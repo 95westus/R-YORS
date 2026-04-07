@@ -1,4 +1,4 @@
-# RЯORS (Coming Soon)
+# RЯORS (Coming Soon(ish))
 
 `RЯORS` = **Roll Ya Own Runtime System**
 
