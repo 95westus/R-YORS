@@ -2,7 +2,7 @@
 
 `RЯORS` = **Roll Ya Own Runtime System**
 
-No E, expect fewer errors.
+No E, expect fewer errors. LOL
 
 Pronunciation: **"are-yors"** (`R + ya + ors`).
 
