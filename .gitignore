@@ -1,27 +1,32 @@
+## Build artifacts
 *.obj
 *.sym
 *.log
 *.tmp
 *.bak
 *.swp
-
-.bin
+*.bin
 *.map
 *.lst
 *.lib
+*.s19
+LIB.TMP
 
+## Archives
 *.zip
 
-DOC/*
-SRC/*
+## Local tooling/output folders
 *WDCMON*/
 *BSO2*/
 
+## Editor / OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+*.code-workspace
 
+## Python cache
 __pycache__/
 *.pyc
 
