@@ -18,6 +18,7 @@ LIB.TMP
 ## Local tooling/output folders
 *WDCMON*/
 *BSO2*/
+SRC/BUILD/
 
 ## Editor / OS
 .vscode/

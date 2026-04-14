@@ -11,8 +11,16 @@ A full public project write-up is coming soon.
 Once I have a flashable command-processor image with a working `DUMP` command that accepts at least one parameter (start address) and defaults to a `$100`-byte length, I'll release additional project details.
 
 Naming guide and alias normalization:
-- See [R-YORS_GUIDE.md](./R-YORS_GUIDE.md).
+- See [DOC/GUIDES/INDEX.md](./DOC/GUIDES/INDEX.md).
 - `R-YORS` is the preferred primary name; legacy aliases include `RYORS`, `RORS`, and `RЯORS` (stylized/logo form).
+
+Repository layout:
+- `DOC/branding/`: visual identity assets.
+- `DOC/GUIDES/`: index, glossary, references, and cross-reference notes.
+- `SRC/LIB/`: shared runtime/library assembly modules.
+- `SRC/TEST/`: command/test entry points and runnable assembly programs.
+- `SRC/Makefile`: source-level build orchestration.
+- `Makefile`: top-level pass-through wrapper for `SRC/Makefile`.
 
 For now, this repository contains active source, contracts, and internal working docs while the project is being shaped. The code is being intentionally thought through for both form and function, with a long-term goal of building a massive set of libraries that contains the "kitchen sink." Testing is part of the current workflow, and edge-case handling is documented in the project docs.
 
