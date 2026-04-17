@@ -4,12 +4,41 @@
 
 Not eRRORS, but expect fewer.
 
-Pronunciation: **"are-yors"** (`R + ya + ors`).
+Pronunciation: **"are-yors"** (`R + Я(ya) + ors`).
 
-R-YORS is an in-progress 65C02 runtime project.
-A full public project write-up is coming soon.
-Once I have a flashable command-processor image with a working suite of utilities like the `DISPLAY` command and have tested the digital pin routines and the layers based on them, I'll release additional project details.
+This is a play on "Roll Your Own Runtime System," where "Я" (Russian for "ya") represents "your," highlighting the DIY, customizable nature of the project.
 
-- `R-YORS` is the preferred primary name; legacy aliases include `RYORS`, `RORS`, and `RЯORS` (stylized/logo form).
+## Why
 
-For now, this repository contains active source, contracts, and internal working docs while the project is being shaped. The code is being intentionally thought through for both form and function, with a long-term goal of building a massive set of libraries that contains the "kitchen sink." Testing is part of the current workflow, and edge-case handling is documented in the project docs.
+**The goal is to create an inexpensive, turnkey 6502 runtime system that boots directly from hardware without requiring toolchain setup. This will make retro computing accessible to anyone seeking standalone operation and customizable runtime experimentation on a single board.**
+
+## What
+
+R-YORS is an in-progress 65C02 runtime project based on the Western Design Center W65C02SXB/W65C02EDU hardware. I'm vibe-coding from the ground up—building low-level routines and exploring multiple paths to realize my ultimate goal: an RPG II compiler. This iterative process generates reusable code blocks along the way, even if not all prove essential to the final vision. 
+
+## How
+
+R-YORS enables this vision through a modular library of routines that can be easily linked into projects. This approach allows developers to quickly assemble custom runtime systems by selecting and combining pre-built, tested components—eliminating the need to rewrite low-level code and accelerating experimentation on the 6502 platform.
+
+## Example Routines
+
+To illustrate the library's versatility, here are three example routines from different layers:
+
+- **UTL_HEX_NIBBLE_TO_ASCII** (Utility): Converts a low nibble (0-15) in A to uppercase ASCII hex ('0'-'F'), useful for debugging output.
+- **BIO_PIA_LED_WRITE** (Hardware Abstraction): Controls LED states on the PIA chip, abstracting direct hardware access for safer GPIO operations.
+- **SYS_WRITE_CHAR** (System I/O): Provides device-neutral character output, routing through the selected backend (e.g., FTDI) for consistent I/O across platforms. 
+
+## Architecture & Current Status
+
+My predecessor project, BSO2, proved the concept but suffered from inflexible command processing, poor modularity, and AI-induced rabbit holes. R-YORS adopts a more disciplined approach with layered, reusable building blocks:
+
+- **PIN routines** – Direct hardware interface
+- **BIO routines** – Hardware abstraction layer wrapping PIN routines
+- **COR routines** – Application-level functionality (currently under test)
+- **SYS routines** – I/O handling for specific board devices (FTDI, ACIA, VIA, PIA)
+
+The system includes a compact monitor (**himon**) at ~4K that currently supports: DISPLAY, FILL, COPY, MODIFY, HELP, LOAD, QUIT. Note that R-YORS/himon currently relies on bso2 for BRK handling. Future enhancements will extend himon to match the board's default onboard flash monitor capabilities.
+
+## Documentation & References
+
+My runtime system development journey will be guided by manuals such as IBM's SY31-0458-3 (System Unit Theory Diagrams Manual) and GC21-7667-4 (RPG II Reference Manual).
