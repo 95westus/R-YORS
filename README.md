@@ -16,6 +16,10 @@ This is a play on "Roll Your Own Runtime System," where "Я" (Russian for "ya") 
 
 R-YORS is an in-progress 65C02 runtime project based on the Western Design Center W65C02SXB/W65C02EDU hardware. I'm vibe-coding from the ground up—building low-level routines and exploring multiple paths to realize my ultimate goal: an RPG II compiler. This iterative process generates reusable code blocks along the way, even if not all prove essential to the final vision. 
 
+### Why RPG
+
+I want to build the language I actually learned, not a modern approximation. I spent nearly 30 years writing RPG, and there still is not one project here focused on true RPG II. Yes, I could get access to an AS/400 or S/3x0, but that misses the point. This project targets the original RPG II model. As I kept building routines on top of routines, I realized this approach can produce a close approximation/simulation of the original environment. The plan is to build it from the ground up, guided by IBM manuals such as SY31-0458-3 (System Unit Theory Diagrams Manual) and GC21-7667-4 (RPG II Reference Manual), then expand compatibility without losing what made RPG II unique.
+
 ## How
 
 R-YORS enables this vision through a modular library of routines that can be easily linked into projects. This approach allows developers to quickly assemble custom runtime systems by selecting and combining pre-built, tested components—eliminating the need to rewrite low-level code and accelerating experimentation on the 6502 platform.
@@ -41,4 +45,4 @@ The system includes a compact monitor (**himon**) at ~4K that currently supports
 
 ## Documentation & References
 
-My runtime system development journey will be guided by manuals such as IBM's SY31-0458-3 (System Unit Theory Diagrams Manual) and GC21-7667-4 (RPG II Reference Manual).
+Core references include IBM's SY31-0458-3 (System Unit Theory Diagrams Manual) and GC21-7667-4 (RPG II Reference Manual).
