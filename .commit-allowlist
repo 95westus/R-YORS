@@ -9,3 +9,6 @@ README.md
 .githooks/*
 install-githooks.ps1
 c.ps1
+
+DOC/
+SRC/
