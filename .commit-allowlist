@@ -10,5 +10,4 @@ README.md
 install-githooks.ps1
 c.ps1
 
-DOC/
-SRC/
+# leakage control didnt work
