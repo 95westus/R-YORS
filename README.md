@@ -43,7 +43,7 @@ My predecessor project, BSO2, proved the concept but suffered from inflexible co
 - **COR routines** – Application-level functionality (currently under test)
 - **SYS routines** – I/O handling for specific board devices (FTDI, ACIA, VIA, PIA)
 
-The system includes a compact monitor (**himon**) at ~4K that currently supports: DISPLAY, FILL, COPY, MODIFY, HELP, LOAD, QUIT. Note that R-YORS/himon currently relies on bso2 for BRK handling. Future enhancements will extend himon to match the board's default onboard flash monitor capabilities.
+The system includes a compact monitor (**himon**) at ~4K that currently supports: DISPLAY, FILL, COPY, MODIFY, HELP, LOAD, QUIT. himon is intended as a rudimentary top-level supervisory monitor (and is evolving toward that role). The `KEYTEST` command came out of one of the many test harness routines. Note that R-YORS/himon currently relies on bso2 for BRK handling. Future enhancements will extend himon to match the board's default onboard flash monitor capabilities.
 
 ## Documentation & References
 
