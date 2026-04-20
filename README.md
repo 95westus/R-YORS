@@ -1,4 +1,6 @@
-﻿# RЯORS (R-YORS) #
+﻿![R-YORS logo](DOC/branding/logo-r-yors.svg)
+
+# RЯORS (R-YORS) #
 
 `R-YORS` = **Roll Ya Own Runtime System**
 
