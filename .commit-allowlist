@@ -1,13 +1,1 @@
-# One glob pattern per line.
-# Staged files must match at least one pattern to be committed.
-# Keep this list intentionally small.
 
-.gitignore
-README.md
-
-.commit-allowlist
-.githooks/*
-install-githooks.ps1
-c.ps1
-
-# leakage control didnt work
