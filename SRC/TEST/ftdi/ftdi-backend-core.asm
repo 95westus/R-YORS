@@ -41,7 +41,7 @@
                         XREF            BIO_FTDI_INIT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_INIT  [HASH:FCDD]
+; ROUTINE: COR_FTDI_INIT  [HASH:503C]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, NO-ZP, NO-RAM, CALLS_BIO, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -62,7 +62,7 @@ COR_FTDI_INIT:
                         XREF            BIO_FTDI_FLUSH_RX
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_FLUSH_RX  [HASH:82CE]
+; ROUTINE: COR_FTDI_FLUSH_RX  [HASH:0EAD]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, FLUSH, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_BIO,
 ;   NOSTACK
@@ -84,7 +84,7 @@ COR_FTDI_FLUSH_RX:
                         XREF            PIN_FTDI_CHECK_ENUMERATED
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CHECK_ENUMERATED  [HASH:DE84]
+; ROUTINE: COR_FTDI_CHECK_ENUMERATED  [HASH:1B63]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, ENUM, NO-ZP, NO-RAM, CALLS_PIN, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -105,7 +105,7 @@ COR_FTDI_CHECK_ENUMERATED:
                         XREF            BIO_FTDI_POLL_RX_READY
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_POLL_CHAR  [HASH:EC29]
+; ROUTINE: COR_FTDI_POLL_CHAR  [HASH:DC2A]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, REGISTER, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_BIO, NOSTACK
@@ -127,7 +127,7 @@ COR_FTDI_POLL_CHAR:
                         XDEF            COR_FTDI_READ_CHAR
                         XREF            BIO_FTDI_READ_BYTE_BLOCK
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CHAR  [HASH:B8B2]
+; ROUTINE: COR_FTDI_READ_CHAR  [HASH:A8B3]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, READ, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_BIO,
 ;   NOSTACK
@@ -155,7 +155,7 @@ FTDI_GCT_TMO_SLICE_Y       EQU             $F8
 FTDI_GCT_TMO_CODE          EQU             $FD
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CHAR_TIMEOUT  [HASH:66B4]
+; ROUTINE: COR_FTDI_READ_CHAR_TIMEOUT  [HASH:C5B5]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, VIA, TIMEOUT, READ, CARRY-STATUS, NO-ZP,
 ;   USES-FIXED-RAM, CALLS_COR, STACK
@@ -206,7 +206,7 @@ FTDI_GSC_SLICE_X           EQU             $B6
 FTDI_GSC_SLICE_Y           EQU             $F8
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CHAR_SPINCOUNT  [HASH:3EA0]
+; ROUTINE: COR_FTDI_READ_CHAR_SPINCOUNT  [HASH:E161]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, VIA, TIMEOUT, CARRY-STATUS, NO-ZP,
 ;   USES-FIXED-RAM, CALLS_COR, STACK
@@ -259,7 +259,7 @@ FTDI_GTS_SLICE_Y           EQU             $F8
 FTDI_GTS_TMO_CODE          EQU             $FD
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CHAR_TIMEOUT_SPINDOWN  [HASH:310F]
+; ROUTINE: COR_FTDI_READ_CHAR_TIMEOUT_SPINDOWN  [HASH:232E]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, VIA, SPINDOWN, TIMEOUT, READ, CARRY-STATUS,
 ;   NO-ZP, USES-FIXED-RAM, CALLS_COR, STACK
@@ -304,7 +304,7 @@ COR_FTDI_READ_CHAR_TIMEOUT_SPINDOWN:
                         XDEF            COR_FTDI_WRITE_CHAR
                         XREF            BIO_FTDI_WRITE_BYTE_BLOCK
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_CHAR  [HASH:B5E3]
+; ROUTINE: COR_FTDI_WRITE_CHAR  [HASH:C602]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, WRITE, PRESERVE-A, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, CALLS_BIO, NOSTACK
@@ -326,7 +326,7 @@ COR_FTDI_WRITE_CHAR:
                         XREF            COR_FTDI_WRITE_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_CHAR_REPEAT  [HASH:9377]
+; ROUTINE: COR_FTDI_WRITE_CHAR_REPEAT  [HASH:F278]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, WRITE, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   NOSTACK
@@ -357,7 +357,7 @@ COR_FTDI_WRITE_CHAR_REPEAT:
                         XREF            COR_FTDI_WRITE_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_CHAR_PLUS_CRLF  [HASH:4652]
+; ROUTINE: COR_FTDI_WRITE_CHAR_PLUS_CRLF  [HASH:FBB1]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, WRITE, LOWERCASE, CRLF, PRESERVE-A, CARRY-STATUS,
 ;   NO-ZP, NO-RAM, CALLS_COR, STACK
@@ -394,7 +394,7 @@ COR_FTDI_WRITE_CHAR_PLUS_CRLF:
                         XREF            COR_FTDI_WRITE_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_BYTES_AXY  [HASH:3EA1]
+; ROUTINE: COR_FTDI_WRITE_BYTES_AXY  [HASH:69E2]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, WRITE, PRESERVE-XY, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, STACK
@@ -440,7 +440,7 @@ COR_FTDI_WRITE_BYTES_AXY:
                         XREF            COR_FTDI_WRITE_CHAR_PLUS_CRLF
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF  [HASH:6F56]
+; ROUTINE: COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF  [HASH:5D35]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, WRITE, CRLF, PRESERVE-A, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, CALLS_COR, NOSTACK
@@ -464,7 +464,7 @@ COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF:
                         XREF            COR_FTDI_WRITE_BYTES_AXY
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_WRITE_BYTES_AXY  [HASH:831D]
+; ROUTINE: COR_FTDI_CVN_WRITE_BYTES_AXY  [HASH:25DE]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, WRITE, PRESERVE-XY, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -488,7 +488,7 @@ COR_FTDI_CVN_WRITE_BYTES_AXY:
                         XREF            UTL_HEX_BYTE_TO_ASCII_YX
                         XREF            BIO_FTDI_WRITE_BYTE_BLOCK
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_HEX_BYTE  [HASH:3BD9]
+; ROUTINE: COR_FTDI_WRITE_HEX_BYTE  [HASH:2478]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, HEX, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_BIO, STACK
@@ -519,7 +519,7 @@ COR_FTDI_WRITE_HEX_BYTE:
                         XREF            COR_FTDI_WRITE_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_CRLF  [HASH:DCB6]
+; ROUTINE: COR_FTDI_WRITE_CRLF  [HASH:ECD5]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, WRITE, CRLF, PRESERVE-A, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, CALLS_COR, STACK
@@ -582,7 +582,7 @@ US                         EQU             $1F
 DEL                        EQU             $7F
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CHAR_COOKED_ECHO  [HASH:5170]
+; ROUTINE: COR_FTDI_READ_CHAR_COOKED_ECHO  [HASH:47F1]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, ECHO, CRLF, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK

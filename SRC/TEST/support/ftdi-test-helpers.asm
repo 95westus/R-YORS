@@ -28,13 +28,13 @@
                         XREF            COR_FTDI_WRITE_CSTRING
                         XREF            COR_FTDI_WRITE_CRLF
 
-TH_PTR_LO                  EQU             $F8
-TH_PTR_HI                  EQU             $F9
-TH_LEN                     EQU             $FA
-TH_CHAR                    EQU             $FB
+TH_PTR_LO                  EQU             $E8
+TH_PTR_HI                  EQU             $E9
+TH_LEN                     EQU             $EA
+TH_CHAR                    EQU             $EB
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_CLASS_TAG_A  [HASH:7CD6]
+; ROUTINE: COR_FTDI_WRITE_CLASS_TAG_A  [HASH:1FDF]
 ; TIER: APP-L5
 ; TAGS: COR, APP-L5, UPPERCASE, LOWERCASE, CLASSIFY, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, NOSTACK
@@ -106,7 +106,7 @@ TH_TAG_PRINT_LOWER:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_VISIBLE_BUFFER  [HASH:936C]
+; ROUTINE: COR_FTDI_WRITE_VISIBLE_BUFFER  [HASH:27C3]
 ; TIER: APP-L5
 ; TAGS: COR, APP-L5, CARRY-STATUS, USES-ZP, NO-RAM, CALLS_COR, STACK
 ; MEM : ZP: TH_PTR_LO/HI($F8/$F9), TH_LEN($FA); FIXED_RAM: none.
@@ -158,7 +158,7 @@ TH_VIS_DONE:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_CLASSIFIED_BUFFER  [HASH:70ED]
+; ROUTINE: COR_FTDI_WRITE_CLASSIFIED_BUFFER  [HASH:E936]
 ; TIER: APP-L5
 ; TAGS: COR, APP-L5, CARRY-STATUS, USES-ZP, NO-RAM, CALLS_COR, STACK
 ; MEM : ZP: TH_PTR_LO/HI($F8/$F9), TH_LEN($FA), TH_CHAR($FB); FIXED_RAM: none.

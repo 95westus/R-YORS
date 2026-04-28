@@ -73,17 +73,17 @@
 PIA_LED_PROFILE_RAW        EQU             $00
 PIA_LED_PROFILE_EDU        EQU             $01
 
-PIA_BIO_LOCK_DEPTH         EQU             $7BFC
-PIA_BIO_LED_PROFILE        EQU             $7BFB
-PIA_BIO_TMP_A              EQU             $7BFA
+PIA_BIO_TMP_A              EQU             $7EE3
+PIA_BIO_LED_PROFILE        EQU             $7EE4
+PIA_BIO_LOCK_DEPTH         EQU             $7EE5
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_INIT  [HASH:C375]
+; ROUTINE: BIO_PIA_INIT  [HASH:8DF8]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, RAW, CARRY-STATUS, NO-ZP, USES-FIXED-RAM, CALLS_PIN,
 ;   NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_BIO_LOCK_DEPTH($7BFC),
-;   PIA_BIO_LED_PROFILE($7BFB).
+; MEM : ZP: none; FIXED_RAM: PIA_BIO_LOCK_DEPTH($7EE5),
+;   PIA_BIO_LED_PROFILE($7EE4).
 ; PURPOSE: Initialize HAL gate state and seed driver shadows.
 ; IN : none
 ; OUT: C = 1 on success
@@ -99,11 +99,11 @@ BIO_PIA_INIT:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LOCK  [HASH:2390]
+; ROUTINE: BIO_PIA_LOCK  [HASH:EE13]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, PIA, LOCK, IRQ, CARRY-STATUS, NO-ZP, USES-FIXED-RAM,
 ;   NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_BIO_LOCK_DEPTH($7BFC).
+; MEM : ZP: none; FIXED_RAM: PIA_BIO_LOCK_DEPTH($7EE5).
 ; PURPOSE: Enter PIA critical section (software-only in this revision).
 ; IN : none
 ; OUT: C = 1 on success, C = 0 on lock-depth overflow
@@ -122,11 +122,11 @@ PIA_LOCK_FAIL:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_UNLOCK  [HASH:3469]
+; ROUTINE: BIO_PIA_UNLOCK  [HASH:6A2C]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, PIA, UNLOCK, IRQ, CARRY-STATUS, NO-ZP, USES-FIXED-RAM,
 ;   NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_BIO_LOCK_DEPTH($7BFC).
+; MEM : ZP: none; FIXED_RAM: PIA_BIO_LOCK_DEPTH($7EE5).
 ; PURPOSE: Exit PIA critical section.
 ; IN : none
 ; OUT: C = 1 on success, C = 0 if unlock attempted while unlocked
@@ -144,11 +144,11 @@ PIA_UNLOCK_FAIL:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_INIT_PROFILE  [HASH:7A13]
+; ROUTINE: BIO_PIA_LED_INIT_PROFILE  [HASH:9816]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, DDR, LOCK, RAW, CARRY-STATUS, NO-ZP, USES-FIXED-RAM,
 ;   CALLS_PIN, CALLS_BIO, STACK
-; MEM : ZP: none; FIXED_RAM: PIA_BIO_LED_PROFILE($7BFB).
+; MEM : ZP: none; FIXED_RAM: PIA_BIO_LED_PROFILE($7EE4).
 ; PURPOSE: Configure LED profile and set PA to output mode.
 ; IN : A = LED profile (0=RAW, 1=EDU)
 ; OUT: C = 1 on success, C = 0 on lock failure
@@ -174,7 +174,7 @@ PIA_LED_INIT_FAIL_POP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_INIT_RAW  [HASH:7592]
+; ROUTINE: BIO_PIA_LED_INIT_RAW  [HASH:0D15]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, RAW, NO-ZP, NO-RAM, CALLS_BIO, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -188,7 +188,7 @@ BIO_PIA_LED_INIT_RAW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_INIT_EDU  [HASH:4520]
+; ROUTINE: BIO_PIA_LED_INIT_EDU  [HASH:DCA3]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, NO-ZP, NO-RAM, CALLS_BIO, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -202,11 +202,11 @@ BIO_PIA_LED_INIT_EDU:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_WRITE  [HASH:5D26]
+; ROUTINE: BIO_PIA_LED_WRITE  [HASH:AC83]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, WRITE, LOCK, RAW, CARRY-STATUS, NO-ZP, USES-FIXED-RAM,
 ;   CALLS_PIN, CALLS_BIO, STACK
-; MEM : ZP: none; FIXED_RAM: PIA_BIO_LED_PROFILE($7BFB), PIA_BIO_TMP_A($7BFA).
+; MEM : ZP: none; FIXED_RAM: PIA_BIO_LED_PROFILE($7EE4), PIA_BIO_TMP_A($7EE3).
 ; PURPOSE: Write logical LED byte through current profile mapping.
 ; IN : A = logical LED state byte
 ; OUT: C = 1 on success, C = 0 on lock failure
@@ -238,7 +238,7 @@ PIA_LED_WRITE_FAIL_POP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_SET_MASK  [HASH:0602]
+; ROUTINE: BIO_PIA_LED_SET_MASK  [HASH:9D85]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, VIA, WRITE, LOCK, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_BIO, NOSTACK
@@ -256,7 +256,7 @@ BIO_PIA_LED_SET_MASK:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_CLEAR_MASK  [HASH:18B7]
+; ROUTINE: BIO_PIA_LED_CLEAR_MASK  [HASH:DB7A]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, VIA, WRITE, LOCK, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_BIO, NOSTACK
@@ -274,7 +274,7 @@ BIO_PIA_LED_CLEAR_MASK:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_XOR_MASK  [HASH:85A9]
+; ROUTINE: BIO_PIA_LED_XOR_MASK  [HASH:1D2C]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, SHADOW, READ, WRITE, LOCK, TOGGLE, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, CALLS_PIN, CALLS_BIO, STACK
@@ -306,7 +306,7 @@ PIA_LED_XOR_MASK_FAIL_POP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_TOGGLE_MASK  [HASH:911E]
+; ROUTINE: BIO_PIA_LED_TOGGLE_MASK  [HASH:26BB]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, TOGGLE, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -318,7 +318,7 @@ BIO_PIA_LED_TOGGLE_MASK:
                         JMP             BIO_PIA_LED_XOR_MASK
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_READ_SHADOW  [HASH:5810]
+; ROUTINE: BIO_PIA_LED_READ_SHADOW  [HASH:EDAD]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, SHADOW, READ, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN,
 ;   NOSTACK
@@ -334,7 +334,7 @@ BIO_PIA_LED_READ_SHADOW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_LED_READ_RAW  [HASH:B718]
+; ROUTINE: BIO_PIA_LED_READ_RAW  [HASH:4E9B]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, READ, RAW, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN,
 ;   NOSTACK
@@ -348,7 +348,7 @@ BIO_PIA_LED_READ_RAW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_GPIO_CONFIG_DDRA  [HASH:0001]
+; ROUTINE: BIO_PIA_GPIO_CONFIG_DDRA  [HASH:1E04]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, PIA, DDR, LOCK, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN,
 ;   CALLS_BIO, STACK
@@ -372,7 +372,7 @@ PIA_GPIO_CFG_DDRA_FAIL_POP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_GPIO_CONFIG_DDRB  [HASH:0002]
+; ROUTINE: BIO_PIA_GPIO_CONFIG_DDRB  [HASH:1E05]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, PIA, DDR, LOCK, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN,
 ;   CALLS_BIO, STACK
@@ -396,7 +396,7 @@ PIA_GPIO_CFG_DDRB_FAIL_POP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_GPIO_WRITE_PORTA_MASKED  [HASH:6635]
+; ROUTINE: BIO_PIA_GPIO_WRITE_PORTA_MASKED  [HASH:0ED2]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, PIA, WRITE, LOCK, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_PIN, CALLS_BIO, STACK
@@ -423,7 +423,7 @@ PIA_GPIO_WRITE_A_MASKED_FAIL_POP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_GPIO_WRITE_PORTB_MASKED  [HASH:9314]
+; ROUTINE: BIO_PIA_GPIO_WRITE_PORTB_MASKED  [HASH:3BB1]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, PIA, WRITE, LOCK, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_PIN, CALLS_BIO, STACK
@@ -450,7 +450,7 @@ PIA_GPIO_WRITE_B_MASKED_FAIL_POP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_GPIO_READ_PORTA_RAW  [HASH:212B]
+; ROUTINE: BIO_PIA_GPIO_READ_PORTA_RAW  [HASH:A048]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, PIA, READ, LOCK, RAW, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_PIN, CALLS_BIO, STACK
@@ -474,7 +474,7 @@ PIA_GPIO_READ_A_RAW_FAIL:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_GPIO_READ_PORTB_RAW  [HASH:38AC]
+; ROUTINE: BIO_PIA_GPIO_READ_PORTB_RAW  [HASH:B7C9]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, PIA, READ, LOCK, RAW, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_PIN, CALLS_BIO, STACK
@@ -498,7 +498,7 @@ PIA_GPIO_READ_B_RAW_FAIL:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_GPIO_READ_PORTA_SHADOW  [HASH:511D]
+; ROUTINE: BIO_PIA_GPIO_READ_PORTA_SHADOW  [HASH:A0E0]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, SHADOW, READ, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN,
 ;   NOSTACK
@@ -512,7 +512,7 @@ BIO_PIA_GPIO_READ_PORTA_SHADOW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: BIO_PIA_GPIO_READ_PORTB_SHADOW  [HASH:7DFC]
+; ROUTINE: BIO_PIA_GPIO_READ_PORTB_SHADOW  [HASH:CDBF]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, SHADOW, READ, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN,
 ;   NOSTACK

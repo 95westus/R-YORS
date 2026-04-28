@@ -40,7 +40,7 @@
                         XREF            COR_FTDI_READ_CSTRING_EDIT_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_ECHO  [HASH:A3D2]
+; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_ECHO  [HASH:95F1]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, ECHO, CARRY-STATUS, NOSTACK
 ; PURPOSE: Line-editor read wrapper (echo, no case conversion).
@@ -60,7 +60,7 @@ COR_FTDI_READ_CSTRING_EDIT_ECHO:
                         XREF            COR_FTDI_READ_CSTRING_EDIT_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_SILENT  [HASH:12C2]
+; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_SILENT  [HASH:F921]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, ECHO, CARRY-STATUS, NOSTACK
 ; PURPOSE: Line-editor read wrapper (no echo, no case conversion).
@@ -77,7 +77,7 @@ COR_FTDI_READ_CSTRING_EDIT_SILENT:
                         XREF            COR_FTDI_READ_CSTRING_EDIT_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:BF59]
+; ROUTINE: COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:D6B8]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, ECHO, CARRY-STATUS, NOSTACK
 ; PURPOSE: Line-editor read wrapper (echo + force uppercase).
@@ -98,20 +98,20 @@ COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER:
                         XREF            UTL_CHAR_TO_LOWER
 
 FTDI_GCE_ESC               EQU             $1B
-FTDI_GCE_PTR_LO            EQU             $F8
-FTDI_GCE_PTR_HI            EQU             $F9
-FTDI_GCE_MAX               EQU             $FA
-FTDI_GCE_LEN               EQU             $FB
-FTDI_GCE_PB_CH             EQU             $FC
-FTDI_GCE_PB_VALID          EQU             $FD
-FTDI_GCE_EOL               EQU             $FE
-FTDI_GCE_MODE              EQU             $FF
+FTDI_GCE_PTR_LO            EQU             $E8
+FTDI_GCE_PTR_HI            EQU             $E9
+FTDI_GCE_MAX               EQU             $EA
+FTDI_GCE_LEN               EQU             $EB
+FTDI_GCE_PB_CH             EQU             $EC
+FTDI_GCE_PB_VALID          EQU             $ED
+FTDI_GCE_EOL               EQU             $EE
+FTDI_GCE_MODE              EQU             $EF
 FTDI_GCE_MODE_ECHO         EQU             $01
 FTDI_GCE_MODE_UPPER        EQU             $02
 FTDI_GCE_MODE_LOWER        EQU             $04
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_MODE  [HASH:7350]
+; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_MODE  [HASH:656F]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, ECHO, NUL-TERM, CARRY-STATUS, CALLS_COR, STACK
 ; PURPOSE: Mode-driven line editor with insert/delete and cursor movement.

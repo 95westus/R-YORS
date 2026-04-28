@@ -44,7 +44,7 @@
 
                         MODULE          PIN_FTDI_INIT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_INIT  [HASH:AE5A]
+; ROUTINE: PIN_FTDI_INIT  [HASH:7A68]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, INIT, PRESERVE-A,
 ;   PRESERVE-XY, NO-ZP, NO-RAM, TOP-SHELF, STACK
@@ -84,7 +84,7 @@ PIN_FTDI_INIT:
 
                         MODULE          PIN_FTDI_POLL_RX_READY
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_POLL_RX_READY  [HASH:6CC0]
+; ROUTINE: PIN_FTDI_POLL_RX_READY  [HASH:5072]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, PRESERVE-A, PRESERVE-XY,
 ;   CARRY-STATUS, NO-ZP, NO-RAM, STACK
@@ -125,7 +125,7 @@ PIN_FTDI_POLL_RX_READY:
 
                         MODULE          PIN_FTDI_READ_BYTE_NONBLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_READ_BYTE_NONBLOCK  [HASH:3018]
+; ROUTINE: PIN_FTDI_READ_BYTE_NONBLOCK  [HASH:CBA6]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, MMIO, REGISTER, NONBLOCKING, READ, PRESERVE-XY,
 ;   CARRY-STATUS, NO-ZP, NO-RAM, STACK
@@ -174,7 +174,7 @@ PIN_FTDI_READ_BYTE_NONBLOCK:
 
                         MODULE          PIN_FTDI_WRITE_BYTE_NONBLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_WRITE_BYTE_NONBLOCK  [HASH:2C2D]
+; ROUTINE: PIN_FTDI_WRITE_BYTE_NONBLOCK  [HASH:025F]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, MMIO, REGISTER, NONBLOCKING, TIMEOUT, WRITE,
 ;   PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, STACK
@@ -237,7 +237,7 @@ PIN_FTDI_WRITE_BYTE_NONBLOCK:
 
                         MODULE          PIN_FTDI_CHECK_ENUMERATED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_CHECK_ENUMERATED  [HASH:3C81]
+; ROUTINE: PIN_FTDI_CHECK_ENUMERATED  [HASH:638F]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, READ, ENUM, PRESERVE-XY,
 ;   CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK

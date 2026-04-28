@@ -124,7 +124,7 @@ DONE:                   BRA             PH1_AFTER_READ
                        BRK             00
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PRINT_DELAY_MSG
+; ROUTINE: PRINT_DELAY_MSG  [HASH:381B]
 ; TAGS: MMIO, REGISTER, NOSTACK
 ; ----------------------------------------------------------------------------
 PRINT_DELAY_MSG:
@@ -134,7 +134,7 @@ PRINT_DELAY_MSG:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: DELAY_3S_8MHZ
+; ROUTINE: DELAY_3S_8MHZ  [HASH:2532]
 ; TAGS: MMIO, REGISTER, NOSTACK
 ; PURPOSE: Busy-wait delay tuned for approximately 3.0 seconds at 8 MHz.
 ; IN : none

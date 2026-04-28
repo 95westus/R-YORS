@@ -1,7 +1,7 @@
 ; ----------------------------------------------------------------------------
 ; test-mon:
 ; - Standalone monitor-load test image.
-; - Built by `make test-mon` and linked at $5000.
+; - Built by `make test-mon` and linked at $2000.
 ; - Shows live up/down counters until a key arrives.
 ; - Ctrl-C exits through R-YORS call `brk $65`.
 ; ----------------------------------------------------------------------------
@@ -20,7 +20,7 @@
                         XREF            SYS_WRITE_HEX_BYTE
                         XREF            UTL_DELAY_AXY_8MHZ
 
-                        INCLUDE         "TEST/LIB/test-mon-eq.inc"
+                        INCLUDE         "TEST/test-mon-eq.inc"
 
                         CODE
 START:
@@ -236,7 +236,7 @@ TMON_PRINT_LINE_XY:
 
                         DATA
 MSG_HDR_1: DB $0D,$0A,"R-YORS test-mon load demo",$00
-MSG_HDR_2:              DB              "linked for GO @ $5000",$00
+MSG_HDR_2:              DB              "linked for GO @ $2000",$00
 MSG_HDR_3:              DB              "Ctrl-C exits via brk $65",$00
 MSG_RT_UP:              DB              "spinning up=$",$00
 MSG_RT_DOWN:            DB              " down=$",$00

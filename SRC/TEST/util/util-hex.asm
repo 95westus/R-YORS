@@ -17,7 +17,7 @@
                         CODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_HEX_NIBBLE_TO_ASCII  [HASH:165D]
+; ROUTINE: UTL_HEX_NIBBLE_TO_ASCII  [HASH:2EDE]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -45,7 +45,7 @@ UTL_HEX_NIBBLE_TO_ASCII:
                         XREF            UTL_HEX_NIBBLE_TO_ASCII
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_HEX_BYTE_TO_ASCII_YX  [HASH:4015]
+; ROUTINE: UTL_HEX_BYTE_TO_ASCII_YX  [HASH:37B4]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, NO-ZP, NO-RAM, STACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -77,7 +77,7 @@ UTL_HEX_BYTE_TO_ASCII_YX:
                         XDEF            UTL_HEX_ASCII_TO_NIBBLE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_HEX_ASCII_TO_NIBBLE  [HASH:2CAF]
+; ROUTINE: UTL_HEX_ASCII_TO_NIBBLE  [HASH:4530]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -125,10 +125,10 @@ UTL_HEX_ASCII_TO_NIBBLE:
                         XDEF            UTL_HEX_ASCII_YX_TO_BYTE
                         XREF            UTL_HEX_ASCII_TO_NIBBLE
 
-UTL_CONV_TMP_A             EQU             $F6
+UTL_CONV_TMP_A             EQU             $E6
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_HEX_ASCII_YX_TO_BYTE  [HASH:D995]
+; ROUTINE: UTL_HEX_ASCII_YX_TO_BYTE  [HASH:D134]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: UTL_CONV_TMP_A($F6); FIXED_RAM: none.

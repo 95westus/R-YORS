@@ -32,7 +32,7 @@ DELAY_AXY_MAX_X            EQU             $B6                    ; 182
 DELAY_AXY_MAX_Y            EQU             $F8                    ; 248
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_DELAY_AXY_8MHZ  [HASH:1ACF]
+; ROUTINE: UTL_DELAY_AXY_8MHZ  [HASH:B9EE]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, NO-ZP, USES-FIXED-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: DELAY_AXY_X_INIT($7BF9), DELAY_AXY_Y_INIT($7BF8).

@@ -53,7 +53,7 @@ SYS_BACKEND_SELECTED       EQU             SYS_BACKEND_FTDI
                         XREF            COR_FTDI_READ_CSTRING_ECHO
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING  [HASH:1CFF]
+; ROUTINE: SYS_READ_CSTRING  [HASH:0D00]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -74,7 +74,7 @@ SYS_READ_CSTRING:
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_MODE  [HASH:14E3]
+; ROUTINE: SYS_READ_CSTRING_MODE  [HASH:FD82]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, ECHO, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -96,7 +96,7 @@ SYS_READ_CSTRING_MODE:
                         XREF            COR_FTDI_READ_CSTRING_EDIT_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_EDIT_MODE  [HASH:DF78]
+; ROUTINE: SYS_READ_CSTRING_EDIT_MODE  [HASH:8239]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -115,7 +115,7 @@ SYS_READ_CSTRING_EDIT_MODE:
         XREF COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:6FFD]
+; ROUTINE: SYS_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:3DFE]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -135,7 +135,7 @@ SYS_READ_CSTRING_EDIT_ECHO_UPPER:
                         XREF            COR_FTDI_READ_CSTRING_SILENT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_SILENT  [HASH:9B95]
+; ROUTINE: SYS_READ_CSTRING_SILENT  [HASH:D874]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, ECHO, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -154,7 +154,7 @@ SYS_READ_CSTRING_SILENT:
                         XREF            COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_ECHO_UPPER  [HASH:A928]
+; ROUTINE: SYS_READ_CSTRING_ECHO_UPPER  [HASH:5E87]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -173,7 +173,7 @@ SYS_READ_CSTRING_ECHO_UPPER:
                         XREF            COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_ECHO_LOWER  [HASH:7B87]
+; ROUTINE: SYS_READ_CSTRING_ECHO_LOWER  [HASH:30E6]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -192,7 +192,7 @@ SYS_READ_CSTRING_ECHO_LOWER:
                         XREF            COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_SILENT_UPPER  [HASH:9B58]
+; ROUTINE: SYS_READ_CSTRING_SILENT_UPPER  [HASH:74F7]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, SILENT, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -211,7 +211,7 @@ SYS_READ_CSTRING_SILENT_UPPER:
                         XREF            COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_SILENT_LOWER  [HASH:6DB7]
+; ROUTINE: SYS_READ_CSTRING_SILENT_LOWER  [HASH:4756]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, SILENT, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -222,6 +222,141 @@ SYS_READ_CSTRING_SILENT_UPPER:
 SYS_READ_CSTRING_SILENT_LOWER:
                         JSR             COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER
                         RTS
+                        ENDMOD
+
+                        MODULE          SYS_READ_STRING_CTRL_C_ECHO
+
+                        XDEF            SYS_READ_CSTRING_CTRL_C_ECHO
+                        XDEF            SYS_READ_HBSTRING_CTRL_C_ECHO
+                        XREF            SYS_READ_CHAR
+                        XREF            SYS_WRITE_CHAR
+                        XREF            SYS_WRITE_CRLF
+
+SYS_RCCE_PTR_LO           EQU             $E8
+SYS_RCCE_PTR_HI           EQU             $E9
+SYS_RCCE_LEN              EQU             $EA
+SYS_RCCE_MODE             EQU             $EB
+
+SYS_RCCE_MODE_CSTR        EQU             $00
+SYS_RCCE_MODE_HBSTR       EQU             $01
+SYS_RCCE_MAX_CSTR         EQU             $FE
+SYS_RCCE_MAX_HBSTR        EQU             $FF
+SYS_RCCE_FULL_CODE        EQU             $FE
+SYS_RCCE_CTRL_C           EQU             $03
+
+; ----------------------------------------------------------------------------
+; ROUTINE: SYS_READ_CSTRING_CTRL_C_ECHO / SYS_READ_HBSTRING_CTRL_C_ECHO
+; TIER: SYS-L4
+; TAGS: SYS, SYS-L4, READ, ECHO, CTRL-C, CSTRING, HIBIT-TERM, CARRY-STATUS,
+;   USES-ZP, NO-RAM, STACK
+; MEM : ZP: SYS_RCCE_PTR_LO($E8), SYS_RCCE_PTR_HI($E9), SYS_RCCE_LEN($EA),
+;   SYS_RCCE_MODE($EB); FIXED_RAM: none.
+; PURPOSE: Device-neutral blocking line input with printable echo and Ctrl-C
+;   abort status.
+; IN : X/Y = destination pointer
+; OUT: C=1, A=len on CR/LF completion
+;      C=0, A=$03 on Ctrl-C
+;      C=0, A=$FE on full buffer
+; EXCEPTIONS/NOTES:
+; - Printable bytes $20-$7E are stored and echoed.
+; - Other controls are ignored except CR/LF and Ctrl-C.
+; - CSTR capacity is 254 bytes (+ trailing NUL).
+; - HBSTR capacity is 255 bytes (final stored byte has bit7 set).
+; - C-string output stores a trailing NUL.
+; - HBSTR output sets bit 7 on the final character. Empty HBSTR input stores
+;   $80 as an application-readable empty sentinel.
+; ----------------------------------------------------------------------------
+SYS_READ_CSTRING_CTRL_C_ECHO:
+                        LDA             #SYS_RCCE_MODE_CSTR
+                        BRA             SYS_READ_STRING_CTRL_C_ECHO
+
+SYS_READ_HBSTRING_CTRL_C_ECHO:
+                        LDA             #SYS_RCCE_MODE_HBSTR
+
+SYS_READ_STRING_CTRL_C_ECHO:
+                        STX             SYS_RCCE_PTR_LO
+                        STY             SYS_RCCE_PTR_HI
+                        STA             SYS_RCCE_MODE
+                        STZ             SYS_RCCE_LEN
+
+SYS_RCCE_LOOP:
+                        JSR             SYS_READ_CHAR
+                        CMP             #SYS_RCCE_CTRL_C
+                        BEQ             SYS_RCCE_ABORT
+                        CMP             #$0D
+                        BEQ             SYS_RCCE_DONE
+                        CMP             #$0A
+                        BEQ             SYS_RCCE_DONE
+                        CMP             #$20
+                        BCC             SYS_RCCE_LOOP
+                        CMP             #$7F
+                        BCS             SYS_RCCE_LOOP
+
+                        PHA
+                        LDY             SYS_RCCE_LEN
+                        LDA             SYS_RCCE_MODE
+                        CMP             #SYS_RCCE_MODE_HBSTR
+                        BEQ             SYS_RCCE_CHECK_MAX_HBSTR
+                        CPY             #SYS_RCCE_MAX_CSTR
+                        BEQ             SYS_RCCE_FULL_POP
+                        BRA             SYS_RCCE_STORE_CHAR
+SYS_RCCE_CHECK_MAX_HBSTR:
+                        CPY             #SYS_RCCE_MAX_HBSTR
+                        BEQ             SYS_RCCE_FULL_POP
+SYS_RCCE_STORE_CHAR:
+                        PLA
+                        STA             (SYS_RCCE_PTR_LO),Y
+                        JSR             SYS_WRITE_CHAR
+                        INC             SYS_RCCE_LEN
+                        BRA             SYS_RCCE_LOOP
+SYS_RCCE_FULL_POP:
+                        PLA
+                        BRA             SYS_RCCE_FULL
+
+SYS_RCCE_DONE:
+                        JSR             SYS_RCCE_TERMINATE
+                        JSR             SYS_WRITE_CRLF
+                        LDA             SYS_RCCE_LEN
+                        SEC
+                        RTS
+
+SYS_RCCE_ABORT:
+                        JSR             SYS_WRITE_CRLF
+                        LDA             #SYS_RCCE_CTRL_C
+                        CLC
+                        RTS
+
+SYS_RCCE_FULL:
+                        JSR             SYS_RCCE_TERMINATE
+                        JSR             SYS_WRITE_CRLF
+                        LDA             #SYS_RCCE_FULL_CODE
+                        CLC
+                        RTS
+
+SYS_RCCE_TERMINATE:
+                        LDA             SYS_RCCE_MODE
+                        CMP             #SYS_RCCE_MODE_HBSTR
+                        BEQ             SYS_RCCE_TERM_HBSTR
+
+                        LDY             SYS_RCCE_LEN
+                        LDA             #$00
+                        STA             (SYS_RCCE_PTR_LO),Y
+                        RTS
+
+SYS_RCCE_TERM_HBSTR:
+                        LDY             SYS_RCCE_LEN
+                        BNE             SYS_RCCE_TERM_HBSTR_NONEMPTY
+                        LDA             #$80
+                        STA             (SYS_RCCE_PTR_LO),Y
+                        RTS
+
+SYS_RCCE_TERM_HBSTR_NONEMPTY:
+                        DEY
+                        LDA             (SYS_RCCE_PTR_LO),Y
+                        ORA             #$80
+                        STA             (SYS_RCCE_PTR_LO),Y
+                        RTS
+
                         ENDMOD
 
                         END

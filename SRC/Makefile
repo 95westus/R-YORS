@@ -3,6 +3,7 @@ LIB := wdclib
 LINKER := wdcln
 ASFLAGS = -G -L -S -W -I $(BUILD_DIR) -I $(INC_DIR)
 LINKFLAGS := -g -s -t -c1000 -hm19 -j -o
+TEST_LINKFLAGS := -g -s -t -c2000 -hm19 -j -o
 STASH_DIR := STASH
 CORE_DIR := SESH
 TEST_ROOT_DIR := TEST
@@ -24,18 +25,34 @@ S19_DIR := $(BUILD_DIR)/s19
 #   - SESH/ftdi
 #   - TEST/{ftdi,util,dev,acia,pia}
 
-CMD_SRC := $(APPS_DIR)/cmd.asm
-CMD_OBJ := $(OBJ_DIR)/$(APPS_DIR)/cmd.obj
-CMD_S19 := $(S19_DIR)/cmd.s19
-DUMP_SRC := $(APPS_DIR)/dump.asm
-DUMP_OBJ := $(OBJ_DIR)/$(APPS_DIR)/dump.obj
-DUMP_S19 := $(S19_DIR)/dump.s19
-HIM_SRC := $(APPS_DIR)/himon.asm
-HIM_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon.obj
-MON_SRC := $(APPS_DIR)/mon.asm
-MON_OBJ := $(OBJ_DIR)/$(APPS_DIR)/mon.obj
+HIM_SUBDIR := $(APPS_DIR)/himon
+HIM_SRC := $(HIM_SUBDIR)/himon.asm
+HIM_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon.obj
+MON_SRC := $(HIM_SUBDIR)/mon.asm
+MON_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/mon.obj
 HIM_S19 := $(S19_DIR)/himon.s19
 HIM_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
+HIM_ROM_S19 := $(S19_DIR)/himon-rom.s19
+HIM_ROM_LINKFLAGS := -g -s -t -c8000 -hm19 -j -o
+HIM_ROM_BIN := $(BIN_DIR)/himon.bin
+HIMONIA_SRC := $(HIM_SUBDIR)/himonia.asm
+HIMONIA_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himonia.obj
+HIMONIA_S19 := $(S19_DIR)/himonia.s19
+HIMONIA_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
+HIMONIA_ROM_S19 := $(S19_DIR)/himonia-rom.s19
+HIMONIA_ROM_LINKFLAGS := -g -s -t -c8000 -hm19 -j -o
+HIMONIA_ROM_BIN := $(BIN_DIR)/himonia.bin
+HIMONIA_F_SRC := $(HIM_SUBDIR)/himonia-f.asm
+HIMONIA_F_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himonia-f.obj
+HIMONIA_F_S19 := $(S19_DIR)/himonia-f.s19
+HIMONIA_F_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
+HIMONIA_F_ROM_S19 := $(S19_DIR)/himonia-f-rom.s19
+HIMONIA_F_ROM_LINKFLAGS := -g -s -t -c8000 -hm19 -j -o
+HIMONIA_F_ROM_BIN := $(BIN_DIR)/himonia-f.bin
+FNV1A_HBSTR_SRC := $(HIM_SUBDIR)/fnv1a-hbstr.asm
+FNV1A_HBSTR_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/fnv1a-hbstr.obj
+FNV1A_HBSTR_S19 := $(S19_DIR)/fnv1a-hbstr.s19
+FNV1A_HBSTR_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
 TMON_SRC := $(TEST_ROOT_DIR)/test-mon.asm
 TMON_OBJ := $(OBJ_DIR)/$(TEST_ROOT_DIR)/test-mon.obj
 TMON_S19 := $(S19_DIR)/test-mon.s19
@@ -45,13 +62,15 @@ TFTDI_S19 := $(S19_DIR)/test-ftdi-drv.s19
 TFHAL_SRC := $(TEST_ROOT_DIR)/test-ftdi-hal.asm
 TFHAL_OBJ := $(OBJ_DIR)/$(TEST_ROOT_DIR)/test-ftdi-hal.obj
 TFHAL_S19 := $(S19_DIR)/test-ftdi-hal.s19
+LIFE_SRC := $(APPS_DIR)/life.asm
+LIFE_OBJ := $(OBJ_DIR)/$(APPS_DIR)/life.obj
+LIFE_S19 := $(S19_DIR)/life.s19
 FTDI_DRV_SRC := $(STASH_DIR)/ftdi/ftdi-drv.asm
 FTDI_DRV_INC := $(STASH_DIR)/ftdi/ftdi-drv.inc
-TMON_LINKFLAGS := -g -s -t -c5000 -hm19 -j -o
 
 ROM_EXTRA_SRC := $(wildcard $(TEST_ROOT_DIR)/ftdi-backend-debug.asm)
 ROM_SRC := $(foreach d,$(LIB_SUBDIRS),$(wildcard $(d)/*.asm)) $(ROM_EXTRA_SRC)
-APP_SRC := $(wildcard $(STASH_DIR)/*.asm) $(wildcard $(CORE_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/*.asm) $(wildcard $(APPS_DIR)/*.asm) $(wildcard $(TEST_SUPPORT_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/ftdi/*.asm) $(wildcard $(TEST_ROOT_DIR)/dev/*.asm) $(wildcard $(TEST_ROOT_DIR)/acia/*.asm) $(wildcard $(TEST_ROOT_DIR)/pia/*.asm) $(wildcard $(TEST_ROOT_DIR)/util/*.asm)
+APP_SRC := $(wildcard $(STASH_DIR)/*.asm) $(wildcard $(CORE_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/*.asm) $(wildcard $(APPS_DIR)/*.asm) $(wildcard $(HIM_SUBDIR)/*.asm) $(wildcard $(TEST_SUPPORT_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/ftdi/*.asm) $(wildcard $(TEST_ROOT_DIR)/dev/*.asm) $(wildcard $(TEST_ROOT_DIR)/acia/*.asm) $(wildcard $(TEST_ROOT_DIR)/pia/*.asm) $(wildcard $(TEST_ROOT_DIR)/util/*.asm)
 ROM_OBJ := $(addprefix $(OBJ_DIR)/,$(ROM_SRC:.asm=.obj))
 ROM_LIB := $(BUILD_DIR)\lib\rom.lib
 TEST_LIB_SRC := $(wildcard $(TEST_SUPPORT_DIR)/*.asm)
@@ -81,19 +100,49 @@ CALL_MAP_GEN := tools/gen_call_map.ps1
 TERMINAL ?=
 UPLOADER ?=
 
-all: test-ftdi-drv cmd dump himon
+all: test-ftdi-drv himon
 
-cmd: $(ROM_LIB) $(CMD_S19)
-	@echo "Built $(CMD_S19)."
-	@$(MAKE) artifacts
-
-dump: $(ROM_LIB) $(DUMP_S19)
-	@echo "Built $(DUMP_S19)."
-	@$(MAKE) artifacts
-
-himon: $(ROM_LIB) $(HIM_S19)
+himon: $(ROM_LIB) $(HIM_S19) himon-rom-bin
 	@echo "Built $(HIM_S19)."
 	@$(MAKE) artifacts
+
+himon-rom: $(ROM_LIB) $(HIM_ROM_S19)
+	@echo "Built $(HIM_ROM_S19)."
+	@$(MAKE) artifacts
+
+himon-rom-bin: himon-rom
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-rom.map" -S19Path "$(S19_DIR)/himon-rom.s19" -BinPath "$(HIM_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-rom-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin' -Force }"
+	@echo "Built $(HIM_ROM_BIN)."
+
+himonia: $(ROM_LIB) $(HIMONIA_S19) himonia-rom-bin
+	@echo "Built $(HIMONIA_S19)."
+	@$(MAKE) artifacts
+
+himonia-rom: $(ROM_LIB) $(HIMONIA_ROM_S19)
+	@echo "Built $(HIMONIA_ROM_S19)."
+	@$(MAKE) artifacts
+
+himonia-rom-bin: himonia-rom
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himonia-rom.map" -S19Path "$(S19_DIR)/himonia-rom.s19" -BinPath "$(HIMONIA_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himonia-rom-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himonia-rom-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himonia-rom-vectors.bin' -Force }"
+	@echo "Built $(HIMONIA_ROM_BIN)."
+
+himonia-f: $(ROM_LIB) $(HIMONIA_F_S19) himonia-f-rom-bin
+	@echo "Built $(HIMONIA_F_S19)."
+	@$(MAKE) artifacts
+
+himonia-f-rom: $(ROM_LIB) $(HIMONIA_F_ROM_S19)
+	@echo "Built $(HIMONIA_F_ROM_S19)."
+	@$(MAKE) artifacts
+
+himonia-f-rom-bin: himonia-f-rom
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himonia-f-rom.map" -S19Path "$(S19_DIR)/himonia-f-rom.s19" -BinPath "$(HIMONIA_F_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himonia-f-rom-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himonia-f-rom-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himonia-f-rom-vectors.bin' -Force }"
+	@echo "Built $(HIMONIA_F_ROM_BIN)."
+
+fnv1a-hbstr: $(ROM_LIB) $(FNV1A_HBSTR_S19)
+	@echo "Built $(FNV1A_HBSTR_S19)."
 
 test-mon: $(ROM_LIB) $(TEST_LIB) $(TMON_S19)
 	@echo "Built $(TMON_S19)."
@@ -108,6 +157,10 @@ test-ftdi-gauntlet: test-ftdi-drv
 
 test-ftdi-hal: $(ROM_LIB) $(TEST_LIB) $(TFHAL_S19)
 	@echo "Built $(TFHAL_S19)."
+	@$(MAKE) artifacts
+
+life: $(ROM_LIB) $(LIFE_S19)
+	@echo "Built $(LIFE_S19)."
 	@$(MAKE) artifacts
 
 test-ftdi-init: test-ftdi-drv
@@ -161,29 +214,50 @@ rom-acia:
 testing: $(TEST_LIB)
 	@echo "Built $(TEST_LIB)."
 
-$(CMD_S19): $(CMD_OBJ) $(ROM_LIB)
-	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(LINKFLAGS) $(CMD_S19) $(CMD_OBJ) -L $(BUILD_DIR)\lib\rom
-
-$(DUMP_S19): $(DUMP_OBJ) $(ROM_LIB)
-	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(LINKFLAGS) $(DUMP_S19) $(DUMP_OBJ) -L $(BUILD_DIR)\lib\rom
-
 $(HIM_S19): $(HIM_OBJ) $(MON_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(HIM_LINKFLAGS) $(HIM_S19) $(HIM_OBJ) $(MON_OBJ) -L $(BUILD_DIR)\lib\rom
 
+$(HIM_ROM_S19): $(HIM_OBJ) $(MON_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIM_ROM_LINKFLAGS) $(HIM_ROM_S19) $(HIM_OBJ) $(MON_OBJ) -L $(BUILD_DIR)\lib\rom
+
+$(HIMONIA_S19): $(HIMONIA_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIMONIA_LINKFLAGS) $(HIMONIA_S19) $(HIMONIA_OBJ) -L $(BUILD_DIR)\lib\rom
+
+$(HIMONIA_ROM_S19): $(HIMONIA_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIMONIA_ROM_LINKFLAGS) $(HIMONIA_ROM_S19) $(HIMONIA_OBJ) -L $(BUILD_DIR)\lib\rom
+
+$(HIMONIA_F_S19): $(HIMONIA_F_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIMONIA_F_LINKFLAGS) $(HIMONIA_F_S19) $(HIMONIA_F_OBJ) -L $(BUILD_DIR)\lib\rom
+
+$(HIMONIA_F_ROM_S19): $(HIMONIA_F_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIMONIA_F_ROM_LINKFLAGS) $(HIMONIA_F_ROM_S19) $(HIMONIA_F_OBJ) -L $(BUILD_DIR)\lib\rom
+
+$(FNV1A_HBSTR_S19): $(FNV1A_HBSTR_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(FNV1A_HBSTR_LINKFLAGS) $(FNV1A_HBSTR_S19) $(FNV1A_HBSTR_OBJ) -L $(BUILD_DIR)\lib\rom
+
 $(TMON_S19): $(TMON_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(TMON_LINKFLAGS) $(TMON_S19) $(TMON_OBJ) -L $(BUILD_DIR)\lib\rom -L $(BUILD_DIR)\lib\testing
+	$(LINKER) $(TEST_LINKFLAGS) $(TMON_S19) $(TMON_OBJ) -L $(BUILD_DIR)\lib\rom -L $(BUILD_DIR)\lib\testing
 
 $(TFTDI_S19): $(TFTDI_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(LINKFLAGS) $(TFTDI_S19) $(TFTDI_OBJ) -L $(BUILD_DIR)\lib\rom -L $(BUILD_DIR)\lib\testing
+	$(LINKER) $(TEST_LINKFLAGS) $(TFTDI_S19) $(TFTDI_OBJ) -L $(BUILD_DIR)\lib\rom -L $(BUILD_DIR)\lib\testing
 
 $(TFHAL_S19): $(TFHAL_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(LINKFLAGS) $(TFHAL_S19) $(TFHAL_OBJ) -L $(BUILD_DIR)\lib\rom -L $(BUILD_DIR)\lib\testing
+	$(LINKER) $(TEST_LINKFLAGS) $(TFHAL_S19) $(TFHAL_OBJ) -L $(BUILD_DIR)\lib\rom -L $(BUILD_DIR)\lib\testing
+
+$(LIFE_S19): $(LIFE_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(TEST_LINKFLAGS) $(LIFE_S19) $(LIFE_OBJ) -L $(BUILD_DIR)\lib\rom
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(LIFE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
 
 $(FTDI_DRV_INC): $(FTDI_DRV_SRC)
 	@if not exist $(subst /,\,$(dir $(FTDI_DRV_INC))) mkdir $(subst /,\,$(dir $(FTDI_DRV_INC)))
@@ -256,4 +330,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all cmd dump himon test-mon test-ftdi-drv test-ftdi-gauntlet test-ftdi-hal test-ftdi-init call-order call-map routine-contracts routine-tree routine-class-diagram routine-graph-insights routine-components routine-hash-comments docs docs-watch rom rom-auto rom-ftdi rom-acia testing artifacts clean realclean upload term
+.PHONY: all himon himon-rom himon-rom-bin himonia himonia-rom himonia-rom-bin himonia-f himonia-f-rom himonia-f-rom-bin fnv1a-hbstr test-mon test-ftdi-drv test-ftdi-gauntlet test-ftdi-hal life test-ftdi-init call-order call-map routine-contracts routine-tree routine-class-diagram routine-graph-insights routine-components routine-hash-comments docs docs-watch rom rom-auto rom-ftdi rom-acia testing artifacts clean realclean upload term

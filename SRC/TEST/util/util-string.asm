@@ -1,12 +1,12 @@
                         MODULE          UTL_STRING_SCAN
                         XDEF            UTL_FIND_CHAR_CSTR
 
-UTL_FCS_PTR_LO             EQU             $F0
-UTL_FCS_PTR_HI             EQU             $F1
-UTL_FCS_NEEDLE             EQU             $F7
+UTL_FCS_PTR_LO             EQU             $E0
+UTL_FCS_PTR_HI             EQU             $E1
+UTL_FCS_NEEDLE             EQU             $E7
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_FIND_CHAR_CSTR  [HASH:33B0]
+; ROUTINE: UTL_FIND_CHAR_CSTR  [HASH:7871]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, NUL-TERM, CARRY-STATUS, USES-ZP, NO-RAM, STACK
 ; MEM : ZP: UTL_FCS_PTR_LO($F0), UTL_FCS_PTR_HI($F1), UTL_FCS_NEEDLE($F7);
@@ -90,13 +90,13 @@ UTL_FIND_CHAR_CSTR:
                         MODULE          UTL_STRING_SCAN_HIBIT
                         XDEF            UTL_FIND_CHAR_HBSTR
 
-UTL_FHS_PTR_LO             EQU             $F0
-UTL_FHS_PTR_HI             EQU             $F1
-UTL_FHS_NEEDLE             EQU             $F7
-UTL_FHS_CUR                EQU             $F8
+UTL_FHS_PTR_LO             EQU             $E0
+UTL_FHS_PTR_HI             EQU             $E1
+UTL_FHS_NEEDLE             EQU             $E7
+UTL_FHS_CUR                EQU             $E8
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_FIND_CHAR_HBSTR  [HASH:FA55]
+; ROUTINE: UTL_FIND_CHAR_HBSTR  [HASH:4DB4]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, HIBIT-TERM, CARRY-STATUS, USES-ZP, NO-RAM, STACK
 ; MEM : ZP: UTL_FHS_PTR_LO($F0), UTL_FHS_PTR_HI($F1), UTL_FHS_NEEDLE($F7),

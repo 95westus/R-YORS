@@ -16,7 +16,7 @@ This is a play on "Roll Your Own Runtime System," where "Я" (Russian for "ya") 
 
 ## What
 
-R-YORS is an in-progress 65C02 runtime project based on the Western Design Center W65C02SXB/W65C02EDU hardware. I'm vibe-coding from the ground up—building low-level routines and exploring multiple paths to realize my ultimate goal: an RPG II compiler. This iterative process generates reusable code blocks along the way, even if not all prove essential to the final vision. 
+R-YORS is an in-progress 65C02 runtime project based on the Western Design Center W65C02SXB/W65C02EDU hardware. I'm building it from the ground up: low-level board bring-up, reusable runtime routines, a compact monitor, loaders, debug paths, and small applications that prove the pieces work on real hardware. The long-term goal is still an RPG II compiler, but the work is deliberately producing useful runtime blocks along the way.
 
 ### Why RPG
 
@@ -36,14 +36,29 @@ To illustrate the library's versatility, here are three example routines from di
 
 ## Architecture & Current Status
 
-My predecessor project, BSO2, proved the concept but suffered from inflexible command processing, poor modularity, and AI-induced rabbit holes. R-YORS adopts a more disciplined approach with layered, reusable building blocks:
+My predecessor project, BSO2, proved the concept but suffered from inflexible command processing, poor modularity, and too many rabbit holes. R-YORS adopts a more disciplined approach with layered, reusable building blocks:
 
 - **PIN routines** – Direct hardware interface
 - **BIO routines** – Hardware abstraction layer wrapping PIN routines
-- **COR routines** – Application-level functionality (currently under test)
-- **SYS routines** – I/O handling for specific board devices (FTDI, ACIA, VIA, PIA)
+- **COR routines** – Core reusable services and board-facing helpers
+- **SYS routines** – System-level services such as I/O, vectors, debug entry, and monitor-facing adapters
 
-The system includes a compact monitor (**himon**) at ~4K that currently supports: DISPLAY, FILL, COPY, MODIFY, HELP, LOAD, QUIT. himon is intended as a rudimentary top-level supervisory monitor (and is evolving toward that role). The `KEYTEST` command came out of one of the many test harness routines. Note that R-YORS/himon currently relies on bso2 for BRK handling. Future enhancements will extend himon to match the board's default onboard flash monitor capabilities.
+The current supervisory monitor is **HIMONIA-F**, a compact FNV-1a-dispatched monitor built to fit under 8K. It boots from ROM, initializes FTDI I/O, clears RAM on cold reset, patches RAM dispatch cells for reset/NMI/IRQ/BRK handling, and prints terse cold-boot telemetry such as:
+
+```text
+BOOT COLD
+WAIT OK
+RAM ZERO OK
+FTDI INIT
+RST 7EF8=....
+NMI 7EFA=....
+IRQ 7EFE=....
+BRK 7EFC=....
+```
+
+HIMONIA-F currently includes hashed command dispatch, S-record loading, GO/LOAD+GO execution, register display/editing, memory display/modify, disassembly/assembly helpers, breakpoints, single-step support, NMI/BRK trap capture, decoded CPU flags, and return-status reporting for executed user code. BRK handling is now native to the monitor rather than delegated to BSO2. The monitor also exposes discoverable FNV signatures for selected commands and routines, making ROM services easier to identify and call by hash.
+
+Small standalone programs are used to test the runtime surface. One example is a 16x16 Conway Life app loaded at `$2000`, with random/manual/auto/next/quit controls, age-aware cells, NMI count testing, and cleanup that restores the monitor's debug vector before returning.
 
 ## Documentation & References
 

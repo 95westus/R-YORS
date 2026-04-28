@@ -51,9 +51,10 @@ SYS_BACKEND_SELECTED       EQU             SYS_BACKEND_FTDI
 
                         XDEF            SYS_INIT
                         XREF            COR_FTDI_INIT
+                        XREF            SYS_VEC_INIT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_INIT  [HASH:2D2F]
+; ROUTINE: SYS_INIT  [HASH:56B0]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -64,6 +65,7 @@ SYS_BACKEND_SELECTED       EQU             SYS_BACKEND_FTDI
 ; - Delegates to backend routine `COR_FTDI_INIT`.
 ; ----------------------------------------------------------------------------
 SYS_INIT:
+                        JSR             SYS_VEC_INIT
                         JSR             COR_FTDI_INIT
                         RTS
                         ENDMOD
@@ -74,7 +76,7 @@ SYS_INIT:
                         XREF            COR_FTDI_FLUSH_RX
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_FLUSH_RX  [HASH:3A20]
+; ROUTINE: SYS_FLUSH_RX  [HASH:BB21]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, FLUSH, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -95,7 +97,7 @@ SYS_FLUSH_RX:
                         XREF            COR_FTDI_CHECK_ENUMERATED
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_CHECK_ENUMERATED  [HASH:23D6]
+; ROUTINE: SYS_CHECK_ENUMERATED  [HASH:13D7]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, ENUM, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -116,7 +118,7 @@ SYS_CHECK_ENUMERATED:
                         XREF            COR_FTDI_READ_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CHAR  [HASH:EBA0]
+; ROUTINE: SYS_READ_CHAR  [HASH:8ABF]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, READ, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -126,6 +128,8 @@ SYS_CHECK_ENUMERATED:
 ; EXCEPTIONS/NOTES:
 ; - Delegates to backend routine `COR_FTDI_READ_CHAR`.
 ; ----------------------------------------------------------------------------
+SYS_READ_CHAR_FNV:
+                        DB              'F','N',('V'+$80),$9C,$1C,$62,$43,$00
 SYS_READ_CHAR:
                         JSR             COR_FTDI_READ_CHAR
                         RTS
@@ -137,7 +141,7 @@ SYS_READ_CHAR:
                         XREF            COR_FTDI_READ_CHAR_SPINCOUNT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CHAR_SPINCOUNT  [HASH:200E]
+; ROUTINE: SYS_READ_CHAR_SPINCOUNT  [HASH:A46D]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, READ, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -158,7 +162,7 @@ SYS_READ_CHAR_SPINCOUNT:
                         XREF            COR_FTDI_READ_CHAR_TIMEOUT_SPINDOWN
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CHAR_TIMEOUT_SPINDOWN  [HASH:77E1]
+; ROUTINE: SYS_READ_CHAR_TIMEOUT_SPINDOWN  [HASH:1AA2]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, SPINDOWN, TIMEOUT, READ, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -181,7 +185,7 @@ SYS_READ_CHAR_TIMEOUT_SPINDOWN:
                         XREF            COR_FTDI_POLL_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_POLL_CHAR  [HASH:1F17]
+; ROUTINE: SYS_POLL_CHAR  [HASH:BE36]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -202,7 +206,7 @@ SYS_POLL_CHAR:
                         XREF            COR_FTDI_WRITE_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_CHAR  [HASH:E0B5]
+; ROUTINE: SYS_WRITE_CHAR  [HASH:2576]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -223,7 +227,7 @@ SYS_WRITE_CHAR:
                         XREF            COR_FTDI_WRITE_CHAR_REPEAT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_CHAR_REPEAT  [HASH:F865]
+; ROUTINE: SYS_WRITE_CHAR_REPEAT  [HASH:0884]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -243,11 +247,27 @@ SYS_WRITE_CHAR_REPEAT:
 
                         MODULE          SYS_READ_CHAR_COOKED_ECHO
 
+                        XDEF            SYS_READ_CHAR_ECHO
                         XDEF            SYS_READ_CHAR_COOKED_ECHO
                         XREF            COR_FTDI_READ_CHAR_COOKED_ECHO
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CHAR_COOKED_ECHO  [HASH:8F5E]
+; ROUTINE: SYS_READ_CHAR_ECHO
+; TIER: SYS-L4
+; TAGS: SYS, SYS-L4, COOKED, ECHO, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Short command alias for cooked single-char input with echo policy.
+; IN : none
+; OUT: C/A semantics follow backend cooked-char contract
+; ----------------------------------------------------------------------------
+SYS_READ_CHAR_ECHO_FNV:
+                        DB              'F','N',('V'+$80),$F8,$47,$19,$F9,$00
+SYS_READ_CHAR_ECHO:
+                        JSR             COR_FTDI_READ_CHAR_COOKED_ECHO
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: SYS_READ_CHAR_COOKED_ECHO  [HASH:77FD]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, ECHO, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -257,6 +277,8 @@ SYS_WRITE_CHAR_REPEAT:
 ; EXCEPTIONS/NOTES:
 ; - Delegates to backend routine `COR_FTDI_READ_CHAR_COOKED_ECHO`.
 ; ----------------------------------------------------------------------------
+SYS_READ_CHAR_COOKED_ECHO_FNV:
+                        DB              'F','N',('V'+$80),$10,$3F,$5E,$B8,$00
 SYS_READ_CHAR_COOKED_ECHO:
                         JSR             COR_FTDI_READ_CHAR_COOKED_ECHO
                         RTS

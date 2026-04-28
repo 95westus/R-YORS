@@ -42,9 +42,9 @@ PIA_PORTA                  EQU             PIA_BASE+1
 PIA_DDRB                   EQU             PIA_BASE+2
 PIA_DDRA                   EQU             PIA_BASE+3
 
-PIA_STATE_PA_SHADOW        EQU             $7BFF
-PIA_STATE_PB_SHADOW        EQU             $7BFE
-PIA_STATE_TMP              EQU             $7BFD
+PIA_STATE_TMP              EQU             $7EE0
+PIA_STATE_PB_SHADOW        EQU             $7EE1
+PIA_STATE_PA_SHADOW        EQU             $7EE2
 
                         XDEF            PIN_PIA_INIT_SHADOWS
                         XDEF            PIN_PIA_WRITE_DDRA
@@ -59,12 +59,12 @@ PIA_STATE_TMP              EQU             $7BFD
                         XDEF            PIN_PIA_READ_PORTB_SHADOW
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_INIT_SHADOWS  [HASH:7207]
+; ROUTINE: PIN_PIA_INIT_SHADOWS  [HASH:098A]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, DDR, CARRY-STATUS, NO-ZP,
 ;   USES-FIXED-RAM, NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_STATE_PA_SHADOW($7BFF),
-;   PIA_STATE_PB_SHADOW($7BFE).
+; MEM : ZP: none; FIXED_RAM: PIA_STATE_PA_SHADOW($7EE2),
+;   PIA_STATE_PB_SHADOW($7EE1).
 ; PURPOSE: Seed software shadows from current hardware port states.
 ; IN : none
 ; OUT: C = 1, shadows initialized from PIA_PORTA/PIA_PORTB
@@ -80,7 +80,7 @@ PIN_PIA_INIT_SHADOWS:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_DDRA  [HASH:76F2]
+; ROUTINE: PIN_PIA_WRITE_DDRA  [HASH:1335]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, PIA, MMIO, REGISTER, DDR, WRITE, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, NOSTACK
@@ -97,7 +97,7 @@ PIN_PIA_WRITE_DDRA:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_DDRB  [HASH:76F3]
+; ROUTINE: PIN_PIA_WRITE_DDRB  [HASH:1336]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, PIA, MMIO, REGISTER, DDR, WRITE, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, NOSTACK
@@ -114,11 +114,11 @@ PIN_PIA_WRITE_DDRB:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_PORTA  [HASH:83FD]
+; ROUTINE: PIN_PIA_WRITE_PORTA  [HASH:701A]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, WRITE, IRQ, PRESERVE-A,
 ;   CARRY-STATUS, NO-ZP, USES-FIXED-RAM, NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_STATE_PA_SHADOW($7BFF).
+; MEM : ZP: none; FIXED_RAM: PIA_STATE_PA_SHADOW($7EE2).
 ; PURPOSE: Write full byte to port A and update shadow.
 ; IN : A = output byte
 ; OUT: C = 1, A preserved
@@ -132,11 +132,11 @@ PIN_PIA_WRITE_PORTA:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_PORTB  [HASH:83FE]
+; ROUTINE: PIN_PIA_WRITE_PORTB  [HASH:701B]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, WRITE, IRQ, PRESERVE-A,
 ;   CARRY-STATUS, NO-ZP, USES-FIXED-RAM, NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_STATE_PB_SHADOW($7BFE).
+; MEM : ZP: none; FIXED_RAM: PIA_STATE_PB_SHADOW($7EE1).
 ; PURPOSE: Write full byte to port B and update shadow.
 ; IN : A = output byte
 ; OUT: C = 1, A preserved
@@ -150,11 +150,11 @@ PIN_PIA_WRITE_PORTB:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_PORTA_MASKED  [HASH:6F0D]
+; ROUTINE: PIN_PIA_WRITE_PORTA_MASKED  [HASH:1850]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, WRITE, IRQ, CARRY-STATUS,
 ;   NO-ZP, USES-FIXED-RAM, NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_STATE_PA_SHADOW($7BFF), PIA_STATE_TMP($7BFD).
+; MEM : ZP: none; FIXED_RAM: PIA_STATE_PA_SHADOW($7EE2), PIA_STATE_TMP($7EE0).
 ; PURPOSE: Masked port-A write using software shadow.
 ; IN : A = desired bits, X = mask (1 bits in mask are updated)
 ; OUT: A = resulting port byte, C = 1
@@ -176,11 +176,11 @@ PIN_PIA_WRITE_PORTA_MASKED:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_PORTB_MASKED  [HASH:9BEC]
+; ROUTINE: PIN_PIA_WRITE_PORTB_MASKED  [HASH:452F]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, WRITE, IRQ, CARRY-STATUS,
 ;   NO-ZP, USES-FIXED-RAM, NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_STATE_PB_SHADOW($7BFE), PIA_STATE_TMP($7BFD).
+; MEM : ZP: none; FIXED_RAM: PIA_STATE_PB_SHADOW($7EE1), PIA_STATE_TMP($7EE0).
 ; PURPOSE: Masked port-B write using software shadow.
 ; IN : A = desired bits, X = mask (1 bits in mask are updated)
 ; OUT: A = resulting port byte, C = 1
@@ -202,7 +202,7 @@ PIN_PIA_WRITE_PORTB_MASKED:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_READ_PORTA_RAW  [HASH:5603]
+; ROUTINE: PIN_PIA_READ_PORTA_RAW  [HASH:18C6]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, READ, RAW, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, NOSTACK
@@ -217,7 +217,7 @@ PIN_PIA_READ_PORTA_RAW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_READ_PORTB_RAW  [HASH:6D84]
+; ROUTINE: PIN_PIA_READ_PORTB_RAW  [HASH:3047]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, READ, RAW, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, NOSTACK
@@ -232,11 +232,11 @@ PIN_PIA_READ_PORTB_RAW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_READ_PORTA_SHADOW  [HASH:CD45]
+; ROUTINE: PIN_PIA_READ_PORTA_SHADOW  [HASH:6FA2]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, READ, CARRY-STATUS, NO-ZP,
 ;   USES-FIXED-RAM, NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_STATE_PA_SHADOW($7BFF).
+; MEM : ZP: none; FIXED_RAM: PIA_STATE_PA_SHADOW($7EE2).
 ; PURPOSE: Read software shadow for port A (intended output state).
 ; IN : none
 ; OUT: A = shadow state, C = 1
@@ -247,11 +247,11 @@ PIN_PIA_READ_PORTA_SHADOW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_READ_PORTB_SHADOW  [HASH:FA24]
+; ROUTINE: PIN_PIA_READ_PORTB_SHADOW  [HASH:9C81]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, READ, CARRY-STATUS, NO-ZP,
 ;   USES-FIXED-RAM, NOSTACK
-; MEM : ZP: none; FIXED_RAM: PIA_STATE_PB_SHADOW($7BFE).
+; MEM : ZP: none; FIXED_RAM: PIA_STATE_PB_SHADOW($7EE1).
 ; PURPOSE: Read software shadow for port B (intended output state).
 ; IN : none
 ; OUT: A = shadow state, C = 1

@@ -41,12 +41,12 @@
                         XREF            COR_FTDI_WRITE_CHAR
                         XREF            COR_FTDI_WRITE_CRLF
 
-FTDI_WRTL_PTR_LO           EQU             $F8
-FTDI_WRTL_PTR_HI           EQU             $F9
-FTDI_WRTL_LEN              EQU             $FA
+FTDI_WRTL_PTR_LO           EQU             $E8
+FTDI_WRTL_PTR_HI           EQU             $E9
+FTDI_WRTL_LEN              EQU             $EA
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_WRITE_LINE_RTL_XY  [HASH:8804]
+; ROUTINE: COR_FTDI_CVN_WRITE_LINE_RTL_XY  [HASH:61A3]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, NUL-TERM, CRLF, CARRY-STATUS, USES-ZP, NO-RAM,
 ;   CALLS_COR, STACK
@@ -109,8 +109,8 @@ COR_FTDI_CVN_WRITE_LINE_RTL_XY:
                         XDEF            COR_FTDI_WRITE_CSTRING
                         XREF            COR_FTDI_WRITE_CHAR
 
-FTDI_PCS_PTR_LO            EQU             $F8
-FTDI_PCS_PTR_HI            EQU             $F9
+FTDI_PCS_PTR_LO            EQU             $E8
+FTDI_PCS_PTR_HI            EQU             $E9
 
 ; in:  X = ptr low, Y = ptr high
 ;      (A is currently ignored by backend policy.)
@@ -118,7 +118,7 @@ FTDI_PCS_PTR_HI            EQU             $F9
 ;      A = chars written (0..255)
 ; note: Caller-owned max-length policy is intentionally handled above backend.
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_CSTRING  [HASH:8E5B]
+; ROUTINE: COR_FTDI_WRITE_CSTRING  [HASH:76FA]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, WRITE, NUL-TERM, CARRY-STATUS, USES-ZP,
 ;   NO-RAM, CALLS_COR, STACK
@@ -161,16 +161,16 @@ COR_FTDI_WRITE_CSTRING:
                         XDEF            COR_FTDI_WRITE_HBSTRING
                         XREF            COR_FTDI_WRITE_CHAR
 
-FTDI_PHB_PTR_LO            EQU             $F8
-FTDI_PHB_PTR_HI            EQU             $F9
-FTDI_PHB_CUR               EQU             $F7
+FTDI_PHB_PTR_LO            EQU             $E8
+FTDI_PHB_PTR_HI            EQU             $E9
+FTDI_PHB_CUR               EQU             $E7
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_HBSTRING  [HASH:8A24]
+; ROUTINE: COR_FTDI_WRITE_HBSTRING  [HASH:B565]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, WRITE, HIBIT-TERM, CARRY-STATUS, USES-ZP,
 ;   NO-RAM, CALLS_COR, STACK
-; MEM : ZP: FTDI_PHB_PTR_LO($F8), FTDI_PHB_PTR_HI($F9), FTDI_PHB_CUR($F7);
+; MEM : ZP: FTDI_PHB_PTR_LO($E8), FTDI_PHB_PTR_HI($E9), FTDI_PHB_CUR($E7);
 ;   FIXED_RAM: none.
 ; PURPOSE: Write HIBIT-terminated string over FTDI with fixed backend cap.
 ; IN : X/Y = source pointer

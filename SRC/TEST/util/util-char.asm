@@ -1,7 +1,7 @@
                         MODULE          UTL_CHAR_IN_RANGE
                         XDEF            UTL_CHAR_IN_RANGE
 
-CHAR_CLASS_TMP_A           EQU             $F6
+CHAR_CLASS_TMP_A           EQU             $E6
 
 ; ----------------------------------------------------------------------------
 ; ASCII character classifiers.
@@ -11,7 +11,7 @@ CHAR_CLASS_TMP_A           EQU             $F6
 ; ----------------------------------------------------------------------------
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IN_RANGE  [HASH:C9B2]
+; ROUTINE: UTL_CHAR_IN_RANGE  [HASH:A491]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: CHAR_CLASS_TMP_A($F6); FIXED_RAM: none.
@@ -44,7 +44,7 @@ UTL_CHAR_IN_RANGE:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_PRINTABLE  [HASH:ED41]
+; ROUTINE: UTL_CHAR_IS_PRINTABLE  [HASH:40A0]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
@@ -66,7 +66,7 @@ UTL_CHAR_IS_PRINTABLE:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_CONTROL  [HASH:D397]
+; ROUTINE: UTL_CHAR_IS_CONTROL  [HASH:72B6]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
@@ -95,7 +95,7 @@ UTL_CHAR_IS_CONTROL:
                         XREF            UTL_CHAR_IS_ALPHA
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_PUNCT  [HASH:D9F4]
+; ROUTINE: UTL_CHAR_IS_PUNCT  [HASH:B4D3]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE/CHAR_* helpers;
@@ -127,7 +127,7 @@ UTL_CHAR_IS_PUNCT:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_DIGIT  [HASH:31E7]
+; ROUTINE: UTL_CHAR_IS_DIGIT  [HASH:0CC6]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
@@ -150,7 +150,7 @@ UTL_CHAR_IS_DIGIT:
                         XREF            UTL_CHAR_IS_LOWER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_ALPHA  [HASH:6A18]
+; ROUTINE: UTL_CHAR_IS_ALPHA  [HASH:44F7]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IS_UPPER/UTL_CHAR_IS_LOWER;
@@ -179,7 +179,7 @@ UTL_CHAR_IS_ALPHA:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_LOWER  [HASH:E3BB]
+; ROUTINE: UTL_CHAR_IS_LOWER  [HASH:BE9A]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
@@ -201,7 +201,7 @@ UTL_CHAR_IS_LOWER:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_UPPER  [HASH:115C]
+; ROUTINE: UTL_CHAR_IS_UPPER  [HASH:EC3B]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
@@ -222,7 +222,7 @@ UTL_CHAR_IS_UPPER:
                         XDEF            UTL_CHAR_TO_UPPER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_TO_UPPER  [HASH:11ED]
+; ROUTINE: UTL_CHAR_TO_UPPER  [HASH:ECCC]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -247,7 +247,7 @@ UTL_CHAR_TO_UPPER:
                         XDEF            UTL_CHAR_TO_LOWER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_TO_LOWER  [HASH:E44C]
+; ROUTINE: UTL_CHAR_TO_LOWER  [HASH:BF2B]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.

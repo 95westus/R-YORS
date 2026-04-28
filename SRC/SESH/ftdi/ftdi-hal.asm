@@ -68,7 +68,7 @@
 
                         MODULE          BIO_FTDI_INIT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_INIT  [HASH:E15C]
+; ROUTINE: BIO_FTDI_INIT  [HASH:5B8E]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, INIT, NO-ZP, NO-RAM, CALLS_PIN, NOSTACK, PUFF-PASS
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -95,7 +95,7 @@ BIO_FTDI_INIT:
 
                         MODULE          BIO_FTDI_READ_BYTE_NONBLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_READ_BYTE_NONBLOCK  [HASH:F79A]
+; ROUTINE: BIO_FTDI_READ_BYTE_NONBLOCK  [HASH:B24C]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, NONBLOCKING, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PASS,
 ;   CALLS_PIN, NOSTACK, RETURNS-A, BYTE, CHAR
@@ -124,7 +124,7 @@ BIO_FTDI_READ_BYTE_NONBLOCK:
 
                         MODULE          BIO_FTDI_WRITE_BYTE_NONBLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_WRITE_BYTE_NONBLOCK  [HASH:54EB]
+; ROUTINE: BIO_FTDI_WRITE_BYTE_NONBLOCK  [HASH:F079]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, NONBLOCKING, PRESERVE-A, CARRY-STATUS, NO-ZP, PUFF-PASS,
 ;   NO-RAM, CALLS_PIN, NOSTACK, BYTE, CHAR
@@ -153,7 +153,7 @@ BIO_FTDI_WRITE_BYTE_NONBLOCK:
 
                         MODULE          BIO_FTDI_CHECK_ENUMERATED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_CHECK_ENUMERATED  [HASH:FC83]
+; ROUTINE: BIO_FTDI_CHECK_ENUMERATED  [HASH:BBB5]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, ENUM, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN, PUFF-PASS,
 ;   NOSTACK
@@ -182,7 +182,7 @@ BIO_FTDI_CHECK_ENUMERATED:
 
                         MODULE          BIO_FTDI_TMO_DELAY_PROFILE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_TMO_DELAY_PROFILE  [HASH:7258]
+; ROUTINE: BIO_FTDI_TMO_DELAY_PROFILE  [HASH:9966]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, TIMEOUT, DELAY, PROFILE, CARRY-STATUS, NO-ZP, PUFF-PLUS,
 ;   NO-RAM, STACK
@@ -282,7 +282,7 @@ BIO_FTDI_TMO_DELAY_PROFILE:
 
                         MODULE          BIO_FTDI_READ_BYTE_TMO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_READ_BYTE_TMO  [HASH:E2FC]
+; ROUTINE: BIO_FTDI_READ_BYTE_TMO  [HASH:C10A]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, TIMEOUT, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN, PUFF-PLUS,
 ;   RETURNS-A, BYTE, CHAR, STACK
@@ -328,7 +328,7 @@ BIO_FTDI_READ_BYTE_TMO:
 
                         MODULE          BIO_FTDI_WRITE_BYTE_TMO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_WRITE_BYTE_TMO  [HASH:B70B]
+; ROUTINE: BIO_FTDI_WRITE_BYTE_TMO  [HASH:9ABD]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, TIMEOUT, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, STACK, BYTE, CHAR
@@ -374,7 +374,7 @@ BIO_FTDI_WRITE_BYTE_TMO:
 
                         MODULE          BIO_FTDI_WAIT_RX_READY_TMO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_WAIT_RX_READY_TMO  [HASH:BF3F]
+; ROUTINE: BIO_FTDI_WAIT_RX_READY_TMO  [HASH:E64D]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, WAIT, TIMEOUT, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, STACK
@@ -419,7 +419,7 @@ BIO_FTDI_WAIT_RX_READY_TMO:
 
                         MODULE          BIO_FTDI_DRAIN_RX_MAX
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_DRAIN_RX_MAX  [HASH:805E]
+; ROUTINE: BIO_FTDI_DRAIN_RX_MAX  [HASH:A890]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, FLUSH, DRAIN, BOUNDED, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, RETURNS-A, REGISTER
@@ -459,7 +459,7 @@ BIO_FTDI_DRAIN_RX_MAX:
 
                         MODULE          BIO_FTDI_READ_BYTE_BLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_READ_BYTE_BLOCK  [HASH:00F3]
+; ROUTINE: BIO_FTDI_READ_BYTE_BLOCK  [HASH:9381]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, BLOCKING, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, NOSTACK, RETURNS-A, BYTE, CHAR
@@ -488,7 +488,7 @@ BIO_FTDI_READ_BYTE_BLOCK:
 
                         MODULE          BIO_FTDI_WRITE_BYTE_BLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_WRITE_BYTE_BLOCK  [HASH:0D42]
+; ROUTINE: BIO_FTDI_WRITE_BYTE_BLOCK  [HASH:CC74]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, BLOCKING, PRESERVE-A, CARRY-STATUS, NO-ZP, PUFF-PLUS,
 ;   NO-RAM, STACK, BYTE, CHAR
@@ -519,7 +519,7 @@ BIO_FTDI_WRITE_BYTE_BLOCK:
 
                         MODULE          BIO_FTDI_FLUSH_RX_COUNT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_FLUSH_RX_COUNT  [HASH:FDFD]
+; ROUTINE: BIO_FTDI_FLUSH_RX_COUNT  [HASH:E1AF]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, FLUSH, COUNT, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, REGISTER
@@ -554,7 +554,7 @@ BIO_FTDI_FLUSH_RX_COUNT:
 
                         MODULE          BIO_FTDI_FLUSH_RX
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_FLUSH_RX  [HASH:0FCD]
+; ROUTINE: BIO_FTDI_FLUSH_RX  [HASH:20FF]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, FLUSH, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, STACK
@@ -586,7 +586,7 @@ BIO_FTDI_FLUSH_RX:
                         XREF            PIN_FTDI_POLL_RX_READY
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_POLL_RX_READY  [HASH:7BFE]
+; ROUTINE: BIO_FTDI_POLL_RX_READY  [HASH:5A0C]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, REGISTER, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN, NOSTACK, PUFF-PASS
 ; MEM : ZP: none; FIXED_RAM: none.
