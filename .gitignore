@@ -28,3 +28,4 @@ DOC/s34
 /SRC/TEST/apps/fig-forth.asm
 /SRC/TEST/apps/msbasic/
 /SRC/BUILD/
+*.code-workspace
