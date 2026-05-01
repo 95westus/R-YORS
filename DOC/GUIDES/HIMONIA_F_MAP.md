@@ -7,7 +7,7 @@ edges into readable subsystems and capability surfaces.
 Scope is the current Himonia-F build path:
 
 ```text
-SRC/TEST/apps/himon/himonia-f.asm
+SRC/TEST/apps/himon/himon.asm
 SRC/TEST/apps/himon/himonia-debug.inc
 SRC/TEST/apps/himon/himonia-disasm.inc
 SRC/TEST/apps/himon/himonia-asm.inc
@@ -294,4 +294,4 @@ flowchart TD
 - Relative branches and fallthrough are control-flow facts, but not direct call
   edges. They are described only when they explain capability behavior.
 - Include files are part of the Himonia-F capability surface even when the raw
-  source line lives outside `himonia-f.asm`.
+  source line lives outside `himon.asm`.

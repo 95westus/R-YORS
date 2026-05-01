@@ -1,6 +1,6 @@
 # Himonia-F Edge Dump
 
-Generated-style edge dump for `SRC/TEST/apps/himon/himonia-f.asm`.
+Generated-style edge dump for `SRC/TEST/apps/himon/himon.asm`.
 
 For the readable subsystem/capability view, see
 [HIMONIA_F_MAP.md](./HIMONIA_F_MAP.md).
@@ -10,7 +10,7 @@ Scope: direct `JSR target` and `JMP target` edges only. Relative branches, fallt
 ## Summary
 
 ```text
-source file:     SRC/TEST/apps/himon/himonia-f.asm
+source file:     SRC/TEST/apps/himon/himon.asm
 global labels:   356
 raw call sites:  437
 unique edges:    362
@@ -19,7 +19,7 @@ external targets:13
 
 ## External Targets
 
-These targets are not labels in `himonia-f.asm`; most are `XREF` providers from the ROM library.
+These targets are not labels in `himon.asm`; most are `XREF` providers from the ROM library.
 
 ```text
 BIO_FTDI_READ_BYTE_BLOCK

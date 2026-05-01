@@ -19,7 +19,7 @@ Runtime FNV-1a
   form: four stored bytes
   owner: Himonia-F command dispatch
   purpose: command token lookup
-  source: SRC/TEST/apps/himon/himonia-f.asm
+  source: SRC/TEST/apps/himon/himon.asm
   symbol guide: SYMBOL_XREF.md
 
 Assembler symbol hash

@@ -107,12 +107,12 @@ and debug tools.
 ```text
 SRC/TEST/apps/himon/
   himon.asm
+  himon-parent.asm
   himonia.asm
   fnv1a-hbstr.asm
-  himonia-f.asm
 
 SRC/TEST/apps/
-  calc-flash.asm
+  rom-append-calc.asm
   life.asm
   microchess.asm
 

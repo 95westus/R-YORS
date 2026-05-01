@@ -1,176 +1,119 @@
 ; ----------------------------------------------------------------------------
-; Command monitor shell:
-; - Reads one line at a time (C-string input, uppercase).
-; - Dispatches commands through HBSTR `CMD_TBL` entries.
-; - Executes DISPLAY/FILL/COPY/MODIFY/HELP/LOAD/QUIT handlers in this file.
+; himon.asm
+; Compact supervisory debug monitor for W65C02S with FNV-1a command dispatch.
+; Memory map target:
+;   RAM   $0000-$7EFF (UPA $2000-$77FF, HIUPA $7800-$79FF)
+;   IO    $7F00-$7FFF
+;   FLASH $8000-$FFFF
 ; ----------------------------------------------------------------------------
 
-                        MODULE          MONITOR_APP
+                        MODULE          HIMON_APP
 
                         XDEF            START
-                        XDEF            CMDP_ADV_PTR
-                        XDEF            CMDP_INC_ADDR
-                        XDEF            CMDP_IS_DELIM_OR_NUL
-                        XDEF            CMDP_MSG_MOD_OK_1
-                        XDEF            CMDP_MSG_MOD_OK_2
-                        XDEF            CMDP_MSG_USAGE_COPY
-                        XDEF            CMDP_MSG_USAGE_DISPLAY
-                        XDEF            CMDP_MSG_USAGE_FILL
-                        XDEF            CMDP_MSG_USAGE_GO
-                        XDEF            CMDP_MSG_USAGE_R
-                        XDEF            CMDP_MSG_USAGE_RESUME
-                        XDEF            CMDP_MSG_USAGE_HELP
-                        XDEF            CMDP_MSG_USAGE_KEYTEST
-                        XDEF            CMDP_MSG_USAGE_LOAD
-                        XDEF            CMDP_MSG_USAGE_MODIFY
-                        XDEF            CMDP_MSG_USAGE_QUIT
-                        XDEF            CMDP_PARSE_HEX_BYTE_ADV
-                        XDEF            CMDP_PARSE_HEX_BYTE_TOKEN
-                        XDEF            CMDP_PARSE_HEX_WORD_TOKEN
-                        XDEF            CMDP_PEEK_CHAR
-                        XDEF            CMDP_REQUIRE_EOL
-                        XDEF            CMDP_SKIP_SPACES
-                        XDEF            CMDP_TO_UPPER_A
-                        XDEF            CMDP_USAGE_LINE_XY
-                        XDEF            MSG_HELP_1
-                        XDEF            MSG_HELP_2
-                        XDEF            MSG_HELP_3
-                        XDEF            MSG_HELP_4
-                        XDEF            MSG_HELP_5
-                        XDEF            MSG_HELP_6
-                        XDEF            MSG_HELP_7
-                        XDEF            MSG_HELP_8
-                        XDEF            MSG_HELP_9
-                        XDEF            MSG_HELP_10
-                        XDEF            MSG_GO_EXEC
-                        XDEF            MSG_R_NONE
-                        XDEF            MSG_R_PC
-                        XDEF            MSG_R_A
-                        XDEF            MSG_R_X
-                        XDEF            MSG_R_Y
-                        XDEF            MSG_R_P
-                        XDEF            MSG_R_S
-                        XDEF            MSG_RESUME_EXEC
-                        XDEF            MSG_KEYTEST_CHAR
-                        XDEF            MSG_KEYTEST_CLASS_CTRL
-                        XDEF            MSG_KEYTEST_CLASS_PRINT_DIGIT
-                        XDEF            MSG_KEYTEST_CLASS_PRINT_LOWER
-                        XDEF            MSG_KEYTEST_CLASS_PRINT_PUNCT
-                        XDEF            MSG_KEYTEST_CLASS_PRINT_SPACE
-                        XDEF            MSG_KEYTEST_CLASS_PRINT_UPPER
-                        XDEF            MSG_KEYTEST_ESCSEQ
-                        XDEF            MSG_KEYTEST_EXIT
-                        XDEF            MSG_KEYTEST_FALSE
-                        XDEF            MSG_KEYTEST_HDR
-                        XDEF            MSG_KEYTEST_HEX
-                        XDEF            MSG_KEYTEST_ISPRINT
-                        XDEF            MSG_KEYTEST_NONPRINT
-                        XDEF            MSG_KEYTEST_NOTE
-                        XDEF            MSG_KEYTEST_PROMPT
-                        XDEF            MSG_KEYTEST_TRUE
-                        XDEF            MSG_KEYTEST_TYPE
-                        XDEF            MSG_LOAD_ADDR_UNKNOWN
-                        XDEF            MSG_LOAD_DONE_LEN
-                        XDEF            MSG_LOAD_GO_EXEC
-                        XDEF            MSG_LOAD_GO_MISSING
-                        XDEF            MSG_LOAD_LINE_STATUS
-                        XDEF            MSG_LOAD_NO_GO
-                        XDEF            MSG_LOAD_PARSE_FAIL
-                        XDEF            MSG_LOAD_RANGE_HDR
-                        XDEF            MSG_LOAD_RANGE_OVF
-                        XDEF            MSG_LOAD_READY
-                        XDEF            MSG_LOAD_SUM_BYTES
-                        XDEF            MSG_LOAD_SUM_END
-                        XDEF            MSG_LOAD_SUM_GO
-                        XDEF            MSG_LOAD_SUM_IGNORED
-                        XDEF            MSG_LOAD_SUM_OK_START
-                        XDEF            MSG_LOAD_SUM_REC
+                        IF              ROM_ABI
+                        XDEF            HIMONIA_ABI_WRITE_BYTE
+                        XDEF            HIMONIA_ABI_READ_BYTE
+                        XDEF            HIMONIA_ABI_EXIT_APP
+                        ENDIF
 
+                        XREF            BIO_FTDI_READ_BYTE_BLOCK
+                        XREF            BIO_FTDI_WRITE_BYTE_BLOCK
                         XREF            SYS_INIT
                         XREF            SYS_FLUSH_RX
-                        XREF            SYS_READ_CSTRING_EDIT_ECHO_UPPER
-                        XREF            SYS_READ_CSTRING_SILENT_UPPER
-                        XREF            SYS_READ_CHAR
-                        XREF            SYS_POLL_CHAR
-                        XREF            SYS_WRITE_CHAR
                         XREF            SYS_WRITE_HEX_BYTE
                         XREF            SYS_WRITE_CRLF
-                        XREF            SYS_WRITE_HBSTRING
-                        XREF            SYS_WRITE_HBLINE
+                        XREF            SYS_VEC_ENTRY_NMI
+                        XREF            SYS_VEC_ENTRY_IRQ_MASTER
+                        XREF            SYS_VEC_DEFAULT_RESET
                         XREF            SYS_VEC_SET_NMI_XY
-                        XREF            UTL_CHAR_IS_PRINTABLE
-                        XREF            MON_CMD_DISPLAY
-                        XREF            MON_CMD_FILL
-                        XREF            MON_CMD_COPY
-                        XREF            MON_CMD_MODIFY
-                        XREF            MON_CMD_HELP
-                        XREF            MON_CMD_LOAD
-                        XREF            MON_CMD_GO
-                        XREF            MON_CMD_R
-                        XREF            MON_CMD_RESUME
-                        XREF            MON_CMD_KEYTEST
-                        XREF            MON_CMD_QUIT
-                        XREF            CMDP_GET_TOKEN_LEN
-                        XREF            CMDP_TBL_GET_ENTRY_LEN
-                        XREF            CMDP_TBL_MATCH_CURRENT
-                        XREF            CMDP_TBL_GET_ROUTINE_PTR
-                        XREF            CMDP_CALL_ROUTINE_PTR
-                        XREF            CMDP_TBL_ADVANCE_NEXT
-
+                        XREF            SYS_VEC_SET_IRQ_BRK_XY
+                        XREF            SYS_VEC_SET_IRQ_NONBRK_XY
+                        XREF            UTL_DELAY_AXY_8MHZ
+                        XREF            BIO_FTDI_READ_BYTE_NONBLOCK
+                        XREF            FLASH_WRITE_BYTE_AXY
+                        XREF            SYS_READ_CHAR
+                        XREF            SYS_READ_CHAR_ECHO
+                        XREF            SYS_READ_CHAR_COOKED_ECHO
+                        XREF            SYS_GET_CTRL_C
 
                         INCLUDE         "TEST/apps/himon/himon-shared-eq.inc"
 
+TRAP_CAUSE               EQU             $7EEA
+TRAP_BRK_SIG             EQU             $7EEB
+TRAP_CAUSE_NONE          EQU             $00
+TRAP_CAUSE_NMI           EQU             $01
+TRAP_CAUSE_BRK           EQU             $02
+
+CMD_HASH_TAB_LO          EQU             $E0
+CMD_HASH_TAB_HI          EQU             $E1
+FNV_HASH0                EQU             $7E66
+FNV_HASH1                EQU             $7E67
+FNV_HASH2                EQU             $7E68
+FNV_HASH3                EQU             $7E69
+FNV_TERM0                EQU             $7E6A
+FNV_TERM1                EQU             $7E6B
+FNV_TERM2                EQU             $7E6C
+FNV_TERM3                EQU             $7E6D
+CMD_EXEC_HASH0           EQU             $7E6E
+CMD_EXEC_HASH1           EQU             $7E6F
+CMD_EXEC_HASH2           EQU             $7E70
+CMD_EXEC_HASH3           EQU             $7E71
+CMD_EXEC_ENTRY_LO        EQU             $7E72
+CMD_EXEC_ENTRY_HI        EQU             $7E73
+CMD_EXEC_KIND            EQU             $7E74
+BOOT_REASON              EQU             $7E75
+CMD_EXEC_KIND_HASH       EQU             $00
+CMD_EXEC_KIND_GO         EQU             $01
+CMD_EXEC_KIND_LOADGO     EQU             $02
+BOOT_REASON_NONE         EQU             $00
+BOOT_REASON_COLD         EQU             $01
+BOOT_REASON_WARM         EQU             $02
+
+CMD_FLAG_TOP_INPUT       EQU             $01
+CMD_ABORT_TOP            EQU             $04
+; Current FNV record format:
+;   'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...
+;   kind=$00: executable code begins immediately after the kind byte.
+CMD_FNV_SIG2             EQU             ('V'+$80)
+CMD_HASH_SCAN_BASE_HI    EQU             $90
 
                         CODE
 START:
                         SEI
                         CLD
-                        ; Pre-stack reset classifier:
-                        ; - Signature match => warm/user reset (keep RAM).
-                        ; - Signature mismatch => cold/power-on reset
-                        ;   (clear $0000-$7EFF).
+                        LDX             #$FF
+                        TXS
                         LDA             RESET_SIG0
                         CMP             #$A5
-                        BNE             START_COLD_RESET
+                        BNE             MON_COLD_RESET
                         LDA             RESET_SIG1
                         CMP             #$5A
-                        BNE             START_COLD_RESET
+                        BNE             MON_COLD_RESET
                         LDA             RESET_SIG2
                         CMP             #$C3
-                        BNE             START_COLD_RESET
+                        BNE             MON_COLD_RESET
                         LDA             RESET_SIG3
                         CMP             #$3C
-                        BNE             START_COLD_RESET
-                        BRA             START_RESET_DONE
+                        BNE             MON_COLD_RESET
+                        LDA             #BOOT_REASON_WARM
+                        STA             BOOT_REASON
+                        STZ             NMI_CTX_FLAG
+                        STZ             TRAP_CAUSE
+                        STZ             TRAP_BRK_SIG
+                        JMP             MON_START_INIT
 
-START_COLD_RESET:
-                        ; Clear RAM $0000-$7EFF without JSR/stack usage.
-                        ; Use CMDP_PTR_LO/HI ($FE/$FF) as temporary page pointer.
-                        LDA             #$00
-                        STA             CMDP_PTR_LO
-                        LDA             #$01
-                        STA             CMDP_PTR_HI
-                        LDA             #$00
-START_COLD_CLEAR_PAGE:
-                        LDY             #$00
-START_COLD_CLEAR_BYTE:
-                        STA             (CMDP_PTR_LO),Y
-                        INY
-                        BNE             START_COLD_CLEAR_BYTE
-                        INC             CMDP_PTR_HI
-                        LDA             CMDP_PTR_HI
-                        CMP             #$7F
-                        BNE             START_COLD_CLEAR_PAGE
+MON_COLD_RESET_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$F4,$E2,$10,$CB,$00 ; MON_COLD_RESET $CB10E2F4 EXEC
+MON_COLD_RESET:
+                        JMP             MON_CLEAR_RAM
 
-                        ; Clear page 0 last so temporary pointer bytes survive loop.
-                        LDX             #$00
-START_COLD_CLEAR_ZP:
-                        STZ             $0000,X
-                        INX
-                        BNE             START_COLD_CLEAR_ZP
+MON_REENTER:
+                        SEI
+                        CLD
+                        LDX             #$FF
+                        TXS
 
-START_RESET_DONE:
-                        ; Stamp warm-reset signature for subsequent user resets.
+MON_START_INIT:
                         LDA             #$A5
                         STA             RESET_SIG0
                         LDA             #$5A
@@ -179,66 +122,493 @@ START_RESET_DONE:
                         STA             RESET_SIG2
                         LDA             #$3C
                         STA             RESET_SIG3
-
-                        ; Stack is now explicitly established before any JSR.
-                        LDX             #$FF
-                        TXS
                         JSR             SYS_INIT
                         JSR             SYS_FLUSH_RX
-                        JSR             CMD_INIT_HOOKS
-                        LDA             NMI_CTX_FLAG
-                        CMP             #$01
-                        BEQ             START_KEEP_NMI_CTX
-                        STZ             NMI_CTX_FLAG
-START_KEEP_NMI_CTX:
+
                         LDX             #<MON_NMI_TRAP
                         LDY             #>MON_NMI_TRAP
                         JSR             SYS_VEC_SET_NMI_XY
-                        LDX             #<MSG_HDR_1
-                        LDY             #>MSG_HDR_1
-                        JSR             SYS_WRITE_HBLINE
-                        LDX             #<MSG_HDR_2
-                        LDY             #>MSG_HDR_2
-                        JSR             SYS_WRITE_HBLINE
+                        LDX             #<MON_BRK_TRAP
+                        LDY             #>MON_BRK_TRAP
+                        JSR             SYS_VEC_SET_IRQ_BRK_XY
+                        LDX             #<MON_IRQ_TRAP
+                        LDY             #>MON_IRQ_TRAP
+                        JSR             SYS_VEC_SET_IRQ_NONBRK_XY
+
+                        JSR             MON_BOOTLOG_RESET
+
+                        LDX             #<MSG_BANNER
+                        LDY             #>MSG_BANNER
+                        JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
 
-CMD_MAIN_LOOP:
+                        LDA             NMI_CTX_FLAG
+                        CMP             #$01
+                        BNE             MAIN_LOOP
+                        JSR             MON_PRINT_STOP_AND_REGS
+
+MAIN_LOOP:
                         LDX             #<MSG_PROMPT
                         LDY             #>MSG_PROMPT
-                        JSR             SYS_WRITE_HBSTRING
+                        JSR             HIM_WRITE_HBSTRING
 
+                        LDA             #CMD_FLAG_TOP_INPUT
+                        STA             CMD_FLAGS
                         LDX             #<CMD_BUF
                         LDY             #>CMD_BUF
-                        JSR             SYS_READ_CSTRING_EDIT_ECHO_UPPER
-                        BCS             CMD_HAVE_LINE
+                        JSR             HIM_READ_LINE_ECHO_UPPER
+                        STZ             CMD_FLAGS
+                        BCS             MAIN_HAVE_LINE
+                        CMP             #CMD_ABORT_TOP
+                        BNE             MAIN_LOOP
+                        BRK             $03
+                        JMP             MAIN_LOOP
 
-                        ; Handle C=0 statuses from line reader (BS/DEL/full),
-                        ;   then retry.
-                        STA             CMD_LINE_STATUS
-                        LDX             #<MSG_LINE_STATUS
-                        LDY             #>MSG_LINE_STATUS
-                        JSR             SYS_WRITE_HBSTRING
-                        LDA             CMD_LINE_STATUS
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDX             #<MSG_RETRY
-                        LDY             #>MSG_RETRY
-                        JSR             SYS_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-                        BRA             CMD_MAIN_LOOP
-
-CMD_HAVE_LINE:
+MAIN_HAVE_LINE:
                         STA             CMD_LEN
-                        LDX             #<CMD_BUF
-                        LDY             #>CMD_BUF
-                        JSR             CMD_PARSE_AND_EXECUTE_ROUTER
-                        BRA             CMD_MAIN_LOOP
+                        LDA             #<CMD_BUF
+                        STA             CMDP_PTR_LO
+                        LDA             #>CMD_BUF
+                        STA             CMDP_PTR_HI
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             MAIN_LOOP
+                        JSR             CMD_HASH_TOKEN
+                        JMP             CMD_DISPATCH_HASH
+
+CMD_UNKNOWN:
+                        LDX             #<MSG_UNKNOWN
+                        LDY             #>MSG_UNKNOWN
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        JMP             MAIN_LOOP
+
+CMD_HELP_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$8E,$B0,$0C,$3A,$00 ; ? $3A0CB08E EXEC
+CMD_HELP:
+                        LDX             #<MSG_HELP
+                        LDY             #>MSG_HELP
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_NMI_TRAP  [HASH:7D351CE4]
-; PURPOSE: Capture interrupted CPU state and re-enter monitor shell.
-; NOTES:
-; - Captures A/X/Y and hardware-pushed P/PC from NMI stack frame.
-; - Stores pre-interrupt S as editable context byte.
+; # [token] -- list/resolve FNV records without executing them.
+; ----------------------------------------------------------------------------
+CMD_HASH_INFO_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$12,$91,$0C,$26,$00 ; # $260C9112 EXEC
+CMD_HASH_INFO:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             CMD_HASH_LIST
+                        JSR             CMD_HASH_TOKEN
+                        JSR             CMD_HASH_PRINT_FNV
+                        JSR             CMD_HASH_FIND
+                        BCS             CMD_HASH_INFO_FOUND
+                        LDX             #<MSG_HASH_NF
+                        LDY             #>MSG_HASH_NF
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             CMD_HASH_PRINT_TOKEN
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+CMD_HASH_INFO_FOUND:
+                        LDX             #<MSG_HASH_ENTRY
+                        LDY             #>MSG_HASH_ENTRY
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             CMD_HASH_PRINT_ENTRY
+                        LDX             #<MSG_HASH_K
+                        LDY             #>MSG_HASH_K
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             CMD_HASH_PRINT_KIND
+                        JSR             CMD_HASH_PRINT_TOKEN
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+CMD_HASH_LIST:
+                        LDX             #<MSG_HASH_HDR
+                        LDY             #>MSG_HASH_HDR
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        JSR             CMD_HASH_SCAN_INIT
+CMD_HASH_LIST_LOOP:
+                        JSR             CMD_HASH_SCAN_NEXT_RECORD
+                        BCC             CMD_HASH_LIST_DONE
+                        JSR             CMD_HASH_PRINT_ROW
+                        JSR             HIM_CHECK_CTRL_C
+                        BCS             CMD_HASH_LIST_DONE
+                        JSR             CMD_HASH_SCAN_ADV
+                        BRA             CMD_HASH_LIST_LOOP
+CMD_HASH_LIST_DONE:
+                        RTS
+
+; ----------------------------------------------------------------------------
+; D start [end|+len]
+; ----------------------------------------------------------------------------
+CMD_D_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$13,$F2,$0B,$C1,$00 ; D $C10BF213 EXEC
+CMD_D:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PARSE_RANGE_REQUIRED
+                        BCS             CMD_D_RANGE_OK
+                        JMP             CMD_USAGE_D
+CMD_D_RANGE_OK:
+                        JSR             MON_PRINT_MEM_RANGE
+                        RTS
+
+CMD_USAGE_D:
+                        LDX             #<MSG_USAGE_D
+                        LDY             #>MSG_USAGE_D
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+; ----------------------------------------------------------------------------
+; M start [end|+len]
+; ----------------------------------------------------------------------------
+CMD_M_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$18,$FD,$0B,$C8,$00 ; M $C80BFD18 EXEC
+CMD_M:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PARSE_RANGE_REQUIRED
+                        BCC             CMD_USAGE_M
+                        JSR             MON_MODIFY_RANGE
+                        RTS
+
+CMD_USAGE_M:
+                        LDX             #<MSG_USAGE_M
+                        LDY             #>MSG_USAGE_M
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+; ----------------------------------------------------------------------------
+; R [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+; ----------------------------------------------------------------------------
+CMD_R_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$B5,$14,$0C,$D7,$00 ; R $D70C14B5 EXEC
+CMD_R:
+                        JSR             MON_CTX_REQUIRE_VALID
+                        BCS             CMD_R_HAVE_CTX
+                        RTS
+CMD_R_HAVE_CTX:
+                        JSR             CMD_ADV_PTR
+                        JSR             MON_CTX_PARSE_ASSIGN_LIST
+                        BCC             CMD_USAGE_R
+                        JSR             MON_PRINT_STOP_AND_REGS
+                        RTS
+
+CMD_USAGE_R:
+                        LDX             #<MSG_USAGE_R
+                        LDY             #>MSG_USAGE_R
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+; ----------------------------------------------------------------------------
+; X [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+; ----------------------------------------------------------------------------
+CMD_X_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$27,$1E,$0C,$DD,$00 ; X $DD0C1E27 EXEC
+CMD_X:
+                        JSR             MON_CTX_REQUIRE_VALID
+                        BCS             CMD_X_HAVE_CTX
+                        RTS
+CMD_X_HAVE_CTX:
+                        JSR             CMD_ADV_PTR
+                        JSR             MON_CTX_PARSE_ASSIGN_LIST
+                        BCC             CMD_USAGE_X
+                        LDX             #<MSG_RESUME
+                        LDY             #>MSG_RESUME
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             NMI_CTX_PCH
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             NMI_CTX_PCL
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        JMP             MON_CTX_RESUME_RTI
+
+CMD_USAGE_X:
+                        LDX             #<MSG_USAGE_X
+                        LDY             #>MSG_USAGE_X
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+; ----------------------------------------------------------------------------
+; G start
+; ----------------------------------------------------------------------------
+CMD_G_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$A6,$F3,$0B,$C2,$00 ; G $C20BF3A6 EXEC
+CMD_G:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             CMD_USAGE_G
+                        JSR             CMD_REQUIRE_EOL
+                        BCC             CMD_USAGE_G
+                        LDX             #<MSG_GO
+                        LDY             #>MSG_GO
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             CMDP_ADDR_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMDP_ADDR_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        JSR             CMD_SAVE_ENTRY
+                        LDA             #CMD_EXEC_KIND_GO
+                        STA             CMD_EXEC_KIND
+                        JMP             (CMDP_ADDR_LO)
+
+CMD_USAGE_G:
+                        LDX             #<MSG_USAGE_G
+                        LDY             #>MSG_USAGE_G
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+; ----------------------------------------------------------------------------
+; L  (S19-only loader: S1 data, S9 terminator; S0 skipped)
+; ----------------------------------------------------------------------------
+CMD_L_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$AB,$FE,$0B,$C9,$00 ; L $C90BFEAB EXEC
+CMD_L:
+                        JSR             CMD_ADV_PTR
+                        STZ             LOAD_AUTO_GO
+                        STZ             LOAD_FLASH_MODE
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             CMD_L_ARGS_OK
+                        CMP             #'G'
+                        BEQ             CMD_L_ARG_G
+                        CMP             #'F'
+                        BEQ             CMD_L_ARG_F
+                        BRA             CMD_USAGE_L_JMP
+CMD_L_ARG_G:
+                        JSR             CMD_ADV_PTR
+                        LDA             #$01
+                        STA             LOAD_AUTO_GO
+                        JSR             CMD_REQUIRE_EOL
+                        BCS             CMD_L_ARGS_OK
+                        BRA             CMD_USAGE_L_JMP
+CMD_L_ARG_F:
+                        JSR             CMD_ADV_PTR
+                        LDA             #$01
+                        STA             LOAD_FLASH_MODE
+                        JSR             CMD_REQUIRE_EOL
+                        BCS             CMD_L_ARGS_OK
+CMD_USAGE_L_JMP:
+                        JMP             CMD_USAGE_L
+CMD_L_ARGS_OK:
+                        STZ             LOAD_FAIL_CODE
+                        STZ             LOAD_TOTAL_LO
+                        STZ             LOAD_TOTAL_HI
+                        STZ             LOAD_SKIP_LO
+                        STZ             LOAD_SKIP_HI
+                        STZ             LOAD_ABORT_MODE
+                        STZ             LOAD_WRITE_OK
+                        STZ             LOAD_FAIL_ADDR_LO
+                        STZ             LOAD_FAIL_ADDR_HI
+                        STZ             LOAD_GO_VALID
+                        STZ             LOAD_HAVE_DATA
+                        STZ             LOAD_LAST_LO
+                        STZ             LOAD_LAST_HI
+                        LDA             LOAD_FLASH_MODE
+                        BEQ             CMD_L_READY_NORMAL
+                        LDX             #<MSG_LF_READY
+                        LDY             #>MSG_LF_READY
+                        BRA             CMD_L_READY_PRINT
+CMD_L_READY_NORMAL:
+                        LDX             #<MSG_L_READY
+                        LDY             #>MSG_L_READY
+CMD_L_READY_PRINT:
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+
+CMD_L_READ_LOOP:
+                        LDX             #<CMD_BUF
+                        LDY             #>CMD_BUF
+                        JSR             HIM_READ_LINE_UPPER
+                        BCS             CMD_L_HAVE_LINE
+                        STA             LOAD_LINE_STATUS
+                        LDX             #<MSG_L_STATUS
+                        LDY             #>MSG_L_STATUS
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             LOAD_LINE_STATUS
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        BRA             CMD_L_READ_LOOP
+
+CMD_L_HAVE_LINE:
+                        LDA             #<CMD_BUF
+                        STA             CMDP_PTR_LO
+                        LDA             #>CMD_BUF
+                        STA             CMDP_PTR_HI
+                        JSR             CMD_PEEK
+                        BEQ             CMD_L_READ_LOOP
+                        CMP             #'L'
+                        BEQ             CMD_L_READ_LOOP
+
+                        LDA             LOAD_ABORT_MODE
+                        BNE             CMD_L_KEEP_FAIL_CODE
+                        STZ             LOAD_FAIL_CODE
+CMD_L_KEEP_FAIL_CODE:
+                        JSR             L_PARSE_RECORD
+                        BCS             CMD_L_PARSE_OK
+                        LDA             LOAD_ABORT_MODE
+                        BNE             CMD_L_READ_LOOP
+                        JSR             CMD_L_PRINT_FAIL
+                        LDA             LOAD_FAIL_CODE
+                        CMP             #LOAD_FAIL_PARSE
+                        BEQ             CMD_L_READ_LOOP
+                        LDA             LOAD_FLASH_MODE
+                        BNE             CMD_L_FLASH_FAIL_DRAIN
+                        JMP             CMD_L_FAIL_EXIT
+CMD_L_FLASH_FAIL_DRAIN:
+                        JSR             CMD_L_LATCH_FLASH_FAIL
+                        BRA             CMD_L_READ_LOOP
+
+CMD_L_PARSE_OK:
+                        LDA             LOAD_REC_KIND
+                        CMP             #LOAD_REC_KIND_TERM
+                        BNE             CMD_L_READ_LOOP
+
+                        LDA             LOAD_AUTO_GO
+                        BEQ             CMD_L_PRINT_DONE
+                        LDA             LOAD_GO_VALID
+                        BEQ             CMD_L_GO_FALLBACK
+                        LDA             LOAD_GO_HI
+                        ORA             LOAD_GO_LO
+                        BNE             CMD_L_PRINT_DONE
+CMD_L_GO_FALLBACK:
+                        LDA             LOAD_HAVE_DATA
+                        BEQ             CMD_L_PRINT_DONE
+                        LDA             LOAD_FIRST_LO
+                        STA             LOAD_GO_LO
+                        LDA             LOAD_FIRST_HI
+                        STA             LOAD_GO_HI
+                        LDA             #$01
+                        STA             LOAD_GO_VALID
+
+CMD_L_PRINT_DONE:
+                        LDA             LOAD_FLASH_MODE
+                        BEQ             CMD_L_DONE_NORMAL
+                        LDA             LOAD_ABORT_MODE
+                        BNE             CMD_L_PRINT_FLASH_FAIL_DONE
+                        LDX             #<MSG_LF_DONE
+                        LDY             #>MSG_LF_DONE
+                        BRA             CMD_L_DONE_PRINT
+CMD_L_PRINT_FLASH_FAIL_DONE:
+                        LDX             #<MSG_LF_FAIL_DONE
+                        LDY             #>MSG_LF_FAIL_DONE
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             LOAD_FAIL_CODE
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_L_WR
+                        LDY             #>MSG_L_WR
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             LOAD_TOTAL_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             LOAD_TOTAL_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_L_SKIP
+                        LDY             #>MSG_L_SKIP
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             LOAD_SKIP_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             LOAD_SKIP_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_L_GO
+                        LDY             #>MSG_L_GO
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             LOAD_GO_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             LOAD_GO_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        JMP             CMD_L_FAIL_EXIT
+CMD_L_DONE_NORMAL:
+                        LDX             #<MSG_L_DONE
+                        LDY             #>MSG_L_DONE
+CMD_L_DONE_PRINT:
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             LOAD_TOTAL_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             LOAD_TOTAL_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_L_GO
+                        LDY             #>MSG_L_GO
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             LOAD_GO_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             LOAD_GO_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        LDA             LOAD_AUTO_GO
+                        BEQ             CMD_L_DONE_EXIT
+                        LDA             LOAD_GO_VALID
+                        BEQ             CMD_L_DONE_EXIT
+                        LDA             LOAD_GO_HI
+                        ORA             LOAD_GO_LO
+                        BEQ             CMD_L_DONE_EXIT
+                        LDA             LOAD_GO_LO
+                        STA             CMD_EXEC_ENTRY_LO
+                        LDA             LOAD_GO_HI
+                        STA             CMD_EXEC_ENTRY_HI
+                        LDA             #CMD_EXEC_KIND_LOADGO
+                        STA             CMD_EXEC_KIND
+                        JMP             (LOAD_GO_LO)
+CMD_L_DONE_EXIT:
+                        LDA             #LOAD_FAIL_NONE
+                        SEC
+                        RTS
+CMD_L_FAIL_EXIT:
+                        LDA             LOAD_FAIL_CODE
+                        PHA
+                        LDA             LOAD_FAIL_ADDR_HI
+                        ORA             LOAD_FAIL_ADDR_LO
+                        BEQ             CMD_L_FAIL_EXIT_DST
+                        LDX             LOAD_FAIL_ADDR_HI
+                        LDY             LOAD_FAIL_ADDR_LO
+                        BRA             CMD_L_FAIL_EXIT_DONE
+CMD_L_FAIL_EXIT_DST:
+                        LDX             LOAD_DST_HI
+                        LDY             LOAD_DST_LO
+CMD_L_FAIL_EXIT_DONE:
+                        PLA
+                        CLC
+                        RTS
+
+CMD_L_LATCH_FLASH_FAIL:
+                        LDA             LOAD_ABORT_MODE
+                        BNE             CMD_L_LATCH_FLASH_FAIL_DONE
+                        LDA             LOAD_DST_LO
+                        STA             LOAD_FAIL_ADDR_LO
+                        LDA             LOAD_DST_HI
+                        STA             LOAD_FAIL_ADDR_HI
+                        LDA             #$01
+                        STA             LOAD_ABORT_MODE
+CMD_L_LATCH_FLASH_FAIL_DONE:
+                        RTS
+
+CMD_USAGE_L:
+                        LDX             #<MSG_USAGE_L
+                        LDY             #>MSG_USAGE_L
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+CMD_Q_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$FC,$0F,$0C,$D4,$00 ; Q $D40C0FFC EXEC
+CMD_Q:
+                        BRK             $65
+                        RTS
+
+                        INCLUDE         "TEST/apps/himon/himonia-debug.inc"
+                        INCLUDE         "TEST/apps/himon/himonia-disasm.inc"
+                        INCLUDE         "TEST/apps/himon/himonia-asm.inc"
+
+; ----------------------------------------------------------------------------
+; Trap handlers
 ; ----------------------------------------------------------------------------
 MON_NMI_TRAP:
                         STA             NMI_CTX_A
@@ -257,116 +627,1635 @@ MON_NMI_TRAP:
                         STA             NMI_CTX_S
                         LDA             #$01
                         STA             NMI_CTX_FLAG
-                        JMP             START
+                        LDA             #TRAP_CAUSE_NMI
+                        STA             TRAP_CAUSE
+                        STZ             TRAP_BRK_SIG
+                        JMP             MON_REENTER
 
+MON_BRK_TRAP:
+                        STA             NMI_CTX_A
+                        STX             NMI_CTX_X
+                        STY             NMI_CTX_Y
+                        TSX
+                        LDA             $0101,X
+                        STA             NMI_CTX_P
+                        LDA             $0102,X
+                        STA             NMI_CTX_PCL
+                        LDA             $0103,X
+                        STA             NMI_CTX_PCH
+                        TXA
+                        CLC
+                        ADC             #$03
+                        STA             NMI_CTX_S
+                        LDA             #$01
+                        STA             NMI_CTX_FLAG
+                        LDA             #TRAP_CAUSE_BRK
+                        STA             TRAP_CAUSE
+
+                        JSR             DBG_HANDLE_BRK
+                        BCC             MON_BRK_TRAP_NORMAL
+                        JMP             MON_REENTER
+
+MON_BRK_TRAP_NORMAL:
+                        LDA             NMI_CTX_PCL
+                        SEC
+                        SBC             #$01
+                        STA             CMDP_ADDR_LO
+                        LDA             NMI_CTX_PCH
+                        SBC             #$00
+                        STA             CMDP_ADDR_HI
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+                        STA             TRAP_BRK_SIG
+                        JMP             MON_REENTER
+
+MON_IRQ_TRAP:
+                        RTI
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: CMD_PARSE_AND_EXECUTE_ROUTER  [HASH:CB4E849F]
-; TIER: APP-L5
-; TAGS: CMD, APP-L5, NOSTACK
-; PURPOSE: Compatibility entrypoint retained for call-site stability.
-;          Forwards directly to the HBSTR table-driven parser/dispatcher.
-; IN : X/Y = pointer to command line
-; OUT: C mirrors selected command path result.
+; Reset-time RAM clear
 ; ----------------------------------------------------------------------------
-CMD_PARSE_AND_EXECUTE_ROUTER:
-                        JMP             CMD_PARSE_AND_EXECUTE
+MON_CLEAR_RAM:
+                        STZ             CMDP_PTR_LO
+                        LDA             #$01
+                        STA             CMDP_PTR_HI
+                        LDY             #$00
+                        LDA             #$00
+MON_CLEAR_RAM_PAGE:
+MON_CLEAR_RAM_BYTE:
+                        STA             (CMDP_PTR_LO),Y
+                        INY
+                        BNE             MON_CLEAR_RAM_BYTE
+                        INC             CMDP_PTR_HI
+                        LDA             CMDP_PTR_HI
+                        CMP             #$7F
+                        BEQ             MON_CLEAR_RAM_ZP_BEGIN
+                        LDA             #$00
+                        BRA             MON_CLEAR_RAM_PAGE
 
+MON_CLEAR_RAM_ZP_BEGIN:
+                        LDX             #$00
+MON_CLEAR_RAM_ZP:
+                        STZ             $00,X
+                        INX
+                        BNE             MON_CLEAR_RAM_ZP
+                        LDA             #BOOT_REASON_COLD
+                        STA             BOOT_REASON
+                        JMP             MON_START_INIT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: CMD_PARSE_AND_EXECUTE  [HASH:867B3335]
-; TIER: APP-L5
-; TAGS: CMD, APP-L5, VIA, NUL-TERM, PARSE, CARRY-STATUS, NOSTACK
-; PURPOSE: Parse one command line and dispatch via HBSTR `CMD_TBL`.
-;          Table format per entry: <HBSTR command><DW handler address>.
-; IN : X/Y = pointer to NUL-terminated command line
-; OUT: C=1 command handled/success; C=0 unknown command or usage error
+; Tiny HIMONIA input
 ; ----------------------------------------------------------------------------
-CMD_PARSE_AND_EXECUTE:
+HIM_READ_LINE_ECHO_UPPER:
+                        LDA             #$01
+                        BRA             HIM_READ_LINE_SET_MODE
+HIM_READ_LINE_UPPER:
+                        LDA             #$00
+HIM_READ_LINE_SET_MODE:
+                        STA             CMD_IO_TMP
                         STX             CMDP_PTR_LO
                         STY             CMDP_PTR_HI
-                        STZ             CMD_FLAGS
-                        JSR             CMDP_SKIP_SPACES
-                        JSR             CMDP_PEEK_CHAR
-                        CMP             #'!'
-                        BNE             CMDP_PARSE_NO_FORCE
-                        LDA             #$01
-                        STA             CMD_FLAGS
-                        JSR             CMDP_ADV_PTR
-CMDP_PARSE_NO_FORCE:
-                        JSR             CMDP_PEEK_CHAR
-                        BEQ             CMDP_EMPTY_OK
+                        STZ             CMDP_REMAIN
+HIM_READ_LINE_LOOP:
+                        JSR             BIO_FTDI_READ_BYTE_BLOCK
+                        CMP             #$03
+                        BEQ             HIM_READ_LINE_ABORT
+                        CMP             #$0D
+                        BEQ             HIM_READ_LINE_DONE
+                        CMP             #$0A
+                        BEQ             HIM_READ_LINE_DONE
+                        CMP             #$08
+                        BEQ             HIM_READ_LINE_BACKSPACE
+                        CMP             #$7F
+                        BEQ             HIM_READ_LINE_BACKSPACE
+                        JSR             HIM_CHAR_TO_UPPER
+                        STA             CMDP_BYTE_TMP
+                        LDA             CMDP_REMAIN
+                        CMP             #$FF
+                        BEQ             HIM_READ_LINE_LOOP
+                        LDY             #$00
+                        LDA             CMDP_BYTE_TMP
+                        STA             (CMDP_PTR_LO),Y
+                        JSR             CMD_ADV_PTR
+                        INC             CMDP_REMAIN
+                        LDA             CMD_IO_TMP
+                        BEQ             HIM_READ_LINE_LOOP
+                        LDA             CMDP_BYTE_TMP
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        BRA             HIM_READ_LINE_LOOP
 
+HIM_READ_LINE_BACKSPACE:
+                        LDA             CMDP_REMAIN
+                        BEQ             HIM_READ_LINE_LOOP
+                        DEC             CMDP_REMAIN
                         LDA             CMDP_PTR_LO
-                        STA             CMDP_ADDR_LO
-                        LDA             CMDP_PTR_HI
-                        STA             CMDP_ADDR_HI
-                        JSR             CMDP_GET_TOKEN_LEN
-                        BCC             CMDP_PARSE_UNKNOWN
-                        STA             CMDP_TOKEN_LEN
-                        BEQ             CMDP_PARSE_UNKNOWN
-                        LDA             #<CMD_TBL
+                        BNE             HIM_READ_LINE_BS_DEC
+                        DEC             CMDP_PTR_HI
+HIM_READ_LINE_BS_DEC:
+                        DEC             CMDP_PTR_LO
+                        LDA             CMD_IO_TMP
+                        BEQ             HIM_READ_LINE_LOOP
+                        LDA             #$08
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #$08
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        BRA             HIM_READ_LINE_LOOP
+
+HIM_READ_LINE_DONE:
+                        LDY             #$00
+                        LDA             #$00
+                        STA             (CMDP_PTR_LO),Y
+                        LDA             CMD_IO_TMP
+                        BEQ             HIM_READ_LINE_DONE_STATUS
+                        JSR             SYS_WRITE_CRLF
+HIM_READ_LINE_DONE_STATUS:
+                        LDA             CMDP_REMAIN
+                        SEC
+                        RTS
+
+HIM_READ_LINE_ABORT:
+                        JSR             SYS_WRITE_CRLF
+                        LDA             CMD_FLAGS
+                        AND             #CMD_FLAG_TOP_INPUT
+                        BEQ             HIM_READ_LINE_ABORT_LINE
+                        LDA             CMDP_REMAIN
+                        BNE             HIM_READ_LINE_ABORT_LINE
+                        LDA             #CMD_ABORT_TOP
+                        CLC
+                        RTS
+HIM_READ_LINE_ABORT_LINE:
+                        LDA             #$03
+                        CLC
+                        RTS
+
+HIM_CHAR_TO_UPPER:
+                        CMP             #'a'
+                        BCC             HIM_CHAR_TO_UPPER_DONE
+                        CMP             #'z'+1
+                        BCS             HIM_CHAR_TO_UPPER_DONE
+                        SEC
+                        SBC             #$20
+HIM_CHAR_TO_UPPER_DONE:
+                        RTS
+
+HIM_WRITE_HBSTRING:
+                        STX             CMDP_PTR_LO
+                        STY             CMDP_PTR_HI
+                        LDY             #$00
+HIM_WRITE_HBSTRING_LOOP:
+                        LDA             (CMDP_PTR_LO),Y
+                        BMI             HIM_WRITE_HBSTRING_LAST
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        INY
+                        BNE             HIM_WRITE_HBSTRING_LOOP
+                        INC             CMDP_PTR_HI
+                        BRA             HIM_WRITE_HBSTRING_LOOP
+HIM_WRITE_HBSTRING_LAST:
+                        AND             #$7F
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        RTS
+
+; ----------------------------------------------------------------------------
+; Context helpers
+; ----------------------------------------------------------------------------
+MON_CTX_REQUIRE_VALID:
+                        LDA             NMI_CTX_FLAG
+                        CMP             #$01
+                        BEQ             MON_CTX_REQUIRE_VALID_OK
+                        LDX             #<MSG_NOCTX
+                        LDY             #>MSG_NOCTX
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        CLC
+                        RTS
+MON_CTX_REQUIRE_VALID_OK:
+                        SEC
+                        RTS
+
+MON_CTX_PARSE_ASSIGN_LIST:
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             MON_CTX_PARSE_ASSIGN_LIST_DONE
+MON_CTX_PARSE_ASSIGN_LOOP:
+                        JSR             MON_CTX_PARSE_ASSIGN
+                        BCC             MON_CTX_PARSE_ASSIGN_LIST_FAIL
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BNE             MON_CTX_PARSE_ASSIGN_LOOP
+MON_CTX_PARSE_ASSIGN_LIST_DONE:
+                        SEC
+                        RTS
+MON_CTX_PARSE_ASSIGN_LIST_FAIL:
+                        CLC
+                        RTS
+
+MON_CTX_PARSE_ASSIGN:
+                        JSR             CMD_PEEK
+                        CMP             #'A'
+                        BEQ             MON_CTX_PARSE_A
+                        CMP             #'X'
+                        BEQ             MON_CTX_PARSE_X
+                        CMP             #'Y'
+                        BEQ             MON_CTX_PARSE_Y
+                        CMP             #'S'
+                        BEQ             MON_CTX_PARSE_S
+                        CMP             #'P'
+                        BEQ             MON_CTX_PARSE_P_OR_PC
+                        CLC
+                        RTS
+
+MON_CTX_PARSE_A:
+                        JSR             CMD_ADV_PTR
+                        JSR             MON_PARSE_EQ
+                        BCC             MON_CTX_PARSE_FAIL
+                        JSR             CMD_PARSE_HEX_BYTE_TOKEN
+                        BCC             MON_CTX_PARSE_FAIL
+                        STA             NMI_CTX_A
+                        SEC
+                        RTS
+
+MON_CTX_PARSE_X:
+                        JSR             CMD_ADV_PTR
+                        JSR             MON_PARSE_EQ
+                        BCC             MON_CTX_PARSE_FAIL
+                        JSR             CMD_PARSE_HEX_BYTE_TOKEN
+                        BCC             MON_CTX_PARSE_FAIL
+                        STA             NMI_CTX_X
+                        SEC
+                        RTS
+
+MON_CTX_PARSE_Y:
+                        JSR             CMD_ADV_PTR
+                        JSR             MON_PARSE_EQ
+                        BCC             MON_CTX_PARSE_FAIL
+                        JSR             CMD_PARSE_HEX_BYTE_TOKEN
+                        BCC             MON_CTX_PARSE_FAIL
+                        STA             NMI_CTX_Y
+                        SEC
+                        RTS
+
+MON_CTX_PARSE_S:
+                        JSR             CMD_ADV_PTR
+                        JSR             MON_PARSE_EQ
+                        BCC             MON_CTX_PARSE_FAIL
+                        JSR             CMD_PARSE_HEX_BYTE_TOKEN
+                        BCC             MON_CTX_PARSE_FAIL
+                        STA             NMI_CTX_S
+                        SEC
+                        RTS
+
+MON_CTX_PARSE_P_OR_PC:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PEEK
+                        CMP             #'C'
+                        BEQ             MON_CTX_PARSE_PC
+                        JSR             MON_PARSE_EQ
+                        BCC             MON_CTX_PARSE_FAIL
+                        JSR             CMD_PARSE_HEX_BYTE_TOKEN
+                        BCC             MON_CTX_PARSE_FAIL
+                        STA             NMI_CTX_P
+                        SEC
+                        RTS
+
+MON_CTX_PARSE_PC:
+                        JSR             CMD_ADV_PTR
+                        JSR             MON_PARSE_EQ
+                        BCC             MON_CTX_PARSE_FAIL
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             MON_CTX_PARSE_FAIL
+                        LDA             CMDP_ADDR_LO
+                        STA             NMI_CTX_PCL
+                        LDA             CMDP_ADDR_HI
+                        STA             NMI_CTX_PCH
+                        SEC
+                        RTS
+
+MON_CTX_PARSE_FAIL:
+                        CLC
+                        RTS
+
+MON_PARSE_EQ:
+                        JSR             CMD_PEEK
+                        CMP             #'='
+                        BNE             MON_PARSE_EQ_FAIL
+                        JSR             CMD_ADV_PTR
+                        SEC
+                        RTS
+MON_PARSE_EQ_FAIL:
+                        CLC
+                        RTS
+
+MON_CTX_RESUME_RTI:
+                        SEI
+                        LDY             NMI_CTX_S
+                        LDA             NMI_CTX_P
+                        STA             $00FE,Y
+                        LDA             NMI_CTX_PCL
+                        STA             $00FF,Y
+                        LDA             NMI_CTX_PCH
+                        STA             $0100,Y
+
+                        TYA
+                        SEC
+                        SBC             #$03
+                        TAX
+                        TXS
+
+                        STZ             NMI_CTX_FLAG
+                        LDA             NMI_CTX_A
+                        LDX             NMI_CTX_X
+                        LDY             NMI_CTX_Y
+                        RTI
+
+; ----------------------------------------------------------------------------
+; Printing helpers
+; ----------------------------------------------------------------------------
+MON_PRINT_STOP_AND_REGS:
+                        JSR             SYS_WRITE_CRLF
+                        LDA             TRAP_CAUSE
+                        CMP             #TRAP_CAUSE_BRK
+                        BEQ             MON_PRINT_STOP_BRK
+                        LDX             #<MSG_STOP_NMI
+                        LDY             #>MSG_STOP_NMI
+                        JSR             HIM_WRITE_HBSTRING
+                        BRA             MON_PRINT_STOP_PC
+MON_PRINT_STOP_BRK:
+                        LDX             #<MSG_STOP_BRK
+                        LDY             #>MSG_STOP_BRK
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             TRAP_BRK_SIG
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_STOP_PC
+                        LDY             #>MSG_STOP_PC
+                        JSR             HIM_WRITE_HBSTRING
+MON_PRINT_STOP_PC:
+                        LDA             NMI_CTX_PCH
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             NMI_CTX_PCL
+                        JSR             SYS_WRITE_HEX_BYTE
+
+MON_PRINT_REGS:
+                        JSR             SYS_WRITE_CRLF
+MON_PRINT_REGS_BODY:
+                        LDX             #<MSG_REG_A
+                        LDY             #>MSG_REG_A
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             NMI_CTX_A
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_REG_X
+                        LDY             #>MSG_REG_X
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             NMI_CTX_X
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_REG_Y
+                        LDY             #>MSG_REG_Y
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             NMI_CTX_Y
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_REG_P
+                        LDY             #>MSG_REG_P
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             NMI_CTX_P
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_REG_S
+                        LDY             #>MSG_REG_S
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             NMI_CTX_S
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             MON_PRINT_FLAGS
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+MON_PRINT_RET_AND_REGS:
+                        JSR             SYS_WRITE_CRLF
+                        JSR             MON_PRINT_EXEC_ID
+                        LDX             #<MSG_ENTRY
+                        LDY             #>MSG_ENTRY
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             NMI_CTX_PCH
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             NMI_CTX_PCL
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        LDX             #<MSG_RET
+                        LDY             #>MSG_RET
+                        JSR             HIM_WRITE_HBSTRING
+                        JMP             MON_PRINT_REGS_BODY
+
+MON_PRINT_EXEC_ID:
+                        LDA             CMD_EXEC_KIND
+                        CMP             #CMD_EXEC_KIND_GO
+                        BEQ             MON_PRINT_EXEC_GO
+                        CMP             #CMD_EXEC_KIND_LOADGO
+                        BEQ             MON_PRINT_EXEC_LOADGO
+                        JMP             MON_PRINT_HASH
+MON_PRINT_EXEC_GO:
+                        LDX             #<MSG_BOX_GO
+                        LDY             #>MSG_BOX_GO
+                        BRA             MON_PRINT_BOX
+MON_PRINT_EXEC_LOADGO:
+                        LDX             #<MSG_BOX_LOADGO
+                        LDY             #>MSG_BOX_LOADGO
+MON_PRINT_BOX:
+                        LDA             #'#'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             #'#'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        RTS
+
+MON_PRINT_HASH:
+                        LDA             #'#'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             CMD_EXEC_HASH3
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMD_EXEC_HASH2
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMD_EXEC_HASH1
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMD_EXEC_HASH0
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             #'#'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        RTS
+
+MON_PRINT_FLAGS:
+                        LDA             NMI_CTX_P
+                        LDX             #'N'
+                        LDY             #'n'
+                        JSR             MON_PRINT_FLAG_CHAR
+                        LDA             NMI_CTX_P
+                        LDX             #'V'
+                        LDY             #'v'
+                        ASL             A
+                        ASL             A
+                        JSR             MON_PRINT_FLAG_CHAR
+                        LDA             #'-'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             NMI_CTX_P
+                        LDX             #'B'
+                        LDY             #'b'
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        JSR             MON_PRINT_FLAG_CHAR
+                        LDA             NMI_CTX_P
+                        LDX             #'D'
+                        LDY             #'d'
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        JSR             MON_PRINT_FLAG_CHAR
+                        LDA             NMI_CTX_P
+                        LDX             #'I'
+                        LDY             #'i'
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        JSR             MON_PRINT_FLAG_CHAR
+                        LDA             NMI_CTX_P
+                        LDX             #'Z'
+                        LDY             #'z'
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        JSR             MON_PRINT_FLAG_CHAR
+                        LDA             NMI_CTX_P
+                        LDX             #'C'
+                        LDY             #'c'
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+MON_PRINT_FLAG_CHAR:
+                        BCS             MON_PRINT_FLAG_SET
+                        TYA
+                        BRA             MON_PRINT_FLAG_OUT
+MON_PRINT_FLAG_SET:
+                        TXA
+MON_PRINT_FLAG_OUT:
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        RTS
+
+MON_PRINT_MEM_RANGE:
+MON_PRINT_MEM_NEXT_LINE:
+                        JSR             MON_CURR_GT_END
+                        BCS             MON_PRINT_MEM_ABORT
+                        LDA             CMD_RANGE_TMP_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMD_RANGE_TMP_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             #':'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+
+                        LDA             CMDP_START_LO
+                        STA             CMDP_PTR_LO
+                        LDA             CMDP_START_HI
+                        STA             CMDP_PTR_HI
+                        STZ             CMD_PATTERN_COUNT
+MON_PRINT_MEM_LINE_LOOP:
+                        JSR             HIM_CHECK_CTRL_C
+                        BCS             MON_PRINT_MEM_ABORT
+                        JSR             MON_CURR_GT_END
+                        BCS             MON_PRINT_MEM_NEXT_LINE
+                        LDA             CMD_PATTERN_COUNT
+                        BEQ             MON_PRINT_MEM_SPACE
+                        CMP             #$08
+                        BNE             MON_PRINT_MEM_SPACE
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #'|'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+MON_PRINT_MEM_SPACE:
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDY             #$00
+                        LDA             (CMDP_START_LO),Y
+                        JSR             SYS_WRITE_HEX_BYTE
+                        INC             CMD_PATTERN_COUNT
+                        LDA             CMD_RANGE_TMP_HI
+                        CMP             CMD_RANGE_END_HI
+                        BNE             MON_PRINT_MEM_NOT_END
+                        LDA             CMD_RANGE_TMP_LO
+                        CMP             CMD_RANGE_END_LO
+                        BEQ             MON_PRINT_MEM_LAST_LINE
+MON_PRINT_MEM_NOT_END:
+                        JSR             CMD_INC_RANGE_TMP
+                        LDA             CMD_PATTERN_COUNT
+                        CMP             #$10
+                        BCC             MON_PRINT_MEM_LINE_LOOP
+                        JSR             MON_PRINT_MEM_ASCII
+                        JSR             SYS_WRITE_CRLF
+                        BRA             MON_PRINT_MEM_NEXT_LINE
+
+MON_PRINT_MEM_LAST_LINE:
+                        JSR             MON_PRINT_MEM_ASCII
+MON_PRINT_MEM_ABORT:
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+MON_PRINT_MEM_ASCII:
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #'|'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        STZ             CMD_PATTERN_INDEX
+MON_PRINT_MEM_ASCII_LOOP:
+                        LDA             CMD_PATTERN_INDEX
+                        CMP             CMD_PATTERN_COUNT
+                        BCS             MON_PRINT_MEM_ASCII_DONE
+                        TAY
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             #' '
+                        BCC             MON_PRINT_MEM_ASCII_DOT
+                        CMP             #$7F
+                        BCC             MON_PRINT_MEM_ASCII_OUT
+MON_PRINT_MEM_ASCII_DOT:
+                        LDA             #'.'
+MON_PRINT_MEM_ASCII_OUT:
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        INC             CMD_PATTERN_INDEX
+                        BRA             MON_PRINT_MEM_ASCII_LOOP
+MON_PRINT_MEM_ASCII_DONE:
+                        RTS
+
+HIM_CHECK_CTRL_C:
+                        JSR             BIO_FTDI_READ_BYTE_NONBLOCK
+                        BCC             HIM_CHECK_CTRL_C_NO
+                        CMP             #$03
+                        BEQ             HIM_CHECK_CTRL_C_YES
+HIM_CHECK_CTRL_C_NO:
+                        CLC
+                        RTS
+HIM_CHECK_CTRL_C_YES:
+                        SEC
+                        RTS
+
+MON_MODIFY_RANGE:
+                        STZ             CMD_PATTERN_COUNT
+MON_MODIFY_LOOP:
+                        JSR             MON_CURR_GT_END
+                        BCS             MON_MODIFY_DONE
+                        LDA             CMD_RANGE_TMP_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMD_RANGE_TMP_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             #':'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDY             #$00
+                        LDA             (CMDP_START_LO),Y
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+
+                        LDX             #<CMD_BUF
+                        LDY             #>CMD_BUF
+                        JSR             HIM_READ_LINE_ECHO_UPPER
+                        BCC             MON_MODIFY_ABORT
+                        LDA             #<CMD_BUF
+                        STA             CMDP_PTR_LO
+                        LDA             #>CMD_BUF
+                        STA             CMDP_PTR_HI
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             MON_MODIFY_NEXT
+                        CMP             #'.'
+                        BEQ             MON_MODIFY_ABORT
+                        JSR             CMD_PARSE_HEX_BYTE_TOKEN
+                        BCC             MON_MODIFY_BAD
+                        STA             CMD_IO_TMP
+                        JSR             CMD_REQUIRE_EOL
+                        BCC             MON_MODIFY_BAD
+                        LDY             #$00
+                        LDA             CMD_IO_TMP
+                        STA             (CMDP_START_LO),Y
+                        INC             CMD_PATTERN_COUNT
+MON_MODIFY_NEXT:
+                        JSR             CMD_INC_RANGE_TMP
+                        BRA             MON_MODIFY_LOOP
+
+MON_MODIFY_BAD:
+                        LDX             #<MSG_USAGE_M
+                        LDY             #>MSG_USAGE_M
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        BRA             MON_MODIFY_LOOP
+
+MON_MODIFY_ABORT:
+                        RTS
+
+MON_MODIFY_DONE:
+                        RTS
+
+MON_CURR_GT_END:
+                        LDA             CMD_RANGE_TMP_HI
+                        CMP             CMD_RANGE_END_HI
+                        BCC             MON_CURR_GT_END_NO
+                        BNE             MON_CURR_GT_END_YES
+                        LDA             CMD_RANGE_TMP_LO
+                        CMP             CMD_RANGE_END_LO
+                        BCC             MON_CURR_GT_END_NO
+                        BEQ             MON_CURR_GT_END_NO
+MON_CURR_GT_END_YES:
+                        SEC
+                        RTS
+MON_CURR_GT_END_NO:
+                        CLC
+                        RTS
+
+CMD_INC_RANGE_TMP:
+                        INC             CMD_RANGE_TMP_LO
+                        BNE             CMD_INC_RANGE_TMP_DONE
+                        INC             CMD_RANGE_TMP_HI
+CMD_INC_RANGE_TMP_DONE:
+                        INC             CMDP_START_LO
+                        BNE             CMD_INC_RANGE_PTR_DONE
+                        INC             CMDP_START_HI
+CMD_INC_RANGE_PTR_DONE:
+                        RTS
+
+CMD_PARSE_RANGE_REQUIRED:
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             CMD_PARSE_RANGE_FAIL
+                        LDA             CMDP_ADDR_LO
+                        STA             CMD_RANGE_START_LO
+                        STA             CMD_RANGE_TMP_LO
                         STA             CMDP_START_LO
-                        LDA             #>CMD_TBL
+                        LDA             CMDP_ADDR_HI
+                        STA             CMD_RANGE_START_HI
+                        STA             CMD_RANGE_TMP_HI
                         STA             CMDP_START_HI
-CMDP_DISPATCH_LOOP:
-                        JSR             CMDP_TBL_GET_ENTRY_LEN
-                        BCC             CMDP_PARSE_UNKNOWN
-                        JSR             CMDP_TBL_MATCH_CURRENT
-                        BCC             CMDP_DISPATCH_NEXT
-                        JSR             CMDP_TBL_GET_ROUTINE_PTR
-                        JSR             CMDP_CALL_ROUTINE_PTR
-                        RTS
-CMDP_DISPATCH_NEXT:
-                        JSR             CMDP_TBL_ADVANCE_NEXT
-                        BCC             CMDP_PARSE_UNKNOWN
-                        BRA             CMDP_DISPATCH_LOOP
-CMDP_PARSE_UNKNOWN:
-                        JMP             (CMD_HOOK_UNKNOWN_LO)
 
-CMD_UNKNOWN_BUILTIN:
-                        LDX             #<CMDP_MSG_ERR_UNKNOWN
-                        LDY             #>CMDP_MSG_ERR_UNKNOWN
-                        JSR             SYS_WRITE_HBLINE
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             CMD_PARSE_RANGE_DEFAULT_END
+                        CMP             #'+'
+                        BEQ             CMD_PARSE_RANGE_PLUS
+
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             CMD_PARSE_RANGE_FAIL
+                        LDA             CMDP_ADDR_LO
+                        STA             CMD_RANGE_END_LO
+                        LDA             CMDP_ADDR_HI
+                        STA             CMD_RANGE_END_HI
+                        BRA             CMD_PARSE_RANGE_HAVE_END
+
+CMD_PARSE_RANGE_PLUS:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             CMD_PARSE_RANGE_FAIL
+                        LDA             CMD_RANGE_START_LO
                         CLC
-                        RTS
+                        ADC             CMDP_ADDR_LO
+                        STA             CMD_RANGE_END_LO
+                        LDA             CMD_RANGE_START_HI
+                        ADC             CMDP_ADDR_HI
+                        STA             CMD_RANGE_END_HI
+                        BRA             CMD_PARSE_RANGE_HAVE_END
 
-CMDP_EMPTY_OK:
+CMD_PARSE_RANGE_DEFAULT_END:
+                        LDA             CMD_RANGE_START_LO
+                        STA             CMD_RANGE_END_LO
+                        LDA             CMD_RANGE_START_HI
+                        STA             CMD_RANGE_END_HI
+
+CMD_PARSE_RANGE_HAVE_END:
+                        JSR             CMD_REQUIRE_EOL
+                        BCC             CMD_PARSE_RANGE_FAIL
+                        LDA             CMD_RANGE_END_HI
+                        CMP             CMD_RANGE_START_HI
+                        BCC             CMD_PARSE_RANGE_FAIL
+                        BNE             CMD_PARSE_RANGE_OK
+                        LDA             CMD_RANGE_END_LO
+                        CMP             CMD_RANGE_START_LO
+                        BCC             CMD_PARSE_RANGE_FAIL
+CMD_PARSE_RANGE_OK:
                         SEC
+                        RTS
+CMD_PARSE_RANGE_FAIL:
+                        CLC
                         RTS
 
 ; ----------------------------------------------------------------------------
-; Parse helpers
+; S19 parser helpers (L command)
 ; ----------------------------------------------------------------------------
-CMDP_REQUIRE_EOL:
-                        JSR             CMDP_SKIP_SPACES
-                        JSR             CMDP_PEEK_CHAR
-                        BEQ             CMDP_REQUIRE_EOL_OK
+L_PARSE_RECORD:
+                        STZ             LOAD_REC_KIND
+                        JSR             CMD_PEEK
+                        CMP             #'S'
+                        BNE             L_PARSE_RECORD_FAIL
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PEEK
+                        CMP             #'1'
+                        BEQ             L_PARSE_RECORD_S1
+                        CMP             #'9'
+                        BEQ             L_PARSE_RECORD_S9
+                        CMP             #'0'
+                        BEQ             L_PARSE_RECORD_S0
+                        BRA             L_PARSE_RECORD_FAIL
+L_PARSE_RECORD_S1:
+                        JSR             CMD_ADV_PTR
+                        JSR             L_PARSE_S1
+                        RTS
+L_PARSE_RECORD_S9:
+                        JSR             CMD_ADV_PTR
+                        JSR             L_PARSE_S9
+                        RTS
+L_PARSE_RECORD_S0:
+                        JSR             CMD_ADV_PTR
+                        JSR             L_PARSE_S0
+                        RTS
+L_PARSE_RECORD_FAIL:
                         CLC
                         RTS
-CMDP_REQUIRE_EOL_OK:
+
+L_PARSE_S0:
+                        STZ             LOAD_SUM
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S0_C0
+                        JMP             L_PARSE_FAIL
+L_PARSE_S0_C0:
+                        STA             LOAD_COUNT
+                        JSR             L_SUM_ADD_A
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S0_C1
+                        JMP             L_PARSE_FAIL
+L_PARSE_S0_C1:
+                        JSR             L_SUM_ADD_A
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S0_C2
+                        JMP             L_PARSE_FAIL
+L_PARSE_S0_C2:
+                        JSR             L_SUM_ADD_A
+
+                        LDA             LOAD_COUNT
+                        SEC
+                        SBC             #$03
+                        BCS             L_PARSE_S0_HAVE_DLEN
+                        JMP             L_PARSE_FAIL
+L_PARSE_S0_HAVE_DLEN:
+                        STA             LOAD_DATA_LEN
+L_PARSE_S0_SKIP:
+                        LDA             LOAD_DATA_LEN
+                        BEQ             L_PARSE_S0_CHK
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S0_D0
+                        JMP             L_PARSE_FAIL
+L_PARSE_S0_D0:
+                        JSR             L_SUM_ADD_A
+                        DEC             LOAD_DATA_LEN
+                        BRA             L_PARSE_S0_SKIP
+L_PARSE_S0_CHK:
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S0_CK
+                        JMP             L_PARSE_FAIL
+L_PARSE_S0_CK:
+                        STA             LOAD_CHK
+                        JSR             L_VERIFY_CHECKSUM_EOL
+                        BCS             L_PARSE_S0_OK
+                        JMP             L_PARSE_FAIL
+L_PARSE_S0_OK:
+                        LDA             #LOAD_REC_KIND_SKIP
+                        STA             LOAD_REC_KIND
                         SEC
                         RTS
 
-CMDP_USAGE_LINE_XY:
-                        JSR             SYS_WRITE_HBLINE
+L_PARSE_S1:
+                        STZ             LOAD_SUM
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S1_C0
+                        JMP             L_PARSE_FAIL
+L_PARSE_S1_C0:
+                        STA             LOAD_COUNT
+                        JSR             L_SUM_ADD_A
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S1_C1
+                        JMP             L_PARSE_FAIL
+L_PARSE_S1_C1:
+                        STA             LOAD_DST_HI
+                        JSR             L_SUM_ADD_A
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S1_C2
+                        JMP             L_PARSE_FAIL
+L_PARSE_S1_C2:
+                        STA             LOAD_DST_LO
+                        JSR             L_SUM_ADD_A
+
+                        LDA             LOAD_COUNT
+                        SEC
+                        SBC             #$03
+                        BCS             L_PARSE_S1_HAVE_DLEN
+                        JMP             L_PARSE_FAIL
+L_PARSE_S1_HAVE_DLEN:
+                        STA             LOAD_DATA_LEN
+                        BEQ             L_PARSE_S1_DATA
+                        JSR             L_NOTE_S1_ADDR
+L_PARSE_S1_DATA:
+                        LDA             LOAD_DATA_LEN
+                        BEQ             L_PARSE_S1_CHK
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S1_D0
+                        JMP             L_PARSE_FAIL
+L_PARSE_S1_D0:
+                        STA             CMD_IO_TMP
+                        JSR             L_SUM_ADD_A
+                        LDA             CMD_IO_TMP
+                        JSR             L_WRITE_DATA_BYTE
+                        BCS             L_PARSE_S1_WROTE
+                        JMP             L_PARSE_FAIL
+L_PARSE_S1_WROTE:
+                        INC             LOAD_DST_LO
+                        BNE             L_PARSE_S1_NEXT
+                        INC             LOAD_DST_HI
+L_PARSE_S1_NEXT:
+                        LDA             LOAD_WRITE_OK
+                        BEQ             L_PARSE_S1_NEXT2
+                        INC             LOAD_TOTAL_LO
+                        BNE             L_PARSE_S1_NEXT2
+                        INC             LOAD_TOTAL_HI
+L_PARSE_S1_NEXT2:
+                        DEC             LOAD_DATA_LEN
+                        BRA             L_PARSE_S1_DATA
+L_PARSE_S1_CHK:
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S1_CK
+                        JMP             L_PARSE_FAIL
+L_PARSE_S1_CK:
+                        STA             LOAD_CHK
+                        JSR             L_VERIFY_CHECKSUM_EOL
+                        BCS             L_PARSE_S1_OK
+                        JMP             L_PARSE_FAIL
+L_PARSE_S1_OK:
+                        LDA             LOAD_DST_LO
+                        STA             LOAD_LAST_LO
+                        LDA             LOAD_DST_HI
+                        STA             LOAD_LAST_HI
+                        LDA             #LOAD_REC_KIND_DATA
+                        STA             LOAD_REC_KIND
+                        SEC
+                        RTS
+
+L_WRITE_DATA_BYTE:
+                        STA             CMD_IO_TMP
+                        STZ             LOAD_WRITE_OK
+                        LDA             LOAD_FLASH_MODE
+                        BNE             L_WRITE_DATA_BYTE_FLASH
+                        LDA             LOAD_DST_HI
+                        CMP             #$80
+                        BCS             L_WRITE_DATA_BYTE_NEED_FLASH
+                        LDA             LOAD_DST_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             LOAD_DST_HI
+                        STA             CMDP_ADDR_HI
+                        LDY             #$00
+                        LDA             CMD_IO_TMP
+                        STA             (CMDP_ADDR_LO),Y
+                        LDA             #$01
+                        STA             LOAD_WRITE_OK
+                        SEC
+                        RTS
+
+L_WRITE_DATA_BYTE_NEED_FLASH:
+                        LDA             #LOAD_FAIL_NEED_FLASH
+                        STA             LOAD_FAIL_CODE
                         CLC
                         RTS
 
-CMDP_PARSE_HEX_WORD_TOKEN:
-                        JSR             CMDP_SKIP_SPACES
-                        JSR             CMDP_SKIP_OPTIONAL_DOLLAR
+L_WRITE_DATA_BYTE_FLASH:
+                        LDA             LOAD_ABORT_MODE
+                        BEQ             L_WRITE_DATA_BYTE_FLASH_ACTIVE
+                        JSR             L_COUNT_SKIPPED_BYTE
+                        SEC
+                        RTS
+L_WRITE_DATA_BYTE_FLASH_ACTIVE:
+                        LDA             LOAD_DST_HI
+                        CMP             #$80
+                        BCC             L_WRITE_DATA_BYTE_PROTECT
+                        CMP             #$D0
+                        BCS             L_WRITE_DATA_BYTE_PROTECT
+                        JSR             L_FLASH_SET_PTR
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+                        STA             LOAD_FLASH_OLD
+                        CMP             CMD_IO_TMP
+                        BEQ             L_WRITE_DATA_BYTE_MATCH
+                        CMP             #$FF
+                        BNE             L_WRITE_DATA_BYTE_ERASE
+                        LDA             CMD_IO_TMP
+                        LDX             LOAD_DST_LO
+                        LDY             LOAD_DST_HI
+                        JSR             FLASH_WRITE_BYTE_AXY
+                        BCC             L_WRITE_DATA_BYTE_WRITE_FAIL
+                        JSR             L_FLASH_SET_PTR
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+                        CMP             CMD_IO_TMP
+                        BNE             L_WRITE_DATA_BYTE_WRITE_FAIL_A
+                        LDA             #$01
+                        STA             LOAD_WRITE_OK
+                        SEC
+                        RTS
+
+L_WRITE_DATA_BYTE_MATCH:
+                        LDA             #$01
+                        STA             LOAD_WRITE_OK
+                        SEC
+                        RTS
+
+L_WRITE_DATA_BYTE_PROTECT:
+                        JSR             L_COUNT_SKIPPED_BYTE
+                        LDA             #LOAD_FAIL_PROTECT
+                        STA             LOAD_FAIL_CODE
+                        CLC
+                        RTS
+
+L_WRITE_DATA_BYTE_ERASE:
+                        JSR             L_COUNT_SKIPPED_BYTE
+                        LDA             #LOAD_FAIL_ERASE
+                        STA             LOAD_FAIL_CODE
+                        CLC
+                        RTS
+
+L_WRITE_DATA_BYTE_WRITE_FAIL:
+                        JSR             L_FLASH_SET_PTR
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+L_WRITE_DATA_BYTE_WRITE_FAIL_A:
+                        STA             LOAD_FLASH_OLD
+                        JSR             L_COUNT_SKIPPED_BYTE
+                        LDA             #LOAD_FAIL_WRITE
+                        STA             LOAD_FAIL_CODE
+                        CLC
+                        RTS
+
+L_COUNT_SKIPPED_BYTE:
+                        INC             LOAD_SKIP_LO
+                        BNE             L_COUNT_SKIPPED_BYTE_DONE
+                        INC             LOAD_SKIP_HI
+L_COUNT_SKIPPED_BYTE_DONE:
+                        RTS
+
+L_FLASH_SET_PTR:
+                        LDA             LOAD_DST_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             LOAD_DST_HI
+                        STA             CMDP_ADDR_HI
+                        RTS
+
+L_NOTE_S1_ADDR:
+                        LDA             LOAD_HAVE_DATA
+                        BNE             L_NOTE_S1_ADDR_HAVE_DATA
+                        LDA             #$01
+                        STA             LOAD_HAVE_DATA
+                        LDA             LOAD_DST_LO
+                        STA             LOAD_FIRST_LO
+                        LDA             LOAD_DST_HI
+                        STA             LOAD_FIRST_HI
+                        BRA             L_NOTE_S1_ADDR_PRINT
+
+L_NOTE_S1_ADDR_HAVE_DATA:
+                        LDA             LOAD_DST_HI
+                        CMP             LOAD_LAST_HI
+                        BNE             L_NOTE_S1_ADDR_PRINT
+                        LDA             LOAD_DST_LO
+                        CMP             LOAD_LAST_LO
+                        BEQ             L_NOTE_S1_ADDR_DONE
+L_NOTE_S1_ADDR_PRINT:
+                        LDA             #'L'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #'@'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             LOAD_DST_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             LOAD_DST_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+L_NOTE_S1_ADDR_DONE:
+                        RTS
+
+L_PARSE_S9:
+                        STZ             LOAD_SUM
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S9_C0
+                        JMP             L_PARSE_FAIL
+L_PARSE_S9_C0:
+                        STA             LOAD_COUNT
+                        JSR             L_SUM_ADD_A
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S9_C1
+                        JMP             L_PARSE_FAIL
+L_PARSE_S9_C1:
+                        STA             LOAD_GO_HI
+                        JSR             L_SUM_ADD_A
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S9_C2
+                        JMP             L_PARSE_FAIL
+L_PARSE_S9_C2:
+                        STA             LOAD_GO_LO
+                        JSR             L_SUM_ADD_A
+
+                        LDA             LOAD_COUNT
+                        CMP             #$03
+                        BNE             L_PARSE_FAIL
+
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCS             L_PARSE_S9_CK
+                        JMP             L_PARSE_FAIL
+L_PARSE_S9_CK:
+                        STA             LOAD_CHK
+                        JSR             L_VERIFY_CHECKSUM_EOL
+                        BCS             L_PARSE_S9_OK
+                        JMP             L_PARSE_FAIL
+L_PARSE_S9_OK:
+                        LDA             #$01
+                        STA             LOAD_GO_VALID
+                        LDA             #LOAD_REC_KIND_TERM
+                        STA             LOAD_REC_KIND
+                        SEC
+                        RTS
+
+L_SUM_ADD_A:
+                        CLC
+                        ADC             LOAD_SUM
+                        STA             LOAD_SUM
+                        RTS
+
+L_VERIFY_CHECKSUM_EOL:
+                        LDA             LOAD_SUM
+                        EOR             #$FF
+                        CMP             LOAD_CHK
+                        BNE             L_VERIFY_CHECKSUM_EOL_FAIL
+                        JSR             CMD_PEEK
+                        BEQ             L_VERIFY_CHECKSUM_EOL_OK
+L_VERIFY_CHECKSUM_EOL_FAIL:
+                        CLC
+                        RTS
+L_VERIFY_CHECKSUM_EOL_OK:
+                        SEC
+                        RTS
+
+L_PARSE_HEX_BYTE_STRICT:
+                        JSR             CMD_PEEK
+                        JSR             CMD_HEX_ASCII_TO_NIBBLE
+                        BCC             L_PARSE_HEX_BYTE_STRICT_FAIL
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        STA             CMDP_NIB_HI
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PEEK
+                        JSR             CMD_HEX_ASCII_TO_NIBBLE
+                        BCC             L_PARSE_HEX_BYTE_STRICT_FAIL
+                        ORA             CMDP_NIB_HI
+                        JSR             CMD_ADV_PTR
+                        SEC
+                        RTS
+L_PARSE_HEX_BYTE_STRICT_FAIL:
+                        CLC
+                        RTS
+
+L_PARSE_FAIL:
+                        LDA             LOAD_FAIL_CODE
+                        BNE             L_PARSE_FAIL_HAVE_CODE
+                        LDA             #LOAD_FAIL_PARSE
+                        STA             LOAD_FAIL_CODE
+L_PARSE_FAIL_HAVE_CODE:
+                        CLC
+                        RTS
+
+CMD_L_PRINT_FAIL:
+                        LDA             LOAD_FAIL_CODE
+                        CMP             #LOAD_FAIL_PROTECT
+                        BEQ             CMD_L_PRINT_FAIL_PROTECT
+                        CMP             #LOAD_FAIL_ERASE
+                        BEQ             CMD_L_PRINT_FAIL_ERASE
+                        CMP             #LOAD_FAIL_WRITE
+                        BEQ             CMD_L_PRINT_FAIL_WRITE
+                        CMP             #LOAD_FAIL_NEED_FLASH
+                        BEQ             CMD_L_PRINT_FAIL_NEED_FLASH
+                        LDX             #<MSG_L_ERR
+                        LDY             #>MSG_L_ERR
+                        JSR             HIM_WRITE_HBSTRING
+                        JMP             SYS_WRITE_CRLF
+
+CMD_L_PRINT_FAIL_NEED_FLASH:
+                        LDX             #<MSG_L_USE_F
+                        LDY             #>MSG_L_USE_F
+                        JSR             HIM_WRITE_HBSTRING
+                        JMP             SYS_WRITE_CRLF
+
+CMD_L_PRINT_FAIL_PROTECT:
+                        LDX             #<MSG_LF_PROTECT
+                        LDY             #>MSG_LF_PROTECT
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             CMD_L_PRINT_LOAD_DST
+                        JMP             SYS_WRITE_CRLF
+
+CMD_L_PRINT_FAIL_ERASE:
+                        LDX             #<MSG_LF_ERASE
+                        LDY             #>MSG_LF_ERASE
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             CMD_L_PRINT_LOAD_DST
+                        LDX             #<MSG_L_OLD
+                        LDY             #>MSG_L_OLD
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             LOAD_FLASH_OLD
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_L_NEW
+                        LDY             #>MSG_L_NEW
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             CMD_IO_TMP
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JMP             SYS_WRITE_CRLF
+
+CMD_L_PRINT_FAIL_WRITE:
+                        LDX             #<MSG_LF_WRITE
+                        LDY             #>MSG_LF_WRITE
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             CMD_L_PRINT_LOAD_DST
+                        LDX             #<MSG_L_WANT
+                        LDY             #>MSG_L_WANT
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             CMD_IO_TMP
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_L_READ
+                        LDY             #>MSG_L_READ
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             LOAD_FLASH_OLD
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JMP             SYS_WRITE_CRLF
+
+CMD_L_PRINT_LOAD_DST:
+                        LDA             LOAD_DST_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             LOAD_DST_LO
+                        JMP             SYS_WRITE_HEX_BYTE
+
+; ----------------------------------------------------------------------------
+; FNV-1a command token dispatch
+; ----------------------------------------------------------------------------
+CMD_HASH_TOKEN:
+                        LDA             CMDP_PTR_LO
+                        STA             CMDP_START_LO
+                        LDA             CMDP_PTR_HI
+                        STA             CMDP_START_HI
+                        JSR             FNV1A_INIT
+CMD_HASH_TOKEN_LOOP:
+                        JSR             CMD_PEEK
+                        JSR             CMD_IS_DELIM_OR_NUL
+                        BCS             CMD_HASH_TOKEN_DONE
+                        AND             #$7F
+                        JSR             FNV1A_UPDATE_A
+                        JSR             CMD_ADV_PTR
+                        BRA             CMD_HASH_TOKEN_LOOP
+CMD_HASH_TOKEN_DONE:
+                        LDA             CMDP_START_LO
+                        STA             CMDP_PTR_LO
+                        LDA             CMDP_START_HI
+                        STA             CMDP_PTR_HI
+                        JSR             CMD_SAVE_HASH
+                        RTS
+
+CMD_SAVE_HASH:
+                        LDX             #$03
+CMD_SAVE_HASH_LOOP:
+                        LDA             FNV_HASH0,X
+                        STA             CMD_EXEC_HASH0,X
+                        DEX
+                        BPL             CMD_SAVE_HASH_LOOP
+                        RTS
+
+CMD_DISPATCH_HASH:
+                        JSR             CMD_HASH_SCAN_INIT
+CMD_DISPATCH_SCAN_LOOP:
+                        JSR             CMD_HASH_SCAN_NEXT_RECORD
+                        BCC             CMD_DISPATCH_SCAN_MISS
+                        JSR             CMD_HASH_RECORD_MATCH
+                        BCC             CMD_DISPATCH_SCAN_NEXT
+                        JSR             CMD_HASH_RECORD_IS_EXEC
+                        BCC             CMD_DISPATCH_SCAN_NEXT
+                        JSR             CMD_HASH_RECORD_ENTRY
+                        JSR             CMD_SAVE_ENTRY
+                        STZ             CMD_EXEC_KIND
+                        JSR             CMD_EXEC_ADDR
+                        JMP             MAIN_LOOP
+CMD_DISPATCH_SCAN_NEXT:
+                        JSR             CMD_HASH_SCAN_ADV
+                        BRA             CMD_DISPATCH_SCAN_LOOP
+CMD_DISPATCH_SCAN_MISS:
+                        JSR             MON_PRINT_HASH
+                        LDX             #<MSG_HASH_NF
+                        LDY             #>MSG_HASH_NF
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        JMP             MAIN_LOOP
+
+CMD_HASH_FIND:
+                        JSR             CMD_HASH_SCAN_INIT
+CMD_HASH_FIND_LOOP:
+                        JSR             CMD_HASH_SCAN_NEXT_RECORD
+                        BCC             CMD_HASH_FIND_FAIL
+                        JSR             CMD_HASH_RECORD_MATCH
+                        BCC             CMD_HASH_FIND_NEXT
+                        JSR             CMD_HASH_RECORD_ENTRY
+                        SEC
+                        RTS
+CMD_HASH_FIND_NEXT:
+                        JSR             CMD_HASH_SCAN_ADV
+                        BRA             CMD_HASH_FIND_LOOP
+CMD_HASH_FIND_FAIL:
+                        CLC
+                        RTS
+
+CMD_HASH_SCAN_INIT:
+                        STZ             CMD_HASH_TAB_LO
+                        LDA             #CMD_HASH_SCAN_BASE_HI
+                        STA             CMD_HASH_TAB_HI
+                        RTS
+
+CMD_HASH_SCAN_END:
+                        LDA             CMD_HASH_TAB_HI
+                        CMP             #$FF
+                        BNE             CMD_HASH_SCAN_NOT_END
+                        LDA             CMD_HASH_TAB_LO
+                        CMP             #$F8
+                        BCS             CMD_HASH_SCAN_AT_END
+CMD_HASH_SCAN_NOT_END:
+                        CLC
+                        RTS
+CMD_HASH_SCAN_AT_END:
+                        SEC
+                        RTS
+
+CMD_HASH_SCAN_ADV:
+                        INC             CMD_HASH_TAB_LO
+                        BNE             CMD_HASH_SCAN_ADV_SAME
+                        INC             CMD_HASH_TAB_HI
+                        SEC
+                        RTS
+CMD_HASH_SCAN_ADV_SAME:
+                        CLC
+                        RTS
+
+CMD_HASH_SCAN_NEXT_RECORD:
+                        JSR             CMD_HASH_SCAN_END
+                        BCS             CMD_HASH_SCAN_NEXT_RECORD_FAIL
+                        JSR             CMD_HASH_IS_RECORD
+                        BCS             CMD_HASH_SCAN_NEXT_RECORD_FOUND
+                        JSR             CMD_HASH_SCAN_ADV
+                        BRA             CMD_HASH_SCAN_NEXT_RECORD
+CMD_HASH_SCAN_NEXT_RECORD_FOUND:
+                        SEC
+                        RTS
+CMD_HASH_SCAN_NEXT_RECORD_FAIL:
+                        CLC
+                        RTS
+
+CMD_HASH_IS_RECORD:
+                        LDY             #$00
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             #'F'
+                        BNE             CMD_HASH_IS_RECORD_NO
+                        INY
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             #'N'
+                        BNE             CMD_HASH_IS_RECORD_NO
+                        INY
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             #CMD_FNV_SIG2
+                        BNE             CMD_HASH_IS_RECORD_NO
+                        SEC
+                        RTS
+CMD_HASH_IS_RECORD_NO:
+                        CLC
+                        RTS
+
+CMD_HASH_RECORD_MATCH:
+                        LDY             #$03
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             FNV_HASH0
+                        BNE             CMD_HASH_RECORD_MATCH_NO
+                        INY
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             FNV_HASH1
+                        BNE             CMD_HASH_RECORD_MATCH_NO
+                        INY
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             FNV_HASH2
+                        BNE             CMD_HASH_RECORD_MATCH_NO
+                        INY
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             FNV_HASH3
+                        BNE             CMD_HASH_RECORD_MATCH_NO
+                        SEC
+                        RTS
+CMD_HASH_RECORD_MATCH_NO:
+                        CLC
+                        RTS
+
+CMD_HASH_RECORD_IS_EXEC:
+                        LDY             #$07
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        BEQ             CMD_HASH_RECORD_IS_EXEC_YES
+                        CLC
+                        RTS
+CMD_HASH_RECORD_IS_EXEC_YES:
+                        SEC
+                        RTS
+
+CMD_HASH_RECORD_ENTRY:
+                        CLC
+                        LDA             CMD_HASH_TAB_LO
+                        ADC             #$08
+                        STA             CMDP_ADDR_LO
+                        LDA             CMD_HASH_TAB_HI
+                        ADC             #$00
+                        STA             CMDP_ADDR_HI
+                        RTS
+
+CMD_HASH_PRINT_ROW:
+                        JSR             CMD_HASH_PRINT_RECORD_HASH
+                        JSR             CMD_HASH_SPACE
+                        JSR             CMD_HASH_RECORD_ENTRY
+                        JSR             CMD_HASH_PRINT_ENTRY
+                        JSR             CMD_HASH_SPACE
+                        JSR             CMD_HASH_PRINT_KIND
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+CMD_HASH_PRINT_FNV:
+                        LDA             FNV_HASH3
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             FNV_HASH2
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             FNV_HASH1
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             FNV_HASH0
+                        JSR             SYS_WRITE_HEX_BYTE
+                        RTS
+
+CMD_HASH_PRINT_RECORD_HASH:
+                        LDY             #$06
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDY             #$05
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDY             #$04
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDY             #$03
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        JSR             SYS_WRITE_HEX_BYTE
+                        RTS
+
+CMD_HASH_PRINT_ENTRY:
+                        LDA             CMDP_ADDR_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMDP_ADDR_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        RTS
+
+CMD_HASH_PRINT_KIND:
+                        LDY             #$07
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        JSR             SYS_WRITE_HEX_BYTE
+                        RTS
+
+CMD_HASH_PRINT_TOKEN:
+                        JSR             CMD_HASH_SPACE
+                        LDY             #$00
+CMD_HASH_PRINT_TOKEN_LOOP:
+                        LDA             (CMDP_PTR_LO),Y
+                        JSR             CMD_IS_DELIM_OR_NUL
+                        BCS             CMD_HASH_PRINT_TOKEN_DONE
+                        LDA             (CMDP_PTR_LO),Y
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        INY
+                        BRA             CMD_HASH_PRINT_TOKEN_LOOP
+CMD_HASH_PRINT_TOKEN_DONE:
+                        RTS
+
+CMD_HASH_SPACE:
+                        LDA             #' '
+                        JMP             BIO_FTDI_WRITE_BYTE_BLOCK
+
+CMD_SAVE_ENTRY:
+                        LDA             CMDP_ADDR_LO
+                        STA             CMD_EXEC_ENTRY_LO
+                        LDA             CMDP_ADDR_HI
+                        STA             CMD_EXEC_ENTRY_HI
+                        RTS
+
+CMD_EXEC_ADDR:
+                        JSR             CMD_CALL_ADDR
+                        PHP
+                        STA             NMI_CTX_A
+                        STX             NMI_CTX_X
+                        STY             NMI_CTX_Y
+                        PLA
+                        STA             NMI_CTX_P
+                        TSX
+                        STX             NMI_CTX_S
+                        LDA             CMD_EXEC_ENTRY_LO
+                        STA             NMI_CTX_PCL
+                        LDA             CMD_EXEC_ENTRY_HI
+                        STA             NMI_CTX_PCH
+                        JSR             MON_PRINT_RET_AND_REGS
+                        RTS
+
+CMD_CALL_ADDR:
+                        JMP             (CMDP_ADDR_LO)
+
+FNV1A_INIT:
+                        LDX             #$03
+FNV1A_INIT_LOOP:
+                        LDA             FNV1A_OFFSET_BASIS,X
+                        STA             FNV_HASH0,X
+                        DEX
+                        BPL             FNV1A_INIT_LOOP
+                        RTS
+
+FNV1A_OFFSET_BASIS:
+                        DB              $C5,$9D,$1C,$81
+
+FNV1A_UPDATE_A:
+                        EOR             FNV_HASH0
+                        STA             FNV_HASH0
+                        JMP             FNV1A_MUL_PRIME
+
+FNV1A_MUL_PRIME:
+                        JSR             MATH_COPY_HASH_TO_TERM
+                        LDX             #$01
+                        JSR             MATH_SHLADD_TERM_N
+                        LDX             #$03
+                        JSR             MATH_SHLADD_TERM_N
+                        LDX             #$03
+                        JSR             MATH_SHLADD_TERM_N
+                        LDX             #$01
+                        JSR             MATH_SHLADD_TERM_N
+                        JMP             MATH_ADD_TERM1_TO_HASH3
+
+MATH_COPY_HASH_TO_TERM:
+                        LDX             #$03
+MATH_COPY_HASH_LOOP:
+                        LDA             FNV_HASH0,X
+                        STA             FNV_TERM0,X
+                        DEX
+                        BPL             MATH_COPY_HASH_LOOP
+                        RTS
+
+MATH_SHLADD_TERM_N:
+                        JSR             MATH_SHL_TERM_N
+                        JMP             MATH_ADD_TERM_TO_HASH
+
+MATH_SHL_TERM_N:
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        DEX
+                        BNE             MATH_SHL_TERM_N
+                        RTS
+
+MATH_ADD_TERM_TO_HASH:
+                        CLC
+                        LDA             FNV_HASH0
+                        ADC             FNV_TERM0
+                        STA             FNV_HASH0
+                        LDA             FNV_HASH1
+                        ADC             FNV_TERM1
+                        STA             FNV_HASH1
+                        LDA             FNV_HASH2
+                        ADC             FNV_TERM2
+                        STA             FNV_HASH2
+                        LDA             FNV_HASH3
+                        ADC             FNV_TERM3
+                        STA             FNV_HASH3
+                        RTS
+
+MATH_ADD_TERM1_TO_HASH3:
+                        LDA             FNV_HASH3
+                        CLC
+                        ADC             FNV_TERM1
+                        STA             FNV_HASH3
+                        RTS
+
+; ----------------------------------------------------------------------------
+; Scanner / parser helpers
+; ----------------------------------------------------------------------------
+CMD_REQUIRE_EOL:
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             CMD_REQUIRE_EOL_OK
+                        CLC
+                        RTS
+CMD_REQUIRE_EOL_OK:
+                        SEC
+                        RTS
+
+CMD_SKIP_SPACES:
+                        JSR             CMD_PEEK
+                        CMP             #' '
+                        BEQ             CMD_SKIP_SPACES_ADV
+                        CMP             #$09
+                        BEQ             CMD_SKIP_SPACES_ADV
+                        RTS
+CMD_SKIP_SPACES_ADV:
+                        JSR             CMD_ADV_PTR
+                        BRA             CMD_SKIP_SPACES
+
+CMD_PEEK:
+                        LDY             #$00
+                        LDA             (CMDP_PTR_LO),Y
+                        RTS
+
+CMD_ADV_PTR:
+                        INC             CMDP_PTR_LO
+                        BNE             CMD_ADV_PTR_DONE
+                        INC             CMDP_PTR_HI
+CMD_ADV_PTR_DONE:
+                        RTS
+
+CMD_PARSE_HEX_WORD_TOKEN:
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_SKIP_OPTIONAL_DOLLAR
                         STZ             CMDP_ADDR_HI
                         STZ             CMDP_ADDR_LO
                         STZ             CMDP_TOKEN_LEN
-CMDP_PARSE_HEX_WORD_LOOP:
-                        JSR             CMDP_PEEK_CHAR
-                        JSR             CMDP_HEX_ASCII_TO_NIBBLE
-                        BCC             CMDP_PARSE_HEX_WORD_DONE
+CMD_PARSE_HEX_WORD_LOOP:
+                        JSR             CMD_PEEK
+                        JSR             CMD_HEX_ASCII_TO_NIBBLE
+                        BCC             CMD_PARSE_HEX_WORD_DONE
                         STA             CMDP_NIB_HI
                         LDA             CMDP_TOKEN_LEN
                         CMP             #$04
-                        BCS             CMDP_PARSE_HEX_WORD_FAIL
+                        BCS             CMD_PARSE_HEX_WORD_FAIL
                         INC             CMDP_TOKEN_LEN
 
                         ASL             CMDP_ADDR_LO
@@ -381,324 +2270,259 @@ CMDP_PARSE_HEX_WORD_LOOP:
                         LDA             CMDP_ADDR_LO
                         ORA             CMDP_NIB_HI
                         STA             CMDP_ADDR_LO
-                        JSR             CMDP_ADV_PTR
-                        BRA             CMDP_PARSE_HEX_WORD_LOOP
-CMDP_PARSE_HEX_WORD_DONE:
+                        JSR             CMD_ADV_PTR
+                        BRA             CMD_PARSE_HEX_WORD_LOOP
+CMD_PARSE_HEX_WORD_DONE:
                         LDA             CMDP_TOKEN_LEN
-                        BEQ             CMDP_PARSE_HEX_WORD_FAIL
-                        JSR             CMDP_PEEK_CHAR
-                        JSR             CMDP_IS_DELIM_OR_NUL
-                        BCC             CMDP_PARSE_HEX_WORD_FAIL
+                        BEQ             CMD_PARSE_HEX_WORD_FAIL
+                        JSR             CMD_PEEK
+                        JSR             CMD_IS_DELIM_OR_NUL
+                        BCC             CMD_PARSE_HEX_WORD_FAIL
                         SEC
                         RTS
-CMDP_PARSE_HEX_WORD_FAIL:
+CMD_PARSE_HEX_WORD_FAIL:
                         CLC
                         RTS
 
-CMDP_PARSE_HEX_BYTE_TOKEN:
-                        JSR             CMDP_PARSE_HEX_WORD_TOKEN
-                        BCC             CMDP_PARSE_HEX_BYTE_TOKEN_FAIL
+CMD_PARSE_HEX_BYTE_TOKEN:
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             CMD_PARSE_HEX_BYTE_TOKEN_FAIL
                         LDA             CMDP_ADDR_HI
-                        BNE             CMDP_PARSE_HEX_BYTE_TOKEN_FAIL
+                        BNE             CMD_PARSE_HEX_BYTE_TOKEN_FAIL
                         LDA             CMDP_ADDR_LO
                         SEC
                         RTS
-CMDP_PARSE_HEX_BYTE_TOKEN_FAIL:
+CMD_PARSE_HEX_BYTE_TOKEN_FAIL:
                         CLC
                         RTS
 
-CMDP_PARSE_HEX_BYTE_ADV:
-                        JSR             CMDP_PARSE_HEX_NIBBLE_ADV
-                        BCC             CMDP_PARSE_HEX_BYTE_ADV_FAIL
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        STA             CMDP_NIB_HI
-                        JSR             CMDP_PARSE_HEX_NIBBLE_ADV
-                        BCC             CMDP_PARSE_HEX_BYTE_ADV_FAIL
-                        ORA             CMDP_NIB_HI
-                        SEC
-                        RTS
-CMDP_PARSE_HEX_BYTE_ADV_FAIL:
-                        CLC
-                        RTS
-
-CMDP_PARSE_HEX_NIBBLE_ADV:
-                        JSR             CMDP_PEEK_CHAR
-                        JSR             CMDP_HEX_ASCII_TO_NIBBLE
-                        BCC             CMDP_PARSE_HEX_NIBBLE_ADV_FAIL
-                        PHA
-                        JSR             CMDP_ADV_PTR
-                        PLA
-                        SEC
-                        RTS
-CMDP_PARSE_HEX_NIBBLE_ADV_FAIL:
-                        CLC
-                        RTS
-
-CMDP_SKIP_OPTIONAL_DOLLAR:
-                        JSR             CMDP_PEEK_CHAR
+CMD_SKIP_OPTIONAL_DOLLAR:
+                        JSR             CMD_PEEK
                         CMP             #'$'
-                        BNE             CMDP_SKIP_OPTIONAL_DOLLAR_DONE
-                        JSR             CMDP_ADV_PTR
-CMDP_SKIP_OPTIONAL_DOLLAR_DONE:
+                        BNE             CMD_SKIP_OPTIONAL_DOLLAR_DONE
+                        JSR             CMD_ADV_PTR
+CMD_SKIP_OPTIONAL_DOLLAR_DONE:
                         RTS
 
-
-; ----------------------------------------------------------------------------
-; Generic scanner helpers
-; ----------------------------------------------------------------------------
-CMDP_SKIP_SPACES:
-                        JSR             CMDP_PEEK_CHAR
-                        CMP             #' '
-                        BEQ             CMDP_SKIP_SPACES_ADV
-                        CMP             #$09
-                        BEQ             CMDP_SKIP_SPACES_ADV
-                        RTS
-CMDP_SKIP_SPACES_ADV:
-                        JSR             CMDP_ADV_PTR
-                        BRA             CMDP_SKIP_SPACES
-
-CMDP_PEEK_CHAR:
-                        LDY             #$00
-                        LDA             (CMDP_PTR_LO),Y
-                        RTS
-
-CMDP_ADV_PTR:
-                        INC             CMDP_PTR_LO
-                        BNE             CMDP_ADV_PTR_DONE
-                        INC             CMDP_PTR_HI
-CMDP_ADV_PTR_DONE:
-                        RTS
-
-CMDP_INC_ADDR:
-                        INC             CMDP_ADDR_LO
-                        BNE             CMDP_INC_ADDR_DONE
-                        INC             CMDP_ADDR_HI
-CMDP_INC_ADDR_DONE:
-                        RTS
-
-CMDP_IS_DELIM_OR_NUL:
+CMD_IS_DELIM_OR_NUL:
                         CMP             #$00
-                        BEQ             CMDP_IS_DELIM_TRUE
+                        BEQ             CMD_IS_DELIM_TRUE
                         CMP             #' '
-                        BEQ             CMDP_IS_DELIM_TRUE
+                        BEQ             CMD_IS_DELIM_TRUE
                         CMP             #$09
-                        BEQ             CMDP_IS_DELIM_TRUE
+                        BEQ             CMD_IS_DELIM_TRUE
                         CLC
                         RTS
-CMDP_IS_DELIM_TRUE:
+CMD_IS_DELIM_TRUE:
                         SEC
                         RTS
 
-CMDP_TO_UPPER_A:
-                        CMP             #'a'
-                        BCC             CMDP_TO_UPPER_DONE
-                        CMP             #'{'
-                        BCS             CMDP_TO_UPPER_DONE
-                        AND             #$DF
-CMDP_TO_UPPER_DONE:
-                        RTS
-
-CMDP_HEX_ASCII_TO_NIBBLE:
+CMD_HEX_ASCII_TO_NIBBLE:
                         CMP             #'0'
-                        BCC             CMDP_HXN_BAD
+                        BCC             CMD_HXN_BAD
                         CMP             #':'
-                        BCC             CMDP_HXN_DIGIT
+                        BCC             CMD_HXN_DIGIT
                         CMP             #'A'
-                        BCC             CMDP_HXN_CHECK_LOWER
+                        BCC             CMD_HXN_CHECK_LOWER
                         CMP             #'G'
-                        BCC             CMDP_HXN_UPPER
-CMDP_HXN_CHECK_LOWER:
+                        BCC             CMD_HXN_UPPER
+CMD_HXN_CHECK_LOWER:
                         CMP             #'a'
-                        BCC             CMDP_HXN_BAD
+                        BCC             CMD_HXN_BAD
                         CMP             #'g'
-                        BCS             CMDP_HXN_BAD
+                        BCS             CMD_HXN_BAD
                         SEC
                         SBC             #$57
                         SEC
                         RTS
-CMDP_HXN_UPPER:
+CMD_HXN_UPPER:
                         SEC
                         SBC             #$37
                         SEC
                         RTS
-CMDP_HXN_DIGIT:
+CMD_HXN_DIGIT:
                         SEC
                         SBC             #'0'
                         SEC
                         RTS
-CMDP_HXN_BAD:
+CMD_HXN_BAD:
                         CLC
                         RTS
 
-; ----------------------------------------------------------------------------
-; ROUTINE: CMD_INIT_HOOKS  [HASH:D3FAAB4D]
-; PURPOSE: Initialize command hook vectors to built-in handlers.
-; ----------------------------------------------------------------------------
-CMD_INIT_HOOKS:
-                        LDA             #<MON_CMD_DISPLAY
-                        STA             CMD_HOOK_DISPLAY_LO
-                        LDA             #>MON_CMD_DISPLAY
-                        STA             CMD_HOOK_DISPLAY_HI
+                        INCLUDE         "TEST/apps/himon/himonia-bootlog.inc"
 
-                        LDA             #<MON_CMD_FILL
-                        STA             CMD_HOOK_FILL_LO
-                        LDA             #>MON_CMD_FILL
-                        STA             CMD_HOOK_FILL_HI
-
-                        LDA             #<MON_CMD_COPY
-                        STA             CMD_HOOK_COPY_LO
-                        LDA             #>MON_CMD_COPY
-                        STA             CMD_HOOK_COPY_HI
-
-                        LDA             #<MON_CMD_MODIFY
-                        STA             CMD_HOOK_MODIFY_LO
-                        LDA             #>MON_CMD_MODIFY
-                        STA             CMD_HOOK_MODIFY_HI
-
-                        LDA             #<MON_CMD_HELP
-                        STA             CMD_HOOK_HELP_LO
-                        LDA             #>MON_CMD_HELP
-                        STA             CMD_HOOK_HELP_HI
-
-                        LDA             #<MON_CMD_LOAD
-                        STA             CMD_HOOK_LOAD_LO
-                        LDA             #>MON_CMD_LOAD
-                        STA             CMD_HOOK_LOAD_HI
-
-                        LDA             #<MON_CMD_KEYTEST
-                        STA             CMD_HOOK_KEYTEST_LO
-                        LDA             #>MON_CMD_KEYTEST
-                        STA             CMD_HOOK_KEYTEST_HI
-
-                        LDA             #<MON_CMD_QUIT
-                        STA             CMD_HOOK_QUIT_LO
-                        LDA             #>MON_CMD_QUIT
-                        STA             CMD_HOOK_QUIT_HI
-
-                        LDA             #<CMD_UNKNOWN_BUILTIN
-                        STA             CMD_HOOK_UNKNOWN_LO
-                        LDA             #>CMD_UNKNOWN_BUILTIN
-                        STA             CMD_HOOK_UNKNOWN_HI
-                        STZ             CMD_DISP_NEXT_LO
-                        STZ             CMD_DISP_NEXT_HI
-                        STZ             CMD_RANGE_START_LO
-                        STZ             CMD_RANGE_START_HI
-                        STZ             CMD_RANGE_END_LO
-                        STZ             CMD_RANGE_END_HI
-                        STZ             CMD_RANGE_TMP_LO
-                        STZ             CMD_RANGE_TMP_HI
-                        STZ             CMD_PATTERN_COUNT
-                        STZ             CMD_PATTERN_INDEX
-                        STZ             CMD_FLAGS
-                        STZ             CMD_IO_TMP
-                        RTS
-
-; ----------------------------------------------------------------------------
-; Command table:
-; - Each entry stores the address of a RAM vector cell (CMD_HOOK_*_LO).
-; - CMDP_CALL_ROUTINE_PTR performs the extra dereference and dispatch.
-; ----------------------------------------------------------------------------
                         DATA
-CMD_TBL:
-DISPLAY_HBSTR:           DB              "DISPLA",$D9
-DISPLAY_ADDR:            DW              CMD_HOOK_DISPLAY_LO
-FILL_HBSTR:              DB              "FIL",$CC
-FILL_ADDR:               DW              CMD_HOOK_FILL_LO
-COPY_HBSTR:              DB              "COP",$D9
-COPY_ADDR:               DW              CMD_HOOK_COPY_LO
-MODIFY_HBSTR:            DB              "MODIF",$D9
-MODIFY_ADDR:             DW              CMD_HOOK_MODIFY_LO
-HELP_HBSTR:              DB              "HEL",$D0
-HELP_ADDR:               DW              CMD_HOOK_HELP_LO
-LOAD_HBSTR:              DB              "LOA",$C4
-LOAD_ADDR:               DW              CMD_HOOK_LOAD_LO
-KEYTEST_HBSTR:           DB              "KEYTES",$D4
-KEYTEST_ADDR:            DW              CMD_HOOK_KEYTEST_LO
-GO_HBSTR:                DB              "G",$CF
-GO_ADDR:                 DW              GO_DISPATCH_PTR
-RESUME_HBSTR:            DB              "RESUM",$C5
-RESUME_ADDR:             DW              RESUME_DISPATCH_PTR
-QUIT_HBSTR:              DB              "QUI",$D4
-QUIT_ADDR:               DW              CMD_HOOK_QUIT_LO
-CMD_TBL_END:             DB              $00
-GO_DISPATCH_PTR:         DW              MON_CMD_GO
-RESUME_DISPATCH_PTR:     DW              MON_CMD_RESUME
+HIM_FNV_FORCE_SYS:
+                        DW              SYS_READ_CHAR
+                        DW              SYS_READ_CHAR_ECHO
+                        DW              SYS_READ_CHAR_COOKED_ECHO
+                        DW              SYS_GET_CTRL_C
 
-MSG_HDR_1:               DB              $0d,$0a,"R-YORS command monito",$F2
-MSG_HDR_2: DB "DISPLAY FILL COPY MODIFY HELP LOAD KEYTEST GO RESUME QUI",$D4
-MSG_PROMPT:              DB              "cmd>",$A0
-MSG_LINE_STATUS:         DB              "line status=",$A4
-MSG_RETRY:               DB              " (retry",$A9
-CMDP_MSG_ERR_UNKNOWN:    DB              "ERR: unknown comman",$E4
-CMDP_MSG_USAGE_DISPLAY:  DB              "usage: DISPLAY [a [b|+c]",$DD
-CMDP_MSG_USAGE_FILL:     DB              "usage: FILL a [b|+c] [b1 ...",$DD
-CMDP_MSG_USAGE_GO:       DB              "usage: GO [addr16]",$DD
-CMDP_MSG_USAGE_R: DB "usage: R [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]",$DD
-CMDP_MSG_USAGE_RESUME: DB "usage: RESUME [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]",$DD
-CMDP_MSG_USAGE_COPY:      DB              "usage: COPY a [b|+c] d",$DD
-CMDP_MSG_USAGE_MODIFY:   DB              "usage: MODIFY a [b|+c] [b1 ...",$DD
-CMDP_MSG_USAGE_HELP:     DB              "usage: HEL",$D0
-CMDP_MSG_USAGE_LOAD:     DB              "usage: LOAD [GO] [S19",$DD
-CMDP_MSG_USAGE_KEYTEST:  DB              "usage: KEYTES",$D4
-CMDP_MSG_USAGE_QUIT:     DB              "usage: QUI",$D4
-CMDP_MSG_MOD_OK_1:       DB              "modified ",$A4
-CMDP_MSG_MOD_OK_2:       DB              " bytes at ",$A4
-MSG_HELP_1:              DB              "DISPLAY [a [b|+c]",$DD
-MSG_HELP_2:              DB              "FILL a [b|+c] [b1 ...",$DD
-MSG_HELP_3:               DB              "COPY a [b|+c] d",$DD
-MSG_HELP_4:              DB              "MODIFY a [b|+c] [b1 ...",$DD
-MSG_HELP_5:              DB              "LOAD [GO] [S19",$DD
-MSG_HELP_6:              DB              "GO [addr16]",$DD
-MSG_HELP_7: DB "RESUME [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]",$DD
-MSG_HELP_8:              DB              "QUI",$D4
-MSG_HELP_9:              DB              "KEYTES",$D4
-MSG_HELP_10:             DB              $8D
-MSG_GO_EXEC:             DB              "GO jumping to ",$A4
-MSG_R_NONE:              DB              "R: no NMI contex",$F4
-MSG_R_PC:                DB              "R PC=",$A4
-MSG_R_A:                 DB              " A=",$A4
-MSG_R_X:                 DB              " X=",$A4
-MSG_R_Y:                 DB              " Y=",$A4
-MSG_R_P:                 DB              " P=",$A4
-MSG_R_S:                 DB              " S=",$A4
-MSG_RESUME_EXEC:         DB              "RESUME to ",$A4
-MSG_LOAD_READY: DB "LOAD READY: paste S-record lines, end with S",$B9
-MSG_LOAD_LINE_STATUS:    DB              "LOAD line status=",$A4
-MSG_LOAD_PARSE_FAIL:     DB              "LOAD parse fail type",$BD
-MSG_LOAD_SUM_OK_START:   DB              "LOAD OK START ",$A4
-MSG_LOAD_SUM_END:        DB              " END ",$A4
-MSG_LOAD_SUM_BYTES:      DB              " BYTES ",$A4
-MSG_LOAD_SUM_GO:         DB              " GO ",$A4
-MSG_LOAD_SUM_IGNORED:    DB              ", ignore",$E4
-MSG_LOAD_SUM_REC:        DB              " REC ",$A4
-MSG_LOAD_DONE_LEN:       DB              " len=",$BD
-MSG_LOAD_RANGE_HDR:      DB              "LOAD ranges:",$BA
-MSG_LOAD_RANGE_OVF: DB "LOAD ranges: additional ranges omitte",$E4
-MSG_LOAD_NO_GO:          DB              "???",$BF
-MSG_LOAD_ADDR_UNKNOWN:   DB              "????",$BF
-MSG_LOAD_GO_EXEC:        DB              "LOAD GO jumping to ",$A4
-MSG_LOAD_GO_MISSING: DB "LOAD GO requested but no GO address captured",$E4
-MSG_KEYTEST_HDR:         DB              $0d,$0a,"KEYTEST: type keys, Ctrl-C to exi",$F4
-MSG_KEYTEST_NOTE: DB "ESC-prefixed keys print one hex byte-sequence lin",$E5
-MSG_KEYTEST_PROMPT:      DB              "key>",$A0
-MSG_KEYTEST_ESCSEQ:      DB              "esc seq: ",$A0
-MSG_KEYTEST_TYPE:        DB              "type: ",$A0
-MSG_KEYTEST_CHAR:        DB              "char: ",$A0
-MSG_KEYTEST_NONPRINT:    DB              "(non-printable)",$A0
-MSG_KEYTEST_HEX:         DB              "hex: ",$A0
-MSG_KEYTEST_ISPRINT:     DB              "isprint: ",$A0
-MSG_KEYTEST_TRUE:        DB              "1",$B1
-MSG_KEYTEST_FALSE:       DB              "0",$B0
-MSG_KEYTEST_EXIT:        DB              "KEYTEST exi",$F4
-MSG_KEYTEST_CLASS_CTRL:  DB              "CTRL",$CC
-MSG_KEYTEST_CLASS_PRINT_SPACE: DB "PRINT-SPAC",$C5
-MSG_KEYTEST_CLASS_PRINT_DIGIT: DB "PRINT-DIGI",$D4
-MSG_KEYTEST_CLASS_PRINT_UPPER: DB "PRINT-UPPE",$D2
-MSG_KEYTEST_CLASS_PRINT_LOWER: DB "PRINT-LOWE",$D2
-MSG_KEYTEST_CLASS_PRINT_PUNCT: DB "PRINT-PUNC",$D4
+MSG_BANNER:              DB              $0D,$0A,"HIMONIA v",('1'+$80)
+MSG_PROMPT:              DB              ('>'+$80)
+MSG_UNKNOWN:             DB              ('?'+$80)
+MSG_HASH_NF:             DB              " HSH_NF",('!'+$80)
+MSG_HASH_HDR:            DB              "HASH     ENTRY ",('K'+$80)
+MSG_HASH_ENTRY:          DB              " ENTRY",('='+$80)
+MSG_HASH_K:              DB              " K",('='+$80)
+MSG_HELP:                DB              "# ? D M U R X G L B S A ",('Q'+$80)
+MSG_USAGE_D:             DB              "D start [end|+n]",(']'+$80)
+MSG_USAGE_M:             DB              "M start [end|+n]",('.'+$80)
+MSG_USAGE_R:             DB              "R reg",('s'+$80)
+MSG_USAGE_X:             DB              "X reg",('s'+$80)
+MSG_USAGE_G:             DB              "G ",('a'+$80)
+MSG_USAGE_L:             DB              "L [G|F]",(' '+$80)
+MSG_NOCTX:               DB              "NOCT",('X'+$80)
+MSG_RESUME:              DB              "RESUME",(' '+$80)
+MSG_GO:                  DB              "GO",(' '+$80)
+MSG_L_READY:             DB              "L S1",('9'+$80)
+MSG_LF_READY:            DB              "L F S1",('9'+$80)
+MSG_L_STATUS:            DB              "L",('S'+$80)
+MSG_L_ERR:               DB              "LER",('R'+$80)
+MSG_L_DONE:              DB              "L OK",('='+$80)
+MSG_LF_DONE:             DB              "LF OK WR",('='+$80)
+MSG_LF_FAIL_DONE:        DB              "LF FAIL",('='+$80)
+MSG_L_WR:                DB              " WR",('='+$80)
+MSG_L_SKIP:              DB              " SKIP",('='+$80)
+MSG_L_GO:                DB              " GO",('='+$80)
+MSG_L_USE_F:             DB              "HINT L ",('F'+$80)
+MSG_LF_PROTECT:          DB              "LF PROT",('='+$80)
+MSG_LF_ERASE:            DB              "LF ERASE",('='+$80)
+MSG_LF_WRITE:            DB              "LF WFAIL",('='+$80)
+MSG_L_OLD:               DB              " OLD",('='+$80)
+MSG_L_NEW:               DB              " NEW",('='+$80)
+MSG_L_WANT:              DB              " WANT",('='+$80)
+MSG_L_READ:              DB              " READ",('='+$80)
+MSG_STOP_NMI:            DB              "NMI PC",('='+$80)
+MSG_STOP_BRK:            DB              "BRK",(' '+$80)
+MSG_STOP_PC:             DB              " PC",('='+$80)
+MSG_ENTRY:               DB              " ENTRY",('='+$80)
+MSG_RET:                 DB              "RET",(' '+$80)
+MSG_BOX_GO:              DB              "G",('O'+$80)
+MSG_BOX_LOADGO:          DB              "LOADG",('O'+$80)
+MSG_REG_A:               DB              "A",('='+$80)
+MSG_REG_X:               DB              " X",('='+$80)
+MSG_REG_Y:               DB              " Y",('='+$80)
+MSG_REG_P:               DB              " P",('='+$80)
+MSG_REG_S:               DB              " S",('='+$80)
+MSG_USAGE_B:             DB              "B start",(']'+$80)
+MSG_USAGE_BC:            DB              "B C start",(']'+$80)
+MSG_USAGE_BL:            DB              "B ",('L'+$80)
+MSG_USAGE_S:             DB              ('S'+$80)
+MSG_USAGE_U:             DB              "U start [end|+n]",(']'+$80)
+                        IF              ROM_ABI
+HIMONIA_ABI_WRITE        SECTION         OFFSET $F00D
+HIMONIA_ABI_WRITE_BYTE:
+                        JMP             BIO_FTDI_WRITE_BYTE_BLOCK
+                        ENDS
+
+HIMONIA_ABI_READ         SECTION         OFFSET $FEED
+HIMONIA_ABI_READ_BYTE:
+                        JMP             BIO_FTDI_READ_BYTE_BLOCK
+                        ENDS
+
+HIMONIA_ABI_EXIT         SECTION         OFFSET $FADE
+HIMONIA_ABI_EXIT_APP:
+                        STZ             NMI_CTX_FLAG
+                        STZ             TRAP_CAUSE
+                        STZ             TRAP_BRK_SIG
+                        JMP             MON_REENTER
+                        ENDS
+
+HIMON_DATA_TAIL          SECTION         OFFSET $F010
+                        ENDIF
+MSG_USAGE_A:             DB              "A start [mne op]",(']'+$80)
+MSG_BP_SET:              DB              "BP ",('$'+$80)
+MSG_BP_CLR:              DB              "B C ",('$'+$80)
+MSG_STEP:                DB              "STEP PC",('='+$80)
+MSG_STEP_OP:             DB              " OP",('='+$80)
+MSG_STEP_LEN:            DB              " LEN",('='+$80)
+MSG_STEP_NEXT:           DB              " NEXT",('='+$80)
+MSG_STEP_BP:             DB              " B",('P'+$80)
+MSG_DIS_DB:              DB              ".DB ",('$'+$80)
+
+ASM_MNEM_NAMES:
+                        DB              'B','R',('K'+$80),$80,'O','R',('A'+$80),$80,'T','S',('B'+$80),$80,'A','S',('L'+$80),$80,'R','M','B',('0'+$80),'P','H',('P'+$80),$80,'B','B','R',('0'+$80),'B','P',('L'+$80),$80
+                        DB              'T','R',('B'+$80),$80,'R','M','B',('1'+$80),'C','L',('C'+$80),$80,'I','N',('C'+$80),$80,'B','B','R',('1'+$80),'J','S',('R'+$80),$80,'A','N',('D'+$80),$80,'B','I',('T'+$80),$80
+                        DB              'R','O',('L'+$80),$80,'R','M','B',('2'+$80),'P','L',('P'+$80),$80,'B','B','R',('2'+$80),'B','M',('I'+$80),$80,'R','M','B',('3'+$80),'S','E',('C'+$80),$80,'D','E',('C'+$80),$80
+                        DB              'B','B','R',('3'+$80),'R','T',('I'+$80),$80,'E','O',('R'+$80),$80,'L','S',('R'+$80),$80,'R','M','B',('4'+$80),'P','H',('A'+$80),$80,'J','M',('P'+$80),$80,'B','B','R',('4'+$80)
+                        DB              'B','V',('C'+$80),$80,'R','M','B',('5'+$80),'C','L',('I'+$80),$80,'P','H',('Y'+$80),$80,'B','B','R',('5'+$80),'R','T',('S'+$80),$80,'A','D',('C'+$80),$80,'S','T',('Z'+$80),$80
+                        DB              'R','O',('R'+$80),$80,'R','M','B',('6'+$80),'P','L',('A'+$80),$80,'B','B','R',('6'+$80),'B','V',('S'+$80),$80,'R','M','B',('7'+$80),'S','E',('I'+$80),$80,'P','L',('Y'+$80),$80
+                        DB              'B','B','R',('7'+$80),'B','R',('A'+$80),$80,'S','T',('A'+$80),$80,'S','T',('Y'+$80),$80,'S','T',('X'+$80),$80,'S','M','B',('0'+$80),'D','E',('Y'+$80),$80,'T','X',('A'+$80),$80
+                        DB              'B','B','S',('0'+$80),'B','C',('C'+$80),$80,'S','M','B',('1'+$80),'T','Y',('A'+$80),$80,'T','X',('S'+$80),$80,'B','B','S',('1'+$80),'L','D',('Y'+$80),$80,'L','D',('A'+$80),$80
+                        DB              'L','D',('X'+$80),$80,'S','M','B',('2'+$80),'T','A',('Y'+$80),$80,'T','A',('X'+$80),$80,'B','B','S',('2'+$80),'B','C',('S'+$80),$80,'S','M','B',('3'+$80),'C','L',('V'+$80),$80
+                        DB              'T','S',('X'+$80),$80,'B','B','S',('3'+$80),'C','P',('Y'+$80),$80,'C','M',('P'+$80),$80,'S','M','B',('4'+$80),'I','N',('Y'+$80),$80,'D','E',('X'+$80),$80,'W','A',('I'+$80),$80
+                        DB              'B','B','S',('4'+$80),'B','N',('E'+$80),$80,'S','M','B',('5'+$80),'C','L',('D'+$80),$80,'P','H',('X'+$80),$80,'S','T',('P'+$80),$80,'B','B','S',('5'+$80),'C','P',('X'+$80),$80
+                        DB              'S','B',('C'+$80),$80,'S','M','B',('6'+$80),'I','N',('X'+$80),$80,'N','O',('P'+$80),$80,'B','B','S',('6'+$80),'B','E',('Q'+$80),$80,'S','M','B',('7'+$80),'S','E',('D'+$80),$80
+                        DB              'P','L',('X'+$80),$80,'B','B','S',('7'+$80)
+
+ASM_OP_MNEM_ID:
+                        DB              $01,$02,$00,$00,$03,$02,$04,$05
+                        DB              $06,$02,$04,$00,$03,$02,$04,$07
+                        DB              $08,$02,$02,$00,$09,$02,$04,$0A
+                        DB              $0B,$02,$0C,$00,$09,$02,$04,$0D
+                        DB              $0E,$0F,$00,$00,$10,$0F,$11,$12
+                        DB              $13,$0F,$11,$00,$10,$0F,$11,$14
+                        DB              $15,$0F,$0F,$00,$10,$0F,$11,$16
+                        DB              $17,$0F,$18,$00,$10,$0F,$11,$19
+                        DB              $1A,$1B,$00,$00,$00,$1B,$1C,$1D
+                        DB              $1E,$1B,$1C,$00,$1F,$1B,$1C,$20
+                        DB              $21,$1B,$1B,$00,$00,$1B,$1C,$22
+                        DB              $23,$1B,$24,$00,$00,$1B,$1C,$25
+                        DB              $26,$27,$00,$00,$28,$27,$29,$2A
+                        DB              $2B,$27,$29,$00,$1F,$27,$29,$2C
+                        DB              $2D,$27,$27,$00,$28,$27,$29,$2E
+                        DB              $2F,$27,$30,$00,$1F,$27,$29,$31
+                        DB              $32,$33,$00,$00,$34,$33,$35,$36
+                        DB              $37,$10,$38,$00,$34,$33,$35,$39
+                        DB              $3A,$33,$33,$00,$34,$33,$35,$3B
+                        DB              $3C,$33,$3D,$00,$28,$33,$28,$3E
+                        DB              $3F,$40,$41,$00,$3F,$40,$41,$42
+                        DB              $43,$40,$44,$00,$3F,$40,$41,$45
+                        DB              $46,$40,$40,$00,$3F,$40,$41,$47
+                        DB              $48,$40,$49,$00,$3F,$40,$41,$4A
+                        DB              $4B,$4C,$00,$00,$4B,$4C,$18,$4D
+                        DB              $4E,$4C,$4F,$50,$4B,$4C,$18,$51
+                        DB              $52,$4C,$4C,$00,$00,$4C,$18,$53
+                        DB              $54,$4C,$55,$56,$00,$4C,$18,$57
+                        DB              $58,$59,$00,$00,$58,$59,$0C,$5A
+                        DB              $5B,$59,$5C,$00,$58,$59,$0C,$5D
+                        DB              $5E,$59,$59,$00,$00,$59,$0C,$5F
+                        DB              $60,$59,$61,$00,$00,$59,$0C,$62
+
+ASM_OP_MODE:
+                        DB              $11,$07,$00,$00,$04,$04,$04,$04
+                        DB              $01,$03,$02,$00,$0A,$0A,$0A,$10
+                        DB              $0F,$09,$08,$00,$04,$05,$05,$04
+                        DB              $01,$0C,$02,$00,$0A,$0B,$0B,$10
+                        DB              $0A,$07,$00,$00,$04,$04,$04,$04
+                        DB              $01,$03,$02,$00,$0A,$0A,$0A,$10
+                        DB              $0F,$09,$08,$00,$05,$05,$05,$04
+                        DB              $01,$0C,$02,$00,$0B,$0B,$0B,$10
+                        DB              $01,$07,$00,$00,$00,$04,$04,$04
+                        DB              $01,$03,$02,$00,$0A,$0A,$0A,$10
+                        DB              $0F,$09,$08,$00,$00,$05,$05,$04
+                        DB              $01,$0C,$01,$00,$00,$0B,$0B,$10
+                        DB              $01,$07,$00,$00,$04,$04,$04,$04
+                        DB              $01,$03,$02,$00,$0D,$0A,$0A,$10
+                        DB              $0F,$09,$08,$00,$05,$05,$05,$04
+                        DB              $01,$0C,$01,$00,$0E,$0B,$0B,$10
+                        DB              $0F,$07,$00,$00,$04,$04,$04,$04
+                        DB              $01,$03,$01,$00,$0A,$0A,$0A,$10
+                        DB              $0F,$09,$08,$00,$05,$05,$06,$04
+                        DB              $01,$0C,$01,$00,$0A,$0B,$0B,$10
+                        DB              $03,$07,$03,$00,$04,$04,$04,$04
+                        DB              $01,$03,$01,$00,$0A,$0A,$0A,$10
+                        DB              $0F,$09,$08,$00,$05,$05,$06,$04
+                        DB              $01,$0C,$01,$00,$0B,$0B,$0C,$10
+                        DB              $03,$07,$00,$00,$04,$04,$04,$04
+                        DB              $01,$03,$01,$01,$0A,$0A,$0A,$10
+                        DB              $0F,$09,$08,$00,$00,$05,$05,$04
+                        DB              $01,$0C,$01,$01,$00,$0B,$0B,$10
+                        DB              $03,$07,$00,$00,$04,$04,$04,$04
+                        DB              $01,$03,$01,$00,$0A,$0A,$0A,$10
+                        DB              $0F,$09,$08,$00,$00,$05,$05,$04
+                        DB              $01,$0C,$01,$00,$00,$0B,$0B,$10
 
                         ENDMOD
 

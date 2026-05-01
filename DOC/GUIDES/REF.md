@@ -6,7 +6,7 @@ This reference is scoped to the current `ror` workspace.
 
 ```text
 SRC/STASH   stable or promoted code lane
-SRC/TEST    active build/test lane, including Himonia-F work
+SRC/TEST    active build/test lane, including HIMON work
 SRC/SESH    session/WIP lane
 SRC/BUILD   build output
 SRC/tools   host-side build/support scripts
@@ -23,10 +23,10 @@ SRC/SESH:  1
 ## Monitor Lineage
 
 ```text
-himon.asm        smaller monitor shell
+himon-parent.asm parent/reference monitor shell
 himonia.asm      compact supervisory monitor
 fnv1a-hbstr.asm  FNV-1a/HBSTR proving app
-himonia-f.asm    current FNV-driven path toward HIMON
+himon.asm        current FNV-driven HIMON app
 ```
 
 Primary path:
@@ -40,8 +40,8 @@ SRC/TEST/apps/himon/
 ```text
 R-YORS       whole project/system
 STR8         Straight 8 boot/recovery/update layer
-HIMON        final monitor name that Himonia-F will become
-Himonia-F    current FNV-driven implementation path toward HIMON
+HIMON        current FNV-driven monitor app
+Himonia-F    historical name for the codebase now promoted to HIMON
 HASHED_ASM   onboard assembler design using hash symbols and fixups
 ```
 
@@ -147,12 +147,16 @@ the assembler.
 ## Useful Make Targets
 
 ```text
-make -C SRC himon
+make -C SRC help
+make -C SRC help Q=flash
 make -C SRC himonia
-make -C SRC himonia-f
+make -C SRC himon
+make -C SRC basic-himon-rom-bin
+make -C SRC basic-forth-himon-rom-bin
+make -C SRC fnv1a-hbstr
 make -C SRC test-mon
 make -C SRC test-flash
-make -C SRC calc-flash
+make -C SRC rom-append-calc
 make -C SRC routine-hash-comments
 ```
 

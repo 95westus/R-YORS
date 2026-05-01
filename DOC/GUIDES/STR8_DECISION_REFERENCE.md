@@ -8,6 +8,20 @@ W65C02S-only.
 This document records the current design decisions for the first working STR8
 test. It is a development reference, not a full implementation spec.
 
+## Source Placement
+
+The first STR8 implementation is a testing/userland app, not a production ROM
+layout yet.
+
+Expected source placement:
+
+```text
+SRC/TEST/apps/str8/
+```
+
+STR8 can still model reset/recovery behavior, flash bank operations, and
+protected-sector policy while living in the test app lane.
+
 ## Hardware Facts
 
 Reset maps flash bank 3 into `$8000-$FFFF`.
@@ -27,7 +41,7 @@ The design assumes flash sectors have a finite erase endurance, roughly 100,000
 erase cycles per sector depending on the specific flash device.
 
 STR8 should not treat flash as endlessly rewritable storage. Future STR8 or
-HiMonia-F layers should provide either built-in wear leveling, a small flash
+HIMON layers should provide either built-in wear leveling, a small flash
 file-system style allocator, erase counters, or some combination of those tools.
 
 The purpose is to know when a sector or chip is approaching its practical write
@@ -66,7 +80,7 @@ STR8 prompt appears with timeout
 choose image 2
 copy bank 2 $8000-$EFFF -> bank 3 $8000-$EFFF
 verify with FNV
-jump to HiMonia-F
+jump to HIMON
 ROR runs
 ```
 
@@ -95,7 +109,7 @@ recovery image.
 Today:
 
 ```text
-STR8 timeout or G -> HiMonia-F
+STR8 timeout or G -> HIMON
 ```
 
 Future:
@@ -104,7 +118,7 @@ Future:
 STR8 -> trampoline
 STR8 -> burned command text buffer
 STR8 -> hashed launch/command record
-STR8/HiMonia-F -> L F style flash loader
+STR8/HIMON -> L F style flash loader
 ```
 
 ## First Prompt
@@ -114,7 +128,7 @@ STR8 - Subroutine To Reset
 B = backup image
 2 = recover from image 2
 1 = recover from image 1
-G = go HiMonia-F / timeout default
+G = go HIMON / timeout default
 ```
 
 `GO addr` and `L F` style loading are later features.
@@ -138,7 +152,7 @@ RAM_IRQ_VEC
 RAM_BRK_VEC
 ```
 
-STR8 installs safe defaults. HiMonia-F, BASIC, FORTH, or user code may patch
+STR8 installs safe defaults. HIMON, BASIC, FORTH, or user code may patch
 the RAM vectors later.
 
 ## Layering
@@ -187,4 +201,4 @@ WDCMONv2 transition documentation/tool
 
 Bank 3 boots. Banks 0-2 store.
 
-STR8 restores bank 3, then HiMonia-F takes over.
+STR8 restores bank 3, then HIMON takes over.

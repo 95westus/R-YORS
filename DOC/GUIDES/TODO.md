@@ -19,5 +19,5 @@
 - Re-run routine hash comments after any routine-header reshuffle.
 - Check unresolved `XREF` names before using source cross-reference counts as a
   release-quality metric.
-- Keep `SRC/TEST/apps/himon/himonia-f.asm` as the current reference point for
+- Keep `SRC/TEST/apps/himon/himon.asm` as the current reference point for
   hash-driven command dispatch.

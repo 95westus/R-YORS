@@ -47,7 +47,7 @@ HIMONIA_F_MAP.md
   uses HIMONIA_F_EDGE_DUMP.md as raw evidence
 
 HIMONIA_F_EDGE_DUMP.md
-  direct `JSR`/`JMP` edge dump for `SRC/TEST/apps/himon/himonia-f.asm`
+  direct `JSR`/`JMP` edge dump for `SRC/TEST/apps/himon/himon.asm`
   keeps raw edge sites separate from the compact SYMBOL_XREF call tree and
   readable HIMONIA_F_MAP.md diagrams
 ```
@@ -67,10 +67,10 @@ JSR/JMP call sites:    2259 total, 450 unique targets
 Primary Himonia/Himon files:
 
 ```text
-SRC/TEST/apps/himon/himon.asm
+SRC/TEST/apps/himon/himon-parent.asm
 SRC/TEST/apps/himon/himonia.asm
 SRC/TEST/apps/himon/fnv1a-hbstr.asm
-SRC/TEST/apps/himon/himonia-f.asm
+SRC/TEST/apps/himon/himon.asm
 ```
 
 Primary Himonia-F edge guide:
@@ -90,7 +90,7 @@ SRC/TEST/test-flash.asm
 Primary app using flash command record ideas:
 
 ```text
-SRC/TEST/apps/calc-flash.asm
+SRC/TEST/apps/rom-append-calc.asm
 ```
 
 ## Cross-Reference Rules

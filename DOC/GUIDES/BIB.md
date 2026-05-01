@@ -8,7 +8,7 @@ This guide set uses the current `ror` workspace as its source corpus.
 README.md
 SRC/Makefile
 SRC/TEST/apps/himon/*.asm
-SRC/TEST/apps/calc-flash.asm
+SRC/TEST/apps/rom-append-calc.asm
 SRC/TEST/test-flash.asm
 SRC/TEST/dev/*.asm
 SRC/TEST/ftdi/*.asm
@@ -48,7 +48,7 @@ DOC/GUIDES/FUTURE.md
 - Symbol relationships are derived from WDC-style `XDEF` and `XREF`
   declarations.
 - Symbol contract examples are seeded from `SRC/STASH/ftdi/ftdi-drv.asm`,
-  `SRC/TEST/dev/*.asm`, and `SRC/TEST/apps/himon/himonia-f.asm`.
+  `SRC/TEST/dev/*.asm`, and `SRC/TEST/apps/himon/himon.asm`.
 - Routine inventory is derived from `; ROUTINE:` comment blocks.
 - `CATALOG.md` is a programmer-facing selection view over that
   routine inventory.

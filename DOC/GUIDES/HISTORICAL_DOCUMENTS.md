@@ -1,8 +1,8 @@
 # Historical Documents
 
 This guide traces the practical path from the WDCMON/WDC board-monitor starting
-point, through BSO2, to the current Himonia-F path toward HIMON. It is a source
-map, not mythology: where a point is based on Git history or visible source, it
+point, through BSO2 and the Himonia experiments, to the current HIMON path. It
+is a source map, not mythology: where a point is based on visible source, it
 names that evidence; where it is an architectural reading, it says so.
 
 ## Short Version
@@ -15,8 +15,7 @@ R-YORS kept the useful BSO2 shape but rejected the monolith. The work moved into
 layered routines (`PIN`, `BIO`, `COR`, `SYS`), test lanes, exported symbols, and
 small monitors that could be recomposed.
 
-Himonia-F is the current compact recomposition and implementation path toward
-HIMON: a small supervisory monitor with
+HIMON is the current compact recomposition: a small supervisory monitor with
 FNV-1a command dispatch, NMI/BRK trap capture, S-record load/go, assembler and
 disassembler helpers, flash command discovery, and fixed ROM ABI jump points.
 
@@ -29,8 +28,8 @@ WDCMON/WDC monitor base
   -> BSO2 board monitor
   -> R-YORS routine layers
   -> Himon/Himonia compact monitors
-  -> Himonia-F hash-dispatched monitor
-  -> planned HIMON behind STR8
+  -> Himonia-F hash-dispatched monitor experiment
+  -> HIMON behind STR8
 ```
 
 WDCMON/WDC sample material is the ground floor: a board boots, talks serial,
@@ -46,17 +45,40 @@ small supervisor: reset signature, hardware-stack ownership, NMI/BRK context,
 load/go, register edit/resume, assembly, disassembly, and compact command
 handling.
 
-Himonia-F is the sharp turn: text command dispatch becomes FNV-1a record scan.
+Himonia-F was the sharp turn: text command dispatch becomes FNV-1a record scan.
 That changes the design from "commands are parsed by this monitor" to
 "commands/routines can be discovered in flash." The `#` command makes the
 catalog visible, `L F` starts making flash-resident command images practical,
 and fixed ABI slots such as `$F00D`, `$FEED`, and `$FADE` give external code a
 stable way back into the monitor.
 
+The naming trail reflects that exploration. `Himon` was the monitor root.
+`Himonia` marked a turn toward a more assisted, more intelligent monitor shape.
+`Himonia-F` marked the FNV and Forth-like direction: compact records,
+discoverable commands, and flash-resident extension. A short Himon4 variation
+also tested the shape of that idea. These names are not competing products or
+claims of superiority; they are mile markers from a period of active design.
+The current source promotes the useful Himonia-F line back into HIMON.
+
+## Working Context
+
+GitHub is used here first as backup and continuity: a place to keep the work
+from disappearing, to make it visible across machines, and to preserve enough
+history that the design path can be reconstructed later. The repository should
+not be read as proof of a polished git workflow. Renames, transitional files,
+and design mile markers may remain visible because they helped the system move
+forward.
+
+The project is also intentionally collaborative. The owner can read and reason
+about 6502/W65C02 code, hardware behavior, memory maps, and test results, but
+does not claim fluent hand-written W65C02 assembly as the main method of
+development. R-YORS grows from design intent, board testing, readable source,
+and assisted refactoring/code generation working together.
+
 The current direction is STR8 plus HIMON: STR8 keeps recovery/update safe;
-HIMON becomes the normal monitor/debug/catalog/assembler environment. The old
-thread is still visible, but the center of gravity moved from firmware monitor
-to recoverable, inspectable, self-extending runtime.
+HIMON is the normal monitor/debug/catalog/assembler environment. The old thread
+is still visible, but the center of gravity moved from firmware monitor to
+recoverable, inspectable, self-extending runtime.
 
 ## Evidence Map
 
@@ -77,7 +99,7 @@ to recoverable, inspectable, self-extending runtime.
   print restart hints, but should not implicitly resume old state.
 - `ror/README.md` explicitly names BSO2 as the predecessor project, says it
   proved the concept, and says R-YORS adopts layered reusable building blocks.
-- `ror/SRC/TEST/apps/himon/himon.asm` is the first smaller monitor shell shape:
+- `ror/SRC/TEST/apps/himon/himon-parent.asm` is the first smaller monitor shell shape:
   line input, HBSTR command table dispatch, reset signature, NMI hook, and
   command routines factored into callable pieces.
 - `ror/SRC/TEST/apps/himon/himonia.asm` is the compact supervisory monitor
@@ -85,7 +107,7 @@ to recoverable, inspectable, self-extending runtime.
   resume, loader, assembler, disassembler, and debug helpers.
 - `ror/SRC/TEST/apps/himon/fnv1a-hbstr.asm` is the visible FNV/HBSTR proving
   app: hash a high-bit-terminated string and print the 32-bit FNV-1a result.
-- `ror/SRC/TEST/apps/himon/himonia-f.asm` is Himonia-F: the compact monitor
+- `ror/SRC/TEST/apps/himon/himon.asm` is HIMON, descended from Himonia-F: the compact monitor
   whose command dispatch scans FNV records and executes matching entries. This
   is the current path toward the final HIMON monitor name.
 ## Timeline
@@ -167,16 +189,16 @@ That same commit is also important because the `A` assembler path gets factored
 into `himonia-asm.inc`. In other words, the assembler existed as a practical
 monitor feature before the later hashed-symbol assembler design.
 
-### 2026-04-27: HIMONIA-F Becomes Hash Driven
+### 2026-04-27: Himonia-F Becomes Hash Driven
 
-Commit `53bce09` adds `himonia-f.asm` with FNV command dispatch. This is the big
+Commit `53bce09` adds `himonia-f.asm`, now promoted to `himon.asm`, with FNV command dispatch. This is the big
 turn:
 
 ```text
 input token -> FNV-1a hash -> scan FNV records -> entry address -> call
 ```
 
-Current `himonia-f.asm` shows the model clearly:
+Current `himon.asm` shows the model clearly:
 
 - `CMD_HASH_TOKEN` hashes the current command token.
 - `CMD_DISPATCH_HASH` scans records.
@@ -191,9 +213,9 @@ record" is visibly close.
 
 ### 2026-04-28 to 2026-04-29: Flash, ABI, And Language Images
 
-The short-lived forth-like Himonia variants tested command metadata and contract
-ideas. The retired variants still matter as design evidence: command records can
-carry more than an entry address.
+The short-lived Forth-like Himonia and Himon4 variants tested command metadata
+and contract ideas. The retired variants still matter as design evidence:
+command records can carry more than an entry address.
 
 Commit `32c1143` proves flash command installation with `test-flash.s19` and a
 runnable `Z` command in flash. The current monitor also exposes fixed ABI jump
@@ -218,7 +240,7 @@ Himon used HBSTR table entries for command names and routine pointers.
 
 Himonia first used direct command comparisons for compactness.
 
-HIMONIA-F replaces textual dispatch with FNV records, which gives a stable path
+Himonia-F replaced textual dispatch with FNV records, which gives a stable path
 for flash-resident commands and future dynamic lookup.
 
 ### Vectors And Traps
@@ -229,7 +251,7 @@ BSO2's vector model used trampolines and hook bytes in zero page:
 hardware vector -> ROM stub -> RAM hook/trampoline -> handler
 ```
 
-HIMONIA-F keeps the key lesson but simplifies the implementation. On monitor
+HIMON keeps the key lesson but simplifies the implementation. On monitor
 entry it installs RAM vector cells through `SYS_VEC_SET_NMI_XY`,
 `SYS_VEC_SET_IRQ_BRK_XY`, and `SYS_VEC_SET_IRQ_NONBRK_XY`. NMI and BRK capture
 the interrupted register/stack context, then re-enter the monitor with a clean
@@ -243,7 +265,7 @@ This is the root of the STR8/recovery design: the monitor owns the real
 BSO2's recovery idea was warmstart hints after reset, with no implicit stale
 resume. That is still the right principle.
 
-HIMONIA-F currently chooses a stricter posture:
+HIMON currently chooses a stricter posture:
 
 - cold reset clears RAM
 - monitor entry resets `S` to `$FF`
@@ -253,17 +275,17 @@ HIMONIA-F currently chooses a stricter posture:
 STR8 should combine the two:
 
 - BSO2's advisory recovery hints
-- HIMONIA-F's hard monitor-owned stack and explicit trap context
+- HIMON's hard monitor-owned stack and explicit trap context
 - flash-aware guardrails for erase/write/update windows
 
 ### Loader And Userland
 
 BSO2 proved S-record loading and load/go as the normal path for board work.
 
-HIMONIA-F keeps S-record loading, adds flash mode, and begins treating flash
-command images as discoverable routines. `calc-flash.asm` is a clear example:
-an FNV record lives at the front of a flash-resident command image, followed by
-the callable command entry.
+HIMON keeps S-record loading, adds flash mode, and begins treating appended ROM
+command images as discoverable routines. `rom-append-calc.asm` is a clear
+example: an FNV record lives at the front of a flash-resident command image,
+followed by the callable command entry.
 
 ### Assembly
 
@@ -295,7 +317,7 @@ Core responsibilities:
 - expose small routines that userland can call for checkpoint, abort, and exit
 - keep the hardware stack under monitor ownership
 
-The old BSO2 lesson is that recovery hints are useful. The Himonia-F lesson is
+The old BSO2 lesson is that recovery hints are useful. The Himonia-F/HIMON lesson is
 that implicit continuation is dangerous unless the monitor can rebuild the exact
 machine context.
 
@@ -308,10 +330,10 @@ For future archaeology, read in this order:
 3. `bso2/DOCS/reference/warmstart-test-plan.md`
 4. `bso2/DOCS/reference/zero-page-usage.md`
 5. `ror/README.md`
-6. `ror/SRC/TEST/apps/himon/himon.asm`
+6. `ror/SRC/TEST/apps/himon/himon-parent.asm`
 7. `ror/SRC/TEST/apps/himon/himonia.asm`
 8. `ror/SRC/TEST/apps/himon/fnv1a-hbstr.asm`
-9. `ror/SRC/TEST/apps/himon/himonia-f.asm`
+9. `ror/SRC/TEST/apps/himon/himon.asm`
 10. `ror/DOC/GUIDES/STR8.md`
 11. `ror/DOC/GUIDES/HASHED_ASM.md`
 

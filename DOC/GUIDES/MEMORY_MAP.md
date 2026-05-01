@@ -3,7 +3,7 @@
 This is the easy-to-find memory map for the current Himonia-F ROM build and
 the RAM workspace it uses.
 
-The map below is definitive for the current generated `himonia-f-rom` image.
+The map below is definitive for the current generated `himon-rom` image.
 It is not the final STR8/HIMON split. STR8 may later own the highest recovery
 region and hand normal operation to HIMON.
 
@@ -196,12 +196,12 @@ contract says otherwise.
 
 ## RAM-Load Build Note
 
-The non-ROM `himonia-f` map is useful for development, but it is not the
+The non-ROM `himon` map is useful for development, but it is not the
 authoritative flash image map. The current ROM memory map should be taken from:
 
 ```text
-SRC/BUILD/map/himonia-f-rom.map
-SRC/TEST/apps/himon/himonia-f.asm
+SRC/BUILD/map/himon-rom.map
+SRC/TEST/apps/himon/himon.asm
 SRC/TEST/apps/himon/himon-shared-eq.inc
 ```
 

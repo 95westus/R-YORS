@@ -1,7 +1,7 @@
 param(
     [string]$MapPath = "BUILD/map/himon-rom.map",
     [string]$S19Path = "BUILD/s19/himon-rom.s19",
-    [string]$BinPath = "BUILD/bin/himon-rom-8000-ffff.bin",
+    [string]$BinPath = "BUILD/bin/himon-rom.bin",
     [string]$TmpVecPath = "BUILD/tmp/himon-rom-vectors.bin",
     [string]$NmiSymbol = "SYS_VEC_ENTRY_NMI",
     [string]$ResetSymbol = "START",

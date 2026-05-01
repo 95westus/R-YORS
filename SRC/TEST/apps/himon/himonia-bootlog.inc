@@ -4,7 +4,7 @@
 ; ----------------------------------------------------------------------------
 
                         IF              ROM_ABI
-HIMONIA_F_BOOTLOG       SECTION         OFFSET $F3D1
+HIMON_BOOTLOG           SECTION         OFFSET $F3D1
                         ELSE
                         CODE
                         ENDIF

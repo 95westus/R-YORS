@@ -72,16 +72,17 @@ make release
 ```
 
 `release` regenerates the source markdown summaries, builds the tracked-source
-release set, and stamps the Himonia-F ROM binary under `SRC/ROM_IMAGES/`. The
-tracked-source release set is Himonia-F, the FNV-1a/HBSTR tool, the flash test,
-and `calc-flash`.
+release set, and stamps the HIMON ROM binary under `SRC/ROM_IMAGES/`. The
+tracked-source release set is HIMON, the FNV-1a/HBSTR tool, the flash test,
+and `rom-append-calc`.
 
 ```text
 make release-local
 ```
 
-`release-local` adds the ignored/private local composites, such as BASIC/Forth
-ROM images, when the `LOCAL/` source homes are populated.
+`release-local` adds the ignored/private local composites, including
+`basic-himon-rom.bin` and `basic-forth-himon-rom.bin`, when the `LOCAL/`
+source homes are populated.
 
 ## Documentation & References
 
@@ -89,7 +90,7 @@ Start here:
 
 - [DOC/INDEX.md](DOC/INDEX.md) - documentation spine.
 - [DOC/GUIDES/STR8.md](DOC/GUIDES/STR8.md) - recovery/update monitor direction.
-- [DOC/GUIDES/MEMORY_MAP.md](DOC/GUIDES/MEMORY_MAP.md) - current Himonia-F ROM/RAM map.
+- [DOC/GUIDES/MEMORY_MAP.md](DOC/GUIDES/MEMORY_MAP.md) - current HIMON ROM/RAM map.
 - [DOC/GUIDES/CATALOG.md](DOC/GUIDES/CATALOG.md) - programmer-facing callable routine catalog.
 - [DOC/GUIDES/FUTURE.md](DOC/GUIDES/FUTURE.md) - longer-term direction, including RPG II.
 

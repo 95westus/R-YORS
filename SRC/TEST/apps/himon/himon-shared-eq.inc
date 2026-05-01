@@ -1,5 +1,5 @@
 ; ----------------------------------------------------------------------------
-; Shared fixed-address workspace/constants for himon.asm and mon.asm
+; Shared fixed-address workspace/constants for Himonia monitor builds.
 ; Grouped by usage and packed to coalesce low free space.
 ; ----------------------------------------------------------------------------
 

@@ -174,7 +174,7 @@ hash:        $0D94A63F
 kind:        C/R
 class:       MONITOR_ONLY
 tokens:      HIMON, RESET, BOOT, STACK_OWNER, VECTOR_SETUP
-source:      SRC/TEST/apps/himon/himonia-f.asm:75
+source:      SRC/TEST/apps/himon/himon.asm:75
 abi_in:      CPU reset or monitor jump context
 abi_out:     enters MAIN_LOOP
 calls:       SYS_INIT, SYS_FLUSH_RX, SYS_VEC_SET_*, MON_BOOTLOG_RESET,
@@ -188,7 +188,7 @@ hash:        $E1A112AE
 kind:        R
 class:       MONITOR_ONLY
 tokens:      HIMON, CMD, HASH, TOKEN, FNV
-source:      SRC/TEST/apps/himon/himonia-f.asm:1854
+source:      SRC/TEST/apps/himon/himon.asm:1854
 abi_in:      command pointer state
 abi_out:     command hash state
 calls:       FNV1A_INIT, CMD_PEEK, FNV1A_UPDATE_A, CMD_ADV_PTR
@@ -201,7 +201,7 @@ hash:        $C6233F7A
 kind:        T/R
 class:       USER_CALLABLE, MONITOR_ABI
 tokens:      HIMON, ABI, WRITE, BYTE, FTDI, TRAMPOLINE
-source:      SRC/TEST/apps/himon/himonia-f.asm:2407
+source:      SRC/TEST/apps/himon/himon.asm:2407
 abi_in:      A = byte to write
 abi_out:     follows BIO_FTDI_WRITE_BYTE_BLOCK
 calls:       BIO_FTDI_WRITE_BYTE_BLOCK
@@ -210,7 +210,7 @@ notes:       ABI-facing routine should remain stable even if backend moves.
 
 ## Current Himonia-F Call Tree
 
-This is a hand-sized tree from `SRC/TEST/apps/himon/himonia-f.asm`. It is not a
+This is a hand-sized tree from `SRC/TEST/apps/himon/himon.asm`. It is not a
 complete edge dump; indirect jumps, tables, and some repeated print helper calls
 are intentionally collapsed.
 
