@@ -62,3 +62,10 @@ DOC/GUIDES/FUTURE.md
   implemented.
 - External links may appear as background precedent notes, but the guide spine
   is built from the local `ror` workspace.
+
+## External References
+
+- RFC 9923, "Fowler/Noll/Vo (FNV) Non-Cryptographic Hash Algorithm":
+  <https://www.rfc-editor.org/rfc/rfc9923.html>. R-YORS uses 32-bit FNV-1a
+  from this family for routine headers, runtime command lookup, catalog records,
+  symbols, and fixups.

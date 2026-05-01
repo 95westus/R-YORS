@@ -3,6 +3,10 @@
 R-YORS uses FNV-1a as the one hash algorithm for runtime/catalog/symbol lookup
 and routine block identity.
 
+FNV means Fowler/Noll/Vo. The external algorithm reference for the constants,
+update order, and little-endian persistent storage convention is RFC 9923:
+<https://www.rfc-editor.org/rfc/rfc9923.html>.
+
 ```text
 [HASH:XXXXXXXX]  32-bit FNV-1a routine/catalog/symbol hash
 ```

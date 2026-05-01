@@ -61,6 +61,10 @@ record-format generation instead:
 'V'  format v3
 ```
 
+`FNV` names the Fowler/Noll/Vo hash family. RFC 9923 is the outside reference
+for the FNV-1a algorithm; R-YORS `F/N/V` signature bytes are catalog record
+format markers layered on top of that one hash, not alternate algorithms.
+
 Those letters are a compact version ladder, not alternate hash algorithms. Every
 one still means the `hash0..3` field is FNV-1a.
 
