@@ -57,6 +57,11 @@ The current monitor already proves this with FNV-1a command dispatch: a typed
 command token is hashed, the catalog is scanned for a matching record, and the
 matching executable entry is called. The `#` command exposes that lookup path.
 
+The current scan is intentionally simple. Scanning a ROM/flash catalog and
+computing a multiplicative hash both cost cycles, but the W65C02SXB is fast
+enough for this proving stage, and the catalog format can grow block headers or
+indexes later without changing the basic command/hash relationship.
+
 Hashes keep records compact enough for ROM and flash, but they are not meant to
 be the whole identity forever. As the catalog grows, stored command/routine text
 can prove collisions, support listings, and let onboard tools link against
@@ -81,7 +86,10 @@ My predecessor project, BSO2, proved the concept but suffered from inflexible co
 - **COR routines** – Core reusable services and board-facing helpers
 - **SYS routines** – System-level services such as I/O, vectors, debug entry, and monitor-facing adapters
 
-The current supervisory monitor is **HIMONIA-F**, a compact FNV-1a-dispatched monitor built to fit under 8K. It boots from ROM, initializes FTDI I/O, clears RAM on cold reset, patches RAM dispatch cells for reset/NMI/IRQ/BRK handling, and prints a terse reset report like:
+The current HIMON proof image is a compact FNV-1a-dispatched monitor built to
+fit under 8K. It boots from ROM, initializes FTDI I/O, clears RAM on cold
+reset, patches RAM dispatch cells for reset/NMI/IRQ/BRK handling, and prints a
+terse reset report like:
 
 ```text
 BOOT COLD
@@ -99,7 +107,13 @@ HIMONIA v1
 Warm reset reports `BOOT WARM` instead of `BOOT COLD` and skips the
 `RAM ZERO OK` line.
 
-HIMONIA-F currently includes hashed command dispatch, S-record loading, GO/LOAD+GO execution, register display/editing, memory display/modify, disassembly/assembly helpers, breakpoints, single-step support, NMI/BRK trap capture, decoded CPU flags, and return-status reporting for executed user code. BRK handling is now native to the monitor rather than delegated to BSO2. The monitor also exposes discoverable FNV signatures for selected commands and routines, making ROM services easier to identify and call by hash.
+The current monitor includes hashed command dispatch, S-record loading,
+GO/LOAD+GO execution, register display/editing, memory display/modify,
+disassembly/assembly helpers, breakpoints, single-step support, NMI/BRK trap
+capture, decoded CPU flags, and return-status reporting for executed user code.
+BRK handling is now native to the monitor rather than delegated to BSO2. The
+monitor also exposes discoverable FNV signatures for selected commands and
+routines, making ROM services easier to identify and call by hash.
 
 Small standalone programs are used to test the runtime surface. One example is a 16x16 Conway Life app loaded at `$2000`, with random/manual/auto/next/quit controls, age-aware cells, NMI count testing, and cleanup that restores the monitor's debug vector before returning.
 
