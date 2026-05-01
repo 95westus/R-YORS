@@ -74,7 +74,15 @@
 - Keep bank 3 cleaner for boot/current-monitor/catalog/trampoline material.
 - Prefer banks 0-2 for growth packs, expanded command text, onboard exports,
   and stale records.
-- Let STR8 own scan, verify, write, commit, and later condense policy.
+- Let R-YORS define scan, verify, write, commit, and later condense policy,
+  with STR8/HIMON sharing code where that makes sense.
+- Treat future flash GC as append/invalidate/reclaim instead of in-place edits:
+  mark records or sections stale, prepare a compacted sector image in RAM,
+  relink copied records when needed, erase the old 4K sector, then write and
+  verify the prepared image.
+- Explore LOC, "link on copy", for flash compaction: copied catalog records or
+  modules are relinked to their new addresses before the rewritten sector
+  becomes live.
 - Store compressed command text only when it is smaller than raw text after
   flags/headers.
 

@@ -27,15 +27,42 @@ building, flashing, modifying, or running it.
 
 ## What
 
-R-YORS is an in-progress W65C02 runtime project built from the ground up: low-level board bring-up, reusable runtime routines, a compact monitor, flash-safe recovery/update paths, loaders, debug tools, and small applications that prove the pieces work on real hardware.
+R-YORS is an in-progress W65C02 runtime project built from the ground up:
+low-level board bring-up, reusable runtime routines, command/catalog lookup,
+flash-safe update paths, loaders, debug tools, and small applications that
+prove the pieces work on real hardware.
 
-The near-term project is the runtime itself: **STR8** for recovery/update safety and **HIMON** for the monitor, command dispatch, catalog lookup, assembler, and debug surface.
+The near-term project is the runtime family itself. **STR8** and **HIMON** are
+sister components inside R-YORS: they may share code, and they may or may not
+be used together in a given build. Recovery/update safety, command dispatch,
+catalog lookup, assembler/debug services, and flash growth are R-YORS-level
+concerns first.
 
 The long-term north star is still true RPG II, but not as a bolted-on compiler. The "OS" is being shaped around the needs of that future: stable callable routines, discoverable catalogs, flash-resident programs, fixed entry points, simple text encodings, and an onboard assembler/linker path that can grow without losing the machine.
 
 ## How
 
 R-YORS enables this vision through a modular library of routines that can be easily linked into projects. This approach allows developers to quickly assemble custom runtime systems by selecting and combining pre-built, tested components—eliminating the need to rewrite low-level code and accelerating experimentation on the 6502 platform.
+
+## Command And Hash Catalog
+
+One of R-YORS' core ideas is that commands, routines, symbols, and future
+flash-resident modules can be found through the same small catalog pattern:
+
+```text
+text token -> canonical text -> 32-bit FNV-1a hash -> catalog record -> entry/value
+```
+
+The current monitor already proves this with FNV-1a command dispatch: a typed
+command token is hashed, the catalog is scanned for a matching record, and the
+matching executable entry is called. The `#` command exposes that lookup path.
+
+Hashes keep records compact enough for ROM and flash, but they are not meant to
+be the whole identity forever. As the catalog grows, stored command/routine text
+can prove collisions, support listings, and let onboard tools link against
+names without carrying a large conventional symbol table. See
+[DOC/GUIDES/HASH_MAP.md](DOC/GUIDES/HASH_MAP.md) and
+[DOC/GUIDES/HASH.md](DOC/GUIDES/HASH.md) for the deeper record model.
 
 ## Example Routines
 
