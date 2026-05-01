@@ -37,7 +37,7 @@
                         XREF            SYS_WRITE_CRLF
                         XREF            SYS_WRITE_HBSTRING
                         XREF            SYS_WRITE_HEX_BYTE
-                        XREF            SYS_READ_HBSTRING_CTRL_C_ECHO
+                        XREF            SYS_RD_HBSTR_CCE
 
 FNV_PTR_LO              EQU             $E0
 FNV_PTR_HI              EQU             $E1
@@ -75,7 +75,7 @@ MAIN_LOOP:
 
                         LDX             #<FNV_INPUT_BUF
                         LDY             #>FNV_INPUT_BUF
-                        JSR             SYS_READ_HBSTRING_CTRL_C_ECHO
+                        JSR             SYS_RD_HBSTR_CCE
                         BCS             MAIN_HAVE_LINE
                         CMP             #$03
                         BEQ             MAIN_EXIT
@@ -99,7 +99,7 @@ MAIN_EXIT:
                         JMP             MAIN_LOOP
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: APP_PRINT_HASH
+; ROUTINE: APP_PRINT_HASH  [HASH:91D8206D]
 ; OUT: emits FNV_HASH as high-to-low 8 hex digits
 ; ----------------------------------------------------------------------------
 APP_PRINT_HASH:
@@ -117,7 +117,7 @@ APP_PRINT_HASH:
                         JMP             SYS_WRITE_CRLF
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: FNV1A_TRIM_TRAILING_CRLF
+; ROUTINE: FNV1A_TRIM_TRAILING_CRLF  [HASH:1F9D1E8D]
 ; IN : FNV_INPUT_LEN = count returned by read routine
 ; OUT: FNV_INPUT_LEN trimmed of trailing CR/LF bytes (defensive)
 ; ----------------------------------------------------------------------------
@@ -140,7 +140,7 @@ FNV1A_TRIM_DONE:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: FNV1A_BUF_XY_LEN
+; ROUTINE: FNV1A_BUF_XY_LEN  [HASH:67A1CA5D]
 ; IN : X/Y = pointer to input buffer, FNV_INPUT_LEN = byte count
 ; OUT: FNV_HASH0..FNV_HASH3 = FNV-1a hash, little-endian
 ; NOTE: Input bytes are masked to 7-bit ASCII before hash update.
@@ -166,7 +166,7 @@ FNV1A_BUF_DONE:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: FNV1A_HBSTR_XY
+; ROUTINE: FNV1A_HBSTR_XY  [HASH:4E69C4B9]
 ; IN : X/Y = pointer to HIBIT-terminated string
 ; OUT: FNV_HASH0..FNV_HASH3 = FNV-1a hash, little-endian
 ; NOTE: $80 at offset 0 is treated as an empty HBSTR sentinel.
@@ -194,7 +194,7 @@ FNV1A_HBSTR_DONE:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: FNV1A_INIT
+; ROUTINE: FNV1A_INIT  [HASH:4B9AEE1E]
 ; OUT: FNV_HASH = 32-bit FNV offset basis $811C9DC5, little-endian
 ; ----------------------------------------------------------------------------
 FNV1A_INIT:
@@ -210,7 +210,7 @@ FNV1A_OFFSET_BASIS:
                         DB              $C5,$9D,$1C,$81
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: FNV1A_UPDATE_A
+; ROUTINE: FNV1A_UPDATE_A  [HASH:6E684C95]
 ; IN : A = next input byte
 ; OUT: FNV_HASH *= $01000193 after low byte xor
 ; ----------------------------------------------------------------------------
@@ -220,7 +220,7 @@ FNV1A_UPDATE_A:
                         JMP             FNV1A_MUL_PRIME
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: FNV1A_MUL_PRIME
+; ROUTINE: FNV1A_MUL_PRIME  [HASH:40C68FD2]
 ; OUT: FNV_HASH = FNV_HASH * $01000193 mod 2^32
 ;
 ; $01000193 = 1 + 2 + 16 + 128 + 256 + 16777216.
@@ -239,7 +239,7 @@ FNV1A_MUL_PRIME:
                         JMP             MATH_ADD_TERM1_TO_HASH3
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MATH_COPY_HASH_TO_TERM
+; ROUTINE: MATH_COPY_HASH_TO_TERM  [HASH:1E8D3985]
 ; OUT: FNV_TERM = FNV_HASH
 ; ----------------------------------------------------------------------------
 MATH_COPY_HASH_TO_TERM:
@@ -252,7 +252,7 @@ MATH_COPY_HASH_LOOP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MATH_SHLADD_TERM_N
+; ROUTINE: MATH_SHLADD_TERM_N  [HASH:4A7E949E]
 ; IN : X = number of left shifts, must be nonzero
 ; OUT: FNV_TERM <<= X; FNV_HASH += FNV_TERM
 ; ----------------------------------------------------------------------------
@@ -261,7 +261,7 @@ MATH_SHLADD_TERM_N:
                         JMP             MATH_ADD_TERM_TO_HASH
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MATH_SHL_TERM_N
+; ROUTINE: MATH_SHL_TERM_N  [HASH:8AAA583D]
 ; IN : X = number of left shifts, must be nonzero
 ; OUT: FNV_TERM <<= X
 ; ----------------------------------------------------------------------------
@@ -275,7 +275,7 @@ MATH_SHL_TERM_N:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MATH_ADD_TERM_TO_HASH
+; ROUTINE: MATH_ADD_TERM_TO_HASH  [HASH:F1301573]
 ; OUT: FNV_HASH += FNV_TERM mod 2^32
 ; ----------------------------------------------------------------------------
 MATH_ADD_TERM_TO_HASH:
@@ -295,7 +295,7 @@ MATH_ADD_TERM_TO_HASH:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MATH_ADD_TERM1_TO_HASH3
+; ROUTINE: MATH_ADD_TERM1_TO_HASH3  [HASH:B7A9142D]
 ; OUT: FNV_HASH += original_hash << 24 mod 2^32
 ; NOTE: After the previous shift-add, FNV_TERM1 contains original_hash byte 0.
 ; ----------------------------------------------------------------------------

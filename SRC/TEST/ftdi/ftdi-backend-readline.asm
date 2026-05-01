@@ -63,7 +63,7 @@
 ; When C=0 and A=$08/$7F: BS/DEL encountered (buffer still NUL-terminated)
 ;      When C=0 and A=$FE: buffer full before EOL (buffer NUL-terminated)
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_ECHO  [HASH:AA02]
+; ROUTINE: COR_FTDI_READ_CSTRING_ECHO  [HASH:AFA5DCB7]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, COOKED, ECHO, CRLF, USES-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: FTDI_GCS_PTR_LO($F8), FTDI_GCS_PTR_HI($F9), FTDI_GCS_MAX($FA),
@@ -87,7 +87,7 @@ COR_FTDI_READ_CSTRING_ECHO:
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_SILENT  [HASH:4CF2]
+; ROUTINE: COR_FTDI_READ_CSTRING_SILENT  [HASH:DC1D7147]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -108,7 +108,7 @@ COR_FTDI_READ_CSTRING_SILENT:
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER  [HASH:2181]
+; ROUTINE: COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER  [HASH:837FAA72]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -128,7 +128,7 @@ COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER:
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER  [HASH:F3E0]
+; ROUTINE: COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER  [HASH:2F8CC313]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -148,7 +148,7 @@ COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER:
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER  [HASH:6171]
+; ROUTINE: COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER  [HASH:3133183A]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -166,7 +166,7 @@ COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER:
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER  [HASH:33D0]
+; ROUTINE: COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER  [HASH:8AE0FF1B]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -184,7 +184,7 @@ COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER:
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_CORE  [HASH:EF7C]
+; ROUTINE: COR_FTDI_READ_CSTRING_CORE  [HASH:B10FE9C9]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, VIA, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -225,7 +225,7 @@ FTDI_GCS_MODE_UPPER        EQU             $02
 FTDI_GCS_MODE_LOWER        EQU             $04
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_MODE  [HASH:7980]
+; ROUTINE: COR_FTDI_READ_CSTRING_MODE  [HASH:E73324BD]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, UPPERCASE, LOWERCASE, CRLF,
 ;   CARRY-STATUS, USES-ZP, NO-RAM, CALLS_COR, STACK

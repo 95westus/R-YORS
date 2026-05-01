@@ -234,7 +234,7 @@ CMD_HAVE_LINE:
                         BRA             CMD_MAIN_LOOP
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_NMI_TRAP  [HASH:A848]
+; ROUTINE: MON_NMI_TRAP  [HASH:7D351CE4]
 ; PURPOSE: Capture interrupted CPU state and re-enter monitor shell.
 ; NOTES:
 ; - Captures A/X/Y and hardware-pushed P/PC from NMI stack frame.
@@ -261,7 +261,7 @@ MON_NMI_TRAP:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: CMD_PARSE_AND_EXECUTE_ROUTER  [HASH:FE1F]
+; ROUTINE: CMD_PARSE_AND_EXECUTE_ROUTER  [HASH:CB4E849F]
 ; TIER: APP-L5
 ; TAGS: CMD, APP-L5, NOSTACK
 ; PURPOSE: Compatibility entrypoint retained for call-site stability.
@@ -274,7 +274,7 @@ CMD_PARSE_AND_EXECUTE_ROUTER:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: CMD_PARSE_AND_EXECUTE  [HASH:7A29]
+; ROUTINE: CMD_PARSE_AND_EXECUTE  [HASH:867B3335]
 ; TIER: APP-L5
 ; TAGS: CMD, APP-L5, VIA, NUL-TERM, PARSE, CARRY-STATUS, NOSTACK
 ; PURPOSE: Parse one command line and dispatch via HBSTR `CMD_TBL`.
@@ -534,7 +534,7 @@ CMDP_HXN_BAD:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: CMD_INIT_HOOKS  [HASH:C799]
+; ROUTINE: CMD_INIT_HOOKS  [HASH:D3FAAB4D]
 ; PURPOSE: Initialize command hook vectors to built-in handlers.
 ; ----------------------------------------------------------------------------
 CMD_INIT_HOOKS:

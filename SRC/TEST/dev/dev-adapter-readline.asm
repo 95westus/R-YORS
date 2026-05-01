@@ -53,7 +53,7 @@ SYS_BACKEND_SELECTED       EQU             SYS_BACKEND_FTDI
                         XREF            COR_FTDI_READ_CSTRING_ECHO
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING  [HASH:0D00]
+; ROUTINE: SYS_READ_CSTRING  [HASH:EFF54394]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -74,7 +74,7 @@ SYS_READ_CSTRING:
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_MODE  [HASH:FD82]
+; ROUTINE: SYS_READ_CSTRING_MODE  [HASH:584E5FAE]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, ECHO, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -96,7 +96,7 @@ SYS_READ_CSTRING_MODE:
                         XREF            COR_FTDI_READ_CSTRING_EDIT_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_EDIT_MODE  [HASH:8239]
+; ROUTINE: SYS_READ_CSTRING_EDIT_MODE  [HASH:A49D7915]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -115,7 +115,7 @@ SYS_READ_CSTRING_EDIT_MODE:
         XREF COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:3DFE]
+; ROUTINE: SYS_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:B3A76D2C]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -135,7 +135,7 @@ SYS_READ_CSTRING_EDIT_ECHO_UPPER:
                         XREF            COR_FTDI_READ_CSTRING_SILENT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_SILENT  [HASH:D874]
+; ROUTINE: SYS_READ_CSTRING_SILENT  [HASH:98B68980]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, ECHO, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -154,7 +154,7 @@ SYS_READ_CSTRING_SILENT:
                         XREF            COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_ECHO_UPPER  [HASH:5E87]
+; ROUTINE: SYS_READ_CSTRING_ECHO_UPPER  [HASH:E2DD10AF]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -173,7 +173,7 @@ SYS_READ_CSTRING_ECHO_UPPER:
                         XREF            COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_ECHO_LOWER  [HASH:30E6]
+; ROUTINE: SYS_READ_CSTRING_ECHO_LOWER  [HASH:A05843C2]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -192,7 +192,7 @@ SYS_READ_CSTRING_ECHO_LOWER:
                         XREF            COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_SILENT_UPPER  [HASH:74F7]
+; ROUTINE: SYS_READ_CSTRING_SILENT_UPPER  [HASH:C9364C7F]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, SILENT, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -211,7 +211,7 @@ SYS_READ_CSTRING_SILENT_UPPER:
                         XREF            COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_SILENT_LOWER  [HASH:4756]
+; ROUTINE: SYS_READ_CSTRING_SILENT_LOWER  [HASH:43D98ED2]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, SILENT, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -224,10 +224,10 @@ SYS_READ_CSTRING_SILENT_LOWER:
                         RTS
                         ENDMOD
 
-                        MODULE          SYS_READ_STRING_CTRL_C_ECHO
+                        MODULE          SYS_RD_STR_CCE
 
-                        XDEF            SYS_READ_CSTRING_CTRL_C_ECHO
-                        XDEF            SYS_READ_HBSTRING_CTRL_C_ECHO
+                        XDEF            SYS_RD_CSTR_CCE
+                        XDEF            SYS_RD_HBSTR_CCE
                         XREF            SYS_READ_CHAR
                         XREF            SYS_WRITE_CHAR
                         XREF            SYS_WRITE_CRLF
@@ -245,7 +245,7 @@ SYS_RCCE_FULL_CODE        EQU             $FE
 SYS_RCCE_CTRL_C           EQU             $03
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CSTRING_CTRL_C_ECHO / SYS_READ_HBSTRING_CTRL_C_ECHO
+; ROUTINE: SYS_RD_CSTR_CCE / SYS_RD_HBSTR_CCE  [HASH:C16F1AEC]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, READ, ECHO, CTRL-C, CSTRING, HIBIT-TERM, CARRY-STATUS,
 ;   USES-ZP, NO-RAM, STACK
@@ -266,11 +266,11 @@ SYS_RCCE_CTRL_C           EQU             $03
 ; - HBSTR output sets bit 7 on the final character. Empty HBSTR input stores
 ;   $80 as an application-readable empty sentinel.
 ; ----------------------------------------------------------------------------
-SYS_READ_CSTRING_CTRL_C_ECHO:
+SYS_RD_CSTR_CCE:
                         LDA             #SYS_RCCE_MODE_CSTR
                         BRA             SYS_READ_STRING_CTRL_C_ECHO
 
-SYS_READ_HBSTRING_CTRL_C_ECHO:
+SYS_RD_HBSTR_CCE:
                         LDA             #SYS_RCCE_MODE_HBSTR
 
 SYS_READ_STRING_CTRL_C_ECHO:

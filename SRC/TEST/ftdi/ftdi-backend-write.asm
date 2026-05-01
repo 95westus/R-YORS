@@ -46,7 +46,7 @@ FTDI_WRTL_PTR_HI           EQU             $E9
 FTDI_WRTL_LEN              EQU             $EA
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_WRITE_LINE_RTL_XY  [HASH:61A3]
+; ROUTINE: COR_FTDI_CVN_WRITE_LINE_RTL_XY  [HASH:8D4A111F]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, NUL-TERM, CRLF, CARRY-STATUS, USES-ZP, NO-RAM,
 ;   CALLS_COR, STACK
@@ -118,7 +118,7 @@ FTDI_PCS_PTR_HI            EQU             $E9
 ;      A = chars written (0..255)
 ; note: Caller-owned max-length policy is intentionally handled above backend.
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_CSTRING  [HASH:76FA]
+; ROUTINE: COR_FTDI_WRITE_CSTRING  [HASH:692F7342]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, WRITE, NUL-TERM, CARRY-STATUS, USES-ZP,
 ;   NO-RAM, CALLS_COR, STACK
@@ -166,7 +166,7 @@ FTDI_PHB_PTR_HI            EQU             $E9
 FTDI_PHB_CUR               EQU             $E7
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_WRITE_HBSTRING  [HASH:B565]
+; ROUTINE: COR_FTDI_WRITE_HBSTRING  [HASH:D06D9799]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, WRITE, HIBIT-TERM, CARRY-STATUS, USES-ZP,
 ;   NO-RAM, CALLS_COR, STACK

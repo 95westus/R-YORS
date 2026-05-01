@@ -1,27 +1,43 @@
 ; ----------------------------------------------------------------------------
-; Cold-reset boot telemetry.
+; Reset boot telemetry.
 ; Keep this include removable: one caller, one flag, local strings only.
 ; ----------------------------------------------------------------------------
 
+                        IF              ROM_ABI
+HIMONIA_F_BOOTLOG       SECTION         OFFSET $F3D1
+                        ELSE
                         CODE
-MON_BOOTLOG_COLD:
-                        LDA             BOOT_COLD_FLAG
-                        BNE             MON_BOOTLOG_HAVE_COLD
+                        ENDIF
+MON_BOOTLOG_RESET:
+                        LDA             BOOT_REASON
+                        BNE             MON_BOOTLOG_HAVE_REASON
                         RTS
-MON_BOOTLOG_HAVE_COLD:
-                        STZ             BOOT_COLD_FLAG
+MON_BOOTLOG_HAVE_REASON:
+                        STZ             BOOT_REASON
 
-                        LDX             #<MSG_BOOTLOG_BOOT
-                        LDY             #>MSG_BOOTLOG_BOOT
-                        JSR             MON_BOOTLOG_LINE_XY
-                        LDX             #<MSG_BOOTLOG_WAIT
-                        LDY             #>MSG_BOOTLOG_WAIT
+                        CMP             #BOOT_REASON_WARM
+                        BEQ             MON_BOOTLOG_WARM
+                        LDX             #<MSG_BOOTLOG_COLD
+                        LDY             #>MSG_BOOTLOG_COLD
                         JSR             MON_BOOTLOG_LINE_XY
                         LDX             #<MSG_BOOTLOG_RAM
                         LDY             #>MSG_BOOTLOG_RAM
                         JSR             MON_BOOTLOG_LINE_XY
+                        BRA             MON_BOOTLOG_AFTER_REASON
+MON_BOOTLOG_WARM:
+                        LDX             #<MSG_BOOTLOG_WARM
+                        LDY             #>MSG_BOOTLOG_WARM
+                        JSR             MON_BOOTLOG_LINE_XY
+MON_BOOTLOG_AFTER_REASON:
                         LDX             #<MSG_BOOTLOG_FTDI
                         LDY             #>MSG_BOOTLOG_FTDI
+                        JSR             MON_BOOTLOG_LINE_XY
+                        LDX             #<MSG_BOOTLOG_WAIT
+                        LDY             #>MSG_BOOTLOG_WAIT
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             MON_BOOTLOG_WAIT_DOTS
+                        LDX             #<MSG_BOOTLOG_OK
+                        LDY             #>MSG_BOOTLOG_OK
                         JSR             MON_BOOTLOG_LINE_XY
 
                         LDX             #<MSG_BOOTLOG_RST
@@ -67,12 +83,35 @@ MON_BOOTLOG_LINE_XY:
                         JSR             SYS_WRITE_CRLF
                         RTS
 
+MON_BOOTLOG_WAIT_DOTS:
+                        LDX             #$0D
+?DOT:
+                        PHX
+                        LDA             #$6F
+                        LDX             #$7B
+                        LDY             #$39
+                        JSR             UTL_DELAY_AXY_8MHZ
+                        LDA             #'.'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        PLX
+                        DEX
+                        BNE             ?DOT
+                        RTS
+
+                        IF              ROM_ABI
+                        ELSE
                         DATA
-MSG_BOOTLOG_BOOT:       DB              "BOOT COL",('D'+$80)
-MSG_BOOTLOG_WAIT:       DB              "WAIT O",('K'+$80)
+                        ENDIF
+MSG_BOOTLOG_COLD:       DB              "BOOT COL",('D'+$80)
+MSG_BOOTLOG_WARM:       DB              "BOOT WAR",('M'+$80)
+MSG_BOOTLOG_WAIT:       DB              "WAIT",(' '+$80)
+MSG_BOOTLOG_OK:         DB              " O",('K'+$80)
 MSG_BOOTLOG_RAM:        DB              "RAM ZERO O",('K'+$80)
 MSG_BOOTLOG_FTDI:       DB              "FTDI INI",('T'+$80)
 MSG_BOOTLOG_RST:        DB              "RST 7EF8",('='+$80)
 MSG_BOOTLOG_NMI:        DB              "NMI 7EFA",('='+$80)
 MSG_BOOTLOG_IRQ:        DB              "IRQ 7EFE",('='+$80)
 MSG_BOOTLOG_BRK:        DB              "BRK 7EFC",('='+$80)
+                        IF              ROM_ABI
+                        ENDS
+                        ENDIF

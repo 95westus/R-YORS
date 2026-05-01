@@ -11,10 +11,10 @@ CHAR_CLASS_TMP_A           EQU             $E6
 ; ----------------------------------------------------------------------------
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IN_RANGE  [HASH:A491]
+; ROUTINE: UTL_CHAR_IN_RANGE  [HASH:AE682F27]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
-; MEM : ZP: CHAR_CLASS_TMP_A($F6); FIXED_RAM: none.
+; MEM : ZP: CHAR_CLASS_TMP_A($E6); FIXED_RAM: none.
 ; PURPOSE: Check whether character A is in half-open interval [X, Y).
 ; IN : A = character, X = low bound (inclusive), Y = high bound (exclusive)
 ; OUT: C = 1 when X <= A < Y, C = 0 otherwise
@@ -44,10 +44,10 @@ UTL_CHAR_IN_RANGE:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_PRINTABLE  [HASH:40A0]
+; ROUTINE: UTL_CHAR_IS_PRINTABLE  [HASH:0566EC22]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
-; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
+; MEM : ZP: CHAR_CLASS_TMP_A($E6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
 ; PURPOSE: Check for printable ASCII character (space through '~').
 ; IN : A = character
 ; OUT: C = 1 if printable, C = 0 otherwise
@@ -66,10 +66,10 @@ UTL_CHAR_IS_PRINTABLE:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_CONTROL  [HASH:72B6]
+; ROUTINE: UTL_CHAR_IS_CONTROL  [HASH:7B454918]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
-; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
+; MEM : ZP: CHAR_CLASS_TMP_A($E6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
 ; PURPOSE: Check for ASCII control character.
 ; IN : A = character
 ; OUT: C = 1 if control (0x00..0x1F or 0x7F), C = 0 otherwise
@@ -95,10 +95,10 @@ UTL_CHAR_IS_CONTROL:
                         XREF            UTL_CHAR_IS_ALPHA
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_PUNCT  [HASH:B4D3]
+; ROUTINE: UTL_CHAR_IS_PUNCT  [HASH:EA93C43D]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
-; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE/CHAR_* helpers;
+; MEM : ZP: CHAR_CLASS_TMP_A($E6) via UTL_CHAR_IN_RANGE/CHAR_* helpers;
 ;   FIXED_RAM: none.
 ; PURPOSE: Check for printable punctuation (not space, not alnum).
 ; IN : A = character
@@ -127,10 +127,10 @@ UTL_CHAR_IS_PUNCT:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_DIGIT  [HASH:0CC6]
+; ROUTINE: UTL_CHAR_IS_DIGIT  [HASH:06BA7C90]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
-; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
+; MEM : ZP: CHAR_CLASS_TMP_A($E6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
 ; PURPOSE: Check for ASCII decimal digit.
 ; IN : A = character
 ; OUT: C = 1 if '0'..'9', C = 0 otherwise
@@ -150,10 +150,10 @@ UTL_CHAR_IS_DIGIT:
                         XREF            UTL_CHAR_IS_LOWER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_ALPHA  [HASH:44F7]
+; ROUTINE: UTL_CHAR_IS_ALPHA  [HASH:020E7369]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
-; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IS_UPPER/UTL_CHAR_IS_LOWER;
+; MEM : ZP: CHAR_CLASS_TMP_A($E6) via UTL_CHAR_IS_UPPER/UTL_CHAR_IS_LOWER;
 ;   FIXED_RAM: none.
 ; PURPOSE: Check for ASCII alphabetic letter.
 ; IN : A = character
@@ -179,10 +179,10 @@ UTL_CHAR_IS_ALPHA:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_LOWER  [HASH:BE9A]
+; ROUTINE: UTL_CHAR_IS_LOWER  [HASH:DA5862DC]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
-; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
+; MEM : ZP: CHAR_CLASS_TMP_A($E6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
 ; PURPOSE: Check for lowercase ASCII letter.
 ; IN : A = character
 ; OUT: C = 1 if 'a'..'z', C = 0 otherwise
@@ -201,10 +201,10 @@ UTL_CHAR_IS_LOWER:
                         XREF            UTL_CHAR_IN_RANGE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_IS_UPPER  [HASH:EC3B]
+; ROUTINE: UTL_CHAR_IS_UPPER  [HASH:0DF85141]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, VIA, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
-; MEM : ZP: CHAR_CLASS_TMP_A($F6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
+; MEM : ZP: CHAR_CLASS_TMP_A($E6) via UTL_CHAR_IN_RANGE; FIXED_RAM: none.
 ; PURPOSE: Check for uppercase ASCII letter.
 ; IN : A = character
 ; OUT: C = 1 if 'A'..'Z', C = 0 otherwise
@@ -222,7 +222,7 @@ UTL_CHAR_IS_UPPER:
                         XDEF            UTL_CHAR_TO_UPPER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_TO_UPPER  [HASH:ECCC]
+; ROUTINE: UTL_CHAR_TO_UPPER  [HASH:54633FE8]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -247,7 +247,7 @@ UTL_CHAR_TO_UPPER:
                         XDEF            UTL_CHAR_TO_LOWER
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_CHAR_TO_LOWER  [HASH:BF2B]
+; ROUTINE: UTL_CHAR_TO_LOWER  [HASH:89F65341]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.

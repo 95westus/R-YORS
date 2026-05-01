@@ -414,7 +414,7 @@ DONE:                   LDX             #<MSG_DONE
                         JMP             SUITE_LOOP
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: VERIFY_EMPTY_AFTER_FLUSH  [HASH:A376]
+; ROUTINE: VERIFY_EMPTY_AFTER_FLUSH  [HASH:CD75477E]
 ; ----------------------------------------------------------------------------
 VERIFY_EMPTY_AFTER_FLUSH:
                         JSR             BIO_FTDI_POLL_RX_READY
@@ -430,7 +430,7 @@ VERIFY_EMPTY_AFTER_FLUSH:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: RUN_READ_TMO_PROFILE_CASE  [HASH:A7F7]
+; ROUTINE: RUN_READ_TMO_PROFILE_CASE  [HASH:AAF2BCDF]
 ; IN : A = Y profile value to test
 ; ----------------------------------------------------------------------------
 RUN_READ_TMO_PROFILE_CASE:
@@ -452,7 +452,7 @@ RUN_READ_TMO_PROFILE_CASE:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: RUN_T13_PROFILE_SWEEP  [HASH:08AC]
+; ROUTINE: RUN_T13_PROFILE_SWEEP  [HASH:76253B28]
 ; ----------------------------------------------------------------------------
 RUN_T13_PROFILE_SWEEP:
                         LDA             #$00
@@ -478,7 +478,7 @@ RUN_T13_PROFILE_SWEEP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: RUN_T14_NONBLOCK_BURST  [HASH:2A6A]
+; ROUTINE: RUN_T14_NONBLOCK_BURST  [HASH:4EBDDF20]
 ; ----------------------------------------------------------------------------
 RUN_T14_NONBLOCK_BURST:
                         LDX             #<MSG_T14_BEGIN
@@ -502,7 +502,7 @@ RUN_T14_NONBLOCK_BURST:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: RUN_T15_BLOCKING_GUARDED  [HASH:8042]
+; ROUTINE: RUN_T15_BLOCKING_GUARDED  [HASH:1FBDE95C]
 ; ----------------------------------------------------------------------------
 RUN_T15_BLOCKING_GUARDED:
                         LDX             #<MSG_T15_BEGIN
@@ -537,7 +537,7 @@ RUN_T15_BLOCKING_GUARDED:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: RUN_T16_SCAN_SWEEP  [HASH:BA51]
+; ROUTINE: RUN_T16_SCAN_SWEEP  [HASH:864B689D]
 ; ----------------------------------------------------------------------------
 RUN_T16_SCAN_SWEEP:
                         LDX             #<MSG_T16_BEGIN
@@ -560,7 +560,7 @@ RUN_T16_SCAN_SWEEP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: WAIT_NEXT_CYCLE_OR_CTRL_C  [HASH:C2C3]
+; ROUTINE: WAIT_NEXT_CYCLE_OR_CTRL_C  [HASH:D2B5C683]
 ; ----------------------------------------------------------------------------
 WAIT_NEXT_CYCLE_OR_CTRL_C:
                         LDX             #<MSG_NEXT_CYCLE
@@ -575,7 +575,7 @@ WAIT_NEXT_CYCLE_OR_CTRL_C:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: CHECK_FOR_CTRL_C_EXIT  [HASH:9FF4]
+; ROUTINE: CHECK_FOR_CTRL_C_EXIT  [HASH:0680F72C]
 ; ----------------------------------------------------------------------------
 CHECK_FOR_CTRL_C_EXIT:
                         JSR             BIO_FTDI_READ_BYTE_NONBLOCK
@@ -590,7 +590,7 @@ CHECK_FOR_CTRL_C_EXIT:
 ?NO_CTRL_C:             RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PRINT_HEX_A_WITH_PREFIX  [HASH:A8EA]
+; ROUTINE: PRINT_HEX_A_WITH_PREFIX  [HASH:25CEEB64]
 ; IN :
 ; - X:Y = pointer to cstring prefix
 ; - A   = byte to print as hex
@@ -610,7 +610,7 @@ PRINT_HEX_A_WITH_PREFIX:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PRINT_DELAY_MSG  [HASH:A186]
+; ROUTINE: PRINT_DELAY_MSG  [HASH:32A17112]
 ; ----------------------------------------------------------------------------
 PRINT_DELAY_MSG:
                         LDX             #<MSG_DELAY
@@ -619,7 +619,7 @@ PRINT_DELAY_MSG:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: WAIT_INPUT_WINDOW_3S  [HASH:99BD]
+; ROUTINE: WAIT_INPUT_WINDOW_3S  [HASH:CCE1B1C3]
 ; ----------------------------------------------------------------------------
 WAIT_INPUT_WINDOW_3S:
                         JSR             PRINT_DELAY_MSG
@@ -627,7 +627,7 @@ WAIT_INPUT_WINDOW_3S:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: WAIT_BETWEEN_TESTS  [HASH:768D]
+; ROUTINE: WAIT_BETWEEN_TESTS  [HASH:329FE7BD]
 ; ----------------------------------------------------------------------------
 WAIT_BETWEEN_TESTS:
                         LDX             #<MSG_BETWEEN_TESTS
@@ -637,7 +637,7 @@ WAIT_BETWEEN_TESTS:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: WAIT_NO_INPUT_WINDOW_3S  [HASH:DA99]
+; ROUTINE: WAIT_NO_INPUT_WINDOW_3S  [HASH:B632F3AD]
 ; ----------------------------------------------------------------------------
 WAIT_NO_INPUT_WINDOW_3S:
                         LDX             #<MSG_DELAY_NO_INPUT
@@ -647,7 +647,7 @@ WAIT_NO_INPUT_WINDOW_3S:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: WAIT_TYPE_INPUT_WINDOW_3S  [HASH:AAD2]
+; ROUTINE: WAIT_TYPE_INPUT_WINDOW_3S  [HASH:654A8F56]
 ; ----------------------------------------------------------------------------
 WAIT_TYPE_INPUT_WINDOW_3S:
                         LDX             #<MSG_DELAY_TYPE_INPUT
@@ -657,7 +657,7 @@ WAIT_TYPE_INPUT_WINDOW_3S:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PRINT_BIO_C_STATUS  [HASH:5A44]
+; ROUTINE: PRINT_BIO_C_STATUS  [HASH:0DBA7AD6]
 ; PURPOSE: Print carry status from last BIO call and preserve flags.
 ; ----------------------------------------------------------------------------
 PRINT_BIO_C_STATUS:
@@ -677,7 +677,7 @@ PRINT_BIO_C_STATUS:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: DELAY_3S_8MHZ  [HASH:ED5D]
+; ROUTINE: DELAY_3S_8MHZ  [HASH:2D1D64D9]
 ; ----------------------------------------------------------------------------
 DELAY_3S_8MHZ:
                         LDA             #$6A
@@ -695,7 +695,7 @@ DELAY3_INNER:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: DELAY_250MS_8MHZ  [HASH:4B7C]
+; ROUTINE: DELAY_250MS_8MHZ  [HASH:0CC1A404]
 ; ----------------------------------------------------------------------------
 DELAY_250MS_8MHZ:
                         LDA             #$09

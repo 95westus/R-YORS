@@ -19,7 +19,7 @@ UTL_ADDR_BAND_ROM_MID      EQU             $07
 UTL_ADDR_BAND_ROM_HI       EQU             $08
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_ADDR16_GET_BAND  [HASH:8087]
+; ROUTINE: UTL_ADDR16_GET_BAND  [HASH:46C4C4F0]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CLASSIFY, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -29,8 +29,8 @@ UTL_ADDR_BAND_ROM_HI       EQU             $08
 ;      $00 : $0000-$00FF
 ;      $01 : $0100-$01FF
 ;      $02 : $0200-$0FFF
-;      $03 : $1000-$6FFF
-;      $04 : $7000-$7EFF
+;      $03 : $1000-$77FF
+;      $04 : $7800-$7EFF
 ;      $05 : $7F00-$7FFF
 ;      $06 : $8000-$BFFF
 ;      $07 : $C000-$EFFF
@@ -47,7 +47,7 @@ UTL_ADDR16_GET_BAND:
                         BEQ             ?BAND_STACK
                         CMP             #$10
                         BCC             ?BAND_LOW_RAM
-                        CMP             #$70
+                        CMP             #$78
                         BCC             ?BAND_MAIN_RAM
                         CMP             #$7F
                         BCC             ?BAND_IO_WINDOW
@@ -97,7 +97,7 @@ UTL_ADDR16_GET_BAND:
                         XDEF            UTL_ADDR16_GET_PAGE_BAND
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_ADDR16_GET_PAGE_BAND  [HASH:BED3]
+; ROUTINE: UTL_ADDR16_GET_PAGE_BAND  [HASH:9CB79B22]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -118,7 +118,7 @@ UTL_ADDR16_GET_PAGE_BAND:
                         XDEF            UTL_GET_CALLSITE_NEXT16
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_GET_CALLSITE_NEXT16  [HASH:0EC9]
+; ROUTINE: UTL_GET_CALLSITE_NEXT16  [HASH:59886F2E]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CARRY-STATUS, NO-ZP, NO-RAM, STACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -149,7 +149,7 @@ UTL_GET_CALLSITE_NEXT16:
                         XREF            UTL_ADDR16_GET_BAND
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_GET_CALLSITE_BAND  [HASH:5CE6]
+; ROUTINE: UTL_GET_CALLSITE_BAND  [HASH:F7DDEB7B]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.

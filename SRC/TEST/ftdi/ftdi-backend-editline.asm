@@ -40,7 +40,7 @@
                         XREF            COR_FTDI_READ_CSTRING_EDIT_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_ECHO  [HASH:95F1]
+; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_ECHO  [HASH:C45D5C96]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, ECHO, CARRY-STATUS, NOSTACK
 ; PURPOSE: Line-editor read wrapper (echo, no case conversion).
@@ -60,7 +60,7 @@ COR_FTDI_READ_CSTRING_EDIT_ECHO:
                         XREF            COR_FTDI_READ_CSTRING_EDIT_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_SILENT  [HASH:F921]
+; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_SILENT  [HASH:E69D9BE6]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, ECHO, CARRY-STATUS, NOSTACK
 ; PURPOSE: Line-editor read wrapper (no echo, no case conversion).
@@ -77,7 +77,7 @@ COR_FTDI_READ_CSTRING_EDIT_SILENT:
                         XREF            COR_FTDI_READ_CSTRING_EDIT_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:D6B8]
+; ROUTINE: COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:680FEAD3]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, ECHO, CARRY-STATUS, NOSTACK
 ; PURPOSE: Line-editor read wrapper (echo + force uppercase).
@@ -111,7 +111,7 @@ FTDI_GCE_MODE_UPPER        EQU             $02
 FTDI_GCE_MODE_LOWER        EQU             $04
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_MODE  [HASH:656F]
+; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_MODE  [HASH:AC8C5108]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, ECHO, NUL-TERM, CARRY-STATUS, CALLS_COR, STACK
 ; PURPOSE: Mode-driven line editor with insert/delete and cursor movement.

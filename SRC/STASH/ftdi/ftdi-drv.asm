@@ -40,11 +40,15 @@
 ; - Exported `PIN_FTDI_*` behavioral contracts are frozen.
 ; - Allowed changes: bug fixes, timing-safe hardware fixes, and docs/comments.
 ; - Any intentional contract change must update `SRC/STASH_CODE.md`.
+;
+; HASH NOTE:
+; - `[HASH:XXXXXXXX]` is the 32-bit FNV-1a routine/catalog/symbol hash
+;   over the routine name.
 ; -------------------------------------------------------------------------
 
                         MODULE          PIN_FTDI_INIT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_INIT  [HASH:7A68]
+; ROUTINE: PIN_FTDI_INIT  [HASH:226EDE8F]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, INIT, PRESERVE-A,
 ;   PRESERVE-XY, NO-ZP, NO-RAM, TOP-SHELF, STACK
@@ -84,7 +88,7 @@ PIN_FTDI_INIT:
 
                         MODULE          PIN_FTDI_POLL_RX_READY
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_POLL_RX_READY  [HASH:5072]
+; ROUTINE: PIN_FTDI_POLL_RX_READY  [HASH:F2B69C5B]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, PRESERVE-A, PRESERVE-XY,
 ;   CARRY-STATUS, NO-ZP, NO-RAM, STACK
@@ -125,7 +129,7 @@ PIN_FTDI_POLL_RX_READY:
 
                         MODULE          PIN_FTDI_READ_BYTE_NONBLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_READ_BYTE_NONBLOCK  [HASH:CBA6]
+; ROUTINE: PIN_FTDI_READ_BYTE_NONBLOCK  [HASH:483BB2DD]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, MMIO, REGISTER, NONBLOCKING, READ, PRESERVE-XY,
 ;   CARRY-STATUS, NO-ZP, NO-RAM, STACK
@@ -174,7 +178,7 @@ PIN_FTDI_READ_BYTE_NONBLOCK:
 
                         MODULE          PIN_FTDI_WRITE_BYTE_NONBLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_WRITE_BYTE_NONBLOCK  [HASH:025F]
+; ROUTINE: PIN_FTDI_WRITE_BYTE_NONBLOCK  [HASH:D55FC6FC]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, MMIO, REGISTER, NONBLOCKING, TIMEOUT, WRITE,
 ;   PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, STACK
@@ -237,7 +241,7 @@ PIN_FTDI_WRITE_BYTE_NONBLOCK:
 
                         MODULE          PIN_FTDI_CHECK_ENUMERATED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: PIN_FTDI_CHECK_ENUMERATED  [HASH:638F]
+; ROUTINE: PIN_FTDI_CHECK_ENUMERATED  [HASH:8A7D53EE]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, READ, ENUM, PRESERVE-XY,
 ;   CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
@@ -279,3 +283,5 @@ PIN_FTDI_CHECK_ENUMERATED:
                         SEC                                     ; carry set
                         RTS
                         ENDMOD
+
+                        END

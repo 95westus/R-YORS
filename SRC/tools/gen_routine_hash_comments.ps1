@@ -24,7 +24,6 @@ function Get-RoutineHash {
         [string]$RoutineNamesRaw
     )
 
-    $pathToken = $RelPath.Replace('\', '/').Trim().ToUpperInvariant()
     $nameTokens = @()
     foreach ($token in ($RoutineNamesRaw -split '\s*/\s*')) {
         $name = $token.Trim()
@@ -37,25 +36,32 @@ function Get-RoutineHash {
         $nameTokens = @($RoutineNamesRaw.Trim().ToUpperInvariant())
     }
 
-    $namesToken = ($nameTokens -join ' / ')
-    $material = "$pathToken|$namesToken"
-
-    # HASH algorithm: simple 16-bit rolling checksum over ASCII(payload)
-    # hash = (hash * 31 + byte) mod 65536
-    $crc = 0
-    foreach ($b in [System.Text.Encoding]::ASCII.GetBytes($material)) {
-        $crc = ((($crc * 31) + $b) -band 0xFFFF)
+    # HASH algorithm: 32-bit FNV-1a over canonical routine text.
+    # If a legacy ROUTINE header lists multiple names, the first name is the
+    # primary hash identity. Split the header when each alias needs its own
+    # exact [HASH:XXXXXXXX] line.
+    [UInt64]$hash = 2166136261
+    foreach ($b in [System.Text.Encoding]::ASCII.GetBytes($nameTokens[0])) {
+        $hash = ((($hash -bxor [UInt64]$b) * [UInt64]16777619) -band [UInt64]4294967295)
     }
 
-    return ('{0:X4}' -f ($crc -band 0xFFFF))
+    return ('{0:X8}' -f $hash)
 }
 
 $repoRoot = (Resolve-Path -LiteralPath $Src).Path
-$scanRoots = @(
-    (Join-Path $repoRoot 'SRC/STASH'),
-    (Join-Path $repoRoot 'SRC/TEST'),
-    (Join-Path $repoRoot 'SRC/SESH')
-)
+$scanRoots = if (Test-Path -LiteralPath (Join-Path $repoRoot 'STASH')) {
+    @(
+        (Join-Path $repoRoot 'STASH'),
+        (Join-Path $repoRoot 'TEST'),
+        (Join-Path $repoRoot 'SESH')
+    )
+} else {
+    @(
+        (Join-Path $repoRoot 'SRC/STASH'),
+        (Join-Path $repoRoot 'SRC/TEST'),
+        (Join-Path $repoRoot 'SRC/SESH')
+    )
+}
 
 $files = @()
 foreach ($root in $scanRoots) {
@@ -70,7 +76,7 @@ foreach ($root in $scanRoots) {
     )
 }
 
-$routineHeaderPattern = '^(\s*;\s*ROUTINE:\s*)(.+?)(?:\s+\[HASH:([0-9A-Fa-f]{4})\])?\s*$'
+$routineHeaderPattern = '^(\s*;\s*ROUTINE:\s*)(.+?)(?:\s+\[HASH:([0-9A-Fa-f]{8})\])?\s*$'
 $filesChanged = 0
 $headersSeen = 0
 $hashIndex = @{}

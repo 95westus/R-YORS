@@ -23,7 +23,7 @@
                         XREF            COR_FTDI_WRITE_CSTRING
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: TST_PUTS_XY  [HASH:5745]
+; ROUTINE: TST_PUTS_XY  [HASH:E1634B6F]
 ; TIER: APP-L5
 ; TAGS: TST, APP-L5, NUL-TERM, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -45,7 +45,7 @@ TST_PUTS_XY:
                         XREF            COR_FTDI_WRITE_HBSTRING
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: TST_PUTS_HB_XY  [HASH:29A2]
+; ROUTINE: TST_PUTS_HB_XY  [HASH:D1B82334]
 ; TIER: APP-L5
 ; TAGS: TST, APP-L5, HIBIT-TERM, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -68,7 +68,7 @@ TST_PUTS_HB_XY:
                         XREF            COR_FTDI_WRITE_CRLF
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: TST_PRINT_LINE_XY  [HASH:6A23]
+; ROUTINE: TST_PRINT_LINE_XY  [HASH:7DABA93F]
 ; TIER: APP-L5
 ; TAGS: TST, APP-L5, WRITE, NUL-TERM, CRLF, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -91,7 +91,7 @@ TST_PRINT_LINE_XY:
                         XREF            COR_FTDI_WRITE_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: TST_PRINT_CARRY_BIT_A  [HASH:B4A2]
+; ROUTINE: TST_PRINT_CARRY_BIT_A  [HASH:2ED5CB88]
 ; TIER: APP-L5
 ; TAGS: TST, APP-L5, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -115,7 +115,7 @@ TST_PRINT_CARRY_BIT_A:
                         XREF            COR_FTDI_WRITE_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: TST_PRINT_CARRY_FROM_LAST_C  [HASH:E002]
+; ROUTINE: TST_PRINT_CARRY_FROM_LAST_C  [HASH:7C7883F8]
 ; TIER: APP-L5
 ; TAGS: TST, APP-L5, NO-ZP, NO-RAM, CALLS_COR, STACK
 ; MEM : ZP: none; FIXED_RAM: none.

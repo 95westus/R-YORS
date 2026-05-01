@@ -555,7 +555,7 @@ MON_CMD_HELP_USAGE:
                         JMP             CMDP_USAGE_LINE_XY
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_CMD_KEYTEST  [HASH:BBF1]
+; ROUTINE: MON_CMD_KEYTEST  [HASH:37F57716]
 ; TIER: APP-L5
 ; TAGS: APP-L5, KEYTEST, BLOCKING, READ, WRITE, CARRY-STATUS
 ; MEM : ZP: none; FIXED_RAM: KEYT_CHAR($7B27), KEYT_ESC_BYTE($7B28).
@@ -677,7 +677,7 @@ MON_CMD_KEYTEST_USAGE:
                         JMP             CMDP_USAGE_LINE_XY
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: KEYTEST_WRITE_CLASS_TAG_A  [HASH:DEBF]
+; ROUTINE: KEYTEST_WRITE_CLASS_TAG_A  [HASH:4709F7F8]
 ; TIER: APP-L5
 ; TAGS: APP-L5, CLASSIFY, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.

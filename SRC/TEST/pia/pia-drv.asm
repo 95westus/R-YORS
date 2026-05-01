@@ -59,7 +59,7 @@ PIA_STATE_PA_SHADOW        EQU             $7EE2
                         XDEF            PIN_PIA_READ_PORTB_SHADOW
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_INIT_SHADOWS  [HASH:098A]
+; ROUTINE: PIN_PIA_INIT_SHADOWS  [HASH:A90B028A]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, DDR, CARRY-STATUS, NO-ZP,
 ;   USES-FIXED-RAM, NOSTACK
@@ -80,7 +80,7 @@ PIN_PIA_INIT_SHADOWS:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_DDRA  [HASH:1335]
+; ROUTINE: PIN_PIA_WRITE_DDRA  [HASH:7CF78EDB]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, PIA, MMIO, REGISTER, DDR, WRITE, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, NOSTACK
@@ -97,7 +97,7 @@ PIN_PIA_WRITE_DDRA:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_DDRB  [HASH:1336]
+; ROUTINE: PIN_PIA_WRITE_DDRB  [HASH:7DF7906E]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, PIA, MMIO, REGISTER, DDR, WRITE, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, NOSTACK
@@ -114,7 +114,7 @@ PIN_PIA_WRITE_DDRB:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_PORTA  [HASH:701A]
+; ROUTINE: PIN_PIA_WRITE_PORTA  [HASH:AAB9F9BC]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, WRITE, IRQ, PRESERVE-A,
 ;   CARRY-STATUS, NO-ZP, USES-FIXED-RAM, NOSTACK
@@ -132,7 +132,7 @@ PIN_PIA_WRITE_PORTA:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_PORTB  [HASH:701B]
+; ROUTINE: PIN_PIA_WRITE_PORTB  [HASH:ADB9FE75]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, WRITE, IRQ, PRESERVE-A,
 ;   CARRY-STATUS, NO-ZP, USES-FIXED-RAM, NOSTACK
@@ -150,7 +150,7 @@ PIN_PIA_WRITE_PORTB:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_PORTA_MASKED  [HASH:1850]
+; ROUTINE: PIN_PIA_WRITE_PORTA_MASKED  [HASH:89FDCD9C]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, WRITE, IRQ, CARRY-STATUS,
 ;   NO-ZP, USES-FIXED-RAM, NOSTACK
@@ -176,7 +176,7 @@ PIN_PIA_WRITE_PORTA_MASKED:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_WRITE_PORTB_MASKED  [HASH:452F]
+; ROUTINE: PIN_PIA_WRITE_PORTB_MASKED  [HASH:0035EE0F]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, WRITE, IRQ, CARRY-STATUS,
 ;   NO-ZP, USES-FIXED-RAM, NOSTACK
@@ -202,7 +202,7 @@ PIN_PIA_WRITE_PORTB_MASKED:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_READ_PORTA_RAW  [HASH:18C6]
+; ROUTINE: PIN_PIA_READ_PORTA_RAW  [HASH:54E3FE0E]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, READ, RAW, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, NOSTACK
@@ -217,7 +217,7 @@ PIN_PIA_READ_PORTA_RAW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_READ_PORTB_RAW  [HASH:3047]
+; ROUTINE: PIN_PIA_READ_PORTB_RAW  [HASH:C923BAFF]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, READ, RAW, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, NOSTACK
@@ -232,7 +232,7 @@ PIN_PIA_READ_PORTB_RAW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_READ_PORTA_SHADOW  [HASH:6FA2]
+; ROUTINE: PIN_PIA_READ_PORTA_SHADOW  [HASH:EA777EFC]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, READ, CARRY-STATUS, NO-ZP,
 ;   USES-FIXED-RAM, NOSTACK
@@ -247,7 +247,7 @@ PIN_PIA_READ_PORTA_SHADOW:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_PIA_READ_PORTB_SHADOW  [HASH:9C81]
+; ROUTINE: PIN_PIA_READ_PORTB_SHADOW  [HASH:90FC64F7]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SHADOW, READ, CARRY-STATUS, NO-ZP,
 ;   USES-FIXED-RAM, NOSTACK
@@ -260,3 +260,5 @@ PIN_PIA_READ_PORTB_SHADOW:
                         LDA             PIA_STATE_PB_SHADOW
                         SEC
                         RTS
+
+                        END

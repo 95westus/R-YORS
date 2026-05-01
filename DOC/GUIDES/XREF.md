@@ -1,61 +1,123 @@
 # R-YORS Cross-Reference
 
-Generated from current source scan on 2026-04-13 22:06:00 -05:00.
+This file connects the guide set to the current `ror` source tree.
 
-## App/Test to Prefix Usage by File
-- SRC/APP/STASH/cmd.asm: COR=6, SYS=3, UTL=1
-- SRC/APP/STASH/dump.asm: COR=6, UTL=2
-- SRC/APP/STASH/himon.asm: SYS=9
-- SRC/APP/STASH/himonv.asm: SYS=9
-- SRC/APP/STASH/life.asm: SYS=8
-- SRC/APP/STASH/monitor.asm: SYS=10, UTL=1
-- SRC/APP/TEST/lowlevel-test.asm: PIN=5, BIO=4, COR=2, UTL=1
-- SRC/APP/TEST/test.asm: PIN=5, BIO=4, COR=2, UTL=1
-- SRC/APP/TEST/test-cor-iso.asm: COR=9
-- SRC/APP/TEST/test-l0l2-units.asm: COR=38, PIN=5, SYS=5, BIO=4
-- SRC/APP/TEST/test-mon.asm: SYS=8, UTL=1
+## Document Cross-Reference
 
-## Symbol Provider/Consumer Hotspots
-- COR_FTDI_WRITE_CHAR: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-backend-core.asm; consumer file count = 11
-- COR_FTDI_WRITE_CRLF: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-backend-core.asm; consumer file count = 9
-- COR_FTDI_FLUSH_RX: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-backend-core.asm; consumer file count = 8
-- COR_FTDI_INIT: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-backend-core.asm; consumer file count = 8
-- COR_FTDI_WRITE_CSTRING: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-backend-write.asm; consumer file count = 8
-- COR_FTDI_WRITE_HEX_BYTE: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-backend-core.asm; consumer file count = 8
-- SYS_WRITE_CRLF: provider(s) = SRC/APP/STASH/LIB/dev/dev-adapter-write.asm; consumer file count = 8
-- SYS_FLUSH_RX: provider(s) = SRC/APP/STASH/LIB/dev/dev-adapter-core.asm; consumer file count = 7
-- SYS_INIT: provider(s) = SRC/APP/STASH/LIB/dev/dev-adapter-core.asm; consumer file count = 7
-- SYS_WRITE_HEX_BYTE: provider(s) = SRC/APP/STASH/LIB/dev/dev-adapter-write.asm; consumer file count = 7
-- COR_FTDI_POLL_CHAR: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-backend-core.asm; consumer file count = 6
-- COR_FTDI_READ_CHAR: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-backend-core.asm; consumer file count = 6
-- SYS_WRITE_CHAR: provider(s) = SRC/APP/STASH/LIB/dev/dev-adapter-core.asm; consumer file count = 6
-- SYS_WRITE_CSTRING: provider(s) = SRC/APP/STASH/LIB/dev/dev-adapter-write.asm; consumer file count = 6
-- BIO_FTDI_READ_BYTE_BLOCK: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-hal.asm; consumer file count = 5
-- COR_FTDI_READ_CSTRING_ECHO: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-backend-readline.asm; consumer file count = 5
-- SYS_READ_CSTRING_EDIT_ECHO_UPPER: provider(s) = SRC/APP/STASH/LIB/dev/dev-adapter-readline.asm; consumer file count = 5
-- BIO_FTDI_FLUSH_RX: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-hal.asm; consumer file count = 4
-- BIO_FTDI_POLL_RX_READY: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-hal.asm; consumer file count = 4
-- BIO_FTDI_WRITE_BYTE_BLOCK: provider(s) = SRC/APP/STASH/LIB/ftdi/ftdi-hal.asm; consumer file count = 4
+```text
+STR8.md
+  used by HASHED_ASM.md for flash commit/condense policy
+  used by MAP.md for recovery/update ownership
+  used by HISTORICAL_DOCUMENTS.md as the recovery-layer name
 
-## Duplicate Routine Names Across Files
-- CMD_PARSE_AND_EXECUTE appears in 4 files: SRC/APP/STASH/cmd.asm, SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- CMD_PARSE_AND_EXECUTE_ROUTER appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_ACCUM_RECORD_ONLY appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_CAPTURE_GO appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_CLASSIFY_TYPE appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_INIT appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_PARSE_RECORD appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_PRINT_SUMMARY appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_READ_LINE appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_RESOLVE_ADDR16 appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_VALIDATE_ARGS appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_WRITE_RECORD_DATA appears in 3 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm, SRC/APP/STASH/monitor.asm
-- MON_LOAD_COMMIT_CURRENT_RANGE appears in 2 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm
-- MON_LOAD_FINALIZE_RANGES appears in 2 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm
-- MON_LOAD_MAYBE_GO appears in 2 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm
-- MON_LOAD_PRINT_ONE_RANGE appears in 2 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm
-- MON_LOAD_TRACK_DATA_RANGE appears in 2 files: SRC/APP/STASH/himon.asm, SRC/APP/STASH/himonv.asm
+DECISIONS.md
+  records settled naming, hash, STR8, ASM, ABI, local-home, and doc-shape calls
+  should be checked before reopening design alternatives
+  overrides looser exploratory notes unless explicitly reopened
 
-## Unresolved Imports (XREF without local XDEF provider)
-- COR_FTDI_DEBUG_WRITE_FLAGS_A
-- COR_FTDI_DEBUG_WRITE_STR
+HASH_MAP.md
+  points to HASH.md for ROUTINE header IDs
+  points to HASHED_ASM.md for symbol/fixup hashes
+  points to Himonia-F sources for runtime FNV
+
+HASHED_ASM.md
+  depends on STR8.md for flash safety
+  depends on HASH_MAP.md for hash vocabulary
+  feeds FUTURE.md and TODO.md implementation direction
+
+SYMBOL_XREF.md
+  combines REF-style routine contracts with XREF-style source edges
+  adds XXREF semantic tokens for code that exists now and code still planned
+  includes a hand-sized Himonia-F Mermaid call tree
+
+CATALOG.md
+  programmer-facing callable routine catalog
+  groups routines by need rather than source order: read, write, strings, hex,
+  hash, flash, vectors, and BIO recovery helpers
+  keeps routine name, hash, entry/exit registers, carry flags, notes, and tags
+
+MEMORY_MAP.md
+  current Himonia-F ROM and RAM address ownership
+  records user flash, monitor code/data, ABI slots, vectors, and high-RAM workspaces
+  separates the current Himonia-F build map from future STR8/HIMON ownership
+
+HIMONIA_F_MAP.md
+  readable map over Himonia-F direct edges and capability surfaces
+  groups startup, dispatch, loader/flash, debug, disasm, ASM, and ABI maps
+  uses HIMONIA_F_EDGE_DUMP.md as raw evidence
+
+HIMONIA_F_EDGE_DUMP.md
+  direct `JSR`/`JMP` edge dump for `SRC/TEST/apps/himon/himonia-f.asm`
+  keeps raw edge sites separate from the compact SYMBOL_XREF call tree and
+  readable HIMONIA_F_MAP.md diagrams
+```
+
+## Source Cross-Reference
+
+Current source scan:
+
+```text
+ASM files:             37
+XDEF declarations:     339 total, 328 unique names
+XREF declarations:     354 total, 200 unique names
+ROUTINE headers:       228 total, 226 unique first names
+JSR/JMP call sites:    2259 total, 450 unique targets
+```
+
+Primary Himonia/Himon files:
+
+```text
+SRC/TEST/apps/himon/himon.asm
+SRC/TEST/apps/himon/himonia.asm
+SRC/TEST/apps/himon/fnv1a-hbstr.asm
+SRC/TEST/apps/himon/himonia-f.asm
+```
+
+Primary Himonia-F edge guide:
+
+```text
+DOC/GUIDES/HIMONIA_F_MAP.md
+DOC/GUIDES/HIMONIA_F_EDGE_DUMP.md
+DOC/GUIDES/MEMORY_MAP.md
+```
+
+Primary flash/recovery proving file:
+
+```text
+SRC/TEST/test-flash.asm
+```
+
+Primary app using flash command record ideas:
+
+```text
+SRC/TEST/apps/calc-flash.asm
+```
+
+## Cross-Reference Rules
+
+- Use `MODULE`/`ENDMOD` around each logical unit that should export symbols.
+- `XDEF` names a symbol provided by a source module.
+- `XREF` names a symbol required from another source module.
+- Hardware registers and constants can stay as local `EQU`s inside a module.
+- Avoid repeating the same global symbol name in multiple modules unless the
+  names are intentionally unique; `wdclib` tracks symbols in a global module
+  dictionary.
+- `ROUTINE` headers document callable blocks and carry `[HASH:XXXXXXXX]`
+  FNV-1a IDs.
+- `JSR` and `JMP` call sites are useful for call maps, but indirect calls and
+  jump tables need separate reasoning.
+- FNV command records are runtime-discovered records, not WDC linker exports.
+- Symbol ref/xref records should preserve source line, ABI contract,
+  classification tokens, and FNV-1a lookup bytes when available.
+- Catalog entries should preserve name, hash, entry registers, exit registers,
+  carry/flag contract, proof status, notes, and tags.
+- Memory-map entries should distinguish generated current addresses from future
+  STR8/HIMON placement goals.
+- `make rom` rebuilds `rom.lib`; test/app links consume that library rather
+  than duplicating shared module code.
+
+## Known Drift
+
+The older generated source-wide graph has been removed because it was noisy and
+stale. Use `HIMONIA_F_MAP.md` for the readable current map and
+`HIMONIA_F_EDGE_DUMP.md` for raw Himonia-F direct-edge evidence.

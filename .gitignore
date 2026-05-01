@@ -20,3 +20,11 @@ DOC/s34
 .tmp_test.py
 *.bin
 *.s19
+
+# Local third-party / provenance-preserving source homes.
+# These are intentionally usable by the build but not tracked here.
+/LOCAL/
+/SRC/TEST/apps/*.BAS
+/SRC/TEST/apps/fig-forth.asm
+/SRC/TEST/apps/msbasic/
+/SRC/BUILD/

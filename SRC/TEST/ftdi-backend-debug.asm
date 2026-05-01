@@ -33,7 +33,7 @@
                         XREF            COR_FTDI_WRITE_HEX_BYTE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_DEBUG_JSR_SNAPSHOT  [HASH:021C]
+; ROUTINE: COR_FTDI_DEBUG_JSR_SNAPSHOT  [HASH:47945EE2]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, REGISTER, WRITE, IRQ, NMI, NO-ZP, NO-RAM,
 ;   CALLS_COR, STACK
@@ -149,7 +149,7 @@ COR_FTDI_DEBUG_JSR_SNAPSHOT:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_DEBUG_WRITE_STR  [HASH:BBCF]
+; ROUTINE: COR_FTDI_DEBUG_WRITE_STR  [HASH:3F06549D]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, FTDI, WRITE, NUL-TERM, NO-ZP, NO-RAM, CALLS_COR,
 ;   NOSTACK
@@ -170,7 +170,7 @@ COR_FTDI_DEBUG_WRITE_STR:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_DEBUG_WRITE_FLAGS_A  [HASH:6F27]
+; ROUTINE: COR_FTDI_DEBUG_WRITE_FLAGS_A  [HASH:A602B89D]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, WRITE, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -259,3 +259,5 @@ DBG_STR_P_EQ:           DB              " P=", 0
 DBG_STR_S_EQ:           DB              " S=", 0
 
                         ENDMOD
+
+                        END

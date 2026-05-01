@@ -68,7 +68,7 @@
 
                         MODULE          BIO_FTDI_INIT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_INIT  [HASH:5B8E]
+; ROUTINE: BIO_FTDI_INIT  [HASH:30A462F2]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, INIT, NO-ZP, NO-RAM, CALLS_PIN, NOSTACK, PUFF-PASS
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -95,7 +95,7 @@ BIO_FTDI_INIT:
 
                         MODULE          BIO_FTDI_READ_BYTE_NONBLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_READ_BYTE_NONBLOCK  [HASH:B24C]
+; ROUTINE: BIO_FTDI_READ_BYTE_NONBLOCK  [HASH:6A5E3370]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, NONBLOCKING, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PASS,
 ;   CALLS_PIN, NOSTACK, RETURNS-A, BYTE, CHAR
@@ -122,9 +122,44 @@ BIO_FTDI_READ_BYTE_NONBLOCK:
                         ENDMOD
 
 
+                        MODULE          BIO_FTDI_GET_CTRL_C
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ROUTINE: BIO_FTDI_GET_CTRL_C  [HASH:426150D2]
+; TIER: HAL-L1
+; TAGS: BIO, HAL-L1, FTDI, CTRL-C, NONBLOCKING, CARRY-STATUS, NO-ZP, NO-RAM,
+;   CALLS_PIN, NOSTACK, CONSUMES-RX
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Non-blocking Ctrl-C detector for the FTDI RX stream.
+; IN : none
+; OUT: C = 1 and A = $03 if Ctrl-C was consumed
+;      C = 0 and A = $00 otherwise
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; EXCEPTIONS/NOTES:
+; - Consumes one pending RX byte when any byte is available.  Non-Ctrl-C input
+;   is discarded.
+; - Intended for break/abort polling while long-running code owns the input
+;   stream, not for non-destructive keyboard peeking.
+                        XDEF            BIO_FTDI_GET_CTRL_C
+                        XREF            PIN_FTDI_READ_BYTE_NONBLOCK
+
+BIO_FTDI_CTRL_C           EQU             $03
+
+BIO_FTDI_GET_CTRL_C:
+                        JSR             PIN_FTDI_READ_BYTE_NONBLOCK
+                        BCC             ?NO_CTRL_C
+                        CMP             #BIO_FTDI_CTRL_C
+                        BEQ             ?YES_CTRL_C
+?NO_CTRL_C:             LDA             #$00
+                        CLC
+                        RTS
+?YES_CTRL_C:            SEC
+                        RTS
+                        ENDMOD
+
+
                         MODULE          BIO_FTDI_WRITE_BYTE_NONBLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_WRITE_BYTE_NONBLOCK  [HASH:F079]
+; ROUTINE: BIO_FTDI_WRITE_BYTE_NONBLOCK  [HASH:8FAE8ABB]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, NONBLOCKING, PRESERVE-A, CARRY-STATUS, NO-ZP, PUFF-PASS,
 ;   NO-RAM, CALLS_PIN, NOSTACK, BYTE, CHAR
@@ -153,7 +188,7 @@ BIO_FTDI_WRITE_BYTE_NONBLOCK:
 
                         MODULE          BIO_FTDI_CHECK_ENUMERATED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_CHECK_ENUMERATED  [HASH:BBB5]
+; ROUTINE: BIO_FTDI_CHECK_ENUMERATED  [HASH:994776E3]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, ENUM, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN, PUFF-PASS,
 ;   NOSTACK
@@ -182,7 +217,7 @@ BIO_FTDI_CHECK_ENUMERATED:
 
                         MODULE          BIO_FTDI_TMO_DELAY_PROFILE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_TMO_DELAY_PROFILE  [HASH:9966]
+; ROUTINE: BIO_FTDI_TMO_DELAY_PROFILE  [HASH:100E7272]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, TIMEOUT, DELAY, PROFILE, CARRY-STATUS, NO-ZP, PUFF-PLUS,
 ;   NO-RAM, STACK
@@ -282,7 +317,7 @@ BIO_FTDI_TMO_DELAY_PROFILE:
 
                         MODULE          BIO_FTDI_READ_BYTE_TMO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_READ_BYTE_TMO  [HASH:C10A]
+; ROUTINE: BIO_FTDI_READ_BYTE_TMO  [HASH:83426F30]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, TIMEOUT, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN, PUFF-PLUS,
 ;   RETURNS-A, BYTE, CHAR, STACK
@@ -328,7 +363,7 @@ BIO_FTDI_READ_BYTE_TMO:
 
                         MODULE          BIO_FTDI_WRITE_BYTE_TMO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_WRITE_BYTE_TMO  [HASH:9ABD]
+; ROUTINE: BIO_FTDI_WRITE_BYTE_TMO  [HASH:DC28D281]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, TIMEOUT, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, STACK, BYTE, CHAR
@@ -374,7 +409,7 @@ BIO_FTDI_WRITE_BYTE_TMO:
 
                         MODULE          BIO_FTDI_WAIT_RX_READY_TMO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_WAIT_RX_READY_TMO  [HASH:E64D]
+; ROUTINE: BIO_FTDI_WAIT_RX_READY_TMO  [HASH:41D15643]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, WAIT, TIMEOUT, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, STACK
@@ -419,7 +454,7 @@ BIO_FTDI_WAIT_RX_READY_TMO:
 
                         MODULE          BIO_FTDI_DRAIN_RX_MAX
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_DRAIN_RX_MAX  [HASH:A890]
+; ROUTINE: BIO_FTDI_DRAIN_RX_MAX  [HASH:172D5D30]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, FLUSH, DRAIN, BOUNDED, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, RETURNS-A, REGISTER
@@ -459,7 +494,7 @@ BIO_FTDI_DRAIN_RX_MAX:
 
                         MODULE          BIO_FTDI_READ_BYTE_BLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_READ_BYTE_BLOCK  [HASH:9381]
+; ROUTINE: BIO_FTDI_READ_BYTE_BLOCK  [HASH:20285B85]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, BLOCKING, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, NOSTACK, RETURNS-A, BYTE, CHAR
@@ -488,7 +523,7 @@ BIO_FTDI_READ_BYTE_BLOCK:
 
                         MODULE          BIO_FTDI_WRITE_BYTE_BLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_WRITE_BYTE_BLOCK  [HASH:CC74]
+; ROUTINE: BIO_FTDI_WRITE_BYTE_BLOCK  [HASH:379FE930]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, BLOCKING, PRESERVE-A, CARRY-STATUS, NO-ZP, PUFF-PLUS,
 ;   NO-RAM, STACK, BYTE, CHAR
@@ -517,9 +552,69 @@ BIO_FTDI_WRITE_BYTE_BLOCK:
                         ENDMOD
 
 
+                        MODULE          BIO_WRITE_HEX_BYTE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ROUTINE: BIO_WRITE_HEX_BYTE  [HASH:CDBB01D2]
+; TIER: HAL-L1
+; TAGS: BIO, HAL-L1, FTDI, HEX, WRITE, PRESERVE-A, CARRY-STATUS, NO-ZP,
+;   NO-RAM, STACK, BYTE, CHAR
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Emit byte in A as two uppercase ASCII hex characters.
+; IN : A = source byte
+; OUT: C = 1 on successful writes, A preserved
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; EXCEPTIONS/NOTES:
+; - Uses `UTL_HEX_BYTE_TO_ASCII_YX` for nibble-to-ASCII conversion.
+; - Performs two blocking writes through `BIO_FTDI_WRITE_BYTE_BLOCK`.
+; - X is preserved by `BIO_FTDI_WRITE_BYTE_BLOCK`; Y follows converter output.
+
+                        XDEF            BIO_WRITE_HEX_BYTE
+                        XREF            UTL_HEX_BYTE_TO_ASCII_YX
+                        XREF            BIO_FTDI_WRITE_BYTE_BLOCK
+
+BIO_WRITE_HEX_BYTE:
+                        PHA
+                        JSR             UTL_HEX_BYTE_TO_ASCII_YX
+                        TYA
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        TXA
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        PLA
+                        RTS
+                        ENDMOD
+
+
+                        MODULE          BIO_WRITE_CRLF
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ROUTINE: BIO_WRITE_CRLF  [HASH:8C36CC4D]
+; TIER: HAL-L1
+; TAGS: BIO, HAL-L1, FTDI, WRITE, CRLF, PRESERVE-A, CARRY-STATUS, NO-ZP,
+;   NO-RAM, STACK, BYTE, CHAR
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Write CRLF sequence over FTDI.
+; IN : none (A preserved)
+; OUT: C = 1 on successful writes, A preserved
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; EXCEPTIONS/NOTES:
+; - Performs two blocking writes through `BIO_FTDI_WRITE_BYTE_BLOCK`.
+
+                        XDEF            BIO_WRITE_CRLF
+                        XREF            BIO_FTDI_WRITE_BYTE_BLOCK
+
+BIO_WRITE_CRLF:
+                        PHA
+                        LDA             #$0D
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #$0A
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        PLA
+                        RTS
+                        ENDMOD
+
+
                         MODULE          BIO_FTDI_FLUSH_RX_COUNT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_FLUSH_RX_COUNT  [HASH:E1AF]
+; ROUTINE: BIO_FTDI_FLUSH_RX_COUNT  [HASH:770817B9]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, FLUSH, COUNT, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, REGISTER
@@ -554,7 +649,7 @@ BIO_FTDI_FLUSH_RX_COUNT:
 
                         MODULE          BIO_FTDI_FLUSH_RX
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_FLUSH_RX  [HASH:20FF]
+; ROUTINE: BIO_FTDI_FLUSH_RX  [HASH:2F6622B9]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, FLUSH, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
 ;   CALLS_PIN, STACK
@@ -586,7 +681,7 @@ BIO_FTDI_FLUSH_RX:
                         XREF            PIN_FTDI_POLL_RX_READY
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_POLL_RX_READY  [HASH:5A0C]
+; ROUTINE: BIO_FTDI_POLL_RX_READY  [HASH:3BD83670]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, REGISTER, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN, NOSTACK, PUFF-PASS
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -607,6 +702,8 @@ BIO_FTDI_POLL_RX_READY:
                         JSR             PIN_FTDI_POLL_RX_READY
                         RTS
                         ENDMOD
+
+                        END
 
 
 

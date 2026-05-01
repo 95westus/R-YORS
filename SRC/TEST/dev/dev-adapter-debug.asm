@@ -53,7 +53,7 @@ SYS_BACKEND_SELECTED       EQU             SYS_BACKEND_FTDI
                         XREF            COR_FTDI_DEBUG_JSR_SNAPSHOT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_DEBUG_JSR_SNAPSHOT  [HASH:9536]
+; ROUTINE: SYS_DEBUG_JSR_SNAPSHOT  [HASH:FBB291C7]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, FTDI, REGISTER, IRQ, NMI, NO-ZP, NO-RAM, CALLS_COR,
 ;   NOSTACK

@@ -54,7 +54,7 @@ SYS_BACKEND_SELECTED       EQU             SYS_BACKEND_FTDI
                         XREF            SYS_VEC_INIT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_INIT  [HASH:56B0]
+; ROUTINE: SYS_INIT  [HASH:0683DF55]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -76,7 +76,7 @@ SYS_INIT:
                         XREF            COR_FTDI_FLUSH_RX
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_FLUSH_RX  [HASH:BB21]
+; ROUTINE: SYS_FLUSH_RX  [HASH:4B6400FA]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, FLUSH, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -97,7 +97,7 @@ SYS_FLUSH_RX:
                         XREF            COR_FTDI_CHECK_ENUMERATED
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_CHECK_ENUMERATED  [HASH:13D7]
+; ROUTINE: SYS_CHECK_ENUMERATED  [HASH:82B6AA70]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, ENUM, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -118,7 +118,7 @@ SYS_CHECK_ENUMERATED:
                         XREF            COR_FTDI_READ_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CHAR  [HASH:8ABF]
+; ROUTINE: SYS_READ_CHAR  [HASH:43621C9C]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, READ, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -135,13 +135,40 @@ SYS_READ_CHAR:
                         RTS
                         ENDMOD
 
+                        MODULE          SYS_GET_CTRL_C
+
+                        XDEF            SYS_GET_CTRL_C
+                        XREF            COR_FTDI_GET_CTRL_C
+
+; ----------------------------------------------------------------------------
+; ROUTINE: SYS_GET_CTRL_C  [HASH:BEB18931]
+; TIER: SYS-L4
+; TAGS: SYS, SYS-L4, CTRL-C, NONBLOCKING, CARRY-STATUS, NO-ZP, NO-RAM,
+;   CALLS_COR, NOSTACK, CONSUMES-RX
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Device-neutral non-blocking Ctrl-C detector.
+; IN : none
+; OUT: C = 1 and A = $03 if Ctrl-C was consumed
+;      C = 0 and A = $00 otherwise
+; EXCEPTIONS/NOTES:
+; - Current backend is FTDI; delegates to `COR_FTDI_GET_CTRL_C`.
+; - Consumes one pending RX byte when any byte is available.  This is for
+;   break/abort polling, not non-destructive keyboard peeking.
+; ----------------------------------------------------------------------------
+SYS_GET_CTRL_C_FNV:
+                        DB              'F','N',('V'+$80),$31,$89,$B1,$BE,$00
+SYS_GET_CTRL_C:
+                        JSR             COR_FTDI_GET_CTRL_C
+                        RTS
+                        ENDMOD
+
                         MODULE          SYS_READ_CHAR_SPINCOUNT
 
                         XDEF            SYS_READ_CHAR_SPINCOUNT
                         XREF            COR_FTDI_READ_CHAR_SPINCOUNT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CHAR_SPINCOUNT  [HASH:A46D]
+; ROUTINE: SYS_READ_CHAR_SPINCOUNT  [HASH:13947FC4]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, READ, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -162,7 +189,7 @@ SYS_READ_CHAR_SPINCOUNT:
                         XREF            COR_FTDI_READ_CHAR_TIMEOUT_SPINDOWN
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CHAR_TIMEOUT_SPINDOWN  [HASH:1AA2]
+; ROUTINE: SYS_READ_CHAR_TIMEOUT_SPINDOWN  [HASH:03FBED1D]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, SPINDOWN, TIMEOUT, READ, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -185,7 +212,7 @@ SYS_READ_CHAR_TIMEOUT_SPINDOWN:
                         XREF            COR_FTDI_POLL_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_POLL_CHAR  [HASH:BE36]
+; ROUTINE: SYS_POLL_CHAR  [HASH:D346E667]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -206,7 +233,7 @@ SYS_POLL_CHAR:
                         XREF            COR_FTDI_WRITE_CHAR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_CHAR  [HASH:2576]
+; ROUTINE: SYS_WRITE_CHAR  [HASH:49023C1B]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -227,7 +254,7 @@ SYS_WRITE_CHAR:
                         XREF            COR_FTDI_WRITE_CHAR_REPEAT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_CHAR_REPEAT  [HASH:0884]
+; ROUTINE: SYS_WRITE_CHAR_REPEAT  [HASH:CCB058E3]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -252,7 +279,7 @@ SYS_WRITE_CHAR_REPEAT:
                         XREF            COR_FTDI_READ_CHAR_COOKED_ECHO
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CHAR_ECHO
+; ROUTINE: SYS_READ_CHAR_ECHO  [HASH:F91947F8]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, ECHO, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -267,7 +294,7 @@ SYS_READ_CHAR_ECHO:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_READ_CHAR_COOKED_ECHO  [HASH:77FD]
+; ROUTINE: SYS_READ_CHAR_COOKED_ECHO  [HASH:B85E3F10]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, COOKED, ECHO, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.

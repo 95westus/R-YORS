@@ -53,7 +53,7 @@ SYS_BACKEND_SELECTED       EQU             SYS_BACKEND_FTDI
                         XREF            COR_FTDI_WRITE_CHAR_PLUS_CRLF
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_CHAR_PLUS_CRLF  [HASH:6009]
+; ROUTINE: SYS_WRITE_CHAR_PLUS_CRLF  [HASH:A06A074A]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, CRLF, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -76,7 +76,7 @@ SYS_WRITE_CHAR_PLUS_CRLF:
                         XREF            COR_FTDI_WRITE_BYTES_AXY
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_BYTES_AXY  [HASH:AE8A]
+; ROUTINE: SYS_WRITE_BYTES_AXY  [HASH:4FDF2021]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, PRESERVE-XY, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -99,7 +99,7 @@ SYS_WRITE_BYTES_AXY:
                         XREF            COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_CVN_WRITE_CHAR_PLUS_CRLF  [HASH:D58D]
+; ROUTINE: SYS_CVN_WRITE_CHAR_PLUS_CRLF  [HASH:3D6ECA3C]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, CRLF, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -122,7 +122,7 @@ SYS_CVN_WRITE_CHAR_PLUS_CRLF:
                         XREF            COR_FTDI_CVN_WRITE_BYTES_AXY
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_CVN_WRITE_BYTES_AXY  [HASH:D686]
+; ROUTINE: SYS_CVN_WRITE_BYTES_AXY  [HASH:DAF7F1CB]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, PRESERVE-XY, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -145,7 +145,7 @@ SYS_CVN_WRITE_BYTES_AXY:
                         XREF            COR_FTDI_CVN_WRITE_LINE_RTL_XY
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_LINE_RTL_XY  [HASH:B63D]
+; ROUTINE: SYS_WRITE_LINE_RTL_XY  [HASH:E6B45652]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, NUL-TERM, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -167,7 +167,7 @@ SYS_WRITE_LINE_RTL_XY:
                         XREF            COR_FTDI_WRITE_CSTRING
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_CSTRING  [HASH:DA90]
+; ROUTINE: SYS_WRITE_CSTRING  [HASH:56C76299]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, FTDI, WRITE, NUL-TERM, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -191,7 +191,7 @@ SYS_WRITE_CSTRING:
                         XREF            COR_FTDI_WRITE_HBSTRING
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_HBSTRING  [HASH:C48F]
+; ROUTINE: SYS_WRITE_HBSTRING  [HASH:A6D68C34]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, HIBIT-TERM, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -216,7 +216,7 @@ SYS_WRITE_HBSTRING:
                         XREF            SYS_WRITE_CRLF
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_HBLINE  [HASH:1FF2]
+; ROUTINE: SYS_WRITE_HBLINE  [HASH:3A150F83]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, HIBIT-TERM, CRLF, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -237,7 +237,7 @@ SYS_WRITE_HBLINE:
                         XREF            SYS_WRITE_CRLF
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_LINE_XY  [HASH:57A8]
+; ROUTINE: SYS_WRITE_LINE_XY  [HASH:59A0E7C5]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, NUL-TERM, CRLF, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -259,7 +259,7 @@ SYS_WRITE_LINE_XY:
                         XREF            COR_FTDI_WRITE_HEX_BYTE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_HEX_BYTE  [HASH:AAD0]
+; ROUTINE: SYS_WRITE_HEX_BYTE  [HASH:A1722743]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, WRITE, HEX, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM,
 ;   CALLS_COR, NOSTACK
@@ -281,7 +281,7 @@ SYS_WRITE_HEX_BYTE:
                         XREF            COR_FTDI_WRITE_CRLF
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_WRITE_CRLF  [HASH:5F2D]
+; ROUTINE: SYS_WRITE_CRLF  [HASH:3F362368]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, CRLF, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.

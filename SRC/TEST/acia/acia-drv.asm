@@ -63,7 +63,7 @@ ACIA_ST_FE_M               EQU             %00000010
 ACIA_ST_PE_M               EQU %00000001               ; PARITY ERROR
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_ACIA_RESET_PROGRAM  [HASH:C2F0]
+; ROUTINE: PIN_ACIA_RESET_PROGRAM  [HASH:41DC7F40]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, ACIA, MMIO, REGISTER, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -80,7 +80,7 @@ PIN_ACIA_RESET_PROGRAM:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_ACIA_INIT_PORT  [HASH:AFEC]
+; ROUTINE: PIN_ACIA_INIT_PORT  [HASH:E4BFE904]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, ACIA, MMIO, REGISTER, NO-ZP, NO-RAM, CALLS_PIN,
 ;   NOSTACK
@@ -106,7 +106,7 @@ PIN_ACIA_INIT_PORT:
                         XDEF            PIN_ACIA_READ_BYTE_BLOCK
                         XDEF            PIN_ACIA_READ_BYTE_SPINWAIT
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_ACIA_WRITE_BYTE_TIMEOUT  [HASH:1F6E]
+; ROUTINE: PIN_ACIA_WRITE_BYTE_TIMEOUT  [HASH:21C019EE]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, FTDI, ACIA, MMIO, REGISTER, TIMEOUT, WRITE,
 ;   PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN, STACK
@@ -151,7 +151,7 @@ PIN_ACIA_WRITE_BYTE_TIMEOUT:
 
                         ; XDEF PIN_ACIA_READ_BYTE_SPINWAIT
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_ACIA_READ_BYTE_SPINWAIT  [HASH:A509]
+; ROUTINE: PIN_ACIA_READ_BYTE_SPINWAIT  [HASH:C91D5139]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, ACIA, MMIO, REGISTER, SPINWAIT, READ, CARRY-STATUS,
 ;   NO-ZP, NO-RAM, NOSTACK
@@ -182,7 +182,7 @@ PIN_ACIA_READ_BYTE_SPINWAIT:
                         ; Blocking read helper for parity with FTDI API:
                         ; loops until ACIA read byte routine returns carry.
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_ACIA_READ_BYTE_BLOCK  [HASH:615B]
+; ROUTINE: PIN_ACIA_READ_BYTE_BLOCK  [HASH:D219A971]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, MMIO, REGISTER, SPINWAIT, READ, CARRY-STATUS, NO-ZP,
 ;   NO-RAM, CALLS_PIN, NOSTACK
@@ -200,7 +200,7 @@ PIN_ACIA_READ_BYTE_BLOCK:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PIN_ACIA_TX_DELAY_GATE  [HASH:DE5E]
+; ROUTINE: PIN_ACIA_TX_DELAY_GATE  [HASH:1CAEC652]
 ; TIER: DRIVER-L0
 ; TAGS: PIN, DRIVER-L0, ACIA, MMIO, REGISTER, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -224,3 +224,5 @@ PIN_ACIA_TX_DELAY_GATE:
                         BNE             ?ATT_OUTER
 ?ATT_DONE:
                         RTS
+
+                        END

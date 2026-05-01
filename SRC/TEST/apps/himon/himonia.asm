@@ -2,7 +2,7 @@
 ; himonia.asm
 ; Compact supervisory debug monitor for W65C02S.
 ; Memory map target:
-;   RAM   $0000-$7EFF
+;   RAM   $0000-$7EFF (UPA $2000-$77FF, HIUPA $7800-$79FF)
 ;   IO    $7F00-$7FFF
 ;   FLASH $8000-$FFFF
 ; ----------------------------------------------------------------------------
@@ -28,6 +28,7 @@ TRAP_BRK_SIG             EQU             $7EEB
 TRAP_CAUSE_NONE          EQU             $00
 TRAP_CAUSE_NMI           EQU             $01
 TRAP_CAUSE_BRK           EQU             $02
+CMD_FNV_SIG2             EQU             ('V'+$80)
 
                         CODE
 START:
@@ -1479,6 +1480,11 @@ MSG_USAGE_U:             DB              "U start [end|+n]",$DD
 MSG_USAGE_A:             DB              "A start [mne op]",$DD
 MSG_BP_SET:              DB              "BP ",$A4
 MSG_BP_CLR:              DB              "BC ",$A4
+MSG_STEP:                DB              "STEP PC",$BD
+MSG_STEP_OP:             DB              " OP",$BD
+MSG_STEP_LEN:            DB              " LEN",$BD
+MSG_STEP_NEXT:           DB              " NEXT",$BD
+MSG_STEP_BP:             DB              " B",$D0
 MSG_DIS_DB:              DB              ".DB ",$A4
 
 ASM_MNEM_NAMES:

@@ -69,7 +69,7 @@ MON_CMD_LOAD_PARSE_FAIL_EOL:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_MAYBE_GO  [HASH:37E2]
+; ROUTINE: MON_LOAD_MAYBE_GO  [HASH:4D263EB4]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, LOAD, CARRY-STATUS, NOSTACK
 ; PURPOSE: For `LOAD GO`, transfer control to captured GO address.
@@ -111,7 +111,7 @@ MON_LOAD_MAYBE_GO_DONE:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_VALIDATE_ARGS  [HASH:00A3]
+; ROUTINE: MON_LOAD_VALIDATE_ARGS  [HASH:39D0BC33]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, SREC, LOAD, NOSTACK
 ; PURPOSE: Validate LOAD args.
@@ -179,7 +179,7 @@ MON_LOAD_VALIDATE_FAIL:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_INIT  [HASH:2A33]
+; ROUTINE: MON_LOAD_INIT  [HASH:332B45E1]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, LOAD, NOSTACK
 ; PURPOSE: Reset LOAD session counters and state.
@@ -225,7 +225,7 @@ MON_LOAD_INIT:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_READ_LINE  [HASH:8DBA]
+; ROUTINE: MON_LOAD_READ_LINE  [HASH:A972A54E]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, READ, SREC, CARRY-STATUS, NOSTACK
 ; PURPOSE: Read one incoming S-record text line into LOAD_BUF.
@@ -245,7 +245,7 @@ MON_LOAD_READ_LINE_OK:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_PARSE_RECORD  [HASH:B9A0]
+; ROUTINE: MON_LOAD_PARSE_RECORD  [HASH:7B85C4C6]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, UPPERCASE, SREC, PARSE, STACK
 ; PURPOSE: Parse one S19 line (S1 data, S9 termination).
@@ -383,7 +383,7 @@ MON_LOAD_PARSE_FAIL:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_CLASSIFY_TYPE  [HASH:B252]
+; ROUTINE: MON_LOAD_CLASSIFY_TYPE  [HASH:8798DE9A]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, SREC, NOSTACK
 ; PURPOSE: Map S-record type to DATA/TERM/SKIP and expected address length.
@@ -434,7 +434,7 @@ MON_LOAD_CLASSIFY_FAIL:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_RESOLVE_ADDR16  [HASH:710C]
+; ROUTINE: MON_LOAD_RESOLVE_ADDR16  [HASH:91C2A55A]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, SREC, NOSTACK
 ; PURPOSE: Resolve parsed record address into 16-bit target address.
@@ -489,7 +489,7 @@ MON_LOAD_RESOLVE_FAIL:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_WRITE_RECORD_DATA  [HASH:C615]
+; ROUTINE: MON_LOAD_WRITE_RECORD_DATA  [HASH:DFDFAB13]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, WRITE, NOSTACK
 ; PURPOSE: Write parsed record payload bytes to LOAD_DST address.
@@ -515,9 +515,9 @@ MON_LOAD_WRITE_DONE:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_ACCUM_RECORD_ONLY / MON_LOAD_ACCUM_RECORD_AND_BYTES  [HASH:7481]
+; ROUTINE: MON_LOAD_ACCUM_RECORD_ONLY / MON_LOAD_ACCUM_RECORD_AND_BYTES  [HASH:225FF9B1]
 ; TIER: APP-L5
-;   [HASH:B3F1]
+; ALIAS_HASH: MON_LOAD_ACCUM_RECORD_AND_BYTES  [HASH:05A2B3E4]
 ; TAGS: MON, APP-L5, LOAD, NOSTACK
 ; PURPOSE: Maintain LOAD session counters.
 ; ----------------------------------------------------------------------------
@@ -541,7 +541,7 @@ MON_LOAD_ACCUM_RECORD_AND_BYTES:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_TRACK_DATA_RANGE  [HASH:587F]
+; ROUTINE: MON_LOAD_TRACK_DATA_RANGE  [HASH:2631A379]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, NOSTACK
 ; PURPOSE: Track overall span and contiguous ranges for DATA records.
@@ -718,7 +718,7 @@ MON_LOAD_TRACK_DONE:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_COMMIT_CURRENT_RANGE  [HASH:F0D2]
+; ROUTINE: MON_LOAD_COMMIT_CURRENT_RANGE  [HASH:FF655A96]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, NOSTACK
 ; PURPOSE: Commit current open range into range list.
@@ -761,7 +761,7 @@ MON_LOAD_COMMIT_COUNT:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_FINALIZE_RANGES  [HASH:8514]
+; ROUTINE: MON_LOAD_FINALIZE_RANGES  [HASH:B78F3D28]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, LOAD, NOSTACK
 ; PURPOSE: Close the last open range at end-of-load.
@@ -773,7 +773,7 @@ MON_LOAD_FINALIZE_RANGES:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_CAPTURE_GO  [HASH:A784]
+; ROUTINE: MON_LOAD_CAPTURE_GO  [HASH:3AD528DE]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, SREC, NOSTACK
 ; PURPOSE: Capture entry address from S7/S8/S9 termination record.
@@ -798,7 +798,7 @@ MON_LOAD_CAPTURE_GO_FAIL:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_PRINT_ONE_RANGE  [HASH:E1AF]
+; ROUTINE: MON_LOAD_PRINT_ONE_RANGE  [HASH:727B9D47]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, STACK
 ; PURPOSE: Print one committed range line. IN: X = 0-based range index.
@@ -860,7 +860,7 @@ MON_LOAD_PRINT_ONE_RANGE:
 
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: MON_LOAD_PRINT_SUMMARY  [HASH:0211]
+; ROUTINE: MON_LOAD_PRINT_SUMMARY  [HASH:4D58AF3D]
 ; TIER: APP-L5
 ; TAGS: MON, APP-L5, LOAD, STACK
 ; PURPOSE: Print one end-of-load summary (counters, ranges, GO).

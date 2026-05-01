@@ -31,8 +31,8 @@ PH0_POLL_READY:
                         LDY             #>MSG_NOINIT_POLL_READY
                         JSR             SYS_WRITE_CSTRING
 PH0_AFTER_POLL:
-                        JSR             PRINT_DELAY_MSG
-                        JSR             DELAY_3S_8MHZ
+                        JSR             DRV_PRINT_DELAY_MSG
+                        JSR             DRV_DELAY_3S_8MHZ
 
                         LDX             #<MSG_NOINIT_WHAT_CHAR
                         LDY             #>MSG_NOINIT_WHAT_CHAR
@@ -54,8 +54,8 @@ PH0_READ_OK:
                         JSR             PIN_FTDI_WRITE_BYTE_NONBLOCK
                         JSR             COR_FTDI_WRITE_CRLF
 PH0_AFTER_READ:
-                        JSR             PRINT_DELAY_MSG
-                        JSR             DELAY_3S_8MHZ
+                        JSR             DRV_PRINT_DELAY_MSG
+                        JSR             DRV_DELAY_3S_8MHZ
 
 ; ----------------------------------------------------------------------------
 ; PIN-L0-FTDI PHASE B: POST-INIT
@@ -77,8 +77,8 @@ PH1_POLL_READY:
                         LDY             #>MSG_INIT_POLL_READY
                         JSR             SYS_WRITE_CSTRING
 PH1_AFTER_POLL:
-                        JSR             PRINT_DELAY_MSG
-                        JSR             DELAY_3S_8MHZ
+                        JSR             DRV_PRINT_DELAY_MSG
+                        JSR             DRV_DELAY_3S_8MHZ
 
                         LDX             #<MSG_INIT_WHAT_CHAR
                         LDY             #>MSG_INIT_WHAT_CHAR
@@ -100,8 +100,8 @@ PH1_READ_OK:
                         JSR             PIN_FTDI_WRITE_BYTE_NONBLOCK
                         JSR             COR_FTDI_WRITE_CRLF 
 PH1_AFTER_READ:
-                        JSR             PRINT_DELAY_MSG
-                        JSR             DELAY_3S_8MHZ
+                        JSR             DRV_PRINT_DELAY_MSG
+                        JSR             DRV_DELAY_3S_8MHZ
 
 ; PIN-L0-FTDI-ENUM-CHK-01
 ENUM_CHECK:             JSR             PIN_FTDI_CHECK_ENUMERATED 
@@ -124,36 +124,36 @@ DONE:                   BRA             PH1_AFTER_READ
                        BRK             00
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: PRINT_DELAY_MSG  [HASH:381B]
+; ROUTINE: DRV_PRINT_DELAY_MSG  [HASH:E5EC2D79]
 ; TAGS: MMIO, REGISTER, NOSTACK
 ; ----------------------------------------------------------------------------
-PRINT_DELAY_MSG:
+DRV_PRINT_DELAY_MSG:
                         LDX             #<MSG_DELAY
                         LDY             #>MSG_DELAY
                         JSR             SYS_WRITE_CSTRING
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: DELAY_3S_8MHZ  [HASH:2532]
+; ROUTINE: DRV_DELAY_3S_8MHZ  [HASH:B61BB98A]
 ; TAGS: MMIO, REGISTER, NOSTACK
 ; PURPOSE: Busy-wait delay tuned for approximately 3.0 seconds at 8 MHz.
 ; IN : none
 ; OUT: none
 ; CLOBBERS: A, X, Y
 ; ----------------------------------------------------------------------------
-DELAY_3S_8MHZ:
+DRV_DELAY_3S_8MHZ:
                         LDA             #$6A            ; 106 outer loops
-DELAY3_OUTER:
+DRV_DELAY3_OUTER:
                         LDX             #$B6            ; 182 middle loops
-DELAY3_MIDDLE:
+DRV_DELAY3_MIDDLE:
                         LDY             #$F8            ; 248 inner loops
-DELAY3_INNER:
+DRV_DELAY3_INNER:
                         DEY
-                        BNE             DELAY3_INNER
+                        BNE             DRV_DELAY3_INNER
                         DEX
-                        BNE             DELAY3_MIDDLE
+                        BNE             DRV_DELAY3_MIDDLE
                         DEC             A
-                        BNE             DELAY3_OUTER
+                        BNE             DRV_DELAY3_OUTER
                         RTS
 
 MSG_PHASE_NO_INIT:      DB              13,10,"PIN-L0-FTDI PHASE: PRE-INIT",13,10,0

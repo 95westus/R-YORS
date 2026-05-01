@@ -12,15 +12,15 @@ This is a play on "Roll Your Own Runtime System," where "Я" (Russian for "ya") 
 
 ## Why
 
-**The goal is to create an inexpensive, turnkey 6502 runtime system that boots directly from hardware without requiring toolchain setup. This will make retro computing accessible to anyone seeking standalone operation and customizable runtime experimentation on a single board.**
+**R-YORS exists to make a WDC W65C02SXB/W65C02EDU single-board computer feel like a standalone machine: power on, recover safely, load or build code, inspect routines, and grow the system in flash without needing a full toolchain every time.**
 
 ## What
 
-R-YORS is an in-progress 65C02 runtime project based on the Western Design Center W65C02SXB/W65C02EDU hardware. I'm building it from the ground up: low-level board bring-up, reusable runtime routines, a compact monitor, loaders, debug paths, and small applications that prove the pieces work on real hardware. The long-term goal is still an RPG II compiler, but the work is deliberately producing useful runtime blocks along the way.
+R-YORS is an in-progress W65C02 runtime project built from the ground up: low-level board bring-up, reusable runtime routines, a compact monitor, flash-safe recovery/update paths, loaders, debug tools, and small applications that prove the pieces work on real hardware.
 
-### Why RPG
+The near-term project is the runtime itself: **STR8** for recovery/update safety and **HIMON** for the monitor, command dispatch, catalog lookup, assembler, and debug surface.
 
-I want to build the language I actually learned, not a modern approximation. I spent nearly 30 years writing RPG, and there still is not one project here focused on true RPG II. Yes, I could get access to an AS/400 or S/3x0, but that misses the point. This project targets the original RPG II model. As I kept building routines on top of routines, I realized this approach can produce a close approximation/simulation of the original environment. The plan is to build it from the ground up, guided by original IBM documentation, then expand compatibility without losing what made RPG II unique.
+The long-term north star is still true RPG II, but not as a bolted-on compiler. The "OS" is being shaped around the needs of that future: stable callable routines, discoverable catalogs, flash-resident programs, fixed entry points, simple text encodings, and an onboard assembler/linker path that can grow without losing the machine.
 
 ## How
 
@@ -43,23 +43,59 @@ My predecessor project, BSO2, proved the concept but suffered from inflexible co
 - **COR routines** – Core reusable services and board-facing helpers
 - **SYS routines** – System-level services such as I/O, vectors, debug entry, and monitor-facing adapters
 
-The current supervisory monitor is **HIMONIA-F**, a compact FNV-1a-dispatched monitor built to fit under 8K. It boots from ROM, initializes FTDI I/O, clears RAM on cold reset, patches RAM dispatch cells for reset/NMI/IRQ/BRK handling, and prints terse cold-boot telemetry such as:
+The current supervisory monitor is **HIMONIA-F**, a compact FNV-1a-dispatched monitor built to fit under 8K. It boots from ROM, initializes FTDI I/O, clears RAM on cold reset, patches RAM dispatch cells for reset/NMI/IRQ/BRK handling, and prints a terse reset report like:
 
 ```text
 BOOT COLD
-WAIT OK
 RAM ZERO OK
 FTDI INIT
-RST 7EF8=....
-NMI 7EFA=....
-IRQ 7EFE=....
-BRK 7EFC=....
+WAIT ............. OK
+RST 7EF8=EB81
+NMI 7EFA=DD72
+IRQ 7EFE=DDF3
+BRK 7EFC=DDA5
+
+HIMONIA v1
 ```
+
+Warm reset reports `BOOT WARM` instead of `BOOT COLD` and skips the
+`RAM ZERO OK` line.
 
 HIMONIA-F currently includes hashed command dispatch, S-record loading, GO/LOAD+GO execution, register display/editing, memory display/modify, disassembly/assembly helpers, breakpoints, single-step support, NMI/BRK trap capture, decoded CPU flags, and return-status reporting for executed user code. BRK handling is now native to the monitor rather than delegated to BSO2. The monitor also exposes discoverable FNV signatures for selected commands and routines, making ROM services easier to identify and call by hash.
 
 Small standalone programs are used to test the runtime surface. One example is a 16x16 Conway Life app loaded at `$2000`, with random/manual/auto/next/quit controls, age-aware cells, NMI count testing, and cleanup that restores the monitor's debug vector before returning.
 
+## Build
+
+```text
+make release
+```
+
+`release` regenerates the source markdown summaries, builds the tracked-source
+release set, and stamps the Himonia-F ROM binary under `SRC/ROM_IMAGES/`. The
+tracked-source release set is Himonia-F, the FNV-1a/HBSTR tool, the flash test,
+and `calc-flash`.
+
+```text
+make release-local
+```
+
+`release-local` adds the ignored/private local composites, such as BASIC/Forth
+ROM images, when the `LOCAL/` source homes are populated.
+
 ## Documentation & References
 
-Core references include IBM's SY31-0458-3 (System Unit Theory Diagrams Manual) and GC21-7667-4 (RPG II Reference Manual).
+Start here:
+
+- [DOC/INDEX.md](DOC/INDEX.md) - documentation spine.
+- [DOC/GUIDES/STR8.md](DOC/GUIDES/STR8.md) - recovery/update monitor direction.
+- [DOC/GUIDES/MEMORY_MAP.md](DOC/GUIDES/MEMORY_MAP.md) - current Himonia-F ROM/RAM map.
+- [DOC/GUIDES/CATALOG.md](DOC/GUIDES/CATALOG.md) - programmer-facing callable routine catalog.
+- [DOC/GUIDES/FUTURE.md](DOC/GUIDES/FUTURE.md) - longer-term direction, including RPG II.
+
+Core historical references include IBM's SY31-0458-3 and GC21-7667-4.
+
+## Trademarks And Attribution
+
+R-YORS is independent and is not affiliated with or endorsed by The Western
+Design Center, Inc. Product names are used only to identify compatible hardware.

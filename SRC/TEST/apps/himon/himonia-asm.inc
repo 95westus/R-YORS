@@ -63,10 +63,7 @@ ASM_INTERACTIVE:
                         BEQ             ASM_INTERACTIVE_DONE
                         JSR             ASM_ASSEMBLE_LINE
                         BCS             ASM_INTERACTIVE
-                        LDX             #<MSG_USAGE_A
-                        LDY             #>MSG_USAGE_A
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             CMD_USAGE_A
                         BRA             ASM_INTERACTIVE
 ASM_INTERACTIVE_DONE:
                         RTS
@@ -646,8 +643,14 @@ ASM_EMIT_1_DONE:
                         RTS
 
 ASM_STORE_A_ADV:
+                        PHA
+                        LDA             CMD_RANGE_TMP_LO
+                        STA             CMDP_START_LO
+                        LDA             CMD_RANGE_TMP_HI
+                        STA             CMDP_START_HI
+                        PLA
                         LDY             #$00
-                        STA             (CMD_RANGE_TMP_LO),Y
+                        STA             (CMDP_START_LO),Y
                         INC             CMD_RANGE_TMP_LO
                         BNE             ASM_STORE_A_ADV_DONE
                         INC             CMD_RANGE_TMP_HI

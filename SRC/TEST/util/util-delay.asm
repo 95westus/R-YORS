@@ -24,18 +24,18 @@
 
                         XDEF            UTL_DELAY_AXY_8MHZ
 
-DELAY_AXY_X_INIT           EQU             $7BF9
-DELAY_AXY_Y_INIT           EQU             $7BF8
+DELAY_AXY_Y_INIT           EQU             $7EDE
+DELAY_AXY_X_INIT           EQU             $7EDF
 
 DELAY_AXY_MAX_A            EQU             $E5                    ; 229
 DELAY_AXY_MAX_X            EQU             $B6                    ; 182
 DELAY_AXY_MAX_Y            EQU             $F8                    ; 248
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: UTL_DELAY_AXY_8MHZ  [HASH:B9EE]
+; ROUTINE: UTL_DELAY_AXY_8MHZ  [HASH:153EF005]
 ; TIER: APP-L5
 ; TAGS: UTL, APP-L5, NO-ZP, USES-FIXED-RAM, NOSTACK
-; MEM : ZP: none; FIXED_RAM: DELAY_AXY_X_INIT($7BF9), DELAY_AXY_Y_INIT($7BF8).
+; MEM : ZP: none; FIXED_RAM: DELAY_AXY_Y_INIT($7EDE), DELAY_AXY_X_INIT($7EDF).
 ; PURPOSE: Polling delay using nested A/X/Y software loops at 8 MHz.
 ; IN :
 ; OUT:
@@ -92,3 +92,5 @@ UTL_DELAY_AXY_8MHZ:
                         RTS
 
                         ENDMOD
+
+                        END

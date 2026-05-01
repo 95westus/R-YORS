@@ -47,7 +47,7 @@ VEC_IRQ_NONBRK_HI         EQU             $7EFF
                         XREF            SYS_DEBUG_JSR_SNAPSHOT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_INIT  [HASH:CC6E]
+; ROUTINE: SYS_VEC_INIT  [HASH:C5FE6C62]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, RESET, IRQ, NMI, BRK, FIXED-RAM, IRQ, NOSTACK
 ; PURPOSE: Seed patchable vector cells with safe default handlers.
@@ -85,7 +85,7 @@ SYS_VEC_INIT:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_ENTRY_RESET  [HASH:BDE4]
+; ROUTINE: SYS_VEC_ENTRY_RESET  [HASH:4EA53CFC]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, RESET, NOSTACK
 ; PURPOSE: RESET vector entry stub. Jumps through patchable RESET target.
@@ -96,7 +96,7 @@ SYS_VEC_ENTRY_RESET:
                         JMP             (VEC_RESET_LO)
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_ENTRY_NMI  [HASH:705F]
+; ROUTINE: SYS_VEC_ENTRY_NMI  [HASH:F8F789CB]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, NMI, NOSTACK
 ; PURPOSE: NMI vector entry stub. Jumps through patchable NMI target.
@@ -107,7 +107,7 @@ SYS_VEC_ENTRY_NMI:
                         JMP             (VEC_NMI_LO)
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_ENTRY_IRQ_MASTER  [HASH:AEA4]
+; ROUTINE: SYS_VEC_ENTRY_IRQ_MASTER  [HASH:72D99F9C]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, IRQ, BRK, NOSTACK
 ; PURPOSE: IRQ master dispatch. Splits BRK vs non-BRK and jumps via patchable
@@ -134,7 +134,7 @@ SYS_VEC_IRQ_MASTER_NONBRK:
                         JMP             (VEC_IRQ_NONBRK_LO)
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_SET_RESET_XY  [HASH:D4CC]
+; ROUTINE: SYS_VEC_SET_RESET_XY  [HASH:90CB06AA]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, RESET, IRQ, FIXED-RAM, NOSTACK
 ; PURPOSE: Atomically patch RESET target vector.
@@ -153,7 +153,7 @@ SYS_VEC_SET_RESET_XY:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_SET_NMI_XY  [HASH:F071]
+; ROUTINE: SYS_VEC_SET_NMI_XY  [HASH:2EEF6FC3]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, NMI, IRQ, FIXED-RAM, NOSTACK
 ; PURPOSE: Atomically patch NMI target vector.
@@ -172,7 +172,7 @@ SYS_VEC_SET_NMI_XY:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_SET_IRQ_BRK_XY  [HASH:F197]
+; ROUTINE: SYS_VEC_SET_IRQ_BRK_XY  [HASH:0DFCEEC3]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, IRQ, BRK, FIXED-RAM, NOSTACK
 ; PURPOSE: Atomically patch IRQ BRK breakout target vector.
@@ -191,7 +191,7 @@ SYS_VEC_SET_IRQ_BRK_XY:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_SET_IRQ_NONBRK_XY  [HASH:6DA0]
+; ROUTINE: SYS_VEC_SET_IRQ_NONBRK_XY  [HASH:14E4B2B4]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, IRQ, FIXED-RAM, NOSTACK
 ; PURPOSE: Atomically patch IRQ non-BRK breakout target vector.
@@ -210,7 +210,7 @@ SYS_VEC_SET_IRQ_NONBRK_XY:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_DEFAULT_RESET  [HASH:07F3]
+; ROUTINE: SYS_VEC_DEFAULT_RESET  [HASH:DE3C6189]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, RESET, NOSTACK
 ; PURPOSE: Fail-safe default RESET target until board-specific patching.
@@ -223,7 +223,7 @@ SYS_VEC_DEFAULT_RESET_HALT:
                         BRA             SYS_VEC_DEFAULT_RESET_HALT
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_DEFAULT_NMI  [HASH:F22E]
+; ROUTINE: SYS_VEC_DEFAULT_NMI  [HASH:B589D492]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, NMI, NOSTACK
 ; PURPOSE: Default NMI target: enter debug snapshot, then return from NMI.
@@ -233,7 +233,7 @@ SYS_VEC_DEFAULT_NMI:
                         RTI
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_DEFAULT_IRQ_BRK  [HASH:2B48]
+; ROUTINE: SYS_VEC_DEFAULT_IRQ_BRK  [HASH:BC9E454E]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, IRQ, BRK, NOSTACK
 ; PURPOSE: Default BRK breakout target: return until monitor patch is installed.
@@ -242,7 +242,7 @@ SYS_VEC_DEFAULT_IRQ_BRK:
                         RTI
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: SYS_VEC_DEFAULT_IRQ_NONBRK  [HASH:EFC1]
+; ROUTINE: SYS_VEC_DEFAULT_IRQ_NONBRK  [HASH:777DCE1D]
 ; TIER: SYS-L4
 ; TAGS: SYS, SYS-L4, VECTOR, IRQ, NOSTACK
 ; PURPOSE: Default non-BRK IRQ breakout target: return until IRQ owner patches.

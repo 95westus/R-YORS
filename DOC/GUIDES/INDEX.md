@@ -1,42 +1,70 @@
 # R-YORS Guide Index
 
-Generated from current source scan on 2026-04-13 22:06:00 -05:00.
+This is the top index for the `ror` documentation set.
 
-## Guide Set
-- [INDEX.md](./INDEX.md)
-- [TOC.md](./TOC.md)
-- [BIB.md](./BIB.md)
-- [CALL_MAP.md](./CALL_MAP.md)
-- [HASH.md](./HASH.md)
-- [GLOSSARY.md](./GLOSSARY.md)
-- [REF.md](./REF.md)
-- [XREF.md](./XREF.md)
-- [TODO.md](./TODO.md)
-- [FUTURE.md](./FUTURE.md)
+## Start Here
 
-## rom.lib Snapshot (SRC/APP/STASH/LIB/**/*.asm)
-- Library files scanned: 19
-- Modules found: 100
-- Exported symbols (XDEF, unique): 114
-- Imported symbols (XREF, unique): 56
-- Routine blocks (ROUTINE): 104
-- Routine prefix breakdown: COR=38, SYS=31, UTL=21, PIN=5, TST=5, BIO=4
-- Subsystem file breakdown: ftdi=8, util=7, dev=4
+- [TOC.md](./TOC.md) - recommended reading order.
+- [MAP.md](./MAP.md) - documentation map and system map.
+- [DECISIONS.md](./DECISIONS.md) - settled calls to avoid reopening by accident.
+- [REF.md](./REF.md) - quick operational reference.
+- [XREF.md](./XREF.md) - document and source cross-reference.
+- [SYMBOL_XREF.md](./SYMBOL_XREF.md) - symbol ref/xref/semantic classification.
+- [CATALOG.md](./CATALOG.md) - programmer-facing routine catalog by need.
+- [MEMORY_MAP.md](./MEMORY_MAP.md) - current Himonia-F ROM and RAM memory map.
+- [BIB.md](./BIB.md) - internal corpus used by these notes.
 
-## App/Test Snapshot
-- STASH app files: 6
-- TEST files: 6
-- SESH files: 1
-- App/test/SESH routine blocks: 90
+## Core Design Guides
 
-## Call Map Snapshot (DOC/GUIDES/CALL_MAP.md)
-- Files scanned: 35
-- Routines/labels discovered: 1138
-- Unique call edges: 1160
-- Raw call sites (JSR/JMP): 2079
+- [HISTORICAL_DOCUMENTS.md](./HISTORICAL_DOCUMENTS.md) - path from BSO2 ideas to Himonia-F.
+- [DECISIONS.md](./DECISIONS.md) - naming, hash, STR8, ASM, ABI, local-home,
+  and doc-shape decisions.
+- [STR8.md](./STR8.md) - Straight 8 recovery/update monitor.
+- [HASHED_ASM.md](./HASHED_ASM.md) - onboard hashed assembler, symbols, and fixups.
+- [HASH_MAP.md](./HASH_MAP.md) - hash uses across docs, runtime dispatch, and assembler records.
+- [MEMORY_MAP.md](./MEMORY_MAP.md) - current Himonia-F ROM image, RAM workspace,
+  fixed ABI entries, vectors, and STR8 ownership direction.
+- [HIMONIA_F_MAP.md](./HIMONIA_F_MAP.md) - readable Himonia-F edge and capability maps.
 
-## Inputs Used
-- SRC/APP/STASH/LIB/**/*.asm
-- SRC/APP/STASH/**/*.asm
-- SRC/APP/TEST/**/*.asm
-- SRC/APP/SESH/**/*.asm
+## Reference Guides
+
+- [HASH.md](./HASH.md) - routine header `[HASH:XXXXXXXX]` FNV-1a IDs.
+- [CATALOG.md](./CATALOG.md) - compact callable routine catalog by read/write/string/hex/hash/flash need.
+- [MEMORY_MAP.md](./MEMORY_MAP.md) - address ranges and ownership for current
+  Himonia-F ROM/RAM.
+- [SYMBOL_XREF.md](./SYMBOL_XREF.md) - STASH/Himonia-F symbol cards, ABI fields,
+  classification tokens, and Himonia-F call tree.
+- [HIMONIA_F_MAP.md](./HIMONIA_F_MAP.md) - grouped Himonia-F edge maps and
+  full capability map.
+- [HIMONIA_F_EDGE_DUMP.md](./HIMONIA_F_EDGE_DUMP.md) - generated-style direct
+  `JSR`/`JMP` edge dump for Himonia-F.
+- [GLOSSARY.md](./GLOSSARY.md) - vocabulary for layers, monitors, hashes, and STR8.
+
+## Planning
+
+- [TODO.md](./TODO.md) - near-term doc and implementation work.
+- [FUTURE.md](./FUTURE.md) - direction notes.
+
+## Current Source Snapshot
+
+Quick scan of `ror/SRC`:
+
+```text
+ASM files:             37
+XDEF declarations:     339 total, 328 unique names
+XREF declarations:     354 total, 200 unique names
+ROUTINE headers:       228 total, 226 unique first names
+JSR/JMP call sites:    2259 total, 450 unique targets
+```
+
+Lane count:
+
+```text
+SRC/STASH: 1 ASM file
+SRC/TEST:  35 ASM files
+SRC/SESH:  1 ASM file
+```
+
+This index intentionally points only inside `ror`. Historical notes may mention
+earlier BSO2 material when explaining lineage, but this guide set is maintained
+from the current `ror` workspace.

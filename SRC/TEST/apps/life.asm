@@ -5,7 +5,8 @@
 ; - Left panel = generation N
 ; - Right panel = generation N+1
 ; - Controls:
-;   n/space = next, r = random, m = manual, a = auto, q = quit/cleanup/RTS
+;   n/space = next, r = random, m = manual, a = auto
+;   i = toggle NMI count/debug mode, q = quit/cleanup/RTS
 ; ----------------------------------------------------------------------------
 
                         MODULE          LIFE_APP
@@ -47,6 +48,7 @@ RNG_SEED                EQU             $12F1          ; 8-bit random state
 NMI_COUNT               EQU             $12F2          ; live NMI button count
 PREV_NMI_LO             EQU             $12F3          ; NMI owner before Life
 PREV_NMI_HI             EQU             $12F4
+INTERRUPT_FLAG          EQU             $12F5          ; 0=debug NMI, 1=count NMI
 VEC_NMI_LO              EQU             $7EFA
 VEC_NMI_HI              EQU             $7EFB
 
@@ -61,13 +63,12 @@ VIS_ORIGIN              EQU             $13            ; (1*18)+1
 START:
                         JSR             SYS_FLUSH_RX
                         STZ             NMI_COUNT
+                        STZ             INTERRUPT_FLAG
                         LDA             VEC_NMI_LO
                         STA             PREV_NMI_LO
                         LDA             VEC_NMI_HI
                         STA             PREV_NMI_HI
-                        LDX             #<LIFE_NMI_TRAP
-                        LDY             #>LIFE_NMI_TRAP
-                        JSR             SYS_VEC_SET_NMI_XY
+                        JSR             LIFE_APPLY_NMI_VECTOR
                         JSR             LIFE_RESET_DEFAULT
                         JSR             LIFE_RENDER_PAIR
 
@@ -145,7 +146,15 @@ LIFE_AUTO_CHECK_KEY:
                         BEQ             LIFE_AUTO_KEY_QUIT
                         CMP             #'q'
                         BEQ             LIFE_AUTO_KEY_QUIT
+                        CMP             #'I'
+                        BEQ             LIFE_AUTO_KEY_INTERRUPT
+                        CMP             #'i'
+                        BEQ             LIFE_AUTO_KEY_INTERRUPT
 LIFE_AUTO_KEY_NONE:
+                        CLC
+                        RTS
+LIFE_AUTO_KEY_INTERRUPT:
+                        JSR             LIFE_TOGGLE_INTERRUPT
                         CLC
                         RTS
 LIFE_AUTO_KEY_QUIT:
@@ -197,6 +206,10 @@ CMD_WAIT:
                         BEQ             CMD_MANUAL
                         CMP             #'m'
                         BEQ             CMD_MANUAL
+                        CMP             #'I'
+                        BEQ             CMD_INTERRUPT
+                        CMP             #'i'
+                        BEQ             CMD_INTERRUPT
                         CMP             #'Q'
                         BEQ             CMD_QUIT
                         CMP             #'q'
@@ -231,6 +244,12 @@ CMD_MANUAL:
                         CLC
                         RTS
 
+CMD_INTERRUPT:
+                        JSR             SYS_FLUSH_RX
+                        JSR             LIFE_TOGGLE_INTERRUPT
+                        CLC
+                        RTS
+
 CMD_QUIT:
                         LDX             #<MSG_QUIT
                         LDY             #>MSG_QUIT
@@ -244,6 +263,25 @@ LIFE_CLEANUP:
                         LDY             PREV_NMI_HI
                         JSR             SYS_VEC_SET_NMI_XY
                         RTS
+
+LIFE_TOGGLE_INTERRUPT:
+                        LDA             INTERRUPT_FLAG
+                        EOR             #$01
+                        STA             INTERRUPT_FLAG
+                        JSR             LIFE_APPLY_NMI_VECTOR
+                        JSR             LIFE_RENDER_PAIR
+                        RTS
+
+LIFE_APPLY_NMI_VECTOR:
+                        LDA             INTERRUPT_FLAG
+                        BEQ             LIFE_APPLY_DEBUG_VECTOR
+                        LDX             #<LIFE_NMI_TRAP
+                        LDY             #>LIFE_NMI_TRAP
+                        JMP             SYS_VEC_SET_NMI_XY
+LIFE_APPLY_DEBUG_VECTOR:
+                        LDX             PREV_NMI_LO
+                        LDY             PREV_NMI_HI
+                        JMP             SYS_VEC_SET_NMI_XY
 
 ; ----------------------------------------------------------------------------
 ; Render pair (left=GEN_LEFT, right=GEN_LEFT+1)
@@ -271,7 +309,13 @@ LIFE_RENDER_PAIR:
                         JSR             LIFE_PRINT_XY
                         LDA             NMI_COUNT
                         JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_INT_FLAG
+                        LDY             #>MSG_INT_FLAG
+                        JSR             LIFE_PRINT_XY
+                        LDA             INTERRUPT_FLAG
+                        JSR             SYS_WRITE_HEX_BYTE
                         JSR             SYS_WRITE_CRLF
+                        JSR             LIFE_RENDER_NMI_VECTORS
 
                         LDA             #<BOARD_LEFT+VIS_ORIGIN
                         STA             ZP_P0_LO
@@ -303,6 +347,42 @@ RENDER_ROW_LOOP:
                         DEC             ZP_ROW
                         BNE             RENDER_ROW_LOOP
                         RTS
+
+LIFE_RENDER_NMI_VECTORS:
+                        LDX             #<MSG_VEC_EFFECT
+                        LDY             #>MSG_VEC_EFFECT
+                        JSR             LIFE_PRINT_XY
+                        JSR             LIFE_PRINT_ACTIVE_NMI_ADDR
+                        LDX             #<MSG_VEC_TOGGLE
+                        LDY             #>MSG_VEC_TOGGLE
+                        JSR             LIFE_PRINT_XY
+                        LDA             INTERRUPT_FLAG
+                        BEQ             LIFE_RENDER_TOGGLE_COUNT
+                        JSR             LIFE_PRINT_DEBUG_NMI_ADDR
+                        BRA             LIFE_RENDER_NMI_VECTORS_DONE
+LIFE_RENDER_TOGGLE_COUNT:
+                        JSR             LIFE_PRINT_COUNT_NMI_ADDR
+LIFE_RENDER_NMI_VECTORS_DONE:
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+LIFE_PRINT_ACTIVE_NMI_ADDR:
+                        LDA             VEC_NMI_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             VEC_NMI_LO
+                        JMP             SYS_WRITE_HEX_BYTE
+
+LIFE_PRINT_DEBUG_NMI_ADDR:
+                        LDA             PREV_NMI_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             PREV_NMI_LO
+                        JMP             SYS_WRITE_HEX_BYTE
+
+LIFE_PRINT_COUNT_NMI_ADDR:
+                        LDA             #>LIFE_NMI_TRAP
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             #<LIFE_NMI_TRAP
+                        JMP             SYS_WRITE_HEX_BYTE
 
 LIFE_RENDER_ONE_ROW:
                         LDA             #VIS_W
@@ -945,9 +1025,20 @@ SET_COL_ADV:
 
 ; ----------------------------------------------------------------------------
 ; NMI trap for LIFE session:
-; - Count hardware NMI button presses and return to interrupted code.
+; - I=0 chains to the previous owner, normally Himonia-f debug NMI.
+; - I=1 silently counts button presses and returns to interrupted code.
 ; ----------------------------------------------------------------------------
 LIFE_NMI_TRAP:
+                        PHA
+                        PHP
+                        LDA             INTERRUPT_FLAG
+                        BNE             LIFE_NMI_COUNT
+                        PLP
+                        PLA
+                        JMP             (PREV_NMI_LO)
+LIFE_NMI_COUNT:
+                        PLP
+                        PLA
                         INC             NMI_COUNT
                         RTI
 
@@ -968,9 +1059,12 @@ MSG_TITLE:              DB              "Conway Life 16x16  age N | age N+1 | li
 MSG_GEN_LEFT:           DB              "Left G=$",$00
 MSG_GEN_RIGHT:          DB              "   Right G=$",$00
 MSG_NMI_COUNT:          DB              "   NMI=$",$00
-MSG_PROMPT:             DB              "[n]=next  [r]=random  [m]=manual  [a]=auto  [q]=quit > ",$00
-MSG_BAD_KEY:            DB              "Use n/space, r, m, a, or q.",$00
-MSG_AUTO_RUN:           DB              "Auto: running; q quits.",$00
+MSG_INT_FLAG:           DB              "   I=$",$00
+MSG_VEC_EFFECT:         DB              "Vector in effect=$",$00
+MSG_VEC_TOGGLE:         DB              "   Toggled vector=$",$00
+MSG_PROMPT:             DB              "[n]=next  [r]=random  [m]=manual  [a]=auto  [i]=int  [q]=quit > ",$00
+MSG_BAD_KEY:            DB              "Use n/space, r, m, a, i, or q.",$00
+MSG_AUTO_RUN:           DB              "Auto: running; i toggles NMI, q quits.",$00
 MSG_EDIT_HDR_1:         DB              "Manual: enter 16 chars per row; blank keeps row.",$00
 MSG_EDIT_HDR_2:         DB              "1-9 live age, . or 0 dead, / done.",$00
 MSG_QUIT:               DB              "Life: quit.",$00
