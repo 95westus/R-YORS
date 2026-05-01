@@ -109,13 +109,14 @@ ROM_LIB := $(BUILD_DIR)\lib\rom.lib
 TEST_LIB_SRC := $(wildcard $(TEST_SUPPORT_DIR)/*.asm)
 TEST_LIB_OBJ := $(addprefix $(OBJ_DIR)/,$(TEST_LIB_SRC:.asm=.obj))
 TEST_LIB := $(BUILD_DIR)\lib\testing.lib
-CALL_ORDER := CALL_ORDER.md
+DOC_GENERATED_DIR := ../DOC/GENERATED
+CALL_ORDER := $(DOC_GENERATED_DIR)/CALL_ORDER.md
 CALL_ORDER_SRC := $(ROM_SRC) $(APP_SRC)
-ROUTINE_CONTRACTS := ROUTINE_CONTRACTS.md
-ROUTINE_TREE := ROUTINE_TREE.md
-ROUTINE_CLASS_DIAGRAM := ROUTINE_CLASS_DIAGRAM.md
-ROUTINE_GRAPH_INSIGHTS := ROUTINE_GRAPH_INSIGHTS.md
-ROUTINE_COMPONENTS := ROUTINE_COMPONENTS.md
+ROUTINE_CONTRACTS := $(DOC_GENERATED_DIR)/ROUTINE_CONTRACTS.md
+ROUTINE_TREE := $(DOC_GENERATED_DIR)/ROUTINE_TREE.md
+ROUTINE_CLASS_DIAGRAM := $(DOC_GENERATED_DIR)/ROUTINE_CLASS_DIAGRAM.md
+ROUTINE_GRAPH_INSIGHTS := $(DOC_GENERATED_DIR)/ROUTINE_GRAPH_INSIGHTS.md
+ROUTINE_COMPONENTS := $(DOC_GENERATED_DIR)/ROUTINE_COMPONENTS.md
 GENERATED_DOCS := $(CALL_ORDER) $(ROUTINE_CONTRACTS) $(ROUTINE_TREE) $(ROUTINE_CLASS_DIAGRAM) $(ROUTINE_GRAPH_INSIGHTS) $(ROUTINE_COMPONENTS)
 ROUTINE_HASH_COMMENTS_GEN := tools/gen_routine_hash_comments.ps1
 DOCS_GEN := tools/gen_docs.ps1
@@ -283,7 +284,7 @@ docs: $(GENERATED_DOCS)
 	@echo "Updated docs: $(GENERATED_DOCS)."
 
 docs-watch:
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_WATCH) -Src .
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_WATCH) -Src . -OutDir $(DOC_GENERATED_DIR)
 
 local-homes:
 	@if not exist $(subst /,\,$(BASIC_PROGRAMS_HOME)) mkdir $(subst /,\,$(BASIC_PROGRAMS_HOME))
@@ -434,7 +435,8 @@ $(OBJ_DIR)/%.obj: %.asm
 	@if exist $(subst /,\,$*.obj) move /Y $(subst /,\,$*.obj) $(subst /,\,$@)
 
 $(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_GEN) -Src . -OutDir .
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "New-Item -ItemType Directory -Force -Path '$(DOC_GENERATED_DIR)' | Out-Null"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_GEN) -Src . -OutDir $(DOC_GENERATED_DIR)
 
 artifacts:
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"

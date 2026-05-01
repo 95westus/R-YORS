@@ -36,12 +36,12 @@ $rows = @(
     [pscustomobject]@{ Target = "testing"; Category = "library"; Description = "Build shared testing support library." }
     [pscustomobject]@{ Target = "docs"; Category = "docs"; Description = "Regenerate source-derived docs." }
     [pscustomobject]@{ Target = "docs-watch"; Category = "docs"; Description = "Watch source and regenerate source-derived docs." }
-    [pscustomobject]@{ Target = "call-order"; Category = "docs"; Description = "Regenerate CALL_ORDER.md." }
-    [pscustomobject]@{ Target = "routine-contracts"; Category = "docs"; Description = "Regenerate ROUTINE_CONTRACTS.md." }
-    [pscustomobject]@{ Target = "routine-tree"; Category = "docs"; Description = "Regenerate ROUTINE_TREE.md." }
-    [pscustomobject]@{ Target = "routine-class-diagram"; Category = "docs"; Description = "Regenerate ROUTINE_CLASS_DIAGRAM.md." }
-    [pscustomobject]@{ Target = "routine-graph-insights"; Category = "docs"; Description = "Regenerate ROUTINE_GRAPH_INSIGHTS.md." }
-    [pscustomobject]@{ Target = "routine-components"; Category = "docs"; Description = "Regenerate ROUTINE_COMPONENTS.md." }
+    [pscustomobject]@{ Target = "call-order"; Category = "docs"; Description = "Regenerate DOC/GENERATED/CALL_ORDER.md." }
+    [pscustomobject]@{ Target = "routine-contracts"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_CONTRACTS.md." }
+    [pscustomobject]@{ Target = "routine-tree"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_TREE.md." }
+    [pscustomobject]@{ Target = "routine-class-diagram"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_CLASS_DIAGRAM.md." }
+    [pscustomobject]@{ Target = "routine-graph-insights"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_GRAPH_INSIGHTS.md." }
+    [pscustomobject]@{ Target = "routine-components"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_COMPONENTS.md." }
     [pscustomobject]@{ Target = "routine-hash-comments"; Category = "docs"; Description = "Refresh generated routine hash comments in ASM files." }
     [pscustomobject]@{ Target = "artifacts"; Category = "housekeeping"; Description = "Move sidecar artifacts into BUILD/{lst,sym,map,bin,s19}." }
     [pscustomobject]@{ Target = "clean"; Category = "housekeeping"; Description = "Remove generated app-side files and BUILD." }

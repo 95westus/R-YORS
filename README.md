@@ -71,10 +71,10 @@ Small standalone programs are used to test the runtime surface. One example is a
 make release
 ```
 
-`release` regenerates the source markdown summaries, builds the tracked-source
-release set, and stamps the HIMON ROM binary under `SRC/ROM_IMAGES/`. The
-tracked-source release set is HIMON, the FNV-1a/HBSTR tool, the flash test,
-and `rom-append-calc`.
+`release` regenerates the source-derived docs under `DOC/GENERATED`, builds
+the tracked-source release set, and stamps the HIMON ROM binary under
+`SRC/ROM_IMAGES/`. The tracked-source release set is HIMON, the FNV-1a/HBSTR
+tool, the flash test, and `rom-append-calc`.
 
 ```text
 make release-local

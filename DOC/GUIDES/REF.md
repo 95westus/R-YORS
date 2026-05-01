@@ -160,6 +160,6 @@ make -C SRC rom-append-calc
 make -C SRC routine-hash-comments
 ```
 
-`make -C SRC docs` currently targets source-generated docs in `SRC`. The guide
-set under `DOC/GUIDES` is hand-maintained design/reference material unless a
-future generator is added.
+`make -C SRC docs` currently targets source-generated docs in `DOC/GENERATED`.
+The guide set under `DOC/GUIDES` is hand-maintained design/reference material
+unless a future generator is added.

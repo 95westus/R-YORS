@@ -8,7 +8,7 @@ I need to write a C string. What are the registers and flags?
 I need a BIO-level helper for STR8. What is small enough to trust?
 ```
 
-For the full generated dump, see `SRC/ROUTINE_CONTRACTS.md`. This guide keeps
+For the full generated dump, see `DOC/GENERATED/ROUTINE_CONTRACTS.md`. This guide keeps
 the high-value callable surface grouped by need, with an S/36-ish bias toward
 "what does the system have, and how do I call it?"
 
@@ -214,5 +214,5 @@ BIO_WRITE_CRLF
 ```
 
 If a programmer needs GPIO/LED routines, start with the `BIO_PIA_*` family in
-`SRC/ROUTINE_CONTRACTS.md`; they are numerous enough that this catalog only
+`DOC/GENERATED/ROUTINE_CONTRACTS.md`; they are numerous enough that this catalog only
 names the category here.
