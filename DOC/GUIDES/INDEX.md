@@ -20,6 +20,8 @@ This is the top index for the `ror` documentation set.
 - [DECISIONS.md](./DECISIONS.md) - naming, hash, STR8, ASM, ABI, local-home,
   and doc-shape decisions.
 - [STR8.md](./STR8.md) - Straight 8 recovery/update monitor.
+- [STR8_DECISION_REFERENCE.md](./STR8_DECISION_REFERENCE.md) - current STR8
+  first-test design decisions.
 - [HASHED_ASM.md](./HASHED_ASM.md) - onboard hashed assembler, symbols, and fixups.
 - [HASH_MAP.md](./HASH_MAP.md) - hash uses across docs, runtime dispatch, and assembler records.
 - [MEMORY_MAP.md](./MEMORY_MAP.md) - current Himonia-F ROM image, RAM workspace,
