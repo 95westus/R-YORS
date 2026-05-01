@@ -10,6 +10,17 @@ Pronunciation: **"are-yors"** (`R + Я(ya) + ors`).
 
 This is a play on "Roll Your Own Runtime System," where "Я" (Russian for "ya") represents "your," highlighting the DIY, customizable nature of the project.
 
+## Safety Notice
+
+R-YORS includes code that can write to and erase flash memory. Running loaders,
+tests, monitor commands, ROM images, or flash utilities may overwrite firmware,
+programs, user data, or configuration stored on the target machine.
+
+Use this project only if you understand the target hardware and have a recovery
+path, such as a known-good ROM image or external programmer. The software is
+provided as-is, without warranty; you are responsible for any consequences of
+building, flashing, modifying, or running it.
+
 ## Why
 
 **R-YORS exists to make a WDC W65C02SXB/W65C02EDU single-board computer feel like a standalone machine: power on, recover safely, load or build code, inspect routines, and grow the system in flash without needing a full toolchain every time.**
