@@ -2358,7 +2358,7 @@ HIM_FNV_FORCE_SYS:
                         DW              SYS_READ_CHAR_COOKED_ECHO
                         DW              SYS_GET_CTRL_C
 
-MSG_BANNER:              DB              $0D,$0A,"HIMONIA v",('1'+$80)
+MSG_BANNER:              DB              $0D,$0A,"HIMO",('N'+$80)
 MSG_PROMPT:              DB              ('>'+$80)
 MSG_UNKNOWN:             DB              ('?'+$80)
 MSG_HASH_NF:             DB              " HSH_NF",('!'+$80)

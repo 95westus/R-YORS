@@ -101,11 +101,12 @@ NMI 7EFA=DD72
 IRQ 7EFE=DDF3
 BRK 7EFC=DDA5
 
-HIMONIA v1
+HIMON
 ```
 
 Warm reset reports `BOOT WARM` instead of `BOOT COLD` and skips the
-`RAM ZERO OK` line.
+`RAM ZERO OK` line. In source, the banner is stored as an HBSTR with the final
+`N` carrying the high-bit terminator.
 
 The current monitor includes hashed command dispatch, S-record loading,
 GO/LOAD+GO execution, register display/editing, memory display/modify,
