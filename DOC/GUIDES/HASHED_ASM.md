@@ -12,6 +12,14 @@ text name -> hash -> symbol record -> value/address -> emitted operand bytes
 
 The hash is not the address. The hash is the lookup key for a symbol record that contains the address, kind, bank, flags, and optionally the original text.
 
+In THE terms:
+
+```text
+hash names and tokens
+store exact addresses and values
+optionally hash complete records for proof
+```
+
 ## Why This Exists
 
 The goal is to keep the system self-hosting-friendly:
@@ -76,6 +84,16 @@ can be emitted as:
 ```
 
 because `JSR abs` needs the 16-bit value of `MYWORD`.
+
+## Address Hashes Are Not Values
+
+For ASM resolution, do not hash raw numeric addresses and then treat that hash
+as the thing to emit or patch. Address hashes can only be proof/check metadata
+for a larger record. The assembler still needs exact address/value fields,
+patch sites, origins, banks, and kinds.
+
+The exploratory what-if belongs in the scratchpad:
+[IDEAS.md](../IDEAS.md).
 
 ## First Useful Command Shape
 
@@ -372,7 +390,7 @@ flowchart LR
    A. SYS_READ_HBSTR reads one monitor line
       1. Hash first token and dispatch to `A`
       2. Pass remaining text to the assembler path
-      3. Treat `.` as the end of a one-shot statement
+      3. Treat `.` as the end of a one-shot statement only when it is the whole token
 
 2. `A` command modes
    A. Interactive mode
@@ -387,11 +405,17 @@ flowchart LR
    A. Label definition
       1. Canonicalize label text before `:`
       2. Reject mnemonic names as labels
-      3. Hash label and bind hash to current PC
-      4. Try pending fixups for that hash
-   B. Manual definition
+      3. If label is local, qualify it with the active scope
+      4. Hash label and bind hash to current PC
+      5. Try pending fixups for that hash
+   B. Local label scope
+      1. A nonlocal label opens or changes the current local scope
+      2. A local label is private to that scope/session
+      3. Local fixups remain tied to the scope that created them
+      4. Local labels are not exported to the public catalog
+   C. Manual definition
       1. `DEF name addr kind` creates the same symbol record without emission
-   C. Symbol viewing
+   D. Symbol viewing
       1. `SYM [name]` lists committed or visible symbols
 
 4. Mnemonic and operand handling
@@ -454,7 +478,7 @@ The exact read routine name can change, but the contract is:
 ```text
 input bytes are canonicalized/masked to 7-bit text for hashing
 the line is stored in a monitor command buffer
-`.` terminates the assembly statement
+`.` as a whole token terminates the assembly statement
 ```
 
 The statement grammar is:
@@ -463,9 +487,10 @@ The statement grammar is:
 A [addr] [label:] MMM [operand] .
 ```
 
-The trailing `.` marks a complete one-shot assembly statement. If `A` receives
-only an address, or no mnemonic after the optional address/label, it enters the
-interactive side of `A` instead of assembling one statement:
+The trailing `.` marks a complete one-shot assembly statement only when it is
+the whole token. Dot-prefixed tokens such as `.LOOP` are still symbol tokens. If
+`A` receives only an address, or no mnemonic after the optional address/label,
+it enters the interactive side of `A` instead of assembling one statement:
 
 ```text
 A 2000
@@ -817,9 +842,9 @@ hash0..3    FNV-1a stored as low byte through high byte
 Examples:
 
 ```text
-.word $1234      -> $34,$12
-.long $89ABCDEF  -> $EF,$CD,$AB,$89
-hash $89ABCDEF   -> hash0=$EF hash1=$CD hash2=$AB hash3=$89
+word value $1234      -> $34,$12
+long value $89ABCDEF  -> $EF,$CD,$AB,$89
+hash value $89ABCDEF  -> hash0=$EF hash1=$CD hash2=$AB hash3=$89
 ```
 
 Human display may print long values high byte first:
@@ -926,10 +951,30 @@ If a record is globally exported, it should still be discoverable from the
 master catalog even when the body lives in banks 0-2. The catalog entry is the
 promise; the banked body is the storage location.
 
-## Data Directive Goal
+## Minimal Directive Goal
 
-`.hbstr` is a design shorthand, not necessarily the final surface syntax. The
-final assembler may prefer WDC-like data declarations:
+The v1 assembler directive surface should be IBM-ish and small:
+
+```text
+DC    define initialized data bytes
+DS    reserve storage / advance assembly PC
+EQU   define a constant or absolute symbol value
+```
+
+No dot-directive aliases in v1. Dot-leading syntax belongs to local labels:
+
+```text
+.NAME:   local label
+.NAME    local symbol use
+.        one-shot statement terminator
+```
+
+This keeps the parser small and avoids splitting dot-leading syntax between
+locals and directives.
+
+## DC Data Forms
+
+`DC` is the primary data-emission directive:
 
 ```asm
 NAME:   DC      HB'HELLO'
@@ -947,20 +992,69 @@ DC HB''       -> $80
 Data forms likely needed:
 
 ```text
+DC X'FF'       hex byte stream
+DC B'10101010' binary byte stream
 DC HB'HELLO'   high-bit-terminated string
-DC C'HELLO'    counted or raw character bytes, depending final syntax
+DC C'HELLO'    raw character bytes
 DC Z'HELLO'    C-string / ASCIIZ, final byte $00
 DC P'HELLO'    Pascal/count-prefixed string
-DS n           reserve n bytes
+DC W'2000'     little-endian word
 ```
 
-If dot-directives are kept as aliases, they would be equivalent:
+Minimal companion directives:
 
 ```text
-.hbstr "HELLO"  == DC HB'HELLO'
-.cstr  "HELLO"  == DC Z'HELLO'
-.asciiz "HELLO" == DC Z'HELLO'
-.pstr  "HELLO"  == DC P'HELLO'
+DS n            reserve n bytes
+NAME EQU value  define a constant or absolute symbol
+```
+
+Do not define `.BYTE`, `.WORD`, `.HBSTR`, or other dot aliases in v1. If a later
+assembler grows compatibility aliases, they should be ordinary mnemonic-like
+tokens such as `DB`, `DW`, or `FCC`, not dot-leading tokens.
+
+### Future Directive Alias Records
+
+THE can model an alias as one hash record resolving to another typed record:
+
+```text
+hash("DB") -> alias/directive record -> hash("DC") -> DC handler
+```
+
+That would let a future assembler accept:
+
+```asm
+DB $FF
+```
+
+as compatibility sugar for:
+
+```asm
+DC X'FF'
+```
+
+The alias must be typed. It is not an arbitrary hash chain:
+
+```text
+source hash    DB
+record kind    directive_alias
+target hash    DC
+adapter        DB operand parser -> DC X form
+```
+
+The adapter matters because `DB $FF` and `DC X'FF'` are not the same text; they
+are equivalent operations after operand parsing. Alias resolution should have a
+small recursion limit and should fail on cycles:
+
+```text
+DB -> DC          ok
+DB -> BYTE -> DC  ok if depth limit allows
+DB -> BYTE -> DB  fail cycle
+```
+
+Keep this out of v1 unless compatibility pressure appears. The v1 path is:
+
+```text
+DC, DS, EQU only
 ```
 
 HBSTR remains a first-class data form because it is part of Himon's command,
@@ -972,11 +1066,12 @@ metadata:
 
 ```asm
 CMD_ID:
-        .byte   'F'         ; format v1 FNV-1a hash record
-        .long   CMD_ID_HASH
-        .byte   KIND
-        .byte   $FF         ; command text length, latched after lookup
-        .word   $FFFF       ; flash address of copied command text
+        DC      C'F'        ; format v1 FNV-1a hash record
+        DC      W'...'      ; low word of CMD_ID_HASH, exact form TBD
+        DC      W'...'      ; high word of CMD_ID_HASH, exact form TBD
+        DC      X'00'       ; KIND
+        DC      X'FF'       ; command text length, latched after lookup
+        DC      W'FFFF'     ; flash address of copied command text
 ID:
 ```
 
@@ -1294,6 +1389,154 @@ encoding mode
 origin / next-PC basis when needed
 ```
 
+## Local Labels Review
+
+Local labels are useful for short branches inside one routine or one assembly
+session without polluting the public symbol/catalog space:
+
+```asm
+A 2000 INIT:  LDX #00 .
+A      .LOOP: INX .
+A             CPX #10 .
+A             BNE .LOOP .
+A             RTS .
+
+A 2100 DRAW:  LDX #00 .
+A      .LOOP: JSR PLOT .
+A             INX .
+A             BNE .LOOP .
+```
+
+Both routines can use `.LOOP` because the local name is scoped under the current
+nonlocal label:
+
+```text
+INIT/.LOOP -> $2002
+DRAW/.LOOP -> $2102
+```
+
+Chosen syntax:
+
+```text
+.NAME:   define a local label
+.NAME    use a local label operand
+.        end the current one-shot statement
+```
+
+The parser rule is exact:
+
+```text
+"." alone is the statement terminator
+".NAME" is a local symbol token
+```
+
+The `NAME` part follows normal label rules. For example, `.LDA:` should still
+fail because `LDA` is a mnemonic.
+
+Reserved dot-directive names are not legal local labels. If `.HBSTR`, `.CSTR`,
+`.ASCIIZ`, `.PSTR`, `.BYTE`, or `.WORD` become directive aliases, those spellings
+belong to directives, not locals.
+
+This choice fits the project direction better than the earlier candidates:
+
+```text
+?NAME    readable and unambiguous, but shifted and less IBM-like
+/NAME    one key, but visually wrong and reserves slash before expressions grow
+@NAME    common in some assemblers, but harder to type
+1f/1b    compact, but introduces directional lookup
+```
+
+Dot locals also echo IBM big-iron practice without copying it exactly. HLASM
+uses dot-leading sequence symbols for assembly-control flow, while ordinary
+symbols and macro variables live in other namespaces. R-YORS can use the same
+mental split:
+
+```text
+NAME     ordinary/public or session symbol
+.NAME    assembler-local symbol
+&NAME    possible future macro/SET-style variable
+```
+
+Lookup rule:
+
+```text
+unprefixed NAME -> global/session/import/export symbol lookup
+.NAME           -> local lookup in the active local scope only
+```
+
+There should be no silent fallback from local-prefixed `NAME` to unprefixed
+`NAME`, or the other way around. The prefix is a scoping command, not
+decoration.
+
+Scope rule:
+
+```text
+a nonlocal label defines/changes the active local scope
+local definitions and local fixups are qualified by that scope
+```
+
+For v1 strict mode, a local label without an active nonlocal label should fail
+clearly. A scratch/RAM interactive mode may choose a session-local anonymous
+scope, but that scope must not be exportable.
+
+Implementation model:
+
+```text
+canonical local text      = .LOOP
+active scope text         = INIT
+lookup identity           = INIT/.LOOP
+hash input                = canonical qualified identity
+symbol flags              = defined + local
+export/catalog visibility = no
+```
+
+A compact later record can avoid storing the joined text by carrying both a
+scope hash and a local hash:
+
+```text
+scope_hash0..3
+local_hash0..3
+value_lo
+value_hi
+bank
+kind
+flags=local
+```
+
+That costs four extra bytes compared with one qualified hash, so the first
+implementation can simply hash the qualified canonical text and optionally keep
+name proof text in RAM.
+
+Forward local labels work the same as forward global labels, except the fixup
+stores the scoped identity:
+
+```asm
+A 3000 MAIN:  BRA .DONE .
+A             LDA #01 .
+A      .DONE: RTS .
+```
+
+At the branch:
+
+```text
+hash(MAIN/.DONE)
+site=$3001
+mode=rel8
+origin=$3000
+```
+
+When `.DONE:` appears, the definition wakes only fixups for `MAIN/.DONE`.
+Starting another nonlocal label before `.DONE:` does not retarget the old fixup;
+it remains tied to `MAIN`.
+
+Local labels should not be legal export names:
+
+```text
+EXPORT .LOOP     fail
+FORGET .LOOP     only affects current local scope/session, if allowed at all
+SYM .LOOP        show current-scope local, not public catalog entry
+```
+
 ## Name Canonicalization
 
 Use the same rule every time before hashing:
@@ -1301,7 +1544,8 @@ Use the same rule every time before hashing:
 ```text
 trim spaces
 uppercase ASCII
-stop at whitespace, comma, colon, right paren, or dot depending on parser state
+stop at whitespace, comma, colon, right paren, or statement-terminator dot
+keep a leading dot when the token is a local label
 ```
 
 Examples:
@@ -1310,6 +1554,8 @@ Examples:
 myword  -> MYWORD
 MyWord  -> MYWORD
 MYWORD: -> MYWORD
+.loop   -> .LOOP
+INIT/.loop -> INIT/.LOOP
 ```
 
 This keeps lookup stable and small.
