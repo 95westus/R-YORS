@@ -226,6 +226,7 @@ module        hash -> flash block plus entry/export table
 fixup         hash -> unresolved reference waiting for definition
 string        hash -> CSTR, HBSTR, raw, or packed-text address
 device        hash -> driver vector table or capability record
+alias         hash -> typed redirect to another hash plus adapter/policy
 ```
 
 This keeps the catalog closer to a small typed name/value system than to a
@@ -272,6 +273,40 @@ routine/data body lives in banks 0-2.
 
 There is no per-record algorithm byte. The catalog format itself defines
 `hash0..3` as FNV-1a.
+
+## Hash-To-Hash Alias Records
+
+An FNV lookup may resolve to a typed alias record that names another FNV hash.
+This is allowed only when the record kind defines what the redirect means:
+
+```text
+hash("DB") -> directive_alias -> target hash("DC")
+```
+
+The alias is not a raw pointer from one hash to another. It must carry enough
+policy to keep lookup inspectable:
+
+```text
+record kind     directive_alias, command_alias, symbol_alias, ...
+target_hash0..3 FNV-1a of the real target name
+adapter/id      optional parser or calling adapter
+flags           exported, local, deprecated, compatibility, ...
+```
+
+For ASM directives, `DB $FF` cannot be treated as the same text as `DC X'FF'`.
+The alias record can point `DB` to the `DC` handler, but an adapter still has to
+parse the `DB` operand and emit the same bytes as the corresponding `DC` form.
+
+Alias resolution must have a small depth limit and cycle detection:
+
+```text
+DB -> DC           ok
+BYTE -> DB -> DC   ok if the limit allows it
+DB -> BYTE -> DB   fail cycle
+```
+
+This keeps THE capable of compatibility names without turning the catalog into
+an invisible chain of hash-only guesses.
 
 Catalog records use 65C02 little-endian byte order:
 
