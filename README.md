@@ -13,8 +13,8 @@ Pronounced **are-yors**.
 
 ## System Card
 
-R-YORS is a retro-computing documentation and source project for building a
-small WDC W65C02SXB/W65C02EDU runtime environment by hand.
+R-YORS is a retro-computing documentation and source project for specifying,
+building, and documenting a small WDC W65C02SXB/W65C02EDU runtime environment.
 
 Current spine:
 
