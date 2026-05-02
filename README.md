@@ -67,10 +67,20 @@ typed record around it says what was found. The same pattern can describe an
 executable command, callable routine, symbol, memory range, constant, string,
 packet shape, data element, flash module, or unresolved fixup.
 
-Hashes keep records compact enough for ROM and flash, but they are not meant to
-be the whole identity forever. As the catalog grows, stored command/routine text
-can prove collisions, support listings, and let onboard tools link against
-names without carrying a large conventional symbol table. See
+This opens a small but exciting path for onboard assembly and dynamic linking.
+R-YORS calls that path **catalog linking**: assembled code exports typed hash
+records, later code imports names by hash, and fixups are resolved through the
+catalog instead of through a host-side DLL, shared object, or large linker file.
+The core pieces are `RCAT`, a runtime catalog dataset; `RREC`, a typed runtime
+record; and `RBODY`, the code, data, string, packet, or module body an RREC
+describes.
+
+Hashes keep records compact enough for ROM and flash. They start as lookup
+filters, not absolute identity; a future writable catalog can promote a match
+to validated identity by checking stored text, type, scope, and other proof
+metadata. As the catalog grows, stored command/routine text can prove
+collisions, support listings, and let onboard tools link against names without
+carrying a large conventional symbol table. See
 [DOC/GUIDES/HASH_MAP.md](DOC/GUIDES/HASH_MAP.md) and
 [DOC/GUIDES/HASH.md](DOC/GUIDES/HASH.md) for the deeper record model.
 
