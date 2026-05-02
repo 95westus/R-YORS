@@ -1,9 +1,9 @@
-# Himonia-F Edge Dump
+# HIMON Edge Dump
 
 Generated-style edge dump for `SRC/TEST/apps/himon/himon.asm`.
 
 For the readable subsystem/capability view, see
-[HIMONIA_F_MAP.md](./HIMONIA_F_MAP.md).
+[HIMON_MAP.md](./HIMON_MAP.md).
 
 Scope: direct `JSR target` and `JMP target` edges only. Relative branches, fallthrough, data labels, indirect calls, and computed jumps are not included. Source is the nearest preceding global label.
 

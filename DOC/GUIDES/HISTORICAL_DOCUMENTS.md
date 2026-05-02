@@ -5,6 +5,9 @@ point, through BSO2 and the Himonia experiments, to the current HIMON path. It
 is a source map, not mythology: where a point is based on visible source, it
 names that evidence; where it is an architectural reading, it says so.
 
+For a compact reconstruction of the Himon/Himonia/Himonia-F stages and
+routine-class families, see [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md).
+
 ## Short Version
 
 BSO2 proved the board-facing monitor idea in one large, practical program:

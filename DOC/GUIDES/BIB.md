@@ -30,9 +30,11 @@ DOC/GUIDES/REF.md
 DOC/GUIDES/XREF.md
 DOC/GUIDES/CATALOG.md
 DOC/GUIDES/MEMORY_MAP.md
+DOC/GUIDES/DYNAMIC_MEMORY_FIRST_STEPS.md
 DOC/GUIDES/SYMBOL_XREF.md
-DOC/GUIDES/HIMONIA_F_MAP.md
-DOC/GUIDES/HIMONIA_F_EDGE_DUMP.md
+DOC/GUIDES/HIMON_MAP.md
+DOC/GUIDES/HIMON_STAGES_CLASSES.md
+DOC/GUIDES/HIMON_EDGE_DUMP.md
 DOC/GUIDES/HISTORICAL_DOCUMENTS.md
 DOC/GUIDES/STR8.md
 DOC/GUIDES/HASH.md
@@ -65,10 +67,14 @@ DOC/GENERATED/ROUTINE_COMPONENTS.md
   routine inventory.
 - `MEMORY_MAP.md` records current Himonia-F ROM/RAM ownership, fixed ABI
   entries, vectors, and future STR8 placement direction.
+- `DYNAMIC_MEMORY_FIRST_STEPS.md` synthesizes the W65C02 allocation discussion
+  with the current R-YORS memory map and zero-page rules.
 - Routine `[HASH:XXXXXXXX]` IDs are FNV-1a over canonical routine text.
 - Runtime command lookup in Himonia-F uses FNV-1a hashes over command text.
-- `HIMONIA_F_MAP.md` is the readable map; `HIMONIA_F_EDGE_DUMP.md` is the raw
+- `HIMON_MAP.md` is the readable HIMON map; `HIMON_EDGE_DUMP.md` is the raw
   direct-edge listing.
+- `HIMON_STAGES_CLASSES.md` reconstructs the Himon/Himonia/Himonia-F stage
+  ladder and subsystem class families from current source plus guide evidence.
 - STR8, hashed assembler, and banked catalog behavior are design notes until
   implemented.
 - External links may appear as background precedent notes, but the guide spine

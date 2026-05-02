@@ -60,6 +60,19 @@ and debug tools.
 - Resume is explicit: rebuild context and `RTI`; do not imply stale automatic
   continuation.
 
+## Dynamic Memory Layer
+
+- If HIMON eventually uses dynamic memory, allocation belongs behind a `MEM_*`
+  memory-management layer.
+- `MEM_*` owns RAM range policy, zero-page pointer lanes, bump allocation,
+  mark/release allocation, fixed pools, and any later free-list heap.
+- `MEM_*` is hardware-constrained because it touches raw W65C02 RAM and zero
+  page, but it is not `PIN_*`/`BIO_*` hardware access.
+- STR8 should not depend on general dynamic memory. STR8 remains fixed-buffer
+  and fixed-workspace oriented.
+- Public monitor or app-facing allocation calls should be `SYS_*` wrappers over
+  `MEM_*`, not direct hidden heap calls from unrelated monitor code.
+
 ## Hash And Catalog Policy
 
 - FNV-1a is the one and only runtime/catalog/symbol hash.
@@ -143,8 +156,8 @@ A [addr] [label:] MMM [operand] .
 - `SYMBOL_XREF.md` is symbol/routine cards, ABI contracts, hashes, and tags.
 - `GLOSSARY.md` defines vocabulary only.
 - `BIB.md` records source corpus/provenance only.
-- `HIMONIA_F_MAP.md` is the readable Himonia-F edge/capability map.
-- `HIMONIA_F_EDGE_DUMP.md` is the raw direct-edge evidence.
+- `HIMON_MAP.md` is the readable HIMON edge/capability map.
+- `HIMON_EDGE_DUMP.md` is the raw direct-edge evidence.
 
 ## Historical Spine
 

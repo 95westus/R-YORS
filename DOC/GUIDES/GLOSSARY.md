@@ -32,6 +32,8 @@
 
 - `PIN_*`: low-level pin/driver routines at hardware/register boundaries.
 - `BIO_*`: HAL routines above `PIN_*`.
+- `MEM_*`: memory ownership/allocation routines for RAM ranges, zero-page
+  lanes, heaps, marks, and pools. Hardware-constrained, but not device access.
 - `COR_*`: backend/core integration routines.
 - `SYS_*`: adapter/system-facing wrappers for app-level use.
 - `UTL_*`: shared utility routines.

@@ -18,12 +18,18 @@ DECISIONS.md
 HASH_MAP.md
   points to HASH.md for ROUTINE header IDs
   points to HASHED_ASM.md for symbol/fixup hashes
-  points to Himonia-F sources for runtime FNV
+  points to current HIMON sources for runtime FNV
 
 HASHED_ASM.md
   depends on STR8.md for flash safety
   depends on HASH_MAP.md for hash vocabulary
   feeds FUTURE.md and TODO.md implementation direction
+
+HIMON_STAGES_CLASSES.md
+  reconstructs the Himon parent, split Himon, Himonia, FNV tool, Himonia-F, and
+  current HIMON stage ladder
+  explains subsystem classes/prefixes before the detailed HIMON edge map
+  depends on HISTORICAL_DOCUMENTS.md, HIMON_MAP.md, and current Himon source
 
 SYMBOL_XREF.md
   combines REF-style routine contracts with XREF-style source edges
@@ -41,15 +47,20 @@ MEMORY_MAP.md
   records user flash, monitor code/data, ABI slots, vectors, and high-RAM workspaces
   separates the current Himonia-F build map from future STR8/HIMON ownership
 
-HIMONIA_F_MAP.md
-  readable map over Himonia-F direct edges and capability surfaces
-  groups startup, dispatch, loader/flash, debug, disasm, ASM, and ABI maps
-  uses HIMONIA_F_EDGE_DUMP.md as raw evidence
+DYNAMIC_MEMORY_FIRST_STEPS.md
+  conceptual W65C02 dynamic allocation guide for R-YORS
+  depends on MEMORY_MAP.md for current RAM and zero-page ownership
+  keeps STR8 fixed-buffer-only and marks HIMON/Himonia-F dynamic allocation as not yet
 
-HIMONIA_F_EDGE_DUMP.md
+HIMON_MAP.md
+  readable map over HIMON direct edges and capability surfaces
+  groups startup, dispatch, loader/flash, debug, disasm, ASM, and ABI maps
+  uses HIMON_EDGE_DUMP.md as raw evidence
+
+HIMON_EDGE_DUMP.md
   direct `JSR`/`JMP` edge dump for `SRC/TEST/apps/himon/himon.asm`
   keeps raw edge sites separate from the compact SYMBOL_XREF call tree and
-  readable HIMONIA_F_MAP.md diagrams
+  readable HIMON_MAP.md diagrams
 ```
 
 ## Source Cross-Reference
@@ -68,16 +79,19 @@ Primary Himonia/Himon files:
 
 ```text
 SRC/TEST/apps/himon/himon-parent.asm
+SRC/TEST/apps/himon/mon.asm
+SRC/TEST/apps/himon/mon-cmd-*.inc
 SRC/TEST/apps/himon/himonia.asm
 SRC/TEST/apps/himon/fnv1a-hbstr.asm
+SRC/TEST/apps/himon/himonia-f.asm
 SRC/TEST/apps/himon/himon.asm
 ```
 
-Primary Himonia-F edge guide:
+Primary HIMON edge guide:
 
 ```text
-DOC/GUIDES/HIMONIA_F_MAP.md
-DOC/GUIDES/HIMONIA_F_EDGE_DUMP.md
+DOC/GUIDES/HIMON_MAP.md
+DOC/GUIDES/HIMON_EDGE_DUMP.md
 DOC/GUIDES/MEMORY_MAP.md
 ```
 
@@ -111,13 +125,17 @@ SRC/TEST/apps/rom-append-calc.asm
   classification tokens, and FNV-1a lookup bytes when available.
 - Catalog entries should preserve name, hash, entry registers, exit registers,
   carry/flag contract, proof status, notes, and tags.
+- Stage/class reconstruction should distinguish historical source stages from
+  current HIMON product direction.
 - Memory-map entries should distinguish generated current addresses from future
   STR8/HIMON placement goals.
+- Dynamic allocation notes should distinguish app/session-owned heap experiments
+  from monitor-owned services that require memory-map reservations.
 - `make rom` rebuilds `rom.lib`; test/app links consume that library rather
   than duplicating shared module code.
 
 ## Known Drift
 
 The older generated source-wide graph has been removed because it was noisy and
-stale. Use `HIMONIA_F_MAP.md` for the readable current map and
-`HIMONIA_F_EDGE_DUMP.md` for raw Himonia-F direct-edge evidence.
+stale. Use `HIMON_MAP.md` for the readable current map and
+`HIMON_EDGE_DUMP.md` for raw HIMON direct-edge evidence.

@@ -19,6 +19,8 @@ This is the top index for the `ror` documentation set.
 - [HISTORICAL_DOCUMENTS.md](./HISTORICAL_DOCUMENTS.md) - path from BSO2 ideas to Himonia-F.
 - [DECISIONS.md](./DECISIONS.md) - naming, hash, STR8, ASM, ABI, local-home,
   and doc-shape decisions.
+- [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - reconstruction of
+  HIMON stages and routine-class families.
 - [STR8.md](./STR8.md) - Straight 8 recovery/update monitor.
 - [STR8_DECISION_REFERENCE.md](./STR8_DECISION_REFERENCE.md) - current STR8
   first-test design decisions.
@@ -26,7 +28,9 @@ This is the top index for the `ror` documentation set.
 - [HASH_MAP.md](./HASH_MAP.md) - hash uses across docs, runtime dispatch, and assembler records.
 - [MEMORY_MAP.md](./MEMORY_MAP.md) - current Himonia-F ROM image, RAM workspace,
   fixed ABI entries, vectors, and STR8 ownership direction.
-- [HIMONIA_F_MAP.md](./HIMONIA_F_MAP.md) - readable Himonia-F edge and capability maps.
+- [DYNAMIC_MEMORY_FIRST_STEPS.md](./DYNAMIC_MEMORY_FIRST_STEPS.md) - first
+  steps for byte, word, pointer, bump, pool, and free-list allocation thinking.
+- [HIMON_MAP.md](./HIMON_MAP.md) - readable HIMON edge and capability maps.
 
 ## Reference Guides
 
@@ -34,12 +38,16 @@ This is the top index for the `ror` documentation set.
 - [CATALOG.md](./CATALOG.md) - compact callable routine catalog by read/write/string/hex/hash/flash need.
 - [MEMORY_MAP.md](./MEMORY_MAP.md) - address ranges and ownership for current
   Himonia-F ROM/RAM.
+- [DYNAMIC_MEMORY_FIRST_STEPS.md](./DYNAMIC_MEMORY_FIRST_STEPS.md) - scoped
+  dynamic memory allocation direction for future user/app/session work.
 - [SYMBOL_XREF.md](./SYMBOL_XREF.md) - STASH/Himonia-F symbol cards, ABI fields,
   classification tokens, and Himonia-F call tree.
-- [HIMONIA_F_MAP.md](./HIMONIA_F_MAP.md) - grouped Himonia-F edge maps and
+- [HIMON_MAP.md](./HIMON_MAP.md) - grouped HIMON edge maps and
   full capability map.
-- [HIMONIA_F_EDGE_DUMP.md](./HIMONIA_F_EDGE_DUMP.md) - generated-style direct
-  `JSR`/`JMP` edge dump for Himonia-F.
+- [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - human stage/class
+  reconstruction for HIMON and the Himonia-F promotion path.
+- [HIMON_EDGE_DUMP.md](./HIMON_EDGE_DUMP.md) - generated-style direct
+  `JSR`/`JMP` edge dump for HIMON.
 - [GLOSSARY.md](./GLOSSARY.md) - vocabulary for layers, monitors, hashes, and STR8.
 
 ## Planning

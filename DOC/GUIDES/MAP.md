@@ -10,13 +10,15 @@ DOC/INDEX.md
      -> TOC.md
      -> MAP.md
      -> DECISIONS.md
+     -> HIMON_STAGES_CLASSES.md
      -> REF.md
      -> XREF.md
      -> CATALOG.md
      -> MEMORY_MAP.md
+     -> DYNAMIC_MEMORY_FIRST_STEPS.md
      -> SYMBOL_XREF.md
-     -> HIMONIA_F_MAP.md
-     -> HIMONIA_F_EDGE_DUMP.md
+     -> HIMON_MAP.md
+     -> HIMON_EDGE_DUMP.md
      -> BIB.md
 ```
 
@@ -43,6 +45,11 @@ Himonia-F
   owns normal monitor interaction
   hashes command tokens
   dispatches to command records
+
+HIMON Stages And Classes
+  reconstructs Himon/Himonia/Himonia-F stages from source and guides
+  explains routine-class families such as CMD, CMD_HASH, MON, HIM, ASM, DIS,
+  DBG, L, FNV1A, MATH, ABI, and future MEM
 
 STR8
   owns recovery/update guardrails
@@ -82,13 +89,18 @@ Memory Map
   identifies user flash, monitor code/data, ABI entries, vectors, and gaps
   distinguishes the current Himonia-F image from the future STR8/HIMON split
 
-Himonia-F Map
+Dynamic Memory First Steps
+  explains byte, word, and pointer allocation as byte reservations
+  keeps STR8 out of general heap ownership and HIMON out for now
+  uses the current memory map and zero-page rules to scope any future heap
+
+HIMON Map
   turns the raw direct edges into readable subsystem diagrams
   maps startup, dispatch, commands, loader/flash, debug, disasm, ASM, and ABI
-  gives Himonia-F a full capability map
+  gives HIMON a full capability map
 
-Himonia-F Edge Dump
-  lists direct `JSR` and `JMP` sites from the current Himonia-F source
+HIMON Edge Dump
+  lists direct `JSR` and `JMP` sites from the current HIMON source
   preserves raw line-number edges separately from compact call-tree diagrams
 ```
 
@@ -108,7 +120,10 @@ and debug tools.
 SRC/TEST/apps/himon/
   himon.asm
   himon-parent.asm
+  mon.asm
+  mon-cmd-*.inc
   himonia.asm
+  himonia-f.asm
   fnv1a-hbstr.asm
 
 SRC/TEST/apps/
@@ -147,17 +162,21 @@ flowchart TD
     IDX[INDEX] --> TOC[TOC]
     IDX --> MAP[MAP]
     IDX --> DEC[DECISIONS]
+    IDX --> HSTAGE[HIMON_STAGES_CLASSES]
     IDX --> REF[REF]
     IDX --> XREF[XREF]
     IDX --> CAT[CATALOG]
     IDX --> MEM[MEMORY_MAP]
+    IDX --> DMEM[DYNAMIC_MEMORY_FIRST_STEPS]
     IDX --> SYMX[SYMBOL_XREF]
-    IDX --> HMAP2[HIMONIA_F_MAP]
-    IDX --> HEDGE[HIMONIA_F_EDGE_DUMP]
+    IDX --> HMAP2[HIMON_MAP]
+    IDX --> HEDGE[HIMON_EDGE_DUMP]
     IDX --> BIB[BIB]
 
     MAP --> HIST[HISTORICAL_DOCUMENTS]
     MAP --> DEC
+    HIST --> HSTAGE
+    HSTAGE --> HMAP2
     MAP --> STR8[STR8]
     MAP --> HASM[HASHED_ASM]
     MAP --> HMAP[HASH_MAP]
@@ -171,6 +190,8 @@ flowchart TD
     HMAP --> CAT
     HMAP --> HASM
     STR8 --> MEM
+    MEM --> DMEM
+    DMEM --> HASM
     MEM --> HMAP2
     STR8 --> HASM
     HASM --> FUTURE[FUTURE]
@@ -187,7 +208,9 @@ flowchart TD
 - `HASH_MAP.md` covers all hash meanings and where they connect.
 - `SYMBOL_XREF.md` covers symbol-level contracts and semantic tags.
 - `CATALOG.md` covers the programmer-facing callable routine catalog.
-- `HIMONIA_F_MAP.md` is the readable Himonia-F edge/capability map.
-- `HIMONIA_F_EDGE_DUMP.md` is the direct Himonia-F edge dump.
+- `HIMON_MAP.md` is the readable HIMON edge/capability map.
+- `HIMON_EDGE_DUMP.md` is the direct HIMON edge dump.
+- `DYNAMIC_MEMORY_FIRST_STEPS.md` is conceptual only until a real allocator is
+  explicitly reserved in the memory map and routine contracts.
 - New guide files should be added to `INDEX.md`, `TOC.md`, `MAP.md`, `XREF.md`,
   and `BIB.md` together.

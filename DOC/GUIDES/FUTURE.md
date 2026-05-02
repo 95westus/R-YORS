@@ -6,8 +6,13 @@
 - Make STR8 the flash recovery/update boundary instead of scattering flash
   mutation policy across normal monitor commands.
 - Preserve the layer ladder (`PIN -> BIO -> COR -> SYS -> APP`) where it still
-  fits, but allow Himonia-F command records to become their own catalog surface.
+  fits, with `MEM` as a future core memory-ownership layer beneath public
+  `SYS` calls.
 - Keep CSTR, HBSTR, and packed command-text forms explicit at API boundaries.
+- Treat future dynamic memory as `MEM_*`: hardware-constrained RAM and
+  zero-page ownership policy, not `PIN_*`/`BIO_*` device access.
+- Keep STR8 fixed-buffer-only. HIMON can adopt `MEM_*` later, starting with
+  app/session-owned bump allocation and pools before any general free-list heap.
 
 ## Long-Term RPG II Direction
 
@@ -97,6 +102,6 @@
 
 - Keep `DOC/GUIDES/INDEX.md`, `TOC.md`, `MAP.md`, `REF.md`, `XREF.md`,
   `BIB.md`, and `HASH_MAP.md` consistent as the stable guide spine.
-- Keep `HIMONIA_F_MAP.md` plus `HIMONIA_F_EDGE_DUMP.md` as the current
-  Himonia-F map/evidence pair.
+- Keep `HIMON_MAP.md` plus `HIMON_EDGE_DUMP.md` as the current HIMON
+  map/evidence pair.
 - Add a future generator only if the guide set starts drifting again.

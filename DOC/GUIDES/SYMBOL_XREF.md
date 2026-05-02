@@ -214,9 +214,9 @@ This is a hand-sized tree from `SRC/TEST/apps/himon/himon.asm`. It is not a
 complete edge dump; indirect jumps, tables, and some repeated print helper calls
 are intentionally collapsed.
 
-For the readable command/subsystem maps and full Himonia-F capability map, see
-[HIMONIA_F_MAP.md](./HIMONIA_F_MAP.md). For the direct generated-style edge
-listing, see [HIMONIA_F_EDGE_DUMP.md](./HIMONIA_F_EDGE_DUMP.md).
+For the readable command/subsystem maps and full HIMON capability map, see
+[HIMON_MAP.md](./HIMON_MAP.md). For the direct generated-style edge
+listing, see [HIMON_EDGE_DUMP.md](./HIMON_EDGE_DUMP.md).
 
 ```mermaid
 flowchart TD
