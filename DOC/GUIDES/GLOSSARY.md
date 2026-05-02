@@ -48,6 +48,28 @@
 - symbol hash: assembler/catalog lookup key for labels, routines, and commands.
 - hash collision: two names produce the same hash; name text must prove identity.
 - hash map: the design map of where hashes are used and what each hash means.
+- RCAT: runtime catalog dataset; may hold records, string pools, indexes, and
+  links to runtime bodies spread across RAM or flash.
+- RREC: runtime record; one typed catalog entry for a command, routine, symbol,
+  data item, module, inline value, or similar runtime thing.
+- RBODY: runtime body; the code, data, string, packet, module image, or payload
+  described by one or more runtime records.
+- RBODY compression: storage codec for runtime body payloads; first direction
+  is byte-aligned RLE with raw storage as fallback.
+- RFMT: runtime format; record/catalog layout version.
+- RBLK: runtime block; physical flash/RAM block containing records, bodies, or
+  both.
+- RIDX: runtime index; optional accelerator that maps resolved records to short
+  local handles or speeds catalog lookup.
+- RSTR: runtime string pool; shared/proof/display text storage.
+- RFIX: runtime fixup; unresolved patch/reference site.
+- RLNK: runtime link; reference from one runtime record/body to another.
+- RBND: runtime bind; process of resolving links/fixups through an RCAT.
+- RRES: runtime resolve; lookup operation by hash/name/type.
+- catalog linking: R-YORS dynamic linking path where assembler imports,
+  exports, and fixups resolve through typed hash catalog records.
+- hash-linked module: loadable or flash-resident body whose public commands,
+  routines, data, or symbols are exposed through catalog records.
 
 ## Flash Terms
 
