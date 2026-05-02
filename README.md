@@ -62,6 +62,11 @@ computing a multiplicative hash both cost cycles, but the W65C02SXB is fast
 enough for this proving stage, and the catalog format can grow block headers or
 indexes later without changing the basic command/hash relationship.
 
+The hash is not limited to commands. In R-YORS it is a compact name handle; the
+typed record around it says what was found. The same pattern can describe an
+executable command, callable routine, symbol, memory range, constant, string,
+packet shape, data element, flash module, or unresolved fixup.
+
 Hashes keep records compact enough for ROM and flash, but they are not meant to
 be the whole identity forever. As the catalog grows, stored command/routine text
 can prove collisions, support listings, and let onboard tools link against
