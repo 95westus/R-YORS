@@ -68,6 +68,10 @@
 - Export only after bytes and fixups are verified.
 - Keep `DEF`, `SYM`, `FIX`, `RESOLVE`, `FORGET`, and `EXPORT` in the design
   surface even if early UI hides some of them.
+- Treat short IDs/indexes as optional post-resolution handles. Hashes remain
+  the catalog discovery key; future RIDX tables can speed hot paths later.
+- Keep PACK5/3x5 as a candidate for compact 3-letter mnemonic tables, because
+  three 5-bit characters fit in two bytes.
 
 ## Flash Direction
 
@@ -85,6 +89,9 @@
   becomes live.
 - Store compressed command text only when it is smaller than raw text after
   flags/headers.
+- Use byte-aligned RLE as the first binary `RBODY` compression direction, with
+  special run forms for `$00`, `$20`, and `$FF` under consideration. Do not
+  commit opcode ranges until the decoder shape is proven small.
 
 ## Documentation Direction
 
