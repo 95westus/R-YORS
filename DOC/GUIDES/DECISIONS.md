@@ -127,8 +127,19 @@ A [addr] [label:] MMM [operand] .
 ```
 
 - Address comes before optional label.
+- ASM hashes canonical names and tokens, not raw numeric addresses, for
+  resolution. Store exact addresses, banks, patch sites, and origins as fields.
+  Address-containing record hashes are proof/check metadata only, not emitted
+  operand values.
 - Labels require `:`.
 - Labels cannot be mnemonic names; mnemonics cannot be labels.
+- Local ASM labels use dot syntax: `.` alone ends a one-shot statement,
+  `.NAME:` defines a local label, and `.NAME` uses a local label. No v1
+  dot-directive aliases. Local labels are scoped under the current nonlocal
+  label and cannot be exported.
+- Minimal v1 ASM directives are IBM-ish: `DC`, `DS`, and `EQU`. Compatibility
+  aliases such as `DB` may later be typed directive-alias records that resolve
+  by hash to a real directive handler, but they are not part of v1.
 - V1 must support forward references through fixups. A forward-reference ban is
   rejected.
 - A fixup is a hash lookup plus patch-site record, not magic. It must preserve
