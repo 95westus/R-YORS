@@ -1,137 +1,75 @@
-﻿![R-YORS logo](DOC/branding/logo-r-yors.svg)
+![R-YORS logo](DOC/branding/logo-r-yors.svg)
 
-# RЯORS (R-YORS) #
+# R-YORS
 
-`R-YORS` = **Roll Ya Own Runtime System**
+```text
+ROLL YA OWN RUNTIME SYSTEM              W65C02
+NOTES / SOURCE / ROMS / MANUALS         READ ME FIRST
+```
 
 Not eRRORS, but expect fewer.
 
-Pronunciation: **"are-yors"** (`R + Я(ya) + ors`).
+Pronounced **are-yors**.
 
-This is a play on "Roll Your Own Runtime System," where "Я" (Russian for "ya") represents "your," highlighting the DIY, customizable nature of the project.
+## System Card
 
-## Safety Notice
+R-YORS is a retro-computing documentation and source project for building a
+small WDC W65C02SXB/W65C02EDU runtime environment by hand.
 
-R-YORS includes code that can write to and erase flash memory. Running loaders,
-tests, monitor commands, ROM images, or flash utilities may overwrite firmware,
-programs, user data, or configuration stored on the target machine.
-
-Use this project only if you understand the target hardware and have a recovery
-path, such as a known-good ROM image or external programmer. The software is
-provided as-is, without warranty; you are responsible for any consequences of
-building, flashing, modifying, or running it.
-
-## Why
-
-**R-YORS exists to make a WDC W65C02SXB/W65C02EDU single-board computer feel like a standalone machine: power on, recover safely, load or build code, inspect routines, and grow the system in flash without needing a full toolchain every time.**
-
-## What
-
-R-YORS is an in-progress W65C02 runtime project built from the ground up:
-low-level board bring-up, reusable runtime routines, command/catalog lookup,
-flash-safe update paths, loaders, debug tools, and small applications that
-prove the pieces work on real hardware.
-
-The near-term project is the runtime family itself. **STR8** and **HIMON** are
-sister components inside R-YORS: they may share code, and they may or may not
-be used together in a given build. Recovery/update safety, command dispatch,
-catalog lookup, assembler/debug services, and flash growth are R-YORS-level
-concerns first.
-
-The long-term north star is still true RPG II, but not as a bolted-on compiler. The "OS" is being shaped around the needs of that future: stable callable routines, discoverable catalogs, flash-resident programs, fixed entry points, simple text encodings, and an onboard assembler/linker path that can grow without losing the machine.
-
-## How
-
-R-YORS enables this vision through a modular library of routines that can be easily linked into projects. This approach allows developers to quickly assemble custom runtime systems by selecting and combining pre-built, tested components—eliminating the need to rewrite low-level code and accelerating experimentation on the 6502 platform.
-
-## Command And Hash Catalog
-
-One of R-YORS' core ideas is that commands, routines, symbols, and future
-flash-resident modules can be found through the same small catalog pattern:
+Current spine:
 
 ```text
-text token -> canonical text -> 32-bit FNV-1a hash -> catalog record -> entry/value
+R-YORS -> STR8 -> HIMON -> THE -> onboard ASM/catalog linking
 ```
 
-The current monitor already proves this with FNV-1a command dispatch: a typed
-command token is hashed, the catalog is scanned for a matching record, and the
-matching executable entry is called. The `#` command exposes that lookup path.
+- `STR8` is the recovery/update guard.
+- `HIMON` is the monitor/debug/catalog environment.
+- `THE` is The Hash Engine: hash-first lookup for names and records.
+- `ASM` is the planned onboard assembler path.
 
-The current scan is intentionally simple. Scanning a ROM/flash catalog and
-computing a multiplicative hash both cost cycles, but the W65C02SXB is fast
-enough for this proving stage, and the catalog format can grow block headers or
-indexes later without changing the basic command/hash relationship.
+This repo is meant to feel like a machine binder: source, generated listings,
+design notes, decisions, maps, and scratchpad material all live together.
 
-The hash is not limited to commands. In R-YORS it is a compact name handle; the
-typed record around it says what was found. The same pattern can describe an
-executable command, callable routine, symbol, memory range, constant, string,
-packet shape, data element, flash module, or unresolved fixup.
+## Safety
 
-This opens a small but exciting path for onboard assembly and dynamic linking.
-R-YORS calls that path **catalog linking**: assembled code exports typed hash
-records, later code imports names by hash, and fixups are resolved through the
-catalog instead of through a host-side DLL, shared object, or large linker file.
-The core pieces are `RCAT`, a runtime catalog dataset; `RREC`, a typed runtime
-record; and `RBODY`, the code, data, string, packet, or module body an RREC
-describes.
+Some code here can write or erase flash memory. Running loaders, tests, monitor
+commands, ROM images, or flash utilities can overwrite firmware, programs,
+user data, or board configuration.
 
-Hashes keep records compact enough for ROM and flash. They start as lookup
-filters, not absolute identity; a future writable catalog can promote a match
-to validated identity by checking stored text, type, scope, and other proof
-metadata. As the catalog grows, stored command/routine text can prove
-collisions, support listings, and let onboard tools link against names without
-carrying a large conventional symbol table. See
-[DOC/GUIDES/HASH_MAP.md](DOC/GUIDES/HASH_MAP.md) and
-[DOC/GUIDES/HASH.md](DOC/GUIDES/HASH.md) for the deeper record model.
+Use this project only with a recovery path: known-good ROM image, external
+programmer, or another way back. No warranty is provided.
 
-## Example Routines
+## Manual Set
 
-To illustrate the library's versatility, here are three example routines from different layers:
+Start here:
 
-- **UTL_HEX_NIBBLE_TO_ASCII** (Utility): Converts a low nibble (0-15) in A to uppercase ASCII hex ('0'-'F'), useful for debugging output.
-- **BIO_PIA_LED_WRITE** (Hardware Abstraction): Controls LED states on the PIA chip, abstracting direct hardware access for safer GPIO operations.
-- **SYS_WRITE_CHAR** (System I/O): Provides device-neutral character output, routing through the selected backend (e.g., FTDI) for consistent I/O across platforms. 
+- [DOC/INDEX.md](DOC/INDEX.md) - documentation front desk.
+- [DOC/GUIDES/TOC.md](DOC/GUIDES/TOC.md) - recommended reading order.
+- [DOC/GUIDES/DECISIONS.md](DOC/GUIDES/DECISIONS.md) - settled calls.
+- [DOC/GUIDES/REF.md](DOC/GUIDES/REF.md) - quick reference.
 
-## Architecture & Current Status
+Core binders:
 
-My predecessor project, BSO2, proved the concept but suffered from inflexible command processing, poor modularity, and too many rabbit holes. R-YORS adopts a more disciplined approach with layered, reusable building blocks:
+- [DOC/GUIDES/STR8.md](DOC/GUIDES/STR8.md)
+- [DOC/GUIDES/HIMON_STAGES_CLASSES.md](DOC/GUIDES/HIMON_STAGES_CLASSES.md)
+- [DOC/GUIDES/HASH_MAP.md](DOC/GUIDES/HASH_MAP.md)
+- [DOC/GUIDES/HASHED_ASM.md](DOC/GUIDES/HASHED_ASM.md)
+- [DOC/GUIDES/CATALOG.md](DOC/GUIDES/CATALOG.md)
+- [DOC/GUIDES/MEMORY_MAP.md](DOC/GUIDES/MEMORY_MAP.md)
 
-- **PIN routines** – Direct hardware interface
-- **BIO routines** – Hardware abstraction layer wrapping PIN routines
-- **COR routines** – Core reusable services and board-facing helpers
-- **SYS routines** – System-level services such as I/O, vectors, debug entry, and monitor-facing adapters
+Generated reports: [DOC/GENERATED](DOC/GENERATED)
+Scratchpad: [DOC/IDEAS.md](DOC/IDEAS.md)
 
-The current HIMON proof image is a compact FNV-1a-dispatched monitor built to
-fit under 8K. It boots from ROM, initializes FTDI I/O, clears RAM on cold
-reset, patches RAM dispatch cells for reset/NMI/IRQ/BRK handling, and prints a
-terse reset report like:
+## Deck Map
 
 ```text
-BOOT COLD
-RAM ZERO OK
-FTDI INIT
-WAIT ............. OK
-RST 7EF8=EB81
-NMI 7EFA=DD72
-IRQ 7EFE=DDF3
-BRK 7EFC=DDA5
-
-HIMON
+SRC/TEST    current bring-up, monitor, apps, device tests
+SRC/STASH   parked or earlier source lines
+SRC/SESH    session/experiment lane
+SRC/tools   doc, ROM, and build helpers
+DOC/        manuals, maps, design notes, generated reports
+LOCAL/      ignored local source homes, when present
 ```
-
-Warm reset reports `BOOT WARM` instead of `BOOT COLD` and skips the
-`RAM ZERO OK` line. In source, the banner is stored as an HBSTR with the final
-`N` carrying the high-bit terminator.
-
-The current monitor includes hashed command dispatch, S-record loading,
-GO/LOAD+GO execution, register display/editing, memory display/modify,
-disassembly/assembly helpers, breakpoints, single-step support, NMI/BRK trap
-capture, decoded CPU flags, and return-status reporting for executed user code.
-BRK handling is now native to the monitor rather than delegated to BSO2. The
-monitor also exposes discoverable FNV signatures for selected commands and
-routines, making ROM services easier to identify and call by hash.
-
-Small standalone programs are used to test the runtime surface. One example is a 16x16 Conway Life app loaded at `$2000`, with random/manual/auto/next/quit controls, age-aware cells, NMI count testing, and cleanup that restores the monitor's debug vector before returning.
 
 ## Build
 
@@ -139,32 +77,26 @@ Small standalone programs are used to test the runtime surface. One example is a
 make release
 ```
 
-`release` regenerates the source-derived docs under `DOC/GENERATED`, builds
-the tracked-source release set, and stamps the HIMON ROM binary under
-`SRC/ROM_IMAGES/`. The tracked-source release set is HIMON, the FNV-1a/HBSTR
-tool, the flash test, and `rom-append-calc`.
+Regenerates source-derived docs, builds the tracked release set, and stamps the
+HIMON ROM binary.
 
 ```text
 make release-local
 ```
 
-`release-local` adds the ignored/private local composites, including
-`basic-himon-rom.bin` and `basic-forth-himon-rom.bin`, when the `LOCAL/`
-source homes are populated.
+Adds ignored/private local composites when `LOCAL/` is populated.
 
-## Documentation & References
+## Lineage
 
-Start here:
+R-YORS grows from the BSO2/WDC monitor line into a smaller, more disciplined
+set of reusable routines, flash-safe recovery, hash-dispatched monitor
+commands, and eventually onboard assembly/catalog linking.
 
-- [DOC/INDEX.md](DOC/INDEX.md) - documentation spine.
-- [DOC/GUIDES/STR8.md](DOC/GUIDES/STR8.md) - recovery/update monitor direction.
-- [DOC/GUIDES/MEMORY_MAP.md](DOC/GUIDES/MEMORY_MAP.md) - current HIMON ROM/RAM map.
-- [DOC/GUIDES/CATALOG.md](DOC/GUIDES/CATALOG.md) - programmer-facing callable routine catalog.
-- [DOC/GUIDES/FUTURE.md](DOC/GUIDES/FUTURE.md) - longer-term direction, including RPG II.
+The long north star is still true RPG II, but shaped from below: stable callable
+routines, discoverable catalogs, flash-resident programs, fixed entry points,
+simple text encodings, and a runtime that can explain itself.
 
-Core historical references include IBM's SY31-0458-3 and GC21-7667-4.
-
-## Trademarks And Attribution
+## Notice
 
 R-YORS is independent and is not affiliated with or endorsed by The Western
 Design Center, Inc. Product names are used only to identify compatible hardware.
