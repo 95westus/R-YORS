@@ -204,6 +204,35 @@ later label -> same hash -> patch recorded site
 
 ## Catalog Hash Record
 
+Mini theory:
+
+```text
+canonical name/text -> FNV-1a hash -> typed catalog record -> value/payload
+```
+
+The hash is only the compact lookup key. The surrounding record gives the match
+meaning. A future R-YORS catalog can use the same hash path for several kinds of
+things:
+
+```text
+command       hash -> executable entry point
+routine       hash -> callable service address plus ABI notes
+symbol        hash -> address/value/bank
+data element  hash -> address, length, and data type
+constant      hash -> byte, word, long, or flag value
+memory range  hash -> base, size, bank, and access flags
+packet        hash -> parser, handler, or schema record
+module        hash -> flash block plus entry/export table
+fixup         hash -> unresolved reference waiting for definition
+string        hash -> CSTR, HBSTR, raw, or packed-text address
+device        hash -> driver vector table or capability record
+```
+
+This keeps the catalog closer to a small typed name/value system than to a
+command table. Early builds can keep the record scanner simple and hash-only
+where space is tight; later writable catalogs should carry proof text, type
+flags, and collision handling.
+
 Working record shape:
 
 ```text
@@ -213,8 +242,10 @@ value_lo/value_hi
 bank
 kind
 flags
+size_or_extra
 optional name length
 optional raw or compressed name text
+optional payload
 ```
 
 `bank` matters because the record may live in a clean catalog area while the
