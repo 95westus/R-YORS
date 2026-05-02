@@ -233,6 +233,25 @@ command table. Early builds can keep the record scanner simple and hash-only
 where space is tight; later writable catalogs should carry proof text, type
 flags, and collision handling.
 
+An `RCAT` is a runtime catalog dataset, not just a table. It may hold `RREC`
+records, string pools, indexes, and links to `RBODY` payloads spread across RAM
+or flash. An `RREC` is a typed runtime record: it names, classifies, and points
+to an `RBODY`, or carries a small inline value itself. An `RBODY` is the actual
+runtime body: executable code, data bytes, string text, packet shape, module
+image, or another payload.
+
+R-YORS names the dynamic path **catalog linking**. A catalog-linked body is not
+a DLL and not a `.so`; it is an `RBODY` plus one or more `RREC` exports visible
+through an `RCAT`. The assembler can emit unresolved references as `RFIX`
+records, then later resolve those fixups when a matching live `RREC` appears.
+
+Possible path:
+
+```text
+assemble RBODY -> create RFIX -> verify body -> export RREC into RCAT
+later code -> import by hash/name -> resolve RFIX/RLNK -> call entry or use value
+```
+
 Working record shape:
 
 ```text
@@ -268,6 +287,53 @@ So a displayed hash such as `$89ABCDEF` is stored as:
 hash0=$EF hash1=$CD hash2=$AB hash3=$89
 ```
 
+## Hashes And Short Handles
+
+Four-byte FNV hashes are worth their cost at catalog boundaries, where a name
+must be found across modules, banks, sessions, or flash blocks. They are too
+expensive to require for every small field, flag, short data element, or local
+packet member.
+
+Rule:
+
+```text
+hashes discover named things
+short IDs, offsets, and indexes reuse known things
+```
+
+Use full FNV-1a records for public or cross-boundary names:
+
+```text
+commands
+exported routines
+symbols
+modules
+packet types
+public data elements
+cross-bank references
+fixup targets
+```
+
+Use smaller local handles inside an already-known `RREC`, `RBODY`, or `RCAT`:
+
+```text
+1-byte kind/type       record class, scalar type, encoding family
+1-byte local id        field or item inside one body/catalog scope
+2-byte local index     string pool offset, record index, block-relative handle
+direct offset/address  payload layout when relocation is not needed
+```
+
+A future `RIDX` can cache resolved records as short handles:
+
+```text
+first use:   name/hash -> RCAT scan -> RREC pointer
+later use:   short id/index -> RREC pointer, entry, or value
+```
+
+That makes `RIDX` an accelerator, not the source of identity. Hashes remain the
+stable discovery key; short handles are local conveniences for hot paths,
+bytecode, packet fields, local imports, or RAM session symbol tables.
+
 ## Text Storage
 
 Possible text encodings:
@@ -275,12 +341,22 @@ Possible text encodings:
 ```text
 raw_hb       high-bit-terminated string
 raw_z        ASCIIZ string
-pack_lo_5    5-bit restricted alphabet
+pack_lo_5    5-bit restricted alphabet; candidate for 3-letter mnemonics
 dict_small   later optional dictionary
 pool_hb      offset to high-bit-terminated text in a block string pool
 pool_z       offset to ASCIIZ text in a block string pool
 pool_len     offset plus length in a block string pool
 ```
+
+`pack_lo_5` is especially plausible for 3-letter assembler mnemonics:
+
+```text
+3 chars * 5 bits = 15 bits
+one mnemonic fits in two bytes
+```
+
+That can reduce mnemonic table storage and may allow direct packed comparisons.
+It is a candidate encoding, not a required general-purpose text format.
 
 Compression rule:
 
@@ -298,6 +374,34 @@ An offset-only string reference can work if the target text is self-terminated
 with high-bit or zero termination. That gives no true length in the record; the
 decoder walks until the terminator. If speed matters later, a block-level string
 index can cache offsets or lengths without changing the basic record.
+
+## RBODY Compression
+
+R-YORS should not use one compression format for every payload. Text names can
+use PACK5/PACK6-style encodings or string pools. Binary `RBODY` payloads need a
+different first codec.
+
+The first binary-body codec direction is byte-aligned RLE:
+
+```text
+host compressor may be slow
+65C02 decompressor must be small
+decompression should be simple and streaming
+raw storage remains the fallback
+```
+
+Runs of common fill bytes are important enough to reserve design space for
+special cases:
+
+```text
+$00  zero-filled data/work areas
+$20  spaces in text-like binary buffers
+$FF  erased flash / blank image regions
+```
+
+Exact opcode ranges and run lengths are not committed yet. The format should
+prefer a tiny decoder and good behavior for flash images over maximum
+compression ratio.
 
 ## Collision Policy
 
