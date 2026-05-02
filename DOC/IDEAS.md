@@ -36,6 +36,88 @@ reason it belongs in R-YORS / STR8 / HIMON
 
 Until then, it stays here as a special moment.
 
+## Word Find: THE
+
+Bucket: `word find`
+
+`THE` means `The Hash Engine`.
+
+Possible R-YORS use:
+
+```text
+THE
+  the conceptual hash path for canonical names, tokens, records, lookups,
+  symbol resolution, fixups, catalog discovery, and proof metadata
+```
+
+Working distinction:
+
+```text
+THE makes named things findable.
+THE does not make raw addresses meaningful.
+```
+
+## Bad Far Out: Hashing ASM Addresses
+
+Bucket: `bad far out`
+
+Question:
+
+```text
+Would hashing the actual address, either as binary bytes or as hex ASCII,
+benefit, aid, or accomplish anything for ASM?
+```
+
+Short answer:
+
+```text
+Not for ASM resolution.
+```
+
+For assembler work, an address is already the useful payload. A 16-bit address
+is smaller than a 32-bit FNV-1a hash, can be emitted directly, can be
+range-checked, can be tested for zero-page use, and can participate in relative
+branch math. Hashing it turns useful structure into an opaque value that cannot
+be reversed back into the address and can still collide.
+
+Hex ASCII is especially weak for this use because spelling choices can change
+the hash while naming the same address:
+
+```text
+$2000
+2000
+$02000
+```
+
+Binary address hashing is less ambiguous than hex ASCII, but still does not
+help the assembler emit bytes. If an address-related hash is ever useful, it
+belongs only as proof metadata or a cache/fingerprint over a complete typed
+record:
+
+```text
+hash(name + kind + bank + address + size + record-format)
+```
+
+That could help detect stale catalog records or changed exports. It does not
+replace the stored fields the assembler needs:
+
+```text
+value_lo
+value_hi
+bank
+kind
+site_lo/site_hi
+origin_lo/origin_hi
+```
+
+Rule that survived the musing:
+
+```text
+THE hashes canonical names/tokens.
+ASM stores and patches exact addresses.
+Record hashes may prove records, but do not stand in for addresses.
+```
+
 ## Word Find: Device Quench
 
 Bucket: `word find`
