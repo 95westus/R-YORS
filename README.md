@@ -24,11 +24,37 @@ R-YORS -> STR8 -> HIMON -> THE -> onboard ASM/catalog linking
 
 - `STR8` is the recovery/update guard.
 - `HIMON` is the monitor/debug/catalog environment.
-- `THE` is The Hash Engine: hash-first lookup for names and records.
+- `THE` is The Hash Engine: FNV-1a hash-first lookup for names and records.
 - `ASM` is the planned onboard assembler path.
 
 This repo is meant to feel like a machine binder: source, generated listings,
 design notes, decisions, maps, and scratchpad material all live together.
+
+## FNV-1a Hash Spine
+
+R-YORS uses **32-bit FNV-1a** as the common lookup key for the runtime system:
+commands, routines, symbols, catalog records, data elements, constants, fixups,
+modules, strings, and future assembler names all follow the same hash-first
+path.
+
+```text
+canonical text -> FNV-1a -> hash0,hash1,hash2,hash3 -> typed record/payload
+```
+
+- Hash constants: offset basis `$811C9DC5`, prime `$01000193`.
+- Persistent storage is little-endian: displayed `$89ABCDEF` is stored as
+  `EF,CD,AB,89`.
+- Current Himonia-F command records use:
+  `'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...`
+- Routine comments carry stable IDs like `[HASH:49023C1B]`, generated from the
+  canonical uppercase routine name.
+- Future catalog records keep the same `hash0..3` field for commands,
+  routines, data, symbols, packets, modules, aliases, and unresolved fixups.
+
+The hash narrows the search; the surrounding typed record gives the match its
+meaning, and stored/proof text can disambiguate collisions when records become
+writable or user-created. Start with [DOC/GUIDES/HASH.md](DOC/GUIDES/HASH.md)
+and [DOC/GUIDES/HASH_MAP.md](DOC/GUIDES/HASH_MAP.md) for the full schema.
 
 ## Safety
 
