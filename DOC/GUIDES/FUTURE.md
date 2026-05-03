@@ -85,8 +85,9 @@
 - Treat versioned catalog lookup as candidate selection, not first-match:
   exact ABI version, minimum-compatible version, and latest-compatible lookup
   are different policies. HIMON and ASM can use compatible latest records when
-  the caller allows it. STR8 V0 does not use FNV/catalog lookup; future STR8 may
-  own catalogs after the image-recovery path is stable.
+  the caller allows it. STR8 V0 does not use FNV/catalog lookup; future
+  STR8-N/STRAIGHTEN may participate in catalog scan/repair after the
+  image-recovery path is stable.
 - Keep PACK5/3x5 as a candidate for compact 3-letter mnemonic tables, because
   three 5-bit characters fit in two bytes.
 
