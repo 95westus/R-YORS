@@ -30,7 +30,8 @@ early recovery code should start at `BIO_*`. Only drop to `COR_*` or `PIN_*`
 when the higher layer does not exist or would pull too much code.
 
 STR8 V0 must not depend on `FNV1A_*`; FNV belongs to HIMON/catalog/assembler
-work after recovery handoff. Future catalog-owning STR8 can revisit this.
+work after recovery handoff. Future STR8-N/STRAIGHTEN can participate in this
+path without requiring catalog ownership.
 
 ## Field Shape
 
