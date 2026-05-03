@@ -12,8 +12,8 @@
   install/update verifies those bytes separately, and any fixed image marker.
 - Define the first catalog record header that can represent hash, kind, bank,
   address, flags, and optional name text.
-- Decide whether `$FACE`, `$FADE`, `$FEED`, and `$F00D` are direct stubs,
-  trampolines, or STR8/Himon service table entries.
+- Define the first explicit STR8 import labels HIMON will use after the
+  simulation stub grows into resident recovery code.
 - Sketch the first W65C02-small `pack_lo_5` decoder and the rule for falling
   back to raw text when compression loses.
 - Define the exact `FIX` record bytes for RAM staging and direct flash patching.

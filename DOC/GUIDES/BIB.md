@@ -65,7 +65,7 @@ DOC/GENERATED/ROUTINE_COMPONENTS.md
 - Routine inventory is derived from `; ROUTINE:` comment blocks.
 - `CATALOG.md` is a programmer-facing selection view over that
   routine inventory.
-- `MEMORY_MAP.md` records current Himonia-F ROM/RAM ownership, fixed ABI
+- `MEMORY_MAP.md` records current Himonia-F ROM/RAM ownership, compatibility
   entries, vectors, and future STR8 placement direction.
 - `DYNAMIC_MEMORY_FIRST_STEPS.md` synthesizes the W65C02 allocation discussion
   with the current R-YORS memory map and zero-page rules.

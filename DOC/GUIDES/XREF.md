@@ -45,7 +45,7 @@ CATALOG.md
 MEMORY_MAP.md
   current Himonia-F ROM and RAM address ownership
   records user flash, monitor code/data, ABI slots, vectors, and high-RAM workspaces
-  separates the current Himonia-F build map from future STR8/HIMON ownership
+  separates the current Himonia-F build map from future STR8/HIMON integration
 
 DYNAMIC_MEMORY_FIRST_STEPS.md
   conceptual W65C02 dynamic allocation guide for R-YORS

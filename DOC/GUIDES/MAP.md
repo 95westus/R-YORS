@@ -10,6 +10,7 @@ DOC/INDEX.md
      -> TOC.md
      -> MAP.md
      -> DECISIONS.md
+     -> BRINGUP.md
      -> HIMON_STAGES_CLASSES.md
      -> REF.md
      -> XREF.md
@@ -30,7 +31,7 @@ R-YORS
 
 Decisions
   records settled calls before details sprawl into guide debate
-  prevents reopening hash, naming, STR8, ABI, ASM, and doc-shape decisions
+  prevents reopening hash, naming, STR8, ASM, and doc-shape decisions
 
 STR8
   keeps recovery/update safe
@@ -58,9 +59,14 @@ STR8
   protects only the selected $FC00/$FA00/$F800/$F600/$F400/$F200/$F000 window
   documents the proposed boot/recovery/update overview map
   future direction scans writable flash and catalog regions
-  future direction protects anchors/vectors/ABI slots
+  future direction protects selected STR8 window and vectors
   V0 verifies copied bank images
   later HIMON/maintenance or future STR8 condenses cluttered banks
+
+Bringup
+  orders STR8 work from simulation stub to reset-owned recovery
+  keeps erase/write work behind read-only proofs
+  records bank policy, protected-window policy, and failure cases
 
 Hashed ASM
   reads `A [addr] [label:] MMM [operand] .`

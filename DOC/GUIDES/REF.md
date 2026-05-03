@@ -76,8 +76,9 @@ STR8 V0 restores ordinary bank 3 bytes from a whole 32K ROM bank image in bank
 install/update is requested. Backup rotates bank 1 to bank 0, bank 2 to bank 1,
 and bank 3 to bank 2.
 
-HIMON controls IRQ/vector behavior in V0. STR8 IRQ/vector ownership is future
-direction.
+HIMON controls IRQ/vector behavior in V0. Future STR8-N/STRAIGHTEN may offer
+recovery-safe vector hooks, but the current direction is opt-in integration
+rather than STR8 ownership of user interrupt policy.
 
 STR8 top-sector policy:
 
@@ -114,18 +115,20 @@ FNV-1a is the only runtime/catalog symbol hash. Catalog records do not need a
 per-record algorithm tag.
 
 STR8 V0 does not use FNV for verification, image selection, command dispatch,
-catalog lookup, or recovery decisions. Future catalog-owning STR8 may use FNV.
+catalog lookup, or recovery decisions. Future STR8-N/STRAIGHTEN may participate
+in catalog/FNV paths without requiring ownership of a user system's catalog.
 
 Compact signature policy:
 
 ```text
-'F'  catalog hash record format v1
-'N'  catalog hash record format v2
-'V'  catalog hash record format v3
+'F'  full FNV-1a records: entries store hash0..3
+'N'  narrow FNV-1a records: entries store folded hash16
+'V'  very narrow records: entries store folded hash8
 ```
 
-All formats still use FNV-1a. Replacing a 3-byte `FNV` text signature with one
-format byte saves 2 bytes per record.
+All layouts still use FNV-1a. Replacing a 3-byte `FNV` text signature with an
+`F`/`N`/`V` layout marker or table header saves record bytes without adding a
+second hash algorithm.
 
 ## Record Byte Order
 
