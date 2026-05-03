@@ -52,8 +52,9 @@ Himonia-F was the sharp turn: text command dispatch becomes FNV-1a record scan.
 That changes the design from "commands are parsed by this monitor" to
 "commands/routines can be discovered in flash." The `#` command makes the
 catalog visible, `L F` starts making flash-resident command images practical,
-and fixed ABI slots such as `$F00D`, `$FEED`, and `$FADE` give external code a
-stable way back into the monitor.
+and the current HIMON compatibility trampolines give external code a stable way
+back into the monitor. Those trampolines are historical HIMON behavior, not a
+STR8 design requirement.
 
 The naming trail reflects that exploration. `Himon` was the monitor root.
 `Himonia` marked a turn toward a more assisted, more intelligent monitor shape.
@@ -214,19 +215,16 @@ Current `himon.asm` shows the model clearly:
 This is the first monitor shape where "dynamic linking by discoverable command
 record" is visibly close.
 
-### 2026-04-28 to 2026-04-29: Flash, ABI, And Language Images
+### 2026-04-28 to 2026-04-29: Flash, Compatibility, And Language Images
 
 The short-lived Forth-like Himonia and Himon4 variants tested command metadata
 and contract ideas. The retired variants still matter as design evidence:
 command records can carry more than an entry address.
 
 Commit `32c1143` proves flash command installation with `test-flash.s19` and a
-runnable `Z` command in flash. The current monitor also exposes fixed ABI jump
-points:
-
-- `$F00D`: `HIMONIA_ABI_WRITE_BYTE`
-- `$FEED`: `HIMONIA_ABI_READ_BYTE`
-- `$FADE`: `HIMONIA_ABI_EXIT_APP`
+runnable `Z` command in flash. The current monitor also exposes historical
+compatibility jump points for loaded language images. STR8 should not inherit
+that fixed-address ABI idea.
 
 Commits on 2026-04-29 add OSI BASIC, fig-Forth, and Microchess images. That
 pushes Himonia from "monitor" toward "small ROM-resident supervisor for loaded
@@ -344,8 +342,8 @@ For future archaeology, read in this order:
 
 - How much of BSO2's warmstart hint state should return in STR8, and how
   much should stay retired?
-- Should fixed ABI slots like `$F00D`, `$FEED`, `$FACE`, and `$FADE` remain
-  direct jump stubs, or become stable trampolines into a flash/RAM service table?
+- The old fixed cute-address entry idea is retired for STR8; future STR8 work
+  should use explicit routine labels/imports and `BIO_*` boundaries.
 - Should flash command records remain hash-only by default, or carry optional
   text names for collision handling and discoverability?
 - Should userland get a monitor-managed software stack API, or only a calling
