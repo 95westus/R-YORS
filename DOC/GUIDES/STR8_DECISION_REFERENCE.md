@@ -163,8 +163,13 @@ G = go HIMON / timeout default
 
 V0 HIMON controls IRQ/vector behavior.
 
-Future STR8 may own the hardware vector stubs because the vectors live in
-protected flash:
+Direction update: earlier notes allowed future STR8 ownership of the hardware
+vector stubs because the vectors live in protected flash. After reconsideration,
+the current direction is opt-in integration. STR8-N/STRAIGHTEN may provide
+recovery-safe vector hooks, while user systems can keep their own interrupt
+policy.
+
+Reference vector integration can still use STR8 stubs:
 
 ```text
 NMI   -> STR8_NMI_STUB
@@ -209,8 +214,9 @@ FNV is not used by STR8 V0.
 
 First STR8 verifies restored ordinary image bytes with range checks, flash
 status, and read-back comparison. Protected-window install/update gets its own
-read-back verification. Future catalog-owning STR8 may use FNV after the
-image-recovery path is stable.
+read-back verification. Future STR8-N/STRAIGHTEN may participate in catalog/FNV
+paths after the image-recovery path is stable, without requiring ownership of a
+user system's catalog or resolver.
 
 ## Deferred
 
@@ -218,8 +224,8 @@ image-recovery path is stable.
 full S19 L F support
 GO addr
 HIMON hashed command dispatch after handoff
-future STR8 catalog/FNV ownership
-future STR8 IRQ/vector ownership
+future STR8-N catalog/FNV participation
+future STR8-N vector integration hooks
 metadata layout
 bank 0 platinum image maintenance
 wear leveling or erase counters

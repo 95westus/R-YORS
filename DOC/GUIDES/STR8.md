@@ -3,6 +3,11 @@
 `STR8` means `Subroutine To Return`. It is pronounced `S-T-R-8`, can also be
 read as `Straight 8`, and deliberately echoes `RTS` / Return from Subroutine.
 
+Future naming may let STR8 grow into `STR8-N`, read as `STRAIGHTEN`: a richer
+repair/normalization path once the small recovery anchor has proved itself.
+That name is a direction, not a promise that the first STR8 must own every
+system policy.
+
 STR8 is the protected recovery/update monitor for Himonia-F/Himon. It is not
 just a crash handler and not just a flash writer. It keeps the machine on a
 known-good path while code, routines, data, and banks are being changed.
@@ -10,8 +15,10 @@ known-good path while code, routines, data, and banks are being changed.
 V0 STR8 is image-oriented recovery: banks 0-2 hold whole 32K ROM images for
 backup and restore, while the selected STR8 protected window is flashed through
 its own guarded path. HIMON owns hashed catalog lookup, rich command behavior,
-and IRQ/vector control in the first version. Future STR8 may grow into
-catalog/FNV and IRQ ownership after the image-recovery path is stable.
+and IRQ/vector control in the first version. Future STR8-N/STRAIGHTEN may offer
+catalog, FNV, scan, repair, and vector-layer services after the image-recovery
+path is stable, but it should remain useful to systems that keep their own
+memory map, interrupt policy, or runtime supervisor.
 
 Working definition:
 
@@ -55,7 +62,7 @@ Use a two-level model:
 ```text
 STR8 protected window:
   minimal, protected, always recoverable
-  owns reset/NMI/BRK recovery, flash guard state, verifier, and repair entry
+  provides recovery entry, flash guard state, verifier, and repair hooks
 
 HIMON body:
   normal monitor/catalog/assembler/loader services
@@ -108,23 +115,38 @@ $FFFE-$FFFF  IRQ/BRK
 Those vector bytes remain part of the selected STR8 protected window. They are
 treated as vector table rather than normal code storage.
 
-## Vector Ownership Policy
+## Vector Integration Policy
 
 V0 HIMON controls IRQ/vector behavior.
 
-Future STR8 is expected to own the hardware vector bytes at `$FFFA-$FFFF`.
+Direction change: earlier STR8 notes leaned toward future STR8 ownership of the
+final hardware vectors and broader trap authority. After careful
+reconsideration by the project author, the direction is softer and more
+reusable: STR8 should offer recovery-safe hooks and routines, while the active
+system may keep its own memory and interrupt policy.
 
-In the future vector-owned model, HIMON/Himonia-F can take over practical vector
-behavior by installing handlers through STR8-owned vector routing, not by
-casually owning the final six bytes itself.
+STR8 should not assume it owns memory management or application interrupt
+policy. A board, application, or user-built system may already have its own RAM
+map, interrupt discipline, and trap supervisor. STR8 should be useful in that
+world as a set of recovery routines and guarded update paths, not as a demand
+that the rest of the system reorganize around it.
 
-Working rule:
+That keeps STR8 in the R-YORS spirit: routines made from routines, useful as
+layers a system can choose and combine rather than a hidden operating-system
+claim over the board.
+
+The R-YORS reference path can still route reset/trap behavior through STR8 or a
+shared vector layer when that makes recovery safer. The preferred integration is
+through explicit hooks such as `SYS_VEC`/IRQ-vector services when they exist,
+rather than by silently claiming all practical NMI/BRK/IRQ behavior.
+
+Reference integration rule:
 
 ```text
 hardware vector -> STR8 entry/trampoline/router -> active handler
 ```
 
-Future normal operation:
+Reference normal operation:
 
 ```text
 STR8 validates HIMON
@@ -133,7 +155,7 @@ HIMON installs NMI/BRK/IRQ handlers through STR8 or SYS_VEC calls
 STR8 routes traps to the installed HIMON handlers
 ```
 
-Future recovery operation:
+Reference recovery operation:
 
 ```text
 HIMON missing/corrupt/unsafe
@@ -141,9 +163,10 @@ STR8 ignores or clears HIMON-installed handlers
 STR8 routes traps to minimal recovery handlers
 ```
 
-So yes: Himonia-F/HIMON controls practical trap handling in V0. Later, STR8 can
-become the reset/vector authority so recovery still works when HIMON is absent,
-broken, or mid-update.
+So yes: Himonia-F/HIMON controls practical trap handling in V0. Later
+STR8-N/STRAIGHTEN can offer a recovery-safe vector path for systems that choose
+it. Systems that already own interrupts can still use STR8 routines directly and
+keep their own policy.
 
 The code may use W65C02 instructions when they keep the anchor smaller or
 clearer. NMOS 6502 portability is not a STR8 V0 goal.
@@ -199,7 +222,7 @@ physical top erase sector is bank 3 $F000-$FFFF
 protected STR8 window starts at $FC00, $FA00, $F800, $F600, $F400, $F200, or $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
-STR8 code/data/ABI/recovery lives from selected start through $FFEF
+STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF8
 vector tail starts at $FFF9; hardware vectors live at $FFFA-$FFFF
 V0 uses whole 32K ROM bank images as recovery and backup sources
@@ -215,7 +238,7 @@ V0 should do only enough to keep boot and flash mutation recoverable:
 
 ```text
 reset entry
-defer IRQ/vector ownership to HIMON in V0
+leave IRQ/vector policy with HIMON/reference system in V0
 boot check
 handoff to HIMON
 minimal recovery entry
@@ -519,7 +542,7 @@ catalog maintenance, collision proof, listings, and later self-hosted linking.
 First version of `L F` can be conservative:
 
 - require user-selected destination or explicit flash mode
-- refuse protected STR8/ABI/vector regions
+- refuse selected STR8 protected window and vector regions
 - write only erased flash bytes unless an erase command has prepared the sector
 - verify every written byte
 - rescan and print discovered records after write
@@ -600,10 +623,11 @@ aggressive compression ratio.
   `$F800`, `$F600`, `$F400`, `$F200`, or `$F000`?
 - What fixed image marker/check should STR8 V0 use for whole-image recovery
   images?
-- When should future STR8 take over catalogs, FNV lookup, and IRQ/vector
-  ownership from HIMON?
-- Does future STR8 own `$FACE`, `$FADE`, `$FEED`, `$F00D`, and any future ABI
-  slots, or does it only verify/route them?
+- Which catalog, FNV, scan, and vector-layer hooks should future
+  STR8-N/STRAIGHTEN offer without requiring ownership of user memory or
+  interrupt policy?
+- What explicit import labels should HIMON use for resident STR8 routines once
+  STR8 is no longer a simulation stub?
 - Does `L F` assemble/write directly to flash, or assemble into RAM and then
   flash from a verified staging image?
 - What is the first catalog record format that supports both compact built-ins
