@@ -15,29 +15,15 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 $8000-$CFFF   user flash/load region for L F
 $D000-$EDC4   Himonia-F CODE, START/RESET entry at $D000
 $EDC5-$EF22   Himonia-F DATA
-$EF23-$F00C   open gap in current image
-$F00D-$F00F   ABI write-byte trampoline, "F00D"/FOOD
-$F010-$F3D0   Himonia-F data tail/tables
+$EF23-$F3D0   current image gap, compatibility trampolines, and data tail
 $F3D1-$F4CC   Himonia-F boot telemetry routine and strings
-$F4CD-$FACD   open gap in current image
-$FACE-$FAD0   planned ABI identity trampoline, FACE, not emitted yet
-$FAD1-$FADD   open gap in current image
-$FADE-$FAE9   ABI exit-to-monitor trampoline, FADE
-$FAEA-$FEEC   open gap in current image
-$FEED-$FEEF   ABI read-byte trampoline, FEED
-$FEF0-$FFF9   open gap in current image
+$F4CD-$FFF9   current image gap and compatibility trampolines
 $FFFA-$FFFF   hardware vectors
 ```
 
-Fixed and planned entry points:
-
-```text
-$D000   START / RESET entry
-$F00D   HIMONIA_ABI_WRITE_BYTE, pronounced "F00D/FOOD"
-$FACE   planned HIMONIA_ABI_IDENTITY / board-version-info output
-$FADE   HIMONIA_ABI_EXIT_APP
-$FEED   HIMONIA_ABI_READ_BYTE
-```
+The current HIMON compatibility trampolines describe loaded-language support in
+the existing image, not STR8's call surface. STR8 V0 should call `BIO_*`
+directly and should not reserve cute fixed entry addresses.
 
 Current ROM vector tail:
 
@@ -54,7 +40,7 @@ allows blank-byte writes in the user flash area:
 
 ```text
 $8000-$CFFF   allowed for current L F blank-write loads
-$D000-$FFFF   protected Himonia-F, ABI, tables, gaps, and vectors
+$D000-$FFFF   protected Himonia-F, compatibility entries, tables, gaps, and vectors
 ```
 
 Current `L F` behavior:
