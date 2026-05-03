@@ -1,9 +1,9 @@
 # R-YORS Hash Reference
 
 R-YORS uses FNV-1a as the one hash algorithm for HIMON runtime/catalog/symbol
-lookup. STR8 V0 does not use FNV; future catalog-owning STR8 may use the same
-hash path.
-and routine block identity.
+lookup and routine block identity. STR8 V0 does not use FNV; future
+STR8-N/STRAIGHTEN may participate in the same hash path without requiring
+catalog ownership.
 
 FNV means Fowler/Noll/Vo. The external algorithm reference for the constants,
 update order, and little-endian persistent storage convention is RFC 9923:
