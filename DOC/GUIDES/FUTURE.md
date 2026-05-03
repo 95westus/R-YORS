@@ -102,7 +102,8 @@
   bank 2.
 - Let R-YORS define scan, verify, write, commit, and later condense policy,
   with shared flash primitives where that makes sense. HIMON/maintenance owns
-  catalog condense first; future STR8 may take catalog ownership later.
+  catalog condense first; future STR8-N/STRAIGHTEN may participate in catalog
+  scan/repair later without requiring ownership of a user system's catalog.
 - Treat future flash GC as append/invalidate/reclaim instead of in-place edits:
   mark records or sections stale, prepare a compacted sector image in RAM,
   relink copied records when needed, erase the old 4K sector, then write and
