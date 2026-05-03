@@ -373,7 +373,7 @@ Primary current role:
 
 ```text
 HIMON = normal monitor/debug/catalog/assembler environment
-STR8  = protected recovery/update owner
+STR8  = protected recovery/update guard
 ```
 
 Current HIMON owns:
@@ -385,21 +385,27 @@ loader and flash blank-write path
 debug trap context
 break/step
 assembler/disassembler helpers
-fixed ABI slots
+explicit import/call surface
 runtime catalog direction
 ```
 
-Future STR8 should own:
+Future STR8-N/STRAIGHTEN may provide:
 
 ```text
-selected STR8 protected window in bank 3 top sector and hardware vectors
+selected STR8 protected window in bank 3 top sector
+optional recovery-safe vector hooks/trampolines
 top-sector read/stage/erase/full-sector-write/verify policy for non-STR8 bytes
-catalog/FNV ownership after V0
+catalog/FNV participation after V0
 recovery/update policy
 flash erase/write/verify/commit guardrails
 known-good identity and recovery surface
-V0 image-oriented bank recovery before catalog/FNV ownership
+V0 image-oriented bank recovery before catalog/FNV participation
 ```
+
+Direction note: earlier planning leaned toward future STR8 ownership of vectors
+and catalogs. Current direction is reusable integration: STR8-N/STRAIGHTEN can
+offer hooks and guarded routines without requiring ownership of user memory,
+interrupt, or catalog policy.
 
 Future `MEM_*` should own dynamic memory if HIMON adopts it:
 
