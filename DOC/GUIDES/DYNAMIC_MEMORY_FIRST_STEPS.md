@@ -89,8 +89,8 @@ but it includes the heap-limit check that many toy examples omit.
 ; Input:
 ;   A = bytes to allocate, 0..255; 0 is treated as 1
 ; Output:
-;   C clear = success, X/Y = allocated address low/high
-;   C set   = out of memory
+;   C set   = success, X/Y = allocated address low/high
+;   C clear = out of memory
 ; Uses:
 ;   HEAP_PTR_LO/HI
 ;   HEAP_LIMIT_LO/HI  ; first invalid address, so equality is okay
@@ -124,7 +124,7 @@ ALLOC8_SIZE_OK:
         BCC ALLOC8_COMMIT
 
 ALLOC8_FAIL:
-        SEC
+        CLC
         RTS
 
 ALLOC8_COMMIT:
@@ -132,7 +132,7 @@ ALLOC8_COMMIT:
         STA HEAP_PTR_LO
         LDA ALLOC_NEW_HI
         STA HEAP_PTR_HI
-        CLC
+        SEC
         RTS
 ```
 
@@ -401,7 +401,7 @@ lifetime    reset-only, mark/release, fixed pool, or free-list
 heap range  exact start/limit from the current memory map
 zp lanes    temp pointers, result pointer, size, and scratch
 ABI         registers returned, carry behavior, and clobbered bytes
-failure     carry set, zero pointer, error code, or monitor message
+failure     carry clear, zero pointer, error code, or monitor message
 ```
 
 Start with an 8-bit-size bump allocator. Add a 16-bit-size path only when a
