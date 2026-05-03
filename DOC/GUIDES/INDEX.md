@@ -17,8 +17,9 @@ This is the top index for the `ror` documentation set.
 ## Core Design Guides
 
 - [HISTORICAL_DOCUMENTS.md](./HISTORICAL_DOCUMENTS.md) - path from BSO2 ideas to Himonia-F.
-- [DECISIONS.md](./DECISIONS.md) - naming, hash, STR8, ASM, ABI, local-home,
+- [DECISIONS.md](./DECISIONS.md) - naming, hash, STR8, ASM, local-home,
   and doc-shape decisions.
+- [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
 - [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - reconstruction of
   HIMON stages and routine-class families.
 - [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor.
@@ -27,7 +28,7 @@ This is the top index for the `ror` documentation set.
 - [HASHED_ASM.md](./HASHED_ASM.md) - onboard hashed assembler, symbols, and fixups.
 - [HASH_MAP.md](./HASH_MAP.md) - hash uses across docs, runtime dispatch, and assembler records.
 - [MEMORY_MAP.md](./MEMORY_MAP.md) - current Himonia-F ROM image, RAM workspace,
-  fixed ABI entries, vectors, and STR8 ownership direction.
+  compatibility entries, vectors, and STR8/HIMON integration direction.
 - [DYNAMIC_MEMORY_FIRST_STEPS.md](./DYNAMIC_MEMORY_FIRST_STEPS.md) - first
   steps for byte, word, pointer, bump, pool, and free-list allocation thinking.
 - [HIMON_MAP.md](./HIMON_MAP.md) - readable HIMON edge and capability maps.
