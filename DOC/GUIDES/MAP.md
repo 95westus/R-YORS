@@ -53,12 +53,14 @@ HIMON Stages And Classes
 
 STR8
   owns recovery/update guardrails
-  prefers the protected $F800-$FFFF anchor
+  V0 manages image-oriented 32K ROM bank recovery
+  future STR8 lives in the bank 3 $F000-$FFFF top erase sector
+  protects only the selected $FC00/$FA00/$F800/$F600/$F400/$F200/$F000 window
   documents the proposed boot/recovery/update overview map
-  scans writable flash
-  protects anchors/vectors/ABI slots
-  verifies and commits flash changes
-  later condenses cluttered banks
+  future direction scans writable flash and catalog regions
+  future direction protects anchors/vectors/ABI slots
+  V0 verifies copied bank images
+  later HIMON/maintenance or future STR8 condenses cluttered banks
 
 Hashed ASM
   reads `A [addr] [label:] MMM [operand] .`
@@ -201,6 +203,8 @@ flowchart TD
 ## Consistency Rules
 
 - `STR8` is the recovery/update name.
+- `STR8` means Subroutine To Return, pronounced `S-T-R-8`, with an intentional
+  `RTS` echo.
 - `DECISIONS.md` is the settled-call list. Check it before reopening design
   alternatives.
 - The older recovery-guide name is retired; use `STR8`.

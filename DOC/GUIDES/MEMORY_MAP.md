@@ -208,7 +208,27 @@ SRC/TEST/apps/himon/himon-shared-eq.inc
 ## STR8 Direction
 
 Current Himonia-F owns `$D000-$FFFF` in the ROM image. The future STR8 recovery
-monitor is expected to take over a small protected top-ROM anchor, preferably
-`$F800-$FFFF` with vectors, or `$F000-$FFFF` if the smaller window is too tight.
+monitor is expected to live in bank 3's `$F000-$FFFF` top-ROM erase sector with
+the hardware vectors, but the policy-protected STR8 window should be only as
+large as the final code requires.
+
+The physical erase unit remains 4K. The protected STR8 window starts at the
+highest boundary that fits:
+
+```text
+$FC00-$FFFF  1K protected STR8 window
+$FA00-$FFFF  1.5K protected STR8 window
+$F800-$FFFF  2K protected STR8 window
+$F600-$FFFF  2.5K protected STR8 window
+$F400-$FFFF  3K protected STR8 window
+$F200-$FFFF  3.5K protected STR8 window
+$F000-$FFFF  4K protected STR8 window, only if needed
+
+$FFF0-$FFF8  one-time flash board/version/config bytes, inside the window
+$FFF9-$FFFF  vector tail; W65C02 hardware vectors are $FFFA-$FFFF
+```
+
+Bytes below the chosen STR8 start are usable, but changing any byte in
+`$F000-$FFFF` still requires read/stage/erase/full-sector-write/verify.
 
 That future split is a design direction, not the current Himonia-F ROM map.

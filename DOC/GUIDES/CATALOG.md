@@ -21,13 +21,16 @@ COR_*    backend implementation layer; use when building SYS or tests
 PIN_*    direct hardware/pin layer; use for bring-up or BIO implementation
 UTL_*    pure utility/helper routines
 FLASH_*  flash guard, erase, and byte-program routines
-FNV1A_*  hash helpers for command/catalog/symbol lookup
+FNV1A_*  hash helpers for HIMON command/catalog/symbol lookup; not used by STR8 V0
 MON_*    monitor command/support internals
 ```
 
 Rule of thumb: application and monitor code should start at `SYS_*`. STR8 and
 early recovery code should start at `BIO_*`. Only drop to `COR_*` or `PIN_*`
 when the higher layer does not exist or would pull too much code.
+
+STR8 V0 must not depend on `FNV1A_*`; FNV belongs to HIMON/catalog/assembler
+work after recovery handoff. Future catalog-owning STR8 can revisit this.
 
 ## Field Shape
 

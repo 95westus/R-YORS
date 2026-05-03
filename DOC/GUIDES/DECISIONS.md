@@ -24,20 +24,34 @@ and debug tools.
 ```
 
 - `ror` is the working repo/copy.
-- `R-YORS` is the project name direction.
-- `STR8` means Straight 8 and is the recovery/update monitor.
+- `R-YORS` is the overall project/system name.
+- `STR8` means Subroutine To Return. It is pronounced `S-T-R-8`, can also be
+  read as `Straight 8`, and deliberately echoes `RTS` / Return from Subroutine.
 - Himonia-F is the current implementation path that will become `HIMON`.
 - `HIMON` is the final monitor/debug/catalog/assembler environment name.
 - Do not treat Himonia-F and HIMON as permanently separate products.
 
 ## STR8 Ownership
 
-- STR8 owns the hardware vector bytes at `$FFFA-$FFFF`.
-- HIMON/Himonia-F may install practical NMI/BRK/IRQ handlers through STR8/SYS
-  vector routing, but recovery ownership remains STR8's.
-- Preferred STR8 anchor is `$F800-$FFFF`, with code/data through `$FFF9` and
-  vectors at `$FFFA-$FFFF`.
-- `$F000-$FFFF` is acceptable if V0 cannot fit in the preferred anchor.
+- Future STR8 owns the hardware vector bytes at `$FFFA-$FFFF`.
+- V0 HIMON controls IRQ/vector behavior. STR8 IRQ/vector ownership is a future
+  direction, not the first recovery test.
+- STR8 lives in bank 3's physical top erase sector (`$F000-$FFFF`), but the
+  policy-protected STR8 window starts at the highest fitting boundary:
+  `$FC00`, `$FA00`, `$F800`, `$F600`, `$F400`, `$F200`, or `$F000`.
+- Protected-window bytes are flashed through a separate STR8 install/update path.
+  That path still stages the full top sector and preserves non-target bytes.
+  Non-STR8 bytes in the same 4K sector may be used, but changing them requires
+  the same read, stage, erase, full-sector-write, and verify transaction.
+- V0 STR8 uses whole 32K ROM bank images (`$8000-$FFFF`) as recovery sources.
+  Restore writes ordinary bank 3 image bytes from selected bank 0, 1, or 2 and
+  skips the selected STR8 protected window unless explicit STR8 install/update
+  is requested.
+- Bank 3 is the live boot image. Bank 2 is the newest backup. Bank 1 is the
+  previous backup. Bank 0 starts as the platinum R-YORS/HIMON/STR8 image and is
+  also the oldest slot in the current backup rotation.
+- A backup request copies bank 1 to bank 0, bank 2 to bank 1, and bank 3 to
+  bank 2.
 - STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.
 - Minimal recovery is a small load/verify/flash/identity surface, not full
   HIMON.
@@ -76,6 +90,11 @@ and debug tools.
 ## Hash And Catalog Policy
 
 - FNV-1a is the one and only runtime/catalog/symbol hash.
+- FNV-1a belongs to HIMON, catalog, assembler, and docs/build tooling today.
+- STR8 V0 does not use FNV: not for verification, image selection, version
+  selection, command dispatch, catalog lookup, or recovery decisions.
+- Future STR8 may own catalogs and use FNV after the V0 image-recovery path
+  is stable.
 - Do not propose per-record hash algorithm tags.
 - Routine header `[HASH:XXXXXXXX]` values are also 32-bit FNV-1a. The old
   16-bit routine comment ID path is retired.
@@ -111,9 +130,9 @@ and debug tools.
   services from an explicit STR8 API/import file or service table. That keeps
   the release reproducible and prevents the linker from pulling a second copy
   of `BIO_*` out of `rom.lib`.
-- Onboard `# label` lookup may resolve the same STR8 catalog entry at runtime
-  and feed a fixup pass. Treat that as the interactive/dynamic equivalent of
-  the import file, not as the only release-build mechanism.
+- `# label` is a HIMON command. It may eventually resolve HIMON catalog entries
+  that point at fixed STR8 service-table entries, but STR8 V0 does not perform
+  catalog lookup.
 - RAM targets can patch resolved addresses directly. Flash targets must either
   stage in RAM before the first write or restrict patching to legal flash
   1-to-0 transitions.
@@ -146,8 +165,8 @@ A [addr] [label:] MMM [operand] .
   enough information to patch the correct byte(s) later.
 - Flash destinations may use byte patching only where flash 1-to-0 write rules
   allow it. RAM destinations can patch freely.
-- Onboard assembly should tolerate flash clutter at first; later STR8 condense
-  can reclaim dead or superseded records.
+- Onboard assembly should tolerate flash clutter at first; later HIMON or
+  maintenance condense can reclaim dead or superseded records.
 
 ## Local Source Homes
 

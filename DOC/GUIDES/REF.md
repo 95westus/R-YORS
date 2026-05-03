@@ -39,7 +39,7 @@ SRC/TEST/apps/himon/
 
 ```text
 R-YORS       whole project/system
-STR8         Straight 8 boot/recovery/update layer
+STR8         Subroutine To Return boot/recovery/update layer
 HIMON        current FNV-driven monitor app
 Himonia-F    historical name for the codebase now promoted to HIMON
 HASHED_ASM   onboard assembler design using hash symbols and fixups
@@ -59,33 +59,44 @@ and debug tools.
 
 ```text
 bank 3:
-  keep cleaner for boot/current monitor/catalog/trampoline material
+  live reset/boot image
 
-banks 0-2:
-  prefer for growth packs, onboard-built exports, expanded command text,
-  stale records, and condense candidates
+bank 2:
+  most recent backup image
+
+bank 1:
+  previous backup image
+
+bank 0:
+  platinum R-YORS/HIMON/STR8 image and oldest backup slot for now
 ```
 
-STR8 should scan by bank, report candidate writable sections, and refuse
-protected anchor/vector/ABI regions.
+STR8 V0 restores ordinary bank 3 bytes from a whole 32K ROM bank image in bank
+0, 1, or 2. It skips the selected STR8 protected window unless explicit STR8
+install/update is requested. Backup rotates bank 1 to bank 0, bank 2 to bank 1,
+and bank 3 to bank 2.
 
-STR8 owns the hardware vector bytes. HIMON/Himonia-F may install active
-NMI/BRK/IRQ handlers through STR8/SYS vector routing, but recovery ownership
-stays with STR8.
+HIMON controls IRQ/vector behavior in V0. STR8 IRQ/vector ownership is future
+direction.
 
-Preferred STR8 anchor:
+STR8 top-sector policy:
 
 ```text
-$F800-$FFFF  STR8 protected anchor
-$F800-$FFF9  STR8 code/data portion
-$FFFA-$FFFF  W65C02 vectors protected by STR8 policy
+$F000-$FFFF  physical 4K top erase sector in bank 3
+$FC00-$FFFF  1K protected STR8 window, if STR8 fits
+$FA00-$FFFF  1.5K protected STR8 window
+$F800-$FFFF  2K protected STR8 window
+$F600-$FFFF  2.5K protected STR8 window
+$F400-$FFFF  3K protected STR8 window
+$F200-$FFFF  3.5K protected STR8 window
+$F000-$FFFF  4K protected STR8 window, only if needed
+$FFF0-$FFF8  one-time flash board/version/config bytes, inside the window
+$FFF9-$FFFF  vector tail; W65C02 hardware vectors are $FFFA-$FFFF
 ```
 
-Fallback anchor:
-
-```text
-$F000-$FFFF  larger STR8 protected region
-```
+Protected-window bytes are flashed separately, still by staging and preserving the
+full top sector. Lower bytes in the same sector may be used, but partial
+top-sector changes require read/stage/erase/full-sector-write/verify.
 
 ## Hash Policy
 
@@ -101,6 +112,9 @@ stored canonical name text after the hash narrows the candidate set.
 
 FNV-1a is the only runtime/catalog symbol hash. Catalog records do not need a
 per-record algorithm tag.
+
+STR8 V0 does not use FNV for verification, image selection, command dispatch,
+catalog lookup, or recovery decisions. Future catalog-owning STR8 may use FNV.
 
 Compact signature policy:
 

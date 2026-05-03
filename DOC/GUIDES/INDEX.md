@@ -21,7 +21,7 @@ This is the top index for the `ror` documentation set.
   and doc-shape decisions.
 - [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - reconstruction of
   HIMON stages and routine-class families.
-- [STR8.md](./STR8.md) - Straight 8 recovery/update monitor.
+- [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor.
 - [STR8_DECISION_REFERENCE.md](./STR8_DECISION_REFERENCE.md) - current STR8
   first-test design decisions.
 - [HASHED_ASM.md](./HASHED_ASM.md) - onboard hashed assembler, symbols, and fixups.

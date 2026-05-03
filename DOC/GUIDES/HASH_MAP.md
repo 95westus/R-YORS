@@ -31,7 +31,7 @@ Assembler symbol hash
 
 Catalog text proof
   size: variable text, raw or compressed
-  owner: catalog/STR8/Himon
+  owner: catalog/HIMON/hashed assembler
   purpose: collision proof, listings, onboard linking
   guide: HASHED_ASM.md, SYMBOL_XREF.md
 ```
@@ -39,7 +39,9 @@ Catalog text proof
 ## Rule
 
 ```text
-FNV-1a is the one catalog/runtime symbol hash.
+FNV-1a is the one catalog/runtime symbol hash for HIMON, the catalog, and the
+assembler path. STR8 V0 does not use FNV; future catalog-owning STR8 may use the
+same hash path.
 records do not carry a hash-algorithm tag.
 hash narrows candidates
 stored text proves identity
@@ -112,9 +114,62 @@ Scale examples:
 ```
 
 Tradeoff: a single-byte signature is weaker when scanning arbitrary flash for
-records. STR8 can handle that by only scanning known catalog regions, requiring
-a valid kind/flags/check byte nearby, or using a larger catalog block header
-while keeping each record tiny.
+records. The HIMON/catalog scanner can handle that by only scanning known
+catalog regions, requiring a valid kind/flags/check byte nearby, or using a
+larger catalog block header while keeping each record tiny. STR8 V0 does not
+scan FNV catalog records.
+
+## Catalog Version Selection
+
+Do not let one byte mean every kind of version. The catalog needs separate
+version ideas:
+
+```text
+record format version   how to parse this RREC layout
+catalog block version   how to parse/discover the enclosing RCAT block
+routine ABI version     what contract the routine/data/provider offers
+record generation       which live record supersedes another record
+```
+
+The compact signature byte belongs to record parsing. It should not decide
+whether `ROUTINE` v1 or `ROUTINE` v2 is the better callable provider.
+
+Catalog lookup should become candidate selection, not first-match:
+
+```text
+lookup(name, kind, version policy)
+  scan valid catalog regions
+  collect matching hash/name/kind records
+  discard stale/dead/invalid records
+  apply version policy
+  choose the best live candidate
+```
+
+Useful version policies:
+
+```text
+exact v1       accept only ABI v1
+v1+            accept the newest compatible ABI at least v1
+latest         accept the newest live compatible provider
+```
+
+So if ROM contains both `ROUTINE` v1 and `ROUTINE` v2, v1 does not need to be
+physically erased or marked dead. Normal HIMON lookup can choose v2 under
+`latest` or `v1+` policy. STR8 V0 stays out of this FNV/version-selection path
+and uses fixed whole-image recovery choices instead.
+
+Append-only flash update should work even when old records cannot be changed:
+
+```text
+old v1 record remains live
+new v2 record is appended with same hash/name/kind and higher ABI/generation
+resolver chooses v2 for compatible lookup
+later condense may drop v1 if policy allows
+```
+
+If a stale bit can be programmed safely, it is a useful hint. The resolver must
+not depend on it, because ROM bytes may be immutable and a failed update may
+leave both records visible.
 
 ## Flash-Monotonic Versions
 
@@ -139,18 +194,19 @@ superseded?
 dead?
 ```
 
-When the chain is exhausted or the block has too much dead material, STR8/HIMON
-can condense: copy live records to RAM or another block, erase the old sector,
-then rewrite a compact block with fresh `$FF` state bytes.
+When the chain is exhausted or the block has too much dead material, HIMON or a
+non-STR8 maintenance tool can condense: copy live records to RAM or another
+block, erase the old sector, then rewrite a compact block with fresh `$FF` state
+bytes.
 
 ## Catalog Blocks
 
 Catalog records do not all have to live in one address range. The system can
-use multiple catalog blocks, for example one near the protected monitor and
-another in a growth bank:
+use multiple catalog blocks, for example one near the selected STR8 protected
+window and another in a growth bank:
 
 ```text
-$Fxyy block  boot/current monitor catalog, small and protected
+$F000-$FFFF  physical top erase sector; selected STR8 protected window lives here
 $B0xx block  growth/user/module catalog, more writable and replaceable
 ```
 
@@ -269,7 +325,7 @@ optional payload
 ```
 
 `bank` matters because the record may live in a clean catalog area while the
-routine/data body lives in banks 0-2.
+routine/data body lives in a future growth/storage bank.
 
 There is no per-record algorithm byte. The catalog format itself defines
 `hash0..3` as FNV-1a.

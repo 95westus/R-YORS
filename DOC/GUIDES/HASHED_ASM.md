@@ -365,14 +365,15 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    B0[banks 0-2 growth blocks]
+    B0[future growth blocks]
     B3[bank 3 clean monitor/catalog area]
-    STR8[STR8 protected update path]
+    STR8[STR8 V0 fixed image recovery path]
     HIMON[HIMON normal lookup path]
 
     B0 --> CATBLOCKS[catalog blocks]
     B3 --> CATBLOCKS
-    STR8 --> CATBLOCKS
+    HIMON --> CATBLOCKS
+    STR8 --> BANKIMG[fixed bank-image restore]
     CATBLOCKS --> SCAN[scan committed live records]
     SCAN --> NAMEPROOF{stored text needed?}
     NAMEPROOF -->|no| HASHONLY[accept unique hash]
@@ -458,8 +459,8 @@ flowchart LR
       3. Write final valid byte last
    B. `EXPORT name`
       1. Mark a resolved symbol visible to command/routine lookup
-   C. `FORGET name`
-      1. Mark a symbol/module dead for later STR8 condense
+    C. `FORGET name`
+      1. Mark a symbol/module dead for later HIMON/maintenance condense
 ```
 
 ### Command Path
@@ -730,7 +731,7 @@ target base = selected flash address
 emit bytes into RAM staging buffer
 record fixups against target addresses or staging offsets
 resolve and verify in RAM
-commit final bytes to flash with L F / STR8
+commit final bytes to flash with L F / future STR8
 ```
 
 This keeps flash clean while preserving hard target addresses. The emitted code
@@ -771,11 +772,12 @@ from memory contents alone.
 
 If a flash fixup tries to patch a byte that is no longer erased or cannot be
 programmed to the needed value, the module/session must fail or be marked dead.
-STR8 can later condense live records and reclaim the clutter.
+HIMON or a later maintenance tool can condense live records and reclaim the
+clutter.
 
 `FORGET` belongs here as an append-only dead-marker operation. It does not erase
 flash immediately; it marks a symbol/module/range as not live so a later
-STR8 condense can reclaim the space.
+HIMON/maintenance condense can reclaim the space.
 
 ### RAM vs Flash Difference
 
@@ -909,17 +911,23 @@ The `bank` byte is not just future decoration. It is how the catalog can stop
 bank 3 from becoming the dumping ground for every onboard-built routine, string,
 and command record.
 
+Current STR8 V0 recovery policy overrides the old growth-bank sketch: bank 0 is
+the platinum/oldest image slot, bank 2 is the most recent backup, bank 1 is the
+previous backup, and bank 3 is the live boot image. Backup rotates bank 1 to
+bank 0, bank 2 to bank 1, and bank 3 to bank 2. The placement below is later
+HIMON/ASM catalog intent after recovery storage moves or expands.
+
 Working intent:
 
 ```text
 bank 3:
-  Himon body
+  HIMON body
   current boot/runtime bank
   core command catalog/index records
   stable trampolines and ABI-facing entries
   minimal text needed for recovery/debug
 
-banks 0-2:
+future growth/storage banks:
   routine packs
   data packs
   expanded command text
@@ -942,14 +950,14 @@ Hard reasoning:
 
 ```text
 bank 3 should stay boring and recoverable
-banks 0-2 can absorb churn from self-hosted assembly
+future growth/storage banks can absorb churn from self-hosted assembly
 catalog records must preserve enough bank/address information to survive scans
-STR8 condense can later move live records out of cluttered banks
+HIMON/maintenance condense can later move live records out of cluttered banks
 ```
 
 If a record is globally exported, it should still be discoverable from the
-master catalog even when the body lives in banks 0-2. The catalog entry is the
-promise; the banked body is the storage location.
+master catalog even when the body lives in a future growth/storage bank. The
+catalog entry is the promise; the banked body is the storage location.
 
 ## Minimal Directive Goal
 
@@ -1644,10 +1652,11 @@ Reasoning:
 hard flash addresses remove relocation
 hard flash addresses do not remove forward-reference uncertainty
 failed direct-to-flash assembly can clutter flash
-flash clutter is acceptable only if STR8 can later condense/pack live data
+flash clutter is acceptable only if HIMON or a maintenance tool can later
+condense/pack live data
 ```
 
-The later STR8 condense model is:
+The later HIMON/maintenance condense model is:
 
 ```text
 copy live ROM/catalog sections to RAM

@@ -9,7 +9,7 @@
 5. [HISTORICAL_DOCUMENTS.md](./HISTORICAL_DOCUMENTS.md) - how the current monitor direction emerged.
 6. [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - reconstructed HIMON
    stages and routine-class families.
-7. [STR8.md](./STR8.md) - Straight 8 recovery/update monitor.
+7. [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor.
 8. [HASH_MAP.md](./HASH_MAP.md) - hash systems and where they live.
 9. [HASHED_ASM.md](./HASHED_ASM.md) - detailed assembler hypothesis.
 10. [CATALOG.md](./CATALOG.md) - programmer-facing routine catalog by

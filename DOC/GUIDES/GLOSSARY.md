@@ -4,8 +4,10 @@
 
 - HIMON: final monitor/debug environment name that Himonia-F will become.
 - Himonia-F: current FNV-driven implementation path toward HIMON.
-- STR8: Straight 8 recovery/update monitor for protected flash mutation.
-- Straight 8: expanded human name for `STR8`; clean, known-good 8-bit path.
+- STR8: Subroutine To Return recovery/update monitor, pronounced `S-T-R-8`;
+  may also be read as Straight 8, with a deliberate `RTS` echo.
+- Straight 8: alternate reading of `STR8`; useful as flavor, not the formal
+  project name.
 - R-YORS: the broader repo/project context around routines on routines.
 
 ## Source Terms
@@ -44,7 +46,9 @@
 
 - HASH: 32-bit FNV-1a routine/header/catalog ID, formatted
   `[HASH:XXXXXXXX]`.
-- FNV-1a: the single runtime/catalog symbol hash used by Himonia-F/HIMON.
+- FNV-1a: the single runtime/catalog symbol hash used by Himonia-F/HIMON and
+  the assembler/catalog path. STR8 V0 does not use FNV; future catalog-owning
+  STR8 may.
 - HBSTR: high-bit-terminated string; final byte has bit 7 set.
 - C_STR: compact semantic token for NUL-terminated string routines/records.
 - symbol hash: assembler/catalog lookup key for labels, routines, and commands.
@@ -83,5 +87,17 @@
 - long: 32-bit little-endian value, stored least significant byte first.
 - commit byte: final marker written after a record/body is verified.
 - condense: copy live records, erase stale flash, and rewrite compacted state.
-- bank 3: preferred cleaner boot/current-monitor/catalog bank.
-- banks 0-2: preferred growth banks for packs, text, exports, and stale records.
+- bank 0: platinum R-YORS/HIMON/STR8 image and oldest backup slot for current
+  STR8 recovery tests.
+- bank 1: previous backup image.
+- bank 2: most recent backup image.
+- bank 3: live reset/boot image.
+- top erase sector: bank 3 `$F000-$FFFF`; physical 4K flash erase unit that
+  contains the final vectors.
+- protected STR8 window: the chosen policy-protected range ending at `$FFFF`,
+  starting at `$FC00`, `$FA00`, `$F800`, `$F600`, `$F400`, `$F200`, or `$F000`
+  according to final STR8 size. It contains the STR8 body, one-time config
+  bytes, and vector tail.
+- partial top-sector update: read the full top sector, update a staged image,
+  erase the sector, write the full staged sector, and verify it so non-STR8
+  bytes can be reused without enlarging the protected STR8 window.

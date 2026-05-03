@@ -1,16 +1,22 @@
 # STR8 Recovery Monitor
 
-`STR8` means `Straight 8`.
+`STR8` means `Subroutine To Return`. It is pronounced `S-T-R-8`, can also be
+read as `Straight 8`, and deliberately echoes `RTS` / Return from Subroutine.
 
 STR8 is the protected recovery/update monitor for Himonia-F/Himon. It is not
 just a crash handler and not just a flash writer. It keeps the machine on a
-known-good path while code, routines, data, banks, and catalog records are being
-changed.
+known-good path while code, routines, data, and banks are being changed.
+
+V0 STR8 is image-oriented recovery: banks 0-2 hold whole 32K ROM images for
+backup and restore, while the selected STR8 protected window is flashed through
+its own guarded path. HIMON owns hashed catalog lookup, rich command behavior,
+and IRQ/vector control in the first version. Future STR8 may grow into
+catalog/FNV and IRQ ownership after the image-recovery path is stable.
 
 Working definition:
 
 ```text
-STR8 = the Himon-owned recovery monitor and flash mutation guard.
+STR8 = the top-sector recovery anchor and flash mutation guard.
 ```
 
 System relationship:
@@ -25,56 +31,73 @@ and debug tools.
 
 ## Core Questions
 
-The open design question is what STR8 is allowed to recover:
+V0's recovery target is settled:
 
 ```text
-1. user routines/programs/data only
-2. Himonia-F main monitor body
-3. STR8 itself
-4. the entire $8000-$FFFF ROM image
-5. only a protected top region such as $F800-$FFFF
+restore from a whole 32K ROM image in bank 0, 1, or 2
+logical image range: $8000-$FFFF
+bank 3 restore: write ordinary image bytes by guarded flash flow
+protected STR8 window: skip unless explicit STR8 install/update is requested
 ```
 
 First principle: STR8 cannot safely erase the code it is currently running
-from. Self-recovery therefore needs either a protected anchor that is not erased
+from. Self-recovery therefore needs either a protected window that is not erased
 during normal updates, or a RAM-resident updater that has already copied all
 required flash routines out of the target erase area.
+
+Future open recovery questions remain for self-update, catalog-aware repair,
+and richer install/export flows. Those are not V0.
 
 ## Recommended Split
 
 Use a two-level model:
 
 ```text
-STR8 anchor:
+STR8 protected window:
   minimal, protected, always recoverable
   owns reset/NMI/BRK recovery, flash guard state, verifier, and repair entry
 
-Himon body:
+HIMON body:
   normal monitor/catalog/assembler/loader services
   can be updated by STR8
 ```
 
-The preferred V0 split is small and W65C02-specific.
+The settled V0 split is small, W65C02-specific, and aligned to the actual STR8
+size rather than wasting the whole top flash sector.
 
-Hard preference:
-
-```text
-$F800-$FFFF  preferred protected STR8 anchor, including vectors
-$F800-$FFF9  STR8 code/data portion, about 2K minus vector bytes
-$FFFA-$FFFF  W65C02 hardware vectors, protected and owned by STR8 policy
-```
-
-Fallback if the first STR8 anchor needs more space:
+The physical top erase sector is still `$F000-$FFFF`, because flash erase
+granularity is 4K and the hardware vectors live at the top of ROM. The STR8
+protected byte window is selected after the true code size is known. Use the
+highest start address that fits:
 
 ```text
-$F000-$FFFF  STR8 anchor, ABI stubs, vectors, verifier, repair tools
+$FC00-$FFFF  1K protected STR8 window
+$FA00-$FFFF  1.5K protected STR8 window
+$F800-$FFFF  2K protected STR8 window
+$F600-$FFFF  2.5K protected STR8 window
+$F400-$FFFF  3K protected STR8 window
+$F200-$FFFF  3.5K protected STR8 window
+$F000-$FFFF  4K protected STR8 window, only if STR8 needs the whole sector
+
+$FFF0-$FFF8  one-time flash board/version/config bytes, inside the window
+$FFF9-$FFFF  vector tail; W65C02 hardware vectors are $FFFA-$FFFF
 ```
 
-The preferred `$F800-$FFFF` anchor keeps the code honest: STR8 should be a
-small boot/recovery/update authority, not another full monitor. When the docs
-say `$F800-$FFF9`, they are naming the code/data portion of the same protected
-anchor, with vectors excluded for precision. The final six bytes are the W65C02
-vector table:
+Protected-window bytes are flashed through a separate install/self-update path.
+That path still stages the full top sector and preserves non-target bytes,
+because hardware erase granularity is 4K. Ordinary writes must not treat the
+selected STR8 protected window as casual free space. Bytes below the chosen
+protected start but still inside `$F000-$FFFF` may hold common routines or
+HIMON-facing material, but updating them requires the same top-sector
+transaction: read the full 4K sector into RAM, update only the allowed bytes in
+the staged image, erase `$F000-$FFFF`, write the full staged sector back, and
+verify by read-back.
+
+V0 restore still reasons about complete `$8000-$FFFF` ROM images as sources,
+but the bank 3 write path skips the selected STR8 protected window unless the
+operator explicitly requests a STR8 install/update. The `$FFF0-$FFF8` bytes are
+reserved for one-time flash data such as board id, version, and config
+information. The final hardware vector bytes are the W65C02 vector table:
 
 ```text
 $FFFA-$FFFB  NMI
@@ -82,16 +105,18 @@ $FFFC-$FFFD  RESET
 $FFFE-$FFFF  IRQ/BRK
 ```
 
-Those vector bytes remain part of the STR8 protected anchor. They are treated as
-vector table rather than normal code storage.
+Those vector bytes remain part of the selected STR8 protected window. They are
+treated as vector table rather than normal code storage.
 
 ## Vector Ownership Policy
 
-STR8 owns the hardware vector bytes at `$FFFA-$FFFF`.
+V0 HIMON controls IRQ/vector behavior.
 
-HIMON/Himonia-F can take over vector behavior, but it should do that by
-installing handlers through STR8-owned vector routing, not by casually owning
-the final six bytes itself.
+Future STR8 is expected to own the hardware vector bytes at `$FFFA-$FFFF`.
+
+In the future vector-owned model, HIMON/Himonia-F can take over practical vector
+behavior by installing handlers through STR8-owned vector routing, not by
+casually owning the final six bytes itself.
 
 Working rule:
 
@@ -99,7 +124,7 @@ Working rule:
 hardware vector -> STR8 entry/trampoline/router -> active handler
 ```
 
-Normal operation:
+Future normal operation:
 
 ```text
 STR8 validates HIMON
@@ -108,7 +133,7 @@ HIMON installs NMI/BRK/IRQ handlers through STR8 or SYS_VEC calls
 STR8 routes traps to the installed HIMON handlers
 ```
 
-Recovery operation:
+Future recovery operation:
 
 ```text
 HIMON missing/corrupt/unsafe
@@ -116,9 +141,9 @@ STR8 ignores or clears HIMON-installed handlers
 STR8 routes traps to minimal recovery handlers
 ```
 
-So yes: Himonia-F can "take over" practical trap handling by installing
-vectors. But the ownership remains STR8's because STR8 must be able to recover
-when HIMON is absent, broken, or mid-update.
+So yes: Himonia-F/HIMON controls practical trap handling in V0. Later, STR8 can
+become the reset/vector authority so recovery still works when HIMON is absent,
+broken, or mid-update.
 
 The code may use W65C02 instructions when they keep the anchor smaller or
 clearer. NMOS 6502 portability is not a STR8 V0 goal.
@@ -146,24 +171,23 @@ behavior.
 Possible layouts:
 
 ```text
-Preferred 2K anchor model:
-  $8000-$F7FF  HIMON body, apps, routine packs, data
-  $F800-$FFFF  STR8 protected anchor
-                code/data through $FFF9, vectors at $FFFA-$FFFF
-
-Top-anchor model:
-  $8000-$EFFF  Himon body, apps, routine packs, data
-  $F000-$FFFF  STR8 anchor, ABI stubs, vectors, verifier
+Protected top-sector model:
+  $8000-$EFFF          HIMON body, apps, routine packs, data
+  $F000-(start-1)      usable top-sector bytes below STR8, if any
+  start-$FFFF          selected STR8 protected window
 
 RAM-updater model:
-  flash layout remains flexible
-  before erasing Himon/STR8 areas, copy updater to RAM and run from RAM
+  special install/self-update path only
+  before erasing protected areas, copy updater to RAM and run from RAM
+  leave either a valid STR8 sector or a clear external-recovery requirement
 ```
 
-The preferred 2K anchor matches the instinct that the highest ROM area should
-hold stable recovery, ABI, and vectors, while still forcing STR8 to stay small.
-The `$F000-$FFFF` model remains acceptable if V0 cannot fit or if board bring-up
-needs a richer protected repair tool.
+The protected top-sector model matches the hardware reality that the top 4K
+erase sector contains the reset vectors and recovery authority. The whole sector
+must be erased and rewritten as a sector when any byte in it changes, but the
+protected policy window should be no larger than STR8 actually needs. STR8
+should not grow into a full monitor just because the sector is special; HIMON
+still owns the rich interactive environment.
 
 ## STR8 V0 Constraints
 
@@ -171,9 +195,16 @@ V0 should stay deliberately small:
 
 ```text
 W65C02-specific code is allowed
-protected anchor prefers $F800-$FFFF
-code/data should fit $F800-$FFF9
-vectors live at $FFFA-$FFFF
+physical top erase sector is bank 3 $F000-$FFFF
+protected STR8 window starts at $FC00, $FA00, $F800, $F600, $F400, $F200, or $F000
+protected bytes are flashed through a separate STR8 install/update path
+non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
+STR8 code/data/ABI/recovery lives from selected start through $FFEF
+one-time board/version/config window is $FFF0-$FFF8
+vector tail starts at $FFF9; hardware vectors live at $FFFA-$FFFF
+V0 uses whole 32K ROM bank images as recovery and backup sources
+V0 HIMON controls IRQ/vector behavior
+V0 has no FNV/catalog lookup
 no flash garbage collection
 no relocation replay
 no command-text compression in STR8 itself
@@ -184,14 +215,19 @@ V0 should do only enough to keep boot and flash mutation recoverable:
 
 ```text
 reset entry
-NMI/IRQ/BRK vector ownership policy
+defer IRQ/vector ownership to HIMON in V0
 boot check
 handoff to HIMON
 minimal recovery entry
-protected range check
+selected STR8 protected-window check
 flash write/erase guard hooks
 small verify/check routines
 ```
+
+STR8 V0 verification means fixed-range checks, flash status, byte-for-byte
+read-back across restored ordinary image bytes, and separate read-back
+verification after any protected-window install/update. Future catalog-owning
+STR8 may use FNV once that direction becomes real.
 
 ## Boot Relationship
 
@@ -201,7 +237,7 @@ after a small validity check.
 
 At boot, STR8 should be able to:
 
-- verify the Himon body enough to decide whether normal boot is safe
+- verify the HIMON body enough to decide whether normal boot is safe
 - enter recovery mode if the body is missing, partial, or corrupt
 - preserve a small failure reason for the user
 - provide a minimal serial/FTDI path if the normal monitor body cannot run
@@ -282,9 +318,9 @@ STR8's recovery contract.
 
 ## Proposed STR8 Overview Map
 
-This is the proposed high-level STR8 shape. It keeps STR8 small: STR8 owns the
-protected decision path and flash mutation guard, while HIMON owns the rich
-interactive monitor.
+This is the future high-level STR8/HIMON shape. It keeps STR8 small while
+allowing later catalog-aware flash mutation. V0 is simpler: image-based
+restore/verify and backup rotation.
 
 ```mermaid
 flowchart TD
@@ -292,7 +328,7 @@ flowchart TD
     NMI[NMI vector] --> STR8_TRAP[STR8 trap/recovery entry]
     IRQ[IRQ/BRK vector] --> STR8_TRAP
 
-    STR8_ENTRY --> ANCHOR[protected anchor $F800-$FFFF]
+    STR8_ENTRY --> ANCHOR[selected STR8 protected window]
     STR8_TRAP --> ANCHOR
     ANCHOR --> BOOTCHECK[boot/check HIMON body]
 
@@ -306,9 +342,9 @@ flowchart TD
     LF --> STR8_API[STR8 guard routines]
 
     RECOVERY --> STR8_API
-    STR8_API --> SCAN[scan writable flash sections]
-    SCAN --> CLASSIFY[classify protected, free, catalog, pack, unknown]
-    CLASSIFY --> CHOOSE[user or policy chooses destination]
+    STR8_API --> SCAN[scan fixed writable flash ranges]
+    SCAN --> CLASSIFY[classify protected, erased, image, unknown]
+    CLASSIFY --> CHOOSE[user or fixed policy chooses destination]
     CHOOSE --> RANGE{protected range?}
     RANGE -->|yes| REFUSE[refuse or require recovery authority]
     RANGE -->|no| PLAN[plan write/erase transaction]
@@ -322,13 +358,14 @@ flowchart TD
     PROGRAM --> VERIFY[verify flash]
     VERIFY --> OK{verified?}
     OK -->|no| RECOVERY
-    OK -->|yes| CATALOG[commit catalog/export record]
+    OK -->|yes| CATALOG[future catalog/export commit]
     CATALOG --> RETURN[return to HIMON or recovery prompt]
 ```
 
-The core rule is that normal work may begin in HIMON, but flash mutation crosses
-a STR8 boundary before bytes are trusted. That boundary is where range checks,
-erase/write state, verification, and commit markers live.
+The future core rule is that normal work may begin in HIMON, but flash mutation
+can cross a STR8 boundary before bytes are trusted. V0 does not do
+catalog-shaped work; it restores and verifies fixed bank images with the
+protected STR8 window handled separately.
 
 ## Minimal Recovery
 
@@ -339,35 +376,45 @@ V0 command surface should be closer to this:
 
 ```text
 ? / ID     print STR8, board, version, and boot failure reason
-L S        load S-record text into RAM/staging
-L F        flash a verified staged image or selected S-record payload
-V          verify staged image or flash range
-G addr     jump only when the target is explicitly accepted
+B          rotate backup images: 1->0, 2->1, 3->2
+0          restore bank 0 to bank 3
+1          restore bank 1 to bank 3
+2          restore bank 2 to bank 3
+V          verify selected/copy target bank image
+G          go HIMON / timeout default
 R          reset/retry normal boot
 ```
 
-`L S` and `L F` are clearer than a bare `L` in recovery mode. The recovery
-loader should avoid the full assembler, full catalog UI, compression tools, and
-rich command parser. Those belong in HIMON once normal operation is safe.
+`L S`, `L F`, `GO addr`, catalog repair, and richer loading are later features.
+The recovery loader should avoid the full assembler, full catalog UI,
+compression tools, and rich command parser. Those belong in HIMON once normal
+operation is safe.
 
 ## STR8 Protected Address Map
 
 ```mermaid
 flowchart LR
-    GROWTH[$8000-$F7FF growth/body area]
-    STR8CODE[$F800-$FFF9 STR8 code/data]
-    VECTORS[$FFFA-$FFFF vectors]
+    GROWTH[$8000-$EFFF growth/body area]
+    TOP[$F000-$FFFF physical 4K top sector]
+    FREE[usable top-sector bytes below selected STR8 start]
+    STR8CODE[$FC00/$FA00/...-$FFEF STR8 body]
+    FLASH9[$FFF0-$FFF8 one-time board/version/config]
+    VECTORS[$FFF9-$FFFF vector tail]
 
     GROWTH -->|normal HIMON body, apps, packs, data| HIMONBODY[mutable by guarded update]
-    STR8CODE -->|preferred anchor| ANCHOR[protected STR8]
+    TOP --> FREE
+    TOP --> STR8CODE
+    TOP --> FLASH9
+    TOP --> VECTORS
+    FREE -->|read/stage/erase/write full sector| HIMONBODY
+    STR8CODE -->|selected STR8 protected window| ANCHOR[protected STR8]
     VECTORS -->|NMI RESET IRQ/BRK| ANCHOR
 ```
 
-Fallback remains:
-
-```text
-$F000-$FFFF  larger protected STR8 anchor if V0 cannot fit at $F800
-```
+The whole `$F000-$FFFF` sector is the physical erase unit. Only the chosen
+STR8 window is policy-protected. If code or data below the window changes, the
+flash driver still has to read, stage, erase, rewrite, and verify the full 4K
+sector.
 
 ## Flash Growth Workflow
 
@@ -391,55 +438,54 @@ Repeat until ROM space is intentionally filled.
 The key idea is that `L F` should not merely program bytes. It should help turn
 new flash content into catalog-visible content.
 
-## Writable Section Scan
+## Future Writable Section Scan
 
-STR8 should provide routines to scan flash and classify regions:
+Future STR8 may provide routines to scan flash and classify regions:
 
 ```text
-protected anchor
-Himon body
+selected STR8 protected window
+HIMON body
 free/erased
 catalog records
 routine/program pack
 data pack
-unknown/non-Himon bytes
+unknown/non-HIMON bytes
 bad/partial write
 ```
 
-A simple first scan can look for erased `$FF` runs and known record signatures.
-Later scans can understand module headers, checksums, sequence numbers, and
-append-only catalog entries.
+This is not V0. A future simple scan can look for erased `$FF` runs and known
+record signatures. Later scans can understand module headers, checksums,
+sequence numbers, and append-only catalog entries.
 
 ## Bank Use Intent
 
-The working policy is to avoid using bank 3 as the default destination for every
-new onboard-built thing.
-
-Bank 3 should remain the least cluttered bank:
+The first STR8 bank policy is image-oriented:
 
 ```text
-Himon body
-core command records
-boot-facing catalog/index records
-stable trampolines
-STR8-facing repair/recovery material
+bank 3 = live reset/boot image
+bank 2 = most recent backup image
+bank 1 = previous backup image
+bank 0 = platinum R-YORS/HIMON/STR8 image and oldest backup slot for now
 ```
 
-Banks 0-2 are better candidates for growth:
+On a backup request:
 
 ```text
-routine packs
-data packs
-expanded command text
-onboard-built exports
-append-only replacement records
-dead/stale records waiting for condense
+copy bank 1 -> bank 0
+copy bank 2 -> bank 1
+copy bank 3 -> bank 2
 ```
 
-This keeps the currently bootable/recoverable bank easier to reason about while
-still allowing the machine to grow itself. STR8 should therefore report free
-space by bank and prefer banks 0-2 for user-selected flash destinations unless
-the user explicitly asks for bank 3.
+On a recovery/restore request:
+
+```text
+restore ordinary bytes from selected 32K bank image 0, 1, or 2 -> bank 3
+skip selected STR8 protected window unless explicit STR8 install/update is requested
+```
+
+Bank 0 starts as a platinum R-YORS/HIMON/STR8 image. Under the current backup
+rotation it is also the oldest backup slot. If bank 0 must remain permanently
+platinum, that needs a later protect/confirm policy.
 
 ## Self-Referencing Flash Content
 
@@ -550,13 +596,14 @@ aggressive compression ratio.
 
 ## Open Decisions
 
-- Can STR8 V0 fit in the preferred `$F800-$FFFF` anchor, with code/data through
-  `$FFF9`, or does first bring-up
-  require the fallback `$F000-$FFFF` region?
-- Is bank 3 formally reserved for the least-cluttered boot/recovery/catalog
-  path, with banks 0-2 preferred for growth packs?
-- Does STR8 own `$FACE`, `$FADE`, `$FEED`, `$F00D`, and any future ABI slots, or
-  does it only verify/route them?
+- What is the first concrete STR8 V0 protected-window start: `$FC00`, `$FA00`,
+  `$F800`, `$F600`, `$F400`, `$F200`, or `$F000`?
+- What fixed image marker/check should STR8 V0 use for whole-image recovery
+  images?
+- When should future STR8 take over catalogs, FNV lookup, and IRQ/vector
+  ownership from HIMON?
+- Does future STR8 own `$FACE`, `$FADE`, `$FEED`, `$F00D`, and any future ABI
+  slots, or does it only verify/route them?
 - Does `L F` assemble/write directly to flash, or assemble into RAM and then
   flash from a verified staging image?
 - What is the first catalog record format that supports both compact built-ins

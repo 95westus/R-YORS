@@ -308,7 +308,7 @@ flash, and userland.
 Recommended meaning:
 
 ```text
-STR8 = Straight 8, the monitor-owned recovery and mutation guard system
+STR8 = Subroutine To Return, the monitor-owned recovery and mutation guard system
 ```
 
 Core responsibilities:

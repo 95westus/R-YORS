@@ -2,9 +2,14 @@
 
 ## Near Term
 
-- Prove whether STR8 V0 fits in the preferred `$F800-$FFFF` protected anchor
-  with code/data through `$FFF9`; fall back to `$F000-$FFFF` only if the first
-  recovery/update authority needs it.
+- Define the first STR8 V0 protected-window start inside bank 3's `$F000-$FFFF`
+  top erase sector: `$FC00`, `$FA00`, `$F800`, `$F600`, `$F400`, `$F200`, or
+  `$F000`.
+- Define the top-sector partial-update transaction for bytes below STR8:
+  read/stage/erase/full-sector-write/verify.
+- Define STR8 V0's image read-back/check flow, including which bytes ordinary
+  restore writes, which selected STR8 protected-window bytes it skips, how STR8
+  install/update verifies those bytes separately, and any fixed image marker.
 - Define the first catalog record header that can represent hash, kind, bank,
   address, flags, and optional name text.
 - Decide whether `$FACE`, `$FADE`, `$FEED`, and `$F00D` are direct stubs,

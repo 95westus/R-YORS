@@ -5,6 +5,13 @@
 - Keep Himonia-F hash dispatch small and inspectable.
 - Make STR8 the flash recovery/update boundary instead of scattering flash
   mutation policy across normal monitor commands.
+- Treat bank 3 `$F000-$FFFF` as the physical top erase sector, but protect only
+  the selected STR8 protected window (`$FC00`, `$FA00`, `$F800`, `$F600`,
+  `$F400`, `$F200`, or `$F000` through `$FFFF`) from ordinary writes.
+- Flash protected-window bytes through a separate install/update path. Reuse
+  lower bytes in the same 4K sector when possible. Both STR8 updates and lower
+  top-sector changes must stage the full sector, erase, rewrite the full staged
+  sector, and verify.
 - Preserve the layer ladder (`PIN -> BIO -> COR -> SYS -> APP`) where it still
   fits, with `MEM` as a future core memory-ownership layer beneath public
   `SYS` calls.
@@ -75,16 +82,27 @@
   surface even if early UI hides some of them.
 - Treat short IDs/indexes as optional post-resolution handles. Hashes remain
   the catalog discovery key; future RIDX tables can speed hot paths later.
+- Treat versioned catalog lookup as candidate selection, not first-match:
+  exact ABI version, minimum-compatible version, and latest-compatible lookup
+  are different policies. HIMON and ASM can use compatible latest records when
+  the caller allows it. STR8 V0 does not use FNV/catalog lookup; future STR8 may
+  own catalogs after the image-recovery path is stable.
 - Keep PACK5/3x5 as a candidate for compact 3-letter mnemonic tables, because
   three 5-bit characters fit in two bytes.
 
 ## Flash Direction
 
-- Keep bank 3 cleaner for boot/current-monitor/catalog/trampoline material.
-- Prefer banks 0-2 for growth packs, expanded command text, onboard exports,
-  and stale records.
+- Keep bank 3 cleaner for boot/current-monitor/catalog/trampoline material. The
+  physical `$F000-$FFFF` sector contains STR8 and vectors, but only the chosen
+  STR8 window is reserved from ordinary writes.
+- For the first STR8 recovery model, restore uses a whole 32K bank 0, 1, or 2
+  image as the source for bank 3, writes ordinary bank 3 image bytes, and skips
+  the selected STR8 protected window unless explicit STR8 install/update is
+  requested. Backup rotates bank 1 to bank 0, bank 2 to bank 1, and bank 3 to
+  bank 2.
 - Let R-YORS define scan, verify, write, commit, and later condense policy,
-  with STR8/HIMON sharing code where that makes sense.
+  with shared flash primitives where that makes sense. HIMON/maintenance owns
+  catalog condense first; future STR8 may take catalog ownership later.
 - Treat future flash GC as append/invalidate/reclaim instead of in-place edits:
   mark records or sections stale, prepare a compacted sector image in RAM,
   relink copied records when needed, erase the old 4K sector, then write and
