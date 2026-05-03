@@ -27,15 +27,29 @@ and debug tools.
 - `R-YORS` is the overall project/system name.
 - `STR8` means Subroutine To Return. It is pronounced `S-T-R-8`, can also be
   read as `Straight 8`, and deliberately echoes `RTS` / Return from Subroutine.
+- Future STR8 may grow into `STR8-N`, read as `STRAIGHTEN`, after the small
+  recovery anchor proves itself. That future name means richer repair and
+  normalization capability, not mandatory ownership of every system policy.
 - Himonia-F is the current implementation path that will become `HIMON`.
 - `HIMON` is the final monitor/debug/catalog/assembler environment name.
 - Do not treat Himonia-F and HIMON as permanently separate products.
 
 ## STR8 Ownership
 
-- Future STR8 owns the hardware vector bytes at `$FFFA-$FFFF`.
-- V0 HIMON controls IRQ/vector behavior. STR8 IRQ/vector ownership is a future
-  direction, not the first recovery test.
+- Direction change: earlier planning leaned toward future STR8 ownership of the
+  final hardware vectors and broader trap authority. After careful
+  reconsideration by the project author, the direction is opt-in integration
+  rather than ownership-by-default.
+- STR8 does not own global memory management or application interrupt policy.
+  User-built systems may provide their own RAM map, trap supervisor, IRQ
+  discipline, and runtime conventions.
+- V0 HIMON controls IRQ/vector behavior.
+- Future STR8-N/STRAIGHTEN may offer recovery-safe vector hooks, trampolines,
+  and `SYS_VEC`/IRQ-vector integration for systems that choose that path. It
+  should remain useful as routines and guarded update machinery even when a
+  user system owns interrupts itself.
+- STR8 stays in the R-YORS "routines made from routines" spirit: reusable
+  layers a system can choose, not a hidden claim over the board.
 - STR8 lives in bank 3's physical top erase sector (`$F000-$FFFF`), but the
   policy-protected STR8 window starts at the highest fitting boundary:
   `$FC00`, `$FA00`, `$F800`, `$F600`, `$F400`, `$F200`, or `$F000`.
@@ -71,6 +85,8 @@ and debug tools.
 - Userland stack behavior belongs behind explicit routines, software stacks,
   conventions, or per-app reservations, not casual ownership of the hardware
   stack.
+- This is the R-YORS reference monitor policy, not a demand that user-built
+  systems give STR8 or HIMON global ownership of memory or interrupts.
 - Resume is explicit: rebuild context and `RTI`; do not imply stale automatic
   continuation.
 
@@ -93,8 +109,9 @@ and debug tools.
 - FNV-1a belongs to HIMON, catalog, assembler, and docs/build tooling today.
 - STR8 V0 does not use FNV: not for verification, image selection, version
   selection, command dispatch, catalog lookup, or recovery decisions.
-- Future STR8 may own catalogs and use FNV after the V0 image-recovery path
-  is stable.
+- Future STR8-N/STRAIGHTEN may participate in catalogs and use FNV after the
+  V0 image-recovery path is stable. It should not require catalog ownership from
+  systems that provide their own catalog or resolver.
 - Do not propose per-record hash algorithm tags.
 - Routine header `[HASH:XXXXXXXX]` values are also 32-bit FNV-1a. The old
   16-bit routine comment ID path is retired.
@@ -115,24 +132,22 @@ and debug tools.
 - Text compression must be optional. If compressed text is not smaller, store
   raw text or omit text.
 
-## ABI Slots
+## STR8 Call Surface
 
-- `$F00D` is the current write-byte ABI slot.
-- `$FEED` is the current read-byte ABI slot.
-- `$FADE` is the current exit-to-monitor ABI slot.
-- `$FACE` is desired as board/version/identity output.
-- Stable ABI slots should behave like trampolines or service entries so the
-  implementation can move.
+- STR8 V0 does not reserve or depend on fixed cute-address entry slots.
+- STR8 should call recovery-safe `BIO_*` helpers directly.
+- HIMON should reach resident STR8 routines through explicit imported labels or
+  a generated import file, not through hard-coded top-ROM vanity addresses.
 
 ## STR8 Imports And Onboard Resolution
 
 - Host-built Himonia-F/HIMON images should import resident STR8 `BIO_*`
-  services from an explicit STR8 API/import file or service table. That keeps
-  the release reproducible and prevents the linker from pulling a second copy
-  of `BIO_*` out of `rom.lib`.
+  services from explicit STR8 labels or an import file. That keeps the release
+  reproducible and prevents the linker from pulling a second copy of `BIO_*`
+  out of `rom.lib`.
 - `# label` is a HIMON command. It may eventually resolve HIMON catalog entries
-  that point at fixed STR8 service-table entries, but STR8 V0 does not perform
-  catalog lookup.
+  that point at callable STR8 routines, but STR8 V0 does not perform catalog
+  lookup.
 - RAM targets can patch resolved addresses directly. Flash targets must either
   stage in RAM before the first write or restrict patching to legal flash
   1-to-0 transitions.
