@@ -17,6 +17,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himonia"; Category = "reference"; Description = "Build historical compact Himonia monitor reference." }
     [pscustomobject]@{ Target = "himonia-rom"; Category = "reference"; Description = "Build Himonia reference linked at ROM address D000." }
     [pscustomobject]@{ Target = "himonia-rom-bin"; Category = "reference"; Description = "Build 32K Himonia reference ROM image." }
+    [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build STR8 V0 simulation stub at F800." }
     [pscustomobject]@{ Target = "fnv1a-hbstr"; Category = "test"; Description = "Build FNV-1a/HBSTR proving app." }
     [pscustomobject]@{ Target = "test-flash"; Category = "test"; Description = "Build flash command/install proving app." }
     [pscustomobject]@{ Target = "test-mon"; Category = "test"; Description = "Build monitor test app." }

@@ -41,6 +41,7 @@ S3X_HOME ?= $(LOCAL_ROOT)/s3x
 #   - TEST/{ftdi,util,dev,acia,pia}
 
 HIM_SUBDIR := $(APPS_DIR)/himon
+STR8_SUBDIR := $(APPS_DIR)/str8
 HIMONIA_SRC := $(HIM_SUBDIR)/himonia.asm
 HIMONIA_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himonia.obj
 HIMONIA_S19 := $(S19_DIR)/himonia.s19
@@ -62,6 +63,10 @@ FNV1A_HBSTR_SRC := $(HIM_SUBDIR)/fnv1a-hbstr.asm
 FNV1A_HBSTR_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/fnv1a-hbstr.obj
 FNV1A_HBSTR_S19 := $(S19_DIR)/fnv1a-hbstr.s19
 FNV1A_HBSTR_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
+STR8_SRC := $(STR8_SUBDIR)/str8.asm
+STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
+STR8_S19 := $(S19_DIR)/str8-f800.s19
+STR8_LINKFLAGS := -g -s -t -cF800 -hm19 -j -o
 TMON_SRC := $(TEST_ROOT_DIR)/test-mon.asm
 TMON_OBJ := $(OBJ_DIR)/$(TEST_ROOT_DIR)/test-mon.obj
 TMON_S19 := $(S19_DIR)/test-mon.s19
@@ -103,7 +108,7 @@ FTDI_DRV_INC := $(STASH_DIR)/ftdi/ftdi-drv.inc
 
 ROM_EXTRA_SRC := $(wildcard $(TEST_ROOT_DIR)/ftdi-backend-debug.asm)
 ROM_SRC := $(foreach d,$(LIB_SUBDIRS),$(wildcard $(d)/*.asm)) $(ROM_EXTRA_SRC)
-APP_SRC := $(wildcard $(STASH_DIR)/*.asm) $(wildcard $(CORE_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/*.asm) $(wildcard $(APPS_DIR)/*.asm) $(wildcard $(HIM_SUBDIR)/*.asm) $(wildcard $(TEST_SUPPORT_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/ftdi/*.asm) $(wildcard $(TEST_ROOT_DIR)/dev/*.asm) $(wildcard $(TEST_ROOT_DIR)/acia/*.asm) $(wildcard $(TEST_ROOT_DIR)/pia/*.asm) $(wildcard $(TEST_ROOT_DIR)/util/*.asm)
+APP_SRC := $(wildcard $(STASH_DIR)/*.asm) $(wildcard $(CORE_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/*.asm) $(wildcard $(APPS_DIR)/*.asm) $(wildcard $(HIM_SUBDIR)/*.asm) $(wildcard $(STR8_SUBDIR)/*.asm) $(wildcard $(TEST_SUPPORT_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/ftdi/*.asm) $(wildcard $(TEST_ROOT_DIR)/dev/*.asm) $(wildcard $(TEST_ROOT_DIR)/acia/*.asm) $(wildcard $(TEST_ROOT_DIR)/pia/*.asm) $(wildcard $(TEST_ROOT_DIR)/util/*.asm)
 ROM_OBJ := $(addprefix $(OBJ_DIR)/,$(ROM_SRC:.asm=.obj))
 ROM_LIB := $(BUILD_DIR)\lib\rom.lib
 TEST_LIB_SRC := $(wildcard $(TEST_SUPPORT_DIR)/*.asm)
@@ -131,6 +136,7 @@ UPLOADER ?=
 ALL_TARGETS := \
 	himonia \
 	himon \
+	str8 \
 	basic-himon-rom-bin \
 	basic-forth-himon-rom-bin \
 	fnv1a-hbstr \
@@ -210,6 +216,10 @@ basic-forth-himon-rom-bin: $(BASIC_FORTH_HIMON_ROM_BIN)
 
 fnv1a-hbstr: $(ROM_LIB) $(FNV1A_HBSTR_S19)
 	@echo "Built $(FNV1A_HBSTR_S19)."
+
+str8: $(STR8_S19)
+	@echo "Built $(STR8_S19)."
+	@$(MAKE) artifacts
 
 test-mon: $(ROM_LIB) $(TEST_LIB) $(TMON_S19)
 	@echo "Built $(TMON_S19)."
@@ -325,6 +335,11 @@ $(HIMON_ROM_S19): $(HIMON_ROM_OBJ) $(ROM_LIB)
 $(FNV1A_HBSTR_S19): $(FNV1A_HBSTR_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(FNV1A_HBSTR_LINKFLAGS) $(FNV1A_HBSTR_S19) $(FNV1A_HBSTR_OBJ) -L $(BUILD_DIR)\lib\rom
+
+$(STR8_S19): $(STR8_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(STR8_LINKFLAGS) $(STR8_S19) $(STR8_OBJ) -L $(BUILD_DIR)\lib\rom
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903F80004'; Set-Content -Path $$p -Value $$lines"
 
 $(TMON_S19): $(TMON_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -465,4 +480,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himonia himonia-rom himonia-rom-bin himon himon-rom himon-rom-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr test-mon test-ftdi-drv test-ftdi-hal test-flash life microchess rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts routine-tree routine-class-diagram routine-graph-insights routine-components routine-hash-comments docs docs-watch rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himonia himonia-rom himonia-rom-bin himon himon-rom himon-rom-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 test-mon test-ftdi-drv test-ftdi-hal test-flash life microchess rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts routine-tree routine-class-diagram routine-graph-insights routine-components routine-hash-comments docs docs-watch rom testing artifacts clean realclean upload term
