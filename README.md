@@ -30,6 +30,20 @@ R-YORS -> STR8 -> HIMON -> THE -> onboard ASM/catalog linking
 This repo is meant to feel like a machine binder: source, generated listings,
 design notes, decisions, maps, and scratchpad material all live together.
 
+## Carry Convention
+
+R-YORS generally treats the 6502 carry flag as an affirmative status bit:
+
+```text
+C=1  yes / ready / valid / success
+C=0  no / not ready / invalid / failure
+```
+
+The convention is deliberately plain: `1` means on, lit, present, or completed;
+`0` means off, dark, absent, or not completed. Individual routines may document
+a different carry contract when compatibility or a lower-level device path
+requires it, but the preferred R-YORS style is `C=1` for success.
+
 ## FNV-1a Hash Spine
 
 R-YORS uses **32-bit FNV-1a** as the common lookup key for the runtime system:
