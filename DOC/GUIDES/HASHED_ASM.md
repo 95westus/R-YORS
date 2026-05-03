@@ -1074,7 +1074,7 @@ metadata:
 
 ```asm
 CMD_ID:
-        DC      C'F'        ; format v1 FNV-1a hash record
+        DC      C'F'        ; full-hash FNV-1a layout record
         DC      W'...'      ; low word of CMD_ID_HASH, exact form TBD
         DC      W'...'      ; high word of CMD_ID_HASH, exact form TBD
         DC      X'00'       ; KIND
@@ -1094,30 +1094,33 @@ They can be programmed from erased `$FF` bytes to concrete values, but changing
 them later requires erasing the containing flash sector or writing a newer
 append-only record.
 
-### FNV Signature Savings
+### FNV Layout Byte Savings
 
 Since FNV-1a is the only runtime/catalog hash, records do not need to store
-`FNV` as text. The signature byte can be the record-format version:
+`FNV` as text. The compact layout byte can identify how much of the canonical
+32-bit FNV-1a hash is stored:
 
 ```text
-'F'  format v1
-'N'  format v2
-'V'  format v3
+'F'  full FNV-1a      entries store hash0..3
+'N'  narrow FNV-1a    entries store folded hash16
+'V'  very narrow      entries store folded hash8
 ```
 
-All three still use FNV-1a for `hash0..3`; the letter selects the record layout,
-not the hash algorithm.
+All three still derive from the same canonical 32-bit FNV-1a value. The letter
+selects storage width/layout, not the hash algorithm and not a format-version
+ladder.
 
 Savings:
 
 ```text
-"FNV" per record      = 3 bytes
-'F' per record        = 1 byte
-saved                 = 2 bytes per record
+"FNV" per record       = 3 bytes
+table layout byte      = 1 byte per table/block
+'N' instead of hash0..3 = 2 hash bytes saved per entry
+'V' instead of hash0..3 = 3 hash bytes saved per entry
 
-100 records           = 200 bytes saved
-256 records           = 512 bytes saved
-1000 records          = 2000 bytes saved
+100 records in an 'N' table  = about 200 hash bytes saved
+256 records in a 'V' table   = about 768 hash bytes saved
+1000 records in an 'N' table = about 2000 hash bytes saved
 ```
 
 If a record would otherwise store both a signature and a version byte, folding
