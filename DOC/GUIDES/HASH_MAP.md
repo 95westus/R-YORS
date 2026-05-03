@@ -34,14 +34,22 @@ Catalog text proof
   owner: catalog/HIMON/hashed assembler
   purpose: collision proof, listings, onboard linking
   guide: HASHED_ASM.md, SYMBOL_XREF.md
+
+Variable-width stored hash
+  size: 1, 2, or 4 stored bytes
+  algorithm: folded FNV-1a from the canonical 32-bit value
+  owner: compact HIMON/catalog tables
+  purpose: save ROM space in lookup contexts where the builder can prove
+           the narrower key is unambiguous
+  guide: HASH.md
 ```
 
 ## Rule
 
 ```text
 FNV-1a is the one catalog/runtime symbol hash for HIMON, the catalog, and the
-assembler path. STR8 V0 does not use FNV; future catalog-owning STR8 may use the
-same hash path.
+assembler path. STR8 V0 does not use FNV; future STR8-N/STRAIGHTEN may
+participate in the same hash path without requiring catalog ownership.
 records do not carry a hash-algorithm tag.
 hash narrows candidates
 stored text proves identity
@@ -51,24 +59,60 @@ record kind/bank/address tells how to use the match
 Do not treat a hash as the whole identity once the catalog becomes writable or
 loadable from user-built modules.
 
-## FNV Signature Policy
+## Variable-Width Hash Storage
 
-FNV-1a is the only runtime/catalog symbol hash, so the record does not need to
-store the text `FNV` or an algorithm id. The leading signature byte can be a
-record-format generation instead:
+This is a compact storage proposal layered on top of the one FNV-1a policy.
+The canonical name hash remains 32-bit FNV-1a. A table may store a folded
+1-byte, 2-byte, or full 4-byte key when that width is enough for its own lookup
+context.
 
 ```text
-'F'  format v1
-'N'  format v2
-'V'  format v3
+hash8   folded from hash0..3
+hash16  folded from hash0..3
+hash32  stored hash0..3, low byte first
+```
+
+F/N/V identifies the hash-width table layout:
+
+```text
+'F'  full FNV-1a      entries store hash0..3
+'N'  narrow FNV-1a    entries store folded hash16
+'V'  very narrow      entries store folded hash8
+```
+
+The safe rule is builder-selected width:
+
+```text
+small/private table       may use 1 byte
+medium shared table       may use 2 bytes
+global/exported catalog   usually keeps 4 bytes
+```
+
+The builder must reject or widen a table when a selected width collides. Runtime
+lookup can then stay simple: load the table width, compare that many hash bytes,
+and use the payload. Runtime collision management is not part of the proposal.
+
+This is separate from short local handles. A folded hash still discovers a name
+inside a lookup context. A local handle or index reuses something already found.
+
+## FNV Layout Marker Policy
+
+FNV-1a is the only runtime/catalog symbol hash, so the record does not need to
+store the text `FNV` or an algorithm id once the scanner is already inside a
+known FNV catalog/table region.
+
+The current compact proposal uses `F/N/V` as hash-width table layouts, not as
+record-format generation markers:
+
+```text
+'F'  4-byte full FNV-1a records
+'N'  2-byte narrow folded FNV-1a records
+'V'  1-byte very narrow folded FNV-1a records
 ```
 
 `FNV` names the Fowler/Noll/Vo hash family. RFC 9923 is the outside reference
-for the FNV-1a algorithm; R-YORS `F/N/V` signature bytes are catalog record
-format markers layered on top of that one hash, not alternate algorithms.
-
-Those letters are a compact version ladder, not alternate hash algorithms. Every
-one still means the `hash0..3` field is FNV-1a.
+for the FNV-1a algorithm. R-YORS `F/N/V` table bytes are storage-layout markers
+layered on top of that one hash, not alternate algorithms.
 
 Current Himonia-F still uses the older proving-record shape:
 
@@ -83,38 +127,42 @@ literal `FNV` signature. The `kind` byte follows the four hash bytes:
 $00  executable entry follows immediately after kind
 ```
 
-The future compact record should collapse signature and record version into one
-byte:
+The future compact record should collapse the old per-record signature into one
+layout byte, or move that byte into a table/block header:
 
 ```text
-sigver,hash0,hash1,hash2,hash3,value_lo,value_hi,bank,kind,flags,...
+'F',hash0,hash1,hash2,hash3,value_lo,value_hi,bank,kind,flags,...
+'N',hash16_lo,hash16_hi,value_lo,value_hi,bank,kind,flags,...
+'V',hash8,value_lo,value_hi,bank,kind,flags,...
 ```
 
-This lets the first byte answer two questions at once:
+As a per-table header:
 
 ```text
-is this a catalog hash record?
-which record layout should the scanner use?
+'F'  entries store hash0..3
+'N'  entries store folded hash16
+'V'  entries store folded hash8
 ```
 
 Storage savings:
 
 ```text
-3-byte "FNV" signature -> 1-byte 'F' signature saves 2 bytes per record
-signature + version byte -> versioned signature saves 1 byte per record
-5-byte "FNV1A" text -> 1-byte signature saves 4 bytes per record
+3-byte "FNV" per record -> 1-byte table layout saves almost 3 bytes per record
+'F' table                  keeps 4 hash bytes per entry
+'N' table                  saves 2 hash bytes per entry
+'V' table                  saves 3 hash bytes per entry
 ```
 
 Scale examples:
 
 ```text
-100 records  * 2 bytes saved = 200 bytes
-256 records  * 2 bytes saved = 512 bytes
-1000 records * 2 bytes saved = 2000 bytes
+100 records  in an 'N' table = about 200 hash bytes saved
+256 records  in a 'V' table  = about 768 hash bytes saved
+1000 records in an 'N' table = about 2000 hash bytes saved
 ```
 
-Tradeoff: a single-byte signature is weaker when scanning arbitrary flash for
-records. The HIMON/catalog scanner can handle that by only scanning known
+Tradeoff: a single-byte layout marker is weaker when scanning arbitrary flash
+for records. The HIMON/catalog scanner can handle that by only scanning known
 catalog regions, requiring a valid kind/flags/check byte nearby, or using a
 larger catalog block header while keeping each record tiny. STR8 V0 does not
 scan FNV catalog records.
@@ -131,8 +179,9 @@ routine ABI version     what contract the routine/data/provider offers
 record generation       which live record supersedes another record
 ```
 
-The compact signature byte belongs to record parsing. It should not decide
-whether `ROUTINE` v1 or `ROUTINE` v2 is the better callable provider.
+The compact layout byte belongs to record parsing and hash-width selection. It
+should not decide whether `ROUTINE` v1 or `ROUTINE` v2 is the better callable
+provider.
 
 Catalog lookup should become candidate selection, not first-match:
 
@@ -222,6 +271,53 @@ record_count_or_scan_limit
 string_pool_offset
 checksum_or_commit
 ```
+
+The scan target itself can be variable and declared. A scanner may receive an
+explicit range:
+
+```text
+start,end
+start,+length
+bank,start,end
+bank,start,+length
+```
+
+Or a compact high-window selector when the unit is a full 4K memory window:
+
+```text
+$0  scan $0000-$0FFF
+$1  scan $1000-$1FFF
+$2  scan $2000-$2FFF
+...
+$6  scan $6000-$6FFF
+$7  scan $7000-$7FFF
+$8  scan $8000-$8FFF
+$F  scan $F000-$FFFF
+```
+
+Current CPU-visible map:
+
+```text
+$0-$6  RAM
+$7     mixed: $7000-$7EFF RAM, $7F00-$7FFF I/O
+$8-$F  flash
+```
+
+If the selector grows to a byte, keep the low nibble as the 4K window and use
+the high nibble for address-space/source selection:
+
+```text
+%sssswwww
+```
+
+The selector is not the record proof. It only limits where to search. A live
+catalog block still needs its `RC`-style signature, bounds, layout/control byte,
+and commit state.
+
+The target window may be RAM, ROM, flash, or a banked view. RAM scans are valid,
+but they are noisy unless the object in RAM carries the same catalog proof
+fields as a persistent block. Scanners should avoid touching `$7F00-$7FFF`
+unless the selected policy is I/O-aware.
 
 The practical rule is:
 
