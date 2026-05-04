@@ -42,13 +42,6 @@ S3X_HOME ?= $(LOCAL_ROOT)/s3x
 
 HIM_SUBDIR := $(APPS_DIR)/himon
 STR8_SUBDIR := $(APPS_DIR)/str8
-HIMONIA_SRC := $(HIM_SUBDIR)/himonia.asm
-HIMONIA_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himonia.obj
-HIMONIA_S19 := $(S19_DIR)/himonia.s19
-HIMONIA_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
-HIMONIA_ROM_S19 := $(S19_DIR)/himonia-rom.s19
-HIMONIA_ROM_LINKFLAGS := -g -s -t -cD000 -hm19 -j -o
-HIMONIA_ROM_BIN := $(BIN_DIR)/himonia.bin
 HIMON_SRC := $(HIM_SUBDIR)/himon.asm
 HIMON_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon.obj
 HIMON_ROM_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon-rom.obj
@@ -57,6 +50,9 @@ HIMON_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
 HIMON_ROM_S19 := $(S19_DIR)/himon-rom.s19
 HIMON_ROM_LINKFLAGS := -g -s -t -cD000 -hm19 -j -o
 HIMON_ROM_BIN := $(BIN_DIR)/himon-rom.bin
+HIMON_LOAD_S19 := $(S19_DIR)/himon-load.s19
+HIMON_LOAD_LINKFLAGS := -g -s -t -c8000 -hm19 -j -o
+HIMON_LOAD_BIN := $(BIN_DIR)/himon.bin
 BASIC_HIMON_ROM_BIN := $(BIN_DIR)/basic-himon-rom.bin
 BASIC_FORTH_HIMON_ROM_BIN := $(BIN_DIR)/basic-forth-himon-rom.bin
 FNV1A_HBSTR_SRC := $(HIM_SUBDIR)/fnv1a-hbstr.asm
@@ -89,7 +85,7 @@ MICROCHESS_LINKFLAGS := -g -s -t -cA900 -hm19 -j -o
 ROM_APPEND_CALC_SRC := $(APPS_DIR)/rom-append-calc.asm
 ROM_APPEND_CALC_OBJ := $(OBJ_DIR)/$(APPS_DIR)/rom-append-calc.obj
 ROM_APPEND_CALC_S19 := $(S19_DIR)/rom-append-calc-9a00.s19
-ROM_APPEND_CALC_LINKFLAGS := -g -s -t -c9A00 -hm19 -j -o
+ROM_APPEND_CALC_LINKFLAGS := -g -s -t -cA800 -hm19 -j -o
 FIG_FORTH_SRC := $(FIG_FORTH_HOME)/generated/fig-forth.asm
 FIG_FORTH_OBJ := $(OBJ_DIR)/LOCAL/fig-forth/fig-forth.obj
 FIG_FORTH_S19 := $(S19_DIR)/fig-forth-9000.s19
@@ -118,15 +114,24 @@ DOC_GENERATED_DIR := ../DOC/GENERATED
 CALL_ORDER := $(DOC_GENERATED_DIR)/CALL_ORDER.md
 CALL_ORDER_SRC := $(ROM_SRC) $(APP_SRC)
 ROUTINE_CONTRACTS := $(DOC_GENERATED_DIR)/ROUTINE_CONTRACTS.md
-ROUTINE_TREE := $(DOC_GENERATED_DIR)/ROUTINE_TREE.md
+HIMON_ROUTINE_TREE := $(DOC_GENERATED_DIR)/HIMON_ROUTINE_TREE.md
 ROUTINE_CLASS_DIAGRAM := $(DOC_GENERATED_DIR)/ROUTINE_CLASS_DIAGRAM.md
+ROUTINE_PREFIX_MAP := $(DOC_GENERATED_DIR)/ROUTINE_PREFIX_MAP.md
+HIMON_SUPPORT_MAP := $(DOC_GENERATED_DIR)/HIMON_SUPPORT_MAP.md
+HIMON_COMMAND_MAP := $(DOC_GENERATED_DIR)/HIMON_COMMAND_MAP.md
+HASH_ROUTINE_MAP := $(DOC_GENERATED_DIR)/HASH_ROUTINE_MAP.md
+CMD_FLOW_MAP := $(DOC_GENERATED_DIR)/CMD_FLOW_MAP.md
+INTERRUPT_VECTOR_MAP := $(DOC_GENERATED_DIR)/INTERRUPT_VECTOR_MAP.md
+MAP_OF_MAPS := $(DOC_GENERATED_DIR)/MAP_OF_MAPS.md
 ROUTINE_GRAPH_INSIGHTS := $(DOC_GENERATED_DIR)/ROUTINE_GRAPH_INSIGHTS.md
 ROUTINE_COMPONENTS := $(DOC_GENERATED_DIR)/ROUTINE_COMPONENTS.md
-GENERATED_DOCS := $(CALL_ORDER) $(ROUTINE_CONTRACTS) $(ROUTINE_TREE) $(ROUTINE_CLASS_DIAGRAM) $(ROUTINE_GRAPH_INSIGHTS) $(ROUTINE_COMPONENTS)
+GENERATED_DOCS := $(CALL_ORDER) $(ROUTINE_CONTRACTS) $(HIMON_ROUTINE_TREE) $(ROUTINE_CLASS_DIAGRAM) $(ROUTINE_PREFIX_MAP) $(HIMON_SUPPORT_MAP) $(HIMON_COMMAND_MAP) $(HASH_ROUTINE_MAP) $(CMD_FLOW_MAP) $(INTERRUPT_VECTOR_MAP) $(MAP_OF_MAPS) $(ROUTINE_GRAPH_INSIGHTS) $(ROUTINE_COMPONENTS)
 ROUTINE_HASH_COMMENTS_GEN := tools/gen_routine_hash_comments.ps1
 DOCS_GEN := tools/gen_docs.ps1
 DOCS_WATCH := tools/watch_docs.ps1
 HELP_GEN := tools/show_make_help.ps1
+BIN_POLICY := tools/bin_policy.ps1
+BIN_CHECK := tools/check_bin_policy.ps1
 HELP_QUERY := $(if $(Q),$(Q),$(SEARCH))
 
 # Optional local commands (override from CLI, e.g. make upload UPLOADER="tool --flash")
@@ -134,7 +139,6 @@ TERMINAL ?=
 UPLOADER ?=
 
 ALL_TARGETS := \
-	himonia \
 	himon \
 	str8 \
 	basic-himon-rom-bin \
@@ -168,33 +172,20 @@ help:
 
 release: docs $(RELEASE_TARGETS)
 	@$(MAKE) artifacts
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(BIN_CHECK) -BinDir "$(BIN_DIR)"
 	@echo "Release build complete."
 	@echo "Tracked-source release targets: $(RELEASE_TARGETS)"
 	@echo "Primary monitor binary: $(HIMON_ROM_BIN)"
 	@echo "Primary monitor S19: $(HIMON_ROM_S19)"
 	@echo "Stamped ROM archive dir: $(ROM_BIN_ARCHIVE_DIR)"
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(ROM_BIN_ARCHIVE_DIR)') { Get-ChildItem -LiteralPath '$(ROM_BIN_ARCHIVE_DIR)' -Filter '*.bin' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 8 | ForEach-Object { '  ' + $$_.Name } }"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(ROM_BIN_ARCHIVE_DIR)') { Get-ChildItem -LiteralPath '$(ROM_BIN_ARCHIVE_DIR)' -Filter '*.bin' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 8 | ForEach-Object { $$b=[System.IO.File]::ReadAllBytes($$_.FullName); $$head=(($$b[0..([Math]::Min(2,$$b.Length-1))] | ForEach-Object { '{0:X2}' -f $$_ }) -join ' '); $$tail=(($$b[([Math]::Max(0,$$b.Length-3))..($$b.Length-1)] | ForEach-Object { '{0:X2}' -f $$_ }) -join ' '); '  ' + $$_.Name + '  len=' + $$b.Length + '  head=[' + $$head + '] tail=[' + $$tail + ']' } }"
 
 release-local: release $(RELEASE_LOCAL_TARGETS)
 	@$(MAKE) artifacts
 	@echo "Local/private release build complete."
 	@echo "Local release targets: $(RELEASE_LOCAL_TARGETS)"
 
-himonia: $(ROM_LIB) $(HIMONIA_S19) himonia-rom-bin
-	@echo "Built $(HIMONIA_S19)."
-	@$(MAKE) artifacts
-
-himonia-rom: $(ROM_LIB) $(HIMONIA_ROM_S19)
-	@echo "Built $(HIMONIA_ROM_S19)."
-	@$(MAKE) artifacts
-
-himonia-rom-bin: himonia-rom
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himonia-rom.map" -S19Path "$(S19_DIR)/himonia-rom.s19" -BinPath "$(HIMONIA_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himonia-rom-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himonia-rom-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himonia-rom-vectors.bin' -Force }"
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMONIA_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
-	@echo "Built $(HIMONIA_ROM_BIN)."
-
-himon: $(ROM_LIB) $(HIMON_S19) himon-rom-bin
+himon: $(ROM_LIB) $(HIMON_S19) himon-load-bin himon-rom-bin
 	@echo "Built $(HIMON_S19)."
 	@$(MAKE) artifacts
 
@@ -207,6 +198,16 @@ himon-rom-bin: himon-rom
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin' -Force }"
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 	@echo "Built $(HIMON_ROM_BIN)."
+
+himon-load: $(ROM_LIB) $(HIMON_LOAD_S19)
+	@echo "Built $(HIMON_LOAD_S19)."
+	@$(MAKE) artifacts
+
+himon-load-bin: himon-load
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-load.map" -S19Path "$(HIMON_LOAD_S19)" -BinPath "$(HIMON_LOAD_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-load-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-load-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-load-vectors.bin' -Force }"
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_LOAD_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
+	@echo "Built $(HIMON_LOAD_BIN)."
 
 basic-himon-rom-bin: $(BASIC_HIMON_ROM_BIN)
 	@echo "Built $(BASIC_HIMON_ROM_BIN)."
@@ -274,11 +275,36 @@ call-order: $(CALL_ORDER)
 routine-contracts: $(ROUTINE_CONTRACTS)
 	@echo "Updated $(ROUTINE_CONTRACTS)."
 
-routine-tree: $(ROUTINE_TREE)
-	@echo "Updated $(ROUTINE_TREE)."
+himon-routine-tree: $(HIMON_ROUTINE_TREE)
+	@echo "Updated $(HIMON_ROUTINE_TREE)."
+
+routine-tree: himon-routine-tree
 
 routine-class-diagram: $(ROUTINE_CLASS_DIAGRAM)
 	@echo "Updated $(ROUTINE_CLASS_DIAGRAM)."
+
+routine-prefix-map: $(ROUTINE_PREFIX_MAP)
+	@echo "Updated $(ROUTINE_PREFIX_MAP)."
+
+himon-support-map: $(HIMON_SUPPORT_MAP)
+	@echo "Updated $(HIMON_SUPPORT_MAP)."
+
+himon-command-map: $(HIMON_COMMAND_MAP)
+	@echo "Updated $(HIMON_COMMAND_MAP)."
+
+hash-routine-map: $(HASH_ROUTINE_MAP)
+	@echo "Updated $(HASH_ROUTINE_MAP)."
+
+cmd-flow-map: $(CMD_FLOW_MAP)
+	@echo "Updated $(CMD_FLOW_MAP)."
+
+interrupt-vector-map: $(INTERRUPT_VECTOR_MAP)
+	@echo "Updated $(INTERRUPT_VECTOR_MAP)."
+
+irq-vector-map: interrupt-vector-map
+
+map-of-maps: $(MAP_OF_MAPS)
+	@echo "Updated $(MAP_OF_MAPS)."
 
 routine-graph-insights: $(ROUTINE_GRAPH_INSIGHTS)
 	@echo "Updated $(ROUTINE_GRAPH_INSIGHTS)."
@@ -308,6 +334,9 @@ local-homes:
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(LOCAL_PROVENANCE) -Name "wdcmonv2" -LocalHome "$(WDCMONV2_HOME)" -SourcePath "$(WDCMONV2_HOME)" -Note "Local WDCMONv2 sources/binaries live here and are intentionally ignored."
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(LOCAL_PROVENANCE) -Name "s3x" -LocalHome "$(S3X_HOME)" -SourcePath "$(S3X_HOME)" -Note "Local s3x material lives here and is intentionally ignored."
 
+bin-check:
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(BIN_CHECK) -BinDir "$(BIN_DIR)"
+
 # Build shared module library independently.
 rom: $(ROM_LIB)
 	@echo "Built $(ROM_LIB)."
@@ -316,17 +345,13 @@ rom: $(ROM_LIB)
 testing: $(TEST_LIB)
 	@echo "Built $(TEST_LIB)."
 
-$(HIMONIA_S19): $(HIMONIA_OBJ) $(ROM_LIB)
-	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(HIMONIA_LINKFLAGS) $(HIMONIA_S19) $(HIMONIA_OBJ) -L $(BUILD_DIR)\lib\rom
-
-$(HIMONIA_ROM_S19): $(HIMONIA_OBJ) $(ROM_LIB)
-	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(HIMONIA_ROM_LINKFLAGS) $(HIMONIA_ROM_S19) $(HIMONIA_OBJ) -L $(BUILD_DIR)\lib\rom
-
 $(HIMON_S19): $(HIMON_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(HIMON_LINKFLAGS) $(HIMON_S19) $(HIMON_OBJ) -L $(BUILD_DIR)\lib\rom
+
+$(HIMON_LOAD_S19): $(HIMON_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIMON_LOAD_LINKFLAGS) $(HIMON_LOAD_S19) $(HIMON_OBJ) -L $(BUILD_DIR)\lib\rom
 
 $(HIMON_ROM_S19): $(HIMON_ROM_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -371,7 +396,7 @@ $(MICROCHESS_S19): $(MICROCHESS_OBJ) $(ROM_LIB)
 $(ROM_APPEND_CALC_S19): $(ROM_APPEND_CALC_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(ROM_APPEND_CALC_LINKFLAGS) $(ROM_APPEND_CALC_S19) $(ROM_APPEND_CALC_OBJ) -L $(BUILD_DIR)\lib\rom
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ROM_APPEND_CALC_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9039A085A'; Set-Content -Path $$p -Value $$lines"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ROM_APPEND_CALC_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903A80054'; Set-Content -Path $$p -Value $$lines"
 
 $(FIG_FORTH_S19): $(FIG_FORTH_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -388,15 +413,15 @@ $(MSBASIC_OSI_S19): $(MSBASIC_OSI_OBJ)
 	$(LINKER) $(MSBASIC_OSI_LINKFLAGS) $(MSBASIC_OSI_S19) $(MSBASIC_OSI_OBJ)
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/msbasic-osi.map') { '$(S19_DIR)/msbasic-osi.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/msbasic-osi.map') { '$(MAP_DIR)/msbasic-osi.map' } else { throw 'msbasic-osi.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+COLD_START\s*$$' | Select-Object -First 1; if (-not $$m) { throw 'COLD_START not found in map' }; $$addr = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$sum = 3 + (($$addr -shr 8) -band 255) + ($$addr -band 255); $$chk = ($$sum -bxor 255) -band 255; $$rec = ('S903{0:X4}{1:X2}' -f $$addr, $$chk); $$lines = Get-Content -Path '$(MSBASIC_OSI_S19)'; $$lines[-1] = $$rec; Set-Content -Path '$(MSBASIC_OSI_S19)' -Value $$lines"
 
-$(MSBASIC_OSI_BIN): $(MSBASIC_OSI_S19) tools/build_msbasic_osi_bin.ps1
+$(MSBASIC_OSI_BIN): $(MSBASIC_OSI_S19) tools/build_msbasic_osi_bin.ps1 tools/stamp_rom_bin.ps1 $(BIN_POLICY)
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_msbasic_osi_bin.ps1 -MapPath "$(S19_DIR)/msbasic-osi.map" -S19Path "$(MSBASIC_OSI_S19)" -BinPath "$(MSBASIC_OSI_BIN)"
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(MSBASIC_OSI_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
-$(BASIC_HIMON_ROM_BIN): $(MSBASIC_OSI_S19) $(HIMON_ROM_S19) tools/build_basic_himon_rom_bin.ps1
+$(BASIC_HIMON_ROM_BIN): $(MSBASIC_OSI_S19) $(HIMON_ROM_S19) tools/build_basic_himon_rom_bin.ps1 tools/stamp_rom_bin.ps1
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_himon_rom_bin.ps1 -MsbasicMapPath "$(S19_DIR)/msbasic-osi.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_HIMON_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/basic-himon-rom-vectors.bin"
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
-$(BASIC_FORTH_HIMON_ROM_BIN): $(MICROCHESS_S19) $(FIG_FORTH_S19) $(MSBASIC_OSI_S19) $(HIMON_ROM_S19) tools/build_basic_forth_himon_rom_bin.ps1
+$(BASIC_FORTH_HIMON_ROM_BIN): $(MICROCHESS_S19) $(FIG_FORTH_S19) $(MSBASIC_OSI_S19) $(HIMON_ROM_S19) tools/build_basic_forth_himon_rom_bin.ps1 tools/stamp_rom_bin.ps1
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_forth_himon_rom_bin.ps1 -MicrochessMapPath "$(S19_DIR)/microchess-a900.map" -MicrochessS19Path "$(MICROCHESS_S19)" -ForthMapPath "$(S19_DIR)/fig-forth-9000.map" -ForthS19Path "$(FIG_FORTH_S19)" -MsbasicMapPath "$(S19_DIR)/msbasic-osi.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_FORTH_HIMON_ROM_BIN)"
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_FORTH_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
@@ -480,4 +505,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himonia himonia-rom himonia-rom-bin himon himon-rom himon-rom-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 test-mon test-ftdi-drv test-ftdi-hal test-flash life microchess rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts routine-tree routine-class-diagram routine-graph-insights routine-components routine-hash-comments docs docs-watch rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 test-mon test-ftdi-drv test-ftdi-hal test-flash life microchess rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch bin-check rom testing artifacts clean realclean upload term
