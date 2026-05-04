@@ -76,7 +76,7 @@ R-YORS split the behavior into layers.
 Himon pulled the monitor back into a smaller shell.
 Himonia made it a compact supervisor/debug environment.
 Himonia-F made commands discoverable FNV records.
-HIMON keeps the Himonia-F line and becomes the normal monitor behind STR8.
+HIMON keeps the useful FNV-dispatch line and becomes the normal monitor behind STR8.
 ```
 
 ## Stage 0: Board Monitor Ground
@@ -352,8 +352,12 @@ token -> FNV-1a hash -> scan record -> executable entry
 Current proving record shape:
 
 ```text
-'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...
 ```
+
+For current `kind=$00`, executable code begins immediately after the kind byte
+at record offset `+8`; the current HIMON record does not store
+`entry_lo,entry_hi`.
 
 This stage is the conceptual break from "the monitor has commands" to "the
 runtime can discover executable records." The `#` command exposes that lookup
@@ -427,7 +431,7 @@ any later free-list heap
 | `HIM_*` | Himonia | Current small monitor I/O | Local line input, uppercase handling, HBSTR output, Ctrl-C checks. |
 | `CMDP_*` | Himon parent | Older/split shell parser | Table parser, hex token parser, HBSTR command table traversal. |
 | `CMD_*` | Himonia | Current command surface | Single-letter command handlers and current FNV dispatch support. |
-| `CMD_HASH_*` | Himonia-F | Current catalog dispatch | Hash token, scan records, compare hash, derive executable entry. |
+| `CMD_HASH_*` | HIMON | Current catalog dispatch | Hash token, scan records, compare hash, derive executable entry. |
 | `MON_CMD_*` | Split Himon | Older modular command bodies | Full-word shell commands such as display/fill/copy/load/go/resume. |
 | `MON_CTX_*` | Himon parent/Himonia | Current debug context | Saved A/X/Y/P/S/PC, edit, print, and `RTI` resume. |
 | `MON_PRINT_*` | Himonia | Current monitor output | Stop reports, register reports, memory dump formatting, return-status display. |
@@ -437,8 +441,8 @@ any later free-list heap
 | `ASM_*` | Himonia | Current assembler include | Numeric mini assembler; future hash assembler adds symbols/fixups. |
 | `FNV1A_*` | FNV tool | Current runtime hash | 32-bit little-endian FNV-1a over command/name text. |
 | `MATH_*` | FNV tool | Current hash support | 32-bit shift/add math used by FNV prime multiply. |
-| `FLASH_*` | Himonia-F | Current imported service | Byte write helper used by `L F`; STR8 should own safer erase/update later. |
-| `HIMONIA_ABI_*` | Himonia-F | Current ROM ABI names | Fixed `$F00D`, `$FEED`, `$FADE` external entry slots. Names lag the final HIMON name. |
+| `FLASH_*` | HIMON/STR8-adjacent | Current imported service | Byte write helper used by `L F`; STR8 should own safer erase/update later. |
+| `HIMONIA_ABI_*` | HIMON | Current ROM ABI names | Fixed `$F00D`, `$FEED`, `$FADE` external entry slots. Names lag the final HIMON name. |
 | `MEM_*` | Future HIMON dynamic stage | Planned only | Dynamic memory ownership layer; not STR8, not current HIMON. |
 
 ## Class Map
@@ -500,7 +504,7 @@ HIM_* local character/string I/O helpers
 Keep this reading:
 
 ```text
-Himonia-F -> current HIMON implementation path
+Himonia-F -> historical implementation branch folded into HIMON
 HIMONIA_ABI_* -> historical ABI symbol names still present in code
 HIMON -> final normal monitor name
 STR8 -> recovery/update guard
@@ -512,7 +516,7 @@ current source promotes the FNV-driven Himonia-F line into HIMON.
 ## Open Reconstruction Notes
 
 - The current checkout keeps the important stage files, but older git history
-  before the tracked Himonia-F import is partly represented by documentation
+  before the tracked HIMON import is partly represented by documentation
   rather than direct commit ancestry.
 - Himon4 is mentioned as a short-lived variant in historical notes, but there is
   no current tracked source file for it in `SRC/TEST/apps/himon`.

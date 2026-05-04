@@ -75,7 +75,7 @@ CMD_ABORT_TOP            EQU             $04
 ;   'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...
 ;   kind=$00: executable code begins immediately after the kind byte.
 CMD_FNV_SIG2             EQU             ('V'+$80)
-CMD_HASH_SCAN_BASE_HI    EQU             $90
+CMD_HASH_SCAN_BASE_HI    EQU             $80
 
                         CODE
 START:

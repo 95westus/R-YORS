@@ -8,6 +8,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+. "$PSScriptRoot/bin_policy.ps1"
 
 if (-not (Test-Path -LiteralPath $MapPath)) {
     $altMapPath = $MapPath.Replace("\s19\", "\map\").Replace("/s19/", "/map/")
@@ -70,6 +71,8 @@ if ($bin.Length -ne $SlotSize) {
     throw "Unexpected BIN size $($bin.Length); expected $SlotSize bytes"
 }
 
+Ensure-BinFirstByte -Path $BinPath
+$bin = [System.IO.File]::ReadAllBytes($BinPath)
 $head = $bin[0..15] | ForEach-Object { "{0:X2}" -f $_ }
 Write-Host ("Symbols FNV/ENTRY/COLD/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $fnv, $entry, $cold, $end)
 Write-Host ("Used/Padded/File bytes     = {0}/{1}/{2}" -f $used, ($SlotSize - $used), $bin.Length)

@@ -3,6 +3,11 @@
 This file separates the different hash ideas so they do not collapse into one
 muddy concept.
 
+Use [GLOSSARY.md](./GLOSSARY.md) for the terminology contract. In this file,
+FNV-1a is the algorithm, hash32/hash16/hash8 are stored result widths, `Record`
+means only the record format defined in the local section, and THE means The
+Hash Environment.
+
 ## Hash Families
 
 ```text
@@ -17,9 +22,9 @@ ROUTINE HASH
 Runtime FNV-1a
   size: 32 bit
   form: four stored bytes
-  owner: Himonia-F command dispatch
+  owner: HIMON command dispatch
   purpose: command token lookup
-  source: SRC/TEST/apps/himon/himon.asm
+  source: HIMON/himon.asm
   symbol guide: SYMBOL_XREF.md
 
 Assembler symbol hash
@@ -72,12 +77,27 @@ hash16  folded from hash0..3
 hash32  stored hash0..3, low byte first
 ```
 
-F/N/V identifies the hash-width table layout:
+The folded widths are produced by reusable helper routines that accept a
+pointer to a completed 32-bit FNV-1a result. They are not tied to HBSTR, CSTR,
+PSTR, or any other source text format:
 
 ```text
-'F'  full FNV-1a      entries store hash0..3
-'N'  narrow FNV-1a    entries store folded hash16
-'V'  very narrow      entries store folded hash8
+FNV1A_FOLD8_XY_A       X/Y=hash0..3 ptr -> A=hash8, C=1
+FNV1A_FOLD16_XY_A8     X/Y=hash0..3 ptr -> X=hash16_lo, Y=hash16_hi, A=hash8, C=1
+FNV1A_FOLD32_XY        X/Y=hash0..3 ptr -> X/Y unchanged, C=1
+```
+
+These are routines-of-routines helpers. They do not replace or modify the
+normal 32-bit FNV-1a engine. A caller first computes the canonical hash through
+the right source-specific path, then calls the fold helper needed by the table
+width.
+
+Hash width should be a compact control field, not literal `FNV` bytes:
+
+```text
+ww=01  very narrow: entries store folded hash8
+ww=10  narrow:      entries store folded hash16
+ww=11  full:        entries store hash0..3
 ```
 
 The safe rule is builder-selected width:
@@ -95,14 +115,13 @@ and use the payload. Runtime collision management is not part of the proposal.
 This is separate from short local handles. A folded hash still discovers a name
 inside a lookup context. A local handle or index reuses something already found.
 
-## FNV Layout Marker Policy
+## Hash Width Control Policy
 
 FNV-1a is the only runtime/catalog symbol hash, so the record does not need to
 store the text `FNV` or an algorithm id once the scanner is already inside a
 known FNV catalog/table region.
 
-The current compact proposal uses `F/N/V` as hash-width table layouts, not as
-record-format generation markers:
+An older shorthand used `F/N/V` as human-readable width markers:
 
 ```text
 'F'  4-byte full FNV-1a records
@@ -110,58 +129,54 @@ record-format generation markers:
 'V'  1-byte very narrow folded FNV-1a records
 ```
 
-`FNV` names the Fowler/Noll/Vo hash family. RFC 9923 is the outside reference
-for the FNV-1a algorithm. R-YORS `F/N/V` table bytes are storage-layout markers
-layered on top of that one hash, not alternate algorithms.
+That is readable, but it still spends a byte on width. In compact RCAT/RREC
+records, width belongs in the `ww` bits of the layout/control byte. `FNV` names
+the Fowler/Noll/Vo hash family. RFC 9923 is the outside reference for the
+FNV-1a algorithm.
 
-Current Himonia-F still uses the older proving-record shape:
+Current HIMON still uses the older proving-record shape:
 
 ```text
-'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...
 ```
 
 In that current shape, `('V'|$80)` is the high-bit-terminated third byte of the
 literal `FNV` signature. The `kind` byte follows the four hash bytes:
 
 ```text
-$00  executable entry follows immediately after kind
+$00  executable code begins immediately after kind, at record+8
 ```
 
-The future compact record should collapse the old per-record signature into one
-layout byte, or move that byte into a table/block header:
+Current HIMON does not store `entry_lo,entry_hi`. Explicit pointer records are
+a future RREC payload direction.
+
+The future compact record should use a layout/control byte instead of spending
+literal width marker bytes:
 
 ```text
-'F',hash0,hash1,hash2,hash3,value_lo,value_hi,bank,kind,flags,...
-'N',hash16_lo,hash16_hi,value_lo,value_hi,bank,kind,flags,...
-'V',hash8,value_lo,value_hi,bank,kind,flags,...
-```
-
-As a per-table header:
-
-```text
-'F'  entries store hash0..3
-'N'  entries store folded hash16
-'V'  entries store folded hash8
+control: ww=11, hash0,hash1,hash2,hash3, value/payload...
+control: ww=10, hash16_lo,hash16_hi,    value/payload...
+control: ww=01, hash8,                  value/payload...
 ```
 
 Storage savings:
 
 ```text
-3-byte "FNV" per record -> 1-byte table layout saves almost 3 bytes per record
-'F' table                  keeps 4 hash bytes per entry
-'N' table                  saves 2 hash bytes per entry
-'V' table                  saves 3 hash bytes per entry
+3-byte "FNV" per record -> compact control saves almost 3 bytes per record
+ww=11                     keeps 4 hash bytes per entry
+ww=10                     saves 2 hash bytes per entry
+ww=01                     saves 3 hash bytes per entry
 ```
 
 Scale examples:
 
 ```text
-100 records  in an 'N' table = about 200 hash bytes saved
-256 records  in a 'V' table  = about 768 hash bytes saved
-1000 records in an 'N' table = about 2000 hash bytes saved
+100 records  at ww=10 = about 200 hash bytes saved
+256 records  at ww=01 = about 768 hash bytes saved
+1000 records at ww=10 = about 2000 hash bytes saved
 ```
 
-Tradeoff: a single-byte layout marker is weaker when scanning arbitrary flash
+Tradeoff: a single-byte control field is weak when scanning arbitrary flash
 for records. The HIMON/catalog scanner can handle that by only scanning known
 catalog regions, requiring a valid kind/flags/check byte nearby, or using a
 larger catalog block header while keeping each record tiny. STR8 V0 does not
@@ -173,10 +188,10 @@ Do not let one byte mean every kind of version. The catalog needs separate
 version ideas:
 
 ```text
-record format version   how to parse this RREC layout
-catalog block version   how to parse/discover the enclosing RCAT block
-routine ABI version     what contract the routine/data/provider offers
-record generation       which live record supersedes another record
+record format version     how to parse this RREC layout
+catalog block version     how to parse/discover the enclosing RCAT block
+routine contract version  what contract the routine/data/provider offers
+record generation         which live record supersedes another record
 ```
 
 The compact layout byte belongs to record parsing and hash-width selection. It
@@ -189,7 +204,7 @@ Catalog lookup should become candidate selection, not first-match:
 lookup(name, kind, version policy)
   scan valid catalog regions
   collect matching hash/name/kind records
-  discard stale/dead/invalid records
+  discard stale/buried/invalid records
   apply version policy
   choose the best live candidate
 ```
@@ -197,13 +212,13 @@ lookup(name, kind, version policy)
 Useful version policies:
 
 ```text
-exact v1       accept only ABI v1
-v1+            accept the newest compatible ABI at least v1
+exact v1       accept only contract v1
+v1+            accept the newest compatible contract at least v1
 latest         accept the newest live compatible provider
 ```
 
 So if ROM contains both `ROUTINE` v1 and `ROUTINE` v2, v1 does not need to be
-physically erased or marked dead. Normal HIMON lookup can choose v2 under
+physically erased or marked buried. Normal HIMON lookup can choose v2 under
 `latest` or `v1+` policy. STR8 V0 stays out of this FNV/version-selection path
 and uses fixed whole-image recovery choices instead.
 
@@ -211,7 +226,7 @@ Append-only flash update should work even when old records cannot be changed:
 
 ```text
 old v1 record remains live
-new v2 record is appended with same hash/name/kind and higher ABI/generation
+new v2 record is appended with same hash/name/kind and higher contract/generation
 resolver chooses v2 for compatible lookup
 later condense may drop v1 if policy allows
 ```
@@ -240,10 +255,10 @@ written?
 verified?
 committed?
 superseded?
-dead?
+buried?
 ```
 
-When the chain is exhausted or the block has too much dead material, HIMON or a
+When the chain is exhausted or the block has too much buried material, HIMON or a
 non-STR8 maintenance tool can condense: copy live records to RAM or another
 block, erase the old sector, then rewrite a compact block with fresh `$FF` state
 bytes.
@@ -330,7 +345,7 @@ condense stale blocks later
 
 ## Runtime Command Hash
 
-Himonia-F command lookup is:
+HIMON command lookup is:
 
 ```text
 input token -> canonical/HBSTR-aware FNV-1a -> record scan -> entry address
@@ -368,7 +383,7 @@ things:
 
 ```text
 command       hash -> executable entry point
-routine       hash -> callable service address plus ABI notes
+routine       hash -> callable service address plus contract notes
 symbol        hash -> address/value/bank
 data element  hash -> address, length, and data type
 constant      hash -> byte, word, long, or flag value

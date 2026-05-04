@@ -5,6 +5,10 @@ lookup and routine block identity. STR8 V0 does not use FNV; future
 STR8-N/STRAIGHTEN may participate in the same hash path without requiring
 catalog ownership.
 
+Terminology follows [GLOSSARY.md](./GLOSSARY.md): FNV-1a is the algorithm;
+hash32/hash16/hash8 are result widths; signature, control byte, and kind are
+separate fields; THE is The Hash Environment, not the whole runtime.
+
 FNV means Fowler/Noll/Vo. The external algorithm reference for the constants,
 update order, and little-endian persistent storage convention is RFC 9923:
 <https://www.rfc-editor.org/rfc/rfc9923.html>.
@@ -13,7 +17,7 @@ update order, and little-endian persistent storage convention is RFC 9923:
 [HASH:XXXXXXXX]  32-bit FNV-1a routine/catalog/symbol hash
 ```
 
-FNV-1a is current, not future-only. It is already used by Himonia-F command
+FNV-1a is current, not future-only. It is already used by HIMON command
 dispatch and is the intended lookup hash for catalogs, symbols, commands,
 routines, fixups, and routine block comments.
 
@@ -32,7 +36,7 @@ FNV-1a is:
 size:       32 bit
 algorithm:  FNV-1a
 storage:    hash0,hash1,hash2,hash3 low byte through high byte
-owner:      Himonia-F/HIMON command, catalog, symbol, and fixup lookup
+owner:      HIMON command, catalog, symbol, and fixup lookup
 ```
 
 Example:
@@ -41,15 +45,18 @@ Example:
 SYS_WRITE_CHAR -> $49023C1B -> stored 1B,3C,02,49
 ```
 
-Current Himonia-F command records use this proving shape:
+Current HIMON command records use this proving shape:
 
 ```text
-'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...
 ```
 
-A compact future catalog table keeps FNV-1a but can replace the 3-byte
-signature with one `F`/`N`/`V` width-layout byte when the table format already
-implies FNV-1a. See [HASH_MAP.md](./HASH_MAP.md).
+For current `kind=$00`, executable code begins immediately after the kind byte,
+at record offset `+8`. Current HIMON does not store `entry_lo,entry_hi`.
+
+A compact future RCAT/RREC table keeps FNV-1a but should put hash width in
+control bits when the table format already implies FNV-1a. See
+[HASH_MAP.md](./HASH_MAP.md).
 
 Routine block comments may include both fields:
 
@@ -75,13 +82,40 @@ hash16 = (h32 xor (h32 >> 16)) & $FFFF
 hash32 = h32
 ```
 
-Preferred first shape:
+This is implemented in the R-YORS "routines made from routines" style. The
+32-bit FNV-1a path stays canonical. Narrow helpers fold a completed 32-bit
+result; they do not know whether that result came from HBSTR, CSTR, PSTR,
+buffer text, HIMON command input, or a future catalog reader.
 
 ```text
-table header:
-  'F'  entries store hash0..3
-  'N'  entries store folded hash16
-  'V'  entries store folded hash8
+FNV1A_FOLD8_XY_A
+  in:   X/Y = pointer to hash0..hash3
+  out:  A = hash8, C=1; X/Y preserved
+  rule: A = FNV_HASH0 xor FNV_HASH1 xor FNV_HASH2 xor FNV_HASH3
+
+FNV1A_FOLD16_XY_A8
+  in:   X/Y = pointer to hash0..hash3
+  out:  X = hash16 low byte, Y = hash16 high byte, A = hash8, C=1
+  rule: X = FNV_HASH0 xor FNV_HASH2
+        Y = FNV_HASH1 xor FNV_HASH3
+
+FNV1A_FOLD32_XY
+  in:   X/Y = pointer to hash0..hash3
+  out:  X/Y unchanged, C=1
+  rule: full-width identity for width-dispatch code
+```
+
+That keeps compact hash storage reusable from HIMON, catalog tools, onboard ASM,
+and future STR8-N/STRAIGHTEN catalog participation without modifying the
+existing 32-bit FNV-1a engine.
+
+Preferred first compact shape:
+
+```text
+control byte:
+  ww=01  entries store folded hash8
+  ww=10  entries store folded hash16
+  ww=11  entries store hash0..3
 
 entries:
   hash bytes
@@ -92,9 +126,9 @@ The table builder should choose the smallest width that is unambiguous for that
 lookup context:
 
 ```text
-try 'V'  1-byte folded hashes
-if any collision exists, try 'N'  2-byte folded hashes
-if any collision exists, use 'F'  4-byte FNV-1a
+try ww=01  1-byte folded hashes
+if any collision exists, try ww=10  2-byte folded hashes
+if any collision exists, use ww=11  4-byte FNV-1a
 ```
 
 Small private tables may use 1-byte hashes. Larger shared tables may start at
@@ -106,8 +140,8 @@ Per-entry or per-bucket widening is possible later:
 
 ```text
 1-byte normal entry
-escape/flag + 'N' + 2-byte hash when the 8-bit key collides
-escape/flag + 'F' + 4-byte hash when the 16-bit key collides
+escape/control + ww=10 + 2-byte hash when the 8-bit key collides
+escape/control + ww=11 + 4-byte hash when the 16-bit key collides
 ```
 
 That form should be accepted only when the saved bytes beat the cost of the
@@ -197,7 +231,7 @@ that works with flash's normal `1 -> 0` programming rule.
 Q: Can a flash catalog record supersede a ROM command?
 
 A: Yes. The ROM command remains physically present. Lookup collects matching
-ROM and flash candidates, discards invalid/draft/dead records, then applies a
+ROM and flash candidates, discards invalid/unsealed/buried records, then applies a
 generation/version/provider policy. The newer committed flash `RREC` can win
 without mutating ROM.
 
@@ -386,8 +420,8 @@ could be:
 ```
 
 The `vv` bits are for parsing the record or table layout. They are not routine
-ABI version, catalog block generation, or "newest provider" selection. Those
-are separate fields or policies.
+contract version, catalog block generation, or "newest provider" selection.
+Those are separate fields or policies.
 
 ### Why Bit 7 Is Active Low
 
@@ -468,7 +502,7 @@ A scanner can then be simple:
 
 This is also the path for superseding ROM commands without rewriting ROM. ROM
 bytes remain physically present, but a newer flash `RREC` can export the same
-command name/hash/kind with a newer generation, ABI, or provider policy.
+command name/hash/kind with a newer generation, contract, or provider policy.
 
 Lookup should therefore collect candidates, not stop at the first match:
 
@@ -477,14 +511,14 @@ lookup command token
   compute canonical 32-bit FNV-1a
   scan ROM catalog records
   scan committed flash RCAT blocks
-  discard erased, draft, dead, or invalid records
+  discard erased, unsealed, buried, or invalid records
   collect matching hash/name/kind candidates
   apply generation/version/provider policy
   choose the best live candidate
 ```
 
 This does not delete or mutate the old ROM command. It supersedes it by lookup
-policy. If a stale/dead bit can be safely programmed in flash, it is a hint. It
+policy. If a buried/stale bit can be safely programmed in flash, it is a hint. It
 must not be required for correctness because ROM records may be immutable and a
 failed update may leave multiple candidates visible.
 
@@ -580,11 +614,9 @@ or directly:
 
 `powershell -NoProfile -ExecutionPolicy Bypass -File tools/gen_routine_hash_comments.ps1 -Src .`
 
-The generator updates every `; ROUTINE:` header under:
-
-- `SRC/STASH`
-- `SRC/TEST`
-- `SRC/SESH`
+The generator updates every selected `; ROUTINE:` header in the source lanes.
+Current docs present operational aliases such as `HIMON/`, `STR8/`, and `ROM/`
+instead of exposing old lane names in generated maps.
 
 ## Collision Check
 

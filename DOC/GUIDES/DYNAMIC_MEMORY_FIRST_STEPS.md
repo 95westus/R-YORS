@@ -8,7 +8,7 @@ implementation.
 
 - STR8 should not need general dynamic memory allocation. Recovery/update code
   wants fixed work areas, bounded buffers, and predictable failure behavior.
-- HIMON/Himonia-F does not need this yet. If dynamic allocation arrives there,
+- HIMON does not need this yet. If dynamic allocation arrives there,
   it should start as a small, documented service for session work, not as a
   hidden dependency in monitor hot paths.
 - User programs, assembler experiments, and future catalog/fixup staging are
@@ -244,9 +244,10 @@ meaning: the word value is treated as an address.
 ## The Zero-Page Bottleneck
 
 Heap memory should not live in zero page. Zero page is too small and too useful.
-The current HIMON map leaves `$00-$CC` free from the monitor's point of
-view while user code is running, but `$CD-$EF` and `$F0-$FF` are volatile
-service/parser scratch windows.
+The current HIMON policy leaves `$00-$AF` user/free while user code is running.
+`$B0-$CC` is reserved for future R-YORS/HIMON/THE/ASM zero-page expansion,
+especially active pointer lanes and addressing-mode workspace. `$CD-$EF` and
+`$F0-$FF` are volatile service/parser scratch windows.
 
 The important W65C02 rule is that indirect data-addressing pointer variables
 live in zero page:
@@ -267,11 +268,11 @@ operand. The usual pattern is:
 
 This is why a future allocator design must reserve not just heap RAM, but also
 a few zero-page lanes for active pointers and scratch. Those lanes must be part
-of the routine contract, especially across monitor or ABI calls.
+of the routine contract, especially across monitor service or fixed-entry calls.
 
 ## Where A First R-YORS Heap Belongs
 
-Do not silently claim a global heap in current HIMON/Himonia-F. The current RAM
+Do not silently claim a global heap in current HIMON. The current RAM
 map already gives strong ownership to monitor buffers, parser workspaces, flash
 helpers, vectors, and user areas.
 
@@ -375,7 +376,7 @@ fixed buffers and fixed work areas
 failure paths must be predictable
 ```
 
-For HIMON/Himonia-F:
+For HIMON:
 
 ```text
 not yet

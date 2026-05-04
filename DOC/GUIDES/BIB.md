@@ -1,21 +1,28 @@
 # R-YORS Bibliography
 
-This guide set uses the current `ror` workspace as its source corpus.
+This guide set uses the current `ror` workspace as its source corpus, but this
+bibliography lists only the operational source set.
 
-## Primary Internal Sources
+## Operational Internal Sources
 
 ```text
 README.md
 SRC/Makefile
-SRC/TEST/apps/himon/*.asm
-SRC/TEST/apps/rom-append-calc.asm
-SRC/TEST/test-flash.asm
-SRC/TEST/dev/*.asm
-SRC/TEST/ftdi/*.asm
-SRC/TEST/util/*.asm
-SRC/STASH/**/*.asm
-SRC/SESH/**/*.asm
+HIMON/himon.asm
+HIMON/*.inc
+HIMON/fnv1a-fold.asm
+STR8/str8.asm
+ROM/ftdi-backend-debug.asm
+ROM/ftdi/*.asm
+ROM/dev/*.asm
+ROM/util/*.asm
+SRC/STASH/ftdi/*.asm
+SRC/SESH/ftdi/*.asm
 ```
+
+The generated source-derived docs use this operational set. Legacy demos,
+harnesses, games, ACIA/PIA, and historical monitor experiments stay out of the
+bibliography/navigation layer.
 
 ## Guide Sources
 
@@ -26,9 +33,16 @@ DOC/GUIDES/INDEX.md
 DOC/GUIDES/TOC.md
 DOC/GUIDES/MAP.md
 DOC/GUIDES/DECISIONS.md
+DOC/GUIDES/QCC.md
+DOC/GUIDES/QCC_HASH.md
+DOC/GUIDES/QCC_FLASH.md
+DOC/GUIDES/QCC_ASM.md
+DOC/GUIDES/QCC_STR8.md
+DOC/GUIDES/QCC_MEMORY.md
 DOC/GUIDES/REF.md
 DOC/GUIDES/XREF.md
 DOC/GUIDES/CATALOG.md
+DOC/GUIDES/LIFE_RCAT_MEMBER.md
 DOC/GUIDES/MEMORY_MAP.md
 DOC/GUIDES/DYNAMIC_MEMORY_FIRST_STEPS.md
 DOC/GUIDES/SYMBOL_XREF.md
@@ -48,10 +62,17 @@ DOC/GUIDES/FUTURE.md
 ## Generated Source-Derived Docs
 
 ```text
+DOC/GENERATED/MAP_OF_MAPS.md
 DOC/GENERATED/CALL_ORDER.md
 DOC/GENERATED/ROUTINE_CONTRACTS.md
-DOC/GENERATED/ROUTINE_TREE.md
+DOC/GENERATED/HIMON_ROUTINE_TREE.md
 DOC/GENERATED/ROUTINE_CLASS_DIAGRAM.md
+DOC/GENERATED/ROUTINE_PREFIX_MAP.md
+DOC/GENERATED/HIMON_SUPPORT_MAP.md
+DOC/GENERATED/HIMON_COMMAND_MAP.md
+DOC/GENERATED/HASH_ROUTINE_MAP.md
+DOC/GENERATED/CMD_FLOW_MAP.md
+DOC/GENERATED/INTERRUPT_VECTOR_MAP.md
 DOC/GENERATED/ROUTINE_GRAPH_INSIGHTS.md
 DOC/GENERATED/ROUTINE_COMPONENTS.md
 ```
@@ -61,20 +82,26 @@ DOC/GENERATED/ROUTINE_COMPONENTS.md
 - Symbol relationships are derived from WDC-style `XDEF` and `XREF`
   declarations.
 - Symbol contract examples are seeded from `SRC/STASH/ftdi/ftdi-drv.asm`,
-  `SRC/TEST/dev/*.asm`, and `SRC/TEST/apps/himon/himon.asm`.
+  `ROM/dev/*.asm`, and `HIMON/himon.asm`.
 - Routine inventory is derived from `; ROUTINE:` comment blocks.
 - `CATALOG.md` is a programmer-facing selection view over that
   routine inventory.
-- `MEMORY_MAP.md` records current Himonia-F ROM/RAM ownership, compatibility
+- `LIFE_RCAT_MEMBER.md` uses `SRC/TEST/apps/life.asm` and
+  `SRC/BUILD/map/life.map` as a worked RCAT/RREC member example. LIFE remains
+  outside the operational generated call trees unless promoted later.
+- `MEMORY_MAP.md` records current HIMON ROM/RAM ownership, compatibility
   entries, vectors, and future STR8 placement direction.
 - `DYNAMIC_MEMORY_FIRST_STEPS.md` synthesizes the W65C02 allocation discussion
   with the current R-YORS memory map and zero-page rules.
 - Routine `[HASH:XXXXXXXX]` IDs are FNV-1a over canonical routine text.
-- Runtime command lookup in Himonia-F uses FNV-1a hashes over command text.
+- Runtime command lookup in HIMON uses FNV-1a hashes over command text.
 - `HIMON_MAP.md` is the readable HIMON map; `HIMON_EDGE_DUMP.md` is the raw
   direct-edge listing.
 - `HIMON_STAGES_CLASSES.md` reconstructs the Himon/Himonia/Himonia-F stage
   ladder and subsystem class families from current source plus guide evidence.
+- `QCC.md` defines Questions, Comments, Concerns as the working-note format for
+  unsettled design topics; `QCC_*.md` pages keep topic-specific what-ifs before
+  they graduate into `DECISIONS.md`.
 - STR8, hashed assembler, and banked catalog behavior are design notes until
   implemented.
 - External links may appear as background precedent notes, but the guide spine

@@ -1,0 +1,19 @@
+# Archived HIMON Branches
+
+This directory holds retired monitor branches that are kept for reference but
+are no longer active build or generated-documentation inputs.
+
+Active HIMON work is `SRC/TEST/apps/himon/himon.asm`.
+
+Archived here:
+
+- `himon-parent.asm`
+- `mon.asm`
+- `mon-cmd-*.inc`
+- `himonia.asm`
+- `himonia-f.asm`
+- `tools/*himonia*.ps1`
+
+The useful Himonia-F line has been folded back into `himon.asm`. When we say
+HIMON in current work, we mean that active file and its directly included
+support files.

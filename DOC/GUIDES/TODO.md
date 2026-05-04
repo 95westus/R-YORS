@@ -19,6 +19,14 @@
 - Define the exact `FIX` record bytes for RAM staging and direct flash patching.
 - Add a current guide generator only after the hand-maintained map stabilizes.
 
+## Very Possible
+
+- Add `TBE`, The Bit Engine, as a small W65C02S convenience/helper routine
+  family for setting, resetting, testing, and branching on bits. Keep RAM
+  helpers based on `TSB`/`TRB`/`SMB`/`RMB`/`BBS`/`BBR` separate from flash-safe
+  helpers, where clearing `1 -> 0` bits may be the only legal commit action
+  without erase.
+
 ## Source Follow-Ups
 
 - Re-run routine hash comments after any routine-header reshuffle.

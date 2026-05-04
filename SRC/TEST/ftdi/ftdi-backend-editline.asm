@@ -72,19 +72,19 @@ COR_FTDI_READ_CSTRING_EDIT_SILENT:
                         JMP             COR_FTDI_READ_CSTRING_EDIT_MODE
                         ENDMOD
 
-        MODULE COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER
-        XDEF COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER
+        MODULE COR_FTDI_READ_CSTRING_EDIT_ECHO_UPPER
+        XDEF COR_FTDI_READ_CSTRING_EDIT_ECHO_UPPER
                         XREF            COR_FTDI_READ_CSTRING_EDIT_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:680FEAD3]
+; ROUTINE: COR_FTDI_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:A24BABFD]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, ECHO, CARRY-STATUS, NOSTACK
 ; PURPOSE: Line-editor read wrapper (echo + force uppercase).
 ; IN : X/Y = destination pointer
 ; OUT: C=1, A=len on EOL completion; C=0, A=$FE on full buffer.
 ; ----------------------------------------------------------------------------
-COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER:
+COR_FTDI_READ_CSTRING_EDIT_ECHO_UPPER:
                         LDA             #$03
                         JMP             COR_FTDI_READ_CSTRING_EDIT_MODE
                         ENDMOD
@@ -467,8 +467,7 @@ COR_FTDI_READ_CSTRING_EDIT_MODE:
                         LDA             #$0A
                         JSR             COR_FTDI_WRITE_CHAR
 ?GCE_NO_ECHO_EOL:
-                        PLA
-                        TAX
+                        PLX
                         JSR             COR_FTDI_POLL_CHAR
                         BCC             ?GCE_TERM_OK
                         JSR             COR_FTDI_READ_CHAR

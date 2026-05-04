@@ -24,7 +24,8 @@ R-YORS -> STR8 -> HIMON -> THE -> onboard ASM/catalog linking
 
 - `STR8` is the recovery/update guard.
 - `HIMON` is the monitor/debug/catalog environment.
-- `THE` is The Hash Engine: FNV-1a hash-first lookup for names and records.
+- `THE` is The Hash Environment: FNV-1a hash-first lookup, catalog records,
+  resolver policy, and typed display. It is not the whole runtime.
 - `ASM` is the planned onboard assembler path.
 
 This repo is meant to feel like a machine binder: source, generated listings,
@@ -58,8 +59,11 @@ canonical text -> FNV-1a -> hash0,hash1,hash2,hash3 -> typed record/payload
 - Hash constants: offset basis `$811C9DC5`, prime `$01000193`.
 - Persistent storage is little-endian: displayed `$89ABCDEF` is stored as
   `EF,CD,AB,89`.
-- Current Himonia-F command records use:
-  `'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...`
+- Folded 8-bit and 16-bit FNV-1a helper results will be available for compact
+  tables; 32-bit FNV-1a remains the canonical hash.
+- Current HIMON command records use:
+  `'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...`
+  where `kind=$00` enters code at record offset `+8`.
 - Routine comments carry stable IDs like `[HASH:49023C1B]`, generated from the
   canonical uppercase routine name.
 - Future catalog records keep the same `hash0..3` field for commands,
@@ -69,6 +73,9 @@ The hash narrows the search; the surrounding typed record gives the match its
 meaning, and stored/proof text can disambiguate collisions when records become
 writable or user-created. Start with [DOC/GUIDES/HASH.md](DOC/GUIDES/HASH.md)
 and [DOC/GUIDES/HASH_MAP.md](DOC/GUIDES/HASH_MAP.md) for the full schema.
+Terminology such as FNV-1a, hash32/hash16/hash8, signature, control byte,
+kind, Record, RREC, contract, bank, sector, and condense is defined in
+[DOC/GUIDES/GLOSSARY.md](DOC/GUIDES/GLOSSARY.md).
 
 ## Safety
 
@@ -87,6 +94,7 @@ Start here:
 - [DOC/GUIDES/TOC.md](DOC/GUIDES/TOC.md) - recommended reading order.
 - [DOC/GUIDES/DECISIONS.md](DOC/GUIDES/DECISIONS.md) - settled calls.
 - [DOC/GUIDES/REF.md](DOC/GUIDES/REF.md) - quick reference.
+- [DOC/GUIDES/GLOSSARY.md](DOC/GUIDES/GLOSSARY.md) - terminology contract.
 
 Core binders:
 
@@ -103,13 +111,18 @@ Scratchpad: [DOC/IDEAS.md](DOC/IDEAS.md)
 ## Deck Map
 
 ```text
-SRC/TEST    current bring-up, monitor, apps, device tests
+HIMON/      current monitor source alias
+STR8/       current recovery/update source alias
+ROM/        current ROM support source alias
 SRC/STASH   parked or earlier source lines
 SRC/SESH    session/experiment lane
 SRC/tools   doc, ROM, and build helpers
 DOC/        manuals, maps, design notes, generated reports
 LOCAL/      ignored local source homes, when present
 ```
+
+The aliases above are the documentation roles; physical source paths are tracked
+in [DOC/GUIDES/GLOSSARY.md](DOC/GUIDES/GLOSSARY.md) and generated docs.
 
 ## Build
 
@@ -119,6 +132,11 @@ make release
 
 Regenerates source-derived docs, builds the tracked release set, and stamps the
 HIMON ROM binary.
+
+Generated burnable ROM `.bin` files are full 128K flash images. The bootable
+HIMON bank is bank 3, so HIMON `START` at CPU `$D000` appears at file offset
+`$1D000`, and the reset vector appears at the tail of the file. The build check
+verifies that vector and reset-target code before release.
 
 ```text
 make release-local

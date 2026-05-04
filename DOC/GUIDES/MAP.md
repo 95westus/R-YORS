@@ -6,15 +6,18 @@ This is the map for the guide set inside `ror`.
 
 ```text
 DOC/INDEX.md
+  -> DOC/GENERATED/MAP_OF_MAPS.md
   -> DOC/GUIDES/INDEX.md
      -> TOC.md
      -> MAP.md
      -> DECISIONS.md
+     -> QCC.md
      -> BRINGUP.md
      -> HIMON_STAGES_CLASSES.md
      -> REF.md
      -> XREF.md
      -> CATALOG.md
+     -> LIFE_RCAT_MEMBER.md
      -> MEMORY_MAP.md
      -> DYNAMIC_MEMORY_FIRST_STEPS.md
      -> SYMBOL_XREF.md
@@ -33,6 +36,11 @@ Decisions
   records settled calls before details sprawl into guide debate
   prevents reopening hash, naming, STR8, ASM, and doc-shape decisions
 
+QCC
+  records Questions, Comments, and Concerns before they become decisions
+  keeps what-if design notes visible without making them settled spec
+  splits active topics into hash, flash, ASM, STR8, and memory QCC pages
+
 STR8
   keeps recovery/update safe
   hands normal operation to HIMON
@@ -41,14 +49,14 @@ HIMON
   provides the monitor, command dispatch, assembler, catalog lookup,
   and debug tools
 
-Himonia-F
-  current implementation path toward HIMON
+HIMON
+  current monitor implementation path
   owns normal monitor interaction
   hashes command tokens
   dispatches to command records
 
 HIMON Stages And Classes
-  reconstructs Himon/Himonia/Himonia-F stages from source and guides
+  reconstructs the historical Himon/Himonia/Himonia-F stages from source and guides
   explains routine-class families such as CMD, CMD_HASH, MON, HIM, ASM, DIS,
   DBG, L, FNV1A, MATH, ABI, and future MEM
 
@@ -81,10 +89,37 @@ Catalog
   may store compressed command/routine text
   becomes the bridge between assembler output and runtime lookup
 
+Life RCAT Member
+  uses standalone LIFE as a worked example for an RCAT-visible member
+  separates RBODY bytes, RREC export records, imports, entry contracts,
+  zero-page needs, RAM needs, and NMI vector behavior
+  keeps LIFE out of generated HIMON call trees while still using it to test
+  catalog vocabulary
+
+QCC Flash
+  records the proposed FSB lifecycle for formed, sealed, and buried records
+  discusses condense/compress triggers, purge classes, and flash-safe ownership
+
+QCC Hash
+  records 1/2/4 byte hash-width questions, folded FNV-1a helpers, and compact
+  signature concerns
+
+QCC ASM
+  records hash-first assembler questions about labels, fixups, symbol text, and
+  sealed output
+
+QCC STR8
+  records STR8 ownership questions around scanning, recovery/update boundaries,
+  and future STRAIGHTEN behavior
+
+QCC Memory
+  records RAM/IO/flash range questions, 4K sector selectors, allocation scope,
+  and TBE bit-helper direction
+
 Symbol Ref/Xref/XXref
   records routine contracts, source locations, FNV hashes, and ABI details
   classifies current and future symbols with reusable semantic tokens
-  gives Himonia-F a compact call tree separate from full generated edge dumps
+  gives HIMON a compact call tree separate from full generated edge dumps
 
 Catalog
   groups callable routines by programmer need: read, write, string, hex, hash,
@@ -93,9 +128,9 @@ Catalog
   compact enough to answer "what routine do I call?"
 
 Memory Map
-  records current Himonia-F ROM and RAM address ownership
+  records current HIMON ROM and RAM address ownership
   identifies user flash, monitor code/data, ABI entries, vectors, and gaps
-  distinguishes the current Himonia-F image from the future STR8/HIMON split
+  distinguishes the current HIMON image from the future STR8/HIMON split
 
 Dynamic Memory First Steps
   explains byte, word, and pointer allocation as byte reservations
@@ -110,6 +145,15 @@ HIMON Map
 HIMON Edge Dump
   lists direct `JSR` and `JMP` sites from the current HIMON source
   preserves raw line-number edges separately from compact call-tree diagrams
+
+Generated Interrupt Vector Map
+  maps current RESET, NMI, IRQ, and BRK trampoline paths
+  shows RAM vector patch cells, monitor trap install, BRK split, and RTI resume
+
+Generated Map Of Maps
+  acts as the atlas for guide maps and source-derived maps
+  answers which map to open for command flow, hash flow, HIMON calls, support
+  layers, memory ranges, and document navigation
 ```
 
 Short form:
@@ -125,19 +169,29 @@ and debug tools.
 ## Source Map
 
 ```text
-SRC/TEST/apps/himon/
-  himon.asm
-  himon-parent.asm
-  mon.asm
-  mon-cmd-*.inc
-  himonia.asm
-  himonia-f.asm
-  fnv1a-hbstr.asm
+Current operational source used by generated routine docs:
 
-SRC/TEST/apps/
-  rom-append-calc.asm
-  life.asm
-  microchess.asm
+HIMON/
+  himon.asm
+  himon-shared-eq.inc
+  himonia-asm.inc
+  himonia-bootlog.inc
+  himonia-debug.inc
+  himonia-disasm.inc
+  fnv1a-fold.asm
+
+STR8/
+  str8.asm
+
+SRC/STASH/ftdi/
+SRC/SESH/ftdi/
+ROM/ftdi-backend-debug.asm
+ROM/ftdi/
+ROM/dev/
+ROM/util/
+
+Legacy demos, harnesses, games, ACIA/PIA, and historical monitor experiments
+are outside the generated operational maps.
 
 LOCAL/
   basic-programs/*.BAS
@@ -147,20 +201,6 @@ LOCAL/
   msbasic/generated/osi-basic.asm
   wdcmonv2/
   s3x/
-
-SRC/TEST/
-  test-flash.asm
-  ftdi/
-  dev/
-  util/
-  pia/
-  acia/
-
-SRC/STASH/
-  promoted/stable lane
-
-SRC/SESH/
-  session/WIP lane
 ```
 
 ## Mermaid View
@@ -168,8 +208,10 @@ SRC/SESH/
 ```mermaid
 flowchart TD
     IDX[INDEX] --> TOC[TOC]
+    IDX --> MOM[GENERATED/MAP_OF_MAPS]
     IDX --> MAP[MAP]
     IDX --> DEC[DECISIONS]
+    IDX --> QCC[QCC]
     IDX --> HSTAGE[HIMON_STAGES_CLASSES]
     IDX --> REF[REF]
     IDX --> XREF[XREF]
@@ -183,14 +225,30 @@ flowchart TD
 
     MAP --> HIST[HISTORICAL_DOCUMENTS]
     MAP --> DEC
+    MAP --> QCC
     HIST --> HSTAGE
     HSTAGE --> HMAP2
     MAP --> STR8[STR8]
     MAP --> HASM[HASHED_ASM]
     MAP --> HMAP[HASH_MAP]
+    QCC --> QHASH[QCC_HASH]
+    QCC --> QFLASH[QCC_FLASH]
+    QCC --> QASM[QCC_ASM]
+    QCC --> QSTR8[QCC_STR8]
+    QCC --> QMEM[QCC_MEMORY]
+    QHASH --> HMAP
+    QFLASH --> STR8
+    QFLASH --> HMAP
+    QASM --> HASM
+    QSTR8 --> STR8
+    QMEM --> MEM
     MAP --> SYMX
     MAP --> HMAP2
     MAP --> HEDGE
+    MOM --> HMAP2
+    MOM --> HMAP
+    MOM --> MEM
+    MOM --> HASM
 
     HIST --> STR8
     HIST --> HASM
@@ -213,6 +271,9 @@ flowchart TD
   `RTS` echo.
 - `DECISIONS.md` is the settled-call list. Check it before reopening design
   alternatives.
+- `QCC.md` and `QCC_*.md` are Questions, Comments, Concerns working notes.
+  They preserve active design thinking without making it settled spec.
+- Settled QCC answers should move into `DECISIONS.md`.
 - The older recovery-guide name is retired; use `STR8`.
 - `HASH.md` covers routine header IDs and their relationship to FNV-1a.
 - `HASH_MAP.md` covers all hash meanings and where they connect.

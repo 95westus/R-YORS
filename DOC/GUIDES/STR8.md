@@ -8,7 +8,10 @@ repair/normalization path once the small recovery anchor has proved itself.
 That name is a direction, not a promise that the first STR8 must own every
 system policy.
 
-STR8 is the protected recovery/update monitor for Himonia-F/Himon. It is not
+Terms such as bank, sector, segment, protected window, owns, uses, requests,
+contract, buried, gone, and condense follow [GLOSSARY.md](./GLOSSARY.md).
+
+STR8 is the protected recovery/update monitor for HIMON. It is not
 just a crash handler and not just a flash writer. It keeps the machine on a
 known-good path while code, routines, data, and banks are being changed.
 
@@ -86,8 +89,8 @@ $F400-$FFFF  3K protected STR8 window
 $F200-$FFFF  3.5K protected STR8 window
 $F000-$FFFF  4K protected STR8 window, only if STR8 needs the whole sector
 
-$FFF0-$FFF8  one-time flash board/version/config bytes, inside the window
-$FFF9-$FFFF  vector tail; W65C02 hardware vectors are $FFFA-$FFFF
+$FFF0-$FFF9  one-time flash board/version/config bytes, inside the window
+$FFFA-$FFFF  W65C02 hardware vector block
 ```
 
 Protected-window bytes are flashed through a separate install/self-update path.
@@ -102,9 +105,10 @@ verify by read-back.
 
 V0 restore still reasons about complete `$8000-$FFFF` ROM images as sources,
 but the bank 3 write path skips the selected STR8 protected window unless the
-operator explicitly requests a STR8 install/update. The `$FFF0-$FFF8` bytes are
+operator explicitly requests a STR8 install/update. The `$FFF0-$FFF9` bytes are
 reserved for one-time flash data such as board id, version, and config
-information. The final hardware vector bytes are the W65C02 vector table:
+information. They can be patched only by clearing bits until the top sector is
+erased/rebuilt. The final hardware vector bytes are the W65C02 vector table:
 
 ```text
 $FFFA-$FFFB  NMI
@@ -163,7 +167,7 @@ STR8 ignores or clears HIMON-installed handlers
 STR8 routes traps to minimal recovery handlers
 ```
 
-So yes: Himonia-F/HIMON controls practical trap handling in V0. Later
+So yes: HIMON controls practical trap handling in V0. Later
 STR8-N/STRAIGHTEN can offer a recovery-safe vector path for systems that choose
 it. Systems that already own interrupts can still use STR8 routines directly and
 keep their own policy.
@@ -223,8 +227,8 @@ protected STR8 window starts at $FC00, $FA00, $F800, $F600, $F400, $F200, or $F0
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data/recovery lives from selected start through $FFEF
-one-time board/version/config window is $FFF0-$FFF8
-vector tail starts at $FFF9; hardware vectors live at $FFFA-$FFFF
+one-time board/version/config window is $FFF0-$FFF9
+hardware vector block is $FFFA-$FFFF
 V0 uses whole 32K ROM bank images as recovery and backup sources
 V0 HIMON controls IRQ/vector behavior
 V0 has no FNV/catalog lookup
@@ -254,8 +258,8 @@ STR8 may use FNV once that direction becomes real.
 
 ## Boot Relationship
 
-Current prototypes may boot directly into Himonia-F. The proposed R-YORS/STR8
-path boots through STR8 first, then hands normal operation to HIMON/Himonia-F
+Current prototypes may boot directly into HIMON. The proposed R-YORS/STR8
+path boots through STR8 first, then hands normal operation to HIMON
 after a small validity check.
 
 At boot, STR8 should be able to:
@@ -284,7 +288,7 @@ This bridge is a future option, not a committed STR8 V0 feature. It may never
 be implemented, or its final form may have more or fewer features than this
 sketch depending on what the board and installer actually need.
 
-This is not the normal path for a board that already has Himonia-F/R-YORS
+This is not the normal path for a board that already has R-YORS/HIMON
 flashed and running. It is a first-install ramp for a fresh board.
 
 Working shape:
@@ -314,7 +318,7 @@ board/ROM signature
 reset/NMI/IRQ jump trampolines
 documented cold-start routine
 small board I/O initialization
-minimal FTDI/serial byte API
+minimal FTDI/serial byte contract
 known load/link address
 single-purpose reflash flow
 ```
@@ -421,13 +425,13 @@ flowchart LR
     TOP[$F000-$FFFF physical 4K top sector]
     FREE[usable top-sector bytes below selected STR8 start]
     STR8CODE[$FC00/$FA00/...-$FFEF STR8 body]
-    FLASH9[$FFF0-$FFF8 one-time board/version/config]
-    VECTORS[$FFF9-$FFFF vector tail]
+    FLASH10[$FFF0-$FFF9 one-time board/version/config]
+    VECTORS[$FFFA-$FFFF vector block]
 
     GROWTH -->|normal HIMON body, apps, packs, data| HIMONBODY[mutable by guarded update]
     TOP --> FREE
     TOP --> STR8CODE
-    TOP --> FLASH9
+    TOP --> FLASH10
     TOP --> VECTORS
     FREE -->|read/stage/erase/write full sector| HIMONBODY
     STR8CODE -->|selected STR8 protected window| ANCHOR[protected STR8]

@@ -1,23 +1,23 @@
 # R-YORS Memory Map
 
-This is the easy-to-find memory map for the current Himonia-F ROM build and
+This is the easy-to-find memory map for the current HIMON ROM build and
 the RAM workspace it uses.
 
 The map below is definitive for the current generated `himon-rom` image.
 It is not the final STR8/HIMON split. STR8 may later own the highest recovery
 region and hand normal operation to HIMON.
 
-## Current Himonia-F ROM Image
+## Current HIMON ROM Image
 
 Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$CFFF   user flash/load region for L F
-$D000-$EDC4   Himonia-F CODE, START/RESET entry at $D000
-$EDC5-$EF22   Himonia-F DATA
+$D000-$EDC4   HIMON CODE, START/RESET entry at $D000
+$EDC5-$EF22   HIMON DATA
 $EF23-$F3D0   current image gap, compatibility trampolines, and data tail
-$F3D1-$F4CC   Himonia-F boot telemetry routine and strings
-$F4CD-$FFF9   current image gap and compatibility trampolines
+$F3D1-$F4CC   HIMON boot telemetry routine and strings
+$F4CD-$FFF9   current image gap, compatibility trampolines, and patch pocket
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -25,7 +25,7 @@ The current HIMON compatibility trampolines describe loaded-language support in
 the existing image, not STR8's call surface. STR8 V0 should call `BIO_*`
 directly and should not reserve cute fixed entry addresses.
 
-Current ROM vector tail:
+Current ROM hardware vectors:
 
 ```text
 $FFFA-$FFFB   NMI   = $EB3A
@@ -33,14 +33,19 @@ $FFFC-$FFFD   RESET = $D000
 $FFFE-$FFFF   IRQ   = $EB3D
 ```
 
+Generated burnable ROM `.bin` files are full 128K flash images. The current
+bootable HIMON image is bank 3, so this CPU view appears at file offset
+`$18000-$1FFFF`. HIMON `START` at CPU `$D000` appears at file offset `$1D000`;
+the hardware vectors appear at the tail of the file.
+
 ## Current Flash Policy
 
-Himonia-F treats flash as `$8000-$FFFF`, but the current `L F` writer only
+HIMON treats flash as `$8000-$FFFF`, but the current `L F` writer only
 allows blank-byte writes in the user flash area:
 
 ```text
 $8000-$CFFF   allowed for current L F blank-write loads
-$D000-$FFFF   protected Himonia-F, compatibility entries, tables, gaps, and vectors
+$D000-$FFFF   protected HIMON, compatibility entries, tables, gaps, and vectors
 ```
 
 Current `L F` behavior:
@@ -51,7 +56,7 @@ target $8000-$CFFF   allowed only if old byte is $FF
 target $D000+        protected
 ```
 
-There is no sector erase/condense path in the current Himonia-F image. STR8 is
+There is no sector erase/condense path in the current HIMON image. STR8 is
 the planned recovery/update owner for safer erase, rewrite, verify, and commit
 flows.
 
@@ -68,7 +73,8 @@ $8000-$FFFF   flash
 Current RAM ownership:
 
 ```text
-$0000-$00CC   zero page not claimed by current Himonia-F ROM map
+$0000-$00AF   zero page user/free while running
+$00B0-$00CC   reserved R-YORS/HIMON/THE/ASM ZP expansion
 $00CD-$00D9   flash helper workspace, active during flash operations
 $00DA-$00DC   reserved expansion bytes inside flash/extended ZP window
 $00DD-$00DF   bank/length sideband bytes, reserved shared ZP
@@ -76,7 +82,7 @@ $00E0-$00E5   shared 16-bit parameter lanes; $E0-$E1 also command hash pointer
 $00E6-$00E7   shared utility temp/scratch bytes
 $00E8-$00EF   shared pointer/length/flags/mode lane for FTDI/SYS/string helpers
 $00F0-$00FF   monitor/parser hot zero-page window
-$0100-$01FF   hardware stack; Himonia-F owns this on monitor entry
+$0100-$01FF   hardware stack; HIMON owns this on monitor entry
 $0300-$12FF   reserved low 4K area, no live allocations
 $1300-$13FF   flash transient / RAM worker page
 $1400-$1FFF   system scratch and transient metadata
@@ -112,7 +118,9 @@ $7EFE-$7EFF   IRQ non-BRK vector target
 Current zero-page detail:
 
 ```text
-$00-$CC   free/unclaimed by Himonia-F; user code may use while running
+$00-$AF   user/free while running
+$B0-$CC   reserved for future R-YORS/HIMON/THE/ASM zero-page expansion;
+          possible active pointer lanes and addressing-mode workspace
 
 $CD        FLASH_ADDR_LO
 $CE        FLASH_ADDR_HI
@@ -171,14 +179,17 @@ $FF        CMDP_PTR_HI
 Zero-page rule of thumb:
 
 ```text
-$00-$CC   free from Himonia-F's point of view
-$CD-$EF   shared low-level service scratch; volatile across monitor/SYS/BIO calls
-$F0-$FF   Himonia-F command/parser scratch; volatile across monitor commands
+$00-$AF   user/free from HIMON's point of view, 176 bytes
+$B0-$CC   reserved future R-YORS workspace, 29 bytes; user code should not rely on it
+$CD-$EF   shared low-level service scratch, 35 bytes; volatile across monitor/SYS/BIO calls
+$F0-$FF   HIMON command/parser scratch, 16 bytes; volatile across monitor commands
 ```
 
-User programs can use free zero page while running, but callable monitor/ABI
-services may clobber the service and parser scratch windows unless their routine
-contract says otherwise.
+User programs can use `$00-$AF` while running. `$B0-$FF` is reserved or
+volatile across monitor/fixed-entry services unless the called routine contract
+says otherwise. That leaves 80 bytes reserved-or-volatile above the user ZP
+line. The current live HIMON service/parser scratch is `$CD-$FF`; `$B0-$CC` is
+being held back for future pointer lanes and addressing-mode helpers.
 
 ## RAM-Load Build Note
 
@@ -187,13 +198,13 @@ authoritative flash image map. The current ROM memory map should be taken from:
 
 ```text
 SRC/BUILD/map/himon-rom.map
-SRC/TEST/apps/himon/himon.asm
-SRC/TEST/apps/himon/himon-shared-eq.inc
+HIMON/himon.asm
+HIMON/himon-shared-eq.inc
 ```
 
 ## STR8 Direction
 
-Current Himonia-F owns `$D000-$FFFF` in the ROM image. The future STR8 recovery
+Current HIMON owns `$D000-$FFFF` in the ROM image. The future STR8 recovery
 monitor is expected to live in bank 3's `$F000-$FFFF` top-ROM erase sector with
 the hardware vectors, but the policy-protected STR8 window should be only as
 large as the final code requires.
@@ -210,11 +221,14 @@ $F400-$FFFF  3K protected STR8 window
 $F200-$FFFF  3.5K protected STR8 window
 $F000-$FFFF  4K protected STR8 window, only if needed
 
-$FFF0-$FFF8  one-time flash board/version/config bytes, inside the window
-$FFF9-$FFFF  vector tail; W65C02 hardware vectors are $FFFA-$FFFF
+$FFF0-$FFF9  one-time flash board/version/config bytes, inside the window
+$FFFA-$FFFF  W65C02 hardware vector block
 ```
 
 Bytes below the chosen STR8 start are usable, but changing any byte in
 `$F000-$FFFF` still requires read/stage/erase/full-sector-write/verify.
+The `$FFF0-$FFF9` pocket is patchable only in the flash sense: after erase,
+programming may clear bits from `1` to `0`, but changing cleared bits back to
+`1` requires another top-sector erase/rewrite.
 
-That future split is a design direction, not the current Himonia-F ROM map.
+That future split is a design direction, not the current HIMON ROM map.

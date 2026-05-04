@@ -35,9 +35,9 @@
 ; -------------------------------------------------------------------------
 
 
-                        MODULE          COR_FTDI_CVN_WRITE_LINE_RTL_XY
+                        MODULE          COR_FTDI_WRITE_LINE_RTL_XY
 
-                        XDEF            COR_FTDI_CVN_WRITE_LINE_RTL_XY
+                        XDEF            COR_FTDI_WRITE_LINE_RTL_XY
                         XREF            COR_FTDI_WRITE_CHAR
                         XREF            COR_FTDI_WRITE_CRLF
 
@@ -46,7 +46,7 @@ FTDI_WRTL_PTR_HI           EQU             $E9
 FTDI_WRTL_LEN              EQU             $EA
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_WRITE_LINE_RTL_XY  [HASH:8D4A111F]
+; ROUTINE: COR_FTDI_WRITE_LINE_RTL_XY  [HASH:BAC93F5D]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, NUL-TERM, CRLF, CARRY-STATUS, USES-ZP, NO-RAM,
 ;   CALLS_COR, STACK
@@ -62,7 +62,7 @@ FTDI_WRTL_LEN              EQU             $EA
 ; - At NUL terminator, backfills from right to left:
 ; - Limits scan to 255 chars; returns C=0 if no NUL found before wrap.
 ; ----------------------------------------------------------------------------
-COR_FTDI_CVN_WRITE_LINE_RTL_XY:
+COR_FTDI_WRITE_LINE_RTL_XY:
                         STX             FTDI_WRTL_PTR_LO
                         STY             FTDI_WRTL_PTR_HI
                         LDY             #$00

@@ -1,6 +1,6 @@
 # HIMON Edge Dump
 
-Generated-style edge dump for `SRC/TEST/apps/himon/himon.asm`.
+Generated-style edge dump for `HIMON/himon.asm`.
 
 For the readable subsystem/capability view, see
 [HIMON_MAP.md](./HIMON_MAP.md).
@@ -10,7 +10,7 @@ Scope: direct `JSR target` and `JMP target` edges only. Relative branches, fallt
 ## Summary
 
 ```text
-source file:     SRC/TEST/apps/himon/himon.asm
+source file:     HIMON/himon.asm
 global labels:   356
 raw call sites:  437
 unique edges:    362

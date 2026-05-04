@@ -2,7 +2,7 @@
 
 ## Architecture Direction
 
-- Keep Himonia-F hash dispatch small and inspectable.
+- Keep HIMON hash dispatch small and inspectable.
 - Make STR8 the flash recovery/update boundary instead of scattering flash
   mutation policy across normal monitor commands.
 - Treat bank 3 `$F000-$FFFF` as the physical top erase sector, but protect only
@@ -32,7 +32,7 @@
   documentation, not a modern language wearing an RPG name.
 - Near-term work should keep producing useful standalone runtime pieces even
   before an RPG II compiler exists.
-- Avoid adding RPG-specific complexity to STR8 V0 or the current Himonia-F
+- Avoid adding RPG-specific complexity to STR8 V0 or the current HIMON
   monitor unless that same work also improves recovery, cataloging, assembly,
   loading, or routine reuse.
 
@@ -41,7 +41,7 @@
 - Support a WDCMONv2-to-R-YORS installation bridge for boards that already boot
   the current WDC monitor.
 - This is mainly for a new WDC board owner, not for a board that already has
-  Himonia-F/R-YORS flashed and running.
+  R-YORS/HIMON flashed and running.
 - The bridge should use the WDCMONv2 style of loading and starting code because
   that is what a fresh board already has. After it starts, the bridge converts
   the flash layout to R-YORS/STR8/HIMON.

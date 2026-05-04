@@ -457,54 +457,6 @@ COR_FTDI_WRITE_BYTES_AXY:
                         RTS
                         ENDMOD
 
-                        MODULE          COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF
-
-                        XDEF            COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF
-                        XREF            COR_FTDI_WRITE_CHAR_PLUS_CRLF
-
-; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF  [HASH:E664F47D]
-; TIER: BACKEND-L2
-; TAGS: COR, BACKEND-L2, WRITE, CRLF, PRESERVE-A, CARRY-STATUS, NO-ZP,
-;   NO-RAM, CALLS_COR, NOSTACK
-; MEM : ZP: none; FIXED_RAM: none.
-; PURPOSE: Convenience wrapper for blocking payload-plus-CRLF output.
-; IN : A = payload byte
-; OUT: C = 1 on full sequence success, C = 0 on write failure
-;      A preserved
-; EXCEPTIONS/NOTES:
-; - Delegates to `COR_FTDI_WRITE_CHAR_PLUS_CRLF`.
-; - `CVN_*` routines are opinionated sequence helpers.
-; ----------------------------------------------------------------------------
-COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF:
-                        JSR             COR_FTDI_WRITE_CHAR_PLUS_CRLF
-                        RTS
-                        ENDMOD
-
-                        MODULE          COR_FTDI_CVN_WRITE_BYTES_AXY
-
-                        XDEF            COR_FTDI_CVN_WRITE_BYTES_AXY
-                        XREF            COR_FTDI_WRITE_BYTES_AXY
-
-; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_WRITE_BYTES_AXY  [HASH:90CA47C8]
-; TIER: BACKEND-L2
-; TAGS: COR, BACKEND-L2, WRITE, PRESERVE-XY, CARRY-STATUS, NO-ZP, NO-RAM,
-;   CALLS_COR, NOSTACK
-; MEM : ZP: none; FIXED_RAM: none.
-; PURPOSE: Convenience wrapper for blocking 3-byte A/X/Y sequence output.
-; IN : A = payload byte, X = byte1, Y = byte2
-; OUT: C = 1 on full sequence success, C = 0 on write failure
-;      A/X/Y preserved
-; EXCEPTIONS/NOTES:
-; - Delegates to `COR_FTDI_WRITE_BYTES_AXY`.
-; - `CVN_*` routines are opinionated sequence helpers.
-; ----------------------------------------------------------------------------
-COR_FTDI_CVN_WRITE_BYTES_AXY:
-                        JSR             COR_FTDI_WRITE_BYTES_AXY
-                        RTS
-                        ENDMOD
-
                         MODULE          COR_FTDI_WRITE_HEX_BYTE
 
                         XDEF            COR_FTDI_WRITE_HEX_BYTE

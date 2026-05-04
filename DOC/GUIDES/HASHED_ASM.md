@@ -1,8 +1,8 @@
 # Hashed Assembler Notes
 
-This document captures a possible Himonia direction:
+This document captures a possible HIMON direction:
 
-`A` grows from a one-line numeric assembler into a tiny onboard assembler that can resolve names through the same hash-first idea used by Himonia command dispatch.
+`A` grows from a one-line numeric assembler into a tiny onboard assembler that can resolve names through the same hash-first idea used by HIMON command dispatch.
 
 The short version:
 
@@ -28,7 +28,7 @@ The goal is to keep the system self-hosting-friendly:
 - add named commands without an external linker
 - refer to routines by stable names instead of fixed addresses
 - support forward labels without requiring a full object format
-- stay close to Himonia's "routines of routines" shape
+- stay close to HIMON's "routines of routines" shape
 
 This is not meant to replace a full WDC toolchain immediately. It is a small monitor-local resolver wrapped around the existing `A` assembler path.
 
@@ -40,7 +40,7 @@ Parts of it have absolutely been done before.
 - Object formats such as ELF use symbol tables plus relocation records to connect symbolic references with definitions.
 - ELF also has a symbol hash table for faster symbol lookup during dynamic linking.
 
-The unusual Himonia part is the combination:
+The unusual HIMON part is the combination:
 
 ```text
 small 65C02 monitor
@@ -225,7 +225,7 @@ mnemonics are reserved words
 
 This section describes the assembler as both a command path and a reusable
 backend. It is intentionally written as a working thesis: small enough for
-Himonia-F, but shaped so it can later support onboard-built routines.
+HIMON, but shaped so it can later support onboard-built routines.
 
 ### Thesis
 
@@ -865,7 +865,7 @@ Proposal, not a committed binary format:
 SYM record:
   sig0        ; "S"
   sig1        ; "Y"
-  sig2        ; "M" with high bit, or another Himonia-style signature
+  sig2        ; "M" with high bit, or another HIMON-style signature
   hash0
   hash1
   hash2
@@ -1587,7 +1587,7 @@ hash matches?
 
 If two hash-only records collide, the system cannot know which was intended. That is why name bytes are worth having for user-created symbols, even if built-in command records stay compact.
 
-## Relationship To Himonia Command Dispatch
+## Relationship To HIMON Command Dispatch
 
 The command table already makes this idea feel natural:
 

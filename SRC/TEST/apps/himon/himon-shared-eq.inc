@@ -1,6 +1,13 @@
 ; ----------------------------------------------------------------------------
-; Shared fixed-address workspace/constants for Himonia monitor builds.
+; Shared fixed-address workspace/constants for HIMON monitor builds.
 ; Grouped by usage and packed to coalesce low free space.
+; ----------------------------------------------------------------------------
+
+; Zero-page policy:
+; - $00-$AF user/free while running (176 bytes)
+; - $B0-$CC reserved R-YORS/HIMON/THE/ASM ZP expansion (29 bytes)
+; - $CD-$EF shared service/flash/SYS/BIO/utility scratch (35 bytes)
+; - $F0-$FF HIMON command/parser scratch (16 bytes)
 ; ----------------------------------------------------------------------------
 
 ; ----------------------------------------------------------------------------

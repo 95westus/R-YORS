@@ -30,8 +30,12 @@ and debug tools.
 - Future STR8 may grow into `STR8-N`, read as `STRAIGHTEN`, after the small
   recovery anchor proves itself. That future name means richer repair and
   normalization capability, not mandatory ownership of every system policy.
-- Himonia-F is the current implementation path that will become `HIMON`.
-- `HIMON` is the final monitor/debug/catalog/assembler environment name.
+- `HIMON` is the active monitor/debug/catalog/assembler environment name.
+- `THE` is The Hash Environment: hash-first lookup, catalog records, resolver
+  policy, aliases, and typed display. HIMON's dispatcher may use THE, but THE
+  is not the whole runtime and not arbitrary command execution.
+- Himonia-F is historical/archived branch vocabulary that has folded back into
+  HIMON.
 - Do not treat Himonia-F and HIMON as permanently separate products.
 
 ## STR8 Ownership
@@ -79,7 +83,7 @@ and debug tools.
 
 ## Stack And Trap Policy
 
-- Himonia-F/HIMON owns the hardware stack on monitor entry.
+- HIMON owns the hardware stack on monitor entry.
 - NMI, BRK, IRQ, reset, and recovery paths must assume monitor ownership of the
   real 6502 stack.
 - Userland stack behavior belongs behind explicit routines, software stacks,
@@ -94,6 +98,8 @@ and debug tools.
 
 - If HIMON eventually uses dynamic memory, allocation belongs behind a `MEM_*`
   memory-management layer.
+- Current user-stable zero page ends at `$AF`. `$B0-$CC` is reserved for future
+  R-YORS/HIMON/THE/ASM pointer lanes and addressing-mode workspace.
 - `MEM_*` owns RAM range policy, zero-page pointer lanes, bump allocation,
   mark/release allocation, fixed pools, and any later free-list heap.
 - `MEM_*` is hardware-constrained because it touches raw W65C02 RAM and zero
@@ -117,12 +123,16 @@ and debug tools.
   16-bit routine comment ID path is retired.
 - `hash0..3` stores FNV-1a low byte through high byte.
 - Words and longs are little-endian: low byte first.
-- Current Himonia-F proving record shape is:
+- Current HIMON proving record shape is:
 
 ```text
-'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...
 ```
 
+- In current HIMON, `kind=$00` means executable code begins immediately after
+  the kind byte, at record offset `+8`. It does not store `entry_lo,entry_hi`.
+- Explicit `entry_lo,entry_hi` pointer records are a future catalog/RREC
+  direction.
 - Future compact signatures identify record layout/classification, not a hash
   algorithm.
 - One thing may have multiple classification flags; use bit flags/tokens rather
@@ -141,7 +151,7 @@ and debug tools.
 
 ## STR8 Imports And Onboard Resolution
 
-- Host-built Himonia-F/HIMON images should import resident STR8 `BIO_*`
+- Host-built HIMON images should import resident STR8 `BIO_*`
   services from explicit STR8 labels or an import file. That keeps the release
   reproducible and prevents the linker from pulling a second copy of `BIO_*`
   out of `rom.lib`.
@@ -181,7 +191,7 @@ A [addr] [label:] MMM [operand] .
 - Flash destinations may use byte patching only where flash 1-to-0 write rules
   allow it. RAM destinations can patch freely.
 - Onboard assembly should tolerate flash clutter at first; later HIMON or
-  maintenance condense can reclaim dead or superseded records.
+  maintenance condense can reclaim buried or superseded records.
 
 ## Local Source Homes
 
@@ -198,7 +208,7 @@ A [addr] [label:] MMM [operand] .
 - `MAP.md` answers: how do docs and systems relate?
 - `REF.md` is the quick operational reference.
 - `XREF.md` is wiring: docs, source, symbols, module/export rules.
-- `SYMBOL_XREF.md` is symbol/routine cards, ABI contracts, hashes, and tags.
+- `SYMBOL_XREF.md` is symbol/routine cards, routine contracts, hashes, and tags.
 - `GLOSSARY.md` defines vocabulary only.
 - `BIB.md` records source corpus/provenance only.
 - `HIMON_MAP.md` is the readable HIMON edge/capability map.
@@ -212,9 +222,10 @@ WDCMON/WDC monitor base
   -> R-YORS routine layers
   -> Himon/Himonia compact monitors
   -> Himonia-F hash-dispatched monitor
-  -> planned HIMON behind STR8
+  -> HIMON behind STR8
 ```
 
 - BSO2 proves the big board-monitor feature set.
 - R-YORS splits that into reusable routines/layers.
-- Himonia-F is the current compact, hash-driven monitor path toward HIMON.
+- Himonia-F was the compact, hash-driven monitor branch that has folded back
+  into HIMON.

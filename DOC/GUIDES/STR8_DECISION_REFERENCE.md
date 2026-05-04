@@ -56,7 +56,7 @@ without depending on an external programmer for ordinary maintenance.
 
 Bank 3 `$F000-$FFFF` is the physical top 4K erase sector. The protected STR8
 window is smaller when the code fits. Choose the highest start address that can
-hold STR8, the one-time config bytes, and the vector tail:
+hold STR8, the one-time config bytes, and the hardware vector block:
 
 ```text
 $FC00-$FFFF  1K protected STR8 window
@@ -67,8 +67,8 @@ $F400-$FFFF  3K protected STR8 window
 $F200-$FFFF  3.5K protected STR8 window
 $F000-$FFFF  4K protected STR8 window, only if needed
 
-$FFF0-$FFF8  one-time flash board/version/config bytes, inside the window
-$FFF9-$FFFF  vector tail; W65C02 hardware vectors are $FFFA-$FFFF
+$FFF0-$FFF9  one-time flash board/version/config bytes, inside the window
+$FFFA-$FFFF  W65C02 hardware vector block
 ```
 
 Protected-window bytes are flashed through a separate STR8 install/update path.
@@ -81,7 +81,9 @@ it.
 
 V0 restore uses whole 32K ROM bank images as sources, but the bank 3 write path
 skips the selected STR8 protected window unless the operator explicitly requests
-a STR8 install/update.
+a STR8 install/update. The `$FFF0-$FFF9` pocket is reserved for board id,
+version, and config bytes that may be patched by clearing bits until the top
+sector is erased/rebuilt.
 
 ## Bank Roles
 

@@ -1,7 +1,8 @@
 # R-YORS Symbol Ref/Xref/XXref
 
 This is the working shape for a symbol catalog that can describe today's
-STASH/Himonia-F code and tomorrow's HIMON routines before all of them exist.
+STASH/HIMON code and tomorrow's catalog-visible routines before all of them
+exist.
 
 ## Thesis
 
@@ -88,7 +89,7 @@ hash:        $49023C1B
 kind:        R
 class:       USER_VISIBLE, USER_CALLABLE
 tokens:      SYS, WRITE, CHAR, CARRY_STATUS, NO_ZP, NO_RAM, NOSTACK
-source:      SRC/TEST/dev/dev-adapter-core.asm:236, label:246
+source:      ROM/dev/dev-adapter-core.asm:236, label:246
 abi_in:      A = byte to send
 abi_out:     C = 1 on success
 calls:       COR_FTDI_WRITE_CHAR
@@ -103,7 +104,7 @@ kind:        R
 class:       USER_VISIBLE, USER_CALLABLE
 tokens:      SYS, WRITE, CSTRING, C_STR, NUL_TERM, CARRY_STATUS,
              NO_ZP, NO_RAM, NOSTACK
-source:      SRC/TEST/dev/dev-adapter-write.asm:170, label:183
+source:      ROM/dev/dev-adapter-write.asm:170, label:183
 abi_in:      X/Y = source pointer
 abi_out:     A = chars written, C = 1 on full string, C = 0 on truncation
 calls:       COR_FTDI_WRITE_CSTRING
@@ -118,7 +119,7 @@ kind:        R
 class:       USER_VISIBLE, USER_CALLABLE
 tokens:      SYS, WRITE, HBSTRING, HB_STR, HIBIT_TERM, CARRY_STATUS,
              NO_ZP, NO_RAM, NOSTACK
-source:      SRC/TEST/dev/dev-adapter-write.asm:194, label:207
+source:      ROM/dev/dev-adapter-write.asm:194, label:207
 abi_in:      X/Y = source pointer
 abi_out:     A = chars written, C = 1 on full string, C = 0 on truncation
 calls:       COR_FTDI_WRITE_HBSTRING
@@ -137,7 +138,7 @@ abi_in:      A = byte to transmit
 abi_out:     C = 1 on success, C = 0 on timeout, A preserved
 clobbers:    X
 calls:       none direct
-notes:       STASH example with frozen behavior and explicit test limitation.
+notes:       STASH example with frozen behavior and explicit board limitation.
 ```
 
 ```text
@@ -174,12 +175,12 @@ hash:        $0D94A63F
 kind:        C/R
 class:       MONITOR_ONLY
 tokens:      HIMON, RESET, BOOT, STACK_OWNER, VECTOR_SETUP
-source:      SRC/TEST/apps/himon/himon.asm:75
+source:      HIMON/himon.asm:75
 abi_in:      CPU reset or monitor jump context
 abi_out:     enters MAIN_LOOP
 calls:       SYS_INIT, SYS_FLUSH_RX, SYS_VEC_SET_*, MON_BOOTLOG_RESET,
              HIM_WRITE_HBSTRING, SYS_WRITE_CRLF, MON_PRINT_STOP_AND_REGS
-notes:       Himonia-F current entry toward final HIMON.
+notes:       Current HIMON monitor entry.
 ```
 
 ```text
@@ -188,7 +189,7 @@ hash:        $E1A112AE
 kind:        R
 class:       MONITOR_ONLY
 tokens:      HIMON, CMD, HASH, TOKEN, FNV
-source:      SRC/TEST/apps/himon/himon.asm:1854
+source:      HIMON/himon.asm:1854
 abi_in:      command pointer state
 abi_out:     command hash state
 calls:       FNV1A_INIT, CMD_PEEK, FNV1A_UPDATE_A, CMD_ADV_PTR
@@ -200,17 +201,17 @@ name:        HIMONIA_ABI_WRITE_BYTE
 hash:        $C6233F7A
 kind:        T/R
 class:       USER_CALLABLE, MONITOR_ABI
-tokens:      HIMON, ABI, WRITE, BYTE, FTDI, TRAMPOLINE
-source:      SRC/TEST/apps/himon/himon.asm:2407
+tokens:      HIMON, FIXED_ENTRY, WRITE, BYTE, FTDI, TRAMPOLINE
+source:      HIMON/himon.asm:2407
 abi_in:      A = byte to write
 abi_out:     follows BIO_FTDI_WRITE_BYTE_BLOCK
 calls:       BIO_FTDI_WRITE_BYTE_BLOCK
-notes:       ABI-facing routine should remain stable even if backend moves.
+notes:       Fixed-entry routine should remain stable even if backend moves.
 ```
 
-## Current Himonia-F Call Tree
+## Current HIMON Call Tree
 
-This is a hand-sized tree from `SRC/TEST/apps/himon/himon.asm`. It is not a
+This is a hand-sized tree from `HIMON/himon.asm`. It is not a
 complete edge dump; indirect jumps, tables, and some repeated print helper calls
 are intentionally collapsed.
 
@@ -305,5 +306,5 @@ flowchart TD
 
 The next improvement is a small generator that emits this file's example
 records from source comments, then lets hand-written `XXREF` tokens fill the
-gaps. That keeps STASH truth, Himonia-F truth, and future HIMON vocabulary in
-the same shape.
+gaps. That keeps STASH truth, current HIMON truth, and future catalog
+vocabulary in the same shape.

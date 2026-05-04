@@ -107,12 +107,14 @@ For the first bringup, assume:
 
 ```text
 STR8 protected window = $F800-$FFFF
-$FFF0-$FFF8           = one-time board/version/config bytes
-$FFF9-$FFFF           = vector tail
+$FFF0-$FFF9           = one-time board/version/config bytes
+$FFFA-$FFFF           = W65C02 hardware vector block
 ```
 
 Ordinary restore skips `$F800-$FFFF`. Explicit STR8 install/update owns that
-window.
+window. The `$FFF0-$FFF9` bytes can be patched only while flash programming can
+still clear needed bits; changing cleared bits back to `1` waits for a top-sector
+erase/rewrite.
 
 ## Top-Sector Rule
 

@@ -137,8 +137,7 @@ UTL_GET_CALLSITE_NEXT16:
                         LDA             $0102,X
                         ADC             #$00
                         TAY
-                        PLA
-                        TAX
+                        PLX
                         SEC
                         RTS
                         ENDMOD

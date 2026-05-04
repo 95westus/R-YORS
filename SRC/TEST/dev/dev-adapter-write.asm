@@ -93,56 +93,10 @@ SYS_WRITE_BYTES_AXY:
                         RTS
                         ENDMOD
 
-                        MODULE          SYS_CVN_WRITE_CHAR_PLUS_CRLF
-
-                        XDEF            SYS_CVN_WRITE_CHAR_PLUS_CRLF
-                        XREF            COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF
-
-; ----------------------------------------------------------------------------
-; ROUTINE: SYS_CVN_WRITE_CHAR_PLUS_CRLF  [HASH:3D6ECA3C]
-; TIER: SYS-L4
-; TAGS: SYS, SYS-L4, WRITE, CRLF, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM,
-;   CALLS_COR, NOSTACK
-; MEM : ZP: none; FIXED_RAM: none.
-; PURPOSE: Device-neutral convenience wrapper for payload-plus-CRLF output.
-; IN : A = payload byte
-; OUT: C = 1 on full sequence success, C = 0 on write failure
-;      A preserved
-; EXCEPTIONS/NOTES:
-; - Delegates to backend routine `COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF`.
-; ----------------------------------------------------------------------------
-SYS_CVN_WRITE_CHAR_PLUS_CRLF:
-                        JSR             COR_FTDI_CVN_WRITE_CHAR_PLUS_CRLF
-                        RTS
-                        ENDMOD
-
-                        MODULE          SYS_CVN_WRITE_BYTES_AXY
-
-                        XDEF            SYS_CVN_WRITE_BYTES_AXY
-                        XREF            COR_FTDI_CVN_WRITE_BYTES_AXY
-
-; ----------------------------------------------------------------------------
-; ROUTINE: SYS_CVN_WRITE_BYTES_AXY  [HASH:DAF7F1CB]
-; TIER: SYS-L4
-; TAGS: SYS, SYS-L4, WRITE, PRESERVE-XY, CARRY-STATUS, NO-ZP, NO-RAM,
-;   CALLS_COR, NOSTACK
-; MEM : ZP: none; FIXED_RAM: none.
-; PURPOSE: Device-neutral convenience wrapper for 3-byte A/X/Y sequence.
-; IN : A = payload byte, X = byte1, Y = byte2
-; OUT: C = 1 on full sequence success, C = 0 on write failure
-;      A/X/Y preserved
-; EXCEPTIONS/NOTES:
-; - Delegates to backend routine `COR_FTDI_CVN_WRITE_BYTES_AXY`.
-; ----------------------------------------------------------------------------
-SYS_CVN_WRITE_BYTES_AXY:
-                        JSR             COR_FTDI_CVN_WRITE_BYTES_AXY
-                        RTS
-                        ENDMOD
-
                         MODULE          SYS_WRITE_LINE_RTL_XY
 
                         XDEF            SYS_WRITE_LINE_RTL_XY
-                        XREF            COR_FTDI_CVN_WRITE_LINE_RTL_XY
+                        XREF            COR_FTDI_WRITE_LINE_RTL_XY
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: SYS_WRITE_LINE_RTL_XY  [HASH:E6B45652]
@@ -154,10 +108,10 @@ SYS_CVN_WRITE_BYTES_AXY:
 ; OUT: C = 1 on full success, C = 0 on failure
 ; EXCEPTIONS/NOTES:
 ; - Source text remains in normal order (not reversed in memory).
-; - Delegates to backend routine `COR_FTDI_CVN_WRITE_LINE_RTL_XY`.
+; - Delegates to backend routine `COR_FTDI_WRITE_LINE_RTL_XY`.
 ; ----------------------------------------------------------------------------
 SYS_WRITE_LINE_RTL_XY:
-                        JSR             COR_FTDI_CVN_WRITE_LINE_RTL_XY
+                        JSR             COR_FTDI_WRITE_LINE_RTL_XY
                         RTS
                         ENDMOD
 

@@ -7,11 +7,11 @@ edges into readable subsystems and capability surfaces.
 Scope is the current HIMON build path:
 
 ```text
-SRC/TEST/apps/himon/himon.asm
-SRC/TEST/apps/himon/himonia-debug.inc
-SRC/TEST/apps/himon/himonia-disasm.inc
-SRC/TEST/apps/himon/himonia-asm.inc
-SRC/TEST/apps/himon/himon-shared-eq.inc
+HIMON/himon.asm
+HIMON/himonia-debug.inc
+HIMON/himonia-disasm.inc
+HIMON/himonia-asm.inc
+HIMON/himon-shared-eq.inc
 ```
 
 Direct `JSR` and `JMP` edges are the hard evidence. Some package-to-package
@@ -239,7 +239,7 @@ flowchart TD
     EMIT --> STORE[ASM_STORE_A_ADV]
 ```
 
-### ABI And External Boundary
+### Fixed Entries And External Boundary
 
 ```mermaid
 flowchart TD
@@ -258,7 +258,7 @@ flowchart TD
 
 | Capability | User surface | Main labels | Current behavior | Notes |
 | --- | --- | --- | --- | --- |
-| Boot/re-enter monitor | reset, ABI exit, trap return | `START`, `MON_REENTER`, `MON_START_INIT` | Owns hardware stack on entry, initializes system I/O, installs active vectors, enters prompt. | This is the normal HIMON path today. STR8 is not implemented here yet. |
+| Boot/re-enter monitor | reset, fixed-entry exit, trap return | `START`, `MON_REENTER`, `MON_START_INIT` | Owns hardware stack on entry, initializes system I/O, installs active vectors, enters prompt. | This is the normal HIMON path today. STR8 is not implemented here yet. |
 | Cold RAM clear | reset path | `MON_COLD_RESET`, `MON_CLEAR_RAM` | Clears RAM through `$7EFF`, then sets reset signature and starts monitor. | Preserves the idea that HIMON owns monitor RAM after cold boot. |
 | Vector/trap install | boot-time | `SYS_VEC_SET_NMI_XY`, `SYS_VEC_SET_IRQ_BRK_XY`, `SYS_VEC_SET_IRQ_NONBRK_XY` | Installs HIMON NMI, BRK, and IRQ handlers through system vector helpers. | STR8 should own physical vectors later, with HIMON installing active RAM vectors. |
 | Line input | prompt and loaders | `HIM_READ_LINE_ECHO_UPPER`, `HIM_READ_LINE_UPPER` | Blocking FTDI read, uppercases input, supports backspace, Ctrl-C abort, and NUL termination. | `L` uses non-echo upper input for S-record streams. |
@@ -275,15 +275,15 @@ flowchart TD
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_S1`, `L_WRITE_DATA_BYTE` | Accepts S0/S1/S9, writes S1 data below `$8000`, tracks count and go address. | Loading to flash without `F` fails with `HINT L F`. |
 | S-record load and go | `L G` | `CMD_L` | Same as `L`, then jumps to S9 address or first data address fallback. | Sets exec kind to LOADGO before jump. |
-| S-record flash load | `L F` | `L_WRITE_DATA_BYTE_FLASH`, `FLASH_WRITE_BYTE_AXY` | Writes only blank `$FF` bytes in `$8000-$CFFF`, verifies readback, skips after first flash failure. | Protects HIMON/ABI area at `$D000+`; no sector erase yet. |
+| S-record flash load | `L F` | `L_WRITE_DATA_BYTE_FLASH`, `FLASH_WRITE_BYTE_AXY` | Writes only blank `$FF` bytes in `$8000-$CFFF`, verifies readback, skips after first flash failure. | Protects HIMON fixed-entry area at `$D000+`; no sector erase yet. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Current patch is direct memory write, so RAM code is the sane target. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
 | Single step | `S` | `CMD_S`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by opcode length, plants a temporary BRK, resumes with `RTI`. | Does not emulate branch-taken paths yet. |
 | Mini assembler | `A start [mne op]`, interactive `A start` | `CMD_A`, `ASM_ASSEMBLE_LINE`, `ASM_FIND_OPCODE`, `ASM_EMIT` | Assembles one W65C02S instruction to the current address; interactive exits on `.` or Ctrl-C. | Current version is numeric-only and direct-write. Future hashed ASM adds labels/fixups. |
-| Quit/test trap | `Q` | `CMD_Q` | Executes `BRK $65`. | Useful to exercise BRK capture path. |
-| ABI write byte | fixed entry `$F00D` | `HIMONIA_ABI_WRITE_BYTE` | Trampoline to `BIO_FTDI_WRITE_BYTE_BLOCK`. | Intended stable external call point. |
-| ABI read byte | fixed entry `$FEED` | `HIMONIA_ABI_READ_BYTE` | Trampoline to `BIO_FTDI_READ_BYTE_BLOCK`. | Intended stable external call point. |
-| ABI exit app | fixed entry `$FADE` | `HIMONIA_ABI_EXIT_APP` | Clears monitor trap state and re-enters monitor. | External code can return to HIMON without knowing internal labels. |
+| Quit/debug trap | `Q` | `CMD_Q` | Executes `BRK $65`. | Useful to exercise BRK capture path. |
+| Fixed-entry write byte | fixed entry `$F00D` | `HIMONIA_ABI_WRITE_BYTE` | Trampoline to `BIO_FTDI_WRITE_BYTE_BLOCK`. | Intended stable external call point. |
+| Fixed-entry read byte | fixed entry `$FEED` | `HIMONIA_ABI_READ_BYTE` | Trampoline to `BIO_FTDI_READ_BYTE_BLOCK`. | Intended stable external call point. |
+| Fixed-entry exit app | fixed entry `$FADE` | `HIMONIA_ABI_EXIT_APP` | Clears monitor trap state and re-enters monitor. | External code can return to HIMON without knowing internal labels. |
 
 ## Edge Evidence Rules
 

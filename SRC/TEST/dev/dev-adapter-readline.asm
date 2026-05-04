@@ -112,7 +112,7 @@ SYS_READ_CSTRING_EDIT_MODE:
                         MODULE          SYS_READ_CSTRING_EDIT_ECHO_UPPER
 
                         XDEF            SYS_READ_CSTRING_EDIT_ECHO_UPPER
-        XREF COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER
+        XREF COR_FTDI_READ_CSTRING_EDIT_ECHO_UPPER
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: SYS_READ_CSTRING_EDIT_ECHO_UPPER  [HASH:B3A76D2C]
@@ -125,7 +125,7 @@ SYS_READ_CSTRING_EDIT_MODE:
 ; OUT: C/A semantics follow backend edit-line contract.
 ; ----------------------------------------------------------------------------
 SYS_READ_CSTRING_EDIT_ECHO_UPPER:
-        JSR COR_FTDI_CVN_READ_CSTRING_EDIT_ECHO_UPPER
+        JSR COR_FTDI_READ_CSTRING_EDIT_ECHO_UPPER
                         RTS
                         ENDMOD
 
@@ -151,7 +151,7 @@ SYS_READ_CSTRING_SILENT:
                         MODULE          SYS_READ_CSTRING_ECHO_UPPER
 
                         XDEF            SYS_READ_CSTRING_ECHO_UPPER
-                        XREF            COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER
+                        XREF            COR_FTDI_READ_CSTRING_ECHO_UPPER
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: SYS_READ_CSTRING_ECHO_UPPER  [HASH:E2DD10AF]
@@ -163,14 +163,14 @@ SYS_READ_CSTRING_SILENT:
 ; OUT: C/A semantics follow backend line reader contract.
 ; ----------------------------------------------------------------------------
 SYS_READ_CSTRING_ECHO_UPPER:
-                        JSR             COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER
+                        JSR             COR_FTDI_READ_CSTRING_ECHO_UPPER
                         RTS
                         ENDMOD
 
                         MODULE          SYS_READ_CSTRING_ECHO_LOWER
 
                         XDEF            SYS_READ_CSTRING_ECHO_LOWER
-                        XREF            COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER
+                        XREF            COR_FTDI_READ_CSTRING_ECHO_LOWER
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: SYS_READ_CSTRING_ECHO_LOWER  [HASH:A05843C2]
@@ -182,14 +182,14 @@ SYS_READ_CSTRING_ECHO_UPPER:
 ; OUT: C/A semantics follow backend line reader contract.
 ; ----------------------------------------------------------------------------
 SYS_READ_CSTRING_ECHO_LOWER:
-                        JSR             COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER
+                        JSR             COR_FTDI_READ_CSTRING_ECHO_LOWER
                         RTS
                         ENDMOD
 
                         MODULE          SYS_READ_CSTRING_SILENT_UPPER
 
                         XDEF            SYS_READ_CSTRING_SILENT_UPPER
-                        XREF            COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER
+                        XREF            COR_FTDI_READ_CSTRING_SILENT_UPPER
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: SYS_READ_CSTRING_SILENT_UPPER  [HASH:C9364C7F]
@@ -201,14 +201,14 @@ SYS_READ_CSTRING_ECHO_LOWER:
 ; OUT: C/A semantics follow backend line reader contract.
 ; ----------------------------------------------------------------------------
 SYS_READ_CSTRING_SILENT_UPPER:
-                        JSR             COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER
+                        JSR             COR_FTDI_READ_CSTRING_SILENT_UPPER
                         RTS
                         ENDMOD
 
                         MODULE          SYS_READ_CSTRING_SILENT_LOWER
 
                         XDEF            SYS_READ_CSTRING_SILENT_LOWER
-                        XREF            COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER
+                        XREF            COR_FTDI_READ_CSTRING_SILENT_LOWER
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: SYS_READ_CSTRING_SILENT_LOWER  [HASH:43D98ED2]
@@ -220,7 +220,7 @@ SYS_READ_CSTRING_SILENT_UPPER:
 ; OUT: C/A semantics follow backend line reader contract.
 ; ----------------------------------------------------------------------------
 SYS_READ_CSTRING_SILENT_LOWER:
-                        JSR             COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER
+                        JSR             COR_FTDI_READ_CSTRING_SILENT_LOWER
                         RTS
                         ENDMOD
 

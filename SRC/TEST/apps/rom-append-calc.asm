@@ -1,8 +1,8 @@
 ; ----------------------------------------------------------------------------
 ; rom-append-calc.asm
-; Tiny ROM append proof image, linked at $9A00.
-;   $9A00-$9A07: FNV record for command CALC
-;   $9A08:       command entry point
+; Tiny ROM append proof image, linked at $A800.
+;   $A800-$A807: FNV record for command CALC
+;   $A808:       command entry point
 ; ----------------------------------------------------------------------------
 
                         MODULE          ROM_APPEND_CALC_APP

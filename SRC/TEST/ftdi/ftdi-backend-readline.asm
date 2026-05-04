@@ -44,10 +44,10 @@
 ;   conversion
 ; - `COR_FTDI_READ_CSTRING_SILENT`             : echo disabled, no case
 ;   conversion
-; - `COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER`     : echo + force uppercase
-; - `COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER`     : echo + force lowercase
-; - `COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER`   : silent + force uppercase
-; - `COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER`   : silent + force lowercase
+; - `COR_FTDI_READ_CSTRING_ECHO_UPPER`         : echo + force uppercase
+; - `COR_FTDI_READ_CSTRING_ECHO_LOWER`         : echo + force lowercase
+; - `COR_FTDI_READ_CSTRING_SILENT_UPPER`       : silent + force uppercase
+; - `COR_FTDI_READ_CSTRING_SILENT_LOWER`       : silent + force lowercase
 ; - `COR_FTDI_READ_CSTRING_CORE`               : compatibility wrapper (carry
 ;   -> mode)
 ; - `COR_FTDI_READ_CSTRING_MODE`               : shared mode-driven engine
@@ -103,12 +103,12 @@ COR_FTDI_READ_CSTRING_SILENT:
                         JMP             COR_FTDI_READ_CSTRING_MODE
                         ENDMOD
 
-                        MODULE          COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER
-                        XDEF            COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER
+                        MODULE          COR_FTDI_READ_CSTRING_ECHO_UPPER
+                        XDEF            COR_FTDI_READ_CSTRING_ECHO_UPPER
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER  [HASH:837FAA72]
+; ROUTINE: COR_FTDI_READ_CSTRING_ECHO_UPPER  [HASH:E7BD7B44]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -118,17 +118,17 @@ COR_FTDI_READ_CSTRING_SILENT:
 ; EXCEPTIONS/NOTES:
 ; - Printable letters 'a'..'z' are normalized to uppercase before store/echo.
 ; ----------------------------------------------------------------------------
-COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER:
+COR_FTDI_READ_CSTRING_ECHO_UPPER:
                         LDA             #$03
                         JMP             COR_FTDI_READ_CSTRING_MODE
                         ENDMOD
 
-                        MODULE          COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER
-                        XDEF            COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER
+                        MODULE          COR_FTDI_READ_CSTRING_ECHO_LOWER
+                        XDEF            COR_FTDI_READ_CSTRING_ECHO_LOWER
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER  [HASH:2F8CC313]
+; ROUTINE: COR_FTDI_READ_CSTRING_ECHO_LOWER  [HASH:543D1D4D]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -138,17 +138,17 @@ COR_FTDI_CVN_READ_CSTRING_ECHO_UPPER:
 ; EXCEPTIONS/NOTES:
 ; - Printable letters 'A'..'Z' are normalized to lowercase before store/echo.
 ; ----------------------------------------------------------------------------
-COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER:
+COR_FTDI_READ_CSTRING_ECHO_LOWER:
                         LDA             #$05
                         JMP             COR_FTDI_READ_CSTRING_MODE
                         ENDMOD
 
-                        MODULE          COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER
-                        XDEF            COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER
+                        MODULE          COR_FTDI_READ_CSTRING_SILENT_UPPER
+                        XDEF            COR_FTDI_READ_CSTRING_SILENT_UPPER
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER  [HASH:3133183A]
+; ROUTINE: COR_FTDI_READ_CSTRING_SILENT_UPPER  [HASH:C4B07B74]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -156,17 +156,17 @@ COR_FTDI_CVN_READ_CSTRING_ECHO_LOWER:
 ; IN : X/Y = destination pointer
 ; OUT: C/A semantics follow `COR_FTDI_READ_CSTRING_MODE`.
 ; ----------------------------------------------------------------------------
-COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER:
+COR_FTDI_READ_CSTRING_SILENT_UPPER:
                         LDA             #$02
                         JMP             COR_FTDI_READ_CSTRING_MODE
                         ENDMOD
 
-                        MODULE          COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER
-                        XDEF            COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER
+                        MODULE          COR_FTDI_READ_CSTRING_SILENT_LOWER
+                        XDEF            COR_FTDI_READ_CSTRING_SILENT_LOWER
                         XREF            COR_FTDI_READ_CSTRING_MODE
 
 ; ----------------------------------------------------------------------------
-; ROUTINE: COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER  [HASH:8AE0FF1B]
+; ROUTINE: COR_FTDI_READ_CSTRING_SILENT_LOWER  [HASH:831A883D]
 ; TIER: BACKEND-L2
 ; TAGS: COR, BACKEND-L2, READ, COOKED, ECHO, NO-ZP, NO-RAM, NOSTACK
 ; MEM : ZP: none; FIXED_RAM: none.
@@ -174,7 +174,7 @@ COR_FTDI_CVN_READ_CSTRING_SILENT_UPPER:
 ; IN : X/Y = destination pointer
 ; OUT: C/A semantics follow `COR_FTDI_READ_CSTRING_MODE`.
 ; ----------------------------------------------------------------------------
-COR_FTDI_CVN_READ_CSTRING_SILENT_LOWER:
+COR_FTDI_READ_CSTRING_SILENT_LOWER:
                         LDA             #$04
                         JMP             COR_FTDI_READ_CSTRING_MODE
                         ENDMOD

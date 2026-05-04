@@ -170,6 +170,9 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `FNV1A_MUL_PRIME` | `$40C68FD2` | hash math | current `FNV_HASH` | `FNV_HASH *= $01000193 mod 2^32` | BUILDS | internal multiply step | `FNV HASH MATH` |
 | `FNV1A_BUF_XY_LEN` | `$67A1CA5D` | hash buffer | `X/Y=buffer`, `FNV_INPUT_LEN=count` | `FNV_HASH0..3` little-endian | BUILDS | hash counted bytes | `FNV HASH BUFFER` |
 | `FNV1A_HBSTR_XY` | `$4E69C4B9` | hash HBSTR | `X/Y=HBSTR` | `FNV_HASH0..3` little-endian | BUILDS | hash high-bit-terminated text | `FNV HASH HBSTRING` |
+| `FNV1A_FOLD8_XY_A` | `$632A38DD` | hash fold | `X/Y=hash0..3 ptr` | `A=hash8`, `C=1`; `X/Y` preserved | PARTIAL | standalone fold helper after any canonical 32-bit FNV result | `FNV HASH FOLD8 COMPACT` |
+| `FNV1A_FOLD16_XY_A8` | `$E52B90E6` | hash fold | `X/Y=hash0..3 ptr` | `X=hash16_lo`, `Y=hash16_hi`, `A=hash8`, `C=1` | PARTIAL | standalone fold helper that also returns the 8-bit fold | `FNV HASH FOLD16 FOLD8 COMPACT` |
+| `FNV1A_FOLD32_XY` | `$9F48B1D8` | hash fold | `X/Y=hash0..3 ptr` | `X/Y` unchanged, `C=1` | PARTIAL | full-width identity helper for width-dispatch code | `FNV HASH FOLD32 FULL` |
 | `FNV1A_TRIM_TRAILING_CRLF` | `$1F9D1E8D` | hash input cleanup | `FNV_INPUT_LEN=count` | length trimmed | BUILDS | defensive CR/LF trim before hashing | `FNV INPUT TRIM` |
 
 ## Flash And Recovery Writes
