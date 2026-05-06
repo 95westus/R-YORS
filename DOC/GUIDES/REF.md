@@ -80,13 +80,18 @@ bank 1:
   previous backup image
 
 bank 0:
-  platinum R-YORS/HIMON/STR8 image and oldest backup slot for now
+  WDCMONv2/factory snapshot slot
 ```
 
 STR8 V0 restores ordinary bank 3 bytes from a whole 32K ROM bank image in bank
 0, 1, or 2. It skips the selected STR8 protected window unless explicit STR8
-install/update is requested. Backup rotates bank 1 to bank 0, bank 2 to bank 1,
-and bank 3 to bank 2.
+install/update is requested. Automatic backup rotates bank 2 to bank 1 and bank
+3 to bank 2. The earlier automatic `1 -> 0` copy is deprecated; bank 0 is
+written only by explicit factory-snapshot request after clear-check. Copying
+bank 0 to bank 3 is the normal factory restore path. Erasing or reusing bank 0
+is a separate destructive factory-slot action; if it happens, onboard WDCMONv2
+factory recovery is no longer available without another saved factory image or
+an external programmer.
 
 HIMON controls IRQ/vector behavior in V0. Future STR8-N/STRAIGHTEN may offer
 recovery-safe vector hooks, but the current direction is opt-in integration
