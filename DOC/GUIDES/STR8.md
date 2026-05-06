@@ -228,6 +228,12 @@ V0 should stay deliberately small:
 ```text
 W65C02-specific code is allowed
 first implementation is a RAM-resident S19 launched under HIMON
+first RAM proof image links at $3000
+first RAM proof reserves $4000-$5FFF as the 8K copy buffer
+first RAM proof can read-check whether selected-bank 4K windows are blank $FF
+first RAM proof can destructively copy bank 2 to bank 1, erasing bank 1 first
+first RAM proof can explicitly mark selected bank 0-2 sector heads with its bank byte
+first RAM proof can optionally fill each 4K sector in the selected bank
 physical top erase sector is bank 3 $F000-$FFFF
 protected STR8 window starts at $FC00, $FA00, $F800, $F600, $F400, $F200, or $F000
 protected bytes are flashed through a separate STR8 install/update path
@@ -542,18 +548,17 @@ STR8_RESTORE_FACTORY
 FLASH_S19_BOARD_RESET_TO_FACTORY
 ```
 
-Full-bank copy in the RAM-resident S19 version uses an 8K RAM buffer:
+Full-bank copy in the current RAM-resident S19 proof reserves `$4000-$5FFF` but
+stages one 4K window at a time through `$4000-$4FFF`:
 
 ```text
-copy windows $8-$9
-copy windows $A-$B
-copy windows $C-$D
-copy windows $E-$F
+B command: copy bank 2 -> bank 1, blindly erasing bank 1 windows
+L command: copy bank 3 -> bank 2, blindly erasing bank 2 windows
 ```
 
-Each chunk reads from the source bank, writes the destination bank, and verifies
-by simple read-back compare. FNV, catalog lookup, wear leveling, and cycle
-counts are later work.
+Each 4K window reads from the source bank, writes the destination bank, and
+verifies by simple read-back compare. Bank 3 is source-only in the live backup
+stage. FNV, catalog lookup, wear leveling, and cycle counts are later work.
 
 ## Self-Referencing Flash Content
 

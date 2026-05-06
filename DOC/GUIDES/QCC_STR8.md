@@ -51,6 +51,33 @@ Comment: Scan ranges may be selected by full start/end, start plus length, or a
 Concern: RAM, IO, and flash have different rules. A selector that is safe for
 flash scanning is not automatically safe for IO probing.
 
+## Q: How long should a 32K STR8 flash copy take?
+
+Comment: The SST39SF010A chip timing gives a useful lower bound, not the current
+STR8 RAM proof wall-clock time. The part has uniform 4K sectors, typical 4K
+sector erase time of about 18 ms, and typical byte-program time of about 14 us.
+For a dense 32K bank rewrite:
+
+```text
+8 sectors * 18 ms       = 144 ms erase time
+32768 bytes * 14 us     = 459 ms program time
+chip-level lower bound  ~= 0.6 s before software/read/verify overhead
+```
+
+The current RAM proof is intentionally simple and slower. It calls
+`FLASH_WRITE_BYTE_RAW_AXY` for each non-`$FF` byte, and that routine copies the
+RAM flash worker before each byte program. At the current 8 MHz timing model,
+that worker-copy overhead alone is roughly 0.5 ms per programmed byte, so a
+dense 32K image can land in the 20-30 second range. Sparse images with many
+`$FF` bytes are faster because STR8 skips byte-program calls for `$FF` source
+bytes.
+
+Concern: Do not use visible LED activity as the timing proof. The first real
+proof should measure serial progress or an explicit activity pin around erase,
+program, and verify phases. Later STR8 should batch the RAM worker or keep it
+resident for a sector/bank operation so the observed time moves closer to the
+flash device timing.
+
 ## Q: Why QCC for STR8?
 
 Comment: STR8 is still deciding how small it stays in V0 and how much future
@@ -58,4 +85,3 @@ STRAIGHTEN will own.
 
 Concern: Settled boundaries should move into `DECISIONS.md`; experiments and
 "what if STR8 owns this?" should stay here until proved.
-

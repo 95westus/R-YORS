@@ -123,6 +123,28 @@
 - Use byte-aligned RLE as the first binary `RBODY` compression direction, with
   special run forms for `$00`, `$20`, and `$FF` under consideration. Do not
   commit opcode ranges until the decoder shape is proven small.
+- Do not use a board LED as proof of flash correctness. A flash chip-select LED
+  may be tied to a narrower decode than the banked ROM window, may see only very
+  short command/read pulses, or may be invisible without pulse stretching. Flash
+  software must report success from readback verification, not from LED state.
+- Keep separate flash result facts:
+  - command accepted/completed without timeout
+  - byte readback equals the requested programmed value
+  - whole 4K window/sector readback equals the staged image
+  - current byte/window still contains `1` bits that can be flipped to `0`
+- A successful byte program does not mean the byte is no longer writable. Flash
+  can only change `1` bits to `0` bits until erase. If the verified byte is not
+  `$00`, its remaining `1` bits are still flippable. For example, `$FE` verifies
+  as a successful program but still has seven flippable bits.
+- Future flash query/status routines should distinguish:
+  - window is fully erased: every byte is `$FF`
+  - byte/window has at least one flippable bit: at least one bit is still `1`
+  - byte/window has no flippable bits: every checked bit is already `0`
+  - desired byte can be programmed without erase: `(current & desired) == desired`
+- A future RAM-staged flash worker can return a compact kind/status byte rather
+  than carry alone. Carry should remain the quick success/fail signal; a kind byte
+  can describe timeout, illegal `0 -> 1`, verified, erased, partially flippable,
+  or exhausted/no-flippable-bits state for diagnostics and STR8 planning.
 
 ## Documentation Direction
 

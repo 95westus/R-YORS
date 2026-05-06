@@ -14,7 +14,8 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at D000: BUILD/bin/himon-rom.bin." }
     [pscustomobject]@{ Target = "basic-himon-rom-bin"; Category = "rom"; Description = "Build 32K 8000-FFFF bank image with BASIC plus HIMON." }
     [pscustomobject]@{ Target = "basic-forth-himon-rom-bin"; Category = "rom"; Description = "Build 32K 8000-FFFF bank image with FORTH, BASIC, and HIMON." }
-    [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build STR8 V0 simulation stub at F800." }
+    [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build STR8 V0 F800 stub and RAM proof image." }
+    [pscustomobject]@{ Target = "str8-ram"; Category = "test"; Description = "Build RAM-launched STR8 bank-select/blank-check/copy/marker proof at 3000." }
     [pscustomobject]@{ Target = "fnv1a-hbstr"; Category = "test"; Description = "Build FNV-1a/HBSTR proving app." }
     [pscustomobject]@{ Target = "test-flash"; Category = "test"; Description = "Build flash command/install proving app." }
     [pscustomobject]@{ Target = "test-mon"; Category = "test"; Description = "Build monitor test app." }

@@ -207,6 +207,7 @@ make -C SRC help
 make -C SRC help Q=flash
 make -C SRC himon
 make -C SRC str8
+make -C SRC str8-ram
 make -C SRC basic-himon-rom-bin
 make -C SRC basic-forth-himon-rom-bin
 make -C SRC docs
