@@ -50,6 +50,11 @@ bank 3 restore: write ordinary image bytes by guarded flash flow
 protected STR8 window: skip unless explicit STR8 install/update is requested
 ```
 
+Bank 0 is the WDCMONv2/factory snapshot slot. It is intended to capture the
+board's original live WDCMONv2 image before R-YORS conversion. Restoring it may
+uninstall R-YORS from live bank 3. Bank 0 is not part of automatic backup
+rotation.
+
 First principle: STR8 cannot safely erase the code it is currently running
 from. Self-recovery therefore needs either a protected window that is not erased
 during normal updates, or a RAM-resident updater that has already copied all
@@ -222,6 +227,7 @@ V0 should stay deliberately small:
 
 ```text
 W65C02-specific code is allowed
+first implementation is a RAM-resident S19 launched under HIMON
 physical top erase sector is bank 3 $F000-$FFFF
 protected STR8 window starts at $FC00, $FA00, $F800, $F600, $F400, $F200, or $F000
 protected bytes are flashed through a separate STR8 install/update path
@@ -230,6 +236,7 @@ STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
 V0 uses whole 32K ROM bank images as recovery and backup sources
+V0 bank copy uses an 8K RAM buffer in four chunks
 V0 HIMON controls IRQ/vector behavior
 V0 has no FNV/catalog lookup
 no flash garbage collection
@@ -403,8 +410,9 @@ V0 command surface should be closer to this:
 
 ```text
 ? / ID     print STR8, board, version, and boot failure reason
-B          rotate backup images: 1->0, 2->1, 3->2
-0          restore bank 0 to bank 3
+B          rotate backup images: 2->1, 3->2
+B0         explicit factory snapshot: 3->0 only if bank 0 is clear
+0          restore bank 0 to bank 3; may uninstall R-YORS
 1          restore bank 1 to bank 3
 2          restore bank 2 to bank 3
 V          verify selected/copy target bank image
@@ -416,6 +424,10 @@ R          reset/retry normal boot
 The recovery loader should avoid the full assembler, full catalog UI,
 compression tools, and rich command parser. Those belong in HIMON once normal
 operation is safe.
+
+There is no casual bank 0 erase command in the first command surface. Erasing
+or repurposing bank 0 is a destructive factory-slot action because it removes
+the onboard WDCMONv2 factory recovery image.
 
 ## STR8 Protected Address Map
 
@@ -492,16 +504,19 @@ The first STR8 bank policy is image-oriented:
 bank 3 = live reset/boot image
 bank 2 = most recent backup image
 bank 1 = previous backup image
-bank 0 = platinum R-YORS/HIMON/STR8 image and oldest backup slot for now
+bank 0 = WDCMONv2/factory snapshot slot
 ```
 
 On a backup request:
 
 ```text
-copy bank 1 -> bank 0
 copy bank 2 -> bank 1
 copy bank 3 -> bank 2
 ```
+
+The earlier automatic `1 -> 0` copy is deprecated. Bank 0 is written only by an
+explicit factory-snapshot operation, after STR8 confirms the target is clear
+first.
 
 On a recovery/restore request:
 
@@ -510,9 +525,35 @@ restore ordinary bytes from selected 32K bank image 0, 1, or 2 -> bank 3
 skip selected STR8 protected window unless explicit STR8 install/update is requested
 ```
 
-Bank 0 starts as a platinum R-YORS/HIMON/STR8 image. Under the current backup
-rotation it is also the oldest backup slot. If bank 0 must remain permanently
-platinum, that needs a later protect/confirm policy.
+Restoring bank 0 is a WDCMONv2/factory restore and may remove R-YORS from the
+live boot image. If bank 0 is later erased or reused, onboard WDCMONv2 factory
+recovery is gone until another factory image is written there.
+
+The generic primitive remains a bank copy:
+
+```text
+FLSH_COPY_BANK_AX   ; A = source bank, X = destination bank
+```
+
+A human-facing wrapper may be deliberately descriptive:
+
+```text
+STR8_RESTORE_FACTORY
+FLASH_S19_BOARD_RESET_TO_FACTORY
+```
+
+Full-bank copy in the RAM-resident S19 version uses an 8K RAM buffer:
+
+```text
+copy windows $8-$9
+copy windows $A-$B
+copy windows $C-$D
+copy windows $E-$F
+```
+
+Each chunk reads from the source bank, writes the destination bank, and verifies
+by simple read-back compare. FNV, catalog lookup, wear leveling, and cycle
+counts are later work.
 
 ## Self-Referencing Flash Content
 
