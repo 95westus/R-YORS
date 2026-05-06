@@ -38,6 +38,16 @@ and debug tools.
   HIMON.
 - Do not treat Himonia-F and HIMON as permanently separate products.
 
+## Address Vocabulary
+
+- `$WLPB` is the preferred teaching mnemonic for a 16-bit hex address:
+  `W` = 4K window, `L` = 256-byte line, `P` = 16-byte paragraph, and `B` =
+  byte.
+- In banked flash, one 4K window is one erase sector of the currently selected
+  bank. The physical flash location is bank plus window plus offset.
+- Sector `$0` means `$0000-$0FFF`; `$0000-$FFFF` is the full 64K CPU address
+  space, not sector `$0`.
+
 ## STR8 Ownership
 
 - Direction change: earlier planning leaned toward future STR8 ownership of the
@@ -61,15 +71,30 @@ and debug tools.
   That path still stages the full top sector and preserves non-target bytes.
   Non-STR8 bytes in the same 4K sector may be used, but changing them requires
   the same read, stage, erase, full-sector-write, and verify transaction.
+- V0 STR8 starts as a RAM-resident S19 program launched under HIMON. It proves
+  bank select, clear check, erase, 8K-buffered copy, and read-back compare
+  before reset-time ownership.
 - V0 STR8 uses whole 32K ROM bank images (`$8000-$FFFF`) as recovery sources.
   Restore writes ordinary bank 3 image bytes from selected bank 0, 1, or 2 and
   skips the selected STR8 protected window unless explicit STR8 install/update
   is requested.
 - Bank 3 is the live boot image. Bank 2 is the newest backup. Bank 1 is the
-  previous backup. Bank 0 starts as the platinum R-YORS/HIMON/STR8 image and is
-  also the oldest slot in the current backup rotation.
-- A backup request copies bank 1 to bank 0, bank 2 to bank 1, and bank 3 to
-  bank 2.
+  previous backup. Bank 0 is intended as the WDCMONv2/factory snapshot slot:
+  copy the board's original live bank there before R-YORS conversion, then
+  restore bank 0 to bank 3 to return the board to that state.
+- Automatic backup copies bank 2 to bank 1 and bank 3 to bank 2. The earlier
+  automatic `1 -> 0` rotation is deprecated.
+- `BACKUP 3 TO 0` is explicit factory-snapshot provisioning only and must
+  clear-check bank 0 before writing.
+- Copying bank 0 to bank 3 is the normal factory restore path. A descriptive
+  wrapper or S19 artifact may call this `STR8_RESTORE_FACTORY` or
+  `FLASH_S19_BOARD_RESET_TO_FACTORY`, while the primitive remains
+  `FLSH_COPY_BANK_AX`.
+- Erasing or reusing bank 0 is a separate destructive factory-slot action, not
+  ordinary backup behavior and not a casual `E0` command.
+- If bank 0 is erased or reused, onboard WDCMONv2 factory recovery is no longer
+  available; recovery then depends on an external programmer or another saved
+  image.
 - STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.
 - Minimal recovery is a small load/verify/flash/identity surface, not full
   HIMON.
