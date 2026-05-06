@@ -39,6 +39,30 @@ bank 0-3 placement is managed through the T48 programmer or through
 R-YORS/STR8. HIMON `START` at CPU `$D000` appears at file offset `$5000`; the
 hardware vectors appear at the tail of the 32K file.
 
+## Flash Window Mapping
+
+The VIA-controlled bank pins change only the upper 32K flash view:
+
+```text
+$0000-$7FFF  unchanged RAM/IO space
+$8000-$FFFF  selected flash window
+```
+
+Physical flash banks map into that same CPU window:
+
+```text
+bank 0  physical $00000-$07FFF -> CPU $8000-$FFFF
+bank 1  physical $08000-$0FFFF -> CPU $8000-$FFFF
+bank 2  physical $10000-$17FFF -> CPU $8000-$FFFF
+bank 3  physical $18000-$1FFFF -> CPU $8000-$FFFF, pull-up/reset default
+```
+
+Use `FLSH_*` for window selection/query and `FLASH_*` for operations on the
+currently selected `$8000-$FFFF` window. A ROM-resident HIMON command must not
+park itself in bank 0-2 while continuing to execute from `$D000`; it should use a
+RAM worker that selects the requested bank, copies or checks bytes, then restores
+bank 3 before HIMON prints or returns to normal command flow.
+
 ## Current Flash Policy
 
 HIMON treats flash as `$8000-$FFFF`, but the current `L F` writer only

@@ -51,6 +51,58 @@ Comment: Scan ranges may be selected by full start/end, start plus length, or a
 Concern: RAM, IO, and flash have different rules. A selector that is safe for
 flash scanning is not automatically safe for IO probing.
 
+## Q: How should future flash range guards evolve?
+
+Comment: Treat the current `FLASH_ADDR_ALLOWED_XY` as a conservative HIMON
+public-writer guard, not as the permanent truth about all valid flash writes.
+It currently allows `$8000-$CFFF` and protects `$D000-$FFFF`, which matches the
+early `L F` blank-byte loader and HIMON-at-`$D000` world. STR8 needs a richer
+policy split:
+
+```text
+FLSH_*   selects or queries the visible $8000-$FFFF flash window
+FLASH_*  performs low-level erase/program/check in the currently selected window
+POLICY   decides whether this caller and operation may touch this range
+```
+
+Possible future guard families:
+
+```text
+FLASH_ADDR_ALLOWED_XY       current HIMON L F public writer guard
+FLSH_RANGE_ALLOWED_CTX      generic operation-context guard
+STR8_RANGE_BACKUP_OK        allow whole destination backup bank/window
+STR8_RANGE_RESTORE_OK       allow ordinary bank 3 bytes, skip STR8 window
+STR8_RANGE_INSTALL_OK       allow protected-window install via top-sector transaction
+STR8_RANGE_FACTORY_OK       allow bank 0 only after explicit clear-check/confirm
+```
+
+The operation context should include enough facts to avoid hidden globals:
+
+```text
+operation kind:  LF, BACKUP, RESTORE, INSTALL, FACTORY, QUERY
+source bank:     0-3 or none
+destination bank:0-3 or none
+window/range:    CPU $8000-$FFFF address range or 4K window selector
+protected start: selected STR8 protected-window start
+authority:       HIMON, STR8 RAM worker, recovery, factory action
+```
+
+Raw erase/program routines should remain available, but only as mechanism:
+
+```text
+FLASH_SECTOR_ERASE_RAW_XY
+FLASH_WRITE_BYTE_RAW_AXY
+```
+
+Callers that use raw routines must first make an explicit policy decision and
+must run from RAM or another bank-stable region if the selected flash window can
+change away from the code that is executing.
+
+Concern: A single global "writable flash range" will be wrong for at least one
+important operation. Backup must write whole bank images into bank 1/2, restore
+must avoid the STR8 window in bank 3, install must touch only the protected path,
+and HIMON `L F` should stay far more conservative than STR8 recovery.
+
 ## Q: How long should a 32K STR8 flash copy take?
 
 Comment: The SST39SF010A chip timing gives a useful lower bound, not the current

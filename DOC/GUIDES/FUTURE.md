@@ -111,6 +111,10 @@
   with shared flash primitives where that makes sense. HIMON/maintenance owns
   catalog condense first; future STR8-N/STRAIGHTEN may participate in catalog
   scan/repair later without requiring ownership of a user system's catalog.
+- Split future flash protection into operation-context guards rather than one
+  global writable range. Keep `FLASH_ADDR_ALLOWED_XY` as the conservative HIMON
+  `L F` guard, keep raw erase/program routines as mechanism, and let STR8 define
+  separate backup, restore, install/update, and factory-slot range policies.
 - Treat future flash GC as append/invalidate/reclaim instead of in-place edits:
   mark records or sections stale, prepare a compacted sector image in RAM,
   relink copied records when needed, erase the old 4K sector, then write and

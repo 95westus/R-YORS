@@ -83,6 +83,30 @@ bank 0:
   WDCMONv2/factory snapshot slot
 ```
 
+Flash-bank and flash-window vocabulary:
+
+```text
+$0000-$7FFF  same RAM/IO decode regardless of flash bank
+$8000-$FFFF  selected 32K flash window
+
+bank 0       physical flash $00000-$07FFF, visible at $8000-$FFFF when selected
+bank 1       physical flash $08000-$0FFFF, visible at $8000-$FFFF when selected
+bank 2       physical flash $10000-$17FFF, visible at $8000-$FFFF when selected
+bank 3       physical flash $18000-$1FFFF, visible at $8000-$FFFF at reset/default
+```
+
+Routine naming rule:
+
+```text
+FLSH_*   selects or queries which physical flash bank is visible in $8000-$FFFF
+FLASH_*  erases/programs/checks the currently selected $8000-$FFFF flash window
+```
+
+`FLASH_*` routines do not choose a bank. The caller must already have selected
+the intended window, and ROM-resident callers must not select away from the bank
+that contains their executing code unless the worker is running from RAM or
+another bank-stable region.
+
 STR8 V0 restores ordinary bank 3 bytes from a whole 32K ROM bank image in bank
 0, 1, or 2. It skips the selected STR8 protected window unless explicit STR8
 install/update is requested. Automatic backup rotates bank 2 to bank 1 and bank
