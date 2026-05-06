@@ -63,6 +63,9 @@ STR8_SRC := $(STR8_SUBDIR)/str8.asm
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
 STR8_S19 := $(S19_DIR)/str8-f800.s19
 STR8_LINKFLAGS := -g -s -t -cF800 -hm19 -j -o
+STR8_RAM_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-ram.obj
+STR8_RAM_S19 := $(S19_DIR)/str8-ram-3000.s19
+STR8_RAM_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 TMON_SRC := $(TEST_ROOT_DIR)/test-mon.asm
 TMON_OBJ := $(OBJ_DIR)/$(TEST_ROOT_DIR)/test-mon.obj
 TMON_S19 := $(S19_DIR)/test-mon.s19
@@ -218,8 +221,12 @@ basic-forth-himon-rom-bin: $(BASIC_FORTH_HIMON_ROM_BIN)
 fnv1a-hbstr: $(ROM_LIB) $(FNV1A_HBSTR_S19)
 	@echo "Built $(FNV1A_HBSTR_S19)."
 
-str8: $(STR8_S19)
-	@echo "Built $(STR8_S19)."
+str8: $(STR8_S19) $(STR8_RAM_S19)
+	@echo "Built $(STR8_S19) and $(STR8_RAM_S19)."
+	@$(MAKE) artifacts
+
+str8-ram: $(STR8_RAM_S19)
+	@echo "Built $(STR8_RAM_S19)."
 	@$(MAKE) artifacts
 
 test-mon: $(ROM_LIB) $(TEST_LIB) $(TMON_S19)
@@ -366,6 +373,16 @@ $(STR8_S19): $(STR8_OBJ) $(ROM_LIB)
 	$(LINKER) $(STR8_LINKFLAGS) $(STR8_S19) $(STR8_OBJ) -L $(BUILD_DIR)\lib\rom
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903F80004'; Set-Content -Path $$p -Value $$lines"
 
+$(STR8_RAM_OBJ): $(STR8_SRC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DSTR8_RAM_PROOF $<
+	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
+
+$(STR8_RAM_S19): $(STR8_RAM_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(STR8_RAM_LINKFLAGS) $(STR8_RAM_S19) $(STR8_RAM_OBJ) -L $(BUILD_DIR)\lib\rom
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_RAM_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+
 $(TMON_S19): $(TMON_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(TEST_LINKFLAGS) $(TMON_S19) $(TMON_OBJ) -L $(BUILD_DIR)\lib\rom -L $(BUILD_DIR)\lib\testing
@@ -505,4 +522,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 test-mon test-ftdi-drv test-ftdi-hal test-flash life microchess rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life microchess rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch bin-check rom testing artifacts clean realclean upload term
