@@ -71,6 +71,10 @@
 - Later, STR8 may offer to preserve the original WDCMONv2 image, bridge image,
   or provenance notes before conversion. That is a future convenience, not a
   requirement for the first installer.
+- The intended bank 0 use is a WDCMONv2/factory snapshot copied from the board
+  before conversion. If the user later erases or reuses bank 0, onboard factory
+  recovery is no longer available without another saved factory image or an
+  external programmer.
 
 ## Assembler Direction
 
@@ -99,8 +103,10 @@
 - For the first STR8 recovery model, restore uses a whole 32K bank 0, 1, or 2
   image as the source for bank 3, writes ordinary bank 3 image bytes, and skips
   the selected STR8 protected window unless explicit STR8 install/update is
-  requested. Backup rotates bank 1 to bank 0, bank 2 to bank 1, and bank 3 to
-  bank 2.
+  requested. Automatic backup rotates bank 2 to bank 1 and bank 3 to bank 2.
+  Bank 0 is the WDCMONv2/factory snapshot slot and is written only by explicit
+  factory-snapshot request after clear-check. Erasing or reusing bank 0 is a
+  separate destructive factory-slot action, not ordinary backup behavior.
 - Let R-YORS define scan, verify, write, commit, and later condense policy,
   with shared flash primitives where that makes sense. HIMON/maintenance owns
   catalog condense first; future STR8-N/STRAIGHTEN may participate in catalog
