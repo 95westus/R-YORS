@@ -10,16 +10,18 @@ added until the read-only version of the same path has passed.
 
 ```text
 STR8 V0
-link target:        $F800-$FFFF
+first proof image:  RAM-resident S19 launched under HIMON
+later ROM target:   $F800-$FFFF
 role:               image-oriented recovery guard
+copy buffer:        8K RAM buffer, four windows per 32K bank
 I/O layer:          BIO_*
 catalog/FNV:        not used by STR8 V0
 HIMON vectors:      HIMON controls IRQ/vector behavior in V0
 ```
 
-STR8 starts as a simulation/test app. It should grow into reset-owned recovery
-only after bank select, verify, backup, restore, and top-sector staging have all
-been proven.
+STR8 starts as a RAM-launched test app. It should grow into reset-owned
+recovery only after bank select, clear check, erase, 8K-buffered copy, verify,
+backup, restore, and top-sector staging have all been proven.
 
 ## Escape Path
 
@@ -43,17 +45,21 @@ assumes the T48 is the trusted recovery tool.
 ## Bringup Order
 
 ```text
-0. Build STR8 simulation stub at $F800.
+0. Build RAM-resident STR8 S19 launched under HIMON.
 1. Prove BIO read/write only.
 2. Prove bank select only.
 3. Prove read-only bank identity checks.
 4. Prove read-only backup and restore plans.
-5. Prove bank 0-2 erase/write/verify on scratch images.
-6. Prove real backup rotation: 1->0, 2->1, 3->2.
-7. Prove restore of ordinary bank 3 bytes, skipping STR8 window.
-8. Prove top-sector read/stage/erase/full-sector-write/verify.
-9. Prove explicit STR8 install/update path.
-10. Only then let reset enter STR8 first.
+5. Prove bank clear checks.
+6. Prove bank 1-2 erase/write/verify on scratch images.
+7. Prove bank 0 factory snapshot capture: 3->0 only while bank 0 is clear.
+8. Prove 8K buffer read/write/verify across windows $8-$F.
+9. Prove real automatic backup rotation: 2->1, 3->2.
+10. Prove restore of ordinary bank 3 bytes, skipping STR8 window.
+11. Prove top-sector read/stage/erase/full-sector-write/verify.
+12. Prove explicit STR8 install/update path.
+13. Prove destructive bank 0 erase/reuse only with external recovery ready.
+14. Only then let reset enter STR8 first.
 ```
 
 ## V0 Bank Policy
@@ -62,17 +68,19 @@ assumes the T48 is the trusted recovery tool.
 bank 3  live reset/boot image
 bank 2  most recent backup image
 bank 1  previous backup image
-bank 0  platinum image at first, oldest backup slot during current rotation
+bank 0  WDCMONv2/factory snapshot slot
 ```
 
-Backup request:
+Automatic backup request:
 
 ```text
-copy bank 1 -> bank 0
 copy bank 2 -> bank 1
 copy bank 3 -> bank 2
 verify copied bytes by read-back
 ```
+
+The earlier automatic `1 -> 0` copy is deprecated. Bank 0 is written only by
+explicit factory-snapshot request after a clear check.
 
 Restore request:
 
@@ -82,6 +90,14 @@ write ordinary bank 3 image bytes
 skip selected STR8 protected window
 verify restored bytes by read-back
 ```
+
+Restoring bank 0 may uninstall R-YORS from the live boot bank and return the
+board to the captured WDCMONv2/factory image. If bank 0 is erased or reused,
+onboard WDCMONv2 factory recovery is no longer available.
+
+Erasing or reusing bank 0 is not ordinary backup behavior. Treat it as a
+separate destructive factory-slot action that requires another saved factory
+image or an external programmer for recovery.
 
 ## Protected Window
 
@@ -138,7 +154,7 @@ marker should be boring and directly readable:
 
 ```text
 magic:       RYORS or STR8 image text
-bank role:   live/latest/previous/platinum
+bank role:   live/latest/previous/factory-wdcmon
 layout:      selected STR8 window start
 version:     small build/version byte or word
 status:      valid/incomplete/recovery marker
@@ -153,6 +169,8 @@ wrong bank selected
 source image marker missing
 verify mismatch after copy
 backup rotation interrupted after first copy
+explicit bank 0 factory snapshot requested when bank 0 is not clear
+bank 0 erase/reuse requested without external recovery path
 restore interrupted before bank 3 is valid
 top-sector erase succeeds but rewrite fails
 protected-window write requested without explicit STR8 install/update
@@ -168,18 +186,21 @@ STR8_INIT
 STR8_PRINT_SCREEN
 STR8_CMD_LOOP
 STR8_CMD_BACKUP        simulated first, real later
+STR8_CMD_BACKUP_0      explicit factory snapshot 3->0 after clear-check
 STR8_CMD_RESTORE_0     simulated first, real later
 STR8_CMD_RESTORE_1     simulated first, real later
 STR8_CMD_RESTORE_2     simulated first, real later
 STR8_CMD_VERIFY        read-only first
-STR8_BANK_SELECT_A     first real hardware hinge
-STR8_VERIFY_BANK_IMAGE
-STR8_COPY_BANK_ORDINARY_BYTES
+FLSH_BANK_SELECT_A     first real hardware hinge
+FLSH_BANK_CLEAR_CHECK_A
+FLSH_BANK_ERASE_A
+FLSH_COPY_BANK_AX
+FLSH_VERIFY_BANK_AX
 STR8_TOP_SECTOR_STAGE
 STR8_INSTALL_SELF
 ```
 
-## Current Stub
+## Current Stub And Next Image
 
 ```text
 source:  SRC/TEST/apps/str8/str8.asm
@@ -187,5 +208,6 @@ build:   make -C SRC str8
 output:  SRC/BUILD/s19/str8-f800.s19
 ```
 
-The current stub is allowed to print plans only. It must not erase or write
-flash.
+The current `$F800` stub is allowed to print plans only. It must not erase or
+write flash. The next proof image should be a RAM-resident S19 launched under
+HIMON; its exact RAM address and 8K copy buffer range remain to be chosen.
