@@ -912,10 +912,11 @@ bank 3 from becoming the dumping ground for every onboard-built routine, string,
 and command record.
 
 Current STR8 V0 recovery policy overrides the old growth-bank sketch: bank 0 is
-the platinum/oldest image slot, bank 2 is the most recent backup, bank 1 is the
-previous backup, and bank 3 is the live boot image. Backup rotates bank 1 to
-bank 0, bank 2 to bank 1, and bank 3 to bank 2. The placement below is later
-HIMON/ASM catalog intent after recovery storage moves or expands.
+the WDCMONv2/factory snapshot slot, bank 2 is the most recent backup, bank 1 is
+the previous backup, and bank 3 is the live boot image. Automatic backup rotates
+bank 2 to bank 1 and bank 3 to bank 2. The earlier automatic `1 -> 0` copy is
+deprecated. The placement below is later HIMON/ASM catalog intent after recovery
+storage moves or expands.
 
 Working intent:
 
