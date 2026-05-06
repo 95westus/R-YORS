@@ -91,11 +91,15 @@ sector is erased/rebuilt.
 bank 3 = live executable system ROM / reset boot image
 bank 2 = most recent backup image
 bank 1 = previous backup image
-bank 0 = platinum R-YORS/HIMON/STR8 image and oldest backup slot for now
+bank 0 = WDCMONv2/factory snapshot slot
 ```
 
 Banks 0-2 are storage banks for now. STR8 reads, copies, verifies, and writes
 them, but does not execute from them.
+
+Bank 0 is intended to hold the board's original live WDCMONv2/factory image,
+captured before R-YORS conversion. Restoring bank 0 may remove R-YORS from the
+live boot bank. Bank 0 is not part of the automatic backup rotation.
 
 ## First Recovery Target
 
@@ -122,14 +126,28 @@ $8000-$FFFF = complete ROM bank image
 `B` backs up the active bank 3 image while preserving the previous backup:
 
 ```text
-copy bank 1 -> bank 0
 copy bank 2 -> bank 1
 copy bank 3 -> bank 2
 verify copied bytes by read-back/byte compare
 ```
 
-This keeps bank 2 as the most recent recovery image, bank 1 as the previous
-recovery image, and bank 0 as the oldest/platinum slot.
+This keeps bank 2 as the most recent recovery image and bank 1 as the previous
+recovery image. The earlier automatic `1 -> 0` copy is deprecated.
+
+Explicit factory snapshot provisioning remains separate:
+
+```text
+BACKUP 3 TO 0 = copy bank 3 -> bank 0 only after bank 0 clear-check succeeds
+```
+
+Copying bank 0 to bank 3 is the factory restore path. It may be exposed with a
+descriptive wrapper such as `STR8_RESTORE_FACTORY` while still using the generic
+`FLSH_COPY_BANK_AX` primitive underneath.
+
+Erasing or repurposing bank 0 is a destructive factory-slot action, not normal
+backup behavior. If bank 0 is later erased or repurposed, onboard WDCMONv2
+factory recovery is gone until another factory image is written there or an
+external programmer restores the board.
 
 ## Boot Target
 
@@ -152,8 +170,8 @@ STR8/HIMON -> L F style flash loader
 
 ```text
 STR8 - Subroutine To Return
-B = backup image
-0 = recover from platinum image
+B = backup automatic image rotation
+0 = recover from WDCMONv2/factory image; may uninstall R-YORS
 2 = recover from image 2
 1 = recover from image 1
 G = go HIMON / timeout default
@@ -210,6 +228,19 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
+The first RAM-resident S19 STR8 copies full 32K banks with an 8K buffer:
+
+```text
+copy windows $8-$9
+copy windows $A-$B
+copy windows $C-$D
+copy windows $E-$F
+```
+
+Each chunk reads the source bank into RAM, selects the destination bank, erases
+the destination windows if needed, writes the buffer, and verifies by read-back
+comparison.
+
 ## Verification
 
 FNV is not used by STR8 V0.
@@ -229,7 +260,7 @@ HIMON hashed command dispatch after handoff
 future STR8-N catalog/FNV participation
 future STR8-N vector integration hooks
 metadata layout
-bank 0 platinum image maintenance
+bank 0 WDCMONv2/factory snapshot maintenance
 wear leveling or erase counters
 flash export/migration over serial or board-to-board link
 special full-image export/import and self-update safety policy
@@ -239,8 +270,8 @@ WDCMONv2 transition documentation/tool
 
 ## Core Rule
 
-Bank 3 boots. Bank 0 starts as platinum/oldest. Bank 2 is latest backup. Bank 1
-is previous backup.
+Bank 3 boots. Bank 0 is WDCMONv2/factory snapshot. Bank 2 is latest backup.
+Bank 1 is previous backup.
 
 STR8 restores bank 3 from whole 32K ROM bank images, skipping the selected STR8
 protected window unless an explicit STR8 install/update is requested. Then HIMON
