@@ -208,7 +208,14 @@ buried records gone.
 - bank: one selectable 32K flash view, visible at `$8000-$FFFF`.
 - bank 0-3: four different physical 32K images mapped into the same
   `$8000-$FFFF` view.
-- sector: 4K erase unit inside a bank; erase granularity is exactly one sector.
+- `$WLPB`: mnemonic for reading the four hex nibbles of a 16-bit CPU address:
+  `W` = 4K window (`$W000-$WFFF`), `L` = 256-byte line
+  (`$WL00-$WLFF`), `P` = 16-byte paragraph (`$WLP0-$WLPF`), and `B` =
+  byte inside that paragraph.
+- window: 4K CPU address range selected by the high hex nibble. Window `$8`
+  is `$8000-$8FFF`; window `$F` is `$F000-$FFFF`.
+- sector: 4K erase unit inside a bank; in banked flash, one 4K window is one
+  erase sector of the currently selected flash bank.
 - page: 256-byte CPU page.
 - segment: logical software range, not necessarily erasable by itself.
 - zero page: `$0000-$00FF`.
@@ -236,4 +243,6 @@ buried records gone.
   address when none is forced; examples include high-to-low, low-to-high, best
   fit, closest-to-top, and first fit in a selected bank or sector range.
 
-Example: `$E000-$EFFF` is sector `E` of whichever bank is currently selected.
+Example: `$E000-$EFFF` is window/sector `$E` of whichever bank is currently
+selected. Sector `$0` is `$0000-$0FFF`; `$0000-$FFFF` is the full 64K CPU
+address space, not sector `$0`.
