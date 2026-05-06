@@ -31,6 +31,16 @@ R-YORS -> STR8 -> HIMON -> THE -> onboard ASM/catalog linking
 This repo is meant to feel like a machine binder: source, generated listings,
 design notes, decisions, maps, and scratchpad material all live together.
 
+## Project Posture
+
+R-YORS does not claim that every idea here is new to computing history. Many
+ideas are known patterns being rediscovered, renamed, tested, and made personal
+through this board, this vocabulary, and this build.
+
+This project is AI-assisted. I am better at reading 6502 code than writing it,
+so AI is used as a working companion for assembly, documentation, design
+review, and turning rough intent into testable source.
+
 ## Carry Convention
 
 R-YORS generally treats the 6502 carry flag as an affirmative status bit:
