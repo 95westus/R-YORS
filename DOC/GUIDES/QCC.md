@@ -32,6 +32,23 @@ QCC notes are allowed to contain what-ifs, partial schemes, warnings, and
 working vocabulary. When a QCC answer becomes firm, copy the settled part into
 `DECISIONS.md` and leave the QCC note as background.
 
+## Q: Is R-YORS trying to emulate IBM midrange systems?
+
+Comment: No. R-YORS is not an emulator, simulator, clone, or compatibility
+target for System/34, System/36, System/38, AS/400, or IBM i. The project
+author has System/36 experience and System/34 simulation/emulation interest, so
+some vocabulary and instincts may show through. R-YORS itself is a W65C02
+project growing from board constraints, flash banks, HIMON, STR8, hash catalogs,
+and routines-of-routines.
+
+Some ideas may rhyme with IBM midrange systems: named things, catalogs, stable
+callable services, recoverable storage, and machine-level policy. Those rhymes
+are useful comparisons, not product goals.
+
+Concern: Do not import unwanted midrange complexity, opacity, job-control
+assumptions, database worldview, or compatibility promises. If an idea does not
+fit a small inspectable 6502 runtime, it does not belong in the first path.
+
 ## Current QCC Topics
 
 - [QCC_HASH.md](./QCC_HASH.md) - hash widths, folded FNV-1a, F/N/V layouts,
