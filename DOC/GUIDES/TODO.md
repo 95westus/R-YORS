@@ -2,6 +2,12 @@
 
 ## Near Term
 
+- Define the RAM-resident STR8 S19 command text for automatic backup, explicit
+  `3 -> 0`, restore, erase, and verify operations.
+- Choose the first 8K STR8 copy buffer address/range and then update
+  `MEMORY_MAP.md`.
+- Define `FLSH_` suffix conventions for register-carried arguments, including
+  `_A` and `_AX`.
 - Define the first STR8 V0 protected-window start inside bank 3's `$F000-$FFFF`
   top erase sector: `$FC00`, `$FA00`, `$F800`, `$F600`, `$F400`, `$F200`, or
   `$F000`.
