@@ -36,6 +36,27 @@ reason it belongs in R-YORS / STR8 / HIMON
 
 Until then, it stays here as a special moment.
 
+## Good Far Out: STR8 Future Flash Services
+
+Bucket: `good far out`
+
+Today STR8 should stay focused on bank select, clear check, erase, copy,
+restore, and read-back verify. These related ideas are worth saving without
+pulling them into the first RAM-resident S19 implementation:
+
+```text
+catalog-linked transients
+copying routine packs from ROM/flash to RAM before dangerous operations
+FLSH_IS_BANK_WRITEABLE
+FLSH_CYCLE_COUNT
+FLSH_SWAP
+FLSH_WEAR_LEVEL_FIND_NEXT_ELIGIBLE
+FLSH_BANK_NEEDS_LEVELING
+flash options/config/identity storage
+STR8-managed flash allocator or filesystem-like layer
+EDU board LED alerts for erase/write/do-not-interrupt states
+```
+
 ## Word Find: THE
 
 Bucket: `word find`
