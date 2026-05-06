@@ -87,7 +87,8 @@ function Read-HexByte {
 function Import-S19IntoImage {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)][byte[]]$Image
+        [Parameter(Mandatory = $true)][byte[]]$Image,
+        [Parameter(Mandatory = $true)][int]$BankOffset
     )
 
     foreach ($rawLine in Get-Content -Path $Path) {
@@ -127,7 +128,7 @@ function Import-S19IntoImage {
             $sum += $b
             $absolute = $addr + $i
             if ($absolute -ge 0x8000 -and $absolute -lt 0x10000) {
-                $offset = $absolute - 0x8000
+                $offset = $BankOffset + ($absolute - 0x8000)
                 if ($Image[$offset] -ne 0xFF -and $Image[$offset] -ne $b) {
                     throw ("Conflicting bytes at {0:X4}: existing {1:X2}, new {2:X2} from {3}" -f $absolute, $Image[$offset], $b, $Path)
                 }
@@ -146,14 +147,14 @@ function Import-S19IntoImage {
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $BinPath) | Out-Null
 
+$bankOffset = 0
 [byte[]]$bin = New-Object byte[] 32768
 for ($i = 0; $i -lt $bin.Length; $i++) {
     $bin[$i] = 0xFF
 }
-$bin[0] = 0x00
 
-Import-S19IntoImage -Path $MsbasicS19Path -Image $bin
-Import-S19IntoImage -Path $HimonS19Path -Image $bin
+Import-S19IntoImage -Path $MsbasicS19Path -Image $bin -BankOffset $bankOffset
+Import-S19IntoImage -Path $HimonS19Path -Image $bin -BankOffset $bankOffset
 
 [byte[]]$vectors = @(
     [byte]($monNmi -band 0xFF), [byte](($monNmi -shr 8) -band 0xFF),
@@ -161,23 +162,24 @@ Import-S19IntoImage -Path $HimonS19Path -Image $bin
     [byte]($monIrq -band 0xFF), [byte](($monIrq -shr 8) -band 0xFF)
 )
 for ($i = 0; $i -lt $vectors.Length; $i++) {
-    $bin[0x7FFA + $i] = $vectors[$i]
+    $bin[$bankOffset + 0x7FFA + $i] = $vectors[$i]
 }
 
 [System.IO.File]::WriteAllBytes($BinPath, $bin)
 
 $bin = [System.IO.File]::ReadAllBytes($BinPath)
 if ($bin.Length -ne 32768) {
-    throw "Unexpected BIN size $($bin.Length); expected 32768 bytes for 8000-FFFF"
+    throw "Unexpected BIN size $($bin.Length); expected 32768 bytes for 8000-FFFF bank image"
 }
 
-$basicHead = $bin[0x3000..0x300F] | ForEach-Object { "{0:X2}" -f $_ }
-$monHead = $bin[0x5000..0x500F] | ForEach-Object { "{0:X2}" -f $_ }
-$bankHead = $bin[0..15] | ForEach-Object { "{0:X2}" -f $_ }
-$tail = $bin[32762..32767] | ForEach-Object { "{0:X2}" -f $_ }
+$basicHead = $bin[($bankOffset + 0x3000)..($bankOffset + 0x300F)] | ForEach-Object { "{0:X2}" -f $_ }
+$monHead = $bin[($bankOffset + 0x5000)..($bankOffset + 0x500F)] | ForEach-Object { "{0:X2}" -f $_ }
+$bankHead = $bin[$bankOffset..($bankOffset + 15)] | ForEach-Object { "{0:X2}" -f $_ }
+$tail = $bin[($bankOffset + 0x7FFA)..($bankOffset + 0x7FFF)] | ForEach-Object { "{0:X2}" -f $_ }
 
 Write-Host ("BASIC FNV/ENTRY/COLD/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $basicFnv, $basicEntry, $basicCold, $basicEnd)
 Write-Host ("HIMON START/NMI/IRQ/END   = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $monStart, $monNmi, $monIrq, $monEnd)
+Write-Host ("Bank offset               = 0x{0:X5}" -f $bankOffset)
 Write-Host ("Bank start @ 8000          = {0}" -f ($bankHead -join " "))
 Write-Host ("BASIC @ B000              = {0}" -f ($basicHead -join " "))
 Write-Host ("HIMON @ D000              = {0}" -f ($monHead -join " "))

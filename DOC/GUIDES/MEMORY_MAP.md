@@ -33,10 +33,11 @@ $FFFC-$FFFD   RESET = $D000
 $FFFE-$FFFF   IRQ   = $EB3D
 ```
 
-Generated burnable ROM `.bin` files are full 128K flash images. The current
-bootable HIMON image is bank 3, so this CPU view appears at file offset
-`$18000-$1FFFF`. HIMON `START` at CPU `$D000` appears at file offset `$1D000`;
-the hardware vectors appear at the tail of the file.
+Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
+image for the programmer workflow. The file does not encode a bank number;
+bank 0-3 placement is managed through the T48 programmer or through
+R-YORS/STR8. HIMON `START` at CPU `$D000` appears at file offset `$5000`; the
+hardware vectors appear at the tail of the 32K file.
 
 ## Current Flash Policy
 

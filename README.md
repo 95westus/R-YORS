@@ -143,10 +143,12 @@ make release
 Regenerates source-derived docs, builds the tracked release set, and stamps the
 HIMON ROM binary.
 
-Generated burnable ROM `.bin` files are full 128K flash images. The bootable
-HIMON bank is bank 3, so HIMON `START` at CPU `$D000` appears at file offset
-`$1D000`, and the reset vector appears at the tail of the file. The build check
-verifies that vector and reset-target code before release.
+Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
+image for the programmer workflow. The file does not encode a bank number;
+bank 0-3 placement is managed through the T48 programmer or through
+R-YORS/STR8. HIMON `START` at CPU `$D000` appears at file offset `$5000`, and
+the reset vector appears at file offset `$7FFC`. The build check verifies that
+vector and reset-target code before release.
 
 ```text
 make release-local

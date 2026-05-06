@@ -110,10 +110,7 @@ Get-ChildItem -LiteralPath $BinDir -Filter *.bin -File | Sort-Object Name | ForE
     }
 
     if ($bin.Length -eq 131072) {
-        $problem = Test-RomBankImage -Name $_.Name -Bytes $bin -BankOffset 0x18000 -BankLabel "bank3"
-        if ($problem) {
-            $bad += $problem
-        }
+        $bad += ("{0}: full 128K flash images are not generated burnable ROM BINs; use one 32K bank image" -f $_.Name)
         return
     }
 

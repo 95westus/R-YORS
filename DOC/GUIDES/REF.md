@@ -219,15 +219,17 @@ unless a future generator is added.
 
 ## BIN Flash Image Policy
 
-Generated burnable ROM `.bin` files are full 128K flash images. The current
-bootable HIMON bank is bank 3, so CPU `$8000-$FFFF` in bank 3 lives at file
-offset `$18000-$1FFFF`.
+Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
+image for the programmer workflow. The file does not encode a bank number;
+bank 0-3 placement is managed through the T48 programmer or through
+R-YORS/STR8.
 
-HIMON `START` is currently CPU `$D000`, which is file offset `$1D000` in the
-full image. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of the file,
-`$1FFFA-$1FFFF`.
+HIMON `START` is currently CPU `$D000`, which is file offset `$5000` in the
+32K bank image. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of the
+file, `$7FFA-$7FFF`.
 
-The beginning of a valid full flash image may be erased `$FF` because bank 0 can
-be blank. Do not add a fake first-byte prefix just to make offset 0 non-blank.
-The build check verifies the reset vector and confirms that the reset target in
-bank 3 contains real code.
+The beginning of a valid HIMON bank image may be erased `$FF` because
+`$8000-$CFFF` is the user flash/load region. Do not add a fake first-byte prefix
+just to make offset 0 non-blank. The build check verifies the reset vector and
+confirms that the reset target in the selected 32K bank image contains real
+code.
