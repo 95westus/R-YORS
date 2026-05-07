@@ -87,6 +87,9 @@ docs.
   pause after each thought block; in R-YORS it is the guide style for important
   design thinking that is not settled enough for `DECISIONS.md`.
 - BSO2: predecessor board-monitor project and lineage evidence.
+- SMS: provisional way-future name for a System Messaging Service. The name may
+  change. The concept is an operator/message-queue service for informational,
+  action, inquiry, reply, and cancel-style system messages.
 
 ## Source Terms
 

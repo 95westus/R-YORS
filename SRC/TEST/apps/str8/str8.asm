@@ -50,10 +50,11 @@ STR8_WORKER_RUN         EQU             $3000
 STR8_WORKER_RUN_HI      EQU             $30
 STR8_WORKER_STORE_HI    EQU             $C0
 STR8_WORKER_COPY_PAGES  EQU             $10
-STR8_DELAY_DOTS         EQU             $06
-STR8_DELAY_DOT_A        EQU             $26
-STR8_DELAY_DOT_X        EQU             $B6
-STR8_DELAY_DOT_Y        EQU             $F8
+STR8_DELAY_TICKS        EQU             $06
+STR8_DELAY_TICK_A       EQU             $26
+STR8_DELAY_FIRST_A      EQU             $27
+STR8_DELAY_TICK_X       EQU             $B6
+STR8_DELAY_TICK_Y       EQU             $F8
 
 STR8_COPY_MODE_FULL     EQU             $00
 STR8_COPY_MODE_RESTORE  EQU             $01
@@ -125,45 +126,70 @@ STR8_ENTER_HIMON_WARM:
 
                         IF              STR8_RAM_PROOF
                         ELSE
-; OUT: C=1 if any key was consumed; C=0 if the timeout elapsed.
+; OUT: C=1 if S/s was consumed; C=0 if the timeout elapsed.
 STR8_STARTUP_DELAY:
                         LDX             #<MSG_BOOT_PROMPT
                         LDY             #>MSG_BOOT_PROMPT
                         JSR             STR8_PRINT_XY
-                        LDA             #STR8_DELAY_DOTS
-?DOT:
+                        LDA             #STR8_DELAY_TICKS
+?TICK:
                         PHA
-                        LDA             STR8_BOOT_KEY_ENABLE
-                        BEQ             ?SKIP_KEY_1
-                        JSR             BIO_FTDI_READ_BYTE_NONBLOCK
+                        JSR             STR8_BOOT_KEY_POLL_IF_ENABLED
                         BCS             ?KEY_PRESSED
-?SKIP_KEY_1:
                         PLA
                         PHA
-                        JSR             STR8_WRITE_DEC_DIGIT_A
+                        JSR             STR8_PRINT_COUNTDOWN_A
                         PLA
                         PHA
-                        CMP             #$01
-                        BEQ             ?NO_COUNT_SPACE
-                        LDA             #' '
-                        JSR             STR8_WRITE_BYTE
-?NO_COUNT_SPACE:
-                        LDA             #STR8_DELAY_DOT_A
-                        LDX             #STR8_DELAY_DOT_X
-                        LDY             #STR8_DELAY_DOT_Y
-                        JSR             UTL_DELAY_AXY_8MHZ
-                        LDA             STR8_BOOT_KEY_ENABLE
-                        BEQ             ?SKIP_KEY_2
-                        JSR             BIO_FTDI_READ_BYTE_NONBLOCK
+                        JSR             STR8_DELAY_COUNTDOWN_TICK_A
+                        JSR             STR8_BOOT_KEY_POLL_IF_ENABLED
                         BCS             ?KEY_PRESSED
-?SKIP_KEY_2:
                         PLA
                         DEC             A
-                        BNE             ?DOT
+                        BNE             ?TICK
                         CLC
                         RTS
 ?KEY_PRESSED:          PLA
                         SEC
+                        RTS
+
+STR8_BOOT_KEY_POLL_IF_ENABLED:
+                        LDA             STR8_BOOT_KEY_ENABLE
+                        BEQ             ?NO
+                        JMP             STR8_BOOT_KEY_POLL
+?NO:                   CLC
+                        RTS
+
+STR8_PRINT_COUNTDOWN_A:
+                        PHA
+                        JSR             STR8_WRITE_DEC_DIGIT_A
+                        PLA
+                        CMP             #$01
+                        BEQ             ?DONE
+                        LDA             #' '
+                        JSR             STR8_WRITE_BYTE
+?DONE:                 RTS
+
+; One $27 tick plus five $26 ticks equals the utility's $E5 6.502s profile.
+STR8_DELAY_COUNTDOWN_TICK_A:
+                        CMP             #STR8_DELAY_TICKS
+                        BEQ             ?FIRST
+                        LDA             #STR8_DELAY_TICK_A
+                        BRA             ?WAIT
+?FIRST:                LDA             #STR8_DELAY_FIRST_A
+?WAIT:                 LDX             #STR8_DELAY_TICK_X
+                        LDY             #STR8_DELAY_TICK_Y
+                        JMP             UTL_DELAY_AXY_8MHZ
+
+STR8_BOOT_KEY_POLL:
+                        JSR             BIO_FTDI_READ_BYTE_NONBLOCK
+                        BCC             ?NO
+                        AND             #$DF
+                        CMP             #'S'
+                        BEQ             ?YES
+?NO:                   CLC
+                        RTS
+?YES:                  SEC
                         RTS
                         ENDIF
 
@@ -762,7 +788,7 @@ MSG_SCREEN:             DB              $0D,$0A,"STR8 V0",$0D,$0A
 MSG_PROMPT:             DB              "STR8",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
-MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 6S. KEY=STR8 ",$A0
+MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 6S. S=STR8 ",$A0
                         ENDIF
 
 MSG_ID:                 DB              $0D,$0A,"STR8 V0",$0D,$8A

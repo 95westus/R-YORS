@@ -36,6 +36,7 @@ design notes, decisions, maps, and scratchpad material all live together.
 A rudimentary STR8 flash-recovery path has been lightly tested on hardware and
 is functioning nominally. Treat it as an early recovery tool, not a finished
 field-updater: keep a programmer recovery path and known-good image nearby.
+So far, STR8 is doing what it is intended to do; testing continues.
 
 ## Project Posture
 

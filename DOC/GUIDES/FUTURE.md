@@ -36,6 +36,22 @@
   monitor unless that same work also improves recovery, cataloging, assembly,
   loading, or routine reuse.
 
+## System Messaging Service Direction
+
+- Add a way-future system messaging service, currently nicknamed `SMS`.
+  The name is provisional and may change before implementation.
+- Model it after console/subconsole and operator-message systems from older
+  midrange/mainframe/supercomputer environments: a task or person can send a
+  message, a console/subconsole can receive it, and some messages can require
+  a reply before the sender continues.
+- Keep the early concept queue-shaped rather than screen-shaped:
+  informational messages, action/attention messages, inquiry messages that
+  require a reply, replies correlated to message IDs, and cancellation of
+  outstanding inquiries.
+- Do not make `SMS` a current HIMON or STR8 feature yet. It belongs after the
+  monitor, catalog, memory, and app/session boundaries are strong enough to
+  host a real service.
+
 ## Board Onboarding Direction
 
 - Support a WDCMONv2-to-R-YORS installation bridge for boards that already boot
