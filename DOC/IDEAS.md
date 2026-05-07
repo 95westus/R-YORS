@@ -57,6 +57,46 @@ STR8-managed flash allocator or filesystem-like layer
 EDU board LED alerts for erase/write/do-not-interrupt states
 ```
 
+## Good Far Out: STR8 C Report Labels
+
+Bucket: `good far out`
+
+The condensed STR8 flash-sector report should be a two-line display with bank
+labels separated from sector status:
+
+```text
+BANK0     BANK1     BANK2     BOOT
+++--++--  --++--++  --------  ++++++++
+```
+
+The status grammar is stable: each eight-character group maps to 4K sectors
+`8 9 A B C D E F`, meaning `$8000` through `$F000`; `-` means erased/unused
+and all `$FF`, while `+` means used/not fully erased.
+
+In time, another command or detail mode could reuse the same sector positions
+for derived meaning:
+
+```text
+BOOT
+----+HHS
+```
+
+Where `+` is used-but-unclassified, `H` is HIMON-like, and `S` is
+STR8/top-sector boot material. The physical `+/-` report should remain the
+cheap primitive; semantic labels can come from later recognizers.
+
+The musing: the label line should not be conceptually tied only to bank
+numbers. Bank 3 should indicate `BOOT`, because that is where reset boots from.
+In the future, those labels could become role names or RCAT/catalog names:
+
+```text
+BASE      RECOV     HIMON     DATA
+++--++--  --++--++  --------  ++++++++
+```
+
+That preserves the compact bench display while letting STR8/STRAIGHTEN grow
+toward named banks or images later.
+
 ## Word Find: THE
 
 Bucket: `word find`

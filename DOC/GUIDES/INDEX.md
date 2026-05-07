@@ -28,6 +28,8 @@ This is the top index for the `ror` documentation set.
 - [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor.
 - [STR8_DECISION_REFERENCE.md](./STR8_DECISION_REFERENCE.md) - current STR8
   first-run design decisions.
+- [STR8_FLASH_UPDATE_PROPOSAL.md](./STR8_FLASH_UPDATE_PROPOSAL.md) - proposed
+  STR8 scan, erase, HIMON update, and STR8 self-update flow.
 - [RTFM-str8.md](./RTFM-str8.md) - small-command STR8 instructions.
 - [RTFM-himon.md](./RTFM-himon.md) - normal monitor boundary instructions.
 - [HASHED_ASM.md](./HASHED_ASM.md) - onboard hashed assembler, symbols, and fixups.

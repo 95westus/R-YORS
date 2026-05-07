@@ -205,18 +205,51 @@ STR8W_COPY_PTR_TO_BUF:
 STR8W_ERASE_DST_SECTOR:
                         LDA             STR8_COPY_DST_BANK
                         JSR             STR8W_BANK_SELECT_A
-                        STZ             STR8W_ADDR_LO
-                        LDA             STR8_MARK_SECTOR_HI
+                        JSR             STR8W_DST_SECTOR_ERASED
+                        BCS             ?OK
+                        LDA             STR8_MARK_ADDR_LO
+                        STA             STR8W_ADDR_LO
+                        LDA             STR8_MARK_ADDR_HI
                         STA             STR8W_ADDR_HI
                         JSR             STR8W_FLASH_ERASE
+                        BCC             ?FAIL
+                        JSR             STR8W_DST_SECTOR_ERASED
                         BCS             ?OK
-                        STZ             STR8_MARK_ADDR_LO
-                        LDA             STR8_MARK_SECTOR_HI
-                        STA             STR8_MARK_ADDR_HI
+?FAIL:
                         CLC
                         RTS
 ?OK:
                         SEC
+                        RTS
+
+; OUT: C=1 if the selected destination sector is all $FF.
+;      C=0 and STR8_MARK_ADDR_* names the first non-erased byte otherwise.
+STR8W_DST_SECTOR_ERASED:
+                        STZ             STR8W_PTR_LO
+                        LDA             STR8_MARK_SECTOR_HI
+                        STA             STR8W_PTR_HI
+?PAGE:
+                        LDY             #$00
+?BYTE:
+                        LDA             (STR8W_PTR_LO),Y
+                        CMP             #$FF
+                        BNE             ?NOT_ERASED
+                        INY
+                        BNE             ?BYTE
+                        INC             STR8W_PTR_HI
+                        LDA             STR8W_PTR_HI
+                        SEC
+                        SBC             STR8_MARK_SECTOR_HI
+                        CMP             #$10
+                        BNE             ?PAGE
+                        SEC
+                        RTS
+?NOT_ERASED:
+                        TYA
+                        STA             STR8_MARK_ADDR_LO
+                        LDA             STR8W_PTR_HI
+                        STA             STR8_MARK_ADDR_HI
+                        CLC
                         RTS
 
 STR8W_PROGRAM_DST_SECTOR:
