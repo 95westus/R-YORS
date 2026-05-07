@@ -10,7 +10,20 @@ MON_BOOTLOG_RESET:
                         RTS
 MON_BOOTLOG_HAVE_REASON:
                         STZ             BOOT_REASON
+                        PHA
 
+                        LDX             #<MSG_BOOTLOG_FTDI
+                        LDY             #>MSG_BOOTLOG_FTDI
+                        JSR             MON_BOOTLOG_LINE_XY
+                        LDX             #<MSG_BOOTLOG_WAIT
+                        LDY             #>MSG_BOOTLOG_WAIT
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             MON_BOOTLOG_WAIT_DOTS
+                        LDX             #<MSG_BOOTLOG_OK
+                        LDY             #>MSG_BOOTLOG_OK
+                        JSR             MON_BOOTLOG_LINE_XY
+
+                        PLA
                         CMP             #BOOT_REASON_WARM
                         BEQ             MON_BOOTLOG_WARM
                         LDX             #<MSG_BOOTLOG_COLD
@@ -25,16 +38,6 @@ MON_BOOTLOG_WARM:
                         LDY             #>MSG_BOOTLOG_WARM
                         JSR             MON_BOOTLOG_LINE_XY
 MON_BOOTLOG_AFTER_REASON:
-                        LDX             #<MSG_BOOTLOG_FTDI
-                        LDY             #>MSG_BOOTLOG_FTDI
-                        JSR             MON_BOOTLOG_LINE_XY
-                        LDX             #<MSG_BOOTLOG_WAIT
-                        LDY             #>MSG_BOOTLOG_WAIT
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             MON_BOOTLOG_WAIT_DOTS
-                        LDX             #<MSG_BOOTLOG_OK
-                        LDY             #>MSG_BOOTLOG_OK
-                        JSR             MON_BOOTLOG_LINE_XY
 
                         LDX             #<MSG_BOOTLOG_RST
                         LDY             #>MSG_BOOTLOG_RST
