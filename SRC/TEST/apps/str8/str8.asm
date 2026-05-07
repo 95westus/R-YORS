@@ -22,6 +22,8 @@
                         XDEF            START
 
                         XREF            BIO_FTDI_INIT
+                        XREF            BIO_FTDI_FLUSH_RX
+                        XREF            BIO_FTDI_READ_BYTE_NONBLOCK
                         XREF            BIO_FTDI_READ_BYTE_BLOCK
                         XREF            BIO_FTDI_WRITE_BYTE_BLOCK
                         XREF            UTL_DELAY_AXY_8MHZ
@@ -40,6 +42,10 @@ STR8_CFG_FLAGS_HI       EQU             $FF
 STR8_CFG_B0_ROT_MASK    EQU             $01
 STR8_RESET_VECTOR       EQU             $FFFC
 STR8_HIMON_START        EQU             $D600
+STR8_HIMON_RESET_SIG0   EQU             $7EE6
+STR8_HIMON_RESET_SIG1   EQU             $7EE7
+STR8_HIMON_RESET_SIG2   EQU             $7EE8
+STR8_HIMON_RESET_SIG3   EQU             $7EE9
 STR8_WORKER_RUN         EQU             $3000
 STR8_WORKER_RUN_HI      EQU             $30
 STR8_WORKER_STORE_HI    EQU             $C0
@@ -52,6 +58,8 @@ STR8_DELAY_DOT_Y        EQU             $F8
 STR8_COPY_MODE_FULL     EQU             $00
 STR8_COPY_MODE_RESTORE  EQU             $01
 STR8_COPY_MODE_ENROLL   EQU             $02
+STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
+STR8_RESTORE_PROT_START_HI EQU          $D0
 
 STR8_PTR_LO             EQU             $CD
 STR8_PTR_HI             EQU             $CE
@@ -65,6 +73,7 @@ STR8_COPY_BUF_HI        EQU             $0314
 STR8_COPY_SRC_BANK      EQU             $0315
 STR8_COPY_DST_BANK      EQU             $0316
 STR8_COPY_MODE          EQU             $0317
+STR8_BOOT_KEY_ENABLE    EQU             $0318
 STR8_SECTOR_BUF_HI      EQU             $40
 STR8_SECTOR_BUF_END_HI  EQU             $50
 
@@ -78,6 +87,12 @@ START:
                         IF              STR8_RAM_PROOF
                         ELSE
                         JSR             STR8_STARTUP_DELAY
+                        BCS             ?STR8_TAKEOVER
+                        LDX             #<MSG_CRLF
+                        LDY             #>MSG_CRLF
+                        JSR             STR8_PRINT_XY
+                        JMP             STR8_ENTER_HIMON_WARM
+?STR8_TAKEOVER:
                         ENDIF
                         JSR             STR8_PRINT_SCREEN
                         JMP             STR8_CMD_LOOP
@@ -87,26 +102,68 @@ START:
 ; ----------------------------------------------------------------------------
 STR8_INIT:
                         JSR             BIO_FTDI_INIT
+                        JSR             BIO_FTDI_FLUSH_RX
+                        LDA             #$00
+                        BCC             ?KEY_FLAG
+                        LDA             #$01
+?KEY_FLAG:             STA             STR8_BOOT_KEY_ENABLE
                         IF              STR8_RAM_PROOF
                         JSR             STR8_SELECT_BANK_3
                         ENDIF
                         RTS
 
+STR8_ENTER_HIMON_WARM:
+                        LDA             #$A5
+                        STA             STR8_HIMON_RESET_SIG0
+                        LDA             #$5A
+                        STA             STR8_HIMON_RESET_SIG1
+                        LDA             #$C3
+                        STA             STR8_HIMON_RESET_SIG2
+                        LDA             #$3C
+                        STA             STR8_HIMON_RESET_SIG3
+                        JMP             STR8_HIMON_START
+
                         IF              STR8_RAM_PROOF
                         ELSE
+; OUT: C=1 if any key was consumed; C=0 if the timeout elapsed.
 STR8_STARTUP_DELAY:
+                        LDX             #<MSG_BOOT_PROMPT
+                        LDY             #>MSG_BOOT_PROMPT
+                        JSR             STR8_PRINT_XY
                         LDA             #STR8_DELAY_DOTS
 ?DOT:
                         PHA
-                        LDA             #'.'
+                        LDA             STR8_BOOT_KEY_ENABLE
+                        BEQ             ?SKIP_KEY_1
+                        JSR             BIO_FTDI_READ_BYTE_NONBLOCK
+                        BCS             ?KEY_PRESSED
+?SKIP_KEY_1:
+                        PLA
+                        PHA
+                        JSR             STR8_WRITE_DEC_DIGIT_A
+                        PLA
+                        PHA
+                        CMP             #$01
+                        BEQ             ?NO_COUNT_SPACE
+                        LDA             #' '
                         JSR             STR8_WRITE_BYTE
+?NO_COUNT_SPACE:
                         LDA             #STR8_DELAY_DOT_A
                         LDX             #STR8_DELAY_DOT_X
                         LDY             #STR8_DELAY_DOT_Y
                         JSR             UTL_DELAY_AXY_8MHZ
+                        LDA             STR8_BOOT_KEY_ENABLE
+                        BEQ             ?SKIP_KEY_2
+                        JSR             BIO_FTDI_READ_BYTE_NONBLOCK
+                        BCS             ?KEY_PRESSED
+?SKIP_KEY_2:
                         PLA
                         DEC             A
                         BNE             ?DOT
+                        CLC
+                        RTS
+?KEY_PRESSED:          PLA
+                        SEC
                         RTS
                         ENDIF
 
@@ -244,10 +301,17 @@ STR8_CMD_RESTORE_A:
                         JSR             STR8_PRINT_XY
                         JSR             STR8_CONFIRM_Y
                         BCC             STR8_CMD_ABORT
+                        LDX             #<MSG_FLASH_HI_WARN
+                        LDY             #>MSG_FLASH_HI_WARN
+                        JSR             STR8_PRINT_XY
+                        JSR             STR8_CONFIRM_Y
+                        BCS             ?FLASH_HI
+                        LDA             #STR8_COPY_MODE_RESTORE
+                        BRA             ?SET_MODE
+?FLASH_HI:             LDA             #STR8_COPY_MODE_RESTORE_FLASH_HI
+?SET_MODE:             STA             STR8_COPY_MODE
                         LDA             #$03
                         STA             STR8_COPY_DST_BANK
-                        LDA             #STR8_COPY_MODE_RESTORE
-                        STA             STR8_COPY_MODE
                         JSR             STR8_RUN_COPY
                         BCC             STR8_CMD_COPY_FAIL
                         JMP             STR8_CMD_OK
@@ -258,12 +322,12 @@ STR8_CMD_G_HIMON:
                         LDX             #<MSG_G_HIMON
                         LDY             #>MSG_G_HIMON
                         JSR             STR8_PRINT_XY
-                        JMP             STR8_HIMON_START
+                        JMP             STR8_ENTER_HIMON_WARM
                         ELSE
                         LDX             #<MSG_G_HIMON
                         LDY             #>MSG_G_HIMON
                         JSR             STR8_PRINT_XY
-                        JMP             STR8_HIMON_START
+                        JMP             STR8_ENTER_HIMON_WARM
                         ENDIF
 
 STR8_CMD_RESET:
@@ -406,7 +470,13 @@ STR8_RUN_COPY:
 STR8_COPY_BANKS:
                         LDA             #$80
                         STA             STR8_MARK_SECTOR_HI
-?SECTOR:                JSR             STR8_STAGE_SRC_SECTOR
+?SECTOR:                LDA             STR8_COPY_MODE
+                        CMP             #STR8_COPY_MODE_RESTORE
+                        BNE             ?COPY_SECTOR
+                        LDA             STR8_MARK_SECTOR_HI
+                        CMP             #STR8_RESTORE_PROT_START_HI
+                        BCS             ?NEXT_SECTOR
+?COPY_SECTOR:           JSR             STR8_STAGE_SRC_SECTOR
                         JSR             STR8_PRESERVE_STR8_IF_RESTORE
                         JSR             STR8_ERASE_DST_SECTOR
                         BCC             ?FAIL
@@ -416,6 +486,7 @@ STR8_COPY_BANKS:
                         BCC             ?FAIL
                         LDA             #'.'
                         JSR             STR8_WRITE_BYTE
+?NEXT_SECTOR:
                         LDA             STR8_MARK_SECTOR_HI
                         CLC
                         ADC             #$10
@@ -689,6 +760,10 @@ MSG_SCREEN:             DB              $0D,$0A,"STR8 V0",$0D,$0A
                         ENDIF
                         DB              "? B E 0 1 2 G R",$0D,$8A
 MSG_PROMPT:             DB              "STR8",('>'+$80)
+                        IF              STR8_RAM_PROOF
+                        ELSE
+MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 6S. KEY=STR8 ",$A0
+                        ENDIF
 
 MSG_ID:                 DB              $0D,$0A,"STR8 V0",$0D,$8A
 MSG_B0_HOLD:            DB              "B0 HOLD",$0D,$8A
@@ -706,7 +781,8 @@ MSG_ALREADY_ROT:        DB              $0D,$0A,"B0 ALREADY ROT",$0D,$8A
 MSG_BACKUP_WARN:        DB              $0D,$0A,"BACKUP ERASE B1/B2. Y:",$A0
 MSG_BACKUP_B0_WARN:     DB              $0D,$0A,"BACKUP ERASE B0/B1/B2. Y:",$A0
 MSG_ENROLL_WARN:        DB              $0D,$0A,"B0 ROT ON. NEXT B ERASES B0. Y:",$A0
-MSG_RESTORE_WARN:       DB              "->B3 SKIP STR8. Y:",$A0
+MSG_RESTORE_WARN:       DB              "->B3? Y:",$A0
+MSG_FLASH_HI_WARN:      DB              $0D,$0A,"WARN: MAY NOT BOOT",$0D,$0A,"FLASH D000-FFFF? Y:",$A0
 MSG_COPY_B:             DB              $0D,$0A,"COPY ",('B'+$80)
 MSG_TO_B:               DB              "->",('B'+$80)
                         IF              STR8_RAM_PROOF

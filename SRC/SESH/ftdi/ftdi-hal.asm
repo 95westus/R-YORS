@@ -651,26 +651,46 @@ BIO_FTDI_FLUSH_RX_COUNT:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ROUTINE: BIO_FTDI_FLUSH_RX  [HASH:2F6622B9]
 ; TIER: HAL-L1
-; TAGS: BIO, HAL-L1, FTDI, FLUSH, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
-;   CALLS_PIN, STACK
+; TAGS: BIO, HAL-L1, FTDI, FLUSH, PRESERVE-A, PRESERVE-XY, CARRY-STATUS,
+;   NO-ZP, NO-RAM, PUFF-PLUS, CALLS_PIN, STACK
 ; MEM : ZP: none; FIXED_RAM: none.
-; PURPOSE: Drain all currently buffered FTDI RX bytes.
+; PURPOSE: Bounded drain of currently buffered FTDI RX bytes.
 ; IN : none
-; OUT: C = 1 when flush loop completes, A preserved
+; OUT: C = 1 when RX reaches empty; C = 0 if the bounded guard expires; A/X/Y preserved
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; EXCEPTIONS/NOTES:
 ; - Independent flush loop; does not call `BIO_FTDI_FLUSH_RX_COUNT`.
 ; - Use `BIO_FTDI_FLUSH_RX_COUNT` when the drained-byte count is needed.
 ; - Drains bytes via `PIN_FTDI_READ_BYTE_NONBLOCK` until FIFO empty (C=0).
+; - Bounded so startup/reset paths cannot hang forever if RXF# is stuck active.
+; - This is an intentional BIO behavior/contract change, not an app-local
+;   workaround. It is not marked as the first PIN/BIO/COR routine change:
+;   git history already contains earlier BIO/COR layer edits.
 ; - NUGGET CLASS (chat): PUFF-PLUS.
+;
+; CHANGELOG:
+; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
+; 2026-05-07T19:14Z WLP2   Changed flush from unbounded drain to bounded drain.
+;                          Preserves A/X/Y and returns C=0 if the guard expires.
                         XDEF            BIO_FTDI_FLUSH_RX
                         XREF            PIN_FTDI_READ_BYTE_NONBLOCK
+
+FTDI_FLUSH_RX_MAX          EQU             $FF
+
 BIO_FTDI_FLUSH_RX:
                         PHA
+                        PHX
+                        LDX             #FTDI_FLUSH_RX_MAX
 ?LOOP:                  JSR             PIN_FTDI_READ_BYTE_NONBLOCK
-                        BCC             ?FLUSH_END
-                        BRA             ?LOOP
-?FLUSH_END:             PLA
+                        BCC             ?EMPTY
+                        DEX
+                        BNE             ?LOOP
+                        PLX
+                        PLA
+                        CLC
+                        RTS
+?EMPTY:                 PLX
+                        PLA
                         SEC
                         RTS
                         ENDMOD

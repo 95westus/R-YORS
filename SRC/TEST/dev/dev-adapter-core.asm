@@ -82,7 +82,7 @@ SYS_INIT:
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Device-neutral input flush.
 ; IN : none
-; OUT: C = 1 when flush completes
+; OUT: C = 1 when RX reaches empty; C = 0 if the backend guard expires
 ; EXCEPTIONS/NOTES:
 ; - Delegates to backend routine `COR_FTDI_FLUSH_RX`.
 ; ----------------------------------------------------------------------------

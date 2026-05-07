@@ -19,11 +19,14 @@ STR8_WORKER_STORE_HI    EQU             $C0
 
 STR8_COPY_MODE_RESTORE  EQU             $01
 STR8_COPY_MODE_ENROLL   EQU             $02
+STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
+STR8_RESTORE_PROT_START_HI EQU          $D0
 
 STR8_CFG_FLAGS_ADDR     EQU             $FFF0
 STR8_CFG_FLAGS_LO       EQU             $F0
 STR8_CFG_FLAGS_HI       EQU             $FF
 STR8_CFG_B0_ROT_MASK    EQU             $01
+STR8_RESET_VECTOR       EQU             $FFFC
 
 STR8W_PTR_LO            EQU             $CD
 STR8W_PTR_HI            EQU             $CE
@@ -68,9 +71,15 @@ START:
 ?DONE:
                         BCC             ?FAIL
                         JSR             STR8W_SELECT_BANK3
+                        LDA             STR8_COPY_MODE
+                        CMP             #STR8_COPY_MODE_RESTORE_FLASH_HI
+                        BEQ             ?RESET
                         PLP
                         SEC
                         RTS
+?RESET:
+                        PLP
+                        JMP             (STR8_RESET_VECTOR)
 ?FAIL:
                         JSR             STR8W_SELECT_BANK3
                         PLP
@@ -81,6 +90,13 @@ STR8W_COPY_BANKS:
                         LDA             #$80
                         STA             STR8_MARK_SECTOR_HI
 ?SECTOR:
+                        LDA             STR8_COPY_MODE
+                        CMP             #STR8_COPY_MODE_RESTORE
+                        BNE             ?COPY_SECTOR
+                        LDA             STR8_MARK_SECTOR_HI
+                        CMP             #STR8_RESTORE_PROT_START_HI
+                        BCS             ?NEXT_SECTOR
+?COPY_SECTOR:
                         JSR             STR8W_STAGE_SRC_SECTOR
                         JSR             STR8W_PRESERVE_IF_RESTORE
                         JSR             STR8W_ERASE_DST_SECTOR
@@ -89,6 +105,7 @@ STR8W_COPY_BANKS:
                         BCC             ?FAIL
                         JSR             STR8W_VERIFY_DST_SECTOR
                         BCC             ?FAIL
+?NEXT_SECTOR:
                         LDA             STR8_MARK_SECTOR_HI
                         CLC
                         ADC             #$10
@@ -136,10 +153,17 @@ STR8W_STAGE_SRC_SECTOR:
 STR8W_PRESERVE_IF_RESTORE:
                         LDA             STR8_COPY_MODE
                         CMP             #STR8_COPY_MODE_RESTORE
+                        BEQ             ?RESTORE
+                        CMP             #STR8_COPY_MODE_RESTORE_FLASH_HI
                         BNE             ?DONE
+?RESTORE:
                         LDA             STR8_MARK_SECTOR_HI
                         CMP             #STR8_WORKER_STORE_HI
                         BEQ             ?PRESERVE_WORKER
+                        LDA             STR8_COPY_MODE
+                        CMP             #STR8_COPY_MODE_RESTORE_FLASH_HI
+                        BEQ             ?DONE
+                        LDA             STR8_MARK_SECTOR_HI
                         CMP             #$F0
                         BEQ             ?PRESERVE_STR8
 ?DONE:

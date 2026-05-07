@@ -69,9 +69,9 @@ COR_FTDI_INIT:
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Backend input flush entry for FTDI stack.
 ; IN : none
-; OUT: C = 1 when flush completes
+; OUT: C = 1 when RX reaches empty; C = 0 if the bounded guard expires
 ; EXCEPTIONS/NOTES:
-; - Thin wrapper over `BIO_FTDI_FLUSH_RX`.
+; - Thin wrapper over bounded HAL routine `BIO_FTDI_FLUSH_RX`.
 ; ----------------------------------------------------------------------------
 COR_FTDI_FLUSH_RX:
                         JSR             BIO_FTDI_FLUSH_RX
