@@ -197,16 +197,16 @@ notes:       Runtime command token hashing path.
 ```
 
 ```text
-name:        HIMONIA_ABI_WRITE_BYTE
-hash:        $C6233F7A
-kind:        T/R
-class:       USER_CALLABLE, MONITOR_ABI
-tokens:      HIMON, FIXED_ENTRY, WRITE, BYTE, FTDI, TRAMPOLINE
-source:      HIMON/himon.asm:2407
+name:        BIO_FTDI_WRITE_BYTE_BLOCK
+hash:        $379FE930
+kind:        R
+class:       DEVICE_IO
+tokens:      BIO, FTDI, WRITE, BYTE, BLOCK
+source:      SESH/ftdi/ftdi-hal.asm
 abi_in:      A = byte to write
-abi_out:     follows BIO_FTDI_WRITE_BYTE_BLOCK
-calls:       BIO_FTDI_WRITE_BYTE_BLOCK
-notes:       Fixed-entry routine should remain stable even if backend moves.
+abi_out:     byte is written when the FTDI bus accepts it
+calls:       PIN_FTDI_WRITE_BYTE_NONBLOCK
+notes:       HIMON now calls this directly; the removed fixed ABI trampoline is no longer present.
 ```
 
 ## Current HIMON Call Tree
@@ -297,9 +297,8 @@ flowchart TD
     MON_BRK_TRAP --> MON_REENTER
     MON_IRQ_TRAP --> MON_REENTER
 
-    HIMONIA_ABI_WRITE_BYTE --> BIO_FTDI_WRITE_BYTE_BLOCK
-    HIMONIA_ABI_READ_BYTE --> BIO_FTDI_READ_BYTE_BLOCK
-    HIMONIA_ABI_EXIT_APP --> MON_REENTER
+    BIO_FTDI_WRITE_BYTE_BLOCK --> PIN_FTDI_WRITE_BYTE_NONBLOCK
+    BIO_FTDI_READ_BYTE_BLOCK --> PIN_FTDI_READ_BYTE_NONBLOCK
 ```
 
 ## Direction

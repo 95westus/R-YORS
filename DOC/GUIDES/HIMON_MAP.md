@@ -8,9 +8,9 @@ Scope is the current HIMON build path:
 
 ```text
 HIMON/himon.asm
-HIMON/himonia-debug.inc
-HIMON/himonia-disasm.inc
-HIMON/himonia-asm.inc
+HIMON/himon-debug.inc
+HIMON/himon-disasm.inc
+HIMON/himon-asm.inc
 HIMON/himon-shared-eq.inc
 ```
 
@@ -239,26 +239,27 @@ flowchart TD
     EMIT --> STORE[ASM_STORE_A_ADV]
 ```
 
-### Fixed Entries And External Boundary
+### External Boundary
 
 ```mermaid
 flowchart TD
-    HWRITE[HIMONIA_ABI_WRITE_BYTE at $F00D] --> FTDIW[BIO_FTDI_WRITE_BYTE_BLOCK]
-    HREAD[HIMONIA_ABI_READ_BYTE at $FEED] --> FTDIR[BIO_FTDI_READ_BYTE_BLOCK]
-    HEXIT[HIMONIA_ABI_EXIT_APP at $FADE] --> CLEAN[clear context/trap cause]
-    CLEAN --> REENTER[MON_REENTER]
-
     HIMON[HIMON] --> SYS[SYS_INIT / SYS_FLUSH_RX / SYS_WRITE_* / SYS_VEC_SET_*]
     HIMON --> BIO[BIO_FTDI_*]
     HIMON --> FLASH[FLASH_WRITE_BYTE_AXY]
     HIMON --> DBGEXT[DBG_HANDLE_BRK in debug include]
+    APP[loaded-language bridge] -.map-patched calls.-> BIO
+    APP -.optional re-entry.-> START[START at $8000]
 ```
+
+The old fixed HIMONIA entry slots at `$F00D`, `$FADE`, and `$FEED` have been
+removed. Current local bridge builds may patch against `himon-rom.map`, but
+there is no promised fixed high-ROM ABI.
 
 ## Full Capability Map
 
 | Capability | User surface | Main labels | Current behavior | Notes |
 | --- | --- | --- | --- | --- |
-| Boot/re-enter monitor | reset, fixed-entry exit, trap return | `START`, `MON_REENTER`, `MON_START_INIT` | Owns hardware stack on entry, initializes system I/O, installs active vectors, enters prompt. | This is the normal HIMON path today. STR8 is not implemented here yet. |
+| Boot/re-enter monitor | reset, trap return, `$8000` handoff | `START`, `MON_REENTER`, `MON_START_INIT` | Owns hardware stack on entry, initializes system I/O, installs active vectors, enters prompt. | This is the normal HIMON path today. STR8 hands normal boot here. |
 | Cold RAM clear | reset path | `MON_COLD_RESET`, `MON_CLEAR_RAM` | Clears RAM through `$7EFF`, then sets reset signature and starts monitor. | Preserves the idea that HIMON owns monitor RAM after cold boot. |
 | Vector/trap install | boot-time | `SYS_VEC_SET_NMI_XY`, `SYS_VEC_SET_IRQ_BRK_XY`, `SYS_VEC_SET_IRQ_NONBRK_XY` | Installs HIMON NMI, BRK, and IRQ handlers through system vector helpers. | STR8 should own physical vectors later, with HIMON installing active RAM vectors. |
 | Line input | prompt and loaders | `HIM_READ_LINE_ECHO_UPPER`, `HIM_READ_LINE_UPPER` | Blocking FTDI read, uppercases input, supports backspace, Ctrl-C abort, and NUL termination. | `L` uses non-echo upper input for S-record streams. |
@@ -281,9 +282,8 @@ flowchart TD
 | Single step | `S` | `CMD_S`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by opcode length, plants a temporary BRK, resumes with `RTI`. | Does not emulate branch-taken paths yet. |
 | Mini assembler | `A start [mne op]`, interactive `A start` | `CMD_A`, `ASM_ASSEMBLE_LINE`, `ASM_FIND_OPCODE`, `ASM_EMIT` | Assembles one W65C02S instruction to the current address; interactive exits on `.` or Ctrl-C. | Current version is numeric-only and direct-write. Future hashed ASM adds labels/fixups. |
 | Quit/debug trap | `Q` | `CMD_Q` | Executes `BRK $65`. | Useful to exercise BRK capture path. |
-| Fixed-entry write byte | fixed entry `$F00D` | `HIMONIA_ABI_WRITE_BYTE` | Trampoline to `BIO_FTDI_WRITE_BYTE_BLOCK`. | Intended stable external call point. |
-| Fixed-entry read byte | fixed entry `$FEED` | `HIMONIA_ABI_READ_BYTE` | Trampoline to `BIO_FTDI_READ_BYTE_BLOCK`. | Intended stable external call point. |
-| Fixed-entry exit app | fixed entry `$FADE` | `HIMONIA_ABI_EXIT_APP` | Clears monitor trap state and re-enters monitor. | External code can return to HIMON without knowing internal labels. |
+| Loaded-language bridge I/O | map-patched call addresses | `BIO_FTDI_READ_BYTE_BLOCK`, `BIO_FTDI_WRITE_BYTE_BLOCK` | Local composite images may patch direct calls from the current HIMON map. | Not a stable fixed-address ABI; rebuild patches must track the map. |
+| Loaded-language return | `$8000` handoff for current composites | `START` | Re-enters HIMON through its reset/monitor entry. | A cleaner app-return contract is future work. |
 
 ## Edge Evidence Rules
 

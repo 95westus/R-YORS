@@ -22,10 +22,10 @@ SRC/TEST/apps/himon/fnv1a-hbstr.asm
 SRC/TEST/apps/himon/himonia-f.asm
 SRC/TEST/apps/himon/himon.asm
 SRC/TEST/apps/himon/himon-shared-eq.inc
-SRC/TEST/apps/himon/himonia-asm.inc
-SRC/TEST/apps/himon/himonia-debug.inc
-SRC/TEST/apps/himon/himonia-disasm.inc
-SRC/TEST/apps/himon/himonia-bootlog.inc
+SRC/TEST/apps/himon/himon-asm.inc
+SRC/TEST/apps/himon/himon-debug.inc
+SRC/TEST/apps/himon/himon-disasm.inc
+SRC/TEST/apps/himon/himon-bootlog.inc
 ```
 
 Guide evidence:
@@ -340,7 +340,6 @@ MON_*          boot, trap, context, print, return-status helpers
 DBG_*          breakpoints and step
 DIS_*          disassembler
 ASM_*          mini assembler
-HIMONIA_ABI_*  fixed external ABI slots
 ```
 
 Primary idea:
@@ -442,7 +441,7 @@ any later free-list heap
 | `FNV1A_*` | FNV tool | Current runtime hash | 32-bit little-endian FNV-1a over command/name text. |
 | `MATH_*` | FNV tool | Current hash support | 32-bit shift/add math used by FNV prime multiply. |
 | `FLASH_*` | HIMON/STR8-adjacent | Current imported service | Byte write helper used by `L F`; STR8 should own safer erase/update later. |
-| `HIMONIA_ABI_*` | HIMON | Current ROM ABI names | Fixed `$F00D`, `$FEED`, `$FADE` external entry slots. Names lag the final HIMON name. |
+| fixed HIMONIA ABI slots | Removed HIMON experiment | Removed | The `$F00D`, `$FEED`, `$FADE` trampolines were novelty proof points, not the current contract. |
 | `MEM_*` | Future HIMON dynamic stage | Planned only | Dynamic memory ownership layer; not STR8, not current HIMON. |
 
 ## Class Map
@@ -467,7 +466,7 @@ flowchart TD
     LOAD --> FLASH["FLASH_* blank-write"]
     CTX --> TRAP["NMI/BRK/IRQ trap state"]
     DBG --> TRAP
-    EXEC --> ABI["HIMONIA_ABI_* / external return"]
+    EXEC --> APPRET["loaded app return / map-patched bridge"]
 
     SYS["SYS_*"] --> BIO["BIO_*"]
     BIO --> PIN["PIN_*"]
@@ -505,7 +504,7 @@ Keep this reading:
 
 ```text
 Himonia-F -> historical implementation branch folded into HIMON
-HIMONIA_ABI_* -> historical ABI symbol names still present in code
+fixed HIMONIA ABI slots -> removed experiment, not current code
 HIMON -> final normal monitor name
 STR8 -> recovery/update guard
 ```

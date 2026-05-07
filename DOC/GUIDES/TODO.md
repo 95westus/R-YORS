@@ -2,9 +2,9 @@
 
 ## Near Term
 
-- Define the RAM-resident STR8 S19 command text for automatic backup, explicit
-  `3 -> 0`, restore, erase, and verify operations.
-- Choose the first 8K STR8 copy buffer address/range and then update
+- Prove the RAM-resident STR8 S19 command text for automatic backup, Bank 0
+  enrollment, restore, reset, and HIMON handoff operations.
+- Choose the first 4K STR8 copy buffer address/range and then update
   `MEMORY_MAP.md`.
 - Define `FLSH_` suffix conventions for register-carried arguments, including
   `_A` and `_AX`.

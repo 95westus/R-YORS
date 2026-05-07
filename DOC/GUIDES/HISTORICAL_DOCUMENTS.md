@@ -190,8 +190,9 @@ pieces. This matters because FNV is no longer just documentation hash thinking.
 It becomes executable 65C02 code that hashes high-bit-terminated strings.
 
 That same commit is also important because the `A` assembler path gets factored
-into `himonia-asm.inc`. In other words, the assembler existed as a practical
-monitor feature before the later hashed-symbol assembler design.
+out into its own include, then named `himonia-asm.inc` and now renamed
+`himon-asm.inc`. In other words, the assembler existed as a practical monitor
+feature before the later hashed-symbol assembler design.
 
 ### 2026-04-27: Himonia-F Becomes Hash Driven
 
@@ -292,7 +293,8 @@ followed by the callable command entry.
 
 BSO2's `A` command was a practical one-line mini assembler.
 
-Himonia keeps that feature and factors it into `himonia-asm.inc`.
+Himonia kept that feature and factored it into the assembler include now named
+`himon-asm.inc`.
 
 The hashed assembler design is the next step: keep the small onboard assembler,
 but let operands resolve through symbol records instead of only numeric text.

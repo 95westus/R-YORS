@@ -10,11 +10,6 @@
                         MODULE          HIMON_APP
 
                         XDEF            START
-                        IF              ROM_ABI
-                        XDEF            HIMONIA_ABI_WRITE_BYTE
-                        XDEF            HIMONIA_ABI_READ_BYTE
-                        XDEF            HIMONIA_ABI_EXIT_APP
-                        ENDIF
 
                         XREF            BIO_FTDI_READ_BYTE_BLOCK
                         XREF            BIO_FTDI_WRITE_BYTE_BLOCK
@@ -603,9 +598,9 @@ CMD_Q:
                         BRK             $65
                         RTS
 
-                        INCLUDE         "TEST/apps/himon/himonia-debug.inc"
-                        INCLUDE         "TEST/apps/himon/himonia-disasm.inc"
-                        INCLUDE         "TEST/apps/himon/himonia-asm.inc"
+                        INCLUDE         "TEST/apps/himon/himon-debug.inc"
+                        INCLUDE         "TEST/apps/himon/himon-disasm.inc"
+                        INCLUDE         "TEST/apps/himon/himon-asm.inc"
 
 ; ----------------------------------------------------------------------------
 ; Trap handlers
@@ -2349,7 +2344,7 @@ CMD_HXN_BAD:
                         CLC
                         RTS
 
-                        INCLUDE         "TEST/apps/himon/himonia-bootlog.inc"
+                        INCLUDE         "TEST/apps/himon/himon-bootlog.inc"
 
                         DATA
 HIM_FNV_FORCE_SYS:
@@ -2410,27 +2405,6 @@ MSG_USAGE_BC:            DB              "B C start",(']'+$80)
 MSG_USAGE_BL:            DB              "B ",('L'+$80)
 MSG_USAGE_S:             DB              ('S'+$80)
 MSG_USAGE_U:             DB              "U start [end|+n]",(']'+$80)
-                        IF              ROM_ABI
-HIMONIA_ABI_WRITE        SECTION         OFFSET $F00D
-HIMONIA_ABI_WRITE_BYTE:
-                        JMP             BIO_FTDI_WRITE_BYTE_BLOCK
-                        ENDS
-
-HIMONIA_ABI_READ         SECTION         OFFSET $FEED
-HIMONIA_ABI_READ_BYTE:
-                        JMP             BIO_FTDI_READ_BYTE_BLOCK
-                        ENDS
-
-HIMONIA_ABI_EXIT         SECTION         OFFSET $FADE
-HIMONIA_ABI_EXIT_APP:
-                        STZ             NMI_CTX_FLAG
-                        STZ             TRAP_CAUSE
-                        STZ             TRAP_BRK_SIG
-                        JMP             MON_REENTER
-                        ENDS
-
-HIMON_DATA_TAIL          SECTION         OFFSET $F010
-                        ENDIF
 MSG_USAGE_A:             DB              "A start [mne op]",(']'+$80)
 MSG_BP_SET:              DB              "BP ",('$'+$80)
 MSG_BP_CLR:              DB              "B C ",('$'+$80)

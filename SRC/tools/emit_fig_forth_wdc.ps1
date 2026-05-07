@@ -188,7 +188,7 @@ function Emit-Xemit {
     Add-Line $Lines "                        STA             (UP),Y"
     Add-Line $Lines "                        LDA             0,X"
     Add-Line $Lines "                        STX             XSAVE"
-    Add-Line $Lines "                        JSR             HIMONIA_ABI_WRITE_BYTE"
+    Add-Line $Lines "                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK"
     Add-Line $Lines "                        LDX             XSAVE"
     Add-Line $Lines "                        JMP             POP"
     Add-Line $Lines
@@ -197,7 +197,7 @@ function Emit-Xemit {
 function Emit-Xkey {
     param([System.Collections.Generic.List[string]]$Lines)
     Add-Line $Lines "XKEY:                   STX             XSAVE"
-    Add-Line $Lines "                        JSR             HIMONIA_ABI_READ_BYTE"
+    Add-Line $Lines "                        JSR             BIO_FTDI_READ_BYTE_BLOCK"
     Add-Line $Lines "                        LDX             XSAVE"
     Add-Line $Lines "                        JMP             PUSH0A"
     Add-Line $Lines
@@ -214,9 +214,9 @@ function Emit-Xcr {
     param([System.Collections.Generic.List[string]]$Lines)
     Add-Line $Lines "XCR:                    STX             XSAVE"
     Add-Line $Lines '                        LDA             #$0D'
-    Add-Line $Lines "                        JSR             HIMONIA_ABI_WRITE_BYTE"
+    Add-Line $Lines "                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK"
     Add-Line $Lines '                        LDA             #$0A'
-    Add-Line $Lines "                        JSR             HIMONIA_ABI_WRITE_BYTE"
+    Add-Line $Lines "                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK"
     Add-Line $Lines "                        LDX             XSAVE"
     Add-Line $Lines "                        JMP             NEXT"
     Add-Line $Lines
@@ -235,7 +235,7 @@ function Emit-Mon {
     param([System.Collections.Generic.List[string]]$Lines)
     Add-Line $Lines "MON:                    DW              *+2"
     Add-Line $Lines "                        STX             XSAVE"
-    Add-Line $Lines "                        JMP             HIMONIA_ABI_EXIT_APP"
+    Add-Line $Lines "                        JMP             HIMON_START"
     Add-Line $Lines
 }
 
@@ -261,6 +261,8 @@ Add-Line $lines
 Add-Line $lines "                        MODULE          FIG_FORTH_APP"
 Add-Line $lines
 Add-Line $lines "                        XDEF            START"
+Add-Line $lines "                        XREF            BIO_FTDI_READ_BYTE_BLOCK"
+Add-Line $lines "                        XREF            BIO_FTDI_WRITE_BYTE_BLOCK"
 Add-Line $lines
 $skipUntil = $null
 $startedCode = $false
@@ -307,9 +309,7 @@ foreach ($raw in ($match.Groups[1].Value -split "`r?`n")) {
         Add-Line $lines
         Add-Line $lines 'RAM_DICT                 EQU             $0300'
         Add-Line $lines "RAM_FORTH_LINK           EQU             UAREA-2"
-        Add-Line $lines 'HIMONIA_ABI_WRITE_BYTE   EQU             $F00D'
-        Add-Line $lines 'HIMONIA_ABI_READ_BYTE    EQU             $FEED'
-        Add-Line $lines 'HIMONIA_ABI_EXIT_APP     EQU             $FADE'
+        Add-Line $lines 'HIMON_START              EQU             $8000'
         Add-Line $lines
         Add-Line $lines "                        CODE"
         Add-Line $lines

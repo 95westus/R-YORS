@@ -64,37 +64,29 @@ and debug tools.
   user system owns interrupts itself.
 - STR8 stays in the R-YORS "routines made from routines" spirit: reusable
   layers a system can choose, not a hidden claim over the board.
-- STR8 lives in bank 3's physical top erase sector (`$F000-$FFFF`), but the
-  policy-protected STR8 window starts at the highest fitting boundary:
-  `$FC00`, `$FA00`, `$F800`, `$F600`, `$F400`, `$F200`, or `$F000`.
+- STR8 lives in bank 3's physical top erase sector (`$F000-$FFFF`). The first
+  resident proof is linked at `$FC00`, giving a 1K protected window.
 - Protected-window bytes are flashed through a separate STR8 install/update path.
   That path still stages the full top sector and preserves non-target bytes.
   Non-STR8 bytes in the same 4K sector may be used, but changing them requires
   the same read, stage, erase, full-sector-write, and verify transaction.
 - V0 STR8 starts as a RAM-resident S19 program launched under HIMON. It proves
-  bank select, clear check, erase, 8K-buffered copy, and read-back compare
+  bank select, erase, 4K-buffered copy, Bank 0 enrollment, and read-back compare
   before reset-time ownership.
 - V0 STR8 uses whole 32K ROM bank images (`$8000-$FFFF`) as recovery sources.
   Restore writes ordinary bank 3 image bytes from selected bank 0, 1, or 2 and
   skips the selected STR8 protected window unless explicit STR8 install/update
   is requested.
 - Bank 3 is the live boot image. Bank 2 is the newest backup. Bank 1 is the
-  previous backup. Bank 0 is intended as the WDCMONv2/factory snapshot slot:
-  copy the board's original live bank there before R-YORS conversion, then
-  restore bank 0 to bank 3 to return the board to that state.
-- Automatic backup copies bank 2 to bank 1 and bank 3 to bank 2. The earlier
-  automatic `1 -> 0` rotation is deprecated.
-- `BACKUP 3 TO 0` is explicit factory-snapshot provisioning only and must
-  clear-check bank 0 before writing.
-- Copying bank 0 to bank 3 is the normal factory restore path. A descriptive
-  wrapper or S19 artifact may call this `STR8_RESTORE_FACTORY` or
-  `FLASH_S19_BOARD_RESET_TO_FACTORY`, while the primitive remains
-  `FLSH_COPY_BANK_AX`.
-- Erasing or reusing bank 0 is a separate destructive factory-slot action, not
-  ordinary backup behavior and not a casual `E0` command.
-- If bank 0 is erased or reused, onboard WDCMONv2 factory recovery is no longer
-  available; recovery then depends on an external programmer or another saved
-  image.
+  previous backup. Bank 0 is held out of rotation unless the operator runs `E`.
+  Saving the board's original WDCMONv2/base image is future bridge/install work,
+  not today's STR8 RAM proof.
+- Automatic backup copies bank 2 to bank 1 and bank 3 to bank 2 until bank 0 is
+  enrolled. After `E` clears the one-way in-flash flag, automatic backup copies
+  bank 1 to bank 0, bank 2 to bank 1, and bank 3 to bank 2.
+- Restoring bank 0 restores whatever bank 0 currently holds. Before enrollment
+  it may be a WDCMONv2/base image; after enrollment it is the oldest rotating
+  backup.
 - STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.
 - Minimal recovery is a small load/verify/flash/identity surface, not full
   HIMON.

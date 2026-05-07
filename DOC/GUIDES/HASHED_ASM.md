@@ -911,11 +911,12 @@ The `bank` byte is not just future decoration. It is how the catalog can stop
 bank 3 from becoming the dumping ground for every onboard-built routine, string,
 and command record.
 
-Current STR8 V0 recovery policy overrides the old growth-bank sketch: bank 0 is
-the WDCMONv2/factory snapshot slot, bank 2 is the most recent backup, bank 1 is
-the previous backup, and bank 3 is the live boot image. Automatic backup rotates
-bank 2 to bank 1 and bank 3 to bank 2. The earlier automatic `1 -> 0` copy is
-deprecated. The placement below is later HIMON/ASM catalog intent after recovery
+Current STR8 V0 recovery policy overrides the old growth-bank sketch: bank 2 is
+the most recent backup, bank 1 is the previous backup, bank 0 is held unless the
+operator enrolls it into rotation, and bank 3 is the live boot image. Automatic
+backup rotates bank 2 to bank 1 and bank 3 to bank 2 until Bank 0 enrollment;
+after enrollment it rotates bank 1 to bank 0, bank 2 to bank 1, and bank 3 to
+bank 2. The placement below is later HIMON/ASM catalog intent after recovery
 storage moves or expands.
 
 Working intent:

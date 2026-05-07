@@ -68,13 +68,12 @@
 - The migration bridge is a future option, not a committed V0 feature. It may
   never be implemented, or it may ship with more or fewer features depending on
   what STR8, the board, and new-user installation actually require.
-- Later, STR8 may offer to preserve the original WDCMONv2 image, bridge image,
-  or provenance notes before conversion. That is a future convenience, not a
-  requirement for the first installer.
-- The intended bank 0 use is a WDCMONv2/factory snapshot copied from the board
-  before conversion. If the user later erases or reuses bank 0, onboard factory
-  recovery is no longer available without another saved factory image or an
-  external programmer.
+- Later, the WDCMONv2 bridge should offer to preserve the original WDCMONv2/base
+  image, bridge image, or provenance notes before conversion. That is a TODO for
+  the bridge/install path, not today's STR8 RAM proof.
+- Bank 0 starts as an optional base-image hold slot, but STR8 can enroll it into
+  automatic backup rotation with a one-way in-flash flag. After enrollment,
+  bank 0 is the oldest rotating backup slot.
 
 ## Assembler Direction
 
@@ -103,10 +102,9 @@
 - For the first STR8 recovery model, restore uses a whole 32K bank 0, 1, or 2
   image as the source for bank 3, writes ordinary bank 3 image bytes, and skips
   the selected STR8 protected window unless explicit STR8 install/update is
-  requested. Automatic backup rotates bank 2 to bank 1 and bank 3 to bank 2.
-  Bank 0 is the WDCMONv2/factory snapshot slot and is written only by explicit
-  factory-snapshot request after clear-check. Erasing or reusing bank 0 is a
-  separate destructive factory-slot action, not ordinary backup behavior.
+  requested. Automatic backup rotates bank 2 to bank 1 and bank 3 to bank 2
+  until `E` enrolls bank 0. After enrollment, backup rotates bank 1 to bank 0,
+  bank 2 to bank 1, and bank 3 to bank 2.
 - Let R-YORS define scan, verify, write, commit, and later condense policy,
   with shared flash primitives where that makes sense. HIMON/maintenance owns
   catalog condense first; future STR8-N/STRAIGHTEN may participate in catalog
@@ -114,7 +112,13 @@
 - Split future flash protection into operation-context guards rather than one
   global writable range. Keep `FLASH_ADDR_ALLOWED_XY` as the conservative HIMON
   `L F` guard, keep raw erase/program routines as mechanism, and let STR8 define
-  separate backup, restore, install/update, and factory-slot range policies.
+  separate backup, restore, install/update, and bank-0-enrollment policies.
+- Consider a future advanced STR8 or HIMON maintenance mode for sector-level
+  work: select source bank/sector, select destination bank/sector, erase the
+  selected destination sector with confirmation, copy one sector to another,
+  and verify by read-back compare. This is good for rescue/lab work, bad for
+  the tiny V0 rescue prompt, and must not change Bank 0 rotation policy except
+  through the normal `E` enrollment command.
 - Treat future flash GC as append/invalidate/reclaim instead of in-place edits:
   mark records or sections stale, prepare a compacted sector image in RAM,
   relink copied records when needed, erase the old 4K sector, then write and

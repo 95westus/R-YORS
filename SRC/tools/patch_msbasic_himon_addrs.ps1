@@ -64,8 +64,8 @@ function Set-Equate {
 $SourcePath = Resolve-ArtifactPath -Path $SourcePath
 $MapPath = Resolve-ArtifactPath -Path $MapPath
 
-$readChar = Get-SymbolAddress -Path $MapPath -Name "HIMONIA_ABI_READ_BYTE"
-$writeChar = Get-SymbolAddress -Path $MapPath -Name "HIMONIA_ABI_WRITE_BYTE"
+$readChar = Get-SymbolAddress -Path $MapPath -Name "BIO_FTDI_READ_BYTE_BLOCK"
+$writeChar = Get-SymbolAddress -Path $MapPath -Name "BIO_FTDI_WRITE_BYTE_BLOCK"
 $ctrlC = Get-SymbolAddress -Path $MapPath -Name "SYS_GET_CTRL_C"
 
 [string[]]$lines = Get-Content -Path $SourcePath
@@ -76,4 +76,4 @@ Set-Equate -Lines $lines -Name "MONRDKEY" -Value $readChar
 Set-Equate -Lines $lines -Name "MONCOUT" -Value $writeChar
 Set-Content -Path $SourcePath -Value $lines
 
-Write-Host ("MSBASIC monitor ABI = READ {0}, WRITE {1}, CTRL-C {2}" -f $readChar, $writeChar, $ctrlC)
+Write-Host ("MSBASIC HIMON calls = READ {0}, WRITE {1}, CTRL-C {2}" -f $readChar, $writeChar, $ctrlC)

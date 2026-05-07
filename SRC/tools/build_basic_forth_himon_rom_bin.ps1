@@ -168,11 +168,11 @@ if ($basicFnv -ne 0xB000) {
 if ($basicEntry -ne 0xB008) {
     throw ("MSBASIC_ENTRY is {0:X4}; expected B008" -f $basicEntry)
 }
-if ($basicEnd -gt 0xD000) {
-    throw ("MS BASIC crosses HIMON at D000; _END_CODE={0:X4}" -f $basicEnd)
+if ($basicEnd -gt 0xD600) {
+    throw ("MS BASIC crosses HIMON at D600; _END_CODE={0:X4}" -f $basicEnd)
 }
-if ($monStart -ne 0xD000) {
-    throw ("HIMON START is {0:X4}; expected D000" -f $monStart)
+if ($monStart -ne 0xD600) {
+    throw ("HIMON START is {0:X4}; expected D600" -f $monStart)
 }
 if ($monEnd -gt 0xFFFA) {
     throw ("HIMON code crosses vector area; _END_CODE={0:X4}" -f $monEnd)
@@ -211,7 +211,8 @@ $bankHead = $bin[$bankOffset..($bankOffset + 0x000F)] | ForEach-Object { "{0:X2}
 $forthHead = $bin[($bankOffset + 0x1000)..($bankOffset + 0x100F)] | ForEach-Object { "{0:X2}" -f $_ }
 $chessHead = $bin[($bankOffset + 0x2900)..($bankOffset + 0x290F)] | ForEach-Object { "{0:X2}" -f $_ }
 $basicHead = $bin[($bankOffset + 0x3000)..($bankOffset + 0x300F)] | ForEach-Object { "{0:X2}" -f $_ }
-$monHead = $bin[($bankOffset + 0x5000)..($bankOffset + 0x500F)] | ForEach-Object { "{0:X2}" -f $_ }
+$monHeadOffset = $bankOffset + ($monStart - 0x8000)
+$monHead = $bin[$monHeadOffset..($monHeadOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
 $tail = $bin[($bankOffset + 0x7FFA)..($bankOffset + 0x7FFF)] | ForEach-Object { "{0:X2}" -f $_ }
 
 Write-Host ("MICROCHESS FNV/ENTRY/END  = {0:X4}/{1:X4}/{2:X4}" -f $microchessFnv, $microchessEntry, $microchessEnd)
@@ -223,6 +224,6 @@ Write-Host ("Bank start @ 8000         = {0}" -f ($bankHead -join " "))
 Write-Host ("FORTH @ 9000              = {0}" -f ($forthHead -join " "))
 Write-Host ("MICROCHESS @ A900         = {0}" -f ($chessHead -join " "))
 Write-Host ("BASIC @ B000              = {0}" -f ($basicHead -join " "))
-Write-Host ("HIMON @ D000              = {0}" -f ($monHead -join " "))
+Write-Host ("HIMON @ {0:X4}              = {1}" -f $monStart, ($monHead -join " "))
 Write-Host ("Vectors FFFA-FFFF         = {0}" -f ($tail -join " "))
 Write-Host ("BIN                       = {0}" -f $BinPath)

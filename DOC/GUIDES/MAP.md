@@ -174,10 +174,10 @@ Current operational source used by generated routine docs:
 HIMON/
   himon.asm
   himon-shared-eq.inc
-  himonia-asm.inc
-  himonia-bootlog.inc
-  himonia-debug.inc
-  himonia-disasm.inc
+  himon-asm.inc
+  himon-bootlog.inc
+  himon-debug.inc
+  himon-disasm.inc
   fnv1a-fold.asm
 
 STR8/

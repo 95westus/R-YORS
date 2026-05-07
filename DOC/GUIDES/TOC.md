@@ -11,34 +11,36 @@
 7. [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - reconstructed HIMON
    stages and routine-class families.
 8. [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor.
-9. [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
-10. [HASH_MAP.md](./HASH_MAP.md) - hash systems and where they live.
-11. [QCC_HASH.md](./QCC_HASH.md) - hash-width and compact signature QCC.
-12. [QCC_FLASH.md](./QCC_FLASH.md) - FSB lifecycle and condense/compress QCC.
-13. [HASHED_ASM.md](./HASHED_ASM.md) - detailed assembler hypothesis.
-14. [QCC_ASM.md](./QCC_ASM.md) - hashed assembler symbol/fixup QCC.
-15. [QCC_STR8.md](./QCC_STR8.md) - STR8 ownership and recovery/update QCC.
-16. [CATALOG.md](./CATALOG.md) - programmer-facing routine catalog by
+9. [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions.
+10. [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
+11. [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
+12. [HASH_MAP.md](./HASH_MAP.md) - hash systems and where they live.
+13. [QCC_HASH.md](./QCC_HASH.md) - hash-width and compact signature QCC.
+14. [QCC_FLASH.md](./QCC_FLASH.md) - FSB lifecycle and condense/compress QCC.
+15. [HASHED_ASM.md](./HASHED_ASM.md) - detailed assembler hypothesis.
+16. [QCC_ASM.md](./QCC_ASM.md) - hashed assembler symbol/fixup QCC.
+17. [QCC_STR8.md](./QCC_STR8.md) - STR8 ownership and recovery/update QCC.
+18. [CATALOG.md](./CATALOG.md) - programmer-facing routine catalog by
    read/write/string/hex/hash/flash need.
-17. [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) - worked example for moving
+19. [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) - worked example for moving
    standalone LIFE into an RBODY/RREC/RCAT member.
-18. [MEMORY_MAP.md](./MEMORY_MAP.md) - current HIMON ROM/RAM memory map,
+20. [MEMORY_MAP.md](./MEMORY_MAP.md) - current HIMON ROM/RAM memory map,
     compatibility entries, vectors, and STR8/HIMON integration direction.
-19. [QCC_MEMORY.md](./QCC_MEMORY.md) - memory ranges, 4K selectors, and bit-helper QCC.
-20. [DYNAMIC_MEMORY_FIRST_STEPS.md](./DYNAMIC_MEMORY_FIRST_STEPS.md) - first
+21. [QCC_MEMORY.md](./QCC_MEMORY.md) - memory ranges, 4K selectors, and bit-helper QCC.
+22. [DYNAMIC_MEMORY_FIRST_STEPS.md](./DYNAMIC_MEMORY_FIRST_STEPS.md) - first
     dynamic allocation notes for bytes, words, pointers, pools, and heap scope.
-21. [SYMBOL_XREF.md](./SYMBOL_XREF.md) - symbol contracts, source cross-reference,
+23. [SYMBOL_XREF.md](./SYMBOL_XREF.md) - symbol contracts, source cross-reference,
    semantic tags, and HIMON call tree.
-22. [HIMON_MAP.md](./HIMON_MAP.md) - readable HIMON edge and
+24. [HIMON_MAP.md](./HIMON_MAP.md) - readable HIMON edge and
     capability maps.
-23. [HIMON_EDGE_DUMP.md](./HIMON_EDGE_DUMP.md) - direct HIMON
+25. [HIMON_EDGE_DUMP.md](./HIMON_EDGE_DUMP.md) - direct HIMON
     `JSR`/`JMP` edge dump.
-24. [REF.md](./REF.md) - current reference sheet.
-25. [XREF.md](./XREF.md) - document/source cross-reference.
-26. [HASH.md](./HASH.md) - routine header IDs and FNV-1a relationship.
-27. [TODO.md](./TODO.md) - next work.
-28. [FUTURE.md](./FUTURE.md) - direction.
-29. [BIB.md](./BIB.md) - internal source list.
+26. [REF.md](./REF.md) - current reference sheet.
+27. [XREF.md](./XREF.md) - document/source cross-reference.
+28. [HASH.md](./HASH.md) - routine header IDs and FNV-1a relationship.
+29. [TODO.md](./TODO.md) - next work.
+30. [FUTURE.md](./FUTURE.md) - direction.
+31. [BIB.md](./BIB.md) - internal source list.
 
 ## Core Thread
 
@@ -75,6 +77,8 @@ HASH_MAP.md    map of hash concepts
 QCC_HASH.md    hash-width and compact signature questions
 QCC_FLASH.md   FSB lifecycle and condense/compress questions
 STR8.md        recovery/update monitor design
+RTFM-str8.md   compact STR8 operating instructions
+RTFM-himon.md  compact HIMON/STR8 boundary instructions
 BRINGUP.md     practical STR8/R-YORS bringup rail
 HASHED_ASM.md  assembler thesis
 QCC_ASM.md     assembler symbol/fixup questions

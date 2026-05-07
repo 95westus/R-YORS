@@ -1,0 +1,141 @@
+# RTFM R-YORS
+
+This is the short operator map. The rest of the docs explain why; this page is
+for remembering what matters when the board is in front of you.
+
+## Big Picture
+
+```text
+reset -> STR8 -> HIMON -> user work
+```
+
+STR8 is the small recovery/update monitor. HIMON is the normal interactive
+monitor. Use STR8 for backup/restore policy. Use HIMON for ordinary inspection,
+loading, disassembly, assembly, and launching code.
+
+```mermaid
+flowchart LR
+    STR8[STR8 recovery] -->|G| HIMON[HIMON monitor]
+    HIMON -->|inspect / load / debug / launch| USER[user work]
+    STR8 -->|B / E / 0 / 1 / 2| FLASH[flash mutation]
+    STR8 --> POLICY[Bank 0 and protected-window policy]
+    HIMON -. does not own .-> POLICY
+    FLASH -->|RAM worker restores Bank 3| STR8
+```
+
+## Current Status
+
+A rudimentary STR8 flash-recovery path has been lightly tested on hardware and
+is functioning nominally. Treat it as an early recovery tool, not a finished
+field-updater: keep a programmer recovery path and known-good image nearby.
+
+## Current Burn Image
+
+```text
+primary image:   SRC/BUILD/bin/himon-str8-rom.bin
+worker source:   $C000-$C1FF
+HIMON:           $D600-$F9DA
+STR8:            $FA00-$FE02
+config pocket:   $FFF0-$FFF9
+vectors:         $FFFA-$FFFF
+```
+
+Build the combined image with:
+
+```text
+make -C SRC himon-str8-rom-bin
+```
+
+## First Boot Checks
+
+After burn, these should match:
+
+```text
+D C000 +F    08 78 AD 17 03 C9 02 F0 ...
+D D600 +F    78 D8 A2 FF 9A AD E6 7E ...
+D FA00 +F    78 D8 A2 FF 9A 20 11 FA ...
+D FFFA FFFF  E4 F1 00 FA E7 F1
+```
+
+On reset, STR8 should initialize FTDI, print progress dots during the startup
+delay, then show the STR8 prompt.
+
+## Flash Banks
+
+```text
+Bank 3  live reset/boot image
+Bank 2  newest backup image
+Bank 1  older backup image
+Bank 0  held base/factory slot until enrolled
+```
+
+Bank 0 is not ordinary rotation space until `E` is confirmed in STR8. After
+that, Bank 0 joins backup rotation and may be erased by future backups.
+
+## STR8 Keys
+
+```text
+?       print STR8 ID/state
+B       backup rotation
+E       enroll Bank 0 into rotation, destructive, confirmed
+0       restore Bank 0 -> Bank 3
+1       restore Bank 1 -> Bank 3
+2       restore Bank 2 -> Bank 3
+G       go HIMON
+R       reset
+```
+
+`B`, `E`, `0`, `1`, and `2` are destructive and ask for `Y`. Do not press NMI
+while STR8 is erasing or programming flash.
+
+## HIMON Basics
+
+```text
+?              help
+D start +n     dump memory count
+D start end    dump memory range
+M addr         modify memory
+U start +n     disassemble
+A addr         assemble
+G addr         go to address
+L              load S-records to RAM
+L G            load S-records and go
+L F            flash-load under the current guard
+X              resume trapped context
+```
+
+For dump commands, `+n` is the safer habit when you mean "show me this many
+bytes."
+
+## Sharp Edges
+
+```text
+STR8 owns backup/restore and protected-window policy.
+HIMON L F is not a sector erase/update tool.
+The old $F00D/$FADE/$FEED fixed ABI entries are gone.
+STR8 restore preserves $C000-$CFFF and $FA00-$FFFF.
+WDCMONv2/base-image preservation is still TODO bridge work.
+```
+
+## Update Direction
+
+Future HIMON/STR8 updates should be RAM-resident sector transactions:
+
+```text
+read sector into RAM
+merge staged update bytes
+program directly if all changes are 1->0
+confirm before erase
+erase/write full staged sector if needed
+verify by read-back compare
+restore Bank 3 before printing status
+```
+
+STR8 self-update is a special confirmed operation and should end in reset.
+
+## More RTFM
+
+```text
+DOC/GUIDES/RTFM-str8.md    recovery, backups, restores, Bank 0
+DOC/GUIDES/RTFM-himon.md   monitor commands, loading, debug notes
+```

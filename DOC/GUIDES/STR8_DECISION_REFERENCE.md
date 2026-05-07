@@ -55,8 +55,8 @@ without depending on an external programmer for ordinary maintenance.
 ## Protected Region
 
 Bank 3 `$F000-$FFFF` is the physical top 4K erase sector. The protected STR8
-window is smaller when the code fits. Choose the highest start address that can
-hold STR8, the one-time config bytes, and the hardware vector block:
+window is smaller when the code fits. The current command proof uses
+`$FA00-$FFFF`, leaving room for the resident shell plus RAM-worker handoff:
 
 ```text
 $FC00-$FFFF  1K protected STR8 window
@@ -91,15 +91,19 @@ sector is erased/rebuilt.
 bank 3 = live executable system ROM / reset boot image
 bank 2 = most recent backup image
 bank 1 = previous backup image
-bank 0 = WDCMONv2/factory snapshot slot
+bank 0 = optional WDCMONv2/base hold, unless enrolled into rotation
 ```
 
 Banks 0-2 are storage banks for now. STR8 reads, copies, verifies, and writes
 them, but does not execute from them.
 
-Bank 0 is intended to hold the board's original live WDCMONv2/factory image,
-captured before R-YORS conversion. Restoring bank 0 may remove R-YORS from the
-live boot bank. Bank 0 is not part of the automatic backup rotation.
+Bank 0 may eventually hold the board's original live WDCMONv2/base image, but
+saving that image is a TODO for the future WDCMONv2-to-R-YORS bridge and is not
+part of today's STR8 RAM proof. Until the operator runs `E`, bank 0 is held out
+of automatic backup rotation. After `E` confirms the destructive policy change
+and clears the in-flash enrollment bit, bank 0 joins the rotation permanently
+until erase/reflash or a deliberate STR8 config rebuild. The current proof uses
+bit 0 of `$FFF0`: erased/set means `B0 HOLD`, cleared means `B0 ROT`.
 
 ## First Recovery Target
 
@@ -123,7 +127,8 @@ $8000-$FFFF = complete ROM bank image
 
 ## First Backup Target
 
-`B` backs up the active bank 3 image while preserving the previous backup:
+`B` backs up the active bank 3 image while preserving earlier backups. Before
+Bank 0 enrollment:
 
 ```text
 copy bank 2 -> bank 1
@@ -131,23 +136,27 @@ copy bank 3 -> bank 2
 verify copied bytes by read-back/byte compare
 ```
 
-This keeps bank 2 as the most recent recovery image and bank 1 as the previous
-recovery image. The earlier automatic `1 -> 0` copy is deprecated.
-
-Explicit factory snapshot provisioning remains separate:
+After Bank 0 enrollment:
 
 ```text
-BACKUP 3 TO 0 = copy bank 3 -> bank 0 only after bank 0 clear-check succeeds
+copy bank 1 -> bank 0
+copy bank 2 -> bank 1
+copy bank 3 -> bank 2
+verify copied bytes by read-back/byte compare
 ```
 
-Copying bank 0 to bank 3 is the factory restore path. It may be exposed with a
-descriptive wrapper such as `STR8_RESTORE_FACTORY` while still using the generic
-`FLSH_COPY_BANK_AX` primitive underneath.
+This keeps bank 2 as the most recent recovery image, bank 1 as the previous
+recovery image, and enrolled bank 0 as the oldest automatic recovery image.
 
-Erasing or repurposing bank 0 is a destructive factory-slot action, not normal
-backup behavior. If bank 0 is later erased or repurposed, onboard WDCMONv2
-factory recovery is gone until another factory image is written there or an
-external programmer restores the board.
+Base-image preservation remains separate future bridge work:
+
+```text
+TODO bridge/install path = offer to save original WDCMONv2/base image
+```
+
+Restoring bank 0 means restoring whatever bank 0 currently holds. Before
+enrollment it may be a WDCMONv2/base image and may remove R-YORS from the live
+boot bank. After enrollment it is just the oldest rotating backup.
 
 ## Boot Target
 
@@ -170,14 +179,17 @@ STR8/HIMON -> L F style flash loader
 
 ```text
 STR8 - Subroutine To Return
-B = backup automatic image rotation
-0 = recover from WDCMONv2/factory image; may uninstall R-YORS
-2 = recover from image 2
-1 = recover from image 1
-G = go HIMON / timeout default
+? = print tiny STR8 ID/state
+B = backup automatic image rotation, with verify
+E = enroll bank 0 into rotation, destructive, confirmed
+0 = restore bank 0 -> bank 3, with verify
+1 = restore bank 1 -> bank 3, with verify
+2 = restore bank 2 -> bank 3, with verify
+G = go HIMON
+R = reset
 ```
 
-`GO addr` and `L F` style loading are later features.
+`GO addr`, `L F`, standalone verify, and rich loading are later features.
 
 ## Vectors
 
@@ -228,18 +240,78 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
-The first RAM-resident S19 STR8 copies full 32K banks with an 8K buffer:
+The current combined ROM stores the worker source at bank 3 `$C000-$CFFF`.
+Before `B`, `E`, `0`, `1`, or `2`, resident STR8 at `$FA00` copies that worker
+to `$3000-$3FFF` and then calls it. The worker uses `$4000-$4FFF` as the 4K
+sector buffer and restores bank 3 before returning.
+
+The current RAM worker copies full 32K banks with a 4K buffer:
 
 ```text
-copy windows $8-$9
-copy windows $A-$B
-copy windows $C-$D
-copy windows $E-$F
+copy window $8
+copy window $9
+copy window $A
+copy window $B
+copy window $C
+copy window $D
+copy window $E
+copy window $F
 ```
 
 Each chunk reads the source bank into RAM, selects the destination bank, erases
 the destination windows if needed, writes the buffer, and verifies by read-back
 comparison.
+
+Restore into bank 3 preserves the worker source sector `$C000-$CFFF` and the
+protected STR8/vector window `$FA00-$FFFF`. That means a restored bank image
+does not replace those support bytes unless a future explicit STR8
+install/update path is selected.
+
+## Sector Update Policy
+
+The answer to "how do we update HIMON or STR8 when the guard is in place?" is:
+keep the guard, and make update an explicit RAM operation.
+
+The future update primitive should be sector-shaped:
+
+```text
+read selected destination sector into RAM
+merge incoming update bytes into the staged sector image
+compare staged image against live flash
+program directly when every changed bit goes 1->0
+confirm before any erase is needed
+erase only the selected destination sector
+write the full staged sector after erase
+verify by complete read-back compare
+return to bank 3 before reporting status
+```
+
+HIMON body updates can use that primitive directly. They are ordinary sector
+updates guarded by destination range and confirmation policy.
+
+Top-sector updates are not ordinary. The top sector contains:
+
+```text
+$F000-$F9FF   top-sector bytes below current STR8
+$FA00-$FFEF   current STR8 code/data protected window
+$FFF0-$FFF9   config/version/flag pocket
+$FFFA-$FFFF   vectors
+```
+
+For a HIMON-adjacent update in the top sector, STR8 must preserve
+`$FA00-$FFFF`. For an explicit STR8 update, the staged sector may replace
+`$FA00-$FFEF`, but `$FFF0-$FFF9` and vectors still need deliberate policy:
+preserve, rebuild, or explicitly change. No implicit overwrite.
+
+STR8 self-update should end in reset, not a casual return into possibly changed
+code. The RAM worker can erase, write, verify, restore bank 3, and then jump
+through reset or return to a tiny RAM reset stub. The important rule is that
+ROM code from the erased/replaced sector is not executed mid-transaction.
+
+Pack current STR8 routines and data back-to-back. Do not reserve accidental ABI
+holes in `$FE03-$FFEF` for speculative counters or future structures. Keep
+`$FFF0-$FFF9` as the deliberate fixed pocket; put repeated-write metadata such
+as counters in a different flash sector if it becomes real.
 
 ## Verification
 
@@ -256,11 +328,12 @@ user system's catalog or resolver.
 ```text
 full S19 L F support
 GO addr
+advanced sector maintenance mode
 HIMON hashed command dispatch after handoff
 future STR8-N catalog/FNV participation
 future STR8-N vector integration hooks
 metadata layout
-bank 0 WDCMONv2/factory snapshot maintenance
+bank 0 WDCMONv2/base-image preservation bridge
 wear leveling or erase counters
 flash export/migration over serial or board-to-board link
 special full-image export/import and self-update safety policy
@@ -268,10 +341,17 @@ special STR8 self-update/install path
 WDCMONv2 transition documentation/tool
 ```
 
+Advanced sector maintenance means a confirmed mode that can select source and
+destination banks/sectors, erase a selected destination sector, copy one sector
+to another, and verify by read-back compare. It is useful for rescue and lab
+work, but it is not part of the small V0 `? B E 0 1 2 G R` command surface and
+must not alter Bank 0 rotation policy except through the normal `E` enrollment
+command.
+
 ## Core Rule
 
-Bank 3 boots. Bank 0 is WDCMONv2/factory snapshot. Bank 2 is latest backup.
-Bank 1 is previous backup.
+Bank 3 boots. Bank 2 is latest backup. Bank 1 is previous backup. Bank 0 is
+held unless the one-way enrollment flag makes it the oldest rotating backup.
 
 STR8 restores bank 3 from whole 32K ROM bank images, skipping the selected STR8
 protected window unless an explicit STR8 install/update is requested. Then HIMON

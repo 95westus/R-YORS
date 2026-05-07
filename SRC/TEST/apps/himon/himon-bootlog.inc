@@ -3,11 +3,7 @@
 ; Keep this include removable: one caller, one flag, local strings only.
 ; ----------------------------------------------------------------------------
 
-                        IF              ROM_ABI
-HIMON_BOOTLOG           SECTION         OFFSET $F3D1
-                        ELSE
                         CODE
-                        ENDIF
 MON_BOOTLOG_RESET:
                         LDA             BOOT_REASON
                         BNE             MON_BOOTLOG_HAVE_REASON
@@ -98,10 +94,7 @@ MON_BOOTLOG_WAIT_DOTS:
                         BNE             ?DOT
                         RTS
 
-                        IF              ROM_ABI
-                        ELSE
                         DATA
-                        ENDIF
 MSG_BOOTLOG_COLD:       DB              "BOOT COL",('D'+$80)
 MSG_BOOTLOG_WARM:       DB              "BOOT WAR",('M'+$80)
 MSG_BOOTLOG_WAIT:       DB              "WAIT",(' '+$80)
@@ -112,6 +105,3 @@ MSG_BOOTLOG_RST:        DB              "RST 7EF8",('='+$80)
 MSG_BOOTLOG_NMI:        DB              "NMI 7EFA",('='+$80)
 MSG_BOOTLOG_IRQ:        DB              "IRQ 7EFE",('='+$80)
 MSG_BOOTLOG_BRK:        DB              "BRK 7EFC",('='+$80)
-                        IF              ROM_ABI
-                        ENDS
-                        ENDIF

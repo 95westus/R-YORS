@@ -80,7 +80,7 @@ bank 1:
   previous backup image
 
 bank 0:
-  WDCMONv2/factory snapshot slot
+  optional WDCMONv2/base hold, unless enrolled into rotation
 ```
 
 Flash-bank and flash-window vocabulary:
@@ -110,12 +110,10 @@ another bank-stable region.
 STR8 V0 restores ordinary bank 3 bytes from a whole 32K ROM bank image in bank
 0, 1, or 2. It skips the selected STR8 protected window unless explicit STR8
 install/update is requested. Automatic backup rotates bank 2 to bank 1 and bank
-3 to bank 2. The earlier automatic `1 -> 0` copy is deprecated; bank 0 is
-written only by explicit factory-snapshot request after clear-check. Copying
-bank 0 to bank 3 is the normal factory restore path. Erasing or reusing bank 0
-is a separate destructive factory-slot action; if it happens, onboard WDCMONv2
-factory recovery is no longer available without another saved factory image or
-an external programmer.
+3 to bank 2 until `E` enrolls bank 0. After enrollment, backup rotates bank 1
+to bank 0, bank 2 to bank 1, and bank 3 to bank 2. Saving the original
+WDCMONv2/base flash image is future bridge/install work, not today's STR8 RAM
+proof. Restoring bank 0 restores whatever bank 0 currently holds.
 
 HIMON controls IRQ/vector behavior in V0. Future STR8-N/STRAIGHTEN may offer
 recovery-safe vector hooks, but the current direction is opt-in integration
@@ -231,6 +229,7 @@ make -C SRC help
 make -C SRC help Q=flash
 make -C SRC himon
 make -C SRC str8
+make -C SRC himon-str8-rom-bin
 make -C SRC str8-ram
 make -C SRC basic-himon-rom-bin
 make -C SRC basic-forth-himon-rom-bin
@@ -249,12 +248,15 @@ image for the programmer workflow. The file does not encode a bank number;
 bank 0-3 placement is managed through the T48 programmer or through
 R-YORS/STR8.
 
-HIMON `START` is currently CPU `$D000`, which is file offset `$5000` in the
-32K bank image. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of the
-file, `$7FFA-$7FFF`.
+`BUILD/bin/himon-str8-rom.bin` is the primary combined image: HIMON starts at
+CPU `$D800` / file offset `$5800`, STR8 starts at CPU `$FC00` / file offset
+`$7C00`, and RESET points to STR8 at `$FC00`. Hardware vectors at CPU
+`$FFFA-$FFFF` live at the tail of the file, `$7FFA-$7FFF`.
 
-The beginning of a valid HIMON bank image may be erased `$FF` because
-`$8000-$CFFF` is the user flash/load region. Do not add a fake first-byte prefix
-just to make offset 0 non-blank. The build check verifies the reset vector and
-confirms that the reset target in the selected 32K bank image contains real
-code.
+The current standalone `himon-rom` image no longer contains the legacy HIMONIA
+fixed entries at `$F00D`, `$FADE`, or `$FEED`. Loaded-language bridge builds
+must patch call addresses from the current HIMON map or wait for a deliberate
+future ABI.
+
+The build check verifies the reset vector and confirms that the reset target in
+the selected 32K bank image contains real code.

@@ -618,7 +618,7 @@ $interruptNames = @(
 
 $interruptLabelFiles = @(
     'HIMON/himon.asm',
-    'HIMON/himonia-debug.inc',
+    'HIMON/himon-debug.inc',
     'ROM/dev/dev-adapter-core.asm',
     'ROM/dev/dev-adapter-vectors.asm'
 )
