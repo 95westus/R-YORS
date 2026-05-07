@@ -31,6 +31,12 @@ R-YORS -> STR8 -> HIMON -> THE -> onboard ASM/catalog linking
 This repo is meant to feel like a machine binder: source, generated listings,
 design notes, decisions, maps, and scratchpad material all live together.
 
+## Current Hardware Status
+
+A rudimentary STR8 flash-recovery path has been lightly tested on hardware and
+is functioning nominally. Treat it as an early recovery tool, not a finished
+field-updater: keep a programmer recovery path and known-good image nearby.
+
 ## Project Posture
 
 R-YORS does not claim that every idea here is new to computing history. Many
@@ -105,6 +111,9 @@ Start here:
 - [DOC/GUIDES/DECISIONS.md](DOC/GUIDES/DECISIONS.md) - settled calls.
 - [DOC/GUIDES/REF.md](DOC/GUIDES/REF.md) - quick reference.
 - [DOC/GUIDES/GLOSSARY.md](DOC/GUIDES/GLOSSARY.md) - terminology contract.
+- [DOC/GUIDES/RTFM-R-YORS.md](DOC/GUIDES/RTFM-R-YORS.md) - operator highlights.
+- [DOC/GUIDES/RTFM-str8.md](DOC/GUIDES/RTFM-str8.md) - STR8 operations.
+- [DOC/GUIDES/RTFM-himon.md](DOC/GUIDES/RTFM-himon.md) - HIMON operations.
 
 Core binders:
 
@@ -146,9 +155,9 @@ HIMON ROM binary.
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
 image for the programmer workflow. The file does not encode a bank number;
 bank 0-3 placement is managed through the T48 programmer or through
-R-YORS/STR8. HIMON `START` at CPU `$D000` appears at file offset `$5000`, and
-the reset vector appears at file offset `$7FFC`. The build check verifies that
-vector and reset-target code before release.
+R-YORS/STR8. The combined `himon-str8-rom.bin` image currently carries HIMON at
+CPU `$D600`, STR8 at CPU `$FA00`, and the reset vector at file offset `$7FFC`.
+The build check verifies that vector and reset-target code before release.
 
 ```text
 make release-local
