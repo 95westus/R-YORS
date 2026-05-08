@@ -58,6 +58,7 @@ STR8_FLASH_ERASE_TMO_HI EQU             $08
 STR8_FLASH_WRITE_TMO_HI EQU             $02
 
                         CODE
+; 260507-1914        WLP2        Restore-high mode resets through bank 3.
 START:
                         PHP
                         SEI
@@ -86,6 +87,7 @@ START:
                         CLC
                         RTS
 
+; 260507-1914        WLP2        Restore skips protected high sectors by mode.
 STR8W_COPY_BANKS:
                         LDA             #$80
                         STA             STR8_MARK_SECTOR_HI
@@ -150,6 +152,7 @@ STR8W_STAGE_SRC_SECTOR:
                         STA             STR8W_BUF_HI
                         JMP             STR8W_COPY_PTR_TO_BUF
 
+; 260507-1914        WLP2        Restore-high mode bypasses top-sector preserve.
 STR8W_PRESERVE_IF_RESTORE:
                         LDA             STR8_COPY_MODE
                         CMP             #STR8_COPY_MODE_RESTORE
@@ -202,6 +205,7 @@ STR8W_COPY_PTR_TO_BUF:
                         BNE             ?PAGE
                         RTS
 
+; 260507-1914        WLP2        Skip erased sectors and verify erase completion.
 STR8W_ERASE_DST_SECTOR:
                         LDA             STR8_COPY_DST_BANK
                         JSR             STR8W_BANK_SELECT_A

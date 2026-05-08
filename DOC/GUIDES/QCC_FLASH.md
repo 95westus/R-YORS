@@ -145,3 +145,71 @@ mark records formed -> sealed
 
 HIMON can scan, use, and request cleanup. The erase/rebuild operation should
 stay with the recovery/update layer.
+
+## Q: Is PACK/compact managed flash space future direction or crazy talk?
+
+Comment: It is future direction. The official low-level word remains
+`Condense`: rebuild a sector or managed region so live records are packed
+together and stale/buried/provisional material stops consuming lookup space.
+`PACK` may become the operator-facing word if it proves clearer:
+
+```text
+CONDENSE RCAT
+PACK HASH
+PACK BANK1
+```
+
+The important model is not compression in the ZIP/RLE sense. It is flash-space
+compaction:
+
+```text
+scan managed region
+choose live winner records
+copy winners into a clean layout
+verify copied records by hash/length/state
+bury or supersede old records when possible
+erase sectors only when no live records remain
+```
+
+Concern: This must not become automatic background magic. Early versions should
+be explicit, slow, verbose, and operator-confirmed. Lookup can skip stale
+records, but erase/rebuild belongs to maintenance or STR8/STRAIGHTEN policy.
+
+## Q: Can different datasets have different condense rules?
+
+Comment: Yes. Hash identity lets address become "where this record currently
+lives" instead of "what this record is." That means different managed datasets
+can eventually have different movement policies:
+
+```text
+RCAT/RREC  catalog records; compactable if sealed and hash-verified
+HASH/NAME  symbol/name/signature records; compactable, possibly rebuildable
+MSG/SMS    message templates and WTOR metadata; compactable by message ID/hash
+CODE       movable only after catalog, ABI, and call/link rules are strong
+DATA       compactable only with length, hash, state, and ownership metadata
+STAGE      disposable after update/verify succeeds
+BOOT       protected/fixed except through explicit install/update policy
+```
+
+Concern: Moving code is much harder than moving records. RCAT/HASH/MSG/DATA
+can probably condense earlier because their identity is naturally record-shaped.
+CODE should wait until catalog lookup, call boundaries, and link-on-copy rules
+are proven.
+
+## Q: What makes a sector safe to erase after condense?
+
+Comment: A sector is eraseable only after the maintenance code can prove every
+record in it is either copied and verified elsewhere, buried/stale by the
+winner rule, provisional junk, or outside the managed region's live set.
+
+```text
+all live records copied
+copies verified
+catalog/winner rule points to copies
+old records are buried or no longer winners
+then sector may be erased
+```
+
+Concern: Power loss halfway through must leave at least one valid winner. That
+means the new copy should be written and sealed before the old copy is buried,
+and erase should be the final cleanup step, not the commit step.

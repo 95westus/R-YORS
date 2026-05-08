@@ -17,10 +17,15 @@ STR8 should also have an explicit, harder-to-trigger option to update STR8.
 Keep ordinary STR8 small, but give it a few clear update/report verbs:
 
 ```text
-C    condensed bank/sector erased report
+M    map banks/sectors with condensed used/erased status
 U H  update HIMON body or normal ROM image region
 U S  update STR8 protected window/top sector
 ```
+
+`M` is the proposed report command because the operator question is "show me
+the flash map." `F` should stay reserved for a broader flash submenu or
+dangerous flash tools. `C` should stay available for future condense/compact
+language rather than meaning this cheap physical map.
 
 `U S` should require a stronger confirmation than ordinary restore/update work:
 
@@ -32,15 +37,15 @@ UPDATE STR8? TYPE STR8:
 This should not directly stream bytes into `$FA00`. It should stage a complete
 top-sector transaction, preserve required bytes, erase/write/verify, then reset.
 
-## Condensed C Report
+## M Map Report
 
-`C` scans bank by bank, sector by sector, then restores bank 3 before returning
+`M` scans bank by bank, sector by sector, then restores bank 3 before returning
 to the prompt.
 
 Proposed output:
 
 ```text
-STR8>C
+STR8>M
 BANK0     BANK1     BANK2     BOOT
 ++--++--  --++--++  --------  ++++++++
 STR8>
@@ -85,7 +90,7 @@ H = HIMON-like sector
 S = STR8/top-sector boot material
 ```
 
-The plain `C` report should stay physical and cheap. The semantic display can
+The plain `M` report should stay physical and cheap. The semantic display can
 arrive after STR8 has recognizers for WDCMON, HIMON, STR8, RCAT/data records,
 or stored bank roles.
 
@@ -119,8 +124,8 @@ For STR8, whole-sector waiting is slower but clearer and safer.
 Build this as routines made from routines:
 
 ```text
-STR8_CMD_C
-  print C header
+STR8_CMD_M
+  print M/map header
   for bank 0..3
     print bank label
     for sector 8..F
@@ -155,8 +160,8 @@ flowchart TD
     BOOT -->|no| HIMON["HIMON warm boot"]
     BOOT -->|yes| PROMPT["STR8 prompt"]
 
-    PROMPT --> C["C: condensed erased scan"]
-    C --> SCAN_BANK["For each bank 0..3"]
+    PROMPT --> M["M: condensed flash map"]
+    M --> SCAN_BANK["For each bank 0..3"]
     SCAN_BANK --> SCAN_SECTOR["For each sector 8..F"]
     SCAN_SECTOR --> SECTOR_ERASED["STR8_SECTOR_ERASED"]
     SECTOR_ERASED --> REPORT["Print - or +"]

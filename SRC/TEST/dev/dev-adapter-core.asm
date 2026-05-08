@@ -83,6 +83,7 @@ SYS_INIT:
 ; PURPOSE: Device-neutral input flush.
 ; IN : none
 ; OUT: C = 1 when RX reaches empty; C = 0 if the backend guard expires
+; 260507-1914        WLP2        SYS flush now exposes backend guard expiry.
 ; EXCEPTIONS/NOTES:
 ; - Delegates to backend routine `COR_FTDI_FLUSH_RX`.
 ; ----------------------------------------------------------------------------

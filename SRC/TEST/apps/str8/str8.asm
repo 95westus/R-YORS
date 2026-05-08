@@ -79,6 +79,7 @@ STR8_SECTOR_BUF_HI      EQU             $40
 STR8_SECTOR_BUF_END_HI  EQU             $50
 
                         CODE
+; 260507-1914        WLP2        Timeout enters HIMON warm; S/s takes STR8.
 START:
                         SEI
                         CLD
@@ -101,6 +102,7 @@ START:
 ; ----------------------------------------------------------------------------
 ; STR8 lifecycle
 ; ----------------------------------------------------------------------------
+; 260507-1914        WLP2        Init flushes RX and gates boot-key polling.
 STR8_INIT:
                         JSR             BIO_FTDI_INIT
                         JSR             BIO_FTDI_FLUSH_RX
@@ -127,6 +129,7 @@ STR8_ENTER_HIMON_WARM:
                         IF              STR8_RAM_PROOF
                         ELSE
 ; OUT: C=1 if S/s was consumed; C=0 if the timeout elapsed.
+; 260507-1914        WLP2        Countdown split into poll, print, and tick helpers.
 STR8_STARTUP_DELAY:
                         LDX             #<MSG_BOOT_PROMPT
                         LDY             #>MSG_BOOT_PROMPT
@@ -315,6 +318,7 @@ STR8_CMD_ENROLL_B0:
                         BCC             STR8_CMD_CFG_FAIL
                         JMP             STR8_CMD_OK
 
+; 260507-1914        WLP2        Restore can optionally include high flash.
 STR8_CMD_RESTORE_A:
                         STA             STR8_COPY_SRC_BANK
                         LDX             #<MSG_RESTORE_B
@@ -342,6 +346,7 @@ STR8_CMD_RESTORE_A:
                         BCC             STR8_CMD_COPY_FAIL
                         JMP             STR8_CMD_OK
 
+; 260507-1914        WLP2        G uses warm-entry signature before HIMON handoff.
 STR8_CMD_G_HIMON:
                         IF              STR8_RAM_PROOF
                         JSR             STR8_SELECT_BANK_3
@@ -493,6 +498,7 @@ STR8_RUN_COPY:
 ; ----------------------------------------------------------------------------
 ; Destructive RAM proof copy/verify routines
 ; ----------------------------------------------------------------------------
+; 260507-1914        WLP2        Restore skips protected high sectors by mode.
 STR8_COPY_BANKS:
                         LDA             #$80
                         STA             STR8_MARK_SECTOR_HI
@@ -574,6 +580,7 @@ STR8_STAGE_B3_PROTECTED:
                         BNE             ?PAGE
                         RTS
 
+; 260507-1914        WLP2        Skip erased sectors and verify erase completion.
 STR8_ERASE_DST_SECTOR:
                         LDA             STR8_COPY_DST_BANK
                         JSR             FLSH_BANK_SELECT_A

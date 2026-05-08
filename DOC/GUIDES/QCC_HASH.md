@@ -95,3 +95,106 @@ flash lifecycle state and are discussed in `QCC_FLASH.md`.
 
 Concern: Keep hash width and lifecycle bits separate in the spec. Width belongs
 in control bits such as `ww`; FSB belongs to a future signature/lifecycle idea.
+
+## Q: Should hash records link to parents and children?
+
+Comment: A HIMON userland explorer could take a command/string, compute its
+FNV-1a hash, find the matching executable FNV record, scan the associated code
+for `JSR abs` opcodes, and follow each target. In the current HIMON executable
+record shape, backing up 8 bytes from a code address can detect whether the
+target has its own FNV header:
+
+```text
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind
+```
+
+For `kind=$00`, executable code begins immediately after the kind byte. If
+`target-8` has that header, the explorer can report:
+
+```text
+parent_hash parent_addr -> child_hash child_addr
+```
+
+This should not use CPU-stack recursion on 6502. Use a RAM worklist instead:
+
+```text
+push starting address
+while worklist not empty and depth/edge budget remains
+  pop address
+  skip if already visited
+  scan bounded code bytes for JSR
+  for each target
+    test target-8 for FNV executable header
+    report edge when found
+    push child target if not visited
+```
+
+Concern: Automatic stored parent/child links cost ROM/flash space and can go
+stale when code changes. They also risk turning a compact record into a small
+database too early. The first implementation should probably derive links by
+scanning code, either in a host-side tool or a HIMON userland program.
+
+Possible later promotion path:
+
+```text
+derived scan only          cheapest, no stored links
+builder-emitted edge table automatic but rebuilt with image/catalog
+cached edge records        useful after load, must be invalidated by hash/version
+stored parent/child fields fastest lookup, highest space/staleness cost
+```
+
+Question to keep open: should RCAT/RREC eventually store explicit dependency
+edges, or should the assembler/catalog builder derive them automatically from
+code and emit a separate edge table?
+
+## Q: Can hash joints help SMS/WTOR-style operator messages?
+
+Comment: Yes, this may be one of the cleaner early uses for hash joints.
+Operator messages want provenance and reply routing more than they want a
+general code graph. A future system messaging service could attach a compact
+hash joint to a message so the operator and the waiting task can agree on:
+
+```text
+message text/hash -> sender task/routine -> reply handler or wait point
+```
+
+That gives each message a small identity trail without forcing the visible
+operator text to carry all of the machinery. A WTOR-like inquiry could carry:
+
+```text
+MSG_HASH     identifies the message template or text
+FROM_HASH    identifies the task/routine that raised it
+WAIT_HASH    identifies the reply-required wait point
+REPLY_HASH   optional expected reply class or handler
+```
+
+The human view can stay terse:
+
+```text
+STR8 RESTORE NEEDS REPLY
+```
+
+while a diagnostic view can show the chain:
+
+```text
+MSG 8A3C -> STR8_RESTORE A91233F0 -> FLASH_ERASE_WAIT 41B8207D
+```
+
+Concern: The hash joint should not become a hard dependency on exact text.
+Operator wording changes often; the durable identity should probably be the
+message template, issuing routine, or wait point, not the printable sentence
+alone. The first SMS/WTOR version should also avoid recursive chain walking.
+Use bounded lookup: message record, sender record, optional wait/reply record.
+
+Possible promotion path:
+
+```text
+message ID only             simplest queue and reply correlation
+message + sender hash       provenance without much space cost
+message + sender + wait     WTOR-style reply routing
+full chain/audit records     useful later for diagnostics and catalogs
+```
+
+Question to keep open: should SMS records store these joints directly, or
+should SMS store only a message ID while RCAT/RREC/catalog metadata resolves
+the hash chain on demand?

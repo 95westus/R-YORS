@@ -48,6 +48,9 @@
   informational messages, action/attention messages, inquiry messages that
   require a reply, replies correlated to message IDs, and cancellation of
   outstanding inquiries.
+- Keep hash-joint/chaining ideas nearby for later SMS/WTOR provenance:
+  message identity, sender routine/task identity, and reply-required wait
+  points may become compact hash-linked records.
 - Do not make `SMS` a current HIMON or STR8 feature yet. It belongs after the
   monitor, catalog, memory, and app/session boundaries are strong enough to
   host a real service.
@@ -139,6 +142,11 @@
   mark records or sections stale, prepare a compacted sector image in RAM,
   relink copied records when needed, erase the old 4K sector, then write and
   verify the prepared image.
+- Treat future `CONDENSE`, possibly exposed as an operator-friendly `PACK`
+  command, as explicit maintenance for managed flash datasets: RCAT/RREC,
+  hash/name records, message templates, movable code records, persistent data,
+  and staging areas. It is a long-term direction, not a current STR8 V0 or
+  HIMON command.
 - Explore LOC, "link on copy", for flash compaction: copied catalog records or
   modules are relinked to their new addresses before the rewritten sector
   becomes live.

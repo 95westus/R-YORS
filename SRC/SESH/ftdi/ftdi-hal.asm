@@ -669,9 +669,9 @@ BIO_FTDI_FLUSH_RX_COUNT:
 ; - NUGGET CLASS (chat): PUFF-PLUS.
 ;
 ; CHANGELOG:
-; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
-; 2026-05-07T19:14Z WLP2   Changed flush from unbounded drain to bounded drain.
-;                          Preserves A/X/Y and returns C=0 if the guard expires.
+; YYMMDD-HHMM        WHO         SUMMARY
+; 260507-1914        WLP2        Bounded RX drain; preserves A/X/Y on return.
+;                              Returns C=0 if the guard expires.
                         XDEF            BIO_FTDI_FLUSH_RX
                         XREF            PIN_FTDI_READ_BYTE_NONBLOCK
 
