@@ -157,8 +157,11 @@ Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
 image for the programmer workflow. The file does not encode a bank number;
 bank 0-3 placement is managed through the T48 programmer or through
 R-YORS/STR8. The combined `himon-str8-rom.bin` image currently carries HIMON at
-CPU `$D600`, STR8 at CPU `$FA00`, and the reset vector at file offset `$7FFC`.
+CPU `$C000`, STR8 at CPU `$F000`, and the reset vector at file offset `$7FFC`.
 The build check verifies that vector and reset-target code before release.
+Local language images are linked under the live monitor/boot region: OSI MS
+BASIC at `$8000` and fig-Forth at `$A000`. They remain blank-write/proof
+artifacts rather than full `L F` update packages.
 
 ```text
 make release-local

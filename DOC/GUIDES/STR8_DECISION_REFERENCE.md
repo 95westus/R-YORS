@@ -240,10 +240,11 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
-The current combined ROM stores the worker source at bank 3 `$C000-$CFFF`.
-Before `B`, `E`, `0`, `1`, or `2`, resident STR8 at `$FA00` copies that worker
-to `$3000-$3FFF` and then calls it. The worker uses `$4000-$4FFF` as the 4K
-sector buffer and restores bank 3 before returning.
+The current combined ROM stores the worker source at bank 3 `$F800-$FA7F`.
+Before `B`, `E`, `M`, `0`, `1`, or `2`, resident STR8 at `$F000` copies that
+worker into the `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The worker
+uses `$0A00-$0A0C` as its state board, uses `$4000-$4FFF` as the 4K sector
+buffer, and restores bank 3 before returning.
 
 The current RAM worker copies full 32K banks with a 4K buffer:
 
@@ -262,10 +263,10 @@ Each chunk reads the source bank into RAM, selects the destination bank, erases
 the destination windows if needed, writes the buffer, and verifies by read-back
 comparison.
 
-Restore into bank 3 preserves the worker source sector `$C000-$CFFF` and the
-protected STR8/vector window `$FA00-$FFFF`. That means a restored bank image
-does not replace those support bytes unless a future explicit STR8
-install/update path is selected.
+Restore into bank 3 preserves `$C000-$FFFF` unless the operator explicitly
+confirms high flash. That means a normal restored bank image does not replace
+HIMON, STR8, the worker source, or the vector pocket unless a future explicit
+STR8 install/update path is selected.
 
 ## Sector Update Policy
 
@@ -344,9 +345,9 @@ WDCMONv2 transition documentation/tool
 Advanced sector maintenance means a confirmed mode that can select source and
 destination banks/sectors, erase a selected destination sector, copy one sector
 to another, and verify by read-back compare. It is useful for rescue and lab
-work, but it is not part of the small V0 `? B E 0 1 2 G R` command surface and
-must not alter Bank 0 rotation policy except through the normal `E` enrollment
-command.
+work, but it is not part of the small V0 `? B E M 0 1 2 G R` command surface
+and must not alter Bank 0 rotation policy except through the normal `E`
+enrollment command.
 
 ## Core Rule
 

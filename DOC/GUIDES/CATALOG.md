@@ -197,7 +197,7 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `SYS_VEC_SET_NMI_XY` | `$2EEF6FC3` | vector patch | `X/Y=target` | NMI cell updated | NEEDS_PROOF | patch NMI target | `SYS VECTOR SET NMI` |
 | `SYS_VEC_SET_IRQ_BRK_XY` | `$0DFCEEC3` | vector patch | `X/Y=target` | BRK cell updated | NEEDS_PROOF | patch BRK target | `SYS VECTOR SET BRK` |
 | `SYS_VEC_SET_IRQ_NONBRK_XY` | `$14E4B2B4` | vector patch | `X/Y=target` | IRQ cell updated | NEEDS_PROOF | patch non-BRK IRQ target | `SYS VECTOR SET IRQ` |
-| `MON_NMI_TRAP` | `$7D351CE4` | monitor trap | CPU NMI context | re-enters monitor shell | NEEDS_PROOF | Himon monitor NMI path | `MON NMI TRAP DEBUG` |
+| `MON_NMI_TRAP` | `$7D351CE4` | monitor trap | CPU NMI context | re-enters monitor shell | NEEDS_PROOF | Baseline Himon monitor NMI path; active vector may point at a debounce POC wrapper. | `MON NMI TRAP DEBUG` |
 
 ## Hardware And Recovery BIO Notes
 

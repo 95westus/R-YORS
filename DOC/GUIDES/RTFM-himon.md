@@ -12,10 +12,10 @@ Normal path:
 reset -> STR8 -> G -> HIMON
 ```
 
-Current HIMON starts at `$D600`. In the combined STR8/HIMON image, STR8 jumps
+Current HIMON starts at `$C000`. In the combined STR8/HIMON image, STR8 jumps
 there for `G`.
 
-Standalone HIMON images also start at `$D600`. The old fixed HIMONIA novelty
+Standalone HIMON images also start at `$C000`. The old fixed HIMONIA novelty
 entries at `$F00D`, `$FADE`, and `$FEED` are gone. Use the current map file for
 build-specific addresses.
 
@@ -34,9 +34,23 @@ L G            load S-records and go
 L F            flash-load S-records under the current guard
 R              reset/re-enter monitor path
 X              resume trapped context when one exists
+Q              quiesce with WAI, then re-enter on wake
 ```
 
 Use HIMON for normal work. Use STR8 for boot-image recovery and backup policy.
+
+`Q` is a true quiesce command now. It masks IRQ, enters `WAI`, and resumes by
+re-entering HIMON when the CPU wakes. NMI remains the trap/debug path.
+
+`M` is currently byte-by-byte memory modify. A future HIMON fill operation fits
+best as an explicit `M` subform, not a replacement for modify. Candidate shape:
+
+```text
+M start [end|+n] =bb    fill range with byte bb
+```
+
+That future fill should start as RAM-only. Flash fill belongs behind the same
+guarded/RAM-updater policy as other flash writes.
 
 ## Short Typing
 
@@ -77,6 +91,11 @@ Those belong to STR8 or a future confirmed RAM updater.
 NMI enters HIMON's trap/debug path when the current vectors are installed. From
 there, use memory dump/disassembly/register context tools to inspect the
 machine.
+
+The active NMI vector is a proof-of-concept debounce handler. It captures the
+first NMI context, waits briefly in a software debounce loop, and ignores NMI
+edges that arrive during that window. The baseline non-debounced NMI trap
+routine remains in the image for comparison.
 
 Do not press NMI while STR8 is erasing or programming flash. NMI cannot be
 masked, and a flash operation should be allowed to finish and restore Bank 3.

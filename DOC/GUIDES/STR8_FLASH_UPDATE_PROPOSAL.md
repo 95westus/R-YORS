@@ -1,7 +1,8 @@
 # STR8 Flash Update Proposal
 
-This is a proposal note for STR8 flash update behavior. It is not a current
-command contract yet.
+This is a proposal note for STR8 flash update behavior. The first-pass `M`
+physical flash map is implemented; the `U H` and `U S` update commands remain
+future command proposals.
 
 The direction is deliberately simple:
 
@@ -22,10 +23,10 @@ U H  update HIMON body or normal ROM image region
 U S  update STR8 protected window/top sector
 ```
 
-`M` is the proposed report command because the operator question is "show me
-the flash map." `F` should stay reserved for a broader flash submenu or
-dangerous flash tools. `C` should stay available for future condense/compact
-language rather than meaning this cheap physical map.
+`M` is the report command because the operator question is "show me the flash
+map." `F` should stay reserved for a broader flash submenu or dangerous flash
+tools. `C` should stay available for future condense/compact language rather
+than meaning this cheap physical map.
 
 `U S` should require a stronger confirmation than ordinary restore/update work:
 
@@ -42,7 +43,7 @@ top-sector transaction, preserve required bytes, erase/write/verify, then reset.
 `M` scans bank by bank, sector by sector, then restores bank 3 before returning
 to the prompt.
 
-Proposed output:
+Current first-pass output shape:
 
 ```text
 STR8>M
@@ -90,7 +91,7 @@ H = HIMON-like sector
 S = STR8/top-sector boot material
 ```
 
-The plain `M` report should stay physical and cheap. The semantic display can
+The first-pass `M` report is physical and cheap. The semantic display can
 arrive after STR8 has recognizers for WDCMON, HIMON, STR8, RCAT/data records,
 or stored bank roles.
 
@@ -125,13 +126,11 @@ Build this as routines made from routines:
 
 ```text
 STR8_CMD_M
+  RAM-resident scan fills four map-mask bytes
+  scan restores bank 3
   print M/map header
   for bank 0..3
-    print bank label
-    for sector 8..F
-      call STR8_SECTOR_ERASED
-      print - or +
-  select bank 3
+    print eight mask bits as - or +
 
 STR8_ENSURE_SECTOR_ERASED
   call STR8_SECTOR_ERASED

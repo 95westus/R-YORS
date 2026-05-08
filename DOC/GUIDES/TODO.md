@@ -20,6 +20,9 @@
   address, flags, and optional name text.
 - Define the first explicit STR8 import labels HIMON will use after the
   simulation stub grows into resident recovery code.
+- Define a future HIMON `M` fill subform. Current `M start [end|+n]` is
+  byte-by-byte modify; candidate fill shape is `M start [end|+n] =bb`, RAM
+  first, with flash fill deferred to guarded RAM-updater policy.
 - Sketch the first W65C02-small `pack_lo_5` decoder and the rule for falling
   back to raw text when compression loses.
 - Define the exact `FIX` record bytes for RAM staging and direct flash patching.

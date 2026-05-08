@@ -23,7 +23,6 @@
                         XREF            SYS_VEC_SET_NMI_XY
                         XREF            SYS_VEC_SET_IRQ_BRK_XY
                         XREF            SYS_VEC_SET_IRQ_NONBRK_XY
-                        XREF            UTL_DELAY_AXY_8MHZ
                         XREF            BIO_FTDI_READ_BYTE_NONBLOCK
                         XREF            FLASH_WRITE_BYTE_AXY
                         XREF            SYS_READ_CHAR
@@ -35,9 +34,13 @@
 
 TRAP_CAUSE               EQU             $7EEA
 TRAP_BRK_SIG             EQU             $7EEB
+NMI_DEBOUNCE_FLAG        EQU             $7EEC
 TRAP_CAUSE_NONE          EQU             $00
 TRAP_CAUSE_NMI           EQU             $01
 TRAP_CAUSE_BRK           EQU             $02
+NMI_DEBOUNCE_A           EQU             $02
+NMI_DEBOUNCE_X           EQU             $B6
+NMI_DEBOUNCE_Y           EQU             $F8
 
 CMD_HASH_TAB_LO          EQU             $E0
 CMD_HASH_TAB_HI          EQU             $E1
@@ -95,6 +98,7 @@ START:
                         STZ             NMI_CTX_FLAG
                         STZ             TRAP_CAUSE
                         STZ             TRAP_BRK_SIG
+                        STZ             NMI_DEBOUNCE_FLAG
                         JMP             MON_START_INIT
 
 MON_COLD_RESET_FNV:
@@ -120,8 +124,8 @@ MON_START_INIT:
                         JSR             SYS_INIT
                         JSR             SYS_FLUSH_RX
 
-                        LDX             #<MON_NMI_TRAP
-                        LDY             #>MON_NMI_TRAP
+                        LDX             #<MON_NMI_TRAP_DEBOUNCE
+                        LDY             #>MON_NMI_TRAP_DEBOUNCE
                         JSR             SYS_VEC_SET_NMI_XY
                         LDX             #<MON_BRK_TRAP
                         LDY             #>MON_BRK_TRAP
@@ -595,8 +599,10 @@ CMD_USAGE_L:
 CMD_Q_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$FC,$0F,$0C,$D4,$00 ; Q $D40C0FFC EXEC
 CMD_Q:
-                        BRK             $65
-                        RTS
+                        ; 260507-2051        WLP2        Q now quiesces with WAI, then re-enters HIMON.
+                        SEI
+                        WAI
+                        JMP             MON_REENTER
 
                         INCLUDE         "TEST/apps/himon/himon-debug.inc"
                         INCLUDE         "TEST/apps/himon/himon-disasm.inc"
@@ -606,6 +612,7 @@ CMD_Q:
 ; Trap handlers
 ; ----------------------------------------------------------------------------
 MON_NMI_TRAP:
+                        ; 260507-2125        WLP2        Restored baseline NMI capture handler.
                         STA             NMI_CTX_A
                         STX             NMI_CTX_X
                         STY             NMI_CTX_Y
@@ -626,6 +633,53 @@ MON_NMI_TRAP:
                         STA             TRAP_CAUSE
                         STZ             TRAP_BRK_SIG
                         JMP             MON_REENTER
+
+MON_NMI_TRAP_DEBOUNCE:
+                        ; 260507-2125        WLP2        POC NMI handler eats switch bounce.
+                        PHA
+                        LDA             NMI_DEBOUNCE_FLAG
+                        CMP             #$01
+                        BNE             MON_NMI_TRAP_DEBOUNCE_CAPTURE
+                        PLA
+                        RTI
+MON_NMI_TRAP_DEBOUNCE_CAPTURE:
+                        LDA             #$01
+                        STA             NMI_DEBOUNCE_FLAG
+                        PLA
+                        STA             NMI_CTX_A
+                        STX             NMI_CTX_X
+                        STY             NMI_CTX_Y
+                        TSX
+                        LDA             $0101,X
+                        STA             NMI_CTX_P
+                        LDA             $0102,X
+                        STA             NMI_CTX_PCL
+                        LDA             $0103,X
+                        STA             NMI_CTX_PCH
+                        TXA
+                        CLC
+                        ADC             #$03
+                        STA             NMI_CTX_S
+                        LDA             #$01
+                        STA             NMI_CTX_FLAG
+                        LDA             #TRAP_CAUSE_NMI
+                        STA             TRAP_CAUSE
+                        STZ             TRAP_BRK_SIG
+                        JSR             MON_NMI_DEBOUNCE_DELAY
+                        STZ             NMI_DEBOUNCE_FLAG
+                        JMP             MON_REENTER
+
+MON_NMI_DEBOUNCE_DELAY:
+                        LDA             #NMI_DEBOUNCE_A
+?OUTER:                 LDX             #NMI_DEBOUNCE_X
+?MIDDLE:                LDY             #NMI_DEBOUNCE_Y
+?INNER:                 DEY
+                        BNE             ?INNER
+                        DEX
+                        BNE             ?MIDDLE
+                        DEC             A
+                        BNE             ?OUTER
+                        RTS
 
 MON_BRK_TRAP:
                         STA             NMI_CTX_A
@@ -1588,7 +1642,8 @@ L_WRITE_DATA_BYTE_FLASH_ACTIVE:
                         LDA             LOAD_DST_HI
                         CMP             #$80
                         BCC             L_WRITE_DATA_BYTE_PROTECT
-                        CMP             #$D0
+; 260507-2258        WLP2        L F protects relocated HIMON/STR8 at $C000+.
+                        CMP             #$C0
                         BCS             L_WRITE_DATA_BYTE_PROTECT
                         JSR             L_FLASH_SET_PTR
                         LDY             #$00

@@ -132,7 +132,7 @@ flowchart TD
     B --> DBGMAP[breakpoint map]
     S --> STEPMAP[step map]
     A --> ASMMAP[assembler map]
-    Q --> BRK65[BRK $65]
+    Q --> QUIESCE[SEI / WAI / MON_REENTER]
 ```
 
 ### Loader And Flash Write Edges
@@ -175,10 +175,16 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    NMI[MON_NMI_TRAP] --> SAVE[NMI_CTX_* save]
-    NMI --> REENTER[MON_REENTER]
+    SETNMI[SYS_VEC_SET_NMI_XY] --> POC[MON_NMI_TRAP_DEBOUNCE]
+    POC --> ACTIVE{debounce active?}
+    ACTIVE -->|yes| RTI[ignore bounce / RTI]
+    ACTIVE -->|no| NMISAVE[NMI_CTX_* save]
+    NMISAVE --> DELAY[software debounce delay]
+    DELAY --> REENTER[MON_REENTER]
+    BASE[MON_NMI_TRAP baseline] --> BASESAVE[NMI_CTX_* save]
+    BASESAVE --> REENTER
 
-    BRK[MON_BRK_TRAP] --> SAVE
+    BRK[MON_BRK_TRAP] --> BRKSAVE[NMI_CTX_* save]
     BRK --> HANDLE[DBG_HANDLE_BRK]
     HANDLE --> STEPHIT[step BRK hit]
     HANDLE --> BPHIT[user breakpoint hit]
@@ -269,9 +275,9 @@ there is no promised fixed high-ROM ABI.
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
 | Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes commands from includes: `# ? D M U R X G L B S A Q`. |
 | Memory dump | `D start [end|+n]` | `CMD_D`, `CMD_PARSE_RANGE_REQUIRED`, `MON_PRINT_MEM_RANGE` | Prints hex rows plus printable ASCII, abortable with Ctrl-C. | Uses shared range parser. |
-| Memory modify | `M start [end|+n]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes RAM byte directly, `.` aborts. | Flash-safe modify is not current behavior. |
+| Memory modify | `M start [end|+n]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes RAM byte directly, `.` aborts. | A future `M start [end|+n] =bb` fill subform fits here; flash-safe modify/fill is not current behavior. |
 | Disassemble | `U start [end|+n]` | `CMD_U`, `DIS_PRINT_ONE`, `DBG_OPCODE_LEN` | Prints W65C02S opcode, mnemonic, and operand using opcode tables. | Shares the same opcode mode tables as assembler/step. |
-| Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture. |
+| Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_S1`, `L_WRITE_DATA_BYTE` | Accepts S0/S1/S9, writes S1 data below `$8000`, tracks count and go address. | Loading to flash without `F` fails with `HINT L F`. |
@@ -281,7 +287,7 @@ there is no promised fixed high-ROM ABI.
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
 | Single step | `S` | `CMD_S`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by opcode length, plants a temporary BRK, resumes with `RTI`. | Does not emulate branch-taken paths yet. |
 | Mini assembler | `A start [mne op]`, interactive `A start` | `CMD_A`, `ASM_ASSEMBLE_LINE`, `ASM_FIND_OPCODE`, `ASM_EMIT` | Assembles one W65C02S instruction to the current address; interactive exits on `.` or Ctrl-C. | Current version is numeric-only and direct-write. Future hashed ASM adds labels/fixups. |
-| Quit/debug trap | `Q` | `CMD_Q` | Executes `BRK $65`. | Useful to exercise BRK capture path. |
+| Quiesce | `Q` | `CMD_Q` | Executes `SEI`, `WAI`, then re-enters HIMON. | IRQ wakes cleanly to monitor re-entry; NMI still follows the trap path through the debounce POC vector. |
 | Loaded-language bridge I/O | map-patched call addresses | `BIO_FTDI_READ_BYTE_BLOCK`, `BIO_FTDI_WRITE_BYTE_BLOCK` | Local composite images may patch direct calls from the current HIMON map. | Not a stable fixed-address ABI; rebuild patches must track the map. |
 | Loaded-language return | `$8000` handoff for current composites | `START` | Re-enters HIMON through its reset/monitor entry. | A cleaner app-return contract is future work. |
 

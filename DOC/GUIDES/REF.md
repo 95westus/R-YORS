@@ -249,9 +249,13 @@ bank 0-3 placement is managed through the T48 programmer or through
 R-YORS/STR8.
 
 `BUILD/bin/himon-str8-rom.bin` is the primary combined image: HIMON starts at
-CPU `$D800` / file offset `$5800`, STR8 starts at CPU `$FC00` / file offset
-`$7C00`, and RESET points to STR8 at `$FC00`. Hardware vectors at CPU
+CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
+`$7000`, and RESET points to STR8 at `$F000`. Hardware vectors at CPU
 `$FFFA-$FFFF` live at the tail of the file, `$7FFA-$7FFF`.
+
+Local language images are linked below HIMON: OSI MS BASIC starts at `$8000`
+and fig-Forth starts at `$A000`. They are proof/load artifacts for now, not
+full safe `L F` updater packages.
 
 The current standalone `himon-rom` image no longer contains the legacy HIMONIA
 fixed entries at `$F00D`, `$FADE`, or `$FEED`. Loaded-language bridge builds

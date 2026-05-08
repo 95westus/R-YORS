@@ -99,6 +99,8 @@ HIMON_MAP.md
   readable map over HIMON direct edges and capability surfaces
   groups startup, dispatch, loader/flash, debug, disasm, ASM, and contract maps
   uses HIMON_EDGE_DUMP.md as raw evidence
+  keeps current command meanings separate from future subforms, such as HIMON
+  `M` being current modify and a future fill candidate
 
 HIMON_EDGE_DUMP.md
   direct `JSR`/`JMP` edge dump for `HIMON/himon.asm`

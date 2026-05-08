@@ -10,12 +10,12 @@ $rows = @(
     [pscustomobject]@{ Target = "release"; Category = "release"; Description = "Build docs plus tracked release artifacts: HIMON, fnv1a-hbstr, test-flash, rom-append-calc." }
     [pscustomobject]@{ Target = "release-local"; Category = "release"; Description = "Build release plus local/private ROM composites." }
     [pscustomobject]@{ Target = "himon"; Category = "monitor"; Description = "Build current HIMON app S19 and ROM binary." }
-    [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address D600." }
-    [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at D600: BUILD/bin/himon-rom.bin." }
-    [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K bank image with HIMON at D600, STR8 at FA00, RESET=FA00: BUILD/bin/himon-str8-rom.bin." }
-    [pscustomobject]@{ Target = "basic-himon-rom-bin"; Category = "rom"; Description = "Build 32K 8000-FFFF bank image with BASIC plus HIMON." }
-    [pscustomobject]@{ Target = "basic-forth-himon-rom-bin"; Category = "rom"; Description = "Build 32K 8000-FFFF bank image with FORTH, BASIC, and HIMON." }
-    [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build STR8 V0 FC00 stub and RAM proof image." }
+    [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000." }
+    [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom.bin." }
+    [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K bank image with HIMON at C000, STR8 at F000, RESET=F000: BUILD/bin/himon-str8-rom.bin." }
+    [pscustomobject]@{ Target = "basic-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000 and HIMON at C000." }
+    [pscustomobject]@{ Target = "basic-forth-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000, fig-Forth at A000, and HIMON at C000." }
+    [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build STR8 V0 F000 boot image and RAM proof image." }
     [pscustomobject]@{ Target = "str8-ram"; Category = "test"; Description = "Build RAM-launched STR8 bank-select/blank-check/copy/marker proof at 3000." }
     [pscustomobject]@{ Target = "fnv1a-hbstr"; Category = "test"; Description = "Build FNV-1a/HBSTR proving app." }
     [pscustomobject]@{ Target = "test-flash"; Category = "test"; Description = "Build flash command/install proving app." }
@@ -23,13 +23,12 @@ $rows = @(
     [pscustomobject]@{ Target = "test-ftdi-drv"; Category = "test"; Description = "Build FTDI driver test app." }
     [pscustomobject]@{ Target = "test-ftdi-hal"; Category = "test"; Description = "Build FTDI HAL test app." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life app." }
-    [pscustomobject]@{ Target = "microchess"; Category = "app"; Description = "Build MicroChess at A900." }
-    [pscustomobject]@{ Target = "rom-append-calc"; Category = "app"; Description = "Build CALC command as a ROM append proof at A800." }
-    [pscustomobject]@{ Target = "fig-forth"; Category = "local"; Description = "Generate and build local fig-Forth S19." }
+    [pscustomobject]@{ Target = "rom-append-calc"; Category = "app"; Description = "Build CALC command as a ROM append proof at B804." }
+    [pscustomobject]@{ Target = "fig-forth"; Category = "local"; Description = "Generate and build local fig-Forth S19 at A000." }
     [pscustomobject]@{ Target = "fig-forth-src"; Category = "local"; Description = "Generate local WDC-flavored fig-Forth source." }
-    [pscustomobject]@{ Target = "msbasic-osi"; Category = "local"; Description = "Generate/build local OSI MS BASIC S19 and binary." }
+    [pscustomobject]@{ Target = "msbasic-osi"; Category = "local"; Description = "Generate/build local OSI MS BASIC S19 and 8K binary at 8000." }
     [pscustomobject]@{ Target = "msbasic-osi-src"; Category = "local"; Description = "Generate local WDC-flavored OSI MS BASIC source." }
-    [pscustomobject]@{ Target = "msbasic-osi-bin"; Category = "local"; Description = "Build local OSI MS BASIC binary." }
+    [pscustomobject]@{ Target = "msbasic-osi-bin"; Category = "local"; Description = "Build local OSI MS BASIC 8000-9FFF slot binary." }
     [pscustomobject]@{ Target = "msbasic-osi-ram"; Category = "local"; Description = "Build local OSI MS BASIC RAM-loadable S19." }
     [pscustomobject]@{ Target = "local-homes"; Category = "local"; Description = "Create ignored LOCAL source homes and provenance files." }
     [pscustomobject]@{ Target = "rom"; Category = "library"; Description = "Build shared ROM routine library." }

@@ -1,6 +1,6 @@
 param(
-    [string]$MsbasicMapPath = "BUILD/s19/msbasic-osi.map",
-    [string]$MsbasicS19Path = "BUILD/s19/msbasic-osi.s19",
+    [string]$MsbasicMapPath = "BUILD/s19/msbasic-osi-8000.map",
+    [string]$MsbasicS19Path = "BUILD/s19/msbasic-osi-8000.s19",
     [string]$HimonMapPath = "BUILD/map/himon-rom.map",
     [string]$HimonS19Path = "BUILD/s19/himon-rom.s19",
     [string]$BinPath = "BUILD/bin/basic-himon-rom.bin",
@@ -57,19 +57,19 @@ $basicEnd = Get-SymbolAddress -MapPath $MsbasicMapPath -Name "_END_CODE"
 $monStart = Get-SymbolAddress -MapPath $HimonMapPath -Name "START"
 $monNmi = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_NMI"
 $monIrq = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_IRQ_MASTER"
-$monEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "_END_CODE"
+$monEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "_END_DATA"
 
-if ($basicFnv -ne 0xB000) {
-    throw ("MSBASIC_FNV is {0:X4}; expected B000" -f $basicFnv)
+if ($basicFnv -ne 0x8000) {
+    throw ("MSBASIC_FNV is {0:X4}; expected 8000" -f $basicFnv)
 }
-if ($basicEntry -ne 0xB008) {
-    throw ("MSBASIC_ENTRY is {0:X4}; expected B008" -f $basicEntry)
+if ($basicEntry -ne 0x8008) {
+    throw ("MSBASIC_ENTRY is {0:X4}; expected 8008" -f $basicEntry)
 }
-if ($basicEnd -gt 0xD600) {
-    throw ("MS BASIC crosses HIMON at D600; _END_CODE={0:X4}" -f $basicEnd)
+if ($basicEnd -gt 0xC000) {
+    throw ("MS BASIC crosses HIMON at C000; _END_CODE={0:X4}" -f $basicEnd)
 }
-if ($monStart -ne 0xD600) {
-    throw ("HIMON START is {0:X4}; expected D600" -f $monStart)
+if ($monStart -ne 0xC000) {
+    throw ("HIMON START is {0:X4}; expected C000" -f $monStart)
 }
 if ($monEnd -gt 0xFFFA) {
     throw ("HIMON code crosses vector area; _END_CODE={0:X4}" -f $monEnd)
@@ -172,7 +172,8 @@ if ($bin.Length -ne 32768) {
     throw "Unexpected BIN size $($bin.Length); expected 32768 bytes for 8000-FFFF bank image"
 }
 
-$basicHead = $bin[($bankOffset + 0x3000)..($bankOffset + 0x300F)] | ForEach-Object { "{0:X2}" -f $_ }
+$basicHeadOffset = $bankOffset + ($basicFnv - 0x8000)
+$basicHead = $bin[$basicHeadOffset..($basicHeadOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
 $monHeadOffset = $bankOffset + ($monStart - 0x8000)
 $monHead = $bin[$monHeadOffset..($monHeadOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
 $bankHead = $bin[$bankOffset..($bankOffset + 15)] | ForEach-Object { "{0:X2}" -f $_ }
@@ -182,7 +183,7 @@ Write-Host ("BASIC FNV/ENTRY/COLD/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $basicFn
 Write-Host ("HIMON START/NMI/IRQ/END   = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $monStart, $monNmi, $monIrq, $monEnd)
 Write-Host ("Bank offset               = 0x{0:X5}" -f $bankOffset)
 Write-Host ("Bank start @ 8000          = {0}" -f ($bankHead -join " "))
-Write-Host ("BASIC @ B000              = {0}" -f ($basicHead -join " "))
+Write-Host ("BASIC @ {0:X4}              = {1}" -f $basicFnv, ($basicHead -join " "))
 Write-Host ("HIMON @ {0:X4}              = {1}" -f $monStart, ($monHead -join " "))
 Write-Host ("Vectors FFFA-FFFF         = {0}" -f ($tail -join " "))
 Write-Host ("BIN                       = {0}" -f $BinPath)

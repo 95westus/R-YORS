@@ -33,7 +33,7 @@ NMI_CTX_S                  EQU             $7EF7
 ; high-state blocks are allocated in other modules:
 ; - PIA state/lock: $7EE0-$7EE5
 ; - reset signature $7EE6-$7EE9
-; - trap/reserve:   $7EEA-$7EEF
+; - trap/debounce:  $7EEA-$7EEF
 ; - NMI context:    $7EF0-$7EF7
 ; - RAM vectors:    $7EF8-$7EFF
 

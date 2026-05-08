@@ -1,10 +1,10 @@
 param(
     [string]$HimonMapPath = "BUILD/map/himon-rom.map",
     [string]$HimonS19Path = "BUILD/s19/himon-rom.s19",
-    [string]$Str8MapPath = "BUILD/map/str8-fa00.map",
-    [string]$Str8S19Path = "BUILD/s19/str8-fa00.s19",
-    [string]$WorkerMapPath = "BUILD/map/str8-worker-3000.map",
-    [string]$WorkerS19Path = "BUILD/s19/str8-worker-3000.s19",
+    [string]$Str8MapPath = "BUILD/map/str8-f000.map",
+    [string]$Str8S19Path = "BUILD/s19/str8-f000.s19",
+    [string]$WorkerMapPath = "BUILD/map/str8-worker-0200.map",
+    [string]$WorkerS19Path = "BUILD/s19/str8-worker-0200.s19",
     [string]$BinPath = "BUILD/bin/himon-str8-rom.bin"
 )
 
@@ -215,30 +215,30 @@ $str8End = Get-SymbolAddress -MapPath $Str8MapPath -Name "_END_DATA"
 
 $workerRunStart = Get-SymbolAddress -MapPath $WorkerMapPath -Name "START"
 $workerRunEnd = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_WORKER_END"
-$workerStoreStart = 0xC000
-$workerStoreSize = 0x1000
+$workerStoreStart = 0xF800
+$workerStoreSize = 0x0800
 $workerSize = $workerRunEnd - $workerRunStart
 
-if ($himonStart -ne 0xD600) {
-    throw ("HIMON START is {0:X4}; expected D600" -f $himonStart)
+if ($himonStart -ne 0xC000) {
+    throw ("HIMON START is {0:X4}; expected C000" -f $himonStart)
 }
-if ($himonEnd -gt 0xFA00) {
-    throw ("HIMON crosses STR8 slot at FA00; _END_DATA={0:X4}" -f $himonEnd)
+if ($himonEnd -gt 0xF000) {
+    throw ("HIMON crosses STR8 sector at F000; _END_DATA={0:X4}" -f $himonEnd)
 }
-if ($str8Start -ne 0xFA00) {
-    throw ("STR8 START is {0:X4}; expected FA00" -f $str8Start)
+if ($str8Start -ne 0xF000) {
+    throw ("STR8 START is {0:X4}; expected F000" -f $str8Start)
 }
-if ($str8End -gt 0xFFFA) {
-    throw ("STR8 crosses hardware vector area; _END_DATA={0:X4}" -f $str8End)
+if ($str8End -gt $workerStoreStart) {
+    throw ("STR8 crosses worker storage at {0:X4}; _END_DATA={1:X4}" -f $workerStoreStart, $str8End)
 }
-if ($workerRunStart -ne 0x3000) {
-    throw ("STR8 worker START is {0:X4}; expected 3000" -f $workerRunStart)
+if ($workerRunStart -ne 0x0200) {
+    throw ("STR8 worker START is {0:X4}; expected 0200" -f $workerRunStart)
 }
 if ($workerSize -le 0 -or $workerSize -gt $workerStoreSize) {
     throw ("STR8 worker size is {0:X}; expected 1..{1:X}" -f $workerSize, $workerStoreSize)
 }
-if (($workerStoreStart + $workerStoreSize) -gt $himonStart) {
-    throw ("STR8 worker storage {0:X4}-{1:X4} overlaps HIMON at {2:X4}" -f $workerStoreStart, ($workerStoreStart + $workerStoreSize - 1), $himonStart)
+if (($workerStoreStart + $workerSize) -gt 0xFFFA) {
+    throw ("STR8 worker storage {0:X4}-{1:X4} crosses hardware vector area" -f $workerStoreStart, ($workerStoreStart + $workerSize - 1))
 }
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $BinPath) | Out-Null

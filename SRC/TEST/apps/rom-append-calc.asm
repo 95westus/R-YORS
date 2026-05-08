@@ -1,8 +1,8 @@
 ; ----------------------------------------------------------------------------
 ; rom-append-calc.asm
-; Tiny ROM append proof image, linked at $A800.
-;   $A800-$A807: FNV record for command CALC
-;   $A808:       command entry point
+; Tiny ROM append proof image, linked at $B804.
+;   $B804-$B80B: FNV record for command CALC
+;   $B80C:       command entry point
 ; ----------------------------------------------------------------------------
 
                         MODULE          ROM_APPEND_CALC_APP
@@ -19,11 +19,13 @@ CALC_A                  EQU             $E2
 CALC_B                  EQU             $E3
 CALC_OP                 EQU             $E4
 CALC_RESULT             EQU             $E5
+CALC_CTRL_C             EQU             $03
 
                         CODE
 
 CALC_FNV:
                         DB              'F','N',('V'+$80),$14,$63,$43,$BA,$00
+; 260507-2221        WLP2        CALC accepts ^C/Q quit from operator prompt.
 START:
                         LDX             #<MSG_TITLE
                         LDY             #>MSG_TITLE
@@ -34,7 +36,13 @@ CALC_LOOP:
                         LDY             #>MSG_A
                         JSR             CALC_PRINT
                         JSR             CALC_READ_HEX_BYTE
-                        BCC             CALC_BAD
+                        BCS             ?A_OK
+                        CMP             #CALC_CTRL_C
+                        BNE             ?A_BAD
+                        JMP             CALC_DONE
+?A_BAD:
+                        JMP             CALC_BAD
+?A_OK:
                         STA             CALC_A
 
                         LDX             #<MSG_OP
@@ -43,14 +51,28 @@ CALC_LOOP:
                         JSR             SYS_READ_CHAR_ECHO
                         STA             CALC_OP
                         JSR             SYS_WRITE_CRLF
+                        LDA             CALC_OP
+                        CMP             #CALC_CTRL_C
+                        BNE             ?OP_Q
+                        JMP             CALC_DONE
+?OP_Q:
+                        AND             #$DF
                         CMP             #'Q'
-                        BEQ             CALC_DONE
+                        BNE             ?OP_NOT_QUIT
+                        JMP             CALC_DONE
+?OP_NOT_QUIT:
 
                         LDX             #<MSG_B
                         LDY             #>MSG_B
                         JSR             CALC_PRINT
                         JSR             CALC_READ_HEX_BYTE
-                        BCC             CALC_BAD
+                        BCS             ?B_OK
+                        CMP             #CALC_CTRL_C
+                        BNE             ?B_BAD
+                        JMP             CALC_DONE
+?B_BAD:
+                        JMP             CALC_BAD
+?B_OK:
                         STA             CALC_B
 
                         LDA             CALC_OP
@@ -110,13 +132,27 @@ CALC_DONE:
                         JSR             CALC_PRINT_LINE
                         RTS
 
+; 260507-2221        WLP2        Hex input returns C=0/A=$03 when ^C aborts.
 CALC_READ_HEX_BYTE:
                         JSR             SYS_READ_CHAR_ECHO
+                        CMP             #CALC_CTRL_C
+                        BEQ             ?QUIT
                         TAY
                         JSR             SYS_READ_CHAR_ECHO
+                        CMP             #CALC_CTRL_C
+                        BEQ             ?QUIT
                         TAX
                         JSR             SYS_WRITE_CRLF
                         JSR             UTL_HEX_ASCII_YX_TO_BYTE
+                        BCS             ?DONE
+                        LDA             #$00
+                        CLC
+?DONE:
+                        RTS
+?QUIT:
+                        JSR             SYS_WRITE_CRLF
+                        LDA             #CALC_CTRL_C
+                        CLC
                         RTS
 
 CALC_PRINT_LINE:
@@ -127,7 +163,7 @@ CALC_PRINT:
                         JMP             SYS_WRITE_CSTRING
 
                         DATA
-MSG_TITLE:              DB              "CALC HEX BYTE: + - & | ^, Q QUITS",0
+MSG_TITLE:              DB              "CALC HEX BYTE: + - & | ^, ^C QUITS",0
 MSG_A:                  DB              "A HEX? ",0
 MSG_B:                  DB              "B HEX? ",0
 MSG_OP:                 DB              "OP? ",0

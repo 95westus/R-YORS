@@ -603,6 +603,8 @@ $interruptNames = @(
     'SYS_VEC_DEFAULT_IRQ_NONBRK',
     'MON_REENTER',
     'MON_START_INIT',
+    'MON_NMI_TRAP_DEBOUNCE',
+    'MON_NMI_DEBOUNCE_DELAY',
     'MON_NMI_TRAP',
     'MON_BRK_TRAP',
     'MON_BRK_TRAP_NORMAL',
@@ -690,14 +692,16 @@ $lines += ''
 $lines += '    INIT --> SETNMI["' + (Format-Interrupt-Node 'SYS_VEC_SET_NMI_XY' 'patch NMI RAM vector') + '"]'
 $lines += '    INIT --> SETBRK["' + (Format-Interrupt-Node 'SYS_VEC_SET_IRQ_BRK_XY' 'patch BRK RAM vector') + '"]'
 $lines += '    INIT --> SETIRQ["' + (Format-Interrupt-Node 'SYS_VEC_SET_IRQ_NONBRK_XY' 'patch IRQ RAM vector') + '"]'
-$lines += '    SETNMI --> VECNMI["$7EFA-$7EFB<br/>VEC_NMI = MON_NMI_TRAP"]'
+$lines += '    SETNMI --> VECNMI["$7EFA-$7EFB<br/>VEC_NMI = MON_NMI_TRAP_DEBOUNCE"]'
 $lines += '    SETBRK --> VECBRK["$7EFC-$7EFD<br/>VEC_IRQ_BRK = MON_BRK_TRAP"]'
 $lines += '    SETIRQ --> VECIRQ["$7EFE-$7EFF<br/>VEC_IRQ_NONBRK = MON_IRQ_TRAP"]'
 $lines += ''
 $lines += '    NMIV["$FFFA-$FFFB<br/>NMI vector"] --> NMIENTRY["' + (Format-Interrupt-Node 'SYS_VEC_ENTRY_NMI' 'NMI trampoline') + '"]'
 $lines += '    NMIENTRY --> VECNMI'
-$lines += '    VECNMI --> NMITRAP["' + (Format-Interrupt-Node 'MON_NMI_TRAP' 'save NMI context') + '"]'
+$lines += '    VECNMI --> NMITRAP["' + (Format-Interrupt-Node 'MON_NMI_TRAP_DEBOUNCE' 'debounce then save NMI context') + '"]'
+$lines += '    NMITRAP -->|bounce| RTINMI["RTI"]'
 $lines += '    NMITRAP --> REENTER["' + (Format-Interrupt-Node 'MON_REENTER' 'reset stack and re-enter monitor') + '"]'
+$lines += '    NMIBASE["' + (Format-Interrupt-Node 'MON_NMI_TRAP' 'baseline NMI context path') + '"] --> REENTER'
 $lines += '    REENTER --> INIT'
 $lines += ''
 $lines += '    IRQV["$FFFE-$FFFF<br/>IRQ/BRK vector"] --> IRQMASTER["' + (Format-Interrupt-Node 'SYS_VEC_ENTRY_IRQ_MASTER' 'IRQ master trampoline') + '"]'
@@ -724,7 +728,7 @@ $lines += '- `SYS_VEC_SET_*_XY` takes `X/Y = target low/high` and patches the ma
 $lines += '- The patch routines use `PHP`, `SEI`, write low/high bytes, then `PLP`; this makes the write atomic against normal IRQ arrival and restores the caller flags.'
 $lines += '- `SEI` does not mask NMI. Do not patch the NMI target while an NMI can be asserted unless the board/system policy makes that safe.'
 $lines += '- `SYS_VEC_ENTRY_IRQ_MASTER` preserves interrupted A/X while it checks stacked status bit 4 to split BRK from non-BRK IRQ.'
-$lines += '- Current HIMON installs `MON_NMI_TRAP`, `MON_BRK_TRAP`, and `MON_IRQ_TRAP` during `MON_START_INIT` after `SYS_INIT` seeds safe defaults.'
+$lines += '- Current HIMON installs `MON_NMI_TRAP_DEBOUNCE`, `MON_BRK_TRAP`, and `MON_IRQ_TRAP` during `MON_START_INIT` after `SYS_INIT` seeds safe defaults. `MON_NMI_TRAP` remains the baseline non-debounced NMI path.'
 $lines += '- Current non-BRK IRQ handling is intentionally tiny: `MON_IRQ_TRAP` just `RTI`s until a real IRQ owner patches the non-BRK vector.'
 $lines += ''
 $lines += '## Source Labels'

@@ -1,10 +1,8 @@
 param(
-    [string]$MicrochessMapPath = "BUILD/map/microchess-a900.map",
-    [string]$MicrochessS19Path = "BUILD/s19/microchess-a900.s19",
-    [string]$ForthMapPath = "BUILD/map/fig-forth-9000.map",
-    [string]$ForthS19Path = "BUILD/s19/fig-forth-9000.s19",
-    [string]$MsbasicMapPath = "BUILD/s19/msbasic-osi.map",
-    [string]$MsbasicS19Path = "BUILD/s19/msbasic-osi.s19",
+    [string]$ForthMapPath = "BUILD/map/fig-forth-a000.map",
+    [string]$ForthS19Path = "BUILD/s19/fig-forth-a000.s19",
+    [string]$MsbasicMapPath = "BUILD/s19/msbasic-osi-8000.map",
+    [string]$MsbasicS19Path = "BUILD/s19/msbasic-osi-8000.s19",
     [string]$HimonMapPath = "BUILD/map/himon-rom.map",
     [string]$HimonS19Path = "BUILD/s19/himon-rom.s19",
     [string]$BinPath = "BUILD/bin/basic-forth-himon-rom.bin"
@@ -117,18 +115,12 @@ function Import-S19IntoImage {
     }
 }
 
-$MicrochessMapPath = Resolve-ArtifactPath -Path $MicrochessMapPath
-$MicrochessS19Path = Resolve-ArtifactPath -Path $MicrochessS19Path
 $ForthMapPath = Resolve-ArtifactPath -Path $ForthMapPath
 $ForthS19Path = Resolve-ArtifactPath -Path $ForthS19Path
 $MsbasicMapPath = Resolve-ArtifactPath -Path $MsbasicMapPath
 $MsbasicS19Path = Resolve-ArtifactPath -Path $MsbasicS19Path
 $HimonMapPath = Resolve-ArtifactPath -Path $HimonMapPath
 $HimonS19Path = Resolve-ArtifactPath -Path $HimonS19Path
-
-$microchessFnv = Get-SymbolAddress -MapPath $MicrochessMapPath -Name "MICROCHESS_FNV"
-$microchessEntry = Get-SymbolAddress -MapPath $MicrochessMapPath -Name "START"
-$microchessEnd = Get-SymbolAddress -MapPath $MicrochessMapPath -Name "_END_CODE"
 
 $forthFnv = Get-SymbolAddress -MapPath $ForthMapPath -Name "FIG_FORTH_FNV"
 $forthEntry = Get-SymbolAddress -MapPath $ForthMapPath -Name "START"
@@ -142,37 +134,28 @@ $basicEnd = Get-SymbolAddress -MapPath $MsbasicMapPath -Name "_END_CODE"
 $monStart = Get-SymbolAddress -MapPath $HimonMapPath -Name "START"
 $monNmi = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_NMI"
 $monIrq = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_IRQ_MASTER"
-$monEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "_END_CODE"
+$monEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "_END_DATA"
 
-if ($microchessFnv -ne 0xA900) {
-    throw ("MICROCHESS_FNV is {0:X4}; expected A900" -f $microchessFnv)
+if ($forthFnv -ne 0xA000) {
+    throw ("FIG_FORTH_FNV is {0:X4}; expected A000" -f $forthFnv)
 }
-if ($microchessEntry -ne 0xA908) {
-    throw ("MicroChess START is {0:X4}; expected A908" -f $microchessEntry)
+if ($forthEntry -ne 0xA008) {
+    throw ("FORTH START is {0:X4}; expected A008" -f $forthEntry)
 }
-if ($microchessEnd -gt 0xB000) {
-    throw ("MicroChess crosses BASIC slot at B000; _END_CODE={0:X4}" -f $microchessEnd)
+if ($forthEnd -gt 0xC000) {
+    throw ("FORTH crosses HIMON at C000; _END_CODE={0:X4}" -f $forthEnd)
 }
-if ($forthFnv -ne 0x9000) {
-    throw ("FIG_FORTH_FNV is {0:X4}; expected 9000" -f $forthFnv)
+if ($basicFnv -ne 0x8000) {
+    throw ("MSBASIC_FNV is {0:X4}; expected 8000" -f $basicFnv)
 }
-if ($forthEntry -ne 0x9008) {
-    throw ("FORTH START is {0:X4}; expected 9008" -f $forthEntry)
+if ($basicEntry -ne 0x8008) {
+    throw ("MSBASIC_ENTRY is {0:X4}; expected 8008" -f $basicEntry)
 }
-if ($forthEnd -gt 0xB000) {
-    throw ("FORTH crosses BASIC slot at B000; _END_CODE={0:X4}" -f $forthEnd)
+if ($basicEnd -gt 0xA000) {
+    throw ("MS BASIC crosses relocated FORTH slot at A000; _END_CODE={0:X4}" -f $basicEnd)
 }
-if ($basicFnv -ne 0xB000) {
-    throw ("MSBASIC_FNV is {0:X4}; expected B000" -f $basicFnv)
-}
-if ($basicEntry -ne 0xB008) {
-    throw ("MSBASIC_ENTRY is {0:X4}; expected B008" -f $basicEntry)
-}
-if ($basicEnd -gt 0xD600) {
-    throw ("MS BASIC crosses HIMON at D600; _END_CODE={0:X4}" -f $basicEnd)
-}
-if ($monStart -ne 0xD600) {
-    throw ("HIMON START is {0:X4}; expected D600" -f $monStart)
+if ($monStart -ne 0xC000) {
+    throw ("HIMON START is {0:X4}; expected C000" -f $monStart)
 }
 if ($monEnd -gt 0xFFFA) {
     throw ("HIMON code crosses vector area; _END_CODE={0:X4}" -f $monEnd)
@@ -186,7 +169,6 @@ for ($i = 0; $i -lt $bin.Length; $i++) {
     $bin[$i] = 0xFF
 }
 
-Import-S19IntoImage -Path $MicrochessS19Path -Image $bin -BankOffset $bankOffset
 Import-S19IntoImage -Path $ForthS19Path -Image $bin -BankOffset $bankOffset
 Import-S19IntoImage -Path $MsbasicS19Path -Image $bin -BankOffset $bankOffset
 Import-S19IntoImage -Path $HimonS19Path -Image $bin -BankOffset $bankOffset
@@ -208,22 +190,21 @@ if ($bin.Length -ne 32768) {
 }
 
 $bankHead = $bin[$bankOffset..($bankOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
-$forthHead = $bin[($bankOffset + 0x1000)..($bankOffset + 0x100F)] | ForEach-Object { "{0:X2}" -f $_ }
-$chessHead = $bin[($bankOffset + 0x2900)..($bankOffset + 0x290F)] | ForEach-Object { "{0:X2}" -f $_ }
-$basicHead = $bin[($bankOffset + 0x3000)..($bankOffset + 0x300F)] | ForEach-Object { "{0:X2}" -f $_ }
+$forthHeadOffset = $bankOffset + ($forthFnv - 0x8000)
+$forthHead = $bin[$forthHeadOffset..($forthHeadOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
+$basicHeadOffset = $bankOffset + ($basicFnv - 0x8000)
+$basicHead = $bin[$basicHeadOffset..($basicHeadOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
 $monHeadOffset = $bankOffset + ($monStart - 0x8000)
 $monHead = $bin[$monHeadOffset..($monHeadOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
 $tail = $bin[($bankOffset + 0x7FFA)..($bankOffset + 0x7FFF)] | ForEach-Object { "{0:X2}" -f $_ }
 
-Write-Host ("MICROCHESS FNV/ENTRY/END  = {0:X4}/{1:X4}/{2:X4}" -f $microchessFnv, $microchessEntry, $microchessEnd)
 Write-Host ("FORTH FNV/ENTRY/END       = {0:X4}/{1:X4}/{2:X4}" -f $forthFnv, $forthEntry, $forthEnd)
 Write-Host ("BASIC FNV/ENTRY/COLD/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $basicFnv, $basicEntry, $basicCold, $basicEnd)
 Write-Host ("HIMON START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $monStart, $monNmi, $monIrq, $monEnd)
 Write-Host ("Bank offset              = 0x{0:X5}" -f $bankOffset)
 Write-Host ("Bank start @ 8000         = {0}" -f ($bankHead -join " "))
-Write-Host ("FORTH @ 9000              = {0}" -f ($forthHead -join " "))
-Write-Host ("MICROCHESS @ A900         = {0}" -f ($chessHead -join " "))
-Write-Host ("BASIC @ B000              = {0}" -f ($basicHead -join " "))
+Write-Host ("FORTH @ {0:X4}              = {1}" -f $forthFnv, ($forthHead -join " "))
+Write-Host ("BASIC @ {0:X4}              = {1}" -f $basicFnv, ($basicHead -join " "))
 Write-Host ("HIMON @ {0:X4}              = {1}" -f $monStart, ($monHead -join " "))
 Write-Host ("Vectors FFFA-FFFF         = {0}" -f ($tail -join " "))
 Write-Host ("BIN                       = {0}" -f $BinPath)

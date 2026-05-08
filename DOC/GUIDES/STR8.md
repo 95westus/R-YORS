@@ -84,13 +84,13 @@ HIMON body:
   can be updated by STR8
 ```
 
-The settled V0 split is small, W65C02-specific, and aligned to the actual STR8
-size rather than wasting the whole top flash sector.
+The current V0 split is small, W65C02-specific, and gives STR8 the whole
+physical top flash sector so recovery code can keep growing without crowding
+the vectors.
 
 The physical top erase sector is still `$F000-$FFFF`, because flash erase
-granularity is 4K and the hardware vectors live at the top of ROM. The STR8
-protected byte window is selected after the true code size is known. Use the
-highest start address that fits. The current command proof uses `$FA00-$FFFF`:
+granularity is 4K and the hardware vectors live at the top of ROM. The current
+combined image uses `$F000-$FFFF` as the protected STR8 top sector:
 
 ```text
 $FC00-$FFFF  1K protected STR8 window
@@ -99,7 +99,7 @@ $F800-$FFFF  2K protected STR8 window
 $F600-$FFFF  2.5K protected STR8 window
 $F400-$FFFF  3K protected STR8 window
 $F200-$FFFF  3.5K protected STR8 window
-$F000-$FFFF  4K protected STR8 window, only if STR8 needs the whole sector
+$F000-$FFFF  4K protected STR8 window, current combined image
 
 $FFF0-$FFF9  one-time flash board/version/config bytes, inside the window
 $FFFA-$FFFF  W65C02 hardware vector block
@@ -211,10 +211,10 @@ Possible layouts:
 
 ```text
 Protected top-sector model:
-  $8000-$D7FF          app/growth space in the selected ROM bank
-  $D600-$F9DA          current HIMON body and data
-  $F9DB-(start-1)      usable top-sector bytes below STR8, if any
-  start-$FFFF          selected STR8 protected window
+  $8000-$BFFF          app/growth space in the selected ROM bank
+  $C000-$E357          current HIMON body and data
+  $E358-$EFFF          slack inside the used E sector
+  $F000-$FFFF          STR8 protected top sector
 
 RAM-updater model:
   special install/self-update path only
@@ -241,13 +241,12 @@ first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can perform backup rotation with read-back verify
 first RAM proof can enroll bank 0 into rotation by clearing an in-flash flag bit
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current ROM build links STR8 at $FA00 and stores a RAM worker at $C000
-current ROM build copies the worker to $3000 before B/0/1/2 flash mutation
-current ROM build copies the worker to $3000 before E config mutation
+current ROM build links STR8 at $F000 and stores a RAM worker at $F800
+current ROM build copies the worker to $0200 before B/0/1/2 flash mutation
+current ROM build copies the worker to $0200 before E config mutation
 current ROM build has working B, E, 0, 1, 2, G, R, and ? commands
 physical top erase sector is bank 3 $F000-$FFFF
-current protected STR8 proof window starts at $FA00
-larger windows remain available if STR8 outgrows 1K
+current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data/recovery lives from selected start through $FFEF
@@ -456,7 +455,7 @@ mutation from RAM:
 
 ```mermaid
 flowchart TD
-    RESET[RESET vector] --> STR8[STR8 shell at $FA00]
+    RESET[RESET vector] --> STR8[STR8 shell at $F000]
     STR8 --> PROMPT[STR8 prompt]
 
     PROMPT --> Q[? ID/state]
@@ -466,10 +465,10 @@ flowchart TD
     PROMPT --> G[G go HIMON]
     PROMPT --> R[R reset]
 
-    G --> HIMON[HIMON at $D600]
+    G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $C000 -> $3000]
+    B --> COPY[copy worker $F800 -> $0200]
     E --> COPY
     RST --> COPY
     COPY --> WORKER[RAM flash worker]
@@ -507,7 +506,7 @@ quit advanced mode
 Bad fit:
 
 ```text
-the normal ? B E 0 1 2 G R rescue path
+the normal ? B E M 0 1 2 G R rescue path
 automatic backup policy
 casual bank 0 erase before enrollment
 catalog garbage collection
@@ -664,12 +663,12 @@ B command, B0 ROT:  copy bank 1 -> bank 0, bank 2 -> bank 1, bank 3 -> bank 2
 ```
 
 Each 4K window reads from the source bank, writes the destination bank, and
-verifies by simple read-back compare. The `$FA00` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$C000-$CFFF` into RAM
-`$3000-$3FFF`. Restore into bank 3 preserves both `$C000-$CFFF` and
-`$FA00-$FFFF`, so the ROM worker and protected STR8/vector window remain usable
-after a restore. FNV, catalog lookup, wear leveling, and cycle counts are later
-work.
+verifies by simple read-back compare. The `$F000` ROM build uses the same copy
+policy by first copying its worker from bank 3 `$F800-$FFFF` into RAM
+`$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
+operator explicitly confirms high flash, so HIMON, the ROM worker, and the
+protected STR8/vector window remain usable after a normal restore. FNV, catalog
+lookup, wear leveling, and cycle counts are later work.
 
 ## STR8/HIMON Update Direction
 
@@ -696,10 +695,10 @@ This is a good fit for ordinary HIMON body sectors. STR8 can keep the guard,
 but still provide a deliberate tool that knows which sector is being rebuilt
 and whether an erase is required.
 
-The top sector needs stricter policy. `$F000-$FFFF` contains ordinary bytes
-below STR8, the STR8 protected window, the config pocket, and vectors. Updating
-HIMON-adjacent bytes in that sector must preserve `$FA00-$FFFF` unless the
-operator explicitly requested a STR8 update.
+The top sector needs stricter policy. `$F000-$FFFF` contains STR8, the RAM
+worker source copy, the config pocket, and vectors. Updating that sector must
+preserve the non-target bytes unless the operator explicitly requested a STR8
+update.
 
 STR8 self-update is the special case:
 

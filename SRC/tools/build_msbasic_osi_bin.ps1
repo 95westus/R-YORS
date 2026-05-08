@@ -1,8 +1,8 @@
 param(
-    [string]$MapPath = "BUILD/s19/msbasic-osi.map",
-    [string]$S19Path = "BUILD/s19/msbasic-osi.s19",
-    [string]$BinPath = "BUILD/bin/msbasic-osi-fnv-b000-8k.bin",
-    [int]$BaseAddress = 0xB000,
+    [string]$MapPath = "BUILD/s19/msbasic-osi-8000.map",
+    [string]$S19Path = "BUILD/s19/msbasic-osi-8000.s19",
+    [string]$BinPath = "BUILD/bin/msbasic-osi-fnv-8000-8k.bin",
+    [int]$BaseAddress = 0x8000,
     [int]$SlotSize = 0x2000
 )
 

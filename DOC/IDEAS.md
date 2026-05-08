@@ -97,6 +97,119 @@ BASE      RECOV     HIMON     DATA
 That preserves the compact bench display while letting STR8/STRAIGHTEN grow
 toward named banks or images later.
 
+## Good Far Out: STR8 Semantic Flash Map Overlay
+
+Bucket: `good far out`
+
+The first `M` command should stay physical and terse, but the same display
+shape can become a future semantic overlay once STR8 has catalog/hash
+recognizers.
+
+Current conservative shape:
+
+```text
+FLASH MAP
+BANK_0   ++--++--
+BANK_1   --------
+BANK_2   --------
+BOOT     ----+HH8
+```
+
+The left label should probably be fixed width, likely eight characters. That
+keeps the output cheap now while allowing future labels to come from role names
+or RCAT/catalog names:
+
+```text
+DATA     ++--++--
+TOOLS    --------
+SCRATCH  --------
+BOOT     R-Z+HH-8
+```
+
+The eight status positions still mean sectors `8 9 A B C D E F`. The semantic
+letters are only an overlay:
+
+```text
+-  erased/free
++  used, not yet classified
+R  R-YORS system area
+Z  RCAT/RREC/hash metadata zone
+H  HIMON
+8  STR8
+```
+
+A later detail display could attach CBI-style provenance to the classified
+map:
+
+```text
+BOOT     R-Z+HH-8
+UPDATED  YYMMDD-HHMM        WLP2        HIMON debounce vector install.
+RECOVER  YYMMDD-HHMM        WLP2        BOOT recovered from bank 0 image.
+```
+
+This is where hash-joint can go deeper. The visible map remains a tiny
+sector-screen, while RCAT/RREC records underneath can explain who owns each
+sector, what hash named it, what installed it, and which update/recovery event
+last touched it.
+
+## Good Far Out: STR8 RAM-Mediated Sector Pairing
+
+Bucket: `good far out`
+
+A future STR8 restore/update tool may want to compare a live boot-bank sector
+with a matching sector from another bank without treating both flash sectors as
+live mapped memory. The safer model is RAM-mediated sector pairing:
+
+```text
+B3:D  live boot-bank sector
+B1:D  recovery/source sector
+RAM   compare buffer / planned result
+```
+
+This is not for ordinary execution. It is for restore, compare, merge,
+recovery, and operator-visible update planning:
+
+```text
+select bank 3
+copy sector D -> RAM_LIVE
+
+select bank 1
+copy sector D -> RAM_SRC
+
+compare RAM_LIVE/RAM_SRC
+build RAM_PLAN
+show operator result
+erase/program only after confirmation
+```
+
+Possible display language:
+
+```text
+PAIR B3:D B1:D
+LIVE +
+SRC  +
+DIFF *
+PLAN =
+```
+
+or tighter:
+
+```text
+D B3:+ B1:+ DIFF:* PLAN:=
+```
+
+This should use RAM aggressively. Flash should stay boring until the final
+committed write. Later hash records could make the comparison richer:
+
+```text
+B3:D  HASH 12345678  HIMON-live
+B1:D  HASH 9ABCDEF0  HIMON-backup
+PLAN  KEEP vectors, KEEP STR8 cfg, WRITE HIMON body
+```
+
+The open question is whether this becomes a STR8 command, an update-planner
+subroutine, or only a diagnostic/detail view behind the normal restore flow.
+
 ## Word Find: THE
 
 Bucket: `word find`
@@ -117,6 +230,82 @@ Working distinction:
 THE makes named things findable.
 THE does not make raw addresses meaningful.
 ```
+
+## Word Find: ROR-bar
+
+Bucket: `word find`
+
+`ROR-bar` is the plain-text spelling for `ROR` with a repeating bar over it.
+The bar means "repeating", so the phrase can mean a recurring odd research
+idea, a repeated rotate, or a not-yet-serious thought that keeps coming back.
+
+Markdown can carry the mark a few ways:
+
+```text
+ ___
+ROR
+```
+
+Portable source spelling:
+
+```text
+ROR-bar
+```
+
+Math-capable Markdown spelling:
+
+```text
+$\overline{\mathrm{ROR}}$
+```
+
+HTML entity spelling, if a renderer handles combining marks:
+
+```text
+R&#772;O&#772;R&#772;
+```
+
+Avoid relying on inline HTML style attributes for this. Some Markdown renderers
+strip `style=...`, and this mark should survive as plain text anyway.
+
+Working meaning:
+
+```text
+ROR-bar
+  recurring odd research
+  repeated rotate
+  wild/crazy idea that has returned often enough to name
+```
+
+## Good Far Out: BRK xx Internal Assertions
+
+Bucket: `good far out`
+
+HIMON already captures BRK context. That makes signed `BRK xx` opcodes a good
+future debug language for conditions that should be impossible if routine
+contracts are being honored.
+
+Do not use this for normal operator mistakes. Bad input should print a normal
+message and return to the prompt. Use `BRK xx` for internal contract failures:
+
+```text
+caller ignored required carry/status result
+parser success left an impossible pointer or range
+hash dispatch matched a command record with an invalid kind
+context resume is about to build an invalid RTI frame
+flash or bank code returned with bank 3 not restored
+```
+
+Possible signature families:
+
+```text
+BRK $2x   parser/range invariant
+BRK $3x   command dispatch invariant
+BRK $4x   trap/context invariant
+BRK $5x   flash/bank invariant
+```
+
+This remains a wild/crazy debugging note until there is a small, documented
+signature table and an agreed rule for where assertions are allowed.
 
 ## Bad Far Out: Hashing ASM Addresses
 

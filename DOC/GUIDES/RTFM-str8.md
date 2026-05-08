@@ -10,15 +10,16 @@ Read this before pressing a destructive key.
 
 ```text
 combined image:  SRC/BUILD/bin/himon-str8-rom.bin
-worker source:   $C000-$C1FF, copied to RAM when needed
-HIMON:           $D600-$F9DA
-STR8:            $FA00-$FE02
+HIMON:           $C000-$E357
+STR8 image:      $F000-$F576
+worker source:   $F800-$FA7F, copied to RAM when needed
+STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF
 ```
 
-On reset, STR8 initializes the FTDI path, prints six progress dots during the
-startup delay, then prints its banner and prompt.
+On reset, STR8 initializes the FTDI path, prints `HIMON IN 6S. S=STR8`, then
+counts down `6 5 4 3 2 1`. Press `S` during that delay to enter STR8.
 
 ## Commands
 
@@ -26,14 +27,25 @@ startup delay, then prints its banner and prompt.
 ?       print STR8 ID and Bank 0 state
 B       run backup rotation, with verify
 E       enroll Bank 0 into backup rotation, destructive, confirmed
+M       map banks/sectors as used `+` or erased `-`
 0       restore Bank 0 -> Bank 3, with verify
 1       restore Bank 1 -> Bank 3, with verify
 2       restore Bank 2 -> Bank 3, with verify
-G       go to HIMON at $D600
+G       go to HIMON at $C000
 R       reset through the live reset vector
 ```
 
 The destructive commands ask for `Y`. Anything else aborts.
+
+`M` is read-only. It scans all banks by 4K sector, restores Bank 3, and prints:
+
+```text
+BANK0     BANK1     BANK2     BOOT
++--++--  --++--++  --------  ++++++++
+```
+
+Each character maps to `$8000,$9000,$A000,$B000,$C000,$D000,$E000,$F000`.
+`-` means the whole sector is `$FF`; `+` means at least one byte is used.
 
 ## Bank Roles
 
@@ -85,8 +97,9 @@ rebuild.
 `0`, `1`, and `2` copy the selected bank into live Bank 3. Restore preserves:
 
 ```text
-$C000-$CFFF   STR8 RAM-worker source sector
-$FA00-$FFFF   STR8 protected window, config pocket, and vectors
+$C000-$FFFF   HIMON/STR8 protected region unless high flash is confirmed
+$F800-$FA7F   STR8 RAM-worker source inside the protected top sector
+$FFF0-$FFFF   config pocket and hardware vectors
 ```
 
 That means restore updates the ordinary live image but keeps STR8 alive.
@@ -98,13 +111,16 @@ remove R-YORS from the ordinary Bank 3 body.
 STR8 copies one compact worker into RAM for flash mutation:
 
 ```text
-$3000-$31FF   current worker code
+$0200-$047F   current worker code
+$0200-$09FF   STR8 RAM tray copied from $F800
+$0A00-$0A0C   STR8 worker state board and map bytes
 $4000-$4FFF   4K sector buffer
 ```
 
 The worker runs silently, switches banks, erases, writes, verifies, restores
-Bank 3, and returns status to the resident STR8 shell. Do not press NMI during
-`B`, `E`, `0`, `1`, or `2`.
+Bank 3, and returns status to the resident STR8 shell. The `M` command also
+uses the worker, but only to scan and store map status bytes. Do not press NMI
+during `B`, `E`, `M`, `0`, `1`, or `2`.
 
 ## Burn Checks
 
@@ -112,10 +128,10 @@ After burning `himon-str8-rom.bin`, these monitor checks should match the
 current image:
 
 ```text
-D C000 +F    08 78 AD 17 03 C9 02 F0 ...
-D D600 +F    78 D8 A2 FF 9A AD E6 7E ...
-D FA00 +F    78 D8 A2 FF 9A 20 11 FA ...
-D FFFA FFFF  E4 F1 00 FA E7 F1
+D C000 +F    78 D8 A2 FF 9A AD E6 7E ...
+D F000 +F    78 D8 A2 FF 9A 20 1D F0 ...
+D F800 +F    08 78 AD 17 03 C9 04 F0 ...
+D FFFA FFFF  C2 DB 00 F0 C5 DB
 ```
 
 ## Updating HIMON Or STR8

@@ -6,6 +6,7 @@
 ;   ?  print tiny ID/state
 ;   B  backup rotation, with read-back verify built in
 ;   E  enroll bank 0 into backup rotation, one-way in-flash flag
+;   M  map bank/sector erased or used status
 ;   0  restore bank 0 -> bank 3, preserving selected STR8 window
 ;   1  restore bank 1 -> bank 3, preserving selected STR8 window
 ;   2  restore bank 2 -> bank 3, preserving selected STR8 window
@@ -13,7 +14,7 @@
 ;   R  reset through the live bank 3 reset vector
 ;
 ; The RAM proof build performs destructive bank copies directly from RAM. The
-; resident ROM build copies a worker from $C000 to $3000, then runs destructive
+; resident ROM build copies a worker from $F800 to $0200, then runs destructive
 ; copy/erase/write/verify and one-way config writes from RAM.
 ; ----------------------------------------------------------------------------
 
@@ -34,22 +35,24 @@
                         XREF            FLASH_WRITE_BYTE_RAW_AXY
                         ENDIF
 
-STR8_PROT_START_HI      EQU             $FA
-STR8_PROT_BUF_HI        EQU             $4A
+; 260507-2258        WLP2        Combined ROM layout moves STR8 to $F000.
+; 260507-2319        WLP2        Worker runs from $0200; state board starts at $0A00.
+STR8_PROT_START_HI      EQU             $F0
+STR8_PROT_BUF_HI        EQU             $40
 STR8_CFG_FLAGS_ADDR     EQU             $FFF0
 STR8_CFG_FLAGS_LO       EQU             $F0
 STR8_CFG_FLAGS_HI       EQU             $FF
 STR8_CFG_B0_ROT_MASK    EQU             $01
 STR8_RESET_VECTOR       EQU             $FFFC
-STR8_HIMON_START        EQU             $D600
+STR8_HIMON_START        EQU             $C000
 STR8_HIMON_RESET_SIG0   EQU             $7EE6
 STR8_HIMON_RESET_SIG1   EQU             $7EE7
 STR8_HIMON_RESET_SIG2   EQU             $7EE8
 STR8_HIMON_RESET_SIG3   EQU             $7EE9
-STR8_WORKER_RUN         EQU             $3000
-STR8_WORKER_RUN_HI      EQU             $30
-STR8_WORKER_STORE_HI    EQU             $C0
-STR8_WORKER_COPY_PAGES  EQU             $10
+STR8_WORKER_RUN         EQU             $0200
+STR8_WORKER_RUN_HI      EQU             $02
+STR8_WORKER_STORE_HI    EQU             $F8
+STR8_WORKER_COPY_PAGES  EQU             $08
 STR8_DELAY_TICKS        EQU             $06
 STR8_DELAY_TICK_A       EQU             $26
 STR8_DELAY_FIRST_A      EQU             $27
@@ -60,21 +63,26 @@ STR8_COPY_MODE_FULL     EQU             $00
 STR8_COPY_MODE_RESTORE  EQU             $01
 STR8_COPY_MODE_ENROLL   EQU             $02
 STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
-STR8_RESTORE_PROT_START_HI EQU          $D0
+STR8_COPY_MODE_MAP      EQU             $04
+STR8_RESTORE_PROT_START_HI EQU          $C0
 
 STR8_PTR_LO             EQU             $CD
 STR8_PTR_HI             EQU             $CE
 STR8_COPY_PTR_LO        EQU             $CF
 STR8_COPY_PTR_HI        EQU             $D0
-STR8_MARK_SECTOR_HI     EQU             $0310
-STR8_MARK_ADDR_LO       EQU             $0311
-STR8_MARK_ADDR_HI       EQU             $0312
-STR8_COPY_BUF_LO        EQU             $0313
-STR8_COPY_BUF_HI        EQU             $0314
-STR8_COPY_SRC_BANK      EQU             $0315
-STR8_COPY_DST_BANK      EQU             $0316
-STR8_COPY_MODE          EQU             $0317
-STR8_BOOT_KEY_ENABLE    EQU             $0318
+STR8_MARK_SECTOR_HI     EQU             $0A00
+STR8_MARK_ADDR_LO       EQU             $0A01
+STR8_MARK_ADDR_HI       EQU             $0A02
+STR8_COPY_BUF_LO        EQU             $0A03
+STR8_COPY_BUF_HI        EQU             $0A04
+STR8_COPY_SRC_BANK      EQU             $0A05
+STR8_COPY_DST_BANK      EQU             $0A06
+STR8_COPY_MODE          EQU             $0A07
+STR8_BOOT_KEY_ENABLE    EQU             $0A08
+STR8_MAP_B0             EQU             $0A09
+STR8_MAP_B1             EQU             $0A0A
+STR8_MAP_B2             EQU             $0A0B
+STR8_MAP_B3             EQU             $0A0C
 STR8_SECTOR_BUF_HI      EQU             $40
 STR8_SECTOR_BUF_END_HI  EQU             $50
 
@@ -219,6 +227,7 @@ STR8_READ_COMMAND:
 ; ----------------------------------------------------------------------------
 ; Command dispatch
 ; ----------------------------------------------------------------------------
+; 260507-2035        WLP2        M dispatch reports physical flash map.
 STR8_DISPATCH_A:
                         CMP             #'0'
                         BNE             ?NOT_0
@@ -249,6 +258,10 @@ STR8_DISPATCH_A:
                         BNE             ?NOT_G
                         JMP             STR8_CMD_G_HIMON
 ?NOT_G:
+                        CMP             #'M'
+                        BNE             ?NOT_M
+                        JMP             STR8_CMD_M
+?NOT_M:
                         CMP             #'R'
                         BNE             ?NOT_R
                         JMP             STR8_CMD_RESET
@@ -319,6 +332,7 @@ STR8_CMD_ENROLL_B0:
                         JMP             STR8_CMD_OK
 
 ; 260507-1914        WLP2        Restore can optionally include high flash.
+; 260507-2216        WLP2        Restore flushes RX between double confirmations.
 STR8_CMD_RESTORE_A:
                         STA             STR8_COPY_SRC_BANK
                         LDX             #<MSG_RESTORE_B
@@ -331,6 +345,7 @@ STR8_CMD_RESTORE_A:
                         JSR             STR8_PRINT_XY
                         JSR             STR8_CONFIRM_Y
                         BCC             STR8_CMD_ABORT
+                        JSR             BIO_FTDI_FLUSH_RX
                         LDX             #<MSG_FLASH_HI_WARN
                         LDY             #>MSG_FLASH_HI_WARN
                         JSR             STR8_PRINT_XY
@@ -345,6 +360,18 @@ STR8_CMD_RESTORE_A:
                         JSR             STR8_RUN_COPY
                         BCC             STR8_CMD_COPY_FAIL
                         JMP             STR8_CMD_OK
+
+STR8_CMD_M:
+                        IF              STR8_RAM_PROOF
+                        JSR             STR8_SCAN_MAP
+                        ELSE
+                        LDA             #STR8_COPY_MODE_MAP
+                        STA             STR8_COPY_MODE
+                        JSR             STR8_COPY_WORKER_TO_RAM
+                        JSR             STR8_WORKER_RUN
+                        ENDIF
+                        BCC             STR8_CMD_COPY_FAIL
+                        JMP             STR8_PRINT_MAP
 
 ; 260507-1914        WLP2        G uses warm-entry signature before HIMON handoff.
 STR8_CMD_G_HIMON:
@@ -498,6 +525,35 @@ STR8_RUN_COPY:
 ; ----------------------------------------------------------------------------
 ; Destructive RAM proof copy/verify routines
 ; ----------------------------------------------------------------------------
+STR8_SCAN_MAP:
+                        STZ             STR8_COPY_SRC_BANK
+?BANK:                 LDA             STR8_COPY_SRC_BANK
+                        JSR             FLSH_BANK_SELECT_A
+                        LDA             #$80
+                        STA             STR8_MARK_SECTOR_HI
+                        STZ             STR8_COPY_BUF_LO
+?SECTOR:               JSR             STR8_DST_SECTOR_ERASED
+                        BCS             ?ERASED
+                        SEC
+                        BRA             ?SHIFT
+?ERASED:               CLC
+?SHIFT:                ROL             STR8_COPY_BUF_LO
+                        LDA             STR8_MARK_SECTOR_HI
+                        CLC
+                        ADC             #$10
+                        STA             STR8_MARK_SECTOR_HI
+                        BNE             ?SECTOR
+                        LDX             STR8_COPY_SRC_BANK
+                        LDA             STR8_COPY_BUF_LO
+                        STA             STR8_MAP_B0,X
+                        INC             STR8_COPY_SRC_BANK
+                        LDA             STR8_COPY_SRC_BANK
+                        CMP             #$04
+                        BNE             ?BANK
+                        JSR             STR8_SELECT_BANK_3
+                        SEC
+                        RTS
+
 ; 260507-1914        WLP2        Restore skips protected high sectors by mode.
 STR8_COPY_BANKS:
                         LDA             #$80
@@ -723,6 +779,8 @@ STR8_PRINT_COPY_PAIR:
                         IF              STR8_RAM_PROOF
                         ELSE
 STR8_COPY_WORKER_TO_RAM:
+; 260507-2258        WLP2        Worker source now copies from $F800.
+; 260507-2319        WLP2        Worker copy target moves into STR8's $0200 tray.
                         STZ             STR8_PTR_LO
                         LDA             #STR8_WORKER_STORE_HI
                         STA             STR8_PTR_HI
@@ -766,6 +824,43 @@ STR8_WRITE_DEC_DIGIT_A:
                         AND             #$0F
                         CLC
                         ADC             #'0'
+                        JMP             STR8_WRITE_BYTE
+
+STR8_PRINT_MAP:
+                        LDX             #<MSG_MAP_HEADER
+                        LDY             #>MSG_MAP_HEADER
+                        JSR             STR8_PRINT_XY
+                        STZ             STR8_COPY_SRC_BANK
+?BANK:                 LDX             STR8_COPY_SRC_BANK
+                        LDA             STR8_MAP_B0,X
+                        JSR             STR8_PRINT_MAP_MASK_A
+                        INC             STR8_COPY_SRC_BANK
+                        LDA             STR8_COPY_SRC_BANK
+                        CMP             #$04
+                        BEQ             ?DONE
+                        JSR             STR8_PRINT_TWO_SPACES
+                        BRA             ?BANK
+?DONE:                 LDX             #<MSG_CRLF
+                        LDY             #>MSG_CRLF
+                        JMP             STR8_PRINT_XY
+
+STR8_PRINT_MAP_MASK_A:
+                        STA             STR8_COPY_BUF_LO
+                        LDA             #$08
+                        STA             STR8_COPY_BUF_HI
+?BIT:                  ASL             STR8_COPY_BUF_LO
+                        LDA             #'-'
+                        BCC             ?PRINT
+                        LDA             #'+'
+?PRINT:                JSR             STR8_WRITE_BYTE
+                        DEC             STR8_COPY_BUF_HI
+                        BNE             ?BIT
+                        RTS
+
+STR8_PRINT_TWO_SPACES:
+                        LDA             #' '
+                        JSR             STR8_WRITE_BYTE
+                        LDA             #' '
                         JMP             STR8_WRITE_BYTE
 
                         IF              STR8_RAM_PROOF
@@ -820,11 +915,11 @@ STR8_WRITE_BYTE:
                         DATA
 MSG_SCREEN:             DB              $0D,$0A,"STR8 V0",$0D,$0A
                         IF              STR8_RAM_PROOF
-                        DB              "RAM $3000 BUF $4000-$4FFF",$0D,$0A
+                        DB              "RAM $0200 BUF $4000-$4FFF",$0D,$0A
                         ELSE
-                        DB              "ROM $FA00",$0D,$0A
+                        DB              "ROM $F000",$0D,$0A
                         ENDIF
-                        DB              "? B E 0 1 2 G R",$0D,$8A
+                        DB              "? B E M 0 1 2 G R",$0D,$8A
 MSG_PROMPT:             DB              "STR8",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
@@ -840,6 +935,7 @@ MSG_ABORT:              DB              $0D,$0A,"ABORT",$0D,$8A
 MSG_CFG_FAIL:           DB              $0D,$0A,"CFG FAIL",$0D,$8A
 MSG_COPY_FAIL:          DB              $0D,$0A,"COPY FAIL",$0D,$8A
 MSG_G_HIMON:            DB              $0D,$0A,"G HIMON",$0D,$8A
+MSG_MAP_HEADER:         DB              $0D,$0A,"BANK0     BANK1     BANK2     BOOT",$0D,$8A
 
 MSG_RESTORE_B:          DB              $0D,$0A,"RESTORE ",('B'+$80)
 MSG_ALREADY_ROT:        DB              $0D,$0A,"B0 ALREADY ROT",$0D,$8A
@@ -848,7 +944,7 @@ MSG_BACKUP_WARN:        DB              $0D,$0A,"BACKUP ERASE B1/B2. Y:",$A0
 MSG_BACKUP_B0_WARN:     DB              $0D,$0A,"BACKUP ERASE B0/B1/B2. Y:",$A0
 MSG_ENROLL_WARN:        DB              $0D,$0A,"B0 ROT ON. NEXT B ERASES B0. Y:",$A0
 MSG_RESTORE_WARN:       DB              "->B3? Y:",$A0
-MSG_FLASH_HI_WARN:      DB              $0D,$0A,"WARN: MAY NOT BOOT",$0D,$0A,"FLASH D000-FFFF? Y:",$A0
+MSG_FLASH_HI_WARN:      DB              $0D,$0A,"WARN: MAY NOT BOOT",$0D,$0A,"FLASH C000-FFFF? Y:",$A0
 MSG_COPY_B:             DB              $0D,$0A,"COPY ",('B'+$80)
 MSG_TO_B:               DB              "->",('B'+$80)
                         IF              STR8_RAM_PROOF

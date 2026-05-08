@@ -12,10 +12,10 @@ recovery region and hand normal operation to HIMON.
 Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
-$8000-$D5FF   current image gap
-$D600-$F46E   HIMON CODE, START/standalone RESET entry at $D600
-$F46F-$F9DA   HIMON DATA
-$F9DB-$FFF9   current image gap and future STR8/high-ROM space
+$8000-$BFFF   current image gap
+$C000-$DE20   HIMON CODE, START/standalone RESET entry at $C000
+$DE21-$E357   HIMON DATA
+$E358-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -27,9 +27,9 @@ explicit handoff contract; STR8 must not reserve those addresses.
 Current ROM hardware vectors:
 
 ```text
-$FFFA-$FFFB   NMI   = $F1E4
-$FFFC-$FFFD   RESET = $D600
-$FFFE-$FFFF   IRQ   = $F1E7
+$FFFA-$FFFB   NMI   = $DBC2
+$FFFC-$FFFD   RESET = $C000
+$FFFE-$FFFF   IRQ   = $DBC5
 ```
 
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
@@ -37,24 +37,36 @@ image for the programmer workflow. The file does not encode a bank number;
 bank 0-3 placement is managed through the T48 programmer or through
 R-YORS/STR8.
 
-The primary combined image is `BUILD/bin/himon-str8-rom.bin`: the STR8 RAM
-worker source is stored at CPU `$C000` / file offset `$4000`, HIMON starts at
-CPU `$D600` / file offset `$5600`, STR8 starts at CPU `$FA00` / file offset
-`$7A00`, and the RESET vector points to STR8 at `$FA00`. The NMI and IRQ
-vectors point to HIMON's `$F1E4`/`$F1E7` vector entries until STR8 grows its own
+The primary combined image is `BUILD/bin/himon-str8-rom.bin`: HIMON starts at
+CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
+`$7000`, the STR8 RAM worker source is stored at CPU `$F800` / file offset
+`$7800`, and the RESET vector points to STR8 at `$F000`. The NMI and IRQ
+vectors point to HIMON's `$DBC2`/`$DBC5` vector entries until STR8 grows its own
 interrupt policy.
 
 Combined image layout:
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$CFFF   STR8 RAM-worker source, copied to $3000 for B/E/0/1/2
-$D000-$D5FF   current image gap
-$D600-$F9DA   HIMON body
-$F9DB-$F9FF   current image gap
-$FA00-$FFF9   STR8 protected window and config bytes
+$C000-$E357   HIMON body
+$E358-$EFFF   current image gap inside the used E sector
+$F000-$F576   STR8 resident shell
+$F577-$F7FF   current image gap inside the top sector
+$F800-$FA7F   STR8 RAM-worker source, copied to $0200 for B/E/M/0/1/2
+$FA80-$FFF9   current image gap, config pocket, and high top-sector space
 $FFFA-$FFFF   hardware vectors
 ```
+
+Local language images are built to sit below the protected HIMON/STR8 region:
+
+```text
+$8000-$9FFF   OSI MS BASIC 8K slot, FNV header at $8000
+$A000-$BFFF   fig-Forth slot, FNV header at $A000
+$C000-$FFFF   protected live HIMON/STR8 region
+```
+
+These are still proof/load artifacts. They are not yet packaged as a safe
+erase/rewrite `L F` update flow.
 
 ## Flash Window Mapping
 
@@ -76,29 +88,28 @@ bank 3  physical $18000-$1FFFF -> CPU $8000-$FFFF, pull-up/reset default
 
 Use `FLSH_*` for window selection/query and `FLASH_*` for operations on the
 currently selected `$8000-$FFFF` window. A ROM-resident HIMON command must not
-park itself in bank 0-2 while continuing to execute from `$D600`; it should use a
+park itself in bank 0-2 while continuing to execute from `$C000`; it should use a
 RAM worker that selects the requested bank, copies or checks bytes, then restores
 bank 3 before HIMON prints or returns to normal command flow.
 
 ## Current Flash Policy
 
-HIMON treats flash as `$8000-$FFFF`, but the current `L F` writer still has the
-older `$D000+` guard. That guard protects the current HIMON-at-`$D600` layout
-conservatively, but it must be revised before the combined STR8/HIMON image is
-treated as the normal live layout:
+HIMON treats flash as `$8000-$FFFF`, but the current `L F` writer remains a
+conservative blank-write path, not a sector updater. Its guard protects the
+current HIMON/STR8 live region at `$C000+`:
 
 ```text
-$8000-$CFFF   currently allowed by old L F blank-write guard
-$D000-$FFFF   currently protected by old L F guard
-$FA00-$FFFF   protected STR8 window, config, and vectors
+$8000-$BFFF   currently allowed by L F only if old byte is $FF
+$C000-$FFFF   protected HIMON/STR8 region
+$F000-$FFFF   STR8 top sector, config, and vectors
 ```
 
 Current `L F` behavior:
 
 ```text
 target below $8000   protected
-target $8000-$CFFF   currently allowed only if old byte is $FF
-target $D000+        currently protected
+target $8000-$BFFF   currently allowed only if old byte is $FF
+target $C000+        currently protected
 ```
 
 There is no sector erase/condense path in the current HIMON image. STR8 is
@@ -128,8 +139,10 @@ $00E6-$00E7   shared utility temp/scratch bytes
 $00E8-$00EF   shared pointer/length/flags/mode lane for FTDI/SYS/string helpers
 $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
-$0300-$12FF   reserved low 4K area, no live allocations
-$1300-$13FF   flash transient / RAM worker page
+$0200-$09FF   STR8 RAM tray; worker copy lands here before flash mutation
+$0A00-$0A0C   STR8 worker state board and map-result bytes
+$0A0D-$12FF   reserved low RAM, no live allocations
+$1300-$13FF   flash transient / reserved worker page
 $1400-$1FFF   system scratch and transient metadata
 $2000-$77FF   UPA, user program area
 $7800-$79FF   HIUPA, high user/scratch area
@@ -145,16 +158,22 @@ $7E95-$7EDD   loader workspace and range table
 $7EDE-$7EDF   delay helper fixed RAM
 $7EE0-$7EE5   PIA state / lock
 $7EE6-$7EE9   reset signature
-$7EEA-$7EEF   trap cause / BRK signature / reserve
+$7EEA-$7EEF   trap cause / BRK signature / NMI debounce / reserve
 $7EF0-$7EF7   NMI context capture
 $7EF8-$7EFF   RAM vectors
 $7F00-$7FFF   I/O window
 ```
 
 During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 temporarily
-clobbers `$3000-$3FFF` with the copied RAM worker and `$4000-$4FFF` with the 4K
+clobbers `$0200-$09FF` with the copied RAM worker and `$4000-$4FFF` with the 4K
 sector staging buffer. Normal HIMON/user code should treat those ranges as
 volatile while STR8 is performing flash work.
+
+STR8 also uses fixed low-RAM bytes `$0A00-$0A0C` for bank/sector copy state,
+failure address reporting, startup flags, and the `M` command's four bank map
+mask bytes. The `M` command runs the RAM worker from `$0200`, stores one status
+mask byte per bank at `$0A09-$0A0C`, restores bank 3, then prints the map from
+resident STR8.
 
 Current high-RAM vectors:
 
@@ -254,10 +273,9 @@ HIMON/himon-shared-eq.inc
 
 ## STR8 Direction
 
-Current standalone HIMON no longer parks code or data above `$A3DA`, leaving the
-high ROM area available for STR8. The combined `himon-str8-rom.bin` image places
-STR8 in bank 3's `$FA00-$FFFF` top-ROM window with the hardware vectors. The
-policy-protected STR8 window should be only as large as the final code requires.
+The combined `himon-str8-rom.bin` image places STR8 in bank 3's `$F000-$FFFF`
+top-ROM sector with the hardware vectors. HIMON starts at `$C000`, and the
+STR8 RAM-worker source is stored inside the top sector at `$F800`.
 
 The physical erase unit remains 4K. The protected STR8 window starts at the
 highest boundary that fits:
@@ -269,16 +287,16 @@ $F800-$FFFF  2K protected STR8 window
 $F600-$FFFF  2.5K protected STR8 window
 $F400-$FFFF  3K protected STR8 window
 $F200-$FFFF  3.5K protected STR8 window
-$F000-$FFFF  4K protected STR8 window, only if needed
+$F000-$FFFF  4K protected STR8 window, current combined image
 
 $FFF0-$FFF9  one-time flash board/version/config bytes, inside the window
 $FFFA-$FFFF  W65C02 hardware vector block
 ```
 
-Bytes below the chosen STR8 start are usable, but changing any byte in
-`$F000-$FFFF` still requires read/stage/erase/full-sector-write/verify.
+Changing any byte in `$F000-$FFFF` still requires
+read/stage/erase/full-sector-write/verify.
 The `$FFF0-$FFF9` pocket is patchable only in the flash sense: after erase,
 programming may clear bits from `1` to `0`, but changing cleared bits back to
 `1` requires another top-sector erase/rewrite.
 
-That future split is a design direction, not the current HIMON ROM map.
+This split is the current combined STR8/HIMON ROM layout.
