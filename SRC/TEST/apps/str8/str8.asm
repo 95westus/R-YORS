@@ -842,6 +842,18 @@ STR8_PRINT_MAP:
                         BRA             ?BANK
 ?DONE:                 LDX             #<MSG_CRLF
                         LDY             #>MSG_CRLF
+                        JSR             STR8_PRINT_XY
+                        LDX             #<MSG_MAP_GRID_HEADER
+                        LDY             #>MSG_MAP_GRID_HEADER
+                        JSR             STR8_PRINT_XY
+                        STZ             STR8_COPY_SRC_BANK
+?GRID_BANK:            JSR             STR8_PRINT_MAP_ROW
+                        INC             STR8_COPY_SRC_BANK
+                        LDA             STR8_COPY_SRC_BANK
+                        CMP             #$04
+                        BNE             ?GRID_BANK
+                        LDX             #<MSG_MAP_GRID_FOOTER
+                        LDY             #>MSG_MAP_GRID_FOOTER
                         JMP             STR8_PRINT_XY
 
 STR8_PRINT_MAP_MASK_A:
@@ -856,6 +868,37 @@ STR8_PRINT_MAP_MASK_A:
                         DEC             STR8_COPY_BUF_HI
                         BNE             ?BIT
                         RTS
+
+STR8_PRINT_MAP_ROW:
+                        LDA             #'B'
+                        JSR             STR8_WRITE_BYTE
+                        LDA             STR8_COPY_SRC_BANK
+                        JSR             STR8_WRITE_DEC_DIGIT_A
+                        LDX             #<MSG_MAP_ROW_MID
+                        LDY             #>MSG_MAP_ROW_MID
+                        JSR             STR8_PRINT_XY
+                        LDX             STR8_COPY_SRC_BANK
+                        LDA             STR8_MAP_B0,X
+                        JSR             STR8_PRINT_MAP_STARS_A
+                        LDX             #<MSG_MAP_ROW_END
+                        LDY             #>MSG_MAP_ROW_END
+                        JMP             STR8_PRINT_XY
+
+STR8_PRINT_MAP_STARS_A:
+                        STA             STR8_COPY_BUF_LO
+                        LDA             #$08
+                        STA             STR8_COPY_BUF_HI
+?BIT:                  ASL             STR8_COPY_BUF_LO
+                        LDA             #'.'
+                        BCC             ?PRINT
+                        LDA             #'*'
+?PRINT:                JSR             STR8_WRITE_BYTE
+                        DEC             STR8_COPY_BUF_HI
+                        BEQ             ?DONE
+                        LDA             #' '
+                        JSR             STR8_WRITE_BYTE
+                        BRA             ?BIT
+?DONE:                 RTS
 
 STR8_PRINT_TWO_SPACES:
                         LDA             #' '
@@ -936,6 +979,10 @@ MSG_CFG_FAIL:           DB              $0D,$0A,"CFG FAIL",$0D,$8A
 MSG_COPY_FAIL:          DB              $0D,$0A,"COPY FAIL",$0D,$8A
 MSG_G_HIMON:            DB              $0D,$0A,"G HIMON",$0D,$8A
 MSG_MAP_HEADER:         DB              $0D,$0A,"BANK0     BANK1     BANK2     BOOT",$0D,$8A
+MSG_MAP_GRID_HEADER:    DB              "     8 9 A B C D E F",$0D,$0A,"   +---------------+",$0D,$8A
+MSG_MAP_ROW_MID:        DB              " |",$A0
+MSG_MAP_ROW_END:        DB              " |",$0D,$8A
+MSG_MAP_GRID_FOOTER:    DB              "   +---------------+",$0D,$8A
 
 MSG_RESTORE_B:          DB              $0D,$0A,"RESTORE ",('B'+$80)
 MSG_ALREADY_ROT:        DB              $0D,$0A,"B0 ALREADY ROT",$0D,$8A
