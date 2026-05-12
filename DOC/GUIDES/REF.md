@@ -67,6 +67,16 @@ HIMON provides the monitor, command dispatch, assembler, catalog lookup,
 and debug tools.
 ```
 
+Command safety:
+
+```text
+DESTRUCTIVE COMMANDS MUST BE 4+ CHARACTERS.
+```
+
+New destructive commands use full words: `COPY`, `FILL`, `MOVE`, `FLASH`,
+`BANK`, `ERASE`, `BACKUP`, `RESTORE`. Current short mutators are transition
+debt.
+
 ## Flash And Bank Policy
 
 ```text

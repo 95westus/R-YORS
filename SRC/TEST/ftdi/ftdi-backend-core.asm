@@ -70,7 +70,7 @@ COR_FTDI_INIT:
 ; PURPOSE: Backend input flush entry for FTDI stack.
 ; IN : none
 ; OUT: C = 1 when RX reaches empty; C = 0 if the bounded guard expires
-; 260507-1914        WLP2        Contract now reflects bounded BIO flush status.
+; 2026-05-07T19:14-05:00        WLP2        Contract now reflects bounded BIO flush status.
 ; EXCEPTIONS/NOTES:
 ; - Thin wrapper over bounded HAL routine `BIO_FTDI_FLUSH_RX`.
 ; ----------------------------------------------------------------------------

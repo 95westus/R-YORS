@@ -6,6 +6,7 @@ This is the top index for the `ror` documentation set.
 
 - [TOC.md](./TOC.md) - recommended reading order.
 - [MAP.md](./MAP.md) - documentation map and system map.
+- [HASH_FLASH.md](./HASH_FLASH.md) - short alert stream for command-surface changes.
 - [DECISIONS.md](./DECISIONS.md) - settled calls to avoid reopening by accident.
 - [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions.
 - [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
@@ -20,6 +21,7 @@ This is the top index for the `ror` documentation set.
 ## Core Design Guides
 
 - [HISTORICAL_DOCUMENTS.md](./HISTORICAL_DOCUMENTS.md) - path from BSO2 ideas toward current HIMON.
+- [HASH_FLASH.md](./HASH_FLASH.md) - REHASH/FLASHBACK notes for command syntax changes.
 - [DECISIONS.md](./DECISIONS.md) - naming, hash, STR8, ASM, local-home,
   and doc-shape decisions.
 - [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.

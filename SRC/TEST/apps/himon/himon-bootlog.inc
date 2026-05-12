@@ -4,7 +4,7 @@
 ; ----------------------------------------------------------------------------
 
                         CODE
-; 260507-1914        WLP2        Bootlog now prints compact cold/warm status.
+; 2026-05-07T19:14-05:00        WLP2        Bootlog now prints compact cold/warm status.
 MON_BOOTLOG_RESET:
                         LDA             BOOT_REASON
                         BNE             MON_BOOTLOG_HAVE_REASON

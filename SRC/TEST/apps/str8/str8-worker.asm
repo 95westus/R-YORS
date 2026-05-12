@@ -13,8 +13,8 @@
                         XDEF            START
                         XDEF            STR8_WORKER_END
 
-; 260507-2258        WLP2        Combined ROM layout moves STR8 to $F000.
-; 260507-2319        WLP2        Worker runs at $0200; state board lives at $0A00.
+; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
+; 2026-05-07T23:19-05:00        WLP2        Worker runs at $0200; state board lives at $0A00.
 STR8_PROT_START_HI      EQU             $F0
 STR8_PROT_BUF_HI        EQU             $40
 STR8_WORKER_STORE_HI    EQU             $F8
@@ -62,8 +62,8 @@ STR8_FLASH_ERASE_TMO_HI EQU             $08
 STR8_FLASH_WRITE_TMO_HI EQU             $02
 
                         CODE
-; 260507-1914        WLP2        Restore-high mode resets through bank 3.
-; 260507-2035        WLP2        MAP mode scans sectors into RAM mask bytes.
+; 2026-05-07T19:14-05:00        WLP2        Restore-high mode resets through bank 3.
+; 2026-05-07T20:35-05:00        WLP2        MAP mode scans sectors into RAM mask bytes.
 START:
                         PHP
                         SEI
@@ -129,7 +129,7 @@ STR8W_SCAN_MAP:
                         SEC
                         RTS
 
-; 260507-1914        WLP2        Restore skips protected high sectors by mode.
+; 2026-05-07T19:14-05:00        WLP2        Restore skips protected high sectors by mode.
 STR8W_COPY_BANKS:
                         LDA             #$80
                         STA             STR8_MARK_SECTOR_HI
@@ -194,8 +194,8 @@ STR8W_STAGE_SRC_SECTOR:
                         STA             STR8W_BUF_HI
                         JMP             STR8W_COPY_PTR_TO_BUF
 
-; 260507-1914        WLP2        Restore-high mode bypasses top-sector preserve.
-; 260507-2258        WLP2        Worker source now sits inside protected F sector.
+; 2026-05-07T19:14-05:00        WLP2        Restore-high mode bypasses top-sector preserve.
+; 2026-05-07T22:58-05:00        WLP2        Worker source now sits inside protected F sector.
 STR8W_PRESERVE_IF_RESTORE:
                         LDA             STR8_COPY_MODE
                         CMP             #STR8_COPY_MODE_RESTORE
@@ -236,7 +236,7 @@ STR8W_COPY_PTR_TO_BUF:
                         BNE             ?PAGE
                         RTS
 
-; 260507-1914        WLP2        Skip erased sectors and verify erase completion.
+; 2026-05-07T19:14-05:00        WLP2        Skip erased sectors and verify erase completion.
 STR8W_ERASE_DST_SECTOR:
                         LDA             STR8_COPY_DST_BANK
                         JSR             STR8W_BANK_SELECT_A

@@ -11,6 +11,20 @@ Not eRRORS, but expect fewer.
 
 Pronounced **are-yors**.
 
+## ### #HASH# FLASH ###
+
+```text
+########################################################################
+##                          #HASH# FLASH                              ##
+##        REHASH / FLASHBACK / COMMAND-SURFACE ALERT                  ##
+########################################################################
+2026-05-11T21:33-05:00 WLP2 Command rules changed: destructive commands now
+                             need 4+ characters, HIMON range/search syntax is
+                             being revised, and STR8 keeps R as reset.
+```
+
+Details live in [DOC/GUIDES/HASH_FLASH.md](DOC/GUIDES/HASH_FLASH.md).
+
 ## System Card
 
 R-YORS is a retro-computing documentation and source project for specifying,
@@ -99,6 +113,15 @@ kind, Record, RREC, contract, bank, sector, and condense is defined in
 Some code here can write or erase flash memory. Running loaders, tests, monitor
 commands, ROM images, or flash utilities can overwrite firmware, programs,
 user data, or board configuration.
+
+Command-safety mandate:
+
+```text
+DESTRUCTIVE COMMANDS MUST BE 4+ CHARACTERS.
+```
+
+Current short destructive/proof commands are transition debt. New destructive
+commands must use full words and confirmation where appropriate.
 
 Use this project only with a recovery path: known-good ROM image, external
 programmer, or another way back. No warranty is provided.

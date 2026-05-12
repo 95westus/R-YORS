@@ -6,12 +6,23 @@ protected-window preservation.
 
 Read this before pressing a destructive key.
 
+## Command Safety Mandate
+
+```text
+DESTRUCTIVE COMMANDS MUST BE 4+ CHARACTERS.
+```
+
+Future STR8 destructive commands must use full words such as `BACKUP`,
+`RESTORE`, `ENROLL`, `ERASE`, `FLASH`, or `BANK`. STR8 keeps `R` as reset. The
+current one-key recovery commands are an early proof surface with confirmation,
+not a pattern for adding more destructive short commands.
+
 ## Current Layout
 
 ```text
 combined image:  SRC/BUILD/bin/himon-str8-rom.bin
 HIMON:           $C000-$E357
-STR8 image:      $F000-$F576
+STR8 image:      $F000-$F620
 worker source:   $F800-$FA7F, copied to RAM when needed
 STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
@@ -36,6 +47,7 @@ R       reset through the live reset vector
 ```
 
 The destructive commands ask for `Y`. Anything else aborts.
+`R` is retained as STR8 reset.
 
 `M` is read-only. It scans all banks by 4K sector, restores Bank 3, and prints:
 
@@ -128,9 +140,9 @@ After burning `himon-str8-rom.bin`, these monitor checks should match the
 current image:
 
 ```text
-D C000 +F    78 D8 A2 FF 9A AD E6 7E ...
-D F000 +F    78 D8 A2 FF 9A 20 1D F0 ...
-D F800 +F    08 78 AD 17 03 C9 04 F0 ...
+D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
+D F000 +10   78 D8 A2 FF 9A 20 1D F0 ...
+D F800 +10   08 78 AD 17 03 C9 04 F0 ...
 D FFFA FFFF  C2 DB 00 F0 C5 DB
 ```
 

@@ -263,6 +263,11 @@ there is no promised fixed high-ROM ABI.
 
 ## Full Capability Map
 
+Command-safety mandate: destructive commands require 4 or more characters.
+Current short mutators are implementation debt until the command surface is
+revised; new bulk mutation should use full words such as `COPY`, `FILL`,
+`MOVE`, `FLASH`, `BACKUP`, `RESTORE`, and `ERASE`.
+
 | Capability | User surface | Main labels | Current behavior | Notes |
 | --- | --- | --- | --- | --- |
 | Boot/re-enter monitor | reset, trap return, `$8000` handoff | `START`, `MON_REENTER`, `MON_START_INIT` | Owns hardware stack on entry, initializes system I/O, installs active vectors, enters prompt. | This is the normal HIMON path today. STR8 hands normal boot here. |
@@ -274,8 +279,8 @@ there is no promised fixed high-ROM ABI.
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$9000` through vector boundary for `FN(V|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
 | Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes commands from includes: `# ? D M U R X G L B S A Q`. |
-| Memory dump | `D start [end|+n]` | `CMD_D`, `CMD_PARSE_RANGE_REQUIRED`, `MON_PRINT_MEM_RANGE` | Prints hex rows plus printable ASCII, abortable with Ctrl-C. | Uses shared range parser. |
-| Memory modify | `M start [end|+n]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes RAM byte directly, `.` aborts. | A future `M start [end|+n] =bb` fill subform fits here; flash-safe modify/fill is not current behavior. |
+| Memory dump | `D start [end|+n]` | `CMD_D`, `CMD_PARSE_RANGE_REQUIRED`, `MON_PRINT_MEM_RANGE` | Prints hex rows plus printable ASCII, abortable with Ctrl-C. | Uses shared range parser. Target revision: bare `D` repeats the previous dump length from the next address. |
+| Memory modify | `M start [end|+n]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes RAM byte directly, `.` aborts. | Current short mutator under review. Future bulk fill should be `FILL start end|+count bb`, not an `M` subform. |
 | Disassemble | `U start [end|+n]` | `CMD_U`, `DIS_PRINT_ONE`, `DBG_OPCODE_LEN` | Prints W65C02S opcode, mnemonic, and operand using opcode tables. | Shares the same opcode mode tables as assembler/step. |
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |

@@ -435,13 +435,13 @@ E          enroll bank 0 into backup rotation, destructive, confirmed
 1          restore bank 1 to bank 3, with verify built in
 2          restore bank 2 to bank 3, with verify built in
 G          go HIMON
-R          reset
+R          reset through the live reset vector
 ```
 
-`L S`, `L F`, `GO addr`, standalone verify, catalog repair, and richer loading
-are later features. The recovery loader should avoid the full assembler, full
-catalog UI, compression tools, and rich command parser. Those belong in HIMON
-once normal operation is safe.
+STR8 keeps `R` as reset. `L S`, `L F`, `GO addr`, standalone verify, catalog
+repair, and richer loading are later features. The recovery loader should avoid
+the full assembler, full catalog UI, compression tools, and rich command parser.
+Those belong in HIMON once normal operation is safe.
 
 There is no casual bank 0 erase command in the first command surface. `E` is the
 only Bank 0 policy change: it confirms the destructive consequence, sets the

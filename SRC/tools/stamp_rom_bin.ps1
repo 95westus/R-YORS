@@ -4,7 +4,7 @@ param(
 
     [string]$OutDir,
 
-    [string]$Stamp = (Get-Date -Format "yyyy-MM-ddTHH-mm")
+    [string]$Stamp = (Get-Date -Format "yyyy-MM-ddTHH:mmK")
 )
 
 if (-not (Test-Path -LiteralPath $SourcePath)) {

@@ -50,8 +50,8 @@ Combined image layout:
 $8000-$BFFF   current image gap
 $C000-$E357   HIMON body
 $E358-$EFFF   current image gap inside the used E sector
-$F000-$F576   STR8 resident shell
-$F577-$F7FF   current image gap inside the top sector
+$F000-$F620   STR8 resident shell
+$F621-$F7FF   current image gap inside the top sector
 $F800-$FA7F   STR8 RAM-worker source, copied to $0200 for B/E/M/0/1/2
 $FA80-$FFF9   current image gap, config pocket, and high top-sector space
 $FFFA-$FFFF   hardware vectors

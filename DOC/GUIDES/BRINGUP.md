@@ -16,7 +16,8 @@ are still being designed.
 ```text
 STR8 V0
 first proof image:  RAM-resident S19 launched under HIMON
-later ROM target:   $FC00-$FFFF
+current ROM proof:  $F000-$FFFF
+future shrink goal: highest fitting protected window
 role:               image-oriented recovery guard
 copy buffer:        4K RAM buffer, one erase sector at a time
 I/O layer:          BIO_*
@@ -126,17 +127,18 @@ $F200-$FFFF  3.5K
 $F000-$FFFF  4K only if needed
 ```
 
-For the first bringup, assume:
+For the current ROM proof, assume:
 
 ```text
-STR8 protected window = $FC00-$FFFF
+STR8 protected window = $F000-$FFFF
 $FFF0-$FFF9           = one-time board/version/config bytes
 $FFFA-$FFFF           = W65C02 hardware vector block
 ```
 
-Ordinary restore skips `$FC00-$FFFF`. Explicit STR8 install/update owns that
-window. The `$FFF0-$FFF9` bytes can be patched only while flash programming can
-still clear needed bits; changing cleared bits back to `1` waits for a top-sector
+Ordinary restore preserves `$C000-$FFFF` unless the operator explicitly confirms
+high flash. Explicit STR8 install/update owns the selected protected window. The
+`$FFF0-$FFF9` bytes can be patched only while flash programming can still clear
+needed bits; changing cleared bits back to `1` waits for a top-sector
 erase/rewrite.
 
 ## Top-Sector Rule
@@ -229,6 +231,6 @@ RAM proof command `E` clears bit 0 of `$FFF0` after confirmation. Erased/set
 means `B0 HOLD`; cleared means `B0 ROT`.
 
 RAM proof commands `0`, `1`, and `2` restore the selected source bank to live
-bank 3. The restore path preserves `$FC00-$FFFF` from bank 3 in the staged
-sector before erasing/writing bank 3, then verifies the destination against the
-staged image.
+bank 3. The normal restore path preserves `$C000-$FFFF` from bank 3 unless the
+operator explicitly confirms high flash, then verifies the destination against
+the staged image.

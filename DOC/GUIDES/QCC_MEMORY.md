@@ -16,6 +16,36 @@ Concern: A scanner must not treat all address ranges alike. RAM can be
 temporary. IO can have side effects. Flash can be scanned safely but can only
 be rewritten under erase/write rules.
 
+## Q: Should HIMON have an extended flash address form?
+
+Comment: Bare 16-bit addresses remain CPU-address-space addresses. `0000-FFFF`
+is valid and means the currently visible 64K map. A future extended address
+form could name physical flash directly with a bank prefix:
+
+```text
+01:0000
+01:0000-01:FFFF
+02:0000
+03:FFFF
+```
+
+Depending on the final flash map, the valid extended range might stop at
+`02:FFFF` or `03:FFFF`.
+
+Good: A bank-prefixed form directly names physical flash and avoids confusion
+about whichever bank is currently selected.
+
+Bad: It adds parser size and forces every command to decide whether it accepts
+CPU-visible addresses, physical flash addresses, or both.
+
+Ugly: Direct physical flash syntax can make dangerous operations feel easy.
+Any destructive command using this form must still obey the four-character
+command mandate and should preserve or restore bank state.
+
+Concern: Treat this as a grammar candidate, not a committed TODO. It probably
+belongs first in read-only flash-aware commands, then only later in destructive
+full-word commands after the bank numbering is settled.
+
 ## Q: Are 4K selectors useful?
 
 Comment: Yes. A selector `0` through `F` can describe a full 4K sector:

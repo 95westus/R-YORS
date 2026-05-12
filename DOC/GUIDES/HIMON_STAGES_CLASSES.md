@@ -264,7 +264,7 @@ This is the point where the monitor becomes less like a command shell and more
 like a small supervisory environment:
 
 ```text
-reset/re-enter
+monitor entry/re-entry
 trap capture
 register edit/resume
 memory tools

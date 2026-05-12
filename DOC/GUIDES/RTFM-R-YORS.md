@@ -29,12 +29,24 @@ A rudimentary STR8 flash-recovery path has been lightly tested on hardware and
 is functioning nominally. Treat it as an early recovery tool, not a finished
 field-updater: keep a programmer recovery path and known-good image nearby.
 
+## Command Safety Mandate
+
+```text
+DESTRUCTIVE COMMANDS MUST BE 4+ CHARACTERS.
+```
+
+Future destructive commands must use full words. This applies to copy, fill,
+move, erase, flash, bank, backup, restore, and boot/recovery policy changes.
+STR8 keeps `R` as reset. The current one-key STR8 recovery commands are an
+early proof surface with `Y` confirmation; treat the destructive keys as
+transitional until the command surface is revised.
+
 ## Current Burn Image
 
 ```text
 primary image:   SRC/BUILD/bin/himon-str8-rom.bin
 HIMON:           $C000-$E357
-STR8 image:      $F000-$F576
+STR8 image:      $F000-$F620
 worker source:   $F800-$FA7F, copied to $0200 when needed
 STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
@@ -52,9 +64,9 @@ make -C SRC himon-str8-rom-bin
 After burn, these should match:
 
 ```text
-D C000 +F    78 D8 A2 FF 9A AD E6 7E ...
-D F000 +F    78 D8 A2 FF 9A 20 1D F0 ...
-D F800 +F    08 78 AD 17 03 C9 04 F0 ...
+D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
+D F000 +10   78 D8 A2 FF 9A 20 1D F0 ...
+D F800 +10   08 78 AD 17 03 C9 04 F0 ...
 D FFFA FFFF  C2 DB 00 F0 C5 DB
 ```
 
@@ -84,17 +96,20 @@ M       map bank/sector status, + used and - erased
 1       restore Bank 1 -> Bank 3
 2       restore Bank 2 -> Bank 3
 G       go HIMON
-R       reset
+R       reset through live vector
 ```
 
-`B`, `E`, `0`, `1`, and `2` are destructive and ask for `Y`. `M` is read-only
-but switches flash banks from the RAM worker. Do not press NMI while STR8 is
-erasing, programming, or mapping flash.
+`B`, `E`, `0`, `1`, and `2` are destructive and ask for `Y`. `R` remains the
+STR8 reset key. `M` is read-only but switches flash banks from the RAM worker.
+Do not press NMI while STR8 is erasing, programming, or mapping flash. Under the
+command safety mandate, future destructive STR8 commands should move to
+full-word names.
 
 ## HIMON Basics
 
 ```text
 ?              help
+# [token]      list records, or resolve token without executing it
 D start +n     dump memory count
 D start end    dump memory range
 M addr         modify memory
@@ -104,12 +119,20 @@ G addr         go to address
 L              load S-records to RAM
 L G            load S-records and go
 L F            flash-load under the current guard
+R [regs]       display/edit trapped context registers
+B start        set breakpoint
+B C start      clear breakpoint
+B L            list breakpoints
+S              single-step trapped context; target moves to N/NEXT
 X              resume trapped context
 Q              quiesce with WAI, then re-enter on wake
 ```
 
-For dump commands, `+n` is the safer habit when you mean "show me this many
-bytes."
+For dump commands in the current parser, `+n` is the safer habit when you mean
+"show me this many bytes." The target range syntax is `start +count` for a byte
+count and short inclusive end tokens that inherit the start high byte, so
+`D 3000 FF` means `$3000-$30FF`. Target continuation behavior: after
+`D 3000 FF`, a bare `D` displays `$3100-$31FF`.
 
 ## Sharp Edges
 

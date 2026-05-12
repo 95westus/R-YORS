@@ -86,6 +86,13 @@ docs.
 - QCC: Questions, Comments, Concerns. Borrowed from call-center training as a
   pause after each thought block; in R-YORS it is the guide style for important
   design thinking that is not settled enough for `DECISIONS.md`.
+- CBI: Computer Bank, Inc., the project author's RPG II coding-days employer.
+  In R-YORS docs, CBI format means the old date / programmer / comment change
+  note shape. CBI dates are written as ISO 8601 without seconds.
+- ISO 8601: project-wide date/time format for source, docs, generated files,
+  comments, logs, and examples. Use `YYYY-MM-DD` for dates and
+  `YYYY-MM-DDTHH:mm+/-HH:MM` for local date/times unless more precision is
+  required.
 - BSO2: predecessor board-monitor project and lineage evidence.
 - SMS: provisional way-future name for a System Messaging Service. The name may
   change. The concept is an operator/message-queue service for informational,
@@ -220,6 +227,10 @@ buried records gone.
 - sector: 4K erase unit inside a bank; in banked flash, one 4K window is one
   erase sector of the currently selected flash bank.
 - page: 256-byte CPU page.
+- page-local: within the same 256-byte CPU page as a base address. In HIMON
+  command range syntax, a 1- or 2-hex-digit end token is a page-local end-byte
+  shorthand: `D 3000 FF` means `$3000-$30FF`, and `D 100 3` means
+  `$0100-$0103`.
 - segment: logical software range, not necessarily erasable by itself.
 - zero page: `$0000-$00FF`.
 - user zero page: `$0000-$00AF`, user/free while running in the current policy.

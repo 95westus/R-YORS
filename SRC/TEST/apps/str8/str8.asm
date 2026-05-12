@@ -35,8 +35,8 @@
                         XREF            FLASH_WRITE_BYTE_RAW_AXY
                         ENDIF
 
-; 260507-2258        WLP2        Combined ROM layout moves STR8 to $F000.
-; 260507-2319        WLP2        Worker runs from $0200; state board starts at $0A00.
+; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
+; 2026-05-07T23:19-05:00        WLP2        Worker runs from $0200; state board starts at $0A00.
 STR8_PROT_START_HI      EQU             $F0
 STR8_PROT_BUF_HI        EQU             $40
 STR8_CFG_FLAGS_ADDR     EQU             $FFF0
@@ -87,7 +87,7 @@ STR8_SECTOR_BUF_HI      EQU             $40
 STR8_SECTOR_BUF_END_HI  EQU             $50
 
                         CODE
-; 260507-1914        WLP2        Timeout enters HIMON warm; S/s takes STR8.
+; 2026-05-07T19:14-05:00        WLP2        Timeout enters HIMON warm; S/s takes STR8.
 START:
                         SEI
                         CLD
@@ -110,7 +110,7 @@ START:
 ; ----------------------------------------------------------------------------
 ; STR8 lifecycle
 ; ----------------------------------------------------------------------------
-; 260507-1914        WLP2        Init flushes RX and gates boot-key polling.
+; 2026-05-07T19:14-05:00        WLP2        Init flushes RX and gates boot-key polling.
 STR8_INIT:
                         JSR             BIO_FTDI_INIT
                         JSR             BIO_FTDI_FLUSH_RX
@@ -137,7 +137,7 @@ STR8_ENTER_HIMON_WARM:
                         IF              STR8_RAM_PROOF
                         ELSE
 ; OUT: C=1 if S/s was consumed; C=0 if the timeout elapsed.
-; 260507-1914        WLP2        Countdown split into poll, print, and tick helpers.
+; 2026-05-07T19:14-05:00        WLP2        Countdown split into poll, print, and tick helpers.
 STR8_STARTUP_DELAY:
                         LDX             #<MSG_BOOT_PROMPT
                         LDY             #>MSG_BOOT_PROMPT
@@ -227,7 +227,7 @@ STR8_READ_COMMAND:
 ; ----------------------------------------------------------------------------
 ; Command dispatch
 ; ----------------------------------------------------------------------------
-; 260507-2035        WLP2        M dispatch reports physical flash map.
+; 2026-05-07T20:35-05:00        WLP2        M dispatch reports physical flash map.
 STR8_DISPATCH_A:
                         CMP             #'0'
                         BNE             ?NOT_0
@@ -331,8 +331,8 @@ STR8_CMD_ENROLL_B0:
                         BCC             STR8_CMD_CFG_FAIL
                         JMP             STR8_CMD_OK
 
-; 260507-1914        WLP2        Restore can optionally include high flash.
-; 260507-2216        WLP2        Restore flushes RX between double confirmations.
+; 2026-05-07T19:14-05:00        WLP2        Restore can optionally include high flash.
+; 2026-05-07T22:16-05:00        WLP2        Restore flushes RX between double confirmations.
 STR8_CMD_RESTORE_A:
                         STA             STR8_COPY_SRC_BANK
                         LDX             #<MSG_RESTORE_B
@@ -373,7 +373,7 @@ STR8_CMD_M:
                         BCC             STR8_CMD_COPY_FAIL
                         JMP             STR8_PRINT_MAP
 
-; 260507-1914        WLP2        G uses warm-entry signature before HIMON handoff.
+; 2026-05-07T19:14-05:00        WLP2        G uses warm-entry signature before HIMON handoff.
 STR8_CMD_G_HIMON:
                         IF              STR8_RAM_PROOF
                         JSR             STR8_SELECT_BANK_3
@@ -554,7 +554,7 @@ STR8_SCAN_MAP:
                         SEC
                         RTS
 
-; 260507-1914        WLP2        Restore skips protected high sectors by mode.
+; 2026-05-07T19:14-05:00        WLP2        Restore skips protected high sectors by mode.
 STR8_COPY_BANKS:
                         LDA             #$80
                         STA             STR8_MARK_SECTOR_HI
@@ -636,7 +636,7 @@ STR8_STAGE_B3_PROTECTED:
                         BNE             ?PAGE
                         RTS
 
-; 260507-1914        WLP2        Skip erased sectors and verify erase completion.
+; 2026-05-07T19:14-05:00        WLP2        Skip erased sectors and verify erase completion.
 STR8_ERASE_DST_SECTOR:
                         LDA             STR8_COPY_DST_BANK
                         JSR             FLSH_BANK_SELECT_A
@@ -779,8 +779,8 @@ STR8_PRINT_COPY_PAIR:
                         IF              STR8_RAM_PROOF
                         ELSE
 STR8_COPY_WORKER_TO_RAM:
-; 260507-2258        WLP2        Worker source now copies from $F800.
-; 260507-2319        WLP2        Worker copy target moves into STR8's $0200 tray.
+; 2026-05-07T22:58-05:00        WLP2        Worker source now copies from $F800.
+; 2026-05-07T23:19-05:00        WLP2        Worker copy target moves into STR8's $0200 tray.
                         STZ             STR8_PTR_LO
                         LDA             #STR8_WORKER_STORE_HI
                         STA             STR8_PTR_HI

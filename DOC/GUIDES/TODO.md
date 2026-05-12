@@ -20,9 +20,23 @@
   address, flags, and optional name text.
 - Define the first explicit STR8 import labels HIMON will use after the
   simulation stub grows into resident recovery code.
-- Define a future HIMON `M` fill subform. Current `M start [end|+n]` is
-  byte-by-byte modify; candidate fill shape is `M start [end|+n] =bb`, RAM
-  first, with flash fill deferred to guarded RAM-updater policy.
+- Revise HIMON command strings and range syntax under the command safety
+  mandate: destructive commands require 4+ characters. Candidate bulk commands
+  are `COPY start end|+count dest`, `FILL start end|+count bb`, and later
+  `MOVE start end|+count dest`; flash/bank mutation stays behind full-word
+  confirmed commands.
+- Revise the shared range parser so `start +count` means byte count, while a
+  1- or 2-hex-digit inclusive `end` inherits the start high byte when safe.
+- Add `D` continuation state: bare `D` repeats the previous dump length from
+  the byte after the previous dump, e.g. `D 3000 FF` then `D` displays
+  `$3100-$31FF`.
+- Define and implement HIMON memory search after the range parser settles:
+  target `S addr end|+count b0 [b1 ...]` for hex-byte search,
+  `S addr end|+count 'TEXT` for text search, and the simple mixed tail
+  `S addr end|+count b0 [b1 ...] 'TEXT`. Treat apostrophe text as a final V0
+  tail, not a quoted atom that resumes parsing. Print hits as D-style context
+  rows: exact hit address, aligned row address, and `*` when the match crosses
+  a 16-byte display row. Current step/next moves to `N` or `NEXT`.
 - Sketch the first W65C02-small `pack_lo_5` decoder and the rule for falling
   back to raw text when compression loses.
 - Define the exact `FIX` record bytes for RAM staging and direct flash patching.

@@ -25,7 +25,7 @@ CALC_CTRL_C             EQU             $03
 
 CALC_FNV:
                         DB              'F','N',('V'+$80),$14,$63,$43,$BA,$00
-; 260507-2221        WLP2        CALC accepts ^C/Q quit from operator prompt.
+; 2026-05-07T22:21-05:00        WLP2        CALC accepts ^C/Q quit from operator prompt.
 START:
                         LDX             #<MSG_TITLE
                         LDY             #>MSG_TITLE
@@ -132,7 +132,7 @@ CALC_DONE:
                         JSR             CALC_PRINT_LINE
                         RTS
 
-; 260507-2221        WLP2        Hex input returns C=0/A=$03 when ^C aborts.
+; 2026-05-07T22:21-05:00        WLP2        Hex input returns C=0/A=$03 when ^C aborts.
 CALC_READ_HEX_BYTE:
                         JSR             SYS_READ_CHAR_ECHO
                         CMP             #CALC_CTRL_C

@@ -599,7 +599,7 @@ CMD_USAGE_L:
 CMD_Q_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$FC,$0F,$0C,$D4,$00 ; Q $D40C0FFC EXEC
 CMD_Q:
-                        ; 260507-2051        WLP2        Q now quiesces with WAI, then re-enters HIMON.
+                        ; 2026-05-07T20:51-05:00        WLP2        Q now quiesces with WAI, then re-enters HIMON.
                         SEI
                         WAI
                         JMP             MON_REENTER
@@ -612,7 +612,7 @@ CMD_Q:
 ; Trap handlers
 ; ----------------------------------------------------------------------------
 MON_NMI_TRAP:
-                        ; 260507-2125        WLP2        Restored baseline NMI capture handler.
+                        ; 2026-05-07T21:25-05:00        WLP2        Restored baseline NMI capture handler.
                         STA             NMI_CTX_A
                         STX             NMI_CTX_X
                         STY             NMI_CTX_Y
@@ -635,7 +635,7 @@ MON_NMI_TRAP:
                         JMP             MON_REENTER
 
 MON_NMI_TRAP_DEBOUNCE:
-                        ; 260507-2125        WLP2        POC NMI handler eats switch bounce.
+                        ; 2026-05-07T21:25-05:00        WLP2        POC NMI handler eats switch bounce.
                         PHA
                         LDA             NMI_DEBOUNCE_FLAG
                         CMP             #$01
@@ -1642,7 +1642,7 @@ L_WRITE_DATA_BYTE_FLASH_ACTIVE:
                         LDA             LOAD_DST_HI
                         CMP             #$80
                         BCC             L_WRITE_DATA_BYTE_PROTECT
-; 260507-2258        WLP2        L F protects relocated HIMON/STR8 at $C000+.
+; 2026-05-07T22:58-05:00        WLP2        L F protects relocated HIMON/STR8 at $C000+.
                         CMP             #$C0
                         BCS             L_WRITE_DATA_BYTE_PROTECT
                         JSR             L_FLASH_SET_PTR

@@ -198,3 +198,56 @@ full chain/audit records     useful later for diagnostics and catalogs
 Question to keep open: should SMS records store these joints directly, or
 should SMS store only a message ID while RCAT/RREC/catalog metadata resolves
 the hash chain on demand?
+
+## Q: Can memory search accept HBSTR literals?
+
+Comment: Yes, but the printable spelling should probably be the canonical one.
+A future HIMON memory search could accept a backtick HBSTR literal:
+
+```text
+S 0 FFFF `HIMON
+```
+
+That would search for bytes `H I M O (N|$80)`, matching a high-bit-terminated
+string without requiring the operator to type or see a raw high-bit byte.
+
+Concern: A Ctrl-letter tail is technically possible because current HIMON top
+input stores many control bytes in `CMD_BUF`, but it is not a good primary
+syntax. Ctrl-C aborts, CR/LF ends the line, BS/DEL edit the line, and terminals
+may intercept flow-control keys such as Ctrl-S and Ctrl-Q. Invisible bytes also
+make command history and documentation harder to reason about. If a Ctrl-letter
+tail is ever supported, treat it as an optional shortcut, not the spec.
+
+Current caveat: HIMON command input uppercases printable letters before
+dispatch. Exact lowercase or mixed-case HBSTR searches need hex-byte spelling
+or a future search input path that preserves case.
+
+## Q: Can memory search mix hex bytes and text?
+
+Comment: Yes, with a small parser rule. After the range, treat the pattern as
+one or more atoms:
+
+```text
+hex-byte      append one byte
+'text-tail   append text through end-of-line, then stop parsing pattern
+```
+
+That keeps the normal cases terse:
+
+```text
+S addr end|+count b0 [b1 ...]
+S addr end|+count 'TEXT
+```
+
+and allows the small operator convenience:
+
+```text
+S 0 FFFF 4D 4D 'M
+```
+
+which searches for three `M` bytes.
+
+Concern: Keep apostrophe text as a final tail for the first implementation.
+There is no closing-quote parser and no return to hex parsing after text.
+Supporting text in the middle of the pattern would require quotes or escaping;
+that is not worth the parser cost for V0.

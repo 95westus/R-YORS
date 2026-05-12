@@ -48,6 +48,66 @@ and debug tools.
 - Sector `$0` means `$0000-$0FFF`; `$0000-$FFFF` is the full 64K CPU address
   space, not sector `$0`.
 
+## Date And Time Format
+
+- All date and date/time text in source, documentation, generated artifacts,
+  comments, logs, and examples should use ISO 8601.
+- Use `YYYY-MM-DD` for dates.
+- Use `YYYY-MM-DDTHH:mm+/-HH:MM` for local date/times when minute precision is
+  enough. Omit seconds unless the event genuinely needs second-level precision.
+- Any discovered older date stamps are cleanup debt, not precedent.
+
+## Command Safety And Syntax
+
+- Mandate: destructive commands require a command token of 4 or more
+  characters. Do not add new 1-, 2-, or 3-character destructive commands.
+- Destructive means the command's normal purpose is to overwrite, erase,
+  program, copy, fill, move, patch, restore, back up, or change boot/recovery
+  policy for RAM, flash, banks, vectors, or catalog/storage records.
+- Short command tokens remain for inspection, search, display, stepping,
+  register/context work, launch, and other nonpersistent control.
+- Existing short mutators in current ROM/proof builds are transition debt, not
+  permission for new short destructive spellings. Future revisions should move
+  bulk mutation behind full words such as `COPY`, `FILL`, `MOVE`, `FLASH`,
+  `BANK`, `ERASE`, `BACKUP`, and `RESTORE`.
+- STR8 keeps `R` as reset. Do not use that exception to add new short
+  destructive command spellings.
+- `C`, `M`, and `F` are not destructive shortcuts. `M` currently means
+  byte-by-byte modify in HIMON and is under command-surface review.
+- Current `S` single-step moves to `N` or `NEXT` in the target command surface,
+  freeing `S` for memory search. Search is non-destructive: hex byte tokens are
+  the default pattern. After the range, parse one or more pattern atoms:
+  byte tokens append bytes, and an apostrophe text atom appends the rest of the
+  line. Example: `S 0 FFFF 4D 4D 'M` searches for three `M` bytes.
+  Apostrophe text is a final tail in V0; there is no closing-quote parser and
+  no return to hex parsing after text.
+- Search hits should print like `D` context rows, with exact hit address first,
+  aligned row base second, and `*` between them when the match continues into
+  the next 16-byte display row. This preserves the useful BSO2 monitor
+  search-display convention in HIMON's command language.
+- Range grammar target for commands that accept ranges:
+
+```text
+start end       end is inclusive
+start +count    count is the number of bytes
+```
+
+- A 1- or 2-hex-digit `end` token inherits the high byte from `start`.
+  This is a page-local end shorthand, not a count. Example: `D 3000 FF`
+  means `$3000-$30FF`, because the short end byte `$FF` inherits `$30` from
+  `$3000`. If the inherited end would land before `start`, reject it and
+  require a full end address or `+count`; `D 30F0 10` is ambiguous/dangerous,
+  so use `D 30F0 3110` or `D 30F0 +21`.
+- The `+count` form is deliberately explicit, but it should not be the common
+  typing path for page-local display. Common bench dumps should prefer
+  page-local end shorthand, such as `D 100 3` for `$0100-$0103` or
+  `D 3000 FF` for `$3000-$30FF`. Use `+count` when the operator means a byte
+  count, not an end byte.
+- `D` without parameters should repeat the previous dump length starting at the
+  byte after the previous dump. Example: `D 3000 FF` displays `$3000-$30FF`
+  and records length `$0100`; the next bare `D` displays `$3100-$31FF`.
+  If no previous dump range exists, bare `D` is a usage error.
+
 ## STR8 Ownership
 
 - Direction change: earlier planning leaned toward future STR8 ownership of the
@@ -64,8 +124,8 @@ and debug tools.
   user system owns interrupts itself.
 - STR8 stays in the R-YORS "routines made from routines" spirit: reusable
   layers a system can choose, not a hidden claim over the board.
-- STR8 lives in bank 3's physical top erase sector (`$F000-$FFFF`). The first
-  resident proof is linked at `$FC00`, giving a 1K protected window.
+- STR8 lives in bank 3's physical top erase sector (`$F000-$FFFF`). The current
+  resident proof is linked at `$F000`, giving a 4K protected window.
 - Protected-window bytes are flashed through a separate STR8 install/update path.
   That path still stages the full top sector and preserves non-target bytes.
   Non-STR8 bytes in the same 4K sector may be used, but changing them requires
@@ -74,9 +134,10 @@ and debug tools.
   bank select, erase, 4K-buffered copy, Bank 0 enrollment, and read-back compare
   before reset-time ownership.
 - V0 STR8 uses whole 32K ROM bank images (`$8000-$FFFF`) as recovery sources.
-  Restore writes ordinary bank 3 image bytes from selected bank 0, 1, or 2 and
-  skips the selected STR8 protected window unless explicit STR8 install/update
-  is requested.
+  Normal restore writes bank 3 image bytes below `$C000` from selected bank 0,
+  1, or 2 and preserves `$C000-$FFFF`. The current proof has a separately
+  confirmed high-flash restore path that may rewrite `$C000-$FFFF`; that is
+  dangerous proof behavior, not the final casual restore policy.
 - Bank 3 is the live boot image. Bank 2 is the newest backup. Bank 1 is the
   previous backup. Bank 0 is held out of rotation unless the operator runs `E`.
   Saving the board's original WDCMONv2/base image is future bridge/install work,

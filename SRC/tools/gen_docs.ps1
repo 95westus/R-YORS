@@ -207,7 +207,7 @@ foreach ($file in $files) {
     }
 }
 
-$stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz'
+$stamp = Get-Date -Format 'yyyy-MM-ddTHH:mmK'
 $edgeGroups = @(
     $edges |
     Group-Object Source, Target |
