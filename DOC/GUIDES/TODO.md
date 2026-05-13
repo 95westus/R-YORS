@@ -36,7 +36,8 @@
   `S addr end|+count b0 [b1 ...] 'TEXT`. Treat apostrophe text as a final V0
   tail, not a quoted atom that resumes parsing. Print hits as D-style context
   rows: exact hit address, aligned row address, and `*` when the match crosses
-  a 16-byte display row. Current step/next moves to `N` or `NEXT`.
+  a 16-byte display row. Current step/next moves to `N` only; do not add
+  `NEXT` as an alias.
 - Sketch the first W65C02-small `pack_lo_5` decoder and the rule for falling
   back to raw text when compression loses.
 - Define the exact `FIX` record bytes for RAM staging and direct flash patching.

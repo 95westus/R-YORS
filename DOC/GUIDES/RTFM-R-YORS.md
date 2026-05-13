@@ -123,7 +123,7 @@ R [regs]       display/edit trapped context registers
 B start        set breakpoint
 B C start      clear breakpoint
 B L            list breakpoints
-S              single-step trapped context; target moves to N/NEXT
+S              single-step trapped context; target moves to N only
 X              resume trapped context
 Q              quiesce with WAI, then re-enter on wake
 ```

@@ -64,7 +64,7 @@ R [regs]       display/edit trapped context registers
 B start        set breakpoint
 B C start      clear breakpoint
 B L            list breakpoints
-S              single-step trapped context; target moves to N/NEXT
+S              single-step trapped context; target moves to N only
 X              resume trapped context when one exists
 Q              quiesce with WAI, then re-enter on wake
 ```
@@ -126,14 +126,15 @@ D            dump $3200-$32FF
 ## Search And Step Direction
 
 `S` is currently single-step. The preferred direction is to move step/next to
-`N` or `NEXT`, freeing `S` for memory search:
+`N` only, freeing `S` for memory search. `NEXT` is not a command alias. RAM-only
+`N` is non-destructive because it plants only a temporary debugger trap in RAM
+and restores the original opcode:
 
 ```text
 S addr end|+count b0 [b1 ...]
 S addr end|+count b0 [b1 ...] 'TEXT
 S addr end|+count 'TEXT
 N
-NEXT
 ```
 
 Hex byte tokens are the default pattern. After the range, parse one or more

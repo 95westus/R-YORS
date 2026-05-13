@@ -72,8 +72,12 @@ D            dump $3100-$31FF
 
 ```text
 2026-05-11T21:33-05:00 WLP2 `S` moves from single-step to memory search;
-                             step/next moves to `N` or `NEXT`.
+                             step/next moves to `N` only.
 ```
+
+`NEXT` is not a command alias in the target surface. RAM-only `N` is
+non-destructive because it plants only a temporary debugger trap in RAM and
+restores the original opcode.
 
 Target search syntax is:
 
@@ -140,8 +144,8 @@ Full debugger functionality belongs in RAM. Any debugger operation that plants,
 restores, or depends on a synthetic `BRK` must classify the target address
 before writing. ROM/flash and I/O targets are rejected for debug patching.
 
-This applies to user breakpoints, temporary `N` / `NEXT` breakpoints, and any
-future true stepper that uses trap planting. A debugger trap is not a generic
+This applies to user breakpoints, temporary `N` breakpoints, and any future
+true stepper that uses trap planting. A debugger trap is not a generic
 memory-write probe. HIMON must not test `$8000-$FFFF` by storing `BRK` and
 reading it back. Generic memory edit, ROM, flash, and banked flash routines have
 their own policy.
