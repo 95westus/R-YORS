@@ -79,6 +79,11 @@ CMD_USAGE_BL:
                         JSR             SYS_WRITE_CRLF
                         RTS
 
+CMD_N_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$D1,$01,$0C,$CB,$00
+CMD_N:
+                        JMP             CMD_S
+
 CMD_S_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$22,$13,$0C,$D6,$00
 CMD_S:
@@ -279,12 +284,7 @@ DBG_STEP_ONCE:
                         JSR             DBG_OPCODE_LEN
                         BCC             DBG_STEP_FAIL
                         STA             DBG_TMP_LEN
-                        CLC
-                        ADC             NMI_CTX_PCL
-                        STA             DBG_STEP_LO
-                        LDA             NMI_CTX_PCH
-                        ADC             #$00
-                        STA             DBG_STEP_HI
+                        JSR             DBG_STEP_RESOLVE_NEXT
                         LDA             DBG_STEP_LO
                         STA             CMDP_ADDR_LO
                         LDA             DBG_STEP_HI
@@ -314,6 +314,107 @@ DBG_STEP_FAIL:
                         CLC
                         RTS
 
+DBG_STEP_RESOLVE_NEXT:
+                        CLC
+                        LDA             NMI_CTX_PCL
+                        ADC             DBG_TMP_LEN
+                        STA             DBG_STEP_LO
+                        LDA             NMI_CTX_PCH
+                        ADC             #$00
+                        STA             DBG_STEP_HI
+
+                        LDA             DBG_TMP_OPCODE
+                        CMP             #$80
+                        BEQ             DBG_STEP_REL_TAKEN
+                        CMP             #$10
+                        BEQ             DBG_STEP_BPL
+                        CMP             #$30
+                        BEQ             DBG_STEP_BMI
+                        CMP             #$50
+                        BEQ             DBG_STEP_BVC
+                        CMP             #$70
+                        BEQ             DBG_STEP_BVS
+                        CMP             #$90
+                        BEQ             DBG_STEP_BCC
+                        CMP             #$B0
+                        BEQ             DBG_STEP_BCS
+                        CMP             #$D0
+                        BEQ             DBG_STEP_BNE
+                        CMP             #$F0
+                        BEQ             DBG_STEP_BEQ
+                        RTS
+DBG_STEP_BPL:
+                        LDA             NMI_CTX_P
+                        AND             #$80
+                        BEQ             DBG_STEP_REL_TAKEN
+                        RTS
+DBG_STEP_BMI:
+                        LDA             NMI_CTX_P
+                        AND             #$80
+                        BNE             DBG_STEP_REL_TAKEN
+                        RTS
+DBG_STEP_BVC:
+                        LDA             NMI_CTX_P
+                        AND             #$40
+                        BEQ             DBG_STEP_REL_TAKEN
+                        RTS
+DBG_STEP_BVS:
+                        LDA             NMI_CTX_P
+                        AND             #$40
+                        BNE             DBG_STEP_REL_TAKEN
+                        RTS
+DBG_STEP_BCC:
+                        LDA             NMI_CTX_P
+                        AND             #$01
+                        BEQ             DBG_STEP_REL_TAKEN
+                        RTS
+DBG_STEP_BCS:
+                        LDA             NMI_CTX_P
+                        AND             #$01
+                        BNE             DBG_STEP_REL_TAKEN
+                        RTS
+DBG_STEP_BNE:
+                        LDA             NMI_CTX_P
+                        AND             #$02
+                        BEQ             DBG_STEP_REL_TAKEN
+                        RTS
+DBG_STEP_BEQ:
+                        LDA             NMI_CTX_P
+                        AND             #$02
+                        BNE             DBG_STEP_REL_TAKEN
+                        RTS
+
+DBG_STEP_REL_TAKEN:
+                        CLC
+                        LDA             NMI_CTX_PCL
+                        ADC             #$01
+                        STA             CMDP_ADDR_LO
+                        LDA             NMI_CTX_PCH
+                        ADC             #$00
+                        STA             CMDP_ADDR_HI
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+                        STA             DBG_TMP_LO
+
+                        CLC
+                        LDA             NMI_CTX_PCL
+                        ADC             #$02
+                        STA             DBG_STEP_LO
+                        LDA             NMI_CTX_PCH
+                        ADC             #$00
+                        STA             DBG_STEP_HI
+                        LDA             DBG_TMP_LO
+                        BPL             DBG_STEP_REL_ADD
+                        DEC             DBG_STEP_HI
+DBG_STEP_REL_ADD:
+                        CLC
+                        ADC             DBG_STEP_LO
+                        STA             DBG_STEP_LO
+                        BCC             DBG_STEP_REL_DONE
+                        INC             DBG_STEP_HI
+DBG_STEP_REL_DONE:
+                        RTS
+
 DBG_PRINT_STEP_INFO:
                         LDX             #<MSG_STEP
                         LDY             #>MSG_STEP
@@ -327,6 +428,12 @@ DBG_PRINT_STEP_INFO:
                         JSR             HIM_WRITE_HBSTRING
                         LDA             DBG_TMP_OPCODE
                         JSR             SYS_WRITE_HEX_BYTE
+                        LDX             DBG_TMP_OPCODE
+                        LDA             ASM_OP_MNEM_ID,X
+                        BEQ             DBG_PRINT_STEP_NO_MNEM
+                        JSR             DIS_WRITE_SPACE
+                        JSR             DIS_PRINT_MNEM_ID
+DBG_PRINT_STEP_NO_MNEM:
                         LDX             #<MSG_STEP_LEN
                         LDY             #>MSG_STEP_LEN
                         JSR             HIM_WRITE_HBSTRING
@@ -339,7 +446,7 @@ DBG_PRINT_STEP_INFO:
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             DBG_STEP_LO
                         JSR             SYS_WRITE_HEX_BYTE
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 
 DBG_OPCODE_LEN:
                         LDX             DBG_TMP_OPCODE

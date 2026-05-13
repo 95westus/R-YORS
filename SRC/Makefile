@@ -43,6 +43,7 @@ S3X_HOME ?= $(LOCAL_ROOT)/s3x
 HIM_SUBDIR := $(APPS_DIR)/himon
 STR8_SUBDIR := $(APPS_DIR)/str8
 HIMON_SRC := $(HIM_SUBDIR)/himon.asm
+HIMON_INC := $(wildcard $(HIM_SUBDIR)/*.inc)
 HIMON_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon.obj
 HIMON_ROM_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon-rom.obj
 HIMON_S19 := $(S19_DIR)/himon.s19
@@ -86,6 +87,10 @@ TFLASH_S19 := $(S19_DIR)/test-flash.s19
 LIFE_SRC := $(APPS_DIR)/life.asm
 LIFE_OBJ := $(OBJ_DIR)/$(APPS_DIR)/life.obj
 LIFE_S19 := $(S19_DIR)/life.s19
+HIMON_DEBUG_PROOF_SRC := $(APPS_DIR)/himon-debug-proof.asm
+HIMON_DEBUG_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-debug-proof.obj
+HIMON_DEBUG_PROOF_S19 := $(S19_DIR)/himon-debug-proof-3000.s19
+HIMON_DEBUG_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 CALC_FLASH_SRC := $(APPS_DIR)/calc-flash.asm
 CALC_FLASH_OBJ := $(OBJ_DIR)/$(APPS_DIR)/calc-flash.obj
 CALC_FLASH_S19 := $(S19_DIR)/calc-flash-9a00.s19
@@ -159,6 +164,7 @@ ALL_TARGETS := \
 	test-ftdi-hal \
 	test-flash \
 	life \
+	himon-debug-proof \
 	rom-append-calc \
 	fig-forth \
 	msbasic-osi \
@@ -206,9 +212,12 @@ himon-rom: $(ROM_LIB) $(HIMON_ROM_S19)
 	@$(MAKE) artifacts
 
 himon-rom-bin: himon-rom
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-rom.map" -S19Path "$(S19_DIR)/himon-rom.s19" -BinPath "$(HIMON_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-rom-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin' -Force }"
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
+	@echo [ps] build $(HIMON_ROM_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-rom.map" -S19Path "$(S19_DIR)/himon-rom.s19" -BinPath "$(HIMON_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-rom-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
+	@echo [ps] clean HIMON ROM vector temp
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin' -Force }"
+	@echo [ps] stamp $(HIMON_ROM_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 	@echo "Built $(HIMON_ROM_BIN)."
 
 himon-str8-rom-bin: $(HIMON_STR8_ROM_BIN)
@@ -219,9 +228,12 @@ himon-load: $(ROM_LIB) $(HIMON_LOAD_S19)
 	@$(MAKE) artifacts
 
 himon-load-bin: himon-load
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-load.map" -S19Path "$(HIMON_LOAD_S19)" -BinPath "$(HIMON_LOAD_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-load-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-load-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-load-vectors.bin' -Force }"
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_LOAD_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
+	@echo [ps] build $(HIMON_LOAD_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-load.map" -S19Path "$(HIMON_LOAD_S19)" -BinPath "$(HIMON_LOAD_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-load-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
+	@echo [ps] clean HIMON load vector temp
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-load-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-load-vectors.bin' -Force }"
+	@echo [ps] stamp $(HIMON_LOAD_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_LOAD_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 	@echo "Built $(HIMON_LOAD_BIN)."
 
 basic-himon-rom-bin: $(BASIC_HIMON_ROM_BIN)
@@ -259,6 +271,10 @@ test-flash: $(ROM_LIB) $(TFLASH_S19)
 
 life: $(ROM_LIB) $(LIFE_S19)
 	@echo "Built $(LIFE_S19)."
+	@$(MAKE) artifacts
+
+himon-debug-proof: $(ROM_LIB) $(HIMON_DEBUG_PROOF_S19)
+	@echo "Built $(HIMON_DEBUG_PROOF_S19)."
 	@$(MAKE) artifacts
 
 calc-flash: $(ROM_LIB) $(CALC_FLASH_S19)
@@ -389,12 +405,14 @@ $(FNV1A_HBSTR_S19): $(FNV1A_HBSTR_OBJ) $(ROM_LIB)
 $(STR8_S19): $(STR8_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(STR8_LINKFLAGS) $(STR8_S19) $(STR8_OBJ) -L $(BUILD_DIR)\lib\rom
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903F0000C'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$F000 in $(STR8_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903F0000C'; Set-Content -Path $$p -Value $$lines"
 
 $(STR8_WORKER_S19): $(STR8_WORKER_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(STR8_WORKER_LINKFLAGS) $(STR8_WORKER_S19) $(STR8_WORKER_OBJ)
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$0200 in $(STR8_WORKER_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
 
 $(STR8_RAM_OBJ): $(STR8_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
@@ -404,7 +422,8 @@ $(STR8_RAM_OBJ): $(STR8_SRC)
 $(STR8_RAM_S19): $(STR8_RAM_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(STR8_RAM_LINKFLAGS) $(STR8_RAM_S19) $(STR8_RAM_OBJ) -L $(BUILD_DIR)\lib\rom
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_RAM_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$3000 in $(STR8_RAM_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_RAM_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
 
 $(TMON_S19): $(TMON_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -421,27 +440,38 @@ $(TFHAL_S19): $(TFHAL_OBJ) $(ROM_LIB)
 $(TFLASH_S19): $(TFLASH_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(TFLASH_LINKFLAGS) $(TFLASH_S19) $(TFLASH_OBJ) -L $(BUILD_DIR)\lib\rom
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(TFLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$3000 in $(TFLASH_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(TFLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
 
 $(LIFE_S19): $(LIFE_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(TEST_LINKFLAGS) $(LIFE_S19) $(LIFE_OBJ) -L $(BUILD_DIR)\lib\rom
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(LIFE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$2000 in $(LIFE_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(LIFE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
+$(HIMON_DEBUG_PROOF_S19): $(HIMON_DEBUG_PROOF_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIMON_DEBUG_PROOF_LINKFLAGS) $(HIMON_DEBUG_PROOF_S19) $(HIMON_DEBUG_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$3000 in $(HIMON_DEBUG_PROOF_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HIMON_DEBUG_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
 
 $(CALC_FLASH_S19): $(CALC_FLASH_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(CALC_FLASH_LINKFLAGS) $(CALC_FLASH_S19) $(CALC_FLASH_OBJ) -L $(BUILD_DIR)\lib\rom
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(CALC_FLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9039A085A'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$9A08 in $(CALC_FLASH_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(CALC_FLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9039A085A'; Set-Content -Path $$p -Value $$lines"
 
 $(ROM_APPEND_CALC_S19): $(ROM_APPEND_CALC_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(ROM_APPEND_CALC_LINKFLAGS) $(ROM_APPEND_CALC_S19) $(ROM_APPEND_CALC_OBJ) -L $(BUILD_DIR)\lib\rom
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ROM_APPEND_CALC_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903B80440'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$B804 in $(ROM_APPEND_CALC_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ROM_APPEND_CALC_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903B80440'; Set-Content -Path $$p -Value $$lines"
 
 $(FIG_FORTH_S19): $(FIG_FORTH_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(FIG_FORTH_LINKFLAGS) $(FIG_FORTH_S19) $(FIG_FORTH_OBJ) -L $(BUILD_DIR)\lib\rom
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(FIG_FORTH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903A00854'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$A008 in $(FIG_FORTH_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(FIG_FORTH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903A00854'; Set-Content -Path $$p -Value $$lines"
 
 $(FIG_FORTH_SRC):
 	@if not exist $(subst /,\,$(dir $(FIG_FORTH_SRC))) mkdir $(subst /,\,$(dir $(FIG_FORTH_SRC)))
@@ -451,28 +481,38 @@ $(FIG_FORTH_SRC):
 $(MSBASIC_OSI_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(MSBASIC_OSI_LINKFLAGS) $(MSBASIC_OSI_S19) $(MSBASIC_OSI_OBJ)
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/msbasic-osi-8000.map') { '$(S19_DIR)/msbasic-osi-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/msbasic-osi-8000.map') { '$(MAP_DIR)/msbasic-osi-8000.map' } else { throw 'msbasic-osi-8000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+COLD_START\s*$$' | Select-Object -First 1; if (-not $$m) { throw 'COLD_START not found in map' }; $$addr = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$sum = 3 + (($$addr -shr 8) -band 255) + ($$addr -band 255); $$chk = ($$sum -bxor 255) -band 255; $$rec = ('S903{0:X4}{1:X2}' -f $$addr, $$chk); $$lines = Get-Content -Path '$(MSBASIC_OSI_S19)'; $$lines[-1] = $$rec; Set-Content -Path '$(MSBASIC_OSI_S19)' -Value $$lines"
+	@echo [ps] set S9 start from COLD_START in $(MSBASIC_OSI_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/msbasic-osi-8000.map') { '$(S19_DIR)/msbasic-osi-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/msbasic-osi-8000.map') { '$(MAP_DIR)/msbasic-osi-8000.map' } else { throw 'msbasic-osi-8000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+COLD_START\s*$$' | Select-Object -First 1; if (-not $$m) { throw 'COLD_START not found in map' }; $$addr = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$sum = 3 + (($$addr -shr 8) -band 255) + ($$addr -band 255); $$chk = ($$sum -bxor 255) -band 255; $$rec = ('S903{0:X4}{1:X2}' -f $$addr, $$chk); $$lines = Get-Content -Path '$(MSBASIC_OSI_S19)'; $$lines[-1] = $$rec; Set-Content -Path '$(MSBASIC_OSI_S19)' -Value $$lines"
 
 $(MSBASIC_OSI_BIN): $(MSBASIC_OSI_S19) tools/build_msbasic_osi_bin.ps1 tools/stamp_rom_bin.ps1 $(BIN_POLICY)
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_msbasic_osi_bin.ps1 -MapPath "$(S19_DIR)/msbasic-osi-8000.map" -S19Path "$(MSBASIC_OSI_S19)" -BinPath "$(MSBASIC_OSI_BIN)"
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(MSBASIC_OSI_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
+	@echo [ps] build $(MSBASIC_OSI_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_msbasic_osi_bin.ps1 -MapPath "$(S19_DIR)/msbasic-osi-8000.map" -S19Path "$(MSBASIC_OSI_S19)" -BinPath "$(MSBASIC_OSI_BIN)"
+	@echo [ps] stamp $(MSBASIC_OSI_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(MSBASIC_OSI_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
 $(BASIC_HIMON_ROM_BIN): $(MSBASIC_OSI_S19) $(HIMON_ROM_S19) tools/build_basic_himon_rom_bin.ps1 tools/stamp_rom_bin.ps1
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_himon_rom_bin.ps1 -MsbasicMapPath "$(S19_DIR)/msbasic-osi-8000.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_HIMON_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/basic-himon-rom-vectors.bin"
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
+	@echo [ps] build $(BASIC_HIMON_ROM_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_himon_rom_bin.ps1 -MsbasicMapPath "$(S19_DIR)/msbasic-osi-8000.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_HIMON_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/basic-himon-rom-vectors.bin"
+	@echo [ps] stamp $(BASIC_HIMON_ROM_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
 $(BASIC_FORTH_HIMON_ROM_BIN): $(FIG_FORTH_S19) $(MSBASIC_OSI_S19) $(HIMON_ROM_S19) tools/build_basic_forth_himon_rom_bin.ps1 tools/stamp_rom_bin.ps1
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_forth_himon_rom_bin.ps1 -ForthMapPath "$(S19_DIR)/fig-forth-a000.map" -ForthS19Path "$(FIG_FORTH_S19)" -MsbasicMapPath "$(S19_DIR)/msbasic-osi-8000.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_FORTH_HIMON_ROM_BIN)"
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_FORTH_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
+	@echo [ps] build $(BASIC_FORTH_HIMON_ROM_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_forth_himon_rom_bin.ps1 -ForthMapPath "$(S19_DIR)/fig-forth-a000.map" -ForthS19Path "$(FIG_FORTH_S19)" -MsbasicMapPath "$(S19_DIR)/msbasic-osi-8000.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_FORTH_HIMON_ROM_BIN)"
+	@echo [ps] stamp $(BASIC_FORTH_HIMON_ROM_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_FORTH_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
 $(HIMON_STR8_ROM_BIN): $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) tools/build_himon_str8_rom_bin.ps1 tools/stamp_rom_bin.ps1
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -BinPath "$(HIMON_STR8_ROM_BIN)"
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_STR8_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
+	@echo [ps] build $(HIMON_STR8_ROM_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -BinPath "$(HIMON_STR8_ROM_BIN)"
+	@echo [ps] stamp $(HIMON_STR8_ROM_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_STR8_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
 $(MSBASIC_OSI_RAM_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(MSBASIC_OSI_RAM_LINKFLAGS) $(MSBASIC_OSI_RAM_S19) $(MSBASIC_OSI_OBJ)
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/msbasic-osi-ram.map') { '$(S19_DIR)/msbasic-osi-ram.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/msbasic-osi-ram.map') { '$(MAP_DIR)/msbasic-osi-ram.map' } else { throw 'msbasic-osi-ram.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+COLD_START\s*$$' | Select-Object -First 1; if (-not $$m) { throw 'COLD_START not found in map' }; $$addr = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$sum = 3 + (($$addr -shr 8) -band 255) + ($$addr -band 255); $$chk = ($$sum -bxor 255) -band 255; $$rec = ('S903{0:X4}{1:X2}' -f $$addr, $$chk); $$lines = Get-Content -Path '$(MSBASIC_OSI_RAM_S19)'; $$lines[-1] = $$rec; Set-Content -Path '$(MSBASIC_OSI_RAM_S19)' -Value $$lines"
+	@echo [ps] set S9 start from COLD_START in $(MSBASIC_OSI_RAM_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/msbasic-osi-ram.map') { '$(S19_DIR)/msbasic-osi-ram.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/msbasic-osi-ram.map') { '$(MAP_DIR)/msbasic-osi-ram.map' } else { throw 'msbasic-osi-ram.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+COLD_START\s*$$' | Select-Object -First 1; if (-not $$m) { throw 'COLD_START not found in map' }; $$addr = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$sum = 3 + (($$addr -shr 8) -band 255) + ($$addr -band 255); $$chk = ($$sum -bxor 255) -band 255; $$rec = ('S903{0:X4}{1:X2}' -f $$addr, $$chk); $$lines = Get-Content -Path '$(MSBASIC_OSI_RAM_S19)'; $$lines[-1] = $$rec; Set-Content -Path '$(MSBASIC_OSI_RAM_S19)' -Value $$lines"
 
 $(FTDI_DRV_INC): $(FTDI_DRV_SRC)
 	@if not exist $(subst /,\,$(dir $(FTDI_DRV_INC))) mkdir $(subst /,\,$(dir $(FTDI_DRV_INC)))
@@ -508,6 +548,8 @@ $(FIG_FORTH_OBJ): $(FIG_FORTH_SRC)
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
+$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC)
+
 $(HIMON_ROM_OBJ): $(HIMON_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) $<
@@ -523,7 +565,8 @@ $(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_GEN) -Src . -OutDir $(DOC_GENERATED_DIR)
 
 artifacts:
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"
+	@echo [ps] move sidecar artifacts
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"
 	@echo "Moved sidecar artifacts into $(BUILD_DIR)/{lst,sym,map,bin,s19}."
 
 clean:
@@ -549,4 +592,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life calc-flash rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof calc-flash rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

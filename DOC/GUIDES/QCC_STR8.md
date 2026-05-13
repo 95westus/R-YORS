@@ -130,6 +130,50 @@ program, and verify phases. Later STR8 should batch the RAM worker or keep it
 resident for a sector/bank operation so the observed time moves closer to the
 flash device timing.
 
+## Q: Why am I not working on LEDs yet?
+
+Comment: LEDs are downstream of the flash state machine. R-YORS should use LEDs
+as visible status for flash in progress, erase, read, write, verify/error,
+IRQ/time, console, and other enumerated machine states. But those states need to
+exist as clean flash/recovery boundaries before the LED layer can be useful.
+
+Current priority is still pulling flash into shape:
+
+```text
+read
+stage
+erase
+write
+verify
+protect
+error/result
+```
+
+After those states are named, add one small LED/status routine and call it at
+stable operation boundaries first. The existing `BIO_PIA_LED_*` routines are
+the likely hardware-facing layer; STR8 should expose a higher-level status byte
+or event code instead of scattering raw PIA calls through flash code.
+
+Possible first status names:
+
+```text
+LED_IDLE
+LED_FLASH
+LED_ERASE
+LED_READ
+LED_WRITE
+LED_VERIFY
+LED_IRQ
+LED_TIME
+LED_CONSOLE
+LED_ERROR
+```
+
+Concern: Do not let LEDs become proof of flash correctness. A blink can prove
+that code reached a point; it cannot prove erase/write/verify succeeded. Also
+avoid putting ROM/BIO LED calls inside the RAM flash worker while bank mutation
+is active unless there is a deliberately RAM-safe status hook.
+
 ## Q: Why QCC for STR8?
 
 Comment: STR8 is still deciding how small it stays in V0 and how much future

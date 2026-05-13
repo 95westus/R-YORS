@@ -10,6 +10,7 @@ This is the top index for the `ror` documentation set.
 - [DECISIONS.md](./DECISIONS.md) - settled calls to avoid reopening by accident.
 - [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions.
 - [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
+- [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - flash/load/step checklist for HIMON debug testing.
 - [QCC.md](./QCC.md) - Questions, Comments, Concerns for active design work.
 - [REF.md](./REF.md) - quick operational reference.
 - [XREF.md](./XREF.md) - document and source cross-reference.
@@ -34,6 +35,7 @@ This is the top index for the `ror` documentation set.
   STR8 scan, erase, HIMON update, and STR8 self-update flow.
 - [RTFM-str8.md](./RTFM-str8.md) - small-command STR8 instructions.
 - [RTFM-himon.md](./RTFM-himon.md) - normal monitor boundary instructions.
+- [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - bench process for RAM-loaded debug proofs.
 - [HASHED_ASM.md](./HASHED_ASM.md) - onboard hashed assembler, symbols, and fixups.
 - [HASH_MAP.md](./HASH_MAP.md) - hash uses across docs, runtime dispatch, and assembler records.
 - [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) - worked example for

@@ -65,6 +65,7 @@ B start        set breakpoint
 B C start      clear breakpoint
 B L            list breakpoints
 S              single-step trapped context; target moves to N only
+N              same step path while S is being freed for search
 X              resume trapped context when one exists
 Q              quiesce with WAI, then re-enter on wake
 ```
@@ -162,6 +163,69 @@ B88F B880: ...
 ```
 
 `*` marks a match that crosses the 16-byte display row boundary.
+
+## RAM Proof To Image
+
+New monitor/debug code should prove itself as RAM-loaded S19 before it becomes
+part of a burnable image. The working loop is:
+
+```text
+write a small standalone RAM proof
+link it inside UPA, usually $2000-$77FF
+build an S19
+load it with HIMON L or L G
+debug it with B, N/S, R, X, D, and U
+promote clean code into HIMON or a ROM/flash image
+build the final .bin
+```
+
+For the next search command, `S` should start this way: a RAM proof S19 running
+under HIMON, not a permanent HIMON command record on the first pass. Link it in
+user RAM and keep the code away from HIMON's workspace, page buffers, I/O, and
+ROM/flash. Debug patches only belong in `$2000-$77FF`; if step or breakpoint
+tries to plant a synthetic `BRK` elsewhere, HIMON reports `DBG RAM`.
+
+Build examples already in this tree:
+
+```text
+make -C SRC life       -> SRC/BUILD/s19/life.s19        linked at $2000
+make -C SRC str8-ram   -> SRC/BUILD/s19/str8-ram-3000.s19
+```
+
+On the board:
+
+```text
+>L              load S-records into RAM, then G start manually
+>L G            load S-records and use the S9 start address
+>B 3000         optional breakpoint in the RAM proof
+>G 3000         run the proof when not using L G
+```
+
+When the RAM proof is clean, promote it in one of two ways:
+
+```text
+HIMON feature: fold the routine/command into SRC/TEST/apps/himon and rebuild.
+flash member: link at its intended flash address and make it catalog/record visible.
+```
+
+S19 is the transfer/proof format. A `.bin` is not "the same file without text";
+it is a placed raw image. For the current main image, use:
+
+```text
+make -C SRC himon
+make -C SRC himon-str8-rom-bin
+```
+
+The important output is:
+
+```text
+SRC/BUILD/bin/himon-str8-rom.bin
+```
+
+That `.bin` is the 32K `$8000-$FFFF` bank image for the programmer/STR8 image
+workflow. For any new standalone ROM member, add an explicit build target or
+script that places the linked S19 bytes at the correct ROM offset and verifies
+the image before calling it burnable.
 
 ## Flash Loading
 
