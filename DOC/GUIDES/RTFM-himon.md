@@ -128,7 +128,8 @@ D            dump $3200-$32FF
 `S` is currently single-step. The preferred direction is to move step/next to
 `N` only, freeing `S` for memory search. `NEXT` is not a command alias. RAM-only
 `N` is non-destructive because it plants only a temporary debugger trap in RAM
-and restores the original opcode:
+and restores the original opcode. The first patchable range is user program RAM
+`$2000-$77FF`; system RAM, I/O, and ROM/flash are not debug patch targets:
 
 ```text
 S addr end|+count b0 [b1 ...]

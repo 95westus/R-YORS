@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R-YORS Bringup - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="r-yors-bringup">R-YORS Bringup</h1>
+<p>This is the practical bringup rail for moving from the current HIMON image to R-YORS booting through STR8.</p>
+<p>Rule zero: prove one dangerous thing at a time. No erase/write step should be added until the read-only version of the same path has passed.</p>
+<p>Current bench status: a rudimentary STR8 flash-recovery path has been lightly tested and is functioning nominally. Continue treating the programmer and a known-good image as the trusted escape path while the update/self-update paths are still being designed.</p>
+<h2 id="current-target">Current Target</h2>
+<pre><code class="language-text">STR8 V0
+first proof image:  RAM-resident S19 launched under HIMON
+current ROM proof:  $F000-$FFFF
+future shrink goal: highest fitting protected window
+role:               image-oriented recovery guard
+copy buffer:        4K RAM buffer, one erase sector at a time
+I/O layer:          BIO_*
+catalog/FNV:        not used by STR8 V0
+HIMON vectors:      HIMON controls IRQ/vector behavior in V0</code></pre>
+<p>STR8 starts as a RAM-launched test app. It should grow into reset-owned recovery only after bank select, erase, 4K-buffered copy, verify, backup, restore, Bank 0 enrollment, and top-sector staging have all been proven.</p>
+<h2 id="escape-path">Escape Path</h2>
+<p>Before any live bank 3 rewrite, the external recovery path is:</p>
+<pre><code class="language-text">T48 programmer image restore</code></pre>
+<p>Required before real STR8 flash writes:</p>
+<pre><code class="language-text">known-good ROM image archived
+current HIMON image documented
+T48 programmer ready to rewrite the flash/ROM</code></pre>
+<p>A future WDCMON bridge may become another path, but the first STR8 bringup assumes the T48 is the trusted recovery tool.</p>
+<h2 id="bringup-order">Bringup Order</h2>
+<pre><code class="language-text">0. Build RAM-resident STR8 S19 launched under HIMON.
+1. Prove BIO read/write only.
+2. Prove bank select only.
+3. Prove 4K buffer read/write/verify across windows $8-$F.
+4. Prove automatic backup rotation: 2-&gt;1, 3-&gt;2.
+5. Prove bank 0 enrollment flag: `E` clears one in-flash bit after confirmation.
+6. Prove enrolled backup rotation: 1-&gt;0, 2-&gt;1, 3-&gt;2.
+7. Prove restore of ordinary bank 3 bytes while preserving the STR8 window.
+8. Prove top-sector read/stage/erase/full-sector-write/verify.
+9. Prove explicit STR8 install/update path.
+10. Only then let reset enter STR8 first.</code></pre>
+<h2 id="v0-bank-policy">V0 Bank Policy</h2>
+<pre><code class="language-text">bank 3  live reset/boot image
+bank 2  most recent backup image
+bank 1  previous backup image
+bank 0  optional WDCMONv2/base hold, unless enrolled into rotation</code></pre>
+<p>Automatic backup request before bank 0 enrollment:</p>
+<pre><code class="language-text">copy bank 2 -&gt; bank 1
+copy bank 3 -&gt; bank 2
+verify copied bytes by read-back</code></pre>
+<p>After <code>E</code> enrolls bank 0:</p>
+<pre><code class="language-text">copy bank 1 -&gt; bank 0
+copy bank 2 -&gt; bank 1
+copy bank 3 -&gt; bank 2
+verify copied bytes by read-back</code></pre>
+<p>Saving the board&#39;s original WDCMONv2/base flash image is still desired, but it belongs to the future bridge/install path. It is not part of today&#39;s STR8 RAM proof.</p>
+<p>Restore request:</p>
+<pre><code class="language-text">use selected whole 32K image from bank 0, 1, or 2 as source
+write ordinary bank 3 image bytes
+skip selected STR8 protected window
+verify restored bytes by read-back</code></pre>
+<p>Restoring bank 0 restores whatever bank 0 currently holds. Before enrollment it may be a saved WDCMONv2/base image. After enrollment it is the oldest rotating backup.</p>
+<h2 id="protected-window">Protected Window</h2>
+<p>The physical top erase sector is always:</p>
+<pre><code class="language-text">$F000-$FFFF</code></pre>
+<p>The selected STR8 protected window should use the highest fitting start:</p>
+<pre><code class="language-text">$FC00-$FFFF  1K
+$FA00-$FFFF  1.5K
+$F800-$FFFF  2K
+$F600-$FFFF  2.5K
+$F400-$FFFF  3K
+$F200-$FFFF  3.5K
+$F000-$FFFF  4K only if needed</code></pre>
+<p>For the current ROM proof, assume:</p>
+<pre><code class="language-text">STR8 protected window = $F000-$FFFF
+$FFF0-$FFF9           = one-time board/version/config bytes
+$FFFA-$FFFF           = W65C02 hardware vector block</code></pre>
+<p>Ordinary restore preserves <code>$C000-$FFFF</code> unless the operator explicitly confirms high flash. Explicit STR8 install/update owns the selected protected window. The <code>$FFF0-$FFF9</code> bytes can be patched only while flash programming can still clear needed bits; changing cleared bits back to <code>1</code> waits for a top-sector erase/rewrite.</p>
+<h2 id="top-sector-rule">Top-Sector Rule</h2>
+<p>Any change inside <code>$F000-$FFFF</code> uses the full-sector transaction:</p>
+<pre><code class="language-text">read full $F000-$FFFF sector into RAM
+update staged bytes only
+erase $F000-$FFFF
+write full staged sector back
+verify full staged sector by read-back</code></pre>
+<p>This rule applies even when only bytes below <code>$FC00</code> are changing, because flash erase granularity is still 4K.</p>
+<h2 id="image-marker">Image Marker</h2>
+<p>STR8 V0 should not use FNV for image selection or verification. The first image marker should be boring and directly readable:</p>
+<pre><code class="language-text">magic:       RYORS or STR8 image text
+bank role:   live/latest/previous/factory-wdcmon
+layout:      selected STR8 window start
+version:     small build/version byte or word
+status:      valid/incomplete/recovery marker</code></pre>
+<p>Do not make the marker a catalog. It is only a V0 recovery sanity check.</p>
+<h2 id="failure-cases-to-prove">Failure Cases To Prove</h2>
+<pre><code class="language-text">wrong bank selected
+source image marker missing
+verify mismatch after copy
+backup rotation interrupted after first copy
+bank 0 enrollment requested without confirmation
+bank 0 enrollment flag write fails or verifies wrong
+restore interrupted before bank 3 is valid
+top-sector erase succeeds but rewrite fails
+protected-window write requested without explicit STR8 install/update</code></pre>
+<p>Each failure should leave a short serial message and return to <code>STR8&gt;</code> whenever that is still possible.</p>
+<h2 id="first-code-milestones">First Code Milestones</h2>
+<pre><code class="language-text">STR8_INIT
+STR8_PRINT_SCREEN
+STR8_CMD_LOOP
+STR8_CMD_BACKUP        RAM proof: real backup cascade with verify
+STR8_CMD_ENROLL_B0     RAM proof: clear one-way bank 0 rotation flag
+STR8_CMD_RESTORE_0     RAM proof: restore bank 0 -&gt; bank 3, preserve STR8 bytes
+STR8_CMD_RESTORE_1     RAM proof: restore bank 1 -&gt; bank 3, preserve STR8 bytes
+STR8_CMD_RESTORE_2     RAM proof: restore bank 2 -&gt; bank 3, preserve STR8 bytes
+FLSH_BANK_SELECT_A     first real hardware hinge
+FLSH_BANK_CLEAR_CHECK_A
+FLSH_BANK_ERASE_A
+FLSH_COPY_BANK_AX
+FLSH_VERIFY_BANK_AX
+STR8_TOP_SECTOR_STAGE
+STR8_INSTALL_SELF</code></pre>
+<h2 id="current-stub-and-next-image">Current Stub And Next Image</h2>
+<pre><code class="language-text">source:  SRC/TEST/apps/str8/str8.asm
+build:   make -C SRC str8
+output:  SRC/BUILD/s19/str8-fc00.s19
+         SRC/BUILD/s19/str8-ram-3000.s19</code></pre>
+<p>The current <code>$FC00</code> stub is allowed to print plans only. It must not erase or write flash. The RAM proof image is linked at <code>$3000</code>, is launched under HIMON, and reserves <code>$4000-$4FFF</code> as copy-buffer RAM. The current copy worker stages one 4K erase sector at a time through that buffer.</p>
+<p>RAM proof command <code>B</code> is the destructive backup cascade. Before Bank 0 enrollment it copies <code>2-&gt;1</code> and <code>3-&gt;2</code>. After <code>E</code> enrollment it copies <code>1-&gt;0</code>, <code>2-&gt;1</code>, and <code>3-&gt;2</code>. Each copy stages one 4K sector through <code>$4000-$4FFF</code>, erases the destination sector, writes it, and verifies by read-back compare.</p>
+<p>RAM proof command <code>E</code> clears bit 0 of <code>$FFF0</code> after confirmation. Erased/set means <code>B0 HOLD</code>; cleared means <code>B0 ROT</code>.</p>
+<p>RAM proof commands <code>0</code>, <code>1</code>, and <code>2</code> restore the selected source bank to live bank 3. The normal restore path preserves <code>$C000-$FFFF</code> from bank 3 unless the operator explicitly confirms high flash, then verifies the destination against the staged image.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/BRINGUP.md</code>. Source modified: <time>2026-05-12T02:50:05Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

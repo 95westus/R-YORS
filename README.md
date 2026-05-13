@@ -20,12 +20,17 @@ Newest alerts appear first.
 ##                          #HASH# FLASH                              ##
 ##        REHASH / FLASHBACK / COMMAND-SURFACE ALERT                  ##
 ########################################################################
-2026-05-13T12:53-05:00 WLP2 RAM-only debug is the new rule: debug patching does
-                             not target ROM/flash. RREC resolver/search-order
-                             notes are evolving.
-2026-05-11T21:33-05:00 WLP2 Command rules changed: destructive commands now
-                             need 4+ characters, HIMON range/search syntax is
-                             being revised, and STR8 keeps R as reset.
+2026
+         05
+                13
+                   17:53Z WLP2 RAM-only debug is the new rule: debug
+                               patching does not target ROM/flash. RREC
+                               resolver/search-order notes are evolving.
+                12
+                   02:33Z WLP2 Command rules changed: destructive
+                               commands now need 4+ characters, HIMON
+                               range/search syntax is being revised, and
+                               STR8 keeps R as reset.
 ```
 
 Details live in [DOC/GUIDES/HASH_FLASH.md](DOC/GUIDES/HASH_FLASH.md).
@@ -201,6 +206,13 @@ make release-local
 ```
 
 Adds ignored/private local composites when `LOCAL/` is populated.
+
+```text
+make docs-html
+```
+
+Generates `DOC/HTML` static pages from the current Markdown docs snapshot.
+HTML is a presentation view; Markdown remains the canonical documentation.
 
 ## Lineage
 

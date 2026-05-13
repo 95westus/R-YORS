@@ -7,12 +7,15 @@ $ErrorActionPreference = "Stop"
 
 $rows = @(
     [pscustomobject]@{ Target = "all"; Category = "build"; Description = "Build the main tracked and local target set." }
+    [pscustomobject]@{ Target = "help"; Category = "build"; Description = "Show this target list. Filter with Q=term, e.g. make help Q=flash." }
     [pscustomobject]@{ Target = "release"; Category = "release"; Description = "Build docs plus tracked release artifacts: HIMON, fnv1a-hbstr, test-flash, rom-append-calc." }
     [pscustomobject]@{ Target = "release-local"; Category = "release"; Description = "Build release plus local/private ROM composites." }
     [pscustomobject]@{ Target = "himon"; Category = "monitor"; Description = "Build current HIMON app S19 and ROM binary." }
     [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000." }
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom.bin." }
     [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K bank image with HIMON at C000, STR8 at F000, RESET=F000: BUILD/bin/himon-str8-rom.bin." }
+    [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000." }
+    [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image from the HIMON load S19." }
     [pscustomobject]@{ Target = "basic-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000 and HIMON at C000." }
     [pscustomobject]@{ Target = "basic-forth-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000, fig-Forth at A000, and HIMON at C000." }
     [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build STR8 V0 F000 boot image and RAM proof image." }
@@ -23,6 +26,7 @@ $rows = @(
     [pscustomobject]@{ Target = "test-ftdi-drv"; Category = "test"; Description = "Build FTDI driver test app." }
     [pscustomobject]@{ Target = "test-ftdi-hal"; Category = "test"; Description = "Build FTDI HAL test app." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life app." }
+    [pscustomobject]@{ Target = "calc-flash"; Category = "app"; Description = "Build CALC flash-slot proof app." }
     [pscustomobject]@{ Target = "rom-append-calc"; Category = "app"; Description = "Build CALC command as a ROM append proof at B804." }
     [pscustomobject]@{ Target = "fig-forth"; Category = "local"; Description = "Generate and build local fig-Forth S19 at A000." }
     [pscustomobject]@{ Target = "fig-forth-src"; Category = "local"; Description = "Generate local WDC-flavored fig-Forth source." }
@@ -52,7 +56,9 @@ $rows = @(
     [pscustomobject]@{ Target = "routine-graph-insights"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_GRAPH_INSIGHTS.md." }
     [pscustomobject]@{ Target = "routine-components"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_COMPONENTS.md." }
     [pscustomobject]@{ Target = "routine-hash-comments"; Category = "docs"; Description = "Refresh generated routine hash comments in ASM files." }
+    [pscustomobject]@{ Target = "docs-html"; Category = "docs"; Description = "Generate DOC/HTML static pages from the current Markdown docs snapshot." }
     [pscustomobject]@{ Target = "artifacts"; Category = "housekeeping"; Description = "Move sidecar artifacts into BUILD/{lst,sym,map,bin,s19}." }
+    [pscustomobject]@{ Target = "bin-check"; Category = "housekeeping"; Description = "Check generated BIN files for expected ROM image size and reset-vector policy." }
     [pscustomobject]@{ Target = "clean"; Category = "housekeeping"; Description = "Remove generated app-side files and BUILD." }
     [pscustomobject]@{ Target = "realclean"; Category = "housekeeping"; Description = "Clean plus root temporary linker artifacts." }
     [pscustomobject]@{ Target = "upload"; Category = "external"; Description = "Run UPLOADER command if provided." }

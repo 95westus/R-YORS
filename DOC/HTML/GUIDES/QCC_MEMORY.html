@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QCC Memory - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="qcc-memory">QCC Memory</h1>
+<p>This page keeps memory and bit-helper questions in QCC form.</p>
+<h2 id="q-what-are-the-current-broad-memory-regions">Q: What are the current broad memory regions?</h2>
+<p>Comment:</p>
+<pre><code class="language-text">$0000-$7EFF  RAM
+$7F00-$7FFF  IO
+$8000-$FFFF  flash</code></pre>
+<p>Concern: A scanner must not treat all address ranges alike. RAM can be temporary. IO can have side effects. Flash can be scanned safely but can only be rewritten under erase/write rules.</p>
+<h2 id="q-should-himon-have-an-extended-flash-address-form">Q: Should HIMON have an extended flash address form?</h2>
+<p>Comment: Bare 16-bit addresses remain CPU-address-space addresses. <code>0000-FFFF</code> is valid and means the currently visible 64K map. A future extended address form could name physical flash directly with a bank prefix:</p>
+<pre><code class="language-text">01:0000
+01:0000-01:FFFF
+02:0000
+03:FFFF</code></pre>
+<p>Depending on the final flash map, the valid extended range might stop at <code>02:FFFF</code> or <code>03:FFFF</code>.</p>
+<p>Good: A bank-prefixed form directly names physical flash and avoids confusion about whichever bank is currently selected.</p>
+<p>Bad: It adds parser size and forces every command to decide whether it accepts CPU-visible addresses, physical flash addresses, or both.</p>
+<p>Ugly: Direct physical flash syntax can make dangerous operations feel easy. Any destructive command using this form must still obey the four-character command mandate and should preserve or restore bank state.</p>
+<p>Concern: Treat this as a grammar candidate, not a committed TODO. It probably belongs first in read-only flash-aware commands, then only later in destructive full-word commands after the bank numbering is settled.</p>
+<h2 id="q-are-4k-selectors-useful">Q: Are 4K selectors useful?</h2>
+<p>Comment: Yes. A selector <code>0</code> through <code>F</code> can describe a full 4K sector:</p>
+<pre><code class="language-text">0 = $0000-$0FFF
+1 = $1000-$1FFF
+...
+F = $F000-$FFFF</code></pre>
+<p>Concern: The high nibble of a selector is tempting for flags, but the cleanest first meaning is address selection. Extra meanings should be carefully scoped so scans stay obvious.</p>
+<h2 id="q-what-zero-page-is-user-stable">Q: What zero page is user-stable?</h2>
+<p>Comment: The current policy leaves <code>$00-$AF</code> user/free while user code is running. <code>$B0-$CC</code> is reserved for future R-YORS/HIMON/THE/ASM zero-page workspace, especially active pointers needed for W65C02 addressing modes.</p>
+<p>Concern: <code>$B0-$CC</code> may look free today because current live HIMON scratch starts at <code>$CD</code>, but treating it as user-owned would make future pointer-lane work harder to add safely.</p>
+<h2 id="q-where-does-dynamic-allocation-belong">Q: Where does dynamic allocation belong?</h2>
+<p>Comment: For now, keep dynamic allocation conceptual. Future app/session heaps can exist, but STR8 should stay fixed-buffer-oriented until a real reservation is made.</p>
+<p>Concern: A heap without a memory-map reservation becomes invisible ownership. That is exactly the kind of thing recovery code should avoid.</p>
+<h2 id="q-should-there-be-a-bit-engine">Q: Should there be a bit engine?</h2>
+<p>Comment: <code>TBE</code>, The Bit Engine, is a plausible convenience/helper family for setting, resetting, testing, and branching on bits.</p>
+<p>Concern: RAM bit helpers and flash bit helpers need different contracts. W65C02S RAM helpers can use instructions such as <code>TSB</code>, <code>TRB</code>, <code>SMB</code>, <code>RMB</code>, <code>BBS</code>, and <code>BBR</code>. Flash helpers must respect <code>1 -&gt; 0</code> commit behavior and sector erase rules.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_MEMORY.md</code>. Source modified: <time>2026-05-12T02:39:30Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QCC ASM - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="qcc-asm">QCC ASM</h1>
+<p>This page keeps onboard assembler questions in QCC form. These are working notes for the hash-first assembler path.</p>
+<h2 id="q-can-assembler-symbols-be-hash-first">Q: Can assembler symbols be hash-first?</h2>
+<p>Comment: Yes. A tiny onboard assembler can hash labels and mnemonics, then resolve names through catalog records.</p>
+<p>Concern: Hash-only symbol records are not enough for every case. User-created symbols need enough name text, length, scope, or collision data to prove which symbol was intended.</p>
+<h2 id="q-what-happens-with-forward-labels">Q: What happens with forward labels?</h2>
+<p>Comment: Emit a fixup record when a label is used before it is known. Later, when the label is sealed into the symbol table, resolve the fixup.</p>
+<p>Concern: Fixups must record enough context to patch safely: address, width, relative/absolute mode, symbol hash, and any text or scope needed to survive a collision.</p>
+<h2 id="q-should-assembler-records-use-fsb">Q: Should assembler records use FSB?</h2>
+<p>Comment: FSB fits assembler-generated flash records well:</p>
+<pre><code class="language-text">formed   record shape is present
+sealed   checks passed
+buried   old version is obsolete</code></pre>
+<p>Concern: Do not mark assembler output sealed until its bytes, fixups, pointer ranges, and collision rules have been checked.</p>
+<h2 id="q-when-does-asm-graduate-from-qcc-to-decision">Q: When does ASM graduate from QCC to decision?</h2>
+<p>Comment: When the record bytes, fixup lifecycle, collision rule, and flash ownership are clear enough to implement without guessing.</p>
+<p>Concern: A half-decided assembler format can trap the system into supporting bad records forever. Keep exploratory formats QCC until the write/verify path is boring.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_ASM.md</code>. Source modified: <time>2026-05-04T00:16:45Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

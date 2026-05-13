@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R-YORS Decisions - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="r-yors-decisions">R-YORS Decisions</h1>
+<p>This file records settled calls. Use it to avoid reopening decisions by accident. If a decision needs to change, change it here first, then update the dependent docs.</p>
+<h2 id="use-this-file">Use This File</h2>
+<ul>
+<li>Check this file before proposing alternatives to naming, hash policy,</li>
+</ul>
+<p>doc structure, STR8/HIMON ownership, or assembler syntax.</p>
+<ul>
+<li>Do not treat an open design note in another guide as stronger than a decision</li>
+</ul>
+<p>here.</p>
+<ul>
+<li>Mark a decision as <code>reopened</code> only when the user explicitly asks to revisit</li>
+</ul>
+<p>it.</p>
+<h2 id="naming-and-roles">Naming And Roles</h2>
+<pre><code class="language-text">R-YORS boots through STR8.
+STR8 keeps recovery/update safe.
+STR8 hands normal operation to HIMON.
+HIMON provides the monitor, command dispatch, assembler, catalog lookup,
+and debug tools.</code></pre>
+<ul>
+<li><code>ror</code> is the working repo/copy.</li>
+<li><code>R-YORS</code> is the overall project/system name.</li>
+<li><code>STR8</code> means Subroutine To Return. It is pronounced <code>S-T-R-8</code>, can also be</li>
+</ul>
+<p>read as <code>Straight 8</code>, and deliberately echoes <code>RTS</code> / Return from Subroutine.</p>
+<ul>
+<li>Future STR8 may grow into <code>STR8-N</code>, read as <code>STRAIGHTEN</code>, after the small</li>
+</ul>
+<p>recovery anchor proves itself. That future name means richer repair and normalization capability, not mandatory ownership of every system policy.</p>
+<ul>
+<li><code>HIMON</code> is the active monitor/debug/catalog/assembler environment name.</li>
+<li><code>THE</code> is The Hash Environment: hash-first lookup, catalog records, resolver</li>
+</ul>
+<p>policy, aliases, and typed display. HIMON&#39;s dispatcher may use THE, but THE is not the whole runtime and not arbitrary command execution.</p>
+<ul>
+<li>Himonia-F is historical/archived branch vocabulary that has folded back into</li>
+</ul>
+<p>HIMON.</p>
+<ul>
+<li>Do not treat Himonia-F and HIMON as permanently separate products.</li>
+</ul>
+<h2 id="address-vocabulary">Address Vocabulary</h2>
+<ul>
+<li><code>$WLPB</code> is the preferred teaching mnemonic for a 16-bit hex address:</li>
+</ul>
+<p><code>W</code> = 4K window, <code>L</code> = 256-byte line, <code>P</code> = 16-byte paragraph, and <code>B</code> = byte.</p>
+<ul>
+<li>In banked flash, one 4K window is one erase sector of the currently selected</li>
+</ul>
+<p>bank. The physical flash location is bank plus window plus offset.</p>
+<ul>
+<li>Sector <code>$0</code> means <code>$0000-$0FFF</code>; <code>$0000-$FFFF</code> is the full 64K CPU address</li>
+</ul>
+<p>space, not sector <code>$0</code>.</p>
+<h2 id="date-and-time-format">Date And Time Format</h2>
+<ul>
+<li>All date and date/time text in source, documentation, generated artifacts,</li>
+</ul>
+<p>comments, logs, and examples should use ISO 8601.</p>
+<ul>
+<li>Use <code>YYYY-MM-DD</code> for dates.</li>
+<li>Use <code>YYYY-MM-DDTHH:mm+/-HH:MM</code> for local date/times when minute precision is</li>
+</ul>
+<p>enough. Omit seconds unless the event genuinely needs second-level precision.</p>
+<ul>
+<li>Use CBI doc form for dated documentation streams: <code>YYYY</code>, then <code>MM</code>, then</li>
+</ul>
+<p><code>DD</code>, then descending <code>HH:MMZ programmer comment</code> rows. Use CBI code form inside source files: <code>; YYYY-MM-DDTHH:MMZ programmer comment</code>. Continuation lines align under the comment body. Keep CBI source lines under 78 columns.</p>
+<ul>
+<li>Any discovered older date stamps are cleanup debt, not precedent.</li>
+</ul>
+<h2 id="command-safety-and-syntax">Command Safety And Syntax</h2>
+<ul>
+<li>Mandate: destructive commands require a command token of 4 or more</li>
+</ul>
+<p>characters. Do not add new 1-, 2-, or 3-character destructive commands.</p>
+<ul>
+<li>Destructive means the command&#39;s normal purpose is to overwrite, erase,</li>
+</ul>
+<p>program, copy, fill, move, patch, restore, back up, or change boot/recovery policy for RAM, flash, banks, vectors, or catalog/storage records.</p>
+<ul>
+<li>Short command tokens remain for inspection, search, display, stepping,</li>
+</ul>
+<p>register/context work, launch, and other nonpersistent control.</p>
+<ul>
+<li>Existing short mutators in current ROM/proof builds are transition debt, not</li>
+</ul>
+<p>permission for new short destructive spellings. Future revisions should move bulk mutation behind full words such as <code>COPY</code>, <code>FILL</code>, <code>MOVE</code>, <code>FLASH</code>, <code>BANK</code>, <code>ERASE</code>, <code>BACKUP</code>, and <code>RESTORE</code>.</p>
+<ul>
+<li>STR8 keeps <code>R</code> as reset. Do not use that exception to add new short</li>
+</ul>
+<p>destructive command spellings.</p>
+<ul>
+<li><code>C</code>, <code>M</code>, and <code>F</code> are not destructive shortcuts. <code>M</code> currently means</li>
+</ul>
+<p>byte-by-byte modify in HIMON and is under command-surface review.</p>
+<ul>
+<li>Current <code>S</code> single-step moves to <code>N</code> in the target command surface. Do not</li>
+</ul>
+<p>add <code>NEXT</code> as a command alias. A RAM-only single-step/next operation is not destructive; it plants only a temporary debugger trap in RAM and restores the original opcode. <code>S</code> is freed for memory search. Search is non-destructive: hex byte tokens are the default pattern. After the range, parse one or more pattern atoms: byte tokens append bytes, and an apostrophe text atom appends the rest of the line. Example: <code>S 0 FFFF 4D 4D &#39;M</code> searches for three <code>M</code> bytes. Apostrophe text is a final tail in V0; there is no closing-quote parser and no return to hex parsing after text.</p>
+<ul>
+<li>The first <code>N</code>/breakpoint patch policy is deliberately conservative:</li>
+</ul>
+<p>synthetic debugger traps may be planted only in UPA <code>$2000-$77FF</code>. Reject zero page, hardware stack, low RAM, HIUPA/scratch, monitor/page-buffer RAM, I/O, and ROM/flash. This protects system-owned RAM as well as non-RAM.</p>
+<ul>
+<li>The patchability check is HIMON system policy, not a user-callable routine</li>
+</ul>
+<p>contract. Keep the first W65C02S implementation as a tiny local debug fast path instead of a &quot;routines of routines&quot; framework. Promote a shared address-policy routine only when multiple system components need the same policy and the ROM byte cost is justified.</p>
+<ul>
+<li>Debug is an optional HIMON subsystem/include, not a layer between STR8 and</li>
+</ul>
+<p>HIMON. A build may omit debug to save flash, but the command records, help text, BRK debug hook behavior, and docs for that build must agree.</p>
+<ul>
+<li>Search hits should print like <code>D</code> context rows, with exact hit address first,</li>
+</ul>
+<p>aligned row base second, and <code>*</code> between them when the match continues into the next 16-byte display row. This preserves the useful BSO2 monitor search-display convention in HIMON&#39;s command language.</p>
+<ul>
+<li>Range grammar target for commands that accept ranges:</li>
+</ul>
+<pre><code class="language-text">start end       end is inclusive
+start +count    count is the number of bytes</code></pre>
+<ul>
+<li>A 1- or 2-hex-digit <code>end</code> token inherits the high byte from <code>start</code>.</li>
+</ul>
+<p>This is a page-local end shorthand, not a count. Example: <code>D 3000 FF</code> means <code>$3000-$30FF</code>, because the short end byte <code>$FF</code> inherits <code>$30</code> from <code>$3000</code>. If the inherited end would land before <code>start</code>, reject it and require a full end address or <code>+count</code>; <code>D 30F0 10</code> is ambiguous/dangerous, so use <code>D 30F0 3110</code> or <code>D 30F0 +21</code>.</p>
+<ul>
+<li>The <code>+count</code> form is deliberately explicit, but it should not be the common</li>
+</ul>
+<p>typing path for page-local display. Common bench dumps should prefer page-local end shorthand, such as <code>D 100 3</code> for <code>$0100-$0103</code> or <code>D 3000 FF</code> for <code>$3000-$30FF</code>. Use <code>+count</code> when the operator means a byte count, not an end byte.</p>
+<ul>
+<li><code>D</code> without parameters should repeat the previous dump length starting at the</li>
+</ul>
+<p>byte after the previous dump. Example: <code>D 3000 FF</code> displays <code>$3000-$30FF</code> and records length <code>$0100</code>; the next bare <code>D</code> displays <code>$3100-$31FF</code>. If no previous dump range exists, bare <code>D</code> is a usage error.</p>
+<h2 id="str8-ownership">STR8 Ownership</h2>
+<ul>
+<li>Direction change: earlier planning leaned toward future STR8 ownership of the</li>
+</ul>
+<p>final hardware vectors and broader trap authority. After careful reconsideration by the project author, the direction is opt-in integration rather than ownership-by-default.</p>
+<ul>
+<li>STR8 does not own global memory management or application interrupt policy.</li>
+</ul>
+<p>User-built systems may provide their own RAM map, trap supervisor, IRQ discipline, and runtime conventions.</p>
+<ul>
+<li>V0 HIMON controls IRQ/vector behavior.</li>
+<li>Future STR8-N/STRAIGHTEN may offer recovery-safe vector hooks, trampolines,</li>
+</ul>
+<p>and <code>SYS_VEC</code>/IRQ-vector integration for systems that choose that path. It should remain useful as routines and guarded update machinery even when a user system owns interrupts itself.</p>
+<ul>
+<li>STR8 stays in the R-YORS &quot;routines made from routines&quot; spirit: reusable</li>
+</ul>
+<p>layers a system can choose, not a hidden claim over the board.</p>
+<ul>
+<li>STR8 lives in bank 3&#39;s physical top erase sector (<code>$F000-$FFFF</code>). The current</li>
+</ul>
+<p>resident proof is linked at <code>$F000</code>, giving a 4K protected window.</p>
+<ul>
+<li>Protected-window bytes are flashed through a separate STR8 install/update path.</li>
+</ul>
+<p>That path still stages the full top sector and preserves non-target bytes. Non-STR8 bytes in the same 4K sector may be used, but changing them requires the same read, stage, erase, full-sector-write, and verify transaction.</p>
+<ul>
+<li>V0 STR8 starts as a RAM-resident S19 program launched under HIMON. It proves</li>
+</ul>
+<p>bank select, erase, 4K-buffered copy, Bank 0 enrollment, and read-back compare before reset-time ownership.</p>
+<ul>
+<li>V0 STR8 uses whole 32K ROM bank images (<code>$8000-$FFFF</code>) as recovery sources.</li>
+</ul>
+<p>Normal restore writes bank 3 image bytes below <code>$C000</code> from selected bank 0, 1, or 2 and preserves <code>$C000-$FFFF</code>. The current proof has a separately confirmed high-flash restore path that may rewrite <code>$C000-$FFFF</code>; that is dangerous proof behavior, not the final casual restore policy.</p>
+<ul>
+<li>Bank 3 is the live boot image. Bank 2 is the newest backup. Bank 1 is the</li>
+</ul>
+<p>previous backup. Bank 0 is held out of rotation unless the operator runs <code>E</code>. Saving the board&#39;s original WDCMONv2/base image is future bridge/install work, not today&#39;s STR8 RAM proof.</p>
+<ul>
+<li>Automatic backup copies bank 2 to bank 1 and bank 3 to bank 2 until bank 0 is</li>
+</ul>
+<p>enrolled. After <code>E</code> clears the one-way in-flash flag, automatic backup copies bank 1 to bank 0, bank 2 to bank 1, and bank 3 to bank 2.</p>
+<ul>
+<li>Restoring bank 0 restores whatever bank 0 currently holds. Before enrollment</li>
+</ul>
+<p>it may be a WDCMONv2/base image; after enrollment it is the oldest rotating backup.</p>
+<ul>
+<li>STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.</li>
+<li>Minimal recovery is a small load/verify/flash/identity surface, not full</li>
+</ul>
+<p>HIMON.</p>
+<ul>
+<li>STR8 should prefer <code>BIO_*</code> helpers for reusable low-level I/O. If a needed</li>
+</ul>
+<p>reusable helper does not exist in <code>BIO_*</code>, STR8 may call <code>PIN_*</code> directly for the first bring-up path, then promote the helper into <code>BIO_*</code> when it becomes a shared recovery primitive.</p>
+<ul>
+<li>STR8 should avoid <code>COR_*</code>/<code>SYS_*</code> as hot-path dependencies unless the entry is</li>
+</ul>
+<p>intentionally tiny, stable, and recovery-safe. <code>SYS_*</code> remains the public monitor/application layer, not the recovery anchor&#39;s default substrate.</p>
+<h2 id="stack-and-trap-policy">Stack And Trap Policy</h2>
+<ul>
+<li>HIMON owns the hardware stack on monitor entry.</li>
+<li>NMI, BRK, IRQ, reset, and recovery paths must assume monitor ownership of the</li>
+</ul>
+<p>real 6502 stack.</p>
+<ul>
+<li>Userland stack behavior belongs behind explicit routines, software stacks,</li>
+</ul>
+<p>conventions, or per-app reservations, not casual ownership of the hardware stack.</p>
+<ul>
+<li>This is the R-YORS reference monitor policy, not a demand that user-built</li>
+</ul>
+<p>systems give STR8 or HIMON global ownership of memory or interrupts.</p>
+<ul>
+<li>Resume is explicit: rebuild context and <code>RTI</code>; do not imply stale automatic</li>
+</ul>
+<p>continuation.</p>
+<h2 id="dynamic-memory-layer">Dynamic Memory Layer</h2>
+<ul>
+<li>If HIMON eventually uses dynamic memory, allocation belongs behind a <code>MEM_*</code></li>
+</ul>
+<p>memory-management layer.</p>
+<ul>
+<li>Current user-stable zero page ends at <code>$AF</code>. <code>$B0-$CC</code> is reserved for future</li>
+</ul>
+<p>R-YORS/HIMON/THE/ASM pointer lanes and addressing-mode workspace.</p>
+<ul>
+<li><code>MEM_*</code> owns RAM range policy, zero-page pointer lanes, bump allocation,</li>
+</ul>
+<p>mark/release allocation, fixed pools, and any later free-list heap.</p>
+<ul>
+<li><code>MEM_*</code> is hardware-constrained because it touches raw W65C02 RAM and zero</li>
+</ul>
+<p>page, but it is not <code>PIN_*</code>/<code>BIO_*</code> hardware access.</p>
+<ul>
+<li>STR8 should not depend on general dynamic memory. STR8 remains fixed-buffer</li>
+</ul>
+<p>and fixed-workspace oriented.</p>
+<ul>
+<li>Public monitor or app-facing allocation calls should be <code>SYS_*</code> wrappers over</li>
+</ul>
+<p><code>MEM_*</code>, not direct hidden heap calls from unrelated monitor code.</p>
+<h2 id="hash-and-catalog-policy">Hash And Catalog Policy</h2>
+<ul>
+<li>FNV-1a is the one and only runtime/catalog/symbol hash.</li>
+<li>FNV-1a belongs to HIMON, catalog, assembler, and docs/build tooling today.</li>
+<li>STR8 V0 does not use FNV: not for verification, image selection, version</li>
+</ul>
+<p>selection, command dispatch, catalog lookup, or recovery decisions.</p>
+<ul>
+<li>Future STR8-N/STRAIGHTEN may participate in catalogs and use FNV after the</li>
+</ul>
+<p>V0 image-recovery path is stable. It should not require catalog ownership from systems that provide their own catalog or resolver.</p>
+<ul>
+<li>Do not propose per-record hash algorithm tags.</li>
+<li>Routine header <code>[HASH:XXXXXXXX]</code> values are also 32-bit FNV-1a. The old</li>
+</ul>
+<p>16-bit routine comment ID path is retired.</p>
+<ul>
+<li><code>hash0..3</code> stores FNV-1a low byte through high byte.</li>
+<li>Words and longs are little-endian: low byte first.</li>
+<li>Current HIMON proving record shape is:</li>
+</ul>
+<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind,inline-code...</code></pre>
+<ul>
+<li>In current HIMON, <code>kind=$00</code> means executable code begins immediately after</li>
+</ul>
+<p>the kind byte, at record offset <code>+8</code>. It does not store <code>entry_lo,entry_hi</code>.</p>
+<ul>
+<li>Explicit <code>entry_lo,entry_hi</code> pointer records are a future catalog/RREC</li>
+</ul>
+<p>direction.</p>
+<ul>
+<li>Future compact signatures identify record layout/classification, not a hash</li>
+</ul>
+<p>algorithm.</p>
+<ul>
+<li>One thing may have multiple classification flags; use bit flags/tokens rather</li>
+</ul>
+<p>than forcing one exclusive kind when that loses truth.</p>
+<ul>
+<li>Command text is for discoverability, collision confirmation, and future</li>
+</ul>
+<p>tooling. It is not required for basic FNV lookup.</p>
+<ul>
+<li>Text compression must be optional. If compressed text is not smaller, store</li>
+</ul>
+<p>raw text or omit text.</p>
+<h2 id="str8-call-surface">STR8 Call Surface</h2>
+<ul>
+<li>STR8 V0 does not reserve or depend on fixed cute-address entry slots.</li>
+<li>STR8 should call recovery-safe <code>BIO_*</code> helpers directly.</li>
+<li>HIMON should reach resident STR8 routines through explicit imported labels or</li>
+</ul>
+<p>a generated import file, not through hard-coded top-ROM vanity addresses.</p>
+<h2 id="str8-imports-and-onboard-resolution">STR8 Imports And Onboard Resolution</h2>
+<ul>
+<li>Host-built HIMON images should import resident STR8 <code>BIO_*</code></li>
+</ul>
+<p>services from explicit STR8 labels or an import file. That keeps the release reproducible and prevents the linker from pulling a second copy of <code>BIO_*</code> out of <code>rom.lib</code>.</p>
+<ul>
+<li><code># label</code> is a HIMON command. It may eventually resolve HIMON catalog entries</li>
+</ul>
+<p>that point at callable STR8 routines, but STR8 V0 does not perform catalog lookup.</p>
+<ul>
+<li>RAM targets can patch resolved addresses directly. Flash targets must either</li>
+</ul>
+<p>stage in RAM before the first write or restrict patching to legal flash 1-to-0 transitions.</p>
+<h2 id="hashed-asm-direction">Hashed ASM Direction</h2>
+<ul>
+<li>Preferred command shape:</li>
+</ul>
+<pre><code class="language-text">A [addr] [label:] MMM [operand] .</code></pre>
+<ul>
+<li>Address comes before optional label.</li>
+<li>ASM hashes canonical names and tokens, not raw numeric addresses, for</li>
+</ul>
+<p>resolution. Store exact addresses, banks, patch sites, and origins as fields. Address-containing record hashes are proof/check metadata only, not emitted operand values.</p>
+<ul>
+<li>Labels require <code>:</code>.</li>
+<li>Labels cannot be mnemonic names; mnemonics cannot be labels.</li>
+<li>Local ASM labels use dot syntax: <code>.</code> alone ends a one-shot statement,</li>
+</ul>
+<p><code>.NAME:</code> defines a local label, and <code>.NAME</code> uses a local label. No v1 dot-directive aliases. Local labels are scoped under the current nonlocal label and cannot be exported.</p>
+<ul>
+<li>Minimal v1 ASM directives are IBM-ish: <code>DC</code>, <code>DS</code>, and <code>EQU</code>. Compatibility</li>
+</ul>
+<p>aliases such as <code>DB</code> may later be typed directive-alias records that resolve by hash to a real directive handler, but they are not part of v1.</p>
+<ul>
+<li>V1 must support forward references through fixups. A forward-reference ban is</li>
+</ul>
+<p>rejected.</p>
+<ul>
+<li>A fixup is a hash lookup plus patch-site record, not magic. It must preserve</li>
+</ul>
+<p>enough information to patch the correct byte(s) later.</p>
+<ul>
+<li>Flash destinations may use byte patching only where flash 1-to-0 write rules</li>
+</ul>
+<p>allow it. RAM destinations can patch freely.</p>
+<ul>
+<li>Onboard assembly should tolerate flash clutter at first; later HIMON or</li>
+</ul>
+<p>maintenance condense can reclaim buried or superseded records.</p>
+<h2 id="local-source-homes">Local Source Homes</h2>
+<ul>
+<li>MS BASIC, <code>.BAS</code> programs, fig-Forth, WDCMONv2, and s3x live under <code>LOCAL/</code>.</li>
+<li><code>LOCAL/</code> is intentionally ignored.</li>
+<li>Provenance belongs in local <code>PROVENANCE.txt</code> files: timestamps, sizes,</li>
+</ul>
+<p>mtimes, paths, hashes, and notes; no source-content leakage into tracked docs.</p>
+<ul>
+<li>Builds may consume ignored local source/generated files when present.</li>
+</ul>
+<h2 id="documentation-shape">Documentation Shape</h2>
+<ul>
+<li><code>INDEX.md</code> answers: what exists?</li>
+<li><code>TOC.md</code> answers: what order should I read it in?</li>
+<li><code>MAP.md</code> answers: how do docs and systems relate?</li>
+<li><code>REF.md</code> is the quick operational reference.</li>
+<li><code>XREF.md</code> is wiring: docs, source, symbols, module/export rules.</li>
+<li><code>SYMBOL_XREF.md</code> is symbol/routine cards, routine contracts, hashes, and tags.</li>
+<li><code>GLOSSARY.md</code> defines vocabulary only.</li>
+<li><code>BIB.md</code> records source corpus/provenance only.</li>
+<li><code>HIMON_MAP.md</code> is the readable HIMON edge/capability map.</li>
+<li><code>HIMON_EDGE_DUMP.md</code> is the raw direct-edge evidence.</li>
+<li>Each concept should have one canonical home. Other documents may give a short</li>
+</ul>
+<p>summary and a link, but should not restate the full explanation.</p>
+<ul>
+<li>Avoid reader pinball: if document A points to document B as the authority for</li>
+</ul>
+<p>a concept, document B should not require document A to understand that same concept. Back-links are for navigation, not required reading loops.</p>
+<ul>
+<li>When updating docs, update the canonical home first, then indexes, maps, and</li>
+</ul>
+<p>cross-references. Generated docs should remain evidence or views, not the primary hand-written explanation.</p>
+<ul>
+<li>HTML pages under <code>DOC/HTML</code> are generated presentation views of the Markdown</li>
+</ul>
+<p>docs. Do not hand-edit them or treat them as canonical explanations.</p>
+<ul>
+<li>Use <code>flowchart</code> for process or decision sequence. Use <code>graph</code> for node/edge</li>
+</ul>
+<p>structure such as call paths or stack-depth paths. Use <code>map</code>, <code>guide map</code>, <code>source-derived map</code>, <code>chart</code>, and <code>edge dump</code> according to <a href="GLOSSARY.html">GLOSSARY.md</a>.</p>
+<pre class="mermaid">flowchart TD
+    IDEA[&quot;New or changed explanation&quot;] --&gt; KNOWN{&quot;Canonical home exists?&quot;}
+    KNOWN --&gt;|yes| HOME[&quot;Update that home first&quot;]
+    KNOWN --&gt;|no| CHOOSE[&quot;Choose one owning guide&quot;]
+    CHOOSE --&gt; HOME
+    HOME --&gt; SUMMARY[&quot;Other docs get a short summary&quot;]
+    SUMMARY --&gt; LINK[&quot;Point once to the canonical home&quot;]
+    LINK --&gt; LOOP{&quot;Does the home require the linking doc?&quot;}
+    LOOP --&gt;|yes| FIX[&quot;Break the required-reading loop&quot;]
+    LOOP --&gt;|no| VIEWS[&quot;Refresh indexes, maps, xrefs, and generated views&quot;]
+    FIX --&gt; HOME</pre>
+<h2 id="historical-spine">Historical Spine</h2>
+<pre><code class="language-text">WDCMON/WDC monitor base
+  -&gt; BSO2 board monitor
+  -&gt; R-YORS routine layers
+  -&gt; Himon/Himonia compact monitors
+  -&gt; Himonia-F hash-dispatched monitor
+  -&gt; HIMON behind STR8</code></pre>
+<ul>
+<li>BSO2 proves the big board-monitor feature set.</li>
+<li>R-YORS splits that into reusable routines/layers.</li>
+<li>Himonia-F was the compact, hash-driven monitor branch that has folded back</li>
+</ul>
+<p>into HIMON.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-13T22:27:06Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
+</body>
+</html>

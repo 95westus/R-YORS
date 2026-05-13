@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HIMON Stages And Classes - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="himon-stages-and-classes">HIMON Stages And Classes</h1>
+<p>This is a reconstruction of HIMON&#39;s design stages and routine-class families. It is not a new implementation plan by itself. It is the map that explains how the current HIMON shape emerged from earlier monitor experiments, and how the major routine prefixes/classes should be read.</p>
+<p>In this document, &quot;class&quot; means a routine family or subsystem class, usually visible through label prefixes such as <code>CMD_*</code>, <code>MON_*</code>, <code>HIM_*</code>, <code>FNV1A_*</code>, <code>ASM_*</code>, and <code>DIS_*</code>. It does not mean an object-oriented class.</p>
+<h2 id="evidence">Evidence</h2>
+<p>Current local evidence:</p>
+<pre><code class="language-text">SRC/TEST/apps/himon/himon-parent.asm
+SRC/TEST/apps/himon/mon.asm
+SRC/TEST/apps/himon/mon-cmd-*.inc
+SRC/TEST/apps/himon/himonia.asm
+SRC/TEST/apps/himon/fnv1a-hbstr.asm
+SRC/TEST/apps/himon/himonia-f.asm
+SRC/TEST/apps/himon/himon.asm
+SRC/TEST/apps/himon/himon-shared-eq.inc
+SRC/TEST/apps/himon/himon-asm.inc
+SRC/TEST/apps/himon/himon-debug.inc
+SRC/TEST/apps/himon/himon-disasm.inc
+SRC/TEST/apps/himon/himon-bootlog.inc</code></pre>
+<p>Guide evidence:</p>
+<pre><code class="language-text">DOC/GUIDES/HISTORICAL_DOCUMENTS.md
+DOC/GUIDES/HIMON_MAP.md
+DOC/GUIDES/MEMORY_MAP.md
+DOC/GUIDES/HASHED_ASM.md
+DOC/GUIDES/HASH_MAP.md
+DOC/GUIDES/DYNAMIC_MEMORY_FIRST_STEPS.md
+DOC/GENERATED/ROUTINE_CLASS_DIAGRAM.md
+DOC/GENERATED/ROUTINE_COMPONENTS.md</code></pre>
+<p>Visible git history in this checkout is shallow around the Himon files, but it does show the current tracked turn:</p>
+<pre><code class="language-text">2026-04-28  himonia-f is flashable
+2026-05-01  bring documentation up to date
+2026-05-01  various minor cleanup, renames
+2026-05-01  banner change</code></pre>
+<p>Older dates and names below come from <code>HISTORICAL_DOCUMENTS.md</code> and from the source files still present in the tree.</p>
+<h2 id="stage-ladder">Stage Ladder</h2>
+<pre><code class="language-text">WDCMON/WDC board monitor context
+  -&gt; BSO2 monolithic board monitor proof
+  -&gt; R-YORS layered routine library
+  -&gt; Himon parent shell
+  -&gt; Himon split command monitor
+  -&gt; Himonia compact supervisor
+  -&gt; FNV1A/HBSTR proving tool
+  -&gt; Himonia-F hash-dispatched monitor
+  -&gt; HIMON current path behind future STR8</code></pre>
+<p>Short meaning:</p>
+<pre><code class="language-text">BSO2 proved the full board-monitor behavior.
+R-YORS split the behavior into layers.
+Himon pulled the monitor back into a smaller shell.
+Himonia made it a compact supervisor/debug environment.
+Himonia-F made commands discoverable FNV records.
+HIMON keeps the useful FNV-dispatch line and becomes the normal monitor behind STR8.</code></pre>
+<h2 id="stage-0-board-monitor-ground">Stage 0: Board Monitor Ground</h2>
+<p>Source class:</p>
+<pre><code class="language-text">external/local WDCMON and BSO2 material</code></pre>
+<p>Primary idea:</p>
+<pre><code class="language-text">the board must always be able to talk, load, inspect, and recover</code></pre>
+<p>BSO2 was the large proof: command table, memory tools, S-record load/go, debug stops, vector hooks, mini assembler/disassembler, and board demos. The lesson was capability first, but not monolith forever.</p>
+<p>Class residue carried forward:</p>
+<pre><code class="language-text">command dispatch
+memory inspect/modify
+S-record load/go
+NMI/BRK/debug context
+vector routing
+assembly/disassembly helpers
+recoverable monitor entry</code></pre>
+<h2 id="stage-1-r-yors-layer-split">Stage 1: R-YORS Layer Split</h2>
+<p>Source class:</p>
+<pre><code class="language-text">PIN_*  direct hardware/register boundary
+BIO_*  board I/O abstraction
+COR_*  reusable core/backend glue
+SYS_*  monitor/app-facing services
+APP_*  tests, monitors, and loaded programs</code></pre>
+<p>Primary idea:</p>
+<pre><code class="language-text">turn one capable monitor into reusable routines on routines</code></pre>
+<p>This is where BSO2&#39;s behavior stops being one program and starts becoming a library surface. Himon/Himonia can then be compact because they call <code>SYS_*</code>, <code>BIO_*</code>, and later <code>FLASH_*</code> services instead of owning all board behavior inline.</p>
+<h2 id="stage-2-himon-parent-shell">Stage 2: Himon Parent Shell</h2>
+<p>Primary file:</p>
+<pre><code class="language-text">SRC/TEST/apps/himon/himon-parent.asm</code></pre>
+<p>Source classes:</p>
+<pre><code class="language-text">START_*  reset/warm detection and RAM clear
+CMDP_*   command parser/table helpers
+CMD_*    shell command loop and hook setup
+MON_*    command handlers imported from split monitor command modules
+MSG_*    HBSTR message text</code></pre>
+<p>Primary idea:</p>
+<pre><code class="language-text">HBSTR command table -&gt; hook vector cell -&gt; monitor command routine</code></pre>
+<p>The parent shell reads one line, uppercases it, parses a token, and dispatches through an HBSTR command table. The table entries point at RAM hook cells, not always directly at final routines. That makes command bodies replaceable and is an early form of dynamic command binding, though still table-based rather than hash/catalog-based.</p>
+<p>Representative command table surface:</p>
+<pre><code class="language-text">DISPLAY
+FILL
+COPY
+MODIFY
+HELP
+LOAD
+KEYTEST
+GO
+RESUME
+QUIT</code></pre>
+<p>Important reconstruction point:</p>
+<pre><code class="language-text">CMDP_* is the older parser class.
+CMD_* becomes the current command class.
+MON_* holds command behavior and monitor context behavior.</code></pre>
+<h2 id="stage-3-split-himon-command-monitor">Stage 3: Split Himon Command Monitor</h2>
+<p>Primary files:</p>
+<pre><code class="language-text">SRC/TEST/apps/himon/mon.asm
+SRC/TEST/apps/himon/mon-cmd-core.inc
+SRC/TEST/apps/himon/mon-cmd-memory.inc
+SRC/TEST/apps/himon/mon-cmd-debug.inc
+SRC/TEST/apps/himon/mon-cmd-load.inc</code></pre>
+<p>Source classes:</p>
+<pre><code class="language-text">MON_CMD_*   command bodies
+MON_LOAD_*  S-record loader session
+MON_CTX_*   saved context display/edit/resume
+CMDP_*      parser helpers still owned by the shell path</code></pre>
+<p>Primary idea:</p>
+<pre><code class="language-text">keep the shell small and move command behavior into callable pieces</code></pre>
+<p>This stage is the bridge from a single shell file into reusable monitor classes. It preserves the command-table world, but begins isolating the work by behavior: core, memory, debug, and load.</p>
+<p>Design result:</p>
+<pre><code class="language-text">HIMON can be small because command classes can be factored,
+but the current final image can still include them directly when compactness
+or fixed placement matters.</code></pre>
+<h2 id="stage-4-himonia-compact-supervisor">Stage 4: Himonia Compact Supervisor</h2>
+<p>Primary file:</p>
+<pre><code class="language-text">SRC/TEST/apps/himon/himonia.asm</code></pre>
+<p>Source classes:</p>
+<pre><code class="language-text">START / MON_START_INIT  boot and re-entry
+MAIN_LOOP               prompt and read/eval loop
+CMD_*                   direct one-letter command dispatch
+HIM_*                   tiny input/output helpers
+MON_CTX_*               trap context validation/edit/resume
+MON_PRINT_*             monitor output helpers
+L_*                     S-record parser/loader
+DBG_*                   breakpoint/step workspace via include
+DIS_*                   disassembler via include
+ASM_*                   assembler via include</code></pre>
+<p>Primary idea:</p>
+<pre><code class="language-text">compact supervisor, direct command dispatch, monitor-owned stack</code></pre>
+<p>Himonia resets the hardware stack on monitor entry, owns NMI/BRK trap capture, and uses concise single-letter commands:</p>
+<pre><code class="language-text">? D M U R X G L B S A Q</code></pre>
+<p>This is the point where the monitor becomes less like a command shell and more like a small supervisory environment:</p>
+<pre><code class="language-text">monitor entry/re-entry
+trap capture
+register edit/resume
+memory tools
+loader
+assembler/disassembler
+debug break/step</code></pre>
+<p>The direct dispatch is intentionally simple:</p>
+<pre><code class="language-text">peek first command byte
+compare against known letters
+jump to command routine</code></pre>
+<h2 id="stage-5-fnv1a-hbstr-proving-tool">Stage 5: FNV1A/HBSTR Proving Tool</h2>
+<p>Primary file:</p>
+<pre><code class="language-text">SRC/TEST/apps/himon/fnv1a-hbstr.asm</code></pre>
+<p>Source classes:</p>
+<pre><code class="language-text">FNV1A_*  FNV-1a hash lifecycle
+MATH_*   32-bit multiply-by-prime support
+APP_*    standalone tool UI</code></pre>
+<p>Primary idea:</p>
+<pre><code class="language-text">prove FNV-1a and HBSTR text as executable W65C02 code</code></pre>
+<p>This stage matters because the hash stops being only a documentation idea. The code hashes high-bit-terminated text into a 32-bit little-endian FNV-1a value:</p>
+<pre><code class="language-text">FNV_HASH0..3 = hash low byte through high byte</code></pre>
+<p>Design result:</p>
+<pre><code class="language-text">command names, symbols, routine names, and future catalog records can share
+one compact lookup method</code></pre>
+<h2 id="stage-6-himonia-f-hash-dispatched-monitor">Stage 6: Himonia-F Hash-Dispatched Monitor</h2>
+<p>Primary files:</p>
+<pre><code class="language-text">SRC/TEST/apps/himon/himonia-f.asm
+SRC/TEST/apps/himon/himon.asm</code></pre>
+<p>Source classes:</p>
+<pre><code class="language-text">CMD_HASH_*     token hashing, record scan, record match, entry lookup
+FNV1A_*        runtime hash calculation
+MATH_*         hash multiply support
+CMD_*          command bodies exposed through FNV records
+L_*            RAM/flash S-record loader
+HIM_*          line input and HBSTR output
+MON_*          boot, trap, context, print, return-status helpers
+DBG_*          breakpoints and step
+DIS_*          disassembler
+ASM_*          mini assembler</code></pre>
+<p>Primary idea:</p>
+<pre><code class="language-text">token -&gt; FNV-1a hash -&gt; scan record -&gt; executable entry</code></pre>
+<p>Current proving record shape:</p>
+<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind,inline-code...</code></pre>
+<p>For current <code>kind=$00</code>, executable code begins immediately after the kind byte at record offset <code>+8</code>; the current HIMON record does not store <code>entry_lo,entry_hi</code>.</p>
+<p>This stage is the conceptual break from &quot;the monitor has commands&quot; to &quot;the runtime can discover executable records.&quot; The <code>#</code> command exposes that lookup path without executing the command.</p>
+<p>Important boundary:</p>
+<pre><code class="language-text">himonia-f.asm is the named FNV experiment.
+himon.asm is the promoted current HIMON path.
+They should not be treated as permanently separate products.</code></pre>
+<h2 id="stage-7-current-himon-behind-future-str8">Stage 7: Current HIMON Behind Future STR8</h2>
+<p>Primary current role:</p>
+<pre><code class="language-text">HIMON = normal monitor/debug/catalog/assembler environment
+STR8  = protected recovery/update guard</code></pre>
+<p>Current HIMON owns:</p>
+<pre><code class="language-text">prompt and command dispatch
+FNV command records
+loader and flash blank-write path
+debug trap context
+break/step
+assembler/disassembler helpers
+explicit import/call surface
+runtime catalog direction</code></pre>
+<p>Future STR8-N/STRAIGHTEN may provide:</p>
+<pre><code class="language-text">selected STR8 protected window in bank 3 top sector
+optional recovery-safe vector hooks/trampolines
+top-sector read/stage/erase/full-sector-write/verify policy for non-STR8 bytes
+catalog/FNV participation after V0
+recovery/update policy
+flash erase/write/verify/commit guardrails
+known-good identity and recovery surface
+V0 image-oriented bank recovery before catalog/FNV participation</code></pre>
+<p>Direction note: earlier planning leaned toward future STR8 ownership of vectors and catalogs. Current direction is reusable integration: STR8-N/STRAIGHTEN can offer hooks and guarded routines without requiring ownership of user memory, interrupt, or catalog policy.</p>
+<p>Future <code>MEM_*</code> should own dynamic memory if HIMON adopts it:</p>
+<pre><code class="language-text">RAM range policy
+zero-page pointer lanes
+bump allocation
+mark/release
+pools
+any later free-list heap</code></pre>
+<h2 id="class-family-reconstruction">Class Family Reconstruction</h2>
+<table>
+<thead><tr>
+<th>Class</th>
+<th>First clear stage</th>
+<th>Current status</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>START_*</code> / <code>START</code></td>
+<td>Himon parent</td>
+<td>Current boot entry</td>
+<td>Reset classification, cold clear, warm entry, initial monitor transfer.</td>
+</tr>
+<tr>
+<td><code>MON_START_*</code> / <code>MON_REENTER</code></td>
+<td>Himonia</td>
+<td>Current supervisor core</td>
+<td>Monitor-owned hardware stack, re-entry after trap or ABI exit, system init.</td>
+</tr>
+<tr>
+<td><code>HIM_*</code></td>
+<td>Himonia</td>
+<td>Current small monitor I/O</td>
+<td>Local line input, uppercase handling, HBSTR output, Ctrl-C checks.</td>
+</tr>
+<tr>
+<td><code>CMDP_*</code></td>
+<td>Himon parent</td>
+<td>Older/split shell parser</td>
+<td>Table parser, hex token parser, HBSTR command table traversal.</td>
+</tr>
+<tr>
+<td><code>CMD_*</code></td>
+<td>Himonia</td>
+<td>Current command surface</td>
+<td>Single-letter command handlers and current FNV dispatch support.</td>
+</tr>
+<tr>
+<td><code>CMD_HASH_*</code></td>
+<td>HIMON</td>
+<td>Current catalog dispatch</td>
+<td>Hash token, scan records, compare hash, derive executable entry.</td>
+</tr>
+<tr>
+<td><code>MON_CMD_*</code></td>
+<td>Split Himon</td>
+<td>Older modular command bodies</td>
+<td>Full-word shell commands such as display/fill/copy/load/go/resume.</td>
+</tr>
+<tr>
+<td><code>MON_CTX_*</code></td>
+<td>Himon parent/Himonia</td>
+<td>Current debug context</td>
+<td>Saved A/X/Y/P/S/PC, edit, print, and <code>RTI</code> resume.</td>
+</tr>
+<tr>
+<td><code>MON_PRINT_*</code></td>
+<td>Himonia</td>
+<td>Current monitor output</td>
+<td>Stop reports, register reports, memory dump formatting, return-status display.</td>
+</tr>
+<tr>
+<td><code>L_*</code> / <code>MON_LOAD_*</code></td>
+<td>Himon parent/Himonia</td>
+<td>Current loader behavior</td>
+<td>S-record session, RAM write, flash blank-write gate, load/go.</td>
+</tr>
+<tr>
+<td><code>DBG_*</code></td>
+<td>Himonia</td>
+<td>Current debug include</td>
+<td>Breakpoint slots, temporary step breakpoint, opcode-length support.</td>
+</tr>
+<tr>
+<td><code>DIS_*</code></td>
+<td>Himonia</td>
+<td>Current disassembler include</td>
+<td>Opcode/mode tables rendered into readable W65C02 mnemonics.</td>
+</tr>
+<tr>
+<td><code>ASM_*</code></td>
+<td>Himonia</td>
+<td>Current assembler include</td>
+<td>Numeric mini assembler; future hash assembler adds symbols/fixups.</td>
+</tr>
+<tr>
+<td><code>FNV1A_*</code></td>
+<td>FNV tool</td>
+<td>Current runtime hash</td>
+<td>32-bit little-endian FNV-1a over command/name text.</td>
+</tr>
+<tr>
+<td><code>MATH_*</code></td>
+<td>FNV tool</td>
+<td>Current hash support</td>
+<td>32-bit shift/add math used by FNV prime multiply.</td>
+</tr>
+<tr>
+<td><code>FLASH_*</code></td>
+<td>HIMON/STR8-adjacent</td>
+<td>Current imported service</td>
+<td>Byte write helper used by <code>L F</code>; STR8 should own safer erase/update later.</td>
+</tr>
+<tr>
+<td>fixed HIMONIA ABI slots</td>
+<td>Removed HIMON experiment</td>
+<td>Removed</td>
+<td>The <code>$F00D</code>, <code>$FEED</code>, <code>$FADE</code> trampolines were novelty proof points, not the current contract.</td>
+</tr>
+<tr>
+<td><code>MEM_*</code></td>
+<td>Future HIMON dynamic stage</td>
+<td>Planned only</td>
+<td>Dynamic memory ownership layer; not STR8, not current HIMON.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="class-map">Class Map</h2>
+<pre class="mermaid">flowchart TD
+    BOOT[&quot;START / MON_START&quot;] --&gt; LOOP[&quot;MAIN_LOOP&quot;]
+    LOOP --&gt; HIM[&quot;HIM_* input/output&quot;]
+    LOOP --&gt; CMD[&quot;CMD_* command surface&quot;]
+    CMD --&gt; HASH[&quot;CMD_HASH_*&quot;]
+    HASH --&gt; FNV[&quot;FNV1A_*&quot;]
+    FNV --&gt; MATH[&quot;MATH_*&quot;]
+    HASH --&gt; EXEC[&quot;CMD_EXEC_ADDR&quot;]
+
+    CMD --&gt; MEMCMD[&quot;D/M memory commands&quot;]
+    CMD --&gt; LOAD[&quot;L_* loader&quot;]
+    CMD --&gt; CTX[&quot;MON_CTX_*&quot;]
+    CMD --&gt; DBG[&quot;DBG_*&quot;]
+    CMD --&gt; DIS[&quot;DIS_*&quot;]
+    CMD --&gt; ASM[&quot;ASM_*&quot;]
+
+    LOAD --&gt; FLASH[&quot;FLASH_* blank-write&quot;]
+    CTX --&gt; TRAP[&quot;NMI/BRK/IRQ trap state&quot;]
+    DBG --&gt; TRAP
+    EXEC --&gt; APPRET[&quot;loaded app return / map-patched bridge&quot;]
+
+    SYS[&quot;SYS_*&quot;] --&gt; BIO[&quot;BIO_*&quot;]
+    BIO --&gt; PIN[&quot;PIN_*&quot;]
+    HIM --&gt; SYS
+    BOOT --&gt; SYS</pre>
+<h2 id="current-command-class-surface">Current Command-Class Surface</h2>
+<p>Current short commands group naturally like this:</p>
+<pre><code class="language-text">?      help
+#      FNV/catalog list or lookup
+D M    memory display and modify
+U A    disassemble and assemble
+R X    register/context view, edit, and resume
+G L    execute, load, load/go, flash load
+B S    breakpoints and single step
+Q      controlled BRK test/quit</code></pre>
+<p>The command class split is important:</p>
+<pre><code class="language-text">CMD_* command names and command entry routines
+CMD_HASH_* runtime lookup and dispatch machinery
+MON_* monitor state/context/output helpers
+HIM_* local character/string I/O helpers</code></pre>
+<h2 id="naming-cleanup-direction">Naming Cleanup Direction</h2>
+<p>Keep this reading:</p>
+<pre><code class="language-text">Himonia-F -&gt; historical implementation branch folded into HIMON
+fixed HIMONIA ABI slots -&gt; removed experiment, not current code
+HIMON -&gt; final normal monitor name
+STR8 -&gt; recovery/update guard</code></pre>
+<p>Do not fork the docs into separate Himonia-F and HIMON product stories. The current source promotes the FNV-driven Himonia-F line into HIMON.</p>
+<h2 id="open-reconstruction-notes">Open Reconstruction Notes</h2>
+<ul>
+<li>The current checkout keeps the important stage files, but older git history</li>
+</ul>
+<p>before the tracked HIMON import is partly represented by documentation rather than direct commit ancestry.</p>
+<ul>
+<li>Himon4 is mentioned as a short-lived variant in historical notes, but there is</li>
+</ul>
+<p>no current tracked source file for it in <code>SRC/TEST/apps/himon</code>.</p>
+<ul>
+<li>The current generated class diagram is useful for prefix frequency, but this</li>
+</ul>
+<p>guide is the human reconstruction of what those classes mean.</p>
+<ul>
+<li>Any future <code>MEM_*</code> dynamic-memory stage should update this document together</li>
+</ul>
+<p>with <code>DYNAMIC_MEMORY_FIRST_STEPS.md</code>, <code>MEMORY_MAP.md</code>, and <code>DECISIONS.md</code>.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_STAGES_CLASSES.md</code>. Source modified: <time>2026-05-12T02:50:40Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
+</body>
+</html>

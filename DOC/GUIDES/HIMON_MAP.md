@@ -306,3 +306,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
   edges. They are described only when they explain capability behavior.
 - Include files are part of the HIMON capability surface even when the raw
   source line lives outside `himon.asm`.
+- Debug is a HIMON subsystem/include. A small build may omit it to save flash,
+  but the related command records, help text, BRK hook behavior, and build docs
+  must be omitted or revised together. NMI trap capture may remain without the
+  breakpoint/`N` stepping subsystem.

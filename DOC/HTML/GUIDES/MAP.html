@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R-YORS Documentation Map - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="r-yors-documentation-map">R-YORS Documentation Map</h1>
+<p>This is the map for the guide set inside <code>ror</code>.</p>
+<h2 id="guide-spine">Guide Spine</h2>
+<pre><code class="language-text">DOC/INDEX.md
+  -&gt; DOC/GENERATED/MAP_OF_MAPS.md
+  -&gt; DOC/GUIDES/INDEX.md
+     -&gt; TOC.md
+     -&gt; MAP.md
+     -&gt; DECISIONS.md
+     -&gt; QCC.md
+     -&gt; BRINGUP.md
+     -&gt; HIMON_STAGES_CLASSES.md
+     -&gt; REF.md
+     -&gt; XREF.md
+     -&gt; CATALOG.md
+     -&gt; LIFE_RCAT_MEMBER.md
+     -&gt; MEMORY_MAP.md
+     -&gt; DYNAMIC_MEMORY_FIRST_STEPS.md
+     -&gt; SYMBOL_XREF.md
+     -&gt; HIMON_MAP.md
+     -&gt; HIMON_EDGE_DUMP.md
+     -&gt; BIB.md</code></pre>
+<h2 id="design-map">Design Map</h2>
+<pre><code class="language-text">R-YORS
+  boots through STR8
+
+Decisions
+  records settled calls before details sprawl into guide debate
+  prevents reopening hash, naming, STR8, ASM, and doc-shape decisions
+
+QCC
+  records Questions, Comments, and Concerns before they become decisions
+  keeps what-if design notes visible without making them settled spec
+  splits active topics into hash, flash, ASM, STR8, and memory QCC pages
+
+STR8
+  keeps recovery/update safe
+  hands normal operation to HIMON
+
+HIMON
+  provides the monitor, command dispatch, assembler, catalog lookup,
+  and debug tools
+
+HIMON
+  current monitor implementation path
+  owns normal monitor interaction
+  hashes command tokens
+  dispatches to command records
+
+HIMON Stages And Classes
+  reconstructs the historical Himon/Himonia/Himonia-F stages from source and guides
+  explains routine-class families such as CMD, CMD_HASH, MON, HIM, ASM, DIS,
+  DBG, L, FNV1A, MATH, ABI, and future MEM
+
+STR8
+  owns recovery/update guardrails
+  V0 manages image-oriented 32K ROM bank recovery
+  future STR8 lives in the bank 3 $F000-$FFFF top erase sector
+  protects only the selected $FC00/$FA00/$F800/$F600/$F400/$F200/$F000 window
+  documents the proposed boot/recovery/update overview map
+  future direction scans writable flash and catalog regions
+  future direction protects selected STR8 window and vectors
+  V0 verifies copied bank images
+  later HIMON/maintenance or future STR8 condenses cluttered banks
+
+Bringup
+  orders STR8 work from simulation stub to reset-owned recovery
+  keeps erase/write work behind read-only proofs
+  records bank policy, protected-window policy, and failure cases
+
+Hashed ASM
+  reads `A [addr] [label:] MMM [operand] .`
+  hashes labels and mnemonics
+  emits bytes
+  creates fixups for forward labels
+  documents process trees, fixup lifecycle, writer split, and linking maps
+  exports symbols after verification
+
+Catalog
+  maps hash/name to kind, bank, address, and flags
+  may store compressed command/routine text
+  becomes the bridge between assembler output and runtime lookup
+
+Life RCAT Member
+  uses standalone LIFE as a worked example for an RCAT-visible member
+  separates RBODY bytes, RREC export records, imports, entry contracts,
+  zero-page needs, RAM needs, and NMI vector behavior
+  keeps LIFE out of generated HIMON call trees while still using it to test
+  catalog vocabulary
+
+QCC Flash
+  records the proposed FSB lifecycle for formed, sealed, and buried records
+  discusses condense/compress triggers, purge classes, and flash-safe ownership
+
+QCC Hash
+  records 1/2/4 byte hash-width questions, folded FNV-1a helpers, and compact
+  signature concerns
+
+QCC ASM
+  records hash-first assembler questions about labels, fixups, symbol text, and
+  sealed output
+
+QCC STR8
+  records STR8 ownership questions around scanning, recovery/update boundaries,
+  and future STRAIGHTEN behavior
+
+QCC Memory
+  records RAM/IO/flash range questions, 4K sector selectors, allocation scope,
+  and TBE bit-helper direction
+
+Symbol Ref/Xref/XXref
+  records routine contracts, source locations, FNV hashes, and ABI details
+  classifies current and future symbols with reusable semantic tokens
+  gives HIMON a compact call tree separate from full generated edge dumps
+
+Catalog
+  groups callable routines by programmer need: read, write, string, hex, hash,
+  flash, vector, and recovery BIO
+  keeps names, hashes, entry/exit registers, carry flags, notes, and tags
+  compact enough to answer &quot;what routine do I call?&quot;
+
+Memory Map
+  records current HIMON ROM and RAM address ownership
+  identifies user flash, monitor code/data, ABI entries, vectors, and gaps
+  distinguishes the current HIMON image from the future STR8/HIMON split
+
+Dynamic Memory First Steps
+  explains byte, word, and pointer allocation as byte reservations
+  keeps STR8 out of general heap ownership and HIMON out for now
+  uses the current memory map and zero-page rules to scope any future heap
+
+HIMON Map
+  turns the raw direct edges into readable subsystem diagrams
+  maps startup, dispatch, commands, loader/flash, debug, disasm, ASM, and ABI
+  gives HIMON a full capability map
+
+HIMON Edge Dump
+  lists direct `JSR` and `JMP` sites from the current HIMON source
+  preserves raw line-number edges separately from compact call-tree diagrams
+
+Generated Interrupt Vector Map
+  maps current RESET, NMI, IRQ, and BRK trampoline paths
+  shows RAM vector patch cells, monitor trap install, BRK split, and RTI resume
+
+Generated Map Of Maps
+  acts as the atlas for guide maps and source-derived maps
+  answers which map to open for command flow, hash flow, HIMON calls, support
+  layers, memory ranges, and document navigation</code></pre>
+<p>Short form:</p>
+<pre><code class="language-text">R-YORS boots through STR8.
+STR8 keeps recovery/update safe.
+STR8 hands normal operation to HIMON.
+HIMON provides the monitor, command dispatch, assembler, catalog lookup,
+and debug tools.</code></pre>
+<h2 id="source-map">Source Map</h2>
+<pre><code class="language-text">Current operational source used by generated routine docs:
+
+HIMON/
+  himon.asm
+  himon-shared-eq.inc
+  himon-asm.inc
+  himon-bootlog.inc
+  himon-debug.inc
+  himon-disasm.inc
+  fnv1a-fold.asm
+
+STR8/
+  str8.asm
+
+SRC/STASH/ftdi/
+SRC/SESH/ftdi/
+ROM/ftdi-backend-debug.asm
+ROM/ftdi/
+ROM/dev/
+ROM/util/
+
+Legacy demos, harnesses, games, ACIA/PIA, and historical monitor experiments
+are outside the generated operational maps.
+
+LOCAL/
+  basic-programs/*.BAS
+  fig-forth/source/ff6502.html
+  fig-forth/generated/fig-forth.asm
+  msbasic/source/
+  msbasic/generated/osi-basic.asm
+  wdcmonv2/
+  s3x/</code></pre>
+<h2 id="mermaid-view">Mermaid View</h2>
+<pre class="mermaid">flowchart TD
+    IDX[INDEX] --&gt; TOC[TOC]
+    IDX --&gt; MOM[GENERATED/MAP_OF_MAPS]
+    IDX --&gt; MAP[MAP]
+    IDX --&gt; DEC[DECISIONS]
+    IDX --&gt; QCC[QCC]
+    IDX --&gt; HSTAGE[HIMON_STAGES_CLASSES]
+    IDX --&gt; REF[REF]
+    IDX --&gt; XREF[XREF]
+    IDX --&gt; CAT[CATALOG]
+    IDX --&gt; MEM[MEMORY_MAP]
+    IDX --&gt; DMEM[DYNAMIC_MEMORY_FIRST_STEPS]
+    IDX --&gt; SYMX[SYMBOL_XREF]
+    IDX --&gt; HMAP2[HIMON_MAP]
+    IDX --&gt; HEDGE[HIMON_EDGE_DUMP]
+    IDX --&gt; BIB[BIB]
+
+    MAP --&gt; HIST[HISTORICAL_DOCUMENTS]
+    MAP --&gt; DEC
+    MAP --&gt; QCC
+    HIST --&gt; HSTAGE
+    HSTAGE --&gt; HMAP2
+    MAP --&gt; STR8[STR8]
+    MAP --&gt; HASM[HASHED_ASM]
+    MAP --&gt; HMAP[HASH_MAP]
+    QCC --&gt; QHASH[QCC_HASH]
+    QCC --&gt; QFLASH[QCC_FLASH]
+    QCC --&gt; QASM[QCC_ASM]
+    QCC --&gt; QSTR8[QCC_STR8]
+    QCC --&gt; QMEM[QCC_MEMORY]
+    QHASH --&gt; HMAP
+    QFLASH --&gt; STR8
+    QFLASH --&gt; HMAP
+    QASM --&gt; HASM
+    QSTR8 --&gt; STR8
+    QMEM --&gt; MEM
+    MAP --&gt; SYMX
+    MAP --&gt; HMAP2
+    MAP --&gt; HEDGE
+    MOM --&gt; HMAP2
+    MOM --&gt; HMAP
+    MOM --&gt; MEM
+    MOM --&gt; HASM
+
+    HIST --&gt; STR8
+    HIST --&gt; HASM
+    HMAP --&gt; HASH[HASH]
+    HMAP --&gt; CAT
+    HMAP --&gt; HASM
+    STR8 --&gt; MEM
+    MEM --&gt; DMEM
+    DMEM --&gt; HASM
+    MEM --&gt; HMAP2
+    STR8 --&gt; HASM
+    HASM --&gt; FUTURE[FUTURE]
+    HASM --&gt; TODO[TODO]</pre>
+<h2 id="consistency-rules">Consistency Rules</h2>
+<ul>
+<li><code>STR8</code> is the recovery/update name.</li>
+<li><code>STR8</code> means Subroutine To Return, pronounced <code>S-T-R-8</code>, with an intentional</li>
+</ul>
+<p><code>RTS</code> echo.</p>
+<ul>
+<li><code>DECISIONS.md</code> is the settled-call list. Check it before reopening design</li>
+</ul>
+<p>alternatives.</p>
+<ul>
+<li><code>QCC.md</code> and <code>QCC_*.md</code> are Questions, Comments, Concerns working notes.</li>
+</ul>
+<p>They preserve active design thinking without making it settled spec.</p>
+<ul>
+<li>Settled QCC answers should move into <code>DECISIONS.md</code>.</li>
+<li>The older recovery-guide name is retired; use <code>STR8</code>.</li>
+<li><code>HASH.md</code> covers routine header IDs and their relationship to FNV-1a.</li>
+<li><code>HASH_MAP.md</code> covers all hash meanings and where they connect.</li>
+<li><code>SYMBOL_XREF.md</code> covers symbol-level contracts and semantic tags.</li>
+<li><code>CATALOG.md</code> covers the programmer-facing callable routine catalog.</li>
+<li><code>HIMON_MAP.md</code> is the readable HIMON edge/capability map.</li>
+<li><code>HIMON_EDGE_DUMP.md</code> is the direct HIMON edge dump.</li>
+<li><code>DYNAMIC_MEMORY_FIRST_STEPS.md</code> is conceptual only until a real allocator is</li>
+</ul>
+<p>explicitly reserved in the memory map and routine contracts.</p>
+<ul>
+<li>New guide files should be added to <code>INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>XREF.md</code>,</li>
+</ul>
+<p>and <code>BIB.md</code> together.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/MAP.md</code>. Source modified: <time>2026-05-07T01:54:07Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
+</body>
+</html>

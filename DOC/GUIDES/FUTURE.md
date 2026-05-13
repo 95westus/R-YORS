@@ -21,6 +21,24 @@
 - Keep STR8 fixed-buffer-only. HIMON can adopt `MEM_*` later, starting with
   app/session-owned bump allocation and pools before any general free-list heap.
 
+## Optional Debug Module Direction
+
+- Current debug stays a compact HIMON include because that is the smallest
+  present shape.
+- Treat plug-and-play debug as a far-future build mechanism, not a current
+  implementation promise.
+- The future shape should keep HIMON core in charge of the command resolver,
+  trap entry, and build profile, while an optional debug module exports `B`,
+  `N`, synthetic-BRK handling, and debug-context helpers.
+- The debug module should import only narrow system services: output text/hex,
+  trapped-context access, resume support, and the address patch policy.
+- A build profile that omits debug must also omit the matching command records,
+  help text, BRK debug hook behavior, and generated docs that claim debugger
+  support.
+- Do not promote this into a framework just to make debug prettier. Promote the
+  mechanism only after two or more optional subsystems need the same command,
+  hook, profile, and documentation machinery.
+
 ## Long-Term RPG II Direction
 
 - RPG II is the long-term language goal, not a near-term monitor feature.

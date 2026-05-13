@@ -138,6 +138,8 @@ GENERATED_DOCS := $(CALL_ORDER) $(ROUTINE_CONTRACTS) $(HIMON_ROUTINE_TREE) $(ROU
 ROUTINE_HASH_COMMENTS_GEN := tools/gen_routine_hash_comments.ps1
 DOCS_GEN := tools/gen_docs.ps1
 DOCS_WATCH := tools/watch_docs.ps1
+DOCS_HTML_GEN := tools/gen_html_docs.ps1
+DOC_HTML_DIR := ../DOC/HTML
 HELP_GEN := tools/show_make_help.ps1
 BIN_POLICY := tools/bin_policy.ps1
 BIN_CHECK := tools/check_bin_policy.ps1
@@ -342,6 +344,9 @@ docs: $(GENERATED_DOCS)
 docs-watch:
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_WATCH) -Src . -OutDir $(DOC_GENERATED_DIR)
 
+docs-html:
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_HTML_GEN) -RepoRoot .. -OutDir $(DOC_HTML_DIR)
+
 local-homes:
 	@if not exist $(subst /,\,$(BASIC_PROGRAMS_HOME)) mkdir $(subst /,\,$(BASIC_PROGRAMS_HOME))
 	@if not exist $(subst /,\,$(FIG_FORTH_HOME)) mkdir $(subst /,\,$(FIG_FORTH_HOME))
@@ -544,4 +549,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life calc-flash rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life calc-flash rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

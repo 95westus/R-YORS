@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RTFM STR8 - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="rtfm-str8">RTFM STR8</h1>
+<p>STR8 is the small recovery/update monitor that runs before HIMON. It owns the dangerous flash decisions: backup rotation, restore, Bank 0 enrollment, and protected-window preservation.</p>
+<p>Read this before pressing a destructive key.</p>
+<h2 id="command-safety-mandate">Command Safety Mandate</h2>
+<pre><code class="language-text">DESTRUCTIVE COMMANDS MUST BE 4+ CHARACTERS.</code></pre>
+<p>Future STR8 destructive commands must use full words such as <code>BACKUP</code>, <code>RESTORE</code>, <code>ENROLL</code>, <code>ERASE</code>, <code>FLASH</code>, or <code>BANK</code>. STR8 keeps <code>R</code> as reset. The current one-key recovery commands are an early proof surface with confirmation, not a pattern for adding more destructive short commands.</p>
+<h2 id="current-layout">Current Layout</h2>
+<pre><code class="language-text">combined image:  SRC/BUILD/bin/himon-str8-rom.bin
+HIMON:           $C000-$E357
+STR8 image:      $F000-$F620
+worker source:   $F800-$FA7F, copied to RAM when needed
+STR8 window:     $F000-$FFFF
+config pocket:   $FFF0-$FFF9
+vectors:         $FFFA-$FFFF</code></pre>
+<p>On reset, STR8 initializes the FTDI path, prints <code>HIMON IN 6S. S=STR8</code>, then counts down <code>6 5 4 3 2 1</code>. Press <code>S</code> during that delay to enter STR8.</p>
+<h2 id="commands">Commands</h2>
+<pre><code class="language-text">?       print STR8 ID and Bank 0 state
+B       run backup rotation, with verify
+E       enroll Bank 0 into backup rotation, destructive, confirmed
+M       map banks/sectors as used `+` or erased `-`
+0       restore Bank 0 -&gt; Bank 3, with verify
+1       restore Bank 1 -&gt; Bank 3, with verify
+2       restore Bank 2 -&gt; Bank 3, with verify
+G       go to HIMON at $C000
+R       reset through the live reset vector</code></pre>
+<p>The destructive commands ask for <code>Y</code>. Anything else aborts. <code>R</code> is retained as STR8 reset.</p>
+<p><code>M</code> is read-only. It scans all banks by 4K sector, restores Bank 3, and prints:</p>
+<pre><code class="language-text">BANK0     BANK1     BANK2     BOOT
++--++--  --++--++  --------  ++++++++</code></pre>
+<p>Each character maps to <code>$8000,$9000,$A000,$B000,$C000,$D000,$E000,$F000</code>. <code>-</code> means the whole sector is <code>$FF</code>; <code>+</code> means at least one byte is used.</p>
+<h2 id="bank-roles">Bank Roles</h2>
+<pre><code class="language-text">Bank 3  live reset/boot image
+Bank 2  newest backup image
+Bank 1  older backup image
+Bank 0  held base/factory slot until enrolled</code></pre>
+<p>Saving the board&#39;s original WDCMONv2/base flash image is still TODO bridge work. It is not part of the current STR8 command set.</p>
+<h2 id="backup">Backup</h2>
+<p>Before Bank 0 enrollment, <code>B</code> does this:</p>
+<pre><code class="language-text">Bank 2 -&gt; Bank 1
+Bank 3 -&gt; Bank 2</code></pre>
+<p>After Bank 0 enrollment, <code>B</code> does this:</p>
+<pre><code class="language-text">Bank 1 -&gt; Bank 0
+Bank 2 -&gt; Bank 1
+Bank 3 -&gt; Bank 2</code></pre>
+<p>Each copy is erased, written, and verified by read-back compare.</p>
+<h2 id="enroll-bank-0">Enroll Bank 0</h2>
+<p><code>E</code> makes Bank 0 part of automatic backup rotation. This is a one-way normal operation. STR8 clears bit 0 at <code>$FFF0</code>:</p>
+<pre><code class="language-text">bit set/erased  = B0 HOLD
+bit cleared     = B0 ROT</code></pre>
+<p>Once Bank 0 is enrolled, ordinary backup rotation may erase whatever image was there. Leaving rotation requires erase/reflash or a deliberate STR8 config rebuild.</p>
+<h2 id="restore">Restore</h2>
+<p><code>0</code>, <code>1</code>, and <code>2</code> copy the selected bank into live Bank 3. Restore preserves:</p>
+<pre><code class="language-text">$C000-$FFFF   HIMON/STR8 protected region unless high flash is confirmed
+$F800-$FA7F   STR8 RAM-worker source inside the protected top sector
+$FFF0-$FFFF   config pocket and hardware vectors</code></pre>
+<p>That means restore updates the ordinary live image but keeps STR8 alive. Restoring Bank 0 before enrollment may restore a WDCMONv2/base image and may remove R-YORS from the ordinary Bank 3 body.</p>
+<h2 id="ram-worker">RAM Worker</h2>
+<p>STR8 copies one compact worker into RAM for flash mutation:</p>
+<pre><code class="language-text">$0200-$047F   current worker code
+$0200-$09FF   STR8 RAM tray copied from $F800
+$0A00-$0A0C   STR8 worker state board and map bytes
+$4000-$4FFF   4K sector buffer</code></pre>
+<p>The worker runs silently, switches banks, erases, writes, verifies, restores Bank 3, and returns status to the resident STR8 shell. The <code>M</code> command also uses the worker, but only to scan and store map status bytes. Do not press NMI during <code>B</code>, <code>E</code>, <code>M</code>, <code>0</code>, <code>1</code>, or <code>2</code>.</p>
+<h2 id="burn-checks">Burn Checks</h2>
+<p>After burning <code>himon-str8-rom.bin</code>, these monitor checks should match the current image:</p>
+<pre><code class="language-text">D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
+D F000 +10   78 D8 A2 FF 9A 20 1D F0 ...
+D F800 +10   08 78 AD 17 03 C9 04 F0 ...
+D FFFA FFFF  C2 DB 00 F0 C5 DB</code></pre>
+<h2 id="updating-himon-or-str8">Updating HIMON Or STR8</h2>
+<p>There is no casual protected-sector updater yet. The sane future command is a RAM-resident sector transaction:</p>
+<pre><code class="language-text">read live destination sector into RAM
+apply staged update bytes in RAM
+if only 1-&gt;0 bit changes are needed, program and verify
+if erase is needed, confirm, erase, write full staged sector, verify
+preserve STR8 protected bytes unless this is an explicit STR8 update
+restore Bank 3 before printing the result</code></pre>
+<p>This is the right shape for updating HIMON sectors too, including the shared top sector below STR8. The guard stays in place; the updater becomes a confirmed RAM operation that knows exactly which sector it is allowed to rebuild.</p>
+<h2 id="not-today">Not Today</h2>
+<p>These are not part of the small rescue prompt:</p>
+<pre><code class="language-text">advanced sector editor
+catalog repair
+flash wear counters
+STR8 self-update UI
+WDCMONv2/base-image preservation</code></pre>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-str8.md</code>. Source modified: <time>2026-05-12T02:54:05Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

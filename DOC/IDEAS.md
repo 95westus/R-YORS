@@ -143,8 +143,11 @@ map:
 
 ```text
 BOOT     R-Z+HH-8
-UPDATED  YYMMDD-HHMM        WLP2        HIMON debounce vector install.
-RECOVER  YYMMDD-HHMM        WLP2        BOOT recovered from bank 0 image.
+2026
+         05
+                13
+                   17:43Z WLP2 HIMON debounce vector install.
+                   16:20Z WLP2 BOOT recovered from bank 0 image.
 ```
 
 This is where hash-joint can go deeper. The visible map remains a tiny

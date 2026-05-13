@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QCC STR8 - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="qcc-str8">QCC STR8</h1>
+<p>This page keeps STR8 and future STR8-N/STRAIGHTEN questions in QCC form.</p>
+<h2 id="q-does-str8-own-memory-and-interrupts">Q: Does STR8 own memory and interrupts?</h2>
+<p>Comment: The current direction is no. STR8 should be useful in systems where the user already has memory policy, vector policy, and interrupt layering. STR8 can cooperate with R-YORS layers, but it should not require ownership of all RAM, all vectors, or all interrupt behavior.</p>
+<p>Concern: STR8 still needs enough reserved workspace and safe entry rules to do recovery/update work. That reservation should be explicit in the memory map.</p>
+<h2 id="q-what-does-str8-own">Q: What does STR8 own?</h2>
+<p>Comment: STR8 owns recovery/update guardrails:</p>
+<pre><code class="language-text">safe boot path
+image validation
+flash rewrite boundaries
+protected recovery window
+handoff to HIMON
+future condense/compress calls</code></pre>
+<p>Concern: Normal interactive monitor behavior belongs to HIMON. STR8 should not grow into a second full monitor by accident.</p>
+<h2 id="q-where-should-rom-garbage-collection-live">Q: Where should ROM garbage collection live?</h2>
+<p>Comment: STR8/STRAIGHTEN is the right home for dangerous sector rebuilds, or for calling a catalog maintenance subsystem that performs them.</p>
+<p>Concern: HIMON lookup can skip buried records, but should not silently erase or rebuild sectors during normal command lookup.</p>
+<h2 id="q-what-can-str8-scan">Q: What can STR8 scan?</h2>
+<p>Comment: Scan ranges may be selected by full start/end, start plus length, or a 4K sector selector:</p>
+<pre><code class="language-text">0-F  one full 4K sector selector
+0-7  RAM region selectors
+7F   IO page is special
+8-F  flash region selectors</code></pre>
+<p>Concern: RAM, IO, and flash have different rules. A selector that is safe for flash scanning is not automatically safe for IO probing.</p>
+<h2 id="q-how-should-future-flash-range-guards-evolve">Q: How should future flash range guards evolve?</h2>
+<p>Comment: Treat the current <code>FLASH_ADDR_ALLOWED_XY</code> as a conservative HIMON public-writer guard, not as the permanent truth about all valid flash writes. It currently allows <code>$8000-$CFFF</code> and protects <code>$D000-$FFFF</code>, which matches the early <code>L F</code> blank-byte loader and HIMON-at-<code>$D000</code> world. STR8 needs a richer policy split:</p>
+<pre><code class="language-text">FLSH_*   selects or queries the visible $8000-$FFFF flash window
+FLASH_*  performs low-level erase/program/check in the currently selected window
+POLICY   decides whether this caller and operation may touch this range</code></pre>
+<p>Possible future guard families:</p>
+<pre><code class="language-text">FLASH_ADDR_ALLOWED_XY       current HIMON L F public writer guard
+FLSH_RANGE_ALLOWED_CTX      generic operation-context guard
+STR8_RANGE_BACKUP_OK        allow whole destination backup bank/window
+STR8_RANGE_RESTORE_OK       allow ordinary bank 3 bytes, skip STR8 window
+STR8_RANGE_INSTALL_OK       allow protected-window install via top-sector transaction
+STR8_RANGE_FACTORY_OK       allow bank 0 only after explicit clear-check/confirm</code></pre>
+<p>The operation context should include enough facts to avoid hidden globals:</p>
+<pre><code class="language-text">operation kind:  LF, BACKUP, RESTORE, INSTALL, FACTORY, QUERY
+source bank:     0-3 or none
+destination bank:0-3 or none
+window/range:    CPU $8000-$FFFF address range or 4K window selector
+protected start: selected STR8 protected-window start
+authority:       HIMON, STR8 RAM worker, recovery, factory action</code></pre>
+<p>Raw erase/program routines should remain available, but only as mechanism:</p>
+<pre><code class="language-text">FLASH_SECTOR_ERASE_RAW_XY
+FLASH_WRITE_BYTE_RAW_AXY</code></pre>
+<p>Callers that use raw routines must first make an explicit policy decision and must run from RAM or another bank-stable region if the selected flash window can change away from the code that is executing.</p>
+<p>Concern: A single global &quot;writable flash range&quot; will be wrong for at least one important operation. Backup must write whole bank images into bank 1/2, restore must avoid the STR8 window in bank 3, install must touch only the protected path, and HIMON <code>L F</code> should stay far more conservative than STR8 recovery.</p>
+<h2 id="q-how-long-should-a-32k-str8-flash-copy-take">Q: How long should a 32K STR8 flash copy take?</h2>
+<p>Comment: The SST39SF010A chip timing gives a useful lower bound, not the current STR8 RAM proof wall-clock time. The part has uniform 4K sectors, typical 4K sector erase time of about 18 ms, and typical byte-program time of about 14 us. For a dense 32K bank rewrite:</p>
+<pre><code class="language-text">8 sectors * 18 ms       = 144 ms erase time
+32768 bytes * 14 us     = 459 ms program time
+chip-level lower bound  ~= 0.6 s before software/read/verify overhead</code></pre>
+<p>The current RAM proof is intentionally simple and slower. It calls <code>FLASH_WRITE_BYTE_RAW_AXY</code> for each non-<code>$FF</code> byte, and that routine copies the RAM flash worker before each byte program. At the current 8 MHz timing model, that worker-copy overhead alone is roughly 0.5 ms per programmed byte, so a dense 32K image can land in the 20-30 second range. Sparse images with many <code>$FF</code> bytes are faster because STR8 skips byte-program calls for <code>$FF</code> source bytes.</p>
+<p>Concern: Do not use visible LED activity as the timing proof. The first real proof should measure serial progress or an explicit activity pin around erase, program, and verify phases. Later STR8 should batch the RAM worker or keep it resident for a sector/bank operation so the observed time moves closer to the flash device timing.</p>
+<h2 id="q-why-qcc-for-str8">Q: Why QCC for STR8?</h2>
+<p>Comment: STR8 is still deciding how small it stays in V0 and how much future STRAIGHTEN will own.</p>
+<p>Concern: Settled boundaries should move into <code>DECISIONS.md</code>; experiments and &quot;what if STR8 owns this?&quot; should stay here until proved.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_STR8.md</code>. Source modified: <time>2026-05-06T05:54:36Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

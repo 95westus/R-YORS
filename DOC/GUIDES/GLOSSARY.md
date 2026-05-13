@@ -159,8 +159,11 @@ docs.
   pause after each thought block; in R-YORS it is the guide style for important
   design thinking that is not settled enough for `DECISIONS.md`.
 - CBI: Computer Bank, Inc., the project author's RPG II coding-days employer.
-  In R-YORS docs, CBI format means the old date / programmer / comment change
-  note shape. CBI dates are written as ISO 8601 without seconds.
+  R-YORS uses two CBI shapes:
+  CBI doc form is the level-break change-note shape: year, month, day, then
+  descending `HH:MMZ programmer comment` rows. CBI code form is the condensed
+  source-comment line: `; YYYY-MM-DDTHH:MMZ programmer comment`. Continuation
+  lines align under the comment body. Keep CBI source lines under 78 columns.
 - ISO 8601: project-wide date/time format for source, docs, generated files,
   comments, logs, and examples. Use `YYYY-MM-DD` for dates and
   `YYYY-MM-DDTHH:mm+/-HH:MM` for local date/times unless more precision is

@@ -55,6 +55,10 @@ and debug tools.
 - Use `YYYY-MM-DD` for dates.
 - Use `YYYY-MM-DDTHH:mm+/-HH:MM` for local date/times when minute precision is
   enough. Omit seconds unless the event genuinely needs second-level precision.
+- Use CBI doc form for dated documentation streams: `YYYY`, then `MM`, then
+  `DD`, then descending `HH:MMZ programmer comment` rows. Use CBI code form
+  inside source files: `; YYYY-MM-DDTHH:MMZ programmer comment`. Continuation
+  lines align under the comment body. Keep CBI source lines under 78 columns.
 - Any discovered older date stamps are cleanup debt, not precedent.
 
 ## Command Safety And Syntax
@@ -84,6 +88,18 @@ and debug tools.
   line. Example: `S 0 FFFF 4D 4D 'M` searches for three `M` bytes.
   Apostrophe text is a final tail in V0; there is no closing-quote parser and
   no return to hex parsing after text.
+- The first `N`/breakpoint patch policy is deliberately conservative:
+  synthetic debugger traps may be planted only in UPA `$2000-$77FF`. Reject
+  zero page, hardware stack, low RAM, HIUPA/scratch, monitor/page-buffer RAM,
+  I/O, and ROM/flash. This protects system-owned RAM as well as non-RAM.
+- The patchability check is HIMON system policy, not a user-callable routine
+  contract. Keep the first W65C02S implementation as a tiny local debug fast
+  path instead of a "routines of routines" framework. Promote a shared
+  address-policy routine only when multiple system components need the same
+  policy and the ROM byte cost is justified.
+- Debug is an optional HIMON subsystem/include, not a layer between STR8 and
+  HIMON. A build may omit debug to save flash, but the command records, help
+  text, BRK debug hook behavior, and docs for that build must agree.
 - Search hits should print like `D` context rows, with exact hit address first,
   aligned row base second, and `*` between them when the match continues into
   the next 16-byte display row. This preserves the useful BSO2 monitor
@@ -302,6 +318,8 @@ A [addr] [label:] MMM [operand] .
 - When updating docs, update the canonical home first, then indexes, maps, and
   cross-references. Generated docs should remain evidence or views, not the
   primary hand-written explanation.
+- HTML pages under `DOC/HTML` are generated presentation views of the Markdown
+  docs. Do not hand-edit them or treat them as canonical explanations.
 - Use `flowchart` for process or decision sequence. Use `graph` for node/edge
   structure such as call paths or stack-depth paths. Use `map`, `guide map`,
   `source-derived map`, `chart`, and `edge dump` according to

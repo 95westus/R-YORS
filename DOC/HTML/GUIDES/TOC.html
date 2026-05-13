@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R-YORS Guide TOC - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="r-yors-guide-toc">R-YORS Guide TOC</h1>
+<h2 id="reading-order">Reading Order</h2>
+<ol>
+<li><a href="INDEX.html">INDEX.md</a> - top-level guide index and current source snapshot.</li>
+<li><a href="MAP.html">MAP.md</a> - where each document fits.</li>
+<li><a href="HASH_FLASH.html">HASH_FLASH.md</a> - command-surface alerts and recent rehashes.</li>
+<li><a href="GLOSSARY.html">GLOSSARY.md</a> - shared vocabulary.</li>
+<li><a href="DECISIONS.html">DECISIONS.md</a> - settled calls to avoid reopening by accident.</li>
+<li><a href="QCC.html">QCC.md</a> - Questions, Comments, Concerns style and topic index.</li>
+<li><a href="HISTORICAL_DOCUMENTS.html">HISTORICAL_DOCUMENTS.md</a> - how the current monitor direction emerged.</li>
+<li><a href="HIMON_STAGES_CLASSES.html">HIMON_STAGES_CLASSES.md</a> - reconstructed HIMON</li>
+</ol>
+<p>stages and routine-class families.</p>
+<ol>
+<li><a href="STR8.html">STR8.md</a> - Subroutine To Return recovery/update monitor.</li>
+<li><a href="RTFM-str8.html">RTFM-str8.md</a> - compact STR8 operating instructions.</li>
+<li><a href="RTFM-himon.html">RTFM-himon.md</a> - compact HIMON/STR8 boundary instructions.</li>
+<li><a href="BRINGUP.html">BRINGUP.md</a> - practical STR8/R-YORS bringup rail.</li>
+<li><a href="HASH_MAP.html">HASH_MAP.md</a> - hash systems and where they live.</li>
+<li><a href="QCC_HASH.html">QCC_HASH.md</a> - hash-width and compact signature QCC.</li>
+<li><a href="QCC_FLASH.html">QCC_FLASH.md</a> - FSB lifecycle and condense/compress QCC.</li>
+<li><a href="HASHED_ASM.html">HASHED_ASM.md</a> - detailed assembler hypothesis.</li>
+<li><a href="QCC_ASM.html">QCC_ASM.md</a> - hashed assembler symbol/fixup QCC.</li>
+<li><a href="QCC_STR8.html">QCC_STR8.md</a> - STR8 ownership and recovery/update QCC.</li>
+<li><a href="CATALOG.html">CATALOG.md</a> - programmer-facing routine catalog by</li>
+</ol>
+<p>read/write/string/hex/hash/flash need.</p>
+<ol>
+<li><a href="LIFE_RCAT_MEMBER.html">LIFE_RCAT_MEMBER.md</a> - worked example for moving</li>
+</ol>
+<p>standalone LIFE into an RBODY/RREC/RCAT member.</p>
+<ol>
+<li><a href="MEMORY_MAP.html">MEMORY_MAP.md</a> - current HIMON ROM/RAM memory map,</li>
+</ol>
+<p>compatibility entries, vectors, and STR8/HIMON integration direction.</p>
+<ol>
+<li><a href="QCC_MEMORY.html">QCC_MEMORY.md</a> - memory ranges, 4K selectors, and bit-helper QCC.</li>
+<li><a href="DYNAMIC_MEMORY_FIRST_STEPS.html">DYNAMIC_MEMORY_FIRST_STEPS.md</a> - first</li>
+</ol>
+<p>dynamic allocation notes for bytes, words, pointers, pools, and heap scope.</p>
+<ol>
+<li><a href="SYMBOL_XREF.html">SYMBOL_XREF.md</a> - symbol contracts, source cross-reference,</li>
+</ol>
+<p>semantic tags, and HIMON call tree.</p>
+<ol>
+<li><a href="HIMON_MAP.html">HIMON_MAP.md</a> - readable HIMON edge and</li>
+</ol>
+<p>capability maps.</p>
+<ol>
+<li><a href="HIMON_EDGE_DUMP.html">HIMON_EDGE_DUMP.md</a> - direct HIMON</li>
+</ol>
+<p><code>JSR</code>/<code>JMP</code> edge dump.</p>
+<ol>
+<li><a href="REF.html">REF.md</a> - current reference sheet.</li>
+<li><a href="XREF.html">XREF.md</a> - document/source cross-reference.</li>
+<li><a href="HASH.html">HASH.md</a> - routine header IDs and FNV-1a relationship.</li>
+<li><a href="TODO.html">TODO.md</a> - next work.</li>
+<li><a href="FUTURE.html">FUTURE.md</a> - direction.</li>
+<li><a href="BIB.html">BIB.md</a> - internal source list.</li>
+</ol>
+<h2 id="core-thread">Core Thread</h2>
+<p>The current conceptual path is:</p>
+<pre><code class="language-text">R-YORS
+  -&gt; STR8 boot/recovery/update guard
+  -&gt; HIMON monitor/debug environment
+  -&gt; hash-first command and symbol lookup
+  -&gt; onboard assembler with fixups
+  -&gt; banked flash growth and catalog maintenance</code></pre>
+<h2 id="file-roles">File Roles</h2>
+<pre><code class="language-text">INDEX.md       navigation and source snapshot
+MAP.md         document/system map
+HASH_FLASH.md  command-surface alerts and recent rehashes
+DECISIONS.md   settled calls
+QCC.md         Questions, Comments, Concerns style and topic index
+HIMON_STAGES_CLASSES.md reconstructed HIMON stages and class families
+REF.md         quick operational reference
+XREF.md        relationships between docs, sources, and symbols
+CATALOG.md     programmer-facing callable routine catalog
+LIFE_RCAT_MEMBER.md worked example for promoting standalone LIFE to RCAT member
+MEMORY_MAP.md  current HIMON ROM/RAM ranges, compatibility entries, and vectors
+DYNAMIC_MEMORY_FIRST_STEPS.md first dynamic allocation scope and mechanics
+SYMBOL_XREF.md symbol contracts and semantic classification
+HIMON_MAP.md readable edge and capability maps for HIMON
+HIMON_EDGE_DUMP.md full direct edge dump for HIMON
+BIB.md         internal references
+HASH_MAP.md    map of hash concepts
+QCC_HASH.md    hash-width and compact signature questions
+QCC_FLASH.md   FSB lifecycle and condense/compress questions
+STR8.md        recovery/update monitor design
+RTFM-str8.md   compact STR8 operating instructions
+RTFM-himon.md  compact HIMON/STR8 boundary instructions
+BRINGUP.md     practical STR8/R-YORS bringup rail
+HASHED_ASM.md  assembler thesis
+QCC_ASM.md     assembler symbol/fixup questions
+QCC_STR8.md    STR8 ownership and recovery/update questions
+QCC_MEMORY.md  memory selectors, allocation, and bit-helper questions</code></pre>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/TOC.md</code>. Source modified: <time>2026-05-12T02:39:30Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

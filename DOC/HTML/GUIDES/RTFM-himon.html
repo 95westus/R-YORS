@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RTFM HIMON - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="rtfm-himon">RTFM HIMON</h1>
+<p>HIMON is the normal R-YORS monitor. STR8 gets the machine through reset and recovery; HIMON is where ordinary inspection, loading, debugging, assembling, and program launch happen.</p>
+<h2 id="entry">Entry</h2>
+<p>Normal path:</p>
+<pre><code class="language-text">reset -&gt; STR8 -&gt; G -&gt; HIMON</code></pre>
+<p>Current HIMON starts at <code>$C000</code>. In the combined STR8/HIMON image, STR8 jumps there for <code>G</code>.</p>
+<p>Standalone HIMON images also start at <code>$C000</code>. The old fixed HIMONIA novelty entries at <code>$F00D</code>, <code>$FADE</code>, and <code>$FEED</code> are gone. Use the current map file for build-specific addresses.</p>
+<h2 id="command-safety-mandate">Command Safety Mandate</h2>
+<pre><code class="language-text">DESTRUCTIVE COMMANDS MUST BE 4+ CHARACTERS.</code></pre>
+<p>This is the new command-language rule. Any command whose ordinary purpose is to overwrite, copy, fill, move, erase, program, patch, restore, back up, or change boot/storage policy must use a full word of at least four characters.</p>
+<p>Examples of future destructive spellings:</p>
+<pre><code class="language-text">COPY start end|+count dest
+FILL start end|+count byte
+MOVE start end|+count dest
+FLASH ...
+BANK ...
+RESTORE ...
+BACKUP ...
+ERASE ...</code></pre>
+<p>Current short mutators, such as <code>M</code>, <code>A</code>, breakpoint patching through <code>B</code>, and <code>L F</code>, are current-ROM behavior and transition debt. Do not add new short destructive commands.</p>
+<h2 id="current-commands">Current Commands</h2>
+<pre><code class="language-text">?              help
+# [token]      list records, or resolve token without executing it
+D start +n     dump memory
+D start end    dump memory range
+M addr         modify memory
+U start +n     disassemble
+A addr         assemble
+G addr         go to address
+L              load S-records to RAM
+L G            load S-records and go
+L F            flash-load S-records under the current guard
+R [regs]       display/edit trapped context registers
+B start        set breakpoint
+B C start      clear breakpoint
+B L            list breakpoints
+S              single-step trapped context; target moves to N only
+X              resume trapped context when one exists
+Q              quiesce with WAI, then re-enter on wake</code></pre>
+<p>Use HIMON for normal work. Use STR8 for boot-image recovery and backup policy.</p>
+<p><code>Q</code> is a true quiesce command now. It masks IRQ, enters <code>WAI</code>, and resumes by re-entering HIMON when the CPU wakes. NMI remains the trap/debug path.</p>
+<p><code>M</code> is currently byte-by-byte memory modify. Under the new command safety mandate, bulk fill should not become an <code>M</code> subform. It should be a full-word command:</p>
+<pre><code class="language-text">FILL start end|+count bb</code></pre>
+<p>That future fill should start as RAM-only. Flash fill belongs behind a full-word flash/update command and guarded RAM-updater policy.</p>
+<h2 id="range-syntax-target">Range Syntax Target</h2>
+<p>The current ROM parser still uses the older range behavior. The target syntax for the next range-parser revision is:</p>
+<pre><code class="language-text">start end       end is inclusive
+start +count    count is the number of bytes</code></pre>
+<p>Short typing stays useful for display/search/disassembly:</p>
+<pre><code class="language-text">D 0 FF       dump $0000-$00FF
+D 100 3      dump $0100-$0103
+D 3000 FF    dump $3000-$30FF
+D 3000 +100  dump $3000-$30FF
+D            repeat previous dump length at next address</code></pre>
+<p>A 1- or 2-hex-digit end token inherits the high byte from <code>start</code>. If that would land before <code>start</code>, use a full end address or <code>+count</code>; for example, prefer <code>D 30F0 3110</code> or <code>D 30F0 +21</code> over <code>D 30F0 10</code>.</p>
+<p>The <code>+</code> is not meant to be the normal typing path for page-local end-byte dumps. <code>D 100 3</code> means <code>$0100-$0103</code>; <code>D 3000 FF</code> means <code>$3000-$30FF</code>. Use <code>+count</code> when the operator means a byte count, not an end byte. See <code>page-local</code> in <code>GLOSSARY.md</code>.</p>
+<p>Bare <code>D</code> is target behavior for the next parser revision. It should continue from the byte after the previous dump and reuse the previous dump length:</p>
+<pre><code class="language-text">D 3000 FF    dump $3000-$30FF and remember length $0100
+D            dump $3100-$31FF
+D            dump $3200-$32FF</code></pre>
+<h2 id="search-and-step-direction">Search And Step Direction</h2>
+<p><code>S</code> is currently single-step. The preferred direction is to move step/next to <code>N</code> only, freeing <code>S</code> for memory search. <code>NEXT</code> is not a command alias. RAM-only <code>N</code> is non-destructive because it plants only a temporary debugger trap in RAM and restores the original opcode. The first patchable range is user program RAM <code>$2000-$77FF</code>; system RAM, I/O, and ROM/flash are not debug patch targets:</p>
+<pre><code class="language-text">S addr end|+count b0 [b1 ...]
+S addr end|+count b0 [b1 ...] &#39;TEXT
+S addr end|+count &#39;TEXT
+N</code></pre>
+<p>Hex byte tokens are the default pattern. After the range, parse one or more pattern atoms. A hex byte token appends one byte. A pattern atom starting with <code>&#39;</code> appends text and consumes the rest of the command line:</p>
+<pre><code class="language-text">S 0 FFFF 4D 4D &#39;M</code></pre>
+<p>That searches for three <code>M</code> bytes. For V0, apostrophe text is a final tail: there is no closing-quote parser and no return to hex parsing after text. Current HIMON command input uppercases printable letters before dispatch; use hex bytes for exact lowercase or mixed-case data until that input policy changes.</p>
+<p>Search hits should use the same visual language as <code>D</code>, but with exact hit address first and aligned dump row second. This follows the useful BSO2 monitor search-display convention:</p>
+<pre><code class="language-text">B88F B880: ...
+022B*0220: ...</code></pre>
+<p><code>*</code> marks a match that crosses the 16-byte display row boundary.</p>
+<h2 id="flash-loading">Flash Loading</h2>
+<p><code>L F</code> is conservative. It writes only where the current guard allows and expects blank flash bytes. It is not a sector erase/update tool.</p>
+<p>Do not use HIMON to casually rewrite:</p>
+<pre><code class="language-text">STR8 protected window
+hardware vectors
+Bank 0 rotation policy
+whole-bank backup/restore images</code></pre>
+<p>Those belong to STR8 or a future confirmed RAM updater.</p>
+<h2 id="debug-and-recovery">Debug And Recovery</h2>
+<p>NMI enters HIMON&#39;s trap/debug path when the current vectors are installed. From there, use memory dump/disassembly/register context tools to inspect the machine.</p>
+<p>The active NMI vector is a proof-of-concept debounce handler. It captures the first NMI context, waits briefly in a software debounce loop, and ignores NMI edges that arrive during that window. The baseline non-debounced NMI trap routine remains in the image for comparison.</p>
+<p>Do not press NMI while STR8 is erasing or programming flash. NMI cannot be masked, and a flash operation should be allowed to finish and restore Bank 3.</p>
+<h2 id="updating-himon">Updating HIMON</h2>
+<p>The current safe update direction is not &quot;let HIMON erase itself.&quot; The right shape is:</p>
+<pre><code class="language-text">STR8 or a RAM updater stages a sector
+the operator confirms if erase is required
+the RAM updater erases/writes/verifies
+Bank 3 is restored before monitor output resumes</code></pre>
+<p>For HIMON body sectors, this can update ordinary HIMON bytes. For the top flash sector, the updater must preserve STR8&#39;s protected window unless the operator explicitly requested a STR8 update.</p>
+<h2 id="wdcmonv2-bridge">WDCMONv2 Bridge</h2>
+<p>Saving the board&#39;s original WDCMONv2/base flash image is future bridge work. HIMON does not do that today.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-himon.md</code>. Source modified: <time>2026-05-13T21:38:19Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

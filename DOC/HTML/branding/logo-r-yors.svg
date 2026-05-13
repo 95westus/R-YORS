@@ -1,0 +1,32 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="600" viewBox="0 0 1600 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="600" fill="url(#bg)"/>
+  <rect x="76" y="76" width="1448" height="448" rx="20" fill="none" stroke="#334155" stroke-width="4"/>
+
+  <text x="800" y="338" text-anchor="middle"
+        font-family="'Bahnschrift','Segoe UI',sans-serif"
+        font-size="232" font-weight="800" letter-spacing="22"
+        fill="url(#ink)">RЯORS</text>
+  <text x="800" y="408" text-anchor="middle"
+        font-family="'Consolas','Courier New',monospace"
+        font-size="38" letter-spacing="10" fill="#94a3b8">ROLL YA OWN RUNTIME SYSTEM</text>
+  <text x="800" y="458" text-anchor="middle"
+        font-family="'Consolas','Courier New',monospace"
+        font-size="42" font-weight="700" letter-spacing="8"
+        fill="#cbd5e1">R-YORS</text>
+
+  <rect x="616" y="478" width="368" height="40" rx="8" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="800" y="506" text-anchor="middle"
+        font-family="'Consolas','Courier New',monospace"
+        font-size="24" letter-spacing="5" fill="#60a5fa">VERSION .420</text>
+</svg>

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R-YORS Future Notes - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="r-yors-future-notes">R-YORS Future Notes</h1>
+<h2 id="architecture-direction">Architecture Direction</h2>
+<ul>
+<li>Keep HIMON hash dispatch small and inspectable.</li>
+<li>Make STR8 the flash recovery/update boundary instead of scattering flash</li>
+</ul>
+<p>mutation policy across normal monitor commands.</p>
+<ul>
+<li>Treat bank 3 <code>$F000-$FFFF</code> as the physical top erase sector, but protect only</li>
+</ul>
+<p>the selected STR8 protected window (<code>$FC00</code>, <code>$FA00</code>, <code>$F800</code>, <code>$F600</code>, <code>$F400</code>, <code>$F200</code>, or <code>$F000</code> through <code>$FFFF</code>) from ordinary writes.</p>
+<ul>
+<li>Flash protected-window bytes through a separate install/update path. Reuse</li>
+</ul>
+<p>lower bytes in the same 4K sector when possible. Both STR8 updates and lower top-sector changes must stage the full sector, erase, rewrite the full staged sector, and verify.</p>
+<ul>
+<li>Preserve the layer ladder (<code>PIN -&gt; BIO -&gt; COR -&gt; SYS -&gt; APP</code>) where it still</li>
+</ul>
+<p>fits, with <code>MEM</code> as a future core memory-ownership layer beneath public <code>SYS</code> calls.</p>
+<ul>
+<li>Keep CSTR, HBSTR, and packed command-text forms explicit at API boundaries.</li>
+<li>Treat future dynamic memory as <code>MEM_*</code>: hardware-constrained RAM and</li>
+</ul>
+<p>zero-page ownership policy, not <code>PIN_*</code>/<code>BIO_*</code> device access.</p>
+<ul>
+<li>Keep STR8 fixed-buffer-only. HIMON can adopt <code>MEM_*</code> later, starting with</li>
+</ul>
+<p>app/session-owned bump allocation and pools before any general free-list heap.</p>
+<h2 id="optional-debug-module-direction">Optional Debug Module Direction</h2>
+<ul>
+<li>Current debug stays a compact HIMON include because that is the smallest</li>
+</ul>
+<p>present shape.</p>
+<ul>
+<li>Treat plug-and-play debug as a far-future build mechanism, not a current</li>
+</ul>
+<p>implementation promise.</p>
+<ul>
+<li>The future shape should keep HIMON core in charge of the command resolver,</li>
+</ul>
+<p>trap entry, and build profile, while an optional debug module exports <code>B</code>, <code>N</code>, synthetic-BRK handling, and debug-context helpers.</p>
+<ul>
+<li>The debug module should import only narrow system services: output text/hex,</li>
+</ul>
+<p>trapped-context access, resume support, and the address patch policy.</p>
+<ul>
+<li>A build profile that omits debug must also omit the matching command records,</li>
+</ul>
+<p>help text, BRK debug hook behavior, and generated docs that claim debugger support.</p>
+<ul>
+<li>Do not promote this into a framework just to make debug prettier. Promote the</li>
+</ul>
+<p>mechanism only after two or more optional subsystems need the same command, hook, profile, and documentation machinery.</p>
+<h2 id="long-term-rpg-ii-direction">Long-Term RPG II Direction</h2>
+<ul>
+<li>RPG II is the long-term language goal, not a near-term monitor feature.</li>
+<li>R-YORS should still be shaped around that future while it grows: records,</li>
+</ul>
+<p>catalogs, fixed entry points, stable callable routines, flash-resident programs, and an onboard assembly/link path should all make a later RPG II environment feel native instead of grafted on.</p>
+<ul>
+<li>The target is true RPG II lineage and behavior, guided by original IBM</li>
+</ul>
+<p>documentation, not a modern language wearing an RPG name.</p>
+<ul>
+<li>Near-term work should keep producing useful standalone runtime pieces even</li>
+</ul>
+<p>before an RPG II compiler exists.</p>
+<ul>
+<li>Avoid adding RPG-specific complexity to STR8 V0 or the current HIMON</li>
+</ul>
+<p>monitor unless that same work also improves recovery, cataloging, assembly, loading, or routine reuse.</p>
+<h2 id="system-messaging-service-direction">System Messaging Service Direction</h2>
+<ul>
+<li>Add a way-future system messaging service, currently nicknamed <code>SMS</code>.</li>
+</ul>
+<p>The name is provisional and may change before implementation.</p>
+<ul>
+<li>Model it after console/subconsole and operator-message systems from older</li>
+</ul>
+<p>midrange/mainframe/supercomputer environments: a task or person can send a message, a console/subconsole can receive it, and some messages can require a reply before the sender continues.</p>
+<ul>
+<li>Keep the early concept queue-shaped rather than screen-shaped:</li>
+</ul>
+<p>informational messages, action/attention messages, inquiry messages that require a reply, replies correlated to message IDs, and cancellation of outstanding inquiries.</p>
+<ul>
+<li>Keep hash-joint/chaining ideas nearby for later SMS/WTOR provenance:</li>
+</ul>
+<p>message identity, sender routine/task identity, and reply-required wait points may become compact hash-linked records.</p>
+<ul>
+<li>Do not make <code>SMS</code> a current HIMON or STR8 feature yet. It belongs after the</li>
+</ul>
+<p>monitor, catalog, memory, and app/session boundaries are strong enough to host a real service.</p>
+<h2 id="board-onboarding-direction">Board Onboarding Direction</h2>
+<ul>
+<li>Support a WDCMONv2-to-R-YORS installation bridge for boards that already boot</li>
+</ul>
+<p>the current WDC monitor.</p>
+<ul>
+<li>This is mainly for a new WDC board owner, not for a board that already has</li>
+</ul>
+<p>R-YORS/HIMON flashed and running.</p>
+<ul>
+<li>The bridge should use the WDCMONv2 style of loading and starting code because</li>
+</ul>
+<p>that is what a fresh board already has. After it starts, the bridge converts the flash layout to R-YORS/STR8/HIMON.</p>
+<ul>
+<li>The bridge should use the same kind of simple program structure that BSO2</li>
+</ul>
+<p>used around the WDC monitor style: a code region, a visible <code>WDC</code>-style signature, fixed reset/NMI/IRQ jump trampolines, a documented cold-start routine, and a tiny board I/O/FTDI API linked at a known load address.</p>
+<ul>
+<li>That structure is the style to preserve, not literal BSO2 code. The new</li>
+</ul>
+<p>bridge&#39;s job is to identify the board, verify assumptions, and reflash the board into STR8/HIMON.</p>
+<ul>
+<li>Preserve useful WDC-style ideas such as a board/firmware signature block and</li>
+</ul>
+<p>fixed jump-vector/service entries. Those make the bridge self-identifying and give the installer stable places to call without needing a full symbolic linker on the board.</p>
+<ul>
+<li>The goal is field installation without an external ROM/flash programmer:</li>
+</ul>
+<p>start from WDCMONv2, load the bridge, verify the board, flash STR8/HIMON, and reboot into R-YORS.</p>
+<ul>
+<li>WDCMONv2 is the entry ramp, not the final runtime owner. After installation,</li>
+</ul>
+<p>R-YORS boots through STR8 and normal operation belongs to HIMON.</p>
+<ul>
+<li>Author preference: when available, the cleanest installation path is still to</li>
+</ul>
+<p>program the flash/ROM directly with a T48 programmer. The WDCMONv2 bridge is for new users who have the stock board and want to reach R-YORS without first adopting extra programmer hardware or WDC&#39;s full toolchain.</p>
+<ul>
+<li>The migration bridge is a future option, not a committed V0 feature. It may</li>
+</ul>
+<p>never be implemented, or it may ship with more or fewer features depending on what STR8, the board, and new-user installation actually require.</p>
+<ul>
+<li>Later, the WDCMONv2 bridge should offer to preserve the original WDCMONv2/base</li>
+</ul>
+<p>image, bridge image, or provenance notes before conversion. That is a TODO for the bridge/install path, not today&#39;s STR8 RAM proof.</p>
+<ul>
+<li>Bank 0 starts as an optional base-image hold slot, but STR8 can enroll it into</li>
+</ul>
+<p>automatic backup rotation with a one-way in-flash flag. After enrollment, bank 0 is the oldest rotating backup slot.</p>
+<h2 id="assembler-direction">Assembler Direction</h2>
+<ul>
+<li>Treat <code>A [addr] [label:] MMM [operand] .</code> as the one-shot assembler shape.</li>
+<li>Support forward labels in v1 through fixup records.</li>
+<li>Prefer RAM staging for flash targets when source may fail or generate fixups.</li>
+<li>Export only after bytes and fixups are verified.</li>
+<li>Keep <code>DEF</code>, <code>SYM</code>, <code>FIX</code>, <code>RESOLVE</code>, <code>FORGET</code>, and <code>EXPORT</code> in the design</li>
+</ul>
+<p>surface even if early UI hides some of them.</p>
+<ul>
+<li>Treat short IDs/indexes as optional post-resolution handles. Hashes remain</li>
+</ul>
+<p>the catalog discovery key; future RIDX tables can speed hot paths later.</p>
+<ul>
+<li>Treat versioned catalog lookup as candidate selection, not first-match:</li>
+</ul>
+<p>exact ABI version, minimum-compatible version, and latest-compatible lookup are different policies. HIMON and ASM can use compatible latest records when the caller allows it. STR8 V0 does not use FNV/catalog lookup; future STR8-N/STRAIGHTEN may participate in catalog scan/repair after the image-recovery path is stable.</p>
+<ul>
+<li>Keep PACK5/3x5 as a candidate for compact 3-letter mnemonic tables, because</li>
+</ul>
+<p>three 5-bit characters fit in two bytes.</p>
+<h2 id="flash-direction">Flash Direction</h2>
+<ul>
+<li>Keep bank 3 cleaner for boot/current-monitor/catalog/trampoline material. The</li>
+</ul>
+<p>physical <code>$F000-$FFFF</code> sector contains STR8 and vectors, but only the chosen STR8 window is reserved from ordinary writes.</p>
+<ul>
+<li>For the first STR8 recovery model, restore uses a whole 32K bank 0, 1, or 2</li>
+</ul>
+<p>image as the source for bank 3, writes ordinary bank 3 image bytes, and skips the selected STR8 protected window unless explicit STR8 install/update is requested. Automatic backup rotates bank 2 to bank 1 and bank 3 to bank 2 until <code>E</code> enrolls bank 0. After enrollment, backup rotates bank 1 to bank 0, bank 2 to bank 1, and bank 3 to bank 2.</p>
+<ul>
+<li>Let R-YORS define scan, verify, write, commit, and later condense policy,</li>
+</ul>
+<p>with shared flash primitives where that makes sense. HIMON/maintenance owns catalog condense first; future STR8-N/STRAIGHTEN may participate in catalog scan/repair later without requiring ownership of a user system&#39;s catalog.</p>
+<ul>
+<li>Split future flash protection into operation-context guards rather than one</li>
+</ul>
+<p>global writable range. Keep <code>FLASH_ADDR_ALLOWED_XY</code> as the conservative HIMON <code>L F</code> guard, keep raw erase/program routines as mechanism, and let STR8 define separate backup, restore, install/update, and bank-0-enrollment policies.</p>
+<ul>
+<li>Consider a future advanced STR8 or HIMON maintenance mode for sector-level</li>
+</ul>
+<p>work: select source bank/sector, select destination bank/sector, erase the selected destination sector with confirmation, copy one sector to another, and verify by read-back compare. This is good for rescue/lab work, bad for the tiny V0 rescue prompt, and must not change Bank 0 rotation policy except through the normal <code>E</code> enrollment command.</p>
+<ul>
+<li>Treat future flash GC as append/invalidate/reclaim instead of in-place edits:</li>
+</ul>
+<p>mark records or sections stale, prepare a compacted sector image in RAM, relink copied records when needed, erase the old 4K sector, then write and verify the prepared image.</p>
+<ul>
+<li>Treat future <code>CONDENSE</code>, possibly exposed as an operator-friendly <code>PACK</code></li>
+</ul>
+<p>command, as explicit maintenance for managed flash datasets: RCAT/RREC, hash/name records, message templates, movable code records, persistent data, and staging areas. It is a long-term direction, not a current STR8 V0 or HIMON command.</p>
+<ul>
+<li>Explore LOC, &quot;link on copy&quot;, for flash compaction: copied catalog records or</li>
+</ul>
+<p>modules are relinked to their new addresses before the rewritten sector becomes live.</p>
+<ul>
+<li>Store compressed command text only when it is smaller than raw text after</li>
+</ul>
+<p>flags/headers.</p>
+<ul>
+<li>Use byte-aligned RLE as the first binary <code>RBODY</code> compression direction, with</li>
+</ul>
+<p>special run forms for <code>$00</code>, <code>$20</code>, and <code>$FF</code> under consideration. Do not commit opcode ranges until the decoder shape is proven small.</p>
+<ul>
+<li>Do not use a board LED as proof of flash correctness. A flash chip-select LED</li>
+</ul>
+<p>may be tied to a narrower decode than the banked ROM window, may see only very short command/read pulses, or may be invisible without pulse stretching. Flash software must report success from readback verification, not from LED state.</p>
+<ul>
+<li>Keep separate flash result facts:</li>
+<li>command accepted/completed without timeout</li>
+<li>byte readback equals the requested programmed value</li>
+<li>whole 4K window/sector readback equals the staged image</li>
+<li>current byte/window still contains <code>1</code> bits that can be flipped to <code>0</code></li>
+<li>A successful byte program does not mean the byte is no longer writable. Flash</li>
+</ul>
+<p>can only change <code>1</code> bits to <code>0</code> bits until erase. If the verified byte is not <code>$00</code>, its remaining <code>1</code> bits are still flippable. For example, <code>$FE</code> verifies as a successful program but still has seven flippable bits.</p>
+<ul>
+<li>Future flash query/status routines should distinguish:</li>
+<li>window is fully erased: every byte is <code>$FF</code></li>
+<li>byte/window has at least one flippable bit: at least one bit is still <code>1</code></li>
+<li>byte/window has no flippable bits: every checked bit is already <code>0</code></li>
+<li>desired byte can be programmed without erase: <code>(current &amp; desired) == desired</code></li>
+<li>A future RAM-staged flash worker can return a compact kind/status byte rather</li>
+</ul>
+<p>than carry alone. Carry should remain the quick success/fail signal; a kind byte can describe timeout, illegal <code>0 -&gt; 1</code>, verified, erased, partially flippable, or exhausted/no-flippable-bits state for diagnostics and STR8 planning.</p>
+<h2 id="documentation-direction">Documentation Direction</h2>
+<ul>
+<li>Keep <code>DOC/GUIDES/INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>REF.md</code>, <code>XREF.md</code>,</li>
+</ul>
+<p><code>BIB.md</code>, and <code>HASH_MAP.md</code> consistent as the stable guide spine.</p>
+<ul>
+<li>Keep <code>HIMON_MAP.md</code> plus <code>HIMON_EDGE_DUMP.md</code> as the current HIMON</li>
+</ul>
+<p>map/evidence pair.</p>
+<ul>
+<li>Add a future generator only if the guide set starts drifting again.</li>
+</ul>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/FUTURE.md</code>. Source modified: <time>2026-05-13T21:47:37Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

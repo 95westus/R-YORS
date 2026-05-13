@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STR8 Flash Update Proposal - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="str8-flash-update-proposal">STR8 Flash Update Proposal</h1>
+<p>This is a proposal note for STR8 flash update behavior. The first-pass <code>M</code> physical flash map is implemented; the <code>U H</code> and <code>U S</code> update commands remain future command proposals.</p>
+<p>The direction is deliberately simple:</p>
+<pre><code class="language-text">HIMON L F stays conservative.
+STR8 owns recovery and dangerous flash update flows.
+STR8 should be able to update HIMON.
+STR8 should also have an explicit, harder-to-trigger option to update STR8.</code></pre>
+<h2 id="command-shape">Command Shape</h2>
+<p>Keep ordinary STR8 small, but give it a few clear update/report verbs:</p>
+<pre><code class="language-text">M    map banks/sectors with condensed used/erased status
+U H  update HIMON body or normal ROM image region
+U S  update STR8 protected window/top sector</code></pre>
+<p><code>M</code> is the report command because the operator question is &quot;show me the flash map.&quot; <code>F</code> should stay reserved for a broader flash submenu or dangerous flash tools. <code>C</code> should stay available for future condense/compact language rather than meaning this cheap physical map.</p>
+<p><code>U S</code> should require a stronger confirmation than ordinary restore/update work:</p>
+<pre><code class="language-text">STR8&gt;U S
+UPDATE STR8? TYPE STR8:</code></pre>
+<p>This should not directly stream bytes into <code>$FA00</code>. It should stage a complete top-sector transaction, preserve required bytes, erase/write/verify, then reset.</p>
+<h2 id="m-map-report">M Map Report</h2>
+<p><code>M</code> scans bank by bank, sector by sector, then restores bank 3 before returning to the prompt.</p>
+<p>Current first-pass output shape:</p>
+<pre><code class="language-text">STR8&gt;M
+BANK0     BANK1     BANK2     BOOT
+++--++--  --++--++  --------  ++++++++
+STR8&gt;</code></pre>
+<p>Each status character position maps to one 4K sector:</p>
+<pre><code class="language-text">8=$8000 9=$9000 A=$A000 B=$B000 C=$C000 D=$D000 E=$E000 F=$F000</code></pre>
+<p>The first line is a label line. Current labels can show bank numbers plus the boot role, because bank 3 is the bank the board boots from. Future labels may be role names or catalog names without changing the status grammar:</p>
+<pre><code class="language-text">BASE      RECOV     HIMON     DATA
+++--++--  --++--++  --------  ++++++++</code></pre>
+<p>Status symbols:</p>
+<pre><code class="language-text">- = erased/unused, all bytes are $FF
++ = used, at least one byte is not $FF</code></pre>
+<p>A later detail mode or separate command can reuse the same eight sector positions for semantic labels:</p>
+<pre><code class="language-text">BOOT
+----+HHS</code></pre>
+<p>Possible semantic symbols:</p>
+<pre><code class="language-text">- = erased/unused, all bytes are $FF
++ = used, not yet classified
+H = HIMON-like sector
+S = STR8/top-sector boot material</code></pre>
+<p>The first-pass <code>M</code> report is physical and cheap. The semantic display can arrive after STR8 has recognizers for WDCMON, HIMON, STR8, RCAT/data records, or stored bank roles.</p>
+<h2 id="erase-policy">Erase Policy</h2>
+<p>STR8 should prefer the obvious whole-sector rule over a clever one-byte poll:</p>
+<pre><code class="language-text">if sector is all $FF:
+  skip erase
+
+if sector is not all $FF:
+  issue sector erase
+  wait until the whole sector scans all $FF
+
+if erase command fails or full-sector erased wait times out:
+  stop</code></pre>
+<p>The important distinction:</p>
+<pre><code class="language-text">one-byte polling asks &quot;did one watched byte finish?&quot;
+whole-sector waiting asks &quot;is the sector actually erased?&quot;</code></pre>
+<p>For STR8, whole-sector waiting is slower but clearer and safer.</p>
+<h2 id="routine-shape">Routine Shape</h2>
+<p>Build this as routines made from routines:</p>
+<pre><code class="language-text">STR8_CMD_M
+  RAM-resident scan fills four map-mask bytes
+  scan restores bank 3
+  print M/map header
+  for bank 0..3
+    print eight mask bits as - or +
+
+STR8_ENSURE_SECTOR_ERASED
+  call STR8_SECTOR_ERASED
+  if erased: success
+  issue erase command
+  call STR8_WAIT_SECTOR_ERASED
+
+STR8_WAIT_SECTOR_ERASED
+  repeat until timeout
+    call STR8_SECTOR_ERASED
+    if erased: success
+  fail
+
+STR8_SECTOR_ERASED
+  scan one selected 4K sector
+  return C=1 when all bytes are $FF
+  return C=0 when any byte is not $FF</code></pre>
+<h2 id="mermaid-map">Mermaid Map</h2>
+<pre class="mermaid">flowchart TD
+    RESET[&quot;Reset&quot;] --&gt; STR8[&quot;STR8&quot;]
+    STR8 --&gt; BOOT{&quot;S pressed during countdown?&quot;}
+    BOOT --&gt;|no| HIMON[&quot;HIMON warm boot&quot;]
+    BOOT --&gt;|yes| PROMPT[&quot;STR8 prompt&quot;]
+
+    PROMPT --&gt; M[&quot;M: condensed flash map&quot;]
+    M --&gt; SCAN_BANK[&quot;For each bank 0..3&quot;]
+    SCAN_BANK --&gt; SCAN_SECTOR[&quot;For each sector 8..F&quot;]
+    SCAN_SECTOR --&gt; SECTOR_ERASED[&quot;STR8_SECTOR_ERASED&quot;]
+    SECTOR_ERASED --&gt; REPORT[&quot;Print - or +&quot;]
+    REPORT --&gt; RESTORE_B3[&quot;Restore bank 3&quot;]
+    RESTORE_B3 --&gt; PROMPT
+    PROMPT --&gt; DETAIL[&quot;future detail scan: semantic sector labels&quot;]
+    DETAIL --&gt; SEMANTIC[&quot;Example BOOT = ----+HHS&quot;]
+    SEMANTIC --&gt; PROMPT
+
+    PROMPT --&gt; UH[&quot;U H: update HIMON/body&quot;]
+    PROMPT --&gt; US[&quot;U S: update STR8/top sector&quot;]
+    US --&gt; CONFIRM[&quot;Require literal STR8 confirmation&quot;]
+    UH --&gt; STAGE[&quot;Stage complete sector/image&quot;]
+    CONFIRM --&gt; STAGE
+
+    STAGE --&gt; PRESERVE[&quot;Preserve protected bytes, config, vectors&quot;]
+    PRESERVE --&gt; ENSURE[&quot;STR8_ENSURE_SECTOR_ERASED&quot;]
+    ENSURE --&gt; ALREADY{&quot;Sector all $FF?&quot;}
+    ALREADY --&gt;|yes| PROGRAM[&quot;Program non-$FF bytes&quot;]
+    ALREADY --&gt;|no| ERASE[&quot;Issue erase command&quot;]
+    ERASE --&gt; WAIT[&quot;Wait for whole sector all $FF&quot;]
+    WAIT --&gt;|timeout/fail| STOP[&quot;Stop and report failure&quot;]
+    WAIT --&gt;|erased| PROGRAM
+    PROGRAM --&gt; VERIFY[&quot;Verify staged image by read-back&quot;]
+    VERIFY --&gt;|fail| STOP
+    VERIFY --&gt;|ok| RESET2[&quot;Reset or return through bank 3&quot;]</pre>
+<h2 id="open-refinements">Open Refinements</h2>
+<ul>
+<li>Decide whether later displays need an optional verbose <code>ERASED/USED</code> mode.</li>
+<li>Decide whether <code>U H</code> receives S-records, a full bank image, or both.</li>
+<li>Decide whether <code>U S</code> requires source image hash/version checks before</li>
+</ul>
+<p>staging.</p>
+<ul>
+<li>Decide how much progress output STR8 should print during erase/program/verify.</li>
+<li>Decide whether failures should report the first bad bank/sector/address.</li>
+</ul>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8_FLASH_UPDATE_PROPOSAL.md</code>. Source modified: <time>2026-05-08T01:43:32Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
+</body>
+</html>
