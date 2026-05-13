@@ -20,6 +20,8 @@ CMD_B:
                         BNE             CMD_USAGE_B
                         JSR             CMD_REQUIRE_EOL
                         BCC             CMD_USAGE_B
+                        JSR             DBG_REQUIRE_PATCHABLE_ADDR
+                        BCC             CMD_B_DONE
                         JSR             DBG_SET_BP
                         BCC             CMD_USAGE_B
                         LDX             #<MSG_BP_SET
@@ -27,6 +29,8 @@ CMD_B:
                         JSR             HIM_WRITE_HBSTRING
                         JSR             DBG_PRINT_CMD_ADDR
                         JSR             SYS_WRITE_CRLF
+                        RTS
+CMD_B_DONE:
                         RTS
 
 CMD_B_CLEAR:
@@ -107,8 +111,6 @@ CMD_USAGE_S:
                         RTS
 
 DBG_SET_BP:
-                        JSR             DBG_REQUIRE_PATCHABLE_ADDR
-                        BCC             DBG_SET_BP_FAIL
                         JSR             DBG_FIND_BP_ADDR
                         BCS             DBG_SET_BP_OK
                         JSR             DBG_FIND_BP_FREE
@@ -385,5 +387,9 @@ DBG_REQUIRE_PATCHABLE_ADDR:
                         SEC
                         RTS
 DBG_REQUIRE_PATCHABLE_ADDR_FAIL:
+                        LDX             #<MSG_DBG_RAM
+                        LDY             #>MSG_DBG_RAM
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
                         CLC
                         RTS
