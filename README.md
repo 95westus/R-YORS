@@ -13,11 +13,16 @@ Pronounced **are-yors**.
 
 ## ### #HASH# FLASH ###
 
+Newest alerts appear first.
+
 ```text
 ########################################################################
 ##                          #HASH# FLASH                              ##
 ##        REHASH / FLASHBACK / COMMAND-SURFACE ALERT                  ##
 ########################################################################
+2026-05-13T12:53-05:00 WLP2 RAM-only debug is the new rule: debug patching does
+                             not target ROM/flash. RREC resolver/search-order
+                             notes are evolving.
 2026-05-11T21:33-05:00 WLP2 Command rules changed: destructive commands now
                              need 4+ characters, HIMON range/search syntax is
                              being revised, and STR8 keeps R as reset.
