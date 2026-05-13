@@ -45,6 +45,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-command-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/HIMON_COMMAND_MAP.md." }
     [pscustomobject]@{ Target = "hash-routine-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/HASH_ROUTINE_MAP.md." }
     [pscustomobject]@{ Target = "cmd-flow-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/CMD_FLOW_MAP.md." }
+    [pscustomobject]@{ Target = "stack-depth-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/STACK_DEPTH_MAP.md for HIMON/STR8 stack high-water paths." }
     [pscustomobject]@{ Target = "interrupt-vector-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/INTERRUPT_VECTOR_MAP.md for IRQ/NMI/BRK vectors." }
     [pscustomobject]@{ Target = "irq-vector-map"; Category = "docs"; Description = "Alias for interrupt-vector-map." }
     [pscustomobject]@{ Target = "map-of-maps"; Category = "docs"; Description = "Regenerate DOC/GENERATED/MAP_OF_MAPS.md." }

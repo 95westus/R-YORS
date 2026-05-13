@@ -67,6 +67,11 @@ This project is AI-assisted. I am better at reading 6502 code than writing it,
 so AI is used as a working companion for assembly, documentation, design
 review, and turning rough intent into testable source.
 
+For documentation work, keep one canonical home for each idea. Use
+[DOC/GUIDES/GLOSSARY.md](DOC/GUIDES/GLOSSARY.md) for terminology and
+[DOC/GUIDES/DECISIONS.md](DOC/GUIDES/DECISIONS.md) for documentation-shape
+edicts before spreading wording into indexes, maps, or generated views.
+
 ## Carry Convention
 
 R-YORS generally treats the 6502 carry flag as an affirmative status bit:

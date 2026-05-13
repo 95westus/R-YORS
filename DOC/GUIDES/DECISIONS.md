@@ -291,6 +291,32 @@ A [addr] [label:] MMM [operand] .
 - `BIB.md` records source corpus/provenance only.
 - `HIMON_MAP.md` is the readable HIMON edge/capability map.
 - `HIMON_EDGE_DUMP.md` is the raw direct-edge evidence.
+- Each concept should have one canonical home. Other documents may give a short
+  summary and a link, but should not restate the full explanation.
+- Avoid reader pinball: if document A points to document B as the authority for
+  a concept, document B should not require document A to understand that same
+  concept. Back-links are for navigation, not required reading loops.
+- When updating docs, update the canonical home first, then indexes, maps, and
+  cross-references. Generated docs should remain evidence or views, not the
+  primary hand-written explanation.
+- Use `flowchart` for process or decision sequence. Use `graph` for node/edge
+  structure such as call paths or stack-depth paths. Use `map`, `guide map`,
+  `source-derived map`, `chart`, and `edge dump` according to
+  [GLOSSARY.md](./GLOSSARY.md).
+
+```mermaid
+flowchart TD
+    IDEA["New or changed explanation"] --> KNOWN{"Canonical home exists?"}
+    KNOWN -->|yes| HOME["Update that home first"]
+    KNOWN -->|no| CHOOSE["Choose one owning guide"]
+    CHOOSE --> HOME
+    HOME --> SUMMARY["Other docs get a short summary"]
+    SUMMARY --> LINK["Point once to the canonical home"]
+    LINK --> LOOP{"Does the home require the linking doc?"}
+    LOOP -->|yes| FIX["Break the required-reading loop"]
+    LOOP -->|no| VIEWS["Refresh indexes, maps, xrefs, and generated views"]
+    FIX --> HOME
+```
 
 ## Historical Spine
 

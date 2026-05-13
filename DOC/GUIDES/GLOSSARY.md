@@ -50,6 +50,78 @@ meaning is required.
   needed.
 - API: named software interface; usually `routine contract` is clearer here.
 
+## Map, Graph, And Flow Terms
+
+Project note: "Words have different meanings [now]" is Walter's shorthand for
+the moment a project word starts carrying too many meanings. When that happens,
+add a precise glossary term instead of relying on the overloaded bare word.
+
+- diagram: any renderable visual explanation. Use a more specific word when the
+  visual has a known role.
+- chart: a visual or table-like comparison of values, categories, states, or
+  summaries. A chart is not necessarily a node/edge structure.
+- graph: nodes and edges. Use this for call relationships, dependency
+  structure, path structure, and analysis output.
+- flowchart: a process, routing, or decision diagram where arrows mostly mean
+  "then", "if", or "next".
+- map: a relationship or orientation view that helps a reader know where things
+  are, who owns them, or what to open next.
+- guide map: a human-readable map that explains relationships, ownership, or
+  reading/navigation choices.
+- source-derived map: generated documentation extracted from source labels,
+  calls, records, or build metadata.
+- edge dump: a raw source edge listing, usually direct `JSR`/`JMP` evidence.
+- atlas: a map of maps; it tells which document to open, not the full content
+  from those documents.
+- hash map: the guide map of hash concepts and ownership in
+  [HASH_MAP.md](./HASH_MAP.md). It is not a hash table implementation.
+- hash table: an implementation data structure for lookup by hash/key.
+- stack depth map: source-derived stack high-water documentation. If it says
+  `graph view`, it should include a renderable Mermaid node/edge diagram.
+
+```mermaid
+flowchart TD
+    ASK["Need a relationship view?"] --> KIND{"What kind?"}
+    KIND -->|comparison or summary| CHART["chart"]
+    KIND -->|nodes and edges| GRAPH["graph"]
+    KIND -->|process or decision sequence| FLOW["flowchart"]
+    KIND -->|human navigation or ownership| GUIDE["guide map"]
+    KIND -->|generated from source/build evidence| SOURCE["source-derived map"]
+    KIND -->|raw call/jump evidence| EDGE["edge dump"]
+    KIND -->|map of maps| ATLAS["atlas"]
+    FLOW --> MERMAID["include Mermaid"]
+    GRAPH --> MERMAID
+```
+
+## Document Structure Terms
+
+- document: one named file or stable rendered artifact with one primary purpose.
+- title: the document's main name, normally the single H1 heading.
+- subtitle: a short descriptive line under the title. It is not a section.
+- heading: a structural label that opens a section.
+- chapter: a major division in a book/manual-scale document. Do not use it for
+  every short guide.
+- section: a named division under a title or chapter, normally H2 in Markdown.
+- subsection: a nested division under a section, normally H3 or deeper.
+- paragraph: a prose block separated from other prose by blank lines.
+- outline: a hierarchical plan or structure for a document, argument, or system.
+- item: one bullet, numbered entry, table row, or checklist row.
+- clause: a small numbered or lettered rule/requirement unit. Use it when the
+  text needs stable reference points, not just prose flow.
+- doc page: a rendered page in a paginated output such as PDF. Markdown files do
+  not have stable pages until rendered.
+- doc line: a line number in a source or Markdown file. Use it for pinpointing
+  an edit location, not as the conceptual home of an idea.
+- paragraph numbering: period-flavored late-1970s/1980s term for hierarchical
+  numbers or letters attached to headings, clauses, or paragraphs, such as
+  `1`, `1a`, `1a1`, or `1a1b2c`. Modern synonyms include outline numbering,
+  hierarchical numbering, alphanumeric outline numbering, section numbering,
+  and clause numbering.
+- outline style: word-processor term for a reusable paragraph-numbering scheme.
+  Legal outline and automatic paragraph numbering are adjacent period terms.
+- paragraph locator: the R-YORS name for a compact paragraph-numbering reference
+  such as `1a1b2c`.
+
 ## Ownership Terms
 
 - owns: responsible for policy, mutation, and final safety.
@@ -134,7 +206,6 @@ docs.
 - symbol hash: assembler/catalog lookup key for labels, routines, and commands.
 - hash collision: two names produce the same stored hash; name text or a wider
   stored hash must prove identity.
-- hash map: the design map of where hashes are used and what each hash means.
 
 ## Record Terms
 

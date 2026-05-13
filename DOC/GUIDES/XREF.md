@@ -141,6 +141,12 @@ are kept out of generated operational maps.
 
 ## Cross-Reference Rules
 
+- Cross-references should name the canonical home for an idea, not create a
+  loop of required reading.
+- A related document may summarize an idea in one or two lines, then point to
+  the canonical home. Do not copy the full explanation into multiple guides.
+- Back-links are allowed as navigation, but not as a prerequisite to understand
+  the current section.
 - Use `MODULE`/`ENDMOD` around each logical unit that should export symbols.
 - `XDEF` names a symbol provided by a source module.
 - `XREF` names a symbol required from another source module.

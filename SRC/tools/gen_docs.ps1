@@ -85,7 +85,8 @@ $operationalSourceSpecs = @(
     'TEST/apps/himon/himon.asm',
     'TEST/apps/himon/*.inc',
     'TEST/apps/himon/fnv1a-fold.asm',
-    'TEST/apps/str8/str8.asm'
+    'TEST/apps/str8/str8.asm',
+    'TEST/apps/str8/str8-worker.asm'
 )
 
 $excludedOperationalSources = @(
@@ -119,12 +120,16 @@ $xdefPattern = '^\s*XDEF\s+([A-Za-z_][A-Za-z0-9_]*)\b'
 $xrefPattern = '^\s*XREF\s+([A-Za-z_][A-Za-z0-9_]*)\b'
 $labelPattern = '^\s*([A-Za-z_][A-Za-z0-9_]*):'
 $callPattern = '^\s*(?:[A-Za-z_?][A-Za-z0-9_?]*:\s*)?(JSR|JMP)\s+([A-Za-z_?][A-Za-z0-9_?]*)\b'
+$instructionPattern = '^\s*(?:[A-Za-z_?][A-Za-z0-9_?]*:\s*)?([A-Za-z]{2,4})\b(?:\s+([^;]+))?'
+
+$stackTrackedOps = @('PHA', 'PHP', 'PHX', 'PHY', 'PLA', 'PLP', 'PLX', 'PLY', 'JSR', 'JMP', 'BRK', 'TXS')
 
 $routines = New-Object System.Collections.Generic.List[object]
 $labels = New-Object System.Collections.Generic.List[object]
 $xdefs = New-Object System.Collections.Generic.List[object]
 $xrefs = New-Object System.Collections.Generic.List[object]
 $edges = New-Object System.Collections.Generic.List[object]
+$stackEvents = New-Object System.Collections.Generic.List[object]
 
 foreach ($file in $files) {
     $rel = Get-DocPath -Path (Get-RelPath -Root $root -Path $file.FullName)
@@ -204,6 +209,26 @@ foreach ($file in $files) {
                 })
             }
         }
+
+        if ($current -and $line -match $instructionPattern) {
+            $op = $matches[1].ToUpperInvariant()
+            if ($stackTrackedOps -contains $op) {
+                $operand = ''
+                if ($matches.Count -gt 2) { $operand = $matches[2].Trim() }
+                $target = ''
+                if ($op -in @('JSR', 'JMP') -and $operand -match '^([A-Za-z_?][A-Za-z0-9_?]*)\b') {
+                    $target = $matches[1]
+                }
+                $stackEvents.Add([pscustomobject]@{
+                    Routine = $current
+                    Op = $op
+                    Target = $target
+                    Operand = $operand
+                    File = $rel
+                    Line = $lineNo
+                })
+            }
+        }
     }
 }
 
@@ -246,6 +271,428 @@ $header = @(
     'Scope: operational HIMON/STR8 source plus ROM support; excludes harnesses, proof apps, games, ACIA/PIA, and local generated-language images.',
     ''
 )
+
+function New-StackKey {
+    param([string]$File, [string]$Name)
+    return "$File::$Name"
+}
+
+function Get-StackFileFromKey {
+    param([string]$Key)
+    $parts = $Key -split '::', 2
+    return $parts[0]
+}
+
+function Get-StackNameFromKey {
+    param([string]$Key)
+    $parts = $Key -split '::', 2
+    if ($parts.Count -gt 1) { return $parts[1] }
+    return $Key
+}
+
+function New-StackScopeSet {
+    param([object[]]$Files)
+    $set = @{}
+    foreach ($file in ($Files | Sort-Object -Unique)) {
+        if (-not [string]::IsNullOrWhiteSpace($file)) {
+            $set[$file] = $true
+        }
+    }
+    return $set
+}
+
+function Join-StackPath {
+    param(
+        [object[]]$Path,
+        [int]$MaxNodes = 18
+    )
+    $items = @($Path | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+    if ($items.Count -gt $MaxNodes) {
+        $items = @($items | Select-Object -First $MaxNodes) + @('...')
+    }
+    return ($items -join ' -> ')
+}
+
+function Escape-MdCell {
+    param([string]$Value)
+    if ($null -eq $Value) { return '' }
+    return ($Value -replace '\|', '\|')
+}
+
+function Format-StackPathCell {
+    param([object[]]$Path)
+    return '`' + (Escape-MdCell (Join-StackPath -Path $Path)) + '`'
+}
+
+function Escape-MermaidLabel {
+    param([string]$Value)
+    if ($null -eq $Value) { return '' }
+    $text = $Value -replace '"', "'"
+    $text = $text -replace '\[', '('
+    $text = $text -replace '\]', ')'
+    return $text
+}
+
+function Get-StackMermaidNodeId {
+    param(
+        [string]$Group,
+        [string]$Label,
+        [hashtable]$NodeIds,
+        [hashtable]$UsedIds
+    )
+    if ($NodeIds.ContainsKey($Label)) {
+        return $NodeIds[$Label]
+    }
+
+    $base = ($Label.ToUpperInvariant() -replace '[^A-Z0-9]+', '_').Trim('_')
+    if ([string]::IsNullOrWhiteSpace($base)) { $base = 'NODE' }
+    if ($base.Length -gt 44) { $base = $base.Substring(0, 44) }
+
+    $candidate = "SD_${Group}_${base}"
+    $suffix = 2
+    while ($UsedIds.ContainsKey($candidate)) {
+        $candidate = "SD_${Group}_${base}_${suffix}"
+        $suffix += 1
+    }
+
+    $NodeIds[$Label] = $candidate
+    $UsedIds[$candidate] = $true
+    return $candidate
+}
+
+function Get-StackMermaidMapLines {
+    param(
+        [string]$Group,
+        [object[]]$Rows,
+        [int]$MaxNodes = 14
+    )
+
+    $lines = @()
+    $nodeDepth = @{}
+    $edgeDepth = @{}
+    $edgeCount = @{}
+    $edgeFrom = @{}
+    $edgeTo = @{}
+
+    foreach ($row in $Rows) {
+        $title = ('{0} {1}' -f $row.Command, $row.Entry).Trim()
+        $pathItems = @($row.Path | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+        $shownItems = @($pathItems | Select-Object -First $MaxNodes)
+        $items = @($title) + @($shownItems)
+        if ($pathItems.Count -gt $shownItems.Count) {
+            $items += '...'
+        }
+
+        foreach ($item in $items) {
+            $label = [string]$item
+            if (-not $nodeDepth.ContainsKey($label) -or $row.Bytes -gt $nodeDepth[$label]) {
+                $nodeDepth[$label] = $row.Bytes
+            }
+        }
+
+        for ($i = 0; $i -lt ($items.Count - 1); $i++) {
+            $from = [string]$items[$i]
+            $to = [string]$items[$i + 1]
+            $key = "$from`t$to"
+            $edgeFrom[$key] = $from
+            $edgeTo[$key] = $to
+            if (-not $edgeDepth.ContainsKey($key) -or $row.Bytes -gt $edgeDepth[$key]) {
+                $edgeDepth[$key] = $row.Bytes
+            }
+            if (-not $edgeCount.ContainsKey($key)) { $edgeCount[$key] = 0 }
+            $edgeCount[$key] += 1
+        }
+    }
+
+    $nodeIds = @{}
+    $usedIds = @{}
+    foreach ($key in ($edgeDepth.Keys | Sort-Object -Property @{Expression={$edgeDepth[$_]};Descending=$true}, @{Expression={$edgeCount[$_]};Descending=$true}, @{Expression={$edgeFrom[$_]}}, @{Expression={$edgeTo[$_]}})) {
+        $from = $edgeFrom[$key]
+        $to = $edgeTo[$key]
+        $fromId = Get-StackMermaidNodeId -Group $Group -Label $from -NodeIds $nodeIds -UsedIds $usedIds
+        $toId = Get-StackMermaidNodeId -Group $Group -Label $to -NodeIds $nodeIds -UsedIds $usedIds
+        $fromLabel = Escape-MermaidLabel ("{0}<br/>max {1} bytes" -f $from, $nodeDepth[$from])
+        $toLabel = Escape-MermaidLabel ("{0}<br/>max {1} bytes" -f $to, $nodeDepth[$to])
+        $lines += ('    {0}["{1}"] -->|{2}| {3}["{4}"]' -f $fromId, $fromLabel, $edgeDepth[$key], $toId, $toLabel)
+    }
+
+    return $lines
+}
+
+$labelByKey = @{}
+$labelsByName = @{}
+foreach ($label in $labels) {
+    $key = New-StackKey -File $label.File -Name $label.Name
+    if (-not $labelByKey.ContainsKey($key)) {
+        $labelByKey[$key] = $label
+    }
+    if (-not $labelsByName.ContainsKey($label.Name)) {
+        $labelsByName[$label.Name] = @()
+    }
+    $labelsByName[$label.Name] = @($labelsByName[$label.Name]) + @($label)
+}
+
+$labelNameCounts = @{}
+foreach ($group in ($labels | Group-Object Name)) {
+    $labelNameCounts[$group.Name] = $group.Count
+}
+
+$stackEventsByKey = @{}
+foreach ($event in $stackEvents) {
+    $key = New-StackKey -File $event.File -Name $event.Routine
+    if (-not $stackEventsByKey.ContainsKey($key)) {
+        $stackEventsByKey[$key] = @()
+    }
+    $stackEventsByKey[$key] = @($stackEventsByKey[$key]) + @($event)
+}
+
+function Format-StackNode {
+    param([string]$Key)
+    $file = Get-StackFileFromKey $Key
+    $name = Get-StackNameFromKey $Key
+    if ($labelNameCounts.ContainsKey($name) -and $labelNameCounts[$name] -gt 1) {
+        return "${file}:$name"
+    }
+    return $name
+}
+
+function Resolve-StackTargetKey {
+    param(
+        [string]$SourceFile,
+        [string]$Target,
+        [hashtable]$ScopeSet
+    )
+    if ([string]::IsNullOrWhiteSpace($Target)) { return $null }
+    if ($Target.StartsWith('?')) { return $null }
+
+    if ($Target -eq 'STR8_WORKER_RUN' -and $ScopeSet.ContainsKey('STR8/str8-worker.asm')) {
+        $workerKey = New-StackKey -File 'STR8/str8-worker.asm' -Name 'START'
+        if ($labelByKey.ContainsKey($workerKey) -or $stackEventsByKey.ContainsKey($workerKey)) {
+            return $workerKey
+        }
+    }
+
+    $sameFileKey = New-StackKey -File $SourceFile -Name $Target
+    if ($ScopeSet.ContainsKey($SourceFile) -and ($labelByKey.ContainsKey($sameFileKey) -or $stackEventsByKey.ContainsKey($sameFileKey))) {
+        return $sameFileKey
+    }
+
+    if ($labelsByName.ContainsKey($Target)) {
+        $candidates = @($labelsByName[$Target] | Where-Object { $ScopeSet.ContainsKey($_.File) })
+        if ($candidates.Count -eq 1) {
+            return (New-StackKey -File $candidates[0].File -Name $candidates[0].Name)
+        }
+    }
+
+    return $null
+}
+
+function Get-StackAnalysis {
+    param(
+        [string]$Key,
+        [hashtable]$ScopeSet,
+        [hashtable]$Cache,
+        [string[]]$Visiting
+    )
+
+    $file = Get-StackFileFromKey $Key
+    if (-not $ScopeSet.ContainsKey($file)) {
+        return [pscustomobject]@{ Depth = 0; Path = @(); Unresolved = 0 }
+    }
+    if ($Cache.ContainsKey($Key)) {
+        return $Cache[$Key]
+    }
+    if ($Visiting -contains $Key) {
+        return [pscustomobject]@{ Depth = 0; Path = @((Format-StackNode $Key), 'cycle-cut'); Unresolved = 0 }
+    }
+
+    $events = @()
+    if ($stackEventsByKey.ContainsKey($Key)) {
+        $events = @($stackEventsByKey[$Key] | Sort-Object Line)
+    }
+
+    $display = Format-StackNode $Key
+    $currentDepth = 0
+    $maxDepth = 0
+    $maxPath = @($display)
+    $unresolved = 0
+    $nextVisiting = @($Visiting) + @($Key)
+
+    foreach ($event in $events) {
+        switch ($event.Op) {
+            { $_ -in @('PHA', 'PHP', 'PHX', 'PHY') } {
+                $currentDepth += 1
+                if ($currentDepth -gt $maxDepth) {
+                    $maxDepth = $currentDepth
+                    $maxPath = @($display, ("{0} {1}:{2}" -f $event.Op, $event.File, $event.Line))
+                }
+                continue
+            }
+            { $_ -in @('PLA', 'PLP', 'PLX', 'PLY') } {
+                $currentDepth -= 1
+                if ($currentDepth -lt 0) { $currentDepth = 0 }
+                continue
+            }
+            'TXS' {
+                $currentDepth = 0
+                continue
+            }
+            'BRK' {
+                $candidateDepth = $currentDepth + 3
+                if ($candidateDepth -gt $maxDepth) {
+                    $maxDepth = $candidateDepth
+                    $maxPath = @($display, ("BRK frame {0}:{1}" -f $event.File, $event.Line))
+                }
+                continue
+            }
+            'JSR' {
+                $targetKey = Resolve-StackTargetKey -SourceFile $event.File -Target $event.Target -ScopeSet $ScopeSet
+                if ($targetKey) {
+                    $child = Get-StackAnalysis -Key $targetKey -ScopeSet $ScopeSet -Cache $Cache -Visiting $nextVisiting
+                    $unresolved += $child.Unresolved
+                    $candidateDepth = $currentDepth + 2 + $child.Depth
+                    if ($candidateDepth -gt $maxDepth) {
+                        $maxDepth = $candidateDepth
+                        $maxPath = @($display) + @($child.Path)
+                    }
+                } else {
+                    $unresolved += 1
+                    $candidateDepth = $currentDepth + 2
+                    if ($candidateDepth -gt $maxDepth) {
+                        $maxDepth = $candidateDepth
+                        $targetName = if ($event.Target) { $event.Target } else { $event.Operand }
+                        $maxPath = @($display, ("JSR {0} unresolved" -f $targetName))
+                    }
+                }
+                continue
+            }
+            'JMP' {
+                $targetKey = Resolve-StackTargetKey -SourceFile $event.File -Target $event.Target -ScopeSet $ScopeSet
+                if ($targetKey -and $targetKey -ne $Key) {
+                    $child = Get-StackAnalysis -Key $targetKey -ScopeSet $ScopeSet -Cache $Cache -Visiting $nextVisiting
+                    $unresolved += $child.Unresolved
+                    $candidateDepth = $currentDepth + $child.Depth
+                    if ($candidateDepth -gt $maxDepth) {
+                        $maxDepth = $candidateDepth
+                        $maxPath = @($display) + @($child.Path)
+                    }
+                }
+                continue
+            }
+        }
+    }
+
+    $result = [pscustomobject]@{
+        Depth = $maxDepth
+        Path = $maxPath
+        Unresolved = $unresolved
+    }
+    $Cache[$Key] = $result
+    return $result
+}
+
+function Get-StackRow {
+    param(
+        [string]$Scope,
+        [hashtable]$ScopeSet,
+        [hashtable]$Cache,
+        [string]$Name,
+        [string]$File,
+        [string]$Kind,
+        [int]$BaseBytes = 0,
+        [object[]]$BasePath = @()
+    )
+    $key = New-StackKey -File $File -Name $Name
+    $analysis = Get-StackAnalysis -Key $key -ScopeSet $ScopeSet -Cache $Cache -Visiting @()
+    $label = $null
+    if ($labelByKey.ContainsKey($key)) { $label = $labelByKey[$key] }
+    $path = @($BasePath) + @($analysis.Path)
+    return [pscustomobject]@{
+        Scope = $Scope
+        Kind = $Kind
+        Name = $Name
+        File = $File
+        Line = if ($label) { $label.Line } else { '' }
+        Bytes = $BaseBytes + $analysis.Depth
+        Path = $path
+        Unresolved = $analysis.Unresolved
+    }
+}
+
+function Get-HimonCommandToken {
+    param([string]$Entry)
+    if ($Entry -eq 'CMD_HELP') { return '?' }
+    if ($Entry -eq 'CMD_HASH_INFO') { return '#' }
+    if ($Entry -match '^CMD_([A-Z0-9])(?:_|$)') { return $matches[1] }
+    return $Entry
+}
+
+$sourcePathByDocPath = @{}
+foreach ($file in $files) {
+    $docPath = Get-DocPath -Path (Get-RelPath -Root $root -Path $file.FullName)
+    $sourcePathByDocPath[$docPath] = $file.FullName
+}
+
+$himonCommandRows = New-Object System.Collections.Generic.List[object]
+foreach ($docPath in ($sourcePathByDocPath.Keys | Where-Object { $_ -eq 'HIMON/himon.asm' -or $_ -like 'HIMON/*.inc' } | Sort-Object)) {
+    $sourcePath = $sourcePathByDocPath[$docPath]
+    $sourceLines = Get-Content -LiteralPath $sourcePath
+    $pendingFnv = $null
+    for ($i = 0; $i -lt $sourceLines.Count; $i++) {
+        $line = $sourceLines[$i]
+        if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)_FNV:\s*$') {
+            $pendingFnv = [pscustomobject]@{
+                Name = $matches[1]
+                File = $docPath
+                Line = $i + 1
+                Token = ''
+                Hash = ''
+                SawRecord = $false
+            }
+            continue
+        }
+        if ($pendingFnv -and $line -match "\bDB\b.*'F'\s*,\s*'N'\s*,\s*CMD_FNV_SIG2") {
+            $pendingFnv.SawRecord = $true
+        }
+        if ($pendingFnv -and $line -match ';\s*(\S+)\s+\$([0-9A-Fa-f]{8})\s+EXEC') {
+            $pendingFnv.Token = $matches[1]
+            $pendingFnv.Hash = $matches[2].ToUpperInvariant()
+            continue
+        }
+        if ($pendingFnv -and $line -match '^\s*([A-Za-z_][A-Za-z0-9_]*):') {
+            $entry = $matches[1]
+            if ($entry -notlike '*_FNV' -and $pendingFnv.SawRecord) {
+                $token = $pendingFnv.Token
+                if ([string]::IsNullOrWhiteSpace($token)) {
+                    $token = Get-HimonCommandToken -Entry $entry
+                }
+                $himonCommandRows.Add([pscustomobject]@{
+                    Command = $token
+                    Entry = $entry
+                    Hash = $pendingFnv.Hash
+                    File = $docPath
+                    Line = $i + 1
+                })
+                $pendingFnv = $null
+            } elseif ($entry -notlike '*_FNV') {
+                $pendingFnv = $null
+            }
+            continue
+        }
+        if ($pendingFnv -and $line -notmatch '^\s*(;|$)' -and $line -notmatch '^\s*DB\b') {
+            $pendingFnv = $null
+        }
+    }
+}
+
+$allStackDocFiles = @(
+    @($labels | ForEach-Object { $_.File }) +
+    @($stackEvents | ForEach-Object { $_.File })
+) | Sort-Object -Unique
+$himonStackScope = New-StackScopeSet -Files @($allStackDocFiles | Where-Object { $_ -notlike 'STR8/*' })
+$str8StackScope = New-StackScopeSet -Files @($allStackDocFiles | Where-Object { $_ -notlike 'HIMON/*' })
+$himonStackCache = @{}
+$str8StackCache = @{}
 
 $lines = @('# R-YORS Call Order') + $header
 $lines += '## Files'
@@ -753,6 +1200,224 @@ if ($interruptRoutineHeaders.Count -eq 0) {
 }
 Write-Doc -Name 'INTERRUPT_VECTOR_MAP.md' -Lines $lines
 
+function Get-OwnedStackRows {
+    param(
+        [string]$Scope,
+        [hashtable]$ScopeSet,
+        [hashtable]$Cache,
+        [string]$FilePrefix,
+        [int]$Limit
+    )
+    $rows = @()
+    foreach ($key in ($stackEventsByKey.Keys | Sort-Object)) {
+        $file = Get-StackFileFromKey $key
+        if ($file -notlike "$FilePrefix*") { continue }
+        $name = Get-StackNameFromKey $key
+        $rows += Get-StackRow -Scope $Scope -ScopeSet $ScopeSet -Cache $Cache -Name $name -File $file -Kind 'routine'
+    }
+    return @($rows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Name, File | Select-Object -First $Limit)
+}
+
+$stackRootRows = @()
+$stackRootRows += Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Name 'START' -File 'HIMON/himon.asm' -Kind 'reset entry'
+$stackRootRows += Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Name 'MAIN_LOOP' -File 'HIMON/himon.asm' -Kind 'main loop'
+$stackRootRows += Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Name 'CMD_DISPATCH_HASH' -File 'HIMON/himon.asm' -Kind 'hash dispatcher'
+$stackRootRows += Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Name 'MON_NMI_TRAP_DEBOUNCE' -File 'HIMON/himon.asm' -Kind 'NMI trap body'
+$stackRootRows += Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Name 'MON_BRK_TRAP' -File 'HIMON/himon.asm' -Kind 'BRK trap body'
+$stackRootRows += Get-StackRow -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -Name 'START' -File 'STR8/str8.asm' -Kind 'reset entry'
+$stackRootRows += Get-StackRow -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -Name 'STR8_CMD_LOOP' -File 'STR8/str8.asm' -Kind 'command loop'
+$stackRootRows += Get-StackRow -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -Name 'START' -File 'STR8/str8-worker.asm' -Kind 'RAM worker entry'
+
+function Get-HimonCommandRelatedKeys {
+    param(
+        [string]$Command,
+        [string]$Entry
+    )
+    $exactNames = @($Entry)
+    $startPrefixes = @("${Entry}_")
+
+    if ($Command -match '^[A-Z0-9]$') {
+        $usage = "CMD_USAGE_$Command"
+        $exactNames += $usage
+        $startPrefixes += $usage
+    }
+    if ($Entry -eq 'CMD_HASH_INFO') {
+        $exactNames += 'CMD_HASH_LIST'
+        $startPrefixes += 'CMD_HASH_LIST_'
+    }
+
+    $keys = @()
+    foreach ($label in ($labels | Where-Object { $_.File -like 'HIMON/*' })) {
+        $include = $false
+        foreach ($name in $exactNames) {
+            if ($label.Name -eq $name) {
+                $include = $true
+                break
+            }
+        }
+        if (-not $include) {
+            foreach ($prefix in $startPrefixes) {
+                if ($label.Name.StartsWith($prefix, [System.StringComparison]::Ordinal)) {
+                    $include = $true
+                    break
+                }
+            }
+        }
+        if ($include) {
+                $keys += (New-StackKey -File $label.File -Name $label.Name)
+        }
+    }
+    return @($keys | Sort-Object -Unique)
+}
+
+function Get-BestStackRowForKeys {
+    param(
+        [string]$Scope,
+        [hashtable]$ScopeSet,
+        [hashtable]$Cache,
+        [string[]]$Keys
+    )
+    $best = $null
+    foreach ($key in ($Keys | Sort-Object -Unique)) {
+        $file = Get-StackFileFromKey $key
+        $name = Get-StackNameFromKey $key
+        $row = Get-StackRow -Scope $Scope -ScopeSet $ScopeSet -Cache $Cache -Name $name -File $file -Kind 'command-label'
+        if ($null -eq $best -or $row.Bytes -gt $best.Bytes) {
+            $best = $row
+        }
+    }
+    return $best
+}
+
+$himonCommandDepthRows = @()
+foreach ($cmd in ($himonCommandRows | Sort-Object File, Line, Entry)) {
+    $relatedKeys = Get-HimonCommandRelatedKeys -Command $cmd.Command -Entry $cmd.Entry
+    $row = Get-BestStackRowForKeys -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Keys $relatedKeys
+    if ($null -eq $row) {
+        $row = Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Name $cmd.Entry -File $cmd.File -Kind 'command'
+    }
+    $himonCommandDepthRows += [pscustomobject]@{
+        Command = $cmd.Command
+        Entry = $cmd.Entry
+        Hash = $cmd.Hash
+        Source = ("{0}:{1}" -f $cmd.File, $cmd.Line)
+        Bytes = 4 + $row.Bytes
+        Path = @('CMD_DISPATCH_HASH', 'JSR CMD_EXEC_ADDR', 'JSR CMD_CALL_ADDR') + @($row.Path)
+    }
+}
+
+$str8CommandDefs = @(
+    [pscustomobject]@{ Command = '?'; Entry = 'STR8_CMD_ID'; Meaning = 'ID/state' }
+    [pscustomobject]@{ Command = 'B'; Entry = 'STR8_CMD_BACKUP'; Meaning = 'backup rotation' }
+    [pscustomobject]@{ Command = 'E'; Entry = 'STR8_CMD_ENROLL_B0'; Meaning = 'enroll bank 0' }
+    [pscustomobject]@{ Command = 'G'; Entry = 'STR8_CMD_G_HIMON'; Meaning = 'go HIMON' }
+    [pscustomobject]@{ Command = 'M'; Entry = 'STR8_CMD_M'; Meaning = 'flash map' }
+    [pscustomobject]@{ Command = 'R'; Entry = 'STR8_CMD_RESET'; Meaning = 'reset vector' }
+    [pscustomobject]@{ Command = '0/1/2'; Entry = 'STR8_CMD_RESTORE_A'; Meaning = 'restore selected bank' }
+)
+
+$str8CommandDepthRows = @()
+foreach ($cmd in $str8CommandDefs) {
+    $row = Get-StackRow -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -Name $cmd.Entry -File 'STR8/str8.asm' -Kind 'command' -BaseBytes 2 -BasePath @('STR8_CMD_LOOP', 'JSR STR8_DISPATCH_A')
+    $str8CommandDepthRows += [pscustomobject]@{
+        Command = $cmd.Command
+        Entry = $cmd.Entry
+        Meaning = $cmd.Meaning
+        Source = if ($row.Line) { ("{0}:{1}" -f $row.File, $row.Line) } else { $row.File }
+        Bytes = $row.Bytes
+        Path = $row.Path
+    }
+}
+
+$himonOwnedStackRows = Get-OwnedStackRows -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -FilePrefix 'HIMON/' -Limit 30
+$str8OwnedStackRows = Get-OwnedStackRows -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -FilePrefix 'STR8/' -Limit 30
+
+$lines = @('# R-YORS Stack Depth Map') + $header
+$lines += 'Source-derived stack high-water map for current HIMON and STR8 paths. It is meant to answer: how deep does stack usage go, and which command/routine path gets there?'
+$lines += ''
+$lines += '## Counting Rules'
+$lines += ''
+$lines += '- Counts each active `JSR` return address as 2 bytes.'
+$lines += '- Counts explicit 65C02 pushes `PHA`, `PHP`, `PHX`, and `PHY` as 1 byte each; matching pulls reduce the current explicit depth.'
+$lines += '- Counts `BRK` as a 3-byte hardware frame at the instruction site.'
+$lines += '- Treats direct `JMP label` as a tail path with no extra return address.'
+$lines += '- Uses static, branch-insensitive paths; command rows choose the deepest related command label so split bodies such as `CMD_L_*` are included.'
+$lines += '- Does not add the hardware NMI/IRQ entry frame to trap rows; those rows start at the handler label. Indirect `JMP (...)` targets and unresolved external targets are not expanded.'
+$lines += ''
+$lines += '## Command Stack Map'
+$lines += ''
+$lines += 'Renderable Mermaid node/edge map of command stack paths. Node labels show the highest stack depth seen on any command path that touches that node; edge labels show the highest stack depth seen on that route. The tables below remain the exact byte/source reference.'
+$lines += ''
+$lines += '```mermaid'
+$lines += '%%{init: {"theme": "base", "themeVariables": {"background": "#000000", "mainBkg": "#000000", "primaryColor": "#000000", "primaryBorderColor": "#d8d8d8", "primaryTextColor": "#ffffff", "lineColor": "#ffffff", "secondaryColor": "#000000", "tertiaryColor": "#000000", "clusterBkg": "#000000", "clusterBorder": "#999999", "edgeLabelBackground": "#000000"}}}%%'
+$lines += 'flowchart LR'
+$lines += '    classDef default fill:#000000,stroke:#d8d8d8,color:#ffffff;'
+$lines += '    subgraph HSTACK["HIMON command stack paths"]'
+$lines += Get-StackMermaidMapLines -Group 'HIMON' -Rows ($himonCommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command, Entry)
+$lines += '    end'
+$lines += '    subgraph SSTACK["STR8 command stack paths"]'
+$lines += Get-StackMermaidMapLines -Group 'STR8' -Rows ($str8CommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command, Entry)
+$lines += '    end'
+$lines += '    style HSTACK fill:#000000,stroke:#999999,color:#ffffff'
+$lines += '    style SSTACK fill:#000000,stroke:#999999,color:#ffffff'
+$lines += '```'
+$lines += ''
+$lines += '## Application Entries'
+$lines += ''
+$lines += '| Scope | Entry | Source | Bytes | Deepest path |'
+$lines += '| --- | --- | --- | ---: | --- |'
+foreach ($row in ($stackRootRows | Sort-Object Scope, @{Expression='Bytes';Descending=$true}, Kind)) {
+    $source = if ($row.Line) { ("{0}:{1}" -f $row.File, $row.Line) } else { $row.File }
+    $entry = ('{0} `{1}`' -f $row.Kind, $row.Name)
+    $lines += ('| {0} | {1} | `{2}` | {3} | {4} |' -f $row.Scope, (Escape-MdCell $entry), $source, $row.Bytes, (Format-StackPathCell $row.Path))
+}
+
+$lines += ''
+$lines += '## HIMON Command/FNV Entries'
+$lines += ''
+$lines += 'Bytes include the hashed command return chain: `CMD_DISPATCH_HASH -> JSR CMD_EXEC_ADDR -> JSR CMD_CALL_ADDR -> command body`.'
+$lines += ''
+$lines += '| Command | Entry | Source | Bytes | Deepest path |'
+$lines += '| --- | --- | --- | ---: | --- |'
+foreach ($row in ($himonCommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command, Entry)) {
+    $hashText = if ($row.Hash) { " hash=$($row.Hash)" } else { '' }
+    $entry = ('`{0}`{1}' -f $row.Entry, $hashText)
+    $lines += ('| `{0}` | {1} | `{2}` | {3} | {4} |' -f (Escape-MdCell $row.Command), (Escape-MdCell $entry), $row.Source, $row.Bytes, (Format-StackPathCell $row.Path))
+}
+
+$lines += ''
+$lines += '## STR8 Commands'
+$lines += ''
+$lines += 'Bytes include the command-loop dispatch return: `STR8_CMD_LOOP -> JSR STR8_DISPATCH_A -> command body`. The resident ROM path resolves `STR8_WORKER_RUN` to the RAM worker entry at `STR8/str8-worker.asm:START`.'
+$lines += ''
+$lines += '| Command | Entry | Meaning | Source | Bytes | Deepest path |'
+$lines += '| --- | --- | --- | --- | ---: | --- |'
+foreach ($row in ($str8CommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command)) {
+    $lines += ('| `{0}` | `{1}` | {2} | `{3}` | {4} | {5} |' -f (Escape-MdCell $row.Command), $row.Entry, (Escape-MdCell $row.Meaning), $row.Source, $row.Bytes, (Format-StackPathCell $row.Path))
+}
+
+$lines += ''
+$lines += '## Deepest HIMON-Owned Routines'
+$lines += ''
+$lines += '| Routine | Source | Bytes | Deepest path |'
+$lines += '| --- | --- | ---: | --- |'
+foreach ($row in $himonOwnedStackRows) {
+    $source = if ($row.Line) { ("{0}:{1}" -f $row.File, $row.Line) } else { $row.File }
+    $lines += ('| `{0}` | `{1}` | {2} | {3} |' -f $row.Name, $source, $row.Bytes, (Format-StackPathCell $row.Path))
+}
+
+$lines += ''
+$lines += '## Deepest STR8-Owned Routines'
+$lines += ''
+$lines += '| Routine | Source | Bytes | Deepest path |'
+$lines += '| --- | --- | ---: | --- |'
+foreach ($row in $str8OwnedStackRows) {
+    $source = if ($row.Line) { ("{0}:{1}" -f $row.File, $row.Line) } else { $row.File }
+    $lines += ('| `{0}` | `{1}` | {2} | {3} |' -f $row.Name, $source, $row.Bytes, (Format-StackPathCell $row.Path))
+}
+
+Write-Doc -Name 'STACK_DEPTH_MAP.md' -Lines $lines
+
 $lines = @('# R-YORS Map Of Maps') + $header
 $lines += 'Scope: atlas for map-shaped R-YORS documentation. Guide maps are hand-maintained design/navigation maps; generated maps are source-derived and refreshed by `make -C SRC docs`.'
 $lines += ''
@@ -769,6 +1434,7 @@ $lines += '| Understand memory and flash ranges | [GUIDES/MEMORY_MAP.md](../GUID
 $lines += '| Understand hash meanings | [GUIDES/HASH_MAP.md](../GUIDES/HASH_MAP.md) | Hash concepts, widths, records, and catalog direction. |'
 $lines += '| Understand HIMON subsystems | [GUIDES/HIMON_MAP.md](../GUIDES/HIMON_MAP.md) | Curated monitor capability and subsystem maps. |'
 $lines += '| Understand command dispatch flow | [CMD_FLOW_MAP.md](./CMD_FLOW_MAP.md) | Prompt, hash, resolve, run, return. |'
+$lines += '| Check stack depth by command/routine | [STACK_DEPTH_MAP.md](./STACK_DEPTH_MAP.md) | Source-derived HIMON and STR8 stack high-water paths. |'
 $lines += '| Understand interrupts and vector patching | [INTERRUPT_VECTOR_MAP.md](./INTERRUPT_VECTOR_MAP.md) | Reset/NMI/IRQ/BRK trampolines, RAM vectors, traps, and `RTI` resume. |'
 $lines += '| See hash-involved source labels | [HASH_ROUTINE_MAP.md](./HASH_ROUTINE_MAP.md) | `CMD_HASH*`, `FNV1A_*`, and related edges. |'
 $lines += '| See command/debug/load/ASM calls | [HIMON_COMMAND_MAP.md](./HIMON_COMMAND_MAP.md) | Compact source-derived HIMON command map. |'
@@ -804,6 +1470,7 @@ $lines += '    GEN --> CALL[CALL_ORDER]'
 $lines += '    GEN --> CONTRACTS[ROUTINE_CONTRACTS]'
 $lines += '    GEN --> TREE[HIMON_ROUTINE_TREE]'
 $lines += '    GEN --> FLOW[CMD_FLOW_MAP]'
+$lines += '    GEN --> STACK[STACK_DEPTH_MAP]'
 $lines += '    GEN --> IVEC[INTERRUPT_VECTOR_MAP]'
 $lines += '    GEN --> HRASH[HASH_ROUTINE_MAP]'
 $lines += '    GEN --> HCOMMAND[HIMON_COMMAND_MAP]'
@@ -816,6 +1483,8 @@ $lines += ''
 $lines += '    HASH --> HRASH'
 $lines += '    HIMON --> FLOW'
 $lines += '    HIMON --> IVEC'
+$lines += '    HIMON --> STACK'
+$lines += '    STR8 --> STACK'
 $lines += '    MEM --> IVEC'
 $lines += '    HIMON --> HCOMMAND'
 $lines += '    FLOW --> HRASH'
@@ -827,7 +1496,7 @@ $lines += ''
 $lines += '## Freshness'
 $lines += ''
 $lines += '- Generated maps are refreshed by `make -C SRC docs`.'
-$lines += '- Individual generated maps can be refreshed with targets such as `make -C SRC cmd-flow-map`, `make -C SRC hash-routine-map`, or `make -C SRC routine-prefix-map`.'
+$lines += '- Individual generated maps can be refreshed with targets such as `make -C SRC stack-depth-map`, `make -C SRC cmd-flow-map`, `make -C SRC hash-routine-map`, or `make -C SRC routine-prefix-map`.'
 $lines += '- Guide maps are design/reference documents. They should be updated when terminology, policy, or document roles change.'
 $lines += ''
 $lines += '## Boundaries'

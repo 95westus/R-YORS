@@ -129,11 +129,12 @@ HIMON_SUPPORT_MAP := $(DOC_GENERATED_DIR)/HIMON_SUPPORT_MAP.md
 HIMON_COMMAND_MAP := $(DOC_GENERATED_DIR)/HIMON_COMMAND_MAP.md
 HASH_ROUTINE_MAP := $(DOC_GENERATED_DIR)/HASH_ROUTINE_MAP.md
 CMD_FLOW_MAP := $(DOC_GENERATED_DIR)/CMD_FLOW_MAP.md
+STACK_DEPTH_MAP := $(DOC_GENERATED_DIR)/STACK_DEPTH_MAP.md
 INTERRUPT_VECTOR_MAP := $(DOC_GENERATED_DIR)/INTERRUPT_VECTOR_MAP.md
 MAP_OF_MAPS := $(DOC_GENERATED_DIR)/MAP_OF_MAPS.md
 ROUTINE_GRAPH_INSIGHTS := $(DOC_GENERATED_DIR)/ROUTINE_GRAPH_INSIGHTS.md
 ROUTINE_COMPONENTS := $(DOC_GENERATED_DIR)/ROUTINE_COMPONENTS.md
-GENERATED_DOCS := $(CALL_ORDER) $(ROUTINE_CONTRACTS) $(HIMON_ROUTINE_TREE) $(ROUTINE_CLASS_DIAGRAM) $(ROUTINE_PREFIX_MAP) $(HIMON_SUPPORT_MAP) $(HIMON_COMMAND_MAP) $(HASH_ROUTINE_MAP) $(CMD_FLOW_MAP) $(INTERRUPT_VECTOR_MAP) $(MAP_OF_MAPS) $(ROUTINE_GRAPH_INSIGHTS) $(ROUTINE_COMPONENTS)
+GENERATED_DOCS := $(CALL_ORDER) $(ROUTINE_CONTRACTS) $(HIMON_ROUTINE_TREE) $(ROUTINE_CLASS_DIAGRAM) $(ROUTINE_PREFIX_MAP) $(HIMON_SUPPORT_MAP) $(HIMON_COMMAND_MAP) $(HASH_ROUTINE_MAP) $(CMD_FLOW_MAP) $(STACK_DEPTH_MAP) $(INTERRUPT_VECTOR_MAP) $(MAP_OF_MAPS) $(ROUTINE_GRAPH_INSIGHTS) $(ROUTINE_COMPONENTS)
 ROUTINE_HASH_COMMENTS_GEN := tools/gen_routine_hash_comments.ps1
 DOCS_GEN := tools/gen_docs.ps1
 DOCS_WATCH := tools/watch_docs.ps1
@@ -313,6 +314,9 @@ hash-routine-map: $(HASH_ROUTINE_MAP)
 
 cmd-flow-map: $(CMD_FLOW_MAP)
 	@echo "Updated $(CMD_FLOW_MAP)."
+
+stack-depth-map: $(STACK_DEPTH_MAP)
+	@echo "Updated $(STACK_DEPTH_MAP)."
 
 interrupt-vector-map: $(INTERRUPT_VECTOR_MAP)
 	@echo "Updated $(INTERRUPT_VECTOR_MAP)."
@@ -540,4 +544,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life calc-flash rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life calc-flash rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch bin-check rom testing artifacts clean realclean upload term

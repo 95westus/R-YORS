@@ -8,6 +8,11 @@ FNV-1a is the algorithm, hash32/hash16/hash8 are stored result widths, `Record`
 means only the record format defined in the local section, and THE means The
 Hash Environment.
 
+Terminology note: `hash map` here means a guide map of hash concepts and
+ownership. It does not mean a hash table implementation, and it does not promise
+that every section is a renderable flowchart. When visual precision matters,
+use `graph`, `flowchart`, or `chart` according to [GLOSSARY.md](./GLOSSARY.md).
+
 ## Hash Families
 
 ```text
