@@ -107,6 +107,8 @@ CMD_USAGE_S:
                         RTS
 
 DBG_SET_BP:
+                        JSR             DBG_REQUIRE_PATCHABLE_ADDR
+                        BCC             DBG_SET_BP_FAIL
                         JSR             DBG_FIND_BP_ADDR
                         BCS             DBG_SET_BP_OK
                         JSR             DBG_FIND_BP_FREE
@@ -285,6 +287,8 @@ DBG_STEP_ONCE:
                         STA             CMDP_ADDR_LO
                         LDA             DBG_STEP_HI
                         STA             CMDP_ADDR_HI
+                        JSR             DBG_REQUIRE_PATCHABLE_ADDR
+                        BCC             DBG_STEP_FAIL
                         JSR             DBG_PRINT_STEP_INFO
                         JSR             DBG_FIND_BP_ADDR
                         BCS             DBG_STEP_BP_OVERLAP
@@ -369,4 +373,17 @@ DBG_PRINT_CMD_ADDR:
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             CMDP_ADDR_LO
                         JSR             SYS_WRITE_HEX_BYTE
+                        RTS
+
+DBG_REQUIRE_PATCHABLE_ADDR:
+                        ; Synthetic BRK patches only belong in user RAM.
+                        LDA             CMDP_ADDR_HI
+                        CMP             #>UPA_BASE
+                        BCC             DBG_REQUIRE_PATCHABLE_ADDR_FAIL
+                        CMP             #>HIUPA
+                        BCS             DBG_REQUIRE_PATCHABLE_ADDR_FAIL
+                        SEC
+                        RTS
+DBG_REQUIRE_PATCHABLE_ADDR_FAIL:
+                        CLC
                         RTS
