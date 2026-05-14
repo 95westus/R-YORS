@@ -26,15 +26,19 @@
 <pre><code class="language-text">2026
          05
                 13
+                   21:30Z WLP2 N/B/X RAM debug path now matches the
+                               RAM-only debug spec on hardware proof.
                    17:43Z WLP2 HIMON debug patching is RAM-only;
                                ROM/flash code may run opaquely, but is
                                not a patch target.</code></pre>
 <p>Full debugger functionality belongs in RAM. Any debugger operation that plants, restores, or depends on a synthetic <code>BRK</code> must classify the target address before writing. ROM/flash and I/O targets are rejected for debug patching.</p>
 <p>This applies to user breakpoints, temporary <code>N</code> breakpoints, and any future true stepper that uses trap planting. A debugger trap is not a generic memory-write probe. HIMON must not test <code>$8000-$FFFF</code> by storing <code>BRK</code> and reading it back. Generic memory edit, ROM, flash, and banked flash routines have their own policy.</p>
 <p>The first compact HIMON policy is stricter than &quot;any RAM&quot;: synthetic debugger traps may be planted only in UPA <code>$2000-$77FF</code>. Zero page, hardware stack, low RAM, HIUPA/scratch, monitor/page-buffer RAM, I/O, and ROM/flash are rejected. This makes RAM-only <code>N</code> non-destructive in the command-safety sense: the user program byte is restored, and system-owned memory is not a patch target.</p>
+<p>Hardware proof status: the current HIMON debug proof has exercised <code>B</code>, <code>B C</code>, <code>B L</code>, <code>N</code>, and <code>X</code> against RAM code at <code>$3000</code>. Verified behavior includes one-shot breakpoints, compact debugger stops as <code>@hhhh</code>, <code>BP FULL</code>, <code>BP NF</code>, <code>DBG RAM</code> outside the patchable range, no command-return <code>RET</code> trailer for plain monitor commands, and empty <code>B L</code> after all one-shot breakpoints are consumed. This confirms the RAM patch/restore policy; it does not make ROM/flash a debug patch target.</p>
 <p>ROM/flash can still execute while RAM code is being debugged. A RAM <code>JSR</code> into ROM can be treated as opaque code if the debugger plants the next trap at a known RAM return address. A <code>JMP</code> into ROM is not a returning call. Debug resumes only when control reaches a known RAM continuation, the user traps with NMI, or ROM executes an intentional <code>BRK xx</code>.</p>
-<p>HIMON should distinguish synthetic debugger breakpoints from real <code>BRK xx</code> program behavior. A synthetic RAM breakpoint restores the original opcode and rewinds PC to the replaced instruction. A real <code>BRK xx</code>, including one in ROM/flash, reports the BRK site and the architectural resume PC:</p>
-<pre><code class="language-text">BRK xx AT=hhhh NEXT=hhhh A=bb X=bb Y=bb P=bb S=bb</code></pre>
+<p>HIMON should distinguish synthetic debugger breakpoints from real <code>BRK xx</code> program behavior. A synthetic RAM breakpoint restores the original opcode and rewinds PC to the replaced instruction. Current transcript format reports synthetic debugger stops as <code>@hhhh</code> followed by the register state. A real <code>BRK xx</code>, including one in ROM/flash, reports the signature and the architectural resume PC:</p>
+<pre><code class="language-text">BRK xx PC=hhhh
+A=bb X=bb Y=bb P=bb S=bb flags</code></pre>
 <p>Address classification can become a shared primitive. <code>UTL_ADDR16_GET_BAND</code> already answers where an address lives, but the first HIMON debug implementation should prefer a tiny local debug fast path if that saves ROM bytes. That helper is system-owned policy, not a user-callable routine contract. Promote it into a shared routine only if multiple system components need the same rule.</p>
 <p>Debug is a HIMON subsystem, not a STR8 layer. A small build may omit the debug include to save flash, but it must omit the related command records, help text, BRK debug hook behavior, and any generated docs that claim debugger support. NMI trap capture may remain as the operator interrupt/context path even when breakpoints and <code>N</code> stepping are omitted.</p>
 <h2 id="rehash-rrec-flash-work-and-hash-transition">REHASH: RREC Flash Work And Hash Transition</h2>
@@ -131,7 +135,7 @@ S addr end|+count &#39;TEXT</code></pre>
 <pre><code class="language-text">S 0 FFFF `HIMON</code></pre>
 <p>That would mean <code>H I M O (N|$80)</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-13T22:27:11Z</time>. HTML generated: <time>2026-05-14T02:27:23Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-14T02:30:44Z</time>. HTML generated: <time>2026-05-14T02:30:53Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

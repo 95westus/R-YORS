@@ -35,6 +35,8 @@ CBI code form stays condensed for source comments:
 2026
          05
                 13
+                   21:30Z WLP2 N/B/X RAM debug path now matches the
+                               RAM-only debug spec on hardware proof.
                    17:43Z WLP2 HIMON debug patching is RAM-only;
                                ROM/flash code may run opaquely, but is
                                not a patch target.
@@ -57,6 +59,14 @@ RAM, HIUPA/scratch, monitor/page-buffer RAM, I/O, and ROM/flash are rejected.
 This makes RAM-only `N` non-destructive in the command-safety sense: the user
 program byte is restored, and system-owned memory is not a patch target.
 
+Hardware proof status: the current HIMON debug proof has exercised `B`, `B C`,
+`B L`, `N`, and `X` against RAM code at `$3000`. Verified behavior includes
+one-shot breakpoints, compact debugger stops as `@hhhh`, `BP FULL`, `BP NF`,
+`DBG RAM` outside the patchable range, no command-return `RET` trailer for
+plain monitor commands, and empty `B L` after all one-shot breakpoints are
+consumed. This confirms the RAM patch/restore policy; it does not make
+ROM/flash a debug patch target.
+
 ROM/flash can still execute while RAM code is being debugged. A RAM `JSR` into
 ROM can be treated as opaque code if the debugger plants the next trap at a
 known RAM return address. A `JMP` into ROM is not a returning call. Debug
@@ -65,11 +75,14 @@ with NMI, or ROM executes an intentional `BRK xx`.
 
 HIMON should distinguish synthetic debugger breakpoints from real `BRK xx`
 program behavior. A synthetic RAM breakpoint restores the original opcode and
-rewinds PC to the replaced instruction. A real `BRK xx`, including one in
-ROM/flash, reports the BRK site and the architectural resume PC:
+rewinds PC to the replaced instruction. Current transcript format reports
+synthetic debugger stops as `@hhhh` followed by the register state. A real
+`BRK xx`, including one in ROM/flash, reports the signature and the
+architectural resume PC:
 
 ```text
-BRK xx AT=hhhh NEXT=hhhh A=bb X=bb Y=bb P=bb S=bb
+BRK xx PC=hhhh
+A=bb X=bb Y=bb P=bb S=bb flags
 ```
 
 Address classification can become a shared primitive. `UTL_ADDR16_GET_BAND`
