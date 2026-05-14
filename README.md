@@ -23,9 +23,9 @@ Newest alerts appear first.
 2026
          05
                 13
-                   17:53Z WLP2 RAM-only debug is the new rule: debug
-                               patching does not target ROM/flash. RREC
-                               resolver/search-order notes are evolving.
+                   21:30Z WLP2 HIMON RAM-only debug N/B/X behavior is
+                               hardware-tested. Debug patching still does
+                               not target ROM/flash.
                 12
                    02:33Z WLP2 Command rules changed: destructive
                                commands now need 4+ characters, HIMON
@@ -61,6 +61,11 @@ A rudimentary STR8 flash-recovery path has been lightly tested on hardware and
 is functioning nominally. Treat it as an early recovery tool, not a finished
 field-updater: keep a programmer recovery path and known-good image nearby.
 So far, STR8 is doing what it is intended to do; testing continues.
+
+HIMON's RAM-only debug path has a current hardware proof for `B`, `B C`,
+`B L`, `N`, and `X`: one-shot breakpoints restore their original opcodes,
+compact debugger stops print as `@hhhh`, and invalid debug patch targets
+report `DBG RAM`. See [DOC/GUIDES/HIMON_DEBUG_TESTING.md](DOC/GUIDES/HIMON_DEBUG_TESTING.md).
 
 ## Project Posture
 
@@ -153,6 +158,7 @@ Start here:
 - [DOC/GUIDES/RTFM-R-YORS.md](DOC/GUIDES/RTFM-R-YORS.md) - operator highlights.
 - [DOC/GUIDES/RTFM-str8.md](DOC/GUIDES/RTFM-str8.md) - STR8 operations.
 - [DOC/GUIDES/RTFM-himon.md](DOC/GUIDES/RTFM-himon.md) - HIMON operations.
+- [DOC/GUIDES/HIMON_DEBUG_TESTING.md](DOC/GUIDES/HIMON_DEBUG_TESTING.md) - RAM debug bench process.
 
 Core binders:
 

@@ -24,9 +24,9 @@ NOTES / SOURCE / ROMS / MANUALS         READ ME FIRST</code></pre>
 2026
          05
                 13
-                   17:53Z WLP2 RAM-only debug is the new rule: debug
-                               patching does not target ROM/flash. RREC
-                               resolver/search-order notes are evolving.
+                   21:30Z WLP2 HIMON RAM-only debug N/B/X behavior is
+                               hardware-tested. Debug patching still does
+                               not target ROM/flash.
                 12
                    02:33Z WLP2 Command rules changed: destructive
                                commands now need 4+ characters, HIMON
@@ -49,6 +49,7 @@ NOTES / SOURCE / ROMS / MANUALS         READ ME FIRST</code></pre>
 <p>This repo is meant to feel like a machine binder: source, generated listings, design notes, decisions, maps, and scratchpad material all live together.</p>
 <h2 id="current-hardware-status">Current Hardware Status</h2>
 <p>A rudimentary STR8 flash-recovery path has been lightly tested on hardware and is functioning nominally. Treat it as an early recovery tool, not a finished field-updater: keep a programmer recovery path and known-good image nearby. So far, STR8 is doing what it is intended to do; testing continues.</p>
+<p>HIMON&#39;s RAM-only debug path has a current hardware proof for <code>B</code>, <code>B C</code>, <code>B L</code>, <code>N</code>, and <code>X</code>: one-shot breakpoints restore their original opcodes, compact debugger stops print as <code>@hhhh</code>, and invalid debug patch targets report <code>DBG RAM</code>. See <a href="GUIDES/HIMON_DEBUG_TESTING.html">DOC/GUIDES/HIMON_DEBUG_TESTING.md</a>.</p>
 <h2 id="project-posture">Project Posture</h2>
 <p>R-YORS does not claim that every idea here is new to computing history. Many ideas are known patterns being rediscovered, renamed, tested, and made personal through this board, this vocabulary, and this build.</p>
 <p>This project is AI-assisted. I am better at reading 6502 code than writing it, so AI is used as a working companion for assembly, documentation, design review, and turning rough intent into testable source.</p>
@@ -100,6 +101,7 @@ C=0  no / not ready / invalid / failure</code></pre>
 <li><a href="GUIDES/RTFM-R-YORS.html">DOC/GUIDES/RTFM-R-YORS.md</a> - operator highlights.</li>
 <li><a href="GUIDES/RTFM-str8.html">DOC/GUIDES/RTFM-str8.md</a> - STR8 operations.</li>
 <li><a href="GUIDES/RTFM-himon.html">DOC/GUIDES/RTFM-himon.md</a> - HIMON operations.</li>
+<li><a href="GUIDES/HIMON_DEBUG_TESTING.html">DOC/GUIDES/HIMON_DEBUG_TESTING.md</a> - RAM debug bench process.</li>
 </ul>
 <p>Core binders:</p>
 <ul>
@@ -135,7 +137,7 @@ LOCAL/      ignored local source homes, when present</code></pre>
 <h2 id="notice">Notice</h2>
 <p>R-YORS is independent and is not affiliated with or endorsed by The Western Design Center, Inc. Product names are used only to identify compatible hardware.</p>
   </main>
-  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-13T22:23:31Z</time>. HTML generated: <time>2026-05-14T02:30:53Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-14T02:34:17Z</time>. HTML generated: <time>2026-05-14T02:34:25Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>
