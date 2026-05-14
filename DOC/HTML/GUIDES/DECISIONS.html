@@ -124,6 +124,18 @@ and debug tools.</code></pre>
 </ul>
 <p>HIMON. A build may omit debug to save flash, but the command records, help text, BRK debug hook behavior, and docs for that build must agree.</p>
 <ul>
+<li><code>BRK 00</code> is reserved for HIMON&#39;s synthetic debug trap. Reserve <code>$50-$5F</code> as</li>
+</ul>
+<p>a lightweight assert/exception signature range, but name only <code>$50 ASSERT</code> and <code>$59 UNHANDLED</code> for now. Proofs may use their own fixed signatures such as <code>$41</code> start, <code>$42</code> pass, and <code>$E1-$E9</code> bad-path stops.</p>
+<ul>
+<li>HIMON should report debugger-owned synthetic traps as compact <code>@hhhh</code></li>
+</ul>
+<p>register-state lines, not as ordinary <code>BRK 00 PC=hhhh</code> stops. Far-out rating: <code>1/10</code>; this is UI classification of already-known debugger state, not a new execution model. Real program <code>BRK xx</code> signatures remain loud.</p>
+<ul>
+<li>User breakpoints are one-shot in the first debug implementation. A persistent</li>
+</ul>
+<p>breakpoint feature can come later, after the hardware transcript for <code>N</code>, <code>@hhhh</code>, real <code>BRK xx</code>, and one-shot <code>B</code> behavior is stable. Persistence requires an explicit step-over/replant state.</p>
+<ul>
 <li>Search hits should print like <code>D</code> context rows, with exact hit address first,</li>
 </ul>
 <p>aligned row base second, and <code>*</code> between them when the match continues into the next 16-byte display row. This preserves the useful BSO2 monitor search-display convention in HIMON&#39;s command language.</p>
@@ -414,7 +426,7 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-13T22:27:06Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-14T01:56:33Z</time>. HTML generated: <time>2026-05-14T02:27:23Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

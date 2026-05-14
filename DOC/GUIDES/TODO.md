@@ -38,6 +38,15 @@
   rows: exact hit address, aligned row address, and `*` when the match crosses
   a 16-byte display row. Current step/next moves to `N` only; do not add
   `NEXT` as an alias.
+- Add a tiny sorted-list helper for monitor tables such as breakpoint listing.
+  `B L` may print slot order for now, but sorted address order will be easier
+  to read once multiple breakpoints are active. For the current four breakpoint
+  slots, prefer a repeated min-scan printer over a general sort routine.
+- Add persistent breakpoint support only after `N`, `@hhhh`, real `BRK xx`, and
+  one-shot breakpoint behavior are boring on hardware. Persistent breakpoints
+  need a step-over/replant state so HIMON can restore the original opcode,
+  execute it once, then replant the `BRK 00` without recursively trapping at
+  the same PC.
 - Sketch the first W65C02-small `pack_lo_5` decoder and the rule for falling
   back to raw text when compression loses.
 - Define the exact `FIX` record bytes for RAM staging and direct flash patching.

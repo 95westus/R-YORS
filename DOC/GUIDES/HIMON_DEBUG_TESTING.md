@@ -53,6 +53,7 @@ SRC/BUILD/s19/himon-debug-proof-3000.s19
 Expected first stop:
 
 ```text
+L OK=0148 GO=3000
 HIMON DEBUG PROOF $3000
 BRK $41: USE N OR S TO STEP
 BRK 41 PC=...
@@ -65,13 +66,13 @@ Loader note:
 
 ```text
 LS03
-NMI PC=DAAA
+NMI PC=DAAA or DB0B
 ```
 
-`LS03` means HIMON left the S19 loader with FTDI status `$03`. In the current
-map, `$DAAA` is `BIO_FTDI_READ_BYTE_BLOCK`, so an NMI there means the monitor
-was in the blocking serial read path, not running the proof. Restart `L G` and
-send the S19 again before treating it as a debug failure.
+`LS03` means HIMON left the S19 loader with FTDI status `$03`. If the NMI PC
+lands inside `BIO_FTDI_READ_BYTE_BLOCK` in `SRC/BUILD/map/himon-rom.map`, the
+monitor was in the blocking serial read path, not running the proof. Restart
+`L G` and send the S19 again before treating it as a debug failure.
 
 Do not press Ctrl-C while HIMON is in `L` or `L G`; HIMON sees it as the FTDI
 Ctrl-C status and the loader can abort with `LS03`. For capture, use terminal
@@ -92,10 +93,88 @@ but `S` is being freed for search.
 >N
 ```
 
-Each successful step should print a `STEP PC=... OP=... MNEM LEN=... NEXT=...`
-line, resume, then trap again at the planted temporary `BRK`.
-Temporary step traps usually report `BRK 00`; that is the planted debugger
-byte, not a bad-path proof code.
+Each successful step should print a
+`STEP PC=... OP=... MNEM [operand] LEN=... NEXT=...` line, resume, then trap
+again at the planted temporary `BRK`.
+Debugger-owned step/breakpoint traps print a compact state line:
+
+```text
+@3045 A=01 X=37 Y=1B P=74 S=FB NV-BdIzc
+```
+
+The underlying planted byte is still `BRK 00`; HIMON marks it as debugger
+state instead of reporting it as a real program `BRK 00`.
+For `BRK`, `OP=00` is always the opcode and the following byte is the signature;
+debug prints that as `SIG=xx`.
+
+Old-ROM marker: if every step line prints the same mnemonic, especially
+`BBR4`, the board is still running a ROM from before the mnemonic-save fix.
+Flash the current `SRC/BUILD/bin/himon-str8-rom.bin` and rerun a short step
+check.
+
+Old-ROM marker: if every debug trap prints a fresh `HIMON` banner before the
+`BRK`/register report, the board is still running the older shared re-entry
+path. Current HIMON prints the banner on boot/reset entry, then debug re-entry
+goes straight to the stop report and prompt so breakpoint tables are not
+forgotten between traps.
+
+## Reading A Debug Transcript
+
+The common line types mean:
+
+```text
+STEP PC=hhhh OP=oo ... NEXT=nnnn
+  N/S decoded the instruction at hhhh before running it and planted a temporary
+  debugger trap at nnnn.
+
+RESUME hhhh
+  HIMON returned to user code at hhhh with RTI.
+
+@hhhh A=.. X=.. Y=.. P=.. S=.. flags
+  HIMON stopped at a debugger-owned synthetic trap. This is a temporary step
+  trap or a user breakpoint backed by BRK 00. The original opcode has been
+  restored before printing. User breakpoints are one-shot in the current build.
+
+BRK xx PC=hhhh
+  User code executed a real BRK with signature xx. The PC is the resume address
+  after the two-byte BRK instruction, not the BRK opcode address.
+
+NMI PC=hhhh
+  HIMON entered through NMI, not BRK.
+```
+
+That PC rule matters. In the proof:
+
+```text
+304A  BRK $42
+304C  BRA $FE
+```
+
+So `BRK 42 PC=304C` means `$304A` executed and `$304C` has not run yet. If
+`B L` still shows `304C 80`, the breakpoint at `$304C` is pending. Use `X` to
+resume into it; `N` from a PC that is already patched by a pending breakpoint is
+a sharper edge and should be avoided until the debugger smooths it.
+
+Breakpoint table lines mean:
+
+```text
+3007 20
+302F A9
+3043 A2
+```
+
+The first value is the pending breakpoint address. The second value is the
+original opcode saved by HIMON. The list is currently slot order, not sorted
+address order. `B C hhhh` removes a pending breakpoint; after an `@hhhh`
+breakpoint hit, that breakpoint has already been consumed.
+
+Breakpoints are one-shot on purpose in this build. On hit, HIMON restores the
+original opcode and clears the slot so `X` can resume from the same PC without
+recursively hitting the same `BRK 00`. Persistent breakpoints are future work;
+they need a step-over/replant state.
+
+Only set breakpoints on opcode bytes. Avoid operands, BRK signature bytes, data
+bytes, and code that is already patched by a pending breakpoint.
 
 The proof walks these branch cases:
 
@@ -115,15 +194,55 @@ First bench checkpoint:
 
 ```text
 3013 OP=18 CLC -> 3014
-3014 OP=90 BCC -> 3018
+3014 OP=90 BCC $02 -> 3018
 3018 OP=38 SEC -> 3019
-3019 OP=B0 BCS -> 301D
+3019 OP=B0 BCS $02 -> 301D
 301D OP=B8 CLV -> 301E
-301E OP=50 BVC -> 3022
+301E OP=50 BVC $02 -> 3022
 ```
 
 That sequence proves normal one-byte stepping and taken branch target
 calculation for `BCC`, `BCS`, and `BVC`.
+
+Full branch bench checkpoint:
+
+```text
+3022 OP=A9 LDA #$7F -> 3024
+3024 OP=18 CLC -> 3025
+3025 OP=69 ADC #$01 -> 3027
+3027 OP=70 BVS $02 -> 302B
+302B OP=30 BMI $02 -> 302F
+302F OP=A9 LDA #$00 -> 3031
+3031 OP=F0 BEQ $02 -> 3035
+3035 OP=10 BPL $02 -> 3039
+3039 OP=A9 LDA #$01 -> 303B
+303B OP=D0 BNE $02 -> 303F
+303F OP=80 BRA $02 -> 3043
+3043 OP=A2 LDX #$37 -> 3045
+3045 OP=A0 LDY #$31 -> 3047
+3047 OP=20 JSR $304E -> 304A, prints DEBUG PROOF DONE
+304A OP=00 BRK $42 SIG=42 -> BRK 42 PC=304C
+304C OP=80 BRA $FE -> 304C
+```
+
+`BRK $42` is the pass stop. Continuing past it tests debug edge behavior, not
+the branch proof itself. The proof parks in a self-`BRA` idle loop after the
+pass stop so an extra `N` remains in known code instead of wandering into data
+or support routines. Repeated `N` after `BRK $42` should keep reporting
+`PC=304C OP=80 BRA $FE NEXT=304C`.
+
+BRK signature policy for this proof:
+
+```text
+@hhhh   temporary debugger step/breakpoint stop, backed by BRK 00
+BRK 41  intentional start stop
+BRK 42  intentional pass stop
+BRK E1-E9  bad-path proof failures
+```
+
+A future dedicated `BRK xx` handler should classify fixed signatures. Known
+proof signatures can say "start", "pass", or "bad path"; unexpected signatures
+while stepping are a hint that execution is about to leave code or enter data.
 
 Use the map file when checking exact labels:
 
@@ -136,11 +255,44 @@ Useful manual checks:
 ```text
 >D 3000 30FF     inspect proof bytes
 >U 3000 30FF     disassemble proof bytes
->B 3000          set a valid RAM breakpoint
+>B 3043          set a valid RAM breakpoint on LDX #$37
 >B L             list breakpoints
->B C 3000        clear breakpoint
+>B C 3043        clear breakpoint
 >B 8000          should print DBG RAM
+>B 3007          fill breakpoint slot 0
+>B 300A          fill breakpoint slot 1
+>B 302F          fill breakpoint slot 2
+>B 3043          fill breakpoint slot 3
+>B 304C          should print BP FULL
+>B C 2222        should print BP NF
 ```
+
+`B L` currently prints active breakpoint slots in table order. A future small
+sorted-list helper should print them in address order; for the current four
+slots, a repeated min-scan printer is probably cheaper than a general sort.
+
+Breakpoint workflow check:
+
+```text
+>L G             load proof and stop at BRK 41 / PC=3013
+>B 3043          patch breakpoint
+>B L             should list only 3043 A2 after a fresh load
+>N               step normally; monitor commands preserve the trapped proof PC
+...              continue N until PC=303F
+>N               BRA target overlaps B 3043, so N resumes into that breakpoint
+```
+
+Expected overlap hit:
+
+```text
+STEP PC=303F OP=80 BRA $02 LEN=02 NEXT=3043
+ BP
+RESUME 303F
+@3043 A=01 X=1B Y=1B P=74 S=FB NV-BdIzc
+```
+
+`L` clears active debug patches before accepting S-records, so breakpoints do
+not survive a program reload as stale table entries.
 
 ## Pass Criteria
 
@@ -155,6 +307,9 @@ no BRK $E1-$E9 appears
 BRK $42 appears at the end
 B rejects non-UPA patch targets with DBG RAM
 B set/list/clear works for a RAM address in $2000-$77FF
+B reports BP FULL when all four slots are active
+B C reports BP NF when the address is not active
+N can resume into a user breakpoint when its step target overlaps one
 ```
 
 Record the tested files:

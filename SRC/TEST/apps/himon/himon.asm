@@ -38,6 +38,7 @@ NMI_DEBOUNCE_FLAG        EQU             $7EEC
 TRAP_CAUSE_NONE          EQU             $00
 TRAP_CAUSE_NMI           EQU             $01
 TRAP_CAUSE_BRK           EQU             $02
+TRAP_CAUSE_DBG           EQU             $03
 NMI_DEBOUNCE_A           EQU             $02
 NMI_DEBOUNCE_X           EQU             $B6
 NMI_DEBOUNCE_Y           EQU             $F8
@@ -95,6 +96,7 @@ START:
                         BNE             MON_COLD_RESET
                         LDA             #BOOT_REASON_WARM
                         STA             BOOT_REASON
+                        JSR             DBG_CLEAR_ALL
                         STZ             NMI_CTX_FLAG
                         STZ             TRAP_CAUSE
                         STZ             TRAP_BRK_SIG
@@ -111,8 +113,10 @@ MON_REENTER:
                         CLD
                         LDX             #$FF
                         TXS
+                        JSR             MON_INIT_COMMON
+                        JMP             MON_AFTER_BANNER
 
-MON_START_INIT:
+MON_INIT_COMMON:
                         LDA             #$A5
                         STA             RESET_SIG0
                         LDA             #$5A
@@ -133,7 +137,10 @@ MON_START_INIT:
                         LDX             #<MON_IRQ_TRAP
                         LDY             #>MON_IRQ_TRAP
                         JSR             SYS_VEC_SET_IRQ_NONBRK_XY
+                        RTS
 
+MON_START_INIT:
+                        JSR             MON_INIT_COMMON
                         JSR             MON_BOOTLOG_RESET
 
                         LDX             #<MSG_BANNER
@@ -141,6 +148,7 @@ MON_START_INIT:
                         JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
 
+MON_AFTER_BANNER:
                         LDA             NMI_CTX_FLAG
                         CMP             #$01
                         BNE             MAIN_LOOP
@@ -398,6 +406,7 @@ CMD_L_ARG_F:
 CMD_USAGE_L_JMP:
                         JMP             CMD_USAGE_L
 CMD_L_ARGS_OK:
+                        JSR             DBG_CLEAR_ALL
                         STZ             LOAD_FAIL_CODE
                         STZ             LOAD_TOTAL_LO
                         STZ             LOAD_TOTAL_HI
@@ -1024,6 +1033,8 @@ MON_CTX_RESUME_RTI:
 MON_PRINT_STOP_AND_REGS:
                         JSR             SYS_WRITE_CRLF
                         LDA             TRAP_CAUSE
+                        CMP             #TRAP_CAUSE_DBG
+                        BEQ             MON_PRINT_STOP_DBG
                         CMP             #TRAP_CAUSE_BRK
                         BEQ             MON_PRINT_STOP_BRK
                         LDX             #<MSG_STOP_NMI
@@ -1078,6 +1089,17 @@ MON_PRINT_REGS_BODY:
                         JSR             MON_PRINT_FLAGS
                         JSR             SYS_WRITE_CRLF
                         RTS
+
+MON_PRINT_STOP_DBG:
+                        LDA             #'@'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             NMI_CTX_PCH
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             NMI_CTX_PCL
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JMP             MON_PRINT_REGS_BODY
 
 MON_PRINT_RET_AND_REGS:
                         JSR             SYS_WRITE_CRLF
@@ -2165,6 +2187,13 @@ CMD_SAVE_ENTRY:
 CMD_EXEC_ADDR:
                         JSR             CMD_CALL_ADDR
                         PHP
+                        PHA
+                        LDA             NMI_CTX_FLAG
+                        CMP             #$01
+                        BEQ             CMD_EXEC_ADDR_KEEP_TRAP
+                        LDA             CMD_EXEC_KIND
+                        BEQ             CMD_EXEC_ADDR_KEEP_TRAP
+                        PLA
                         STA             NMI_CTX_A
                         STX             NMI_CTX_X
                         STY             NMI_CTX_Y
@@ -2177,6 +2206,10 @@ CMD_EXEC_ADDR:
                         LDA             CMD_EXEC_ENTRY_HI
                         STA             NMI_CTX_PCH
                         JSR             MON_PRINT_RET_AND_REGS
+                        RTS
+CMD_EXEC_ADDR_KEEP_TRAP:
+                        PLA
+                        PLA
                         RTS
 
 CMD_CALL_ADDR:
@@ -2463,9 +2496,12 @@ MSG_USAGE_U:             DB              "U start [end|+n]",(']'+$80)
 MSG_USAGE_A:             DB              "A start [mne op]",(']'+$80)
 MSG_BP_SET:              DB              "BP ",('$'+$80)
 MSG_BP_CLR:              DB              "B C ",('$'+$80)
+MSG_BP_FULL:             DB              "BP FUL",('L'+$80)
+MSG_BP_NF:               DB              "BP N",('F'+$80)
 MSG_DBG_RAM:             DB              "DBG RA",('M'+$80)
 MSG_STEP:                DB              "STEP PC",('='+$80)
 MSG_STEP_OP:             DB              " OP",('='+$80)
+MSG_STEP_SIG:            DB              " SIG",('='+$80)
 MSG_STEP_LEN:            DB              " LEN",('='+$80)
 MSG_STEP_NEXT:           DB              " NEXT",('='+$80)
 MSG_STEP_BP:             DB              " B",('P'+$80)

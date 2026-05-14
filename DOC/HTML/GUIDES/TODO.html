@@ -60,6 +60,14 @@
 </ul>
 <p>target <code>S addr end|+count b0 [b1 ...]</code> for hex-byte search, <code>S addr end|+count &#39;TEXT</code> for text search, and the simple mixed tail <code>S addr end|+count b0 [b1 ...] &#39;TEXT</code>. Treat apostrophe text as a final V0 tail, not a quoted atom that resumes parsing. Print hits as D-style context rows: exact hit address, aligned row address, and <code>*</code> when the match crosses a 16-byte display row. Current step/next moves to <code>N</code> only; do not add <code>NEXT</code> as an alias.</p>
 <ul>
+<li>Add a tiny sorted-list helper for monitor tables such as breakpoint listing.</li>
+</ul>
+<p><code>B L</code> may print slot order for now, but sorted address order will be easier to read once multiple breakpoints are active. For the current four breakpoint slots, prefer a repeated min-scan printer over a general sort routine.</p>
+<ul>
+<li>Add persistent breakpoint support only after <code>N</code>, <code>@hhhh</code>, real <code>BRK xx</code>, and</li>
+</ul>
+<p>one-shot breakpoint behavior are boring on hardware. Persistent breakpoints need a step-over/replant state so HIMON can restore the original opcode, execute it once, then replant the <code>BRK 00</code> without recursively trapping at the same PC.</p>
+<ul>
 <li>Sketch the first W65C02-small <code>pack_lo_5</code> decoder and the rule for falling</li>
 </ul>
 <p>back to raw text when compression loses.</p>
@@ -83,7 +91,7 @@
 </ul>
 <p>hash-driven command dispatch.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/TODO.md</code>. Source modified: <time>2026-05-13T21:20:45Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/TODO.md</code>. Source modified: <time>2026-05-14T01:56:33Z</time>. HTML generated: <time>2026-05-14T02:27:23Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

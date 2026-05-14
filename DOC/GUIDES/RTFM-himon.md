@@ -72,6 +72,14 @@ Q              quiesce with WAI, then re-enter on wake
 
 Use HIMON for normal work. Use STR8 for boot-image recovery and backup policy.
 
+`B L` currently reports active breakpoint slots in table order. A future
+sorted-list helper should print breakpoint tables in address order, but that is
+polish after the trap/restore behavior is stable.
+
+`B` reports `BP FULL` when all four slots are active. `B C hhhh` reports
+`BP NF` when that address is not currently active. Breakpoints outside
+`$2000-$77FF` report `DBG RAM`.
+
 `Q` is a true quiesce command now. It masks IRQ, enters `WAI`, and resumes by
 re-entering HIMON when the CPU wakes. NMI remains the trap/debug path.
 
@@ -164,6 +172,90 @@ B88F B880: ...
 
 `*` marks a match that crosses the 16-byte display row boundary.
 
+## Debug Transcript Legend
+
+`STEP PC=hhhh ... NEXT=nnnn` is the pre-execution decode printed by `N`/`S`.
+`RESUME hhhh` means HIMON returned to the trapped context. `@hhhh A=...` is a
+debugger-owned stop from a temporary step trap or user breakpoint; the planted
+`BRK 00` has been classified and the original opcode restored. Real program
+stops remain `BRK xx PC=hhhh`.
+
+Plain monitor commands print their own result and return to the prompt without
+the old `RET ...` register trailer. `RET ...` is reserved for user execution
+that returns through HIMON, such as a `G`/`L G` target that reaches `RTS`.
+
+For real `BRK xx`, the printed PC is the resume address after the two-byte BRK.
+For example, `BRK 42 PC=304C` means the `BRK $42` at `$304A` ran and `$304C`
+has not executed yet. If `B L` shows a pending breakpoint at that resume PC,
+use `X` to enter it. `N` at a PC that is already patched by a pending
+breakpoint is an edge case.
+
+`B L` prints active breakpoint slots as `address original-opcode`. Breakpoints
+are one-shot in the current build, so an `@hhhh` hit consumes that slot.
+Persistent breakpoints are future work because they need a step-over/replant
+state to avoid immediately trapping again at the same PC.
+
+## BRK Signature Direction
+
+On W65C02S, `BRK xx` gives HIMON a one-byte signature after the opcode. Current
+debug uses `BRK 00` as the synthetic temporary step/breakpoint trap, but reports
+debugger-owned stops as compact `@hhhh A=...` state lines. RAM proof programs
+can use fixed nonzero signatures as intent markers:
+
+```text
+@hhhh   debugger temporary step/breakpoint stop, backed by BRK 00
+BRK 41  proof start stop
+BRK 42  proof pass stop
+BRK 50  generic assert failed
+BRK 59  unhandled exception / impossible path
+BRK E1-E9  proof bad-path stops
+```
+
+A future dedicated `BRK xx` handler should classify fixed signatures before the
+generic monitor report. That gives HIMON a clean way to say "known proof stop",
+"known failure stop", or "unexpected BRK signature; you may be leaving code or
+stepping through data".
+
+`$50-$5F` is the lightweight assert/exception range. Do not fill the whole range
+until repeated use proves the names. Start with only `$50 ASSERT` and
+`$59 UNHANDLED`.
+
+Proposed full signature range, subject to change:
+
+```text
+00       HIMON synthetic debug trap
+01-1F    monitor/debug/internal stops
+20-3F    user/program intentional stops
+40-4F    proof/test lifecycle
+50-5F    assert/exception
+60-7F    subsystem/runtime
+80-BF    app-defined
+C0-DF    system/recovery danger
+E0-EF    proof/test failure
+F0-FF    fatal/unknown/reserved
+```
+
+Proposed assert/exception names, also subject to change:
+
+```text
+50  ASSERT
+51  PRECONDITION
+52  POSTCONDITION
+53  INVARIANT
+54  RANGE/BOUNDS
+55  ILLEGAL_STATE
+56  MISSING_HANDLE
+57  BAD_RECORD
+58  VERIFY_FAILED
+59  UNHANDLED
+5A  UNIMPLEMENTED
+5B  IMPOSSIBLE_DEFAULT
+5C  FLOW/STACK
+5D  MEMORY_OWNERSHIP
+5E  UNSUPPORTED
+5F  FATAL_ASSERT
+```
+
 ## RAM Proof To Image
 
 New monitor/debug code should prove itself as RAM-loaded S19 before it becomes
@@ -200,6 +292,9 @@ On the board:
 >B 3000         optional breakpoint in the RAM proof
 >G 3000         run the proof when not using L G
 ```
+
+`L` clears active debug patches before accepting new S-records. Set breakpoints
+after loading the program image they belong to.
 
 When the RAM proof is clean, promote it in one of two ways:
 

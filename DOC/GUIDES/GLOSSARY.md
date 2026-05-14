@@ -172,6 +172,27 @@ docs.
 - SMS: provisional way-future name for a System Messaging Service. The name may
   change. The concept is an operator/message-queue service for informational,
   action, inquiry, reply, and cancel-style system messages.
+- TLA: three-letter acronym. Use one when it makes command output or source
+  labels clearer; spell it out in this glossary when it becomes project
+  vocabulary.
+
+## Monitor And Debug Terms
+
+- BRK: W65C02 software interrupt/trap opcode. In HIMON transcripts,
+  `BRK xx PC=hhhh` means real user code executed `BRK` with signature `xx`; the
+  printed PC is the resume address after the two-byte BRK instruction.
+- BP: breakpoint. `B` is the HIMON command; `BP` is the thing being reported.
+  Example messages: `BP $3043`, `BP FULL`, `BP NF`.
+- BP FULL: all breakpoint slots are active.
+- BP NF: breakpoint not found; used when `B C hhhh` asks to clear an inactive
+  address.
+- DBG: debug/debugger. Current source labels use `DBG_*` for monitor debug
+  state and helper routines.
+- DBG RAM: HIMON refused to plant a synthetic debug `BRK` outside patchable
+  user RAM.
+- synthetic debug trap: HIMON-owned `BRK 00` planted temporarily for `N`/`S`
+  stepping or a user breakpoint. Current transcripts report these stops as
+  compact `@hhhh A=...` lines instead of loud `BRK 00` program stops.
 
 ## Source Terms
 

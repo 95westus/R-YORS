@@ -271,12 +271,16 @@ DIS_WRITE_COMMA_Y:
                         RTS
 
 DIS_PRINT_BYTE_OPER:
+                        LDA             #'$'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
                         LDY             #$01
                         LDA             (CMDP_ADDR_LO),Y
                         JSR             SYS_WRITE_HEX_BYTE
                         RTS
 
 DIS_PRINT_ABS_OPER:
+                        LDA             #'$'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
                         LDY             #$02
                         LDA             (CMDP_ADDR_LO),Y
                         JSR             SYS_WRITE_HEX_BYTE

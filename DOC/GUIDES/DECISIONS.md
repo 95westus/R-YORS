@@ -100,6 +100,18 @@ and debug tools.
 - Debug is an optional HIMON subsystem/include, not a layer between STR8 and
   HIMON. A build may omit debug to save flash, but the command records, help
   text, BRK debug hook behavior, and docs for that build must agree.
+- `BRK 00` is reserved for HIMON's synthetic debug trap. Reserve `$50-$5F` as
+  a lightweight assert/exception signature range, but name only `$50 ASSERT`
+  and `$59 UNHANDLED` for now. Proofs may use their own fixed signatures such
+  as `$41` start, `$42` pass, and `$E1-$E9` bad-path stops.
+- HIMON should report debugger-owned synthetic traps as compact `@hhhh`
+  register-state lines, not as ordinary `BRK 00 PC=hhhh` stops. Far-out
+  rating: `1/10`; this is UI classification of already-known debugger state,
+  not a new execution model. Real program `BRK xx` signatures remain loud.
+- User breakpoints are one-shot in the first debug implementation. A persistent
+  breakpoint feature can come later, after the hardware transcript for `N`,
+  `@hhhh`, real `BRK xx`, and one-shot `B` behavior is stable. Persistence
+  requires an explicit step-over/replant state.
 - Search hits should print like `D` context rows, with exact hit address first,
   aligned row base second, and `*` between them when the match continues into
   the next 16-byte display row. This preserves the useful BSO2 monitor

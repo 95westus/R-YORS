@@ -198,6 +198,36 @@
 <li>SMS: provisional way-future name for a System Messaging Service. The name may</li>
 </ul>
 <p>change. The concept is an operator/message-queue service for informational, action, inquiry, reply, and cancel-style system messages.</p>
+<ul>
+<li>TLA: three-letter acronym. Use one when it makes command output or source</li>
+</ul>
+<p>labels clearer; spell it out in this glossary when it becomes project vocabulary.</p>
+<h2 id="monitor-and-debug-terms">Monitor And Debug Terms</h2>
+<ul>
+<li>BRK: W65C02 software interrupt/trap opcode. In HIMON transcripts,</li>
+</ul>
+<p><code>BRK xx PC=hhhh</code> means real user code executed <code>BRK</code> with signature <code>xx</code>; the printed PC is the resume address after the two-byte BRK instruction.</p>
+<ul>
+<li>BP: breakpoint. <code>B</code> is the HIMON command; <code>BP</code> is the thing being reported.</li>
+</ul>
+<p>Example messages: <code>BP $3043</code>, <code>BP FULL</code>, <code>BP NF</code>.</p>
+<ul>
+<li>BP FULL: all breakpoint slots are active.</li>
+<li>BP NF: breakpoint not found; used when <code>B C hhhh</code> asks to clear an inactive</li>
+</ul>
+<p>address.</p>
+<ul>
+<li>DBG: debug/debugger. Current source labels use <code>DBG_*</code> for monitor debug</li>
+</ul>
+<p>state and helper routines.</p>
+<ul>
+<li>DBG RAM: HIMON refused to plant a synthetic debug <code>BRK</code> outside patchable</li>
+</ul>
+<p>user RAM.</p>
+<ul>
+<li>synthetic debug trap: HIMON-owned <code>BRK 00</code> planted temporarily for <code>N</code>/<code>S</code></li>
+</ul>
+<p>stepping or a user breakpoint. Current transcripts report these stops as compact <code>@hhhh A=...</code> lines instead of loud <code>BRK 00</code> program stops.</p>
 <h2 id="source-terms">Source Terms</h2>
 <ul>
 <li><code>MODULE</code> / <code>ENDMOD</code>: WDC assembler module boundary.</li>
@@ -397,7 +427,7 @@
 <p>address when none is forced; examples include high-to-low, low-to-high, best fit, closest-to-top, and first fit in a selected bank or sector range.</p>
 <p>Example: <code>$E000-$EFFF</code> is window/sector <code>$E</code> of whichever bank is currently selected. Sector <code>$0</code> is <code>$0000-$0FFF</code>; <code>$0000-$FFFF</code> is the full 64K CPU address space, not sector <code>$0</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-13T22:27:01Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-14T02:12:57Z</time>. HTML generated: <time>2026-05-14T02:27:23Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

@@ -23,11 +23,35 @@
 sealed   checks passed
 buried   old version is obsolete</code></pre>
 <p>Concern: Do not mark assembler output sealed until its bytes, fixups, pointer ranges, and collision rules have been checked.</p>
+<h2 id="q-should-the-assembler-support-bra-islands">Q: Should the assembler support BRA islands?</h2>
+<p>Comment: <code>BRA islands</code> are generated branch trampolines for reaching beyond the signed 8-bit relative branch range. Instead of hand-maintaining a chain like <code>$4000 -&gt; $407X -&gt; $40XX -&gt; $41YY -&gt; target</code>, the assembler or linker would place small nearby <code>BRA</code> hops in safe island slots.</p>
+<p>Example shape:</p>
+<pre><code class="language-text">$4000: BRA island_0
+...
+island_0: BRA island_1
+...
+island_1: BRA target</code></pre>
+<p>The useful cases are:</p>
+<pre><code class="language-text">position-ish code that wants to avoid absolute JMP operands
+generated long branch support
+flash/patch layouts where a nearby two-byte branch is easier to place
+controlled filler/alignment zones that can hold trampoline hops
+poor-man overlay/linker connection between separately placed code blocks</code></pre>
+<p>Position-ish code is not fully position-independent 6502 code. It just means a block can keep more of its internal control flow relative. If the block moves but its internal layout stays the same, <code>BRA</code> hops still mean &quot;go this many bytes from here&quot;, while <code>JMP $addr</code> has to be relocated.</p>
+<p>Avoiding an absolute operand at the original site can matter when the original site is early, fixed, or hard to patch. A <code>JMP $4200</code> embeds <code>00 42</code> in that instruction. A <code>BRA island</code> embeds only a signed nearby offset and lets later layout machinery decide how the islands reach the true destination.</p>
+<p>Flash patching is a special case of this. Flash can usually clear <code>1 -&gt; 0</code> bits, but cannot freely set <code>0 -&gt; 1</code> bits without erasing a sector. Rewriting a 16-bit absolute address may require illegal bit transitions. Pre-planned branch slots can sometimes give the system more legal patch points.</p>
+<p>Alignment and filler zones are the cleanest island homes. If the assembler or linker knows a region is padding, reserved space, or a generated branch-pad area, it can place <code>BRA</code> hops there without hiding control flow inside normal code.</p>
+<p>As a poor-man overlay/linker trick, one module can exit through a known island slot and another module can be reached by generated hops. That is not a full relocator, but it is a small native mechanism for connecting separately placed code blocks.</p>
+<p>For conditional far branches, the assembler can use an inverted short branch over an unconditional island hop:</p>
+<pre><code class="language-text">BNE skip
+BRA far_target_island
+skip:</code></pre>
+<p>Concern: Humans should not maintain branch islands by hand. Island placement needs assembler/linker help, range checking, and a rule for where islands are legal. The first assembler does not need this; record it as future machinery for when labels, fixups, and generated code layout are strong enough.</p>
 <h2 id="q-when-does-asm-graduate-from-qcc-to-decision">Q: When does ASM graduate from QCC to decision?</h2>
 <p>Comment: When the record bytes, fixup lifecycle, collision rule, and flash ownership are clear enough to implement without guessing.</p>
 <p>Concern: A half-decided assembler format can trap the system into supporting bad records forever. Keep exploratory formats QCC until the write/verify path is boring.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_ASM.md</code>. Source modified: <time>2026-05-04T00:16:45Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_ASM.md</code>. Source modified: <time>2026-05-14T00:29:37Z</time>. HTML generated: <time>2026-05-14T02:27:23Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

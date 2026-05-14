@@ -46,9 +46,12 @@ B start        set breakpoint
 B C start      clear breakpoint
 B L            list breakpoints
 S              single-step trapped context; target moves to N only
+N              same step path while S is being freed for search
 X              resume trapped context when one exists
 Q              quiesce with WAI, then re-enter on wake</code></pre>
 <p>Use HIMON for normal work. Use STR8 for boot-image recovery and backup policy.</p>
+<p><code>B L</code> currently reports active breakpoint slots in table order. A future sorted-list helper should print breakpoint tables in address order, but that is polish after the trap/restore behavior is stable.</p>
+<p><code>B</code> reports <code>BP FULL</code> when all four slots are active. <code>B C hhhh</code> reports <code>BP NF</code> when that address is not currently active. Breakpoints outside <code>$2000-$77FF</code> report <code>DBG RAM</code>.</p>
 <p><code>Q</code> is a true quiesce command now. It masks IRQ, enters <code>WAI</code>, and resumes by re-entering HIMON when the CPU wakes. NMI remains the trap/debug path.</p>
 <p><code>M</code> is currently byte-by-byte memory modify. Under the new command safety mandate, bulk fill should not become an <code>M</code> subform. It should be a full-word command:</p>
 <pre><code class="language-text">FILL start end|+count bb</code></pre>
@@ -82,6 +85,77 @@ N</code></pre>
 <pre><code class="language-text">B88F B880: ...
 022B*0220: ...</code></pre>
 <p><code>*</code> marks a match that crosses the 16-byte display row boundary.</p>
+<h2 id="debug-transcript-legend">Debug Transcript Legend</h2>
+<p><code>STEP PC=hhhh ... NEXT=nnnn</code> is the pre-execution decode printed by <code>N</code>/<code>S</code>. <code>RESUME hhhh</code> means HIMON returned to the trapped context. <code>@hhhh A=...</code> is a debugger-owned stop from a temporary step trap or user breakpoint; the planted <code>BRK 00</code> has been classified and the original opcode restored. Real program stops remain <code>BRK xx PC=hhhh</code>.</p>
+<p>Plain monitor commands print their own result and return to the prompt without the old <code>RET ...</code> register trailer. <code>RET ...</code> is reserved for user execution that returns through HIMON, such as a <code>G</code>/<code>L G</code> target that reaches <code>RTS</code>.</p>
+<p>For real <code>BRK xx</code>, the printed PC is the resume address after the two-byte BRK. For example, <code>BRK 42 PC=304C</code> means the <code>BRK $42</code> at <code>$304A</code> ran and <code>$304C</code> has not executed yet. If <code>B L</code> shows a pending breakpoint at that resume PC, use <code>X</code> to enter it. <code>N</code> at a PC that is already patched by a pending breakpoint is an edge case.</p>
+<p><code>B L</code> prints active breakpoint slots as <code>address original-opcode</code>. Breakpoints are one-shot in the current build, so an <code>@hhhh</code> hit consumes that slot. Persistent breakpoints are future work because they need a step-over/replant state to avoid immediately trapping again at the same PC.</p>
+<h2 id="brk-signature-direction">BRK Signature Direction</h2>
+<p>On W65C02S, <code>BRK xx</code> gives HIMON a one-byte signature after the opcode. Current debug uses <code>BRK 00</code> as the synthetic temporary step/breakpoint trap, but reports debugger-owned stops as compact <code>@hhhh A=...</code> state lines. RAM proof programs can use fixed nonzero signatures as intent markers:</p>
+<pre><code class="language-text">@hhhh   debugger temporary step/breakpoint stop, backed by BRK 00
+BRK 41  proof start stop
+BRK 42  proof pass stop
+BRK 50  generic assert failed
+BRK 59  unhandled exception / impossible path
+BRK E1-E9  proof bad-path stops</code></pre>
+<p>A future dedicated <code>BRK xx</code> handler should classify fixed signatures before the generic monitor report. That gives HIMON a clean way to say &quot;known proof stop&quot;, &quot;known failure stop&quot;, or &quot;unexpected BRK signature; you may be leaving code or stepping through data&quot;.</p>
+<p><code>$50-$5F</code> is the lightweight assert/exception range. Do not fill the whole range until repeated use proves the names. Start with only <code>$50 ASSERT</code> and <code>$59 UNHANDLED</code>.</p>
+<p>Proposed full signature range, subject to change:</p>
+<pre><code class="language-text">00       HIMON synthetic debug trap
+01-1F    monitor/debug/internal stops
+20-3F    user/program intentional stops
+40-4F    proof/test lifecycle
+50-5F    assert/exception
+60-7F    subsystem/runtime
+80-BF    app-defined
+C0-DF    system/recovery danger
+E0-EF    proof/test failure
+F0-FF    fatal/unknown/reserved</code></pre>
+<p>Proposed assert/exception names, also subject to change:</p>
+<pre><code class="language-text">50  ASSERT
+51  PRECONDITION
+52  POSTCONDITION
+53  INVARIANT
+54  RANGE/BOUNDS
+55  ILLEGAL_STATE
+56  MISSING_HANDLE
+57  BAD_RECORD
+58  VERIFY_FAILED
+59  UNHANDLED
+5A  UNIMPLEMENTED
+5B  IMPOSSIBLE_DEFAULT
+5C  FLOW/STACK
+5D  MEMORY_OWNERSHIP
+5E  UNSUPPORTED
+5F  FATAL_ASSERT</code></pre>
+<h2 id="ram-proof-to-image">RAM Proof To Image</h2>
+<p>New monitor/debug code should prove itself as RAM-loaded S19 before it becomes part of a burnable image. The working loop is:</p>
+<pre><code class="language-text">write a small standalone RAM proof
+link it inside UPA, usually $2000-$77FF
+build an S19
+load it with HIMON L or L G
+debug it with B, N/S, R, X, D, and U
+promote clean code into HIMON or a ROM/flash image
+build the final .bin</code></pre>
+<p>For the next search command, <code>S</code> should start this way: a RAM proof S19 running under HIMON, not a permanent HIMON command record on the first pass. Link it in user RAM and keep the code away from HIMON&#39;s workspace, page buffers, I/O, and ROM/flash. Debug patches only belong in <code>$2000-$77FF</code>; if step or breakpoint tries to plant a synthetic <code>BRK</code> elsewhere, HIMON reports <code>DBG RAM</code>.</p>
+<p>Build examples already in this tree:</p>
+<pre><code class="language-text">make -C SRC life       -&gt; SRC/BUILD/s19/life.s19        linked at $2000
+make -C SRC str8-ram   -&gt; SRC/BUILD/s19/str8-ram-3000.s19</code></pre>
+<p>On the board:</p>
+<pre><code class="language-text">&gt;L              load S-records into RAM, then G start manually
+&gt;L G            load S-records and use the S9 start address
+&gt;B 3000         optional breakpoint in the RAM proof
+&gt;G 3000         run the proof when not using L G</code></pre>
+<p><code>L</code> clears active debug patches before accepting new S-records. Set breakpoints after loading the program image they belong to.</p>
+<p>When the RAM proof is clean, promote it in one of two ways:</p>
+<pre><code class="language-text">HIMON feature: fold the routine/command into SRC/TEST/apps/himon and rebuild.
+flash member: link at its intended flash address and make it catalog/record visible.</code></pre>
+<p>S19 is the transfer/proof format. A <code>.bin</code> is not &quot;the same file without text&quot;; it is a placed raw image. For the current main image, use:</p>
+<pre><code class="language-text">make -C SRC himon
+make -C SRC himon-str8-rom-bin</code></pre>
+<p>The important output is:</p>
+<pre><code class="language-text">SRC/BUILD/bin/himon-str8-rom.bin</code></pre>
+<p>That <code>.bin</code> is the 32K <code>$8000-$FFFF</code> bank image for the programmer/STR8 image workflow. For any new standalone ROM member, add an explicit build target or script that places the linked S19 bytes at the correct ROM offset and verifies the image before calling it burnable.</p>
 <h2 id="flash-loading">Flash Loading</h2>
 <p><code>L F</code> is conservative. It writes only where the current guard allows and expects blank flash bytes. It is not a sector erase/update tool.</p>
 <p>Do not use HIMON to casually rewrite:</p>
@@ -104,7 +178,7 @@ Bank 3 is restored before monitor output resumes</code></pre>
 <h2 id="wdcmonv2-bridge">WDCMONv2 Bridge</h2>
 <p>Saving the board&#39;s original WDCMONv2/base flash image is future bridge work. HIMON does not do that today.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-himon.md</code>. Source modified: <time>2026-05-13T21:38:19Z</time>. HTML generated: <time>2026-05-13T22:33:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-himon.md</code>. Source modified: <time>2026-05-14T02:16:49Z</time>. HTML generated: <time>2026-05-14T02:27:23Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

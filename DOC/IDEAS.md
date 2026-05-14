@@ -36,6 +36,21 @@ reason it belongs in R-YORS / STR8 / HIMON
 
 Until then, it stays here as a special moment.
 
+## Far-Out Rating Note: Compact Debug Stops
+
+Bucket: `good far out`
+
+Idea: report HIMON-owned synthetic step/breakpoint traps as compact `@hhhh`
+state lines instead of ordinary-looking `BRK 00 PC=hhhh` stops.
+
+Far-out rating: `1/10`.
+
+Why: this only classifies a trap HIMON already knows it planted. It reduces
+terminal noise and keeps real program `BRK xx` signatures visually distinct.
+Because the benefit, owner, cost, and implementation shape are clear, the
+settled decision lives in `DOC/GUIDES/DECISIONS.md` and the operating behavior
+lives in `DOC/GUIDES/RTFM-himon.md`.
+
 ## Good Far Out: STR8 Future Flash Services
 
 Bucket: `good far out`

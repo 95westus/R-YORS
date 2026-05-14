@@ -90,7 +90,8 @@ DBGPROOF_DONE:
                         LDY             #>MSG_DONE
                         JSR             DBGPROOF_PRINT_LINE
                         BRK             $42
-                        JMP             START
+DBGPROOF_PASS_IDLE:
+                        BRA             DBGPROOF_PASS_IDLE
 
 DBGPROOF_PRINT_LINE:
                         JSR             SYS_WRITE_CSTRING

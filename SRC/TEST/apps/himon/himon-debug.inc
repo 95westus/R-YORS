@@ -23,7 +23,7 @@ CMD_B:
                         JSR             DBG_REQUIRE_PATCHABLE_ADDR
                         BCC             CMD_B_DONE
                         JSR             DBG_SET_BP
-                        BCC             CMD_USAGE_B
+                        BCC             CMD_B_FULL
                         LDX             #<MSG_BP_SET
                         LDY             #>MSG_BP_SET
                         JSR             HIM_WRITE_HBSTRING
@@ -43,11 +43,25 @@ CMD_B_CLEAR:
                         JSR             CMD_REQUIRE_EOL
                         BCC             CMD_USAGE_BC
                         JSR             DBG_CLEAR_BP
-                        BCC             CMD_USAGE_BC
+                        BCC             CMD_B_NF
                         LDX             #<MSG_BP_CLR
                         LDY             #>MSG_BP_CLR
                         JSR             HIM_WRITE_HBSTRING
                         JSR             DBG_PRINT_CMD_ADDR
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+CMD_B_FULL:
+                        LDX             #<MSG_BP_FULL
+                        LDY             #>MSG_BP_FULL
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+CMD_B_NF:
+                        LDX             #<MSG_BP_NF
+                        LDY             #>MSG_BP_NF
+                        JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
                         RTS
 
@@ -242,15 +256,34 @@ DBG_HANDLE_BRK:
                         BEQ             DBG_HANDLE_BRK_USER
                         LDA             DBG_STEP_LO
                         CMP             DBG_TMP_LO
-                        BNE             DBG_HANDLE_BRK_USER
+                        BNE             DBG_HANDLE_BRK_STEP_RESUME
                         LDA             DBG_STEP_HI
                         CMP             DBG_TMP_HI
-                        BNE             DBG_HANDLE_BRK_USER
+                        BNE             DBG_HANDLE_BRK_STEP_RESUME
                         LDY             #$00
                         LDA             DBG_STEP_OP
                         STA             (CMDP_ADDR_LO),Y
                         STZ             DBG_STEP_FLG
                         BRA             DBG_HANDLE_BRK_HIT
+
+DBG_HANDLE_BRK_STEP_RESUME:
+                        LDA             DBG_STEP_LO
+                        CMP             NMI_CTX_PCL
+                        BNE             DBG_HANDLE_BRK_USER
+                        LDA             DBG_STEP_HI
+                        CMP             NMI_CTX_PCH
+                        BNE             DBG_HANDLE_BRK_USER
+; A real BRK can stop before executing the step trap at the BRK resume PC.
+                        LDA             DBG_STEP_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             DBG_STEP_HI
+                        STA             CMDP_ADDR_HI
+                        LDY             #$00
+                        LDA             DBG_STEP_OP
+                        STA             (CMDP_ADDR_LO),Y
+                        STZ             DBG_STEP_FLG
+                        CLC
+                        RTS
 
 DBG_HANDLE_BRK_USER:
                         JSR             DBG_FIND_BP_ADDR
@@ -265,6 +298,8 @@ DBG_HANDLE_BRK_HIT:
                         STA             NMI_CTX_PCL
                         LDA             DBG_TMP_HI
                         STA             NMI_CTX_PCH
+                        LDA             #TRAP_CAUSE_DBG
+                        STA             TRAP_CAUSE
                         STZ             TRAP_BRK_SIG
                         SEC
                         RTS
@@ -308,7 +343,7 @@ DBG_STEP_BP_OVERLAP:
                         LDY             #>MSG_STEP_BP
                         JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
-                        CLC
+                        SEC
                         RTS
 DBG_STEP_FAIL:
                         CLC
@@ -326,6 +361,10 @@ DBG_STEP_RESOLVE_NEXT:
                         LDA             DBG_TMP_OPCODE
                         CMP             #$80
                         BEQ             DBG_STEP_REL_TAKEN
+                        CMP             #$4C
+                        BNE             DBG_STEP_NOT_JMP_ABS
+                        JMP             DBG_STEP_JMP_ABS
+DBG_STEP_NOT_JMP_ABS:
                         CMP             #$10
                         BEQ             DBG_STEP_BPL
                         CMP             #$30
@@ -415,6 +454,22 @@ DBG_STEP_REL_ADD:
 DBG_STEP_REL_DONE:
                         RTS
 
+DBG_STEP_JMP_ABS:
+                        CLC
+                        LDA             NMI_CTX_PCL
+                        ADC             #$01
+                        STA             CMDP_ADDR_LO
+                        LDA             NMI_CTX_PCH
+                        ADC             #$00
+                        STA             CMDP_ADDR_HI
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+                        STA             DBG_STEP_LO
+                        INY
+                        LDA             (CMDP_ADDR_LO),Y
+                        STA             DBG_STEP_HI
+                        RTS
+
 DBG_PRINT_STEP_INFO:
                         LDX             #<MSG_STEP
                         LDY             #>MSG_STEP
@@ -431,9 +486,34 @@ DBG_PRINT_STEP_INFO:
                         LDX             DBG_TMP_OPCODE
                         LDA             ASM_OP_MNEM_ID,X
                         BEQ             DBG_PRINT_STEP_NO_MNEM
+                        STA             DBG_TMP_OP
                         JSR             DIS_WRITE_SPACE
+                        LDA             DBG_TMP_OP
                         JSR             DIS_PRINT_MNEM_ID
+                        LDA             NMI_CTX_PCL
+                        STA             CMDP_ADDR_LO
+                        LDA             NMI_CTX_PCH
+                        STA             CMDP_ADDR_HI
+                        LDX             DBG_TMP_OPCODE
+                        LDA             ASM_OP_MODE,X
+                        JSR             DIS_PRINT_OPER_MODE
 DBG_PRINT_STEP_NO_MNEM:
+                        LDA             DBG_TMP_OPCODE
+                        BNE             DBG_PRINT_STEP_NO_BRK_SIG
+                        LDX             #<MSG_STEP_SIG
+                        LDY             #>MSG_STEP_SIG
+                        JSR             HIM_WRITE_HBSTRING
+                        CLC
+                        LDA             NMI_CTX_PCL
+                        ADC             #$01
+                        STA             CMDP_START_LO
+                        LDA             NMI_CTX_PCH
+                        ADC             #$00
+                        STA             CMDP_START_HI
+                        LDY             #$00
+                        LDA             (CMDP_START_LO),Y
+                        JSR             SYS_WRITE_HEX_BYTE
+DBG_PRINT_STEP_NO_BRK_SIG:
                         LDX             #<MSG_STEP_LEN
                         LDY             #>MSG_STEP_LEN
                         JSR             HIM_WRITE_HBSTRING
@@ -446,6 +526,10 @@ DBG_PRINT_STEP_NO_MNEM:
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             DBG_STEP_LO
                         JSR             SYS_WRITE_HEX_BYTE
+                        LDA             DBG_STEP_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             DBG_STEP_HI
+                        STA             CMDP_ADDR_HI
                         JMP             SYS_WRITE_CRLF
 
 DBG_OPCODE_LEN:
@@ -477,6 +561,62 @@ DBG_OPCODE_LEN_2:
                         SEC
                         RTS
 
+DBG_FORGET_ALL:
+                        STZ             DBG_STEP_FLG
+                        LDX             #$00
+DBG_FORGET_ALL_LOOP:
+                        STZ             DBG_BP0_FLG,X
+                        INX
+                        INX
+                        INX
+                        INX
+                        CPX             #(DBG_BP_MAX*DBG_BP_STRIDE)
+                        BCC             DBG_FORGET_ALL_LOOP
+                        RTS
+
+DBG_CLEAR_ALL:
+                        LDA             DBG_STEP_FLG
+                        AND             #DBG_BPF_ACTIVE
+                        BEQ             DBG_CLEAR_ALL_BP
+                        LDA             DBG_STEP_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             DBG_STEP_HI
+                        STA             CMDP_ADDR_HI
+                        JSR             DBG_ADDR_PATCHABLE
+                        BCC             DBG_CLEAR_ALL_STEP_DONE
+                        LDY             #$00
+                        LDA             DBG_STEP_OP
+                        STA             (CMDP_ADDR_LO),Y
+DBG_CLEAR_ALL_STEP_DONE:
+                        STZ             DBG_STEP_FLG
+DBG_CLEAR_ALL_BP:
+                        LDX             #$00
+DBG_CLEAR_ALL_LOOP:
+                        LDA             DBG_BP0_FLG,X
+                        AND             #DBG_BPF_ACTIVE
+                        BEQ             DBG_CLEAR_ALL_NEXT
+                        LDA             DBG_BP0_LO,X
+                        STA             CMDP_ADDR_LO
+                        LDA             DBG_BP0_HI,X
+                        STA             CMDP_ADDR_HI
+                        STX             DBG_TMP_INDEX
+                        JSR             DBG_ADDR_PATCHABLE
+                        LDX             DBG_TMP_INDEX
+                        BCC             DBG_CLEAR_ALL_CLR
+                        LDY             #$00
+                        LDA             DBG_BP0_OP,X
+                        STA             (CMDP_ADDR_LO),Y
+DBG_CLEAR_ALL_CLR:
+                        STZ             DBG_BP0_FLG,X
+DBG_CLEAR_ALL_NEXT:
+                        INX
+                        INX
+                        INX
+                        INX
+                        CPX             #(DBG_BP_MAX*DBG_BP_STRIDE)
+                        BCC             DBG_CLEAR_ALL_LOOP
+                        RTS
+
 DBG_PRINT_CMD_ADDR:
                         LDA             CMDP_ADDR_HI
                         JSR             SYS_WRITE_HEX_BYTE
@@ -484,19 +624,28 @@ DBG_PRINT_CMD_ADDR:
                         JSR             SYS_WRITE_HEX_BYTE
                         RTS
 
-DBG_REQUIRE_PATCHABLE_ADDR:
-                        ; Synthetic BRK patches only belong in user RAM.
+DBG_ADDR_PATCHABLE:
                         LDA             CMDP_ADDR_HI
                         CMP             #>UPA_BASE
-                        BCC             DBG_REQUIRE_PATCHABLE_ADDR_FAIL
+                        BCC             DBG_ADDR_PATCHABLE_FAIL
                         CMP             #>HIUPA
-                        BCS             DBG_REQUIRE_PATCHABLE_ADDR_FAIL
+                        BCS             DBG_ADDR_PATCHABLE_FAIL
                         SEC
                         RTS
+DBG_ADDR_PATCHABLE_FAIL:
+                        CLC
+                        RTS
+
+DBG_REQUIRE_PATCHABLE_ADDR:
+                        JSR             DBG_ADDR_PATCHABLE
+                        BCS             DBG_REQUIRE_PATCHABLE_ADDR_OK
 DBG_REQUIRE_PATCHABLE_ADDR_FAIL:
                         LDX             #<MSG_DBG_RAM
                         LDY             #>MSG_DBG_RAM
                         JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
                         CLC
+                        RTS
+DBG_REQUIRE_PATCHABLE_ADDR_OK:
+                        SEC
                         RTS
