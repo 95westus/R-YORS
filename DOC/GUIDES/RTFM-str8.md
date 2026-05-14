@@ -29,8 +29,12 @@ config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF
 ```
 
-On reset, STR8 initializes the FTDI path, prints `HIMON IN 6S. S=STR8`, then
-counts down `6 5 4 3 2 1`. Press `S` during that delay to enter STR8.
+On reset, STR8 initializes the FTDI path, prints `HIMON IN 3S. S=STR8`, then
+counts down `3 2 1`. Press `S` during that delay to enter STR8.
+
+If the countdown expires, STR8 clears HIMON's warm-reset signature before
+jumping to `$C000`, so HIMON takes its cold path. STR8's explicit `G` command
+still uses the warm handoff.
 
 ## Commands
 

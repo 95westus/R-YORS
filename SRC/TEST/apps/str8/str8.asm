@@ -53,7 +53,7 @@ STR8_WORKER_RUN         EQU             $0200
 STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_STORE_HI    EQU             $F8
 STR8_WORKER_COPY_PAGES  EQU             $08
-STR8_DELAY_TICKS        EQU             $06
+STR8_DELAY_TICKS        EQU             $03
 STR8_DELAY_TICK_A       EQU             $26
 STR8_DELAY_FIRST_A      EQU             $27
 STR8_DELAY_TICK_X       EQU             $B6
@@ -88,6 +88,7 @@ STR8_SECTOR_BUF_END_HI  EQU             $50
 
                         CODE
 ; 2026-05-07T19:14-05:00        WLP2        Timeout enters HIMON warm; S/s takes STR8.
+; 2026-05-14T00:00-05:00        WLP2        Timeout enters HIMON cold after half delay.
 START:
                         SEI
                         CLD
@@ -101,7 +102,7 @@ START:
                         LDX             #<MSG_CRLF
                         LDY             #>MSG_CRLF
                         JSR             STR8_PRINT_XY
-                        JMP             STR8_ENTER_HIMON_WARM
+                        JMP             STR8_ENTER_HIMON_COLD
 ?STR8_TAKEOVER:
                         ENDIF
                         JSR             STR8_PRINT_SCREEN
@@ -122,6 +123,13 @@ STR8_INIT:
                         JSR             STR8_SELECT_BANK_3
                         ENDIF
                         RTS
+
+STR8_ENTER_HIMON_COLD:
+                        STZ             STR8_HIMON_RESET_SIG0
+                        STZ             STR8_HIMON_RESET_SIG1
+                        STZ             STR8_HIMON_RESET_SIG2
+                        STZ             STR8_HIMON_RESET_SIG3
+                        JMP             STR8_HIMON_START
 
 STR8_ENTER_HIMON_WARM:
                         LDA             #$A5
@@ -966,7 +974,7 @@ MSG_SCREEN:             DB              $0D,$0A,"STR8 V0",$0D,$0A
 MSG_PROMPT:             DB              "STR8",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
-MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 6S. S=STR8 ",$A0
+MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 3S. S=STR8 ",$A0
                         ENDIF
 
 MSG_ID:                 DB              $0D,$0A,"STR8 V0",$0D,$8A

@@ -70,8 +70,8 @@ D F800 +10   08 78 AD 17 03 C9 04 F0 ...
 D FFFA FFFF  C2 DB 00 F0 C5 DB
 ```
 
-On reset, STR8 should initialize FTDI, print `HIMON IN 6S. S=STR8`, and count
-down `6 5 4 3 2 1`. Press `S` during that delay to show the STR8 prompt.
+On reset, STR8 should initialize FTDI, print `HIMON IN 3S. S=STR8`, and count
+down `3 2 1`. Press `S` during that delay to show the STR8 prompt.
 
 ## Flash Banks
 
