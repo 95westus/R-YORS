@@ -23,7 +23,8 @@ worker source:   $F800-$FA7F, copied to RAM when needed
 STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF</code></pre>
-<p>On reset, STR8 initializes the FTDI path, prints <code>HIMON IN 6S. S=STR8</code>, then counts down <code>6 5 4 3 2 1</code>. Press <code>S</code> during that delay to enter STR8.</p>
+<p>On reset, STR8 initializes the FTDI path, prints <code>HIMON IN 3S. S=STR8</code>, then counts down <code>3 2 1</code>. Press <code>S</code> during that delay to enter STR8.</p>
+<p>If the countdown expires, STR8 clears HIMON&#39;s warm-reset signature before jumping to <code>$C000</code>, so HIMON takes its cold path. STR8&#39;s explicit <code>G</code> command still uses the warm handoff.</p>
 <h2 id="commands">Commands</h2>
 <pre><code class="language-text">?       print STR8 ID and Bank 0 state
 B       run backup rotation, with verify
@@ -95,7 +96,7 @@ flash wear counters
 STR8 self-update UI
 WDCMONv2/base-image preservation</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-str8.md</code>. Source modified: <time>2026-05-12T02:54:05Z</time>. HTML generated: <time>2026-05-14T02:34:25Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-str8.md</code>. Source modified: <time>2026-05-14T02:43:48Z</time>. HTML generated: <time>2026-05-14T03:20:40Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

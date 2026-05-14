@@ -176,6 +176,58 @@ they need a step-over/replant state.
 Only set breakpoints on opcode bytes. Avoid operands, BRK signature bytes, data
 bytes, and code that is already patched by a pending breakpoint.
 
+## Register Mutation Recommendations
+
+Current HIMON already has a saved trap context with `A`, `X`, `Y`, `P`, `S`,
+and `PC`. `R` and `X` currently parse assignments to that context:
+
+```text
+R [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+X [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+```
+
+Keep `R` as the safe register editor if ROM space allows. It is not strictly
+required because stopped contexts are already printed and `X` can mutate before
+resuming, but `R` gives the operator a low-risk way to inspect or alter the
+saved state without accidentally running user code.
+
+Recommended command shape:
+
+```text
+R [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+X [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+N [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+G addr [A=bb X=bb Y=bb P=bb S=bb]
+```
+
+`R` should allow all saved-context fields. `X` should allow all fields too,
+because it resumes with `RTI` from that context. `N` should allow the same
+fields before stepping; mutating `P` is especially useful because branch
+single-step resolution depends on the saved flags, and mutating `PC` is useful
+for retrying or skipping an instruction. Mutating `S` is sharp but legitimate
+for an expert monitor. If `S` remains a step alias in a given build, it should
+follow `N` instead of growing a separate syntax.
+
+`G` currently accepts only an address and performs a raw `JMP`. If register
+arguments are added, prefer treating the address argument as the new `PC` and
+then resuming through the existing context/`RTI` path instead of hand-loading
+registers before a `JMP`. That keeps `A`, `X`, `Y`, `P`, `S`, and `PC` behavior
+consistent with `X`. `G PC=hhhh` is unnecessary because `G hhhh` already names
+the target address.
+
+Keep raw `P=bb` as the exact status-register form. A friendlier future `F=`
+syntax can be added as sugar for individual flags, matching the printed flag
+style where uppercase means set and lowercase means clear:
+
+```text
+N F=Cz      set carry, clear zero
+X F=nvBDizc set/clear the listed flags by case
+G 3000 F=I  start with interrupt disable set
+```
+
+`P=bb` and `F=` should compose by applying assignments in command-line order if
+both are supplied.
+
 The proof walks these branch cases:
 
 ```text

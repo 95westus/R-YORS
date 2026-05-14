@@ -86,6 +86,23 @@ NMI PC=hhhh
 <p>The first value is the pending breakpoint address. The second value is the original opcode saved by HIMON. The list is currently slot order, not sorted address order. <code>B C hhhh</code> removes a pending breakpoint; after an <code>@hhhh</code> breakpoint hit, that breakpoint has already been consumed.</p>
 <p>Breakpoints are one-shot on purpose in this build. On hit, HIMON restores the original opcode and clears the slot so <code>X</code> can resume from the same PC without recursively hitting the same <code>BRK 00</code>. Persistent breakpoints are future work; they need a step-over/replant state.</p>
 <p>Only set breakpoints on opcode bytes. Avoid operands, BRK signature bytes, data bytes, and code that is already patched by a pending breakpoint.</p>
+<h2 id="register-mutation-recommendations">Register Mutation Recommendations</h2>
+<p>Current HIMON already has a saved trap context with <code>A</code>, <code>X</code>, <code>Y</code>, <code>P</code>, <code>S</code>, and <code>PC</code>. <code>R</code> and <code>X</code> currently parse assignments to that context:</p>
+<pre><code class="language-text">R [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+X [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]</code></pre>
+<p>Keep <code>R</code> as the safe register editor if ROM space allows. It is not strictly required because stopped contexts are already printed and <code>X</code> can mutate before resuming, but <code>R</code> gives the operator a low-risk way to inspect or alter the saved state without accidentally running user code.</p>
+<p>Recommended command shape:</p>
+<pre><code class="language-text">R [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+X [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+N [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
+G addr [A=bb X=bb Y=bb P=bb S=bb]</code></pre>
+<p><code>R</code> should allow all saved-context fields. <code>X</code> should allow all fields too, because it resumes with <code>RTI</code> from that context. <code>N</code> should allow the same fields before stepping; mutating <code>P</code> is especially useful because branch single-step resolution depends on the saved flags, and mutating <code>PC</code> is useful for retrying or skipping an instruction. Mutating <code>S</code> is sharp but legitimate for an expert monitor. If <code>S</code> remains a step alias in a given build, it should follow <code>N</code> instead of growing a separate syntax.</p>
+<p><code>G</code> currently accepts only an address and performs a raw <code>JMP</code>. If register arguments are added, prefer treating the address argument as the new <code>PC</code> and then resuming through the existing context/<code>RTI</code> path instead of hand-loading registers before a <code>JMP</code>. That keeps <code>A</code>, <code>X</code>, <code>Y</code>, <code>P</code>, <code>S</code>, and <code>PC</code> behavior consistent with <code>X</code>. <code>G PC=hhhh</code> is unnecessary because <code>G hhhh</code> already names the target address.</p>
+<p>Keep raw <code>P=bb</code> as the exact status-register form. A friendlier future <code>F=</code> syntax can be added as sugar for individual flags, matching the printed flag style where uppercase means set and lowercase means clear:</p>
+<pre><code class="language-text">N F=Cz      set carry, clear zero
+X F=nvBDizc set/clear the listed flags by case
+G 3000 F=I  start with interrupt disable set</code></pre>
+<p><code>P=bb</code> and <code>F=</code> should compose by applying assignments in command-line order if both are supplied.</p>
 <p>The proof walks these branch cases:</p>
 <pre><code class="language-text">BCC taken
 BCS taken
@@ -184,7 +201,7 @@ flash member: link at the intended ROM address and add a verified image builder.
 <pre><code class="language-text">make -C SRC himon-str8-rom-bin</code></pre>
 <p>For a new ROM member, add an explicit script or Makefile rule that places bytes at the correct <code>$8000-$FFFF</code> bank offset and verifies the result before it is called burnable.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-14T02:09:38Z</time>. HTML generated: <time>2026-05-14T02:34:25Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-14T03:20:34Z</time>. HTML generated: <time>2026-05-14T03:20:40Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>
