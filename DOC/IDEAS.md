@@ -170,6 +170,49 @@ sector-screen, while RCAT/RREC records underneath can explain who owns each
 sector, what hash named it, what installed it, and which update/recovery event
 last touched it.
 
+## Good Far Out: Uncataloged Code Placement
+
+Bucket: `good far out`
+
+Code that has no live `RREC` needs a deliberate home. It should not be scattered
+through general growth flash just because the bytes assemble and run.
+
+There are at least three different states:
+
+```text
+headered source code      has ROUTINE/metadata comments in source
+uncataloged runtime code  has no live RREC describing it
+cataloged runtime code    has one or more RREC exports in an RCAT
+```
+
+Headered source code can be readable to humans and generators, but that is not
+the same as a runtime catalog contract. If bytes have no `RREC`, normal catalog
+lookup, bury, supersede, and condense logic cannot prove what they are or where
+they are safe to move. That makes them sticky: the system must treat their
+placement as intentional until a real descriptor exists.
+
+Possible placement rule:
+
+```text
+No RREC -> place only in explicit static lanes:
+  high ROM/flash
+  protected/system flash
+  fixed proof RAM
+  a documented staging range
+```
+
+Do not let uncataloged code become anonymous filler inside future RCAT/RBODY
+storage. Once the code gains an `RREC`, its record can say whether it is core
+system, debug, user-loaded, app/session body, hybrid RAM overlay, or another
+typed runtime thing. Before that, placement policy has to carry the safety
+burden.
+
+The debug case is a good example. Debug may be optional and not yet burned into
+the permanent ROM image. If a user loads a RAM debug body and HIMON installs or
+advertises an `RREC` for it, then the loaded body becomes part of the active
+system surface for that session or provider policy. Without the `RREC`, it is
+only a loaded proof/tool at a known address.
+
 ## Good Far Out: STR8 RAM-Mediated Sector Pairing
 
 Bucket: `good far out`
