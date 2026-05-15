@@ -38,6 +38,16 @@
   rows: exact hit address, aligned row address, and `*` when the match crosses
   a 16-byte display row. Current step/next moves to `N` only; do not add
   `NEXT` as an alias.
+- Document and design BIO-level FTDI RX lookahead before changing the stable
+  input path. A true hardware peek is not available once
+  `PIN_FTDI_READ_BYTE_NONBLOCK` reads the FIFO, so any general peek must cache
+  bytes at the BIO layer and require all RX consumers to read through BIO.
+  Keep `BIO_FTDI_GET_CTRL_C` as a consuming long-scan abort poll for now; do
+  not use it as a general non-destructive keyboard peek.
+- Keep the `BIO_FTDI_*_BYTE_BLOCK` routines as unbounded blocking APIs unless
+  every caller is audited. Bounded waits should use the existing timeout-shaped
+  routines or small wrappers with an explicit loop-delay contract, leaving room
+  for a timer backend later.
 - Add a tiny sorted-list helper for monitor tables such as breakpoint listing.
   `B L` may print slot order for now, but sorted address order will be easier
   to read once multiple breakpoints are active. For the current four breakpoint

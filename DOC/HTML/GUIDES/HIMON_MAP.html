@@ -92,7 +92,7 @@ HIMON/himon-shared-eq.inc</code></pre>
     DISPATCH --&gt; G[G CMD_G]
     DISPATCH --&gt; L[L CMD_L]
     DISPATCH --&gt; B[B CMD_B]
-    DISPATCH --&gt; S[S CMD_S]
+    DISPATCH --&gt; N[N CMD_N]
     DISPATCH --&gt; A[A CMD_A]
     DISPATCH --&gt; Q[Q CMD_Q]
 
@@ -120,7 +120,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 
     L --&gt; LOADMAP[S19 loader map]
     B --&gt; DBGMAP[breakpoint map]
-    S --&gt; STEPMAP[step map]
+    N --&gt; STEPMAP[step map]
     A --&gt; ASMMAP[assembler map]
     Q --&gt; QUIESCE[SEI / WAI / MON_REENTER]</pre>
 <h3 id="loader-and-flash-write-edges">Loader And Flash Write Edges</h3>
@@ -185,13 +185,13 @@ HIMON/himon-shared-eq.inc</code></pre>
     CLR --&gt; FINDADDR
     LIST --&gt; PRINT[SYS_WRITE_HEX_BYTE]
 
-    CMD_S[S command] --&gt; CTX[MON_CTX_REQUIRE_VALID]
-    CMD_S --&gt; STEP[DBG_STEP_ONCE]
+    CMD_N[N command] --&gt; CTX[MON_CTX_REQUIRE_VALID]
+    CMD_N --&gt; STEP[DBG_STEP_ONCE]
     STEP --&gt; OPLEN[DBG_OPCODE_LEN]
     STEP --&gt; STEPINFO[DBG_PRINT_STEP_INFO]
     STEP --&gt; FINDADDR
     STEP --&gt; PATCH[patch temporary BRK]
-    CMD_S --&gt; RESUME[MON_CTX_RESUME_RTI]</pre>
+    CMD_N --&gt; RESUME[MON_CTX_RESUME_RTI]</pre>
 <h3 id="disassembler-and-assembler-edges">Disassembler And Assembler Edges</h3>
 <pre class="mermaid">flowchart TD
     CMD_U[U command] --&gt; RANGE[CMD_PARSE_RANGE_REQUIRED]
@@ -303,7 +303,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 <td><code>?</code></td>
 <td><code>CMD_HELP</code></td>
 <td>Prints current command list.</td>
-<td>Help text includes commands from includes: <code># ? D M U R X G L B S A Q</code>.</td>
+<td>Help text includes commands from includes: <code># ? D M U R X G L B N A Q</code>.</td>
 </tr>
 <tr>
 <td>Memory dump</td>
@@ -388,8 +388,8 @@ HIMON/himon-shared-eq.inc</code></pre>
 </tr>
 <tr>
 <td>Single step</td>
-<td><code>S</code></td>
-<td><code>CMD_S</code>, <code>DBG_STEP_ONCE</code>, <code>DBG_OPCODE_LEN</code>, <code>MON_CTX_RESUME_RTI</code></td>
+<td><code>N</code></td>
+<td><code>CMD_N</code>, <code>DBG_STEP_ONCE</code>, <code>DBG_OPCODE_LEN</code>, <code>MON_CTX_RESUME_RTI</code></td>
 <td>Computes next PC by opcode length, plants a temporary BRK, resumes with <code>RTI</code>.</td>
 <td>Does not emulate branch-taken paths yet.</td>
 </tr>
@@ -443,7 +443,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 </ul>
 <p>but the related command records, help text, BRK hook behavior, and build docs must be omitted or revised together. NMI trap capture may remain without the breakpoint/<code>N</code> stepping subsystem.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_MAP.md</code>. Source modified: <time>2026-05-13T21:43:01Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_MAP.md</code>. Source modified: <time>2026-05-15T03:52:12Z</time>. HTML generated: <time>2026-05-15T03:55:15Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

@@ -37,6 +37,27 @@
 <li>Keep STR8 fixed-buffer-only. HIMON can adopt <code>MEM_*</code> later, starting with</li>
 </ul>
 <p>app/session-owned bump allocation and pools before any general free-list heap.</p>
+<h2 id="bio-rx-lookahead-direction">BIO RX Lookahead Direction</h2>
+<ul>
+<li>Treat the current FTDI input path as stable until a deliberate BIO lookahead</li>
+</ul>
+<p>design is ready. <code>PIN_FTDI_READ_BYTE_NONBLOCK</code> consumes the hardware FIFO byte, so a true non-destructive hardware peek is not available at the PIN layer.</p>
+<ul>
+<li>A future general peek must be a BIO-owned logical peek: cache one byte, or a</li>
+</ul>
+<p>small ring of bytes, above the PIN layer and make ordinary BIO reads consume cached bytes before touching hardware.</p>
+<ul>
+<li>Once BIO lookahead exists, all FTDI RX consumers must go through BIO. Direct</li>
+</ul>
+<p>calls to <code>PIN_FTDI_READ_BYTE_NONBLOCK</code> would bypass the cache and can reorder or discard the logical input stream.</p>
+<ul>
+<li>Keep <code>BIO_FTDI_GET_CTRL_C</code> as a consuming abort poll for long-running code</li>
+</ul>
+<p>that owns input, such as memory search. A non-destructive Ctrl-C service should be a separate BIO routine and probably needs a ring buffer if it must preserve ordinary typed input while still finding Ctrl-C behind it.</p>
+<ul>
+<li>Keep block-vs-timeout contracts separate. <code>BIO_FTDI_READ_BYTE_BLOCK</code> and</li>
+</ul>
+<p><code>BIO_FTDI_WRITE_BYTE_BLOCK</code> mean wait until completion; timeout variants or explicit wait-long wrappers should return <code>C=0</code> on bounded failure. A later timer can replace loop-delay internals without changing those caller contracts.</p>
 <h2 id="optional-debug-module-direction">Optional Debug Module Direction</h2>
 <ul>
 <li>Current debug stays a compact HIMON include because that is the smallest</li>
@@ -247,7 +268,7 @@
 <li>Add a future generator only if the guide set starts drifting again.</li>
 </ul>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/FUTURE.md</code>. Source modified: <time>2026-05-13T21:47:37Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/FUTURE.md</code>. Source modified: <time>2026-05-15T03:02:29Z</time>. HTML generated: <time>2026-05-15T03:55:15Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

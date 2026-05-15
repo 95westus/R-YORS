@@ -92,6 +92,17 @@ UTL HEX PARSE BYTE -> pure conversion helper, no I/O side effect
 FLASH BYTE PROGRAM -> guarded flash byte writer
 ```
 
+## FTDI Control And Status
+
+| routine | hash | class | in | out / flags | proof | notes | tags |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `BIO_FTDI_INIT` | `$30A462F2` | BIO init | none | FTDI pin interface initialized | PROVEN | promoted direct wrapper over top-shelf PIN init | `BIO FTDI INIT PROMOTED` |
+| `PIN_FTDI_INIT` | `$226EDE8F` | PIN init | `A` preserved | FTDI control/data direction registers configured | PROVEN | promoted top-shelf FTDI pin initialization | `PIN FTDI INIT PROMOTED` |
+| `BIO_FTDI_CHECK_ENUMERATED` | `$994776E3` | BIO status | none | `C=1,A=1` enumerated; `C=0,A=0` otherwise | WRAPS_PROVEN | promoted direct wrapper over PIN enumeration check | `BIO FTDI ENUM PROMOTED` |
+| `PIN_FTDI_CHECK_ENUMERATED` | `$8A7D53EE` | PIN status | none | `C=1,A=1` enumerated; `C=0,A=0` otherwise | PROVEN | promoted top-shelf PWE# enumeration check | `PIN FTDI ENUM PROMOTED` |
+| `BIO_FTDI_FLUSH_RX` | `$2F6622B9` | BIO flush | none | `C=1` empty; `C=0` guard expired; `A/X/Y` preserved | PROVEN | promoted bounded RX drain used by reset/startup and search proof | `BIO FTDI FLUSH RX PROMOTED` |
+| `PIN_FTDI_POLL_RX_READY` | `$F2B69C5B` | PIN readiness | none | `C=1` byte ready; `C=0` empty; `A/X/Y` preserved | PROVEN | promoted top-shelf non-consuming RXF# readiness probe | `PIN FTDI POLL RX PROMOTED` |
+
 ## Read And Input
 
 | routine | hash | class | in | out / flags | proof | notes | tags |
@@ -103,10 +114,12 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `SYS_READ_CHAR_TIMEOUT_SPINDOWN` | `$03FBED1D` | SYS timed read | `A=timeout slices` | success: `C=1`, `A=byte`, `X=slices left` | NEEDS_PROOF | visible bounded wait | `SYS READ TIMEOUT SPINDOWN` |
 | `SYS_READ_CHAR_ECHO` | `$F91947F8` | SYS cooked char | none | backend cooked-char `A/C` | NEEDS_PROOF | short alias for cooked echoed char input | `SYS READ ECHO COOKED` |
 | `SYS_READ_CHAR_COOKED_ECHO` | `$B85E3F10` | SYS cooked char | none | backend cooked-char `A/C` | NEEDS_PROOF | echo/normalize single character | `SYS READ ECHO COOKED` |
-| `BIO_FTDI_READ_BYTE_BLOCK` | `$20285B85` | BIO read byte | none | `C=1`, `A=byte` | PARTIAL | STR8-friendly blocking FTDI byte read | `BIO FTDI READ BYTE BLOCKING` |
+| `BIO_FTDI_READ_BYTE_BLOCK` | `$20285B85` | BIO read byte | none | `C=1`, `A=byte` | PROVEN | promoted stable unbounded FTDI byte read; use timeout callers for bounded waits | `BIO FTDI READ BYTE BLOCKING PROMOTED` |
 | `BIO_FTDI_READ_BYTE_NONBLOCK` | `$6A5E3370` | BIO read byte | none | `C=1,A=byte` ready; `C=0,A=0` none | WRAPS_PROVEN | smallest FTDI receive probe | `BIO FTDI READ BYTE NONBLOCKING` |
+| `PIN_FTDI_READ_BYTE_NONBLOCK` | `$483BB2DD` | PIN read byte | none | `C=1,A=byte` ready; `C=0,A=0` none | PROVEN | promoted top-shelf FTDI FIFO read; consumes FIFO byte on success | `PIN FTDI READ BYTE NONBLOCKING PROMOTED` |
 | `BIO_FTDI_READ_BYTE_TMO` | `$83426F30` | BIO timed read | none | bounded receive result | PARTIAL | retrying nonblocking read; no-data path has test harness evidence | `BIO FTDI READ TIMEOUT` |
 | `BIO_FTDI_POLL_RX_READY` | `$3BD83670` | BIO readiness | none | `C=1` ready, `C=0` not ready | WRAPS_PROVEN | readiness alias over proven PIN poll | `BIO FTDI POLL RX` |
+| `PIN_FTDI_POLL_RX_READY` | `$F2B69C5B` | PIN readiness | none | `C=1` byte ready; `C=0` empty; `A/X/Y` preserved | PROVEN | promoted top-shelf non-consuming RXF# readiness probe | `PIN FTDI POLL RX PROMOTED` |
 | `BIO_FTDI_GET_CTRL_C` | `$426150D2` | BIO control | none | `C=1,A=$03` if Ctrl-C consumed | NEEDS_PROOF | recovery-level abort check | `BIO FTDI CTRL_C NONBLOCKING` |
 
 ## Line And String Input
@@ -138,8 +151,9 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `SYS_WRITE_LINE_XY` | `$59A0E7C5` | SYS write C line | `X/Y=source` | `C` follows trailing CRLF | NEEDS_PROOF | CSTR plus newline | `SYS WRITE CSTRING CRLF` |
 | `SYS_WRITE_HEX_BYTE` | `$A1722743` | SYS write hex | `A=byte` | `C=1`, `A` preserved | NEEDS_PROOF | print `A` as two uppercase hex chars | `SYS WRITE HEX BYTE PRESERVE_A` |
 | `SYS_WRITE_CRLF` | `$3F362368` | SYS newline | none | `C=1` success | NEEDS_PROOF | device-neutral CRLF | `SYS WRITE CRLF` |
-| `BIO_FTDI_WRITE_BYTE_BLOCK` | `$379FE930` | BIO write byte | `A=byte` | `C=1`, `A` preserved | PARTIAL | STR8-friendly blocking FTDI byte write | `BIO FTDI WRITE BYTE BLOCKING` |
+| `BIO_FTDI_WRITE_BYTE_BLOCK` | `$379FE930` | BIO write byte | `A=byte` | `C=1`, `A` preserved | PROVEN | promoted stable unbounded FTDI byte write; use timeout callers for bounded waits | `BIO FTDI WRITE BYTE BLOCKING PROMOTED` |
 | `BIO_FTDI_WRITE_BYTE_NONBLOCK` | `$8FAE8ABB` | BIO write byte | `A=byte` | `C=1` accepted, `C=0` timeout, `A` preserved | PARTIAL | success path has test harness evidence; timeout path still needs forced blocked-FIFO proof | `BIO FTDI WRITE BYTE NONBLOCKING` |
+| `PIN_FTDI_WRITE_BYTE_NONBLOCK` | `$D55FC6FC` | PIN write byte | `A=byte` | `C=1` accepted; `C=0` timeout; `A` preserved | PROVEN | promoted top-shelf FTDI FIFO write; timeout path has documented hardware limitation | `PIN FTDI WRITE BYTE NONBLOCKING PROMOTED` |
 | `BIO_FTDI_WRITE_BYTE_TMO` | `$DC28D281` | BIO timed write | `A=byte` | bounded transmit result, `A` preserved | NEEDS_PROOF | retrying nonblocking write | `BIO FTDI WRITE TIMEOUT` |
 | `BIO_WRITE_HEX_BYTE` | `$CDBB01D2` | BIO write hex | `A=byte` | `C=1`, `A` preserved | NEEDS_PROOF | STR8-friendly hex output | `BIO WRITE HEX BYTE` |
 | `BIO_WRITE_CRLF` | `$8C36CC4D` | BIO newline | none | `C=1`, `A` preserved | NEEDS_PROOF | STR8-friendly newline | `BIO WRITE CRLF` |
@@ -148,10 +162,10 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 
 | routine | hash | class | in | out / flags | proof | notes | tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `UTL_HEX_NIBBLE_TO_ASCII` | `$D4C88B87` | UTL hex encode | `A=0..15` | `A='0'..'F'`, `C=1` | NEEDS_PROOF | low nibble to ASCII hex | `UTL HEX ENCODE NIBBLE` |
-| `UTL_HEX_BYTE_TO_ASCII_YX` | `$7142DD21` | UTL hex encode | `A=byte` | `A` preserved, `Y=hi ASCII`, `X=lo ASCII`, `C=1` | NEEDS_PROOF | byte to two hex chars | `UTL HEX ENCODE BYTE` |
-| `UTL_HEX_ASCII_TO_NIBBLE` | `$ADD714B1` | UTL hex parse | `A=ASCII hex` | `C=1,A=nibble` success | NEEDS_PROOF | accepts `0..9`, `A..F`, `a..f` | `UTL HEX PARSE NIBBLE` |
-| `UTL_HEX_ASCII_YX_TO_BYTE` | `$EA0B3E6D` | UTL hex parse | `Y=hi ASCII`, `X=lo ASCII` | `C=1,A=byte` success | NEEDS_PROOF | two hex chars to byte | `UTL HEX PARSE BYTE` |
+| `UTL_HEX_NIBBLE_TO_ASCII` | `$D4C88B87` | UTL hex encode | `A=byte` | low nibble as `'0'..'F'`, `C=1` | PROVEN | promoted small uppercase nibble encoder | `UTL HEX ENCODE NIBBLE PROMOTED` |
+| `UTL_HEX_BYTE_TO_ASCII_YX` | `$7142DD21` | UTL hex encode | `A=byte` | `A` preserved, `Y=hi ASCII`, `X=lo ASCII`, `C=1` | PROVEN | promoted byte-to-two-ASCII helper | `UTL HEX ENCODE BYTE PROMOTED` |
+| `UTL_HEX_ASCII_TO_NIBBLE` | `$ADD714B1` | UTL hex parse | `A=ASCII hex` | `C=1,A=nibble` success; `C=0,A` unchanged invalid | PROVEN | promoted parser for `0..9`, `A..F`, `a..f` | `UTL HEX PARSE NIBBLE PROMOTED` |
+| `UTL_HEX_ASCII_YX_TO_BYTE` | `$EA0B3E6D` | UTL hex parse | `Y=hi ASCII`, `X=lo ASCII` | `C=1,A=byte` success; `C=0` invalid | PROVEN | promoted two-char parser; uses `UTL_CONV_TMP_A=$E6` | `UTL HEX PARSE BYTE PROMOTED` |
 | `UTL_CHAR_IS_PRINTABLE` | `$0566EC22` | UTL char test | `A=char` | `C=1` printable | NEEDS_PROOF | space through `~` | `UTL CHAR CLASSIFY PRINTABLE` |
 | `UTL_CHAR_IS_CONTROL` | `$7B454918` | UTL char test | `A=char` | `C=1` control | NEEDS_PROOF | `00..1F` or `7F` | `UTL CHAR CLASSIFY CONTROL` |
 | `UTL_CHAR_IS_DIGIT` | `$06BA7C90` | UTL char test | `A=char` | `C=1` digit | NEEDS_PROOF | decimal digit test | `UTL CHAR CLASSIFY DIGIT` |
@@ -218,6 +232,364 @@ BIO_FTDI_READ_BYTE_BLOCK
 BIO_FTDI_WRITE_BYTE_BLOCK
 BIO_WRITE_HEX_BYTE
 BIO_WRITE_CRLF
+```
+
+## Promoted PIN Routine Hash Sigs / RREC Seeds
+
+The promoted PIN FTDI primitives are the hardware-facing roots under the BIO
+contracts. They now carry current HIMON-style hash signatures immediately before
+their callable entries.
+
+```text
+RREC PIN_FTDI_INIT
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      PIN_FTDI_INIT
+  hash32:    $226EDE8F
+  stored:    hash0=$8F hash1=$DE hash2=$6E hash3=$22
+  hash_sig:  46 4E D6 8F DE 6E 22 00
+             emitted as PIN_FTDI_INIT_FNV immediately before entry
+  provider:  active FTDI PIN driver
+  body:      current ROM image or linked PIN body
+  entry:     PIN_FTDI_INIT
+  call:      JSR entry; returns by RTS after VIA pin setup
+  in:        A preserved
+  out:       FTDI control/data direction registers configured
+  imports:   none
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO $7FE0/$7FE2/$7FE3
+             stack return frame plus A save
+  flags:     PIN, FTDI, INIT, PRESERVE_A, PRESERVE_XY, PROMOTED, TOP_SHELF
+  proof:     PROVEN; top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+```
+
+```text
+RREC PIN_FTDI_POLL_RX_READY
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      PIN_FTDI_POLL_RX_READY
+  hash32:    $F2B69C5B
+  stored:    hash0=$5B hash1=$9C hash2=$B6 hash3=$F2
+  hash_sig:  46 4E D6 5B 9C B6 F2 00
+             emitted as PIN_FTDI_POLL_RX_READY_FNV immediately before entry
+  provider:  active FTDI PIN driver
+  body:      current ROM image or linked PIN body
+  entry:     PIN_FTDI_POLL_RX_READY
+  call:      JSR entry; returns by RTS after one RXF# sample
+  in:        none
+  out:       ready: C=1; empty: C=0; A/X/Y preserved
+  imports:   none
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO $7FE0
+             stack return frame plus A save
+  flags:     PIN, FTDI, POLL, RX, READY, NONCONSUMING, CARRY_STATUS,
+             PRESERVE_A, PRESERVE_XY, PROMOTED, TOP_SHELF
+  proof:     PROVEN; top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+  caveat:    readiness only; callers that need the byte must use a read routine
+```
+
+```text
+RREC PIN_FTDI_CHECK_ENUMERATED
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      PIN_FTDI_CHECK_ENUMERATED
+  hash32:    $8A7D53EE
+  stored:    hash0=$EE hash1=$53 hash2=$7D hash3=$8A
+  hash_sig:  46 4E D6 EE 53 7D 8A 00
+             emitted as PIN_FTDI_CHECK_ENUMERATED_FNV immediately before entry
+  provider:  active FTDI PIN driver
+  body:      current ROM image or linked PIN body
+  entry:     PIN_FTDI_CHECK_ENUMERATED
+  call:      JSR entry; returns by RTS after one PWE# sample
+  in:        none
+  out:       enumerated: C=1,A=1; otherwise: C=0,A=0; X/Y preserved
+  imports:   none
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO $7FE0
+             stack return frame only
+  flags:     PIN, FTDI, ENUM, STATUS, CARRY_STATUS, PRESERVE_XY, PROMOTED,
+             TOP_SHELF
+  proof:     PROVEN; top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+  caveat:    returned A value is still the current placeholder status encoding
+```
+
+```text
+RREC PIN_FTDI_READ_BYTE_NONBLOCK
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      PIN_FTDI_READ_BYTE_NONBLOCK
+  hash32:    $483BB2DD
+  stored:    hash0=$DD hash1=$B2 hash2=$3B hash3=$48
+  hash_sig:  46 4E D6 DD B2 3B 48 00
+             emitted as PIN_FTDI_READ_BYTE_NONBLOCK_FNV immediately before entry
+  provider:  active FTDI PIN driver
+  body:      current ROM image or linked PIN body
+  entry:     PIN_FTDI_READ_BYTE_NONBLOCK
+  call:      JSR entry; returns by RTS after a single readiness check
+  in:        none
+  out:       ready: C=1, A=byte; empty: C=0, A=$00
+  imports:   none
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO $7FE0/$7FE1/$7FE3
+             stack return frame plus scratch push while RD# is asserted
+  flags:     PIN, FTDI, READ, BYTE, NONBLOCKING, CARRY_STATUS, PROMOTED,
+             TOP_SHELF
+  proof:     PROVEN; top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+  caveat:    consumes the FIFO byte when ready; not a non-destructive peek
+```
+
+```text
+RREC PIN_FTDI_WRITE_BYTE_NONBLOCK
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      PIN_FTDI_WRITE_BYTE_NONBLOCK
+  hash32:    $D55FC6FC
+  stored:    hash0=$FC hash1=$C6 hash2=$5F hash3=$D5
+  hash_sig:  46 4E D6 FC C6 5F D5 00
+             emitted as PIN_FTDI_WRITE_BYTE_NONBLOCK_FNV immediately before entry
+  provider:  active FTDI PIN driver
+  body:      current ROM image or linked PIN body
+  entry:     PIN_FTDI_WRITE_BYTE_NONBLOCK
+  call:      JSR entry; returns by RTS after accept or spin-limit timeout
+  in:        A=byte to transmit
+  out:       accepted: C=1, A preserved; timeout: C=0, A preserved
+  imports:   none
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO $7FE0/$7FE1/$7FE3
+             stack return frame plus A save
+  flags:     PIN, FTDI, WRITE, BYTE, NONBLOCKING, TIMEOUT, CARRY_STATUS,
+             PRESERVE_A, PROMOTED, TOP_SHELF
+  proof:     PROVEN; top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+  caveat:    forced blocked-FIFO hardware proof is still difficult, but the
+             existing top-shelf driver pass verified return codes and behavior
+```
+
+## Promoted BIO Routine Hash Sigs / RREC Seeds
+
+The promoted BIO FTDI primitives have current HIMON-style hash signatures now
+and RREC seeds for the later catalog linker/resolver. The hash signatures are
+real emitted bytes; the fuller RREC cards are not emitted/scanned catalog bytes
+yet.
+
+```text
+RREC BIO_FTDI_INIT
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      BIO_FTDI_INIT
+  hash32:    $30A462F2
+  stored:    hash0=$F2 hash1=$62 hash2=$A4 hash3=$30
+  hash_sig:  46 4E D6 F2 62 A4 30 00
+             emitted as BIO_FTDI_INIT_FNV immediately before entry
+  provider:  active HIMON/BIO image
+  body:      current ROM image or linked BIO body
+  entry:     BIO_FTDI_INIT
+  call:      JSR entry; returns by RTS after PIN init
+  in:        none
+  out:       FTDI pin interface initialized
+  imports:   PIN_FTDI_INIT
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO through PIN_FTDI_INIT
+             stack return frame plus transitive PIN init A save
+  flags:     BIO, FTDI, INIT, PUFF_PASS, PROMOTED
+  proof:     PROVEN; wrapper promoted 2026-04-19, hash-sig promoted 2026-05-15
+```
+
+```text
+RREC BIO_FTDI_CHECK_ENUMERATED
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      BIO_FTDI_CHECK_ENUMERATED
+  hash32:    $994776E3
+  stored:    hash0=$E3 hash1=$76 hash2=$47 hash3=$99
+  hash_sig:  46 4E D6 E3 76 47 99 00
+             emitted as BIO_FTDI_CHECK_ENUMERATED_FNV immediately before entry
+  provider:  active HIMON/BIO image
+  body:      current ROM image or linked BIO body
+  entry:     BIO_FTDI_CHECK_ENUMERATED
+  call:      JSR entry; returns by RTS after PIN status check
+  in:        none
+  out:       enumerated: C=1,A=1; otherwise: C=0,A=0
+  imports:   PIN_FTDI_CHECK_ENUMERATED
+  resources: ZP none; fixed RAM none
+             transitive PIN enumeration resources
+             stack return frame
+  flags:     BIO, FTDI, ENUM, STATUS, CARRY_STATUS, PUFF_PASS, PROMOTED
+  proof:     WRAPS_PROVEN; wrapper promoted 2026-04-19, hash-sig promoted 2026-05-15
+```
+
+```text
+RREC BIO_FTDI_FLUSH_RX
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      BIO_FTDI_FLUSH_RX
+  hash32:    $2F6622B9
+  stored:    hash0=$B9 hash1=$22 hash2=$66 hash3=$2F
+  hash_sig:  46 4E D6 B9 22 66 2F 00
+             emitted as BIO_FTDI_FLUSH_RX_FNV immediately before entry
+  provider:  active HIMON/BIO image
+  body:      current ROM image or linked BIO body
+  entry:     BIO_FTDI_FLUSH_RX
+  call:      JSR entry; returns by RTS after RX empty or guard expiry
+  in:        none
+  out:       empty: C=1; guard expired: C=0; A/X/Y preserved
+  imports:   PIN_FTDI_READ_BYTE_NONBLOCK
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO through PIN_FTDI_READ_BYTE_NONBLOCK
+             stack return frame plus A/X saves and transitive PIN read scratch
+  flags:     BIO, FTDI, FLUSH, RX, BOUNDED, CARRY_STATUS, PRESERVE_A,
+             PRESERVE_XY, PROMOTED
+  proof:     PROVEN; bounded drain 2026-05-07, hash-sig promoted 2026-05-15
+  caveat:    consumes pending RX bytes by design
+```
+
+```text
+RREC BIO_FTDI_READ_BYTE_BLOCK
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      BIO_FTDI_READ_BYTE_BLOCK
+  hash32:    $20285B85
+  stored:    hash0=$85 hash1=$5B hash2=$28 hash3=$20
+  hash_sig:  46 4E D6 85 5B 28 20 00
+             emitted as BIO_FTDI_READ_BYTE_BLOCK_FNV immediately before entry
+  provider:  active HIMON/BIO image
+  body:      current ROM image or linked BIO body
+  entry:     BIO_FTDI_READ_BYTE_BLOCK
+  call:      JSR entry; returns by RTS after a byte is received
+  in:        none
+  out:       C=1, A=received byte
+  imports:   PIN_FTDI_READ_BYTE_NONBLOCK
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO through PIN_FTDI_READ_BYTE_NONBLOCK
+             stack return frame plus transitive PIN read scratch push
+  flags:     BIO, FTDI, READ, BYTE, BLOCKING, CARRY_STATUS, PROMOTED,
+             UNBOUNDED
+  proof:     PROVEN; promoted 2026-05-15 as stable unbounded BIO receive
+  caveat:    not a peek and not timeout-shaped; bounded callers use
+             BIO_FTDI_READ_BYTE_TMO or an explicit timeout wrapper
+```
+
+```text
+RREC BIO_FTDI_WRITE_BYTE_BLOCK
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      BIO_FTDI_WRITE_BYTE_BLOCK
+  hash32:    $379FE930
+  stored:    hash0=$30 hash1=$E9 hash2=$9F hash3=$37
+  hash_sig:  46 4E D6 30 E9 9F 37 00
+             emitted as BIO_FTDI_WRITE_BYTE_BLOCK_FNV immediately before entry
+  provider:  active HIMON/BIO image
+  body:      current ROM image or linked BIO body
+  entry:     BIO_FTDI_WRITE_BYTE_BLOCK
+  call:      JSR entry; returns by RTS after byte is accepted
+  in:        A=byte to transmit
+  out:       C=1, A preserved
+  imports:   PIN_FTDI_WRITE_BYTE_NONBLOCK
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO through PIN_FTDI_WRITE_BYTE_NONBLOCK
+             stack return frame plus X save and transitive PIN write scratch
+  flags:     BIO, FTDI, WRITE, BYTE, BLOCKING, CARRY_STATUS, PRESERVE_A,
+             PRESERVE_X, PROMOTED, UNBOUNDED
+  proof:     PROVEN; promoted 2026-05-15 as stable unbounded BIO transmit
+  caveat:    not timeout-shaped; bounded callers use BIO_FTDI_WRITE_BYTE_TMO
+             or an explicit timeout wrapper
+```
+
+The emitted hash sigs use the current HIMON 8-byte record shape. The final byte
+is `$00`, so current code interprets each entry as `hash_sig+8`. A future compact
+RREC can assign a cleaner routine/export kind without changing either routine
+contract.
+
+## Promoted UTL Hex Routine Hash Sigs / RREC Seeds
+
+The promoted hex helpers are pure conversion contracts except for
+`UTL_HEX_ASCII_YX_TO_BYTE`, which uses the shared one-byte utility scratch
+`$E6` while combining nibbles. These helpers are small, heavily reused, and good
+early catalog-linking candidates because they remove duplicated hex code from
+RAM workers.
+
+```text
+RREC UTL_HEX_NIBBLE_TO_ASCII
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      UTL_HEX_NIBBLE_TO_ASCII
+  hash32:    $D4C88B87
+  stored:    hash0=$87 hash1=$8B hash2=$C8 hash3=$D4
+  hash_sig:  46 4E D6 87 8B C8 D4 00
+             emitted as UTL_HEX_NIBBLE_TO_ASCII_FNV immediately before entry
+  provider:  active utility library or resident ROM image
+  body:      current linked UTL body
+  entry:     UTL_HEX_NIBBLE_TO_ASCII
+  call:      JSR entry; returns by RTS after conversion
+  in:        A=source byte; low nibble is used
+  out:       A=ASCII `0..9` or `A..F`, C=1
+  imports:   none
+  resources: ZP none; fixed RAM none; stack return frame only
+  flags:     UTL, HEX, ENCODE, NIBBLE, CARRY_STATUS, NO_ZP, PROMOTED
+  proof:     PROVEN; reviewed and hash-sig promoted 2026-05-15
+```
+
+```text
+RREC UTL_HEX_BYTE_TO_ASCII_YX
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      UTL_HEX_BYTE_TO_ASCII_YX
+  hash32:    $7142DD21
+  stored:    hash0=$21 hash1=$DD hash2=$42 hash3=$71
+  hash_sig:  46 4E D6 21 DD 42 71 00
+             emitted as UTL_HEX_BYTE_TO_ASCII_YX_FNV immediately before entry
+  provider:  active utility library or resident ROM image
+  body:      current linked UTL body
+  entry:     UTL_HEX_BYTE_TO_ASCII_YX
+  call:      JSR entry; returns by RTS after both nibbles are encoded
+  in:        A=source byte
+  out:       A preserved, Y=high ASCII, X=low ASCII, C=1
+  imports:   UTL_HEX_NIBBLE_TO_ASCII
+  resources: ZP none; fixed RAM none; stack return frame plus A save
+  flags:     UTL, HEX, ENCODE, BYTE, CARRY_STATUS, PRESERVE_A, PROMOTED
+  proof:     PROVEN; reviewed and hash-sig promoted 2026-05-15
+```
+
+```text
+RREC UTL_HEX_ASCII_TO_NIBBLE
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      UTL_HEX_ASCII_TO_NIBBLE
+  hash32:    $ADD714B1
+  stored:    hash0=$B1 hash1=$14 hash2=$D7 hash3=$AD
+  hash_sig:  46 4E D6 B1 14 D7 AD 00
+             emitted as UTL_HEX_ASCII_TO_NIBBLE_FNV immediately before entry
+  provider:  active utility library or resident ROM image
+  body:      current linked UTL body
+  entry:     UTL_HEX_ASCII_TO_NIBBLE
+  call:      JSR entry; returns by RTS after validation/conversion
+  in:        A=ASCII `0..9`, `A..F`, or `a..f`
+  out:       valid: C=1,A=0..15; invalid: C=0,A unchanged
+  imports:   none
+  resources: ZP none; fixed RAM none; stack return frame only
+  flags:     UTL, HEX, PARSE, NIBBLE, CARRY_STATUS, NO_ZP, PROMOTED
+  proof:     PROVEN; reviewed and hash-sig promoted 2026-05-15
+```
+
+```text
+RREC UTL_HEX_ASCII_YX_TO_BYTE
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      UTL_HEX_ASCII_YX_TO_BYTE
+  hash32:    $EA0B3E6D
+  stored:    hash0=$6D hash1=$3E hash2=$0B hash3=$EA
+  hash_sig:  46 4E D6 6D 3E 0B EA 00
+             emitted as UTL_HEX_ASCII_YX_TO_BYTE_FNV immediately before entry
+  provider:  active utility library or resident ROM image
+  body:      current linked UTL body
+  entry:     UTL_HEX_ASCII_YX_TO_BYTE
+  call:      JSR entry; returns by RTS after validation/conversion
+  in:        Y=high ASCII hex, X=low ASCII hex
+  out:       valid: C=1,A=combined byte; invalid: C=0
+  imports:   UTL_HEX_ASCII_TO_NIBBLE
+  resources: ZP `UTL_CONV_TMP_A=$E6`; fixed RAM none; stack return frame
+  flags:     UTL, HEX, PARSE, BYTE, CARRY_STATUS, USES_ZP, PROMOTED
+  proof:     PROVEN; reviewed and hash-sig promoted 2026-05-15
+  caveat:    not reentrant while sharing `$E6`
 ```
 
 If a programmer needs GPIO/LED routines, start with the `BIO_PIA_*` family in

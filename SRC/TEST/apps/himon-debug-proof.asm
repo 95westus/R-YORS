@@ -1,7 +1,7 @@
 ; ----------------------------------------------------------------------------
 ; himon-debug-proof.asm
 ; RAM-loaded HIMON debug proof, linked at $3000.
-; Use this under HIMON to test BRK trap capture, B breakpoints, and N/S step.
+; Use this under HIMON to test BRK trap capture, B breakpoints, and N step.
 ; ----------------------------------------------------------------------------
 
                         MODULE          HIMON_DEBUG_PROOF_APP
@@ -99,7 +99,7 @@ DBGPROOF_PRINT_LINE:
 
                         DATA
 MSG_TITLE:              DB              "HIMON DEBUG PROOF $3000",0
-MSG_USE_N:              DB              "BRK $41: USE N OR S TO STEP",0
+MSG_USE_N:              DB              "BRK $41: USE N TO STEP",0
 MSG_DONE:               DB              "DEBUG PROOF DONE",0
 
                         END

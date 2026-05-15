@@ -145,7 +145,7 @@ ASM_*                   assembler via include</code></pre>
 <p>Primary idea:</p>
 <pre><code class="language-text">compact supervisor, direct command dispatch, monitor-owned stack</code></pre>
 <p>Himonia resets the hardware stack on monitor entry, owns NMI/BRK trap capture, and uses concise single-letter commands:</p>
-<pre><code class="language-text">? D M U R X G L B S A Q</code></pre>
+<pre><code class="language-text">? D M U R X G L B N A Q</code></pre>
 <p>This is the point where the monitor becomes less like a command shell and more like a small supervisory environment:</p>
 <pre><code class="language-text">monitor entry/re-entry
 trap capture
@@ -380,7 +380,7 @@ D M    memory display and modify
 U A    disassemble and assemble
 R X    register/context view, edit, and resume
 G L    execute, load, load/go, flash load
-B S    breakpoints and single step
+B N    breakpoints and single step
 Q      controlled BRK test/quit</code></pre>
 <p>The command class split is important:</p>
 <pre><code class="language-text">CMD_* command names and command entry routines
@@ -412,7 +412,7 @@ STR8 -&gt; recovery/update guard</code></pre>
 </ul>
 <p>with <code>DYNAMIC_MEMORY_FIRST_STEPS.md</code>, <code>MEMORY_MAP.md</code>, and <code>DECISIONS.md</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_STAGES_CLASSES.md</code>. Source modified: <time>2026-05-12T02:50:40Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_STAGES_CLASSES.md</code>. Source modified: <time>2026-05-15T03:52:39Z</time>. HTML generated: <time>2026-05-15T03:55:15Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

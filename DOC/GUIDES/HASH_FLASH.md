@@ -138,6 +138,149 @@ RAM routine regions
 selected flash-bank pages
 ```
 
+The first promoted helper record seeds are:
+
+```text
+RREC PIN_FTDI_INIT
+  kind: routine/export
+  hash32: $226EDE8F
+  hash_sig: 46 4E D6 8F DE 6E 22 00
+  entry: PIN_FTDI_INIT
+  contract: initialize FTDI VIA pin interface; A preserved
+  import: none
+  proof: PROVEN, top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+
+RREC PIN_FTDI_READ_BYTE_NONBLOCK
+  kind: routine/export
+  hash32: $483BB2DD
+  hash_sig: 46 4E D6 DD B2 3B 48 00
+  entry: PIN_FTDI_READ_BYTE_NONBLOCK
+  contract: one FTDI FIFO read check; ready C=1,A=byte; empty C=0,A=$00
+  import: none
+  proof: PROVEN, top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+
+RREC PIN_FTDI_POLL_RX_READY
+  kind: routine/export
+  hash32: $F2B69C5B
+  hash_sig: 46 4E D6 5B 9C B6 F2 00
+  entry: PIN_FTDI_POLL_RX_READY
+  contract: one non-consuming RXF# readiness check; C=1 ready, C=0 empty
+  import: none
+  proof: PROVEN, top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+
+RREC PIN_FTDI_CHECK_ENUMERATED
+  kind: routine/export
+  hash32: $8A7D53EE
+  hash_sig: 46 4E D6 EE 53 7D 8A 00
+  entry: PIN_FTDI_CHECK_ENUMERATED
+  contract: one PWE# enumeration check; C=1,A=1 enumerated; C=0,A=0 otherwise
+  import: none
+  proof: PROVEN, top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+
+RREC PIN_FTDI_WRITE_BYTE_NONBLOCK
+  kind: routine/export
+  hash32: $D55FC6FC
+  hash_sig: 46 4E D6 FC C6 5F D5 00
+  entry: PIN_FTDI_WRITE_BYTE_NONBLOCK
+  contract: one bounded FTDI FIFO write attempt; A preserved, C=1 accepted
+  import: none
+  proof: PROVEN, top-shelf 2026-04-18, hash-sig promoted 2026-05-15
+
+RREC BIO_FTDI_INIT
+  kind: routine/export
+  hash32: $30A462F2
+  hash_sig: 46 4E D6 F2 62 A4 30 00
+  entry: BIO_FTDI_INIT
+  contract: initialize FTDI pin interface
+  import: PIN_FTDI_INIT
+  proof: PROVEN, wrapper promoted 2026-04-19, hash-sig promoted 2026-05-15
+
+RREC BIO_FTDI_CHECK_ENUMERATED
+  kind: routine/export
+  hash32: $994776E3
+  hash_sig: 46 4E D6 E3 76 47 99 00
+  entry: BIO_FTDI_CHECK_ENUMERATED
+  contract: enumeration state; C=1,A=1 enumerated; C=0,A=0 otherwise
+  import: PIN_FTDI_CHECK_ENUMERATED
+  proof: WRAPS_PROVEN, wrapper promoted 2026-04-19, hash-sig promoted 2026-05-15
+
+RREC BIO_FTDI_FLUSH_RX
+  kind: routine/export
+  hash32: $2F6622B9
+  hash_sig: 46 4E D6 B9 22 66 2F 00
+  entry: BIO_FTDI_FLUSH_RX
+  contract: bounded consuming RX drain; C=1 empty; C=0 guard expired
+  import: PIN_FTDI_READ_BYTE_NONBLOCK
+  proof: PROVEN, bounded drain 2026-05-07, hash-sig promoted 2026-05-15
+
+RREC BIO_FTDI_READ_BYTE_BLOCK
+  kind: routine/export
+  hash32: $20285B85
+  hash_sig: 46 4E D6 85 5B 28 20 00
+  entry: BIO_FTDI_READ_BYTE_BLOCK
+  contract: unbounded blocking FTDI byte read; out C=1,A=byte
+  import: PIN_FTDI_READ_BYTE_NONBLOCK
+  proof: PROVEN, promoted 2026-05-15
+
+RREC BIO_FTDI_WRITE_BYTE_BLOCK
+  kind: routine/export
+  hash32: $379FE930
+  hash_sig: 46 4E D6 30 E9 9F 37 00
+  entry: BIO_FTDI_WRITE_BYTE_BLOCK
+  contract: unbounded blocking FTDI byte write; in A=byte, out C=1,A preserved
+  import: PIN_FTDI_WRITE_BYTE_NONBLOCK
+  proof: PROVEN, promoted 2026-05-15
+
+RREC UTL_HEX_NIBBLE_TO_ASCII
+  kind: routine/export
+  hash32: $D4C88B87
+  hash_sig: 46 4E D6 87 8B C8 D4 00
+  entry: UTL_HEX_NIBBLE_TO_ASCII
+  contract: encode low nibble in A as uppercase ASCII hex; out C=1
+  import: none
+  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15
+
+RREC UTL_HEX_BYTE_TO_ASCII_YX
+  kind: routine/export
+  hash32: $7142DD21
+  hash_sig: 46 4E D6 21 DD 42 71 00
+  entry: UTL_HEX_BYTE_TO_ASCII_YX
+  contract: encode A as two uppercase ASCII hex chars; A preserved, Y/X output
+  import: UTL_HEX_NIBBLE_TO_ASCII
+  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15
+
+RREC UTL_HEX_ASCII_TO_NIBBLE
+  kind: routine/export
+  hash32: $ADD714B1
+  hash_sig: 46 4E D6 B1 14 D7 AD 00
+  entry: UTL_HEX_ASCII_TO_NIBBLE
+  contract: parse ASCII hex char; valid C=1,A=0..15; invalid C=0,A unchanged
+  import: none
+  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15
+
+RREC UTL_HEX_ASCII_YX_TO_BYTE
+  kind: routine/export
+  hash32: $EA0B3E6D
+  hash_sig: 46 4E D6 6D 3E 0B EA 00
+  entry: UTL_HEX_ASCII_YX_TO_BYTE
+  contract: parse Y/X ASCII hex pair into A; valid C=1,A=byte; invalid C=0
+  import: UTL_HEX_ASCII_TO_NIBBLE
+  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15
+```
+
+The hash sigs are now emitted immediately before their routine entries:
+`PIN_FTDI_INIT_FNV`, `PIN_FTDI_POLL_RX_READY_FNV`,
+`PIN_FTDI_READ_BYTE_NONBLOCK_FNV`, `PIN_FTDI_WRITE_BYTE_NONBLOCK_FNV`,
+`PIN_FTDI_CHECK_ENUMERATED_FNV`, `BIO_FTDI_INIT_FNV`,
+`BIO_FTDI_CHECK_ENUMERATED_FNV`, `BIO_FTDI_FLUSH_RX_FNV`,
+`BIO_FTDI_READ_BYTE_BLOCK_FNV`, `BIO_FTDI_WRITE_BYTE_BLOCK_FNV`,
+`UTL_HEX_NIBBLE_TO_ASCII_FNV`, `UTL_HEX_BYTE_TO_ASCII_YX_FNV`,
+`UTL_HEX_ASCII_TO_NIBBLE_FNV`, and `UTL_HEX_ASCII_YX_TO_BYTE_FNV`. The fuller
+RREC records are still conceptual until RCAT/RREC bytes and lookup policy exist.
+Their job now is to keep the promoted routines from being just loose labels in
+ROM. Future RAM workers should be able to ask for these contracts by record
+identity instead of carrying private copies of the same receive/transmit loops.
+
 Longer term, the search order should be selectable at runtime or carried as
 part of the worker/session policy. The important V0 rule is simple: resolve
 predictably, search only named sources, and fail explicitly when no helper is
@@ -221,12 +364,16 @@ D            dump $3100-$31FF
 ```text
 2026
          05
+                15
+                   03:48Z WLP2 Resident HIMON no longer accepts `S` as
+                               step. `N` is the step command; `S` is reserved
+                               for search through the FNV command path.
                 12
                    02:33Z WLP2 `S` moves from single-step to memory
                                search; step/next moves to `N` only.
 ```
 
-`NEXT` is not a command alias in the target surface. RAM-only `N` is
+`NEXT` is not a command alias in the resident surface. RAM-only `N` is
 non-destructive because it plants only a temporary debugger trap in RAM and
 restores the original opcode.
 

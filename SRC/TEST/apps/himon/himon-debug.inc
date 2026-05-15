@@ -96,20 +96,15 @@ CMD_USAGE_BL:
 CMD_N_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$D1,$01,$0C,$CB,$00
 CMD_N:
-                        JMP             CMD_S
-
-CMD_S_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$22,$13,$0C,$D6,$00
-CMD_S:
                         JSR             MON_CTX_REQUIRE_VALID
-                        BCS             CMD_S_HAVE_CTX
+                        BCS             CMD_N_HAVE_CTX
                         RTS
-CMD_S_HAVE_CTX:
+CMD_N_HAVE_CTX:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_REQUIRE_EOL
-                        BCC             CMD_USAGE_S
+                        BCC             CMD_USAGE_N
                         JSR             DBG_STEP_ONCE
-                        BCC             CMD_S_DONE
+                        BCC             CMD_N_DONE
                         LDX             #<MSG_RESUME
                         LDY             #>MSG_RESUME
                         JSR             HIM_WRITE_HBSTRING
@@ -119,12 +114,12 @@ CMD_S_HAVE_CTX:
                         JSR             SYS_WRITE_HEX_BYTE
                         JSR             SYS_WRITE_CRLF
                         JMP             MON_CTX_RESUME_RTI
-CMD_S_DONE:
+CMD_N_DONE:
                         RTS
 
-CMD_USAGE_S:
-                        LDX             #<MSG_USAGE_S
-                        LDY             #>MSG_USAGE_S
+CMD_USAGE_N:
+                        LDX             #<MSG_USAGE_N
+                        LDY             #>MSG_USAGE_N
                         JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
                         RTS

@@ -35,7 +35,7 @@ confirm the HIMON prompt appears</code></pre>
 <p>Expected first stop:</p>
 <pre><code class="language-text">L OK=0148 GO=3000
 HIMON DEBUG PROOF $3000
-BRK $41: USE N OR S TO STEP
+BRK $41: USE N TO STEP
 BRK 41 PC=...</code></pre>
 <p><code>BRK $41</code> is the intentional start stop. <code>BRK $42</code> is the intentional pass stop. Any <code>BRK $E1</code> through <code>BRK $E9</code> means the proof ran down a bad path.</p>
 <p>Loader note:</p>
@@ -45,7 +45,7 @@ NMI PC=DAAA or DB0B</code></pre>
 <p>Do not press Ctrl-C while HIMON is in <code>L</code> or <code>L G</code>; HIMON sees it as the FTDI Ctrl-C status and the loader can abort with <code>LS03</code>. For capture, use terminal logging, copy after the prompt returns, or a copy shortcut that does not send Ctrl-C to the serial session.</p>
 <h2 id="debug-checks">Debug Checks</h2>
 <p>Use <code>R</code> after the first stop to confirm the trapped context is valid.</p>
-<p>Use <code>N</code> for the normal step command. <code>S</code> currently calls the same step body, but <code>S</code> is being freed for search.</p>
+<p>Use <code>N</code> for the normal step command. <code>S</code> is no longer a resident step command; it is reserved for memory search through the FNV command path.</p>
 <p>Think of search as a tool behind the prompt, while debug is a HIMON subsystem. Search will parse a command, scan memory, print hits, and return to the prompt. Debug has prompt commands too, but it also owns saved trap context, catches BRK/NMI asynchronously, and can stop or resume user code. That is why debug behaves like part of the monitor&#39;s execution system instead of just another command.</p>
 <pre><code class="language-text">&gt;R
 &gt;N
@@ -59,7 +59,7 @@ NMI PC=DAAA or DB0B</code></pre>
 <h2 id="reading-a-debug-transcript">Reading A Debug Transcript</h2>
 <p>The common line types mean:</p>
 <pre><code class="language-text">STEP PC=hhhh OP=oo ... NEXT=nnnn
-  N/S decoded the instruction at hhhh before running it and planted a temporary
+  N decoded the instruction at hhhh before running it and planted a temporary
   debugger trap at nnnn.
 
 RESUME hhhh
@@ -180,7 +180,7 @@ RESUME 303F
 <pre><code class="language-text">L G loads the proof
 BRK $41 appears
 R shows valid context
-N/S steps through the listed branch cases
+N steps through the listed branch cases
 no BRK $E1-$E9 appears
 BRK $42 appears at the end
 B rejects non-UPA patch targets with DBG RAM
@@ -202,7 +202,7 @@ flash member: link at the intended ROM address and add a verified image builder.
 <pre><code class="language-text">make -C SRC himon-str8-rom-bin</code></pre>
 <p>For a new ROM member, add an explicit script or Makefile rule that places bytes at the correct <code>$8000-$FFFF</code> bank offset and verifies the result before it is called burnable.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-14T22:37:56Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-15T03:52:18Z</time>. HTML generated: <time>2026-05-15T03:55:15Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

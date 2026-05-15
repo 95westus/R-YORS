@@ -60,6 +60,14 @@
 </ul>
 <p>target <code>S addr end|+count b0 [b1 ...]</code> for hex-byte search, <code>S addr end|+count &#39;TEXT</code> for text search, and the simple mixed tail <code>S addr end|+count b0 [b1 ...] &#39;TEXT</code>. Treat apostrophe text as a final V0 tail, not a quoted atom that resumes parsing. Print hits as D-style context rows: exact hit address, aligned row address, and <code>*</code> when the match crosses a 16-byte display row. Current step/next moves to <code>N</code> only; do not add <code>NEXT</code> as an alias.</p>
 <ul>
+<li>Document and design BIO-level FTDI RX lookahead before changing the stable</li>
+</ul>
+<p>input path. A true hardware peek is not available once <code>PIN_FTDI_READ_BYTE_NONBLOCK</code> reads the FIFO, so any general peek must cache bytes at the BIO layer and require all RX consumers to read through BIO. Keep <code>BIO_FTDI_GET_CTRL_C</code> as a consuming long-scan abort poll for now; do not use it as a general non-destructive keyboard peek.</p>
+<ul>
+<li>Keep the <code>BIO_FTDI_*_BYTE_BLOCK</code> routines as unbounded blocking APIs unless</li>
+</ul>
+<p>every caller is audited. Bounded waits should use the existing timeout-shaped routines or small wrappers with an explicit loop-delay contract, leaving room for a timer backend later.</p>
+<ul>
 <li>Add a tiny sorted-list helper for monitor tables such as breakpoint listing.</li>
 </ul>
 <p><code>B L</code> may print slot order for now, but sorted address order will be easier to read once multiple breakpoints are active. For the current four breakpoint slots, prefer a repeated min-scan printer over a general sort routine.</p>
@@ -91,7 +99,7 @@
 </ul>
 <p>hash-driven command dispatch.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/TODO.md</code>. Source modified: <time>2026-05-14T01:56:33Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/TODO.md</code>. Source modified: <time>2026-05-15T03:02:29Z</time>. HTML generated: <time>2026-05-15T03:55:15Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

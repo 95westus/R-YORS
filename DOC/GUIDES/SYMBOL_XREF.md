@@ -127,18 +127,88 @@ notes:       Backend masks emitted bytes to 7-bit ASCII before write.
 ```
 
 ```text
+name:        PIN_FTDI_INIT
+hash:        $226EDE8F
+kind:        R
+class:       MODULE_LOCAL, TOP_SHELF
+tokens:      PIN, DRIVER_L0, FTDI, VIA, MMIO, REGISTER, INIT,
+             PRESERVE_A, PRESERVE_XY, NO_ZP, NO_RAM, STACK,
+             PROMOTED, FNV, HASH_SIG
+source:      SRC/STASH/ftdi/ftdi-drv.asm
+abi_in:      A preserved
+abi_out:     FTDI control/data direction registers configured, A preserved
+preserves:   A, X, Y
+calls:       none direct
+notes:       Top-shelf FTDI pin interface initialization. Current 8-byte hash
+             sig: 46 4E D6 8F DE 6E 22 00.
+```
+
+```text
 name:        PIN_FTDI_WRITE_BYTE_NONBLOCK
 hash:        $D55FC6FC
 kind:        R
 class:       MODULE_LOCAL, TOP_SHELF
 tokens:      PIN, DRIVER_L0, FTDI, MMIO, REGISTER, NONBLOCKING,
-             TIMEOUT, WRITE, PRESERVE_A, CARRY_STATUS, NO_ZP, NO_RAM, STACK
+             TIMEOUT, WRITE, PRESERVE_A, CARRY_STATUS, NO_ZP, NO_RAM, STACK,
+             PROMOTED, FNV, HASH_SIG
 source:      SRC/STASH/ftdi/ftdi-drv.asm:177, label:209
 abi_in:      A = byte to transmit
 abi_out:     C = 1 on success, C = 0 on timeout, A preserved
 clobbers:    X
 calls:       none direct
 notes:       STASH example with frozen behavior and explicit board limitation.
+             Current 8-byte hash sig: 46 4E D6 FC C6 5F D5 00.
+```
+
+```text
+name:        PIN_FTDI_READ_BYTE_NONBLOCK
+hash:        $483BB2DD
+kind:        R
+class:       MODULE_LOCAL, TOP_SHELF
+tokens:      PIN, DRIVER_L0, FTDI, MMIO, REGISTER, NONBLOCKING,
+             READ, PRESERVE_XY, CARRY_STATUS, NO_ZP, NO_RAM, STACK,
+             PROMOTED, FNV, HASH_SIG
+source:      SRC/STASH/ftdi/ftdi-drv.asm
+abi_in:      none
+abi_out:     C = 1 and A = byte when ready; C = 0 and A = 0 when empty
+preserves:   X, Y
+calls:       none direct
+notes:       Consumes the FTDI FIFO byte on success. Current 8-byte hash sig:
+             46 4E D6 DD B2 3B 48 00.
+```
+
+```text
+name:        PIN_FTDI_POLL_RX_READY
+hash:        $F2B69C5B
+kind:        R
+class:       MODULE_LOCAL, TOP_SHELF
+tokens:      PIN, DRIVER_L0, FTDI, VIA, MMIO, REGISTER, POLL, RX,
+             PRESERVE_A, PRESERVE_XY, CARRY_STATUS, NO_ZP, NO_RAM, STACK,
+             PROMOTED, FNV, HASH_SIG
+source:      SRC/STASH/ftdi/ftdi-drv.asm
+abi_in:      none
+abi_out:     C = 1 when RX byte is ready, C = 0 when empty, A preserved
+preserves:   A, X, Y
+calls:       none direct
+notes:       Non-consuming readiness check over the active-low RXF# line.
+             Current 8-byte hash sig: 46 4E D6 5B 9C B6 F2 00.
+```
+
+```text
+name:        PIN_FTDI_CHECK_ENUMERATED
+hash:        $8A7D53EE
+kind:        R
+class:       MODULE_LOCAL, TOP_SHELF
+tokens:      PIN, DRIVER_L0, FTDI, VIA, MMIO, REGISTER, READ, ENUM,
+             PRESERVE_XY, CARRY_STATUS, NO_ZP, NO_RAM, NOSTACK,
+             PROMOTED, FNV, HASH_SIG
+source:      SRC/STASH/ftdi/ftdi-drv.asm
+abi_in:      none
+abi_out:     C = 1 and A = 1 when enumerated; C = 0 and A = 0 otherwise
+preserves:   X, Y
+calls:       none direct
+notes:       PWE# active-low enumeration check. Current 8-byte hash sig:
+             46 4E D6 EE 53 7D 8A 00.
 ```
 
 ```text
@@ -170,6 +240,66 @@ notes:       STR8-friendly newline helper that avoids pulling in COR/SYS.
 ```
 
 ```text
+name:        UTL_HEX_NIBBLE_TO_ASCII
+hash:        $D4C88B87
+kind:        R
+class:       PURE_UTILITY
+tokens:      UTL, HEX, ENCODE, NIBBLE, CARRY_STATUS, NO_ZP, NO_RAM,
+             NOSTACK, PROMOTED, FNV, HASH_SIG
+source:      SRC/TEST/util/util-hex.asm
+abi_in:      A = source byte; low nibble is used
+abi_out:     A = uppercase ASCII hex char, C = 1
+calls:       none direct
+notes:       High nibble ignored. Current 8-byte hash sig:
+             46 4E D6 87 8B C8 D4 00.
+```
+
+```text
+name:        UTL_HEX_BYTE_TO_ASCII_YX
+hash:        $7142DD21
+kind:        R
+class:       PURE_UTILITY
+tokens:      UTL, HEX, ENCODE, BYTE, PRESERVE_A, CARRY_STATUS, NO_ZP,
+             NO_RAM, STACK, PROMOTED, FNV, HASH_SIG
+source:      SRC/TEST/util/util-hex.asm
+abi_in:      A = source byte
+abi_out:     A preserved, Y = high ASCII hex, X = low ASCII hex, C = 1
+calls:       UTL_HEX_NIBBLE_TO_ASCII
+notes:       Current 8-byte hash sig: 46 4E D6 21 DD 42 71 00.
+```
+
+```text
+name:        UTL_HEX_ASCII_TO_NIBBLE
+hash:        $ADD714B1
+kind:        R
+class:       PURE_UTILITY
+tokens:      UTL, HEX, PARSE, NIBBLE, CARRY_STATUS, NO_ZP, NO_RAM,
+             NOSTACK, PROMOTED, FNV, HASH_SIG
+source:      SRC/TEST/util/util-hex.asm
+abi_in:      A = ASCII hex char
+abi_out:     valid: C = 1, A = 0..15; invalid: C = 0, A unchanged
+calls:       none direct
+notes:       Accepts `0..9`, `A..F`, and `a..f`. Current 8-byte hash sig:
+             46 4E D6 B1 14 D7 AD 00.
+```
+
+```text
+name:        UTL_HEX_ASCII_YX_TO_BYTE
+hash:        $EA0B3E6D
+kind:        R
+class:       UTILITY_WITH_ZP
+tokens:      UTL, HEX, PARSE, BYTE, CARRY_STATUS, USES_ZP, NO_RAM,
+             NOSTACK, PROMOTED, FNV, HASH_SIG
+source:      SRC/TEST/util/util-hex.asm
+abi_in:      Y = high ASCII hex, X = low ASCII hex
+abi_out:     valid: C = 1, A = byte; invalid: C = 0
+calls:       UTL_HEX_ASCII_TO_NIBBLE
+resources:   ZP `UTL_CONV_TMP_A=$E6`
+notes:       Uses shared utility temp `$E6`; not reentrant. Current 8-byte hash
+             sig: 46 4E D6 6D 3E 0B EA 00.
+```
+
+```text
 name:        START
 hash:        $0D94A63F
 kind:        C/R
@@ -197,16 +327,61 @@ notes:       Runtime command token hashing path.
 ```
 
 ```text
+name:        BIO_FTDI_INIT
+hash:        $30A462F2
+kind:        R
+class:       DEVICE_IO
+tokens:      BIO, FTDI, INIT, PUFF_PASS, CALLS_PIN, PROMOTED, FNV, HASH_SIG
+source:      SESH/ftdi/ftdi-hal.asm
+abi_in:      none
+abi_out:     FTDI pin interface initialized
+calls:       PIN_FTDI_INIT
+notes:       Stable BIO init wrapper. Current 8-byte hash sig:
+             46 4E D6 F2 62 A4 30 00.
+```
+
+```text
+name:        BIO_FTDI_CHECK_ENUMERATED
+hash:        $994776E3
+kind:        R
+class:       DEVICE_IO
+tokens:      BIO, FTDI, ENUM, STATUS, CARRY_STATUS, PUFF_PASS, CALLS_PIN,
+             PROMOTED, FNV, HASH_SIG
+source:      SESH/ftdi/ftdi-hal.asm
+abi_in:      none
+abi_out:     C = 1 and A = 1 when enumerated; C = 0 and A = 0 otherwise
+calls:       PIN_FTDI_CHECK_ENUMERATED
+notes:       Stable BIO enumeration wrapper. Current 8-byte hash sig:
+             46 4E D6 E3 76 47 99 00.
+```
+
+```text
+name:        BIO_FTDI_FLUSH_RX
+hash:        $2F6622B9
+kind:        R
+class:       DEVICE_IO
+tokens:      BIO, FTDI, FLUSH, RX, BOUNDED, PRESERVE_A, PRESERVE_XY,
+             CARRY_STATUS, CALLS_PIN, PROMOTED, FNV, HASH_SIG
+source:      SESH/ftdi/ftdi-hal.asm
+abi_in:      none
+abi_out:     C = 1 when RX is empty; C = 0 on guard expiry; A/X/Y preserved
+calls:       PIN_FTDI_READ_BYTE_NONBLOCK
+notes:       Bounded consuming RX drain used by startup/reset and search proof.
+             Current 8-byte hash sig: 46 4E D6 B9 22 66 2F 00.
+```
+
+```text
 name:        BIO_FTDI_WRITE_BYTE_BLOCK
 hash:        $379FE930
 kind:        R
 class:       DEVICE_IO
-tokens:      BIO, FTDI, WRITE, BYTE, BLOCK
+tokens:      BIO, FTDI, WRITE, BYTE, BLOCK, PROMOTED, FNV, HASH_SIG
 source:      SESH/ftdi/ftdi-hal.asm
 abi_in:      A = byte to write
-abi_out:     byte is written when the FTDI bus accepts it
+abi_out:     C = 1 when the FTDI bus accepts it, A preserved
 calls:       PIN_FTDI_WRITE_BYTE_NONBLOCK
-notes:       HIMON now calls this directly; the removed fixed ABI trampoline is no longer present.
+notes:       Stable unbounded BIO transmit primitive. Current 8-byte hash sig:
+             46 4E D6 30 E9 9F 37 00.
 ```
 
 ## Current HIMON Call Tree

@@ -55,7 +55,7 @@ Expected first stop:
 ```text
 L OK=0148 GO=3000
 HIMON DEBUG PROOF $3000
-BRK $41: USE N OR S TO STEP
+BRK $41: USE N TO STEP
 BRK 41 PC=...
 ```
 
@@ -83,8 +83,8 @@ Ctrl-C to the serial session.
 
 Use `R` after the first stop to confirm the trapped context is valid.
 
-Use `N` for the normal step command. `S` currently calls the same step body,
-but `S` is being freed for search.
+Use `N` for the normal step command. `S` is no longer a resident step command;
+it is reserved for memory search through the FNV command path.
 
 Think of search as a tool behind the prompt, while debug is a HIMON subsystem.
 Search will parse a command, scan memory, print hits, and return to the prompt.
@@ -131,7 +131,7 @@ The common line types mean:
 
 ```text
 STEP PC=hhhh OP=oo ... NEXT=nnnn
-  N/S decoded the instruction at hhhh before running it and planted a temporary
+  N decoded the instruction at hhhh before running it and planted a temporary
   debugger trap at nnnn.
 
 RESUME hhhh
@@ -361,7 +361,7 @@ The pass path is:
 L G loads the proof
 BRK $41 appears
 R shows valid context
-N/S steps through the listed branch cases
+N steps through the listed branch cases
 no BRK $E1-$E9 appears
 BRK $42 appears at the end
 B rejects non-UPA patch targets with DBG RAM

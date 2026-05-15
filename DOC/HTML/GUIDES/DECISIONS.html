@@ -108,9 +108,9 @@ and debug tools.</code></pre>
 </ul>
 <p>byte-by-byte modify in HIMON and is under command-surface review.</p>
 <ul>
-<li>Current <code>S</code> single-step moves to <code>N</code> in the target command surface. Do not</li>
+<li><code>S</code> single-step has moved to <code>N</code> in the HIMON command surface. Do not add</li>
 </ul>
-<p>add <code>NEXT</code> as a command alias. A RAM-only single-step/next operation is not destructive; it plants only a temporary debugger trap in RAM and restores the original opcode. <code>S</code> is freed for memory search. Search is non-destructive: hex byte tokens are the default pattern. After the range, parse one or more pattern atoms: byte tokens append bytes, and an apostrophe text atom appends the rest of the line. Example: <code>S 0 FFFF 4D 4D &#39;M</code> searches for three <code>M</code> bytes. Apostrophe text is a final tail in V0; there is no closing-quote parser and no return to hex parsing after text.</p>
+<p><code>NEXT</code> as a command alias. A RAM-only single-step/next operation is not destructive; it plants only a temporary debugger trap in RAM and restores the original opcode. <code>S</code> is freed for memory search. Search is non-destructive: hex byte tokens are the default pattern. After the range, parse one or more pattern atoms: byte tokens append bytes, and an apostrophe text atom appends the rest of the line. Example: <code>S 0 FFFF 4D 4D &#39;M</code> searches for three <code>M</code> bytes. Apostrophe text is a final tail in V0; there is no closing-quote parser and no return to hex parsing after text.</p>
 <ul>
 <li>The first <code>N</code>/breakpoint patch policy is deliberately conservative:</li>
 </ul>
@@ -426,7 +426,7 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-14T01:56:33Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-15T03:51:48Z</time>. HTML generated: <time>2026-05-15T03:55:15Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

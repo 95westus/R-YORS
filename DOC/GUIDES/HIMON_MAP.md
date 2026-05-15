@@ -102,7 +102,7 @@ flowchart TD
     DISPATCH --> G[G CMD_G]
     DISPATCH --> L[L CMD_L]
     DISPATCH --> B[B CMD_B]
-    DISPATCH --> S[S CMD_S]
+    DISPATCH --> N[N CMD_N]
     DISPATCH --> A[A CMD_A]
     DISPATCH --> Q[Q CMD_Q]
 
@@ -130,7 +130,7 @@ flowchart TD
 
     L --> LOADMAP[S19 loader map]
     B --> DBGMAP[breakpoint map]
-    S --> STEPMAP[step map]
+    N --> STEPMAP[step map]
     A --> ASMMAP[assembler map]
     Q --> QUIESCE[SEI / WAI / MON_REENTER]
 ```
@@ -203,13 +203,13 @@ flowchart TD
     CLR --> FINDADDR
     LIST --> PRINT[SYS_WRITE_HEX_BYTE]
 
-    CMD_S[S command] --> CTX[MON_CTX_REQUIRE_VALID]
-    CMD_S --> STEP[DBG_STEP_ONCE]
+    CMD_N[N command] --> CTX[MON_CTX_REQUIRE_VALID]
+    CMD_N --> STEP[DBG_STEP_ONCE]
     STEP --> OPLEN[DBG_OPCODE_LEN]
     STEP --> STEPINFO[DBG_PRINT_STEP_INFO]
     STEP --> FINDADDR
     STEP --> PATCH[patch temporary BRK]
-    CMD_S --> RESUME[MON_CTX_RESUME_RTI]
+    CMD_N --> RESUME[MON_CTX_RESUME_RTI]
 ```
 
 ### Disassembler And Assembler Edges
@@ -278,7 +278,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | FNV-1a command hashing | every command token | `CMD_HASH_TOKEN`, `FNV1A_*`, `MATH_*` | Computes the single supported runtime hash and saves it in command exec state. | FNV-1a is the only catalog hash. |
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$9000` through vector boundary for `FN(V|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
-| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes commands from includes: `# ? D M U R X G L B S A Q`. |
+| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes commands from includes: `# ? D M U R X G L B N A Q`. |
 | Memory dump | `D start [end|+n]` | `CMD_D`, `CMD_PARSE_RANGE_REQUIRED`, `MON_PRINT_MEM_RANGE` | Prints hex rows plus printable ASCII, abortable with Ctrl-C. | Uses shared range parser. Target revision: bare `D` repeats the previous dump length from the next address. |
 | Memory modify | `M start [end|+n]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes RAM byte directly, `.` aborts. | Current short mutator under review. Future bulk fill should be `FILL start end|+count bb`, not an `M` subform. |
 | Disassemble | `U start [end|+n]` | `CMD_U`, `DIS_PRINT_ONE`, `DBG_OPCODE_LEN` | Prints W65C02S opcode, mnemonic, and operand using opcode tables. | Shares the same opcode mode tables as assembler/step. |
@@ -290,7 +290,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | S-record flash load | `L F` | `L_WRITE_DATA_BYTE_FLASH`, `FLASH_WRITE_BYTE_AXY` | Writes only blank `$FF` bytes in `$8000-$CFFF`, verifies readback, skips after first flash failure. | Protects HIMON fixed-entry area at `$D000+`; no sector erase yet. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Current patch is direct memory write, so RAM code is the sane target. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
-| Single step | `S` | `CMD_S`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by opcode length, plants a temporary BRK, resumes with `RTI`. | Does not emulate branch-taken paths yet. |
+| Single step | `N` | `CMD_N`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by opcode length, plants a temporary BRK, resumes with `RTI`. | Does not emulate branch-taken paths yet. |
 | Mini assembler | `A start [mne op]`, interactive `A start` | `CMD_A`, `ASM_ASSEMBLE_LINE`, `ASM_FIND_OPCODE`, `ASM_EMIT` | Assembles one W65C02S instruction to the current address; interactive exits on `.` or Ctrl-C. | Current version is numeric-only and direct-write. Future hashed ASM adds labels/fixups. |
 | Quiesce | `Q` | `CMD_Q` | Executes `SEI`, `WAI`, then re-enters HIMON. | IRQ wakes cleanly to monitor re-entry; NMI still follows the trap path through the debounce POC vector. |
 | Loaded-language bridge I/O | map-patched call addresses | `BIO_FTDI_READ_BYTE_BLOCK`, `BIO_FTDI_WRITE_BYTE_BLOCK` | Local composite images may patch direct calls from the current HIMON map. | Not a stable fixed-address ABI; rebuild patches must track the map. |

@@ -76,7 +76,7 @@ R [regs]       display/edit trapped context registers
 B start        set breakpoint
 B C start      clear breakpoint
 B L            list breakpoints
-S              single-step trapped context; target moves to N only
+N              single-step trapped context
 X              resume trapped context
 Q              quiesce with WAI, then re-enter on wake</code></pre>
 <p>For dump commands in the current parser, <code>+n</code> is the safer habit when you mean &quot;show me this many bytes.&quot; The target range syntax is <code>start +count</code> for a byte count and short inclusive end tokens that inherit the start high byte, so <code>D 3000 FF</code> means <code>$3000-$30FF</code>. Target continuation behavior: after <code>D 3000 FF</code>, a bare <code>D</code> displays <code>$3100-$31FF</code>.</p>
@@ -100,7 +100,7 @@ restore Bank 3 before printing status</code></pre>
 <pre><code class="language-text">DOC/GUIDES/RTFM-str8.md    recovery, backups, restores, Bank 0
 DOC/GUIDES/RTFM-himon.md   monitor commands, loading, debug notes</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-R-YORS.md</code>. Source modified: <time>2026-05-14T02:43:48Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-R-YORS.md</code>. Source modified: <time>2026-05-15T03:52:01Z</time>. HTML generated: <time>2026-05-15T03:55:15Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

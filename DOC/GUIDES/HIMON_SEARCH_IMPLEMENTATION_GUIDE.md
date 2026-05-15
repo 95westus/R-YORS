@@ -1,10 +1,10 @@
 # HIMON Search Implementation Guide
 
-This guide turns `S` into HIMON memory search without changing source first.
-The central workflow is: write and debug the routine in RAM, then build an S19
-that writes the proven bytes into flash. After the flash load verifies, the S19
-is no longer the thing being run; the code is now resident in the board's
-flash-backed "ROM" window.
+This guide turns the freed `S` command slot into HIMON memory search. The
+central workflow still starts outside the resident source: write and debug the
+routine in RAM, then build an S19 that writes the proven bytes into flash.
+After the flash load verifies, the S19 is no longer the thing being run; the
+code is now resident in the board's flash-backed "ROM" window.
 
 The order is deliberate:
 
@@ -19,8 +19,8 @@ fold the clean implementation into HIMON later
 
 ## Current Anchors
 
-- `S` is currently step, but the target command surface moves step/next to `N`
-  and frees `S` for search.
+- `S` is no longer the resident step command; `N` owns step/next and `S` is
+  available for search.
 - Search syntax is already shaped as:
 
 ```text
@@ -46,7 +46,8 @@ B88F B880: ...
 - Current `L F` writes only blank bytes in `$8000-$BFFF` and protects
   `$C000-$FFFF`.
 - The command-record scanner starts at `$8000`. A flash FNV record for `S` below
-  `$C000` can shadow the old in-ROM `S` record without rebuilding HIMON first.
+  `$C000` can own the search command before the integrated HIMON search body is
+  folded in.
 
 ## V0 Behavior
 
@@ -93,6 +94,20 @@ SEARCH_CHECK_ABORT      Ctrl-C check during long scans
 Prefer existing HIMON helpers for parsing, range state, output, and Ctrl-C
 where they fit. Add a new helper only when it removes real duplication or keeps
 the search body smaller and easier to prove.
+
+Search abort polling deliberately uses the current BIO Ctrl-C routine as a
+consuming poll. That is acceptable while search owns the keyboard during a long
+scan: ordinary pending input can be thrown away because the operator is trying
+to interrupt the scan. Do not generalize that routine into a monitor-wide
+keyboard peek. A future non-destructive peek belongs above the FTDI PIN layer as
+BIO-owned lookahead storage, and all RX readers would then need to consume
+through BIO so the cached byte and hardware FIFO do not diverge.
+
+Keep the stable block-read/write contracts stable during search work.
+`BIO_FTDI_READ_BYTE_BLOCK` and `BIO_FTDI_WRITE_BYTE_BLOCK` are unbounded waits.
+If search, HIMON, or a future prompt needs bounded I/O, use timeout-shaped BIO
+helpers or explicit wait-long wrappers that return `C=0` on timeout. Do not make
+existing block callers suddenly depend on carry checks they may not perform.
 
 W65C02S-size bias:
 
@@ -150,7 +165,7 @@ map:    SRC/BUILD/map/himon-search-proof-3000.map
 start:  $3000
 RAM:    $7800 line buffer, $7900 pattern buffer
 I/O:    BIO_FTDI_* plus BIO_WRITE_*; no SYS_* line/edit stack
-size:   $04EB bytes total in the current BIO-backed RAM proof
+size:   $052B bytes total in the current BIO-backed RAM proof
 ```
 
 The RAM proof does not need a command FNV record. It can run under HIMON with
@@ -160,9 +175,17 @@ canned self-test table using the same grammar planned for HIMON.
 Earlier hardware transcripts below were captured on the `$070E` SYS-backed
 proof build. They remain behavioral proof for the parser and matcher. The
 current source has since been rebuilt to use the BIO layer directly, matching
-the rest of HIMON's low-level I/O shape and reducing the RAM image to `$04EB`.
-Re-run a short smoke pass after loading the BIO build before using it as the
-base for flash-shadow work.
+the rest of HIMON's low-level I/O shape. The BIO build was `$04EB`; after
+`BIO_FTDI_READ_BYTE_BLOCK` gained its promoted 8-byte FNV signature, the image
+became `$04F3`; after `BIO_FTDI_WRITE_BYTE_BLOCK` gained the same promoted
+8-byte FNV signature, the image became `$04FB`; after
+`PIN_FTDI_READ_BYTE_NONBLOCK` and `PIN_FTDI_WRITE_BYTE_NONBLOCK` gained their
+promoted 8-byte FNV signatures, the image became `$050B`; after
+`BIO_FTDI_FLUSH_RX` gained its promoted 8-byte FNV signature, the image is
+`$0513`; after the linked `UTL_HEX_NIBBLE_TO_ASCII`,
+`UTL_HEX_BYTE_TO_ASCII_YX`, and `UTL_HEX_ASCII_TO_NIBBLE` helpers gained their
+promoted 8-byte FNV signatures, the image is `$052B`. Re-run a short smoke pass
+after loading the BIO build before using it as the base for flash-shadow work.
 
 First interactive proof shape:
 
@@ -337,13 +360,14 @@ as old-ROM behavior, not the target.
 After the RAM proof behaves cleanly, build a low-flash command member. This is
 the "give it a hash, create an S19 at a nice hole, and L F it" phase.
 
-The `S` command hash already exists in the current image:
+The `S` command hash is the stable token for the search record:
 
 ```text
 token: S
 hash32 display: $D60C1322
 record bytes: 46 4E D6 22 13 0C D6 00
 meaning: 'F','N',('V'+$80),hash0,hash1,hash2,hash3,kind=$00
+resident entry: none; the low-flash search record should provide it
 ```
 
 Candidate placement:
@@ -376,7 +400,7 @@ Board proof:
 ```text
 >L F            enter flash S19 load mode
 send search flash S19
-># S            should resolve S to the low-flash entry, not the old ROM step
+># S            should resolve S to the low-flash search entry
 >S 8000 BFFF 46 4E D6
 >S 3000 30FF 'TEXT
 >N              still steps trapped context
@@ -449,8 +473,10 @@ When the RAM and flash-shadow behavior are both boring, fold the command into
 HIMON:
 
 - Move the search implementation into the HIMON source tree.
-- Replace the internal `CMD_S_FNV` binding with search.
-- Make `CMD_N` own the step path directly instead of jumping through `CMD_S`.
+- Done: remove the resident internal `S` step binding so search can own the
+  `S` hash.
+- Done: make `CMD_N` own the step path directly instead of jumping through
+  the old `S` step entry.
 - Update help, usage strings, RTFM, debug testing docs, and generated maps.
 - Remove or retire the flash-shadow record from the active image plan so only
   one `S` record wins in normal builds.

@@ -1062,7 +1062,7 @@ $interruptNames = @(
     'DBG_HANDLE_BRK_NONE',
     'DBG_STEP_ONCE',
     'CMD_X',
-    'CMD_S'
+    'CMD_N'
 )
 
 $interruptLabelFiles = @(
@@ -1164,7 +1164,7 @@ $lines += '    VECIRQ --> IRQTRAP["' + (Format-Interrupt-Node 'MON_IRQ_TRAP' 'cu
 $lines += '    IRQTRAP --> RTIIRQ["RTI"]'
 $lines += ''
 $lines += '    CMDX["' + (Format-Interrupt-Node 'CMD_X' 'resume command') + '"] --> RESUME["' + (Format-Interrupt-Node 'MON_CTX_RESUME_RTI' 'rebuild stack frame') + '"]'
-$lines += '    CMDS["' + (Format-Interrupt-Node 'CMD_S' 'single-step command') + '"] --> STEP["' + (Format-Interrupt-Node 'DBG_STEP_ONCE' 'patch temporary BRK') + '"]'
+$lines += '    CMDN["' + (Format-Interrupt-Node 'CMD_N' 'single-step command') + '"] --> STEP["' + (Format-Interrupt-Node 'DBG_STEP_ONCE' 'patch temporary BRK') + '"]'
 $lines += '    STEP --> RESUME'
 $lines += '    RESUME --> RTIRES["RTI to trapped context"]'
 $lines += '```'

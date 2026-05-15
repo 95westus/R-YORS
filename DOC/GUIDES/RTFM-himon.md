@@ -64,8 +64,7 @@ R [regs]       display/edit trapped context registers
 B start        set breakpoint
 B C start      clear breakpoint
 B L            list breakpoints
-S              single-step trapped context; target moves to N only
-N              same step path while S is being freed for search
+N              single-step trapped context
 X              resume trapped context when one exists
 Q              quiesce with WAI, then re-enter on wake
 ```
@@ -134,11 +133,12 @@ D            dump $3200-$32FF
 
 ## Search And Step Direction
 
-`S` is currently single-step. The preferred direction is to move step/next to
-`N` only, freeing `S` for memory search. `NEXT` is not a command alias. RAM-only
-`N` is non-destructive because it plants only a temporary debugger trap in RAM
-and restores the original opcode. The first patchable range is user program RAM
-`$2000-$77FF`; system RAM, I/O, and ROM/flash are not debug patch targets:
+`N` is the resident single-step command. `S` is freed for memory search and is
+expected to resolve through the FNV command catalog when the search record is
+present. `NEXT` is not a command alias. RAM-only `N` is non-destructive because
+it plants only a temporary debugger trap in RAM and restores the original
+opcode. The first patchable range is user program RAM `$2000-$77FF`; system
+RAM, I/O, and ROM/flash are not debug patch targets:
 
 ```text
 S addr end|+count b0 [b1 ...]
@@ -266,7 +266,7 @@ write a small standalone RAM proof
 link it inside UPA, usually $2000-$77FF
 build an S19
 load it with HIMON L or L G
-debug it with B, N/S, R, X, D, and U
+debug it with B, N, R, X, D, and U
 promote clean code into HIMON or a ROM/flash image
 build the final .bin
 ```

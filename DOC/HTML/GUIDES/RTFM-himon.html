@@ -45,8 +45,7 @@ R [regs]       display/edit trapped context registers
 B start        set breakpoint
 B C start      clear breakpoint
 B L            list breakpoints
-S              single-step trapped context; target moves to N only
-N              same step path while S is being freed for search
+N              single-step trapped context
 X              resume trapped context when one exists
 Q              quiesce with WAI, then re-enter on wake</code></pre>
 <p>Use HIMON for normal work. Use STR8 for boot-image recovery and backup policy.</p>
@@ -73,7 +72,7 @@ D            repeat previous dump length at next address</code></pre>
 D            dump $3100-$31FF
 D            dump $3200-$32FF</code></pre>
 <h2 id="search-and-step-direction">Search And Step Direction</h2>
-<p><code>S</code> is currently single-step. The preferred direction is to move step/next to <code>N</code> only, freeing <code>S</code> for memory search. <code>NEXT</code> is not a command alias. RAM-only <code>N</code> is non-destructive because it plants only a temporary debugger trap in RAM and restores the original opcode. The first patchable range is user program RAM <code>$2000-$77FF</code>; system RAM, I/O, and ROM/flash are not debug patch targets:</p>
+<p><code>N</code> is the resident single-step command. <code>S</code> is freed for memory search and is expected to resolve through the FNV command catalog when the search record is present. <code>NEXT</code> is not a command alias. RAM-only <code>N</code> is non-destructive because it plants only a temporary debugger trap in RAM and restores the original opcode. The first patchable range is user program RAM <code>$2000-$77FF</code>; system RAM, I/O, and ROM/flash are not debug patch targets:</p>
 <pre><code class="language-text">S addr end|+count b0 [b1 ...]
 S addr end|+count b0 [b1 ...] &#39;TEXT
 S addr end|+count &#39;TEXT
@@ -134,7 +133,7 @@ F0-FF    fatal/unknown/reserved</code></pre>
 link it inside UPA, usually $2000-$77FF
 build an S19
 load it with HIMON L or L G
-debug it with B, N/S, R, X, D, and U
+debug it with B, N, R, X, D, and U
 promote clean code into HIMON or a ROM/flash image
 build the final .bin</code></pre>
 <p>For the next search command, <code>S</code> should start this way: a RAM proof S19 running under HIMON, not a permanent HIMON command record on the first pass. Link it in user RAM and keep the code away from HIMON&#39;s workspace, page buffers, I/O, and ROM/flash. Debug patches only belong in <code>$2000-$77FF</code>; if step or breakpoint tries to plant a synthetic <code>BRK</code> elsewhere, HIMON reports <code>DBG RAM</code>.</p>
@@ -178,7 +177,7 @@ Bank 3 is restored before monitor output resumes</code></pre>
 <h2 id="wdcmonv2-bridge">WDCMONv2 Bridge</h2>
 <p>Saving the board&#39;s original WDCMONv2/base flash image is future bridge work. HIMON does not do that today.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-himon.md</code>. Source modified: <time>2026-05-14T02:16:49Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-himon.md</code>. Source modified: <time>2026-05-15T03:51:56Z</time>. HTML generated: <time>2026-05-15T03:55:15Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

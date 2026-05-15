@@ -257,7 +257,7 @@ Himonia resets the hardware stack on monitor entry, owns NMI/BRK trap capture,
 and uses concise single-letter commands:
 
 ```text
-? D M U R X G L B S A Q
+? D M U R X G L B N A Q
 ```
 
 This is the point where the monitor becomes less like a command shell and more
@@ -485,7 +485,7 @@ D M    memory display and modify
 U A    disassemble and assemble
 R X    register/context view, edit, and resume
 G L    execute, load, load/go, flash load
-B S    breakpoints and single step
+B N    breakpoints and single step
 Q      controlled BRK test/quit
 ```
 

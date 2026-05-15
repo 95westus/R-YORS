@@ -78,8 +78,8 @@ and debug tools.
   destructive command spellings.
 - `C`, `M`, and `F` are not destructive shortcuts. `M` currently means
   byte-by-byte modify in HIMON and is under command-surface review.
-- Current `S` single-step moves to `N` in the target command surface. Do not
-  add `NEXT` as a command alias. A RAM-only single-step/next operation is not
+- `S` single-step has moved to `N` in the HIMON command surface. Do not add
+  `NEXT` as a command alias. A RAM-only single-step/next operation is not
   destructive; it plants only a temporary debugger trap in RAM and restores the
   original opcode. `S` is freed for memory search. Search is non-destructive:
   hex byte tokens are the default pattern. After the range, parse one or more

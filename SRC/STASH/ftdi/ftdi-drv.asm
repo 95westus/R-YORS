@@ -51,13 +51,16 @@
 ; ROUTINE: PIN_FTDI_INIT  [HASH:226EDE8F]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, INIT, PRESERVE-A,
-;   PRESERVE-XY, NO-ZP, NO-RAM, TOP-SHELF, STACK
+;   PRESERVE-XY, NO-ZP, NO-RAM, TOP-SHELF, STACK, PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Initialize VIA pins for FTDI FIFO interface.
 ; IN : A = preserved
 ; OUT: FTDI control/data direction registers configured, A preserved
 ; EXCEPTIONS/NOTES:
 ; - Assumes VIA base addresses and pin mapping constants in this module.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call `PIN_FTDI_INIT`, not the
+;   `_FNV` label.
 ; - X/Y unchanged by implementation.
 ;
 ; CHANGELOG:
@@ -66,8 +69,11 @@
 ;                          test-ftdi-drv.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
+; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
+;                          signature immediately before callable entry.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                         XDEF            PIN_FTDI_INIT
+                        XDEF            PIN_FTDI_INIT_FNV
 
 FTDI_INIT_VIA_CTRL         EQU             $7FE0
 FTDI_INIT_VIA_DDRB         EQU             $7FE2
@@ -75,6 +81,8 @@ FTDI_INIT_VIA_DDRA         EQU             $7FE3
 FTDI_INIT_PN_CTRL_INIT     EQU             $0C
 FTDI_INIT_PN_CTRL_INIT_DDR EQU             $0C
 
+PIN_FTDI_INIT_FNV:
+                        DB              'F','N',('V'+$80),$8F,$DE,$6E,$22,$00 ; PIN_FTDI_INIT $226EDE8F EXEC
 PIN_FTDI_INIT:
 ?INIT:                  PHA
                         LDA             #FTDI_INIT_PN_CTRL_INIT
@@ -91,13 +99,16 @@ PIN_FTDI_INIT:
 ; ROUTINE: PIN_FTDI_POLL_RX_READY  [HASH:F2B69C5B]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, PRESERVE-A, PRESERVE-XY,
-;   CARRY-STATUS, NO-ZP, NO-RAM, STACK
+;   CARRY-STATUS, NO-ZP, NO-RAM, STACK, PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Check FTDI RXF# line for pending receive byte.
 ; IN : none (A preserved)
 ; OUT: C = 1 if byte ready, C = 0 if not ready, A preserved
 ; EXCEPTIONS/NOTES:
 ; - Reads active-low RXF# bit from VIA control register.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call `PIN_FTDI_POLL_RX_READY`,
+;   not the `_FNV` label.
 ; - X/Y unchanged by implementation.
 ;
 ; CHANGELOG:
@@ -106,12 +117,17 @@ PIN_FTDI_INIT:
 ;                          test-ftdi-drv.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
+; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
+;                          signature immediately before callable entry.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                         XDEF            PIN_FTDI_POLL_RX_READY
+                        XDEF            PIN_FTDI_POLL_RX_READY_FNV
 
 FTDI_BR_VIA_CTRL           EQU             $7FE0
 FTDI_BR_PN_RXF             EQU             $02
 
+PIN_FTDI_POLL_RX_READY_FNV:
+                        DB              'F','N',('V'+$80),$5B,$9C,$B6,$F2,$00 ; PIN_FTDI_POLL_RX_READY $F2B69C5B EXEC
 PIN_FTDI_POLL_RX_READY:
                         PHA
                         LDA             FTDI_BR_VIA_CTRL
@@ -132,13 +148,16 @@ PIN_FTDI_POLL_RX_READY:
 ; ROUTINE: PIN_FTDI_READ_BYTE_NONBLOCK  [HASH:483BB2DD]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, MMIO, REGISTER, NONBLOCKING, READ, PRESERVE-XY,
-;   CARRY-STATUS, NO-ZP, NO-RAM, STACK
+;   CARRY-STATUS, NO-ZP, NO-RAM, STACK, PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Non-blocking read of one byte from FTDI FIFO.
 ; IN : none
 ; OUT: C = 1 and A = byte when ready; C = 0 and A = 0 when not ready
 ; EXCEPTIONS/NOTES:
 ; - Temporarily asserts RD# to sample FIFO data bus.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call
+;   `PIN_FTDI_READ_BYTE_NONBLOCK`, not the `_FNV` label.
 ; - X/Y unchanged by implementation.
 ;
 ; CHANGELOG:
@@ -147,14 +166,19 @@ PIN_FTDI_POLL_RX_READY:
 ;                          test-ftdi-drv.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
+; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
+;                          signature immediately before callable entry.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                         XDEF            PIN_FTDI_READ_BYTE_NONBLOCK
+                        XDEF            PIN_FTDI_READ_BYTE_NONBLOCK_FNV
 FTDI_RBNB_VIA_DDRA         EQU             $7FE3
 FTDI_RBNB_VIA_CTRL         EQU             $7FE0
 FTDI_RBNB_VIA_DATA         EQU             $7FE1
 FTDI_RBNB_PN_RXF           EQU             $02
 FTDI_RBNB_PN_RD            EQU             $08
 
+PIN_FTDI_READ_BYTE_NONBLOCK_FNV:
+                        DB              'F','N',('V'+$80),$DD,$B2,$3B,$48,$00 ; PIN_FTDI_READ_BYTE_NONBLOCK $483BB2DD EXEC
 PIN_FTDI_READ_BYTE_NONBLOCK:
                         STZ             FTDI_RBNB_VIA_DDRA
                         LDA             #FTDI_RBNB_PN_RXF
@@ -181,13 +205,16 @@ PIN_FTDI_READ_BYTE_NONBLOCK:
 ; ROUTINE: PIN_FTDI_WRITE_BYTE_NONBLOCK  [HASH:D55FC6FC]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, MMIO, REGISTER, NONBLOCKING, TIMEOUT, WRITE,
-;   PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, STACK
+;   PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM, STACK, PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Non-blocking write of one byte to FTDI FIFO with timeout spin.
 ; IN : A = byte to transmit
 ; OUT: C = 1 on success; C = 0 on timeout, A preserved
 ; EXCEPTIONS/NOTES:
 ; - On timeout, X reaches `FTDI_WB_WR_SPIN_LIMIT`.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call
+;   `PIN_FTDI_WRITE_BYTE_NONBLOCK`, not the `_FNV` label.
 ; - X is clobbered by local spin counter; Y unchanged.
 ; - TEST LIMITATION: I am currently unaware how to force a blocked
 ;   FIFO/serial write on this hardware vs a nonblocked case.
@@ -201,8 +228,11 @@ PIN_FTDI_READ_BYTE_NONBLOCK:
 ;                          test-ftdi-drv.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
+; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
+;                          signature immediately before callable entry.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                         XDEF            PIN_FTDI_WRITE_BYTE_NONBLOCK
+                        XDEF            PIN_FTDI_WRITE_BYTE_NONBLOCK_FNV
 FTDI_WB_VIA_DDRA           EQU             $7FE3
 FTDI_WB_VIA_DATA           EQU             $7FE1
 FTDI_WB_VIA_CTRL           EQU             $7FE0
@@ -210,6 +240,8 @@ FTDI_WB_PN_TXE             EQU             $01
 FTDI_WB_PN_WR              EQU             $04
 FTDI_WB_WR_SPIN_LIMIT      EQU             $30; $50
 
+PIN_FTDI_WRITE_BYTE_NONBLOCK_FNV:
+                        DB              'F','N',('V'+$80),$FC,$C6,$5F,$D5,$00 ; PIN_FTDI_WRITE_BYTE_NONBLOCK $D55FC6FC EXEC
 PIN_FTDI_WRITE_BYTE_NONBLOCK:
                         PHA
                         SEC
@@ -244,7 +276,7 @@ PIN_FTDI_WRITE_BYTE_NONBLOCK:
 ; ROUTINE: PIN_FTDI_CHECK_ENUMERATED  [HASH:8A7D53EE]
 ; TIER: TOP-SHELF (behavior frozen)
 ; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, READ, ENUM, PRESERVE-XY,
-;   CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
+;   CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK, PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Check whether FTDI USB FIFO reports host enumeration via PWE#.
 ; IN : none
@@ -252,6 +284,9 @@ PIN_FTDI_WRITE_BYTE_NONBLOCK:
 ; EXCEPTIONS/NOTES:
 ; - PWE# is active-low and read directly from VIA control register.
 ; - Returned A value is currently placeholder device-status encoding.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call
+;   `PIN_FTDI_CHECK_ENUMERATED`, not the `_FNV` label.
 ; - X/Y unchanged by implementation.
 ;
 ; CHANGELOG:
@@ -260,12 +295,17 @@ PIN_FTDI_WRITE_BYTE_NONBLOCK:
 ;                          test-ftdi-drv.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
+; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
+;                          signature immediately before callable entry.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                         XDEF            PIN_FTDI_CHECK_ENUMERATED
+                        XDEF            PIN_FTDI_CHECK_ENUMERATED_FNV
 
 FTDI_ISE_PN_PWE            EQU             $20
 FTDI_ISE_VIA_CTRL          EQU             $7FE0
 
+PIN_FTDI_CHECK_ENUMERATED_FNV:
+                        DB              'F','N',('V'+$80),$EE,$53,$7D,$8A,$00 ; PIN_FTDI_CHECK_ENUMERATED $8A7D53EE EXEC
 PIN_FTDI_CHECK_ENUMERATED:
                         LDA             #FTDI_ISE_PN_PWE
                         ; mask for PB5 (PWE# bit)

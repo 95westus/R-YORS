@@ -21,6 +21,28 @@
 - Keep STR8 fixed-buffer-only. HIMON can adopt `MEM_*` later, starting with
   app/session-owned bump allocation and pools before any general free-list heap.
 
+## BIO RX Lookahead Direction
+
+- Treat the current FTDI input path as stable until a deliberate BIO lookahead
+  design is ready. `PIN_FTDI_READ_BYTE_NONBLOCK` consumes the hardware FIFO
+  byte, so a true non-destructive hardware peek is not available at the PIN
+  layer.
+- A future general peek must be a BIO-owned logical peek: cache one byte, or a
+  small ring of bytes, above the PIN layer and make ordinary BIO reads consume
+  cached bytes before touching hardware.
+- Once BIO lookahead exists, all FTDI RX consumers must go through BIO. Direct
+  calls to `PIN_FTDI_READ_BYTE_NONBLOCK` would bypass the cache and can reorder
+  or discard the logical input stream.
+- Keep `BIO_FTDI_GET_CTRL_C` as a consuming abort poll for long-running code
+  that owns input, such as memory search. A non-destructive Ctrl-C service
+  should be a separate BIO routine and probably needs a ring buffer if it must
+  preserve ordinary typed input while still finding Ctrl-C behind it.
+- Keep block-vs-timeout contracts separate. `BIO_FTDI_READ_BYTE_BLOCK` and
+  `BIO_FTDI_WRITE_BYTE_BLOCK` mean wait until completion; timeout variants or
+  explicit wait-long wrappers should return `C=0` on bounded failure. A later
+  timer can replace loop-delay internals without changing those caller
+  contracts.
+
 ## Optional Debug Module Direction
 
 - Current debug stays a compact HIMON include because that is the smallest

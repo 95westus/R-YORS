@@ -70,7 +70,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ROUTINE: BIO_FTDI_INIT  [HASH:30A462F2]
 ; TIER: HAL-L1
-; TAGS: BIO, HAL-L1, FTDI, INIT, NO-ZP, NO-RAM, CALLS_PIN, NOSTACK, PUFF-PASS
+; TAGS: BIO, HAL-L1, FTDI, INIT, NO-ZP, NO-RAM, CALLS_PIN, NOSTACK, PUFF-PASS,
+;   PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: HAL-level FTDI initialization wrapper.
 ; IN : none
@@ -78,15 +79,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; EXCEPTIONS/NOTES:
 ; - Delegates directly to `PIN_FTDI_INIT`.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call `BIO_FTDI_INIT`, not the
+;   `_FNV` label.
 ; - NUGGET CLASS (chat): PUFF-PASS.
 ;
 ; CHANGELOG:
 ; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
 ; 2026-04-19T00:00Z WLP2   BIO_FTDI_INIT promoted as direct PIN-pass-through.
 ;                          wrapper-only behavior accepted for frozen use.
+; 2026-05-15T00:00Z WLP2   added current HIMON-style 8-byte FNV signature
+;                          immediately before the callable entry.
                         XDEF            BIO_FTDI_INIT
+                        XDEF            BIO_FTDI_INIT_FNV
                         XREF            PIN_FTDI_INIT
 
+BIO_FTDI_INIT_FNV:
+                        DB              'F','N',('V'+$80),$F2,$62,$A4,$30,$00 ; BIO_FTDI_INIT $30A462F2 EXEC
 BIO_FTDI_INIT:
                         JSR             PIN_FTDI_INIT
                         RTS
@@ -118,6 +127,51 @@ BIO_FTDI_INIT:
                         XREF            PIN_FTDI_READ_BYTE_NONBLOCK
 BIO_FTDI_READ_BYTE_NONBLOCK:
                         JSR             PIN_FTDI_READ_BYTE_NONBLOCK
+                        RTS
+                        ENDMOD
+
+
+                        MODULE          BIO_FTDI_READ_BYTE_BLOCK
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ROUTINE: BIO_FTDI_READ_BYTE_BLOCK  [HASH:20285B85]
+; TIER: HAL-L1
+; TAGS: BIO, HAL-L1, FTDI, BLOCKING, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
+;   CALLS_PIN, NOSTACK, RETURNS-A, BYTE, CHAR, PROMOTED, FNV, HASH-SIG
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Stable blocking FTDI receive primitive.
+; IN : none
+; OUT: C = 1, A = received byte
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; EXCEPTIONS/NOTES:
+; - Intentionally unbounded: retries until `PIN_FTDI_READ_BYTE_NONBLOCK`
+;   reports a received byte.
+; - This is the promoted BIO blocking receive API.  Callers that need a bounded
+;   wait should use `BIO_FTDI_READ_BYTE_TMO` or an explicit timeout wrapper.
+; - Returns only after a byte is read, or after external control flow such as an
+;   interrupt/reset takes over.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call `BIO_FTDI_READ_BYTE_BLOCK`,
+;   not the `_FNV` label.
+; - X/Y preservation follows callee behavior.
+; - NUGGET CLASS (chat): PUFF-PLUS.
+;
+; CHANGELOG:
+; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
+; 2026-04-18T22:02Z WLP2   BIO_FTDI_READ_BYTE_BLOCK added as blocking
+;                          receive wrapper over the nonblocking PIN read.
+; 2026-05-15T00:00Z WLP2   promoted as the stable unbounded BIO receive
+;                          primitive; timeout behavior belongs in TMO callers.
+; 2026-05-15T00:00Z WLP2   added current HIMON-style 8-byte FNV signature
+;                          immediately before the callable entry.
+                        XDEF            BIO_FTDI_READ_BYTE_BLOCK
+                        XDEF            BIO_FTDI_READ_BYTE_BLOCK_FNV
+                        XREF            PIN_FTDI_READ_BYTE_NONBLOCK
+
+BIO_FTDI_READ_BYTE_BLOCK_FNV:
+                        DB              'F','N',('V'+$80),$85,$5B,$28,$20,$00 ; BIO_FTDI_READ_BYTE_BLOCK $20285B85 EXEC
+BIO_FTDI_READ_BYTE_BLOCK:
+                        JSR             PIN_FTDI_READ_BYTE_NONBLOCK
+                        BCC             BIO_FTDI_READ_BYTE_BLOCK
                         RTS
                         ENDMOD
 
@@ -186,12 +240,60 @@ BIO_FTDI_WRITE_BYTE_NONBLOCK:
                         ENDMOD
 
 
+                        MODULE          BIO_FTDI_WRITE_BYTE_BLOCK
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ROUTINE: BIO_FTDI_WRITE_BYTE_BLOCK  [HASH:379FE930]
+; TIER: HAL-L1
+; TAGS: BIO, HAL-L1, FTDI, BLOCKING, PRESERVE-A, CARRY-STATUS, NO-ZP,
+;   PUFF-PLUS, NO-RAM, STACK, BYTE, CHAR, PROMOTED, FNV, HASH-SIG
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Stable blocking FTDI transmit primitive.
+; IN : A = byte to transmit
+; OUT: C = 1 when byte accepted by FIFO, A preserved
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; EXCEPTIONS/NOTES:
+; - Intentionally unbounded: retries until `PIN_FTDI_WRITE_BYTE_NONBLOCK`
+;   accepts the byte.
+; - This is the promoted BIO blocking transmit API.  Callers that need a
+;   bounded wait should use `BIO_FTDI_WRITE_BYTE_TMO` or an explicit timeout
+;   wrapper.
+; - Returns only after the byte is accepted, or after external control flow
+;   such as an interrupt/reset takes over.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call `BIO_FTDI_WRITE_BYTE_BLOCK`,
+;   not the `_FNV` label.
+; - X preserved.  Y preservation follows callee behavior.
+; - NUGGET CLASS (chat): PUFF-PLUS.
+;
+; CHANGELOG:
+; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
+; 2026-04-18T22:02Z WLP2   BIO_FTDI_WRITE_BYTE_BLOCK added as blocking
+;                          transmit wrapper over the nonblocking PIN write.
+; 2026-05-15T00:00Z WLP2   promoted as the stable unbounded BIO transmit
+;                          primitive; timeout behavior belongs in TMO callers.
+; 2026-05-15T00:00Z WLP2   added current HIMON-style 8-byte FNV signature
+;                          immediately before the callable entry.
+                        XDEF            BIO_FTDI_WRITE_BYTE_BLOCK
+                        XDEF            BIO_FTDI_WRITE_BYTE_BLOCK_FNV
+                        XREF            PIN_FTDI_WRITE_BYTE_NONBLOCK
+
+BIO_FTDI_WRITE_BYTE_BLOCK_FNV:
+                        DB              'F','N',('V'+$80),$30,$E9,$9F,$37,$00 ; BIO_FTDI_WRITE_BYTE_BLOCK $379FE930 EXEC
+BIO_FTDI_WRITE_BYTE_BLOCK:
+                        PHX
+?LOOP:                  JSR             PIN_FTDI_WRITE_BYTE_NONBLOCK
+                        BCC             ?LOOP
+                        PLX
+                        RTS
+                        ENDMOD
+
+
                         MODULE          BIO_FTDI_CHECK_ENUMERATED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ROUTINE: BIO_FTDI_CHECK_ENUMERATED  [HASH:994776E3]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, ENUM, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN, PUFF-PASS,
-;   NOSTACK
+;   NOSTACK, PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: HAL-level wrapper for FTDI host-enumeration state check.
 ; IN : none
@@ -199,6 +301,9 @@ BIO_FTDI_WRITE_BYTE_NONBLOCK:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; EXCEPTIONS/NOTES:
 ; - Delegates directly to `PIN_FTDI_CHECK_ENUMERATED`.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call `BIO_FTDI_CHECK_ENUMERATED`,
+;   not the `_FNV` label.
 ; - NUGGET CLASS (chat): PUFF-PASS.
 ;
 ; CHANGELOG:
@@ -207,8 +312,13 @@ BIO_FTDI_WRITE_BYTE_NONBLOCK:
 ;                          delegates to PIN enumeration-state check.
 ; 2026-04-19T00:00Z WLP2   promoted as direct PIN-pass-through.
 ;                          no HAL policy added beyond driver contract.
+; 2026-05-15T00:00Z WLP2   added current HIMON-style 8-byte FNV signature
+;                          immediately before the callable entry.
                         XDEF            BIO_FTDI_CHECK_ENUMERATED
+                        XDEF            BIO_FTDI_CHECK_ENUMERATED_FNV
                         XREF            PIN_FTDI_CHECK_ENUMERATED
+BIO_FTDI_CHECK_ENUMERATED_FNV:
+                        DB              'F','N',('V'+$80),$E3,$76,$47,$99,$00 ; BIO_FTDI_CHECK_ENUMERATED $994776E3 EXEC
 BIO_FTDI_CHECK_ENUMERATED:
                         JSR             PIN_FTDI_CHECK_ENUMERATED
                         RTS
@@ -491,67 +601,6 @@ BIO_FTDI_DRAIN_RX_MAX:
                         RTS
                         ENDMOD
 
-
-                        MODULE          BIO_FTDI_READ_BYTE_BLOCK
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_READ_BYTE_BLOCK  [HASH:20285B85]
-; TIER: HAL-L1
-; TAGS: BIO, HAL-L1, FTDI, BLOCKING, CARRY-STATUS, NO-ZP, NO-RAM, PUFF-PLUS,
-;   CALLS_PIN, NOSTACK, RETURNS-A, BYTE, CHAR
-; MEM : ZP: none; FIXED_RAM: none.
-; PURPOSE: Blocking FTDI receive wrapper.
-; IN : none
-; OUT: C = 1, A = received byte
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; EXCEPTIONS/NOTES:
-; - Retries until `PIN_FTDI_READ_BYTE_NONBLOCK` reports ready.(BLOCK FOREVER)
-; - X/Y preservation follows callee behavior.
-; - At this time, only a BYTE being read or an interrupt will get us out of
-; - this.
-; - Should this routine set a long timeout and return C=0
-; - NUGGET CLASS (chat): PUFF-PLUS.
-
-                        XDEF            BIO_FTDI_READ_BYTE_BLOCK
-                        XREF            PIN_FTDI_READ_BYTE_NONBLOCK
-
-BIO_FTDI_READ_BYTE_BLOCK:
-                        JSR             PIN_FTDI_READ_BYTE_NONBLOCK
-                        BCC             BIO_FTDI_READ_BYTE_BLOCK
-                        RTS
-                        ENDMOD
-
-
-                        MODULE          BIO_FTDI_WRITE_BYTE_BLOCK
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ROUTINE: BIO_FTDI_WRITE_BYTE_BLOCK  [HASH:379FE930]
-; TIER: HAL-L1
-; TAGS: BIO, HAL-L1, FTDI, BLOCKING, PRESERVE-A, CARRY-STATUS, NO-ZP, PUFF-PLUS,
-;   NO-RAM, STACK, BYTE, CHAR
-; MEM : ZP: none; FIXED_RAM: none.
-; PURPOSE: Blocking FTDI transmit wrapper.
-; IN : A = byte to transmit
-; OUT: C = 1 when byte accepted by FIFO, A preserved
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; EXCEPTIONS/NOTES:
-; - Retries until `PIN_FTDI_WRITE_BYTE_NONBLOCK` succeeds.
-; - X preserved.
-; - Y preservation follows callee behavior.
-; - A hardware fault/configuration/driver error might prevent us from
-; - returning. Should we spin here for a while?
-; - NUGGET CLASS (chat): PUFF-PLUS.
-
-                        XDEF            BIO_FTDI_WRITE_BYTE_BLOCK
-                        XREF            PIN_FTDI_WRITE_BYTE_NONBLOCK
-
-BIO_FTDI_WRITE_BYTE_BLOCK:
-                        PHX
-?LOOP:                  JSR             PIN_FTDI_WRITE_BYTE_NONBLOCK
-                        BCC             ?LOOP
-                        PLX
-                        RTS
-                        ENDMOD
-
-
                         MODULE          BIO_WRITE_HEX_BYTE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ROUTINE: BIO_WRITE_HEX_BYTE  [HASH:CDBB01D2]
@@ -652,7 +701,7 @@ BIO_FTDI_FLUSH_RX_COUNT:
 ; ROUTINE: BIO_FTDI_FLUSH_RX  [HASH:2F6622B9]
 ; TIER: HAL-L1
 ; TAGS: BIO, HAL-L1, FTDI, FLUSH, PRESERVE-A, PRESERVE-XY, CARRY-STATUS,
-;   NO-ZP, NO-RAM, PUFF-PLUS, CALLS_PIN, STACK
+;   NO-ZP, NO-RAM, PUFF-PLUS, CALLS_PIN, STACK, PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Bounded drain of currently buffered FTDI RX bytes.
 ; IN : none
@@ -666,17 +715,25 @@ BIO_FTDI_FLUSH_RX_COUNT:
 ; - This is an intentional BIO behavior/contract change, not an app-local
 ;   workaround. It is not marked as the first PIN/BIO/COR routine change:
 ;   git history already contains earlier BIO/COR layer edits.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call `BIO_FTDI_FLUSH_RX`, not the
+;   `_FNV` label.
 ; - NUGGET CLASS (chat): PUFF-PLUS.
 ;
 ; CHANGELOG:
 ; YYMMDD-HHMM        WHO         SUMMARY
 ; 2026-05-07T19:14-05:00        WLP2        Bounded RX drain; preserves A/X/Y on return.
 ;                              Returns C=0 if the guard expires.
+; 2026-05-15T00:00Z WLP2        added current HIMON-style 8-byte FNV signature
+;                              immediately before the callable entry.
                         XDEF            BIO_FTDI_FLUSH_RX
+                        XDEF            BIO_FTDI_FLUSH_RX_FNV
                         XREF            PIN_FTDI_READ_BYTE_NONBLOCK
 
 FTDI_FLUSH_RX_MAX          EQU             $FF
 
+BIO_FTDI_FLUSH_RX_FNV:
+                        DB              'F','N',('V'+$80),$B9,$22,$66,$2F,$00 ; BIO_FTDI_FLUSH_RX $2F6622B9 EXEC
 BIO_FTDI_FLUSH_RX:
                         PHA
                         PHX

@@ -19,7 +19,8 @@
 ; ----------------------------------------------------------------------------
 ; ROUTINE: UTL_HEX_NIBBLE_TO_ASCII  [HASH:D4C88B87]
 ; TIER: APP-L5
-; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
+; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK,
+;   PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Convert low nibble in A (0..15) to uppercase ASCII hex.
 ; IN : A = source byte (only low nibble used)
@@ -27,7 +28,13 @@
 ; EXCEPTIONS/NOTES:
 ; - High nibble of input is ignored.
 ; - Always returns success (SEC).
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry. Existing callers must continue to call `UTL_HEX_NIBBLE_TO_ASCII`,
+;   not the `_FNV` label.
 ; ----------------------------------------------------------------------------
+                        XDEF            UTL_HEX_NIBBLE_TO_ASCII_FNV
+UTL_HEX_NIBBLE_TO_ASCII_FNV:
+                        DB              'F','N',('V'+$80),$87,$8B,$C8,$D4,$00 ; UTL_HEX_NIBBLE_TO_ASCII $D4C88B87 EXEC
 UTL_HEX_NIBBLE_TO_ASCII:
 
                         AND             #$0F
@@ -47,7 +54,8 @@ UTL_HEX_NIBBLE_TO_ASCII:
 ; ----------------------------------------------------------------------------
 ; ROUTINE: UTL_HEX_BYTE_TO_ASCII_YX  [HASH:7142DD21]
 ; TIER: APP-L5
-; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, NO-ZP, NO-RAM, STACK
+; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, NO-ZP, NO-RAM, STACK,
+;   PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Convert byte in A to uppercase ASCII hex pair.
 ; IN : A = source byte
@@ -55,7 +63,13 @@ UTL_HEX_NIBBLE_TO_ASCII:
 ; EXCEPTIONS/NOTES:
 ; - Always returns success (SEC).
 ; - X/Y are call-clobbered.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry. Existing callers must continue to call `UTL_HEX_BYTE_TO_ASCII_YX`,
+;   not the `_FNV` label.
 ; ----------------------------------------------------------------------------
+                        XDEF            UTL_HEX_BYTE_TO_ASCII_YX_FNV
+UTL_HEX_BYTE_TO_ASCII_YX_FNV:
+                        DB              'F','N',('V'+$80),$21,$DD,$42,$71,$00 ; UTL_HEX_BYTE_TO_ASCII_YX $7142DD21 EXEC
 UTL_HEX_BYTE_TO_ASCII_YX:
                         PHA
                         LSR             A
@@ -79,7 +93,8 @@ UTL_HEX_BYTE_TO_ASCII_YX:
 ; ----------------------------------------------------------------------------
 ; ROUTINE: UTL_HEX_ASCII_TO_NIBBLE  [HASH:ADD714B1]
 ; TIER: APP-L5
-; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK
+; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, NO-ZP, NO-RAM, NOSTACK,
+;   PROMOTED, FNV, HASH-SIG
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Convert ASCII hex character to nibble.
 ; IN : A = ASCII '0'..'9', 'A'..'F', or 'a'..'f'
@@ -87,7 +102,13 @@ UTL_HEX_BYTE_TO_ASCII_YX:
 ;      C = 0 and A unchanged on invalid input
 ; EXCEPTIONS/NOTES:
 ; - Accepts uppercase and lowercase input.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry. Existing callers must continue to call `UTL_HEX_ASCII_TO_NIBBLE`,
+;   not the `_FNV` label.
 ; ----------------------------------------------------------------------------
+                        XDEF            UTL_HEX_ASCII_TO_NIBBLE_FNV
+UTL_HEX_ASCII_TO_NIBBLE_FNV:
+                        DB              'F','N',('V'+$80),$B1,$14,$D7,$AD,$00 ; UTL_HEX_ASCII_TO_NIBBLE $ADD714B1 EXEC
 UTL_HEX_ASCII_TO_NIBBLE:
                         CMP             #'0'
                         BCC             ?FAIL
@@ -130,8 +151,9 @@ UTL_CONV_TMP_A             EQU             $E6
 ; ----------------------------------------------------------------------------
 ; ROUTINE: UTL_HEX_ASCII_YX_TO_BYTE  [HASH:EA0B3E6D]
 ; TIER: APP-L5
-; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK
-; MEM : ZP: UTL_CONV_TMP_A($F6); FIXED_RAM: none.
+; TAGS: UTL, APP-L5, HEX, CARRY-STATUS, USES-ZP, NO-RAM, NOSTACK,
+;   PROMOTED, FNV, HASH-SIG
+; MEM : ZP: UTL_CONV_TMP_A($E6); FIXED_RAM: none.
 ; PURPOSE: Convert two ASCII hex chars (Y=high, X=low) into one byte.
 ; IN : Y = high nibble ASCII, X = low nibble ASCII
 ; OUT: C = 1 and A = combined byte on success
@@ -139,7 +161,13 @@ UTL_CONV_TMP_A             EQU             $E6
 ; EXCEPTIONS/NOTES:
 ; - Uses UTL_HEX_ASCII_TO_NIBBLE for validation/conversion.
 ; - X/Y are call-clobbered.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry. Existing callers must continue to call `UTL_HEX_ASCII_YX_TO_BYTE`,
+;   not the `_FNV` label.
 ; ----------------------------------------------------------------------------
+                        XDEF            UTL_HEX_ASCII_YX_TO_BYTE_FNV
+UTL_HEX_ASCII_YX_TO_BYTE_FNV:
+                        DB              'F','N',('V'+$80),$6D,$3E,$0B,$EA,$00 ; UTL_HEX_ASCII_YX_TO_BYTE $EA0B3E6D EXEC
 UTL_HEX_ASCII_YX_TO_BYTE:
                         TXA
                         JSR             UTL_HEX_ASCII_TO_NIBBLE
