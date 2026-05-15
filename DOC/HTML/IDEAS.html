@@ -93,6 +93,22 @@ H  HIMON
                    17:43Z WLP2 HIMON debounce vector install.
                    16:20Z WLP2 BOOT recovered from bank 0 image.</code></pre>
 <p>This is where hash-joint can go deeper. The visible map remains a tiny sector-screen, while RCAT/RREC records underneath can explain who owns each sector, what hash named it, what installed it, and which update/recovery event last touched it.</p>
+<h2 id="good-far-out-uncataloged-code-placement">Good Far Out: Uncataloged Code Placement</h2>
+<p>Bucket: <code>good far out</code></p>
+<p>Code that has no live <code>RREC</code> needs a deliberate home. It should not be scattered through general growth flash just because the bytes assemble and run.</p>
+<p>There are at least three different states:</p>
+<pre><code class="language-text">headered source code      has ROUTINE/metadata comments in source
+uncataloged runtime code  has no live RREC describing it
+cataloged runtime code    has one or more RREC exports in an RCAT</code></pre>
+<p>Headered source code can be readable to humans and generators, but that is not the same as a runtime catalog contract. If bytes have no <code>RREC</code>, normal catalog lookup, bury, supersede, and condense logic cannot prove what they are or where they are safe to move. That makes them sticky: the system must treat their placement as intentional until a real descriptor exists.</p>
+<p>Possible placement rule:</p>
+<pre><code class="language-text">No RREC -&gt; place only in explicit static lanes:
+  high ROM/flash
+  protected/system flash
+  fixed proof RAM
+  a documented staging range</code></pre>
+<p>Do not let uncataloged code become anonymous filler inside future RCAT/RBODY storage. Once the code gains an <code>RREC</code>, its record can say whether it is core system, debug, user-loaded, app/session body, hybrid RAM overlay, or another typed runtime thing. Before that, placement policy has to carry the safety burden.</p>
+<p>The debug case is a good example. Debug may be optional and not yet burned into the permanent ROM image. If a user loads a RAM debug body and HIMON installs or advertises an <code>RREC</code> for it, then the loaded body becomes part of the active system surface for that session or provider policy. Without the <code>RREC</code>, it is only a loaded proof/tool at a known address.</p>
 <h2 id="good-far-out-str8-ram-mediated-sector-pairing">Good Far Out: STR8 RAM-Mediated Sector Pairing</h2>
 <p>Bucket: <code>good far out</code></p>
 <p>A future STR8 restore/update tool may want to compare a live boot-bank sector with a matching sector from another bank without treating both flash sectors as live mapped memory. The safer model is RAM-mediated sector pairing:</p>
@@ -243,7 +259,7 @@ OUT:
   C = clear on success, set if packed bit 15 is invalid/set</code></pre>
 <p>Callers choose the alphabet. For example, uppercase mnemonics can subtract <code>&#39;A&#39;</code> before packing and add <code>&#39;A&#39;</code> after unpacking; lowercase can do the same with <code>&#39;a&#39;</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/IDEAS.md</code>. Source modified: <time>2026-05-14T01:45:12Z</time>. HTML generated: <time>2026-05-14T03:20:40Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/IDEAS.md</code>. Source modified: <time>2026-05-14T15:55:38Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

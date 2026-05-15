@@ -46,6 +46,7 @@ NMI PC=DAAA or DB0B</code></pre>
 <h2 id="debug-checks">Debug Checks</h2>
 <p>Use <code>R</code> after the first stop to confirm the trapped context is valid.</p>
 <p>Use <code>N</code> for the normal step command. <code>S</code> currently calls the same step body, but <code>S</code> is being freed for search.</p>
+<p>Think of search as a tool behind the prompt, while debug is a HIMON subsystem. Search will parse a command, scan memory, print hits, and return to the prompt. Debug has prompt commands too, but it also owns saved trap context, catches BRK/NMI asynchronously, and can stop or resume user code. That is why debug behaves like part of the monitor&#39;s execution system instead of just another command.</p>
 <pre><code class="language-text">&gt;R
 &gt;N
 &gt;N
@@ -201,7 +202,7 @@ flash member: link at the intended ROM address and add a verified image builder.
 <pre><code class="language-text">make -C SRC himon-str8-rom-bin</code></pre>
 <p>For a new ROM member, add an explicit script or Makefile rule that places bytes at the correct <code>$8000-$FFFF</code> bank offset and verifies the result before it is called burnable.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-14T03:20:34Z</time>. HTML generated: <time>2026-05-14T03:20:40Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-14T22:37:56Z</time>. HTML generated: <time>2026-05-14T22:38:11Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

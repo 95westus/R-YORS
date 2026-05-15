@@ -86,6 +86,13 @@ Use `R` after the first stop to confirm the trapped context is valid.
 Use `N` for the normal step command. `S` currently calls the same step body,
 but `S` is being freed for search.
 
+Think of search as a tool behind the prompt, while debug is a HIMON subsystem.
+Search will parse a command, scan memory, print hits, and return to the prompt.
+Debug has prompt commands too, but it also owns saved trap context, catches
+BRK/NMI asynchronously, and can stop or resume user code. That is why debug
+behaves like part of the monitor's execution system instead of just another
+command.
+
 ```text
 >R
 >N

@@ -91,6 +91,10 @@ HIMON_DEBUG_PROOF_SRC := $(APPS_DIR)/himon-debug-proof.asm
 HIMON_DEBUG_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-debug-proof.obj
 HIMON_DEBUG_PROOF_S19 := $(S19_DIR)/himon-debug-proof-3000.s19
 HIMON_DEBUG_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
+HIMON_SEARCH_PROOF_SRC := $(APPS_DIR)/himon-search-proof.asm
+HIMON_SEARCH_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-search-proof.obj
+HIMON_SEARCH_PROOF_S19 := $(S19_DIR)/himon-search-proof-3000.s19
+HIMON_SEARCH_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 CALC_FLASH_SRC := $(APPS_DIR)/calc-flash.asm
 CALC_FLASH_OBJ := $(OBJ_DIR)/$(APPS_DIR)/calc-flash.obj
 CALC_FLASH_S19 := $(S19_DIR)/calc-flash-9a00.s19
@@ -165,6 +169,7 @@ ALL_TARGETS := \
 	test-flash \
 	life \
 	himon-debug-proof \
+	himon-search-proof \
 	rom-append-calc \
 	fig-forth \
 	msbasic-osi \
@@ -275,6 +280,10 @@ life: $(ROM_LIB) $(LIFE_S19)
 
 himon-debug-proof: $(ROM_LIB) $(HIMON_DEBUG_PROOF_S19)
 	@echo "Built $(HIMON_DEBUG_PROOF_S19)."
+	@$(MAKE) artifacts
+
+himon-search-proof: $(ROM_LIB) $(HIMON_SEARCH_PROOF_S19)
+	@echo "Built $(HIMON_SEARCH_PROOF_S19)."
 	@$(MAKE) artifacts
 
 calc-flash: $(ROM_LIB) $(CALC_FLASH_S19)
@@ -455,6 +464,12 @@ $(HIMON_DEBUG_PROOF_S19): $(HIMON_DEBUG_PROOF_OBJ) $(ROM_LIB)
 	@echo [ps] set S9 start $$3000 in $(HIMON_DEBUG_PROOF_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HIMON_DEBUG_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
 
+$(HIMON_SEARCH_PROOF_S19): $(HIMON_SEARCH_PROOF_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIMON_SEARCH_PROOF_LINKFLAGS) $(HIMON_SEARCH_PROOF_S19) $(HIMON_SEARCH_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$3000 in $(HIMON_SEARCH_PROOF_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HIMON_SEARCH_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+
 $(CALC_FLASH_S19): $(CALC_FLASH_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(CALC_FLASH_LINKFLAGS) $(CALC_FLASH_S19) $(CALC_FLASH_OBJ) -L $(BUILD_DIR)\lib\rom
@@ -592,4 +607,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof calc-flash rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-proof calc-flash rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
