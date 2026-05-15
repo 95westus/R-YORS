@@ -15,10 +15,10 @@ the high-value callable surface grouped by need, with an S/36-ish bias toward
 ## How To Choose
 
 ```text
-SYS_*    normal monitor/app API; device-neutral; easiest to call
-BIO_*    recovery-safe low-level API; STR8 should prefer this
-COR_*    backend implementation layer; use when building SYS or tests
-PIN_*    direct hardware/pin layer; use for bring-up or BIO implementation
+SYS_*    normal monitor/app API; device-neutral policy/routing surface
+BIO_*    recovery-safe low-level I/O contract; STR8 should prefer this
+COR_*    shared implementation logic; use when building BIO/SYS or tests
+PIN_*    direct hardware/pin/MMIO layer; use for bring-up or BIO implementation
 UTL_*    pure utility/helper routines
 FLASH_*  flash guard, erase, and byte-program routines
 FNV1A_*  hash helpers for HIMON command/catalog/symbol lookup; not used by STR8 V0
@@ -28,6 +28,30 @@ MON_*    monitor command/support internals
 Rule of thumb: application and monitor code should start at `SYS_*`. STR8 and
 early recovery code should start at `BIO_*`. Only drop to `COR_*` or `PIN_*`
 when the higher layer does not exist or would pull too much code.
+
+These prefixes are available boundaries, not a mandatory staircase. A routine
+does not need `PIN_`, `BIO_`, `COR_`, and `SYS_` versions just because one layer
+exists. Add a layer when it expresses a real boundary: hardware access, reusable
+device-neutral behavior, recovery-safe byte I/O, public monitor policy, memory
+ownership, catalog joining, or another contract that callers can depend on.
+
+Device naming rule:
+
+```text
+PIN_<DEVICE>_*    concrete device edge, such as FTDI, ACIA, PIA, VIA
+BIO_<DEVICE>_*    concrete recovery-safe provider while the device is part of
+                  the contract
+BIO_CON_* / BIO_* device-neutral console or byte-I/O contract for code that
+                  should survive a backend swap
+COR_*             reusable logic without board/device ownership
+SYS_*             public policy, routing, and monitor/application API
+```
+
+Example: a future RS232/ACIA path should start with `PIN_ACIA_*` routines. It
+only needs `BIO_ACIA_*` if callers must name that concrete provider. Search,
+copy, fill, and other flash/RAM members should prefer a resident
+`BIO_CON_*`/`BIO_*` contract once one exists, so they do not import a specific
+FTDI or ACIA routine by accident.
 
 STR8 V0 must not depend on `FNV1A_*`; FNV belongs to HIMON/catalog/assembler
 work after recovery handoff. Future STR8-N/STRAIGHTEN can participate in this
@@ -87,7 +111,8 @@ Examples:
 
 ```text
 SYS WRITE CSTR     -> normal app/monitor NUL-string writer
-BIO WRITE BYTE     -> recovery-safe byte writer, current concrete FTDI form
+BIO WRITE BYTE     -> recovery-safe byte writer, current concrete FTDI form or
+                      future console alias
 UTL HEX PARSE BYTE -> pure conversion helper, no I/O side effect
 FLASH BYTE PROGRAM -> guarded flash byte writer
 ```

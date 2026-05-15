@@ -190,6 +190,28 @@ start +count    count is the number of bytes
   intentionally tiny, stable, and recovery-safe. `SYS_*` remains the public
   monitor/application layer, not the recovery anchor's default substrate.
 
+## Routine Layer Policy
+
+- R-YORS layers are optional contracts, not a required ladder. Do not create
+  `PIN_`, `BIO_`, `COR_`, and `SYS_` spellings for every routine by reflex.
+- `PIN_*` names concrete hardware access: device registers, pin state, MMIO,
+  and board-specific readiness. New serial/RS232 hardware should start here,
+  for example `PIN_ACIA_*`.
+- `BIO_*` names recovery-safe byte/block I/O contracts. A concrete provider such
+  as `BIO_FTDI_*` is acceptable while FTDI is part of the contract. Code meant
+  to survive a backend swap should prefer future device-neutral forms such as
+  `BIO_CON_*` or `BIO_WRITE_BYTE` when those aliases exist.
+- `COR_*` is for reusable implementation logic with no device ownership:
+  parsers, formatters, scanners, buffers, and protocol cores that can be used by
+  BIO, SYS, tests, or RAM proofs.
+- `SYS_*` is public policy and routing: active console choice, monitor/app API,
+  line discipline, dispatch, and platform decisions.
+- Additional layers are allowed when they buy a real boundary. `MEM_*`,
+  `HREC_*`, `CAT_*`, or another prefix can exist if it documents ownership,
+  caller contract, dependency direction, and proof state. The test is simple:
+  the name should reduce confusion for future code, not just mirror an existing
+  routine at another altitude.
+
 ## Stack And Trap Policy
 
 - HIMON owns the hardware stack on monitor entry.

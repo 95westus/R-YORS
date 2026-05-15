@@ -215,6 +215,31 @@ start +count    count is the number of bytes</code></pre>
 <li>STR8 should avoid <code>COR_*</code>/<code>SYS_*</code> as hot-path dependencies unless the entry is</li>
 </ul>
 <p>intentionally tiny, stable, and recovery-safe. <code>SYS_*</code> remains the public monitor/application layer, not the recovery anchor&#39;s default substrate.</p>
+<h2 id="routine-layer-policy">Routine Layer Policy</h2>
+<ul>
+<li>R-YORS layers are optional contracts, not a required ladder. Do not create</li>
+</ul>
+<p><code>PIN_</code>, <code>BIO_</code>, <code>COR_</code>, and <code>SYS_</code> spellings for every routine by reflex.</p>
+<ul>
+<li><code>PIN_*</code> names concrete hardware access: device registers, pin state, MMIO,</li>
+</ul>
+<p>and board-specific readiness. New serial/RS232 hardware should start here, for example <code>PIN_ACIA_*</code>.</p>
+<ul>
+<li><code>BIO_*</code> names recovery-safe byte/block I/O contracts. A concrete provider such</li>
+</ul>
+<p>as <code>BIO_FTDI_*</code> is acceptable while FTDI is part of the contract. Code meant to survive a backend swap should prefer future device-neutral forms such as <code>BIO_CON_*</code> or <code>BIO_WRITE_BYTE</code> when those aliases exist.</p>
+<ul>
+<li><code>COR_*</code> is for reusable implementation logic with no device ownership:</li>
+</ul>
+<p>parsers, formatters, scanners, buffers, and protocol cores that can be used by BIO, SYS, tests, or RAM proofs.</p>
+<ul>
+<li><code>SYS_*</code> is public policy and routing: active console choice, monitor/app API,</li>
+</ul>
+<p>line discipline, dispatch, and platform decisions.</p>
+<ul>
+<li>Additional layers are allowed when they buy a real boundary. <code>MEM_*</code>,</li>
+</ul>
+<p><code>HREC_*</code>, <code>CAT_*</code>, or another prefix can exist if it documents ownership, caller contract, dependency direction, and proof state. The test is simple: the name should reduce confusion for future code, not just mirror an existing routine at another altitude.</p>
 <h2 id="stack-and-trap-policy">Stack And Trap Policy</h2>
 <ul>
 <li>HIMON owns the hardware stack on monitor entry.</li>
@@ -426,7 +451,7 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-15T03:51:48Z</time>. HTML generated: <time>2026-05-15T19:47:29Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-15T20:02:54Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

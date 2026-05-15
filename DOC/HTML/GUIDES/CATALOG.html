@@ -16,15 +16,25 @@ I need to write a C string. What are the registers and flags?
 I need a BIO-level helper for STR8. What is small enough to trust?</code></pre>
 <p>For the full generated dump, see <code>DOC/GENERATED/ROUTINE_CONTRACTS.md</code>. This guide keeps the high-value callable surface grouped by need, with an S/36-ish bias toward &quot;what does the system have, and how do I call it?&quot;</p>
 <h2 id="how-to-choose">How To Choose</h2>
-<pre><code class="language-text">SYS_*    normal monitor/app API; device-neutral; easiest to call
-BIO_*    recovery-safe low-level API; STR8 should prefer this
-COR_*    backend implementation layer; use when building SYS or tests
-PIN_*    direct hardware/pin layer; use for bring-up or BIO implementation
+<pre><code class="language-text">SYS_*    normal monitor/app API; device-neutral policy/routing surface
+BIO_*    recovery-safe low-level I/O contract; STR8 should prefer this
+COR_*    shared implementation logic; use when building BIO/SYS or tests
+PIN_*    direct hardware/pin/MMIO layer; use for bring-up or BIO implementation
 UTL_*    pure utility/helper routines
 FLASH_*  flash guard, erase, and byte-program routines
 FNV1A_*  hash helpers for HIMON command/catalog/symbol lookup; not used by STR8 V0
 MON_*    monitor command/support internals</code></pre>
 <p>Rule of thumb: application and monitor code should start at <code>SYS_*</code>. STR8 and early recovery code should start at <code>BIO_*</code>. Only drop to <code>COR_*</code> or <code>PIN_*</code> when the higher layer does not exist or would pull too much code.</p>
+<p>These prefixes are available boundaries, not a mandatory staircase. A routine does not need <code>PIN_</code>, <code>BIO_</code>, <code>COR_</code>, and <code>SYS_</code> versions just because one layer exists. Add a layer when it expresses a real boundary: hardware access, reusable device-neutral behavior, recovery-safe byte I/O, public monitor policy, memory ownership, catalog joining, or another contract that callers can depend on.</p>
+<p>Device naming rule:</p>
+<pre><code class="language-text">PIN_&lt;DEVICE&gt;_*    concrete device edge, such as FTDI, ACIA, PIA, VIA
+BIO_&lt;DEVICE&gt;_*    concrete recovery-safe provider while the device is part of
+                  the contract
+BIO_CON_* / BIO_* device-neutral console or byte-I/O contract for code that
+                  should survive a backend swap
+COR_*             reusable logic without board/device ownership
+SYS_*             public policy, routing, and monitor/application API</code></pre>
+<p>Example: a future RS232/ACIA path should start with <code>PIN_ACIA_*</code> routines. It only needs <code>BIO_ACIA_*</code> if callers must name that concrete provider. Search, copy, fill, and other flash/RAM members should prefer a resident <code>BIO_CON_*</code>/<code>BIO_*</code> contract once one exists, so they do not import a specific FTDI or ACIA routine by accident.</p>
 <p>STR8 V0 must not depend on <code>FNV1A_*</code>; FNV belongs to HIMON/catalog/assembler work after recovery handoff. Future STR8-N/STRAIGHTEN can participate in this path without requiring catalog ownership.</p>
 <h2 id="field-shape">Field Shape</h2>
 <pre><code class="language-text">routine   callable name
@@ -59,7 +69,8 @@ form      shape of use: CHAR, BYTE, CSTR, HBSTR, BLOCKING, TIMEOUT, RAW
 function  concrete reason to call it</code></pre>
 <p>Examples:</p>
 <pre><code class="language-text">SYS WRITE CSTR     -&gt; normal app/monitor NUL-string writer
-BIO WRITE BYTE     -&gt; recovery-safe byte writer, current concrete FTDI form
+BIO WRITE BYTE     -&gt; recovery-safe byte writer, current concrete FTDI form or
+                      future console alias
 UTL HEX PARSE BYTE -&gt; pure conversion helper, no I/O side effect
 FLASH BYTE PROGRAM -&gt; guarded flash byte writer</code></pre>
 <h2 id="ftdi-control-and-status">FTDI Control And Status</h2>
@@ -1325,7 +1336,7 @@ BIO_WRITE_CRLF</code></pre>
   caveat:    not reentrant while sharing `$E6`</code></pre>
 <p>If a programmer needs GPIO/LED routines, start with the <code>BIO_PIA_*</code> family in <code>DOC/GENERATED/ROUTINE_CONTRACTS.md</code>; they are numerous enough that this catalog only names the category here.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG.md</code>. Source modified: <time>2026-05-15T19:17:45Z</time>. HTML generated: <time>2026-05-15T19:47:29Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG.md</code>. Source modified: <time>2026-05-15T20:02:43Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

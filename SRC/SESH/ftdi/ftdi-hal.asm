@@ -11,6 +11,9 @@
 
 ; -------------------------------------------------------------------------
 ; CALL HIERARCHY / LAYER RULES
+; Layer names are contracts, not a mandatory ladder.  Do not add a matching
+; PIN/BIO/COR/SYS routine just because one layer exists; add a layer only when
+; it defines a real boundary for callers.
 ; L0 (Driver): drv-*.asm        -> direct hardware/MMIO access only.
 ; L1 (HAL):    hal-*.asm        -> calls L0, no direct hardware touching.
 ; L2 (Backend):backend-*.asm    -> protocol/helpers, calls L1/L2-common.
@@ -30,8 +33,14 @@
 ; - Calls only L0 driver symbols.
 ; - Should not call L3/L4 symbols.
 ; Naming convention:
-; - L1 HAL exports use `BIO_<DEVICE>_*` (this file: `BIO_FTDI_*`).
+; - L1 HAL exports use `BIO_<DEVICE>_*` while the concrete device is part of
+;   the contract (this file: `BIO_FTDI_*`).
+; - Code that should survive a backend swap should import a future
+;   device-neutral console/byte-I/O alias (`BIO_CON_*` / `BIO_*`) instead of a
+;   concrete FTDI entry.
 ; - L1 calls L0 `PIN_<DEVICE>_*` symbols.
+; - Reusable pure logic belongs in `COR_*`/`UTL_*`; monitor/app policy belongs
+;   in `SYS_*`.
 ;
 ; NUGGET CLASS (chat naming only):
 ; - PUFF-PASS: direct pass-through wrapper to one PIN routine.
