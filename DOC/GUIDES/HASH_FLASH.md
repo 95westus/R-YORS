@@ -213,6 +213,15 @@ RREC BIO_FTDI_FLUSH_RX
   import: PIN_FTDI_READ_BYTE_NONBLOCK
   proof: PROVEN, bounded drain 2026-05-07, hash-sig promoted 2026-05-15
 
+RREC BIO_FTDI_GET_CTRL_C
+  kind: routine/export
+  hash32: $426150D2
+  hash_sig: 46 4E D6 D2 50 61 42 00
+  entry: BIO_FTDI_GET_CTRL_C
+  contract: consuming nonblocking Ctrl-C detector; C=1,A=$03 when consumed
+  import: PIN_FTDI_READ_BYTE_NONBLOCK
+  proof: USED, long-scan abort poll, hash-sig promoted 2026-05-15
+
 RREC BIO_FTDI_READ_BYTE_BLOCK
   kind: routine/export
   hash32: $20285B85
@@ -273,7 +282,8 @@ The hash sigs are now emitted immediately before their routine entries:
 `PIN_FTDI_READ_BYTE_NONBLOCK_FNV`, `PIN_FTDI_WRITE_BYTE_NONBLOCK_FNV`,
 `PIN_FTDI_CHECK_ENUMERATED_FNV`, `BIO_FTDI_INIT_FNV`,
 `BIO_FTDI_CHECK_ENUMERATED_FNV`, `BIO_FTDI_FLUSH_RX_FNV`,
-`BIO_FTDI_READ_BYTE_BLOCK_FNV`, `BIO_FTDI_WRITE_BYTE_BLOCK_FNV`,
+`BIO_FTDI_GET_CTRL_C_FNV`, `BIO_FTDI_READ_BYTE_BLOCK_FNV`,
+`BIO_FTDI_WRITE_BYTE_BLOCK_FNV`,
 `UTL_HEX_NIBBLE_TO_ASCII_FNV`, `UTL_HEX_BYTE_TO_ASCII_YX_FNV`,
 `UTL_HEX_ASCII_TO_NIBBLE_FNV`, and `UTL_HEX_ASCII_YX_TO_BYTE_FNV`. The fuller
 RREC records are still conceptual until RCAT/RREC bytes and lookup policy exist.

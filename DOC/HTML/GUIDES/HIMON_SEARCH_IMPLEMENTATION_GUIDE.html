@@ -121,10 +121,30 @@ S19:    SRC/BUILD/s19/himon-search-proof-3000.s19
 map:    SRC/BUILD/map/himon-search-proof-3000.map
 start:  $3000
 RAM:    $7800 line buffer, $7900 pattern buffer
-I/O:    BIO_FTDI_* plus BIO_WRITE_*; no SYS_* line/edit stack
-size:   $052B bytes total in the current BIO-backed RAM proof</code></pre>
+I/O:    hash-resolved resident BIO_FTDI_* plus local hex output; no SYS_* stack
+size:   $0572 bytes total in the current hash-resolved RAM proof</code></pre>
 <p>The RAM proof does not need a command FNV record. It can run under HIMON with <code>L G</code> or <code>L</code> plus <code>G 3000</code>, then provide its own tiny <code>S&gt;</code> prompt or run a canned self-test table using the same grammar planned for HIMON.</p>
-<p>Earlier hardware transcripts below were captured on the <code>$070E</code> SYS-backed proof build. They remain behavioral proof for the parser and matcher. The current source has since been rebuilt to use the BIO layer directly, matching the rest of HIMON&#39;s low-level I/O shape. The BIO build was <code>$04EB</code>; after <code>BIO_FTDI_READ_BYTE_BLOCK</code> gained its promoted 8-byte FNV signature, the image became <code>$04F3</code>; after <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> gained the same promoted 8-byte FNV signature, the image became <code>$04FB</code>; after <code>PIN_FTDI_READ_BYTE_NONBLOCK</code> and <code>PIN_FTDI_WRITE_BYTE_NONBLOCK</code> gained their promoted 8-byte FNV signatures, the image became <code>$050B</code>; after <code>BIO_FTDI_FLUSH_RX</code> gained its promoted 8-byte FNV signature, the image is <code>$0513</code>; after the linked <code>UTL_HEX_NIBBLE_TO_ASCII</code>, <code>UTL_HEX_BYTE_TO_ASCII_YX</code>, and <code>UTL_HEX_ASCII_TO_NIBBLE</code> helpers gained their promoted 8-byte FNV signatures, the image is <code>$052B</code>. Re-run a short smoke pass after loading the BIO build before using it as the base for flash-shadow work.</p>
+<p>The smaller HREC join proof isolates the resolver/join idea before it is moved into HIMON:</p>
+<pre><code class="language-text">make -C SRC hrec-join-proof
+source: SRC/TEST/apps/hrec-join-proof.asm
+S19:    SRC/BUILD/s19/hrec-join-proof-4000.s19
+map:    SRC/BUILD/map/hrec-join-proof-4000.map
+start:  $4000
+size:   $0248 bytes total</code></pre>
+<p>This proof uses the &quot;C&quot; bootstrap path: it silently joins <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> first. If that resident executable HREC is missing, it returns without printing. Once write is joined, it prints through the joined ROM routine, joins READ/FLUSH/CTRL/HEX by hash, and makes one real joined call to <code>UTL_HEX_ASCII_TO_NIBBLE</code> by parsing <code>&#39;A&#39;</code> into <code>$0A</code>. It also checks the negative path for a missing hash, rejects non-executable kind <code>$01</code>, and proves that a joined helper can still report its own input error by rejecting <code>&#39;G&#39;</code> as hex.</p>
+<p>Expected current output:</p>
+<pre><code class="language-text">HREC JOIN PROOF $4000
+WRITE OK
+READ OK
+FLUSH OK
+CTRL OK
+HEX OK
+MISSING OK
+KIND OK
+HEXINV OK
+DONE</code></pre>
+<p>See <code>DOC/GUIDES/HREC_JOIN_PROOF.md</code> for the Q/A trail, terminology, edge cases, and size notes behind this proof.</p>
+<p>Earlier hardware transcripts below were captured on the <code>$070E</code> SYS-backed proof build. They remain behavioral proof for the parser and matcher. The current source has since been rebuilt to use the BIO layer directly, matching the rest of HIMON&#39;s low-level I/O shape. The BIO build was <code>$04EB</code>; after <code>BIO_FTDI_READ_BYTE_BLOCK</code> gained its promoted 8-byte FNV signature, the image became <code>$04F3</code>; after <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> gained the same promoted 8-byte FNV signature, the image became <code>$04FB</code>; after <code>PIN_FTDI_READ_BYTE_NONBLOCK</code> and <code>PIN_FTDI_WRITE_BYTE_NONBLOCK</code> gained their promoted 8-byte FNV signatures, the image became <code>$050B</code>; after <code>BIO_FTDI_FLUSH_RX</code> gained its promoted 8-byte FNV signature, the image is <code>$0513</code>; after the linked <code>UTL_HEX_NIBBLE_TO_ASCII</code>, <code>UTL_HEX_BYTE_TO_ASCII_YX</code>, and <code>UTL_HEX_ASCII_TO_NIBBLE</code> helpers gained their promoted 8-byte FNV signatures, the image is <code>$052B</code>; after the proof stopped linking resident helper payloads and resolved <code>BIO_FTDI_*</code> plus <code>UTL_HEX_ASCII_TO_NIBBLE</code> by emitted hash headers at startup, the image is <code>$0572</code>. Re-run a short smoke pass after loading the current ROM-bound build before using it as the base for flash-shadow work.</p>
 <p>First interactive proof shape:</p>
 <pre><code class="language-text">&gt;L G
 S&gt; S 3000 36FF 53
@@ -404,7 +424,7 @@ actual:
 pass/fail:
 notes:</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</code>. Source modified: <time>2026-05-15T03:53:25Z</time>. HTML generated: <time>2026-05-15T03:55:15Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</code>. Source modified: <time>2026-05-15T19:45:59Z</time>. HTML generated: <time>2026-05-15T19:47:29Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

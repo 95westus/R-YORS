@@ -164,13 +164,52 @@ S19:    SRC/BUILD/s19/himon-search-proof-3000.s19
 map:    SRC/BUILD/map/himon-search-proof-3000.map
 start:  $3000
 RAM:    $7800 line buffer, $7900 pattern buffer
-I/O:    BIO_FTDI_* plus BIO_WRITE_*; no SYS_* line/edit stack
-size:   $052B bytes total in the current BIO-backed RAM proof
+I/O:    hash-resolved resident BIO_FTDI_* plus local hex output; no SYS_* stack
+size:   $0572 bytes total in the current hash-resolved RAM proof
 ```
 
 The RAM proof does not need a command FNV record. It can run under HIMON with
 `L G` or `L` plus `G 3000`, then provide its own tiny `S>` prompt or run a
 canned self-test table using the same grammar planned for HIMON.
+
+The smaller HREC join proof isolates the resolver/join idea before it is moved
+into HIMON:
+
+```text
+make -C SRC hrec-join-proof
+source: SRC/TEST/apps/hrec-join-proof.asm
+S19:    SRC/BUILD/s19/hrec-join-proof-4000.s19
+map:    SRC/BUILD/map/hrec-join-proof-4000.map
+start:  $4000
+size:   $0248 bytes total
+```
+
+This proof uses the "C" bootstrap path: it silently joins
+`BIO_FTDI_WRITE_BYTE_BLOCK` first. If that resident executable HREC is missing,
+it returns without printing. Once write is joined, it prints through the joined
+ROM routine, joins READ/FLUSH/CTRL/HEX by hash, and makes one real joined call
+to `UTL_HEX_ASCII_TO_NIBBLE` by parsing `'A'` into `$0A`. It also checks the
+negative path for a missing hash, rejects non-executable kind `$01`, and proves
+that a joined helper can still report its own input error by rejecting `'G'` as
+hex.
+
+Expected current output:
+
+```text
+HREC JOIN PROOF $4000
+WRITE OK
+READ OK
+FLUSH OK
+CTRL OK
+HEX OK
+MISSING OK
+KIND OK
+HEXINV OK
+DONE
+```
+
+See `DOC/GUIDES/HREC_JOIN_PROOF.md` for the Q/A trail, terminology, edge cases,
+and size notes behind this proof.
 
 Earlier hardware transcripts below were captured on the `$070E` SYS-backed
 proof build. They remain behavioral proof for the parser and matcher. The
@@ -184,8 +223,11 @@ promoted 8-byte FNV signatures, the image became `$050B`; after
 `BIO_FTDI_FLUSH_RX` gained its promoted 8-byte FNV signature, the image is
 `$0513`; after the linked `UTL_HEX_NIBBLE_TO_ASCII`,
 `UTL_HEX_BYTE_TO_ASCII_YX`, and `UTL_HEX_ASCII_TO_NIBBLE` helpers gained their
-promoted 8-byte FNV signatures, the image is `$052B`. Re-run a short smoke pass
-after loading the BIO build before using it as the base for flash-shadow work.
+promoted 8-byte FNV signatures, the image is `$052B`; after the proof stopped
+linking resident helper payloads and resolved `BIO_FTDI_*` plus
+`UTL_HEX_ASCII_TO_NIBBLE` by emitted hash headers at startup, the image is
+`$0572`. Re-run a short smoke pass after loading the current ROM-bound build
+before using it as the base for flash-shadow work.
 
 First interactive proof shape:
 

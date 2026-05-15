@@ -193,11 +193,17 @@ BIO_FTDI_READ_BYTE_BLOCK:
 ;   is discarded.
 ; - Intended for break/abort polling while long-running code owns the input
 ;   stream, not for non-destructive keyboard peeking.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry. Existing callers must continue to call `BIO_FTDI_GET_CTRL_C`, not
+;   the `_FNV` label.
                         XDEF            BIO_FTDI_GET_CTRL_C
+                        XDEF            BIO_FTDI_GET_CTRL_C_FNV
                         XREF            PIN_FTDI_READ_BYTE_NONBLOCK
 
 BIO_FTDI_CTRL_C           EQU             $03
 
+BIO_FTDI_GET_CTRL_C_FNV:
+                        DB              'F','N',('V'+$80),$D2,$50,$61,$42,$00 ; BIO_FTDI_GET_CTRL_C $426150D2 EXEC
 BIO_FTDI_GET_CTRL_C:
                         JSR             PIN_FTDI_READ_BYTE_NONBLOCK
                         BCC             ?NO_CTRL_C

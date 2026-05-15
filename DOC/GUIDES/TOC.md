@@ -16,34 +16,35 @@
 11. [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
 12. [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - bench process for HIMON debug testing.
 13. [HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](./HIMON_SEARCH_IMPLEMENTATION_GUIDE.md) - RAM-to-flash guide for HIMON memory search.
-14. [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
-15. [HASH_MAP.md](./HASH_MAP.md) - hash systems and where they live.
-16. [QCC_HASH.md](./QCC_HASH.md) - hash-width and compact signature QCC.
-17. [QCC_FLASH.md](./QCC_FLASH.md) - FSB lifecycle and condense/compress QCC.
-18. [HASHED_ASM.md](./HASHED_ASM.md) - detailed assembler hypothesis.
-19. [QCC_ASM.md](./QCC_ASM.md) - hashed assembler symbol/fixup QCC.
-20. [QCC_STR8.md](./QCC_STR8.md) - STR8 ownership and recovery/update QCC.
-21. [CATALOG.md](./CATALOG.md) - programmer-facing routine catalog by
+14. [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md) - RAM proof and vocabulary for joining hash records to callable entries.
+15. [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
+16. [HASH_MAP.md](./HASH_MAP.md) - hash systems and where they live.
+17. [QCC_HASH.md](./QCC_HASH.md) - hash-width and compact signature QCC.
+18. [QCC_FLASH.md](./QCC_FLASH.md) - FSB lifecycle and condense/compress QCC.
+19. [HASHED_ASM.md](./HASHED_ASM.md) - detailed assembler hypothesis.
+20. [QCC_ASM.md](./QCC_ASM.md) - hashed assembler symbol/fixup QCC.
+21. [QCC_STR8.md](./QCC_STR8.md) - STR8 ownership and recovery/update QCC.
+22. [CATALOG.md](./CATALOG.md) - programmer-facing routine catalog by
    read/write/string/hex/hash/flash need.
-22. [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) - worked example for moving
+23. [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) - worked example for moving
    standalone LIFE into an RBODY/RREC/RCAT member.
-23. [MEMORY_MAP.md](./MEMORY_MAP.md) - current HIMON ROM/RAM memory map,
+24. [MEMORY_MAP.md](./MEMORY_MAP.md) - current HIMON ROM/RAM memory map,
     compatibility entries, vectors, and STR8/HIMON integration direction.
-24. [QCC_MEMORY.md](./QCC_MEMORY.md) - memory ranges, 4K selectors, and bit-helper QCC.
-25. [DYNAMIC_MEMORY_FIRST_STEPS.md](./DYNAMIC_MEMORY_FIRST_STEPS.md) - first
+25. [QCC_MEMORY.md](./QCC_MEMORY.md) - memory ranges, 4K selectors, and bit-helper QCC.
+26. [DYNAMIC_MEMORY_FIRST_STEPS.md](./DYNAMIC_MEMORY_FIRST_STEPS.md) - first
     dynamic allocation notes for bytes, words, pointers, pools, and heap scope.
-26. [SYMBOL_XREF.md](./SYMBOL_XREF.md) - symbol contracts, source cross-reference,
+27. [SYMBOL_XREF.md](./SYMBOL_XREF.md) - symbol contracts, source cross-reference,
    semantic tags, and HIMON call tree.
-27. [HIMON_MAP.md](./HIMON_MAP.md) - readable HIMON edge and
+28. [HIMON_MAP.md](./HIMON_MAP.md) - readable HIMON edge and
     capability maps.
-28. [HIMON_EDGE_DUMP.md](./HIMON_EDGE_DUMP.md) - direct HIMON
+29. [HIMON_EDGE_DUMP.md](./HIMON_EDGE_DUMP.md) - direct HIMON
     `JSR`/`JMP` edge dump.
-29. [REF.md](./REF.md) - current reference sheet.
-30. [XREF.md](./XREF.md) - document/source cross-reference.
-31. [HASH.md](./HASH.md) - routine header IDs and FNV-1a relationship.
-32. [TODO.md](./TODO.md) - next work.
-33. [FUTURE.md](./FUTURE.md) - direction.
-34. [BIB.md](./BIB.md) - internal source list.
+30. [REF.md](./REF.md) - current reference sheet.
+31. [XREF.md](./XREF.md) - document/source cross-reference.
+32. [HASH.md](./HASH.md) - routine header IDs and FNV-1a relationship.
+33. [TODO.md](./TODO.md) - next work.
+34. [FUTURE.md](./FUTURE.md) - direction.
+35. [BIB.md](./BIB.md) - internal source list.
 
 ## Core Thread
 
@@ -85,6 +86,7 @@ RTFM-str8.md   compact STR8 operating instructions
 RTFM-himon.md  compact HIMON/STR8 boundary instructions
 HIMON_DEBUG_TESTING.md bench process for HIMON debug testing
 HIMON_SEARCH_IMPLEMENTATION_GUIDE.md RAM proof, flash S19 delivery, and integration guide for search
+HREC_JOIN_PROOF.md RAM proof and terminology for joining HREC hashes to entries
 BRINGUP.md     practical STR8/R-YORS bringup rail
 HASHED_ASM.md  assembler thesis
 QCC_ASM.md     assembler symbol/fixup questions

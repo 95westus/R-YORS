@@ -120,7 +120,7 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `BIO_FTDI_READ_BYTE_TMO` | `$83426F30` | BIO timed read | none | bounded receive result | PARTIAL | retrying nonblocking read; no-data path has test harness evidence | `BIO FTDI READ TIMEOUT` |
 | `BIO_FTDI_POLL_RX_READY` | `$3BD83670` | BIO readiness | none | `C=1` ready, `C=0` not ready | WRAPS_PROVEN | readiness alias over proven PIN poll | `BIO FTDI POLL RX` |
 | `PIN_FTDI_POLL_RX_READY` | `$F2B69C5B` | PIN readiness | none | `C=1` byte ready; `C=0` empty; `A/X/Y` preserved | PROVEN | promoted top-shelf non-consuming RXF# readiness probe | `PIN FTDI POLL RX PROMOTED` |
-| `BIO_FTDI_GET_CTRL_C` | `$426150D2` | BIO control | none | `C=1,A=$03` if Ctrl-C consumed | NEEDS_PROOF | recovery-level abort check | `BIO FTDI CTRL_C NONBLOCKING` |
+| `BIO_FTDI_GET_CTRL_C` | `$426150D2` | BIO control | none | `C=1,A=$03` if Ctrl-C consumed | USED | long-scan abort poll; not a peek | `BIO FTDI CTRL_C NONBLOCKING` |
 
 ## Line And String Input
 
@@ -440,6 +440,32 @@ RREC BIO_FTDI_FLUSH_RX
              PRESERVE_XY, PROMOTED
   proof:     PROVEN; bounded drain 2026-05-07, hash-sig promoted 2026-05-15
   caveat:    consumes pending RX bytes by design
+```
+
+```text
+RREC BIO_FTDI_GET_CTRL_C
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      BIO_FTDI_GET_CTRL_C
+  hash32:    $426150D2
+  stored:    hash0=$D2 hash1=$50 hash2=$61 hash3=$42
+  hash_sig:  46 4E D6 D2 50 61 42 00
+             emitted as BIO_FTDI_GET_CTRL_C_FNV immediately before entry
+  provider:  active HIMON/BIO image
+  body:      current ROM image or linked BIO body
+  entry:     BIO_FTDI_GET_CTRL_C
+  call:      JSR entry; returns by RTS after one nonblocking RX poll
+  in:        none
+  out:       Ctrl-C: C=1,A=$03; otherwise C=0,A=$00
+  imports:   PIN_FTDI_READ_BYTE_NONBLOCK
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO through PIN_FTDI_READ_BYTE_NONBLOCK
+             stack return frame plus transitive PIN read scratch push
+  flags:     BIO, FTDI, CTRL_C, NONBLOCKING, CARRY_STATUS, CONSUMES_RX,
+             PROMOTED
+  proof:     USED; long-scan abort poll, hash-sig promoted 2026-05-15
+  caveat:    consumes one pending RX byte when any byte is available; do not
+             use as a general non-destructive peek
 ```
 
 ```text

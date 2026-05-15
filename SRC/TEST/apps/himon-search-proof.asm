@@ -8,14 +8,6 @@
 
                         XDEF            START
 
-                        XREF            BIO_FTDI_FLUSH_RX
-                        XREF            BIO_FTDI_GET_CTRL_C
-                        XREF            BIO_FTDI_READ_BYTE_BLOCK
-                        XREF            BIO_FTDI_WRITE_BYTE_BLOCK
-                        XREF            BIO_WRITE_CRLF
-                        XREF            BIO_WRITE_HEX_BYTE
-                        XREF            UTL_HEX_ASCII_TO_NIBBLE
-
 ; ----------------------------------------------------------------------------
 ; App-local zero page. HIMON treats $00-$AF as user/free while user code runs.
 ; ----------------------------------------------------------------------------
@@ -39,14 +31,44 @@ SEARCH_PAT_LEN          EQU             $10
 SEARCH_COUNT            EQU             $11
 SEARCH_HIT_FLAG         EQU             $12
 SEARCH_IO_FLAG          EQU             $13
+SEARCH_IMP_WRITE_LO     EQU             $14
+SEARCH_IMP_WRITE_HI     EQU             $15
+SEARCH_IMP_READ_LO      EQU             $16
+SEARCH_IMP_READ_HI      EQU             $17
+SEARCH_IMP_FLUSH_LO     EQU             $18
+SEARCH_IMP_FLUSH_HI     EQU             $19
+SEARCH_IMP_CTRL_C_LO    EQU             $1A
+SEARCH_IMP_CTRL_C_HI    EQU             $1B
+SEARCH_IMP_HEX_IN_LO    EQU             $1C
+SEARCH_IMP_HEX_IN_HI    EQU             $1D
+SEARCH_FIND_RES_LO      EQU             $1E
+SEARCH_FIND_RES_HI      EQU             $1F
+SEARCH_HASH_PTR_LO      EQU             $20
+SEARCH_HASH_PTR_HI      EQU             $21
+SEARCH_HASH_SCAN_LO     EQU             $22
+SEARCH_HASH_SCAN_HI     EQU             $23
 
 SEARCH_LINE_BUF         EQU             $7800
 SEARCH_PAT_BUF          EQU             $7900
 SEARCH_PAT_MAX          EQU             $40
+SEARCH_HASH_SIG2        EQU             ('V'+$80)
+SEARCH_HASH_SCAN_BASE_HI EQU            $80
 
                         CODE
 START:
-                        JSR             BIO_FTDI_FLUSH_RX
+                        JSR             SEARCH_RESOLVE_WRITE
+                        BCS             START_HAVE_WRITE
+                        RTS
+START_HAVE_WRITE:
+                        JSR             SEARCH_RESOLVE_IMPORTS
+                        BCS             START_IMPORTS_OK
+                        LDX             #<MSG_IMPORT
+                        LDY             #>MSG_IMPORT
+                        JSR             SEARCH_PRINT_LINE
+                        RTS
+
+START_IMPORTS_OK:
+                        JSR             SEARCH_BIO_FLUSH_RX
                         LDX             #<MSG_TITLE
                         LDY             #>MSG_TITLE
                         JSR             SEARCH_PRINT_LINE
@@ -113,6 +135,198 @@ SEARCH_USAGE:
                         JSR             SEARCH_PRINT_LINE
                         CLC
                         RTS
+
+; ----------------------------------------------------------------------------
+; Import resolver.  Search carries hash constants, not helper payload copies.
+; ----------------------------------------------------------------------------
+SEARCH_RESOLVE_WRITE:
+                        LDX             #<HASH_BIO_WRITE_BYTE_BLOCK
+                        LDY             #>HASH_BIO_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_FIND_HASH_XY
+                        BCC             SEARCH_RESOLVE_FAIL
+                        BNE             SEARCH_RESOLVE_FAIL
+                        LDA             SEARCH_FIND_RES_LO
+                        STA             SEARCH_IMP_WRITE_LO
+                        LDA             SEARCH_FIND_RES_HI
+                        STA             SEARCH_IMP_WRITE_HI
+                        SEC
+                        RTS
+
+SEARCH_RESOLVE_IMPORTS:
+                        JSR             SEARCH_RESOLVE_READ
+                        BCC             SEARCH_RESOLVE_FAIL
+                        JSR             SEARCH_RESOLVE_FLUSH
+                        BCC             SEARCH_RESOLVE_FAIL
+                        JSR             SEARCH_RESOLVE_CTRL_C
+                        BCC             SEARCH_RESOLVE_FAIL
+                        JSR             SEARCH_RESOLVE_HEX_IN
+                        BCC             SEARCH_RESOLVE_FAIL
+                        SEC
+                        RTS
+
+SEARCH_RESOLVE_READ:
+                        LDX             #<HASH_BIO_READ_BYTE_BLOCK
+                        LDY             #>HASH_BIO_READ_BYTE_BLOCK
+                        JSR             SEARCH_FIND_HASH_XY
+                        BCC             SEARCH_RESOLVE_FAIL
+                        BNE             SEARCH_RESOLVE_FAIL
+                        LDA             SEARCH_FIND_RES_LO
+                        STA             SEARCH_IMP_READ_LO
+                        LDA             SEARCH_FIND_RES_HI
+                        STA             SEARCH_IMP_READ_HI
+                        SEC
+                        RTS
+
+SEARCH_RESOLVE_FLUSH:
+                        LDX             #<HASH_BIO_FLUSH_RX
+                        LDY             #>HASH_BIO_FLUSH_RX
+                        JSR             SEARCH_FIND_HASH_XY
+                        BCC             SEARCH_RESOLVE_FAIL
+                        BNE             SEARCH_RESOLVE_FAIL
+                        LDA             SEARCH_FIND_RES_LO
+                        STA             SEARCH_IMP_FLUSH_LO
+                        LDA             SEARCH_FIND_RES_HI
+                        STA             SEARCH_IMP_FLUSH_HI
+                        SEC
+                        RTS
+
+SEARCH_RESOLVE_CTRL_C:
+                        LDX             #<HASH_BIO_GET_CTRL_C
+                        LDY             #>HASH_BIO_GET_CTRL_C
+                        JSR             SEARCH_FIND_HASH_XY
+                        BCC             SEARCH_RESOLVE_FAIL
+                        BNE             SEARCH_RESOLVE_FAIL
+                        LDA             SEARCH_FIND_RES_LO
+                        STA             SEARCH_IMP_CTRL_C_LO
+                        LDA             SEARCH_FIND_RES_HI
+                        STA             SEARCH_IMP_CTRL_C_HI
+                        SEC
+                        RTS
+
+SEARCH_RESOLVE_HEX_IN:
+                        LDX             #<HASH_UTL_HEX_ASCII_TO_NIBBLE
+                        LDY             #>HASH_UTL_HEX_ASCII_TO_NIBBLE
+                        JSR             SEARCH_FIND_HASH_XY
+                        BCC             SEARCH_RESOLVE_FAIL
+                        BNE             SEARCH_RESOLVE_FAIL
+                        LDA             SEARCH_FIND_RES_LO
+                        STA             SEARCH_IMP_HEX_IN_LO
+                        LDA             SEARCH_FIND_RES_HI
+                        STA             SEARCH_IMP_HEX_IN_HI
+                        SEC
+                        RTS
+
+SEARCH_RESOLVE_FAIL:
+                        CLC
+                        RTS
+
+SEARCH_FIND_HASH_XY:
+                        STX             SEARCH_HASH_PTR_LO
+                        STY             SEARCH_HASH_PTR_HI
+                        STZ             SEARCH_HASH_SCAN_LO
+                        LDA             #SEARCH_HASH_SCAN_BASE_HI
+                        STA             SEARCH_HASH_SCAN_HI
+SEARCH_FIND_LOOP:
+                        JSR             SEARCH_FIND_AT_END
+                        BCS             SEARCH_FIND_FAIL
+                        JSR             SEARCH_FIND_IS_RECORD
+                        BCC             SEARCH_FIND_ADV
+                        JSR             SEARCH_FIND_MATCH
+                        BCS             SEARCH_FIND_FOUND
+SEARCH_FIND_ADV:
+                        INC             SEARCH_HASH_SCAN_LO
+                        BNE             SEARCH_FIND_LOOP
+                        INC             SEARCH_HASH_SCAN_HI
+                        BRA             SEARCH_FIND_LOOP
+
+SEARCH_FIND_FOUND:
+                        CLC
+                        LDA             SEARCH_HASH_SCAN_LO
+                        ADC             #$08
+                        STA             SEARCH_FIND_RES_LO
+                        LDA             SEARCH_HASH_SCAN_HI
+                        ADC             #$00
+                        STA             SEARCH_FIND_RES_HI
+                        LDY             #$07
+                        LDA             (SEARCH_HASH_SCAN_LO),Y
+                        SEC
+                        RTS
+
+SEARCH_FIND_FAIL:
+                        CLC
+                        RTS
+
+SEARCH_FIND_AT_END:
+                        LDA             SEARCH_HASH_SCAN_HI
+                        CMP             #$FF
+                        BNE             SEARCH_FIND_NOT_END
+                        LDA             SEARCH_HASH_SCAN_LO
+                        CMP             #$F8
+                        BCS             SEARCH_FIND_END
+SEARCH_FIND_NOT_END:
+                        CLC
+                        RTS
+SEARCH_FIND_END:
+                        SEC
+                        RTS
+
+SEARCH_FIND_IS_RECORD:
+                        LDY             #$00
+                        LDA             (SEARCH_HASH_SCAN_LO),Y
+                        CMP             #'F'
+                        BNE             SEARCH_FIND_NO
+                        INY
+                        LDA             (SEARCH_HASH_SCAN_LO),Y
+                        CMP             #'N'
+                        BNE             SEARCH_FIND_NO
+                        INY
+                        LDA             (SEARCH_HASH_SCAN_LO),Y
+                        CMP             #SEARCH_HASH_SIG2
+                        BNE             SEARCH_FIND_NO
+                        SEC
+                        RTS
+SEARCH_FIND_NO:
+                        CLC
+                        RTS
+
+SEARCH_FIND_MATCH:
+                        LDY             #$03
+                        LDA             (SEARCH_HASH_SCAN_LO),Y
+                        LDY             #$00
+                        CMP             (SEARCH_HASH_PTR_LO),Y
+                        BNE             SEARCH_FIND_NO
+                        LDY             #$04
+                        LDA             (SEARCH_HASH_SCAN_LO),Y
+                        LDY             #$01
+                        CMP             (SEARCH_HASH_PTR_LO),Y
+                        BNE             SEARCH_FIND_NO
+                        LDY             #$05
+                        LDA             (SEARCH_HASH_SCAN_LO),Y
+                        LDY             #$02
+                        CMP             (SEARCH_HASH_PTR_LO),Y
+                        BNE             SEARCH_FIND_NO
+                        LDY             #$06
+                        LDA             (SEARCH_HASH_SCAN_LO),Y
+                        LDY             #$03
+                        CMP             (SEARCH_HASH_PTR_LO),Y
+                        BNE             SEARCH_FIND_NO
+                        SEC
+                        RTS
+
+SEARCH_BIO_WRITE_BYTE_BLOCK:
+                        JMP             (SEARCH_IMP_WRITE_LO)
+
+SEARCH_BIO_READ_BYTE_BLOCK:
+                        JMP             (SEARCH_IMP_READ_LO)
+
+SEARCH_BIO_FLUSH_RX:
+                        JMP             (SEARCH_IMP_FLUSH_LO)
+
+SEARCH_BIO_GET_CTRL_C:
+                        JMP             (SEARCH_IMP_CTRL_C_LO)
+
+SEARCH_UTL_HEX_ASCII_TO_NIBBLE:
+                        JMP             (SEARCH_IMP_HEX_IN_LO)
 
 ; ----------------------------------------------------------------------------
 ; Parse: start end|+count
@@ -255,7 +469,7 @@ SEARCH_PARSE_HEX_WORD:
 
 SEARCH_HEX_LOOP:
                         JSR             SEARCH_PEEK
-                        JSR             UTL_HEX_ASCII_TO_NIBBLE
+                        JSR             SEARCH_UTL_HEX_ASCII_TO_NIBBLE
                         BCC             SEARCH_HEX_DONE
                         LDX             SEARCH_DIGITS
                         CPX             #$04
@@ -328,7 +542,7 @@ SEARCH_SCAN_LOOP:
                         BRA             SEARCH_SCAN_LOOP
 
 SEARCH_SCAN_NOT_IO:
-                        JSR             BIO_FTDI_GET_CTRL_C
+                        JSR             SEARCH_BIO_GET_CTRL_C
                         BCS             SEARCH_ABORT
                         JSR             SEARCH_MATCH_AT
                         BCC             SEARCH_SCAN_NEXT
@@ -437,9 +651,9 @@ SEARCH_MATCH_FAIL:
 ; ----------------------------------------------------------------------------
 SEARCH_PRINT_HIT:
                         LDA             SEARCH_SCAN_HI
-                        JSR             BIO_WRITE_HEX_BYTE
+                        JSR             SEARCH_WRITE_HEX_BYTE
                         LDA             SEARCH_SCAN_LO
-                        JSR             BIO_WRITE_HEX_BYTE
+                        JSR             SEARCH_WRITE_HEX_BYTE
 
                         LDA             SEARCH_SCAN_LO
                         AND             #$0F
@@ -452,7 +666,7 @@ SEARCH_PRINT_HIT:
 SEARCH_HIT_SPACE:
                         LDA             #' '
 SEARCH_HIT_SEP:
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
 
                         LDA             SEARCH_SCAN_LO
                         AND             #$F0
@@ -461,15 +675,15 @@ SEARCH_HIT_SEP:
                         STA             SEARCH_ROW_HI
                         JSR             SEARCH_PRINT_ROW_ADDR
                         LDA             #':'
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         JSR             SEARCH_PRINT_ROW_BYTES
-                        JMP             BIO_WRITE_CRLF
+                        JMP             SEARCH_WRITE_CRLF
 
 SEARCH_PRINT_ROW_ADDR:
                         LDA             SEARCH_ROW_HI
-                        JSR             BIO_WRITE_HEX_BYTE
+                        JSR             SEARCH_WRITE_HEX_BYTE
                         LDA             SEARCH_ROW_LO
-                        JMP             BIO_WRITE_HEX_BYTE
+                        JMP             SEARCH_WRITE_HEX_BYTE
 
 SEARCH_PRINT_ROW_BYTES:
                         STZ             SEARCH_COUNT
@@ -479,26 +693,26 @@ SEARCH_ROW_BYTE_LOOP:
                         CMP             #$08
                         BNE             SEARCH_ROW_BYTE_SPACE
                         LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         LDA             #'|'
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
 SEARCH_ROW_BYTE_SPACE:
                         LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         LDY             SEARCH_COUNT
                         LDA             (SEARCH_ROW_LO),Y
-                        JSR             BIO_WRITE_HEX_BYTE
+                        JSR             SEARCH_WRITE_HEX_BYTE
                         INC             SEARCH_COUNT
                         LDA             SEARCH_COUNT
                         CMP             #$10
                         BCC             SEARCH_ROW_BYTE_LOOP
 
                         LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         LDA             #'|'
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         STZ             SEARCH_COUNT
 SEARCH_ROW_ASCII_LOOP:
                         LDY             SEARCH_COUNT
@@ -510,7 +724,7 @@ SEARCH_ROW_ASCII_LOOP:
 SEARCH_ROW_DOT:
                         LDA             #'.'
 SEARCH_ROW_ASCII_OUT:
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         INC             SEARCH_COUNT
                         LDA             SEARCH_COUNT
                         CMP             #$10
@@ -525,7 +739,7 @@ SEARCH_READ_LINE_ECHO_UPPER:
                         LDA             #$00
                         STA             (SEARCH_LINE_LO),Y
 SEARCH_READ_LOOP:
-                        JSR             BIO_FTDI_READ_BYTE_BLOCK
+                        JSR             SEARCH_BIO_READ_BYTE_BLOCK
                         CMP             #$03
                         BEQ             SEARCH_READ_ABORT
                         CMP             #$0D
@@ -551,7 +765,7 @@ SEARCH_READ_LOOP:
                         JSR             SEARCH_ADV_LINE
                         INC             SEARCH_COUNT
                         LDA             SEARCH_TMP
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         BRA             SEARCH_READ_LOOP
 
 SEARCH_READ_BACKSPACE:
@@ -564,24 +778,24 @@ SEARCH_READ_BACKSPACE:
 SEARCH_READ_BS_DEC:
                         DEC             SEARCH_LINE_LO
                         LDA             #$08
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         LDA             #$08
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         BRA             SEARCH_READ_LOOP
 
 SEARCH_READ_DONE:
                         LDY             #$00
                         LDA             #$00
                         STA             (SEARCH_LINE_LO),Y
-                        JSR             BIO_WRITE_CRLF
+                        JSR             SEARCH_WRITE_CRLF
                         LDA             SEARCH_COUNT
                         SEC
                         RTS
 
 SEARCH_READ_ABORT:
-                        JSR             BIO_WRITE_CRLF
+                        JSR             SEARCH_WRITE_CRLF
                         LDA             #$03
                         CLC
                         RTS
@@ -590,7 +804,7 @@ SEARCH_READ_FULL:
                         LDY             #$00
                         LDA             #$00
                         STA             (SEARCH_LINE_LO),Y
-                        JSR             BIO_WRITE_CRLF
+                        JSR             SEARCH_WRITE_CRLF
                         LDA             #$FE
                         CLC
                         RTS
@@ -605,6 +819,32 @@ SEARCH_CHAR_TO_UPPER:
 SEARCH_CHAR_UPPER_DONE:
                         RTS
 
+SEARCH_WRITE_HEX_BYTE:
+                        PHA
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        JSR             SEARCH_WRITE_HEX_NIBBLE
+                        PLA
+                        AND             #$0F
+SEARCH_WRITE_HEX_NIBBLE:
+                        CMP             #$0A
+                        BCC             SEARCH_WRITE_HEX_DIGIT
+                        CLC
+                        ADC             #$37
+                        JMP             SEARCH_BIO_WRITE_BYTE_BLOCK
+SEARCH_WRITE_HEX_DIGIT:
+                        CLC
+                        ADC             #'0'
+                        JMP             SEARCH_BIO_WRITE_BYTE_BLOCK
+
+SEARCH_WRITE_CRLF:
+                        LDA             #$0D
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
+                        LDA             #$0A
+                        JMP             SEARCH_BIO_WRITE_BYTE_BLOCK
+
 SEARCH_WRITE_CSTRING:
                         STX             SEARCH_LINE_LO
                         STY             SEARCH_LINE_HI
@@ -612,7 +852,7 @@ SEARCH_WRITE_CSTRING:
 SEARCH_WRITE_CSTRING_LOOP:
                         LDA             (SEARCH_LINE_LO),Y
                         BEQ             SEARCH_WRITE_CSTRING_DONE
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
                         INY
                         BNE             SEARCH_WRITE_CSTRING_LOOP
                         INC             SEARCH_LINE_HI
@@ -622,13 +862,24 @@ SEARCH_WRITE_CSTRING_DONE:
 
 SEARCH_PRINT_LINE:
                         JSR             SEARCH_WRITE_CSTRING
-                        JMP             BIO_WRITE_CRLF
+                        JMP             SEARCH_WRITE_CRLF
 
                         DATA
+HASH_BIO_WRITE_BYTE_BLOCK:
+                        DB              $30,$E9,$9F,$37
+HASH_BIO_READ_BYTE_BLOCK:
+                        DB              $85,$5B,$28,$20
+HASH_BIO_FLUSH_RX:
+                        DB              $B9,$22,$66,$2F
+HASH_BIO_GET_CTRL_C:
+                        DB              $D2,$50,$61,$42
+HASH_UTL_HEX_ASCII_TO_NIBBLE:
+                        DB              $B1,$14,$D7,$AD
 MSG_TITLE:              DB              "HIMON SEARCH PROOF $3000",0
 MSG_USAGE:              DB              "S START END|+COUNT BB [BB...] ['TEXT], ? HELP, Q QUIT",0
 MSG_PROMPT:             DB              "S> ",0
 MSG_FULL:               DB              "S FULL",0
+MSG_IMPORT:             DB              "S IMP",0
 MSG_NF:                 DB              "S NF",0
 MSG_IO:                 DB              "S IO",0
 MSG_ABORT:              DB              "S ABORT",0
