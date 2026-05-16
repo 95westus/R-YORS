@@ -327,6 +327,20 @@ A [addr] [label:] MMM [operand] .
 - Onboard assembly should tolerate flash clutter at first; later HIMON or
   maintenance condense can reclaim buried or superseded records.
 
+## HIMON Assembler And Disassembler Decode
+
+- The OSI-era idea of building HIMON's assembler/disassembler primarily from a
+  compact opcode bit-pattern decoder is retired for the W65C02S target.
+- The useful opcode split is `aaa bbb cc`, but it is only a partial compression
+  aid, not the primary correctness model. `cc=01` is the cleanest 64-slot
+  family. `cc=00`, `cc=10`, and especially `cc=11` need enough special cases
+  that the implementation should remain table-driven.
+- HIMON's current `ASM_OP_MNEM_ID` and `ASM_OP_MODE` tables are the authority
+  for V0 assembly and disassembly. Future size work may compress obvious
+  families only after preserving byte-for-byte table-equivalent behavior.
+- Treat the pulpwood/firewood-era bit-code sketch as historical design fuel,
+  not pending implementation debt.
+
 ## Local Source Homes
 
 - MS BASIC, `.BAS` programs, fig-Forth, WDCMONv2, and s3x live under `LOCAL/`.

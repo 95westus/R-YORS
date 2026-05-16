@@ -82,7 +82,7 @@ SEARCH_MAIN:
                         JSR             SEARCH_WRITE_CSTRING
                         LDX             #<SEARCH_LINE_BUF
                         LDY             #>SEARCH_LINE_BUF
-                        JSR             SEARCH_READ_LINE_ECHO_UPPER
+                        JSR             SEARCH_READ_LINE_ECHO
                         BCS             SEARCH_HAVE_LINE
                         CMP             #$03
                         BEQ             SEARCH_MAIN
@@ -106,6 +106,7 @@ SEARCH_RUN_LINE:
                         BEQ             SEARCH_RUN_DONE
                         CMP             #'?'
                         BEQ             SEARCH_USAGE
+                        AND             #$DF
                         CMP             #'Q'
                         BEQ             SEARCH_QUIT
                         CMP             #'S'
@@ -731,7 +732,7 @@ SEARCH_ROW_ASCII_OUT:
                         BCC             SEARCH_ROW_ASCII_LOOP
                         RTS
 
-SEARCH_READ_LINE_ECHO_UPPER:
+SEARCH_READ_LINE_ECHO:
                         STX             SEARCH_LINE_LO
                         STY             SEARCH_LINE_HI
                         STZ             SEARCH_COUNT
@@ -754,7 +755,6 @@ SEARCH_READ_LOOP:
                         BCC             SEARCH_READ_LOOP
                         CMP             #$7F
                         BCS             SEARCH_READ_LOOP
-                        JSR             SEARCH_CHAR_TO_UPPER
                         STA             SEARCH_TMP
                         LDA             SEARCH_COUNT
                         CMP             #$FE
@@ -807,16 +807,6 @@ SEARCH_READ_FULL:
                         JSR             SEARCH_WRITE_CRLF
                         LDA             #$FE
                         CLC
-                        RTS
-
-SEARCH_CHAR_TO_UPPER:
-                        CMP             #'a'
-                        BCC             SEARCH_CHAR_UPPER_DONE
-                        CMP             #'z'+1
-                        BCS             SEARCH_CHAR_UPPER_DONE
-                        SEC
-                        SBC             #$20
-SEARCH_CHAR_UPPER_DONE:
                         RTS
 
 SEARCH_WRITE_HEX_BYTE:

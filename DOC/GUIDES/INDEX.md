@@ -12,6 +12,7 @@ This is the top index for the `ror` documentation set.
 - [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions.
 - [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
 - [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - flash/load/step checklist for HIMON debug testing.
+- [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md) - board transcript validations and bench findings.
 - [HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](./HIMON_SEARCH_IMPLEMENTATION_GUIDE.md) - RAM-to-flash guide for turning HIMON `S` into memory search.
 - [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md) - RAM proof and terminology for joining hash records to callable entries.
 - [QCC.md](./QCC.md) - Questions, Comments, Concerns for active design work.
@@ -41,6 +42,7 @@ This is the top index for the `ror` documentation set.
 - [RTFM-str8.md](./RTFM-str8.md) - small-command STR8 instructions.
 - [RTFM-himon.md](./RTFM-himon.md) - normal monitor boundary instructions.
 - [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - bench process for RAM-loaded debug proofs.
+- [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md) - hardware transcript validations for STR8, HIMON, HREC, search, and debug.
 - [HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](./HIMON_SEARCH_IMPLEMENTATION_GUIDE.md) - RAM proof, flash S19 delivery, and final integration guide for search.
 - [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md) - `HREC_FIND`/`HREC_JOIN_EXEC` proof and terminology.
 - [HASHED_ASM.md](./HASHED_ASM.md) - onboard hashed assembler, symbols, and fixups.

@@ -32,9 +32,10 @@ S addr end|+count 'TEXT
 - Hex byte tokens are the default pattern atoms. Apostrophe text is a final V0
   tail; it consumes the rest of the command line and does not return to hex
   parsing.
-- HIMON command input currently uppercases printable text before dispatch. Exact
-  lowercase or mixed-case byte searches use hex spelling until input policy
-  changes.
+- Resident HIMON command input currently uppercases printable text before
+  dispatch. The current RAM proof preserves printable input and only folds the
+  command letter, so lowercase and mixed-case apostrophe text can be tested
+  directly there.
 - Search hits print like `D` context rows: exact hit first, aligned display row
   second, and `*` between them when the match crosses a 16-byte display row:
 
@@ -165,7 +166,7 @@ map:    SRC/BUILD/map/himon-search-proof-3000.map
 start:  $3000
 RAM:    $7800 line buffer, $7900 pattern buffer
 I/O:    hash-resolved resident BIO_FTDI_* plus local hex output; no SYS_* stack
-size:   $0572 bytes total in the current hash-resolved RAM proof
+size:   $0565 bytes total in the current hash-resolved RAM proof
 ```
 
 The RAM proof does not need a command FNV record. It can run under HIMON with
@@ -226,8 +227,10 @@ promoted 8-byte FNV signatures, the image became `$050B`; after
 promoted 8-byte FNV signatures, the image is `$052B`; after the proof stopped
 linking resident helper payloads and resolved `BIO_FTDI_*` plus
 `UTL_HEX_ASCII_TO_NIBBLE` by emitted hash headers at startup, the image is
-`$0572`. Re-run a short smoke pass after loading the current ROM-bound build
-before using it as the base for flash-shadow work.
+`$0572`; after the proof stopped uppercasing apostrophe text and kept only the
+command-letter fold, the image is `$0565`. Re-run a short smoke pass after
+loading the current ROM-bound build before using it as the base for
+flash-shadow work.
 
 First interactive proof shape:
 

@@ -41,6 +41,49 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: Hardware Test Log Added
+
+```text
+2026
+         05
+                16
+                   02:59Z WLP2 Added HARDWARE_TEST_LOG as the home for
+                               board transcript validations and bench
+                               findings.
+```
+
+scope: `HARDWARE_TEST_LOG.md`, `INDEX.md`, `TOC.md`, `MAP.md`, `XREF.md`.
+
+change: Hardware proof transcripts now have a single guide home instead of
+living only inside design notes, how-to guides, or external terminal logs.
+
+effect: Use the hardware test log for "what actually passed on the board" and
+the individual proof guides for how to run or interpret each proof.
+
+action: Add future bench passes to [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md).
+
+## REDOC: HIMON Bit-Pattern ASM Decode Retired
+
+```text
+2026
+         05
+                16
+                   01:41Z WLP2 Retired the old bit-code assembler/
+                               disassembler direction for W65C02S. HIMON
+                               keeps table-driven opcode decode as the V0
+                               correctness model.
+```
+
+scope: `DECISIONS.md`, HIMON assembler/disassembler implementation.
+
+change: `aaa bbb cc` remains a useful way to understand parts of the opcode
+map, but it is no longer treated as the implementation plan for HIMON ASM/DIS.
+
+effect: Do not carry the OSI-era bit-coded decoder sketch as current debt.
+Future compression is allowed only after it proves table-equivalent behavior.
+
+action: Use [DECISIONS.md](./DECISIONS.md) for the settled rule.
+
 ## REDOC: Catalog-Linking Bootstrap QCC Added
 
 ```text

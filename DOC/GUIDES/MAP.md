@@ -18,6 +18,7 @@ DOC/INDEX.md
      -> HIMON_STAGES_CLASSES.md
      -> REF.md
      -> XREF.md
+     -> HARDWARE_TEST_LOG.md
      -> CATALOG.md
      -> LIFE_RCAT_MEMBER.md
      -> MEMORY_MAP.md
@@ -82,6 +83,11 @@ Bringup
   orders STR8 work from simulation stub to reset-owned recovery
   keeps erase/write work behind read-only proofs
   records bank policy, protected-window policy, and failure cases
+
+Hardware Test Log
+  records real board transcript evidence after bringup/test passes
+  keeps validation excerpts for STR8, HIMON, HREC, search, debug, and catalog
+  lookup separate from design intent and how-to checklists
 
 Hashed ASM
   reads `A [addr] [label:] MMM [operand] .`

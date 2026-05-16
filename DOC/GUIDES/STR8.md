@@ -212,8 +212,8 @@ Possible layouts:
 ```text
 Protected top-sector model:
   $8000-$BFFF          app/growth space in the selected ROM bank
-  $C000-$E357          current HIMON body and data
-  $E358-$EFFF          slack inside the used E sector
+  $C000-$E62C          current HIMON body and data
+  $E62D-$EFFF          slack inside the used E sector
   $F000-$FFFF          STR8 protected top sector
 
 RAM-updater model:

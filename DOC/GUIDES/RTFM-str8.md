@@ -21,9 +21,9 @@ not a pattern for adding more destructive short commands.
 
 ```text
 combined image:  SRC/BUILD/bin/himon-str8-rom.bin
-HIMON:           $C000-$E357
-STR8 image:      $F000-$F620
-worker source:   $F800-$FA7F, copied to RAM when needed
+HIMON:           $C000-$E62C
+STR8 image:      $F000-$F667
+worker source:   $F800-$FA92, copied to RAM when needed
 STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF
@@ -114,7 +114,7 @@ rebuild.
 
 ```text
 $C000-$FFFF   HIMON/STR8 protected region unless high flash is confirmed
-$F800-$FA7F   STR8 RAM-worker source inside the protected top sector
+$F800-$FA92   STR8 RAM-worker source inside the protected top sector
 $FFF0-$FFFF   config pocket and hardware vectors
 ```
 
@@ -127,7 +127,7 @@ remove R-YORS from the ordinary Bank 3 body.
 STR8 copies one compact worker into RAM for flash mutation:
 
 ```text
-$0200-$047F   current worker code
+$0200-$0492   current worker code
 $0200-$09FF   STR8 RAM tray copied from $F800
 $0A00-$0A0C   STR8 worker state board and map bytes
 $4000-$4FFF   4K sector buffer
@@ -146,8 +146,8 @@ current image:
 ```text
 D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
 D F000 +10   78 D8 A2 FF 9A 20 1D F0 ...
-D F800 +10   08 78 AD 17 03 C9 04 F0 ...
-D FFFA FFFF  C2 DB 00 F0 C5 DB
+D F800 +10   08 78 AD 07 0A C9 04 F0 ...
+D FFFA FFFF  1C DE 00 F0 1F DE
 ```
 
 ## Updating HIMON Or STR8

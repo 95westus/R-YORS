@@ -45,9 +45,9 @@ transitional until the command surface is revised.
 
 ```text
 primary image:   SRC/BUILD/bin/himon-str8-rom.bin
-HIMON:           $C000-$E357
-STR8 image:      $F000-$F620
-worker source:   $F800-$FA7F, copied to $0200 when needed
+HIMON:           $C000-$E62C
+STR8 image:      $F000-$F667
+worker source:   $F800-$FA92, copied to $0200 when needed
 STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF
@@ -66,8 +66,8 @@ After burn, these should match:
 ```text
 D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
 D F000 +10   78 D8 A2 FF 9A 20 1D F0 ...
-D F800 +10   08 78 AD 17 03 C9 04 F0 ...
-D FFFA FFFF  C2 DB 00 F0 C5 DB
+D F800 +10   08 78 AD 07 0A C9 04 F0 ...
+D FFFA FFFF  1C DE 00 F0 1F DE
 ```
 
 On reset, STR8 should initialize FTDI, print `HIMON IN 3S. S=STR8`, and count

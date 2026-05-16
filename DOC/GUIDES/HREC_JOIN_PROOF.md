@@ -130,7 +130,7 @@ The current search RAM proof is still separate:
 ```text
 SRC/BUILD/s19/himon-search-proof-3000.s19
 start: $3000
-size:  $0572 bytes = 1394 decimal
+size:  $0565 bytes = 1381 decimal
 ```
 
 ## Edge Cases

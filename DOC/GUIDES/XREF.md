@@ -122,6 +122,11 @@ HIMON_EDGE_DUMP.md
   direct `JSR`/`JMP` edge dump for `HIMON/himon.asm`
   keeps raw edge sites separate from the compact SYMBOL_XREF call tree and
   readable HIMON_MAP.md diagrams
+
+HARDWARE_TEST_LOG.md
+  records board transcript validation after tests are run
+  references BRINGUP.md, HIMON_DEBUG_TESTING.md, HREC_JOIN_PROOF.md, and
+  HIMON_SEARCH_IMPLEMENTATION_GUIDE.md for the test intent behind each pass
 ```
 
 ## Source Cross-Reference

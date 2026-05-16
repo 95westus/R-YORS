@@ -1,6 +1,6 @@
 ; ----------------------------------------------------------------------------
 ; hrec-join-proof.asm
-; RAM-loaded HREC join proof, linked at $3000.
+; RAM-loaded HREC join proof, linked at $4000.
 ; Proves the "C" path: silently join resident BIO write first, then talk.
 ; ----------------------------------------------------------------------------
 

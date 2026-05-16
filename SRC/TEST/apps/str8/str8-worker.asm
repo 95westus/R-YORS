@@ -93,9 +93,15 @@ START:
                         JMP             (STR8_RESET_VECTOR)
 ?FAIL:
                         JSR             STR8W_SELECT_BANK3
+                        LDA             STR8_COPY_MODE
+                        CMP             #STR8_COPY_MODE_RESTORE_FLASH_HI
+                        BEQ             ?TOP_FAIL
                         PLP
                         CLC
                         RTS
+?TOP_FAIL:
+                        PLP
+                        JMP             STR8W_TOP_FAIL_HALT
 
 STR8W_SCAN_MAP:
                         STZ             STR8_COPY_SRC_BANK
@@ -429,6 +435,13 @@ STR8W_FLASH_RESET_FAIL:
                         STA             STR8_FLASH_UNLOCK1
                         CLC
                         RTS
+
+STR8W_TOP_FAIL_HALT:
+                        LDA             #$F0
+                        STA             STR8_FLASH_UNLOCK1
+                        SEI
+?HALT_LOOP:
+                        BRA             ?HALT_LOOP
 
 STR8W_SELECT_BANK3:
                         LDA             #$03

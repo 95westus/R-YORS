@@ -240,7 +240,7 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
-The current combined ROM stores the worker source at bank 3 `$F800-$FA7F`.
+The current combined ROM stores the worker source at bank 3 `$F800-$FA92`.
 Before `B`, `E`, `M`, `0`, `1`, or `2`, resident STR8 at `$F000` copies that
 worker into the `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The worker
 uses `$0A00-$0A0C` as its state board, uses `$4000-$4FFF` as the 4K sector

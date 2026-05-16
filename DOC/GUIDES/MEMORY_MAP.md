@@ -13,9 +13,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$DE20   HIMON CODE, START/standalone RESET entry at $C000
-$DE21-$E357   HIMON DATA
-$E358-$FFF9   current image gap and future STR8/high-ROM space
+$C000-$E0DB   HIMON CODE, START/standalone RESET entry at $C000
+$E0DC-$E62C   HIMON DATA
+$E62D-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -27,9 +27,9 @@ explicit handoff contract; STR8 must not reserve those addresses.
 Current ROM hardware vectors:
 
 ```text
-$FFFA-$FFFB   NMI   = $DBC2
+$FFFA-$FFFB   NMI   = $DE1C
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $DBC5
+$FFFE-$FFFF   IRQ   = $DE1F
 ```
 
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
@@ -41,19 +41,19 @@ The primary combined image is `BUILD/bin/himon-str8-rom.bin`: HIMON starts at
 CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
 `$7000`, the STR8 RAM worker source is stored at CPU `$F800` / file offset
 `$7800`, and the RESET vector points to STR8 at `$F000`. The NMI and IRQ
-vectors point to HIMON's `$DBC2`/`$DBC5` vector entries until STR8 grows its own
+vectors point to HIMON's `$DE1C`/`$DE1F` vector entries until STR8 grows its own
 interrupt policy.
 
 Combined image layout:
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E357   HIMON body
-$E358-$EFFF   current image gap inside the used E sector
-$F000-$F620   STR8 resident shell
-$F621-$F7FF   current image gap inside the top sector
-$F800-$FA7F   STR8 RAM-worker source, copied to $0200 for B/E/M/0/1/2
-$FA80-$FFF9   current image gap, config pocket, and high top-sector space
+$C000-$E62C   HIMON body
+$E62D-$EFFF   current image gap inside the used E sector
+$F000-$F667   STR8 resident shell
+$F668-$F7FF   current image gap inside the top sector
+$F800-$FA92   STR8 RAM-worker source, copied to $0200 for B/E/M/0/1/2
+$FA93-$FFF9   current image gap, config pocket, and high top-sector space
 $FFFA-$FFFF   hardware vectors
 ```
 

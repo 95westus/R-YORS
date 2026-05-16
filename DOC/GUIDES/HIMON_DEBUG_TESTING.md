@@ -53,7 +53,7 @@ SRC/BUILD/s19/himon-debug-proof-3000.s19
 Expected first stop:
 
 ```text
-L OK=0148 GO=3000
+L OK=0163 GO=3000
 HIMON DEBUG PROOF $3000
 BRK $41: USE N TO STEP
 BRK 41 PC=...

@@ -29,6 +29,7 @@
                         XREF            SYS_READ_CHAR_ECHO
                         XREF            SYS_READ_CHAR_COOKED_ECHO
                         XREF            SYS_GET_CTRL_C
+                        XREF            UTL_HEX_ASCII_TO_NIBBLE
 
                         INCLUDE         "TEST/apps/himon/himon-shared-eq.inc"
 
@@ -2435,11 +2436,12 @@ CMD_HXN_BAD:
                         INCLUDE         "TEST/apps/himon/himon-bootlog.inc"
 
                         DATA
-HIM_FNV_FORCE_SYS:
+HIM_FNV_FORCE_RESIDENT:
                         DW              SYS_READ_CHAR
                         DW              SYS_READ_CHAR_ECHO
                         DW              SYS_READ_CHAR_COOKED_ECHO
                         DW              SYS_GET_CTRL_C
+                        DW              UTL_HEX_ASCII_TO_NIBBLE
 
 MSG_BANNER:              DB              $0D,$0A,"HIMO",('N'+$80)
 MSG_PROMPT:              DB              ('>'+$80)
