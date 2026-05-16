@@ -189,23 +189,24 @@ clearer. NMOS 6502 portability is not a STR8 V0 goal.
 
 ## Recovery I/O Layering
 
-STR8 should talk to the smallest useful layer that still preserves a reusable
-contract.
+STR8 should talk to the smallest useful layer that keeps recovery independent
+and avoids duplicate public catalog providers.
 
 Working rule:
 
 ```text
-prefer BIO_* for STR8 recovery I/O
-use PIN_* only when no BIO_* helper exists yet
-promote repeated PIN_* use into BIO_*
+use private STR8_CON_* for V0 console init/read/write/flush
+do not publish STR8_CON_* as BIO_*/PIN_* FNV catalog records
+keep public BIO_FTDI_* ownership in HIMON/current ROM body
 avoid COR_*/SYS_* in the STR8 hot path unless explicitly recovery-safe
 ```
 
-That gives STR8 a direct, small path for bytes, hex, CRLF, and future flash
-status output without dragging in the normal monitor personality. `PIN_*`
-remains the hardware/register edge. `BIO_*` is the first reusable board I/O
-contract. `COR_*` and `SYS_*` sit above that for richer monitor/application
-behavior.
+That accepts a small private code duplicate inside the protected STR8 anchor so
+recovery does not depend on HIMON's resident BIO copy, and so the combined image
+does not publish a second global `BIO_FTDI_*` provider with the same hash.
+`PIN_*` remains the hardware/register edge, `BIO_*` remains the reusable board
+I/O contract, and `COR_*`/`SYS_*` sit above that for richer
+monitor/application behavior.
 
 Possible layouts:
 

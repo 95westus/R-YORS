@@ -22,11 +22,6 @@
 
                         XDEF            START
 
-                        XREF            BIO_FTDI_INIT
-                        XREF            BIO_FTDI_FLUSH_RX
-                        XREF            BIO_FTDI_READ_BYTE_NONBLOCK
-                        XREF            BIO_FTDI_READ_BYTE_BLOCK
-                        XREF            BIO_FTDI_WRITE_BYTE_BLOCK
                         XREF            UTL_DELAY_AXY_8MHZ
                         IF              STR8_RAM_PROOF
                         XREF            FLSH_BANK_SELECT_A
@@ -86,6 +81,18 @@ STR8_MAP_B3             EQU             $0A0C
 STR8_SECTOR_BUF_HI      EQU             $40
 STR8_SECTOR_BUF_END_HI  EQU             $50
 
+STR8_CON_VIA_CTRL       EQU             $7FE0
+STR8_CON_VIA_DATA       EQU             $7FE1
+STR8_CON_VIA_DDRB       EQU             $7FE2
+STR8_CON_VIA_DDRA       EQU             $7FE3
+STR8_CON_PN_TXE         EQU             $01
+STR8_CON_PN_RXF         EQU             $02
+STR8_CON_PN_WR          EQU             $04
+STR8_CON_PN_RD          EQU             $08
+STR8_CON_PN_CTRL_INIT   EQU             $0C
+STR8_CON_TX_SPIN_LIMIT  EQU             $30
+STR8_CON_FLUSH_RX_MAX   EQU             $FF
+
                         CODE
 ; 2026-05-07T19:14-05:00        WLP2        Timeout enters HIMON warm; S/s takes STR8.
 ; 2026-05-14T00:00-05:00        WLP2        Timeout enters HIMON cold after half delay.
@@ -113,8 +120,8 @@ START:
 ; ----------------------------------------------------------------------------
 ; 2026-05-07T19:14-05:00        WLP2        Init flushes RX and gates boot-key polling.
 STR8_INIT:
-                        JSR             BIO_FTDI_INIT
-                        JSR             BIO_FTDI_FLUSH_RX
+                        JSR             STR8_CON_INIT
+                        JSR             STR8_CON_FLUSH_RX
                         LDA             #$00
                         BCC             ?KEY_FLAG
                         LDA             #$01
@@ -201,7 +208,7 @@ STR8_DELAY_COUNTDOWN_TICK_A:
                         JMP             UTL_DELAY_AXY_8MHZ
 
 STR8_BOOT_KEY_POLL:
-                        JSR             BIO_FTDI_READ_BYTE_NONBLOCK
+                        JSR             STR8_CON_READ_BYTE_NONBLOCK
                         BCC             ?NO
                         AND             #$DF
                         CMP             #'S'
@@ -353,7 +360,7 @@ STR8_CMD_RESTORE_A:
                         JSR             STR8_PRINT_XY
                         JSR             STR8_CONFIRM_Y
                         BCC             STR8_CMD_ABORT
-                        JSR             BIO_FTDI_FLUSH_RX
+                        JSR             STR8_CON_FLUSH_RX
                         LDX             #<MSG_FLASH_HI_WARN
                         LDY             #>MSG_FLASH_HI_WARN
                         JSR             STR8_PRINT_XY
@@ -958,10 +965,97 @@ STR8_PRINT_XY:
                         JMP             STR8_WRITE_BYTE
 
 STR8_READ_BYTE:
-                        JMP             BIO_FTDI_READ_BYTE_BLOCK
+                        JMP             STR8_CON_READ_BYTE_BLOCK
 
 STR8_WRITE_BYTE:
-                        JMP             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JMP             STR8_CON_WRITE_BYTE_BLOCK
+
+STR8_CON_INIT:
+                        PHA
+                        LDA             #STR8_CON_PN_CTRL_INIT
+                        STA             STR8_CON_VIA_CTRL
+                        STA             STR8_CON_VIA_DDRB
+                        STZ             STR8_CON_VIA_DDRA
+                        PLA
+                        RTS
+
+STR8_CON_FLUSH_RX:
+                        PHA
+                        PHX
+                        LDX             #STR8_CON_FLUSH_RX_MAX
+?LOOP:                  JSR             STR8_CON_READ_BYTE_NONBLOCK
+                        BCC             ?EMPTY
+                        DEX
+                        BNE             ?LOOP
+                        PLX
+                        PLA
+                        CLC
+                        RTS
+?EMPTY:                 PLX
+                        PLA
+                        SEC
+                        RTS
+
+STR8_CON_READ_BYTE_BLOCK:
+                        JSR             STR8_CON_READ_BYTE_NONBLOCK
+                        BCC             STR8_CON_READ_BYTE_BLOCK
+                        RTS
+
+STR8_CON_READ_BYTE_NONBLOCK:
+                        STZ             STR8_CON_VIA_DDRA
+                        LDA             #STR8_CON_PN_RXF
+                        BIT             STR8_CON_VIA_CTRL
+                        BNE             ?NO_BYTE_READY
+?BYTE_READY:            LDA             #STR8_CON_PN_RD
+                        TRB             STR8_CON_VIA_CTRL
+                        NOP
+                        NOP
+                        LDA             STR8_CON_VIA_DATA
+                        PHA
+                        LDA             #STR8_CON_PN_RD
+                        TSB             STR8_CON_VIA_CTRL
+                        PLA
+                        SEC
+                        RTS
+?NO_BYTE_READY:         LDA             #$00
+                        CLC
+                        RTS
+
+STR8_CON_WRITE_BYTE_BLOCK:
+                        PHX
+?LOOP:                  JSR             STR8_CON_WRITE_BYTE_NONBLOCK
+                        BCC             ?LOOP
+                        PLX
+                        RTS
+
+STR8_CON_WRITE_BYTE_NONBLOCK:
+                        PHA
+                        SEC
+                        STZ             STR8_CON_VIA_DDRA
+                        STA             STR8_CON_VIA_DATA
+                        NOP
+                        NOP
+                        LDX             #$00
+                        LDA             #STR8_CON_PN_TXE
+?TX_SPIN:               BIT             STR8_CON_VIA_CTRL
+                        BEQ             ?WR_STROBE
+                        INX
+                        CPX             #STR8_CON_TX_SPIN_LIMIT
+                        BNE             ?TX_SPIN
+                        CLC
+                        BRA             ?WR_DEASSERT
+?WR_STROBE:             LDA             #STR8_CON_PN_WR
+                        TSB             STR8_CON_VIA_CTRL
+                        LDA             #$FF
+                        STA             STR8_CON_VIA_DDRA
+                        NOP
+                        NOP
+                        SEC
+?WR_DEASSERT:           LDA             #STR8_CON_PN_WR
+                        TRB             STR8_CON_VIA_CTRL
+                        STZ             STR8_CON_VIA_DDRA
+                        PLA
+                        RTS
 
                         DATA
 MSG_SCREEN:             DB              $0D,$0A,"STR8 V0",$0D,$0A

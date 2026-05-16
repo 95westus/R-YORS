@@ -16,12 +16,13 @@ the high-value callable surface grouped by need, with an S/36-ish bias toward
 
 ```text
 SYS_*    normal monitor/app API; device-neutral policy/routing surface
-BIO_*    recovery-safe low-level I/O contract; STR8 should prefer this
+BIO_*    reusable low-level I/O contract; public providers should be unique
 COR_*    shared implementation logic; use when building BIO/SYS or tests
 PIN_*    direct hardware/pin/MMIO layer; use for bring-up or BIO implementation
 UTL_*    pure utility/helper routines
 FLASH_*  flash guard, erase, and byte-program routines
 FNV1A_*  hash helpers for HIMON command/catalog/symbol lookup; not used by STR8 V0
+STR8_CON_* private STR8 V0 console helpers; no public FNV catalog records
 MON_*    monitor command/support internals
 ```
 
@@ -240,8 +241,12 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 
 ## Hardware And Recovery BIO Notes
 
-BIO is the planned STR8-friendly layer. The current BIO surface is device-bound
-to FTDI/PIA names. A future STR8 import file can publish fixed aliases such as:
+BIO is the reusable low-level I/O layer. The current BIO surface is device-bound
+to FTDI/PIA names and is owned by the HIMON/current ROM body in the combined
+image. STR8 V0 uses private `STR8_CON_*` console helpers so it remains
+self-contained without publishing duplicate BIO/PIN FNV records.
+
+A future STR8 import file can publish fixed aliases such as:
 
 ```text
 BIO_READ_BYTE

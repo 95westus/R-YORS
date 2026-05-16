@@ -185,10 +185,13 @@ start +count    count is the number of bytes
 - STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.
 - Minimal recovery is a small load/verify/flash/identity surface, not full
   HIMON.
-- STR8 should prefer `BIO_*` helpers for reusable low-level I/O. If a needed
-  reusable helper does not exist in `BIO_*`, STR8 may call `PIN_*` directly for
-  the first bring-up path, then promote the helper into `BIO_*` when it becomes
-  a shared recovery primitive.
+- STR8 V0 keeps console byte I/O private as `STR8_CON_*` routines. They are
+  recovery-anchor implementation details, not public `BIO_*`/`PIN_*` FNV
+  catalog providers.
+- Public `BIO_*`/`PIN_*` records should have one owner in the combined image.
+  The current HIMON body owns the public `BIO_FTDI_*` records.
+- Small duplicated console code inside STR8 is acceptable while it keeps
+  recovery self-contained and avoids duplicate global hashes.
 - STR8 should avoid `COR_*`/`SYS_*` as hot-path dependencies unless the entry is
   intentionally tiny, stable, and recovery-safe. `SYS_*` remains the public
   monitor/application layer, not the recovery anchor's default substrate.
@@ -279,16 +282,18 @@ start +count    count is the number of bytes
 ## STR8 Call Surface
 
 - STR8 V0 does not reserve or depend on fixed cute-address entry slots.
-- STR8 should call recovery-safe `BIO_*` helpers directly.
+- STR8 V0 should call its private `STR8_CON_*` console helpers directly for
+  recovery I/O.
 - HIMON should reach resident STR8 routines through explicit imported labels or
   a generated import file, not through hard-coded top-ROM vanity addresses.
 
 ## STR8 Imports And Onboard Resolution
 
-- Host-built HIMON images should import resident STR8 `BIO_*`
-  services from explicit STR8 labels or an import file. That keeps the release
-  reproducible and prevents the linker from pulling a second copy of `BIO_*`
-  out of `rom.lib`.
+- Host-built HIMON images should not import V0 `STR8_CON_*` console helpers;
+  they are private to STR8. Future shared STR8 services should be imported from
+  explicit STR8 labels or a generated import file. That keeps the release
+  reproducible and prevents the linker from pulling a second copy of public
+  `BIO_*` out of `rom.lib`.
 - `# label` is a HIMON command. It may eventually resolve HIMON catalog entries
   that point at callable STR8 routines, but STR8 V0 does not perform catalog
   lookup.
