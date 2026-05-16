@@ -1,6 +1,9 @@
 ; ----------------------------------------------------------------------------
 ; life.asm
-; - Conway's Game of Life (16x16 visible grid)
+; - Conway's Game of Life, devised by John Horton Conway in 1970.
+; - Popularized by Martin Gardner's Scientific American "Mathematical Games"
+;   column in October 1970.
+; - Independent 16x16 W65C02 implementation of the Life rules.
 ; - Linked to user program area base: $2000 (wdcln -c2000)
 ; - Left panel = generation N
 ; - Right panel = generation N+1

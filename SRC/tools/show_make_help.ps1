@@ -25,8 +25,8 @@ $rows = @(
     [pscustomobject]@{ Target = "test-mon"; Category = "test"; Description = "Build monitor test app." }
     [pscustomobject]@{ Target = "test-ftdi-drv"; Category = "test"; Description = "Build FTDI driver test app." }
     [pscustomobject]@{ Target = "test-ftdi-hal"; Category = "test"; Description = "Build FTDI HAL test app." }
-    [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life app." }
-    [pscustomobject]@{ Target = "calc-flash"; Category = "app"; Description = "Build CALC flash-slot proof app." }
+    [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
+    [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }
     [pscustomobject]@{ Target = "rom-append-calc"; Category = "app"; Description = "Build CALC command as a ROM append proof at B804." }
     [pscustomobject]@{ Target = "fig-forth"; Category = "local"; Description = "Generate and build local fig-Forth S19 at A000." }
     [pscustomobject]@{ Target = "fig-forth-src"; Category = "local"; Description = "Generate local WDC-flavored fig-Forth source." }

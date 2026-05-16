@@ -267,6 +267,13 @@ Local language images are linked below HIMON: OSI MS BASIC starts at `$8000`
 and fig-Forth starts at `$A000`. They are proof/load artifacts for now, not
 full safe `L F` updater packages.
 
+Forth as a language/concept is not treated as a copied source artifact. The
+local fig-Forth build is different: it is derived from FIG-Forth 6502 Release
+1.1, whose source identifies itself as a public-domain publication from the
+Forth Interest Group and requires the notice to remain with further
+distribution. `tools/emit_fig_forth_wdc.ps1` preserves that notice in the
+generated source under `LOCAL/fig-forth/generated/fig-forth.asm`.
+
 The current standalone `himon-rom` image no longer contains the legacy HIMONIA
 fixed entries at `$F00D`, `$FADE`, or `$FEED`. Loaded-language bridge builds
 must patch call addresses from the current HIMON map or wait for a deliberate

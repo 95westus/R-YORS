@@ -280,7 +280,7 @@ tries to plant a synthetic `BRK` elsewhere, HIMON reports `DBG RAM`.
 Build examples already in this tree:
 
 ```text
-make -C SRC life       -> SRC/BUILD/s19/life.s19        linked at $2000
+make -C SRC life       -> SRC/BUILD/s19/life-2000.s19 + SRC/BUILD/bin/life-2000-load.bin
 make -C SRC str8-ram   -> SRC/BUILD/s19/str8-ram-3000.s19
 ```
 

@@ -12,6 +12,9 @@ dependent docs.
   here.
 - Mark a decision as `reopened` only when the user explicitly asks to revisit
   it.
+- When a decision/edict changes a reader's working map, add a short entry to
+  [DOC_FLASH.md](./DOC_FLASH.md) pointing at the changed decision and dependent
+  docs.
 
 ## Naming And Roles
 
@@ -331,6 +334,9 @@ A [addr] [label:] MMM [operand] .
 - Provenance belongs in local `PROVENANCE.txt` files: timestamps, sizes,
   mtimes, paths, hashes, and notes; no source-content leakage into tracked docs.
 - Builds may consume ignored local source/generated files when present.
+- Forth language ideas are not treated as copied source. The local fig-Forth
+  source is treated as an external public-domain publication with a required
+  notice; generated fig-Forth source must preserve that notice.
 
 ## Documentation Shape
 

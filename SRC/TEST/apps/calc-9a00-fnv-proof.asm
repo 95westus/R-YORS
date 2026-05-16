@@ -1,11 +1,14 @@
 ; ----------------------------------------------------------------------------
-; calc-flash.asm
-; Tiny flash-resident FNV command test image, linked at $9A00.
+; calc-9a00-fnv-proof.asm
+; Tiny 9A00 FNV command-discovery proof image.
 ;   $9A00-$9A07: FNV record for command CALC
 ;   $9A08:       command entry point
+; Legacy CALC proof. This exists to prove the old inline FNV command scan path.
+; Superseded by rom-append-calc.asm for active ROM-append work. Do not load both;
+; both publish the same CALC FNV record.
 ; ----------------------------------------------------------------------------
 
-                        MODULE          CALC_FLASH_APP
+                        MODULE          CALC_9A00_FNV_PROOF_APP
 
                         XDEF            START
 

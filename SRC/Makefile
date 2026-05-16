@@ -86,7 +86,8 @@ TFLASH_OBJ := $(OBJ_DIR)/$(TEST_ROOT_DIR)/test-flash.obj
 TFLASH_S19 := $(S19_DIR)/test-flash.s19
 LIFE_SRC := $(APPS_DIR)/life.asm
 LIFE_OBJ := $(OBJ_DIR)/$(APPS_DIR)/life.obj
-LIFE_S19 := $(S19_DIR)/life.s19
+LIFE_S19 := $(S19_DIR)/life-2000.s19
+LIFE_BIN := $(BIN_DIR)/life-2000-load.bin
 HIMON_DEBUG_PROOF_SRC := $(APPS_DIR)/himon-debug-proof.asm
 HIMON_DEBUG_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-debug-proof.obj
 HIMON_DEBUG_PROOF_S19 := $(S19_DIR)/himon-debug-proof-3000.s19
@@ -99,10 +100,10 @@ HREC_JOIN_PROOF_SRC := $(APPS_DIR)/hrec-join-proof.asm
 HREC_JOIN_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/hrec-join-proof.obj
 HREC_JOIN_PROOF_S19 := $(S19_DIR)/hrec-join-proof-4000.s19
 HREC_JOIN_PROOF_LINKFLAGS := -g -s -t -c4000 -hm19 -j -o
-CALC_FLASH_SRC := $(APPS_DIR)/calc-flash.asm
-CALC_FLASH_OBJ := $(OBJ_DIR)/$(APPS_DIR)/calc-flash.obj
-CALC_FLASH_S19 := $(S19_DIR)/calc-flash-9a00.s19
-CALC_FLASH_LINKFLAGS := -g -s -t -c9A00 -hm19 -j -o
+CALC_9A00_FNV_PROOF_SRC := $(APPS_DIR)/calc-9a00-fnv-proof.asm
+CALC_9A00_FNV_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/calc-9a00-fnv-proof.obj
+CALC_9A00_FNV_PROOF_S19 := $(S19_DIR)/calc-9a00-fnv-proof.s19
+CALC_9A00_FNV_PROOF_LINKFLAGS := -g -s -t -c9A00 -hm19 -j -o
 ROM_APPEND_CALC_SRC := $(APPS_DIR)/rom-append-calc.asm
 ROM_APPEND_CALC_OBJ := $(OBJ_DIR)/$(APPS_DIR)/rom-append-calc.obj
 ROM_APPEND_CALC_S19 := $(S19_DIR)/rom-append-calc-b804.s19
@@ -279,8 +280,8 @@ test-flash: $(ROM_LIB) $(TFLASH_S19)
 	@echo "Built $(TFLASH_S19)."
 	@$(MAKE) artifacts
 
-life: $(ROM_LIB) $(LIFE_S19)
-	@echo "Built $(LIFE_S19)."
+life: $(ROM_LIB) $(LIFE_S19) $(LIFE_BIN)
+	@echo "Built $(LIFE_S19) and $(LIFE_BIN)."
 	@$(MAKE) artifacts
 
 himon-debug-proof: $(ROM_LIB) $(HIMON_DEBUG_PROOF_S19)
@@ -295,8 +296,8 @@ hrec-join-proof: $(ROM_LIB) $(HREC_JOIN_PROOF_S19)
 	@echo "Built $(HREC_JOIN_PROOF_S19)."
 	@$(MAKE) artifacts
 
-calc-flash: $(ROM_LIB) $(CALC_FLASH_S19)
-	@echo "Built $(CALC_FLASH_S19)."
+calc-9a00-fnv-proof: $(ROM_LIB) $(CALC_9A00_FNV_PROOF_S19)
+	@echo "Built $(CALC_9A00_FNV_PROOF_S19)."
 	@$(MAKE) artifacts
 
 rom-append-calc: $(ROM_LIB) $(ROM_APPEND_CALC_S19)
@@ -467,6 +468,11 @@ $(LIFE_S19): $(LIFE_OBJ) $(ROM_LIB)
 	@echo [ps] set S9 start $$2000 in $(LIFE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(LIFE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
 
+$(LIFE_BIN): $(LIFE_S19)
+	@if not exist $(subst /,\,$(BIN_DIR)) mkdir $(subst /,\,$(BIN_DIR))
+	@echo [ps] build $(LIFE_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$srecCat = (Get-Command srec_cat -ErrorAction Stop).Source; & $$srecCat '$(LIFE_S19)' -motorola -crop 0x2000 0x3000 -offset -0x2000 -o '$(LIFE_BIN)' -binary; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; $$bin = [System.IO.File]::ReadAllBytes('$(LIFE_BIN)'); Write-Host ('BIN                      = {0}' -f '$(LIFE_BIN)'); Write-Host ('Load address/bytes       = 2000/{0}' -f $$bin.Length)"
+
 $(HIMON_DEBUG_PROOF_S19): $(HIMON_DEBUG_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(HIMON_DEBUG_PROOF_LINKFLAGS) $(HIMON_DEBUG_PROOF_S19) $(HIMON_DEBUG_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
@@ -485,11 +491,11 @@ $(HREC_JOIN_PROOF_S19): $(HREC_JOIN_PROOF_OBJ) $(ROM_LIB)
 	@echo [ps] set S9 start $$4000 in $(HREC_JOIN_PROOF_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HREC_JOIN_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9034000BC'; Set-Content -Path $$p -Value $$lines"
 
-$(CALC_FLASH_S19): $(CALC_FLASH_OBJ) $(ROM_LIB)
+$(CALC_9A00_FNV_PROOF_S19): $(CALC_9A00_FNV_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(CALC_FLASH_LINKFLAGS) $(CALC_FLASH_S19) $(CALC_FLASH_OBJ) -L $(BUILD_DIR)\lib\rom
-	@echo [ps] set S9 start $$9A08 in $(CALC_FLASH_S19)
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(CALC_FLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9039A085A'; Set-Content -Path $$p -Value $$lines"
+	$(LINKER) $(CALC_9A00_FNV_PROOF_LINKFLAGS) $(CALC_9A00_FNV_PROOF_S19) $(CALC_9A00_FNV_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$9A08 in $(CALC_9A00_FNV_PROOF_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(CALC_9A00_FNV_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9039A085A'; Set-Content -Path $$p -Value $$lines"
 
 $(ROM_APPEND_CALC_S19): $(ROM_APPEND_CALC_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -622,4 +628,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-proof hrec-join-proof calc-flash rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-proof hrec-join-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

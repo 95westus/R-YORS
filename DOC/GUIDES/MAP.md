@@ -10,6 +10,8 @@ DOC/INDEX.md
   -> DOC/GUIDES/INDEX.md
      -> TOC.md
      -> MAP.md
+     -> HASH_FLASH.md
+     -> DOC_FLASH.md
      -> DECISIONS.md
      -> QCC.md
      -> BRINGUP.md
@@ -39,7 +41,12 @@ Decisions
 QCC
   records Questions, Comments, and Concerns before they become decisions
   keeps what-if design notes visible without making them settled spec
-  splits active topics into hash, flash, ASM, STR8, and memory QCC pages
+  splits active topics into hash, flash, ASM, catalog-linking, STR8, and
+  memory QCC pages
+
+DOC FLASH
+  alerts when doc shape, edicts, canonical homes, or remembered artifact names
+  change enough that a reader's mental map is stale
 
 STR8
   keeps recovery/update safe
@@ -210,6 +217,8 @@ flowchart TD
     IDX[INDEX] --> TOC[TOC]
     IDX --> MOM[GENERATED/MAP_OF_MAPS]
     IDX --> MAP[MAP]
+    IDX --> HFLASH[HASH_FLASH]
+    IDX --> DFLASH[DOC_FLASH]
     IDX --> DEC[DECISIONS]
     IDX --> QCC[QCC]
     IDX --> HSTAGE[HIMON_STAGES_CLASSES]
@@ -234,12 +243,16 @@ flowchart TD
     QCC --> QHASH[QCC_HASH]
     QCC --> QFLASH[QCC_FLASH]
     QCC --> QASM[QCC_ASM]
+    QCC --> QCLINK[QCC_CATALOG_LINKING]
     QCC --> QSTR8[QCC_STR8]
     QCC --> QMEM[QCC_MEMORY]
     QHASH --> HMAP
     QFLASH --> STR8
     QFLASH --> HMAP
     QASM --> HASM
+    QCLINK --> HREC[HREC_JOIN_PROOF]
+    QCLINK --> LIFE[LIFE_RCAT_MEMBER]
+    QCLINK --> CAT
     QSTR8 --> STR8
     QMEM --> MEM
     MAP --> SYMX

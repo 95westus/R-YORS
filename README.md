@@ -34,6 +34,13 @@ Newest alerts appear first.
 ```
 
 Details live in [DOC/GUIDES/HASH_FLASH.md](DOC/GUIDES/HASH_FLASH.md).
+Doc/edict movement lives in [DOC/GUIDES/DOC_FLASH.md](DOC/GUIDES/DOC_FLASH.md).
+
+## ### DOC FLASH ###
+
+Use DOC FLASH when a doc, edict, QCC home, or artifact name changes enough
+that yesterday's notes could mislead you. Latest doc alerts live in
+[DOC/GUIDES/DOC_FLASH.md](DOC/GUIDES/DOC_FLASH.md).
 
 ## System Card
 
@@ -206,6 +213,13 @@ The build check verifies that vector and reset-target code before release.
 Local language images are linked under the live monitor/boot region: OSI MS
 BASIC at `$8000` and fig-Forth at `$A000`. They remain blank-write/proof
 artifacts rather than full `L F` update packages.
+
+Forth as a language/concept is not treated here as a copyright problem. The
+specific fig-Forth source is different: R-YORS uses a local FIG-Forth 6502
+Release 1.1 source that identifies itself as a public-domain publication from
+the Forth Interest Group and requires that its notice be included in further
+distribution. The generator preserves that notice in the generated local
+source.
 
 ```text
 make release-local

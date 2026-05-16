@@ -96,6 +96,64 @@ flash lifecycle state and are discussed in `QCC_FLASH.md`.
 Concern: Keep hash width and lifecycle bits separate in the spec. Width belongs
 in control bits such as `ww`; FSB belongs to a future signature/lifecycle idea.
 
+## Q: Is `FN(V|$80)` too wasteful as a marker?
+
+Comment: Yes, for compact catalog records. No, for bring-up and arbitrary ROM
+scanning.
+
+The current HIMON record spends three visible bytes before the hash:
+
+```text
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind
+```
+
+That is expensive if every compact record pays it. It is also useful right now:
+it is easy to spot in a hex dump, easy to scan with tiny code, and strong enough
+for a proving record in arbitrary ROM/code space.
+
+The compact direction should separate three questions:
+
+```text
+where do I scan?       declared window or catalog block
+what am I reading?     block/table marker and record control byte
+which name is this?    FNV-1a hash bytes, width chosen by context
+```
+
+Good progression:
+
+```text
+current proof
+  per-record FN(V|$80), full hash, kind
+
+near compact
+  block marker such as RCAT/RREC once, then small record controls
+
+managed catalog
+  declared window + sealed block header + compact records, no per-record FNV text
+```
+
+A marker hash is possible, but it should usually identify a block/table format,
+not every record. For example, a block header could carry a 16-bit or 32-bit
+FNV-1a hash of a format name such as `RYORS RCAT V1`. That makes the marker
+namespaced and versionable, but once stored it is still just marker bytes. It
+does not remove the need for length, bounds, lifecycle, and checksum/proof
+rules.
+
+Marker options:
+
+```text
+3 text bytes per record      readable, good for current arbitrary scans
+2 text bytes per block       smaller, still readable: RC/RR/RT/etc.
+1 control byte per record    good only inside a proven block/window
+hash marker in block header  versionable, less readable, useful for formats
+no marker per record         best once the enclosing table proves context
+```
+
+Concern: A marker answers "are these bytes probably a record?" It is not the
+record identity. The identity still comes from hash/name/kind plus contract
+metadata. One byte by itself is not enough for arbitrary scanning; it becomes
+safe only inside a declared and validated block/table.
+
 ## Q: Should hash records link to parents and children?
 
 Comment: A HIMON userland explorer could take a command/string, compute its

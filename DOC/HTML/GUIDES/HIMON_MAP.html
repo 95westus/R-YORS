@@ -287,8 +287,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 <td>Catalog scan/dispatch</td>
 <td>command execution</td>
 <td><code>CMD_DISPATCH_HASH</code>, <code>CMD_HASH_SCAN_*</code>, <code>CMD_HASH_RECORD_*</code>, <code>CMD_EXEC_ADDR</code></td>
-<td>Scans <code>$9000</code> through vector boundary for `FN(V</td>
-<td>$80)` records, matches hash, requires executable kind, calls entry.</td>
+<td>Scans <code>$8000</code> through vector boundary for <code>FN(V|$80)</code> records, matches hash, requires executable kind, calls entry.</td>
 <td>Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer.</td>
 </tr>
 <tr>

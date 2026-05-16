@@ -7,6 +7,7 @@ This is the top index for the `ror` documentation set.
 - [TOC.md](./TOC.md) - recommended reading order.
 - [MAP.md](./MAP.md) - documentation map and system map.
 - [HASH_FLASH.md](./HASH_FLASH.md) - short alert stream for command-surface changes.
+- [DOC_FLASH.md](./DOC_FLASH.md) - short alert stream for doc/edict changes.
 - [DECISIONS.md](./DECISIONS.md) - settled calls to avoid reopening by accident.
 - [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions.
 - [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
@@ -25,6 +26,8 @@ This is the top index for the `ror` documentation set.
 
 - [HISTORICAL_DOCUMENTS.md](./HISTORICAL_DOCUMENTS.md) - path from BSO2 ideas toward current HIMON.
 - [HASH_FLASH.md](./HASH_FLASH.md) - REHASH/FLASHBACK notes for command syntax changes.
+- [DOC_FLASH.md](./DOC_FLASH.md) - REDOC notes for doc-shape, edict, and
+  canonical-home changes.
 - [DECISIONS.md](./DECISIONS.md) - naming, hash, STR8, ASM, local-home,
   and doc-shape decisions.
 - [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
@@ -51,6 +54,8 @@ This is the top index for the `ror` documentation set.
   condense/compress questions.
 - [QCC_ASM.md](./QCC_ASM.md) - hashed assembler symbols, fixups, and record
   safety questions.
+- [QCC_CATALOG_LINKING.md](./QCC_CATALOG_LINKING.md) - bootstrap questions for
+  catalog joins, seed records, and static-link payload baggage.
 - [QCC_STR8.md](./QCC_STR8.md) - STR8 ownership, scanning, and recovery/update
   boundary questions.
 - [QCC_MEMORY.md](./QCC_MEMORY.md) - memory ranges, 4K selectors, allocation,

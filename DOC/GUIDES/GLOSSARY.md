@@ -164,6 +164,9 @@ docs.
   descending `HH:MMZ programmer comment` rows. CBI code form is the condensed
   source-comment line: `; YYYY-MM-DDTHH:MMZ programmer comment`. Continuation
   lines align under the comment body. Keep CBI source lines under 78 columns.
+- DOC FLASH: short alert stream for doc-shape, edict, canonical-home, QCC, and
+  remembered-artifact changes. It is a reader-facing flare, not a full
+  changelog.
 - ISO 8601: project-wide date/time format for source, docs, generated files,
   comments, logs, and examples. Use `YYYY-MM-DD` for dates and
   `YYYY-MM-DDTHH:mm+/-HH:MM` for local date/times unless more precision is

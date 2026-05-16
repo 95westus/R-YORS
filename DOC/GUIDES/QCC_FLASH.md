@@ -94,6 +94,108 @@ later:     old king gets buried
 Concern: The winner rule must be written down before multiple sealed records
 are allowed in the same managed region.
 
+## Q: Are duplicate ROM/flash records a bug or a feature?
+
+Comment: They are a bug in the current first-match scanner, and a feature in a
+future governed catalog.
+
+The `calc-9a00-fnv-proof` and `rom-append-calc` example shows the difference.
+Both records publish the same `CALC` command hash. They both fit physically:
+
+```text
+calc-9a00-fnv-proof   starts $9A00, ends $9C9F
+rom-append-calc       starts $B804, ends $BADA
+```
+
+The room is not the issue. The issue is that both are visible in the same
+scanner world. Current HIMON command dispatch scans upward and stops on the
+first matching executable FNV record. That means the lower-address proof record
+would win before the newer ROM-append payload. In that mode, duplicate command
+records are accidental shadowing.
+
+Future catalog lookup should treat this as candidate selection:
+
+```text
+scan declared windows
+collect matching hash/name/kind candidates
+discard erased, unformed, unsealed, buried, invalid, or wrong-contract records
+choose by explicit winner rule
+```
+
+Useful winner rules depend on the mode:
+
+```text
+boot/recovery     prefer known ROM/fixed records first
+normal command    prefer newest sealed compatible flash/catalog record
+test/staging      prefer RAM or explicit staging window first
+diagnostic #      list every visible candidate, including losers
+condense          keep winners, copy/verify them, bury or drop losers
+```
+
+That is exploitable in the good sense. Duplicate identity lets a new record be
+written and proven before the old one is erased or buried:
+
+```text
+old CALC remains visible
+new CALC is written elsewhere
+new CALC is verified and sealed
+lookup policy starts choosing new CALC
+old CALC becomes rollback/debug material
+later condense removes or buries the loser
+```
+
+Concern: Do not let raw address order become the hidden contract. If address
+order is used, name it as a temporary proof rule. Once staging, update, rollback,
+and garbage collection matter, lookup must collect candidates and apply a
+policy that operators and tools can inspect.
+
+## Q: Can "generation wins" work with only the current kind byte?
+
+Comment: No. The current HIMON proving record is too small for that policy:
+
+```text
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...
+```
+
+That shape proves:
+
+```text
+hash       what command/name was requested
+kind       what coarse thing follows, such as executable code
+entry      current rule says executable code begins at record+8
+```
+
+It does not carry:
+
+```text
+generation
+contract version
+provider/source
+record length
+formed/sealed/buried state
+priority or scan-window policy
+checksum/proof
+explicit entry pointer
+```
+
+So current HIMON can only use simple proof-era rules such as first-match or
+hardcoded scan-window order. That is not generation wins; it is address order
+being used as a temporary resolver.
+
+Real generation wins needs either an extended record or an enclosing catalog
+block/table that supplies metadata:
+
+```text
+collect candidates
+reject invalid/unsealed/buried/wrong-contract candidates
+choose highest compatible generation, or another named policy
+```
+
+Concern: Do not overload the `kind` byte. `kind` says what class of thing the
+record points at. It should not also mean lifecycle, generation, ABI contract,
+and provider priority. Those belong in RCAT/RREC metadata or a transitional
+extended record.
+
 ## Q: What does condense purge?
 
 Comment: The strongest purge signal is `B=0`.

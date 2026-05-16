@@ -3,6 +3,8 @@
 ; Tiny ROM append proof image, linked at $B804.
 ;   $B804-$B80B: FNV record for command CALC
 ;   $B80C:       command entry point
+; Current CALC ROM-append proof. Supersedes calc-9a00-fnv-proof.asm for active
+; proof/load work and must continue to fit below the protected ROM region.
 ; ----------------------------------------------------------------------------
 
                         MODULE          ROM_APPEND_CALC_APP

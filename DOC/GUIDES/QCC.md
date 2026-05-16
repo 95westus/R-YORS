@@ -11,6 +11,10 @@ Concern
 A QCC page is for design thinking that is important enough to keep, but not
 settled enough to become a decision yet.
 
+When a QCC page is added, split, promoted, deprecated, or made the new
+canonical home for an idea, add a short alert to [DOC_FLASH.md](./DOC_FLASH.md)
+so readers know their mental map changed.
+
 The style comes from call-center training: after each section or block, the
 trainer would pause for QCC, meaning questions, comments, and concerns. R-YORS
 uses it the same way: stop at the end of a thought block, catch what is unclear,
@@ -57,6 +61,8 @@ fit a small inspectable 6502 runtime, it does not belong in the first path.
   buried records, and condense/compress policy.
 - [QCC_ASM.md](./QCC_ASM.md) - hashed assembler symbols, fixups, labels, and
   when hash-only records are not enough.
+- [QCC_CATALOG_LINKING.md](./QCC_CATALOG_LINKING.md) - catalog-linking
+  bootstrap, seed-layer joins, and payload-baggage questions.
 - [QCC_STR8.md](./QCC_STR8.md) - STR8/STRAIGHTEN scope, ownership boundaries,
   scanning, and recovery/update responsibilities.
 - [QCC_MEMORY.md](./QCC_MEMORY.md) - RAM/IO/flash ranges, 4K selectors,

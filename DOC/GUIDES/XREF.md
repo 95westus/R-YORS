@@ -19,10 +19,17 @@ DECISIONS.md
   should be checked before reopening design alternatives
   overrides looser exploratory notes unless explicitly reopened
 
+DOC_FLASH.md
+  records short alerts when doc shape, edicts, canonical homes, QCC pages, or
+  remembered artifact names change enough to make yesterday's binder stale
+  points to DECISIONS.md for settled edict changes and QCC_*.md pages for
+  unsettled design movement
+
 QCC.md
   defines Questions, Comments, Concerns as the working-note style for active
   design questions
-  indexes QCC_HASH, QCC_FLASH, QCC_ASM, QCC_STR8, and QCC_MEMORY
+  indexes QCC_HASH, QCC_FLASH, QCC_ASM, QCC_CATALOG_LINKING, QCC_STR8, and
+  QCC_MEMORY
   feeds DECISIONS.md when a working answer becomes settled
 
 HASH_MAP.md
@@ -48,7 +55,16 @@ HASHED_ASM.md
 QCC_ASM.md
   keeps hash-first assembler questions about labels, symbol text, fixups, and
   sealed record output
-  relates to HASHED_ASM.md and QCC_FLASH.md
+  relates to HASHED_ASM.md, QCC_CATALOG_LINKING.md, and QCC_FLASH.md
+
+QCC_CATALOG_LINKING.md
+  keeps the bootstrap question for catalog-linked bodies and catalog-aware ASM:
+  what creates the first records before catalog joins are strong enough to own
+  themselves
+  names LIFE-2000 static-link support code as useful payload baggage, not the
+  final catalog contract
+  relates to HREC_JOIN_PROOF.md, LIFE_RCAT_MEMBER.md, HASHED_ASM.md,
+  CATALOG.md, and QCC_ASM.md
 
 QCC_STR8.md
   keeps STR8/STRAIGHTEN questions about ownership, scan ranges, recovery/update

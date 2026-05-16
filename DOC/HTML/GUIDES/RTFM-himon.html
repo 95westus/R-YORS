@@ -138,7 +138,7 @@ promote clean code into HIMON or a ROM/flash image
 build the final .bin</code></pre>
 <p>For the next search command, <code>S</code> should start this way: a RAM proof S19 running under HIMON, not a permanent HIMON command record on the first pass. Link it in user RAM and keep the code away from HIMON&#39;s workspace, page buffers, I/O, and ROM/flash. Debug patches only belong in <code>$2000-$77FF</code>; if step or breakpoint tries to plant a synthetic <code>BRK</code> elsewhere, HIMON reports <code>DBG RAM</code>.</p>
 <p>Build examples already in this tree:</p>
-<pre><code class="language-text">make -C SRC life       -&gt; SRC/BUILD/s19/life.s19        linked at $2000
+<pre><code class="language-text">make -C SRC life       -&gt; SRC/BUILD/s19/life-2000.s19 + SRC/BUILD/bin/life-2000-load.bin
 make -C SRC str8-ram   -&gt; SRC/BUILD/s19/str8-ram-3000.s19</code></pre>
 <p>On the board:</p>
 <pre><code class="language-text">&gt;L              load S-records into RAM, then G start manually

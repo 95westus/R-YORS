@@ -32,11 +32,13 @@ DOC/IDEAS.md
 DOC/GUIDES/INDEX.md
 DOC/GUIDES/TOC.md
 DOC/GUIDES/MAP.md
+DOC/GUIDES/DOC_FLASH.md
 DOC/GUIDES/DECISIONS.md
 DOC/GUIDES/QCC.md
 DOC/GUIDES/QCC_HASH.md
 DOC/GUIDES/QCC_FLASH.md
 DOC/GUIDES/QCC_ASM.md
+DOC/GUIDES/QCC_CATALOG_LINKING.md
 DOC/GUIDES/QCC_STR8.md
 DOC/GUIDES/QCC_MEMORY.md
 DOC/GUIDES/REF.md
@@ -113,3 +115,10 @@ DOC/GENERATED/ROUTINE_COMPONENTS.md
   <https://www.rfc-editor.org/rfc/rfc9923.html>. R-YORS uses 32-bit FNV-1a
   from this family for routine headers, runtime command lookup, catalog records,
   symbols, and fixups.
+- Forth Interest Group home page: <https://www.forth.org/>. FIG describes
+  itself as having promoted the Forth computer language and hosts public-domain
+  and experimental Forth implementations.
+- FIG-Forth Implementations index:
+  <https://www.forth.org/fig-forth/contents.html>. The local fig-Forth path is
+  based on the 6502 FIG-Forth implementation; the local generator preserves the
+  source notice required by that publication.
