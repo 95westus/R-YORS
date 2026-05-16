@@ -110,10 +110,10 @@ full-word names.
 ```text
 ?              help
 # [token]      list records, or resolve token without executing it
-D start +n     dump memory count
+D start +count dump memory count
 D start end    dump memory range
 M addr         modify memory
-U start +n     disassemble
+U start +count disassemble
 A addr         assemble
 G addr         go to address
 L              load S-records to RAM
@@ -128,11 +128,11 @@ X              resume trapped context
 Q              quiesce with WAI, then re-enter on wake
 ```
 
-For dump commands in the current parser, `+n` is the safer habit when you mean
-"show me this many bytes." The target range syntax is `start +count` for a byte
-count and short inclusive end tokens that inherit the start high byte, so
-`D 3000 FF` means `$3000-$30FF`. Target continuation behavior: after
-`D 3000 FF`, a bare `D` displays `$3100-$31FF`.
+For dump commands, `+count` means "show me this many bytes." Short inclusive end
+tokens inherit the start high byte, so `D 3000 FF` means `$3000-$30FF`.
+Three- or four-digit end tokens are full addresses, so `D 1000 FFF` is not
+`$1000-$1FFF`; use `D 1000 1FFF` or `D 1000 +1000`. Target continuation
+behavior: after `D 3000 FF`, a bare `D` displays `$3100-$31FF`.
 
 ## Sharp Edges
 

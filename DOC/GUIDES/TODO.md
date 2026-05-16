@@ -25,12 +25,10 @@
   are `COPY start end|+count dest`, `FILL start end|+count bb`, and later
   `MOVE start end|+count dest`; flash/bank mutation stays behind full-word
   confirmed commands.
-- Revise the shared range parser so `start +count` means byte count, while a
-  1- or 2-hex-digit inclusive `end` inherits the start high byte when safe.
 - Add `D` continuation state: bare `D` repeats the previous dump length from
   the byte after the previous dump, e.g. `D 3000 FF` then `D` displays
   `$3100-$31FF`.
-- Define and implement HIMON memory search after the range parser settles:
+- Define and implement HIMON memory search using the shared range parser:
   target `S addr end|+count b0 [b1 ...]` for hex-byte search,
   `S addr end|+count 'TEXT` for text search, and the simple mixed tail
   `S addr end|+count b0 [b1 ...] 'TEXT`. Treat apostrophe text as a final V0

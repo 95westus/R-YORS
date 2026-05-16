@@ -563,6 +563,13 @@ The promoted hex helpers are pure conversion contracts except for
 early catalog-linking candidates because they remove duplicated hex code from
 RAM workers.
 
+The same promotion pattern applies to parser helpers. If HIMON, search, copy,
+fill, and later STR8-N tools all need `start end|+count`, first static-link a
+documented range-parser contract and keep caller-specific workspace adapters
+thin. Later the same contract can become an `RREC` export with `RFIX`/`RLNK`
+users. That is the "routines made from routines" rule in catalog form: promote
+the useful behavior, not just a pasted source block.
+
 ```text
 RREC UTL_HEX_NIBBLE_TO_ASCII
   lifecycle: formed, sealed, not buried

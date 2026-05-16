@@ -443,8 +443,20 @@ optional payload
 `bank` matters because the record may live in a clean catalog area while the
 routine/data body lives in a future growth/storage bank.
 
+`kind` classifies the record or payload. It should not carry lifecycle policy.
+Lifecycle flags can include `REQUIRED_FOR_RECOVERY`, `BOOT_REQUIRED`, or
+`REPLACEABLE`. `REQUIRED_FOR_RECOVERY` is the future no-ordinary-purge rule for
+the active recovery dependency chain; it is not implied merely by a `BIO_*` or
+`PIN_*` routine name.
+
 There is no per-record algorithm byte. The catalog format itself defines
 `hash0..3` as FNV-1a.
+
+When a useful behavior is duplicated in proof code, promote it in two stages:
+first static-link a documented routine contract through labels/library records;
+later export the same contract as an `RREC` and let `RFIX`/`RLNK` resolve it.
+The HIMON/search range parser is the model: share the range arithmetic and
+count/end semantics, while keeping thin adapters for each caller's workspace.
 
 ## Hash-To-Hash Alias Records
 

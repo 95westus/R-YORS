@@ -10,6 +10,7 @@ DOC/INDEX.md
   -> DOC/GUIDES/INDEX.md
      -> TOC.md
      -> MAP.md
+     -> BOOK.md
      -> HASH_FLASH.md
      -> DOC_FLASH.md
      -> DECISIONS.md
@@ -34,6 +35,11 @@ DOC/INDEX.md
 ```text
 R-YORS
   boots through STR8
+
+BOOK
+  gives the project a manuscript spine
+  turns the guide set into chapter questions, answers, and proof pointers
+  preserves the narrative of building a hashed runtime from the bench up
 
 Decisions
   records settled calls before details sprawl into guide debate

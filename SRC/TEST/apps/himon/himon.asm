@@ -251,7 +251,7 @@ CMD_HASH_LIST_DONE:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; D start [end|+len]
+; D start [end|+count]
 ; ----------------------------------------------------------------------------
 CMD_D_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$13,$F2,$0B,$C1,$00 ; D $C10BF213 EXEC
@@ -272,7 +272,7 @@ CMD_USAGE_D:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; M start [end|+len]
+; M start [end|+count]
 ; ----------------------------------------------------------------------------
 CMD_M_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$18,$FD,$0B,$C8,$00 ; M $C80BFD18 EXEC
@@ -1410,7 +1410,9 @@ CMD_INC_RANGE_PTR_DONE:
 
 CMD_PARSE_RANGE_REQUIRED:
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
-                        BCC             CMD_PARSE_RANGE_FAIL
+                        BCS             CMD_PARSE_RANGE_START_OK
+                        JMP             CMD_PARSE_RANGE_FAIL
+CMD_PARSE_RANGE_START_OK:
                         LDA             CMDP_ADDR_LO
                         STA             CMD_RANGE_START_LO
                         STA             CMD_RANGE_TMP_LO
@@ -1427,7 +1429,19 @@ CMD_PARSE_RANGE_REQUIRED:
                         BEQ             CMD_PARSE_RANGE_PLUS
 
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
-                        BCC             CMD_PARSE_RANGE_FAIL
+                        BCS             CMD_PARSE_RANGE_END_OK
+                        JMP             CMD_PARSE_RANGE_FAIL
+CMD_PARSE_RANGE_END_OK:
+                        LDA             CMDP_TOKEN_LEN
+                        CMP             #$03
+                        BCS             CMD_PARSE_RANGE_FULL_END
+                        LDA             CMD_RANGE_START_HI
+                        STA             CMD_RANGE_END_HI
+                        LDA             CMDP_ADDR_LO
+                        STA             CMD_RANGE_END_LO
+                        BRA             CMD_PARSE_RANGE_HAVE_END
+
+CMD_PARSE_RANGE_FULL_END:
                         LDA             CMDP_ADDR_LO
                         STA             CMD_RANGE_END_LO
                         LDA             CMDP_ADDR_HI
@@ -1437,7 +1451,19 @@ CMD_PARSE_RANGE_REQUIRED:
 CMD_PARSE_RANGE_PLUS:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
-                        BCC             CMD_PARSE_RANGE_FAIL
+                        BCS             CMD_PARSE_RANGE_COUNT_OK
+                        JMP             CMD_PARSE_RANGE_FAIL
+CMD_PARSE_RANGE_COUNT_OK:
+                        LDA             CMDP_ADDR_LO
+                        ORA             CMDP_ADDR_HI
+                        BNE             CMD_PARSE_RANGE_COUNT_NONZERO
+                        JMP             CMD_PARSE_RANGE_FAIL
+CMD_PARSE_RANGE_COUNT_NONZERO:
+                        LDA             CMDP_ADDR_LO
+                        BNE             CMD_PARSE_RANGE_COUNT_DEC_LO
+                        DEC             CMDP_ADDR_HI
+CMD_PARSE_RANGE_COUNT_DEC_LO:
+                        DEC             CMDP_ADDR_LO
                         LDA             CMD_RANGE_START_LO
                         CLC
                         ADC             CMDP_ADDR_LO
@@ -1445,6 +1471,7 @@ CMD_PARSE_RANGE_PLUS:
                         LDA             CMD_RANGE_START_HI
                         ADC             CMDP_ADDR_HI
                         STA             CMD_RANGE_END_HI
+                        BCS             CMD_PARSE_RANGE_FAIL
                         BRA             CMD_PARSE_RANGE_HAVE_END
 
 CMD_PARSE_RANGE_DEFAULT_END:
@@ -2361,7 +2388,11 @@ CMD_PARSE_HEX_WORD_DONE:
                         BEQ             CMD_PARSE_HEX_WORD_FAIL
                         JSR             CMD_PEEK
                         JSR             CMD_IS_DELIM_OR_NUL
-                        BCC             CMD_PARSE_HEX_WORD_FAIL
+                        BCS             CMD_PARSE_HEX_WORD_OK
+                        JSR             CMD_PEEK
+                        CMP             #'+'
+                        BNE             CMD_PARSE_HEX_WORD_FAIL
+CMD_PARSE_HEX_WORD_OK:
                         SEC
                         RTS
 CMD_PARSE_HEX_WORD_FAIL:
@@ -2451,8 +2482,8 @@ MSG_HASH_HDR:            DB              "HASH     ENTRY ",('K'+$80)
 MSG_HASH_ENTRY:          DB              " ENTRY",('='+$80)
 MSG_HASH_K:              DB              " K",('='+$80)
 MSG_HELP:                DB              "# ? D M U R X G L B N A ",('Q'+$80)
-MSG_USAGE_D:             DB              "D start [end|+n]",(']'+$80)
-MSG_USAGE_M:             DB              "M start [end|+n]",('.'+$80)
+MSG_USAGE_D:             DB              "D start [end|+cnt",(']'+$80)
+MSG_USAGE_M:             DB              "M start [end|+cnt]",('.'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)
 MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
@@ -2494,7 +2525,7 @@ MSG_USAGE_B:             DB              "B start",(']'+$80)
 MSG_USAGE_BC:            DB              "B C start",(']'+$80)
 MSG_USAGE_BL:            DB              "B ",('L'+$80)
 MSG_USAGE_N:             DB              ('N'+$80)
-MSG_USAGE_U:             DB              "U start [end|+n]",(']'+$80)
+MSG_USAGE_U:             DB              "U start [end|+cnt",(']'+$80)
 MSG_USAGE_A:             DB              "A start [mne op]",(']'+$80)
 MSG_BP_SET:              DB              "BP ",('$'+$80)
 MSG_BP_CLR:              DB              "B C ",('$'+$80)

@@ -51,10 +51,10 @@ destructive commands.
 ```text
 ?              help
 # [token]      list records, or resolve token without executing it
-D start +n     dump memory
+D start +count dump memory
 D start end    dump memory range
 M addr         modify memory
-U start +n     disassemble
+U start +count disassemble
 A addr         assemble
 G addr         go to address
 L              load S-records to RAM
@@ -93,10 +93,9 @@ FILL start end|+count bb
 That future fill should start as RAM-only. Flash fill belongs behind a
 full-word flash/update command and guarded RAM-updater policy.
 
-## Range Syntax Target
+## Range Syntax
 
-The current ROM parser still uses the older range behavior. The target syntax
-for the next range-parser revision is:
+The shared range parser uses:
 
 ```text
 start end       end is inclusive
@@ -117,12 +116,15 @@ A 1- or 2-hex-digit end token inherits the high byte from `start`. If that
 would land before `start`, use a full end address or `+count`; for example,
 prefer `D 30F0 3110` or `D 30F0 +21` over `D 30F0 10`.
 
+A 3- or 4-hex-digit end token is a full address. `D 1000 FFF` is rejected
+because `$0FFF` is before `$1000`; use `D 1000 1FFF` or `D 1000 +1000`.
+
 The `+` is not meant to be the normal typing path for page-local end-byte
 dumps. `D 100 3` means `$0100-$0103`; `D 3000 FF` means `$3000-$30FF`.
 Use `+count` when the operator means a byte count, not an end byte. See
 `page-local` in `GLOSSARY.md`.
 
-Bare `D` is target behavior for the next parser revision. It should continue
+Bare `D` is target behavior for a later parser revision. It should continue
 from the byte after the previous dump and reuse the previous dump length:
 
 ```text

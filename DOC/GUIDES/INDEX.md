@@ -6,6 +6,7 @@ This is the top index for the `ror` documentation set.
 
 - [TOC.md](./TOC.md) - recommended reading order.
 - [MAP.md](./MAP.md) - documentation map and system map.
+- [BOOK.md](./BOOK.md) - narrative spine for the hashed runtime system book.
 - [HASH_FLASH.md](./HASH_FLASH.md) - short alert stream for command-surface changes.
 - [DOC_FLASH.md](./DOC_FLASH.md) - short alert stream for doc/edict changes.
 - [DECISIONS.md](./DECISIONS.md) - settled calls to avoid reopening by accident.
@@ -26,6 +27,7 @@ This is the top index for the `ror` documentation set.
 ## Core Design Guides
 
 - [HISTORICAL_DOCUMENTS.md](./HISTORICAL_DOCUMENTS.md) - path from BSO2 ideas toward current HIMON.
+- [BOOK.md](./BOOK.md) - book outline, chapter questions, and proof pointers.
 - [HASH_FLASH.md](./HASH_FLASH.md) - REHASH/FLASHBACK notes for command syntax changes.
 - [DOC_FLASH.md](./DOC_FLASH.md) - REDOC notes for doc-shape, edict, and
   canonical-home changes.

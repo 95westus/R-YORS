@@ -119,19 +119,26 @@ and debug tools.
   aligned row base second, and `*` between them when the match continues into
   the next 16-byte display row. This preserves the useful BSO2 monitor
   search-display convention in HIMON's command language.
-- Range grammar target for commands that accept ranges:
+- Range grammar for commands that accept ranges:
 
 ```text
 start end       end is inclusive
 start +count    count is the number of bytes
 ```
 
+- The current shared parser also accepts the tight form `start+count`, so
+  `D 1234+1` means exactly one byte at `$1234`.
 - A 1- or 2-hex-digit `end` token inherits the high byte from `start`.
   This is a page-local end shorthand, not a count. Example: `D 3000 FF`
   means `$3000-$30FF`, because the short end byte `$FF` inherits `$30` from
   `$3000`. If the inherited end would land before `start`, reject it and
   require a full end address or `+count`; `D 30F0 10` is ambiguous/dangerous,
   so use `D 30F0 3110` or `D 30F0 +21`.
+- A 3- or 4-hex-digit `end` token is a full absolute address, not a
+  window-local shorthand. `D 1000 FFF` therefore resolves as `$0FFF` and is
+  rejected because it lands before `$1000`; use `D 1000 1FFF` or
+  `D 1000 +1000`. A future 3-digit window-local shorthand would need its own
+  explicit decision.
 - The `+count` form is deliberately explicit, but it should not be the common
   typing path for page-local display. Common bench dumps should prefer
   page-local end shorthand, such as `D 100 3` for `$0100-$0103` or
@@ -217,6 +224,12 @@ start +count    count is the number of bytes
   caller contract, dependency direction, and proof state. The test is simple:
   the name should reduce confusion for future code, not just mirror an existing
   routine at another altitude.
+- When duplicated proof code starts wanting to be reused, promote the behavior
+  into a documented callable contract before catalog magic. First static-link
+  it through ordinary labels/library rules. Later, expose the same contract as
+  an `RREC` export and resolve users through `RFIX`/`RLNK`. Keep
+  workspace-specific adapters thin; for example, HIMON and search can share
+  range arithmetic while retaining their own `CMD_*` or `SEARCH_*` workspace.
 
 ## Stack And Trap Policy
 
@@ -274,6 +287,16 @@ start +count    count is the number of bytes
   algorithm.
 - One thing may have multiple classification flags; use bit flags/tokens rather
   than forcing one exclusive kind when that loses truth.
+- Do not overload `kind` for purge/lifecycle policy. `kind` says what the
+  record or payload is: routine, command, symbol, alias, range, data, and so
+  on. Lifecycle metadata belongs in flags or extra record metadata.
+- Prefer `REQUIRED_FOR_RECOVERY` for the flag that prevents ordinary purge,
+  movement, or superseding. It names the reason, while `PINNED` or
+  `unpurgeable` names only the effect.
+- `BIO_*` and `PIN_*` prefixes do not automatically imply
+  `REQUIRED_FOR_RECOVERY`. Only the active recovery dependency chain gets that
+  flag. STR8 V0's private `STR8_CON_*` path means HIMON's public
+  `BIO_FTDI_*` records are not automatically recovery-required.
 - Command text is for discoverability, collision confirmation, and future
   tooling. It is not required for basic FNV lookup.
 - Text compression must be optional. If compressed text is not smaller, store

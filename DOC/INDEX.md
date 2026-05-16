@@ -5,6 +5,7 @@ Start with the guide index:
 - [GUIDES/INDEX.md](./GUIDES/INDEX.md)
 - [GUIDES/TOC.md](./GUIDES/TOC.md)
 - [GUIDES/MAP.md](./GUIDES/MAP.md)
+- [GUIDES/BOOK.md](./GUIDES/BOOK.md)
 - [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md)
 - [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md)
 - [GUIDES/DECISIONS.md](./GUIDES/DECISIONS.md)
@@ -13,6 +14,7 @@ Start with the guide index:
 Core current design notes:
 
 - [GUIDES/STR8.md](./GUIDES/STR8.md)
+- [GUIDES/BOOK.md](./GUIDES/BOOK.md)
 - [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md)
 - [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md)
 - [GUIDES/HIMON_STAGES_CLASSES.md](./GUIDES/HIMON_STAGES_CLASSES.md)

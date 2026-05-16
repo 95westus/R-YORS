@@ -208,6 +208,14 @@ does not publish a second global `BIO_FTDI_*` provider with the same hash.
 I/O contract, and `COR_*`/`SYS_*` sit above that for richer
 monitor/application behavior.
 
+Future catalogs should mark the active recovery dependency chain with
+`REQUIRED_FOR_RECOVERY` metadata rather than inferring protection from a
+`BIO_*` or `PIN_*` prefix. STR8 V0's private `STR8_CON_*` helpers mean HIMON's
+public `BIO_FTDI_*` records are not automatically pinned for recovery. If a
+later STR8-N path imports shared `BIO_CON_*` or `PIN_*` providers, those exact
+providers and their required dependencies become recovery-required until an
+explicit recovery update transaction replaces them.
+
 Possible layouts:
 
 ```text
