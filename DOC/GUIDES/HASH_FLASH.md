@@ -29,6 +29,26 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: Hardware Test Log Available
+
+```text
+2026
+         05
+                16
+                   03:05Z WLP2 Added a hardware test log entry for the
+                               STR8/HIMON/HREC/search/debug smoke pass.
+```
+
+The board transcript validation now has a single home:
+[HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md). The first entry records the
+2026-05-15 STR8/HIMON/HREC/search/debug smoke pass, including STR8 map/restore,
+burn-check dumps, HREC join, search mixed-case text, debug `N` stepping,
+breakpoints, catalog lookup, and the resident HIMON `+count` range-parser
+finding.
+
+Use HASH FLASH for the command-surface alert; use the hardware test log for the
+actual transcript slices and pass/finding details.
+
 ## REHASH: RAM-Only Debug Edict
 
 ```text
