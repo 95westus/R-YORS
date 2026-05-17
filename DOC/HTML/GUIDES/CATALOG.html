@@ -17,12 +17,13 @@ I need a BIO-level helper for STR8. What is small enough to trust?</code></pre>
 <p>For the full generated dump, see <code>DOC/GENERATED/ROUTINE_CONTRACTS.md</code>. This guide keeps the high-value callable surface grouped by need, with an S/36-ish bias toward &quot;what does the system have, and how do I call it?&quot;</p>
 <h2 id="how-to-choose">How To Choose</h2>
 <pre><code class="language-text">SYS_*    normal monitor/app API; device-neutral policy/routing surface
-BIO_*    recovery-safe low-level I/O contract; STR8 should prefer this
+BIO_*    reusable low-level I/O contract; public providers should be unique
 COR_*    shared implementation logic; use when building BIO/SYS or tests
 PIN_*    direct hardware/pin/MMIO layer; use for bring-up or BIO implementation
 UTL_*    pure utility/helper routines
 FLASH_*  flash guard, erase, and byte-program routines
 FNV1A_*  hash helpers for HIMON command/catalog/symbol lookup; not used by STR8 V0
+STR8_CON_* private STR8 V0 console helpers; no public FNV catalog records
 MON_*    monitor command/support internals</code></pre>
 <p>Rule of thumb: application and monitor code should start at <code>SYS_*</code>. STR8 and early recovery code should start at <code>BIO_*</code>. Only drop to <code>COR_*</code> or <code>PIN_*</code> when the higher layer does not exist or would pull too much code.</p>
 <p>These prefixes are available boundaries, not a mandatory staircase. A routine does not need <code>PIN_</code>, <code>BIO_</code>, <code>COR_</code>, and <code>SYS_</code> versions just because one layer exists. Add a layer when it expresses a real boundary: hardware access, reusable device-neutral behavior, recovery-safe byte I/O, public monitor policy, memory ownership, catalog joining, or another contract that callers can depend on.</p>
@@ -1004,7 +1005,8 @@ FLASH BYTE PROGRAM -&gt; guarded flash byte writer</code></pre>
 </tbody>
 </table>
 <h2 id="hardware-and-recovery-bio-notes">Hardware And Recovery BIO Notes</h2>
-<p>BIO is the planned STR8-friendly layer. The current BIO surface is device-bound to FTDI/PIA names. A future STR8 import file can publish fixed aliases such as:</p>
+<p>BIO is the reusable low-level I/O layer. The current BIO surface is device-bound to FTDI/PIA names and is owned by the HIMON/current ROM body in the combined image. STR8 V0 uses private <code>STR8_CON_*</code> console helpers so it remains self-contained without publishing duplicate BIO/PIN FNV records.</p>
+<p>A future STR8 import file can publish fixed aliases such as:</p>
 <pre><code class="language-text">BIO_READ_BYTE
 BIO_WRITE_BYTE
 BIO_WRITE_HEX_BYTE
@@ -1261,6 +1263,7 @@ BIO_WRITE_CRLF</code></pre>
 <p>The emitted hash sigs use the current HIMON 8-byte record shape. The final byte is <code>$00</code>, so current code interprets each entry as <code>hash_sig+8</code>. A future compact RREC can assign a cleaner routine/export kind without changing either routine contract.</p>
 <h2 id="promoted-utl-hex-routine-hash-sigs-rrec-seeds">Promoted UTL Hex Routine Hash Sigs / RREC Seeds</h2>
 <p>The promoted hex helpers are pure conversion contracts except for <code>UTL_HEX_ASCII_YX_TO_BYTE</code>, which uses the shared one-byte utility scratch <code>$E6</code> while combining nibbles. These helpers are small, heavily reused, and good early catalog-linking candidates because they remove duplicated hex code from RAM workers.</p>
+<p>The same promotion pattern applies to parser helpers. If HIMON, search, copy, fill, and later STR8-N tools all need <code>start end|+count</code>, first static-link a documented range-parser contract and keep caller-specific workspace adapters thin. Later the same contract can become an <code>RREC</code> export with <code>RFIX</code>/<code>RLNK</code> users. That is the &quot;routines made from routines&quot; rule in catalog form: promote the useful behavior, not just a pasted source block.</p>
 <pre><code class="language-text">RREC UTL_HEX_NIBBLE_TO_ASCII
   lifecycle: formed, sealed, not buried
   kind:      routine/export
@@ -1336,7 +1339,7 @@ BIO_WRITE_CRLF</code></pre>
   caveat:    not reentrant while sharing `$E6`</code></pre>
 <p>If a programmer needs GPIO/LED routines, start with the <code>BIO_PIA_*</code> family in <code>DOC/GENERATED/ROUTINE_CONTRACTS.md</code>; they are numerous enough that this catalog only names the category here.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG.md</code>. Source modified: <time>2026-05-15T20:02:43Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG.md</code>. Source modified: <time>2026-05-16T04:09:05Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

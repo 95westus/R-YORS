@@ -17,12 +17,16 @@
   -&gt; DOC/GUIDES/INDEX.md
      -&gt; TOC.md
      -&gt; MAP.md
+     -&gt; BOOK.md
+     -&gt; HASH_FLASH.md
+     -&gt; DOC_FLASH.md
      -&gt; DECISIONS.md
      -&gt; QCC.md
      -&gt; BRINGUP.md
      -&gt; HIMON_STAGES_CLASSES.md
      -&gt; REF.md
      -&gt; XREF.md
+     -&gt; HARDWARE_TEST_LOG.md
      -&gt; CATALOG.md
      -&gt; LIFE_RCAT_MEMBER.md
      -&gt; MEMORY_MAP.md
@@ -35,6 +39,11 @@
 <pre><code class="language-text">R-YORS
   boots through STR8
 
+BOOK
+  gives the project a manuscript spine
+  turns the guide set into chapter questions, answers, and proof pointers
+  preserves the narrative of building a hashed runtime from the bench up
+
 Decisions
   records settled calls before details sprawl into guide debate
   prevents reopening hash, naming, STR8, ASM, and doc-shape decisions
@@ -42,7 +51,12 @@ Decisions
 QCC
   records Questions, Comments, and Concerns before they become decisions
   keeps what-if design notes visible without making them settled spec
-  splits active topics into hash, flash, ASM, STR8, and memory QCC pages
+  splits active topics into hash, flash, ASM, catalog-linking, STR8, and
+  memory QCC pages
+
+DOC FLASH
+  alerts when doc shape, edicts, canonical homes, or remembered artifact names
+  change enough that a reader&#39;s mental map is stale
 
 STR8
   keeps recovery/update safe
@@ -78,6 +92,11 @@ Bringup
   orders STR8 work from simulation stub to reset-owned recovery
   keeps erase/write work behind read-only proofs
   records bank policy, protected-window policy, and failure cases
+
+Hardware Test Log
+  records real board transcript evidence after bringup/test passes
+  keeps validation excerpts for STR8, HIMON, HREC, search, debug, and catalog
+  lookup separate from design intent and how-to checklists
 
 Hashed ASM
   reads `A [addr] [label:] MMM [operand] .`
@@ -201,6 +220,8 @@ LOCAL/
     IDX[INDEX] --&gt; TOC[TOC]
     IDX --&gt; MOM[GENERATED/MAP_OF_MAPS]
     IDX --&gt; MAP[MAP]
+    IDX --&gt; HFLASH[HASH_FLASH]
+    IDX --&gt; DFLASH[DOC_FLASH]
     IDX --&gt; DEC[DECISIONS]
     IDX --&gt; QCC[QCC]
     IDX --&gt; HSTAGE[HIMON_STAGES_CLASSES]
@@ -225,12 +246,16 @@ LOCAL/
     QCC --&gt; QHASH[QCC_HASH]
     QCC --&gt; QFLASH[QCC_FLASH]
     QCC --&gt; QASM[QCC_ASM]
+    QCC --&gt; QCLINK[QCC_CATALOG_LINKING]
     QCC --&gt; QSTR8[QCC_STR8]
     QCC --&gt; QMEM[QCC_MEMORY]
     QHASH --&gt; HMAP
     QFLASH --&gt; STR8
     QFLASH --&gt; HMAP
     QASM --&gt; HASM
+    QCLINK --&gt; HREC[HREC_JOIN_PROOF]
+    QCLINK --&gt; LIFE[LIFE_RCAT_MEMBER]
+    QCLINK --&gt; CAT
     QSTR8 --&gt; STR8
     QMEM --&gt; MEM
     MAP --&gt; SYMX
@@ -284,7 +309,7 @@ LOCAL/
 </ul>
 <p>and <code>BIB.md</code> together.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/MAP.md</code>. Source modified: <time>2026-05-07T01:54:07Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/MAP.md</code>. Source modified: <time>2026-05-16T04:14:57Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

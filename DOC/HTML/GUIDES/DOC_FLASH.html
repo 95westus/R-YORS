@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DOC FLASH - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="doc-flash">DOC FLASH</h1>
+<p>DOC FLASH is the short alert stream for documentation-shape changes, edicts, canonical-home moves, deprecated ideas, and QCC/decision changes that are easy to miss if you remember yesterday&#39;s binder.</p>
+<p>This is not a full changelog. Use it when a reader should stop and adjust their mental map:</p>
+<pre><code class="language-text">an edict changed
+a QCC topic was added, split, promoted, or deprecated
+the canonical home for an idea moved
+a proof lane was named as a kludge or seed path
+a remembered artifact name or doc path is now stale</code></pre>
+<p>Command-surface behavior still belongs in <a href="HASH_FLASH.html">HASH_FLASH.md</a>. Settled calls still belong in <a href="DECISIONS.html">DECISIONS.md</a>. QCC pages keep unsettled design thinking. DOC FLASH is the visible flare that says where the reader should look next.</p>
+<p>Entries use CBI doc form:</p>
+<pre><code class="language-text">YYYY
+         MM
+                DD
+                   HH:MMZ programmer comment
+                               continuation line</code></pre>
+<p>Use UTC ISO 8601 time without seconds. Sort newest first at every level.</p>
+<p>Each alert should answer:</p>
+<pre><code class="language-text">scope:      which docs/source/artifacts changed
+change:     what moved or was reclassified
+effect:     what old assumption is stale now
+action:     where to look or what to do next</code></pre>
+<h2 id="redoc-str8-flash-manager-qcc-expanded">REDOC: STR8 Flash-Manager QCC Expanded</h2>
+<pre><code class="language-text">2026
+         05
+                17
+                   02:03Z WLP2 Expanded QCC_STR8 with the boring
+                               flash-manager direction: Bank 0 WDC HOLD,
+                               STR8-owned HIMON/STR8 updates, identity
+                               display, and future classified chunk moves.</code></pre>
+<p>scope: <code>QCC_STR8.md</code>.</p>
+<p>change: STR8&#39;s future role is now recorded as flash manager/housekeeper rather than only backup/restore guard. The notes also capture full-bank WDCMONv2 preservation and the compact <code>RYORS 0.0517 #hash B0 HOLD</code> identity line.</p>
+<p>effect: Do not treat HIMON <code>L F</code> as the eventual owner of protected monitor or STR8 updates. STR8 is the proposed authority for dangerous flash writes and any future flash compaction.</p>
+<p>action: Use <a href="QCC_STR8.html">QCC_STR8.md</a> for this unsettled direction until the parts that prove out are promoted into decisions or implementation docs.</p>
+<h2 id="redoc-hardware-test-log-added">REDOC: Hardware Test Log Added</h2>
+<pre><code class="language-text">2026
+         05
+                16
+                   02:59Z WLP2 Added HARDWARE_TEST_LOG as the home for
+                               board transcript validations and bench
+                               findings.</code></pre>
+<p>scope: <code>HARDWARE_TEST_LOG.md</code>, <code>INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>XREF.md</code>.</p>
+<p>change: Hardware proof transcripts now have a single guide home instead of living only inside design notes, how-to guides, or external terminal logs.</p>
+<p>effect: Use the hardware test log for &quot;what actually passed on the board&quot; and the individual proof guides for how to run or interpret each proof.</p>
+<p>action: Add future bench passes to <a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>.</p>
+<h2 id="redoc-himon-bit-pattern-asm-decode-retired">REDOC: HIMON Bit-Pattern ASM Decode Retired</h2>
+<pre><code class="language-text">2026
+         05
+                16
+                   01:41Z WLP2 Retired the old bit-code assembler/
+                               disassembler direction for W65C02S. HIMON
+                               keeps table-driven opcode decode as the V0
+                               correctness model.</code></pre>
+<p>scope: <code>DECISIONS.md</code>, HIMON assembler/disassembler implementation.</p>
+<p>change: <code>aaa bbb cc</code> remains a useful way to understand parts of the opcode map, but it is no longer treated as the implementation plan for HIMON ASM/DIS.</p>
+<p>effect: Do not carry the OSI-era bit-coded decoder sketch as current debt. Future compression is allowed only after it proves table-equivalent behavior.</p>
+<p>action: Use <a href="DECISIONS.html">DECISIONS.md</a> for the settled rule.</p>
+<h2 id="redoc-catalog-linking-bootstrap-qcc-added">REDOC: Catalog-Linking Bootstrap QCC Added</h2>
+<pre><code class="language-text">2026
+         05
+                15
+                   23:56Z WLP2 Added QCC notes that generation-wins needs
+                               more than the current kind byte, and that
+                               FN(V|$80) is a readable proof marker rather
+                               than the compact future catalog shape.
+                   22:13Z WLP2 Added duplicate ROM/flash record policy
+                               to QCC_FLASH: current first-match duplicates
+                               are shadowing; future candidate selection
+                               enables staging, rollback, and condense.
+                   22:09Z WLP2 Renamed legacy calc-flash to
+                               calc-9a00-fnv-proof so its name says what
+                               it proves. rom-append-calc remains the active
+                               payload that must fit below $C000.
+                   22:08Z WLP2 Classified calc-flash as the legacy CALC
+                               proof and rom-append-calc as the active
+                               ROM-append proof. Do not load both: they
+                               publish the same CALC FNV command record.
+                   22:05Z WLP2 Corrected HIMON_MAP scanner text to match
+                               source: command FNV scan starts at $8000,
+                               and the table now escapes FN(V|$80).
+                   21:55Z WLP2 Documented the fig-Forth notice stance:
+                               Forth ideas are not copied source; local
+                               FIG-Forth source preserves its required notice.
+                   21:51Z WLP2 Added the 30-40 service-discovery
+                               explanation between the 17 and 62 models.
+                   21:49Z WLP2 Published the 12/17/62 catalog-linking
+                               explanations. The 62 shop-index analogy is
+                               now marked as the preferred public model.
+                   21:38Z WLP2 QCC_CATALOG_LINKING now names S(earch)
+                               plus HREC join as the preferred first
+                               bootstrap target; LIFE is later/heavier.
+                   21:33Z WLP2 Added QCC_CATALOG_LINKING as the home for
+                               the catalog/ASM chicken-and-egg question.</code></pre>
+<p>scope: <code>QCC_CATALOG_LINKING.md</code>, <code>LIFE_RCAT_MEMBER.md</code>, <code>CATALOG.md</code>, <code>HASHED_ASM.md</code>, <code>QCC_ASM.md</code></p>
+<p>change: Catalog linking now has its own QCC home. The current <code>LIFE-2000</code> load path is explicitly named as a useful static-link kludge and proof lane, not the final catalog contract.</p>
+<p>effect: Do not read <code>life-2000-load.bin</code> as &quot;the catalog member.&quot; It is a seed package that proves the body runs while still carrying private support payload from static linking.</p>
+<p>action: Use <a href="QCC_CATALOG_LINKING.html">QCC_CATALOG_LINKING.md</a> for the general bootstrap rule and <a href="LIFE_RCAT_MEMBER.html">LIFE_RCAT_MEMBER.md</a> for the LIFE-specific migration notes.</p>
+<h2 id="redoc-life-load-artifact-names-now-carry-address">REDOC: LIFE Load Artifact Names Now Carry Address</h2>
+<pre><code class="language-text">2026
+         05
+                15
+                   21:20Z WLP2 LIFE build output now names the load address:
+                               life-2000.s19 and life-2000-load.bin.</code></pre>
+<p>scope: <code>SRC/Makefile</code>, <code>RTFM-himon.md</code>, <code>show_make_help.ps1</code>, <code>SRC/BUILD/s19</code>, <code>SRC/BUILD/bin</code></p>
+<p>change: <code>make -C SRC life</code> now emits:</p>
+<pre><code class="language-text">SRC/BUILD/s19/life-2000.s19
+SRC/BUILD/bin/life-2000-load.bin</code></pre>
+<p>effect: <code>SRC/BUILD/s19/life.s19</code> is a stale remembered artifact name. New references should carry the load address.</p>
+<p>action: Use <code>life-2000.s19</code> for HIMON S-record loading and <code>life-2000-load.bin</code> when a raw loadable binary is needed.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-17T02:03:43Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

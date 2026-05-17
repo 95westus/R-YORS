@@ -23,6 +23,73 @@ protected recovery window
 handoff to HIMON
 future condense/compress calls</code></pre>
 <p>Concern: Normal interactive monitor behavior belongs to HIMON. STR8 should not grow into a second full monitor by accident.</p>
+<h2 id="q-how-should-str8-treat-a-factory-wdcmonv2-image">Q: How should STR8 treat a factory WDCMONv2 image?</h2>
+<p>Comment: The preferred recovery story is full-bank preservation, not clever partial reconstruction. If a stock board arrives with WDC code in the <code>$8000-$FFFF</code> flash window and WDCMONv2 near the top of ROM, STR8 should first preserve that default image as a complete 32K bank before R-YORS becomes the live boot image:</p>
+<pre><code class="language-text">Bank 0  WDC factory/base image, B0 HOLD
+Bank 1  older R-YORS backup
+Bank 2  newer R-YORS backup
+Bank 3  live boot image</code></pre>
+<p>&quot;Purge WDCMONv2&quot; should mean &quot;remove it from the live boot bank after a verified factory image has been stashed,&quot; not &quot;erase the only copy.&quot; A restore from Bank 0 can deliberately return the board to WDC-style behavior. The operator warning should be loud because restoring Bank 0 may remove R-YORS from the ordinary live image.</p>
+<p>Concern: Coexistence is possible only when the address ranges and vectors do not fight. Current R-YORS STR8 owns the <code>$F000-$FFFF</code> top sector; a stock WDCMONv2-at-<code>$F800</code> image cannot coexist with that layout in the same live bank without either moving/relinking something, preserving WDCMONv2 in another bank, or letting WDCMONv2 remain the boot owner.</p>
+<h2 id="q-what-boring-features-are-worthwhile-for-str8">Q: What boring features are worthwhile for STR8?</h2>
+<p>Comment: STR8 should be the small flash manager, not a second rich monitor. Its value is that flash operations become explicit, repeatable, and boring:</p>
+<pre><code class="language-text">IDENTIFY
+MAP
+BACKUP
+RESTORE
+INSTALL HIMON
+INSTALL STR8
+VERIFY</code></pre>
+<p>HIMON remains the workbench: editor, loader, debugger, assembler, catalog view, and normal command environment. STR8 owns survival: boot checks, bank policy, flash range policy, staging, erase, write, verify, rollback, and recovery messages.</p>
+<p>The short identity line belongs in this spirit:</p>
+<pre><code class="language-text">RYORS 0.0517 #89ABCDEF B0 HOLD</code></pre>
+<p>The displayed epoch date is <code>(year - 2026).MMDD</code>. The hash should identify the canonical image text, while mutable policy such as <code>B0 HOLD</code> comes from the STR8 config byte rather than being part of the image hash.</p>
+<p>Concern: &quot;Boring&quot; must not mean vague. Each operation should say what range it will touch, whether erase is required, what is preserved, what was verified, and whether bank 3 was restored before any ROM code resumes.</p>
+<h2 id="q-should-str8-load-update-himon-and-str8-itself">Q: Should STR8 load/update HIMON and STR8 itself?</h2>
+<p>Comment: Yes. STR8 is the right authority for dangerous flash update flows. HIMON may receive, inspect, or prepare an update package, but STR8 should make the flash decision:</p>
+<pre><code class="language-text">is the target range legal?
+does this touch the protected top sector?
+is erase required?
+has the live image been backed up?
+does the written image verify?
+is the new HIMON bootable enough to hand off?</code></pre>
+<p>HIMON updates should be the friendlier case. STR8 can stage a HIMON S-record or sector image, refuse the protected top sector, update the ordinary HIMON/body sectors, verify by read-back, update identity bytes when appropriate, then hand off to HIMON.</p>
+<p>STR8 updates are the harder case. They need a RAM-resident transaction that stages the full top sector, merges the new STR8 and RAM-worker bytes, preserves or deliberately rebuilds the config pocket and vectors, confirms the protected-sector erase, writes and verifies from RAM, then resets.</p>
+<p>Concern: STR8 self-update must not return casually into ROM code that may have just been erased or replaced. The update path must either reset or return through a tiny RAM-safe continuation after bank 3 and the top sector are known good.</p>
+<h2 id="q-can-future-str8-move-flash-chunks-around">Q: Can future STR8 move flash chunks around?</h2>
+<p>Comment: Eventually, yes, but only after STR8 can classify what it is moving. The future useful direction is a flash housekeeper that finds erased <code>$FF</code> space, recognizes live non-<code>$FF</code> chunks, moves safe chunks into better homes, and makes larger erased sectors available again.</p>
+<p>The first version should stay sector-based:</p>
+<pre><code class="language-text">sector is erased
+sector is used
+sector is protected
+sector looks like WDC/base image
+sector looks like R-YORS/HIMON
+sector looks like STR8/top-sector material</code></pre>
+<p>Later STR8 or STR8-N can become record-aware:</p>
+<pre><code class="language-text">this block has a header
+this block has a type
+this block has a length
+this block has a hash/name identity
+this block has a checksum
+this block can be relocated
+this block must stay fixed
+this block is stale/buried</code></pre>
+<p>The safe movement shape is transactional:</p>
+<pre><code class="language-text">copy live chunk to new blank space
+verify copy
+mark new chunk valid
+update catalog/link record
+mark old chunk stale
+erase stale sector only when no live chunks remain</code></pre>
+<p>A compact block header will probably be needed before this becomes real:</p>
+<pre><code class="language-text">magic/type
+length
+hash
+flags
+load address or relocation policy
+checksum
+valid/commit byte</code></pre>
+<p>Concern: STR8 must not move random non-<code>$FF</code> bytes just because they are not blank. Unknown used bytes should be reported and preserved until a recognizer, header, catalog record, or explicit operator action gives STR8 enough authority to relocate them.</p>
 <h2 id="q-where-should-rom-garbage-collection-live">Q: Where should ROM garbage collection live?</h2>
 <p>Comment: STR8/STRAIGHTEN is the right home for dangerous sector rebuilds, or for calling a catalog maintenance subsystem that performs them.</p>
 <p>Concern: HIMON lookup can skip buried records, but should not silently erase or rebuild sectors during normal command lookup.</p>
@@ -91,7 +158,7 @@ LED_ERROR</code></pre>
 <p>Comment: STR8 is still deciding how small it stays in V0 and how much future STRAIGHTEN will own.</p>
 <p>Concern: Settled boundaries should move into <code>DECISIONS.md</code>; experiments and &quot;what if STR8 owns this?&quot; should stay here until proved.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_STR8.md</code>. Source modified: <time>2026-05-13T23:33:19Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_STR8.md</code>. Source modified: <time>2026-05-17T02:04:27Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

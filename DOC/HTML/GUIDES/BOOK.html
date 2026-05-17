@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Rolling Of My Own Hashed Runtime System - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="the-rolling-of-my-own-hashed-runtime-system">The Rolling Of My Own Hashed Runtime System</h1>
+<p>This is the book spine for R-YORS as a designed, built, and argued system. It does not replace the reference docs. It gives the story a table of contents: what each chapter should answer, what questions remain alive, and where the technical proof already lives.</p>
+<p>Working title:</p>
+<pre><code class="language-text">The Rolling Of My Own Hashed Runtime System</code></pre>
+<p>Possible subtitle:</p>
+<pre><code class="language-text">R-YORS, HIMON, STR8, and the path from monitor commands to catalog-linked code</code></pre>
+<h2 id="book-promise">Book Promise</h2>
+<p>The book is about building a small hashed runtime system from the bench up. It is not a claim that hashing, catalogs, flash records, monitors, loaders, or linkers are new ideas. It is the record of making them personal, concrete, and operational on this board, with this vocabulary, and under these constraints.</p>
+<p>The central claim:</p>
+<pre><code class="language-text">A tiny monitor can become more than a command loop when names, commands,
+routines, records, and future fixups all share one hash-first lookup path.</code></pre>
+<p>The second claim:</p>
+<pre><code class="language-text">Recovery must be designed before cleverness. STR8 protects the system that
+HIMON and THE want to grow.</code></pre>
+<p>The third claim:</p>
+<pre><code class="language-text">Routines made from routines are the real unit of growth. Hash records and
+catalogs matter because they let useful behavior keep being found, reused, and
+relinked.</code></pre>
+<h2 id="reader-path">Reader Path</h2>
+<p>The book should read in three layers:</p>
+<ol>
+<li>The story: why this exists, what changed, and what each piece is for.</li>
+<li>The machine: actual HIMON, STR8, FNV, command, flash, and catalog behavior.</li>
+<li>The questions: what is settled, what is only proved, and what remains open.</li>
+</ol>
+<p>Proof lives in the guide set:</p>
+<ul>
+<li><a href="DECISIONS.html">DECISIONS.md</a> - settled calls.</li>
+<li><a href="HASH.html">HASH.md</a> and <a href="HASH_MAP.html">HASH_MAP.md</a> - hash and catalog model.</li>
+<li><a href="HIMON_MAP.html">HIMON_MAP.md</a> - monitor capability map.</li>
+<li><a href="STR8.html">STR8.md</a> - recovery/update anchor.</li>
+<li><a href="CATALOG.html">CATALOG.md</a> - callable routine surface and RREC seeds.</li>
+<li><a href="HREC_JOIN_PROOF.html">HREC_JOIN_PROOF.md</a> - hash record to callable entry proof.</li>
+<li><a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a> - board evidence.</li>
+<li><a href="QCC.html">QCC.md</a> and topic QCC files - live questions.</li>
+</ul>
+<h2 id="part-i-why-hash-first">Part I: Why Hash-First?</h2>
+<h3 id="chapter-1-why-hash-first">Chapter 1: Why Hash-First?</h3>
+<p>Answer:</p>
+<p>Hash-first lookup turns command names, routine names, symbols, aliases, fixups, and future catalog entries into variations of one problem: compute identity, scan records, classify the match, and act. The hash is not the whole object. It is the compact key that lets a small system find the object.</p>
+<p>This chapter should explain why a monitor command table wants to become a record scanner, and why that matters later when the same scanner idea grows into RCAT/RREC/RBODY/RFIX/RLNK.</p>
+<p>Questions:</p>
+<ul>
+<li>What does hash-first buy on a W65C02 system where every byte matters?</li>
+<li>When is a hash enough, and when must the record carry proof text?</li>
+<li>How should collisions be found, displayed, and resolved?</li>
+<li>What belongs in the scanner, and what belongs in the surrounding record?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HASH.html">HASH.md</a></li>
+<li><a href="HASH_MAP.html">HASH_MAP.md</a></li>
+<li><a href="HREC_JOIN_PROOF.html">HREC_JOIN_PROOF.md</a></li>
+<li><a href="DECISIONS.html">DECISIONS.md</a></li>
+</ul>
+<h3 id="chapter-2-fnv-as-identity-not-magic">Chapter 2: FNV As Identity, Not Magic</h3>
+<p>Answer:</p>
+<p>FNV-1a is the chosen runtime/catalog/symbol hash. It is not treated as a secret, security feature, or universal truth. It is a deterministic name-to-number path with small code, stable constants, and little-endian storage rules.</p>
+<p>The chapter should keep the distinction sharp:</p>
+<pre><code class="language-text">FNV-1a      algorithm
+hash32     canonical identity result
+hash16/8   folded storage choices
+signature  record proof or table proof
+kind       record/payload classification
+flags      lifecycle or policy metadata</code></pre>
+<p>Questions:</p>
+<ul>
+<li>Why one hash algorithm instead of per-record algorithm tags?</li>
+<li>Where should 32-bit hashes be kept, and where can folded hashes be used?</li>
+<li>Why are variable-width stored hashes a space policy, not a second identity?</li>
+<li>How does a system avoid treating a guessed hash as authority?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HASH.html">HASH.md</a></li>
+<li><a href="HASH_MAP.html">HASH_MAP.md</a></li>
+<li><a href="QCC_HASH.html">QCC_HASH.md</a></li>
+</ul>
+<h3 id="chapter-3-from-monitor-commands-to-callable-records">Chapter 3: From Monitor Commands To Callable Records</h3>
+<p>Answer:</p>
+<p>Current HIMON command records already show the transition:</p>
+<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind,inline-code...</code></pre>
+<p>For <code>kind=$00</code>, code begins immediately after the kind byte. That is a proving shape, not the final catalog shape. The important move is that a command is no longer merely an entry in a hand-written dispatch table. It is a typed record that the monitor can find by hash and call.</p>
+<p>Questions:</p>
+<ul>
+<li>What makes a command record different from a future routine export record?</li>
+<li>When does a record need an explicit <code>entry_lo,entry_hi</code> pointer?</li>
+<li>Should commands, routines, aliases, symbols, constants, and ranges share one</li>
+</ul>
+<p>scanner or only one hash convention?</p>
+<ul>
+<li>What should <code># token</code> show when records become richer?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HIMON_MAP.html">HIMON_MAP.md</a></li>
+<li><a href="HASH_MAP.html">HASH_MAP.md</a></li>
+<li><a href="HREC_JOIN_PROOF.html">HREC_JOIN_PROOF.md</a></li>
+</ul>
+<h3 id="chapter-4-the-record-is-the-meaning">Chapter 4: The Record Is The Meaning</h3>
+<p>Answer:</p>
+<p>The hash narrows the search. The record gives the match meaning. A future catalog can use the same hash path for commands, routines, symbols, data, constants, memory ranges, modules, packets, fixups, aliases, and strings.</p>
+<p>This chapter should argue against letting one byte do too much. <code>kind</code>, <code>flags</code>, <code>bank</code>, size fields, text proof, and payload shape all exist so the hash does not become overloaded.</p>
+<p>Questions:</p>
+<ul>
+<li>What are the minimum fields for a useful RREC?</li>
+<li>Which fields are parsing layout, and which are lifecycle policy?</li>
+<li>How much text proof should writable catalogs carry?</li>
+<li>Can small ROM tables stay hash-only while writable records carry more proof?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HASH_MAP.html">HASH_MAP.md</a></li>
+<li><a href="CATALOG.html">CATALOG.md</a></li>
+<li><a href="QCC_CATALOG_LINKING.html">QCC_CATALOG_LINKING.md</a></li>
+</ul>
+<h2 id="part-ii-himon-as-the-working-bench">Part II: HIMON As The Working Bench</h2>
+<h3 id="chapter-5-himon-as-the-working-bench">Chapter 5: HIMON As The Working Bench</h3>
+<p>Answer:</p>
+<p>HIMON is where the system can be touched: command input, hash dispatch, memory dump/modify, loading, flashing under guard, disassembly, mini assembly, break, step, resume, and catalog inspection. It is the bench monitor, not the recovery anchor.</p>
+<p>Questions:</p>
+<ul>
+<li>What work belongs in HIMON instead of STR8?</li>
+<li>How does the monitor stay useful while the catalog system is incomplete?</li>
+<li>What should be debug UI, and what should be catalog/linking infrastructure?</li>
+<li>How do command records, generated docs, and hardware transcripts reinforce</li>
+</ul>
+<p>each other?</p>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HIMON_MAP.html">HIMON_MAP.md</a></li>
+<li><a href="RTFM-himon.html">RTFM-himon.md</a></li>
+<li><a href="HIMON_DEBUG_TESTING.html">HIMON_DEBUG_TESTING.md</a></li>
+<li><a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a></li>
+</ul>
+<h3 id="chapter-6-the-command-language-as-human-interface">Chapter 6: The Command Language As Human Interface</h3>
+<p>Answer:</p>
+<p>The command language is part of the machine. It is not just syntax. It encodes bench habits, danger boundaries, and the difference between quick inspection and destructive action.</p>
+<p>Range syntax is a good example:</p>
+<pre><code class="language-text">start end       inclusive end
+start +count    count bytes</code></pre>
+<p>Short end tokens are page-local, so <code>D 3000 FF</code> means <code>$3000-$30FF</code>. Three- or four-digit ends are full addresses, so <code>D 1000 FFF</code> is not shorthand for <code>$1FFF</code>; use <code>D 1000 1FFF</code> or <code>D 1000 +1000</code>.</p>
+<p>Questions:</p>
+<ul>
+<li>Which short commands are worth keeping?</li>
+<li>Which destructive operations must be full-word commands?</li>
+<li>How should help text teach the safe mental model without becoming verbose?</li>
+<li>When should the parser accept tight operator forms such as <code>1234+1</code>?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="RTFM-himon.html">RTFM-himon.md</a></li>
+<li><a href="DECISIONS.html">DECISIONS.md</a></li>
+<li><a href="HIMON_SEARCH_IMPLEMENTATION_GUIDE.html">HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</a></li>
+</ul>
+<h3 id="chapter-7-debugging-as-a-runtime-contract">Chapter 7: Debugging As A Runtime Contract</h3>
+<p>Answer:</p>
+<p>Break, step, resume, register editing, and trap context are not just monitor features. They define who owns the hardware stack, how context is saved, and what it means to continue after a trap.</p>
+<p>Questions:</p>
+<ul>
+<li>Why does HIMON own the hardware stack on monitor entry?</li>
+<li>What is the difference between <code>BRK</code>, NMI, a breakpoint, and a resume?</li>
+<li>When should debugger state become command output, record output, or both?</li>
+<li>Which debug features are proof obligations before user convenience?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HIMON_DEBUG_TESTING.html">HIMON_DEBUG_TESTING.md</a></li>
+<li><a href="HIMON_MAP.html">HIMON_MAP.md</a></li>
+<li><a href="DECISIONS.html">DECISIONS.md</a></li>
+</ul>
+<h2 id="part-iii-str8-and-recovery">Part III: STR8 And Recovery</h2>
+<h3 id="chapter-8-str8-as-recovery-anchor">Chapter 8: STR8 As Recovery Anchor</h3>
+<p>Answer:</p>
+<p>STR8 exists so recovery does not depend on the thing being recovered. It owns safe boot, protected-window policy, image-oriented restore/backup, handoff to HIMON, and eventually guarded update transactions.</p>
+<p>STR8 V0 intentionally keeps console byte I/O private as <code>STR8_CON_*</code> rather than publishing duplicate <code>BIO_*</code> or <code>PIN_*</code> catalog providers.</p>
+<p>Questions:</p>
+<ul>
+<li>What must be true before reset enters STR8 first?</li>
+<li>Why should STR8 stay smaller than HIMON?</li>
+<li>When should STR8 call shared services, and when should it carry private code?</li>
+<li>How does future STR8-N participate in catalogs without owning all catalogs?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="STR8.html">STR8.md</a></li>
+<li><a href="RTFM-str8.html">RTFM-str8.md</a></li>
+<li><a href="BRINGUP.html">BRINGUP.md</a></li>
+<li><a href="QCC_STR8.html">QCC_STR8.md</a></li>
+</ul>
+<h3 id="chapter-9-flash-purge-and-required-for-recovery">Chapter 9: Flash, Purge, And REQUIRED_FOR_RECOVERY</h3>
+<p>Answer:</p>
+<p>Purge policy is lifecycle metadata, not record kind. <code>kind</code> says what a record is. Flags say what can happen to it. The active recovery dependency chain should use a flag such as <code>REQUIRED_FOR_RECOVERY</code>, which means ordinary purge, movement, or superseding must not touch it outside an explicit recovery update transaction.</p>
+<p>Important distinction:</p>
+<pre><code class="language-text">BIO_* or PIN_* does not automatically mean REQUIRED_FOR_RECOVERY.
+Only the active recovery dependency chain gets that flag.</code></pre>
+<p>Questions:</p>
+<ul>
+<li>What exactly counts as the active recovery dependency chain?</li>
+<li>How does a future condense operation prove it did not bury recovery?</li>
+<li>What transaction can replace a recovery-required provider?</li>
+<li>How should catalogs show pinned, buried, gone, and replaceable records?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="STR8.html">STR8.md</a></li>
+<li><a href="HASH_MAP.html">HASH_MAP.md</a></li>
+<li><a href="QCC_FLASH.html">QCC_FLASH.md</a></li>
+<li><a href="DECISIONS.html">DECISIONS.md</a></li>
+</ul>
+<h3 id="chapter-10-banked-flash-as-a-living-medium">Chapter 10: Banked Flash As A Living Medium</h3>
+<p>Answer:</p>
+<p>Flash is not just storage. It is a medium with erase sectors, one-way bit transitions, bank selection, protected ranges, source/destination policy, and recovery failure modes.</p>
+<p>Questions:</p>
+<ul>
+<li>Which operations are safe in HIMON, and which belong to STR8 or STR8-N?</li>
+<li>What does it mean to restore an image while preserving the protected window?</li>
+<li>How should bank 0 enrollment change backup semantics?</li>
+<li>When do append-only records need condense or compress?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="STR8.html">STR8.md</a></li>
+<li><a href="STR8_FLASH_UPDATE_PROPOSAL.html">STR8_FLASH_UPDATE_PROPOSAL.md</a></li>
+<li><a href="QCC_FLASH.html">QCC_FLASH.md</a></li>
+<li><a href="MEMORY_MAP.html">MEMORY_MAP.md</a></li>
+</ul>
+<h2 id="part-iv-catalog-linking">Part IV: Catalog Linking</h2>
+<h3 id="chapter-11-rcat-rrec-rbody-rfix-rlnk">Chapter 11: RCAT, RREC, RBODY, RFIX, RLNK</h3>
+<p>Answer:</p>
+<p>The catalog-linked system is made of named, typed records and bodies:</p>
+<pre><code class="language-text">RCAT   runtime catalog dataset
+RREC   typed runtime record/export
+RBODY  executable/data/string/module body
+RFIX   unresolved reference
+RLNK   resolved link/fixup result</code></pre>
+<p>The path is:</p>
+<pre><code class="language-text">assemble RBODY -&gt; create RFIX -&gt; verify body -&gt; export RREC into RCAT
+later code -&gt; import by hash/name -&gt; resolve RFIX/RLNK -&gt; call entry or use value</code></pre>
+<p>Questions:</p>
+<ul>
+<li>What is the smallest useful RREC?</li>
+<li>When does an RREC point to an RBODY, and when does it carry inline value?</li>
+<li>Where do aliases live?</li>
+<li>How does onboard linking avoid making flash updates unsafe?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HASH_MAP.html">HASH_MAP.md</a></li>
+<li><a href="HASHED_ASM.html">HASHED_ASM.md</a></li>
+<li><a href="QCC_CATALOG_LINKING.html">QCC_CATALOG_LINKING.md</a></li>
+</ul>
+<h3 id="chapter-12-routines-made-from-routines">Chapter 12: Routines Made From Routines</h3>
+<p>Answer:</p>
+<p>The rule is not &quot;copy code less.&quot; The rule is &quot;promote useful behavior into a callable contract.&quot; First static-link the contract with ordinary labels and libraries. Later export the same contract as an RREC and let RFIX/RLNK resolve callers.</p>
+<p>The range parser is the model. HIMON and search both need <code>start end|+count</code>, but each has its own workspace. The reusable behavior is range arithmetic and semantics. The caller-specific part is the adapter around <code>CMD_*</code> or <code>SEARCH_*</code> state.</p>
+<p>Questions:</p>
+<ul>
+<li>What is the boundary between reusable behavior and caller workspace?</li>
+<li>When should a helper become <code>UTL_*</code>, <code>COR_*</code>, <code>CAT_*</code>, or something else?</li>
+<li>Which duplicated routines should be promoted first?</li>
+<li>How does the catalog keep a contract stable while implementation changes?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="CATALOG.html">CATALOG.md</a></li>
+<li><a href="DECISIONS.html">DECISIONS.md</a></li>
+<li><a href="HIMON_SEARCH_IMPLEMENTATION_GUIDE.html">HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</a></li>
+</ul>
+<h3 id="chapter-13-static-linking-before-catalog-magic">Chapter 13: Static Linking Before Catalog Magic</h3>
+<p>Answer:</p>
+<p>Static linking is the first proof. Catalog linking should not hide an unclear contract. A routine should become a normal callable module with documented ABI, scratch use, proof state, and tests before it becomes a dynamic RREC export.</p>
+<p>Questions:</p>
+<ul>
+<li>What ABI fields belong in a routine contract?</li>
+<li>How does <code>rom.lib</code> promotion prepare a routine for RCAT promotion?</li>
+<li>Which routines are too board-specific for public catalog export?</li>
+<li>How can a future resolver choose between multiple providers?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="CATALOG.html">CATALOG.md</a></li>
+<li><a href="SYMBOL_XREF.html">SYMBOL_XREF.md</a></li>
+<li><a href="QCC_CATALOG_LINKING.html">QCC_CATALOG_LINKING.md</a></li>
+</ul>
+<h3 id="chapter-14-hashed-asm-and-self-hosted-growth">Chapter 14: Hashed ASM And Self-Hosted Growth</h3>
+<p>Answer:</p>
+<p>The assembler is where hash-first lookup becomes construction, not just dispatch. It can emit bodies, unresolved references, symbol records, aliases, and fixups that a later resolver can join.</p>
+<p>Questions:</p>
+<ul>
+<li>Which assembler syntax is human enough for onboard work?</li>
+<li>What records should assembly emit before the full catalog exists?</li>
+<li>How does a fixup remain safe in RAM versus flash?</li>
+<li>When should labels be text, hashes, or both?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HASHED_ASM.html">HASHED_ASM.md</a></li>
+<li><a href="QCC_ASM.html">QCC_ASM.md</a></li>
+<li><a href="HASH_MAP.html">HASH_MAP.md</a></li>
+</ul>
+<h2 id="part-v-worked-examples">Part V: Worked Examples</h2>
+<h3 id="chapter-15-hrec-join-proof">Chapter 15: HREC Join Proof</h3>
+<p>Answer:</p>
+<p>The HREC proof shows the smallest meaningful bridge: find a hash record, derive the callable entry, and execute or inspect it. It is the seed of catalog linking before the full catalog exists.</p>
+<p>Questions:</p>
+<ul>
+<li>What does a proof record prove?</li>
+<li>What does it deliberately not prove?</li>
+<li>How does the join proof differ from a final RREC resolver?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HREC_JOIN_PROOF.html">HREC_JOIN_PROOF.md</a></li>
+</ul>
+<h3 id="chapter-16-life-as-an-rcat-member">Chapter 16: LIFE As An RCAT Member</h3>
+<p>Answer:</p>
+<p>The standalone LIFE program can be reimagined as an RBODY with RREC exports and catalog-visible metadata. This makes the book concrete: a real body migrates from &quot;load this program&quot; toward &quot;link this member.&quot;</p>
+<p>Questions:</p>
+<ul>
+<li>What does a game/app export?</li>
+<li>Which data is code, which is state, and which is catalog metadata?</li>
+<li>What does it mean for a program to be discoverable on board?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="LIFE_RCAT_MEMBER.html">LIFE_RCAT_MEMBER.md</a></li>
+</ul>
+<h3 id="chapter-17-search-as-a-promotion-story">Chapter 17: Search As A Promotion Story</h3>
+<p>Answer:</p>
+<p>Search begins as a proof app, then becomes a HIMON command, then becomes a consumer of shared parser and output conventions. It demonstrates the path from one useful proof to a resident tool.</p>
+<p>Questions:</p>
+<ul>
+<li>How should hits be printed?</li>
+<li>What range syntax should search share with D/M/U/COPY/FILL?</li>
+<li>What should be in the proof app, and what should be promoted into HIMON?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="HIMON_SEARCH_IMPLEMENTATION_GUIDE.html">HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</a></li>
+<li><a href="QCC_HASH.html">QCC_HASH.md</a></li>
+</ul>
+<h2 id="part-vi-what-stayed-simple-on-purpose">Part VI: What Stayed Simple On Purpose</h2>
+<h3 id="chapter-18-what-stayed-simple-on-purpose">Chapter 18: What Stayed Simple On Purpose</h3>
+<p>Answer:</p>
+<p>R-YORS keeps some choices small because the hardware, flash risks, and human operator matter. STR8 V0 does not use FNV. Current HIMON records use a readable proving signature. Destructive commands should be full words. Text compression is optional. Dynamic memory waits behind fixed workspaces and explicit policy.</p>
+<p>Questions:</p>
+<ul>
+<li>Which simplicity is permanent design?</li>
+<li>Which simplicity is scaffolding?</li>
+<li>How do you tell the difference?</li>
+<li>When is cleverness worth its recovery cost?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="DECISIONS.html">DECISIONS.md</a></li>
+<li><a href="DYNAMIC_MEMORY_FIRST_STEPS.html">DYNAMIC_MEMORY_FIRST_STEPS.md</a></li>
+<li><a href="QCC_MEMORY.html">QCC_MEMORY.md</a></li>
+</ul>
+<h3 id="chapter-19-naming-vocabulary-and-the-shape-of-thought">Chapter 19: Naming, Vocabulary, And The Shape Of Thought</h3>
+<p>Answer:</p>
+<p>The vocabulary is part of the system. STR8, HIMON, THE, RCAT, RREC, RBODY, RFIX, RLNK, BIO, PIN, COR, SYS, and REQUIRED_FOR_RECOVERY are not decoration. They mark ownership and prevent confused code.</p>
+<p>Questions:</p>
+<ul>
+<li>Which names reduce confusion?</li>
+<li>Which names are too cute to carry a contract?</li>
+<li>When should a new prefix exist?</li>
+<li>How can glossary and code keep each other honest?</li>
+</ul>
+<p>Proof and notes:</p>
+<ul>
+<li><a href="GLOSSARY.html">GLOSSARY.md</a></li>
+<li><a href="DECISIONS.html">DECISIONS.md</a></li>
+<li><a href="CATALOG.html">CATALOG.md</a></li>
+</ul>
+<h3 id="chapter-20-questions-the-book-should-keep-alive">Chapter 20: Questions The Book Should Keep Alive</h3>
+<p>These are book-grade questions, not blockers:</p>
+<ul>
+<li>What is the first compact RCAT format that is worth burning into ROM?</li>
+<li>How much name text should writable records carry?</li>
+<li>How should collision candidates be shown on board?</li>
+<li>What is the first safe catalog condense transaction?</li>
+<li>How does STR8-N replace a recovery-required provider?</li>
+<li>Which routine contracts become universal, and which stay board-local?</li>
+<li>When does HIMON stop being a monitor and become THE?</li>
+<li>What is the smallest self-hosted build loop that still feels honest?</li>
+</ul>
+<h2 id="drafting-order">Drafting Order</h2>
+<p>Do not write the book in chapter order. Write from proof outward:</p>
+<ol>
+<li>Write the HIMON command/hash dispatch chapter from current code and</li>
+</ol>
+<p><a href="HIMON_MAP.html">HIMON_MAP.md</a>.</p>
+<ol>
+<li>Write STR8 recovery from <a href="STR8.html">STR8.md</a>, <a href="BRINGUP.html">BRINGUP.md</a>,</li>
+</ol>
+<p>and <a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>.</p>
+<ol>
+<li>Write FNV and records from <a href="HASH.html">HASH.md</a>, <a href="HASH_MAP.html">HASH_MAP.md</a>,</li>
+</ol>
+<p>and <a href="HREC_JOIN_PROOF.html">HREC_JOIN_PROOF.md</a>.</p>
+<ol>
+<li>Write routines-made-from-routines from <a href="CATALOG.html">CATALOG.md</a>,</li>
+</ol>
+<p>promoted helpers, and the range-parser/search path.</p>
+<ol>
+<li>Write catalog linking from <a href="HASHED_ASM.html">HASHED_ASM.md</a>,</li>
+</ol>
+<p><a href="QCC_ASM.html">QCC_ASM.md</a>, and <a href="QCC_CATALOG_LINKING.html">QCC_CATALOG_LINKING.md</a>.</p>
+<ol>
+<li>Finish with the reflective chapters: what stayed simple, what remains open,</li>
+</ol>
+<p>and how the vocabulary shaped the system.</p>
+<h2 id="chapter-template">Chapter Template</h2>
+<p>Each finished chapter should keep this shape:</p>
+<pre><code class="language-text">Question
+  What problem did this chapter start with?
+
+Answer
+  What is the current R-YORS answer?
+
+Machine
+  What code, records, command behavior, or memory layout proves it?
+
+Tradeoff
+  What did this answer reject?
+
+Open questions
+  What should not be silently settled yet?
+
+Pointers
+  Which guide files and source files hold the proof?</code></pre>
+<h2 id="possible-back-cover-copy">Possible Back-Cover Copy</h2>
+<p>R-YORS is a small W65C02 system that grows from a monitor into a hashed runtime environment. HIMON provides the bench: commands, debugging, loading, flash guards, and hash dispatch. STR8 protects recovery. THE names the future hash environment where records, bodies, fixups, and catalogs make code discoverable and linkable on the machine itself.</p>
+<p>This book follows that path without pretending the destination arrived first. It keeps the false starts, proof apps, hardware transcripts, command grammar debates, and naming decisions close to the metal, because that is where the runtime became real.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/BOOK.md</code>. Source modified: <time>2026-05-16T04:14:57Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

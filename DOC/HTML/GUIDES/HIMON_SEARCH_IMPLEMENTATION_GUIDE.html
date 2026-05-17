@@ -34,9 +34,9 @@ S addr end|+count &#39;TEXT</code></pre>
 </ul>
 <p>tail; it consumes the rest of the command line and does not return to hex parsing.</p>
 <ul>
-<li>HIMON command input currently uppercases printable text before dispatch. Exact</li>
+<li>Resident HIMON command input currently uppercases printable text before</li>
 </ul>
-<p>lowercase or mixed-case byte searches use hex spelling until input policy changes.</p>
+<p>dispatch. The current RAM proof preserves printable input and only folds the command letter, so lowercase and mixed-case apostrophe text can be tested directly there.</p>
 <ul>
 <li>Search hits print like <code>D</code> context rows: exact hit first, aligned display row</li>
 </ul>
@@ -122,7 +122,7 @@ map:    SRC/BUILD/map/himon-search-proof-3000.map
 start:  $3000
 RAM:    $7800 line buffer, $7900 pattern buffer
 I/O:    hash-resolved resident BIO_FTDI_* plus local hex output; no SYS_* stack
-size:   $0572 bytes total in the current hash-resolved RAM proof</code></pre>
+size:   $0565 bytes total in the current hash-resolved RAM proof</code></pre>
 <p>The RAM proof does not need a command FNV record. It can run under HIMON with <code>L G</code> or <code>L</code> plus <code>G 3000</code>, then provide its own tiny <code>S&gt;</code> prompt or run a canned self-test table using the same grammar planned for HIMON.</p>
 <p>The smaller HREC join proof isolates the resolver/join idea before it is moved into HIMON:</p>
 <pre><code class="language-text">make -C SRC hrec-join-proof
@@ -144,7 +144,7 @@ KIND OK
 HEXINV OK
 DONE</code></pre>
 <p>See <code>DOC/GUIDES/HREC_JOIN_PROOF.md</code> for the Q/A trail, terminology, edge cases, and size notes behind this proof.</p>
-<p>Earlier hardware transcripts below were captured on the <code>$070E</code> SYS-backed proof build. They remain behavioral proof for the parser and matcher. The current source has since been rebuilt to use the BIO layer directly, matching the rest of HIMON&#39;s low-level I/O shape. The BIO build was <code>$04EB</code>; after <code>BIO_FTDI_READ_BYTE_BLOCK</code> gained its promoted 8-byte FNV signature, the image became <code>$04F3</code>; after <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> gained the same promoted 8-byte FNV signature, the image became <code>$04FB</code>; after <code>PIN_FTDI_READ_BYTE_NONBLOCK</code> and <code>PIN_FTDI_WRITE_BYTE_NONBLOCK</code> gained their promoted 8-byte FNV signatures, the image became <code>$050B</code>; after <code>BIO_FTDI_FLUSH_RX</code> gained its promoted 8-byte FNV signature, the image is <code>$0513</code>; after the linked <code>UTL_HEX_NIBBLE_TO_ASCII</code>, <code>UTL_HEX_BYTE_TO_ASCII_YX</code>, and <code>UTL_HEX_ASCII_TO_NIBBLE</code> helpers gained their promoted 8-byte FNV signatures, the image is <code>$052B</code>; after the proof stopped linking resident helper payloads and resolved <code>BIO_FTDI_*</code> plus <code>UTL_HEX_ASCII_TO_NIBBLE</code> by emitted hash headers at startup, the image is <code>$0572</code>. Re-run a short smoke pass after loading the current ROM-bound build before using it as the base for flash-shadow work.</p>
+<p>Earlier hardware transcripts below were captured on the <code>$070E</code> SYS-backed proof build. They remain behavioral proof for the parser and matcher. The current source has since been rebuilt to use the BIO layer directly, matching the rest of HIMON&#39;s low-level I/O shape. The BIO build was <code>$04EB</code>; after <code>BIO_FTDI_READ_BYTE_BLOCK</code> gained its promoted 8-byte FNV signature, the image became <code>$04F3</code>; after <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> gained the same promoted 8-byte FNV signature, the image became <code>$04FB</code>; after <code>PIN_FTDI_READ_BYTE_NONBLOCK</code> and <code>PIN_FTDI_WRITE_BYTE_NONBLOCK</code> gained their promoted 8-byte FNV signatures, the image became <code>$050B</code>; after <code>BIO_FTDI_FLUSH_RX</code> gained its promoted 8-byte FNV signature, the image is <code>$0513</code>; after the linked <code>UTL_HEX_NIBBLE_TO_ASCII</code>, <code>UTL_HEX_BYTE_TO_ASCII_YX</code>, and <code>UTL_HEX_ASCII_TO_NIBBLE</code> helpers gained their promoted 8-byte FNV signatures, the image is <code>$052B</code>; after the proof stopped linking resident helper payloads and resolved <code>BIO_FTDI_*</code> plus <code>UTL_HEX_ASCII_TO_NIBBLE</code> by emitted hash headers at startup, the image is <code>$0572</code>; after the proof stopped uppercasing apostrophe text and kept only the command-letter fold, the image is <code>$0565</code>. Re-run a short smoke pass after loading the current ROM-bound build before using it as the base for flash-shadow work.</p>
 <p>First interactive proof shape:</p>
 <pre><code class="language-text">&gt;L G
 S&gt; S 3000 36FF 53
@@ -424,7 +424,7 @@ actual:
 pass/fail:
 notes:</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</code>. Source modified: <time>2026-05-15T19:45:59Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</code>. Source modified: <time>2026-05-16T01:42:16Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

@@ -24,6 +24,10 @@
 <li>Mark a decision as <code>reopened</code> only when the user explicitly asks to revisit</li>
 </ul>
 <p>it.</p>
+<ul>
+<li>When a decision/edict changes a reader&#39;s working map, add a short entry to</li>
+</ul>
+<p><a href="DOC_FLASH.html">DOC_FLASH.md</a> pointing at the changed decision and dependent docs.</p>
 <h2 id="naming-and-roles">Naming And Roles</h2>
 <pre><code class="language-text">R-YORS boots through STR8.
 STR8 keeps recovery/update safe.
@@ -140,14 +144,22 @@ and debug tools.</code></pre>
 </ul>
 <p>aligned row base second, and <code>*</code> between them when the match continues into the next 16-byte display row. This preserves the useful BSO2 monitor search-display convention in HIMON&#39;s command language.</p>
 <ul>
-<li>Range grammar target for commands that accept ranges:</li>
+<li>Range grammar for commands that accept ranges:</li>
 </ul>
 <pre><code class="language-text">start end       end is inclusive
 start +count    count is the number of bytes</code></pre>
 <ul>
+<li>The current shared parser also accepts the tight form <code>start+count</code>, so</li>
+</ul>
+<p><code>D 1234+1</code> means exactly one byte at <code>$1234</code>.</p>
+<ul>
 <li>A 1- or 2-hex-digit <code>end</code> token inherits the high byte from <code>start</code>.</li>
 </ul>
 <p>This is a page-local end shorthand, not a count. Example: <code>D 3000 FF</code> means <code>$3000-$30FF</code>, because the short end byte <code>$FF</code> inherits <code>$30</code> from <code>$3000</code>. If the inherited end would land before <code>start</code>, reject it and require a full end address or <code>+count</code>; <code>D 30F0 10</code> is ambiguous/dangerous, so use <code>D 30F0 3110</code> or <code>D 30F0 +21</code>.</p>
+<ul>
+<li>A 3- or 4-hex-digit <code>end</code> token is a full absolute address, not a</li>
+</ul>
+<p>window-local shorthand. <code>D 1000 FFF</code> therefore resolves as <code>$0FFF</code> and is rejected because it lands before <code>$1000</code>; use <code>D 1000 1FFF</code> or <code>D 1000 +1000</code>. A future 3-digit window-local shorthand would need its own explicit decision.</p>
 <ul>
 <li>The <code>+count</code> form is deliberately explicit, but it should not be the common</li>
 </ul>
@@ -208,9 +220,17 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>HIMON.</p>
 <ul>
-<li>STR8 should prefer <code>BIO_*</code> helpers for reusable low-level I/O. If a needed</li>
+<li>STR8 V0 keeps console byte I/O private as <code>STR8_CON_*</code> routines. They are</li>
 </ul>
-<p>reusable helper does not exist in <code>BIO_*</code>, STR8 may call <code>PIN_*</code> directly for the first bring-up path, then promote the helper into <code>BIO_*</code> when it becomes a shared recovery primitive.</p>
+<p>recovery-anchor implementation details, not public <code>BIO_*</code>/<code>PIN_*</code> FNV catalog providers.</p>
+<ul>
+<li>Public <code>BIO_*</code>/<code>PIN_*</code> records should have one owner in the combined image.</li>
+</ul>
+<p>The current HIMON body owns the public <code>BIO_FTDI_*</code> records.</p>
+<ul>
+<li>Small duplicated console code inside STR8 is acceptable while it keeps</li>
+</ul>
+<p>recovery self-contained and avoids duplicate global hashes.</p>
 <ul>
 <li>STR8 should avoid <code>COR_*</code>/<code>SYS_*</code> as hot-path dependencies unless the entry is</li>
 </ul>
@@ -240,6 +260,10 @@ start +count    count is the number of bytes</code></pre>
 <li>Additional layers are allowed when they buy a real boundary. <code>MEM_*</code>,</li>
 </ul>
 <p><code>HREC_*</code>, <code>CAT_*</code>, or another prefix can exist if it documents ownership, caller contract, dependency direction, and proof state. The test is simple: the name should reduce confusion for future code, not just mirror an existing routine at another altitude.</p>
+<ul>
+<li>When duplicated proof code starts wanting to be reused, promote the behavior</li>
+</ul>
+<p>into a documented callable contract before catalog magic. First static-link it through ordinary labels/library rules. Later, expose the same contract as an <code>RREC</code> export and resolve users through <code>RFIX</code>/<code>RLNK</code>. Keep workspace-specific adapters thin; for example, HIMON and search can share range arithmetic while retaining their own <code>CMD_*</code> or <code>SEARCH_*</code> workspace.</p>
 <h2 id="stack-and-trap-policy">Stack And Trap Policy</h2>
 <ul>
 <li>HIMON owns the hardware stack on monitor entry.</li>
@@ -322,6 +346,18 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>than forcing one exclusive kind when that loses truth.</p>
 <ul>
+<li>Do not overload <code>kind</code> for purge/lifecycle policy. <code>kind</code> says what the</li>
+</ul>
+<p>record or payload is: routine, command, symbol, alias, range, data, and so on. Lifecycle metadata belongs in flags or extra record metadata.</p>
+<ul>
+<li>Prefer <code>REQUIRED_FOR_RECOVERY</code> for the flag that prevents ordinary purge,</li>
+</ul>
+<p>movement, or superseding. It names the reason, while <code>PINNED</code> or <code>unpurgeable</code> names only the effect.</p>
+<ul>
+<li><code>BIO_*</code> and <code>PIN_*</code> prefixes do not automatically imply</li>
+</ul>
+<p><code>REQUIRED_FOR_RECOVERY</code>. Only the active recovery dependency chain gets that flag. STR8 V0&#39;s private <code>STR8_CON_*</code> path means HIMON&#39;s public <code>BIO_FTDI_*</code> records are not automatically recovery-required.</p>
+<ul>
 <li>Command text is for discoverability, collision confirmation, and future</li>
 </ul>
 <p>tooling. It is not required for basic FNV lookup.</p>
@@ -332,15 +368,18 @@ start +count    count is the number of bytes</code></pre>
 <h2 id="str8-call-surface">STR8 Call Surface</h2>
 <ul>
 <li>STR8 V0 does not reserve or depend on fixed cute-address entry slots.</li>
-<li>STR8 should call recovery-safe <code>BIO_*</code> helpers directly.</li>
+<li>STR8 V0 should call its private <code>STR8_CON_*</code> console helpers directly for</li>
+</ul>
+<p>recovery I/O.</p>
+<ul>
 <li>HIMON should reach resident STR8 routines through explicit imported labels or</li>
 </ul>
 <p>a generated import file, not through hard-coded top-ROM vanity addresses.</p>
 <h2 id="str8-imports-and-onboard-resolution">STR8 Imports And Onboard Resolution</h2>
 <ul>
-<li>Host-built HIMON images should import resident STR8 <code>BIO_*</code></li>
+<li>Host-built HIMON images should not import V0 <code>STR8_CON_*</code> console helpers;</li>
 </ul>
-<p>services from explicit STR8 labels or an import file. That keeps the release reproducible and prevents the linker from pulling a second copy of <code>BIO_*</code> out of <code>rom.lib</code>.</p>
+<p>they are private to STR8. Future shared STR8 services should be imported from explicit STR8 labels or a generated import file. That keeps the release reproducible and prevents the linker from pulling a second copy of public <code>BIO_*</code> out of <code>rom.lib</code>.</p>
 <ul>
 <li><code># label</code> is a HIMON command. It may eventually resolve HIMON catalog entries</li>
 </ul>
@@ -385,6 +424,23 @@ start +count    count is the number of bytes</code></pre>
 <li>Onboard assembly should tolerate flash clutter at first; later HIMON or</li>
 </ul>
 <p>maintenance condense can reclaim buried or superseded records.</p>
+<h2 id="himon-assembler-and-disassembler-decode">HIMON Assembler And Disassembler Decode</h2>
+<ul>
+<li>The OSI-era idea of building HIMON&#39;s assembler/disassembler primarily from a</li>
+</ul>
+<p>compact opcode bit-pattern decoder is retired for the W65C02S target.</p>
+<ul>
+<li>The useful opcode split is <code>aaa bbb cc</code>, but it is only a partial compression</li>
+</ul>
+<p>aid, not the primary correctness model. <code>cc=01</code> is the cleanest 64-slot family. <code>cc=00</code>, <code>cc=10</code>, and especially <code>cc=11</code> need enough special cases that the implementation should remain table-driven.</p>
+<ul>
+<li>HIMON&#39;s current <code>ASM_OP_MNEM_ID</code> and <code>ASM_OP_MODE</code> tables are the authority</li>
+</ul>
+<p>for V0 assembly and disassembly. Future size work may compress obvious families only after preserving byte-for-byte table-equivalent behavior.</p>
+<ul>
+<li>Treat the pulpwood/firewood-era bit-code sketch as historical design fuel,</li>
+</ul>
+<p>not pending implementation debt.</p>
 <h2 id="local-source-homes">Local Source Homes</h2>
 <ul>
 <li>MS BASIC, <code>.BAS</code> programs, fig-Forth, WDCMONv2, and s3x live under <code>LOCAL/</code>.</li>
@@ -394,7 +450,9 @@ start +count    count is the number of bytes</code></pre>
 <p>mtimes, paths, hashes, and notes; no source-content leakage into tracked docs.</p>
 <ul>
 <li>Builds may consume ignored local source/generated files when present.</li>
+<li>Forth language ideas are not treated as copied source. The local fig-Forth</li>
 </ul>
+<p>source is treated as an external public-domain publication with a required notice; generated fig-Forth source must preserve that notice.</p>
 <h2 id="documentation-shape">Documentation Shape</h2>
 <ul>
 <li><code>INDEX.md</code> answers: what exists?</li>
@@ -451,7 +509,7 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-15T20:02:54Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-16T04:08:30Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

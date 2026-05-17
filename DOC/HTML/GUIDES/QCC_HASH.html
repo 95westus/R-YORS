@@ -47,6 +47,32 @@ large arbitrary scans    weak without a stronger signature</code></pre>
 <pre><code class="language-text">&#39;F&#39; &#39;N&#39; %FSB10110</code></pre>
 <p>The low five bits are packed uppercase <code>V</code>. The high three bits belong to flash lifecycle state and are discussed in <code>QCC_FLASH.md</code>.</p>
 <p>Concern: Keep hash width and lifecycle bits separate in the spec. Width belongs in control bits such as <code>ww</code>; FSB belongs to a future signature/lifecycle idea.</p>
+<h2 id="q-is-fn-v-80-too-wasteful-as-a-marker">Q: Is <code>FN(V|$80)</code> too wasteful as a marker?</h2>
+<p>Comment: Yes, for compact catalog records. No, for bring-up and arbitrary ROM scanning.</p>
+<p>The current HIMON record spends three visible bytes before the hash:</p>
+<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind</code></pre>
+<p>That is expensive if every compact record pays it. It is also useful right now: it is easy to spot in a hex dump, easy to scan with tiny code, and strong enough for a proving record in arbitrary ROM/code space.</p>
+<p>The compact direction should separate three questions:</p>
+<pre><code class="language-text">where do I scan?       declared window or catalog block
+what am I reading?     block/table marker and record control byte
+which name is this?    FNV-1a hash bytes, width chosen by context</code></pre>
+<p>Good progression:</p>
+<pre><code class="language-text">current proof
+  per-record FN(V|$80), full hash, kind
+
+near compact
+  block marker such as RCAT/RREC once, then small record controls
+
+managed catalog
+  declared window + sealed block header + compact records, no per-record FNV text</code></pre>
+<p>A marker hash is possible, but it should usually identify a block/table format, not every record. For example, a block header could carry a 16-bit or 32-bit FNV-1a hash of a format name such as <code>RYORS RCAT V1</code>. That makes the marker namespaced and versionable, but once stored it is still just marker bytes. It does not remove the need for length, bounds, lifecycle, and checksum/proof rules.</p>
+<p>Marker options:</p>
+<pre><code class="language-text">3 text bytes per record      readable, good for current arbitrary scans
+2 text bytes per block       smaller, still readable: RC/RR/RT/etc.
+1 control byte per record    good only inside a proven block/window
+hash marker in block header  versionable, less readable, useful for formats
+no marker per record         best once the enclosing table proves context</code></pre>
+<p>Concern: A marker answers &quot;are these bytes probably a record?&quot; It is not the record identity. The identity still comes from hash/name/kind plus contract metadata. One byte by itself is not enough for arbitrary scanning; it becomes safe only inside a declared and validated block/table.</p>
 <h2 id="q-should-hash-records-link-to-parents-and-children">Q: Should hash records link to parents and children?</h2>
 <p>Comment: A HIMON userland explorer could take a command/string, compute its FNV-1a hash, find the matching executable FNV record, scan the associated code for <code>JSR abs</code> opcodes, and follow each target. In the current HIMON executable record shape, backing up 8 bytes from a code address can detect whether the target has its own FNV header:</p>
 <pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind</code></pre>
@@ -106,7 +132,7 @@ S addr end|+count &#39;TEXT</code></pre>
 <p>which searches for three <code>M</code> bytes.</p>
 <p>Concern: Keep apostrophe text as a final tail for the first implementation. There is no closing-quote parser and no return to hex parsing after text. Supporting text in the middle of the pattern would require quotes or escaping; that is not worth the parser cost for V0.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_HASH.md</code>. Source modified: <time>2026-05-12T02:39:30Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_HASH.md</code>. Source modified: <time>2026-05-15T23:57:18Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

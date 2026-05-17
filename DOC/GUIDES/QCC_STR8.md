@@ -28,6 +28,215 @@ future condense/compress calls
 Concern: Normal interactive monitor behavior belongs to HIMON. STR8 should not
 grow into a second full monitor by accident.
 
+## Q: How should STR8 treat a factory WDCMONv2 image?
+
+Comment: The preferred recovery story is full-bank preservation, not clever
+partial reconstruction. If a stock board arrives with WDC code in the
+`$8000-$FFFF` flash window and WDCMONv2 near the top of ROM, STR8 should first
+preserve that default image as a complete 32K bank before R-YORS becomes the
+live boot image:
+
+```text
+Bank 0  WDC factory/base image, B0 HOLD
+Bank 1  older R-YORS backup
+Bank 2  newer R-YORS backup
+Bank 3  live boot image
+```
+
+"Purge WDCMONv2" should mean "remove it from the live boot bank after a
+verified factory image has been stashed," not "erase the only copy." A restore
+from Bank 0 can deliberately return the board to WDC-style behavior. The
+operator warning should be loud because restoring Bank 0 may remove R-YORS from
+the ordinary live image.
+
+Concern: Coexistence is possible only when the address ranges and vectors do
+not fight. Current R-YORS STR8 owns the `$F000-$FFFF` top sector; a stock
+WDCMONv2-at-`$F800` image cannot coexist with that layout in the same live bank
+without either moving/relinking something, preserving WDCMONv2 in another bank,
+or letting WDCMONv2 remain the boot owner.
+
+## Q: What kind of WDCMONv2 bridge should R-YORS build?
+
+Comment: A vector-only bridge is attractive because the final hardware vectors
+are tiny:
+
+```text
+$FFFA-$FFFB  NMI
+$FFFC-$FFFD  RESET
+$FFFE-$FFFF  IRQ/BRK
+```
+
+Changing those six bytes can choose which monitor receives reset, NMI, and
+IRQ/BRK, but only if the code bodies for both choices already exist at
+non-overlapping addresses. The vectors pick an entry point; they do not make
+two different programs fit at the same address.
+
+Current conflict:
+
+```text
+STR8 current top sector  $F000-$FFFF
+WDCMONv2 possible body   $F800-$FFFF
+```
+
+If WDCMONv2 really occupies `$F800-$FFFF`, and STR8 also stores code/worker
+material there, a vector-only switch cannot make the board be WDCMONv2 one
+moment and R-YORS the next inside the same live bank. One image must move, be
+stashed in another bank, or be restored by a fuller transaction.
+
+Possible bridge shapes:
+
+```text
+vector-only bridge:
+  both monitor bodies already present
+  non-overlapping code ranges
+  vectors select the active entry
+
+shared top-sector trampoline:
+  tiny stable reset owner remains fixed
+  trampoline selects WDCMONv2 or STR8/HIMON
+  requires planned top-sector layout
+
+full top-sector transaction:
+  stage $F000-$FFFF in RAM
+  merge desired monitor/top-sector bytes
+  preserve or rebuild config/vectors
+  erase/write/verify the full sector
+
+full-bank restore bridge:
+  preserve WDCMONv2 as a complete Bank 0 image
+  restore Bank 0 -> Bank 3 for WDC mode
+  reinstall or restore R-YORS for R-YORS mode
+```
+
+Concern: The vectors live inside the same `$F000-$FFFF` erase sector as the
+top monitor code. Flash can clear bits from `1` to `0` without erase, but it
+cannot set `0` bits back to `1`. Any vector change that needs `0->1` requires
+a full top-sector erase/rewrite, so the bridge must already be prepared to
+stage and preserve the rest of `$F000-$FFFF`.
+
+## Q: What boring features are worthwhile for STR8?
+
+Comment: STR8 should be the small flash manager, not a second rich monitor.
+Its value is that flash operations become explicit, repeatable, and boring:
+
+```text
+IDENTIFY
+MAP
+BACKUP
+RESTORE
+INSTALL HIMON
+INSTALL STR8
+VERIFY
+```
+
+HIMON remains the workbench: editor, loader, debugger, assembler, catalog view,
+and normal command environment. STR8 owns survival: boot checks, bank policy,
+flash range policy, staging, erase, write, verify, rollback, and recovery
+messages.
+
+The short identity line belongs in this spirit:
+
+```text
+RYORS 0.0517 #89ABCDEF B0 HOLD
+```
+
+The displayed epoch date is `(year - 2026).MMDD`. The hash should identify the
+canonical image text, while mutable policy such as `B0 HOLD` comes from the
+STR8 config byte rather than being part of the image hash.
+
+Concern: "Boring" must not mean vague. Each operation should say what range it
+will touch, whether erase is required, what is preserved, what was verified,
+and whether bank 3 was restored before any ROM code resumes.
+
+## Q: Should STR8 load/update HIMON and STR8 itself?
+
+Comment: Yes. STR8 is the right authority for dangerous flash update flows.
+HIMON may receive, inspect, or prepare an update package, but STR8 should make
+the flash decision:
+
+```text
+is the target range legal?
+does this touch the protected top sector?
+is erase required?
+has the live image been backed up?
+does the written image verify?
+is the new HIMON bootable enough to hand off?
+```
+
+HIMON updates should be the friendlier case. STR8 can stage a HIMON S-record or
+sector image, refuse the protected top sector, update the ordinary HIMON/body
+sectors, verify by read-back, update identity bytes when appropriate, then hand
+off to HIMON.
+
+STR8 updates are the harder case. They need a RAM-resident transaction that
+stages the full top sector, merges the new STR8 and RAM-worker bytes, preserves
+or deliberately rebuilds the config pocket and vectors, confirms the
+protected-sector erase, writes and verifies from RAM, then resets.
+
+Concern: STR8 self-update must not return casually into ROM code that may have
+just been erased or replaced. The update path must either reset or return
+through a tiny RAM-safe continuation after bank 3 and the top sector are known
+good.
+
+## Q: Can future STR8 move flash chunks around?
+
+Comment: Eventually, yes, but only after STR8 can classify what it is moving.
+The future useful direction is a flash housekeeper that finds erased `$FF`
+space, recognizes live non-`$FF` chunks, moves safe chunks into better homes,
+and makes larger erased sectors available again.
+
+The first version should stay sector-based:
+
+```text
+sector is erased
+sector is used
+sector is protected
+sector looks like WDC/base image
+sector looks like R-YORS/HIMON
+sector looks like STR8/top-sector material
+```
+
+Later STR8 or STR8-N can become record-aware:
+
+```text
+this block has a header
+this block has a type
+this block has a length
+this block has a hash/name identity
+this block has a checksum
+this block can be relocated
+this block must stay fixed
+this block is stale/buried
+```
+
+The safe movement shape is transactional:
+
+```text
+copy live chunk to new blank space
+verify copy
+mark new chunk valid
+update catalog/link record
+mark old chunk stale
+erase stale sector only when no live chunks remain
+```
+
+A compact block header will probably be needed before this becomes real:
+
+```text
+magic/type
+length
+hash
+flags
+load address or relocation policy
+checksum
+valid/commit byte
+```
+
+Concern: STR8 must not move random non-`$FF` bytes just because they are not
+blank. Unknown used bytes should be reported and preserved until a recognizer,
+header, catalog record, or explicit operator action gives STR8 enough authority
+to relocate them.
+
 ## Q: Where should ROM garbage collection live?
 
 Comment: STR8/STRAIGHTEN is the right home for dangerous sector rebuilds, or

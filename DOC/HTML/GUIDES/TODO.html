@@ -48,15 +48,11 @@
 </ul>
 <p>mandate: destructive commands require 4+ characters. Candidate bulk commands are <code>COPY start end|+count dest</code>, <code>FILL start end|+count bb</code>, and later <code>MOVE start end|+count dest</code>; flash/bank mutation stays behind full-word confirmed commands.</p>
 <ul>
-<li>Revise the shared range parser so <code>start +count</code> means byte count, while a</li>
-</ul>
-<p>1- or 2-hex-digit inclusive <code>end</code> inherits the start high byte when safe.</p>
-<ul>
 <li>Add <code>D</code> continuation state: bare <code>D</code> repeats the previous dump length from</li>
 </ul>
 <p>the byte after the previous dump, e.g. <code>D 3000 FF</code> then <code>D</code> displays <code>$3100-$31FF</code>.</p>
 <ul>
-<li>Define and implement HIMON memory search after the range parser settles:</li>
+<li>Define and implement HIMON memory search using the shared range parser:</li>
 </ul>
 <p>target <code>S addr end|+count b0 [b1 ...]</code> for hex-byte search, <code>S addr end|+count &#39;TEXT</code> for text search, and the simple mixed tail <code>S addr end|+count b0 [b1 ...] &#39;TEXT</code>. Treat apostrophe text as a final V0 tail, not a quoted atom that resumes parsing. Print hits as D-style context rows: exact hit address, aligned row address, and <code>*</code> when the match crosses a 16-byte display row. Current step/next moves to <code>N</code> only; do not add <code>NEXT</code> as an alias.</p>
 <ul>
@@ -99,7 +95,7 @@
 </ul>
 <p>hash-driven command dispatch.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/TODO.md</code>. Source modified: <time>2026-05-15T03:02:29Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/TODO.md</code>. Source modified: <time>2026-05-16T04:09:12Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

@@ -80,18 +80,19 @@ STR8 routes traps to minimal recovery handlers</code></pre>
 <p>So yes: HIMON controls practical trap handling in V0. Later STR8-N/STRAIGHTEN can offer a recovery-safe vector path for systems that choose it. Systems that already own interrupts can still use STR8 routines directly and keep their own policy.</p>
 <p>The code may use W65C02 instructions when they keep the anchor smaller or clearer. NMOS 6502 portability is not a STR8 V0 goal.</p>
 <h2 id="recovery-i-o-layering">Recovery I/O Layering</h2>
-<p>STR8 should talk to the smallest useful layer that still preserves a reusable contract.</p>
+<p>STR8 should talk to the smallest useful layer that keeps recovery independent and avoids duplicate public catalog providers.</p>
 <p>Working rule:</p>
-<pre><code class="language-text">prefer BIO_* for STR8 recovery I/O
-use PIN_* only when no BIO_* helper exists yet
-promote repeated PIN_* use into BIO_*
+<pre><code class="language-text">use private STR8_CON_* for V0 console init/read/write/flush
+do not publish STR8_CON_* as BIO_*/PIN_* FNV catalog records
+keep public BIO_FTDI_* ownership in HIMON/current ROM body
 avoid COR_*/SYS_* in the STR8 hot path unless explicitly recovery-safe</code></pre>
-<p>That gives STR8 a direct, small path for bytes, hex, CRLF, and future flash status output without dragging in the normal monitor personality. <code>PIN_*</code> remains the hardware/register edge. <code>BIO_*</code> is the first reusable board I/O contract. <code>COR_*</code> and <code>SYS_*</code> sit above that for richer monitor/application behavior.</p>
+<p>That accepts a small private code duplicate inside the protected STR8 anchor so recovery does not depend on HIMON&#39;s resident BIO copy, and so the combined image does not publish a second global <code>BIO_FTDI_*</code> provider with the same hash. <code>PIN_*</code> remains the hardware/register edge, <code>BIO_*</code> remains the reusable board I/O contract, and <code>COR_*</code>/<code>SYS_*</code> sit above that for richer monitor/application behavior.</p>
+<p>Future catalogs should mark the active recovery dependency chain with <code>REQUIRED_FOR_RECOVERY</code> metadata rather than inferring protection from a <code>BIO_*</code> or <code>PIN_*</code> prefix. STR8 V0&#39;s private <code>STR8_CON_*</code> helpers mean HIMON&#39;s public <code>BIO_FTDI_*</code> records are not automatically pinned for recovery. If a later STR8-N path imports shared <code>BIO_CON_*</code> or <code>PIN_*</code> providers, those exact providers and their required dependencies become recovery-required until an explicit recovery update transaction replaces them.</p>
 <p>Possible layouts:</p>
 <pre><code class="language-text">Protected top-sector model:
   $8000-$BFFF          app/growth space in the selected ROM bank
-  $C000-$E357          current HIMON body and data
-  $E358-$EFFF          slack inside the used E sector
+  $C000-$E62C          current HIMON body and data
+  $E62D-$EFFF          slack inside the used E sector
   $F000-$FFFF          STR8 protected top sector
 
 RAM-updater model:
@@ -494,7 +495,7 @@ user explicitly installs it as module-local or replacement.</code></pre>
 </ul>
 <p>mixed encoding flag?</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8.md</code>. Source modified: <time>2026-05-12T02:54:05Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8.md</code>. Source modified: <time>2026-05-16T04:08:54Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

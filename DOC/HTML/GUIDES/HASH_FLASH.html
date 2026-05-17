@@ -22,6 +22,14 @@
 <p>CBI code form stays condensed for source comments:</p>
 <pre><code class="language-asm">; YYYY-MM-DDTHH:MMZ WLP2 summary
 ;                         continuation line</code></pre>
+<h2 id="rehash-hardware-test-log-available">REHASH: Hardware Test Log Available</h2>
+<pre><code class="language-text">2026
+         05
+                16
+                   03:05Z WLP2 Added a hardware test log entry for the
+                               STR8/HIMON/HREC/search/debug smoke pass.</code></pre>
+<p>The board transcript validation now has a single home: <a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>. The first entry records the 2026-05-15 STR8/HIMON/HREC/search/debug smoke pass, including STR8 map/restore, burn-check dumps, HREC join, search mixed-case text, debug <code>N</code> stepping, breakpoints, catalog lookup, and the resident HIMON <code>+count</code> range-parser finding.</p>
+<p>Use HASH FLASH for the command-surface alert; use the hardware test log for the actual transcript slices and pass/finding details.</p>
 <h2 id="rehash-ram-only-debug-edict">REHASH: RAM-Only Debug Edict</h2>
 <pre><code class="language-text">2026
          05
@@ -275,7 +283,7 @@ S addr end|+count &#39;TEXT</code></pre>
 <pre><code class="language-text">S 0 FFFF `HIMON</code></pre>
 <p>That would mean <code>H I M O (N|$80)</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-15T19:14:32Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-16T03:05:33Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

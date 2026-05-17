@@ -15,25 +15,25 @@
 <h2 id="current-himon-rom-image">Current HIMON ROM Image</h2>
 <p>Ranges are listed as inclusive. Linker <code>_END_*</code> symbols are exclusive.</p>
 <pre><code class="language-text">$8000-$BFFF   current image gap
-$C000-$DE20   HIMON CODE, START/standalone RESET entry at $C000
-$DE21-$E357   HIMON DATA
-$E358-$FFF9   current image gap and future STR8/high-ROM space
+$C000-$E0DB   HIMON CODE, START/standalone RESET entry at $C000
+$E0DC-$E62C   HIMON DATA
+$E62D-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors</code></pre>
 <p>The legacy HIMONIA fixed entries at <code>$F00D</code>, <code>$FADE</code>, and <code>$FEED</code> have been removed. They were useful as a proof, but not a practical permanent ABI. Local language bridges should patch against the current HIMON map or use a future explicit handoff contract; STR8 must not reserve those addresses.</p>
 <p>Current ROM hardware vectors:</p>
-<pre><code class="language-text">$FFFA-$FFFB   NMI   = $DBC2
+<pre><code class="language-text">$FFFA-$FFFB   NMI   = $DE1C
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $DBC5</code></pre>
+$FFFE-$FFFF   IRQ   = $DE1F</code></pre>
 <p>Generated burnable ROM <code>.bin</code> files are exactly one 32K <code>$8000-$FFFF</code> bank image for the programmer workflow. The file does not encode a bank number; bank 0-3 placement is managed through the T48 programmer or through R-YORS/STR8.</p>
-<p>The primary combined image is <code>BUILD/bin/himon-str8-rom.bin</code>: HIMON starts at CPU <code>$C000</code> / file offset <code>$4000</code>, STR8 starts at CPU <code>$F000</code> / file offset <code>$7000</code>, the STR8 RAM worker source is stored at CPU <code>$F800</code> / file offset <code>$7800</code>, and the RESET vector points to STR8 at <code>$F000</code>. The NMI and IRQ vectors point to HIMON&#39;s <code>$DBC2</code>/<code>$DBC5</code> vector entries until STR8 grows its own interrupt policy.</p>
+<p>The primary combined image is <code>BUILD/bin/himon-str8-rom.bin</code>: HIMON starts at CPU <code>$C000</code> / file offset <code>$4000</code>, STR8 starts at CPU <code>$F000</code> / file offset <code>$7000</code>, the STR8 RAM worker source is stored at CPU <code>$F800</code> / file offset <code>$7800</code>, and the RESET vector points to STR8 at <code>$F000</code>. The NMI and IRQ vectors point to HIMON&#39;s <code>$DE1C</code>/<code>$DE1F</code> vector entries until STR8 grows its own interrupt policy.</p>
 <p>Combined image layout:</p>
 <pre><code class="language-text">$8000-$BFFF   current image gap
-$C000-$E357   HIMON body
-$E358-$EFFF   current image gap inside the used E sector
-$F000-$F620   STR8 resident shell
-$F621-$F7FF   current image gap inside the top sector
-$F800-$FA7F   STR8 RAM-worker source, copied to $0200 for B/E/M/0/1/2
-$FA80-$FFF9   current image gap, config pocket, and high top-sector space
+$C000-$E62C   HIMON body
+$E62D-$EFFF   current image gap inside the used E sector
+$F000-$F667   STR8 resident shell
+$F668-$F7FF   current image gap inside the top sector
+$F800-$FA92   STR8 RAM-worker source, copied to $0200 for B/E/M/0/1/2
+$FA93-$FFF9   current image gap, config pocket, and high top-sector space
 $FFFA-$FFFF   hardware vectors</code></pre>
 <p>Local language images are built to sit below the protected HIMON/STR8 region:</p>
 <pre><code class="language-text">$8000-$9FFF   OSI MS BASIC 8K slot, FNV header at $8000
@@ -190,7 +190,7 @@ $FFFA-$FFFF  W65C02 hardware vector block</code></pre>
 <p>Changing any byte in <code>$F000-$FFFF</code> still requires read/stage/erase/full-sector-write/verify. The <code>$FFF0-$FFF9</code> pocket is patchable only in the flash sense: after erase, programming may clear bits from <code>1</code> to <code>0</code>, but changing cleared bits back to <code>1</code> requires another top-sector erase/rewrite.</p>
 <p>This split is the current combined STR8/HIMON ROM layout.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY_MAP.md</code>. Source modified: <time>2026-05-12T02:48:57Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY_MAP.md</code>. Source modified: <time>2026-05-16T01:44:28Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

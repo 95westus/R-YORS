@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QCC Catalog Linking - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="qcc-catalog-linking">QCC Catalog Linking</h1>
+<p>This page keeps the catalog-linking bootstrap problem in QCC form. The short version in project terms:</p>
+<pre><code class="language-text">we want catalog joins
+but the first catalog-aware ASM/body wants to use those joins
+so the first thing cannot require the thing it is proving</code></pre>
+<p>That is the chicken-and-egg problem. It is real, and the answer is a seed layer, not pretending the full catalog already exists.</p>
+<h2 id="plain-english-models">Plain-English Models</h2>
+<p>These are deliberately informal. They are here because the catalog-linking idea is easy to over-formalize before the first proof is boring.</p>
+<h3 id="if-you-are-12">If You Are 12</h3>
+<p>ASM linking is like building a model at your desk before you bring it to the table. You already know where every piece goes, so the finished model carries everything it needs.</p>
+<p>Catalog linking is like using a shared workshop. Instead of bringing every tool in your box, the job asks the workshop:</p>
+<pre><code class="language-text">who has WRITE?
+who has HEX?
+who has CTRL-C?</code></pre>
+<p>The workshop catalog points at the shared tool. The program uses that tool instead of carrying its own copy.</p>
+<h3 id="if-you-are-17">If You Are 17</h3>
+<p>ASM linking is compile-time certainty. The linker resolves names into fixed addresses before the program runs:</p>
+<pre><code class="language-text">JSR SYS_WRITE_CHAR -&gt; JSR $2700</code></pre>
+<p>That is simple and reliable, but it couples the program to the exact image it was linked with. If a helper is not already resident, the linker may pull in a private copy. That is payload baggage.</p>
+<p>Catalog linking is runtime resolution. The program says, &quot;I need the routine whose record/hash means WRITE,&quot; and HIMON/THE finds the resident provider:</p>
+<pre><code class="language-text">hash(&quot;BIO_FTDI_WRITE_BYTE_BLOCK&quot;) -&gt; record -&gt; entry address -&gt; call it</code></pre>
+<p>That is smaller and more flexible for shared services, but only after the catalog and join rules are trustworthy.</p>
+<h3 id="if-you-are-30-40">If You Are 30-40</h3>
+<p>ASM linking is like shipping an app with its dependencies bundled into the package. The build is predictable because every referenced routine is either at a fixed address or copied into the output. That is good for a proof, but it can make every package carry the same utility code.</p>
+<p>Catalog linking is closer to service discovery inside a small operating environment. The app says:</p>
+<pre><code class="language-text">I need WRITE-BLOCK with this contract.
+I need HEX-PARSE with this proof level.</code></pre>
+<p>The catalog resolves those needs to resident routines. The app can be smaller, and the system can replace or promote a shared service without rebuilding every caller. The tradeoff is trust: the catalog must be versioned, verified, and honest about the contract it returns.</p>
+<p>This is why <code>S</code> is a better first target than LIFE. Search is a real command with real dependencies, but it is still small enough to prove:</p>
+<pre><code class="language-text">same behavior
+less bundled baggage
+joined resident helpers</code></pre>
+<h3 id="if-you-are-62">If You Are 62</h3>
+<p>ASM linking is like a printed service manual with every referenced appendix photocopied into the back. Everything is present, and the page references are fixed, but ten manuals that need the same appendix now carry ten copies.</p>
+<p>Catalog linking is like a well-run shop index. The job card says:</p>
+<pre><code class="language-text">Use procedure WRITE-BLOCK, revision/proof X.</code></pre>
+<p>You go to the catalog, verify the entry, and use the shop&#39;s master copy. Less duplication, easier replacement, but only if the index is trustworthy and the procedure name points to the right drawer.</p>
+<p>This shop-index model is the preferred public analogy for now. It matched the project author&#39;s own working picture best.</p>
+<h2 id="q-should-the-first-target-be-s-life-or-s-plus-join">Q: Should The First Target Be S, LIFE, Or S Plus Join?</h2>
+<p>Comment: Prefer <code>S</code> plus join.</p>
+<p><code>S</code> is the better first catalog-linking pressure test. LIFE is useful because it is visible and human, but it is also big: board RAM, NMI cleanup, display, input loop, and app state. <code>S</code> is smaller and closer to the real HIMON command surface. It has the exact pain we want to solve:</p>
+<pre><code class="language-text">S body       real command work
+S imports    write/read/flush/ctrl/hex helpers
+S baggage    helper payload that should be joined, not carried</code></pre>
+<p>So the target should be:</p>
+<pre><code class="language-text">S(earch) as the body
+HREC_JOIN_EXEC as the first join mechanism
+build/map truth as the seed record source</code></pre>
+<p>That makes <code>S</code> the practical bridge:</p>
+<pre><code class="language-text">hrec-join-proof      proves FIND/JOIN/EXEC mechanics
+himon-search-proof   proves S parser/matcher with joined helpers
+future S command     proves command-surface use of joined resident support
+future RCAT/RREC     generalizes the same idea beyond tiny HREC records</code></pre>
+<p>Concern: Do not make <code>S</code> wait for full RCAT/RREC. That recreates the egg problem. <code>S</code> should consume the current small HREC join path first. Once <code>S</code> can run while joining resident helper routines instead of linking private copies, it becomes evidence for the fuller catalog record shape.</p>
+<p>LIFE remains a later worked example for an interactive member. It is better as the second or third catalog member, after <code>S</code> has made the join path boring.</p>
+<h2 id="q-can-we-build-the-catalog-dynamically-later">Q: Can We Build The Catalog Dynamically Later?</h2>
+<p>Comment: Yes, but not first.</p>
+<p>The future shape can be dynamic: HIMON, onboard ASM, or a catalog maintenance tool can append or update catalog records as code is built, loaded, promoted, or retired. That is the desired direction.</p>
+<p>The first shape should be seeded instead:</p>
+<pre><code class="language-text">build emits records from map/symbol truth
+HIMON scans records
+S joins resident helpers
+tests prove the joins and behavior
+later ASM learns to emit records itself</code></pre>
+<p>That keeps the first catalog from depending on itself. A dynamic catalog is the destination; generated seed records are the first road.</p>
+<p>Concern: Dynamic catalog writes must eventually obey flash lifecycle rules: formed, sealed, buried, gone, and later condense/repair. Do not make early catalog records look casually rewritable if they will live in flash.</p>
+<h2 id="q-is-ram-proof-plus-l-f-proof-enough">Q: Is RAM Proof Plus L F Proof Enough?</h2>
+<p>Comment: It is enough for behavior and residency, but not by itself enough for catalog-linking proof.</p>
+<p>For <code>S</code>, there are three levels:</p>
+<pre><code class="language-text">RAM proof passes       S parser/matcher behavior works while loaded in RAM
+L F proof passes       delivered flash bytes behave the same when resident
+join proof passes      S uses joined resident helpers, not private baggage</code></pre>
+<p>RAM pass plus <code>L F</code> pass proves the command body and delivery path. Catalog linking also needs evidence that the support routines were found through records and joined correctly.</p>
+<p>Good first proof bundle:</p>
+<pre><code class="language-text">same S tests pass in RAM and flash
+map/listing shows private helper baggage removed or named
+positive joins find WRITE/READ/FLUSH/CTRL/HEX helpers
+negative joins reject missing hashes and wrong kind bytes
+transcript records the same behavior before and after L F</code></pre>
+<p>After that, the claim becomes stronger:</p>
+<pre><code class="language-text">S is not just resident
+S is resident and joined</code></pre>
+<h2 id="q-is-life-2000-a-kludge-around-linking-and-payload-baggage">Q: Is LIFE-2000 A Kludge Around Linking And Payload Baggage?</h2>
+<p>Comment: Yes. <code>LIFE-2000</code> is a useful kludge. The WDC link path proves the app body, entry, return behavior, display, input loop, and NMI cleanup. But it also drags support payload into the standalone image: <code>SYS_*</code>, <code>BIO_*</code>, <code>COR_*</code>, <code>PIN_*</code>, and utility code that a catalog member should normally join to rather than carry privately.</p>
+<p>In your terms:</p>
+<pre><code class="language-text">life body              good proof payload
+private support copies baggage from static linking
+life-2000-load.bin     useful package, not the final catalog shape</code></pre>
+<p>Concern: Do not let the loadable BIN become the contract. The BIN proves &quot;these bytes run at <code>$2000</code>.&quot; It does not prove &quot;this is a clean catalog member.&quot; A catalog member must say what it imports, what RAM and zero-page it touches, what entry is public, and what support code is joined instead of duplicated.</p>
+<h2 id="q-how-do-catalog-joins-start-if-catalog-linked-asm-needs-the-catalog">Q: How do catalog joins start if catalog-linked ASM needs the catalog?</h2>
+<p>Comment: Start below the catalog, then climb into it. The first working path is seeded by tools and fixed contracts, not by a fully self-hosted catalog:</p>
+<pre><code class="language-text">fixed boot ABI / WDC link / HREC join proof
+  -&gt; build tool emits first records from map/symbol truth
+  -&gt; HIMON scans and joins those records
+  -&gt; app bodies join resident support instead of carrying it
+  -&gt; later onboard ASM emits/updates catalog records itself</code></pre>
+<p>That makes the catalog a product of proof before it becomes an input to proof. Early ASM can still assemble code. Early HREC can still join fixed resident records. Early docs/build scripts can describe records. Once those pieces are boring, ASM can be trusted to write records.</p>
+<p>Concern: If catalog-linked ASM is required on day one, it cannot boot itself. If static WDC linking is treated as the final answer, the payload baggage never goes away. Keep both lanes visible:</p>
+<pre><code class="language-text">seed lane     fixed addresses, WDC link, HREC proof, generated descriptors
+catalog lane  RCAT/RREC/RBODY imports, joins, fixups, resource records</code></pre>
+<h2 id="q-where-should-the-first-catalog-records-be-created">Q: Where should the first catalog records be created?</h2>
+<p>Comment: Not inside the first catalog-dependent ASM. Create the first records outside the target runtime from evidence the build already has:</p>
+<pre><code class="language-text">map file       entry addresses and ranges
+symbol file    names and exported labels
+source header  purpose, credit, resource claims
+QCC/docs       unsettled contract questions</code></pre>
+<p>Then use a small resident scanner/joiner to consume them on target. That keeps the first catalog publishable because there is an audit trail: source -&gt; map -&gt; record -&gt; join proof.</p>
+<p>Concern: A record emitted only because the assembler said so is too trusting for the first pass. The first pass should be boring and inspectable. Build-side records are allowed to be ugly if they are explicit and checked.</p>
+<h2 id="q-when-does-this-leave-qcc">Q: When does this leave QCC?</h2>
+<p>Comment: Move the settled answer to <code>DECISIONS.md</code> when a proof can show:</p>
+<pre><code class="language-text">S/search body runs as the target proof
+one caller finds the needed resident helper records
+one join validates kind/entry
+S uses joined resident support instead of private helper payload
+payload baggage is measurably removed or named</code></pre>
+<p>Until then, this remains QCC. <code>LIFE_RCAT_MEMBER.md</code> can keep LIFE-specific member details; this page keeps the general bootstrap rule.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_CATALOG_LINKING.md</code>. Source modified: <time>2026-05-15T21:51:58Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

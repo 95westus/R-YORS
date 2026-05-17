@@ -32,10 +32,10 @@ ERASE ...</code></pre>
 <h2 id="current-commands">Current Commands</h2>
 <pre><code class="language-text">?              help
 # [token]      list records, or resolve token without executing it
-D start +n     dump memory
+D start +count dump memory
 D start end    dump memory range
 M addr         modify memory
-U start +n     disassemble
+U start +count disassemble
 A addr         assemble
 G addr         go to address
 L              load S-records to RAM
@@ -55,8 +55,8 @@ Q              quiesce with WAI, then re-enter on wake</code></pre>
 <p><code>M</code> is currently byte-by-byte memory modify. Under the new command safety mandate, bulk fill should not become an <code>M</code> subform. It should be a full-word command:</p>
 <pre><code class="language-text">FILL start end|+count bb</code></pre>
 <p>That future fill should start as RAM-only. Flash fill belongs behind a full-word flash/update command and guarded RAM-updater policy.</p>
-<h2 id="range-syntax-target">Range Syntax Target</h2>
-<p>The current ROM parser still uses the older range behavior. The target syntax for the next range-parser revision is:</p>
+<h2 id="range-syntax">Range Syntax</h2>
+<p>The shared range parser uses:</p>
 <pre><code class="language-text">start end       end is inclusive
 start +count    count is the number of bytes</code></pre>
 <p>Short typing stays useful for display/search/disassembly:</p>
@@ -66,8 +66,9 @@ D 3000 FF    dump $3000-$30FF
 D 3000 +100  dump $3000-$30FF
 D            repeat previous dump length at next address</code></pre>
 <p>A 1- or 2-hex-digit end token inherits the high byte from <code>start</code>. If that would land before <code>start</code>, use a full end address or <code>+count</code>; for example, prefer <code>D 30F0 3110</code> or <code>D 30F0 +21</code> over <code>D 30F0 10</code>.</p>
+<p>A 3- or 4-hex-digit end token is a full address. <code>D 1000 FFF</code> is rejected because <code>$0FFF</code> is before <code>$1000</code>; use <code>D 1000 1FFF</code> or <code>D 1000 +1000</code>.</p>
 <p>The <code>+</code> is not meant to be the normal typing path for page-local end-byte dumps. <code>D 100 3</code> means <code>$0100-$0103</code>; <code>D 3000 FF</code> means <code>$3000-$30FF</code>. Use <code>+count</code> when the operator means a byte count, not an end byte. See <code>page-local</code> in <code>GLOSSARY.md</code>.</p>
-<p>Bare <code>D</code> is target behavior for the next parser revision. It should continue from the byte after the previous dump and reuse the previous dump length:</p>
+<p>Bare <code>D</code> is target behavior for a later parser revision. It should continue from the byte after the previous dump and reuse the previous dump length:</p>
 <pre><code class="language-text">D 3000 FF    dump $3000-$30FF and remember length $0100
 D            dump $3100-$31FF
 D            dump $3200-$32FF</code></pre>
@@ -177,7 +178,7 @@ Bank 3 is restored before monitor output resumes</code></pre>
 <h2 id="wdcmonv2-bridge">WDCMONv2 Bridge</h2>
 <p>Saving the board&#39;s original WDCMONv2/base flash image is future bridge work. HIMON does not do that today.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-himon.md</code>. Source modified: <time>2026-05-15T03:51:56Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-himon.md</code>. Source modified: <time>2026-05-16T04:08:54Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

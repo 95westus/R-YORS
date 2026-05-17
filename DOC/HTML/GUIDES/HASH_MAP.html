@@ -225,7 +225,9 @@ optional name length
 optional raw or compressed name text
 optional payload</code></pre>
 <p><code>bank</code> matters because the record may live in a clean catalog area while the routine/data body lives in a future growth/storage bank.</p>
+<p><code>kind</code> classifies the record or payload. It should not carry lifecycle policy. Lifecycle flags can include <code>REQUIRED_FOR_RECOVERY</code>, <code>BOOT_REQUIRED</code>, or <code>REPLACEABLE</code>. <code>REQUIRED_FOR_RECOVERY</code> is the future no-ordinary-purge rule for the active recovery dependency chain; it is not implied merely by a <code>BIO_*</code> or <code>PIN_*</code> routine name.</p>
 <p>There is no per-record algorithm byte. The catalog format itself defines <code>hash0..3</code> as FNV-1a.</p>
+<p>When a useful behavior is duplicated in proof code, promote it in two stages: first static-link a documented routine contract through labels/library records; later export the same contract as an <code>RREC</code> and let <code>RFIX</code>/<code>RLNK</code> resolve it. The HIMON/search range parser is the model: share the range arithmetic and count/end semantics, while keeping thin adapters for each caller&#39;s workspace.</p>
 <h2 id="hash-to-hash-alias-records">Hash-To-Hash Alias Records</h2>
 <p>An FNV lookup may resolve to a typed alias record that names another FNV hash. This is allowed only when the record kind defines what the redirect means:</p>
 <pre><code class="language-text">hash(&quot;DB&quot;) -&gt; directive_alias -&gt; target hash(&quot;DC&quot;)</code></pre>
@@ -311,7 +313,7 @@ $FF  erased flash / blank image regions</code></pre>
 5. If text is absent and collision exists, require qualified/manual choice.</code></pre>
 <p>This keeps the system usable before the catalog is fancy, but does not trap it in unsafe hash-only linking forever.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_MAP.md</code>. Source modified: <time>2026-05-13T20:50:32Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_MAP.md</code>. Source modified: <time>2026-05-16T04:08:54Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

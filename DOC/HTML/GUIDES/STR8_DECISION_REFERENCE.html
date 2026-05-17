@@ -116,7 +116,7 @@ PIN_  = raw hardware access hidden under BIO_ or FLSH_</code></pre>
 <h2 id="ram-flash-worker">RAM Flash Worker</h2>
 <p>Flash write and erase routines always run from RAM.</p>
 <p>STR8 copies the flash worker into RAM before erase, write, or bank-copy operations. The RAM worker owns flash mutation and bank switching while the operation is active.</p>
-<p>The current combined ROM stores the worker source at bank 3 <code>$F800-$FA7F</code>. Before <code>B</code>, <code>E</code>, <code>M</code>, <code>0</code>, <code>1</code>, or <code>2</code>, resident STR8 at <code>$F000</code> copies that worker into the <code>$0200-$09FF</code> STR8 RAM tray and then calls <code>$0200</code>. The worker uses <code>$0A00-$0A0C</code> as its state board, uses <code>$4000-$4FFF</code> as the 4K sector buffer, and restores bank 3 before returning.</p>
+<p>The current combined ROM stores the worker source at bank 3 <code>$F800-$FA92</code>. Before <code>B</code>, <code>E</code>, <code>M</code>, <code>0</code>, <code>1</code>, or <code>2</code>, resident STR8 at <code>$F000</code> copies that worker into the <code>$0200-$09FF</code> STR8 RAM tray and then calls <code>$0200</code>. The worker uses <code>$0A00-$0A0C</code> as its state board, uses <code>$4000-$4FFF</code> as the 4K sector buffer, and restores bank 3 before returning.</p>
 <p>The current RAM worker copies full 32K banks with a 4K buffer:</p>
 <pre><code class="language-text">copy window $8
 copy window $9
@@ -171,7 +171,7 @@ WDCMONv2 transition documentation/tool</code></pre>
 <p>Bank 3 boots. Bank 2 is latest backup. Bank 1 is previous backup. Bank 0 is held unless the one-way enrollment flag makes it the oldest rotating backup.</p>
 <p>STR8 restores bank 3 from whole 32K ROM bank images, skipping the selected STR8 protected window unless an explicit STR8 install/update is requested. Then HIMON takes over.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8_DECISION_REFERENCE.md</code>. Source modified: <time>2026-05-08T04:21:00Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8_DECISION_REFERENCE.md</code>. Source modified: <time>2026-05-16T01:44:32Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

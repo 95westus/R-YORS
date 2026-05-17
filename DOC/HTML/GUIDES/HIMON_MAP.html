@@ -287,7 +287,8 @@ HIMON/himon-shared-eq.inc</code></pre>
 <td>Catalog scan/dispatch</td>
 <td>command execution</td>
 <td><code>CMD_DISPATCH_HASH</code>, <code>CMD_HASH_SCAN_*</code>, <code>CMD_HASH_RECORD_*</code>, <code>CMD_EXEC_ADDR</code></td>
-<td>Scans <code>$8000</code> through vector boundary for <code>FN(V|$80)</code> records, matches hash, requires executable kind, calls entry.</td>
+<td>Scans <code>$8000</code> through vector boundary for `FN(V\</td>
+<td>$80)` records, matches hash, requires executable kind, calls entry.</td>
 <td>Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer.</td>
 </tr>
 <tr>
@@ -307,7 +308,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 <tr>
 <td>Memory dump</td>
 <td>`D start [end</td>
-<td>+n]`</td>
+<td>+count]`</td>
 <td><code>CMD_D</code>, <code>CMD_PARSE_RANGE_REQUIRED</code>, <code>MON_PRINT_MEM_RANGE</code></td>
 <td>Prints hex rows plus printable ASCII, abortable with Ctrl-C.</td>
 <td>Uses shared range parser. Target revision: bare <code>D</code> repeats the previous dump length from the next address.</td>
@@ -315,7 +316,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 <tr>
 <td>Memory modify</td>
 <td>`M start [end</td>
-<td>+n]`</td>
+<td>+count]`</td>
 <td><code>CMD_M</code>, <code>MON_MODIFY_RANGE</code></td>
 <td>Prompts each byte, writes RAM byte directly, <code>.</code> aborts.</td>
 <td>Current short mutator under review. Future bulk fill should be `FILL start end</td>
@@ -324,7 +325,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 <tr>
 <td>Disassemble</td>
 <td>`U start [end</td>
-<td>+n]`</td>
+<td>+count]`</td>
 <td><code>CMD_U</code>, <code>DIS_PRINT_ONE</code>, <code>DBG_OPCODE_LEN</code></td>
 <td>Prints W65C02S opcode, mnemonic, and operand using opcode tables.</td>
 <td>Shares the same opcode mode tables as assembler/step.</td>
@@ -442,7 +443,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 </ul>
 <p>but the related command records, help text, BRK hook behavior, and build docs must be omitted or revised together. NMI trap capture may remain without the breakpoint/<code>N</code> stepping subsystem.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_MAP.md</code>. Source modified: <time>2026-05-15T03:52:12Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_MAP.md</code>. Source modified: <time>2026-05-16T04:02:59Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

@@ -32,7 +32,9 @@ NOTES / SOURCE / ROMS / MANUALS         READ ME FIRST</code></pre>
                                commands now need 4+ characters, HIMON
                                range/search syntax is being revised, and
                                STR8 keeps R as reset.</code></pre>
-<p>Details live in <a href="GUIDES/HASH_FLASH.html">DOC/GUIDES/HASH_FLASH.md</a>.</p>
+<p>Details live in <a href="GUIDES/HASH_FLASH.html">DOC/GUIDES/HASH_FLASH.md</a>. Doc/edict movement lives in <a href="GUIDES/DOC_FLASH.html">DOC/GUIDES/DOC_FLASH.md</a>.</p>
+<h2 id="doc-flash">### DOC FLASH ###</h2>
+<p>Use DOC FLASH when a doc, edict, QCC home, or artifact name changes enough that yesterday&#39;s notes could mislead you. Latest doc alerts live in <a href="GUIDES/DOC_FLASH.html">DOC/GUIDES/DOC_FLASH.md</a>.</p>
 <h2 id="system-card">System Card</h2>
 <p>R-YORS is a retro-computing documentation and source project for specifying, building, and documenting a small WDC W65C02SXB/W65C02EDU runtime environment.</p>
 <p>Current spine:</p>
@@ -127,6 +129,7 @@ LOCAL/      ignored local source homes, when present</code></pre>
 <pre><code class="language-text">make release</code></pre>
 <p>Regenerates source-derived docs, builds the tracked release set, and stamps the HIMON ROM binary.</p>
 <p>Generated burnable ROM <code>.bin</code> files are exactly one 32K <code>$8000-$FFFF</code> bank image for the programmer workflow. The file does not encode a bank number; bank 0-3 placement is managed through the T48 programmer or through R-YORS/STR8. The combined <code>himon-str8-rom.bin</code> image currently carries HIMON at CPU <code>$C000</code>, STR8 at CPU <code>$F000</code>, and the reset vector at file offset <code>$7FFC</code>. The build check verifies that vector and reset-target code before release. Local language images are linked under the live monitor/boot region: OSI MS BASIC at <code>$8000</code> and fig-Forth at <code>$A000</code>. They remain blank-write/proof artifacts rather than full <code>L F</code> update packages.</p>
+<p>Forth as a language/concept is not treated here as a copyright problem. The specific fig-Forth source is different: R-YORS uses a local FIG-Forth 6502 Release 1.1 source that identifies itself as a public-domain publication from the Forth Interest Group and requires that its notice be included in further distribution. The generator preserves that notice in the generated local source.</p>
 <pre><code class="language-text">make release-local</code></pre>
 <p>Adds ignored/private local composites when <code>LOCAL/</code> is populated.</p>
 <pre><code class="language-text">make docs-html</code></pre>
@@ -137,7 +140,7 @@ LOCAL/      ignored local source homes, when present</code></pre>
 <h2 id="notice">Notice</h2>
 <p>R-YORS is independent and is not affiliated with or endorsed by The Western Design Center, Inc. Product names are used only to identify compatible hardware.</p>
   </main>
-  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-14T02:34:17Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-15T21:56:00Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

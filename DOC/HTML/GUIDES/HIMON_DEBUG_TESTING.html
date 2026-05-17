@@ -33,7 +33,7 @@ confirm the HIMON prompt appears</code></pre>
 <p>Send:</p>
 <pre><code class="language-text">SRC/BUILD/s19/himon-debug-proof-3000.s19</code></pre>
 <p>Expected first stop:</p>
-<pre><code class="language-text">L OK=0148 GO=3000
+<pre><code class="language-text">L OK=0163 GO=3000
 HIMON DEBUG PROOF $3000
 BRK $41: USE N TO STEP
 BRK 41 PC=...</code></pre>
@@ -202,7 +202,7 @@ flash member: link at the intended ROM address and add a verified image builder.
 <pre><code class="language-text">make -C SRC himon-str8-rom-bin</code></pre>
 <p>For a new ROM member, add an explicit script or Makefile rule that places bytes at the correct <code>$8000-$FFFF</code> bank offset and verifies the result before it is called burnable.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-15T03:52:18Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-16T02:37:18Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

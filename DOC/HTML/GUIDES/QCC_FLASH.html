@@ -54,6 +54,53 @@ new king:  formed + sealed, generation 5
 lookup:    chooses generation 5
 later:     old king gets buried</code></pre>
 <p>Concern: The winner rule must be written down before multiple sealed records are allowed in the same managed region.</p>
+<h2 id="q-are-duplicate-rom-flash-records-a-bug-or-a-feature">Q: Are duplicate ROM/flash records a bug or a feature?</h2>
+<p>Comment: They are a bug in the current first-match scanner, and a feature in a future governed catalog.</p>
+<p>The <code>calc-9a00-fnv-proof</code> and <code>rom-append-calc</code> example shows the difference. Both records publish the same <code>CALC</code> command hash. They both fit physically:</p>
+<pre><code class="language-text">calc-9a00-fnv-proof   starts $9A00, ends $9C9F
+rom-append-calc       starts $B804, ends $BADA</code></pre>
+<p>The room is not the issue. The issue is that both are visible in the same scanner world. Current HIMON command dispatch scans upward and stops on the first matching executable FNV record. That means the lower-address proof record would win before the newer ROM-append payload. In that mode, duplicate command records are accidental shadowing.</p>
+<p>Future catalog lookup should treat this as candidate selection:</p>
+<pre><code class="language-text">scan declared windows
+collect matching hash/name/kind candidates
+discard erased, unformed, unsealed, buried, invalid, or wrong-contract records
+choose by explicit winner rule</code></pre>
+<p>Useful winner rules depend on the mode:</p>
+<pre><code class="language-text">boot/recovery     prefer known ROM/fixed records first
+normal command    prefer newest sealed compatible flash/catalog record
+test/staging      prefer RAM or explicit staging window first
+diagnostic #      list every visible candidate, including losers
+condense          keep winners, copy/verify them, bury or drop losers</code></pre>
+<p>That is exploitable in the good sense. Duplicate identity lets a new record be written and proven before the old one is erased or buried:</p>
+<pre><code class="language-text">old CALC remains visible
+new CALC is written elsewhere
+new CALC is verified and sealed
+lookup policy starts choosing new CALC
+old CALC becomes rollback/debug material
+later condense removes or buries the loser</code></pre>
+<p>Concern: Do not let raw address order become the hidden contract. If address order is used, name it as a temporary proof rule. Once staging, update, rollback, and garbage collection matter, lookup must collect candidates and apply a policy that operators and tools can inspect.</p>
+<h2 id="q-can-generation-wins-work-with-only-the-current-kind-byte">Q: Can &quot;generation wins&quot; work with only the current kind byte?</h2>
+<p>Comment: No. The current HIMON proving record is too small for that policy:</p>
+<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind,inline-code...</code></pre>
+<p>That shape proves:</p>
+<pre><code class="language-text">hash       what command/name was requested
+kind       what coarse thing follows, such as executable code
+entry      current rule says executable code begins at record+8</code></pre>
+<p>It does not carry:</p>
+<pre><code class="language-text">generation
+contract version
+provider/source
+record length
+formed/sealed/buried state
+priority or scan-window policy
+checksum/proof
+explicit entry pointer</code></pre>
+<p>So current HIMON can only use simple proof-era rules such as first-match or hardcoded scan-window order. That is not generation wins; it is address order being used as a temporary resolver.</p>
+<p>Real generation wins needs either an extended record or an enclosing catalog block/table that supplies metadata:</p>
+<pre><code class="language-text">collect candidates
+reject invalid/unsealed/buried/wrong-contract candidates
+choose highest compatible generation, or another named policy</code></pre>
+<p>Concern: Do not overload the <code>kind</code> byte. <code>kind</code> says what class of thing the record points at. It should not also mean lifecycle, generation, ABI contract, and provider priority. Those belong in RCAT/RREC metadata or a transitional extended record.</p>
 <h2 id="q-what-does-condense-purge">Q: What does condense purge?</h2>
 <p>Comment: The strongest purge signal is <code>B=0</code>.</p>
 <pre><code class="language-text">purge B=0 buried records
@@ -114,7 +161,7 @@ old records are buried or no longer winners
 then sector may be erased</code></pre>
 <p>Concern: Power loss halfway through must leave at least one valid winner. That means the new copy should be written and sealed before the old copy is buried, and erase should be the final cleanup step, not the commit step.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_FLASH.md</code>. Source modified: <time>2026-05-08T00:34:23Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_FLASH.md</code>. Source modified: <time>2026-05-15T23:57:17Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

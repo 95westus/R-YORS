@@ -28,9 +28,9 @@
 <p>Future destructive commands must use full words. This applies to copy, fill, move, erase, flash, bank, backup, restore, and boot/recovery policy changes. STR8 keeps <code>R</code> as reset. The current one-key STR8 recovery commands are an early proof surface with <code>Y</code> confirmation; treat the destructive keys as transitional until the command surface is revised.</p>
 <h2 id="current-burn-image">Current Burn Image</h2>
 <pre><code class="language-text">primary image:   SRC/BUILD/bin/himon-str8-rom.bin
-HIMON:           $C000-$E357
-STR8 image:      $F000-$F620
-worker source:   $F800-$FA7F, copied to $0200 when needed
+HIMON:           $C000-$E62C
+STR8 image:      $F000-$F667
+worker source:   $F800-$FA92, copied to $0200 when needed
 STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF</code></pre>
@@ -40,8 +40,8 @@ vectors:         $FFFA-$FFFF</code></pre>
 <p>After burn, these should match:</p>
 <pre><code class="language-text">D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
 D F000 +10   78 D8 A2 FF 9A 20 1D F0 ...
-D F800 +10   08 78 AD 17 03 C9 04 F0 ...
-D FFFA FFFF  C2 DB 00 F0 C5 DB</code></pre>
+D F800 +10   08 78 AD 07 0A C9 04 F0 ...
+D FFFA FFFF  1C DE 00 F0 1F DE</code></pre>
 <p>On reset, STR8 should initialize FTDI, print <code>HIMON IN 3S. S=STR8</code>, and count down <code>3 2 1</code>. Press <code>S</code> during that delay to show the STR8 prompt.</p>
 <h2 id="flash-banks">Flash Banks</h2>
 <pre><code class="language-text">Bank 3  live reset/boot image
@@ -63,10 +63,10 @@ R       reset through live vector</code></pre>
 <h2 id="himon-basics">HIMON Basics</h2>
 <pre><code class="language-text">?              help
 # [token]      list records, or resolve token without executing it
-D start +n     dump memory count
+D start +count dump memory count
 D start end    dump memory range
 M addr         modify memory
-U start +n     disassemble
+U start +count disassemble
 A addr         assemble
 G addr         go to address
 L              load S-records to RAM
@@ -79,7 +79,7 @@ B L            list breakpoints
 N              single-step trapped context
 X              resume trapped context
 Q              quiesce with WAI, then re-enter on wake</code></pre>
-<p>For dump commands in the current parser, <code>+n</code> is the safer habit when you mean &quot;show me this many bytes.&quot; The target range syntax is <code>start +count</code> for a byte count and short inclusive end tokens that inherit the start high byte, so <code>D 3000 FF</code> means <code>$3000-$30FF</code>. Target continuation behavior: after <code>D 3000 FF</code>, a bare <code>D</code> displays <code>$3100-$31FF</code>.</p>
+<p>For dump commands, <code>+count</code> means &quot;show me this many bytes.&quot; Short inclusive end tokens inherit the start high byte, so <code>D 3000 FF</code> means <code>$3000-$30FF</code>. Three- or four-digit end tokens are full addresses, so <code>D 1000 FFF</code> is not <code>$1000-$1FFF</code>; use <code>D 1000 1FFF</code> or <code>D 1000 +1000</code>. Target continuation behavior: after <code>D 3000 FF</code>, a bare <code>D</code> displays <code>$3100-$31FF</code>.</p>
 <h2 id="sharp-edges">Sharp Edges</h2>
 <pre><code class="language-text">STR8 owns backup/restore and protected-window policy.
 HIMON L F is not a sector erase/update tool.
@@ -100,7 +100,7 @@ restore Bank 3 before printing status</code></pre>
 <pre><code class="language-text">DOC/GUIDES/RTFM-str8.md    recovery, backups, restores, Bank 0
 DOC/GUIDES/RTFM-himon.md   monitor commands, loading, debug notes</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-R-YORS.md</code>. Source modified: <time>2026-05-15T03:52:01Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-R-YORS.md</code>. Source modified: <time>2026-05-16T04:08:54Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

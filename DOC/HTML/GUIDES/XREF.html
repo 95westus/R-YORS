@@ -23,10 +23,17 @@ DECISIONS.md
   should be checked before reopening design alternatives
   overrides looser exploratory notes unless explicitly reopened
 
+DOC_FLASH.md
+  records short alerts when doc shape, edicts, canonical homes, QCC pages, or
+  remembered artifact names change enough to make yesterday&#39;s binder stale
+  points to DECISIONS.md for settled edict changes and QCC_*.md pages for
+  unsettled design movement
+
 QCC.md
   defines Questions, Comments, Concerns as the working-note style for active
   design questions
-  indexes QCC_HASH, QCC_FLASH, QCC_ASM, QCC_STR8, and QCC_MEMORY
+  indexes QCC_HASH, QCC_FLASH, QCC_ASM, QCC_CATALOG_LINKING, QCC_STR8, and
+  QCC_MEMORY
   feeds DECISIONS.md when a working answer becomes settled
 
 HASH_MAP.md
@@ -52,7 +59,16 @@ HASHED_ASM.md
 QCC_ASM.md
   keeps hash-first assembler questions about labels, symbol text, fixups, and
   sealed record output
-  relates to HASHED_ASM.md and QCC_FLASH.md
+  relates to HASHED_ASM.md, QCC_CATALOG_LINKING.md, and QCC_FLASH.md
+
+QCC_CATALOG_LINKING.md
+  keeps the bootstrap question for catalog-linked bodies and catalog-aware ASM:
+  what creates the first records before catalog joins are strong enough to own
+  themselves
+  names LIFE-2000 static-link support code as useful payload baggage, not the
+  final catalog contract
+  relates to HREC_JOIN_PROOF.md, LIFE_RCAT_MEMBER.md, HASHED_ASM.md,
+  CATALOG.md, and QCC_ASM.md
 
 QCC_STR8.md
   keeps STR8/STRAIGHTEN questions about ownership, scan ranges, recovery/update
@@ -109,7 +125,12 @@ HIMON_MAP.md
 HIMON_EDGE_DUMP.md
   direct `JSR`/`JMP` edge dump for `HIMON/himon.asm`
   keeps raw edge sites separate from the compact SYMBOL_XREF call tree and
-  readable HIMON_MAP.md diagrams</code></pre>
+  readable HIMON_MAP.md diagrams
+
+HARDWARE_TEST_LOG.md
+  records board transcript validation after tests are run
+  references BRINGUP.md, HIMON_DEBUG_TESTING.md, HREC_JOIN_PROOF.md, and
+  HIMON_SEARCH_IMPLEMENTATION_GUIDE.md for the test intent behind each pass</code></pre>
 <h2 id="source-cross-reference">Source Cross-Reference</h2>
 <p>Current generated operational source scan:</p>
 <pre><code class="language-text">Source files scanned:  27
@@ -187,7 +208,7 @@ ROM/util/*.asm</code></pre>
 <h2 id="known-drift">Known Drift</h2>
 <p>The older generated source-wide graph has been narrowed because broad scans made harnesses and proof apps look like the current subsystem graph. Use <code>HIMON_MAP.md</code> for the readable current map and <code>HIMON_EDGE_DUMP.md</code> for raw HIMON direct-edge evidence.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/XREF.md</code>. Source modified: <time>2026-05-13T20:30:25Z</time>. HTML generated: <time>2026-05-15T20:03:11Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/XREF.md</code>. Source modified: <time>2026-05-16T02:59:27Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>
