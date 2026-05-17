@@ -114,6 +114,54 @@ cannot set `0` bits back to `1`. Any vector change that needs `0->1` requires
 a full top-sector erase/rewrite, so the bridge must already be prepared to
 stage and preserve the rest of `$F000-$FFFF`.
 
+## Q: What should the first WDCMONv2 RAM bridge do?
+
+Comment: The first bridge should look like a normal WDC-loaded program, in the
+same spirit as the stock/demo programs that WDCMONv2 already knows how to load
+and run. WDCMONv2 is the launch ramp, not the permanent owner of the update
+policy.
+
+The bridge should run from RAM and ask only a few plain questions:
+
+```text
+WDC RYORS BRIDGE
+
+BACKUP LIVE BANK 3 TO BANK 0? Y/N
+INSTALL STR8/R-YORS TO BANK 3? Y/N
+```
+
+Before asking, it should print the facts it thinks it sees:
+
+```text
+LIVE=B3
+B0=ERASED/USED/UNKNOWN
+TOP=WDCMON/RYORS/UNKNOWN
+TARGET=RYORS 0.0517 #89ABCDEF
+```
+
+The backup action is full-bank preservation:
+
+```text
+if B0 is erased:
+  copy live Bank 3 -> Bank 0
+  verify Bank 0 == original Bank 3
+  leave Bank 0 conceptually B0 HOLD
+
+if B0 is used:
+  refuse or require a stronger typed confirmation before erase
+```
+
+The install action should receive or carry a R-YORS/STR8 install payload, stage
+dangerous sectors in RAM, write/verify from RAM, and reset into STR8 when the
+live boot image is valid enough.
+
+Concern: Once flash mutation begins, the bridge must not depend on WDCMONv2
+ROM calls. It may use WDCMONv2 to get launched and perhaps to receive bytes
+before the flash transaction, but the erase/write/verify core has to be
+self-contained in RAM. If the bridge replaces the live top sector and fails
+halfway, recovery may require the saved Bank 0 image, a WDC bridge rerun, or
+the external programmer.
+
 ## Q: What boring features are worthwhile for STR8?
 
 Comment: STR8 should be the small flash manager, not a second rich monitor.
@@ -147,6 +195,98 @@ STR8 config byte rather than being part of the image hash.
 Concern: "Boring" must not mean vague. Each operation should say what range it
 will touch, whether erase is required, what is preserved, what was verified,
 and whether bank 3 was restored before any ROM code resumes.
+
+## Q: Can STR8 yield to monitors or apps other than HIMON?
+
+Comment: Yes, later. STR8 does not have to mean "the thing that only starts
+HIMON." It can become the tiny boot/recovery chooser that validates a target
+and yields to it:
+
+```text
+LOMON   low/small monitor
+MIDMON  middle monitor/tools
+HIMON   full R-YORS monitor
+CHESS   app/game/demo target
+WDC     restored factory/base image
+```
+
+A future boot-target display could stay compact:
+
+```text
+STR8>BOOT
+0 WDC    B0  #12345678
+1 LOMON  B3  $9000
+2 MIDMON B3  $A000
+3 HIMON  B3  $C000
+4 CHESS  B3  $8000
+```
+
+For V0, `G` can remain the simple HIMON handoff. The richer target table should
+wait until STR8 has reliable identity, map, verify, and install behavior.
+
+Concern: A boot-target table must not turn STR8 into a general application
+shell. STR8 should verify enough to avoid jumping into garbage, select the
+bank/range if needed, and jump. The target owns its own UI, memory rules, and
+return/reset behavior.
+
+## Q: Could STR8 become the useful product by itself?
+
+Comment: Yes. STR8 can be valuable as a neutral W65C02SXB boot/recovery tool
+even for users who do not want HIMON, THE, R-YORS catalogs, or the later
+assembler/runtime stack. In that shape, STR8 is a small board utility:
+
+```text
+bank-aware boot selector
+factory-image saver
+flash backup/restore guard
+installer/verifier
+known-good escape hatch
+```
+
+The product boundary should stay layered:
+
+```text
+STR8 core     tiny, boring, recovery-safe
+STR8 menu     optional boot chooser UI
+HIMON         one possible payload
+R-YORS        one possible full stack
+```
+
+Boot behavior should be quiet by default:
+
+```text
+reset -> STR8
+if default target is valid and no key pressed: boot it
+if key pressed or target bad: show menu/recovery
+```
+
+An eventual menu could be useful without being a full monitor:
+
+```text
+STR8 BOOT
+0 WDCMON  B0  $F800  #12345678
+1 BASIC   B3  $8000  #...
+2 FORTH   B3  $A000  #...
+3 HIMON   B3  $C000  #...
+4 CHESS   B2  $8000  #...
+```
+
+Target records probably need only compact facts:
+
+```text
+name
+bank
+entry address
+protected ranges
+hash/check
+default flag
+role/notes
+```
+
+Concern: STR8-as-product must not require the user to buy into the rest of
+R-YORS. The menu must remain optional, compact, and recovery-oriented. If STR8
+becomes too chatty, catalog-heavy, or application-like, it stops being the
+thing an operator trusts when the payload is broken.
 
 ## Q: Should STR8 load/update HIMON and STR8 itself?
 

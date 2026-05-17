@@ -50,14 +50,18 @@ action:     where to look or what to do next
                    02:03Z WLP2 Expanded QCC_STR8 with the boring
                                flash-manager direction: Bank 0 WDC HOLD,
                                STR8-owned HIMON/STR8 updates, identity
-                               display, and future classified chunk moves.
+                               display, WDC RAM bridge, future yield
+                               targets, STR8-as-product, and classified
+                               chunk moves.
 ```
 
 scope: `QCC_STR8.md`.
 
 change: STR8's future role is now recorded as flash manager/housekeeper rather
 than only backup/restore guard. The notes also capture full-bank WDCMONv2
-preservation and the compact `RYORS 0.0517 #hash B0 HOLD` identity line.
+preservation, a WDCMONv2-loaded RAM bridge, future boot targets, and the
+STR8-as-product boundary, plus the compact `RYORS 0.0517 #hash B0 HOLD`
+identity line.
 
 effect: Do not treat HIMON `L F` as the eventual owner of protected monitor or
 STR8 updates. STR8 is the proposed authority for dangerous flash writes and any
