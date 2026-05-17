@@ -14,8 +14,8 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 ```text
 $8000-$BFFF   current image gap
 $C000-$E0DB   HIMON CODE, START/standalone RESET entry at $C000
-$E0DC-$E62C   HIMON DATA
-$E62D-$FFF9   current image gap and future STR8/high-ROM space
+$E1CB-$E72D   HIMON DATA
+$E72E-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -37,6 +37,22 @@ image for the programmer workflow. The file does not encode a bank number;
 bank 0-3 placement is managed through the T48 programmer or through
 R-YORS/STR8.
 
+## Target Live-Bank Budget
+
+This is a target boundary, not a panic rule:
+
+```text
+$8000-$BFFF   16K user code/data/app space
+$C000-$EFFF   12K HIMON monitor/tools budget
+$F000-$FFFF    4K STR8 recovery-owned erase sector
+```
+
+STR8 may use less than 4K, but the whole `$F000-$FFFF` erase sector is
+recovery-owned because erase granularity and the hardware vectors make it the
+dangerous top sector. HIMON should fit below `$F000`; if it outgrows 12K, that
+should be an intentional design decision because it eats the lower 16K user
+space.
+
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: HIMON starts at
 CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
 `$7000`, the STR8 RAM worker source is stored at CPU `$F800` / file offset
@@ -48,10 +64,11 @@ Combined image layout:
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E62C   HIMON body
-$E62D-$EFFF   current image gap inside the used E sector
-$F000-$F667   STR8 resident shell
-$F668-$F7FF   current image gap inside the top sector
+$C000-$E72D   HIMON body
+$E72E-$EFFF   current image gap inside the used E sector
+$F000-$F71E   STR8 resident shell
+$F481         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$F71F-$F7FF   current image gap inside the top sector
 $F800-$FA92   STR8 RAM-worker source, copied to $0200 for B/E/M/0/1/2
 $FA93-$FFF9   current image gap, config pocket, and high top-sector space
 $FFFA-$FFFF   hardware vectors

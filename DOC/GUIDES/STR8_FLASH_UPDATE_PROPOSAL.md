@@ -1,16 +1,17 @@
 # STR8 Flash Update Proposal
 
 This is a proposal note for STR8 flash update behavior. The first-pass `M`
-physical flash map is implemented; the `U H` and `U S` update commands remain
-future command proposals.
+physical flash map is implemented; the `U T`, `U H`, and `U S` update commands
+remain future command proposals.
 
 The direction is deliberately simple:
 
 ```text
 HIMON L F stays conservative.
 STR8 owns recovery and dangerous flash update flows.
-STR8 should be able to update HIMON.
+STR8 should be able to update target code/ranges; HIMON is the default target.
 STR8 should also have an explicit, harder-to-trigger option to update STR8.
+Monitor replacement means 4K sector rebuild, not casual byte writes.
 ```
 
 ## Command Shape
@@ -19,7 +20,8 @@ Keep ordinary STR8 small, but give it a few clear update/report verbs:
 
 ```text
 M    map banks/sectors with condensed used/erased status
-U H  update HIMON body or normal ROM image region
+U T  update target body or normal ROM image region; HIMON is the default target
+U H  alias/profile for updating the default HIMON target
 U S  update STR8 protected window/top sector
 ```
 
@@ -37,6 +39,70 @@ UPDATE STR8? TYPE STR8:
 
 This should not directly stream bytes into `$FA00`. It should stage a complete
 top-sector transaction, preserve required bytes, erase/write/verify, then reset.
+
+`U T`, `U H`, and `U S` may receive S19, but S19 is only the transport. The
+update unit is a complete 4K staged sector image:
+
+```text
+copy live destination sector into RAM
+merge S19 bytes into the RAM sector image
+if the RAM sector differs from flash, confirm erase
+erase the flash sector
+write the full RAM sector image
+verify the full sector
+```
+
+Near-term install packages are still prepared off board. The host build creates
+the vector-complete ROM `.bin`, then converts the install range to S1/S9 text
+for the board. STR8 receives that text and stages sectors; it does not need to
+turn a binary into S19 onboard. Later onboard ASM/export work can bypass S19 by
+handing STR8 complete sector images or sealed candidate records directly.
+
+Future STR8 transport may add an S2/S8 profile, commonly written as `.s28`.
+That name is a file/profile hint; the records themselves are S2 data records
+with 24-bit addresses and an S8 termination record. The third address byte gives
+STR8 room to treat incoming records as physical SST39SF010A flash-chip
+addresses instead of only as CPU-visible `$8000-$FFFF` bytes.
+
+For the current four 32K bank idea, that future linear map names physical
+flash-chip addresses:
+
+```text
+bank 0  physical flash $00000-$07FFF
+bank 1  physical flash $08000-$0FFFF
+bank 2  physical flash $10000-$17FFF
+bank 3  physical flash $18000-$1FFFF  reset/default boot bank
+```
+
+Translation is simple and visible:
+
+```text
+bank        = linear_address >> 15
+bank_offset = linear_address & $7FFF
+cpu_address = $8000 + bank_offset
+```
+
+So physical flash address `$18000` means bank 3 at CPU `$8000`, `$1F000` means
+bank 3 top sector, and `$1FFFA-$1FFFF` means the reset/default boot bank's
+vector block. That makes S2/S8 a good later fit for bank-aware restore, bulk
+data storage, retrieval, and transport. It is not a V0 requirement; V0 can stay
+with S1/S9 install packages and explicit STR8 bank/range policy.
+
+V0 should not try to be clever about direct 1->0 patching for HIMON/STR8
+replacement. The first rule is sector rebuild. Direct 1->0 writes remain useful
+for deliberate one-way flags or later append-only records.
+
+The implementation should still start with the friendliest proof:
+
+```text
+install default HIMON target below the protected STR8 sector
+verify that STR8 survives a bad or missing target
+only then add the STR8/top-sector self-update path
+```
+
+That keeps V0 small while avoiding a HIMON-only installer. The low-level
+operation is "install this target image/range"; the command profile can still
+say `U H` when the target is the bundled HIMON image.
 
 ## M Map Report
 
@@ -97,7 +163,8 @@ or stored bank roles.
 
 ## Erase Policy
 
-STR8 should prefer the obvious whole-sector rule over a clever one-byte poll:
+STR8 should prefer the obvious whole-sector rule over a clever one-byte poll.
+For V0 HIMON/STR8 replacement, any changed staged sector is erased and rebuilt:
 
 ```text
 if sector is all $FF:
@@ -119,6 +186,10 @@ whole-sector waiting asks "is the sector actually erased?"
 ```
 
 For STR8, whole-sector waiting is slower but clearer and safer.
+
+For a monitor update, "write" should be understood as "rebuild the selected 4K
+sector." The chip still programs bytes after erase, but the operator-facing
+operation is sector erase, full-sector write, and full-sector verify.
 
 ## Routine Shape
 
@@ -170,10 +241,12 @@ flowchart TD
     DETAIL --> SEMANTIC["Example BOOT = ----+HHS"]
     SEMANTIC --> PROMPT
 
-    PROMPT --> UH["U H: update HIMON/body"]
+    PROMPT --> UT["U T: update target/body"]
+    PROMPT --> UH["U H: default HIMON target profile"]
     PROMPT --> US["U S: update STR8/top sector"]
     US --> CONFIRM["Require literal STR8 confirmation"]
-    UH --> STAGE["Stage complete sector/image"]
+    UT --> STAGE["Stage complete sector/image"]
+    UH --> STAGE
     CONFIRM --> STAGE
 
     STAGE --> PRESERVE["Preserve protected bytes, config, vectors"]
@@ -192,7 +265,9 @@ flowchart TD
 ## Open Refinements
 
 - Decide whether later displays need an optional verbose `ERASED/USED` mode.
-- Decide whether `U H` receives S-records, a full bank image, or both.
+- Decide whether `U T`/`U H` receive S-records, a full bank image, or both.
+- Decide whether future bank-aware transport should accept S2/S8 `.s28`
+  records in addition to V0 S1/S9 packages.
 - Decide whether `U S` requires source image hash/version checks before
   staging.
 - Decide how much progress output STR8 should print during erase/program/verify.

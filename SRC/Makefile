@@ -52,6 +52,8 @@ HIMON_ROM_S19 := $(S19_DIR)/himon-rom.s19
 HIMON_ROM_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_ROM_BIN := $(BIN_DIR)/himon-rom.bin
 HIMON_STR8_ROM_BIN := $(BIN_DIR)/himon-str8-rom.bin
+HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-install.s19
+HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_LOAD_BIN := $(BIN_DIR)/himon.bin
@@ -157,6 +159,7 @@ DOC_HTML_DIR := ../DOC/HTML
 HELP_GEN := tools/show_make_help.ps1
 BIN_POLICY := tools/bin_policy.ps1
 BIN_CHECK := tools/check_bin_policy.ps1
+ROM_INSTALL_S19_GEN := tools/build_rom_install_s19.ps1
 HELP_QUERY := $(if $(Q),$(Q),$(SEARCH))
 
 # Optional local commands (override from CLI, e.g. make upload UPLOADER="tool --flash")
@@ -184,6 +187,7 @@ ALL_TARGETS := \
 RELEASE_TARGETS ?= \
 	himon \
 	himon-str8-rom-bin \
+	himon-str8-rom-install-s19 \
 	fnv1a-hbstr \
 	test-flash \
 	rom-append-calc
@@ -206,6 +210,7 @@ release: docs $(RELEASE_TARGETS)
 	@echo "Tracked-source release targets: $(RELEASE_TARGETS)"
 	@echo "Primary monitor binary: $(HIMON_STR8_ROM_BIN)"
 	@echo "Primary monitor S19: $(HIMON_ROM_S19)"
+	@echo "Primary install S19: $(HIMON_STR8_ROM_INSTALL_S19)"
 	@echo "Stamped ROM archive dir: $(ROM_BIN_ARCHIVE_DIR)"
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(ROM_BIN_ARCHIVE_DIR)') { Get-ChildItem -LiteralPath '$(ROM_BIN_ARCHIVE_DIR)' -Filter '*.bin' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 8 | ForEach-Object { $$b=[System.IO.File]::ReadAllBytes($$_.FullName); $$head=(($$b[0..([Math]::Min(2,$$b.Length-1))] | ForEach-Object { '{0:X2}' -f $$_ }) -join ' '); $$tail=(($$b[([Math]::Max(0,$$b.Length-3))..($$b.Length-1)] | ForEach-Object { '{0:X2}' -f $$_ }) -join ' '); '  ' + $$_.Name + '  len=' + $$b.Length + '  head=[' + $$head + '] tail=[' + $$tail + ']' } }"
 
@@ -233,6 +238,15 @@ himon-rom-bin: himon-rom
 
 himon-str8-rom-bin: $(HIMON_STR8_ROM_BIN)
 	@echo "Built $(HIMON_STR8_ROM_BIN)."
+
+himon-rom-install-s19: $(HIMON_ROM_INSTALL_S19)
+	@echo "Built $(HIMON_ROM_INSTALL_S19)."
+
+himon-str8-rom-install-s19: $(HIMON_STR8_ROM_INSTALL_S19)
+	@echo "Built $(HIMON_STR8_ROM_INSTALL_S19)."
+
+rom-install-s19: himon-str8-rom-install-s19
+	@echo "Built primary ROM install S19."
 
 himon-load: $(ROM_LIB) $(HIMON_LOAD_S19)
 	@echo "Built $(HIMON_LOAD_S19)."
@@ -543,6 +557,14 @@ $(HIMON_STR8_ROM_BIN): $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) tools/bui
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -BinPath "$(HIMON_STR8_ROM_BIN)"
 	@echo [ps] stamp $(HIMON_STR8_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_STR8_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
+
+$(HIMON_ROM_INSTALL_S19): $(HIMON_ROM_BIN) $(ROM_INSTALL_S19_GEN)
+	@echo [ps] build $(HIMON_ROM_INSTALL_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_ROM_BIN)" -S19Path "$(HIMON_ROM_INSTALL_S19)" -BaseAddress 32768
+
+$(HIMON_STR8_ROM_INSTALL_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
+	@echo [ps] build $(HIMON_STR8_ROM_INSTALL_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$(HIMON_STR8_ROM_INSTALL_S19)" -BaseAddress 32768
 
 $(MSBASIC_OSI_RAM_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))

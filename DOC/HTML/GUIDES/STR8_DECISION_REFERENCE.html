@@ -26,8 +26,10 @@
 <p>STR8 may use all RAM and zero page during recovery.</p>
 <h2 id="flash-endurance">Flash Endurance</h2>
 <p>The design assumes flash sectors have a finite erase endurance, roughly 100,000 erase cycles per sector depending on the specific flash device.</p>
-<p>STR8 should not treat flash as endlessly rewritable storage. Future STR8 or HIMON layers should provide either built-in wear leveling, a small flash file-system style allocator, erase counters, or some combination of those tools.</p>
+<p>STR8 should not treat flash as endlessly rewritable storage. Future STR8 or HIMON layers should provide wear awareness through explicit hash-shaped metadata records, not by silently stealing bytes from ordinary image sectors or from the STR8 top-sector slack.</p>
+<p>Exact counts to 100,000 erase cycles need 17 bits. If the system records only each 128th erase event, the persistent bucket count needs 10 bits. Those small counts should still be written append-only as <code>WMAP</code> or similar wear-map records, verified and sealed before they are used.</p>
 <p>The purpose is to know when a sector or chip is approaching its practical write life before it becomes a recovery problem.</p>
+<p>Scratch flash is a future managed lease, not a filesystem and not an only-copy home. A future TMP/STAGE sector may be chosen from the lowest-wear reclaimable sector, but reclaim still erases a full 4K sector and must preserve, copy, or discard the rest of that sector by explicit transaction policy.</p>
 <p>Longer term, R-YORS should have a way to export flash contents to a host as an S19-like serial stream, or move flash contents between two connected boards, without depending on an external programmer for ordinary maintenance.</p>
 <h2 id="protected-region">Protected Region</h2>
 <p>Bank 3 <code>$F000-$FFFF</code> is the physical top 4K erase sector. The protected STR8 window is smaller when the code fits. The current command proof uses <code>$FA00-$FFFF</code>, leaving room for the resident shell plus RAM-worker handoff:</p>
@@ -171,7 +173,7 @@ WDCMONv2 transition documentation/tool</code></pre>
 <p>Bank 3 boots. Bank 2 is latest backup. Bank 1 is previous backup. Bank 0 is held unless the one-way enrollment flag makes it the oldest rotating backup.</p>
 <p>STR8 restores bank 3 from whole 32K ROM bank images, skipping the selected STR8 protected window unless an explicit STR8 install/update is requested. Then HIMON takes over.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8_DECISION_REFERENCE.md</code>. Source modified: <time>2026-05-16T01:44:32Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8_DECISION_REFERENCE.md</code>. Source modified: <time>2026-05-17T03:27:41Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

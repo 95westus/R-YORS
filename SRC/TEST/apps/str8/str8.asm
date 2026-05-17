@@ -21,6 +21,7 @@
                         MODULE          STR8_APP
 
                         XDEF            START
+                        XDEF            STR8_ID_MARKER_BYTES
 
                         XREF            UTL_DELAY_AXY_8MHZ
                         IF              STR8_RAM_PROOF
@@ -38,6 +39,11 @@ STR8_CFG_FLAGS_ADDR     EQU             $FFF0
 STR8_CFG_FLAGS_LO       EQU             $F0
 STR8_CFG_FLAGS_HI       EQU             $FF
 STR8_CFG_B0_ROT_MASK    EQU             $01
+; STR8 identity marker. The source phrase is private.
+STR8_ID_MARKER0         EQU             $7A
+STR8_ID_MARKER1         EQU             $0F
+STR8_ID_MARKER2         EQU             $6A
+STR8_ID_MARKER3         EQU             $5F
 STR8_RESET_VECTOR       EQU             $FFFC
 STR8_HIMON_START        EQU             $C000
 STR8_HIMON_RESET_SIG0   EQU             $7EE6
@@ -53,6 +59,7 @@ STR8_DELAY_TICK_A       EQU             $26
 STR8_DELAY_FIRST_A      EQU             $27
 STR8_DELAY_TICK_X       EQU             $B6
 STR8_DELAY_TICK_Y       EQU             $F8
+STR8_SPLASH_DELAY_A     EQU             $13
 
 STR8_COPY_MODE_FULL     EQU             $00
 STR8_COPY_MODE_RESTORE  EQU             $01
@@ -104,6 +111,8 @@ START:
                         JSR             STR8_INIT
                         IF              STR8_RAM_PROOF
                         ELSE
+                        JSR             STR8_SPLASH_DELAY
+                        JSR             STR8_PRINT_BANNER
                         JSR             STR8_STARTUP_DELAY
                         BCS             ?STR8_TAKEOVER
                         LDX             #<MSG_CRLF
@@ -151,6 +160,17 @@ STR8_ENTER_HIMON_WARM:
 
                         IF              STR8_RAM_PROOF
                         ELSE
+STR8_SPLASH_DELAY:
+                        LDA             #STR8_SPLASH_DELAY_A
+                        LDX             #STR8_DELAY_TICK_X
+                        LDY             #STR8_DELAY_TICK_Y
+                        JMP             UTL_DELAY_AXY_8MHZ
+
+STR8_PRINT_BANNER:
+                        LDX             #<MSG_BOOT_BANNER
+                        LDY             #>MSG_BOOT_BANNER
+                        JMP             STR8_PRINT_XY
+
 ; OUT: C=1 if S/s was consumed; C=0 if the timeout elapsed.
 ; 2026-05-07T19:14-05:00        WLP2        Countdown split into poll, print, and tick helpers.
 STR8_STARTUP_DELAY:
@@ -1058,7 +1078,10 @@ STR8_CON_WRITE_BYTE_NONBLOCK:
                         RTS
 
                         DATA
-MSG_SCREEN:             DB              $0D,$0A,"STR8 V0",$0D,$0A
+STR8_ID_MARKER_BYTES:   DB              STR8_ID_MARKER0,STR8_ID_MARKER1
+                        DB              STR8_ID_MARKER2,STR8_ID_MARKER3
+
+MSG_SCREEN:             DB              $0D,$0A,"STR8 V0 #5F6A0F7A",$0D,$0A
                         IF              STR8_RAM_PROOF
                         DB              "RAM $0200 BUF $4000-$4FFF",$0D,$0A
                         ELSE
@@ -1068,10 +1091,16 @@ MSG_SCREEN:             DB              $0D,$0A,"STR8 V0",$0D,$0A
 MSG_PROMPT:             DB              "STR8",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
+MSG_BOOT_BANNER:       DB              $0D,$0A
+                        DB              "____      ____    ____   ____      ____",$0D,$0A
+                        DB              "|   \    /   |   /    \  |   \    /",$0D,$0A
+                        DB              "|___/    |___|  |      | |___/    \___",$0D,$0A
+                        DB              "|   \    /   |  |      | |   \        \",$0D,$0A
+                        DB              "|    \  /    |   \____/  |    \   ____/",$0D,$8A
 MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 3S. S=STR8 ",$A0
                         ENDIF
 
-MSG_ID:                 DB              $0D,$0A,"STR8 V0",$0D,$8A
+MSG_ID:                 DB              $0D,$0A,"STR8 V0 #5F6A0F7A",$0D,$8A
 MSG_B0_HOLD:            DB              "B0 HOLD",$0D,$8A
 MSG_B0_ROT:             DB              "B0 ROT",$0D,$8A
 MSG_UNKNOWN:            DB              $0D,$0A,"?",$0D,$8A

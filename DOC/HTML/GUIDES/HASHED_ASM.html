@@ -476,6 +476,19 @@ resolve and verify in RAM
 commit final bytes to flash with L F / future STR8</code></pre>
 <p>This keeps flash clean while preserving hard target addresses. The emitted code can still be assembled &quot;as if&quot; it lives at <code>$9A00</code> or <code>$F000</code>; only the physical bytes wait in RAM until commit. This is the preferred path for any source that may fail, duplicate code, or generate many fixups.</p>
 <p><code>EXPORT</code> belongs after this stage: the symbol should become globally visible only after the staged image has resolved and committed cleanly.</p>
+<h3 id="asm-work-products-and-ram-pressure">ASM Work Products And RAM Pressure</h3>
+<p>Interactive ASM should treat parsing as work, not as a flash promise. The ordinary flow is:</p>
+<pre><code class="language-text">console line -&gt; RAM line buffer
+parse/hash -&gt; RAM scratch
+emit bytes -&gt; RAM object/stage buffer
+fixups/exports -&gt; RAM tables while they fit
+flash -&gt; only after explicit commit</code></pre>
+<p>If RAM fills, ASM should stop at a visible boundary instead of silently spilling into final flash. First-version choices should be simple:</p>
+<pre><code class="language-text">COMMIT current staged unit
+DISCARD current staged unit
+ENTER explicit flash-stage mode</code></pre>
+<p>Flash-stage mode is not a filesystem. It should append hash-shaped provisional records such as <code>ASM_STAGE</code>, <code>ASM_FIX</code>, or <code>ASM_SYM</code>, verify them, and later seal final <code>CODE</code> and catalog records only after the assembly unit is complete. Failed or abandoned stage records remain non-final until a later condense operation reclaims their sectors.</p>
+<p>This keeps the assembler small-unit friendly: assemble one routine or module fragment, seal its exports, then let later code import those exports by hash/name. Large builds can use explicit staging or host-assisted replay rather than turning every pasted source line into permanent flash history.</p>
 <h3 id="flash-assembly">Flash Assembly</h3>
 <p>In flash, the assembler must be stricter because normal flash programming only changes erased <code>1</code> bits to programmed <code>0</code> bits. The safe unresolved-byte pattern is therefore erased <code>$FF</code>.</p>
 <p>Direct flash flow:</p>
@@ -992,7 +1005,7 @@ SYM</code></pre>
 <li>Open Firmware/FCode shows the embedded-firmware tradition of compact Forth-like extensibility: https://www.openfirmware.info/Forth_FCode.html</li>
 </ul>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASHED_ASM.md</code>. Source modified: <time>2026-05-07T01:06:16Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASHED_ASM.md</code>. Source modified: <time>2026-05-17T03:28:08Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

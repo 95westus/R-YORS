@@ -41,6 +41,115 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: Product Boundaries Named
+
+```text
+2026
+         05
+                17
+                   18:49Z WLP2 Added a product-boundary guide for R-YORS,
+                               STR8, LEAF/IVI, HIMON, and peer payloads.
+```
+
+scope: `PRODUCT_BOUNDARIES.md`, `INDEX.md`, `TOC.md`, `MAP.md`, `BOOK.md`,
+`GLOSSARY.md`.
+
+change: STR8 is now documented as the board management product inside the
+current repo. LEAF/IVI is the interrupt front door. HIMON is the default monitor
+payload, while WDCMONv2, BETTERMON, apps, tools, BASIC, and FORTH can be peer
+payload targets.
+
+effect: Do not treat STR8 as only a HIMON helper, and do not treat HIMON as the
+only possible thing STR8 can install or boot. The repo stays together for now;
+the boundary is conceptual and documented before any source split.
+
+action: Start with [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md), then use
+[STR8.md](./STR8.md) for the board-management contract and
+[QCC_STR8.md](./QCC_STR8.md) for open STR8/LEAF questions.
+
+## REDOC: Onboard ASM Monitor Candidates Added
+
+```text
+2026
+         05
+                16
+                   22:46Z WLP2 Added future wording for onboard ASM
+                               producing monitor candidates instead of S19,
+                               with a tiny winner-record commit.
+```
+
+scope: `HASHED_ASM.md`, `QCC_STR8.md`.
+
+change: Future onboard update flow now distinguishes S19 as host transport from
+native onboard products: RAM candidates, staged sector images, `ASM_STAGE`,
+`ASM_FIX`, `CODE`, `RCAT/RREC`, and later `BOOT/XMON` candidate or winner
+records. The atomic part is the final winner-record commit after verification,
+not the whole monitor write.
+
+effect: Do not assume onboard ASM must generate S19 to update the board. The
+old monitor should remain the winner until a sealed, verified candidate is
+published by a small commit record.
+
+action: Use [HASHED_ASM.md](./HASHED_ASM.md) for onboard ASM product shape and
+[QCC_STR8.md](./QCC_STR8.md) for future STR8 candidate/winner policy.
+
+## REDOC: HIMON/STR8 Update Means Sector Rebuild
+
+```text
+2026
+         05
+                16
+                   22:42Z WLP2 Clarified that V0 HIMON/STR8 replacement
+                               means RAM-staged 4K sector rebuild, with S19
+                               as transport only.
+```
+
+scope: `STR8.md`, `STR8_DECISION_REFERENCE.md`,
+`STR8_FLASH_UPDATE_PROPOSAL.md`, `QCC_STR8.md`.
+
+change: The monitor update path now says V0 should stage a full 4K sector in
+RAM, merge incoming S19 bytes if S19 is used, confirm erase when the staged
+sector differs, erase the destination sector, write the full staged sector, and
+verify the whole sector. Direct 1->0 programming is demoted to later
+optimization or deliberate one-way flags.
+
+effect: Do not describe HIMON or STR8 replacement as a casual flash write,
+byte patch, or live S19 stream into monitor flash. It is a sector rebuild.
+
+action: Use the STR8 update notes before designing `U H`, `U S`, or any RAM
+updater that touches `$C000-$FFFF`.
+
+## REDOC: STR8 Wear, Scratch, And Partition Notes Added
+
+```text
+2026
+         05
+                16
+                   22:28Z WLP2 Added QCC and reference notes for WMAP wear
+                               records, TMP/STAGE scratch sectors, ASM RAM
+                               pressure, and a partitioned-bank thought
+                               experiment.
+```
+
+scope: `QCC_STR8.md`, `STR8.md`, `STR8_DECISION_REFERENCE.md`,
+`HASHED_ASM.md`.
+
+change: Wear counts are now framed as append-only hash-shaped `WMAP` metadata,
+not stolen bytes in image sectors or STR8 slack. Scratch flash is a future
+lease selected from reclaimable sectors, with 4K erase transactions still
+preserving or discarding neighboring policy windows explicitly. ASM now records
+RAM-first work products and explicit flash-stage behavior under RAM pressure.
+The partitioned-bank sketch is captured as a QCC thought experiment, not as a
+change to the current whole 32K image rotation contract.
+
+effect: Do not assume a hidden filesystem, silent ASM spill to flash, or
+an approved partitioned-bank design. The current STR8 recovery contract still
+uses whole 32K images unless a later decision explicitly promotes another map.
+
+action: Use [QCC_STR8.md](./QCC_STR8.md) for the unsettled STR8/STRAIGHTEN
+policy, [STR8.md](./STR8.md) for the current recovery narrative, and
+[HASHED_ASM.md](./HASHED_ASM.md) for ASM staging rules.
+
 ## REDOC: STR8 Flash-Manager QCC Expanded
 
 ```text

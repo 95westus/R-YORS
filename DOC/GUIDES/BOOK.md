@@ -17,6 +17,13 @@ Possible subtitle:
 R-YORS, HIMON, STR8, and the path from monitor commands to catalog-linked code
 ```
 
+Product subtitle:
+
+```text
+STR8 keeps the board alive. LEAF opens the interrupt front door. HIMON is the
+default workbench payload.
+```
+
 ## Book Promise
 
 The book is about building a small hashed runtime system from the bench up. It
@@ -56,6 +63,8 @@ The book should read in three layers:
 
 Proof lives in the guide set:
 
+- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - R-YORS, STR8, LEAF/IVI,
+  HIMON, and payload ownership lanes.
 - [DECISIONS.md](./DECISIONS.md) - settled calls.
 - [HASH.md](./HASH.md) and [HASH_MAP.md](./HASH_MAP.md) - hash and catalog model.
 - [HIMON_MAP.md](./HIMON_MAP.md) - monitor capability map.
@@ -261,13 +270,37 @@ Proof and notes:
 
 ## Part III: STR8 And Recovery
 
-### Chapter 8: STR8 As Recovery Anchor
+### Chapter 8: STR8 As Board Management Product
 
 Answer:
 
-STR8 exists so recovery does not depend on the thing being recovered. It owns
-safe boot, protected-window policy, image-oriented restore/backup, handoff to
-HIMON, and eventually guarded update transactions.
+STR8 exists so recovery does not depend on the thing being recovered. It is the
+board management product: safe boot, flash map, backup, restore, target install,
+verify, protected-window policy, and handoff.
+
+HIMON is the default workbench payload, not the reason STR8 exists. STR8 should
+be useful to someone who wants to install WDCMONv2, BETTERMON, BASIC, FORTH, a
+game, or a personal monitor without buying into the whole R-YORS runtime stack.
+
+The product boundary makes the book readable:
+
+```text
+R-YORS  the project/system direction
+STR8    board management and survival
+LEAF    BSO2/STR8's IVI path; IVI is pronounced IVY
+HIMON   default monitor payload and workbench
+THE     future hash/catalog environment
+```
+
+IVY grows into LEAF. IVI is the interrupt-vector indirection pattern; LEAF is
+the Latched Entry Address Frontdoor that makes it feel like a board feature
+instead of a register spreadsheet.
+
+Later, STR8 can learn a bigger transport language without changing that story.
+S1/S9 is enough for V0 install packages. A future S2/S8 `.s28` path can use
+24-bit addresses as physical SST39SF010A flash-chip addresses: bank 3, the
+reset/default boot bank, starts at physical flash `$18000`, so the boot bank can
+be named directly for bulk storage, retrieval, restore, and transport.
 
 STR8 V0 intentionally keeps console byte I/O private as `STR8_CON_*` rather
 than publishing duplicate `BIO_*` or `PIN_*` catalog providers.
@@ -275,12 +308,16 @@ than publishing duplicate `BIO_*` or `PIN_*` catalog providers.
 Questions:
 
 - What must be true before reset enters STR8 first?
-- Why should STR8 stay smaller than HIMON?
+- Why should STR8 stay useful without HIMON?
+- Why should STR8 stay smaller than any one payload?
+- What does LEAF provide without owning payload interrupt policy forever?
+- When does S1/S9 stay enough, and when does bank-aware S2/S8 transport help?
 - When should STR8 call shared services, and when should it carry private code?
 - How does future STR8-N participate in catalogs without owning all catalogs?
 
 Proof and notes:
 
+- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md)
 - [STR8.md](./STR8.md)
 - [RTFM-str8.md](./RTFM-str8.md)
 - [BRINGUP.md](./BRINGUP.md)

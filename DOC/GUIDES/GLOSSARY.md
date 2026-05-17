@@ -5,9 +5,12 @@
 Use these words precisely. When a word can mean more than one technical thing,
 prefer the specific form listed here instead of the bare word.
 
-- R-YORS: the whole project/system/runtime direction.
-- HIMON: the current monitor/debug/catalog environment.
-- STR8: the current recovery/update guard.
+- R-YORS: the whole project/system/runtime direction and current repo home.
+- HIMON: the current monitor/debug/catalog environment; the default bundled
+  monitor payload for STR8.
+- STR8: the board management product and current recovery/update guard.
+- LEAF: Latched Entry Address Frontdoor. BSO2/STR8's friendly IVI path: stable
+  vector stubs plus patchable latched entry addresses.
 - STR8-N / STRAIGHTEN: future expanded STR8 direction.
 - THE: The Hash Environment. THE is the hash-first lookup/catalog environment:
   canonical names, FNV-1a, hash8/hash16/hash32 storage, RCAT/RREC records,
@@ -15,6 +18,8 @@ prefer the specific form listed here instead of the bare word.
   A dispatcher may use THE; HIMON's current command dispatcher is the first
   concrete user.
 - ASM: the planned onboard assembler path.
+- payload target: a bootable/installable monitor, application, tool, or ROM
+  image selected by STR8. HIMON is the default payload target, not the only one.
 
 ## Normative Words
 
@@ -46,6 +51,9 @@ meaning is required.
 - trampoline: a tiny stable entry that jumps or calls into the current
   implementation.
 - vector: an address slot used by CPU/system dispatch.
+- IVI: Interrupt Vector Indirection, pronounced `IVY`. A stable STR8/vector-layer
+  front door where hardware vectors enter small stubs, and payloads patch
+  indirect targets or tables instead of reflashing the hardware vector block.
 - ABI: binary/register/address-level contract; use only when that precision is
   needed.
 - API: named software interface; usually `routine contract` is clearer here.
@@ -316,6 +324,17 @@ buried records gone.
 - bank: one selectable 32K flash view, visible at `$8000-$FFFF`.
 - bank 0-3: four different physical 32K images mapped into the same
   `$8000-$FFFF` view.
+- linear flash address: future STR8 transport address that names the physical
+  SST39SF010A flash-chip address as bank plus offset instead of only a
+  CPU-visible address. With 32K banks: `bank = address >> 15`,
+  `bank_offset = address & $7FFF`, and `cpu_address = $8000 + bank_offset`.
+  In the current four-bank map, bank 3 is the reset/default boot bank at
+  physical flash `$18000-$1FFFF`.
+- S1/S9 transport: current near-term S-record install-package shape using
+  16-bit S1 data records and an S9 termination record.
+- S2/S8 transport / `.s28`: future bank-aware S-record profile using 24-bit S2
+  data records and an S8 termination record. `.s28` is the file/profile name,
+  not a literal record type.
 - `$WLPB`: mnemonic for reading the four hex nibbles of a 16-bit CPU address:
   `W` = 4K window (`$W000-$WFFF`), `L` = 256-byte line
   (`$WL00-$WLFF`), `P` = 16-byte paragraph (`$WLP0-$WLPF`), and `B` =

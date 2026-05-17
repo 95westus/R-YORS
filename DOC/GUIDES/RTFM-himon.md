@@ -51,6 +51,7 @@ destructive commands.
 ```text
 ?              help
 # [token]      list records, or resolve token without executing it
+"text"         print FNV-1a32 for quoted text; reports STR8 match on #5F6A0F7A
 D start +count dump memory
 D start end    dump memory range
 M addr         modify memory
@@ -70,6 +71,11 @@ Q              quiesce with WAI, then re-enter on wake
 ```
 
 Use HIMON for normal work. Use STR8 for boot-image recovery and backup policy.
+
+The quoted-hash command uppercases input through HIMON's normal reader. A
+leading space after the opening quote is ignored, trailing spaces before the
+closing quote are trimmed, and text is hashed through the closing quote or end
+of line. It is an identity-marker Easter egg, not a security boundary.
 
 `B L` currently reports active breakpoint slots in table order. A future
 sorted-list helper should print breakpoint tables in address order, but that is

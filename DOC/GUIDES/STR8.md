@@ -29,6 +29,10 @@ Working definition:
 STR8 = the top-sector recovery anchor and flash mutation guard.
 ```
 
+Product-boundary definition: STR8 is the board management product inside
+R-YORS. See [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) for the split
+between R-YORS, STR8, LEAF/IVI, HIMON, and peer payload targets.
+
 System relationship:
 
 ```text
@@ -83,6 +87,19 @@ HIMON body:
   normal monitor/catalog/assembler/loader services
   can be updated by STR8
 ```
+
+The live bank has a deliberate budget target:
+
+```text
+$8000-$BFFF   16K user code/data/app space
+$C000-$EFFF   12K HIMON monitor/tools budget
+$F000-$FFFF    4K STR8 recovery-owned erase sector
+```
+
+This is a boundary target, not a panic rule. STR8 should stay inside the top
+4K sector and may use less than that. HIMON should fit below `$F000`; growing
+past the 12K budget should be an intentional call because it consumes user
+code/data space.
 
 The current V0 split is small, W65C02-specific, and gives STR8 the whole
 physical top flash sector so recovery code can keep growing without crowding
@@ -156,6 +173,63 @@ shared vector layer when that makes recovery safer. The preferred integration is
 through explicit hooks such as `SYS_VEC`/IRQ-vector services when they exist,
 rather than by silently claiming all practical NMI/BRK/IRQ behavior.
 
+During STR8-owned time, NMI should normally be inert. If an NMI edge arrives
+while STR8 is waiting, prompting, or doing recovery work, the reference behavior
+is a tiny STR8-safe target that returns with `RTI`; the button press does not
+become a command by itself. If STR8 needs operator input, it should poll a key,
+event latch, or request flag at safe points.
+
+Future supervisor entry may deliberately open a short boot recognition window
+where NMI sets a `STR8_SUP_REQUEST` flag and then returns. STR8 would poll that
+flag and choose supervisor/recovery mode before normal HIMON handoff. Before
+flash erase/write/verify starts, STR8 should restore inert NMI behavior and
+must not depend on asynchronous NMI as an event source.
+
+### Interrupt Vector Indirection
+
+`IVI` means Interrupt Vector Indirection and is pronounced `IVY`. If a user
+chooses STR8 as the board's boot/recovery product, STR8 may reasonably own the
+hardware vector front door and provide patchable indirect targets:
+
+```text
+RESET    -> STR8 reset supervisor
+NMI      -> IVI_NMI
+IRQ/BRK  -> IVI_IRQ_BRK
+
+IVI_NMI      -> JMP (IVI_NMI_VEC)
+IVI_IRQ_BRK  -> split stacked B flag
+  IRQ        -> JMP (IVI_IRQ_VEC)
+  BRK        -> decode BRK operand/signature, then dispatch
+```
+
+That is mechanism, not permanent interrupt policy. During STR8-owned time,
+these targets are safe defaults or recovery handlers. After handoff, the
+payload may install its own NMI, IRQ, and BRK targets through the documented
+patch points. HIMON can use IVI for NMI/debug re-entry, a real IRQ owner, and a
+BRK expansion table; another monitor can install different meanings without
+reflashing `$FFFA-$FFFF`.
+
+The product value is simple:
+
+```text
+install STR8 once
+hardware vectors stay recoverable
+payloads patch indirect vectors
+BRK services can grow behind one stable IRQ/BRK entry
+experiments do not require top-sector vector reflashing
+```
+
+Future BRK dispatch can reserve ranges without making STR8 own every meaning:
+
+```text
+BRK $00-$7F  payload/user/debug space
+BRK $80-$BF  STR8/IVI recovery or board services
+BRK $C0-$FF  system/future/reserved
+```
+
+The exact ranges are not settled. The important rule is that IVI may split and
+route BRK, while the selected payload owns the meanings it claims.
+
 Reference integration rule:
 
 ```text
@@ -221,8 +295,8 @@ Possible layouts:
 ```text
 Protected top-sector model:
   $8000-$BFFF          app/growth space in the selected ROM bank
-  $C000-$E62C          current HIMON body and data
-  $E62D-$EFFF          slack inside the used E sector
+  $C000-$E72D          current HIMON body and data
+  $E72E-$EFFF          slack inside the used E sector
   $F000-$FFFF          STR8 protected top sector
 
 RAM-updater model:
@@ -254,6 +328,7 @@ current ROM build links STR8 at $F000 and stores a RAM worker at $F800
 current ROM build copies the worker to $0200 before B/0/1/2 flash mutation
 current ROM build copies the worker to $0200 before E config mutation
 current ROM build has working B, E, 0, 1, 2, G, R, and ? commands
+current STR8 identity marker is `#5F6A0F7A`
 physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
@@ -679,35 +754,97 @@ operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. FNV, catalog
 lookup, wear leveling, and cycle counts are later work.
 
-## STR8/HIMON Update Direction
+Partitioned-bank layouts remain QCC thought experiments until promoted. They
+are not part of the current `B`, `0`, `1`, and `2` recovery contract.
+
+## STR8 Target Update Direction
 
 The flash guard should stay in place. Updating HIMON or STR8 should not mean
 "turn off the guard and let a ROM-resident command erase whatever it is running
-from." The safer shape is a confirmed RAM-resident sector transaction.
+from." The safer shape is a confirmed RAM-resident sector rebuild.
 
-Generic sector update:
+The V0 installer should be target/range-shaped, not HIMON-shaped. HIMON is the
+default bundled target and the first useful proof, but the operation should read
+as "install this target image/range" so another monitor or app can use the same
+path later:
+
+```text
+target name:     HIMON, BETTERMON, app, or explicit range
+target range:    bank plus CPU-visible address range
+entry address:   where STR8 should hand off after validation
+protected range: what must not be erased by this install
+```
+
+For V0, treat target replacement as a sector erase/rebuild operation, not as a
+casual flash write or byte patch:
 
 ```text
 select destination bank and 4K sector
 read the live destination sector into the RAM staging buffer
-apply the new bytes to the staged sector image
+receive S19 bytes as transport, if needed
+merge incoming bytes into the staged 4K sector image
 compare staged image with live flash
-if all changes are 1->0, program changed bytes and verify
-if any change needs 0->1, ask for erase confirmation
-after confirmation, erase the destination sector
+if staged image matches flash: report OK, no erase
+if staged image differs: confirm sector erase
+erase the destination sector
 write the complete staged sector back
 verify the complete sector by read-back compare
 restore bank 3 before printing status
 ```
 
-This is a good fit for ordinary HIMON body sectors. STR8 can keep the guard,
-but still provide a deliberate tool that knows which sector is being rebuilt
-and whether an erase is required.
+The 1->0 direct-program shortcut is later optimization, not the first
+target-update contract. V0 may still clear tiny one-way config bits such as
+`B0 HOLD -> B0 ROT`, but monitor replacement should be a whole-sector rebuild.
+
+S19 is only the transport format. STR8 should collect or merge S19 data into a
+complete 4K RAM sector image before flash is touched. This preserves bytes that
+the S19 did not mention.
+
+For now, creating that install transport is still an off-board packaging step.
+The host build creates the vector-complete ROM `.bin`, then converts the needed
+image/range back into S1/S9 text for the board to receive. The board consumes
+the S19; it does not yet manufacture S19 from a binary image. That can change
+after onboard ASM/export tooling or a STR8 image builder can hand STR8 complete
+sector images or sealed candidate records directly.
+
+Future STR8 may also accept bank-aware S2/S8 `.s28` transport. S2 records carry
+24-bit addresses, so the extra byte can name the physical SST39SF010A flash
+address instead of only repeating CPU-visible `$8000-$FFFF` addresses. A simple
+four-bank physical flash-chip map would be:
+
+```text
+bank 0  physical flash $00000-$07FFF
+bank 1  physical flash $08000-$0FFFF
+bank 2  physical flash $10000-$17FFF
+bank 3  physical flash $18000-$1FFFF  reset/default boot bank
+```
+
+STR8 would translate that address into `bank`, `bank_offset`, and
+`$8000 + bank_offset`, then apply the same protected-window and sector-rebuild
+rules before writing anything. That makes `.s28` a good later fast path for
+bulk bank storage/retrieval/transport, while V0 can stay with S1/S9 packages.
+
+Current helper target:
+
+```text
+make -C SRC himon-str8-rom-install-s19
+```
+
+It writes `BUILD/s19/himon-str8-rom-install.s19` from the vector-complete
+`BUILD/bin/himon-str8-rom.bin`.
+
+This is a good fit for ordinary HIMON body sectors. Updating `$C000-$EFFF`
+should rebuild only the touched HIMON sectors and leave the `$F000-$FFFF`
+recovery sector intact. If the new HIMON is bad, reset should still reach STR8.
+The same rule applies to a non-HIMON target: rebuild only the target-owned
+sectors, preserve STR8's recovery sector, and do not assume the payload is
+called HIMON in the low-level installer.
 
 The top sector needs stricter policy. `$F000-$FFFF` contains STR8, the RAM
 worker source copy, the config pocket, and vectors. Updating that sector must
 preserve the non-target bytes unless the operator explicitly requested a STR8
-update.
+update. A failed top-sector rebuild can remove the reset vector or recovery
+code, so this path remains the dangerous one.
 
 STR8 self-update is the special case:
 
@@ -726,6 +863,18 @@ Pack STR8 code and data back-to-back, reserve only deliberate fixed pockets
 such as `$FFF0-$FFF9`, and treat the remaining slack as growth space. Repeated
 write counters belong in a separate metadata sector if they become important;
 they should not force routine erases of STR8's protected sector.
+
+Wear maps and scratch use should remain hash-shaped rather than file-shaped. A
+future wear map can be an append-only `WMAP` record: write the newer map, verify
+it, seal it, and let hash/kind/generation select the newest sealed map. A future
+scratch sector can be a `TMP` or `STAGE` lease chosen from erased or
+reclaimable low-wear sectors, but it must never contain the only valid copy of
+anything required for boot or recovery.
+
+Two 2K policy windows can share two 4K sectors, but erase remains 4K. If a 2K
+`WMAP` or `STAGE` window in sector X ping-pongs with a matching window in
+sector Y, the other half of each sector must be preserved through the sector
+transaction or be explicitly disposable.
 
 ## Self-Referencing Flash Content
 
@@ -837,7 +986,8 @@ aggressive compression ratio.
 ## Open Decisions
 
 - What fixed image marker/check should STR8 V0 use for whole-image recovery
-  images?
+- Should whole-image recovery use the STR8 identity marker `#5F6A0F7A`, a
+  separate per-image check, or both?
 - Which catalog, FNV, scan, and vector-layer hooks should future
   STR8-N/STRAIGHTEN offer without requiring ownership of user memory or
   interrupt policy?

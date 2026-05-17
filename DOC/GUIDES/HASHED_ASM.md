@@ -742,6 +742,77 @@ may fail, duplicate code, or generate many fixups.
 `EXPORT` belongs after this stage: the symbol should become globally visible
 only after the staged image has resolved and committed cleanly.
 
+### ASM Work Products And RAM Pressure
+
+Interactive ASM should treat parsing as work, not as a flash promise. The
+ordinary flow is:
+
+```text
+console line -> RAM line buffer
+parse/hash -> RAM scratch
+emit bytes -> RAM object/stage buffer
+fixups/exports -> RAM tables while they fit
+flash -> only after explicit commit
+```
+
+If RAM fills, ASM should stop at a visible boundary instead of silently spilling
+into final flash. First-version choices should be simple:
+
+```text
+COMMIT current staged unit
+DISCARD current staged unit
+ENTER explicit flash-stage mode
+```
+
+Flash-stage mode is not a filesystem. It should append hash-shaped provisional
+records such as `ASM_STAGE`, `ASM_FIX`, or `ASM_SYM`, verify them, and later
+seal final `CODE` and catalog records only after the assembly unit is complete.
+Failed or abandoned stage records remain non-final until a later condense
+operation reclaims their sectors.
+
+This keeps the assembler small-unit friendly: assemble one routine or module
+fragment, seal its exports, then let later code import those exports by
+hash/name. Large builds can use explicit staging or host-assisted replay rather
+than turning every pasted source line into permanent flash history.
+
+### Onboard ASM Update Products
+
+Onboard ASM does not need to create S19. S19 is a host-to-board transport
+format. If ASM is running on the board, its natural products are RAM candidates,
+hash records, and staged sector images:
+
+```text
+RAM candidate bytes
+ASM_STAGE provisional records
+ASM_FIX resolved or pending fixups
+ASM_SYM local symbol spill, if needed
+CODE final bytes after verification
+RCAT/RREC catalog/export metadata
+BOOT/XMON candidate or winner records, later
+```
+
+The future monitor-update flow should therefore be candidate-shaped:
+
+```text
+write new XMON/HIMON code
+assemble/build into RAM while possible
+test from RAM if the module can run there
+stage candidate records or sector images
+verify staged bytes
+seal candidate records
+publish a tiny final winner record only after verification
+reboot through STR8
+```
+
+The atomic action is not "write the whole monitor atomically." Flash cannot
+promise that. The atomic action is the final small commit that makes a sealed,
+verified candidate the winner. Before that commit, the old monitor remains the
+winner. After that commit, STR8 may try the new winner and still keep enough
+metadata to fall back to the previous sealed candidate if boot validation fails.
+
+This keeps onboard ASM native to R-YORS instead of making it pretend to be a
+host S19 generator.
+
 ### Flash Assembly
 
 In flash, the assembler must be stricter because normal flash programming only

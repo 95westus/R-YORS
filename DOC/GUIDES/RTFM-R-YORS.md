@@ -45,13 +45,25 @@ transitional until the command surface is revised.
 
 ```text
 primary image:   SRC/BUILD/bin/himon-str8-rom.bin
-HIMON:           $C000-$E62C
-STR8 image:      $F000-$F667
+HIMON:           $C000-$E72D
+STR8 image:      $F000-$F71E
+STR8 identity:   #5F6A0F7A, marker bytes at $F481 = 7A 0F 6A 5F
 worker source:   $F800-$FA92, copied to $0200 when needed
 STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF
 ```
+
+Target live-bank budget:
+
+```text
+$8000-$BFFF   16K user code/data
+$C000-$EFFF   12K HIMON budget
+$F000-$FFFF    4K STR8 recovery sector
+```
+
+HIMON growth past `$EFFF` should be deliberate because it eats user space.
+STR8 may use less than 4K, but the whole top sector is recovery-owned.
 
 Build the combined image with:
 
@@ -65,13 +77,22 @@ After burn, these should match:
 
 ```text
 D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
-D F000 +10   78 D8 A2 FF 9A 20 1D F0 ...
+D F000 +10   78 D8 A2 FF 9A 20 23 F0 ...
 D F800 +10   08 78 AD 07 0A C9 04 F0 ...
-D FFFA FFFF  1C DE 00 F0 1F DE
+D FFFA FFFF  0B DF 00 F0 0E DF
 ```
 
-On reset, STR8 should initialize FTDI, print `HIMON IN 3S. S=STR8`, and count
-down `3 2 1`. Press `S` during that delay to show the STR8 prompt.
+On reset, STR8 should initialize FTDI, wait briefly, print the R-YORS banner,
+then print `HIMON IN 3S. S=STR8` and count down `3 2 1`. Press `S` during
+that countdown to show the STR8 prompt.
+
+```text
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+```
 
 ## Flash Banks
 
@@ -88,7 +109,7 @@ that, Bank 0 joins backup rotation and may be erased by future backups.
 ## STR8 Keys
 
 ```text
-?       print STR8 ID/state
+?       print STR8 ID/state, including `#5F6A0F7A`
 B       backup rotation
 E       enroll Bank 0 into rotation, destructive, confirmed
 M       map bank/sector status, + used and - erased

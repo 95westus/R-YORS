@@ -1,0 +1,81 @@
+this file is named ID10Toms.txt
+
+this file is to be fed into ai as some background/history/nostalgia.
+
+ID10T, idiot.. i need to work this in somewhere, perhaps a section/chapter in the book
+
+While growing up i was always interested in space,
+science et and my parents encourged me.
+
+my 10th grade algerbra class had an Perkin-Elmer
+Interdata 7/16 computer, and I had found a passion.
+
+i was one of 3 or 4 other 10 graders and 2 seniors
+and the majority of 11th.
+
+There were 5 ASR? tty33's? with huge rolls of a
+yellowish paper in the carriage and oiled punch
+tape, that would stain your printout in 24 hours.
+There were 3 crt's although i could not remember
+the brand.
+
+I cant remember if I had a seperate class of 
+Computer Science, but eventually Mr. McCarthy
+let me begin booting the system in the morning.
+I took to BASIC. I remember a Star Treck Program,
+modifying a 'Mcdonalds Automated Order/Point of 
+Sale' program. McDonald's steaks were 8.95. The
+steaks were trimmed to weigh exactly the same.
+
+My father supervised some lower ranked airmen.
+My father came to me with a request. He needed,
+in triplicate, a printout that looked like a set 
+of orders for one of his buddies, to someplace
+worse than England in the late 70's. This must 
+have been in the 11th grade, becuase the system 
+in the 10th grade was just that, 8 devices.
+
+during the summer the computer was updated to 
+2 8 inch floppy drives, more memory and a 132 
+character line printer.
+
+Anyway, I didnt (and still dont know how to type)
+so I typed for days, after school. Walking from
+RAF Lakenheath to off base housing closer to Mildenhall.
+
+being such a poor typist, i left semicolons off of 
+PRINT statements, so some lines continued where
+others had started on a new line, but in the in,
+the joke was worth helping my dad.
+
+Anyway, this is also about the W65C02S project(s) i have going.
+I kick myself giving a OSI C4P that had 24K of ram and
+a floppy drive to my first wife's brother's wife.
+
+I have looked. I tried a Parralax Propeller controlled 6502 system.
+I tried the Olimex 6502 product. I even purchased Ben Eater's clock and 6502 breadboard kits.
+But I suck at small things, or I have just enough 
+information to be dangerous.
+
+So i was excited aabout the W65C02SXB/EDU boards,
+and this is from a company created by one of THE pioneers
+of microcomputing, and 6502 in particular.
+
+I had poured over thru the docs online, I still didnt understand.
+I printed everything I could find about the board and its software.
+
+I have realized I am way to overconfident in my technology skillset.
+10 years in a call center will kill braincells!
+
+My background. BASIC, 6502 due to OSI's documentation.
+FORTRAN from The 7/16. I remember cowriting a program
+with Dale that would solve chemical equasions. It was so large
+that the 7/16 was partitioned into 2 active terminals due to memory constrainsts.
+
+FORTRAN continued at Kilgore College in my senior year. 
+on an IBM 360.
+
+I also got a job as data entry/gopher during my senior year.
+an IBM S/34. I guess that is where the IBM way(ish)
+or the love/hate of RPG began.
+

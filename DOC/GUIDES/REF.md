@@ -99,10 +99,10 @@ Flash-bank and flash-window vocabulary:
 $0000-$7FFF  same RAM/IO decode regardless of flash bank
 $8000-$FFFF  selected 32K flash window
 
-bank 0       physical flash $00000-$07FFF, visible at $8000-$FFFF when selected
-bank 1       physical flash $08000-$0FFFF, visible at $8000-$FFFF when selected
-bank 2       physical flash $10000-$17FFF, visible at $8000-$FFFF when selected
-bank 3       physical flash $18000-$1FFFF, visible at $8000-$FFFF at reset/default
+bank 0       SST39SF010A physical flash $00000-$07FFF, visible at $8000-$FFFF when selected
+bank 1       SST39SF010A physical flash $08000-$0FFFF, visible at $8000-$FFFF when selected
+bank 2       SST39SF010A physical flash $10000-$17FFF, visible at $8000-$FFFF when selected
+bank 3       SST39SF010A physical flash $18000-$1FFFF, visible at $8000-$FFFF at reset/default boot
 ```
 
 Routine naming rule:

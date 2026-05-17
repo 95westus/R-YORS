@@ -6,6 +6,8 @@ This is the top index for the `ror` documentation set.
 
 - [TOC.md](./TOC.md) - recommended reading order.
 - [MAP.md](./MAP.md) - documentation map and system map.
+- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - R-YORS, STR8, LEAF/IVI,
+  HIMON, and payload ownership lanes.
 - [BOOK.md](./BOOK.md) - narrative spine for the hashed runtime system book.
 - [HASH_FLASH.md](./HASH_FLASH.md) - short alert stream for command-surface changes.
 - [DOC_FLASH.md](./DOC_FLASH.md) - short alert stream for doc/edict changes.
@@ -34,6 +36,9 @@ This is the top index for the `ror` documentation set.
 - [DECISIONS.md](./DECISIONS.md) - naming, hash, STR8, ASM, local-home,
   and doc-shape decisions.
 - [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
+- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - current product boundary:
+  R-YORS as project, STR8 as board management, LEAF/IVI as interrupt front
+  door, HIMON as default payload, and other payloads as peers.
 - [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - reconstruction of
   HIMON stages and routine-class families.
 - [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor.

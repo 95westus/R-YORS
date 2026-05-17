@@ -21,16 +21,39 @@ not a pattern for adding more destructive short commands.
 
 ```text
 combined image:  SRC/BUILD/bin/himon-str8-rom.bin
-HIMON:           $C000-$E62C
-STR8 image:      $F000-$F667
+identity marker: STR8 V0 #5F6A0F7A
+HIMON:           $C000-$E72D
+STR8 image:      $F000-$F71E
+marker bytes:    $F481 = 7A 0F 6A 5F
 worker source:   $F800-$FA92, copied to RAM when needed
 STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF
 ```
 
-On reset, STR8 initializes the FTDI path, prints `HIMON IN 3S. S=STR8`, then
-counts down `3 2 1`. Press `S` during that delay to enter STR8.
+Target live-bank budget:
+
+```text
+$8000-$BFFF   16K user code/data
+$C000-$EFFF   12K HIMON budget
+$F000-$FFFF    4K STR8 recovery sector
+```
+
+STR8 may use less than 4K, but the whole top sector is recovery-owned.
+
+On reset, STR8 initializes the FTDI path, waits briefly, prints the R-YORS
+banner, then prints `HIMON IN 3S. S=STR8` and counts down `3 2 1`. Press `S`
+during that countdown to enter STR8.
+
+Current banner:
+
+```text
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+```
 
 If the countdown expires, STR8 clears HIMON's warm-reset signature before
 jumping to `$C000`, so HIMON takes its cold path. STR8's explicit `G` command
@@ -39,7 +62,7 @@ still uses the warm handoff.
 ## Commands
 
 ```text
-?       print STR8 ID and Bank 0 state
+?       print `STR8 V0 #5F6A0F7A` and Bank 0 state
 B       run backup rotation, with verify
 E       enroll Bank 0 into backup rotation, destructive, confirmed
 M       map banks/sectors as used `+` or erased `-`
@@ -145,9 +168,9 @@ current image:
 
 ```text
 D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
-D F000 +10   78 D8 A2 FF 9A 20 1D F0 ...
+D F000 +10   78 D8 A2 FF 9A 20 23 F0 ...
 D F800 +10   08 78 AD 07 0A C9 04 F0 ...
-D FFFA FFFF  1C DE 00 F0 1F DE
+D FFFA FFFF  0B DF 00 F0 0E DF
 ```
 
 ## Updating HIMON Or STR8

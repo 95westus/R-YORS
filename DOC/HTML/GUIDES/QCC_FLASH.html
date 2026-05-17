@@ -12,6 +12,13 @@
 <h1 id="qcc-flash">QCC Flash</h1>
 <p>This page keeps flash-record questions in QCC form. These are working design notes, not final wire format.</p>
 <p>Glossary decision: <code>formed</code>, <code>sealed</code>, <code>buried</code>, and <code>gone</code> are the preferred flash lifecycle words. <code>Condense</code> is the official sector rebuild term; collapse/compress may appear as informal synonyms.</p>
+<h2 id="q-is-writing-ff-to-erased-flash-the-same-as-an-erase">Q: Is writing <code>$FF</code> to erased flash the same as an erase?</h2>
+<p>Comment: No. Erased flash normally reads as all <code>1</code> bits, so an erased byte will read <code>$FF</code> / <code>%11111111</code>. Programming <code>$FF</code> into a location that is already erased leaves the visible user byte unchanged, but it is still a program operation, not an erase operation.</p>
+<p>Flash programming is one-way at the bit level:</p>
+<pre><code class="language-text">1 -&gt; 0  program can do this
+0 -&gt; 1  erase must do this</code></pre>
+<p>So writing <code>$FF</code> cannot restore a programmed <code>0</code> bit back to <code>1</code>. Only erase can do that, and erase happens at sector/block scale rather than as a byte update.</p>
+<p>Concern: Treat <code>$FF</code> writes as redundant writes, not as harmless erases. On a simple raw cell the user bits do not change, and the stress is usually much less significant than a sector erase. But real flash parts and controllers may still apply program pulses, update hidden ECC/status bits, restrict repeated programming of the same word/page, or make a location no longer blank in a device-specific sense. Writers should skip <code>$FF</code> bytes/words when possible, and blanking logic must use real erase.</p>
 <h2 id="q-how-can-the-compact-signature-carry-lifecycle-state">Q: How can the compact signature carry lifecycle state?</h2>
 <p>Comment: Use the third signature byte as packed <code>V</code> plus three active-low lifecycle bits:</p>
 <pre><code class="language-text">&#39;F&#39; &#39;N&#39; %FSB10110</code></pre>
@@ -161,7 +168,7 @@ old records are buried or no longer winners
 then sector may be erased</code></pre>
 <p>Concern: Power loss halfway through must leave at least one valid winner. That means the new copy should be written and sealed before the old copy is buried, and erase should be the final cleanup step, not the commit step.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_FLASH.md</code>. Source modified: <time>2026-05-15T23:57:17Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_FLASH.md</code>. Source modified: <time>2026-05-17T15:36:20Z</time>. HTML generated: <time>2026-05-17T17:06:08Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

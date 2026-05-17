@@ -23,6 +23,22 @@ protected recovery window
 handoff to HIMON
 future condense/compress calls</code></pre>
 <p>Concern: Normal interactive monitor behavior belongs to HIMON. STR8 should not grow into a second full monitor by accident.</p>
+<h2 id="q-where-do-wear-counts-and-scratch-sectors-live">Q: Where do wear counts and scratch sectors live?</h2>
+<p>Comment: Not in stolen bytes inside ordinary data sectors, and not in hidden holes in the STR8 top sector. If R-YORS records erase wear, it should do so as explicit flash metadata, probably named by hash/kind as <code>WMAP</code> rather than as a filesystem file.</p>
+<p>Exact erase counts to 100,000 need 17 bits. If R-YORS only records each 128th erase event, the persistent bucket count needs only 10 bits because:</p>
+<pre><code class="language-text">ceil(100000 / 128) = 782</code></pre>
+<p>That makes the counter payload small, but the flash physics are still sector physics. A tiny counter table still needs an erase-sector home. The preferred future shape is append-only:</p>
+<pre><code class="language-text">write a newer WMAP record
+verify it
+seal it
+let hash/kind/generation choose the newest sealed WMAP
+bury or ignore old WMAP records until condense</code></pre>
+<p>Temporary flash should be treated as a lease, not as storage holding the only truth. A future STRAIGHTEN scratch chooser may pick an erased sector with low wear, but the scratch sector must be free, reclaimable, or fully staged before erase:</p>
+<pre><code class="language-text">TMP    disposable work area; no only-copy truth
+STAGE  provisional transaction area with hash/check/state
+FINAL  sealed hash-visible records or image bytes</code></pre>
+<p>Half-sector policy windows are possible, but they are not erase units. A 2K window in sector X and a 2K window in sector Y can ping-pong only if STR8 treats reclaim as a full 4K sector transaction and preserves or discards the other 2K half by explicit policy.</p>
+<p>Concern: A &quot;least worn scratch sector&quot; does not exist until the bank layout has a managed pool. V0 banks 0-2 are still recovery images, and bank 3 is still the live boot bank. STR8 must not borrow protected STR8/vector bytes, live boot required bytes, the only valid backup image, or sealed final records just because a sector has attractive wear.</p>
 <h2 id="q-how-should-str8-treat-a-factory-wdcmonv2-image">Q: How should STR8 treat a factory WDCMONv2 image?</h2>
 <p>Comment: The preferred recovery story is full-bank preservation, not clever partial reconstruction. If a stock board arrives with WDC code in the <code>$8000-$FFFF</code> flash window and WDCMONv2 near the top of ROM, STR8 should first preserve that default image as a complete 32K bank before R-YORS becomes the live boot image:</p>
 <pre><code class="language-text">Bank 0  WDC factory/base image, B0 HOLD
@@ -31,6 +47,81 @@ Bank 2  newer R-YORS backup
 Bank 3  live boot image</code></pre>
 <p>&quot;Purge WDCMONv2&quot; should mean &quot;remove it from the live boot bank after a verified factory image has been stashed,&quot; not &quot;erase the only copy.&quot; A restore from Bank 0 can deliberately return the board to WDC-style behavior. The operator warning should be loud because restoring Bank 0 may remove R-YORS from the ordinary live image.</p>
 <p>Concern: Coexistence is possible only when the address ranges and vectors do not fight. Current R-YORS STR8 owns the <code>$F000-$FFFF</code> top sector; a stock WDCMONv2-at-<code>$F800</code> image cannot coexist with that layout in the same live bank without either moving/relinking something, preserving WDCMONv2 in another bank, or letting WDCMONv2 remain the boot owner.</p>
+<h2 id="q-what-if-a-future-bank-layout-stopped-being-whole-32k-images">Q: What if a future bank layout stopped being whole 32K images?</h2>
+<p>Comment: This is a thought experiment, not a change to the current STR8 bank policy. The current proof uses whole 32K images because the recovery rule is simple and visible. If a later design reserved banks and divided one bank into smaller image or staging regions, it might look like:</p>
+<pre><code class="language-text">bank 0  WDC/base/reserved
+bank 1  reserved for future managed use
+bank 2  lower 16K image slot
+bank 2  upper 16K image slot
+bank 3  $8000-$BFFF reserved/growth/stage
+bank 3  $C000-$FFFF HIMON/STR8/vector</code></pre>
+<p>If the shorthand is written as <code>0-7</code> and <code>8-F</code>, the implementation document must translate it into exact bank-relative sectors or CPU-visible ranges before any flash writer trusts it. On this board, each selected 32K bank maps to <code>$8000-$FFFF</code> and contains eight 4K erase sectors, so range names must not hide the physical geometry.</p>
+<p>Smaller image slots need explicit records:</p>
+<pre><code class="language-text">bank
+start address
+length
+entry address, if executable
+hash/check
+generation
+role
+protected ranges
+dependencies</code></pre>
+<p>This can be useful. A 16K payload below <code>$C000</code> can coexist with a fixed HIMON/STR8 top half. A 16K upper-half image is more dangerous because it overlaps HIMON, STR8, the config pocket, and vectors unless the operation is an explicit protected update.</p>
+<p>Concern: Once a bank is partitioned this way, automatic <code>B</code> backup rotation can no longer pretend the bank is one complete 32K image. STR8 needs range-aware restore and verify rules, and the map display must say which sectors are reserved, staged, final, image, WDC/base, HIMON, and STR8.</p>
+<h2 id="q-what-kind-of-wdcmonv2-bridge-should-r-yors-build">Q: What kind of WDCMONv2 bridge should R-YORS build?</h2>
+<p>Comment: A vector-only bridge is attractive because the final hardware vectors are tiny:</p>
+<pre><code class="language-text">$FFFA-$FFFB  NMI
+$FFFC-$FFFD  RESET
+$FFFE-$FFFF  IRQ/BRK</code></pre>
+<p>Changing those six bytes can choose which monitor receives reset, NMI, and IRQ/BRK, but only if the code bodies for both choices already exist at non-overlapping addresses. The vectors pick an entry point; they do not make two different programs fit at the same address.</p>
+<p>Current conflict:</p>
+<pre><code class="language-text">STR8 current top sector  $F000-$FFFF
+WDCMONv2 possible body   $F800-$FFFF</code></pre>
+<p>If WDCMONv2 really occupies <code>$F800-$FFFF</code>, and STR8 also stores code/worker material there, a vector-only switch cannot make the board be WDCMONv2 one moment and R-YORS the next inside the same live bank. One image must move, be stashed in another bank, or be restored by a fuller transaction.</p>
+<p>Possible bridge shapes:</p>
+<pre><code class="language-text">vector-only bridge:
+  both monitor bodies already present
+  non-overlapping code ranges
+  vectors select the active entry
+
+shared top-sector trampoline:
+  tiny stable reset owner remains fixed
+  trampoline selects WDCMONv2 or STR8/HIMON
+  requires planned top-sector layout
+
+full top-sector transaction:
+  stage $F000-$FFFF in RAM
+  merge desired monitor/top-sector bytes
+  preserve or rebuild config/vectors
+  erase/write/verify the full sector
+
+full-bank restore bridge:
+  preserve WDCMONv2 as a complete Bank 0 image
+  restore Bank 0 -&gt; Bank 3 for WDC mode
+  reinstall or restore R-YORS for R-YORS mode</code></pre>
+<p>Concern: The vectors live inside the same <code>$F000-$FFFF</code> erase sector as the top monitor code. Flash can clear bits from <code>1</code> to <code>0</code> without erase, but it cannot set <code>0</code> bits back to <code>1</code>. Any vector change that needs <code>0-&gt;1</code> requires a full top-sector erase/rewrite, so the bridge must already be prepared to stage and preserve the rest of <code>$F000-$FFFF</code>.</p>
+<h2 id="q-what-should-the-first-wdcmonv2-ram-bridge-do">Q: What should the first WDCMONv2 RAM bridge do?</h2>
+<p>Comment: The first bridge should look like a normal WDC-loaded program, in the same spirit as the stock/demo programs that WDCMONv2 already knows how to load and run. WDCMONv2 is the launch ramp, not the permanent owner of the update policy.</p>
+<p>The bridge should run from RAM and ask only a few plain questions:</p>
+<pre><code class="language-text">WDC RYORS BRIDGE
+
+BACKUP LIVE BANK 3 TO BANK 0? Y/N
+INSTALL STR8/R-YORS TO BANK 3? Y/N</code></pre>
+<p>Before asking, it should print the facts it thinks it sees:</p>
+<pre><code class="language-text">LIVE=B3
+B0=ERASED/USED/UNKNOWN
+TOP=WDCMON/RYORS/UNKNOWN
+TARGET=RYORS 0.0517 #89ABCDEF</code></pre>
+<p>The backup action is full-bank preservation:</p>
+<pre><code class="language-text">if B0 is erased:
+  copy live Bank 3 -&gt; Bank 0
+  verify Bank 0 == original Bank 3
+  leave Bank 0 conceptually B0 HOLD
+
+if B0 is used:
+  refuse or require a stronger typed confirmation before erase</code></pre>
+<p>The install action should receive or carry a R-YORS/STR8 install payload, stage dangerous sectors in RAM, write/verify from RAM, and reset into STR8 when the live boot image is valid enough.</p>
+<p>Concern: Once flash mutation begins, the bridge must not depend on WDCMONv2 ROM calls. It may use WDCMONv2 to get launched and perhaps to receive bytes before the flash transaction, but the erase/write/verify core has to be self-contained in RAM. If the bridge replaces the live top sector and fails halfway, recovery may require the saved Bank 0 image, a WDC bridge rerun, or the external programmer.</p>
 <h2 id="q-what-boring-features-are-worthwhile-for-str8">Q: What boring features are worthwhile for STR8?</h2>
 <p>Comment: STR8 should be the small flash manager, not a second rich monitor. Its value is that flash operations become explicit, repeatable, and boring:</p>
 <pre><code class="language-text">IDENTIFY
@@ -45,6 +136,54 @@ VERIFY</code></pre>
 <pre><code class="language-text">RYORS 0.0517 #89ABCDEF B0 HOLD</code></pre>
 <p>The displayed epoch date is <code>(year - 2026).MMDD</code>. The hash should identify the canonical image text, while mutable policy such as <code>B0 HOLD</code> comes from the STR8 config byte rather than being part of the image hash.</p>
 <p>Concern: &quot;Boring&quot; must not mean vague. Each operation should say what range it will touch, whether erase is required, what is preserved, what was verified, and whether bank 3 was restored before any ROM code resumes.</p>
+<h2 id="q-can-str8-yield-to-monitors-or-apps-other-than-himon">Q: Can STR8 yield to monitors or apps other than HIMON?</h2>
+<p>Comment: Yes, later. STR8 does not have to mean &quot;the thing that only starts HIMON.&quot; It can become the tiny boot/recovery chooser that validates a target and yields to it:</p>
+<pre><code class="language-text">LOMON   low/small monitor
+MIDMON  middle monitor/tools
+HIMON   full R-YORS monitor
+CHESS   app/game/demo target
+WDC     restored factory/base image</code></pre>
+<p>A future boot-target display could stay compact:</p>
+<pre><code class="language-text">STR8&gt;BOOT
+0 WDC    B0  #12345678
+1 LOMON  B3  $9000
+2 MIDMON B3  $A000
+3 HIMON  B3  $C000
+4 CHESS  B3  $8000</code></pre>
+<p>For V0, <code>G</code> can remain the simple HIMON handoff. The richer target table should wait until STR8 has reliable identity, map, verify, and install behavior.</p>
+<p>Concern: A boot-target table must not turn STR8 into a general application shell. STR8 should verify enough to avoid jumping into garbage, select the bank/range if needed, and jump. The target owns its own UI, memory rules, and return/reset behavior.</p>
+<h2 id="q-could-str8-become-the-useful-product-by-itself">Q: Could STR8 become the useful product by itself?</h2>
+<p>Comment: Yes. STR8 can be valuable as a neutral W65C02SXB boot/recovery tool even for users who do not want HIMON, THE, R-YORS catalogs, or the later assembler/runtime stack. In that shape, STR8 is a small board utility:</p>
+<pre><code class="language-text">bank-aware boot selector
+factory-image saver
+flash backup/restore guard
+installer/verifier
+known-good escape hatch</code></pre>
+<p>The product boundary should stay layered:</p>
+<pre><code class="language-text">STR8 core     tiny, boring, recovery-safe
+STR8 menu     optional boot chooser UI
+HIMON         one possible payload
+R-YORS        one possible full stack</code></pre>
+<p>Boot behavior should be quiet by default:</p>
+<pre><code class="language-text">reset -&gt; STR8
+if default target is valid and no key pressed: boot it
+if key pressed or target bad: show menu/recovery</code></pre>
+<p>An eventual menu could be useful without being a full monitor:</p>
+<pre><code class="language-text">STR8 BOOT
+0 WDCMON  B0  $F800  #12345678
+1 BASIC   B3  $8000  #...
+2 FORTH   B3  $A000  #...
+3 HIMON   B3  $C000  #...
+4 CHESS   B2  $8000  #...</code></pre>
+<p>Target records probably need only compact facts:</p>
+<pre><code class="language-text">name
+bank
+entry address
+protected ranges
+hash/check
+default flag
+role/notes</code></pre>
+<p>Concern: STR8-as-product must not require the user to buy into the rest of R-YORS. The menu must remain optional, compact, and recovery-oriented. If STR8 becomes too chatty, catalog-heavy, or application-like, it stops being the thing an operator trusts when the payload is broken.</p>
 <h2 id="q-should-str8-load-update-himon-and-str8-itself">Q: Should STR8 load/update HIMON and STR8 itself?</h2>
 <p>Comment: Yes. STR8 is the right authority for dangerous flash update flows. HIMON may receive, inspect, or prepare an update package, but STR8 should make the flash decision:</p>
 <pre><code class="language-text">is the target range legal?
@@ -158,7 +297,7 @@ LED_ERROR</code></pre>
 <p>Comment: STR8 is still deciding how small it stays in V0 and how much future STRAIGHTEN will own.</p>
 <p>Concern: Settled boundaries should move into <code>DECISIONS.md</code>; experiments and &quot;what if STR8 owns this?&quot; should stay here until proved.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_STR8.md</code>. Source modified: <time>2026-05-17T02:04:27Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_STR8.md</code>. Source modified: <time>2026-05-17T03:30:15Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

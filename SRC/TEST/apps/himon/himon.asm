@@ -76,6 +76,10 @@ CMD_ABORT_TOP            EQU             $04
 ;   kind=$00: executable code begins immediately after the kind byte.
 CMD_FNV_SIG2             EQU             ('V'+$80)
 CMD_HASH_SCAN_BASE_HI    EQU             $80
+QUOTE_HASH_TARGET0       EQU             $7A
+QUOTE_HASH_TARGET1       EQU             $0F
+QUOTE_HASH_TARGET2       EQU             $6A
+QUOTE_HASH_TARGET3       EQU             $5F
 
                         CODE
 START:
@@ -248,6 +252,103 @@ CMD_HASH_LIST_LOOP:
                         JSR             CMD_HASH_SCAN_ADV
                         BRA             CMD_HASH_LIST_LOOP
 CMD_HASH_LIST_DONE:
+                        RTS
+
+; ----------------------------------------------------------------------------
+; " text ["]
+; Hash text through the closing quote or end of line. Input is already folded
+; uppercase by the top-level reader; leading/trailing spaces are not hashed.
+; ----------------------------------------------------------------------------
+CMD_QUOTE_HASH_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$A5,$92,$0C,$27,$00 ; " $270C92A5 EXEC
+CMD_QUOTE_HASH:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_SKIP_SPACES
+                        LDA             CMDP_PTR_LO
+                        STA             CMDP_START_LO
+                        LDA             CMDP_PTR_HI
+                        STA             CMDP_START_HI
+CMD_QUOTE_FIND_END:
+                        JSR             CMD_PEEK
+                        BEQ             CMD_QUOTE_END_FOUND
+                        CMP             #'"'
+                        BEQ             CMD_QUOTE_END_FOUND
+                        JSR             CMD_ADV_PTR
+                        BRA             CMD_QUOTE_FIND_END
+CMD_QUOTE_END_FOUND:
+                        LDA             CMDP_PTR_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             CMDP_PTR_HI
+                        STA             CMDP_ADDR_HI
+CMD_QUOTE_TRIM:
+                        LDA             CMDP_ADDR_LO
+                        CMP             CMDP_START_LO
+                        BNE             CMD_QUOTE_TRIM_HAVE_BYTE
+                        LDA             CMDP_ADDR_HI
+                        CMP             CMDP_START_HI
+                        BEQ             CMD_QUOTE_HASH_RANGE
+CMD_QUOTE_TRIM_HAVE_BYTE:
+                        LDA             CMDP_ADDR_LO
+                        BNE             CMD_QUOTE_TRIM_DEC_LO
+                        DEC             CMDP_ADDR_HI
+CMD_QUOTE_TRIM_DEC_LO:
+                        DEC             CMDP_ADDR_LO
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+                        CMP             #' '
+                        BEQ             CMD_QUOTE_TRIM
+                        CMP             #$09
+                        BEQ             CMD_QUOTE_TRIM
+                        INC             CMDP_ADDR_LO
+                        BNE             CMD_QUOTE_HASH_RANGE
+                        INC             CMDP_ADDR_HI
+CMD_QUOTE_HASH_RANGE:
+                        JSR             FNV1A_INIT
+                        LDA             CMDP_START_LO
+                        STA             CMDP_PTR_LO
+                        LDA             CMDP_START_HI
+                        STA             CMDP_PTR_HI
+CMD_QUOTE_HASH_LOOP:
+                        LDA             CMDP_PTR_LO
+                        CMP             CMDP_ADDR_LO
+                        BNE             CMD_QUOTE_HASH_BYTE
+                        LDA             CMDP_PTR_HI
+                        CMP             CMDP_ADDR_HI
+                        BEQ             CMD_QUOTE_HASH_DONE
+CMD_QUOTE_HASH_BYTE:
+                        JSR             CMD_PEEK
+                        AND             #$7F
+                        JSR             FNV1A_UPDATE_A
+                        JSR             CMD_ADV_PTR
+                        BRA             CMD_QUOTE_HASH_LOOP
+CMD_QUOTE_HASH_DONE:
+                        JSR             CMD_SAVE_HASH
+                        JSR             MON_PRINT_HASH
+                        JSR             CMD_QUOTE_HASH_MATCH
+                        BCC             CMD_QUOTE_HASH_CRLF
+                        LDX             #<MSG_QUOTE_MATCH
+                        LDY             #>MSG_QUOTE_MATCH
+                        JSR             HIM_WRITE_HBSTRING
+CMD_QUOTE_HASH_CRLF:
+                        JMP             SYS_WRITE_CRLF
+
+CMD_QUOTE_HASH_MATCH:
+                        LDA             FNV_HASH0
+                        CMP             #QUOTE_HASH_TARGET0
+                        BNE             CMD_QUOTE_HASH_NO_MATCH
+                        LDA             FNV_HASH1
+                        CMP             #QUOTE_HASH_TARGET1
+                        BNE             CMD_QUOTE_HASH_NO_MATCH
+                        LDA             FNV_HASH2
+                        CMP             #QUOTE_HASH_TARGET2
+                        BNE             CMD_QUOTE_HASH_NO_MATCH
+                        LDA             FNV_HASH3
+                        CMP             #QUOTE_HASH_TARGET3
+                        BNE             CMD_QUOTE_HASH_NO_MATCH
+                        SEC
+                        RTS
+CMD_QUOTE_HASH_NO_MATCH:
+                        CLC
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -1965,6 +2066,12 @@ CMD_HASH_TOKEN:
                         LDA             CMDP_PTR_HI
                         STA             CMDP_START_HI
                         JSR             FNV1A_INIT
+                        JSR             CMD_PEEK
+                        CMP             #'"'
+                        BNE             CMD_HASH_TOKEN_LOOP
+                        AND             #$7F
+                        JSR             FNV1A_UPDATE_A
+                        BRA             CMD_HASH_TOKEN_DONE
 CMD_HASH_TOKEN_LOOP:
                         JSR             CMD_PEEK
                         JSR             CMD_IS_DELIM_OR_NUL
@@ -2481,7 +2588,8 @@ MSG_HASH_NF:             DB              " HSH_NF",('!'+$80)
 MSG_HASH_HDR:            DB              "HASH     ENTRY ",('K'+$80)
 MSG_HASH_ENTRY:          DB              " ENTRY",('='+$80)
 MSG_HASH_K:              DB              " K",('='+$80)
-MSG_HELP:                DB              "# ? D M U R X G L B N A ",('Q'+$80)
+MSG_HELP:                DB              "# ? D M U R X G L B N A Q ",($22+$80)
+MSG_QUOTE_MATCH:         DB              " STR8 MATCH",('!'+$80)
 MSG_USAGE_D:             DB              "D start [end|+cnt",(']'+$80)
 MSG_USAGE_M:             DB              "M start [end|+cnt]",('.'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)

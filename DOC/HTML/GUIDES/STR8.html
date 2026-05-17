@@ -376,6 +376,7 @@ FLASH_S19_BOARD_RESET_TO_FACTORY</code></pre>
 B command, B0 ROT:  copy bank 1 -&gt; bank 0, bank 2 -&gt; bank 1, bank 3 -&gt; bank 2
 0/1/2 commands:     copy selected bank -&gt; bank 3 while preserving STR8 bytes</code></pre>
 <p>Each 4K window reads from the source bank, writes the destination bank, and verifies by simple read-back compare. The <code>$F000</code> ROM build uses the same copy policy by first copying its worker from bank 3 <code>$F800-$FFFF</code> into RAM <code>$0200-$09FF</code>. Ordinary restore into bank 3 preserves <code>$C000-$FFFF</code> unless the operator explicitly confirms high flash, so HIMON, the ROM worker, and the protected STR8/vector window remain usable after a normal restore. FNV, catalog lookup, wear leveling, and cycle counts are later work.</p>
+<p>Partitioned-bank layouts remain QCC thought experiments until promoted. They are not part of the current <code>B</code>, <code>0</code>, <code>1</code>, and <code>2</code> recovery contract.</p>
 <h2 id="str8-himon-update-direction">STR8/HIMON Update Direction</h2>
 <p>The flash guard should stay in place. Updating HIMON or STR8 should not mean &quot;turn off the guard and let a ROM-resident command erase whatever it is running from.&quot; The safer shape is a confirmed RAM-resident sector transaction.</p>
 <p>Generic sector update:</p>
@@ -400,6 +401,8 @@ vectors are rebuilt deliberately
 operator confirms the protected-sector erase
 RAM worker erases $F000-$FFFF, writes the staged sector, verifies, then resets</code></pre>
 <p>Do not add little fixed holes in <code>$FE03-$FFEF</code> for counters or future promises. Pack STR8 code and data back-to-back, reserve only deliberate fixed pockets such as <code>$FFF0-$FFF9</code>, and treat the remaining slack as growth space. Repeated write counters belong in a separate metadata sector if they become important; they should not force routine erases of STR8&#39;s protected sector.</p>
+<p>Wear maps and scratch use should remain hash-shaped rather than file-shaped. A future wear map can be an append-only <code>WMAP</code> record: write the newer map, verify it, seal it, and let hash/kind/generation select the newest sealed map. A future scratch sector can be a <code>TMP</code> or <code>STAGE</code> lease chosen from erased or reclaimable low-wear sectors, but it must never contain the only valid copy of anything required for boot or recovery.</p>
+<p>Two 2K policy windows can share two 4K sectors, but erase remains 4K. If a 2K <code>WMAP</code> or <code>STAGE</code> window in sector X ping-pongs with a matching window in sector Y, the other half of each sector must be preserved through the sector transaction or be explicitly disposable.</p>
 <h2 id="self-referencing-flash-content">Self-Referencing Flash Content</h2>
 <p>A flashed routine/program/data item becomes self-referencing when it carries or is accompanied by catalog metadata:</p>
 <pre><code class="language-text">hash/name identity
@@ -495,7 +498,7 @@ user explicitly installs it as module-local or replacement.</code></pre>
 </ul>
 <p>mixed encoding flag?</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8.md</code>. Source modified: <time>2026-05-16T04:08:54Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8.md</code>. Source modified: <time>2026-05-17T03:30:25Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

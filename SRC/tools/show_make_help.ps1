@@ -14,6 +14,9 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000." }
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom.bin." }
     [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K bank image with HIMON at C000, STR8 at F000, RESET=F000: BUILD/bin/himon-str8-rom.bin." }
+    [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-install.s19." }
+    [pscustomobject]@{ Target = "himon-str8-rom-install-s19"; Category = "monitor"; Description = "Convert primary HIMON+STR8 ROM BIN to S1/S9 install transport: BUILD/s19/himon-str8-rom-install.s19." }
+    [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for himon-str8-rom-install-s19." }
     [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000." }
     [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image from the HIMON load S19." }
     [pscustomobject]@{ Target = "basic-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000 and HIMON at C000." }

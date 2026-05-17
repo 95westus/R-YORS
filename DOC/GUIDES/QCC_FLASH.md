@@ -7,6 +7,31 @@ Glossary decision: `formed`, `sealed`, `buried`, and `gone` are the preferred
 flash lifecycle words. `Condense` is the official sector rebuild term;
 collapse/compress may appear as informal synonyms.
 
+## Q: Is writing `$FF` to erased flash the same as an erase?
+
+Comment: No. Erased flash normally reads as all `1` bits, so an erased byte
+will read `$FF` / `%11111111`. Programming `$FF` into a location that is already
+erased leaves the visible user byte unchanged, but it is still a program
+operation, not an erase operation.
+
+Flash programming is one-way at the bit level:
+
+```text
+1 -> 0  program can do this
+0 -> 1  erase must do this
+```
+
+So writing `$FF` cannot restore a programmed `0` bit back to `1`. Only erase can
+do that, and erase happens at sector/block scale rather than as a byte update.
+
+Concern: Treat `$FF` writes as redundant writes, not as harmless erases. On a
+simple raw cell the user bits do not change, and the stress is usually much
+less significant than a sector erase. But real flash parts and controllers may
+still apply program pulses, update hidden ECC/status bits, restrict repeated
+programming of the same word/page, or make a location no longer blank in a
+device-specific sense. Writers should skip `$FF` bytes/words when possible, and
+blanking logic must use real erase.
+
 ## Q: How can the compact signature carry lifecycle state?
 
 Comment: Use the third signature byte as packed `V` plus three active-low

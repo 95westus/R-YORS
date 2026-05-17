@@ -30,6 +30,18 @@ a remembered artifact name or doc path is now stale</code></pre>
 change:     what moved or was reclassified
 effect:     what old assumption is stale now
 action:     where to look or what to do next</code></pre>
+<h2 id="redoc-str8-wear-scratch-and-partition-notes-added">REDOC: STR8 Wear, Scratch, And Partition Notes Added</h2>
+<pre><code class="language-text">2026
+         05
+                16
+                   22:28Z WLP2 Added QCC and reference notes for WMAP wear
+                               records, TMP/STAGE scratch sectors, ASM RAM
+                               pressure, and a partitioned-bank thought
+                               experiment.</code></pre>
+<p>scope: <code>QCC_STR8.md</code>, <code>STR8.md</code>, <code>STR8_DECISION_REFERENCE.md</code>, <code>HASHED_ASM.md</code>.</p>
+<p>change: Wear counts are now framed as append-only hash-shaped <code>WMAP</code> metadata, not stolen bytes in image sectors or STR8 slack. Scratch flash is a future lease selected from reclaimable sectors, with 4K erase transactions still preserving or discarding neighboring policy windows explicitly. ASM now records RAM-first work products and explicit flash-stage behavior under RAM pressure. The partitioned-bank sketch is captured as a QCC thought experiment, not as a change to the current whole 32K image rotation contract.</p>
+<p>effect: Do not assume a hidden filesystem, silent ASM spill to flash, or an approved partitioned-bank design. The current STR8 recovery contract still uses whole 32K images unless a later decision explicitly promotes another map.</p>
+<p>action: Use <a href="QCC_STR8.html">QCC_STR8.md</a> for the unsettled STR8/STRAIGHTEN policy, <a href="STR8.html">STR8.md</a> for the current recovery narrative, and <a href="HASHED_ASM.html">HASHED_ASM.md</a> for ASM staging rules.</p>
 <h2 id="redoc-str8-flash-manager-qcc-expanded">REDOC: STR8 Flash-Manager QCC Expanded</h2>
 <pre><code class="language-text">2026
          05
@@ -37,9 +49,11 @@ action:     where to look or what to do next</code></pre>
                    02:03Z WLP2 Expanded QCC_STR8 with the boring
                                flash-manager direction: Bank 0 WDC HOLD,
                                STR8-owned HIMON/STR8 updates, identity
-                               display, and future classified chunk moves.</code></pre>
+                               display, WDC RAM bridge, future yield
+                               targets, STR8-as-product, and classified
+                               chunk moves.</code></pre>
 <p>scope: <code>QCC_STR8.md</code>.</p>
-<p>change: STR8&#39;s future role is now recorded as flash manager/housekeeper rather than only backup/restore guard. The notes also capture full-bank WDCMONv2 preservation and the compact <code>RYORS 0.0517 #hash B0 HOLD</code> identity line.</p>
+<p>change: STR8&#39;s future role is now recorded as flash manager/housekeeper rather than only backup/restore guard. The notes also capture full-bank WDCMONv2 preservation, a WDCMONv2-loaded RAM bridge, future boot targets, and the STR8-as-product boundary, plus the compact <code>RYORS 0.0517 #hash B0 HOLD</code> identity line.</p>
 <p>effect: Do not treat HIMON <code>L F</code> as the eventual owner of protected monitor or STR8 updates. STR8 is the proposed authority for dangerous flash writes and any future flash compaction.</p>
 <p>action: Use <a href="QCC_STR8.html">QCC_STR8.md</a> for this unsettled direction until the parts that prove out are promoted into decisions or implementation docs.</p>
 <h2 id="redoc-hardware-test-log-added">REDOC: Hardware Test Log Added</h2>
@@ -118,7 +132,7 @@ SRC/BUILD/bin/life-2000-load.bin</code></pre>
 <p>effect: <code>SRC/BUILD/s19/life.s19</code> is a stale remembered artifact name. New references should carry the load address.</p>
 <p>action: Use <code>life-2000.s19</code> for HIMON S-record loading and <code>life-2000-load.bin</code> when a raw loadable binary is needed.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-17T02:03:43Z</time>. HTML generated: <time>2026-05-17T02:04:34Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-17T03:30:32Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

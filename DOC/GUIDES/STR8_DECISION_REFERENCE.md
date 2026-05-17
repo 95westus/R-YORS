@@ -6,6 +6,16 @@ as **Straight 8**, and deliberately echoes `RTS` / Return from Subroutine.
 STR8 is the reset-time recovery root for R-YORS. It must stay small, compact, and
 W65C02S-only.
 
+Current STR8 identity marker:
+
+```text
+private phrase -> FNV-1a32 -> #5F6A0F7A
+```
+
+The marker is displayed in the STR8 ID line. It is an identity tag, not the V0
+bank-restore verifier. The source phrase is deliberately not recorded in public
+source or documentation.
+
 This document records the current design decisions for the first working STR8
 test. It is a development reference, not a full implementation spec.
 
@@ -42,11 +52,22 @@ The design assumes flash sectors have a finite erase endurance, roughly 100,000
 erase cycles per sector depending on the specific flash device.
 
 STR8 should not treat flash as endlessly rewritable storage. Future STR8 or
-HIMON layers should provide either built-in wear leveling, a small flash
-file-system style allocator, erase counters, or some combination of those tools.
+HIMON layers should provide wear awareness through explicit hash-shaped
+metadata records, not by silently stealing bytes from ordinary image sectors or
+from the STR8 top-sector slack.
+
+Exact counts to 100,000 erase cycles need 17 bits. If the system records only
+each 128th erase event, the persistent bucket count needs 10 bits. Those small
+counts should still be written append-only as `WMAP` or similar wear-map
+records, verified and sealed before they are used.
 
 The purpose is to know when a sector or chip is approaching its practical write
 life before it becomes a recovery problem.
+
+Scratch flash is a future managed lease, not a filesystem and not an only-copy
+home. A future TMP/STAGE sector may be chosen from the lowest-wear reclaimable
+sector, but reclaim still erases a full 4K sector and must preserve, copy, or
+discard the rest of that sector by explicit transaction policy.
 
 Longer term, R-YORS should have a way to export flash contents to a host as an
 S19-like serial stream, or move flash contents between two connected boards,
@@ -178,7 +199,7 @@ STR8/HIMON -> L F style flash loader
 ## First Prompt
 
 ```text
-STR8 - Subroutine To Return
+STR8 V0 #5F6A0F7A
 ? = print tiny STR8 ID/state
 B = backup automatic image rotation, with verify
 E = enroll bank 0 into rotation, destructive, confirmed
@@ -218,7 +239,11 @@ RAM_IRQ_VEC
 RAM_BRK_VEC
 ```
 
-In V0, HIMON installs and patches the active vector targets.
+This opt-in stub family is the start of `IVI`: Interrupt Vector Indirection,
+pronounced `IVY`. If STR8 is installed as the board's boot/recovery product,
+IVI lets hardware vectors stay stable while payloads patch indirect targets. In
+V0, HIMON installs and patches the active vector targets. Future payloads can
+use the same mechanism without inheriting HIMON's interrupt meanings.
 
 ## Layering
 
@@ -270,25 +295,36 @@ STR8 install/update path is selected.
 
 ## Sector Update Policy
 
-The answer to "how do we update HIMON or STR8 when the guard is in place?" is:
-keep the guard, and make update an explicit RAM operation.
+The answer to "how do we update payload targets or STR8 when the guard is in
+place?" is: keep the guard, and make update an explicit RAM operation.
 
-The future update primitive should be sector-shaped:
+V0 target replacement should be sector-shaped and erase/rebuild oriented. Do
+not present monitor/app or STR8 replacement as a byte-level flash write:
 
 ```text
-read selected destination sector into RAM
-merge incoming update bytes into the staged sector image
-compare staged image against live flash
-program directly when every changed bit goes 1->0
-confirm before any erase is needed
-erase only the selected destination sector
-write the full staged sector after erase
+read selected 4K destination sector into RAM
+receive S19 update bytes, if S19 is the transport
+merge incoming bytes into the staged 4K sector image
+compare staged sector against live flash
+if identical: do not erase
+if different: confirm, erase the selected sector
+write the full staged sector
 verify by complete read-back compare
 return to bank 3 before reporting status
 ```
 
-HIMON body updates can use that primitive directly. They are ordinary sector
-updates guarded by destination range and confirmation policy.
+The direct 1->0 programming shortcut is a later optimization for ordinary data
+or append-only records, not a V0 monitor replacement rule. Tiny one-way config
+flags may still use 1->0 programming when deliberate.
+
+S19 is a transport, not the flash operation unit. STR8 should stage a complete
+4K sector image in RAM before erasing or programming the destination sector.
+
+HIMON body updates are the default proof target for the V0 sector rebuild
+primitive, but the primitive itself should be target/range-shaped. A different
+monitor or app can use the same flow if its destination range is legal. These
+ordinary target updates leave the top recovery sector intact, so a bad payload
+update should still reset into STR8.
 
 Top-sector updates are not ordinary. The top sector contains:
 
@@ -316,7 +352,8 @@ as counters in a different flash sector if it becomes real.
 
 ## Verification
 
-FNV is not used by STR8 V0.
+FNV is not used by STR8 V0 for recovery verification. The displayed
+`#5F6A0F7A` marker is only STR8's identity tag.
 
 First STR8 verifies restored ordinary image bytes with range checks, flash
 status, and read-back comparison. Protected-window install/update gets its own

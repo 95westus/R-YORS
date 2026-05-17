@@ -10,6 +10,7 @@ DOC/INDEX.md
   -> DOC/GUIDES/INDEX.md
      -> TOC.md
      -> MAP.md
+     -> PRODUCT_BOUNDARIES.md
      -> BOOK.md
      -> HASH_FLASH.md
      -> DOC_FLASH.md
@@ -36,6 +37,14 @@ DOC/INDEX.md
 R-YORS
   boots through STR8
 
+Product Boundaries
+  names the current product lanes inside one repo
+  treats R-YORS as the project/system direction
+  treats STR8 as board management
+  treats LEAF/IVI as the interrupt-vector front door
+  treats HIMON as the default monitor payload
+  treats BETTERMON/WDCMONv2/apps/tools as peer payload targets
+
 BOOK
   gives the project a manuscript spine
   turns the guide set into chapter questions, answers, and proof pointers
@@ -56,12 +65,21 @@ DOC FLASH
   change enough that a reader's mental map is stale
 
 STR8
+  is the board management product
   keeps recovery/update safe
-  hands normal operation to HIMON
+  installs and boots selected targets
+  uses HIMON as the default bundled payload, not the only possible payload
+
+LEAF / IVI
+  gives STR8 a stable interrupt front door when installed
+  keeps hardware vectors recoverable
+  lets payloads patch latched NMI/IRQ/BRK entry addresses
+  does not dictate payload interrupt meanings after handoff
 
 HIMON
-  provides the monitor, command dispatch, assembler, catalog lookup,
-  and debug tools
+  is the default monitor payload and workbench
+  provides command dispatch, loader/debug tools, assembler direction,
+  catalog lookup, and hash experiments
 
 HIMON
   current monitor implementation path
@@ -178,11 +196,11 @@ Generated Map Of Maps
 Short form:
 
 ```text
-R-YORS boots through STR8.
-STR8 keeps recovery/update safe.
-STR8 hands normal operation to HIMON.
-HIMON provides the monitor, command dispatch, assembler, catalog lookup,
-and debug tools.
+R-YORS is the project/system direction.
+STR8 is the board management product.
+LEAF/IVI is the interrupt front door.
+HIMON is the default monitor payload.
+Other payloads can stand beside HIMON.
 ```
 
 ## Source Map
