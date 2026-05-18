@@ -5,10 +5,14 @@
 
 ; Zero-page policy:
 ; - $00-$AF user/free while running (176 bytes)
-; - $B0-$CC reserved R-YORS/HIMON/THE/ASM ZP expansion (29 bytes)
+; - $B0-$CA reserved R-YORS/HIMON/THE/ASM ZP expansion (27 bytes)
+; - $CB-$CC CRC16 state, allocated from the high end downward
 ; - $CD-$EF shared service/flash/SYS/BIO/utility scratch (35 bytes)
 ; - $F0-$FF HIMON command/parser scratch (16 bytes)
 ; ----------------------------------------------------------------------------
+
+CRC16_LO                  EQU             $CB
+CRC16_HI                  EQU             $CC
 
 ; ----------------------------------------------------------------------------
 ; User program area and high-RAM ownership boundaries.

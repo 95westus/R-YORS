@@ -147,7 +147,8 @@ Current RAM ownership:
 
 ```text
 $0000-$00AF   zero page user/free while running
-$00B0-$00CC   reserved R-YORS/HIMON/THE/ASM ZP expansion
+$00B0-$00CA   reserved R-YORS/HIMON/THE/ASM ZP expansion
+$00CB-$00CC   CRC16 no-table state, low/high; allocated from high end downward
 $00CD-$00D9   flash helper workspace, active during flash operations
 $00DA-$00DC   reserved expansion bytes inside flash/extended ZP window
 $00DD-$00DF   bank/length sideband bytes, reserved shared ZP
@@ -205,8 +206,10 @@ Current zero-page detail:
 
 ```text
 $00-$AF   user/free while running
-$B0-$CC   reserved for future R-YORS/HIMON/THE/ASM zero-page expansion;
+$B0-$CA   reserved for future R-YORS/HIMON/THE/ASM zero-page expansion;
           possible active pointer lanes and addressing-mode workspace
+$CB        CRC16_LO
+$CC        CRC16_HI
 
 $CD        FLASH_ADDR_LO
 $CE        FLASH_ADDR_HI
@@ -266,7 +269,8 @@ Zero-page rule of thumb:
 
 ```text
 $00-$AF   user/free from HIMON's point of view, 176 bytes
-$B0-$CC   reserved future R-YORS workspace, 29 bytes; user code should not rely on it
+$B0-$CA   reserved future R-YORS workspace, 27 bytes; user code should not rely on it
+$CB-$CC   CRC16 no-table state, low/high; grows down from the high end
 $CD-$EF   shared low-level service scratch, 35 bytes; volatile across monitor/SYS/BIO calls
 $F0-$FF   HIMON command/parser scratch, 16 bytes; volatile across monitor commands
 ```
@@ -274,8 +278,9 @@ $F0-$FF   HIMON command/parser scratch, 16 bytes; volatile across monitor comman
 User programs can use `$00-$AF` while running. `$B0-$FF` is reserved or
 volatile across monitor/fixed-entry services unless the called routine contract
 says otherwise. That leaves 80 bytes reserved-or-volatile above the user ZP
-line. The current live HIMON service/parser scratch is `$CD-$FF`; `$B0-$CC` is
-being held back for future pointer lanes and addressing-mode helpers.
+line. The current live HIMON service/parser scratch is `$CD-$FF`; `$CB-$CC` is
+held for CRC16 state, and `$B0-$CA` is being held back for future pointer lanes
+and addressing-mode helpers.
 
 ## RAM-Load Build Note
 
