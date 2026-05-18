@@ -3,9 +3,10 @@
 This reference is scoped to the current `ror` workspace.
 
 Terms in this reference follow [GLOSSARY.md](./GLOSSARY.md). In particular,
-THE means The Hash Environment, `contract` is the preferred call-interface word,
-and `bank`, `sector`, `signature`, `control byte`, `kind`, `Record`, `RREC`,
-`buried`, `gone`, and `condense` keep their glossary meanings.
+THE means The Hash Environment for lookup/catalog records, `contract` is the
+preferred call-interface word, and `bank`, `sector`, `signature`,
+`control byte`, `kind`, `Record`, `RREC`, `buried`, `gone`, and `condense`
+keep their glossary meanings.
 
 ## Source Lanes
 
@@ -32,7 +33,7 @@ SRC/SESH:  1
 ```text
 himon-parent.asm parent/reference monitor shell
 himonia.asm      historical compact supervisory monitor
-himon.asm        current FNV-driven HIMON app
+himon.asm        current HIMON app with FNV-era command records
 ```
 
 Primary path:
@@ -51,10 +52,10 @@ those generated maps.
 ```text
 R-YORS       whole project/system
 STR8         Subroutine To Return boot/recovery/update layer
-HIMON        current FNV-driven monitor app
-THE          The Hash Environment: hash/catalog lookup and resolver policy
+HIMON        current monitor/catalog app
+THE          The Hash Environment: lookup/catalog records and resolver policy
 Himonia-F    historical name for the codebase now promoted to HIMON
-HASHED_ASM   onboard assembler design using hash symbols and fixups
+HASHED_ASM   onboard assembler design using hashed symbols and fixups
 ```
 
 Boot relationship:
@@ -154,21 +155,24 @@ flash programming can clear bits from `1` to `0`, but cannot set them back to
 ## Hash Policy
 
 ```text
-routine header HASH   32-bit FNV-1a over canonical routine text
-runtime/catalog hash  32-bit FNV-1a lookup used by HIMON
-symbol hash           32-bit FNV-1a assembler/catalog lookup key
-name text             optional proof/listing/collision data
+routine header HASH      existing 32-bit FNV-1a routine comment ID
+current HIMON hash       FNV-era command record lookup
+intended compact hash     tableless CRC16 for runtime/catalog records
+name text                optional proof/listing/collision data
 ```
 
-Hash is a lookup key, not identity by itself. When identity matters, compare the
-stored canonical name text after the hash narrows the candidate set.
+The hash is a lookup hint, not identity by itself. When identity matters, compare
+the stored canonical name text after the hash narrows the candidate set.
 
-FNV-1a is the only runtime/catalog symbol hash. Catalog records do not need a
-per-record algorithm tag.
+FNV-1a is current implementation history and transition debt, not the final
+runtime/catalog symbol-hash decision. Catalog records should not need a
+per-record algorithm tag unless multi-algorithm catalogs become a deliberate
+future design.
 
-STR8 V0 does not use FNV for verification, image selection, command dispatch,
-catalog lookup, or recovery decisions. Future STR8-N/STRAIGHTEN may participate
-in catalog/FNV paths without requiring ownership of a user system's catalog.
+STR8 V0 does not use FNV or CRC16 for verification, image selection, command
+dispatch, catalog lookup, or recovery decisions. Future STR8-N/STRAIGHTEN may
+participate in compact-hash catalog paths without requiring ownership of a user
+system's catalog.
 
 Current HIMON FNV command record:
 
@@ -188,7 +192,7 @@ Current HIMON records do not store `entry_lo,entry_hi`; the entry is `record+8`
 when `kind=$00`. Explicit pointer records with `entry_lo,entry_hi` are a future
 catalog/RREC direction, not the current inline-code command record.
 
-Stored hash width direction:
+Legacy FNV stored-width direction:
 
 ```text
 ww=00  no hash / local id / direct record
@@ -197,9 +201,9 @@ ww=10  folded hash16
 ww=11  full hash32, stored hash0..3
 ```
 
-All widths still use FNV-1a as the canonical hash. Do not spend literal `FNV`
-bytes to mark hash width in compact RCAT/RREC records; put width in control
-bits when the record/table format already implies FNV-1a.
+These widths describe the older folded-FNV proposal and current helper
+vocabulary. The preferred compact runtime/catalog hash direction is tableless
+CRC16.
 
 ## Record Byte Order
 
@@ -264,9 +268,12 @@ CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
 at `$F089`/`$F09D`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
 the file, `$7FFA-$7FFF`.
 
-Local language images are linked below HIMON: OSI MS BASIC starts at `$8000`
-and fig-Forth starts at `$A000`. They are proof/load artifacts for now, not
-full safe `L F` updater packages.
+Current STR8 payload update images are fixed `$C000-$EFFF` S19 streams:
+`msbasic-osi-str8-update.s19` and `fig-forth-str8-update.s19`. They place OSI
+BASIC or fig-FORTH where HIMON normally lives so STR8 can prove backup,
+rotation, and recovery with real bootable payloads. Older below-HIMON language
+layout proofs may still exist as build artifacts, but the proven STR8 image
+manager path is the fixed update gate.
 
 For STR8 bench work, fig-Forth can also be generated as a temporary `$C000`
 payload with `make -C SRC fig-forth-str8-update-s19`. That stream is for the
