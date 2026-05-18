@@ -88,12 +88,12 @@ IVI / LEAF
 HIMON
   is the default monitor payload and workbench
   provides command dispatch, loader/debug tools, assembler direction,
-  catalog lookup, and hash experiments
+  catalog lookup, and current FNV-era hash experiments
 
 HIMON
   current monitor implementation path
   owns normal monitor interaction
-  hashes command tokens
+  computes command-token hashes
   dispatches to command records
 
 HIMON Stages And Classes
@@ -152,7 +152,7 @@ QCC Flash
   discusses condense/compress triggers, purge classes, and flash-safe ownership
 
 QCC Hash
-  records 1/2/4 byte hash-width questions, folded FNV-1a helpers, and compact
+  records the FNV-to-CRC16 hash pivot, older folded FNV helpers, and compact
   signature concerns
 
 QCC ASM
@@ -168,7 +168,7 @@ QCC Memory
   and TBE bit-helper direction
 
 Symbol Ref/Xref/XXref
-  records routine contracts, source locations, FNV hashes, and ABI details
+  records routine contracts, source locations, hashes, and ABI details
   classifies current and future symbols with reusable semantic tokens
   gives HIMON a compact call tree separate from full generated edge dumps
 
