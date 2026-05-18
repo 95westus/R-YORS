@@ -27,7 +27,7 @@ default workbench payload.
 ## Book Promise
 
 The book is about building a small hashed runtime system from the bench up. It
-is not a claim that hashing, catalogs, flash records, monitors, loaders, or
+is not a claim that hash lookups, catalogs, flash records, monitors, loaders, or
 linkers are new ideas. It is the record of making them personal, concrete, and
 operational on this board, with this vocabulary, and under these constraints.
 
@@ -35,7 +35,7 @@ The central claim:
 
 ```text
 A tiny monitor can become more than a command loop when names, commands,
-routines, records, and future fixups all share one hash-first lookup path.
+routines, records, and future fixups all share one compact hash lookup path.
 ```
 
 The second claim:
@@ -58,7 +58,7 @@ relinked.
 The book should read in three layers:
 
 1. The story: why this exists, what changed, and what each piece is for.
-2. The machine: actual HIMON, STR8, FNV, command, flash, and catalog behavior.
+2. The machine: actual HIMON, STR8, FNV-era command records, flash, and catalog behavior.
 3. The questions: what is settled, what is only proved, and what remains open.
 
 Proof lives in the guide set:
@@ -66,7 +66,7 @@ Proof lives in the guide set:
 - [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - R-YORS, STR8, IVI/LEAF,
   HIMON, and payload ownership lanes.
 - [DECISIONS.md](./DECISIONS.md) - settled calls.
-- [HASH.md](./HASH.md) and [HASH_MAP.md](./HASH_MAP.md) - hash and catalog model.
+- [HASH.md](./HASH.md) and [HASH_MAP.md](./HASH_MAP.md) - hash lookup and catalog model.
 - [HIMON_MAP.md](./HIMON_MAP.md) - monitor capability map.
 - [STR8.md](./STR8.md) - recovery/update anchor.
 - [CATALOG.md](./CATALOG.md) - callable routine surface and RREC seeds.
@@ -81,9 +81,10 @@ Proof lives in the guide set:
 Answer:
 
 Hash-first lookup turns command names, routine names, symbols, aliases, fixups,
-and future catalog entries into variations of one problem: compute identity,
-scan records, classify the match, and act. The hash is not the whole object. It
-is the compact key that lets a small system find the object.
+and future catalog entries into variations of one problem: compute a compact
+lookup hash, scan records, classify the match, and act. The hash is not the whole
+object. It lets a small system find the object without carrying full text in
+every hot path.
 
 This chapter should explain why a monitor command table wants to become a
 record scanner, and why that matters later when the same scanner idea grows
@@ -91,8 +92,8 @@ into RCAT/RREC/RBODY/RFIX/RLNK.
 
 Questions:
 
-- What does hash-first buy on a W65C02 system where every byte matters?
-- When is a hash enough, and when must the record carry proof text?
+- What does hash-first lookup buy on a W65C02 system where every byte matters?
+- When is a compact hash enough, and when must the record carry proof text?
 - How should collisions be found, displayed, and resolved?
 - What belongs in the scanner, and what belongs in the surrounding record?
 
@@ -103,30 +104,30 @@ Proof and notes:
 - [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md)
 - [DECISIONS.md](./DECISIONS.md)
 
-### Chapter 2: FNV As Identity, Not Magic
+### Chapter 2: From FNV To CRC16
 
 Answer:
 
-FNV-1a is the chosen runtime/catalog/symbol hash. It is not treated as a secret,
-security feature, or universal truth. It is a deterministic name-to-number path
-with small code, stable constants, and little-endian storage rules.
+FNV-1a was the first working runtime/catalog/symbol hash path. It is not treated
+as a secret, security feature, or universal truth. Current HIMON records and
+routine comments still carry FNV-era proof, but the intended compact hash is now
+tableless CRC16 because it better fits W65C02 time and ROM pressure.
 
 The chapter should keep the distinction sharp:
 
 ```text
-FNV-1a      algorithm
-hash32     canonical identity result
-hash16/8   folded storage choices
-signature  record proof or table proof
-kind       record/payload classification
-flags      lifecycle or policy metadata
+FNV-1a      current implementation history
+CRC16       intended compact runtime/catalog hash
+signature   record proof or table proof
+kind        record/payload classification
+flags       lifecycle or policy metadata
 ```
 
 Questions:
 
-- Why one hash algorithm instead of per-record algorithm tags?
-- Where should 32-bit hashes be kept, and where can folded hashes be used?
-- Why are variable-width stored hashes a space policy, not a second identity?
+- Why a tableless CRC16 hash instead of carrying the 32-bit FNV path everywhere?
+- Which FNV fields are current-ROM transition debt?
+- Why avoid per-record algorithm tags unless multi-algorithm catalogs become real?
 - How does a system avoid treating a guessed hash as authority?
 
 Proof and notes:
@@ -169,7 +170,7 @@ Proof and notes:
 Answer:
 
 The hash narrows the search. The record gives the match meaning. A future
-catalog can use the same hash path for commands, routines, symbols, data,
+catalog can use the same compact hash path for commands, routines, symbols, data,
 constants, memory ranges, modules, packets, fixups, aliases, and strings.
 
 This chapter should argue against letting one byte do too much. `kind`,
@@ -195,7 +196,7 @@ Proof and notes:
 
 Answer:
 
-HIMON is where the system can be touched: command input, hash dispatch, memory
+HIMON is where the system can be touched: command input, current FNV-era dispatch, memory
 dump/modify, loading, flashing under guard, disassembly, mini assembly, break,
 step, resume, and catalog inspection. It is the bench monitor, not the recovery
 anchor.
@@ -290,7 +291,7 @@ STR8    board management and survival
 IVI     Interrupt Vector Indirection from BSO2, pronounced IVY
 LEAF    newer product-shaped front door built on IVI
 HIMON   default monitor payload and workbench
-THE     future hash/catalog environment
+THE     future lookup/catalog environment
 ```
 
 IVI is the interrupt-vector indirection pattern. IVY is only how IVI is spoken
@@ -546,9 +547,10 @@ Proof and notes:
 Answer:
 
 R-YORS keeps some choices small because the hardware, flash risks, and human
-operator matter. STR8 V0 does not use FNV. Current HIMON records use a readable
-proving signature. Destructive commands should be full words. Text compression
-is optional. Dynamic memory waits behind fixed workspaces and explicit policy.
+operator matter. STR8 V0 does not use FNV or CRC16 for recovery decisions.
+Current HIMON records use a readable proving signature. Destructive commands
+should be full words. Text compression is optional. Dynamic memory waits behind
+fixed workspaces and explicit policy.
 
 Questions:
 
@@ -601,12 +603,13 @@ These are book-grade questions, not blockers:
 
 Do not write the book in chapter order. Write from proof outward:
 
-1. Write the HIMON command/hash dispatch chapter from current code and
+1. Write the HIMON command/catalog dispatch chapter from current code and
    [HIMON_MAP.md](./HIMON_MAP.md).
 2. Write STR8 recovery from [STR8.md](./STR8.md), [BRINGUP.md](./BRINGUP.md),
    and [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md).
-3. Write FNV and records from [HASH.md](./HASH.md), [HASH_MAP.md](./HASH_MAP.md),
-   and [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md).
+3. Write the FNV-to-CRC16 hash transition and records from
+   [HASH.md](./HASH.md), [HASH_MAP.md](./HASH_MAP.md), and
+   [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md).
 4. Write routines-made-from-routines from [CATALOG.md](./CATALOG.md),
    promoted helpers, and the range-parser/search path.
 5. Write catalog linking from [HASHED_ASM.md](./HASHED_ASM.md),
@@ -643,7 +646,7 @@ Pointers
 
 R-YORS is a small W65C02 system that grows from a monitor into a hashed runtime
 environment. HIMON provides the bench: commands, debugging, loading, flash
-guards, and hash dispatch. STR8 protects recovery. THE names the future hash
+guards, and current FNV-era dispatch. STR8 protects recovery. THE names the future lookup
 environment where records, bodies, fixups, and catalogs make code discoverable
 and linkable on the machine itself.
 
