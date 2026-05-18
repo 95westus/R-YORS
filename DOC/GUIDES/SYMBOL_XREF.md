@@ -35,7 +35,7 @@ try to preserve this information:
 ```text
 name:        canonical symbol name
 alias:       optional alternate command/symbol names
-hash:        32-bit FNV-1a over canonical lookup text when known
+hash:    compact lookup hash; existing docs may carry 32-bit FNV-1a
 kind:        R routine, C command, D data, S symbol, F fixup, T trampoline
 class:       visibility/callability/storage flags
 tokens:      semantic XXREF tokens
@@ -50,13 +50,15 @@ called_by:   generated or hand-maintained callers
 notes:       collision, alias, bank, or future-catalog notes
 ```
 
-FNV-1a is the only runtime/catalog/symbol hash. No per-record hash algorithm
-tag is needed. Words and longs remain little-endian:
+FNV-1a is the current implemented history for many generated symbol IDs. The
+intended compact runtime/catalog/symbol hash is tableless CRC16. No per-record
+algorithm tag is needed unless multi-algorithm catalogs become a deliberate
+future design. Words and longs remain little-endian:
 
 ```text
 word      low byte, then high byte
 long      byte0..3, least significant to most significant
-hash0..3  FNV-1a low byte through high byte
+hash0..3  existing FNV-1a low byte through high byte
 ```
 
 ## Classification Tokens
