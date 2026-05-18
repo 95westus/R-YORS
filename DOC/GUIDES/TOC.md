@@ -17,15 +17,16 @@
    stages and routine-class families.
 12. [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor.
 13. [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) - current STR8 work rail.
-14. [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions.
+14. [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions and
+    current three-image milestone.
 15. [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
 16. [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - bench process for HIMON debug testing.
 17. [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md) - board transcript validations and bench findings.
 18. [HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](./HIMON_SEARCH_IMPLEMENTATION_GUIDE.md) - RAM-to-flash guide for HIMON memory search.
-19. [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md) - RAM proof and vocabulary for joining hash records to callable entries.
+19. [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md) - RAM proof and vocabulary for joining current HREC records to callable entries.
 20. [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
 21. [HASH_MAP.md](./HASH_MAP.md) - hash systems and where they live.
-22. [QCC_HASH.md](./QCC_HASH.md) - hash-width and compact signature QCC.
+22. [QCC_HASH.md](./QCC_HASH.md) - compact-hash and signature QCC.
 23. [QCC_FLASH.md](./QCC_FLASH.md) - FSB lifecycle and condense/compress QCC.
 24. [HASHED_ASM.md](./HASHED_ASM.md) - detailed assembler hypothesis.
 25. [QCC_ASM.md](./QCC_ASM.md) - hashed assembler symbol/fixup QCC.
@@ -48,7 +49,7 @@
     `JSR`/`JMP` edge dump.
 36. [REF.md](./REF.md) - current reference sheet.
 37. [XREF.md](./XREF.md) - document/source cross-reference.
-38. [HASH.md](./HASH.md) - routine header IDs and FNV-1a relationship.
+38. [HASH.md](./HASH.md) - current FNV-era IDs and the CRC16 hash pivot.
 39. [TODO.md](./TODO.md) - next work.
 40. [FUTURE.md](./FUTURE.md) - direction.
 41. [BIB.md](./BIB.md) - internal source list.
@@ -63,7 +64,7 @@ R-YORS
   -> IVI mechanism and LEAF front door
   -> HIMON default monitor payload
   -> other payload targets
-  -> hash-first command and symbol lookup
+  -> compact-hash command and symbol lookup
   -> onboard assembler with fixups
   -> banked flash growth and catalog maintenance
 ```
@@ -91,16 +92,16 @@ HIMON_MAP.md readable edge and capability maps for HIMON
 HIMON_EDGE_DUMP.md full direct edge dump for HIMON
 BIB.md         internal references
 HASH_MAP.md    map of hash concepts
-QCC_HASH.md    hash-width and compact signature questions
+QCC_HASH.md    compact-hash and signature questions
 QCC_FLASH.md   FSB lifecycle and condense/compress questions
-STR8.md        recovery/update monitor design
+STR8.md        recovery/update monitor design and current hardware milestone
 STR8_WORK_PROCESS.md current review/proof/implementation rail for STR8
-RTFM-str8.md   compact STR8 operating instructions
+RTFM-str8.md   compact STR8 operating instructions and proven-image notes
 RTFM-himon.md  compact HIMON/STR8 boundary instructions
 HIMON_DEBUG_TESTING.md bench process for HIMON debug testing
 HARDWARE_TEST_LOG.md board transcript validations and bench findings
 HIMON_SEARCH_IMPLEMENTATION_GUIDE.md RAM proof, flash S19 delivery, and integration guide for search
-HREC_JOIN_PROOF.md RAM proof and terminology for joining HREC hashes to entries
+HREC_JOIN_PROOF.md RAM proof and terminology for joining HREC records to entries
 BRINGUP.md     practical STR8/R-YORS bringup rail
 HASHED_ASM.md  assembler thesis
 QCC_ASM.md     assembler symbol/fixup questions
