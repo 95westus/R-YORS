@@ -1,9 +1,13 @@
 # R-YORS Hash Reference
 
-R-YORS uses FNV-1a as the one hash algorithm for HIMON runtime/catalog/symbol
-lookup and routine block identity. STR8 V0 does not use FNV; future
-STR8-N/STRAIGHTEN may participate in the same hash path without requiring
-catalog ownership.
+Status: this is now a transition reference for the existing FNV-1a work. It
+documents what current HIMON records and routine comments still contain. It is
+not the final lookup hash decision.
+
+The intended compact runtime/catalog hash is tableless CRC16. FNV-1a remains in
+current HIMON command records and `[HASH:XXXXXXXX]` routine comments until the
+CRC16 record shape and doc/build ID path are written through. STR8 V0 does not
+use either FNV-1a or CRC16 for recovery decisions.
 
 Terminology follows [GLOSSARY.md](./GLOSSARY.md): FNV-1a is the algorithm;
 hash32/hash16/hash8 are result widths; signature, control byte, and kind are
@@ -17,9 +21,10 @@ update order, and little-endian persistent storage convention is RFC 9923:
 [HASH:XXXXXXXX]  32-bit FNV-1a routine/catalog/symbol hash
 ```
 
-FNV-1a is current, not future-only. It is already used by HIMON command
-dispatch and is the intended lookup hash for catalogs, symbols, commands,
-routines, fixups, and routine block comments.
+FNV-1a is current implementation, not final policy. It is already used by
+HIMON command dispatch and routine block comments. The catalog, symbol,
+command, routine, and fixup direction is moving to a compact CRC16 hash plus
+typed records and optional proof text.
 
 `[HASH:XXXXXXXX]` is the 8-hex-digit routine header hash written in `; ROUTINE:`
 lines:
@@ -28,7 +33,7 @@ lines:
 
 That value is FNV-1a over the canonical uppercase routine name.
 
-## FNV-1a Catalog Hash
+## Legacy FNV-1a Catalog Hash
 
 FNV-1a is:
 
@@ -54,8 +59,9 @@ Current HIMON command records use this proving shape:
 For current `kind=$00`, executable code begins immediately after the kind byte,
 at record offset `+8`. Current HIMON does not store `entry_lo,entry_hi`.
 
-A compact future RCAT/RREC table keeps FNV-1a but should put hash width in
-control bits when the table format already implies FNV-1a. See
+A compact future RCAT/RREC table was previously expected to keep FNV-1a and put
+hash width in control bits. That is now historical design context. The current
+direction is tableless CRC16 for the compact runtime/catalog hash. See
 [HASH_MAP.md](./HASH_MAP.md).
 
 Routine block comments may include both fields:
@@ -68,13 +74,14 @@ Routine block comments may include both fields:
 The first line carries the canonical hash. A following `FNV1A_LE` line is only
 an optional storage reminder for catalog records.
 
-## Variable-Width Stored Hash Proposal
+## Legacy Variable-Width Stored Hash Proposal
 
-HIMON can keep 32-bit FNV-1a as the canonical name hash while allowing compact
-tables to store only 1, 2, or 4 bytes of lookup key. This is a storage-width
-choice, not a second hash algorithm.
+This older proposal kept 32-bit FNV-1a as the canonical name hash while
+allowing compact tables to store only 1, 2, or 4 bytes of lookup hash. It remains
+useful for understanding current helper code, but it is no longer the preferred
+compact runtime/catalog direction.
 
-Derive narrower keys by folding the 32-bit FNV-1a value:
+Derive narrower hashes by folding the 32-bit FNV-1a value:
 
 ```text
 hash8  = (h32 xor (h32 >> 8) xor (h32 >> 16) xor (h32 >> 24)) & $FF
@@ -82,10 +89,10 @@ hash16 = (h32 xor (h32 >> 16)) & $FFFF
 hash32 = h32
 ```
 
-This is implemented in the R-YORS "routines made from routines" style. The
-32-bit FNV-1a path stays canonical. Narrow helpers fold a completed 32-bit
-result; they do not know whether that result came from HBSTR, CSTR, PSTR,
-buffer text, HIMON command input, or a future catalog reader.
+This is implemented in the R-YORS "routines made from routines" style for the
+current FNV helper path. Narrow helpers fold a completed 32-bit result; they do
+not know whether that result came from HBSTR, CSTR, PSTR, buffer text, HIMON
+command input, or a future catalog reader.
 
 ```text
 FNV1A_FOLD8_XY_A
@@ -140,8 +147,8 @@ Per-entry or per-bucket widening is possible later:
 
 ```text
 1-byte normal entry
-escape/control + ww=10 + 2-byte hash when the 8-bit key collides
-escape/control + ww=11 + 4-byte hash when the 16-bit key collides
+escape/control + ww=10 + 2-byte hash when the 8-bit hash collides
+escape/control + ww=11 + 4-byte hash when the 16-bit hash collides
 ```
 
 That form should be accepted only when the saved bytes beat the cost of the
@@ -345,8 +352,8 @@ name/proof text    this candidate is exactly the intended name, if needed
 ```
 
 Long term, `FNV` should be treated as a proving/debug signature, not the compact
-record shape. FNV-1a is the only runtime/catalog hash algorithm, so catalog
-records do not need to spend bytes naming the algorithm again.
+record shape. Compact catalog records should not spend bytes naming the hash
+algorithm once the enclosing container proves the record family.
 
 The compact project-owned signature should describe the container, not the
 algorithm. Preferred two-byte block/table signature:
