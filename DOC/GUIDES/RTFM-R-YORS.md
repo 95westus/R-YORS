@@ -17,7 +17,7 @@ loading, disassembly, assembly, and launching code.
 flowchart LR
     STR8[STR8 recovery] -->|G| HIMON[HIMON monitor]
     HIMON -->|inspect / load / debug / launch| USER[user work]
-    STR8 -->|B / E / 0 / 1 / 2| FLASH[flash mutation]
+    STR8 -->|B / E / U / 0 / 1 / 2| FLASH[flash mutation]
     STR8 --> POLICY[Bank 0 and protected-window policy]
     HIMON -. does not own .-> POLICY
     FLASH -->|RAM worker restores Bank 3| STR8
@@ -25,9 +25,22 @@ flowchart LR
 
 ## Current Status
 
-A rudimentary STR8 flash-recovery path has been lightly tested on hardware and
-is functioning nominally. Treat it as an early recovery tool, not a finished
-field-updater: keep a programmer recovery path and known-good image nearby.
+STR8 is now hardware-proven as a small image manager, not just a sketch. The
+current bench milestone is three bootable images rotated through the same
+recovery/update path:
+
+```text
+HIMON      recovery, inspection, loading, debug
+OSI BASIC  interactive BASIC payload
+fig-FORTH  threaded language payload
+```
+
+The proven path includes Bank 0 enrollment/rotation, backup rotation, the
+fixed `$C000-$EFFF` `U` / `UPDATE HIMON` gate, HIMON U1->U2 update, bootable
+fig-FORTH and OSI BASIC payloads, and high-flash recovery from Bank 2 back to
+known-good HIMON. Treat it as a bench-proven recovery/update guard, not a
+finished field-updater: keep a programmer recovery path and known-good image
+nearby.
 
 ## Command Safety Mandate
 
