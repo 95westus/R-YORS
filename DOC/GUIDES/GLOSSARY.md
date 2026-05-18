@@ -18,11 +18,11 @@ prefer the specific form listed here instead of the bare word.
   built on IVI: stable vector stubs plus patchable latched entry addresses,
   explained as a board feature rather than as raw vector plumbing.
 - STR8-N / STRAIGHTEN: future expanded STR8 direction.
-- THE: The Hash Environment. THE is the hash-first lookup/catalog environment:
-  canonical names, FNV-1a, hash8/hash16/hash32 storage, RCAT/RREC records,
-  resolver policy, aliases, and typed display. THE is not the whole runtime.
-  A dispatcher may use THE; HIMON's current command dispatcher is the first
-  concrete user.
+- THE: The Hash Environment. THE is the lookup/catalog environment: canonical
+  names, compact hashes, RCAT/RREC records, resolver policy, aliases, and typed
+  display. HIMON's current command dispatcher still carries FNV-1a history; the
+  intended compact runtime/catalog hash is tableless CRC16. THE is not the whole
+  runtime.
 - ASM: the planned onboard assembler path.
 - payload target: a bootable/installable monitor, application, tool, or ROM
   image selected by STR8. HIMON is the default payload target, not the only one.
@@ -88,7 +88,7 @@ add a precise glossary term instead of relying on the overloaded bare word.
   from those documents.
 - hash map: the guide map of hash concepts and ownership in
   [HASH_MAP.md](./HASH_MAP.md). It is not a hash table implementation.
-- hash table: an implementation data structure for lookup by hash/key.
+- hash table: an implementation data structure for lookup by hash.
 - stack depth map: source-derived stack high-water documentation. If it says
   `graph view`, it should include a renderable Mermaid node/edge diagram.
 
@@ -236,14 +236,18 @@ docs.
 
 ## Hash Terms
 
-- FNV-1a: the hash algorithm/family.
+- FNV-1a: the older/currently implemented HIMON hash family. It remains in
+  current command records and routine `[HASH:XXXXXXXX]` comments, but it is not
+  the final compact runtime/catalog hash decision.
+- CRC16: intended tableless compact runtime/catalog hash family.
 - hash32: full 32-bit FNV-1a result, stored as hash0..3 low byte first.
-- hash16: folded 16-bit result derived from hash32.
-- hash8: folded 8-bit result derived from hash32.
+- hash16: older folded 16-bit result derived from hash32.
+- hash8: older folded 8-bit result derived from hash32.
 - hash width: how many hash bytes are stored: 1, 2, or 4.
 - fold: derive hash16 or hash8 from hash32.
-- HASH: routine header ID formatted `[HASH:XXXXXXXX]`; this is hash32.
-- symbol hash: assembler/catalog lookup key for labels, routines, and commands.
+- HASH: existing routine header ID formatted `[HASH:XXXXXXXX]`; this is hash32
+  until the doc/build ID path is replaced.
+- symbol hash: assembler/catalog lookup hash for labels, routines, and commands.
 - hash collision: two names produce the same stored hash; name text or a wider
   stored hash must prove identity.
 
