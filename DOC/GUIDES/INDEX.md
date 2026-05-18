@@ -2,6 +2,14 @@
 
 This is the top index for the `ror` documentation set.
 
+## Current Milestone
+
+STR8 is currently hardware-proven rotating three bootable live-bank images:
+HIMON, OSI BASIC, and fig-FORTH. Start with
+[RTFM-R-YORS.md](./RTFM-R-YORS.md) for the operator picture,
+[RTFM-str8.md](./RTFM-str8.md) for the key-by-key STR8 procedure, and
+[STR8.md](./STR8.md) for the recovery/update design boundary.
+
 ## Start Here
 
 - [TOC.md](./TOC.md) - recommended reading order.
@@ -14,6 +22,7 @@ This is the top index for the `ror` documentation set.
 - [DECISIONS.md](./DECISIONS.md) - settled calls to avoid reopening by accident.
 - [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) - current work rail for
   STR8 review, proof, implementation, and documentation.
+- [RTFM-R-YORS.md](./RTFM-R-YORS.md) - board-in-front-of-you operator map.
 - [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions.
 - [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
 - [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - flash/load/step checklist for HIMON debug testing.
@@ -44,7 +53,8 @@ This is the top index for the `ror` documentation set.
   other payloads as peers.
 - [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - reconstruction of
   HIMON stages and routine-class families.
-- [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor.
+- [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor and
+  current hardware milestone.
 - [STR8_DECISION_REFERENCE.md](./STR8_DECISION_REFERENCE.md) - current STR8
   first-run design decisions.
 - [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) - the next-step process for
@@ -62,7 +72,7 @@ This is the top index for the `ror` documentation set.
 - [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) - worked example for
   turning standalone LIFE into an RBODY/RREC/RCAT member.
 - [QCC.md](./QCC.md) - QCC style and topic index for unresolved design work.
-- [QCC_HASH.md](./QCC_HASH.md) - hash-width, folded-hash, and compact
+- [QCC_HASH.md](./QCC_HASH.md) - compact-hash, folded-FNV, and compact
   signature questions.
 - [QCC_FLASH.md](./QCC_FLASH.md) - FSB lifecycle, buried records, and
   condense/compress questions.
@@ -82,7 +92,7 @@ This is the top index for the `ror` documentation set.
 
 ## Reference Guides
 
-- [HASH.md](./HASH.md) - routine header `[HASH:XXXXXXXX]` FNV-1a IDs.
+- [HASH.md](./HASH.md) - current FNV-era IDs and the CRC16 hash pivot.
 - [CATALOG.md](./CATALOG.md) - compact callable routine catalog by read/write/string/hex/hash/flash need.
 - [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) - RCAT/RREC member
   migration worked example for the standalone LIFE app.
