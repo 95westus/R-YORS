@@ -29,6 +29,36 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: STR8 Three-Image Milestone And CRC16 Hash Pivot
+
+```text
+2026
+         05
+                18
+                   15:10Z WLP2 STR8 now has hardware proof rotating HIMON,
+                               OSI BASIC, and fig-FORTH, and FNV-1a is no
+                               longer documented as the final catalog spine.
+```
+
+The operator-facing truth changed again: `U` / `UPDATE HIMON` is now proven
+not only with HIMON U1->U2, but as the fixed `$C000-$EFFF` gate that can place
+bootable OSI BASIC and fig-FORTH payloads where HIMON normally lives. STR8 can
+then use its backup/restore path to return to known-good HIMON.
+
+The hash-policy truth also changed. Existing HIMON command records and the
+quoted helper still carry FNV-era behavior, but that is implementation history
+and transition debt. The intended compact runtime/catalog lookup hash is now a
+tableless CRC16 shape, chosen because W65C02 time and ROM pressure beat the
+first FNV-1a design.
+
+Do not write new public docs as though 32-bit FNV-1a is the settled universal
+spine. Say "current FNV-era records" when describing the present ROM, and say
+"tableless CRC16 compact hash" when describing the intended catalog direction.
+
+See [RTFM-str8.md](./RTFM-str8.md) for the three-image operator path and
+[DECISIONS.md](./DECISIONS.md), [HASH.md](./HASH.md), and
+[HASH_MAP.md](./HASH_MAP.md) for the catalog-hash pivot.
+
 ## REHASH: STR8 UPDATE HIMON Hardware Proof
 
 ```text
