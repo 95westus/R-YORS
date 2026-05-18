@@ -93,6 +93,20 @@ closing quote are trimmed, and text is hashed through the closing quote or end
 of line. It is an identity-marker Easter egg, not a security boundary, and not
 the final compact catalog-hash decision.
 
+The same quote helper is also the HIMON FNV-1a phrase challenge. The hidden
+phrase is uppercase text with no punctuation except ordinary space `$20`.
+Example input shape, not the answer:
+
+```text
+>" THIS IS MY PHRASE"
+```
+
+If the phrase hashes to HIMON's current 32-bit FNV-1a target `#5F6A0F7A`,
+HIMON prints the hash and `STR8 MATCH!`. Contact the maintainer with the
+original phrase; the intended prize is a chip puller and a 128K 4x32K flash
+chip preloaded with STR8 and HIMON. This is a public puzzle and proof-of-work
+marker, not authentication or update authority.
+
 `B L` currently reports active breakpoint slots in table order. A future
 sorted-list helper should print breakpoint tables in address order, but that is
 polish after the trap/restore behavior is stable.
