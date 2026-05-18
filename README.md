@@ -49,8 +49,10 @@ that yesterday's notes could mislead you. Latest doc alerts live in
 
 ## System Card
 
-R-YORS is a retro-computing documentation and source project for specifying,
-building, and documenting a small WDC W65C02SXB/W65C02EDU runtime environment.
+R-YORS exists to make a WDC W65C02SXB/W65C02EDU single-board computer feel like
+a standalone, recoverable machine: power on, recover safely, inspect memory and
+routines, load vetted S19 images, rotate flash backups, and grow the system in
+flash without needing a full host toolchain every time.
 
 Current spine:
 
@@ -69,12 +71,13 @@ design notes, decisions, maps, and scratchpad material all live together.
 
 ## Current Hardware Status
 
-STR8 now has hardware proof for the core recovery/update loop: map, backup,
-fixed-gate `U` / `UPDATE HIMON` from U1 to U2, and high-flash Bank 2 recovery
-back to U1. Treat it as a bench-proven recovery/update guard, not a finished
-field-updater: keep a programmer recovery path and known-good image nearby.
-Remaining STR8 proof gaps include Bank 0 enrollment, restore over non-erased
-ordinary sectors, and deliberate high-flash failure behavior.
+STR8 is currently hardware-proven rotating three bootable images: HIMON for
+recovery/inspection, OSI BASIC for interactive programming, and fig-FORTH for a
+threaded language environment. It also has proof for map, backup, fixed-gate
+`U` / `UPDATE HIMON` from U1 to U2, high-flash Bank 2 recovery back to U1, and
+Bank 0 enrollment/rotation. Treat it as a bench-proven recovery/update guard,
+not a finished field-updater: keep a programmer recovery path and known-good
+image nearby.
 
 HIMON's RAM-only debug path has a current hardware proof for `B`, `B C`,
 `B L`, `N`, and `X`: one-shot breakpoints restore their original opcodes,
