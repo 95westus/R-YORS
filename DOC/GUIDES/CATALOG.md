@@ -21,8 +21,9 @@ COR_*    shared implementation logic; use when building BIO/SYS or tests
 PIN_*    direct hardware/pin/MMIO layer; use for bring-up or BIO implementation
 UTL_*    pure utility/helper routines
 FLASH_*  flash guard, erase, and byte-program routines
-FNV1A_*  hash helpers for HIMON command/catalog/symbol lookup; not used by STR8 V0
-STR8_CON_* private STR8 V0 console helpers; no public FNV catalog records
+FNV1A_*  current FNV-era helpers; transition history, not STR8 V0 policy
+CRC16_*  intended compact hash helpers, once implemented
+STR8_CON_* private STR8 V0 console helpers; no public catalog records
 MON_*    monitor command/support internals
 ```
 
@@ -54,15 +55,17 @@ copy, fill, and other flash/RAM members should prefer a resident
 `BIO_CON_*`/`BIO_*` contract once one exists, so they do not import a specific
 FTDI or ACIA routine by accident.
 
-STR8 V0 must not depend on `FNV1A_*`; FNV belongs to HIMON/catalog/assembler
-work after recovery handoff. Future STR8-N/STRAIGHTEN can participate in this
-path without requiring catalog ownership.
+STR8 V0 must not depend on `FNV1A_*` or future `CRC16_*` helpers for recovery
+decisions. Current FNV-era helpers belong to HIMON/catalog/assembler work after
+recovery handoff. The intended compact catalog hash is tableless CRC16. Future
+STR8-N/STRAIGHTEN can participate in that path without requiring catalog
+ownership.
 
 ## Field Shape
 
 ```text
 routine   callable name
-hash      32-bit FNV-1a over canonical routine text
+hash      existing 32-bit FNV-1a routine comment/signature value
 class     layer and broad type
 in        entry registers/state
 out       exit registers/state and carry contract
@@ -244,7 +247,7 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 BIO is the reusable low-level I/O layer. The current BIO surface is device-bound
 to FTDI/PIA names and is owned by the HIMON/current ROM body in the combined
 image. STR8 V0 uses private `STR8_CON_*` console helpers so it remains
-self-contained without publishing duplicate BIO/PIN FNV records.
+self-contained without publishing duplicate BIO/PIN catalog records.
 
 A future STR8 import file can publish fixed aliases such as:
 
