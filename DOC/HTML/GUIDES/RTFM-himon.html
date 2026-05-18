@@ -32,6 +32,7 @@ ERASE ...</code></pre>
 <h2 id="current-commands">Current Commands</h2>
 <pre><code class="language-text">?              help
 # [token]      list records, or resolve token without executing it
+&quot;text&quot;         print FNV-1a32 for quoted text; reports STR8 match on #5F6A0F7A
 D start +count dump memory
 D start end    dump memory range
 M addr         modify memory
@@ -49,6 +50,7 @@ N              single-step trapped context
 X              resume trapped context when one exists
 Q              quiesce with WAI, then re-enter on wake</code></pre>
 <p>Use HIMON for normal work. Use STR8 for boot-image recovery and backup policy.</p>
+<p>The quoted-hash command uppercases input through HIMON&#39;s normal reader. A leading space after the opening quote is ignored, trailing spaces before the closing quote are trimmed, and text is hashed through the closing quote or end of line. It is an identity-marker Easter egg, not a security boundary.</p>
 <p><code>B L</code> currently reports active breakpoint slots in table order. A future sorted-list helper should print breakpoint tables in address order, but that is polish after the trap/restore behavior is stable.</p>
 <p><code>B</code> reports <code>BP FULL</code> when all four slots are active. <code>B C hhhh</code> reports <code>BP NF</code> when that address is not currently active. Breakpoints outside <code>$2000-$77FF</code> report <code>DBG RAM</code>.</p>
 <p><code>Q</code> is a true quiesce command now. It masks IRQ, enters <code>WAI</code>, and resumes by re-entering HIMON when the CPU wakes. NMI remains the trap/debug path.</p>
@@ -178,7 +180,7 @@ Bank 3 is restored before monitor output resumes</code></pre>
 <h2 id="wdcmonv2-bridge">WDCMONv2 Bridge</h2>
 <p>Saving the board&#39;s original WDCMONv2/base flash image is future bridge work. HIMON does not do that today.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-himon.md</code>. Source modified: <time>2026-05-16T04:08:54Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/RTFM-himon.md</code>. Source modified: <time>2026-05-17T21:41:56Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

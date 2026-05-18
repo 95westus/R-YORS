@@ -211,12 +211,14 @@ $himonIrq = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_IRQ_MA
 $himonEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "_END_DATA"
 
 $str8Start = Get-SymbolAddress -MapPath $Str8MapPath -Name "START"
+$str8Nmi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_IVY_ENTRY_NMI"
+$str8Irq = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_IVY_ENTRY_IRQ_MASTER"
 $str8End = Get-SymbolAddress -MapPath $Str8MapPath -Name "_END_DATA"
 
 $workerRunStart = Get-SymbolAddress -MapPath $WorkerMapPath -Name "START"
 $workerRunEnd = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_WORKER_END"
-$workerStoreStart = 0xF800
-$workerStoreSize = 0x0800
+$workerStoreStart = 0xFC00
+$workerStoreSize = 0x0400
 $workerSize = $workerRunEnd - $workerRunStart
 
 if ($himonStart -ne 0xC000) {
@@ -228,6 +230,12 @@ if ($himonEnd -gt 0xF000) {
 if ($str8Start -ne 0xF000) {
     throw ("STR8 START is {0:X4}; expected F000" -f $str8Start)
 }
+if ($str8Nmi -lt 0xF000 -or $str8Nmi -ge 0x10000) {
+    throw ("STR8 IVY NMI entry is {0:X4}; expected F000-FFFF" -f $str8Nmi)
+}
+if ($str8Irq -lt 0xF000 -or $str8Irq -ge 0x10000) {
+    throw ("STR8 IVY IRQ entry is {0:X4}; expected F000-FFFF" -f $str8Irq)
+}
 if ($str8End -gt $workerStoreStart) {
     throw ("STR8 crosses worker storage at {0:X4}; _END_DATA={1:X4}" -f $workerStoreStart, $str8End)
 }
@@ -237,8 +245,8 @@ if ($workerRunStart -ne 0x0200) {
 if ($workerSize -le 0 -or $workerSize -gt $workerStoreSize) {
     throw ("STR8 worker size is {0:X}; expected 1..{1:X}" -f $workerSize, $workerStoreSize)
 }
-if (($workerStoreStart + $workerSize) -gt 0xFFFA) {
-    throw ("STR8 worker storage {0:X4}-{1:X4} crosses hardware vector area" -f $workerStoreStart, ($workerStoreStart + $workerSize - 1))
+if (($workerStoreStart + $workerSize) -gt 0xFFF0) {
+    throw ("STR8 worker storage {0:X4}-{1:X4} crosses config/vector area" -f $workerStoreStart, ($workerStoreStart + $workerSize - 1))
 }
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $BinPath) | Out-Null
@@ -254,9 +262,9 @@ Import-S19RelocatedIntoImage -Path $WorkerS19Path -Image $bin -BankOffset $bankO
 Import-S19IntoImage -Path $Str8S19Path -Image $bin -BankOffset $bankOffset
 
 [byte[]]$vectors = @(
-    [byte]($himonNmi -band 0xFF), [byte](($himonNmi -shr 8) -band 0xFF),
+    [byte]($str8Nmi -band 0xFF), [byte](($str8Nmi -shr 8) -band 0xFF),
     [byte]($str8Start -band 0xFF), [byte](($str8Start -shr 8) -band 0xFF),
-    [byte]($himonIrq -band 0xFF), [byte](($himonIrq -shr 8) -band 0xFF)
+    [byte]($str8Irq -band 0xFF), [byte](($str8Irq -shr 8) -band 0xFF)
 )
 for ($i = 0; $i -lt $vectors.Length; $i++) {
     Set-VectorByte -Image $bin -Offset ($bankOffset + 0x7FFA + $i) -Value $vectors[$i]
@@ -280,9 +288,9 @@ $resetHead = $bin[($bankOffset + ($str8Start - 0x8000))..($bankOffset + ($str8St
 $tail = $bin[($bankOffset + 0x7FFA)..($bankOffset + 0x7FFF)] | ForEach-Object { "{0:X2}" -f $_ }
 
 Write-Host ("HIMON START/NMI/IRQ/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $himonStart, $himonNmi, $himonIrq, $himonEnd)
-Write-Host ("STR8 START/END          = {0:X4}/{1:X4}" -f $str8Start, $str8End)
+Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Start, $str8Nmi, $str8Irq, $str8End)
 Write-Host ("WORKER RUN/STORE/SIZE   = {0:X4}/{1:X4}/{2:X}" -f $workerRunStart, $workerStoreStart, $workerSize)
-Write-Host ("Vectors NMI/RESET/IRQ   = {0:X4}/{1:X4}/{2:X4}" -f $himonNmi, $str8Start, $himonIrq)
+Write-Host ("Vectors NMI/RESET/IRQ   = {0:X4}/{1:X4}/{2:X4}" -f $str8Nmi, $str8Start, $str8Irq)
 Write-Host ("Bank offset             = 0x{0:X5}" -f $bankOffset)
 Write-Host ("Bank start @ 8000       = {0}" -f ($bankHead -join " "))
 Write-Host ("WORKER @ {0:X4}          = {1}" -f $workerStoreStart, ($workerHead -join " "))

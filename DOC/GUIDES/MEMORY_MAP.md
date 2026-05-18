@@ -13,9 +13,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E0DB   HIMON CODE, START/standalone RESET entry at $C000
-$E1CB-$E72D   HIMON DATA
-$E72E-$FFF9   current image gap and future STR8/high-ROM space
+$C000-$E1F8   HIMON CODE, START/standalone RESET entry at $C000
+$E1F9-$E75B   HIMON DATA
+$E75C-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -27,9 +27,9 @@ explicit handoff contract; STR8 must not reserve those addresses.
 Current ROM hardware vectors:
 
 ```text
-$FFFA-$FFFB   NMI   = $DE1C
+$FFFA-$FFFB   NMI   = $DF21
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $DE1F
+$FFFE-$FFFF   IRQ   = $DF24
 ```
 
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
@@ -55,22 +55,22 @@ space.
 
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: HIMON starts at
 CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
-`$7000`, the STR8 RAM worker source is stored at CPU `$F800` / file offset
-`$7800`, and the RESET vector points to STR8 at `$F000`. The NMI and IRQ
-vectors point to HIMON's `$DE1C`/`$DE1F` vector entries until STR8 grows its own
-interrupt policy.
+`$7000`, the STR8 RAM worker source is stored at CPU `$FC00` / file offset
+`$7C00`, and all live hardware vectors enter the STR8-owned top sector. RESET
+points to STR8 at `$F000`; NMI and IRQ/BRK point to STR8 IVI stubs at
+`$F089`/`$F09D`, which dispatch through the RAM vector cells.
 
 Combined image layout:
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E72D   HIMON body
-$E72E-$EFFF   current image gap inside the used E sector
-$F000-$F71E   STR8 resident shell
-$F481         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$F71F-$F7FF   current image gap inside the top sector
-$F800-$FA92   STR8 RAM-worker source, copied to $0200 for B/E/M/0/1/2
-$FA93-$FFF9   current image gap, config pocket, and high top-sector space
+$C000-$E75B   HIMON body
+$E75C-$EFFF   current image gap inside the used E sector
+$F000-$FA83   STR8 resident shell, IVI stubs, and HIMON updater
+$F770         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$FA84-$FBFF   current image gap inside the top sector
+$FC00-$FEBE   STR8 RAM-worker source, copied to $0200 for B/E/M/U/0/1/2
+$FEBF-$FFF9   current image gap, config pocket, and high top-sector space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -84,6 +84,15 @@ $C000-$FFFF   protected live HIMON/STR8 region
 
 These are still proof/load artifacts. They are not yet packaged as a safe
 erase/rewrite `L F` update flow.
+
+STR8 bench tests may temporarily place fig-Forth at `$C000-$EFFF` with
+`BUILD/s19/fig-forth-str8-update.s19`. That is not the normal memory map; it is
+a deliberate replacement of the HIMON payload through STR8 `U`, with STR8 still
+resident at `$F000-$FFFF`.
+
+The same temporary replacement exists for OSI MS BASIC at `$C000-$EFFF` with
+`BUILD/s19/msbasic-osi-str8-update.s19`. It is also a STR8 `U` payload, not the
+normal combined monitor map.
 
 ## Flash Window Mapping
 
@@ -157,9 +166,10 @@ $00E6-$00E7   shared utility temp/scratch bytes
 $00E8-$00EF   shared pointer/length/flags/mode lane for FTDI/SYS/string helpers
 $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
-$0200-$09FF   STR8 RAM tray; worker copy lands here before flash mutation
-$0A00-$0A0C   STR8 worker state board and map-result bytes
-$0A0D-$12FF   reserved low RAM, no live allocations
+$0200-$05FF   STR8 RAM tray; worker copy lands here before flash mutation
+$0600-$09FF   reserved low RAM, no live allocations
+$0A00-$0A16   STR8 worker/update state board and map-result bytes
+$0A17-$12FF   reserved low RAM, no live allocations
 $1300-$13FF   flash transient / reserved worker page
 $1400-$1FFF   system scratch and transient metadata
 $2000-$77FF   UPA, user program area
@@ -176,22 +186,24 @@ $7E95-$7EDD   loader workspace and range table
 $7EDE-$7EDF   delay helper fixed RAM
 $7EE0-$7EE5   PIA state / lock
 $7EE6-$7EE9   reset signature
-$7EEA-$7EEF   trap cause / BRK signature / NMI debounce / reserve
+$7EEA-$7EEC   trap cause / BRK signature / NMI debounce
+$7EED-$7EEF   IVI vector-table signature bytes, ASCII "IVY"
 $7EF0-$7EF7   NMI context capture
 $7EF8-$7EFF   RAM vectors
 $7F00-$7FFF   I/O window
 ```
 
 During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 temporarily
-clobbers `$0200-$09FF` with the copied RAM worker and `$4000-$4FFF` with the 4K
-sector staging buffer. Normal HIMON/user code should treat those ranges as
-volatile while STR8 is performing flash work.
+clobbers `$0200-$05FF` with the copied RAM worker and `$4000-$4FFF` with the 4K
+sector staging buffer. During `U`, STR8 also uses `$5000-$6FFF` so it can stage
+all three HIMON sectors before the first erase. Normal HIMON/user code should
+treat those ranges as volatile while STR8 is performing flash work.
 
-STR8 also uses fixed low-RAM bytes `$0A00-$0A0C` for bank/sector copy state,
-failure address reporting, startup flags, and the `M` command's four bank map
-mask bytes. The `M` command runs the RAM worker from `$0200`, stores one status
-mask byte per bank at `$0A09-$0A0C`, restores bank 3, then prints the map from
-resident STR8.
+STR8 also uses fixed low-RAM bytes `$0A00-$0A16` for bank/sector copy state,
+failure address reporting, startup flags, update state, and the `M` command's
+four bank map mask bytes. The `M` command runs the RAM worker from `$0200`,
+stores one status mask byte per bank at `$0A09-$0A0C`, restores bank 3, then
+prints the map from resident STR8.
 
 Current high-RAM vectors:
 
@@ -297,7 +309,7 @@ HIMON/himon-shared-eq.inc
 
 The combined `himon-str8-rom.bin` image places STR8 in bank 3's `$F000-$FFFF`
 top-ROM sector with the hardware vectors. HIMON starts at `$C000`, and the
-STR8 RAM-worker source is stored inside the top sector at `$F800`.
+STR8 RAM-worker source is stored inside the top sector at `$FC00`.
 
 The physical erase unit remains 4K. The protected STR8 window starts at the
 highest boundary that fits:

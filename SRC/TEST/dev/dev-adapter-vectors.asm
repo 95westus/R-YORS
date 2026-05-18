@@ -31,6 +31,12 @@ VEC_IRQ_BRK_LO            EQU             $7EFC
 VEC_IRQ_BRK_HI            EQU             $7EFD
 VEC_IRQ_NONBRK_LO         EQU             $7EFE
 VEC_IRQ_NONBRK_HI         EQU             $7EFF
+IVY_SIG0                  EQU             $7EED
+IVY_SIG1                  EQU             $7EEE
+IVY_SIG2                  EQU             $7EEF
+IVY_SIG0_VAL              EQU             'I'
+IVY_SIG1_VAL              EQU             'V'
+IVY_SIG2_VAL              EQU             'Y'
 
                         XDEF            SYS_VEC_INIT
                         XDEF            SYS_VEC_ENTRY_RESET
@@ -60,6 +66,7 @@ VEC_IRQ_NONBRK_HI         EQU             $7EFF
 SYS_VEC_INIT:
                         PHP
                         SEI
+                        STZ             IVY_SIG0
 
                         LDA             #<SYS_VEC_DEFAULT_RESET
                         STA             VEC_RESET_LO
@@ -81,7 +88,17 @@ SYS_VEC_INIT:
                         LDA             #>SYS_VEC_DEFAULT_IRQ_NONBRK
                         STA             VEC_IRQ_NONBRK_HI
 
+                        JSR             SYS_VEC_IVY_MARK_VALID
                         PLP
+                        RTS
+
+SYS_VEC_IVY_MARK_VALID:
+                        LDA             #IVY_SIG1_VAL
+                        STA             IVY_SIG1
+                        LDA             #IVY_SIG2_VAL
+                        STA             IVY_SIG2
+                        LDA             #IVY_SIG0_VAL
+                        STA             IVY_SIG0
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -145,10 +162,12 @@ SYS_VEC_IRQ_MASTER_NONBRK:
 SYS_VEC_SET_RESET_XY:
                         PHP
                         SEI
+                        STZ             IVY_SIG0
                         TXA
                         STA             VEC_RESET_LO
                         TYA
                         STA             VEC_RESET_HI
+                        JSR             SYS_VEC_IVY_MARK_VALID
                         PLP
                         RTS
 
@@ -164,10 +183,12 @@ SYS_VEC_SET_RESET_XY:
 SYS_VEC_SET_NMI_XY:
                         PHP
                         SEI
+                        STZ             IVY_SIG0
                         TXA
                         STA             VEC_NMI_LO
                         TYA
                         STA             VEC_NMI_HI
+                        JSR             SYS_VEC_IVY_MARK_VALID
                         PLP
                         RTS
 
@@ -183,10 +204,12 @@ SYS_VEC_SET_NMI_XY:
 SYS_VEC_SET_IRQ_BRK_XY:
                         PHP
                         SEI
+                        STZ             IVY_SIG0
                         TXA
                         STA             VEC_IRQ_BRK_LO
                         TYA
                         STA             VEC_IRQ_BRK_HI
+                        JSR             SYS_VEC_IVY_MARK_VALID
                         PLP
                         RTS
 
@@ -202,10 +225,12 @@ SYS_VEC_SET_IRQ_BRK_XY:
 SYS_VEC_SET_IRQ_NONBRK_XY:
                         PHP
                         SEI
+                        STZ             IVY_SIG0
                         TXA
                         STA             VEC_IRQ_NONBRK_LO
                         TYA
                         STA             VEC_IRQ_NONBRK_HI
+                        JSR             SYS_VEC_IVY_MARK_VALID
                         PLP
                         RTS
 

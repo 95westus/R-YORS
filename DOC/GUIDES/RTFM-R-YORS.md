@@ -32,26 +32,26 @@ field-updater: keep a programmer recovery path and known-good image nearby.
 ## Command Safety Mandate
 
 ```text
-DESTRUCTIVE COMMANDS MUST BE 4+ CHARACTERS.
+DESTRUCTIVE FLASH MUST CONFIRM BEFORE ERASE/WRITE.
 ```
 
-Future destructive commands must use full words. This applies to copy, fill,
-move, erase, flash, bank, backup, restore, and boot/recovery policy changes.
-STR8 keeps `R` as reset. The current one-key STR8 recovery commands are an
-early proof surface with `Y` confirmation; treat the destructive keys as
-transitional until the command surface is revised.
+Destructive flash commands must confirm before erase/write. Short selectors are
+acceptable when STR8 owns the target range; the current `U` command is fixed to
+HIMON `$C000-$EFFF`, checks S19 before erase, and asks again before program.
+Raw-range or advanced commands should still use louder words or a guided menu.
 
 ## Current Burn Image
 
 ```text
 primary image:   SRC/BUILD/bin/himon-str8-rom.bin
-HIMON:           $C000-$E72D
-STR8 image:      $F000-$F71E
-STR8 identity:   #5F6A0F7A, marker bytes at $F481 = 7A 0F 6A 5F
-worker source:   $F800-$FA92, copied to $0200 when needed
+HIMON:           $C000-$E75B
+STR8 image:      $F000-$FA83
+IVI entries:     NMI $F089, IRQ/BRK $F09D
+STR8 identity:   #5F6A0F7A, marker bytes at $F770 = 7A 0F 6A 5F
+worker source:   $FC00-$FEBE, copied to $0200 when needed
 STR8 window:     $F000-$FFFF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF
+vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0
 ```
 
 Target live-bank budget:
@@ -77,14 +77,16 @@ After burn, these should match:
 
 ```text
 D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
-D F000 +10   78 D8 A2 FF 9A 20 23 F0 ...
-D F800 +10   08 78 AD 07 0A C9 04 F0 ...
-D FFFA FFFF  0B DF 00 F0 0E DF
+D F000 +10   78 D8 A2 FF 9A 20 36 F0 ...
+D FC00 +10   08 78 AD 07 0A C9 04 F0 ...
+D FFFA FFFF  89 F0 00 F0 9D F0
 ```
 
-On reset, STR8 should initialize FTDI, wait briefly, print the R-YORS banner,
-then print `HIMON IN 3S. S=STR8` and count down `3 2 1`. Press `S` during
-that countdown to show the STR8 prompt.
+On reset, STR8 should initialize IVI and FTDI, wait briefly, print the R-YORS
+banner, then print `HIMON IN 3S. S=STR8` and count down `3 2 1`. Press `S`
+during that countdown to show the STR8 prompt. NMI and IRQ/BRK now enter STR8
+IVI stubs first, then dispatch through RAM vector cells that HIMON patches
+after handoff.
 
 ```text
 ____      ____    ____   ____      ____
@@ -113,6 +115,7 @@ that, Bank 0 joins backup rotation and may be erased by future backups.
 B       backup rotation
 E       enroll Bank 0 into rotation, destructive, confirmed
 M       map bank/sector status, + used and - erased
+U       update HIMON from C000-EFFF S19, confirmed before write
 0       restore Bank 0 -> Bank 3
 1       restore Bank 1 -> Bank 3
 2       restore Bank 2 -> Bank 3

@@ -22,6 +22,11 @@ Newest alerts appear first.
 ########################################################################
 2026
          05
+                18
+                   02:35Z WLP2 STR8 U / UPDATE HIMON is hardware-proven
+                               for the fixed C000-EFFF gate: U1 backed up
+                               to Bank 2, Bank 3 updated to U2, then
+                               high-flash restore brought U1 back.
                 13
                    21:30Z WLP2 HIMON RAM-only debug N/B/X behavior is
                                hardware-tested. Debug patching still does
@@ -64,10 +69,12 @@ design notes, decisions, maps, and scratchpad material all live together.
 
 ## Current Hardware Status
 
-A rudimentary STR8 flash-recovery path has been lightly tested on hardware and
-is functioning nominally. Treat it as an early recovery tool, not a finished
+STR8 now has hardware proof for the core recovery/update loop: map, backup,
+fixed-gate `U` / `UPDATE HIMON` from U1 to U2, and high-flash Bank 2 recovery
+back to U1. Treat it as a bench-proven recovery/update guard, not a finished
 field-updater: keep a programmer recovery path and known-good image nearby.
-So far, STR8 is doing what it is intended to do; testing continues.
+Remaining STR8 proof gaps include Bank 0 enrollment, restore over non-erased
+ordinary sectors, and deliberate high-flash failure behavior.
 
 HIMON's RAM-only debug path has a current hardware proof for `B`, `B C`,
 `B L`, `N`, and `X`: one-shot breakpoints restore their original opcodes,
@@ -164,6 +171,7 @@ Start here:
 - [DOC/GUIDES/GLOSSARY.md](DOC/GUIDES/GLOSSARY.md) - terminology contract.
 - [DOC/GUIDES/RTFM-R-YORS.md](DOC/GUIDES/RTFM-R-YORS.md) - operator highlights.
 - [DOC/GUIDES/RTFM-str8.md](DOC/GUIDES/RTFM-str8.md) - STR8 operations.
+- [DOC/GUIDES/STR8_WORK_PROCESS.md](DOC/GUIDES/STR8_WORK_PROCESS.md) - STR8 work/process rail.
 - [DOC/GUIDES/RTFM-himon.md](DOC/GUIDES/RTFM-himon.md) - HIMON operations.
 - [DOC/GUIDES/HIMON_DEBUG_TESTING.md](DOC/GUIDES/HIMON_DEBUG_TESTING.md) - RAM debug bench process.
 
@@ -213,6 +221,14 @@ The build check verifies that vector and reset-target code before release.
 Local language images are linked under the live monitor/boot region: OSI MS
 BASIC at `$8000` and fig-Forth at `$A000`. They remain blank-write/proof
 artifacts rather than full `L F` update packages.
+
+For STR8 bench work, `make -C SRC fig-forth-str8-update-s19` builds
+`SRC/BUILD/s19/fig-forth-str8-update.s19`: a bootable fig-Forth payload for the
+fixed `$C000-$EFFF` `U` gate. It replaces HIMON in Bank 3 until Bank 2 is
+restored back over it.
+
+`make -C SRC msbasic-osi-str8-update-s19` does the same for OSI MS BASIC as a
+temporary `$C000` payload using STR8's resident console.
 
 Forth as a language/concept is not treated here as a copyright problem. The
 specific fig-Forth source is different: R-YORS uses a local FIG-Forth 6502

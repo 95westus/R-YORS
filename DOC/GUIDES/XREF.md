@@ -14,6 +14,12 @@ STR8.md
   used by MAP.md for recovery/update ownership
   used by HISTORICAL_DOCUMENTS.md as the recovery-layer name
 
+STR8_WORK_PROCESS.md
+  records the current process for returning to STR8 work
+  starts with a V0 acceptance pass before new update commands or self-update
+  relates to STR8.md, STR8_DECISION_REFERENCE.md, RTFM-str8.md,
+  STR8_FLASH_UPDATE_PROPOSAL.md, BRINGUP.md, TODO.md, and HARDWARE_TEST_LOG.md
+
 DECISIONS.md
   records settled naming, hash, STR8, ASM, contract, local-home, and doc-shape calls
   should be checked before reopening design alternatives

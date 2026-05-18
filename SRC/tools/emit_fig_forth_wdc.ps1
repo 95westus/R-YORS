@@ -1,6 +1,8 @@
 param(
     [string]$SourcePath = "../LOCAL/fig-forth/source/ff6502.html",
-    [string]$OutPath = "../LOCAL/fig-forth/generated/fig-forth.asm"
+    [string]$OutPath = "../LOCAL/fig-forth/generated/fig-forth.asm",
+    [string]$MonitorExitAddress = '$8000',
+    [switch]$BootEntryAtBase
 )
 
 Set-StrictMode -Version Latest
@@ -309,13 +311,20 @@ foreach ($raw in ($match.Groups[1].Value -split "`r?`n")) {
         Add-Line $lines
         Add-Line $lines 'RAM_DICT                 EQU             $0300'
         Add-Line $lines "RAM_FORTH_LINK           EQU             UAREA-2"
-        Add-Line $lines 'HIMON_START              EQU             $8000'
+        Add-Line $lines ("HIMON_START              EQU             {0}" -f $MonitorExitAddress)
         Add-Line $lines
         Add-Line $lines "                        CODE"
         Add-Line $lines
-        Add-Line $lines "FIG_FORTH_FNV:"
-        Add-Line $lines "                        DB              'F','N',('V'+`$80),`$2C,`$BE,`$EC,`$1C,`$00"
-        Add-Line $lines "START:"
+        if ($BootEntryAtBase) {
+            Add-Line $lines "START:"
+            Add-Line $lines "                        JMP             FORTH_ORIG"
+            Add-Line $lines "FIG_FORTH_FNV:"
+            Add-Line $lines "                        DB              'F','N',('V'+`$80),`$2C,`$BE,`$EC,`$1C,`$00"
+        } else {
+            Add-Line $lines "FIG_FORTH_FNV:"
+            Add-Line $lines "                        DB              'F','N',('V'+`$80),`$2C,`$BE,`$EC,`$1C,`$00"
+            Add-Line $lines "START:"
+        }
         Add-Line $lines "FORTH_ORIG:"
         $startedCode = $true
     }

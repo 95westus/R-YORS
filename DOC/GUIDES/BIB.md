@@ -53,6 +53,7 @@ DOC/GUIDES/HIMON_STAGES_CLASSES.md
 DOC/GUIDES/HIMON_EDGE_DUMP.md
 DOC/GUIDES/HISTORICAL_DOCUMENTS.md
 DOC/GUIDES/STR8.md
+DOC/GUIDES/STR8_WORK_PROCESS.md
 DOC/GUIDES/HASH.md
 DOC/GUIDES/HASH_MAP.md
 DOC/GUIDES/HASHED_ASM.md
@@ -101,6 +102,8 @@ DOC/GENERATED/ROUTINE_COMPONENTS.md
   direct-edge listing.
 - `HIMON_STAGES_CLASSES.md` reconstructs the Himon/Himonia/Himonia-F stage
   ladder and subsystem class families from current source plus guide evidence.
+- `STR8_WORK_PROCESS.md` records the current review, proof, implementation,
+  and documentation loop for STR8 work.
 - `QCC.md` defines Questions, Comments, Concerns as the working-note format for
   unsettled design topics; `QCC_*.md` pages keep topic-specific what-ifs before
   they graduate into `DECISIONS.md`.

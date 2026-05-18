@@ -17,12 +17,15 @@
   -&gt; DOC/GUIDES/INDEX.md
      -&gt; TOC.md
      -&gt; MAP.md
+     -&gt; PRODUCT_BOUNDARIES.md
      -&gt; BOOK.md
      -&gt; HASH_FLASH.md
      -&gt; DOC_FLASH.md
      -&gt; DECISIONS.md
      -&gt; QCC.md
      -&gt; BRINGUP.md
+     -&gt; STR8.md
+     -&gt; STR8_WORK_PROCESS.md
      -&gt; HIMON_STAGES_CLASSES.md
      -&gt; REF.md
      -&gt; XREF.md
@@ -38,6 +41,14 @@
 <h2 id="design-map">Design Map</h2>
 <pre><code class="language-text">R-YORS
   boots through STR8
+
+Product Boundaries
+  names the current product lanes inside one repo
+  treats R-YORS as the project/system direction
+  treats STR8 as board management
+  treats IVI as the interrupt-vector mechanism and LEAF as the front-door name
+  treats HIMON as the default monitor payload
+  treats BETTERMON/WDCMONv2/apps/tools as peer payload targets
 
 BOOK
   gives the project a manuscript spine
@@ -59,12 +70,28 @@ DOC FLASH
   change enough that a reader&#39;s mental map is stale
 
 STR8
+  is the board management product
   keeps recovery/update safe
-  hands normal operation to HIMON
+  installs and boots selected targets
+  uses HIMON as the default bundled payload, not the only possible payload
+
+STR8 Work Process
+  names the current next step for STR8 work
+  starts with the V0 acceptance pass before new update commands
+  ties source edits, build checks, hardware transcripts, and guide updates
+  together
+
+IVI / LEAF
+  IVI gives STR8 a stable interrupt-vector mechanism
+  LEAF is the later friendly front-door surface built on IVI
+  keeps hardware vectors recoverable
+  lets payloads patch latched NMI/IRQ/BRK entry addresses
+  does not dictate payload interrupt meanings after handoff
 
 HIMON
-  provides the monitor, command dispatch, assembler, catalog lookup,
-  and debug tools
+  is the default monitor payload and workbench
+  provides command dispatch, loader/debug tools, assembler direction,
+  catalog lookup, and hash experiments
 
 HIMON
   current monitor implementation path
@@ -87,6 +114,11 @@ STR8
   future direction protects selected STR8 window and vectors
   V0 verifies copied bank images
   later HIMON/maintenance or future STR8 condenses cluttered banks
+
+STR8 Work Process
+  says how to return to STR8 without reopening settled design
+  separates V0 proof, V0 fixes, proposals, and future STR8-N ideas
+  records the acceptance checklist before `U T`, `U H`, `U S`, or self-update
 
 Bringup
   orders STR8 work from simulation stub to reset-owned recovery
@@ -177,11 +209,12 @@ Generated Map Of Maps
   answers which map to open for command flow, hash flow, HIMON calls, support
   layers, memory ranges, and document navigation</code></pre>
 <p>Short form:</p>
-<pre><code class="language-text">R-YORS boots through STR8.
-STR8 keeps recovery/update safe.
-STR8 hands normal operation to HIMON.
-HIMON provides the monitor, command dispatch, assembler, catalog lookup,
-and debug tools.</code></pre>
+<pre><code class="language-text">R-YORS is the project/system direction.
+STR8 is the board management product.
+IVI is the interrupt-vector mechanism. LEAF is the product-shaped front door
+built on it.
+HIMON is the default monitor payload.
+Other payloads can stand beside HIMON.</code></pre>
 <h2 id="source-map">Source Map</h2>
 <pre><code class="language-text">Current operational source used by generated routine docs:
 
@@ -241,6 +274,7 @@ LOCAL/
     HIST --&gt; HSTAGE
     HSTAGE --&gt; HMAP2
     MAP --&gt; STR8[STR8]
+    STR8 --&gt; SWP[STR8_WORK_PROCESS]
     MAP --&gt; HASM[HASHED_ASM]
     MAP --&gt; HMAP[HASH_MAP]
     QCC --&gt; QHASH[QCC_HASH]
@@ -309,7 +343,7 @@ LOCAL/
 </ul>
 <p>and <code>BIB.md</code> together.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/MAP.md</code>. Source modified: <time>2026-05-16T04:14:57Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/MAP.md</code>. Source modified: <time>2026-05-18T01:55:04Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

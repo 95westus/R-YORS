@@ -1,0 +1,271 @@
+# STR8 Work Process
+
+This is the working rail for returning to STR8 without reopening the whole
+design each time.
+
+## Review Result
+
+Current STR8 is not just a sketch anymore. The code and docs agree on a small
+V0 recovery surface:
+
+```text
+?          identity and Bank 0 state
+B          backup rotation
+E          enroll Bank 0 into rotation
+M          map used/erased sectors
+U          update HIMON from S19, fixed $C000-$EFFF gate
+0/1/2      restore selected backup bank to Bank 3
+G          go HIMON
+R          reset
+```
+
+The current ROM proof runs STR8 from bank 3 `$F000`, stores the RAM flash
+worker at `$FC00`, copies that worker to `$0200`, uses `$0A00-$0A16` for
+worker/update state, stages ordinary copy sectors through `$4000-$4FFF`, and
+stages HIMON update sectors through `$4000-$6FFF`.
+
+The current build targets are:
+
+```text
+make -C SRC str8
+make -C SRC himon-str8-rom-bin
+make -C SRC himon-str8-rom-install-s19
+make -C SRC himon-str8-himon-update-s19
+make -C SRC fig-forth-str8-update-s19
+make -C SRC msbasic-osi-str8-update-s19
+```
+
+The hardware log now proves the prompt, `M`, `G`, burn-check bytes, `B`
+backup rotation, `E` / Bank 0 enrollment, post-enrollment B0/B1/B2 rotation,
+`U` / `UPDATE HIMON` from visible U1 to visible U2, fig-Forth as a `$C000`
+payload, OSI BASIC as a `$C000` payload, and high-flash recovery from the
+backup chain. It explicitly does not yet prove restore over non-erased ordinary
+bytes below `$C000`, STR8 self-update, or the high-flash failure path with a
+sacrificial image.
+
+## Start Here
+
+Start with the STR8 V0 acceptance pass.
+
+STR8 has already been proven to work as the recovery path. This pass is not a
+first proof. It is the current-build regression pass: rebuild the image we are
+about to trust, confirm the known-good behavior is still present, and record
+the evidence before adding update machinery.
+
+Do not begin by adding catalog repair, wear maps, or self-update machinery.
+Also do not expose `U T`, `U H`, or `U S` as operator commands; those are design
+shorthand, not an error-proof user surface. IVI is now the stable vector
+mechanism: RESET enters STR8, NMI/IRQ enter STR8 stubs, and payload policy still
+lives behind RAM vectors. IVY is only how IVI is pronounced; LEAF is the later
+front-door name built on IVI. The next trustworthy step is to show that the
+current image still behaves like the proven rescue core on the bench.
+
+V0 acceptance means:
+
+```text
+build current artifacts
+record exact ROM image identity
+run non-destructive STR8 regression smoke
+run destructive backup/restore/enroll regression checks with programmer recovery ready
+record serial transcript in HARDWARE_TEST_LOG.md
+update RTFM/decision docs if behavior differs from source
+only then design the first target-update primitive
+```
+
+## Work Loop
+
+Use this loop for each STR8 work item:
+
+1. Read the canonical lane:
+   `STR8.md`, `STR8_DECISION_REFERENCE.md`, `RTFM-str8.md`,
+   `STR8_FLASH_UPDATE_PROPOSAL.md`, `BRINGUP.md`, and the latest
+   `HARDWARE_TEST_LOG.md`.
+2. Name the work as either V0 proof, V0 fix, proposal, or future STR8-N idea.
+3. State the flash ranges touched before editing code.
+4. Keep destructive behavior behind the RAM worker or another RAM-safe path.
+5. Build the narrow target first, then the combined ROM if needed.
+6. Test read-only behavior before destructive behavior.
+7. Log hardware evidence when the board proves something.
+8. Promote settled behavior into `RTFM-str8.md`, `BRINGUP.md`, or
+   `STR8_DECISION_REFERENCE.md`; leave speculation in `QCC_STR8.md`.
+
+## Acceptance Checklist
+
+Before the next feature, rerun this checklist on hardware for the current build:
+
+```text
+Build:
+  make -C SRC str8
+  make -C SRC himon-str8-rom-bin
+  make -C SRC himon-str8-rom-install-s19
+
+Artifact check:
+  himon-str8-rom.bin is 32768 bytes
+  HIMON starts at CPU $C000
+  STR8 starts at CPU $F000
+  worker source starts at CPU $FC00
+  vectors point to STR8 IVI entries: F089/F000/F09D
+
+Non-destructive STR8:
+  reset enters STR8 countdown
+  S reaches STR8 prompt
+  ? prints identity and B0 state
+  M scans all banks and restores Bank 3
+  U rejects out-of-range S19 before erase
+  G enters HIMON
+  R resets through the live vector
+
+Destructive STR8, separate bench pass:
+  B before Bank 0 enrollment rotates 2->1 and 3->2
+  restore Bank 2 -> Bank 3 writes ordinary lower sectors and verifies
+  E confirms and clears the Bank 0 rotation flag
+  B after enrollment rotates 1->0, 2->1, and 3->2
+  restore abort path leaves Bank 3 selected and STR8 usable
+  high-flash restore/failure behavior is tested only with a sacrificial image
+```
+
+Do not combine first-time destructive proofs. If a pass can erase Bank 0,
+rewrite Bank 3, or touch high flash, give it its own transcript and recovery
+plan.
+
+## First HIMON Install/Update Proof
+
+The first plain bench proof passed on 2026-05-17. The operator transcript showed
+the intended update shape:
+
+```text
+Bank 3 booted known-good HIMON U1
+B copied Bank 3 -> Bank 2
+U received compact C000-EFFF S19 and programmed HIMON U2
+boot showed HIMON U2
+G F000 reached STR8 after the update
+high-flash restore Bank 2 -> Bank 3 restored HIMON U1
+```
+
+This is the first useful `UPDATE HIMON` proof, not an external-programmer
+exercise. STR8 received the candidate through the HIMON target path, enforced
+the `$C000-$EFFF` gate, staged sectors, and asked before erase/write. The proof
+is still partial because it does not prove every future transport or STR8
+self-update case. It proves the part that matters first: a bad HIMON does not
+trap the board, because STR8 is still present and Bank 2 holds the last
+known-good image.
+
+Current STR8 restore has two answers. A normal `2` restore with the high-flash
+warning declined preserves `$C000-$FFFF`, so it will not replace a bad HIMON.
+To recover a bad HIMON with today's command set, Bank 2 must be known good and
+the operator must intentionally accept the high-flash restore warning:
+
+```text
+FLASH C000-FFFF? Y
+```
+
+That path is more dangerous because it also rewrites the top sector. Use it
+only for this controlled proof, with the external programmer treated as the
+last-resort recovery choice for a bricked board.
+
+Make the HIMON change obvious. A different banner, version string, or prompt is
+enough. Do not rely on a hidden byte change for this test; the transcript should
+show old monitor, backup, new monitor, and restore-to-old monitor if recovery is
+needed.
+
+For this proof, keep STR8 fixed. The intended update candidate is HIMON only:
+`$C000-$EFFF` accepted, `$F000-$FFFF` refused. If an emergency programmer image
+or other whole-ROM image is used outside the normal test path, say that in the
+log and do not count it as proving `UPDATE HIMON`.
+
+## Code Rules
+
+Keep STR8 small and literal:
+
+```text
+new destructive commands use full words or stronger confirmation
+operator update choices name HIMON or STR8, not a vague target/range
+V0 verification is read-back compare, not FNV
+Bank 3 must be restored before resident STR8 prints status
+the worker must not call ROM or HIMON while banks can change
+NMI is not part of the flash-mutation control path
+Bank 0 policy changes only through enrollment or an explicit future rebuild
+top-sector changes are full-sector transactions
+```
+
+The current one-key destructive commands are transition debt and proof surface.
+They are not the pattern for new destructive commands.
+
+## Documentation Rule
+
+Every STR8 change should leave one of these behind:
+
+```text
+RTFM-str8.md                 operator behavior changed
+HARDWARE_TEST_LOG.md         bench behavior was proved
+STR8_DECISION_REFERENCE.md   settled design behavior changed
+STR8_FLASH_UPDATE_PROPOSAL.md update proposal changed
+QCC_STR8.md                  open question or future direction changed
+BRINGUP.md                   bringup/checklist changed
+TODO.md                      next work changed
+```
+
+Generated HTML is only a presentation view. Markdown remains canonical.
+
+## Current Update Path
+
+The first implemented target/range sector-rebuild primitive is the compact `U`
+command. It is the fixed HIMON profile of the longer guided update idea:
+
+```text
+U
+UPDATE HIMON
+```
+
+`U` prints the HIMON range, receives S19, rejects anything outside
+`$C000-$EFFF`, stages a blank C/D/E image in RAM, overlays the received bytes,
+and asks before programming. The
+future broader operator-facing surface may still become:
+
+```text
+UPDATE
+UPDATE HIMON
+UPDATE STR8
+```
+
+`UPDATE` by itself would print a small menu. `UPDATE STR8` still prints the
+top-sector danger and requires stronger confirmation.
+
+The first S19 load path has two fixed gates:
+
+```text
+U / UPDATE HIMON accepts only $C000-$EFFF records.
+UPDATE STR8 accepts only $F000-$FFFF records.
+```
+
+Do not add a mixed or raw-range S19 loader first. If a record lands outside the
+selected gate, the operation aborts before erase.
+
+The 2026-05-17 fig-Forth and OSI BASIC bench passes proved that this same gate
+can install different `$C000-$EFFF` payloads while leaving STR8 alive in the top
+sector. That is useful for payload experiments, but it also makes the
+backup-chain rule more visible: after the payload is in Bank 3, `B` rotates
+that payload into Bank 2. Only run `B` after a payload when that is the
+intended promotion.
+
+This still preserves the product split:
+
+```text
+STR8 keeps recovery and dangerous flash writes safe.
+IVI is the stable vector mechanism, not the policy owner.
+Future LEAF routines may patch IVI targets after handoff.
+Payloads do not become allowed to rewrite STR8 casually.
+```
+
+That means:
+
+```text
+stage complete 4K destination sectors in RAM
+merge incoming bytes into the blank staged sector image
+confirm before erase/write
+erase, write, and verify each selected full sector
+restore Bank 3 before reporting
+refuse the selected STR8 protected window unless this is an explicit STR8 path
+```
+
+Only after that primitive is dull should STR8 self-update enter the work queue.

@@ -30,6 +30,61 @@ a remembered artifact name or doc path is now stale</code></pre>
 change:     what moved or was reclassified
 effect:     what old assumption is stale now
 action:     where to look or what to do next</code></pre>
+<h2 id="proof-str8-update-himon-passed-on-hardware">PROOF: STR8 UPDATE HIMON Passed On Hardware</h2>
+<pre><code class="language-text">2026
+         05
+                18
+                   02:35Z WLP2 Logged the STR8 UPDATE HIMON U1-&gt;U2 hardware
+                               proof and narrowed TODO/work-process wording to
+                               the remaining acceptance gaps.</code></pre>
+<p>scope: <code>HARDWARE_TEST_LOG.md</code>, <code>STR8_WORK_PROCESS.md</code>, <code>TODO.md</code>.</p>
+<p>change: The hardware log now records the successful STR8 <code>U</code> path: Bank 3 booted HIMON U1, <code>B</code> copied U1 into Bank 2, <code>U</code> received compact <code>$C000-$EFFF</code> S19 and programmed HIMON U2, STR8 stayed reachable, and high-flash Bank 2 -&gt; Bank 3 restore brought HIMON U1 back.</p>
+<p>effect: The first fixed-gate <code>UPDATE HIMON</code> proof is no longer theoretical. The remaining STR8 V0 proof gaps are Bank 0 enrollment, lower-sector restore over non-erased bytes, and deliberate high-flash failure behavior with a sacrificial image.</p>
+<p>action: Use <a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a> for the transcript and <a href="STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> for the remaining bench rail.</p>
+<h2 id="redoc-str8-work-process-added">REDOC: STR8 Work Process Added</h2>
+<pre><code class="language-text">2026
+         05
+                18
+                   00:33Z WLP2 Added the STR8 work-process rail, refreshed
+                               bringup/TODO wording around the current ROM
+                               proof, and simplified the future update
+                               command shape with fixed S19 gates.</code></pre>
+<p>scope: <code>STR8_WORK_PROCESS.md</code>, <code>INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>XREF.md</code>, <code>BIB.md</code>, <code>BRINGUP.md</code>, <code>TODO.md</code>, <code>STR8_FLASH_UPDATE_PROPOSAL.md</code>, <code>STR8.md</code>, <code>QCC_STR8.md</code>.</p>
+<p>change: STR8 now has a process guide that names the next step as a V0 acceptance/regression pass before new update commands or self-update. STR8&#39;s recovery path is treated as already proven; the pass records that the current build still behaves like the known-good recovery image. The update proposal now treats <code>U T</code>, <code>U H</code>, and <code>U S</code> as design shorthand only; the compact implemented HIMON path is <code>U</code>, equivalent to fixed <code>UPDATE HIMON</code>. The first S19 gate is fixed: <code>U</code> accepts only <code>$C000-$EFFF</code>, while future <code>UPDATE STR8</code> accepts only <code>$F000-$FFFF</code> after stronger confirmation. IVI is now the combined image&#39;s stable vector-indirection mechanism, IVY is only its pronunciation, and LEAF is the future friendly front door built on IVI. Payload use of future LEAF patch routines is optional and has no flash authority. The bringup guide points to the current <code>$F000</code> resident shell, <code>$FC00</code> worker source, <code>$0200-$05FF</code> RAM tray, <code>$4000-$4FFF</code> copy buffer, and <code>$4000-$6FFF</code> HIMON update staging area.</p>
+<p>effect: Do not expose <code>U T</code>, <code>U H</code>, or <code>U S</code> as operator commands. Use <code>U</code> only as the fixed HIMON S19 gate, and keep later generic/raw-range work behind a guided update surface. The existing <code>? B E M U 0 1 2 G R</code> rescue/update surface still needs a clean hardware transcript, especially for destructive <code>B</code>, <code>E</code>, <code>U</code>, lower-sector restore, and high-flash failure behavior.</p>
+<p>action: Use <a href="STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> before editing STR8 source or planning the next bench pass.</p>
+<h2 id="redoc-product-boundaries-named">REDOC: Product Boundaries Named</h2>
+<pre><code class="language-text">2026
+         05
+                17
+                   18:49Z WLP2 Added a product-boundary guide for R-YORS,
+                               STR8, IVI/LEAF, HIMON, and peer payloads.</code></pre>
+<p>scope: <code>PRODUCT_BOUNDARIES.md</code>, <code>INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>BOOK.md</code>, <code>GLOSSARY.md</code>.</p>
+<p>change: STR8 is now documented as the board management product inside the current repo. IVI is the interrupt-vector mechanism, and LEAF is the newer front-door product name built on it. HIMON is the default monitor payload, while WDCMONv2, BETTERMON, apps, tools, BASIC, and FORTH can be peer payload targets.</p>
+<p>effect: Do not treat STR8 as only a HIMON helper, and do not treat HIMON as the only possible thing STR8 can install or boot. The repo stays together for now; the boundary is conceptual and documented before any source split.</p>
+<p>action: Start with <a href="PRODUCT_BOUNDARIES.html">PRODUCT_BOUNDARIES.md</a>, then use <a href="STR8.html">STR8.md</a> for the board-management contract and <a href="QCC_STR8.html">QCC_STR8.md</a> for open STR8, IVI, and LEAF questions.</p>
+<h2 id="redoc-onboard-asm-monitor-candidates-added">REDOC: Onboard ASM Monitor Candidates Added</h2>
+<pre><code class="language-text">2026
+         05
+                16
+                   22:46Z WLP2 Added future wording for onboard ASM
+                               producing monitor candidates instead of S19,
+                               with a tiny winner-record commit.</code></pre>
+<p>scope: <code>HASHED_ASM.md</code>, <code>QCC_STR8.md</code>.</p>
+<p>change: Future onboard update flow now distinguishes S19 as host transport from native onboard products: RAM candidates, staged sector images, <code>ASM_STAGE</code>, <code>ASM_FIX</code>, <code>CODE</code>, <code>RCAT/RREC</code>, and later <code>BOOT/XMON</code> candidate or winner records. The atomic part is the final winner-record commit after verification, not the whole monitor write.</p>
+<p>effect: Do not assume onboard ASM must generate S19 to update the board. The old monitor should remain the winner until a sealed, verified candidate is published by a small commit record.</p>
+<p>action: Use <a href="HASHED_ASM.html">HASHED_ASM.md</a> for onboard ASM product shape and <a href="QCC_STR8.html">QCC_STR8.md</a> for future STR8 candidate/winner policy.</p>
+<h2 id="redoc-himon-str8-update-means-sector-rebuild">REDOC: HIMON/STR8 Update Means Sector Rebuild</h2>
+<pre><code class="language-text">2026
+         05
+                16
+                   22:42Z WLP2 Clarified that V0 HIMON/STR8 replacement
+                               means RAM-staged 4K sector rebuild, with S19
+                               as transport only.</code></pre>
+<p>scope: <code>STR8.md</code>, <code>STR8_DECISION_REFERENCE.md</code>, <code>STR8_FLASH_UPDATE_PROPOSAL.md</code>, <code>QCC_STR8.md</code>.</p>
+<p>change: The monitor update path now says V0 should stage a full 4K sector in RAM, merge incoming S19 bytes if S19 is used, confirm erase when the staged sector differs, erase the destination sector, write the full staged sector, and verify the whole sector. Direct 1-&gt;0 programming is demoted to later optimization or deliberate one-way flags.</p>
+<p>effect: Do not describe HIMON or STR8 replacement as a casual flash write, byte patch, or live S19 stream into monitor flash. It is a sector rebuild.</p>
+<p>action: Use the STR8 update notes before designing <code>UPDATE HIMON</code>, <code>UPDATE STR8</code>, or any RAM updater that touches <code>$C000-$FFFF</code>.</p>
 <h2 id="redoc-str8-wear-scratch-and-partition-notes-added">REDOC: STR8 Wear, Scratch, And Partition Notes Added</h2>
 <pre><code class="language-text">2026
          05
@@ -132,7 +187,7 @@ SRC/BUILD/bin/life-2000-load.bin</code></pre>
 <p>effect: <code>SRC/BUILD/s19/life.s19</code> is a stale remembered artifact name. New references should carry the load address.</p>
 <p>action: Use <code>life-2000.s19</code> for HIMON S-record loading and <code>life-2000-load.bin</code> when a raw loadable binary is needed.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-17T03:30:32Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-18T02:31:58Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

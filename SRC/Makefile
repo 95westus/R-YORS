@@ -54,6 +54,7 @@ HIMON_ROM_BIN := $(BIN_DIR)/himon-rom.bin
 HIMON_STR8_ROM_BIN := $(BIN_DIR)/himon-str8-rom.bin
 HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-install.s19
 HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
+HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_LOAD_BIN := $(BIN_DIR)/himon.bin
@@ -114,7 +115,13 @@ FIG_FORTH_SRC := $(FIG_FORTH_HOME)/generated/fig-forth.asm
 FIG_FORTH_OBJ := $(OBJ_DIR)/LOCAL/fig-forth/fig-forth.obj
 FIG_FORTH_S19 := $(S19_DIR)/fig-forth-a000.s19
 FIG_FORTH_LINKFLAGS := -g -s -t -cA000 -hm19 -j -o
+FIG_FORTH_C000_SRC := $(FIG_FORTH_HOME)/generated/fig-forth-c000.asm
+FIG_FORTH_C000_OBJ := $(OBJ_DIR)/LOCAL/fig-forth/fig-forth-c000.obj
+FIG_FORTH_C000_S19 := $(S19_DIR)/fig-forth-c000.s19
+FIG_FORTH_C000_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
+FIG_FORTH_STR8_UPDATE_S19 := $(S19_DIR)/fig-forth-str8-update.s19
 MSBASIC_OSI_GEN := tools/emit_msbasic_osi_wdc.py
+MSBASIC_OSI_C000_GEN := tools/emit_msbasic_osi_c000_from_generated.ps1
 # Local-only source/generator home. Nothing under $(LOCAL_ROOT) is tracked.
 MSBASIC_OSI_SRC := $(MSBASIC_HOME)/generated/osi-basic.asm
 MSBASIC_OSI_OBJ := $(OBJ_DIR)/LOCAL/msbasic/osi-basic.obj
@@ -123,6 +130,11 @@ MSBASIC_OSI_LINKFLAGS := -g -s -t -c8000 -hm19 -j -o
 MSBASIC_OSI_BIN := $(BIN_DIR)/msbasic-osi-fnv-8000-8k.bin
 MSBASIC_OSI_RAM_S19 := $(S19_DIR)/msbasic-osi-ram.s19
 MSBASIC_OSI_RAM_LINKFLAGS := -g -s -t -c4000 -hm19 -j -o
+MSBASIC_OSI_C000_SRC := $(MSBASIC_HOME)/generated/osi-basic-c000.asm
+MSBASIC_OSI_C000_OBJ := $(OBJ_DIR)/LOCAL/msbasic/osi-basic-c000.obj
+MSBASIC_OSI_C000_S19 := $(S19_DIR)/msbasic-osi-c000.s19
+MSBASIC_OSI_C000_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
+MSBASIC_OSI_STR8_UPDATE_S19 := $(S19_DIR)/msbasic-osi-str8-update.s19
 FTDI_DRV_SRC := $(STASH_DIR)/ftdi/ftdi-drv.asm
 FTDI_DRV_INC := $(STASH_DIR)/ftdi/ftdi-drv.inc
 
@@ -245,6 +257,9 @@ himon-rom-install-s19: $(HIMON_ROM_INSTALL_S19)
 himon-str8-rom-install-s19: $(HIMON_STR8_ROM_INSTALL_S19)
 	@echo "Built $(HIMON_STR8_ROM_INSTALL_S19)."
 
+himon-str8-himon-update-s19: $(HIMON_STR8_HIMON_UPDATE_S19)
+	@echo "Built $(HIMON_STR8_HIMON_UPDATE_S19)."
+
 rom-install-s19: himon-str8-rom-install-s19
 	@echo "Built primary ROM install S19."
 
@@ -325,6 +340,12 @@ fig-forth: $(ROM_LIB) $(FIG_FORTH_S19)
 fig-forth-src: $(FIG_FORTH_SRC)
 	@echo "Built local $(FIG_FORTH_SRC)."
 
+fig-forth-c000: $(ROM_LIB) $(FIG_FORTH_C000_S19)
+	@echo "Built $(FIG_FORTH_C000_S19)."
+
+fig-forth-str8-update-s19: $(FIG_FORTH_STR8_UPDATE_S19)
+	@echo "Built $(FIG_FORTH_STR8_UPDATE_S19)."
+
 msbasic-osi: $(MSBASIC_OSI_S19) $(MSBASIC_OSI_BIN)
 	@echo "Built $(MSBASIC_OSI_S19) and $(MSBASIC_OSI_BIN)."
 
@@ -336,6 +357,12 @@ msbasic-osi-bin: $(MSBASIC_OSI_BIN)
 
 msbasic-osi-ram: $(MSBASIC_OSI_RAM_S19)
 	@echo "Built $(MSBASIC_OSI_RAM_S19)."
+
+msbasic-osi-c000: $(MSBASIC_OSI_C000_S19)
+	@echo "Built $(MSBASIC_OSI_C000_S19)."
+
+msbasic-osi-str8-update-s19: $(MSBASIC_OSI_STR8_UPDATE_S19)
+	@echo "Built $(MSBASIC_OSI_STR8_UPDATE_S19)."
 
 call-order: $(CALL_ORDER)
 	@echo "Updated $(CALL_ORDER)."
@@ -523,10 +550,25 @@ $(FIG_FORTH_S19): $(FIG_FORTH_OBJ) $(ROM_LIB)
 	@echo [ps] set S9 start $$A008 in $(FIG_FORTH_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(FIG_FORTH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903A00854'; Set-Content -Path $$p -Value $$lines"
 
+$(FIG_FORTH_C000_S19): $(FIG_FORTH_C000_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(FIG_FORTH_C000_LINKFLAGS) $(FIG_FORTH_C000_S19) $(FIG_FORTH_C000_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$C000 in $(FIG_FORTH_C000_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(FIG_FORTH_C000_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903C0003C'; Set-Content -Path $$p -Value $$lines"
+
+$(FIG_FORTH_STR8_UPDATE_S19): $(FIG_FORTH_C000_S19)
+	@echo [ps] build $(FIG_FORTH_STR8_UPDATE_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$src = '$(FIG_FORTH_C000_S19)'; $$dst = '$(FIG_FORTH_STR8_UPDATE_S19)'; $$out = New-Object System.Collections.Generic.List[string]; foreach ($$raw in Get-Content -Path $$src) { $$line = $$raw.Trim(); if ($$line.Length -eq 0) { continue }; if ($$line.StartsWith('S1', [System.StringComparison]::Ordinal)) { $$addr = [Convert]::ToInt32($$line.Substring(4, 4), 16); if ($$addr -lt 0xC000 -or $$addr -gt 0xEFFF) { throw ('fig-Forth STR8 U record outside C000-EFFF: ' + $$line) }; $$out.Add($$line); continue }; if ($$line.StartsWith('S9', [System.StringComparison]::Ordinal)) { $$out.Add('S903C0003C'); continue }; if ($$line.StartsWith('S0', [System.StringComparison]::Ordinal)) { continue }; throw ('Unsupported record in fig-Forth STR8 U stream: ' + $$line) }; if ($$out.Count -eq 0) { throw 'No records for fig-Forth STR8 U stream' }; [System.IO.File]::WriteAllLines($$dst, $$out, [System.Text.Encoding]::ASCII); Write-Host ('STR8 U S19              = {0}' -f $$dst); Write-Host ('Address range           = C000-EFFF'); Write-Host ('S9 start                = C000'); Write-Host ('Records                 = {0}' -f $$out.Count)"
+
 $(FIG_FORTH_SRC):
 	@if not exist $(subst /,\,$(dir $(FIG_FORTH_SRC))) mkdir $(subst /,\,$(dir $(FIG_FORTH_SRC)))
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/emit_fig_forth_wdc.ps1 -SourcePath "$(FIG_FORTH_INPUT)" -OutPath "$(FIG_FORTH_SRC)"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(LOCAL_PROVENANCE) -Name "fig-forth" -LocalHome "$(FIG_FORTH_HOME)" -SourcePath "$(FIG_FORTH_INPUT)" -GeneratedPath "$(FIG_FORTH_SRC)" -ToolPath "tools/emit_fig_forth_wdc.ps1" -Note "Generated local WDC-flavored fig-Forth source."
+
+$(FIG_FORTH_C000_SRC):
+	@if not exist $(subst /,\,$(dir $(FIG_FORTH_C000_SRC))) mkdir $(subst /,\,$(dir $(FIG_FORTH_C000_SRC)))
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/emit_fig_forth_wdc.ps1 -SourcePath "$(FIG_FORTH_INPUT)" -OutPath "$(FIG_FORTH_C000_SRC)" -MonitorExitAddress 61440 -BootEntryAtBase
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(LOCAL_PROVENANCE) -Name "fig-forth-c000" -LocalHome "$(FIG_FORTH_HOME)" -SourcePath "$(FIG_FORTH_INPUT)" -GeneratedPath "$(FIG_FORTH_C000_SRC)" -ToolPath "tools/emit_fig_forth_wdc.ps1" -Note "Generated bootable C000 fig-Forth source for STR8 U experiments."
 
 $(MSBASIC_OSI_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -566,11 +608,25 @@ $(HIMON_STR8_ROM_INSTALL_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 	@echo [ps] build $(HIMON_STR8_ROM_INSTALL_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$(HIMON_STR8_ROM_INSTALL_S19)" -BaseAddress 32768
 
+$(HIMON_STR8_HIMON_UPDATE_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
+	@echo [ps] build $(HIMON_STR8_HIMON_UPDATE_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$(HIMON_STR8_HIMON_UPDATE_S19)" -BaseAddress 32768 -RangeStart 49152 -RangeEnd 61439 -StartAddress 49152 -OmitAllFFDataRecords
+
 $(MSBASIC_OSI_RAM_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(MSBASIC_OSI_RAM_LINKFLAGS) $(MSBASIC_OSI_RAM_S19) $(MSBASIC_OSI_OBJ)
 	@echo [ps] set S9 start from COLD_START in $(MSBASIC_OSI_RAM_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/msbasic-osi-ram.map') { '$(S19_DIR)/msbasic-osi-ram.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/msbasic-osi-ram.map') { '$(MAP_DIR)/msbasic-osi-ram.map' } else { throw 'msbasic-osi-ram.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+COLD_START\s*$$' | Select-Object -First 1; if (-not $$m) { throw 'COLD_START not found in map' }; $$addr = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$sum = 3 + (($$addr -shr 8) -band 255) + ($$addr -band 255); $$chk = ($$sum -bxor 255) -band 255; $$rec = ('S903{0:X4}{1:X2}' -f $$addr, $$chk); $$lines = Get-Content -Path '$(MSBASIC_OSI_RAM_S19)'; $$lines[-1] = $$rec; Set-Content -Path '$(MSBASIC_OSI_RAM_S19)' -Value $$lines"
+
+$(MSBASIC_OSI_C000_S19): $(MSBASIC_OSI_C000_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(MSBASIC_OSI_C000_LINKFLAGS) $(MSBASIC_OSI_C000_S19) $(MSBASIC_OSI_C000_OBJ)
+	@echo [ps] set S9 start $$C000 in $(MSBASIC_OSI_C000_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(MSBASIC_OSI_C000_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903C0003C'; Set-Content -Path $$p -Value $$lines"
+
+$(MSBASIC_OSI_STR8_UPDATE_S19): $(MSBASIC_OSI_C000_S19)
+	@echo [ps] build $(MSBASIC_OSI_STR8_UPDATE_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$src = '$(MSBASIC_OSI_C000_S19)'; $$dst = '$(MSBASIC_OSI_STR8_UPDATE_S19)'; $$out = New-Object System.Collections.Generic.List[string]; foreach ($$raw in Get-Content -Path $$src) { $$line = $$raw.Trim(); if ($$line.Length -eq 0) { continue }; if ($$line.StartsWith('S1', [System.StringComparison]::Ordinal)) { $$addr = [Convert]::ToInt32($$line.Substring(4, 4), 16); if ($$addr -lt 0xC000 -or $$addr -gt 0xEFFF) { throw ('MS BASIC STR8 U record outside C000-EFFF: ' + $$line) }; $$out.Add($$line); continue }; if ($$line.StartsWith('S9', [System.StringComparison]::Ordinal)) { $$out.Add('S903C0003C'); continue }; if ($$line.StartsWith('S0', [System.StringComparison]::Ordinal)) { continue }; throw ('Unsupported record in MS BASIC STR8 U stream: ' + $$line) }; if ($$out.Count -eq 0) { throw 'No records for MS BASIC STR8 U stream' }; [System.IO.File]::WriteAllLines($$dst, $$out, [System.Text.Encoding]::ASCII); Write-Host ('STR8 U S19              = {0}' -f $$dst); Write-Host ('Address range           = C000-EFFF'); Write-Host ('S9 start                = C000'); Write-Host ('Records                 = {0}' -f $$out.Count)"
 
 $(FTDI_DRV_INC): $(FTDI_DRV_SRC)
 	@if not exist $(subst /,\,$(dir $(FTDI_DRV_INC))) mkdir $(subst /,\,$(dir $(FTDI_DRV_INC)))
@@ -595,13 +651,29 @@ $(MSBASIC_OSI_SRC):
 	$(PYTHON) $(MSBASIC_OSI_GEN) --source-root "$(MSBASIC_SRC_ROOT)" --out "$(MSBASIC_OSI_SRC)"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(LOCAL_PROVENANCE) -Name "msbasic" -LocalHome "$(MSBASIC_HOME)" -SourceRoot "$(MSBASIC_SRC_ROOT)" -GeneratedPath "$(MSBASIC_OSI_SRC)" -ToolPath "$(MSBASIC_OSI_GEN)" -Note "Generated local WDC-flavored OSI MS BASIC source."
 
+$(MSBASIC_OSI_C000_SRC): $(MSBASIC_OSI_C000_GEN)
+	@if not exist $(subst /,\,$(dir $(MSBASIC_OSI_C000_SRC))) mkdir $(subst /,\,$(dir $(MSBASIC_OSI_C000_SRC)))
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(MSBASIC_OSI_C000_GEN) -SourcePath "$(MSBASIC_OSI_SRC)" -OutPath "$(MSBASIC_OSI_C000_SRC)"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(LOCAL_PROVENANCE) -Name "msbasic-c000" -LocalHome "$(MSBASIC_HOME)" -SourceRoot "$(MSBASIC_SRC_ROOT)" -GeneratedPath "$(MSBASIC_OSI_C000_SRC)" -ToolPath "$(MSBASIC_OSI_C000_GEN)" -Note "Generated bootable C000 OSI MS BASIC source for STR8 U experiments."
+
 $(MSBASIC_OSI_OBJ): $(MSBASIC_OSI_SRC) $(HIMON_ROM_S19) tools/patch_msbasic_himon_addrs.ps1
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/patch_msbasic_himon_addrs.ps1 -SourcePath "$(MSBASIC_OSI_SRC)" -MapPath "$(S19_DIR)/himon-rom.map"
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
+$(MSBASIC_OSI_C000_OBJ): $(MSBASIC_OSI_C000_SRC) $(STR8_S19) tools/patch_msbasic_himon_addrs.ps1
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/patch_msbasic_himon_addrs.ps1 -SourcePath "$(MSBASIC_OSI_C000_SRC)" -MapPath "$(S19_DIR)/str8-f000.map" -Profile str8
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) $<
+	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
+
 $(FIG_FORTH_OBJ): $(FIG_FORTH_SRC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) $<
+	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
+
+$(FIG_FORTH_C000_OBJ): $(FIG_FORTH_C000_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
@@ -650,4 +722,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-proof hrec-join-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-proof hrec-join-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

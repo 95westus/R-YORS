@@ -9,8 +9,14 @@ prefer the specific form listed here instead of the bare word.
 - HIMON: the current monitor/debug/catalog environment; the default bundled
   monitor payload for STR8.
 - STR8: the board management product and current recovery/update guard.
-- LEAF: Latched Entry Address Frontdoor. BSO2/STR8's friendly IVI path: stable
-  vector stubs plus patchable latched entry addresses.
+- IVI: Interrupt Vector Indirection. This came from BSO2 and is pronounced
+  `IVY`. It is the mechanism: hardware vectors enter small stubs, and payloads
+  patch RAM targets or tables instead of reflashing the hardware vector block.
+- IVY: pronunciation of IVI. Use `IVI` in written design text unless referring
+  to the current `IVY` signature bytes or existing symbol names.
+- LEAF: Latched Entry Address Frontdoor. The newer/friendlier front-door idea
+  built on IVI: stable vector stubs plus patchable latched entry addresses,
+  explained as a board feature rather than as raw vector plumbing.
 - STR8-N / STRAIGHTEN: future expanded STR8 direction.
 - THE: The Hash Environment. THE is the hash-first lookup/catalog environment:
   canonical names, FNV-1a, hash8/hash16/hash32 storage, RCAT/RREC records,
@@ -51,9 +57,8 @@ meaning is required.
 - trampoline: a tiny stable entry that jumps or calls into the current
   implementation.
 - vector: an address slot used by CPU/system dispatch.
-- IVI: Interrupt Vector Indirection, pronounced `IVY`. A stable STR8/vector-layer
-  front door where hardware vectors enter small stubs, and payloads patch
-  indirect targets or tables instead of reflashing the hardware vector block.
+- IVI vector slot: a RAM address cell or dispatch table entry used behind the
+  stable hardware-vector stubs.
 - ABI: binary/register/address-level contract; use only when that precision is
   needed.
 - API: named software interface; usually `routine contract` is clearer here.

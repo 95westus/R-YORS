@@ -12,25 +12,41 @@
 <h1 id="r-yors-todo">R-YORS TODO</h1>
 <h2 id="near-term">Near Term</h2>
 <ul>
-<li>Prove the RAM-resident STR8 S19 command text for automatic backup, Bank 0</li>
+<li>Run the remaining STR8 V0 acceptance/regression pass from</li>
 </ul>
-<p>enrollment, restore, reset, and HIMON handoff operations.</p>
+<p><a href="STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a>: rebuild artifacts, record image identity, smoke <code>?</code>/<code>M</code>/<code>U</code> reject/<code>G</code>/<code>R</code>, then separately rerun the remaining lower-sector restore over non-erased bytes and high-flash failure behavior checks with a programmer recovery path ready. <code>B</code>, <code>E</code>, B0 enrolled rotation, <code>U</code>, visible HIMON U1-&gt;U2, fig-Forth payload, OSI BASIC payload, and high-flash restores from the backup chain passed on 2026-05-17.</p>
 <ul>
-<li>Choose the first 4K STR8 copy buffer address/range and then update</li>
+<li>Keep <code>MEMORY_MAP.md</code> and <code>RTFM-str8.md</code> aligned with the current STR8 RAM</li>
 </ul>
-<p><code>MEMORY_MAP.md</code>.</p>
+<p>tray: worker at <code>$0200-$05FF</code>, state at <code>$0A00-$0A16</code>, bank-copy sector buffer at <code>$4000-$4FFF</code>, and <code>U</code> update staging at <code>$4000-$6FFF</code>.</p>
 <ul>
 <li>Define <code>FLSH_</code> suffix conventions for register-carried arguments, including</li>
 </ul>
 <p><code>_A</code> and <code>_AX</code>.</p>
 <ul>
-<li>Define the first STR8 V0 protected-window start inside bank 3&#39;s <code>$F000-$FFFF</code></li>
+<li>Treat the current combined ROM protected-window start as <code>$F000</code>; revisit</li>
 </ul>
-<p>top erase sector: <code>$FC00</code>, <code>$FA00</code>, <code>$F800</code>, <code>$F600</code>, <code>$F400</code>, <code>$F200</code>, or <code>$F000</code>.</p>
+<p>shrink only after the V0 acceptance pass and size pressure make it useful.</p>
 <ul>
-<li>Define the top-sector partial-update transaction for bytes below STR8:</li>
+<li>Keep the first <code>U</code> / <code>UPDATE HIMON</code> target path boring after the 2026-05-17</li>
 </ul>
-<p>read/stage/erase/full-sector-write/verify.</p>
+<p>hardware pass: compact S19, <code>$C000-$EFFF</code> gate, blank C/D/E staging, confirmed erase/write/verify, and no <code>$F000-$FFFF</code> update authority.</p>
+<ul>
+<li>Keep the <code>$C000-$EFFF</code> payload gate boring. HIMON U1-&gt;U2, fig-Forth, and OSI</li>
+</ul>
+<p>BASIC have all passed through STR8 <code>U</code>; future payloads should use the same compact S19 gate, transcript proof, and backup-promotion warning.</p>
+<ul>
+<li>Define the later STR8 self-update gate: <code>UPDATE STR8</code> accepts only</li>
+</ul>
+<p><code>$F000-$FFFF</code>, requires stronger confirmation, and resets after verify.</p>
+<ul>
+<li>Decide when to promote a visibly updated HIMON from candidate to baseline:</li>
+</ul>
+<p>after a good <code>U</code>, run <code>B</code> only when Bank 2 should become the new recovery image.</p>
+<ul>
+<li>Sketch LEAF atomic vector routines only after STR8 V0 acceptance:</li>
+</ul>
+<p>install NMI target, install IRQ target, install BRK target, and leave either the old target or new target valid.</p>
 <ul>
 <li>Define STR8 V0&#39;s image read-back/check flow, including which bytes ordinary</li>
 </ul>
@@ -95,7 +111,7 @@
 </ul>
 <p>hash-driven command dispatch.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/TODO.md</code>. Source modified: <time>2026-05-16T04:09:12Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/TODO.md</code>. Source modified: <time>2026-05-18T02:57:17Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

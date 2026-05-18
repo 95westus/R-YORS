@@ -23,6 +23,11 @@ NOTES / SOURCE / ROMS / MANUALS         READ ME FIRST</code></pre>
 ########################################################################
 2026
          05
+                18
+                   02:35Z WLP2 STR8 U / UPDATE HIMON is hardware-proven
+                               for the fixed C000-EFFF gate: U1 backed up
+                               to Bank 2, Bank 3 updated to U2, then
+                               high-flash restore brought U1 back.
                 13
                    21:30Z WLP2 HIMON RAM-only debug N/B/X behavior is
                                hardware-tested. Debug patching still does
@@ -50,7 +55,7 @@ NOTES / SOURCE / ROMS / MANUALS         READ ME FIRST</code></pre>
 </ul>
 <p>This repo is meant to feel like a machine binder: source, generated listings, design notes, decisions, maps, and scratchpad material all live together.</p>
 <h2 id="current-hardware-status">Current Hardware Status</h2>
-<p>A rudimentary STR8 flash-recovery path has been lightly tested on hardware and is functioning nominally. Treat it as an early recovery tool, not a finished field-updater: keep a programmer recovery path and known-good image nearby. So far, STR8 is doing what it is intended to do; testing continues.</p>
+<p>STR8 now has hardware proof for the core recovery/update loop: map, backup, fixed-gate <code>U</code> / <code>UPDATE HIMON</code> from U1 to U2, and high-flash Bank 2 recovery back to U1. Treat it as a bench-proven recovery/update guard, not a finished field-updater: keep a programmer recovery path and known-good image nearby. Remaining STR8 proof gaps include Bank 0 enrollment, restore over non-erased ordinary sectors, and deliberate high-flash failure behavior.</p>
 <p>HIMON&#39;s RAM-only debug path has a current hardware proof for <code>B</code>, <code>B C</code>, <code>B L</code>, <code>N</code>, and <code>X</code>: one-shot breakpoints restore their original opcodes, compact debugger stops print as <code>@hhhh</code>, and invalid debug patch targets report <code>DBG RAM</code>. See <a href="GUIDES/HIMON_DEBUG_TESTING.html">DOC/GUIDES/HIMON_DEBUG_TESTING.md</a>.</p>
 <h2 id="project-posture">Project Posture</h2>
 <p>R-YORS does not claim that every idea here is new to computing history. Many ideas are known patterns being rediscovered, renamed, tested, and made personal through this board, this vocabulary, and this build.</p>
@@ -102,6 +107,7 @@ C=0  no / not ready / invalid / failure</code></pre>
 <li><a href="GUIDES/GLOSSARY.html">DOC/GUIDES/GLOSSARY.md</a> - terminology contract.</li>
 <li><a href="GUIDES/RTFM-R-YORS.html">DOC/GUIDES/RTFM-R-YORS.md</a> - operator highlights.</li>
 <li><a href="GUIDES/RTFM-str8.html">DOC/GUIDES/RTFM-str8.md</a> - STR8 operations.</li>
+<li><a href="GUIDES/STR8_WORK_PROCESS.html">DOC/GUIDES/STR8_WORK_PROCESS.md</a> - STR8 work/process rail.</li>
 <li><a href="GUIDES/RTFM-himon.html">DOC/GUIDES/RTFM-himon.md</a> - HIMON operations.</li>
 <li><a href="GUIDES/HIMON_DEBUG_TESTING.html">DOC/GUIDES/HIMON_DEBUG_TESTING.md</a> - RAM debug bench process.</li>
 </ul>
@@ -129,6 +135,8 @@ LOCAL/      ignored local source homes, when present</code></pre>
 <pre><code class="language-text">make release</code></pre>
 <p>Regenerates source-derived docs, builds the tracked release set, and stamps the HIMON ROM binary.</p>
 <p>Generated burnable ROM <code>.bin</code> files are exactly one 32K <code>$8000-$FFFF</code> bank image for the programmer workflow. The file does not encode a bank number; bank 0-3 placement is managed through the T48 programmer or through R-YORS/STR8. The combined <code>himon-str8-rom.bin</code> image currently carries HIMON at CPU <code>$C000</code>, STR8 at CPU <code>$F000</code>, and the reset vector at file offset <code>$7FFC</code>. The build check verifies that vector and reset-target code before release. Local language images are linked under the live monitor/boot region: OSI MS BASIC at <code>$8000</code> and fig-Forth at <code>$A000</code>. They remain blank-write/proof artifacts rather than full <code>L F</code> update packages.</p>
+<p>For STR8 bench work, <code>make -C SRC fig-forth-str8-update-s19</code> builds <code>SRC/BUILD/s19/fig-forth-str8-update.s19</code>: a bootable fig-Forth payload for the fixed <code>$C000-$EFFF</code> <code>U</code> gate. It replaces HIMON in Bank 3 until Bank 2 is restored back over it.</p>
+<p><code>make -C SRC msbasic-osi-str8-update-s19</code> does the same for OSI MS BASIC as a temporary <code>$C000</code> payload using STR8&#39;s resident console.</p>
 <p>Forth as a language/concept is not treated here as a copyright problem. The specific fig-Forth source is different: R-YORS uses a local FIG-Forth 6502 Release 1.1 source that identifies itself as a public-domain publication from the Forth Interest Group and requires that its notice be included in further distribution. The generator preserves that notice in the generated local source.</p>
 <pre><code class="language-text">make release-local</code></pre>
 <p>Adds ignored/private local composites when <code>LOCAL/</code> is populated.</p>
@@ -140,7 +148,7 @@ LOCAL/      ignored local source homes, when present</code></pre>
 <h2 id="notice">Notice</h2>
 <p>R-YORS is independent and is not affiliated with or endorsed by The Western Design Center, Inc. Product names are used only to identify compatible hardware.</p>
   </main>
-  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-15T21:56:00Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-18T02:50:04Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

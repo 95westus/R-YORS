@@ -137,8 +137,10 @@ def db_for_bytes(values: list[int]) -> str:
 
 
 class OsiWdcEmitter:
-    def __init__(self, source_root: Path) -> None:
+    def __init__(self, source_root: Path, *, boot_entry_at_base: bool = False, ctrl_c_mode: str = "monitor") -> None:
         self.source_root = source_root
+        self.boot_entry_at_base = boot_entry_at_base
+        self.ctrl_c_mode = ctrl_c_mode
         self.symbols: dict[str, int | str] = {"osi": 1}
         self.cond_stack: list[CondFrame] = []
         self.current_segment: str | None = None
@@ -657,12 +659,28 @@ class OsiWdcEmitter:
                 "",
                 "; HIMON FNV command record for BASIC.",
                 "; The monitor enters executable records at record+8.",
-                "MSBASIC_FNV:",
-                f"                        DB              'F','N',('V'+$80),{BASIC_CMD_FNV_HASH},$00",
-                "MSBASIC_ENTRY:",
-                "                        JMP             COLD_START",
             ]
         )
+        if self.boot_entry_at_base:
+            lines.extend(
+                [
+                    "START:",
+                    "                        JMP             COLD_START",
+                    "MSBASIC_FNV:",
+                    f"                        DB              'F','N',('V'+$80),{BASIC_CMD_FNV_HASH},$00",
+                    "MSBASIC_ENTRY:",
+                    "                        JMP             COLD_START",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "MSBASIC_FNV:",
+                    f"                        DB              'F','N',('V'+$80),{BASIC_CMD_FNV_HASH},$00",
+                    "MSBASIC_ENTRY:",
+                    "                        JMP             COLD_START",
+                ]
+            )
         for seg in SEGMENT_ORDER:
             if not self.segments[seg]:
                 continue
@@ -686,11 +704,27 @@ class OsiWdcEmitter:
                 "                        JMP             MSBASIC_PUT_CHAR_ADDR",
                 "MSBASIC_MONISCNTC:",
                 "MONISCNTC:",
+            ]
+        )
+        if self.ctrl_c_mode == "none":
+            lines.extend(
+                [
+                    "                        CLC",
+                    "                        RTS",
+                ]
+            )
+        else:
+            lines.extend(
+                [
                 "                        JSR             MSBASIC_GET_CTRL_C_ADDR",
                 "                        BCC             MSBASIC_MONISCNTC_DONE",
                 "                        JMP             CONTROL_C_TYPED",
                 "MSBASIC_MONISCNTC_DONE:",
                 "                        RTS",
+                ]
+            )
+        lines.extend(
+            [
                 "LOAD:",
                 "SAVE:",
                 "                        RTS",
@@ -708,9 +742,15 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--boot-entry-at-base", action="store_true")
+    parser.add_argument("--ctrl-c-mode", choices=("monitor", "none"), default="monitor")
     args = parser.parse_args()
 
-    emitter = OsiWdcEmitter(args.source_root)
+    emitter = OsiWdcEmitter(
+        args.source_root,
+        boot_entry_at_base=args.boot_entry_at_base,
+        ctrl_c_mode=args.ctrl_c_mode,
+    )
     emitter.process_file("msbasic.s")
     emitter.write(args.out)
 

@@ -63,7 +63,7 @@ The book should read in three layers:
 
 Proof lives in the guide set:
 
-- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - R-YORS, STR8, LEAF/IVI,
+- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - R-YORS, STR8, IVI/LEAF,
   HIMON, and payload ownership lanes.
 - [DECISIONS.md](./DECISIONS.md) - settled calls.
 - [HASH.md](./HASH.md) and [HASH_MAP.md](./HASH_MAP.md) - hash and catalog model.
@@ -287,14 +287,15 @@ The product boundary makes the book readable:
 ```text
 R-YORS  the project/system direction
 STR8    board management and survival
-LEAF    BSO2/STR8's IVI path; IVI is pronounced IVY
+IVI     Interrupt Vector Indirection from BSO2, pronounced IVY
+LEAF    newer product-shaped front door built on IVI
 HIMON   default monitor payload and workbench
 THE     future hash/catalog environment
 ```
 
-IVY grows into LEAF. IVI is the interrupt-vector indirection pattern; LEAF is
-the Latched Entry Address Frontdoor that makes it feel like a board feature
-instead of a register spreadsheet.
+IVI is the interrupt-vector indirection pattern. IVY is only how IVI is spoken
+out loud. LEAF is the Latched Entry Address Frontdoor: the newer name for making
+that mechanism feel like a board feature instead of a register spreadsheet.
 
 Later, STR8 can learn a bigger transport language without changing that story.
 S1/S9 is enough for V0 install packages. A future S2/S8 `.s28` path can use

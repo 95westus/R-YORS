@@ -203,6 +203,8 @@ STR8 V0 #5F6A0F7A
 ? = print tiny STR8 ID/state
 B = backup automatic image rotation, with verify
 E = enroll bank 0 into rotation, destructive, confirmed
+M = map bank/sector used or erased status
+U = update HIMON from fixed $C000-$EFFF S19 gate
 0 = restore bank 0 -> bank 3, with verify
 1 = restore bank 1 -> bank 3, with verify
 2 = restore bank 2 -> bank 3, with verify
@@ -214,36 +216,36 @@ R = reset
 
 ## Vectors
 
-V0 HIMON controls IRQ/vector behavior.
-
-Direction update: earlier notes allowed future STR8 ownership of the hardware
-vector stubs because the vectors live in protected flash. After reconsideration,
-the current direction is opt-in integration. STR8-N/STRAIGHTEN may provide
-recovery-safe vector hooks, while user systems can keep their own interrupt
-policy.
-
-Reference vector integration can still use STR8 stubs:
+The combined STR8/HIMON image now uses STR8-owned IVI hardware-vector entries
+in the protected top sector. IVI means Interrupt Vector Indirection; IVY is only
+the pronunciation and the current signature/symbol spelling.
 
 ```text
-NMI   -> STR8_NMI_STUB
-RESET -> STR8_RESET_STUB
-IRQ   -> STR8_IRQBRK_STUB
+NMI   -> STR8_IVY_ENTRY_NMI at $F089
+RESET -> START at $F000
+IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F09D
+```
+
+On reset, STR8 seeds the IVI RAM cells with safe defaults before the boot
+countdown:
+
+```text
+$7EF8-$7EF9  reset target, currently START
+$7EFA-$7EFB  NMI target
+$7EFC-$7EFD  BRK target
+$7EFE-$7EFF  IRQ target
 ```
 
 The IRQ/BRK stub splits BRK from non-BRK IRQ using the stacked status `B` flag,
-then dispatches through RAM vectors.
+then dispatches through the appropriate RAM vector. The stubs ignore the table
+unless `$7EED-$7EEF` contains the `IVY` signature, so a cold RAM clear or
+half-written vector table falls back to `RTI` rather than a wild jump.
 
-```text
-RAM_NMI_VEC
-RAM_IRQ_VEC
-RAM_BRK_VEC
-```
-
-This opt-in stub family is the start of `IVI`: Interrupt Vector Indirection,
-pronounced `IVY`. If STR8 is installed as the board's boot/recovery product,
-IVI lets hardware vectors stay stable while payloads patch indirect targets. In
-V0, HIMON installs and patches the active vector targets. Future payloads can
-use the same mechanism without inheriting HIMON's interrupt meanings.
+STR8 owns the physical front door; HIMON installs the active vector targets
+after handoff through the existing `SYS_VEC_SET_*` routines. Future payloads can
+use the same mechanism without inheriting HIMON's interrupt meanings. LEAF is
+the newer product-shaped front door built on this IVI mechanism, not a separate
+interrupt policy owner yet.
 
 ## Layering
 
@@ -265,11 +267,12 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
-The current combined ROM stores the worker source at bank 3 `$F800-$FA92`.
-Before `B`, `E`, `M`, `0`, `1`, or `2`, resident STR8 at `$F000` copies that
-worker into the `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The worker
-uses `$0A00-$0A0C` as its state board, uses `$4000-$4FFF` as the 4K sector
-buffer, and restores bank 3 before returning.
+The current combined ROM stores the worker source at bank 3 `$FC00-$FEBE`.
+Before `B`, `E`, `M`, `U`, `0`, `1`, or `2`, resident STR8 at `$F000` copies
+that worker into the `$0200-$05FF` STR8 RAM tray and then calls `$0200`. The
+worker uses `$0A00-$0A16` as its state/update board, uses `$4000-$4FFF` as the
+4K bank-copy sector buffer, and restores bank 3 before returning. The `U` HIMON
+updater also uses `$5000-$6FFF` so C/D/E can all be staged before erase.
 
 The current RAM worker copies full 32K banks with a 4K buffer:
 
@@ -382,7 +385,7 @@ WDCMONv2 transition documentation/tool
 Advanced sector maintenance means a confirmed mode that can select source and
 destination banks/sectors, erase a selected destination sector, copy one sector
 to another, and verify by read-back compare. It is useful for rescue and lab
-work, but it is not part of the small V0 `? B E M 0 1 2 G R` command surface
+work, but it is not part of the small V0 `? B E M U 0 1 2 G R` command surface
 and must not alter Bank 0 rotation policy except through the normal `E`
 enrollment command.
 

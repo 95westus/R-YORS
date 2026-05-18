@@ -14,6 +14,10 @@
 <ol>
 <li><a href="INDEX.html">INDEX.md</a> - top-level guide index and current source snapshot.</li>
 <li><a href="MAP.html">MAP.md</a> - where each document fits.</li>
+<li><a href="PRODUCT_BOUNDARIES.html">PRODUCT_BOUNDARIES.md</a> - R-YORS, STR8, IVI/LEAF,</li>
+</ol>
+<p>HIMON, and payload ownership lanes.</p>
+<ol>
 <li><a href="BOOK.html">BOOK.md</a> - narrative spine for the hashed runtime system book.</li>
 <li><a href="HASH_FLASH.html">HASH_FLASH.md</a> - command-surface alerts and recent rehashes.</li>
 <li><a href="DOC_FLASH.html">DOC_FLASH.md</a> - doc/edict alerts and recent REDOC notes.</li>
@@ -26,6 +30,7 @@
 <p>stages and routine-class families.</p>
 <ol>
 <li><a href="STR8.html">STR8.md</a> - Subroutine To Return recovery/update monitor.</li>
+<li><a href="STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> - current STR8 work rail.</li>
 <li><a href="RTFM-str8.html">RTFM-str8.md</a> - compact STR8 operating instructions.</li>
 <li><a href="RTFM-himon.html">RTFM-himon.md</a> - compact HIMON/STR8 boundary instructions.</li>
 <li><a href="HIMON_DEBUG_TESTING.html">HIMON_DEBUG_TESTING.md</a> - bench process for HIMON debug testing.</li>
@@ -79,14 +84,17 @@
 <h2 id="core-thread">Core Thread</h2>
 <p>The current conceptual path is:</p>
 <pre><code class="language-text">R-YORS
-  -&gt; STR8 boot/recovery/update guard
-  -&gt; HIMON monitor/debug environment
+  -&gt; STR8 board management product
+  -&gt; IVI mechanism and LEAF front door
+  -&gt; HIMON default monitor payload
+  -&gt; other payload targets
   -&gt; hash-first command and symbol lookup
   -&gt; onboard assembler with fixups
   -&gt; banked flash growth and catalog maintenance</code></pre>
 <h2 id="file-roles">File Roles</h2>
 <pre><code class="language-text">INDEX.md       navigation and source snapshot
 MAP.md         document/system map
+PRODUCT_BOUNDARIES.md R-YORS, STR8, IVI/LEAF, HIMON, and payload ownership lanes
 BOOK.md        narrative spine for the hashed runtime system book
 HASH_FLASH.md  command-surface alerts and recent rehashes
 DOC_FLASH.md   doc/edict alerts and recent REDOC notes
@@ -107,6 +115,7 @@ HASH_MAP.md    map of hash concepts
 QCC_HASH.md    hash-width and compact signature questions
 QCC_FLASH.md   FSB lifecycle and condense/compress questions
 STR8.md        recovery/update monitor design
+STR8_WORK_PROCESS.md current review/proof/implementation rail for STR8
 RTFM-str8.md   compact STR8 operating instructions
 RTFM-himon.md  compact HIMON/STR8 boundary instructions
 HIMON_DEBUG_TESTING.md bench process for HIMON debug testing
@@ -120,7 +129,7 @@ QCC_CATALOG_LINKING.md catalog-linking bootstrap and payload-baggage questions
 QCC_STR8.md    STR8 ownership and recovery/update questions
 QCC_MEMORY.md  memory selectors, allocation, and bit-helper questions</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/TOC.md</code>. Source modified: <time>2026-05-16T04:15:39Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/TOC.md</code>. Source modified: <time>2026-05-18T01:54:17Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

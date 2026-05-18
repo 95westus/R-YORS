@@ -15,6 +15,9 @@
 <pre><code class="language-text">The Rolling Of My Own Hashed Runtime System</code></pre>
 <p>Possible subtitle:</p>
 <pre><code class="language-text">R-YORS, HIMON, STR8, and the path from monitor commands to catalog-linked code</code></pre>
+<p>Product subtitle:</p>
+<pre><code class="language-text">STR8 keeps the board alive. LEAF opens the interrupt front door. HIMON is the
+default workbench payload.</code></pre>
 <h2 id="book-promise">Book Promise</h2>
 <p>The book is about building a small hashed runtime system from the bench up. It is not a claim that hashing, catalogs, flash records, monitors, loaders, or linkers are new ideas. It is the record of making them personal, concrete, and operational on this board, with this vocabulary, and under these constraints.</p>
 <p>The central claim:</p>
@@ -35,6 +38,10 @@ relinked.</code></pre>
 <li>The questions: what is settled, what is only proved, and what remains open.</li>
 </ol>
 <p>Proof lives in the guide set:</p>
+<ul>
+<li><a href="PRODUCT_BOUNDARIES.html">PRODUCT_BOUNDARIES.md</a> - R-YORS, STR8, IVI/LEAF,</li>
+</ul>
+<p>HIMON, and payload ownership lanes.</p>
 <ul>
 <li><a href="DECISIONS.html">DECISIONS.md</a> - settled calls.</li>
 <li><a href="HASH.html">HASH.md</a> and <a href="HASH_MAP.html">HASH_MAP.md</a> - hash and catalog model.</li>
@@ -181,19 +188,33 @@ start +count    count bytes</code></pre>
 <li><a href="DECISIONS.html">DECISIONS.md</a></li>
 </ul>
 <h2 id="part-iii-str8-and-recovery">Part III: STR8 And Recovery</h2>
-<h3 id="chapter-8-str8-as-recovery-anchor">Chapter 8: STR8 As Recovery Anchor</h3>
+<h3 id="chapter-8-str8-as-board-management-product">Chapter 8: STR8 As Board Management Product</h3>
 <p>Answer:</p>
-<p>STR8 exists so recovery does not depend on the thing being recovered. It owns safe boot, protected-window policy, image-oriented restore/backup, handoff to HIMON, and eventually guarded update transactions.</p>
+<p>STR8 exists so recovery does not depend on the thing being recovered. It is the board management product: safe boot, flash map, backup, restore, target install, verify, protected-window policy, and handoff.</p>
+<p>HIMON is the default workbench payload, not the reason STR8 exists. STR8 should be useful to someone who wants to install WDCMONv2, BETTERMON, BASIC, FORTH, a game, or a personal monitor without buying into the whole R-YORS runtime stack.</p>
+<p>The product boundary makes the book readable:</p>
+<pre><code class="language-text">R-YORS  the project/system direction
+STR8    board management and survival
+IVI     Interrupt Vector Indirection from BSO2, pronounced IVY
+LEAF    newer product-shaped front door built on IVI
+HIMON   default monitor payload and workbench
+THE     future hash/catalog environment</code></pre>
+<p>IVI is the interrupt-vector indirection pattern. IVY is only how IVI is spoken out loud. LEAF is the Latched Entry Address Frontdoor: the newer name for making that mechanism feel like a board feature instead of a register spreadsheet.</p>
+<p>Later, STR8 can learn a bigger transport language without changing that story. S1/S9 is enough for V0 install packages. A future S2/S8 <code>.s28</code> path can use 24-bit addresses as physical SST39SF010A flash-chip addresses: bank 3, the reset/default boot bank, starts at physical flash <code>$18000</code>, so the boot bank can be named directly for bulk storage, retrieval, restore, and transport.</p>
 <p>STR8 V0 intentionally keeps console byte I/O private as <code>STR8_CON_*</code> rather than publishing duplicate <code>BIO_*</code> or <code>PIN_*</code> catalog providers.</p>
 <p>Questions:</p>
 <ul>
 <li>What must be true before reset enters STR8 first?</li>
-<li>Why should STR8 stay smaller than HIMON?</li>
+<li>Why should STR8 stay useful without HIMON?</li>
+<li>Why should STR8 stay smaller than any one payload?</li>
+<li>What does LEAF provide without owning payload interrupt policy forever?</li>
+<li>When does S1/S9 stay enough, and when does bank-aware S2/S8 transport help?</li>
 <li>When should STR8 call shared services, and when should it carry private code?</li>
 <li>How does future STR8-N participate in catalogs without owning all catalogs?</li>
 </ul>
 <p>Proof and notes:</p>
 <ul>
+<li><a href="PRODUCT_BOUNDARIES.html">PRODUCT_BOUNDARIES.md</a></li>
 <li><a href="STR8.html">STR8.md</a></li>
 <li><a href="RTFM-str8.html">RTFM-str8.md</a></li>
 <li><a href="BRINGUP.html">BRINGUP.md</a></li>
@@ -445,7 +466,7 @@ Pointers
 <p>R-YORS is a small W65C02 system that grows from a monitor into a hashed runtime environment. HIMON provides the bench: commands, debugging, loading, flash guards, and hash dispatch. STR8 protects recovery. THE names the future hash environment where records, bodies, fixups, and catalogs make code discoverable and linkable on the machine itself.</p>
 <p>This book follows that path without pretending the destination arrived first. It keeps the false starts, proof apps, hardware transcripts, command grammar debates, and naming decisions close to the metal, because that is where the runtime became real.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/BOOK.md</code>. Source modified: <time>2026-05-16T04:14:57Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/BOOK.md</code>. Source modified: <time>2026-05-18T01:54:04Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

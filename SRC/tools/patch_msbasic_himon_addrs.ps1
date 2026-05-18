@@ -1,6 +1,8 @@
 param(
     [string]$SourcePath = "../LOCAL/msbasic/generated/osi-basic.asm",
-    [string]$MapPath = "BUILD/map/himon-rom.map"
+    [string]$MapPath = "BUILD/map/himon-rom.map",
+    [ValidateSet("himon", "str8")]
+    [string]$Profile = "himon"
 )
 
 Set-StrictMode -Version Latest
@@ -45,7 +47,8 @@ function Set-Equate {
     param(
         [string[]]$Lines,
         [Parameter(Mandatory = $true)][string]$Name,
-        [Parameter(Mandatory = $true)][string]$Value
+        [Parameter(Mandatory = $true)][string]$Value,
+        [switch]$Optional
     )
 
     $pattern = "^($([Regex]::Escape($Name))\s+EQU\s+)\$[0-9A-Fa-f]{4}(\s*(?:;.*)?)$"
@@ -56,6 +59,9 @@ function Set-Equate {
             $count++
         }
     }
+    if ($Optional -and $count -eq 0) {
+        return
+    }
     if ($count -ne 1) {
         throw "Expected one equate for $Name in $SourcePath; found $count"
     }
@@ -64,16 +70,22 @@ function Set-Equate {
 $SourcePath = Resolve-ArtifactPath -Path $SourcePath
 $MapPath = Resolve-ArtifactPath -Path $MapPath
 
-$readChar = Get-SymbolAddress -Path $MapPath -Name "BIO_FTDI_READ_BYTE_BLOCK"
-$writeChar = Get-SymbolAddress -Path $MapPath -Name "BIO_FTDI_WRITE_BYTE_BLOCK"
-$ctrlC = Get-SymbolAddress -Path $MapPath -Name "SYS_GET_CTRL_C"
+if ($Profile -eq "str8") {
+    $readChar = Get-SymbolAddress -Path $MapPath -Name "STR8_CON_READ_BYTE_BLOCK"
+    $writeChar = Get-SymbolAddress -Path $MapPath -Name "STR8_CON_WRITE_BYTE_BLOCK"
+    $ctrlC = '$0000'
+} else {
+    $readChar = Get-SymbolAddress -Path $MapPath -Name "BIO_FTDI_READ_BYTE_BLOCK"
+    $writeChar = Get-SymbolAddress -Path $MapPath -Name "BIO_FTDI_WRITE_BYTE_BLOCK"
+    $ctrlC = Get-SymbolAddress -Path $MapPath -Name "SYS_GET_CTRL_C"
+}
 
 [string[]]$lines = Get-Content -Path $SourcePath
 Set-Equate -Lines $lines -Name "MSBASIC_GET_CHAR_ADDR" -Value $readChar
 Set-Equate -Lines $lines -Name "MSBASIC_PUT_CHAR_ADDR" -Value $writeChar
-Set-Equate -Lines $lines -Name "MSBASIC_GET_CTRL_C_ADDR" -Value $ctrlC
+Set-Equate -Lines $lines -Name "MSBASIC_GET_CTRL_C_ADDR" -Value $ctrlC -Optional
 Set-Equate -Lines $lines -Name "MONRDKEY" -Value $readChar
 Set-Equate -Lines $lines -Name "MONCOUT" -Value $writeChar
 Set-Content -Path $SourcePath -Value $lines
 
-Write-Host ("MSBASIC HIMON calls = READ {0}, WRITE {1}, CTRL-C {2}" -f $readChar, $writeChar, $ctrlC)
+Write-Host ("MSBASIC {0} calls = READ {1}, WRITE {2}, CTRL-C {3}" -f $Profile.ToUpperInvariant(), $readChar, $writeChar, $ctrlC)

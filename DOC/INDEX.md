@@ -14,6 +14,7 @@ Start with the guide index:
 Core current design notes:
 
 - [GUIDES/STR8.md](./GUIDES/STR8.md)
+- [GUIDES/STR8_WORK_PROCESS.md](./GUIDES/STR8_WORK_PROCESS.md)
 - [GUIDES/BOOK.md](./GUIDES/BOOK.md)
 - [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md)
 - [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md)

@@ -31,7 +31,7 @@ STR8 = the top-sector recovery anchor and flash mutation guard.
 
 Product-boundary definition: STR8 is the board management product inside
 R-YORS. See [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) for the split
-between R-YORS, STR8, LEAF/IVI, HIMON, and peer payload targets.
+between R-YORS, STR8, IVI/LEAF, HIMON, and peer payload targets.
 
 System relationship:
 
@@ -187,9 +187,10 @@ must not depend on asynchronous NMI as an event source.
 
 ### Interrupt Vector Indirection
 
-`IVI` means Interrupt Vector Indirection and is pronounced `IVY`. If a user
-chooses STR8 as the board's boot/recovery product, STR8 may reasonably own the
-hardware vector front door and provide patchable indirect targets:
+`IVI` means Interrupt Vector Indirection. It came from BSO2 and is pronounced
+`IVY`. If a user chooses STR8 as the board's boot/recovery product, STR8 may
+reasonably own the hardware vector front door and provide patchable indirect
+targets:
 
 ```text
 RESET    -> STR8 reset supervisor
@@ -239,6 +240,9 @@ hardware vector -> STR8 entry/trampoline/router -> active handler
 Reference normal operation:
 
 ```text
+RESET enters STR8 at $F000
+STR8 seeds IVI RAM vectors with safe defaults
+STR8 waits for S, or times out to HIMON
 STR8 validates HIMON
 STR8 hands off to HIMON
 HIMON installs NMI/BRK/IRQ handlers through STR8 or SYS_VEC calls
@@ -253,10 +257,11 @@ STR8 ignores or clears HIMON-installed handlers
 STR8 routes traps to minimal recovery handlers
 ```
 
-So yes: HIMON controls practical trap handling in V0. Later
-STR8-N/STRAIGHTEN can offer a recovery-safe vector path for systems that choose
-it. Systems that already own interrupts can still use STR8 routines directly and
-keep their own policy.
+In the current combined image, STR8 owns the physical vector front door and
+HIMON controls the practical trap behavior after handoff by patching the RAM
+targets. Systems that already own interrupts can still use the same IVI cells
+directly and keep their own policy. LEAF is the newer/friendlier front-door idea
+built on this IVI mechanism; it is not a separate policy owner yet.
 
 The code may use W65C02 instructions when they keep the anchor smaller or
 clearer. NMOS 6502 portability is not a STR8 V0 goal.
@@ -295,8 +300,8 @@ Possible layouts:
 ```text
 Protected top-sector model:
   $8000-$BFFF          app/growth space in the selected ROM bank
-  $C000-$E72D          current HIMON body and data
-  $E72E-$EFFF          slack inside the used E sector
+  $C000-$E75B          current HIMON body and data
+  $E75C-$EFFF          slack inside the used E sector
   $F000-$FFFF          STR8 protected top sector
 
 RAM-updater model:
@@ -324,8 +329,8 @@ first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can perform backup rotation with read-back verify
 first RAM proof can enroll bank 0 into rotation by clearing an in-flash flag bit
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current ROM build links STR8 at $F000 and stores a RAM worker at $F800
-current ROM build copies the worker to $0200 before B/0/1/2 flash mutation
+current ROM build links STR8 at $F000 and stores a RAM worker at $FC00
+current ROM build copies the worker to $0200 before B/U/0/1/2 flash mutation
 current ROM build copies the worker to $0200 before E config mutation
 current ROM build has working B, E, 0, 1, 2, G, R, and ? commands
 current STR8 identity marker is `#5F6A0F7A`
@@ -552,7 +557,7 @@ flowchart TD
     G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $F800 -> $0200]
+    B --> COPY[copy worker $FC00 -> $0200]
     E --> COPY
     RST --> COPY
     COPY --> WORKER[RAM flash worker]
@@ -590,7 +595,7 @@ quit advanced mode
 Bad fit:
 
 ```text
-the normal ? B E M 0 1 2 G R rescue path
+the normal ? B E M U 0 1 2 G R rescue/update path
 automatic backup policy
 casual bank 0 erase before enrollment
 catalog garbage collection
@@ -748,8 +753,8 @@ B command, B0 ROT:  copy bank 1 -> bank 0, bank 2 -> bank 1, bank 3 -> bank 2
 
 Each 4K window reads from the source bank, writes the destination bank, and
 verifies by simple read-back compare. The `$F000` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$F800-$FFFF` into RAM
-`$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
+policy by first copying its worker from bank 3 `$FC00-$FFFF` into RAM
+`$0200-$05FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. FNV, catalog
 lookup, wear leveling, and cycle counts are later work.
@@ -763,10 +768,10 @@ The flash guard should stay in place. Updating HIMON or STR8 should not mean
 "turn off the guard and let a ROM-resident command erase whatever it is running
 from." The safer shape is a confirmed RAM-resident sector rebuild.
 
-The V0 installer should be target/range-shaped, not HIMON-shaped. HIMON is the
-default bundled target and the first useful proof, but the operation should read
-as "install this target image/range" so another monitor or app can use the same
-path later:
+The V0 installer should be target/range-shaped internally, not HIMON-shaped.
+HIMON is the default bundled target and the first useful proof, but the low
+level operation should read as "install this target image/range" so another
+monitor or app can use the same path later:
 
 ```text
 target name:     HIMON, BETTERMON, app, or explicit range
@@ -774,6 +779,37 @@ target range:    bank plus CPU-visible address range
 entry address:   where STR8 should hand off after validation
 protected range: what must not be erased by this install
 ```
+
+The operator-facing surface should stay simpler than the internal primitive.
+First expose named profiles such as:
+
+```text
+UPDATE
+UPDATE HIMON
+UPDATE STR8
+```
+
+Do not ask the operator to choose a raw target/range until a later advanced
+mode can print and guard that choice well enough to be mistake-proof.
+
+The first S19 update gates are fixed and named:
+
+```text
+UPDATE HIMON
+  accepts only $C000-$EFFF records
+  refuses $F000-$FFFF records
+  keeps STR8 alive if HIMON is bad
+
+UPDATE STR8
+  accepts only $F000-$FFFF records
+  refuses $C000-$EFFF records
+  requires literal STR8 confirmation
+  verifies and resets instead of returning casually
+```
+
+If a future package contains both ranges, STR8 should split it into two visible
+operations. The operator should never have to notice a raw address typo to keep
+the board safe.
 
 For V0, treat target replacement as a sector erase/rebuild operation, not as a
 casual flash write or byte patch:

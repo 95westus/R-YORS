@@ -558,8 +558,9 @@ thing an operator trusts when the payload is broken.
 
 Comment: Yes. STR8 is the right authority for dangerous flash update flows.
 HIMON may receive, inspect, or prepare an update package, but STR8 should make
-the flash decision. The V0 installer should be target/range-shaped rather than
-HIMON-shaped. HIMON is the default bundled target, not the only possible target:
+the flash decision. The V0 installer should be target/range-shaped internally
+rather than HIMON-shaped. HIMON is the default bundled target, not the only
+possible target:
 
 ```text
 is the target range legal?
@@ -569,6 +570,31 @@ has the live image been backed up?
 does the written image verify?
 is the new target bootable enough to hand off?
 ```
+
+Concern: "target/range-shaped" is an implementation rule, not permission to put
+raw range selection in the ordinary rescue prompt. The first user surface should
+be named and guided:
+
+```text
+UPDATE
+UPDATE HIMON
+UPDATE STR8
+```
+
+Generic target/range selection belongs in a later advanced path, after STR8 can
+print exact ranges, reject protected overlap, and make the operator confirm the
+named consequence rather than a cryptic address.
+
+The first S19 gates should be fixed:
+
+```text
+UPDATE HIMON  accepts only $C000-$EFFF
+UPDATE STR8   accepts only $F000-$FFFF
+```
+
+That still leaves the low-level code reusable. It simply prevents the ordinary
+operator from being asked to type or approve raw ranges while the machine is in
+its recovery/update prompt.
 
 Payload updates below the protected top sector should be the friendlier case.
 STR8 can stage a target S-record or sector image, refuse the protected top
@@ -600,6 +626,21 @@ verify full staged sector
 Direct 1->0 byte programming is useful for deliberate one-way flags and later
 append-only records, but monitor replacement should not depend on that shortcut
 in the first version.
+
+IVI remains the vector mechanism beside this update path. LEAF is the future
+friendly surface over it. Payloads such as HIMON can use future LEAF atomic
+routines to patch runtime vector targets after handoff:
+
+```text
+set NMI target
+set IRQ target
+set BRK target
+set BRK service target, later
+```
+
+Those routines should leave either the old target or the new target valid; no
+half-patched state. They do not grant flash-write authority and do not make
+STR8 responsible for the payload's interrupt meanings.
 
 Future onboard updates do not have to pass through S19. S19 is useful when a
 host sends bytes to the board; onboard ASM can instead hand STR8 candidate

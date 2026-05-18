@@ -260,12 +260,23 @@ R-YORS/STR8.
 
 `BUILD/bin/himon-str8-rom.bin` is the primary combined image: HIMON starts at
 CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
-`$7000`, and RESET points to STR8 at `$F000`. Hardware vectors at CPU
-`$FFFA-$FFFF` live at the tail of the file, `$7FFA-$7FFF`.
+`$7000`, RESET points to STR8 at `$F000`, and NMI/IRQ point to STR8 IVI entries
+at `$F089`/`$F09D`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
+the file, `$7FFA-$7FFF`.
 
 Local language images are linked below HIMON: OSI MS BASIC starts at `$8000`
 and fig-Forth starts at `$A000`. They are proof/load artifacts for now, not
 full safe `L F` updater packages.
+
+For STR8 bench work, fig-Forth can also be generated as a temporary `$C000`
+payload with `make -C SRC fig-forth-str8-update-s19`. That stream is for the
+already-proven STR8 `U` gate: it replaces the normal HIMON `$C000-$EFFF` payload
+in Bank 3, enters at `$C000`, and returns to STR8 with `MON` at `$F000`.
+
+OSI MS BASIC has the same temporary-payload path:
+`make -C SRC msbasic-osi-str8-update-s19`. The C000 BASIC image uses STR8's
+resident console calls and disables its background Ctrl-C poll for the first
+bench pass.
 
 Forth as a language/concept is not treated as a copied source artifact. The
 local fig-Forth build is different: it is derived from FIG-Forth 6502 Release

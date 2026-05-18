@@ -6,12 +6,14 @@ This is the top index for the `ror` documentation set.
 
 - [TOC.md](./TOC.md) - recommended reading order.
 - [MAP.md](./MAP.md) - documentation map and system map.
-- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - R-YORS, STR8, LEAF/IVI,
+- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - R-YORS, STR8, IVI/LEAF,
   HIMON, and payload ownership lanes.
 - [BOOK.md](./BOOK.md) - narrative spine for the hashed runtime system book.
 - [HASH_FLASH.md](./HASH_FLASH.md) - short alert stream for command-surface changes.
 - [DOC_FLASH.md](./DOC_FLASH.md) - short alert stream for doc/edict changes.
 - [DECISIONS.md](./DECISIONS.md) - settled calls to avoid reopening by accident.
+- [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) - current work rail for
+  STR8 review, proof, implementation, and documentation.
 - [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions.
 - [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
 - [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - flash/load/step checklist for HIMON debug testing.
@@ -37,13 +39,16 @@ This is the top index for the `ror` documentation set.
   and doc-shape decisions.
 - [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
 - [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - current product boundary:
-  R-YORS as project, STR8 as board management, LEAF/IVI as interrupt front
-  door, HIMON as default payload, and other payloads as peers.
+  R-YORS as project, STR8 as board management, IVI as interrupt-vector
+  mechanism, LEAF as later front-door surface, HIMON as default payload, and
+  other payloads as peers.
 - [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - reconstruction of
   HIMON stages and routine-class families.
 - [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor.
 - [STR8_DECISION_REFERENCE.md](./STR8_DECISION_REFERENCE.md) - current STR8
   first-run design decisions.
+- [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) - the next-step process for
+  reviewing STR8, proving V0 behavior, and deciding when new update work starts.
 - [STR8_FLASH_UPDATE_PROPOSAL.md](./STR8_FLASH_UPDATE_PROPOSAL.md) - proposed
   STR8 scan, erase, HIMON update, and STR8 self-update flow.
 - [RTFM-str8.md](./RTFM-str8.md) - small-command STR8 instructions.

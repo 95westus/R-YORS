@@ -17,6 +17,8 @@ DOC/INDEX.md
      -> DECISIONS.md
      -> QCC.md
      -> BRINGUP.md
+     -> STR8.md
+     -> STR8_WORK_PROCESS.md
      -> HIMON_STAGES_CLASSES.md
      -> REF.md
      -> XREF.md
@@ -41,7 +43,7 @@ Product Boundaries
   names the current product lanes inside one repo
   treats R-YORS as the project/system direction
   treats STR8 as board management
-  treats LEAF/IVI as the interrupt-vector front door
+  treats IVI as the interrupt-vector mechanism and LEAF as the front-door name
   treats HIMON as the default monitor payload
   treats BETTERMON/WDCMONv2/apps/tools as peer payload targets
 
@@ -70,8 +72,15 @@ STR8
   installs and boots selected targets
   uses HIMON as the default bundled payload, not the only possible payload
 
-LEAF / IVI
-  gives STR8 a stable interrupt front door when installed
+STR8 Work Process
+  names the current next step for STR8 work
+  starts with the V0 acceptance pass before new update commands
+  ties source edits, build checks, hardware transcripts, and guide updates
+  together
+
+IVI / LEAF
+  IVI gives STR8 a stable interrupt-vector mechanism
+  LEAF is the later friendly front-door surface built on IVI
   keeps hardware vectors recoverable
   lets payloads patch latched NMI/IRQ/BRK entry addresses
   does not dictate payload interrupt meanings after handoff
@@ -102,6 +111,11 @@ STR8
   future direction protects selected STR8 window and vectors
   V0 verifies copied bank images
   later HIMON/maintenance or future STR8 condenses cluttered banks
+
+STR8 Work Process
+  says how to return to STR8 without reopening settled design
+  separates V0 proof, V0 fixes, proposals, and future STR8-N ideas
+  records the acceptance checklist before `U T`, `U H`, `U S`, or self-update
 
 Bringup
   orders STR8 work from simulation stub to reset-owned recovery
@@ -198,7 +212,8 @@ Short form:
 ```text
 R-YORS is the project/system direction.
 STR8 is the board management product.
-LEAF/IVI is the interrupt front door.
+IVI is the interrupt-vector mechanism. LEAF is the product-shaped front door
+built on it.
 HIMON is the default monitor payload.
 Other payloads can stand beside HIMON.
 ```
@@ -268,6 +283,7 @@ flowchart TD
     HIST --> HSTAGE
     HSTAGE --> HMAP2
     MAP --> STR8[STR8]
+    STR8 --> SWP[STR8_WORK_PROCESS]
     MAP --> HASM[HASHED_ASM]
     MAP --> HMAP[HASH_MAP]
     QCC --> QHASH[QCC_HASH]

@@ -7,9 +7,9 @@ Rule zero: prove one dangerous thing at a time. No erase/write step should be
 added until the read-only version of the same path has passed.
 
 Current bench status: a rudimentary STR8 flash-recovery path has been lightly
-tested and is functioning nominally. Continue treating the programmer and a
-known-good image as the trusted escape path while the update/self-update paths
-are still being designed.
+tested and is functioning nominally. Keep the programmer and a known-good image
+available as last-resort brick recovery while STR8's own update/self-update
+paths are being proved.
 
 ## Current Target
 
@@ -20,24 +20,27 @@ current ROM proof:  $F000-$FFFF
 future shrink goal: highest fitting protected window
 role:               image-oriented recovery guard
 copy buffer:        4K RAM buffer, one erase sector at a time
-I/O layer:          BIO_*
+I/O layer:          private STR8_CON_* FTDI/VIA path
 catalog/FNV:        not used by STR8 V0
 HIMON vectors:      HIMON controls IRQ/vector behavior in V0
 ```
 
-STR8 starts as a RAM-launched test app. It should grow into reset-owned
-recovery only after bank select, erase, 4K-buffered copy, verify, backup,
-restore, Bank 0 enrollment, and top-sector staging have all been proven.
+STR8 started as a RAM-launched test app. The current ROM proof is reset-entered
+and resident at `$F000`, but new destructive behavior should still begin as a
+read-only or RAM-safe proof before it becomes part of the reset-owned recovery
+path.
 
 ## Escape Path
 
-Before any live bank 3 rewrite, the external recovery path is:
+If the board is bricked badly enough that STR8 cannot run, the external recovery
+path is:
 
 ```text
 T48 programmer image restore
 ```
 
-Required before real STR8 flash writes:
+Required before real STR8 flash writes, even though it is not the normal update
+path:
 
 ```text
 known-good ROM image archived
@@ -46,7 +49,7 @@ T48 programmer ready to rewrite the flash/ROM
 ```
 
 A future WDCMON bridge may become another path, but the first STR8 bringup
-assumes the T48 is the trusted recovery tool.
+keeps the T48 as the final escape hatch.
 
 ## Bringup Order
 
@@ -208,19 +211,23 @@ STR8_TOP_SECTOR_STAGE
 STR8_INSTALL_SELF
 ```
 
-## Current Stub And Next Image
+## Current STR8 Images
 
 ```text
 source:  SRC/TEST/apps/str8/str8.asm
 build:   make -C SRC str8
-output:  SRC/BUILD/s19/str8-fc00.s19
+output:  SRC/BUILD/s19/str8-f000.s19
          SRC/BUILD/s19/str8-ram-3000.s19
+         SRC/BUILD/s19/str8-worker-0200.s19
 ```
 
-The current `$FC00` stub is allowed to print plans only. It must not erase or
-write flash. The RAM proof image is linked at `$3000`, is launched under HIMON,
-and reserves `$4000-$4FFF` as copy-buffer RAM. The current copy worker stages
-one 4K erase sector at a time through that buffer.
+The current ROM proof links the resident shell at `$F000`. The worker image
+links for `$0200`, is stored in the combined ROM at `$FC00`, and is copied into
+the `$0200-$05FF` STR8 RAM tray before destructive flash work. The RAM proof
+image is linked at `$3000`, is launched under HIMON, and reserves
+`$4000-$4FFF` as copy-buffer RAM. The current copy worker stages one 4K erase
+sector at a time through that buffer. The ROM `U` updater uses `$4000-$6FFF`
+to stage HIMON C/D/E sectors before erase/write.
 
 RAM proof command `B` is the destructive backup cascade. Before Bank 0
 enrollment it copies `2->1` and `3->2`. After `E` enrollment it copies `1->0`,

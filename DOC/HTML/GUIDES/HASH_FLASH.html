@@ -22,6 +22,26 @@
 <p>CBI code form stays condensed for source comments:</p>
 <pre><code class="language-asm">; YYYY-MM-DDTHH:MMZ WLP2 summary
 ;                         continuation line</code></pre>
+<h2 id="rehash-str8-update-himon-hardware-proof">REHASH: STR8 UPDATE HIMON Hardware Proof</h2>
+<pre><code class="language-text">2026
+         05
+                18
+                   02:35Z WLP2 STR8 U / UPDATE HIMON is hardware-proven
+                               for the fixed C000-EFFF HIMON gate.</code></pre>
+<p>The operator-facing truth changed: <code>U</code> is no longer only proposed or waiting for a first useful proof. On hardware, Bank 3 booted visible <code>HIMON U1</code>, <code>B</code> copied that known-good image into Bank 2, <code>U</code> accepted the compact <code>$C000-$EFFF</code> S19 stream, asked before programming, and rebuilt HIMON as visible <code>HIMON U2</code>. STR8 stayed reachable after the update through <code>G F000</code>. A high-flash restore from Bank 2 back to Bank 3 then brought visible <code>HIMON U1</code> back.</p>
+<p>Command-surface status:</p>
+<pre><code class="language-text">U / UPDATE HIMON
+  implemented
+  accepts only S1 records inside $C000-$EFFF
+  stages blank C/D/E RAM images, overlays S19 bytes, then programs C/D/E
+  asks before erase/write
+  leaves $F000-$FFFF to STR8 unless a separate future STR8 path exists</code></pre>
+<p>Do not promote <code>U T</code>, <code>U H</code>, or <code>U S</code> as operator commands. <code>U</code> remains the short fixed HIMON profile. The future broader surface is still named-target and confirmed:</p>
+<pre><code class="language-text">UPDATE
+UPDATE HIMON
+UPDATE STR8</code></pre>
+<p><code>UPDATE STR8</code> is not proven or implemented by this pass. It still needs a stronger confirmation and a top-sector transaction.</p>
+<p>Transcript and artifact details live in <a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>. Remaining STR8 proof gaps are Bank 0 enrollment, restore over non-erased ordinary sectors below <code>$C000</code>, and deliberate high-flash failure behavior with a sacrificial image.</p>
 <h2 id="rehash-hardware-test-log-available">REHASH: Hardware Test Log Available</h2>
 <pre><code class="language-text">2026
          05
@@ -283,7 +303,7 @@ S addr end|+count &#39;TEXT</code></pre>
 <pre><code class="language-text">S 0 FFFF `HIMON</code></pre>
 <p>That would mean <code>H I M O (N|$80)</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-16T03:05:33Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-18T02:35:15Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

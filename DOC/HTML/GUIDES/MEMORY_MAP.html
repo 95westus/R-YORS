@@ -15,31 +15,40 @@
 <h2 id="current-himon-rom-image">Current HIMON ROM Image</h2>
 <p>Ranges are listed as inclusive. Linker <code>_END_*</code> symbols are exclusive.</p>
 <pre><code class="language-text">$8000-$BFFF   current image gap
-$C000-$E0DB   HIMON CODE, START/standalone RESET entry at $C000
-$E0DC-$E62C   HIMON DATA
-$E62D-$FFF9   current image gap and future STR8/high-ROM space
+$C000-$E1F8   HIMON CODE, START/standalone RESET entry at $C000
+$E1F9-$E75B   HIMON DATA
+$E75C-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors</code></pre>
 <p>The legacy HIMONIA fixed entries at <code>$F00D</code>, <code>$FADE</code>, and <code>$FEED</code> have been removed. They were useful as a proof, but not a practical permanent ABI. Local language bridges should patch against the current HIMON map or use a future explicit handoff contract; STR8 must not reserve those addresses.</p>
 <p>Current ROM hardware vectors:</p>
-<pre><code class="language-text">$FFFA-$FFFB   NMI   = $DE1C
+<pre><code class="language-text">$FFFA-$FFFB   NMI   = $DF21
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $DE1F</code></pre>
+$FFFE-$FFFF   IRQ   = $DF24</code></pre>
 <p>Generated burnable ROM <code>.bin</code> files are exactly one 32K <code>$8000-$FFFF</code> bank image for the programmer workflow. The file does not encode a bank number; bank 0-3 placement is managed through the T48 programmer or through R-YORS/STR8.</p>
-<p>The primary combined image is <code>BUILD/bin/himon-str8-rom.bin</code>: HIMON starts at CPU <code>$C000</code> / file offset <code>$4000</code>, STR8 starts at CPU <code>$F000</code> / file offset <code>$7000</code>, the STR8 RAM worker source is stored at CPU <code>$F800</code> / file offset <code>$7800</code>, and the RESET vector points to STR8 at <code>$F000</code>. The NMI and IRQ vectors point to HIMON&#39;s <code>$DE1C</code>/<code>$DE1F</code> vector entries until STR8 grows its own interrupt policy.</p>
+<h2 id="target-live-bank-budget">Target Live-Bank Budget</h2>
+<p>This is a target boundary, not a panic rule:</p>
+<pre><code class="language-text">$8000-$BFFF   16K user code/data/app space
+$C000-$EFFF   12K HIMON monitor/tools budget
+$F000-$FFFF    4K STR8 recovery-owned erase sector</code></pre>
+<p>STR8 may use less than 4K, but the whole <code>$F000-$FFFF</code> erase sector is recovery-owned because erase granularity and the hardware vectors make it the dangerous top sector. HIMON should fit below <code>$F000</code>; if it outgrows 12K, that should be an intentional design decision because it eats the lower 16K user space.</p>
+<p>The primary combined image is <code>BUILD/bin/himon-str8-rom.bin</code>: HIMON starts at CPU <code>$C000</code> / file offset <code>$4000</code>, STR8 starts at CPU <code>$F000</code> / file offset <code>$7000</code>, the STR8 RAM worker source is stored at CPU <code>$FC00</code> / file offset <code>$7C00</code>, and all live hardware vectors enter the STR8-owned top sector. RESET points to STR8 at <code>$F000</code>; NMI and IRQ/BRK point to STR8 IVI stubs at <code>$F089</code>/<code>$F09D</code>, which dispatch through the RAM vector cells.</p>
 <p>Combined image layout:</p>
 <pre><code class="language-text">$8000-$BFFF   current image gap
-$C000-$E62C   HIMON body
-$E62D-$EFFF   current image gap inside the used E sector
-$F000-$F667   STR8 resident shell
-$F668-$F7FF   current image gap inside the top sector
-$F800-$FA92   STR8 RAM-worker source, copied to $0200 for B/E/M/0/1/2
-$FA93-$FFF9   current image gap, config pocket, and high top-sector space
+$C000-$E75B   HIMON body
+$E75C-$EFFF   current image gap inside the used E sector
+$F000-$FA83   STR8 resident shell, IVI stubs, and HIMON updater
+$F770         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$FA84-$FBFF   current image gap inside the top sector
+$FC00-$FEBE   STR8 RAM-worker source, copied to $0200 for B/E/M/U/0/1/2
+$FEBF-$FFF9   current image gap, config pocket, and high top-sector space
 $FFFA-$FFFF   hardware vectors</code></pre>
 <p>Local language images are built to sit below the protected HIMON/STR8 region:</p>
 <pre><code class="language-text">$8000-$9FFF   OSI MS BASIC 8K slot, FNV header at $8000
 $A000-$BFFF   fig-Forth slot, FNV header at $A000
 $C000-$FFFF   protected live HIMON/STR8 region</code></pre>
 <p>These are still proof/load artifacts. They are not yet packaged as a safe erase/rewrite <code>L F</code> update flow.</p>
+<p>STR8 bench tests may temporarily place fig-Forth at <code>$C000-$EFFF</code> with <code>BUILD/s19/fig-forth-str8-update.s19</code>. That is not the normal memory map; it is a deliberate replacement of the HIMON payload through STR8 <code>U</code>, with STR8 still resident at <code>$F000-$FFFF</code>.</p>
+<p>The same temporary replacement exists for OSI MS BASIC at <code>$C000-$EFFF</code> with <code>BUILD/s19/msbasic-osi-str8-update.s19</code>. It is also a STR8 <code>U</code> payload, not the normal combined monitor map.</p>
 <h2 id="flash-window-mapping">Flash Window Mapping</h2>
 <p>The VIA-controlled bank pins change only the upper 32K flash view:</p>
 <pre><code class="language-text">$0000-$7FFF  unchanged RAM/IO space
@@ -67,7 +76,8 @@ $7F00-$7FFF   I/O
 $8000-$FFFF   flash</code></pre>
 <p>Current RAM ownership:</p>
 <pre><code class="language-text">$0000-$00AF   zero page user/free while running
-$00B0-$00CC   reserved R-YORS/HIMON/THE/ASM ZP expansion
+$00B0-$00CA   reserved R-YORS/HIMON/THE/ASM ZP expansion
+$00CB-$00CC   CRC16 no-table state, low/high; allocated from high end downward
 $00CD-$00D9   flash helper workspace, active during flash operations
 $00DA-$00DC   reserved expansion bytes inside flash/extended ZP window
 $00DD-$00DF   bank/length sideband bytes, reserved shared ZP
@@ -76,9 +86,10 @@ $00E6-$00E7   shared utility temp/scratch bytes
 $00E8-$00EF   shared pointer/length/flags/mode lane for FTDI/SYS/string helpers
 $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
-$0200-$09FF   STR8 RAM tray; worker copy lands here before flash mutation
-$0A00-$0A0C   STR8 worker state board and map-result bytes
-$0A0D-$12FF   reserved low RAM, no live allocations
+$0200-$05FF   STR8 RAM tray; worker copy lands here before flash mutation
+$0600-$09FF   reserved low RAM, no live allocations
+$0A00-$0A16   STR8 worker/update state board and map-result bytes
+$0A17-$12FF   reserved low RAM, no live allocations
 $1300-$13FF   flash transient / reserved worker page
 $1400-$1FFF   system scratch and transient metadata
 $2000-$77FF   UPA, user program area
@@ -95,12 +106,13 @@ $7E95-$7EDD   loader workspace and range table
 $7EDE-$7EDF   delay helper fixed RAM
 $7EE0-$7EE5   PIA state / lock
 $7EE6-$7EE9   reset signature
-$7EEA-$7EEF   trap cause / BRK signature / NMI debounce / reserve
+$7EEA-$7EEC   trap cause / BRK signature / NMI debounce
+$7EED-$7EEF   IVI vector-table signature bytes, ASCII &quot;IVY&quot;
 $7EF0-$7EF7   NMI context capture
 $7EF8-$7EFF   RAM vectors
 $7F00-$7FFF   I/O window</code></pre>
-<p>During destructive STR8 <code>B</code>, <code>0</code>, <code>1</code>, and <code>2</code> operations, STR8 temporarily clobbers <code>$0200-$09FF</code> with the copied RAM worker and <code>$4000-$4FFF</code> with the 4K sector staging buffer. Normal HIMON/user code should treat those ranges as volatile while STR8 is performing flash work.</p>
-<p>STR8 also uses fixed low-RAM bytes <code>$0A00-$0A0C</code> for bank/sector copy state, failure address reporting, startup flags, and the <code>M</code> command&#39;s four bank map mask bytes. The <code>M</code> command runs the RAM worker from <code>$0200</code>, stores one status mask byte per bank at <code>$0A09-$0A0C</code>, restores bank 3, then prints the map from resident STR8.</p>
+<p>During destructive STR8 <code>B</code>, <code>0</code>, <code>1</code>, and <code>2</code> operations, STR8 temporarily clobbers <code>$0200-$05FF</code> with the copied RAM worker and <code>$4000-$4FFF</code> with the 4K sector staging buffer. During <code>U</code>, STR8 also uses <code>$5000-$6FFF</code> so it can stage all three HIMON sectors before the first erase. Normal HIMON/user code should treat those ranges as volatile while STR8 is performing flash work.</p>
+<p>STR8 also uses fixed low-RAM bytes <code>$0A00-$0A16</code> for bank/sector copy state, failure address reporting, startup flags, update state, and the <code>M</code> command&#39;s four bank map mask bytes. The <code>M</code> command runs the RAM worker from <code>$0200</code>, stores one status mask byte per bank at <code>$0A09-$0A0C</code>, restores bank 3, then prints the map from resident STR8.</p>
 <p>Current high-RAM vectors:</p>
 <pre><code class="language-text">$7EF8-$7EF9   reset vector target
 $7EFA-$7EFB   NMI vector target
@@ -108,8 +120,10 @@ $7EFC-$7EFD   IRQ/BRK vector target
 $7EFE-$7EFF   IRQ non-BRK vector target</code></pre>
 <p>Current zero-page detail:</p>
 <pre><code class="language-text">$00-$AF   user/free while running
-$B0-$CC   reserved for future R-YORS/HIMON/THE/ASM zero-page expansion;
+$B0-$CA   reserved for future R-YORS/HIMON/THE/ASM zero-page expansion;
           possible active pointer lanes and addressing-mode workspace
+$CB        CRC16_LO
+$CC        CRC16_HI
 
 $CD        FLASH_ADDR_LO
 $CE        FLASH_ADDR_HI
@@ -165,17 +179,18 @@ $FE        CMDP_PTR_LO
 $FF        CMDP_PTR_HI</code></pre>
 <p>Zero-page rule of thumb:</p>
 <pre><code class="language-text">$00-$AF   user/free from HIMON&#39;s point of view, 176 bytes
-$B0-$CC   reserved future R-YORS workspace, 29 bytes; user code should not rely on it
+$B0-$CA   reserved future R-YORS workspace, 27 bytes; user code should not rely on it
+$CB-$CC   CRC16 no-table state, low/high; grows down from the high end
 $CD-$EF   shared low-level service scratch, 35 bytes; volatile across monitor/SYS/BIO calls
 $F0-$FF   HIMON command/parser scratch, 16 bytes; volatile across monitor commands</code></pre>
-<p>User programs can use <code>$00-$AF</code> while running. <code>$B0-$FF</code> is reserved or volatile across monitor/fixed-entry services unless the called routine contract says otherwise. That leaves 80 bytes reserved-or-volatile above the user ZP line. The current live HIMON service/parser scratch is <code>$CD-$FF</code>; <code>$B0-$CC</code> is being held back for future pointer lanes and addressing-mode helpers.</p>
+<p>User programs can use <code>$00-$AF</code> while running. <code>$B0-$FF</code> is reserved or volatile across monitor/fixed-entry services unless the called routine contract says otherwise. That leaves 80 bytes reserved-or-volatile above the user ZP line. The current live HIMON service/parser scratch is <code>$CD-$FF</code>; <code>$CB-$CC</code> is held for CRC16 state, and <code>$B0-$CA</code> is being held back for future pointer lanes and addressing-mode helpers.</p>
 <h2 id="ram-load-build-note">RAM-Load Build Note</h2>
 <p>The non-ROM <code>himon</code> map is useful for development, but it is not the authoritative flash image map. The current ROM memory map should be taken from:</p>
 <pre><code class="language-text">SRC/BUILD/map/himon-rom.map
 HIMON/himon.asm
 HIMON/himon-shared-eq.inc</code></pre>
 <h2 id="str8-direction">STR8 Direction</h2>
-<p>The combined <code>himon-str8-rom.bin</code> image places STR8 in bank 3&#39;s <code>$F000-$FFFF</code> top-ROM sector with the hardware vectors. HIMON starts at <code>$C000</code>, and the STR8 RAM-worker source is stored inside the top sector at <code>$F800</code>.</p>
+<p>The combined <code>himon-str8-rom.bin</code> image places STR8 in bank 3&#39;s <code>$F000-$FFFF</code> top-ROM sector with the hardware vectors. HIMON starts at <code>$C000</code>, and the STR8 RAM-worker source is stored inside the top sector at <code>$FC00</code>.</p>
 <p>The physical erase unit remains 4K. The protected STR8 window starts at the highest boundary that fits:</p>
 <pre><code class="language-text">$FC00-$FFFF  1K protected STR8 window
 $FA00-$FFFF  1.5K protected STR8 window
@@ -190,7 +205,7 @@ $FFFA-$FFFF  W65C02 hardware vector block</code></pre>
 <p>Changing any byte in <code>$F000-$FFFF</code> still requires read/stage/erase/full-sector-write/verify. The <code>$FFF0-$FFF9</code> pocket is patchable only in the flash sense: after erase, programming may clear bits from <code>1</code> to <code>0</code>, but changing cleared bits back to <code>1</code> requires another top-sector erase/rewrite.</p>
 <p>This split is the current combined STR8/HIMON ROM layout.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY_MAP.md</code>. Source modified: <time>2026-05-16T01:44:28Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY_MAP.md</code>. Source modified: <time>2026-05-18T02:50:04Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

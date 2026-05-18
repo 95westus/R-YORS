@@ -4,6 +4,360 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-05-17 STR8 U OSI BASIC Payload And B0 Rotation Proof
+
+Source transcript:
+
+```text
+operator transcript pasted into Codex session
+```
+
+Build artifacts under test:
+
+```text
+Payload S19:       SRC/BUILD/s19/msbasic-osi-str8-update.s19
+S1 records:        495
+S19 gate:          $C000-$EFFF only
+Entry:             START $C000 -> COLD_START $DD1F
+FNV header:        $C003
+MSBASIC entry:     $C00B
+Code end:          $DEEE
+Console read/write: $F6BD / $F6E4
+```
+
+### Result
+
+Pass.
+
+Validated:
+
+- `E` enrolled Bank 0 into backup rotation and changed the STR8 state from
+  `B0 HOLD` to `B0 ROT`.
+- After enrollment, `B` erased Bank 0/1/2 and rotated `B1->B0`, `B2->B1`,
+  and `B3->B2`.
+- STR8 `U` accepted the OSI BASIC `$C000-$EFFF` payload stream and printed
+  `OK` after confirmed erase/write/verify.
+- `G HIMON` entered the new `$C000` payload and booted OSI BASIC.
+- OSI BASIC printed its memory and terminal prompts, banner, and `OK` prompt.
+- A simple BASIC program entered and ran: `10 PRINT "HELLO"` / `RUN` /
+  `HELLO`.
+- Restore from the rotated backup chain brought back the expected images:
+  HIMON U2 from Bank 0, fig-Forth from Bank 1, and OSI BASIC from Bank 2 at
+  the final rotation stage.
+
+Important backup-chain lesson:
+
+- Bank 0 enrollment makes Bank 0 a normal rotating backup slot.
+- Once enrolled, `B` no longer preserves Bank 0 as a factory/base image.
+- Payloads rotate exactly like HIMON. Running `B` after BASIC or Forth is an
+  intentional promotion of that payload into the backup chain.
+
+Not tested in this pass:
+
+- STR8 self-update.
+- Restore over non-erased ordinary sectors below `$C000`.
+- Deliberate high-flash failure behavior with a sacrificial image.
+
+### Transcript Extract
+
+Bank 0 was enrolled:
+
+```text
+STR8>
+B0 ROT ON. NEXT B ERASES B0. Y: y
+OK
+STR8>
+```
+
+The next backup included Bank 0:
+
+```text
+STR8>
+BACKUP ERASE B0/B1/B2. Y: y
+COPY B1->B0
+
+COPY B2->B1
+
+COPY B3->B2
+
+OK
+```
+
+The BASIC payload was installed through the same fixed `U` gate:
+
+```text
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+```
+
+The payload booted OSI BASIC and ran a small program:
+
+```text
+MEMORY SIZE?
+TERMINAL WIDTH?
+
+ 29950 BYTES FREE
+
+OSI 6502 BASIC VERSION 1.0 REV 3.2
+COPYRIGHT 1977 BY MICROSOFT CO.
+
+OK
+10 PRINT "HELLO"
+RUN
+HELLO
+
+OK
+```
+
+The rotated chain restored the expected payloads:
+
+```text
+RESTORE B0->B3 ... HIMON U2
+RESTORE B1->B3 ... fig-FORTH  1.0
+RESTORE B2->B3 ... OSI 6502 BASIC VERSION 1.0 REV 3.2
+```
+
+## 2026-05-17 STR8 U fig-Forth Payload Proof
+
+Source transcript:
+
+```text
+operator transcript pasted into Codex session
+```
+
+Build artifacts under test:
+
+```text
+Payload S19: SRC/BUILD/s19/fig-forth-str8-update.s19
+S1 records: 397
+S19 gate:   $C000-$EFFF only
+Entry:      START $C000 -> FORTH_ORIG $C00B
+FNV header: $C003
+Code end:   $D8C9
+MON exit:   $F000
+```
+
+### Result
+
+Pass.
+
+Validated:
+
+- STR8 `B` first made HIMON U1/U2 recoverable in the backup chain.
+- STR8 `U` accepted a non-HIMON `$C000-$EFFF` payload stream and printed `OK`
+  after confirmed erase/write/verify.
+- `G HIMON` entered the new `$C000` payload and booted `fig-FORTH  1.0`.
+- Simple stack words and numeric output worked from the Forth prompt.
+- STR8 remained reachable after the payload boot.
+- High-flash restore from a backup bank put HIMON back into Bank 3.
+
+Important backup-chain lesson:
+
+- `B` always means "rotate the current Bank 3 into the backup chain."
+- Running `B` while Bank 3 contains fig-Forth promotes fig-Forth into Bank 2.
+- After that, `2` with high flash restores fig-Forth, not old HIMON.
+- To preserve old HIMON, keep at least one backup bank untouched, or restore
+  from the older bank such as Bank 1.
+
+Not tested in this pass:
+
+- OSI MS BASIC as a `$C000` STR8 `U` payload.
+- STR8 self-update.
+- Deliberate failed high-flash restore behavior.
+
+### Transcript Extract
+
+The known-good monitor was first backed up:
+
+```text
+STR8>
+BACKUP ERASE B1/B2. Y: y
+COPY B2->B1
+
+COPY B3->B2
+
+OK
+```
+
+The Forth payload was installed through the same fixed `U` gate:
+
+```text
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+.............................................................................................................................................................................................................................................................................................................................................................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+
+fig-FORTH  1.0
+```
+
+Basic stack checks ran from the Forth prompt:
+
+```text
+1 2 4 8 OK
+dup OK
+. 8 OK
+. 8 OK
+. 4 OK
+. 2 OK
+. 1 OK
+```
+
+Restoring an older backup brought HIMON back:
+
+```text
+STR8>
+RESTORE B1->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B1->B3
+
+BOOT COLD
+RAM ZERO OK
+
+HIMON U2
+>
+```
+
+A later restore from Bank 2 booted Forth again because a backup had been run
+after Forth was installed:
+
+```text
+STR8>
+RESTORE B2->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B2->B3
+
+fig-FORTH  1.0
+```
+
+## 2026-05-17 STR8 UPDATE HIMON U1->U2 And Recovery Proof
+
+Source transcript:
+
+```text
+operator transcript pasted into Codex session
+```
+
+Build artifacts under test:
+
+```text
+ROM candidate: SRC/BUILD/bin/himon-str8-rom.bin
+SHA256:        7176A1E7450A6EDF5D3102CFFDAD000325715576C8A3159E3977DBCEE439F7D5
+Update S19:    SRC/BUILD/s19/himon-str8-himon-update.s19
+S1 records:    315
+S19 gate:      $C000-$EFFF only
+Visible bytes: $E220 = 0D 0A 48 49 4D 4F 4E 20 55 B2
+```
+
+### Result
+
+Pass.
+
+Validated:
+
+- STR8 `M` showed Bank 3 as the boot image before backup.
+- STR8 `B` copied Bank 3 to Bank 2, making U1 the known-good recovery image.
+- HIMON booted visibly as `HIMON U1` before the update.
+- STR8 `U` accepted the compact `$C000-$EFFF` S19 stream, asked before
+  programming, erased/wrote/verified C/D/E, and printed `OK`.
+- Reboot after `U` showed `HIMON U2`, proving the visible HIMON update.
+- STR8 remained reachable after the update through `G F000`.
+- High-flash restore Bank 2 -> Bank 3 with `FLASH C000-FFFF? Y` restored the
+  known-good U1 image.
+- Reboot after restore showed `HIMON U1`.
+
+Not tested in this pass:
+
+- Bank 0 enrollment with `E`.
+- Restore over non-erased ordinary sectors below `$C000`.
+- Deliberate high-flash failure behavior with a sacrificial image.
+- STR8 self-update; this pass intentionally touched HIMON `$C000-$EFFF` only.
+
+### Transcript Extract
+
+Backup made Bank 2 match live Bank 3:
+
+```text
+STR8>
+BANK0     BANK1     BANK2     BOOT
+--------  --------  --------  ----++++
+...
+B3 | . . . . * * * * |
+STR8>
+BACKUP ERASE B1/B2. Y: y
+COPY B2->B1
+
+COPY B3->B2
+
+OK
+STR8>
+BANK0     BANK1     BANK2     BOOT
+--------  --------  ----++++  ----++++
+...
+B2 | . . . . * * * * |
+B3 | . . . . * * * * |
+```
+
+The baseline monitor was visibly U1:
+
+```text
+BOOT COLD
+RAM ZERO OK
+
+HIMON U1
+>G F000
+GO F000
+```
+
+The update stream programmed successfully:
+
+```text
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...........................................................................................................................................................................................................................................................................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+```
+
+The updated monitor booted visibly as U2:
+
+```text
+BOOT COLD
+RAM ZERO OK
+
+HIMON U2
+>G F000
+GO F000
+```
+
+The high-flash restore recovered the previous U1 image from Bank 2:
+
+```text
+STR8>
+RESTORE B2->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B2->B3
+
+BOOT COLD
+RAM ZERO OK
+
+HIMON U1
+>
+```
+
 ## 2026-05-15 STR8/HIMON/HREC/Search/Debug Smoke
 
 Source transcript:

@@ -2,7 +2,7 @@
 ; str8-worker.asm
 ; RAM-resident STR8 bank-copy worker.
 ;
-; This image links for $0200, is stored in the combined ROM at $F800, and is
+; This image links for $0200, is stored in the combined ROM at $FC00, and is
 ; copied to $0200 before destructive STR8 bank operations. Keep it independent:
 ; once running, it must not call ROM code because it switches flash banks and
 ; may erase bank 3's top sector.
@@ -14,15 +14,16 @@
                         XDEF            STR8_WORKER_END
 
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
-; 2026-05-07T23:19-05:00        WLP2        Worker runs at $0200; state board lives at $0A00.
+; 2026-05-17T21:20-05:00        WLP2        Worker source storage moves to $FC00.
 STR8_PROT_START_HI      EQU             $F0
 STR8_PROT_BUF_HI        EQU             $40
-STR8_WORKER_STORE_HI    EQU             $F8
+STR8_WORKER_STORE_HI    EQU             $FC
 
 STR8_COPY_MODE_RESTORE  EQU             $01
 STR8_COPY_MODE_ENROLL   EQU             $02
 STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
 STR8_COPY_MODE_MAP      EQU             $04
+STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
 STR8_RESTORE_PROT_START_HI EQU          $C0
 
 STR8_CFG_FLAGS_ADDR     EQU             $FFF0
@@ -49,6 +50,7 @@ STR8_COPY_SRC_BANK      EQU             $0A05
 STR8_COPY_DST_BANK      EQU             $0A06
 STR8_COPY_MODE          EQU             $0A07
 STR8_MAP_B0             EQU             $0A09
+STR8_STAGE_BUF_HI       EQU             $0A0D
 
 STR8_SECTOR_BUF_HI      EQU             $40
 STR8_SECTOR_BUF_END_HI  EQU             $50
@@ -72,6 +74,8 @@ START:
                         BEQ             ?MAP
                         CMP             #STR8_COPY_MODE_ENROLL
                         BEQ             ?ENROLL
+                        CMP             #STR8_COPY_MODE_PROGRAM_STAGED
+                        BEQ             ?PROGRAM_STAGED
                         JSR             STR8W_COPY_BANKS
                         BRA             ?DONE
 ?MAP:
@@ -79,6 +83,9 @@ START:
                         BRA             ?DONE
 ?ENROLL:
                         JSR             STR8W_SET_B0_ENROLLED
+                        BRA             ?DONE
+?PROGRAM_STAGED:
+                        JSR             STR8W_PROGRAM_STAGED_SECTOR
 ?DONE:
                         BCC             ?FAIL
                         JSR             STR8W_SELECT_BANK3
@@ -187,6 +194,19 @@ STR8W_SET_B0_ENROLLED:
                         RTS
 ?OK:
                         SEC
+                        RTS
+
+STR8W_PROGRAM_STAGED_SECTOR:
+                        JSR             STR8W_ERASE_DST_SECTOR
+                        BCC             ?FAIL
+                        JSR             STR8W_PROGRAM_DST_SECTOR
+                        BCC             ?FAIL
+                        JSR             STR8W_VERIFY_DST_SECTOR
+                        BCC             ?FAIL
+                        SEC
+                        RTS
+?FAIL:
+                        CLC
                         RTS
 
 STR8W_STAGE_SRC_SECTOR:
@@ -300,7 +320,7 @@ STR8W_PROGRAM_DST_SECTOR:
                         LDA             STR8_MARK_SECTOR_HI
                         STA             STR8W_ADDR_HI
                         STZ             STR8W_BUF_LO
-                        LDA             #STR8_SECTOR_BUF_HI
+                        JSR             STR8W_ACTIVE_BUF_HI
                         STA             STR8W_BUF_HI
 ?BYTE:
                         LDY             #$00
@@ -322,8 +342,7 @@ STR8W_PROGRAM_DST_SECTOR:
                         BNE             ?BYTE
                         INC             STR8W_ADDR_HI
                         INC             STR8W_BUF_HI
-                        LDA             STR8W_BUF_HI
-                        CMP             #STR8_SECTOR_BUF_END_HI
+                        JSR             STR8W_ACTIVE_BUF_END_REACHED
                         BNE             ?BYTE
                         SEC
                         RTS
@@ -335,7 +354,7 @@ STR8W_VERIFY_DST_SECTOR:
                         LDA             STR8_MARK_SECTOR_HI
                         STA             STR8W_PTR_HI
                         STZ             STR8W_BUF_LO
-                        LDA             #STR8_SECTOR_BUF_HI
+                        JSR             STR8W_ACTIVE_BUF_HI
                         STA             STR8W_BUF_HI
 ?PAGE:
                         LDY             #$00
@@ -347,8 +366,7 @@ STR8W_VERIFY_DST_SECTOR:
                         BNE             ?BYTE
                         INC             STR8W_PTR_HI
                         INC             STR8W_BUF_HI
-                        LDA             STR8W_BUF_HI
-                        CMP             #STR8_SECTOR_BUF_END_HI
+                        JSR             STR8W_ACTIVE_BUF_END_REACHED
                         BNE             ?PAGE
                         SEC
                         RTS
@@ -358,6 +376,30 @@ STR8W_VERIFY_DST_SECTOR:
                         LDA             STR8W_PTR_HI
                         STA             STR8_MARK_ADDR_HI
                         CLC
+                        RTS
+
+STR8W_ACTIVE_BUF_HI:
+                        LDA             STR8_COPY_MODE
+                        CMP             #STR8_COPY_MODE_PROGRAM_STAGED
+                        BEQ             ?STAGED
+                        LDA             #STR8_SECTOR_BUF_HI
+                        RTS
+?STAGED:
+                        LDA             STR8_STAGE_BUF_HI
+                        RTS
+
+STR8W_ACTIVE_BUF_END_REACHED:
+                        LDA             STR8_COPY_MODE
+                        CMP             #STR8_COPY_MODE_PROGRAM_STAGED
+                        BEQ             ?STAGED
+                        LDA             STR8W_BUF_HI
+                        CMP             #STR8_SECTOR_BUF_END_HI
+                        RTS
+?STAGED:
+                        LDA             STR8_STAGE_BUF_HI
+                        CLC
+                        ADC             #$10
+                        CMP             STR8W_BUF_HI
                         RTS
 
 STR8W_FLASH_ERASE:

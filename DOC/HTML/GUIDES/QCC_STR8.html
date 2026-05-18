@@ -14,6 +14,74 @@
 <h2 id="q-does-str8-own-memory-and-interrupts">Q: Does STR8 own memory and interrupts?</h2>
 <p>Comment: The current direction is no. STR8 should be useful in systems where the user already has memory policy, vector policy, and interrupt layering. STR8 can cooperate with R-YORS layers, but it should not require ownership of all RAM, all vectors, or all interrupt behavior.</p>
 <p>Concern: STR8 still needs enough reserved workspace and safe entry rules to do recovery/update work. That reservation should be explicit in the memory map.</p>
+<h2 id="q-what-should-nmi-mean-while-str8-is-running">Q: What should NMI mean while STR8 is running?</h2>
+<p>Comment: STR8 should treat NMI as inert unless a specific STR8 mode deliberately opens a safe recognition window. In ordinary STR8 prompt, countdown, recovery, and update work, an NMI press is not a command path:</p>
+<pre><code class="language-text">NMI edge arrives
+CPU enters the STR8-safe NMI target
+handler does the smallest safe thing, normally RTI
+STR8 continues where it was</code></pre>
+<p>If STR8 needs operator input, it should ask for a polled event, key, or latched state at known-safe points. The fact that the physical input arrives on NMI does not mean STR8 should use asynchronous NMI control flow as the user interface.</p>
+<p>Concern: A 65C02 NMI cannot be masked by <code>SEI</code>. Even a do-nothing NMI still requires vector fetch and handler fetch. During flash erase/program, fetching the vector or RTI stub from the same flash device or from the wrong selected bank may be unsafe. Therefore the &quot;NMI does nothing&quot; policy needs an implementation proof: valid vector bytes, a fetchable tiny handler or RAM-safe path, and bank state that cannot expose the wrong handler. Until that is proved, NMI during flash mutation remains something STR8 should not depend on.</p>
+<h2 id="q-could-nmi-vector-patching-become-a-supervisor-boot-signal">Q: Could NMI vector patching become a supervisor boot signal?</h2>
+<p>Comment: Yes, as a possible future, but it should be framed as a boot-time recognition window rather than as a general STR8 interrupt API.</p>
+<p>One possible shape:</p>
+<pre><code class="language-text">reset enters STR8
+STR8 installs a tiny NMI target for the boot window
+NMI/button sets STR8_SUP_REQUEST and RTIs
+STR8 polls STR8_SUP_REQUEST at safe points
+if set, STR8 enters supervisor/recovery mode
+before flash mutation, STR8 restores inert NMI behavior
+on HIMON handoff, HIMON installs its normal NMI policy</code></pre>
+<p>This makes NMI a way to request a mode, not a way to interrupt arbitrary STR8 work. The active NMI target could have a few named states:</p>
+<pre><code class="language-text">STR8_NMI_RTI          ignore NMI during STR8
+STR8_NMI_SUP_REQUEST  set supervisor-request flag, then RTI
+HIMON_NMI_TRAP        normal HIMON/debug NMI behavior after handoff</code></pre>
+<p>Concern: The current image still has the hardware NMI vector in the top flash vector block, and the current HIMON/SYS vector layer may dispatch through RAM target cells. A future supervisor request must say exactly which vector is being patched: final hardware bytes, a STR8 stub, or a RAM vector target behind a stable trampoline. It must also close the recognition window before erase/write starts, because flash mutation is not a safe time to use NMI as an event source.</p>
+<h2 id="q-should-str8-introduce-ivi-interrupt-vector-indirection">Q: Should STR8 introduce IVI, Interrupt Vector Indirection?</h2>
+<p>Comment: Yes, if STR8 is the chosen boot/recovery product for the board. <code>IVI</code> is pronounced <code>IVY</code>. If a user does not install STR8, then STR8 vector policy is irrelevant. But if the user chooses STR8, it is reasonable for STR8 to own the hardware vector front door and provide a recoverable indirection layer.</p>
+<p>The shape:</p>
+<pre><code class="language-text">RESET    -&gt; STR8 reset supervisor
+NMI      -&gt; IVI_NMI
+IRQ/BRK  -&gt; IVI_IRQ_BRK
+
+IVI_NMI:
+  JMP (IVI_NMI_VEC)
+
+IVI_IRQ_BRK:
+  inspect stacked status B flag
+  if IRQ: JMP (IVI_IRQ_VEC)
+  if BRK: decode BRK operand/signature and dispatch</code></pre>
+<p>That lets HIMON install what HIMON wants:</p>
+<pre><code class="language-text">RESET -&gt; STR8 boot decision, then HIMON cold/warm entry
+NMI   -&gt; HIMON NMI/debug/re-enter path
+IRQ   -&gt; real IRQ owner such as ACIA/VIA/user code
+BRK   -&gt; HIMON debugger now, richer BRK service table later</code></pre>
+<p>Another payload, <code>BETTERMON</code> or a user application, can install different targets. STR8 provides the stable patch points; the payload owns the meanings after handoff.</p>
+<p>Possible BRK table direction:</p>
+<pre><code class="language-text">BRK $00-$7F  payload/user/debug space
+BRK $80-$BF  STR8/IVI recovery or board services
+BRK $C0-$FF  system/future/reserved</code></pre>
+<p>The ranges are placeholders. The stronger idea is that one hardware IRQ/BRK vector can become an inspectable dispatch front door without reflashing the top-sector vector bytes every time a monitor wants a different BRK policy.</p>
+<p>Concern: IVI must not become a hidden operating system. Its promise is recoverable mechanism:</p>
+<pre><code class="language-text">hardware vectors stay stable
+STR8 can always regain control on reset
+payloads can patch indirect targets
+payloads own semantics after handoff</code></pre>
+<p>If IVI starts dictating every NMI, IRQ, and BRK meaning forever, it violates the payload-owns-policy spirit. If it gives patchable vectors, safe defaults, and documented dispatch rules, it strengthens STR8 as a standalone board product.</p>
+<h2 id="q-how-should-str8-ivi-be-explained-as-useful">Q: How should STR8/IVI be explained as useful?</h2>
+<p>Comment: The user-facing value is not &quot;more vector machinery.&quot; It is &quot;install one small recovery layer and stop reflashing fragile top-sector vectors for every experiment.&quot;</p>
+<p>Possible product framing:</p>
+<pre><code class="language-text">STR8 gives the board a recoverable boot door.
+IVI gives every monitor safe interrupt patch points.
+HIMON is the bundled monitor, not the only possible payload.
+Your monitor can boot through STR8 and still own its NMI/IRQ/BRK behavior.</code></pre>
+<p>For a board user who does not want a complex toolchain, STR8 can be the first useful thing:</p>
+<pre><code class="language-text">install STR8 once
+use MAP/BACKUP/RESTORE/INSTALL
+load HIMON, WDCMONv2, BETTERMON, or an app as a target
+recover through STR8 if the target is missing or bad
+change interrupt behavior through IVI patch points instead of reflashing vectors</code></pre>
+<p>Concern: The sell must stay honest. IVI does not make unsafe flash mutation safe by itself, and it does not remove the need for a clear payload handoff contract. It reduces one specific pain: hardware vector changes become rare, recoverable, and visible.</p>
 <h2 id="q-what-does-str8-own">Q: What does STR8 own?</h2>
 <p>Comment: STR8 owns recovery/update guardrails:</p>
 <pre><code class="language-text">safe boot path
@@ -111,7 +179,7 @@ INSTALL STR8/R-YORS TO BANK 3? Y/N</code></pre>
 <pre><code class="language-text">LIVE=B3
 B0=ERASED/USED/UNKNOWN
 TOP=WDCMON/RYORS/UNKNOWN
-TARGET=RYORS 0.0517 #89ABCDEF</code></pre>
+TARGET=RYORS 0.0517 #5F6A0F7A</code></pre>
 <p>The backup action is full-bank preservation:</p>
 <pre><code class="language-text">if B0 is erased:
   copy live Bank 3 -&gt; Bank 0
@@ -133,8 +201,14 @@ INSTALL STR8
 VERIFY</code></pre>
 <p>HIMON remains the workbench: editor, loader, debugger, assembler, catalog view, and normal command environment. STR8 owns survival: boot checks, bank policy, flash range policy, staging, erase, write, verify, rollback, and recovery messages.</p>
 <p>The short identity line belongs in this spirit:</p>
-<pre><code class="language-text">RYORS 0.0517 #89ABCDEF B0 HOLD</code></pre>
-<p>The displayed epoch date is <code>(year - 2026).MMDD</code>. The hash should identify the canonical image text, while mutable policy such as <code>B0 HOLD</code> comes from the STR8 config byte rather than being part of the image hash.</p>
+<pre><code class="language-text">RYORS 0.0517 #5F6A0F7A B0 HOLD</code></pre>
+<p>The displayed epoch date is <code>(year - 2026).MMDD</code>. For current STR8, the marker is FNV-1a32 over a private phrase:</p>
+<pre><code class="language-text">private phrase -&gt; #5F6A0F7A</code></pre>
+<p>Mutable policy such as <code>B0 HOLD</code> comes from the STR8 config byte rather than being part of the identity marker.</p>
+<p>A HIMON quoted-hash command can make this a small public challenge without publishing the phrase:</p>
+<pre><code class="language-text">&gt; &quot;GUESS TEXT&quot;
+#XXXXXXXX#</code></pre>
+<p>The command hashes text between the command quote and the closing quote, after HIMON uppercases input and trims leading/trailing spaces, so <code>&quot;GUESS TEXT&quot;</code> and <code>&quot; GUESS TEXT &quot;</code> hash the same bytes. If the result is <code>#5F6A0F7A</code>, HIMON reports a STR8 match. Treat this as an Easter egg, not security; 32-bit FNV-1a is intentionally compact and non-cryptographic.</p>
 <p>Concern: &quot;Boring&quot; must not mean vague. Each operation should say what range it will touch, whether erase is required, what is preserved, what was verified, and whether bank 3 was restored before any ROM code resumes.</p>
 <h2 id="q-can-str8-yield-to-monitors-or-apps-other-than-himon">Q: Can STR8 yield to monitors or apps other than HIMON?</h2>
 <p>Comment: Yes, later. STR8 does not have to mean &quot;the thing that only starts HIMON.&quot; It can become the tiny boot/recovery chooser that validates a target and yields to it:</p>
@@ -184,17 +258,79 @@ hash/check
 default flag
 role/notes</code></pre>
 <p>Concern: STR8-as-product must not require the user to buy into the rest of R-YORS. The menu must remain optional, compact, and recovery-oriented. If STR8 becomes too chatty, catalog-heavy, or application-like, it stops being the thing an operator trusts when the payload is broken.</p>
-<h2 id="q-should-str8-load-update-himon-and-str8-itself">Q: Should STR8 load/update HIMON and STR8 itself?</h2>
-<p>Comment: Yes. STR8 is the right authority for dangerous flash update flows. HIMON may receive, inspect, or prepare an update package, but STR8 should make the flash decision:</p>
+<h2 id="q-should-str8-load-update-targets-and-str8-itself">Q: Should STR8 load/update targets and STR8 itself?</h2>
+<p>Comment: Yes. STR8 is the right authority for dangerous flash update flows. HIMON may receive, inspect, or prepare an update package, but STR8 should make the flash decision. The V0 installer should be target/range-shaped internally rather than HIMON-shaped. HIMON is the default bundled target, not the only possible target:</p>
 <pre><code class="language-text">is the target range legal?
 does this touch the protected top sector?
 is erase required?
 has the live image been backed up?
 does the written image verify?
-is the new HIMON bootable enough to hand off?</code></pre>
-<p>HIMON updates should be the friendlier case. STR8 can stage a HIMON S-record or sector image, refuse the protected top sector, update the ordinary HIMON/body sectors, verify by read-back, update identity bytes when appropriate, then hand off to HIMON.</p>
+is the new target bootable enough to hand off?</code></pre>
+<p>Concern: &quot;target/range-shaped&quot; is an implementation rule, not permission to put raw range selection in the ordinary rescue prompt. The first user surface should be named and guided:</p>
+<pre><code class="language-text">UPDATE
+UPDATE HIMON
+UPDATE STR8</code></pre>
+<p>Generic target/range selection belongs in a later advanced path, after STR8 can print exact ranges, reject protected overlap, and make the operator confirm the named consequence rather than a cryptic address.</p>
+<p>The first S19 gates should be fixed:</p>
+<pre><code class="language-text">UPDATE HIMON  accepts only $C000-$EFFF
+UPDATE STR8   accepts only $F000-$FFFF</code></pre>
+<p>That still leaves the low-level code reusable. It simply prevents the ordinary operator from being asked to type or approve raw ranges while the machine is in its recovery/update prompt.</p>
+<p>Payload updates below the protected top sector should be the friendlier case. STR8 can stage a target S-record or sector image, refuse the protected top sector, rebuild the ordinary target/body sectors, verify by read-back, update identity bytes when appropriate, then hand off to the selected target. S19 is a transport into the RAM staging buffer, not permission to stream bytes directly into live monitor flash.</p>
+<p>The sticky V0 rule:</p>
+<pre><code class="language-text">first make STR8 install target code/ranges
+use HIMON as the default proof target
+do not bake HIMON into the low-level installer
+then use the proven machinery for the harder STR8/top-sector update</code></pre>
+<p>For V0, target replacement should mean:</p>
+<pre><code class="language-text">stage full 4K sector in RAM
+merge incoming bytes
+if staged sector differs, confirm erase
+erase selected 4K sector
+write full staged sector
+verify full staged sector</code></pre>
+<p>Direct 1-&gt;0 byte programming is useful for deliberate one-way flags and later append-only records, but monitor replacement should not depend on that shortcut in the first version.</p>
+<p>IVI remains the vector mechanism beside this update path. LEAF is the future friendly surface over it. Payloads such as HIMON can use future LEAF atomic routines to patch runtime vector targets after handoff:</p>
+<pre><code class="language-text">set NMI target
+set IRQ target
+set BRK target
+set BRK service target, later</code></pre>
+<p>Those routines should leave either the old target or the new target valid; no half-patched state. They do not grant flash-write authority and do not make STR8 responsible for the payload&#39;s interrupt meanings.</p>
+<p>Future onboard updates do not have to pass through S19. S19 is useful when a host sends bytes to the board; onboard ASM can instead hand STR8 candidate records or staged sector images directly.</p>
+<p>Until that onboard producer exists, BIN-to-S19 remains an off-board packaging step:</p>
+<pre><code class="language-text">host build creates vector-complete ROM BIN
+host converts selected image/range to S1/S9 transport
+board receives S19 into STR8 staging
+STR8 rebuilds sectors, writes, verifies, and resets/hands off</code></pre>
+<p>That is a transport limitation, not the permanent architecture. The future shape is:</p>
+<pre><code class="language-text">old monitor remains the winner
+new XMON/HIMON is built as a candidate
+candidate bytes are staged and verified
+candidate metadata is formed and sealed
+final tiny BOOT/XMON winner record points to the new candidate
+reboot through STR8</code></pre>
+<p>The &quot;atomic&quot; part is the winner-record commit, not the whole monitor write. Before that commit, STR8 should still choose the old sealed monitor. After that commit, STR8 may try the new sealed candidate. If validation or boot fails, STR8 should be able to choose the previous sealed candidate instead of assuming the latest write is always bootable.</p>
 <p>STR8 updates are the harder case. They need a RAM-resident transaction that stages the full top sector, merges the new STR8 and RAM-worker bytes, preserves or deliberately rebuilds the config pocket and vectors, confirms the protected-sector erase, writes and verifies from RAM, then resets.</p>
 <p>Concern: STR8 self-update must not return casually into ROM code that may have just been erased or replaced. The update path must either reset or return through a tiny RAM-safe continuation after bank 3 and the top sector are known good.</p>
+<h2 id="q-could-str8-use-s2-s8-s28-as-a-bank-aware-transport-later">Q: Could STR8 use S2/S8 <code>.s28</code> as a bank-aware transport later?</h2>
+<p>Comment: Yes. This is a strong future STR8 idea, but it should be named as S2/S8 or <code>.s28</code> transport rather than as a V0 requirement. Motorola S-record type S2 carries a 24-bit address, and S8 terminates a 24-bit-address transfer. The <code>.s28</code> name is the file/profile convention, not a separate <code>S28</code> record type.</p>
+<p>That extra address byte can describe physical board flash directly. With four 32K banks, STR8 can treat the transfer as physical SST39SF010A flash-chip addresses:</p>
+<pre><code class="language-text">bank 0  physical flash $00000-$07FFF
+bank 1  physical flash $08000-$0FFFF
+bank 2  physical flash $10000-$17FFF
+bank 3  physical flash $18000-$1FFFF  reset/default boot bank</code></pre>
+<p>The translation from transport address to board operation is:</p>
+<pre><code class="language-text">bank        = linear_address &gt;&gt; 15
+bank_offset = linear_address &amp; $7FFF
+cpu_address = $8000 + bank_offset</code></pre>
+<p>Examples:</p>
+<pre><code class="language-text">$00000  bank 0 physical flash, CPU $8000 when bank 0 is selected
+$08000  bank 1 physical flash, CPU $8000 when bank 1 is selected
+$10000  bank 2 physical flash, CPU $8000 when bank 2 is selected
+$18000  bank 3 physical flash, CPU $8000 at reset/default
+$1F000  bank 3 physical flash, CPU $F000 top sector at reset/default
+$1FFFA  bank 3 physical flash, CPU $FFFA vector block at reset/default</code></pre>
+<p>This gives STR8 a clean future fast path for bulk data storage, retrieval, and transport. The host or onboard producer can say &quot;these bytes belong to physical bank/range X&quot; without overloading CPU-visible <code>$8000-$FFFF</code> addresses, and STR8 can still apply its own guard rules before any erase/write happens.</p>
+<p>Concern: S2/S8 makes addressing richer, not safer by magic. STR8 still has to validate destination banks, protected windows, top-sector writes, bank 0 policy, factory slots, and self-update rules. For V0, S1/S9 remains enough; S2/S8 is a later STR8-N-style transport once the bank/range contract is firm.</p>
 <h2 id="q-can-future-str8-move-flash-chunks-around">Q: Can future STR8 move flash chunks around?</h2>
 <p>Comment: Eventually, yes, but only after STR8 can classify what it is moving. The future useful direction is a flash housekeeper that finds erased <code>$FF</code> space, recognizes live non-<code>$FF</code> chunks, moves safe chunks into better homes, and makes larger erased sectors available again.</p>
 <p>The first version should stay sector-based:</p>
@@ -297,7 +433,7 @@ LED_ERROR</code></pre>
 <p>Comment: STR8 is still deciding how small it stays in V0 and how much future STRAIGHTEN will own.</p>
 <p>Concern: Settled boundaries should move into <code>DECISIONS.md</code>; experiments and &quot;what if STR8 owns this?&quot; should stay here until proved.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_STR8.md</code>. Source modified: <time>2026-05-17T03:30:15Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC_STR8.md</code>. Source modified: <time>2026-05-18T01:54:31Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

@@ -29,6 +29,53 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: STR8 UPDATE HIMON Hardware Proof
+
+```text
+2026
+         05
+                18
+                   02:35Z WLP2 STR8 U / UPDATE HIMON is hardware-proven
+                               for the fixed C000-EFFF HIMON gate.
+```
+
+The operator-facing truth changed: `U` is no longer only proposed or waiting
+for a first useful proof. On hardware, Bank 3 booted visible `HIMON U1`, `B`
+copied that known-good image into Bank 2, `U` accepted the compact
+`$C000-$EFFF` S19 stream, asked before programming, and rebuilt HIMON as
+visible `HIMON U2`. STR8 stayed reachable after the update through `G F000`.
+A high-flash restore from Bank 2 back to Bank 3 then brought visible
+`HIMON U1` back.
+
+Command-surface status:
+
+```text
+U / UPDATE HIMON
+  implemented
+  accepts only S1 records inside $C000-$EFFF
+  stages blank C/D/E RAM images, overlays S19 bytes, then programs C/D/E
+  asks before erase/write
+  leaves $F000-$FFFF to STR8 unless a separate future STR8 path exists
+```
+
+Do not promote `U T`, `U H`, or `U S` as operator commands. `U` remains the
+short fixed HIMON profile. The future broader surface is still named-target
+and confirmed:
+
+```text
+UPDATE
+UPDATE HIMON
+UPDATE STR8
+```
+
+`UPDATE STR8` is not proven or implemented by this pass. It still needs a
+stronger confirmation and a top-sector transaction.
+
+Transcript and artifact details live in
+[HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md). Remaining STR8 proof gaps are
+Bank 0 enrollment, restore over non-erased ordinary sectors below `$C000`, and
+deliberate high-flash failure behavior with a sacrificial image.
+
 ## REHASH: Hardware Test Log Available
 
 ```text

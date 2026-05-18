@@ -13,16 +13,33 @@
 <h2 id="terminology-contract">Terminology Contract</h2>
 <p>Use these words precisely. When a word can mean more than one technical thing, prefer the specific form listed here instead of the bare word.</p>
 <ul>
-<li>R-YORS: the whole project/system/runtime direction.</li>
-<li>HIMON: the current monitor/debug/catalog environment.</li>
-<li>STR8: the current recovery/update guard.</li>
+<li>R-YORS: the whole project/system/runtime direction and current repo home.</li>
+<li>HIMON: the current monitor/debug/catalog environment; the default bundled</li>
+</ul>
+<p>monitor payload for STR8.</p>
+<ul>
+<li>STR8: the board management product and current recovery/update guard.</li>
+<li>IVI: Interrupt Vector Indirection. This came from BSO2 and is pronounced</li>
+</ul>
+<p><code>IVY</code>. It is the mechanism: hardware vectors enter small stubs, and payloads patch RAM targets or tables instead of reflashing the hardware vector block.</p>
+<ul>
+<li>IVY: pronunciation of IVI. Use <code>IVI</code> in written design text unless referring</li>
+</ul>
+<p>to the current <code>IVY</code> signature bytes or existing symbol names.</p>
+<ul>
+<li>LEAF: Latched Entry Address Frontdoor. The newer/friendlier front-door idea</li>
+</ul>
+<p>built on IVI: stable vector stubs plus patchable latched entry addresses, explained as a board feature rather than as raw vector plumbing.</p>
+<ul>
 <li>STR8-N / STRAIGHTEN: future expanded STR8 direction.</li>
 <li>THE: The Hash Environment. THE is the hash-first lookup/catalog environment:</li>
 </ul>
 <p>canonical names, FNV-1a, hash8/hash16/hash32 storage, RCAT/RREC records, resolver policy, aliases, and typed display. THE is not the whole runtime. A dispatcher may use THE; HIMON&#39;s current command dispatcher is the first concrete user.</p>
 <ul>
 <li>ASM: the planned onboard assembler path.</li>
+<li>payload target: a bootable/installable monitor, application, tool, or ROM</li>
 </ul>
+<p>image selected by STR8. HIMON is the default payload target, not the only one.</p>
 <h2 id="normative-words">Normative Words</h2>
 <p>R-YORS uses RFC 2119/8174-style words only when they are uppercase in a spec or contract block.</p>
 <ul>
@@ -52,6 +69,10 @@
 <p>implementation.</p>
 <ul>
 <li>vector: an address slot used by CPU/system dispatch.</li>
+<li>IVI vector slot: a RAM address cell or dispatch table entry used behind the</li>
+</ul>
+<p>stable hardware-vector stubs.</p>
+<ul>
 <li>ABI: binary/register/address-level contract; use only when that precision is</li>
 </ul>
 <p>needed.</p>
@@ -379,6 +400,18 @@
 </ul>
 <p><code>$8000-$FFFF</code> view.</p>
 <ul>
+<li>linear flash address: future STR8 transport address that names the physical</li>
+</ul>
+<p>SST39SF010A flash-chip address as bank plus offset instead of only a CPU-visible address. With 32K banks: <code>bank = address &gt;&gt; 15</code>, <code>bank_offset = address &amp; $7FFF</code>, and <code>cpu_address = $8000 + bank_offset</code>. In the current four-bank map, bank 3 is the reset/default boot bank at physical flash <code>$18000-$1FFFF</code>.</p>
+<ul>
+<li>S1/S9 transport: current near-term S-record install-package shape using</li>
+</ul>
+<p>16-bit S1 data records and an S9 termination record.</p>
+<ul>
+<li>S2/S8 transport / <code>.s28</code>: future bank-aware S-record profile using 24-bit S2</li>
+</ul>
+<p>data records and an S8 termination record. <code>.s28</code> is the file/profile name, not a literal record type.</p>
+<ul>
 <li><code>$WLPB</code>: mnemonic for reading the four hex nibbles of a 16-bit CPU address:</li>
 </ul>
 <p><code>W</code> = 4K window (<code>$W000-$WFFF</code>), <code>L</code> = 256-byte line (<code>$WL00-$WLFF</code>), <code>P</code> = 16-byte paragraph (<code>$WLP0-$WLPF</code>), and <code>B</code> = byte inside that paragraph.</p>
@@ -431,7 +464,7 @@
 <p>address when none is forced; examples include high-to-low, low-to-high, best fit, closest-to-top, and first fit in a selected bank or sector range.</p>
 <p>Example: <code>$E000-$EFFF</code> is window/sector <code>$E</code> of whichever bank is currently selected. Sector <code>$0</code> is <code>$0000-$0FFF</code>; <code>$0000-$FFFF</code> is the full 64K CPU address space, not sector <code>$0</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-15T21:35:26Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-18T01:52:30Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

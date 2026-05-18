@@ -2,17 +2,34 @@
 
 ## Near Term
 
-- Prove the RAM-resident STR8 S19 command text for automatic backup, Bank 0
-  enrollment, restore, reset, and HIMON handoff operations.
-- Choose the first 4K STR8 copy buffer address/range and then update
-  `MEMORY_MAP.md`.
+- Run the remaining STR8 V0 acceptance/regression pass from
+  [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md): rebuild artifacts, record
+  image identity, smoke `?`/`M`/`U` reject/`G`/`R`, then separately rerun the
+  remaining lower-sector restore over non-erased bytes and high-flash failure
+  behavior checks with a programmer recovery path ready. `B`, `E`, B0 enrolled
+  rotation, `U`, visible HIMON U1->U2, fig-Forth payload, OSI BASIC payload,
+  and high-flash restores from the backup chain passed on 2026-05-17.
+- Keep `MEMORY_MAP.md` and `RTFM-str8.md` aligned with the current STR8 RAM
+  tray: worker at `$0200-$05FF`, state at `$0A00-$0A16`, bank-copy sector
+  buffer at `$4000-$4FFF`, and `U` update staging at `$4000-$6FFF`.
 - Define `FLSH_` suffix conventions for register-carried arguments, including
   `_A` and `_AX`.
-- Define the first STR8 V0 protected-window start inside bank 3's `$F000-$FFFF`
-  top erase sector: `$FC00`, `$FA00`, `$F800`, `$F600`, `$F400`, `$F200`, or
-  `$F000`.
-- Define the top-sector partial-update transaction for bytes below STR8:
-  read/stage/erase/full-sector-write/verify.
+- Treat the current combined ROM protected-window start as `$F000`; revisit
+  shrink only after the V0 acceptance pass and size pressure make it useful.
+- Keep the first `U` / `UPDATE HIMON` target path boring after the 2026-05-17
+  hardware pass: compact S19, `$C000-$EFFF` gate, blank C/D/E staging,
+  confirmed erase/write/verify, and no `$F000-$FFFF` update authority.
+- Keep the `$C000-$EFFF` payload gate boring. HIMON U1->U2, fig-Forth, and OSI
+  BASIC have all passed through STR8 `U`; future payloads should use the same
+  compact S19 gate, transcript proof, and backup-promotion warning.
+- Define the later STR8 self-update gate: `UPDATE STR8` accepts only
+  `$F000-$FFFF`, requires stronger confirmation, and resets after verify.
+- Decide when to promote a visibly updated HIMON from candidate to baseline:
+  after a good `U`, run `B` only when Bank 2 should become the new recovery
+  image.
+- Sketch LEAF atomic vector routines only after STR8 V0 acceptance:
+  install NMI target, install IRQ target, install BRK target, and leave either
+  the old target or new target valid.
 - Define STR8 V0's image read-back/check flow, including which bytes ordinary
   restore writes, which selected STR8 protected-window bytes it skips, how STR8
   install/update verifies those bytes separately, and any fixed image marker.

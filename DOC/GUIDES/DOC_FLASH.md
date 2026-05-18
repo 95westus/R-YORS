@@ -41,6 +41,74 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## PROOF: STR8 UPDATE HIMON Passed On Hardware
+
+```text
+2026
+         05
+                18
+                   02:35Z WLP2 Logged the STR8 UPDATE HIMON U1->U2 hardware
+                               proof and narrowed TODO/work-process wording to
+                               the remaining acceptance gaps.
+```
+
+scope: `HARDWARE_TEST_LOG.md`, `STR8_WORK_PROCESS.md`, `TODO.md`.
+
+change: The hardware log now records the successful STR8 `U` path: Bank 3
+booted HIMON U1, `B` copied U1 into Bank 2, `U` received compact
+`$C000-$EFFF` S19 and programmed HIMON U2, STR8 stayed reachable, and
+high-flash Bank 2 -> Bank 3 restore brought HIMON U1 back.
+
+effect: The first fixed-gate `UPDATE HIMON` proof is no longer theoretical.
+The remaining STR8 V0 proof gaps are Bank 0 enrollment, lower-sector restore
+over non-erased bytes, and deliberate high-flash failure behavior with a
+sacrificial image.
+
+action: Use [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md) for the transcript
+and [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) for the remaining bench
+rail.
+
+## REDOC: STR8 Work Process Added
+
+```text
+2026
+         05
+                18
+                   00:33Z WLP2 Added the STR8 work-process rail, refreshed
+                               bringup/TODO wording around the current ROM
+                               proof, and simplified the future update
+                               command shape with fixed S19 gates.
+```
+
+scope: `STR8_WORK_PROCESS.md`, `INDEX.md`, `TOC.md`, `MAP.md`, `XREF.md`,
+`BIB.md`, `BRINGUP.md`, `TODO.md`, `STR8_FLASH_UPDATE_PROPOSAL.md`,
+`STR8.md`, `QCC_STR8.md`.
+
+change: STR8 now has a process guide that names the next step as a V0
+acceptance/regression pass before new update commands or self-update. STR8's
+recovery path is treated as already proven; the pass records that the current
+build still behaves like the known-good recovery image. The update proposal
+now treats `U T`, `U H`, and `U S` as design shorthand only; the compact
+implemented HIMON path is `U`, equivalent to fixed `UPDATE HIMON`. The first
+S19 gate is fixed: `U` accepts only `$C000-$EFFF`, while future `UPDATE STR8`
+accepts only `$F000-$FFFF` after stronger confirmation. IVI is now the combined
+image's stable vector-indirection mechanism, IVY is only its pronunciation, and
+LEAF is the future friendly front door built on IVI. Payload use of future LEAF
+patch routines is optional and has no flash authority. The bringup guide points
+to the current
+`$F000` resident shell, `$FC00` worker
+source, `$0200-$05FF` RAM tray, `$4000-$4FFF` copy buffer, and `$4000-$6FFF`
+HIMON update staging area.
+
+effect: Do not expose `U T`, `U H`, or `U S` as operator commands. Use `U` only
+as the fixed HIMON S19 gate, and keep later generic/raw-range work behind a
+guided update surface. The existing `? B E M U 0 1 2 G R` rescue/update surface
+still needs a clean hardware transcript, especially for destructive `B`, `E`,
+`U`, lower-sector restore, and high-flash failure behavior.
+
+action: Use [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) before editing STR8
+source or planning the next bench pass.
+
 ## REDOC: Product Boundaries Named
 
 ```text
@@ -48,16 +116,16 @@ action:     where to look or what to do next
          05
                 17
                    18:49Z WLP2 Added a product-boundary guide for R-YORS,
-                               STR8, LEAF/IVI, HIMON, and peer payloads.
+                               STR8, IVI/LEAF, HIMON, and peer payloads.
 ```
 
 scope: `PRODUCT_BOUNDARIES.md`, `INDEX.md`, `TOC.md`, `MAP.md`, `BOOK.md`,
 `GLOSSARY.md`.
 
 change: STR8 is now documented as the board management product inside the
-current repo. LEAF/IVI is the interrupt front door. HIMON is the default monitor
-payload, while WDCMONv2, BETTERMON, apps, tools, BASIC, and FORTH can be peer
-payload targets.
+current repo. IVI is the interrupt-vector mechanism, and LEAF is the newer
+front-door product name built on it. HIMON is the default monitor payload, while
+WDCMONv2, BETTERMON, apps, tools, BASIC, and FORTH can be peer payload targets.
 
 effect: Do not treat STR8 as only a HIMON helper, and do not treat HIMON as the
 only possible thing STR8 can install or boot. The repo stays together for now;
@@ -65,7 +133,7 @@ the boundary is conceptual and documented before any source split.
 
 action: Start with [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md), then use
 [STR8.md](./STR8.md) for the board-management contract and
-[QCC_STR8.md](./QCC_STR8.md) for open STR8/LEAF questions.
+[QCC_STR8.md](./QCC_STR8.md) for open STR8, IVI, and LEAF questions.
 
 ## REDOC: Onboard ASM Monitor Candidates Added
 
@@ -116,8 +184,8 @@ optimization or deliberate one-way flags.
 effect: Do not describe HIMON or STR8 replacement as a casual flash write,
 byte patch, or live S19 stream into monitor flash. It is a sector rebuild.
 
-action: Use the STR8 update notes before designing `U H`, `U S`, or any RAM
-updater that touches `$C000-$FFFF`.
+action: Use the STR8 update notes before designing `UPDATE HIMON`,
+`UPDATE STR8`, or any RAM updater that touches `$C000-$FFFF`.
 
 ## REDOC: STR8 Wear, Scratch, And Partition Notes Added
 

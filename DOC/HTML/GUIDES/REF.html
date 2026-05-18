@@ -63,10 +63,10 @@ bank 0:
 <pre><code class="language-text">$0000-$7FFF  same RAM/IO decode regardless of flash bank
 $8000-$FFFF  selected 32K flash window
 
-bank 0       physical flash $00000-$07FFF, visible at $8000-$FFFF when selected
-bank 1       physical flash $08000-$0FFFF, visible at $8000-$FFFF when selected
-bank 2       physical flash $10000-$17FFF, visible at $8000-$FFFF when selected
-bank 3       physical flash $18000-$1FFFF, visible at $8000-$FFFF at reset/default</code></pre>
+bank 0       SST39SF010A physical flash $00000-$07FFF, visible at $8000-$FFFF when selected
+bank 1       SST39SF010A physical flash $08000-$0FFFF, visible at $8000-$FFFF when selected
+bank 2       SST39SF010A physical flash $10000-$17FFF, visible at $8000-$FFFF when selected
+bank 3       SST39SF010A physical flash $18000-$1FFFF, visible at $8000-$FFFF at reset/default boot</code></pre>
 <p>Routine naming rule:</p>
 <pre><code class="language-text">FLSH_*   selects or queries which physical flash bank is visible in $8000-$FFFF
 FLASH_*  erases/programs/checks the currently selected $8000-$FFFF flash window</code></pre>
@@ -141,13 +141,15 @@ make -C SRC routine-hash-comments</code></pre>
 <p><code>make -C SRC docs</code> currently targets source-generated docs in <code>DOC/GENERATED</code>. The guide set under <code>DOC/GUIDES</code> is hand-maintained design/reference material unless a future generator is added.</p>
 <h2 id="bin-flash-image-policy">BIN Flash Image Policy</h2>
 <p>Generated burnable ROM <code>.bin</code> files are exactly one 32K <code>$8000-$FFFF</code> bank image for the programmer workflow. The file does not encode a bank number; bank 0-3 placement is managed through the T48 programmer or through R-YORS/STR8.</p>
-<p><code>BUILD/bin/himon-str8-rom.bin</code> is the primary combined image: HIMON starts at CPU <code>$C000</code> / file offset <code>$4000</code>, STR8 starts at CPU <code>$F000</code> / file offset <code>$7000</code>, and RESET points to STR8 at <code>$F000</code>. Hardware vectors at CPU <code>$FFFA-$FFFF</code> live at the tail of the file, <code>$7FFA-$7FFF</code>.</p>
+<p><code>BUILD/bin/himon-str8-rom.bin</code> is the primary combined image: HIMON starts at CPU <code>$C000</code> / file offset <code>$4000</code>, STR8 starts at CPU <code>$F000</code> / file offset <code>$7000</code>, RESET points to STR8 at <code>$F000</code>, and NMI/IRQ point to STR8 IVI entries at <code>$F089</code>/<code>$F09D</code>. Hardware vectors at CPU <code>$FFFA-$FFFF</code> live at the tail of the file, <code>$7FFA-$7FFF</code>.</p>
 <p>Local language images are linked below HIMON: OSI MS BASIC starts at <code>$8000</code> and fig-Forth starts at <code>$A000</code>. They are proof/load artifacts for now, not full safe <code>L F</code> updater packages.</p>
+<p>For STR8 bench work, fig-Forth can also be generated as a temporary <code>$C000</code> payload with <code>make -C SRC fig-forth-str8-update-s19</code>. That stream is for the already-proven STR8 <code>U</code> gate: it replaces the normal HIMON <code>$C000-$EFFF</code> payload in Bank 3, enters at <code>$C000</code>, and returns to STR8 with <code>MON</code> at <code>$F000</code>.</p>
+<p>OSI MS BASIC has the same temporary-payload path: <code>make -C SRC msbasic-osi-str8-update-s19</code>. The C000 BASIC image uses STR8&#39;s resident console calls and disables its background Ctrl-C poll for the first bench pass.</p>
 <p>Forth as a language/concept is not treated as a copied source artifact. The local fig-Forth build is different: it is derived from FIG-Forth 6502 Release 1.1, whose source identifies itself as a public-domain publication from the Forth Interest Group and requires the notice to remain with further distribution. <code>tools/emit_fig_forth_wdc.ps1</code> preserves that notice in the generated source under <code>LOCAL/fig-forth/generated/fig-forth.asm</code>.</p>
 <p>The current standalone <code>himon-rom</code> image no longer contains the legacy HIMONIA fixed entries at <code>$F00D</code>, <code>$FADE</code>, or <code>$FEED</code>. Loaded-language bridge builds must patch call addresses from the current HIMON map or wait for a deliberate future ABI.</p>
 <p>The build check verifies the reset vector and confirms that the reset target in the selected 32K bank image contains real code.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/REF.md</code>. Source modified: <time>2026-05-15T21:56:05Z</time>. HTML generated: <time>2026-05-17T03:30:39Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/REF.md</code>. Source modified: <time>2026-05-18T02:50:04Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>
