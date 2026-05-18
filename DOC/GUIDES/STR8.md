@@ -898,6 +898,15 @@ The same rule applies to a non-HIMON target: rebuild only the target-owned
 sectors, preserve STR8's recovery sector, and do not assume the payload is
 called HIMON in the low-level installer.
 
+The operator-manual version of that rule is the `MYMON` example in
+[RTFM-str8.md](./RTFM-str8.md#example-your-own-payload-through-str8): build a
+payload whose live entry is `$C000`, emit only S1 records in `$C000-$EFFF`, feed
+that stream through `U`, and decide deliberately whether the old image or the
+new payload belongs in the rotating backup chain. If the payload owns NMI, BRK,
+or IRQ, it must patch the IVI RAM targets at `$7EFA-$7EFF` after handoff; STR8
+keeps the top-sector stubs alive but does not define the payload's interrupt
+policy.
+
 The top sector needs stricter policy. `$F000-$FFFF` contains STR8, the RAM
 worker source copy, the config pocket, and vectors. Updating that sector must
 preserve the non-target bytes unless the operator explicitly requested a STR8
