@@ -2,22 +2,30 @@
 
 This document captures a possible HIMON direction:
 
-`A` grows from a one-line numeric assembler into a tiny onboard assembler that can resolve names through the same hash-first idea used by HIMON command dispatch.
+Status: this file was born under the `HASHED_ASM` name and still contains many
+FNV-era examples. Treat those as current HIMON implementation history and
+record-shape sketches. The intended compact assembler/catalog hash is now
+tableless CRC16 unless a later decision explicitly changes it.
+
+`A` grows from a one-line numeric assembler into a tiny onboard assembler that
+can resolve names through the same hash-first idea used by HIMON command
+dispatch.
 
 The short version:
 
 ```text
-text name -> hash -> symbol record -> value/address -> emitted operand bytes
+text name -> compact hash -> symbol record -> value/address -> emitted operand bytes
 ```
 
-The hash is not the address. The hash is the lookup key for a symbol record that contains the address, kind, bank, flags, and optionally the original text.
+The hash is not the address. The hash is the lookup hint for a symbol record that
+contains the address, kind, bank, flags, and optionally the original text.
 
 In THE terms:
 
 ```text
 hash names and tokens
 store exact addresses and values
-optionally hash complete records for proof
+optionally store proof text or signatures
 ```
 
 ## Why This Exists
@@ -44,7 +52,7 @@ The unusual HIMON part is the combination:
 
 ```text
 small 65C02 monitor
-+ FNV-1a command/name hashing
++ compact command/name hashes
 + onboard one-line assembler
 + flash/RAM symbol records
 + fixup records small enough to manage by hand
@@ -135,7 +143,7 @@ Ordering rule:
 This order keeps the command monitor-shaped: address comes immediately after
 `A`, and the optional label names the address being assembled.
 
-`MMM` is not just text decoration. It is the dispatch key for a small emitter
+`MMM` is not just text decoration. It is the dispatch hash for a small emitter
 path:
 
 ```text
@@ -469,7 +477,7 @@ Normal monitor path:
 
 ```text
 SYS_READ_HBSTR reads a high-bit-terminated command line.
-Himon hashes the first command token.
+HIMON currently hashes the first command token.
 The command dispatcher finds `A`.
 The `A` command receives the rest of the line as an assembly statement.
 ```
@@ -477,7 +485,7 @@ The `A` command receives the rest of the line as an assembly statement.
 The exact read routine name can change, but the contract is:
 
 ```text
-input bytes are canonicalized/masked to 7-bit text for hashing
+input bytes are canonicalized/masked to 7-bit text before hash calculation
 the line is stored in a monitor command buffer
 `.` as a whole token terminates the assembly statement
 ```
@@ -520,7 +528,7 @@ Parse order:
 6. Unknown operand bytes become a fixup.
 ```
 
-### Label Hashing
+### Label Hashes
 
 When a label definition is seen:
 
@@ -533,12 +541,12 @@ Himon does this:
 ```text
 canonicalize `LOOP`
 reject it if it is a mnemonic name
-hash the canonical label text
+compute the canonical label hash
 associate hash(LOOP) with current PC `$2000`
 scan pending fixups for hash(LOOP)
 ```
 
-The label text before `:` is the source identity. The hash is the lookup key.
+The label text before `:` is the source identity. The hash is the lookup hint.
 The address is the value.
 
 `DEF name addr kind` is the manual version of this operation. It creates a
@@ -1167,11 +1175,13 @@ They can be programmed from erased `$FF` bytes to concrete values, but changing
 them later requires erasing the containing flash sector or writing a newer
 append-only record.
 
-### FNV Layout Byte Savings
+### Legacy FNV Layout Byte Savings
 
-Since FNV-1a is the only runtime/catalog hash, records do not need to store
-`FNV` as text. The compact layout byte can identify how much of the canonical
-32-bit FNV-1a hash is stored:
+This was the older compact-storage thought for FNV-era records. Since the
+intended compact hash has moved to tableless CRC16, use this section as history
+and as a guide to the current ROM's FNV record shape, not as final catalog
+policy. In a known FNV table, the compact layout byte can identify how much of
+the canonical 32-bit FNV-1a hash is stored:
 
 ```text
 'F'  full FNV-1a      entries store hash0..3
@@ -1525,7 +1535,7 @@ This choice fits the project direction better than the earlier candidates:
 
 ```text
 ?NAME    readable and unambiguous, but shifted and less IBM-like
-/NAME    one key, but visually wrong and reserves slash before expressions grow
+/NAME    one hash, but visually wrong and reserves slash before expressions grow
 @NAME    common in some assemblers, but harder to type
 1f/1b    compact, but introduces directional lookup
 ```
@@ -1646,7 +1656,8 @@ This keeps lookup stable and small.
 
 ## Collision Handling
 
-Hash-only is tempting and probably fine for a small board, but a robust record should optionally carry text.
+Hash-only is tempting and probably fine for a small board, but a robust record
+should optionally carry text.
 
 Lookup can be:
 
@@ -1658,7 +1669,9 @@ hash matches?
     accept hash
 ```
 
-If two hash-only records collide, the system cannot know which was intended. That is why name bytes are worth having for user-created symbols, even if built-in command records stay compact.
+If two hash-only records collide, the system cannot know which was intended.
+That is why name bytes are worth having for user-created symbols, even if
+built-in command records stay compact.
 
 ## Relationship To HIMON Command Dispatch
 
@@ -1668,10 +1681,11 @@ The command table already makes this idea feel natural:
 user token -> FNV-1a hash -> record scan -> entry
 ```
 
-The assembler symbol table is the same pattern with a richer payload:
+That is the current HIMON implementation. The assembler symbol table should use
+the same pattern with the settled compact hash and a richer payload:
 
 ```text
-operand token -> FNV-1a hash -> symbol scan -> value/kind/bank/flags
+operand token -> compact hash -> symbol scan -> value/kind/bank/flags
 ```
 
 A future command record and a future symbol record could share scanning primitives:
