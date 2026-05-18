@@ -228,6 +228,14 @@ restored back over it.
 `make -C SRC msbasic-osi-str8-update-s19` does the same for OSI MS BASIC as a
 temporary `$C000` payload using STR8's resident console.
 
+For your own monitor, app, or language image, use the same shape: build a
+payload that enters at `$C000`, emit only `$C000-$EFFF` S1 records, load it
+through STR8 `U`, and decide whether `B` should preserve the old image or
+promote the new payload. See
+[`DOC/GUIDES/RTFM-str8.md`](DOC/GUIDES/RTFM-str8.md#example-your-own-payload-through-str8)
+for the worked `MYMON` example, including the current IVI vector-cell
+expectations.
+
 Forth as a language/concept is not treated here as a copyright problem. The
 specific fig-Forth source is different: R-YORS uses a local FIG-Forth 6502
 Release 1.1 source that identifies itself as a public-domain publication from
