@@ -1,5 +1,10 @@
 # R-YORS Documentation
 
+Current public milestone: STR8 is hardware-proven rotating three bootable
+images: HIMON, OSI BASIC, and fig-FORTH. The operator entry points are
+[GUIDES/RTFM-R-YORS.md](./GUIDES/RTFM-R-YORS.md) and
+[GUIDES/RTFM-str8.md](./GUIDES/RTFM-str8.md).
+
 Start with the guide index:
 
 - [GUIDES/INDEX.md](./GUIDES/INDEX.md)
