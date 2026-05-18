@@ -247,6 +247,10 @@ docs.
 - fold: derive hash16 or hash8 from hash32.
 - HASH: existing routine header ID formatted `[HASH:XXXXXXXX]`; this is hash32
   until the doc/build ID path is replaced.
+- hash phrase challenge: HIMON's quote-command puzzle. The operator types a
+  quoted phrase, HIMON uppercases/trims it through the normal reader, computes
+  32-bit FNV-1a, and reports a match when it equals the built-in challenge
+  hash. This is an Easter egg/proof marker, not a security feature.
 - symbol hash: assembler/catalog lookup hash for labels, routines, and commands.
 - hash collision: two names produce the same stored hash; name text or a wider
   stored hash must prove identity.
