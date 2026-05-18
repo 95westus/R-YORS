@@ -19,6 +19,21 @@ Standalone HIMON images also start at `$C000`. The old fixed HIMONIA novelty
 entries at `$F00D`, `$FADE`, and `$FEED` are gone. Use the current map file for
 build-specific addresses.
 
+## STR8 Image Milestone
+
+STR8 now has hardware proof as a small boot-image manager. The current bench
+set is three bootable `$C000-$EFFF` images:
+
+```text
+HIMON      this recovery/inspection monitor
+OSI BASIC  interactive BASIC payload
+fig-FORTH  threaded language payload
+```
+
+Use HIMON for ordinary monitor work when HIMON is the live image. Use
+[RTFM-str8.md](./RTFM-str8.md) for image backup, rotation, `U` / `UPDATE
+HIMON`, and recovery back to a known-good HIMON image.
+
 ## Command Safety Mandate
 
 ```text
@@ -51,7 +66,7 @@ destructive commands.
 ```text
 ?              help
 # [token]      list records, or resolve token without executing it
-"text"         print FNV-1a32 for quoted text; reports STR8 match on #5F6A0F7A
+"text"         print legacy FNV-1a32; reports STR8 match on #5F6A0F7A
 D start +count dump memory
 D start end    dump memory range
 M addr         modify memory
@@ -72,10 +87,11 @@ Q              quiesce with WAI, then re-enter on wake
 
 Use HIMON for normal work. Use STR8 for boot-image recovery and backup policy.
 
-The quoted-hash command uppercases input through HIMON's normal reader. A
+The quoted legacy-FNV helper uppercases input through HIMON's normal reader. A
 leading space after the opening quote is ignored, trailing spaces before the
 closing quote are trimmed, and text is hashed through the closing quote or end
-of line. It is an identity-marker Easter egg, not a security boundary.
+of line. It is an identity-marker Easter egg, not a security boundary, and not
+the final compact catalog-hash decision.
 
 `B L` currently reports active breakpoint slots in table order. A future
 sorted-list helper should print breakpoint tables in address order, but that is
@@ -142,11 +158,13 @@ D            dump $3200-$32FF
 ## Search And Step Direction
 
 `N` is the resident single-step command. `S` is freed for memory search and is
-expected to resolve through the FNV command catalog when the search record is
-present. `NEXT` is not a command alias. RAM-only `N` is non-destructive because
-it plants only a temporary debugger trap in RAM and restores the original
-opcode. The first patchable range is user program RAM `$2000-$77FF`; system
-RAM, I/O, and ROM/flash are not debug patch targets:
+expected to resolve through the current command catalog when the search record
+is present. The current ROM still carries FNV-era command records; the intended
+compact catalog-hash direction is tableless CRC16. `NEXT` is not a command
+alias. RAM-only `N` is non-destructive because it plants only a temporary
+debugger trap in RAM and restores the original opcode. The first patchable
+range is user program RAM `$2000-$77FF`; system RAM, I/O, and ROM/flash are not
+debug patch targets:
 
 ```text
 S addr end|+count b0 [b1 ...]
