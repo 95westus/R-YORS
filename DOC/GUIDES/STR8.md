@@ -17,11 +17,11 @@ known-good path while code, routines, data, and banks are being changed.
 
 V0 STR8 is image-oriented recovery: banks 0-2 hold whole 32K ROM images for
 backup and restore, while the selected STR8 protected window is flashed through
-its own guarded path. HIMON owns hashed catalog lookup, rich command behavior,
-and IRQ/vector control in the first version. Future STR8-N/STRAIGHTEN may offer
-catalog, FNV, scan, repair, and vector-layer services after the image-recovery
-path is stable, but it should remain useful to systems that keep their own
-memory map, interrupt policy, or runtime supervisor.
+its own guarded path. HIMON owns catalog lookup, rich command behavior, and
+IRQ/vector control in the first version. Future STR8-N/STRAIGHTEN may offer
+catalog, compact-hash lookup, scan, repair, and vector-layer services after the
+image-recovery path is stable, but it should remain useful to systems that keep
+their own memory map, interrupt policy, or runtime supervisor.
 
 Working definition:
 
@@ -42,6 +42,27 @@ STR8 hands normal operation to HIMON.
 HIMON provides the monitor, command dispatch, assembler, catalog lookup,
 and debug tools.
 ```
+
+## Milestone Snapshot
+
+The current STR8 hardware milestone is image rotation and recovery, proven with
+three bootable live-bank payloads:
+
+```text
+HIMON      recovery/inspection monitor
+OSI BASIC  interactive programming payload
+fig-FORTH  threaded language payload
+```
+
+The board proof covers `M`, `B`, `E`, Bank 0 rotation, the fixed
+`$C000-$EFFF` `U` / `UPDATE HIMON` gate, HIMON U1->U2 update, booting OSI
+BASIC and fig-FORTH through that same gate, and restoring known-good HIMON from
+Bank 2 by the high-flash recovery path. This promotes STR8 from proposed
+recovery idea to bench-proven recovery/update guard.
+
+The milestone does not make STR8 a finished field-updater. STR8 self-update,
+whole-ROM install, catalog-aware repair, raw range update, and original
+WDCMONv2/base-image preservation remain separate future work.
 
 ## Core Questions
 
@@ -275,14 +296,14 @@ Working rule:
 
 ```text
 use private STR8_CON_* for V0 console init/read/write/flush
-do not publish STR8_CON_* as BIO_*/PIN_* FNV catalog records
+do not publish STR8_CON_* as BIO_*/PIN_* catalog records
 keep public BIO_FTDI_* ownership in HIMON/current ROM body
 avoid COR_*/SYS_* in the STR8 hot path unless explicitly recovery-safe
 ```
 
 That accepts a small private code duplicate inside the protected STR8 anchor so
 recovery does not depend on HIMON's resident BIO copy, and so the combined image
-does not publish a second global `BIO_FTDI_*` provider with the same hash.
+does not publish a second global `BIO_FTDI_*` provider with the same lookup hash.
 `PIN_*` remains the hardware/register edge, `BIO_*` remains the reusable board
 I/O contract, and `COR_*`/`SYS_*` sit above that for richer
 monitor/application behavior.
@@ -332,7 +353,7 @@ first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 byte
 current ROM build links STR8 at $F000 and stores a RAM worker at $FC00
 current ROM build copies the worker to $0200 before B/U/0/1/2 flash mutation
 current ROM build copies the worker to $0200 before E config mutation
-current ROM build has working B, E, 0, 1, 2, G, R, and ? commands
+current ROM build has working ?, B, E, M, U, 0, 1, 2, G, and R commands
 current STR8 identity marker is `#5F6A0F7A`
 physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000
@@ -344,7 +365,7 @@ hardware vector block is $FFFA-$FFFF
 V0 uses whole 32K ROM bank images as recovery and backup sources
 V0 bank copy uses a 4K RAM buffer one erase sector at a time
 V0 HIMON controls IRQ/vector behavior
-V0 has no FNV/catalog lookup
+V0 has no catalog lookup
 no flash garbage collection
 no relocation replay
 no command-text compression in STR8 itself
@@ -369,13 +390,13 @@ small verify/check routines
 STR8 V0 verification means fixed-range checks, flash status, byte-for-byte
 read-back across restored ordinary image bytes, and separate read-back
 verification after any protected-window install/update. Future catalog-owning
-STR8 may use FNV once that direction becomes real.
+STR8 may use compact hash lookups after the CRC16 record shape is settled.
 
 ## Boot Relationship
 
-Current prototypes may boot directly into HIMON. The proposed R-YORS/STR8
-path boots through STR8 first, then hands normal operation to HIMON
-after a small validity check.
+Earlier prototypes could boot directly into HIMON. The current R-YORS/STR8
+reference path boots through STR8 first, then hands normal operation to HIMON
+or to another image occupying the live `$C000-$EFFF` payload window.
 
 At boot, STR8 should be able to:
 
@@ -385,8 +406,9 @@ At boot, STR8 should be able to:
 - provide a minimal serial/FTDI path if the normal monitor body cannot run
 - expose flash repair/install commands
 
-In the first implementation, this can be mostly policy and a few guard bytes.
-The full recovery monitor can grow later.
+In the current implementation, this is mostly policy, fixed gates, guarded
+flash mutation, and a small resident prompt. Richer validation and repair can
+grow later.
 
 ## WDCMONv2 Board-Onboarding Bridge
 
@@ -756,8 +778,8 @@ verifies by simple read-back compare. The `$F000` ROM build uses the same copy
 policy by first copying its worker from bank 3 `$FC00-$FFFF` into RAM
 `$0200-$05FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
-protected STR8/vector window remain usable after a normal restore. FNV, catalog
-lookup, wear leveling, and cycle counts are later work.
+protected STR8/vector window remain usable after a normal restore. Catalog
+lookup, hashed metadata, wear leveling, and cycle counts are later work.
 
 Partitioned-bank layouts remain QCC thought experiments until promoted. They
 are not part of the current `B`, `0`, `1`, and `2` recovery contract.
@@ -1024,7 +1046,7 @@ aggressive compression ratio.
 - What fixed image marker/check should STR8 V0 use for whole-image recovery
 - Should whole-image recovery use the STR8 identity marker `#5F6A0F7A`, a
   separate per-image check, or both?
-- Which catalog, FNV, scan, and vector-layer hooks should future
+- Which catalog, compact-hash, scan, and vector-layer hooks should future
   STR8-N/STRAIGHTEN offer without requiring ownership of user memory or
   interrupt policy?
 - What explicit import labels should HIMON use for resident STR8 routines once
