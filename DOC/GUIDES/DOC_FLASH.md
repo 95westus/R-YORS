@@ -41,6 +41,39 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: STR8 Milestone And CRC16 Hash Pivot
+
+```text
+2026
+         05
+                18
+                   15:10Z WLP2 Promoted the STR8 three-image milestone across
+                               the reader-facing manuals and reclassified
+                               FNV-1a as transition history, with tableless
+                               CRC16 as the intended compact hash.
+```
+
+scope: `README.md`, `DOC/INDEX.md`, and the reader-facing guide lane:
+`INDEX.md`, `TOC.md`, `MAP.md`, `BOOK.md`, `BRINGUP.md`, `RTFM-*.md`,
+`STR8.md`, `DECISIONS.md`, `GLOSSARY.md`, `REF.md`, `CATALOG.md`,
+`HASH.md`, `HASH_MAP.md`, `HASHED_ASM.md`, `HIMON_MAP.md`, `QCC_ASM.md`,
+`QCC_HASH.md`, `SYMBOL_XREF.md`, and `XREF.md`.
+
+change: STR8 is now presented as hardware-proven rotating three bootable
+images: HIMON, OSI BASIC, and fig-FORTH. The hash docs now distinguish
+current FNV-era implementation records from the intended compact tableless
+CRC16 catalog-hash direction.
+
+effect: The old assumption that STR8 is only a sketch, and that FNV-1a is the
+settled universal runtime spine, is stale. FNV-1a remains useful history and
+current-ROM transition debt until the CRC16 record shape is written through.
+
+action: Start with [RTFM-R-YORS.md](./RTFM-R-YORS.md),
+[RTFM-str8.md](./RTFM-str8.md), and [STR8.md](./STR8.md) for the proven image
+manager behavior. Use [DECISIONS.md](./DECISIONS.md),
+[HASH.md](./HASH.md), and [HASH_MAP.md](./HASH_MAP.md) for the hash-policy
+pivot.
+
 ## PROOF: STR8 UPDATE HIMON Passed On Hardware
 
 ```text
