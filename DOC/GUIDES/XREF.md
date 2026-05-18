@@ -3,7 +3,7 @@
 This file connects the guide set to the current `ror` source tree.
 
 Cross-reference wording follows [GLOSSARY.md](./GLOSSARY.md), especially for
-THE, hash32/hash16/hash8, Record/RREC, contract, source aliases, and
+THE, hash terms, Record/RREC, contract, source aliases, and
 formed/sealed/buried/gone lifecycle terms.
 
 ## Document Cross-Reference
