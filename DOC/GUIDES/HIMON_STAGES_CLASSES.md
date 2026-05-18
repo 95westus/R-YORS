@@ -398,11 +398,11 @@ Future STR8-N/STRAIGHTEN may provide:
 selected STR8 protected window in bank 3 top sector
 optional recovery-safe vector hooks/trampolines
 top-sector read/stage/erase/full-sector-write/verify policy for non-STR8 bytes
-catalog/FNV participation after V0
+catalog/compact-hash participation after V0
 recovery/update policy
 flash erase/write/verify/commit guardrails
 known-good identity and recovery surface
-V0 image-oriented bank recovery before catalog/FNV participation
+V0 image-oriented bank recovery before catalog/compact-hash participation
 ```
 
 Direction note: earlier planning leaned toward future STR8 ownership of vectors
