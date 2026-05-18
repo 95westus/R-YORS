@@ -1,12 +1,13 @@
 # QCC ASM
 
 This page keeps onboard assembler questions in QCC form. These are working
-notes for the hash-first assembler path.
+notes for the hash-first assembler path. Older FNV examples are current
+implementation history; the intended compact hash is tableless CRC16.
 
 ## Q: Can assembler symbols be hash-first?
 
-Comment: Yes. A tiny onboard assembler can hash labels and mnemonics, then
-resolve names through catalog records.
+Comment: Yes. A tiny onboard assembler can compute compact hashes for labels and
+mnemonics, then resolve names through catalog records.
 
 Concern: Hash-only symbol records are not enough for every case. User-created
 symbols need enough name text, length, scope, or collision data to prove which
@@ -18,8 +19,8 @@ Comment: Emit a fixup record when a label is used before it is known. Later,
 when the label is sealed into the symbol table, resolve the fixup.
 
 Concern: Fixups must record enough context to patch safely: address, width,
-relative/absolute mode, symbol hash, and any text or scope needed to survive a
-collision.
+relative/absolute mode, symbol hash/hash, and any text or scope needed to
+survive a collision.
 
 ## Q: Should assembler records use FSB?
 
