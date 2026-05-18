@@ -1,12 +1,16 @@
 # R-YORS Hash Map
 
-This file separates the different hash ideas so they do not collapse into one
-muddy concept.
+This file separates the different hash ideas so they do not collapse into
+one muddy concept.
+
+Status: this map still documents the current FNV-1a implementation and older
+compact-hash proposals. The intended compact runtime/catalog hash has shifted to
+tableless CRC16 because it better fits the W65C02 time/space budget.
 
 Use [GLOSSARY.md](./GLOSSARY.md) for the terminology contract. In this file,
-FNV-1a is the algorithm, hash32/hash16/hash8 are stored result widths, `Record`
-means only the record format defined in the local section, and THE means The
-Hash Environment.
+FNV-1a is the current implemented hash algorithm, hash32/hash16/hash8 are older
+stored result widths, `Record` means only the record format defined in the local
+section, and THE means The Hash Environment.
 
 Terminology note: `hash map` here means a guide map of hash concepts and
 ownership. It does not mean a hash table implementation, and it does not promise
@@ -32,9 +36,16 @@ Runtime FNV-1a
   source: HIMON/himon.asm
   symbol guide: SYMBOL_XREF.md
 
+Compact CRC16 hash
+  size: 16 bit
+  algorithm: tableless CRC16, exact polynomial/record shape still to settle
+  owner: future HIMON/catalog/hashed assembler
+  purpose: compact runtime/catalog/symbol lookup
+  guide: HASH.md, QCC_HASH.md
+
 Assembler symbol hash
-  size: 32 bit
-  algorithm: FNV-1a
+  size: compact hash, current notes may still show 32-bit FNV examples
+  algorithm: intended tableless CRC16
   owner: hashed assembler/catalog
   purpose: label, routine, command, and fixup lookup
   guide: HASHED_ASM.md
@@ -45,22 +56,23 @@ Catalog text proof
   purpose: collision proof, listings, onboard linking
   guide: HASHED_ASM.md, SYMBOL_XREF.md
 
-Variable-width stored hash
+Legacy variable-width FNV
   size: 1, 2, or 4 stored bytes
   algorithm: folded FNV-1a from the canonical 32-bit value
   owner: compact HIMON/catalog tables
   purpose: save ROM space in lookup contexts where the builder can prove
-           the narrower key is unambiguous
+           the narrower hash is unambiguous
   guide: HASH.md
 ```
 
 ## Rule
 
 ```text
-FNV-1a is the one catalog/runtime symbol hash for HIMON, the catalog, and the
-assembler path. STR8 V0 does not use FNV; future STR8-N/STRAIGHTEN may
-participate in the same hash path without requiring catalog ownership.
-records do not carry a hash-algorithm tag.
+FNV-1a is current implementation/history, not the final universal hash.
+tableless CRC16 is the intended compact runtime/catalog hash.
+STR8 V0 does not use either hash for recovery decisions.
+records should not carry a hash-algorithm tag unless multi-algorithm catalogs
+are explicitly adopted.
 hash narrows candidates
 stored text proves identity
 record kind/bank/address tells how to use the match
@@ -69,12 +81,11 @@ record kind/bank/address tells how to use the match
 Do not treat a hash as the whole identity once the catalog becomes writable or
 loadable from user-built modules.
 
-## Variable-Width Hash Storage
+## Legacy Variable-Width FNV Storage
 
-This is a compact storage proposal layered on top of the one FNV-1a policy.
-The canonical name hash remains 32-bit FNV-1a. A table may store a folded
-1-byte, 2-byte, or full 4-byte key when that width is enough for its own lookup
-context.
+This is an older compact storage proposal layered on top of the FNV-1a policy.
+It remains useful for understanding current helper code and generated maps. The
+current preferred compact hash direction is tableless CRC16.
 
 ```text
 hash8   folded from hash0..3
@@ -120,11 +131,11 @@ and use the payload. Runtime collision management is not part of the proposal.
 This is separate from short local handles. A folded hash still discovers a name
 inside a lookup context. A local handle or index reuses something already found.
 
-## Hash Width Control Policy
+## Legacy Hash Width Control Policy
 
-FNV-1a is the only runtime/catalog symbol hash, so the record does not need to
-store the text `FNV` or an algorithm id once the scanner is already inside a
-known FNV catalog/table region.
+When a scanner is already inside a known catalog/table region, the record should
+not spend bytes naming its hash algorithm. The older text below explains how the
+FNV proving records tried to reduce per-record marker cost.
 
 An older shorthand used `F/N/V` as human-readable width markers:
 
@@ -364,7 +375,7 @@ show collision candidates from the master catalog.
 Hashed ASM uses the same mental shape:
 
 ```text
-label text -> canonical text -> hash -> symbol record -> value
+label text -> canonical text -> compact hash -> symbol record -> value
 ```
 
 For a forward label:
@@ -379,10 +390,10 @@ later label -> same hash -> patch recorded site
 Mini theory:
 
 ```text
-canonical name/text -> FNV-1a hash -> typed catalog record -> value/payload
+canonical name/text -> compact hash -> typed catalog record -> value/payload
 ```
 
-The hash is only the compact lookup key. The surrounding record gives the match
+The hash is only the compact lookup hint. The surrounding record gives the match
 meaning. A future R-YORS catalog can use the same hash path for several kinds of
 things:
 
@@ -550,7 +561,7 @@ later use:   short id/index -> RREC pointer, entry, or value
 ```
 
 That makes `RIDX` an accelerator, not the source of identity. Hashes remain the
-stable discovery key; short handles are local conveniences for hot paths,
+stable discovery hash; short handles are local conveniences for hot paths,
 bytecode, packet fields, local imports, or RAM session symbol tables.
 
 ## Text Storage
