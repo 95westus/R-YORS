@@ -291,6 +291,91 @@ RUN
 HELLO
 ```
 
+## Example: Your Own Payload Through STR8
+
+Suppose you have a monitor, app, or language image called `MYMON` and you want
+STR8 to install it as the live `$C000` payload while leaving STR8 resident at
+`$F000-$FFFF`.
+
+The payload contract is deliberately plain:
+
+```text
+$C000        executable entry or jump stub
+$C000-$EFFF  payload bytes accepted by STR8 U
+$F000-$FFFF  STR8-owned recovery sector, not part of this payload
+```
+
+If your build already emits a 12K binary whose first byte belongs at `$C000`,
+make the STR8 update stream like this:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File SRC/tools/build_rom_install_s19.ps1 `
+  -BinPath LOCAL/mymon-c000.bin `
+  -S19Path SRC/BUILD/s19/mymon-str8-update.s19 `
+  -BaseAddress 49152 `
+  -StartAddress 49152 `
+  -OmitAllFFDataRecords
+```
+
+`49152` is `$C000`. If your build emits a full 32K bank image whose CPU address
+range is `$8000-$FFFF`, crop only the payload gate:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File SRC/tools/build_rom_install_s19.ps1 `
+  -BinPath LOCAL/mymon-bank.bin `
+  -S19Path SRC/BUILD/s19/mymon-str8-update.s19 `
+  -BaseAddress 32768 `
+  -RangeStart 49152 `
+  -RangeEnd 61439 `
+  -StartAddress 49152 `
+  -OmitAllFFDataRecords
+```
+
+`32768` is `$8000`; `61439` is `$EFFF`. The resulting S19 should contain only
+S1 data records in `$C000-$EFFF` and an S9 start of `$C000`. STR8 `U` will
+reject records outside that range before erase.
+
+On the board, use STR8 as the gate and recovery guard:
+
+```text
+STR8>M
+STR8>B
+STR8>U
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+... send SRC/BUILD/s19/mymon-str8-update.s19 ...
+PROGRAM C000-EFFF? Y: y
+OK
+STR8>G
+```
+
+Run `B` before `U` only when the current live Bank 3 image should be preserved
+in the backup chain. After `MYMON` boots, another `B` promotes `MYMON` into the
+backup chain. That is correct only if `MYMON` is now the image you want to keep
+recoverable. To recover an older HIMON over a bad `$C000` payload, restore from
+a backup bank known to contain HIMON and intentionally accept the high-flash
+`FLASH C000-FFFF?` prompt; ordinary restore preserves `$C000-$FFFF`.
+
+If `MYMON` does not use interrupts, do nothing. STR8 seeds the IVI RAM vector
+cells with safe `RTI` defaults before handoff. If `MYMON` owns NMI, BRK, or IRQ,
+install its targets after entry:
+
+```text
+$7EFA-$7EFB  NMI target
+$7EFC-$7EFD  BRK target
+$7EFE-$7EFF  non-BRK IRQ target
+```
+
+Patch those cells only when your handlers and stack policy are ready. Future
+LEAF routines should make that friendlier, but the current proven surface is the
+IVI RAM-cell contract.
+
+STR8 protects the boring part: range-gating the S19, asking before flash
+erase/program, keeping the `$F000-$FFFF` recovery sector out of `U`, and giving
+you a backup/restore path if you used it deliberately. It does not prove that
+your payload starts cleanly, uses RAM compatibly, initializes interrupts safely,
+or preserves your intended backup history after you run `B`.
+
 STR8 self-update is still future work. The sane shape remains a RAM-resident
 top-sector transaction:
 
