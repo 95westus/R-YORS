@@ -34,9 +34,10 @@ and debug tools.
   recovery anchor proves itself. That future name means richer repair and
   normalization capability, not mandatory ownership of every system policy.
 - `HIMON` is the active monitor/debug/catalog/assembler environment name.
-- `THE` is The Hash Environment: hash-first lookup, catalog records, resolver
-  policy, aliases, and typed display. HIMON's dispatcher may use THE, but THE
-  is not the whole runtime and not arbitrary command execution.
+- `THE` is The Hash Environment: lookup/catalog records, resolver policy,
+  aliases, and typed display. HIMON's current dispatcher still carries FNV-1a
+  history, but the intended compact runtime/catalog hash is tableless CRC16.
+  THE is not the whole runtime and not arbitrary command execution.
 - Himonia-F is historical/archived branch vocabulary that has folded back into
   HIMON.
 - Do not treat Himonia-F and HIMON as permanently separate products.
@@ -193,12 +194,12 @@ start +count    count is the number of bytes
 - Minimal recovery is a small load/verify/flash/identity surface, not full
   HIMON.
 - STR8 V0 keeps console byte I/O private as `STR8_CON_*` routines. They are
-  recovery-anchor implementation details, not public `BIO_*`/`PIN_*` FNV
-  catalog providers.
+  recovery-anchor implementation details, not public `BIO_*`/`PIN_*` catalog
+  providers.
 - Public `BIO_*`/`PIN_*` records should have one owner in the combined image.
   The current HIMON body owns the public `BIO_FTDI_*` records.
 - Small duplicated console code inside STR8 is acceptable while it keeps
-  recovery self-contained and avoids duplicate global hashes.
+  recovery self-contained and avoids duplicate global hash lookups.
 - STR8 should avoid `COR_*`/`SYS_*` as hot-path dependencies unless the entry is
   intentionally tiny, stable, and recovery-safe. `SYS_*` remains the public
   monitor/application layer, not the recovery anchor's default substrate.
@@ -261,17 +262,24 @@ start +count    count is the number of bytes
 
 ## Hash And Catalog Policy
 
-- FNV-1a is the one and only runtime/catalog/symbol hash.
-- FNV-1a belongs to HIMON, catalog, assembler, and docs/build tooling today.
-- STR8 V0 does not use FNV: not for verification, image selection, version
-  selection, command dispatch, catalog lookup, or recovery decisions.
-- Future STR8-N/STRAIGHTEN may participate in catalogs and use FNV after the
-  V0 image-recovery path is stable. It should not require catalog ownership from
-  systems that provide their own catalog or resolver.
-- Do not propose per-record hash algorithm tags.
-- Routine header `[HASH:XXXXXXXX]` values are also 32-bit FNV-1a. The old
-  16-bit routine comment ID path is retired.
-- `hash0..3` stores FNV-1a low byte through high byte.
+- FNV-1a is implemented history and current transition debt, not the final
+  universal runtime/catalog/symbol hash decision.
+- The intended compact runtime/catalog hash is tableless CRC16. The reason is
+  practical W65C02 time and ROM pressure.
+- Current HIMON command records and routine `[HASH:XXXXXXXX]` comments may
+  still carry 32-bit FNV-1a. Treat those as existing record/comment formats
+  until the CRC16 record shape is written through.
+- STR8 V0 does not use FNV or CRC16 for recovery decisions: not for
+  verification, image selection, version selection, command dispatch, catalog
+  lookup, or restore policy.
+- Future STR8-N/STRAIGHTEN may participate in catalogs and use the compact hash
+  after the V0 image-recovery path is stable. It should not require catalog
+  ownership from systems that provide their own catalog or resolver.
+- Do not add per-record hash-algorithm tags unless the project explicitly
+  adopts a multi-algorithm catalog.
+- Routine header `[HASH:XXXXXXXX]` values remain 32-bit FNV-1a for existing
+  docs/build tooling. They are not the final runtime hash decision.
+- Existing `hash0..3` fields store FNV-1a low byte through high byte.
 - Words and longs are little-endian: low byte first.
 - Current HIMON proving record shape is:
 
@@ -298,7 +306,7 @@ start +count    count is the number of bytes
   flag. STR8 V0's private `STR8_CON_*` path means HIMON's public
   `BIO_FTDI_*` records are not automatically recovery-required.
 - Command text is for discoverability, collision confirmation, and future
-  tooling. It is not required for basic FNV lookup.
+  tooling. It is not required for the current basic FNV lookup.
 - Text compression must be optional. If compressed text is not smaller, store
   raw text or omit text.
 
