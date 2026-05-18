@@ -1,7 +1,9 @@
 # QCC Hash
 
-This page keeps hash questions in QCC form. These notes are for compact lookup,
-hash-width records, and folded FNV-1a behavior.
+This page keeps hash questions in QCC form. Much of this page records the older
+folded FNV-1a direction. The current compact runtime/catalog direction is
+tableless CRC16, chosen for W65C02 time and ROM pressure. Keep the FNV notes as
+implementation/history until the CRC16 record shape replaces them.
 
 ## Q: Can HIMON use 1, 2, and 4 byte hashes?
 
