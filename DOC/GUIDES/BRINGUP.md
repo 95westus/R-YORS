@@ -6,29 +6,29 @@ R-YORS booting through STR8.
 Rule zero: prove one dangerous thing at a time. No erase/write step should be
 added until the read-only version of the same path has passed.
 
-Current bench status: a rudimentary STR8 flash-recovery path has been lightly
-tested and is functioning nominally. Keep the programmer and a known-good image
-available as last-resort brick recovery while STR8's own update/self-update
-paths are being proved.
+Current bench status: STR8 is reset-entered and hardware-proven as a small
+boot-image manager. The current proof set rotates three bootable `$C000-$EFFF`
+payloads: HIMON, OSI BASIC, and fig-FORTH. Keep the programmer and a
+known-good image available as last-resort brick recovery while STR8's broader
+field-update and self-update paths are still being proved.
 
 ## Current Target
 
 ```text
 STR8 V0
-first proof image:  RAM-resident S19 launched under HIMON
 current ROM proof:  $F000-$FFFF
 future shrink goal: highest fitting protected window
 role:               image-oriented recovery guard
 copy buffer:        4K RAM buffer, one erase sector at a time
 I/O layer:          private STR8_CON_* FTDI/VIA path
-catalog/FNV:        not used by STR8 V0
+catalog/hash path:   not used by STR8 V0 recovery decisions
 HIMON vectors:      HIMON controls IRQ/vector behavior in V0
 ```
 
 STR8 started as a RAM-launched test app. The current ROM proof is reset-entered
-and resident at `$F000`, but new destructive behavior should still begin as a
-read-only or RAM-safe proof before it becomes part of the reset-owned recovery
-path.
+and resident at `$F000`, with guarded `B`, `E`, `M`, `U`, `0`, `1`, and `2`
+paths. New destructive behavior should still begin as a read-only or RAM-safe
+proof before it becomes part of the reset-owned recovery path.
 
 ## Escape Path
 
@@ -51,7 +51,13 @@ T48 programmer ready to rewrite the flash/ROM
 A future WDCMON bridge may become another path, but the first STR8 bringup
 keeps the T48 as the final escape hatch.
 
-## Bringup Order
+## Bringup Order And Remaining Rail
+
+The early bringup order below is mostly historical now. Bank 0 enrollment,
+backup rotation, the fixed `$C000-$EFFF` `U` gate, HIMON U1->U2 update, OSI
+BASIC and fig-FORTH payload update, and high-flash recovery back to HIMON have
+all passed on hardware. STR8 self-update and broader field-update policy remain
+future work.
 
 ```text
 0. Build RAM-resident STR8 S19 launched under HIMON.
@@ -64,7 +70,7 @@ keeps the T48 as the final escape hatch.
 7. Prove restore of ordinary bank 3 bytes while preserving the STR8 window.
 8. Prove top-sector read/stage/erase/full-sector-write/verify.
 9. Prove explicit STR8 install/update path.
-10. Only then let reset enter STR8 first.
+10. Let reset enter STR8 first.
 ```
 
 ## V0 Bank Policy
