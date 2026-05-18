@@ -23,6 +23,10 @@ Newest alerts appear first.
 2026
          05
                 18
+                   15:10Z WLP2 STR8 crossed the three-image milestone:
+                               HIMON, OSI BASIC, and fig-FORTH have all
+                               booted through the fixed C000-EFFF update gate
+                               and can be managed as recoverable flash images.
                    02:35Z WLP2 STR8 U / UPDATE HIMON is hardware-proven
                                for the fixed C000-EFFF gate: U1 backed up
                                to Bank 2, Bank 3 updated to U2, then
@@ -62,8 +66,9 @@ R-YORS -> STR8 -> HIMON -> THE -> onboard ASM/catalog linking
 
 - `STR8` is the recovery/update guard.
 - `HIMON` is the monitor/debug/catalog environment.
-- `THE` is The Hash Environment: FNV-1a hash-first lookup, catalog records,
-  resolver policy, and typed display. It is not the whole runtime.
+- `THE` is The Hash Environment: lookup/catalog records, resolver policy, and
+  typed display. It is not the whole runtime. Current HIMON pieces still carry
+  FNV-1a history, but the intended compact runtime hash is tableless CRC16.
 - `ASM` is the planned onboard assembler path.
 
 This repo is meant to feel like a machine binder: source, generated listings,
@@ -113,36 +118,26 @@ The convention is deliberately plain: `1` means on, lit, present, or completed;
 a different carry contract when compatibility or a lower-level device path
 requires it, but the preferred R-YORS style is `C=1` for success.
 
-## FNV-1a Hash Spine
+## Hash Status
 
-R-YORS uses **32-bit FNV-1a** as the common lookup key for the runtime system:
-commands, routines, symbols, catalog records, data elements, constants, fixups,
-modules, strings, and future assembler names all follow the same hash-first
-path.
+R-YORS still contains FNV-1a work, and current HIMON command/routine notes may
+still mention FNV-1a records or `[HASH:XXXXXXXX]` IDs. Treat that as
+implementation history and transition debt, not the final lookup decision.
+
+The intended compact runtime/catalog hash is now **tableless CRC16**. The reason
+is practical 65C02 time and space: CRC16 can be computed without a table and
+without dragging the 32-bit FNV-1a path into every small command/catalog scan.
 
 ```text
-canonical text -> FNV-1a -> hash0,hash1,hash2,hash3 -> typed record/payload
+canonical text -> tableless CRC16 -> typed record/payload
 ```
-
-- Hash constants: offset basis `$811C9DC5`, prime `$01000193`.
-- Persistent storage is little-endian: displayed `$89ABCDEF` is stored as
-  `EF,CD,AB,89`.
-- Folded 8-bit and 16-bit FNV-1a helper results will be available for compact
-  tables; 32-bit FNV-1a remains the canonical hash.
-- Current HIMON command records use:
-  `'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...`
-  where `kind=$00` enters code at record offset `+8`.
-- Routine comments carry stable IDs like `[HASH:49023C1B]`, generated from the
-  canonical uppercase routine name.
-- Future catalog records keep the same `hash0..3` field for commands,
-  routines, data, symbols, packets, modules, aliases, and unresolved fixups.
 
 The hash narrows the search; the surrounding typed record gives the match its
 meaning, and stored/proof text can disambiguate collisions when records become
-writable or user-created. Start with [DOC/GUIDES/HASH.md](DOC/GUIDES/HASH.md)
-and [DOC/GUIDES/HASH_MAP.md](DOC/GUIDES/HASH_MAP.md) for the full schema.
-Terminology such as FNV-1a, hash32/hash16/hash8, signature, control byte,
-kind, Record, RREC, contract, bank, sector, and condense is defined in
+writable or user-created. The older FNV-1a schema lives in
+[DOC/GUIDES/HASH.md](DOC/GUIDES/HASH.md) and
+[DOC/GUIDES/HASH_MAP.md](DOC/GUIDES/HASH_MAP.md) until the CRC16 record shape is
+fully written through. Terminology lives in
 [DOC/GUIDES/GLOSSARY.md](DOC/GUIDES/GLOSSARY.md).
 
 ## Safety
@@ -256,8 +251,8 @@ HTML is a presentation view; Markdown remains the canonical documentation.
 ## Lineage
 
 R-YORS grows from the BSO2/WDC monitor line into a smaller, more disciplined
-set of reusable routines, flash-safe recovery, hash-dispatched monitor
-commands, and eventually onboard assembly/catalog linking.
+set of reusable routines, flash-safe recovery, compact-hash monitor/catalog
+lookup, and eventually onboard assembly/catalog linking.
 
 The long north star is still true RPG II, but shaped from below: stable callable
 routines, discoverable catalogs, flash-resident programs, fixed entry points,
