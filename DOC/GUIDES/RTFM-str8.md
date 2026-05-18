@@ -6,6 +6,23 @@ protected-window preservation.
 
 Read this before pressing a destructive key.
 
+## Current Milestone
+
+STR8 has crossed its first serious hardware milestone: it can rotate and
+recover three bootable images through the same guarded path.
+
+```text
+HIMON      recovery/inspection monitor
+OSI BASIC  interactive programming payload
+fig-FORTH  threaded language payload
+```
+
+The proof covers map, backup rotation, Bank 0 enrollment, the fixed
+`$C000-$EFFF` `U` gate, HIMON U1->U2 update, booting BASIC and fig-FORTH as
+temporary live images, and restoring known-good HIMON from Bank 2. That makes
+STR8 a bench-proven recovery/update guard. It is still not a finished
+field-updater or STR8 self-updater.
+
 ## Command Safety Mandate
 
 ```text
@@ -242,10 +259,11 @@ make -C SRC fig-forth-str8-update-s19
 
 It emits `SRC/BUILD/s19/fig-forth-str8-update.s19`, a `$C000-$EFFF` stream
 that puts a bootable fig-Forth image where HIMON normally lives. The image has a
-real entry at `$C000` (`JMP FORTH_ORIG`), keeps the fig-Forth FNV header after
-that entry, and makes Forth `MON` jump back to STR8 at `$F000`. Treat this as a
-bench payload test: run `B` first if Bank 2 should keep known-good HIMON, and
-use the high-flash restore path to put HIMON back into Bank 3.
+real entry at `$C000` (`JMP FORTH_ORIG`), keeps the current legacy metadata
+record after that entry, and makes Forth `MON` jump back to STR8 at `$F000`.
+Treat this as a bench payload test: run `B` first if Bank 2 should keep
+known-good HIMON, and use the high-flash restore path to put HIMON back into
+Bank 3.
 
 After a payload boots, `B` promotes that payload into the backup chain. That is
 useful only when the payload should become recoverable. If you want to keep the
@@ -260,9 +278,10 @@ make -C SRC msbasic-osi-str8-update-s19
 
 It emits `SRC/BUILD/s19/msbasic-osi-str8-update.s19`, a `$C000-$EFFF` stream
 that puts bootable BASIC where HIMON normally lives. BASIC enters at `$C000`,
-keeps its FNV record after that entry, and uses STR8's resident console calls in
-the top sector. This payload disables BASIC's background Ctrl-C poll for now so
-it does not consume pending input through STR8's simple console primitive.
+keeps its current legacy metadata record after that entry, and uses STR8's
+resident console calls in the top sector. This payload disables BASIC's
+background Ctrl-C poll for now so it does not consume pending input through
+STR8's simple console primitive.
 
 The 2026-05-17 hardware pass proved this payload through `U` and ran:
 
