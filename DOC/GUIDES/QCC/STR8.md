@@ -301,6 +301,62 @@ no longer pretend the bank is one complete 32K image. STR8 needs range-aware
 restore and verify rules, and the map display must say which sectors are
 reserved, staged, final, image, WDC/base, HIMON, and STR8.
 
+## Q: Could STR8-N pack named regions instead of whole banks?
+
+Comment: Yes, as a future STR8-N/STRAIGHTEN direction. STR8-N can become a
+boot recovery and flash-management layer that backs up regions, remembers
+where each region came from, and later restores or relocates them by metadata
+rather than by whole-bank position alone.
+
+The future verb is `PACK` in the broad sense: place live regions somewhere
+safe, record their origin and role, and make later recovery/restore possible.
+Some backed-up regions may eventually be compressed, but compression must be
+optional and explicit. STR8-N must be able to verify, name, and restore a
+region without guessing what compressed bytes mean.
+
+Near-term bank-layout direction:
+
+```text
+banks 0 and 1 together:
+  64K managed backup arena
+  five 12K backup slots = 60K total
+  one 4K metadata sector for names, labels, origin records, checks, and roles
+
+bank 2:
+  SYS/USR bank
+
+bank 3:
+  default boot bank
+  $8000-$BFFF  16K user-available space
+  $C000-$EFFF  12K default payload gate, currently HIMON-shaped
+  $F000-$FFFF   4K STR8 recovery/top-sector region
+```
+
+A first metadata record for a 12K slot likely needs:
+
+```text
+name or label
+source bank
+source start address
+length
+entry address, if executable
+role: system, user, payload, backup, scratch, factory, unknown
+hash/check
+generation
+compression kind: none first, later optional
+restore policy
+```
+
+This keeps the useful part of whole-image recovery, but stops pretending that a
+backup source must always be a full 32K bank.
+
+Concern: This is not the current `B`, `0`, `1`, and `2` contract. The current
+implementation still uses whole 32K image copies. Before the 5x12K layout can
+be trusted, STR8 needs exact slot boundaries, sector erase rules, metadata
+commit rules, and a restore display that tells the operator what region is
+being restored and where it came from. Unknown regions must be preserved or
+reported, not packed, moved, or compressed silently.
+
 ## Q: What kind of WDCMONv2 bridge should R-YORS build?
 
 Comment: A vector-only bridge is attractive because the final hardware vectors

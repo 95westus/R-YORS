@@ -215,6 +215,14 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>it may be a WDCMONv2/base image; after enrollment it is the oldest rotating backup.</p>
 <ul>
+<li>Future STR8-N/STRAIGHTEN may grow from whole-bank recovery into a</li>
+</ul>
+<p>range-aware flash manager. It may pack named regions elsewhere, remember their origin, and later restore them by metadata. Optional compression is allowed only behind explicit metadata and verification. This does not change the current STR8 V0 whole-32K-image backup/restore contract.</p>
+<ul>
+<li>The next partitioned-backup direction is a 64K arena across banks 0 and 1:</li>
+</ul>
+<p>five 12K backup slots plus one 4K metadata/name/label sector. Bank 2 is the planned SYS/USR bank, and bank 3 remains the default boot bank with <code>$8000-$BFFF</code> user-available, <code>$C000-$EFFF</code> as the default payload gate, and <code>$F000-$FFFF</code> as STR8/top-sector recovery space.</p>
+<ul>
 <li>STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.</li>
 <li>Minimal recovery is a small load/verify/flash/identity surface, not full</li>
 </ul>
@@ -552,7 +560,7 @@ DOC/IDEAS.md</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-19T00:44:05Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-19T00:55:17Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

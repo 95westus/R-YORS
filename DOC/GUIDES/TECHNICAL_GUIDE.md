@@ -149,6 +149,12 @@ $F000-$FFFF    4K STR8 recovery sector
 STR8 may use less than 4K, but the whole top erase sector is recovery-owned
 for V0 policy.
 
+Future bank planning may split the backup model into regions instead of whole
+banks. The current sketch treats banks 0 and 1 together as five 12K backup
+slots plus one 4K metadata sector for names, labels, origins, checks, and
+roles; bank 2 becomes SYS/USR space; bank 3 remains the default boot bank with
+`$8000-$BFFF` user-available. This is not current V0 behavior.
+
 ## Combined Image Layout
 
 Current combined-image facts:
@@ -400,6 +406,11 @@ restore Bank 3 before printing status
 ```
 
 STR8 self-update is a special confirmed operation and should end in reset.
+
+Future STR8-N/STRAIGHTEN may become a range-aware flash manager that can pack
+regions elsewhere, remember where they came from, and optionally compress
+backed-up regions. That needs explicit metadata and verification before it can
+replace the current whole-bank recovery model.
 
 ## Documentation Shape
 

@@ -784,6 +784,51 @@ lookup, hashed metadata, wear leveling, and cycle counts are later work.
 Partitioned-bank layouts remain QCC thought experiments until promoted. They
 are not part of the current `B`, `0`, `1`, and `2` recovery contract.
 
+## Next Partitioned Backup Direction
+
+The next STR8 backup direction may stop treating banks 0 and 1 as independent
+whole-bank images. Instead, banks 0 and 1 can be treated together as a 64K
+managed backup arena:
+
+```text
+banks 0+1  64K managed backup arena
+  12K backup slot 0
+  12K backup slot 1
+  12K backup slot 2
+  12K backup slot 3
+  12K backup slot 4
+   4K metadata sector for names, labels, origin records, checks, and roles
+
+bank 2     SYS/USR bank
+
+bank 3     default boot bank
+  $8000-$BFFF  16K user-available space
+  $C000-$EFFF  12K default payload gate
+  $F000-$FFFF   4K STR8 recovery/top-sector region
+```
+
+This is still range-aware backup planning, not current V0 behavior. It needs
+exact sector placement before code should trust it. The important design move
+is that a backup slot records where it came from:
+
+```text
+origin bank
+origin start
+length
+entry address, if executable
+name/label
+role
+hash/check
+generation
+compression kind, initially none
+```
+
+Future STR8-N/STRAIGHTEN can grow from this into a `PACK` manager: move named
+regions into safe homes, remember their origin, and later restore or relocate
+them. Optional compression belongs behind explicit metadata and verification;
+it is not a current STR8 V0 feature and not permission to compress unknown
+bytes.
+
 ## STR8 Target Update Direction
 
 The flash guard should stay in place. Updating HIMON or STR8 should not mean

@@ -334,3 +334,28 @@ programming may clear bits from `1` to `0`, but changing cleared bits back to
 `1` requires another top-sector erase/rewrite.
 
 This split is the current combined STR8/HIMON ROM layout.
+
+## Future Partitioned Bank Planning
+
+The current implementation still uses whole 32K bank images for backup and
+restore. A near-term planning direction is to treat banks 0 and 1 together as a
+64K managed backup arena:
+
+```text
+banks 0+1  five 12K backup slots, 60K total
+banks 0+1  one 4K metadata sector for names, labels, origins, checks, roles
+bank 2     SYS/USR bank
+bank 3     default boot bank
+```
+
+The live bank 3 budget stays:
+
+```text
+$8000-$BFFF   16K user-available space
+$C000-$EFFF   12K default payload gate, currently HIMON-shaped
+$F000-$FFFF    4K STR8 recovery/top-sector region
+```
+
+This planning map is not yet a writer contract. The first code version needs
+exact 4K-sector slot boundaries and metadata commit rules before it can erase,
+write, or restore from those sections.

@@ -172,6 +172,15 @@
   global writable range. Keep `FLASH_ADDR_ALLOWED_XY` as the conservative HIMON
   `L F` guard, keep raw erase/program routines as mechanism, and let STR8 define
   separate backup, restore, install/update, and bank-0-enrollment policies.
+- Explore the next STR8 backup layout as a managed 64K arena across banks 0
+  and 1: five 12K backup slots plus one 4K metadata sector for names, labels,
+  origin records, checks, and roles. This would leave bank 2 for SYS/USR use
+  and bank 3 as the default boot bank, with `$8000-$BFFF` remaining 16K of
+  user-available live-bank space.
+- Treat STR8-N/STRAIGHTEN `PACK` as a way-future range manager: copy or move
+  named regions into safe flash homes, remember where they came from, and
+  optionally compress backed-up regions only when the metadata is strong enough
+  to verify and restore them.
 - Consider a future advanced STR8 or HIMON maintenance mode for sector-level
   work: select source bank/sector, select destination bank/sector, erase the
   selected destination sector with confirmation, copy one sector to another,

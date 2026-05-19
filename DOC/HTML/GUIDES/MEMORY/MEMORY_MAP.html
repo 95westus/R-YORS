@@ -204,8 +204,19 @@ $FFF0-$FFF9  one-time flash board/version/config bytes, inside the window
 $FFFA-$FFFF  W65C02 hardware vector block</code></pre>
 <p>Changing any byte in <code>$F000-$FFFF</code> still requires read/stage/erase/full-sector-write/verify. The <code>$FFF0-$FFF9</code> pocket is patchable only in the flash sense: after erase, programming may clear bits from <code>1</code> to <code>0</code>, but changing cleared bits back to <code>1</code> requires another top-sector erase/rewrite.</p>
 <p>This split is the current combined STR8/HIMON ROM layout.</p>
+<h2 id="future-partitioned-bank-planning">Future Partitioned Bank Planning</h2>
+<p>The current implementation still uses whole 32K bank images for backup and restore. A near-term planning direction is to treat banks 0 and 1 together as a 64K managed backup arena:</p>
+<pre><code class="language-text">banks 0+1  five 12K backup slots, 60K total
+banks 0+1  one 4K metadata sector for names, labels, origins, checks, roles
+bank 2     SYS/USR bank
+bank 3     default boot bank</code></pre>
+<p>The live bank 3 budget stays:</p>
+<pre><code class="language-text">$8000-$BFFF   16K user-available space
+$C000-$EFFF   12K default payload gate, currently HIMON-shaped
+$F000-$FFFF    4K STR8 recovery/top-sector region</code></pre>
+<p>This planning map is not yet a writer contract. The first code version needs exact 4K-sector slot boundaries and metadata commit rules before it can erase, write, or restore from those sections.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY/MEMORY_MAP.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY/MEMORY_MAP.md</code>. Source modified: <time>2026-05-19T00:55:17Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

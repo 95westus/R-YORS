@@ -48,6 +48,17 @@ action:     where to look or what to do next</code></pre>
 <p>change: <code>OPERATORS_GUIDE.md</code> is now the canonical board-facing guide. <code>TECHNICAL_GUIDE.md</code> is now the canonical architecture guide. The old <code>RTFM-R-YORS.md</code>, <code>RTFM-str8.md</code>, and <code>RTFM-himon.md</code> files now redirect to the operator guide instead of duplicating procedures, and they are intentionally kept out of the main README/index/TOC path under <code>META/COMPAT/</code>. Secondary guides now live one level down by domain instead of crowding the top-level <code>DOC/GUIDES</code> directory.</p>
 <p>effect: The old assumption that a reader must hop between three RTFM files, README status blocks, and design notes to operate the board is stale. The story lane is explicitly separate from the main docs.</p>
 <p>action: Start with <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a> for board use and <a href="TECHNICAL_GUIDE.html">TECHNICAL_GUIDE.md</a> for architecture. Use <a href="STORY/BOOK.html">BOOK.md</a>, <a href="STORY/HISTORICAL_DOCUMENTS.html">HISTORICAL_DOCUMENTS.md</a>, and <a href="../IDEAS.html">../IDEAS.md</a> for narrative material.</p>
+<h2 id="redoc-str8-n-region-packing-direction">REDOC: STR8-N Region Packing Direction</h2>
+<pre><code class="language-text">2026
+         05
+                19
+                   00:53Z WLP2 Captured the future STR8-N range-packing
+                               direction and the near-term 5x12K backup arena
+                               sketch for banks 0 and 1.</code></pre>
+<p>scope: <code>DECISIONS.md</code>, <code>TECHNICAL_GUIDE.md</code>, <code>STR8/STR8.md</code>, <code>MEMORY/MEMORY_MAP.md</code>, <code>PLANNING/FUTURE.md</code>, and <code>QCC/STR8.md</code>.</p>
+<p>change: STR8-N/STRAIGHTEN may become a range-aware boot recovery and flash manager that packs named regions elsewhere, remembers where they came from, and later restores them by metadata. Optional compression is way-future and must be explicit and verifiable. The near-term planning sketch uses banks 0 and 1 as a 64K backup arena: five 12K backup slots plus one 4K metadata sector for names, labels, origins, checks, and roles. Bank 2 becomes SYS/USR space. Bank 3 remains the default boot bank with <code>$8000-$BFFF</code> user-available.</p>
+<p>effect: The current whole-32K STR8 V0 backup/restore contract is unchanged, but future STR8 planning should stop assuming that every useful backup source must be a complete bank image.</p>
+<p>action: Use <a href="QCC/STR8.html">QCC/STR8.md</a> for open design concerns and <a href="STR8/STR8.html">STR8/STR8.md</a> plus <a href="MEMORY/MEMORY_MAP.html">MEMORY/MEMORY_MAP.md</a> for the current sketch before implementing any range-aware writer.</p>
 <h2 id="redoc-str8-milestone-and-crc16-hash-pivot">REDOC: STR8 Milestone And CRC16 Hash Pivot</h2>
 <pre><code class="language-text">2026
          05
@@ -217,7 +228,7 @@ SRC/BUILD/bin/life-2000-load.bin</code></pre>
 <p>effect: <code>SRC/BUILD/s19/life.s19</code> is a stale remembered artifact name. New references should carry the load address.</p>
 <p>action: Use <code>life-2000.s19</code> for HIMON S-record loading and <code>life-2000-load.bin</code> when a raw loadable binary is needed.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-19T00:44:05Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-19T00:55:17Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

@@ -190,6 +190,16 @@ start +count    count is the number of bytes
 - Restoring bank 0 restores whatever bank 0 currently holds. Before enrollment
   it may be a WDCMONv2/base image; after enrollment it is the oldest rotating
   backup.
+- Future STR8-N/STRAIGHTEN may grow from whole-bank recovery into a
+  range-aware flash manager. It may pack named regions elsewhere, remember
+  their origin, and later restore them by metadata. Optional compression is
+  allowed only behind explicit metadata and verification. This does not change
+  the current STR8 V0 whole-32K-image backup/restore contract.
+- The next partitioned-backup direction is a 64K arena across banks 0 and 1:
+  five 12K backup slots plus one 4K metadata/name/label sector. Bank 2 is the
+  planned SYS/USR bank, and bank 3 remains the default boot bank with
+  `$8000-$BFFF` user-available, `$C000-$EFFF` as the default payload gate, and
+  `$F000-$FFFF` as STR8/top-sector recovery space.
 - STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.
 - Minimal recovery is a small load/verify/flash/identity surface, not full
   HIMON.

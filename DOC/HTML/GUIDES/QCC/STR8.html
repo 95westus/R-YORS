@@ -136,6 +136,36 @@ protected ranges
 dependencies</code></pre>
 <p>This can be useful. A 16K payload below <code>$C000</code> can coexist with a fixed HIMON/STR8 top half. A 16K upper-half image is more dangerous because it overlaps HIMON, STR8, the config pocket, and vectors unless the operation is an explicit protected update.</p>
 <p>Concern: Once a bank is partitioned this way, automatic <code>B</code> backup rotation can no longer pretend the bank is one complete 32K image. STR8 needs range-aware restore and verify rules, and the map display must say which sectors are reserved, staged, final, image, WDC/base, HIMON, and STR8.</p>
+<h2 id="q-could-str8-n-pack-named-regions-instead-of-whole-banks">Q: Could STR8-N pack named regions instead of whole banks?</h2>
+<p>Comment: Yes, as a future STR8-N/STRAIGHTEN direction. STR8-N can become a boot recovery and flash-management layer that backs up regions, remembers where each region came from, and later restores or relocates them by metadata rather than by whole-bank position alone.</p>
+<p>The future verb is <code>PACK</code> in the broad sense: place live regions somewhere safe, record their origin and role, and make later recovery/restore possible. Some backed-up regions may eventually be compressed, but compression must be optional and explicit. STR8-N must be able to verify, name, and restore a region without guessing what compressed bytes mean.</p>
+<p>Near-term bank-layout direction:</p>
+<pre><code class="language-text">banks 0 and 1 together:
+  64K managed backup arena
+  five 12K backup slots = 60K total
+  one 4K metadata sector for names, labels, origin records, checks, and roles
+
+bank 2:
+  SYS/USR bank
+
+bank 3:
+  default boot bank
+  $8000-$BFFF  16K user-available space
+  $C000-$EFFF  12K default payload gate, currently HIMON-shaped
+  $F000-$FFFF   4K STR8 recovery/top-sector region</code></pre>
+<p>A first metadata record for a 12K slot likely needs:</p>
+<pre><code class="language-text">name or label
+source bank
+source start address
+length
+entry address, if executable
+role: system, user, payload, backup, scratch, factory, unknown
+hash/check
+generation
+compression kind: none first, later optional
+restore policy</code></pre>
+<p>This keeps the useful part of whole-image recovery, but stops pretending that a backup source must always be a full 32K bank.</p>
+<p>Concern: This is not the current <code>B</code>, <code>0</code>, <code>1</code>, and <code>2</code> contract. The current implementation still uses whole 32K image copies. Before the 5x12K layout can be trusted, STR8 needs exact slot boundaries, sector erase rules, metadata commit rules, and a restore display that tells the operator what region is being restored and where it came from. Unknown regions must be preserved or reported, not packed, moved, or compressed silently.</p>
 <h2 id="q-what-kind-of-wdcmonv2-bridge-should-r-yors-build">Q: What kind of WDCMONv2 bridge should R-YORS build?</h2>
 <p>Comment: A vector-only bridge is attractive because the final hardware vectors are tiny:</p>
 <pre><code class="language-text">$FFFA-$FFFB  NMI
@@ -433,7 +463,7 @@ LED_ERROR</code></pre>
 <p>Comment: STR8 is still deciding how small it stays in V0 and how much future STRAIGHTEN will own.</p>
 <p>Concern: Settled boundaries should move into <code>DECISIONS.md</code>; experiments and &quot;what if STR8 owns this?&quot; should stay here until proved.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/STR8.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/STR8.md</code>. Source modified: <time>2026-05-19T00:55:16Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

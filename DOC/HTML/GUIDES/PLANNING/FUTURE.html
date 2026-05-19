@@ -210,6 +210,14 @@
 </ul>
 <p>global writable range. Keep <code>FLASH_ADDR_ALLOWED_XY</code> as the conservative HIMON <code>L F</code> guard, keep raw erase/program routines as mechanism, and let STR8 define separate backup, restore, install/update, and bank-0-enrollment policies.</p>
 <ul>
+<li>Explore the next STR8 backup layout as a managed 64K arena across banks 0</li>
+</ul>
+<p>and 1: five 12K backup slots plus one 4K metadata sector for names, labels, origin records, checks, and roles. This would leave bank 2 for SYS/USR use and bank 3 as the default boot bank, with <code>$8000-$BFFF</code> remaining 16K of user-available live-bank space.</p>
+<ul>
+<li>Treat STR8-N/STRAIGHTEN <code>PACK</code> as a way-future range manager: copy or move</li>
+</ul>
+<p>named regions into safe flash homes, remember where they came from, and optionally compress backed-up regions only when the metadata is strong enough to verify and restore them.</p>
+<ul>
 <li>Consider a future advanced STR8 or HIMON maintenance mode for sector-level</li>
 </ul>
 <p>work: select source bank/sector, select destination bank/sector, erase the selected destination sector with confirmation, copy one sector to another, and verify by read-back compare. This is good for rescue/lab work, bad for the tiny V0 rescue prompt, and must not change Bank 0 rotation policy except through the normal <code>E</code> enrollment command.</p>
@@ -268,7 +276,7 @@
 <li>Add a future generator only if the guide set starts drifting again.</li>
 </ul>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/PLANNING/FUTURE.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/PLANNING/FUTURE.md</code>. Source modified: <time>2026-05-19T00:55:16Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

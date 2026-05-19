@@ -84,6 +84,36 @@ action: Start with [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) for board use and
 [BOOK.md](STORY/BOOK.md), [HISTORICAL_DOCUMENTS.md](STORY/HISTORICAL_DOCUMENTS.md),
 and [../IDEAS.md](../IDEAS.md) for narrative material.
 
+## REDOC: STR8-N Region Packing Direction
+
+```text
+2026
+         05
+                19
+                   00:53Z WLP2 Captured the future STR8-N range-packing
+                               direction and the near-term 5x12K backup arena
+                               sketch for banks 0 and 1.
+```
+
+scope: `DECISIONS.md`, `TECHNICAL_GUIDE.md`, `STR8/STR8.md`,
+`MEMORY/MEMORY_MAP.md`, `PLANNING/FUTURE.md`, and `QCC/STR8.md`.
+
+change: STR8-N/STRAIGHTEN may become a range-aware boot recovery and flash
+manager that packs named regions elsewhere, remembers where they came from,
+and later restores them by metadata. Optional compression is way-future and
+must be explicit and verifiable. The near-term planning sketch uses banks 0
+and 1 as a 64K backup arena: five 12K backup slots plus one 4K metadata sector
+for names, labels, origins, checks, and roles. Bank 2 becomes SYS/USR space.
+Bank 3 remains the default boot bank with `$8000-$BFFF` user-available.
+
+effect: The current whole-32K STR8 V0 backup/restore contract is unchanged,
+but future STR8 planning should stop assuming that every useful backup source
+must be a complete bank image.
+
+action: Use [QCC/STR8.md](QCC/STR8.md) for open design concerns and
+[STR8/STR8.md](STR8/STR8.md) plus [MEMORY/MEMORY_MAP.md](MEMORY/MEMORY_MAP.md)
+for the current sketch before implementing any range-aware writer.
+
 ## REDOC: STR8 Milestone And CRC16 Hash Pivot
 
 ```text

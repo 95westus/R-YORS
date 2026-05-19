@@ -90,6 +90,7 @@ Bank 0  base/factory hold until enrolled into rotation</code></pre>
 $C000-$EFFF   12K payload gate, currently HIMON
 $F000-$FFFF    4K STR8 recovery sector</code></pre>
 <p>STR8 may use less than 4K, but the whole top erase sector is recovery-owned for V0 policy.</p>
+<p>Future bank planning may split the backup model into regions instead of whole banks. The current sketch treats banks 0 and 1 together as five 12K backup slots plus one 4K metadata sector for names, labels, origins, checks, and roles; bank 2 becomes SYS/USR space; bank 3 remains the default boot bank with <code>$8000-$BFFF</code> user-available. This is not current V0 behavior.</p>
 <h2 id="combined-image-layout">Combined Image Layout</h2>
 <p>Current combined-image facts:</p>
 <pre><code class="language-text">HIMON entry:     $C000
@@ -217,6 +218,7 @@ erase/write full staged sector
 verify by read-back compare
 restore Bank 3 before printing status</code></pre>
 <p>STR8 self-update is a special confirmed operation and should end in reset.</p>
+<p>Future STR8-N/STRAIGHTEN may become a range-aware flash manager that can pack regions elsewhere, remember where they came from, and optionally compress backed-up regions. That needs explicit metadata and verification before it can replace the current whole-bank recovery model.</p>
 <h2 id="documentation-shape">Documentation Shape</h2>
 <p>Main docs now use a small reader path:</p>
 <pre><code class="language-text">README.md
@@ -239,7 +241,7 @@ HIMON/HIMON_EDGE_DUMP.md      raw HIMON edge evidence
 LOGS/HARDWARE_TEST_LOG.md     board transcript validation
 DOC/GENERATED/                source-derived maps and reports</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/TECHNICAL_GUIDE.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/TECHNICAL_GUIDE.md</code>. Source modified: <time>2026-05-19T00:55:17Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>
