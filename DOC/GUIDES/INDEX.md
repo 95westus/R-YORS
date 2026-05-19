@@ -1,119 +1,55 @@
 # R-YORS Guide Index
 
-This is the top index for the `ror` documentation set.
-
-## Current Milestone
-
-STR8 is currently hardware-proven rotating three bootable live-bank images:
-HIMON, OSI BASIC, and fig-FORTH. Start with
-[RTFM-R-YORS.md](./RTFM-R-YORS.md) for the operator picture,
-[RTFM-str8.md](./RTFM-str8.md) for the key-by-key STR8 procedure, and
-[STR8.md](./STR8.md) for the recovery/update design boundary.
+This is the full guide index for the current R-YORS documentation set.
 
 ## Start Here
 
+- [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) - canonical board-facing guide for R-YORS, STR8, and HIMON operation.
+- [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
+- [REF.md](./REF.md) - compact reference sheet.
+- [GLOSSARY.md](./GLOSSARY.md) - vocabulary contract.
+- [DECISIONS.md](./DECISIONS.md) - settled calls.
+
+## Current Milestone
+
+STR8 is hardware-proven rotating three bootable live-bank images: HIMON, OSI
+BASIC, and fig-FORTH. HIMON RAM-only debug is hardware-proven for current
+one-shot breakpoint and single-step behavior.
+
+- [HASH_FLASH.md](./HASH_FLASH.md) - command-surface and milestone alerts.
+- [DOC_FLASH.md](./DOC_FLASH.md) - documentation-shape alerts.
+- [HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md) - board transcript evidence.
+
+## Navigation
+
 - [TOC.md](./TOC.md) - recommended reading order.
 - [MAP.md](./MAP.md) - documentation map and system map.
-- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - R-YORS, STR8, IVI/LEAF,
-  HIMON, and payload ownership lanes.
-- [BOOK.md](./BOOK.md) - narrative spine for the hashed runtime system book.
-- [HASH_FLASH.md](./HASH_FLASH.md) - short alert stream for command-surface changes.
-- [DOC_FLASH.md](./DOC_FLASH.md) - short alert stream for doc/edict changes.
-- [DECISIONS.md](./DECISIONS.md) - settled calls to avoid reopening by accident.
-- [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) - current work rail for
-  STR8 review, proof, implementation, and documentation.
-- [RTFM-R-YORS.md](./RTFM-R-YORS.md) - board-in-front-of-you operator map.
-- [RTFM-str8.md](./RTFM-str8.md) - compact STR8 operating instructions.
-- [RTFM-himon.md](./RTFM-himon.md) - compact HIMON/STR8 boundary instructions.
-- [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - flash/load/step checklist for HIMON debug testing.
-- [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md) - board transcript validations and bench findings.
-- [HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](./HIMON_SEARCH_IMPLEMENTATION_GUIDE.md) - RAM-to-flash guide for turning HIMON `S` into memory search.
-- [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md) - RAM proof and terminology for joining hash records to callable entries.
-- [QCC.md](./QCC.md) - Questions, Comments, Concerns for active design work.
-- [REF.md](./REF.md) - quick operational reference.
-- [XREF.md](./XREF.md) - document and source cross-reference.
-- [SYMBOL_XREF.md](./SYMBOL_XREF.md) - symbol ref/xref/semantic classification.
-- [CATALOG.md](./CATALOG.md) - programmer-facing routine catalog by need.
-- [MEMORY_MAP.md](./MEMORY_MAP.md) - current HIMON ROM and RAM memory map.
-- [BIB.md](./BIB.md) - internal corpus used by these notes.
+- [XREF.md](META/XREF.md) - document/source cross-reference.
+- [BIB.md](META/BIB.md) - source corpus and guide bibliography.
 
-## Core Design Guides
+## Guide Shelves
 
-- [HISTORICAL_DOCUMENTS.md](./HISTORICAL_DOCUMENTS.md) - path from BSO2 ideas toward current HIMON.
-- [BOOK.md](./BOOK.md) - book outline, chapter questions, and proof pointers.
-- [HASH_FLASH.md](./HASH_FLASH.md) - REHASH/FLASHBACK notes for command syntax changes.
-- [DOC_FLASH.md](./DOC_FLASH.md) - REDOC notes for doc-shape, edict, and
-  canonical-home changes.
-- [DECISIONS.md](./DECISIONS.md) - naming, hash, STR8, ASM, local-home,
-  and doc-shape decisions.
-- [BRINGUP.md](./BRINGUP.md) - practical STR8/R-YORS bringup rail.
-- [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md) - current product boundary:
-  R-YORS as project, STR8 as board management, IVI as interrupt-vector
-  mechanism, LEAF as later front-door surface, HIMON as default payload, and
-  other payloads as peers.
-- [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - reconstruction of
-  HIMON stages and routine-class families.
-- [STR8.md](./STR8.md) - Subroutine To Return recovery/update monitor and
-  current hardware milestone.
-- [STR8_DECISION_REFERENCE.md](./STR8_DECISION_REFERENCE.md) - current STR8
-  first-run design decisions.
-- [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) - the next-step process for
-  reviewing STR8, proving V0 behavior, and deciding when new update work starts.
-- [STR8_FLASH_UPDATE_PROPOSAL.md](./STR8_FLASH_UPDATE_PROPOSAL.md) - proposed
-  STR8 scan, erase, HIMON update, and STR8 self-update flow.
-- [RTFM-str8.md](./RTFM-str8.md) - small-command STR8 instructions.
-- [RTFM-himon.md](./RTFM-himon.md) - normal monitor boundary instructions.
-- [HIMON_DEBUG_TESTING.md](./HIMON_DEBUG_TESTING.md) - bench process for RAM-loaded debug proofs.
-- [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md) - hardware transcript validations for STR8, HIMON, HREC, search, and debug.
-- [HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](./HIMON_SEARCH_IMPLEMENTATION_GUIDE.md) - RAM proof, flash S19 delivery, and final integration guide for search.
-- [HREC_JOIN_PROOF.md](./HREC_JOIN_PROOF.md) - `HREC_FIND`/`HREC_JOIN_EXEC` proof and terminology.
-- [HASHED_ASM.md](./HASHED_ASM.md) - onboard hashed assembler, symbols, and fixups.
-- [HASH_MAP.md](./HASH_MAP.md) - hash uses across docs, runtime dispatch, and assembler records.
-- [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) - worked example for
-  turning standalone LIFE into an RBODY/RREC/RCAT member.
-- [QCC.md](./QCC.md) - QCC style and topic index for unresolved design work.
-- [QCC_HASH.md](./QCC_HASH.md) - compact-hash, folded-FNV, and compact
-  signature questions.
-- [QCC_FLASH.md](./QCC_FLASH.md) - FSB lifecycle, buried records, and
-  condense/compress questions.
-- [QCC_ASM.md](./QCC_ASM.md) - hashed assembler symbols, fixups, and record
-  safety questions.
-- [QCC_CATALOG_LINKING.md](./QCC_CATALOG_LINKING.md) - bootstrap questions for
-  catalog joins, seed records, and static-link payload baggage.
-- [QCC_STR8.md](./QCC_STR8.md) - STR8 ownership, scanning, and recovery/update
-  boundary questions.
-- [QCC_MEMORY.md](./QCC_MEMORY.md) - memory ranges, 4K selectors, allocation,
-  and bit-helper questions.
-- [MEMORY_MAP.md](./MEMORY_MAP.md) - current HIMON ROM image, RAM workspace,
-  compatibility entries, vectors, and STR8/HIMON integration direction.
-- [DYNAMIC_MEMORY_FIRST_STEPS.md](./DYNAMIC_MEMORY_FIRST_STEPS.md) - first
-  steps for byte, word, pointer, bump, pool, and free-list allocation thinking.
-- [HIMON_MAP.md](./HIMON_MAP.md) - readable HIMON edge and capability maps.
+- [STR8](STR8/STR8.md) - recovery, updates, product boundaries, bringup, work process.
+- [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, edge evidence.
+- [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
+- [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
+- [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction.
+- [ASM](ASM/HASHED_ASM.md) - onboard assembler and symbol reference material.
+- [QCC](QCC/INDEX.md) - Questions, Comments, Concerns working notes.
+- [LOGS](LOGS/HARDWARE_TEST_LOG.md) - hardware transcript proof.
+- [STORY](STORY/BOOK.md) - book spine and historical narrative.
+- [PLANNING](PLANNING/TODO.md) - TODO and future direction.
+- [META](META/XREF.md) - bibliography and cross-reference.
 
-## Reference Guides
+## Story And Planning
 
-- [HASH.md](./HASH.md) - current FNV-era IDs and the CRC16 hash pivot.
-- [CATALOG.md](./CATALOG.md) - compact callable routine catalog by read/write/string/hex/hash/flash need.
-- [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) - RCAT/RREC member
-  migration worked example for the standalone LIFE app.
-- [MEMORY_MAP.md](./MEMORY_MAP.md) - address ranges and ownership for current
-  HIMON ROM/RAM.
-- [DYNAMIC_MEMORY_FIRST_STEPS.md](./DYNAMIC_MEMORY_FIRST_STEPS.md) - scoped
-  dynamic memory allocation direction for future user/app/session work.
-- [SYMBOL_XREF.md](./SYMBOL_XREF.md) - STASH/HIMON symbol cards, ABI fields,
-  classification tokens, and HIMON call tree.
-- [HIMON_MAP.md](./HIMON_MAP.md) - grouped HIMON edge maps and
-  full capability map.
-- [HIMON_STAGES_CLASSES.md](./HIMON_STAGES_CLASSES.md) - human stage/class
-  reconstruction for HIMON and its historical promotion path.
-- [HIMON_EDGE_DUMP.md](./HIMON_EDGE_DUMP.md) - generated-style direct
-  `JSR`/`JMP` edge dump for HIMON.
-- [GLOSSARY.md](./GLOSSARY.md) - vocabulary for layers, monitors, hashes, and STR8.
+These are useful for the human arc and future direction, but not required for
+the main operator/technical path.
 
-## Planning
-
-- [TODO.md](./TODO.md) - near-term doc and implementation work.
-- [FUTURE.md](./FUTURE.md) - direction notes.
+- [STORY/BOOK.md](STORY/BOOK.md) - manuscript spine.
+- [STORY/HISTORICAL_DOCUMENTS.md](STORY/HISTORICAL_DOCUMENTS.md) - lineage.
+- [TODO.md](PLANNING/TODO.md) - near-term work.
+- [FUTURE.md](PLANNING/FUTURE.md) - direction notes.
 
 ## Current Generated Source Snapshot
 
@@ -128,18 +64,4 @@ JSR/JMP call sites:    989
 Unique direct edges:   779
 ```
 
-Operational lane count:
-
-```text
-SRC/STASH: 1 source file
-ROM/HIMON/STR8: 25 source files
-SRC/SESH:  1 source file
-```
-
-Legacy demos, harnesses, games, ACIA/PIA, and historical experiments remain
-documented where useful, but they are not part of the generated operational
-routine maps.
-
-This index intentionally points only inside `ror`. Historical notes may mention
-earlier BSO2 material when explaining lineage, but this guide set is maintained
-from the current `ror` workspace.
+Generated reports live in [../GENERATED](../GENERATED).

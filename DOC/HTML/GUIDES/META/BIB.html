@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R-YORS Bibliography - R-YORS Docs</title>
+  <link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../../index.html"><img class="brand-logo" src="../../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../../README.html">README</a><a href="../INDEX.html">Guides</a><a href="../../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="r-yors-bibliography">R-YORS Bibliography</h1>
+<p>This guide set uses the current <code>ror</code> workspace as its source corpus, but this bibliography lists only the operational source set.</p>
+<h2 id="operational-internal-sources">Operational Internal Sources</h2>
+<pre><code class="language-text">README.md
+SRC/Makefile
+HIMON/himon.asm
+HIMON/*.inc
+HIMON/fnv1a-fold.asm
+STR8/str8.asm
+ROM/ftdi-backend-debug.asm
+ROM/ftdi/*.asm
+ROM/dev/*.asm
+ROM/util/*.asm
+SRC/STASH/ftdi/*.asm
+SRC/SESH/ftdi/*.asm</code></pre>
+<p>The generated source-derived docs use this operational set. Legacy demos, harnesses, games, ACIA/PIA, and historical monitor experiments stay out of the bibliography/navigation layer.</p>
+<h2 id="guide-sources">Guide Sources</h2>
+<pre><code class="language-text">DOC/INDEX.md
+DOC/IDEAS.md
+DOC/GUIDES/ASM/HASHED_ASM.md
+DOC/GUIDES/ASM/SYMBOL_XREF.md
+DOC/GUIDES/CATALOG/CATALOG.md
+DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md
+DOC/GUIDES/CATALOG/LIFE_RCAT_MEMBER.md
+DOC/GUIDES/DECISIONS.md
+DOC/GUIDES/DOC_FLASH.md
+DOC/GUIDES/GLOSSARY.md
+DOC/GUIDES/HASH/HASH.md
+DOC/GUIDES/HASH/HASH_MAP.md
+DOC/GUIDES/HASH_FLASH.md
+DOC/GUIDES/HIMON/HIMON_DEBUG_TESTING.md
+DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md
+DOC/GUIDES/HIMON/HIMON_MAP.md
+DOC/GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md
+DOC/GUIDES/HIMON/HIMON_STAGES_CLASSES.md
+DOC/GUIDES/INDEX.md
+DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md
+DOC/GUIDES/MAP.md
+DOC/GUIDES/MEMORY/DYNAMIC_MEMORY_FIRST_STEPS.md
+DOC/GUIDES/MEMORY/MEMORY_MAP.md
+DOC/GUIDES/META/BIB.md
+DOC/GUIDES/META/COMPAT/RTFM-himon.md
+DOC/GUIDES/META/COMPAT/RTFM-R-YORS.md
+DOC/GUIDES/META/COMPAT/RTFM-str8.md
+DOC/GUIDES/META/XREF.md
+DOC/GUIDES/OPERATORS_GUIDE.md
+DOC/GUIDES/PLANNING/FUTURE.md
+DOC/GUIDES/PLANNING/TODO.md
+DOC/GUIDES/QCC/ASM.md
+DOC/GUIDES/QCC/CATALOG_LINKING.md
+DOC/GUIDES/QCC/FLASH.md
+DOC/GUIDES/QCC/HASH.md
+DOC/GUIDES/QCC/INDEX.md
+DOC/GUIDES/QCC/MEMORY.md
+DOC/GUIDES/QCC/STR8.md
+DOC/GUIDES/REF.md
+DOC/GUIDES/STORY/BOOK.md
+DOC/GUIDES/STORY/HISTORICAL_DOCUMENTS.md
+DOC/GUIDES/STORY/ID10Toms.txt
+DOC/GUIDES/STR8/BRINGUP.md
+DOC/GUIDES/STR8/PRODUCT_BOUNDARIES.md
+DOC/GUIDES/STR8/STR8.md
+DOC/GUIDES/STR8/STR8_DECISION_REFERENCE.md
+DOC/GUIDES/STR8/STR8_FLASH_UPDATE_PROPOSAL.md
+DOC/GUIDES/STR8/STR8_WORK_PROCESS.md
+DOC/GUIDES/TECHNICAL_GUIDE.md
+DOC/GUIDES/TOC.md</code></pre>
+<h2 id="generated-source-derived-docs">Generated Source-Derived Docs</h2>
+<pre><code class="language-text">DOC/GENERATED/CALL_ORDER.md
+DOC/GENERATED/CMD_FLOW_MAP.md
+DOC/GENERATED/HASH_ROUTINE_MAP.md
+DOC/GENERATED/HIMON_COMMAND_MAP.md
+DOC/GENERATED/HIMON_ROUTINE_TREE.md
+DOC/GENERATED/HIMON_SUPPORT_MAP.md
+DOC/GENERATED/INTERRUPT_VECTOR_MAP.md
+DOC/GENERATED/MAP_OF_MAPS.md
+DOC/GENERATED/ROUTINE_CLASS_DIAGRAM.md
+DOC/GENERATED/ROUTINE_COMPONENTS.md
+DOC/GENERATED/ROUTINE_CONTRACTS.md
+DOC/GENERATED/ROUTINE_GRAPH_INSIGHTS.md
+DOC/GENERATED/ROUTINE_PREFIX_MAP.md
+DOC/GENERATED/STACK_DEPTH_MAP.md</code></pre>
+<h2 id="reference-notes">Reference Notes</h2>
+<ul>
+<li><code>OPERATORS_GUIDE.md</code> is the consolidated board-facing guide and canonical</li>
+</ul>
+<p>home for current STR8/HIMON operation.</p>
+<ul>
+<li><code>TECHNICAL_GUIDE.md</code> is the consolidated architecture guide and canonical</li>
+</ul>
+<p>home for current system layout, flash policy, and payload contracts.</p>
+<ul>
+<li><code>RTFM-R-YORS.md</code>, <code>RTFM-str8.md</code>, and <code>RTFM-himon.md</code> are compatibility entry</li>
+</ul>
+<p>points that redirect to the operator guide.</p>
+<ul>
+<li>Symbol relationships are derived from WDC-style <code>XDEF</code> and <code>XREF</code></li>
+</ul>
+<p>declarations.</p>
+<ul>
+<li>Symbol contract examples are seeded from <code>SRC/STASH/ftdi/ftdi-drv.asm</code>,</li>
+</ul>
+<p><code>ROM/dev/*.asm</code>, and <code>HIMON/himon.asm</code>.</p>
+<ul>
+<li>Routine inventory is derived from <code>; ROUTINE:</code> comment blocks.</li>
+<li><code>CATALOG.md</code> is a programmer-facing selection view over that</li>
+</ul>
+<p>routine inventory.</p>
+<ul>
+<li><code>LIFE_RCAT_MEMBER.md</code> uses <code>SRC/TEST/apps/life.asm</code> and</li>
+</ul>
+<p><code>SRC/BUILD/map/life.map</code> as a worked RCAT/RREC member example. LIFE remains outside the operational generated call trees unless promoted later.</p>
+<ul>
+<li><code>MEMORY_MAP.md</code> records current HIMON ROM/RAM ownership, compatibility</li>
+</ul>
+<p>entries, vectors, and future STR8 placement direction.</p>
+<ul>
+<li><code>DYNAMIC_MEMORY_FIRST_STEPS.md</code> synthesizes the W65C02 allocation discussion</li>
+</ul>
+<p>with the current R-YORS memory map and zero-page rules.</p>
+<ul>
+<li>Routine <code>[HASH:XXXXXXXX]</code> IDs are FNV-1a over canonical routine text.</li>
+<li>Runtime command lookup in HIMON uses FNV-1a hashes over command text.</li>
+<li><code>HIMON_MAP.md</code> is the readable HIMON map; <code>HIMON_EDGE_DUMP.md</code> is the raw</li>
+</ul>
+<p>direct-edge listing.</p>
+<ul>
+<li><code>HIMON_STAGES_CLASSES.md</code> reconstructs the Himon/Himonia/Himonia-F stage</li>
+</ul>
+<p>ladder and subsystem class families from current source plus guide evidence.</p>
+<ul>
+<li><code>STR8_WORK_PROCESS.md</code> records the current review, proof, implementation,</li>
+</ul>
+<p>and documentation loop for STR8 work.</p>
+<ul>
+<li><code>QCC.md</code> defines Questions, Comments, Concerns as the working-note format for</li>
+</ul>
+<p>unsettled design topics; <code>QCC_*.md</code> pages keep topic-specific what-ifs before they graduate into <code>DECISIONS.md</code>.</p>
+<ul>
+<li>STR8, hashed assembler, and banked catalog behavior are design notes until</li>
+</ul>
+<p>implemented.</p>
+<ul>
+<li>External links may appear as background precedent notes, but the guide spine</li>
+</ul>
+<p>is built from the local <code>ror</code> workspace.</p>
+<h2 id="external-references">External References</h2>
+<ul>
+<li>RFC 9923, &quot;Fowler/Noll/Vo (FNV) Non-Cryptographic Hash Algorithm&quot;:</li>
+</ul>
+<p>&lt;https://www.rfc-editor.org/rfc/rfc9923.html&gt;. R-YORS uses 32-bit FNV-1a from this family for routine headers, runtime command lookup, catalog records, symbols, and fixups.</p>
+<ul>
+<li>Forth Interest Group home page: &lt;https://www.forth.org/&gt;. FIG describes</li>
+</ul>
+<p>itself as having promoted the Forth computer language and hosts public-domain and experimental Forth implementations.</p>
+<ul>
+<li>FIG-Forth Implementations index:</li>
+</ul>
+<p>&lt;https://www.forth.org/fig-forth/contents.html&gt;. The local fig-Forth path is based on the 6502 FIG-Forth implementation; the local generator preserves the source notice required by that publication.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/META/BIB.md</code>. Source modified: <time>2026-05-19T00:44:05Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

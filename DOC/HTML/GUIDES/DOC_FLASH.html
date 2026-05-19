@@ -30,6 +30,36 @@ a remembered artifact name or doc path is now stale</code></pre>
 change:     what moved or was reclassified
 effect:     what old assumption is stale now
 action:     where to look or what to do next</code></pre>
+<h2 id="redoc-operator-and-technical-guides-are-canonical">REDOC: Operator And Technical Guides Are Canonical</h2>
+<pre><code class="language-text">2026
+         05
+                19
+                   00:40Z WLP2 Moved RTFM compatibility stubs under
+                               DOC/GUIDES/META/COMPAT so they are reference
+                               plumbing instead of a visible guide shelf.
+                   00:30Z WLP2 Moved secondary guide material into shelf
+                               folders under DOC/GUIDES so the top level holds
+                               only entry points and stable cross-cutting refs.
+                   00:11Z WLP2 Consolidated the scattered RTFM/operator
+                               material into one operator guide and added one
+                               technical guide for the current R-YORS/STR8/HIMON
+                               architecture.</code></pre>
+<p>scope: <code>README.md</code>, <code>DOC/INDEX.md</code>, <code>DOC/GUIDES/INDEX.md</code>, <code>DOC/GUIDES/TOC.md</code>, <code>DOC/GUIDES/MAP.md</code>, <code>DOC/GUIDES/META/XREF.md</code>, <code>DOC/GUIDES/META/BIB.md</code>, <code>DOC/GUIDES/DECISIONS.md</code>, <code>DOC/GUIDES/OPERATORS_GUIDE.md</code>, <code>DOC/GUIDES/TECHNICAL_GUIDE.md</code>, the <code>STR8/</code>, <code>HIMON/</code>, <code>QCC/</code>, <code>STORY/</code>, <code>MEMORY/</code>, <code>CATALOG/</code>, <code>ASM/</code>, <code>HASH/</code>, <code>LOGS/</code>, <code>META/</code>, and <code>PLANNING/</code> shelves, plus the <code>META/COMPAT/RTFM-*.md</code> compatibility entry points.</p>
+<p>change: <code>OPERATORS_GUIDE.md</code> is now the canonical board-facing guide. <code>TECHNICAL_GUIDE.md</code> is now the canonical architecture guide. The old <code>RTFM-R-YORS.md</code>, <code>RTFM-str8.md</code>, and <code>RTFM-himon.md</code> files now redirect to the operator guide instead of duplicating procedures, and they are intentionally kept out of the main README/index/TOC path under <code>META/COMPAT/</code>. Secondary guides now live one level down by domain instead of crowding the top-level <code>DOC/GUIDES</code> directory.</p>
+<p>effect: The old assumption that a reader must hop between three RTFM files, README status blocks, and design notes to operate the board is stale. The story lane is explicitly separate from the main docs.</p>
+<p>action: Start with <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a> for board use and <a href="TECHNICAL_GUIDE.html">TECHNICAL_GUIDE.md</a> for architecture. Use <a href="STORY/BOOK.html">BOOK.md</a>, <a href="STORY/HISTORICAL_DOCUMENTS.html">HISTORICAL_DOCUMENTS.md</a>, and <a href="../IDEAS.html">../IDEAS.md</a> for narrative material.</p>
+<h2 id="redoc-str8-milestone-and-crc16-hash-pivot">REDOC: STR8 Milestone And CRC16 Hash Pivot</h2>
+<pre><code class="language-text">2026
+         05
+                18
+                   15:10Z WLP2 Promoted the STR8 three-image milestone across
+                               the reader-facing manuals and reclassified
+                               FNV-1a as transition history, with tableless
+                               CRC16 as the intended compact hash.</code></pre>
+<p>scope: <code>README.md</code>, <code>DOC/INDEX.md</code>, and the reader-facing guide lane: <code>INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>BOOK.md</code>, <code>BRINGUP.md</code>, <code>RTFM-*.md</code>, <code>STR8.md</code>, <code>DECISIONS.md</code>, <code>GLOSSARY.md</code>, <code>REF.md</code>, <code>CATALOG.md</code>, <code>HASH.md</code>, <code>HASH_MAP.md</code>, <code>HASHED_ASM.md</code>, <code>HIMON_MAP.md</code>, <code>QCC_ASM.md</code>, <code>QCC_HASH.md</code>, <code>SYMBOL_XREF.md</code>, and <code>XREF.md</code>.</p>
+<p>change: STR8 is now presented as hardware-proven rotating three bootable images: HIMON, OSI BASIC, and fig-FORTH. The hash docs now distinguish current FNV-era implementation records from the intended compact tableless CRC16 catalog-hash direction.</p>
+<p>effect: The old assumption that STR8 is only a sketch, and that FNV-1a is the settled universal runtime spine, is stale. FNV-1a remains useful history and current-ROM transition debt until the CRC16 record shape is written through.</p>
+<p>action: Start with <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a> and <a href="TECHNICAL_GUIDE.html">TECHNICAL_GUIDE.md</a> for the proven image manager behavior. Use <a href="DECISIONS.html">DECISIONS.md</a>, <a href="HASH/HASH.html">HASH.md</a>, and <a href="HASH/HASH_MAP.html">HASH_MAP.md</a> for the hash-policy pivot.</p>
 <h2 id="proof-str8-update-himon-passed-on-hardware">PROOF: STR8 UPDATE HIMON Passed On Hardware</h2>
 <pre><code class="language-text">2026
          05
@@ -40,7 +70,7 @@ action:     where to look or what to do next</code></pre>
 <p>scope: <code>HARDWARE_TEST_LOG.md</code>, <code>STR8_WORK_PROCESS.md</code>, <code>TODO.md</code>.</p>
 <p>change: The hardware log now records the successful STR8 <code>U</code> path: Bank 3 booted HIMON U1, <code>B</code> copied U1 into Bank 2, <code>U</code> received compact <code>$C000-$EFFF</code> S19 and programmed HIMON U2, STR8 stayed reachable, and high-flash Bank 2 -&gt; Bank 3 restore brought HIMON U1 back.</p>
 <p>effect: The first fixed-gate <code>UPDATE HIMON</code> proof is no longer theoretical. The remaining STR8 V0 proof gaps are Bank 0 enrollment, lower-sector restore over non-erased bytes, and deliberate high-flash failure behavior with a sacrificial image.</p>
-<p>action: Use <a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a> for the transcript and <a href="STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> for the remaining bench rail.</p>
+<p>action: Use <a href="LOGS/HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a> for the transcript and <a href="STR8/STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> for the remaining bench rail.</p>
 <h2 id="redoc-str8-work-process-added">REDOC: STR8 Work Process Added</h2>
 <pre><code class="language-text">2026
          05
@@ -52,7 +82,7 @@ action:     where to look or what to do next</code></pre>
 <p>scope: <code>STR8_WORK_PROCESS.md</code>, <code>INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>XREF.md</code>, <code>BIB.md</code>, <code>BRINGUP.md</code>, <code>TODO.md</code>, <code>STR8_FLASH_UPDATE_PROPOSAL.md</code>, <code>STR8.md</code>, <code>QCC_STR8.md</code>.</p>
 <p>change: STR8 now has a process guide that names the next step as a V0 acceptance/regression pass before new update commands or self-update. STR8&#39;s recovery path is treated as already proven; the pass records that the current build still behaves like the known-good recovery image. The update proposal now treats <code>U T</code>, <code>U H</code>, and <code>U S</code> as design shorthand only; the compact implemented HIMON path is <code>U</code>, equivalent to fixed <code>UPDATE HIMON</code>. The first S19 gate is fixed: <code>U</code> accepts only <code>$C000-$EFFF</code>, while future <code>UPDATE STR8</code> accepts only <code>$F000-$FFFF</code> after stronger confirmation. IVI is now the combined image&#39;s stable vector-indirection mechanism, IVY is only its pronunciation, and LEAF is the future friendly front door built on IVI. Payload use of future LEAF patch routines is optional and has no flash authority. The bringup guide points to the current <code>$F000</code> resident shell, <code>$FC00</code> worker source, <code>$0200-$05FF</code> RAM tray, <code>$4000-$4FFF</code> copy buffer, and <code>$4000-$6FFF</code> HIMON update staging area.</p>
 <p>effect: Do not expose <code>U T</code>, <code>U H</code>, or <code>U S</code> as operator commands. Use <code>U</code> only as the fixed HIMON S19 gate, and keep later generic/raw-range work behind a guided update surface. The existing <code>? B E M U 0 1 2 G R</code> rescue/update surface still needs a clean hardware transcript, especially for destructive <code>B</code>, <code>E</code>, <code>U</code>, lower-sector restore, and high-flash failure behavior.</p>
-<p>action: Use <a href="STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> before editing STR8 source or planning the next bench pass.</p>
+<p>action: Use <a href="STR8/STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> before editing STR8 source or planning the next bench pass.</p>
 <h2 id="redoc-product-boundaries-named">REDOC: Product Boundaries Named</h2>
 <pre><code class="language-text">2026
          05
@@ -62,7 +92,7 @@ action:     where to look or what to do next</code></pre>
 <p>scope: <code>PRODUCT_BOUNDARIES.md</code>, <code>INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>BOOK.md</code>, <code>GLOSSARY.md</code>.</p>
 <p>change: STR8 is now documented as the board management product inside the current repo. IVI is the interrupt-vector mechanism, and LEAF is the newer front-door product name built on it. HIMON is the default monitor payload, while WDCMONv2, BETTERMON, apps, tools, BASIC, and FORTH can be peer payload targets.</p>
 <p>effect: Do not treat STR8 as only a HIMON helper, and do not treat HIMON as the only possible thing STR8 can install or boot. The repo stays together for now; the boundary is conceptual and documented before any source split.</p>
-<p>action: Start with <a href="PRODUCT_BOUNDARIES.html">PRODUCT_BOUNDARIES.md</a>, then use <a href="STR8.html">STR8.md</a> for the board-management contract and <a href="QCC_STR8.html">QCC_STR8.md</a> for open STR8, IVI, and LEAF questions.</p>
+<p>action: Start with <a href="STR8/PRODUCT_BOUNDARIES.html">PRODUCT_BOUNDARIES.md</a>, then use <a href="STR8/STR8.html">STR8.md</a> for the board-management contract and <a href="QCC/STR8.html">QCC_STR8.md</a> for open STR8, IVI, and LEAF questions.</p>
 <h2 id="redoc-onboard-asm-monitor-candidates-added">REDOC: Onboard ASM Monitor Candidates Added</h2>
 <pre><code class="language-text">2026
          05
@@ -73,7 +103,7 @@ action:     where to look or what to do next</code></pre>
 <p>scope: <code>HASHED_ASM.md</code>, <code>QCC_STR8.md</code>.</p>
 <p>change: Future onboard update flow now distinguishes S19 as host transport from native onboard products: RAM candidates, staged sector images, <code>ASM_STAGE</code>, <code>ASM_FIX</code>, <code>CODE</code>, <code>RCAT/RREC</code>, and later <code>BOOT/XMON</code> candidate or winner records. The atomic part is the final winner-record commit after verification, not the whole monitor write.</p>
 <p>effect: Do not assume onboard ASM must generate S19 to update the board. The old monitor should remain the winner until a sealed, verified candidate is published by a small commit record.</p>
-<p>action: Use <a href="HASHED_ASM.html">HASHED_ASM.md</a> for onboard ASM product shape and <a href="QCC_STR8.html">QCC_STR8.md</a> for future STR8 candidate/winner policy.</p>
+<p>action: Use <a href="ASM/HASHED_ASM.html">HASHED_ASM.md</a> for onboard ASM product shape and <a href="QCC/STR8.html">QCC_STR8.md</a> for future STR8 candidate/winner policy.</p>
 <h2 id="redoc-himon-str8-update-means-sector-rebuild">REDOC: HIMON/STR8 Update Means Sector Rebuild</h2>
 <pre><code class="language-text">2026
          05
@@ -96,7 +126,7 @@ action:     where to look or what to do next</code></pre>
 <p>scope: <code>QCC_STR8.md</code>, <code>STR8.md</code>, <code>STR8_DECISION_REFERENCE.md</code>, <code>HASHED_ASM.md</code>.</p>
 <p>change: Wear counts are now framed as append-only hash-shaped <code>WMAP</code> metadata, not stolen bytes in image sectors or STR8 slack. Scratch flash is a future lease selected from reclaimable sectors, with 4K erase transactions still preserving or discarding neighboring policy windows explicitly. ASM now records RAM-first work products and explicit flash-stage behavior under RAM pressure. The partitioned-bank sketch is captured as a QCC thought experiment, not as a change to the current whole 32K image rotation contract.</p>
 <p>effect: Do not assume a hidden filesystem, silent ASM spill to flash, or an approved partitioned-bank design. The current STR8 recovery contract still uses whole 32K images unless a later decision explicitly promotes another map.</p>
-<p>action: Use <a href="QCC_STR8.html">QCC_STR8.md</a> for the unsettled STR8/STRAIGHTEN policy, <a href="STR8.html">STR8.md</a> for the current recovery narrative, and <a href="HASHED_ASM.html">HASHED_ASM.md</a> for ASM staging rules.</p>
+<p>action: Use <a href="QCC/STR8.html">QCC_STR8.md</a> for the unsettled STR8/STRAIGHTEN policy, <a href="STR8/STR8.html">STR8.md</a> for the current recovery narrative, and <a href="ASM/HASHED_ASM.html">HASHED_ASM.md</a> for ASM staging rules.</p>
 <h2 id="redoc-str8-flash-manager-qcc-expanded">REDOC: STR8 Flash-Manager QCC Expanded</h2>
 <pre><code class="language-text">2026
          05
@@ -110,7 +140,7 @@ action:     where to look or what to do next</code></pre>
 <p>scope: <code>QCC_STR8.md</code>.</p>
 <p>change: STR8&#39;s future role is now recorded as flash manager/housekeeper rather than only backup/restore guard. The notes also capture full-bank WDCMONv2 preservation, a WDCMONv2-loaded RAM bridge, future boot targets, and the STR8-as-product boundary, plus the compact <code>RYORS 0.0517 #hash B0 HOLD</code> identity line.</p>
 <p>effect: Do not treat HIMON <code>L F</code> as the eventual owner of protected monitor or STR8 updates. STR8 is the proposed authority for dangerous flash writes and any future flash compaction.</p>
-<p>action: Use <a href="QCC_STR8.html">QCC_STR8.md</a> for this unsettled direction until the parts that prove out are promoted into decisions or implementation docs.</p>
+<p>action: Use <a href="QCC/STR8.html">QCC_STR8.md</a> for this unsettled direction until the parts that prove out are promoted into decisions or implementation docs.</p>
 <h2 id="redoc-hardware-test-log-added">REDOC: Hardware Test Log Added</h2>
 <pre><code class="language-text">2026
          05
@@ -121,7 +151,7 @@ action:     where to look or what to do next</code></pre>
 <p>scope: <code>HARDWARE_TEST_LOG.md</code>, <code>INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>XREF.md</code>.</p>
 <p>change: Hardware proof transcripts now have a single guide home instead of living only inside design notes, how-to guides, or external terminal logs.</p>
 <p>effect: Use the hardware test log for &quot;what actually passed on the board&quot; and the individual proof guides for how to run or interpret each proof.</p>
-<p>action: Add future bench passes to <a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>.</p>
+<p>action: Add future bench passes to <a href="LOGS/HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>.</p>
 <h2 id="redoc-himon-bit-pattern-asm-decode-retired">REDOC: HIMON Bit-Pattern ASM Decode Retired</h2>
 <pre><code class="language-text">2026
          05
@@ -173,7 +203,7 @@ action:     where to look or what to do next</code></pre>
 <p>scope: <code>QCC_CATALOG_LINKING.md</code>, <code>LIFE_RCAT_MEMBER.md</code>, <code>CATALOG.md</code>, <code>HASHED_ASM.md</code>, <code>QCC_ASM.md</code></p>
 <p>change: Catalog linking now has its own QCC home. The current <code>LIFE-2000</code> load path is explicitly named as a useful static-link kludge and proof lane, not the final catalog contract.</p>
 <p>effect: Do not read <code>life-2000-load.bin</code> as &quot;the catalog member.&quot; It is a seed package that proves the body runs while still carrying private support payload from static linking.</p>
-<p>action: Use <a href="QCC_CATALOG_LINKING.html">QCC_CATALOG_LINKING.md</a> for the general bootstrap rule and <a href="LIFE_RCAT_MEMBER.html">LIFE_RCAT_MEMBER.md</a> for the LIFE-specific migration notes.</p>
+<p>action: Use <a href="QCC/CATALOG_LINKING.html">QCC_CATALOG_LINKING.md</a> for the general bootstrap rule and <a href="CATALOG/LIFE_RCAT_MEMBER.html">LIFE_RCAT_MEMBER.md</a> for the LIFE-specific migration notes.</p>
 <h2 id="redoc-life-load-artifact-names-now-carry-address">REDOC: LIFE Load Artifact Names Now Carry Address</h2>
 <pre><code class="language-text">2026
          05
@@ -187,7 +217,7 @@ SRC/BUILD/bin/life-2000-load.bin</code></pre>
 <p>effect: <code>SRC/BUILD/s19/life.s19</code> is a stale remembered artifact name. New references should carry the load address.</p>
 <p>action: Use <code>life-2000.s19</code> for HIMON S-record loading and <code>life-2000-load.bin</code> when a raw loadable binary is needed.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-18T02:31:58Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-19T00:44:05Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

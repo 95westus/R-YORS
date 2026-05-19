@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R-YORS Operator Guide - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="r-yors-operator-guide">R-YORS Operator Guide</h1>
+<p>This is the board-in-front-of-you guide. It says what R-YORS does today, which prompt owns which job, and which commands are safe to use for ordinary bench work.</p>
+<p>For implementation details, read <a href="TECHNICAL_GUIDE.html">TECHNICAL_GUIDE.md</a>. For project narrative, read <a href="STORY/BOOK.html">BOOK.md</a>, <a href="STORY/HISTORICAL_DOCUMENTS.html">HISTORICAL_DOCUMENTS.md</a>, and <a href="../IDEAS.html">../IDEAS.md</a>. The story lane is useful, but it is not required for operating the board.</p>
+<h2 id="current-status">Current Status</h2>
+<p>As of 2026-05-18, STR8 is hardware-proven rotating three bootable images through the fixed <code>$C000-$EFFF</code> update gate:</p>
+<pre><code class="language-text">HIMON      recovery, inspection, loading, debug
+OSI BASIC  interactive BASIC payload
+fig-FORTH  threaded language payload</code></pre>
+<p>The proven STR8 path includes flash map reporting, backup rotation, Bank 0 enrollment, <code>U</code> / <code>UPDATE HIMON</code>, HIMON U1-to-U2 update, temporary BASIC and Forth payloads, and recovery back to known-good HIMON from backup flash.</p>
+<p>Treat this as a bench-proven recovery/update guard, not a finished field updater. Keep a known-good image and an external programmer path nearby.</p>
+<p>HIMON has hardware proof for RAM-only debug behavior: <code>B</code>, <code>B C</code>, <code>B L</code>, <code>N</code>, and <code>X</code>. Breakpoints are one-shot, synthetic debug stops print as <code>@hhhh</code>, and debug patching is limited to RAM.</p>
+<h2 id="mental-model">Mental Model</h2>
+<pre><code class="language-text">reset -&gt; STR8 -&gt; HIMON -&gt; user work</code></pre>
+<pre><code class="language-text">R-YORS  whole project and runtime direction
+STR8    recovery/update guard that runs before the payload
+HIMON   default monitor payload for inspection, loading, debug, catalog work</code></pre>
+<p>Use STR8 when the job changes boot images, backup banks, or protected flash policy. Use HIMON when the job is normal monitor work.</p>
+<h2 id="safety-rules">Safety Rules</h2>
+<p>Some commands and host tools can erase or program flash. Use this project only with a recovery path.</p>
+<pre><code class="language-text">STR8 destructive flash commands ask for confirmation before erase/write.
+HIMON future destructive commands must use 4+ character command words.
+Do not press NMI while STR8 is mapping, erasing, programming, or restoring.</code></pre>
+<p>Current short mutators are transition debt from the existing ROM/proof surface. Do not add new short destructive commands.</p>
+<h2 id="current-image">Current Image</h2>
+<p>The primary burnable image is:</p>
+<pre><code class="language-text">SRC/BUILD/bin/himon-str8-rom.bin</code></pre>
+<p>Current live-bank layout:</p>
+<pre><code class="language-text">$8000-$BFFF   16K user code/data
+$C000-$EFFF   12K payload gate, currently HIMON
+$F000-$FFFF    4K STR8 recovery sector</code></pre>
+<p>Current combined-image facts:</p>
+<pre><code class="language-text">HIMON:           $C000-$E75B
+STR8 image:      $F000-$FA83
+IVI entries:     NMI $F089, IRQ/BRK $F09D
+STR8 identity:   #5F6A0F7A
+marker bytes:    $F770 = 7A 0F 6A 5F
+worker source:   $FC00-$FEBE, copied to RAM when needed
+config pocket:   $FFF0-$FFF9
+vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0</code></pre>
+<p>After burning, quick monitor checks should look like:</p>
+<pre><code class="language-text">D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
+D F000 +10   78 D8 A2 FF 9A 20 36 F0 ...
+D FC00 +10   08 78 AD 07 0A C9 04 F0 ...
+D FFFA FFFF  89 F0 00 F0 9D F0</code></pre>
+<h2 id="first-boot">First Boot</h2>
+<p>On reset, STR8 initializes IVI vector cells and FTDI console I/O, prints the R-YORS banner, then prints:</p>
+<pre><code class="language-text">HIMON IN 3S. S=STR8</code></pre>
+<p>Press <code>S</code> during the countdown to enter the STR8 prompt. If the countdown expires, STR8 jumps to HIMON at <code>$C000</code>.</p>
+<h2 id="flash-banks">Flash Banks</h2>
+<pre><code class="language-text">Bank 3  live reset/boot image
+Bank 2  newest backup image
+Bank 1  older backup image
+Bank 0  base/factory hold until enrolled</code></pre>
+<p>Bank 0 is not ordinary rotation space until <code>E</code> is confirmed in STR8. After enrollment, Bank 0 may be erased by future backups.</p>
+<h2 id="str8-commands">STR8 Commands</h2>
+<pre><code class="language-text">?       print STR8 ID/state, including #5F6A0F7A
+B       backup rotation, destructive, confirmed
+E       enroll Bank 0 into backup rotation, destructive, confirmed
+M       map banks/sectors as used + or erased -
+U       update $C000-$EFFF from S19, destructive, confirmed
+0       restore Bank 0 -&gt; Bank 3, destructive, confirmed
+1       restore Bank 1 -&gt; Bank 3, destructive, confirmed
+2       restore Bank 2 -&gt; Bank 3, destructive, confirmed
+G       go to HIMON at $C000
+R       reset through the live reset vector</code></pre>
+<p><code>M</code> is read-only, but it still switches flash banks through the RAM worker. Let it finish. The map prints eight sector characters per bank, corresponding to <code>$8000,$9000,$A000,$B000,$C000,$D000,$E000,$F000</code>.</p>
+<h2 id="str8-workflows">STR8 Workflows</h2>
+<p>Check identity and bank state:</p>
+<pre><code class="language-text">STR8&gt;?
+STR8&gt;M</code></pre>
+<p>Back up the live image:</p>
+<pre><code class="language-text">STR8&gt;B
+... confirm with Y only if the rotation is intended ...</code></pre>
+<p>Before Bank 0 enrollment, backup rotates:</p>
+<pre><code class="language-text">Bank 2 -&gt; Bank 1
+Bank 3 -&gt; Bank 2</code></pre>
+<p>After Bank 0 enrollment, backup rotates:</p>
+<pre><code class="language-text">Bank 1 -&gt; Bank 0
+Bank 2 -&gt; Bank 1
+Bank 3 -&gt; Bank 2</code></pre>
+<p>Enroll Bank 0 only when losing its current contents is acceptable:</p>
+<pre><code class="language-text">STR8&gt;E
+... confirm with Y ...</code></pre>
+<p>Restore an older image:</p>
+<pre><code class="language-text">STR8&gt;2
+... confirm with Y ...
+STR8&gt;G</code></pre>
+<p>Ordinary restore preserves the high protected region. Recovery over a bad <code>$C000</code> payload uses the separately confirmed high-flash path.</p>
+<p>Update the current <code>$C000-$EFFF</code> payload:</p>
+<pre><code class="language-text">STR8&gt;U
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+... send the S19 stream ...
+PROGRAM C000-EFFF? Y: y
+OK
+STR8&gt;G</code></pre>
+<p>Run <code>B</code> before <code>U</code> when the current live image should be preserved in the backup chain. Do not run <code>B</code> after a temporary payload boots unless that payload should become recoverable.</p>
+<h2 id="str8-payload-streams">STR8 Payload Streams</h2>
+<p>Build the current HIMON update stream:</p>
+<pre><code class="language-text">make -C SRC himon-str8-himon-update-s19</code></pre>
+<p>It emits:</p>
+<pre><code class="language-text">SRC/BUILD/s19/himon-str8-himon-update.s19</code></pre>
+<p>Build the proven temporary payload streams:</p>
+<pre><code class="language-text">make -C SRC fig-forth-str8-update-s19
+make -C SRC msbasic-osi-str8-update-s19</code></pre>
+<p>They emit <code>$C000-$EFFF</code> S19 streams for the same STR8 <code>U</code> gate. These are bench payloads used to prove image rotation and recovery.</p>
+<p>For your own <code>$C000</code> payload, STR8 expects this contract:</p>
+<pre><code class="language-text">$C000        executable entry or jump stub
+$C000-$EFFF  S1 data accepted by STR8 U
+$F000-$FFFF  STR8-owned recovery sector, not part of the payload</code></pre>
+<p>For a 12K binary already based at <code>$C000</code>:</p>
+<pre><code class="language-text">powershell -NoProfile -ExecutionPolicy Bypass -File SRC/tools/build_rom_install_s19.ps1 `
+  -BinPath LOCAL/mymon-c000.bin `
+  -S19Path SRC/BUILD/s19/mymon-str8-update.s19 `
+  -BaseAddress 49152 `
+  -StartAddress 49152 `
+  -OmitAllFFDataRecords</code></pre>
+<p>For a full 32K <code>$8000-$FFFF</code> bank image, crop the STR8 gate:</p>
+<pre><code class="language-text">powershell -NoProfile -ExecutionPolicy Bypass -File SRC/tools/build_rom_install_s19.ps1 `
+  -BinPath LOCAL/mymon-bank.bin `
+  -S19Path SRC/BUILD/s19/mymon-str8-update.s19 `
+  -BaseAddress 32768 `
+  -RangeStart 49152 `
+  -RangeEnd 61439 `
+  -StartAddress 49152 `
+  -OmitAllFFDataRecords</code></pre>
+<p>STR8 rejects records outside <code>$C000-$EFFF</code> before erase.</p>
+<h2 id="himon-commands">HIMON Commands</h2>
+<pre><code class="language-text">?              help
+# [token]      list records, or resolve token without executing it
+&quot;text&quot;         print legacy FNV-1a32; reports STR8 match on #5F6A0F7A
+D start +count dump memory by byte count
+D start end    dump memory through inclusive end
+M addr         modify memory byte by byte
+U start +count disassemble
+A addr         assemble
+G addr         go to address
+L              load S-records to RAM
+L G            load S-records and go to S9 start
+L F            flash-load under the current guard
+R [regs]       display/edit trapped context registers
+B start        set one-shot breakpoint
+B C start      clear breakpoint
+B L            list breakpoints
+N              single-step trapped context
+X              resume trapped context
+Q              quiesce with WAI, then re-enter on wake</code></pre>
+<p>Use HIMON for ordinary monitor work. Use STR8 for backup, restore, image rotation, and protected flash policy.</p>
+<h2 id="himon-range-syntax">HIMON Range Syntax</h2>
+<pre><code class="language-text">start end       end is inclusive
+start +count    count is the number of bytes</code></pre>
+<p>Short end tokens inherit the start high byte:</p>
+<pre><code class="language-text">D 100 3       dumps $0100-$0103
+D 3000 FF     dumps $3000-$30FF
+D 3000 +100   dumps $3000-$30FF</code></pre>
+<p>A 3- or 4-hex-digit end token is a full address. <code>D 1000 FFF</code> resolves as <code>$0FFF</code> and is rejected because it lands before <code>$1000</code>; use <code>D 1000 1FFF</code> or <code>D 1000 +1000</code>.</p>
+<p>Target behavior for bare <code>D</code> is continuation from the previous dump:</p>
+<pre><code class="language-text">D 3000 FF
+D
+D</code></pre>
+<h2 id="himon-ram-proof-loop">HIMON RAM Proof Loop</h2>
+<p>New monitor/debug code should prove itself as RAM-loaded S19 before becoming part of a burnable image.</p>
+<pre><code class="language-text">write a standalone RAM proof
+link it inside user program RAM, usually $2000-$77FF
+build an S19
+load it with HIMON L or L G
+debug with B, N, R, X, D, and U
+promote clean code into HIMON or a payload image</code></pre>
+<p>Useful examples:</p>
+<pre><code class="language-text">make -C SRC life
+make -C SRC str8-ram
+make -C SRC himon-debug-proof
+make -C SRC himon-search-proof</code></pre>
+<p>On the board:</p>
+<pre><code class="language-text">&gt;L
+&gt;L G
+&gt;B 3000
+&gt;G 3000</code></pre>
+<p><code>L</code> clears active debug patches before accepting new S-records. Set breakpoints after loading the image they belong to.</p>
+<h2 id="himon-debug-notes">HIMON Debug Notes</h2>
+<p>RAM debug patching is limited to <code>$2000-$77FF</code>. If a breakpoint or step tries to patch system RAM, I/O, or ROM/flash, HIMON reports:</p>
+<pre><code class="language-text">DBG RAM</code></pre>
+<p>Debugger-owned stops print as compact <code>@hhhh</code> lines. Real program <code>BRK xx</code> stops remain loud and keep their signature.</p>
+<p>Breakpoints are one-shot in the current build. An <code>@hhhh</code> hit consumes the slot. Persistent breakpoints are future work.</p>
+<h2 id="loading-and-flashing">Loading And Flashing</h2>
+<p><code>L</code> and <code>L G</code> are the normal RAM proof path. <code>L F</code> is conservative: it writes only where the current guard allows and expects blank flash bytes. It is not a sector erase/update tool.</p>
+<p>Do not use HIMON to casually rewrite:</p>
+<pre><code class="language-text">STR8 protected window
+hardware vectors
+Bank 0 rotation policy
+whole-bank backup/restore images</code></pre>
+<p>Those jobs belong to STR8 or a future confirmed RAM updater.</p>
+<h2 id="build-commands">Build Commands</h2>
+<pre><code class="language-text">make release
+make release-local
+make docs-html
+make -C SRC help
+make -C SRC himon
+make -C SRC str8
+make -C SRC himon-str8-rom-bin</code></pre>
+<p><code>make release</code> regenerates source-derived docs, builds the tracked release set, and stamps the HIMON/STR8 ROM binary. <code>make docs-html</code> regenerates the presentation copy under <code>DOC/HTML</code>; Markdown remains canonical.</p>
+<h2 id="where-to-go-next">Where To Go Next</h2>
+<pre><code class="language-text">TECHNICAL_GUIDE.md       architecture, memory, flash policy, source/build map
+HARDWARE_TEST_LOG.md     board transcript proof
+HIMON_DEBUG_TESTING.md   RAM debug bench process
+MEMORY_MAP.md            address ownership
+REF.md                   compact reference sheet
+GLOSSARY.md              vocabulary contract
+DECISIONS.md             settled policy</code></pre>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/OPERATORS_GUIDE.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

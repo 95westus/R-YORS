@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R-YORS Technical Guide - R-YORS Docs</title>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="r-yors-technical-guide">R-YORS Technical Guide</h1>
+<p>This is the canonical technical guide for the current R-YORS, STR8, and HIMON shape. It summarizes the architecture, build products, memory ownership, flash policy, and source layout without carrying the project story.</p>
+<p>For board operation, read <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a>. For the narrative lane, read <a href="STORY/BOOK.html">BOOK.md</a>, <a href="STORY/HISTORICAL_DOCUMENTS.html">HISTORICAL_DOCUMENTS.md</a>, and <a href="../IDEAS.html">../IDEAS.md</a>.</p>
+<h2 id="product-roles">Product Roles</h2>
+<pre><code class="language-text">R-YORS  project/system direction and vocabulary
+STR8    reset-time recovery/update guard
+IVI     interrupt-vector indirection mechanism
+LEAF    future friendly front door over IVI
+HIMON   default monitor/debug/catalog/assembler payload
+THE     future hash/catalog resolver environment</code></pre>
+<p>Current boot relationship:</p>
+<pre><code class="language-text">RESET -&gt; STR8 -&gt; HIMON -&gt; user work</code></pre>
+<p>STR8 should remain useful even when the payload is not HIMON. HIMON is the bundled workbench and default <code>$C000</code> payload, not the reason STR8 exists.</p>
+<h2 id="current-proof-state">Current Proof State</h2>
+<p>As of 2026-05-18, STR8 has hardware proof for:</p>
+<pre><code class="language-text">flash map by bank/sector
+backup rotation before and after Bank 0 enrollment
+Bank 0 enrollment
+fixed $C000-$EFFF S19 update gate
+HIMON U1-to-U2 update
+bootable OSI BASIC payload through the same gate
+bootable fig-FORTH payload through the same gate
+high-flash recovery from Bank 2 back to known-good HIMON</code></pre>
+<p>HIMON has hardware proof for RAM-only debug commands <code>B</code>, <code>B C</code>, <code>B L</code>, <code>N</code>, and <code>X</code>, with one-shot breakpoints and <code>DBG RAM</code> rejection outside user RAM.</p>
+<p>This is still a bench-proven recovery/update guard, not a field-updater or self-updater release.</p>
+<h2 id="source-layout">Source Layout</h2>
+<p>Current source aliases in the docs:</p>
+<pre><code class="language-text">HIMON       SRC/TEST/apps/himon/
+STR8        SRC/TEST/apps/str8/
+ROM         ROM support source alias in generated docs
+SRC/STASH   parked or promoted code lane
+SRC/SESH    session/experiment lane
+SRC/tools   host build and support scripts
+DOC         hand-written and generated documentation
+LOCAL       ignored local source homes</code></pre>
+<p>Physical paths used by the current build:</p>
+<pre><code class="language-text">SRC/TEST/apps/himon/himon.asm
+SRC/TEST/apps/himon/*.inc
+SRC/TEST/apps/himon/fnv1a-fold.asm
+SRC/TEST/apps/str8/str8.asm
+SRC/TEST/apps/str8/str8-worker.asm
+SRC/STASH/ftdi/*.asm
+SRC/SESH/ftdi/*.asm
+SRC/TEST/ftdi/*.asm
+SRC/TEST/dev/*.asm
+SRC/TEST/util/*.asm</code></pre>
+<p>Generated routine maps intentionally focus on current operational HIMON/STR8 and ROM-support source. Legacy demos, harnesses, games, ACIA/PIA experiments, and archived monitors are kept out of that operational graph unless promoted.</p>
+<h2 id="build-products">Build Products</h2>
+<p>Primary combined ROM image:</p>
+<pre><code class="language-text">SRC/BUILD/bin/himon-str8-rom.bin</code></pre>
+<p>Primary install and update streams:</p>
+<pre><code class="language-text">SRC/BUILD/s19/himon-str8-rom-install.s19
+SRC/BUILD/s19/himon-str8-himon-update.s19
+SRC/BUILD/s19/fig-forth-str8-update.s19
+SRC/BUILD/s19/msbasic-osi-str8-update.s19</code></pre>
+<p>Useful targets:</p>
+<pre><code class="language-text">make release
+make release-local
+make docs-html
+make -C SRC docs
+make -C SRC himon
+make -C SRC str8
+make -C SRC himon-str8-rom-bin
+make -C SRC himon-str8-himon-update-s19
+make -C SRC fig-forth-str8-update-s19
+make -C SRC msbasic-osi-str8-update-s19</code></pre>
+<p>Burnable <code>.bin</code> files are exactly one 32K CPU <code>$8000-$FFFF</code> bank image. The file does not encode a bank number; bank placement is managed by the programmer or by STR8.</p>
+<h2 id="cpu-and-flash-model">CPU And Flash Model</h2>
+<p>The W65C02 sees selected flash at <code>$8000-$FFFF</code>:</p>
+<pre><code class="language-text">$0000-$7FFF  RAM/I/O decode, same regardless of selected flash bank
+$8000-$FFFF  selected 32K flash bank window</code></pre>
+<p>Physical bank roles:</p>
+<pre><code class="language-text">Bank 3  live boot image
+Bank 2  newest backup image
+Bank 1  older backup image
+Bank 0  base/factory hold until enrolled into rotation</code></pre>
+<p>The current target live-bank budget is:</p>
+<pre><code class="language-text">$8000-$BFFF   16K user code/data
+$C000-$EFFF   12K payload gate, currently HIMON
+$F000-$FFFF    4K STR8 recovery sector</code></pre>
+<p>STR8 may use less than 4K, but the whole top erase sector is recovery-owned for V0 policy.</p>
+<h2 id="combined-image-layout">Combined Image Layout</h2>
+<p>Current combined-image facts:</p>
+<pre><code class="language-text">HIMON entry:     $C000
+HIMON body:      $C000-$E75B
+STR8 entry:      $F000
+STR8 body:       $F000-$FA83
+STR8 identity:   #5F6A0F7A
+marker bytes:    $F770 = 7A 0F 6A 5F
+worker source:   $FC00-$FEBE
+config pocket:   $FFF0-$FFF9
+vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0</code></pre>
+<p>The combined <code>himon-str8-rom.bin</code> places HIMON at CPU <code>$C000</code>, STR8 at CPU <code>$F000</code>, and the reset vector at file offset <code>$7FFC</code>. NMI and IRQ/BRK vectors enter STR8 IVI stubs first.</p>
+<h2 id="boot-and-handoff">Boot And Handoff</h2>
+<p>On reset, STR8:</p>
+<pre><code class="language-text">sets the CPU to a known monitor/recovery state
+seeds IVI RAM vector cells with safe defaults
+initializes FTDI console I/O
+prints the R-YORS banner and countdown
+waits for S to enter STR8
+jumps to HIMON at $C000 when the countdown expires</code></pre>
+<p>Current vector path:</p>
+<pre><code class="language-text">NMI      -&gt; STR8 IVI entry at $F089 -&gt; RAM vector $7EFA-$7EFB
+RESET    -&gt; STR8 START at $F000
+IRQ/BRK  -&gt; STR8 IVI entry at $F09D -&gt; RAM vectors $7EFC-$7EFF</code></pre>
+<p>HIMON patches the RAM targets after handoff. IVI is a mechanism, not a claim that STR8 owns all interrupt meanings after payload entry.</p>
+<p>Payloads that own interrupts may install their own targets:</p>
+<pre><code class="language-text">$7EFA-$7EFB  NMI target
+$7EFC-$7EFD  BRK target
+$7EFE-$7EFF  non-BRK IRQ target</code></pre>
+<p>Patch those cells only after the payload&#39;s handlers and stack policy are ready.</p>
+<h2 id="str8-implementation">STR8 Implementation</h2>
+<p>STR8 is split into a resident shell and a RAM worker.</p>
+<p>Resident STR8:</p>
+<pre><code class="language-text">owns reset-time prompt and countdown
+owns command parsing for the recovery prompt
+owns fixed S19 update-gate validation
+keeps private console helpers as STR8_CON_*
+copies the flash worker from ROM to RAM
+reports status after the worker restores Bank 3</code></pre>
+<p>RAM worker:</p>
+<pre><code class="language-text">runs from $0200
+switches flash banks
+erases and programs selected sectors
+copies and verifies bank images
+scans sector emptiness for M
+restores Bank 3 before returning to resident STR8</code></pre>
+<p>Current RAM workspace:</p>
+<pre><code class="language-text">$0200-$05FF   STR8 RAM tray copied from $FC00
+$0A00-$0A16   STR8 worker/update state board and map bytes
+$4000-$4FFF   4K sector buffer for bank copy
+$4000-$6FFF   staged C/D/E sector buffers during U</code></pre>
+<p><code>M</code> is read-only from the operator&#39;s point of view, but still uses the worker to switch banks and scan sectors.</p>
+<h2 id="str8-update-gate">STR8 Update Gate</h2>
+<p>The current <code>U</code> gate is intentionally narrow:</p>
+<pre><code class="language-text">target range:  $C000-$EFFF
+record type:   S1 data records only
+S0:            skipped
+S9:            ends transfer
+outside range: abort before erase
+programming:   requires confirmation after S19 validation</code></pre>
+<p>STR8 stages blank C/D/E sectors in RAM, overlays incoming S19 bytes, asks again, then erases/writes/verifies the three sectors.</p>
+<p>This gate is named <code>UPDATE HIMON</code> in the current prompt because HIMON is the default payload. Technically it is a fixed <code>$C000-$EFFF</code> payload installer. The same path has booted HIMON, OSI BASIC, and fig-FORTH.</p>
+<h2 id="str8-backup-and-restore">STR8 Backup And Restore</h2>
+<p>Before Bank 0 enrollment:</p>
+<pre><code class="language-text">B:  Bank 2 -&gt; Bank 1
+    Bank 3 -&gt; Bank 2</code></pre>
+<p>After Bank 0 enrollment:</p>
+<pre><code class="language-text">B:  Bank 1 -&gt; Bank 0
+    Bank 2 -&gt; Bank 1
+    Bank 3 -&gt; Bank 2</code></pre>
+<p>Restore commands copy selected backup banks into Bank 3 and verify by read-back compare. Ordinary restore preserves the protected high region. A separately confirmed high-flash recovery path exists for restoring known-good HIMON over a bad <code>$C000</code> payload.</p>
+<p>Bank 0 enrollment clears bit 0 at <code>$FFF0</code>:</p>
+<pre><code class="language-text">bit set/erased  = B0 HOLD
+bit cleared     = B0 ROT</code></pre>
+<p>Leaving rotation requires erase/reflash or deliberate STR8 config rebuild.</p>
+<h2 id="himon-implementation">HIMON Implementation</h2>
+<p>HIMON is the default monitor payload. It owns:</p>
+<pre><code class="language-text">interactive monitor prompt
+memory dump and modify
+S-record load and guarded flash load
+disassembly and assembler direction
+trap/debug context
+legacy FNV-era command lookup
+catalog/hash experiments</code></pre>
+<p>Current commands are summarized in <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a>. Detailed debug proof procedure lives in <a href="HIMON/HIMON_DEBUG_TESTING.html">HIMON_DEBUG_TESTING.md</a>.</p>
+<h2 id="himon-debug-policy">HIMON Debug Policy</h2>
+<p>HIMON owns the hardware stack on monitor entry. Resume is explicit: rebuild context and <code>RTI</code>.</p>
+<p>The current debug implementation is conservative:</p>
+<pre><code class="language-text">debug patch range:  $2000-$77FF
+system RAM:         not patchable
+I/O:                not patchable
+ROM/flash:          not patchable
+synthetic trap:     BRK 00
+debug stop display: @hhhh
+breakpoint mode:    one-shot</code></pre>
+<p><code>BRK 00</code> is reserved for HIMON&#39;s synthetic debug trap. Real <code>BRK xx</code> signatures remain visible as program stops. Future assertion ranges are documented in <a href="DECISIONS.html">DECISIONS.md</a>.</p>
+<h2 id="range-parser-contract">Range Parser Contract</h2>
+<p>Commands that accept ranges use:</p>
+<pre><code class="language-text">start end       end is inclusive
+start +count    count is the number of bytes</code></pre>
+<p>One- or two-hex-digit end tokens inherit the high byte from <code>start</code>. Three- or four-hex-digit end tokens are full addresses. Bare <code>D</code> should continue at the next address using the previous dump length.</p>
+<p>The canonical policy is in <a href="DECISIONS.html">DECISIONS.md</a>. Operator examples are in <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a>.</p>
+<h2 id="hash-and-catalog-state">Hash And Catalog State</h2>
+<p>Current HIMON still contains FNV-1a command/routine history:</p>
+<pre><code class="language-text">routine header HASH      32-bit FNV-1a comment ID
+current HIMON commands   FNV-era command records
+legacy quote helper      prints FNV-1a32</code></pre>
+<p>The intended compact runtime/catalog hash is tableless CRC16:</p>
+<pre><code class="language-text">canonical text -&gt; tableless CRC16 -&gt; typed record/payload</code></pre>
+<p>The hash narrows lookup. Typed records, stored names, and proof text give the match its meaning. STR8 V0 does not use FNV or CRC16 for recovery decisions.</p>
+<h2 id="payload-contract">Payload Contract</h2>
+<p>The current STR8 payload gate is:</p>
+<pre><code class="language-text">$C000        executable entry or jump stub
+$C000-$EFFF  bytes accepted by STR8 U
+$F000-$FFFF  STR8-owned recovery sector</code></pre>
+<p>A payload that does not use interrupts can ignore IVI after entry. A payload that uses NMI, BRK, or IRQ patches the IVI RAM cells after its handlers are ready.</p>
+<p>STR8 protects the update transaction. It does not prove the payload&#39;s RAM map, interrupt policy, console assumptions, or backup history after the operator runs <code>B</code>.</p>
+<h2 id="future-update-shape">Future Update Shape</h2>
+<p>The right shape for future HIMON/STR8 updates is a RAM-resident sector transaction:</p>
+<pre><code class="language-text">read live destination sector into RAM
+merge staged update bytes
+program directly if all changes are 1-&gt;0
+confirm before erase when erase is needed
+erase/write full staged sector
+verify by read-back compare
+restore Bank 3 before printing status</code></pre>
+<p>STR8 self-update is a special confirmed operation and should end in reset.</p>
+<h2 id="documentation-shape">Documentation Shape</h2>
+<p>Main docs now use a small reader path:</p>
+<pre><code class="language-text">README.md
+DOC/INDEX.md
+DOC/GUIDES/OPERATORS_GUIDE.md
+DOC/GUIDES/TECHNICAL_GUIDE.md</code></pre>
+<p>Supporting references stay available, but they should not duplicate the whole operator or architecture explanation. The narrative lane is explicit and kept out of the main operation path:</p>
+<pre><code class="language-text">DOC/GUIDES/STORY/BOOK.md
+DOC/GUIDES/STORY/HISTORICAL_DOCUMENTS.md
+DOC/IDEAS.md</code></pre>
+<h2 id="canonical-references">Canonical References</h2>
+<pre><code class="language-text">OPERATORS_GUIDE.md            board operation and workflows
+STR8/PRODUCT_BOUNDARIES.md    product lanes and ownership
+DECISIONS.md                  settled calls and command policy
+MEMORY/MEMORY_MAP.md          address ownership
+REF.md                        compact technical reference
+CATALOG/CATALOG.md            callable routine selection view
+HIMON/HIMON_MAP.md            readable HIMON capability map
+HIMON/HIMON_EDGE_DUMP.md      raw HIMON edge evidence
+LOGS/HARDWARE_TEST_LOG.md     board transcript validation
+DOC/GENERATED/                source-derived maps and reports</code></pre>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/TECHNICAL_GUIDE.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

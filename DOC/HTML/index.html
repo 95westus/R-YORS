@@ -10,67 +10,55 @@
   <header class="site-header"><div class="nav-start"><a class="back-link" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="index.html"><img class="brand-logo" src="branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="README.html">README</a><a href="GUIDES/INDEX.html">Guides</a><a href="GENERATED/index.html">Generated</a></nav></header>
   <main class="doc-page">
 <h1 id="r-yors-documentation">R-YORS Documentation</h1>
-<p>Start with the guide index:</p>
+<p>This is the documentation front desk. Start with the small main path, then open supporting references only when you need detail.</p>
+<h2 id="main-path">Main Path</h2>
+<pre><code class="language-text">README.md
+DOC/GUIDES/OPERATORS_GUIDE.md
+DOC/GUIDES/TECHNICAL_GUIDE.md</code></pre>
 <ul>
-<li><a href="GUIDES/INDEX.html">GUIDES/INDEX.md</a></li>
-<li><a href="GUIDES/TOC.html">GUIDES/TOC.md</a></li>
-<li><a href="GUIDES/MAP.html">GUIDES/MAP.md</a></li>
-<li><a href="GUIDES/BOOK.html">GUIDES/BOOK.md</a></li>
-<li><a href="GUIDES/HASH_FLASH.html">GUIDES/HASH_FLASH.md</a></li>
-<li><a href="GUIDES/DOC_FLASH.html">GUIDES/DOC_FLASH.md</a></li>
-<li><a href="GUIDES/DECISIONS.html">GUIDES/DECISIONS.md</a></li>
-<li><a href="GUIDES/QCC.html">GUIDES/QCC.md</a></li>
+<li><a href="GUIDES/OPERATORS_GUIDE.html">GUIDES/OPERATORS_GUIDE.md</a> - board operation: current status, STR8 workflows, HIMON commands, payload updates, recovery.</li>
+<li><a href="GUIDES/TECHNICAL_GUIDE.html">GUIDES/TECHNICAL_GUIDE.md</a> - architecture: product roles, source layout, memory, flash, IVI, build artifacts.</li>
+<li><a href="GUIDES/REF.html">GUIDES/REF.md</a> - compact reference sheet.</li>
+<li><a href="GUIDES/GLOSSARY.html">GUIDES/GLOSSARY.md</a> - vocabulary contract.</li>
+<li><a href="GUIDES/DECISIONS.html">GUIDES/DECISIONS.md</a> - settled policy.</li>
 </ul>
-<p>Core current design notes:</p>
+<h2 id="current-status">Current Status</h2>
+<p>STR8 is hardware-proven rotating three bootable images: HIMON, OSI BASIC, and fig-FORTH. HIMON RAM-only debug is hardware-proven for the current one-shot breakpoint and single-step surface.</p>
 <ul>
-<li><a href="GUIDES/STR8.html">GUIDES/STR8.md</a></li>
-<li><a href="GUIDES/STR8_WORK_PROCESS.html">GUIDES/STR8_WORK_PROCESS.md</a></li>
-<li><a href="GUIDES/BOOK.html">GUIDES/BOOK.md</a></li>
-<li><a href="GUIDES/HASH_FLASH.html">GUIDES/HASH_FLASH.md</a></li>
-<li><a href="GUIDES/DOC_FLASH.html">GUIDES/DOC_FLASH.md</a></li>
-<li><a href="GUIDES/HIMON_STAGES_CLASSES.html">GUIDES/HIMON_STAGES_CLASSES.md</a></li>
-<li><a href="GUIDES/HASHED_ASM.html">GUIDES/HASHED_ASM.md</a></li>
-<li><a href="GUIDES/HASH_MAP.html">GUIDES/HASH_MAP.md</a></li>
-<li><a href="GUIDES/LIFE_RCAT_MEMBER.html">GUIDES/LIFE_RCAT_MEMBER.md</a></li>
-<li><a href="GUIDES/QCC_HASH.html">GUIDES/QCC_HASH.md</a></li>
-<li><a href="GUIDES/QCC_FLASH.html">GUIDES/QCC_FLASH.md</a></li>
-<li><a href="GUIDES/QCC_ASM.html">GUIDES/QCC_ASM.md</a></li>
-<li><a href="GUIDES/QCC_CATALOG_LINKING.html">GUIDES/QCC_CATALOG_LINKING.md</a></li>
-<li><a href="GUIDES/QCC_STR8.html">GUIDES/QCC_STR8.md</a></li>
-<li><a href="GUIDES/QCC_MEMORY.html">GUIDES/QCC_MEMORY.md</a></li>
-<li><a href="GUIDES/CATALOG.html">GUIDES/CATALOG.md</a></li>
-<li><a href="GUIDES/MEMORY_MAP.html">GUIDES/MEMORY_MAP.md</a></li>
-<li><a href="GUIDES/DYNAMIC_MEMORY_FIRST_STEPS.html">GUIDES/DYNAMIC_MEMORY_FIRST_STEPS.md</a></li>
-<li><a href="GUIDES/SYMBOL_XREF.html">GUIDES/SYMBOL_XREF.md</a></li>
-<li><a href="GUIDES/HIMON_MAP.html">GUIDES/HIMON_MAP.md</a></li>
-<li><a href="GUIDES/HIMON_DEBUG_TESTING.html">GUIDES/HIMON_DEBUG_TESTING.md</a></li>
-<li><a href="GUIDES/HIMON_SEARCH_IMPLEMENTATION_GUIDE.html">GUIDES/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</a></li>
-<li><a href="GUIDES/HIMON_EDGE_DUMP.html">GUIDES/HIMON_EDGE_DUMP.md</a></li>
-<li><a href="GUIDES/HISTORICAL_DOCUMENTS.html">GUIDES/HISTORICAL_DOCUMENTS.md</a></li>
+<li><a href="GUIDES/HASH_FLASH.html">GUIDES/HASH_FLASH.md</a> - milestone and command alerts.</li>
+<li><a href="GUIDES/DOC_FLASH.html">GUIDES/DOC_FLASH.md</a> - documentation-shape alerts.</li>
+<li><a href="GUIDES/LOGS/HARDWARE_TEST_LOG.html">GUIDES/LOGS/HARDWARE_TEST_LOG.md</a> - board proof.</li>
 </ul>
-<p>Generated source analysis:</p>
+<h2 id="guide-indexes">Guide Indexes</h2>
 <ul>
-<li><a href="GENERATED/MAP_OF_MAPS.html">GENERATED/MAP_OF_MAPS.md</a></li>
-<li><a href="GENERATED/CALL_ORDER.html">GENERATED/CALL_ORDER.md</a></li>
-<li><a href="GENERATED/ROUTINE_CONTRACTS.html">GENERATED/ROUTINE_CONTRACTS.md</a></li>
-<li><a href="GENERATED/HIMON_ROUTINE_TREE.html">GENERATED/HIMON_ROUTINE_TREE.md</a></li>
-<li><a href="GENERATED/ROUTINE_CLASS_DIAGRAM.html">GENERATED/ROUTINE_CLASS_DIAGRAM.md</a></li>
-<li><a href="GENERATED/ROUTINE_PREFIX_MAP.html">GENERATED/ROUTINE_PREFIX_MAP.md</a></li>
-<li><a href="GENERATED/HIMON_SUPPORT_MAP.html">GENERATED/HIMON_SUPPORT_MAP.md</a></li>
-<li><a href="GENERATED/HIMON_COMMAND_MAP.html">GENERATED/HIMON_COMMAND_MAP.md</a></li>
-<li><a href="GENERATED/HASH_ROUTINE_MAP.html">GENERATED/HASH_ROUTINE_MAP.md</a></li>
-<li><a href="GENERATED/CMD_FLOW_MAP.html">GENERATED/CMD_FLOW_MAP.md</a></li>
-<li><a href="GENERATED/STACK_DEPTH_MAP.html">GENERATED/STACK_DEPTH_MAP.md</a></li>
-<li><a href="GENERATED/INTERRUPT_VECTOR_MAP.html">GENERATED/INTERRUPT_VECTOR_MAP.md</a></li>
-<li><a href="GENERATED/ROUTINE_GRAPH_INSIGHTS.html">GENERATED/ROUTINE_GRAPH_INSIGHTS.md</a></li>
-<li><a href="GENERATED/ROUTINE_COMPONENTS.html">GENERATED/ROUTINE_COMPONENTS.md</a></li>
+<li><a href="GUIDES/INDEX.html">GUIDES/INDEX.md</a> - full guide index.</li>
+<li><a href="GUIDES/TOC.html">GUIDES/TOC.md</a> - recommended reading order.</li>
+<li><a href="GUIDES/MAP.html">GUIDES/MAP.md</a> - documentation and system map.</li>
+<li><a href="GUIDES/META/XREF.html">GUIDES/META/XREF.md</a> - document/source cross-reference.</li>
 </ul>
-<p>Scratchpad:</p>
+<h2 id="story-lane">Story Lane</h2>
+<p>The story is intentionally outside the main operator/technical path:</p>
 <ul>
-<li><a href="IDEAS.html">IDEAS.md</a></li>
+<li><a href="GUIDES/STORY/BOOK.html">GUIDES/STORY/BOOK.md</a> - manuscript spine.</li>
+<li><a href="GUIDES/STORY/HISTORICAL_DOCUMENTS.html">GUIDES/STORY/HISTORICAL_DOCUMENTS.md</a> - lineage.</li>
+<li><a href="IDEAS.html">IDEAS.md</a> - scratchpad and special moments.</li>
 </ul>
+<h2 id="guide-shelves">Guide Shelves</h2>
+<ul>
+<li><a href="GUIDES/STR8/STR8.html">GUIDES/STR8</a> - recovery, update, product boundaries, bringup.</li>
+<li><a href="GUIDES/HIMON/HIMON_MAP.html">GUIDES/HIMON</a> - monitor maps, debug, search, stage notes.</li>
+<li><a href="GUIDES/MEMORY/MEMORY_MAP.html">GUIDES/MEMORY</a> - address ownership and allocation direction.</li>
+<li><a href="GUIDES/CATALOG/CATALOG.html">GUIDES/CATALOG</a> - routine catalog and catalog proof notes.</li>
+<li><a href="GUIDES/HASH/HASH_MAP.html">GUIDES/HASH</a> - hash references and map.</li>
+<li><a href="GUIDES/ASM/HASHED_ASM.html">GUIDES/ASM</a> - assembler and symbol references.</li>
+<li><a href="GUIDES/QCC/INDEX.html">GUIDES/QCC</a> - active design questions.</li>
+<li><a href="GUIDES/LOGS/HARDWARE_TEST_LOG.html">GUIDES/LOGS</a> - hardware proof logs.</li>
+<li><a href="GUIDES/PLANNING/TODO.html">GUIDES/PLANNING</a> - TODO and future notes.</li>
+<li><a href="GUIDES/META/XREF.html">GUIDES/META</a> - bibliography and cross-reference.</li>
+</ul>
+<p>Generated source analysis lives in <a href="GENERATED/index.html">GENERATED</a>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/INDEX.md</code>. Source modified: <time>2026-05-18T00:35:04Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/INDEX.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

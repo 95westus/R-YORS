@@ -10,157 +10,50 @@
   <header class="site-header"><div class="nav-start"><a class="back-link" href="../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../index.html"><img class="brand-logo" src="../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../README.html">README</a><a href="INDEX.html">Guides</a><a href="../GENERATED/index.html">Generated</a></nav></header>
   <main class="doc-page">
 <h1 id="r-yors-guide-index">R-YORS Guide Index</h1>
-<p>This is the top index for the <code>ror</code> documentation set.</p>
+<p>This is the full guide index for the current R-YORS documentation set.</p>
 <h2 id="start-here">Start Here</h2>
+<ul>
+<li><a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a> - canonical board-facing guide for R-YORS, STR8, and HIMON operation.</li>
+<li><a href="TECHNICAL_GUIDE.html">TECHNICAL_GUIDE.md</a> - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.</li>
+<li><a href="REF.html">REF.md</a> - compact reference sheet.</li>
+<li><a href="GLOSSARY.html">GLOSSARY.md</a> - vocabulary contract.</li>
+<li><a href="DECISIONS.html">DECISIONS.md</a> - settled calls.</li>
+</ul>
+<h2 id="current-milestone">Current Milestone</h2>
+<p>STR8 is hardware-proven rotating three bootable live-bank images: HIMON, OSI BASIC, and fig-FORTH. HIMON RAM-only debug is hardware-proven for current one-shot breakpoint and single-step behavior.</p>
+<ul>
+<li><a href="HASH_FLASH.html">HASH_FLASH.md</a> - command-surface and milestone alerts.</li>
+<li><a href="DOC_FLASH.html">DOC_FLASH.md</a> - documentation-shape alerts.</li>
+<li><a href="LOGS/HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a> - board transcript evidence.</li>
+</ul>
+<h2 id="navigation">Navigation</h2>
 <ul>
 <li><a href="TOC.html">TOC.md</a> - recommended reading order.</li>
 <li><a href="MAP.html">MAP.md</a> - documentation map and system map.</li>
-<li><a href="PRODUCT_BOUNDARIES.html">PRODUCT_BOUNDARIES.md</a> - R-YORS, STR8, IVI/LEAF,</li>
+<li><a href="META/XREF.html">XREF.md</a> - document/source cross-reference.</li>
+<li><a href="META/BIB.html">BIB.md</a> - source corpus and guide bibliography.</li>
 </ul>
-<p>HIMON, and payload ownership lanes.</p>
+<h2 id="guide-shelves">Guide Shelves</h2>
 <ul>
-<li><a href="BOOK.html">BOOK.md</a> - narrative spine for the hashed runtime system book.</li>
-<li><a href="HASH_FLASH.html">HASH_FLASH.md</a> - short alert stream for command-surface changes.</li>
-<li><a href="DOC_FLASH.html">DOC_FLASH.md</a> - short alert stream for doc/edict changes.</li>
-<li><a href="DECISIONS.html">DECISIONS.md</a> - settled calls to avoid reopening by accident.</li>
-<li><a href="STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> - current work rail for</li>
+<li><a href="STR8/STR8.html">STR8</a> - recovery, updates, product boundaries, bringup, work process.</li>
+<li><a href="HIMON/HIMON_MAP.html">HIMON</a> - monitor maps, stage notes, debug, search, edge evidence.</li>
+<li><a href="MEMORY/MEMORY_MAP.html">MEMORY</a> - address ownership and allocation direction.</li>
+<li><a href="CATALOG/CATALOG.html">CATALOG</a> - callable routine catalog and catalog proof examples.</li>
+<li><a href="HASH/HASH_MAP.html">HASH</a> - hash policy, FNV-era notes, CRC16 direction.</li>
+<li><a href="ASM/HASHED_ASM.html">ASM</a> - onboard assembler and symbol reference material.</li>
+<li><a href="QCC/INDEX.html">QCC</a> - Questions, Comments, Concerns working notes.</li>
+<li><a href="LOGS/HARDWARE_TEST_LOG.html">LOGS</a> - hardware transcript proof.</li>
+<li><a href="STORY/BOOK.html">STORY</a> - book spine and historical narrative.</li>
+<li><a href="PLANNING/TODO.html">PLANNING</a> - TODO and future direction.</li>
+<li><a href="META/XREF.html">META</a> - bibliography and cross-reference.</li>
 </ul>
-<p>STR8 review, proof, implementation, and documentation.</p>
+<h2 id="story-and-planning">Story And Planning</h2>
+<p>These are useful for the human arc and future direction, but not required for the main operator/technical path.</p>
 <ul>
-<li><a href="RTFM-str8.html">RTFM-str8.md</a> - compact STR8 operating instructions.</li>
-<li><a href="RTFM-himon.html">RTFM-himon.md</a> - compact HIMON/STR8 boundary instructions.</li>
-<li><a href="HIMON_DEBUG_TESTING.html">HIMON_DEBUG_TESTING.md</a> - flash/load/step checklist for HIMON debug testing.</li>
-<li><a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a> - board transcript validations and bench findings.</li>
-<li><a href="HIMON_SEARCH_IMPLEMENTATION_GUIDE.html">HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</a> - RAM-to-flash guide for turning HIMON <code>S</code> into memory search.</li>
-<li><a href="HREC_JOIN_PROOF.html">HREC_JOIN_PROOF.md</a> - RAM proof and terminology for joining hash records to callable entries.</li>
-<li><a href="QCC.html">QCC.md</a> - Questions, Comments, Concerns for active design work.</li>
-<li><a href="REF.html">REF.md</a> - quick operational reference.</li>
-<li><a href="XREF.html">XREF.md</a> - document and source cross-reference.</li>
-<li><a href="SYMBOL_XREF.html">SYMBOL_XREF.md</a> - symbol ref/xref/semantic classification.</li>
-<li><a href="CATALOG.html">CATALOG.md</a> - programmer-facing routine catalog by need.</li>
-<li><a href="MEMORY_MAP.html">MEMORY_MAP.md</a> - current HIMON ROM and RAM memory map.</li>
-<li><a href="BIB.html">BIB.md</a> - internal corpus used by these notes.</li>
-</ul>
-<h2 id="core-design-guides">Core Design Guides</h2>
-<ul>
-<li><a href="HISTORICAL_DOCUMENTS.html">HISTORICAL_DOCUMENTS.md</a> - path from BSO2 ideas toward current HIMON.</li>
-<li><a href="BOOK.html">BOOK.md</a> - book outline, chapter questions, and proof pointers.</li>
-<li><a href="HASH_FLASH.html">HASH_FLASH.md</a> - REHASH/FLASHBACK notes for command syntax changes.</li>
-<li><a href="DOC_FLASH.html">DOC_FLASH.md</a> - REDOC notes for doc-shape, edict, and</li>
-</ul>
-<p>canonical-home changes.</p>
-<ul>
-<li><a href="DECISIONS.html">DECISIONS.md</a> - naming, hash, STR8, ASM, local-home,</li>
-</ul>
-<p>and doc-shape decisions.</p>
-<ul>
-<li><a href="BRINGUP.html">BRINGUP.md</a> - practical STR8/R-YORS bringup rail.</li>
-<li><a href="PRODUCT_BOUNDARIES.html">PRODUCT_BOUNDARIES.md</a> - current product boundary:</li>
-</ul>
-<p>R-YORS as project, STR8 as board management, IVI as interrupt-vector mechanism, LEAF as later front-door surface, HIMON as default payload, and other payloads as peers.</p>
-<ul>
-<li><a href="HIMON_STAGES_CLASSES.html">HIMON_STAGES_CLASSES.md</a> - reconstruction of</li>
-</ul>
-<p>HIMON stages and routine-class families.</p>
-<ul>
-<li><a href="STR8.html">STR8.md</a> - Subroutine To Return recovery/update monitor.</li>
-<li><a href="STR8_DECISION_REFERENCE.html">STR8_DECISION_REFERENCE.md</a> - current STR8</li>
-</ul>
-<p>first-run design decisions.</p>
-<ul>
-<li><a href="STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> - the next-step process for</li>
-</ul>
-<p>reviewing STR8, proving V0 behavior, and deciding when new update work starts.</p>
-<ul>
-<li><a href="STR8_FLASH_UPDATE_PROPOSAL.html">STR8_FLASH_UPDATE_PROPOSAL.md</a> - proposed</li>
-</ul>
-<p>STR8 scan, erase, HIMON update, and STR8 self-update flow.</p>
-<ul>
-<li><a href="RTFM-str8.html">RTFM-str8.md</a> - small-command STR8 instructions.</li>
-<li><a href="RTFM-himon.html">RTFM-himon.md</a> - normal monitor boundary instructions.</li>
-<li><a href="HIMON_DEBUG_TESTING.html">HIMON_DEBUG_TESTING.md</a> - bench process for RAM-loaded debug proofs.</li>
-<li><a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a> - hardware transcript validations for STR8, HIMON, HREC, search, and debug.</li>
-<li><a href="HIMON_SEARCH_IMPLEMENTATION_GUIDE.html">HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</a> - RAM proof, flash S19 delivery, and final integration guide for search.</li>
-<li><a href="HREC_JOIN_PROOF.html">HREC_JOIN_PROOF.md</a> - <code>HREC_FIND</code>/<code>HREC_JOIN_EXEC</code> proof and terminology.</li>
-<li><a href="HASHED_ASM.html">HASHED_ASM.md</a> - onboard hashed assembler, symbols, and fixups.</li>
-<li><a href="HASH_MAP.html">HASH_MAP.md</a> - hash uses across docs, runtime dispatch, and assembler records.</li>
-<li><a href="LIFE_RCAT_MEMBER.html">LIFE_RCAT_MEMBER.md</a> - worked example for</li>
-</ul>
-<p>turning standalone LIFE into an RBODY/RREC/RCAT member.</p>
-<ul>
-<li><a href="QCC.html">QCC.md</a> - QCC style and topic index for unresolved design work.</li>
-<li><a href="QCC_HASH.html">QCC_HASH.md</a> - hash-width, folded-hash, and compact</li>
-</ul>
-<p>signature questions.</p>
-<ul>
-<li><a href="QCC_FLASH.html">QCC_FLASH.md</a> - FSB lifecycle, buried records, and</li>
-</ul>
-<p>condense/compress questions.</p>
-<ul>
-<li><a href="QCC_ASM.html">QCC_ASM.md</a> - hashed assembler symbols, fixups, and record</li>
-</ul>
-<p>safety questions.</p>
-<ul>
-<li><a href="QCC_CATALOG_LINKING.html">QCC_CATALOG_LINKING.md</a> - bootstrap questions for</li>
-</ul>
-<p>catalog joins, seed records, and static-link payload baggage.</p>
-<ul>
-<li><a href="QCC_STR8.html">QCC_STR8.md</a> - STR8 ownership, scanning, and recovery/update</li>
-</ul>
-<p>boundary questions.</p>
-<ul>
-<li><a href="QCC_MEMORY.html">QCC_MEMORY.md</a> - memory ranges, 4K selectors, allocation,</li>
-</ul>
-<p>and bit-helper questions.</p>
-<ul>
-<li><a href="MEMORY_MAP.html">MEMORY_MAP.md</a> - current HIMON ROM image, RAM workspace,</li>
-</ul>
-<p>compatibility entries, vectors, and STR8/HIMON integration direction.</p>
-<ul>
-<li><a href="DYNAMIC_MEMORY_FIRST_STEPS.html">DYNAMIC_MEMORY_FIRST_STEPS.md</a> - first</li>
-</ul>
-<p>steps for byte, word, pointer, bump, pool, and free-list allocation thinking.</p>
-<ul>
-<li><a href="HIMON_MAP.html">HIMON_MAP.md</a> - readable HIMON edge and capability maps.</li>
-</ul>
-<h2 id="reference-guides">Reference Guides</h2>
-<ul>
-<li><a href="HASH.html">HASH.md</a> - routine header <code>[HASH:XXXXXXXX]</code> FNV-1a IDs.</li>
-<li><a href="CATALOG.html">CATALOG.md</a> - compact callable routine catalog by read/write/string/hex/hash/flash need.</li>
-<li><a href="LIFE_RCAT_MEMBER.html">LIFE_RCAT_MEMBER.md</a> - RCAT/RREC member</li>
-</ul>
-<p>migration worked example for the standalone LIFE app.</p>
-<ul>
-<li><a href="MEMORY_MAP.html">MEMORY_MAP.md</a> - address ranges and ownership for current</li>
-</ul>
-<p>HIMON ROM/RAM.</p>
-<ul>
-<li><a href="DYNAMIC_MEMORY_FIRST_STEPS.html">DYNAMIC_MEMORY_FIRST_STEPS.md</a> - scoped</li>
-</ul>
-<p>dynamic memory allocation direction for future user/app/session work.</p>
-<ul>
-<li><a href="SYMBOL_XREF.html">SYMBOL_XREF.md</a> - STASH/HIMON symbol cards, ABI fields,</li>
-</ul>
-<p>classification tokens, and HIMON call tree.</p>
-<ul>
-<li><a href="HIMON_MAP.html">HIMON_MAP.md</a> - grouped HIMON edge maps and</li>
-</ul>
-<p>full capability map.</p>
-<ul>
-<li><a href="HIMON_STAGES_CLASSES.html">HIMON_STAGES_CLASSES.md</a> - human stage/class</li>
-</ul>
-<p>reconstruction for HIMON and its historical promotion path.</p>
-<ul>
-<li><a href="HIMON_EDGE_DUMP.html">HIMON_EDGE_DUMP.md</a> - generated-style direct</li>
-</ul>
-<p><code>JSR</code>/<code>JMP</code> edge dump for HIMON.</p>
-<ul>
-<li><a href="GLOSSARY.html">GLOSSARY.md</a> - vocabulary for layers, monitors, hashes, and STR8.</li>
-</ul>
-<h2 id="planning">Planning</h2>
-<ul>
-<li><a href="TODO.html">TODO.md</a> - near-term doc and implementation work.</li>
-<li><a href="FUTURE.html">FUTURE.md</a> - direction notes.</li>
+<li><a href="STORY/BOOK.html">STORY/BOOK.md</a> - manuscript spine.</li>
+<li><a href="STORY/HISTORICAL_DOCUMENTS.html">STORY/HISTORICAL_DOCUMENTS.md</a> - lineage.</li>
+<li><a href="PLANNING/TODO.html">TODO.md</a> - near-term work.</li>
+<li><a href="PLANNING/FUTURE.html">FUTURE.md</a> - direction notes.</li>
 </ul>
 <h2 id="current-generated-source-snapshot">Current Generated Source Snapshot</h2>
 <p>Quick scan of the operational HIMON/STR8 source set used by <code>DOC/GENERATED</code>:</p>
@@ -170,14 +63,9 @@ XREF declarations:     143
 ROUTINE headers:       130
 JSR/JMP call sites:    989
 Unique direct edges:   779</code></pre>
-<p>Operational lane count:</p>
-<pre><code class="language-text">SRC/STASH: 1 source file
-ROM/HIMON/STR8: 25 source files
-SRC/SESH:  1 source file</code></pre>
-<p>Legacy demos, harnesses, games, ACIA/PIA, and historical experiments remain documented where useful, but they are not part of the generated operational routine maps.</p>
-<p>This index intentionally points only inside <code>ror</code>. Historical notes may mention earlier BSO2 material when explaining lineage, but this guide set is maintained from the current <code>ror</code> workspace.</p>
+<p>Generated reports live in <a href="../GENERATED/index.html">../GENERATED</a>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/INDEX.md</code>. Source modified: <time>2026-05-18T01:54:11Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/INDEX.md</code>. Source modified: <time>2026-05-19T00:41:18Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

@@ -87,7 +87,7 @@ add a precise glossary term instead of relying on the overloaded bare word.
 - atlas: a map of maps; it tells which document to open, not the full content
   from those documents.
 - hash map: the guide map of hash concepts and ownership in
-  [HASH_MAP.md](./HASH_MAP.md). It is not a hash table implementation.
+  [HASH_MAP.md](HASH/HASH_MAP.md). It is not a hash table implementation.
 - hash table: an implementation data structure for lookup by hash.
 - stack depth map: source-derived stack high-water documentation. If it says
   `graph view`, it should include a renderable Mermaid node/edge diagram.

@@ -4,8 +4,8 @@ HASH FLASH is the short alert stream for command-surface changes that are easy
 to miss if you remember yesterday's monitor behavior.
 
 The settled calls still belong in [DECISIONS.md](./DECISIONS.md). Operator
-syntax belongs in [RTFM-himon.md](./RTFM-himon.md). This file is the readable
-bridge between those two places.
+syntax belongs in [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md). This file is the
+readable bridge between those two places.
 
 Entries use CBI doc form, named for Computer Bank, Inc., the
 project author's RPG II coding-days employer:
@@ -55,9 +55,9 @@ Do not write new public docs as though 32-bit FNV-1a is the settled universal
 spine. Say "current FNV-era records" when describing the present ROM, and say
 "tableless CRC16 compact hash" when describing the intended catalog direction.
 
-See [RTFM-str8.md](./RTFM-str8.md) for the three-image operator path and
-[DECISIONS.md](./DECISIONS.md), [HASH.md](./HASH.md), and
-[HASH_MAP.md](./HASH_MAP.md) for the catalog-hash pivot.
+See [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) for the three-image operator
+path and [DECISIONS.md](./DECISIONS.md), [HASH.md](HASH/HASH.md), and
+[HASH_MAP.md](HASH/HASH_MAP.md) for the catalog-hash pivot.
 
 ## REHASH: STR8 UPDATE HIMON Hardware Proof
 
@@ -102,7 +102,7 @@ UPDATE STR8
 stronger confirmation and a top-sector transaction.
 
 Transcript and artifact details live in
-[HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md). Remaining STR8 proof gaps are
+[HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md). Remaining STR8 proof gaps are
 Bank 0 enrollment, restore over non-erased ordinary sectors below `$C000`, and
 deliberate high-flash failure behavior with a sacrificial image.
 
@@ -117,7 +117,7 @@ deliberate high-flash failure behavior with a sacrificial image.
 ```
 
 The board transcript validation now has a single home:
-[HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md). The first entry records the
+[HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md). The first entry records the
 2026-05-15 STR8/HIMON/HREC/search/debug smoke pass, including STR8 map/restore,
 burn-check dumps, HREC join, search mixed-case text, debug `N` stepping,
 breakpoints, catalog lookup, and the resident HIMON `+count` range-parser

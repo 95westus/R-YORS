@@ -41,6 +41,49 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: Operator And Technical Guides Are Canonical
+
+```text
+2026
+         05
+                19
+                   00:40Z WLP2 Moved RTFM compatibility stubs under
+                               DOC/GUIDES/META/COMPAT so they are reference
+                               plumbing instead of a visible guide shelf.
+                   00:30Z WLP2 Moved secondary guide material into shelf
+                               folders under DOC/GUIDES so the top level holds
+                               only entry points and stable cross-cutting refs.
+                   00:11Z WLP2 Consolidated the scattered RTFM/operator
+                               material into one operator guide and added one
+                               technical guide for the current R-YORS/STR8/HIMON
+                               architecture.
+```
+
+scope: `README.md`, `DOC/INDEX.md`, `DOC/GUIDES/INDEX.md`,
+`DOC/GUIDES/TOC.md`, `DOC/GUIDES/MAP.md`, `DOC/GUIDES/META/XREF.md`,
+`DOC/GUIDES/META/BIB.md`, `DOC/GUIDES/DECISIONS.md`,
+`DOC/GUIDES/OPERATORS_GUIDE.md`, `DOC/GUIDES/TECHNICAL_GUIDE.md`, the
+`STR8/`, `HIMON/`, `QCC/`, `STORY/`, `MEMORY/`, `CATALOG/`, `ASM/`, `HASH/`,
+`LOGS/`, `META/`, and `PLANNING/` shelves, plus the `META/COMPAT/RTFM-*.md`
+compatibility entry points.
+
+change: `OPERATORS_GUIDE.md` is now the canonical board-facing guide.
+`TECHNICAL_GUIDE.md` is now the canonical architecture guide. The old
+`RTFM-R-YORS.md`, `RTFM-str8.md`, and `RTFM-himon.md` files now redirect to the
+operator guide instead of duplicating procedures, and they are intentionally
+kept out of the main README/index/TOC path under `META/COMPAT/`. Secondary
+guides now live one level down by domain instead of crowding the top-level
+`DOC/GUIDES` directory.
+
+effect: The old assumption that a reader must hop between three RTFM files,
+README status blocks, and design notes to operate the board is stale. The story
+lane is explicitly separate from the main docs.
+
+action: Start with [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) for board use and
+[TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) for architecture. Use
+[BOOK.md](STORY/BOOK.md), [HISTORICAL_DOCUMENTS.md](STORY/HISTORICAL_DOCUMENTS.md),
+and [../IDEAS.md](../IDEAS.md) for narrative material.
+
 ## REDOC: STR8 Milestone And CRC16 Hash Pivot
 
 ```text
@@ -68,11 +111,10 @@ effect: The old assumption that STR8 is only a sketch, and that FNV-1a is the
 settled universal runtime spine, is stale. FNV-1a remains useful history and
 current-ROM transition debt until the CRC16 record shape is written through.
 
-action: Start with [RTFM-R-YORS.md](./RTFM-R-YORS.md),
-[RTFM-str8.md](./RTFM-str8.md), and [STR8.md](./STR8.md) for the proven image
-manager behavior. Use [DECISIONS.md](./DECISIONS.md),
-[HASH.md](./HASH.md), and [HASH_MAP.md](./HASH_MAP.md) for the hash-policy
-pivot.
+action: Start with [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) and
+[TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) for the proven image manager
+behavior. Use [DECISIONS.md](./DECISIONS.md), [HASH.md](HASH/HASH.md), and
+[HASH_MAP.md](HASH/HASH_MAP.md) for the hash-policy pivot.
 
 ## PROOF: STR8 UPDATE HIMON Passed On Hardware
 
@@ -97,8 +139,8 @@ The remaining STR8 V0 proof gaps are Bank 0 enrollment, lower-sector restore
 over non-erased bytes, and deliberate high-flash failure behavior with a
 sacrificial image.
 
-action: Use [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md) for the transcript
-and [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) for the remaining bench
+action: Use [HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md) for the transcript
+and [STR8_WORK_PROCESS.md](STR8/STR8_WORK_PROCESS.md) for the remaining bench
 rail.
 
 ## REDOC: STR8 Work Process Added
@@ -139,7 +181,7 @@ guided update surface. The existing `? B E M U 0 1 2 G R` rescue/update surface
 still needs a clean hardware transcript, especially for destructive `B`, `E`,
 `U`, lower-sector restore, and high-flash failure behavior.
 
-action: Use [STR8_WORK_PROCESS.md](./STR8_WORK_PROCESS.md) before editing STR8
+action: Use [STR8_WORK_PROCESS.md](STR8/STR8_WORK_PROCESS.md) before editing STR8
 source or planning the next bench pass.
 
 ## REDOC: Product Boundaries Named
@@ -164,9 +206,9 @@ effect: Do not treat STR8 as only a HIMON helper, and do not treat HIMON as the
 only possible thing STR8 can install or boot. The repo stays together for now;
 the boundary is conceptual and documented before any source split.
 
-action: Start with [PRODUCT_BOUNDARIES.md](./PRODUCT_BOUNDARIES.md), then use
-[STR8.md](./STR8.md) for the board-management contract and
-[QCC_STR8.md](./QCC_STR8.md) for open STR8, IVI, and LEAF questions.
+action: Start with [PRODUCT_BOUNDARIES.md](STR8/PRODUCT_BOUNDARIES.md), then use
+[STR8.md](STR8/STR8.md) for the board-management contract and
+[QCC_STR8.md](QCC/STR8.md) for open STR8, IVI, and LEAF questions.
 
 ## REDOC: Onboard ASM Monitor Candidates Added
 
@@ -191,8 +233,8 @@ effect: Do not assume onboard ASM must generate S19 to update the board. The
 old monitor should remain the winner until a sealed, verified candidate is
 published by a small commit record.
 
-action: Use [HASHED_ASM.md](./HASHED_ASM.md) for onboard ASM product shape and
-[QCC_STR8.md](./QCC_STR8.md) for future STR8 candidate/winner policy.
+action: Use [HASHED_ASM.md](ASM/HASHED_ASM.md) for onboard ASM product shape and
+[QCC_STR8.md](QCC/STR8.md) for future STR8 candidate/winner policy.
 
 ## REDOC: HIMON/STR8 Update Means Sector Rebuild
 
@@ -247,9 +289,9 @@ effect: Do not assume a hidden filesystem, silent ASM spill to flash, or
 an approved partitioned-bank design. The current STR8 recovery contract still
 uses whole 32K images unless a later decision explicitly promotes another map.
 
-action: Use [QCC_STR8.md](./QCC_STR8.md) for the unsettled STR8/STRAIGHTEN
-policy, [STR8.md](./STR8.md) for the current recovery narrative, and
-[HASHED_ASM.md](./HASHED_ASM.md) for ASM staging rules.
+action: Use [QCC_STR8.md](QCC/STR8.md) for the unsettled STR8/STRAIGHTEN
+policy, [STR8.md](STR8/STR8.md) for the current recovery narrative, and
+[HASHED_ASM.md](ASM/HASHED_ASM.md) for ASM staging rules.
 
 ## REDOC: STR8 Flash-Manager QCC Expanded
 
@@ -277,7 +319,7 @@ effect: Do not treat HIMON `L F` as the eventual owner of protected monitor or
 STR8 updates. STR8 is the proposed authority for dangerous flash writes and any
 future flash compaction.
 
-action: Use [QCC_STR8.md](./QCC_STR8.md) for this unsettled direction until the
+action: Use [QCC_STR8.md](QCC/STR8.md) for this unsettled direction until the
 parts that prove out are promoted into decisions or implementation docs.
 
 ## REDOC: Hardware Test Log Added
@@ -299,7 +341,7 @@ living only inside design notes, how-to guides, or external terminal logs.
 effect: Use the hardware test log for "what actually passed on the board" and
 the individual proof guides for how to run or interpret each proof.
 
-action: Add future bench passes to [HARDWARE_TEST_LOG.md](./HARDWARE_TEST_LOG.md).
+action: Add future bench passes to [HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md).
 
 ## REDOC: HIMON Bit-Pattern ASM Decode Retired
 
@@ -374,8 +416,8 @@ effect: Do not read `life-2000-load.bin` as "the catalog member." It is a
 seed package that proves the body runs while still carrying private support
 payload from static linking.
 
-action: Use [QCC_CATALOG_LINKING.md](./QCC_CATALOG_LINKING.md) for the general
-bootstrap rule and [LIFE_RCAT_MEMBER.md](./LIFE_RCAT_MEMBER.md) for the
+action: Use [QCC_CATALOG_LINKING.md](QCC/CATALOG_LINKING.md) for the general
+bootstrap rule and [LIFE_RCAT_MEMBER.md](CATALOG/LIFE_RCAT_MEMBER.md) for the
 LIFE-specific migration notes.
 
 ## REDOC: LIFE Load Artifact Names Now Carry Address

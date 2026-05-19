@@ -1,65 +1,58 @@
 # R-YORS Documentation
 
-Current public milestone: STR8 is hardware-proven rotating three bootable
-images: HIMON, OSI BASIC, and fig-FORTH. The operator entry points are
-[GUIDES/RTFM-R-YORS.md](./GUIDES/RTFM-R-YORS.md) and
-[GUIDES/RTFM-str8.md](./GUIDES/RTFM-str8.md).
+This is the documentation front desk. Start with the small main path, then open
+supporting references only when you need detail.
 
-Start with the guide index:
+## Main Path
 
-- [GUIDES/INDEX.md](./GUIDES/INDEX.md)
-- [GUIDES/TOC.md](./GUIDES/TOC.md)
-- [GUIDES/MAP.md](./GUIDES/MAP.md)
-- [GUIDES/BOOK.md](./GUIDES/BOOK.md)
-- [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md)
-- [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md)
-- [GUIDES/DECISIONS.md](./GUIDES/DECISIONS.md)
-- [GUIDES/QCC.md](./GUIDES/QCC.md)
+```text
+README.md
+DOC/GUIDES/OPERATORS_GUIDE.md
+DOC/GUIDES/TECHNICAL_GUIDE.md
+```
 
-Core current design notes:
+- [GUIDES/OPERATORS_GUIDE.md](./GUIDES/OPERATORS_GUIDE.md) - board operation: current status, STR8 workflows, HIMON commands, payload updates, recovery.
+- [GUIDES/TECHNICAL_GUIDE.md](./GUIDES/TECHNICAL_GUIDE.md) - architecture: product roles, source layout, memory, flash, IVI, build artifacts.
+- [GUIDES/REF.md](./GUIDES/REF.md) - compact reference sheet.
+- [GUIDES/GLOSSARY.md](./GUIDES/GLOSSARY.md) - vocabulary contract.
+- [GUIDES/DECISIONS.md](./GUIDES/DECISIONS.md) - settled policy.
 
-- [GUIDES/STR8.md](./GUIDES/STR8.md)
-- [GUIDES/STR8_WORK_PROCESS.md](./GUIDES/STR8_WORK_PROCESS.md)
-- [GUIDES/BOOK.md](./GUIDES/BOOK.md)
-- [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md)
-- [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md)
-- [GUIDES/HIMON_STAGES_CLASSES.md](./GUIDES/HIMON_STAGES_CLASSES.md)
-- [GUIDES/HASHED_ASM.md](./GUIDES/HASHED_ASM.md)
-- [GUIDES/HASH_MAP.md](./GUIDES/HASH_MAP.md)
-- [GUIDES/LIFE_RCAT_MEMBER.md](./GUIDES/LIFE_RCAT_MEMBER.md)
-- [GUIDES/QCC_HASH.md](./GUIDES/QCC_HASH.md)
-- [GUIDES/QCC_FLASH.md](./GUIDES/QCC_FLASH.md)
-- [GUIDES/QCC_ASM.md](./GUIDES/QCC_ASM.md)
-- [GUIDES/QCC_CATALOG_LINKING.md](./GUIDES/QCC_CATALOG_LINKING.md)
-- [GUIDES/QCC_STR8.md](./GUIDES/QCC_STR8.md)
-- [GUIDES/QCC_MEMORY.md](./GUIDES/QCC_MEMORY.md)
-- [GUIDES/CATALOG.md](./GUIDES/CATALOG.md)
-- [GUIDES/MEMORY_MAP.md](./GUIDES/MEMORY_MAP.md)
-- [GUIDES/DYNAMIC_MEMORY_FIRST_STEPS.md](./GUIDES/DYNAMIC_MEMORY_FIRST_STEPS.md)
-- [GUIDES/SYMBOL_XREF.md](./GUIDES/SYMBOL_XREF.md)
-- [GUIDES/HIMON_MAP.md](./GUIDES/HIMON_MAP.md)
-- [GUIDES/HIMON_DEBUG_TESTING.md](./GUIDES/HIMON_DEBUG_TESTING.md)
-- [GUIDES/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](./GUIDES/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md)
-- [GUIDES/HIMON_EDGE_DUMP.md](./GUIDES/HIMON_EDGE_DUMP.md)
-- [GUIDES/HISTORICAL_DOCUMENTS.md](./GUIDES/HISTORICAL_DOCUMENTS.md)
+## Current Status
 
-Generated source analysis:
+STR8 is hardware-proven rotating three bootable images: HIMON, OSI BASIC, and
+fig-FORTH. HIMON RAM-only debug is hardware-proven for the current one-shot
+breakpoint and single-step surface.
 
-- [GENERATED/MAP_OF_MAPS.md](./GENERATED/MAP_OF_MAPS.md)
-- [GENERATED/CALL_ORDER.md](./GENERATED/CALL_ORDER.md)
-- [GENERATED/ROUTINE_CONTRACTS.md](./GENERATED/ROUTINE_CONTRACTS.md)
-- [GENERATED/HIMON_ROUTINE_TREE.md](./GENERATED/HIMON_ROUTINE_TREE.md)
-- [GENERATED/ROUTINE_CLASS_DIAGRAM.md](./GENERATED/ROUTINE_CLASS_DIAGRAM.md)
-- [GENERATED/ROUTINE_PREFIX_MAP.md](./GENERATED/ROUTINE_PREFIX_MAP.md)
-- [GENERATED/HIMON_SUPPORT_MAP.md](./GENERATED/HIMON_SUPPORT_MAP.md)
-- [GENERATED/HIMON_COMMAND_MAP.md](./GENERATED/HIMON_COMMAND_MAP.md)
-- [GENERATED/HASH_ROUTINE_MAP.md](./GENERATED/HASH_ROUTINE_MAP.md)
-- [GENERATED/CMD_FLOW_MAP.md](./GENERATED/CMD_FLOW_MAP.md)
-- [GENERATED/STACK_DEPTH_MAP.md](./GENERATED/STACK_DEPTH_MAP.md)
-- [GENERATED/INTERRUPT_VECTOR_MAP.md](./GENERATED/INTERRUPT_VECTOR_MAP.md)
-- [GENERATED/ROUTINE_GRAPH_INSIGHTS.md](./GENERATED/ROUTINE_GRAPH_INSIGHTS.md)
-- [GENERATED/ROUTINE_COMPONENTS.md](./GENERATED/ROUTINE_COMPONENTS.md)
+- [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md) - milestone and command alerts.
+- [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md) - documentation-shape alerts.
+- [GUIDES/LOGS/HARDWARE_TEST_LOG.md](GUIDES/LOGS/HARDWARE_TEST_LOG.md) - board proof.
 
-Scratchpad:
+## Guide Indexes
 
-- [IDEAS.md](./IDEAS.md)
+- [GUIDES/INDEX.md](./GUIDES/INDEX.md) - full guide index.
+- [GUIDES/TOC.md](./GUIDES/TOC.md) - recommended reading order.
+- [GUIDES/MAP.md](./GUIDES/MAP.md) - documentation and system map.
+- [GUIDES/META/XREF.md](GUIDES/META/XREF.md) - document/source cross-reference.
+
+## Story Lane
+
+The story is intentionally outside the main operator/technical path:
+
+- [GUIDES/STORY/BOOK.md](GUIDES/STORY/BOOK.md) - manuscript spine.
+- [GUIDES/STORY/HISTORICAL_DOCUMENTS.md](GUIDES/STORY/HISTORICAL_DOCUMENTS.md) - lineage.
+- [IDEAS.md](./IDEAS.md) - scratchpad and special moments.
+
+## Guide Shelves
+
+- [GUIDES/STR8](GUIDES/STR8/STR8.md) - recovery, update, product boundaries, bringup.
+- [GUIDES/HIMON](GUIDES/HIMON/HIMON_MAP.md) - monitor maps, debug, search, stage notes.
+- [GUIDES/MEMORY](GUIDES/MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
+- [GUIDES/CATALOG](GUIDES/CATALOG/CATALOG.md) - routine catalog and catalog proof notes.
+- [GUIDES/HASH](GUIDES/HASH/HASH_MAP.md) - hash references and map.
+- [GUIDES/ASM](GUIDES/ASM/HASHED_ASM.md) - assembler and symbol references.
+- [GUIDES/QCC](GUIDES/QCC/INDEX.md) - active design questions.
+- [GUIDES/LOGS](GUIDES/LOGS/HARDWARE_TEST_LOG.md) - hardware proof logs.
+- [GUIDES/PLANNING](GUIDES/PLANNING/TODO.md) - TODO and future notes.
+- [GUIDES/META](GUIDES/META/XREF.md) - bibliography and cross-reference.
+
+Generated source analysis lives in [GENERATED](./GENERATED).

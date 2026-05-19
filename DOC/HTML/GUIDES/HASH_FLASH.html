@@ -11,7 +11,7 @@
   <main class="doc-page">
 <h1 id="hash-flash">HASH FLASH</h1>
 <p>HASH FLASH is the short alert stream for command-surface changes that are easy to miss if you remember yesterday&#39;s monitor behavior.</p>
-<p>The settled calls still belong in <a href="DECISIONS.html">DECISIONS.md</a>. Operator syntax belongs in <a href="RTFM-himon.html">RTFM-himon.md</a>. This file is the readable bridge between those two places.</p>
+<p>The settled calls still belong in <a href="DECISIONS.html">DECISIONS.md</a>. Operator syntax belongs in <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a>. This file is the readable bridge between those two places.</p>
 <p>Entries use CBI doc form, named for Computer Bank, Inc., the project author&#39;s RPG II coding-days employer:</p>
 <pre><code class="language-text">YYYY
          MM
@@ -22,6 +22,17 @@
 <p>CBI code form stays condensed for source comments:</p>
 <pre><code class="language-asm">; YYYY-MM-DDTHH:MMZ WLP2 summary
 ;                         continuation line</code></pre>
+<h2 id="rehash-str8-three-image-milestone-and-crc16-hash-pivot">REHASH: STR8 Three-Image Milestone And CRC16 Hash Pivot</h2>
+<pre><code class="language-text">2026
+         05
+                18
+                   15:10Z WLP2 STR8 now has hardware proof rotating HIMON,
+                               OSI BASIC, and fig-FORTH, and FNV-1a is no
+                               longer documented as the final catalog spine.</code></pre>
+<p>The operator-facing truth changed again: <code>U</code> / <code>UPDATE HIMON</code> is now proven not only with HIMON U1-&gt;U2, but as the fixed <code>$C000-$EFFF</code> gate that can place bootable OSI BASIC and fig-FORTH payloads where HIMON normally lives. STR8 can then use its backup/restore path to return to known-good HIMON.</p>
+<p>The hash-policy truth also changed. Existing HIMON command records and the quoted helper still carry FNV-era behavior, but that is implementation history and transition debt. The intended compact runtime/catalog lookup hash is now a tableless CRC16 shape, chosen because W65C02 time and ROM pressure beat the first FNV-1a design.</p>
+<p>Do not write new public docs as though 32-bit FNV-1a is the settled universal spine. Say &quot;current FNV-era records&quot; when describing the present ROM, and say &quot;tableless CRC16 compact hash&quot; when describing the intended catalog direction.</p>
+<p>See <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a> for the three-image operator path and <a href="DECISIONS.html">DECISIONS.md</a>, <a href="HASH/HASH.html">HASH.md</a>, and <a href="HASH/HASH_MAP.html">HASH_MAP.md</a> for the catalog-hash pivot.</p>
 <h2 id="rehash-str8-update-himon-hardware-proof">REHASH: STR8 UPDATE HIMON Hardware Proof</h2>
 <pre><code class="language-text">2026
          05
@@ -41,14 +52,14 @@
 UPDATE HIMON
 UPDATE STR8</code></pre>
 <p><code>UPDATE STR8</code> is not proven or implemented by this pass. It still needs a stronger confirmation and a top-sector transaction.</p>
-<p>Transcript and artifact details live in <a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>. Remaining STR8 proof gaps are Bank 0 enrollment, restore over non-erased ordinary sectors below <code>$C000</code>, and deliberate high-flash failure behavior with a sacrificial image.</p>
+<p>Transcript and artifact details live in <a href="LOGS/HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>. Remaining STR8 proof gaps are Bank 0 enrollment, restore over non-erased ordinary sectors below <code>$C000</code>, and deliberate high-flash failure behavior with a sacrificial image.</p>
 <h2 id="rehash-hardware-test-log-available">REHASH: Hardware Test Log Available</h2>
 <pre><code class="language-text">2026
          05
                 16
                    03:05Z WLP2 Added a hardware test log entry for the
                                STR8/HIMON/HREC/search/debug smoke pass.</code></pre>
-<p>The board transcript validation now has a single home: <a href="HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>. The first entry records the 2026-05-15 STR8/HIMON/HREC/search/debug smoke pass, including STR8 map/restore, burn-check dumps, HREC join, search mixed-case text, debug <code>N</code> stepping, breakpoints, catalog lookup, and the resident HIMON <code>+count</code> range-parser finding.</p>
+<p>The board transcript validation now has a single home: <a href="LOGS/HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a>. The first entry records the 2026-05-15 STR8/HIMON/HREC/search/debug smoke pass, including STR8 map/restore, burn-check dumps, HREC join, search mixed-case text, debug <code>N</code> stepping, breakpoints, catalog lookup, and the resident HIMON <code>+count</code> range-parser finding.</p>
 <p>Use HASH FLASH for the command-surface alert; use the hardware test log for the actual transcript slices and pass/finding details.</p>
 <h2 id="rehash-ram-only-debug-edict">REHASH: RAM-Only Debug Edict</h2>
 <pre><code class="language-text">2026
@@ -303,7 +314,7 @@ S addr end|+count &#39;TEXT</code></pre>
 <pre><code class="language-text">S 0 FFFF `HIMON</code></pre>
 <p>That would mean <code>H I M O (N|$80)</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-18T02:35:15Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

@@ -46,9 +46,9 @@ and debug tools.</code></pre>
 <p>recovery anchor proves itself. That future name means richer repair and normalization capability, not mandatory ownership of every system policy.</p>
 <ul>
 <li><code>HIMON</code> is the active monitor/debug/catalog/assembler environment name.</li>
-<li><code>THE</code> is The Hash Environment: hash-first lookup, catalog records, resolver</li>
+<li><code>THE</code> is The Hash Environment: lookup/catalog records, resolver policy,</li>
 </ul>
-<p>policy, aliases, and typed display. HIMON&#39;s dispatcher may use THE, but THE is not the whole runtime and not arbitrary command execution.</p>
+<p>aliases, and typed display. HIMON&#39;s current dispatcher still carries FNV-1a history, but the intended compact runtime/catalog hash is tableless CRC16. THE is not the whole runtime and not arbitrary command execution.</p>
 <ul>
 <li>Himonia-F is historical/archived branch vocabulary that has folded back into</li>
 </ul>
@@ -222,7 +222,7 @@ start +count    count is the number of bytes</code></pre>
 <ul>
 <li>STR8 V0 keeps console byte I/O private as <code>STR8_CON_*</code> routines. They are</li>
 </ul>
-<p>recovery-anchor implementation details, not public <code>BIO_*</code>/<code>PIN_*</code> FNV catalog providers.</p>
+<p>recovery-anchor implementation details, not public <code>BIO_*</code>/<code>PIN_*</code> catalog providers.</p>
 <ul>
 <li>Public <code>BIO_*</code>/<code>PIN_*</code> records should have one owner in the combined image.</li>
 </ul>
@@ -230,7 +230,7 @@ start +count    count is the number of bytes</code></pre>
 <ul>
 <li>Small duplicated console code inside STR8 is acceptable while it keeps</li>
 </ul>
-<p>recovery self-contained and avoids duplicate global hashes.</p>
+<p>recovery self-contained and avoids duplicate global hash lookups.</p>
 <ul>
 <li>STR8 should avoid <code>COR_*</code>/<code>SYS_*</code> as hot-path dependencies unless the entry is</li>
 </ul>
@@ -309,22 +309,35 @@ start +count    count is the number of bytes</code></pre>
 <p><code>MEM_*</code>, not direct hidden heap calls from unrelated monitor code.</p>
 <h2 id="hash-and-catalog-policy">Hash And Catalog Policy</h2>
 <ul>
-<li>FNV-1a is the one and only runtime/catalog/symbol hash.</li>
-<li>FNV-1a belongs to HIMON, catalog, assembler, and docs/build tooling today.</li>
-<li>STR8 V0 does not use FNV: not for verification, image selection, version</li>
+<li>FNV-1a is implemented history and current transition debt, not the final</li>
 </ul>
-<p>selection, command dispatch, catalog lookup, or recovery decisions.</p>
+<p>universal runtime/catalog/symbol hash decision.</p>
 <ul>
-<li>Future STR8-N/STRAIGHTEN may participate in catalogs and use FNV after the</li>
+<li>The intended compact runtime/catalog hash is tableless CRC16. The reason is</li>
 </ul>
-<p>V0 image-recovery path is stable. It should not require catalog ownership from systems that provide their own catalog or resolver.</p>
+<p>practical W65C02 time and ROM pressure.</p>
 <ul>
-<li>Do not propose per-record hash algorithm tags.</li>
-<li>Routine header <code>[HASH:XXXXXXXX]</code> values are also 32-bit FNV-1a. The old</li>
+<li>Current HIMON command records and routine <code>[HASH:XXXXXXXX]</code> comments may</li>
 </ul>
-<p>16-bit routine comment ID path is retired.</p>
+<p>still carry 32-bit FNV-1a. Treat those as existing record/comment formats until the CRC16 record shape is written through.</p>
 <ul>
-<li><code>hash0..3</code> stores FNV-1a low byte through high byte.</li>
+<li>STR8 V0 does not use FNV or CRC16 for recovery decisions: not for</li>
+</ul>
+<p>verification, image selection, version selection, command dispatch, catalog lookup, or restore policy.</p>
+<ul>
+<li>Future STR8-N/STRAIGHTEN may participate in catalogs and use the compact hash</li>
+</ul>
+<p>after the V0 image-recovery path is stable. It should not require catalog ownership from systems that provide their own catalog or resolver.</p>
+<ul>
+<li>Do not add per-record hash-algorithm tags unless the project explicitly</li>
+</ul>
+<p>adopts a multi-algorithm catalog.</p>
+<ul>
+<li>Routine header <code>[HASH:XXXXXXXX]</code> values remain 32-bit FNV-1a for existing</li>
+</ul>
+<p>docs/build tooling. They are not the final runtime hash decision.</p>
+<ul>
+<li>Existing <code>hash0..3</code> fields store FNV-1a low byte through high byte.</li>
 <li>Words and longs are little-endian: low byte first.</li>
 <li>Current HIMON proving record shape is:</li>
 </ul>
@@ -360,7 +373,7 @@ start +count    count is the number of bytes</code></pre>
 <ul>
 <li>Command text is for discoverability, collision confirmation, and future</li>
 </ul>
-<p>tooling. It is not required for basic FNV lookup.</p>
+<p>tooling. It is not required for the current basic FNV lookup.</p>
 <ul>
 <li>Text compression must be optional. If compressed text is not smaller, store</li>
 </ul>
@@ -455,16 +468,46 @@ start +count    count is the number of bytes</code></pre>
 <p>source is treated as an external public-domain publication with a required notice; generated fig-Forth source must preserve that notice.</p>
 <h2 id="documentation-shape">Documentation Shape</h2>
 <ul>
+<li>Main reader path:</li>
+</ul>
+<pre><code class="language-text">README.md
+DOC/INDEX.md
+DOC/GUIDES/OPERATORS_GUIDE.md
+DOC/GUIDES/TECHNICAL_GUIDE.md</code></pre>
+<ul>
+<li><code>DOC/GUIDES</code> top level is for entry points and stable cross-cutting</li>
+</ul>
+<p>references. Domain, story, planning, compatibility, and working-note material belongs one level down in shelves such as <code>STR8/</code>, <code>HIMON/</code>, <code>QCC/</code>, <code>STORY/</code>, <code>MEMORY/</code>, <code>CATALOG/</code>, <code>ASM/</code>, <code>HASH/</code>, <code>LOGS/</code>, <code>META/</code>, and <code>PLANNING/</code>. Compatibility stubs belong under <code>META/COMPAT/</code>.</p>
+<ul>
+<li><code>OPERATORS_GUIDE.md</code> is the canonical board-facing guide for current R-YORS,</li>
+</ul>
+<p>STR8, and HIMON operation.</p>
+<ul>
+<li><code>TECHNICAL_GUIDE.md</code> is the canonical architecture guide for product roles,</li>
+</ul>
+<p>source layout, build artifacts, memory, flash, IVI, STR8, HIMON, and payload contracts.</p>
+<ul>
+<li><code>RTFM-R-YORS.md</code>, <code>RTFM-str8.md</code>, and <code>RTFM-himon.md</code> are compatibility entry</li>
+</ul>
+<p>points. They should point to <code>OPERATORS_GUIDE.md</code> instead of carrying their own duplicated procedure bodies. They are reference/backlink files, not front page navigation; keep them under <code>META/COMPAT/</code> and do not list them from <code>README.md</code>, <code>DOC/INDEX.md</code>, <code>INDEX.md</code>, or <code>TOC.md</code>.</p>
+<ul>
+<li>Story and narrative material belongs outside the main operator/technical</li>
+</ul>
+<p>path:</p>
+<pre><code class="language-text">DOC/GUIDES/STORY/BOOK.md
+DOC/GUIDES/STORY/HISTORICAL_DOCUMENTS.md
+DOC/IDEAS.md</code></pre>
+<ul>
 <li><code>INDEX.md</code> answers: what exists?</li>
 <li><code>TOC.md</code> answers: what order should I read it in?</li>
 <li><code>MAP.md</code> answers: how do docs and systems relate?</li>
 <li><code>REF.md</code> is the quick operational reference.</li>
-<li><code>XREF.md</code> is wiring: docs, source, symbols, module/export rules.</li>
-<li><code>SYMBOL_XREF.md</code> is symbol/routine cards, routine contracts, hashes, and tags.</li>
+<li><code>META/XREF.md</code> is wiring: docs, source, symbols, module/export rules.</li>
+<li><code>ASM/SYMBOL_XREF.md</code> is symbol/routine cards, routine contracts, hashes, and tags.</li>
 <li><code>GLOSSARY.md</code> defines vocabulary only.</li>
-<li><code>BIB.md</code> records source corpus/provenance only.</li>
-<li><code>HIMON_MAP.md</code> is the readable HIMON edge/capability map.</li>
-<li><code>HIMON_EDGE_DUMP.md</code> is the raw direct-edge evidence.</li>
+<li><code>META/BIB.md</code> records source corpus/provenance only.</li>
+<li><code>HIMON/HIMON_MAP.md</code> is the readable HIMON edge/capability map.</li>
+<li><code>HIMON/HIMON_EDGE_DUMP.md</code> is the raw direct-edge evidence.</li>
 <li>Each concept should have one canonical home. Other documents may give a short</li>
 </ul>
 <p>summary and a link, but should not restate the full explanation.</p>
@@ -509,7 +552,7 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-16T04:08:30Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-19T00:44:05Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QCC Hash - R-YORS Docs</title>
+  <link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../../index.html"><img class="brand-logo" src="../../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../../README.html">README</a><a href="../INDEX.html">Guides</a><a href="../../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="qcc-hash">QCC Hash</h1>
+<p>This page keeps hash questions in QCC form. Much of this page records the older folded FNV-1a direction. The current compact runtime/catalog direction is tableless CRC16, chosen for W65C02 time and ROM pressure. Keep the FNV notes as implementation/history until the CRC16 record shape replaces them.</p>
+<h2 id="q-can-himon-use-1-2-and-4-byte-hashes">Q: Can HIMON use 1, 2, and 4 byte hashes?</h2>
+<p>Comment: Yes. The clean idea is:</p>
+<pre><code class="language-text">1 byte  very narrow folded hash
+2 bytes narrow folded hash
+4 bytes full FNV-1a hash</code></pre>
+<p>Use the short form only where collisions are controlled by table scope, fallback, or name verification. Escalate to a wider hash when a collision is known.</p>
+<p>Concern: A 1-byte hash is not magic. With many records, collisions arrive fast. For arbitrary ROM scanning, a short hash must be paired with a real record signature, bounds, length, and validation rules.</p>
+<h2 id="q-should-f-n-v-bytes-mark-hash-width">Q: Should F/N/V bytes mark hash width?</h2>
+<p>Comment: As a human shorthand, <code>F/N/V</code> can still mean:</p>
+<pre><code class="language-text">F = full, 4-byte hash records
+N = narrow, 2-byte folded hash records
+V = very narrow, 1-byte folded hash records</code></pre>
+<p>Concern: Spending a literal byte on <code>F</code>, <code>N</code>, or <code>V</code> just to mark width wastes space in compact RCAT/RREC records. The better compact direction is to store width in <code>ww</code> control bits:</p>
+<pre><code class="language-text">ww=01  folded hash8
+ww=10  folded hash16
+ww=11  full hash32</code></pre>
+<p>The letters remain useful documentation shorthand, not necessarily bytes in the record.</p>
+<h2 id="q-can-fnv-1a-derive-8-bit-and-16-bit-results">Q: Can FNV-1a derive 8-bit and 16-bit results?</h2>
+<p>Comment: Yes. Keep the 32-bit FNV-1a routine canonical, then fold the 32-bit result into 16 or 8 bits with helper routines.</p>
+<pre><code class="language-text">FNV1A32(text) -&gt; fold16 -&gt; fold8</code></pre>
+<p>Concern: The folded helpers should call the 32-bit routine instead of becoming new independent hash algorithms. That keeps all runtime and documentation language anchored to one hash family.</p>
+<h2 id="q-when-does-a-1-byte-hash-stop-helping">Q: When does a 1-byte hash stop helping?</h2>
+<p>Comment: It depends on table size and collision policy.</p>
+<p>Rough intuition:</p>
+<pre><code class="language-text">small named tables       useful
+known command families   useful with collision escalation
+large arbitrary scans    weak without a stronger signature</code></pre>
+<p>Concern: For a 256-slot hash space, collision odds become noticeable after only a small number of records. A 1-byte hash is a compact discriminator, not a unique identity.</p>
+<h2 id="q-can-hash-width-hide-things">Q: Can hash width hide things?</h2>
+<p>Comment: It can obscure casual reading. A mixed 1/2/4-byte table forces the reader to understand the table layout before names make sense.</p>
+<p>Concern: It is not security. Anyone who knows the record format can scan and decode it. Treat it as compactness and light obscurity only.</p>
+<h2 id="q-how-does-compact-signature-work-with-fsb">Q: How does compact signature work with FSB?</h2>
+<p>Comment: The compact signature can keep the first two bytes literal and pack the third:</p>
+<pre><code class="language-text">&#39;F&#39; &#39;N&#39; %FSB10110</code></pre>
+<p>The low five bits are packed uppercase <code>V</code>. The high three bits belong to flash lifecycle state and are discussed in <code>QCC_FLASH.md</code>.</p>
+<p>Concern: Keep hash width and lifecycle bits separate in the spec. Width belongs in control bits such as <code>ww</code>; FSB belongs to a future signature/lifecycle idea.</p>
+<h2 id="q-is-fn-v-80-too-wasteful-as-a-marker">Q: Is <code>FN(V|$80)</code> too wasteful as a marker?</h2>
+<p>Comment: Yes, for compact catalog records. No, for bring-up and arbitrary ROM scanning.</p>
+<p>The current HIMON record spends three visible bytes before the hash:</p>
+<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind</code></pre>
+<p>That is expensive if every compact record pays it. It is also useful right now: it is easy to spot in a hex dump, easy to scan with tiny code, and strong enough for a proving record in arbitrary ROM/code space.</p>
+<p>The compact direction should separate three questions:</p>
+<pre><code class="language-text">where do I scan?       declared window or catalog block
+what am I reading?     block/table marker and record control byte
+which name is this?    FNV-1a hash bytes, width chosen by context</code></pre>
+<p>Good progression:</p>
+<pre><code class="language-text">current proof
+  per-record FN(V|$80), full hash, kind
+
+near compact
+  block marker such as RCAT/RREC once, then small record controls
+
+managed catalog
+  declared window + sealed block header + compact records, no per-record FNV text</code></pre>
+<p>A marker hash is possible, but it should usually identify a block/table format, not every record. For example, a block header could carry a 16-bit or 32-bit FNV-1a hash of a format name such as <code>RYORS RCAT V1</code>. That makes the marker namespaced and versionable, but once stored it is still just marker bytes. It does not remove the need for length, bounds, lifecycle, and checksum/proof rules.</p>
+<p>Marker options:</p>
+<pre><code class="language-text">3 text bytes per record      readable, good for current arbitrary scans
+2 text bytes per block       smaller, still readable: RC/RR/RT/etc.
+1 control byte per record    good only inside a proven block/window
+hash marker in block header  versionable, less readable, useful for formats
+no marker per record         best once the enclosing table proves context</code></pre>
+<p>Concern: A marker answers &quot;are these bytes probably a record?&quot; It is not the record identity. The identity still comes from hash/name/kind plus contract metadata. One byte by itself is not enough for arbitrary scanning; it becomes safe only inside a declared and validated block/table.</p>
+<h2 id="q-should-hash-records-link-to-parents-and-children">Q: Should hash records link to parents and children?</h2>
+<p>Comment: A HIMON userland explorer could take a command/string, compute its FNV-1a hash, find the matching executable FNV record, scan the associated code for <code>JSR abs</code> opcodes, and follow each target. In the current HIMON executable record shape, backing up 8 bytes from a code address can detect whether the target has its own FNV header:</p>
+<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind</code></pre>
+<p>For <code>kind=$00</code>, executable code begins immediately after the kind byte. If <code>target-8</code> has that header, the explorer can report:</p>
+<pre><code class="language-text">parent_hash parent_addr -&gt; child_hash child_addr</code></pre>
+<p>This should not use CPU-stack recursion on 6502. Use a RAM worklist instead:</p>
+<pre><code class="language-text">push starting address
+while worklist not empty and depth/edge budget remains
+  pop address
+  skip if already visited
+  scan bounded code bytes for JSR
+  for each target
+    test target-8 for FNV executable header
+    report edge when found
+    push child target if not visited</code></pre>
+<p>Concern: Automatic stored parent/child links cost ROM/flash space and can go stale when code changes. They also risk turning a compact record into a small database too early. The first implementation should probably derive links by scanning code, either in a host-side tool or a HIMON userland program.</p>
+<p>Possible later promotion path:</p>
+<pre><code class="language-text">derived scan only          cheapest, no stored links
+builder-emitted edge table automatic but rebuilt with image/catalog
+cached edge records        useful after load, must be invalidated by hash/version
+stored parent/child fields fastest lookup, highest space/staleness cost</code></pre>
+<p>Question to keep open: should RCAT/RREC eventually store explicit dependency edges, or should the assembler/catalog builder derive them automatically from code and emit a separate edge table?</p>
+<h2 id="q-can-hash-joints-help-sms-wtor-style-operator-messages">Q: Can hash joints help SMS/WTOR-style operator messages?</h2>
+<p>Comment: Yes, this may be one of the cleaner early uses for hash joints. Operator messages want provenance and reply routing more than they want a general code graph. A future system messaging service could attach a compact hash joint to a message so the operator and the waiting task can agree on:</p>
+<pre><code class="language-text">message text/hash -&gt; sender task/routine -&gt; reply handler or wait point</code></pre>
+<p>That gives each message a small identity trail without forcing the visible operator text to carry all of the machinery. A WTOR-like inquiry could carry:</p>
+<pre><code class="language-text">MSG_HASH     identifies the message template or text
+FROM_HASH    identifies the task/routine that raised it
+WAIT_HASH    identifies the reply-required wait point
+REPLY_HASH   optional expected reply class or handler</code></pre>
+<p>The human view can stay terse:</p>
+<pre><code class="language-text">STR8 RESTORE NEEDS REPLY</code></pre>
+<p>while a diagnostic view can show the chain:</p>
+<pre><code class="language-text">MSG 8A3C -&gt; STR8_RESTORE A91233F0 -&gt; FLASH_ERASE_WAIT 41B8207D</code></pre>
+<p>Concern: The hash joint should not become a hard dependency on exact text. Operator wording changes often; the durable identity should probably be the message template, issuing routine, or wait point, not the printable sentence alone. The first SMS/WTOR version should also avoid recursive chain walking. Use bounded lookup: message record, sender record, optional wait/reply record.</p>
+<p>Possible promotion path:</p>
+<pre><code class="language-text">message ID only             simplest queue and reply correlation
+message + sender hash       provenance without much space cost
+message + sender + wait     WTOR-style reply routing
+full chain/audit records     useful later for diagnostics and catalogs</code></pre>
+<p>Question to keep open: should SMS records store these joints directly, or should SMS store only a message ID while RCAT/RREC/catalog metadata resolves the hash chain on demand?</p>
+<h2 id="q-can-memory-search-accept-hbstr-literals">Q: Can memory search accept HBSTR literals?</h2>
+<p>Comment: Yes, but the printable spelling should probably be the canonical one. A future HIMON memory search could accept a backtick HBSTR literal:</p>
+<pre><code class="language-text">S 0 FFFF `HIMON</code></pre>
+<p>That would search for bytes <code>H I M O (N|$80)</code>, matching a high-bit-terminated string without requiring the operator to type or see a raw high-bit byte.</p>
+<p>Concern: A Ctrl-letter tail is technically possible because current HIMON top input stores many control bytes in <code>CMD_BUF</code>, but it is not a good primary syntax. Ctrl-C aborts, CR/LF ends the line, BS/DEL edit the line, and terminals may intercept flow-control keys such as Ctrl-S and Ctrl-Q. Invisible bytes also make command history and documentation harder to reason about. If a Ctrl-letter tail is ever supported, treat it as an optional shortcut, not the spec.</p>
+<p>Current caveat: HIMON command input uppercases printable letters before dispatch. Exact lowercase or mixed-case HBSTR searches need hex-byte spelling or a future search input path that preserves case.</p>
+<h2 id="q-can-memory-search-mix-hex-bytes-and-text">Q: Can memory search mix hex bytes and text?</h2>
+<p>Comment: Yes, with a small parser rule. After the range, treat the pattern as one or more atoms:</p>
+<pre><code class="language-text">hex-byte      append one byte
+&#39;text-tail   append text through end-of-line, then stop parsing pattern</code></pre>
+<p>That keeps the normal cases terse:</p>
+<pre><code class="language-text">S addr end|+count b0 [b1 ...]
+S addr end|+count &#39;TEXT</code></pre>
+<p>and allows the small operator convenience:</p>
+<pre><code class="language-text">S 0 FFFF 4D 4D &#39;M</code></pre>
+<p>which searches for three <code>M</code> bytes.</p>
+<p>Concern: Keep apostrophe text as a final tail for the first implementation. There is no closing-quote parser and no return to hex parsing after text. Supporting text in the middle of the pattern would require quotes or escaping; that is not worth the parser cost for V0.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/HASH.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

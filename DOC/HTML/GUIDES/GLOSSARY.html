@@ -32,9 +32,9 @@
 <p>built on IVI: stable vector stubs plus patchable latched entry addresses, explained as a board feature rather than as raw vector plumbing.</p>
 <ul>
 <li>STR8-N / STRAIGHTEN: future expanded STR8 direction.</li>
-<li>THE: The Hash Environment. THE is the hash-first lookup/catalog environment:</li>
+<li>THE: The Hash Environment. THE is the lookup/catalog environment: canonical</li>
 </ul>
-<p>canonical names, FNV-1a, hash8/hash16/hash32 storage, RCAT/RREC records, resolver policy, aliases, and typed display. THE is not the whole runtime. A dispatcher may use THE; HIMON&#39;s current command dispatcher is the first concrete user.</p>
+<p>names, compact hashes, RCAT/RREC records, resolver policy, aliases, and typed display. HIMON&#39;s current command dispatcher still carries FNV-1a history; the intended compact runtime/catalog hash is tableless CRC16. THE is not the whole runtime.</p>
 <ul>
 <li>ASM: the planned onboard assembler path.</li>
 <li>payload target: a bootable/installable monitor, application, tool, or ROM</li>
@@ -117,9 +117,9 @@
 <ul>
 <li>hash map: the guide map of hash concepts and ownership in</li>
 </ul>
-<p><a href="HASH_MAP.html">HASH_MAP.md</a>. It is not a hash table implementation.</p>
+<p><a href="HASH/HASH_MAP.html">HASH_MAP.md</a>. It is not a hash table implementation.</p>
 <ul>
-<li>hash table: an implementation data structure for lookup by hash/key.</li>
+<li>hash table: an implementation data structure for lookup by hash.</li>
 <li>stack depth map: source-derived stack high-water documentation. If it says</li>
 </ul>
 <p><code>graph view</code>, it should include a renderable Mermaid node/edge diagram.</p>
@@ -285,14 +285,25 @@
 </ul>
 <h2 id="hash-terms">Hash Terms</h2>
 <ul>
-<li>FNV-1a: the hash algorithm/family.</li>
+<li>FNV-1a: the older/currently implemented HIMON hash family. It remains in</li>
+</ul>
+<p>current command records and routine <code>[HASH:XXXXXXXX]</code> comments, but it is not the final compact runtime/catalog hash decision.</p>
+<ul>
+<li>CRC16: intended tableless compact runtime/catalog hash family.</li>
 <li>hash32: full 32-bit FNV-1a result, stored as hash0..3 low byte first.</li>
-<li>hash16: folded 16-bit result derived from hash32.</li>
-<li>hash8: folded 8-bit result derived from hash32.</li>
+<li>hash16: older folded 16-bit result derived from hash32.</li>
+<li>hash8: older folded 8-bit result derived from hash32.</li>
 <li>hash width: how many hash bytes are stored: 1, 2, or 4.</li>
 <li>fold: derive hash16 or hash8 from hash32.</li>
-<li>HASH: routine header ID formatted <code>[HASH:XXXXXXXX]</code>; this is hash32.</li>
-<li>symbol hash: assembler/catalog lookup key for labels, routines, and commands.</li>
+<li>HASH: existing routine header ID formatted <code>[HASH:XXXXXXXX]</code>; this is hash32</li>
+</ul>
+<p>until the doc/build ID path is replaced.</p>
+<ul>
+<li>hash phrase challenge: HIMON&#39;s quote-command puzzle. The operator types a</li>
+</ul>
+<p>quoted phrase, HIMON uppercases/trims it through the normal reader, computes 32-bit FNV-1a, and reports a match when it equals the built-in challenge hash. This is an Easter egg/proof marker, not a security feature.</p>
+<ul>
+<li>symbol hash: assembler/catalog lookup hash for labels, routines, and commands.</li>
 <li>hash collision: two names produce the same stored hash; name text or a wider</li>
 </ul>
 <p>stored hash must prove identity.</p>
@@ -464,7 +475,7 @@
 <p>address when none is forced; examples include high-to-low, low-to-high, best fit, closest-to-top, and first fit in a selected bank or sector range.</p>
 <p>Example: <code>$E000-$EFFF</code> is window/sector <code>$E</code> of whichever bank is currently selected. Sector <code>$0</code> is <code>$0000-$0FFF</code>; <code>$0000-$FFFF</code> is the full 64K CPU address space, not sector <code>$0</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-18T01:52:30Z</time>. HTML generated: <time>2026-05-18T02:57:41Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

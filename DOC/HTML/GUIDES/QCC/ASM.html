@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QCC ASM - R-YORS Docs</title>
+  <link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../../index.html"><img class="brand-logo" src="../../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../../README.html">README</a><a href="../INDEX.html">Guides</a><a href="../../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="qcc-asm">QCC ASM</h1>
+<p>This page keeps onboard assembler questions in QCC form. These are working notes for the hash-first assembler path. Older FNV examples are current implementation history; the intended compact hash is tableless CRC16.</p>
+<h2 id="q-can-assembler-symbols-be-hash-first">Q: Can assembler symbols be hash-first?</h2>
+<p>Comment: Yes. A tiny onboard assembler can compute compact hashes for labels and mnemonics, then resolve names through catalog records.</p>
+<p>Concern: Hash-only symbol records are not enough for every case. User-created symbols need enough name text, length, scope, or collision data to prove which symbol was intended.</p>
+<h2 id="q-what-happens-with-forward-labels">Q: What happens with forward labels?</h2>
+<p>Comment: Emit a fixup record when a label is used before it is known. Later, when the label is sealed into the symbol table, resolve the fixup.</p>
+<p>Concern: Fixups must record enough context to patch safely: address, width, relative/absolute mode, symbol hash/hash, and any text or scope needed to survive a collision.</p>
+<h2 id="q-should-assembler-records-use-fsb">Q: Should assembler records use FSB?</h2>
+<p>Comment: FSB fits assembler-generated flash records well:</p>
+<pre><code class="language-text">formed   record shape is present
+sealed   checks passed
+buried   old version is obsolete</code></pre>
+<p>Concern: Do not mark assembler output sealed until its bytes, fixups, pointer ranges, and collision rules have been checked.</p>
+<h2 id="q-should-the-assembler-support-bra-islands">Q: Should the assembler support BRA islands?</h2>
+<p>Comment: <code>BRA islands</code> are generated branch trampolines for reaching beyond the signed 8-bit relative branch range. Instead of hand-maintaining a chain like <code>$4000 -&gt; $407X -&gt; $40XX -&gt; $41YY -&gt; target</code>, the assembler or linker would place small nearby <code>BRA</code> hops in safe island slots.</p>
+<p>Example shape:</p>
+<pre><code class="language-text">$4000: BRA island_0
+...
+island_0: BRA island_1
+...
+island_1: BRA target</code></pre>
+<p>The useful cases are:</p>
+<pre><code class="language-text">position-ish code that wants to avoid absolute JMP operands
+generated long branch support
+flash/patch layouts where a nearby two-byte branch is easier to place
+controlled filler/alignment zones that can hold trampoline hops
+poor-man overlay/linker connection between separately placed code blocks</code></pre>
+<p>Position-ish code is not fully position-independent 6502 code. It just means a block can keep more of its internal control flow relative. If the block moves but its internal layout stays the same, <code>BRA</code> hops still mean &quot;go this many bytes from here&quot;, while <code>JMP $addr</code> has to be relocated.</p>
+<p>Avoiding an absolute operand at the original site can matter when the original site is early, fixed, or hard to patch. A <code>JMP $4200</code> embeds <code>00 42</code> in that instruction. A <code>BRA island</code> embeds only a signed nearby offset and lets later layout machinery decide how the islands reach the true destination.</p>
+<p>Flash patching is a special case of this. Flash can usually clear <code>1 -&gt; 0</code> bits, but cannot freely set <code>0 -&gt; 1</code> bits without erasing a sector. Rewriting a 16-bit absolute address may require illegal bit transitions. Pre-planned branch slots can sometimes give the system more legal patch points.</p>
+<p>Alignment and filler zones are the cleanest island homes. If the assembler or linker knows a region is padding, reserved space, or a generated branch-pad area, it can place <code>BRA</code> hops there without hiding control flow inside normal code.</p>
+<p>As a poor-man overlay/linker trick, one module can exit through a known island slot and another module can be reached by generated hops. That is not a full relocator, but it is a small native mechanism for connecting separately placed code blocks.</p>
+<p>For conditional far branches, the assembler can use an inverted short branch over an unconditional island hop:</p>
+<pre><code class="language-text">BNE skip
+BRA far_target_island
+skip:</code></pre>
+<p>Concern: Humans should not maintain branch islands by hand. Island placement needs assembler/linker help, range checking, and a rule for where islands are legal. The first assembler does not need this; record it as future machinery for when labels, fixups, and generated code layout are strong enough.</p>
+<h2 id="q-when-does-asm-graduate-from-qcc-to-decision">Q: When does ASM graduate from QCC to decision?</h2>
+<p>Comment: When the record bytes, fixup lifecycle, collision rule, and flash ownership are clear enough to implement without guessing.</p>
+<p>Concern: A half-decided assembler format can trap the system into supporting bad records forever. Keep exploratory formats QCC until the write/verify path is boring.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/ASM.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HREC JOIN PROOF - R-YORS Docs</title>
+  <link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../../index.html"><img class="brand-logo" src="../../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../../README.html">README</a><a href="../INDEX.html">Guides</a><a href="../../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="hrec-join-proof">HREC JOIN PROOF</h1>
+<p>This note records the design thread and RAM proof for joining callers to resident hash records. It is deliberately small and operational: search stays at <code>$3000</code>, while the HREC join proof loads at <code>$4000</code>.</p>
+<h2 id="current-proof">Current Proof</h2>
+<pre><code class="language-text">make -C SRC hrec-join-proof
+source: SRC/TEST/apps/hrec-join-proof.asm
+S19:    SRC/BUILD/s19/hrec-join-proof-4000.s19
+map:    SRC/BUILD/map/hrec-join-proof-4000.map
+start:  $4000</code></pre>
+<p>Expected current output:</p>
+<pre><code class="language-text">HREC JOIN PROOF $4000
+WRITE OK
+READ OK
+FLUSH OK
+CTRL OK
+HEX OK
+MISSING OK
+KIND OK
+HEXINV OK
+DONE</code></pre>
+<p>The proof uses the &quot;C&quot; bootstrap path: it emits no text until it has joined <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> from resident ROM. If the write join fails, the program simply returns.</p>
+<h2 id="terminology-trail">Terminology Trail</h2>
+<p>The first working words were <code>HREC_FIND</code> and <code>HREC_BIND_EXEC</code>. <code>bind</code> was accurate, but it sounded larger than the current operation: not a full linker, not relocation, not future CLINK.</p>
+<p><code>joint</code> was considered as the thing formed by a hash and an address. That was close, but the routine name wanted a verb. We settled on <code>join</code>:</p>
+<pre><code class="language-text">HREC       hash record in active memory
+FIND       locate a matching HREC by hash
+JOIN       validate the record and join the caller to its payload
+EXEC JOIN  require K=$00, then return a callable entry</code></pre>
+<p>So the current routine names are:</p>
+<pre><code class="language-text">HREC_FIND_XY
+HREC_JOIN_EXEC_XY</code></pre>
+<p>The join result lives in:</p>
+<pre><code class="language-text">HREC_JOIN_LO
+HREC_JOIN_HI</code></pre>
+<h2 id="record-shape">Record Shape</h2>
+<p>The current tiny generic hash record is:</p>
+<pre><code class="language-text">&#39;F&#39; &#39;N&#39; (&#39;V&#39;|$80) h0 h1 h2 h3 K</code></pre>
+<p>For today:</p>
+<pre><code class="language-text">K=$00  executable inline payload
+       callable entry = record + 8</code></pre>
+<p>The proof rejects any other <code>K</code> for <code>HREC_JOIN_EXEC_XY</code>. Future records can use other kind bytes for strings, pointer records, import lists, text lists, or fuller RREC descriptors.</p>
+<h2 id="what-is-tested">What Is Tested</h2>
+<p>The positive joins prove that existing ROM HREC headers can be found and used:</p>
+<pre><code class="language-text">BIO_FTDI_WRITE_BYTE_BLOCK
+BIO_FTDI_READ_BYTE_BLOCK
+BIO_FTDI_FLUSH_RX
+BIO_FTDI_GET_CTRL_C
+UTL_HEX_ASCII_TO_NIBBLE</code></pre>
+<p>The error probes are intentionally boring:</p>
+<pre><code class="language-text">MISSING OK   a made-up hash `$DEADBEEF` is not found and returns C=0
+KIND OK      a non-exec kind `$01` is rejected by the EXEC join gate
+HEXINV OK    a joined helper can still report its own input error</code></pre>
+<p><code>HEXINV</code> calls the joined <code>UTL_HEX_ASCII_TO_NIBBLE</code> with <code>&#39;G&#39;</code> and expects <code>C=0</code>.</p>
+<h2 id="size-notes">Size Notes</h2>
+<p>The first proof, with only positive checks at <code>$3000</code>, was:</p>
+<pre><code class="language-text">$01D4 bytes = 468 decimal</code></pre>
+<p>After moving the proof to <code>$4000</code> and adding the negative probes:</p>
+<pre><code class="language-text">CODE  $01D5 = 469 decimal
+DATA  $0073 = 115 decimal
+TOTAL $0248 = 584 decimal</code></pre>
+<p>The reusable core from <code>HREC_JOIN_EXEC_XY</code> through <code>HREC_FIND_MATCH</code> is about <code>$99</code> bytes, or 153 decimal bytes, in the current proof map. The rest is proof harness, messages, test hashes, and output helpers.</p>
+<p>The current search RAM proof is still separate:</p>
+<pre><code class="language-text">SRC/BUILD/s19/himon-search-proof-3000.s19
+start: $3000
+size:  $0565 bytes = 1381 decimal</code></pre>
+<h2 id="edge-cases">Edge Cases</h2>
+<p>Keep these visible before promotion into HIMON:</p>
+<ul>
+<li>Missing first write join is silent because there is no output path yet.</li>
+<li>A stale ROM image without a needed HREC header will make joins fail.</li>
+<li><code>K</code> must be checked before calling; hash match alone is not permission to</li>
+</ul>
+<p>execute.</p>
+<ul>
+<li>The current HREC header does not encode a full ABI contract. The routine</li>
+</ul>
+<p>name/hash and documentation carry that burden until fuller RREC records exist.</p>
+<ul>
+<li>Duplicate hashes or duplicate records currently mean first match wins by scan</li>
+</ul>
+<p>order. Future catalog policy must decide ROM-vs-flash precedence.</p>
+<ul>
+<li>Hash collisions remain possible. RREC should eventually add stronger identity</li>
+</ul>
+<p>or proof fields when records become writable/user-created.</p>
+<ul>
+<li>The current scanner walks <code>$8000..$FFF7</code>, matching the existing HIMON command</li>
+</ul>
+<p>scan. Other active record regions should be explicit, not accidental.</p>
+<ul>
+<li>A record at the end of scan space must leave room for the full 8-byte header.</li>
+<li><code>record+8</code> can cross a page; the carry path is required and currently present.</li>
+<li>The <code>BNE</code> kind check relies on <code>A=K</code> and <code>SEC</code> not changing the Z flag.</li>
+<li>Joined routines keep their own status contracts. Joining a routine does not</li>
+</ul>
+<p>make its input valid.</p>
+<ul>
+<li><code>BIO_FTDI_GET_CTRL_C</code> is a consuming abort poll, not a non-destructive peek.</li>
+<li>The proof uses user/free zero page; a resident HIMON version needs a published</li>
+</ul>
+<p>scratch contract or a monitor-owned API surface.</p>
+<h2 id="promotion-path">Promotion Path</h2>
+<p>The next clean step is to move the reusable pieces into HIMON:</p>
+<pre><code class="language-text">HREC_FIND_XY
+HREC_JOIN_EXEC_XY</code></pre>
+<p>Then <code>S</code>, <code>COPY</code>, <code>MOVE</code>, <code>FILL</code>, <code>MODIFY</code>, and similar flash members can call one resident join routine instead of each carrying a private scanner.</p>
+<p>The durable version should eventually be reachable through a fixed monitor API entry or jump table, so a member does not need a bootstrap scanner just to find the scanner.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md</code>. Source modified: <time>2026-05-19T00:34:09Z</time>. HTML generated: <time>2026-05-19T00:44:16Z</time>. Markdown remains canonical.</footer>
+  
+</body>
+</html>

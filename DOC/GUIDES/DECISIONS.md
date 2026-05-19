@@ -390,16 +390,49 @@ A [addr] [label:] MMM [operand] .
 
 ## Documentation Shape
 
+- Main reader path:
+
+```text
+README.md
+DOC/INDEX.md
+DOC/GUIDES/OPERATORS_GUIDE.md
+DOC/GUIDES/TECHNICAL_GUIDE.md
+```
+
+- `DOC/GUIDES` top level is for entry points and stable cross-cutting
+  references. Domain, story, planning, compatibility, and working-note material
+  belongs one level down in shelves such as `STR8/`, `HIMON/`, `QCC/`,
+  `STORY/`, `MEMORY/`, `CATALOG/`, `ASM/`, `HASH/`, `LOGS/`, `META/`,
+  and `PLANNING/`. Compatibility stubs belong under `META/COMPAT/`.
+- `OPERATORS_GUIDE.md` is the canonical board-facing guide for current R-YORS,
+  STR8, and HIMON operation.
+- `TECHNICAL_GUIDE.md` is the canonical architecture guide for product roles,
+  source layout, build artifacts, memory, flash, IVI, STR8, HIMON, and payload
+  contracts.
+- `RTFM-R-YORS.md`, `RTFM-str8.md`, and `RTFM-himon.md` are compatibility entry
+  points. They should point to `OPERATORS_GUIDE.md` instead of carrying their
+  own duplicated procedure bodies. They are reference/backlink files, not front
+  page navigation; keep them under `META/COMPAT/` and do not list them from
+  `README.md`, `DOC/INDEX.md`, `INDEX.md`, or `TOC.md`.
+- Story and narrative material belongs outside the main operator/technical
+  path:
+
+```text
+DOC/GUIDES/STORY/BOOK.md
+DOC/GUIDES/STORY/HISTORICAL_DOCUMENTS.md
+DOC/IDEAS.md
+```
+
 - `INDEX.md` answers: what exists?
 - `TOC.md` answers: what order should I read it in?
 - `MAP.md` answers: how do docs and systems relate?
 - `REF.md` is the quick operational reference.
-- `XREF.md` is wiring: docs, source, symbols, module/export rules.
-- `SYMBOL_XREF.md` is symbol/routine cards, routine contracts, hashes, and tags.
+- `META/XREF.md` is wiring: docs, source, symbols, module/export rules.
+- `ASM/SYMBOL_XREF.md` is symbol/routine cards, routine contracts, hashes, and tags.
 - `GLOSSARY.md` defines vocabulary only.
-- `BIB.md` records source corpus/provenance only.
-- `HIMON_MAP.md` is the readable HIMON edge/capability map.
-- `HIMON_EDGE_DUMP.md` is the raw direct-edge evidence.
+- `META/BIB.md` records source corpus/provenance only.
+- `HIMON/HIMON_MAP.md` is the readable HIMON edge/capability map.
+- `HIMON/HIMON_EDGE_DUMP.md` is the raw direct-edge evidence.
 - Each concept should have one canonical home. Other documents may give a short
   summary and a link, but should not restate the full explanation.
 - Avoid reader pinball: if document A points to document B as the authority for

@@ -4,7 +4,8 @@ This is the scratchpad for far-out ideas, surprising terms, possible tricks, and
 ideas that are not ready to become direction.
 
 Use this file when an idea is worth saving, but not yet strong enough for
-`DOC/GUIDES/FUTURE.md`, `TODO.md`, or a focused design guide.
+`DOC/GUIDES/PLANNING/FUTURE.md`, `DOC/GUIDES/PLANNING/TODO.md`, or a focused
+design guide.
 
 ## Buckets
 
@@ -49,7 +50,7 @@ Why: this only classifies a trap HIMON already knows it planted. It reduces
 terminal noise and keeps real program `BRK xx` signatures visually distinct.
 Because the benefit, owner, cost, and implementation shape are clear, the
 settled decision lives in `DOC/GUIDES/DECISIONS.md` and the operating behavior
-lives in `DOC/GUIDES/RTFM-himon.md`.
+lives in `DOC/GUIDES/OPERATORS_GUIDE.md`.
 
 ## Good Far Out: STR8 Future Flash Services
 
