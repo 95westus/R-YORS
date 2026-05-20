@@ -46,3 +46,37 @@ bits 2-3 reserved
 Future permission or selector work should get its own QCC note first. If it
 survives that, promote it into `DECISIONS.md` as a named record field or control
 byte, not as a casual reinterpretation of K.
+
+## Candidate: K Bit 2 For Command Expansion
+
+Idea:
+
+```text
+K bit 0  executable/callable
+K bit 1  confirm before execution
+K bit 2  command expansion/completion allowed
+```
+
+This is a better candidate than a general selector because it is still about
+command behavior. Exact hash lookup would not change: if the user types the
+full token and bit 0 is set, the record may execute. Prefix completion,
+abbreviation expansion, or automatic "AS -> ASM" style help would only consider
+records where bit 2 is set.
+
+That gives dangerous entries a clean shape:
+
+```text
+K=$03  executable + confirm, exact name only
+```
+
+`BOOT_COLD_RESET`, `BOOT_WARM_RESET`, flash erase/write, and future reset or
+recovery commands should stay exact-only unless there is a strong reason to
+make them expandable. Friendly interactive commands could eventually use:
+
+```text
+K=$05  executable + expandable
+K=$07  executable + confirm + expandable
+```
+
+Status: parked, but promising. Do not spend bit 2 until HIMON actually has a
+completion/expansion path to enforce the rule.

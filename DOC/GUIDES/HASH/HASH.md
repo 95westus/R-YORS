@@ -61,7 +61,7 @@ Current HIMON treats `kind` as a bit field:
 ```text
 bit 0  executable/callable
 bit 1  confirm before execution
-bit 2  reserved
+bit 2  reserved; candidate command expansion/completion permission
 bit 3  reserved
 ```
 
@@ -76,6 +76,9 @@ K=$03  executable/callable and confirm before execution; payload is
 
 `EXTRA` is display side information, not an alias and not a parameter pointer.
 Aliases must be separate records with their own hashes.
+
+The bit 2 completion idea is parked in [HASH_TRASH.md](HASH_TRASH.md). It is not
+implemented by current HIMON dispatch.
 
 A compact future RCAT/RREC table was previously expected to keep FNV-1a and put
 hash width in control bits. That is now historical design context. The current

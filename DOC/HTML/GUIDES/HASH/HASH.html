@@ -32,7 +32,7 @@ owner:      HIMON command, catalog, symbol, and fixup lookup</code></pre>
 <p>Current HIMON treats <code>kind</code> as a bit field:</p>
 <pre><code class="language-text">bit 0  executable/callable
 bit 1  confirm before execution
-bit 2  reserved
+bit 2  reserved; candidate command expansion/completion permission
 bit 3  reserved</code></pre>
 <p>The current values are:</p>
 <pre><code class="language-text">K=$00  described/known, not directly executable by current dispatch
@@ -40,6 +40,7 @@ K=$01  executable/callable; legacy inline command code starts at record+8
 K=$03  executable/callable and confirm before execution; payload is
        DW ENTRY, DW EXTRA</code></pre>
 <p><code>EXTRA</code> is display side information, not an alias and not a parameter pointer. Aliases must be separate records with their own hashes.</p>
+<p>The bit 2 completion idea is parked in <a href="HASH_TRASH.html">HASH_TRASH.md</a>. It is not implemented by current HIMON dispatch.</p>
 <p>A compact future RCAT/RREC table was previously expected to keep FNV-1a and put hash width in control bits. That is now historical design context. The current direction is tableless CRC16 for the compact runtime/catalog hash. See <a href="HASH_MAP.html">HASH_MAP.md</a>.</p>
 <p>Routine block comments may include both fields:</p>
 <pre><code class="language-text">; ROUTINE: SYS_WRITE_CHAR  [HASH:49023C1B]
@@ -303,7 +304,7 @@ step:         hash = (hash xor byte) * prime mod 2^32</code></pre>
 </ul>
 <p><code>powershell -NoProfile -ExecutionPolicy Bypass -File tools/gen_routine_hash_comments.ps1 -Src . -FailOnCollision $false</code></p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH.md</code>. Source modified: <time>2026-05-20T03:51:09Z</time>. HTML generated: <time>2026-05-20T05:14:19Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH.md</code>. Source modified: <time>2026-05-20T05:29:14Z</time>. HTML generated: <time>2026-05-20T05:29:23Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

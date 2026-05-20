@@ -102,7 +102,7 @@ global/exported catalog   usually keeps 4 bytes</code></pre>
 <pre><code class="language-text">$00  described/known, not directly executable by current dispatch
 $01  executable/callable; legacy inline code begins at record+8
 $03  executable/callable and confirm before execution; DW ENTRY, DW EXTRA</code></pre>
-<p>Bit 0 means executable/callable. Bit 1 means confirm before execution. Bits 2 and 3 are reserved; do not spend them as selectors or permissions without a future record/control-byte design. <code>EXTRA</code> is display side information, not an alias and not a parameter pointer. Richer callable records with <code>PARMS</code> or <code>RESULTS</code> are still a future RREC payload direction.</p>
+<p>Bit 0 means executable/callable. Bit 1 means confirm before execution. Bits 2 and 3 are reserved. The parked bit 2 candidate is command expansion/completion permission, where exact lookup still works but prefix expansion only considers records that opt in. Do not spend bit 2 until HIMON has an expansion path that can enforce it. <code>EXTRA</code> is display side information, not an alias and not a parameter pointer. Richer callable records with <code>PARMS</code> or <code>RESULTS</code> are still a future RREC payload direction.</p>
 <p>The future compact record should use a layout/control byte instead of spending literal width marker bytes:</p>
 <pre><code class="language-text">control: ww=11, hash0,hash1,hash2,hash3, value/payload...
 control: ww=10, hash16_lo,hash16_hi,    value/payload...
@@ -325,7 +325,7 @@ $FF  erased flash / blank image regions</code></pre>
 5. If text is absent and collision exists, require qualified/manual choice.</code></pre>
 <p>This keeps the system usable before the catalog is fancy, but does not trap it in unsafe hash-only linking forever.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH_MAP.md</code>. Source modified: <time>2026-05-20T03:52:34Z</time>. HTML generated: <time>2026-05-20T05:14:19Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH_MAP.md</code>. Source modified: <time>2026-05-20T05:29:14Z</time>. HTML generated: <time>2026-05-20T05:29:23Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

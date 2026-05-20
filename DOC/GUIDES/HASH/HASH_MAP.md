@@ -169,10 +169,12 @@ $03  executable/callable and confirm before execution; DW ENTRY, DW EXTRA
 ```
 
 Bit 0 means executable/callable. Bit 1 means confirm before execution. Bits 2
-and 3 are reserved; do not spend them as selectors or permissions without a
-future record/control-byte design. `EXTRA` is display side information, not an
-alias and not a parameter pointer. Richer callable records with `PARMS` or
-`RESULTS` are still a future RREC payload direction.
+and 3 are reserved. The parked bit 2 candidate is command expansion/completion
+permission, where exact lookup still works but prefix expansion only considers
+records that opt in. Do not spend bit 2 until HIMON has an expansion path that
+can enforce it. `EXTRA` is display side information, not an alias and not a
+parameter pointer. Richer callable records with `PARMS` or `RESULTS` are still a
+future RREC payload direction.
 
 The future compact record should use a layout/control byte instead of spending
 literal width marker bytes:
