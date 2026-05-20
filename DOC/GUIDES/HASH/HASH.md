@@ -511,6 +511,32 @@ RREC record:
   optional name proof, payload pointer, or inline payload
 ```
 
+An `RREC` is a typed envelope around either inline bytes or a linked `RBODY`.
+The kind/control contract decides what the payload means and which operations
+are allowed. A text/data packet might be printable. A checked or signed packet
+might be validatable or authenticatable. A routine/export packet might be
+joinable into a callable entry. A module/import packet might be resolvable or
+linkable. The resolver must reject an operation when the record kind does not
+declare that operation.
+
+That keeps the byte model general without making `kind` a permission grab bag:
+`kind` selects a parser and contract, while lifecycle, generation, provider
+choice, and recovery policy stay in separate metadata.
+
+A simple configuration record is the same idea with a scalar payload:
+
+```text
+name/hash: CONFIG.TERMINAL.WIDTH
+kind:      config.u8 or config.word
+payload:   $40
+```
+
+Startup or terminal initialization can resolve that name, require a
+configuration-scalar kind, range-check the value, and then use it. If the record
+is missing or invalid, HIMON should fall back to a compiled default. Because the
+record is data/config kind, it may be displayed and consumed as configuration,
+but it is not joinable as code.
+
 This gives two levels of safety:
 
 ```text

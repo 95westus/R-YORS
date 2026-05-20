@@ -128,6 +128,20 @@ The proof rejects other `K` values for `HREC_JOIN_EXEC_XY`. Future records can
 use other kind bytes for strings, pointer records, import lists, text lists, or
 fuller RREC descriptors.
 
+The broader RREC rule is that `K` is a payload contract selector. A record can
+wrap inline bytes or point at an `RBODY`, and the selected contract says which
+operations are valid for that payload:
+
+```text
+display/print          allowed for text, table, and typed dump records
+validate/authenticate  allowed for checked or signed packet records
+join/call              allowed only for executable records with a call ABI
+resolve/link           allowed for import, export, and module descriptors
+```
+
+`HREC_JOIN_EXEC_XY` is the narrow proof of the join/call case. It must not make
+plain data executable just because the bytes are discoverable by hash.
+
 For `K=$10`, `ENTRY` and `EXTRA` are not automatically coupled:
 
 ```text

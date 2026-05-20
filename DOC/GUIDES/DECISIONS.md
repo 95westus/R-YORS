@@ -331,6 +331,17 @@ start +count    count is the number of bytes
 - Future records that make the second or third word part of the call contract,
   such as `PARMS` or `RESULTS`, should use a different kind and a documented
   HIMON/THE calling convention.
+- Future `RREC` records may wrap inline bytes or a linked `RBODY` as a typed
+  data packet. The kind/control contract decides whether that payload can be
+  displayed, validated/authenticated, joined as code, resolved as imports, or
+  used in some other way.
+- A resolver must reject operation/kind mismatches. Printable data is not
+  automatically joinable; authenticatable data is not automatically executable;
+  joinable code still needs an explicit call contract.
+- Config values such as `CONFIG.TERMINAL.WIDTH=$40` should be future
+  data/config records, not executable records. Terminal startup may resolve the
+  hash/name, require a scalar config kind, validate the range, and fall back to
+  the compiled default when the record is absent or invalid.
 - Bits 2 and 3 of the current FNV `kind` byte are reserved. Do not spend them
   as ad-hoc selectors, permissions, lifecycle flags, or dependency-policy flags
   until a future record layout proves the need. Selector and permission ideas

@@ -262,7 +262,9 @@ docs.
   should say, "In this section, Record means ...".
 - R-YORS record: a R-YORS structured runtime/catalog record.
 - RREC: R-YORS runtime record; one typed catalog entry for a command, routine,
-  symbol, data item, module, inline value, or similar runtime thing.
+  symbol, data item, module, inline value, or similar runtime thing. Treat an
+  RREC as a typed envelope: its kind/control contract says how to interpret its
+  inline payload or linked `RBODY`, and which operations are legal.
 - RCAT: R-YORS runtime catalog dataset; may hold records, string pools, indexes,
   and links to runtime bodies spread across RAM or flash.
 - member: informal package view of a catalog-visible thing, usually an `RBODY`
@@ -272,6 +274,9 @@ docs.
   behavior.
 - catalog record: metadata that maps hash/name to value, kind, bank, flags, and
   optional name text.
+- config record: typed data/config record used to publish a small setting such
+  as `CONFIG.TERMINAL.WIDTH`. It may be displayed and consumed by policy code,
+  but it is not executable unless a separate executable kind says so.
 - fixup record: pending patch site for a symbol not known when an instruction
   is emitted.
 - RPG record: business/data record in RPG terminology; do not confuse this with
@@ -285,7 +290,8 @@ docs.
 - signature: bytes that help find or identify a container or record family.
 - control byte: packed layout, lifecycle, and hash-width byte.
 - kind: semantic type, such as command, routine, symbol, fixup, string, or
-  module.
+  module. For typed runtime records, kind selects the contract for the payload;
+  it is not a lifecycle state or blanket permission byte.
 
 Current HIMON uses `FNV|$80` as a readable command-record signature. Future
 compact catalog records should put layout and hash width in a control byte.
