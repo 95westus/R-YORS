@@ -22,10 +22,14 @@ S19_DIR := $(BUILD_DIR)/s19
 ROM_BIN_STAMP_DEFAULT := $(shell powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-ddTHH:mmK'")
 ROM_BIN_STAMP ?= $(ROM_BIN_STAMP_DEFAULT)
 ROM_BIN_ARCHIVE_DIR := ROM_IMAGES
+HIMON_VISIBLE_STAMP_DEFAULT := $(shell powershell -NoProfile -Command "Get-Date -Format 'MMdd(HHmm)'")
+HIMON_VISIBLE_STAMP ?= $(HIMON_VISIBLE_STAMP_DEFAULT)
 PYTHON ?= python
 
 LOCAL_ROOT ?= ../LOCAL
 LOCAL_PROVENANCE := tools/write_local_provenance.ps1
+HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
+HIMON_VERSION_INC := $(INC_DIR)/himon-version.inc
 BASIC_PROGRAMS_HOME ?= $(LOCAL_ROOT)/basic-programs
 FIG_FORTH_HOME ?= $(LOCAL_ROOT)/fig-forth
 FIG_FORTH_INPUT ?= $(FIG_FORTH_HOME)/source/ff6502.html
@@ -182,6 +186,7 @@ ALL_TARGETS := \
 	himon \
 	str8 \
 	himon-str8-rom-bin \
+	himon-str8-himon-update-s19 \
 	fnv1a-hbstr \
 	test-mon \
 	test-ftdi-drv \
@@ -678,7 +683,11 @@ $(FIG_FORTH_C000_OBJ): $(FIG_FORTH_C000_SRC)
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC)
+.PHONY: himon-version-stamp
+himon-version-stamp: $(HIMON_VERSION_STAMP)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" -Stamp "$(HIMON_VISIBLE_STAMP)"
+
+$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) himon-version-stamp
 
 $(HIMON_ROM_OBJ): $(HIMON_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))

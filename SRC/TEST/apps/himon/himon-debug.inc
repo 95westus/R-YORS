@@ -3,7 +3,7 @@
 ; ----------------------------------------------------------------------------
 
 CMD_B_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$85,$FB,$0B,$C7,$00
+                        DB              'F','N',CMD_FNV_SIG2,$85,$FB,$0B,$C7,CMD_HASH_KIND_EXEC
 CMD_B:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_SKIP_SPACES
@@ -94,7 +94,7 @@ CMD_USAGE_BL:
                         RTS
 
 CMD_N_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$D1,$01,$0C,$CB,$00
+                        DB              'F','N',CMD_FNV_SIG2,$D1,$01,$0C,$CB,CMD_HASH_KIND_EXEC
 CMD_N:
                         JSR             MON_CTX_REQUIRE_VALID
                         BCS             CMD_N_HAVE_CTX

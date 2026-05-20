@@ -24,7 +24,7 @@ connect.
 - [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, and edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
-- [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, and CRC16 direction.
+- [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and parked ideas.
 - [ASM](ASM/HASHED_ASM.md) - onboard assembler and symbol reference material.
 - [QCC](QCC/INDEX.md) - active Questions, Comments, Concerns working notes.
 - [PLANNING](PLANNING/TODO.md) - near-term work and future direction.

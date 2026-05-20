@@ -41,6 +41,37 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: Hash Trash And K-Bit Contract
+
+```text
+2026
+         05
+                20
+                   03:49Z WLP2 Added HASH_TRASH.md as the parking lot for
+                               tempting hash/catalog ideas and refreshed the
+                               current HIMON K-bit contract across reference
+                               docs.
+```
+
+scope: `DOC/GUIDES/DECISIONS.md`, `DOC/GUIDES/HASH_FLASH.md`,
+`DOC/GUIDES/REF.md`, `DOC/GUIDES/GLOSSARY.md`,
+`DOC/GUIDES/HASH/HASH.md`, `DOC/GUIDES/HASH/HASH_MAP.md`,
+`DOC/GUIDES/HASH/HASH_TRASH.md`, and
+`DOC/GUIDES/QCC/CATALOG_LINKING.md`.
+
+change: Current HIMON FNV `kind` is now documented as bit 0
+executable/callable and bit 1 confirm-before-execute. K bits 2 and 3 are
+reserved. The PIN/BIO/SYS selection model is documented as recursive
+catalog-linking through explicit imports.
+
+effect: The older assumption that K=$00 is the executable command shape and
+K=$10 is the active pointer-record shape is stale for current HIMON. The idea
+of using spare K bits as selectors or permissions is parked, not adopted.
+
+action: Use [DECISIONS.md](./DECISIONS.md) for the current K contract,
+[HASH_FLASH.md](./HASH_FLASH.md) for the behavior alert, and
+[HASH_TRASH.md](HASH/HASH_TRASH.md) for parked hash/catalog ideas.
+
 ## REDOC: Operator And Technical Guides Are Canonical
 
 ```text

@@ -272,6 +272,8 @@ start +count    count is the number of bytes
 
 ## Hash And Catalog Policy
 
+- Working description: HIMON/THE is a ROM-resident hash dictionary for 65C02
+  services, with Forth instincts and assembler bones.
 - FNV-1a is implemented history and current transition debt, not the final
   universal runtime/catalog/symbol hash decision.
 - The intended compact runtime/catalog hash is tableless CRC16. The reason is
@@ -294,13 +296,31 @@ start +count    count is the number of bytes
 - Current HIMON proving record shape is:
 
 ```text
-'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,payload...
 ```
 
-- In current HIMON, `kind=$00` means executable code begins immediately after
-  the kind byte, at record offset `+8`. It does not store `entry_lo,entry_hi`.
-- Explicit `entry_lo,entry_hi` pointer records are a future catalog/RREC
-  direction.
+- In current HIMON, `kind` is a bit field for the FNV-era record:
+  bit 0 means executable/callable, and bit 1 means confirm before execution.
+- `kind=$00` means described/known, not directly executable by the current
+  dispatcher.
+- `kind=$01` means executable/callable. For legacy inline command records, code
+  begins immediately after the kind byte at record offset `+8`.
+- `kind=$03` means executable/callable with confirmation. Its current payload is
+  `DW ENTRY`, `DW EXTRA`. `EXTRA` is descriptive side information used by `#`
+  and by confirm prompts as optional HBSTR display text. `EXTRA` is not an
+  alias and is not passed to the called routine.
+- `# K=hh`, `# K<hh`, and `# K>hh` are display filters, not resolver modes.
+  They list resident records by exact, less-than, or greater-than `kind` byte.
+- Command aliases must be real records with their own hash. Display text must
+  not be treated as a second command name unless a future alias record explicitly
+  says so.
+- Future records that make the second or third word part of the call contract,
+  such as `PARMS` or `RESULTS`, should use a different kind and a documented
+  HIMON/THE calling convention.
+- Bits 2 and 3 of the current FNV `kind` byte are reserved. Do not spend them
+  as ad-hoc selectors, permissions, lifecycle flags, or dependency-policy flags
+  until a future record layout proves the need. Selector and permission ideas
+  belong in separate metadata or a documented control byte first.
 - Future compact signatures identify record layout/classification, not a hash
   algorithm.
 - One thing may have multiple classification flags; use bit flags/tokens rather
@@ -319,6 +339,12 @@ start +count    count is the number of bytes
   tooling. It is not required for the current basic FNV lookup.
 - Text compression must be optional. If compressed text is not smaller, store
   raw text or omit text.
+- Catalog linking resolves imports recursively. Selecting a low-level provider
+  such as `PIN_READ_BYTE_NB` should install only the PIN-level body. Selecting a
+  higher-level service such as `BIO_READ_CHAR_NB` or `SYS_READ_CHAR_NB` should
+  follow that service's declared imports down through BIO/COR/PIN dependencies,
+  add only missing bodies, and then apply fixups. The hash identifies the
+  requested contract; import/export/fixup records do the linking work.
 
 ## STR8 Call Surface
 

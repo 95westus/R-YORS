@@ -106,6 +106,47 @@ procedure name points to the right drawer.
 This shop-index model is the preferred public analogy for now. It matched the
 project author's own working picture best.
 
+## Q: Does Choosing SYS Pull BIO And PIN?
+
+Comment: Yes, if the selected record declares imports and the resolver follows
+them.
+
+The catalog should let the user choose the abstraction level they actually want:
+
+```text
+PIN_READ_BYTE_NB
+BIO_READ_CHAR_NB
+SYS_READ_CHAR_NB
+```
+
+Choosing the PIN-level provider should flash the smallest body: the driver-level
+routine and any truly local support it needs. Choosing the BIO-level service
+should flash the BIO wrapper plus the PIN routine it imports. Choosing the
+SYS-level service should flash the SYS policy wrapper plus the declared chain
+below it.
+
+The rule is recursive and boring by design:
+
+```text
+select service
+find export by hash/name/contract
+read imports
+for each import, find provider
+install missing bodies
+apply fixups
+test selected entry
+```
+
+This is the point where catalog linking starts to feel like a small resident
+linker instead of a command shortcut. The hash identifies the requested
+contract. The import/export/fixup records explain how to assemble a working
+body at the chosen layer.
+
+Concern: The resolver must not infer dependencies only from names like `SYS_`,
+`BIO_`, or `PIN_`. Prefixes are useful human tiers, but the executable rule is
+the declared import list. If a service does not describe its imports, the first
+catalog linker should refuse to pretend it can safely install it.
+
 ## Q: Should The First Target Be S, LIFE, Or S Plus Join?
 
 Comment: Prefer `S` plus join.

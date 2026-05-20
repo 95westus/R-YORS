@@ -6,7 +6,7 @@
 ; ----------------------------------------------------------------------------
 
 CMD_A_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$CC,$F6,$0B,$C4,$00
+                        DB              'F','N',CMD_FNV_SIG2,$CC,$F6,$0B,$C4,CMD_HASH_KIND_EXEC
 CMD_A:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_PARSE_HEX_WORD_TOKEN

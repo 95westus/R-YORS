@@ -128,6 +128,57 @@ The proof rejects other `K` values for `HREC_JOIN_EXEC_XY`. Future records can
 use other kind bytes for strings, pointer records, import lists, text lists, or
 fuller RREC descriptors.
 
+For `K=$10`, `ENTRY` and `EXTRA` are not automatically coupled:
+
+```text
+ENTRY  callable routine address
+EXTRA  optional side information pointer
+```
+
+Current HIMON uses `EXTRA` as display metadata. If `EXTRA=$0000`, there is no
+extra display text. If it is nonzero today, `#` treats it as an HBSTR pointer.
+The called routine does not receive or consume `EXTRA` unless a later kind and
+contract explicitly says so.
+
+### Possible Future Contract Records
+
+Do not overload `K=$10` to mean every pointer shape. Keep `K=$10` as
+`ENTRY + EXTRA`, where `EXTRA` is descriptive/metadata. Use new kind values when
+the second or third word is part of the call contract.
+
+Possible future shapes:
+
+```text
+K=$11  executable pointer with parameters
+       DW ENTRY
+       DW PARMS
+
+K=$12  executable pointer with parameters and results
+       DW ENTRY
+       DW PARMS
+       DW RESULTS
+```
+
+The words mean:
+
+```text
+ENTRY    routine to call
+PARMS    pointer to contract-specific input/control data
+RESULTS  pointer to a result collection address or result descriptor
+```
+
+`PARMS` could point at an HBSTR, CSTR, PSTR, token stream, command list, import
+list, or a small typed parameter block. `RESULTS` should normally point at RAM,
+or at a descriptor that points at RAM, because output has to be written
+somewhere safe. `RESULTS=$0000` means the routine returns only through its
+ordinary small ABI: `A`, `X`, `Y`, processor status, and documented scratch.
+
+The CPU does not connect these fields by itself. HIMON/THE must define the
+calling convention for each future kind, such as "load PARMS into a known zero
+page pointer before `JSR ENTRY`" or "return a count through the RESULTS
+descriptor." This keeps simple records simple while leaving room for token
+runners, search collectors, import resolvers, and assembler/catalog services.
+
 The `K=$10` proof record is RAM-local inside the loaded proof image. It uses a
 made-up hash:
 
@@ -260,6 +311,9 @@ Keep these visible before promotion into HIMON:
 - `K=$10` does not use `record+8` as the callable entry. It reads `DW ENTRY`
   and `DW EXTRA` from the record payload. That is the first proof of a record
   whose metadata and callable body are separated.
+- Field names after `K` are part of the kind contract. In `K=$10`, `EXTRA` is
+  side information. A future `PARMS` or `RESULTS` word must use a different
+  kind and an explicit call convention.
 - The `BNE` kind check relies on `A=K` and `SEC` not changing the Z flag.
 - Joined routines keep their own status contracts. Joining a routine does not
   make its input valid.

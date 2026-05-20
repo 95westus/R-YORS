@@ -184,13 +184,26 @@ Current HIMON FNV command record:
 +4  hash1
 +5  hash2
 +6  hash3      FNV-1a high byte
-+7  kind       current $00 means executable code follows
-+8  code       inline executable entry for kind=$00
++7  kind       bit 0 executable/callable, bit 1 confirm
++8  payload    inline code or pointer payload, according to kind
 ```
 
-Current HIMON records do not store `entry_lo,entry_hi`; the entry is `record+8`
-when `kind=$00`. Explicit pointer records with `entry_lo,entry_hi` are a future
-catalog/RREC direction, not the current inline-code command record.
+Current K values:
+
+```text
+K=$00  described/known, not directly executable
+K=$01  executable/callable; legacy inline entry is record+8
+K=$03  executable/callable with confirmation:
+       +8  entry_lo
+       +9  entry_hi
+       +10 extra_lo
+       +11 extra_hi
+```
+
+`ENTRY` is the callable address. `EXTRA` is side information; current `#` and
+confirm prompts treat nonzero `EXTRA` as an HBSTR pointer. `EXTRA` is not an
+alias or parameter pointer. Future records that need `PARMS` or `RESULTS`
+should use a documented call convention.
 
 Legacy FNV stored-width direction:
 

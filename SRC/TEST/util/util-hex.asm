@@ -34,7 +34,7 @@
 ; ----------------------------------------------------------------------------
                         XDEF            UTL_HEX_NIBBLE_TO_ASCII_FNV
 UTL_HEX_NIBBLE_TO_ASCII_FNV:
-                        DB              'F','N',('V'+$80),$87,$8B,$C8,$D4,$00 ; UTL_HEX_NIBBLE_TO_ASCII $D4C88B87 EXEC
+                        DB              'F','N',('V'+$80),$87,$8B,$C8,$D4,$01 ; UTL_HEX_NIBBLE_TO_ASCII $D4C88B87 EXEC
 UTL_HEX_NIBBLE_TO_ASCII:
 
                         AND             #$0F
@@ -69,7 +69,7 @@ UTL_HEX_NIBBLE_TO_ASCII:
 ; ----------------------------------------------------------------------------
                         XDEF            UTL_HEX_BYTE_TO_ASCII_YX_FNV
 UTL_HEX_BYTE_TO_ASCII_YX_FNV:
-                        DB              'F','N',('V'+$80),$21,$DD,$42,$71,$00 ; UTL_HEX_BYTE_TO_ASCII_YX $7142DD21 EXEC
+                        DB              'F','N',('V'+$80),$21,$DD,$42,$71,$01 ; UTL_HEX_BYTE_TO_ASCII_YX $7142DD21 EXEC
 UTL_HEX_BYTE_TO_ASCII_YX:
                         PHA
                         LSR             A
@@ -108,7 +108,7 @@ UTL_HEX_BYTE_TO_ASCII_YX:
 ; ----------------------------------------------------------------------------
                         XDEF            UTL_HEX_ASCII_TO_NIBBLE_FNV
 UTL_HEX_ASCII_TO_NIBBLE_FNV:
-                        DB              'F','N',('V'+$80),$B1,$14,$D7,$AD,$00 ; UTL_HEX_ASCII_TO_NIBBLE $ADD714B1 EXEC
+                        DB              'F','N',('V'+$80),$B1,$14,$D7,$AD,$01 ; UTL_HEX_ASCII_TO_NIBBLE $ADD714B1 EXEC
 UTL_HEX_ASCII_TO_NIBBLE:
                         CMP             #'0'
                         BCC             ?FAIL
@@ -167,7 +167,7 @@ UTL_CONV_TMP_A             EQU             $E6
 ; ----------------------------------------------------------------------------
                         XDEF            UTL_HEX_ASCII_YX_TO_BYTE_FNV
 UTL_HEX_ASCII_YX_TO_BYTE_FNV:
-                        DB              'F','N',('V'+$80),$6D,$3E,$0B,$EA,$00 ; UTL_HEX_ASCII_YX_TO_BYTE $EA0B3E6D EXEC
+                        DB              'F','N',('V'+$80),$6D,$3E,$0B,$EA,$01 ; UTL_HEX_ASCII_YX_TO_BYTE $EA0B3E6D EXEC
 UTL_HEX_ASCII_YX_TO_BYTE:
                         TXA
                         JSR             UTL_HEX_ASCII_TO_NIBBLE

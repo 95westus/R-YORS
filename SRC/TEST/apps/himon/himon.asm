@@ -48,6 +48,8 @@ CMD_HASH_TAB_LO          EQU             $E0
 CMD_HASH_TAB_HI          EQU             $E1
 CMD_HASH_EXTRA_LO        EQU             $B0
 CMD_HASH_EXTRA_HI        EQU             $B1
+CMD_HASH_FILTER_VALUE    EQU             $B2
+CMD_HASH_FILTER_OP       EQU             $B3
 FNV_HASH0                EQU             $7E66
 FNV_HASH1                EQU             $7E67
 FNV_HASH2                EQU             $7E68
@@ -74,10 +76,15 @@ BOOT_REASON_WARM         EQU             $02
 CMD_FLAG_TOP_INPUT       EQU             $01
 CMD_ABORT_TOP            EQU             $04
 ; Current FNV record format:
-;   'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...
-;   kind=$00: executable code begins immediately after the kind byte.
-;   kind=$10: DW ENTRY, DW EXTRA; EXTRA=$0000 means no display text.
+;   'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,payload...
+;   kind bit 0: executable.
+;   kind bit 1: confirm before execution.
+;   kind=$01: executable code begins immediately after the kind byte.
+;   kind=$03: DW ENTRY, DW EXTRA; EXTRA=$0000 means no display text.
 CMD_FNV_SIG2             EQU             ('V'+$80)
+CMD_HASH_KIND_EXEC       EQU             $01
+CMD_HASH_KIND_CONFIRM    EQU             $02
+CMD_HASH_KIND_EXEC_TEXT  EQU             (CMD_HASH_KIND_EXEC+CMD_HASH_KIND_CONFIRM)
 CMD_HASH_SCAN_BASE_HI    EQU             $80
 QUOTE_HASH_TARGET0       EQU             $7A
 QUOTE_HASH_TARGET1       EQU             $0F
@@ -102,6 +109,30 @@ START:
                         LDA             RESET_SIG3
                         CMP             #$3C
                         BNE             MON_COLD_RESET
+                        JMP             BOOT_RESET_WARM_BODY
+
+BOOT_COLD_RESET_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$F0,$30,$7A,$EC,CMD_HASH_KIND_EXEC_TEXT ; BOOT_COLD_RESET $EC7A30F0 EXEC+CONFIRM
+                        DW              BOOT_RESET_COLD
+                        DW              TXT_BOOT_COLD_RESET
+BOOT_RESET_COLD:
+MON_COLD_RESET:
+                        SEI
+                        CLD
+                        LDX             #$FF
+                        TXS
+                        JMP             MON_CLEAR_RAM
+
+BOOT_WARM_RESET_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$AB,$AE,$33,$53,CMD_HASH_KIND_EXEC_TEXT ; BOOT_WARM_RESET $5333AEAB EXEC+CONFIRM
+                        DW              BOOT_RESET_WARM
+                        DW              TXT_BOOT_WARM_RESET
+BOOT_RESET_WARM:
+                        SEI
+                        CLD
+                        LDX             #$FF
+                        TXS
+BOOT_RESET_WARM_BODY:
                         LDA             #BOOT_REASON_WARM
                         STA             BOOT_REASON
                         JSR             DBG_CLEAR_ALL
@@ -110,11 +141,6 @@ START:
                         STZ             TRAP_BRK_SIG
                         STZ             NMI_DEBOUNCE_FLAG
                         JMP             MON_START_INIT
-
-MON_COLD_RESET_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$F4,$E2,$10,$CB,$00 ; MON_COLD_RESET $CB10E2F4 EXEC
-MON_COLD_RESET:
-                        JMP             MON_CLEAR_RAM
 
 MON_REENTER:
                         SEI
@@ -199,7 +225,7 @@ CMD_UNKNOWN:
                         JMP             MAIN_LOOP
 
 CMD_HELP_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$8E,$B0,$0C,$3A,$00 ; ? $3A0CB08E EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$8E,$B0,$0C,$3A,CMD_HASH_KIND_EXEC ; ? $3A0CB08E EXEC
 CMD_HELP:
                         LDX             #<MSG_HELP
                         LDY             #>MSG_HELP
@@ -211,15 +237,22 @@ CMD_HELP:
 ; # [token] -- list/resolve FNV records without executing them.
 ; ----------------------------------------------------------------------------
 CMD_HASH_INFO_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$12,$91,$0C,$26,$00 ; # $260C9112 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$12,$91,$0C,$26,CMD_HASH_KIND_EXEC ; # $260C9112 EXEC
 CMD_HASH_INFO:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_SKIP_SPACES
+                        LDA             CMDP_PTR_LO
+                        STA             CMDP_START_LO
+                        LDA             CMDP_PTR_HI
+                        STA             CMDP_START_HI
                         JSR             CMD_PEEK
                         BEQ             CMD_HASH_LIST
+                        CMP             #'K'
+                        BEQ             CMD_HASH_INFO_K_FILTER
+CMD_HASH_INFO_LOOKUP:
                         JSR             CMD_HASH_TOKEN
                         JSR             CMD_HASH_PRINT_FNV
-                        JSR             CMD_HASH_FIND
+                        JSR             THE_JOIN_FIND
                         BCS             CMD_HASH_INFO_FOUND
                         LDX             #<MSG_HASH_NF
                         LDY             #>MSG_HASH_NF
@@ -241,7 +274,41 @@ CMD_HASH_INFO_FOUND:
                         JSR             SYS_WRITE_CRLF
                         RTS
 
+CMD_HASH_INFO_K_FILTER:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        CMP             #'='
+                        BEQ             CMD_HASH_INFO_K_HAVE_OP
+                        CMP             #'<'
+                        BEQ             CMD_HASH_INFO_K_HAVE_OP
+                        CMP             #'>'
+                        BNE             CMD_HASH_INFO_RESTORE_LOOKUP
+CMD_HASH_INFO_K_HAVE_OP:
+                        STA             CMD_HASH_FILTER_OP
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PARSE_HEX_BYTE_TOKEN
+                        BCC             CMD_HASH_USAGE
+                        STA             CMD_HASH_FILTER_VALUE
+                        JSR             CMD_REQUIRE_EOL
+                        BCC             CMD_HASH_USAGE
+                        BRA             CMD_HASH_LIST_WITH_FILTER
+CMD_HASH_INFO_RESTORE_LOOKUP:
+                        LDA             CMDP_START_LO
+                        STA             CMDP_PTR_LO
+                        LDA             CMDP_START_HI
+                        STA             CMDP_PTR_HI
+                        BRA             CMD_HASH_INFO_LOOKUP
+CMD_HASH_USAGE:
+                        LDX             #<MSG_HASH_USAGE
+                        LDY             #>MSG_HASH_USAGE
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
 CMD_HASH_LIST:
+                        STZ             CMD_HASH_FILTER_OP
+CMD_HASH_LIST_WITH_FILTER:
                         LDX             #<MSG_HASH_HDR
                         LDY             #>MSG_HASH_HDR
                         JSR             HIM_WRITE_HBSTRING
@@ -250,9 +317,12 @@ CMD_HASH_LIST:
 CMD_HASH_LIST_LOOP:
                         JSR             CMD_HASH_SCAN_NEXT_RECORD
                         BCC             CMD_HASH_LIST_DONE
+                        JSR             CMD_HASH_RECORD_IN_FILTER
+                        BCC             CMD_HASH_LIST_SKIP
                         JSR             CMD_HASH_PRINT_ROW
                         JSR             HIM_CHECK_CTRL_C
                         BCS             CMD_HASH_LIST_DONE
+CMD_HASH_LIST_SKIP:
                         JSR             CMD_HASH_SCAN_ADV
                         BRA             CMD_HASH_LIST_LOOP
 CMD_HASH_LIST_DONE:
@@ -264,7 +334,7 @@ CMD_HASH_LIST_DONE:
 ; uppercase by the top-level reader; leading/trailing spaces are not hashed.
 ; ----------------------------------------------------------------------------
 CMD_QUOTE_HASH_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$A5,$92,$0C,$27,$00 ; " $270C92A5 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$A5,$92,$0C,$27,CMD_HASH_KIND_EXEC ; " $270C92A5 EXEC
 CMD_QUOTE_HASH:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_SKIP_SPACES
@@ -359,7 +429,7 @@ CMD_QUOTE_HASH_NO_MATCH:
 ; D start [end|+count]
 ; ----------------------------------------------------------------------------
 CMD_D_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$13,$F2,$0B,$C1,$00 ; D $C10BF213 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$13,$F2,$0B,$C1,CMD_HASH_KIND_EXEC ; D $C10BF213 EXEC
 CMD_D:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_PARSE_RANGE_REQUIRED
@@ -380,7 +450,7 @@ CMD_USAGE_D:
 ; M start [end|+count]
 ; ----------------------------------------------------------------------------
 CMD_M_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$18,$FD,$0B,$C8,$00 ; M $C80BFD18 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$18,$FD,$0B,$C8,CMD_HASH_KIND_EXEC ; M $C80BFD18 EXEC
 CMD_M:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_PARSE_RANGE_REQUIRED
@@ -399,7 +469,7 @@ CMD_USAGE_M:
 ; R [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
 ; ----------------------------------------------------------------------------
 CMD_R_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$B5,$14,$0C,$D7,$00 ; R $D70C14B5 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$B5,$14,$0C,$D7,CMD_HASH_KIND_EXEC ; R $D70C14B5 EXEC
 CMD_R:
                         JSR             MON_CTX_REQUIRE_VALID
                         BCS             CMD_R_HAVE_CTX
@@ -422,7 +492,7 @@ CMD_USAGE_R:
 ; X [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
 ; ----------------------------------------------------------------------------
 CMD_X_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$27,$1E,$0C,$DD,$00 ; X $DD0C1E27 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$27,$1E,$0C,$DD,CMD_HASH_KIND_EXEC ; X $DD0C1E27 EXEC
 CMD_X:
                         JSR             MON_CTX_REQUIRE_VALID
                         BCS             CMD_X_HAVE_CTX
@@ -452,7 +522,7 @@ CMD_USAGE_X:
 ; G start
 ; ----------------------------------------------------------------------------
 CMD_G_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$A6,$F3,$0B,$C2,$00 ; G $C20BF3A6 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$A6,$F3,$0B,$C2,CMD_HASH_KIND_EXEC ; G $C20BF3A6 EXEC
 CMD_G:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
@@ -483,7 +553,7 @@ CMD_USAGE_G:
 ; L  (S19-only loader: S1 data, S9 terminator; S0 skipped)
 ; ----------------------------------------------------------------------------
 CMD_L_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$AB,$FE,$0B,$C9,$00 ; L $C90BFEAB EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$AB,$FE,$0B,$C9,CMD_HASH_KIND_EXEC ; L $C90BFEAB EXEC
 CMD_L:
                         JSR             CMD_ADV_PTR
                         STZ             LOAD_AUTO_GO
@@ -712,7 +782,7 @@ CMD_USAGE_L:
                         RTS
 
 CMD_Q_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$FC,$0F,$0C,$D4,$00 ; Q $D40C0FFC EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$FC,$0F,$0C,$D4,CMD_HASH_KIND_EXEC ; Q $D40C0FFC EXEC
 CMD_Q:
                         ; 2026-05-07T20:51-05:00        WLP2        Q now quiesces with WAI, then re-enters HIMON.
                         SEI
@@ -2111,9 +2181,12 @@ CMD_DISPATCH_SCAN_LOOP:
                         JSR             CMD_HASH_RECORD_IS_EXEC
                         BCC             CMD_DISPATCH_SCAN_NEXT
                         JSR             CMD_HASH_RECORD_ENTRY
+                        JSR             CMD_HASH_CONFIRM_EXEC
+                        BCC             CMD_DISPATCH_DONE
                         JSR             CMD_SAVE_ENTRY
                         STZ             CMD_EXEC_KIND
                         JSR             CMD_EXEC_ADDR
+CMD_DISPATCH_DONE:
                         JMP             MAIN_LOOP
 CMD_DISPATCH_SCAN_NEXT:
                         JSR             CMD_HASH_SCAN_ADV
@@ -2126,20 +2199,36 @@ CMD_DISPATCH_SCAN_MISS:
                         JSR             SYS_WRITE_CRLF
                         JMP             MAIN_LOOP
 
+; ----------------------------------------------------------------------------
+; THE_JOIN_FIND -- internal resident FNV record lookup.
+; IN : FNV_HASH0..3 = wanted hash.
+; OUT: C=1 found, A=kind, CMDP_ADDR_LO/HI=entry,
+;      CMD_HASH_EXTRA_LO/HI=extra pointer or $0000.
+;      C=0 not found.
+; ----------------------------------------------------------------------------
+THE_JOIN_FIND:
 CMD_HASH_FIND:
                         JSR             CMD_HASH_SCAN_INIT
+THE_JOIN_FIND_LOOP:
 CMD_HASH_FIND_LOOP:
                         JSR             CMD_HASH_SCAN_NEXT_RECORD
                         BCC             CMD_HASH_FIND_FAIL
                         JSR             CMD_HASH_RECORD_MATCH
                         BCC             CMD_HASH_FIND_NEXT
                         JSR             CMD_HASH_RECORD_ENTRY
+                        JSR             CMD_HASH_RECORD_EXTRA
+                        LDY             #$07
+                        LDA             (CMD_HASH_TAB_LO),Y
                         SEC
                         RTS
+THE_JOIN_FIND_NEXT:
 CMD_HASH_FIND_NEXT:
                         JSR             CMD_HASH_SCAN_ADV
-                        BRA             CMD_HASH_FIND_LOOP
+                        BRA             THE_JOIN_FIND_LOOP
+THE_JOIN_FIND_FAIL:
 CMD_HASH_FIND_FAIL:
+                        STZ             CMD_HASH_EXTRA_LO
+                        STZ             CMD_HASH_EXTRA_HI
                         CLC
                         RTS
 
@@ -2232,18 +2321,14 @@ CMD_HASH_RECORD_MATCH_NO:
 CMD_HASH_RECORD_IS_EXEC:
                         LDY             #$07
                         LDA             (CMD_HASH_TAB_LO),Y
-                        BEQ             CMD_HASH_RECORD_IS_EXEC_YES
-                        CLC
-                        RTS
-CMD_HASH_RECORD_IS_EXEC_YES:
-                        SEC
+                        LSR             A
                         RTS
 
 CMD_HASH_RECORD_ENTRY:
                         LDY             #$07
                         LDA             (CMD_HASH_TAB_LO),Y
-                        CMP             #$10
-                        BEQ             CMD_HASH_RECORD_ENTRY_K10
+                        CMP             #CMD_HASH_KIND_EXEC_TEXT
+                        BEQ             CMD_HASH_RECORD_ENTRY_PTR
                         CLC
                         LDA             CMD_HASH_TAB_LO
                         ADC             #$08
@@ -2252,7 +2337,7 @@ CMD_HASH_RECORD_ENTRY:
                         ADC             #$00
                         STA             CMDP_ADDR_HI
                         RTS
-CMD_HASH_RECORD_ENTRY_K10:
+CMD_HASH_RECORD_ENTRY_PTR:
                         LDY             #$08
                         LDA             (CMD_HASH_TAB_LO),Y
                         STA             CMDP_ADDR_LO
@@ -2266,7 +2351,7 @@ CMD_HASH_RECORD_EXTRA:
                         STZ             CMD_HASH_EXTRA_HI
                         LDY             #$07
                         LDA             (CMD_HASH_TAB_LO),Y
-                        CMP             #$10
+                        CMP             #CMD_HASH_KIND_EXEC_TEXT
                         BNE             CMD_HASH_RECORD_EXTRA_DONE
                         LDY             #$0A
                         LDA             (CMD_HASH_TAB_LO),Y
@@ -2275,6 +2360,85 @@ CMD_HASH_RECORD_EXTRA:
                         LDA             (CMD_HASH_TAB_LO),Y
                         STA             CMD_HASH_EXTRA_HI
 CMD_HASH_RECORD_EXTRA_DONE:
+                        RTS
+
+CMD_HASH_RECORD_IN_FILTER:
+                        LDA             CMD_HASH_FILTER_OP
+                        BEQ             CMD_HASH_RECORD_FILTER_YES
+                        LDY             #$07
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        TAX
+                        LDA             CMD_HASH_FILTER_OP
+                        CMP             #'='
+                        BEQ             CMD_HASH_RECORD_FILTER_EQ
+                        CMP             #'<'
+                        BEQ             CMD_HASH_RECORD_FILTER_LT
+                        CMP             #'>'
+                        BEQ             CMD_HASH_RECORD_FILTER_GT
+CMD_HASH_RECORD_FILTER_YES:
+                        SEC
+                        RTS
+CMD_HASH_RECORD_FILTER_EQ:
+                        TXA
+                        CMP             CMD_HASH_FILTER_VALUE
+                        BEQ             CMD_HASH_RECORD_FILTER_YES
+                        CLC
+                        RTS
+CMD_HASH_RECORD_FILTER_LT:
+                        TXA
+                        CMP             CMD_HASH_FILTER_VALUE
+                        BCC             CMD_HASH_RECORD_FILTER_YES
+                        CLC
+                        RTS
+CMD_HASH_RECORD_FILTER_GT:
+                        TXA
+                        CMP             CMD_HASH_FILTER_VALUE
+                        BEQ             CMD_HASH_RECORD_FILTER_NO
+                        BCS             CMD_HASH_RECORD_FILTER_YES
+CMD_HASH_RECORD_FILTER_NO:
+                        CLC
+                        RTS
+
+CMD_HASH_CONFIRM_EXEC:
+                        LDY             #$07
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             #CMD_HASH_KIND_EXEC_TEXT
+                        BEQ             CMD_HASH_CONFIRM_ASK
+                        SEC
+                        RTS
+CMD_HASH_CONFIRM_ASK:
+                        LDX             #<MSG_RUN
+                        LDY             #>MSG_RUN
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             CMD_HASH_RECORD_EXTRA
+                        LDA             CMD_HASH_EXTRA_LO
+                        ORA             CMD_HASH_EXTRA_HI
+                        BEQ             CMD_HASH_CONFIRM_TOKEN
+                        LDX             CMD_HASH_EXTRA_LO
+                        LDY             CMD_HASH_EXTRA_HI
+                        JSR             HIM_WRITE_HBSTRING
+                        BRA             CMD_HASH_CONFIRM_ADDR
+CMD_HASH_CONFIRM_TOKEN:
+                        JSR             CMD_HASH_PRINT_TOKEN_RAW
+CMD_HASH_CONFIRM_ADDR:
+                        LDX             #<MSG_RUN_AT
+                        LDY             #>MSG_RUN_AT
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             CMD_HASH_PRINT_ENTRY
+                        LDX             #<MSG_RUN_Q
+                        LDY             #>MSG_RUN_Q
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_READ_CHAR_ECHO
+                        JSR             HIM_CHAR_TO_UPPER
+                        CMP             #'Y'
+                        PHP
+                        JSR             SYS_WRITE_CRLF
+                        PLP
+                        BEQ             CMD_HASH_CONFIRM_YES
+                        CLC
+                        RTS
+CMD_HASH_CONFIRM_YES:
+                        SEC
                         RTS
 
 CMD_HASH_PRINT_ROW:
@@ -2341,6 +2505,7 @@ CMD_HASH_PRINT_EXTRA_DONE:
 
 CMD_HASH_PRINT_TOKEN:
                         JSR             CMD_HASH_SPACE
+CMD_HASH_PRINT_TOKEN_RAW:
                         LDY             #$00
 CMD_HASH_PRINT_TOKEN_LOOP:
                         LDA             (CMDP_PTR_LO),Y
@@ -2627,18 +2792,24 @@ HIM_FNV_FORCE_RESIDENT:
                         DW              UTL_HEX_ASCII_TO_NIBBLE
 
 HIMON_VERSION_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$80,$1A,$05,$B0,$10 ; HIMON $B0051A80 INFO
+                        DB              'F','N',CMD_FNV_SIG2,$80,$1A,$05,$B0,CMD_HASH_KIND_EXEC_TEXT ; HIMON $B0051A80 EXEC+CONFIRM
                         DW              START
                         DW              MSG_HIMON_VERSION_TEXT
 
 MSG_BANNER:              DB              $0D,$0A
-MSG_HIMON_VERSION_TEXT:  DB              "HIMON V 00.0519(1925",(')'+$80)
+                        INCLUDE         "himon-version.inc"
+TXT_BOOT_COLD_RESET:     DB              "BOOT_COLD_RESE",('T'+$80)
+TXT_BOOT_WARM_RESET:     DB              "BOOT_WARM_RESE",('T'+$80)
 MSG_PROMPT:              DB              ('>'+$80)
 MSG_UNKNOWN:             DB              ('?'+$80)
 MSG_HASH_NF:             DB              " HSH_NF",('!'+$80)
 MSG_HASH_HDR:            DB              "HASH     ENTRY K TEX",('T'+$80)
 MSG_HASH_ENTRY:          DB              " ENTRY",('='+$80)
 MSG_HASH_K:              DB              " K",('='+$80)
+MSG_HASH_USAGE:          DB              "# [K=hh|K<hh|K>hh|token",(']'+$80)
+MSG_RUN:                 DB              "RUN",(' '+$80)
+MSG_RUN_AT:              DB              " ",('@'+$80)
+MSG_RUN_Q:               DB              " ?",(' '+$80)
 MSG_HELP:                DB              "# ? D M U R X G L B N A Q ",($22+$80)
 MSG_QUOTE_MATCH:         DB              " STR8 MATCH",('!'+$80)
 MSG_USAGE_D:             DB              "D start [end|+cnt",(']'+$80)

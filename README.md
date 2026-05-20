@@ -75,10 +75,19 @@ external programmer path and known-good image nearby.
 Status streams:
 
 ```text
+DOC/GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.md  live update and rollback proof
 DOC/GUIDES/HASH_FLASH.md      command-surface and milestone alerts
 DOC/GUIDES/DOC_FLASH.md       documentation-shape alerts
 DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md  board transcript proof
 ```
+
+## Live Proof
+
+The clearest current transcript is
+[HIMON/STR8 Live Update Proof](DOC/GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.md).
+It shows bank 3 moving from HIMON `(2312)` to `(2317)` and back to `(2312)`:
+STR8 updates HIMON, HIMON proves the hash catalog filters and confirmed
+`BOOT_COLD_RESET`, then STR8 restores the earlier image.
 
 ## Start Here
 

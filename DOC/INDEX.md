@@ -26,6 +26,7 @@ breakpoint and single-step surface.
 - [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md) - milestone and command alerts.
 - [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md) - documentation-shape alerts.
 - [GUIDES/LOGS/HARDWARE_TEST_LOG.md](GUIDES/LOGS/HARDWARE_TEST_LOG.md) - board proof.
+- [GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.md](GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.md) - live HIMON update and rollback proof, tracked by `(2312) -> (2317) -> (2312)`.
 
 ## Guide Indexes
 

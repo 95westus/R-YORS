@@ -82,7 +82,7 @@ FTDI_INIT_PN_CTRL_INIT     EQU             $0C
 FTDI_INIT_PN_CTRL_INIT_DDR EQU             $0C
 
 PIN_FTDI_INIT_FNV:
-                        DB              'F','N',('V'+$80),$8F,$DE,$6E,$22,$00 ; PIN_FTDI_INIT $226EDE8F EXEC
+                        DB              'F','N',('V'+$80),$8F,$DE,$6E,$22,$01 ; PIN_FTDI_INIT $226EDE8F EXEC
 PIN_FTDI_INIT:
 ?INIT:                  PHA
                         LDA             #FTDI_INIT_PN_CTRL_INIT
@@ -127,7 +127,7 @@ FTDI_BR_VIA_CTRL           EQU             $7FE0
 FTDI_BR_PN_RXF             EQU             $02
 
 PIN_FTDI_POLL_RX_READY_FNV:
-                        DB              'F','N',('V'+$80),$5B,$9C,$B6,$F2,$00 ; PIN_FTDI_POLL_RX_READY $F2B69C5B EXEC
+                        DB              'F','N',('V'+$80),$5B,$9C,$B6,$F2,$01 ; PIN_FTDI_POLL_RX_READY $F2B69C5B EXEC
 PIN_FTDI_POLL_RX_READY:
                         PHA
                         LDA             FTDI_BR_VIA_CTRL
@@ -178,7 +178,7 @@ FTDI_RBNB_PN_RXF           EQU             $02
 FTDI_RBNB_PN_RD            EQU             $08
 
 PIN_FTDI_READ_BYTE_NONBLOCK_FNV:
-                        DB              'F','N',('V'+$80),$DD,$B2,$3B,$48,$00 ; PIN_FTDI_READ_BYTE_NONBLOCK $483BB2DD EXEC
+                        DB              'F','N',('V'+$80),$DD,$B2,$3B,$48,$01 ; PIN_FTDI_READ_BYTE_NONBLOCK $483BB2DD EXEC
 PIN_FTDI_READ_BYTE_NONBLOCK:
                         STZ             FTDI_RBNB_VIA_DDRA
                         LDA             #FTDI_RBNB_PN_RXF
@@ -241,7 +241,7 @@ FTDI_WB_PN_WR              EQU             $04
 FTDI_WB_WR_SPIN_LIMIT      EQU             $30; $50
 
 PIN_FTDI_WRITE_BYTE_NONBLOCK_FNV:
-                        DB              'F','N',('V'+$80),$FC,$C6,$5F,$D5,$00 ; PIN_FTDI_WRITE_BYTE_NONBLOCK $D55FC6FC EXEC
+                        DB              'F','N',('V'+$80),$FC,$C6,$5F,$D5,$01 ; PIN_FTDI_WRITE_BYTE_NONBLOCK $D55FC6FC EXEC
 PIN_FTDI_WRITE_BYTE_NONBLOCK:
                         PHA
                         SEC
@@ -305,7 +305,7 @@ FTDI_ISE_PN_PWE            EQU             $20
 FTDI_ISE_VIA_CTRL          EQU             $7FE0
 
 PIN_FTDI_CHECK_ENUMERATED_FNV:
-                        DB              'F','N',('V'+$80),$EE,$53,$7D,$8A,$00 ; PIN_FTDI_CHECK_ENUMERATED $8A7D53EE EXEC
+                        DB              'F','N',('V'+$80),$EE,$53,$7D,$8A,$01 ; PIN_FTDI_CHECK_ENUMERATED $8A7D53EE EXEC
 PIN_FTDI_CHECK_ENUMERATED:
                         LDA             #FTDI_ISE_PN_PWE
                         ; mask for PB5 (PWE# bit)

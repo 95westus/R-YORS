@@ -104,7 +104,7 @@
                         XREF            PIN_FTDI_INIT
 
 BIO_FTDI_INIT_FNV:
-                        DB              'F','N',('V'+$80),$F2,$62,$A4,$30,$00 ; BIO_FTDI_INIT $30A462F2 EXEC
+                        DB              'F','N',('V'+$80),$F2,$62,$A4,$30,$01 ; BIO_FTDI_INIT $30A462F2 EXEC
 BIO_FTDI_INIT:
                         JSR             PIN_FTDI_INIT
                         RTS
@@ -177,7 +177,7 @@ BIO_FTDI_READ_BYTE_NONBLOCK:
                         XREF            PIN_FTDI_READ_BYTE_NONBLOCK
 
 BIO_FTDI_READ_BYTE_BLOCK_FNV:
-                        DB              'F','N',('V'+$80),$85,$5B,$28,$20,$00 ; BIO_FTDI_READ_BYTE_BLOCK $20285B85 EXEC
+                        DB              'F','N',('V'+$80),$85,$5B,$28,$20,$01 ; BIO_FTDI_READ_BYTE_BLOCK $20285B85 EXEC
 BIO_FTDI_READ_BYTE_BLOCK:
                         JSR             PIN_FTDI_READ_BYTE_NONBLOCK
                         BCC             BIO_FTDI_READ_BYTE_BLOCK
@@ -212,7 +212,7 @@ BIO_FTDI_READ_BYTE_BLOCK:
 BIO_FTDI_CTRL_C           EQU             $03
 
 BIO_FTDI_GET_CTRL_C_FNV:
-                        DB              'F','N',('V'+$80),$D2,$50,$61,$42,$00 ; BIO_FTDI_GET_CTRL_C $426150D2 EXEC
+                        DB              'F','N',('V'+$80),$D2,$50,$61,$42,$01 ; BIO_FTDI_GET_CTRL_C $426150D2 EXEC
 BIO_FTDI_GET_CTRL_C:
                         JSR             PIN_FTDI_READ_BYTE_NONBLOCK
                         BCC             ?NO_CTRL_C
@@ -293,7 +293,7 @@ BIO_FTDI_WRITE_BYTE_NONBLOCK:
                         XREF            PIN_FTDI_WRITE_BYTE_NONBLOCK
 
 BIO_FTDI_WRITE_BYTE_BLOCK_FNV:
-                        DB              'F','N',('V'+$80),$30,$E9,$9F,$37,$00 ; BIO_FTDI_WRITE_BYTE_BLOCK $379FE930 EXEC
+                        DB              'F','N',('V'+$80),$30,$E9,$9F,$37,$01 ; BIO_FTDI_WRITE_BYTE_BLOCK $379FE930 EXEC
 BIO_FTDI_WRITE_BYTE_BLOCK:
                         PHX
 ?LOOP:                  JSR             PIN_FTDI_WRITE_BYTE_NONBLOCK
@@ -333,7 +333,7 @@ BIO_FTDI_WRITE_BYTE_BLOCK:
                         XDEF            BIO_FTDI_CHECK_ENUMERATED_FNV
                         XREF            PIN_FTDI_CHECK_ENUMERATED
 BIO_FTDI_CHECK_ENUMERATED_FNV:
-                        DB              'F','N',('V'+$80),$E3,$76,$47,$99,$00 ; BIO_FTDI_CHECK_ENUMERATED $994776E3 EXEC
+                        DB              'F','N',('V'+$80),$E3,$76,$47,$99,$01 ; BIO_FTDI_CHECK_ENUMERATED $994776E3 EXEC
 BIO_FTDI_CHECK_ENUMERATED:
                         JSR             PIN_FTDI_CHECK_ENUMERATED
                         RTS
@@ -748,7 +748,7 @@ BIO_FTDI_FLUSH_RX_COUNT:
 FTDI_FLUSH_RX_MAX          EQU             $FF
 
 BIO_FTDI_FLUSH_RX_FNV:
-                        DB              'F','N',('V'+$80),$B9,$22,$66,$2F,$00 ; BIO_FTDI_FLUSH_RX $2F6622B9 EXEC
+                        DB              'F','N',('V'+$80),$B9,$22,$66,$2F,$01 ; BIO_FTDI_FLUSH_RX $2F6622B9 EXEC
 BIO_FTDI_FLUSH_RX:
                         PHA
                         PHX

@@ -276,8 +276,9 @@ docs.
   is emitted.
 - RPG record: business/data record in RPG terminology; do not confuse this with
   an RREC.
-- current HIMON FNV command record: the current inline HIMON command shape:
-  `'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...`.
+- current HIMON FNV command record: the current HIMON proving shape:
+  `'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,payload...`.
+  Current K bits mark executable/callable and confirm-before-execute.
 
 ## Signature, Control, And Kind
 

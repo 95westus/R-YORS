@@ -56,8 +56,26 @@ Current HIMON command records use this proving shape:
 'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...
 ```
 
-For current `kind=$00`, executable code begins immediately after the kind byte,
-at record offset `+8`. Current HIMON does not store `entry_lo,entry_hi`.
+Current HIMON treats `kind` as a bit field:
+
+```text
+bit 0  executable/callable
+bit 1  confirm before execution
+bit 2  reserved
+bit 3  reserved
+```
+
+The current values are:
+
+```text
+K=$00  described/known, not directly executable by current dispatch
+K=$01  executable/callable; legacy inline command code starts at record+8
+K=$03  executable/callable and confirm before execution; payload is
+       DW ENTRY, DW EXTRA
+```
+
+`EXTRA` is display side information, not an alias and not a parameter pointer.
+Aliases must be separate records with their own hashes.
 
 A compact future RCAT/RREC table was previously expected to keep FNV-1a and put
 hash width in control bits. That is now historical design context. The current

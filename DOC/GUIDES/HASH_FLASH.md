@@ -29,53 +29,132 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
-## REHASH: HIMON Visible Version Uses Current Date
+## REHASH: Current HIMON K Bits And Catalog-Linking Direction
 
 ```text
 2026
          05
-                19
-                   19:30Z WLP2 Corrected the HBSTR terminator so the closing
-                               parenthesis prints.
-                   19:26Z WLP2 HIMON visible text is now
-                               HIMON V 00.0519(1925), and the resident K=$10
-                               HIMON record points at the same text.
-                   19:23Z WLP2 HIMON ROM now contains one resident K=$10
-                               FNV record for HIMON, pointing at START and
-                               EXTRA text HIMON V 00.0519.
-                   19:00Z WLP2 HIMON cold boot now reports V 00.0519,
-                               derived from the current update date.
+                20
+                   03:49Z WLP2 Updated the current HIMON FNV K byte: bit 0 is
+                               executable/callable, bit 1 is confirm before
+                               execution, and K=$03 records carry ENTRY plus
+                               display EXTRA.
 ```
 
-For visible HIMON/STR8 version updates, get the current date first, then derive
-the banner version from that date. The May 19 update line is:
+Current HIMON FNV-era records use:
 
 ```text
-HIMON V 00.0519
+K=$00  described/known, not directly executable by current dispatch
+K=$01  executable/callable
+K=$03  executable/callable and confirm before execution
 ```
 
-## REHASH: HIMON # K10 EXTRA Text
+Working description: HIMON/THE is a ROM-resident hash dictionary for 65C02
+services, with Forth instincts and assembler bones.
+
+The resident `#` command can list all records or filter by maximum K value:
 
 ```text
-2026
-         05
-                19
-                   18:58Z WLP2 HIMON # now understands current FNV K=$10
-                               pointer records well enough to print a
-                               nonzero DW EXTRA HBSTR at the end of the row.
+#         list every visible FNV record
+# K=hh    list records whose K byte equals hex hh
+# K<hh    list records whose K byte is less than hex hh
+# K>hh    list records whose K byte is greater than hex hh
 ```
 
-The current FNV-era `#` view keeps old `K=$00` records quiet and unchanged.
-For a `K=$10` record, HIMON reads:
+For K=$03, the current payload is:
 
 ```text
 DW ENTRY
 DW EXTRA
 ```
 
-`ENTRY` is printed as the row entry address. If `EXTRA` is `$0000`, no text is
-added. If `EXTRA` is nonzero, `#` appends one space and writes the
-high-bit-terminated string found there.
+`ENTRY` is the callable address. `EXTRA` is side information: currently an
+optional HBSTR for `#` display and confirm prompts. `EXTRA` is not an alias,
+not a second command name, and not automatically passed to the called routine.
+
+The text pointer is a display/prompt field, not a typed-name alias. If an alias
+is ever wanted, it must be a deliberate second record with its own hash. The
+current reset exports are only `BOOT_COLD_RESET` and `BOOT_WARM_RESET`.
+
+Catalog linking follows imports recursively. A user choosing a low-level input
+provider such as `PIN_READ_BYTE_NB` should flash only the PIN-level body. A user
+choosing a higher-level service such as `BIO_READ_CHAR_NB` or
+`SYS_READ_CHAR_NB` should pull that service plus its declared dependencies down
+through BIO/COR/PIN records, then apply fixups.
+
+Bits 2 and 3 of the current K byte are reserved. Do not use them yet as
+selectors, permissions, lifecycle flags, or dependency-policy flags. Those may
+become useful later, but they need a real record/control-byte design before they
+earn scarce bit positions.
+
+Future records that need callable input or output should use a documented
+record shape, not reinterpret `EXTRA`:
+
+```text
+K=$11  DW ENTRY, DW PARMS
+K=$12  DW ENTRY, DW PARMS, DW RESULTS
+```
+
+`PARMS` can point at a string, token stream, command list, import list, or typed
+parameter block. `RESULTS` can point at a writable result buffer or result
+descriptor. HIMON/THE must define the calling convention for each future kind.
+
+## REHASH: HIMON Visible Version Uses Current Date
+
+```text
+2026
+         05
+                19
+                   22:26  WLP2 Added a build-time HIMON version stamp so each
+                               HIMON rebuild updates the visible
+                               HIMON V 00.MMDD(HHMM) text before assembly.
+                   19:42Z WLP2 Added THE_JOIN_FIND as HIMON's first internal
+                               join hook; # token used it for lookup while
+                               command dispatch was still K=$00-only.
+                   19:30Z WLP2 Corrected the HBSTR terminator so the closing
+                               parenthesis prints.
+                   19:26Z WLP2 HIMON visible text became
+                               HIMON V 00.0519(1925), and the then-current
+                               K=$10 HIMON record pointed at the same text.
+                   19:23Z WLP2 HIMON ROM then contained one resident K=$10
+                               FNV record for HIMON, pointing at START and
+                               EXTRA text HIMON V 00.0519.
+                   19:00Z WLP2 HIMON cold boot now reports V 00.0519,
+                               derived from the current update date.
+```
+
+Visible HIMON/STR8 version text is build-stamped from local time before HIMON
+assembly. The source stores the final `)` as the HB-string high-bit terminator,
+so the quoted bytes intentionally stop before that character.
+
+The build format is:
+
+```text
+HIMON V 00.MMDD(HHMM)
+```
+
+## REHASH: Historical HIMON # K10 EXTRA Text
+
+```text
+2026
+         05
+                19
+                   18:58Z WLP2 HIMON # then understood FNV K=$10
+                               pointer records well enough to print a
+                               nonzero DW EXTRA HBSTR at the end of the row.
+```
+
+This was the short-lived pointer-record step before the current K-bit contract
+above. At that point, `#` kept old `K=$00` records quiet and, for a `K=$10`
+record, read:
+
+```text
+DW ENTRY
+DW EXTRA
+```
+
+The current replacement is K=$03 for confirmed executable pointer records:
+`DW ENTRY`, `DW EXTRA`.
 
 ## REHASH: STR8 Three-Image Milestone And CRC16 Hash Pivot
 

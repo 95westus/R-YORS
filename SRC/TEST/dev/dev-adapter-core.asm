@@ -130,7 +130,7 @@ SYS_CHECK_ENUMERATED:
 ; - Delegates to backend routine `COR_FTDI_READ_CHAR`.
 ; ----------------------------------------------------------------------------
 SYS_READ_CHAR_FNV:
-                        DB              'F','N',('V'+$80),$9C,$1C,$62,$43,$00
+                        DB              'F','N',('V'+$80),$9C,$1C,$62,$43,$01
 SYS_READ_CHAR:
                         JSR             COR_FTDI_READ_CHAR
                         RTS
@@ -157,7 +157,7 @@ SYS_READ_CHAR:
 ;   break/abort polling, not non-destructive keyboard peeking.
 ; ----------------------------------------------------------------------------
 SYS_GET_CTRL_C_FNV:
-                        DB              'F','N',('V'+$80),$31,$89,$B1,$BE,$00
+                        DB              'F','N',('V'+$80),$31,$89,$B1,$BE,$01
 SYS_GET_CTRL_C:
                         JSR             COR_FTDI_GET_CTRL_C
                         RTS
@@ -289,7 +289,7 @@ SYS_WRITE_CHAR_REPEAT:
 ; OUT: C/A semantics follow backend cooked-char contract
 ; ----------------------------------------------------------------------------
 SYS_READ_CHAR_ECHO_FNV:
-                        DB              'F','N',('V'+$80),$F8,$47,$19,$F9,$00
+                        DB              'F','N',('V'+$80),$F8,$47,$19,$F9,$01
 SYS_READ_CHAR_ECHO:
                         JSR             COR_FTDI_READ_CHAR_COOKED_ECHO
                         RTS
@@ -306,7 +306,7 @@ SYS_READ_CHAR_ECHO:
 ; - Delegates to backend routine `COR_FTDI_READ_CHAR_COOKED_ECHO`.
 ; ----------------------------------------------------------------------------
 SYS_READ_CHAR_COOKED_ECHO_FNV:
-                        DB              'F','N',('V'+$80),$10,$3F,$5E,$B8,$00
+                        DB              'F','N',('V'+$80),$10,$3F,$5E,$B8,$01
 SYS_READ_CHAR_COOKED_ECHO:
                         JSR             COR_FTDI_READ_CHAR_COOKED_ECHO
                         RTS

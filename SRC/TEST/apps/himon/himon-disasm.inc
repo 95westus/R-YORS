@@ -4,7 +4,7 @@
 ; ----------------------------------------------------------------------------
 
 CMD_U_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$B0,$09,$0C,$D0,$00
+                        DB              'F','N',CMD_FNV_SIG2,$B0,$09,$0C,$D0,CMD_HASH_KIND_EXEC
 CMD_U:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_PARSE_RANGE_REQUIRED

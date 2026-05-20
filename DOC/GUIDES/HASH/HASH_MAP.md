@@ -12,6 +12,9 @@ FNV-1a is the current implemented hash algorithm, hash32/hash16/hash8 are older
 stored result widths, `Record` means only the record format defined in the local
 section, and THE means The Hash Environment.
 
+Tempting ideas that should not yet become ABI live in
+[HASH_TRASH.md](HASH_TRASH.md).
+
 Terminology note: `hash map` here means a guide map of hash concepts and
 ownership. It does not mean a hash table implementation, and it does not promise
 that every section is a renderable flowchart. When visual precision matters,
@@ -153,18 +156,23 @@ FNV-1a algorithm.
 Current HIMON still uses the older proving-record shape:
 
 ```text
-'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,inline-code...
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,payload...
 ```
 
 In that current shape, `('V'|$80)` is the high-bit-terminated third byte of the
 literal `FNV` signature. The `kind` byte follows the four hash bytes:
 
 ```text
-$00  executable code begins immediately after kind, at record+8
+$00  described/known, not directly executable by current dispatch
+$01  executable/callable; legacy inline code begins at record+8
+$03  executable/callable and confirm before execution; DW ENTRY, DW EXTRA
 ```
 
-Current HIMON does not store `entry_lo,entry_hi`. Explicit pointer records are
-a future RREC payload direction.
+Bit 0 means executable/callable. Bit 1 means confirm before execution. Bits 2
+and 3 are reserved; do not spend them as selectors or permissions without a
+future record/control-byte design. `EXTRA` is display side information, not an
+alias and not a parameter pointer. Richer callable records with `PARMS` or
+`RESULTS` are still a future RREC payload direction.
 
 The future compact record should use a layout/control byte instead of spending
 literal width marker bytes:
