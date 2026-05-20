@@ -46,6 +46,8 @@ NMI_DEBOUNCE_Y           EQU             $F8
 
 CMD_HASH_TAB_LO          EQU             $E0
 CMD_HASH_TAB_HI          EQU             $E1
+CMD_HASH_EXTRA_LO        EQU             $B0
+CMD_HASH_EXTRA_HI        EQU             $B1
 FNV_HASH0                EQU             $7E66
 FNV_HASH1                EQU             $7E67
 FNV_HASH2                EQU             $7E68
@@ -74,6 +76,7 @@ CMD_ABORT_TOP            EQU             $04
 ; Current FNV record format:
 ;   'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,entry...
 ;   kind=$00: executable code begins immediately after the kind byte.
+;   kind=$10: DW ENTRY, DW EXTRA; EXTRA=$0000 means no display text.
 CMD_FNV_SIG2             EQU             ('V'+$80)
 CMD_HASH_SCAN_BASE_HI    EQU             $80
 QUOTE_HASH_TARGET0       EQU             $7A
@@ -234,6 +237,7 @@ CMD_HASH_INFO_FOUND:
                         JSR             HIM_WRITE_HBSTRING
                         JSR             CMD_HASH_PRINT_KIND
                         JSR             CMD_HASH_PRINT_TOKEN
+                        JSR             CMD_HASH_PRINT_EXTRA
                         JSR             SYS_WRITE_CRLF
                         RTS
 
@@ -2236,6 +2240,10 @@ CMD_HASH_RECORD_IS_EXEC_YES:
                         RTS
 
 CMD_HASH_RECORD_ENTRY:
+                        LDY             #$07
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             #$10
+                        BEQ             CMD_HASH_RECORD_ENTRY_K10
                         CLC
                         LDA             CMD_HASH_TAB_LO
                         ADC             #$08
@@ -2243,6 +2251,30 @@ CMD_HASH_RECORD_ENTRY:
                         LDA             CMD_HASH_TAB_HI
                         ADC             #$00
                         STA             CMDP_ADDR_HI
+                        RTS
+CMD_HASH_RECORD_ENTRY_K10:
+                        LDY             #$08
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        STA             CMDP_ADDR_LO
+                        INY
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        STA             CMDP_ADDR_HI
+                        RTS
+
+CMD_HASH_RECORD_EXTRA:
+                        STZ             CMD_HASH_EXTRA_LO
+                        STZ             CMD_HASH_EXTRA_HI
+                        LDY             #$07
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             #$10
+                        BNE             CMD_HASH_RECORD_EXTRA_DONE
+                        LDY             #$0A
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        STA             CMD_HASH_EXTRA_LO
+                        INY
+                        LDA             (CMD_HASH_TAB_LO),Y
+                        STA             CMD_HASH_EXTRA_HI
+CMD_HASH_RECORD_EXTRA_DONE:
                         RTS
 
 CMD_HASH_PRINT_ROW:
@@ -2252,6 +2284,7 @@ CMD_HASH_PRINT_ROW:
                         JSR             CMD_HASH_PRINT_ENTRY
                         JSR             CMD_HASH_SPACE
                         JSR             CMD_HASH_PRINT_KIND
+                        JSR             CMD_HASH_PRINT_EXTRA
                         JSR             SYS_WRITE_CRLF
                         RTS
 
@@ -2292,6 +2325,18 @@ CMD_HASH_PRINT_KIND:
                         LDY             #$07
                         LDA             (CMD_HASH_TAB_LO),Y
                         JSR             SYS_WRITE_HEX_BYTE
+                        RTS
+
+CMD_HASH_PRINT_EXTRA:
+                        JSR             CMD_HASH_RECORD_EXTRA
+                        LDA             CMD_HASH_EXTRA_LO
+                        ORA             CMD_HASH_EXTRA_HI
+                        BEQ             CMD_HASH_PRINT_EXTRA_DONE
+                        JSR             CMD_HASH_SPACE
+                        LDX             CMD_HASH_EXTRA_LO
+                        LDY             CMD_HASH_EXTRA_HI
+                        JSR             HIM_WRITE_HBSTRING
+CMD_HASH_PRINT_EXTRA_DONE:
                         RTS
 
 CMD_HASH_PRINT_TOKEN:
@@ -2581,11 +2626,17 @@ HIM_FNV_FORCE_RESIDENT:
                         DW              SYS_GET_CTRL_C
                         DW              UTL_HEX_ASCII_TO_NIBBLE
 
-MSG_BANNER:              DB              $0D,$0A,"HIMON U",('2'+$80)
+HIMON_VERSION_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$80,$1A,$05,$B0,$10 ; HIMON $B0051A80 INFO
+                        DW              START
+                        DW              MSG_HIMON_VERSION_TEXT
+
+MSG_BANNER:              DB              $0D,$0A
+MSG_HIMON_VERSION_TEXT:  DB              "HIMON V 00.0519(1925",(')'+$80)
 MSG_PROMPT:              DB              ('>'+$80)
 MSG_UNKNOWN:             DB              ('?'+$80)
 MSG_HASH_NF:             DB              " HSH_NF",('!'+$80)
-MSG_HASH_HDR:            DB              "HASH     ENTRY ",('K'+$80)
+MSG_HASH_HDR:            DB              "HASH     ENTRY K TEX",('T'+$80)
 MSG_HASH_ENTRY:          DB              " ENTRY",('='+$80)
 MSG_HASH_K:              DB              " K",('='+$80)
 MSG_HELP:                DB              "# ? D M U R X G L B N A Q ",($22+$80)

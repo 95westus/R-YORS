@@ -29,6 +29,54 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: HIMON Visible Version Uses Current Date
+
+```text
+2026
+         05
+                19
+                   19:30Z WLP2 Corrected the HBSTR terminator so the closing
+                               parenthesis prints.
+                   19:26Z WLP2 HIMON visible text is now
+                               HIMON V 00.0519(1925), and the resident K=$10
+                               HIMON record points at the same text.
+                   19:23Z WLP2 HIMON ROM now contains one resident K=$10
+                               FNV record for HIMON, pointing at START and
+                               EXTRA text HIMON V 00.0519.
+                   19:00Z WLP2 HIMON cold boot now reports V 00.0519,
+                               derived from the current update date.
+```
+
+For visible HIMON/STR8 version updates, get the current date first, then derive
+the banner version from that date. The May 19 update line is:
+
+```text
+HIMON V 00.0519
+```
+
+## REHASH: HIMON # K10 EXTRA Text
+
+```text
+2026
+         05
+                19
+                   18:58Z WLP2 HIMON # now understands current FNV K=$10
+                               pointer records well enough to print a
+                               nonzero DW EXTRA HBSTR at the end of the row.
+```
+
+The current FNV-era `#` view keeps old `K=$00` records quiet and unchanged.
+For a `K=$10` record, HIMON reads:
+
+```text
+DW ENTRY
+DW EXTRA
+```
+
+`ENTRY` is printed as the row entry address. If `EXTRA` is `$0000`, no text is
+added. If `EXTRA` is nonzero, `#` appends one space and writes the
+high-bit-terminated string found there.
+
 ## REHASH: STR8 Three-Image Milestone And CRC16 Hash Pivot
 
 ```text
