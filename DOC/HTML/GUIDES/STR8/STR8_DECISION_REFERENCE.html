@@ -81,6 +81,22 @@ verify copied bytes by read-back/byte compare</code></pre>
 <p>Base-image preservation remains separate future bridge work:</p>
 <pre><code class="language-text">TODO bridge/install path = offer to save original WDCMONv2/base image</code></pre>
 <p>Restoring bank 0 means restoring whatever bank 0 currently holds. Before enrollment it may be a WDCMONv2/base image and may remove R-YORS from the live boot bank. After enrollment it is just the oldest rotating backup.</p>
+<h2 id="future-partitioned-backup-target">Future Partitioned Backup Target</h2>
+<p>The next product direction is not &quot;let the operator spend banks 0 and 1 by hand.&quot; STR8 should own banks 0 and 1 as a managed 64K backup arena, decide how much of each bank is taken, and print the storage plan before it commits.</p>
+<p>Preferred future layout:</p>
+<pre><code class="language-text">bank 0
+  $8000-$8FFF  metadata/catalog sector
+  $9000-$BFFF  payload pool sectors 0-2, default 12K lane
+  $C000-$EFFF  payload pool sectors 3-5, default 12K lane
+  $F000-$FFFF  payload pool sector 6
+
+bank 1
+  $8000-$9FFF  payload pool sectors 7-8
+  $A000-$CFFF  payload pool sectors 9-11, default 12K lane
+  $D000-$FFFF  payload pool sectors 12-14, default 12K lane</code></pre>
+<p>That gives STR8 one fixed 4K catalog sector and a 60K payload pool. Five clean 12K slots are the default HIMON-sized view of the pool, not a fixed allocation rule. Plain <code>B</code> should remain the safe default: back up the live bank 3 <code>$C000-$EFFF</code> HIMON payload using three 4K sectors. A future explicit <code>B start end</code> may back up a requested range, but STR8 must validate or round it to erase-sector boundaries, allocate the number of sectors actually needed, and refuse anything that cannot be represented safely.</p>
+<p>The catalog sector records origin bank, origin start, requested length, actual sector-rounded range, allocated payload sector list, payload offset when packed, per-sector state, label/name, role, entry address, hash/check, generation, and compression kind. Compression starts as <code>none</code>.</p>
+<p>Erased sectors are metadata, not payload. If a source sector is all <code>$FF</code>, STR8 records it as erased and stores no data bytes for it; restore erases the target sector and leaves it erased. Full-sector payloads such as <code>$F000-$FFFF</code> must remain byte-for-byte clean, so metadata is not placed in front of copied data.</p>
 <h2 id="boot-target">Boot Target</h2>
 <p>Today:</p>
 <pre><code class="language-text">STR8 timeout or G -&gt; HIMON</code></pre>
@@ -168,7 +184,7 @@ advanced sector maintenance mode
 HIMON hashed command dispatch after handoff
 future STR8-N catalog/FNV participation
 future STR8-N vector integration hooks
-metadata layout
+exact partitioned catalog record layout
 bank 0 WDCMONv2/base-image preservation bridge
 wear leveling or erase counters
 flash export/migration over serial or board-to-board link
@@ -180,7 +196,7 @@ WDCMONv2 transition documentation/tool</code></pre>
 <p>Bank 3 boots. Bank 2 is latest backup. Bank 1 is previous backup. Bank 0 is held unless the one-way enrollment flag makes it the oldest rotating backup.</p>
 <p>STR8 restores bank 3 from whole 32K ROM bank images, skipping the selected STR8 protected window unless an explicit STR8 install/update is requested. Then HIMON takes over.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8_DECISION_REFERENCE.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-20T05:29:23Z</time>. Markdown remains canonical.</footer>
-  
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8_DECISION_REFERENCE.md</code>. Source modified: <time>2026-05-20T05:56:19Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+
 </body>
 </html>

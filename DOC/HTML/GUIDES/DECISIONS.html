@@ -219,9 +219,17 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>range-aware flash manager. It may pack named regions elsewhere, remember their origin, and later restore them by metadata. Optional compression is allowed only behind explicit metadata and verification. This does not change the current STR8 V0 whole-32K-image backup/restore contract.</p>
 <ul>
-<li>The next partitioned-backup direction is a 64K arena across banks 0 and 1:</li>
+<li>The next partitioned-backup direction is a 64K arena across banks 0 and 1,</li>
 </ul>
-<p>five 12K backup slots plus one 4K metadata/name/label sector. Bank 2 is the planned SYS/USR bank, and bank 3 remains the default boot bank with <code>$8000-$BFFF</code> user-available, <code>$C000-$EFFF</code> as the default payload gate, and <code>$F000-$FFFF</code> as STR8/top-sector recovery space.</p>
+<p>allocated by STR8 policy rather than by the operator. The preferred catalog location is one fixed 4K sector at bank 0 <code>$8000-$8FFF</code>, leaving a 60K, 15-sector payload pool in the remaining bank 0/1 space. Five clean 12K slots are the default HIMON-sized view of that pool, not a fixed allocation rule.</p>
+<ul>
+<li>In that direction, plain <code>B</code> remains the product-safe backup of the live</li>
+</ul>
+<p>HIMON payload range, while <code>B start end</code> may become an explicit range backup. STR8 must round or validate requested ranges to flash erase sectors, detect erased <code>$FF</code> sectors, and record erased sectors in metadata instead of storing payload bytes for them. Smaller ranges can consume fewer sectors, larger ranges can consume more, and the catalog records the actual allocated sector list.</p>
+<ul>
+<li>Full-sector backups such as <code>$F000-$FFFF</code> should keep their payload sector</li>
+</ul>
+<p>byte-for-byte clean; metadata lives in the catalog sector, not in front of the copied data. STR8 decides whether a requested backup fits, where it is stored, and what may be overwritten. Bank 2 is the planned SYS/USR bank, and bank 3 remains the default boot bank with <code>$8000-$BFFF</code> user-available, <code>$C000-$EFFF</code> as the default payload gate, and <code>$F000-$FFFF</code> as STR8/top-sector recovery space.</p>
 <ul>
 <li>STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.</li>
 <li>Minimal recovery is a small load/verify/flash/identity surface, not full</li>
@@ -592,7 +600,7 @@ DOC/IDEAS.md</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-20T04:17:43Z</time>. HTML generated: <time>2026-05-20T05:29:23Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-20T05:55:49Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>
