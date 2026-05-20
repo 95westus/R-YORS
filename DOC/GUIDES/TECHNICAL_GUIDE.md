@@ -347,8 +347,8 @@ start +count    count is the number of bytes
 ```
 
 One- or two-hex-digit end tokens inherit the high byte from `start`. Three- or
-four-hex-digit end tokens are full addresses. Bare `D` should continue at the
-next address using the previous dump length.
+four-hex-digit end tokens are full addresses. Bare `D` continues at the next
+address using the previous dump length.
 
 The canonical policy is in [DECISIONS.md](./DECISIONS.md). Operator examples
 are in [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md).

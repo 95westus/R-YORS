@@ -105,7 +105,7 @@ The confirmed command path also works. `BOOT_COLD_RESET` is found by hash, promp
 
 ```text
 >BOOT_COLD_RESET
-RUN BOOT_COLD_RESET @C030 ? y
+RUN BOOT_COLD_RESET @C030 K=03 ? y
 BOOT COLD
 RAM ZERO OK
 

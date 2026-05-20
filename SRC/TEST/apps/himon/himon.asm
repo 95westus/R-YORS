@@ -426,17 +426,75 @@ CMD_QUOTE_HASH_NO_MATCH:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; D start [end|+count]
+; D [start [end|+count]]
 ; ----------------------------------------------------------------------------
 CMD_D_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$13,$F2,$0B,$C1,CMD_HASH_KIND_EXEC ; D $C10BF213 EXEC
 CMD_D:
                         JSR             CMD_ADV_PTR
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             CMD_D_CONTINUE
                         JSR             CMD_PARSE_RANGE_REQUIRED
-                        BCS             CMD_D_RANGE_OK
+                        BCS             CMD_D_EXPLICIT_RANGE
                         JMP             CMD_USAGE_D
+CMD_D_CONTINUE:
+                        JSR             CMD_D_REPEAT_RANGE
+                        BCC             CMD_USAGE_D
+                        BRA             CMD_D_RANGE_OK
+CMD_D_EXPLICIT_RANGE:
+                        JSR             CMD_D_SAVE_SPAN
 CMD_D_RANGE_OK:
                         JSR             MON_PRINT_MEM_RANGE
+                        JSR             CMD_D_SAVE_NEXT
+                        RTS
+
+CMD_D_REPEAT_RANGE:
+                        LDA             CMD_DISP_NEXT_LO
+                        ORA             CMD_DISP_NEXT_HI
+                        BEQ             CMD_D_REPEAT_FAIL
+
+                        LDA             CMD_DISP_NEXT_LO
+                        STA             CMD_RANGE_START_LO
+                        STA             CMD_RANGE_TMP_LO
+                        STA             CMDP_START_LO
+                        LDA             CMD_DISP_NEXT_HI
+                        STA             CMD_RANGE_START_HI
+                        STA             CMD_RANGE_TMP_HI
+                        STA             CMDP_START_HI
+
+                        LDA             CMD_RANGE_START_LO
+                        CLC
+                        ADC             CMD_DISP_SPAN_LO
+                        STA             CMD_RANGE_END_LO
+                        LDA             CMD_RANGE_START_HI
+                        ADC             CMD_DISP_SPAN_HI
+                        STA             CMD_RANGE_END_HI
+                        BCS             CMD_D_REPEAT_FAIL
+                        SEC
+                        RTS
+CMD_D_REPEAT_FAIL:
+                        CLC
+                        RTS
+
+CMD_D_SAVE_SPAN:
+                        LDA             CMD_RANGE_END_LO
+                        SEC
+                        SBC             CMD_RANGE_START_LO
+                        STA             CMD_DISP_SPAN_LO
+                        LDA             CMD_RANGE_END_HI
+                        SBC             CMD_RANGE_START_HI
+                        STA             CMD_DISP_SPAN_HI
+                        RTS
+
+CMD_D_SAVE_NEXT:
+                        LDA             CMD_RANGE_END_LO
+                        CLC
+                        ADC             #$01
+                        STA             CMD_DISP_NEXT_LO
+                        LDA             CMD_RANGE_END_HI
+                        ADC             #$00
+                        STA             CMD_DISP_NEXT_HI
                         RTS
 
 CMD_USAGE_D:
@@ -2425,6 +2483,10 @@ CMD_HASH_CONFIRM_ADDR:
                         LDY             #>MSG_RUN_AT
                         JSR             HIM_WRITE_HBSTRING
                         JSR             CMD_HASH_PRINT_ENTRY
+                        LDX             #<MSG_HASH_K
+                        LDY             #>MSG_HASH_K
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             CMD_HASH_PRINT_KIND
                         LDX             #<MSG_RUN_Q
                         LDY             #>MSG_RUN_Q
                         JSR             HIM_WRITE_HBSTRING

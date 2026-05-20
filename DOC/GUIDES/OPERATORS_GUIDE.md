@@ -271,6 +271,7 @@ STR8 rejects records outside `$C000-$EFFF` before erase.
 ?              help
 # [token]      list records, or resolve token without executing it
 "text"         print legacy FNV-1a32; reports STR8 match on #5F6A0F7A
+D              continue previous dump length from next address
 D start +count dump memory by byte count
 D start end    dump memory through inclusive end
 M addr         modify memory byte by byte

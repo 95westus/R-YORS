@@ -63,6 +63,8 @@ CMD_LEN                    EQU             $7E76
 CMD_LINE_STATUS            EQU             $7E77
 CMD_HOOK_DISPLAY_LO        EQU             $7E78
 CMD_HOOK_DISPLAY_HI        EQU             $7E79
+CMD_DISP_SPAN_LO           EQU             $7E78
+CMD_DISP_SPAN_HI           EQU             $7E79
 CMD_HOOK_FILL_LO           EQU             $7E7A
 CMD_HOOK_FILL_HI           EQU             $7E7B
 CMD_HOOK_COPY_LO           EQU             $7E7C
