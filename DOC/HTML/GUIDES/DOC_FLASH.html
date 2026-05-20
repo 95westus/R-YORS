@@ -30,6 +30,18 @@ a remembered artifact name or doc path is now stale</code></pre>
 change:     what moved or was reclassified
 effect:     what old assumption is stale now
 action:     where to look or what to do next</code></pre>
+<h2 id="redoc-hash-trash-and-k-bit-contract">REDOC: Hash Trash And K-Bit Contract</h2>
+<pre><code class="language-text">2026
+         05
+                20
+                   03:49Z WLP2 Added HASH_TRASH.md as the parking lot for
+                               tempting hash/catalog ideas and refreshed the
+                               current HIMON K-bit contract across reference
+                               docs.</code></pre>
+<p>scope: <code>DOC/GUIDES/DECISIONS.md</code>, <code>DOC/GUIDES/HASH_FLASH.md</code>, <code>DOC/GUIDES/REF.md</code>, <code>DOC/GUIDES/GLOSSARY.md</code>, <code>DOC/GUIDES/HASH/HASH.md</code>, <code>DOC/GUIDES/HASH/HASH_MAP.md</code>, <code>DOC/GUIDES/HASH/HASH_TRASH.md</code>, and <code>DOC/GUIDES/QCC/CATALOG_LINKING.md</code>.</p>
+<p>change: Current HIMON FNV <code>kind</code> is now documented as bit 0 executable/callable and bit 1 confirm-before-execute. K bits 2 and 3 are reserved. The PIN/BIO/SYS selection model is documented as recursive catalog-linking through explicit imports.</p>
+<p>effect: The older assumption that K=$00 is the executable command shape and K=$10 is the active pointer-record shape is stale for current HIMON. The idea of using spare K bits as selectors or permissions is parked, not adopted.</p>
+<p>action: Use <a href="DECISIONS.html">DECISIONS.md</a> for the current K contract, <a href="HASH_FLASH.html">HASH_FLASH.md</a> for the behavior alert, and <a href="HASH/HASH_TRASH.html">HASH_TRASH.md</a> for parked hash/catalog ideas.</p>
 <h2 id="redoc-operator-and-technical-guides-are-canonical">REDOC: Operator And Technical Guides Are Canonical</h2>
 <pre><code class="language-text">2026
          05
@@ -228,7 +240,7 @@ SRC/BUILD/bin/life-2000-load.bin</code></pre>
 <p>effect: <code>SRC/BUILD/s19/life.s19</code> is a stale remembered artifact name. New references should carry the load address.</p>
 <p>action: Use <code>life-2000.s19</code> for HIMON S-record loading and <code>life-2000-load.bin</code> when a raw loadable binary is needed.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-19T00:55:17Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-20T03:53:29Z</time>. HTML generated: <time>2026-05-20T04:41:48Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

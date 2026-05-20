@@ -39,9 +39,12 @@ fig-FORTH  threaded language payload</code></pre>
 <p>HIMON&#39;s RAM-only debug path is hardware-proven for <code>B</code>, <code>B C</code>, <code>B L</code>, <code>N</code>, and <code>X</code>. One-shot breakpoints restore their original opcodes, debugger stops print as <code>@hhhh</code>, and invalid debug patch targets report <code>DBG RAM</code>.</p>
 <p>Treat the system as bench-proven, not as a finished field updater. Keep an external programmer path and known-good image nearby.</p>
 <p>Status streams:</p>
-<pre><code class="language-text">DOC/GUIDES/HASH_FLASH.md      command-surface and milestone alerts
+<pre><code class="language-text">DOC/GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.md  live update and rollback proof
+DOC/GUIDES/HASH_FLASH.md      command-surface and milestone alerts
 DOC/GUIDES/DOC_FLASH.md       documentation-shape alerts
 DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md  board transcript proof</code></pre>
+<h2 id="live-proof">Live Proof</h2>
+<p>The clearest current transcript is <a href="GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.html">HIMON/STR8 Live Update Proof</a>. It shows bank 3 moving from HIMON <code>(2312)</code> to <code>(2317)</code> and back to <code>(2312)</code>: STR8 updates HIMON, HIMON proves the hash catalog filters and confirmed <code>BOOT_COLD_RESET</code>, then STR8 restores the earlier image.</p>
 <h2 id="start-here">Start Here</h2>
 <pre><code class="language-text">DOC/GUIDES/OPERATORS_GUIDE.md   use the board: STR8, HIMON, workflows
 DOC/GUIDES/TECHNICAL_GUIDE.md   understand the system: memory, flash, source
@@ -97,7 +100,7 @@ LOCAL                  ignored local source homes, when present</code></pre>
 <h2 id="notice">Notice</h2>
 <p>R-YORS is independent and is not affiliated with or endorsed by The Western Design Center, Inc. Product names are used only to identify compatible hardware.</p>
   </main>
-  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-19T00:34:09Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-20T04:32:23Z</time>. HTML generated: <time>2026-05-20T04:41:48Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

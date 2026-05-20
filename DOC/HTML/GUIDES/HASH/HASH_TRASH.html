@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hash Trash - R-YORS Docs</title>
+  <link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+  <header class="site-header"><div class="nav-start"><a class="back-link" href="../../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../../index.html"><img class="brand-logo" src="../../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../../README.html">README</a><a href="../INDEX.html">Guides</a><a href="../../GENERATED/index.html">Generated</a></nav></header>
+  <main class="doc-page">
+<h1 id="hash-trash">Hash Trash</h1>
+<p>This file is the parking lot for hash/catalog ideas that are tempting enough to remember, but not ready to become ABI, source layout, or command behavior.</p>
+<p>An item in Hash Trash is not automatically bad. It means: do not build on it until the project has a proof, a record shape, and a reason it beats the simpler rule.</p>
+<h2 id="parked-use-k-bits-2-and-3-as-selector-or-permission">Parked: Use K Bits 2 And 3 As Selector Or Permission</h2>
+<p>Idea:</p>
+<pre><code class="language-text">K bit 0  executable/callable
+K bit 1  confirm before execution
+K bits 2-3 selector, permission, or policy</code></pre>
+<p>Status: parked.</p>
+<p>Reason:</p>
+<pre><code class="language-text">selector      asks &quot;which body/provider/space?&quot;
+permission    asks &quot;who may do this, and under what authority?&quot;
+kind          currently asks &quot;can this be called, and must it confirm?&quot;</code></pre>
+<p>Those are different questions. Packing them into one byte too early makes the first catalog linker harder to reason about. A selector may need a full field, a compact table index, or a provider class. A permission may need operator state, recovery context, flash range authority, or a separate safety record. None of those should be hidden in two spare K bits before the record format knows what it is protecting.</p>
+<p>Current rule:</p>
+<pre><code class="language-text">K=$00  described/known, not directly executable
+K=$01  executable/callable
+K=$03  executable/callable with confirmation
+bits 2-3 reserved</code></pre>
+<p>Future permission or selector work should get its own QCC note first. If it survives that, promote it into <code>DECISIONS.md</code> as a named record field or control byte, not as a casual reinterpretation of K.</p>
+  </main>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH_TRASH.md</code>. Source modified: <time>2026-05-20T04:35:02Z</time>. HTML generated: <time>2026-05-20T04:41:48Z</time>. Markdown remains canonical.</footer>
+
+</body>
+</html>

@@ -47,6 +47,23 @@ joined resident helpers</code></pre>
 <pre><code class="language-text">Use procedure WRITE-BLOCK, revision/proof X.</code></pre>
 <p>You go to the catalog, verify the entry, and use the shop&#39;s master copy. Less duplication, easier replacement, but only if the index is trustworthy and the procedure name points to the right drawer.</p>
 <p>This shop-index model is the preferred public analogy for now. It matched the project author&#39;s own working picture best.</p>
+<h2 id="q-does-choosing-sys-pull-bio-and-pin">Q: Does Choosing SYS Pull BIO And PIN?</h2>
+<p>Comment: Yes, if the selected record declares imports and the resolver follows them.</p>
+<p>The catalog should let the user choose the abstraction level they actually want:</p>
+<pre><code class="language-text">PIN_READ_BYTE_NB
+BIO_READ_CHAR_NB
+SYS_READ_CHAR_NB</code></pre>
+<p>Choosing the PIN-level provider should flash the smallest body: the driver-level routine and any truly local support it needs. Choosing the BIO-level service should flash the BIO wrapper plus the PIN routine it imports. Choosing the SYS-level service should flash the SYS policy wrapper plus the declared chain below it.</p>
+<p>The rule is recursive and boring by design:</p>
+<pre><code class="language-text">select service
+find export by hash/name/contract
+read imports
+for each import, find provider
+install missing bodies
+apply fixups
+test selected entry</code></pre>
+<p>This is the point where catalog linking starts to feel like a small resident linker instead of a command shortcut. The hash identifies the requested contract. The import/export/fixup records explain how to assemble a working body at the chosen layer.</p>
+<p>Concern: The resolver must not infer dependencies only from names like <code>SYS_</code>, <code>BIO_</code>, or <code>PIN_</code>. Prefixes are useful human tiers, but the executable rule is the declared import list. If a service does not describe its imports, the first catalog linker should refuse to pretend it can safely install it.</p>
 <h2 id="q-should-the-first-target-be-s-life-or-s-plus-join">Q: Should The First Target Be S, LIFE, Or S Plus Join?</h2>
 <p>Comment: Prefer <code>S</code> plus join.</p>
 <p><code>S</code> is the better first catalog-linking pressure test. LIFE is useful because it is visible and human, but it is also big: board RAM, NMI cleanup, display, input loop, and app state. <code>S</code> is smaller and closer to the real HIMON command surface. It has the exact pain we want to solve:</p>
@@ -126,7 +143,7 @@ S uses joined resident support instead of private helper payload
 payload baggage is measurably removed or named</code></pre>
 <p>Until then, this remains QCC. <code>LIFE_RCAT_MEMBER.md</code> can keep LIFE-specific member details; this page keeps the general bootstrap rule.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/CATALOG_LINKING.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/CATALOG_LINKING.md</code>. Source modified: <time>2026-05-20T03:52:12Z</time>. HTML generated: <time>2026-05-20T04:41:48Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

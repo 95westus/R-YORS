@@ -22,6 +22,69 @@
 <p>CBI code form stays condensed for source comments:</p>
 <pre><code class="language-asm">; YYYY-MM-DDTHH:MMZ WLP2 summary
 ;                         continuation line</code></pre>
+<h2 id="rehash-current-himon-k-bits-and-catalog-linking-direction">REHASH: Current HIMON K Bits And Catalog-Linking Direction</h2>
+<pre><code class="language-text">2026
+         05
+                20
+                   03:49Z WLP2 Updated the current HIMON FNV K byte: bit 0 is
+                               executable/callable, bit 1 is confirm before
+                               execution, and K=$03 records carry ENTRY plus
+                               display EXTRA.</code></pre>
+<p>Current HIMON FNV-era records use:</p>
+<pre><code class="language-text">K=$00  described/known, not directly executable by current dispatch
+K=$01  executable/callable
+K=$03  executable/callable and confirm before execution</code></pre>
+<p>Working description: HIMON/THE is a ROM-resident hash dictionary for 65C02 services, with Forth instincts and assembler bones.</p>
+<p>The resident <code>#</code> command can list all records or filter by maximum K value:</p>
+<pre><code class="language-text">#         list every visible FNV record
+# K=hh    list records whose K byte equals hex hh
+# K&lt;hh    list records whose K byte is less than hex hh
+# K&gt;hh    list records whose K byte is greater than hex hh</code></pre>
+<p>For K=$03, the current payload is:</p>
+<pre><code class="language-text">DW ENTRY
+DW EXTRA</code></pre>
+<p><code>ENTRY</code> is the callable address. <code>EXTRA</code> is side information: currently an optional HBSTR for <code>#</code> display and confirm prompts. <code>EXTRA</code> is not an alias, not a second command name, and not automatically passed to the called routine.</p>
+<p>The text pointer is a display/prompt field, not a typed-name alias. If an alias is ever wanted, it must be a deliberate second record with its own hash. The current reset exports are only <code>BOOT_COLD_RESET</code> and <code>BOOT_WARM_RESET</code>.</p>
+<p>Catalog linking follows imports recursively. A user choosing a low-level input provider such as <code>PIN_READ_BYTE_NB</code> should flash only the PIN-level body. A user choosing a higher-level service such as <code>BIO_READ_CHAR_NB</code> or <code>SYS_READ_CHAR_NB</code> should pull that service plus its declared dependencies down through BIO/COR/PIN records, then apply fixups.</p>
+<p>Bits 2 and 3 of the current K byte are reserved. Do not use them yet as selectors, permissions, lifecycle flags, or dependency-policy flags. Those may become useful later, but they need a real record/control-byte design before they earn scarce bit positions.</p>
+<p>Future records that need callable input or output should use a documented record shape, not reinterpret <code>EXTRA</code>:</p>
+<pre><code class="language-text">K=$11  DW ENTRY, DW PARMS
+K=$12  DW ENTRY, DW PARMS, DW RESULTS</code></pre>
+<p><code>PARMS</code> can point at a string, token stream, command list, import list, or typed parameter block. <code>RESULTS</code> can point at a writable result buffer or result descriptor. HIMON/THE must define the calling convention for each future kind.</p>
+<h2 id="rehash-himon-visible-version-uses-current-date">REHASH: HIMON Visible Version Uses Current Date</h2>
+<pre><code class="language-text">2026
+         05
+                19
+                   22:26  WLP2 Added a build-time HIMON version stamp so each
+                               HIMON rebuild updates the visible
+                               HIMON V 00.MMDD(HHMM) text before assembly.
+                   19:42Z WLP2 Added THE_JOIN_FIND as HIMON&#39;s first internal
+                               join hook; # token used it for lookup while
+                               command dispatch was still K=$00-only.
+                   19:30Z WLP2 Corrected the HBSTR terminator so the closing
+                               parenthesis prints.
+                   19:26Z WLP2 HIMON visible text became
+                               HIMON V 00.0519(1925), and the then-current
+                               K=$10 HIMON record pointed at the same text.
+                   19:23Z WLP2 HIMON ROM then contained one resident K=$10
+                               FNV record for HIMON, pointing at START and
+                               EXTRA text HIMON V 00.0519.
+                   19:00Z WLP2 HIMON cold boot now reports V 00.0519,
+                               derived from the current update date.</code></pre>
+<p>Visible HIMON/STR8 version text is build-stamped from local time before HIMON assembly. The source stores the final <code>)</code> as the HB-string high-bit terminator, so the quoted bytes intentionally stop before that character.</p>
+<p>The build format is:</p>
+<pre><code class="language-text">HIMON V 00.MMDD(HHMM)</code></pre>
+<h2 id="rehash-historical-himon-k10-extra-text">REHASH: Historical HIMON # K10 EXTRA Text</h2>
+<pre><code class="language-text">2026
+         05
+                19
+                   18:58Z WLP2 HIMON # then understood FNV K=$10
+                               pointer records well enough to print a
+                               nonzero DW EXTRA HBSTR at the end of the row.</code></pre>
+<p>This was the short-lived pointer-record step before the current K-bit contract above. At that point, <code>#</code> kept old <code>K=$00</code> records quiet and, for a <code>K=$10</code> record, read:</p>
+<pre><code class="language-text">DW ENTRY
+DW EXTRA</code></pre>
+<p>The current replacement is K=$03 for confirmed executable pointer records: <code>DW ENTRY</code>, <code>DW EXTRA</code>.</p>
 <h2 id="rehash-str8-three-image-milestone-and-crc16-hash-pivot">REHASH: STR8 Three-Image Milestone And CRC16 Hash Pivot</h2>
 <pre><code class="language-text">2026
          05
@@ -314,7 +377,7 @@ S addr end|+count &#39;TEXT</code></pre>
 <pre><code class="language-text">S 0 FFFF `HIMON</code></pre>
 <p>That would mean <code>H I M O (N|$80)</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-20T04:17:38Z</time>. HTML generated: <time>2026-05-20T04:41:48Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>

@@ -317,6 +317,10 @@ start +count    count is the number of bytes</code></pre>
 <p><code>MEM_*</code>, not direct hidden heap calls from unrelated monitor code.</p>
 <h2 id="hash-and-catalog-policy">Hash And Catalog Policy</h2>
 <ul>
+<li>Working description: HIMON/THE is a ROM-resident hash dictionary for 65C02</li>
+</ul>
+<p>services, with Forth instincts and assembler bones.</p>
+<ul>
 <li>FNV-1a is implemented history and current transition debt, not the final</li>
 </ul>
 <p>universal runtime/catalog/symbol hash decision.</p>
@@ -349,15 +353,39 @@ start +count    count is the number of bytes</code></pre>
 <li>Words and longs are little-endian: low byte first.</li>
 <li>Current HIMON proving record shape is:</li>
 </ul>
-<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind,inline-code...</code></pre>
+<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind,payload...</code></pre>
 <ul>
-<li>In current HIMON, <code>kind=$00</code> means executable code begins immediately after</li>
+<li>In current HIMON, <code>kind</code> is a bit field for the FNV-era record:</li>
 </ul>
-<p>the kind byte, at record offset <code>+8</code>. It does not store <code>entry_lo,entry_hi</code>.</p>
+<p>bit 0 means executable/callable, and bit 1 means confirm before execution.</p>
 <ul>
-<li>Explicit <code>entry_lo,entry_hi</code> pointer records are a future catalog/RREC</li>
+<li><code>kind=$00</code> means described/known, not directly executable by the current</li>
 </ul>
-<p>direction.</p>
+<p>dispatcher.</p>
+<ul>
+<li><code>kind=$01</code> means executable/callable. For legacy inline command records, code</li>
+</ul>
+<p>begins immediately after the kind byte at record offset <code>+8</code>.</p>
+<ul>
+<li><code>kind=$03</code> means executable/callable with confirmation. Its current payload is</li>
+</ul>
+<p><code>DW ENTRY</code>, <code>DW EXTRA</code>. <code>EXTRA</code> is descriptive side information used by <code>#</code> and by confirm prompts as optional HBSTR display text. <code>EXTRA</code> is not an alias and is not passed to the called routine.</p>
+<ul>
+<li><code># K=hh</code>, <code># K&lt;hh</code>, and <code># K&gt;hh</code> are display filters, not resolver modes.</li>
+</ul>
+<p>They list resident records by exact, less-than, or greater-than <code>kind</code> byte.</p>
+<ul>
+<li>Command aliases must be real records with their own hash. Display text must</li>
+</ul>
+<p>not be treated as a second command name unless a future alias record explicitly says so.</p>
+<ul>
+<li>Future records that make the second or third word part of the call contract,</li>
+</ul>
+<p>such as <code>PARMS</code> or <code>RESULTS</code>, should use a different kind and a documented HIMON/THE calling convention.</p>
+<ul>
+<li>Bits 2 and 3 of the current FNV <code>kind</code> byte are reserved. Do not spend them</li>
+</ul>
+<p>as ad-hoc selectors, permissions, lifecycle flags, or dependency-policy flags until a future record layout proves the need. Selector and permission ideas belong in separate metadata or a documented control byte first.</p>
 <ul>
 <li>Future compact signatures identify record layout/classification, not a hash</li>
 </ul>
@@ -386,6 +414,10 @@ start +count    count is the number of bytes</code></pre>
 <li>Text compression must be optional. If compressed text is not smaller, store</li>
 </ul>
 <p>raw text or omit text.</p>
+<ul>
+<li>Catalog linking resolves imports recursively. Selecting a low-level provider</li>
+</ul>
+<p>such as <code>PIN_READ_BYTE_NB</code> should install only the PIN-level body. Selecting a higher-level service such as <code>BIO_READ_CHAR_NB</code> or <code>SYS_READ_CHAR_NB</code> should follow that service&#39;s declared imports down through BIO/COR/PIN dependencies, add only missing bodies, and then apply fixups. The hash identifies the requested contract; import/export/fixup records do the linking work.</p>
 <h2 id="str8-call-surface">STR8 Call Surface</h2>
 <ul>
 <li>STR8 V0 does not reserve or depend on fixed cute-address entry slots.</li>
@@ -560,7 +592,7 @@ DOC/IDEAS.md</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-19T00:55:17Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-20T04:17:43Z</time>. HTML generated: <time>2026-05-20T04:41:48Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

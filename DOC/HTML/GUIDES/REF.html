@@ -101,9 +101,17 @@ name text                optional proof/listing/collision data</code></pre>
 +4  hash1
 +5  hash2
 +6  hash3      FNV-1a high byte
-+7  kind       current $00 means executable code follows
-+8  code       inline executable entry for kind=$00</code></pre>
-<p>Current HIMON records do not store <code>entry_lo,entry_hi</code>; the entry is <code>record+8</code> when <code>kind=$00</code>. Explicit pointer records with <code>entry_lo,entry_hi</code> are a future catalog/RREC direction, not the current inline-code command record.</p>
++7  kind       bit 0 executable/callable, bit 1 confirm
++8  payload    inline code or pointer payload, according to kind</code></pre>
+<p>Current K values:</p>
+<pre><code class="language-text">K=$00  described/known, not directly executable
+K=$01  executable/callable; legacy inline entry is record+8
+K=$03  executable/callable with confirmation:
+       +8  entry_lo
+       +9  entry_hi
+       +10 extra_lo
+       +11 extra_hi</code></pre>
+<p><code>ENTRY</code> is the callable address. <code>EXTRA</code> is side information; current <code>#</code> and confirm prompts treat nonzero <code>EXTRA</code> as an HBSTR pointer. <code>EXTRA</code> is not an alias or parameter pointer. Future records that need <code>PARMS</code> or <code>RESULTS</code> should use a documented call convention.</p>
 <p>Legacy FNV stored-width direction:</p>
 <pre><code class="language-text">ww=00  no hash / local id / direct record
 ww=01  folded hash8
@@ -149,7 +157,7 @@ make -C SRC routine-hash-comments</code></pre>
 <p>The current standalone <code>himon-rom</code> image no longer contains the legacy HIMONIA fixed entries at <code>$F00D</code>, <code>$FADE</code>, or <code>$FEED</code>. Loaded-language bridge builds must patch call addresses from the current HIMON map or wait for a deliberate future ABI.</p>
 <p>The build check verifies the reset vector and confirms that the reset target in the selected 32K bank image contains real code.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/REF.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-19T00:55:27Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/REF.md</code>. Source modified: <time>2026-05-20T03:52:58Z</time>. HTML generated: <time>2026-05-20T04:41:48Z</time>. Markdown remains canonical.</footer>
   
 </body>
 </html>
