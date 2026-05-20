@@ -787,17 +787,21 @@ are not part of the current `B`, `0`, `1`, and `2` recovery contract.
 ## Next Partitioned Backup Direction
 
 The next STR8 backup direction may stop treating banks 0 and 1 as independent
-whole-bank images. Instead, banks 0 and 1 can be treated together as a 64K
-managed backup arena:
+whole-bank images. Instead, STR8 can own them together as a 64K managed backup
+arena. The preferred layout gives metadata one fixed sector and keeps the
+remaining 60K as a 15-sector payload pool:
 
 ```text
-banks 0+1  64K managed backup arena
-  12K backup slot 0
-  12K backup slot 1
-  12K backup slot 2
-  12K backup slot 3
-  12K backup slot 4
-   4K metadata sector for names, labels, origin records, checks, and roles
+bank 0
+  $8000-$8FFF  metadata/catalog sector
+  $9000-$BFFF  payload pool sectors 0-2, default 12K lane
+  $C000-$EFFF  payload pool sectors 3-5, default 12K lane
+  $F000-$FFFF  payload pool sector 6
+
+bank 1
+  $8000-$9FFF  payload pool sectors 7-8
+  $A000-$CFFF  payload pool sectors 9-11, default 12K lane
+  $D000-$FFFF  payload pool sectors 12-14, default 12K lane
 
 bank 2     SYS/USR bank
 
@@ -807,14 +811,30 @@ bank 3     default boot bank
   $F000-$FFFF   4K STR8 recovery/top-sector region
 ```
 
-This is still range-aware backup planning, not current V0 behavior. It needs
-exact sector placement before code should trust it. The important design move
-is that a backup slot records where it came from:
+This is still range-aware backup planning, not current V0 behavior. The
+important design move is that STR8 decides the storage placement. The operator
+requests a backup or restore; STR8 reports the actual slot plan and refuses
+unsafe overlap or a range that cannot be represented safely.
+
+The five clean 12K lanes are the obvious HIMON-sized view of the pool, not a
+fixed allocation rule. Plain `B` remains the product-safe backup command. Its
+default job is to back up the live HIMON payload range, bank 3 `$C000-$EFFF`,
+using three 4K sectors. A future explicit form, such as `B start end`, may back
+up another CPU-visible range; STR8 validates or rounds that request to flash
+erase sectors, then allocates the number of payload sectors actually needed.
+`$F000-$FFFF` can use one sector. `$8000-$BFFF` can use four. Erased sectors can
+use no payload sectors at all.
+
+The metadata/catalog sector records where each payload came from:
 
 ```text
 origin bank
 origin start
-length
+requested length
+actual sector-rounded range
+allocated payload sector list
+payload offset, when packed
+per-sector state: present or erased
 entry address, if executable
 name/label
 role
@@ -822,6 +842,18 @@ hash/check
 generation
 compression kind, initially none
 ```
+
+Erased-sector detection belongs in the backup path. If a source sector is all
+`$FF`, STR8 should record that sector as erased and store no payload bytes for
+it. Restore then erases the destination sector and leaves it erased. This lets
+explicit range backup preserve a sparse or partly blank region without wasting
+slot bytes or inventing data.
+
+Full-sector backups such as `$F000-$FFFF` must keep their payload sector pure.
+Metadata lives in bank 0 `$8000-$8FFF`, not in front of copied bytes at the
+start of the payload. If metadata were prepended to a full sector, the backup
+would become a two-sector container; that is not the preferred STR8 product
+shape.
 
 Future STR8-N/STRAIGHTEN can grow from this into a `PACK` manager: move named
 regions into safe homes, remember their origin, and later restore or relocate

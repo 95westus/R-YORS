@@ -195,11 +195,25 @@ start +count    count is the number of bytes
   their origin, and later restore them by metadata. Optional compression is
   allowed only behind explicit metadata and verification. This does not change
   the current STR8 V0 whole-32K-image backup/restore contract.
-- The next partitioned-backup direction is a 64K arena across banks 0 and 1:
-  five 12K backup slots plus one 4K metadata/name/label sector. Bank 2 is the
-  planned SYS/USR bank, and bank 3 remains the default boot bank with
-  `$8000-$BFFF` user-available, `$C000-$EFFF` as the default payload gate, and
-  `$F000-$FFFF` as STR8/top-sector recovery space.
+- The next partitioned-backup direction is a 64K arena across banks 0 and 1,
+  allocated by STR8 policy rather than by the operator. The preferred catalog
+  location is one fixed 4K sector at bank 0 `$8000-$8FFF`, leaving a 60K,
+  15-sector payload pool in the remaining bank 0/1 space. Five clean 12K slots
+  are the default HIMON-sized view of that pool, not a fixed allocation rule.
+- In that direction, plain `B` remains the product-safe backup of the live
+  HIMON payload range, while `B start end` may become an explicit range backup.
+  STR8 must round or validate requested ranges to flash erase sectors, detect
+  erased `$FF` sectors, and record erased sectors in metadata instead of
+  storing payload bytes for them. Smaller ranges can consume fewer sectors,
+  larger ranges can consume more, and the catalog records the actual allocated
+  sector list.
+- Full-sector backups such as `$F000-$FFFF` should keep their payload sector
+  byte-for-byte clean; metadata lives in the catalog sector, not in front of the
+  copied data. STR8 decides whether a requested backup fits, where it is stored,
+  and what may be overwritten. Bank 2 is the planned SYS/USR bank, and bank 3
+  remains the default boot bank with `$8000-$BFFF` user-available,
+  `$C000-$EFFF` as the default payload gate, and `$F000-$FFFF` as
+  STR8/top-sector recovery space.
 - STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.
 - Minimal recovery is a small load/verify/flash/identity surface, not full
   HIMON.

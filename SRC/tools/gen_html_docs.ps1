@@ -493,7 +493,7 @@ function Convert-ToHtmlPage {
     $titleHtml = Encode-Html $Title
     $nav = Get-NavHtml -OutputRelativePath $OutputRelativePath
     $mermaidScript = if ($HasMermaid) {
-        '<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>'
+        '  <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>'
     } else {
         ""
     }
@@ -513,7 +513,7 @@ function Convert-ToHtmlPage {
 $Body
   </main>
   <footer class="site-footer">Generated from <code>$sourceLabel</code>. Source modified: <time>$sourceModifiedLabel</time>. HTML generated: <time>$generatedLabel</time>. Markdown remains canonical.</footer>
-  $mermaidScript
+$mermaidScript
 </body>
 </html>
 "@

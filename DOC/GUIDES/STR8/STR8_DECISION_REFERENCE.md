@@ -179,6 +179,45 @@ Restoring bank 0 means restoring whatever bank 0 currently holds. Before
 enrollment it may be a WDCMONv2/base image and may remove R-YORS from the live
 boot bank. After enrollment it is just the oldest rotating backup.
 
+## Future Partitioned Backup Target
+
+The next product direction is not "let the operator spend banks 0 and 1 by
+hand." STR8 should own banks 0 and 1 as a managed 64K backup arena, decide how
+much of each bank is taken, and print the storage plan before it commits.
+
+Preferred future layout:
+
+```text
+bank 0
+  $8000-$8FFF  metadata/catalog sector
+  $9000-$BFFF  payload pool sectors 0-2, default 12K lane
+  $C000-$EFFF  payload pool sectors 3-5, default 12K lane
+  $F000-$FFFF  payload pool sector 6
+
+bank 1
+  $8000-$9FFF  payload pool sectors 7-8
+  $A000-$CFFF  payload pool sectors 9-11, default 12K lane
+  $D000-$FFFF  payload pool sectors 12-14, default 12K lane
+```
+
+That gives STR8 one fixed 4K catalog sector and a 60K payload pool. Five clean
+12K slots are the default HIMON-sized view of the pool, not a fixed allocation
+rule. Plain `B` should remain the safe default: back up the live bank 3
+`$C000-$EFFF` HIMON payload using three 4K sectors. A future explicit
+`B start end` may back up a requested range, but STR8 must validate or round it
+to erase-sector boundaries, allocate the number of sectors actually needed, and
+refuse anything that cannot be represented safely.
+
+The catalog sector records origin bank, origin start, requested length, actual
+sector-rounded range, allocated payload sector list, payload offset when
+packed, per-sector state, label/name, role, entry address, hash/check,
+generation, and compression kind. Compression starts as `none`.
+
+Erased sectors are metadata, not payload. If a source sector is all `$FF`, STR8
+records it as erased and stores no data bytes for it; restore erases the target
+sector and leaves it erased. Full-sector payloads such as `$F000-$FFFF` must
+remain byte-for-byte clean, so metadata is not placed in front of copied data.
+
 ## Boot Target
 
 Today:
@@ -373,7 +412,7 @@ advanced sector maintenance mode
 HIMON hashed command dispatch after handoff
 future STR8-N catalog/FNV participation
 future STR8-N vector integration hooks
-metadata layout
+exact partitioned catalog record layout
 bank 0 WDCMONv2/base-image preservation bridge
 wear leveling or erase counters
 flash export/migration over serial or board-to-board link
