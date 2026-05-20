@@ -8,6 +8,8 @@
                         XREF            PIN_FTDI_INIT_FNV
                         XREF            PIN_FTDI_POLL_RX_READY
                         XREF            PIN_FTDI_POLL_RX_READY_FNV
+                        XREF            PIN_FTDI_POLL_TX_READY
+                        XREF            PIN_FTDI_POLL_TX_READY_FNV
                         XREF            PIN_FTDI_READ_BYTE_NONBLOCK
                         XREF            PIN_FTDI_READ_BYTE_NONBLOCK_FNV
                         XREF            PIN_FTDI_WRITE_BYTE_NONBLOCK

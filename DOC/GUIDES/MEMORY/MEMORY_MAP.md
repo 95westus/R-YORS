@@ -342,11 +342,19 @@ restore. A near-term planning direction is to treat banks 0 and 1 together as a
 64K managed backup arena:
 
 ```text
-banks 0+1  five 12K backup slots, 60K total
-banks 0+1  one 4K metadata sector for names, labels, origins, checks, roles
-bank 2     SYS/USR bank
-bank 3     default boot bank
+bank 0 $8000-$8FFF   metadata/catalog sector
+bank 0 $9000-$FFFF   payload slots 0-6
+bank 1 $8000-$EFFF   payload slots 7-13
+bank 1 $F000-$FFFF   reserved STR8_TOP_SAFE payload slot
+bank 2               SYS/USR and rcat/hrec/rrec bank
+bank 3               default boot bank
 ```
+
+The bank 0/1 arena is 64K total. With the metadata sector and the reserved
+STR8 top-sector rescue slot held out, 56K remains for ordinary managed backup
+payloads. If STR8 self-update is not in play yet, the reserved slot may still
+be erased, but the allocator should treat it as held back once top-sector
+update work begins.
 
 The live bank 3 budget stays:
 
@@ -359,3 +367,12 @@ $F000-$FFFF    4K STR8 recovery/top-sector region
 This planning map is not yet a writer contract. The first code version needs
 exact 4K-sector slot boundaries and metadata commit rules before it can erase,
 write, or restore from those sections.
+
+Payload slots should remain raw sector bytes. Metadata such as labels, source
+range, signatures, checks, and commit state belongs in the catalog sector. The
+fixed external recovery address pair for the first `STR8_TOP_SAFE` plan is:
+
+```text
+source backup  bank 1 CPU $F000-$FFFF = PHY $0F000-$0FFFF
+active target  bank 3 CPU $F000-$FFFF = PHY $1F000-$1FFFF
+```

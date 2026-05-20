@@ -1524,6 +1524,16 @@ STR8_CON_WRITE_BYTE_BLOCK:
                         PLX
                         RTS
 
+STR8_CON_POLL_TX_READY:
+                        PHA
+                        ; TXE# is bit 0; invert it into carry without a branch.
+                        LDA             STR8_CON_VIA_CTRL
+                        AND             #STR8_CON_PN_TXE
+                        EOR             #STR8_CON_PN_TXE
+                        LSR             A
+                        PLA
+                        RTS
+
 STR8_CON_WRITE_BYTE_NONBLOCK:
                         PHA
                         SEC

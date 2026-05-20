@@ -213,6 +213,60 @@ replace a bad HIMON. The controlled fallback test must accept the
 The external programmer remains the last choice for a bricked board, not the
 ordinary update/install proof.
 
+## First STR8 Self-Update Candidate
+
+The first STR8 self-update candidate should be intentionally small: an
+observable identity string change, not new behavior. HIMON and STR8 should look
+visually related, but their time bases differ:
+
+```text
+HIMON V 00.mmdd(hhmm)   local time
+STR8  V 00.mmdd(hhmm)Z  UTC time
+```
+
+The `Z` is part of the STR8 convention so serial transcripts show that the
+stamp is UTC. Do not use a timestamp-only proof when a reproducible release
+identity is needed; the timestamp is the bench-visible proof marker.
+
+## EDU Top-Sector Recovery Rule
+
+The W65C02SXB/EDU has no alternate boot jumper. If the active bank 3
+`$F000-$FFFF` top sector is corrupted badly enough that the reset vectors are
+not usable, there is no onboard software path to STR8, the backup catalog, or
+bank 2 tools. Recovery is then an external-programmer operation.
+
+Before `UPDATE STR8` erases or programs the active top sector, it must make a
+raw 4K backup of the current bank 3 `$F000-$FFFF` sector into a reserved
+bank 0/1 payload slot, verify it byte-for-byte, catalog it, and print an
+external recovery receipt. The payload sector must be a clean copy of the
+source bytes; headers, labels, hashes, and flags live in the catalog sector.
+
+Use physical addresses in the rescue receipt. CPU addresses are bank-relative:
+
+```text
+phy = bank * $8000 + (cpu_addr - $8000)
+```
+
+A fixed `STR8_TOP_SAFE` slot is acceptable for the first version:
+
+```text
+STR8_TOP_SAFE backup:
+  bank 1 CPU $F000-$FFFF = PHY $0F000-$0FFFF
+
+active STR8 top sector:
+  bank 3 CPU $F000-$FFFF = PHY $1F000-$1FFFF
+
+EXTERNAL RECOVERY:
+  COPY PHY $0F000-$0FFFF
+  TO   PHY $1F000-$1FFFF
+```
+
+The update transaction must not erase or overwrite `STR8_TOP_SAFE` while it is
+also updating the active STR8 sector. If power fails after the active top
+sector is damaged, the guaranteed rescue is to use a programmer to erase,
+program, and verify physical `$1F000-$1FFFF` from the raw bytes stored at
+physical `$0F000-$0FFFF`.
+
 ## STR8 And LEAF Boundary
 
 These update commands do not turn STR8 into the runtime owner. STR8 remains the

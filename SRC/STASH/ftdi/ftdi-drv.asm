@@ -143,6 +143,48 @@ PIN_FTDI_POLL_RX_READY:
                         RTS
                         ENDMOD
 
+                        MODULE          PIN_FTDI_POLL_TX_READY
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ROUTINE: PIN_FTDI_POLL_TX_READY  [HASH:99BF1FB5]
+; TIER: TOP-SHELF (behavior frozen)
+; TAGS: PIN, DRIVER-L0, FTDI, VIA, MMIO, REGISTER, PRESERVE-A, PRESERVE-XY,
+;   CARRY-STATUS, NO-ZP, NO-RAM, STACK, PROMOTED, FNV, HASH-SIG
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Check FTDI TXE# line for transmit FIFO ready.
+; IN : none (A preserved)
+; OUT: C = 1 if FIFO can accept a byte, C = 0 if not ready, A preserved
+; EXCEPTIONS/NOTES:
+; - Reads active-low TXE# bit from VIA control register.
+; - This is a pure readiness check; it does not touch the data bus or strobe
+;   WR#.
+; - Emits current 8-byte FNV header signature immediately before the callable
+;   entry.  Existing callers must continue to call `PIN_FTDI_POLL_TX_READY`,
+;   not the `_FNV` label.
+; - X/Y unchanged by implementation.
+;
+; CHANGELOG:
+; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
+; 2026-05-20T00:00Z WLP2   PIN_FTDI_POLL_TX_READY added as pure TXE# poll.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                        XDEF            PIN_FTDI_POLL_TX_READY
+                        XDEF            PIN_FTDI_POLL_TX_READY_FNV
+
+FTDI_BT_VIA_CTRL           EQU             $7FE0
+FTDI_BT_PN_TXE             EQU             $01
+
+PIN_FTDI_POLL_TX_READY_FNV:
+                        DB              'F','N',('V'+$80),$B5,$1F,$BF,$99,$01 ; PIN_FTDI_POLL_TX_READY $99BF1FB5 EXEC
+PIN_FTDI_POLL_TX_READY:
+                        PHA
+                        ; TXE# is bit 0; invert it into carry without a branch.
+                        LDA             FTDI_BT_VIA_CTRL
+                        AND             #FTDI_BT_PN_TXE
+                        EOR             #FTDI_BT_PN_TXE
+                        LSR             A
+                        PLA
+                        RTS
+                        ENDMOD
+
                         MODULE          PIN_FTDI_READ_BYTE_NONBLOCK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ROUTINE: PIN_FTDI_READ_BYTE_NONBLOCK  [HASH:483BB2DD]

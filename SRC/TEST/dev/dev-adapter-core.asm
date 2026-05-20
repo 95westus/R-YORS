@@ -228,6 +228,27 @@ SYS_POLL_CHAR:
                         RTS
                         ENDMOD
 
+                        MODULE          SYS_POLL_WRITE_READY
+
+                        XDEF            SYS_POLL_WRITE_READY
+                        XREF            COR_FTDI_POLL_TX_READY
+
+; ----------------------------------------------------------------------------
+; ROUTINE: SYS_POLL_WRITE_READY  [HASH:175EB9D6]
+; TIER: SYS-L4
+; TAGS: SYS, SYS-L4, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_COR, NOSTACK
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Device-neutral non-blocking readiness check for output byte.
+; IN : none
+; OUT: C = 1 if the active backend can accept a byte, C = 0 otherwise
+; EXCEPTIONS/NOTES:
+; - Delegates to backend routine `COR_FTDI_POLL_TX_READY`.
+; ----------------------------------------------------------------------------
+SYS_POLL_WRITE_READY:
+                        JSR             COR_FTDI_POLL_TX_READY
+                        RTS
+                        ENDMOD
+
                         MODULE          SYS_WRITE_CHAR
 
                         XDEF            SYS_WRITE_CHAR

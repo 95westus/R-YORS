@@ -123,6 +123,29 @@ COR_FTDI_POLL_CHAR:
                         RTS
                         ENDMOD
 
+                        MODULE          COR_FTDI_POLL_TX_READY
+
+                        XDEF            COR_FTDI_POLL_TX_READY
+                        XREF            BIO_FTDI_POLL_TX_READY
+
+; ----------------------------------------------------------------------------
+; ROUTINE: COR_FTDI_POLL_TX_READY  [HASH:BD2614A4]
+; TIER: BACKEND-L2
+; TAGS: COR, BACKEND-L2, FTDI, REGISTER, CARRY-STATUS, NO-ZP, NO-RAM,
+;   CALLS_BIO, NOSTACK
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: Non-blocking check for FTDI transmit FIFO readiness.
+; IN : none
+; OUT: C = 1 if FIFO can accept a byte, C = 0 otherwise
+; EXCEPTIONS/NOTES:
+; - Thin wrapper over `BIO_FTDI_POLL_TX_READY`.
+; - Register preservation follows callee behavior.
+; ----------------------------------------------------------------------------
+COR_FTDI_POLL_TX_READY:
+                        JSR             BIO_FTDI_POLL_TX_READY
+                        RTS
+                        ENDMOD
+
                         MODULE          COR_FTDI_READ_CHAR
 
                         XDEF            COR_FTDI_READ_CHAR

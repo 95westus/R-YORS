@@ -795,6 +795,34 @@ BIO_FTDI_POLL_RX_READY:
                         RTS
                         ENDMOD
 
+                        MODULE          BIO_FTDI_POLL_TX_READY
+
+                        XDEF            BIO_FTDI_POLL_TX_READY
+                        XREF            PIN_FTDI_POLL_TX_READY
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ROUTINE: BIO_FTDI_POLL_TX_READY  [HASH:480B1B7E]
+; TIER: HAL-L1
+; TAGS: BIO, HAL-L1, REGISTER, CARRY-STATUS, NO-ZP, NO-RAM, CALLS_PIN, NOSTACK, PUFF-PASS
+; MEM : ZP: none; FIXED_RAM: none.
+; PURPOSE: HAL-level alias wrapper for transmit-ready check.
+; IN : none
+; OUT: C = 1 if FTDI FIFO can accept a byte, C = 0 otherwise
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; EXCEPTIONS/NOTES:
+; - Delegates directly to `PIN_FTDI_POLL_TX_READY`.
+; - Register preservation follows callee behavior.
+; - NUGGET CLASS (chat): PUFF-PASS.
+;
+; CHANGELOG:
+; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
+; 2026-05-20T00:00Z WLP2   BIO_FTDI_POLL_TX_READY added as direct
+;                          PIN-pass-through wrapper.
+BIO_FTDI_POLL_TX_READY:
+                        JSR             PIN_FTDI_POLL_TX_READY
+                        RTS
+                        ENDMOD
+
                         END
 
 

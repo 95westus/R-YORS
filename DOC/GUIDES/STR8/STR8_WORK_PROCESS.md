@@ -174,6 +174,60 @@ For this proof, keep STR8 fixed. The intended update candidate is HIMON only:
 or other whole-ROM image is used outside the normal test path, say that in the
 log and do not count it as proving `UPDATE HIMON`.
 
+## Planned Smart Backup Guidelines
+
+The current implementation still uses whole-bank backup and restore. The agreed
+next direction is a managed 64K arena across banks 0 and 1, with bank 2 kept
+available for `rcat`/`hrec`/`rrec`, SYS/USR tools, and related records.
+
+Planned bank 0/1 layout:
+
+```text
+bank 0 $8000-$8FFF   metadata/catalog sector
+bank 0 $9000-$FFFF   payload slots 0-6
+bank 1 $8000-$EFFF   payload slots 7-13
+bank 1 $F000-$FFFF   reserved STR8_TOP_SAFE payload slot
+```
+
+That leaves 56K for ordinary managed backups plus one raw 4K top-sector rescue
+slot. If `STR8_TOP_SAFE` is not populated, it is still held out of ordinary
+allocation when a STR8 self-update is possible.
+
+Payload slots are raw 4K flash-sector images. Do not put headers in them.
+Metadata belongs in the catalog sector: source bank/range, destination slot,
+type label, version string when recognized, CRC/hash, verify status, and commit
+state. The catalog should be append-only enough that the last complete
+committed snapshot wins after reset.
+
+The smart backup user surface should classify first, then mutate only after the
+operator chooses the writing command:
+
+```text
+BACKUP CHECK 8000-FFFF   scan, classify, and print only
+BACKUP 8000-FFFF         copy non-empty sectors, verify, and catalog
+CATALOG                  show committed snapshots and reserved slots
+```
+
+`BACKUP 8000-FFFF` scans in 4K windows. Erased windows are recorded as erased
+in metadata and do not consume payload slots. Non-empty windows are copied,
+read back, verified byte-for-byte, and cataloged only after verification:
+
+```text
+8000 EMPTY SKIP
+9000 EMPTY SKIP
+A000 EMPTY SKIP
+B000 EMPTY SKIP
+C000 SIG FOUND: HIMON V 00.0520(1342)
+C000 BANK0:9000 COPIED VERIFIED CATALOGED
+F000 SIG FOUND: STR8  V 00.0520(1842)Z
+F000 BANK1:F000 COPIED VERIFIED CATALOGED
+```
+
+For top-sector updates on W65C02SXB/EDU, remember the limit: a corrupted active
+bank 3 `$F000-$FFFF` sector cannot be rescued by onboard software after reset.
+The backup is still valuable because it gives an external programmer a known
+physical source sector to copy back to physical `$1F000-$1FFFF`.
+
 ## Code Rules
 
 Keep STR8 small and literal:

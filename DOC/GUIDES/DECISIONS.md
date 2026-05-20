@@ -64,6 +64,12 @@ and debug tools.
   inside source files: `; YYYY-MM-DDTHH:MMZ programmer comment`. Continuation
   lines align under the comment body. Keep CBI source lines under 78 columns.
 - Any discovered older date stamps are cleanup debt, not precedent.
+- Firmware identity banners may use the compact visual monitor form instead of
+  ISO 8601 when screen space and serial transcripts benefit from it. HIMON uses
+  local time as `HIMON V 00.mmdd(hhmm)`. STR8 uses the matching UTC form
+  `STR8  V 00.mmdd(hhmm)Z`; the trailing `Z` is part of the STR8 convention.
+  This exception is for firmware-visible identity strings, not for docs, logs,
+  source comments, or generated artifacts.
 
 ## Command Safety And Syntax
 
@@ -214,6 +220,18 @@ start +count    count is the number of bytes
   remains the default boot bank with `$8000-$BFFF` user-available,
   `$C000-$EFFF` as the default payload gate, and `$F000-$FFFF` as
   STR8/top-sector recovery space.
+- In the partitioned-backup direction, reserve one normal 4K bank 0/1 payload
+  slot as `STR8_TOP_SAFE` before allowing STR8 top-sector update work. The first
+  fixed slot may be bank 1 `$F000-$FFFF`, physical `$0F000-$0FFFF`, leaving 56K
+  for ordinary managed backups. The active boot top sector is bank 3
+  `$F000-$FFFF`, physical `$1F000-$1FFFF`.
+- W65C02SXB/EDU has no alternate boot jumper. If the active bank 3 top sector
+  is corrupt enough to lose usable reset vectors, no onboard software path can
+  reach STR8, bank 2 tools, or the bank 0/1 catalog. A top-sector backup is
+  therefore programmer-assisted recovery, not bootable self-rescue: erase,
+  program, and verify physical `$1F000-$1FFFF` from the raw bytes stored in the
+  `STR8_TOP_SAFE` physical source slot. Recovery receipts must use physical
+  addresses, not ambiguous CPU `$F000-$FFFF` text.
 - STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.
 - Minimal recovery is a small load/verify/flash/identity surface, not full
   HIMON.
