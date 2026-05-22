@@ -46,6 +46,11 @@ storage:    hash0,hash1,hash2,hash3 low byte through high byte
 owner:      HIMON command, catalog, symbol, and fixup lookup
 ```
 
+The active fast FNV update keeps the original routine available and only
+unrolls the fixed shift sequence inside the software multiply by `$01000193`.
+This is a deliberate ROM-for-cycles tradeoff: it spends a few bytes to lessen
+the runtime cost of doing the FNV prime multiply in software.
+
 Example:
 
 ```text

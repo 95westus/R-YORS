@@ -37,6 +37,8 @@ Runtime FNV-1a
   owner: HIMON command dispatch
   purpose: command token lookup
   source: HIMON/himon.asm
+  note: fast path unrolls only the software multiply shifts, trading ROM bytes
+        for fewer cycles
   symbol guide: SYMBOL_XREF.md
 
 Compact CRC16 local hash/check

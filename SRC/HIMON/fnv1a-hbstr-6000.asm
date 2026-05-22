@@ -25,7 +25,9 @@
                         XDEF            FNV1A_HBSTR_XY
                         XDEF            FNV1A_INIT
                         XDEF            FNV1A_UPDATE_A
+                        XDEF            FNV1A_UPDATE_A_FAST
                         XDEF            FNV1A_MUL_PRIME
+                        XDEF            FNV1A_MUL_PRIME_FAST
                         XDEF            MATH_COPY_HASH_TO_TERM
                         XDEF            MATH_SHLADD_TERM_N
                         XDEF            MATH_SHL_TERM_N
@@ -155,7 +157,7 @@ FNV1A_BUF_XY_LEN:
 FNV1A_BUF_LOOP:
                         LDA             (FNV_PTR_LO),Y
                         AND             #$7F
-                        JSR             FNV1A_UPDATE_A
+                        JSR             FNV1A_UPDATE_A_FAST
                         INY
                         BNE             FNV1A_BUF_NEXT
                         INC             FNV_PTR_HI
@@ -183,7 +185,7 @@ FNV1A_HBSTR_LOOP:
                         LDA             (FNV_PTR_LO),Y
                         PHA
                         AND             #$7F
-                        JSR             FNV1A_UPDATE_A
+                        JSR             FNV1A_UPDATE_A_FAST
                         PLA
                         BMI             FNV1A_HBSTR_DONE
                         INY
@@ -305,6 +307,68 @@ MATH_ADD_TERM1_TO_HASH3:
                         ADC             FNV_TERM1
                         STA             FNV_HASH3
                         RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: FNV1A_UPDATE_A_FAST  [HASH:A8802314]
+; IN : A = next input byte
+; OUT: FNV_HASH *= $01000193 after low byte xor
+; NOTE: Drop-in faster update; original FNV1A_UPDATE_A remains available.
+;       This is a ROM-for-cycles tradeoff to lessen the software multiply cost.
+; ----------------------------------------------------------------------------
+FNV1A_UPDATE_A_FAST:
+                        EOR             FNV_HASH0
+                        STA             FNV_HASH0
+                        JMP             FNV1A_MUL_PRIME_FAST
+
+; ----------------------------------------------------------------------------
+; ROUTINE: FNV1A_MUL_PRIME_FAST  [HASH:303E5DC1]
+; OUT: FNV_HASH = FNV_HASH * $01000193 mod 2^32
+; NOTE: Same shift-add sequence as FNV1A_MUL_PRIME, with only the fixed
+;       1,3,3,1 shift pattern expanded to avoid per-shift loop overhead.
+; ----------------------------------------------------------------------------
+FNV1A_MUL_PRIME_FAST:
+                        JSR             MATH_COPY_HASH_TO_TERM
+
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        JSR             MATH_ADD_TERM_TO_HASH
+
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        JSR             MATH_ADD_TERM_TO_HASH
+
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        JSR             MATH_ADD_TERM_TO_HASH
+
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        JSR             MATH_ADD_TERM_TO_HASH
+                        JMP             MATH_ADD_TERM1_TO_HASH3
 
 MSG_BANNER:
                         DB              "FNV-1A HASH. CTRL-C EXIT",$D3

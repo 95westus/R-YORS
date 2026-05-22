@@ -423,7 +423,7 @@ CMD_QUOTE_HASH_LOOP:
 CMD_QUOTE_HASH_BYTE:
                         JSR             CMD_PEEK
                         AND             #$7F
-                        JSR             FNV1A_UPDATE_A
+                        JSR             FNV1A_UPDATE_A_FAST
                         JSR             CMD_ADV_PTR
                         BRA             CMD_QUOTE_HASH_LOOP
 CMD_QUOTE_HASH_DONE:
@@ -2767,14 +2767,14 @@ CMD_HASH_TOKEN:
                         CMP             #'"'
                         BNE             CMD_HASH_TOKEN_LOOP
                         AND             #$7F
-                        JSR             FNV1A_UPDATE_A
+                        JSR             FNV1A_UPDATE_A_FAST
                         BRA             CMD_HASH_TOKEN_DONE
 CMD_HASH_TOKEN_LOOP:
                         JSR             CMD_PEEK
                         JSR             CMD_IS_DELIM_OR_NUL
                         BCS             CMD_HASH_TOKEN_DONE
                         AND             #$7F
-                        JSR             FNV1A_UPDATE_A
+                        JSR             FNV1A_UPDATE_A_FAST
                         JSR             CMD_ADV_PTR
                         BRA             CMD_HASH_TOKEN_LOOP
 CMD_HASH_TOKEN_DONE:
@@ -3310,6 +3310,58 @@ MATH_ADD_TERM1_TO_HASH3:
                         ADC             FNV_TERM1
                         STA             FNV_HASH3
                         RTS
+
+; Fast drop-in FNV-1a byte update. The original update/multiply path above
+; stays resident; this one only expands the fixed 1,3,3,1 shift pattern.
+; Tradeoff: spend a few ROM bytes to reduce software multiply loop overhead.
+FNV1A_UPDATE_A_FAST:
+                        EOR             FNV_HASH0
+                        STA             FNV_HASH0
+                        JMP             FNV1A_MUL_PRIME_FAST
+
+FNV1A_MUL_PRIME_FAST:
+                        JSR             MATH_COPY_HASH_TO_TERM
+
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        JSR             MATH_ADD_TERM_TO_HASH
+
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        JSR             MATH_ADD_TERM_TO_HASH
+
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        JSR             MATH_ADD_TERM_TO_HASH
+
+                        ASL             FNV_TERM0
+                        ROL             FNV_TERM1
+                        ROL             FNV_TERM2
+                        ROL             FNV_TERM3
+                        JSR             MATH_ADD_TERM_TO_HASH
+                        JMP             MATH_ADD_TERM1_TO_HASH3
 
 ; ----------------------------------------------------------------------------
 ; Scanner / parser helpers
