@@ -92,11 +92,13 @@ $FFFA-$FFFF  W65C02 hardware vector block</code></pre>
 <h2 id="hash-policy">Hash Policy</h2>
 <pre><code class="language-text">routine header HASH      existing 32-bit FNV-1a routine comment ID
 current HIMON hash       FNV-era command record lookup
-intended compact hash     tableless CRC16 for runtime/catalog records
+public catalog hash      32-bit FNV-1a for names crossing boundaries
+compact local hash       CRC16 or short IDs inside validated local contexts
+record/body check        optional CRC32/checksum when worth the bytes
 name text                optional proof/listing/collision data</code></pre>
 <p>The hash is a lookup hint, not identity by itself. When identity matters, compare the stored canonical name text after the hash narrows the candidate set.</p>
-<p>FNV-1a is current implementation history and transition debt, not the final runtime/catalog symbol-hash decision. Catalog records should not need a per-record algorithm tag unless multi-algorithm catalogs become a deliberate future design.</p>
-<p>STR8 V0 does not use FNV or CRC16 for verification, image selection, command dispatch, catalog lookup, or recovery decisions. Future STR8-N/STRAIGHTEN may participate in compact-hash catalog paths without requiring ownership of a user system&#39;s catalog.</p>
+<p>FNV-1a32 is the settled public routine/command/symbol identity hash. Catalog records should not need a per-record algorithm tag unless multi-algorithm catalogs become a deliberate future design.</p>
+<p>STR8 V0 does not use FNV, CRC16, or CRC32 for verification, image selection, command dispatch, catalog lookup, or recovery decisions. Future STR8-N/STRAIGHTEN may participate in catalog paths without requiring ownership of a user system&#39;s catalog.</p>
 <p>Current HIMON FNV command record:</p>
 <pre><code class="language-text">+0  &#39;F&#39;        $46
 +1  &#39;N&#39;        $4E
@@ -121,7 +123,7 @@ K=$03  executable/callable with confirmation:
 ww=01  folded hash8
 ww=10  folded hash16
 ww=11  full hash32, stored hash0..3</code></pre>
-<p>These widths describe the older folded-FNV proposal and current helper vocabulary. The preferred compact runtime/catalog hash direction is tableless CRC16.</p>
+<p>These widths describe the older folded-FNV proposal and current helper vocabulary. Future public records should keep FNV32 at public boundaries; use CRC16/short IDs only inside local contexts with fallback/collision handling.</p>
 <h2 id="record-byte-order">Record Byte Order</h2>
 <pre><code class="language-text">word      low byte, then high byte
 long      byte0..3, least significant to most significant
@@ -161,7 +163,7 @@ make -C SRC routine-hash-comments</code></pre>
 <p>The current standalone <code>himon-rom</code> image no longer contains the legacy HIMONIA fixed entries at <code>$F00D</code>, <code>$FADE</code>, or <code>$FEED</code>. Loaded-language bridge builds must patch call addresses from the current HIMON map or wait for a deliberate future ABI.</p>
 <p>The build check verifies the reset vector and confirms that the reset target in the selected 32K bank image contains real code.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/REF.md</code>. Source modified: <time>2026-05-22T03:40:00Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/REF.md</code>. Source modified: <time>2026-05-22T04:31:08Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

@@ -451,6 +451,20 @@ import, it returns before printing with `A=$E1`. If a later import fails, it can
 print `S IMP` and returns `A=$E2` through `$E5` for READ, FLUSH, CTRL-C, or
 HEX-IN.
 
+The RAM proof is still a placed image, not a relocatable command package. It is
+linked for `$3000`, so loading it at `$3000` needs no fixups. Loading the same
+bytes at `$6000` would require future RREC metadata: link address, entry offset,
+payload length, internal fixups, and dependency hashes. That is the direction
+for a later CP/M-like command tray:
+
+```text
+banked RREC storage -> LOAD @6000 -> copy -> resolve deps -> apply fixups -> run
+```
+
+Until that exists, `himon-search-static`, `himon-search-proof`, and
+`himon-search-flash` should be read as placed proofs. Their map address is part
+of the proof.
+
 The smaller HREC join proof isolates the resolver/join idea before search uses
 it as a normal dependency path:
 
@@ -837,31 +851,32 @@ hash32 display: $D60C1322
 record bytes: 46 4E D6 22 13 0C D6 05 <entry-lo> <entry-hi> <extra-lo> <extra-hi>
 meaning: 'F','N',('V'+$80),hash0,hash1,hash2,hash3,kind=$05,DW ENTRY,DW EXTRA
 resident entry: provided by the low-flash search member
-extra text: high-bit-terminated display text, such as S(earch)
+extra text: high-bit-terminated display text:
+            S: SEARCH FROM RAM TO HASHED HIMON CMD
 ```
 
 Candidate placement:
 
 ```text
-preferred candidate: $BBA2 if blank on the board
-guard before:        $BBA0-$BBA1, expected $FF $FF
-calculation:         original $045C pocket fit at $BBA2; current image still fits
-actual image range:  $BBA2-$BFF5
-actual size:         $0454 bytes, 1108 decimal
-guard after:         $BFF6-$BFFF, expected $FF padding before $C000
+preferred candidate: $BB80 if blank on the board
+guard before:        $BB7E-$BB7F, expected $FF $FF
+calculation:         longer display text no longer fits at $BBA2 with a $C000 guard
+actual image range:  $BB80-$BFF1
+actual size:         $0472 bytes, 1138 decimal
+guard after:         $BFF2-$BFFF, expected $FF padding before $C000
 next protected ROM:  $C000
-record:              $BBA2-$BBAD
-entry:               $BBAE
-extra:               $BFEE, high-bit text S(earch)
+record:              $BB80-$BB8B
+entry:               $BB8C
+extra:               $BFCC, high-bit text S: SEARCH FROM RAM TO HASHED HIMON CMD
 allowed by L F:      yes, if all target bytes are $FF
 protected region:    do not target $C000+
-artifact:            SRC/BUILD/s19/himon-search-flash-bba2.s19
-map:                 SRC/BUILD/map/himon-search-flash-bba2.map
+artifact:            SRC/BUILD/s19/himon-search-flash-bb80.s19
+map:                 SRC/BUILD/map/himon-search-flash-bb80.map
 ```
 
 The `$E9B0` HIMON-tail idea is scratched for this pass. Keep the flash-shadow
 experiment in `$8000-$BFFF` so it stays inside the current conservative `L F`
-write policy. The `$BBA2` placement keeps the flash command near the top of low
+write policy. The `$BB80` placement keeps the flash command near the top of low
 flash while preserving a two-byte `$FF` guard before the record and more than
 the requested two-byte `$FF` guard before `$C000`.
 
@@ -882,7 +897,8 @@ DW SEARCH_EXTRA
 SEARCH_ENTRY:
     ; command code
 SEARCH_EXTRA:
-    ; high-bit-terminated text, for example S(earch)
+    ; high-bit-terminated text, for example
+    ; S: SEARCH FROM RAM TO HASHED HIMON CMD
 ```
 
 The `EXTRA` pointer is display metadata. The called search routine does not
@@ -898,16 +914,16 @@ First `L F` board script:
 
 ```text
 >L F
-send SRC/BUILD/s19/himon-search-flash-bba2.s19
+send SRC/BUILD/s19/himon-search-flash-bb80.s19
 ># S
->S BBA0 BFFF 46 4E D6
->S BBA0 BFFF 'S(earch)'
+>S BB80 BFFF 46 4E D6
+>S BB80 BFFF 'S: SEARCH'
 ```
 
 The earlier K=`$03` flash-shadow proof asked for `Y` before every run. K=`$05`
 keeps the display metadata while removing that prompt.
 
-`$BBA2` is the current candidate, not a promise. If `$BBA0-$BFFF` is occupied by
+`$BB80` is the current candidate, not a promise. If `$BB80-$BFFF` is occupied by
 CALC, a local language image, an earlier experiment, or anything not all `$FF`,
 pick another blank page in `$8000-$BFFF`. Do not erase as part of this step.
 
@@ -916,7 +932,7 @@ Before `L F`:
 ```text
 record current ROM/bin identity
 record the exact S19 and map filenames
-dump or otherwise confirm $BBA0-$BFFF target bytes are $FF
+dump or otherwise confirm $BB7E-$BFFF target bytes are $FF
 confirm the S19 contains only the intended low-flash range
 confirm the S9 start address is the command entry
 keep external recovery available before any live flash write
@@ -926,10 +942,10 @@ Board proof:
 
 ```text
 >L F            enter flash S19 load mode
-send SRC/BUILD/s19/himon-search-flash-bba2.s19
-># S            should resolve S to $BBAE K=05 S(earch)
->S BBA0 BFFF 46 4E D6
->S BBA0 BFFF 'S(earch)'
+send SRC/BUILD/s19/himon-search-flash-bb80.s19
+># S            should resolve S to $BB8C K=05 S: SEARCH FROM RAM TO HASHED HIMON CMD
+>S BB80 BFFF 46 4E D6
+>S BB80 BFFF 'S: SEARCH'
 >N              still steps trapped context
 ```
 
@@ -1074,20 +1090,26 @@ hash-resolved RAM proof
 flash command
     proves the command can live as a K=$05 FNV record in low flash, be found by
     HIMON's catalog, keep display text, skip confirmation, and run from ROM
+
+native HIMON command
+    makes S part of HIMON proper, with the same search core and direct resident
+    helper calls instead of the low-flash import resolver
 ```
 
-The flash command is the smallest binary even though its source is larger than
-the static proof. That is the useful result: once HIMON owns the shell, command
-dispatch, confirmation text, and resident helper table, the command member only
-needs the search parser/scanner/printer plus a small import resolver. The board
-transcript above proves that this was not just a link-map theory; the same `S`
-command made the trip from RAM proof to hash-visible flash resident code.
+The flash command is the smallest standalone binary even though its source is
+larger than the static proof. That was the useful intermediate result: once
+HIMON owns the shell, command dispatch, confirmation text, and resident helper
+table, the command member only needs the search parser/scanner/printer plus a
+small import resolver. The native HIMON command removes that resolver too. The
+same `S` command has now made the trip from RAM proof to hash-visible flash
+resident code to built-in HIMON command.
 
 ### What "Lay It Into HIMON" Means
 
 The flash-shadow command is a resident command, but it is still outside the
 HIMON image. Laying it into HIMON means replacing the low-flash specimen with a
-native HIMON command member:
+native HIMON command member. As of `HIMON V 00.0522(0048)`, this is implemented
+in `SRC/HIMON/himon.asm`:
 
 ```text
 CMD_SEARCH_FNV
@@ -1097,26 +1119,33 @@ CMD_SEARCH
     command entry that starts from CMDP_START, skips the S token, parses args,
     scans memory, prints hits, reports S NF/S ABORT/usage, and skips I/O with
     the shared named-slot printer
+
+current map
+    CMD_SEARCH_FNV    $C306
+    CMD_SEARCH        $C312
+    MSG_SEARCH_EXTRA  $E8E9
+    _END_DATA         $EE27
 ```
 
-The body would mostly come from `himon-search-flash.asm`, but not as a blind
-paste. The native version should delete the flash import resolver and call HIMON
-locals directly: FTDI write/read, Ctrl-C check, CRLF, hex output, and
-`UTL_HEX_ASCII_TO_NIBBLE`. Its zero-page names should also be folded into the
-HIMON command scratch space instead of remaining app-local `$00-$23` names.
+The body came from `himon-search-flash.asm`, but not as a blind paste. The
+native version deletes the flash import resolver and calls HIMON locals
+directly: FTDI write, Ctrl-C check, CRLF, hex output, named I/O-slot skip, and
+`CMD_HEX_ASCII_TO_NIBBLE`. Its zero-page names are folded into the HIMON
+command scratch space instead of remaining app-local `$00-$23` names.
 
-The important command-line rule stays the same. `CMD_SEARCH` should not trust
-`$FE/$FF` on entry because display/confirm printing may use that pointer. It
-should copy `CMDP_START` from `$FA/$FB`, advance past the `S` token, and parse
-the argument tail from there.
+The important command-line rule stays the same. `CMD_HASH_TOKEN` restores
+`CMDP_PTR` to the token start before dispatch. `CMD_SEARCH` advances past the
+one-byte `S` token, copies the resulting argument pointer into `SEARCH_LINE`,
+and parses the tail from there. The search parser then uses its own pointer, so
+message printing can still use HIMON's `$FE/$FF` string pointer safely.
 
-### Native HIMON Port Blueprint
+### Native HIMON Port Record
 
-Use `SRC/PROOFS/himon-search-flash.asm` as the donor file and
-`SRC/PROOFS/himon-search-for-himon.asm` as the code-side checklist, but do
-not paste either one blindly. The built-in version should keep the search core
-as small W65C02S routines-of-routines and delete the flash-loader machinery
-that only exists because the command currently lives outside HIMON.
+`SRC/PROOFS/himon-search-flash.asm` remains the donor/proof file and
+`SRC/PROOFS/himon-search-for-himon.asm` remains the code-side checklist. The
+built-in version keeps the search core as small W65C02S routines-of-routines
+and deletes the flash-loader machinery that only existed because the command
+once lived outside HIMON.
 
 Native record:
 
@@ -1131,24 +1160,22 @@ Native command entry:
 
 ```asm
 CMD_SEARCH:
-                        LDA             CMDP_START_LO
+                        JSR             CMD_ADV_PTR
+                        LDA             CMDP_PTR_LO
                         STA             SEARCH_LINE_LO
-                        LDA             CMDP_START_HI
+                        LDA             CMDP_PTR_HI
                         STA             SEARCH_LINE_HI
-                        JSR             SEARCH_SKIP_SPACES
-                        JSR             SEARCH_PEEK
-                        BEQ             CMD_SEARCH_USAGE
-                        JSR             SEARCH_ADV_LINE       ; skip S token
                         JSR             SEARCH_PARSE_RANGE
                         BCC             CMD_SEARCH_USAGE
                         JSR             SEARCH_PARSE_PATTERN
                         BCC             CMD_SEARCH_USAGE
-                        JMP             SEARCH_SCAN_RANGE
+                        JSR             SEARCH_SCAN_RANGE
+                        RTS
 ```
 
-The entry shape intentionally mirrors the flash command. It preserves the
-tested parser/scanner flow and avoids depending on `$FE/$FF`, which display and
-hash printing may have used before dispatch.
+The entry shape preserves the tested parser/scanner flow while using the normal
+HIMON command convention: command routines start with `CMDP_PTR` at the token
+and advance over their own command byte.
 
 Keep these routines from the flash donor, with only label-prefix and helper-call
 changes:
@@ -1213,7 +1240,7 @@ MSG_SEARCH_USAGE:       DB "S START END|+COUNT BB|'TEXT' [...], ? HELP, Q QUI",(
 MSG_SEARCH_IMPORT:      ; delete in native; there are no runtime imports
 MSG_SEARCH_NF:          DB "S N",('F'+$80)
 MSG_SEARCH_ABORT:       DB "S ABOR",('T'+$80)
-MSG_SEARCH_EXTRA:       DB "S(earch",(')'+$80)
+MSG_SEARCH_EXTRA:       DB "S: SEARCH FROM RAM TO HASHED HIMON CM",('D'+$80)
 ```
 
 The native version should not keep zero-terminated string printing just for
@@ -1269,19 +1296,18 @@ Native source placement in `himon.asm`:
 
 ```text
 command records:
-    put CMD_SEARCH_FNV near the other command FNV records, after the quote/D
-    area is fine
+    CMD_SEARCH_FNV sits after D, before M
 
 command body:
-    put CMD_SEARCH and SEARCH_* routines near CMD_D/MON_PRINT_MEM_RANGE, because
-    search shares the same display-row and I/O-skip mental model
+    CMD_SEARCH and SEARCH_* routines sit near CMD_D/MON_PRINT_MEM_RANGE,
+    because search shares the same display-row and I/O-skip mental model
 
 messages:
-    put MSG_SEARCH_* with the other HIMON messages
+    MSG_SEARCH_* lives with the other HIMON messages
 ```
 
 Hash-scan order matters. HIMON scans records from `$8000` upward. If the
-low-flash `S` record at `$BBA2` is still programmed, it will win before a native
+low-flash `S` record at `$BB80` is still programmed, it will win before a native
 `S` record inside HIMON at `$C000+`. Native test boards must either erase/avoid
 the low-flash search record or boot a bank without that flash-shadow member.
 
@@ -1302,12 +1328,12 @@ Size-biased native rewrite rules:
 Native test sequence:
 
 ```text
-make -C SRC himon
+make -C SRC himon-str8-rom-bin
 install/run the new HIMON image
-ensure $BBA2 flash-shadow S is absent, erased, or in a different bank
+ensure $BB80 flash-shadow S is absent, erased, or in a different bank
 
 ># S
-    expected: D60C1322 ENTRY=<native> K=05  S(earch)
+    expected: D60C1322 ENTRY=C312 K=05  S: SEARCH FROM RAM TO HASHED HIMON CMD
 
 >S 7F06 +27 00
     expected: 7F00/7F20 named IO SKIP rows, then S NF
@@ -1322,8 +1348,8 @@ ensure $BBA2 flash-shadow S is absent, erased, or in a different bank
     expected: D still prints the same named IO SKIP rows
 ```
 
-Only after this native sequence is boring should `himon-search-flash.asm` be
-marked as historical/proof-delivery code instead of the active command owner.
+After this native sequence is boring, `himon-search-flash.asm` can stay as
+historical/proof-delivery code instead of the active command owner.
 
 ### Flash-Shadow Linking Caveat
 

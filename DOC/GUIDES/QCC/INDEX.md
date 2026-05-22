@@ -59,10 +59,11 @@ fit a small inspectable 6502 runtime, it does not belong in the first path.
   compact signatures, and collision questions.
 - [QCC_FLASH.md](FLASH.md) - flash-native record lifecycle, FSB bits,
   buried records, and condense/compress policy.
-- [QCC_ASM.md](ASM.md) - hashed assembler symbols, fixups, labels, and
-  when hash-only records are not enough.
+- [QCC_ASM.md](ASM.md) - hashed assembler symbols, fixups, labels,
+  mnemonic dispatch, self-modifying-code (SMC) boundaries, and the VM boundary.
 - [QCC_CATALOG_LINKING.md](CATALOG_LINKING.md) - catalog-linking
-  bootstrap, seed-layer joins, and payload-baggage questions.
+  bootstrap, seed-layer joins, storage-bank metadata, and payload-baggage
+  questions.
 - [QCC_STR8.md](STR8.md) - STR8/STRAIGHTEN scope, ownership boundaries,
   scanning, and recovery/update responsibilities.
 - [QCC_MEMORY.md](MEMORY.md) - RAM/IO/flash ranges, 4K selectors,

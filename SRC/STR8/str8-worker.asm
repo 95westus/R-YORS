@@ -2,8 +2,8 @@
 ; str8-worker.asm
 ; RAM-resident STR8 bank-copy worker.
 ;
-; This image links for $0200, is stored in the combined ROM at $FC00, and is
-; copied to $0200 before destructive STR8 bank operations. Keep it independent:
+; This image links for $0200, is stored in high flash packed against $FFEF, and
+; is copied to $0200 before destructive STR8 bank operations. Keep it independent:
 ; once running, it must not call ROM code because it switches flash banks and
 ; may erase bank 3's top sector.
 ; ----------------------------------------------------------------------------
@@ -14,10 +14,10 @@
                         XDEF            STR8_WORKER_END
 
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
-; 2026-05-17T21:20-05:00        WLP2        Worker source storage moves to $FC00.
+; 2026-05-17T21:20-05:00        WLP2        Worker source storage formerly moved to $FC00.
+; 2026-05-21T23:55-05:00        WLP2        Worker source is now packed down from $FFEF.
 STR8_PROT_START_HI      EQU             $F0
 STR8_PROT_BUF_HI        EQU             $40
-STR8_WORKER_STORE_HI    EQU             $FC
 
 STR8_COPY_MODE_RESTORE  EQU             $01
 STR8_COPY_MODE_ENROLL   EQU             $02

@@ -89,9 +89,25 @@ active memory. A later RREC can stand alone the same way; an RCAT can collect
 many RRECs later for bounds, indexes, generations, string pools, or maintenance.
 The join proof should not wait for RCAT.
 
-CRC16 remains the intended compact runtime/catalog hash. This proof deliberately
-uses current emitted FNV signatures because those bytes are already in HIMON and
-prove the join mechanics without starting another migration at the same time.
+This proof does not make current HRECs relocatable. It proves "find a placed
+record and join to its already-linked entry." A current HREC entry is an address
+that is valid because the bytes are already at the address they were linked for.
+Moving that payload to another RAM address requires future RREC-style relocation
+metadata:
+
+```text
+HREC today   hash -> kind -> already-placed entry
+RREC future  hash -> payload + link_addr + fixups + deps -> load/fix/run
+```
+
+For the full staged plan, see `DOC/GUIDES/HASH/HASH_MAP.md`, section
+"Placed HREC And Relocatable RREC".
+
+FNV32 is the settled public identity hash for exported routines and commands.
+This proof deliberately uses current emitted FNV signatures because those bytes
+are already in HIMON and prove the join mechanics without starting another
+migration at the same time. CRC16 remains available for compact local/scoped
+tables and checks, not as the universal public routine identity.
 
 ## Terminology Trail
 

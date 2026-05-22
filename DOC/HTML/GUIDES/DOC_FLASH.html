@@ -30,6 +30,59 @@ a remembered artifact name or doc path is now stale</code></pre>
 change:     what moved or was reclassified
 effect:     what old assumption is stale now
 action:     where to look or what to do next</code></pre>
+<h2 id="redoc-self-modifying-code-parked-as-qcc-boundary">REDOC: Self-Modifying Code Parked As QCC Boundary</h2>
+<pre><code class="language-text">2026
+         05
+                22
+                   05:04Z WLP2 Added the ASM-side self-modifying-code
+                               boundary note.</code></pre>
+<p>scope: <code>QCC/ASM.md</code>, <code>QCC/INDEX.md</code>, and generated HTML.</p>
+<p>change: The ASM QCC now records that self-modifying code is not a general R-YORS style goal. The acceptable future shape is explicit loader/fixup work, generated RAM bodies, or a very narrow RAM-worker size-pressure exception.</p>
+<p>effect: Do not treat RAM execution, hash-based joining, or relocation fixups as permission to hide normal control flow in patched instruction bytes.</p>
+<p>action: Prefer zero-page indirection, tables, helper routines, and visible fixup records. If code bytes must change, make that mutation part of a loader, fixup table, or generated-RAM-body story.</p>
+<h2 id="redoc-str8-worker-packed-down-from-ffef">REDOC: STR8 Worker Packed Down From FFEF</h2>
+<pre><code class="language-text">2026
+         05
+                22
+                   04:54Z WLP2 Coalesced the STR8 top-sector slack by
+                               packing the RAM worker down from $FFEF.</code></pre>
+<p>scope: <code>SRC/STR8/str8.asm</code>, <code>SRC/STR8/str8-worker.asm</code>, <code>SRC/tools/build_himon_str8_rom_bin.ps1</code>, STR8/operator/memory guides, and generated HTML.</p>
+<p>change: The stored STR8 RAM worker moved from <code>$FC00-$FED1</code> to <code>$FD1E-$FFEF</code>. STR8 now copies the exact worker length into <code>$0200-$04D1</code> instead of assuming a page-aligned four-page source. The ROM builder recomputes the packed worker address from the worker size and validates STR8&#39;s copy constants.</p>
+<p>effect: The old two-hole top-sector picture is stale. STR8 code/data grows upward from <code>$F000</code>, the worker grows downward from <code>$FFEF</code>, and the current free top-sector hole is one contiguous <code>$FA83-$FD1D</code> range.</p>
+<p>action: Use the current layout in <code>TECHNICAL_GUIDE.md</code>, <code>MEMORY_MAP.md</code>, <code>OPERATORS_GUIDE.md</code>, and <code>STR8.md</code>.</p>
+<h2 id="redoc-book-spine-names-the-change-mind-loop">REDOC: Book Spine Names The Change-Mind Loop</h2>
+<pre><code class="language-text">2026
+         05
+                22
+                   04:44Z WLP2 Updated the book spine with the
+                               want/need/answer/question/change/do/keep/no-more
+                               motion of the project.</code></pre>
+<p>scope: <code>STORY/BOOK.md</code> and generated HTML.</p>
+<p>change: The story spine now says chapters should show what the system wanted, what the hardware or operator needed, what answer was tried, what questions remained, what changed, what was proved, what survived, and what path was retired.</p>
+<p>effect: The book should not read as if every current answer was obvious from the start. R-YORS changes its mind when the board, ROM size, flash physics, or operator surface proves an older answer too large, unsafe, or stale.</p>
+<p>action: Use <a href="STORY/BOOK.html">BOOK.md</a> for the narrative structure and keep settled technical calls in <a href="DECISIONS.html">DECISIONS.md</a>.</p>
+<h2 id="redoc-asm-vm-question-parked-in-qcc">REDOC: ASM VM Question Parked In QCC</h2>
+<pre><code class="language-text">2026
+         05
+                22
+                   04:40Z WLP2 Captured the hash-first ASM and storage-bank
+                               metadata question as QCC, explicitly parking
+                               VM/bytecode ideas as later work.</code></pre>
+<p>scope: <code>QCC_ASM.md</code>, <code>QCC_CATALOG_LINKING.md</code>, and generated HTML.</p>
+<p>change: <code>LABEL: MNEMONIC OPERAND</code> is now documented as a hash-first native assembler path: hash labels, dispatch hashed mnemonics to W65C02S emitters or directives, and record operand fixups. Storage banks are framed around <code>provides</code>, <code>depends</code>, <code>fixups</code>, payload length, link/load address, and checksum.</p>
+<p>effect: The old mental shortcut &quot;hashed ASM plus address traps means VM&quot; is too far ahead. Native emitted W65C02S cannot be trapped after the fact; trapping requires deliberate watched forms such as HIMON service calls, BRK tokens, or bytecode.</p>
+<p>action: Keep VM talk in QCC. The near-term proof remains seed records, explicit dependencies, fixups, and native load/join/run behavior.</p>
+<h2 id="redoc-hash-policy-settled-on-fnv32-public-identity">REDOC: Hash Policy Settled On FNV32 Public Identity</h2>
+<pre><code class="language-text">2026
+         05
+                21
+                   23:00Z WLP2 Settled the hash split: FNV-1a32 is public
+                               name identity; CRC16 is compact local/scoped
+                               hash/check; CRC32 is optional integrity/check,
+                               not ordinary lookup identity.</code></pre>
+<p>scope: <code>DECISIONS.md</code>, <code>README.md</code>, <code>TECHNICAL_GUIDE.md</code>, <code>REF.md</code>, <code>GLOSSARY.md</code>, <code>HASH.md</code>, <code>HASH_MAP.md</code>, <code>QCC_HASH.md</code>, <code>HASHED_ASM.md</code>, <code>SYMBOL_XREF.md</code>, <code>CATALOG.md</code>, <code>HIMON_MAP.md</code>, <code>STR8.md</code>, and generated HTML.</p>
+<p>change: The earlier &quot;CRC16 replaces FNV32 as the intended runtime/catalog hash&quot; wording is retired. Public/exported/cross-bank names keep FNV32. CRC16 remains valuable in bounded local record contexts. CRC32 belongs to integrity checking.</p>
+<p>effect: Docs should no longer describe FNV-1a32 as mere transition debt or describe CRC16 as the universal future catalog identity.</p>
 <h2 id="redoc-hash-trash-and-k-bit-contract">REDOC: Hash Trash And K-Bit Contract</h2>
 <pre><code class="language-text">2026
          05
@@ -103,7 +156,7 @@ action:     where to look or what to do next</code></pre>
                                proof, and simplified the future update
                                command shape with fixed S19 gates.</code></pre>
 <p>scope: <code>STR8_WORK_PROCESS.md</code>, <code>INDEX.md</code>, <code>TOC.md</code>, <code>MAP.md</code>, <code>XREF.md</code>, <code>BIB.md</code>, <code>BRINGUP.md</code>, <code>TODO.md</code>, <code>STR8_FLASH_UPDATE_PROPOSAL.md</code>, <code>STR8.md</code>, <code>QCC_STR8.md</code>.</p>
-<p>change: STR8 now has a process guide that names the next step as a V0 acceptance/regression pass before new update commands or self-update. STR8&#39;s recovery path is treated as already proven; the pass records that the current build still behaves like the known-good recovery image. The update proposal now treats <code>U T</code>, <code>U H</code>, and <code>U S</code> as design shorthand only; the compact implemented HIMON path is <code>U</code>, equivalent to fixed <code>UPDATE HIMON</code>. The first S19 gate is fixed: <code>U</code> accepts only <code>$C000-$EFFF</code>, while future <code>UPDATE STR8</code> accepts only <code>$F000-$FFFF</code> after stronger confirmation. IVI is now the combined image&#39;s stable vector-indirection mechanism, IVY is only its pronunciation, and LEAF is the future friendly front door built on IVI. Payload use of future LEAF patch routines is optional and has no flash authority. The bringup guide points to the current <code>$F000</code> resident shell, <code>$FC00</code> worker source, <code>$0200-$05FF</code> RAM tray, <code>$4000-$4FFF</code> copy buffer, and <code>$4000-$6FFF</code> HIMON update staging area.</p>
+<p>change: STR8 now has a process guide that names the next step as a V0 acceptance/regression pass before new update commands or self-update. STR8&#39;s recovery path is treated as already proven; the pass records that the current build still behaves like the known-good recovery image. The update proposal now treats <code>U T</code>, <code>U H</code>, and <code>U S</code> as design shorthand only; the compact implemented HIMON path is <code>U</code>, equivalent to fixed <code>UPDATE HIMON</code>. The first S19 gate is fixed: <code>U</code> accepts only <code>$C000-$EFFF</code>, while future <code>UPDATE STR8</code> accepts only <code>$F000-$FFFF</code> after stronger confirmation. IVI is now the combined image&#39;s stable vector-indirection mechanism, IVY is only its pronunciation, and LEAF is the future friendly front door built on IVI. Payload use of future LEAF patch routines is optional and has no flash authority. The bringup guide points to the current <code>$F000</code> resident shell, <code>$FD1E-$FFEF</code> worker source, <code>$0200-$04D1</code> RAM tray, <code>$4000-$4FFF</code> copy buffer, and <code>$4000-$6FFF</code> HIMON update staging area.</p>
 <p>effect: Do not expose <code>U T</code>, <code>U H</code>, or <code>U S</code> as operator commands. Use <code>U</code> only as the fixed HIMON S19 gate, and keep later generic/raw-range work behind a guided update surface. The existing <code>? B E M U 0 1 2 G R</code> rescue/update surface still needs a clean hardware transcript, especially for destructive <code>B</code>, <code>E</code>, <code>U</code>, lower-sector restore, and high-flash failure behavior.</p>
 <p>action: Use <a href="STR8/STR8_WORK_PROCESS.html">STR8_WORK_PROCESS.md</a> before editing STR8 source or planning the next bench pass.</p>
 <h2 id="redoc-product-boundaries-named">REDOC: Product Boundaries Named</h2>
@@ -240,7 +293,7 @@ SRC/BUILD/bin/life-2000-load.bin</code></pre>
 <p>effect: <code>SRC/BUILD/s19/life.s19</code> is a stale remembered artifact name. New references should carry the load address.</p>
 <p>action: Use <code>life-2000.s19</code> for HIMON S-record loading and <code>life-2000-load.bin</code> when a raw loadable binary is needed.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-20T03:53:29Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DOC_FLASH.md</code>. Source modified: <time>2026-05-22T05:05:19Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

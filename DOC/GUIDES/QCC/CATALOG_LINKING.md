@@ -12,6 +12,43 @@ so the first thing cannot require the thing it is proving
 That is the chicken-and-egg problem. It is real, and the answer is a seed
 layer, not pretending the full catalog already exists.
 
+## Q: What minimum metadata makes flash banks usable as storage?
+
+Comment: A bank becomes useful storage when its records say what they provide,
+what they depend on, and how their bytes can be placed safely. Without that,
+the bank is only a byte pile: searchable, dumpable, maybe copyable, but not a
+trustworthy routine shelf.
+
+The small record set we keep circling is:
+
+```text
+provides       public hash/name/kind/entry exported by this record
+depends        required hashes/contracts before this body can run
+fixups         patch sites, widths, modes, and targets
+payload length exact body size, not "until the next thing maybe"
+link address   address the body was assembled for
+load address   address chosen by loader, if different
+checksum       body/record check before trusting the bytes
+```
+
+That is still not a VM. It is a tiny loader/linker contract. The storage bank
+can hold `RR/RB/RF/RD` pieces; HIMON or a future tool can copy the body to RAM,
+resolve dependencies, apply fixups, and then run native W65C02S code.
+
+The bootstrap remains seed-first:
+
+```text
+build/map truth emits first provides/depends/fixups
+HIMON scans those records
+S proves join/load/use behavior
+later ASM learns to emit the same record facts
+```
+
+Concern: Do not infer dependency closure from names alone. `SYS_`, `BIO_`, and
+`PIN_` are useful human layers, but storage records need declared imports and
+exports. The resolver should know why a body can run, not merely hope because a
+hash was found somewhere in a bank.
+
 ## Plain-English Models
 
 These are deliberately informal. They are here because the catalog-linking

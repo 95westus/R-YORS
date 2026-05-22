@@ -1,8 +1,9 @@
 # QCC ASM
 
 This page keeps onboard assembler questions in QCC form. These are working
-notes for the hash-first assembler path. Older FNV examples are current
-implementation history; the intended compact hash is tableless CRC16.
+notes for the hash-first assembler path. Public/exported symbols should use
+FNV32 identity; CRC16 or short IDs are for local/scoped assembler tables where
+context can handle collisions.
 
 ## Q: Can assembler symbols be hash-first?
 
@@ -100,6 +101,80 @@ Concern: Humans should not maintain branch islands by hand. Island placement
 needs assembler/linker help, range checking, and a rule for where islands are
 legal. The first assembler does not need this; record it as future machinery for
 when labels, fixups, and generated code layout are strong enough.
+
+## Q: Should R-YORS use self-modifying code?
+
+Comment: The current preference is no. Self-modifying code is not a general
+style goal for R-YORS. It makes dumps harder to trust, hides state inside
+instruction bytes, complicates listings and disassembly, and is especially
+awkward anywhere flash is involved. Prefer ordinary W65C02S code, zero-page
+indirect pointers, tables, small helpers, and explicit record/fixup metadata.
+
+There are still a few places where the idea is worth naming so it does not
+keep sneaking back under new names:
+
+```text
+load-time fixups      patch a RAM image before it is sealed and run
+RAM worker tuning     patch once, then run a tight RAM-only flash worker loop
+RAM trampolines       patch a JMP/JSR target after a hash/catalog lookup
+ASM scratch pocket    emit a tiny native test sequence in RAM, run it, discard it
+```
+
+The clean version of this is usually not "runtime self-modifying code" at all.
+It is linking or loading. A relocatable body is copied to RAM, dependency hashes
+are resolved, fixup records patch the operand bytes, and only then does the code
+become callable. That keeps mutation in the loader/fixup phase instead of
+hiding it inside normal execution.
+
+If a future STR8 RAM worker becomes desperate for bytes, a narrowly scoped RAM
+specialization may still be reasonable: patch a source pointer, destination
+pointer, or branch target once, then run the small loop many times. That is a
+size-pressure exception, not a pattern to spread through HIMON.
+
+Concern: Do not use self-modifying code as a shortcut around unclear records,
+dependencies, or allocator policy. Do not patch flash-resident code except
+through an explicit erase/write/verify path. Do not leave long-lived hidden
+patched code without a map/listing/debug story. If mutation is needed, prefer
+to make it visible as a fixup table, loader action, or generated RAM body.
+
+## Q: Is hashed `LABEL: MNEMONIC OPERAND` a virtual machine?
+
+Comment: Not for the first path. Treat it as a hash-first assembler question,
+not a VM commitment.
+
+The useful near-term shape is:
+
+```text
+LABEL:      hash symbol, record current address/value/scope
+MNEMONIC    hash word, dispatch to emitter or directive handler
+OPERAND     parse literal, address, text, label reference, or fixup
+```
+
+For example, `EQU` dispatches to equate handling, while `LDA`, `LDX`, `LDY`,
+`JSR`, and friends dispatch to W65C02S emitters. If an operand is not absolute
+yet, the assembler records a fixup with enough context to patch it later.
+
+A later proof could reserve a small RAM pocket, emit one assembled instruction
+or short sequence there, `JSR` into it, and return to HIMON. That would be a
+tiny onboard assembler or execution scratchpad. It is still native W65C02S
+code, not a virtual machine.
+
+The trap line matters. Once the assembler emits raw native code like
+`LDA $7F80`, the CPU will touch `$7F80`; HIMON does not get asked first. Address
+trapping only becomes possible if the emitter deliberately outputs watched
+forms:
+
+```text
+call HIMON memory service
+call catalog service by hash
+emit BRK token for the monitor to decode
+emit bytecode/threaded tokens instead of raw machine instructions
+```
+
+Concern: Do not make the first assembler carry VM promises. Keep VM, BRK-token,
+or bytecode ideas parked until labels, fixups, body records, and load/run
+proofs are already boring. The first useful assembler can be plain native code
+plus explicit fixup/dependency records.
 
 ## Q: When does ASM graduate from QCC to decision?
 

@@ -1,8 +1,8 @@
 ; ----------------------------------------------------------------------------
 ; himon-search-flash.asm
-; Low-flash HIMON S command shadow, linked at $BBA2.
-; Provides a K=$05 FNV record so HIMON can discover S and show S(earch)
-; without confirm-before-run.
+; Low-flash HIMON S command shadow, linked at $BB80.
+; Provides a K=$05 FNV record so HIMON can discover S and show
+; S: SEARCH FROM RAM TO HASHED HIMON CMD without confirm-before-run.
 ;
 ; Native HIMON port blueprint:
 ; - This file is the donor, not the final shape.  Keep the parse/scan/match/hit
@@ -767,6 +767,6 @@ MSG_USAGE:              DB              "S START END|+COUNT BB|'TEXT' [...], ? H
 MSG_IMPORT:             DB              "S IMP",0
 MSG_NF:                 DB              "S NF",0
 MSG_ABORT:              DB              "S ABORT",0
-SEARCH_EXTRA:           DB              "S(earch",(')'+$80)
+SEARCH_EXTRA:           DB              "S: SEARCH FROM RAM TO HASHED HIMON CM",('D'+$80)
 
                         END

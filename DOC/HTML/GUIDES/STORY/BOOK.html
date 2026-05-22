@@ -37,6 +37,19 @@ relinked.</code></pre>
 <li>The machine: actual HIMON, STR8, FNV-era command records, flash, and catalog behavior.</li>
 <li>The questions: what is settled, what is only proved, and what remains open.</li>
 </ol>
+<h2 id="how-the-work-moves">How The Work Moves</h2>
+<p>The book should not pretend R-YORS knew the answer before the board, code, and operator did. The honest rhythm is:</p>
+<pre><code class="language-text">Want       what the system is trying to become
+Need       what the board, flash, RAM, or operator safety requires
+Answer     the current design call
+Question   what still feels uncertain
+Change     the place where an older answer stops fitting
+Do         the proof, command, loader, transcript, or ROM image
+Question   what the proof exposed
+Keep       the answer that survived contact with the machine
+Do more    the next behavior made possible by the kept answer
+No more    the retired path, boundary, or edict that should not be reopened casually</code></pre>
+<p>That motion matters. A chapter may begin with a want, discover a need, answer it badly, change its mind, do a smaller proof, keep the part that worked, and say no more to the part that became too expensive or unsafe. This is not indecision. It is the real build record of a system small enough that every byte, bank, vector, and operator prompt can change the answer.</p>
 <p>Proof lives in the guide set:</p>
 <ul>
 <li><a href="../STR8/PRODUCT_BOUNDARIES.html">PRODUCT_BOUNDARIES.md</a> - R-YORS, STR8, IVI/LEAF,</li>
@@ -71,19 +84,23 @@ relinked.</code></pre>
 <li><a href="../CATALOG/HREC_JOIN_PROOF.html">HREC_JOIN_PROOF.md</a></li>
 <li><a href="../DECISIONS.html">DECISIONS.md</a></li>
 </ul>
-<h3 id="chapter-2-from-fnv-to-crc16">Chapter 2: From FNV To CRC16</h3>
+<h3 id="chapter-2-hash-identity-and-compact-records">Chapter 2: Hash Identity And Compact Records</h3>
 <p>Answer:</p>
-<p>FNV-1a was the first working runtime/catalog/symbol hash path. It is not treated as a secret, security feature, or universal truth. Current HIMON records and routine comments still carry FNV-era proof, but the intended compact hash is now tableless CRC16 because it better fits W65C02 time and ROM pressure.</p>
+<p>FNV-1a was the first working runtime/catalog/symbol hash path. It is not treated as a secret or security feature, but FNV-1a32 is now the settled public identity hash for names that cross boundaries. CRC16 remains a compact local/scoped hash/check where record context handles collisions. CRC32 is a possible stronger integrity check for blocks or bodies, not ordinary lookup identity.</p>
 <p>The chapter should keep the distinction sharp:</p>
-<pre><code class="language-text">FNV-1a      current implementation history
-CRC16       intended compact runtime/catalog hash
+<pre><code class="language-text">FNV-1a32    public command/export/symbol identity
+CRC16       compact local/scoped hash or check
+CRC32       optional stronger block/body integrity check
 signature   record proof or table proof
 kind        record/payload classification
 flags       lifecycle or policy metadata</code></pre>
 <p>Questions:</p>
 <ul>
-<li>Why a tableless CRC16 hash instead of carrying the 32-bit FNV path everywhere?</li>
-<li>Which FNV fields are current-ROM transition debt?</li>
+<li>Where can CRC16 safely replace a full public FNV32?</li>
+<li>Which current <code>FN(V|$80)</code> marker bytes are proof/debug overhead rather than</li>
+</ul>
+<p>final record structure?</p>
+<ul>
 <li>Why avoid per-record algorithm tags unless multi-algorithm catalogs become real?</li>
 <li>How does a system avoid treating a guessed hash as authority?</li>
 </ul>
@@ -445,7 +462,13 @@ later code -&gt; import by hash/name -&gt; resolve RFIX/RLNK -&gt; call entry or
 <p>and how the vocabulary shaped the system.</p>
 <h2 id="chapter-template">Chapter Template</h2>
 <p>Each finished chapter should keep this shape:</p>
-<pre><code class="language-text">Question
+<pre><code class="language-text">Want
+  What did the system or operator want at this point?
+
+Need
+  What did the hardware, ROM/RAM layout, recovery rule, or human workflow require?
+
+Question
   What problem did this chapter start with?
 
 Answer
@@ -453,6 +476,9 @@ Answer
 
 Machine
   What code, records, command behavior, or memory layout proves it?
+
+Change of mind
+  What old answer was corrected, narrowed, or retired?
 
 Tradeoff
   What did this answer reject?
@@ -466,7 +492,7 @@ Pointers
 <p>R-YORS is a small W65C02 system that grows from a monitor into a hashed runtime environment. HIMON provides the bench: commands, debugging, loading, flash guards, and current FNV-era dispatch. STR8 protects recovery. THE names the future lookup environment where records, bodies, fixups, and catalogs make code discoverable and linkable on the machine itself.</p>
 <p>This book follows that path without pretending the destination arrived first. It keeps the false starts, proof apps, hardware transcripts, command grammar debates, and naming decisions close to the metal, because that is where the runtime became real.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STORY/BOOK.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STORY/BOOK.md</code>. Source modified: <time>2026-05-22T04:44:31Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

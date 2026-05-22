@@ -57,7 +57,11 @@ RCAT  optional collection/container of RRECs, not required for a standalone reco
 RBODY optional body/payload that an RREC points at or carries inline
 THE   future resident hash/catalog resolver kernel</code></pre>
 <p>So the current HREC is best understood as a proto-RREC: a standalone record in active memory. A later RREC can stand alone the same way; an RCAT can collect many RRECs later for bounds, indexes, generations, string pools, or maintenance. The join proof should not wait for RCAT.</p>
-<p>CRC16 remains the intended compact runtime/catalog hash. This proof deliberately uses current emitted FNV signatures because those bytes are already in HIMON and prove the join mechanics without starting another migration at the same time.</p>
+<p>This proof does not make current HRECs relocatable. It proves &quot;find a placed record and join to its already-linked entry.&quot; A current HREC entry is an address that is valid because the bytes are already at the address they were linked for. Moving that payload to another RAM address requires future RREC-style relocation metadata:</p>
+<pre><code class="language-text">HREC today   hash -&gt; kind -&gt; already-placed entry
+RREC future  hash -&gt; payload + link_addr + fixups + deps -&gt; load/fix/run</code></pre>
+<p>For the full staged plan, see <code>DOC/GUIDES/HASH/HASH_MAP.md</code>, section &quot;Placed HREC And Relocatable RREC&quot;.</p>
+<p>FNV32 is the settled public identity hash for exported routines and commands. This proof deliberately uses current emitted FNV signatures because those bytes are already in HIMON and prove the join mechanics without starting another migration at the same time. CRC16 remains available for compact local/scoped tables and checks, not as the universal public routine identity.</p>
 <h2 id="terminology-trail">Terminology Trail</h2>
 <p>The first working words were <code>HREC_FIND</code> and <code>HREC_BIND_EXEC</code>. <code>bind</code> was accurate, but it sounded larger than the current operation: not a full linker, not relocation, not future CLINK.</p>
 <p><code>joint</code> was considered as the thing formed by a hash and an address. That was close, but the routine name wanted a verb. We settled on <code>join</code>:</p>
@@ -327,7 +331,7 @@ THE_JOIN_LOAD_HASH_XY</code></pre>
     EXEC --&gt;|no| NF
     EXEC --&gt;|yes| OK[&quot;C=1, X/Y = callable entry&quot;]</pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md</code>. Source modified: <time>2026-05-22T03:38:42Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md</code>. Source modified: <time>2026-05-22T04:30:20Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

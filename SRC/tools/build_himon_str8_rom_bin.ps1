@@ -217,9 +217,16 @@ $str8End = Get-SymbolAddress -MapPath $Str8MapPath -Name "_END_DATA"
 
 $workerRunStart = Get-SymbolAddress -MapPath $WorkerMapPath -Name "START"
 $workerRunEnd = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_WORKER_END"
-$workerStoreStart = 0xFC00
-$workerStoreSize = 0x0400
 $workerSize = $workerRunEnd - $workerRunStart
+$workerStoreEndExclusive = 0xFFF0
+$workerStoreStart = $workerStoreEndExclusive - $workerSize
+$workerStoreSize = $workerSize
+$str8WorkerStoreLo = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_STORE_LO"
+$str8WorkerStoreHi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_STORE_HI"
+$str8WorkerCopyLenLo = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_COPY_LEN_LO"
+$str8WorkerCopyLenHi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_COPY_LEN_HI"
+$str8WorkerStoreStart = (($str8WorkerStoreHi -band 0xFF) -shl 8) -bor ($str8WorkerStoreLo -band 0xFF)
+$str8WorkerCopyLen = (($str8WorkerCopyLenHi -band 0xFF) -shl 8) -bor ($str8WorkerCopyLenLo -band 0xFF)
 
 if ($himonStart -ne 0xC000) {
     throw ("HIMON START is {0:X4}; expected C000" -f $himonStart)
@@ -245,8 +252,14 @@ if ($workerRunStart -ne 0x0200) {
 if ($workerSize -le 0 -or $workerSize -gt $workerStoreSize) {
     throw ("STR8 worker size is {0:X}; expected 1..{1:X}" -f $workerSize, $workerStoreSize)
 }
-if (($workerStoreStart + $workerSize) -gt 0xFFF0) {
+if (($workerStoreStart + $workerSize) -gt $workerStoreEndExclusive) {
     throw ("STR8 worker storage {0:X4}-{1:X4} crosses config/vector area" -f $workerStoreStart, ($workerStoreStart + $workerSize - 1))
+}
+if ($str8WorkerStoreStart -ne $workerStoreStart) {
+    throw ("STR8 worker copy source constant is {0:X4}; expected {1:X4}. Update STR8_WORKER_STORE_LO/HI." -f $str8WorkerStoreStart, $workerStoreStart)
+}
+if ($str8WorkerCopyLen -ne $workerSize) {
+    throw ("STR8 worker copy length constant is {0:X}; expected {1:X}. Update STR8_WORKER_COPY_LEN_LO/HI." -f $str8WorkerCopyLen, $workerSize)
 }
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $BinPath) | Out-Null
@@ -289,7 +302,7 @@ $tail = $bin[($bankOffset + 0x7FFA)..($bankOffset + 0x7FFF)] | ForEach-Object { 
 
 Write-Host ("HIMON START/NMI/IRQ/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $himonStart, $himonNmi, $himonIrq, $himonEnd)
 Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Start, $str8Nmi, $str8Irq, $str8End)
-Write-Host ("WORKER RUN/STORE/SIZE   = {0:X4}/{1:X4}/{2:X}" -f $workerRunStart, $workerStoreStart, $workerSize)
+Write-Host ("WORKER RUN/STORE/SIZE   = {0:X4}/{1:X4}-{2:X4}/{3:X}" -f $workerRunStart, $workerStoreStart, ($workerStoreStart + $workerSize - 1), $workerSize)
 Write-Host ("Vectors NMI/RESET/IRQ   = {0:X4}/{1:X4}/{2:X4}" -f $str8Nmi, $str8Start, $str8Irq)
 Write-Host ("Bank offset             = 0x{0:X5}" -f $bankOffset)
 Write-Host ("Bank start @ 8000       = {0}" -f ($bankHead -join " "))

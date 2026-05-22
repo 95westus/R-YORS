@@ -55,8 +55,8 @@ space.
 
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: HIMON starts at
 CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
-`$7000`, the STR8 RAM worker source is stored at CPU `$FC00` / file offset
-`$7C00`, and all live hardware vectors enter the STR8-owned top sector. RESET
+`$7000`, the STR8 RAM worker source is stored at CPU `$FD1E` / file offset
+`$7D1E`, and all live hardware vectors enter the STR8-owned top sector. RESET
 points to STR8 at `$F000`; NMI and IRQ/BRK point to STR8 IVI stubs at
 `$F089`/`$F09D`, which dispatch through the RAM vector cells.
 
@@ -64,13 +64,13 @@ Combined image layout:
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E75B   HIMON body
-$E75C-$EFFF   current image gap inside the used E sector
-$F000-$FA83   STR8 resident shell, IVI stubs, and HIMON updater
-$F770         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$FA84-$FBFF   current image gap inside the top sector
-$FC00-$FEBE   STR8 RAM-worker source, copied to $0200 for B/E/M/U/0/1/2
-$FEBF-$FFF9   current image gap, config pocket, and high top-sector space
+$C000-$EAF3   HIMON body
+$EAF4-$EFFF   current image gap inside the used E sector
+$F000-$FA82   STR8 resident shell, IVI stubs, and HIMON updater
+$F76F         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$FA83-$FD1D   current contiguous top-sector growth hole
+$FD1E-$FFEF   STR8 RAM-worker source, copied to $0200-$04D1 for B/E/M/U/0/1/2
+$FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -166,7 +166,8 @@ $00E6-$00E7   shared utility temp/scratch bytes
 $00E8-$00EF   shared pointer/length/flags/mode lane for FTDI/SYS/string helpers
 $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
-$0200-$05FF   STR8 RAM tray; worker copy lands here before flash mutation
+$0200-$04D1   STR8 RAM worker image while flash mutation runs
+$04D2-$05FF   reserved low RAM tray slack
 $0600-$09FF   reserved low RAM, no live allocations
 $0A00-$0A16   STR8 worker/update state board and map-result bytes
 $0A17-$12FF   reserved low RAM, no live allocations
@@ -193,6 +194,13 @@ $7EF8-$7EFF   RAM vectors
 $7F00-$7FFF   I/O window
 ```
 
+The UPA is also the natural first tray for future RREC-loaded commands. A
+CP/M-like convention such as `LOAD @6000 <hash>` can copy a banked RREC payload
+into RAM, apply relocation/fixups there, restore the normal flash bank, then run
+from `$6000 + entry_offset`. This keeps banked flash as storage first and avoids
+duplicating HIMON/STR8 helper code across banks. The fixed `@6000` tray is a
+convention proposal, not a current HIMON allocator.
+
 The `$7F00-$7FFF` I/O window is decoded as eight `$20`-byte slots on the
 current board. HIMON `D` and flash-resident `S` treat the whole page as
 side-effectful I/O: they print slot labels and skip the addresses instead of
@@ -210,7 +218,7 @@ $7FE0-$7FFF   FTDI VIA
 ```
 
 During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 temporarily
-clobbers `$0200-$05FF` with the copied RAM worker and `$4000-$4FFF` with the 4K
+clobbers `$0200-$04D1` with the copied RAM worker and `$4000-$4FFF` with the 4K
 sector staging buffer. During `U`, STR8 also uses `$5000-$6FFF` so it can stage
 all three HIMON sectors before the first erase. Normal HIMON/user code should
 treat those ranges as volatile while STR8 is performing flash work.
@@ -332,7 +340,7 @@ HIMON/himon-shared-eq.inc
 
 The combined `himon-str8-rom.bin` image places STR8 in bank 3's `$F000-$FFFF`
 top-ROM sector with the hardware vectors. HIMON starts at `$C000`, and the
-STR8 RAM-worker source is stored inside the top sector at `$FC00`.
+STR8 RAM-worker source is stored inside the top sector at `$FD1E-$FFEF`.
 
 The physical erase unit remains 4K. The protected STR8 window starts at the
 highest boundary that fits:

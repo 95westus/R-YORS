@@ -10,8 +10,9 @@
   rotation, `U`, visible HIMON U1->U2, fig-Forth payload, OSI BASIC payload,
   and high-flash restores from the backup chain passed on 2026-05-17.
 - Keep `MEMORY_MAP.md` and `TECHNICAL_GUIDE.md` aligned with the current STR8
-  RAM tray: worker at `$0200-$05FF`, state at `$0A00-$0A16`, bank-copy sector
-  buffer at `$4000-$4FFF`, and `U` update staging at `$4000-$6FFF`.
+  RAM tray: worker at `$0200-$04D1`, tray slack at `$04D2-$05FF`, state at
+  `$0A00-$0A16`, bank-copy sector buffer at `$4000-$4FFF`, and `U` update
+  staging at `$4000-$6FFF`.
 - Define `FLSH_` suffix conventions for register-carried arguments, including
   `_A` and `_AX`.
 - Treat the current combined ROM protected-window start as `$F000`; revisit

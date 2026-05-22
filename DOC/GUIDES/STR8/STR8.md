@@ -169,19 +169,24 @@ $FFFE-$FFFF  IRQ/BRK
 Those vector bytes remain part of the selected STR8 protected window. They are
 treated as vector table rather than normal code storage.
 
-The current high-flash reserve should be read as a top-sector ownership rule,
-not as general free ROM:
+The current high-flash layout should be read as a top-sector ownership rule,
+not as general free ROM. STR8 code/data grows upward, the stored RAM worker is
+packed against `$FFEF` and grows downward, and the remaining free space is one
+contiguous hole:
 
 ```text
-$FC00-$FFEF  STR8 private reserve inside the top sector
-             size $03F0 = 1008 bytes
+$F000-$F76E  STR8 resident code
+             size $076F = 1903 bytes
 
-$FC00-$FED1  stored STR8 RAM worker image
+$F76F-$FA82  STR8 resident data
+             size $0314 = 788 bytes
+
+$FA83-$FD1D  contiguous unused $FF growth hole
+             size $029B = 667 bytes
+
+$FD1E-$FFEF  stored STR8 RAM worker image
              size $02D2 = 722 bytes
              copied to and run from $0200-$04D1
-
-$FED2-$FFEF  reserved free space for future STR8-private metadata or cache
-             size $011E = 286 bytes
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
              size $000A = 10 bytes
@@ -190,11 +195,11 @@ $FFFA-$FFFF  W65C02 hardware vectors
              size $0006 = 6 bytes
 ```
 
-If STR8 later caches hash/address fast paths in flash, that cache belongs in
-the `$FED2-$FFEF` slack or in another deliberate STR8-owned record area. Cached
-addresses are hints: validate the cache against the active ROM/build identity
-before trusting it, and fall back to a fresh scan when identity or checksum does
-not match.
+If STR8 later caches hash/address fast paths in flash, that cache belongs in a
+deliberate STR8-owned record area, not in a fixed little post-worker hole.
+Cached addresses are hints: validate the cache against the active ROM/build
+identity before trusting it, and fall back to a fresh scan when identity or
+checksum does not match.
 
 ## Vector Integration Policy
 
@@ -377,7 +382,7 @@ first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can perform backup rotation with read-back verify
 first RAM proof can enroll bank 0 into rotation by clearing an in-flash flag bit
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current ROM build links STR8 at $F000 and stores a RAM worker at $FC00
+current ROM build links STR8 at $F000 and stores a RAM worker at $FD1E-$FFEF
 current ROM build copies the worker to $0200 before B/U/0/1/2 flash mutation
 current ROM build copies the worker to $0200 before E config mutation
 current ROM build has working ?, B, E, M, U, 0, 1, 2, G, and R commands
@@ -386,9 +391,9 @@ physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
-STR8 private high-flash reserve is $FC00-$FFEF
-stored worker currently occupies $FC00-$FED1
-reserved worker/cache slack is currently $FED2-$FFEF
+STR8 code/data grows upward from $F000
+stored worker currently occupies $FD1E-$FFEF and grows downward
+current contiguous free hole is $FA83-$FD1D
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
@@ -420,7 +425,9 @@ small verify/check routines
 STR8 V0 verification means fixed-range checks, flash status, byte-for-byte
 read-back across restored ordinary image bytes, and separate read-back
 verification after any protected-window install/update. Future catalog-owning
-STR8 may use compact hash lookups after the CRC16 record shape is settled.
+STR8 may use the settled catalog split after the image-recovery path is stable:
+FNV32 for public identity, CRC16/short IDs for compact local contexts, and
+checksums/CRC32 for integrity where needed.
 
 ## Boot Relationship
 
@@ -609,7 +616,7 @@ flowchart TD
     G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $FC00 -> $0200]
+    B --> COPY[copy worker $FD1E-$FFEF -> $0200]
     E --> COPY
     RST --> COPY
     COPY --> WORKER[RAM flash worker]
@@ -676,7 +683,7 @@ flowchart LR
     GROWTH[$8000-$EFFF growth/body area]
     TOP[$F000-$FFFF physical 4K top sector]
     FREE[usable top-sector bytes below selected STR8 start]
-    STR8CODE[$FC00/$FA00/...-$FFEF STR8 body]
+    STR8CODE[selected STR8 window through $FFEF]
     FLASH10[$FFF0-$FFF9 one-time board/version/config]
     VECTORS[$FFFA-$FFFF vector block]
 
@@ -805,8 +812,8 @@ B command, B0 ROT:  copy bank 1 -> bank 0, bank 2 -> bank 1, bank 3 -> bank 2
 
 Each 4K window reads from the source bank, writes the destination bank, and
 verifies by simple read-back compare. The `$F000` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$FC00-$FFFF` into RAM
-`$0200-$05FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
+policy by first copying its worker from bank 3 `$FD1E-$FFEF` into RAM
+`$0200-$04D1`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. Catalog
 lookup, hashed metadata, wear leveling, and cycle counts are later work.

@@ -95,6 +95,7 @@ flowchart TD
     DISPATCH[CMD_DISPATCH_HASH] --> HELP[? CMD_HELP]
     DISPATCH --> HASHINFO[# CMD_HASH_INFO]
     DISPATCH --> D[D CMD_D]
+    DISPATCH --> S[S CMD_SEARCH]
     DISPATCH --> M[M CMD_M]
     DISPATCH --> U[U CMD_U]
     DISPATCH --> R[R CMD_R]
@@ -112,6 +113,9 @@ flowchart TD
 
     D --> RANGE[CMD_PARSE_RANGE_REQUIRED]
     D --> MEMPRINT[MON_PRINT_MEM_RANGE]
+    S --> SPARSE[SEARCH_PARSE_RANGE]
+    S --> SPATTERN[SEARCH_PARSE_PATTERN]
+    S --> SSCAN[SEARCH_SCAN_RANGE]
     M --> RANGE
     M --> MEMMOD[MON_MODIFY_RANGE]
     U --> RANGE
@@ -275,17 +279,19 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Vector/trap install | boot-time | `SYS_VEC_SET_NMI_XY`, `SYS_VEC_SET_IRQ_BRK_XY`, `SYS_VEC_SET_IRQ_NONBRK_XY` | Installs HIMON NMI, BRK, and IRQ handlers through system vector helpers. | STR8 should own physical vectors later, with HIMON installing active RAM vectors. |
 | Line input | prompt and loaders | `HIM_READ_LINE_ECHO_UPPER`, `HIM_READ_LINE_UPPER` | Blocking FTDI read, uppercases input, supports backspace, Ctrl-C abort, and NUL termination. | `L` uses non-echo upper input for S-record streams. |
 | Hi-bit string output | all command messages | `HIM_WRITE_HBSTRING` | Writes high-bit terminated strings through FTDI. | Current compact text format for monitor messages. |
-| FNV-era command hashing | every command token | `CMD_HASH_TOKEN`, `FNV1A_*`, `MATH_*` | Computes the current HIMON command hash and saves it in command exec state. | Current implementation; tableless CRC16 is the intended compact catalog-hash direction. |
+| FNV-era command hashing | every command token | `CMD_HASH_TOKEN`, `FNV1A_*`, `MATH_*` | Computes the current HIMON command hash and saves it in command exec state. | FNV32 remains the public command/export identity hash; CRC16 is for compact local/scoped tables and checks. |
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
 | Quoted hash | `"text"` | `CMD_QUOTE_HASH`, `FNV1A_*` | Prints FNV-1a32 for text through the closing quote and reports STR8 match on `#5F6A0F7A`. | Input is uppercased by HIMON and leading/trailing spaces are trimmed. |
-| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes commands from includes: `# ? D M U R X G L B N A Q "`. |
+| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes commands from includes: `# ? S D M U R X G L B N A Q " STR8`. |
 | Memory dump | `D [start [end|+count]]` | `CMD_D`, `CMD_PARSE_RANGE_REQUIRED`, `MON_PRINT_MEM_RANGE` | Prints hex rows plus printable ASCII, abortable with Ctrl-C. | Bare `D` repeats the previous dump length from the next address. |
+| Memory search | `S start end\|+count bb\|'TEXT' [...]` | `CMD_SEARCH`, `SEARCH_PARSE_RANGE`, `SEARCH_PARSE_PATTERN`, `SEARCH_SCAN_RANGE` | Built-in K=$05 HIMON command; searches memory for mixed hex/text byte patterns, skips named `$7Fxx` I/O slots, reports `S NF` or `S ABORT`. | Token hash is `$D60C1322`; display text is `S: SEARCH FROM RAM TO HASHED HIMON CMD`. |
 | Memory modify | `M start [end|+count]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes RAM byte directly, `.` aborts. | Current short mutator under review. Future bulk fill should be `FILL start end|+count bb`, not an `M` subform. |
 | Disassemble | `U start [end|+count]` | `CMD_U`, `DIS_PRINT_ONE`, `DBG_OPCODE_LEN` | Prints W65C02S opcode, mnemonic, and operand using opcode tables. | Shares the same opcode mode tables as assembler/step. |
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
+| Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_S1`, `L_WRITE_DATA_BYTE` | Accepts S0/S1/S9, writes S1 data below `$8000`, tracks count and go address. | Loading to flash without `F` fails with `HINT L F`. |
 | S-record load and go | `L G` | `CMD_L` | Same as `L`, then jumps to S9 address or first data address fallback. | Sets exec kind to LOADGO before jump. |
 | S-record flash load | `L F` | `L_WRITE_DATA_BYTE_FLASH`, `FLASH_WRITE_BYTE_AXY` | Writes only blank `$FF` bytes in `$8000-$CFFF`, verifies readback, skips after first flash failure. | Protects HIMON fixed-entry area at `$D000+`; no sector erase yet. |

@@ -10,7 +10,7 @@
   <header class="site-header"><div class="nav-start"><a class="back-link" href="../../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../../index.html"><img class="brand-logo" src="../../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../../README.html">README</a><a href="../INDEX.html">Guides</a><a href="../../GENERATED/index.html">Generated</a></nav></header>
   <main class="doc-page">
 <h1 id="qcc-asm">QCC ASM</h1>
-<p>This page keeps onboard assembler questions in QCC form. These are working notes for the hash-first assembler path. Older FNV examples are current implementation history; the intended compact hash is tableless CRC16.</p>
+<p>This page keeps onboard assembler questions in QCC form. These are working notes for the hash-first assembler path. Public/exported symbols should use FNV32 identity; CRC16 or short IDs are for local/scoped assembler tables where context can handle collisions.</p>
 <h2 id="q-can-assembler-symbols-be-hash-first">Q: Can assembler symbols be hash-first?</h2>
 <p>Comment: Yes. A tiny onboard assembler can compute compact hashes for labels and mnemonics, then resolve names through catalog records.</p>
 <p>Concern: Hash-only symbol records are not enough for every case. User-created symbols need enough name text, length, scope, or collision data to prove which symbol was intended.</p>
@@ -47,11 +47,35 @@ poor-man overlay/linker connection between separately placed code blocks</code><
 BRA far_target_island
 skip:</code></pre>
 <p>Concern: Humans should not maintain branch islands by hand. Island placement needs assembler/linker help, range checking, and a rule for where islands are legal. The first assembler does not need this; record it as future machinery for when labels, fixups, and generated code layout are strong enough.</p>
+<h2 id="q-should-r-yors-use-self-modifying-code">Q: Should R-YORS use self-modifying code?</h2>
+<p>Comment: The current preference is no. Self-modifying code is not a general style goal for R-YORS. It makes dumps harder to trust, hides state inside instruction bytes, complicates listings and disassembly, and is especially awkward anywhere flash is involved. Prefer ordinary W65C02S code, zero-page indirect pointers, tables, small helpers, and explicit record/fixup metadata.</p>
+<p>There are still a few places where the idea is worth naming so it does not keep sneaking back under new names:</p>
+<pre><code class="language-text">load-time fixups      patch a RAM image before it is sealed and run
+RAM worker tuning     patch once, then run a tight RAM-only flash worker loop
+RAM trampolines       patch a JMP/JSR target after a hash/catalog lookup
+ASM scratch pocket    emit a tiny native test sequence in RAM, run it, discard it</code></pre>
+<p>The clean version of this is usually not &quot;runtime self-modifying code&quot; at all. It is linking or loading. A relocatable body is copied to RAM, dependency hashes are resolved, fixup records patch the operand bytes, and only then does the code become callable. That keeps mutation in the loader/fixup phase instead of hiding it inside normal execution.</p>
+<p>If a future STR8 RAM worker becomes desperate for bytes, a narrowly scoped RAM specialization may still be reasonable: patch a source pointer, destination pointer, or branch target once, then run the small loop many times. That is a size-pressure exception, not a pattern to spread through HIMON.</p>
+<p>Concern: Do not use self-modifying code as a shortcut around unclear records, dependencies, or allocator policy. Do not patch flash-resident code except through an explicit erase/write/verify path. Do not leave long-lived hidden patched code without a map/listing/debug story. If mutation is needed, prefer to make it visible as a fixup table, loader action, or generated RAM body.</p>
+<h2 id="q-is-hashed-label-mnemonic-operand-a-virtual-machine">Q: Is hashed <code>LABEL: MNEMONIC OPERAND</code> a virtual machine?</h2>
+<p>Comment: Not for the first path. Treat it as a hash-first assembler question, not a VM commitment.</p>
+<p>The useful near-term shape is:</p>
+<pre><code class="language-text">LABEL:      hash symbol, record current address/value/scope
+MNEMONIC    hash word, dispatch to emitter or directive handler
+OPERAND     parse literal, address, text, label reference, or fixup</code></pre>
+<p>For example, <code>EQU</code> dispatches to equate handling, while <code>LDA</code>, <code>LDX</code>, <code>LDY</code>, <code>JSR</code>, and friends dispatch to W65C02S emitters. If an operand is not absolute yet, the assembler records a fixup with enough context to patch it later.</p>
+<p>A later proof could reserve a small RAM pocket, emit one assembled instruction or short sequence there, <code>JSR</code> into it, and return to HIMON. That would be a tiny onboard assembler or execution scratchpad. It is still native W65C02S code, not a virtual machine.</p>
+<p>The trap line matters. Once the assembler emits raw native code like <code>LDA $7F80</code>, the CPU will touch <code>$7F80</code>; HIMON does not get asked first. Address trapping only becomes possible if the emitter deliberately outputs watched forms:</p>
+<pre><code class="language-text">call HIMON memory service
+call catalog service by hash
+emit BRK token for the monitor to decode
+emit bytecode/threaded tokens instead of raw machine instructions</code></pre>
+<p>Concern: Do not make the first assembler carry VM promises. Keep VM, BRK-token, or bytecode ideas parked until labels, fixups, body records, and load/run proofs are already boring. The first useful assembler can be plain native code plus explicit fixup/dependency records.</p>
 <h2 id="q-when-does-asm-graduate-from-qcc-to-decision">Q: When does ASM graduate from QCC to decision?</h2>
 <p>Comment: When the record bytes, fixup lifecycle, collision rule, and flash ownership are clear enough to implement without guessing.</p>
 <p>Concern: A half-decided assembler format can trap the system into supporting bad records forever. Keep exploratory formats QCC until the write/verify path is boring.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/ASM.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/ASM.md</code>. Source modified: <time>2026-05-22T05:05:06Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

@@ -37,7 +37,7 @@ stack:       stack behavior
 calls:       direct known calls
 called_by:   generated or hand-maintained callers
 notes:       collision, alias, bank, or future-catalog notes</code></pre>
-<p>FNV-1a is the current implemented history for many generated symbol IDs. The intended compact runtime/catalog/symbol hash is tableless CRC16. No per-record algorithm tag is needed unless multi-algorithm catalogs become a deliberate future design. Words and longs remain little-endian:</p>
+<p>FNV-1a32 is the settled public symbol/routine identity hash. CRC16 may be used for compact local/scoped tables when surrounding record context can handle collisions. No per-record algorithm tag is needed unless multi-algorithm catalogs become a deliberate future design. Words and longs remain little-endian:</p>
 <pre><code class="language-text">word      low byte, then high byte
 long      byte0..3, least significant to most significant
 hash0..3  existing FNV-1a low byte through high byte</code></pre>
@@ -382,7 +382,7 @@ notes:       Stable unbounded BIO transmit primitive. Current 8-byte hash sig:
 <h2 id="direction">Direction</h2>
 <p>The next improvement is a small generator that emits this file&#39;s example records from source comments, then lets hand-written <code>XXREF</code> tokens fill the gaps. That keeps LIB truth, current HIMON truth, and future catalog vocabulary in the same shape.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/ASM/SYMBOL_XREF.md</code>. Source modified: <time>2026-05-22T03:41:14Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/ASM/SYMBOL_XREF.md</code>. Source modified: <time>2026-05-22T04:31:33Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

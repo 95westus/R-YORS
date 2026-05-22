@@ -161,22 +161,23 @@ flash programming can clear bits from `1` to `0`, but cannot set them back to
 ```text
 routine header HASH      existing 32-bit FNV-1a routine comment ID
 current HIMON hash       FNV-era command record lookup
-intended compact hash     tableless CRC16 for runtime/catalog records
+public catalog hash      32-bit FNV-1a for names crossing boundaries
+compact local hash       CRC16 or short IDs inside validated local contexts
+record/body check        optional CRC32/checksum when worth the bytes
 name text                optional proof/listing/collision data
 ```
 
 The hash is a lookup hint, not identity by itself. When identity matters, compare
 the stored canonical name text after the hash narrows the candidate set.
 
-FNV-1a is current implementation history and transition debt, not the final
-runtime/catalog symbol-hash decision. Catalog records should not need a
-per-record algorithm tag unless multi-algorithm catalogs become a deliberate
-future design.
+FNV-1a32 is the settled public routine/command/symbol identity hash. Catalog
+records should not need a per-record algorithm tag unless multi-algorithm
+catalogs become a deliberate future design.
 
-STR8 V0 does not use FNV or CRC16 for verification, image selection, command
-dispatch, catalog lookup, or recovery decisions. Future STR8-N/STRAIGHTEN may
-participate in compact-hash catalog paths without requiring ownership of a user
-system's catalog.
+STR8 V0 does not use FNV, CRC16, or CRC32 for verification, image selection,
+command dispatch, catalog lookup, or recovery decisions. Future
+STR8-N/STRAIGHTEN may participate in catalog paths without requiring ownership
+of a user system's catalog.
 
 Current HIMON FNV command record:
 
@@ -219,8 +220,8 @@ ww=11  full hash32, stored hash0..3
 ```
 
 These widths describe the older folded-FNV proposal and current helper
-vocabulary. The preferred compact runtime/catalog hash direction is tableless
-CRC16.
+vocabulary. Future public records should keep FNV32 at public boundaries; use
+CRC16/short IDs only inside local contexts with fallback/collision handling.
 
 ## Record Byte Order
 

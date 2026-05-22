@@ -31,16 +31,16 @@ $FFFE-$FFFF   IRQ   = $DF24</code></pre>
 $C000-$EFFF   12K HIMON monitor/tools budget
 $F000-$FFFF    4K STR8 recovery-owned erase sector</code></pre>
 <p>STR8 may use less than 4K, but the whole <code>$F000-$FFFF</code> erase sector is recovery-owned because erase granularity and the hardware vectors make it the dangerous top sector. HIMON should fit below <code>$F000</code>; if it outgrows 12K, that should be an intentional design decision because it eats the lower 16K user space.</p>
-<p>The primary combined image is <code>BUILD/bin/himon-str8-rom.bin</code>: HIMON starts at CPU <code>$C000</code> / file offset <code>$4000</code>, STR8 starts at CPU <code>$F000</code> / file offset <code>$7000</code>, the STR8 RAM worker source is stored at CPU <code>$FC00</code> / file offset <code>$7C00</code>, and all live hardware vectors enter the STR8-owned top sector. RESET points to STR8 at <code>$F000</code>; NMI and IRQ/BRK point to STR8 IVI stubs at <code>$F089</code>/<code>$F09D</code>, which dispatch through the RAM vector cells.</p>
+<p>The primary combined image is <code>BUILD/bin/himon-str8-rom.bin</code>: HIMON starts at CPU <code>$C000</code> / file offset <code>$4000</code>, STR8 starts at CPU <code>$F000</code> / file offset <code>$7000</code>, the STR8 RAM worker source is stored at CPU <code>$FD1E</code> / file offset <code>$7D1E</code>, and all live hardware vectors enter the STR8-owned top sector. RESET points to STR8 at <code>$F000</code>; NMI and IRQ/BRK point to STR8 IVI stubs at <code>$F089</code>/<code>$F09D</code>, which dispatch through the RAM vector cells.</p>
 <p>Combined image layout:</p>
 <pre><code class="language-text">$8000-$BFFF   current image gap
-$C000-$E75B   HIMON body
-$E75C-$EFFF   current image gap inside the used E sector
-$F000-$FA83   STR8 resident shell, IVI stubs, and HIMON updater
-$F770         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$FA84-$FBFF   current image gap inside the top sector
-$FC00-$FEBE   STR8 RAM-worker source, copied to $0200 for B/E/M/U/0/1/2
-$FEBF-$FFF9   current image gap, config pocket, and high top-sector space
+$C000-$EAF3   HIMON body
+$EAF4-$EFFF   current image gap inside the used E sector
+$F000-$FA82   STR8 resident shell, IVI stubs, and HIMON updater
+$F76F         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$FA83-$FD1D   current contiguous top-sector growth hole
+$FD1E-$FFEF   STR8 RAM-worker source, copied to $0200-$04D1 for B/E/M/U/0/1/2
+$FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors</code></pre>
 <p>Local language images are built to sit below the protected HIMON/STR8 region:</p>
 <pre><code class="language-text">$8000-$9FFF   OSI MS BASIC 8K slot, FNV header at $8000
@@ -86,7 +86,8 @@ $00E6-$00E7   shared utility temp/scratch bytes
 $00E8-$00EF   shared pointer/length/flags/mode lane for FTDI/SYS/string helpers
 $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
-$0200-$05FF   STR8 RAM tray; worker copy lands here before flash mutation
+$0200-$04D1   STR8 RAM worker image while flash mutation runs
+$04D2-$05FF   reserved low RAM tray slack
 $0600-$09FF   reserved low RAM, no live allocations
 $0A00-$0A16   STR8 worker/update state board and map-result bytes
 $0A17-$12FF   reserved low RAM, no live allocations
@@ -111,6 +112,7 @@ $7EED-$7EEF   IVI vector-table signature bytes, ASCII &quot;IVY&quot;
 $7EF0-$7EF7   NMI context capture
 $7EF8-$7EFF   RAM vectors
 $7F00-$7FFF   I/O window</code></pre>
+<p>The UPA is also the natural first tray for future RREC-loaded commands. A CP/M-like convention such as <code>LOAD @6000 &lt;hash&gt;</code> can copy a banked RREC payload into RAM, apply relocation/fixups there, restore the normal flash bank, then run from <code>$6000 + entry_offset</code>. This keeps banked flash as storage first and avoids duplicating HIMON/STR8 helper code across banks. The fixed <code>@6000</code> tray is a convention proposal, not a current HIMON allocator.</p>
 <p>The <code>$7F00-$7FFF</code> I/O window is decoded as eight <code>$20</code>-byte slots on the current board. HIMON <code>D</code> and flash-resident <code>S</code> treat the whole page as side-effectful I/O: they print slot labels and skip the addresses instead of reading device registers.</p>
 <pre><code class="language-text">$7F00-$7F1F   CS0 / expansion or unused
 $7F20-$7F3F   CS1 / expansion or unused
@@ -120,7 +122,7 @@ $7F80-$7F9F   ACIA
 $7FA0-$7FBF   PIA
 $7FC0-$7FDF   VIA
 $7FE0-$7FFF   FTDI VIA</code></pre>
-<p>During destructive STR8 <code>B</code>, <code>0</code>, <code>1</code>, and <code>2</code> operations, STR8 temporarily clobbers <code>$0200-$05FF</code> with the copied RAM worker and <code>$4000-$4FFF</code> with the 4K sector staging buffer. During <code>U</code>, STR8 also uses <code>$5000-$6FFF</code> so it can stage all three HIMON sectors before the first erase. Normal HIMON/user code should treat those ranges as volatile while STR8 is performing flash work.</p>
+<p>During destructive STR8 <code>B</code>, <code>0</code>, <code>1</code>, and <code>2</code> operations, STR8 temporarily clobbers <code>$0200-$04D1</code> with the copied RAM worker and <code>$4000-$4FFF</code> with the 4K sector staging buffer. During <code>U</code>, STR8 also uses <code>$5000-$6FFF</code> so it can stage all three HIMON sectors before the first erase. Normal HIMON/user code should treat those ranges as volatile while STR8 is performing flash work.</p>
 <p>STR8 also uses fixed low-RAM bytes <code>$0A00-$0A16</code> for bank/sector copy state, failure address reporting, startup flags, update state, and the <code>M</code> command&#39;s four bank map mask bytes. The <code>M</code> command runs the RAM worker from <code>$0200</code>, stores one status mask byte per bank at <code>$0A09-$0A0C</code>, restores bank 3, then prints the map from resident STR8.</p>
 <p>Current high-RAM vectors:</p>
 <pre><code class="language-text">$7EF8-$7EF9   reset vector target
@@ -200,7 +202,7 @@ $F0-$FF   HIMON command/parser scratch, 16 bytes; volatile across monitor comman
 HIMON/himon.asm
 HIMON/himon-shared-eq.inc</code></pre>
 <h2 id="str8-direction">STR8 Direction</h2>
-<p>The combined <code>himon-str8-rom.bin</code> image places STR8 in bank 3&#39;s <code>$F000-$FFFF</code> top-ROM sector with the hardware vectors. HIMON starts at <code>$C000</code>, and the STR8 RAM-worker source is stored inside the top sector at <code>$FC00</code>.</p>
+<p>The combined <code>himon-str8-rom.bin</code> image places STR8 in bank 3&#39;s <code>$F000-$FFFF</code> top-ROM sector with the hardware vectors. HIMON starts at <code>$C000</code>, and the STR8 RAM-worker source is stored inside the top sector at <code>$FD1E-$FFEF</code>.</p>
 <p>The physical erase unit remains 4K. The protected STR8 window starts at the highest boundary that fits:</p>
 <pre><code class="language-text">$FC00-$FFFF  1K protected STR8 window
 $FA00-$FFFF  1.5K protected STR8 window
@@ -232,7 +234,7 @@ $F000-$FFFF    4K STR8 recovery/top-sector region</code></pre>
 <pre><code class="language-text">source backup  bank 1 CPU $F000-$FFFF = PHY $0F000-$0FFFF
 active target  bank 3 CPU $F000-$FFFF = PHY $1F000-$1FFFF</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY/MEMORY_MAP.md</code>. Source modified: <time>2026-05-22T03:29:34Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY/MEMORY_MAP.md</code>. Source modified: <time>2026-05-22T04:57:56Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

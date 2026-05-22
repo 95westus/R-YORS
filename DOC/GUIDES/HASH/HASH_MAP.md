@@ -3,14 +3,14 @@
 This file separates the different hash ideas so they do not collapse into
 one muddy concept.
 
-Status: this map still documents the current FNV-1a implementation and older
-compact-hash proposals. The intended compact runtime/catalog hash has shifted to
-tableless CRC16 because it better fits the W65C02 time/space budget.
+Status: this map documents the settled split: 32-bit FNV-1a is the public
+name/identity hash, CRC16 is for compact local/scoped tables and checks, and
+CRC32 is for optional stronger integrity checking rather than normal lookup.
 
 Use [GLOSSARY.md](../GLOSSARY.md) for the terminology contract. In this file,
-FNV-1a is the current implemented hash algorithm, hash32/hash16/hash8 are older
-stored result widths, `Record` means only the record format defined in the local
-section, and THE means The Hash Environment.
+FNV-1a is the public implemented hash algorithm, hash32/hash16/hash8 are older
+stored FNV result widths, `Record` means only the record format defined in the
+local section, and THE means The Hash Environment.
 
 Tempting ideas that should not yet become ABI live in
 [HASH_TRASH.md](HASH_TRASH.md).
@@ -39,18 +39,19 @@ Runtime FNV-1a
   source: HIMON/himon.asm
   symbol guide: SYMBOL_XREF.md
 
-Compact CRC16 hash
+Compact CRC16 local hash/check
   size: 16 bit
-  algorithm: tableless CRC16, exact polynomial/record shape still to settle
+  algorithm: tableless CRC16, exact polynomial/record/check shape still to settle
   owner: future HIMON/catalog/hashed assembler
-  purpose: compact runtime/catalog/symbol lookup
+  purpose: local table indexes, scoped symbol IDs, block/body checks, and
+           compact record contexts that have collision fallback
   guide: HASH.md, QCC_HASH.md
 
 Assembler symbol hash
-  size: compact hash, current notes may still show 32-bit FNV examples
-  algorithm: intended tableless CRC16
+  size: 32-bit public hash or 16-bit local/scoped hash
+  algorithm: FNV-1a for exported/public symbols, CRC16 for local scopes only
   owner: hashed assembler/catalog
-  purpose: label, routine, command, and fixup lookup
+  purpose: labels, routines, commands, and fixup lookup
   guide: HASHED_ASM.md
 
 Catalog text proof
@@ -71,9 +72,12 @@ Legacy variable-width FNV
 ## Rule
 
 ```text
-FNV-1a is current implementation/history, not the final universal hash.
-tableless CRC16 is the intended compact runtime/catalog hash.
-STR8 V0 does not use either hash for recovery decisions.
+FNV-1a 32-bit is public identity for commands, exports, symbols, modules,
+and cross-bank imports.
+CRC16 is for compact local/scoped indexes and checks where context handles
+collisions.
+CRC32 is for optional stronger integrity checks, not ordinary lookup identity.
+STR8 V0 does not use any of these hashes for recovery decisions.
 records should not carry a hash-algorithm tag unless multi-algorithm catalogs
 are explicitly adopted.
 hash narrows candidates
@@ -87,8 +91,9 @@ loadable from user-built modules.
 ## Legacy Variable-Width FNV Storage
 
 This is an older compact storage proposal layered on top of the FNV-1a policy.
-It remains useful for understanding current helper code and generated maps. The
-current preferred compact hash direction is tableless CRC16.
+It remains useful for understanding current helper code and generated maps. New
+record work should keep FNV32 at public boundaries and use CRC16/short IDs only
+inside known local contexts with fallback/collision handling.
 
 ```text
 hash8   folded from hash0..3
@@ -446,6 +451,34 @@ assemble RBODY -> create RFIX -> verify body -> export RREC into RCAT
 later code -> import by hash/name -> resolve RFIX/RLNK -> call entry or use value
 ```
 
+Compact runtime records should use signatures for the record family, not for
+the hash algorithm. The current `FN(V|$80)` marker is good bring-up/debug
+vocabulary, but the later catalog wants readable type signatures:
+
+```text
+RC  runtime catalog/container block
+RR  runtime record/export/import/value envelope
+RB  runtime body/payload bytes
+RF  relocation/fixup table
+RD  dependency/import table
+RI  runtime index/cache
+```
+
+The longer documentation names can stay useful:
+
+```text
+RCAT   human name for RC
+RREC   human name for RR
+RBODY  human name for RB
+RFIX   human name for RF
+RDEP   human name for RD
+RIDX   human name for RI
+```
+
+That means a dump can show `RC`, `RR`, `RB`, `RF`, `RD`, and `RI` without
+spending bytes on the word `FNV` in every record. Hash algorithm and width
+belong in the catalog version/control fields, not in a repeated text signature.
+
 Working record shape:
 
 ```text
@@ -463,6 +496,136 @@ optional payload
 
 `bank` matters because the record may live in a clean catalog area while the
 routine/data body lives in a future growth/storage bank.
+
+### Placed HREC And Relocatable RREC
+
+The current `HREC`-style records are placed executable records. They prove
+hash discovery and joining, but they are not relocatable in the linker sense:
+
+```text
+himon-search-proof-3000   linked to run at $3000
+himon-search-flash-bba2   linked to sit/run at $BBA2, entry at $BBAE
+HREC entry field          already-placed callable address
+relocation table          none
+```
+
+That means a placed image works when it is loaded at the address it was built
+for. `LOAD search-3000 @3000` does not need fixups. `LOAD search-3000 @6000`
+works only if the body is accidentally position-independent, which 65C02 code
+usually is not once it contains absolute calls, jumps, data references, or
+literal address bytes:
+
+```asm
+JSR SOME_HELPER      ; 16-bit absolute operand
+JMP SOME_LABEL       ; 16-bit absolute operand
+LDA SOME_DATA        ; 16-bit absolute operand
+LDX #<MSG            ; low byte of linked address
+LDY #>MSG            ; high byte of linked address
+```
+
+Use this distinction:
+
+```text
+HREC  placed executable record; findable and callable only at its linked address
+RREC  relocatable record; copyable to RAM/flash and fixable before use
+RCAT  catalog/container that can collect RRECs, indexes, pools, and generations
+```
+
+For a future `RREC`, `preferred_load_addr` or `link_addr` is the compiled/link
+address of the payload. It is not a command to always load there. It gives the
+loader the relocation delta:
+
+```text
+delta = actual_load_addr - link_addr
+```
+
+A first useful `RREC` can stay deliberately small: one contiguous record, one
+code/data payload segment, and a compact fixup/dependency table. The record
+storage remains contiguous so scanners and condense tools can skip/copy it by
+`record_len`, even if the payload later describes non-contiguous runtime
+segments.
+
+```text
+RREC
+  magic/type/version
+  header_len
+  record_len
+  link_addr
+  entry_offset
+  payload_offset
+  payload_len
+  fixup_offset
+  fixup_count
+  dependency_offset
+  dependency_count
+  checksum
+  payload bytes
+  fixup table
+  dependency table
+  optional display/name text
+```
+
+Initial fixup kinds should cover the common W65C02S cases without building a
+large linker first:
+
+```text
+ABS16_INTERNAL   add relocation delta to a 16-bit address inside the payload
+LO8_INTERNAL     patch low byte of an internal payload address
+HI8_INTERNAL     patch high byte of an internal payload address
+ABS16_DEP        write resolved dependency entry address
+LO8_DEP          write low byte of resolved dependency entry
+HI8_DEP          write high byte of resolved dependency entry
+```
+
+Each dependency row can be small:
+
+```text
+dep_id
+hash32
+kind/filter
+```
+
+Fixups that target dependencies refer to `dep_id`, not to another full hash.
+The loader resolves each dependency once, stores the resulting entry address in
+a small table, then patches all dependent call/data sites.
+
+Loader flow:
+
+```text
+read RREC header
+choose actual load address, such as $6000
+copy payload bytes to RAM
+delta = actual_load_addr - link_addr
+resolve dependency hashes against resident HIMON/RCAT records
+apply internal and dependency fixups in RAM
+entry = actual_load_addr + entry_offset
+JSR/JMP entry according to the record contract
+```
+
+Banked flash should be treated first as storage, not execution space. A record
+in another bank needs more than a 16-bit address; it needs bank identity and a
+safe mapping story. Directly mapping another bank and calling code there is
+fragile because HIMON/STR8 helpers, return paths, and data may disappear from
+the CPU window. The cleaner rule is:
+
+```text
+banked HREC  display/find/copy only unless its bank is currently visible and safe
+banked RREC  copy to RAM, relocate/fix, restore normal bank, then run from RAM
+```
+
+That gives R-YORS a CP/M-like command loading model. CP/M `.COM` programs avoid
+relocation by agreeing on one load address in the TPA. R-YORS can start the
+same way with a conventional RAM command slot:
+
+```text
+LOAD @6000 <hash>
+copy banked RREC payload to $6000
+fix internal/dependency addresses
+run $6000 + entry_offset
+```
+
+The fixed `@6000` form is the simple first step. True "load anywhere" comes
+later, after fixup emission is boring.
 
 `kind` classifies the record or payload. It should not carry lifecycle policy.
 Lifecycle flags can include `REQUIRED_FOR_RECOVERY`, `BOOT_REQUIRED`, or

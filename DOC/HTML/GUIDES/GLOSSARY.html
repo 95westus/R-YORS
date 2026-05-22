@@ -34,7 +34,7 @@
 <li>STR8-N / STRAIGHTEN: future expanded STR8 direction.</li>
 <li>THE: The Hash Environment. THE is the lookup/catalog environment: canonical</li>
 </ul>
-<p>names, compact hashes, RCAT/RREC records, resolver policy, aliases, and typed display. HIMON&#39;s current command dispatcher still carries FNV-1a history; the intended compact runtime/catalog hash is tableless CRC16. THE is not the whole runtime.</p>
+<p>names, public FNV32 hashes, compact local hashes/checks, RCAT/RREC records, resolver policy, aliases, and typed display. HIMON&#39;s current command dispatcher already uses FNV-1a32 for public command identity. THE is not the whole runtime.</p>
 <ul>
 <li>ASM: the planned onboard assembler path.</li>
 <li>payload target: a bootable/installable monitor, application, tool, or ROM</li>
@@ -257,6 +257,17 @@
 <p>stepping or a user breakpoint. Current transcripts report these stops as compact <code>@hhhh A=...</code> lines instead of loud <code>BRK 00</code> program stops.</p>
 <h2 id="source-terms">Source Terms</h2>
 <ul>
+<li>SMC: self-modifying code. Code, normally RAM-resident, that changes its own</li>
+</ul>
+<p>instruction bytes while running or before being run. R-YORS does not treat SMC as a normal coding style; visible loader/fixup patching and narrow generated-RAM-body cases belong in explicit ASM/catalog/worker records. Example shape:</p>
+<pre><code class="language-asm">  TARGET_LO:  LDA #$00
+              STA SOME_JMP+1
+  TARGET_HI:  LDA #$40
+              STA SOME_JMP+2
+
+  SOME_JMP:   JMP $4000</code></pre>
+<p>After the stores, the operand bytes inside <code>SOME_JMP</code> have been changed.</p>
+<ul>
 <li><code>MODULE</code> / <code>ENDMOD</code>: WDC assembler module boundary.</li>
 <li><code>XDEF</code>: symbol exported by a module.</li>
 <li><code>XREF</code>: symbol imported from another module.</li>
@@ -287,11 +298,18 @@
 </ul>
 <h2 id="hash-terms">Hash Terms</h2>
 <ul>
-<li>FNV-1a: the older/currently implemented HIMON hash family. It remains in</li>
+<li>FNV-1a: the settled 32-bit public name hash for HIMON commands, exported</li>
 </ul>
-<p>current command records and routine <code>[HASH:XXXXXXXX]</code> comments, but it is not the final compact runtime/catalog hash decision.</p>
+<p>routines, public symbols, modules, cross-bank imports, and routine <code>[HASH:XXXXXXXX]</code> comments.</p>
 <ul>
-<li>CRC16: intended tableless compact runtime/catalog hash family.</li>
+<li>CRC16: intended tableless compact local/scoped hash or check family. Use it</li>
+</ul>
+<p>only where record/block context can handle collisions.</p>
+<ul>
+<li>CRC32: optional stronger integrity/check family for records or bodies; not</li>
+</ul>
+<p>the normal lookup identity.</p>
+<ul>
 <li>hash32: full 32-bit FNV-1a result, stored as hash0..3 low byte first.</li>
 <li>hash16: older folded 16-bit result derived from hash32.</li>
 <li>hash8: older folded 8-bit result derived from hash32.</li>
@@ -481,7 +499,7 @@
 <p>address when none is forced; examples include high-to-low, low-to-high, best fit, closest-to-top, and first fit in a selected bank or sector range.</p>
 <p>Example: <code>$E000-$EFFF</code> is window/sector <code>$E</code> of whichever bank is currently selected. Sector <code>$0</code> is <code>$0000-$0FFF</code>; <code>$0000-$FFFF</code> is the full 64K CPU address space, not sector <code>$0</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-22T03:40:00Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-22T05:13:48Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

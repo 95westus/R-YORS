@@ -161,12 +161,12 @@ Current combined-image facts:
 
 ```text
 HIMON entry:     $C000
-HIMON body:      $C000-$E9AF
+HIMON body:      $C000-$EAF3
 STR8 entry:      $F000
-STR8 body:       $F000-$FA71
+STR8 body:       $F000-$FA82
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F75E = 7A 0F 6A 5F
-worker source:   $FC00-$FED1
+marker bytes:    $F76F = 7A 0F 6A 5F
+worker source:   $FD1E-$FFEF
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0
 ```
@@ -238,7 +238,7 @@ restores Bank 3 before returning to resident STR8
 Current RAM workspace:
 
 ```text
-$0200-$05FF   STR8 RAM tray copied from $FC00
+$0200-$04D1   STR8 RAM tray copied from $FD1E-$FFEF
 $0A00-$0A16   STR8 worker/update state board and map bytes
 $4000-$4FFF   4K sector buffer for bank copy
 $4000-$6FFF   staged C/D/E sector buffers during U
@@ -250,21 +250,18 @@ to switch banks and scan sectors.
 Current top-sector reserve policy:
 
 ```text
-$F800-$FA71  STR8 resident message/data tail
-             size $0272 = 626 bytes
+$F000-$F76E  STR8 resident code
+             size $076F = 1903 bytes
 
-$FA72-$FBFF  unused $FF padding before the private reserve
-             size $018E = 398 bytes
+$F76F-$FA82  STR8 resident data
+             size $0314 = 788 bytes
 
-$FC00-$FFEF  STR8 private high-flash reserve
-             size $03F0 = 1008 bytes
+$FA83-$FD1D  contiguous unused $FF growth hole
+             size $029B = 667 bytes
 
-$FC00-$FED1  stored STR8 RAM worker image inside that reserve
+$FD1E-$FFEF  stored STR8 RAM worker image
              size $02D2 = 722 bytes
              linked to run at $0200-$04D1
-
-$FED2-$FFEF  reserved free space for future STR8-private metadata or cache
-             size $011E = 286 bytes
 
 $FFF0-$FFF9  STR8 config pocket
              size $000A = 10 bytes
@@ -273,11 +270,12 @@ $FFFA-$FFFF  W65C02 vectors
              size $0006 = 6 bytes
 ```
 
-The working rule is that `$FC00-$FFEF` belongs to STR8 as a private high-flash
-reserve. The worker grows upward from `$FC00`; any future STR8 fast-path cache
-or private metadata should grow downward from `$FFEF` and must be treated as a
-hint unless it is validated against the active image identity. `$FFF0-$FFFF`
-stays out of general allocation.
+The working rule is that STR8 code/data grows upward from `$F000`, while the
+stored RAM worker is packed against `$FFEF` and grows downward as needed. That
+keeps one visible free hole between resident STR8 data and the worker image.
+Any future STR8 fast-path cache or private metadata should live in a deliberate
+record area, not in a fixed accidental gap. `$FFF0-$FFFF` stays out of general
+allocation.
 
 ## STR8 Update Gate
 
@@ -387,7 +385,7 @@ are in [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md).
 
 ## Hash And Catalog State
 
-Current HIMON still contains FNV-1a command/routine history:
+Current HIMON contains FNV-1a command/routine identity:
 
 ```text
 routine header HASH      32-bit FNV-1a comment ID
@@ -395,14 +393,17 @@ current HIMON commands   FNV-era command records
 legacy quote helper      prints FNV-1a32
 ```
 
-The intended compact runtime/catalog hash is tableless CRC16:
+The settled split is:
 
 ```text
-canonical text -> tableless CRC16 -> typed record/payload
+public name -> FNV-1a32 -> typed record/payload
+local table/scope -> CRC16 or short ID -> verified by record context
+record/body integrity -> optional CRC32/checksum
 ```
 
 The hash narrows lookup. Typed records, stored names, and proof text give the
-match its meaning. STR8 V0 does not use FNV or CRC16 for recovery decisions.
+match its meaning. STR8 V0 does not use FNV, CRC16, or CRC32 for recovery
+decisions.
 
 ## Payload Contract
 

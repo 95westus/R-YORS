@@ -50,10 +50,11 @@ called_by:   generated or hand-maintained callers
 notes:       collision, alias, bank, or future-catalog notes
 ```
 
-FNV-1a is the current implemented history for many generated symbol IDs. The
-intended compact runtime/catalog/symbol hash is tableless CRC16. No per-record
-algorithm tag is needed unless multi-algorithm catalogs become a deliberate
-future design. Words and longs remain little-endian:
+FNV-1a32 is the settled public symbol/routine identity hash. CRC16 may be used
+for compact local/scoped tables when surrounding record context can handle
+collisions. No per-record algorithm tag is needed unless multi-algorithm
+catalogs become a deliberate future design. Words and longs remain
+little-endian:
 
 ```text
 word      low byte, then high byte

@@ -1,16 +1,17 @@
 ; ----------------------------------------------------------------------------
 ; himon-search-for-himon.asm
-; Native HIMON search port scaffold.
+; Native HIMON search port record.
 ;
 ; This is not a loadable S19 app.  It is the code-side checklist for moving the
-; proven low-flash search command into HIMON/himon.asm without
-; changing the already-tested search core.
+; proven low-flash search command into HIMON/himon.asm without changing the
+; already-tested search core.  The native port is now implemented in himon.asm;
+; keep this file as the short comparison/maintenance note for that move.
 ;
 ; The four search artifacts now have separate jobs:
 ; - himon-search-static     RAM standalone search, statically linked helpers.
 ; - himon-search-proof      RAM search using runtime-discovered helpers.
 ; - himon-search-flash      Low-flash K=$05 FNV command delivered by L F.
-; - himon-search-for-himon  This native port scaffold for HIMON proper.
+; - himon-search-for-himon  This native port record/checklist for HIMON proper.
 ; ----------------------------------------------------------------------------
 
                         MODULE          HIMON_SEARCH_FOR_HIMON_APP
@@ -26,33 +27,34 @@
 ; Hash/token:
 ;   S             -> $D60C1322
 ;   kind $05      -> executable + display text, no confirm-before-run
-;   extra text    -> MSG_SEARCH_EXTRA, high-bit-terminated "S(earch)"
+;   extra text    -> MSG_SEARCH_EXTRA, high-bit-terminated
+;                    "S: SEARCH FROM RAM TO HASHED HIMON CMD"
+;   current map    -> CMD_SEARCH_FNV $C306, CMD_SEARCH $C312,
+;                    MSG_SEARCH_EXTRA $E8E9
 ;
 ; Important: HIMON scans FNV records from $8000 upward.  A low-flash S record at
-; $BBA2 will win before a native S record inside HIMON at $C000+.  Native board
+; $BB80 will win before a native S record inside HIMON at $C000+.  Native board
 ; tests must erase/avoid the flash-shadow record or use a bank without it.
 
 ; ----------------------------------------------------------------------------
 ; Entry shape to fold into himon.asm.
 ; ----------------------------------------------------------------------------
 ; CMD_SEARCH:
-;                         LDA             CMDP_START_LO
+;                         JSR             CMD_ADV_PTR
+;                         LDA             CMDP_PTR_LO
 ;                         STA             SEARCH_LINE_LO
-;                         LDA             CMDP_START_HI
+;                         LDA             CMDP_PTR_HI
 ;                         STA             SEARCH_LINE_HI
-;                         JSR             SEARCH_SKIP_SPACES
-;                         JSR             SEARCH_PEEK
-;                         BEQ             CMD_SEARCH_USAGE
-;                         JSR             SEARCH_ADV_LINE       ; skip S token
 ;                         JSR             SEARCH_PARSE_RANGE
 ;                         BCC             CMD_SEARCH_USAGE
 ;                         JSR             SEARCH_PARSE_PATTERN
 ;                         BCC             CMD_SEARCH_USAGE
-;                         JMP             SEARCH_SCAN_RANGE
+;                         JSR             SEARCH_SCAN_RANGE
+;                         RTS
 ;
-; Do not depend on $FE/$FF on entry.  Display/confirm/hash work may already have
-; used that pointer.  Start from CMDP_START ($FA/$FB), just like the flash proof
-; now does.
+; CMD_HASH_TOKEN restores CMDP_PTR to the token start before dispatch.  Native
+; search advances over its own S token, then keeps its private SEARCH_LINE
+; pointer so HIM_WRITE_HBSTRING can still use $FE/$FF during messages.
 
 ; ----------------------------------------------------------------------------
 ; Keep these routines from himon-search-flash.asm.
@@ -150,7 +152,7 @@
 ; MSG_SEARCH_USAGE:      DB "S START END|+COUNT BB|'TEXT' [...], ? HELP, Q QUI",('T'+$80)
 ; MSG_SEARCH_NF:         DB "S N",('F'+$80)
 ; MSG_SEARCH_ABORT:      DB "S ABOR",('T'+$80)
-; MSG_SEARCH_EXTRA:      DB "S(earch",(')'+$80)
+; MSG_SEARCH_EXTRA:      DB "S: SEARCH FROM RAM TO HASHED HIMON CM",('D'+$80)
 ;
 ; Delete the flash import message in native HIMON; there are no runtime imports.
 
@@ -162,7 +164,7 @@
 ; ensure the low-flash S record is absent or erased
 ;
 ; ># S
-;     expect: D60C1322 ENTRY=<native> K=05  S(earch)
+;     expect: D60C1322 ENTRY=C312 K=05  S: SEARCH FROM RAM TO HASHED HIMON CMD
 ; >S 7F06 +27 00
 ;     expect: named IO SKIP rows, then S NF
 ; >S 0 FFFF 'HIMON'

@@ -80,12 +80,12 @@ $F000-$FFFF    4K STR8 recovery sector
 Current combined-image facts:
 
 ```text
-HIMON:           $C000-$E75B
-STR8 image:      $F000-$FA83
+HIMON:           $C000-$EE27
+STR8 image:      $F000-$FA82
 IVI entries:     NMI $F089, IRQ/BRK $F09D
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F770 = 7A 0F 6A 5F
-worker source:   $FC00-$FEBE, copied to RAM when needed
+marker bytes:    $F76F = 7A 0F 6A 5F
+worker source:   $FD1E-$FFEF, copied to RAM when needed
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0
 ```
@@ -95,7 +95,7 @@ After burning, quick monitor checks should look like:
 ```text
 D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
 D F000 +10   78 D8 A2 FF 9A 20 36 F0 ...
-D FC00 +10   08 78 AD 07 0A C9 04 F0 ...
+D FD1E +10   08 78 AD 07 0A C9 04 F0 ...
 D FFFA FFFF  89 F0 00 F0 9D F0
 ```
 
@@ -274,10 +274,12 @@ STR8 rejects records outside `$C000-$EFFF` before erase.
 D              continue previous dump length from next address
 D start +count dump memory by byte count
 D start end    dump memory through inclusive end
+S start end|+count bb|'TEXT' [...] search memory; skips $7Fxx I/O slots
 M addr         modify memory byte by byte
 U start +count disassemble
 A addr         assemble
 G addr         go to address
+STR8           enter STR8 at $F000
 L              load S-records to RAM
 L G            load S-records and go to S9 start
 L F            flash-load under the current guard

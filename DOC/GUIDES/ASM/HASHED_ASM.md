@@ -4,8 +4,9 @@ This document captures a possible HIMON direction:
 
 Status: this file was born under the `HASHED_ASM` name and still contains many
 FNV-era examples. Treat those as current HIMON implementation history and
-record-shape sketches. The intended compact assembler/catalog hash is now
-tableless CRC16 unless a later decision explicitly changes it.
+record-shape sketches. The settled split is FNV32 for public/exported symbols
+and CRC16 or short IDs only for local/scoped tables where context handles
+collisions.
 
 `A` grows from a one-line numeric assembler into a tiny onboard assembler that
 can resolve names through the same hash-first idea used by HIMON command
@@ -1177,10 +1178,11 @@ append-only record.
 
 ### Legacy FNV Layout Byte Savings
 
-This was the older compact-storage thought for FNV-era records. Since the
-intended compact hash has moved to tableless CRC16, use this section as history
-and as a guide to the current ROM's FNV record shape, not as final catalog
-policy. In a known FNV table, the compact layout byte can identify how much of
+This was the older compact-storage thought for FNV-era records. Use this
+section as history and as a guide to the current ROM's FNV record shape, not as
+final catalog policy. Future public records should keep FNV32 at public
+boundaries; CRC16 or short IDs are for local/scoped tables with collision
+fallback. In a known FNV table, the compact layout byte can identify how much of
 the canonical 32-bit FNV-1a hash is stored:
 
 ```text

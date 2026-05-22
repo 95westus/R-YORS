@@ -19,10 +19,10 @@ prefer the specific form listed here instead of the bare word.
   explained as a board feature rather than as raw vector plumbing.
 - STR8-N / STRAIGHTEN: future expanded STR8 direction.
 - THE: The Hash Environment. THE is the lookup/catalog environment: canonical
-  names, compact hashes, RCAT/RREC records, resolver policy, aliases, and typed
-  display. HIMON's current command dispatcher still carries FNV-1a history; the
-  intended compact runtime/catalog hash is tableless CRC16. THE is not the whole
-  runtime.
+  names, public FNV32 hashes, compact local hashes/checks, RCAT/RREC records,
+  resolver policy, aliases, and typed display. HIMON's current command
+  dispatcher already uses FNV-1a32 for public command identity. THE is not the
+  whole runtime.
 - ASM: the planned onboard assembler path.
 - payload target: a bootable/installable monitor, application, tool, or ROM
   image selected by STR8. HIMON is the default payload target, not the only one.
@@ -214,6 +214,22 @@ docs.
 
 ## Source Terms
 
+- SMC: self-modifying code. Code, normally RAM-resident, that changes its own
+  instruction bytes while running or before being run. R-YORS does not treat
+  SMC as a normal coding style; visible loader/fixup patching and narrow
+  generated-RAM-body cases belong in explicit ASM/catalog/worker records.
+  Example shape:
+
+  ```asm
+  TARGET_LO:  LDA #$00
+              STA SOME_JMP+1
+  TARGET_HI:  LDA #$40
+              STA SOME_JMP+2
+
+  SOME_JMP:   JMP $4000
+  ```
+
+  After the stores, the operand bytes inside `SOME_JMP` have been changed.
 - `MODULE` / `ENDMOD`: WDC assembler module boundary.
 - `XDEF`: symbol exported by a module.
 - `XREF`: symbol imported from another module.
@@ -238,10 +254,13 @@ docs.
 
 ## Hash Terms
 
-- FNV-1a: the older/currently implemented HIMON hash family. It remains in
-  current command records and routine `[HASH:XXXXXXXX]` comments, but it is not
-  the final compact runtime/catalog hash decision.
-- CRC16: intended tableless compact runtime/catalog hash family.
+- FNV-1a: the settled 32-bit public name hash for HIMON commands, exported
+  routines, public symbols, modules, cross-bank imports, and routine
+  `[HASH:XXXXXXXX]` comments.
+- CRC16: intended tableless compact local/scoped hash or check family. Use it
+  only where record/block context can handle collisions.
+- CRC32: optional stronger integrity/check family for records or bodies; not
+  the normal lookup identity.
 - hash32: full 32-bit FNV-1a result, stored as hash0..3 low byte first.
 - hash16: older folded 16-bit result derived from hash32.
 - hash8: older folded 8-bit result derived from hash32.

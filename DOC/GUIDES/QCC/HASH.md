@@ -1,9 +1,10 @@
 # QCC Hash
 
-This page keeps hash questions in QCC form. Much of this page records the older
-folded FNV-1a direction. The current compact runtime/catalog direction is
-tableless CRC16, chosen for W65C02 time and ROM pressure. Keep the FNV notes as
-implementation/history until the CRC16 record shape replaces them.
+This page keeps hash questions in QCC form. The settled public identity call is:
+use 32-bit FNV-1a for names that cross boundaries, reserve CRC16 for compact
+local/scoped indexes and checks, and reserve CRC32 for optional stronger
+integrity checking. Older folded-FNV and CRC16-first notes remain here as design
+history.
 
 ## Q: Can HIMON use 1, 2, and 4 byte hashes?
 
@@ -155,6 +156,57 @@ Concern: A marker answers "are these bytes probably a record?" It is not the
 record identity. The identity still comes from hash/name/kind plus contract
 metadata. One byte by itself is not enough for arbitrary scanning; it becomes
 safe only inside a declared and validated block/table.
+
+## Q: Should runtime records use RC/RR/RB/RF/RD/RI signatures?
+
+Comment: Yes, this looks like the cleaner byte-level vocabulary for the
+catalog family:
+
+```text
+RC  runtime catalog/container block
+RR  runtime record/export/import/value envelope
+RB  runtime body/payload bytes
+RF  relocation/fixup table
+RD  dependency/import table
+RI  runtime index/cache
+```
+
+This keeps dumps readable without tying every record to the hash algorithm.
+The longer doc words remain useful aliases:
+
+```text
+RCAT   human name for RC
+RREC   human name for RR
+RBODY  human name for RB
+RFIX   human name for RF
+RDEP   human name for RD
+RIDX   human name for RI
+```
+
+Concern: Do not let the new signatures accidentally settle the hash algorithm.
+The signature says "what kind of record is this?" The catalog version/control
+still has to say how identity is represented, whether by current 32-bit FNV-1a,
+future CRC16, or a mixed/verified form.
+
+## Q: Should CRC16 still replace FNV32 for runtime catalogs?
+
+Comment: Settled for now: no. Tableless CRC16 is attractive because it is
+smaller and likely cheaper on W65C02 than the current FNV-1a path. But 32-bit
+FNV-1a solved a real problem: public routine/command names need enough identity
+that collisions do not dominate the design.
+
+Adopt this split:
+
+```text
+FNV32  public/exported/cross-bank identity where collision cost is high
+CRC16  compact local/catalog/table identity where context and validation help
+CRC32  stronger block/body integrity check when worth the bytes
+```
+
+Concern: A 16-bit hash can be fine inside a known `RC` block with length,
+kind, checksum, namespace, and optional display/name verification. It is weaker
+as the only identity for arbitrary public routines. Do not demote FNV32 unless
+a later explicit decision replaces this policy.
 
 ## Q: Should hash records link to parents and children?
 

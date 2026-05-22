@@ -73,23 +73,26 @@ $FFFA-$FFFF  W65C02 hardware vector block</code></pre>
 $FFFC-$FFFD  RESET
 $FFFE-$FFFF  IRQ/BRK</code></pre>
 <p>Those vector bytes remain part of the selected STR8 protected window. They are treated as vector table rather than normal code storage.</p>
-<p>The current high-flash reserve should be read as a top-sector ownership rule, not as general free ROM:</p>
-<pre><code class="language-text">$FC00-$FFEF  STR8 private reserve inside the top sector
-             size $03F0 = 1008 bytes
+<p>The current high-flash layout should be read as a top-sector ownership rule, not as general free ROM. STR8 code/data grows upward, the stored RAM worker is packed against <code>$FFEF</code> and grows downward, and the remaining free space is one contiguous hole:</p>
+<pre><code class="language-text">$F000-$F76E  STR8 resident code
+             size $076F = 1903 bytes
 
-$FC00-$FED1  stored STR8 RAM worker image
+$F76F-$FA82  STR8 resident data
+             size $0314 = 788 bytes
+
+$FA83-$FD1D  contiguous unused $FF growth hole
+             size $029B = 667 bytes
+
+$FD1E-$FFEF  stored STR8 RAM worker image
              size $02D2 = 722 bytes
              copied to and run from $0200-$04D1
-
-$FED2-$FFEF  reserved free space for future STR8-private metadata or cache
-             size $011E = 286 bytes
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
              size $000A = 10 bytes
 
 $FFFA-$FFFF  W65C02 hardware vectors
              size $0006 = 6 bytes</code></pre>
-<p>If STR8 later caches hash/address fast paths in flash, that cache belongs in the <code>$FED2-$FFEF</code> slack or in another deliberate STR8-owned record area. Cached addresses are hints: validate the cache against the active ROM/build identity before trusting it, and fall back to a fresh scan when identity or checksum does not match.</p>
+<p>If STR8 later caches hash/address fast paths in flash, that cache belongs in a deliberate STR8-owned record area, not in a fixed little post-worker hole. Cached addresses are hints: validate the cache against the active ROM/build identity before trusting it, and fall back to a fresh scan when identity or checksum does not match.</p>
 <h2 id="vector-integration-policy">Vector Integration Policy</h2>
 <p>V0 HIMON controls IRQ/vector behavior.</p>
 <p>Direction change: earlier STR8 notes leaned toward future STR8 ownership of the final hardware vectors and broader trap authority. After careful reconsideration by the project author, the direction is softer and more reusable: STR8 should offer recovery-safe hooks and routines, while the active system may keep its own memory and interrupt policy.</p>
@@ -166,7 +169,7 @@ first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can perform backup rotation with read-back verify
 first RAM proof can enroll bank 0 into rotation by clearing an in-flash flag bit
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current ROM build links STR8 at $F000 and stores a RAM worker at $FC00
+current ROM build links STR8 at $F000 and stores a RAM worker at $FD1E-$FFEF
 current ROM build copies the worker to $0200 before B/U/0/1/2 flash mutation
 current ROM build copies the worker to $0200 before E config mutation
 current ROM build has working ?, B, E, M, U, 0, 1, 2, G, and R commands
@@ -175,9 +178,9 @@ physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
-STR8 private high-flash reserve is $FC00-$FFEF
-stored worker currently occupies $FC00-$FED1
-reserved worker/cache slack is currently $FED2-$FFEF
+STR8 code/data grows upward from $F000
+stored worker currently occupies $FD1E-$FFEF and grows downward
+current contiguous free hole is $FA83-$FD1D
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
@@ -200,7 +203,7 @@ minimal recovery entry
 selected STR8 protected-window check
 flash write/erase guard hooks
 small verify/check routines</code></pre>
-<p>STR8 V0 verification means fixed-range checks, flash status, byte-for-byte read-back across restored ordinary image bytes, and separate read-back verification after any protected-window install/update. Future catalog-owning STR8 may use compact hash lookups after the CRC16 record shape is settled.</p>
+<p>STR8 V0 verification means fixed-range checks, flash status, byte-for-byte read-back across restored ordinary image bytes, and separate read-back verification after any protected-window install/update. Future catalog-owning STR8 may use the settled catalog split after the image-recovery path is stable: FNV32 for public identity, CRC16/short IDs for compact local contexts, and checksums/CRC32 for integrity where needed.</p>
 <h2 id="boot-relationship">Boot Relationship</h2>
 <p>Earlier prototypes could boot directly into HIMON. The current R-YORS/STR8 reference path boots through STR8 first, then hands normal operation to HIMON or to another image occupying the live <code>$C000-$EFFF</code> payload window.</p>
 <p>At boot, STR8 should be able to:</p>
@@ -312,7 +315,7 @@ R          reset through the live reset vector</code></pre>
     G --&gt; HIMON[HIMON at $C000]
     R --&gt; RESETV[live reset vector]
 
-    B --&gt; COPY[copy worker $FC00 -&gt; $0200]
+    B --&gt; COPY[copy worker $FD1E-$FFEF -&gt; $0200]
     E --&gt; COPY
     RST --&gt; COPY
     COPY --&gt; WORKER[RAM flash worker]
@@ -369,7 +372,7 @@ rich monitor UI</code></pre>
     GROWTH[$8000-$EFFF growth/body area]
     TOP[$F000-$FFFF physical 4K top sector]
     FREE[usable top-sector bytes below selected STR8 start]
-    STR8CODE[$FC00/$FA00/...-$FFEF STR8 body]
+    STR8CODE[selected STR8 window through $FFEF]
     FLASH10[$FFF0-$FFF9 one-time board/version/config]
     VECTORS[$FFFA-$FFFF vector block]
 
@@ -436,7 +439,7 @@ FLASH_S19_BOARD_RESET_TO_FACTORY</code></pre>
 <pre><code class="language-text">B command, B0 HOLD: copy bank 2 -&gt; bank 1, then bank 3 -&gt; bank 2
 B command, B0 ROT:  copy bank 1 -&gt; bank 0, bank 2 -&gt; bank 1, bank 3 -&gt; bank 2
 0/1/2 commands:     copy selected bank -&gt; bank 3 while preserving STR8 bytes</code></pre>
-<p>Each 4K window reads from the source bank, writes the destination bank, and verifies by simple read-back compare. The <code>$F000</code> ROM build uses the same copy policy by first copying its worker from bank 3 <code>$FC00-$FFFF</code> into RAM <code>$0200-$05FF</code>. Ordinary restore into bank 3 preserves <code>$C000-$FFFF</code> unless the operator explicitly confirms high flash, so HIMON, the ROM worker, and the protected STR8/vector window remain usable after a normal restore. Catalog lookup, hashed metadata, wear leveling, and cycle counts are later work.</p>
+<p>Each 4K window reads from the source bank, writes the destination bank, and verifies by simple read-back compare. The <code>$F000</code> ROM build uses the same copy policy by first copying its worker from bank 3 <code>$FD1E-$FFEF</code> into RAM <code>$0200-$04D1</code>. Ordinary restore into bank 3 preserves <code>$C000-$FFFF</code> unless the operator explicitly confirms high flash, so HIMON, the ROM worker, and the protected STR8/vector window remain usable after a normal restore. Catalog lookup, hashed metadata, wear leveling, and cycle counts are later work.</p>
 <p>Partitioned-bank layouts remain QCC thought experiments until promoted. They are not part of the current <code>B</code>, <code>0</code>, <code>1</code>, and <code>2</code> recovery contract.</p>
 <h2 id="next-partitioned-backup-direction">Next Partitioned Backup Direction</h2>
 <p>The next STR8 backup direction may stop treating banks 0 and 1 as independent whole-bank images. Instead, STR8 can own them together as a 64K managed backup arena. The preferred layout gives metadata one fixed sector and keeps the remaining 60K as a 15-sector payload pool:</p>
@@ -634,7 +637,7 @@ user explicitly installs it as module-local or replacement.</code></pre>
 </ul>
 <p>mixed encoding flag?</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8.md</code>. Source modified: <time>2026-05-21T22:46:56Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8.md</code>. Source modified: <time>2026-05-22T04:55:15Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

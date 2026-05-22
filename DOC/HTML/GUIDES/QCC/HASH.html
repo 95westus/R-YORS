@@ -10,7 +10,7 @@
   <header class="site-header"><div class="nav-start"><a class="back-link" href="../../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../../index.html"><img class="brand-logo" src="../../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../../README.html">README</a><a href="../INDEX.html">Guides</a><a href="../../GENERATED/index.html">Generated</a></nav></header>
   <main class="doc-page">
 <h1 id="qcc-hash">QCC Hash</h1>
-<p>This page keeps hash questions in QCC form. Much of this page records the older folded FNV-1a direction. The current compact runtime/catalog direction is tableless CRC16, chosen for W65C02 time and ROM pressure. Keep the FNV notes as implementation/history until the CRC16 record shape replaces them.</p>
+<p>This page keeps hash questions in QCC form. The settled public identity call is: use 32-bit FNV-1a for names that cross boundaries, reserve CRC16 for compact local/scoped indexes and checks, and reserve CRC32 for optional stronger integrity checking. Older folded-FNV and CRC16-first notes remain here as design history.</p>
 <h2 id="q-can-himon-use-1-2-and-4-byte-hashes">Q: Can HIMON use 1, 2, and 4 byte hashes?</h2>
 <p>Comment: Yes. The clean idea is:</p>
 <pre><code class="language-text">1 byte  very narrow folded hash
@@ -73,6 +73,29 @@ managed catalog
 hash marker in block header  versionable, less readable, useful for formats
 no marker per record         best once the enclosing table proves context</code></pre>
 <p>Concern: A marker answers &quot;are these bytes probably a record?&quot; It is not the record identity. The identity still comes from hash/name/kind plus contract metadata. One byte by itself is not enough for arbitrary scanning; it becomes safe only inside a declared and validated block/table.</p>
+<h2 id="q-should-runtime-records-use-rc-rr-rb-rf-rd-ri-signatures">Q: Should runtime records use RC/RR/RB/RF/RD/RI signatures?</h2>
+<p>Comment: Yes, this looks like the cleaner byte-level vocabulary for the catalog family:</p>
+<pre><code class="language-text">RC  runtime catalog/container block
+RR  runtime record/export/import/value envelope
+RB  runtime body/payload bytes
+RF  relocation/fixup table
+RD  dependency/import table
+RI  runtime index/cache</code></pre>
+<p>This keeps dumps readable without tying every record to the hash algorithm. The longer doc words remain useful aliases:</p>
+<pre><code class="language-text">RCAT   human name for RC
+RREC   human name for RR
+RBODY  human name for RB
+RFIX   human name for RF
+RDEP   human name for RD
+RIDX   human name for RI</code></pre>
+<p>Concern: Do not let the new signatures accidentally settle the hash algorithm. The signature says &quot;what kind of record is this?&quot; The catalog version/control still has to say how identity is represented, whether by current 32-bit FNV-1a, future CRC16, or a mixed/verified form.</p>
+<h2 id="q-should-crc16-still-replace-fnv32-for-runtime-catalogs">Q: Should CRC16 still replace FNV32 for runtime catalogs?</h2>
+<p>Comment: Settled for now: no. Tableless CRC16 is attractive because it is smaller and likely cheaper on W65C02 than the current FNV-1a path. But 32-bit FNV-1a solved a real problem: public routine/command names need enough identity that collisions do not dominate the design.</p>
+<p>Adopt this split:</p>
+<pre><code class="language-text">FNV32  public/exported/cross-bank identity where collision cost is high
+CRC16  compact local/catalog/table identity where context and validation help
+CRC32  stronger block/body integrity check when worth the bytes</code></pre>
+<p>Concern: A 16-bit hash can be fine inside a known <code>RC</code> block with length, kind, checksum, namespace, and optional display/name verification. It is weaker as the only identity for arbitrary public routines. Do not demote FNV32 unless a later explicit decision replaces this policy.</p>
 <h2 id="q-should-hash-records-link-to-parents-and-children">Q: Should hash records link to parents and children?</h2>
 <p>Comment: A HIMON userland explorer could take a command/string, compute its FNV-1a hash, find the matching executable FNV record, scan the associated code for <code>JSR abs</code> opcodes, and follow each target. In the current HIMON executable record shape, backing up 8 bytes from a code address can detect whether the target has its own FNV header:</p>
 <pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,kind</code></pre>
@@ -132,7 +155,7 @@ S addr end|+count &#39;TEXT</code></pre>
 <p>which searches for three <code>M</code> bytes.</p>
 <p>Concern: Keep apostrophe text as a final tail for the first implementation. There is no closing-quote parser and no return to hex parsing after text. Supporting text in the middle of the pattern would require quotes or escaping; that is not worth the parser cost for V0.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/HASH.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/HASH.md</code>. Source modified: <time>2026-05-22T04:30:32Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

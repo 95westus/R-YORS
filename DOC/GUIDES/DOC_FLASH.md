@@ -41,6 +41,130 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: Self-Modifying Code Parked As QCC Boundary
+
+```text
+2026
+         05
+                22
+                   05:04Z WLP2 Added the ASM-side self-modifying-code
+                               boundary note.
+```
+
+scope: `QCC/ASM.md`, `QCC/INDEX.md`, and generated HTML.
+
+change: The ASM QCC now records that self-modifying code is not a general
+R-YORS style goal. The acceptable future shape is explicit loader/fixup work,
+generated RAM bodies, or a very narrow RAM-worker size-pressure exception.
+
+effect: Do not treat RAM execution, hash-based joining, or relocation fixups as
+permission to hide normal control flow in patched instruction bytes.
+
+action: Prefer zero-page indirection, tables, helper routines, and visible
+fixup records. If code bytes must change, make that mutation part of a loader,
+fixup table, or generated-RAM-body story.
+
+## REDOC: STR8 Worker Packed Down From FFEF
+
+```text
+2026
+         05
+                22
+                   04:54Z WLP2 Coalesced the STR8 top-sector slack by
+                               packing the RAM worker down from $FFEF.
+```
+
+scope: `SRC/STR8/str8.asm`, `SRC/STR8/str8-worker.asm`,
+`SRC/tools/build_himon_str8_rom_bin.ps1`, STR8/operator/memory guides, and
+generated HTML.
+
+change: The stored STR8 RAM worker moved from `$FC00-$FED1` to `$FD1E-$FFEF`.
+STR8 now copies the exact worker length into `$0200-$04D1` instead of assuming
+a page-aligned four-page source. The ROM builder recomputes the packed worker
+address from the worker size and validates STR8's copy constants.
+
+effect: The old two-hole top-sector picture is stale. STR8 code/data grows
+upward from `$F000`, the worker grows downward from `$FFEF`, and the current
+free top-sector hole is one contiguous `$FA83-$FD1D` range.
+
+action: Use the current layout in `TECHNICAL_GUIDE.md`, `MEMORY_MAP.md`,
+`OPERATORS_GUIDE.md`, and `STR8.md`.
+
+## REDOC: Book Spine Names The Change-Mind Loop
+
+```text
+2026
+         05
+                22
+                   04:44Z WLP2 Updated the book spine with the
+                               want/need/answer/question/change/do/keep/no-more
+                               motion of the project.
+```
+
+scope: `STORY/BOOK.md` and generated HTML.
+
+change: The story spine now says chapters should show what the system wanted,
+what the hardware or operator needed, what answer was tried, what questions
+remained, what changed, what was proved, what survived, and what path was
+retired.
+
+effect: The book should not read as if every current answer was obvious from
+the start. R-YORS changes its mind when the board, ROM size, flash physics, or
+operator surface proves an older answer too large, unsafe, or stale.
+
+action: Use [BOOK.md](STORY/BOOK.md) for the narrative structure and keep
+settled technical calls in [DECISIONS.md](./DECISIONS.md).
+
+## REDOC: ASM VM Question Parked In QCC
+
+```text
+2026
+         05
+                22
+                   04:40Z WLP2 Captured the hash-first ASM and storage-bank
+                               metadata question as QCC, explicitly parking
+                               VM/bytecode ideas as later work.
+```
+
+scope: `QCC_ASM.md`, `QCC_CATALOG_LINKING.md`, and generated HTML.
+
+change: `LABEL: MNEMONIC OPERAND` is now documented as a hash-first native
+assembler path: hash labels, dispatch hashed mnemonics to W65C02S emitters or
+directives, and record operand fixups. Storage banks are framed around
+`provides`, `depends`, `fixups`, payload length, link/load address, and
+checksum.
+
+effect: The old mental shortcut "hashed ASM plus address traps means VM" is
+too far ahead. Native emitted W65C02S cannot be trapped after the fact; trapping
+requires deliberate watched forms such as HIMON service calls, BRK tokens, or
+bytecode.
+
+action: Keep VM talk in QCC. The near-term proof remains seed records,
+explicit dependencies, fixups, and native load/join/run behavior.
+
+## REDOC: Hash Policy Settled On FNV32 Public Identity
+
+```text
+2026
+         05
+                21
+                   23:00Z WLP2 Settled the hash split: FNV-1a32 is public
+                               name identity; CRC16 is compact local/scoped
+                               hash/check; CRC32 is optional integrity/check,
+                               not ordinary lookup identity.
+```
+
+scope: `DECISIONS.md`, `README.md`, `TECHNICAL_GUIDE.md`, `REF.md`,
+`GLOSSARY.md`, `HASH.md`, `HASH_MAP.md`, `QCC_HASH.md`, `HASHED_ASM.md`,
+`SYMBOL_XREF.md`, `CATALOG.md`, `HIMON_MAP.md`, `STR8.md`, and generated HTML.
+
+change: The earlier "CRC16 replaces FNV32 as the intended runtime/catalog hash"
+wording is retired. Public/exported/cross-bank names keep FNV32. CRC16 remains
+valuable in bounded local record contexts. CRC32 belongs to integrity checking.
+
+effect: Docs should no longer describe FNV-1a32 as mere transition debt or
+describe CRC16 as the universal future catalog identity.
+
 ## REDOC: Hash Trash And K-Bit Contract
 
 ```text
@@ -232,8 +356,8 @@ image's stable vector-indirection mechanism, IVY is only its pronunciation, and
 LEAF is the future friendly front door built on IVI. Payload use of future LEAF
 patch routines is optional and has no flash authority. The bringup guide points
 to the current
-`$F000` resident shell, `$FC00` worker
-source, `$0200-$05FF` RAM tray, `$4000-$4FFF` copy buffer, and `$4000-$6FFF`
+`$F000` resident shell, `$FD1E-$FFEF` worker
+source, `$0200-$04D1` RAM tray, `$4000-$4FFF` copy buffer, and `$4000-$6FFF`
 HIMON update staging area.
 
 effect: Do not expose `U T`, `U H`, or `U S` as operator commands. Use `U` only

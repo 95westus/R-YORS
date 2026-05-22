@@ -85,6 +85,7 @@ HIMON/himon-shared-eq.inc</code></pre>
     DISPATCH[CMD_DISPATCH_HASH] --&gt; HELP[? CMD_HELP]
     DISPATCH --&gt; HASHINFO[# CMD_HASH_INFO]
     DISPATCH --&gt; D[D CMD_D]
+    DISPATCH --&gt; S[S CMD_SEARCH]
     DISPATCH --&gt; M[M CMD_M]
     DISPATCH --&gt; U[U CMD_U]
     DISPATCH --&gt; R[R CMD_R]
@@ -102,6 +103,9 @@ HIMON/himon-shared-eq.inc</code></pre>
 
     D --&gt; RANGE[CMD_PARSE_RANGE_REQUIRED]
     D --&gt; MEMPRINT[MON_PRINT_MEM_RANGE]
+    S --&gt; SPARSE[SEARCH_PARSE_RANGE]
+    S --&gt; SPATTERN[SEARCH_PARSE_PATTERN]
+    S --&gt; SSCAN[SEARCH_SCAN_RANGE]
     M --&gt; RANGE
     M --&gt; MEMMOD[MON_MODIFY_RANGE]
     U --&gt; RANGE
@@ -281,7 +285,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 <td>every command token</td>
 <td><code>CMD_HASH_TOKEN</code>, <code>FNV1A_*</code>, <code>MATH_*</code></td>
 <td>Computes the current HIMON command hash and saves it in command exec state.</td>
-<td>Current implementation; tableless CRC16 is the intended compact catalog-hash direction.</td>
+<td>FNV32 remains the public command/export identity hash; CRC16 is for compact local/scoped tables and checks.</td>
 </tr>
 <tr>
 <td>Catalog scan/dispatch</td>
@@ -310,7 +314,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 <td><code>?</code></td>
 <td><code>CMD_HELP</code></td>
 <td>Prints current command list.</td>
-<td>Help text includes commands from includes: <code># ? D M U R X G L B N A Q &quot;</code>.</td>
+<td>Help text includes commands from includes: <code># ? S D M U R X G L B N A Q &quot; STR8</code>.</td>
 </tr>
 <tr>
 <td>Memory dump</td>
@@ -319,6 +323,15 @@ HIMON/himon-shared-eq.inc</code></pre>
 <td><code>CMD_D</code>, <code>CMD_PARSE_RANGE_REQUIRED</code>, <code>MON_PRINT_MEM_RANGE</code></td>
 <td>Prints hex rows plus printable ASCII, abortable with Ctrl-C.</td>
 <td>Bare <code>D</code> repeats the previous dump length from the next address.</td>
+</tr>
+<tr>
+<td>Memory search</td>
+<td>`S start end\</td>
+<td>+count bb\</td>
+<td>&#39;TEXT&#39; [...]`</td>
+<td><code>CMD_SEARCH</code>, <code>SEARCH_PARSE_RANGE</code>, <code>SEARCH_PARSE_PATTERN</code>, <code>SEARCH_SCAN_RANGE</code></td>
+<td>Built-in K=$05 HIMON command; searches memory for mixed hex/text byte patterns, skips named <code>$7Fxx</code> I/O slots, reports <code>S NF</code> or <code>S ABORT</code>.</td>
+<td>Token hash is <code>$D60C1322</code>; display text is <code>S: SEARCH FROM RAM TO HASHED HIMON CMD</code>.</td>
 </tr>
 <tr>
 <td>Memory modify</td>
@@ -357,6 +370,13 @@ HIMON/himon-shared-eq.inc</code></pre>
 <td><code>CMD_G</code></td>
 <td>Parses address, saves exec entry, prints go address, jumps indirectly.</td>
 <td>Return reporting only happens if called through command record or loader-go path.</td>
+</tr>
+<tr>
+<td>Enter STR8</td>
+<td><code>STR8</code></td>
+<td><code>CMD_STR8_FNV</code></td>
+<td>Hash-record alias for <code>$F000</code>; jumps into the resident STR8 entry without typing <code>G F000</code>.</td>
+<td>Token hash is <code>$A2AD0E18</code>; display text is <code>STR8: BOOTLOADER</code>. STR8&#39;s separate identity marker remains <code>#5F6A0F7A</code>.</td>
 </tr>
 <tr>
 <td>S-record load to RAM</td>
@@ -450,7 +470,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 </ul>
 <p>but the related command records, help text, BRK hook behavior, and build docs must be omitted or revised together. NMI trap capture may remain without the breakpoint/<code>N</code> stepping subsystem.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_MAP.md</code>. Source modified: <time>2026-05-22T03:21:23Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_MAP.md</code>. Source modified: <time>2026-05-22T05:49:44Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

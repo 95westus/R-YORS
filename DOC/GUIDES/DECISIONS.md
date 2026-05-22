@@ -35,9 +35,10 @@ and debug tools.
   normalization capability, not mandatory ownership of every system policy.
 - `HIMON` is the active monitor/debug/catalog/assembler environment name.
 - `THE` is The Hash Environment: lookup/catalog records, resolver policy,
-  aliases, and typed display. HIMON's current dispatcher still carries FNV-1a
-  history, but the intended compact runtime/catalog hash is tableless CRC16.
-  THE is not the whole runtime and not arbitrary command execution.
+  aliases, and typed display. Public catalog/name identity uses 32-bit FNV-1a;
+  CRC16 is reserved for compact local tables and checks where surrounding record
+  context handles collisions. THE is not the whole runtime and not arbitrary
+  command execution.
 - Himonia-F is historical/archived branch vocabulary that has folded back into
   HIMON.
 - Do not treat Himonia-F and HIMON as permanently separate products.
@@ -306,23 +307,30 @@ start +count    count is the number of bytes
 
 - Working description: HIMON/THE is a ROM-resident hash dictionary for 65C02
   services, with Forth instincts and assembler bones.
-- FNV-1a is implemented history and current transition debt, not the final
-  universal runtime/catalog/symbol hash decision.
-- The intended compact runtime/catalog hash is tableless CRC16. The reason is
-  practical W65C02 time and ROM pressure.
-- Current HIMON command records and routine `[HASH:XXXXXXXX]` comments may
-  still carry 32-bit FNV-1a. Treat those as existing record/comment formats
-  until the CRC16 record shape is written through.
+- FNV-1a 32-bit is the settled public hash for names that cross a boundary:
+  commands, exported routines, public symbols, modules, and cross-bank imports.
+  It solved the real public-identity problem and avoids making 16-bit
+  collisions dominate the design.
+- Tableless CRC16 remains useful, but not as the universal public identity. Use
+  it for compact local catalog/table indexes, short IDs, local assembler scopes,
+  and block/body checks where record length, kind, namespace, checksum/proof
+  text, or fallback comparison can handle collisions.
+- CRC32 is a possible stronger integrity/check value for `RC` blocks or `RB`
+  bodies. It is not the normal command/routine lookup hash.
+- Current HIMON command records and routine `[HASH:XXXXXXXX]` comments carry
+  32-bit FNV-1a, and future public `RR` records should continue to carry the
+  same public identity unless a later explicit multi-algorithm decision replaces
+  it.
 - STR8 V0 does not use FNV or CRC16 for recovery decisions: not for
   verification, image selection, version selection, command dispatch, catalog
   lookup, or restore policy.
-- Future STR8-N/STRAIGHTEN may participate in catalogs and use the compact hash
-  after the V0 image-recovery path is stable. It should not require catalog
-  ownership from systems that provide their own catalog or resolver.
+- Future STR8-N/STRAIGHTEN may participate in catalogs after the V0
+  image-recovery path is stable. It should not require catalog ownership from
+  systems that provide their own catalog or resolver.
 - Do not add per-record hash-algorithm tags unless the project explicitly
   adopts a multi-algorithm catalog.
-- Routine header `[HASH:XXXXXXXX]` values remain 32-bit FNV-1a for existing
-  docs/build tooling. They are not the final runtime hash decision.
+- Routine header `[HASH:XXXXXXXX]` values remain 32-bit FNV-1a for docs/build
+  tooling and public routine identity.
 - Existing `hash0..3` fields store FNV-1a low byte through high byte.
 - Words and longs are little-endian: low byte first.
 - Current HIMON proving record shape is:

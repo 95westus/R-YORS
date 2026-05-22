@@ -10,16 +10,16 @@
   <header class="site-header"><div class="nav-start"><a class="back-link" href="../../index.html" onclick="if (history.length > 1) { history.back(); return false; }">Back</a><a class="brand" href="../../index.html"><img class="brand-logo" src="../../branding/logo-r-yors.svg" alt="R-YORS logo"><span>R-YORS Docs</span></a></div><nav><a href="../../README.html">README</a><a href="../INDEX.html">Guides</a><a href="../../GENERATED/index.html">Generated</a></nav></header>
   <main class="doc-page">
 <h1 id="r-yors-hash-reference">R-YORS Hash Reference</h1>
-<p>Status: this is now a transition reference for the existing FNV-1a work. It documents what current HIMON records and routine comments still contain. It is not the final lookup hash decision.</p>
-<p>The intended compact runtime/catalog hash is tableless CRC16. FNV-1a remains in current HIMON command records and <code>[HASH:XXXXXXXX]</code> routine comments until the CRC16 record shape and doc/build ID path are written through. STR8 V0 does not use either FNV-1a or CRC16 for recovery decisions.</p>
+<p>Status: this is the settled hash-policy reference for the current catalog direction. It also documents the existing FNV-1a record shape that HIMON uses today.</p>
+<p>Public names use 32-bit FNV-1a: commands, exported routines, public symbols, modules, cross-bank imports, and <code>[HASH:XXXXXXXX]</code> routine comments. Tableless CRC16 remains useful for compact local tables, scoped IDs, and checks where the record/block context supplies collision handling. CRC32 is an integrity/check candidate, not the normal lookup identity. STR8 V0 does not use FNV-1a, CRC16, or CRC32 for recovery decisions.</p>
 <p>Terminology follows <a href="../GLOSSARY.html">GLOSSARY.md</a>: FNV-1a is the algorithm; hash32/hash16/hash8 are result widths; signature, control byte, and kind are separate fields; THE is The Hash Environment, not the whole runtime.</p>
 <p>FNV means Fowler/Noll/Vo. The external algorithm reference for the constants, update order, and little-endian persistent storage convention is RFC 9923: &lt;https://www.rfc-editor.org/rfc/rfc9923.html&gt;.</p>
 <pre><code class="language-text">[HASH:XXXXXXXX]  32-bit FNV-1a routine/catalog/symbol hash</code></pre>
-<p>FNV-1a is current implementation, not final policy. It is already used by HIMON command dispatch and routine block comments. The catalog, symbol, command, routine, and fixup direction is moving to a compact CRC16 hash plus typed records and optional proof text.</p>
+<p>FNV-1a is current implementation and the public identity policy. It is already used by HIMON command dispatch and routine block comments. Compact catalog work should reduce marker/header overhead with typed <code>RC/RR/RB/RF/RD/RI</code> records, not by demoting public names to 16-bit identity.</p>
 <p><code>[HASH:XXXXXXXX]</code> is the 8-hex-digit routine header hash written in <code>; ROUTINE:</code> lines:</p>
 <p><code> ; ROUTINE: SOME_ROUTINE  [HASH:12345678] </code></p>
 <p>That value is FNV-1a over the canonical uppercase routine name.</p>
-<h2 id="legacy-fnv-1a-catalog-hash">Legacy FNV-1a Catalog Hash</h2>
+<h2 id="public-fnv-1a-catalog-hash">Public FNV-1a Catalog Hash</h2>
 <p>FNV-1a is:</p>
 <pre><code class="language-text">size:       32 bit
 algorithm:  FNV-1a
@@ -41,13 +41,13 @@ K=$03  executable/callable and confirm before execution; payload is
        DW ENTRY, DW EXTRA</code></pre>
 <p><code>EXTRA</code> is display side information, not an alias and not a parameter pointer. Aliases must be separate records with their own hashes.</p>
 <p>The bit 2 completion idea is parked in <a href="HASH_TRASH.html">HASH_TRASH.md</a>. It is not implemented by current HIMON dispatch.</p>
-<p>A compact future RCAT/RREC table was previously expected to keep FNV-1a and put hash width in control bits. That is now historical design context. The current direction is tableless CRC16 for the compact runtime/catalog hash. See <a href="HASH_MAP.html">HASH_MAP.md</a>.</p>
+<p>A compact future RCAT/RREC table was briefly expected to replace public FNV-1a with tableless CRC16. That is now historical design context. Current policy is: FNV32 for public/exported/cross-bank identity, CRC16 for compact local/scoped uses, and CRC32 only when a stronger record/body integrity check is worth the bytes. See <a href="HASH_MAP.html">HASH_MAP.md</a>.</p>
 <p>Routine block comments may include both fields:</p>
 <pre><code class="language-text">; ROUTINE: SYS_WRITE_CHAR  [HASH:49023C1B]
 ; FNV1A_LE: 1B,3C,02,49</code></pre>
 <p>The first line carries the canonical hash. A following <code>FNV1A_LE</code> line is only an optional storage reminder for catalog records.</p>
 <h2 id="legacy-variable-width-stored-hash-proposal">Legacy Variable-Width Stored Hash Proposal</h2>
-<p>This older proposal kept 32-bit FNV-1a as the canonical name hash while allowing compact tables to store only 1, 2, or 4 bytes of lookup hash. It remains useful for understanding current helper code, but it is no longer the preferred compact runtime/catalog direction.</p>
+<p>This older proposal kept 32-bit FNV-1a as the canonical name hash while allowing compact tables to store only 1, 2, or 4 bytes of lookup hash. It remains useful for understanding current helper code. For future records, prefer full FNV32 at public boundaries and use CRC16/short IDs only inside known local contexts that can handle collisions.</p>
 <p>Derive narrower hashes by folding the 32-bit FNV-1a value:</p>
 <pre><code class="language-text">hash8  = (h32 xor (h32 &gt;&gt; 8) xor (h32 &gt;&gt; 16) xor (h32 &gt;&gt; 24)) &amp; $FF
 hash16 = (h32 xor (h32 &gt;&gt; 16)) &amp; $FFFF
@@ -311,7 +311,7 @@ step:         hash = (hash xor byte) * prime mod 2^32</code></pre>
 </ul>
 <p><code>powershell -NoProfile -ExecutionPolicy Bypass -File tools/gen_routine_hash_comments.ps1 -Src . -FailOnCollision $false</code></p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH.md</code>. Source modified: <time>2026-05-20T06:17:16Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH.md</code>. Source modified: <time>2026-05-22T04:29:56Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

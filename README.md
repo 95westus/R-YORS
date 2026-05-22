@@ -190,16 +190,18 @@ LOCAL/          ignored local source homes, when present
 ## Hash Direction
 
 R-YORS still contains FNV-1a work. Current HIMON command/routine notes may
-still mention FNV-1a records or `[HASH:XXXXXXXX]` IDs. Treat that as
-implementation history and transition debt.
+mention FNV-1a records or `[HASH:XXXXXXXX]` IDs. That is now the settled public
+name hash for commands, exported routines, symbols, and cross-bank imports.
 
-The intended compact runtime/catalog hash is tableless CRC16:
+Compact records can still use smaller checks and local IDs:
 
 ```text
-canonical text -> tableless CRC16 -> typed record/payload
+public name -> FNV-1a32 -> typed record/payload
+local table/scope -> CRC16 or short ID -> verified by record context
+record/body integrity -> optional CRC32/checksum
 ```
 
-STR8 V0 does not use FNV or CRC16 for recovery decisions.
+STR8 V0 does not use FNV, CRC16, or CRC32 for recovery decisions.
 
 ## Lineage
 

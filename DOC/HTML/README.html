@@ -95,17 +95,19 @@ DOC/GENERATED/  source-derived reports
 DOC/HTML/       generated static presentation view
 LOCAL/          ignored local source homes, when present</code></pre>
 <h2 id="hash-direction">Hash Direction</h2>
-<p>R-YORS still contains FNV-1a work. Current HIMON command/routine notes may still mention FNV-1a records or <code>[HASH:XXXXXXXX]</code> IDs. Treat that as implementation history and transition debt.</p>
-<p>The intended compact runtime/catalog hash is tableless CRC16:</p>
-<pre><code class="language-text">canonical text -&gt; tableless CRC16 -&gt; typed record/payload</code></pre>
-<p>STR8 V0 does not use FNV or CRC16 for recovery decisions.</p>
+<p>R-YORS still contains FNV-1a work. Current HIMON command/routine notes may mention FNV-1a records or <code>[HASH:XXXXXXXX]</code> IDs. That is now the settled public name hash for commands, exported routines, symbols, and cross-bank imports.</p>
+<p>Compact records can still use smaller checks and local IDs:</p>
+<pre><code class="language-text">public name -&gt; FNV-1a32 -&gt; typed record/payload
+local table/scope -&gt; CRC16 or short ID -&gt; verified by record context
+record/body integrity -&gt; optional CRC32/checksum</code></pre>
+<p>STR8 V0 does not use FNV, CRC16, or CRC32 for recovery decisions.</p>
 <h2 id="lineage">Lineage</h2>
 <p>R-YORS grows from the BSO2/WDC monitor line into a smaller set of reusable routines, flash-safe recovery, compact-hash monitor/catalog lookup, and eventually onboard assembly/catalog linking.</p>
 <p>The long north star is still true RPG II, shaped from below: stable callable routines, discoverable catalogs, flash-resident programs, fixed entry points, simple text encodings, and a runtime that can explain itself.</p>
 <h2 id="notice">Notice</h2>
 <p>R-YORS is independent and is not affiliated with or endorsed by The Western Design Center, Inc. Product names are used only to identify compatible hardware.</p>
   </main>
-  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-22T03:40:00Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-22T04:31:08Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

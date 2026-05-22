@@ -61,6 +61,30 @@ The book should read in three layers:
 2. The machine: actual HIMON, STR8, FNV-era command records, flash, and catalog behavior.
 3. The questions: what is settled, what is only proved, and what remains open.
 
+## How The Work Moves
+
+The book should not pretend R-YORS knew the answer before the board, code, and
+operator did. The honest rhythm is:
+
+```text
+Want       what the system is trying to become
+Need       what the board, flash, RAM, or operator safety requires
+Answer     the current design call
+Question   what still feels uncertain
+Change     the place where an older answer stops fitting
+Do         the proof, command, loader, transcript, or ROM image
+Question   what the proof exposed
+Keep       the answer that survived contact with the machine
+Do more    the next behavior made possible by the kept answer
+No more    the retired path, boundary, or edict that should not be reopened casually
+```
+
+That motion matters. A chapter may begin with a want, discover a need, answer
+it badly, change its mind, do a smaller proof, keep the part that worked, and
+say no more to the part that became too expensive or unsafe. This is not
+indecision. It is the real build record of a system small enough that every
+byte, bank, vector, and operator prompt can change the answer.
+
 Proof lives in the guide set:
 
 - [PRODUCT_BOUNDARIES.md](../STR8/PRODUCT_BOUNDARIES.md) - R-YORS, STR8, IVI/LEAF,
@@ -104,20 +128,22 @@ Proof and notes:
 - [HREC_JOIN_PROOF.md](../CATALOG/HREC_JOIN_PROOF.md)
 - [DECISIONS.md](../DECISIONS.md)
 
-### Chapter 2: From FNV To CRC16
+### Chapter 2: Hash Identity And Compact Records
 
 Answer:
 
 FNV-1a was the first working runtime/catalog/symbol hash path. It is not treated
-as a secret, security feature, or universal truth. Current HIMON records and
-routine comments still carry FNV-era proof, but the intended compact hash is now
-tableless CRC16 because it better fits W65C02 time and ROM pressure.
+as a secret or security feature, but FNV-1a32 is now the settled public identity
+hash for names that cross boundaries. CRC16 remains a compact local/scoped
+hash/check where record context handles collisions. CRC32 is a possible stronger
+integrity check for blocks or bodies, not ordinary lookup identity.
 
 The chapter should keep the distinction sharp:
 
 ```text
-FNV-1a      current implementation history
-CRC16       intended compact runtime/catalog hash
+FNV-1a32    public command/export/symbol identity
+CRC16       compact local/scoped hash or check
+CRC32       optional stronger block/body integrity check
 signature   record proof or table proof
 kind        record/payload classification
 flags       lifecycle or policy metadata
@@ -125,8 +151,9 @@ flags       lifecycle or policy metadata
 
 Questions:
 
-- Why a tableless CRC16 hash instead of carrying the 32-bit FNV path everywhere?
-- Which FNV fields are current-ROM transition debt?
+- Where can CRC16 safely replace a full public FNV32?
+- Which current `FN(V|$80)` marker bytes are proof/debug overhead rather than
+  final record structure?
 - Why avoid per-record algorithm tags unless multi-algorithm catalogs become real?
 - How does a system avoid treating a guessed hash as authority?
 
@@ -624,6 +651,12 @@ Do not write the book in chapter order. Write from proof outward:
 Each finished chapter should keep this shape:
 
 ```text
+Want
+  What did the system or operator want at this point?
+
+Need
+  What did the hardware, ROM/RAM layout, recovery rule, or human workflow require?
+
 Question
   What problem did this chapter start with?
 
@@ -632,6 +665,9 @@ Answer
 
 Machine
   What code, records, command behavior, or memory layout proves it?
+
+Change of mind
+  What old answer was corrected, narrowed, or retired?
 
 Tradeoff
   What did this answer reject?

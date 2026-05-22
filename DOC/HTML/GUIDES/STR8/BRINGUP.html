@@ -130,12 +130,12 @@ build:   make -C SRC str8
 output:  SRC/BUILD/s19/str8-f000.s19
          SRC/BUILD/s19/str8-ram-3000.s19
          SRC/BUILD/s19/str8-worker-0200.s19</code></pre>
-<p>The current ROM proof links the resident shell at <code>$F000</code>. The worker image links for <code>$0200</code>, is stored in the combined ROM at <code>$FC00</code>, and is copied into the <code>$0200-$05FF</code> STR8 RAM tray before destructive flash work. The RAM proof image is linked at <code>$3000</code>, is launched under HIMON, and reserves <code>$4000-$4FFF</code> as copy-buffer RAM. The current copy worker stages one 4K erase sector at a time through that buffer. The ROM <code>U</code> updater uses <code>$4000-$6FFF</code> to stage HIMON C/D/E sectors before erase/write.</p>
+<p>The current ROM proof links the resident shell at <code>$F000</code>. The worker image links for <code>$0200</code>, is stored in the combined ROM at <code>$FD1E-$FFEF</code>, and is copied into the <code>$0200-$04D1</code> STR8 RAM tray before destructive flash work. The RAM proof image is linked at <code>$3000</code>, is launched under HIMON, and reserves <code>$4000-$4FFF</code> as copy-buffer RAM. The current copy worker stages one 4K erase sector at a time through that buffer. The ROM <code>U</code> updater uses <code>$4000-$6FFF</code> to stage HIMON C/D/E sectors before erase/write.</p>
 <p>RAM proof command <code>B</code> is the destructive backup cascade. Before Bank 0 enrollment it copies <code>2-&gt;1</code> and <code>3-&gt;2</code>. After <code>E</code> enrollment it copies <code>1-&gt;0</code>, <code>2-&gt;1</code>, and <code>3-&gt;2</code>. Each copy stages one 4K sector through <code>$4000-$4FFF</code>, erases the destination sector, writes it, and verifies by read-back compare.</p>
 <p>RAM proof command <code>E</code> clears bit 0 of <code>$FFF0</code> after confirmation. Erased/set means <code>B0 HOLD</code>; cleared means <code>B0 ROT</code>.</p>
 <p>RAM proof commands <code>0</code>, <code>1</code>, and <code>2</code> restore the selected source bank to live bank 3. The normal restore path preserves <code>$C000-$FFFF</code> from bank 3 unless the operator explicitly confirms high flash, then verifies the destination against the staged image.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/BRINGUP.md</code>. Source modified: <time>2026-05-22T03:38:42Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/BRINGUP.md</code>. Source modified: <time>2026-05-22T04:54:15Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

@@ -1,13 +1,15 @@
 # R-YORS Hash Reference
 
-Status: this is now a transition reference for the existing FNV-1a work. It
-documents what current HIMON records and routine comments still contain. It is
-not the final lookup hash decision.
+Status: this is the settled hash-policy reference for the current catalog
+direction. It also documents the existing FNV-1a record shape that HIMON uses
+today.
 
-The intended compact runtime/catalog hash is tableless CRC16. FNV-1a remains in
-current HIMON command records and `[HASH:XXXXXXXX]` routine comments until the
-CRC16 record shape and doc/build ID path are written through. STR8 V0 does not
-use either FNV-1a or CRC16 for recovery decisions.
+Public names use 32-bit FNV-1a: commands, exported routines, public symbols,
+modules, cross-bank imports, and `[HASH:XXXXXXXX]` routine comments. Tableless
+CRC16 remains useful for compact local tables, scoped IDs, and checks where the
+record/block context supplies collision handling. CRC32 is an integrity/check
+candidate, not the normal lookup identity. STR8 V0 does not use FNV-1a, CRC16,
+or CRC32 for recovery decisions.
 
 Terminology follows [GLOSSARY.md](../GLOSSARY.md): FNV-1a is the algorithm;
 hash32/hash16/hash8 are result widths; signature, control byte, and kind are
@@ -21,10 +23,10 @@ update order, and little-endian persistent storage convention is RFC 9923:
 [HASH:XXXXXXXX]  32-bit FNV-1a routine/catalog/symbol hash
 ```
 
-FNV-1a is current implementation, not final policy. It is already used by
-HIMON command dispatch and routine block comments. The catalog, symbol,
-command, routine, and fixup direction is moving to a compact CRC16 hash plus
-typed records and optional proof text.
+FNV-1a is current implementation and the public identity policy. It is already
+used by HIMON command dispatch and routine block comments. Compact catalog
+work should reduce marker/header overhead with typed `RC/RR/RB/RF/RD/RI`
+records, not by demoting public names to 16-bit identity.
 
 `[HASH:XXXXXXXX]` is the 8-hex-digit routine header hash written in `; ROUTINE:`
 lines:
@@ -33,7 +35,7 @@ lines:
 
 That value is FNV-1a over the canonical uppercase routine name.
 
-## Legacy FNV-1a Catalog Hash
+## Public FNV-1a Catalog Hash
 
 FNV-1a is:
 
@@ -80,10 +82,11 @@ Aliases must be separate records with their own hashes.
 The bit 2 completion idea is parked in [HASH_TRASH.md](HASH_TRASH.md). It is not
 implemented by current HIMON dispatch.
 
-A compact future RCAT/RREC table was previously expected to keep FNV-1a and put
-hash width in control bits. That is now historical design context. The current
-direction is tableless CRC16 for the compact runtime/catalog hash. See
-[HASH_MAP.md](HASH_MAP.md).
+A compact future RCAT/RREC table was briefly expected to replace public FNV-1a
+with tableless CRC16. That is now historical design context. Current policy is:
+FNV32 for public/exported/cross-bank identity, CRC16 for compact local/scoped
+uses, and CRC32 only when a stronger record/body integrity check is worth the
+bytes. See [HASH_MAP.md](HASH_MAP.md).
 
 Routine block comments may include both fields:
 
@@ -98,9 +101,10 @@ an optional storage reminder for catalog records.
 ## Legacy Variable-Width Stored Hash Proposal
 
 This older proposal kept 32-bit FNV-1a as the canonical name hash while
-allowing compact tables to store only 1, 2, or 4 bytes of lookup hash. It remains
-useful for understanding current helper code, but it is no longer the preferred
-compact runtime/catalog direction.
+allowing compact tables to store only 1, 2, or 4 bytes of lookup hash. It
+remains useful for understanding current helper code. For future records, prefer
+full FNV32 at public boundaries and use CRC16/short IDs only inside known local
+contexts that can handle collisions.
 
 Derive narrower hashes by folding the 32-bit FNV-1a value:
 

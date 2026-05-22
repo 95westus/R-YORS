@@ -15,8 +15,8 @@
 ;   R  reset through the live bank 3 reset vector
 ;
 ; The RAM proof build performs destructive bank copies directly from RAM. The
-; resident ROM build copies a worker from $FC00 to $0200, then runs destructive
-; copy/erase/write/verify and one-way config writes from RAM.
+; resident ROM build copies a worker from high flash to $0200, then runs
+; destructive copy/erase/write/verify and one-way config writes from RAM.
 ; ----------------------------------------------------------------------------
 
                         MODULE          STR8_APP
@@ -35,7 +35,8 @@
                         ENDIF
 
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
-; 2026-05-17T21:20-05:00        WLP2        Worker storage moves to $FC00 to make room for U/HIMON update.
+; 2026-05-17T21:20-05:00        WLP2        Worker storage formerly moved to $FC00 to make room for U/HIMON update.
+; 2026-05-21T23:55-05:00        WLP2        Worker now packs down from $FFEF so the free hole is contiguous.
 STR8_PROT_START_HI      EQU             $F0
 STR8_PROT_BUF_HI        EQU             $40
 STR8_CFG_FLAGS_ADDR     EQU             $FFF0
@@ -69,8 +70,10 @@ STR8_IVY_VEC_IRQ_LO     EQU             $7EFE
 STR8_IVY_VEC_IRQ_HI     EQU             $7EFF
 STR8_WORKER_RUN         EQU             $0200
 STR8_WORKER_RUN_HI      EQU             $02
-STR8_WORKER_STORE_HI    EQU             $FC
-STR8_WORKER_COPY_PAGES  EQU             $04
+STR8_WORKER_STORE_LO    EQU             $1E
+STR8_WORKER_STORE_HI    EQU             $FD
+STR8_WORKER_COPY_LEN_LO EQU             $D2
+STR8_WORKER_COPY_LEN_HI EQU             $02
 STR8_DELAY_TICKS        EQU             $03
 STR8_DELAY_TICK_A       EQU             $26
 STR8_DELAY_FIRST_A      EQU             $27
@@ -989,15 +992,18 @@ STR8_PRINT_COPY_PAIR:
                         IF              STR8_RAM_PROOF
                         ELSE
 STR8_COPY_WORKER_TO_RAM:
-; 2026-05-17T21:20-05:00        WLP2        Worker source now copies from $FC00.
+; 2026-05-21T23:55-05:00        WLP2        Worker source packs against $FFEF and copies exact length.
+; 2026-05-17T21:20-05:00        WLP2        Worker source formerly copied from $FC00.
 ; 2026-05-07T23:19-05:00        WLP2        Worker copy target moves into STR8's $0200 tray.
-                        STZ             STR8_PTR_LO
+                        LDA             #STR8_WORKER_STORE_LO
+                        STA             STR8_PTR_LO
                         LDA             #STR8_WORKER_STORE_HI
                         STA             STR8_PTR_HI
                         STZ             STR8_COPY_PTR_LO
                         LDA             #STR8_WORKER_RUN_HI
                         STA             STR8_COPY_PTR_HI
-                        LDX             #STR8_WORKER_COPY_PAGES
+                        LDX             #STR8_WORKER_COPY_LEN_HI
+                        BEQ             ?TAIL_START
 ?PAGE:
                         LDY             #$00
 ?BYTE:
@@ -1009,6 +1015,16 @@ STR8_COPY_WORKER_TO_RAM:
                         INC             STR8_COPY_PTR_HI
                         DEX
                         BNE             ?PAGE
+?TAIL_START:
+                        LDY             #$00
+?TAIL:
+                        CPY             #STR8_WORKER_COPY_LEN_LO
+                        BEQ             ?DONE
+                        LDA             (STR8_PTR_LO),Y
+                        STA             (STR8_COPY_PTR_LO),Y
+                        INY
+                        BRA             ?TAIL
+?DONE:
                         RTS
                         ENDIF
 

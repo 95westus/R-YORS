@@ -110,8 +110,8 @@ HIMON_SEARCH_PROOF_S19 := $(S19_DIR)/himon-search-proof-3000.s19
 HIMON_SEARCH_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 HIMON_SEARCH_FLASH_SRC := $(PROOFS_DIR)/himon-search-flash.asm
 HIMON_SEARCH_FLASH_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/himon-search-flash.obj
-HIMON_SEARCH_FLASH_S19 := $(S19_DIR)/himon-search-flash-bba2.s19
-HIMON_SEARCH_FLASH_LINKFLAGS := -g -s -t -cBBA2 -hm19 -j -o
+HIMON_SEARCH_FLASH_S19 := $(S19_DIR)/himon-search-flash-bb80.s19
+HIMON_SEARCH_FLASH_LINKFLAGS := -g -s -t -cBB80 -hm19 -j -o
 HIMON_SEARCH_FOR_HIMON_SRC := $(PROOFS_DIR)/himon-search-for-himon.asm
 HIMON_SEARCH_FOR_HIMON_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/himon-search-for-himon.obj
 HREC_JOIN_PROOF_SRC := $(PROOFS_DIR)/hrec-join-proof.asm
@@ -569,8 +569,8 @@ $(HIMON_SEARCH_PROOF_S19): $(HIMON_SEARCH_PROOF_OBJ) $(ROM_LIB)
 $(HIMON_SEARCH_FLASH_S19): $(HIMON_SEARCH_FLASH_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(HIMON_SEARCH_FLASH_LINKFLAGS) $(HIMON_SEARCH_FLASH_S19) $(HIMON_SEARCH_FLASH_OBJ) -L $(BUILD_DIR)\lib\rom
-	@echo [ps] set S9 start $$BBAE in $(HIMON_SEARCH_FLASH_S19)
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HIMON_SEARCH_FLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903BBAE93'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$BB8C in $(HIMON_SEARCH_FLASH_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HIMON_SEARCH_FLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903BB8CB5'; Set-Content -Path $$p -Value $$lines"
 
 $(HREC_JOIN_PROOF_S19): $(HREC_JOIN_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))

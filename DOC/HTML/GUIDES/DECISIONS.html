@@ -48,7 +48,7 @@ and debug tools.</code></pre>
 <li><code>HIMON</code> is the active monitor/debug/catalog/assembler environment name.</li>
 <li><code>THE</code> is The Hash Environment: lookup/catalog records, resolver policy,</li>
 </ul>
-<p>aliases, and typed display. HIMON&#39;s current dispatcher still carries FNV-1a history, but the intended compact runtime/catalog hash is tableless CRC16. THE is not the whole runtime and not arbitrary command execution.</p>
+<p>aliases, and typed display. Public catalog/name identity uses 32-bit FNV-1a; CRC16 is reserved for compact local tables and checks where surrounding record context handles collisions. THE is not the whole runtime and not arbitrary command execution.</p>
 <ul>
 <li>Himonia-F is historical/archived branch vocabulary that has folded back into</li>
 </ul>
@@ -339,33 +339,37 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>services, with Forth instincts and assembler bones.</p>
 <ul>
-<li>FNV-1a is implemented history and current transition debt, not the final</li>
+<li>FNV-1a 32-bit is the settled public hash for names that cross a boundary:</li>
 </ul>
-<p>universal runtime/catalog/symbol hash decision.</p>
+<p>commands, exported routines, public symbols, modules, and cross-bank imports. It solved the real public-identity problem and avoids making 16-bit collisions dominate the design.</p>
 <ul>
-<li>The intended compact runtime/catalog hash is tableless CRC16. The reason is</li>
+<li>Tableless CRC16 remains useful, but not as the universal public identity. Use</li>
 </ul>
-<p>practical W65C02 time and ROM pressure.</p>
+<p>it for compact local catalog/table indexes, short IDs, local assembler scopes, and block/body checks where record length, kind, namespace, checksum/proof text, or fallback comparison can handle collisions.</p>
 <ul>
-<li>Current HIMON command records and routine <code>[HASH:XXXXXXXX]</code> comments may</li>
+<li>CRC32 is a possible stronger integrity/check value for <code>RC</code> blocks or <code>RB</code></li>
 </ul>
-<p>still carry 32-bit FNV-1a. Treat those as existing record/comment formats until the CRC16 record shape is written through.</p>
+<p>bodies. It is not the normal command/routine lookup hash.</p>
+<ul>
+<li>Current HIMON command records and routine <code>[HASH:XXXXXXXX]</code> comments carry</li>
+</ul>
+<p>32-bit FNV-1a, and future public <code>RR</code> records should continue to carry the same public identity unless a later explicit multi-algorithm decision replaces it.</p>
 <ul>
 <li>STR8 V0 does not use FNV or CRC16 for recovery decisions: not for</li>
 </ul>
 <p>verification, image selection, version selection, command dispatch, catalog lookup, or restore policy.</p>
 <ul>
-<li>Future STR8-N/STRAIGHTEN may participate in catalogs and use the compact hash</li>
+<li>Future STR8-N/STRAIGHTEN may participate in catalogs after the V0</li>
 </ul>
-<p>after the V0 image-recovery path is stable. It should not require catalog ownership from systems that provide their own catalog or resolver.</p>
+<p>image-recovery path is stable. It should not require catalog ownership from systems that provide their own catalog or resolver.</p>
 <ul>
 <li>Do not add per-record hash-algorithm tags unless the project explicitly</li>
 </ul>
 <p>adopts a multi-algorithm catalog.</p>
 <ul>
-<li>Routine header <code>[HASH:XXXXXXXX]</code> values remain 32-bit FNV-1a for existing</li>
+<li>Routine header <code>[HASH:XXXXXXXX]</code> values remain 32-bit FNV-1a for docs/build</li>
 </ul>
-<p>docs/build tooling. They are not the final runtime hash decision.</p>
+<p>tooling and public routine identity.</p>
 <ul>
 <li>Existing <code>hash0..3</code> fields store FNV-1a low byte through high byte.</li>
 <li>Words and longs are little-endian: low byte first.</li>
@@ -622,7 +626,7 @@ DOC/IDEAS.md</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-21T20:57:32Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-22T04:29:40Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

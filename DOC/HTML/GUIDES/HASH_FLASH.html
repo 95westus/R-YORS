@@ -93,9 +93,9 @@ DW EXTRA</code></pre>
                                OSI BASIC, and fig-FORTH, and FNV-1a is no
                                longer documented as the final catalog spine.</code></pre>
 <p>The operator-facing truth changed again: <code>U</code> / <code>UPDATE HIMON</code> is now proven not only with HIMON U1-&gt;U2, but as the fixed <code>$C000-$EFFF</code> gate that can place bootable OSI BASIC and fig-FORTH payloads where HIMON normally lives. STR8 can then use its backup/restore path to return to known-good HIMON.</p>
-<p>The hash-policy truth also changed. Existing HIMON command records and the quoted helper still carry FNV-era behavior, but that is implementation history and transition debt. The intended compact runtime/catalog lookup hash is now a tableless CRC16 shape, chosen because W65C02 time and ROM pressure beat the first FNV-1a design.</p>
-<p>Do not write new public docs as though 32-bit FNV-1a is the settled universal spine. Say &quot;current FNV-era records&quot; when describing the present ROM, and say &quot;tableless CRC16 compact hash&quot; when describing the intended catalog direction.</p>
-<p>See <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a> for the three-image operator path and <a href="DECISIONS.html">DECISIONS.md</a>, <a href="HASH/HASH.html">HASH.md</a>, and <a href="HASH/HASH_MAP.html">HASH_MAP.md</a> for the catalog-hash pivot.</p>
+<p>The hash-policy truth changed again after the CRC16 pivot. Existing HIMON command records and the quoted helper carry FNV-era behavior, and FNV-1a32 is now the settled public name hash for commands, exported routines, symbols, and cross-bank imports. CRC16 remains useful for compact local/scoped tables and checks. CRC32 is an integrity/check candidate, not normal lookup identity.</p>
+<p>Do not write new public docs as though tableless CRC16 replaces every public name. Say &quot;FNV32 public identity&quot; for exported/cross-boundary names and &quot;CRC16 compact local/check&quot; for bounded record contexts.</p>
+<p>See <a href="OPERATORS_GUIDE.html">OPERATORS_GUIDE.md</a> for the three-image operator path and <a href="DECISIONS.html">DECISIONS.md</a>, <a href="HASH/HASH.html">HASH.md</a>, and <a href="HASH/HASH_MAP.html">HASH_MAP.md</a> for the settled hash split.</p>
 <h2 id="rehash-str8-update-himon-hardware-proof">REHASH: STR8 UPDATE HIMON Hardware Proof</h2>
 <pre><code class="language-text">2026
          05
@@ -302,7 +302,7 @@ RREC UTL_HEX_ASCII_YX_TO_BYTE
 <p>The hash sigs are now emitted immediately before their routine entries: <code>PIN_FTDI_INIT_FNV</code>, <code>PIN_FTDI_POLL_RX_READY_FNV</code>, <code>PIN_FTDI_READ_BYTE_NONBLOCK_FNV</code>, <code>PIN_FTDI_WRITE_BYTE_NONBLOCK_FNV</code>, <code>PIN_FTDI_CHECK_ENUMERATED_FNV</code>, <code>BIO_FTDI_INIT_FNV</code>, <code>BIO_FTDI_CHECK_ENUMERATED_FNV</code>, <code>BIO_FTDI_FLUSH_RX_FNV</code>, <code>BIO_FTDI_GET_CTRL_C_FNV</code>, <code>BIO_FTDI_READ_BYTE_BLOCK_FNV</code>, <code>BIO_FTDI_WRITE_BYTE_BLOCK_FNV</code>, <code>UTL_HEX_NIBBLE_TO_ASCII_FNV</code>, <code>UTL_HEX_BYTE_TO_ASCII_YX_FNV</code>, <code>UTL_HEX_ASCII_TO_NIBBLE_FNV</code>, and <code>UTL_HEX_ASCII_YX_TO_BYTE_FNV</code>. The fuller RREC records are still conceptual until RCAT/RREC bytes and lookup policy exist. Their job now is to keep the promoted routines from being just loose labels in ROM. Future RAM workers should be able to ask for these contracts by record identity instead of carrying private copies of the same receive/transmit loops.</p>
 <p>Longer term, the search order should be selectable at runtime or carried as part of the worker/session policy. The important V0 rule is simple: resolve predictably, search only named sources, and fail explicitly when no helper is found.</p>
 <p>Resolving a helper in ROM means &quot;call it as opaque ROM code.&quot; It does not make that ROM address debug-patchable. The RAM-only debug edict still applies.</p>
-<p>FNV-1a solved immediate command and routine lookup, but it is now transition debt rather than a permanent promise. Its math is expensive for small W65C02 code. RREC should leave room for a cheaper resolver hash or routine-id scheme.</p>
+<p>FNV-1a solved immediate command and routine lookup, and FNV-1a32 is now the settled public identity for names that cross boundaries. Its math is still expensive for tiny W65C02 paths, so <code>RR</code>/<code>RC</code> internals should leave room for CRC16, short IDs, or indexes where the enclosing record context handles collisions.</p>
 <p>Candidates under investigation:</p>
 <pre><code class="language-text">eorrot
 8-8-16 hash partitioning
@@ -377,7 +377,7 @@ S addr end|+count &#39;TEXT</code></pre>
 <pre><code class="language-text">S 0 FFFF `HIMON</code></pre>
 <p>That would mean <code>H I M O (N|$80)</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-20T04:17:38Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH_FLASH.md</code>. Source modified: <time>2026-05-22T04:33:03Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

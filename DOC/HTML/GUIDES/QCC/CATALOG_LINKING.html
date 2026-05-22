@@ -15,6 +15,23 @@
 but the first catalog-aware ASM/body wants to use those joins
 so the first thing cannot require the thing it is proving</code></pre>
 <p>That is the chicken-and-egg problem. It is real, and the answer is a seed layer, not pretending the full catalog already exists.</p>
+<h2 id="q-what-minimum-metadata-makes-flash-banks-usable-as-storage">Q: What minimum metadata makes flash banks usable as storage?</h2>
+<p>Comment: A bank becomes useful storage when its records say what they provide, what they depend on, and how their bytes can be placed safely. Without that, the bank is only a byte pile: searchable, dumpable, maybe copyable, but not a trustworthy routine shelf.</p>
+<p>The small record set we keep circling is:</p>
+<pre><code class="language-text">provides       public hash/name/kind/entry exported by this record
+depends        required hashes/contracts before this body can run
+fixups         patch sites, widths, modes, and targets
+payload length exact body size, not &quot;until the next thing maybe&quot;
+link address   address the body was assembled for
+load address   address chosen by loader, if different
+checksum       body/record check before trusting the bytes</code></pre>
+<p>That is still not a VM. It is a tiny loader/linker contract. The storage bank can hold <code>RR/RB/RF/RD</code> pieces; HIMON or a future tool can copy the body to RAM, resolve dependencies, apply fixups, and then run native W65C02S code.</p>
+<p>The bootstrap remains seed-first:</p>
+<pre><code class="language-text">build/map truth emits first provides/depends/fixups
+HIMON scans those records
+S proves join/load/use behavior
+later ASM learns to emit the same record facts</code></pre>
+<p>Concern: Do not infer dependency closure from names alone. <code>SYS_</code>, <code>BIO_</code>, and <code>PIN_</code> are useful human layers, but storage records need declared imports and exports. The resolver should know why a body can run, not merely hope because a hash was found somewhere in a bank.</p>
 <h2 id="plain-english-models">Plain-English Models</h2>
 <p>These are deliberately informal. They are here because the catalog-linking idea is easy to over-formalize before the first proof is boring.</p>
 <h3 id="if-you-are-12">If You Are 12</h3>
@@ -143,7 +160,7 @@ S uses joined resident support instead of private helper payload
 payload baggage is measurably removed or named</code></pre>
 <p>Until then, this remains QCC. <code>LIFE_RCAT_MEMBER.md</code> can keep LIFE-specific member details; this page keeps the general bootstrap rule.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/CATALOG_LINKING.md</code>. Source modified: <time>2026-05-20T03:52:12Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/CATALOG_LINKING.md</code>. Source modified: <time>2026-05-22T04:40:38Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>
