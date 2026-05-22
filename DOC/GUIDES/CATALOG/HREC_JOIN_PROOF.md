@@ -8,7 +8,7 @@ at `$3000`, while the HREC join proof loads at `$4000`.
 
 ```text
 make -C SRC hrec-join-proof
-source: SRC/TEST/apps/hrec-join-proof.asm
+source: SRC/PROOFS/hrec-join-proof.asm
 S19:    SRC/BUILD/s19/hrec-join-proof-4000.s19
 map:    SRC/BUILD/map/hrec-join-proof-4000.map
 start:  $4000

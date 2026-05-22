@@ -49,6 +49,17 @@ B88F B880: ...
 - The command-record scanner starts at `$8000`. A flash FNV record for `S` below
   `$C000` can own the search command before the integrated HIMON search body is
   folded in.
+- The active search names are deliberately separate:
+
+```text
+himon-search-static     standalone RAM proof with statically linked helpers
+himon-search-proof      RAM proof using runtime-discovered resident helpers
+himon-search-flash      low-flash K=$05 command record for L F delivery
+himon-search-for-himon  native HIMON port scaffold and checklist
+```
+
+`himon-search-static-proof` remains as a legacy build alias, but the shorter
+`himon-search-static` name is the one to use in new notes.
 
 ## V0 Behavior
 
@@ -183,13 +194,15 @@ Phase 1 has two RAM artifacts:
 
 ```text
 static-linked first proof:
-SRC/TEST/apps/himon-search-static-proof.asm
+target: himon-search-static
+SRC/PROOFS/himon-search-static-proof.asm
 SRC/BUILD/s19/himon-search-static-proof-3000.s19
 SRC/BUILD/map/himon-search-static-proof-3000.map
 link address: $3000
 
 hash-resolved follow-up proof:
-SRC/TEST/apps/himon-search-proof.asm
+target: himon-search-proof
+SRC/PROOFS/himon-search-proof.asm
 SRC/BUILD/s19/himon-search-proof-3000.s19
 SRC/BUILD/map/himon-search-proof-3000.map
 link address: $3000
@@ -198,8 +211,8 @@ link address: $3000
 The first pass is intentionally static-linked:
 
 ```text
-make -C SRC himon-search-static-proof
-source: SRC/TEST/apps/himon-search-static-proof.asm
+make -C SRC himon-search-static
+source: SRC/PROOFS/himon-search-static-proof.asm
 S19:    SRC/BUILD/s19/himon-search-static-proof-3000.s19
 map:    SRC/BUILD/map/himon-search-static-proof-3000.map
 start:  $3000
@@ -402,7 +415,7 @@ S 34AF +20 'HI' 4D 'ON'
 First RAM standalone checklist:
 
 ```text
-build himon-search-static-proof
+build himon-search-static
 load and enter at $3000
 prove the S> prompt appears
 prove at least one hex-byte pattern search
@@ -420,7 +433,7 @@ proof:
 
 ```text
 make -C SRC himon-search-proof
-source: SRC/TEST/apps/himon-search-proof.asm
+source: SRC/PROOFS/himon-search-proof.asm
 S19:    SRC/BUILD/s19/himon-search-proof-3000.s19
 map:    SRC/BUILD/map/himon-search-proof-3000.map
 start:  $3000
@@ -443,7 +456,7 @@ it as a normal dependency path:
 
 ```text
 make -C SRC hrec-join-proof
-source: SRC/TEST/apps/hrec-join-proof.asm
+source: SRC/PROOFS/hrec-join-proof.asm
 S19:    SRC/BUILD/s19/hrec-join-proof-4000.s19
 map:    SRC/BUILD/map/hrec-join-proof-4000.map
 start:  $4000
@@ -1009,35 +1022,45 @@ Measured from the current source files and linker maps:
 
 | Build | Source lines | CODE | DATA | Total | Purpose |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `himon-search-static-proof` | 676 | `$04AF` / 1199 | `$0071` / 113 | `$0520` / 1312 | RAM standalone, statically linked helpers |
+| `himon-search-static` | 676 | `$04B0` / 1200 | `$0071` / 113 | `$0521` / 1313 | RAM standalone, statically linked helpers |
 | `himon-search-proof` | 913 | `$04FF` / 1279 | `$008A` / 138 | `$0589` / 1417 | RAM standalone, runtime hash-resolved helpers |
-| `himon-search-flash` | 746 | `$03F6` / 1014 | `$005E` / 94 | `$0454` / 1108 | Low-flash K=`$05` command record |
+| `himon-search-flash` | 772 | `$03F6` / 1014 | `$005E` / 94 | `$0454` / 1108 | Low-flash K=`$05` command record |
+| `himon-search-for-himon` | 170 | `$0000` / 0 | `$0000` / 0 | `$0000` / 0 | Native HIMON port scaffold; no loadable image |
+
+The static artifact is still named `himon-search-static-proof-3000.s19` on
+disk for history. The build target now has the shorter `himon-search-static`
+name, with `himon-search-static-proof` kept as an alias.
 
 Source diff counts:
 
-| Compare | Diff stat | Hunks | Source line delta | CODE delta | DATA delta | Total delta |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| static proof -> hash proof | +251 / -14 lines | 15 | +237 | +`$0050` / +80 | +`$0019` / +25 | +`$0069` / +105 |
-| static proof -> flash command | +228 / -158 lines | 29 | +70 | -`$00B9` / -185 | -`$0013` / -19 | -`$00CC` / -204 |
-| flash command -> hash proof | +205 / -38 lines | 32 | +167 | +`$0109` / +265 | +`$002C` / +44 | +`$0135` / +309 |
+| Compare | Diff stat | Hunks | Source line delta | Active line delta | CODE delta | DATA delta | Total delta |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| static proof -> hash proof | +251 / -14 lines | 15 | +237 | +221 | +`$004F` / +79 | +`$0019` / +25 | +`$0068` / +104 |
+| static proof -> flash command | +254 / -158 lines | 29 | +96 | +63 | -`$00BA` / -186 | -`$0013` / -19 | -`$00CD` / -205 |
+| flash command -> hash proof | +205 / -64 lines | 32 | +141 | +158 | +`$0109` / +265 | +`$002C` / +44 | +`$0135` / +309 |
+| flash command -> for-HIMON scaffold | +156 / -758 lines | 10 | -602 | -654 | no image | no image | no image |
 
 Assembly complexity counters are simple static counts, not a full cyclomatic
 analysis. They are useful here because the files are W65C02S assembly and the
-main question is how much machinery each proof carries.
+main question is how much machinery each proof carries. `Map symbols` counts
+CODE+DATA symbols from the linker map for linked artifacts; the for-HIMON
+scaffold assembles to an empty object and has no map symbols.
 
-| Build | Nonblank | Code/data lines | Labels | JSR | JMP | Branches | EQU | Data dirs |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| static proof | 618 | 594 | 94 | 73 | 12 | 97 | 23 | 8 |
-| hash proof | 841 | 815 | 125 | 88 | 12 | 127 | 47 | 14 |
-| flash command | 684 | 657 | 104 | 68 | 11 | 100 | 42 | 12 |
+| Build | Nonblank | Comments | Active lines | Map symbols | JSR | JMP | Branches | EQU | Data dirs |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| static proof | 618 | 24 | 594 | 107 | 73 | 12 | 97 | 23 | 9 |
+| hash proof | 841 | 26 | 815 | 125 | 88 | 12 | 127 | 47 | 15 |
+| flash command | 710 | 53 | 657 | 104 | 68 | 11 | 100 | 42 | 13 |
+| for-HIMON scaffold | 160 | 157 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
 
 Complexity deltas:
 
-| Compare | Code/data lines | Labels | JSR | JMP | Branches | EQU |
+| Compare | Active lines | Map symbols | JSR | JMP | Branches | EQU |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| static proof -> hash proof | +221 | +31 | +15 | 0 | +30 | +24 |
-| static proof -> flash command | +63 | +10 | -5 | -1 | +3 | +19 |
+| static proof -> hash proof | +221 | +18 | +15 | 0 | +30 | +24 |
+| static proof -> flash command | +63 | -3 | -5 | -1 | +3 | +19 |
 | flash command -> hash proof | +158 | +21 | +20 | +1 | +27 | +5 |
+| flash command -> for-HIMON scaffold | -654 | -104 | -68 | -11 | -100 | -42 |
 
 The comparison proves the promotion ladder:
 
@@ -1086,6 +1109,221 @@ The important command-line rule stays the same. `CMD_SEARCH` should not trust
 `$FE/$FF` on entry because display/confirm printing may use that pointer. It
 should copy `CMDP_START` from `$FA/$FB`, advance past the `S` token, and parse
 the argument tail from there.
+
+### Native HIMON Port Blueprint
+
+Use `SRC/PROOFS/himon-search-flash.asm` as the donor file and
+`SRC/PROOFS/himon-search-for-himon.asm` as the code-side checklist, but do
+not paste either one blindly. The built-in version should keep the search core
+as small W65C02S routines-of-routines and delete the flash-loader machinery
+that only exists because the command currently lives outside HIMON.
+
+Native record:
+
+```asm
+CMD_SEARCH_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$22,$13,$0C,$D6,CMD_HASH_KIND_EXEC_TEXT
+                        DW              CMD_SEARCH
+                        DW              MSG_SEARCH_EXTRA
+```
+
+Native command entry:
+
+```asm
+CMD_SEARCH:
+                        LDA             CMDP_START_LO
+                        STA             SEARCH_LINE_LO
+                        LDA             CMDP_START_HI
+                        STA             SEARCH_LINE_HI
+                        JSR             SEARCH_SKIP_SPACES
+                        JSR             SEARCH_PEEK
+                        BEQ             CMD_SEARCH_USAGE
+                        JSR             SEARCH_ADV_LINE       ; skip S token
+                        JSR             SEARCH_PARSE_RANGE
+                        BCC             CMD_SEARCH_USAGE
+                        JSR             SEARCH_PARSE_PATTERN
+                        BCC             CMD_SEARCH_USAGE
+                        JMP             SEARCH_SCAN_RANGE
+```
+
+The entry shape intentionally mirrors the flash command. It preserves the
+tested parser/scanner flow and avoids depending on `$FE/$FF`, which display and
+hash printing may have used before dispatch.
+
+Keep these routines from the flash donor, with only label-prefix and helper-call
+changes:
+
+```text
+SEARCH_PARSE_RANGE       range parser, including +count and page-local end
+SEARCH_PARSE_PATTERN     hex bytes and apostrophe text atoms
+SEARCH_APPEND_A          fixed pattern-buffer append
+SEARCH_PARSE_HEX_WORD    four-hex-digit parser
+SEARCH_SKIP_SPACES
+SEARCH_PEEK
+SEARCH_ADV_LINE
+SEARCH_SCAN_RANGE        main scan loop
+SEARCH_SCAN_GT_END
+SEARCH_MATCH_GT_END
+SEARCH_MATCH_AT
+SEARCH_PRINT_HIT
+SEARCH_PRINT_ROW_ADDR
+SEARCH_PRINT_ROW_BYTES
+```
+
+Delete these flash-only routines and data:
+
+```text
+SEARCH_FNV
+START / START_HAVE_WRITE / START_IMPORTS_OK names, after renaming to CMD_SEARCH
+SEARCH_RESOLVE_WRITE
+SEARCH_RESOLVE_IMPORTS
+SEARCH_RESOLVE_CTRL_C
+SEARCH_RESOLVE_HEX_IN
+SEARCH_FIND_HASH_XY
+SEARCH_FIND_* scanner helpers
+SEARCH_BIO_WRITE_BYTE_BLOCK trampoline
+SEARCH_BIO_GET_CTRL_C trampoline
+SEARCH_UTL_HEX_ASCII_TO_NIBBLE trampoline
+SEARCH_SYS_PRINT_IO_SLOT_SKIP trampoline
+HASH_BIO_WRITE_BYTE_BLOCK
+HASH_BIO_GET_CTRL_C
+HASH_UTL_HEX_ASCII_TO_NIBBLE
+HASH_SYS_PRINT_IO_SLOT_SKIP
+SEARCH_EXTRA, after replacing with MSG_SEARCH_EXTRA
+```
+
+Direct native helper calls:
+
+```text
+flash helper name                  native HIMON call
+-----------------                  -----------------
+SEARCH_BIO_WRITE_BYTE_BLOCK        BIO_FTDI_WRITE_BYTE_BLOCK
+SEARCH_BIO_GET_CTRL_C              HIM_CHECK_CTRL_C
+SEARCH_UTL_HEX_ASCII_TO_NIBBLE     CMD_HEX_ASCII_TO_NIBBLE
+SEARCH_SYS_PRINT_IO_SLOT_SKIP      SYS_PRINT_IO_SLOT_SKIP
+SEARCH_WRITE_HEX_BYTE              SYS_WRITE_HEX_BYTE
+SEARCH_WRITE_CRLF                  SYS_WRITE_CRLF
+SEARCH_PRINT_LINE                  HIM_WRITE_HBSTRING + SYS_WRITE_CRLF
+```
+
+Message conversion:
+
+```asm
+MSG_SEARCH_USAGE:       DB "S START END|+COUNT BB|'TEXT' [...], ? HELP, Q QUI",('T'+$80)
+MSG_SEARCH_IMPORT:      ; delete in native; there are no runtime imports
+MSG_SEARCH_NF:          DB "S N",('F'+$80)
+MSG_SEARCH_ABORT:       DB "S ABOR",('T'+$80)
+MSG_SEARCH_EXTRA:       DB "S(earch",(')'+$80)
+```
+
+The native version should not keep zero-terminated string printing just for
+search. Use HIMON high-bit strings so the command can reuse
+`HIM_WRITE_HBSTRING` and delete `SEARCH_WRITE_CSTRING`.
+
+Proposed native scratch map:
+
+```text
+$B4 SEARCH_LINE_LO
+$B5 SEARCH_LINE_HI
+$B6 SEARCH_WORD_LO
+$B7 SEARCH_WORD_HI
+$B8 SEARCH_START_LO
+$B9 SEARCH_START_HI
+$BA SEARCH_END_LO
+$BB SEARCH_END_HI
+$BC SEARCH_SCAN_LO
+$BD SEARCH_SCAN_HI
+$BE SEARCH_MATCH_LO
+$BF SEARCH_MATCH_HI
+$C0 SEARCH_ROW_LO
+$C1 SEARCH_ROW_HI
+$C2 SEARCH_TMP
+$C3 SEARCH_DIGITS
+$C4 SEARCH_PAT_LEN
+$C5 SEARCH_COUNT
+$C6 SEARCH_HIT_FLAG
+$C7-$CA spare/reserved
+```
+
+That keeps the hot pointers in zero page without stealing the `$00-$AF`
+user/free region. It uses the reserved R-YORS/HIMON/THE/ASM expansion lane
+`$B0-$CA`; leave `$B0-$B3` alone because current hash display/filter code uses
+it. The pattern buffer can remain at `$7900` for the first native pass so the
+search core stays unchanged. The known side effect remains: whole-memory scans
+can find the active pattern bytes at `$7900`.
+
+Do not build a runtime memory allocator for this native pass. HIMON commands
+are single-owner, foreground routines, and their scratch bytes are volatile
+while the command is running. The right mechanism is a static workspace ledger:
+reserve named zero-page bytes in the source, document who owns them, and keep
+the contracts clear about which helper calls may clobber `$CD-$FF`. In that
+sense the assembler/linker and memory map are the allocator.
+
+If later runtime-discovered routines need scratch space, make that an explicit
+record/header contract or a linker/loader fixup concern. Do not let arbitrary
+loaded code ask HIMON for zero-page bytes at runtime until there is a real need,
+because such an allocator would need lifetime rules, failure paths, and
+reentrancy decisions that search does not need.
+
+Native source placement in `himon.asm`:
+
+```text
+command records:
+    put CMD_SEARCH_FNV near the other command FNV records, after the quote/D
+    area is fine
+
+command body:
+    put CMD_SEARCH and SEARCH_* routines near CMD_D/MON_PRINT_MEM_RANGE, because
+    search shares the same display-row and I/O-skip mental model
+
+messages:
+    put MSG_SEARCH_* with the other HIMON messages
+```
+
+Hash-scan order matters. HIMON scans records from `$8000` upward. If the
+low-flash `S` record at `$BBA2` is still programmed, it will win before a native
+`S` record inside HIMON at `$C000+`. Native test boards must either erase/avoid
+the low-flash search record or boot a bank without that flash-shadow member.
+
+Size-biased native rewrite rules:
+
+- Keep the parse/scan/match/hit routines split. They are already small leaves
+  and make later bugs easier to isolate.
+- Delete the import resolver before doing any size comparisons; its job ends
+  when search is native.
+- Prefer direct `JMP` tails to `JSR`/`RTS` pairs when the caller is done.
+- Keep `STZ`, `BRA`, zero-page `(zp),Y`, and one-byte flags from the flash
+  proof.
+- Replace local hex and CRLF writers with `SYS_WRITE_HEX_BYTE` and
+  `SYS_WRITE_CRLF`; do not carry duplicate output helpers inside HIMON.
+- Do not introduce a generalized scanner framework for this pass. The goal is
+  the proven search core inside HIMON, not a new abstraction layer.
+
+Native test sequence:
+
+```text
+make -C SRC himon
+install/run the new HIMON image
+ensure $BBA2 flash-shadow S is absent, erased, or in a different bank
+
+># S
+    expected: D60C1322 ENTRY=<native> K=05  S(earch)
+
+>S 7F06 +27 00
+    expected: 7F00/7F20 named IO SKIP rows, then S NF
+
+>S 0 FFFF 'HIMON'
+    expected: RAM/current-line hits, named IO SKIP rows, ROM hits
+
+>S 3000 +100 'NOTTHERE'
+    expected: S NF, using a range that excludes $7900 pattern storage
+
+>D 7EF0 800F
+    expected: D still prints the same named IO SKIP rows
+```
+
+Only after this native sequence is boring should `himon-search-flash.asm` be
+marked as historical/proof-delivery code instead of the active command owner.
 
 ### Flash-Shadow Linking Caveat
 
@@ -1150,6 +1388,9 @@ When the RAM and flash-shadow behavior are both boring, fold the command into
 HIMON:
 
 - Move the search implementation into the HIMON source tree.
+- Use `SRC/PROOFS/himon-search-for-himon.asm` as the checklist for the
+  native record, entry shape, helper-call replacements, scratch bytes, and
+  first native board test.
 - Done: remove the resident internal `S` step binding so search can own the
   `S` hash.
 - Done: make `CMD_N` own the step path directly instead of jumping through

@@ -111,6 +111,15 @@ $7EED-$7EEF   IVI vector-table signature bytes, ASCII &quot;IVY&quot;
 $7EF0-$7EF7   NMI context capture
 $7EF8-$7EFF   RAM vectors
 $7F00-$7FFF   I/O window</code></pre>
+<p>The <code>$7F00-$7FFF</code> I/O window is decoded as eight <code>$20</code>-byte slots on the current board. HIMON <code>D</code> and flash-resident <code>S</code> treat the whole page as side-effectful I/O: they print slot labels and skip the addresses instead of reading device registers.</p>
+<pre><code class="language-text">$7F00-$7F1F   CS0 / expansion or unused
+$7F20-$7F3F   CS1 / expansion or unused
+$7F40-$7F5F   CS2 / expansion or unused
+$7F60-$7F7F   CS3 / expansion or unused
+$7F80-$7F9F   ACIA
+$7FA0-$7FBF   PIA
+$7FC0-$7FDF   VIA
+$7FE0-$7FFF   FTDI VIA</code></pre>
 <p>During destructive STR8 <code>B</code>, <code>0</code>, <code>1</code>, and <code>2</code> operations, STR8 temporarily clobbers <code>$0200-$05FF</code> with the copied RAM worker and <code>$4000-$4FFF</code> with the 4K sector staging buffer. During <code>U</code>, STR8 also uses <code>$5000-$6FFF</code> so it can stage all three HIMON sectors before the first erase. Normal HIMON/user code should treat those ranges as volatile while STR8 is performing flash work.</p>
 <p>STR8 also uses fixed low-RAM bytes <code>$0A00-$0A16</code> for bank/sector copy state, failure address reporting, startup flags, update state, and the <code>M</code> command&#39;s four bank map mask bytes. The <code>M</code> command runs the RAM worker from <code>$0200</code>, stores one status mask byte per bank at <code>$0A09-$0A0C</code>, restores bank 3, then prints the map from resident STR8.</p>
 <p>Current high-RAM vectors:</p>
@@ -184,9 +193,10 @@ $CB-$CC   CRC16 no-table state, low/high; grows down from the high end
 $CD-$EF   shared low-level service scratch, 35 bytes; volatile across monitor/SYS/BIO calls
 $F0-$FF   HIMON command/parser scratch, 16 bytes; volatile across monitor commands</code></pre>
 <p>User programs can use <code>$00-$AF</code> while running. <code>$B0-$FF</code> is reserved or volatile across monitor/fixed-entry services unless the called routine contract says otherwise. That leaves 80 bytes reserved-or-volatile above the user ZP line. The current live HIMON service/parser scratch is <code>$CD-$FF</code>; <code>$CB-$CC</code> is held for CRC16 state, and <code>$B0-$CA</code> is being held back for future pointer lanes and addressing-mode helpers.</p>
+<p>There is no runtime zero-page allocator in HIMON. For native monitor code, allocation is static: add named <code>EQU</code> entries, keep them in this map, and treat the reserved bytes as volatile according to the routine contract. If future runtime-loaded records need workspace, describe that workspace in the record or resolve it during load/link. Do not add a heap-style allocator just to hand out scratch bytes for one foreground command.</p>
 <h2 id="ram-load-build-note">RAM-Load Build Note</h2>
 <p>The non-ROM <code>himon</code> map is useful for development, but it is not the authoritative flash image map. The current ROM memory map should be taken from:</p>
-<pre><code class="language-text">SRC/BUILD/map/himon-rom.map
+<pre><code class="language-text">SRC/BUILD/map/himon-rom-c000.map
 HIMON/himon.asm
 HIMON/himon-shared-eq.inc</code></pre>
 <h2 id="str8-direction">STR8 Direction</h2>
@@ -206,17 +216,23 @@ $FFFA-$FFFF  W65C02 hardware vector block</code></pre>
 <p>This split is the current combined STR8/HIMON ROM layout.</p>
 <h2 id="future-partitioned-bank-planning">Future Partitioned Bank Planning</h2>
 <p>The current implementation still uses whole 32K bank images for backup and restore. A near-term planning direction is to treat banks 0 and 1 together as a 64K managed backup arena:</p>
-<pre><code class="language-text">banks 0+1  five 12K backup slots, 60K total
-banks 0+1  one 4K metadata sector for names, labels, origins, checks, roles
-bank 2     SYS/USR bank
-bank 3     default boot bank</code></pre>
+<pre><code class="language-text">bank 0 $8000-$8FFF   metadata/catalog sector
+bank 0 $9000-$FFFF   payload slots 0-6
+bank 1 $8000-$EFFF   payload slots 7-13
+bank 1 $F000-$FFFF   reserved STR8_TOP_SAFE payload slot
+bank 2               SYS/USR and rcat/hrec/rrec bank
+bank 3               default boot bank</code></pre>
+<p>The bank 0/1 arena is 64K total. With the metadata sector and the reserved STR8 top-sector rescue slot held out, 56K remains for ordinary managed backup payloads. If STR8 self-update is not in play yet, the reserved slot may still be erased, but the allocator should treat it as held back once top-sector update work begins.</p>
 <p>The live bank 3 budget stays:</p>
 <pre><code class="language-text">$8000-$BFFF   16K user-available space
 $C000-$EFFF   12K default payload gate, currently HIMON-shaped
 $F000-$FFFF    4K STR8 recovery/top-sector region</code></pre>
 <p>This planning map is not yet a writer contract. The first code version needs exact 4K-sector slot boundaries and metadata commit rules before it can erase, write, or restore from those sections.</p>
+<p>Payload slots should remain raw sector bytes. Metadata such as labels, source range, signatures, checks, and commit state belongs in the catalog sector. The fixed external recovery address pair for the first <code>STR8_TOP_SAFE</code> plan is:</p>
+<pre><code class="language-text">source backup  bank 1 CPU $F000-$FFFF = PHY $0F000-$0FFFF
+active target  bank 3 CPU $F000-$FFFF = PHY $1F000-$1FFFF</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY/MEMORY_MAP.md</code>. Source modified: <time>2026-05-19T00:55:17Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/MEMORY/MEMORY_MAP.md</code>. Source modified: <time>2026-05-22T03:29:34Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

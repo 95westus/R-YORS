@@ -16,12 +16,10 @@ function Get-RelPath {
 
 function Get-DocPath {
     param([string]$Path)
-    if ($Path -match '^TEST/apps/himon/(.+)$') { return "HIMON/$($matches[1])" }
-    if ($Path -match '^TEST/apps/str8/(.+)$') { return "STR8/$($matches[1])" }
-    if ($Path -eq 'TEST/ftdi-backend-debug.asm') { return 'ROM/ftdi-backend-debug.asm' }
-    if ($Path -match '^TEST/ftdi/(.+)$') { return "ROM/ftdi/$($matches[1])" }
-    if ($Path -match '^TEST/dev/(.+)$') { return "ROM/dev/$($matches[1])" }
-    if ($Path -match '^TEST/util/(.+)$') { return "ROM/util/$($matches[1])" }
+    if ($Path -eq 'TESTS/ftdi-backend-debug.asm') { return 'ROM/ftdi-backend-debug.asm' }
+    if ($Path -match '^LIB/ftdi/(.+)$') { return "ROM/ftdi/$($matches[1])" }
+    if ($Path -match '^LIB/dev/(.+)$') { return "ROM/dev/$($matches[1])" }
+    if ($Path -match '^LIB/util/(.+)$') { return "ROM/util/$($matches[1])" }
     return $Path
 }
 
@@ -76,22 +74,20 @@ $root = (Resolve-Path -LiteralPath $Src).Path
 $outRoot = (Resolve-Path -LiteralPath $OutDir).Path
 
 $operationalSourceSpecs = @(
-    'STASH/ftdi/*.asm',
-    'SESH/ftdi/*.asm',
-    'TEST/ftdi-backend-debug.asm',
-    'TEST/ftdi/*.asm',
-    'TEST/dev/*.asm',
-    'TEST/util/*.asm',
-    'TEST/apps/himon/himon.asm',
-    'TEST/apps/himon/*.inc',
-    'TEST/apps/himon/fnv1a-fold.asm',
-    'TEST/apps/str8/str8.asm',
-    'TEST/apps/str8/str8-worker.asm'
+    'LIB/ftdi/*.asm',
+    'LIB/dev/*.asm',
+    'LIB/util/*.asm',
+    'TESTS/ftdi-backend-debug.asm',
+    'HIMON/himon.asm',
+    'HIMON/*.inc',
+    'HIMON/fnv1a-fold.asm',
+    'STR8/str8.asm',
+    'STR8/str8-worker.asm'
 )
 
 $excludedOperationalSources = @(
-    'TEST/util/util-test.asm',
-    'TEST/apps/himon/fnv1a-hbstr.asm'
+    'LIB/util/util-test.asm',
+    'HIMON/fnv1a-hbstr-6000.asm'
 )
 
 $fileMap = @{}

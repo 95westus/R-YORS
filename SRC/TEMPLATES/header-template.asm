@@ -1,8 +1,8 @@
 ; ----------------------------------------------------------------------------
 ; FILE: default.asm
-; PURPOSE: Default SESH template with block header comments only.
+; PURPOSE: Default source template with block header comments only.
 ; NOTES:
-; - Copy/rename this file when starting a new SESH source file.
+; - Copy/rename this file when starting a new source file.
 ; - Replace placeholder sections with real module/routine content.
 ; ----------------------------------------------------------------------------
 

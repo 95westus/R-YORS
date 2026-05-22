@@ -33,7 +33,7 @@
 ; - L1 calls L0 `PIN_PIA_*` symbols.
 ;
 ; WIP CODE POLICY:
-; - This file is in SESH/WIP lane.
+; - This file is in the shared LIB lane.
 ; - Behavioral contracts are exploratory and may change.
 ; -------------------------------------------------------------------------
 

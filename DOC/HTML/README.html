@@ -15,6 +15,9 @@
 NOTES / SOURCE / ROMS / MANUALS         READ ME FIRST</code></pre>
 <p>Not eRRORS, but expect fewer.</p>
 <p>Pronounced <strong>are-yors</strong>.</p>
+<h2 id="current-spark">Current Spark</h2>
+<p>Search just made the full ladder: standalone RAM proof, joined RAM proof, and a flash-resident FNV command that HIMON can discover and run. Along the way a sneaky FTDI carry bug was caught and fixed, explaining the occasional extra hex digit in dumps.</p>
+<p>Details and transcripts live in <a href="GUIDES/LOGS/HARDWARE_TEST_LOG.html">HARDWARE_TEST_LOG.md</a> and <a href="GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.html">HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</a>.</p>
 <h2 id="live-proof">Live Proof</h2>
 <p>The clearest current transcript is <a href="GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.html">HIMON/STR8 Live Update Proof</a>. It shows bank 3 moving from HIMON <code>(2312)</code> to <code>(2317)</code> and back to <code>(2312)</code>: STR8 updates HIMON, HIMON proves the hash catalog filters and confirmed <code>BOOT_COLD_RESET</code>, then STR8 restores the earlier image.</p>
 <h2 id="what-this-is">What This Is</h2>
@@ -32,7 +35,7 @@ HIMON   dumps/modifies memory, loads S19, disassembles, assembles, debugs RAM</c
 <pre><code class="language-text">reset -&gt; STR8 -&gt; HIMON -&gt; user work</code></pre>
 <p>STR8 is useful even if the payload is not HIMON. The same proven <code>$C000-$EFFF</code> update gate has booted HIMON, OSI BASIC, and fig-FORTH as live images.</p>
 <h2 id="current-status">Current Status</h2>
-<p>Updated 2026-05-18.</p>
+<p>Updated 2026-05-21.</p>
 <p>STR8 is hardware-proven rotating three bootable images through the same guarded path:</p>
 <pre><code class="language-text">HIMON      recovery, inspection, loading, debug
 OSI BASIC  interactive BASIC payload
@@ -80,15 +83,17 @@ make -C SRC fig-forth-str8-update-s19
 make -C SRC msbasic-osi-str8-update-s19</code></pre>
 <p><code>make release-local</code> adds ignored/private local composites when <code>LOCAL/</code> is populated. <code>make docs-html</code> regenerates <code>DOC/HTML</code>; Markdown remains canonical.</p>
 <h2 id="repository-map">Repository Map</h2>
-<pre><code class="language-text">SRC/TEST/apps/himon/   HIMON monitor payload source
-SRC/TEST/apps/str8/    STR8 recovery/update source
-SRC/STASH              parked or promoted source lane
-SRC/SESH               session/experiment lane
-SRC/tools              host-side build and support scripts
-DOC/GUIDES             hand-written guides
-DOC/GENERATED          source-derived reports
-DOC/HTML               generated static presentation view
-LOCAL                  ignored local source homes, when present</code></pre>
+<pre><code class="language-text">SRC/HIMON/      HIMON monitor payload source
+SRC/STR8/       STR8 recovery/update source
+SRC/LIB/        shared ROM support libraries
+SRC/PROOFS/     board proofs and promotion scaffolds
+SRC/APPS/       standalone applications
+SRC/TESTS/      test harnesses
+SRC/tools/      host-side build and support scripts
+DOC/GUIDES/     hand-written guides
+DOC/GENERATED/  source-derived reports
+DOC/HTML/       generated static presentation view
+LOCAL/          ignored local source homes, when present</code></pre>
 <h2 id="hash-direction">Hash Direction</h2>
 <p>R-YORS still contains FNV-1a work. Current HIMON command/routine notes may still mention FNV-1a records or <code>[HASH:XXXXXXXX]</code> IDs. Treat that as implementation history and transition debt.</p>
 <p>The intended compact runtime/catalog hash is tableless CRC16:</p>
@@ -100,7 +105,7 @@ LOCAL                  ignored local source homes, when present</code></pre>
 <h2 id="notice">Notice</h2>
 <p>R-YORS is independent and is not affiliated with or endorsed by The Western Design Center, Inc. Product names are used only to identify compatible hardware.</p>
   </main>
-  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-20T04:44:59Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>README.md</code>. Source modified: <time>2026-05-22T03:40:00Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

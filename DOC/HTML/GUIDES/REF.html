@@ -13,23 +13,27 @@
 <p>This reference is scoped to the current <code>ror</code> workspace.</p>
 <p>Terms in this reference follow <a href="GLOSSARY.html">GLOSSARY.md</a>. In particular, THE means The Hash Environment for lookup/catalog records, <code>contract</code> is the preferred call-interface word, and <code>bank</code>, <code>sector</code>, <code>signature</code>, <code>control byte</code>, <code>kind</code>, <code>Record</code>, <code>RREC</code>, <code>buried</code>, <code>gone</code>, and <code>condense</code> keep their glossary meanings.</p>
 <h2 id="source-lanes">Source Lanes</h2>
-<pre><code class="language-text">SRC/STASH   stable or promoted code lane
-HIMON       current monitor source alias
-STR8        current recovery/update source alias
-ROM         current ROM support source alias
-SRC/SESH    session/WIP lane
+<pre><code class="language-text">SRC/HIMON   current monitor payload source
+SRC/STR8    current recovery/update source
+SRC/LIB     shared ROM support source
+SRC/PROOFS  board proofs and promotion scaffolds
+SRC/APPS    standalone applications
+SRC/TESTS   test harnesses
 SRC/BUILD   build output
 SRC/tools   host-side build/support scripts</code></pre>
 <p>Current ASM file count:</p>
-<pre><code class="language-text">SRC/STASH: 1
-ROM/HIMON/STR8: 25
-SRC/SESH:  1</code></pre>
+<pre><code class="language-text">SRC/APPS:   2
+SRC/HIMON:  4
+SRC/STR8:   2
+SRC/LIB:   24
+SRC/PROOFS: 7
+SRC/TESTS:  6</code></pre>
 <h2 id="monitor-lineage">Monitor Lineage</h2>
 <pre><code class="language-text">himon-parent.asm parent/reference monitor shell
 himonia.asm      historical compact supervisory monitor
 himon.asm        current HIMON app with FNV-era command records</code></pre>
 <p>Primary path:</p>
-<pre><code class="language-text">HIMON/</code></pre>
+<pre><code class="language-text">SRC/HIMON/</code></pre>
 <p>The source-generated routine docs are narrower than the whole source tree. They track current HIMON/STR8 operational source and ROM support code; legacy demos, harnesses, games, ACIA/PIA, and historical monitor variants are kept out of those generated maps.</p>
 <h2 id="current-design-names">Current Design Names</h2>
 <pre><code class="language-text">R-YORS       whole project/system
@@ -157,7 +161,7 @@ make -C SRC routine-hash-comments</code></pre>
 <p>The current standalone <code>himon-rom</code> image no longer contains the legacy HIMONIA fixed entries at <code>$F00D</code>, <code>$FADE</code>, or <code>$FEED</code>. Loaded-language bridge builds must patch call addresses from the current HIMON map or wait for a deliberate future ABI.</p>
 <p>The build check verifies the reset vector and confirms that the reset target in the selected 32K bank image contains real code.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/REF.md</code>. Source modified: <time>2026-05-20T03:52:58Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/REF.md</code>. Source modified: <time>2026-05-22T03:40:00Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

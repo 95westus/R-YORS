@@ -41,7 +41,7 @@ BRK 41 PC=...</code></pre>
 <p>Loader note:</p>
 <pre><code class="language-text">LS03
 NMI PC=DAAA or DB0B</code></pre>
-<p><code>LS03</code> means HIMON left the S19 loader with FTDI status <code>$03</code>. If the NMI PC lands inside <code>BIO_FTDI_READ_BYTE_BLOCK</code> in <code>SRC/BUILD/map/himon-rom.map</code>, the monitor was in the blocking serial read path, not running the proof. Restart <code>L G</code> and send the S19 again before treating it as a debug failure.</p>
+<p><code>LS03</code> means HIMON left the S19 loader with FTDI status <code>$03</code>. If the NMI PC lands inside <code>BIO_FTDI_READ_BYTE_BLOCK</code> in <code>SRC/BUILD/map/himon-rom-c000.map</code>, the monitor was in the blocking serial read path, not running the proof. Restart <code>L G</code> and send the S19 again before treating it as a debug failure.</p>
 <p>Do not press Ctrl-C while HIMON is in <code>L</code> or <code>L G</code>; HIMON sees it as the FTDI Ctrl-C status and the loader can abort with <code>LS03</code>. For capture, use terminal logging, copy after the prompt returns, or a copy shortcut that does not send Ctrl-C to the serial session.</p>
 <h2 id="debug-checks">Debug Checks</h2>
 <p>Use <code>R</code> after the first stop to confirm the trapped context is valid.</p>
@@ -196,13 +196,13 @@ date:  yyyy-mm-dd
 notes: pass/fail and any BRK code seen</code></pre>
 <h2 id="promotion-rule">Promotion Rule</h2>
 <p>Keep new debug/search work as a RAM S19 proof until it behaves cleanly under HIMON. After that:</p>
-<pre><code class="language-text">HIMON feature: fold the routine into SRC/TEST/apps/himon and rebuild ROM.
+<pre><code class="language-text">HIMON feature: fold the routine into SRC/HIMON and rebuild ROM.
 flash member: link at the intended ROM address and add a verified image builder.</code></pre>
 <p>S19 is the proof/load format. A <code>.bin</code> is a placed raw image, not just a converted S19. The current main <code>.bin</code> path is:</p>
 <pre><code class="language-text">make -C SRC himon-str8-rom-bin</code></pre>
 <p>For a new ROM member, add an explicit script or Makefile rule that places bytes at the correct <code>$8000-$FFFF</code> bank offset and verifies the result before it is called burnable.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_DEBUG_TESTING.md</code>. Source modified: <time>2026-05-22T03:40:01Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

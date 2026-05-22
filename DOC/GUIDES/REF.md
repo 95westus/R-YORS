@@ -11,11 +11,12 @@ keep their glossary meanings.
 ## Source Lanes
 
 ```text
-SRC/STASH   stable or promoted code lane
-HIMON       current monitor source alias
-STR8        current recovery/update source alias
-ROM         current ROM support source alias
-SRC/SESH    session/WIP lane
+SRC/HIMON   current monitor payload source
+SRC/STR8    current recovery/update source
+SRC/LIB     shared ROM support source
+SRC/PROOFS  board proofs and promotion scaffolds
+SRC/APPS    standalone applications
+SRC/TESTS   test harnesses
 SRC/BUILD   build output
 SRC/tools   host-side build/support scripts
 ```
@@ -23,9 +24,12 @@ SRC/tools   host-side build/support scripts
 Current ASM file count:
 
 ```text
-SRC/STASH: 1
-ROM/HIMON/STR8: 25
-SRC/SESH:  1
+SRC/APPS:   2
+SRC/HIMON:  4
+SRC/STR8:   2
+SRC/LIB:   24
+SRC/PROOFS: 7
+SRC/TESTS:  6
 ```
 
 ## Monitor Lineage
@@ -39,7 +43,7 @@ himon.asm        current HIMON app with FNV-era command records
 Primary path:
 
 ```text
-HIMON/
+SRC/HIMON/
 ```
 
 The source-generated routine docs are narrower than the whole source tree. They

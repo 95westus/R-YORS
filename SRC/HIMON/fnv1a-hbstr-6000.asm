@@ -1,6 +1,6 @@
 ; ----------------------------------------------------------------------------
-; fnv1a-hbstr.asm
-; Standalone W65C02S serial FNV-1a hash tool.
+; fnv1a-hbstr-6000.asm
+; Standalone W65C02S serial FNV-1a hash tool, linked at $6000.
 ;
 ; UI:
 ;   - Reads one echoed input line into a HIBIT-terminated linear buffer.

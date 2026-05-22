@@ -310,13 +310,20 @@ line. The current live HIMON service/parser scratch is `$CD-$FF`; `$CB-$CC` is
 held for CRC16 state, and `$B0-$CA` is being held back for future pointer lanes
 and addressing-mode helpers.
 
+There is no runtime zero-page allocator in HIMON. For native monitor code,
+allocation is static: add named `EQU` entries, keep them in this map, and treat
+the reserved bytes as volatile according to the routine contract. If future
+runtime-loaded records need workspace, describe that workspace in the record or
+resolve it during load/link. Do not add a heap-style allocator just to hand out
+scratch bytes for one foreground command.
+
 ## RAM-Load Build Note
 
 The non-ROM `himon` map is useful for development, but it is not the
 authoritative flash image map. The current ROM memory map should be taken from:
 
 ```text
-SRC/BUILD/map/himon-rom.map
+SRC/BUILD/map/himon-rom-c000.map
 HIMON/himon.asm
 HIMON/himon-shared-eq.inc
 ```

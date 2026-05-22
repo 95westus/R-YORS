@@ -229,7 +229,7 @@ HIMON/himon-shared-eq.inc</code></pre>
     HIMON --&gt; DBGEXT[DBG_HANDLE_BRK in debug include]
     APP[loaded-language bridge] -.map-patched calls.-&gt; BIO
     APP -.optional re-entry.-&gt; START[START at $8000]</pre>
-<p>The old fixed HIMONIA entry slots at <code>$F00D</code>, <code>$FADE</code>, and <code>$FEED</code> have been removed. Current local bridge builds may patch against <code>himon-rom.map</code>, but there is no promised fixed high-ROM ABI.</p>
+<p>The old fixed HIMONIA entry slots at <code>$F00D</code>, <code>$FADE</code>, and <code>$FEED</code> have been removed. Current local bridge builds may patch against <code>himon-rom-c000.map</code>, but there is no promised fixed high-ROM ABI.</p>
 <h2 id="full-capability-map">Full Capability Map</h2>
 <p>Command-safety mandate: destructive commands require 4 or more characters. Current short mutators are implementation debt until the command surface is revised; new bulk mutation should use full words such as <code>COPY</code>, <code>FILL</code>, <code>MOVE</code>, <code>FLASH</code>, <code>BACKUP</code>, <code>RESTORE</code>, and <code>ERASE</code>.</p>
 <table>
@@ -450,7 +450,7 @@ HIMON/himon-shared-eq.inc</code></pre>
 </ul>
 <p>but the related command records, help text, BRK hook behavior, and build docs must be omitted or revised together. NMI trap capture may remain without the breakpoint/<code>N</code> stepping subsystem.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_MAP.md</code>. Source modified: <time>2026-05-20T05:12:33Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_MAP.md</code>. Source modified: <time>2026-05-22T03:21:23Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

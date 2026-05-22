@@ -37,7 +37,7 @@
                         XREF            SYS_GET_CTRL_C
                         XREF            UTL_HEX_ASCII_TO_NIBBLE
 
-                        INCLUDE         "TEST/apps/himon/himon-shared-eq.inc"
+                        INCLUDE         "HIMON/himon-shared-eq.inc"
 
 TRAP_CAUSE               EQU             $7EEA
 TRAP_BRK_SIG             EQU             $7EEB
@@ -857,9 +857,9 @@ CMD_Q:
                         WAI
                         JMP             MON_REENTER
 
-                        INCLUDE         "TEST/apps/himon/himon-debug.inc"
-                        INCLUDE         "TEST/apps/himon/himon-disasm.inc"
-                        INCLUDE         "TEST/apps/himon/himon-asm.inc"
+                        INCLUDE         "HIMON/himon-debug.inc"
+                        INCLUDE         "HIMON/himon-disasm.inc"
+                        INCLUDE         "HIMON/himon-asm.inc"
 
 ; ----------------------------------------------------------------------------
 ; Trap handlers
@@ -3013,7 +3013,7 @@ CMD_HXN_BAD:
                         CLC
                         RTS
 
-                        INCLUDE         "TEST/apps/himon/himon-bootlog.inc"
+                        INCLUDE         "HIMON/himon-bootlog.inc"
 
                         DATA
 HIM_FNV_FORCE_RESIDENT:

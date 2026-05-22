@@ -91,20 +91,18 @@ The story path is intentionally outside the main operator/technical path.
 Current operational source used by generated routine docs:
 
 HIMON/
-  SRC/TEST/apps/himon/himon.asm
-  SRC/TEST/apps/himon/*.inc
-  SRC/TEST/apps/himon/fnv1a-fold.asm
+  SRC/HIMON/himon.asm
+  SRC/HIMON/*.inc
+  SRC/HIMON/fnv1a-fold.asm
 
 STR8/
-  SRC/TEST/apps/str8/str8.asm
-  SRC/TEST/apps/str8/str8-worker.asm
+  SRC/STR8/str8.asm
+  SRC/STR8/str8-worker.asm
 
 Support/
-  SRC/STASH/ftdi/*.asm
-  SRC/SESH/ftdi/*.asm
-  SRC/TEST/ftdi/*.asm
-  SRC/TEST/dev/*.asm
-  SRC/TEST/util/*.asm
+  SRC/LIB/ftdi/*.asm
+  SRC/LIB/dev/*.asm
+  SRC/LIB/util/*.asm
 ```
 
 Legacy demos, harnesses, games, ACIA/PIA, and historical monitor experiments

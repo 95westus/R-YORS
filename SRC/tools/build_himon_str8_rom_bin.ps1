@@ -1,6 +1,6 @@
 param(
-    [string]$HimonMapPath = "BUILD/map/himon-rom.map",
-    [string]$HimonS19Path = "BUILD/s19/himon-rom.s19",
+    [string]$HimonMapPath = "BUILD/map/himon-rom-c000.map",
+    [string]$HimonS19Path = "BUILD/s19/himon-rom-c000.s19",
     [string]$Str8MapPath = "BUILD/map/str8-f000.map",
     [string]$Str8S19Path = "BUILD/s19/str8-f000.s19",
     [string]$WorkerMapPath = "BUILD/map/str8-worker-0200.map",

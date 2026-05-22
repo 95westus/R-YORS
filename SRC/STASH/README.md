@@ -1,4 +1,4 @@
-# STASH Lane
+# Retired STASH Lane
 
-Top-shelf lane.
-Place app-level source here after it is proven and validated by test runs.
+STASH used to hold promoted source. Current shared and promoted code now lives
+under `SRC/LIB`, `SRC/HIMON`, `SRC/STR8`, `SRC/APPS`, or `SRC/PROOFS`.

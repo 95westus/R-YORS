@@ -92,7 +92,7 @@ DESIGN        planned/future catalog surface, not a concrete current proof item
 Current captured proof evidence:
 
 ```text
-PIN_FTDI_*     PROVEN/TOP-SHELF from documented test-ftdi-drv.asm pass notes.
+PIN_FTDI_*     PROVEN/TOP-SHELF from documented test-ftdi-drv-2000.asm pass notes.
 BIO_FTDI_*     mixed: direct pass-through wrappers can WRAP proven PIN paths;
                timeout/drain/flush paths have partial harness evidence.
 FLASH_*        partial harness exists; STR8-grade flash proof still needs a

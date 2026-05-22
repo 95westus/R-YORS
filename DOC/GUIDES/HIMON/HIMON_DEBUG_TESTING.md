@@ -70,7 +70,7 @@ NMI PC=DAAA or DB0B
 ```
 
 `LS03` means HIMON left the S19 loader with FTDI status `$03`. If the NMI PC
-lands inside `BIO_FTDI_READ_BYTE_BLOCK` in `SRC/BUILD/map/himon-rom.map`, the
+lands inside `BIO_FTDI_READ_BYTE_BLOCK` in `SRC/BUILD/map/himon-rom-c000.map`, the
 monitor was in the blocking serial read path, not running the proof. Restart
 `L G` and send the S19 again before treating it as a debug failure.
 
@@ -387,7 +387,7 @@ Keep new debug/search work as a RAM S19 proof until it behaves cleanly under
 HIMON. After that:
 
 ```text
-HIMON feature: fold the routine into SRC/TEST/apps/himon and rebuild ROM.
+HIMON feature: fold the routine into SRC/HIMON and rebuild ROM.
 flash member: link at the intended ROM address and add a verified image builder.
 ```
 

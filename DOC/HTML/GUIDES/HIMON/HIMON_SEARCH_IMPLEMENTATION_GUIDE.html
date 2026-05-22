@@ -26,13 +26,12 @@ fold the clean implementation into HIMON later</code></pre>
 <ul>
 <li>Search syntax is already shaped as:</li>
 </ul>
-<pre><code class="language-text">S addr end|+count b0 [b1 ...]
-S addr end|+count b0 [b1 ...] &#39;TEXT
-S addr end|+count &#39;TEXT</code></pre>
+<pre><code class="language-text">S addr end b0 [b1 ...] &#39;TEXT&#39; bx ...
+S addr +count b0 [b1 ...] &#39;TEXT&#39; bx ...</code></pre>
 <ul>
-<li>Hex byte tokens are the default pattern atoms. Apostrophe text is a final V0</li>
+<li>After the range, each pattern atom is either a hex byte token or an</li>
 </ul>
-<p>tail; it consumes the rest of the command line and does not return to hex parsing.</p>
+<p>apostrophe-quoted text chunk. Text chunks can appear at the start, middle, or end of the pattern. Use hex byte <code>$27</code> when the pattern must contain an apostrophe byte.</p>
 <ul>
 <li>Resident HIMON command input currently uppercases printable text before</li>
 </ul>
@@ -51,6 +50,14 @@ S addr end|+count &#39;TEXT</code></pre>
 <li>The command-record scanner starts at <code>$8000</code>. A flash FNV record for <code>S</code> below</li>
 </ul>
 <p><code>$C000</code> can own the search command before the integrated HIMON search body is folded in.</p>
+<ul>
+<li>The active search names are deliberately separate:</li>
+</ul>
+<pre><code class="language-text">himon-search-static     standalone RAM proof with statically linked helpers
+himon-search-proof      RAM proof using runtime-discovered resident helpers
+himon-search-flash      low-flash K=$05 command record for L F delivery
+himon-search-for-himon  native HIMON port scaffold and checklist</code></pre>
+<p><code>himon-search-static-proof</code> remains as a legacy build alias, but the shorter <code>himon-search-static</code> name is the one to use in new notes.</p>
 <h2 id="v0-behavior">V0 Behavior</h2>
 <p><code>S</code> is a prompt command, not a debug trap. It parses, scans, prints hits, and returns to the prompt. It does not patch user code, consume breakpoints, alter trap context, or resume execution.</p>
 <p>Target behavior:</p>
@@ -70,15 +77,15 @@ S addr end|+count &#39;TEXT</code></pre>
 <li>The pattern buffer is fixed-size. The RAM proof may own its own buffer; the</li>
 </ul>
 <p>final HIMON integration must either reserve search workspace or explicitly reuse an existing buffer only when its owner is inactive.</p>
-<p>I/O policy must be boring. Reads from <code>$7F00-$7FFF</code> are memory-mapped I/O, so a mistyped all-memory search must not accidentally consume device state. First V0 implementation should skip that I/O window when a range crosses it and print a short note such as <code>S IO</code>. A future explicit I/O-search form can be designed later if it is ever needed.</p>
+<p>I/O policy must be boring. Reads from <code>$7F00-$7FFF</code> are memory-mapped I/O, so a mistyped all-memory search must not accidentally consume device state. Current HIMON <code>D</code> and flash-resident <code>S</code> skip that I/O window by <code>$20</code>-byte decode slot and print the same named skip rows, such as <code>7F80: ACIA IO SKIP</code>. A future explicit I/O-search form can be designed later if it is ever needed.</p>
 <h2 id="implementation-shape">Implementation Shape</h2>
 <p>Build search as routines of routines, with W65C02S instructions used for size. The proof can keep these helpers local, but the labels should already show the shape that can move into HIMON later:</p>
 <pre><code class="language-text">CMD_SEARCH              command entry and usage/error routing
-SEARCH_PARSE_PATTERN    append hex bytes and final apostrophe text tail
+SEARCH_PARSE_PATTERN    append hex bytes and apostrophe-quoted text atoms
 SEARCH_SCAN_RANGE       walk candidate start addresses
 SEARCH_MATCH_AT         compare pattern bytes at current address
 SEARCH_PRINT_HIT        print exact hit plus D-style context row
-SEARCH_SKIP_IO          skip/report $7F00-$7FFF when a range crosses I/O
+SEARCH_SKIP_IO          skip/report named $7F00-$7FFF slots when a range crosses I/O
 SEARCH_CHECK_ABORT      Ctrl-C check during long scans</code></pre>
 <p>Prefer existing HIMON helpers for parsing, range state, output, and Ctrl-C where they fit. Add a new helper only when it removes real duplication or keeps the search body smaller and easier to prove.</p>
 <p>Search abort polling deliberately uses the current BIO Ctrl-C routine as a consuming poll. That is acceptable while search owns the keyboard during a long scan: ordinary pending input can be thrown away because the operator is trying to interrupt the scan. Do not generalize that routine into a monitor-wide keyboard peek. A future non-destructive peek belongs above the FTDI PIN layer as BIO-owned lookahead storage, and all RX readers would then need to consume through BIO so the cached byte and hardware FIFO do not diverge.</p>
@@ -108,47 +115,321 @@ map/listing        proof of where the bytes landed</code></pre>
 <p>The RAM proof S19 is for fast mistakes. Load it, run it, debug it, throw it away, rebuild it. It should live in UPA, normally around <code>$3000</code>, and should not rely on being discovered as a HIMON command record.</p>
 <p>The flash S19 is different. It is not &quot;the program&quot; in the final state; it is the packet used to write the program into erased flash. Once <code>L F</code> writes and verifies those bytes, the command record and routine live in the <code>$8000-$BFFF</code> flash window. HIMON can discover the FNV record there on the next command scan.</p>
 <p>Keep the flash S19, map, and transcript as provenance, but do not think of the board as running the S19. It is running the bytes that the S19 delivered.</p>
+<p>The join proof is not the search proof. It proves the small runtime service boundary that search should eventually use:</p>
+<pre><code class="language-text">caller has a hash -&gt; resident joiner finds executable record -&gt; caller invokes it</code></pre>
+<p>That is the bootstrap layer. Search is the real command proof. Its promotion path should be:</p>
+<pre><code class="language-text">RAM standalone search
+RAM search using resident join helpers
+RAM search with the same command header shape planned for flash
+low-flash search placed only in a proven blank hole
+L F delivery into $8000-$BFFF
+later fold the boring version into HIMON proper</code></pre>
+<p>This keeps each question separate. The join proof answers &quot;can a loaded routine find and call resident services without fixed addresses?&quot; Search answers &quot;does the actual command parse, scan, print, abort, and avoid I/O correctly?&quot; The flash-shadow phase answers &quot;can this command live as a discoverable record in low flash before it is part of the HIMON ROM build?&quot;</p>
+<p>When the full assembler/linker path exists, this ladder gets shorter but does not disappear. The board-side tools should be able to emit the command record, record imports, resolve or fix up joins, and place the bytes in an approved hole. That removes much of the host-side S19/relink ceremony. It does not remove the need to prove behavior in RAM before writing flash, or to prove the flash destination is blank before <code>L F</code>.</p>
 <h2 id="phase-1-ram-proof">Phase 1: RAM Proof</h2>
-<p>Create a standalone RAM proof, likely:</p>
-<pre><code class="language-text">SRC/TEST/apps/himon-search-proof.asm
+<p>Phase 1 has two RAM artifacts:</p>
+<pre><code class="language-text">static-linked first proof:
+target: himon-search-static
+SRC/PROOFS/himon-search-static-proof.asm
+SRC/BUILD/s19/himon-search-static-proof-3000.s19
+SRC/BUILD/map/himon-search-static-proof-3000.map
+link address: $3000
+
+hash-resolved follow-up proof:
+target: himon-search-proof
+SRC/PROOFS/himon-search-proof.asm
 SRC/BUILD/s19/himon-search-proof-3000.s19
 SRC/BUILD/map/himon-search-proof-3000.map
 link address: $3000</code></pre>
-<p>Current first proof:</p>
+<p>The first pass is intentionally static-linked:</p>
+<pre><code class="language-text">make -C SRC himon-search-static
+source: SRC/PROOFS/himon-search-static-proof.asm
+S19:    SRC/BUILD/s19/himon-search-static-proof-3000.s19
+map:    SRC/BUILD/map/himon-search-static-proof-3000.map
+start:  $3000
+RAM:    $7800 line buffer, $7900 pattern buffer
+I/O:    static-linked BIO_FTDI_* plus UTL_HEX_ASCII_TO_NIBBLE payloads
+size:   $0520 bytes total in the current static-linked RAM proof</code></pre>
+<p>The RAM proof does not need a command FNV record. It can run under HIMON with <code>L G</code> or <code>L</code> plus <code>G 3000</code>, then provide its own tiny <code>S&gt;</code> prompt or run a canned self-test table using the same grammar planned for HIMON.</p>
+<h3 id="phase-1a-standalone-ram-s">Phase 1A: Standalone RAM S</h3>
+<p>Start the next search pass with the static-linked standalone RAM <code>S&gt;</code> tool. This phase is about command behavior only:</p>
+<pre><code class="language-text">load:      L or L G with SRC/BUILD/s19/himon-search-static-proof-3000.s19
+entry:     $3000
+prompt:    S&gt;
+scope:     parse, scan, print hits, no-found, usage, Ctrl-C, I/O skip
+not yet:   runtime imports, command FNV record, flash placement, L F delivery</code></pre>
+<p>Keep two records for every board pass:</p>
+<pre><code class="language-text">actual board output  exact serial transcript, minimally edited
+summary transcript   short operator-readable command/result log</code></pre>
+<p>The actual board output is the evidence. Paste it as received, including prompts, typos, loader output, and odd spacing. The summary transcript is the working memory: one line per important command, with expected/observed result and a short note when behavior changes.</p>
+<p>Use this entry shape for new passes:</p>
+<h3 id="yyyy-mm-dd-ram-standalone-search-pass">YYYY-MM-DD RAM standalone search pass</h3>
+<p>Build identity:</p>
+<pre><code class="language-text">S19: SRC/BUILD/s19/himon-search-static-proof-3000.s19
+map: SRC/BUILD/map/himon-search-static-proof-3000.map
+HIMON map/bin under test:
+start: $3000
+pattern max:
+notes:</code></pre>
+<p>Actual board output:</p>
+<pre><code class="language-text">paste exact serial transcript here</code></pre>
+<p>Summary transcript:</p>
+<pre><code class="language-text">L/G search proof -&gt; S&gt; prompt
+S 34AF +20 &#39;HIMON&#39; -&gt; expected/observed
+S 7EF0 8010 00    -&gt; expected named I/O slot skips if range crosses $7F00-$7FFF
+S ...             -&gt; expected/observed
+Q                 -&gt; returns to HIMON</code></pre>
+<p>Result:</p>
+<pre><code class="language-text">PASS/FAIL/PARTIAL, with next action</code></pre>
+<h3 id="2026-05-21-ram-standalone-search-pass">2026-05-21 RAM standalone search pass</h3>
+<p>Build identity:</p>
+<pre><code class="language-text">S19: SRC/BUILD/s19/himon-search-static-proof-3000.s19
+map: SRC/BUILD/map/himon-search-static-proof-3000.map
+HIMON under test: HIMON V 00.0521(1847)
+start: $3000
+loaded size: $0520
+map end: $3520
+pattern max: $40
+notes: static-linked proof; MSG_TITLE at $34AF</code></pre>
+<p>Actual board output:</p>
+<pre><code class="language-text">HIMON V 00.0521(1847)
+&gt;L
+L S19
+L @3000
+L OK=0520 GO=3000
+&gt;G 3000
+GO 3000
+HIMON SEARCH STATIC $3000
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+S&gt; s 3000 +100 53
+304F 3040: AC 31 F0 1E C9 3F F0 25 | 29 DF C9 51 F0 16 C9 53 | .1...?.%)..Q...S
+S&gt; s 3000 +100 &#39;HIMON&#39;
+S NF
+S&gt; s 3000 +100 48 &#39;IMON&#39;
+S NF
+S&gt; S 3000 +100 &#39;HI&#39; 4D &#39;ON&#39;
+S NF
+S&gt; S 3000 +100 &#39;&#39;
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+S&gt; S FFFF 0 00
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+S&gt; S 3000 +0 20
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+S&gt; S 7EF0 8010 00
+7EF0 7EF0: 00 00 00 00 00 00 00 00 | 74 E1 43 D1 9C D1 EA D1 | ........t.C.....
+7EF1 7EF0: 00 00 00 00 00 00 00 00 | 74 E1 43 D1 9C D1 EA D1 | ........t.C.....
+7EF2 7EF0: 00 00 00 00 00 00 00 00 | 74 E1 43 D1 9C D1 EA D1 | ........t.C.....
+7EF3 7EF0: 00 00 00 00 00 00 00 00 | 74 E1 43 D1 9C D1 EA D1 | ........t.C.....
+7EF4 7EF0: 00 00 00 00 00 00 00 00 | 74 E1 43 D1 9C D1 EA D1 | ........t.C.....
+7EF5 7EF0: 00 00 00 00 00 00 00 00 | 74 E1 43 D1 9C D1 EA D1 | ........t.C.....
+7EF6 7EF0: 00 00 00 00 00 00 00 00 | 74 E1 43 D1 9C D1 EA D1 | ........t.C.....
+7EF7 7EF0: 00 00 00 00 00 00 00 00 | 74 E1 43 D1 9C D1 EA D1 | ........t.C.....
+S IO
+S&gt;</code></pre>
+<p>Summary transcript:</p>
+<pre><code class="language-text">L/G search proof -&gt; static S&gt; prompt PASS
+S 3000 +100 53 -&gt; hit at $304F PASS
+S 3000 +100 &#39;HIMON&#39; -&gt; S NF, expected because title/data is outside $3000-$30FF
+S 3000 +100 48 &#39;IMON&#39; -&gt; S NF for same range reason
+S 3000 +100 &#39;HI&#39; 4D &#39;ON&#39; -&gt; S NF for same range reason
+S 3000 +100 &#39;&#39; -&gt; usage PASS
+S FFFF 0 00 -&gt; usage PASS
+S 3000 +0 20 -&gt; usage PASS
+S 7EF0 8010 00 -&gt; hits before I/O window, then S IO PASS</code></pre>
+<p>Follow-up actual board output:</p>
+<pre><code class="language-text">S&gt; S 34AF +20 &#39;HIMON&#39;
+34AF*34A0: 57 38 60 38 E9 37 38 60 | 38 E9 30 38 60 18 60 48 | W8`8.78`8.08`.`H
+S&gt; &#39;HI&#39; 4D &#39;ON&#39;
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+S&gt; S 34AF +20 &#39;STATIC&#39; 20 24
+34BC*34B0: 49 4D 4F 4E 20 53 45 41 | 52 43 48 20 53 54 41 54 | IMON SEARCH STAT
+S&gt;</code></pre>
+<p>Second follow-up actual board output:</p>
+<pre><code class="language-text">S&gt; S 34AF +20 &#39;STATIC&#39; 20 24
+34BC*34B0: 49 4D 4F 4E 20 53 45 41 | 52 43 48 20 53 54 41 54 | IMON SEARCH STAT
+S&gt; S 34AF +20 48 &#39;IMON&#39;
+34AF*34A0: 57 38 60 38 E9 37 38 60 | 38 E9 30 38 60 18 60 48 | W8`8.78`8.08`.`H
+S&gt;</code></pre>
+<p>Quit actual board output:</p>
+<pre><code class="language-text">S&gt; Q
+S DONE
+
+#GO# ENTRY=3000
+RET A=0A X=19 Y=06 P=75 S=FD NV-BdIzC
+&gt;</code></pre>
+<p>Follow-up summary:</p>
+<pre><code class="language-text">S 34AF +20 &#39;HIMON&#39; -&gt; hit at $34AF PASS
+&#39;HI&#39; 4D &#39;ON&#39; -&gt; usage PASS, command omitted the required range prefix
+S 34AF +20 &#39;STATIC&#39; 20 24 -&gt; mixed text/hex hit at $34BC PASS
+S 34AF +20 48 &#39;IMON&#39; -&gt; mixed hex/text hit at $34AF PASS
+Q -&gt; S DONE, #GO# return report, HIMON prompt PASS</code></pre>
+<p>Result:</p>
+<pre><code class="language-text">PASS for the static RAM proof. Loader, prompt, hex search, quoted text, mixed
+text/hex atoms, bad range handling, empty quoted text, zero count handling, I/O
+skip note, and clean `Q` return to HIMON are proven.</code></pre>
+<p>Next board checks:</p>
+<pre><code class="language-text">S 34AF +20 &#39;HI&#39; 4D &#39;ON&#39;</code></pre>
+<p>First RAM standalone checklist:</p>
+<pre><code class="language-text">build himon-search-static
+load and enter at $3000
+prove the S&gt; prompt appears
+prove at least one hex-byte pattern search
+prove at least one apostrophe text search
+prove no-found output
+prove usage on malformed input
+prove $7F00-$7FFF I/O skip note
+quit cleanly back to HIMON</code></pre>
+<h3 id="phase-1b-ram-hash-resolved-s">Phase 1B: RAM Hash-Resolved S</h3>
+<p>After the static-linked proof is boring, move to the current hash-resolved RAM proof:</p>
 <pre><code class="language-text">make -C SRC himon-search-proof
-source: SRC/TEST/apps/himon-search-proof.asm
+source: SRC/PROOFS/himon-search-proof.asm
 S19:    SRC/BUILD/s19/himon-search-proof-3000.s19
 map:    SRC/BUILD/map/himon-search-proof-3000.map
 start:  $3000
 RAM:    $7800 line buffer, $7900 pattern buffer
 I/O:    hash-resolved resident BIO_FTDI_* plus local hex output; no SYS_* stack
-size:   $0565 bytes total in the current hash-resolved RAM proof</code></pre>
-<p>The RAM proof does not need a command FNV record. It can run under HIMON with <code>L G</code> or <code>L</code> plus <code>G 3000</code>, then provide its own tiny <code>S&gt;</code> prompt or run a canned self-test table using the same grammar planned for HIMON.</p>
-<p>The smaller HREC join proof isolates the resolver/join idea before it is moved into HIMON:</p>
+size:   $0589 bytes total in the current hash-resolved RAM proof</code></pre>
+<p>This version still carries its own tiny record scanner, but it no longer carries the BIO/FTDI helper payloads. It resolves current HIMON inline executable records by requiring kind bit 0, then calls the resident entries. It deliberately does not handle pointer/extra record shapes; that belongs to the resident join layer or a later import resolver phase. If it cannot resolve the first write import, it returns before printing with <code>A=$E1</code>. If a later import fails, it can print <code>S IMP</code> and returns <code>A=$E2</code> through <code>$E5</code> for READ, FLUSH, CTRL-C, or HEX-IN.</p>
+<p>The smaller HREC join proof isolates the resolver/join idea before search uses it as a normal dependency path:</p>
 <pre><code class="language-text">make -C SRC hrec-join-proof
-source: SRC/TEST/apps/hrec-join-proof.asm
+source: SRC/PROOFS/hrec-join-proof.asm
 S19:    SRC/BUILD/s19/hrec-join-proof-4000.s19
 map:    SRC/BUILD/map/hrec-join-proof-4000.map
 start:  $4000
-size:   $0248 bytes total</code></pre>
-<p>This proof uses the &quot;C&quot; bootstrap path: it silently joins <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> first. If that resident executable HREC is missing, it returns without printing. Once write is joined, it prints through the joined ROM routine, joins READ/FLUSH/CTRL/HEX by hash, and makes one real joined call to <code>UTL_HEX_ASCII_TO_NIBBLE</code> by parsing <code>&#39;A&#39;</code> into <code>$0A</code>. It also checks the negative path for a missing hash, rejects non-executable kind <code>$01</code>, and proves that a joined helper can still report its own input error by rejecting <code>&#39;G&#39;</code> as hex.</p>
+size:   $05FC bytes total in the current bootstrap proof</code></pre>
+<p>This proof carries a tiny local scanner only long enough to find resident <code>THE_JOIN_EXEC_XY</code>. After that, ordinary joins go through HIMON&#39;s resident joiner. It silently joins <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> first; if the joiner or write routine is missing, it returns without printing. Once write is joined, it prints through the joined ROM routine, joins READ/FLUSH/CTRL/HEX by hash, and makes one real joined call to <code>UTL_HEX_ASCII_TO_NIBBLE</code> by parsing <code>&#39;A&#39;</code> into <code>$0A</code>.</p>
+<p>The same proof also checks a missing hash, rejects a non-executable kind, proves the joined hex helper can report its own input error by rejecting <code>&#39;G&#39;</code>, proves a RAM-local pointer/extra record, and lets the operator type hashes at <code>J&gt;</code>.</p>
 <p>Expected current output:</p>
 <pre><code class="language-text">HREC JOIN PROOF $4000
-WRITE OK
-READ OK
-FLUSH OK
-CTRL OK
-HEX OK
-MISSING OK
-KIND OK
-HEXINV OK
+WRITE H=$379FE930 E=$DF09 OK
+JOINER H=$A9AF15F7 E=$DB0D OK
+READ H=$20285B85 E=$DEF7 OK
+FLUSH H=$2F6622B9 E=$E212 OK
+CTRL H=$426150D2 E=$E22E OK
+HEX H=$ADD714B1 E=$E18D IN=A OUT=$0A OK
+MISSING H=$DEADBEEF E=---- NF OK
+KIND K=$02 OK
+HEXINV H=$ADD714B1 E=$E18D IN=G C=0 OK
+PTR H=$76543210 E=$4235 X=PTR-EXTR OUT=$10 OK
+TYPE 8 HEX HASH, CR QUIT
+J&gt; 76543210
+USER H=$76543210 E=$4235 OK
+J&gt; 379FE930
+USER H=$379FE930 E=$DF09 OK
+J&gt; DEADBEEF
+USER H=$DEADBEEF E=---- NF
+J&gt;
 DONE</code></pre>
 <p>See <code>DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md</code> for the Q/A trail, terminology, edge cases, and size notes behind this proof.</p>
-<p>Earlier hardware transcripts below were captured on the <code>$070E</code> SYS-backed proof build. They remain behavioral proof for the parser and matcher. The current source has since been rebuilt to use the BIO layer directly, matching the rest of HIMON&#39;s low-level I/O shape. The BIO build was <code>$04EB</code>; after <code>BIO_FTDI_READ_BYTE_BLOCK</code> gained its promoted 8-byte FNV signature, the image became <code>$04F3</code>; after <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> gained the same promoted 8-byte FNV signature, the image became <code>$04FB</code>; after <code>PIN_FTDI_READ_BYTE_NONBLOCK</code> and <code>PIN_FTDI_WRITE_BYTE_NONBLOCK</code> gained their promoted 8-byte FNV signatures, the image became <code>$050B</code>; after <code>BIO_FTDI_FLUSH_RX</code> gained its promoted 8-byte FNV signature, the image is <code>$0513</code>; after the linked <code>UTL_HEX_NIBBLE_TO_ASCII</code>, <code>UTL_HEX_BYTE_TO_ASCII_YX</code>, and <code>UTL_HEX_ASCII_TO_NIBBLE</code> helpers gained their promoted 8-byte FNV signatures, the image is <code>$052B</code>; after the proof stopped linking resident helper payloads and resolved <code>BIO_FTDI_*</code> plus <code>UTL_HEX_ASCII_TO_NIBBLE</code> by emitted hash headers at startup, the image is <code>$0572</code>; after the proof stopped uppercasing apostrophe text and kept only the command-letter fold, the image is <code>$0565</code>. Re-run a short smoke pass after loading the current ROM-bound build before using it as the base for flash-shadow work.</p>
+<p>Earlier hardware transcripts below were captured on the <code>$070E</code> SYS-backed proof build. They remain behavioral proof for the parser and matcher, but some text examples use the older apostrophe-to-end-of-line tail. The current parser uses closed apostrophe text atoms so hex bytes may follow text. The current source has since been rebuilt to use the BIO layer directly, matching the rest of HIMON&#39;s low-level I/O shape. The BIO build was <code>$04EB</code>; after <code>BIO_FTDI_READ_BYTE_BLOCK</code> gained its promoted 8-byte FNV signature, the image became <code>$04F3</code>; after <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> gained the same promoted 8-byte FNV signature, the image became <code>$04FB</code>; after <code>PIN_FTDI_READ_BYTE_NONBLOCK</code> and <code>PIN_FTDI_WRITE_BYTE_NONBLOCK</code> gained their promoted 8-byte FNV signatures, the image became <code>$050B</code>; after <code>BIO_FTDI_FLUSH_RX</code> gained its promoted 8-byte FNV signature, the image is <code>$0513</code>; after the linked <code>UTL_HEX_NIBBLE_TO_ASCII</code>, <code>UTL_HEX_BYTE_TO_ASCII_YX</code>, and <code>UTL_HEX_ASCII_TO_NIBBLE</code> helpers gained their promoted 8-byte FNV signatures, the image is <code>$052B</code>; after the proof stopped linking resident helper payloads and resolved <code>BIO_FTDI_*</code> plus <code>UTL_HEX_ASCII_TO_NIBBLE</code> by emitted hash headers at startup, the image is <code>$0572</code>; after the proof stopped uppercasing apostrophe text and kept only the command-letter fold, the image is <code>$0565</code>; after the local resolver accepted current inline executable kind <code>$01</code> instead of requiring kind <code>$00</code>, the image is <code>$056B</code>; after the parser switched to closed quoted text atoms, the image is <code>$0571</code>; after empty quoted text atoms were rejected explicitly, the image is <code>$0579</code>; after stale resolver <code>BNE fail</code> checks were removed and import failure return codes were added, the image is <code>$0589</code>. Re-run a short smoke pass after loading the current ROM-bound build before using it as the base for flash-shadow work.</p>
+<p>2026-05-21 first hash-resolved board observation, using the older <code>$0579</code> image:</p>
+<pre><code class="language-text">&gt;G F000
+GO F000
+
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+
+HIMON IN 3S. S=STR8  3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0521(1847)
+&gt;L
+L S19
+L @3000
+L OK=0579 GO=3000
+&gt;G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=01 X=EF Y=07 P=34 S=FD Nv-BdIzc
+&gt;</code></pre>
+<p>Interpretation: the proof returned before printing its title, so bootstrap failed before it had a write routine. <code>A=01</code> exposed the actual code bug: the finder had accepted an executable record and returned <code>A=01</code>, but each resolver still had the old <code>BNE fail</code> check from the earlier kind <code>$00</code> experiment. The current <code>$0589</code> image removes those stale checks.</p>
+<p>2026-05-21 hash-resolved board pass, using the corrected <code>$0589</code> image:</p>
+<pre><code class="language-text">&gt;L
+L S19
+L @3000
+L OK=0589 GO=3000
+&gt;G 3000
+GO 3000
+HIMON SEARCH PROOF $3000
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+S&gt; s 0 ffff ff 00
+7900 7900: FF 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+D3A9 D3A0: F4 7E 99 FE 00 AD F5 7E | 99 FF 00 AD F6 7E 99 00 | .~.....~.....~..
+S IO
+S&gt; q
+S DONE
+
+#GO# ENTRY=3000
+RET A=0A X=82 Y=06 P=F5 S=FD NV-BdIzC
+&gt;#
+HASH     ENTRY K TEXT
+EC7A30F0 C030 03 BOOT_COLD_RESET
+5333AEAB C044 03 BOOT_WARM_RESET
+3A0CB08E C102 01
+260C9112 C115 01
+270C92A5 C1CF 01
+C10BF213 C27A 01
+C80BFD18 C30E 01
+D70C14B5 C32D 01
+DD0C1E27 C352 01
+C20BF3A6 C38C 01
+C90BFEAB C3CB 01
+D40C0FFC C5C1 01
+C70BFB85 C5CE 01
+CB0C01D1 C679 01
+D00C09B0 CA6E 01
+C40BF6CC CC7E 01
+A9AF15F7 DB0D 01
+20285B85 DEF7 01
+379FE930 DF09 01
+483BB2DD E03B 01
+D55FC6FC E064 01
+BEB18931 E0A1 01
+43621C9C E0B4 01
+F91947F8 E0C0 01
+B85E3F10 E0CC 01
+ADD714B1 E18D 01
+2F6622B9 E212 01
+426150D2 E22E 01
+30A462F2 E245 01
+226EDE8F E3AF 01
+7142DD21 E3C7 01
+D4C88B87 E3E1 01
+B0051A80 C000 03 HIMON V 00.0521(1847)
+&gt;# S
+D60C1322 HSH_NF!
+&gt;G 3000
+GO 3000
+HIMON SEARCH PROOF $3000
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+S&gt; s 0 ffff 00 ff
+0005 0000: 0E 78 FF 00 00 00 FF FF | 05 00 06 00 00 00 FF 02 | .x..............
+000D 0000: 0E 78 FF 00 00 00 FF FF | 0D 00 0E 00 00 00 FF 02 | .x..............
+7900 7900: 00 FF 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+S IO
+S&gt;</code></pre>
+<p>Summary:</p>
+<pre><code class="language-text">L/G hash-resolved proof -&gt; S&gt; prompt PASS
+S 0 FFFF FF 00 -&gt; hits RAM pattern buffer and ROM helper bytes, then S IO PASS
+Q -&gt; S DONE, #GO# return report, HIMON prompt PASS
+# -&gt; resident hash records visible, including helper imports PASS
+# S -&gt; HSH_NF expected because S is not a resident K=$05 flash record yet
+restart at $3000 -&gt; S&gt; prompt PASS
+S 0 FFFF 00 FF -&gt; hits RAM state/pattern buffer, then S IO PASS</code></pre>
+<p>Result:</p>
+<pre><code class="language-text">PASS for the hash-resolved RAM proof areas tested so far. The proof resolves
+resident BIO/FTDI and HEX helpers by hash, runs the same search command loop,
+and returns cleanly to HIMON. `# S` remains not-found until the later low-flash
+K=$05 S command record is created and loaded with L F.</code></pre>
 <p>First interactive proof shape:</p>
 <pre><code class="language-text">&gt;L G
 S&gt; S 3000 36FF 53
-S&gt; S 3000 +100 &#39;HIMON
+S&gt; S 3000 +100 &#39;HIMON&#39;
 S&gt; S 7EF0 8010 00
 S&gt; Q</code></pre>
 <p>First hardware observation:</p>
@@ -274,7 +555,7 @@ S ABORT</code></pre>
 </ul>
 <p>and junk after a hex atom all route to usage.</p>
 <ul>
-<li>Mixed hex plus final text tail works.</li>
+<li>Mixed hex plus quoted text atoms work.</li>
 <li>Whole-memory no-hit tests are self-polluting because the current pattern is</li>
 </ul>
 <p>stored in <code>$7900</code>; use a range that excludes <code>$7900</code> when testing no-found.</p>
@@ -286,8 +567,8 @@ S ABORT</code></pre>
 <p>RAM proof checks:</p>
 <ul>
 <li>hex-only pattern: <code>S 3000 30FF 4D</code></li>
-<li>final text tail: <code>S 3000 30FF &#39;TEXT</code></li>
-<li>mixed hex plus text tail: <code>S 3000 30FF 4D &#39;M</code></li>
+<li>text-only pattern: <code>S 3000 30FF &#39;TEXT&#39;</code></li>
+<li>mixed hex and text atoms: <code>S 3000 30FF 4D &#39;M&#39; 00</code></li>
 <li>page-local end syntax after the shared range parser is ready:</li>
 </ul>
 <p><code>S 3000 FF ...</code> means <code>$3000-$30FF</code></p>
@@ -307,35 +588,512 @@ BRK 42  proof pass
 BRK E1-E9  bad path</code></pre>
 <p>During this phase, use <code>N</code> for stepping. Treat any remaining <code>S</code> step behavior as old-ROM behavior, not the target.</p>
 <h2 id="phase-2-flash-shadow-command">Phase 2: Flash Shadow Command</h2>
-<p>After the RAM proof behaves cleanly, build a low-flash command member. This is the &quot;give it a hash, create an S19 at a nice hole, and L F it&quot; phase.</p>
+<p>After Phase 1A static behavior and Phase 1B hash-resolved behavior are both boring, build a low-flash command member. This is the &quot;give it a hash, create an S19 at a nice hole, and L F it&quot; phase.</p>
 <p>The <code>S</code> command hash is the stable token for the search record:</p>
 <pre><code class="language-text">token: S
 hash32 display: $D60C1322
-record bytes: 46 4E D6 22 13 0C D6 00
-meaning: &#39;F&#39;,&#39;N&#39;,(&#39;V&#39;+$80),hash0,hash1,hash2,hash3,kind=$00
-resident entry: none; the low-flash search record should provide it</code></pre>
+record bytes: 46 4E D6 22 13 0C D6 05 &lt;entry-lo&gt; &lt;entry-hi&gt; &lt;extra-lo&gt; &lt;extra-hi&gt;
+meaning: &#39;F&#39;,&#39;N&#39;,(&#39;V&#39;+$80),hash0,hash1,hash2,hash3,kind=$05,DW ENTRY,DW EXTRA
+resident entry: provided by the low-flash search member
+extra text: high-bit-terminated display text, such as S(earch)</code></pre>
 <p>Candidate placement:</p>
-<pre><code class="language-text">preferred candidate: $B800 if blank on the board
-record:              $B800-$B807
-entry:               $B808
+<pre><code class="language-text">preferred candidate: $BBA2 if blank on the board
+guard before:        $BBA0-$BBA1, expected $FF $FF
+calculation:         original $045C pocket fit at $BBA2; current image still fits
+actual image range:  $BBA2-$BFF5
+actual size:         $0454 bytes, 1108 decimal
+guard after:         $BFF6-$BFFF, expected $FF padding before $C000
+next protected ROM:  $C000
+record:              $BBA2-$BBAD
+entry:               $BBAE
+extra:               $BFEE, high-bit text S(earch)
 allowed by L F:      yes, if all target bytes are $FF
-protected region:    do not target $C000+</code></pre>
-<p><code>$B800</code> is a candidate, not a promise. If <code>$B800</code> is occupied by CALC, a local language image, an earlier experiment, or anything not all <code>$FF</code>, pick another blank page in <code>$8000-$BFFF</code>. Do not erase as part of this step.</p>
+protected region:    do not target $C000+
+artifact:            SRC/BUILD/s19/himon-search-flash-bba2.s19
+map:                 SRC/BUILD/map/himon-search-flash-bba2.map</code></pre>
+<p>The <code>$E9B0</code> HIMON-tail idea is scratched for this pass. Keep the flash-shadow experiment in <code>$8000-$BFFF</code> so it stays inside the current conservative <code>L F</code> write policy. The <code>$BBA2</code> placement keeps the flash command near the top of low flash while preserving a two-byte <code>$FF</code> guard before the record and more than the requested two-byte <code>$FF</code> guard before <code>$C000</code>.</p>
+<p>Current flash <code>S</code> resolves <code>SYS_PRINT_IO_SLOT_SKIP</code> by FNV hash <code>$C2A5A6CE</code>. That lets <code>S</code> and <code>D</code> share the same resident I/O slot labeler instead of carrying a second copy of the <code>$7F00-$7FFF</code> board map in the low flash command.</p>
+<p>Use <code>K=$05</code> for the flash-shadow command record when <code>S</code> should be visible in hash/catalog displays as more than a raw token without asking for confirmation on every run. HIMON treats kind bit 0 as executable, legacy exact <code>$03</code> as a confirming pointer record, and exact <code>$05</code> as a non-confirming pointer record:</p>
+<pre><code class="language-text">F N V+80 hash0 hash1 hash2 hash3 05
+DW SEARCH_ENTRY
+DW SEARCH_EXTRA
+SEARCH_ENTRY:
+    ; command code
+SEARCH_EXTRA:
+    ; high-bit-terminated text, for example S(earch)</code></pre>
+<p>The <code>EXTRA</code> pointer is display metadata. The called search routine does not receive it as an argument.</p>
+<p>Build:</p>
+<pre><code class="language-text">make -C SRC himon-search-flash</code></pre>
+<p>First <code>L F</code> board script:</p>
+<pre><code class="language-text">&gt;L F
+send SRC/BUILD/s19/himon-search-flash-bba2.s19
+&gt;# S
+&gt;S BBA0 BFFF 46 4E D6
+&gt;S BBA0 BFFF &#39;S(earch)&#39;</code></pre>
+<p>The earlier K=<code>$03</code> flash-shadow proof asked for <code>Y</code> before every run. K=<code>$05</code> keeps the display metadata while removing that prompt.</p>
+<p><code>$BBA2</code> is the current candidate, not a promise. If <code>$BBA0-$BFFF</code> is occupied by CALC, a local language image, an earlier experiment, or anything not all <code>$FF</code>, pick another blank page in <code>$8000-$BFFF</code>. Do not erase as part of this step.</p>
 <p>Before <code>L F</code>:</p>
 <pre><code class="language-text">record current ROM/bin identity
 record the exact S19 and map filenames
-dump the candidate flash page and confirm target bytes are $FF
+dump or otherwise confirm $BBA0-$BFFF target bytes are $FF
 confirm the S19 contains only the intended low-flash range
 confirm the S9 start address is the command entry
 keep external recovery available before any live flash write</code></pre>
 <p>Board proof:</p>
 <pre><code class="language-text">&gt;L F            enter flash S19 load mode
-send search flash S19
-&gt;# S            should resolve S to the low-flash search entry
-&gt;S 8000 BFFF 46 4E D6
-&gt;S 3000 30FF &#39;TEXT
+send SRC/BUILD/s19/himon-search-flash-bba2.s19
+&gt;# S            should resolve S to $BBAE K=05 S(earch)
+&gt;S BBA0 BFFF 46 4E D6
+&gt;S BBA0 BFFF &#39;S(earch)&#39;
 &gt;N              still steps trapped context</code></pre>
+<p>Observed K=<code>$03</code> flash-shadow proof before the K=<code>$05</code> split:</p>
+<pre><code class="language-text">&gt;L F
+L F S19
+L @BA67
+LF OK WR=045C GO=BA73
+&gt;# S
+D60C1322 ENTRY=BA73 K=03  S(earch)
+&gt;#
+HASH     ENTRY K TEXT
+D60C1322 BA73 03 S(earch)
+...
+&gt;G BA73
+GO BA73
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+
+#GO# ENTRY=BA73
+RET A=0A X=70 Y=32 P=74 S=FD NV-BdIzc
+&gt;S B000 C000 &#39;TEXT&#39;
+RUN S(earch) @BA73 K=03 ? y
+BE87 BE80: 4E 54 20 42 42 7C 27 54 | 45 58 54 27 20 5B 2E 2E | NT BB|&#39;TEXT&#39; [..</code></pre>
+<p>This proves all three pieces of the flash-shadow command: <code>L F</code> wrote the record, <code># S</code> finds it as K=<code>$03</code>, and normal command dispatch preserves the argument line through the <code>RUN S(earch) ... ?</code> confirmation. Direct <code>G BA73</code> has no HIMON command token and therefore correctly prints usage.</p>
+<p>The command-entry detail matters: <code>K=$03</code> confirmation prints through HIMON&#39;s string writer, which uses <code>$FE/$FF</code> as a temporary text pointer. The flash <code>S</code> command copies HIMON&#39;s saved command token start from <code>$FA/$FB</code>, then advances past the one-byte <code>S</code> token before parsing <code>addr end|+count ...</code>.</p>
+<p>Observed flash-shadow coverage:</p>
+<pre><code class="language-text">&gt;S B000 FFFF &#39;FN&#39;
+RUN S(earch) @BA73 K=03 ? y
+BA67 BA60: FF FF FF FF FF FF FF 46 | 4E D6 22 13 0C D6 03 73 | .......FN.&quot;....s
+...
+E414 E410: A1 E0 8D E1 46 4E D6 80 | 1A 05 B0 03 00 C0 22 E4 | ....FN........&quot;.
+&gt;S BE70 BEAF &#39;HELP&#39;
+RUN S(earch) @BA73 K=03 ? y
+BE96 BE90: 2E 5D 2C 20 3F 20 48 45 | 4C 50 2C 20 51 20 51 55 | .], ? HELP, Q QU
+&gt;S BE70 +60 &#39;TEXT&#39;
+RUN S(earch) @BA73 K=03 ? y
+BE87 BE80: 4E 54 20 42 42 7C 27 54 | 45 58 54 27 20 5B 2E 2E | NT BB|&#39;TEXT&#39; [..
+&gt;S BE70 +40 &#39;END&#39; 7C 2B &#39;COUNT&#39;
+RUN S(earch) @BA73 K=03 ? y
+BE78*BE70: 53 20 53 54 41 52 54 20 | 45 4E 44 7C 2B 43 4F 55 | S START END|+COU
+&gt;S BE70 +60 54 &#39;EXT&#39;
+RUN S(earch) @BA73 K=03 ? y
+BE87 BE80: 4E 54 20 42 42 7C 27 54 | 45 58 54 27 20 5B 2E 2E | NT BB|&#39;TEXT&#39; [..
+&gt;S BE70 +60 &#39;NOTTHERE&#39;
+RUN S(earch) @BA73 K=03 ? y
+S NF
+&gt;S BE70 +60 &#39;&#39;
+RUN S(earch) @BA73 K=03 ? y
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+&gt;S BE70 +0 20
+RUN S(earch) @BA73 K=03 ? y
+S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUIT
+&gt;S 7EF0 8010 00
+RUN S(earch) @BA73 K=03 ? y
+7EF0 7EF0: 00 0A 70 32 74 73 BA FD | 74 E1 43 D1 9C D1 EA D1 | ..p2ts..t.C.....
+S IO
+&gt;S 0 FFFF &#39;HIMON&#39;
+RUN S(earch) @BA73 K=03 ? y
+S ABORT</code></pre>
+<p>Coverage result: catalog, direct entry usage, command dispatch, end-range, <code>+count</code>, mixed text/hex/text atoms, byte-plus-text atoms, no-found, bad syntax, zero count, I/O-boundary detection, and in-command Ctrl-C abort all passed. The earlier <code>BRK 03 PC=C0D1</code> happened after <code>S</code> had already returned to a fresh HIMON prompt; the later wide <code>&#39;HIMON&#39;</code> scan captured the intended <code>S ABORT</code> case.</p>
 <p>If <code>L F</code> reports protect, erase, write, or verify failure, stop. Do not keep trying variants over a partly written area until the page has been inspected and the recovery path is clear.</p>
+<h3 id="search-proof-comparison">Search Proof Comparison</h3>
+<p>Measured from the current source files and linker maps:</p>
+<table>
+<thead><tr>
+<th>Build</th>
+<th>Source lines</th>
+<th>CODE</th>
+<th>DATA</th>
+<th>Total</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>himon-search-static</code></td>
+<td>676</td>
+<td><code>$04B0</code> / 1200</td>
+<td><code>$0071</code> / 113</td>
+<td><code>$0521</code> / 1313</td>
+<td>RAM standalone, statically linked helpers</td>
+</tr>
+<tr>
+<td><code>himon-search-proof</code></td>
+<td>913</td>
+<td><code>$04FF</code> / 1279</td>
+<td><code>$008A</code> / 138</td>
+<td><code>$0589</code> / 1417</td>
+<td>RAM standalone, runtime hash-resolved helpers</td>
+</tr>
+<tr>
+<td><code>himon-search-flash</code></td>
+<td>772</td>
+<td><code>$03F6</code> / 1014</td>
+<td><code>$005E</code> / 94</td>
+<td><code>$0454</code> / 1108</td>
+<td>Low-flash K=<code>$05</code> command record</td>
+</tr>
+<tr>
+<td><code>himon-search-for-himon</code></td>
+<td>170</td>
+<td><code>$0000</code> / 0</td>
+<td><code>$0000</code> / 0</td>
+<td><code>$0000</code> / 0</td>
+<td>Native HIMON port scaffold; no loadable image</td>
+</tr>
+</tbody>
+</table>
+<p>The static artifact is still named <code>himon-search-static-proof-3000.s19</code> on disk for history. The build target now has the shorter <code>himon-search-static</code> name, with <code>himon-search-static-proof</code> kept as an alias.</p>
+<p>Source diff counts:</p>
+<table>
+<thead><tr>
+<th>Compare</th>
+<th>Diff stat</th>
+<th>Hunks</th>
+<th>Source line delta</th>
+<th>Active line delta</th>
+<th>CODE delta</th>
+<th>DATA delta</th>
+<th>Total delta</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>static proof -&gt; hash proof</td>
+<td>+251 / -14 lines</td>
+<td>15</td>
+<td>+237</td>
+<td>+221</td>
+<td>+<code>$004F</code> / +79</td>
+<td>+<code>$0019</code> / +25</td>
+<td>+<code>$0068</code> / +104</td>
+</tr>
+<tr>
+<td>static proof -&gt; flash command</td>
+<td>+254 / -158 lines</td>
+<td>29</td>
+<td>+96</td>
+<td>+63</td>
+<td>-<code>$00BA</code> / -186</td>
+<td>-<code>$0013</code> / -19</td>
+<td>-<code>$00CD</code> / -205</td>
+</tr>
+<tr>
+<td>flash command -&gt; hash proof</td>
+<td>+205 / -64 lines</td>
+<td>32</td>
+<td>+141</td>
+<td>+158</td>
+<td>+<code>$0109</code> / +265</td>
+<td>+<code>$002C</code> / +44</td>
+<td>+<code>$0135</code> / +309</td>
+</tr>
+<tr>
+<td>flash command -&gt; for-HIMON scaffold</td>
+<td>+156 / -758 lines</td>
+<td>10</td>
+<td>-602</td>
+<td>-654</td>
+<td>no image</td>
+<td>no image</td>
+<td>no image</td>
+</tr>
+</tbody>
+</table>
+<p>Assembly complexity counters are simple static counts, not a full cyclomatic analysis. They are useful here because the files are W65C02S assembly and the main question is how much machinery each proof carries. <code>Map symbols</code> counts CODE+DATA symbols from the linker map for linked artifacts; the for-HIMON scaffold assembles to an empty object and has no map symbols.</p>
+<table>
+<thead><tr>
+<th>Build</th>
+<th>Nonblank</th>
+<th>Comments</th>
+<th>Active lines</th>
+<th>Map symbols</th>
+<th>JSR</th>
+<th>JMP</th>
+<th>Branches</th>
+<th>EQU</th>
+<th>Data dirs</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>static proof</td>
+<td>618</td>
+<td>24</td>
+<td>594</td>
+<td>107</td>
+<td>73</td>
+<td>12</td>
+<td>97</td>
+<td>23</td>
+<td>9</td>
+</tr>
+<tr>
+<td>hash proof</td>
+<td>841</td>
+<td>26</td>
+<td>815</td>
+<td>125</td>
+<td>88</td>
+<td>12</td>
+<td>127</td>
+<td>47</td>
+<td>15</td>
+</tr>
+<tr>
+<td>flash command</td>
+<td>710</td>
+<td>53</td>
+<td>657</td>
+<td>104</td>
+<td>68</td>
+<td>11</td>
+<td>100</td>
+<td>42</td>
+<td>13</td>
+</tr>
+<tr>
+<td>for-HIMON scaffold</td>
+<td>160</td>
+<td>157</td>
+<td>3</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>Complexity deltas:</p>
+<table>
+<thead><tr>
+<th>Compare</th>
+<th>Active lines</th>
+<th>Map symbols</th>
+<th>JSR</th>
+<th>JMP</th>
+<th>Branches</th>
+<th>EQU</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>static proof -&gt; hash proof</td>
+<td>+221</td>
+<td>+18</td>
+<td>+15</td>
+<td>0</td>
+<td>+30</td>
+<td>+24</td>
+</tr>
+<tr>
+<td>static proof -&gt; flash command</td>
+<td>+63</td>
+<td>-3</td>
+<td>-5</td>
+<td>-1</td>
+<td>+3</td>
+<td>+19</td>
+</tr>
+<tr>
+<td>flash command -&gt; hash proof</td>
+<td>+158</td>
+<td>+21</td>
+<td>+20</td>
+<td>+1</td>
+<td>+27</td>
+<td>+5</td>
+</tr>
+<tr>
+<td>flash command -&gt; for-HIMON scaffold</td>
+<td>-654</td>
+<td>-104</td>
+<td>-68</td>
+<td>-11</td>
+<td>-100</td>
+<td>-42</td>
+</tr>
+</tbody>
+</table>
+<p>The comparison proves the promotion ladder:</p>
+<pre><code class="language-text">static RAM proof
+    proves the command behavior with all helper code carried locally
+
+hash-resolved RAM proof
+    proves the same behavior while discovering resident helpers by FNV records
+
+flash command
+    proves the command can live as a K=$05 FNV record in low flash, be found by
+    HIMON&#39;s catalog, keep display text, skip confirmation, and run from ROM</code></pre>
+<p>The flash command is the smallest binary even though its source is larger than the static proof. That is the useful result: once HIMON owns the shell, command dispatch, confirmation text, and resident helper table, the command member only needs the search parser/scanner/printer plus a small import resolver. The board transcript above proves that this was not just a link-map theory; the same <code>S</code> command made the trip from RAM proof to hash-visible flash resident code.</p>
+<h3 id="what-lay-it-into-himon-means">What &quot;Lay It Into HIMON&quot; Means</h3>
+<p>The flash-shadow command is a resident command, but it is still outside the HIMON image. Laying it into HIMON means replacing the low-flash specimen with a native HIMON command member:</p>
+<pre><code class="language-text">CMD_SEARCH_FNV
+    FNV record for token S, K=$05, DW CMD_SEARCH, DW MSG_SEARCH_EXTRA
+
+CMD_SEARCH
+    command entry that starts from CMDP_START, skips the S token, parses args,
+    scans memory, prints hits, reports S NF/S ABORT/usage, and skips I/O with
+    the shared named-slot printer</code></pre>
+<p>The body would mostly come from <code>himon-search-flash.asm</code>, but not as a blind paste. The native version should delete the flash import resolver and call HIMON locals directly: FTDI write/read, Ctrl-C check, CRLF, hex output, and <code>UTL_HEX_ASCII_TO_NIBBLE</code>. Its zero-page names should also be folded into the HIMON command scratch space instead of remaining app-local <code>$00-$23</code> names.</p>
+<p>The important command-line rule stays the same. <code>CMD_SEARCH</code> should not trust <code>$FE/$FF</code> on entry because display/confirm printing may use that pointer. It should copy <code>CMDP_START</code> from <code>$FA/$FB</code>, advance past the <code>S</code> token, and parse the argument tail from there.</p>
+<h3 id="native-himon-port-blueprint">Native HIMON Port Blueprint</h3>
+<p>Use <code>SRC/PROOFS/himon-search-flash.asm</code> as the donor file and <code>SRC/PROOFS/himon-search-for-himon.asm</code> as the code-side checklist, but do not paste either one blindly. The built-in version should keep the search core as small W65C02S routines-of-routines and delete the flash-loader machinery that only exists because the command currently lives outside HIMON.</p>
+<p>Native record:</p>
+<pre><code class="language-asm">CMD_SEARCH_FNV:
+                        DB              &#39;F&#39;,&#39;N&#39;,CMD_FNV_SIG2,$22,$13,$0C,$D6,CMD_HASH_KIND_EXEC_TEXT
+                        DW              CMD_SEARCH
+                        DW              MSG_SEARCH_EXTRA</code></pre>
+<p>Native command entry:</p>
+<pre><code class="language-asm">CMD_SEARCH:
+                        LDA             CMDP_START_LO
+                        STA             SEARCH_LINE_LO
+                        LDA             CMDP_START_HI
+                        STA             SEARCH_LINE_HI
+                        JSR             SEARCH_SKIP_SPACES
+                        JSR             SEARCH_PEEK
+                        BEQ             CMD_SEARCH_USAGE
+                        JSR             SEARCH_ADV_LINE       ; skip S token
+                        JSR             SEARCH_PARSE_RANGE
+                        BCC             CMD_SEARCH_USAGE
+                        JSR             SEARCH_PARSE_PATTERN
+                        BCC             CMD_SEARCH_USAGE
+                        JMP             SEARCH_SCAN_RANGE</code></pre>
+<p>The entry shape intentionally mirrors the flash command. It preserves the tested parser/scanner flow and avoids depending on <code>$FE/$FF</code>, which display and hash printing may have used before dispatch.</p>
+<p>Keep these routines from the flash donor, with only label-prefix and helper-call changes:</p>
+<pre><code class="language-text">SEARCH_PARSE_RANGE       range parser, including +count and page-local end
+SEARCH_PARSE_PATTERN     hex bytes and apostrophe text atoms
+SEARCH_APPEND_A          fixed pattern-buffer append
+SEARCH_PARSE_HEX_WORD    four-hex-digit parser
+SEARCH_SKIP_SPACES
+SEARCH_PEEK
+SEARCH_ADV_LINE
+SEARCH_SCAN_RANGE        main scan loop
+SEARCH_SCAN_GT_END
+SEARCH_MATCH_GT_END
+SEARCH_MATCH_AT
+SEARCH_PRINT_HIT
+SEARCH_PRINT_ROW_ADDR
+SEARCH_PRINT_ROW_BYTES</code></pre>
+<p>Delete these flash-only routines and data:</p>
+<pre><code class="language-text">SEARCH_FNV
+START / START_HAVE_WRITE / START_IMPORTS_OK names, after renaming to CMD_SEARCH
+SEARCH_RESOLVE_WRITE
+SEARCH_RESOLVE_IMPORTS
+SEARCH_RESOLVE_CTRL_C
+SEARCH_RESOLVE_HEX_IN
+SEARCH_FIND_HASH_XY
+SEARCH_FIND_* scanner helpers
+SEARCH_BIO_WRITE_BYTE_BLOCK trampoline
+SEARCH_BIO_GET_CTRL_C trampoline
+SEARCH_UTL_HEX_ASCII_TO_NIBBLE trampoline
+SEARCH_SYS_PRINT_IO_SLOT_SKIP trampoline
+HASH_BIO_WRITE_BYTE_BLOCK
+HASH_BIO_GET_CTRL_C
+HASH_UTL_HEX_ASCII_TO_NIBBLE
+HASH_SYS_PRINT_IO_SLOT_SKIP
+SEARCH_EXTRA, after replacing with MSG_SEARCH_EXTRA</code></pre>
+<p>Direct native helper calls:</p>
+<pre><code class="language-text">flash helper name                  native HIMON call
+-----------------                  -----------------
+SEARCH_BIO_WRITE_BYTE_BLOCK        BIO_FTDI_WRITE_BYTE_BLOCK
+SEARCH_BIO_GET_CTRL_C              HIM_CHECK_CTRL_C
+SEARCH_UTL_HEX_ASCII_TO_NIBBLE     CMD_HEX_ASCII_TO_NIBBLE
+SEARCH_SYS_PRINT_IO_SLOT_SKIP      SYS_PRINT_IO_SLOT_SKIP
+SEARCH_WRITE_HEX_BYTE              SYS_WRITE_HEX_BYTE
+SEARCH_WRITE_CRLF                  SYS_WRITE_CRLF
+SEARCH_PRINT_LINE                  HIM_WRITE_HBSTRING + SYS_WRITE_CRLF</code></pre>
+<p>Message conversion:</p>
+<pre><code class="language-asm">MSG_SEARCH_USAGE:       DB &quot;S START END|+COUNT BB|&#39;TEXT&#39; [...], ? HELP, Q QUI&quot;,(&#39;T&#39;+$80)
+MSG_SEARCH_IMPORT:      ; delete in native; there are no runtime imports
+MSG_SEARCH_NF:          DB &quot;S N&quot;,(&#39;F&#39;+$80)
+MSG_SEARCH_ABORT:       DB &quot;S ABOR&quot;,(&#39;T&#39;+$80)
+MSG_SEARCH_EXTRA:       DB &quot;S(earch&quot;,(&#39;)&#39;+$80)</code></pre>
+<p>The native version should not keep zero-terminated string printing just for search. Use HIMON high-bit strings so the command can reuse <code>HIM_WRITE_HBSTRING</code> and delete <code>SEARCH_WRITE_CSTRING</code>.</p>
+<p>Proposed native scratch map:</p>
+<pre><code class="language-text">$B4 SEARCH_LINE_LO
+$B5 SEARCH_LINE_HI
+$B6 SEARCH_WORD_LO
+$B7 SEARCH_WORD_HI
+$B8 SEARCH_START_LO
+$B9 SEARCH_START_HI
+$BA SEARCH_END_LO
+$BB SEARCH_END_HI
+$BC SEARCH_SCAN_LO
+$BD SEARCH_SCAN_HI
+$BE SEARCH_MATCH_LO
+$BF SEARCH_MATCH_HI
+$C0 SEARCH_ROW_LO
+$C1 SEARCH_ROW_HI
+$C2 SEARCH_TMP
+$C3 SEARCH_DIGITS
+$C4 SEARCH_PAT_LEN
+$C5 SEARCH_COUNT
+$C6 SEARCH_HIT_FLAG
+$C7-$CA spare/reserved</code></pre>
+<p>That keeps the hot pointers in zero page without stealing the <code>$00-$AF</code> user/free region. It uses the reserved R-YORS/HIMON/THE/ASM expansion lane <code>$B0-$CA</code>; leave <code>$B0-$B3</code> alone because current hash display/filter code uses it. The pattern buffer can remain at <code>$7900</code> for the first native pass so the search core stays unchanged. The known side effect remains: whole-memory scans can find the active pattern bytes at <code>$7900</code>.</p>
+<p>Do not build a runtime memory allocator for this native pass. HIMON commands are single-owner, foreground routines, and their scratch bytes are volatile while the command is running. The right mechanism is a static workspace ledger: reserve named zero-page bytes in the source, document who owns them, and keep the contracts clear about which helper calls may clobber <code>$CD-$FF</code>. In that sense the assembler/linker and memory map are the allocator.</p>
+<p>If later runtime-discovered routines need scratch space, make that an explicit record/header contract or a linker/loader fixup concern. Do not let arbitrary loaded code ask HIMON for zero-page bytes at runtime until there is a real need, because such an allocator would need lifetime rules, failure paths, and reentrancy decisions that search does not need.</p>
+<p>Native source placement in <code>himon.asm</code>:</p>
+<pre><code class="language-text">command records:
+    put CMD_SEARCH_FNV near the other command FNV records, after the quote/D
+    area is fine
+
+command body:
+    put CMD_SEARCH and SEARCH_* routines near CMD_D/MON_PRINT_MEM_RANGE, because
+    search shares the same display-row and I/O-skip mental model
+
+messages:
+    put MSG_SEARCH_* with the other HIMON messages</code></pre>
+<p>Hash-scan order matters. HIMON scans records from <code>$8000</code> upward. If the low-flash <code>S</code> record at <code>$BBA2</code> is still programmed, it will win before a native <code>S</code> record inside HIMON at <code>$C000+</code>. Native test boards must either erase/avoid the low-flash search record or boot a bank without that flash-shadow member.</p>
+<p>Size-biased native rewrite rules:</p>
+<ul>
+<li>Keep the parse/scan/match/hit routines split. They are already small leaves</li>
+</ul>
+<p>and make later bugs easier to isolate.</p>
+<ul>
+<li>Delete the import resolver before doing any size comparisons; its job ends</li>
+</ul>
+<p>when search is native.</p>
+<ul>
+<li>Prefer direct <code>JMP</code> tails to <code>JSR</code>/<code>RTS</code> pairs when the caller is done.</li>
+<li>Keep <code>STZ</code>, <code>BRA</code>, zero-page <code>(zp),Y</code>, and one-byte flags from the flash</li>
+</ul>
+<p>proof.</p>
+<ul>
+<li>Replace local hex and CRLF writers with <code>SYS_WRITE_HEX_BYTE</code> and</li>
+</ul>
+<p><code>SYS_WRITE_CRLF</code>; do not carry duplicate output helpers inside HIMON.</p>
+<ul>
+<li>Do not introduce a generalized scanner framework for this pass. The goal is</li>
+</ul>
+<p>the proven search core inside HIMON, not a new abstraction layer.</p>
+<p>Native test sequence:</p>
+<pre><code class="language-text">make -C SRC himon
+install/run the new HIMON image
+ensure $BBA2 flash-shadow S is absent, erased, or in a different bank
+
+&gt;# S
+    expected: D60C1322 ENTRY=&lt;native&gt; K=05  S(earch)
+
+&gt;S 7F06 +27 00
+    expected: 7F00/7F20 named IO SKIP rows, then S NF
+
+&gt;S 0 FFFF &#39;HIMON&#39;
+    expected: RAM/current-line hits, named IO SKIP rows, ROM hits
+
+&gt;S 3000 +100 &#39;NOTTHERE&#39;
+    expected: S NF, using a range that excludes $7900 pattern storage
+
+&gt;D 7EF0 800F
+    expected: D still prints the same named IO SKIP rows</code></pre>
+<p>Only after this native sequence is boring should <code>himon-search-flash.asm</code> be marked as historical/proof-delivery code instead of the active command owner.</p>
 <h3 id="flash-shadow-linking-caveat">Flash-Shadow Linking Caveat</h3>
 <p><code>L F</code> plus a <code>&gt;$8000</code> S19 is a good bring-up shape, but it is not the same thing as real catalog linking.</p>
 <p>The RAM proof is deliberately self-contained. Even the BIO-backed proof carries some payload that already exists in the resident HIMON ROM image:</p>
@@ -384,6 +1142,10 @@ UTL_HEX_* helpers</code></pre>
 <p>When the RAM and flash-shadow behavior are both boring, fold the command into HIMON:</p>
 <ul>
 <li>Move the search implementation into the HIMON source tree.</li>
+<li>Use <code>SRC/PROOFS/himon-search-for-himon.asm</code> as the checklist for the</li>
+</ul>
+<p>native record, entry shape, helper-call replacements, scratch bytes, and first native board test.</p>
+<ul>
 <li>Done: remove the resident internal <code>S</code> step binding so search can own the</li>
 </ul>
 <p><code>S</code> hash.</p>
@@ -427,7 +1189,7 @@ actual:
 pass/fail:
 notes:</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</code>. Source modified: <time>2026-05-22T03:38:42Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

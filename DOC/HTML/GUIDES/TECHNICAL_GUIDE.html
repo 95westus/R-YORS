@@ -36,25 +36,25 @@ high-flash recovery from Bank 2 back to known-good HIMON</code></pre>
 <p>This is still a bench-proven recovery/update guard, not a field-updater or self-updater release.</p>
 <h2 id="source-layout">Source Layout</h2>
 <p>Current source aliases in the docs:</p>
-<pre><code class="language-text">HIMON       SRC/TEST/apps/himon/
-STR8        SRC/TEST/apps/str8/
+<pre><code class="language-text">HIMON       SRC/HIMON/
+STR8        SRC/STR8/
 ROM         ROM support source alias in generated docs
-SRC/STASH   parked or promoted code lane
-SRC/SESH    session/experiment lane
+LIB         SRC/LIB/
+PROOFS      SRC/PROOFS/
+APPS        SRC/APPS/
+TESTS       SRC/TESTS/
 SRC/tools   host build and support scripts
 DOC         hand-written and generated documentation
 LOCAL       ignored local source homes</code></pre>
 <p>Physical paths used by the current build:</p>
-<pre><code class="language-text">SRC/TEST/apps/himon/himon.asm
-SRC/TEST/apps/himon/*.inc
-SRC/TEST/apps/himon/fnv1a-fold.asm
-SRC/TEST/apps/str8/str8.asm
-SRC/TEST/apps/str8/str8-worker.asm
-SRC/STASH/ftdi/*.asm
-SRC/SESH/ftdi/*.asm
-SRC/TEST/ftdi/*.asm
-SRC/TEST/dev/*.asm
-SRC/TEST/util/*.asm</code></pre>
+<pre><code class="language-text">SRC/HIMON/himon.asm
+SRC/HIMON/*.inc
+SRC/HIMON/fnv1a-fold.asm
+SRC/STR8/str8.asm
+SRC/STR8/str8-worker.asm
+SRC/LIB/ftdi/*.asm
+SRC/LIB/dev/*.asm
+SRC/LIB/util/*.asm</code></pre>
 <p>Generated routine maps intentionally focus on current operational HIMON/STR8 and ROM-support source. Legacy demos, harnesses, games, ACIA/PIA experiments, and archived monitors are kept out of that operational graph unless promoted.</p>
 <h2 id="build-products">Build Products</h2>
 <p>Primary combined ROM image:</p>
@@ -94,12 +94,12 @@ $F000-$FFFF    4K STR8 recovery sector</code></pre>
 <h2 id="combined-image-layout">Combined Image Layout</h2>
 <p>Current combined-image facts:</p>
 <pre><code class="language-text">HIMON entry:     $C000
-HIMON body:      $C000-$E75B
+HIMON body:      $C000-$E9AF
 STR8 entry:      $F000
-STR8 body:       $F000-$FA83
+STR8 body:       $F000-$FA71
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F770 = 7A 0F 6A 5F
-worker source:   $FC00-$FEBE
+marker bytes:    $F75E = 7A 0F 6A 5F
+worker source:   $FC00-$FED1
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0</code></pre>
 <p>The combined <code>himon-str8-rom.bin</code> places HIMON at CPU <code>$C000</code>, STR8 at CPU <code>$F000</code>, and the reset vector at file offset <code>$7FFC</code>. NMI and IRQ/BRK vectors enter STR8 IVI stubs first.</p>
@@ -143,6 +143,29 @@ $0A00-$0A16   STR8 worker/update state board and map bytes
 $4000-$4FFF   4K sector buffer for bank copy
 $4000-$6FFF   staged C/D/E sector buffers during U</code></pre>
 <p><code>M</code> is read-only from the operator&#39;s point of view, but still uses the worker to switch banks and scan sectors.</p>
+<p>Current top-sector reserve policy:</p>
+<pre><code class="language-text">$F800-$FA71  STR8 resident message/data tail
+             size $0272 = 626 bytes
+
+$FA72-$FBFF  unused $FF padding before the private reserve
+             size $018E = 398 bytes
+
+$FC00-$FFEF  STR8 private high-flash reserve
+             size $03F0 = 1008 bytes
+
+$FC00-$FED1  stored STR8 RAM worker image inside that reserve
+             size $02D2 = 722 bytes
+             linked to run at $0200-$04D1
+
+$FED2-$FFEF  reserved free space for future STR8-private metadata or cache
+             size $011E = 286 bytes
+
+$FFF0-$FFF9  STR8 config pocket
+             size $000A = 10 bytes
+
+$FFFA-$FFFF  W65C02 vectors
+             size $0006 = 6 bytes</code></pre>
+<p>The working rule is that <code>$FC00-$FFEF</code> belongs to STR8 as a private high-flash reserve. The worker grows upward from <code>$FC00</code>; any future STR8 fast-path cache or private metadata should grow downward from <code>$FFEF</code> and must be treated as a hint unless it is validated against the active image identity. <code>$FFF0-$FFFF</code> stays out of general allocation.</p>
 <h2 id="str8-update-gate">STR8 Update Gate</h2>
 <p>The current <code>U</code> gate is intentionally narrow:</p>
 <pre><code class="language-text">target range:  $C000-$EFFF
@@ -241,7 +264,7 @@ HIMON/HIMON_EDGE_DUMP.md      raw HIMON edge evidence
 LOGS/HARDWARE_TEST_LOG.md     board transcript validation
 DOC/GENERATED/                source-derived maps and reports</code></pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/TECHNICAL_GUIDE.md</code>. Source modified: <time>2026-05-20T05:12:33Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/TECHNICAL_GUIDE.md</code>. Source modified: <time>2026-05-22T03:40:00Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

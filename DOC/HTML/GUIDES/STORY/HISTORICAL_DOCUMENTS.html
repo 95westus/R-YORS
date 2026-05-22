@@ -58,19 +58,19 @@
 </ul>
 <p>proved the concept, and says R-YORS adopts layered reusable building blocks.</p>
 <ul>
-<li><code>ror/SRC/TEST/apps/himon/himon-parent.asm</code> is the first smaller monitor shell shape:</li>
+<li><code>ror/SRC/ARCHIVE/himon/himon-parent.asm</code> is the first smaller monitor shell shape:</li>
 </ul>
 <p>line input, HBSTR command table dispatch, reset signature, NMI hook, and command routines factored into callable pieces.</p>
 <ul>
-<li><code>ror/SRC/TEST/apps/himon/himonia.asm</code> is the compact supervisory monitor</li>
+<li><code>ror/SRC/ARCHIVE/himon/himonia.asm</code> is the compact supervisory monitor</li>
 </ul>
 <p>before FNV dispatch: direct command comparisons, NMI/BRK trap capture, context resume, loader, assembler, disassembler, and debug helpers.</p>
 <ul>
-<li><code>ror/SRC/TEST/apps/himon/fnv1a-hbstr.asm</code> is the visible FNV/HBSTR proving</li>
+<li><code>ror/SRC/HIMON/fnv1a-hbstr-6000.asm</code> is the visible FNV/HBSTR proving</li>
 </ul>
 <p>app: hash a high-bit-terminated string and print the 32-bit FNV-1a result.</p>
 <ul>
-<li><code>ror/SRC/TEST/apps/himon/himon.asm</code> is HIMON, descended from Himonia-F: the compact monitor</li>
+<li><code>ror/SRC/HIMON/himon.asm</code> is HIMON, descended from Himonia-F: the compact monitor</li>
 </ul>
 <p>whose command dispatch scans FNV records and executes matching entries. This is the current path toward the final HIMON monitor name.</p>
 <h2 id="timeline">Timeline</h2>
@@ -110,7 +110,7 @@
 <li><code>BIO</code>: hardware abstraction above pins and chips</li>
 <li><code>COR</code>: reusable core services and backend glue</li>
 <li><code>SYS</code>: monitor-facing system services, vectors, I/O, and debug adapters</li>
-<li><code>APP</code>/<code>TEST</code>/<code>SESH</code> lanes: practical proving grounds</li>
+<li>early app/test/session lanes: practical proving grounds</li>
 </ul>
 <p>The lineage from BSO2 is architectural rather than a straight copy. BSO2&#39;s command table, loader, debug, vector, and userland ideas become smaller exports and testable monitor-facing pieces.</p>
 <h3 id="2026-04-25-himonia-arrives">2026-04-25: Himonia Arrives</h3>
@@ -127,7 +127,7 @@
 </ul>
 <p>This is the point where BSO2&#39;s &quot;monitor as full environment&quot; becomes Himonia&#39;s &quot;monitor as compact supervisor.&quot;</p>
 <h3 id="2026-04-26-fnv-and-hbstr-become-runtime-tools">2026-04-26: FNV And HBSTR Become Runtime Tools</h3>
-<p>Commit <code>f12b7a8</code> adds <code>fnv1a-hbstr.asm</code> and factors the assembler/debug/disasm pieces. This matters because FNV is no longer just documentation hash thinking. It becomes executable 65C02 code that hashes high-bit-terminated strings.</p>
+<p>Commit <code>f12b7a8</code> adds the original <code>fnv1a-hbstr.asm</code> and factors the assembler/debug/disasm pieces. This matters because FNV is no longer just documentation hash thinking. It becomes executable 65C02 code that hashes high-bit-terminated strings.</p>
 <p>That same commit is also important because the <code>A</code> assembler path gets factored out into its own include, then named <code>himonia-asm.inc</code> and now renamed <code>himon-asm.inc</code>. In other words, the assembler existed as a practical monitor feature before the later hashed-symbol assembler design.</p>
 <h3 id="2026-04-27-himonia-f-becomes-hash-driven">2026-04-27: Himonia-F Becomes Hash Driven</h3>
 <p>Commit <code>53bce09</code> adds <code>himonia-f.asm</code>, now promoted to <code>himon.asm</code>, with FNV command dispatch. This is the big turn:</p>
@@ -145,7 +145,7 @@
 <p>This is the first monitor shape where &quot;dynamic linking by discoverable command record&quot; is visibly close.</p>
 <h3 id="2026-04-28-to-2026-04-29-flash-compatibility-and-language-images">2026-04-28 to 2026-04-29: Flash, Compatibility, And Language Images</h3>
 <p>The short-lived Forth-like Himonia and Himon4 variants tested command metadata and contract ideas. The retired variants still matter as design evidence: command records can carry more than an entry address.</p>
-<p>Commit <code>32c1143</code> proves flash command installation with <code>test-flash.s19</code> and a runnable <code>Z</code> command in flash. The current monitor also exposes historical compatibility jump points for loaded language images. STR8 should not inherit that fixed-address ABI idea.</p>
+<p>Commit <code>32c1143</code> proves flash command installation with the original <code>test-flash.s19</code> and a runnable <code>Z</code> command in flash. The current monitor also exposes historical compatibility jump points for loaded language images. STR8 should not inherit that fixed-address ABI idea.</p>
 <p>Commits on 2026-04-29 add OSI BASIC, fig-Forth, and Microchess images. That pushes Himonia from &quot;monitor&quot; toward &quot;small ROM-resident supervisor for loaded systems.&quot;</p>
 <h2 id="design-lineage">Design Lineage</h2>
 <h3 id="command-dispatch">Command Dispatch</h3>
@@ -202,10 +202,10 @@
 <li><code>bso2/DOCS/reference/warmstart-test-plan.md</code></li>
 <li><code>bso2/DOCS/reference/zero-page-usage.md</code></li>
 <li><code>ror/README.md</code></li>
-<li><code>ror/SRC/TEST/apps/himon/himon-parent.asm</code></li>
-<li><code>ror/SRC/TEST/apps/himon/himonia.asm</code></li>
-<li><code>ror/SRC/TEST/apps/himon/fnv1a-hbstr.asm</code></li>
-<li><code>ror/SRC/TEST/apps/himon/himon.asm</code></li>
+<li><code>ror/SRC/ARCHIVE/himon/himon-parent.asm</code></li>
+<li><code>ror/SRC/ARCHIVE/himon/himonia.asm</code></li>
+<li><code>ror/SRC/HIMON/fnv1a-hbstr-6000.asm</code></li>
+<li><code>ror/SRC/HIMON/himon.asm</code></li>
 <li><code>ror/DOC/GUIDES/STR8/STR8.md</code></li>
 <li><code>ror/DOC/GUIDES/ASM/HASHED_ASM.md</code></li>
 </ol>
@@ -227,7 +227,7 @@
 </ul>
 <p>convention plus per-app RAM reservations?</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STORY/HISTORICAL_DOCUMENTS.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STORY/HISTORICAL_DOCUMENTS.md</code>. Source modified: <time>2026-05-22T03:41:35Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

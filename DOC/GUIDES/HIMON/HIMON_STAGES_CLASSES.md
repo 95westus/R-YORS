@@ -14,18 +14,18 @@ visible through label prefixes such as `CMD_*`, `MON_*`, `HIM_*`, `FNV1A_*`,
 Current local evidence:
 
 ```text
-SRC/TEST/apps/himon/himon-parent.asm
-SRC/TEST/apps/himon/mon.asm
-SRC/TEST/apps/himon/mon-cmd-*.inc
-SRC/TEST/apps/himon/himonia.asm
-SRC/TEST/apps/himon/fnv1a-hbstr.asm
-SRC/TEST/apps/himon/himonia-f.asm
-SRC/TEST/apps/himon/himon.asm
-SRC/TEST/apps/himon/himon-shared-eq.inc
-SRC/TEST/apps/himon/himon-asm.inc
-SRC/TEST/apps/himon/himon-debug.inc
-SRC/TEST/apps/himon/himon-disasm.inc
-SRC/TEST/apps/himon/himon-bootlog.inc
+SRC/ARCHIVE/himon/himon-parent.asm
+SRC/ARCHIVE/himon/mon.asm
+SRC/ARCHIVE/himon/mon-cmd-*.inc
+SRC/ARCHIVE/himon/himonia.asm
+SRC/HIMON/fnv1a-hbstr-6000.asm
+SRC/ARCHIVE/himon/himonia-f.asm
+SRC/HIMON/himon.asm
+SRC/HIMON/himon-shared-eq.inc
+SRC/HIMON/himon-asm.inc
+SRC/HIMON/himon-debug.inc
+SRC/HIMON/himon-disasm.inc
+SRC/HIMON/himon-bootlog.inc
 ```
 
 Guide evidence:
@@ -137,7 +137,7 @@ inline.
 Primary file:
 
 ```text
-SRC/TEST/apps/himon/himon-parent.asm
+SRC/ARCHIVE/himon/himon-parent.asm
 ```
 
 Source classes:
@@ -190,11 +190,11 @@ MON_* holds command behavior and monitor context behavior.
 Primary files:
 
 ```text
-SRC/TEST/apps/himon/mon.asm
-SRC/TEST/apps/himon/mon-cmd-core.inc
-SRC/TEST/apps/himon/mon-cmd-memory.inc
-SRC/TEST/apps/himon/mon-cmd-debug.inc
-SRC/TEST/apps/himon/mon-cmd-load.inc
+SRC/ARCHIVE/himon/mon.asm
+SRC/ARCHIVE/himon/mon-cmd-core.inc
+SRC/ARCHIVE/himon/mon-cmd-memory.inc
+SRC/ARCHIVE/himon/mon-cmd-debug.inc
+SRC/ARCHIVE/himon/mon-cmd-load.inc
 ```
 
 Source classes:
@@ -229,7 +229,7 @@ or fixed placement matters.
 Primary file:
 
 ```text
-SRC/TEST/apps/himon/himonia.asm
+SRC/ARCHIVE/himon/himonia.asm
 ```
 
 Source classes:
@@ -286,7 +286,7 @@ jump to command routine
 Primary file:
 
 ```text
-SRC/TEST/apps/himon/fnv1a-hbstr.asm
+SRC/HIMON/fnv1a-hbstr-6000.asm
 ```
 
 Source classes:
@@ -323,8 +323,8 @@ one compact lookup method
 Primary files:
 
 ```text
-SRC/TEST/apps/himon/himonia-f.asm
-SRC/TEST/apps/himon/himon.asm
+SRC/ARCHIVE/himon/himonia-f.asm
+SRC/HIMON/himon.asm
 ```
 
 Source classes:
@@ -518,7 +518,7 @@ current source promotes the FNV-driven Himonia-F line into HIMON.
   before the tracked HIMON import is partly represented by documentation
   rather than direct commit ancestry.
 - Himon4 is mentioned as a short-lived variant in historical notes, but there is
-  no current tracked source file for it in `SRC/TEST/apps/himon`.
+  no current tracked source file for it in `SRC/HIMON` or `SRC/ARCHIVE/himon`.
 - The current generated class diagram is useful for prefix frequency, but this
   guide is the human reconstruction of what those classes mean.
 - Any future `MEM_*` dynamic-memory stage should update this document together

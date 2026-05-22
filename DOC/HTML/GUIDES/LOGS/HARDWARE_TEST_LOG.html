@@ -11,6 +11,73 @@
   <main class="doc-page">
 <h1 id="r-yors-hardware-test-log">R-YORS Hardware Test Log</h1>
 <p>This file records bench transcripts that prove behavior on real hardware. Keep entries short enough to scan, but include enough serial output to reconstruct what was actually tested.</p>
+<h2 id="2026-05-21-search-ladder-and-ftdi-tx-carry-bug">2026-05-21 Search Ladder And FTDI TX Carry Bug</h2>
+<h3 id="summary">Summary</h3>
+<p>The <code>S</code> search command reached the three-step proof ladder:</p>
+<pre><code class="language-text">S static RAM   standalone parser/scanner proof at $3000
+S joined RAM   same behavior with runtime FNV helper discovery
+S flash        discoverable low-flash FNV command record, run from ROM window</code></pre>
+<p>During the flash proof, occasional impossible three-digit byte displays were observed:</p>
+<pre><code class="language-text">expected: D0 06      observed: D00 06
+expected: 0D 0A      observed: 0D 00A
+expected: 00 00      observed: 00 000</code></pre>
+<p>Root cause: <code>PIN_FTDI_WRITE_BYTE_NONBLOCK</code> could accept a byte after one or more TX-ready spin iterations, but return with carry clear because <code>CPX</code> in the spin loop had changed carry. Blocking callers interpreted <code>C=0</code> as &quot;not accepted&quot; and resent the byte. The fix is to force <code>SEC</code> on the successful write-strobe path while preserving <code>CLC</code> on timeout.</p>
+<p>Follow-up audit: <code>STR8_CON_WRITE_BYTE_NONBLOCK</code> has the same TX-spin shape, but already forces <code>SEC</code> on success before deassert/return. FTDI poll/read routines explicitly return carry status, and timeout wrappers branch on the callee&#39;s carry before issuing their own <code>CLC</code> timeout return. No second active resend-after-success bug was found.</p>
+<h3 id="search-proof-extracts">Search Proof Extracts</h3>
+<p>RAM static:</p>
+<pre><code class="language-text">&gt;L
+L @3000
+L OK=0520 GO=3000
+&gt;G 3000
+HIMON SEARCH STATIC $3000
+S&gt; S 34AF +20 48 &#39;IMON&#39;
+34AF*34A0: ... 48 | ...
+S&gt; S 7EF0 8010 00
+S IO
+S&gt; Q
+S DONE</code></pre>
+<p>RAM joined:</p>
+<pre><code class="language-text">&gt;L
+L @3000
+L OK=0589 GO=3000
+&gt;G 3000
+HIMON SEARCH PROOF $3000
+S&gt; S 0 FFFF FF 00
+7900 7900: ...
+S IO
+&gt;# S
+D60C1322 HSH_NF!</code></pre>
+<p>Flash command, hardware-proven K=<code>$03</code> transcript:</p>
+<pre><code class="language-text">&gt;L F
+L @BA67
+LF OK WR=045C GO=BA73
+&gt;# S
+D60C1322 ENTRY=BA73 K=03  S(earch)
+&gt;S B000 C000 &#39;TEXT&#39;
+RUN S(earch) @BA73 K=03 ? y
+BE87 BE80: ... 45 58 54 ...
+&gt;S 0 FFFF &#39;HIMON&#39;
+RUN S(earch) @BA73 K=03 ? y
+S ABORT</code></pre>
+<p>Current source advances the flash command record to K=<code>$05</code> and relocates it to <code>$BBA2-$BFF5</code>, with <code>$FF,$FF</code> guard bytes before the record and spare <code>$FF</code> padding before <code>$C000</code>. That shape keeps <code>S(earch)</code> display text while removing the <code>RUN ... ?</code> confirmation prompt under a new HIMON build.</p>
+<p>The current flash <code>S</code> also shares HIMON&#39;s named I/O slot printer (<code>SYS_PRINT_IO_SLOT_SKIP</code>, hash <code>$C2A5A6CE</code>) with <code>D</code>. A range that reaches the <code>$7F00-$7FFF</code> I/O page prints rows such as <code>7F80: ACIA IO SKIP</code> instead of reading device registers or reporting only <code>S IO</code>.</p>
+<p>Aligned I/O slot proof from PuTTY log, after the padded resident HIMON strings:</p>
+<pre><code class="language-text">S 0 FFFF FF
+...
+7900 7900: FF 49 4D 4F 4E 00 00 00 | 00 00 00 00 00 00 00 00 | .IMON...........
+7E78 7E70: 0C D6 AE BB 00 00 0B 00 | FF FF 00 00 00 00 00 00 | ................
+7F00: CS0      IO SKIP
+7F20: CS1      IO SKIP
+7F40: CS2      IO SKIP
+7F60: CS3      IO SKIP
+7F80: ACIA     IO SKIP
+7FA0: PIA      IO SKIP
+7FC0: VIA      IO SKIP
+7FE0: FTDI VIA IO SKIP
+8000 8000: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................</code></pre>
+<p>Searching for <code>FF</code> across all memory is intentionally noisy because erased RAM and flash areas produce many hits. The useful proof here is that the search prints named skip rows and resumes at <code>$8000</code> without reading the I/O page.</p>
+<p>Full notes:</p>
+<pre><code class="language-text">DOC/GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md</code></pre>
 <h2 id="2026-05-17-str8-u-osi-basic-payload-and-b0-rotation-proof">2026-05-17 STR8 U OSI BASIC Payload And B0 Rotation Proof</h2>
 <p>Source transcript:</p>
 <pre><code class="language-text">operator transcript pasted into Codex session</code></pre>
@@ -503,7 +570,7 @@ RESUME 4007
 </ul>
 <p>high-flash failure behavior.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md</code>. Source modified: <time>2026-05-22T02:50:13Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

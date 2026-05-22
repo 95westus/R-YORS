@@ -187,8 +187,10 @@
 <li>ROM/dev/: current ROM support adapter source alias.</li>
 <li>ROM/ftdi/: current ROM FTDI backend source alias.</li>
 <li>ROM/util/: current ROM utility source alias.</li>
-<li>SRC/STASH: stable or promoted code lane.</li>
-<li>SRC/SESH: session/WIP lane.</li>
+<li>SRC/LIB: shared ROM support source.</li>
+<li>SRC/PROOFS: board proofs and promotion scaffolds.</li>
+<li>SRC/APPS: standalone applications.</li>
+<li>SRC/TESTS: test harnesses.</li>
 <li>SRC/BUILD: generated build output.</li>
 <li>SRC/tools: host-side scripts for build and generated artifacts.</li>
 </ul>
@@ -317,7 +319,7 @@
 <li>R-YORS record: a R-YORS structured runtime/catalog record.</li>
 <li>RREC: R-YORS runtime record; one typed catalog entry for a command, routine,</li>
 </ul>
-<p>symbol, data item, module, inline value, or similar runtime thing.</p>
+<p>symbol, data item, module, inline value, or similar runtime thing. Treat an RREC as a typed envelope: its kind/control contract says how to interpret its inline payload or linked <code>RBODY</code>, and which operations are legal.</p>
 <ul>
 <li>RCAT: R-YORS runtime catalog dataset; may hold records, string pools, indexes,</li>
 </ul>
@@ -334,6 +336,10 @@
 <li>catalog record: metadata that maps hash/name to value, kind, bank, flags, and</li>
 </ul>
 <p>optional name text.</p>
+<ul>
+<li>config record: typed data/config record used to publish a small setting such</li>
+</ul>
+<p>as <code>CONFIG.TERMINAL.WIDTH</code>. It may be displayed and consumed by policy code, but it is not executable unless a separate executable kind says so.</p>
 <ul>
 <li>fixup record: pending patch site for a symbol not known when an instruction</li>
 </ul>
@@ -352,7 +358,7 @@
 <li>control byte: packed layout, lifecycle, and hash-width byte.</li>
 <li>kind: semantic type, such as command, routine, symbol, fixup, string, or</li>
 </ul>
-<p>module.</p>
+<p>module. For typed runtime records, kind selects the contract for the payload; it is not a lifecycle state or blanket permission byte.</p>
 <p>Current HIMON uses <code>FNV|$80</code> as a readable command-record signature. Future compact catalog records should put layout and hash width in a control byte.</p>
 <h2 id="runtime-catalog-terms">Runtime Catalog Terms</h2>
 <ul>
@@ -475,7 +481,7 @@
 <p>address when none is forced; examples include high-to-low, low-to-high, best fit, closest-to-top, and first fit in a selected bank or sector range.</p>
 <p>Example: <code>$E000-$EFFF</code> is window/sector <code>$E</code> of whichever bank is currently selected. Sector <code>$0</code> is <code>$0000-$0FFF</code>; <code>$0000-$FFFF</code> is the full 64K CPU address space, not sector <code>$0</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-20T03:53:13Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/GLOSSARY.md</code>. Source modified: <time>2026-05-22T03:40:00Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

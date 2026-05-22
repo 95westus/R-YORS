@@ -1,6 +1,6 @@
 param(
     [string]$SourcePath = "../LOCAL/msbasic/generated/osi-basic.asm",
-    [string]$MapPath = "BUILD/map/himon-rom.map",
+    [string]$MapPath = "BUILD/map/himon-rom-c000.map",
     [ValidateSet("himon", "str8")]
     [string]$Profile = "himon"
 )

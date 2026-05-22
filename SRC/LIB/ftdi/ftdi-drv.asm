@@ -1,7 +1,7 @@
 ; -------------------------------------------------------------------------
 ; HEADER
-; FILE: SRC/STASH/ftdi/ftdi-drv.asm
-; OWNER: STASH / top-shelf lane
+; FILE: SRC/LIB/ftdi/ftdi-drv.asm
+; OWNER: LIB / top-shelf FTDI driver
 ; SCOPE: FTDI FIFO L0 pin driver routines (`PIN_FTDI_*`)
 ; ABI: Exported `PIN_FTDI_*` contracts are frozen unless policy says
 ;   otherwise.
@@ -36,10 +36,10 @@
 ; - L0 driver exports use `PIN_<DEVICE>_*` (this file: `PIN_FTDI_*`).
 ;
 ; TOP-SHELF CODE POLICY:
-; - This file is designated top-shelf (STASH lane).
+; - This file is designated top-shelf FTDI L0 code.
 ; - Exported `PIN_FTDI_*` behavioral contracts are frozen.
 ; - Allowed changes: bug fixes, timing-safe hardware fixes, and docs/comments.
-; - Any intentional contract change must update `SRC/STASH_CODE.md`.
+; - Any intentional contract change must update the source and symbol docs.
 ;
 ; HASH NOTE:
 ; - `[HASH:XXXXXXXX]` is the 32-bit FNV-1a routine/catalog/symbol hash
@@ -66,7 +66,7 @@
 ; CHANGELOG:
 ; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
 ; 2026-04-18T04:59Z WLP2   PIN_FTDI_INIT declared TOP-SHELF.
-;                          test-ftdi-drv.asm PASSED expected results.
+;                          test-ftdi-drv-2000.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
 ; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
@@ -117,7 +117,7 @@ PIN_FTDI_INIT:
 ; CHANGELOG:
 ; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
 ; 2026-04-18T04:59Z WLP2   PIN_FTDI_POLL_RX_READY declared TOP-SHELF.
-;                          test-ftdi-drv.asm PASSED expected results.
+;                          test-ftdi-drv-2000.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
 ; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
@@ -208,7 +208,7 @@ PIN_FTDI_POLL_TX_READY:
 ; CHANGELOG:
 ; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
 ; 2026-04-18T04:59Z WLP2   PIN_FTDI_READ_BYTE_NONBLOCK declared TOP-SHELF.
-;                          test-ftdi-drv.asm PASSED expected results.
+;                          test-ftdi-drv-2000.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
 ; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
@@ -270,7 +270,7 @@ PIN_FTDI_READ_BYTE_NONBLOCK:
 ; CHANGELOG:
 ; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
 ; 2026-04-18T04:59Z WLP2   PIN_FTDI_WRITE_BYTE_NONBLOCK declared TOP-SHELF.
-;                          test-ftdi-drv.asm PASSED expected results.
+;                          test-ftdi-drv-2000.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
 ; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
@@ -338,7 +338,7 @@ PIN_FTDI_WRITE_BYTE_NONBLOCK:
 ; CHANGELOG:
 ; YYYY-MM-DDTHH:MMZ AUTHOR SUMMARY
 ; 2026-04-18T04:59Z WLP2   PIN_FTDI_CHECK_ENUMERATED declared TOP-SHELF.
-;                          test-ftdi-drv.asm PASSED expected results.
+;                          test-ftdi-drv-2000.asm PASSED expected results.
 ;                          exercised beyond nominal paths.
 ;                          return codes verified.
 ; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV

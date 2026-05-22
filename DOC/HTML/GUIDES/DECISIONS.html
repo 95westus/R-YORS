@@ -85,7 +85,9 @@ and debug tools.</code></pre>
 <p><code>DD</code>, then descending <code>HH:MMZ programmer comment</code> rows. Use CBI code form inside source files: <code>; YYYY-MM-DDTHH:MMZ programmer comment</code>. Continuation lines align under the comment body. Keep CBI source lines under 78 columns.</p>
 <ul>
 <li>Any discovered older date stamps are cleanup debt, not precedent.</li>
+<li>Firmware identity banners may use the compact visual monitor form instead of</li>
 </ul>
+<p>ISO 8601 when screen space and serial transcripts benefit from it. HIMON uses local time as <code>HIMON V 00.mmdd(hhmm)</code>. STR8 uses the matching UTC form <code>STR8  V 00.mmdd(hhmm)Z</code>; the trailing <code>Z</code> is part of the STR8 convention. This exception is for firmware-visible identity strings, not for docs, logs, source comments, or generated artifacts.</p>
 <h2 id="command-safety-and-syntax">Command Safety And Syntax</h2>
 <ul>
 <li>Mandate: destructive commands require a command token of 4 or more</li>
@@ -230,6 +232,14 @@ start +count    count is the number of bytes</code></pre>
 <li>Full-sector backups such as <code>$F000-$FFFF</code> should keep their payload sector</li>
 </ul>
 <p>byte-for-byte clean; metadata lives in the catalog sector, not in front of the copied data. STR8 decides whether a requested backup fits, where it is stored, and what may be overwritten. Bank 2 is the planned SYS/USR bank, and bank 3 remains the default boot bank with <code>$8000-$BFFF</code> user-available, <code>$C000-$EFFF</code> as the default payload gate, and <code>$F000-$FFFF</code> as STR8/top-sector recovery space.</p>
+<ul>
+<li>In the partitioned-backup direction, reserve one normal 4K bank 0/1 payload</li>
+</ul>
+<p>slot as <code>STR8_TOP_SAFE</code> before allowing STR8 top-sector update work. The first fixed slot may be bank 1 <code>$F000-$FFFF</code>, physical <code>$0F000-$0FFFF</code>, leaving 56K for ordinary managed backups. The active boot top sector is bank 3 <code>$F000-$FFFF</code>, physical <code>$1F000-$1FFFF</code>.</p>
+<ul>
+<li>W65C02SXB/EDU has no alternate boot jumper. If the active bank 3 top sector</li>
+</ul>
+<p>is corrupt enough to lose usable reset vectors, no onboard software path can reach STR8, bank 2 tools, or the bank 0/1 catalog. A top-sector backup is therefore programmer-assisted recovery, not bootable self-rescue: erase, program, and verify physical <code>$1F000-$1FFFF</code> from the raw bytes stored in the <code>STR8_TOP_SAFE</code> physical source slot. Recovery receipts must use physical addresses, not ambiguous CPU <code>$F000-$FFFF</code> text.</p>
 <ul>
 <li>STR8 V0 is W65C02-specific. NMOS 6502 portability is not a V0 goal.</li>
 <li>Minimal recovery is a small load/verify/flash/identity surface, not full</li>
@@ -390,6 +400,18 @@ start +count    count is the number of bytes</code></pre>
 <li>Future records that make the second or third word part of the call contract,</li>
 </ul>
 <p>such as <code>PARMS</code> or <code>RESULTS</code>, should use a different kind and a documented HIMON/THE calling convention.</p>
+<ul>
+<li>Future <code>RREC</code> records may wrap inline bytes or a linked <code>RBODY</code> as a typed</li>
+</ul>
+<p>data packet. The kind/control contract decides whether that payload can be displayed, validated/authenticated, joined as code, resolved as imports, or used in some other way.</p>
+<ul>
+<li>A resolver must reject operation/kind mismatches. Printable data is not</li>
+</ul>
+<p>automatically joinable; authenticatable data is not automatically executable; joinable code still needs an explicit call contract.</p>
+<ul>
+<li>Config values such as <code>CONFIG.TERMINAL.WIDTH=$40</code> should be future</li>
+</ul>
+<p>data/config records, not executable records. Terminal startup may resolve the hash/name, require a scalar config kind, validate the range, and fall back to the compiled default when the record is absent or invalid.</p>
 <ul>
 <li>Bits 2 and 3 of the current FNV <code>kind</code> byte are reserved. Do not spend them</li>
 </ul>
@@ -600,7 +622,7 @@ DOC/IDEAS.md</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-20T05:55:49Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-21T20:57:32Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

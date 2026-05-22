@@ -73,6 +73,23 @@ $FFFA-$FFFF  W65C02 hardware vector block</code></pre>
 $FFFC-$FFFD  RESET
 $FFFE-$FFFF  IRQ/BRK</code></pre>
 <p>Those vector bytes remain part of the selected STR8 protected window. They are treated as vector table rather than normal code storage.</p>
+<p>The current high-flash reserve should be read as a top-sector ownership rule, not as general free ROM:</p>
+<pre><code class="language-text">$FC00-$FFEF  STR8 private reserve inside the top sector
+             size $03F0 = 1008 bytes
+
+$FC00-$FED1  stored STR8 RAM worker image
+             size $02D2 = 722 bytes
+             copied to and run from $0200-$04D1
+
+$FED2-$FFEF  reserved free space for future STR8-private metadata or cache
+             size $011E = 286 bytes
+
+$FFF0-$FFF9  one-time flash board/version/config pocket
+             size $000A = 10 bytes
+
+$FFFA-$FFFF  W65C02 hardware vectors
+             size $0006 = 6 bytes</code></pre>
+<p>If STR8 later caches hash/address fast paths in flash, that cache belongs in the <code>$FED2-$FFEF</code> slack or in another deliberate STR8-owned record area. Cached addresses are hints: validate the cache against the active ROM/build identity before trusting it, and fall back to a fresh scan when identity or checksum does not match.</p>
 <h2 id="vector-integration-policy">Vector Integration Policy</h2>
 <p>V0 HIMON controls IRQ/vector behavior.</p>
 <p>Direction change: earlier STR8 notes leaned toward future STR8 ownership of the final hardware vectors and broader trap authority. After careful reconsideration by the project author, the direction is softer and more reusable: STR8 should offer recovery-safe hooks and routines, while the active system may keep its own memory and interrupt policy.</p>
@@ -158,6 +175,9 @@ physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
+STR8 private high-flash reserve is $FC00-$FFEF
+stored worker currently occupies $FC00-$FED1
+reserved worker/cache slack is currently $FED2-$FFEF
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
@@ -614,7 +634,7 @@ user explicitly installs it as module-local or replacement.</code></pre>
 </ul>
 <p>mixed encoding flag?</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8.md</code>. Source modified: <time>2026-05-20T05:56:05Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8.md</code>. Source modified: <time>2026-05-21T22:46:56Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

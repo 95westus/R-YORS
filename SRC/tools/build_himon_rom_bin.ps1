@@ -1,8 +1,8 @@
 param(
-    [string]$MapPath = "BUILD/map/himon-rom.map",
-    [string]$S19Path = "BUILD/s19/himon-rom.s19",
-    [string]$BinPath = "BUILD/bin/himon-rom.bin",
-    [string]$TmpVecPath = "BUILD/tmp/himon-rom-vectors.bin",
+    [string]$MapPath = "BUILD/map/himon-rom-c000.map",
+    [string]$S19Path = "BUILD/s19/himon-rom-c000.s19",
+    [string]$BinPath = "BUILD/bin/himon-rom-c000.bin",
+    [string]$TmpVecPath = "BUILD/tmp/himon-rom-c000-vectors.bin",
     [string]$NmiSymbol = "SYS_VEC_ENTRY_NMI",
     [string]$ResetSymbol = "START",
     [string]$IrqSymbol = "SYS_VEC_ENTRY_IRQ_MASTER"

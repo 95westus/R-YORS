@@ -14,18 +14,18 @@
 <p>In this document, &quot;class&quot; means a routine family or subsystem class, usually visible through label prefixes such as <code>CMD_*</code>, <code>MON_*</code>, <code>HIM_*</code>, <code>FNV1A_*</code>, <code>ASM_*</code>, and <code>DIS_*</code>. It does not mean an object-oriented class.</p>
 <h2 id="evidence">Evidence</h2>
 <p>Current local evidence:</p>
-<pre><code class="language-text">SRC/TEST/apps/himon/himon-parent.asm
-SRC/TEST/apps/himon/mon.asm
-SRC/TEST/apps/himon/mon-cmd-*.inc
-SRC/TEST/apps/himon/himonia.asm
-SRC/TEST/apps/himon/fnv1a-hbstr.asm
-SRC/TEST/apps/himon/himonia-f.asm
-SRC/TEST/apps/himon/himon.asm
-SRC/TEST/apps/himon/himon-shared-eq.inc
-SRC/TEST/apps/himon/himon-asm.inc
-SRC/TEST/apps/himon/himon-debug.inc
-SRC/TEST/apps/himon/himon-disasm.inc
-SRC/TEST/apps/himon/himon-bootlog.inc</code></pre>
+<pre><code class="language-text">SRC/ARCHIVE/himon/himon-parent.asm
+SRC/ARCHIVE/himon/mon.asm
+SRC/ARCHIVE/himon/mon-cmd-*.inc
+SRC/ARCHIVE/himon/himonia.asm
+SRC/HIMON/fnv1a-hbstr-6000.asm
+SRC/ARCHIVE/himon/himonia-f.asm
+SRC/HIMON/himon.asm
+SRC/HIMON/himon-shared-eq.inc
+SRC/HIMON/himon-asm.inc
+SRC/HIMON/himon-debug.inc
+SRC/HIMON/himon-disasm.inc
+SRC/HIMON/himon-bootlog.inc</code></pre>
 <p>Guide evidence:</p>
 <pre><code class="language-text">DOC/GUIDES/STORY/HISTORICAL_DOCUMENTS.md
 DOC/GUIDES/HIMON/HIMON_MAP.md
@@ -84,7 +84,7 @@ APP_*  tests, monitors, and loaded programs</code></pre>
 <p>This is where BSO2&#39;s behavior stops being one program and starts becoming a library surface. Himon/Himonia can then be compact because they call <code>SYS_*</code>, <code>BIO_*</code>, and later <code>FLASH_*</code> services instead of owning all board behavior inline.</p>
 <h2 id="stage-2-himon-parent-shell">Stage 2: Himon Parent Shell</h2>
 <p>Primary file:</p>
-<pre><code class="language-text">SRC/TEST/apps/himon/himon-parent.asm</code></pre>
+<pre><code class="language-text">SRC/ARCHIVE/himon/himon-parent.asm</code></pre>
 <p>Source classes:</p>
 <pre><code class="language-text">START_*  reset/warm detection and RAM clear
 CMDP_*   command parser/table helpers
@@ -111,11 +111,11 @@ CMD_* becomes the current command class.
 MON_* holds command behavior and monitor context behavior.</code></pre>
 <h2 id="stage-3-split-himon-command-monitor">Stage 3: Split Himon Command Monitor</h2>
 <p>Primary files:</p>
-<pre><code class="language-text">SRC/TEST/apps/himon/mon.asm
-SRC/TEST/apps/himon/mon-cmd-core.inc
-SRC/TEST/apps/himon/mon-cmd-memory.inc
-SRC/TEST/apps/himon/mon-cmd-debug.inc
-SRC/TEST/apps/himon/mon-cmd-load.inc</code></pre>
+<pre><code class="language-text">SRC/ARCHIVE/himon/mon.asm
+SRC/ARCHIVE/himon/mon-cmd-core.inc
+SRC/ARCHIVE/himon/mon-cmd-memory.inc
+SRC/ARCHIVE/himon/mon-cmd-debug.inc
+SRC/ARCHIVE/himon/mon-cmd-load.inc</code></pre>
 <p>Source classes:</p>
 <pre><code class="language-text">MON_CMD_*   command bodies
 MON_LOAD_*  S-record loader session
@@ -130,7 +130,7 @@ but the current final image can still include them directly when compactness
 or fixed placement matters.</code></pre>
 <h2 id="stage-4-himonia-compact-supervisor">Stage 4: Himonia Compact Supervisor</h2>
 <p>Primary file:</p>
-<pre><code class="language-text">SRC/TEST/apps/himon/himonia.asm</code></pre>
+<pre><code class="language-text">SRC/ARCHIVE/himon/himonia.asm</code></pre>
 <p>Source classes:</p>
 <pre><code class="language-text">START / MON_START_INIT  boot and re-entry
 MAIN_LOOP               prompt and read/eval loop
@@ -160,7 +160,7 @@ compare against known letters
 jump to command routine</code></pre>
 <h2 id="stage-5-fnv1a-hbstr-proving-tool">Stage 5: FNV1A/HBSTR Proving Tool</h2>
 <p>Primary file:</p>
-<pre><code class="language-text">SRC/TEST/apps/himon/fnv1a-hbstr.asm</code></pre>
+<pre><code class="language-text">SRC/HIMON/fnv1a-hbstr-6000.asm</code></pre>
 <p>Source classes:</p>
 <pre><code class="language-text">FNV1A_*  FNV-1a hash lifecycle
 MATH_*   32-bit multiply-by-prime support
@@ -174,8 +174,8 @@ APP_*    standalone tool UI</code></pre>
 one compact lookup method</code></pre>
 <h2 id="stage-6-himonia-f-hash-dispatched-monitor">Stage 6: Himonia-F Hash-Dispatched Monitor</h2>
 <p>Primary files:</p>
-<pre><code class="language-text">SRC/TEST/apps/himon/himonia-f.asm
-SRC/TEST/apps/himon/himon.asm</code></pre>
+<pre><code class="language-text">SRC/ARCHIVE/himon/himonia-f.asm
+SRC/HIMON/himon.asm</code></pre>
 <p>Source classes:</p>
 <pre><code class="language-text">CMD_HASH_*     token hashing, record scan, record match, entry lookup
 FNV1A_*        runtime hash calculation
@@ -402,7 +402,7 @@ STR8 -&gt; recovery/update guard</code></pre>
 <ul>
 <li>Himon4 is mentioned as a short-lived variant in historical notes, but there is</li>
 </ul>
-<p>no current tracked source file for it in <code>SRC/TEST/apps/himon</code>.</p>
+<p>no current tracked source file for it in <code>SRC/HIMON</code> or <code>SRC/ARCHIVE/himon</code>.</p>
 <ul>
 <li>The current generated class diagram is useful for prefix frequency, but this</li>
 </ul>
@@ -412,7 +412,7 @@ STR8 -&gt; recovery/update guard</code></pre>
 </ul>
 <p>with <code>DYNAMIC_MEMORY_FIRST_STEPS.md</code>, <code>MEMORY_MAP.md</code>, and <code>DECISIONS.md</code>.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_STAGES_CLASSES.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HIMON/HIMON_STAGES_CLASSES.md</code>. Source modified: <time>2026-05-22T03:40:01Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

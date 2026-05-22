@@ -1,5 +1,5 @@
 ; ----------------------------------------------------------------------------
-; test-flash:
+; test-flash-3000:
 ; - Standalone flash primitive test image.
 ; - Built by `make test-flash` and linked at $3000, above life.
 ; - Uses reserved low RAM at $0300 as a staging buffer.

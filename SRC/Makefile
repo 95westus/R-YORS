@@ -5,12 +5,14 @@ ASFLAGS = -G -L -S -W -I $(BUILD_DIR) -I $(INC_DIR)
 LINKFLAGS := -g -s -t -c1000 -hm19 -j -o
 TEST_LINKFLAGS := -g -s -t -c2000 -hm19 -j -o
 TFLASH_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
-STASH_DIR := STASH
-CORE_DIR := SESH
-TEST_ROOT_DIR := TEST
-APPS_DIR := $(TEST_ROOT_DIR)/apps
-TEST_SUPPORT_DIR := $(TEST_ROOT_DIR)/support
-LIB_SUBDIRS := $(STASH_DIR)/ftdi $(CORE_DIR)/ftdi $(TEST_ROOT_DIR)/ftdi $(TEST_ROOT_DIR)/util $(TEST_ROOT_DIR)/dev $(TEST_ROOT_DIR)/acia $(TEST_ROOT_DIR)/pia
+LIB_DIR := LIB
+HIMON_DIR := HIMON
+STR8_DIR := STR8
+TESTS_DIR := TESTS
+PROOFS_DIR := PROOFS
+APPS_DIR := APPS
+TEST_SUPPORT_DIR := $(TESTS_DIR)/support
+LIB_SUBDIRS := $(LIB_DIR)/ftdi $(LIB_DIR)/util $(LIB_DIR)/dev $(LIB_DIR)/acia $(LIB_DIR)/pia
 BUILD_DIR := BUILD
 OBJ_DIR := $(BUILD_DIR)/obj
 INC_DIR := $(BUILD_DIR)/inc
@@ -40,33 +42,32 @@ S3X_HOME ?= $(LOCAL_ROOT)/s3x
 
 # Module map:
 # - rom.lib is built from:
-#   - STASH/ftdi
-#   - SESH/ftdi
-#   - TEST/{ftdi,util,dev,acia,pia}
+#   - LIB/{ftdi,util,dev,acia,pia}
+#   - TESTS/ftdi-backend-debug.asm
 
-HIM_SUBDIR := $(APPS_DIR)/himon
-STR8_SUBDIR := $(APPS_DIR)/str8
+HIM_SUBDIR := $(HIMON_DIR)
+STR8_SUBDIR := $(STR8_DIR)
 HIMON_SRC := $(HIM_SUBDIR)/himon.asm
 HIMON_INC := $(wildcard $(HIM_SUBDIR)/*.inc)
-HIMON_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon.obj
-HIMON_ROM_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon-rom.obj
-HIMON_S19 := $(S19_DIR)/himon.s19
+HIMON_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon-c000.obj
+HIMON_ROM_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon-rom-c000.obj
+HIMON_S19 := $(S19_DIR)/himon-c000.s19
 HIMON_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
-HIMON_ROM_S19 := $(S19_DIR)/himon-rom.s19
+HIMON_ROM_S19 := $(S19_DIR)/himon-rom-c000.s19
 HIMON_ROM_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
-HIMON_ROM_BIN := $(BIN_DIR)/himon-rom.bin
+HIMON_ROM_BIN := $(BIN_DIR)/himon-rom-c000.bin
 HIMON_STR8_ROM_BIN := $(BIN_DIR)/himon-str8-rom.bin
-HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-install.s19
+HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
-HIMON_LOAD_S19 := $(S19_DIR)/himon-load.s19
+HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
-HIMON_LOAD_BIN := $(BIN_DIR)/himon.bin
+HIMON_LOAD_BIN := $(BIN_DIR)/himon-load-c000.bin
 BASIC_HIMON_ROM_BIN := $(BIN_DIR)/basic-himon-rom.bin
 BASIC_FORTH_HIMON_ROM_BIN := $(BIN_DIR)/basic-forth-himon-rom.bin
-FNV1A_HBSTR_SRC := $(HIM_SUBDIR)/fnv1a-hbstr.asm
-FNV1A_HBSTR_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/fnv1a-hbstr.obj
-FNV1A_HBSTR_S19 := $(S19_DIR)/fnv1a-hbstr.s19
+FNV1A_HBSTR_SRC := $(HIM_SUBDIR)/fnv1a-hbstr-6000.asm
+FNV1A_HBSTR_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/fnv1a-hbstr-6000.obj
+FNV1A_HBSTR_S19 := $(S19_DIR)/fnv1a-hbstr-6000.s19
 FNV1A_HBSTR_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
 STR8_SRC := $(STR8_SUBDIR)/str8.asm
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
@@ -79,44 +80,46 @@ STR8_WORKER_LINKFLAGS := -g -s -t -c0200 -hm19 -j -o
 STR8_RAM_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-ram.obj
 STR8_RAM_S19 := $(S19_DIR)/str8-ram-3000.s19
 STR8_RAM_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
-TMON_SRC := $(TEST_ROOT_DIR)/test-mon.asm
-TMON_OBJ := $(OBJ_DIR)/$(TEST_ROOT_DIR)/test-mon.obj
+TMON_SRC := $(TESTS_DIR)/test-mon.asm
+TMON_OBJ := $(OBJ_DIR)/$(TESTS_DIR)/test-mon.obj
 TMON_S19 := $(S19_DIR)/test-mon.s19
-TFTDI_SRC := $(TEST_ROOT_DIR)/test-ftdi-drv.asm
-TFTDI_OBJ := $(OBJ_DIR)/$(TEST_ROOT_DIR)/test-ftdi-drv.obj
-TFTDI_S19 := $(S19_DIR)/test-ftdi-drv.s19
-TFHAL_SRC := $(TEST_ROOT_DIR)/test-ftdi-hal.asm
-TFHAL_OBJ := $(OBJ_DIR)/$(TEST_ROOT_DIR)/test-ftdi-hal.obj
-TFHAL_S19 := $(S19_DIR)/test-ftdi-hal.s19
-TFLASH_SRC := $(TEST_ROOT_DIR)/test-flash.asm
-TFLASH_OBJ := $(OBJ_DIR)/$(TEST_ROOT_DIR)/test-flash.obj
-TFLASH_S19 := $(S19_DIR)/test-flash.s19
+TFTDI_SRC := $(TESTS_DIR)/test-ftdi-drv-2000.asm
+TFTDI_OBJ := $(OBJ_DIR)/$(TESTS_DIR)/test-ftdi-drv-2000.obj
+TFTDI_S19 := $(S19_DIR)/test-ftdi-drv-2000.s19
+TFHAL_SRC := $(TESTS_DIR)/test-ftdi-hal-2000.asm
+TFHAL_OBJ := $(OBJ_DIR)/$(TESTS_DIR)/test-ftdi-hal-2000.obj
+TFHAL_S19 := $(S19_DIR)/test-ftdi-hal-2000.s19
+TFLASH_SRC := $(TESTS_DIR)/test-flash-3000.asm
+TFLASH_OBJ := $(OBJ_DIR)/$(TESTS_DIR)/test-flash-3000.obj
+TFLASH_S19 := $(S19_DIR)/test-flash-3000.s19
 LIFE_SRC := $(APPS_DIR)/life.asm
 LIFE_OBJ := $(OBJ_DIR)/$(APPS_DIR)/life.obj
 LIFE_S19 := $(S19_DIR)/life-2000.s19
 LIFE_BIN := $(BIN_DIR)/life-2000-load.bin
-HIMON_DEBUG_PROOF_SRC := $(APPS_DIR)/himon-debug-proof.asm
-HIMON_DEBUG_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-debug-proof.obj
+HIMON_DEBUG_PROOF_SRC := $(PROOFS_DIR)/himon-debug-proof.asm
+HIMON_DEBUG_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/himon-debug-proof.obj
 HIMON_DEBUG_PROOF_S19 := $(S19_DIR)/himon-debug-proof-3000.s19
 HIMON_DEBUG_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
-HIMON_SEARCH_STATIC_PROOF_SRC := $(APPS_DIR)/himon-search-static-proof.asm
-HIMON_SEARCH_STATIC_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-search-static-proof.obj
+HIMON_SEARCH_STATIC_PROOF_SRC := $(PROOFS_DIR)/himon-search-static-proof.asm
+HIMON_SEARCH_STATIC_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/himon-search-static-proof.obj
 HIMON_SEARCH_STATIC_PROOF_S19 := $(S19_DIR)/himon-search-static-proof-3000.s19
 HIMON_SEARCH_STATIC_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
-HIMON_SEARCH_PROOF_SRC := $(APPS_DIR)/himon-search-proof.asm
-HIMON_SEARCH_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-search-proof.obj
+HIMON_SEARCH_PROOF_SRC := $(PROOFS_DIR)/himon-search-proof.asm
+HIMON_SEARCH_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/himon-search-proof.obj
 HIMON_SEARCH_PROOF_S19 := $(S19_DIR)/himon-search-proof-3000.s19
 HIMON_SEARCH_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
-HIMON_SEARCH_FLASH_SRC := $(APPS_DIR)/himon-search-flash.asm
-HIMON_SEARCH_FLASH_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-search-flash.obj
+HIMON_SEARCH_FLASH_SRC := $(PROOFS_DIR)/himon-search-flash.asm
+HIMON_SEARCH_FLASH_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/himon-search-flash.obj
 HIMON_SEARCH_FLASH_S19 := $(S19_DIR)/himon-search-flash-bba2.s19
 HIMON_SEARCH_FLASH_LINKFLAGS := -g -s -t -cBBA2 -hm19 -j -o
-HREC_JOIN_PROOF_SRC := $(APPS_DIR)/hrec-join-proof.asm
-HREC_JOIN_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/hrec-join-proof.obj
+HIMON_SEARCH_FOR_HIMON_SRC := $(PROOFS_DIR)/himon-search-for-himon.asm
+HIMON_SEARCH_FOR_HIMON_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/himon-search-for-himon.obj
+HREC_JOIN_PROOF_SRC := $(PROOFS_DIR)/hrec-join-proof.asm
+HREC_JOIN_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/hrec-join-proof.obj
 HREC_JOIN_PROOF_S19 := $(S19_DIR)/hrec-join-proof-4000.s19
 HREC_JOIN_PROOF_LINKFLAGS := -g -s -t -c4000 -hm19 -j -o
-CALC_9A00_FNV_PROOF_SRC := $(APPS_DIR)/calc-9a00-fnv-proof.asm
-CALC_9A00_FNV_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/calc-9a00-fnv-proof.obj
+CALC_9A00_FNV_PROOF_SRC := $(PROOFS_DIR)/calc-9a00-fnv-proof.asm
+CALC_9A00_FNV_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/calc-9a00-fnv-proof.obj
 CALC_9A00_FNV_PROOF_S19 := $(S19_DIR)/calc-9a00-fnv-proof.s19
 CALC_9A00_FNV_PROOF_LINKFLAGS := -g -s -t -c9A00 -hm19 -j -o
 ROM_APPEND_CALC_SRC := $(APPS_DIR)/rom-append-calc.asm
@@ -147,12 +150,12 @@ MSBASIC_OSI_C000_OBJ := $(OBJ_DIR)/LOCAL/msbasic/osi-basic-c000.obj
 MSBASIC_OSI_C000_S19 := $(S19_DIR)/msbasic-osi-c000.s19
 MSBASIC_OSI_C000_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 MSBASIC_OSI_STR8_UPDATE_S19 := $(S19_DIR)/msbasic-osi-str8-update.s19
-FTDI_DRV_SRC := $(STASH_DIR)/ftdi/ftdi-drv.asm
-FTDI_DRV_INC := $(STASH_DIR)/ftdi/ftdi-drv.inc
+FTDI_DRV_SRC := $(LIB_DIR)/ftdi/ftdi-drv.asm
+FTDI_DRV_INC := $(LIB_DIR)/ftdi/ftdi-drv.inc
 
-ROM_EXTRA_SRC := $(wildcard $(TEST_ROOT_DIR)/ftdi-backend-debug.asm)
+ROM_EXTRA_SRC := $(wildcard $(TESTS_DIR)/ftdi-backend-debug.asm)
 ROM_SRC := $(foreach d,$(LIB_SUBDIRS),$(wildcard $(d)/*.asm)) $(ROM_EXTRA_SRC)
-APP_SRC := $(wildcard $(STASH_DIR)/*.asm) $(wildcard $(CORE_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/*.asm) $(wildcard $(APPS_DIR)/*.asm) $(wildcard $(HIM_SUBDIR)/*.asm) $(wildcard $(STR8_SUBDIR)/*.asm) $(wildcard $(TEST_SUPPORT_DIR)/*.asm) $(wildcard $(TEST_ROOT_DIR)/ftdi/*.asm) $(wildcard $(TEST_ROOT_DIR)/dev/*.asm) $(wildcard $(TEST_ROOT_DIR)/acia/*.asm) $(wildcard $(TEST_ROOT_DIR)/pia/*.asm) $(wildcard $(TEST_ROOT_DIR)/util/*.asm)
+APP_SRC := $(wildcard $(APPS_DIR)/*.asm) $(wildcard $(PROOFS_DIR)/*.asm) $(wildcard $(HIM_SUBDIR)/*.asm) $(wildcard $(STR8_SUBDIR)/*.asm) $(wildcard $(TESTS_DIR)/*.asm) $(wildcard $(TEST_SUPPORT_DIR)/*.asm) $(foreach d,$(LIB_SUBDIRS),$(wildcard $(d)/*.asm))
 ROM_OBJ := $(addprefix $(OBJ_DIR)/,$(ROM_SRC:.asm=.obj))
 ROM_LIB := $(BUILD_DIR)\lib\rom.lib
 TEST_LIB_SRC := $(wildcard $(TEST_SUPPORT_DIR)/*.asm)
@@ -202,9 +205,10 @@ ALL_TARGETS := \
 	test-flash \
 	life \
 	himon-debug-proof \
-	himon-search-static-proof \
+	himon-search-static \
 	himon-search-proof \
 	himon-search-flash \
+	himon-search-for-himon \
 	hrec-join-proof \
 	rom-append-calc \
 	fig-forth \
@@ -256,9 +260,9 @@ himon-rom: $(ROM_LIB) $(HIMON_ROM_S19)
 
 himon-rom-bin: himon-rom
 	@echo [ps] build $(HIMON_ROM_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-rom.map" -S19Path "$(S19_DIR)/himon-rom.s19" -BinPath "$(HIMON_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-rom-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-rom-c000.map" -S19Path "$(HIMON_ROM_S19)" -BinPath "$(HIMON_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-rom-c000-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
 	@echo [ps] clean HIMON ROM vector temp
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-rom-vectors.bin' -Force }"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-rom-c000-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-rom-c000-vectors.bin' -Force }"
 	@echo [ps] stamp $(HIMON_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 	@echo "Built $(HIMON_ROM_BIN)."
@@ -284,9 +288,9 @@ himon-load: $(ROM_LIB) $(HIMON_LOAD_S19)
 
 himon-load-bin: himon-load
 	@echo [ps] build $(HIMON_LOAD_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-load.map" -S19Path "$(HIMON_LOAD_S19)" -BinPath "$(HIMON_LOAD_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-load-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-load-c000.map" -S19Path "$(HIMON_LOAD_S19)" -BinPath "$(HIMON_LOAD_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-load-c000-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
 	@echo [ps] clean HIMON load vector temp
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-load-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-load-vectors.bin' -Force }"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-load-c000-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-load-c000-vectors.bin' -Force }"
 	@echo [ps] stamp $(HIMON_LOAD_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_LOAD_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 	@echo "Built $(HIMON_LOAD_BIN)."
@@ -332,9 +336,11 @@ himon-debug-proof: $(ROM_LIB) $(HIMON_DEBUG_PROOF_S19)
 	@echo "Built $(HIMON_DEBUG_PROOF_S19)."
 	@$(MAKE) artifacts
 
-himon-search-static-proof: $(ROM_LIB) $(HIMON_SEARCH_STATIC_PROOF_S19)
+himon-search-static: $(ROM_LIB) $(HIMON_SEARCH_STATIC_PROOF_S19)
 	@echo "Built $(HIMON_SEARCH_STATIC_PROOF_S19)."
 	@$(MAKE) artifacts
+
+himon-search-static-proof: himon-search-static
 
 himon-search-proof: $(ROM_LIB) $(HIMON_SEARCH_PROOF_S19)
 	@echo "Built $(HIMON_SEARCH_PROOF_S19)."
@@ -342,6 +348,11 @@ himon-search-proof: $(ROM_LIB) $(HIMON_SEARCH_PROOF_S19)
 
 himon-search-flash: $(ROM_LIB) $(HIMON_SEARCH_FLASH_S19)
 	@echo "Built $(HIMON_SEARCH_FLASH_S19)."
+	@$(MAKE) artifacts
+
+himon-search-for-himon: $(HIMON_SEARCH_FOR_HIMON_OBJ)
+	@echo "Native HIMON search port scaffold: $(HIMON_SEARCH_FOR_HIMON_SRC)."
+	@echo "Use it with DOC/GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md and $(HIMON_SEARCH_FLASH_SRC)."
 	@$(MAKE) artifacts
 
 hrec-join-proof: $(ROM_LIB) $(HREC_JOIN_PROOF_S19)
@@ -619,19 +630,19 @@ $(MSBASIC_OSI_BIN): $(MSBASIC_OSI_S19) tools/build_msbasic_osi_bin.ps1 tools/sta
 
 $(BASIC_HIMON_ROM_BIN): $(MSBASIC_OSI_S19) $(HIMON_ROM_S19) tools/build_basic_himon_rom_bin.ps1 tools/stamp_rom_bin.ps1
 	@echo [ps] build $(BASIC_HIMON_ROM_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_himon_rom_bin.ps1 -MsbasicMapPath "$(S19_DIR)/msbasic-osi-8000.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_HIMON_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/basic-himon-rom-vectors.bin"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_himon_rom_bin.ps1 -MsbasicMapPath "$(S19_DIR)/msbasic-osi-8000.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_HIMON_ROM_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/basic-himon-rom-vectors.bin"
 	@echo [ps] stamp $(BASIC_HIMON_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
 $(BASIC_FORTH_HIMON_ROM_BIN): $(FIG_FORTH_S19) $(MSBASIC_OSI_S19) $(HIMON_ROM_S19) tools/build_basic_forth_himon_rom_bin.ps1 tools/stamp_rom_bin.ps1
 	@echo [ps] build $(BASIC_FORTH_HIMON_ROM_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_forth_himon_rom_bin.ps1 -ForthMapPath "$(S19_DIR)/fig-forth-a000.map" -ForthS19Path "$(FIG_FORTH_S19)" -MsbasicMapPath "$(S19_DIR)/msbasic-osi-8000.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_FORTH_HIMON_ROM_BIN)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_basic_forth_himon_rom_bin.ps1 -ForthMapPath "$(S19_DIR)/fig-forth-a000.map" -ForthS19Path "$(FIG_FORTH_S19)" -MsbasicMapPath "$(S19_DIR)/msbasic-osi-8000.map" -MsbasicS19Path "$(MSBASIC_OSI_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -BinPath "$(BASIC_FORTH_HIMON_ROM_BIN)"
 	@echo [ps] stamp $(BASIC_FORTH_HIMON_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_FORTH_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
 $(HIMON_STR8_ROM_BIN): $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) tools/build_himon_str8_rom_bin.ps1 tools/stamp_rom_bin.ps1
 	@echo [ps] build $(HIMON_STR8_ROM_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -BinPath "$(HIMON_STR8_ROM_BIN)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -BinPath "$(HIMON_STR8_ROM_BIN)"
 	@echo [ps] stamp $(HIMON_STR8_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_STR8_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
@@ -665,7 +676,7 @@ $(MSBASIC_OSI_STR8_UPDATE_S19): $(MSBASIC_OSI_C000_S19)
 
 $(FTDI_DRV_INC): $(FTDI_DRV_SRC)
 	@if not exist $(subst /,\,$(dir $(FTDI_DRV_INC))) mkdir $(subst /,\,$(dir $(FTDI_DRV_INC)))
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$src = '$(FTDI_DRV_SRC)'; $$dst = '$(FTDI_DRV_INC)'; $$defs = Select-String -Path $$src -Pattern '^\s*XDEF\s+PIN_FTDI_[A-Z0-9_]+' | ForEach-Object { [Regex]::Match($$_.Line, 'PIN_FTDI_[A-Z0-9_]+').Value } | Select-Object -Unique; $$lines = @('; -------------------------------------------------------------------------','; ftdi-drv.inc','; Public include interface for FTDI L0 driver entry points.','; AUTO-GENERATED by Makefile from STASH/ftdi/ftdi-drv.asm.','; -------------------------------------------------------------------------','') + ($$defs | ForEach-Object { ('                        XREF            ' + $$_) }); Set-Content -Path $$dst -Value $$lines"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$src = '$(FTDI_DRV_SRC)'; $$dst = '$(FTDI_DRV_INC)'; $$defs = Select-String -Path $$src -Pattern '^\s*XDEF\s+PIN_FTDI_[A-Z0-9_]+' | ForEach-Object { [Regex]::Match($$_.Line, 'PIN_FTDI_[A-Z0-9_]+').Value } | Select-Object -Unique; $$lines = @('; -------------------------------------------------------------------------','; ftdi-drv.inc','; Public include interface for FTDI L0 driver entry points.','; AUTO-GENERATED by Makefile from LIB/ftdi/ftdi-drv.asm.','; -------------------------------------------------------------------------','') + ($$defs | ForEach-Object { ('                        XREF            ' + $$_) }); Set-Content -Path $$dst -Value $$lines"
 
 $(TFTDI_OBJ): $(FTDI_DRV_INC)
 
@@ -692,7 +703,7 @@ $(MSBASIC_OSI_C000_SRC): $(MSBASIC_OSI_C000_GEN)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(LOCAL_PROVENANCE) -Name "msbasic-c000" -LocalHome "$(MSBASIC_HOME)" -SourceRoot "$(MSBASIC_SRC_ROOT)" -GeneratedPath "$(MSBASIC_OSI_C000_SRC)" -ToolPath "$(MSBASIC_OSI_C000_GEN)" -Note "Generated bootable C000 OSI MS BASIC source for STR8 U experiments."
 
 $(MSBASIC_OSI_OBJ): $(MSBASIC_OSI_SRC) $(HIMON_ROM_S19) tools/patch_msbasic_himon_addrs.ps1
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/patch_msbasic_himon_addrs.ps1 -SourcePath "$(MSBASIC_OSI_SRC)" -MapPath "$(S19_DIR)/himon-rom.map"
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/patch_msbasic_himon_addrs.ps1 -SourcePath "$(MSBASIC_OSI_SRC)" -MapPath "$(S19_DIR)/himon-rom-c000.map"
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
@@ -719,10 +730,14 @@ himon-version-stamp: $(HIMON_VERSION_STAMP)
 
 $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) himon-version-stamp
 
-$(HIMON_ROM_OBJ): $(HIMON_SRC)
+$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	@if not exist $(subst /,\,$(LST_DIR)) mkdir $(subst /,\,$(LST_DIR))
+	@if not exist $(subst /,\,$(SYM_DIR)) mkdir $(subst /,\,$(SYM_DIR))
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
+	@if exist $(subst /,\,$(<:.asm=.lst)) move /Y $(subst /,\,$(<:.asm=.lst)) $(subst /,\,$(LST_DIR)/$(@F:.obj=.lst))
+	@if exist $(subst /,\,$(<:.asm=.sym)) move /Y $(subst /,\,$(<:.asm=.sym)) $(subst /,\,$(SYM_DIR)/$(@F:.obj=.sym))
 
 $(OBJ_DIR)/%.obj: %.asm
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
@@ -735,12 +750,12 @@ $(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
 
 artifacts:
 	@echo [ps] move sidecar artifacts
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)','$(PROOFS_DIR)','$(HIMON_DIR)','$(STR8_DIR)','$(TESTS_DIR)','$(LIB_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"
 	@echo "Moved sidecar artifacts into $(BUILD_DIR)/{lst,sym,map,bin,s19}."
 
 clean:
 	-del /f *.obj *.lst *.sym *.map *.bin >nul 2>nul
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-ChildItem -Recurse -File -Path '$(APP_DIR)' -Include *.obj,*.lst,*.sym,*.map,*.bin | Remove-Item -Force -ErrorAction SilentlyContinue"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$dirs = @('$(APPS_DIR)','$(PROOFS_DIR)','$(HIMON_DIR)','$(STR8_DIR)','$(TESTS_DIR)','$(LIB_DIR)'); foreach ($$d in $$dirs) { if (Test-Path -LiteralPath $$d) { Get-ChildItem -Recurse -File -Path $$d -Include *.obj,*.lst,*.sym,*.map,*.bin | Remove-Item -Force -ErrorAction SilentlyContinue } }"
 	@if exist $(BUILD_DIR) rmdir /s /q $(BUILD_DIR)
 	@rem keep generated artifacts under BUILD between normal builds
 
@@ -761,4 +776,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static-proof himon-search-proof himon-search-flash hrec-join-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

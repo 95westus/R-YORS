@@ -258,7 +258,7 @@ flowchart TD
 ```
 
 The old fixed HIMONIA entry slots at `$F00D`, `$FADE`, and `$FEED` have been
-removed. Current local bridge builds may patch against `himon-rom.map`, but
+removed. Current local bridge builds may patch against `himon-rom-c000.map`, but
 there is no promised fixed high-ROM ABI.
 
 ## Full Capability Map

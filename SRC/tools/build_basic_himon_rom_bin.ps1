@@ -1,8 +1,8 @@
 param(
     [string]$MsbasicMapPath = "BUILD/s19/msbasic-osi-8000.map",
     [string]$MsbasicS19Path = "BUILD/s19/msbasic-osi-8000.s19",
-    [string]$HimonMapPath = "BUILD/map/himon-rom.map",
-    [string]$HimonS19Path = "BUILD/s19/himon-rom.s19",
+    [string]$HimonMapPath = "BUILD/map/himon-rom-c000.map",
+    [string]$HimonS19Path = "BUILD/s19/himon-rom-c000.s19",
     [string]$BinPath = "BUILD/bin/basic-himon-rom.bin",
     [string]$TmpVecPath = "BUILD/tmp/basic-himon-rom-vectors.bin"
 )

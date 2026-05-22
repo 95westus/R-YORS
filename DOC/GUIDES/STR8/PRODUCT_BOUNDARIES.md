@@ -39,8 +39,8 @@ until it can install/use/verify targets cleanly and has its own release story.
 Current source homes stay as they are:
 
 ```text
-SRC/TEST/apps/str8/    STR8 proof and resident recovery source
-SRC/TEST/apps/himon/   HIMON monitor payload source
+SRC/STR8/    STR8 proof and resident recovery source
+SRC/HIMON/   HIMON monitor payload source
 DOC/GUIDES/STR8/STR8.md     STR8 product and design contract
 DOC/GUIDES/QCC/STR8.md live STR8, IVI, and LEAF questions
 ```

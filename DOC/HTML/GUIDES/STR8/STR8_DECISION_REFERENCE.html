@@ -19,7 +19,7 @@
 <h2 id="source-placement">Source Placement</h2>
 <p>The first STR8 implementation is a testing/userland app, not a production ROM layout yet.</p>
 <p>Expected source placement:</p>
-<pre><code class="language-text">SRC/TEST/apps/str8/</code></pre>
+<pre><code class="language-text">SRC/STR8/</code></pre>
 <p>STR8 can still model reset/recovery behavior, flash bank operations, and protected-sector policy while living in the test app lane.</p>
 <h2 id="hardware-facts">Hardware Facts</h2>
 <p>Reset maps flash bank 3 into <code>$8000-$FFFF</code>.</p>
@@ -196,7 +196,7 @@ WDCMONv2 transition documentation/tool</code></pre>
 <p>Bank 3 boots. Bank 2 is latest backup. Bank 1 is previous backup. Bank 0 is held unless the one-way enrollment flag makes it the oldest rotating backup.</p>
 <p>STR8 restores bank 3 from whole 32K ROM bank images, skipping the selected STR8 protected window unless an explicit STR8 install/update is requested. Then HIMON takes over.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8_DECISION_REFERENCE.md</code>. Source modified: <time>2026-05-20T05:56:19Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8_DECISION_REFERENCE.md</code>. Source modified: <time>2026-05-22T03:38:42Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

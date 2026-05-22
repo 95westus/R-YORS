@@ -37,7 +37,7 @@ inside or beside an `RCAT`. "Member" is a useful S/36-ish packaging word, but
 Current LIFE source:
 
 ```text
-source: SRC/TEST/apps/life.asm
+source: SRC/APPS/life.asm
 module: LIFE_APP
 export: START
 current link base: $2000

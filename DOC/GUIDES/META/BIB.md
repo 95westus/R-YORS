@@ -16,8 +16,8 @@ ROM/ftdi-backend-debug.asm
 ROM/ftdi/*.asm
 ROM/dev/*.asm
 ROM/util/*.asm
-SRC/STASH/ftdi/*.asm
-SRC/SESH/ftdi/*.asm
+SRC/LIB/ftdi/*.asm
+SRC/LIB/ftdi/*.asm
 ```
 
 The generated source-derived docs use this operational set. Legacy demos,
@@ -108,12 +108,12 @@ DOC/GENERATED/STACK_DEPTH_MAP.md
   points that redirect to the operator guide.
 - Symbol relationships are derived from WDC-style `XDEF` and `XREF`
   declarations.
-- Symbol contract examples are seeded from `SRC/STASH/ftdi/ftdi-drv.asm`,
+- Symbol contract examples are seeded from `SRC/LIB/ftdi/ftdi-drv.asm`,
   `ROM/dev/*.asm`, and `HIMON/himon.asm`.
 - Routine inventory is derived from `; ROUTINE:` comment blocks.
 - `CATALOG.md` is a programmer-facing selection view over that
   routine inventory.
-- `LIFE_RCAT_MEMBER.md` uses `SRC/TEST/apps/life.asm` and
+- `LIFE_RCAT_MEMBER.md` uses `SRC/APPS/life.asm` and
   `SRC/BUILD/map/life.map` as a worked RCAT/RREC member example. LIFE remains
   outside the operational generated call trees unless promoted later.
 - `MEMORY_MAP.md` records current HIMON ROM/RAM ownership, compatibility

@@ -20,7 +20,7 @@
                         XREF            SYS_WRITE_HEX_BYTE
                         XREF            UTL_DELAY_AXY_8MHZ
 
-                        INCLUDE         "TEST/test-mon-eq.inc"
+                        INCLUDE         "TESTS/test-mon-eq.inc"
 
                         CODE
 START:

@@ -3,7 +3,7 @@
 
                         XREF            SYS_WRITE_CSTRING
                         XREF            COR_FTDI_WRITE_CRLF 
-                        INCLUDE         "STASH/ftdi/ftdi-drv.inc"
+                        INCLUDE         "LIB/ftdi/ftdi-drv.inc"
                         XDEF            PIN_FTDI_WRITE_BYTE_NONBLOCK
 
                         CODE

@@ -49,17 +49,23 @@ function Get-RoutineHash {
 }
 
 $repoRoot = (Resolve-Path -LiteralPath $Src).Path
-$scanRoots = if (Test-Path -LiteralPath (Join-Path $repoRoot 'STASH')) {
+$scanRoots = if (Test-Path -LiteralPath (Join-Path $repoRoot 'LIB')) {
     @(
-        (Join-Path $repoRoot 'STASH'),
-        (Join-Path $repoRoot 'TEST'),
-        (Join-Path $repoRoot 'SESH')
+        (Join-Path $repoRoot 'LIB'),
+        (Join-Path $repoRoot 'HIMON'),
+        (Join-Path $repoRoot 'STR8'),
+        (Join-Path $repoRoot 'TESTS'),
+        (Join-Path $repoRoot 'PROOFS'),
+        (Join-Path $repoRoot 'APPS')
     )
 } else {
     @(
-        (Join-Path $repoRoot 'SRC/STASH'),
-        (Join-Path $repoRoot 'SRC/TEST'),
-        (Join-Path $repoRoot 'SRC/SESH')
+        (Join-Path $repoRoot 'SRC/LIB'),
+        (Join-Path $repoRoot 'SRC/HIMON'),
+        (Join-Path $repoRoot 'SRC/STR8'),
+        (Join-Path $repoRoot 'SRC/TESTS'),
+        (Join-Path $repoRoot 'SRC/PROOFS'),
+        (Join-Path $repoRoot 'SRC/APPS')
     )
 }
 

@@ -154,8 +154,10 @@ do not leak into current terminology.
 - ROM/dev/: current ROM support adapter source alias.
 - ROM/ftdi/: current ROM FTDI backend source alias.
 - ROM/util/: current ROM utility source alias.
-- SRC/STASH: stable or promoted code lane.
-- SRC/SESH: session/WIP lane.
+- SRC/LIB: shared ROM support source.
+- SRC/PROOFS: board proofs and promotion scaffolds.
+- SRC/APPS: standalone applications.
+- SRC/TESTS: test harnesses.
 - SRC/BUILD: generated build output.
 - SRC/tools: host-side scripts for build and generated artifacts.
 

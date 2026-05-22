@@ -1,3 +1,4 @@
-# TEST LIB Lane
+# Retired TEST Lane
 
-Place test-specific library modules here when they are not part of the shared STASH library surface.
+Test harnesses now live under `SRC/TESTS`. Shared ROM support lives under
+`SRC/LIB`.

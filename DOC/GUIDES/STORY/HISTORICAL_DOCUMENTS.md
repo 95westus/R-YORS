@@ -103,15 +103,15 @@ recoverable, inspectable, self-extending runtime.
   print restart hints, but should not implicitly resume old state.
 - `ror/README.md` explicitly names BSO2 as the predecessor project, says it
   proved the concept, and says R-YORS adopts layered reusable building blocks.
-- `ror/SRC/TEST/apps/himon/himon-parent.asm` is the first smaller monitor shell shape:
+- `ror/SRC/ARCHIVE/himon/himon-parent.asm` is the first smaller monitor shell shape:
   line input, HBSTR command table dispatch, reset signature, NMI hook, and
   command routines factored into callable pieces.
-- `ror/SRC/TEST/apps/himon/himonia.asm` is the compact supervisory monitor
+- `ror/SRC/ARCHIVE/himon/himonia.asm` is the compact supervisory monitor
   before FNV dispatch: direct command comparisons, NMI/BRK trap capture, context
   resume, loader, assembler, disassembler, and debug helpers.
-- `ror/SRC/TEST/apps/himon/fnv1a-hbstr.asm` is the visible FNV/HBSTR proving
+- `ror/SRC/HIMON/fnv1a-hbstr-6000.asm` is the visible FNV/HBSTR proving
   app: hash a high-bit-terminated string and print the 32-bit FNV-1a result.
-- `ror/SRC/TEST/apps/himon/himon.asm` is HIMON, descended from Himonia-F: the compact monitor
+- `ror/SRC/HIMON/himon.asm` is HIMON, descended from Himonia-F: the compact monitor
   whose command dispatch scans FNV records and executes matching entries. This
   is the current path toward the final HIMON monitor name.
 ## Timeline
@@ -160,7 +160,7 @@ different. Instead of growing one monitor, it creates reusable strata:
 - `BIO`: hardware abstraction above pins and chips
 - `COR`: reusable core services and backend glue
 - `SYS`: monitor-facing system services, vectors, I/O, and debug adapters
-- `APP`/`TEST`/`SESH` lanes: practical proving grounds
+- early app/test/session lanes: practical proving grounds
 
 The lineage from BSO2 is architectural rather than a straight copy. BSO2's
 command table, loader, debug, vector, and userland ideas become smaller exports
@@ -185,7 +185,7 @@ This is the point where BSO2's "monitor as full environment" becomes Himonia's
 
 ### 2026-04-26: FNV And HBSTR Become Runtime Tools
 
-Commit `f12b7a8` adds `fnv1a-hbstr.asm` and factors the assembler/debug/disasm
+Commit `f12b7a8` adds the original `fnv1a-hbstr.asm` and factors the assembler/debug/disasm
 pieces. This matters because FNV is no longer just documentation hash thinking.
 It becomes executable 65C02 code that hashes high-bit-terminated strings.
 
@@ -222,7 +222,7 @@ The short-lived Forth-like Himonia and Himon4 variants tested command metadata
 and contract ideas. The retired variants still matter as design evidence:
 command records can carry more than an entry address.
 
-Commit `32c1143` proves flash command installation with `test-flash.s19` and a
+Commit `32c1143` proves flash command installation with the original `test-flash.s19` and a
 runnable `Z` command in flash. The current monitor also exposes historical
 compatibility jump points for loaded language images. STR8 should not inherit
 that fixed-address ABI idea.
@@ -333,10 +333,10 @@ For future archaeology, read in this order:
 3. `bso2/DOCS/reference/warmstart-test-plan.md`
 4. `bso2/DOCS/reference/zero-page-usage.md`
 5. `ror/README.md`
-6. `ror/SRC/TEST/apps/himon/himon-parent.asm`
-7. `ror/SRC/TEST/apps/himon/himonia.asm`
-8. `ror/SRC/TEST/apps/himon/fnv1a-hbstr.asm`
-9. `ror/SRC/TEST/apps/himon/himon.asm`
+6. `ror/SRC/ARCHIVE/himon/himon-parent.asm`
+7. `ror/SRC/ARCHIVE/himon/himonia.asm`
+8. `ror/SRC/HIMON/fnv1a-hbstr-6000.asm`
+9. `ror/SRC/HIMON/himon.asm`
 10. `ror/DOC/GUIDES/STR8/STR8.md`
 11. `ror/DOC/GUIDES/ASM/HASHED_ASM.md`
 

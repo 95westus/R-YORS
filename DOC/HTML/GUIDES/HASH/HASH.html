@@ -232,6 +232,13 @@ bit 7 = 0   committed enough to parse</code></pre>
   hash bytes selected by ww
   value/address/bank/kind/flags
   optional name proof, payload pointer, or inline payload</code></pre>
+<p>An <code>RREC</code> is a typed envelope around either inline bytes or a linked <code>RBODY</code>. The kind/control contract decides what the payload means and which operations are allowed. A text/data packet might be printable. A checked or signed packet might be validatable or authenticatable. A routine/export packet might be joinable into a callable entry. A module/import packet might be resolvable or linkable. The resolver must reject an operation when the record kind does not declare that operation.</p>
+<p>That keeps the byte model general without making <code>kind</code> a permission grab bag: <code>kind</code> selects a parser and contract, while lifecycle, generation, provider choice, and recovery policy stay in separate metadata.</p>
+<p>A simple configuration record is the same idea with a scalar payload:</p>
+<pre><code class="language-text">name/hash: CONFIG.TERMINAL.WIDTH
+kind:      config.u8 or config.word
+payload:   $40</code></pre>
+<p>Startup or terminal initialization can resolve that name, require a configuration-scalar kind, range-check the value, and then use it. If the record is missing or invalid, HIMON should fall back to a compiled default. Because the record is data/config kind, it may be displayed and consumed as configuration, but it is not joinable as code.</p>
 <p>This gives two levels of safety:</p>
 <pre><code class="language-text">RCAT committed?   Is this catalog block valid to scan?
 RREC committed?   Is this individual record valid to use?</code></pre>
@@ -304,7 +311,7 @@ step:         hash = (hash xor byte) * prime mod 2^32</code></pre>
 </ul>
 <p><code>powershell -NoProfile -ExecutionPolicy Bypass -File tools/gen_routine_hash_comments.ps1 -Src . -FailOnCollision $false</code></p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH.md</code>. Source modified: <time>2026-05-20T05:29:14Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH.md</code>. Source modified: <time>2026-05-20T06:17:16Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

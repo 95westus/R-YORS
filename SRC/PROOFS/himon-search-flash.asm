@@ -3,6 +3,32 @@
 ; Low-flash HIMON S command shadow, linked at $BBA2.
 ; Provides a K=$05 FNV record so HIMON can discover S and show S(earch)
 ; without confirm-before-run.
+;
+; Native HIMON port blueprint:
+; - This file is the donor, not the final shape.  Keep the parse/scan/match/hit
+;   routines as routines-of-routines, but delete the flash import resolver when
+;   folding search into HIMON/himon.asm.
+; - See himon-search-for-himon.asm for the shorter native-port checklist.
+; - Native FNV record should become CMD_SEARCH_FNV in himon.asm:
+;     DB 'F','N',CMD_FNV_SIG2,$22,$13,$0C,$D6,CMD_HASH_KIND_EXEC_TEXT
+;     DW CMD_SEARCH
+;     DW MSG_SEARCH_EXTRA
+; - START becomes CMD_SEARCH.  It should still copy CMDP_START ($FA/$FB),
+;   advance past the S token, then call SEARCH_PARSE_RANGE,
+;   SEARCH_PARSE_PATTERN, and SEARCH_SCAN_RANGE.
+; - Delete SEARCH_RESOLVE_*, SEARCH_FIND_*, HASH_* constants, and import
+;   trampolines.  Native calls should be direct:
+;     SEARCH_BIO_WRITE_BYTE_BLOCK      -> BIO_FTDI_WRITE_BYTE_BLOCK
+;     SEARCH_BIO_GET_CTRL_C           -> HIM_CHECK_CTRL_C
+;     SEARCH_UTL_HEX_ASCII_TO_NIBBLE  -> CMD_HEX_ASCII_TO_NIBBLE
+;     SEARCH_SYS_PRINT_IO_SLOT_SKIP   -> SYS_PRINT_IO_SLOT_SKIP
+;     SEARCH_WRITE_HEX_BYTE           -> SYS_WRITE_HEX_BYTE
+;     SEARCH_WRITE_CRLF               -> SYS_WRITE_CRLF
+; - Convert zero-terminated messages to HIMON high-bit strings and print them
+;   with HIM_WRITE_HBSTRING + SYS_WRITE_CRLF.  That lets native search delete
+;   SEARCH_WRITE_CSTRING and SEARCH_PRINT_LINE's C-string machinery.
+; - Keep W65C02S size rules: STZ for clears, zero-page scan pointers,
+;   tail JMPs when finished, and no abstraction that changes the search core.
 ; ----------------------------------------------------------------------------
 
                         MODULE          HIMON_SEARCH_FLASH_APP

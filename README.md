@@ -174,15 +174,17 @@ populated. `make docs-html` regenerates `DOC/HTML`; Markdown remains canonical.
 ## Repository Map
 
 ```text
-SRC/TEST/apps/himon/   HIMON monitor payload source
-SRC/TEST/apps/str8/    STR8 recovery/update source
-SRC/STASH              parked or promoted source lane
-SRC/SESH               session/experiment lane
-SRC/tools              host-side build and support scripts
-DOC/GUIDES             hand-written guides
-DOC/GENERATED          source-derived reports
-DOC/HTML               generated static presentation view
-LOCAL                  ignored local source homes, when present
+SRC/HIMON/      HIMON monitor payload source
+SRC/STR8/       STR8 recovery/update source
+SRC/LIB/        shared ROM support libraries
+SRC/PROOFS/     board proofs and promotion scaffolds
+SRC/APPS/       standalone applications
+SRC/TESTS/      test harnesses
+SRC/tools/      host-side build and support scripts
+DOC/GUIDES/     hand-written guides
+DOC/GENERATED/  source-derived reports
+DOC/HTML/       generated static presentation view
+LOCAL/          ignored local source homes, when present
 ```
 
 ## Hash Direction

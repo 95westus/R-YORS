@@ -105,6 +105,27 @@ if it fails, enter STR8 and high-flash restore Bank 2 -&gt; Bank 3
 boot again and confirm the old HIMON is back</code></pre>
 <p>That proves the recovery shape with the intended updater, not with the programmer as the normal path. The <code>UPDATE HIMON</code> implementation must use the fixed <code>$C000-$EFFF</code> gate and must not rely on whole-ROM programming as its normal update method.</p>
 <p>With the current recovery command set, declining the high-flash warning preserves <code>$C000-$FFFF</code>; that is correct for ordinary restore but not enough to replace a bad HIMON. The controlled fallback test must accept the <code>FLASH C000-FFFF?</code> warning only when Bank 2 is a known-good STR8/HIMON image. The external programmer remains the last choice for a bricked board, not the ordinary update/install proof.</p>
+<h2 id="first-str8-self-update-candidate">First STR8 Self-Update Candidate</h2>
+<p>The first STR8 self-update candidate should be intentionally small: an observable identity string change, not new behavior. HIMON and STR8 should look visually related, but their time bases differ:</p>
+<pre><code class="language-text">HIMON V 00.mmdd(hhmm)   local time
+STR8  V 00.mmdd(hhmm)Z  UTC time</code></pre>
+<p>The <code>Z</code> is part of the STR8 convention so serial transcripts show that the stamp is UTC. Do not use a timestamp-only proof when a reproducible release identity is needed; the timestamp is the bench-visible proof marker.</p>
+<h2 id="edu-top-sector-recovery-rule">EDU Top-Sector Recovery Rule</h2>
+<p>The W65C02SXB/EDU has no alternate boot jumper. If the active bank 3 <code>$F000-$FFFF</code> top sector is corrupted badly enough that the reset vectors are not usable, there is no onboard software path to STR8, the backup catalog, or bank 2 tools. Recovery is then an external-programmer operation.</p>
+<p>Before <code>UPDATE STR8</code> erases or programs the active top sector, it must make a raw 4K backup of the current bank 3 <code>$F000-$FFFF</code> sector into a reserved bank 0/1 payload slot, verify it byte-for-byte, catalog it, and print an external recovery receipt. The payload sector must be a clean copy of the source bytes; headers, labels, hashes, and flags live in the catalog sector.</p>
+<p>Use physical addresses in the rescue receipt. CPU addresses are bank-relative:</p>
+<pre><code class="language-text">phy = bank * $8000 + (cpu_addr - $8000)</code></pre>
+<p>A fixed <code>STR8_TOP_SAFE</code> slot is acceptable for the first version:</p>
+<pre><code class="language-text">STR8_TOP_SAFE backup:
+  bank 1 CPU $F000-$FFFF = PHY $0F000-$0FFFF
+
+active STR8 top sector:
+  bank 3 CPU $F000-$FFFF = PHY $1F000-$1FFFF
+
+EXTERNAL RECOVERY:
+  COPY PHY $0F000-$0FFFF
+  TO   PHY $1F000-$1FFFF</code></pre>
+<p>The update transaction must not erase or overwrite <code>STR8_TOP_SAFE</code> while it is also updating the active STR8 sector. If power fails after the active top sector is damaged, the guaranteed rescue is to use a programmer to erase, program, and verify physical <code>$1F000-$1FFFF</code> from the raw bytes stored at physical <code>$0F000-$0FFFF</code>.</p>
 <h2 id="str8-and-leaf-boundary">STR8 And LEAF Boundary</h2>
 <p>These update commands do not turn STR8 into the runtime owner. STR8 remains the recovery/update guard. In the current combined image, IVI is the stable hardware-vector indirection mechanism; using future LEAF patch routines after handoff is optional payload behavior.</p>
 <pre><code class="language-text">STR8:
@@ -244,7 +265,7 @@ STR8_SECTOR_ERASED
 <li>Decide whether failures should report the first bad bank/sector/address.</li>
 </ul>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8_FLASH_UPDATE_PROPOSAL.md</code>. Source modified: <time>2026-05-19T00:34:10Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STR8/STR8_FLASH_UPDATE_PROPOSAL.md</code>. Source modified: <time>2026-05-20T19:04:23Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

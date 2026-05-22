@@ -13,35 +13,43 @@
 <p>This note records the design thread and RAM proof for joining callers to resident hash records. It is deliberately small and operational: search stays at <code>$3000</code>, while the HREC join proof loads at <code>$4000</code>.</p>
 <h2 id="current-proof">Current Proof</h2>
 <pre><code class="language-text">make -C SRC hrec-join-proof
-source: SRC/TEST/apps/hrec-join-proof.asm
+source: SRC/PROOFS/hrec-join-proof.asm
 S19:    SRC/BUILD/s19/hrec-join-proof-4000.s19
 map:    SRC/BUILD/map/hrec-join-proof-4000.map
 start:  $4000</code></pre>
 <p>Expected current output:</p>
 <pre><code class="language-text">HREC JOIN PROOF $4000
-WRITE H=$379FE930 E=$DD15 OK
-READ H=$20285B85 E=$DD03 OK
-FLUSH H=$2F6622B9 E=$E01E OK
-CTRL H=$426150D2 E=$E03A OK
-HEX H=$ADD714B1 E=$DF99 IN=A OUT=$0A OK
+WRITE H=$379FE930 E=$DF09 OK
+JOINER H=$A9AF15F7 E=$DB0D OK
+READ H=$20285B85 E=$DEF7 OK
+FLUSH H=$2F6622B9 E=$E212 OK
+CTRL H=$426150D2 E=$E22E OK
+HEX H=$ADD714B1 E=$E18D IN=A OUT=$0A OK
 MISSING H=$DEADBEEF E=---- NF OK
-KIND K=$01 OK
-HEXINV H=$ADD714B1 E=$DF99 IN=G C=0 OK
-K10 H=$76543210 E=$420B X=K10-EXTRA OUT=$10 OK
+KIND K=$02 OK
+HEXINV H=$ADD714B1 E=$E18D IN=G C=0 OK
+PTR H=$76543210 E=$4235 X=PTR-EXTR OUT=$10 OK
 TYPE 8 HEX HASH, CR QUIT
 J&gt; 76543210
-USER H=$76543210 E=$420B OK
+USER H=$76543210 E=$4235 OK
 J&gt; 379FE930
-USER H=$379FE930 E=$DD15 OK
+USER H=$379FE930 E=$DF09 OK
 J&gt; DEADBEEF
 USER H=$DEADBEEF E=---- NF
 J&gt;
 DONE</code></pre>
 <p>The exact <code>E=$hhhh</code> entry addresses are from the current ROM map. If HIMON is rebuilt, the hashes should stay the same for the same contracts, but the joined entry addresses may move.</p>
-<p>The proof uses the &quot;C&quot; bootstrap path: it emits no text until it has joined <code>BIO_FTDI_WRITE_BYTE_BLOCK</code> from resident ROM. If the write join fails, the program simply returns.</p>
+<p>The proof uses the &quot;C&quot; bootstrap path: it emits no text until its local tiny scanner has found resident <code>THE_JOIN_EXEC_XY</code>, and that resident joiner has joined <code>BIO_FTDI_WRITE_BYTE_BLOCK</code>. If either join fails, the program simply returns.</p>
 <h2 id="settled-direction">Settled Direction</h2>
 <p>This proof stays on the existing FNV/HREC path. It is not the CRC16 migration and it is not a new catalog format. Its job is to finish the seed-layer join:</p>
 <pre><code class="language-text">hash bytes -&gt; resident record -&gt; executable entry -&gt; callable routine</code></pre>
+<p>The current proof now carries the bootstrap scanner needed to find the resident joiner. The same local code also serves the RAM-local pointer-record proof, but ordinary ROM service joins go through HIMON:</p>
+<pre><code class="language-text">local scanner -&gt; THE_JOIN_EXEC_XY -&gt; all ordinary resident joins</code></pre>
+<p><code>THE_JOIN_EXEC_XY</code> is itself published as an FNV record:</p>
+<pre><code class="language-text">name:        THE_JOIN_EXEC_XY
+hash32:      $A9AF15F7
+stored:      F7 15 AF A9
+record kind: $01 inline executable</code></pre>
 <p>Current direction updates that matter here:</p>
 <pre><code class="language-text">HREC  current tiny FNV-era proof record
 RREC  future typed runtime-record atom
@@ -56,7 +64,7 @@ THE   future resident hash/catalog resolver kernel</code></pre>
 <pre><code class="language-text">HREC       hash record in active memory
 FIND       locate a matching HREC by hash
 JOIN       validate the record and join the caller to its payload
-EXEC JOIN  require K=$00, then return a callable entry</code></pre>
+EXEC JOIN  require executable kind bit 0, then return a callable entry</code></pre>
 <p>So the current routine names are:</p>
 <pre><code class="language-text">HREC_FIND_XY
 HREC_JOIN_EXEC_XY</code></pre>
@@ -67,20 +75,33 @@ HREC_JOIN_HI</code></pre>
 <p>The current tiny generic hash record is:</p>
 <pre><code class="language-text">&#39;F&#39; &#39;N&#39; (&#39;V&#39;|$80) h0 h1 h2 h3 K</code></pre>
 <p>For today:</p>
-<pre><code class="language-text">K=$00  executable inline payload
+<pre><code class="language-text">K=$01  executable inline payload
        callable entry = record + 8
 
-K=$10  executable pointer record with extra pointer
+K=$03  executable pointer/extra record
+       legacy confirm-before-execute form
+       bytes after K are:
+         DW ENTRY
+         DW EXTRA
+
+K=$05  executable pointer/extra record
+       display text without confirm-before-execute
        bytes after K are:
          DW ENTRY
          DW EXTRA</code></pre>
-<p>The proof rejects other <code>K</code> values for <code>HREC_JOIN_EXEC_XY</code>. Future records can use other kind bytes for strings, pointer records, import lists, text lists, or fuller RREC descriptors.</p>
-<p>For <code>K=$10</code>, <code>ENTRY</code> and <code>EXTRA</code> are not automatically coupled:</p>
+<p>The proof follows current HIMON kind bits: bit 0 means executable, bit 1 means confirm before execution, and bit 2 marks text/display metadata. <code>K=$03</code> remains the legacy confirming pointer/extra form; <code>K=$05</code> is the non-confirming pointer/extra form used by flash-shadow commands such as <code>S(earch)</code>. <code>HREC_JOIN_EXEC_XY</code> rejects records whose kind byte does not set bit 0.</p>
+<p>The broader RREC rule is that <code>K</code> is a payload contract selector. A record can wrap inline bytes or point at an <code>RBODY</code>, and the selected contract says which operations are valid for that payload:</p>
+<pre><code class="language-text">display/print          allowed for text, table, and typed dump records
+validate/authenticate  allowed for checked or signed packet records
+join/call              allowed only for executable records with a call ABI
+resolve/link           allowed for import, export, and module descriptors</code></pre>
+<p><code>HREC_JOIN_EXEC_XY</code> is the narrow proof of the join/call case. It must not make plain data executable just because the bytes are discoverable by hash.</p>
+<p>For <code>K=$03</code>, <code>ENTRY</code> and <code>EXTRA</code> are not automatically coupled:</p>
 <pre><code class="language-text">ENTRY  callable routine address
 EXTRA  optional side information pointer</code></pre>
 <p>Current HIMON uses <code>EXTRA</code> as display metadata. If <code>EXTRA=$0000</code>, there is no extra display text. If it is nonzero today, <code>#</code> treats it as an HBSTR pointer. The called routine does not receive or consume <code>EXTRA</code> unless a later kind and contract explicitly says so.</p>
 <h3 id="possible-future-contract-records">Possible Future Contract Records</h3>
-<p>Do not overload <code>K=$10</code> to mean every pointer shape. Keep <code>K=$10</code> as <code>ENTRY + EXTRA</code>, where <code>EXTRA</code> is descriptive/metadata. Use new kind values when the second or third word is part of the call contract.</p>
+<p>Do not overload <code>K=$03</code> to mean every pointer shape. Keep <code>K=$03</code> as <code>ENTRY + EXTRA</code>, where <code>EXTRA</code> is descriptive/metadata. Use new kind values when the second or third word is part of the call contract.</p>
 <p>Possible future shapes:</p>
 <pre><code class="language-text">K=$11  executable pointer with parameters
        DW ENTRY
@@ -96,34 +117,70 @@ PARMS    pointer to contract-specific input/control data
 RESULTS  pointer to a result collection address or result descriptor</code></pre>
 <p><code>PARMS</code> could point at an HBSTR, CSTR, PSTR, token stream, command list, import list, or a small typed parameter block. <code>RESULTS</code> should normally point at RAM, or at a descriptor that points at RAM, because output has to be written somewhere safe. <code>RESULTS=$0000</code> means the routine returns only through its ordinary small ABI: <code>A</code>, <code>X</code>, <code>Y</code>, processor status, and documented scratch.</p>
 <p>The CPU does not connect these fields by itself. HIMON/THE must define the calling convention for each future kind, such as &quot;load PARMS into a known zero page pointer before <code>JSR ENTRY</code>&quot; or &quot;return a count through the RESULTS descriptor.&quot; This keeps simple records simple while leaving room for token runners, search collectors, import resolvers, and assembler/catalog services.</p>
-<p>The <code>K=$10</code> proof record is RAM-local inside the loaded proof image. It uses a made-up hash:</p>
+<p>The <code>K=$03</code> pointer/extra proof record is RAM-local inside the loaded proof image. It uses a made-up hash:</p>
 <pre><code class="language-text">display hash: $76543210
 stored bytes: 10 32 54 76
-ENTRY:        HREC_K10_TARGET
-EXTRA:        high-bit-terminated text &quot;K10-EXTRA&quot;</code></pre>
-<p>This proves the extended layout without writing a new record into flash. The normal ROM scan still proves current HIMON HREC records; the local <code>K=$10</code> scan is a proof-only RAM path.</p>
+ENTRY:        HREC_PTR_TARGET
+EXTRA:        high-bit-terminated text &quot;PTR-EXTR&quot;</code></pre>
+<p>This proves the extended layout without writing a new record into flash. The normal ROM scan still proves current HIMON HREC records; the local <code>K=$03</code> scan is a proof-only RAM path.</p>
 <h2 id="what-it-does">What It Does</h2>
-<p>The proof runs from RAM at <code>$4000</code> and asks the live ROM image for routines by hash. It proves that a caller can find a resident record, verify that it is callable, remember the entry address, and then call through that joined entry.</p>
-<p>The first join is special:</p>
-<pre><code class="language-text">join BIO_FTDI_WRITE_BYTE_BLOCK
-if found, use it for all proof output
-if missing, return silently because there is no output routine yet</code></pre>
+<p>The proof runs from RAM at <code>$4000</code> and asks the live ROM image for routines by hash. It proves that a caller can carry one tiny bootstrap scanner, find the resident joiner, then use that joined HIMON routine for later service joins. After a service is joined, the proof remembers the entry address and calls through it.</p>
+<p>The first two joins are special:</p>
+<pre><code class="language-text">HREC_JOIN_INIT:
+  local scan joins THE_JOIN_EXEC_XY
+  resident THE_JOIN_EXEC_XY joins BIO_FTDI_WRITE_BYTE_BLOCK
+if both succeed, use BIO write for all proof output
+if either is missing, return silently because there is no output routine yet</code></pre>
 <p>After that bootstrap join succeeds, the proof prints status lines with the requested hash and joined entry address. A successful run means the live ROM has the needed HREC headers, the scanner can find them, the EXEC gate rejects non-executable kinds, and a joined helper still keeps its own input/status contract.</p>
 <p>After the canned checks, the proof enters a small interactive resolver prompt:</p>
 <pre><code class="language-text">J&gt; 379FE930</code></pre>
-<p>The typed hash is displayed in normal high-byte-first form. The proof stores it in the little-endian byte order used by current HREC/FNV records, runs the same join path, and prints either the joined entry address or <code>NF</code>. It checks the RAM-local <code>K=$10</code> proof record first, then current ROM records. It does not execute arbitrary user-entered joins. The canned <code>HEX</code> and <code>K10</code> checks call known helpers with known input; the interactive prompt only resolves and reports.</p>
+<p>The typed hash is displayed in normal high-byte-first form. The proof stores it in the little-endian byte order used by current HREC/FNV records, runs the same join path, and prints either the joined entry address or <code>NF</code>. It checks the RAM-local <code>K=$03</code> proof record first, then asks resident <code>THE_JOIN_EXEC_XY</code> for current ROM records. It does not execute arbitrary user-entered joins. The canned <code>HEX</code> and <code>PTR</code> checks call known helpers with known input; the interactive prompt only resolves and reports.</p>
+<h2 id="using-the-join-bootstrap">Using The Join Bootstrap</h2>
+<p>Use this pattern for RAM-loaded or flash-loaded code that is not statically linked with HIMON and therefore cannot simply <code>XREF THE_JOIN_EXEC_XY</code>. If the routine is linked into the same image as HIMON, a normal <code>XREF</code>/<code>JSR</code> is smaller and clearer. If the routine arrives later as bytes, carry the tiny bootstrap scanner once, find the resident joiner, and then let HIMON do the rest.</p>
+<p>Recommended local shape:</p>
+<pre><code class="language-text">HREC_JOIN_INIT
+  find resident THE_JOIN_EXEC_XY by local scan
+  save its entry in HREC_JOINER_LO/HI
+  use that resident joiner to find the first output routine
+  return C=1 when the join layer is usable
+
+HREC_JOIN_RESIDENT_XY
+  input:  X/Y -&gt; 4 little-endian hash bytes
+  action: save X/Y as the requested hash pointer
+          call resident THE_JOIN_EXEC_XY through HREC_JOINER_LO/HI
+          copy returned entry X/Y into HREC_JOIN_LO/HI
+  output: C=1 found executable, X/Y and HREC_JOIN_LO/HI = entry
+          C=0 not found or not executable</code></pre>
+<p>The preservation step matters. The caller passes the hash pointer in <code>X/Y</code>, but resident <code>THE_JOIN_EXEC_XY</code> also returns the found entry in <code>X/Y</code>. A proof, loader, or user-facing command often still needs the original hash pointer for printing, logging, fixup records, or error reporting. <code>HREC_JOIN_RESIDENT_XY</code> therefore saves the input pointer in <code>HREC_HASH_PTR_LO/HI</code> before calling the resident joiner, then copies the returned entry into <code>HREC_JOIN_LO/HI</code>.</p>
+<p>Minimal use:</p>
+<pre><code class="language-asm">        JSR HREC_JOIN_INIT
+        BCC NO_JOIN_LAYER
+
+        LDX #&lt;HASH_BIO_READ_BYTE_BLOCK
+        LDY #&gt;HASH_BIO_READ_BYTE_BLOCK
+        JSR HREC_JOIN_RESIDENT_XY
+        BCC NO_READ
+        STX READ_LO
+        STY READ_HI</code></pre>
+<p>Where the state lives is package-local in this proof:</p>
+<pre><code class="language-text">HREC_JOINER_LO/HI    resident THE_JOIN_EXEC_XY entry
+HREC_HASH_PTR_LO/HI  hash pointer for the current request
+HREC_JOIN_LO/HI      joined executable entry for the current request
+HREC_EXTRA_LO/HI     optional extra pointer for pointer/extra records</code></pre>
+<p>Later packages should use their own prefix and workspace cells. The names in this proof are examples of the contract shape, not global HIMON variables.</p>
 <h2 id="what-is-tested">What Is Tested</h2>
 <p>The positive joins prove that existing ROM HREC headers can be found and used:</p>
-<pre><code class="language-text">BIO_FTDI_WRITE_BYTE_BLOCK
+<pre><code class="language-text">THE_JOIN_EXEC_XY
+BIO_FTDI_WRITE_BYTE_BLOCK
 BIO_FTDI_READ_BYTE_BLOCK
 BIO_FTDI_FLUSH_RX
 BIO_FTDI_GET_CTRL_C
 UTL_HEX_ASCII_TO_NIBBLE</code></pre>
 <p>The error probes are intentionally boring:</p>
 <pre><code class="language-text">MISSING OK   a made-up hash `$DEADBEEF` is not found and returns C=0
-KIND OK      a non-exec kind `$01` is rejected by the EXEC join gate
+KIND OK      a non-exec kind `$02` is rejected by the EXEC join gate
 HEXINV OK    a joined helper can still report its own input error
-K10 OK       a RAM-local K=$10 record can return DW ENTRY and DW EXTRA</code></pre>
+PTR OK       a RAM-local K=$03 record can return DW ENTRY and DW EXTRA</code></pre>
 <p><code>HEXINV</code> calls the joined <code>UTL_HEX_ASCII_TO_NIBBLE</code> with <code>&#39;G&#39;</code> and expects <code>C=0</code>.</p>
 <h2 id="size-notes">Size Notes</h2>
 <p>The first proof, with only positive checks at <code>$3000</code>, was:</p>
@@ -133,10 +190,10 @@ K10 OK       a RAM-local K=$10 record can return DW ENTRY and DW EXTRA</code></p
 DATA  $0073 = 115 decimal
 TOTAL $0248 = 584 decimal</code></pre>
 <p>Current verbose build:</p>
-<pre><code class="language-text">CODE  $049A = 1178 decimal
-DATA  $0114 = 276 decimal
-TOTAL $05AE = 1454 decimal</code></pre>
-<p>The reusable core from <code>HREC_JOIN_EXEC_XY</code> through <code>HREC_FIND_MATCH</code> is about <code>$99</code> bytes, or 153 decimal bytes, in the current proof map. The rest is proof harness, messages, test hashes, and output helpers. The verbose build spends extra bytes on local hex printing, trace text, the <code>K=$10</code> pointer-record proof, and the interactive hash prompt; the join core is still the same proof target.</p>
+<pre><code class="language-text">CODE  $04DC = 1244 decimal
+DATA  $0120 = 288 decimal
+TOTAL $05FC = 1532 decimal</code></pre>
+<p>The reusable core from <code>HREC_JOIN_EXEC_XY</code> through <code>HREC_FIND_MATCH</code> is about <code>$C0</code> bytes, or 192 decimal bytes, in the current proof map. The rest is proof harness, messages, test hashes, and output helpers. The verbose build spends extra bytes on local hex printing, trace text, the <code>K=$03</code> pointer-record proof, the resident-joiner bootstrap, and the interactive hash prompt; the join core is still the same proof target.</p>
 <p>The current search RAM proof is still separate:</p>
 <pre><code class="language-text">SRC/BUILD/s19/himon-search-proof-3000.s19
 start: $3000
@@ -168,15 +225,15 @@ size:  $0565 bytes = 1381 decimal</code></pre>
 <ul>
 <li>A record at the end of scan space must leave room for the full 8-byte header.</li>
 <li><code>record+8</code> can cross a page; the carry path is required and currently present.</li>
-<li><code>K=$10</code> does not use <code>record+8</code> as the callable entry. It reads <code>DW ENTRY</code></li>
+<li><code>K=$03</code> does not use <code>record+8</code> as the callable entry. It reads <code>DW ENTRY</code></li>
 </ul>
 <p>and <code>DW EXTRA</code> from the record payload. That is the first proof of a record whose metadata and callable body are separated.</p>
 <ul>
-<li>Field names after <code>K</code> are part of the kind contract. In <code>K=$10</code>, <code>EXTRA</code> is</li>
+<li>Field names after <code>K</code> are part of the kind contract. In <code>K=$03</code>, <code>EXTRA</code> is</li>
 </ul>
 <p>side information. A future <code>PARMS</code> or <code>RESULTS</code> word must use a different kind and an explicit call convention.</p>
 <ul>
-<li>The <code>BNE</code> kind check relies on <code>A=K</code> and <code>SEC</code> not changing the Z flag.</li>
+<li>The EXEC gate is the current HIMON rule: kind bit 0 must be set.</li>
 <li>Joined routines keep their own status contracts. Joining a routine does not</li>
 </ul>
 <p>make its input valid.</p>
@@ -190,20 +247,26 @@ size:  $0565 bytes = 1381 decimal</code></pre>
 </ul>
 <p>add stricter local policy, but normal bounds such as scan range, record header fit, allowed callable-entry range, and future STR8/top-sector exclusions should not be reimplemented differently by every command or package.</p>
 <h2 id="promotion-path">Promotion Path</h2>
-<p>The next clean step is to move the reusable pieces into HIMON:</p>
-<pre><code class="language-text">HREC_FIND_XY
-HREC_JOIN_EXEC_XY</code></pre>
-<p>Then <code>S</code>, <code>COPY</code>, <code>MOVE</code>, <code>FILL</code>, <code>MODIFY</code>, and similar flash members can call one resident join routine instead of each carrying a private scanner.</p>
-<p>The durable version should eventually be reachable through a fixed monitor API entry or jump table, so a member does not need a bootstrap scanner just to find the scanner.</p>
+<p>The reusable pieces now have resident HIMON counterparts:</p>
+<pre><code class="language-text">THE_JOIN_FIND
+THE_JOIN_EXEC
+THE_JOIN_EXEC_XY
+THE_JOIN_LOAD_HASH_XY</code></pre>
+<p><code>THE_JOIN_EXEC_XY</code> also has its own FNV record, so <code>S</code>, <code>COPY</code>, <code>MOVE</code>, <code>FILL</code>, <code>MODIFY</code>, and similar flash members can carry one tiny bootstrap scanner to find the joiner, then call the resident routine instead of each carrying a full private resolver.</p>
+<p>The durable version should eventually be reachable through a fixed monitor API entry or jump table too. The FNV record solves runtime discovery; a jump-table slot would solve address stability for code that wants no scanner at all.</p>
 <p>The interactive resolver tail is proof-only. It is useful because it lets a user type an 8-digit hash and watch the same join code answer. The durable HIMON service should be a callable routine first; a friendly command can be added later if it earns its keep.</p>
 <h2 id="mermaid-flow">Mermaid Flow</h2>
 <pre class="mermaid">flowchart TD
-    START[&quot;START at $4000&quot;] --&gt; JOINW[&quot;Join BIO_FTDI_WRITE_BYTE_BLOCK&quot;]
-    JOINW --&gt;|missing| SILENT[&quot;RTS silently&quot;]
+    START[&quot;START at $4000&quot;] --&gt; JOINJ[&quot;HREC_JOIN_INIT local scan joins THE_JOIN_EXEC_XY&quot;]
+    JOINJ --&gt;|missing| SILENT[&quot;RTS silently&quot;]
+    JOINJ --&gt;|found| SAVEJ[&quot;Save resident joiner entry&quot;]
+    SAVEJ --&gt; JOINW[&quot;Resident joiner joins BIO_FTDI_WRITE_BYTE_BLOCK&quot;]
+    JOINW --&gt;|missing| SILENT
     JOINW --&gt;|found| SAVEW[&quot;Save joined WRITE entry&quot;]
     SAVEW --&gt; TITLE[&quot;Print proof title&quot;]
+    TITLE --&gt; JOINER[&quot;Print JOINER hash, entry, OK&quot;]
 
-    TITLE --&gt; READ[&quot;Join BIO_FTDI_READ_BYTE_BLOCK&quot;]
+    JOINER --&gt; READ[&quot;Resident joiner joins BIO_FTDI_READ_BYTE_BLOCK&quot;]
     READ --&gt; READOK[&quot;Print READ hash, entry, and OK/NF&quot;]
     READOK --&gt; FLUSH[&quot;Join BIO_FTDI_FLUSH_RX&quot;]
     FLUSH --&gt; FLUSHOK[&quot;Print FLUSH hash, entry, and OK/NF&quot;]
@@ -225,19 +288,19 @@ HREC_JOIN_EXEC_XY</code></pre>
     MISSOK --&gt; KIND
     MISSBAD --&gt; KIND
 
-    KIND[&quot;Force kind byte $01 through EXEC gate&quot;] --&gt;|rejected| KINDOK[&quot;Print KIND K=$01 OK&quot;]
-    KIND --&gt;|accepted| KINDBAD[&quot;Print KIND K=$01 BAD&quot;]
+    KIND[&quot;Force kind byte $02 through EXEC gate&quot;] --&gt;|rejected| KINDOK[&quot;Print KIND K=$02 OK&quot;]
+    KIND --&gt;|accepted| KINDBAD[&quot;Print KIND K=$02 BAD&quot;]
     KINDOK --&gt; HEXINV
     KINDBAD --&gt; HEXINV
 
     HEXINV[&quot;Join HEX again and call with &#39;G&#39;&quot;] --&gt;|C=0 invalid input| HEXINVOK[&quot;Print HEXINV hash, entry, IN=G C=0, OK&quot;]
     HEXINV --&gt;|accepted or missing| HEXINVBAD[&quot;Print HEXINV BAD/NF&quot;]
-    HEXINVOK --&gt; K10[&quot;Resolve RAM-local K=$10 pointer record&quot;]
-    HEXINVBAD --&gt; K10
-    K10 --&gt;|found and returns A=$10| K10OK[&quot;Print K10 hash, entry, extra text, OUT=$10, OK&quot;]
-    K10 --&gt;|missing or bad| K10BAD[&quot;Print K10 BAD/NF&quot;]
-    K10OK --&gt; PROMPT[&quot;Prompt for user-entered 8-hex hash&quot;]
-    K10BAD --&gt; PROMPT
+    HEXINVOK --&gt; PTR[&quot;Resolve RAM-local K=$03 pointer record&quot;]
+    HEXINVBAD --&gt; PTR
+    PTR --&gt;|found and returns A=$10| PTROK[&quot;Print PTR hash, entry, extra text, OUT=$10, OK&quot;]
+    PTR --&gt;|missing or bad| PTRBAD[&quot;Print PTR BAD/NF&quot;]
+    PTROK --&gt; PROMPT[&quot;Prompt for user-entered 8-hex hash&quot;]
+    PTRBAD --&gt; PROMPT
     PROMPT --&gt;|blank line| DONE[&quot;Print DONE and RTS&quot;]
     PROMPT --&gt;|hash found| USEROK[&quot;Print USER hash and entry&quot;]
     PROMPT --&gt;|not found| USERNF[&quot;Print USER hash and E=---- NF&quot;]
@@ -255,16 +318,16 @@ HREC_JOIN_EXEC_XY</code></pre>
     ADV --&gt; END
     SIG --&gt;|yes| HASH{&quot;hash0..3 match requested bytes?&quot;}
     HASH --&gt;|no| ADV
-    HASH --&gt;|yes| ENTRY[&quot;Set HREC_JOIN = record + 8&quot;]
-    ENTRY --&gt; KIND[&quot;Load K from record + 7&quot;]
-    KIND --&gt; EXEC{&quot;K == $00?&quot;}
-    EXEC --&gt;|no| K10{&quot;K == $10?&quot;}
-    EXEC --&gt;|yes| OK[&quot;C=1, X/Y = callable entry&quot;]
-    K10 --&gt;|no| NF
-    K10 --&gt;|yes| EXT[&quot;Load DW ENTRY into join and DW EXTRA into extra pointer&quot;]
-    EXT --&gt; OK</pre>
+    HASH --&gt;|yes| KIND[&quot;Load K from record + 7&quot;]
+    KIND --&gt; PTR{&quot;K == $03?&quot;}
+    PTR --&gt;|yes| EXT[&quot;Load DW ENTRY into join and DW EXTRA into extra pointer&quot;]
+    PTR --&gt;|no| ENTRY[&quot;Set HREC_JOIN = record + 8&quot;]
+    EXT --&gt; EXEC{&quot;K bit 0 set?&quot;}
+    ENTRY --&gt; EXEC
+    EXEC --&gt;|no| NF
+    EXEC --&gt;|yes| OK[&quot;C=1, X/Y = callable entry&quot;]</pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md</code>. Source modified: <time>2026-05-20T01:12:27Z</time>. HTML generated: <time>2026-05-20T06:01:16Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md</code>. Source modified: <time>2026-05-22T03:38:42Z</time>. HTML generated: <time>2026-05-22T03:43:38Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

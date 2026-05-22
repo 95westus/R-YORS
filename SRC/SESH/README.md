@@ -1,4 +1,5 @@
-# SESH LIB Lane
+# Retired SESH Lane
 
-WIP library lane.
-Use this lane for in-progress or experimental library modules before promotion to top-shelf.
+SESH used to hold session/WIP library code. Current shared source now lives
+under `SRC/LIB`; board proofs and experiments belong under `SRC/PROOFS` or
+`SRC/TESTS`.

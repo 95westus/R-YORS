@@ -32,7 +32,7 @@
 ; - L0 driver exports use `PIN_<DEVICE>_*` (this file: `PIN_PIA_*`).
 ;
 ; WIP CODE POLICY:
-; - This file is in SESH/WIP lane.
+; - This file is in the shared LIB lane.
 ; - Behavioral contracts are exploratory and may change.
 ; -------------------------------------------------------------------------
 

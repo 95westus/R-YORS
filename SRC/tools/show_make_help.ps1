@@ -11,27 +11,29 @@ $rows = @(
     [pscustomobject]@{ Target = "release"; Category = "release"; Description = "Build docs plus tracked release artifacts: HIMON, fnv1a-hbstr, test-flash, rom-append-calc." }
     [pscustomobject]@{ Target = "release-local"; Category = "release"; Description = "Build release plus local/private ROM composites." }
     [pscustomobject]@{ Target = "himon"; Category = "monitor"; Description = "Build current HIMON app S19 and ROM binary." }
-    [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000." }
-    [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom.bin." }
+    [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000: BUILD/s19/himon-rom-c000.s19." }
+    [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom-c000.bin." }
     [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K bank image with HIMON at C000, STR8 at F000, RESET=F000: BUILD/bin/himon-str8-rom.bin." }
-    [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-install.s19." }
+    [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-c000-install-8000.s19." }
     [pscustomobject]@{ Target = "himon-str8-rom-install-s19"; Category = "monitor"; Description = "Convert primary HIMON+STR8 ROM BIN to S1/S9 install transport: BUILD/s19/himon-str8-rom-install.s19." }
     [pscustomobject]@{ Target = "himon-str8-himon-update-s19"; Category = "monitor"; Description = "Build C000-EFFF S1/S9 stream for STR8 U / UPDATE HIMON: BUILD/s19/himon-str8-himon-update.s19." }
     [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for himon-str8-rom-install-s19." }
-    [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000." }
-    [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image from the HIMON load S19." }
+    [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000: BUILD/s19/himon-load-c000.s19." }
+    [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image at BUILD/bin/himon-load-c000.bin." }
     [pscustomobject]@{ Target = "basic-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000 and HIMON at C000." }
     [pscustomobject]@{ Target = "basic-forth-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000, fig-Forth at A000, and HIMON at C000." }
     [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build STR8 V0 F000 boot image and RAM proof image." }
     [pscustomobject]@{ Target = "str8-ram"; Category = "test"; Description = "Build RAM-launched STR8 bank-select/blank-check/copy/marker proof at 3000." }
-    [pscustomobject]@{ Target = "fnv1a-hbstr"; Category = "test"; Description = "Build FNV-1a/HBSTR proving app." }
-    [pscustomobject]@{ Target = "test-flash"; Category = "test"; Description = "Build flash command/install proving app." }
+    [pscustomobject]@{ Target = "fnv1a-hbstr"; Category = "test"; Description = "Build FNV-1a/HBSTR proving app linked at 6000." }
+    [pscustomobject]@{ Target = "test-flash"; Category = "test"; Description = "Build flash command/install proving app linked at 3000." }
     [pscustomobject]@{ Target = "test-mon"; Category = "test"; Description = "Build monitor test app." }
-    [pscustomobject]@{ Target = "test-ftdi-drv"; Category = "test"; Description = "Build FTDI driver test app." }
-    [pscustomobject]@{ Target = "test-ftdi-hal"; Category = "test"; Description = "Build FTDI HAL test app." }
-    [pscustomobject]@{ Target = "himon-search-static-proof"; Category = "test"; Description = "Build standalone static-linked RAM search proof at 3000." }
+    [pscustomobject]@{ Target = "test-ftdi-drv"; Category = "test"; Description = "Build FTDI driver test app linked at 2000." }
+    [pscustomobject]@{ Target = "test-ftdi-hal"; Category = "test"; Description = "Build FTDI HAL test app linked at 2000." }
+    [pscustomobject]@{ Target = "himon-search-static"; Category = "test"; Description = "Build standalone static-linked RAM search proof at 3000." }
+    [pscustomobject]@{ Target = "himon-search-static-proof"; Category = "test"; Description = "Legacy alias for himon-search-static." }
     [pscustomobject]@{ Target = "himon-search-proof"; Category = "test"; Description = "Build hash-resolved RAM search proof at 3000." }
     [pscustomobject]@{ Target = "himon-search-flash"; Category = "test"; Description = "Build low-flash K=05 S search command S19 at BBA2 for L F." }
+    [pscustomobject]@{ Target = "himon-search-for-himon"; Category = "test"; Description = "Assemble the native HIMON search port scaffold and guide pointer." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
     [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }
     [pscustomobject]@{ Target = "rom-append-calc"; Category = "app"; Description = "Build CALC command as a ROM append proof at B804." }

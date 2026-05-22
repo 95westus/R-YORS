@@ -220,7 +220,7 @@ STR8_INSTALL_SELF
 ## Current STR8 Images
 
 ```text
-source:  SRC/TEST/apps/str8/str8.asm
+source:  SRC/STR8/str8.asm
 build:   make -C SRC str8
 output:  SRC/BUILD/s19/str8-f000.s19
          SRC/BUILD/s19/str8-ram-3000.s19

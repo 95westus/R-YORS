@@ -55,11 +55,13 @@ self-updater release.
 Current source aliases in the docs:
 
 ```text
-HIMON       SRC/TEST/apps/himon/
-STR8        SRC/TEST/apps/str8/
+HIMON       SRC/HIMON/
+STR8        SRC/STR8/
 ROM         ROM support source alias in generated docs
-SRC/STASH   parked or promoted code lane
-SRC/SESH    session/experiment lane
+LIB         SRC/LIB/
+PROOFS      SRC/PROOFS/
+APPS        SRC/APPS/
+TESTS       SRC/TESTS/
 SRC/tools   host build and support scripts
 DOC         hand-written and generated documentation
 LOCAL       ignored local source homes
@@ -68,16 +70,14 @@ LOCAL       ignored local source homes
 Physical paths used by the current build:
 
 ```text
-SRC/TEST/apps/himon/himon.asm
-SRC/TEST/apps/himon/*.inc
-SRC/TEST/apps/himon/fnv1a-fold.asm
-SRC/TEST/apps/str8/str8.asm
-SRC/TEST/apps/str8/str8-worker.asm
-SRC/STASH/ftdi/*.asm
-SRC/SESH/ftdi/*.asm
-SRC/TEST/ftdi/*.asm
-SRC/TEST/dev/*.asm
-SRC/TEST/util/*.asm
+SRC/HIMON/himon.asm
+SRC/HIMON/*.inc
+SRC/HIMON/fnv1a-fold.asm
+SRC/STR8/str8.asm
+SRC/STR8/str8-worker.asm
+SRC/LIB/ftdi/*.asm
+SRC/LIB/dev/*.asm
+SRC/LIB/util/*.asm
 ```
 
 Generated routine maps intentionally focus on current operational HIMON/STR8

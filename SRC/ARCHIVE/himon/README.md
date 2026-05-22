@@ -3,7 +3,9 @@
 This directory holds retired monitor branches that are kept for reference but
 are no longer active build or generated-documentation inputs.
 
-Active HIMON work is `SRC/TEST/apps/himon/himon.asm`.
+Active HIMON work is `SRC/HIMON/himon.asm`.
+Some archived source includes preserve old pre-move include paths because these
+files are reference material, not current build inputs.
 
 Archived here:
 

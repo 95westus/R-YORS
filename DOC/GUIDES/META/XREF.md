@@ -112,7 +112,7 @@ CATALOG.md
   keeps routine name, hash, entry/exit registers, carry flags, notes, and tags
 
 LIFE_RCAT_MEMBER.md
-  worked example for turning `SRC/TEST/apps/life.asm` into an RCAT-visible
+  worked example for turning `SRC/APPS/life.asm` into an RCAT-visible
   member without treating LIFE as operational HIMON source
   depends on GLOSSARY.md, HASH_MAP.md, HASHED_ASM.md, CATALOG.md, and
   MEMORY_MAP.md vocabulary
@@ -167,8 +167,8 @@ HIMON/himon.asm
 HIMON/*.inc
 HIMON/fnv1a-fold.asm
 STR8/str8.asm
-SRC/STASH/ftdi/*.asm
-SRC/SESH/ftdi/*.asm
+SRC/LIB/ftdi/*.asm
+SRC/LIB/ftdi/*.asm
 ROM/ftdi-backend-debug.asm
 ROM/ftdi/*.asm
 ROM/dev/*.asm

@@ -1,7 +1,7 @@
 # R-YORS Symbol Ref/Xref/XXref
 
 This is the working shape for a symbol catalog that can describe today's
-STASH/HIMON code and tomorrow's catalog-visible routines before all of them
+LIB/HIMON code and tomorrow's catalog-visible routines before all of them
 exist.
 
 ## Thesis
@@ -136,7 +136,7 @@ class:       MODULE_LOCAL, TOP_SHELF
 tokens:      PIN, DRIVER_L0, FTDI, VIA, MMIO, REGISTER, INIT,
              PRESERVE_A, PRESERVE_XY, NO_ZP, NO_RAM, STACK,
              PROMOTED, FNV, HASH_SIG
-source:      SRC/STASH/ftdi/ftdi-drv.asm
+source:      SRC/LIB/ftdi/ftdi-drv.asm
 abi_in:      A preserved
 abi_out:     FTDI control/data direction registers configured, A preserved
 preserves:   A, X, Y
@@ -153,12 +153,12 @@ class:       MODULE_LOCAL, TOP_SHELF
 tokens:      PIN, DRIVER_L0, FTDI, MMIO, REGISTER, NONBLOCKING,
              TIMEOUT, WRITE, PRESERVE_A, CARRY_STATUS, NO_ZP, NO_RAM, STACK,
              PROMOTED, FNV, HASH_SIG
-source:      SRC/STASH/ftdi/ftdi-drv.asm:177, label:209
+source:      SRC/LIB/ftdi/ftdi-drv.asm:177, label:209
 abi_in:      A = byte to transmit
 abi_out:     C = 1 on success, C = 0 on timeout, A preserved
 clobbers:    X
 calls:       none direct
-notes:       STASH example with frozen behavior and explicit board limitation.
+notes:       LIB example with frozen behavior and explicit board limitation.
              Current 8-byte hash sig: 46 4E D6 FC C6 5F D5 00.
 ```
 
@@ -170,7 +170,7 @@ class:       MODULE_LOCAL, TOP_SHELF
 tokens:      PIN, DRIVER_L0, FTDI, MMIO, REGISTER, NONBLOCKING,
              READ, PRESERVE_XY, CARRY_STATUS, NO_ZP, NO_RAM, STACK,
              PROMOTED, FNV, HASH_SIG
-source:      SRC/STASH/ftdi/ftdi-drv.asm
+source:      SRC/LIB/ftdi/ftdi-drv.asm
 abi_in:      none
 abi_out:     C = 1 and A = byte when ready; C = 0 and A = 0 when empty
 preserves:   X, Y
@@ -187,7 +187,7 @@ class:       MODULE_LOCAL, TOP_SHELF
 tokens:      PIN, DRIVER_L0, FTDI, VIA, MMIO, REGISTER, POLL, RX,
              PRESERVE_A, PRESERVE_XY, CARRY_STATUS, NO_ZP, NO_RAM, STACK,
              PROMOTED, FNV, HASH_SIG
-source:      SRC/STASH/ftdi/ftdi-drv.asm
+source:      SRC/LIB/ftdi/ftdi-drv.asm
 abi_in:      none
 abi_out:     C = 1 when RX byte is ready, C = 0 when empty, A preserved
 preserves:   A, X, Y
@@ -204,7 +204,7 @@ class:       MODULE_LOCAL, TOP_SHELF
 tokens:      PIN, DRIVER_L0, FTDI, VIA, MMIO, REGISTER, READ, ENUM,
              PRESERVE_XY, CARRY_STATUS, NO_ZP, NO_RAM, NOSTACK,
              PROMOTED, FNV, HASH_SIG
-source:      SRC/STASH/ftdi/ftdi-drv.asm
+source:      SRC/LIB/ftdi/ftdi-drv.asm
 abi_in:      none
 abi_out:     C = 1 and A = 1 when enumerated; C = 0 and A = 0 otherwise
 preserves:   X, Y
@@ -220,7 +220,7 @@ kind:        R
 class:       MODULE_LOCAL, RECOVERY_USABLE
 tokens:      BIO, HAL-L1, FTDI, WRITE, HEX, BYTE, PRESERVE_A,
              CARRY_STATUS, NO_ZP, NO_RAM, STACK
-source:      SRC/SESH/ftdi/ftdi-hal.asm:557, label:575
+source:      SRC/LIB/ftdi/ftdi-hal.asm:557, label:575
 abi_in:      A = source byte
 abi_out:     C = 1 on successful writes, A preserved
 calls:       UTL_HEX_BYTE_TO_ASCII_YX, BIO_FTDI_WRITE_BYTE_BLOCK
@@ -234,7 +234,7 @@ kind:        R
 class:       MODULE_LOCAL, RECOVERY_USABLE
 tokens:      BIO, HAL-L1, FTDI, WRITE, CRLF, PRESERVE_A,
              CARRY_STATUS, NO_ZP, NO_RAM, STACK
-source:      SRC/SESH/ftdi/ftdi-hal.asm:589, label:604
+source:      SRC/LIB/ftdi/ftdi-hal.asm:589, label:604
 abi_in:      none
 abi_out:     C = 1 on successful writes, A preserved
 calls:       BIO_FTDI_WRITE_BYTE_BLOCK
@@ -248,7 +248,7 @@ kind:        R
 class:       PURE_UTILITY
 tokens:      UTL, HEX, ENCODE, NIBBLE, CARRY_STATUS, NO_ZP, NO_RAM,
              NOSTACK, PROMOTED, FNV, HASH_SIG
-source:      SRC/TEST/util/util-hex.asm
+source:      SRC/LIB/util/util-hex.asm
 abi_in:      A = source byte; low nibble is used
 abi_out:     A = uppercase ASCII hex char, C = 1
 calls:       none direct
@@ -263,7 +263,7 @@ kind:        R
 class:       PURE_UTILITY
 tokens:      UTL, HEX, ENCODE, BYTE, PRESERVE_A, CARRY_STATUS, NO_ZP,
              NO_RAM, STACK, PROMOTED, FNV, HASH_SIG
-source:      SRC/TEST/util/util-hex.asm
+source:      SRC/LIB/util/util-hex.asm
 abi_in:      A = source byte
 abi_out:     A preserved, Y = high ASCII hex, X = low ASCII hex, C = 1
 calls:       UTL_HEX_NIBBLE_TO_ASCII
@@ -277,7 +277,7 @@ kind:        R
 class:       PURE_UTILITY
 tokens:      UTL, HEX, PARSE, NIBBLE, CARRY_STATUS, NO_ZP, NO_RAM,
              NOSTACK, PROMOTED, FNV, HASH_SIG
-source:      SRC/TEST/util/util-hex.asm
+source:      SRC/LIB/util/util-hex.asm
 abi_in:      A = ASCII hex char
 abi_out:     valid: C = 1, A = 0..15; invalid: C = 0, A unchanged
 calls:       none direct
@@ -292,7 +292,7 @@ kind:        R
 class:       UTILITY_WITH_ZP
 tokens:      UTL, HEX, PARSE, BYTE, CARRY_STATUS, USES_ZP, NO_RAM,
              NOSTACK, PROMOTED, FNV, HASH_SIG
-source:      SRC/TEST/util/util-hex.asm
+source:      SRC/LIB/util/util-hex.asm
 abi_in:      Y = high ASCII hex, X = low ASCII hex
 abi_out:     valid: C = 1, A = byte; invalid: C = 0
 calls:       UTL_HEX_ASCII_TO_NIBBLE
@@ -334,7 +334,7 @@ hash:        $30A462F2
 kind:        R
 class:       DEVICE_IO
 tokens:      BIO, FTDI, INIT, PUFF_PASS, CALLS_PIN, PROMOTED, FNV, HASH_SIG
-source:      SESH/ftdi/ftdi-hal.asm
+source:      LIB/ftdi/ftdi-hal.asm
 abi_in:      none
 abi_out:     FTDI pin interface initialized
 calls:       PIN_FTDI_INIT
@@ -349,7 +349,7 @@ kind:        R
 class:       DEVICE_IO
 tokens:      BIO, FTDI, ENUM, STATUS, CARRY_STATUS, PUFF_PASS, CALLS_PIN,
              PROMOTED, FNV, HASH_SIG
-source:      SESH/ftdi/ftdi-hal.asm
+source:      LIB/ftdi/ftdi-hal.asm
 abi_in:      none
 abi_out:     C = 1 and A = 1 when enumerated; C = 0 and A = 0 otherwise
 calls:       PIN_FTDI_CHECK_ENUMERATED
@@ -364,7 +364,7 @@ kind:        R
 class:       DEVICE_IO
 tokens:      BIO, FTDI, FLUSH, RX, BOUNDED, PRESERVE_A, PRESERVE_XY,
              CARRY_STATUS, CALLS_PIN, PROMOTED, FNV, HASH_SIG
-source:      SESH/ftdi/ftdi-hal.asm
+source:      LIB/ftdi/ftdi-hal.asm
 abi_in:      none
 abi_out:     C = 1 when RX is empty; C = 0 on guard expiry; A/X/Y preserved
 calls:       PIN_FTDI_READ_BYTE_NONBLOCK
@@ -378,7 +378,7 @@ hash:        $379FE930
 kind:        R
 class:       DEVICE_IO
 tokens:      BIO, FTDI, WRITE, BYTE, BLOCK, PROMOTED, FNV, HASH_SIG
-source:      SESH/ftdi/ftdi-hal.asm
+source:      LIB/ftdi/ftdi-hal.asm
 abi_in:      A = byte to write
 abi_out:     C = 1 when the FTDI bus accepts it, A preserved
 calls:       PIN_FTDI_WRITE_BYTE_NONBLOCK
@@ -484,5 +484,5 @@ flowchart TD
 
 The next improvement is a small generator that emits this file's example
 records from source comments, then lets hand-written `XXREF` tokens fill the
-gaps. That keeps STASH truth, current HIMON truth, and future catalog
+gaps. That keeps LIB truth, current HIMON truth, and future catalog
 vocabulary in the same shape.

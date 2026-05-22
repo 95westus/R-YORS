@@ -27,7 +27,7 @@ layout yet.
 Expected source placement:
 
 ```text
-SRC/TEST/apps/str8/
+SRC/STR8/
 ```
 
 STR8 can still model reset/recovery behavior, flash bank operations, and
