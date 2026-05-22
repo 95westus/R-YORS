@@ -1,10 +1,11 @@
 ; ----------------------------------------------------------------------------
-; himon-search-proof.asm
-; RAM-loaded HIMON search proof, linked at $3000.
-; Provides a tiny S> prompt for proving the future HIMON S command.
+; himon-search-flash.asm
+; Low-flash HIMON S command shadow, linked at $BBA2.
+; Provides a K=$05 FNV record so HIMON can discover S and show S(earch)
+; without confirm-before-run.
 ; ----------------------------------------------------------------------------
 
-                        MODULE          HIMON_SEARCH_PROOF_APP
+                        MODULE          HIMON_SEARCH_FLASH_APP
 
                         XDEF            START
 
@@ -48,19 +49,25 @@ SEARCH_HASH_PTR_HI      EQU             $21
 SEARCH_HASH_SCAN_LO     EQU             $22
 SEARCH_HASH_SCAN_HI     EQU             $23
 
-SEARCH_LINE_BUF         EQU             $7800
+CMDP_START_LO           EQU             $FA
+CMDP_START_HI           EQU             $FB
+
 SEARCH_PAT_BUF          EQU             $7900
 SEARCH_PAT_MAX          EQU             $40
 SEARCH_HASH_SIG2        EQU             ('V'+$80)
 SEARCH_HASH_SCAN_BASE_HI EQU            $80
 SEARCH_HASH_KIND_EXEC   EQU             $01
+SEARCH_HASH_KIND_EXEC_TEXT EQU           $05
 SEARCH_ERR_WRITE        EQU             $E1
-SEARCH_ERR_READ         EQU             $E2
-SEARCH_ERR_FLUSH        EQU             $E3
-SEARCH_ERR_CTRL_C       EQU             $E4
-SEARCH_ERR_HEX_IN       EQU             $E5
+SEARCH_ERR_CTRL_C       EQU             $E2
+SEARCH_ERR_HEX_IN       EQU             $E3
 
                         CODE
+SEARCH_FNV:
+                        DB              'F','N',SEARCH_HASH_SIG2,$22,$13,$0C,$D6,SEARCH_HASH_KIND_EXEC_TEXT ; S $D60C1322 EXEC+TEXT
+                        DW              START
+                        DW              SEARCH_EXTRA
+
 START:
                         JSR             SEARCH_RESOLVE_WRITE
                         BCS             START_HAVE_WRITE
@@ -76,49 +83,13 @@ START_HAVE_WRITE:
                         RTS
 
 START_IMPORTS_OK:
-                        JSR             SEARCH_BIO_FLUSH_RX
-                        LDX             #<MSG_TITLE
-                        LDY             #>MSG_TITLE
-                        JSR             SEARCH_PRINT_LINE
-                        LDX             #<MSG_USAGE
-                        LDY             #>MSG_USAGE
-                        JSR             SEARCH_PRINT_LINE
-
-SEARCH_MAIN:
-                        LDX             #<MSG_PROMPT
-                        LDY             #>MSG_PROMPT
-                        JSR             SEARCH_WRITE_CSTRING
-                        LDX             #<SEARCH_LINE_BUF
-                        LDY             #>SEARCH_LINE_BUF
-                        JSR             SEARCH_READ_LINE_ECHO
-                        BCS             SEARCH_HAVE_LINE
-                        CMP             #$03
-                        BEQ             SEARCH_MAIN
-                        LDX             #<MSG_FULL
-                        LDY             #>MSG_FULL
-                        JSR             SEARCH_PRINT_LINE
-                        BRA             SEARCH_MAIN
-
-SEARCH_HAVE_LINE:
-                        JSR             SEARCH_RUN_LINE
-                        BCC             SEARCH_MAIN
-                        RTS
-
-SEARCH_RUN_LINE:
-                        LDA             #<SEARCH_LINE_BUF
+                        LDA             CMDP_START_LO
                         STA             SEARCH_LINE_LO
-                        LDA             #>SEARCH_LINE_BUF
+                        LDA             CMDP_START_HI
                         STA             SEARCH_LINE_HI
                         JSR             SEARCH_SKIP_SPACES
                         JSR             SEARCH_PEEK
-                        BEQ             SEARCH_RUN_DONE
-                        CMP             #'?'
                         BEQ             SEARCH_USAGE
-                        AND             #$DF
-                        CMP             #'Q'
-                        BEQ             SEARCH_QUIT
-                        CMP             #'S'
-                        BNE             SEARCH_PARSE_ARGS
                         JSR             SEARCH_ADV_LINE
 
 SEARCH_PARSE_ARGS:
@@ -127,15 +98,7 @@ SEARCH_PARSE_ARGS:
                         JSR             SEARCH_PARSE_PATTERN
                         BCC             SEARCH_USAGE
                         JSR             SEARCH_SCAN_RANGE
-SEARCH_RUN_DONE:
                         CLC
-                        RTS
-
-SEARCH_QUIT:
-                        LDX             #<MSG_BYE
-                        LDY             #>MSG_BYE
-                        JSR             SEARCH_PRINT_LINE
-                        SEC
                         RTS
 
 SEARCH_USAGE:
@@ -164,16 +127,6 @@ SEARCH_RESOLVE_WRITE_FOUND:
                         RTS
 
 SEARCH_RESOLVE_IMPORTS:
-                        JSR             SEARCH_RESOLVE_READ
-                        BCS             SEARCH_RESOLVE_HAVE_READ
-                        LDA             #SEARCH_ERR_READ
-                        BRA             SEARCH_RESOLVE_IMPORT_FAIL
-SEARCH_RESOLVE_HAVE_READ:
-                        JSR             SEARCH_RESOLVE_FLUSH
-                        BCS             SEARCH_RESOLVE_HAVE_FLUSH
-                        LDA             #SEARCH_ERR_FLUSH
-                        BRA             SEARCH_RESOLVE_IMPORT_FAIL
-SEARCH_RESOLVE_HAVE_FLUSH:
                         JSR             SEARCH_RESOLVE_CTRL_C
                         BCS             SEARCH_RESOLVE_HAVE_CTRL_C
                         LDA             #SEARCH_ERR_CTRL_C
@@ -189,30 +142,6 @@ SEARCH_RESOLVE_IMPORTS_OK:
 SEARCH_RESOLVE_IMPORT_FAIL:
                         STA             SEARCH_TMP
                         CLC
-                        RTS
-
-SEARCH_RESOLVE_READ:
-                        LDX             #<HASH_BIO_READ_BYTE_BLOCK
-                        LDY             #>HASH_BIO_READ_BYTE_BLOCK
-                        JSR             SEARCH_FIND_HASH_XY
-                        BCC             SEARCH_RESOLVE_FAIL
-                        LDA             SEARCH_FIND_RES_LO
-                        STA             SEARCH_IMP_READ_LO
-                        LDA             SEARCH_FIND_RES_HI
-                        STA             SEARCH_IMP_READ_HI
-                        SEC
-                        RTS
-
-SEARCH_RESOLVE_FLUSH:
-                        LDX             #<HASH_BIO_FLUSH_RX
-                        LDY             #>HASH_BIO_FLUSH_RX
-                        JSR             SEARCH_FIND_HASH_XY
-                        BCC             SEARCH_RESOLVE_FAIL
-                        LDA             SEARCH_FIND_RES_LO
-                        STA             SEARCH_IMP_FLUSH_LO
-                        LDA             SEARCH_FIND_RES_HI
-                        STA             SEARCH_IMP_FLUSH_HI
-                        SEC
                         RTS
 
 SEARCH_RESOLVE_CTRL_C:
@@ -341,12 +270,6 @@ SEARCH_FIND_MATCH:
 
 SEARCH_BIO_WRITE_BYTE_BLOCK:
                         JMP             (SEARCH_IMP_WRITE_LO)
-
-SEARCH_BIO_READ_BYTE_BLOCK:
-                        JMP             (SEARCH_IMP_READ_LO)
-
-SEARCH_BIO_FLUSH_RX:
-                        JMP             (SEARCH_IMP_FLUSH_LO)
 
 SEARCH_BIO_GET_CTRL_C:
                         JMP             (SEARCH_IMP_CTRL_C_LO)
@@ -767,83 +690,6 @@ SEARCH_ROW_ASCII_OUT:
                         BCC             SEARCH_ROW_ASCII_LOOP
                         RTS
 
-SEARCH_READ_LINE_ECHO:
-                        STX             SEARCH_LINE_LO
-                        STY             SEARCH_LINE_HI
-                        STZ             SEARCH_COUNT
-                        LDY             #$00
-                        LDA             #$00
-                        STA             (SEARCH_LINE_LO),Y
-SEARCH_READ_LOOP:
-                        JSR             SEARCH_BIO_READ_BYTE_BLOCK
-                        CMP             #$03
-                        BEQ             SEARCH_READ_ABORT
-                        CMP             #$0D
-                        BEQ             SEARCH_READ_DONE
-                        CMP             #$0A
-                        BEQ             SEARCH_READ_DONE
-                        CMP             #$08
-                        BEQ             SEARCH_READ_BACKSPACE
-                        CMP             #$7F
-                        BEQ             SEARCH_READ_BACKSPACE
-                        CMP             #' '
-                        BCC             SEARCH_READ_LOOP
-                        CMP             #$7F
-                        BCS             SEARCH_READ_LOOP
-                        STA             SEARCH_TMP
-                        LDA             SEARCH_COUNT
-                        CMP             #$FE
-                        BEQ             SEARCH_READ_FULL
-                        LDY             #$00
-                        LDA             SEARCH_TMP
-                        STA             (SEARCH_LINE_LO),Y
-                        JSR             SEARCH_ADV_LINE
-                        INC             SEARCH_COUNT
-                        LDA             SEARCH_TMP
-                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
-                        BRA             SEARCH_READ_LOOP
-
-SEARCH_READ_BACKSPACE:
-                        LDA             SEARCH_COUNT
-                        BEQ             SEARCH_READ_LOOP
-                        DEC             SEARCH_COUNT
-                        LDA             SEARCH_LINE_LO
-                        BNE             SEARCH_READ_BS_DEC
-                        DEC             SEARCH_LINE_HI
-SEARCH_READ_BS_DEC:
-                        DEC             SEARCH_LINE_LO
-                        LDA             #$08
-                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
-                        LDA             #' '
-                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
-                        LDA             #$08
-                        JSR             SEARCH_BIO_WRITE_BYTE_BLOCK
-                        BRA             SEARCH_READ_LOOP
-
-SEARCH_READ_DONE:
-                        LDY             #$00
-                        LDA             #$00
-                        STA             (SEARCH_LINE_LO),Y
-                        JSR             SEARCH_WRITE_CRLF
-                        LDA             SEARCH_COUNT
-                        SEC
-                        RTS
-
-SEARCH_READ_ABORT:
-                        JSR             SEARCH_WRITE_CRLF
-                        LDA             #$03
-                        CLC
-                        RTS
-
-SEARCH_READ_FULL:
-                        LDY             #$00
-                        LDA             #$00
-                        STA             (SEARCH_LINE_LO),Y
-                        JSR             SEARCH_WRITE_CRLF
-                        LDA             #$FE
-                        CLC
-                        RTS
-
 SEARCH_WRITE_HEX_BYTE:
                         PHA
                         LSR             A
@@ -892,22 +738,15 @@ SEARCH_PRINT_LINE:
                         DATA
 HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
-HASH_BIO_READ_BYTE_BLOCK:
-                        DB              $85,$5B,$28,$20
-HASH_BIO_FLUSH_RX:
-                        DB              $B9,$22,$66,$2F
 HASH_BIO_GET_CTRL_C:
                         DB              $D2,$50,$61,$42
 HASH_UTL_HEX_ASCII_TO_NIBBLE:
                         DB              $B1,$14,$D7,$AD
-MSG_TITLE:              DB              "HIMON SEARCH PROOF $3000",0
 MSG_USAGE:              DB              "S START END|+COUNT BB|'TEXT' [...], ? HELP, Q QUIT",0
-MSG_PROMPT:             DB              "S> ",0
-MSG_FULL:               DB              "S FULL",0
 MSG_IMPORT:             DB              "S IMP",0
 MSG_NF:                 DB              "S NF",0
 MSG_IO:                 DB              "S IO",0
 MSG_ABORT:              DB              "S ABORT",0
-MSG_BYE:                DB              "S DONE",0
+SEARCH_EXTRA:           DB              "S(earch",(')'+$80)
 
                         END

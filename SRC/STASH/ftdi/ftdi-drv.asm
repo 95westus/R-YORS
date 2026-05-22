@@ -71,6 +71,9 @@
 ;                          return codes verified.
 ; 2026-05-15T00:00Z WLP2   promoted with current HIMON-style 8-byte FNV
 ;                          signature immediately before callable entry.
+; 2026-05-21T20:30Z WLP2   fixed delayed TX-ready success path to return C=1;
+;                          CPX in the spin loop could leave C=0 after a byte
+;                          was accepted, causing blocking callers to resend it.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                         XDEF            PIN_FTDI_INIT
                         XDEF            PIN_FTDI_INIT_FNV
@@ -300,7 +303,8 @@ PIN_FTDI_WRITE_BYTE_NONBLOCK:
                         BNE             ?TX_SPIN
                         CLC
                         BRA             ?WR_DEASSERT
-?WR_STROBE:             LDA             #FTDI_WB_PN_WR
+?WR_STROBE:             SEC
+                        LDA             #FTDI_WB_PN_WR
                         TSB             FTDI_WB_VIA_CTRL
                         LDA             #$FF
                         STA             FTDI_WB_VIA_DDRA

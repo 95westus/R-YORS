@@ -1,7 +1,7 @@
 ; ----------------------------------------------------------------------------
 ; hrec-join-proof.asm
 ; RAM-loaded HREC join proof, linked at $4000.
-; Proves the "C" path: silently join resident BIO write first, then talk.
+; Proves the "C" path: find resident THE_JOIN_EXEC_XY, then join BIO write.
 ; ----------------------------------------------------------------------------
 
                         MODULE          HREC_JOIN_PROOF_APP
@@ -33,15 +33,18 @@ HREC_USER_BYTE_INDEX   EQU             $12
 HREC_NIBBLE_HI         EQU             $13
 HREC_EXTRA_LO          EQU             $14
 HREC_EXTRA_HI          EQU             $15
+HREC_JOINER_LO         EQU             $16
+HREC_JOINER_HI         EQU             $17
 
 HREC_HASH_SIG2         EQU             ('V'+$80)
+HREC_KIND_EXEC         EQU             $01
+HREC_KIND_CONFIRM      EQU             $02
+HREC_KIND_EXEC_TEXT    EQU             (HREC_KIND_EXEC+HREC_KIND_CONFIRM)
 HREC_SCAN_BASE_HI      EQU             $80
 
                         CODE
 START:
-                        LDX             #<HASH_BIO_WRITE_BYTE_BLOCK
-                        LDY             #>HASH_BIO_WRITE_BYTE_BLOCK
-                        JSR             HREC_JOIN_EXEC_XY
+                        JSR             HREC_JOIN_INIT
                         BCS             START_HAVE_WRITE
                         RTS
 
@@ -58,9 +61,21 @@ START_HAVE_WRITE:
                         LDY             #>MSG_WRITE
                         JSR             HREC_PRINT_JOIN_OK_LINE
 
+                        LDX             #<HASH_THE_JOIN_EXEC_XY
+                        STX             HREC_HASH_PTR_LO
+                        LDY             #>HASH_THE_JOIN_EXEC_XY
+                        STY             HREC_HASH_PTR_HI
+                        LDA             HREC_JOINER_LO
+                        STA             HREC_JOIN_LO
+                        LDA             HREC_JOINER_HI
+                        STA             HREC_JOIN_HI
+                        LDX             #<MSG_JOINER
+                        LDY             #>MSG_JOINER
+                        JSR             HREC_PRINT_JOIN_OK_LINE
+
                         LDX             #<HASH_BIO_READ_BYTE_BLOCK
                         LDY             #>HASH_BIO_READ_BYTE_BLOCK
-                        JSR             HREC_JOIN_EXEC_XY
+                        JSR             HREC_JOIN_RESIDENT_XY
                         BCC             TEST_READ_NF
                         STX             HREC_IMP_READ_LO
                         STY             HREC_IMP_READ_HI
@@ -68,6 +83,29 @@ START_HAVE_WRITE:
                         LDY             #>MSG_READ
                         JSR             HREC_PRINT_JOIN_OK_LINE
                         BRA             TEST_FLUSH
+
+; ----------------------------------------------------------------------------
+; HREC_JOIN_INIT
+; Bootstrap the resident join layer and first output dependency.
+; OUT: C=1 with X/Y and HREC_JOIN_LO/HI = BIO_FTDI_WRITE_BYTE_BLOCK entry.
+;      C=0 if the resident joiner or write routine cannot be joined.
+; ----------------------------------------------------------------------------
+HREC_JOIN_INIT:
+                        LDX             #<HASH_THE_JOIN_EXEC_XY
+                        LDY             #>HASH_THE_JOIN_EXEC_XY
+                        JSR             HREC_JOIN_EXEC_XY
+                        BCC             HREC_JOIN_INIT_FAIL
+                        STX             HREC_JOINER_LO
+                        STY             HREC_JOINER_HI
+
+                        LDX             #<HASH_BIO_WRITE_BYTE_BLOCK
+                        LDY             #>HASH_BIO_WRITE_BYTE_BLOCK
+                        JSR             HREC_JOIN_RESIDENT_XY
+                        BCC             HREC_JOIN_INIT_FAIL
+                        RTS
+HREC_JOIN_INIT_FAIL:
+                        CLC
+                        RTS
 TEST_READ_NF:
                         LDX             #<MSG_READ
                         LDY             #>MSG_READ
@@ -76,7 +114,7 @@ TEST_READ_NF:
 TEST_FLUSH:
                         LDX             #<HASH_BIO_FLUSH_RX
                         LDY             #>HASH_BIO_FLUSH_RX
-                        JSR             HREC_JOIN_EXEC_XY
+                        JSR             HREC_JOIN_RESIDENT_XY
                         BCC             TEST_FLUSH_NF
                         LDX             #<MSG_FLUSH
                         LDY             #>MSG_FLUSH
@@ -90,7 +128,7 @@ TEST_FLUSH_NF:
 TEST_CTRL:
                         LDX             #<HASH_BIO_GET_CTRL_C
                         LDY             #>HASH_BIO_GET_CTRL_C
-                        JSR             HREC_JOIN_EXEC_XY
+                        JSR             HREC_JOIN_RESIDENT_XY
                         BCC             TEST_CTRL_NF
                         LDX             #<MSG_CTRL
                         LDY             #>MSG_CTRL
@@ -104,7 +142,7 @@ TEST_CTRL_NF:
 TEST_HEX:
                         LDX             #<HASH_UTL_HEX_ASCII_TO_NIBBLE
                         LDY             #>HASH_UTL_HEX_ASCII_TO_NIBBLE
-                        JSR             HREC_JOIN_EXEC_XY
+                        JSR             HREC_JOIN_RESIDENT_XY
                         BCC             TEST_HEX_NF
                         LDA             #'A'
                         JSR             HREC_CALL_JOIN
@@ -128,7 +166,7 @@ TEST_HEX_BAD:
 TEST_MISSING:
                         LDX             #<HASH_NO_SUCH_RECORD
                         LDY             #>HASH_NO_SUCH_RECORD
-                        JSR             HREC_JOIN_EXEC_XY
+                        JSR             HREC_JOIN_RESIDENT_XY
                         BCC             TEST_MISSING_OK
                         LDX             #<MSG_MISSING
                         LDY             #>MSG_MISSING
@@ -140,7 +178,7 @@ TEST_MISSING_OK:
                         JSR             HREC_PRINT_JOIN_NF_OK_LINE
 
 TEST_KIND:
-                        LDA             #$01
+                        LDA             #HREC_KIND_CONFIRM
                         JSR             HREC_JOIN_EXEC_KIND
                         BCC             TEST_KIND_OK
                         JSR             HREC_PRINT_KIND_BAD_LINE
@@ -151,7 +189,7 @@ TEST_KIND_OK:
 TEST_HEX_INV:
                         LDX             #<HASH_UTL_HEX_ASCII_TO_NIBBLE
                         LDY             #>HASH_UTL_HEX_ASCII_TO_NIBBLE
-                        JSR             HREC_JOIN_EXEC_XY
+                        JSR             HREC_JOIN_RESIDENT_XY
                         BCC             TEST_HEX_INV_NF
                         LDA             #'G'
                         JSR             HREC_CALL_JOIN
@@ -164,34 +202,34 @@ TEST_HEX_INV_OK:
                         LDX             #<MSG_HEX_INV
                         LDY             #>MSG_HEX_INV
                         JSR             HREC_PRINT_HEX_G_OK_LINE
-                        BRA             TEST_K10
+                        BRA             TEST_PTR
 TEST_HEX_INV_NF:
                         LDX             #<MSG_HEX_INV
                         LDY             #>MSG_HEX_INV
                         JSR             HREC_PRINT_JOIN_NF_LINE
-                        BRA             TEST_K10
+                        BRA             TEST_PTR
 
-TEST_K10:
-                        LDX             #<HASH_K10_EXT
-                        LDY             #>HASH_K10_EXT
+TEST_PTR:
+                        LDX             #<HASH_PTR_EXT
+                        LDY             #>HASH_PTR_EXT
                         JSR             HREC_JOIN_EXEC_LOCAL_XY
-                        BCC             TEST_K10_NF
+                        BCC             TEST_PTR_NF
                         JSR             HREC_CALL_JOIN
-                        BCC             TEST_K10_BAD
+                        BCC             TEST_PTR_BAD
                         CMP             #$10
-                        BNE             TEST_K10_BAD
-                        LDX             #<MSG_K10
-                        LDY             #>MSG_K10
-                        JSR             HREC_PRINT_K10_OK_LINE
+                        BNE             TEST_PTR_BAD
+                        LDX             #<MSG_PTR
+                        LDY             #>MSG_PTR
+                        JSR             HREC_PRINT_PTR_OK_LINE
                         BRA             TEST_DONE
-TEST_K10_NF:
-                        LDX             #<MSG_K10
-                        LDY             #>MSG_K10
+TEST_PTR_NF:
+                        LDX             #<MSG_PTR
+                        LDY             #>MSG_PTR
                         JSR             HREC_PRINT_JOIN_NF_LINE
                         BRA             TEST_DONE
-TEST_K10_BAD:
-                        LDX             #<MSG_K10
-                        LDY             #>MSG_K10
+TEST_PTR_BAD:
+                        LDX             #<MSG_PTR
+                        LDY             #>MSG_PTR
                         JSR             HREC_PRINT_JOIN_BAD_LINE
 
 TEST_DONE:
@@ -204,16 +242,15 @@ TEST_DONE:
 ; ----------------------------------------------------------------------------
 ; HREC_JOIN_EXEC_XY
 ; IN : X/Y = pointer to little-endian hash32 bytes.
-; OUT: found executable: C=1, A=$00, X/Y=payload entry, HREC_JOIN_LO/HI=entry.
+; OUT: found executable: C=1, X/Y=payload entry, HREC_JOIN_LO/HI=entry.
 ;      missing or non-exec: C=0.
 ; ----------------------------------------------------------------------------
 HREC_JOIN_EXEC_XY:
                         JSR             HREC_FIND_XY
                         BCC             HREC_JOIN_FAIL
 HREC_JOIN_EXEC_KIND:
-                        BEQ             HREC_JOIN_OK
-                        CMP             #$10
-                        BNE             HREC_JOIN_FAIL
+                        AND             #HREC_KIND_EXEC
+                        BEQ             HREC_JOIN_FAIL
 HREC_JOIN_OK:
                         LDX             HREC_JOIN_LO
                         LDY             HREC_JOIN_HI
@@ -253,8 +290,8 @@ HREC_FIND_FOUND:
                         STZ             HREC_EXTRA_HI
                         LDY             #$07
                         LDA             (HREC_SCAN_LO),Y
-                        CMP             #$10
-                        BEQ             HREC_FIND_FOUND_K10
+                        CMP             #HREC_KIND_EXEC_TEXT
+                        BEQ             HREC_FIND_FOUND_PTR
                         CLC
                         LDA             HREC_SCAN_LO
                         ADC             #$08
@@ -266,7 +303,7 @@ HREC_FIND_FOUND:
                         LDA             (HREC_SCAN_LO),Y
                         SEC
                         RTS
-HREC_FIND_FOUND_K10:
+HREC_FIND_FOUND_PTR:
                         LDY             #$08
                         LDA             (HREC_SCAN_LO),Y
                         STA             HREC_JOIN_LO
@@ -279,7 +316,7 @@ HREC_FIND_FOUND_K10:
                         INY
                         LDA             (HREC_SCAN_LO),Y
                         STA             HREC_EXTRA_HI
-                        LDA             #$10
+                        LDA             #HREC_KIND_EXEC_TEXT
                         SEC
                         RTS
 
@@ -354,9 +391,9 @@ HREC_JOIN_EXEC_LOCAL_FOUND:
 HREC_FIND_LOCAL_XY:
                         STX             HREC_HASH_PTR_LO
                         STY             HREC_HASH_PTR_HI
-                        LDA             #<HREC_K10_RECORD
+                        LDA             #<HREC_PTR_RECORD
                         STA             HREC_SCAN_LO
-                        LDA             #>HREC_K10_RECORD
+                        LDA             #>HREC_PTR_RECORD
                         STA             HREC_SCAN_HI
                         JSR             HREC_FIND_IS_RECORD
                         BCC             HREC_FIND_FAIL
@@ -364,13 +401,34 @@ HREC_FIND_LOCAL_XY:
                         BCC             HREC_FIND_FAIL
                         JMP             HREC_FIND_FOUND
 
-HREC_K10_TARGET:
+HREC_PTR_TARGET:
                         LDA             #$10
                         SEC
                         RTS
 
 HREC_CALL_JOIN:
                         JMP             (HREC_JOIN_LO)
+
+; Call the resident THE_JOIN_EXEC_XY found by the bootstrap scanner.
+; IN : X/Y = pointer to little-endian hash32 bytes.
+; OUT: C=1 with X/Y and HREC_JOIN_LO/HI = executable entry.
+HREC_JOIN_RESIDENT_XY:
+                        STX             HREC_HASH_PTR_LO
+                        STY             HREC_HASH_PTR_HI
+                        STZ             HREC_EXTRA_LO
+                        STZ             HREC_EXTRA_HI
+                        JSR             HREC_CALL_JOINER
+                        BCC             HREC_JOIN_RESIDENT_FAIL
+                        STX             HREC_JOIN_LO
+                        STY             HREC_JOIN_HI
+                        SEC
+                        RTS
+HREC_JOIN_RESIDENT_FAIL:
+                        CLC
+                        RTS
+
+HREC_CALL_JOINER:
+                        JMP             (HREC_JOINER_LO)
 
 HREC_BIO_WRITE_BYTE_BLOCK:
                         JMP             (HREC_IMP_WRITE_LO)
@@ -427,7 +485,7 @@ HREC_INPUT_END_LINE:
                         BCS             HREC_INPUT_FOUND
                         LDX             #<HREC_USER_HASH0
                         LDY             #>HREC_USER_HASH0
-                        JSR             HREC_JOIN_EXEC_XY
+                        JSR             HREC_JOIN_RESIDENT_XY
                         BCC             HREC_INPUT_NF
 HREC_INPUT_FOUND:
                         LDX             #<MSG_USER
@@ -577,7 +635,7 @@ HREC_PRINT_HEX_G_OK_LINE:
                         LDY             #>MSG_OK
                         JMP             HREC_PRINT_LINE
 
-HREC_PRINT_K10_OK_LINE:
+HREC_PRINT_PTR_OK_LINE:
                         JSR             HREC_WRITE_CSTRING
                         JSR             HREC_PRINT_HASH_FIELD
                         JSR             HREC_PRINT_ENTRY_FIELD
@@ -745,6 +803,8 @@ HREC_WRITE_HBSTRING_DONE:
                         RTS
 
                         DATA
+HASH_THE_JOIN_EXEC_XY:
+                        DB              $F7,$15,$AF,$A9
 HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
 HASH_BIO_READ_BYTE_BLOCK:
@@ -757,26 +817,27 @@ HASH_UTL_HEX_ASCII_TO_NIBBLE:
                         DB              $B1,$14,$D7,$AD
 HASH_NO_SUCH_RECORD:
                         DB              $EF,$BE,$AD,$DE
-HASH_K10_EXT:
+HASH_PTR_EXT:
                         DB              $10,$32,$54,$76
-HREC_K10_RECORD:
+HREC_PTR_RECORD:
                         DB              'F','N',HREC_HASH_SIG2
                         DB              $10,$32,$54,$76
-                        DB              $10
-                        DW              HREC_K10_TARGET
-                        DW              HREC_K10_EXTRA
+                        DB              HREC_KIND_EXEC_TEXT
+                        DW              HREC_PTR_TARGET
+                        DW              HREC_PTR_EXTRA
 HREC_LINE_BUF:
                         DB              $00,$00,$00,$00,$00,$00,$00,$00
 
 MSG_TITLE:             DB              "HREC JOIN PROOF $4000",0
 MSG_WRITE:             DB              "WRITE ",0
+MSG_JOINER:            DB              "JOINER ",0
 MSG_READ:              DB              "READ ",0
 MSG_FLUSH:             DB              "FLUSH ",0
 MSG_CTRL:              DB              "CTRL ",0
 MSG_HEX:               DB              "HEX ",0
 MSG_MISSING:           DB              "MISSING ",0
 MSG_KIND:              DB              "KIND ",0
-MSG_K10:               DB              "K10 ",0
+MSG_PTR:               DB              "PTR ",0
 MSG_HEX_INV:           DB              "HEXINV ",0
 MSG_HASH_FIELD:        DB              "H=",0
 MSG_ENTRY_FIELD:       DB              " E=",0
@@ -785,8 +846,8 @@ MSG_NO_ENTRY:          DB              "----",0
 MSG_IN_A_OUT_0A:       DB              " IN=A OUT=$0A ",0
 MSG_IN_G_C0:           DB              " IN=G C=0 ",0
 MSG_OUT_10:            DB              " OUT=$10 ",0
-MSG_KIND_FIELD:        DB              "K=$01 ",0
-HREC_K10_EXTRA:        DB              "K10-EXTR",$C1
+MSG_KIND_FIELD:        DB              "K=$02 ",0
+HREC_PTR_EXTRA:        DB              "PTR-EXTR",$C1
 MSG_INPUT_HELP:        DB              "TYPE 8 HEX HASH, CR QUIT",0
 MSG_INPUT_PROMPT:      DB              "J> ",0
 MSG_INPUT_NO_READ:     DB              "INPUT READ NF",0

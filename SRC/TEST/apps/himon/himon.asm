@@ -10,6 +10,11 @@
                         MODULE          HIMON_APP
 
                         XDEF            START
+                        XDEF            THE_JOIN_FIND
+                        XDEF            THE_JOIN_EXEC
+                        XDEF            THE_JOIN_EXEC_XY
+                        XDEF            THE_JOIN_EXEC_XY_FNV
+                        XDEF            THE_JOIN_LOAD_HASH_XY
 
                         XREF            BIO_FTDI_READ_BYTE_BLOCK
                         XREF            BIO_FTDI_WRITE_BYTE_BLOCK
@@ -79,12 +84,16 @@ CMD_ABORT_TOP            EQU             $04
 ;   'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,payload...
 ;   kind bit 0: executable.
 ;   kind bit 1: confirm before execution.
+;   kind bit 2: text/metadata pointer is present.
 ;   kind=$01: executable code begins immediately after the kind byte.
-;   kind=$03: DW ENTRY, DW EXTRA; EXTRA=$0000 means no display text.
+;   kind=$03: legacy DW ENTRY, DW EXTRA, confirm before execution.
+;   kind=$05: DW ENTRY, DW EXTRA, display text without confirmation.
 CMD_FNV_SIG2             EQU             ('V'+$80)
 CMD_HASH_KIND_EXEC       EQU             $01
 CMD_HASH_KIND_CONFIRM    EQU             $02
-CMD_HASH_KIND_EXEC_TEXT  EQU             (CMD_HASH_KIND_EXEC+CMD_HASH_KIND_CONFIRM)
+CMD_HASH_KIND_TEXT       EQU             $04
+CMD_HASH_KIND_EXEC_CONFIRM_TEXT EQU      (CMD_HASH_KIND_EXEC+CMD_HASH_KIND_CONFIRM)
+CMD_HASH_KIND_EXEC_TEXT  EQU             (CMD_HASH_KIND_EXEC+CMD_HASH_KIND_TEXT)
 CMD_HASH_SCAN_BASE_HI    EQU             $80
 QUOTE_HASH_TARGET0       EQU             $7A
 QUOTE_HASH_TARGET1       EQU             $0F
@@ -112,7 +121,7 @@ START:
                         JMP             BOOT_RESET_WARM_BODY
 
 BOOT_COLD_RESET_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$F0,$30,$7A,$EC,CMD_HASH_KIND_EXEC_TEXT ; BOOT_COLD_RESET $EC7A30F0 EXEC+CONFIRM
+                        DB              'F','N',CMD_FNV_SIG2,$F0,$30,$7A,$EC,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; BOOT_COLD_RESET $EC7A30F0 EXEC+CONFIRM
                         DW              BOOT_RESET_COLD
                         DW              TXT_BOOT_COLD_RESET
 BOOT_RESET_COLD:
@@ -124,7 +133,7 @@ MON_COLD_RESET:
                         JMP             MON_CLEAR_RAM
 
 BOOT_WARM_RESET_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$AB,$AE,$33,$53,CMD_HASH_KIND_EXEC_TEXT ; BOOT_WARM_RESET $5333AEAB EXEC+CONFIRM
+                        DB              'F','N',CMD_FNV_SIG2,$AB,$AE,$33,$53,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; BOOT_WARM_RESET $5333AEAB EXEC+CONFIRM
                         DW              BOOT_RESET_WARM
                         DW              TXT_BOOT_WARM_RESET
 BOOT_RESET_WARM:
@@ -2258,7 +2267,52 @@ CMD_DISPATCH_SCAN_MISS:
                         JMP             MAIN_LOOP
 
 ; ----------------------------------------------------------------------------
-; THE_JOIN_FIND -- internal resident FNV record lookup.
+; THE_JOIN_EXEC_XY / THE_JOIN_EXEC -- resident executable-record join.
+; IN : THE_JOIN_EXEC_XY: X/Y = pointer to little-endian hash32 bytes.
+;      THE_JOIN_EXEC:    FNV_HASH0..3 = wanted hash.
+; OUT: C=1 executable found, X/Y and CMDP_ADDR_LO/HI = entry,
+;      CMD_HASH_EXTRA_LO/HI = extra pointer or $0000.
+;      C=0 not found or not executable.
+; ----------------------------------------------------------------------------
+THE_JOIN_EXEC_XY_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$F7,$15,$AF,$A9,CMD_HASH_KIND_EXEC ; THE_JOIN_EXEC_XY $A9AF15F7 EXEC
+THE_JOIN_EXEC_XY:
+                        JSR             THE_JOIN_LOAD_HASH_XY
+THE_JOIN_EXEC:
+                        JSR             CMD_HASH_SCAN_INIT
+THE_JOIN_EXEC_LOOP:
+                        JSR             CMD_HASH_SCAN_NEXT_RECORD
+                        BCC             THE_JOIN_EXEC_FAIL
+                        JSR             CMD_HASH_RECORD_MATCH
+                        BCC             THE_JOIN_EXEC_NEXT
+                        JSR             CMD_HASH_RECORD_IS_EXEC
+                        BCC             THE_JOIN_EXEC_NEXT
+                        JSR             CMD_HASH_RECORD_ENTRY
+                        JSR             CMD_HASH_RECORD_EXTRA
+                        LDX             CMDP_ADDR_LO
+                        LDY             CMDP_ADDR_HI
+                        SEC
+                        RTS
+THE_JOIN_EXEC_NEXT:
+                        JSR             CMD_HASH_SCAN_ADV
+                        BRA             THE_JOIN_EXEC_LOOP
+THE_JOIN_EXEC_FAIL:
+                        CLC
+                        RTS
+
+THE_JOIN_LOAD_HASH_XY:
+                        STX             CMDP_ADDR_LO
+                        STY             CMDP_ADDR_HI
+                        LDY             #$03
+THE_JOIN_LOAD_HASH_LOOP:
+                        LDA             (CMDP_ADDR_LO),Y
+                        STA             FNV_HASH0,Y
+                        DEY
+                        BPL             THE_JOIN_LOAD_HASH_LOOP
+                        RTS
+
+; ----------------------------------------------------------------------------
+; THE_JOIN_FIND -- resident FNV record lookup.
 ; IN : FNV_HASH0..3 = wanted hash.
 ; OUT: C=1 found, A=kind, CMDP_ADDR_LO/HI=entry,
 ;      CMD_HASH_EXTRA_LO/HI=extra pointer or $0000.
@@ -2385,6 +2439,8 @@ CMD_HASH_RECORD_IS_EXEC:
 CMD_HASH_RECORD_ENTRY:
                         LDY             #$07
                         LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             #CMD_HASH_KIND_EXEC_CONFIRM_TEXT
+                        BEQ             CMD_HASH_RECORD_ENTRY_PTR
                         CMP             #CMD_HASH_KIND_EXEC_TEXT
                         BEQ             CMD_HASH_RECORD_ENTRY_PTR
                         CLC
@@ -2409,8 +2465,11 @@ CMD_HASH_RECORD_EXTRA:
                         STZ             CMD_HASH_EXTRA_HI
                         LDY             #$07
                         LDA             (CMD_HASH_TAB_LO),Y
+                        CMP             #CMD_HASH_KIND_EXEC_CONFIRM_TEXT
+                        BEQ             CMD_HASH_RECORD_EXTRA_PTR
                         CMP             #CMD_HASH_KIND_EXEC_TEXT
                         BNE             CMD_HASH_RECORD_EXTRA_DONE
+CMD_HASH_RECORD_EXTRA_PTR:
                         LDY             #$0A
                         LDA             (CMD_HASH_TAB_LO),Y
                         STA             CMD_HASH_EXTRA_LO
@@ -2460,7 +2519,7 @@ CMD_HASH_RECORD_FILTER_NO:
 CMD_HASH_CONFIRM_EXEC:
                         LDY             #$07
                         LDA             (CMD_HASH_TAB_LO),Y
-                        CMP             #CMD_HASH_KIND_EXEC_TEXT
+                        CMP             #CMD_HASH_KIND_EXEC_CONFIRM_TEXT
                         BEQ             CMD_HASH_CONFIRM_ASK
                         SEC
                         RTS
@@ -2854,7 +2913,7 @@ HIM_FNV_FORCE_RESIDENT:
                         DW              UTL_HEX_ASCII_TO_NIBBLE
 
 HIMON_VERSION_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$80,$1A,$05,$B0,CMD_HASH_KIND_EXEC_TEXT ; HIMON $B0051A80 EXEC+CONFIRM
+                        DB              'F','N',CMD_FNV_SIG2,$80,$1A,$05,$B0,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; HIMON $B0051A80 EXEC+CONFIRM
                         DW              START
                         DW              MSG_HIMON_VERSION_TEXT
 

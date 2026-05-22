@@ -169,6 +169,33 @@ $FFFE-$FFFF  IRQ/BRK
 Those vector bytes remain part of the selected STR8 protected window. They are
 treated as vector table rather than normal code storage.
 
+The current high-flash reserve should be read as a top-sector ownership rule,
+not as general free ROM:
+
+```text
+$FC00-$FFEF  STR8 private reserve inside the top sector
+             size $03F0 = 1008 bytes
+
+$FC00-$FED1  stored STR8 RAM worker image
+             size $02D2 = 722 bytes
+             copied to and run from $0200-$04D1
+
+$FED2-$FFEF  reserved free space for future STR8-private metadata or cache
+             size $011E = 286 bytes
+
+$FFF0-$FFF9  one-time flash board/version/config pocket
+             size $000A = 10 bytes
+
+$FFFA-$FFFF  W65C02 hardware vectors
+             size $0006 = 6 bytes
+```
+
+If STR8 later caches hash/address fast paths in flash, that cache belongs in
+the `$FED2-$FFEF` slack or in another deliberate STR8-owned record area. Cached
+addresses are hints: validate the cache against the active ROM/build identity
+before trusting it, and fall back to a fresh scan when identity or checksum does
+not match.
+
 ## Vector Integration Policy
 
 V0 HIMON controls IRQ/vector behavior.
@@ -359,6 +386,9 @@ physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
+STR8 private high-flash reserve is $FC00-$FFEF
+stored worker currently occupies $FC00-$FED1
+reserved worker/cache slack is currently $FED2-$FFEF
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF

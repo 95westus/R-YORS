@@ -29,6 +29,9 @@ $rows = @(
     [pscustomobject]@{ Target = "test-mon"; Category = "test"; Description = "Build monitor test app." }
     [pscustomobject]@{ Target = "test-ftdi-drv"; Category = "test"; Description = "Build FTDI driver test app." }
     [pscustomobject]@{ Target = "test-ftdi-hal"; Category = "test"; Description = "Build FTDI HAL test app." }
+    [pscustomobject]@{ Target = "himon-search-static-proof"; Category = "test"; Description = "Build standalone static-linked RAM search proof at 3000." }
+    [pscustomobject]@{ Target = "himon-search-proof"; Category = "test"; Description = "Build hash-resolved RAM search proof at 3000." }
+    [pscustomobject]@{ Target = "himon-search-flash"; Category = "test"; Description = "Build low-flash K=05 S search command S19 at BBA2 for L F." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
     [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }
     [pscustomobject]@{ Target = "rom-append-calc"; Category = "app"; Description = "Build CALC command as a ROM append proof at B804." }

@@ -99,10 +99,18 @@ HIMON_DEBUG_PROOF_SRC := $(APPS_DIR)/himon-debug-proof.asm
 HIMON_DEBUG_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-debug-proof.obj
 HIMON_DEBUG_PROOF_S19 := $(S19_DIR)/himon-debug-proof-3000.s19
 HIMON_DEBUG_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
+HIMON_SEARCH_STATIC_PROOF_SRC := $(APPS_DIR)/himon-search-static-proof.asm
+HIMON_SEARCH_STATIC_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-search-static-proof.obj
+HIMON_SEARCH_STATIC_PROOF_S19 := $(S19_DIR)/himon-search-static-proof-3000.s19
+HIMON_SEARCH_STATIC_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 HIMON_SEARCH_PROOF_SRC := $(APPS_DIR)/himon-search-proof.asm
 HIMON_SEARCH_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-search-proof.obj
 HIMON_SEARCH_PROOF_S19 := $(S19_DIR)/himon-search-proof-3000.s19
 HIMON_SEARCH_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
+HIMON_SEARCH_FLASH_SRC := $(APPS_DIR)/himon-search-flash.asm
+HIMON_SEARCH_FLASH_OBJ := $(OBJ_DIR)/$(APPS_DIR)/himon-search-flash.obj
+HIMON_SEARCH_FLASH_S19 := $(S19_DIR)/himon-search-flash-bba2.s19
+HIMON_SEARCH_FLASH_LINKFLAGS := -g -s -t -cBBA2 -hm19 -j -o
 HREC_JOIN_PROOF_SRC := $(APPS_DIR)/hrec-join-proof.asm
 HREC_JOIN_PROOF_OBJ := $(OBJ_DIR)/$(APPS_DIR)/hrec-join-proof.obj
 HREC_JOIN_PROOF_S19 := $(S19_DIR)/hrec-join-proof-4000.s19
@@ -194,7 +202,9 @@ ALL_TARGETS := \
 	test-flash \
 	life \
 	himon-debug-proof \
+	himon-search-static-proof \
 	himon-search-proof \
+	himon-search-flash \
 	hrec-join-proof \
 	rom-append-calc \
 	fig-forth \
@@ -322,8 +332,16 @@ himon-debug-proof: $(ROM_LIB) $(HIMON_DEBUG_PROOF_S19)
 	@echo "Built $(HIMON_DEBUG_PROOF_S19)."
 	@$(MAKE) artifacts
 
+himon-search-static-proof: $(ROM_LIB) $(HIMON_SEARCH_STATIC_PROOF_S19)
+	@echo "Built $(HIMON_SEARCH_STATIC_PROOF_S19)."
+	@$(MAKE) artifacts
+
 himon-search-proof: $(ROM_LIB) $(HIMON_SEARCH_PROOF_S19)
 	@echo "Built $(HIMON_SEARCH_PROOF_S19)."
+	@$(MAKE) artifacts
+
+himon-search-flash: $(ROM_LIB) $(HIMON_SEARCH_FLASH_S19)
+	@echo "Built $(HIMON_SEARCH_FLASH_S19)."
 	@$(MAKE) artifacts
 
 hrec-join-proof: $(ROM_LIB) $(HREC_JOIN_PROOF_S19)
@@ -525,11 +543,23 @@ $(HIMON_DEBUG_PROOF_S19): $(HIMON_DEBUG_PROOF_OBJ) $(ROM_LIB)
 	@echo [ps] set S9 start $$3000 in $(HIMON_DEBUG_PROOF_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HIMON_DEBUG_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
 
+$(HIMON_SEARCH_STATIC_PROOF_S19): $(HIMON_SEARCH_STATIC_PROOF_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIMON_SEARCH_STATIC_PROOF_LINKFLAGS) $(HIMON_SEARCH_STATIC_PROOF_S19) $(HIMON_SEARCH_STATIC_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$3000 in $(HIMON_SEARCH_STATIC_PROOF_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HIMON_SEARCH_STATIC_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+
 $(HIMON_SEARCH_PROOF_S19): $(HIMON_SEARCH_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(HIMON_SEARCH_PROOF_LINKFLAGS) $(HIMON_SEARCH_PROOF_S19) $(HIMON_SEARCH_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
 	@echo [ps] set S9 start $$3000 in $(HIMON_SEARCH_PROOF_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HIMON_SEARCH_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+
+$(HIMON_SEARCH_FLASH_S19): $(HIMON_SEARCH_FLASH_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(HIMON_SEARCH_FLASH_LINKFLAGS) $(HIMON_SEARCH_FLASH_S19) $(HIMON_SEARCH_FLASH_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$BBAE in $(HIMON_SEARCH_FLASH_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HIMON_SEARCH_FLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903BBAE93'; Set-Content -Path $$p -Value $$lines"
 
 $(HREC_JOIN_PROOF_S19): $(HREC_JOIN_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -731,4 +761,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-proof hrec-join-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static-proof himon-search-proof himon-search-flash hrec-join-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

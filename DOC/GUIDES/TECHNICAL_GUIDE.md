@@ -161,12 +161,12 @@ Current combined-image facts:
 
 ```text
 HIMON entry:     $C000
-HIMON body:      $C000-$E75B
+HIMON body:      $C000-$E9AF
 STR8 entry:      $F000
-STR8 body:       $F000-$FA83
+STR8 body:       $F000-$FA71
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F770 = 7A 0F 6A 5F
-worker source:   $FC00-$FEBE
+marker bytes:    $F75E = 7A 0F 6A 5F
+worker source:   $FC00-$FED1
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0
 ```
@@ -246,6 +246,38 @@ $4000-$6FFF   staged C/D/E sector buffers during U
 
 `M` is read-only from the operator's point of view, but still uses the worker
 to switch banks and scan sectors.
+
+Current top-sector reserve policy:
+
+```text
+$F800-$FA71  STR8 resident message/data tail
+             size $0272 = 626 bytes
+
+$FA72-$FBFF  unused $FF padding before the private reserve
+             size $018E = 398 bytes
+
+$FC00-$FFEF  STR8 private high-flash reserve
+             size $03F0 = 1008 bytes
+
+$FC00-$FED1  stored STR8 RAM worker image inside that reserve
+             size $02D2 = 722 bytes
+             linked to run at $0200-$04D1
+
+$FED2-$FFEF  reserved free space for future STR8-private metadata or cache
+             size $011E = 286 bytes
+
+$FFF0-$FFF9  STR8 config pocket
+             size $000A = 10 bytes
+
+$FFFA-$FFFF  W65C02 vectors
+             size $0006 = 6 bytes
+```
+
+The working rule is that `$FC00-$FFEF` belongs to STR8 as a private high-flash
+reserve. The worker grows upward from `$FC00`; any future STR8 fast-path cache
+or private metadata should grow downward from `$FFEF` and must be treated as a
+hint unless it is validated against the active image identity. `$FFF0-$FFFF`
+stays out of general allocation.
 
 ## STR8 Update Gate
 
