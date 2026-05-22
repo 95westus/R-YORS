@@ -31,6 +31,7 @@ PYTHON ?= python
 LOCAL_ROOT ?= ../LOCAL
 LOCAL_PROVENANCE := tools/write_local_provenance.ps1
 HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
+FIG_FORTH_HIMON_PATCH := tools/patch_fig_forth_himon_addrs.ps1
 HIMON_VERSION_INC := $(INC_DIR)/himon-version.inc
 BASIC_PROGRAMS_HOME ?= $(LOCAL_ROOT)/basic-programs
 FIG_FORTH_HOME ?= $(LOCAL_ROOT)/fig-forth
@@ -606,12 +607,12 @@ $(FIG_FORTH_STR8_UPDATE_S19): $(FIG_FORTH_C000_S19)
 	@echo [ps] build $(FIG_FORTH_STR8_UPDATE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$src = '$(FIG_FORTH_C000_S19)'; $$dst = '$(FIG_FORTH_STR8_UPDATE_S19)'; $$out = New-Object System.Collections.Generic.List[string]; foreach ($$raw in Get-Content -Path $$src) { $$line = $$raw.Trim(); if ($$line.Length -eq 0) { continue }; if ($$line.StartsWith('S1', [System.StringComparison]::Ordinal)) { $$addr = [Convert]::ToInt32($$line.Substring(4, 4), 16); if ($$addr -lt 0xC000 -or $$addr -gt 0xEFFF) { throw ('fig-Forth STR8 U record outside C000-EFFF: ' + $$line) }; $$out.Add($$line); continue }; if ($$line.StartsWith('S9', [System.StringComparison]::Ordinal)) { $$out.Add('S903C0003C'); continue }; if ($$line.StartsWith('S0', [System.StringComparison]::Ordinal)) { continue }; throw ('Unsupported record in fig-Forth STR8 U stream: ' + $$line) }; if ($$out.Count -eq 0) { throw 'No records for fig-Forth STR8 U stream' }; [System.IO.File]::WriteAllLines($$dst, $$out, [System.Text.Encoding]::ASCII); Write-Host ('STR8 U S19              = {0}' -f $$dst); Write-Host ('Address range           = C000-EFFF'); Write-Host ('S9 start                = C000'); Write-Host ('Records                 = {0}' -f $$out.Count)"
 
-$(FIG_FORTH_SRC):
+$(FIG_FORTH_SRC): $(FIG_FORTH_INPUT) tools/emit_fig_forth_wdc.ps1 $(LOCAL_PROVENANCE)
 	@if not exist $(subst /,\,$(dir $(FIG_FORTH_SRC))) mkdir $(subst /,\,$(dir $(FIG_FORTH_SRC)))
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/emit_fig_forth_wdc.ps1 -SourcePath "$(FIG_FORTH_INPUT)" -OutPath "$(FIG_FORTH_SRC)"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(LOCAL_PROVENANCE) -Name "fig-forth" -LocalHome "$(FIG_FORTH_HOME)" -SourcePath "$(FIG_FORTH_INPUT)" -GeneratedPath "$(FIG_FORTH_SRC)" -ToolPath "tools/emit_fig_forth_wdc.ps1" -Note "Generated local WDC-flavored fig-Forth source."
 
-$(FIG_FORTH_C000_SRC):
+$(FIG_FORTH_C000_SRC): $(FIG_FORTH_INPUT) tools/emit_fig_forth_wdc.ps1 $(LOCAL_PROVENANCE)
 	@if not exist $(subst /,\,$(dir $(FIG_FORTH_C000_SRC))) mkdir $(subst /,\,$(dir $(FIG_FORTH_C000_SRC)))
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/emit_fig_forth_wdc.ps1 -SourcePath "$(FIG_FORTH_INPUT)" -OutPath "$(FIG_FORTH_C000_SRC)" -MonitorExitAddress 61440 -BootEntryAtBase
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(LOCAL_PROVENANCE) -Name "fig-forth-c000" -LocalHome "$(FIG_FORTH_HOME)" -SourcePath "$(FIG_FORTH_INPUT)" -GeneratedPath "$(FIG_FORTH_C000_SRC)" -ToolPath "tools/emit_fig_forth_wdc.ps1" -Note "Generated bootable C000 fig-Forth source for STR8 U experiments."
@@ -714,7 +715,8 @@ $(MSBASIC_OSI_C000_OBJ): $(MSBASIC_OSI_C000_SRC) $(STR8_S19) tools/patch_msbasic
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(FIG_FORTH_OBJ): $(FIG_FORTH_SRC)
+$(FIG_FORTH_OBJ): $(FIG_FORTH_SRC) $(HIMON_ROM_S19) $(FIG_FORTH_HIMON_PATCH)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(FIG_FORTH_HIMON_PATCH) -SourcePath "$(FIG_FORTH_SRC)" -MapPath "$(S19_DIR)/himon-rom-c000.map"
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
