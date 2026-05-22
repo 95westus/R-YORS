@@ -4,6 +4,99 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-05-21 Search Ladder And FTDI TX Carry Bug
+
+### Summary
+
+The `S` search command reached the three-step proof ladder:
+
+```text
+S static RAM   standalone parser/scanner proof at $3000
+S joined RAM   same behavior with runtime FNV helper discovery
+S flash        discoverable low-flash FNV command record, run from ROM window
+```
+
+During the flash proof, occasional impossible three-digit byte displays were
+observed:
+
+```text
+expected: D0 06      observed: D00 06
+expected: 0D 0A      observed: 0D 00A
+expected: 00 00      observed: 00 000
+```
+
+Root cause: `PIN_FTDI_WRITE_BYTE_NONBLOCK` could accept a byte after one or more
+TX-ready spin iterations, but return with carry clear because `CPX` in the spin
+loop had changed carry. Blocking callers interpreted `C=0` as "not accepted"
+and resent the byte. The fix is to force `SEC` on the successful write-strobe
+path while preserving `CLC` on timeout.
+
+Follow-up audit: `STR8_CON_WRITE_BYTE_NONBLOCK` has the same TX-spin shape, but
+already forces `SEC` on success before deassert/return. FTDI poll/read routines
+explicitly return carry status, and timeout wrappers branch on the callee's
+carry before issuing their own `CLC` timeout return. No second active
+resend-after-success bug was found.
+
+### Search Proof Extracts
+
+RAM static:
+
+```text
+>L
+L @3000
+L OK=0520 GO=3000
+>G 3000
+HIMON SEARCH STATIC $3000
+S> S 34AF +20 48 'IMON'
+34AF*34A0: ... 48 | ...
+S> S 7EF0 8010 00
+S IO
+S> Q
+S DONE
+```
+
+RAM joined:
+
+```text
+>L
+L @3000
+L OK=0589 GO=3000
+>G 3000
+HIMON SEARCH PROOF $3000
+S> S 0 FFFF FF 00
+7900 7900: ...
+S IO
+># S
+D60C1322 HSH_NF!
+```
+
+Flash command, hardware-proven K=`$03` transcript:
+
+```text
+>L F
+L @BA67
+LF OK WR=045C GO=BA73
+># S
+D60C1322 ENTRY=BA73 K=03  S(earch)
+>S B000 C000 'TEXT'
+RUN S(earch) @BA73 K=03 ? y
+BE87 BE80: ... 45 58 54 ...
+>S 0 FFFF 'HIMON'
+RUN S(earch) @BA73 K=03 ? y
+S ABORT
+```
+
+Current source advances the flash command record to K=`$05` and relocates it to
+`$BBA2-$BFFD`, with `$FF,$FF` guard pockets at `$BBA0-$BBA1` and `$BFFE-$BFFF`.
+That shape keeps `S(earch)` display text while removing the `RUN ... ?`
+confirmation prompt under a new HIMON build.
+
+Full notes:
+
+```text
+DOC/GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md
+```
+
 ## 2026-05-17 STR8 U OSI BASIC Payload And B0 Rotation Proof
 
 Source transcript:

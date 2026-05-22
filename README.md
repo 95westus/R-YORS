@@ -11,77 +11,16 @@ Not eRRORS, but expect fewer.
 
 Pronounced **are-yors**.
 
-## 2026-05-21 Alert
+## Current Spark
 
-An FTDI transmit bug was found and fixed in
-`PIN_FTDI_WRITE_BYTE_NONBLOCK`. When TX was not ready immediately, the spin
-loop's `CPX` could leave carry clear even after the byte was accepted. The
-blocking writer saw `C=0` and resent the same byte, producing display artifacts
-such as:
+Search just made the full ladder: standalone RAM proof, joined RAM proof, and
+a flash-resident FNV command that HIMON can discover and run. Along the way a
+sneaky FTDI carry bug was caught and fixed, explaining the occasional extra
+hex digit in dumps.
 
-```text
-expected: D0 06      observed: D00 06
-expected: 0D 0A      observed: 0D 00A
-expected: 00 00      observed: 00 000
-```
-
-Fix: the successful write-strobe path now forces `SEC` before returning, while
-the timeout path still returns `CLC`.
-
-Search command proofs also reached the promotion milestone:
-
-```text
-S static RAM   standalone parser/scanner proof at $3000
-S joined RAM   same command behavior with runtime FNV helper discovery
-S flash        discoverable low-flash FNV command record, run from ROM window
-```
-
-Summary transcripts:
-
-```text
-RAM static:
->L
-L @3000
-L OK=0520 GO=3000
->G 3000
-HIMON SEARCH STATIC $3000
-S> S 34AF +20 48 'IMON'
-34AF*34A0: ... 48 | ...
-S> S 7EF0 8010 00
-S IO
-S> Q
-S DONE
-
-RAM joined:
->L
-L @3000
-L OK=0589 GO=3000
->G 3000
-HIMON SEARCH PROOF $3000
-S> S 0 FFFF FF 00
-7900 7900: ...
-S IO
-># S
-D60C1322 HSH_NF!
-
-Flash command, hardware-proven K=$03 transcript:
->L F
-L @BA67
-LF OK WR=045C GO=BA73
-># S
-D60C1322 ENTRY=BA73 K=03  S(earch)
->S B000 C000 'TEXT'
-RUN S(earch) @BA73 K=03 ? y
-BE87 BE80: ... 45 58 54 ...
->S 0 FFFF 'HIMON'
-RUN S(earch) @BA73 K=03 ? y
-S ABORT
-```
-
-Current source advances the flash command record to K=`$05` and relocates it to
-`$BBA2-$BFFD`, with `$FF,$FF` guard pockets at `$BBA0-$BBA1` and `$BFFE-$BFFF`.
-That K=`$05` shape is intended to keep `S(earch)` display text while removing
-the `RUN ... ?` confirmation prompt under a new HIMON build.
+Details and transcripts live in
+[HARDWARE_TEST_LOG.md](DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md) and
+[HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](DOC/GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md).
 
 ## Live Proof
 
