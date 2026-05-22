@@ -71,10 +71,10 @@ Target behavior:
   reuse an existing buffer only when its owner is inactive.
 
 I/O policy must be boring. Reads from `$7F00-$7FFF` are memory-mapped I/O, so a
-mistyped all-memory search must not accidentally consume device state. First V0
-implementation should skip that I/O window when a range crosses it and print a
-short note such as `S IO`. A future explicit I/O-search form can be designed
-later if it is ever needed.
+mistyped all-memory search must not accidentally consume device state. Current
+HIMON `D` and flash-resident `S` skip that I/O window by `$20`-byte decode slot
+and print the same named skip rows, such as `7F80: ACIA IO SKIP`. A future
+explicit I/O-search form can be designed later if it is ever needed.
 
 ## Implementation Shape
 
@@ -88,7 +88,7 @@ SEARCH_PARSE_PATTERN    append hex bytes and apostrophe-quoted text atoms
 SEARCH_SCAN_RANGE       walk candidate start addresses
 SEARCH_MATCH_AT         compare pattern bytes at current address
 SEARCH_PRINT_HIT        print exact hit plus D-style context row
-SEARCH_SKIP_IO          skip/report $7F00-$7FFF when a range crosses I/O
+SEARCH_SKIP_IO          skip/report named $7F00-$7FFF slots when a range crosses I/O
 SEARCH_CHECK_ABORT      Ctrl-C check during long scans
 ```
 
@@ -263,7 +263,7 @@ Summary transcript:
 ```text
 L/G search proof -> S> prompt
 S 34AF +20 'HIMON' -> expected/observed
-S 7EF0 8010 00    -> expected S IO note if range crosses $7F00-$7FFF
+S 7EF0 8010 00    -> expected named I/O slot skips if range crosses $7F00-$7FFF
 S ...             -> expected/observed
 Q                 -> returns to HIMON
 ```
@@ -832,14 +832,14 @@ Candidate placement:
 ```text
 preferred candidate: $BBA2 if blank on the board
 guard before:        $BBA0-$BBA1, expected $FF $FF
-calculation:         $C000-$0002-$045C = $BBA2
-actual image range:  $BBA2-$BFFD
-actual size:         $045C bytes, 1116 decimal
-guard after:         $BFFE-$BFFF, expected $FF $FF
+calculation:         original $045C pocket fit at $BBA2; current image still fits
+actual image range:  $BBA2-$BFF5
+actual size:         $0454 bytes, 1108 decimal
+guard after:         $BFF6-$BFFF, expected $FF padding before $C000
 next protected ROM:  $C000
 record:              $BBA2-$BBAD
 entry:               $BBAE
-extra:               $BFF6, high-bit text S(earch)
+extra:               $BFEE, high-bit text S(earch)
 allowed by L F:      yes, if all target bytes are $FF
 protected region:    do not target $C000+
 artifact:            SRC/BUILD/s19/himon-search-flash-bba2.s19
@@ -848,9 +848,14 @@ map:                 SRC/BUILD/map/himon-search-flash-bba2.map
 
 The `$E9B0` HIMON-tail idea is scratched for this pass. Keep the flash-shadow
 experiment in `$8000-$BFFF` so it stays inside the current conservative `L F`
-write policy. The `$BBA2` placement packs the current `$045C` flash command
-against the top of low flash while preserving a two-byte `$FF` guard before the
-record and a two-byte `$FF` guard before `$C000`.
+write policy. The `$BBA2` placement keeps the flash command near the top of low
+flash while preserving a two-byte `$FF` guard before the record and more than
+the requested two-byte `$FF` guard before `$C000`.
+
+Current flash `S` resolves `SYS_PRINT_IO_SLOT_SKIP` by FNV hash
+`$C2A5A6CE`. That lets `S` and `D` share the same resident I/O slot labeler
+instead of carrying a second copy of the `$7F00-$7FFF` board map in the low
+flash command.
 
 Use `K=$05` for the flash-shadow command record when `S` should be visible in
 hash/catalog displays as more than a raw token without asking for confirmation
@@ -1006,15 +1011,15 @@ Measured from the current source files and linker maps:
 | --- | ---: | ---: | ---: | ---: | --- |
 | `himon-search-static-proof` | 676 | `$04AF` / 1199 | `$0071` / 113 | `$0520` / 1312 | RAM standalone, statically linked helpers |
 | `himon-search-proof` | 913 | `$04FF` / 1279 | `$008A` / 138 | `$0589` / 1417 | RAM standalone, runtime hash-resolved helpers |
-| `himon-search-flash` | 752 | `$03FD` / 1021 | `$005F` / 95 | `$045C` / 1116 | Low-flash K=`$05` command record |
+| `himon-search-flash` | 746 | `$03F6` / 1014 | `$005E` / 94 | `$0454` / 1108 | Low-flash K=`$05` command record |
 
 Source diff counts:
 
 | Compare | Diff stat | Hunks | Source line delta | CODE delta | DATA delta | Total delta |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | static proof -> hash proof | +251 / -14 lines | 15 | +237 | +`$0050` / +80 | +`$0019` / +25 | +`$0069` / +105 |
-| static proof -> flash command | +219 / -143 lines | 24 | +76 | -`$00B2` / -178 | -`$0012` / -18 | -`$00C4` / -196 |
-| flash command -> hash proof | +180 / -19 lines | 20 | +161 | +`$0102` / +258 | +`$002B` / +43 | +`$012D` / +301 |
+| static proof -> flash command | +228 / -158 lines | 29 | +70 | -`$00B9` / -185 | -`$0013` / -19 | -`$00CC` / -204 |
+| flash command -> hash proof | +205 / -38 lines | 32 | +167 | +`$0109` / +265 | +`$002C` / +44 | +`$0135` / +309 |
 
 Assembly complexity counters are simple static counts, not a full cyclomatic
 analysis. They are useful here because the files are W65C02S assembly and the
@@ -1022,17 +1027,17 @@ main question is how much machinery each proof carries.
 
 | Build | Nonblank | Code/data lines | Labels | JSR | JMP | Branches | EQU | Data dirs |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| static proof | 618 | 594 | 89 | 73 | 12 | 97 | 23 | 8 |
-| hash proof | 841 | 815 | 121 | 88 | 12 | 127 | 47 | 14 |
-| flash command | 691 | 664 | 99 | 67 | 10 | 102 | 47 | 12 |
+| static proof | 618 | 594 | 94 | 73 | 12 | 97 | 23 | 8 |
+| hash proof | 841 | 815 | 125 | 88 | 12 | 127 | 47 | 14 |
+| flash command | 684 | 657 | 104 | 68 | 11 | 100 | 42 | 12 |
 
 Complexity deltas:
 
 | Compare | Code/data lines | Labels | JSR | JMP | Branches | EQU |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| static proof -> hash proof | +221 | +32 | +15 | 0 | +30 | +24 |
-| static proof -> flash command | +70 | +10 | -6 | -2 | +5 | +24 |
-| flash command -> hash proof | +151 | +22 | +21 | +2 | +25 | 0 |
+| static proof -> hash proof | +221 | +31 | +15 | 0 | +30 | +24 |
+| static proof -> flash command | +63 | +10 | -5 | -1 | +3 | +19 |
+| flash command -> hash proof | +158 | +21 | +20 | +1 | +27 | +5 |
 
 The comparison proves the promotion ladder:
 
@@ -1067,7 +1072,8 @@ CMD_SEARCH_FNV
 
 CMD_SEARCH
     command entry that starts from CMDP_START, skips the S token, parses args,
-    scans memory, prints hits, reports S NF/S IO/S ABORT/usage
+    scans memory, prints hits, reports S NF/S ABORT/usage, and skips I/O with
+    the shared named-slot printer
 ```
 
 The body would mostly come from `himon-search-flash.asm`, but not as a blind

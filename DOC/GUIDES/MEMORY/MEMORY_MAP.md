@@ -193,6 +193,22 @@ $7EF8-$7EFF   RAM vectors
 $7F00-$7FFF   I/O window
 ```
 
+The `$7F00-$7FFF` I/O window is decoded as eight `$20`-byte slots on the
+current board. HIMON `D` and flash-resident `S` treat the whole page as
+side-effectful I/O: they print slot labels and skip the addresses instead of
+reading device registers.
+
+```text
+$7F00-$7F1F   CS0 / expansion or unused
+$7F20-$7F3F   CS1 / expansion or unused
+$7F40-$7F5F   CS2 / expansion or unused
+$7F60-$7F7F   CS3 / expansion or unused
+$7F80-$7F9F   ACIA
+$7FA0-$7FBF   PIA
+$7FC0-$7FDF   VIA
+$7FE0-$7FFF   FTDI VIA
+```
+
 During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 temporarily
 clobbers `$0200-$05FF` with the copied RAM worker and `$4000-$4FFF` with the 4K
 sector staging buffer. During `U`, STR8 also uses `$5000-$6FFF` so it can stage

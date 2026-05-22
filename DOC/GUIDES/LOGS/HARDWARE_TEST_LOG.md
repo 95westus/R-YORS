@@ -87,9 +87,36 @@ S ABORT
 ```
 
 Current source advances the flash command record to K=`$05` and relocates it to
-`$BBA2-$BFFD`, with `$FF,$FF` guard pockets at `$BBA0-$BBA1` and `$BFFE-$BFFF`.
-That shape keeps `S(earch)` display text while removing the `RUN ... ?`
-confirmation prompt under a new HIMON build.
+`$BBA2-$BFF5`, with `$FF,$FF` guard bytes before the record and spare `$FF`
+padding before `$C000`. That shape keeps `S(earch)` display text while removing
+the `RUN ... ?` confirmation prompt under a new HIMON build.
+
+The current flash `S` also shares HIMON's named I/O slot printer
+(`SYS_PRINT_IO_SLOT_SKIP`, hash `$C2A5A6CE`) with `D`. A range that reaches the
+`$7F00-$7FFF` I/O page prints rows such as `7F80: ACIA IO SKIP` instead of
+reading device registers or reporting only `S IO`.
+
+Aligned I/O slot proof from PuTTY log, after the padded resident HIMON strings:
+
+```text
+S 0 FFFF FF
+...
+7900 7900: FF 49 4D 4F 4E 00 00 00 | 00 00 00 00 00 00 00 00 | .IMON...........
+7E78 7E70: 0C D6 AE BB 00 00 0B 00 | FF FF 00 00 00 00 00 00 | ................
+7F00: CS0      IO SKIP
+7F20: CS1      IO SKIP
+7F40: CS2      IO SKIP
+7F60: CS3      IO SKIP
+7F80: ACIA     IO SKIP
+7FA0: PIA      IO SKIP
+7FC0: VIA      IO SKIP
+7FE0: FTDI VIA IO SKIP
+8000 8000: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+```
+
+Searching for `FF` across all memory is intentionally noisy because erased RAM
+and flash areas produce many hits. The useful proof here is that the search
+prints named skip rows and resumes at `$8000` without reading the I/O page.
 
 Full notes:
 

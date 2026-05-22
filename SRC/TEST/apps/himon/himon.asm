@@ -15,6 +15,7 @@
                         XDEF            THE_JOIN_EXEC_XY
                         XDEF            THE_JOIN_EXEC_XY_FNV
                         XDEF            THE_JOIN_LOAD_HASH_XY
+                        XDEF            SYS_PRINT_IO_SLOT_SKIP
 
                         XREF            BIO_FTDI_READ_BYTE_BLOCK
                         XREF            BIO_FTDI_WRITE_BYTE_BLOCK
@@ -1472,7 +1473,11 @@ MON_PRINT_FLAG_OUT:
 MON_PRINT_MEM_RANGE:
 MON_PRINT_MEM_NEXT_LINE:
                         JSR             MON_CURR_GT_END
-                        BCS             MON_PRINT_MEM_ABORT
+                        BCC             MON_PRINT_MEM_RANGE_ACTIVE
+                        JMP             MON_PRINT_MEM_DONE
+MON_PRINT_MEM_RANGE_ACTIVE:
+                        JSR             MON_PRINT_MEM_IO_SKIP
+                        BCS             MON_PRINT_MEM_NEXT_LINE
                         LDA             CMD_RANGE_TMP_HI
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             CMD_RANGE_TMP_LO
@@ -1490,6 +1495,14 @@ MON_PRINT_MEM_LINE_LOOP:
                         BCS             MON_PRINT_MEM_ABORT
                         JSR             MON_CURR_GT_END
                         BCS             MON_PRINT_MEM_NEXT_LINE
+                        JSR             MON_CURR_IS_IO
+                        BCC             MON_PRINT_MEM_READ_BYTE
+                        LDA             CMD_PATTERN_COUNT
+                        BEQ             MON_PRINT_MEM_NEXT_LINE
+                        JSR             MON_PRINT_MEM_ASCII
+                        JSR             SYS_WRITE_CRLF
+                        JMP             MON_PRINT_MEM_NEXT_LINE
+MON_PRINT_MEM_READ_BYTE:
                         LDA             CMD_PATTERN_COUNT
                         BEQ             MON_PRINT_MEM_SPACE
                         CMP             #$08
@@ -1518,12 +1531,13 @@ MON_PRINT_MEM_NOT_END:
                         BCC             MON_PRINT_MEM_LINE_LOOP
                         JSR             MON_PRINT_MEM_ASCII
                         JSR             SYS_WRITE_CRLF
-                        BRA             MON_PRINT_MEM_NEXT_LINE
+                        JMP             MON_PRINT_MEM_NEXT_LINE
 
 MON_PRINT_MEM_LAST_LINE:
                         JSR             MON_PRINT_MEM_ASCII
 MON_PRINT_MEM_ABORT:
                         JSR             SYS_WRITE_CRLF
+MON_PRINT_MEM_DONE:
                         RTS
 
 MON_PRINT_MEM_ASCII:
@@ -1552,6 +1566,103 @@ MON_PRINT_MEM_ASCII_OUT:
                         BRA             MON_PRINT_MEM_ASCII_LOOP
 MON_PRINT_MEM_ASCII_DONE:
                         RTS
+
+MON_CURR_IS_IO:
+                        LDA             CMD_RANGE_TMP_HI
+                        CMP             #$7F
+                        BEQ             MON_CURR_IS_IO_YES
+                        CLC
+                        RTS
+MON_CURR_IS_IO_YES:
+                        SEC
+                        RTS
+
+MON_PRINT_MEM_IO_SKIP:
+                        JSR             MON_CURR_IS_IO
+                        BCS             MON_PRINT_MEM_IO_SKIP_YES
+                        CLC
+                        RTS
+MON_PRINT_MEM_IO_SKIP_YES:
+                        LDA             CMD_RANGE_TMP_LO
+                        JSR             SYS_PRINT_IO_SLOT_SKIP
+                        LDA             CMD_RANGE_TMP_LO
+                        AND             #$E0
+                        CLC
+                        ADC             #$20
+                        STA             CMD_RANGE_TMP_LO
+                        STA             CMDP_START_LO
+                        LDA             #$7F
+                        ADC             #$00
+                        STA             CMD_RANGE_TMP_HI
+                        STA             CMDP_START_HI
+                        SEC
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: SYS_PRINT_IO_SLOT_SKIP  [HASH:C2A5A6CE]
+; IN : A = low byte inside $7Fxx I/O window.
+; OUT: one named "$7Fxx: ... IO SKIP" line printed; A/X/Y clobbered.
+; ----------------------------------------------------------------------------
+SYS_PRINT_IO_SLOT_SKIP_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$CE,$A6,$A5,$C2,CMD_HASH_KIND_EXEC ; SYS_PRINT_IO_SLOT_SKIP $C2A5A6CE EXEC
+SYS_PRINT_IO_SLOT_SKIP:
+                        AND             #$E0
+                        STA             CMD_IO_TMP
+                        LDA             #$7F
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMD_IO_TMP
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             #':'
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        LDA             CMD_IO_TMP
+                        BEQ             SYS_PRINT_IO_SLOT_CS0
+                        CMP             #$20
+                        BEQ             SYS_PRINT_IO_SLOT_CS1
+                        CMP             #$40
+                        BEQ             SYS_PRINT_IO_SLOT_CS2
+                        CMP             #$60
+                        BEQ             SYS_PRINT_IO_SLOT_CS3
+                        CMP             #$80
+                        BEQ             SYS_PRINT_IO_SLOT_ACIA
+                        CMP             #$A0
+                        BEQ             SYS_PRINT_IO_SLOT_PIA
+                        CMP             #$C0
+                        BEQ             SYS_PRINT_IO_SLOT_VIA
+                        LDX             #<MSG_D_IO_FTDI
+                        LDY             #>MSG_D_IO_FTDI
+                        BRA             SYS_PRINT_IO_SLOT_TEXT
+SYS_PRINT_IO_SLOT_CS0:
+                        LDX             #<MSG_D_IO_CS0
+                        LDY             #>MSG_D_IO_CS0
+                        BRA             SYS_PRINT_IO_SLOT_TEXT
+SYS_PRINT_IO_SLOT_CS1:
+                        LDX             #<MSG_D_IO_CS1
+                        LDY             #>MSG_D_IO_CS1
+                        BRA             SYS_PRINT_IO_SLOT_TEXT
+SYS_PRINT_IO_SLOT_CS2:
+                        LDX             #<MSG_D_IO_CS2
+                        LDY             #>MSG_D_IO_CS2
+                        BRA             SYS_PRINT_IO_SLOT_TEXT
+SYS_PRINT_IO_SLOT_CS3:
+                        LDX             #<MSG_D_IO_CS3
+                        LDY             #>MSG_D_IO_CS3
+                        BRA             SYS_PRINT_IO_SLOT_TEXT
+SYS_PRINT_IO_SLOT_ACIA:
+                        LDX             #<MSG_D_IO_ACIA
+                        LDY             #>MSG_D_IO_ACIA
+                        BRA             SYS_PRINT_IO_SLOT_TEXT
+SYS_PRINT_IO_SLOT_PIA:
+                        LDX             #<MSG_D_IO_PIA
+                        LDY             #>MSG_D_IO_PIA
+                        BRA             SYS_PRINT_IO_SLOT_TEXT
+SYS_PRINT_IO_SLOT_VIA:
+                        LDX             #<MSG_D_IO_VIA
+                        LDY             #>MSG_D_IO_VIA
+SYS_PRINT_IO_SLOT_TEXT:
+                        JSR             HIM_WRITE_HBSTRING
+                        JMP             SYS_WRITE_CRLF
 
 HIM_CHECK_CTRL_C:
                         JSR             BIO_FTDI_READ_BYTE_NONBLOCK
@@ -2931,6 +3042,14 @@ MSG_HASH_USAGE:          DB              "# [K=hh|K<hh|K>hh|token",(']'+$80)
 MSG_RUN:                 DB              "RUN",(' '+$80)
 MSG_RUN_AT:              DB              " ",('@'+$80)
 MSG_RUN_Q:               DB              " ?",(' '+$80)
+MSG_D_IO_CS0:            DB              "CS0      IO SKI",('P'+$80)
+MSG_D_IO_CS1:            DB              "CS1      IO SKI",('P'+$80)
+MSG_D_IO_CS2:            DB              "CS2      IO SKI",('P'+$80)
+MSG_D_IO_CS3:            DB              "CS3      IO SKI",('P'+$80)
+MSG_D_IO_ACIA:           DB              "ACIA     IO SKI",('P'+$80)
+MSG_D_IO_PIA:            DB              "PIA      IO SKI",('P'+$80)
+MSG_D_IO_VIA:            DB              "VIA      IO SKI",('P'+$80)
+MSG_D_IO_FTDI:           DB              "FTDI VIA IO SKI",('P'+$80)
 MSG_HELP:                DB              "# ? D M U R X G L B N A Q ",($22+$80)
 MSG_QUOTE_MATCH:         DB              " STR8 MATCH",('!'+$80)
 MSG_USAGE_D:             DB              "D start [end|+cnt",(']'+$80)

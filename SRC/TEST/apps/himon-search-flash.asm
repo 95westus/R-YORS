@@ -31,11 +31,8 @@ SEARCH_DIGITS           EQU             $0F
 SEARCH_PAT_LEN          EQU             $10
 SEARCH_COUNT            EQU             $11
 SEARCH_HIT_FLAG         EQU             $12
-SEARCH_IO_FLAG          EQU             $13
 SEARCH_IMP_WRITE_LO     EQU             $14
 SEARCH_IMP_WRITE_HI     EQU             $15
-SEARCH_IMP_READ_LO      EQU             $16
-SEARCH_IMP_READ_HI      EQU             $17
 SEARCH_IMP_FLUSH_LO     EQU             $18
 SEARCH_IMP_FLUSH_HI     EQU             $19
 SEARCH_IMP_CTRL_C_LO    EQU             $1A
@@ -59,8 +56,6 @@ SEARCH_HASH_SCAN_BASE_HI EQU            $80
 SEARCH_HASH_KIND_EXEC   EQU             $01
 SEARCH_HASH_KIND_EXEC_TEXT EQU           $05
 SEARCH_ERR_WRITE        EQU             $E1
-SEARCH_ERR_CTRL_C       EQU             $E2
-SEARCH_ERR_HEX_IN       EQU             $E3
 
                         CODE
 SEARCH_FNV:
@@ -79,7 +74,6 @@ START_HAVE_WRITE:
                         LDX             #<MSG_IMPORT
                         LDY             #>MSG_IMPORT
                         JSR             SEARCH_PRINT_LINE
-                        LDA             SEARCH_TMP
                         RTS
 
 START_IMPORTS_OK:
@@ -128,19 +122,19 @@ SEARCH_RESOLVE_WRITE_FOUND:
 
 SEARCH_RESOLVE_IMPORTS:
                         JSR             SEARCH_RESOLVE_CTRL_C
-                        BCS             SEARCH_RESOLVE_HAVE_CTRL_C
-                        LDA             #SEARCH_ERR_CTRL_C
-                        BRA             SEARCH_RESOLVE_IMPORT_FAIL
+                        BCC             SEARCH_RESOLVE_IMPORT_FAIL
 SEARCH_RESOLVE_HAVE_CTRL_C:
                         JSR             SEARCH_RESOLVE_HEX_IN
-                        BCS             SEARCH_RESOLVE_IMPORTS_OK
-                        LDA             #SEARCH_ERR_HEX_IN
-                        BRA             SEARCH_RESOLVE_IMPORT_FAIL
+                        BCC             SEARCH_RESOLVE_IMPORT_FAIL
+SEARCH_RESOLVE_HAVE_HEX_IN:
+                        LDX             #<HASH_SYS_PRINT_IO_SLOT_SKIP
+                        LDY             #>HASH_SYS_PRINT_IO_SLOT_SKIP
+                        JSR             SEARCH_FIND_HASH_XY
+                        BCC             SEARCH_RESOLVE_IMPORT_FAIL
 SEARCH_RESOLVE_IMPORTS_OK:
                         SEC
                         RTS
 SEARCH_RESOLVE_IMPORT_FAIL:
-                        STA             SEARCH_TMP
                         CLC
                         RTS
 
@@ -276,6 +270,9 @@ SEARCH_BIO_GET_CTRL_C:
 
 SEARCH_UTL_HEX_ASCII_TO_NIBBLE:
                         JMP             (SEARCH_IMP_HEX_IN_LO)
+
+SEARCH_SYS_PRINT_IO_SLOT_SKIP:
+                        JMP             (SEARCH_FIND_RES_LO)
 
 ; ----------------------------------------------------------------------------
 ; Parse: start end|+count
@@ -486,17 +483,21 @@ SEARCH_ADV_DONE:
 ; ----------------------------------------------------------------------------
 SEARCH_SCAN_RANGE:
                         STZ             SEARCH_HIT_FLAG
-                        STZ             SEARCH_IO_FLAG
 SEARCH_SCAN_LOOP:
                         JSR             SEARCH_SCAN_GT_END
                         BCS             SEARCH_SCAN_DONE
                         LDA             SEARCH_SCAN_HI
                         CMP             #$7F
                         BNE             SEARCH_SCAN_NOT_IO
-                        LDA             #$01
-                        STA             SEARCH_IO_FLAG
-                        STZ             SEARCH_SCAN_LO
-                        LDA             #$80
+                        LDA             SEARCH_SCAN_LO
+                        JSR             SEARCH_SYS_PRINT_IO_SLOT_SKIP
+                        LDA             SEARCH_SCAN_LO
+                        AND             #$E0
+                        CLC
+                        ADC             #$20
+                        STA             SEARCH_SCAN_LO
+                        LDA             #$7F
+                        ADC             #$00
                         STA             SEARCH_SCAN_HI
                         BRA             SEARCH_SCAN_LOOP
 
@@ -523,12 +524,6 @@ SEARCH_SCAN_INC:
                         BRA             SEARCH_SCAN_LOOP
 
 SEARCH_SCAN_DONE:
-                        LDA             SEARCH_IO_FLAG
-                        BEQ             SEARCH_SCAN_NO_IO_MSG
-                        LDX             #<MSG_IO
-                        LDY             #>MSG_IO
-                        JSR             SEARCH_PRINT_LINE
-SEARCH_SCAN_NO_IO_MSG:
                         LDA             SEARCH_HIT_FLAG
                         BNE             SEARCH_SCAN_RETURN
                         LDX             #<MSG_NF
@@ -579,8 +574,6 @@ SEARCH_MATCH_LOOP:
                         LDA             SEARCH_MATCH_HI
                         CMP             #$7F
                         BNE             SEARCH_MATCH_NOT_IO
-                        LDA             #$01
-                        STA             SEARCH_IO_FLAG
                         CLC
                         RTS
 SEARCH_MATCH_NOT_IO:
@@ -742,10 +735,11 @@ HASH_BIO_GET_CTRL_C:
                         DB              $D2,$50,$61,$42
 HASH_UTL_HEX_ASCII_TO_NIBBLE:
                         DB              $B1,$14,$D7,$AD
+HASH_SYS_PRINT_IO_SLOT_SKIP:
+                        DB              $CE,$A6,$A5,$C2
 MSG_USAGE:              DB              "S START END|+COUNT BB|'TEXT' [...], ? HELP, Q QUIT",0
 MSG_IMPORT:             DB              "S IMP",0
 MSG_NF:                 DB              "S NF",0
-MSG_IO:                 DB              "S IO",0
 MSG_ABORT:              DB              "S ABORT",0
 SEARCH_EXTRA:           DB              "S(earch",(')'+$80)
 
