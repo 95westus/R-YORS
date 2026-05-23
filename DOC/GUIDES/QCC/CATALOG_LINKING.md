@@ -18,7 +18,7 @@ should use the compact `RF` signature. From the current codebase, the proof
 lane is still:
 
 ```text
-make -C SRC hrec-join-proof himon-search-proof
+make -C SRC hrec-join-proof asm-rjoin-proof himon-search-proof
 ```
 
 Those targets prove the present join/search mechanics while the fuller
@@ -223,6 +223,7 @@ That makes `S` the practical bridge:
 
 ```text
 hrec-join-proof      proves FIND/JOIN/EXEC mechanics
+asm-rjoin-proof      proves ASM name hash -> RJOIN/RF sim -> native JSR emit
 himon-search-proof   proves S parser/matcher with joined helpers
 future S command     proves command-surface use of joined resident support
 future RCAT/RREC     generalizes the same idea beyond tiny HREC records

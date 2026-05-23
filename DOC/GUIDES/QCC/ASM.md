@@ -176,16 +176,52 @@ or bytecode ideas parked until labels, fixups, body records, and load/run
 proofs are already boring. The first useful assembler can be plain native code
 plus explicit fixup/dependency records.
 
-## Q: What is the first RAM RJOIN ASM proof?
+## Q: Should labels be allowed to match opcodes?
 
-Comment: Make the first proof intentionally narrow and verbose:
+Comment: No. Treat opcode mnemonics and assembler directives as reserved
+assembler vocabulary. A source label should not be able to use the same
+canonical text as `JSR`, `LDA`, `DC`, `EQU`, or any other active mnemonic or
+directive keyword.
+
+That makes the hash-first parser easier to reason about:
 
 ```text
-[LABEL:] JSR OPERAND
+hash first token
+if token is mnemonic/directive: parse instruction or directive
+else token may be a label and the next token must be mnemonic/directive
 ```
 
-If `LABEL:` is present, the proof hashes the label, stores the current PC as
-the symbol value, and records enough local metadata to list it again:
+`LABEL:` remains the explicit, easy-to-read label definition form. The proof
+also accepts the colon-light form `FORWARD JSR STR8`, because `FORWARD` cannot
+secretly become an opcode and `JSR JSR` stays unambiguously "mnemonic plus
+operand."
+
+Concern: The assembler vocabulary becomes part of source compatibility. If a
+future mnemonic, pseudo-op, or directive name is added, any old label with that
+canonical text becomes illegal. Keep the keyword set explicit and versioned
+when ASM source starts being sealed or stored as records.
+
+## Q: What is the first RAM RJOIN ASM proof?
+
+Comment: The first proof is now a RAM-loaded scripted proof, not a replacement
+for the current `A` command:
+
+```text
+source: SRC/PROOFS/asm-rjoin-proof-3000.asm
+target: make -C SRC asm-rjoin-proof
+S19:    SRC/BUILD/s19/asm-rjoin-proof-3000.s19
+start:  $3000
+```
+
+Make this proof intentionally narrow and verbose:
+
+```text
+[LABEL[:]] JSR OPERAND
+```
+
+If a leading label is present, with or without the visual `:`, the proof hashes
+the label, stores the current PC as the symbol value, and records enough local
+metadata to list it again:
 
 ```text
 hash(LABEL) -> value=current PC, kind=local code label
@@ -206,53 +242,119 @@ should be an alias/export record, not a special parser case.
 Verbose transcript target:
 
 ```text
-ASM RJOIN PROOF
-PC=$4000
-LINE: START: JSR BIO_FTDI_WRITE_BYTE_BLOCK
+ASM RJOIN PROOF $3000
+A=MINI ASM; ASM=HASH/RJOIN PROOF
+PC=$....
 
-LABEL START
-  HASH=....
-  VALUE=$4000
-  STORE=LOCAL SYMBOL
-
-OP JSR
-  MODE=ABS
-  OPCODE=$20
-
-OPERAND BIO_FTDI_WRITE_BYTE_BLOCK
-  HASH=$379FE930
-  LOCAL=NO
-  RJOIN=FOUND
-  KIND=EXEC
-  ENTRY=$....
-
-EMIT
-  $4000: 20 .. ..
-  PC=$4003
+-- SOURCE: START: JSR BIO_FTDI_WRITE_BYTE_BLOCK
+  LABEL   START
+    H(START)=....
+    V=$.... STORE=LOCAL SYMBOL
+  OP      JSR
+    MODE=ABS OPCODE=$20
+  OPERAND BIO_FTDI_WRITE_BYTE_BLOCK
+    H(BIO_FTDI_WRITE_BYTE_BLOCK)=$379FE930
+    LOCAL=NO RJOIN=FOUND K=$01 EXEC
+    E=$.... OK
+  EMIT
+    SITE=$.... BYTES=20 .. ..
+    PC=$....
+  HARNESS
+    RTS=$....
+  RUN
+    SEND=!
+    OK
 ```
 
 Failure cases should be different and boring:
 
 ```text
-JSR NO_SUCH_LABEL
-  local symbol table: no
-  resident RJOIN records: no
-  error: unresolved symbol
-  emit: no
-  PC: unchanged
+-- SOURCE: JSR NO_SUCH_LABEL
+  OPERAND NO_SUCH_LABEL
+    H(NO_SUCH_LABEL)=....
+    LOCAL=NO RJOIN=NO
+    ERROR=UNRESOLVED
+    EMIT=NO
+    PC=$....
 
-JSR NON_EXEC_RECORD
-  record found
-  executable kind bit: clear
-  error: not executable
-  emit: no
-  PC: unchanged
+-- SOURCE: JSR NON_EXEC_RECORD
+  OPERAND NON_EXEC_RECORD
+    H(NON_EXEC_RECORD)=....
+    LOCAL=FOUND K=$00 NOTEXEC
+    ERROR=NOT EXEC
+    EMIT=NO
+    PC=$....
 ```
 
-Do not create `RF` fixups in this first RAM proof. No placeholder
-`JSR $0000`, no partial PC advance, and no half-built code. Forward labels can
-graduate to `RF` later after the strict resolved/not-resolved behavior is
-boring.
+The strict failure tests still do not create `RF` fixups: no placeholder
+`JSR $0000`, no partial PC advance, and no half-built code for
+`NO_SUCH_LABEL` or `NON_EXEC_RECORD`.
+
+After those tests, the proof deliberately enters an `RF SIM` lane for forward
+references:
+
+```text
+-- SOURCE: JSR LATER_LABEL
+  OPERAND LATER_LABEL
+    H(LATER_LABEL)=....
+    LOCAL=NO RF=PENDING
+  EMIT   PENDING
+    NAME=LATER_LABEL
+    SITE=$.... BYTES=20 00 00
+    PC=$....
+
+-- SOURCE: LATER_LABEL: JSR BIO_FTDI_WRITE_BYTE_BLOCK
+  LABEL   LATER_LABEL
+    H(LATER_LABEL)=....
+    V=$.... STORE=LOCAL SYMBOL
+  RF      RESOLVE
+    NAME=LATER_LABEL
+    SITE=$....
+    T=$.... PATCH=OK
+
+RESOLVED RF
+  NAME=LATER_LABEL
+  H(LATER_LABEL)=....
+  SITE=$....
+  T=$....
+  WIDTH=ABS16
+
+UNRESOLVED RF
+  NAME=LABEL2
+  H(LABEL2)=$6AC8FC3D
+  SITE=$....
+  WIDTH=ABS16
+```
+
+This is a simulation of the later fixup lifecycle, not yet the final `RF`
+record format. It proves the behavior pressure: an unresolved operand can own a
+patch site, the PC can keep moving by the instruction width, and a later label
+definition can patch the saved site when its hash matches.
+
+The current implementation bootstraps through the same resident joiner path as
+`hrec-join-proof`: it finds `THE_JOIN_EXEC_XY`, uses that resident resolver to
+join `BIO_FTDI_WRITE_BYTE_BLOCK` and `BIO_FTDI_READ_BYTE_BLOCK`, hashes the
+scripted operand text onboard, and emits normal native `JSR` only after the
+operand resolves to an executable entry. `NO_SUCH_LABEL` must leave the proof
+PC unchanged. `NON_EXEC_RECORD` is a local proof record with the executable bit
+clear, so it proves "found but not executable" without requiring the resident
+catalog to already contain that exact test record.
+
+After the scripted tests, the proof enters a line loop:
+
+```text
+PC=$.... ASM> [LABEL[:]] JSR OPERAND
+```
+
+Input is CR/LF terminated. Ctrl-C exits the loop. The parser is intentionally
+small: uppercase text, optional leading label with or without `:`, `JSR`, then
+one operand token. A first token of `JSR` is treated as the opcode; any other
+first token is treated as a label candidate and the next token must be `JSR`.
+Label-only lines define a symbol and do not advance PC. Accepted `JSR` lines
+advance PC by three bytes whether they resolve immediately or become an `RF
+SIM` pending patch. The first table sizes are intentionally proof-sized: 16
+local labels and 8 pending fixups. Ctrl-C exit reports any still-pending
+fixups by stored name, hash, patch site, and assumed absolute-16 width.
 
 ## Q: When does ASM graduate from QCC to decision?
 

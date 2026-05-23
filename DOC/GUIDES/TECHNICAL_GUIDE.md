@@ -116,6 +116,9 @@ make -C SRC fig-forth-str8-update-s19
 make -C SRC msbasic-osi-str8-update-s19
 ```
 
+`make docs-html` is an explicit/manual presentation rebuild only. `DOC/HTML`
+is ignored and untracked; Markdown remains canonical.
+
 Burnable `.bin` files are exactly one 32K CPU `$8000-$FFFF` bank image. The
 file does not encode a bank number; bank placement is managed by the programmer
 or by STR8.

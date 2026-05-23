@@ -443,8 +443,12 @@ A [addr] [label:] MMM [operand] .
   resolution. Store exact addresses, banks, patch sites, and origins as fields.
   Address-containing record hashes are proof/check metadata only, not emitted
   operand values.
-- Labels require `:`.
-- Labels cannot be mnemonic names; mnemonics cannot be labels.
+- Labels require `:` in the current v1 command shape.
+- Labels cannot be opcode mnemonic or directive keyword names. Mnemonics and
+  directives reserve their canonical token text, so hash-first parsing can
+  check "is this token assembler vocabulary?" before treating it as a label.
+  `LABEL:` remains the explicit visual form; the reserved-vocabulary rule also
+  leaves room for a later colon-light parser without making `JSR JSR` ambiguous.
 - Local ASM labels use dot syntax: `.` alone ends a one-shot statement,
   `.NAME:` defines a local label, and `.NAME` uses a local label. No v1
   dot-directive aliases. Local labels are scoped under the current nonlocal
@@ -539,8 +543,10 @@ DOC/IDEAS.md
 - When updating docs, update the canonical home first, then indexes, maps, and
   cross-references. Generated docs should remain evidence or views, not the
   primary hand-written explanation.
-- HTML pages under `DOC/HTML` are generated presentation views of the Markdown
-  docs. Do not hand-edit them or treat them as canonical explanations.
+- HTML pages under `DOC/HTML` are generated, ignored, untracked presentation
+  views of the Markdown docs. Do not hand-edit them or treat them as canonical
+  explanations. Regenerate them with `make docs-html` only when explicitly
+  requested.
 - Use `flowchart` for process or decision sequence. Use `graph` for node/edge
   structure such as call paths or stack-depth paths. Use `map`, `guide map`,
   `source-derived map`, `chart`, and `edge dump` according to
@@ -556,7 +562,7 @@ flowchart TD
     SUMMARY --> LINK["Point once to the canonical home"]
     LINK --> LOOP{"Does the home require the linking doc?"}
     LOOP -->|yes| FIX["Break the required-reading loop"]
-    LOOP -->|no| VIEWS["Refresh indexes, maps, xrefs, and generated views"]
+    LOOP -->|no| VIEWS["Refresh indexes, maps, and xrefs"]
     FIX --> HOME
 ```
 

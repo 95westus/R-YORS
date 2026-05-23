@@ -119,6 +119,10 @@ HREC_JOIN_PROOF_SRC := $(PROOFS_DIR)/hrec-join-proof.asm
 HREC_JOIN_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/hrec-join-proof.obj
 HREC_JOIN_PROOF_S19 := $(S19_DIR)/hrec-join-proof-4000.s19
 HREC_JOIN_PROOF_LINKFLAGS := -g -s -t -c4000 -hm19 -j -o
+ASM_RJOIN_PROOF_SRC := $(PROOFS_DIR)/asm-rjoin-proof-3000.asm
+ASM_RJOIN_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/asm-rjoin-proof-3000.obj
+ASM_RJOIN_PROOF_S19 := $(S19_DIR)/asm-rjoin-proof-3000.s19
+ASM_RJOIN_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 CALC_9A00_FNV_PROOF_SRC := $(PROOFS_DIR)/calc-9a00-fnv-proof.asm
 CALC_9A00_FNV_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/calc-9a00-fnv-proof.obj
 CALC_9A00_FNV_PROOF_S19 := $(S19_DIR)/calc-9a00-fnv-proof.s19
@@ -211,6 +215,7 @@ ALL_TARGETS := \
 	himon-search-flash \
 	himon-search-for-himon \
 	hrec-join-proof \
+	asm-rjoin-proof \
 	rom-append-calc \
 	fig-forth \
 	msbasic-osi \
@@ -358,6 +363,10 @@ himon-search-for-himon: $(HIMON_SEARCH_FOR_HIMON_OBJ)
 
 hrec-join-proof: $(ROM_LIB) $(HREC_JOIN_PROOF_S19)
 	@echo "Built $(HREC_JOIN_PROOF_S19)."
+	@$(MAKE) artifacts
+
+asm-rjoin-proof: $(ROM_LIB) $(ASM_RJOIN_PROOF_S19)
+	@echo "Built $(ASM_RJOIN_PROOF_S19)."
 	@$(MAKE) artifacts
 
 calc-9a00-fnv-proof: $(ROM_LIB) $(CALC_9A00_FNV_PROOF_S19)
@@ -579,6 +588,12 @@ $(HREC_JOIN_PROOF_S19): $(HREC_JOIN_PROOF_OBJ) $(ROM_LIB)
 	@echo [ps] set S9 start $$4000 in $(HREC_JOIN_PROOF_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HREC_JOIN_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9034000BC'; Set-Content -Path $$p -Value $$lines"
 
+$(ASM_RJOIN_PROOF_S19): $(ASM_RJOIN_PROOF_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(ASM_RJOIN_PROOF_LINKFLAGS) $(ASM_RJOIN_PROOF_S19) $(ASM_RJOIN_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$3000 in $(ASM_RJOIN_PROOF_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_RJOIN_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+
 $(CALC_9A00_FNV_PROOF_S19): $(CALC_9A00_FNV_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(CALC_9A00_FNV_PROOF_LINKFLAGS) $(CALC_9A00_FNV_PROOF_S19) $(CALC_9A00_FNV_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
@@ -778,4 +793,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

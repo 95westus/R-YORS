@@ -169,7 +169,8 @@ make -C SRC msbasic-osi-str8-update-s19
 ```
 
 `make release-local` adds ignored/private local composites when `LOCAL/` is
-populated. `make docs-html` regenerates `DOC/HTML`; Markdown remains canonical.
+populated. `make docs-html` is an explicit/manual presentation rebuild only;
+`DOC/HTML` is ignored and untracked, and Markdown remains canonical.
 
 ## Repository Map
 
@@ -183,7 +184,7 @@ SRC/TESTS/      test harnesses
 SRC/tools/      host-side build and support scripts
 DOC/GUIDES/     hand-written guides
 DOC/GENERATED/  source-derived reports
-DOC/HTML/       generated static presentation view
+DOC/HTML/       generated, ignored static presentation view
 LOCAL/          ignored local source homes, when present
 ```
 

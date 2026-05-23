@@ -402,8 +402,9 @@ make -C SRC himon-str8-rom-bin
 ```
 
 `make release` regenerates source-derived docs, builds the tracked release set,
-and stamps the HIMON/STR8 ROM binary. `make docs-html` regenerates the
-presentation copy under `DOC/HTML`; Markdown remains canonical.
+and stamps the HIMON/STR8 ROM binary. `make docs-html` is an explicit/manual
+presentation rebuild only; `DOC/HTML` is ignored and untracked, and Markdown
+remains canonical.
 
 ## Where To Go Next
 

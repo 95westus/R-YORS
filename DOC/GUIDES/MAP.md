@@ -1,7 +1,8 @@
 # R-YORS Documentation Map
 
 This map explains how the hand-written docs fit together. Markdown is
-canonical; `DOC/HTML` is generated presentation.
+canonical; `DOC/HTML` is generated, ignored, untracked presentation and is only
+rebuilt on explicit request.
 
 ## Main Spine
 

@@ -41,6 +41,60 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: HTML Tracking Stopped And ASM Keyword Rule Named
+
+```text
+2026
+         05
+                23
+                   01:17Z WLP2 Marked generated HTML as ignored/untracked and
+                               named the ASM reserved-keyword label rule.
+```
+
+scope: `.gitignore`, `README.md`, `DECISIONS.md`, `OPERATORS_GUIDE.md`,
+`TECHNICAL_GUIDE.md`, and `QCC/ASM.md`.
+
+change: `DOC/HTML` is now treated as a generated presentation view only. It is
+ignored by git and should be regenerated only on an explicit `make docs-html`
+request. ASM notes now spell out that labels cannot use active opcode
+mnemonic or directive keyword names, and the proof parser now accepts
+colon-light labels such as `FORWARD JSR STR8`.
+
+effect: Markdown is the canonical documentation surface. Generated HTML should
+not churn during ordinary source/doc edits. Hash-first ASM parsing can reserve
+mnemonic/directive token text before deciding whether a first token is a label.
+
+action: Update Markdown docs first. Do not touch `DOC/HTML` unless a regen is
+requested. Keep ASM keyword vocabulary explicit as the assembler grows.
+
+## REDOC: ASM RJOIN RAM Proof Started
+
+```text
+2026
+         05
+                23
+                   00:47Z WLP2 Added and extended the first ASM/RJOIN
+                               RAM proof target.
+```
+
+scope: `SRC/PROOFS/asm-rjoin-proof-3000.asm`, `SRC/Makefile`,
+`QCC/ASM.md`, and `QCC/CATALOG_LINKING.md`.
+
+change: ASM/RJOIN is now represented by a buildable RAM proof at `$3000`.
+The proof keeps `A` as the existing mini assembler and uses `ASM` for the
+separate hash/RJOIN lane: hash a scripted source name, check local symbols,
+join resident executable records, emit native `JSR` on success, simulate an
+`RF`-style forward reference, and then enter a tiny CR/LF-terminated line loop.
+
+effect: The first ASM/RJOIN step is no longer only a design sketch. The stale
+assumption is that catalog-aware ASM must wait for full RCAT/RREC/RF machinery
+before it can prove name-hash resolution and native code emission.
+
+action: Build `make -C SRC asm-rjoin-proof` when testing the proof lane. Treat
+the forward-reference path as `RF SIM`: behavior pressure for future fixup
+records, not the final record format. The strict missing/non-executable tests
+still reject without emitting placeholder code.
+
 ## REDOC: Self-Modifying Code Parked As QCC Boundary
 
 ```text
