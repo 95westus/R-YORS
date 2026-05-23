@@ -21,6 +21,9 @@ DOC/s34
 *.bin
 *.s19
 
+# Generated documentation presentation. Markdown is canonical.
+/DOC/HTML/
+
 # Local third-party / provenance-preserving source homes.
 # These are intentionally usable by the build but not tracked here.
 /LOCAL/
