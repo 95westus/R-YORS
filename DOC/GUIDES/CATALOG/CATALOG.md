@@ -570,7 +570,7 @@ RAM workers.
 The same promotion pattern applies to parser helpers. If HIMON, search, copy,
 fill, and later STR8-N tools all need `start end|+count`, first static-link a
 documented range-parser contract and keep caller-specific workspace adapters
-thin. Later the same contract can become an `RREC` export with `RFIX`/`RLNK`
+thin. Later the same contract can become an `RREC` export with `RF`/`RLNK`
 users. That is the "routines made from routines" rule in catalog form: promote
 the useful behavior, not just a pasted source block.
 

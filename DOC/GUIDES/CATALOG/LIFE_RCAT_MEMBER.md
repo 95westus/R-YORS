@@ -24,7 +24,7 @@ compact RCAT/RREC catalog-linking system. This document therefore separates:
 ```text
 today:           LIFE-2000, WDC-linked standalone app loaded and called by address
 near term:       LIFE-9000, reassembled permanent flash app with a findable header
-proposed future: CLINK, catalog linking through RBODY, RREC, RCAT, RLNK, RFIX
+proposed future: RJOIN, runtime joining through RBODY, RREC, RCAT, RLNK, RF
 ```
 
 Related vocabulary lives in [GLOSSARY.md](../GLOSSARY.md). The short answer is:
@@ -98,7 +98,7 @@ There are three named lanes for this idea:
 ```text
 LIFE-2000  current RAM/dev S19 at $2000
 LIFE-9000  near-term permanent flash form reassembled at $9000
-CLINK      future catalog-linking path that can relocate, bind, and catalog
+RJOIN      future runtime-joining path that can relocate, bind, and catalog
 ```
 
 There are five useful shapes. The first three are current or near-term build
@@ -259,13 +259,13 @@ be able to carry, directly or through attached records.
 
 ### 4. Catalog-Linked Flash/RAM Member
 
-This is `CLINK`, the future dynamic shape. `CLINK` means catalog link.
+This is `RJOIN`, the future dynamic shape. `RJOIN` means runtime join.
 
 ```text
 RBODY contains LIFE code and strings
 RREC exports LIFE as a command/member entry
 RREC or RLNK records describe imports
-RFIX records exist only if something still needs patching
+RF records exist only if something still needs patching
 RCAT makes the member discoverable
 ```
 
@@ -293,8 +293,8 @@ Catalog-linking flow:
 LIFE-2000 body
   -> L F [preferred_addr]
   -> selected flash placement policy chooses or accepts address
-  -> CLINK applies relocation/fixups for final address
-  -> CLINK resolves imports by fixed entries or hash-based import records
+  -> RJOIN applies relocation/fixups for final address
+  -> RJOIN resolves imports by fixed entries or hash-based import records
   -> relocated RBODY is written/bound in flash
   -> RREC is emitted/updated inside an RCAT
   -> LIFE becomes findable
@@ -408,7 +408,7 @@ member, there are three possible import styles:
 
 ```text
 fixed entries      LIFE calls stable HIMON/SYS entry addresses
-catalog imports    LIFE imports by RREC name/hash and CLINK binds before running
+catalog imports    LIFE imports by RREC name/hash and RJOIN binds before running
 private support    LIFE carries the support code in its own RBODY
 ```
 

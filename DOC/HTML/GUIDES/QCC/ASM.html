@@ -71,11 +71,58 @@ call catalog service by hash
 emit BRK token for the monitor to decode
 emit bytecode/threaded tokens instead of raw machine instructions</code></pre>
 <p>Concern: Do not make the first assembler carry VM promises. Keep VM, BRK-token, or bytecode ideas parked until labels, fixups, body records, and load/run proofs are already boring. The first useful assembler can be plain native code plus explicit fixup/dependency records.</p>
+<h2 id="q-what-is-the-first-ram-rjoin-asm-proof">Q: What is the first RAM RJOIN ASM proof?</h2>
+<p>Comment: Make the first proof intentionally narrow and verbose:</p>
+<pre><code class="language-text">[LABEL:] JSR OPERAND</code></pre>
+<p>If <code>LABEL:</code> is present, the proof hashes the label, stores the current PC as the symbol value, and records enough local metadata to list it again:</p>
+<pre><code class="language-text">hash(LABEL) -&gt; value=current PC, kind=local code label</code></pre>
+<p>Then <code>JSR OPERAND</code> hashes the operand name. Resolution order is local symbols first, then resident runtime records through <code>RJOIN</code>. The output is still native W65C02S code:</p>
+<pre><code class="language-text">JSR resolved_entry -&gt; 20 lo hi</code></pre>
+<p>Use an existing resident executable record for the positive test, such as <code>BIO_FTDI_WRITE_BYTE_BLOCK</code>. A future friendlier name such as <code>BIO_WRITE_CHAR</code> should be an alias/export record, not a special parser case.</p>
+<p>Verbose transcript target:</p>
+<pre><code class="language-text">ASM RJOIN PROOF
+PC=$4000
+LINE: START: JSR BIO_FTDI_WRITE_BYTE_BLOCK
+
+LABEL START
+  HASH=....
+  VALUE=$4000
+  STORE=LOCAL SYMBOL
+
+OP JSR
+  MODE=ABS
+  OPCODE=$20
+
+OPERAND BIO_FTDI_WRITE_BYTE_BLOCK
+  HASH=$379FE930
+  LOCAL=NO
+  RJOIN=FOUND
+  KIND=EXEC
+  ENTRY=$....
+
+EMIT
+  $4000: 20 .. ..
+  PC=$4003</code></pre>
+<p>Failure cases should be different and boring:</p>
+<pre><code class="language-text">JSR NO_SUCH_LABEL
+  local symbol table: no
+  resident RJOIN records: no
+  error: unresolved symbol
+  emit: no
+  PC: unchanged
+
+JSR NON_EXEC_RECORD
+  record found
+  executable kind bit: clear
+  error: not executable
+  emit: no
+  PC: unchanged</code></pre>
+<p>Do not create <code>RF</code> fixups in this first RAM proof. No placeholder <code>JSR $0000</code>, no partial PC advance, and no half-built code. Forward labels can graduate to <code>RF</code> later after the strict resolved/not-resolved behavior is boring.</p>
 <h2 id="q-when-does-asm-graduate-from-qcc-to-decision">Q: When does ASM graduate from QCC to decision?</h2>
 <p>Comment: When the record bytes, fixup lifecycle, collision rule, and flash ownership are clear enough to implement without guessing.</p>
 <p>Concern: A half-decided assembler format can trap the system into supporting bad records forever. Keep exploratory formats QCC until the write/verify path is boring.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/ASM.md</code>. Source modified: <time>2026-05-22T05:05:06Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/ASM.md</code>. Source modified: <time>2026-05-23T00:20:47Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

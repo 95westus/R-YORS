@@ -304,7 +304,9 @@ docs.
   an RREC.
 - current HIMON FNV command record: the current HIMON proving shape:
   `'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,payload...`.
-  Current K bits mark executable/callable and confirm-before-execute.
+  Current K bits mark executable/callable and confirm-before-execute. The
+  parked non-legacy direction uses bit 7 as the legacy inline escape and bit 2
+  as `has text`, so records with no text do not carry a dead text word.
 
 ## Signature, Control, And Kind
 
@@ -329,13 +331,14 @@ compact catalog records should put layout and hash width in a control byte.
 - RIDX: runtime index; optional accelerator that maps resolved records to short
   local handles or speeds catalog lookup.
 - RSTR: runtime string pool; shared/proof/display text storage.
-- RFIX: runtime fixup; unresolved patch/reference site.
+- RF: runtime fixup record/chunk; unresolved patch/reference site. Use `RF`
+  as the compact fixup record signature.
 - RLNK: runtime link; reference from one runtime record/body to another.
 - RBND: runtime bind; process of resolving links/fixups through an RCAT.
 - RRES: runtime resolve; lookup operation by hash/name/type.
-- CLINK: catalog link; shorthand for the future catalog-linking operation that
-  places, relocates, binds, and exposes an `RBODY` through `RREC`/`RCAT`
-  records. `CLINK` is proposed vocabulary, not live code today.
+- RJOIN: runtime join; hash/name reference -> resolved runtime entry/value.
+  `RJOIN` is the proposed vocabulary for the first RAM proof where native ASM
+  operands resolve through local symbols or resident runtime records.
 - catalog linking: R-YORS dynamic linking path where assembler imports,
   exports, and fixups resolve through typed hash catalog records.
 - hash-linked module: loadable or flash-resident body whose public commands,

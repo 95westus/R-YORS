@@ -764,6 +764,16 @@ FLASH BYTE PROGRAM -&gt; guarded flash byte writer</code></pre>
 <td><code>FNV HASH UPDATE BYTE</code></td>
 </tr>
 <tr>
+<td><code>FNV1A_UPDATE_A_FAST</code></td>
+<td><code>$A8802314</code></td>
+<td>hash update</td>
+<td><code>A=next byte</code></td>
+<td><code>FNV_HASH</code> updated</td>
+<td>BUILDS</td>
+<td>faster drop-in update; ROM-for-cycles tradeoff to lessen software multiply cost</td>
+<td><code>FNV HASH UPDATE BYTE FAST</code></td>
+</tr>
+<tr>
 <td><code>FNV1A_MUL_PRIME</code></td>
 <td><code>$40C68FD2</code></td>
 <td>hash math</td>
@@ -772,6 +782,16 @@ FLASH BYTE PROGRAM -&gt; guarded flash byte writer</code></pre>
 <td>BUILDS</td>
 <td>internal multiply step</td>
 <td><code>FNV HASH MATH</code></td>
+</tr>
+<tr>
+<td><code>FNV1A_MUL_PRIME_FAST</code></td>
+<td><code>$303E5DC1</code></td>
+<td>hash math</td>
+<td>current <code>FNV_HASH</code></td>
+<td><code>FNV_HASH *= $01000193 mod 2^32</code></td>
+<td>BUILDS</td>
+<td>same math with only the fixed shift loop unrolled; trades a few bytes for fewer cycles</td>
+<td><code>FNV HASH MATH FAST</code></td>
 </tr>
 <tr>
 <td><code>FNV1A_BUF_XY_LEN</code></td>
@@ -1264,7 +1284,7 @@ BIO_WRITE_CRLF</code></pre>
 <p>The emitted hash sigs use the current HIMON 8-byte record shape. The final byte is <code>$00</code>, so current code interprets each entry as <code>hash_sig+8</code>. A future compact RREC can assign a cleaner routine/export kind without changing either routine contract.</p>
 <h2 id="promoted-utl-hex-routine-hash-sigs-rrec-seeds">Promoted UTL Hex Routine Hash Sigs / RREC Seeds</h2>
 <p>The promoted hex helpers are pure conversion contracts except for <code>UTL_HEX_ASCII_YX_TO_BYTE</code>, which uses the shared one-byte utility scratch <code>$E6</code> while combining nibbles. These helpers are small, heavily reused, and good early catalog-linking candidates because they remove duplicated hex code from RAM workers.</p>
-<p>The same promotion pattern applies to parser helpers. If HIMON, search, copy, fill, and later STR8-N tools all need <code>start end|+count</code>, first static-link a documented range-parser contract and keep caller-specific workspace adapters thin. Later the same contract can become an <code>RREC</code> export with <code>RFIX</code>/<code>RLNK</code> users. That is the &quot;routines made from routines&quot; rule in catalog form: promote the useful behavior, not just a pasted source block.</p>
+<p>The same promotion pattern applies to parser helpers. If HIMON, search, copy, fill, and later STR8-N tools all need <code>start end|+count</code>, first static-link a documented range-parser contract and keep caller-specific workspace adapters thin. Later the same contract can become an <code>RREC</code> export with <code>RF</code>/<code>RLNK</code> users. That is the &quot;routines made from routines&quot; rule in catalog form: promote the useful behavior, not just a pasted source block.</p>
 <pre><code class="language-text">RREC UTL_HEX_NIBBLE_TO_ASCII
   lifecycle: formed, sealed, not buried
   kind:      routine/export
@@ -1340,7 +1360,7 @@ BIO_WRITE_CRLF</code></pre>
   caveat:    not reentrant while sharing `$E6`</code></pre>
 <p>If a programmer needs GPIO/LED routines, start with the <code>BIO_PIA_*</code> family in <code>DOC/GENERATED/ROUTINE_CONTRACTS.md</code>; they are numerous enough that this catalog only names the category here.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/CATALOG.md</code>. Source modified: <time>2026-05-22T04:31:33Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/CATALOG.md</code>. Source modified: <time>2026-05-23T00:03:56Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

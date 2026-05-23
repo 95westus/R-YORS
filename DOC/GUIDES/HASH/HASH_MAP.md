@@ -175,13 +175,40 @@ $01  executable/callable; legacy inline code begins at record+8
 $03  executable/callable and confirm before execution; DW ENTRY, DW EXTRA
 ```
 
-Bit 0 means executable/callable. Bit 1 means confirm before execution. Bits 2
-and 3 are reserved. The parked bit 2 candidate is command expansion/completion
-permission, where exact lookup still works but prefix expansion only considers
-records that opt in. Do not spend bit 2 until HIMON has an expansion path that
-can enforce it. `EXTRA` is display side information, not an alias and not a
-parameter pointer. Richer callable records with `PARMS` or `RESULTS` are still a
-future RREC payload direction.
+Current legacy/proof records treat `$03` as executable/callable plus
+confirm-before-execution and carry `DW ENTRY, DW EXTRA`. In the parked
+non-legacy direction, bit 0 still means executable/callable and bit 1 still
+means confirm before execution, but bit 2 becomes the `has text` payload bit.
+That makes a text-bearing executable+confirm record `$07`, while `$03` carries
+only the entry word. Exact command lookup should not depend on the text bit.
+Command expansion/completion permission should move into later flags or an
+extension record instead of consuming this hot-path text bit. `TEXT`/`EXTRA`
+is display side information, not an alias and not a parameter pointer. Richer
+callable records with `PARMS` or `RESULTS` are still a future RREC payload
+direction.
+
+Parked near-term FNV/RR transition direction:
+
+```text
+'F','N',('V'|$80),hash0,hash1,hash2,hash3,K,RSV0..RSV4,payload...
+```
+
+`K` should select the payload shape. Bit 7 is the explicit legacy escape: when
+set, the old inline executable body begins at the legacy offset and no standard
+metadata contract is implied. When bit 7 is clear, executable records stop using
+inline `record+8` entry math. They carry a pointer payload instead:
+
+```text
+if K bit 0 executable:  DW ENTRY
+if K bit 2 has text:    DW TEXT
+```
+
+If bit 2 is clear, the `TEXT` word is not present; do not spend two bytes on a
+zero text pointer. Future optional words such as input parameters, output
+parameters, flags/capabilities, or extension offsets should follow in a fixed
+bit order so a tiny parser can walk the record without per-kind tables. The five
+reserved bytes after `K` are intentionally held for compact length/state/
+generation/extension/summary control as the catalog grows.
 
 The future compact record should use a layout/control byte instead of spending
 literal width marker bytes:
@@ -441,16 +468,17 @@ to an `RBODY`, or carries a small inline value itself. An `RBODY` is the actual
 runtime body: executable code, data bytes, string text, packet shape, module
 image, or another payload.
 
-R-YORS names the dynamic path **catalog linking**. A catalog-linked body is not
+R-YORS names the first dynamic path **RJOIN** / **runtime joining**. A
+runtime-joined body is not
 a DLL and not a `.so`; it is an `RBODY` plus one or more `RREC` exports visible
-through an `RCAT`. The assembler can emit unresolved references as `RFIX`
+through an `RCAT`. The assembler can emit unresolved references as compact `RF`
 records, then later resolve those fixups when a matching live `RREC` appears.
 
 Possible path:
 
 ```text
-assemble RBODY -> create RFIX -> verify body -> export RREC into RCAT
-later code -> import by hash/name -> resolve RFIX/RLNK -> call entry or use value
+assemble RBODY -> create RF -> verify body -> export RREC into RCAT
+later code -> import by hash/name -> resolve RF/RLNK -> call entry or use value
 ```
 
 Compact runtime records should use signatures for the record family, not for
@@ -472,7 +500,7 @@ The longer documentation names can stay useful:
 RCAT   human name for RC
 RREC   human name for RR
 RBODY  human name for RB
-RFIX   human name for RF
+RF     fixup/relocation records
 RDEP   human name for RD
 RIDX   human name for RI
 ```
@@ -498,6 +526,14 @@ optional payload
 
 `bank` matters because the record may live in a clean catalog area while the
 routine/data body lives in a future growth/storage bank.
+
+Growth rule: keep the base record fast enough for lookup and execution, and let
+extension chunks carry the things that are not needed on every call. Link/load
+and flash-management extensions (`RF`, imports/dependencies, seal, commit,
+purge, generation, checks) belong near the front of that growth path because
+catalog linking and condense need them. Capability and descriptive extensions
+such as IRQ/timer/LED usage, ABI details, names, aliases, and help text can grow
+behind the same extension mechanism.
 
 ### Placed HREC And Relocatable RREC
 
@@ -640,7 +676,7 @@ There is no per-record algorithm byte. The catalog format itself defines
 
 When a useful behavior is duplicated in proof code, promote it in two stages:
 first static-link a documented routine contract through labels/library records;
-later export the same contract as an `RREC` and let `RFIX`/`RLNK` resolve it.
+later export the same contract as an `RREC` and let `RF`/`RLNK` resolve it.
 The HIMON/search range parser is the model: share the range arithmetic and
 count/end semantics, while keeping thin adapters for each caller's workspace.
 

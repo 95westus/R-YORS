@@ -112,7 +112,7 @@ every hot path.
 
 This chapter should explain why a monitor command table wants to become a
 record scanner, and why that matters later when the same scanner idea grows
-into RCAT/RREC/RBODY/RFIX/RLNK.
+into RCAT/RREC/RBODY/RF/RLNK.
 
 Questions:
 
@@ -408,7 +408,7 @@ Proof and notes:
 
 ## Part IV: Catalog Linking
 
-### Chapter 11: RCAT, RREC, RBODY, RFIX, RLNK
+### Chapter 11: RCAT, RREC, RBODY, RF, RLNK
 
 Answer:
 
@@ -418,15 +418,15 @@ The catalog-linked system is made of named, typed records and bodies:
 RCAT   runtime catalog dataset
 RREC   typed runtime record/export
 RBODY  executable/data/string/module body
-RFIX   unresolved reference
+RF     unresolved reference/fixup record
 RLNK   resolved link/fixup result
 ```
 
 The path is:
 
 ```text
-assemble RBODY -> create RFIX -> verify body -> export RREC into RCAT
-later code -> import by hash/name -> resolve RFIX/RLNK -> call entry or use value
+assemble RBODY -> create RF -> verify body -> export RREC into RCAT
+later code -> import by hash/name -> resolve RF/RLNK -> call entry or use value
 ```
 
 Questions:
@@ -448,7 +448,7 @@ Answer:
 
 The rule is not "copy code less." The rule is "promote useful behavior into a
 callable contract." First static-link the contract with ordinary labels and
-libraries. Later export the same contract as an RREC and let RFIX/RLNK resolve
+libraries. Later export the same contract as an RREC and let RF/RLNK resolve
 callers.
 
 The range parser is the model. HIMON and search both need `start end|+count`,
@@ -598,7 +598,7 @@ Proof and notes:
 Answer:
 
 The vocabulary is part of the system. STR8, HIMON, THE, RCAT, RREC, RBODY,
-RFIX, RLNK, BIO, PIN, COR, SYS, and REQUIRED_FOR_RECOVERY are not decoration.
+RF, RLNK, BIO, PIN, COR, SYS, and REQUIRED_FOR_RECOVERY are not decoration.
 They mark ownership and prevent confused code.
 
 Questions:

@@ -85,7 +85,7 @@ RI  runtime index/cache</code></pre>
 <pre><code class="language-text">RCAT   human name for RC
 RREC   human name for RR
 RBODY  human name for RB
-RFIX   human name for RF
+RF     fixup/relocation records
 RDEP   human name for RD
 RIDX   human name for RI</code></pre>
 <p>Concern: Do not let the new signatures accidentally settle the hash algorithm. The signature says &quot;what kind of record is this?&quot; The catalog version/control still has to say how identity is represented, whether by current 32-bit FNV-1a, future CRC16, or a mixed/verified form.</p>
@@ -155,7 +155,7 @@ S addr end|+count &#39;TEXT</code></pre>
 <p>which searches for three <code>M</code> bytes.</p>
 <p>Concern: Keep apostrophe text as a final tail for the first implementation. There is no closing-quote parser and no return to hex parsing after text. Supporting text in the middle of the pattern would require quotes or escaping; that is not worth the parser cost for V0.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/HASH.md</code>. Source modified: <time>2026-05-22T04:30:32Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/HASH.md</code>. Source modified: <time>2026-05-23T00:03:57Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

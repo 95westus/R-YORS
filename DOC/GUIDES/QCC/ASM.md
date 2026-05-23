@@ -176,6 +176,84 @@ or bytecode ideas parked until labels, fixups, body records, and load/run
 proofs are already boring. The first useful assembler can be plain native code
 plus explicit fixup/dependency records.
 
+## Q: What is the first RAM RJOIN ASM proof?
+
+Comment: Make the first proof intentionally narrow and verbose:
+
+```text
+[LABEL:] JSR OPERAND
+```
+
+If `LABEL:` is present, the proof hashes the label, stores the current PC as
+the symbol value, and records enough local metadata to list it again:
+
+```text
+hash(LABEL) -> value=current PC, kind=local code label
+```
+
+Then `JSR OPERAND` hashes the operand name. Resolution order is local symbols
+first, then resident runtime records through `RJOIN`. The output is still
+native W65C02S code:
+
+```text
+JSR resolved_entry -> 20 lo hi
+```
+
+Use an existing resident executable record for the positive test, such as
+`BIO_FTDI_WRITE_BYTE_BLOCK`. A future friendlier name such as `BIO_WRITE_CHAR`
+should be an alias/export record, not a special parser case.
+
+Verbose transcript target:
+
+```text
+ASM RJOIN PROOF
+PC=$4000
+LINE: START: JSR BIO_FTDI_WRITE_BYTE_BLOCK
+
+LABEL START
+  HASH=....
+  VALUE=$4000
+  STORE=LOCAL SYMBOL
+
+OP JSR
+  MODE=ABS
+  OPCODE=$20
+
+OPERAND BIO_FTDI_WRITE_BYTE_BLOCK
+  HASH=$379FE930
+  LOCAL=NO
+  RJOIN=FOUND
+  KIND=EXEC
+  ENTRY=$....
+
+EMIT
+  $4000: 20 .. ..
+  PC=$4003
+```
+
+Failure cases should be different and boring:
+
+```text
+JSR NO_SUCH_LABEL
+  local symbol table: no
+  resident RJOIN records: no
+  error: unresolved symbol
+  emit: no
+  PC: unchanged
+
+JSR NON_EXEC_RECORD
+  record found
+  executable kind bit: clear
+  error: not executable
+  emit: no
+  PC: unchanged
+```
+
+Do not create `RF` fixups in this first RAM proof. No placeholder
+`JSR $0000`, no partial PC advance, and no half-built code. Forward labels can
+graduate to `RF` later after the strict resolved/not-resolved behavior is
+boring.
+
 ## Q: When does ASM graduate from QCC to decision?
 
 Comment: When the record bytes, fixup lifecycle, collision rule, and flash

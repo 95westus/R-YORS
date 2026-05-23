@@ -178,7 +178,7 @@ The longer doc words remain useful aliases:
 RCAT   human name for RC
 RREC   human name for RR
 RBODY  human name for RB
-RFIX   human name for RF
+RF     fixup/relocation records
 RDEP   human name for RD
 RIDX   human name for RI
 ```

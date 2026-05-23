@@ -15,6 +15,9 @@
 but the first catalog-aware ASM/body wants to use those joins
 so the first thing cannot require the thing it is proving</code></pre>
 <p>That is the chicken-and-egg problem. It is real, and the answer is a seed layer, not pretending the full catalog already exists.</p>
+<p>The working name for the first runtime operation is <code>RJOIN</code>: runtime join. It means hash/name reference -&gt; resolved runtime entry/value. Fixup records should use the compact <code>RF</code> signature. From the current codebase, the proof lane is still:</p>
+<pre><code class="language-text">make -C SRC hrec-join-proof himon-search-proof</code></pre>
+<p>Those targets prove the present join/search mechanics while the fuller RJOIN/RR/RB/RF/RD record family is still being shaped.</p>
 <h2 id="q-what-minimum-metadata-makes-flash-banks-usable-as-storage">Q: What minimum metadata makes flash banks usable as storage?</h2>
 <p>Comment: A bank becomes useful storage when its records say what they provide, what they depend on, and how their bytes can be placed safely. Without that, the bank is only a byte pile: searchable, dumpable, maybe copyable, but not a trustworthy routine shelf.</p>
 <p>The small record set we keep circling is:</p>
@@ -160,7 +163,7 @@ S uses joined resident support instead of private helper payload
 payload baggage is measurably removed or named</code></pre>
 <p>Until then, this remains QCC. <code>LIFE_RCAT_MEMBER.md</code> can keep LIFE-specific member details; this page keeps the general bootstrap rule.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/CATALOG_LINKING.md</code>. Source modified: <time>2026-05-22T04:40:38Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/QCC/CATALOG_LINKING.md</code>. Source modified: <time>2026-05-23T00:20:30Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

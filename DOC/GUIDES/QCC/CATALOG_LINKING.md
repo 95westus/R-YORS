@@ -12,6 +12,18 @@ so the first thing cannot require the thing it is proving
 That is the chicken-and-egg problem. It is real, and the answer is a seed
 layer, not pretending the full catalog already exists.
 
+The working name for the first runtime operation is `RJOIN`: runtime join.
+It means hash/name reference -> resolved runtime entry/value. Fixup records
+should use the compact `RF` signature. From the current codebase, the proof
+lane is still:
+
+```text
+make -C SRC hrec-join-proof himon-search-proof
+```
+
+Those targets prove the present join/search mechanics while the fuller
+RJOIN/RR/RB/RF/RD record family is still being shaped.
+
 ## Q: What minimum metadata makes flash banks usable as storage?
 
 Comment: A bank becomes useful storage when its records say what they provide,

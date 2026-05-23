@@ -25,6 +25,7 @@
 algorithm:  FNV-1a
 storage:    hash0,hash1,hash2,hash3 low byte through high byte
 owner:      HIMON command, catalog, symbol, and fixup lookup</code></pre>
+<p>The active fast FNV update keeps the original routine available and only unrolls the fixed shift sequence inside the software multiply by <code>$01000193</code>. This is a deliberate ROM-for-cycles tradeoff: it spends a few bytes to lessen the runtime cost of doing the FNV prime multiply in software.</p>
 <p>Example:</p>
 <pre><code class="language-text">SYS_WRITE_CHAR -&gt; $49023C1B -&gt; stored 1B,3C,02,49</code></pre>
 <p>Current HIMON command records use this proving shape:</p>
@@ -311,7 +312,7 @@ step:         hash = (hash xor byte) * prime mod 2^32</code></pre>
 </ul>
 <p><code>powershell -NoProfile -ExecutionPolicy Bypass -File tools/gen_routine_hash_comments.ps1 -Src . -FailOnCollision $false</code></p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH.md</code>. Source modified: <time>2026-05-22T04:29:56Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH.md</code>. Source modified: <time>2026-05-22T20:35:46Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

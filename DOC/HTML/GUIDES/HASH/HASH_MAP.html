@@ -30,6 +30,8 @@ Runtime FNV-1a
   owner: HIMON command dispatch
   purpose: command token lookup
   source: HIMON/himon.asm
+  note: fast path unrolls only the software multiply shifts, trading ROM bytes
+        for fewer cycles
   symbol guide: SYMBOL_XREF.md
 
 Compact CRC16 local hash/check
@@ -106,7 +108,13 @@ global/exported catalog   usually keeps 4 bytes</code></pre>
 <pre><code class="language-text">$00  described/known, not directly executable by current dispatch
 $01  executable/callable; legacy inline code begins at record+8
 $03  executable/callable and confirm before execution; DW ENTRY, DW EXTRA</code></pre>
-<p>Bit 0 means executable/callable. Bit 1 means confirm before execution. Bits 2 and 3 are reserved. The parked bit 2 candidate is command expansion/completion permission, where exact lookup still works but prefix expansion only considers records that opt in. Do not spend bit 2 until HIMON has an expansion path that can enforce it. <code>EXTRA</code> is display side information, not an alias and not a parameter pointer. Richer callable records with <code>PARMS</code> or <code>RESULTS</code> are still a future RREC payload direction.</p>
+<p>Current legacy/proof records treat <code>$03</code> as executable/callable plus confirm-before-execution and carry <code>DW ENTRY, DW EXTRA</code>. In the parked non-legacy direction, bit 0 still means executable/callable and bit 1 still means confirm before execution, but bit 2 becomes the <code>has text</code> payload bit. That makes a text-bearing executable+confirm record <code>$07</code>, while <code>$03</code> carries only the entry word. Exact command lookup should not depend on the text bit. Command expansion/completion permission should move into later flags or an extension record instead of consuming this hot-path text bit. <code>TEXT</code>/<code>EXTRA</code> is display side information, not an alias and not a parameter pointer. Richer callable records with <code>PARMS</code> or <code>RESULTS</code> are still a future RREC payload direction.</p>
+<p>Parked near-term FNV/RR transition direction:</p>
+<pre><code class="language-text">&#39;F&#39;,&#39;N&#39;,(&#39;V&#39;|$80),hash0,hash1,hash2,hash3,K,RSV0..RSV4,payload...</code></pre>
+<p><code>K</code> should select the payload shape. Bit 7 is the explicit legacy escape: when set, the old inline executable body begins at the legacy offset and no standard metadata contract is implied. When bit 7 is clear, executable records stop using inline <code>record+8</code> entry math. They carry a pointer payload instead:</p>
+<pre><code class="language-text">if K bit 0 executable:  DW ENTRY
+if K bit 2 has text:    DW TEXT</code></pre>
+<p>If bit 2 is clear, the <code>TEXT</code> word is not present; do not spend two bytes on a zero text pointer. Future optional words such as input parameters, output parameters, flags/capabilities, or extension offsets should follow in a fixed bit order so a tiny parser can walk the record without per-kind tables. The five reserved bytes after <code>K</code> are intentionally held for compact length/state/ generation/extension/summary control as the catalog grows.</p>
 <p>The future compact record should use a layout/control byte instead of spending literal width marker bytes:</p>
 <pre><code class="language-text">control: ww=11, hash0,hash1,hash2,hash3, value/payload...
 control: ww=10, hash16_lo,hash16_hi,    value/payload...
@@ -225,10 +233,10 @@ device        hash -&gt; driver vector table or capability record
 alias         hash -&gt; typed redirect to another hash plus adapter/policy</code></pre>
 <p>This keeps the catalog closer to a small typed name/value system than to a command table. Early builds can keep the record scanner simple and hash-only where space is tight; later writable catalogs should carry proof text, type flags, and collision handling.</p>
 <p>An <code>RCAT</code> is a runtime catalog dataset, not just a table. It may hold <code>RREC</code> records, string pools, indexes, and links to <code>RBODY</code> payloads spread across RAM or flash. An <code>RREC</code> is a typed runtime record: it names, classifies, and points to an <code>RBODY</code>, or carries a small inline value itself. An <code>RBODY</code> is the actual runtime body: executable code, data bytes, string text, packet shape, module image, or another payload.</p>
-<p>R-YORS names the dynamic path <strong>catalog linking</strong>. A catalog-linked body is not a DLL and not a <code>.so</code>; it is an <code>RBODY</code> plus one or more <code>RREC</code> exports visible through an <code>RCAT</code>. The assembler can emit unresolved references as <code>RFIX</code> records, then later resolve those fixups when a matching live <code>RREC</code> appears.</p>
+<p>R-YORS names the first dynamic path <strong>RJOIN</strong> / <strong>runtime joining</strong>. A runtime-joined body is not a DLL and not a <code>.so</code>; it is an <code>RBODY</code> plus one or more <code>RREC</code> exports visible through an <code>RCAT</code>. The assembler can emit unresolved references as compact <code>RF</code> records, then later resolve those fixups when a matching live <code>RREC</code> appears.</p>
 <p>Possible path:</p>
-<pre><code class="language-text">assemble RBODY -&gt; create RFIX -&gt; verify body -&gt; export RREC into RCAT
-later code -&gt; import by hash/name -&gt; resolve RFIX/RLNK -&gt; call entry or use value</code></pre>
+<pre><code class="language-text">assemble RBODY -&gt; create RF -&gt; verify body -&gt; export RREC into RCAT
+later code -&gt; import by hash/name -&gt; resolve RF/RLNK -&gt; call entry or use value</code></pre>
 <p>Compact runtime records should use signatures for the record family, not for the hash algorithm. The current <code>FN(V|$80)</code> marker is good bring-up/debug vocabulary, but the later catalog wants readable type signatures:</p>
 <pre><code class="language-text">RC  runtime catalog/container block
 RR  runtime record/export/import/value envelope
@@ -240,7 +248,7 @@ RI  runtime index/cache</code></pre>
 <pre><code class="language-text">RCAT   human name for RC
 RREC   human name for RR
 RBODY  human name for RB
-RFIX   human name for RF
+RF     fixup/relocation records
 RDEP   human name for RD
 RIDX   human name for RI</code></pre>
 <p>That means a dump can show <code>RC</code>, <code>RR</code>, <code>RB</code>, <code>RF</code>, <code>RD</code>, and <code>RI</code> without spending bytes on the word <code>FNV</code> in every record. Hash algorithm and width belong in the catalog version/control fields, not in a repeated text signature.</p>
@@ -256,6 +264,7 @@ optional name length
 optional raw or compressed name text
 optional payload</code></pre>
 <p><code>bank</code> matters because the record may live in a clean catalog area while the routine/data body lives in a future growth/storage bank.</p>
+<p>Growth rule: keep the base record fast enough for lookup and execution, and let extension chunks carry the things that are not needed on every call. Link/load and flash-management extensions (<code>RF</code>, imports/dependencies, seal, commit, purge, generation, checks) belong near the front of that growth path because catalog linking and condense need them. Capability and descriptive extensions such as IRQ/timer/LED usage, ABI details, names, aliases, and help text can grow behind the same extension mechanism.</p>
 <h3 id="placed-hrec-and-relocatable-rrec">Placed HREC And Relocatable RREC</h3>
 <p>The current <code>HREC</code>-style records are placed executable records. They prove hash discovery and joining, but they are not relocatable in the linker sense:</p>
 <pre><code class="language-text">himon-search-proof-3000   linked to run at $3000
@@ -324,7 +333,7 @@ run $6000 + entry_offset</code></pre>
 <p>The fixed <code>@6000</code> form is the simple first step. True &quot;load anywhere&quot; comes later, after fixup emission is boring.</p>
 <p><code>kind</code> classifies the record or payload. It should not carry lifecycle policy. Lifecycle flags can include <code>REQUIRED_FOR_RECOVERY</code>, <code>BOOT_REQUIRED</code>, or <code>REPLACEABLE</code>. <code>REQUIRED_FOR_RECOVERY</code> is the future no-ordinary-purge rule for the active recovery dependency chain; it is not implied merely by a <code>BIO_*</code> or <code>PIN_*</code> routine name.</p>
 <p>There is no per-record algorithm byte. The catalog format itself defines <code>hash0..3</code> as FNV-1a.</p>
-<p>When a useful behavior is duplicated in proof code, promote it in two stages: first static-link a documented routine contract through labels/library records; later export the same contract as an <code>RREC</code> and let <code>RFIX</code>/<code>RLNK</code> resolve it. The HIMON/search range parser is the model: share the range arithmetic and count/end semantics, while keeping thin adapters for each caller&#39;s workspace.</p>
+<p>When a useful behavior is duplicated in proof code, promote it in two stages: first static-link a documented routine contract through labels/library records; later export the same contract as an <code>RREC</code> and let <code>RF</code>/<code>RLNK</code> resolve it. The HIMON/search range parser is the model: share the range arithmetic and count/end semantics, while keeping thin adapters for each caller&#39;s workspace.</p>
 <h2 id="hash-to-hash-alias-records">Hash-To-Hash Alias Records</h2>
 <p>An FNV lookup may resolve to a typed alias record that names another FNV hash. This is allowed only when the record kind defines what the redirect means:</p>
 <pre><code class="language-text">hash(&quot;DB&quot;) -&gt; directive_alias -&gt; target hash(&quot;DC&quot;)</code></pre>
@@ -410,7 +419,7 @@ $FF  erased flash / blank image regions</code></pre>
 5. If text is absent and collision exists, require qualified/manual choice.</code></pre>
 <p>This keeps the system usable before the catalog is fancy, but does not trap it in unsafe hash-only linking forever.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH_MAP.md</code>. Source modified: <time>2026-05-22T04:30:13Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/HASH/HASH_MAP.md</code>. Source modified: <time>2026-05-23T00:20:30Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>

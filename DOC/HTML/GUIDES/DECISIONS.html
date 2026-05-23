@@ -289,7 +289,7 @@ start +count    count is the number of bytes</code></pre>
 <ul>
 <li>When duplicated proof code starts wanting to be reused, promote the behavior</li>
 </ul>
-<p>into a documented callable contract before catalog magic. First static-link it through ordinary labels/library rules. Later, expose the same contract as an <code>RREC</code> export and resolve users through <code>RFIX</code>/<code>RLNK</code>. Keep workspace-specific adapters thin; for example, HIMON and search can share range arithmetic while retaining their own <code>CMD_*</code> or <code>SEARCH_*</code> workspace.</p>
+<p>into a documented callable contract before catalog magic. First static-link it through ordinary labels/library rules. Later, expose the same contract as an <code>RREC</code> export and resolve users through <code>RF</code>/<code>RLNK</code>. Keep workspace-specific adapters thin; for example, HIMON and search can share range arithmetic while retaining their own <code>CMD_*</code> or <code>SEARCH_*</code> workspace.</p>
 <h2 id="stack-and-trap-policy">Stack And Trap Policy</h2>
 <ul>
 <li>HIMON owns the hardware stack on monitor entry.</li>
@@ -405,6 +405,14 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>such as <code>PARMS</code> or <code>RESULTS</code>, should use a different kind and a documented HIMON/THE calling convention.</p>
 <ul>
+<li>Parked next-shape direction: retire newly emitted inline executable records.</li>
+</ul>
+<p>Use an explicit legacy <code>K</code> bit for old inline records, and let non-legacy executable records carry <code>DW ENTRY</code> plus optional words selected by <code>K</code> bits. If a text bit is clear, no <code>TEXT</code> word is present; do not force a <code>$0000</code> placeholder just to preserve a fixed text slot.</p>
+<ul>
+<li>Keep <code>K</code> focused on hot-path shape/dispatch. Link/load and flash-management</li>
+</ul>
+<p>data such as length, state, generation, seal, purge, imports, and fixups should live in reserved bytes or attached typed extensions rather than consuming all remaining <code>K</code> bits.</p>
+<ul>
 <li>Future <code>RREC</code> records may wrap inline bytes or a linked <code>RBODY</code> as a typed</li>
 </ul>
 <p>data packet. The kind/control contract decides whether that payload can be displayed, validated/authenticated, joined as code, resolved as imports, or used in some other way.</p>
@@ -417,9 +425,9 @@ start +count    count is the number of bytes</code></pre>
 </ul>
 <p>data/config records, not executable records. Terminal startup may resolve the hash/name, require a scalar config kind, validate the range, and fall back to the compiled default when the record is absent or invalid.</p>
 <ul>
-<li>Bits 2 and 3 of the current FNV <code>kind</code> byte are reserved. Do not spend them</li>
+<li>Bit 2 is the parked <code>has text</code> bit for the next non-legacy FNV/RR shape; it</li>
 </ul>
-<p>as ad-hoc selectors, permissions, lifecycle flags, or dependency-policy flags until a future record layout proves the need. Selector and permission ideas belong in separate metadata or a documented control byte first.</p>
+<p>selects whether a <code>TEXT</code> word is present after <code>DW ENTRY</code>. Bits 3..6 remain unassigned in the hot-path <code>K</code> byte. Do not spend them as ad-hoc selectors, permissions, lifecycle flags, or dependency-policy flags until a future record layout proves the need. Selector and permission ideas belong in separate metadata or a documented control byte first.</p>
 <ul>
 <li>Future compact signatures identify record layout/classification, not a hash</li>
 </ul>
@@ -626,7 +634,7 @@ DOC/IDEAS.md</code></pre>
 </ul>
 <p>into HIMON.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-22T04:29:40Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/DECISIONS.md</code>. Source modified: <time>2026-05-23T00:05:54Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

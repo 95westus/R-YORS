@@ -63,7 +63,7 @@ RREC future  hash -&gt; payload + link_addr + fixups + deps -&gt; load/fix/run</
 <p>For the full staged plan, see <code>DOC/GUIDES/HASH/HASH_MAP.md</code>, section &quot;Placed HREC And Relocatable RREC&quot;.</p>
 <p>FNV32 is the settled public identity hash for exported routines and commands. This proof deliberately uses current emitted FNV signatures because those bytes are already in HIMON and prove the join mechanics without starting another migration at the same time. CRC16 remains available for compact local/scoped tables and checks, not as the universal public routine identity.</p>
 <h2 id="terminology-trail">Terminology Trail</h2>
-<p>The first working words were <code>HREC_FIND</code> and <code>HREC_BIND_EXEC</code>. <code>bind</code> was accurate, but it sounded larger than the current operation: not a full linker, not relocation, not future CLINK.</p>
+<p>The first working words were <code>HREC_FIND</code> and <code>HREC_BIND_EXEC</code>. <code>bind</code> was accurate, but it sounded larger than the current operation: not a full linker, not relocation, not full future RJOIN.</p>
 <p><code>joint</code> was considered as the thing formed by a hash and an address. That was close, but the routine name wanted a verb. We settled on <code>join</code>:</p>
 <pre><code class="language-text">HREC       hash record in active memory
 FIND       locate a matching HREC by hash
@@ -104,6 +104,9 @@ resolve/link           allowed for import, export, and module descriptors</code>
 <pre><code class="language-text">ENTRY  callable routine address
 EXTRA  optional side information pointer</code></pre>
 <p>Current HIMON uses <code>EXTRA</code> as display metadata. If <code>EXTRA=$0000</code>, there is no extra display text. If it is nonzero today, <code>#</code> treats it as an HBSTR pointer. The called routine does not receive or consume <code>EXTRA</code> unless a later kind and contract explicitly says so.</p>
+<p>The parked next executable-record direction retires implicit inline entry math for newly emitted records. <code>K=$01</code> can become a pointer executable record rather than &quot;code begins at record+8&quot;:</p>
+<pre><code class="language-text">&#39;F&#39; &#39;N&#39; (&#39;V&#39;|$80) h0 h1 h2 h3 K RSV0 RSV1 RSV2 RSV3 RSV4 DW ENTRY [DW TEXT]</code></pre>
+<p><code>DW TEXT</code> exists only when the chosen <code>K</code> text bit is set; if the bit is clear, there is no text word to skip and no forced <code>$0000</code> placeholder. The reserve bytes after <code>K</code> are for future length/state/generation/extension/summary data. Legacy inline records should be explicit, for example by setting a high <code>K</code> legacy bit, so the resolver can keep reading old proof records without making new records pay the inline-code contract.</p>
 <h3 id="possible-future-contract-records">Possible Future Contract Records</h3>
 <p>Do not overload <code>K=$03</code> to mean every pointer shape. Keep <code>K=$03</code> as <code>ENTRY + EXTRA</code>, where <code>EXTRA</code> is descriptive/metadata. Use new kind values when the second or third word is part of the call contract.</p>
 <p>Possible future shapes:</p>
@@ -331,7 +334,7 @@ THE_JOIN_LOAD_HASH_XY</code></pre>
     EXEC --&gt;|no| NF
     EXEC --&gt;|yes| OK[&quot;C=1, X/Y = callable entry&quot;]</pre>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md</code>. Source modified: <time>2026-05-22T04:30:20Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md</code>. Source modified: <time>2026-05-23T00:20:30Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

@@ -18,7 +18,7 @@
 <p>Today, LIFE is a standalone RAM-linked application that can run under or beside HIMON. HIMON has its current FNV command-record path, but not the proposed compact RCAT/RREC catalog-linking system. This document therefore separates:</p>
 <pre><code class="language-text">today:           LIFE-2000, WDC-linked standalone app loaded and called by address
 near term:       LIFE-9000, reassembled permanent flash app with a findable header
-proposed future: CLINK, catalog linking through RBODY, RREC, RCAT, RLNK, RFIX</code></pre>
+proposed future: RJOIN, runtime joining through RBODY, RREC, RCAT, RLNK, RF</code></pre>
 <p>Related vocabulary lives in <a href="../GLOSSARY.html">GLOSSARY.md</a>. The short answer is: yes, LIFE should become an <code>RBODY</code> described by one or more <code>RREC</code> records inside or beside an <code>RCAT</code>. &quot;Member&quot; is a useful S/36-ish packaging word, but <code>RREC</code> remains the record format word.</p>
 <h2 id="starting-shape">Starting Shape</h2>
 <p>Current LIFE source:</p>
@@ -52,7 +52,7 @@ member  packaged thing exposed through an RCAT; usually RBODY plus RREC exports<
 <p>There are three named lanes for this idea:</p>
 <pre><code class="language-text">LIFE-2000  current RAM/dev S19 at $2000
 LIFE-9000  near-term permanent flash form reassembled at $9000
-CLINK      future catalog-linking path that can relocate, bind, and catalog</code></pre>
+RJOIN      future runtime-joining path that can relocate, bind, and catalog</code></pre>
 <p>There are five useful shapes. The first three are current or near-term build shapes. The last two are proposed catalog-linking shapes.</p>
 <h3 id="1-standalone-under-himon">1. Standalone Under HIMON</h3>
 <p>This is <code>LIFE-2000</code>, closest to the current LIFE build.</p>
@@ -136,11 +136,11 @@ stored:  hash0=$1F hash1=$A6 hash2=$1A hash3=$E5</code></pre>
   flags:     interactive, uses terminal, uses NMI, app/session body</code></pre>
 <p>That is not the final byte layout. It is the information the byte layout must be able to carry, directly or through attached records.</p>
 <h3 id="4-catalog-linked-flash-ram-member">4. Catalog-Linked Flash/RAM Member</h3>
-<p>This is <code>CLINK</code>, the future dynamic shape. <code>CLINK</code> means catalog link.</p>
+<p>This is <code>RJOIN</code>, the future dynamic shape. <code>RJOIN</code> means runtime join.</p>
 <pre><code class="language-text">RBODY contains LIFE code and strings
 RREC exports LIFE as a command/member entry
 RREC or RLNK records describe imports
-RFIX records exist only if something still needs patching
+RF records exist only if something still needs patching
 RCAT makes the member discoverable</code></pre>
 <p>Possible future loader spellings:</p>
 <pre><code class="language-text">L F
@@ -160,8 +160,8 @@ L F xxxx=2000
 <pre><code class="language-text">LIFE-2000 body
   -&gt; L F [preferred_addr]
   -&gt; selected flash placement policy chooses or accepts address
-  -&gt; CLINK applies relocation/fixups for final address
-  -&gt; CLINK resolves imports by fixed entries or hash-based import records
+  -&gt; RJOIN applies relocation/fixups for final address
+  -&gt; RJOIN resolves imports by fixed entries or hash-based import records
   -&gt; relocated RBODY is written/bound in flash
   -&gt; RREC is emitted/updated inside an RCAT
   -&gt; LIFE becomes findable</code></pre>
@@ -218,7 +218,7 @@ SYS_WRITE_HEX_BYTE
 BIO_FTDI_READ_BYTE_NONBLOCK</code></pre>
 <p>For a monolithic build, the WDC linker resolves these. For a catalog-linked member, there are three possible import styles:</p>
 <pre><code class="language-text">fixed entries      LIFE calls stable HIMON/SYS entry addresses
-catalog imports    LIFE imports by RREC name/hash and CLINK binds before running
+catalog imports    LIFE imports by RREC name/hash and RJOIN binds before running
 private support    LIFE carries the support code in its own RBODY</code></pre>
 <p>Catalog imports may be hash-based. Public imports should use canonical 32-bit FNV-1a over the import name, then prove the match through kind, contract, and optional name/proof text. Folded hash16/hash8 variants are better kept for small local tables whose builder can prove there are no collisions.</p>
 <p>Preferred direction:</p>
@@ -307,7 +307,7 @@ LIFE.SET_CELL</code></pre>
 3. catalog LIFE as an interactive app/member with resources</code></pre>
 <p>LIFE is valuable because it forces the right questions: body, entry, imports, RAM, zero page, vectors, strings, and update lifecycle. That makes it an excellent design example even before it is the first shipped catalog member.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/LIFE_RCAT_MEMBER.md</code>. Source modified: <time>2026-05-22T03:38:42Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/CATALOG/LIFE_RCAT_MEMBER.md</code>. Source modified: <time>2026-05-23T00:20:30Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
   <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });</script>
 </body>
 </html>

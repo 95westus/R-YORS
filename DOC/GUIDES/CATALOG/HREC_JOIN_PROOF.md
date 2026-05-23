@@ -113,7 +113,7 @@ tables and checks, not as the universal public routine identity.
 
 The first working words were `HREC_FIND` and `HREC_BIND_EXEC`. `bind` was
 accurate, but it sounded larger than the current operation: not a full linker,
-not relocation, not future CLINK.
+not relocation, not full future RJOIN.
 
 `joint` was considered as the thing formed by a hash and an address. That was
 close, but the routine name wanted a verb. We settled on `join`:
@@ -197,6 +197,21 @@ Current HIMON uses `EXTRA` as display metadata. If `EXTRA=$0000`, there is no
 extra display text. If it is nonzero today, `#` treats it as an HBSTR pointer.
 The called routine does not receive or consume `EXTRA` unless a later kind and
 contract explicitly says so.
+
+The parked next executable-record direction retires implicit inline entry math
+for newly emitted records. `K=$01` can become a pointer executable record rather
+than "code begins at record+8":
+
+```text
+'F' 'N' ('V'|$80) h0 h1 h2 h3 K RSV0 RSV1 RSV2 RSV3 RSV4 DW ENTRY [DW TEXT]
+```
+
+`DW TEXT` exists only when the chosen `K` text bit is set; if the bit is clear,
+there is no text word to skip and no forced `$0000` placeholder. The reserve
+bytes after `K` are for future length/state/generation/extension/summary data.
+Legacy inline records should be explicit, for example by setting a high `K`
+legacy bit, so the resolver can keep reading old proof records without making
+new records pay the inline-code contract.
 
 ### Possible Future Contract Records
 

@@ -271,7 +271,7 @@ start +count    count is the number of bytes
 - When duplicated proof code starts wanting to be reused, promote the behavior
   into a documented callable contract before catalog magic. First static-link
   it through ordinary labels/library rules. Later, expose the same contract as
-  an `RREC` export and resolve users through `RFIX`/`RLNK`. Keep
+  an `RREC` export and resolve users through `RF`/`RLNK`. Keep
   workspace-specific adapters thin; for example, HIMON and search can share
   range arithmetic while retaining their own `CMD_*` or `SEARCH_*` workspace.
 
@@ -357,6 +357,15 @@ start +count    count is the number of bytes
 - Future records that make the second or third word part of the call contract,
   such as `PARMS` or `RESULTS`, should use a different kind and a documented
   HIMON/THE calling convention.
+- Parked next-shape direction: retire newly emitted inline executable records.
+  Use an explicit legacy `K` bit for old inline records, and let non-legacy
+  executable records carry `DW ENTRY` plus optional words selected by `K` bits.
+  If a text bit is clear, no `TEXT` word is present; do not force a `$0000`
+  placeholder just to preserve a fixed text slot.
+- Keep `K` focused on hot-path shape/dispatch. Link/load and flash-management
+  data such as length, state, generation, seal, purge, imports, and fixups
+  should live in reserved bytes or attached typed extensions rather than
+  consuming all remaining `K` bits.
 - Future `RREC` records may wrap inline bytes or a linked `RBODY` as a typed
   data packet. The kind/control contract decides whether that payload can be
   displayed, validated/authenticated, joined as code, resolved as imports, or
@@ -368,10 +377,12 @@ start +count    count is the number of bytes
   data/config records, not executable records. Terminal startup may resolve the
   hash/name, require a scalar config kind, validate the range, and fall back to
   the compiled default when the record is absent or invalid.
-- Bits 2 and 3 of the current FNV `kind` byte are reserved. Do not spend them
-  as ad-hoc selectors, permissions, lifecycle flags, or dependency-policy flags
-  until a future record layout proves the need. Selector and permission ideas
-  belong in separate metadata or a documented control byte first.
+- Bit 2 is the parked `has text` bit for the next non-legacy FNV/RR shape; it
+  selects whether a `TEXT` word is present after `DW ENTRY`. Bits 3..6 remain
+  unassigned in the hot-path `K` byte. Do not spend them as ad-hoc selectors,
+  permissions, lifecycle flags, or dependency-policy flags until a future
+  record layout proves the need. Selector and permission ideas belong in
+  separate metadata or a documented control byte first.
 - Future compact signatures identify record layout/classification, not a hash
   algorithm.
 - One thing may have multiple classification flags; use bit flags/tokens rather

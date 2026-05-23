@@ -69,7 +69,7 @@ No more    the retired path, boundary, or edict that should not be reopened casu
 <h3 id="chapter-1-why-hash-first">Chapter 1: Why Hash-First?</h3>
 <p>Answer:</p>
 <p>Hash-first lookup turns command names, routine names, symbols, aliases, fixups, and future catalog entries into variations of one problem: compute a compact lookup hash, scan records, classify the match, and act. The hash is not the whole object. It lets a small system find the object without carrying full text in every hot path.</p>
-<p>This chapter should explain why a monitor command table wants to become a record scanner, and why that matters later when the same scanner idea grows into RCAT/RREC/RBODY/RFIX/RLNK.</p>
+<p>This chapter should explain why a monitor command table wants to become a record scanner, and why that matters later when the same scanner idea grows into RCAT/RREC/RBODY/RF/RLNK.</p>
 <p>Questions:</p>
 <ul>
 <li>What does hash-first lookup buy on a W65C02 system where every byte matters?</li>
@@ -275,17 +275,17 @@ Only the active recovery dependency chain gets that flag.</code></pre>
 <li><a href="../MEMORY/MEMORY_MAP.html">MEMORY_MAP.md</a></li>
 </ul>
 <h2 id="part-iv-catalog-linking">Part IV: Catalog Linking</h2>
-<h3 id="chapter-11-rcat-rrec-rbody-rfix-rlnk">Chapter 11: RCAT, RREC, RBODY, RFIX, RLNK</h3>
+<h3 id="chapter-11-rcat-rrec-rbody-rf-rlnk">Chapter 11: RCAT, RREC, RBODY, RF, RLNK</h3>
 <p>Answer:</p>
 <p>The catalog-linked system is made of named, typed records and bodies:</p>
 <pre><code class="language-text">RCAT   runtime catalog dataset
 RREC   typed runtime record/export
 RBODY  executable/data/string/module body
-RFIX   unresolved reference
+RF     unresolved reference/fixup record
 RLNK   resolved link/fixup result</code></pre>
 <p>The path is:</p>
-<pre><code class="language-text">assemble RBODY -&gt; create RFIX -&gt; verify body -&gt; export RREC into RCAT
-later code -&gt; import by hash/name -&gt; resolve RFIX/RLNK -&gt; call entry or use value</code></pre>
+<pre><code class="language-text">assemble RBODY -&gt; create RF -&gt; verify body -&gt; export RREC into RCAT
+later code -&gt; import by hash/name -&gt; resolve RF/RLNK -&gt; call entry or use value</code></pre>
 <p>Questions:</p>
 <ul>
 <li>What is the smallest useful RREC?</li>
@@ -301,7 +301,7 @@ later code -&gt; import by hash/name -&gt; resolve RFIX/RLNK -&gt; call entry or
 </ul>
 <h3 id="chapter-12-routines-made-from-routines">Chapter 12: Routines Made From Routines</h3>
 <p>Answer:</p>
-<p>The rule is not &quot;copy code less.&quot; The rule is &quot;promote useful behavior into a callable contract.&quot; First static-link the contract with ordinary labels and libraries. Later export the same contract as an RREC and let RFIX/RLNK resolve callers.</p>
+<p>The rule is not &quot;copy code less.&quot; The rule is &quot;promote useful behavior into a callable contract.&quot; First static-link the contract with ordinary labels and libraries. Later export the same contract as an RREC and let RF/RLNK resolve callers.</p>
 <p>The range parser is the model. HIMON and search both need <code>start end|+count</code>, but each has its own workspace. The reusable behavior is range arithmetic and semantics. The caller-specific part is the adapter around <code>CMD_*</code> or <code>SEARCH_*</code> state.</p>
 <p>Questions:</p>
 <ul>
@@ -408,7 +408,7 @@ later code -&gt; import by hash/name -&gt; resolve RFIX/RLNK -&gt; call entry or
 </ul>
 <h3 id="chapter-19-naming-vocabulary-and-the-shape-of-thought">Chapter 19: Naming, Vocabulary, And The Shape Of Thought</h3>
 <p>Answer:</p>
-<p>The vocabulary is part of the system. STR8, HIMON, THE, RCAT, RREC, RBODY, RFIX, RLNK, BIO, PIN, COR, SYS, and REQUIRED_FOR_RECOVERY are not decoration. They mark ownership and prevent confused code.</p>
+<p>The vocabulary is part of the system. STR8, HIMON, THE, RCAT, RREC, RBODY, RF, RLNK, BIO, PIN, COR, SYS, and REQUIRED_FOR_RECOVERY are not decoration. They mark ownership and prevent confused code.</p>
 <p>Questions:</p>
 <ul>
 <li>Which names reduce confusion?</li>
@@ -492,7 +492,7 @@ Pointers
 <p>R-YORS is a small W65C02 system that grows from a monitor into a hashed runtime environment. HIMON provides the bench: commands, debugging, loading, flash guards, and current FNV-era dispatch. STR8 protects recovery. THE names the future lookup environment where records, bodies, fixups, and catalogs make code discoverable and linkable on the machine itself.</p>
 <p>This book follows that path without pretending the destination arrived first. It keeps the false starts, proof apps, hardware transcripts, command grammar debates, and naming decisions close to the metal, because that is where the runtime became real.</p>
   </main>
-  <footer class="site-footer">Generated from <code>DOC/GUIDES/STORY/BOOK.md</code>. Source modified: <time>2026-05-22T04:44:31Z</time>. HTML generated: <time>2026-05-22T05:51:18Z</time>. Markdown remains canonical.</footer>
+  <footer class="site-footer">Generated from <code>DOC/GUIDES/STORY/BOOK.md</code>. Source modified: <time>2026-05-23T00:02:23Z</time>. HTML generated: <time>2026-05-23T00:21:10Z</time>. Markdown remains canonical.</footer>
 
 </body>
 </html>
