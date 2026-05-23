@@ -23,6 +23,7 @@ DOC/s34
 
 # Generated documentation presentation. Markdown is canonical.
 /DOC/HTML/
+/index.html
 
 # Local third-party / provenance-preserving source homes.
 # These are intentionally usable by the build but not tracked here.
