@@ -54,18 +54,20 @@ action:     where to look or what to do next
 scope: `.gitignore`, `README.md`, `DECISIONS.md`, `OPERATORS_GUIDE.md`,
 `TECHNICAL_GUIDE.md`, and `QCC/ASM.md`.
 
-change: `DOC/HTML` is now treated as a generated presentation view only. It is
-ignored by git and should be regenerated only on an explicit `make docs-html`
-request. ASM notes now spell out that labels cannot use active opcode
-mnemonic or directive keyword names, and the proof parser now accepts
-colon-light labels such as `FORWARD JSR STR8`.
+change: `DOC/HTML` and the root `index.html` redirect are now treated as
+generated presentation views only. They are ignored by git and should be
+regenerated only on an explicit `make docs-html` request. ASM notes now spell
+out that labels cannot use active opcode mnemonic or directive keyword names,
+and the proof parser now accepts colon-light labels such as `FORWARD JSR STR8`.
 
-effect: Markdown is the canonical documentation surface. Generated HTML should
-not churn during ordinary source/doc edits. Hash-first ASM parsing can reserve
-mnemonic/directive token text before deciding whether a first token is a label.
+effect: Markdown is the canonical documentation surface. Generated HTML and the
+root redirect should not churn during ordinary source/doc edits. Hash-first ASM
+parsing can reserve mnemonic/directive token text before deciding whether a
+first token is a label.
 
-action: Update Markdown docs first. Do not touch `DOC/HTML` unless a regen is
-requested. Keep ASM keyword vocabulary explicit as the assembler grows.
+action: Update Markdown docs first. Do not touch `DOC/HTML` or root
+`index.html` unless a regen is requested. Keep ASM keyword vocabulary explicit
+as the assembler grows.
 
 ## REDOC: ASM RJOIN RAM Proof Started
 
