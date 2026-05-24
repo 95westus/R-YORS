@@ -109,6 +109,17 @@ ASM_STATUS_BAD_SYM     EQU             $08
 ASM_STATUS_BAD_FIX     EQU             $09
 ASM_STATUS_LOCAL_NYI   EQU             $0A
 
+ASM_STEP_BEGIN         EQU             $10
+ASM_STEP_LEX_OK        EQU             $20
+ASM_STEP_TOKENS        EQU             $30
+ASM_STEP_VOCAB         EQU             $40
+ASM_STEP_PARSE         EQU             $50
+ASM_STEP_SYMBOLS       EQU             $60
+ASM_STEP_RJOIN_JOINER  EQU             $71
+ASM_STEP_RJOIN_WRITE   EQU             $72
+ASM_STEP_LONG_LINE     EQU             $80
+ASM_STEP_END           EQU             $90
+
 ASM_BEGINF_HAVE_PC     EQU             $01
 
 ASM_SESS_IDLE          EQU             $00
@@ -189,13 +200,14 @@ ASM_SYM_MAX            EQU             $10
 ASM_SYM_NAME_MAX       EQU             $20
 ASM_FIX_MAX            EQU             $08
 ASM_REF_MAX            EQU             $10
-ASM_VOC_COUNT          EQU             $51
+ASM_VOC_COUNT          EQU             $52
 
-ASM_VID_DC             EQU             $18
-ASM_VID_DS             EQU             $1C
-ASM_VID_END            EQU             $1D
-ASM_VID_EQU            EQU             $20
-ASM_VID_ORG            EQU             $2D
+ASM_VID_DB             EQU             $18
+ASM_VID_DC             EQU             $19
+ASM_VID_DS             EQU             $1D
+ASM_VID_END            EQU             $1E
+ASM_VID_EQU            EQU             $21
+ASM_VID_ORG            EQU             $2E
 
                         CODE
 
@@ -206,28 +218,42 @@ ASM_VID_ORG            EQU             $2D
 ;      ASM_END behaved as expected.
 ; ----------------------------------------------------------------------------
 START:
+                        LDA             #ASM_STEP_BEGIN
+                        STA             ASM_START_STEP
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #<ASM_CODE_BUF
                         LDY             #>ASM_CODE_BUF
                         JSR             ASM_BEGIN
                         BCC             START_FAIL
 
+                        LDA             #ASM_STEP_LEX_OK
+                        STA             ASM_START_STEP
                         LDX             #<ASM_SMOKE_LINE_OK
                         LDY             #>ASM_SMOKE_LINE_OK
                         JSR             ASM_LEX_LINE
                         BCC             START_FAIL
+                        LDA             #ASM_STEP_TOKENS
+                        STA             ASM_START_STEP
                         JSR             ASM_SMOKE_TOKENS
                         BCC             START_FAIL
+                        LDA             #ASM_STEP_VOCAB
+                        STA             ASM_START_STEP
                         JSR             ASM_SMOKE_VOCAB
                         BCC             START_FAIL
+                        LDA             #ASM_STEP_PARSE
+                        STA             ASM_START_STEP
                         JSR             ASM_SMOKE_PARSE
                         BCC             START_FAIL
+                        LDA             #ASM_STEP_SYMBOLS
+                        STA             ASM_START_STEP
                         JSR             ASM_SMOKE_SYMBOLS
                         BCC             START_FAIL
                         JSR             ASM_RJOIN_INIT
                         BCC             START_FAIL
                         JSR             ASM_SMOKE_PRINT_PASS
 
+                        LDA             #ASM_STEP_LONG_LINE
+                        STA             ASM_START_STEP
                         LDX             #<ASM_SMOKE_LINE_LONG
                         LDY             #>ASM_SMOKE_LINE_LONG
                         JSR             ASM_LEX_LINE
@@ -235,10 +261,15 @@ START:
                         CMP             #ASM_STATUS_BAD_LINE
                         BNE             START_FAIL
 
+                        LDA             #ASM_STEP_END
+                        STA             ASM_START_STEP
                         JSR             ASM_END
                         BCC             START_FAIL
                         RTS
 START_FAIL:
+                        LDA             ASM_START_STEP
+                        LDX             ASM_STATUS
+                        LDY             ASM_SLOT
                         CLC
                         RTS
 
@@ -265,6 +296,8 @@ ASM_SMOKE_PRINT_PASS:
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASM_RJOIN_INIT:
+                        LDA             #ASM_STEP_RJOIN_JOINER
+                        STA             ASM_START_STEP
                         LDX             #<ASM_HASH_THE_JOIN_EXEC_XY
                         LDY             #>ASM_HASH_THE_JOIN_EXEC_XY
                         JSR             ASM_RJ_JOIN_EXEC_XY
@@ -272,6 +305,8 @@ ASM_RJOIN_INIT:
                         STX             ASM_RJ_JOINER_LO
                         STY             ASM_RJ_JOINER_HI
 
+                        LDA             #ASM_STEP_RJOIN_WRITE
+                        STA             ASM_START_STEP
                         LDX             #<ASM_HASH_BIO_WRITE_BYTE_BLOCK
                         LDY             #>ASM_HASH_BIO_WRITE_BYTE_BLOCK
                         JSR             ASM_RJ_RESIDENT_XY
@@ -598,6 +633,12 @@ ASM_SMOKE_VOCAB:
                         BCC             ASM_SMOKE_VOCAB_FAIL
 
                         LDA             #ASM_VOC_DIR
+                        LDX             #<ASM_SMOKE_VOC_DB
+                        LDY             #>ASM_SMOKE_VOC_DB
+                        JSR             ASM_SMOKE_LOOKUP
+                        BCC             ASM_SMOKE_VOCAB_FAIL
+
+                        LDA             #ASM_VOC_RESERVED
                         LDX             #<ASM_SMOKE_VOC_DC
                         LDY             #>ASM_SMOKE_VOC_DC
                         JSR             ASM_SMOKE_LOOKUP
@@ -606,6 +647,12 @@ ASM_SMOKE_VOCAB:
                         LDA             #ASM_VOC_REG
                         LDX             #<ASM_SMOKE_VOC_A
                         LDY             #>ASM_SMOKE_VOC_A
+                        JSR             ASM_SMOKE_LOOKUP
+                        BCC             ASM_SMOKE_VOCAB_FAIL
+
+                        LDA             #ASM_VOC_REG
+                        LDX             #<ASM_SMOKE_VOC_Y
+                        LDY             #>ASM_SMOKE_VOC_Y
                         JSR             ASM_SMOKE_LOOKUP
                         BCC             ASM_SMOKE_VOCAB_FAIL
 
@@ -679,19 +726,19 @@ ASM_SMOKE_PARSE:
                         LDX             #<ASM_SMOKE_PARSE_LABEL_COLON
                         LDY             #>ASM_SMOKE_PARSE_LABEL_COLON
                         JSR             ASM_SMOKE_PARSE_OK
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCC             ASM_SMOKE_PARSE_FAIL_A
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_COLON
-                        BEQ             ASM_SMOKE_PARSE_FAIL
+                        BEQ             ASM_SMOKE_PARSE_FAIL_A
 
                         LDA             #ASM_STMT_MNEM
                         LDX             #<ASM_SMOKE_PARSE_LDA
                         LDY             #>ASM_SMOKE_PARSE_LDA
                         JSR             ASM_SMOKE_PARSE_OK
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCC             ASM_SMOKE_PARSE_FAIL_A
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
-                        BEQ             ASM_SMOKE_PARSE_FAIL
+                        BEQ             ASM_SMOKE_PARSE_FAIL_A
 
                         LDA             #ASM_STMT_MNEM
                         LDX             #<ASM_SMOKE_PARSE_LABEL_LDA
@@ -714,6 +761,19 @@ ASM_SMOKE_PARSE:
                         BNE             ASM_SMOKE_PARSE_FAIL
 
                         LDA             #ASM_STMT_DIR
+                        LDX             #<ASM_SMOKE_PARSE_DB
+                        LDY             #>ASM_SMOKE_PARSE_DB
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_FAIL
+                        LDA             ASM_STMT_FLAGS
+                        AND             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
+                        CMP             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
+                        BNE             ASM_SMOKE_PARSE_FAIL
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_BINDS_PC
+                        BEQ             ASM_SMOKE_PARSE_FAIL
+
+                        LDA             #ASM_STMT_DIR
                         LDX             #<ASM_SMOKE_PARSE_ORG
                         LDY             #>ASM_SMOKE_PARSE_ORG
                         JSR             ASM_SMOKE_PARSE_OK
@@ -734,6 +794,12 @@ ASM_SMOKE_PARSE:
                         LDA             #ASM_STATUS_BAD_OPER
                         LDX             #<ASM_SMOKE_PARSE_END_TAIL
                         LDY             #>ASM_SMOKE_PARSE_END_TAIL
+                        JSR             ASM_SMOKE_PARSE_ERR
+                        BCC             ASM_SMOKE_PARSE_FAIL
+
+                        LDA             #ASM_STATUS_BAD_DIR
+                        LDX             #<ASM_SMOKE_PARSE_DC
+                        LDY             #>ASM_SMOKE_PARSE_DC
                         JSR             ASM_SMOKE_PARSE_ERR
                         BCC             ASM_SMOKE_PARSE_FAIL
 
@@ -1745,7 +1811,7 @@ ASM_STORE_OP_DIR:
                         STA             ASM_STMT_FLAGS
                         BRA             ASM_STORE_OP_DIR_TAIL
 ASM_STORE_OP_DIR_NOT_EQU:
-                        CMP             #ASM_VID_DC
+                        CMP             #ASM_VID_DB
                         BEQ             ASM_STORE_OP_DIR_BINDS_PC
                         CMP             #ASM_VID_DS
                         BEQ             ASM_STORE_OP_DIR_BINDS_PC
@@ -1806,7 +1872,7 @@ ASM_DISPATCH_DIR:
                         BEQ             ASM_DISPATCH_DIR_ORG
                         CMP             #ASM_VID_END
                         BEQ             ASM_DISPATCH_DIR_END
-                        CMP             #ASM_VID_DC
+                        CMP             #ASM_VID_DB
                         BEQ             ASM_DISPATCH_DIR_DATA
                         CMP             #ASM_VID_DS
                         BEQ             ASM_DISPATCH_DIR_DATA
@@ -2519,6 +2585,7 @@ ASM_CLEAR_SESSION:
 
 ASM_SESSION_STATE:     DB              $00
 ASM_LAST_STATUS:       DB              $00
+ASM_START_STEP:        DB              $00
 ASM_LINE_COUNT_LO:     DB              $00
 ASM_LINE_COUNT_HI:     DB              $00
 ASM_PC_LO:             DB              $00
@@ -2569,8 +2636,10 @@ ASM_SMOKE_LINE_TOKENS: DB              "LABEL: LDA #1",0
 ASM_SMOKE_LINE_CHAR:   DB              "'a'",0
 ASM_SMOKE_LINE_MASK:   DB              "%XXXXXXX1",0
 ASM_SMOKE_VOC_LDA:     DB              "LDA",0
+ASM_SMOKE_VOC_DB:      DB              "DB",0
 ASM_SMOKE_VOC_DC:      DB              "DC",0
 ASM_SMOKE_VOC_A:       DB              "A",0
+ASM_SMOKE_VOC_Y:       DB              "Y",0
 ASM_SMOKE_VOC_START:   DB              "START",0
 ASM_SMOKE_VOC_FOO:     DB              "FOO",0
 ASM_SMOKE_PARSE_BLANK: DB              "   ; comment",0
@@ -2581,12 +2650,14 @@ ASM_SMOKE_PARSE_LDA:   DB              "LDA #1",0
 ASM_SMOKE_PARSE_LABEL_LDA:
                         DB              "LABEL: LDA #1",0
 ASM_SMOKE_PARSE_EQU:   DB              "NAME EQU $12",0
+ASM_SMOKE_PARSE_DB:    DB              "SEED DB $52",0
 ASM_SMOKE_PARSE_ORG:   DB              "ORG $3000",0
 ASM_SMOKE_PARSE_END:   DB              "END",0
 ASM_SMOKE_PARSE_LABEL_ORG:
                         DB              "LABEL ORG $3000",0
 ASM_SMOKE_PARSE_END_TAIL:
                         DB              "END X",0
+ASM_SMOKE_PARSE_DC:    DB              "DC $52",0
 ASM_SMOKE_PARSE_START: DB              "START",0
 ASM_SMOKE_SYM_LABEL:   DB              "LABEL",0
 ASM_SMOKE_SYM_FOO_EQU: DB              "FOO EQU $12",0
@@ -2610,40 +2681,40 @@ ASM_SMOKE_LINE_LONG:
 
 ; Vocabulary slots are canonical-token sorted:
 ; A ADC AND ASL BBR BBS BCC BCS BEQ BIT BMI BNE BPL BRA BRK BVC BVS CLC
-; CLD CLI CLV CMP CPX CPY DC DEC DEX DEY DS END ENTRY EOR EQU EXTRN INC
+; CLD CLI CLV CMP CPX CPY DB DC DEC DEX DEY DS END ENTRY EOR EQU EXTRN INC
 ; INX INY JMP JSR LDA LDX LDY LSR NOP ORA ORG PHA PHP PHX PHY PLA PLP
 ; PLX PLY RMB ROL ROR RTI RTS SBC SEC SED SEI SMB STA START STP STX STY
 ; STZ TAX TAY TRB TSB TSX TXA TXS TYA WAI X Y.
 ASM_VOC_HASH0:         DB              $CC,$41,$C6,$93,$35,$A2,$63,$33,$C3,$50,$43,$BC,$B9,$DC,$9A,$DE
-                        DB              $0E,$1B,$FA,$A9,$A4,$47,$FA,$8D,$F0,$F3,$4E,$E1,$C0,$0A,$33,$1D
-                        DB              $62,$F4,$67,$32,$C5,$E0,$48,$34,$FF,$6C,$4E,$5E,$9F,$79,$4C,$0F
-                        DB              $A7,$14,$A8,$0B,$73,$E0,$1E,$66,$54,$0E,$20,$D9,$92,$B3,$04,$6D
-                        DB              $39,$3F,$D6,$6E,$01,$48,$5A,$ED,$13,$76,$B8,$40,$96,$7D,$B4,$27
-                        DB              $94
+                        DB              $0E,$1B,$FA,$A9,$A4,$47,$FA,$8D,$83,$F0,$F3,$4E,$E1,$C0,$0A,$33
+                        DB              $1D,$62,$F4,$67,$32,$C5,$E0,$48,$34,$FF,$6C,$4E,$5E,$9F,$79,$4C
+                        DB              $0F,$A7,$14,$A8,$0B,$73,$E0,$1E,$66,$54,$0E,$20,$D9,$92,$B3,$04
+                        DB              $6D,$39,$3F,$D6,$6E,$01,$48,$5A,$ED,$13,$76,$B8,$40,$96,$7D,$B4
+                        DB              $27,$94
 ASM_VOC_HASH1:         DB              $F6,$57,$6D,$75,$D2,$D0,$03,$EA,$77,$F6,$25,$6D,$54,$5A,$6A,$3D
-                        DB              $57,$5E,$65,$54,$49,$F3,$21,$23,$73,$FA,$22,$23,$5A,$92,$1E,$F0
-                        DB              $E2,$59,$B3,$8F,$90,$0A,$45,$D9,$B4,$B3,$7B,$41,$0A,$07,$BA,$D5
-                        DB              $E1,$E0,$D0,$B9,$AC,$AA,$68,$10,$39,$3A,$11,$1B,$71,$69,$7B,$46
-                        DB              $D4,$A6,$EB,$F8,$FA,$F5,$02,$03,$3C,$91,$81,$CF,$EB,$8E,$8F,$1E
-                        DB              $1C
+                        DB              $57,$5E,$65,$54,$49,$F3,$21,$23,$75,$73,$FA,$22,$23,$5A,$92,$1E
+                        DB              $F0,$E2,$59,$B3,$8F,$90,$0A,$45,$D9,$B4,$B3,$7B,$41,$0A,$07,$BA
+                        DB              $D5,$E1,$E0,$D0,$B9,$AC,$AA,$68,$10,$39,$3A,$11,$1B,$71,$69,$7B
+                        DB              $46,$D4,$A6,$EB,$F8,$FA,$F5,$02,$03,$3C,$91,$81,$CF,$EB,$8E,$8F
+                        DB              $1E,$1C
 ASM_VOC_HASH2:         DB              $0B,$75,$66,$AD,$74,$74,$73,$72,$63,$81,$77,$7F,$97,$9C,$9C,$93
-                        DB              $93,$6A,$6A,$6A,$6A,$6C,$25,$25,$CE,$0E,$0F,$0F,$CE,$43,$41,$45
-                        DB              $4B,$21,$C3,$C3,$C3,$85,$80,$47,$47,$47,$5D,$EE,$F8,$F8,$F9,$F9
-                        DB              $F9,$F9,$EF,$EF,$EF,$EF,$E2,$E8,$E8,$AA,$AA,$F0,$01,$01,$01,$15
-                        DB              $25,$94,$25,$25,$25,$25,$34,$34,$58,$56,$56,$71,$71,$6E,$1F,$0C
-                        DB              $0C
+                        DB              $93,$6A,$6A,$6A,$6A,$6C,$25,$25,$CE,$CE,$0E,$0F,$0F,$CE,$43,$41
+                        DB              $45,$4B,$21,$C3,$C3,$C3,$85,$80,$47,$47,$47,$5D,$EE,$F8,$F8,$F9
+                        DB              $F9,$F9,$F9,$EF,$EF,$EF,$EF,$E2,$E8,$E8,$AA,$AA,$F0,$01,$01,$01
+                        DB              $15,$25,$94,$25,$25,$25,$25,$34,$34,$58,$56,$56,$71,$71,$6E,$1F
+                        DB              $0C,$0C
 ASM_VOC_HASH3:         DB              $C4,$7C,$91,$57,$AD,$AC,$F4,$E4,$A2,$E5,$BA,$B6,$A3,$FA,$04,$E4
-                        DB              $F4,$56,$5B,$50,$49,$8D,$47,$48,$35,$47,$60,$61,$25,$AF,$A2,$C3
-                        DB              $B0,$6F,$EB,$D4,$D5,$48,$1A,$E4,$CD,$CC,$CD,$A7,$E0,$DE,$8E,$9F
-                        DB              $A7,$A6,$F6,$E7,$DF,$DE,$B1,$6F,$89,$CC,$B2,$35,$3E,$39,$44,$6F
-                        DB              $F8,$0D,$07,$0F,$10,$0D,$35,$36,$D5,$33,$29,$D2,$E4,$2E,$AF,$DD
-                        DB              $DC
+                        DB              $F4,$56,$5B,$50,$49,$8D,$47,$48,$36,$35,$47,$60,$61,$25,$AF,$A2
+                        DB              $C3,$B0,$6F,$EB,$D4,$D5,$48,$1A,$E4,$CD,$CC,$CD,$A7,$E0,$DE,$8E
+                        DB              $9F,$A7,$A6,$F6,$E7,$DF,$DE,$B1,$6F,$89,$CC,$B2,$35,$3E,$39,$44
+                        DB              $6F,$F8,$0D,$07,$0F,$10,$0D,$35,$36,$D5,$33,$29,$D2,$E4,$2E,$AF
+                        DB              $DD,$DC
 ASM_VOC_KIND_TAB:      DB              $03,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
-                        DB              $01,$01,$01,$01,$01,$01,$01,$01,$02,$01,$01,$01,$02,$02,$04,$01
-                        DB              $02,$04,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$02,$01,$01
+                        DB              $01,$01,$01,$01,$01,$01,$01,$01,$02,$04,$01,$01,$01,$02,$02,$04
+                        DB              $01,$02,$04,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$02,$01
                         DB              $01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
-                        DB              $01,$04,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$03
-                        DB              $03
+                        DB              $01,$01,$04,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
+                        DB              $03,$03
 
 ASM_CODE_BUF:          DS              $0200
 

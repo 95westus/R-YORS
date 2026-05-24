@@ -32,6 +32,24 @@ Current host-side checker:
 make -C SRC asmtest-3000-check
 ```
 
+Current WDC proof build for the same sample:
+
+```text
+make -C SRC asmtest-3000-wdc
+```
+
+This emits the independent WDC proof artifacts:
+
+```text
+SRC/BUILD/lst/asmtest-3000-wdc.lst
+SRC/BUILD/map/asmtest-3000-wdc.map
+SRC/BUILD/s19/asmtest-3000-wdc.s19
+```
+
+For this proof, `ORG $3000` in the source sample owns placement. The WDC linker
+is run without a `-c` origin override so later dynamic linking policy can remain
+separate.
+
 Current ASM core build:
 
 ```text
@@ -53,7 +71,7 @@ labels are legal and unique
 operation words are known v1 mnemonics/directives
 no local labels
 references resolve within the sample
-DC seed bytes are valid
+DB seed bytes are valid
 seed byte count is 16
 seed XOR checksum is $0F
 ```
@@ -108,7 +126,7 @@ returns with RTS
 Future good samples:
 
 ```text
-ASMTEST_MIN.asm       ORG/EQU/DC/RTS only
+ASMTEST_MIN.asm       ORG/EQU/DB/RTS only
 ASMTEST_BRANCH.asm    forward/backward branch range proof
 ASMTEST_FIXUP.asm     forward abs16/rel8/lo8/hi8 fixups
 ASMTEST_BITS.asm      RMB/SMB/BBR/BBS operand forms
@@ -126,7 +144,7 @@ BAD_SYM        duplicate symbol, reserved word as label, EQU without name
 BAD_MNEM       pending label followed by non-vocabulary operation
 BAD_DIR        parked directive used in v1
 BAD_OPER       missing operand, extra operand, grouping parentheses
-BAD_WIDTH      LDA 12, $123, unknown bare DC ADDR
+BAD_WIDTH      LDA 12, $123, unknown bare DB ADDR
 BAD_RANGE      LDA #$1234, branch out of range, bit number 8
 BAD_MODE       LDA A, LDA ($1234),Y
 BAD_FIX        unresolved required fixup at END
@@ -223,15 +241,16 @@ Current executable proof:
 make -C SRC asm-v1-core
 ```
 
-The standalone `START` smoke path now checks `LDA`, `DC`, `A`, `START`, and
-`FOO`. V1 stores the vocabulary row slot as the compact id until the emitter
-needs a separate opcode-family id.
+The standalone `START` smoke path now checks `LDA`, active `DB`, parked `DC`,
+`A`, `START`, and `FOO`. V1 stores the vocabulary row slot as the compact id
+until the emitter needs a separate opcode-family id.
 
 Required fixtures:
 
 ```text
 LDA -> VOC_MNEM
-DC  -> VOC_DIR
+DB  -> VOC_DIR
+DC  -> VOC_RESERVED parked
 A   -> VOC_REG
 START -> VOC_RESERVED parked
 FOO -> VOC_NONE with C=0,A=OK
@@ -313,6 +332,83 @@ not-found lookup, and a visible pass line:
 ```text
 ASM 1.70 RJOIN OK W=$.... SYM=$06 PC=$....
 ```
+
+On 2026-05-24, hardware passed with:
+
+```text
+L OK=17F3 GO=3000
+ASM 1.70 RJOIN OK W=$E2F4 SYM=$06 PC=$45F3
+RET A=00 X=F3 Y=45 P=75 S=FD NV-BdIzC
+```
+
+If the board returns before that line, the standalone entry now returns
+diagnostic registers:
+
+```text
+A = smoke stage
+X = ASM_STATUS
+Y = ASM_SLOT
+```
+
+`A` is the checkpoint that was about to run or was running when the failure
+returned:
+
+```text
+$10 ASM_BEGIN
+$20 first ORG lex
+$30 token smoke
+$40 vocabulary smoke
+$50 parser smoke
+$60 symbol smoke
+$71 RJOIN joiner lookup
+$72 RJOIN BIO write lookup
+$80 long-line rejection
+$90 ASM_END
+```
+
+`X` is `ASM_STATUS`:
+
+```text
+$00 OK
+$01 BAD_MNEM
+$02 BAD_DIR
+$03 BAD_OPER
+$04 BAD_MODE
+$05 BAD_WIDTH
+$06 BAD_RANGE
+$07 BAD_LINE
+$08 BAD_SYM
+$09 BAD_FIX
+$0A LOCAL_NYI
+```
+
+`Y` is `ASM_SLOT`, the last fixed-vocabulary slot touched by lookup. `$FF`
+means no vocabulary match. Slot kinds are `MNEM`, `DIR`, `REG`, and `RES`
+for reserved/parked words:
+
+| Slot | Slot | Slot | Slot |
+| --- | --- | --- | --- |
+| $00 A REG | $15 CMP MNEM | $2A LDY MNEM | $3F SEI MNEM |
+| $01 ADC MNEM | $16 CPX MNEM | $2B LSR MNEM | $40 SMB MNEM |
+| $02 AND MNEM | $17 CPY MNEM | $2C NOP MNEM | $41 STA MNEM |
+| $03 ASL MNEM | $18 DB DIR | $2D ORA MNEM | $42 START RES |
+| $04 BBR MNEM | $19 DC RES | $2E ORG DIR | $43 STP MNEM |
+| $05 BBS MNEM | $1A DEC MNEM | $2F PHA MNEM | $44 STX MNEM |
+| $06 BCC MNEM | $1B DEX MNEM | $30 PHP MNEM | $45 STY MNEM |
+| $07 BCS MNEM | $1C DEY MNEM | $31 PHX MNEM | $46 STZ MNEM |
+| $08 BEQ MNEM | $1D DS DIR | $32 PHY MNEM | $47 TAX MNEM |
+| $09 BIT MNEM | $1E END DIR | $33 PLA MNEM | $48 TAY MNEM |
+| $0A BMI MNEM | $1F ENTRY RES | $34 PLP MNEM | $49 TRB MNEM |
+| $0B BNE MNEM | $20 EOR MNEM | $35 PLX MNEM | $4A TSB MNEM |
+| $0C BPL MNEM | $21 EQU DIR | $36 PLY MNEM | $4B TSX MNEM |
+| $0D BRA MNEM | $22 EXTRN RES | $37 RMB MNEM | $4C TXA MNEM |
+| $0E BRK MNEM | $23 INC MNEM | $38 ROL MNEM | $4D TXS MNEM |
+| $0F BVC MNEM | $24 INX MNEM | $39 ROR MNEM | $4E TYA MNEM |
+| $10 BVS MNEM | $25 INY MNEM | $3A RTI MNEM | $4F WAI MNEM |
+| $11 CLC MNEM | $26 JMP MNEM | $3B RTS MNEM | $50 X REG |
+| $12 CLD MNEM | $27 JSR MNEM | $3C SBC MNEM | $51 Y REG |
+| $13 CLI MNEM | $28 LDA MNEM | $3D SEC MNEM | |
+| $14 CLV MNEM | $29 LDX MNEM | $3E SED MNEM | |
 
 Required fixtures:
 
@@ -460,7 +556,7 @@ Required fixtures:
 ```text
 ORG $3000
 NAME EQU expr
-DC $FF,10,'A',$1234,<ADDR,>ADDR
+DB $FF,10,'A',$1234,<ADDR,>ADDR
 DS 2,$0D,$0A
 END
 ```
@@ -470,8 +566,8 @@ Acceptance:
 ```text
 ORG forward/current only
 backward ORG is error
-DC emits byte/word by source/symbol width
-unknown bare DC ADDR is BAD WIDTH
+DB emits byte/word by source/symbol width
+unknown bare DB ADDR is BAD WIDTH
 DS count is resolved and byte-sized initializer repeats/truncates
 ```
 

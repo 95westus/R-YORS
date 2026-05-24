@@ -25,14 +25,17 @@ $mnemonics = @(
     'ROR','RTI','RTS','SBC','SEC','SED','SEI','SMB','STA','STP','STX','STY',
     'STZ','TAX','TAY','TRB','TSB','TSX','TXA','TXS','TYA','WAI'
 )
-$directives = @('DC','DS','END','EQU','ORG')
+$directives = @('DB','DS','END','EQU','ORG')
+$parkedDirectives = @('DC','ENTRY','EXTRN','START')
 $registers = @('A','X','Y')
 
 $mnemonicSet = @{}
 $directiveSet = @{}
+$parkedSet = @{}
 $reservedSet = @{}
 foreach ($m in $mnemonics) { $mnemonicSet[$m] = $true; $reservedSet[$m] = $true }
 foreach ($d in $directives) { $directiveSet[$d] = $true; $reservedSet[$d] = $true }
+foreach ($d in $parkedDirectives) { $parkedSet[$d] = $true; $reservedSet[$d] = $true }
 foreach ($r in $registers) { $reservedSet[$r] = $true }
 
 $defs = @{}
@@ -142,7 +145,7 @@ function Add-RefsFromTail {
     }
 }
 
-function Convert-DcItemToBytes {
+function Convert-DbItemToBytes {
     param([string]$Item, [int]$LineNo)
 
     $itemText = $Item.Trim().ToUpperInvariant()
@@ -156,7 +159,7 @@ function Convert-DcItemToBytes {
     if ($itemText -match '^[0-9]+$') {
         $value = [Convert]::ToInt32($itemText, 10)
         if ($value -lt 0 -or $value -gt 255) {
-            Fail-AsmTest $LineNo "decimal DC byte out of range: $Item"
+            Fail-AsmTest $LineNo "decimal DB byte out of range: $Item"
         }
         return @($value)
     }
@@ -167,7 +170,7 @@ function Convert-DcItemToBytes {
         return @([int][char]"'")
     }
 
-    Fail-AsmTest $LineNo "unsupported DC item in ASMTEST: $Item"
+    Fail-AsmTest $LineNo "unsupported DB item in ASMTEST: $Item"
 }
 
 $lines = Get-Content -LiteralPath $SourcePath
@@ -228,6 +231,10 @@ for ($lineNo = 1; $lineNo -le $lines.Count; $lineNo++) {
         Add-Def $label $lineNo
     }
 
+    if ($parkedSet.ContainsKey($op)) {
+        Fail-AsmTest $lineNo "parked directive is not active: $op"
+    }
+
     if (-not ($mnemonicSet.ContainsKey($op) -or $directiveSet.ContainsKey($op))) {
         Fail-AsmTest $lineNo "unknown operation: $op"
     }
@@ -254,12 +261,12 @@ for ($lineNo = 1; $lineNo -le $lines.Count; $lineNo++) {
                 Fail-AsmTest $lineNo "EQU requires an expression"
             }
         }
-        'DC' {
+        'DB' {
             if ($tail.Length -eq 0) {
-                Fail-AsmTest $lineNo "DC requires data"
+                Fail-AsmTest $lineNo "DB requires data"
             }
             foreach ($item in ($tail -split ',')) {
-                foreach ($b in (Convert-DcItemToBytes $item $lineNo)) {
+                foreach ($b in (Convert-DbItemToBytes $item $lineNo)) {
                     [void]$seedBytes.Add($b)
                 }
             }

@@ -19,8 +19,11 @@ Settled v1 overview:
   non-vocabulary first tokens held as pending definition names.
 - Width is source intent. `$hh` means zero page, `$hhhh` means absolute, and no
   numeric-range promotion/demotion is allowed.
-- `EQU`, `DC`, `DS`, `ORG`, and `END` are v1 directives. `EQU` must resolve
+- `EQU`, `DB`, `DS`, `ORG`, and `END` are v1 directives. `EQU` must resolve
   immediately; forward references use emitted-byte fixups only.
+- `DC` is parked for now because WDC source format wins. V1 vocabulary keeps
+  `DC` reserved so using it as an operation returns `BAD DIR`, not a user
+  symbol.
 - V1 reports the current session: address range, bytes, counts, unresolved
   fixups, used symbols with line numbers, unused session symbols, and resident
   symbols referenced.
@@ -51,7 +54,7 @@ ASM 1.90   operand classifier
 ASM 2.00   emission overview
 ASM 2.10   opcode emitter
 ASM 2.20   fixups / patch records
-ASM 2.30   DC/DS/ORG/END directive handlers
+ASM 2.30   DB/DS/ORG/END directive handlers
 ASM 2.40   report/listing basics
 ASM 2.50   status/error model
 ASM 2.60   source input driver / pasted-line handling
@@ -145,7 +148,7 @@ A [addr] [label[:]] MMM [operand] .
   token against the ASM vocabulary table. If it is a mnemonic or directive, it
   is the operation. If it is not, it is a pending definition name and the next
   token must be a mnemonic or directive.
-  Binding waits until the operation is known: mnemonic/`DC`/`DS` bind the name
+  Binding waits until the operation is known: mnemonic/`DB`/`DS` bind the name
   to the current PC, while `EQU` binds the name to the expression value. A
   leading definition name before `ORG` or `END` is an error in v1. If the
   statement ends after one pending definition name, it is a label-only line:
@@ -177,13 +180,12 @@ A [addr] [label[:]] MMM [operand] .
   `.NAME:`, `?NAME`, and `?NAME:` should fail with `LOCAL NYI`. `.` alone is a
   legacy `A`/input-driver sentinel if used, not ASM source syntax. No v1
   dot-directive aliases.
-- Minimal v1 ASM directives are IBM-ish: `EQU`, `DC`, `DS`, `ORG`, and `END`.
-  `START`, `ENTRY`, and `EXTRN` are parked later directives, not v1. Compatibility
-  aliases such as `DB` may later be typed directive-alias records that resolve
-  by hash to a real directive handler, but they are not part of v1.
+- Minimal v1 ASM directives follow WDC shape: `EQU`, `DB`, `DS`, `ORG`, and
+  `END`. `DC`, `START`, `ENTRY`, and `EXTRN` are parked later directives, not
+  v1.
 - V1 directive shapes are:
   `NAME EQU expr` with name required;
-  `[NAME] DC item[,item...]` with optional current-PC label;
+  `[NAME] DB item[,item...]` with optional current-PC label;
   `[NAME] DS count[,init...]` with optional current-PC label;
   `ORG expr` with no leading name;
   `END` with no leading name and no operand.
@@ -245,7 +247,7 @@ A [addr] [label[:]] MMM [operand] .
   light head-word scan plus `ASM_LOOKUP_WORD`. It returns `BAD SYM`, `BAD MNEM`,
   `BAD DIR`, `BAD OPER`, or `LOCAL NYI` for top-level statement errors.
 - `ASM_DISPATCH_STATEMENT` applies the top-level policy: label-only binds the
-  pending name to current PC; mnemonic/DC/DS with a name bind current PC before
+  pending name to current PC; mnemonic/DB/DS with a name bind current PC before
   emission/data handling; `EQU` requires a name and binds expression value;
   `ORG` and `END` reject leading names; clean `END` calls `ASM_END`.
 - ASM 1.60 may check whether an operand/directive tail exists or is absent, but
@@ -344,8 +346,8 @@ A [addr] [label[:]] MMM [operand] .
   spelling does not select zero page or absolute. Decimal remains valid where
   the context supplies width, such as `#10`, bit numbers, counts, and data
   initializers.
-- In byte-data context, decimal emits the byte if it fits. `DC 10` is `DC $0A`.
-  Decimal `DC` values outside `$00-$FF` are `BAD RANGE` unless a later word-data
+- In byte-data context, decimal emits the byte if it fits. `DB 10` is `DB $0A`.
+  Decimal `DB` values outside `$00-$FF` are `BAD RANGE` unless a later word-data
   form is added.
 - ASM v1 character literals preserve exact character value inside quotes:
   `'A'` emits uppercase `A`, `'a'` emits lowercase `a`, and `'''` emits a
@@ -363,7 +365,7 @@ A [addr] [label[:]] MMM [operand] .
   strictly left-to-right with no operator precedence. `A | B & C` means
   `(A | B) & C`. Use a separate `EQU` if a staged result is needed.
 - Unary minus is not v1 syntax. Use `0-1` if needed, then let the target context
-  range-check the result. `DC -1` is `BAD OPER`.
+  range-check the result. `DB -1` is `BAD OPER`.
 - Parentheses are not expression grouping in v1. `(` and `)` remain operand
   addressing punctuation, such as `LDA ($12),Y`; expression grouping
   parentheses are `BAD OPER`.
@@ -390,8 +392,8 @@ A [addr] [label[:]] MMM [operand] .
   operands/data bytes, not for unresolved symbol equations. Hashes can identify
   the names in a forward `EQU`, but they do not evaluate the equation, wake
   dependent symbols, detect dependency cycles, or decide final width/kind.
-- `*` carries current-PC absolute/word width. `DC *` emits the current PC as a
-  little-endian word; use `DC <*` or `DC >*` for one-byte low/high PC data.
+- `*` carries current-PC absolute/word width. `DB *` emits the current PC as a
+  little-endian word; use `DB <*` or `DB >*` for one-byte low/high PC data.
 - `ORG` sets the assembly PC/location counter. It may move forward or stay at
   the current PC. It emits no bytes and does not fill the gap. It must not move
   backward in v1 or later; use explicit data emission or a monitor memory edit
@@ -400,13 +402,12 @@ A [addr] [label[:]] MMM [operand] .
   repeating/truncating the initializer list to `count` bytes. `DS count` must
   be a concrete, resolved value in v1 because it advances the assembly PC.
   Initializer elements are byte-sized in v1.
-- `DC` v1 emits simple byte/word/address data: `DC $FF`, `DC 10` as byte
-  `$0A`, `DC $1234`, `DC 'A'`, `DC <ADDR`, `DC >ADDR`, and `DC ADDR` when
-  `ADDR` has known width. Unknown bare `DC ADDR` is `BAD WIDTH`; use
-  `DC <ADDR,>ADDR` for a v1 address-word workaround with byte fixups.
-  `DC X'...'`, `DC B'...'`, `DC HBSTR'...'`, `DC CSTR'...'`, and
-  `DC PSTR'...'` are parked later forms. Whether `HBSTR`, `CSTR`, and `PSTR`
-  should become standalone directives instead of `DC` type forms remains open.
+- `DB` v1 emits simple byte/word/address data: `DB $FF`, `DB 10` as byte
+  `$0A`, `DB $1234`, `DB 'A'`, `DB <ADDR`, `DB >ADDR`, and `DB ADDR` when
+  `ADDR` has known width. Unknown bare `DB ADDR` is `BAD WIDTH`; use
+  `DB <ADDR,>ADDR` for a v1 address-word workaround with byte fixups.
+  Typed data forms such as `X'...'`, `B'...'`, `HBSTR'...'`, `CSTR'...'`, and
+  `PSTR'...'` are parked later.
 - Unknown ordinary symbol operands default to absolute fixups when the mnemonic
   does not force another mode. For example, `LDA FOO` emits the absolute form
   and creates an `abs16` fixup if `FOO` is unresolved.

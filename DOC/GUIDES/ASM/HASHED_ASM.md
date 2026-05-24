@@ -8,6 +8,10 @@ record-shape sketches. The settled split is FNV32 for public/exported symbols
 and CRC16 or short IDs only for local/scoped tables where context handles
 collisions.
 
+Current WDC-compatibility correction: `DB` is the active v1 data directive.
+`DC` is parked/reserved for now, so older `DC` examples in this narrative are
+historical unless repeated in [DECISIONS.md](DECISIONS.md).
+
 HIMON's `A` command is legacy mini-assembler code. ASM was once going to use
 `A`, but that plan is canceled. ASM proper is its own hash-based source-line
 parser and emitter: it can start proof-sized, then grow into HIMON-scale symbol
@@ -84,9 +88,9 @@ Core settled rules:
   emitted bytes, not symbol equations.
 - `<` and `>` select low/high bytes. V1 applies them as prefix selectors on one
   atom. `*` is the current assembly PC.
-- V1 directives are `EQU`, `DC`, `DS`, `ORG`, and `END`. `START`, `ENTRY`, and
-  `EXTRN` are parked.
-- `DC` v1 is simple byte/word/address data. `X'...'`, `B'...'`, `HBSTR`,
+- V1 directives are `EQU`, `DB`, `DS`, `ORG`, and `END`. `DC`, `START`,
+  `ENTRY`, and `EXTRN` are parked.
+- `DB` v1 is simple byte/word/address data. `X'...'`, `B'...'`, `HBSTR`,
   `CSTR`, and `PSTR` are later.
 - `ORG` sets PC, emits no bytes, and never moves backward.
 - Unknown ordinary symbol operands default to absolute fixups unless the
@@ -199,7 +203,7 @@ ASM 1.90   operand classifier
 ASM 2.00   emission overview
 ASM 2.10   opcode emitter
 ASM 2.20   fixups / patch records
-ASM 2.30   DC/DS/ORG/END directive handlers
+ASM 2.30   DB/DS/ORG/END directive handlers
 ASM 2.40   report/listing basics
 ASM 2.50   status/error model
 ASM 2.60   source input driver / pasted-line handling
@@ -504,7 +508,7 @@ Binding rule:
 
 ```text
 LABEL mnemonic operand      LABEL = current PC before emitting
-LABEL DC ...                LABEL = current PC before data
+LABEL DB ...                LABEL = current PC before data
 LABEL DS ...                LABEL = current PC before storage
 LABEL EQU expr              LABEL = expression value
 LABEL alone                 LABEL = current PC
@@ -515,7 +519,7 @@ Directive shapes:
 
 ```text
 NAME EQU expr
-[NAME] DC item[,item...]
+[NAME] DB item[,item...]
 [NAME] DS count[,init...]
 ORG expr
 END
@@ -928,7 +932,7 @@ for reproducibility, listings, and later binary search.
 V1 active directive words:
 
 ```text
-DC
+DB
 DS
 END
 EQU
@@ -938,6 +942,7 @@ ORG
 Parked reserved directive words:
 
 ```text
+DC
 ENTRY
 EXTRN
 START
@@ -1124,7 +1129,7 @@ EMPTY          accept, emit nothing
 LABEL_ONLY     bind pending name to current PC, try fixups
 MNEM no name   classify operand tail, emit instruction
 MNEM with name bind name to current PC, try fixups, then emit instruction
-DC/DS with name bind name to current PC, try fixups, then handle directive
+DB/DS with name bind name to current PC, try fixups, then handle directive
 EQU with name  parse expression and define symbol value
 EQU no name    BAD SYM
 ORG with name  BAD SYM
@@ -1390,7 +1395,7 @@ lookup answer must still be proven before ASM trusts the value.
 
 ## ASM 1.80 Expression Evaluator
 
-ASM 1.80 evaluates the small v1 expression language used by `EQU`, `ORG`, `DC`,
+ASM 1.80 evaluates the small v1 expression language used by `EQU`, `ORG`, `DB`,
 `DS`, immediates, branch targets, and operand address fields. The source syntax
 is readable infix. RPN is allowed only as an internal implementation form.
 
@@ -1412,12 +1417,12 @@ choosing opcodes
 choosing addressing mode from a whole operand
 creating fixup rows directly
 defining symbols
-deciding DC/DS list structure
+deciding DB/DS list structure
 moving the assembly PC
 ```
 
 The evaluator tells the truth about the expression. The caller decides whether
-that result is legal for `EQU`, `ORG`, `DC`, a branch, or an instruction operand.
+that result is legal for `EQU`, `ORG`, `DB`, a branch, or an instruction operand.
 
 ### ASM 1.80.1 Expression Boundary
 
@@ -1425,7 +1430,7 @@ that result is legal for `EQU`, `ORG`, `DC`, a branch, or an instruction operand
 
 ```text
 EOL/comment       normal end for EQU/ORG/operand tail
-comma             normal end for DC/DS lists and multi-part operands
+comma             normal end for DB/DS lists and multi-part operands
 right paren       normal end inside addressing forms when caller permits it
 ```
 
@@ -1458,7 +1463,7 @@ compound values, stage the value through an `EQU`:
 
 ```asm
 TMP EQU ADDR + 1
-DC <TMP
+DB <TMP
 ```
 
 ### ASM 1.80.3 Expression Result Record
@@ -1519,8 +1524,8 @@ Known examples:
 COUNT EQU 10
 ADDR  EQU * - $20
 FLAGS EQU ERR_1 | ERR_2
-DC    'A'
-DC    <ADDR,>ADDR
+DB    'A'
+DB    <ADDR,>ADDR
 ```
 
 ### ASM 1.80.5 Operator Rules
@@ -1566,14 +1571,14 @@ That covers:
 LDA FOO       ; caller may choose abs16 fixup
 LDA <FOO      ; caller may choose zp/lo8 fixup
 LDA #<FOO     ; caller may choose imm8 lo-byte fixup
-DC <FOO,>FOO  ; caller may create two byte fixups
+DB <FOO,>FOO  ; caller may create two byte fixups
 ```
 
 V1 does not allow compound unresolved expressions:
 
 ```asm
 LDA FOO+1       ; BAD SYM or BAD FIX until addend fixups exist
-DC >FOO+1       ; BAD SYM or BAD FIX until selected addend fixups exist
+DB >FOO+1       ; BAD SYM or BAD FIX until selected addend fixups exist
 NEXT EQU BASE+1 ; BAD SYM; forward EQU dependency solver is later
 ```
 
@@ -1941,7 +1946,7 @@ flowchart TD
     DISPATCH{Operation class}
     EQU[Handle EQU]
     ORG[Handle ORG]
-    DC[Handle DC]
+    DB[Handle DB]
     DS[Handle DS]
     MNEM[Handle mnemonic]
     EQUOK{EQU ok}
@@ -1985,7 +1990,7 @@ flowchart TD
     DISPATCH -->|equ| EQU
     DISPATCH -->|org| ORG
     DISPATCH -->|end| ENDST
-    DISPATCH -->|dc| DC
+    DISPATCH -->|db| DB
     DISPATCH -->|ds| DS
     DISPATCH -->|mnemonic| MNEM
     EQU --> EQUOK
@@ -2004,7 +2009,7 @@ flowchart TD
     NEEDFIX -->|no| REF
     FIX --> READ
     REF --> READ
-    DC --> READ
+    DB --> READ
     DS --> READ
     FAIL --> REPORTFAIL
     REPORTFAIL --> ENDFAIL
@@ -2098,7 +2103,7 @@ ASM_DISPATCH_STATEMENT():
             return BAD_OPER
         return ASM_END()
 
-    if op == DC:
+    if op == DB:
         if stmt has no tail:
             return BAD_OPER
         if pending_name != NONE:
@@ -2355,7 +2360,7 @@ flowchart LR
    B. Source-line parse
       1. Each source line is parsed as `[label[:]] operation [operand]`
       2. A leading non-vocabulary token is held as a pending definition name
-      3. The operation decides the bind: mnemonic/`DC`/`DS` bind current PC;
+      3. The operation decides the bind: mnemonic/`DB`/`DS` bind current PC;
          `EQU` binds expression value; `ORG`/`END` reject the pending name
 
 2. Symbol and label handling
@@ -2473,7 +2478,7 @@ Parse order:
 4. If it is not, hold it as a pending definition name, then hash the next token
    as the operation.
 5. Bind the pending name only after the operation is known:
-   - mnemonic, `DC`, or `DS`: current PC symbol
+   - mnemonic, `DB`, or `DS`: current PC symbol
    - `EQU`: expression-value symbol
    - `ORG` or `END`: error in v1
    - no operation before statement end: current PC symbol, no emission
@@ -3006,7 +3011,7 @@ The v1 assembler directive surface should be IBM-ish and small:
 
 ```text
 EQU   define a constant/symbol value with width from source spelling
-DC    define initialized data bytes
+DB    define initialized data bytes
 DS    reserve storage / advance assembly PC
 ORG   set assembly PC / location counter
 END   end the current assembly input
@@ -3016,7 +3021,7 @@ V1 directive shapes:
 
 ```text
 NAME EQU expr             name required; binds expression result
-[NAME] DC item[,item...]  optional current-PC data label
+[NAME] DB item[,item...]  optional current-PC data label
 [NAME] DS count[,init...] optional current-PC storage label
 ORG expr                  no leading name
 END                       no leading name, no operand
@@ -3114,8 +3119,8 @@ Decimal numbers are concrete values for immediates, counts, data, and ordinary
 expressions. They do not by themselves select zero-page or absolute memory
 addressing. Where instruction operand width matters, use hex address spelling,
 a label or `EQU` with recorded address width, or explicit `<`/`>` selection.
-For byte-data contexts, decimal emits the byte value if it fits; `DC 10` is the
-same byte as `DC $0A`.
+For byte-data contexts, decimal emits the byte value if it fits; `DB 10` is the
+same byte as `DB $0A`.
 
 Hex width is source-significant:
 
@@ -3148,9 +3153,9 @@ No C-style escapes in v1.
 Parked later string/data forms:
 
 ```text
-DC HBSTR'HELLO'   high-bit terminated string
-DC CSTR'HELLO'    trailing-NUL C string
-DC PSTR'HELLO'    count-prefixed Pascal string
+DB HBSTR'HELLO'   high-bit terminated string
+DB CSTR'HELLO'    trailing-NUL C string
+DB PSTR'HELLO'    count-prefixed Pascal string
 ```
 
 ASM source expressions are readable infix, not RPN:
@@ -3192,7 +3197,7 @@ number
 ```
 
 Unary minus is not v1 syntax. Write `0-1` if you need to express subtraction
-from zero, then let the target context range-check the result. `DC -1` is
+from zero, then let the target context range-check the result. `DB -1` is
 `BAD OPER`.
 
 Parentheses are not expression grouping in v1. `(` and `)` remain
@@ -3210,8 +3215,8 @@ This is legal v1 if `*` and `$20` are known immediately. Because `*` carries
 address width, the result is an absolute/word-width value if it remains in
 `$0000-$FFFF`. Underflow or overflow is `BAD RANGE`.
 
-Because `*` carries absolute/word width, `DC *` emits a little-endian word for
-the current PC. Use `DC <*` or `DC >*` for one-byte low/high PC data.
+Because `*` carries absolute/word width, `DB *` emits a little-endian word for
+the current PC. Use `DB <*` or `DB >*` for one-byte low/high PC data.
 
 Binary `%` literals require exactly 8 or 16 binary/mask digits. After `%`, the
 lexer is in binary/mask mode and accepts only `0`, `1`, `X`, and `x` until the
@@ -3685,41 +3690,41 @@ WAI
 This preserves the earlier decode decision: `aaa bbb cc` is a useful compact
 emitter aid, not the primary correctness model for all W65C02S opcodes.
 
-## DC Data Forms
+## DB Data Forms
 
-`DC` is the primary data-emission directive. V1 keeps it plain:
+`DB` is the primary data-emission directive. V1 keeps it plain:
 
 ```asm
-DC $FF          ; one byte
-DC 10           ; one byte, decimal $0A
-DC $1234        ; one word, little endian -> $34,$12
-DC 'A'          ; one byte
-DC <ADDR        ; one byte, low(ADDR)
-DC >ADDR        ; one byte, high(ADDR)
-DC ADDR         ; width from ADDR's symbol record
-DC <ADDR,>ADDR  ; two bytes, v1 address-word workaround
+DB $FF          ; one byte
+DB 10           ; one byte, decimal $0A
+DB $1234        ; one word, little endian -> $34,$12
+DB 'A'          ; one byte
+DB <ADDR        ; one byte, low(ADDR)
+DB >ADDR        ; one byte, high(ADDR)
+DB ADDR         ; width from ADDR's symbol record
+DB <ADDR,>ADDR  ; two bytes, v1 address-word workaround
 ```
 
 Parked later string example:
 
 ```text
-DC HBSTR'ID'     -> $49,$C4
-DC HBSTR'FNV'    -> $46,$4E,$D6
-DC HBSTR''       -> $80
+DB HBSTR'ID'     -> $49,$C4
+DB HBSTR'FNV'    -> $46,$4E,$D6
+DB HBSTR''       -> $80
 ```
 
 Parked later data forms:
 
 ```text
-DC X'FF'          hex byte stream
-DC B'10101010'    binary byte stream
-DC HBSTR'HELLO'   high-bit-terminated string
-DC CSTR'HELLO'    C-string / ASCIIZ, final byte $00
-DC PSTR'HELLO'    Pascal/count-prefixed string
+DB X'FF'          hex byte stream
+DB B'10101010'    binary byte stream
+DB HBSTR'HELLO'   high-bit-terminated string
+DB CSTR'HELLO'    C-string / ASCIIZ, final byte $00
+DB PSTR'HELLO'    Pascal/count-prefixed string
 ```
 
-Do not add `DC W'...'` in v1. Word data already has a plain source-width form:
-`DC $1234` emits `$34,$12`. A typed word-stream form can wait until word stream
+Do not add `DB W'...'` in v1. Word data already has a plain source-width form:
+`DB $1234` emits `$34,$12`. A typed word-stream form can wait until word stream
 syntax is really needed.
 
 Minimal companion directives:
@@ -3747,24 +3752,24 @@ Plain `DS count` reserves/advances without initializing bytes.
 Initializer elements are byte-sized in v1. If an initializer cannot be made into
 a byte or byte fixup, fail clearly instead of changing the reserved size.
 
-`DC` emits by source width:
+`DB` emits by source width:
 
 ```asm
-DC $FF          ; one byte
-DC 10           ; one byte, decimal $0A
-DC $1234        ; one word, little endian -> $34,$12
-DC 'A'          ; one byte
-DC <ADDR        ; one byte, low(ADDR)
-DC >ADDR        ; one byte, high(ADDR)
-DC ADDR         ; width from ADDR's symbol record
-DC <ADDR,>ADDR  ; two bytes, v1 address-word workaround
+DB $FF          ; one byte
+DB 10           ; one byte, decimal $0A
+DB $1234        ; one word, little endian -> $34,$12
+DB 'A'          ; one byte
+DB <ADDR        ; one byte, low(ADDR)
+DB >ADDR        ; one byte, high(ADDR)
+DB ADDR         ; width from ADDR's symbol record
+DB <ADDR,>ADDR  ; two bytes, v1 address-word workaround
 ```
 
-`DC ADDR` is legal only when `ADDR` is already known or has a recorded symbol
-width. Unknown bare `DC ADDR` is `BAD WIDTH` in v1. Use `DC <ADDR,>ADDR` to
+`DB ADDR` is legal only when `ADDR` is already known or has a recorded symbol
+width. Unknown bare `DB ADDR` is `BAD WIDTH` in v1. Use `DB <ADDR,>ADDR` to
 emit an address word with byte fixups. Do not infer width from the eventual
 numeric value.
-Decimal `DC` items are byte data in v1. `DC 10` emits `$0A`; decimal values
+Decimal `DB` items are byte data in v1. `DB 10` emits `$0A`; decimal values
 outside `$00-$FF` are `BAD RANGE` unless a later word-data form is added.
 
 `ORG` rules:
@@ -3794,48 +3799,49 @@ tokens such as `DB`, `DW`, or `FCC`, not dot-leading tokens.
 
 ### Future Directive Alias Records
 
-THE can model an alias as one hash record resolving to another typed record:
+THE can model an alias as one hash record resolving to another typed record,
+but `DC` is parked for v1:
 
 ```text
-hash("DB") -> alias/directive record -> hash("DC") -> DC handler
+hash("DC") -> alias/directive record -> hash("DB") -> DB handler
 ```
 
 That would let a future assembler accept:
 
 ```asm
-DB $FF
+DC $FF
 ```
 
 as compatibility sugar for:
 
 ```asm
-DC X'FF'
+DB $FF
 ```
 
 The alias must be typed. It is not an arbitrary hash chain:
 
 ```text
-source hash    DB
+source hash    DC
 record kind    directive_alias
-target hash    DC
-adapter        DB operand parser -> DC X form
+target hash    DB
+adapter        DC operand parser -> DB data form
 ```
 
-The adapter matters because `DB $FF` and `DC X'FF'` are not the same text; they
-are equivalent operations after operand parsing. Alias resolution should have a
-small recursion limit and should fail on cycles:
+The adapter matters when spellings are not the same text; they are equivalent
+operations only after operand parsing. Alias resolution should have a small
+recursion limit and should fail on cycles:
 
 ```text
-DB -> DC          ok
-DB -> BYTE -> DC  ok if depth limit allows
-DB -> BYTE -> DB  fail cycle
+DC -> DB          ok
+DC -> BYTE -> DB  ok if depth limit allows
+DC -> BYTE -> DC  fail cycle
 ```
 
 Keep this out of v1 unless compatibility pressure appears. The v1 directive
 path is:
 
 ```text
-EQU, DC, DS, ORG, END only
+EQU, DB, DS, ORG, END only
 ```
 
 HBSTR remains a named later data form because it is part of Himon's command,
@@ -3847,12 +3853,12 @@ metadata:
 
 ```asm
 CMD_ID:
-        DC      'F'         ; full-hash FNV-1a layout record
-        DC      $FFFF       ; low word of CMD_ID_HASH, placeholder/TBD
-        DC      $FFFF       ; high word of CMD_ID_HASH, placeholder/TBD
-        DC      $00         ; KIND
-        DC      $FF         ; command text length, latched after lookup
-        DC      $FFFF       ; flash address of copied command text
+        DB      'F'         ; full-hash FNV-1a layout record
+        DB      $FFFF       ; low word of CMD_ID_HASH, placeholder/TBD
+        DB      $FFFF       ; high word of CMD_ID_HASH, placeholder/TBD
+        DB      $00         ; KIND
+        DB      $FF         ; command text length, latched after lookup
+        DB      $FFFF       ; flash address of copied command text
 ID:
 ```
 
@@ -4064,7 +4070,7 @@ For each instruction line:
    token as the operation.
 5. Lookup mnemonic/directive/emitter family.
 6. Bind any pending definition according to the operation: current PC for
-   mnemonic/`DC`/`DS`, expression value for `EQU`, error for `ORG`/`END`, or
+   mnemonic/`DB`/`DS`, expression value for `EQU`, error for `ORG`/`END`, or
    current PC with no emission if the statement ended after the definition name.
 7. Parse operand and determine addressing/fixup mode.
 8. If operand is numeric, emit encoded bytes.

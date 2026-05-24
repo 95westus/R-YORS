@@ -4,6 +4,48 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-05-24 ASM Core Smoke And WDC ASMTEST_3000 Proof
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard lexer/vocabulary/parser/symbol/RJOIN
+smoke path and printed the ASM 1.70 pass banner. The independent WDC-built
+`ASMTEST_3000` proof also loaded and returned the expected checksum/registers.
+
+### Transcript Extract
+
+ASM core:
+
+```text
+>L G
+L S19
+L @3000
+L OK=17F3 GO=3000
+ASM 1.70 RJOIN OK W=$E2F4 SYM=$06 PC=$45F3
+
+#LOADGO# ENTRY=3000
+RET A=00 X=F3 Y=45 P=75 S=FD NV-BdIzC
+```
+
+WDC `ASMTEST_3000` proof:
+
+```text
+>L G
+L S19
+L @3000
+L OK=0027 GO=3000
+
+#LOADGO# ENTRY=3000
+RET A=0F X=10 Y=30 P=77 S=FD NV-BdIZC
+```
+
+Interpretation:
+
+- ASM core success returned `A=00`, `X/Y=$45F3`, carry set. The pass banner
+  proves RJOIN found the resident FTDI write routine and printed through it.
+- `ASMTEST_3000` returned checksum `A=$0F`, byte count `X=$10`, and page
+  `Y=$30`, matching the WDC reference proof.
+
 ## 2026-05-21 Search Ladder And FTDI TX Carry Bug
 
 ### Summary

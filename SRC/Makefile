@@ -130,6 +130,12 @@ ASM_V1_CORE_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-core.obj
 ASM_V1_CORE_S19 := $(S19_DIR)/asm-v1-core-3000.s19
 ASM_V1_CORE_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 ASMTEST_3000_SAMPLE := ../DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
+ASMTEST_3000_WDC_SIDE_OBJ := $(ASMTEST_3000_SAMPLE:.asm=.obj)
+ASMTEST_3000_WDC_SIDE_LST := $(ASMTEST_3000_SAMPLE:.asm=.lst)
+ASMTEST_3000_WDC_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asmtest-3000-wdc.obj
+ASMTEST_3000_WDC_LST := $(LST_DIR)/asmtest-3000-wdc.lst
+ASMTEST_3000_WDC_MAP := $(MAP_DIR)/asmtest-3000-wdc.map
+ASMTEST_3000_WDC_S19 := $(S19_DIR)/asmtest-3000-wdc.s19
 CALC_9A00_FNV_PROOF_SRC := $(PROOFS_DIR)/calc-9a00-fnv-proof.asm
 CALC_9A00_FNV_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/calc-9a00-fnv-proof.obj
 CALC_9A00_FNV_PROOF_S19 := $(S19_DIR)/calc-9a00-fnv-proof.s19
@@ -383,6 +389,13 @@ asm-v1-core: $(ASM_V1_CORE_S19)
 
 asmtest-3000-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE)"
+
+asmtest-3000-wdc: $(ASMTEST_3000_WDC_S19)
+	@$(MAKE) artifacts
+	@echo "Built WDC ASMTEST_3000 proof."
+	@echo "Listing: $(ASMTEST_3000_WDC_LST)"
+	@echo "Map: $(ASMTEST_3000_WDC_MAP)"
+	@echo "S19: $(ASMTEST_3000_WDC_S19)"
 
 asm-test: asmtest-3000-check asm-v1-core
 	@echo "ASM v1 smoke checks passed."
@@ -785,6 +798,17 @@ $(OBJ_DIR)/%.obj: %.asm
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$*.obj) move /Y $(subst /,\,$*.obj) $(subst /,\,$@)
 
+$(ASMTEST_3000_WDC_OBJ): $(ASMTEST_3000_SAMPLE) Makefile
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	@if not exist $(subst /,\,$(LST_DIR)) mkdir $(subst /,\,$(LST_DIR))
+	$(ASM) $(ASFLAGS) $<
+	@if exist $(subst /,\,$(ASMTEST_3000_WDC_SIDE_OBJ)) move /Y $(subst /,\,$(ASMTEST_3000_WDC_SIDE_OBJ)) $(subst /,\,$@)
+	@if exist $(subst /,\,$(ASMTEST_3000_WDC_SIDE_LST)) move /Y $(subst /,\,$(ASMTEST_3000_WDC_SIDE_LST)) $(subst /,\,$(ASMTEST_3000_WDC_LST))
+
+$(ASMTEST_3000_WDC_S19): $(ASMTEST_3000_WDC_OBJ) Makefile
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) -g -s -t -hm19 -j -o $(ASMTEST_3000_WDC_S19) $(ASMTEST_3000_WDC_OBJ)
+
 $(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "New-Item -ItemType Directory -Force -Path '$(DOC_GENERATED_DIR)' | Out-Null"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_GEN) -Src . -OutDir $(DOC_GENERATED_DIR)
@@ -817,4 +841,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asmtest-3000-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asmtest-3000-check asmtest-3000-wdc asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
