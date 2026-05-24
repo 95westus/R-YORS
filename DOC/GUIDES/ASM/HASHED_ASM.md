@@ -329,6 +329,11 @@ patch sites, origins, banks, and kinds.
 The exploratory what-if belongs in the scratchpad:
 [IDEAS.md](../../IDEAS.md).
 
+The executable test ladder lives in [TEST_PLAN.md](TEST_PLAN.md). It starts
+with host-side checks for `ASMTEST_3000.asm`, then grows layer by layer as ASM
+adds tokenizing, vocabulary lookup, parsing, symbols, expressions, classification,
+emission, fixups, directives, and reports.
+
 ## Legacy HIMON A Command Shape
 
 Keep this only as a record of the old HIMON mini-assembler command shape:

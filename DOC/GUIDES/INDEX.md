@@ -35,7 +35,7 @@ one-shot breakpoint and single-step behavior.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
 - [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and [Hash Trash](HASH/HASH_TRASH.md).
-- [ASM](ASM/HASHED_ASM.md) - onboard assembler and symbol reference material.
+- [ASM](ASM/HASHED_ASM.md) - onboard assembler and symbol reference material; see [TEST_PLAN.md](ASM/TEST_PLAN.md) for ASM test gates.
 - [QCC](QCC/INDEX.md) - Questions, Comments, Concerns working notes.
 - [LOGS](LOGS/HARDWARE_TEST_LOG.md) - hardware transcript proof.
 - [STORY](STORY/BOOK.md) - book spine and historical narrative.

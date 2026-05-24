@@ -6,6 +6,21 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+function Resolve-ArtifactPath {
+    param([string]$Path)
+
+    if (Test-Path -LiteralPath $Path) {
+        return $Path
+    }
+
+    $alt = $Path.Replace("\s19\", "\map\").Replace("/s19/", "/map/")
+    if (Test-Path -LiteralPath $alt) {
+        return $alt
+    }
+
+    throw "Map file not found: $Path"
+}
+
 function Get-MapAddress {
     param(
         [string]$Path,
@@ -30,6 +45,8 @@ function Equ-Line {
 
     return ("{0,-26} EQU             {1}" -f $Name, $Value)
 }
+
+$MapPath = Resolve-ArtifactPath -Path $MapPath
 
 $readAddr = Get-MapAddress -Path $MapPath -Name "BIO_FTDI_READ_BYTE_BLOCK"
 $writeAddr = Get-MapAddress -Path $MapPath -Name "BIO_FTDI_WRITE_BYTE_BLOCK"

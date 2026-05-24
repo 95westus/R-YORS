@@ -31,6 +31,7 @@ PYTHON ?= python
 
 LOCAL_ROOT ?= ../LOCAL
 LOCAL_PROVENANCE := tools/write_local_provenance.ps1
+ASMTEST_CHECK := tools/check_asmtest_3000.ps1
 HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
 FIG_FORTH_HIMON_PATCH := tools/patch_fig_forth_himon_addrs.ps1
 HIMON_VERSION_INC := $(INC_DIR)/himon-version.inc
@@ -128,6 +129,7 @@ ASM_V1_CORE_SRC := $(ASM_DIR)/asm-v1-core.asm
 ASM_V1_CORE_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-core.obj
 ASM_V1_CORE_S19 := $(S19_DIR)/asm-v1-core-3000.s19
 ASM_V1_CORE_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
+ASMTEST_3000_SAMPLE := ../DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
 CALC_9A00_FNV_PROOF_SRC := $(PROOFS_DIR)/calc-9a00-fnv-proof.asm
 CALC_9A00_FNV_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/calc-9a00-fnv-proof.obj
 CALC_9A00_FNV_PROOF_S19 := $(S19_DIR)/calc-9a00-fnv-proof.s19
@@ -378,6 +380,12 @@ asm-rjoin-proof: $(ROM_LIB) $(ASM_RJOIN_PROOF_S19)
 asm-v1-core: $(ASM_V1_CORE_S19)
 	@echo "Built $(ASM_V1_CORE_S19)."
 	@$(MAKE) artifacts
+
+asmtest-3000-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE)"
+
+asm-test: asmtest-3000-check asm-v1-core
+	@echo "ASM v1 smoke checks passed."
 
 calc-9a00-fnv-proof: $(ROM_LIB) $(CALC_9A00_FNV_PROOF_S19)
 	@echo "Built $(CALC_9A00_FNV_PROOF_S19)."
@@ -809,4 +817,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asmtest-3000-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
