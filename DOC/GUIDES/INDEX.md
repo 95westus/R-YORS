@@ -25,6 +25,7 @@ one-shot breakpoint and single-step behavior.
 - [TOC.md](./TOC.md) - recommended reading order.
 - [MAP.md](./MAP.md) - documentation map and system map.
 - [XREF.md](META/XREF.md) - document/source cross-reference.
+- [PROVENANCE.md](META/PROVENANCE.md) - idea-origin and outside-help marking rules.
 - [BIB.md](META/BIB.md) - source corpus and guide bibliography.
 
 ## Guide Shelves

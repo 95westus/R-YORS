@@ -43,6 +43,12 @@ DOC_FLASH.md
   points to DECISIONS.md for settled edict changes and QCC_*.md pages for
   unsettled design movement
 
+PROVENANCE.md
+  records the tag set for idea origin and outside help
+  separates Walter-originated project ideas, hardware proof, AI/Codex-assisted
+  shaping, outside prior art, generated/source-derived evidence, and unknown
+  origin without turning the docs into legal boilerplate
+
 QCC.md
   defines Questions, Comments, Concerns as the working-note style for active
   design questions

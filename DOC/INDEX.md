@@ -34,6 +34,7 @@ breakpoint and single-step surface.
 - [GUIDES/TOC.md](./GUIDES/TOC.md) - recommended reading order.
 - [GUIDES/MAP.md](./GUIDES/MAP.md) - documentation and system map.
 - [GUIDES/META/XREF.md](GUIDES/META/XREF.md) - document/source cross-reference.
+- [GUIDES/META/PROVENANCE.md](GUIDES/META/PROVENANCE.md) - idea-origin and outside-help marking rules.
 
 ## Story Lane
 

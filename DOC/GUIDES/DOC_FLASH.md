@@ -41,6 +41,31 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: Idea Provenance Tags Added
+
+```text
+2026
+         05
+                23
+                   21:26Z WLP2 Added idea-origin tags for book/story/code
+                               truth marking.
+```
+
+scope: `META/PROVENANCE.md`, `STORY/BOOK.md`, `DECISIONS.md`, `META/XREF.md`,
+`GUIDES/INDEX.md`, and `DOC/INDEX.md`.
+
+change: The guide set now has explicit provenance tags for Walter-originated
+project ideas, bench proof, AI/Codex-assisted shaping, outside prior art,
+source-derived evidence, and unknown origin.
+
+effect: Future story, QCC, decision, and source comments can distinguish "my
+project idea" from "old public idea" and "outside help shaped this" without
+turning every paragraph into legal boilerplate.
+
+action: Use `META/PROVENANCE.md` when origin matters. Mark older public
+machinery as prior art, Walter edicts as `ORIG-WLP2`, bench proof as
+`BENCH-WLP2`, and AI-shaped material as `COLLAB-AI`.
+
 ## REDOC: HTML Tracking Stopped And ASM Keyword Rule Named
 
 ```text

@@ -53,6 +53,29 @@ catalogs matter because they let useful behavior keep being found, reused, and
 relinked.
 ```
 
+## Truth And Provenance
+
+The book should mark idea origin when it matters. Walter's original names,
+edicts, bench observations, and design calls should stay visible as Walter's.
+Old public machinery should be named as old public machinery. AI/Codex help
+should be marked where it shaped wording, organization, comparisons, code, or
+design synthesis.
+
+Use [PROVENANCE.md](../META/PROVENANCE.md) for the tag set:
+
+```text
+ORIG-WLP2
+BENCH-WLP2
+COLLAB-AI
+EXT-PRIOR
+DERIVED-SRC
+UNKNOWN
+```
+
+The book voice may still say "my" for Walter's board, vocabulary, constraints,
+and design journey. The provenance tags keep that personal story from claiming
+that old assembler, linker, catalog, Forth, FNV, or CPU ideas were invented here.
+
 ## Reader Path
 
 The book should read in three layers:
