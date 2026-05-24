@@ -11,6 +11,7 @@ STR8_DIR := STR8
 TESTS_DIR := TESTS
 PROOFS_DIR := PROOFS
 APPS_DIR := APPS
+ASM_DIR := ASM
 TEST_SUPPORT_DIR := $(TESTS_DIR)/support
 LIB_SUBDIRS := $(LIB_DIR)/ftdi $(LIB_DIR)/util $(LIB_DIR)/dev $(LIB_DIR)/acia $(LIB_DIR)/pia
 BUILD_DIR := BUILD
@@ -123,6 +124,10 @@ ASM_RJOIN_PROOF_SRC := $(PROOFS_DIR)/asm-rjoin-proof-3000.asm
 ASM_RJOIN_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/asm-rjoin-proof-3000.obj
 ASM_RJOIN_PROOF_S19 := $(S19_DIR)/asm-rjoin-proof-3000.s19
 ASM_RJOIN_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
+ASM_V1_CORE_SRC := $(ASM_DIR)/asm-v1-core.asm
+ASM_V1_CORE_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-core.obj
+ASM_V1_CORE_S19 := $(S19_DIR)/asm-v1-core-3000.s19
+ASM_V1_CORE_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 CALC_9A00_FNV_PROOF_SRC := $(PROOFS_DIR)/calc-9a00-fnv-proof.asm
 CALC_9A00_FNV_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/calc-9a00-fnv-proof.obj
 CALC_9A00_FNV_PROOF_S19 := $(S19_DIR)/calc-9a00-fnv-proof.s19
@@ -160,7 +165,7 @@ FTDI_DRV_INC := $(LIB_DIR)/ftdi/ftdi-drv.inc
 
 ROM_EXTRA_SRC := $(wildcard $(TESTS_DIR)/ftdi-backend-debug.asm)
 ROM_SRC := $(foreach d,$(LIB_SUBDIRS),$(wildcard $(d)/*.asm)) $(ROM_EXTRA_SRC)
-APP_SRC := $(wildcard $(APPS_DIR)/*.asm) $(wildcard $(PROOFS_DIR)/*.asm) $(wildcard $(HIM_SUBDIR)/*.asm) $(wildcard $(STR8_SUBDIR)/*.asm) $(wildcard $(TESTS_DIR)/*.asm) $(wildcard $(TEST_SUPPORT_DIR)/*.asm) $(foreach d,$(LIB_SUBDIRS),$(wildcard $(d)/*.asm))
+APP_SRC := $(wildcard $(APPS_DIR)/*.asm) $(wildcard $(PROOFS_DIR)/*.asm) $(wildcard $(ASM_DIR)/*.asm) $(wildcard $(HIM_SUBDIR)/*.asm) $(wildcard $(STR8_SUBDIR)/*.asm) $(wildcard $(TESTS_DIR)/*.asm) $(wildcard $(TEST_SUPPORT_DIR)/*.asm) $(foreach d,$(LIB_SUBDIRS),$(wildcard $(d)/*.asm))
 ROM_OBJ := $(addprefix $(OBJ_DIR)/,$(ROM_SRC:.asm=.obj))
 ROM_LIB := $(BUILD_DIR)\lib\rom.lib
 TEST_LIB_SRC := $(wildcard $(TEST_SUPPORT_DIR)/*.asm)
@@ -216,6 +221,7 @@ ALL_TARGETS := \
 	himon-search-for-himon \
 	hrec-join-proof \
 	asm-rjoin-proof \
+	asm-v1-core \
 	rom-append-calc \
 	fig-forth \
 	msbasic-osi \
@@ -367,6 +373,10 @@ hrec-join-proof: $(ROM_LIB) $(HREC_JOIN_PROOF_S19)
 
 asm-rjoin-proof: $(ROM_LIB) $(ASM_RJOIN_PROOF_S19)
 	@echo "Built $(ASM_RJOIN_PROOF_S19)."
+	@$(MAKE) artifacts
+
+asm-v1-core: $(ASM_V1_CORE_S19)
+	@echo "Built $(ASM_V1_CORE_S19)."
 	@$(MAKE) artifacts
 
 calc-9a00-fnv-proof: $(ROM_LIB) $(CALC_9A00_FNV_PROOF_S19)
@@ -594,6 +604,12 @@ $(ASM_RJOIN_PROOF_S19): $(ASM_RJOIN_PROOF_OBJ) $(ROM_LIB)
 	@echo [ps] set S9 start $$3000 in $(ASM_RJOIN_PROOF_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_RJOIN_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
 
+$(ASM_V1_CORE_S19): $(ASM_V1_CORE_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(ASM_V1_CORE_LINKFLAGS) $(ASM_V1_CORE_S19) $(ASM_V1_CORE_OBJ)
+	@echo [ps] set S9 start $$3000 in $(ASM_V1_CORE_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_V1_CORE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+
 $(CALC_9A00_FNV_PROOF_S19): $(CALC_9A00_FNV_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(CALC_9A00_FNV_PROOF_LINKFLAGS) $(CALC_9A00_FNV_PROOF_S19) $(CALC_9A00_FNV_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
@@ -767,12 +783,12 @@ $(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
 
 artifacts:
 	@echo [ps] move sidecar artifacts
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)','$(PROOFS_DIR)','$(HIMON_DIR)','$(STR8_DIR)','$(TESTS_DIR)','$(LIB_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)','$(PROOFS_DIR)','$(ASM_DIR)','$(HIMON_DIR)','$(STR8_DIR)','$(TESTS_DIR)','$(LIB_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"
 	@echo "Moved sidecar artifacts into $(BUILD_DIR)/{lst,sym,map,bin,s19}."
 
 clean:
 	-del /f *.obj *.lst *.sym *.map *.bin >nul 2>nul
-	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$dirs = @('$(APPS_DIR)','$(PROOFS_DIR)','$(HIMON_DIR)','$(STR8_DIR)','$(TESTS_DIR)','$(LIB_DIR)'); foreach ($$d in $$dirs) { if (Test-Path -LiteralPath $$d) { Get-ChildItem -Recurse -File -Path $$d -Include *.obj,*.lst,*.sym,*.map,*.bin | Remove-Item -Force -ErrorAction SilentlyContinue } }"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$dirs = @('$(APPS_DIR)','$(PROOFS_DIR)','$(ASM_DIR)','$(HIMON_DIR)','$(STR8_DIR)','$(TESTS_DIR)','$(LIB_DIR)'); foreach ($$d in $$dirs) { if (Test-Path -LiteralPath $$d) { Get-ChildItem -Recurse -File -Path $$d -Include *.obj,*.lst,*.sym,*.map,*.bin | Remove-Item -Force -ErrorAction SilentlyContinue } }"
 	@if exist $(BUILD_DIR) rmdir /s /q $(BUILD_DIR)
 	@rem keep generated artifacts under BUILD between normal builds
 
@@ -793,4 +809,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

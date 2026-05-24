@@ -26,6 +26,12 @@ HIMON provides the monitor, command dispatch, assembler, catalog lookup,
 and debug tools.
 ```
 
+ASM emits W65C02S native code optimized for size. Prefer compact instruction
+forms when the source spelling or symbol width explicitly permits them, but do
+not silently promote or demote operand width. The code shape is
+routines-of-routines: small callable routines, explicit labels, and fixups
+rather than a hidden VM or broad runtime.
+
 - `ror` is the working repo/copy.
 - `R-YORS` is the overall project/system name.
 - `STR8` means Subroutine To Return. It is pronounced `S-T-R-8`, can also be
@@ -432,38 +438,29 @@ start +count    count is the number of bytes
 
 ## Hashed ASM Direction
 
-- Preferred command shape:
+Detailed settled ASM decisions live in [ASM/DECISIONS.md](ASM/DECISIONS.md).
 
-```text
-A [addr] [label:] MMM [operand] .
-```
+Project-level summary:
 
-- Address comes before optional label.
-- ASM hashes canonical names and tokens, not raw numeric addresses, for
-  resolution. Store exact addresses, banks, patch sites, and origins as fields.
-  Address-containing record hashes are proof/check metadata only, not emitted
-  operand values.
-- Labels require `:` in the current v1 command shape.
-- Labels cannot be opcode mnemonic or directive keyword names. Mnemonics and
-  directives reserve their canonical token text, so hash-first parsing can
-  check "is this token assembler vocabulary?" before treating it as a label.
-  `LABEL:` remains the explicit visual form; the reserved-vocabulary rule also
-  leaves room for a later colon-light parser without making `JSR JSR` ambiguous.
-- Local ASM labels use dot syntax: `.` alone ends a one-shot statement,
-  `.NAME:` defines a local label, and `.NAME` uses a local label. No v1
-  dot-directive aliases. Local labels are scoped under the current nonlocal
-  label and cannot be exported.
-- Minimal v1 ASM directives are IBM-ish: `DC`, `DS`, and `EQU`. Compatibility
-  aliases such as `DB` may later be typed directive-alias records that resolve
-  by hash to a real directive handler, but they are not part of v1.
-- V1 must support forward references through fixups. A forward-reference ban is
-  rejected.
-- A fixup is a hash lookup plus patch-site record, not magic. It must preserve
-  enough information to patch the correct byte(s) later.
-- Flash destinations may use byte patching only where flash 1-to-0 write rules
-  allow it. RAM destinations can patch freely.
-- Onboard assembly should tolerate flash clutter at first; later HIMON or
-  maintenance condense can reclaim buried or superseded records.
+- ASM proper is its own hash-based source-line assembler, not the legacy HIMON
+  `A` mini-assembler path.
+- ASM v1 is a RAM-session W65C02S assembler that emits native bytes and records
+  explicit symbols, references, and fixups.
+- Source width is intent: `$hh` is zero page, `$hhhh` is absolute, with no
+  silent promotion or demotion.
+- V1 directives are `EQU`, `DC`, `DS`, `ORG`, and `END`; `START`, `ENTRY`, and
+  `EXTRN` stay parked.
+- `EQU` resolves immediately in v1. Forward references are emitted-byte fixups,
+  not symbol-equation dependency chains.
+- The `ASM n.nn` catalog now has the 1.xx front-end spine settled through
+  `ASM 1.90`: source rules, calling contracts, session spine, lexer, vocabulary
+  lookup, statement parser, symbol table, expression evaluator, and operand
+  classifier.
+- Larger ASM/HIMON-scale symbol pressure is a future design problem involving
+  resident tables, temporary storage, flash workspace, compression, or a mix. V1
+  RAM rows keep hash plus canonical text and do not store `SYM3`.
+- `ASM-xxxx` remains reserved for future S/36-style operator diagnostics and
+  WTOR/reply policy.
 
 ## HIMON Assembler And Disassembler Decode
 
@@ -525,11 +522,20 @@ DOC/GUIDES/STORY/HISTORICAL_DOCUMENTS.md
 DOC/IDEAS.md
 ```
 
+- When origin matters, mark idea provenance using
+  `META/PROVENANCE.md`. Use `ORIG-WLP2` for Walter-originated project names,
+  edicts, and design calls; `BENCH-WLP2` for hardware proof; `COLLAB-AI` for
+  AI/Codex-assisted shaping; `EXT-PRIOR` for outside prior art or convention;
+  `DERIVED-SRC` for generated/source-derived evidence; and `UNKNOWN` when the
+  origin is not yet known. Provenance tags are truth markers, not legal
+  ownership claims.
 - `INDEX.md` answers: what exists?
 - `TOC.md` answers: what order should I read it in?
 - `MAP.md` answers: how do docs and systems relate?
 - `REF.md` is the quick operational reference.
 - `META/XREF.md` is wiring: docs, source, symbols, module/export rules.
+- `META/PROVENANCE.md` records idea-origin marking rules for the book, docs,
+  and source comments.
 - `ASM/SYMBOL_XREF.md` is symbol/routine cards, routine contracts, hashes, and tags.
 - `GLOSSARY.md` defines vocabulary only.
 - `META/BIB.md` records source corpus/provenance only.
