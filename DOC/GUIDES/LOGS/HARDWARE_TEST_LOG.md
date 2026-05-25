@@ -4,12 +4,122 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-05-24 ASM 2.10 Opcode Emitter Proof
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.10 smoke ladder, including the
+explicit opcode lookup/emission stage. The `$5B OPCODE` stage emits and checks
+the resolved ASMTEST-path instruction byte stream while leaving forward fixups
+for ASM 2.20.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @3000
+L OK=2A97 GO=3000
+ASM 2.10 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+
+#LOADGO# ENTRY=3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+## 2026-05-24 ASM 2.00 Emission Foundation Proof
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.00 smoke ladder, including the
+raw emit stage. The new `$59 EMIT` stage proves `ASM_EMIT_BYTE` and
+`ASM_EMIT_WORD_LE` write through the live ASM PC, advance PC/high-water, and
+return the expected failure statuses for inactive-session and wrap cases.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @3000
+L OK=25E8 GO=3000
+ASM 2.00 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+
+#LOADGO# ENTRY=3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+## 2026-05-24 ASM Core Informative Test Report
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 1.90 smoke ladder and printed
+the individual test stages. The final `PC=$3000` is expected because the
+operand-classifier setup exercises `ORG $3000`, and the later symbol smoke
+uses that live assembler PC.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @3000
+L OK=244F GO=3000
+ASM 1.90 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 5A OPERAND
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+ W=$E2F4 SYM=$06 PC=$3000
+
+#LOADGO# ENTRY=3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
 ## 2026-05-24 ASM Core Smoke And WDC ASMTEST_3000 Proof
 
 ### Summary
 
-`asm-v1-core-3000.s19` passed the onboard lexer/vocabulary/parser/symbol/RJOIN
-smoke path and printed the ASM 1.70 pass banner. The independent WDC-built
+`asm-v1-core-3000.s19` passed the onboard lexer/vocabulary/parser/expression/
+line-assembly/symbol/RJOIN smoke path and printed the ASM 1.70 pass banner.
+This run includes the tightened parser smoke for colon/no-colon labels, exact
+tail starts, missing directive operands, reserved/register label rejection,
+local-label rejection, the statement heads used by `ASMTEST_3000`, the
+resolved-atom `ASM_PARSE_EXPR` smoke, and the `ASM_ASSEMBLE_LINE` session spine.
+The independent WDC-built
 `ASMTEST_3000` proof also loaded and returned the expected checksum/registers.
 
 ### Transcript Extract
@@ -20,11 +130,11 @@ ASM core:
 >L G
 L S19
 L @3000
-L OK=17F3 GO=3000
-ASM 1.70 RJOIN OK W=$E2F4 SYM=$06 PC=$45F3
+L OK=1E65 GO=3000
+ASM 1.70 RJOIN OK W=$E2F4 SYM=$06 PC=$4C65
 
 #LOADGO# ENTRY=3000
-RET A=00 X=F3 Y=45 P=75 S=FD NV-BdIzC
+RET A=00 X=65 Y=4C P=75 S=FD NV-BdIzC
 ```
 
 WDC `ASMTEST_3000` proof:
@@ -41,7 +151,7 @@ RET A=0F X=10 Y=30 P=77 S=FD NV-BdIZC
 
 Interpretation:
 
-- ASM core success returned `A=00`, `X/Y=$45F3`, carry set. The pass banner
+- ASM core success returned `A=00`, `X/Y=$4C65`, carry set. The pass banner
   proves RJOIN found the resident FTDI write routine and printed through it.
 - `ASMTEST_3000` returned checksum `A=$0F`, byte count `X=$10`, and page
   `Y=$30`, matching the WDC reference proof.

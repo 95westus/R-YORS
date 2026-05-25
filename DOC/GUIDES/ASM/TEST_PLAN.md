@@ -168,7 +168,7 @@ Routines under test:
 
 ```text
 ASM_BEGIN
-ASM_ASSEMBLE_LINE later
+ASM_ASSEMBLE_LINE
 ASM_END
 ```
 
@@ -183,6 +183,12 @@ Required checks:
 ```text
 ASM_BEGIN opens active session and sets PC
 ASM_BEGIN clears counts and status
+ASM_ASSEMBLE_LINE counts physical lines
+ASM_ASSEMBLE_LINE runs lex, parse, and dispatch for one line
+ASM_ASSEMBLE_LINE applies resolved ORG to the ASM PC
+ASM_ASSEMBLE_LINE defines resolved EQU symbols
+ASM_ASSEMBLE_LINE calls ASM_END for an accepted END statement
+line after clean END returns BAD OPER and marks the session failed
 ASM_END succeeds with no fixups
 ASM_END fails with required unresolved fixups
 second ASM_END after clean end is OK
@@ -280,8 +286,9 @@ make -C SRC asm-v1-core
 ```
 
 The standalone `START` smoke path now checks empty/comment, label-only,
-attached colon, mnemonic with tail, label-plus-mnemonic, active directives, and
-the top-level errors `LABEL ORG`, `END X`, and `START`.
+attached colon, mnemonic with tail, colon and no-colon label-plus-mnemonic,
+active directives, exact tail starts, the top-level policy errors below, and
+the statement heads used by `ASMTEST_3000`.
 
 Required fixtures:
 
@@ -293,18 +300,49 @@ LDA #1                -> MNEM no name
 LABEL LDA #1          -> MNEM with name
 LABEL: LDA #1         -> MNEM with name/HAS_COLON
 NAME EQU $12          -> DIR/EQU with name
+SEED DB $52           -> DIR/DB with name
 ORG $3000             -> DIR/ORG no name
 END                   -> DIR/END no tail
 LABEL ORG $3000       -> BAD SYM
+LABEL END             -> BAD SYM
 END X                 -> BAD OPER
+ORG                   -> BAD OPER
+NAME EQU              -> BAD OPER
+SEED DB               -> BAD OPER
+DC $52                -> BAD DIR
 START                 -> BAD DIR
+A LDA #1              -> BAD SYM
+.LOOP                 -> LOCAL NYI
+```
+
+`ASMTEST_3000` parser-head fixtures:
+
+```text
+        ORG $3000
+OUT EQU $3100
+SUM EQU $3110
+COUNT EQU 16
+ASMTEST LDX #0
+        STZ SUM
+LOOP    LDA SEED,X
+        STA OUT,X
+        EOR SUM
+        STA SUM
+        INX
+        CPX #COUNT
+        BNE LOOP
+        RTS
+SEED    DB $52,...
+        DB $53,...
+        END
 ```
 
 Acceptance:
 
 ```text
-tail pointer is exact
+tail pointer is exact for operand/directive tails
 label binding is delayed until dispatch
+ASM_ASSEMBLE_LINE is parser/session spine only; no emission yet
 one source line is one statement
 trailing non-comment junk is BAD OPER
 ```
@@ -327,19 +365,64 @@ make -C SRC asm-v1-core
 
 The standalone `START` smoke path now checks label binding, duplicate
 rejection, hash-match/text-mismatch continuation, ZP/ABS/VALUE/MASK `EQU` rows,
-not-found lookup, and a visible pass line:
+not-found lookup, and the later parser/expression/line/operand smoke slices.
+On success it prints an onboard test report:
 
 ```text
-ASM 1.70 RJOIN OK W=$.... SYM=$06 PC=$....
+ASM 2.10 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$.... SYM=$06 PC=$....
 ```
 
-On 2026-05-24, hardware passed with:
+Last hardware-proven `ASM 2.00` smoke on 2026-05-24:
 
 ```text
-L OK=17F3 GO=3000
-ASM 1.70 RJOIN OK W=$E2F4 SYM=$06 PC=$45F3
-RET A=00 X=F3 Y=45 P=75 S=FD NV-BdIzC
+L OK=25E8 GO=3000
+ASM 2.00 TESTS OK
+ ...
+ 59 EMIT
+ 5A OPERAND
+ ...
+W=$E2F4 SYM=$06 PC=$3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
 ```
+
+Current local `ASM 2.10` build expects:
+
+```text
+L OK=2A97 GO=3000
+ASM 2.10 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$.... SYM=$06 PC=$3000
+RET A=00 X=00 Y=30 ... C
+```
+
+`PC=$3000` is expected here. The operand-classifier setup exercises
+`ORG $3000`, and the later symbol smoke binds against that live assembler PC.
 
 If the board returns before that line, the standalone entry now returns
 diagnostic registers:
@@ -359,6 +442,11 @@ $20 first ORG lex
 $30 token smoke
 $40 vocabulary smoke
 $50 parser smoke
+$56 ASM_PARSE_EXPR smoke
+$58 ASM_ASSEMBLE_LINE smoke
+$59 ASM_EMIT_BYTE/ASM_EMIT_WORD_LE smoke
+$5A ASM_CLASS_OPERAND smoke
+$5B ASM_FIND_OPCODE/ASM_EMIT smoke
 $60 symbol smoke
 $71 RJOIN joiner lookup
 $72 RJOIN BIO write lookup
@@ -439,13 +527,31 @@ Routine under test:
 ASM_PARSE_EXPR
 ```
 
-Required fixtures:
+Current executable proof:
+
+```text
+make -C SRC asm-v1-core
+```
+
+The standalone `START` smoke path now checks the resolved one-atom foothold
+used by `ORG` and `EQU`. Operators, symbols, selectors, and fixups remain
+future expression work.
+
+Current fixtures:
 
 ```text
 10                    -> VALUE/NONE
 $12                   -> ADDR/ZP
 $0012                 -> ADDR/ABS
 'A'                   -> VALUE/BYTE
+%XXXXXXX1             -> MASK/MASK8
+*                     -> ADDR/ABS current PC
+$12 $34               -> BAD OPER
+```
+
+Future fixtures:
+
+```text
 * - $20               -> ADDR/ABS if in range
 ERR_1 | ERR_2         -> MASK or VALUE by care result
 FOO unresolved allowed -> UNRESOLVED
@@ -472,7 +578,17 @@ Routine under test:
 ASM_CLASS_OPERAND
 ```
 
-Required fixtures:
+Current executable proof:
+
+```text
+make -C SRC asm-v1-core
+```
+
+The standalone `START` smoke path now classifies the operand forms needed by
+the `ASMTEST_3000` statement heads. It records unresolved references as planned
+state only; no fixup rows or emitted bytes are created yet.
+
+Current fixtures:
 
 ```text
 ASL        -> NONE accepted by ASL emitter as accumulator
@@ -480,6 +596,21 @@ ASL A      -> ACC
 LDA #10    -> IMM8
 LDA $12    -> ZP8
 LDA $0012  -> ABS16
+LDX #0     -> IMM8
+CPX #COUNT -> IMM8 from resolved EQU
+STZ SUM    -> ABS16 from resolved EQU
+EOR SUM    -> ABS16 from resolved EQU
+STA SUM    -> ABS16 from resolved EQU
+STA OUT,X  -> ABS_X from resolved EQU
+LDA SEED,X -> ABS_X unresolved planned
+BNE LOOP   -> REL8 unresolved planned
+LDA A      -> BAD MODE
+LDA 12     -> BAD WIDTH
+```
+
+Future fixtures:
+
+```text
 LDA FOO unresolved -> ABS16 fixup
 LDA <FOO   -> ZP8/lo8
 LDA #<FOO  -> IMM_LO8
@@ -487,8 +618,6 @@ BRA FOO    -> REL8 fixup
 JSR FOO    -> ABS16 fixup
 RMB 3,$12  -> BIT_ZP
 BBR 3,$12,TARGET -> BIT_ZP_REL
-LDA A      -> BAD MODE
-LDA 12     -> BAD WIDTH
 ```
 
 Acceptance:
@@ -500,6 +629,37 @@ bit number resolves now and is 0..7
 no ZP/ABS promotion or demotion after classification
 ```
 
+### ASM 2.00 Emission Foundation
+
+Routines under test:
+
+```text
+ASM_EMIT_BYTE
+ASM_EMIT_WORD_LE
+```
+
+Current executable proof:
+
+```text
+make -C SRC asm-v1-core
+```
+
+The standalone `START` smoke path emits `A2 34 12` into `ASM_CODE_BUF` using
+one raw byte emit and one little-endian word emit. It then verifies the stored
+bytes, current PC, and high-water PC. This is raw emission only; opcode
+selection and fixups begin in later slices.
+
+Acceptance:
+
+```text
+emit writes through the current ASM PC
+emit advances PC by the byte count written
+high-water PC follows the furthest emitted next-PC
+word emission is little endian
+emit outside an active session is BAD OPER
+16-bit PC wrap is BAD RANGE
+```
+
 ### ASM 2.10 Opcode Emitter
 
 Routines under test:
@@ -509,15 +669,34 @@ ASM_FIND_OPCODE
 ASM_EMIT
 ```
 
-Required fixtures:
+Current fixtures:
 
 ```text
-RTS          -> 60
 LDX #0       -> A2 00
 STZ $3110    -> 9C 10 31
-LDA $1234,X  -> BD 34 12
-BNE LOOP     -> D0 rr
-JSR FOO      -> 20 FF FF if unresolved
+STA $3100,X  -> 9D 00 31
+EOR $3110    -> 4D 10 31
+STA $3110    -> 8D 10 31
+INX          -> E8
+CPX #COUNT   -> E0 10
+BNE LOOP     -> D0 ED when LOOP is a resolved backward label
+RTS          -> 60
+STZ #0       -> BAD MODE at opcode lookup
+JSR FOO      -> BAD FIX while fixup rows are not implemented
+```
+
+The standalone `START` smoke emits this resolved byte stream into
+`ASM_CODE_BUF` and compares every byte:
+
+```text
+A2 00 9C 10 31 9D 00 31 4D 10 31 8D 10 31 E8 E0 10 D0 ED 60
+```
+
+Future fixtures:
+
+```text
+LDA SEED,X   -> BD lo hi after SEED resolves
+JSR FOO      -> 20 FF FF with abs16 fixup
 ```
 
 Acceptance:
@@ -526,7 +705,7 @@ Acceptance:
 known emitted bytes match W65C02S table
 irregular opcodes are explicit
 aaa-bbb-cc helpers are used only where regular
-placeholder bytes are $FF for unresolved fixups
+unresolved operands fail BAD FIX until ASM 2.20 owns fixup rows
 ```
 
 ### ASM 2.20 Fixups

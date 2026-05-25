@@ -15,11 +15,18 @@
                         XDEF            START
                         XDEF            ASM_BEGIN
                         XDEF            ASM_END
+                        XDEF            ASM_ASSEMBLE_LINE
                         XDEF            ASM_LEX_LINE
                         XDEF            ASM_NEXT_TOKEN
                         XDEF            ASM_LOOKUP_WORD
                         XDEF            ASM_PARSE_HEAD
                         XDEF            ASM_DISPATCH_STATEMENT
+                        XDEF            ASM_PARSE_EXPR
+                        XDEF            ASM_CLASS_OPERAND
+                        XDEF            ASM_EMIT_BYTE
+                        XDEF            ASM_EMIT_WORD_LE
+                        XDEF            ASM_FIND_OPCODE
+                        XDEF            ASM_EMIT
                         XDEF            ASM_LOOKUP_SYMBOL
                         XDEF            ASM_BIND_LABEL
                         XDEF            ASM_DEFINE_EQU
@@ -114,6 +121,11 @@ ASM_STEP_LEX_OK        EQU             $20
 ASM_STEP_TOKENS        EQU             $30
 ASM_STEP_VOCAB         EQU             $40
 ASM_STEP_PARSE         EQU             $50
+ASM_STEP_EXPR          EQU             $56
+ASM_STEP_ASSEMBLE_LINE EQU             $58
+ASM_STEP_EMIT          EQU             $59
+ASM_STEP_OPERAND       EQU             $5A
+ASM_STEP_OPCODE        EQU             $5B
 ASM_STEP_SYMBOLS       EQU             $60
 ASM_STEP_RJOIN_JOINER  EQU             $71
 ASM_STEP_RJOIN_WRITE   EQU             $72
@@ -189,6 +201,19 @@ ASM_WIDTH_ABS          EQU             $04
 ASM_WIDTH_MASK8        EQU             $05
 ASM_WIDTH_MASK16       EQU             $06
 
+ASM_OPM_NONE           EQU             $00
+ASM_OPM_ACC            EQU             $01
+ASM_OPM_IMM8           EQU             $02
+ASM_OPM_ZP8            EQU             $03
+ASM_OPM_ABS16          EQU             $04
+ASM_OPM_ZP_X           EQU             $05
+ASM_OPM_ABS_X          EQU             $06
+ASM_OPM_REL8           EQU             $07
+
+ASM_OPF_UNRESOLVED     EQU             $01
+
+ASM_ATOM_REG           EQU             $80
+
 ASM_RJ_HASH_SIG2       EQU             ('V'+$80)
 ASM_RJ_KIND_EXEC       EQU             $01
 ASM_RJ_KIND_EXEC_TEXT  EQU             $05
@@ -208,14 +233,39 @@ ASM_VID_DS             EQU             $1D
 ASM_VID_END            EQU             $1E
 ASM_VID_EQU            EQU             $21
 ASM_VID_ORG            EQU             $2E
+ASM_VID_ASL            EQU             $03
+ASM_VID_BCC            EQU             $06
+ASM_VID_BCS            EQU             $07
+ASM_VID_BEQ            EQU             $08
+ASM_VID_BMI            EQU             $0A
+ASM_VID_BNE            EQU             $0B
+ASM_VID_BPL            EQU             $0C
+ASM_VID_BRA            EQU             $0D
+ASM_VID_BVC            EQU             $0F
+ASM_VID_BVS            EQU             $10
+ASM_VID_CPX            EQU             $16
+ASM_VID_EOR            EQU             $20
+ASM_VID_INX            EQU             $24
+ASM_VID_JSR            EQU             $27
+ASM_VID_LDA            EQU             $28
+ASM_VID_LDX            EQU             $29
+ASM_VID_LSR            EQU             $2B
+ASM_VID_ROL            EQU             $38
+ASM_VID_ROR            EQU             $39
+ASM_VID_RTS            EQU             $3B
+ASM_VID_STA            EQU             $41
+ASM_VID_STZ            EQU             $46
+ASM_VID_REG_A          EQU             $00
+ASM_VID_REG_X          EQU             $50
+ASM_VID_REG_Y          EQU             $51
 
                         CODE
 
 ; ----------------------------------------------------------------------------
 ; START
 ; Tiny smoke entry for the standalone S19 target.
-; OUT: C=1 if ASM_BEGIN, lexer self-checks, one too-long-line rejection, and
-;      ASM_END behaved as expected.
+; OUT: C=1 if the standalone smoke ladder passes. A=OK, X/Y=current PC.
+;      C=0 with A=stage, X=status, Y=slot when a stage fails.
 ; ----------------------------------------------------------------------------
 START:
                         LDA             #ASM_STEP_BEGIN
@@ -224,48 +274,110 @@ START:
                         LDX             #<ASM_CODE_BUF
                         LDY             #>ASM_CODE_BUF
                         JSR             ASM_BEGIN
-                        BCC             START_FAIL
+                        BCS             START_BEGIN_OK
+                        JMP             START_FAIL
+START_BEGIN_OK:
 
                         LDA             #ASM_STEP_LEX_OK
                         STA             ASM_START_STEP
                         LDX             #<ASM_SMOKE_LINE_OK
                         LDY             #>ASM_SMOKE_LINE_OK
                         JSR             ASM_LEX_LINE
-                        BCC             START_FAIL
+                        BCS             START_LEX_OK
+                        JMP             START_FAIL
+START_LEX_OK:
                         LDA             #ASM_STEP_TOKENS
                         STA             ASM_START_STEP
                         JSR             ASM_SMOKE_TOKENS
-                        BCC             START_FAIL
+                        BCS             START_TOKENS_OK
+                        JMP             START_FAIL
+START_TOKENS_OK:
                         LDA             #ASM_STEP_VOCAB
                         STA             ASM_START_STEP
                         JSR             ASM_SMOKE_VOCAB
-                        BCC             START_FAIL
+                        BCS             START_VOCAB_OK
+                        JMP             START_FAIL
+START_VOCAB_OK:
                         LDA             #ASM_STEP_PARSE
                         STA             ASM_START_STEP
                         JSR             ASM_SMOKE_PARSE
-                        BCC             START_FAIL
+                        BCS             START_PARSE_OK
+                        JMP             START_FAIL
+START_PARSE_OK:
+                        LDA             #ASM_STEP_EXPR
+                        STA             ASM_START_STEP
+                        JSR             ASM_SMOKE_EXPR
+                        BCS             START_EXPR_OK
+                        JMP             START_FAIL
+START_EXPR_OK:
+                        LDA             #ASM_STEP_ASSEMBLE_LINE
+                        STA             ASM_START_STEP
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE
+                        BCS             START_ASSEMBLE_LINE_OK
+                        JMP             START_FAIL
+START_ASSEMBLE_LINE_OK:
+                        LDA             #ASM_STEP_EMIT
+                        STA             ASM_START_STEP
+                        JSR             ASM_SMOKE_EMIT
+                        BCS             START_EMIT_OK
+                        JMP             START_FAIL
+START_EMIT_OK:
+                        LDA             #ASM_STEP_OPERAND
+                        STA             ASM_START_STEP
+                        JSR             ASM_SMOKE_OPERANDS
+                        BCS             START_OPERAND_OK
+                        JMP             START_FAIL
+START_OPERAND_OK:
+                        LDA             #ASM_STEP_OPCODE
+                        STA             ASM_START_STEP
+                        JSR             ASM_SMOKE_OPCODE
+                        BCS             START_OPCODE_OK
+                        JMP             START_FAIL
+START_OPCODE_OK:
                         LDA             #ASM_STEP_SYMBOLS
                         STA             ASM_START_STEP
                         JSR             ASM_SMOKE_SYMBOLS
-                        BCC             START_FAIL
-                        JSR             ASM_RJOIN_INIT
-                        BCC             START_FAIL
-                        JSR             ASM_SMOKE_PRINT_PASS
+                        BCS             START_SYMBOLS_OK
+                        JMP             START_FAIL
+START_SYMBOLS_OK:
 
                         LDA             #ASM_STEP_LONG_LINE
                         STA             ASM_START_STEP
                         LDX             #<ASM_SMOKE_LINE_LONG
                         LDY             #>ASM_SMOKE_LINE_LONG
                         JSR             ASM_LEX_LINE
-                        BCS             START_FAIL
+                        BCC             START_LONG_REJECTED
+                        JMP             START_FAIL
+START_LONG_REJECTED:
                         CMP             #ASM_STATUS_BAD_LINE
-                        BNE             START_FAIL
+                        BEQ             START_LONG_STATUS_OK
+                        JMP             START_FAIL
+START_LONG_STATUS_OK:
 
                         LDA             #ASM_STEP_END
                         STA             ASM_START_STEP
                         JSR             ASM_END
-                        BCC             START_FAIL
+                        BCS             START_END_OK
+                        JMP             START_FAIL
+START_END_OK:
+                        PHA
+                        PHX
+                        PHY
+                        JSR             ASM_RJOIN_INIT
+                        BCS             START_PRINT_READY
+                        JMP             START_PRINT_FAIL
+START_PRINT_READY:
+                        JSR             ASM_SMOKE_PRINT_PASS
+                        PLY
+                        PLX
+                        PLA
+                        SEC
                         RTS
+START_PRINT_FAIL:
+                        PLY
+                        PLX
+                        PLA
+                        BRA             START_FAIL
 START_FAIL:
                         LDA             ASM_START_STEP
                         LDX             ASM_STATUS
@@ -276,6 +388,48 @@ START_FAIL:
 ASM_SMOKE_PRINT_PASS:
                         LDX             #<ASM_SMOKE_MSG_PASS
                         LDY             #>ASM_SMOKE_MSG_PASS
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_BEGIN
+                        LDY             #>ASM_SMOKE_MSG_T_BEGIN
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_LEX
+                        LDY             #>ASM_SMOKE_MSG_T_LEX
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_TOKENS
+                        LDY             #>ASM_SMOKE_MSG_T_TOKENS
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_VOCAB
+                        LDY             #>ASM_SMOKE_MSG_T_VOCAB
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_PARSE
+                        LDY             #>ASM_SMOKE_MSG_T_PARSE
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_EXPR
+                        LDY             #>ASM_SMOKE_MSG_T_EXPR
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_LINE
+                        LDY             #>ASM_SMOKE_MSG_T_LINE
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_EMIT
+                        LDY             #>ASM_SMOKE_MSG_T_EMIT
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_OPER
+                        LDY             #>ASM_SMOKE_MSG_T_OPER
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_OPCODE
+                        LDY             #>ASM_SMOKE_MSG_T_OPCODE
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_SYMBOLS
+                        LDY             #>ASM_SMOKE_MSG_T_SYMBOLS
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_LONG
+                        LDY             #>ASM_SMOKE_MSG_T_LONG
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_END
+                        LDY             #>ASM_SMOKE_MSG_T_END
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_W
+                        LDY             #>ASM_SMOKE_MSG_W
                         JSR             ASM_RJ_WRITE_CSTRING
                         LDA             ASM_RJ_WRITE_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
@@ -293,6 +447,10 @@ ASM_SMOKE_PRINT_PASS:
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_PC_LO
                         JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_SMOKE_PRINT_LINE:
+                        JSR             ASM_RJ_WRITE_CSTRING
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASM_RJOIN_INIT:
@@ -739,51 +897,106 @@ ASM_SMOKE_PARSE:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BEQ             ASM_SMOKE_PARSE_FAIL_A
+                        LDA             #'#'
+                        JSR             ASM_SMOKE_PARSE_TAIL_CHAR
+                        BCC             ASM_SMOKE_PARSE_FAIL_A
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_SMOKE_PARSE_LABEL_LDA_NC
+                        LDY             #>ASM_SMOKE_PARSE_LABEL_LDA_NC
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_FAIL_B
+                        LDA             ASM_STMT_FLAGS
+                        AND             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
+                        CMP             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
+                        BNE             ASM_SMOKE_PARSE_FAIL_B
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_HAS_COLON
+                        BNE             ASM_SMOKE_PARSE_FAIL_B
+                        LDA             #'#'
+                        JSR             ASM_SMOKE_PARSE_TAIL_CHAR
+                        BCC             ASM_SMOKE_PARSE_FAIL_B
 
                         LDA             #ASM_STMT_MNEM
                         LDX             #<ASM_SMOKE_PARSE_LABEL_LDA
                         LDY             #>ASM_SMOKE_PARSE_LABEL_LDA
                         JSR             ASM_SMOKE_PARSE_OK
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCC             ASM_SMOKE_PARSE_FAIL_B
                         LDA             ASM_STMT_FLAGS
                         AND             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
                         CMP             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
-                        BNE             ASM_SMOKE_PARSE_FAIL
+                        BNE             ASM_SMOKE_PARSE_FAIL_B
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_HAS_COLON
+                        BEQ             ASM_SMOKE_PARSE_FAIL_B
+                        LDA             #'#'
+                        JSR             ASM_SMOKE_PARSE_TAIL_CHAR
+                        BCC             ASM_SMOKE_PARSE_FAIL_B
+
+                        BRA             ASM_SMOKE_PARSE_AFTER_FAIL_B
+ASM_SMOKE_PARSE_FAIL_B:
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_AFTER_FAIL_B:
 
                         LDA             #ASM_STMT_DIR
                         LDX             #<ASM_SMOKE_PARSE_EQU
                         LDY             #>ASM_SMOKE_PARSE_EQU
                         JSR             ASM_SMOKE_PARSE_OK
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCC             ASM_SMOKE_PARSE_FAIL_C
                         LDA             ASM_STMT_FLAGS
                         AND             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
                         CMP             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
-                        BNE             ASM_SMOKE_PARSE_FAIL
+                        BNE             ASM_SMOKE_PARSE_FAIL_C
+                        LDA             #'$'
+                        JSR             ASM_SMOKE_PARSE_TAIL_CHAR
+                        BCC             ASM_SMOKE_PARSE_FAIL_C
 
                         LDA             #ASM_STMT_DIR
                         LDX             #<ASM_SMOKE_PARSE_DB
                         LDY             #>ASM_SMOKE_PARSE_DB
                         JSR             ASM_SMOKE_PARSE_OK
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCC             ASM_SMOKE_PARSE_FAIL_C
                         LDA             ASM_STMT_FLAGS
                         AND             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
                         CMP             #(ASM_STMTF_HAS_NAME|ASM_STMTF_HAS_TAIL)
-                        BNE             ASM_SMOKE_PARSE_FAIL
+                        BNE             ASM_SMOKE_PARSE_FAIL_C
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_BINDS_PC
-                        BEQ             ASM_SMOKE_PARSE_FAIL
+                        BEQ             ASM_SMOKE_PARSE_FAIL_C
+                        LDA             #'$'
+                        JSR             ASM_SMOKE_PARSE_TAIL_CHAR
+                        BCC             ASM_SMOKE_PARSE_FAIL_C
 
                         LDA             #ASM_STMT_DIR
                         LDX             #<ASM_SMOKE_PARSE_ORG
                         LDY             #>ASM_SMOKE_PARSE_ORG
                         JSR             ASM_SMOKE_PARSE_OK
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCC             ASM_SMOKE_PARSE_FAIL_C
+                        LDA             #'$'
+                        JSR             ASM_SMOKE_PARSE_TAIL_CHAR
+                        BCC             ASM_SMOKE_PARSE_FAIL_C
+
+                        BRA             ASM_SMOKE_PARSE_AFTER_FAIL_C
+ASM_SMOKE_PARSE_FAIL_C:
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_AFTER_FAIL_C:
 
                         LDA             #ASM_STMT_DIR
                         LDX             #<ASM_SMOKE_PARSE_END
                         LDY             #>ASM_SMOKE_PARSE_END
                         JSR             ASM_SMOKE_PARSE_OK
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCC             ASM_SMOKE_PARSE_FAIL_D
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_HAS_TAIL
+                        BNE             ASM_SMOKE_PARSE_FAIL_D
+                        LDA             #$00
+                        JSR             ASM_SMOKE_PARSE_TAIL_CHAR
+                        BCC             ASM_SMOKE_PARSE_FAIL_D
+
+                        BRA             ASM_SMOKE_PARSE_AFTER_FAIL_D
+ASM_SMOKE_PARSE_FAIL_D:
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_AFTER_FAIL_D:
 
                         LDA             #ASM_STATUS_BAD_SYM
                         LDX             #<ASM_SMOKE_PARSE_LABEL_ORG
@@ -794,6 +1007,42 @@ ASM_SMOKE_PARSE:
                         LDA             #ASM_STATUS_BAD_OPER
                         LDX             #<ASM_SMOKE_PARSE_END_TAIL
                         LDY             #>ASM_SMOKE_PARSE_END_TAIL
+                        JSR             ASM_SMOKE_PARSE_ERR
+                        BCC             ASM_SMOKE_PARSE_FAIL
+
+                        LDA             #ASM_STATUS_BAD_SYM
+                        LDX             #<ASM_SMOKE_PARSE_LABEL_END
+                        LDY             #>ASM_SMOKE_PARSE_LABEL_END
+                        JSR             ASM_SMOKE_PARSE_ERR
+                        BCC             ASM_SMOKE_PARSE_FAIL
+
+                        LDA             #ASM_STATUS_BAD_OPER
+                        LDX             #<ASM_SMOKE_PARSE_ORG_EMPTY
+                        LDY             #>ASM_SMOKE_PARSE_ORG_EMPTY
+                        JSR             ASM_SMOKE_PARSE_ERR
+                        BCC             ASM_SMOKE_PARSE_FAIL
+
+                        LDA             #ASM_STATUS_BAD_OPER
+                        LDX             #<ASM_SMOKE_PARSE_EQU_EMPTY
+                        LDY             #>ASM_SMOKE_PARSE_EQU_EMPTY
+                        JSR             ASM_SMOKE_PARSE_ERR
+                        BCC             ASM_SMOKE_PARSE_FAIL
+
+                        LDA             #ASM_STATUS_BAD_OPER
+                        LDX             #<ASM_SMOKE_PARSE_DB_EMPTY
+                        LDY             #>ASM_SMOKE_PARSE_DB_EMPTY
+                        JSR             ASM_SMOKE_PARSE_ERR
+                        BCC             ASM_SMOKE_PARSE_FAIL
+
+                        LDA             #ASM_STATUS_BAD_SYM
+                        LDX             #<ASM_SMOKE_PARSE_REG_LABEL
+                        LDY             #>ASM_SMOKE_PARSE_REG_LABEL
+                        JSR             ASM_SMOKE_PARSE_ERR
+                        BCC             ASM_SMOKE_PARSE_FAIL
+
+                        LDA             #ASM_STATUS_LOCAL_NYI
+                        LDX             #<ASM_SMOKE_PARSE_LOCAL_LABEL
+                        LDY             #>ASM_SMOKE_PARSE_LOCAL_LABEL
                         JSR             ASM_SMOKE_PARSE_ERR
                         BCC             ASM_SMOKE_PARSE_FAIL
 
@@ -808,6 +1057,9 @@ ASM_SMOKE_PARSE:
                         LDY             #>ASM_SMOKE_PARSE_START
                         JSR             ASM_SMOKE_PARSE_ERR
                         BCC             ASM_SMOKE_PARSE_FAIL
+
+                        JSR             ASM_SMOKE_PARSE_ASMTEST
+                        BCC             ASM_SMOKE_PARSE_FAIL
                         SEC
                         RTS
 
@@ -820,8 +1072,6 @@ ASM_SMOKE_PARSE_OK:
                         JSR             ASM_LEX_LINE
                         BCC             ASM_SMOKE_PARSE_HELPER_FAIL
                         JSR             ASM_PARSE_HEAD
-                        BCC             ASM_SMOKE_PARSE_HELPER_FAIL
-                        JSR             ASM_DISPATCH_STATEMENT
                         BCC             ASM_SMOKE_PARSE_HELPER_FAIL
                         LDA             ASM_STMT_KIND
                         CMP             ASM_TMP0_LO
@@ -844,6 +1094,971 @@ ASM_SMOKE_PARSE_HAVE_ERR:
                         RTS
 
 ASM_SMOKE_PARSE_HELPER_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_PARSE_TAIL_CHAR:
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_STMT_TAIL_PTR_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_STMT_TAIL_PTR_HI
+                        STA             ASM_TMP1_HI
+                        LDY             #$00
+                        LDA             (ASM_TMP1_LO),Y
+                        CMP             ASM_TMP0_LO
+                        BNE             ASM_SMOKE_PARSE_TAIL_CHAR_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_PARSE_TAIL_CHAR_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_PARSE_ASMTEST_FAIL_A:
+                        JMP             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+ASM_SMOKE_PARSE_ASMTEST:
+                        LDA             #ASM_STMT_DIR
+                        LDX             #<ASM_PARSE_AT_ORG
+                        LDY             #>ASM_PARSE_AT_ORG
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL_A
+
+                        LDA             #ASM_STMT_DIR
+                        LDX             #<ASM_PARSE_AT_OUT_EQU
+                        LDY             #>ASM_PARSE_AT_OUT_EQU
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL_A
+
+                        LDA             #ASM_STMT_DIR
+                        LDX             #<ASM_PARSE_AT_COUNT_EQU
+                        LDY             #>ASM_PARSE_AT_COUNT_EQU
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL_A
+
+                        LDA             #ASM_STMT_DIR
+                        LDX             #<ASM_CLASS_SUM_EQU
+                        LDY             #>ASM_CLASS_SUM_EQU
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL_A
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_ASMTEST_LDX
+                        LDY             #>ASM_PARSE_AT_ASMTEST_LDX
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL_A
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_STZ
+                        LDY             #>ASM_PARSE_AT_STZ
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL_A
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_LOOP_LDA
+                        LDY             #>ASM_PARSE_AT_LOOP_LDA
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL_A
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_STA_OUT_X
+                        LDY             #>ASM_PARSE_AT_STA_OUT_X
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_EOR_SUM
+                        LDY             #>ASM_PARSE_AT_EOR_SUM
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_STA_SUM
+                        LDY             #>ASM_PARSE_AT_STA_SUM
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_INX
+                        LDY             #>ASM_PARSE_AT_INX
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_CPX
+                        LDY             #>ASM_PARSE_AT_CPX
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_BNE
+                        LDY             #>ASM_PARSE_AT_BNE
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+                        LDA             #ASM_STMT_MNEM
+                        LDX             #<ASM_PARSE_AT_RTS
+                        LDY             #>ASM_PARSE_AT_RTS
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+                        LDA             #ASM_STMT_DIR
+                        LDX             #<ASM_PARSE_AT_SEED_DB
+                        LDY             #>ASM_PARSE_AT_SEED_DB
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+                        LDA             #ASM_STMT_DIR
+                        LDX             #<ASM_PARSE_AT_DB_CONT
+                        LDY             #>ASM_PARSE_AT_DB_CONT
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+
+                        LDA             #ASM_STMT_DIR
+                        LDX             #<ASM_PARSE_AT_END
+                        LDY             #>ASM_PARSE_AT_END
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCC             ASM_SMOKE_PARSE_ASMTEST_FAIL
+                        SEC
+                        RTS
+
+ASM_SMOKE_PARSE_ASMTEST_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_EXPR:
+                        LDX             #<ASM_SMOKE_EXPR_DEC
+                        LDY             #>ASM_SMOKE_EXPR_DEC
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASM_SMOKE_EXPR_DEC_PARSED
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_DEC_PARSED:
+                        LDA             ASM_MODE
+                        CMP             #ASM_SYMK_VALUE
+                        BEQ             ASM_SMOKE_EXPR_DEC_MODE_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_DEC_MODE_OK:
+                        LDA             ASM_WIDTH
+                        CMP             #ASM_WIDTH_NONE
+                        BEQ             ASM_SMOKE_EXPR_DEC_WIDTH_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_DEC_WIDTH_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             #$0A
+                        BEQ             ASM_SMOKE_EXPR_DEC_LO_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_DEC_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        BEQ             ASM_SMOKE_EXPR_DEC_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_DEC_OK:
+
+                        LDX             #<ASM_SMOKE_EXPR_HEX_ZP
+                        LDY             #>ASM_SMOKE_EXPR_HEX_ZP
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASM_SMOKE_EXPR_ZP_PARSED
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ZP_PARSED:
+                        LDA             ASM_MODE
+                        CMP             #ASM_SYMK_ADDR
+                        BEQ             ASM_SMOKE_EXPR_ZP_MODE_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ZP_MODE_OK:
+                        LDA             ASM_WIDTH
+                        CMP             #ASM_WIDTH_ZP
+                        BEQ             ASM_SMOKE_EXPR_ZP_WIDTH_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ZP_WIDTH_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             #$12
+                        BEQ             ASM_SMOKE_EXPR_ZP_LO_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ZP_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        BEQ             ASM_SMOKE_EXPR_ZP_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ZP_OK:
+
+                        LDX             #<ASM_SMOKE_EXPR_HEX_ABS
+                        LDY             #>ASM_SMOKE_EXPR_HEX_ABS
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASM_SMOKE_EXPR_ABS_PARSED
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ABS_PARSED:
+                        LDA             ASM_MODE
+                        CMP             #ASM_SYMK_ADDR
+                        BEQ             ASM_SMOKE_EXPR_ABS_MODE_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ABS_MODE_OK:
+                        LDA             ASM_WIDTH
+                        CMP             #ASM_WIDTH_ABS
+                        BEQ             ASM_SMOKE_EXPR_ABS_WIDTH_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ABS_WIDTH_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             #$12
+                        BEQ             ASM_SMOKE_EXPR_ABS_LO_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ABS_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        BEQ             ASM_SMOKE_EXPR_ABS_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_ABS_OK:
+
+                        LDX             #<ASM_SMOKE_EXPR_CHAR_A
+                        LDY             #>ASM_SMOKE_EXPR_CHAR_A
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASM_SMOKE_EXPR_CHAR_PARSED
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_CHAR_PARSED:
+                        LDA             ASM_MODE
+                        CMP             #ASM_SYMK_VALUE
+                        BEQ             ASM_SMOKE_EXPR_CHAR_MODE_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_CHAR_MODE_OK:
+                        LDA             ASM_WIDTH
+                        CMP             #ASM_WIDTH_BYTE
+                        BEQ             ASM_SMOKE_EXPR_CHAR_WIDTH_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_CHAR_WIDTH_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             #'A'
+                        BEQ             ASM_SMOKE_EXPR_CHAR_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_CHAR_OK:
+
+                        LDX             #<ASM_SMOKE_EXPR_MASK
+                        LDY             #>ASM_SMOKE_EXPR_MASK
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASM_SMOKE_EXPR_MASK_PARSED
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_MASK_PARSED:
+                        LDA             ASM_MODE
+                        CMP             #ASM_SYMK_MASK
+                        BEQ             ASM_SMOKE_EXPR_MASK_MODE_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_MASK_MODE_OK:
+                        LDA             ASM_WIDTH
+                        CMP             #ASM_WIDTH_MASK8
+                        BEQ             ASM_SMOKE_EXPR_MASK_WIDTH_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_MASK_WIDTH_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             #$01
+                        BEQ             ASM_SMOKE_EXPR_MASK_VALUE_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_MASK_VALUE_OK:
+                        LDA             ASM_CARE_LO
+                        CMP             #$01
+                        BEQ             ASM_SMOKE_EXPR_MASK_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_MASK_OK:
+
+                        LDA             #$34
+                        STA             ASM_PC_LO
+                        LDA             #$12
+                        STA             ASM_PC_HI
+                        LDX             #<ASM_SMOKE_EXPR_PC
+                        LDY             #>ASM_SMOKE_EXPR_PC
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASM_SMOKE_EXPR_PC_PARSED
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_PC_PARSED:
+                        LDA             ASM_MODE
+                        CMP             #ASM_SYMK_ADDR
+                        BEQ             ASM_SMOKE_EXPR_PC_MODE_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_PC_MODE_OK:
+                        LDA             ASM_WIDTH
+                        CMP             #ASM_WIDTH_ABS
+                        BEQ             ASM_SMOKE_EXPR_PC_WIDTH_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_PC_WIDTH_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             #$34
+                        BEQ             ASM_SMOKE_EXPR_PC_LO_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_PC_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        CMP             #$12
+                        BEQ             ASM_SMOKE_EXPR_PC_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_PC_OK:
+
+                        LDX             #<ASM_SMOKE_EXPR_EXTRA
+                        LDY             #>ASM_SMOKE_EXPR_EXTRA
+                        JSR             ASM_PARSE_EXPR
+                        BCC             ASM_SMOKE_EXPR_EXTRA_FAILED
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_EXTRA_FAILED:
+                        CMP             #ASM_STATUS_BAD_OPER
+                        BEQ             ASM_SMOKE_EXPR_OK
+                        JMP             ASM_SMOKE_EXPR_FAIL
+
+ASM_SMOKE_EXPR_OK:
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        SEC
+                        RTS
+ASM_SMOKE_EXPR_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_ASSEMBLE_LINE_FAIL_A:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #<ASM_CODE_BUF
+                        LDY             #>ASM_CODE_BUF
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+
+                        LDX             #<ASM_SMOKE_PARSE_BLANK
+                        LDY             #>ASM_SMOKE_PARSE_BLANK
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        LDA             ASM_LINE_COUNT_LO
+                        CMP             #$01
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        LDA             ASM_LINE_COUNT_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+
+                        LDX             #<ASM_SMOKE_PARSE_ORG
+                        LDY             #>ASM_SMOKE_PARSE_ORG
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_CHECK_PC_3000
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+
+                        LDX             #<ASM_SMOKE_PARSE_LABEL
+                        LDY             #>ASM_SMOKE_PARSE_LABEL
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+
+                        LDX             #<ASM_SMOKE_PARSE_LABEL_LDA_NC
+                        LDY             #>ASM_SMOKE_PARSE_LABEL_LDA_NC
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+
+                        LDX             #<ASM_SMOKE_PARSE_EQU
+                        LDY             #>ASM_SMOKE_PARSE_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_CHECK_EQU
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+
+                        LDX             #<ASM_SMOKE_PARSE_END
+                        LDY             #>ASM_SMOKE_PARSE_END
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ENDED
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+
+                        LDX             #<ASM_SMOKE_PARSE_LDA
+                        LDY             #>ASM_SMOKE_PARSE_LDA
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_FAIL
+                        CMP             #ASM_STATUS_BAD_OPER
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_FAILED
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL
+                        LDA             ASM_LINE_COUNT_LO
+                        CMP             #$07
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL
+
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #<ASM_CODE_BUF
+                        LDY             #>ASM_CODE_BUF
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL
+                        SEC
+                        RTS
+
+ASM_SMOKE_ASSEMBLE_LINE_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_ASSEMBLE_LINE_CHECK_PC_3000:
+                        LDA             ASM_PC_LO
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_PC_HI
+                        CMP             #$30
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        SEC
+                        RTS
+
+ASM_SMOKE_ASSEMBLE_LINE_CHECK_EQU:
+                        LDA             ASM_SYM_COUNT
+                        CMP             #$01
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_SYM_KIND
+                        CMP             #ASM_SYMK_ADDR
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_SYM_WIDTH
+                        CMP             #ASM_WIDTH_ZP
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_SYM_VAL_LO
+                        CMP             #$12
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_SYM_VAL_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        SEC
+                        RTS
+
+ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_EMIT:
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_EMIT_BEGIN_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_BEGIN_OK:
+
+                        LDA             #$A2
+                        JSR             ASM_EMIT_BYTE
+                        BCS             ASM_SMOKE_EMIT_BYTE_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_BYTE_OK:
+                        LDA             #$34
+                        LDX             #$12
+                        JSR             ASM_EMIT_WORD_LE
+                        BCS             ASM_SMOKE_EMIT_WORD_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_WORD_OK:
+
+                        LDA             ASM_CODE_BUF
+                        CMP             #$A2
+                        BEQ             ASM_SMOKE_EMIT_BUF0_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_BUF0_OK:
+                        LDA             ASM_CODE_BUF+1
+                        CMP             #$34
+                        BEQ             ASM_SMOKE_EMIT_BUF1_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_BUF1_OK:
+                        LDA             ASM_CODE_BUF+2
+                        CMP             #$12
+                        BEQ             ASM_SMOKE_EMIT_BUF2_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_BUF2_OK:
+
+                        LDA             ASM_PC_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_PC_HI
+                        SBC             ASM_START_PC_HI
+                        BEQ             ASM_SMOKE_EMIT_PC_HI_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_PC_HI_OK:
+                        LDA             ASM_TMP0_LO
+                        CMP             #$03
+                        BEQ             ASM_SMOKE_EMIT_PC_LO_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_PC_LO_OK:
+
+                        LDA             ASM_HIGH_PC_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_HIGH_PC_HI
+                        SBC             ASM_START_PC_HI
+                        BEQ             ASM_SMOKE_EMIT_HIGH_HI_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_HIGH_HI_OK:
+                        LDA             ASM_TMP0_LO
+                        CMP             #$03
+                        BEQ             ASM_SMOKE_EMIT_HIGH_LO_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_HIGH_LO_OK:
+
+                        JSR             ASM_END
+                        BCS             ASM_SMOKE_EMIT_END_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_END_OK:
+                        LDA             #$00
+                        JSR             ASM_EMIT_BYTE
+                        BCC             ASM_SMOKE_EMIT_AFTER_END_ERR
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_AFTER_END_ERR:
+                        CMP             #ASM_STATUS_BAD_OPER
+                        BEQ             ASM_SMOKE_EMIT_AFTER_END_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_AFTER_END_OK:
+
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_EMIT_RANGE_BEGIN_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_RANGE_BEGIN_OK:
+                        LDA             #$FF
+                        STA             ASM_PC_LO
+                        STA             ASM_PC_HI
+                        LDA             #$00
+                        JSR             ASM_EMIT_BYTE
+                        BCC             ASM_SMOKE_EMIT_RANGE_ERR
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_RANGE_ERR:
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BEQ             ASM_SMOKE_EMIT_RANGE_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_RANGE_OK:
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_EMIT_CLEAN_OK
+                        JMP             ASM_SMOKE_EMIT_FAIL
+ASM_SMOKE_EMIT_CLEAN_OK:
+
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        SEC
+                        RTS
+ASM_SMOKE_EMIT_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_OPERANDS_FAIL_A:
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+
+ASM_SMOKE_OPERANDS:
+                        JSR             ASM_SMOKE_OPERANDS_SETUP
+                        BCC             ASM_SMOKE_OPERANDS_FAIL_A
+
+                        LDA             #ASM_OPM_NONE
+                        LDX             #<ASM_PARSE_AT_RTS
+                        LDY             #>ASM_PARSE_AT_RTS
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCC             ASM_SMOKE_OPERANDS_FAIL_A
+
+                        LDA             #ASM_OPM_NONE
+                        LDX             #<ASM_PARSE_AT_INX
+                        LDY             #>ASM_PARSE_AT_INX
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCC             ASM_SMOKE_OPERANDS_FAIL_A
+
+                        LDA             #ASM_OPM_ACC
+                        LDX             #<ASM_CLASS_ASL_A
+                        LDY             #>ASM_CLASS_ASL_A
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCC             ASM_SMOKE_OPERANDS_FAIL_A
+
+                        LDA             #ASM_OPM_IMM8
+                        LDX             #<ASM_PARSE_AT_ASMTEST_LDX
+                        LDY             #>ASM_PARSE_AT_ASMTEST_LDX
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCC             ASM_SMOKE_OPERANDS_FAIL_A
+                        LDA             ASM_VALUE_LO
+                        BNE             ASM_SMOKE_OPERANDS_FAIL_A
+                        LDA             ASM_VALUE_HI
+                        BNE             ASM_SMOKE_OPERANDS_FAIL_A
+
+                        LDA             #ASM_OPM_IMM8
+                        LDX             #<ASM_PARSE_AT_CPX
+                        LDY             #>ASM_PARSE_AT_CPX
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCC             ASM_SMOKE_OPERANDS_FAIL_A
+                        LDA             ASM_VALUE_LO
+                        CMP             #$10
+                        BEQ             ASM_SMOKE_OPERANDS_CPX_LO_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_CPX_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        BEQ             ASM_SMOKE_OPERANDS_CPX_HI_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_CPX_HI_OK:
+
+                        LDA             #ASM_OPM_ZP8
+                        LDX             #<ASM_CLASS_LDA_ZP
+                        LDY             #>ASM_CLASS_LDA_ZP
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_LDA_ZP_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_LDA_ZP_OK:
+
+                        LDA             #ASM_OPM_ABS16
+                        LDX             #<ASM_CLASS_LDA_ABS
+                        LDY             #>ASM_CLASS_LDA_ABS
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_LDA_ABS_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_LDA_ABS_OK:
+
+                        LDA             #ASM_OPM_ABS16
+                        LDX             #<ASM_PARSE_AT_STZ
+                        LDY             #>ASM_PARSE_AT_STZ
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_STZ_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_STZ_OK:
+
+                        LDA             #ASM_OPM_ABS16
+                        LDX             #<ASM_PARSE_AT_EOR_SUM
+                        LDY             #>ASM_PARSE_AT_EOR_SUM
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_EOR_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_EOR_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             #$10
+                        BEQ             ASM_SMOKE_OPERANDS_EOR_LO_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_EOR_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        CMP             #$31
+                        BEQ             ASM_SMOKE_OPERANDS_EOR_HI_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_EOR_HI_OK:
+
+                        LDA             #ASM_OPM_ABS16
+                        LDX             #<ASM_PARSE_AT_STA_SUM
+                        LDY             #>ASM_PARSE_AT_STA_SUM
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_STA_SUM_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_STA_SUM_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             #$10
+                        BEQ             ASM_SMOKE_OPERANDS_STA_SUM_LO_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_STA_SUM_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        CMP             #$31
+                        BEQ             ASM_SMOKE_OPERANDS_STA_SUM_HI_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_STA_SUM_HI_OK:
+
+                        LDA             #ASM_OPM_ABS_X
+                        LDX             #<ASM_PARSE_AT_STA_OUT_X
+                        LDY             #>ASM_PARSE_AT_STA_OUT_X
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_STA_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_STA_OK:
+                        LDA             ASM_VALUE_LO
+                        BEQ             ASM_SMOKE_OPERANDS_STA_LO_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_STA_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        CMP             #$31
+                        BEQ             ASM_SMOKE_OPERANDS_STA_HI_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_STA_HI_OK:
+
+                        LDA             #ASM_OPM_ABS_X
+                        LDX             #<ASM_PARSE_AT_LOOP_LDA
+                        LDY             #>ASM_PARSE_AT_LOOP_LDA
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_LDA_SEED_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_LDA_SEED_OK:
+                        LDA             ASM_FLAGS
+                        AND             #ASM_OPF_UNRESOLVED
+                        BNE             ASM_SMOKE_OPERANDS_LDA_SEED_UNRES_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_LDA_SEED_UNRES_OK:
+
+                        LDA             #ASM_OPM_REL8
+                        LDX             #<ASM_PARSE_AT_BNE
+                        LDY             #>ASM_PARSE_AT_BNE
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_BNE_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_BNE_OK:
+                        LDA             ASM_FLAGS
+                        AND             #ASM_OPF_UNRESOLVED
+                        BNE             ASM_SMOKE_OPERANDS_BNE_UNRES_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_BNE_UNRES_OK:
+
+                        LDA             #ASM_STATUS_BAD_MODE
+                        LDX             #<ASM_CLASS_LDA_A
+                        LDY             #>ASM_CLASS_LDA_A
+                        JSR             ASM_SMOKE_CLASS_ERR
+                        BCS             ASM_SMOKE_OPERANDS_LDA_A_ERR_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_LDA_A_ERR_OK:
+
+                        LDA             #ASM_STATUS_BAD_WIDTH
+                        LDX             #<ASM_CLASS_LDA_DEC
+                        LDY             #>ASM_CLASS_LDA_DEC
+                        JSR             ASM_SMOKE_CLASS_ERR
+                        BCS             ASM_SMOKE_OPERANDS_LDA_DEC_ERR_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_LDA_DEC_ERR_OK:
+
+                        SEC
+                        RTS
+
+ASM_SMOKE_OPCODE_FAIL_A:
+                        JMP             ASM_SMOKE_OPCODE_FAIL
+
+ASM_SMOKE_OPCODE:
+                        JSR             ASM_SMOKE_OPCODE_SETUP
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_ASMTEST_LDX
+                        LDY             #>ASM_PARSE_AT_ASMTEST_LDX
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_PARSE_AT_STZ
+                        LDY             #>ASM_PARSE_AT_STZ
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_PARSE_AT_STA_OUT_X
+                        LDY             #>ASM_PARSE_AT_STA_OUT_X
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_PARSE_AT_EOR_SUM
+                        LDY             #>ASM_PARSE_AT_EOR_SUM
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_PARSE_AT_STA_SUM
+                        LDY             #>ASM_PARSE_AT_STA_SUM
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_PARSE_AT_INX
+                        LDY             #>ASM_PARSE_AT_INX
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_PARSE_AT_CPX
+                        LDY             #>ASM_PARSE_AT_CPX
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_PARSE_AT_BNE
+                        LDY             #>ASM_PARSE_AT_BNE
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_PARSE_AT_RTS
+                        LDY             #>ASM_PARSE_AT_RTS
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+
+                        JSR             ASM_SMOKE_OPCODE_CHECK_BYTES
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        JSR             ASM_SMOKE_OPCODE_CHECK_PC
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+
+                        LDA             #ASM_VID_STZ
+                        STA             ASM_STMT_OP_ID
+                        LDA             #ASM_OPM_IMM8
+                        STA             ASM_MODE
+                        JSR             ASM_FIND_OPCODE
+                        BCC             ASM_SMOKE_OPCODE_BAD_MODE_RETURNED
+                        JMP             ASM_SMOKE_OPCODE_FAIL
+ASM_SMOKE_OPCODE_BAD_MODE_RETURNED:
+                        CMP             #ASM_STATUS_BAD_MODE
+                        BEQ             ASM_SMOKE_OPCODE_BAD_MODE_OK
+                        JMP             ASM_SMOKE_OPCODE_FAIL
+ASM_SMOKE_OPCODE_BAD_MODE_OK:
+
+                        LDX             #<ASM_OPCODE_JSR_FOO
+                        LDY             #>ASM_OPCODE_JSR_FOO
+                        JSR             ASM_SMOKE_EMIT_LINE_ERR
+                        BCS             ASM_SMOKE_OPCODE_BAD_FIX_OK
+                        JMP             ASM_SMOKE_OPCODE_FAIL
+ASM_SMOKE_OPCODE_BAD_FIX_OK:
+
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$00
+                        LDY             #$30
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_OPCODE_RESTORE_OK
+                        JMP             ASM_SMOKE_OPCODE_FAIL
+ASM_SMOKE_OPCODE_RESTORE_OK:
+                        SEC
+                        RTS
+
+ASM_SMOKE_OPCODE_SETUP:
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_OPCODE_SETUP_FAIL
+                        LDX             #<ASM_PARSE_AT_OUT_EQU
+                        LDY             #>ASM_PARSE_AT_OUT_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_OPCODE_SETUP_FAIL
+                        LDX             #<ASM_PARSE_AT_COUNT_EQU
+                        LDY             #>ASM_PARSE_AT_COUNT_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_OPCODE_SETUP_FAIL
+                        LDX             #<ASM_CLASS_SUM_EQU
+                        LDY             #>ASM_CLASS_SUM_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_OPCODE_SETUP_FAIL
+                        LDX             #<ASM_OPCODE_LOOP_LABEL
+                        LDY             #>ASM_OPCODE_LOOP_LABEL
+                        JSR             ASM_SMOKE_PARSE_FOR_NAME
+                        BCC             ASM_SMOKE_OPCODE_SETUP_FAIL
+                        JSR             ASM_BIND_LABEL
+                        BCC             ASM_SMOKE_OPCODE_SETUP_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_OPCODE_SETUP_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_EMIT_LINE:
+                        JSR             ASM_LEX_LINE
+                        BCC             ASM_SMOKE_EMIT_LINE_FAIL
+                        JSR             ASM_PARSE_HEAD
+                        BCC             ASM_SMOKE_EMIT_LINE_FAIL
+                        LDA             ASM_STMT_KIND
+                        CMP             #ASM_STMT_MNEM
+                        BNE             ASM_SMOKE_EMIT_LINE_FAIL
+                        JSR             ASM_EMIT
+                        BCC             ASM_SMOKE_EMIT_LINE_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_EMIT_LINE_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_EMIT_LINE_ERR:
+                        JSR             ASM_LEX_LINE
+                        BCC             ASM_SMOKE_EMIT_LINE_ERR_FAIL
+                        JSR             ASM_PARSE_HEAD
+                        BCC             ASM_SMOKE_EMIT_LINE_ERR_FAIL
+                        JSR             ASM_EMIT
+                        BCS             ASM_SMOKE_EMIT_LINE_ERR_FAIL
+                        CMP             #ASM_STATUS_BAD_FIX
+                        BNE             ASM_SMOKE_EMIT_LINE_ERR_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_EMIT_LINE_ERR_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_OPCODE_CHECK_BYTES:
+                        LDX             #$00
+ASM_SMOKE_OPCODE_CHECK_LOOP:
+                        LDA             ASM_CODE_BUF,X
+                        CMP             ASM_OPCODE_EXPECT,X
+                        BEQ             ASM_SMOKE_OPCODE_CHECK_BYTE_OK
+                        JMP             ASM_SMOKE_OPCODE_CHECK_FAIL
+ASM_SMOKE_OPCODE_CHECK_BYTE_OK:
+                        INX
+                        CPX             #$14
+                        BNE             ASM_SMOKE_OPCODE_CHECK_LOOP
+                        SEC
+                        RTS
+
+ASM_SMOKE_OPCODE_CHECK_PC:
+                        LDA             ASM_PC_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_PC_HI
+                        SBC             ASM_START_PC_HI
+                        BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
+                        LDA             ASM_TMP0_LO
+                        CMP             #$14
+                        BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
+                        LDA             ASM_HIGH_PC_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_HIGH_PC_HI
+                        SBC             ASM_START_PC_HI
+                        BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
+                        LDA             ASM_TMP0_LO
+                        CMP             #$14
+                        BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_OPCODE_CHECK_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_OPCODE_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_OPERANDS_SETUP:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #<ASM_CODE_BUF
+                        LDY             #>ASM_CODE_BUF
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_OPERANDS_SETUP_FAIL
+
+                        LDX             #<ASM_PARSE_AT_ORG
+                        LDY             #>ASM_PARSE_AT_ORG
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_OPERANDS_SETUP_FAIL
+
+                        LDX             #<ASM_PARSE_AT_OUT_EQU
+                        LDY             #>ASM_PARSE_AT_OUT_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_OPERANDS_SETUP_FAIL
+
+                        LDX             #<ASM_PARSE_AT_COUNT_EQU
+                        LDY             #>ASM_PARSE_AT_COUNT_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_OPERANDS_SETUP_FAIL
+
+                        LDX             #<ASM_CLASS_SUM_EQU
+                        LDY             #>ASM_CLASS_SUM_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_OPERANDS_SETUP_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_OPERANDS_SETUP_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_CLASS_EXPECT:
+                        STA             ASM_SMOKE_EXPECT_MODE
+                        JSR             ASM_SMOKE_CLASS_PARSE_LINE
+                        BCC             ASM_SMOKE_CLASS_FAIL
+                        LDX             ASM_STMT_TAIL_PTR_LO
+                        LDY             ASM_STMT_TAIL_PTR_HI
+                        JSR             ASM_CLASS_OPERAND
+                        BCC             ASM_SMOKE_CLASS_FAIL
+                        LDA             ASM_MODE
+                        CMP             ASM_SMOKE_EXPECT_MODE
+                        BNE             ASM_SMOKE_CLASS_FAIL
+                        SEC
+                        RTS
+
+ASM_SMOKE_CLASS_ERR:
+                        STA             ASM_SMOKE_EXPECT_STATUS
+                        JSR             ASM_SMOKE_CLASS_PARSE_LINE
+                        BCC             ASM_SMOKE_CLASS_FAIL
+                        LDX             ASM_STMT_TAIL_PTR_LO
+                        LDY             ASM_STMT_TAIL_PTR_HI
+                        JSR             ASM_CLASS_OPERAND
+                        BCS             ASM_SMOKE_CLASS_FAIL
+                        CMP             ASM_SMOKE_EXPECT_STATUS
+                        BNE             ASM_SMOKE_CLASS_FAIL
+                        SEC
+                        RTS
+
+ASM_SMOKE_CLASS_PARSE_LINE:
+                        JSR             ASM_LEX_LINE
+                        BCC             ASM_SMOKE_CLASS_FAIL
+                        JSR             ASM_PARSE_HEAD
+                        BCC             ASM_SMOKE_CLASS_FAIL
+                        LDA             ASM_STMT_KIND
+                        CMP             #ASM_STMT_MNEM
+                        BNE             ASM_SMOKE_CLASS_FAIL
+                        SEC
+                        RTS
+
+ASM_SMOKE_CLASS_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_OPERANDS_FAIL:
                         CLC
                         RTS
 
@@ -1141,6 +2356,628 @@ ASM_END_OK:
 ASM_END_FAILED:
                         LDA             ASM_LAST_STATUS
                         STA             ASM_STATUS
+                        LDX             ASM_PC_LO
+                        LDY             ASM_PC_HI
+                        CLC
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_ASSEMBLE_LINE
+; IN : X/Y = NUL, CR, or LF-terminated source line.
+; OUT: C=1,A=OK,X/Y=current PC if the line was accepted.
+;      C=0,A=status,X/Y=current PC if the line was rejected.
+; NOTE: Parser/session spine only. Emission and real directive handlers are
+;       later layers.
+; ----------------------------------------------------------------------------
+ASM_ASSEMBLE_LINE:
+                        JSR             ASM_INC_LINE_COUNT
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ACTIVE
+                        BEQ             ASM_ASSEMBLE_LINE_ACTIVE
+                        CMP             #ASM_SESS_FAILED
+                        BEQ             ASM_ASSEMBLE_LINE_STORED_FAIL
+                        LDA             #ASM_STATUS_BAD_OPER
+                        BRA             ASM_ASSEMBLE_LINE_FAIL_A
+
+ASM_ASSEMBLE_LINE_ACTIVE:
+                        JSR             ASM_LEX_LINE
+                        BCC             ASM_ASSEMBLE_LINE_FAIL_A
+                        JSR             ASM_PARSE_HEAD
+                        BCC             ASM_ASSEMBLE_LINE_FAIL_A
+                        JSR             ASM_DISPATCH_STATEMENT
+                        BCC             ASM_ASSEMBLE_LINE_FAIL_A
+                        LDA             ASM_STMT_KIND
+                        CMP             #ASM_STMT_DIR
+                        BNE             ASM_ASSEMBLE_LINE_OK
+                        LDA             ASM_STMT_OP_ID
+                        CMP             #ASM_VID_END
+                        BNE             ASM_ASSEMBLE_LINE_OK
+                        JMP             ASM_END
+
+ASM_ASSEMBLE_LINE_OK:
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        LDX             ASM_PC_LO
+                        LDY             ASM_PC_HI
+                        SEC
+                        RTS
+
+ASM_ASSEMBLE_LINE_STORED_FAIL:
+                        LDA             ASM_LAST_STATUS
+                        BNE             ASM_ASSEMBLE_LINE_RETURN_FAIL
+                        LDA             #ASM_STATUS_BAD_OPER
+ASM_ASSEMBLE_LINE_RETURN_FAIL:
+                        STA             ASM_STATUS
+                        LDX             ASM_PC_LO
+                        LDY             ASM_PC_HI
+                        CLC
+                        RTS
+
+ASM_ASSEMBLE_LINE_FAIL_A:
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        LDA             #ASM_SESS_FAILED
+                        STA             ASM_SESSION_STATE
+                        LDA             ASM_STATUS
+                        LDX             ASM_PC_LO
+                        LDY             ASM_PC_HI
+                        CLC
+                        RTS
+
+ASM_INC_LINE_COUNT:
+                        INC             ASM_LINE_COUNT_LO
+                        BNE             ASM_INC_LINE_COUNT_DONE
+                        INC             ASM_LINE_COUNT_HI
+ASM_INC_LINE_COUNT_DONE:
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_EMIT_BYTE
+; IN : A = byte to write at current ASM PC.
+; OUT: C=1,A=OK,X/Y=advanced PC. C=0,A=status,X/Y=current PC on failure.
+; DOES: Writes to target RAM, advances PC, and updates the high-water PC.
+; ----------------------------------------------------------------------------
+ASM_EMIT_BYTE:
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ACTIVE
+                        BEQ             ASM_EMIT_BYTE_ACTIVE
+                        LDA             #ASM_STATUS_BAD_OPER
+                        JMP             ASM_EMIT_FAIL_A
+ASM_EMIT_BYTE_ACTIVE:
+                        LDA             ASM_PC_HI
+                        CMP             #$FF
+                        BNE             ASM_EMIT_BYTE_ROOM
+                        LDA             ASM_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_EMIT_BYTE_ROOM
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        JMP             ASM_EMIT_FAIL_A
+ASM_EMIT_BYTE_ROOM:
+                        LDA             ASM_PC_LO
+                        STA             ASM_EMIT_PTR_LO
+                        LDA             ASM_PC_HI
+                        STA             ASM_EMIT_PTR_HI
+                        LDY             #$00
+                        LDA             ASM_TMP0_LO
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        JSR             ASM_ADVANCE_PC_ONE
+                        JSR             ASM_UPDATE_HIGH_PC
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        LDX             ASM_PC_LO
+                        LDY             ASM_PC_HI
+                        SEC
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_EMIT_WORD_LE
+; IN : A = low byte, X = high byte.
+; OUT: C=1,A=OK,X/Y=advanced PC. C=0,A=status,X/Y=current PC on failure.
+; ----------------------------------------------------------------------------
+ASM_EMIT_WORD_LE:
+                        STA             ASM_TMP0_LO
+                        STX             ASM_TMP0_HI
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ACTIVE
+                        BEQ             ASM_EMIT_WORD_ACTIVE
+                        LDA             #ASM_STATUS_BAD_OPER
+                        JMP             ASM_EMIT_FAIL_A
+ASM_EMIT_WORD_ACTIVE:
+                        LDA             ASM_PC_HI
+                        CMP             #$FF
+                        BNE             ASM_EMIT_WORD_ROOM
+                        LDA             ASM_PC_LO
+                        CMP             #$FE
+                        BCC             ASM_EMIT_WORD_ROOM
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        JMP             ASM_EMIT_FAIL_A
+ASM_EMIT_WORD_ROOM:
+                        LDA             ASM_TMP0_LO
+                        JSR             ASM_EMIT_BYTE
+                        BCS             ASM_EMIT_WORD_LOW_OK
+                        RTS
+ASM_EMIT_WORD_LOW_OK:
+                        LDA             ASM_TMP0_HI
+                        JMP             ASM_EMIT_BYTE
+
+ASM_ADVANCE_PC_ONE:
+                        INC             ASM_PC_LO
+                        BNE             ASM_ADVANCE_PC_ONE_DONE
+                        INC             ASM_PC_HI
+ASM_ADVANCE_PC_ONE_DONE:
+                        RTS
+
+ASM_UPDATE_HIGH_PC:
+                        LDA             ASM_PC_HI
+                        CMP             ASM_HIGH_PC_HI
+                        BCC             ASM_UPDATE_HIGH_DONE
+                        BNE             ASM_UPDATE_HIGH_SET
+                        LDA             ASM_PC_LO
+                        CMP             ASM_HIGH_PC_LO
+                        BCC             ASM_UPDATE_HIGH_DONE
+                        BEQ             ASM_UPDATE_HIGH_DONE
+ASM_UPDATE_HIGH_SET:
+                        LDA             ASM_PC_LO
+                        STA             ASM_HIGH_PC_LO
+                        LDA             ASM_PC_HI
+                        STA             ASM_HIGH_PC_HI
+ASM_UPDATE_HIGH_DONE:
+                        RTS
+
+ASM_EMIT_FAIL_A:
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        LDA             #ASM_SESS_FAILED
+                        STA             ASM_SESSION_STATE
+                        LDA             ASM_STATUS
+                        LDX             ASM_PC_LO
+                        LDY             ASM_PC_HI
+                        CLC
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_FIND_OPCODE
+; IN : ASM_STMT_OP_ID = mnemonic id, ASM_MODE = classified operand mode.
+; OUT: C=1,A=opcode. C=0,A=BAD_MODE when this mnemonic/mode is unsupported.
+; NOTE: ASM 2.10 keeps the first table explicit for auditability.
+; ----------------------------------------------------------------------------
+ASM_FIND_OPCODE:
+                        LDA             ASM_STMT_OP_ID
+                        CMP             #ASM_VID_RTS
+                        BNE             ASM_FIND_OPCODE_NOT_RTS
+                        JMP             ASM_FIND_OPCODE_RTS
+ASM_FIND_OPCODE_NOT_RTS:
+                        CMP             #ASM_VID_INX
+                        BNE             ASM_FIND_OPCODE_NOT_INX
+                        JMP             ASM_FIND_OPCODE_INX
+ASM_FIND_OPCODE_NOT_INX:
+                        CMP             #ASM_VID_LDX
+                        BNE             ASM_FIND_OPCODE_NOT_LDX
+                        JMP             ASM_FIND_OPCODE_LDX
+ASM_FIND_OPCODE_NOT_LDX:
+                        CMP             #ASM_VID_CPX
+                        BNE             ASM_FIND_OPCODE_NOT_CPX
+                        JMP             ASM_FIND_OPCODE_CPX
+ASM_FIND_OPCODE_NOT_CPX:
+                        CMP             #ASM_VID_STZ
+                        BNE             ASM_FIND_OPCODE_NOT_STZ
+                        JMP             ASM_FIND_OPCODE_STZ
+ASM_FIND_OPCODE_NOT_STZ:
+                        CMP             #ASM_VID_EOR
+                        BNE             ASM_FIND_OPCODE_NOT_EOR
+                        JMP             ASM_FIND_OPCODE_EOR
+ASM_FIND_OPCODE_NOT_EOR:
+                        CMP             #ASM_VID_STA
+                        BNE             ASM_FIND_OPCODE_NOT_STA
+                        JMP             ASM_FIND_OPCODE_STA
+ASM_FIND_OPCODE_NOT_STA:
+                        CMP             #ASM_VID_LDA
+                        BNE             ASM_FIND_OPCODE_NOT_LDA
+                        JMP             ASM_FIND_OPCODE_LDA
+ASM_FIND_OPCODE_NOT_LDA:
+                        CMP             #ASM_VID_ASL
+                        BNE             ASM_FIND_OPCODE_NOT_ASL
+                        JMP             ASM_FIND_OPCODE_ASL
+ASM_FIND_OPCODE_NOT_ASL:
+                        CMP             #ASM_VID_JSR
+                        BNE             ASM_FIND_OPCODE_NOT_JSR
+                        JMP             ASM_FIND_OPCODE_JSR
+ASM_FIND_OPCODE_NOT_JSR:
+                        CMP             #ASM_VID_BNE
+                        BNE             ASM_FIND_OPCODE_NOT_BNE
+                        JMP             ASM_FIND_OPCODE_BNE
+ASM_FIND_OPCODE_NOT_BNE:
+                        CMP             #ASM_VID_BCC
+                        BNE             ASM_FIND_OPCODE_NOT_BCC
+                        JMP             ASM_FIND_OPCODE_BCC
+ASM_FIND_OPCODE_NOT_BCC:
+                        CMP             #ASM_VID_BCS
+                        BNE             ASM_FIND_OPCODE_NOT_BCS
+                        JMP             ASM_FIND_OPCODE_BCS
+ASM_FIND_OPCODE_NOT_BCS:
+                        CMP             #ASM_VID_BEQ
+                        BNE             ASM_FIND_OPCODE_NOT_BEQ
+                        JMP             ASM_FIND_OPCODE_BEQ
+ASM_FIND_OPCODE_NOT_BEQ:
+                        CMP             #ASM_VID_BMI
+                        BNE             ASM_FIND_OPCODE_NOT_BMI
+                        JMP             ASM_FIND_OPCODE_BMI
+ASM_FIND_OPCODE_NOT_BMI:
+                        CMP             #ASM_VID_BPL
+                        BNE             ASM_FIND_OPCODE_NOT_BPL
+                        JMP             ASM_FIND_OPCODE_BPL
+ASM_FIND_OPCODE_NOT_BPL:
+                        CMP             #ASM_VID_BRA
+                        BNE             ASM_FIND_OPCODE_NOT_BRA
+                        JMP             ASM_FIND_OPCODE_BRA
+ASM_FIND_OPCODE_NOT_BRA:
+                        CMP             #ASM_VID_BVC
+                        BNE             ASM_FIND_OPCODE_NOT_BVC
+                        JMP             ASM_FIND_OPCODE_BVC
+ASM_FIND_OPCODE_NOT_BVC:
+                        CMP             #ASM_VID_BVS
+                        BNE             ASM_FIND_OPCODE_NOT_BVS
+                        JMP             ASM_FIND_OPCODE_BVS
+ASM_FIND_OPCODE_NOT_BVS:
+                        LDA             #ASM_STATUS_BAD_MODE
+                        JMP             ASM_FIND_OPCODE_FAIL_A
+
+ASM_FIND_OPCODE_RTS:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_NONE
+                        BEQ             ASM_FIND_OPCODE_RTS_OK
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_RTS_OK:
+                        LDA             #$60
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_INX:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_NONE
+                        BEQ             ASM_FIND_OPCODE_INX_OK
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_INX_OK:
+                        LDA             #$E8
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_LDX:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_IMM8
+                        BEQ             ASM_FIND_OPCODE_LDX_IMM
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_LDX_IMM:
+                        LDA             #$A2
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_CPX:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_IMM8
+                        BEQ             ASM_FIND_OPCODE_CPX_IMM
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_CPX_IMM:
+                        LDA             #$E0
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_STZ:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_ZP8
+                        BEQ             ASM_FIND_OPCODE_STZ_ZP
+                        CMP             #ASM_OPM_ABS16
+                        BEQ             ASM_FIND_OPCODE_STZ_ABS
+                        CMP             #ASM_OPM_ZP_X
+                        BEQ             ASM_FIND_OPCODE_STZ_ZPX
+                        CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_FIND_OPCODE_STZ_ABSX
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_STZ_ZP:
+                        LDA             #$64
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_STZ_ABS:
+                        LDA             #$9C
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_STZ_ZPX:
+                        LDA             #$74
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_STZ_ABSX:
+                        LDA             #$9E
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_EOR:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_IMM8
+                        BEQ             ASM_FIND_OPCODE_EOR_IMM
+                        CMP             #ASM_OPM_ZP8
+                        BEQ             ASM_FIND_OPCODE_EOR_ZP
+                        CMP             #ASM_OPM_ABS16
+                        BEQ             ASM_FIND_OPCODE_EOR_ABS
+                        CMP             #ASM_OPM_ZP_X
+                        BEQ             ASM_FIND_OPCODE_EOR_ZPX
+                        CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_FIND_OPCODE_EOR_ABSX
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_EOR_IMM:
+                        LDA             #$49
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_EOR_ZP:
+                        LDA             #$45
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_EOR_ABS:
+                        LDA             #$4D
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_EOR_ZPX:
+                        LDA             #$55
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_EOR_ABSX:
+                        LDA             #$5D
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_STA:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_ZP8
+                        BEQ             ASM_FIND_OPCODE_STA_ZP
+                        CMP             #ASM_OPM_ABS16
+                        BEQ             ASM_FIND_OPCODE_STA_ABS
+                        CMP             #ASM_OPM_ZP_X
+                        BEQ             ASM_FIND_OPCODE_STA_ZPX
+                        CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_FIND_OPCODE_STA_ABSX
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_STA_ZP:
+                        LDA             #$85
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_STA_ABS:
+                        LDA             #$8D
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_STA_ZPX:
+                        LDA             #$95
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_STA_ABSX:
+                        LDA             #$9D
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_LDA:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_IMM8
+                        BEQ             ASM_FIND_OPCODE_LDA_IMM
+                        CMP             #ASM_OPM_ZP8
+                        BEQ             ASM_FIND_OPCODE_LDA_ZP
+                        CMP             #ASM_OPM_ABS16
+                        BEQ             ASM_FIND_OPCODE_LDA_ABS
+                        CMP             #ASM_OPM_ZP_X
+                        BEQ             ASM_FIND_OPCODE_LDA_ZPX
+                        CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_FIND_OPCODE_LDA_ABSX
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_LDA_IMM:
+                        LDA             #$A9
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_LDA_ZP:
+                        LDA             #$A5
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_LDA_ABS:
+                        LDA             #$AD
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_LDA_ZPX:
+                        LDA             #$B5
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_LDA_ABSX:
+                        LDA             #$BD
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_ASL:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_NONE
+                        BEQ             ASM_FIND_OPCODE_ASL_ACC
+                        CMP             #ASM_OPM_ACC
+                        BEQ             ASM_FIND_OPCODE_ASL_ACC
+                        CMP             #ASM_OPM_ZP8
+                        BEQ             ASM_FIND_OPCODE_ASL_ZP
+                        CMP             #ASM_OPM_ABS16
+                        BEQ             ASM_FIND_OPCODE_ASL_ABS
+                        CMP             #ASM_OPM_ZP_X
+                        BEQ             ASM_FIND_OPCODE_ASL_ZPX
+                        CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_FIND_OPCODE_ASL_ABSX
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_ASL_ACC:
+                        LDA             #$0A
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_ASL_ZP:
+                        LDA             #$06
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_ASL_ABS:
+                        LDA             #$0E
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_ASL_ZPX:
+                        LDA             #$16
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_ASL_ABSX:
+                        LDA             #$1E
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_JSR:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_ABS16
+                        BEQ             ASM_FIND_OPCODE_JSR_ABS
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_JSR_ABS:
+                        LDA             #$20
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_BCC:
+                        LDA             #$90
+                        JMP             ASM_FIND_OPCODE_BRANCH_A
+ASM_FIND_OPCODE_BCS:
+                        LDA             #$B0
+                        JMP             ASM_FIND_OPCODE_BRANCH_A
+ASM_FIND_OPCODE_BEQ:
+                        LDA             #$F0
+                        JMP             ASM_FIND_OPCODE_BRANCH_A
+ASM_FIND_OPCODE_BMI:
+                        LDA             #$30
+                        JMP             ASM_FIND_OPCODE_BRANCH_A
+ASM_FIND_OPCODE_BNE:
+                        LDA             #$D0
+                        JMP             ASM_FIND_OPCODE_BRANCH_A
+ASM_FIND_OPCODE_BPL:
+                        LDA             #$10
+                        JMP             ASM_FIND_OPCODE_BRANCH_A
+ASM_FIND_OPCODE_BRA:
+                        LDA             #$80
+                        JMP             ASM_FIND_OPCODE_BRANCH_A
+ASM_FIND_OPCODE_BVC:
+                        LDA             #$50
+                        JMP             ASM_FIND_OPCODE_BRANCH_A
+ASM_FIND_OPCODE_BVS:
+                        LDA             #$70
+ASM_FIND_OPCODE_BRANCH_A:
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_REL8
+                        BEQ             ASM_FIND_OPCODE_BRANCH_OK
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_BRANCH_OK:
+                        LDA             ASM_TMP0_LO
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_BAD_MODE:
+                        LDA             #ASM_STATUS_BAD_MODE
+ASM_FIND_OPCODE_FAIL_A:
+                        STA             ASM_STATUS
+                        CLC
+                        RTS
+ASM_FIND_OPCODE_OK_A:
+                        STA             ASM_TMP0_LO
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        LDA             ASM_TMP0_LO
+                        SEC
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_EMIT
+; IN : Parsed mnemonic statement in ASM_STMT_*.
+; OUT: C=1,A=OK,X/Y=advanced PC. C=0,A=status,X/Y=current PC on failure.
+; NOTE: ASM 2.10 emits resolved operands only; fixup rows land in ASM 2.20.
+; ----------------------------------------------------------------------------
+ASM_EMIT:
+                        LDA             ASM_STMT_KIND
+                        CMP             #ASM_STMT_MNEM
+                        BEQ             ASM_EMIT_MNEM
+                        LDA             #ASM_STATUS_BAD_OPER
+                        JMP             ASM_EMIT_MNEM_FAIL_A
+ASM_EMIT_MNEM:
+                        LDX             ASM_STMT_TAIL_PTR_LO
+                        LDY             ASM_STMT_TAIL_PTR_HI
+                        JSR             ASM_CLASS_OPERAND
+                        BCS             ASM_EMIT_CLASS_OK
+                        JMP             ASM_EMIT_MNEM_FAIL_A
+ASM_EMIT_CLASS_OK:
+                        LDA             ASM_FLAGS
+                        AND             #ASM_OPF_UNRESOLVED
+                        BEQ             ASM_EMIT_RESOLVED
+                        LDA             #ASM_STATUS_BAD_FIX
+                        JMP             ASM_EMIT_MNEM_FAIL_A
+ASM_EMIT_RESOLVED:
+                        JSR             ASM_FIND_OPCODE
+                        BCS             ASM_EMIT_OPCODE_OK
+                        JMP             ASM_EMIT_MNEM_FAIL_A
+ASM_EMIT_OPCODE_OK:
+                        JSR             ASM_EMIT_BYTE
+                        BCS             ASM_EMIT_OPCODE_WRITTEN
+                        RTS
+ASM_EMIT_OPCODE_WRITTEN:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_NONE
+                        BEQ             ASM_EMIT_OK
+                        CMP             #ASM_OPM_ACC
+                        BEQ             ASM_EMIT_OK
+                        CMP             #ASM_OPM_IMM8
+                        BEQ             ASM_EMIT_BYTE_OPERAND
+                        CMP             #ASM_OPM_ZP8
+                        BEQ             ASM_EMIT_BYTE_OPERAND
+                        CMP             #ASM_OPM_ZP_X
+                        BEQ             ASM_EMIT_BYTE_OPERAND
+                        CMP             #ASM_OPM_REL8
+                        BEQ             ASM_EMIT_REL8_OPERAND
+                        CMP             #ASM_OPM_ABS16
+                        BEQ             ASM_EMIT_WORD_OPERAND
+                        CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_EMIT_WORD_OPERAND
+                        LDA             #ASM_STATUS_BAD_MODE
+                        JMP             ASM_EMIT_MNEM_FAIL_A
+
+ASM_EMIT_REL8_OPERAND:
+                        JSR             ASM_PREP_REL8
+                        BCS             ASM_EMIT_BYTE_OPERAND
+                        JMP             ASM_EMIT_MNEM_FAIL_A
+ASM_EMIT_BYTE_OPERAND:
+                        LDA             ASM_VALUE_LO
+                        JSR             ASM_EMIT_BYTE
+                        BCS             ASM_EMIT_OK
+                        RTS
+ASM_EMIT_WORD_OPERAND:
+                        LDA             ASM_VALUE_LO
+                        LDX             ASM_VALUE_HI
+                        JSR             ASM_EMIT_WORD_LE
+                        BCS             ASM_EMIT_OK
+                        RTS
+ASM_EMIT_OK:
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        LDX             ASM_PC_LO
+                        LDY             ASM_PC_HI
+                        SEC
+                        RTS
+
+ASM_PREP_REL8:
+                        LDA             ASM_PC_LO
+                        CLC
+                        ADC             #$01
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_PC_HI
+                        ADC             #$00
+                        STA             ASM_TMP0_HI
+                        LDA             ASM_VALUE_LO
+                        SEC
+                        SBC             ASM_TMP0_LO
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_VALUE_HI
+                        SBC             ASM_TMP0_HI
+                        STA             ASM_TMP0_HI
+                        BEQ             ASM_PREP_REL8_POS
+                        CMP             #$FF
+                        BEQ             ASM_PREP_REL8_NEG
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        CLC
+                        RTS
+ASM_PREP_REL8_POS:
+                        LDA             ASM_TMP0_LO
+                        BMI             ASM_PREP_REL8_BAD_RANGE
+                        STA             ASM_VALUE_LO
+                        STZ             ASM_VALUE_HI
+                        SEC
+                        RTS
+ASM_PREP_REL8_NEG:
+                        LDA             ASM_TMP0_LO
+                        BMI             ASM_PREP_REL8_OK
+ASM_PREP_REL8_BAD_RANGE:
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        CLC
+                        RTS
+ASM_PREP_REL8_OK:
+                        STA             ASM_VALUE_LO
+                        STZ             ASM_VALUE_HI
+                        SEC
+                        RTS
+
+ASM_EMIT_MNEM_FAIL_A:
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        LDA             #ASM_SESS_FAILED
+                        STA             ASM_SESSION_STATE
+                        LDA             ASM_STATUS
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
                         CLC
@@ -1846,23 +3683,31 @@ ASM_SET_TAIL_DONE:
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_DISPATCH_STATEMENT
-; Current v1.60 dispatch only applies top-level statement policy. Later layers
-; bind symbols, evaluate expressions, emit opcodes, and resolve fixups.
+; Current dispatch applies top-level statement policy and resolved ORG/EQU
+; expressions. Later layers bind PC labels, emit opcodes, and resolve fixups.
 ; ----------------------------------------------------------------------------
 ASM_DISPATCH_STATEMENT:
                         LDA             ASM_STMT_KIND
                         CMP             #ASM_STMT_ERROR
-                        BEQ             ASM_DISPATCH_STORED_FAIL
+                        BNE             ASM_DISPATCH_NOT_ERROR
+                        JMP             ASM_DISPATCH_STORED_FAIL
+ASM_DISPATCH_NOT_ERROR:
                         CMP             #ASM_STMT_EMPTY
-                        BEQ             ASM_DISPATCH_OK
+                        BNE             ASM_DISPATCH_NOT_EMPTY
+                        JMP             ASM_DISPATCH_OK
+ASM_DISPATCH_NOT_EMPTY:
                         CMP             #ASM_STMT_LABEL_ONLY
-                        BEQ             ASM_DISPATCH_OK
+                        BNE             ASM_DISPATCH_NOT_LABEL_ONLY
+                        JMP             ASM_DISPATCH_OK
+ASM_DISPATCH_NOT_LABEL_ONLY:
                         CMP             #ASM_STMT_MNEM
-                        BEQ             ASM_DISPATCH_OK
+                        BNE             ASM_DISPATCH_NOT_MNEM
+                        JMP             ASM_DISPATCH_OK
+ASM_DISPATCH_NOT_MNEM:
                         CMP             #ASM_STMT_DIR
                         BEQ             ASM_DISPATCH_DIR
                         LDA             #ASM_STATUS_BAD_OPER
-                        BRA             ASM_DISPATCH_FAIL_A
+                        JMP             ASM_DISPATCH_FAIL_A
 
 ASM_DISPATCH_DIR:
                         LDA             ASM_STMT_OP_ID
@@ -1886,6 +3731,12 @@ ASM_DISPATCH_DIR_EQU:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BEQ             ASM_DISPATCH_BAD_OPER
+                        LDX             ASM_STMT_TAIL_PTR_LO
+                        LDY             ASM_STMT_TAIL_PTR_HI
+                        JSR             ASM_PARSE_EXPR
+                        BCC             ASM_DISPATCH_FAIL_A
+                        JSR             ASM_DEFINE_EQU
+                        BCC             ASM_DISPATCH_FAIL_A
                         BRA             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_ORG:
@@ -1895,6 +3746,14 @@ ASM_DISPATCH_DIR_ORG:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BEQ             ASM_DISPATCH_BAD_OPER
+                        LDX             ASM_STMT_TAIL_PTR_LO
+                        LDY             ASM_STMT_TAIL_PTR_HI
+                        JSR             ASM_PARSE_EXPR
+                        BCC             ASM_DISPATCH_FAIL_A
+                        LDA             ASM_MODE
+                        CMP             #ASM_SYMK_ADDR
+                        BNE             ASM_DISPATCH_BAD_WIDTH
+                        JSR             ASM_SET_PC_FROM_VALUE
                         BRA             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_END:
@@ -1918,6 +3777,9 @@ ASM_DISPATCH_BAD_SYM:
 ASM_DISPATCH_BAD_OPER:
                         LDA             #ASM_STATUS_BAD_OPER
                         BRA             ASM_DISPATCH_FAIL_A
+ASM_DISPATCH_BAD_WIDTH:
+                        LDA             #ASM_STATUS_BAD_WIDTH
+                        BRA             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_STORED_FAIL:
                         LDA             ASM_STMT_STATUS
 
@@ -1936,6 +3798,645 @@ ASM_DISPATCH_OK:
                         STA             ASM_STMT_STATUS
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
+                        SEC
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_PARSE_EXPR
+; IN : X/Y = NUL, CR, LF, or semicolon-terminated expression tail.
+; OUT: C=1,A=OK with ASM_VALUE/ASM_CARE/ASM_MODE/ASM_WIDTH set.
+;      C=0,A=status on malformed or unsupported expression.
+; NOTE: v1.80 foothold: one resolved atom only, no symbols or operators yet.
+; ----------------------------------------------------------------------------
+ASM_PARSE_EXPR:
+                        STX             ASM_PARSE_PTR_LO
+                        STY             ASM_PARSE_PTR_HI
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_PARSE_EXPR_HAVE_TOKEN
+                        JMP             ASM_PARSE_EXPR_FAIL_A
+ASM_PARSE_EXPR_HAVE_TOKEN:
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_NUMBER
+                        BEQ             ASM_PARSE_EXPR_NUMBER
+                        CMP             #ASM_TOK_CHAR
+                        BEQ             ASM_PARSE_EXPR_CHAR
+                        CMP             #ASM_TOK_PUNCT
+                        BEQ             ASM_PARSE_EXPR_PUNCT
+                        LDA             #ASM_STATUS_BAD_OPER
+                        JMP             ASM_PARSE_EXPR_FAIL_A
+
+ASM_PARSE_EXPR_NUMBER:
+                        LDA             ASM_TOK_SUB
+                        CMP             #ASM_TSUB_DEC
+                        BEQ             ASM_PARSE_EXPR_DEC
+                        CMP             #ASM_TSUB_HEX
+                        BEQ             ASM_PARSE_EXPR_HEX
+                        CMP             #ASM_TSUB_BIN
+                        BEQ             ASM_PARSE_EXPR_BIN
+                        CMP             #ASM_TSUB_MASK
+                        BEQ             ASM_PARSE_EXPR_MASK
+                        LDA             #ASM_STATUS_BAD_OPER
+                        JMP             ASM_PARSE_EXPR_FAIL_A
+
+ASM_PARSE_EXPR_DEC:
+                        LDA             #ASM_SYMK_VALUE
+                        STA             ASM_MODE
+                        LDA             #ASM_WIDTH_NONE
+                        STA             ASM_WIDTH
+                        JSR             ASM_PARSE_EXPR_SET_FULL_CARE
+                        BRA             ASM_PARSE_EXPR_ATOM_DONE
+
+ASM_PARSE_EXPR_HEX:
+                        LDA             #ASM_SYMK_ADDR
+                        STA             ASM_MODE
+                        LDA             ASM_LEN
+                        CMP             #$04
+                        BCS             ASM_PARSE_EXPR_HEX_ABS
+                        LDA             #ASM_WIDTH_ZP
+                        BRA             ASM_PARSE_EXPR_HEX_WIDTH
+ASM_PARSE_EXPR_HEX_ABS:
+                        LDA             #ASM_WIDTH_ABS
+ASM_PARSE_EXPR_HEX_WIDTH:
+                        STA             ASM_WIDTH
+                        JSR             ASM_PARSE_EXPR_SET_FULL_CARE
+                        BRA             ASM_PARSE_EXPR_ATOM_DONE
+
+ASM_PARSE_EXPR_BIN:
+                        LDA             #ASM_SYMK_VALUE
+                        STA             ASM_MODE
+                        LDA             ASM_BIT
+                        CMP             #$08
+                        BEQ             ASM_PARSE_EXPR_BIN_BYTE
+                        LDA             #ASM_WIDTH_WORD
+                        BRA             ASM_PARSE_EXPR_BIN_WIDTH
+ASM_PARSE_EXPR_BIN_BYTE:
+                        LDA             #ASM_WIDTH_BYTE
+ASM_PARSE_EXPR_BIN_WIDTH:
+                        STA             ASM_WIDTH
+                        BRA             ASM_PARSE_EXPR_ATOM_DONE
+
+ASM_PARSE_EXPR_MASK:
+                        LDA             #ASM_SYMK_MASK
+                        STA             ASM_MODE
+                        LDA             ASM_BIT
+                        CMP             #$08
+                        BEQ             ASM_PARSE_EXPR_MASK8
+                        LDA             #ASM_WIDTH_MASK16
+                        BRA             ASM_PARSE_EXPR_MASK_WIDTH
+ASM_PARSE_EXPR_MASK8:
+                        LDA             #ASM_WIDTH_MASK8
+ASM_PARSE_EXPR_MASK_WIDTH:
+                        STA             ASM_WIDTH
+                        BRA             ASM_PARSE_EXPR_ATOM_DONE
+
+ASM_PARSE_EXPR_CHAR:
+                        LDA             #ASM_SYMK_VALUE
+                        STA             ASM_MODE
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_WIDTH
+                        JSR             ASM_PARSE_EXPR_SET_FULL_CARE
+                        BRA             ASM_PARSE_EXPR_ATOM_DONE
+
+ASM_PARSE_EXPR_PUNCT:
+                        LDA             ASM_TOK_SUB
+                        CMP             #'*'
+                        BEQ             ASM_PARSE_EXPR_PC
+                        LDA             #ASM_STATUS_BAD_OPER
+                        BRA             ASM_PARSE_EXPR_FAIL_A
+
+ASM_PARSE_EXPR_PC:
+                        LDA             ASM_PC_LO
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_PC_HI
+                        STA             ASM_VALUE_HI
+                        LDA             #ASM_SYMK_ADDR
+                        STA             ASM_MODE
+                        LDA             #ASM_WIDTH_ABS
+                        STA             ASM_WIDTH
+                        JSR             ASM_PARSE_EXPR_SET_FULL_CARE
+
+ASM_PARSE_EXPR_ATOM_DONE:
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCC             ASM_PARSE_EXPR_BAD_OPER
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        LDX             ASM_VALUE_LO
+                        LDY             ASM_VALUE_HI
+                        SEC
+                        RTS
+
+ASM_PARSE_EXPR_BAD_OPER:
+                        LDA             #ASM_STATUS_BAD_OPER
+ASM_PARSE_EXPR_FAIL_A:
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        LDX             ASM_TOKEN_PTR_LO
+                        LDY             ASM_TOKEN_PTR_HI
+                        CLC
+                        RTS
+
+ASM_PARSE_EXPR_SET_FULL_CARE:
+                        LDA             #$FF
+                        STA             ASM_CARE_LO
+                        STA             ASM_CARE_HI
+                        RTS
+
+ASM_PARSE_EXPR_REQUIRE_END:
+                        JSR             ASM_SKIP_SPACES
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        BEQ             ASM_PARSE_EXPR_REQUIRE_END_OK
+                        CMP             #$0D
+                        BEQ             ASM_PARSE_EXPR_REQUIRE_END_OK
+                        CMP             #$0A
+                        BEQ             ASM_PARSE_EXPR_REQUIRE_END_OK
+                        CMP             #';'
+                        BEQ             ASM_PARSE_EXPR_REQUIRE_END_OK
+                        CLC
+                        RTS
+ASM_PARSE_EXPR_REQUIRE_END_OK:
+                        SEC
+                        RTS
+
+ASM_SET_PC_FROM_VALUE:
+                        LDA             ASM_VALUE_LO
+                        STA             ASM_PC_LO
+                        STA             ASM_HIGH_PC_LO
+                        LDA             ASM_VALUE_HI
+                        STA             ASM_PC_HI
+                        STA             ASM_HIGH_PC_HI
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_CLASS_OPERAND
+; IN : ASM_STMT_OP_ID = mnemonic id, X/Y = operand tail pointer.
+; OUT: C=1,A=OK with ASM_MODE=operand mode, ASM_WIDTH=operand width,
+;      ASM_VALUE=resolved value or $FFFF placeholder, ASM_FLAGS bit0=unresolved.
+;      C=0,A=status for unsupported or malformed operand shape.
+; NOTE: v1.90 foothold: no emission and no fixup records yet.
+; ----------------------------------------------------------------------------
+ASM_CLASS_OPERAND:
+                        STX             ASM_PARSE_PTR_LO
+                        STY             ASM_PARSE_PTR_HI
+                        STZ             ASM_TMP1_HI
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_CLASS_HAVE_TOKEN
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_HAVE_TOKEN:
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_EOL
+                        BEQ             ASM_CLASS_NONE
+                        CMP             #ASM_TOK_PUNCT
+                        BNE             ASM_CLASS_NOT_IMMEDIATE
+                        LDA             ASM_TOK_SUB
+                        CMP             #'#'
+                        BNE             ASM_CLASS_NOT_IMMEDIATE
+                        JMP             ASM_CLASS_IMMEDIATE
+
+ASM_CLASS_NOT_IMMEDIATE:
+                        JSR             ASM_CLASS_LOAD_ATOM
+                        BCS             ASM_CLASS_HAVE_ATOM
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_HAVE_ATOM:
+                        JSR             ASM_IS_BRANCH_OP
+                        BCC             ASM_CLASS_DIRECT
+                        JMP             ASM_CLASS_BRANCH
+
+ASM_CLASS_NONE:
+                        STZ             ASM_BASE_LO
+                        STZ             ASM_BASE_HI
+                        STZ             ASM_TMP1_HI
+                        LDA             #ASM_WIDTH_NONE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_NONE
+                        JMP             ASM_CLASS_OK_A
+
+ASM_CLASS_IMMEDIATE:
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_CLASS_IMM_HAVE_ATOM_TOKEN
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_IMM_HAVE_ATOM_TOKEN:
+                        JSR             ASM_CLASS_LOAD_ATOM
+                        BCS             ASM_CLASS_IMM_ATOM_OK
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_IMM_ATOM_OK:
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASM_CLASS_IMM_END_OK
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_IMM_END_OK:
+                        LDA             ASM_TMP0_LO
+                        CMP             #ASM_ATOM_REG
+                        BNE             ASM_CLASS_IMM_NOT_REG
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_IMM_NOT_REG:
+                        CMP             #ASM_SYMK_MASK
+                        BNE             ASM_CLASS_IMM_NOT_MASK
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_IMM_NOT_MASK:
+                        LDA             ASM_TMP1_HI
+                        AND             #ASM_OPF_UNRESOLVED
+                        BNE             ASM_CLASS_IMM_WIDTH_OK
+                        LDA             ASM_BASE_HI
+                        BEQ             ASM_CLASS_IMM_WIDTH_OK
+                        JMP             ASM_CLASS_BAD_RANGE
+ASM_CLASS_IMM_WIDTH_OK:
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_IMM8
+                        JMP             ASM_CLASS_OK_A
+
+ASM_CLASS_BRANCH:
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASM_CLASS_BRANCH_END_OK
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_BRANCH_END_OK:
+                        LDA             ASM_TMP0_LO
+                        CMP             #ASM_ATOM_REG
+                        BNE             ASM_CLASS_BRANCH_NOT_REG
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_BRANCH_NOT_REG:
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_REL8
+                        JMP             ASM_CLASS_OK_A
+
+ASM_CLASS_DIRECT:
+                        JSR             ASM_CLASS_PARSE_OPTIONAL_INDEX
+                        BCS             ASM_CLASS_DIRECT_HAVE_SUFFIX
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_DIRECT_HAVE_SUFFIX:
+                        LDA             ASM_TMP0_LO
+                        CMP             #ASM_ATOM_REG
+                        BEQ             ASM_CLASS_REG_OPERAND
+                        CMP             #ASM_SYMK_ADDR
+                        BEQ             ASM_CLASS_ADDR_OPERAND
+                        JMP             ASM_CLASS_BAD_WIDTH
+
+ASM_CLASS_REG_OPERAND:
+                        LDA             ASM_TMP0_HI
+                        CMP             #ASM_VID_REG_A
+                        BEQ             ASM_CLASS_REG_IS_A
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_REG_IS_A:
+                        JSR             ASM_CLASS_ACC_ALLOWED
+                        BCS             ASM_CLASS_REG_ACC_ALLOWED
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_REG_ACC_ALLOWED:
+                        LDA             ASM_TMP1_LO
+                        BEQ             ASM_CLASS_REG_NO_INDEX
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_REG_NO_INDEX:
+                        STZ             ASM_BASE_LO
+                        STZ             ASM_BASE_HI
+                        LDA             #ASM_WIDTH_NONE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ACC
+                        JMP             ASM_CLASS_OK_A
+
+ASM_CLASS_ADDR_OPERAND:
+                        LDA             ASM_TMP1_LO
+                        BEQ             ASM_CLASS_ADDR_NO_INDEX
+                        CMP             #ASM_VID_REG_X
+                        BEQ             ASM_CLASS_ADDR_INDEX_X
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_ADDR_INDEX_X:
+                        LDA             ASM_TMP0_HI
+                        CMP             #ASM_WIDTH_ZP
+                        BEQ             ASM_CLASS_ADDR_ZP_X
+                        CMP             #ASM_WIDTH_ABS
+                        BEQ             ASM_CLASS_ADDR_ABS_X
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_ADDR_ABS_X:
+                        LDA             #ASM_WIDTH_WORD
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ABS_X
+                        JMP             ASM_CLASS_OK_A
+ASM_CLASS_ADDR_ZP_X:
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ZP_X
+                        JMP             ASM_CLASS_OK_A
+
+ASM_CLASS_ADDR_NO_INDEX:
+                        LDA             ASM_TMP0_HI
+                        CMP             #ASM_WIDTH_ZP
+                        BEQ             ASM_CLASS_ADDR_ZP
+                        CMP             #ASM_WIDTH_ABS
+                        BEQ             ASM_CLASS_ADDR_ABS
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_ADDR_ABS:
+                        LDA             #ASM_WIDTH_WORD
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ABS16
+                        JMP             ASM_CLASS_OK_A
+ASM_CLASS_ADDR_ZP:
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ZP8
+                        JMP             ASM_CLASS_OK_A
+
+ASM_CLASS_PARSE_OPTIONAL_INDEX:
+                        STZ             ASM_TMP1_LO
+                        JSR             ASM_NEXT_TOKEN
+                        BCC             ASM_CLASS_PARSE_SUFFIX_FAIL
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_EOL
+                        BEQ             ASM_CLASS_PARSE_SUFFIX_OK
+                        CMP             #ASM_TOK_PUNCT
+                        BEQ             ASM_CLASS_PARSE_SUFFIX_PUNCT
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_PARSE_SUFFIX_PUNCT:
+                        LDA             ASM_TOK_SUB
+                        CMP             #','
+                        BEQ             ASM_CLASS_PARSE_SUFFIX_COMMA
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_PARSE_SUFFIX_COMMA:
+                        JSR             ASM_NEXT_TOKEN
+                        BCC             ASM_CLASS_PARSE_SUFFIX_FAIL
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_WORD
+                        BEQ             ASM_CLASS_PARSE_SUFFIX_WORD
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_PARSE_SUFFIX_WORD:
+                        JSR             ASM_LOOKUP_WORD
+                        BCS             ASM_CLASS_PARSE_SUFFIX_LOOKUP
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_PARSE_SUFFIX_LOOKUP:
+                        CPY             #ASM_VOC_REG
+                        BEQ             ASM_CLASS_PARSE_SUFFIX_REG
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_PARSE_SUFFIX_REG:
+                        LDA             ASM_VOC_ID
+                        STA             ASM_TMP1_LO
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASM_CLASS_PARSE_SUFFIX_OK
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_PARSE_SUFFIX_OK:
+                        SEC
+                        RTS
+ASM_CLASS_PARSE_SUFFIX_FAIL:
+                        RTS
+
+ASM_CLASS_LOAD_ATOM:
+                        STZ             ASM_TMP1_HI
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_NUMBER
+                        BEQ             ASM_CLASS_LOAD_NUMBER
+                        CMP             #ASM_TOK_CHAR
+                        BEQ             ASM_CLASS_LOAD_CHAR
+                        CMP             #ASM_TOK_WORD
+                        BNE             ASM_CLASS_LOAD_NOT_WORD
+                        JMP             ASM_CLASS_LOAD_WORD
+ASM_CLASS_LOAD_NOT_WORD:
+                        CMP             #ASM_TOK_PUNCT
+                        BNE             ASM_CLASS_LOAD_NOT_PUNCT
+                        JMP             ASM_CLASS_LOAD_PUNCT
+ASM_CLASS_LOAD_NOT_PUNCT:
+                        LDA             #ASM_STATUS_BAD_OPER
+                        CLC
+                        RTS
+
+ASM_CLASS_LOAD_NUMBER:
+                        LDA             ASM_VALUE_LO
+                        STA             ASM_BASE_LO
+                        LDA             ASM_VALUE_HI
+                        STA             ASM_BASE_HI
+                        LDA             ASM_TOK_SUB
+                        CMP             #ASM_TSUB_DEC
+                        BEQ             ASM_CLASS_LOAD_DEC
+                        CMP             #ASM_TSUB_HEX
+                        BEQ             ASM_CLASS_LOAD_HEX
+                        CMP             #ASM_TSUB_BIN
+                        BEQ             ASM_CLASS_LOAD_BIN
+                        CMP             #ASM_TSUB_MASK
+                        BEQ             ASM_CLASS_LOAD_MASK
+                        LDA             #ASM_STATUS_BAD_OPER
+                        CLC
+                        RTS
+ASM_CLASS_LOAD_DEC:
+                        LDA             #ASM_SYMK_VALUE
+                        STA             ASM_TMP0_LO
+                        LDA             #ASM_WIDTH_NONE
+                        STA             ASM_TMP0_HI
+                        SEC
+                        RTS
+ASM_CLASS_LOAD_HEX:
+                        LDA             #ASM_SYMK_ADDR
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_LEN
+                        CMP             #$04
+                        BNE             ASM_CLASS_LOAD_HEX_NOT_BAD_WIDTH
+                        LDA             #ASM_STATUS_BAD_WIDTH
+                        CLC
+                        RTS
+ASM_CLASS_LOAD_HEX_NOT_BAD_WIDTH:
+                        BCS             ASM_CLASS_LOAD_HEX_ABS
+                        LDA             #ASM_WIDTH_ZP
+                        BRA             ASM_CLASS_LOAD_HEX_WIDTH
+ASM_CLASS_LOAD_HEX_ABS:
+                        LDA             #ASM_WIDTH_ABS
+ASM_CLASS_LOAD_HEX_WIDTH:
+                        STA             ASM_TMP0_HI
+                        SEC
+                        RTS
+ASM_CLASS_LOAD_BIN:
+                        LDA             #ASM_SYMK_VALUE
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_BIT
+                        CMP             #$08
+                        BEQ             ASM_CLASS_LOAD_BIN_BYTE
+                        LDA             #ASM_WIDTH_WORD
+                        BRA             ASM_CLASS_LOAD_BIN_WIDTH
+ASM_CLASS_LOAD_BIN_BYTE:
+                        LDA             #ASM_WIDTH_BYTE
+ASM_CLASS_LOAD_BIN_WIDTH:
+                        STA             ASM_TMP0_HI
+                        SEC
+                        RTS
+ASM_CLASS_LOAD_MASK:
+                        LDA             #ASM_SYMK_MASK
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_BIT
+                        CMP             #$08
+                        BEQ             ASM_CLASS_LOAD_MASK8
+                        LDA             #ASM_WIDTH_MASK16
+                        BRA             ASM_CLASS_LOAD_MASK_WIDTH
+ASM_CLASS_LOAD_MASK8:
+                        LDA             #ASM_WIDTH_MASK8
+ASM_CLASS_LOAD_MASK_WIDTH:
+                        STA             ASM_TMP0_HI
+                        SEC
+                        RTS
+
+ASM_CLASS_LOAD_CHAR:
+                        LDA             ASM_VALUE_LO
+                        STA             ASM_BASE_LO
+                        STZ             ASM_BASE_HI
+                        LDA             #ASM_SYMK_VALUE
+                        STA             ASM_TMP0_LO
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_TMP0_HI
+                        SEC
+                        RTS
+
+ASM_CLASS_LOAD_WORD:
+                        JSR             ASM_LOOKUP_WORD
+                        BCC             ASM_CLASS_LOAD_SYMBOL
+                        CPY             #ASM_VOC_REG
+                        BNE             ASM_CLASS_LOAD_SYMBOL
+                        LDA             #ASM_ATOM_REG
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_VOC_ID
+                        STA             ASM_TMP0_HI
+                        STZ             ASM_BASE_LO
+                        STZ             ASM_BASE_HI
+                        SEC
+                        RTS
+
+ASM_CLASS_LOAD_SYMBOL:
+                        LDA             ASM_TOKEN_PTR_LO
+                        STA             ASM_NAME_PTR_LO
+                        LDA             ASM_TOKEN_PTR_HI
+                        STA             ASM_NAME_PTR_HI
+                        LDA             #(ASM_SYM_LOOK_SESSION|ASM_SYM_LOOK_MARK_USE)
+                        JSR             ASM_LOOKUP_SYMBOL
+                        BCC             ASM_CLASS_LOAD_UNRESOLVED
+                        LDA             ASM_VALUE_LO
+                        STA             ASM_BASE_LO
+                        LDA             ASM_VALUE_HI
+                        STA             ASM_BASE_HI
+                        LDA             ASM_MODE
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_WIDTH
+                        CMP             #ASM_WIDTH_ZP
+                        BEQ             ASM_CLASS_LOAD_SYMBOL_WIDTH_OK
+                        CMP             #ASM_WIDTH_ABS
+                        BEQ             ASM_CLASS_LOAD_SYMBOL_WIDTH_OK
+                        LDA             ASM_MODE
+                        CMP             #ASM_SYMK_ADDR
+                        BNE             ASM_CLASS_LOAD_SYMBOL_KEEP_WIDTH
+                        LDA             #ASM_WIDTH_ABS
+ASM_CLASS_LOAD_SYMBOL_WIDTH_OK:
+                        STA             ASM_TMP0_HI
+                        SEC
+                        RTS
+ASM_CLASS_LOAD_SYMBOL_KEEP_WIDTH:
+                        LDA             ASM_WIDTH
+                        STA             ASM_TMP0_HI
+                        SEC
+                        RTS
+
+ASM_CLASS_LOAD_UNRESOLVED:
+                        LDA             #$FF
+                        STA             ASM_BASE_LO
+                        STA             ASM_BASE_HI
+                        LDA             #ASM_SYMK_ADDR
+                        STA             ASM_TMP0_LO
+                        LDA             #ASM_WIDTH_ABS
+                        STA             ASM_TMP0_HI
+                        LDA             #ASM_OPF_UNRESOLVED
+                        STA             ASM_TMP1_HI
+                        SEC
+                        RTS
+
+ASM_CLASS_LOAD_PUNCT:
+                        LDA             ASM_TOK_SUB
+                        CMP             #'*'
+                        BEQ             ASM_CLASS_LOAD_PC
+                        LDA             #ASM_STATUS_BAD_OPER
+                        CLC
+                        RTS
+ASM_CLASS_LOAD_PC:
+                        LDA             ASM_PC_LO
+                        STA             ASM_BASE_LO
+                        LDA             ASM_PC_HI
+                        STA             ASM_BASE_HI
+                        LDA             #ASM_SYMK_ADDR
+                        STA             ASM_TMP0_LO
+                        LDA             #ASM_WIDTH_ABS
+                        STA             ASM_TMP0_HI
+                        SEC
+                        RTS
+
+ASM_CLASS_LOAD_BAD_WIDTH:
+                        LDA             #ASM_STATUS_BAD_WIDTH
+                        CLC
+                        RTS
+
+ASM_IS_BRANCH_OP:
+                        LDA             ASM_STMT_OP_ID
+                        CMP             #ASM_VID_BCC
+                        BEQ             ASM_IS_BRANCH_YES
+                        CMP             #ASM_VID_BCS
+                        BEQ             ASM_IS_BRANCH_YES
+                        CMP             #ASM_VID_BEQ
+                        BEQ             ASM_IS_BRANCH_YES
+                        CMP             #ASM_VID_BMI
+                        BEQ             ASM_IS_BRANCH_YES
+                        CMP             #ASM_VID_BNE
+                        BEQ             ASM_IS_BRANCH_YES
+                        CMP             #ASM_VID_BPL
+                        BEQ             ASM_IS_BRANCH_YES
+                        CMP             #ASM_VID_BRA
+                        BEQ             ASM_IS_BRANCH_YES
+                        CMP             #ASM_VID_BVC
+                        BEQ             ASM_IS_BRANCH_YES
+                        CMP             #ASM_VID_BVS
+                        BEQ             ASM_IS_BRANCH_YES
+                        CLC
+                        RTS
+ASM_IS_BRANCH_YES:
+                        SEC
+                        RTS
+
+ASM_CLASS_ACC_ALLOWED:
+                        LDA             ASM_STMT_OP_ID
+                        CMP             #ASM_VID_ASL
+                        BEQ             ASM_CLASS_ACC_YES
+                        CMP             #ASM_VID_LSR
+                        BEQ             ASM_CLASS_ACC_YES
+                        CMP             #ASM_VID_ROL
+                        BEQ             ASM_CLASS_ACC_YES
+                        CMP             #ASM_VID_ROR
+                        BEQ             ASM_CLASS_ACC_YES
+                        CLC
+                        RTS
+ASM_CLASS_ACC_YES:
+                        SEC
+                        RTS
+
+ASM_CLASS_BAD_OPER:
+                        LDA             #ASM_STATUS_BAD_OPER
+                        BRA             ASM_CLASS_FAIL_A
+ASM_CLASS_BAD_MODE:
+                        LDA             #ASM_STATUS_BAD_MODE
+                        BRA             ASM_CLASS_FAIL_A
+ASM_CLASS_BAD_WIDTH:
+                        LDA             #ASM_STATUS_BAD_WIDTH
+                        BRA             ASM_CLASS_FAIL_A
+ASM_CLASS_BAD_RANGE:
+                        LDA             #ASM_STATUS_BAD_RANGE
+
+ASM_CLASS_FAIL_A:
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        LDX             ASM_TOKEN_PTR_LO
+                        LDY             ASM_TOKEN_PTR_HI
+                        CLC
+                        RTS
+
+ASM_CLASS_OK_A:
+                        STA             ASM_MODE
+                        LDA             ASM_BASE_LO
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_BASE_HI
+                        STA             ASM_VALUE_HI
+                        LDA             ASM_TMP1_HI
+                        STA             ASM_FLAGS
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        LDX             ASM_VALUE_LO
+                        LDY             ASM_VALUE_HI
                         SEC
                         RTS
 
@@ -2389,6 +4890,8 @@ ASM_IS_DIGIT_NO:
                         CLC
                         RTS
 
+; Private mirror of UTL_HEX_ASCII_TO_NIBBLE for the standalone $3000 proof.
+; Replace with the GP UTL routine once ASM import/linkage policy is settled.
 ASM_HEX_TO_NIBBLE:
                         CMP             #'0'
                         BCC             ASM_HEX_BAD
@@ -2613,6 +5116,9 @@ ASM_STMT_OP_ID:        DB              $00
 ASM_STMT_TAIL_PTR_LO:  DB              $00
 ASM_STMT_TAIL_PTR_HI:  DB              $00
 ASM_STMT_STATUS:       DB              $00
+ASM_SMOKE_EXPECT_MODE: DB              $00
+ASM_SMOKE_EXPECT_STATUS:
+                        DB              $00
 ASM_SYM_STATE:         DS              ASM_SYM_MAX
 ASM_SYM_FLAGS:         DS              ASM_SYM_MAX
 ASM_SYM_KIND:          DS              ASM_SYM_MAX
@@ -2647,6 +5153,8 @@ ASM_SMOKE_PARSE_LABEL: DB              "LABEL",0
 ASM_SMOKE_PARSE_LABEL_COLON:
                         DB              "LABEL:",0
 ASM_SMOKE_PARSE_LDA:   DB              "LDA #1",0
+ASM_SMOKE_PARSE_LABEL_LDA_NC:
+                        DB              "LABEL LDA #1",0
 ASM_SMOKE_PARSE_LABEL_LDA:
                         DB              "LABEL: LDA #1",0
 ASM_SMOKE_PARSE_EQU:   DB              "NAME EQU $12",0
@@ -2655,10 +5163,65 @@ ASM_SMOKE_PARSE_ORG:   DB              "ORG $3000",0
 ASM_SMOKE_PARSE_END:   DB              "END",0
 ASM_SMOKE_PARSE_LABEL_ORG:
                         DB              "LABEL ORG $3000",0
+ASM_SMOKE_PARSE_LABEL_END:
+                        DB              "LABEL END",0
+ASM_SMOKE_PARSE_ORG_EMPTY:
+                        DB              "ORG",0
+ASM_SMOKE_PARSE_EQU_EMPTY:
+                        DB              "NAME EQU",0
+ASM_SMOKE_PARSE_DB_EMPTY:
+                        DB              "SEED DB",0
+ASM_SMOKE_PARSE_REG_LABEL:
+                        DB              "A LDA #1",0
+ASM_SMOKE_PARSE_LOCAL_LABEL:
+                        DB              ".LOOP",0
 ASM_SMOKE_PARSE_END_TAIL:
                         DB              "END X",0
 ASM_SMOKE_PARSE_DC:    DB              "DC $52",0
 ASM_SMOKE_PARSE_START: DB              "START",0
+ASM_PARSE_AT_ORG:      DB              "        ORG $3000",0
+ASM_PARSE_AT_OUT_EQU:  DB              "OUT EQU $3100",0
+ASM_PARSE_AT_COUNT_EQU:
+                        DB              "COUNT EQU 16",0
+ASM_PARSE_AT_ASMTEST_LDX:
+                        DB              "ASMTEST LDX #0",0
+ASM_PARSE_AT_STZ:      DB              "        STZ SUM",0
+ASM_PARSE_AT_LOOP_LDA:
+                        DB              "LOOP    LDA SEED,X",0
+ASM_PARSE_AT_STA_OUT_X:
+                        DB              "        STA OUT,X",0
+ASM_PARSE_AT_EOR_SUM:  DB              "        EOR SUM",0
+ASM_PARSE_AT_STA_SUM:  DB              "        STA SUM",0
+ASM_PARSE_AT_INX:      DB              "        INX",0
+ASM_PARSE_AT_CPX:      DB              "        CPX #COUNT",0
+ASM_PARSE_AT_BNE:      DB              "        BNE LOOP",0
+ASM_PARSE_AT_RTS:      DB              "        RTS",0
+ASM_PARSE_AT_SEED_DB:
+                        DB              "SEED    DB $52,$2D,$59,$4F",0
+ASM_PARSE_AT_DB_CONT:
+                        DB              "        DB $53,$4D,$20,$54",0
+ASM_PARSE_AT_END:      DB              "        END",0
+ASM_CLASS_SUM_EQU:     DB              "SUM EQU $3110",0
+ASM_CLASS_LDA_ZP:      DB              "        LDA $12",0
+ASM_CLASS_LDA_ABS:     DB              "        LDA $0012",0
+ASM_CLASS_ASL_A:       DB              "        ASL A",0
+ASM_CLASS_LDA_A:       DB              "        LDA A",0
+ASM_CLASS_LDA_DEC:     DB              "        LDA 12",0
+ASM_OPCODE_LOOP_LABEL: DB              "LOOP",0
+ASM_OPCODE_JSR_FOO:    DB              "        JSR FOO",0
+ASM_OPCODE_EXPECT:     DB              $A2,$00,$9C,$10,$31,$9D,$00,$31
+                        DB              $4D,$10,$31,$8D,$10,$31,$E8,$E0
+                        DB              $10,$D0,$ED,$60
+ASM_SMOKE_EXPR_DEC:    DB              "10",0
+ASM_SMOKE_EXPR_HEX_ZP:
+                        DB              "$12",0
+ASM_SMOKE_EXPR_HEX_ABS:
+                        DB              "$0012",0
+ASM_SMOKE_EXPR_CHAR_A:
+                        DB              "'A'",0
+ASM_SMOKE_EXPR_MASK:   DB              "%XXXXXXX1",0
+ASM_SMOKE_EXPR_PC:     DB              "*",0
+ASM_SMOKE_EXPR_EXTRA:  DB              "$12 $34",0
 ASM_SMOKE_SYM_LABEL:   DB              "LABEL",0
 ASM_SMOKE_SYM_FOO_EQU: DB              "FOO EQU $12",0
 ASM_SMOKE_SYM_ADDR_EQU:
@@ -2672,7 +5235,24 @@ ASM_HASH_THE_JOIN_EXEC_XY:
                         DB              $F7,$15,$AF,$A9
 ASM_HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
-ASM_SMOKE_MSG_PASS:    DB              "ASM 1.70 RJOIN OK W=$",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.10 TESTS OK",0
+ASM_SMOKE_MSG_T_BEGIN: DB              " 10 BEGIN",0
+ASM_SMOKE_MSG_T_LEX:   DB              " 20 LEX LINE",0
+ASM_SMOKE_MSG_T_TOKENS:
+                        DB              " 30 TOKENS",0
+ASM_SMOKE_MSG_T_VOCAB: DB              " 40 VOCAB",0
+ASM_SMOKE_MSG_T_PARSE: DB              " 50 PARSER",0
+ASM_SMOKE_MSG_T_EXPR:  DB              " 56 EXPR",0
+ASM_SMOKE_MSG_T_LINE:  DB              " 58 LINE",0
+ASM_SMOKE_MSG_T_EMIT:  DB              " 59 EMIT",0
+ASM_SMOKE_MSG_T_OPER:  DB              " 5A OPERAND",0
+ASM_SMOKE_MSG_T_OPCODE:
+                        DB              " 5B OPCODE",0
+ASM_SMOKE_MSG_T_SYMBOLS:
+                        DB              " 60 SYMBOLS",0
+ASM_SMOKE_MSG_T_LONG:  DB              " 80 LONG LINE",0
+ASM_SMOKE_MSG_T_END:   DB              " 90 END",0
+ASM_SMOKE_MSG_W:       DB              "W=$",0
 ASM_SMOKE_MSG_SYM:     DB              " SYM=$",0
 ASM_SMOKE_MSG_PC:      DB              " PC=$",0
 ASM_SMOKE_LINE_LONG:
