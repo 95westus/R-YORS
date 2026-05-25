@@ -293,6 +293,39 @@ THE makes named things findable.
 THE does not make raw addresses meaningful.
 ```
 
+TCS note: relocatable code should prefer hash-mediated calls over hard
+`JSR`/`JMP` addresses when the target may live outside branch range or move
+between RAM/ROM homes. In that shape, T.H.E. walks an explicit chain of hashes:
+
+```text
+hash1
+hash2
+00000000
+```
+
+The chain walker, not `hash2`, owns the error contract. Each routine-shaped hash
+entry should return through the shared ABI:
+
+```text
+C=1 success
+C=0 failure
+A=status/error code
+X/Y=detail or return value, by routine class
+```
+
+Default chain policy is `required, stop on first error`. If `hash1` fails, T.H.E.
+records the failing hash/index/status and stops before entering `hash2`.
+Optional error behavior belongs to the chain/context record, not to each routine:
+
+```text
+default policy: STOP_ON_ERROR
+optional handler: handler hash/vector
+later per-entry flags: REQUIRED, OPTIONAL, CONTINUE_ON_ERROR
+```
+
+Start simple: hash entries obey the ABI; T.H.E. checks carry after every call.
+Registering a chain-level error handler can come later if diagnostics need it.
+
 ## Word Find: ROR-bar
 
 Bucket: `word find`

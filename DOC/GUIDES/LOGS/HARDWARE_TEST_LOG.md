@@ -4,6 +4,382 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-05-25 ASM 2.37 RAM Reorg Proof On HIMON 00.0524(2131)
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.37 smoke ladder on hardware.
+This proves the post-reorg RAM layout: the resident ASM proof loads and runs at
+`$2000`, the standalone smoke assembly target is `$6800`, and
+`WARN_DS_WRAP` still prints in the final report.
+
+### Transcript Extract
+
+```text
+HIMON V 00.0524(2131)
+>L G
+L S19
+L @2000
+L OK=3E74 GO=2000
+ASM 2.37 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#LOADGO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-25 ASM 2.36 Visible WARN_DS_WRAP Proof On HIMON
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.36 smoke ladder on hardware.
+This proves the corrected visible warning path: `WARN_DS_WRAP` survives later
+smoke sessions and prints `WARN WARN_DS_WRAP` in the final pass report.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @3000
+L OK=3E74 GO=3000
+ASM 2.36 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$3000
+>
+```
+
+## 2026-05-25 ASM 2.35 Warning Visibility Gap On HIMON
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.35 smoke ladder on hardware,
+but did not print the expected `WARN WARN_DS_WRAP` report line. This showed
+that the directive smoke set `WARN_DS_WRAP`, but a later smoke session cleared
+session-local `ASM_REPORT_FLAGS` before the final report. This is not a
+functional assembler failure, but it means ASM 2.35 did not prove visible
+warning reporting.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @3000
+L OK=3E67 GO=3000
+ASM 2.35 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+>
+```
+
+## 2026-05-25 ASM 2.34 WARN_DS_WRAP Proof On HIMON
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.34 smoke ladder on hardware.
+This proves the `$5D DIRECT` slice after naming and asserting
+`WARN_DS_WRAP`: a `DS` initializer list whose final repeat stops partway through
+the list still succeeds, sets the warning report flag, and is not `BAD_RANGE`.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @3000
+L OK=3E43 GO=3000
+ASM 2.34 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+>
+```
+
+## 2026-05-25 ASM 2.33 DS Initializer-List Proof On HIMON
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.33 smoke ladder on hardware.
+This proves the `$5D DIRECT` slice after adding `DS` initializer lists:
+initializer bytes repeat to fill the requested count, truncate after the count,
+and advance PC/high-water correctly. This run predates the later
+`WARN_DS_WRAP` 2.34 change.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @3000
+L OK=3DF8 GO=3000
+ASM 2.33 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+
+#LOADGO# ENTRY=3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-25 ASM 2.32 DS Directive Proof On HIMON
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.32 smoke ladder on hardware.
+This proves the `$5D DIRECT` slice after adding `DS`: count/fill reservation,
+low-byte fill truncation, PC/high-water advance, empty-operand rejection, and
+count-over-255 rejection.
+
+### Transcript Extract
+
+```text
+L S19
+L @3000
+L OK=3C40 GO=3000
+ASM 2.32 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+
+#LOADGO# ENTRY=3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-24 ASM 2.31 ORG Policy Proof On HIMON 00.0524(2131)
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.31 smoke ladder under HIMON
+`00.0524(2131)`. This proves the `$5D DIRECT` slice after adding ORG placement
+policy: first pristine ORG may establish source origin, current/forward ORG is
+allowed, and later backward ORG fails `BAD_RANGE`.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @3000
+L OK=398C GO=3000
+ASM 2.31 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+
+#LOADGO# ENTRY=3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+## 2026-05-24 ASM 2.30 DB Directive Proof On HIMON 00.0524(2131)
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.30 smoke ladder under HIMON
+`00.0524(2131)`. This proves the `$5D DIRECT` slice on hardware for `DB`
+directive emission. `DC` remains parked for a later directive slice.
+
+### Transcript Extract
+
+```text
+L S19
+L @3000
+L OK=381B GO=3000
+ASM 2.30 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+
+#LOADGO# ENTRY=3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+## 2026-05-24 ASM 2.20 Fixup Proof On HIMON 00.0524(2131)
+
+### Summary
+
+`asm-v1-core-3000.s19` passed the onboard ASM 2.20 smoke ladder under HIMON
+`00.0524(2131)`. This proves the `$5C FIXUPS` slice on hardware: ABS16 and
+REL8 forward fixup records, selected `<`/`>` byte fixups, range failure, and
+pending-fixup rejection at `END`.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @3000
+L OK=3455 GO=3000
+ASM 2.20 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+
+#LOADGO# ENTRY=3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+## 2026-05-24 ASM 2.10 Re-Proof On HIMON 00.0524(2131)
+
+### Summary
+
+`asm-v1-core-3000.s19` still passed the onboard ASM 2.10 smoke ladder under
+HIMON `00.0524(2131)`. This re-proofs the ASMTEST path after the low-RAM
+worker/mirror/state layout work.
+
+### Transcript Extract
+
+```text
+HIMON V 00.0524(2131)
+>L G
+L S19
+L @3000
+L OK=2A97 GO=3000
+ASM 2.10 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+
+#LOADGO# ENTRY=3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
 ## 2026-05-24 ASM 2.10 Opcode Emitter Proof
 
 ### Summary

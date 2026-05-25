@@ -401,7 +401,10 @@ A [addr] [label[:]] MMM [operand] .
 - `DS count, init-list` is legal and emits/fills initialized storage by
   repeating/truncating the initializer list to `count` bytes. `DS count` must
   be a concrete, resolved value in v1 because it advances the assembly PC.
-  Initializer elements are byte-sized in v1.
+  Initializer elements are byte-sized in v1. If the final repeat stops partway
+  through the initializer list, ASM sets `WARN_DS_WRAP`; this is not
+  `BAD_RANGE`, and the line still succeeds. Reports print this as
+  `WARN WARN_DS_WRAP`.
 - `DB` v1 emits simple byte/word/address data: `DB $FF`, `DB 10` as byte
   `$0A`, `DB $1234`, `DB 'A'`, `DB <ADDR`, `DB >ADDR`, and `DB ADDR` when
   `ADDR` has known width. Unknown bare `DB ADDR` is `BAD WIDTH`; use
@@ -457,6 +460,9 @@ A [addr] [label[:]] MMM [operand] .
 - A new RAM ASM session starts at a configured scratch code origin unless the
   user supplies an address. Session start and `ORG expr` both set the same
   assembly PC after range validation. `*` reads that current PC.
+- The active ASM core RAM proof loads at `$2000`. Its standalone smoke target is
+  `$6800` and its data targets are `$6900/$6910`, keeping emitted proof bytes out
+  of the resident proof image while ASM remains RAM-hosted.
 - ASM v1 RAM symbol rows carry canonical name text/length for user symbols,
   FNV32 hash, value, kind, width, flags, and optional scope/session id. Hash is
   the lookup accelerator; text proves collision identity and supports `SYM`.

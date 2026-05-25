@@ -14,6 +14,12 @@ if (-not (Test-Path -LiteralPath $SourcePath)) {
 }
 
 $lineMax = 63
+$expectedOrg = '$6800'
+$expectedEqu = @{
+    OUT = '$6900'
+    SUM = '$6910'
+    COUNT = '16'
+}
 $expectedChecksum = 0x0F
 $expectedSeedBytes = 16
 
@@ -40,6 +46,7 @@ foreach ($r in $registers) { $reservedSet[$r] = $true }
 
 $defs = @{}
 $refs = @{}
+$orgSeen = $false
 $seedBytes = New-Object System.Collections.Generic.List[int]
 $maxSeen = 0
 
@@ -252,6 +259,14 @@ for ($lineNo = 1; $lineNo -le $lines.Count; $lineNo++) {
             if ($tail -notmatch '^\$[0-9A-Fa-f]{4}$') {
                 Fail-AsmTest $lineNo "ASMTEST ORG must be a four-digit hex address"
             }
+            $orgText = $tail.ToUpperInvariant()
+            if ($orgText -ne $expectedOrg) {
+                Fail-AsmTest $lineNo ("ASMTEST ORG {0}, expected {1}" -f $orgText, $expectedOrg)
+            }
+            if ($orgSeen) {
+                Fail-AsmTest $lineNo "ASMTEST must have only one ORG"
+            }
+            $orgSeen = $true
         }
         'EQU' {
             if (-not $label) {
@@ -259,6 +274,12 @@ for ($lineNo = 1; $lineNo -le $lines.Count; $lineNo++) {
             }
             if ($tail.Length -eq 0) {
                 Fail-AsmTest $lineNo "EQU requires an expression"
+            }
+            if ($expectedEqu.ContainsKey($label)) {
+                $equText = $tail.ToUpperInvariant()
+                if ($equText -ne $expectedEqu[$label]) {
+                    Fail-AsmTest $lineNo ("{0} EQU {1}, expected {2}" -f $label, $equText, $expectedEqu[$label])
+                }
             }
         }
         'DB' {
@@ -275,6 +296,10 @@ for ($lineNo = 1; $lineNo -le $lines.Count; $lineNo++) {
             Add-RefsFromTail $tail
         }
     }
+}
+
+if (-not $orgSeen) {
+    Fail-AsmTest 0 "ASMTEST ORG is missing"
 }
 
 foreach ($name in $refs.Keys) {
@@ -301,6 +326,6 @@ if ($checksum -ne $expectedChecksum) {
 $defsText = ($defs.Keys | Sort-Object) -join ','
 $refsText = ($refs.Keys | Sort-Object) -join ','
 $checksumText = '$' + ('{0:X2}' -f $checksum)
-Write-Host ("ASMTEST_3000 OK lines={0} max={1} seed={2} checksum={3}" -f $lines.Count, $maxSeen, $seedBytes.Count, $checksumText)
+Write-Host ("ASMTEST_3000 OK org={0} lines={1} max={2} seed={3} checksum={4}" -f $expectedOrg, $lines.Count, $maxSeen, $seedBytes.Count, $checksumText)
 Write-Host ("defs={0}" -f $defsText)
 Write-Host ("refs={0}" -f $refsText)

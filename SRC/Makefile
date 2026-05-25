@@ -127,15 +127,15 @@ ASM_RJOIN_PROOF_S19 := $(S19_DIR)/asm-rjoin-proof-3000.s19
 ASM_RJOIN_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 ASM_V1_CORE_SRC := $(ASM_DIR)/asm-v1-core.asm
 ASM_V1_CORE_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-core.obj
-ASM_V1_CORE_S19 := $(S19_DIR)/asm-v1-core-3000.s19
-ASM_V1_CORE_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
+ASM_V1_CORE_S19 := $(S19_DIR)/asm-v1-core-2000.s19
+ASM_V1_CORE_LINKFLAGS := -g -s -t -c2000 -hm19 -j -o
 ASMTEST_3000_SAMPLE := ../DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
 ASMTEST_3000_WDC_SIDE_OBJ := $(ASMTEST_3000_SAMPLE:.asm=.obj)
 ASMTEST_3000_WDC_SIDE_LST := $(ASMTEST_3000_SAMPLE:.asm=.lst)
-ASMTEST_3000_WDC_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asmtest-3000-wdc.obj
-ASMTEST_3000_WDC_LST := $(LST_DIR)/asmtest-3000-wdc.lst
-ASMTEST_3000_WDC_MAP := $(MAP_DIR)/asmtest-3000-wdc.map
-ASMTEST_3000_WDC_S19 := $(S19_DIR)/asmtest-3000-wdc.s19
+ASMTEST_3000_WDC_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asmtest-6800-wdc.obj
+ASMTEST_3000_WDC_LST := $(LST_DIR)/asmtest-6800-wdc.lst
+ASMTEST_3000_WDC_MAP := $(MAP_DIR)/asmtest-6800-wdc.map
+ASMTEST_3000_WDC_S19 := $(S19_DIR)/asmtest-6800-wdc.s19
 CALC_9A00_FNV_PROOF_SRC := $(PROOFS_DIR)/calc-9a00-fnv-proof.asm
 CALC_9A00_FNV_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/calc-9a00-fnv-proof.obj
 CALC_9A00_FNV_PROOF_S19 := $(S19_DIR)/calc-9a00-fnv-proof.s19
@@ -387,17 +387,21 @@ asm-v1-core: $(ASM_V1_CORE_S19)
 	@echo "Built $(ASM_V1_CORE_S19)."
 	@$(MAKE) artifacts
 
-asmtest-3000-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE)
+asmtest-6800-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE)"
 
-asmtest-3000-wdc: $(ASMTEST_3000_WDC_S19)
+asmtest-3000-check: asmtest-6800-check
+
+asmtest-6800-wdc: $(ASMTEST_3000_WDC_S19)
 	@$(MAKE) artifacts
-	@echo "Built WDC ASMTEST_3000 proof."
+	@echo "Built WDC ASMTEST_3000 pasted proof at 6800."
 	@echo "Listing: $(ASMTEST_3000_WDC_LST)"
 	@echo "Map: $(ASMTEST_3000_WDC_MAP)"
 	@echo "S19: $(ASMTEST_3000_WDC_S19)"
 
-asm-test: asmtest-3000-check asm-v1-core
+asmtest-3000-wdc: asmtest-6800-wdc
+
+asm-test: asmtest-6800-check asm-v1-core
 	@echo "ASM v1 smoke checks passed."
 
 calc-9a00-fnv-proof: $(ROM_LIB) $(CALC_9A00_FNV_PROOF_S19)
@@ -628,8 +632,8 @@ $(ASM_RJOIN_PROOF_S19): $(ASM_RJOIN_PROOF_OBJ) $(ROM_LIB)
 $(ASM_V1_CORE_S19): $(ASM_V1_CORE_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(ASM_V1_CORE_LINKFLAGS) $(ASM_V1_CORE_S19) $(ASM_V1_CORE_OBJ)
-	@echo [ps] set S9 start $$3000 in $(ASM_V1_CORE_S19)
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_V1_CORE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$2000 in $(ASM_V1_CORE_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_V1_CORE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
 
 $(CALC_9A00_FNV_PROOF_S19): $(CALC_9A00_FNV_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -808,6 +812,8 @@ $(ASMTEST_3000_WDC_OBJ): $(ASMTEST_3000_SAMPLE) Makefile
 $(ASMTEST_3000_WDC_S19): $(ASMTEST_3000_WDC_OBJ) Makefile
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) -g -s -t -hm19 -j -o $(ASMTEST_3000_WDC_S19) $(ASMTEST_3000_WDC_OBJ)
+	@echo [ps] set S9 start $$6800 in $(ASMTEST_3000_WDC_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASMTEST_3000_WDC_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903680094'; Set-Content -Path $$p -Value $$lines"
 
 $(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "New-Item -ItemType Directory -Force -Path '$(DOC_GENERATED_DIR)' | Out-Null"
@@ -841,4 +847,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asmtest-3000-check asmtest-3000-wdc asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asmtest-6800-check asmtest-6800-wdc asmtest-3000-check asmtest-3000-wdc asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

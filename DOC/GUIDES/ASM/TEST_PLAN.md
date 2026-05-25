@@ -29,24 +29,24 @@ DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
 Current host-side checker:
 
 ```text
-make -C SRC asmtest-3000-check
+make -C SRC asmtest-6800-check
 ```
 
 Current WDC proof build for the same sample:
 
 ```text
-make -C SRC asmtest-3000-wdc
+make -C SRC asmtest-6800-wdc
 ```
 
 This emits the independent WDC proof artifacts:
 
 ```text
-SRC/BUILD/lst/asmtest-3000-wdc.lst
-SRC/BUILD/map/asmtest-3000-wdc.map
-SRC/BUILD/s19/asmtest-3000-wdc.s19
+SRC/BUILD/lst/asmtest-6800-wdc.lst
+SRC/BUILD/map/asmtest-6800-wdc.map
+SRC/BUILD/s19/asmtest-6800-wdc.s19
 ```
 
-For this proof, `ORG $3000` in the source sample owns placement. The WDC linker
+For this proof, `ORG $6800` in the source sample owns placement. The WDC linker
 is run without a `-c` origin override so later dynamic linking policy can remain
 separate.
 
@@ -55,6 +55,17 @@ Current ASM core build:
 ```text
 make -C SRC asm-v1-core
 ```
+
+Current ASM core proof artifact:
+
+```text
+SRC/BUILD/s19/asm-v1-core-2000.s19
+```
+
+The ASM core RAM proof links and loads at `$2000`. Its smoke assembly target is
+`$6800`, with data targets at `$6900/$6910`, so emitted self-test bytes stay out
+of the resident proof image. `ASMTEST_3000.asm` remains the independent WDC
+sample and now owns its own pasted-test `ORG $6800`.
 
 ## Current Acceptance
 
@@ -79,7 +90,7 @@ seed XOR checksum is $0F
 Current passing output:
 
 ```text
-ASMTEST_3000 OK lines=24 max=49 seed=16 checksum=$0F
+ASMTEST_3000 OK org=$6800 lines=24 max=49 seed=16 checksum=$0F
 defs=ASMTEST,COUNT,LOOP,OUT,SEED,SUM
 refs=COUNT,LOOP,OUT,SEED,SUM
 ```
@@ -115,11 +126,11 @@ Required v1 good sample:
 ASMTEST_3000.asm
 ```
 
-`ASMTEST_3000.asm` must eventually assemble to code at `$3000` that:
+`ASMTEST_3000.asm` must eventually assemble to code at `$6800` that:
 
 ```text
-writes 16 seed bytes to $3100-$310F
-writes XOR checksum $0F to $3110
+writes 16 seed bytes to $6900-$690F
+writes XOR checksum $0F to $6910
 returns with RTS
 ```
 
@@ -301,9 +312,9 @@ LABEL LDA #1          -> MNEM with name
 LABEL: LDA #1         -> MNEM with name/HAS_COLON
 NAME EQU $12          -> DIR/EQU with name
 SEED DB $52           -> DIR/DB with name
-ORG $3000             -> DIR/ORG no name
+ORG $6800             -> DIR/ORG no name
 END                   -> DIR/END no tail
-LABEL ORG $3000       -> BAD SYM
+LABEL ORG $6800       -> BAD SYM
 LABEL END             -> BAD SYM
 END X                 -> BAD OPER
 ORG                   -> BAD OPER
@@ -318,9 +329,9 @@ A LDA #1              -> BAD SYM
 `ASMTEST_3000` parser-head fixtures:
 
 ```text
-        ORG $3000
-OUT EQU $3100
-SUM EQU $3110
+        ORG $6800
+OUT EQU $6900
+SUM EQU $6910
 COUNT EQU 16
 ASMTEST LDX #0
         STZ SUM
@@ -365,11 +376,13 @@ make -C SRC asm-v1-core
 
 The standalone `START` smoke path now checks label binding, duplicate
 rejection, hash-match/text-mismatch continuation, ZP/ABS/VALUE/MASK `EQU` rows,
-not-found lookup, and the later parser/expression/line/operand smoke slices.
-On success it prints an onboard test report:
+not-found lookup, emitted opcodes, ABS16/REL8 fixup records, DB directive
+emission, ORG placement policy, DS reservation/fill/list behavior, and the
+later parser/expression/line/operand smoke slices. On success it prints an
+onboard test report:
 
 ```text
-ASM 2.10 TESTS OK
+ASM 2.37 TESTS OK
  10 BEGIN
  20 LEX LINE
  30 TOKENS
@@ -380,13 +393,42 @@ ASM 2.10 TESTS OK
  59 EMIT
  5A OPERAND
  5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
  60 SYMBOLS
  80 LONG LINE
  90 END
-W=$.... SYM=$06 PC=$....
+WARN WARN_DS_WRAP
+W=$.... SYM=$06 PC=$6800
 ```
 
-Last hardware-proven `ASM 2.00` smoke on 2026-05-24:
+Hardware-proven `ASM 2.37` RAM-reorg smoke on 2026-05-25:
+
+```text
+L @2000
+L OK=3E74 GO=2000
+ASM 2.37 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+```
+
+Earlier hardware-proven `ASM 2.00` smoke on 2026-05-24:
 
 ```text
 L OK=25E8 GO=3000
@@ -399,11 +441,11 @@ W=$E2F4 SYM=$06 PC=$3000
 RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
 ```
 
-Current local `ASM 2.10` build expects:
+Hardware-proven `ASM 2.20` smoke on 2026-05-24:
 
 ```text
-L OK=2A97 GO=3000
-ASM 2.10 TESTS OK
+L OK=3455 GO=3000
+ASM 2.20 TESTS OK
  10 BEGIN
  20 LEX LINE
  30 TOKENS
@@ -414,15 +456,197 @@ ASM 2.10 TESTS OK
  59 EMIT
  5A OPERAND
  5B OPCODE
+ 5C FIXUPS
  60 SYMBOLS
  80 LONG LINE
  90 END
-W=$.... SYM=$06 PC=$3000
-RET A=00 X=00 Y=30 ... C
+W=$E2F4 SYM=$06 PC=$3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
 ```
 
-`PC=$3000` is expected here. The operand-classifier setup exercises
-`ORG $3000`, and the later symbol smoke binds against that live assembler PC.
+Hardware-proven `ASM 2.30` DB smoke on 2026-05-24:
+
+```text
+L OK=381B GO=3000
+ASM 2.30 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+Hardware-proven `ASM 2.31` ORG-policy smoke on 2026-05-24:
+
+```text
+L OK=398C GO=3000
+ASM 2.31 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+Hardware-proven `ASM 2.32` DS smoke on 2026-05-25:
+
+```text
+L S19
+L @3000
+L OK=3C40 GO=3000
+ASM 2.32 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+Hardware-proven `ASM 2.33` DS initializer-list smoke on 2026-05-25:
+
+```text
+L S19
+L @3000
+L OK=3DF8 GO=3000
+ASM 2.33 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+RET A=00 X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+Hardware-proven `ASM 2.34` `WARN_DS_WRAP` smoke on 2026-05-25:
+
+```text
+L S19
+L @3000
+L OK=3E43 GO=3000
+ASM 2.34 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+```
+
+Hardware-observed `ASM 2.35` warning visibility gap on 2026-05-25:
+
+```text
+L S19
+L @3000
+L OK=3E67 GO=3000
+ASM 2.35 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+W=$E2F4 SYM=$06 PC=$3000
+```
+
+2.35 set and asserted the directive warning internally, but the final pass
+report did not print `WARN WARN_DS_WRAP` because a later smoke session cleared
+session-local report flags before printing.
+
+Hardware-proven `ASM 2.36` visible warning smoke on 2026-05-25:
+
+```text
+L S19
+L @3000
+L OK=3E74 GO=3000
+ASM 2.36 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$3000
+```
+
+`PC=$3000` is expected here. This is the pre-reorg 2.36 baseline: the
+operand-classifier setup exercised `ORG $3000`, and the later symbol smoke
+bound against that live assembler PC.
 
 If the board returns before that line, the standalone entry now returns
 diagnostic registers:
@@ -431,6 +655,15 @@ diagnostic registers:
 A = smoke stage
 X = ASM_STATUS
 Y = ASM_SLOT
+```
+
+The failure path also tries to print one compact line before returning:
+
+```text
+ASM 2.36 TESTS FAIL
+ 5D DIRECT
+ D3 WARN_DS_WRAP
+S=$5D X=$00 Y=$D3
 ```
 
 `A` is the checkpoint that was about to run or was running when the failure
@@ -447,11 +680,61 @@ $58 ASM_ASSEMBLE_LINE smoke
 $59 ASM_EMIT_BYTE/ASM_EMIT_WORD_LE smoke
 $5A ASM_CLASS_OPERAND smoke
 $5B ASM_FIND_OPCODE/ASM_EMIT smoke
+$5C fixup record/patch smoke
+$5D DB/ORG/DS directive smoke
 $60 symbol smoke
 $71 RJOIN joiner lookup
 $72 RJOIN BIO write lookup
 $80 long-line rejection
 $90 ASM_END
+```
+
+For `$5C` fixup smoke, `Y` identifies the subtest when the failure is an
+internal assertion rather than an API status:
+
+```text
+$A1 abs16 forward label
+$A2 rel8 forward label
+$A3 rel8 out-of-range
+$A4 selected fixup group
+$A5 selected lo8 immediate
+$A6 selected hi8 immediate
+$A7 pending fixup at END
+$AF shared fixup site/base check
+$B1 abs16 BEGIN failed
+$B2 abs16 `JSR FOO` emit failed
+$B3 abs16 emitted bytes were not `20 FF FF`
+$B4 abs16 fixup row metadata failed
+$B5 abs16 patch site was wrong
+$B6 abs16 `FOO` label parse/bind failed
+$B7 abs16 row did not resolve
+$B8 abs16 low patch byte was wrong
+$B9 abs16 high patch byte was wrong
+$BA abs16 END failed after patch
+```
+
+For `$5D` directive smoke, `Y` identifies the directive subtest:
+
+```text
+$C1 DB begin failed
+$C2 `ADDR EQU $1234` setup failed
+$C3 mixed DB line failed
+$C4 emitted DB bytes were wrong
+$C5 DB PC/high-water was wrong
+$C6 empty DB did not fail BAD OPER
+$C7 unknown bare DB symbol did not fail BAD WIDTH
+$C8 ORG current did not preserve PC/high-water
+$C9 ORG forward did not advance PC/high-water
+$CA ORG backward did not fail BAD RANGE
+$CB DS emit failed
+$CC emitted DS bytes were wrong
+$CD DS PC/high-water was wrong
+$CE empty DS did not fail BAD OPER
+$CF DS count over 255 did not fail BAD RANGE
+$D0 DS initializer-list emit failed
+$D1 emitted DS initializer-list bytes were wrong
+$D2 DS initializer-list PC/high-water was wrong
+$D3 DS partial initializer-list repeat did not set WARN_DS_WRAP
 ```
 
 `X` is `ASM_STATUS`:
@@ -673,30 +956,30 @@ Current fixtures:
 
 ```text
 LDX #0       -> A2 00
-STZ $3110    -> 9C 10 31
-STA $3100,X  -> 9D 00 31
-EOR $3110    -> 4D 10 31
-STA $3110    -> 8D 10 31
+STZ $6910    -> 9C 10 69
+STA $6900,X  -> 9D 00 69
+EOR $6910    -> 4D 10 69
+STA $6910    -> 8D 10 69
 INX          -> E8
 CPX #COUNT   -> E0 10
 BNE LOOP     -> D0 ED when LOOP is a resolved backward label
 RTS          -> 60
 STZ #0       -> BAD MODE at opcode lookup
-JSR FOO      -> BAD FIX while fixup rows are not implemented
 ```
 
 The standalone `START` smoke emits this resolved byte stream into
 `ASM_CODE_BUF` and compares every byte:
 
 ```text
-A2 00 9C 10 31 9D 00 31 4D 10 31 8D 10 31 E8 E0 10 D0 ED 60
+A2 00 9C 10 69 9D 00 69 4D 10 69 8D 10 69 E8 E0 10 D0 ED 60
 ```
 
-Future fixtures:
+Fixup fixtures:
 
 ```text
-LDA SEED,X   -> BD lo hi after SEED resolves
 JSR FOO      -> 20 FF FF with abs16 fixup
+BNE FOO      -> D0 FF with rel8 fixup
+END          -> BAD FIX when a required fixup is still pending
 ```
 
 Acceptance:
@@ -705,7 +988,7 @@ Acceptance:
 known emitted bytes match W65C02S table
 irregular opcodes are explicit
 aaa-bbb-cc helpers are used only where regular
-unresolved operands fail BAD FIX until ASM 2.20 owns fixup rows
+unresolved operands create explicit fixup rows when the emitted mode is known
 ```
 
 ### ASM 2.20 Fixups
@@ -720,6 +1003,17 @@ lo8/hi8 selected fixups patch one byte
 END fails if required unresolved fixups remain
 ```
 
+Current foothold:
+
+```text
+abs16 forward label resolves little endian
+rel8 forward label resolves with branch base after operand
+rel8 out-of-range forward label fails BAD RANGE
+selected lo8/hi8 immediate fixups patch one byte
+END fails BAD FIX if a required fixup remains pending
+unresolved symbol hash/name is snapshotted before suffix/EOL token scans
+```
+
 Acceptance:
 
 ```text
@@ -728,26 +1022,60 @@ patch site is exact
 branch base is address after branch operand
 ```
 
-### ASM 2.30 Directives
+### ASM 2.30-2.34 Directives
 
-Required fixtures:
+Current DB fixture:
 
 ```text
-ORG $3000
-NAME EQU expr
-DB $FF,10,'A',$1234,<ADDR,>ADDR
-DS 2,$0D,$0A
-END
+ADDR EQU $1234
+SEED DB $FF,10,'A',$1234,<ADDR,>ADDR
 ```
 
-Acceptance:
+Current ORG fixtures:
 
 ```text
-ORG forward/current only
-backward ORG is error
+ORG *
+ORG $3010
+ORG $300F
+```
+
+Current DS fixtures:
+
+```text
+BUF DS 3,$AA
+DS 2,$1234
+BUF DS
+DS $0100
+PAT DS 6,$AA,$55,'A','5'
+DS 3,$11,$22,$33,$44
+```
+
+Current DB/ORG/DS acceptance:
+
+```text
 DB emits byte/word by source/symbol width
 unknown bare DB ADDR is BAD WIDTH
-DS count is resolved and byte-sized initializer repeats/truncates
+empty DB is BAD OPER
+DB emits FF 0A 41 34 12 34 12 for the current fixture
+first pristine ORG may establish source origin from scratch PC
+ORG current is allowed
+ORG forward is allowed and updates high-water PC
+ORG backward is BAD RANGE
+DS repeats the fill byte
+DS fill value truncates to the low byte
+DS initializer lists repeat to fill the requested count
+DS initializer lists truncate after the requested count
+DS partial initializer-list repeats set WARN_DS_WRAP, not BAD RANGE
+reports print WARN WARN_DS_WRAP when WARN_DS_WRAP is set
+DS advances PC/high-water by count
+empty DS is BAD OPER
+DS count >255 is BAD RANGE
+```
+
+Parked for later directive slices:
+
+```text
+DC constants
 ```
 
 ### ASM 2.40 Report
@@ -782,19 +1110,19 @@ fixups, `ASMTEST_3000.asm` becomes a full assembly acceptance test.
 Expected source:
 
 ```text
-ORG $3000
-OUT EQU $3100
-SUM EQU $3110
+ORG $6800
+OUT EQU $6900
+SUM EQU $6910
 COUNT EQU 16
 ...
 END
 ```
 
-Expected behavior after running at `$3000`:
+Expected behavior after running at `$6800`:
 
 ```text
-$3100-$310F = 52 2D 59 4F 52 53 20 41 53 4D 20 54 45 53 54 2E
-$3110       = 0F
+$6900-$690F = 52 2D 59 4F 52 53 20 41 53 4D 20 54 45 53 54 2E
+$6910       = 0F
 ```
 
 Host-side expected image comparison should be added before trusting onboard
@@ -812,7 +1140,7 @@ make -C SRC asm-test
 Current `asm-test` expands to:
 
 ```text
-make -C SRC asmtest-3000-check
+make -C SRC asmtest-6800-check
 make -C SRC asm-v1-core
 ```
 
@@ -828,7 +1156,7 @@ make -C SRC asm-classifier-test
 make -C SRC asm-emitter-test
 make -C SRC asm-fixup-test
 make -C SRC asm-directive-test
-make -C SRC asmtest-3000-assemble
+make -C SRC asmtest-6800-assemble
 ```
 
 Every new test target must be small enough to diagnose without a full symbolic
@@ -854,8 +1182,8 @@ Minimum bench proof for `ASMTEST_3000`:
 load ASM
 paste/load ASMTEST_3000
 END succeeds
-RUN $3000
-display $3100-$3110
+RUN $6800
+display $6900-$6910
 verify seed and checksum
 record transcript in HARDWARE_TEST_LOG
 ```

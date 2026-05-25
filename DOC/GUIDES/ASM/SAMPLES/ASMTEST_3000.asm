@@ -1,11 +1,11 @@
 ; ASM v1 smoke test. Paste/load as ASM source.
-; Run at $3000, then display $3100-$3110.
-; Expected: $3100-$310F seed, $3110 checksum $0F.
+; Run at $6800, then display $6900-$6910.
+; Expected: $6900-$690F seed, $6910 checksum $0F.
 
-        ORG $3000
+        ORG $6800
 
-OUT EQU $3100
-SUM EQU $3110
+OUT EQU $6900
+SUM EQU $6910
 COUNT EQU 16
 
 ASMTEST LDX #0
