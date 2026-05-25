@@ -7,7 +7,7 @@
 ; - Destructively erases/programs D000-FFFF in flash banks 0-2.
 ; - Verifies guard failures for protected monitor flash $D000-$FFFF.
 ; - Prompts for one raw byte write to any entered address, no range guard.
-; - Optional stage-2 sector worker copies one RAM worker, then programs 4K.
+; - Optional stage-2 sector worker copies one RAM worker to $0600, then programs 4K.
 ; ----------------------------------------------------------------------------
 
                         MODULE          TEST_FLASH_APP
@@ -64,7 +64,8 @@ TF_BANK_PCR_MASK          EQU             $EE
 ;TF_BANK_DELAY_A           EQU             $6A
 ;TF_BANK_DELAY_X           EQU             $B6
 ;TF_BANK_DELAY_Y           EQU             $F8
-TF_STAGE2_WORKER_RAM      EQU             $1300
+TF_STAGE2_WORKER_RAM      EQU             $0600
+TF_WORKER_CODE_TRAY_END   EQU             $09FF
 TF_FLASH_UNLOCK1          EQU             $D555
 TF_FLASH_UNLOCK2          EQU             $AAAA
 TF_FAST_ADDR_LO           EQU             $CD

@@ -2,10 +2,11 @@
 ; str8-worker.asm
 ; RAM-resident STR8 bank-copy worker.
 ;
-; This image links for $0200, is stored in high flash packed against $FFEF, and
-; is copied to $0200 before destructive STR8 bank operations. Keep it independent:
-; once running, it must not call ROM code because it switches flash banks and
-; may erase bank 3's top sector.
+; This image links for $0200, must fit in the $0200-$09FF STR8 RAM worker tray,
+; is stored in high flash packed against $FFEF, and is copied to $0200 before
+; destructive STR8 bank operations. Keep it independent: once running, it must
+; not call ROM code because it switches flash banks and may erase bank 3's top
+; sector.
 ; ----------------------------------------------------------------------------
 
                         MODULE          STR8_WORKER_APP
@@ -43,14 +44,16 @@ STR8W_TMO0              EQU             $D4
 STR8W_TMO1              EQU             $D5
 STR8W_TMO2              EQU             $D6
 
-STR8_MARK_SECTOR_HI     EQU             $0A00
-STR8_MARK_ADDR_LO       EQU             $0A01
-STR8_MARK_ADDR_HI       EQU             $0A02
-STR8_COPY_SRC_BANK      EQU             $0A05
-STR8_COPY_DST_BANK      EQU             $0A06
-STR8_COPY_MODE          EQU             $0A07
-STR8_MAP_B0             EQU             $0A09
-STR8_STAGE_BUF_HI       EQU             $0A0D
+STR8_STATE_BASE         EQU             $1FE9
+STR8_STATE_END          EQU             $1FFF
+STR8_MARK_SECTOR_HI     EQU             $1FE9
+STR8_MARK_ADDR_LO       EQU             $1FEA
+STR8_MARK_ADDR_HI       EQU             $1FEB
+STR8_COPY_SRC_BANK      EQU             $1FEE
+STR8_COPY_DST_BANK      EQU             $1FEF
+STR8_COPY_MODE          EQU             $1FF0
+STR8_MAP_B0             EQU             $1FF2
+STR8_STAGE_BUF_HI       EQU             $1FF6
 
 STR8_SECTOR_BUF_HI      EQU             $40
 STR8_SECTOR_BUF_END_HI  EQU             $50

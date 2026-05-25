@@ -308,8 +308,8 @@ operation is active.
 
 The current combined ROM stores the worker source at bank 3 `$FD1E-$FFEF`.
 Before `B`, `E`, `M`, `U`, `0`, `1`, or `2`, resident STR8 at `$F000` copies
-that worker into the `$0200-$04D1` STR8 RAM tray and then calls `$0200`. The
-worker uses `$0A00-$0A16` as its state/update board, uses `$4000-$4FFF` as the
+that worker into the `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The
+worker uses `$1FE9-$1FFF` as its state/update board, uses `$4000-$4FFF` as the
 4K bank-copy sector buffer, and restores bank 3 before returning. The `U` HIMON
 updater also uses `$5000-$6FFF` so C/D/E can all be staged before erase.
 

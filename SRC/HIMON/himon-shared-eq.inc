@@ -253,8 +253,9 @@ LOAD_BUF                   EQU             $7C00
 LOAD_DATA_BUF              EQU             $7D00
 
 ; keep reserved:
-; - $0300-$12FF low 4K reserve (no live allocations)
-; - $1300-$13FF flash transient / RAM worker page
-; - $1400-$1FFF system scratch and transient metadata
+; - $0200-$09FF 2K RAM flash worker/RJOIN code tray
+; - $0A00-$19FF 4K flash sector mirror / update image tray
+; - $1A00-$1FE8 RJOIN/debug trace and reserved low-RAM scratch
+; - $1FE9-$1FFF STR8 worker/update state board
 ; - UPA_BASE-UPA_END user program area
 ; - HIUPA-HIUPA_END high UPA/scratch area before page buffers

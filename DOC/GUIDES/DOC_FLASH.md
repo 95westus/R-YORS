@@ -160,9 +160,10 @@ scope: `SRC/STR8/str8.asm`, `SRC/STR8/str8-worker.asm`,
 generated HTML.
 
 change: The stored STR8 RAM worker moved from `$FC00-$FED1` to `$FD1E-$FFEF`.
-STR8 now copies the exact worker length into `$0200-$04D1` instead of assuming
-a page-aligned four-page source. The ROM builder recomputes the packed worker
-address from the worker size and validates STR8's copy constants.
+STR8 now copies the exact worker length into the `$0200-$09FF` RAM tray instead
+of assuming a page-aligned four-page source. The ROM builder recomputes the
+packed worker address from the worker size and validates STR8's copy constants
+and RAM tray limit.
 
 effect: The old two-hole top-sector picture is stale. STR8 code/data grows
 upward from `$F000`, the worker grows downward from `$FFEF`, and the current
@@ -438,7 +439,7 @@ LEAF is the future friendly front door built on IVI. Payload use of future LEAF
 patch routines is optional and has no flash authority. The bringup guide points
 to the current
 `$F000` resident shell, `$FD1E-$FFEF` worker
-source, `$0200-$04D1` RAM tray, `$4000-$4FFF` copy buffer, and `$4000-$6FFF`
+source, `$0200-$09FF` RAM tray, `$4000-$4FFF` copy buffer, and `$4000-$6FFF`
 HIMON update staging area.
 
 effect: Do not expose `U T`, `U H`, or `U S` as operator commands. Use `U` only

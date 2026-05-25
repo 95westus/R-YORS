@@ -241,8 +241,10 @@ restores Bank 3 before returning to resident STR8
 Current RAM workspace:
 
 ```text
-$0200-$04D1   STR8 RAM tray copied from $FD1E-$FFEF
-$0A00-$0A16   STR8 worker/update state board and map bytes
+$0200-$09FF   2K RAM flash worker/RJOIN code tray, STR8 copied from $FD1E-$FFEF at exact worker length
+$0A00-$19FF   4K flash sector mirror / update image tray
+$1A00-$1FE8   RJOIN/debug trace and reserved low-RAM scratch
+$1FE9-$1FFF   STR8 worker/update state board and map bytes
 $4000-$4FFF   4K sector buffer for bank copy
 $4000-$6FFF   staged C/D/E sector buffers during U
 ```
@@ -264,7 +266,7 @@ $FA83-$FD1D  contiguous unused $FF growth hole
 
 $FD1E-$FFEF  stored STR8 RAM worker image
              size $02D2 = 722 bytes
-             linked to run at $0200-$04D1
+             linked at $0200 inside the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  STR8 config pocket
              size $000A = 10 bytes

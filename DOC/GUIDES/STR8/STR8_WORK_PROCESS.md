@@ -20,8 +20,8 @@ R          reset
 ```
 
 The current ROM proof runs STR8 from bank 3 `$F000`, stores the RAM flash
-worker at `$FD1E-$FFEF`, copies that worker to `$0200-$04D1`, uses
-`$0A00-$0A16` for worker/update state, stages ordinary copy sectors through
+worker at `$FD1E-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
+`$1FE9-$1FFF` for worker/update state, stages ordinary copy sectors through
 `$4000-$4FFF`, and stages HIMON update sectors through `$4000-$6FFF`.
 
 The current build targets are:

@@ -19,7 +19,8 @@
 ;
 ; THIS FILE: low-level flash service.
 ; - Public wrappers execute from ROM only while copying/setup is safe.
-; - Actual erase/program command sequences execute from RAM at $1300.
+; - Actual erase/program command sequences execute from RAM at $0600, inside
+;   the $0200-$09FF unified RAM flash worker-code tray.
 ; - Erase API granularity is one 4K sector per call. Code that needs to erase
 ;   $8xxx and $9xxx must call FLASH_SECTOR_ERASE_XY twice.
 ; - The protected monitor region is $D000-$FFFF; public entry points only
@@ -35,7 +36,13 @@
                         XDEF            FLASH_WRITE_BYTE_AXY
                         XDEF            FLASH_WRITE_BYTE_RAW_AXY
 
-FLASH_RAM_WORKER          EQU             $1300
+FLASH_RAM_WORKER          EQU             $0600
+FLASH_WORKER_CODE_TRAY_BASE EQU           $0200
+FLASH_WORKER_CODE_TRAY_END EQU            $09FF
+FLASH_SECTOR_MIRROR_BASE  EQU             $0A00
+FLASH_SECTOR_MIRROR_END   EQU             $19FF
+FLASH_TRANSIENT_TRAY_BASE EQU             FLASH_SECTOR_MIRROR_BASE
+FLASH_TRANSIENT_TRAY_END  EQU             FLASH_SECTOR_MIRROR_END
 FLASH_TARGET_MIN_HI       EQU             $80
 FLASH_PROTECT_HI          EQU             $D0
 FLASH_UNLOCK1             EQU             $D555
@@ -94,7 +101,7 @@ FLASH_ADDR_ALLOWED_XY:
 ; EXCEPTIONS/NOTES:
 ; - Refuses targets outside $8000-$CFFF.
 ; - Erases exactly one 4K sector per call. Callers own any multi-sector loop.
-; - Runs the flash command/poll worker from RAM at $1300.
+; - Runs the flash command/poll worker from RAM at $0600.
 ; - IRQs are masked during the command window; NMI must not be asserted.
 ; ----------------------------------------------------------------------------
 FLASH_SECTOR_ERASE_XY:
@@ -140,7 +147,7 @@ FLASH_SECTOR_ERASE_RAW_XY:
 ; EXCEPTIONS/NOTES:
 ; - Refuses targets outside $8000-$CFFF.
 ; - Flash must already be erased enough for requested 1->0 bit transitions.
-; - Runs the flash command/poll worker from RAM at $1300.
+; - Runs the flash command/poll worker from RAM at $0600.
 ; - IRQs are masked during the command window; NMI must not be asserted.
 ; ----------------------------------------------------------------------------
 FLASH_WRITE_BYTE_AXY:

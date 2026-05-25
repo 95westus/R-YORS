@@ -186,7 +186,7 @@ $FA83-$FD1D  contiguous unused $FF growth hole
 
 $FD1E-$FFEF  stored STR8 RAM worker image
              size $02D2 = 722 bytes
-             copied to and run from $0200-$04D1
+             copied to and run from the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
              size $000A = 10 bytes
@@ -813,7 +813,7 @@ B command, B0 ROT:  copy bank 1 -> bank 0, bank 2 -> bank 1, bank 3 -> bank 2
 Each 4K window reads from the source bank, writes the destination bank, and
 verifies by simple read-back compare. The `$F000` ROM build uses the same copy
 policy by first copying its worker from bank 3 `$FD1E-$FFEF` into RAM
-`$0200-$04D1`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
+`$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. Catalog
 lookup, hashed metadata, wear leveling, and cycle counts are later work.

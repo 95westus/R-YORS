@@ -209,6 +209,14 @@ $himonStart = Get-SymbolAddress -MapPath $HimonMapPath -Name "START"
 $himonNmi = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_NMI"
 $himonIrq = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_IRQ_MASTER"
 $himonEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "_END_DATA"
+$flashRamWorker = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_RAM_WORKER"
+$flashWorkerCodeTrayBase = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_WORKER_CODE_TRAY_BASE"
+$flashWorkerCodeTrayEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_WORKER_CODE_TRAY_END"
+$flashSectorMirrorBase = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_SECTOR_MIRROR_BASE"
+$flashSectorMirrorEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_SECTOR_MIRROR_END"
+$flashTransientTrayBase = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_TRANSIENT_TRAY_BASE"
+$flashTransientTrayEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_TRANSIENT_TRAY_END"
+$flashWorkerSize = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_WORKER_SIZE"
 
 $str8Start = Get-SymbolAddress -MapPath $Str8MapPath -Name "START"
 $str8Nmi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_IVY_ENTRY_NMI"
@@ -217,6 +225,8 @@ $str8End = Get-SymbolAddress -MapPath $Str8MapPath -Name "_END_DATA"
 
 $workerRunStart = Get-SymbolAddress -MapPath $WorkerMapPath -Name "START"
 $workerRunEnd = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_WORKER_END"
+$workerStateBase = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_STATE_BASE"
+$workerStateEnd = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_STATE_END"
 $workerSize = $workerRunEnd - $workerRunStart
 $workerStoreEndExclusive = 0xFFF0
 $workerStoreStart = $workerStoreEndExclusive - $workerSize
@@ -225,6 +235,10 @@ $str8WorkerStoreLo = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_
 $str8WorkerStoreHi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_STORE_HI"
 $str8WorkerCopyLenLo = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_COPY_LEN_LO"
 $str8WorkerCopyLenHi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_COPY_LEN_HI"
+$str8WorkerTraySize = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_TRAY_SIZE"
+$str8WorkerTrayEnd = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_TRAY_END"
+$str8StateBase = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_STATE_BASE"
+$str8StateEnd = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_STATE_END"
 $str8WorkerStoreStart = (($str8WorkerStoreHi -band 0xFF) -shl 8) -bor ($str8WorkerStoreLo -band 0xFF)
 $str8WorkerCopyLen = (($str8WorkerCopyLenHi -band 0xFF) -shl 8) -bor ($str8WorkerCopyLenLo -band 0xFF)
 
@@ -248,6 +262,39 @@ if ($str8End -gt $workerStoreStart) {
 }
 if ($workerRunStart -ne 0x0200) {
     throw ("STR8 worker START is {0:X4}; expected 0200" -f $workerRunStart)
+}
+if ($str8WorkerTraySize -ne 0x0800) {
+    throw ("STR8 worker tray size is {0:X}; expected 800 for RAM tray 0200-09FF" -f $str8WorkerTraySize)
+}
+if ($str8WorkerTrayEnd -ne 0x09FF) {
+    throw ("STR8 worker tray end is {0:X4}; expected 09FF" -f $str8WorkerTrayEnd)
+}
+if (($workerRunStart + $str8WorkerTraySize - 1) -ne $str8WorkerTrayEnd) {
+    throw ("STR8 worker tray {0:X4}+{1:X} ends at {2:X4}; expected {3:X4}" -f $workerRunStart, $str8WorkerTraySize, ($workerRunStart + $str8WorkerTraySize - 1), $str8WorkerTrayEnd)
+}
+if ($str8StateBase -ne 0x1FE9) {
+    throw ("STR8 state base is {0:X4}; expected 1FE9" -f $str8StateBase)
+}
+if ($str8StateEnd -ne 0x1FFF) {
+    throw ("STR8 state end is {0:X4}; expected 1FFF" -f $str8StateEnd)
+}
+if ($workerStateBase -ne $str8StateBase -or $workerStateEnd -ne $str8StateEnd) {
+    throw ("STR8 worker state board {0:X4}-{1:X4}; expected resident {2:X4}-{3:X4}" -f $workerStateBase, $workerStateEnd, $str8StateBase, $str8StateEnd)
+}
+if ($flashWorkerCodeTrayBase -ne $workerRunStart -or $flashWorkerCodeTrayEnd -ne $str8WorkerTrayEnd) {
+    throw ("Flash worker code tray {0:X4}-{1:X4}; expected STR8 tray {2:X4}-{3:X4}" -f $flashWorkerCodeTrayBase, $flashWorkerCodeTrayEnd, $workerRunStart, $str8WorkerTrayEnd)
+}
+if ($flashRamWorker -lt $flashWorkerCodeTrayBase -or (($flashRamWorker + $flashWorkerSize - 1) -gt $flashWorkerCodeTrayEnd)) {
+    throw ("Flash RAM worker {0:X4}+{1:X} does not fit in code tray {2:X4}-{3:X4}" -f $flashRamWorker, $flashWorkerSize, $flashWorkerCodeTrayBase, $flashWorkerCodeTrayEnd)
+}
+if ($flashSectorMirrorBase -ne 0x0A00 -or $flashSectorMirrorEnd -ne 0x19FF) {
+    throw ("Flash sector mirror {0:X4}-{1:X4}; expected 0A00-19FF" -f $flashSectorMirrorBase, $flashSectorMirrorEnd)
+}
+if ($flashTransientTrayBase -ne $flashSectorMirrorBase -or $flashTransientTrayEnd -ne $flashSectorMirrorEnd) {
+    throw ("Flash transient tray alias {0:X4}-{1:X4}; expected sector mirror {2:X4}-{3:X4}" -f $flashTransientTrayBase, $flashTransientTrayEnd, $flashSectorMirrorBase, $flashSectorMirrorEnd)
+}
+if ($workerSize -gt $str8WorkerTraySize) {
+    throw ("STR8 worker size is {0:X}; exceeds RAM tray 0200-09FF size {1:X}" -f $workerSize, $str8WorkerTraySize)
 }
 if ($workerSize -le 0 -or $workerSize -gt $workerStoreSize) {
     throw ("STR8 worker size is {0:X}; expected 1..{1:X}" -f $workerSize, $workerStoreSize)

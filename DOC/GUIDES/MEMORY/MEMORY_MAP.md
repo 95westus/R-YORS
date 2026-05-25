@@ -56,8 +56,9 @@ space.
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: HIMON starts at
 CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
 `$7000`, the STR8 RAM worker source is stored at CPU `$FD1E` / file offset
-`$7D1E`, and all live hardware vectors enter the STR8-owned top sector. RESET
-points to STR8 at `$F000`; NMI and IRQ/BRK point to STR8 IVI stubs at
+`$7D1E`, copied into the `$0200-$09FF` RAM worker-code tray, and all live
+hardware vectors enter the STR8-owned top sector. RESET points to STR8 at
+`$F000`; NMI and IRQ/BRK point to STR8 IVI stubs at
 `$F089`/`$F09D`, which dispatch through the RAM vector cells.
 
 Combined image layout:
@@ -69,7 +70,7 @@ $EAF4-$EFFF   current image gap inside the used E sector
 $F000-$FA82   STR8 resident shell, IVI stubs, and HIMON updater
 $F76F         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
 $FA83-$FD1D   current contiguous top-sector growth hole
-$FD1E-$FFEF   STR8 RAM-worker source, copied to $0200-$04D1 for B/E/M/U/0/1/2
+$FD1E-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray for B/E/M/U/0/1/2
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
@@ -166,13 +167,10 @@ $00E6-$00E7   shared utility temp/scratch bytes
 $00E8-$00EF   shared pointer/length/flags/mode lane for FTDI/SYS/string helpers
 $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
-$0200-$04D1   STR8 RAM worker image while flash mutation runs
-$04D2-$05FF   reserved low RAM tray slack
-$0600-$09FF   reserved low RAM, no live allocations
-$0A00-$0A16   STR8 worker/update state board and map-result bytes
-$0A17-$12FF   reserved low RAM, no live allocations
-$1300-$13FF   flash transient / reserved worker page
-$1400-$1FFF   system scratch and transient metadata
+$0200-$09FF   2K RAM flash worker/RJOIN code tray
+$0A00-$19FF   4K flash sector mirror / update image tray
+$1A00-$1FE8   RJOIN/debug trace and reserved low-RAM scratch
+$1FE9-$1FFF   STR8 worker/update state board and map-result bytes
 $2000-$77FF   UPA, user program area
 $7800-$79FF   HIUPA, high user/scratch area
 $7A00-$7AFF   scratch buffer
@@ -217,17 +215,23 @@ $7FC0-$7FDF   VIA
 $7FE0-$7FFF   FTDI VIA
 ```
 
-During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 temporarily
-clobbers `$0200-$04D1` with the copied RAM worker and `$4000-$4FFF` with the 4K
-sector staging buffer. During `U`, STR8 also uses `$5000-$6FFF` so it can stage
-all three HIMON sectors before the first erase. Normal HIMON/user code should
-treat those ranges as volatile while STR8 is performing flash work.
+During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 owns the
+`$0200-$09FF` RAM worker-code tray and `$4000-$4FFF` 4K sector staging buffer.
+The current worker copy is exact-length inside that tray, but normal HIMON/user
+code should treat the whole tray as volatile while STR8 is performing flash
+work. During `U`, STR8 also uses `$5000-$6FFF` so it can stage all three HIMON
+sectors before the first erase.
 
-STR8 also uses fixed low-RAM bytes `$0A00-$0A16` for bank/sector copy state,
+STR8 also uses fixed low-RAM bytes `$1FE9-$1FFF` for bank/sector copy state,
 failure address reporting, startup flags, update state, and the `M` command's
 four bank map mask bytes. The `M` command runs the RAM worker from `$0200`,
-stores one status mask byte per bank at `$0A09-$0A0C`, restores bank 3, then
+stores one status mask byte per bank at `$1FF2-$1FF5`, restores bank 3, then
 prints the map from resident STR8.
+
+The `$1A00-$1FE8` reserved range is the preferred future home for a compact
+hash/RJOIN debug stack. That stack should be a breadcrumb trace for dynamic
+join/load/fixup failures, not the CPU stack and not required for normal success
+paths.
 
 Current high-RAM vectors:
 

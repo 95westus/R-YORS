@@ -153,6 +153,24 @@
 - Keep PACK5/3x5 as a candidate for compact 3-letter mnemonic tables, because
   three 5-bit characters fit in two bytes.
 
+## RJOIN Debug Hash Stack Direction
+
+- Reserve the idea of a small RAM hash/RJOIN debug stack for post-crash
+  diagnosis. This is not the CPU hardware stack and not a current ABI; it is a
+  breadcrumb trace area for dynamic join/load/fixup work.
+- The current low-RAM map leaves `$1A00-$1FE8` as RJOIN/debug trace and
+  reserved scratch. A future hash stack can live there while UPA remains at
+  `$2000`.
+- Early entries should be compact and boring: hash or routine ID, stage byte,
+  operation kind, worker mode, fixup site or target address, and an optional
+  PC/error/register snapshot when a failure path has those values cheaply.
+- Use it to answer crash questions such as "which hash was being joined?",
+  "which fixup was being applied?", "which flash worker mode was active?", and
+  "what was the last resolved dependency before the fault?"
+- Keep it append/ring-shaped at first. Do not make success paths depend on it;
+  losing trace data should never change loader, assembler, STR8, or flash
+  mutation behavior.
+
 ## Flash Direction
 
 - Keep bank 3 cleaner for boot/current-monitor/catalog/trampoline material. The
