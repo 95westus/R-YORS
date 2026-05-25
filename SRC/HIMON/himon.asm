@@ -3526,7 +3526,7 @@ HIMON_VERSION_FNV:
                         DW              MSG_HIMON_VERSION_TEXT
 
 CMD_STR8_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$18,$0E,$AD,$A2,CMD_HASH_KIND_EXEC_TEXT ; STR8 $A2AD0E18 EXEC+TEXT
+                        DB              'F','N',CMD_FNV_SIG2,$18,$0E,$AD,$A2,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; STR8 $A2AD0E18 EXEC+CONFIRM+TEXT
                         DW              $F000
                         DW              TXT_STR8
 
