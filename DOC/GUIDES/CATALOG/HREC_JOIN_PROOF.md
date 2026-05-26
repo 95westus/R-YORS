@@ -18,12 +18,12 @@ Expected current output:
 
 ```text
 HREC JOIN PROOF $4000
-WRITE H=$379FE930 E=$DF09 OK
-JOINER H=$A9AF15F7 E=$DB0D OK
-READ H=$20285B85 E=$DEF7 OK
-FLUSH H=$2F6622B9 E=$E212 OK
-CTRL H=$426150D2 E=$E22E OK
-HEX H=$ADD714B1 E=$E18D IN=A OUT=$0A OK
+WRITE H=$379FE930 E=$E2DF OK
+JOINER H=$A9AF15F7 E=$DE77 OK
+READ H=$20285B85 E=$E2CD OK
+FLUSH H=$2F6622B9 E=$E46C OK
+CTRL H=$426150D2 E=$E478 OK
+HEX H=$ADD714B1 E=$E564 IN=A OUT=$0A OK
 MISSING H=$DEADBEEF E=---- NF OK
 KIND K=$02 OK
 HEXINV H=$ADD714B1 E=$E18D IN=G C=0 OK
@@ -32,7 +32,7 @@ TYPE 8 HEX HASH, CR QUIT
 J> 76543210
 USER H=$76543210 E=$4235 OK
 J> 379FE930
-USER H=$379FE930 E=$DF09 OK
+USER H=$379FE930 E=$E2DF OK
 J> DEADBEEF
 USER H=$DEADBEEF E=---- NF
 J>
@@ -71,7 +71,8 @@ local scanner -> THE_JOIN_EXEC_XY -> all ordinary resident joins
 name:        THE_JOIN_EXEC_XY
 hash32:      $A9AF15F7
 stored:      F7 15 AF A9
-record kind: $01 inline executable
+record kind: $05 executable pointer with display text
+text:        HASH ACQUIRE
 ```
 
 Current direction updates that matter here:
@@ -474,10 +475,10 @@ THE_JOIN_EXEC_XY
 THE_JOIN_LOAD_HASH_XY
 ```
 
-`THE_JOIN_EXEC_XY` also has its own FNV record, so `S`, `COPY`, `MOVE`, `FILL`,
-`MODIFY`, and similar flash members can carry one tiny bootstrap scanner to find
-the joiner, then call the resident routine instead of each carrying a full
-private resolver.
+`THE_JOIN_EXEC_XY` also has its own FNV record, with resident text
+`HASH ACQUIRE`, so `S`, `COPY`, `MOVE`, `FILL`, `MODIFY`, and similar flash
+members can carry one tiny bootstrap scanner to find the joiner, then call the
+resident routine instead of each carrying a full private resolver.
 
 The durable version should eventually be reachable through a fixed monitor API
 entry or jump table too. The FNV record solves runtime discovery; a jump-table

@@ -39,7 +39,9 @@ HREC_JOINER_HI         EQU             $17
 HREC_HASH_SIG2         EQU             ('V'+$80)
 HREC_KIND_EXEC         EQU             $01
 HREC_KIND_CONFIRM      EQU             $02
-HREC_KIND_EXEC_TEXT    EQU             (HREC_KIND_EXEC+HREC_KIND_CONFIRM)
+HREC_KIND_TEXT         EQU             $04
+HREC_KIND_EXEC_CONFIRM_TEXT EQU        (HREC_KIND_EXEC+HREC_KIND_CONFIRM)
+HREC_KIND_EXEC_TEXT    EQU             (HREC_KIND_EXEC+HREC_KIND_TEXT)
 HREC_SCAN_BASE_HI      EQU             $80
 
                         CODE
@@ -290,8 +292,10 @@ HREC_FIND_FOUND:
                         STZ             HREC_EXTRA_HI
                         LDY             #$07
                         LDA             (HREC_SCAN_LO),Y
+                        CMP             #HREC_KIND_EXEC_CONFIRM_TEXT
+                        BEQ             HREC_FIND_FOUND_PTR_CONFIRM
                         CMP             #HREC_KIND_EXEC_TEXT
-                        BEQ             HREC_FIND_FOUND_PTR
+                        BEQ             HREC_FIND_FOUND_PTR_TEXT
                         CLC
                         LDA             HREC_SCAN_LO
                         ADC             #$08
@@ -303,7 +307,13 @@ HREC_FIND_FOUND:
                         LDA             (HREC_SCAN_LO),Y
                         SEC
                         RTS
+HREC_FIND_FOUND_PTR_CONFIRM:
+                        LDA             #HREC_KIND_EXEC_CONFIRM_TEXT
+                        BRA             HREC_FIND_FOUND_PTR
+HREC_FIND_FOUND_PTR_TEXT:
+                        LDA             #HREC_KIND_EXEC_TEXT
 HREC_FIND_FOUND_PTR:
+                        PHA
                         LDY             #$08
                         LDA             (HREC_SCAN_LO),Y
                         STA             HREC_JOIN_LO
@@ -316,7 +326,7 @@ HREC_FIND_FOUND_PTR:
                         INY
                         LDA             (HREC_SCAN_LO),Y
                         STA             HREC_EXTRA_HI
-                        LDA             #HREC_KIND_EXEC_TEXT
+                        PLA
                         SEC
                         RTS
 
@@ -822,7 +832,7 @@ HASH_PTR_EXT:
 HREC_PTR_RECORD:
                         DB              'F','N',HREC_HASH_SIG2
                         DB              $10,$32,$54,$76
-                        DB              HREC_KIND_EXEC_TEXT
+                        DB              HREC_KIND_EXEC_CONFIRM_TEXT
                         DW              HREC_PTR_TARGET
                         DW              HREC_PTR_EXTRA
 HREC_LINE_BUF:

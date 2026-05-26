@@ -58,7 +58,9 @@ ASM_NAME_HI            EQU             $26
 ASM_HASH_SIG2          EQU             ('V'+$80)
 ASM_KIND_EXEC          EQU             $01
 ASM_KIND_CONFIRM       EQU             $02
-ASM_KIND_EXEC_TEXT     EQU             (ASM_KIND_EXEC+ASM_KIND_CONFIRM)
+ASM_KIND_TEXT          EQU             $04
+ASM_KIND_EXEC_CONFIRM_TEXT EQU         (ASM_KIND_EXEC+ASM_KIND_CONFIRM)
+ASM_KIND_EXEC_TEXT     EQU             (ASM_KIND_EXEC+ASM_KIND_TEXT)
 ASM_SCAN_BASE_HI       EQU             $80
 ASM_SYM_MAX            EQU             $10
 ASM_FIX_MAX            EQU             $08
@@ -1313,8 +1315,10 @@ ASM_FIND_ADV:
 ASM_FIND_FOUND:
                         LDY             #$07
                         LDA             (ASM_SCAN_LO),Y
+                        CMP             #ASM_KIND_EXEC_CONFIRM_TEXT
+                        BEQ             ASM_FIND_FOUND_PTR_CONFIRM
                         CMP             #ASM_KIND_EXEC_TEXT
-                        BEQ             ASM_FIND_FOUND_PTR
+                        BEQ             ASM_FIND_FOUND_PTR_TEXT
                         CLC
                         LDA             ASM_SCAN_LO
                         ADC             #$08
@@ -1326,14 +1330,20 @@ ASM_FIND_FOUND:
                         LDA             (ASM_SCAN_LO),Y
                         SEC
                         RTS
+ASM_FIND_FOUND_PTR_CONFIRM:
+                        LDA             #ASM_KIND_EXEC_CONFIRM_TEXT
+                        BRA             ASM_FIND_FOUND_PTR
+ASM_FIND_FOUND_PTR_TEXT:
+                        LDA             #ASM_KIND_EXEC_TEXT
 ASM_FIND_FOUND_PTR:
+                        PHA
                         LDY             #$08
                         LDA             (ASM_SCAN_LO),Y
                         STA             ASM_JOIN_LO
                         INY
                         LDA             (ASM_SCAN_LO),Y
                         STA             ASM_JOIN_HI
-                        LDA             #ASM_KIND_EXEC_TEXT
+                        PLA
                         SEC
                         RTS
 

@@ -2833,7 +2833,9 @@ CMD_DISPATCH_SCAN_MISS:
 ;      C=0 not found or not executable.
 ; ----------------------------------------------------------------------------
 THE_JOIN_EXEC_XY_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$F7,$15,$AF,$A9,CMD_HASH_KIND_EXEC ; THE_JOIN_EXEC_XY $A9AF15F7 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$F7,$15,$AF,$A9,CMD_HASH_KIND_EXEC_TEXT ; THE_JOIN_EXEC_XY $A9AF15F7 EXEC+TEXT
+                        DW              THE_JOIN_EXEC_XY
+                        DW              TXT_THE_JOIN_EXEC_XY
 THE_JOIN_EXEC_XY:
                         JSR             THE_JOIN_LOAD_HASH_XY
 THE_JOIN_EXEC:
@@ -3544,6 +3546,7 @@ MSG_BANNER:              DB              $0D,$0A
                         INCLUDE         "himon-version.inc"
 TXT_BOOT_COLD_RESET:     DB              "BOOT_COLD_RESE",('T'+$80)
 TXT_BOOT_WARM_RESET:     DB              "BOOT_WARM_RESE",('T'+$80)
+TXT_THE_JOIN_EXEC_XY:    DB              "HASH ACQUIR",('E'+$80)
 TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
 TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)
 TXT_STR8:                DB              "STR8: BOOTLOADE",('R'+$80)
