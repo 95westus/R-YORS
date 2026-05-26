@@ -3240,7 +3240,9 @@ CMD_CALL_ADDR:
                         JMP             (CMDP_ADDR_LO)
 
 FNV1A_INIT_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$1E,$EE,$9A,$4B,CMD_HASH_KIND_EXEC ; FNV1A_INIT $4B9AEE1E EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$1E,$EE,$9A,$4B,CMD_HASH_KIND_EXEC_TEXT ; FNV1A_INIT $4B9AEE1E EXEC+TEXT
+                        DW              FNV1A_INIT
+                        DW              TXT_FNV1A_INIT
 FNV1A_INIT:
                         LDX             #$03
 FNV1A_INIT_LOOP:
@@ -3319,7 +3321,9 @@ MATH_ADD_TERM1_TO_HASH3:
 ; stays resident; this one only expands the fixed 1,3,3,1 shift pattern.
 ; Tradeoff: spend a few ROM bytes to reduce software multiply loop overhead.
 FNV1A_UPDATE_A_FAST_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$14,$23,$80,$A8,CMD_HASH_KIND_EXEC ; FNV1A_UPDATE_A_FAST $A8802314 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$14,$23,$80,$A8,CMD_HASH_KIND_EXEC_TEXT ; FNV1A_UPDATE_A_FAST $A8802314 EXEC+TEXT
+                        DW              FNV1A_UPDATE_A_FAST
+                        DW              TXT_FNV1A_UPDATE_A_FAST
 FNV1A_UPDATE_A_FAST:
                         EOR             FNV_HASH0
                         STA             FNV_HASH0
@@ -3540,6 +3544,8 @@ MSG_BANNER:              DB              $0D,$0A
                         INCLUDE         "himon-version.inc"
 TXT_BOOT_COLD_RESET:     DB              "BOOT_COLD_RESE",('T'+$80)
 TXT_BOOT_WARM_RESET:     DB              "BOOT_WARM_RESE",('T'+$80)
+TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
+TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)
 TXT_STR8:                DB              "STR8: BOOTLOADE",('R'+$80)
 MSG_PROMPT:              DB              ('>'+$80)
 MSG_UNKNOWN:             DB              ('?'+$80)

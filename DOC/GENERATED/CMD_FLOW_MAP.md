@@ -14,9 +14,9 @@ flowchart TD
     READ -->|abort or empty| LOOP
     HAVE --> PREP["set CMDP_PTR to CMD_BUF<br/>skip spaces / peek token"]
     PREP --> HASH["hash command token<br/>CMD_HASH_TOKEN:2762"]
-    HASH --> FNVINIT["seed FNV-1a<br/>FNV1A_INIT:3244"]
+    HASH --> FNVINIT["seed FNV-1a<br/>FNV1A_INIT:3246"]
     HASH --> HASHLOOP["walk token bytes<br/>CMD_HASH_TOKEN_LOOP:2774"]
-    HASHLOOP --> UPDATE["update hash with byte<br/>FNV1A_UPDATE_A:3256"]
+    HASHLOOP --> UPDATE["update hash with byte<br/>FNV1A_UPDATE_A:3258"]
     UPDATE --> HASHLOOP
     HASHLOOP --> DONE["restore token pointer<br/>CMD_HASH_TOKEN_DONE:2782"]
     DONE --> SAVEHASH["save hash to exec state<br/>CMD_SAVE_HASH:2790"]
@@ -59,8 +59,8 @@ flowchart TD
 - `CMD_HASH_TOKEN`: HIMON/himon.asm:2762
 - `CMD_HASH_TOKEN_LOOP`: HIMON/himon.asm:2774
 - `CMD_HASH_TOKEN_DONE`: HIMON/himon.asm:2782
-- `FNV1A_INIT`: HIMON/himon.asm:3244
-- `FNV1A_UPDATE_A`: HIMON/himon.asm:3256
+- `FNV1A_INIT`: HIMON/himon.asm:3246
+- `FNV1A_UPDATE_A`: HIMON/himon.asm:3258
 - `CMD_SAVE_HASH`: HIMON/himon.asm:2790
 - `CMD_DISPATCH_HASH`: HIMON/himon.asm:2799
 - `CMD_DISPATCH_SCAN_LOOP`: HIMON/himon.asm:2801

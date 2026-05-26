@@ -656,6 +656,9 @@ foreach ($docPath in ($sourcePathByDocPath.Keys | Where-Object { $_ -eq 'HIMON/h
                 Token = ''
                 Hash = ''
                 SawRecord = $false
+                EntryHint = ''
+                EntryLiteral = $false
+                PayloadWords = 0
             }
             continue
         }
@@ -667,9 +670,26 @@ foreach ($docPath in ($sourcePathByDocPath.Keys | Where-Object { $_ -eq 'HIMON/h
             $pendingFnv.Hash = $matches[2].ToUpperInvariant()
             continue
         }
+        if ($pendingFnv -and $line -match '^\s*DW\s+(.+?)\s*(?:;.*)?$') {
+            if ($pendingFnv.PayloadWords -eq 0) {
+                $entryOperand = $matches[1].Trim()
+                if ($entryOperand -match '^[A-Za-z_][A-Za-z0-9_]*$') {
+                    $pendingFnv.EntryHint = $entryOperand
+                } else {
+                    $pendingFnv.EntryLiteral = $true
+                }
+            }
+            $pendingFnv.PayloadWords++
+            continue
+        }
         if ($pendingFnv -and $line -match '^\s*([A-Za-z_][A-Za-z0-9_]*):') {
             $entry = $matches[1]
             if ($entry -notlike '*_FNV' -and $pendingFnv.SawRecord) {
+                if ($pendingFnv.EntryLiteral -or
+                    (-not [string]::IsNullOrWhiteSpace($pendingFnv.EntryHint) -and $entry -ne $pendingFnv.EntryHint)) {
+                    $pendingFnv = $null
+                    continue
+                }
                 $token = $pendingFnv.Token
                 if ([string]::IsNullOrWhiteSpace($token)) {
                     $token = Get-HimonCommandToken -Entry $entry
@@ -687,7 +707,7 @@ foreach ($docPath in ($sourcePathByDocPath.Keys | Where-Object { $_ -eq 'HIMON/h
             }
             continue
         }
-        if ($pendingFnv -and $line -notmatch '^\s*(;|$)' -and $line -notmatch '^\s*DB\b') {
+        if ($pendingFnv -and $line -notmatch '^\s*(;|$)' -and $line -notmatch '^\s*(DB|DW)\b') {
             $pendingFnv = $null
         }
     }
