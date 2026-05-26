@@ -488,6 +488,34 @@ Expected onboard success banner:
 ASM 2.52 TESTS OK
 ```
 
+ASM 2.53 keeps the 2.52 cached resident-FNV bootstrap, but adds bench-visible
+progress output to the standalone smoke ladder. The first successful write-side
+checkpoint is printed as soon as the resident BIO writer is known, then each
+smoke stage is printed before it runs. The final pass printer no longer repeats
+the whole ladder, so the serial output is both live and still compact.
+
+ASM 2.53 expected host-built S19 marker:
+
+```text
+L OK=474E GO=2000
+```
+
+Expected onboard progress shape:
+
+```text
+ 00 RJOIN
+ASM 2.53 RUN
+ 10 BEGIN
+ 20 LEX LINE
+...
+ 90 END
+ASM 2.53 TESTS OK
+```
+
+The live progress pass builds at `$474E`, a `$21` byte increase over 2.52's
+`$472D`, keeping most of the resident FNV size recovery while making a stuck
+board show the last completed checkpoint.
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text

@@ -300,8 +300,24 @@ ASM_VID_REG_Y          EQU             $51
 ; ----------------------------------------------------------------------------
 START:
                         STZ             ASM_SMOKE_REPORT_FLAGS
+                        LDA             #$01
+                        STA             ASM_RJ_PROGRESS
+                        JSR             ASM_RJOIN_INIT
+                        BCS             START_RJOIN_OK
+                        STZ             ASM_RJ_PROGRESS
+                        LDA             #ASM_STATUS_RJOIN
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        JMP             START_FAIL
+START_RJOIN_OK:
+                        STZ             ASM_RJ_PROGRESS
+                        LDX             #<ASM_SMOKE_MSG_RUN
+                        LDY             #>ASM_SMOKE_MSG_RUN
+                        JSR             ASM_SMOKE_PRINT_LINE
                         LDA             #ASM_STEP_BEGIN
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_BEGIN
+                        LDY             #>ASM_SMOKE_MSG_T_BEGIN
+                        JSR             ASM_SMOKE_PROGRESS
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #<ASM_CODE_BUF
                         LDY             #>ASM_CODE_BUF
@@ -311,7 +327,9 @@ START:
 START_BEGIN_OK:
 
                         LDA             #ASM_STEP_LEX_OK
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_LEX
+                        LDY             #>ASM_SMOKE_MSG_T_LEX
+                        JSR             ASM_SMOKE_PROGRESS
                         LDX             #<ASM_SMOKE_LINE_OK
                         LDY             #>ASM_SMOKE_LINE_OK
                         JSR             ASM_LEX_LINE
@@ -319,80 +337,106 @@ START_BEGIN_OK:
                         JMP             START_FAIL
 START_LEX_OK:
                         LDA             #ASM_STEP_TOKENS
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_TOKENS
+                        LDY             #>ASM_SMOKE_MSG_T_TOKENS
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_TOKENS
                         BCS             START_TOKENS_OK
                         JMP             START_FAIL
 START_TOKENS_OK:
                         LDA             #ASM_STEP_VOCAB
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_VOCAB
+                        LDY             #>ASM_SMOKE_MSG_T_VOCAB
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_VOCAB
                         BCS             START_VOCAB_OK
                         JMP             START_FAIL
 START_VOCAB_OK:
                         LDA             #ASM_STEP_PARSE
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_PARSE
+                        LDY             #>ASM_SMOKE_MSG_T_PARSE
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_PARSE
                         BCS             START_PARSE_OK
                         JMP             START_FAIL
 START_PARSE_OK:
                         LDA             #ASM_STEP_EXPR
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_EXPR
+                        LDY             #>ASM_SMOKE_MSG_T_EXPR
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_EXPR
                         BCS             START_EXPR_OK
                         JMP             START_FAIL
 START_EXPR_OK:
                         LDA             #ASM_STEP_ASSEMBLE_LINE
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_LINE
+                        LDY             #>ASM_SMOKE_MSG_T_LINE
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_ASSEMBLE_LINE
                         BCS             START_ASSEMBLE_LINE_OK
                         JMP             START_FAIL
 START_ASSEMBLE_LINE_OK:
                         LDA             #ASM_STEP_EMIT
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_EMIT
+                        LDY             #>ASM_SMOKE_MSG_T_EMIT
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_EMIT
                         BCS             START_EMIT_OK
                         JMP             START_FAIL
 START_EMIT_OK:
                         LDA             #ASM_STEP_OPERAND
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_OPER
+                        LDY             #>ASM_SMOKE_MSG_T_OPER
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_OPERANDS
                         BCS             START_OPERAND_OK
                         JMP             START_FAIL
 START_OPERAND_OK:
                         LDA             #ASM_STEP_OPCODE
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_OPCODE
+                        LDY             #>ASM_SMOKE_MSG_T_OPCODE
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_OPCODE
                         BCS             START_OPCODE_OK
                         JMP             START_FAIL
 START_OPCODE_OK:
                         LDA             #ASM_STEP_FIXUPS
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_FIXUPS
+                        LDY             #>ASM_SMOKE_MSG_T_FIXUPS
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_FIXUPS
                         BCS             START_FIXUPS_OK
                         JMP             START_FAIL
 START_FIXUPS_OK:
                         LDA             #ASM_STEP_DIRECTIVE
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_DIRECT
+                        LDY             #>ASM_SMOKE_MSG_T_DIRECT
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_DIRECTIVES
                         BCS             START_DIRECTIVES_OK
                         JMP             START_FAIL
 START_DIRECTIVES_OK:
                         LDA             #ASM_STEP_REPORT
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_REPORT
+                        LDY             #>ASM_SMOKE_MSG_T_REPORT
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_REPORT
                         BCS             START_REPORT_OK
                         JMP             START_FAIL
 START_REPORT_OK:
                         LDA             #ASM_STEP_SYMBOLS
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_SYMBOLS
+                        LDY             #>ASM_SMOKE_MSG_T_SYMBOLS
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_SMOKE_SYMBOLS
                         BCS             START_SYMBOLS_OK
                         JMP             START_FAIL
 START_SYMBOLS_OK:
 
                         LDA             #ASM_STEP_LONG_LINE
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_LONG
+                        LDY             #>ASM_SMOKE_MSG_T_LONG
+                        JSR             ASM_SMOKE_PROGRESS
                         LDX             #<ASM_SMOKE_LINE_LONG
                         LDY             #>ASM_SMOKE_LINE_LONG
                         JSR             ASM_LEX_LINE
@@ -405,7 +449,9 @@ START_LONG_REJECTED:
 START_LONG_STATUS_OK:
 
                         LDA             #ASM_STEP_END
-                        STA             ASM_START_STEP
+                        LDX             #<ASM_SMOKE_MSG_T_END
+                        LDY             #>ASM_SMOKE_MSG_T_END
+                        JSR             ASM_SMOKE_PROGRESS
                         JSR             ASM_END
                         BCS             START_END_OK
                         JMP             START_FAIL
@@ -640,54 +686,6 @@ ASM_SMOKE_PRINT_PASS:
                         LDX             #<ASM_SMOKE_MSG_PASS
                         LDY             #>ASM_SMOKE_MSG_PASS
                         JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_BEGIN
-                        LDY             #>ASM_SMOKE_MSG_T_BEGIN
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_LEX
-                        LDY             #>ASM_SMOKE_MSG_T_LEX
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_TOKENS
-                        LDY             #>ASM_SMOKE_MSG_T_TOKENS
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_VOCAB
-                        LDY             #>ASM_SMOKE_MSG_T_VOCAB
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_PARSE
-                        LDY             #>ASM_SMOKE_MSG_T_PARSE
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_EXPR
-                        LDY             #>ASM_SMOKE_MSG_T_EXPR
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_LINE
-                        LDY             #>ASM_SMOKE_MSG_T_LINE
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_EMIT
-                        LDY             #>ASM_SMOKE_MSG_T_EMIT
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_OPER
-                        LDY             #>ASM_SMOKE_MSG_T_OPER
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_OPCODE
-                        LDY             #>ASM_SMOKE_MSG_T_OPCODE
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_FIXUPS
-                        LDY             #>ASM_SMOKE_MSG_T_FIXUPS
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_DIRECT
-                        LDY             #>ASM_SMOKE_MSG_T_DIRECT
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_REPORT
-                        LDY             #>ASM_SMOKE_MSG_T_REPORT
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_SYMBOLS
-                        LDY             #>ASM_SMOKE_MSG_T_SYMBOLS
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_LONG
-                        LDY             #>ASM_SMOKE_MSG_T_LONG
-                        JSR             ASM_SMOKE_PRINT_LINE
-                        LDX             #<ASM_SMOKE_MSG_T_END
-                        LDY             #>ASM_SMOKE_MSG_T_END
-                        JSR             ASM_SMOKE_PRINT_LINE
                         JSR             ASM_SMOKE_PRINT_WARNINGS
                         LDX             #<ASM_SMOKE_MSG_W
                         LDY             #>ASM_SMOKE_MSG_W
@@ -720,6 +718,10 @@ ASM_SMOKE_PRINT_WARNINGS:
                         JSR             ASM_SMOKE_PRINT_LINE
 ASM_SMOKE_PRINT_WARNINGS_DONE:
                         RTS
+
+ASM_SMOKE_PROGRESS:
+                        STA             ASM_START_STEP
+                        JMP             ASM_SMOKE_PRINT_LINE
 
 ASM_SMOKE_PRINT_LINE:
                         JSR             ASM_RJ_WRITE_CSTRING
@@ -1033,6 +1035,12 @@ ASM_RJOIN_INIT_SCAN:
                         BCC             ASM_RJOIN_INIT_FAIL
                         STX             ASM_RJ_WRITE_LO
                         STY             ASM_RJ_WRITE_HI
+                        LDA             ASM_RJ_PROGRESS
+                        BEQ             ASM_RJOIN_INIT_NO_PROGRESS
+                        LDX             #<ASM_SMOKE_MSG_T_RJOIN
+                        LDY             #>ASM_SMOKE_MSG_T_RJOIN
+                        JSR             ASM_SMOKE_PRINT_LINE
+ASM_RJOIN_INIT_NO_PROGRESS:
 
                         LDA             #ASM_STEP_RJOIN_FNV_INIT
                         STA             ASM_START_STEP
@@ -1051,12 +1059,14 @@ ASM_RJOIN_INIT_SCAN:
                         BCC             ASM_RJOIN_INIT_FAIL
                         STX             ASM_RJ_FNV_UPDATE_LO
                         STY             ASM_RJ_FNV_UPDATE_HI
+                        STZ             ASM_RJ_PROGRESS
                         LDA             #$01
                         STA             ASM_RJ_READY
                         SEC
                         RTS
 ASM_RJOIN_INIT_FAIL:
                         STZ             ASM_RJ_READY
+                        STZ             ASM_RJ_PROGRESS
                         CLC
                         RTS
 
@@ -8133,6 +8143,7 @@ ASM_FIX_COUNT:         DB              $00
 ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
 ASM_RJ_READY:          DB              $00
+ASM_RJ_PROGRESS:       DB              $00
 ASM_RJ_READ_LO:        DB              $00
 ASM_RJ_READ_HI:        DB              $00
 ASM_RJ_FNV_INIT_LO:    DB              $00
@@ -8350,16 +8361,17 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.52 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.53 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.52 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.53 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.53 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.52 TESTS FAIL",0
+                        DB              "ASM 2.53 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0
@@ -8402,6 +8414,7 @@ ASM_SMOKE_MSG_DIR_D2:  DB              " D2 DS LIST PC",0
 ASM_SMOKE_MSG_DIR_D3:  DB              " D3 WARN_DS_WRAP",0
 ASM_SMOKE_MSG_WARN_DS_WRAP:
                         DB              "WARN WARN_DS_WRAP",0
+ASM_SMOKE_MSG_T_RJOIN: DB              " 00 RJOIN",0
 ASM_SMOKE_MSG_T_BEGIN: DB              " 10 BEGIN",0
 ASM_SMOKE_MSG_T_LEX:   DB              " 20 LEX LINE",0
 ASM_SMOKE_MSG_T_TOKENS:

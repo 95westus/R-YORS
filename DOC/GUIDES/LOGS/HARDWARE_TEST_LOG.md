@@ -14,7 +14,9 @@ bootstrap scanner and was interrupted at `PC=$264E`.
 
 Map interpretation: `$264E` is inside `ASM_RJ_FIND_ADV`, before the smoke
 ladder starts. The follow-up 2.52 slice caches RJOIN/FNV resolution and starts
-the local bootstrap scan at `$C000` to avoid repeated long ROM scans.
+the local bootstrap scan at `$C000` to avoid repeated long ROM scans. The 2.53
+follow-up adds live smoke progress lines, beginning with `00 RJOIN` once the
+resident writer is known, so a paused board exposes the last checkpoint reached.
 
 ### Transcript Extract
 
