@@ -957,6 +957,25 @@ ASM> MAIN2 LDY #$4D
 OK PC=$7004 BYTES= A0 4D
 ```
 
+Hardware-proven `ASM 2.59` REPL byte-display, LDY, and forward-fixup proof on
+2026-05-26:
+
+```text
+>L
+L S19
+L @2000
+L OK=4812 GO=2000
+>G 2184
+GO 2184
+ASM 2.59 REPL
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA W3
+OK PC=$7003 BYTES= AD FF FF
+ASM> W3: DB $4D
+OK PC=$7004 BYTES= 4D
+```
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
