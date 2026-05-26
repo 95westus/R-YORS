@@ -8358,9 +8358,9 @@ ASM_HASH_BIO_WRITE_BYTE_BLOCK:
 ASM_HASH_SYS_READ_CSTRING_EDIT_ECHO_UPPER:
                         DB              $2C,$6D,$A7,$B3
 ASM_HASH_FNV1A_INIT:
-                        DB              $6F,$4D,$FD,$0B
+                        DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
-                        DB              $13,$DB,$26,$34
+                        DB              $14,$23,$80,$A8
 ASM_REPL_MSG_TITLE:    DB              "ASM 2.53 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0

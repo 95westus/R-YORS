@@ -207,9 +207,9 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 
 | routine | hash | class | in | out / flags | proof | notes | tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `FNV1A_INIT` | `$0BFD4D6F` | hash init | none | `FNV_HASH=$811C9DC5` little-endian | BUILDS | start a new 32-bit FNV-1a hash | `HASH OPEN` |
+| `FNV1A_INIT` | `$4B9AEE1E` | hash init | none | `FNV_HASH=$811C9DC5` little-endian | BUILDS | start a new 32-bit FNV-1a hash | `FNV HASH INIT` |
 | `FNV1A_UPDATE_A` | `$6E684C95` | hash update | `A=next byte` | `FNV_HASH` updated | BUILDS | hash one byte | `FNV HASH UPDATE BYTE` |
-| `FNV1A_UPDATE_A_FAST` | `$3426DB13` | hash update | `A=next byte` | `FNV_HASH` updated | BUILDS | faster drop-in update; ROM-for-cycles tradeoff to lessen software multiply cost | `HASH MIX` |
+| `FNV1A_UPDATE_A_FAST` | `$A8802314` | hash update | `A=next byte` | `FNV_HASH` updated | BUILDS | faster drop-in update; ROM-for-cycles tradeoff to lessen software multiply cost | `FNV HASH UPDATE BYTE FAST` |
 | `FNV1A_MUL_PRIME` | `$40C68FD2` | hash math | current `FNV_HASH` | `FNV_HASH *= $01000193 mod 2^32` | BUILDS | internal multiply step | `FNV HASH MATH` |
 | `FNV1A_MUL_PRIME_FAST` | `$303E5DC1` | hash math | current `FNV_HASH` | `FNV_HASH *= $01000193 mod 2^32` | BUILDS | same math with only the fixed shift loop unrolled; trades a few bytes for fewer cycles | `FNV HASH MATH FAST` |
 | `FNV1A_BUF_XY_LEN` | `$67A1CA5D` | hash buffer | `X/Y=buffer`, `FNV_INPUT_LEN=count` | `FNV_HASH0..3` little-endian | BUILDS | hash counted bytes | `FNV HASH BUFFER` |
