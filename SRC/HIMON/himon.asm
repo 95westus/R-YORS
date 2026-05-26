@@ -15,6 +15,8 @@
                         XDEF            THE_JOIN_EXEC_XY
                         XDEF            THE_JOIN_EXEC_XY_FNV
                         XDEF            THE_JOIN_LOAD_HASH_XY
+                        XDEF            FNV1A_INIT_FNV
+                        XDEF            FNV1A_UPDATE_A_FAST_FNV
                         XDEF            SYS_PRINT_IO_SLOT_SKIP
 
                         XREF            BIO_FTDI_READ_BYTE_BLOCK
@@ -52,18 +54,18 @@ NMI_DEBOUNCE_Y           EQU             $F8
 
 CMD_HASH_TAB_LO          EQU             $E0
 CMD_HASH_TAB_HI          EQU             $E1
-CMD_HASH_EXTRA_LO        EQU             $B0
-CMD_HASH_EXTRA_HI        EQU             $B1
-CMD_HASH_FILTER_VALUE    EQU             $B2
-CMD_HASH_FILTER_OP       EQU             $B3
-FNV_HASH0                EQU             $7E66
-FNV_HASH1                EQU             $7E67
-FNV_HASH2                EQU             $7E68
-FNV_HASH3                EQU             $7E69
-FNV_TERM0                EQU             $7E6A
-FNV_TERM1                EQU             $7E6B
-FNV_TERM2                EQU             $7E6C
-FNV_TERM3                EQU             $7E6D
+FNV_HASH0                EQU             $B0
+FNV_HASH1                EQU             $B1
+FNV_HASH2                EQU             $B2
+FNV_HASH3                EQU             $B3
+FNV_TERM0                EQU             $C7
+FNV_TERM1                EQU             $C8
+FNV_TERM2                EQU             $C9
+FNV_TERM3                EQU             $CA
+CMD_HASH_EXTRA_LO        EQU             $7E66
+CMD_HASH_EXTRA_HI        EQU             $7E67
+CMD_HASH_FILTER_VALUE    EQU             $7E68
+CMD_HASH_FILTER_OP       EQU             $7E69
 CMD_EXEC_HASH0           EQU             $7E6E
 CMD_EXEC_HASH1           EQU             $7E6F
 CMD_EXEC_HASH2           EQU             $7E70
@@ -3237,6 +3239,8 @@ CMD_EXEC_ADDR_KEEP_TRAP:
 CMD_CALL_ADDR:
                         JMP             (CMDP_ADDR_LO)
 
+FNV1A_INIT_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$1E,$EE,$9A,$4B,CMD_HASH_KIND_EXEC ; FNV1A_INIT $4B9AEE1E EXEC
 FNV1A_INIT:
                         LDX             #$03
 FNV1A_INIT_LOOP:
@@ -3314,6 +3318,8 @@ MATH_ADD_TERM1_TO_HASH3:
 ; Fast drop-in FNV-1a byte update. The original update/multiply path above
 ; stays resident; this one only expands the fixed 1,3,3,1 shift pattern.
 ; Tradeoff: spend a few ROM bytes to reduce software multiply loop overhead.
+FNV1A_UPDATE_A_FAST_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$14,$23,$80,$A8,CMD_HASH_KIND_EXEC ; FNV1A_UPDATE_A_FAST $A8802314 EXEC
 FNV1A_UPDATE_A_FAST:
                         EOR             FNV_HASH0
                         STA             FNV_HASH0

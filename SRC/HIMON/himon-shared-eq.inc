@@ -5,7 +5,9 @@
 
 ; Zero-page policy:
 ; - $00-$AF user/free while running (176 bytes)
-; - $B0-$CA reserved R-YORS/HIMON/THE/ASM ZP expansion (27 bytes)
+; - $B0-$B3 shared FNV32 hash state
+; - $B4-$C6 reserved R-YORS/HIMON/THE/ASM ZP expansion (19 bytes)
+; - $C7-$CA shared FNV32 multiply term
 ; - $CB-$CC CRC16 state, allocated from the high end downward
 ; - $CD-$EF shared service/flash/SYS/BIO/utility scratch (35 bytes)
 ; - $F0-$FF HIMON command/parser scratch (16 bytes)
@@ -53,7 +55,7 @@ RESET_SIG3                EQU             $7EE9
 ; 7E page map:
 ; - $7E00-$7E45 free buffer spill/scratch after page buffers
 ; - $7E46-$7E65 debugger/assembler workspace
-; - $7E66-$7E75 hash/exec metadata
+; - $7E66-$7E75 hash record/exec metadata
 ; - $7E76-$7E94 command/parser/keytest workspace
 ; - $7E95-$7EDD loader workspace and range table
 ; - $7EDE-$7EDF delay helper fixed RAM
