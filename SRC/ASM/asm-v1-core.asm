@@ -614,6 +614,7 @@ ASM_REPL_PRINT_OK:
                         LDA             ASM_PC_LO
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_REPL_PRINT_BYTES
+                        JSR             ASM_REPL_PRINT_DEF
                         JSR             ASM_REPL_PRINT_FIXUPS
                         JMP             ASM_RJ_PRINT_CRLF
 
@@ -689,6 +690,21 @@ ASM_REPL_BYTES_LOOP:
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         INC             ASM_REPL_BYTE_INDEX
                         BRA             ASM_REPL_BYTES_LOOP
+
+ASM_REPL_PRINT_DEF:
+                        LDA             ASM_STMT_FLAGS
+                        AND             #(ASM_STMTF_HAS_NAME|ASM_STMTF_BINDS_PC)
+                        CMP             #(ASM_STMTF_HAS_NAME|ASM_STMTF_BINDS_PC)
+                        BNE             ASM_REPL_PRINT_DEF_DONE
+                        LDX             #<ASM_REPORT_MSG_DEF
+                        LDY             #>ASM_REPORT_MSG_DEF
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_REPL_OLD_PC_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_REPL_OLD_PC_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+ASM_REPL_PRINT_DEF_DONE:
+                        RTS
 
 ASM_REPL_PRINT_FIXUPS:
                         LDA             ASM_FIX_RESOLVE_COUNT
@@ -8486,7 +8502,7 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.60 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.61 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
@@ -8494,10 +8510,10 @@ ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_FIX:      DB              " FIX=$",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.60 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.60 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.61 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.61 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.60 TESTS FAIL",0
+                        DB              "ASM 2.61 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0

@@ -1022,6 +1022,36 @@ ASM> W3 DB $4D
 OK PC=$7006 BYTES= 4D FIX=$7001
 ```
 
+ASM 2.61 makes PC-bound label definitions explicit in the REPL. When an
+accepted line binds a label to the current PC, the OK line now prints
+`DEF=$hhhh` using the statement's pre-assembly PC, before any resolved fixup
+site. This makes `W3 DB $4D` report both the byte written and the address bound
+to `W3`, instead of requiring the operator to infer it from the previous prompt.
+The display reuses the existing `DEF=$` report string and costs `$20` bytes
+over ASM 2.60.
+
+ASM 2.61 expected host-built S19 marker:
+
+```text
+L OK=4890 GO=2000
+```
+
+Expected REPL shape:
+
+```text
+>G 2184
+GO 2184
+ASM 2.61 REPL
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA W3
+OK PC=$7003 BYTES= AD FF FF
+ASM> LDY #$0E
+OK PC=$7005 BYTES= A0 0E
+ASM> W3 DB $4D
+OK PC=$7006 BYTES= 4D DEF=$7005 FIX=$7001
+```
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
