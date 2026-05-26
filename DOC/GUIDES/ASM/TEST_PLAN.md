@@ -453,6 +453,12 @@ zero-page contract at `$B0-$B3/$C7-$CA`. The host-built S19 marker is:
 L OK=4715 GO=2000
 ```
 
+This is a significant size and architecture win. ASM 2.50 built at `$4761`;
+ASM 2.51 builds at `$4715`, reclaiming `$4C` bytes, 76 bytes net, after paying
+for the RJOIN resolution slots, hash constants, and jump shims. More important,
+ASM no longer carries a private FNV multiply body for the project-wide hash
+path.
+
 Expected onboard success banner after loading a HIMON image with the resident
 FNV records is:
 

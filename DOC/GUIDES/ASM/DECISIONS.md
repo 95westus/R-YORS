@@ -433,6 +433,10 @@ A [addr] [label[:]] MMM [operand] .
   tables. Other HIMON shared ZP may be borrowed only as volatile scratch under
   the called routine's contract; ASM must not depend on shared bytes surviving
   SYS/BIO/COR/PIN/flash/FNV/HIMON helper calls.
+- Hash stays on the fast shared-state path. Pointer-based FNV helpers may be
+  added later for generic or nested hash work, but they should not replace the
+  hot `FNV1A_INIT` / `FNV1A_UPDATE_A_FAST` shared-ZP contract used by HIMON and
+  ASM.
 - All ASM callable routine interfaces follow HIMON/THE routine style. ASM does
   not invent a private ABI. Each routine card must document inputs, outputs,
   carry/status meaning, preserves, clobbers, ASM zero-page frame bytes used, RAM
