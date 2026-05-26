@@ -17,6 +17,7 @@
                         XDEF            THE_JOIN_LOAD_HASH_XY
                         XDEF            FNV1A_INIT_FNV
                         XDEF            FNV1A_UPDATE_A_FAST_FNV
+                        XDEF            SYS_READ_CSTRING_ECHO_UPPER_FNV
                         XDEF            SYS_PRINT_IO_SLOT_SKIP
 
                         XREF            BIO_FTDI_READ_BYTE_BLOCK
@@ -3532,6 +3533,11 @@ HIM_FNV_FORCE_RESIDENT:
                         DW              SYS_GET_CTRL_C
                         DW              UTL_HEX_ASCII_TO_NIBBLE
 
+SYS_READ_CSTRING_ECHO_UPPER_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$AF,$10,$DD,$E2,CMD_HASH_KIND_EXEC_TEXT ; SYS_READ_CSTRING_ECHO_UPPER $E2DD10AF EXEC+TEXT
+                        DW              HIM_READ_LINE_ECHO_UPPER
+                        DW              TXT_SYS_READ_CSTRING_ECHO_UPPER
+
 HIMON_VERSION_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$80,$1A,$05,$B0,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; HIMON $B0051A80 EXEC+CONFIRM
                         DW              START
@@ -3549,6 +3555,8 @@ TXT_BOOT_WARM_RESET:     DB              "BOOT_WARM_RESE",('T'+$80)
 TXT_THE_JOIN_EXEC_XY:    DB              "HASH ACQUIR",('E'+$80)
 TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
 TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)
+TXT_SYS_READ_CSTRING_ECHO_UPPER:
+                        DB              "READ LIN",('E'+$80)
 TXT_STR8:                DB              "STR8: BOOTLOADE",('R'+$80)
 MSG_PROMPT:              DB              ('>'+$80)
 MSG_UNKNOWN:             DB              ('?'+$80)

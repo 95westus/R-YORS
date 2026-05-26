@@ -577,6 +577,66 @@ ASM 2.55 RUN
 ASM 2.55 TESTS OK
 ```
 
+Hardware-proven `ASM 2.55` persistent-RJOIN smoke on 2026-05-26:
+
+```text
+L OK=4775 GO=2000
+ASM 2.55 RUN
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ASM REPORT
+STATUS=OK
+START=$7000
+PC=$700C
+BYTES=$000C
+REFS=$02/$10
+TRUNC=NO
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+ASM 2.55 TESTS OK
+WARN WARN_DS_WRAP
+W=$E2DF SYM=$06 PC=$7000
+```
+
+`G 2184` against HIMON `00.0525(2256)` returned immediately because the REPL
+asked RJOIN for `SYS_READ_CSTRING_EDIT_ECHO_UPPER`, but that editable readline
+service was not resident in HIMON. ASM 2.56 switches the REPL to
+`SYS_READ_CSTRING_ECHO_UPPER` (`$E2DD10AF`), which HIMON now publishes as a
+compact EXEC+TEXT row named `READ LINE` pointing at `HIM_READ_LINE_ECHO_UPPER`.
+If the read service is still missing, ASM prints `READ=$0B` instead of silently
+returning.
+
+ASM 2.56 expected host-built S19 marker:
+
+```text
+L OK=4784 GO=2000
+```
+
+Expected onboard progress shape:
+
+```text
+ 00 RJOIN
+ASM 2.56 RUN
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+...
+ASM 2.56 TESTS OK
+```
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
@@ -648,14 +708,15 @@ W=$E2F4 SYM=$06 PC=$7000
 ```
 
 The standalone `START` path remains the deterministic smoke ladder. The
-separate `ASM_REPL` entry uses resident `SYS_READ_CSTRING_EDIT_ECHO_UPPER`
-through RJOIN, so pasted lines and normal backspace/edit handling come from the
-ROM readline service. `ASM_REPL=$2123` is the remaining interactive bench proof.
+separate `ASM_REPL` entry uses resident `SYS_READ_CSTRING_ECHO_UPPER` through
+RJOIN, so pasted lines, backspace, Ctrl-C, CR/LF, and uppercase handling come
+from the ROM readline service. `ASM_REPL=$2184` is the remaining interactive
+bench proof.
 A minimal sequence for one-line feedback is:
 
 ```text
-G 2123
-ASM 2.51 REPL
+G 2184
+ASM 2.56 REPL
 ASM> LDA #1
 OK PC=$7002 BYTES= A9 01
 ASM> STA $7100

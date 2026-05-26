@@ -159,7 +159,7 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `SYS_READ_CSTRING_EDIT_MODE` | `$A49D7915` | SYS editable CSTR | `A=mode`, `X/Y=dest` | edit-line `A/C` | NEEDS_PROOF | insert/delete/cursor capable path | `SYS READ CSTRING EDIT` |
 | `SYS_READ_CSTRING_EDIT_ECHO_UPPER` | `$B3A76D2C` | SYS editable CSTR | `X/Y=dest` | edit-line `A/C` | NEEDS_PROOF | convenience wrapper: echo and uppercase | `SYS READ CSTRING EDIT ECHO UPPER` |
 | `SYS_READ_CSTRING_SILENT` | `$98B68980` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | cooked no-echo input | `SYS READ CSTRING SILENT` |
-| `SYS_READ_CSTRING_ECHO_UPPER` | `$E2DD10AF` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | echo and uppercase | `SYS READ CSTRING ECHO UPPER` |
+| `SYS_READ_CSTRING_ECHO_UPPER` | `$E2DD10AF` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | resident HIMON compact line reader row; echo, uppercase, backspace, Ctrl-C, CR/LF; text `READ LINE` | `SYS READ CSTRING ECHO UPPER` |
 | `SYS_READ_CSTRING_ECHO_LOWER` | `$A05843C2` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | echo and lowercase | `SYS READ CSTRING ECHO LOWER` |
 | `SYS_READ_CSTRING_SILENT_UPPER` | `$C9364C7F` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | silent uppercase | `SYS READ CSTRING SILENT UPPER` |
 | `SYS_READ_CSTRING_SILENT_LOWER` | `$43D98ED2` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | silent lowercase | `SYS READ CSTRING SILENT LOWER` |

@@ -565,9 +565,10 @@ A [addr] [label[:]] MMM [operand] .
   `BAD MNEM`, `BAD DIR`, `BAD OPER`, `BAD MODE`, `BAD WIDTH`, `BAD RANGE`,
   `BAD LINE`, `BAD SYM`, `BAD FIX`, and `LOCAL NYI`.
 - ASM 2.50 stops on the first error. The first interactive path is a
-  line-at-a-time REPL that calls resident `SYS_READ_CSTRING_EDIT_ECHO_UPPER`,
-  prints compact `OK`/`ERR` feedback, and reopens at the pre-error PC after a
-  rejected line; v1 does not keep parsing after an error.
+  line-at-a-time REPL. As of ASM 2.56 it calls resident
+  `SYS_READ_CSTRING_ECHO_UPPER`, prints compact `OK`/`ERR` feedback, and
+  reopens at the pre-error PC after a rejected line; v1 does not keep parsing
+  after an error.
 - `LDA #$1234` is `BAD RANGE` because immediate byte width is known but the
   value is too large. `LDA ($1234),Y` is `BAD MODE` because that data addressing
   form is zero-page-only. `LABEL END` is `BAD SYM`; `END X` is `BAD OPER`.

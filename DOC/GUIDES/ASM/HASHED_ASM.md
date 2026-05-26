@@ -4900,8 +4900,8 @@ sym_slot        RAM symbol slot if resolved locally, $FF if not local
 
 If the reference table fills in v1, stop with `BAD FIX` and `TRUNC=YES`. First
 ASM 2.50 behavior is stop on first error. The first interactive path is a
-one-line REPL that calls resident `SYS_READ_CSTRING_EDIT_ECHO_UPPER` through
-RJOIN, reports the new PC and up to 16 emitted bytes, and restarts the session
+one-line REPL that calls resident `SYS_READ_CSTRING_ECHO_UPPER` through RJOIN,
+reports the new PC and up to 16 emitted bytes, and restarts the session
 after a rejected line.
 
 Line numbers are physical source/session input lines counted from the start of

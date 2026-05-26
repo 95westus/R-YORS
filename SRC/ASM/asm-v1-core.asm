@@ -496,8 +496,7 @@ START_FAIL_RETURN:
 ASM_REPL:
                         JSR             ASM_RJOIN_INIT_IO
                         BCS             ASM_REPL_IO_READY
-                        CLC
-                        RTS
+                        JMP             ASM_REPL_IO_FAIL
 ASM_REPL_IO_READY:
                         LDX             #<ASM_REPL_MSG_TITLE
                         LDY             #>ASM_REPL_MSG_TITLE
@@ -510,8 +509,7 @@ ASM_REPL_IO_READY:
 ASM_REPL_LOOP:
                         JSR             ASM_RJOIN_INIT_IO
                         BCS             ASM_REPL_PROMPT
-                        CLC
-                        RTS
+                        JMP             ASM_REPL_IO_FAIL
 ASM_REPL_PROMPT:
                         LDX             #<ASM_REPL_MSG_PROMPT
                         LDY             #>ASM_REPL_MSG_PROMPT
@@ -566,6 +564,12 @@ ASM_REPL_QUIT:
                         JSR             ASM_SMOKE_PRINT_LINE
                         SEC
                         RTS
+ASM_REPL_IO_FAIL:
+                        JSR             ASM_RJOIN_INIT
+                        BCC             ASM_REPL_RETURN_FAIL
+                        LDA             #ASM_STATUS_RJOIN
+                        STA             ASM_REPL_STATUS
+                        JSR             ASM_REPL_PRINT_READ_FAIL
 ASM_REPL_RETURN_FAIL:
                         CLC
                         RTS
@@ -1081,8 +1085,8 @@ ASM_RJOIN_INIT_IO:
                         BNE             ASM_RJOIN_INIT_IO_READY
                         LDA             #ASM_STEP_RJOIN_READ
                         STA             ASM_START_STEP
-                        LDX             #<ASM_HASH_SYS_READ_CSTRING_EDIT_ECHO_UPPER
-                        LDY             #>ASM_HASH_SYS_READ_CSTRING_EDIT_ECHO_UPPER
+                        LDX             #<ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
+                        LDY             #>ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
                         JSR             ASM_RJ_RESIDENT_XY
                         BCC             ASM_RJOIN_INIT_IO_FAIL
                         STX             ASM_RJ_READ_LO
@@ -8367,23 +8371,23 @@ ASM_HASH_THE_JOIN_EXEC_XY:
                         DB              $F7,$15,$AF,$A9
 ASM_HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
-ASM_HASH_SYS_READ_CSTRING_EDIT_ECHO_UPPER:
-                        DB              $2C,$6D,$A7,$B3
+ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER:
+                        DB              $AF,$10,$DD,$E2
 ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.55 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.56 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.55 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.55 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.56 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.56 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.55 TESTS FAIL",0
+                        DB              "ASM 2.56 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0
