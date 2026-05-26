@@ -1069,12 +1069,23 @@ ASM> LDY FOO
 ERR=$04 PC=$7002
 ASM> FOO: DB $7E
 OK PC=$7003 BYTES= 7E DEF=$7002
+ASM> LDA FOO
+OK PC=$7006 BYTES= AD 02 70
+ASM> LDA POO
+OK PC=$7009 BYTES= AD FF FF
+ASM> POO LDA QQQ
+OK PC=$700C BYTES= AD FF FF DEF=$7009 FIX=$7007
 ```
 
 `LDY FOO` is expected to report bad mode in ASM 2.61 because the current `LDY`
 opcode path only accepts immediate mode. The proof of this slice is the
 following `FOO: DB $7E` line, which makes the PC-bound definition explicit as
 `DEF=$7002`.
+
+The same session also proves that a no-colon `label mnemonic` line binds the
+label before emitting the instruction. `POO LDA QQQ` binds `POO` at `$7009`,
+resolves the earlier `LDA POO` operand at patch site `$7007`, and still emits a
+new unresolved absolute `LDA QQQ` as `AD FF FF`.
 
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 

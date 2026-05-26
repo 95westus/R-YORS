@@ -4923,7 +4923,9 @@ then prints that patch site in the REPL as `FIX=$hhhh`.
 ASM 2.61 prints PC-bound label definitions in the REPL as `DEF=$hhhh`, using
 the pre-assembly PC for the accepted line. A forward definition such as
 `W3 DB $4D` can now report `BYTES= 4D DEF=$7005 FIX=$7001`, making the symbol's
-bound address explicit.
+bound address explicit. The same rule covers no-colon `label mnemonic` lines:
+`POO LDA QQQ` binds `POO` before emitting the `LDA`, then can report both
+`DEF=$7009` and any resolved prior reference such as `FIX=$7007`.
 
 Line numbers are physical source/session input lines counted from the start of
 the assembly session, including blank/comment lines. Blank/comment-only lines do
