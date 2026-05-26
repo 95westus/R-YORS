@@ -4914,6 +4914,9 @@ statements bind the current PC, label+mnemonic statements bind before emission,
 and accepted mnemonic lines advance PC and write bytes in both smoke and REPL
 paths.
 
+ASM 2.59 fixes REPL emitted-byte display by using a zero-page indirect pointer
+for `(ptr),Y` reads and adds the `LDY #imm8` opcode path.
+
 Line numbers are physical source/session input lines counted from the start of
 the assembly session, including blank/comment lines. Blank/comment-only lines do
 not create reference rows, but they still advance the line counter so reported

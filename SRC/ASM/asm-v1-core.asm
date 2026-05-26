@@ -281,6 +281,7 @@ ASM_VID_INX            EQU             $24
 ASM_VID_JSR            EQU             $27
 ASM_VID_LDA            EQU             $28
 ASM_VID_LDX            EQU             $29
+ASM_VID_LDY            EQU             $2A
 ASM_VID_LSR            EQU             $2B
 ASM_VID_ROL            EQU             $38
 ASM_VID_ROR            EQU             $39
@@ -668,9 +669,9 @@ ASM_REPL_BYTES_DONE:
 ASM_REPL_BYTES_HAVE_DELTA:
                         STA             ASM_REPL_DELTA
                         LDA             ASM_REPL_OLD_PC_LO
-                        STA             ASM_REPL_BYTE_PTR_LO
+                        STA             ASM_EMIT_PTR_LO
                         LDA             ASM_REPL_OLD_PC_HI
-                        STA             ASM_REPL_BYTE_PTR_HI
+                        STA             ASM_EMIT_PTR_HI
                         STZ             ASM_REPL_BYTE_INDEX
                         LDX             #<ASM_REPL_MSG_BYTES
                         LDY             #>ASM_REPL_MSG_BYTES
@@ -682,7 +683,7 @@ ASM_REPL_BYTES_LOOP:
                         LDA             #' '
                         JSR             ASM_RJ_WRITE_BYTE
                         LDY             ASM_REPL_BYTE_INDEX
-                        LDA             (ASM_REPL_BYTE_PTR_LO),Y
+                        LDA             (ASM_EMIT_PTR_LO),Y
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         INC             ASM_REPL_BYTE_INDEX
                         BRA             ASM_REPL_BYTES_LOOP
@@ -2478,6 +2479,10 @@ ASM_SMOKE_OPCODE:
                         LDY             #>ASM_PARSE_AT_ASMTEST_LDX
                         JSR             ASM_SMOKE_EMIT_LINE
                         BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_PARSE_AT_LDY
+                        LDY             #>ASM_PARSE_AT_LDY
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
                         LDX             #<ASM_PARSE_AT_STZ
                         LDY             #>ASM_PARSE_AT_STZ
                         JSR             ASM_SMOKE_EMIT_LINE
@@ -2608,7 +2613,7 @@ ASM_SMOKE_OPCODE_CHECK_LOOP:
                         JMP             ASM_SMOKE_OPCODE_CHECK_FAIL
 ASM_SMOKE_OPCODE_CHECK_BYTE_OK:
                         INX
-                        CPX             #$14
+                        CPX             #$16
                         BNE             ASM_SMOKE_OPCODE_CHECK_LOOP
                         SEC
                         RTS
@@ -2622,7 +2627,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         SBC             ASM_START_PC_HI
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$14
+                        CMP             #$16
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_HIGH_PC_LO
                         SEC
@@ -2632,7 +2637,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         SBC             ASM_START_PC_HI
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$14
+                        CMP             #$16
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         SEC
                         RTS
@@ -4626,6 +4631,10 @@ ASM_FIND_OPCODE_NOT_INX:
                         BNE             ASM_FIND_OPCODE_NOT_LDX
                         JMP             ASM_FIND_OPCODE_LDX
 ASM_FIND_OPCODE_NOT_LDX:
+                        CMP             #ASM_VID_LDY
+                        BNE             ASM_FIND_OPCODE_NOT_LDY
+                        JMP             ASM_FIND_OPCODE_LDY
+ASM_FIND_OPCODE_NOT_LDY:
                         CMP             #ASM_VID_CPX
                         BNE             ASM_FIND_OPCODE_NOT_CPX
                         JMP             ASM_FIND_OPCODE_CPX
@@ -4718,6 +4727,15 @@ ASM_FIND_OPCODE_LDX:
                         JMP             ASM_FIND_OPCODE_BAD_MODE
 ASM_FIND_OPCODE_LDX_IMM:
                         LDA             #$A2
+                        JMP             ASM_FIND_OPCODE_OK_A
+
+ASM_FIND_OPCODE_LDY:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_IMM8
+                        BEQ             ASM_FIND_OPCODE_LDY_IMM
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_LDY_IMM:
+                        LDA             #$A0
                         JMP             ASM_FIND_OPCODE_OK_A
 
 ASM_FIND_OPCODE_CPX:
@@ -8223,8 +8241,6 @@ ASM_REPL_OLD_PC_LO:    DB              $00
 ASM_REPL_OLD_PC_HI:    DB              $00
 ASM_REPL_DELTA:        DB              $00
 ASM_REPL_BYTE_INDEX:   DB              $00
-ASM_REPL_BYTE_PTR_LO:  DB              $00
-ASM_REPL_BYTE_PTR_HI:  DB              $00
 ASM_STMT_KIND:         DB              $00
 ASM_STMT_FLAGS:        DB              $00
 ASM_STMT_NAME_PTR_LO:  DB              $00
@@ -8344,6 +8360,7 @@ ASM_PARSE_AT_COUNT_EQU:
                         DB              "COUNT EQU 16",0
 ASM_PARSE_AT_ASMTEST_LDX:
                         DB              "ASMTEST LDX #0",0
+ASM_PARSE_AT_LDY:      DB              "        LDY #$4D",0
 ASM_PARSE_AT_STZ:      DB              "        STZ SUM",0
 ASM_PARSE_AT_LOOP_LDA:
                         DB              "LOOP    LDA SEED,X",0
@@ -8391,9 +8408,10 @@ ASM_DIRECT_DS_RANGE:   DB              "        DS $0100",0
 ASM_DIRECT_DS_LIST:    DB              "PAT DS 6,$AA,$55,'A','5'",0
 ASM_DIRECT_DS_LIST_TRUNC:
                         DB              "        DS 3,$11,$22,$33,$44",0
-ASM_OPCODE_EXPECT:     DB              $A2,$00,$9C,$10,$71,$9D,$00,$71
+ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
+                        DB              $00,$71
                         DB              $4D,$10,$71,$8D,$10,$71,$E8,$E0
-                        DB              $10,$D0,$ED,$60
+                        DB              $10,$D0,$EB,$60
 ASM_DIRECT_DB_EXPECT:  DB              $FF,$0A,$41,$34,$12,$34,$12
 ASM_DIRECT_DS_EXPECT:  DB              $AA,$AA,$AA,$34,$34
 ASM_DIRECT_DS_LIST_EXPECT:
@@ -8428,17 +8446,17 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.58 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.59 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.58 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.58 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.59 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.59 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.58 TESTS FAIL",0
+                        DB              "ASM 2.59 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0

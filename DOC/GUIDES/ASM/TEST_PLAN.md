@@ -932,6 +932,31 @@ ASM> START LDA #$4D
 ERR=$02 PC=$7000
 ```
 
+ASM 2.59 fixes the REPL byte display and adds `LDY #imm8` emission. The byte
+display bug was not in the emitter: `ASM_REPL_PRINT_BYTES` kept its display
+pointer in normal DATA and then used 65C02 `(ptr),Y`, which only reads a
+zero-page pointer. It now copies the old PC into the ASM zero-page emit pointer
+before reading emitted bytes. The opcode smoke now includes `LDY #$4D` and
+expects `$A0 $4D`. This costs `$2D` bytes over ASM 2.58.
+
+ASM 2.59 expected host-built S19 marker:
+
+```text
+L OK=4812 GO=2000
+```
+
+Expected REPL shape:
+
+```text
+>G 2184
+GO 2184
+ASM 2.59 REPL
+ASM> MAIN1: LDA #$FF
+OK PC=$7002 BYTES= A9 FF
+ASM> MAIN2 LDY #$4D
+OK PC=$7004 BYTES= A0 4D
+```
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
