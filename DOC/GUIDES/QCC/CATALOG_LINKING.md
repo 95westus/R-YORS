@@ -365,6 +365,31 @@ Concern: A record emitted only because the assembler said so is too trusting
 for the first pass. The first pass should be boring and inspectable.
 Build-side records are allowed to be ugly if they are explicit and checked.
 
+## Q: What Should RYORS Do With A Text-Bearing Executable Record?
+
+Comment: Text is metadata, not a prompt by itself. Current HIMON uses the extra
+word on pointer records as human display text for catalog rows and confirmation
+messages. A non-human caller such as RYORS should not parse that text, wait on
+that text, or treat it as part of the routine ABI.
+
+Current behavior:
+
+```text
+K=$03  executable pointer with confirmation path and display text
+K=$05  executable pointer with display text and no confirmation prompt
+```
+
+Policy direction: automated joins may execute a text-bearing routine only when
+the executable contract permits it. `K=$05` is suitable for subroutine services
+such as FNV helpers: the text helps `#` and logs, while RJOIN/RYORS ignores it
+and calls the entry. `K=$03` is different because it means human confirmation is
+part of HIMON's command path; an automated caller should either reject that
+record by default or use a separate trusted/privileged path.
+
+Concern: If TEXT ever starts implying interactivity, automated callers will
+deadlock or make display strings part of the ABI. Keep confirmation, text, and
+call permission as separate contract facts.
+
 ## Q: When does this leave QCC?
 
 Comment: Move the settled answer to `DECISIONS.md` when a proof can show:

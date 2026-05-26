@@ -3533,7 +3533,7 @@ HIM_FNV_FORCE_RESIDENT:
 HIMON_VERSION_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$80,$1A,$05,$B0,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; HIMON $B0051A80 EXEC+CONFIRM
                         DW              START
-                        DW              MSG_HIMON_VERSION_TEXT
+                        DW              MSG_HIMON_VERSION_HASH_TEXT
 
 CMD_STR8_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$18,$0E,$AD,$A2,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; STR8 $A2AD0E18 EXEC+CONFIRM+TEXT
