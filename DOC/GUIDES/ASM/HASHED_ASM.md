@@ -4917,6 +4917,9 @@ paths.
 ASM 2.59 fixes REPL emitted-byte display by using a zero-page indirect pointer
 for `(ptr),Y` reads and adds the `LDY #imm8` opcode path.
 
+ASM 2.60 records how many fixups a definition resolved and the last patch site,
+then prints that patch site in the REPL as `FIX=$hhhh`.
+
 Line numbers are physical source/session input lines counted from the start of
 the assembly session, including blank/comment lines. Blank/comment-only lines do
 not create reference rows, but they still advance the line counter so reported

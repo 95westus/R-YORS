@@ -976,6 +976,33 @@ ASM> W3: DB $4D
 OK PC=$7004 BYTES= 4D
 ```
 
+ASM 2.60 makes resolved fixups visible in the REPL. When a line defines a
+symbol and wakes pending fixups, the resolver records the number of patches and
+the last patched site. The REPL prints the last site as `FIX=$hhhh` on the same
+OK line. The ABS16 fixup smoke now also asserts that a bind recorded one
+resolved fixup and the expected patch site. This costs `$5E` bytes over ASM
+2.59.
+
+ASM 2.60 expected host-built S19 marker:
+
+```text
+L OK=4870 GO=2000
+```
+
+Expected REPL shape:
+
+```text
+>G 2184
+GO 2184
+ASM 2.60 REPL
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA W3
+OK PC=$7003 BYTES= AD FF FF
+ASM> W3: DB $4D
+OK PC=$7004 BYTES= 4D FIX=$7001
+```
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text

@@ -540,6 +540,7 @@ ASM_REPL_READ_OK:
                         BEQ             ASM_REPL_QUIT
 
 ASM_REPL_ASSEMBLE:
+                        STZ             ASM_FIX_RESOLVE_COUNT
                         LDA             ASM_PC_LO
                         STA             ASM_REPL_OLD_PC_LO
                         LDA             ASM_PC_HI
@@ -613,6 +614,7 @@ ASM_REPL_PRINT_OK:
                         LDA             ASM_PC_LO
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_REPL_PRINT_BYTES
+                        JSR             ASM_REPL_PRINT_FIXUPS
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASM_REPL_PRINT_ERR:
@@ -687,6 +689,19 @@ ASM_REPL_BYTES_LOOP:
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         INC             ASM_REPL_BYTE_INDEX
                         BRA             ASM_REPL_BYTES_LOOP
+
+ASM_REPL_PRINT_FIXUPS:
+                        LDA             ASM_FIX_RESOLVE_COUNT
+                        BEQ             ASM_REPL_PRINT_FIXUPS_DONE
+                        LDX             #<ASM_REPL_MSG_FIX
+                        LDY             #>ASM_REPL_MSG_FIX
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_FIX_LAST_SITE_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_FIX_LAST_SITE_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+ASM_REPL_PRINT_FIXUPS_DONE:
+                        RTS
 
 ASM_SMOKE_PRINT_PASS:
                         LDX             #<ASM_SMOKE_MSG_PASS
@@ -2749,6 +2764,21 @@ ASM_SMOKE_FIXUPS_ABS16_BIND_OK:
                         BEQ             ASM_SMOKE_FIXUPS_ABS16_RESOLVE_OK
                         JMP             ASM_SMOKE_FIXUPS_ABS16_FAIL
 ASM_SMOKE_FIXUPS_ABS16_RESOLVE_OK:
+                        LDA             ASM_FIX_RESOLVE_COUNT
+                        CMP             #$01
+                        BEQ             ASM_SMOKE_FIXUPS_ABS16_RESOLVE_COUNT_OK
+                        JMP             ASM_SMOKE_FIXUPS_ABS16_FAIL
+ASM_SMOKE_FIXUPS_ABS16_RESOLVE_COUNT_OK:
+                        LDA             ASM_FIX_LAST_SITE_LO
+                        CMP             ASM_FIX_SITE_LO
+                        BEQ             ASM_SMOKE_FIXUPS_ABS16_RESOLVE_SITE_LO_OK
+                        JMP             ASM_SMOKE_FIXUPS_ABS16_FAIL
+ASM_SMOKE_FIXUPS_ABS16_RESOLVE_SITE_LO_OK:
+                        LDA             ASM_FIX_LAST_SITE_HI
+                        CMP             ASM_FIX_SITE_HI
+                        BEQ             ASM_SMOKE_FIXUPS_ABS16_RESOLVE_SITE_OK
+                        JMP             ASM_SMOKE_FIXUPS_ABS16_FAIL
+ASM_SMOKE_FIXUPS_ABS16_RESOLVE_SITE_OK:
                         LDA             #$B8
                         STA             ASM_SLOT
                         LDA             ASM_CODE_BUF+1
@@ -5225,6 +5255,7 @@ ASM_FIX_HAS_PENDING_NO:
                         RTS
 
 ASM_RESOLVE_FIXUPS_CURRENT:
+                        STZ             ASM_FIX_RESOLVE_COUNT
                         LDX             #$00
 ASM_RESOLVE_FIXUPS_LOOP:
                         CPX             ASM_FIX_COUNT
@@ -5240,6 +5271,11 @@ ASM_RESOLVE_FIXUPS_LOOP:
                         CLC
                         RTS
 ASM_RESOLVE_FIXUPS_PATCHED:
+                        INC             ASM_FIX_RESOLVE_COUNT
+                        LDA             ASM_FIX_SITE_LO,X
+                        STA             ASM_FIX_LAST_SITE_LO
+                        LDA             ASM_FIX_SITE_HI,X
+                        STA             ASM_FIX_LAST_SITE_HI
                         LDA             #ASM_FIX_RESOLVED
                         STA             ASM_FIX_STATE,X
 ASM_RESOLVE_FIXUPS_NEXT:
@@ -8201,6 +8237,7 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_FIX_PLAN_HASH2
                         STZ             ASM_FIX_PLAN_HASH3
                         STZ             ASM_FIX_PLAN_SEL
+                        STZ             ASM_FIX_RESOLVE_COUNT
                         RTS
 
                         DATA
@@ -8221,6 +8258,9 @@ ASM_HIGH_PC_LO:        DB              $00
 ASM_HIGH_PC_HI:        DB              $00
 ASM_SYM_COUNT:         DB              $00
 ASM_FIX_COUNT:         DB              $00
+ASM_FIX_RESOLVE_COUNT: DB              $00
+ASM_FIX_LAST_SITE_LO:  DB              $00
+ASM_FIX_LAST_SITE_HI:  DB              $00
 ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
 ASM_RJ_READY:          DB              $00
@@ -8446,17 +8486,18 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.59 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.60 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
+ASM_REPL_MSG_FIX:      DB              " FIX=$",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.59 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.59 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.60 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.60 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.59 TESTS FAIL",0
+                        DB              "ASM 2.60 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0
