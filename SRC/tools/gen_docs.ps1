@@ -61,6 +61,18 @@ function Mermaid-Prefix-Id {
     return 'P_' + ($Name -replace '[^A-Za-z0-9_]', '_')
 }
 
+function Mermaid-WordTree-Id {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return 'RW_ROOT' }
+    return 'RW_' + ($Path -replace '[^A-Za-z0-9_]', '_')
+}
+
+function Get-RoutineWords {
+    param([string]$Name)
+    $display = Get-DisplayName $Name
+    return @($display -split '_' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.ToUpperInvariant() })
+}
+
 function Write-Doc {
     param(
         [string]$Name,
@@ -777,6 +789,110 @@ foreach ($row in ($prefixRows | Select-Object -First 160)) {
 $lines += '```'
 Write-Doc -Name 'ROUTINE_PREFIX_MAP.md' -Lines $lines
 
+$routineWordNameSet = @{}
+foreach ($r in $routines) {
+    $routineWordNameSet[(Get-DisplayName $r.Name)] = $true
+}
+foreach ($edge in $edges) {
+    $routineWordNameSet[(Get-DisplayName $edge.Source)] = $true
+    $routineWordNameSet[(Get-DisplayName $edge.Target)] = $true
+}
+
+$routineWordNames = @(
+    $routineWordNameSet.Keys |
+    Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and $_ -notmatch '^\?' } |
+    Sort-Object
+)
+
+$wordPathCounts = @{}
+$wordPathDepths = @{}
+$wordPathParents = @{}
+$wordPathToken = @{}
+$wordPathExamples = @{}
+$maxWordTreeDepth = 4
+
+foreach ($name in $routineWordNames) {
+    $tokens = @(Get-RoutineWords $name)
+    if ($tokens.Count -eq 0) { continue }
+    $depthLimit = [Math]::Min($maxWordTreeDepth, $tokens.Count)
+    for ($depth = 1; $depth -le $depthLimit; $depth++) {
+        $path = ($tokens[0..($depth - 1)] -join '_')
+        $parent = ''
+        if ($depth -gt 1) {
+            $parent = ($tokens[0..($depth - 2)] -join '_')
+        }
+        if (-not $wordPathCounts.ContainsKey($path)) {
+            $wordPathCounts[$path] = 0
+            $wordPathDepths[$path] = $depth
+            $wordPathParents[$path] = $parent
+            $wordPathToken[$path] = $tokens[$depth - 1]
+            $wordPathExamples[$path] = @()
+        }
+        $wordPathCounts[$path] += 1
+        if (@($wordPathExamples[$path]).Count -lt 5) {
+            $wordPathExamples[$path] = @($wordPathExamples[$path]) + @($name)
+        }
+    }
+}
+
+$wordPathRows = @(
+    $wordPathCounts.Keys |
+    ForEach-Object {
+        [pscustomobject]@{
+            Path = $_
+            Parent = $wordPathParents[$_]
+            Token = $wordPathToken[$_]
+            Depth = $wordPathDepths[$_]
+            Count = $wordPathCounts[$_]
+            Examples = @($wordPathExamples[$_])
+        }
+    }
+)
+
+$selectedWordPaths = @{}
+$wordPathCandidates = @(
+    $wordPathRows |
+    Where-Object { $_.Depth -eq 1 -or $_.Count -ge 2 } |
+    Sort-Object -Property Depth, @{Expression='Count';Descending=$true}, Path |
+    Select-Object -First 260
+)
+
+foreach ($row in $wordPathCandidates) {
+    $parts = @($row.Path -split '_')
+    for ($depth = 1; $depth -le $parts.Count; $depth++) {
+        $ancestor = ($parts[0..($depth - 1)] -join '_')
+        $selectedWordPaths[$ancestor] = $true
+    }
+}
+
+$lines = @('# R-YORS Routine Word Tree') + $header
+$lines += 'Hierarchy over callable-ish source symbols, split on `_`. Symbols come from routine headers and direct `JSR`/`JMP` source/target names in the operational source set.'
+$lines += ''
+$lines += 'The Mermaid graph keeps branches with at least two symbols, plus all root words. Edges are name containment, not call edges.'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
+$lines += ('    RW_ROOT["ROUTINES<br/>{0} symbols"]' -f $routineWordNames.Count)
+for ($depth = 1; $depth -le $maxWordTreeDepth; $depth++) {
+    foreach ($row in ($wordPathRows | Where-Object { $_.Depth -eq $depth -and $selectedWordPaths.ContainsKey($_.Path) } | Sort-Object -Property Parent, @{Expression='Count';Descending=$true}, Token)) {
+        $parentId = if ([string]::IsNullOrWhiteSpace($row.Parent)) { 'RW_ROOT' } else { Mermaid-WordTree-Id $row.Parent }
+        $nodeId = Mermaid-WordTree-Id $row.Path
+        $label = Escape-MermaidLabel ("{0}<br/>{1}" -f $row.Token, $row.Count)
+        $lines += ('    {0} --> {1}["{2}"]' -f $parentId, $nodeId, $label)
+    }
+}
+$lines += '```'
+$lines += ''
+$lines += '## Largest Branches'
+$lines += ''
+$lines += '| Path | Symbols | Examples |'
+$lines += '| --- | ---: | --- |'
+foreach ($row in ($wordPathRows | Where-Object { $_.Depth -gt 1 } | Sort-Object -Property @{Expression='Count';Descending=$true}, Depth, Path | Select-Object -First 40)) {
+    $examples = (@($row.Examples) | ForEach-Object { '`' + $_ + '`' }) -join ', '
+    $lines += ('| `{0}` | {1} | {2} |' -f $row.Path, $row.Count, $examples)
+}
+Write-Doc -Name 'ROUTINE_WORD_TREE.md' -Lines $lines
+
 $himonEdges = @(
     $edges |
     Where-Object {
@@ -1438,6 +1554,7 @@ $lines += '| See command/debug/load/ASM calls | [HIMON_COMMAND_MAP.md](./HIMON_C
 $lines += '| See whole HIMON call tree | [HIMON_ROUTINE_TREE.md](./HIMON_ROUTINE_TREE.md) | Current HIMON source-only direct edge tree. |'
 $lines += '| See support-layer dependencies | [HIMON_SUPPORT_MAP.md](./HIMON_SUPPORT_MAP.md) | HIMON-only prefix dependency map. |'
 $lines += '| See all operational prefix groups | [ROUTINE_PREFIX_MAP.md](./ROUTINE_PREFIX_MAP.md) | Operational source prefix map with counts. |'
+$lines += '| See underscore-word routine hierarchy | [ROUTINE_WORD_TREE.md](./ROUTINE_WORD_TREE.md) | Callable-ish symbols grouped by name words between `_`. |'
 $lines += '| See class-level call shape | [ROUTINE_CLASS_DIAGRAM.md](./ROUTINE_CLASS_DIAGRAM.md) | Compact prefix/class edge diagram. |'
 $lines += '| See routine inventory and contracts | [CALL_ORDER.md](./CALL_ORDER.md), [ROUTINE_CONTRACTS.md](./ROUTINE_CONTRACTS.md) | Source order and routine contracts. |'
 $lines += '| See graph statistics | [ROUTINE_GRAPH_INSIGHTS.md](./ROUTINE_GRAPH_INSIGHTS.md), [ROUTINE_COMPONENTS.md](./ROUTINE_COMPONENTS.md) | Hot callees, busy callers, component counts. |'
@@ -1473,6 +1590,7 @@ $lines += '    GEN --> HRASH[HASH_ROUTINE_MAP]'
 $lines += '    GEN --> HCOMMAND[HIMON_COMMAND_MAP]'
 $lines += '    GEN --> HSUPPORT[HIMON_SUPPORT_MAP]'
 $lines += '    GEN --> PREFIX[ROUTINE_PREFIX_MAP]'
+$lines += '    GEN --> WORDTREE[ROUTINE_WORD_TREE]'
 $lines += '    GEN --> CLASS[ROUTINE_CLASS_DIAGRAM]'
 $lines += '    GEN --> INSIGHTS[ROUTINE_GRAPH_INSIGHTS]'
 $lines += '    GEN --> COMPONENTS[ROUTINE_COMPONENTS]'
@@ -1487,13 +1605,14 @@ $lines += '    HIMON --> HCOMMAND'
 $lines += '    FLOW --> HRASH'
 $lines += '    TREE --> HCOMMAND'
 $lines += '    PREFIX --> CLASS'
+$lines += '    PREFIX --> WORDTREE'
 $lines += '    COMPONENTS --> PREFIX'
 $lines += '```'
 $lines += ''
 $lines += '## Freshness'
 $lines += ''
 $lines += '- Generated maps are refreshed by `make -C SRC docs`.'
-$lines += '- Individual generated maps can be refreshed with targets such as `make -C SRC stack-depth-map`, `make -C SRC cmd-flow-map`, `make -C SRC hash-routine-map`, or `make -C SRC routine-prefix-map`.'
+$lines += '- Individual generated maps can be refreshed with targets such as `make -C SRC stack-depth-map`, `make -C SRC cmd-flow-map`, `make -C SRC hash-routine-map`, `make -C SRC routine-prefix-map`, or `make -C SRC routine-word-tree`.'
 $lines += '- Guide maps are design/reference documents. They should be updated when terminology, policy, or document roles change.'
 $lines += ''
 $lines += '## Boundaries'

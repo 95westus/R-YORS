@@ -4,6 +4,629 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-05-26 ASM 2.50 Relocated Smoke Target Proof On HIMON
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.50 smoke ladder on hardware.
+This proves the paired 2.48/2.49/2.50 slice for the deterministic smoke path:
+the resident proof image loads as `L OK=4761 GO=2000`, the standalone assembly
+target moved from `$6800` to `$7000`, data targets moved to `$7100/$7110`, and
+the report/status smoke still reaches `ASM 2.50 TESTS OK`. The separate
+`ASM_REPL=$2123` entry remains to be hardware-proven interactively.
+
+### Transcript Extract
+
+```text
+L G
+L S19
+L @2000
+L OK=4761 GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$7000
+PC=$700C
+HIGH=$700C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$02/$10
+TRUNC=NO
+USED
+ADDR DEF=$0002 REFS=$02 FIRST=$0003
+UNUSED
+SEED DEF=$0003
+BUF DEF=$0004
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$7000
+PC=$7000
+HIGH=$7000
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$7000
+PC=$7000
+HIGH=$7000
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ASM 2.50 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$7000
+>
+```
+
+## 2026-05-26 ASM 2.47 Def-Line And Unused Report Proof On HIMON
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.47 smoke ladder on hardware.
+This proves the paired 2.46/2.47 report slice: session symbols now store
+definition lines, the `USED` row includes `DEF=$0002`, and the first compact
+`UNUSED` section prints `SEED DEF=$0003` and `BUF DEF=$0004`. This transcript
+ran the already-loaded image with `GO 2000`.
+
+### Transcript Extract
+
+```text
+GO 2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$02/$10
+TRUNC=NO
+USED
+ADDR DEF=$0002 REFS=$02 FIRST=$0003
+UNUSED
+SEED DEF=$0003
+BUF DEF=$0004
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ASM 2.47 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#GO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-26 ASM 2.45 Used-Symbol Report Proof On HIMON
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.45 smoke ladder on hardware.
+This proves the paired 2.44/2.45 report slice: mark-use symbol lookups now
+consume the report reference budget, the clean report shows `REFS=$02/$10`, and
+the first compact `USED` row prints `ADDR REFS=$02 FIRST=$0003`. The later
+overflow proof still reaches `REFS=$10/$10`, fails with `BAD_FIX`, and prints
+`TRUNC=YES`.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=43B4 GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$02/$10
+TRUNC=NO
+USED
+ADDR REFS=$02 FIRST=$0003
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ASM 2.45 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#LOADGO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-26 ASM 2.43 Report Overflow Proof On HIMON
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.43 smoke ladder on hardware.
+This proves the report reference-counter overflow trigger: after the clean and
+first-failure report proofs, the `$5E REPORT` slice fills `REFS` to `$10/$10`,
+then the next report reference fails with `BAD_FIX`, sets `TRUNC=YES`, and
+prints the third compact report with `STATUS=$09`.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=42F8 GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ASM 2.43 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#LOADGO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-26 ASM 2.42 Report Truncation Proof On HIMON
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.42 smoke ladder on hardware.
+This proves the compact report truncation flag printer: after the clean and
+first-failure report proofs, the `$5E REPORT` slice sets the report truncation
+flag and prints a third report with `TRUNC=YES`, then still completes the final
+warning/report smoke ladder.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=42AD GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=YES
+ASM 2.42 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#LOADGO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-26 ASM 2.41 Failure Report Proof On HIMON
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.41 smoke ladder on hardware.
+This proves the first-failure compact report path: the `$5E REPORT` slice prints
+the clean `ASM_END` report, then enables report-on-failure, rejects a bad `ORG`
+line with `BAD_OPER`, prints the failure report, preserves the failed-session
+stored status, and still completes the final warning/report smoke ladder.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=4279 GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM 2.41 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#LOADGO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-26 ASM 2.40 ASM_END Report Proof On HIMON 00.0524(2131)
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.40 smoke ladder on hardware.
+This proves compact report printing through the `ASM_END` path: the `$5E REPORT`
+slice enables report-on-END, assembles through a real `END`, prints the compact
+report, keeps the clean second-`ASM_END` path idempotent, and still preserves
+the final `WARN_DS_WRAP` smoke report.
+
+### Transcript Extract
+
+```text
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+
+HIMON IN 3S. S=STR8  3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0524(2131)
+>L G
+L S19
+L @2000
+L OK=41AF GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM 2.40 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#LOADGO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-26 ASM 2.39 Compact Report Proof On HIMON
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.39 smoke ladder on hardware.
+This proves the compact report printer in the `$5E REPORT` slice: the report
+prints status, error line, start/current/high PCs, byte count, line count,
+table counts/limits, and truncation state before the final smoke ladder.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=416E GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM 2.39 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#LOADGO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-05-25 ASM 2.38 Report-Fact Proof On HIMON
+
+### Summary
+
+`asm-v1-core-2000.s19` passed the onboard ASM 2.38 smoke ladder on hardware.
+This proves the new `$5E REPORT` slice on the post-reorg RAM layout: the proof
+loads and runs at `$2000`, the standalone smoke assembly target remains `$6800`,
+and `WARN_DS_WRAP` still prints in the final report.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=3F9B GO=2000
+ASM 2.38 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#LOADGO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
 ## 2026-05-25 ASM 2.37 RAM Reorg Proof On HIMON 00.0524(2131)
 
 ### Summary

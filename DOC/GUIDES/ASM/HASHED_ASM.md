@@ -1288,16 +1288,17 @@ inputs      ASM_NAME_PTR/ASM_LEN point at canonical symbol text
 
 outputs     C=1,A=OK,X=symbol slot,Y=source layer when found
             C=0,A=OK,X=$FF,Y=0 when not found
+            C=0,A=BAD_FIX when mark-use exceeds the report reference budget
             value/kind/width/care copied to ASM_VALUE/ASM_MODE fields if found
 
 carry       C=1 found
-            C=0 not found; this is not an error by itself
+            C=0 not found or mark-use overflow; not-found is not an error by itself
 
 preserves   caller line buffer contents
 clobbers    A,X,Y,P, scan/hash compare scratch
 ZP          ASM_NAME_PTR, ASM_LEN, ASM_HASH32, ASM_SCAN_PTR, ASM_SLOT,
             ASM_VALUE, ASM_WIDTH, ASM_CARE, ASM_FLAGS
-RAM         may update USECNT/FIRSTREF and reference rows if mark-use is set
+RAM         may update USECNT/FIRSTREF and the report reference count if mark-use is set
 stack       balanced; return frame only
 calls       name compare/hash helpers, resident lookup later
 
@@ -4893,7 +4894,10 @@ sym_slot        RAM symbol slot if resolved locally, $FF if not local
 ```
 
 If the reference table fills in v1, stop with `BAD FIX` and `TRUNC=YES`. First
-ASM 2.50 behavior is stop on first error.
+ASM 2.50 behavior is stop on first error. The first interactive path is a
+one-line REPL that calls resident `SYS_READ_CSTRING_EDIT_ECHO_UPPER` through
+RJOIN, reports the new PC and up to 16 emitted bytes, and restarts the session
+after a rejected line.
 
 Line numbers are physical source/session input lines counted from the start of
 the assembly session, including blank/comment lines. Blank/comment-only lines do
@@ -5085,8 +5089,10 @@ not prevent later condense/compaction.
 
 ## Failure Cases
 
-ASM 2.50 stops on the first error. Interactive/output mode policy can be decided
-later; v1 does not keep parsing after an error.
+ASM 2.50 stops on the first error. The current interactive path is line-at-a-time:
+read one ROM-edited source line, assemble it, print compact `OK PC=$....`
+feedback with short emitted-byte output, or print `ERR=$.. PC=$....` and reopen
+the session at the pre-error PC. V1 does not keep parsing after an error.
 
 The assembler should fail clearly when:
 

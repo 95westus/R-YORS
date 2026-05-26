@@ -63,9 +63,9 @@ SRC/BUILD/s19/asm-v1-core-2000.s19
 ```
 
 The ASM core RAM proof links and loads at `$2000`. Its smoke assembly target is
-`$6800`, with data targets at `$6900/$6910`, so emitted self-test bytes stay out
-of the resident proof image. `ASMTEST_3000.asm` remains the independent WDC
-sample and now owns its own pasted-test `ORG $6800`.
+`$7000`, with data targets at `$7100/$7110`, so emitted self-test bytes stay out
+of the resident proof image as the core grows. `ASMTEST_3000.asm` remains the
+independent WDC sample and owns its own pasted-test `ORG $6800`.
 
 ## Current Acceptance
 
@@ -312,9 +312,9 @@ LABEL LDA #1          -> MNEM with name
 LABEL: LDA #1         -> MNEM with name/HAS_COLON
 NAME EQU $12          -> DIR/EQU with name
 SEED DB $52           -> DIR/DB with name
-ORG $6800             -> DIR/ORG no name
+ORG $7000             -> DIR/ORG no name
 END                   -> DIR/END no tail
-LABEL ORG $6800       -> BAD SYM
+LABEL ORG $7000       -> BAD SYM
 LABEL END             -> BAD SYM
 END X                 -> BAD OPER
 ORG                   -> BAD OPER
@@ -326,12 +326,12 @@ A LDA #1              -> BAD SYM
 .LOOP                 -> LOCAL NYI
 ```
 
-`ASMTEST_3000` parser-head fixtures:
+Smoke parser-head fixtures adapted from `ASMTEST_3000`:
 
 ```text
-        ORG $6800
-OUT EQU $6900
-SUM EQU $6910
+        ORG $7000
+OUT EQU $7100
+SUM EQU $7110
 COUNT EQU 16
 ASMTEST LDX #0
         STZ SUM
@@ -377,12 +377,53 @@ make -C SRC asm-v1-core
 The standalone `START` smoke path now checks label binding, duplicate
 rejection, hash-match/text-mismatch continuation, ZP/ABS/VALUE/MASK `EQU` rows,
 not-found lookup, emitted opcodes, ABS16/REL8 fixup records, DB directive
-emission, ORG placement policy, DS reservation/fill/list behavior, and the
-later parser/expression/line/operand smoke slices. On success it prints an
-onboard test report:
+emission, ORG placement policy, DS reservation/fill/list behavior, compact
+report-state facts, and the later parser/expression/line/operand smoke slices.
+On success it prints an onboard test report:
 
 ```text
-ASM 2.37 TESTS OK
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$7000
+PC=$700C
+HIGH=$700C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$02/$10
+TRUNC=NO
+USED
+ADDR DEF=$0002 REFS=$02 FIRST=$0003
+UNUSED
+SEED DEF=$0003
+BUF DEF=$0004
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$7000
+PC=$7000
+HIGH=$7000
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$7000
+PC=$7000
+HIGH=$7000
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ASM 2.50 TESTS OK
  10 BEGIN
  20 LEX LINE
  30 TOKENS
@@ -395,14 +436,573 @@ ASM 2.37 TESTS OK
  5B OPCODE
  5C FIXUPS
  5D DIRECT
+ 5E REPORT
  60 SYMBOLS
  80 LONG LINE
  90 END
 WARN WARN_DS_WRAP
-W=$.... SYM=$06 PC=$6800
+W=$.... SYM=$06 PC=$7000
 ```
 
-Hardware-proven `ASM 2.37` RAM-reorg smoke on 2026-05-25:
+Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
+
+```text
+L G
+L S19
+L @2000
+L OK=4761 GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$7000
+PC=$700C
+HIGH=$700C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$02/$10
+TRUNC=NO
+USED
+ADDR DEF=$0002 REFS=$02 FIRST=$0003
+UNUSED
+SEED DEF=$0003
+BUF DEF=$0004
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$7000
+PC=$7000
+HIGH=$7000
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$7000
+PC=$7000
+HIGH=$7000
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ASM 2.50 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$7000
+>
+```
+
+The standalone `START` path remains the deterministic smoke ladder. The
+separate `ASM_REPL` entry uses resident `SYS_READ_CSTRING_EDIT_ECHO_UPPER`
+through RJOIN, so pasted lines and normal backspace/edit handling come from the
+ROM readline service. `ASM_REPL=$2123` is the remaining interactive bench proof.
+A minimal sequence for one-line feedback is:
+
+```text
+G 2123
+ASM 2.50 REPL
+ASM> LDA #1
+OK PC=$7002 BYTES= A9 01
+ASM> STA $7100
+OK PC=$7005 BYTES= 8D 00 71
+ASM> .
+BYE
+```
+
+Hardware-proven `ASM 2.47` def-line/UNUSED-row smoke on 2026-05-26:
+
+The software-built S19 marker for this image is `L OK=4499 GO=2000`. The board
+proof below ran the already-loaded image with `GO 2000`.
+
+```text
+GO 2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$02/$10
+TRUNC=NO
+USED
+ADDR DEF=$0002 REFS=$02 FIRST=$0003
+UNUSED
+SEED DEF=$0003
+BUF DEF=$0004
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ASM 2.47 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#GO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+`ASM 2.46/2.47` records the definition line for each session symbol, enriches
+`USED` rows with `DEF=$....`, and prints the first compact `UNUSED` section.
+The report fixture now proves `ADDR` was defined on line 2 and used on line 3,
+while `SEED` and `BUF` are session symbols defined on lines 3 and 4 but not
+referenced later.
+
+Hardware-proven `ASM 2.45` report-reference/USED-row smoke on 2026-05-26:
+
+```text
+>L G
+L S19
+L @2000
+L OK=43B4 GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$02/$10
+TRUNC=NO
+USED
+ADDR REFS=$02 FIRST=$0003
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ASM 2.45 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+
+#LOADGO# ENTRY=2000
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+>
+```
+
+`ASM 2.44/2.45` wires symbol mark-use lookup into the report reference budget
+and prints the first compact `USED` section. The clean report fixture references
+`ADDR` twice from source line 3, so the report now prints `REFS=$02/$10` and
+`ADDR REFS=$02 FIRST=$0003`. The later overflow proof still uses the report
+reference counter to prove `TRUNC=YES`/`BAD_FIX`.
+
+Hardware-proven `ASM 2.43` report overflow smoke on 2026-05-26:
+
+```text
+L @2000
+L OK=42F8 GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ASM 2.43 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+```
+
+`ASM 2.43` replaces the manual trunc-flag report with a real report-reference
+counter overflow trigger. `ASM_REPORT_NOTE_REF` records report references until
+`REFS=$10/$10`, then the next reference sets `TRUNC`, fails with `BAD_FIX`, and
+prints the third compact report with `STATUS=$09` and `TRUNC=YES`. This is still
+a report-counter foothold; full reference rows and rich xref output remain later
+work.
+
+Earlier hardware-proven `ASM 2.42` report truncation smoke on 2026-05-26:
+
+```text
+L @2000
+L OK=42AD GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=YES
+ASM 2.42 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+```
+
+`ASM 2.42` proves the compact report `TRUNC=YES` printer path. It sets the
+report truncation flag after the first-failure report proof and prints a third
+compact report with the same stored `BAD_OPER` status and `ERRLINE=$0001`, but
+with `TRUNC=YES`. This is a trunc-flag printer foothold; the later
+table-overflow path still needs to set the flag from real overflow.
+
+Earlier hardware-proven `ASM 2.41` first-failure report smoke on 2026-05-26:
+
+```text
+L @2000
+L OK=4279 GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$6800
+PC=$6800
+HIGH=$6800
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM 2.41 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+```
+
+`ASM 2.41` adds the first-failure report path. The report smoke fixture enables
+report-on-failure, assembles a bad `ORG` line, proves the failure report printed
+with `STATUS=$03` and `ERRLINE=$0001`, then verifies a later `ASM_END` on the
+failed session returns the stored `BAD_OPER` status.
+
+Earlier hardware-proven `ASM 2.40` `ASM_END` report smoke on 2026-05-26:
+
+```text
+L @2000
+L OK=41AF GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM 2.40 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+```
+
+`ASM 2.40` moves compact report printing into the `ASM_END` path. The report
+smoke fixture enables report-on-END, assembles through a real `END` line,
+asserts that the report was printed, then calls `ASM_END` a second time to prove
+the clean idempotent path does not lose the printed-report state.
+
+Earlier hardware-proven `ASM 2.39` compact-report smoke on 2026-05-26:
+
+```text
+L @2000
+L OK=416E GO=2000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$6800
+PC=$680C
+HIGH=$680C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM 2.39 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+```
+
+`ASM 2.39` prints the compact report block from the `$5E REPORT` fixture before
+the final smoke ladder. It uses hex fields for the first W65C02S foothold and
+proves the field printer for `STATUS`, `ERRLINE`, start/current/high PCs,
+emitted/reserved bytes, line count, table counts/limits, and `TRUNC`.
+
+Earlier hardware-proven `ASM 2.38` report-fact smoke on 2026-05-25:
+
+```text
+L @2000
+L OK=3F9B GO=2000
+ASM 2.38 TESTS OK
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+WARN WARN_DS_WRAP
+W=$E2F4 SYM=$06 PC=$6800
+RET A=00 X=00 Y=68 P=77 S=FD NV-BdIZC
+```
+
+`ASM 2.38` added a pre-2.40 report-fact smoke slice. It assembles `ORG`, `EQU`,
+`DB`, `DS`, and `END` through `ASM_ASSEMBLE_LINE`, then asserts ended/OK
+session state, start/current/high-water PCs, physical line count,
+symbol/fixup/reference counts, and report flags before restoring the `$6800`
+symbol-smoke session.
+
+Earlier hardware-proven `ASM 2.37` RAM-reorg smoke on 2026-05-25:
 
 ```text
 L @2000
@@ -660,7 +1260,7 @@ Y = ASM_SLOT
 The failure path also tries to print one compact line before returning:
 
 ```text
-ASM 2.36 TESTS FAIL
+ASM 2.47 TESTS FAIL
  5D DIRECT
  D3 WARN_DS_WRAP
 S=$5D X=$00 Y=$D3
@@ -682,6 +1282,7 @@ $5A ASM_CLASS_OPERAND smoke
 $5B ASM_FIND_OPCODE/ASM_EMIT smoke
 $5C fixup record/patch smoke
 $5D DB/ORG/DS directive smoke
+$5E report-fact smoke
 $60 symbol smoke
 $71 RJOIN joiner lookup
 $72 RJOIN BIO write lookup
@@ -735,6 +1336,30 @@ $D0 DS initializer-list emit failed
 $D1 emitted DS initializer-list bytes were wrong
 $D2 DS initializer-list PC/high-water was wrong
 $D3 DS partial initializer-list repeat did not set WARN_DS_WRAP
+```
+
+For `$5E` report-fact smoke, `Y` identifies the report-state subtest:
+
+```text
+$E1 report BEGIN failed
+$E2 report ORG failed
+$E3 report EQU failed
+$E4 report DB failed
+$E5 report DS fill failed
+$E6 report DS truncating fill failed
+$E7 report END failed
+$E8 ended/OK/printed session state was wrong
+$E9 start/current/high-water PC facts were wrong
+$EA line/symbol/fixup/reference/use counts were wrong
+$EB report flags were wrong
+$EC second clean ASM_END failed or lost report-printed state
+$ED report-failure BEGIN failed
+$EE report-failure bad line did not fail BAD_OPER
+$EF report-failure state/report facts were wrong
+$F0 failed-session ASM_END did not return stored BAD_OPER
+$F1 report reference counter fill failed
+$F2 report reference overflow did not fail BAD_FIX/set TRUNC
+$F3 report smoke restore failed
 ```
 
 `X` is `ASM_STATUS`:
@@ -956,10 +1581,10 @@ Current fixtures:
 
 ```text
 LDX #0       -> A2 00
-STZ $6910    -> 9C 10 69
-STA $6900,X  -> 9D 00 69
-EOR $6910    -> 4D 10 69
-STA $6910    -> 8D 10 69
+STZ $7110    -> 9C 10 71
+STA $7100,X  -> 9D 00 71
+EOR $7110    -> 4D 10 71
+STA $7110    -> 8D 10 71
 INX          -> E8
 CPX #COUNT   -> E0 10
 BNE LOOP     -> D0 ED when LOOP is a resolved backward label
@@ -1080,6 +1705,22 @@ DC constants
 
 ### ASM 2.40 Report
 
+Current foothold:
+
+```text
+ASM 2.40 prints a compact report block from ASM_END when report-on-END is set.
+ASM 2.41 prints a compact report block on first failure when report-on-failure
+is set.
+ASM 2.42 prints TRUNC=YES when the report truncation flag is set.
+ASM 2.43 sets TRUNC=YES from report-reference counter overflow.
+ASM 2.44 counts mark-use symbol references in REFS.
+ASM 2.45 prints the first compact USED row with count and first-ref line.
+ASM 2.46 stores session symbol definition lines.
+ASM 2.47 prints compact UNUSED rows with definition lines.
+Numeric report fields are hex in this first W65C02S printer.
+Second clean ASM_END returns OK without duplicating report state.
+```
+
 Required report facts:
 
 ```text
@@ -1100,6 +1741,8 @@ Acceptance:
 first clean END prints compact report
 first failure prints error and compact report
 report overflow sets TRUNC=YES
+used symbol report prints count and first reference line
+unused symbol report prints definition lines
 ```
 
 ## ASMTEST_3000 Final Acceptance

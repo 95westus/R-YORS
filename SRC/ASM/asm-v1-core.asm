@@ -13,6 +13,7 @@
                         MODULE          ASM_V1_CORE
 
                         XDEF            START
+                        XDEF            ASM_REPL
                         XDEF            ASM_BEGIN
                         XDEF            ASM_END
                         XDEF            ASM_ASSEMBLE_LINE
@@ -128,19 +129,21 @@ ASM_STEP_OPERAND       EQU             $5A
 ASM_STEP_OPCODE        EQU             $5B
 ASM_STEP_FIXUPS        EQU             $5C
 ASM_STEP_DIRECTIVE     EQU             $5D
+ASM_STEP_REPORT        EQU             $5E
 ASM_STEP_SYMBOLS       EQU             $60
 ASM_STEP_RJOIN_JOINER  EQU             $71
 ASM_STEP_RJOIN_WRITE   EQU             $72
+ASM_STEP_RJOIN_READ    EQU             $73
 ASM_STEP_LONG_LINE     EQU             $80
 ASM_STEP_END           EQU             $90
 
 ASM_BEGINF_HAVE_PC     EQU             $01
 
 ASM_SMOKE_TARGET_LO    EQU             $00
-ASM_SMOKE_TARGET_HI    EQU             $68
+ASM_SMOKE_TARGET_HI    EQU             $70
 ASM_SMOKE_TARGET_FWD_LO EQU            $10
 ASM_SMOKE_TARGET_BACK_LO EQU           $0F
-ASM_SMOKE_DATA_HI      EQU             $69
+ASM_SMOKE_DATA_HI      EQU             $71
 
 ASM_SESS_IDLE          EQU             $00
 ASM_SESS_ACTIVE        EQU             $01
@@ -149,6 +152,10 @@ ASM_SESS_FAILED        EQU             $03
 
 ASM_REPORTF_ORG_SEEN   EQU             $01
 ASM_REPORTF_WARN_DS_WRAP EQU           $02
+ASM_REPORTF_PRINT_END  EQU             $04
+ASM_REPORTF_PRINTED    EQU             $08
+ASM_REPORTF_PRINT_FAIL EQU             $10
+ASM_REPORTF_TRUNC      EQU             $20
 
 ASM_TOK_EOL           EQU             $00
 ASM_TOK_WORD          EQU             $01
@@ -368,6 +375,12 @@ START_FIXUPS_OK:
                         BCS             START_DIRECTIVES_OK
                         JMP             START_FAIL
 START_DIRECTIVES_OK:
+                        LDA             #ASM_STEP_REPORT
+                        STA             ASM_START_STEP
+                        JSR             ASM_SMOKE_REPORT
+                        BCS             START_REPORT_OK
+                        JMP             START_FAIL
+START_REPORT_OK:
                         LDA             #ASM_STEP_SYMBOLS
                         STA             ASM_START_STEP
                         JSR             ASM_SMOKE_SYMBOLS
@@ -429,6 +442,197 @@ START_FAIL_RETURN:
                         CLC
                         RTS
 
+; ----------------------------------------------------------------------------
+; ASM_REPL
+; Resident one-line assembler console. Reads through the ROM edit-line service,
+; assembles at ASM_SMOKE_TARGET, and prints the new PC plus emitted bytes.
+; A single "." line exits.
+; ----------------------------------------------------------------------------
+ASM_REPL:
+                        JSR             ASM_RJOIN_INIT_IO
+                        BCS             ASM_REPL_IO_READY
+                        CLC
+                        RTS
+ASM_REPL_IO_READY:
+                        LDX             #<ASM_REPL_MSG_TITLE
+                        LDY             #>ASM_REPL_MSG_TITLE
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        JSR             ASM_REPL_BEGIN_TARGET
+                        BCS             ASM_REPL_LOOP
+                        CLC
+                        RTS
+
+ASM_REPL_LOOP:
+                        JSR             ASM_RJOIN_INIT_IO
+                        BCS             ASM_REPL_PROMPT
+                        CLC
+                        RTS
+ASM_REPL_PROMPT:
+                        LDX             #<ASM_REPL_MSG_PROMPT
+                        LDY             #>ASM_REPL_MSG_PROMPT
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDX             #<ASM_REPL_LINE_BUF
+                        LDY             #>ASM_REPL_LINE_BUF
+                        JSR             ASM_RJ_READ_CSTRING
+                        BCS             ASM_REPL_READ_OK
+                        STA             ASM_REPL_STATUS
+                        JSR             ASM_RJOIN_INIT_IO
+                        BCC             ASM_REPL_RETURN_FAIL
+                        JSR             ASM_REPL_PRINT_READ_FAIL
+                        JMP             ASM_REPL_LOOP
+
+ASM_REPL_READ_OK:
+                        STA             ASM_REPL_LEN
+                        BEQ             ASM_REPL_LOOP
+                        LDA             ASM_REPL_LINE_BUF
+                        CMP             #'.'
+                        BNE             ASM_REPL_ASSEMBLE
+                        LDA             ASM_REPL_LINE_BUF+1
+                        BEQ             ASM_REPL_QUIT
+
+ASM_REPL_ASSEMBLE:
+                        LDA             ASM_PC_LO
+                        STA             ASM_REPL_OLD_PC_LO
+                        LDA             ASM_PC_HI
+                        STA             ASM_REPL_OLD_PC_HI
+                        LDX             #<ASM_REPL_LINE_BUF
+                        LDY             #>ASM_REPL_LINE_BUF
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_REPL_ASSEMBLE_OK
+                        STA             ASM_REPL_STATUS
+                        JSR             ASM_RJOIN_INIT_IO
+                        BCC             ASM_REPL_RETURN_FAIL
+                        JSR             ASM_REPL_PRINT_ERR
+                        JSR             ASM_REPL_BEGIN_OLD_PC
+                        JMP             ASM_REPL_LOOP
+
+ASM_REPL_ASSEMBLE_OK:
+                        JSR             ASM_RJOIN_INIT_IO
+                        BCC             ASM_REPL_RETURN_FAIL
+                        JSR             ASM_REPL_PRINT_OK
+                        JSR             ASM_REPL_REOPEN_IF_NEEDED
+                        JMP             ASM_REPL_LOOP
+
+ASM_REPL_QUIT:
+                        JSR             ASM_RJOIN_INIT_IO
+                        BCC             ASM_REPL_RETURN_FAIL
+                        LDX             #<ASM_REPL_MSG_BYE
+                        LDY             #>ASM_REPL_MSG_BYE
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        SEC
+                        RTS
+ASM_REPL_RETURN_FAIL:
+                        CLC
+                        RTS
+
+ASM_REPL_BEGIN_TARGET:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #ASM_SMOKE_TARGET_LO
+                        LDY             #ASM_SMOKE_TARGET_HI
+                        JMP             ASM_BEGIN
+
+ASM_REPL_BEGIN_OLD_PC:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             ASM_REPL_OLD_PC_LO
+                        LDY             ASM_REPL_OLD_PC_HI
+                        JMP             ASM_BEGIN
+
+ASM_REPL_REOPEN_IF_NEEDED:
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ACTIVE
+                        BNE             ASM_REPL_REOPEN
+                        SEC
+                        RTS
+ASM_REPL_REOPEN:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             ASM_PC_LO
+                        LDY             ASM_PC_HI
+                        JMP             ASM_BEGIN
+
+ASM_REPL_PRINT_OK:
+                        LDX             #<ASM_REPL_MSG_OK
+                        LDY             #>ASM_REPL_MSG_OK
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_PC_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_PC_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_REPL_PRINT_BYTES
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPL_PRINT_ERR:
+                        LDX             #<ASM_REPL_MSG_ERR
+                        LDY             #>ASM_REPL_MSG_ERR
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_REPL_STATUS
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<ASM_SMOKE_MSG_PC
+                        LDY             #>ASM_SMOKE_MSG_PC
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_REPL_OLD_PC_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_REPL_OLD_PC_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPL_PRINT_READ_FAIL:
+                        LDX             #<ASM_REPL_MSG_READ
+                        LDY             #>ASM_REPL_MSG_READ
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_REPL_STATUS
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPL_PRINT_BYTES:
+                        LDA             ASM_STMT_KIND
+                        CMP             #ASM_STMT_MNEM
+                        BEQ             ASM_REPL_BYTES_MAYBE
+                        CMP             #ASM_STMT_DIR
+                        BEQ             ASM_REPL_BYTES_CHECK_DIR
+                        RTS
+ASM_REPL_BYTES_CHECK_DIR:
+                        LDA             ASM_STMT_OP_ID
+                        CMP             #ASM_VID_DB
+                        BEQ             ASM_REPL_BYTES_MAYBE
+                        CMP             #ASM_VID_DS
+                        BEQ             ASM_REPL_BYTES_MAYBE
+                        RTS
+ASM_REPL_BYTES_MAYBE:
+                        LDA             ASM_PC_HI
+                        CMP             ASM_REPL_OLD_PC_HI
+                        BEQ             ASM_REPL_BYTES_SAME_PAGE
+                        RTS
+ASM_REPL_BYTES_SAME_PAGE:
+                        LDA             ASM_PC_LO
+                        SEC
+                        SBC             ASM_REPL_OLD_PC_LO
+                        BEQ             ASM_REPL_BYTES_DONE
+                        CMP             #$11
+                        BCC             ASM_REPL_BYTES_HAVE_DELTA
+ASM_REPL_BYTES_DONE:
+                        RTS
+ASM_REPL_BYTES_HAVE_DELTA:
+                        STA             ASM_REPL_DELTA
+                        LDA             ASM_REPL_OLD_PC_LO
+                        STA             ASM_REPL_BYTE_PTR_LO
+                        LDA             ASM_REPL_OLD_PC_HI
+                        STA             ASM_REPL_BYTE_PTR_HI
+                        STZ             ASM_REPL_BYTE_INDEX
+                        LDX             #<ASM_REPL_MSG_BYTES
+                        LDY             #>ASM_REPL_MSG_BYTES
+                        JSR             ASM_RJ_WRITE_CSTRING
+ASM_REPL_BYTES_LOOP:
+                        LDA             ASM_REPL_BYTE_INDEX
+                        CMP             ASM_REPL_DELTA
+                        BEQ             ASM_REPL_BYTES_DONE
+                        LDA             #' '
+                        JSR             ASM_RJ_WRITE_BYTE
+                        LDY             ASM_REPL_BYTE_INDEX
+                        LDA             (ASM_REPL_BYTE_PTR_LO),Y
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        INC             ASM_REPL_BYTE_INDEX
+                        BRA             ASM_REPL_BYTES_LOOP
+
 ASM_SMOKE_PRINT_PASS:
                         LDX             #<ASM_SMOKE_MSG_PASS
                         LDY             #>ASM_SMOKE_MSG_PASS
@@ -468,6 +672,9 @@ ASM_SMOKE_PRINT_PASS:
                         JSR             ASM_SMOKE_PRINT_LINE
                         LDX             #<ASM_SMOKE_MSG_T_DIRECT
                         LDY             #>ASM_SMOKE_MSG_T_DIRECT
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_SMOKE_MSG_T_REPORT
+                        LDY             #>ASM_SMOKE_MSG_T_REPORT
                         JSR             ASM_SMOKE_PRINT_LINE
                         LDX             #<ASM_SMOKE_MSG_T_SYMBOLS
                         LDY             #>ASM_SMOKE_MSG_T_SYMBOLS
@@ -545,6 +752,8 @@ ASM_SMOKE_PRINT_FAIL_STAGE:
                         BEQ             ASM_SMOKE_PRINT_FAIL_FIXUPS
                         CMP             #ASM_STEP_DIRECTIVE
                         BEQ             ASM_SMOKE_PRINT_FAIL_DIRECT
+                        CMP             #ASM_STEP_REPORT
+                        BEQ             ASM_SMOKE_PRINT_FAIL_REPORT
                         RTS
 ASM_SMOKE_PRINT_FAIL_FIXUPS:
                         LDX             #<ASM_SMOKE_MSG_T_FIXUPS
@@ -553,6 +762,10 @@ ASM_SMOKE_PRINT_FAIL_FIXUPS:
 ASM_SMOKE_PRINT_FAIL_DIRECT:
                         LDX             #<ASM_SMOKE_MSG_T_DIRECT
                         LDY             #>ASM_SMOKE_MSG_T_DIRECT
+                        JMP             ASM_SMOKE_PRINT_LINE
+ASM_SMOKE_PRINT_FAIL_REPORT:
+                        LDX             #<ASM_SMOKE_MSG_T_REPORT
+                        LDY             #>ASM_SMOKE_MSG_T_REPORT
                         JMP             ASM_SMOKE_PRINT_LINE
 
 ASM_SMOKE_PRINT_FAIL_DETAIL:
@@ -817,6 +1030,23 @@ ASM_RJOIN_INIT_FAIL:
                         CLC
                         RTS
 
+ASM_RJOIN_INIT_IO:
+                        JSR             ASM_RJOIN_INIT
+                        BCC             ASM_RJOIN_INIT_IO_FAIL
+                        LDA             #ASM_STEP_RJOIN_READ
+                        STA             ASM_START_STEP
+                        LDX             #<ASM_HASH_SYS_READ_CSTRING_EDIT_ECHO_UPPER
+                        LDY             #>ASM_HASH_SYS_READ_CSTRING_EDIT_ECHO_UPPER
+                        JSR             ASM_RJ_RESIDENT_XY
+                        BCC             ASM_RJOIN_INIT_IO_FAIL
+                        STX             ASM_RJ_READ_LO
+                        STY             ASM_RJ_READ_HI
+                        SEC
+                        RTS
+ASM_RJOIN_INIT_IO_FAIL:
+                        CLC
+                        RTS
+
 ASM_RJ_JOIN_EXEC_XY:
                         JSR             ASM_RJ_FIND_XY
                         BCC             ASM_RJ_JOIN_FAIL
@@ -848,6 +1078,9 @@ ASM_RJ_CALL_JOINER:
 
 ASM_RJ_WRITE_BYTE:
                         JMP             (ASM_RJ_WRITE_LO)
+
+ASM_RJ_READ_CSTRING:
+                        JMP             (ASM_RJ_READ_LO)
 
 ASM_RJ_WRITE_CSTRING:
                         STX             ASM_RJ_STR_LO
@@ -3044,6 +3277,603 @@ ASM_SMOKE_DIRECT_FAIL:
                         CLC
                         RTS
 
+ASM_SMOKE_REPORT:
+                        LDA             #$E1
+                        STA             ASM_SLOT
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #ASM_SMOKE_TARGET_LO
+                        LDY             #ASM_SMOKE_TARGET_HI
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_REPORT_BEGIN_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_BEGIN_OK:
+                        LDA             #$E2
+                        STA             ASM_SLOT
+                        LDX             #<ASM_DIRECT_ORG_CURRENT
+                        LDY             #>ASM_DIRECT_ORG_CURRENT
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_REPORT_ORG_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_ORG_OK:
+                        LDA             #$E3
+                        STA             ASM_SLOT
+                        LDX             #<ASM_DIRECT_ADDR_EQU
+                        LDY             #>ASM_DIRECT_ADDR_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_REPORT_EQU_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_EQU_OK:
+                        LDA             #$E4
+                        STA             ASM_SLOT
+                        LDX             #<ASM_DIRECT_DB_MIXED
+                        LDY             #>ASM_DIRECT_DB_MIXED
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_REPORT_DB_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_DB_OK:
+                        LDA             #$E5
+                        STA             ASM_SLOT
+                        LDX             #<ASM_DIRECT_DS_FILL
+                        LDY             #>ASM_DIRECT_DS_FILL
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_REPORT_DS_FILL_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_DS_FILL_OK:
+                        LDA             #$E6
+                        STA             ASM_SLOT
+                        LDX             #<ASM_DIRECT_DS_TRUNC
+                        LDY             #>ASM_DIRECT_DS_TRUNC
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_REPORT_DS_TRUNC_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_DS_TRUNC_OK:
+                        LDA             ASM_REPORT_FLAGS
+                        ORA             #ASM_REPORTF_PRINT_END
+                        STA             ASM_REPORT_FLAGS
+
+                        LDA             #$E7
+                        STA             ASM_SLOT
+                        LDX             #<ASM_SMOKE_PARSE_END
+                        LDY             #>ASM_SMOKE_PARSE_END
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_REPORT_END_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_END_OK:
+                        LDA             #$E8
+                        STA             ASM_SLOT
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ENDED
+                        BNE             ASM_SMOKE_REPORT_FAIL_E8
+                        LDA             ASM_STATUS
+                        BNE             ASM_SMOKE_REPORT_FAIL_E8
+                        LDA             ASM_LAST_STATUS
+                        BNE             ASM_SMOKE_REPORT_FAIL_E8
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINTED
+                        BEQ             ASM_SMOKE_REPORT_FAIL_E8
+                        BRA             ASM_SMOKE_REPORT_CHECK_E9
+ASM_SMOKE_REPORT_FAIL_E8:
+                        JMP             ASM_SMOKE_REPORT_FAIL
+
+ASM_SMOKE_REPORT_CHECK_E9:
+                        LDA             #$E9
+                        STA             ASM_SLOT
+                        LDA             ASM_START_PC_LO
+                        CMP             #ASM_SMOKE_TARGET_LO
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_START_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_PC_LO
+                        CMP             #$0C
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_HIGH_PC_LO
+                        CMP             #$0C
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_HIGH_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        BRA             ASM_SMOKE_REPORT_CHECK_EA
+ASM_SMOKE_REPORT_FAIL_E9:
+                        JMP             ASM_SMOKE_REPORT_FAIL
+
+ASM_SMOKE_REPORT_CHECK_EA:
+                        LDA             #$EA
+                        STA             ASM_SLOT
+                        LDA             ASM_LINE_COUNT_LO
+                        CMP             #$06
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_LINE_COUNT_HI
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_COUNT
+                        CMP             #$03
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_FIX_COUNT
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_REF_COUNT
+                        CMP             #$02
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_USECNT
+                        CMP             #$02
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_FIRSTREF_LO
+                        CMP             #$03
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_FIRSTREF_HI
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_FLAGS
+                        AND             #ASM_SYMF_USED
+                        BEQ             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_DEFLINE_LO
+                        CMP             #$02
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_DEFLINE_HI
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_DEFLINE_LO+1
+                        CMP             #$03
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_DEFLINE_HI+1
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_FLAGS+1
+                        AND             #ASM_SYMF_USED
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_DEFLINE_LO+2
+                        CMP             #$04
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_DEFLINE_HI+2
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        LDA             ASM_SYM_FLAGS+2
+                        AND             #ASM_SYMF_USED
+                        BNE             ASM_SMOKE_REPORT_FAIL_EA
+                        BRA             ASM_SMOKE_REPORT_CHECK_EB
+ASM_SMOKE_REPORT_FAIL_EA:
+                        JMP             ASM_SMOKE_REPORT_FAIL
+
+ASM_SMOKE_REPORT_CHECK_EB:
+                        LDA             #$EB
+                        STA             ASM_SLOT
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_ORG_SEEN
+                        BEQ             ASM_SMOKE_REPORT_FAIL_EB
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_WARN_DS_WRAP
+                        BNE             ASM_SMOKE_REPORT_FAIL_EB
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINT_END
+                        BEQ             ASM_SMOKE_REPORT_FAIL_EB
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINTED
+                        BEQ             ASM_SMOKE_REPORT_FAIL_EB
+                        BRA             ASM_SMOKE_REPORT_CHECK_EC
+ASM_SMOKE_REPORT_FAIL_EB:
+                        JMP             ASM_SMOKE_REPORT_FAIL
+
+ASM_SMOKE_REPORT_CHECK_EC:
+                        LDA             #$EC
+                        STA             ASM_SLOT
+                        JSR             ASM_END
+                        BCS             ASM_SMOKE_REPORT_SECOND_END_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_SECOND_END_OK:
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINTED
+                        BNE             ASM_SMOKE_REPORT_CHECK_ED
+                        JMP             ASM_SMOKE_REPORT_FAIL
+
+ASM_SMOKE_REPORT_CHECK_ED:
+                        LDA             #$ED
+                        STA             ASM_SLOT
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #ASM_SMOKE_TARGET_LO
+                        LDY             #ASM_SMOKE_TARGET_HI
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_REPORT_FAIL_BEGIN_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_BEGIN_OK:
+                        LDA             ASM_REPORT_FLAGS
+                        ORA             #ASM_REPORTF_PRINT_FAIL
+                        STA             ASM_REPORT_FLAGS
+
+                        LDA             #$EE
+                        STA             ASM_SLOT
+                        LDX             #<ASM_SMOKE_PARSE_ORG_EMPTY
+                        LDY             #>ASM_SMOKE_PARSE_ORG_EMPTY
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_REPORT_FAIL_LINE_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_LINE_OK:
+                        CMP             #ASM_STATUS_BAD_OPER
+                        BEQ             ASM_SMOKE_REPORT_FAIL_STATUS_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_STATUS_OK:
+
+                        LDA             #$EF
+                        STA             ASM_SLOT
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_FAILED
+                        BEQ             ASM_SMOKE_REPORT_FAIL_STATE_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_STATE_OK:
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINT_FAIL
+                        BNE             ASM_SMOKE_REPORT_FAIL_FLAG_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_FLAG_OK:
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINTED
+                        BNE             ASM_SMOKE_REPORT_FAIL_PRINT_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_PRINT_OK:
+                        LDA             ASM_LINE_COUNT_LO
+                        CMP             #$01
+                        BEQ             ASM_SMOKE_REPORT_FAIL_LINE_COUNT_LO_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_LINE_COUNT_LO_OK:
+                        LDA             ASM_LINE_COUNT_HI
+                        BEQ             ASM_SMOKE_REPORT_FAIL_LINE_COUNT_HI_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_LINE_COUNT_HI_OK:
+                        LDA             ASM_SYM_COUNT
+                        BEQ             ASM_SMOKE_REPORT_FAIL_SYMS_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_SYMS_OK:
+                        LDA             ASM_PC_LO
+                        CMP             #ASM_SMOKE_TARGET_LO
+                        BEQ             ASM_SMOKE_REPORT_FAIL_PC_LO_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_PC_LO_OK:
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BEQ             ASM_SMOKE_REPORT_FAIL_PC_HI_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAIL_PC_HI_OK:
+
+                        LDA             #$F0
+                        STA             ASM_SLOT
+                        JSR             ASM_END
+                        BCC             ASM_SMOKE_REPORT_FAILED_END_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAILED_END_OK:
+                        CMP             #ASM_STATUS_BAD_OPER
+                        BEQ             ASM_SMOKE_REPORT_FAILED_END_STATUS_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_FAILED_END_STATUS_OK:
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINTED
+                        BNE             ASM_SMOKE_REPORT_CHECK_F1
+                        JMP             ASM_SMOKE_REPORT_FAIL
+
+ASM_SMOKE_REPORT_CHECK_F1:
+                        LDA             #$F1
+                        STA             ASM_SLOT
+                        LDA             #ASM_REF_MAX
+                        STA             ASM_TMP0_LO
+ASM_SMOKE_REPORT_REF_FILL_LOOP:
+                        JSR             ASM_REPORT_NOTE_REF
+                        BCS             ASM_SMOKE_REPORT_REF_FILL_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_REF_FILL_OK:
+                        DEC             ASM_TMP0_LO
+                        BNE             ASM_SMOKE_REPORT_REF_FILL_LOOP
+
+                        LDA             #$F2
+                        STA             ASM_SLOT
+                        JSR             ASM_REPORT_NOTE_REF
+                        BCC             ASM_SMOKE_REPORT_REF_OVERFLOW_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_REF_OVERFLOW_OK:
+                        CMP             #ASM_STATUS_BAD_FIX
+                        BEQ             ASM_SMOKE_REPORT_REF_STATUS_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_REF_STATUS_OK:
+                        LDA             ASM_REF_COUNT
+                        CMP             #ASM_REF_MAX
+                        BEQ             ASM_SMOKE_REPORT_REF_COUNT_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_REF_COUNT_OK:
+                        JSR             ASM_REPORT_COMPACT
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_TRUNC
+                        BNE             ASM_SMOKE_REPORT_CHECK_F2
+                        JMP             ASM_SMOKE_REPORT_FAIL
+
+ASM_SMOKE_REPORT_CHECK_F2:
+                        LDA             #$F3
+                        STA             ASM_SLOT
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #ASM_SMOKE_TARGET_LO
+                        LDY             #ASM_SMOKE_TARGET_HI
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_REPORT_RESTORE_OK
+                        JMP             ASM_SMOKE_REPORT_FAIL
+ASM_SMOKE_REPORT_RESTORE_OK:
+                        SEC
+                        RTS
+ASM_SMOKE_REPORT_FAIL:
+                        CLC
+                        RTS
+
+ASM_REPORT_COMPACT:
+                        LDX             #<ASM_REPORT_MSG_TITLE
+                        LDY             #>ASM_REPORT_MSG_TITLE
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        JSR             ASM_REPORT_PRINT_STATUS
+                        JSR             ASM_REPORT_PRINT_ERRLINE
+                        JSR             ASM_REPORT_PRINT_START
+                        JSR             ASM_REPORT_PRINT_PC
+                        JSR             ASM_REPORT_PRINT_HIGH
+                        JSR             ASM_REPORT_PRINT_BYTES
+                        JSR             ASM_REPORT_PRINT_LINES
+                        JSR             ASM_REPORT_PRINT_SYMS
+                        JSR             ASM_REPORT_PRINT_FIXUPS
+                        JSR             ASM_REPORT_PRINT_REFS
+                        JSR             ASM_REPORT_PRINT_TRUNC
+                        JSR             ASM_REPORT_PRINT_USED
+                        JMP             ASM_REPORT_PRINT_UNUSED
+
+ASM_REPORT_PRINT_STATUS:
+                        LDX             #<ASM_REPORT_MSG_STATUS
+                        LDY             #>ASM_REPORT_MSG_STATUS
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_STATUS
+                        BEQ             ASM_REPORT_PRINT_STATUS_OK
+                        LDA             #'$'
+                        JSR             ASM_RJ_WRITE_BYTE
+                        LDA             ASM_STATUS
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+ASM_REPORT_PRINT_STATUS_OK:
+                        LDX             #<ASM_REPORT_MSG_OK
+                        LDY             #>ASM_REPORT_MSG_OK
+                        JMP             ASM_SMOKE_PRINT_LINE
+
+ASM_REPORT_PRINT_ERRLINE:
+                        LDX             #<ASM_REPORT_MSG_ERRLINE
+                        LDY             #>ASM_REPORT_MSG_ERRLINE
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_STATUS
+                        BEQ             ASM_REPORT_PRINT_ERRLINE_ZERO
+                        LDA             ASM_LINE_COUNT_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_LINE_COUNT_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+ASM_REPORT_PRINT_ERRLINE_ZERO:
+                        LDA             #$00
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             #$00
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_START:
+                        LDX             #<ASM_REPORT_MSG_START
+                        LDY             #>ASM_REPORT_MSG_START
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_START_PC_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_START_PC_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_PC:
+                        LDX             #<ASM_REPORT_MSG_PC
+                        LDY             #>ASM_REPORT_MSG_PC
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_PC_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_PC_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_HIGH:
+                        LDX             #<ASM_REPORT_MSG_HIGH
+                        LDY             #>ASM_REPORT_MSG_HIGH
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_HIGH_PC_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_HIGH_PC_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_BYTES:
+                        LDX             #<ASM_REPORT_MSG_BYTES
+                        LDY             #>ASM_REPORT_MSG_BYTES
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_HIGH_PC_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_HIGH_PC_HI
+                        SBC             ASM_START_PC_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_TMP0_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_LINES:
+                        LDX             #<ASM_REPORT_MSG_LINES
+                        LDY             #>ASM_REPORT_MSG_LINES
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_LINE_COUNT_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_LINE_COUNT_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_SYMS:
+                        LDX             #<ASM_REPORT_MSG_SYMS
+                        LDY             #>ASM_REPORT_MSG_SYMS
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_SYM_COUNT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_REPORT_PRINT_LIMIT_SEP
+                        LDA             #ASM_SYM_MAX
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_FIXUPS:
+                        LDX             #<ASM_REPORT_MSG_FIXUPS
+                        LDY             #>ASM_REPORT_MSG_FIXUPS
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_FIX_COUNT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_REPORT_PRINT_LIMIT_SEP
+                        LDA             #ASM_FIX_MAX
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_REFS:
+                        LDX             #<ASM_REPORT_MSG_REFS
+                        LDY             #>ASM_REPORT_MSG_REFS
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_REF_COUNT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_REPORT_PRINT_LIMIT_SEP
+                        LDA             #ASM_REF_MAX
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_TRUNC:
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_TRUNC
+                        BEQ             ASM_REPORT_PRINT_TRUNC_NO
+                        LDX             #<ASM_REPORT_MSG_TRUNC_YES
+                        LDY             #>ASM_REPORT_MSG_TRUNC_YES
+                        JMP             ASM_SMOKE_PRINT_LINE
+ASM_REPORT_PRINT_TRUNC_NO:
+                        LDX             #<ASM_REPORT_MSG_TRUNC_NO
+                        LDY             #>ASM_REPORT_MSG_TRUNC_NO
+                        JMP             ASM_SMOKE_PRINT_LINE
+
+ASM_REPORT_PRINT_USED:
+                        JSR             ASM_REPORT_HAS_USED_SYMBOL
+                        BCC             ASM_REPORT_PRINT_USED_DONE
+                        LDX             #<ASM_REPORT_MSG_USED
+                        LDY             #>ASM_REPORT_MSG_USED
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #$00
+ASM_REPORT_PRINT_USED_LOOP:
+                        CPX             ASM_SYM_COUNT
+                        BEQ             ASM_REPORT_PRINT_USED_DONE
+                        LDA             ASM_SYM_FLAGS,X
+                        AND             #ASM_SYMF_USED
+                        BEQ             ASM_REPORT_PRINT_USED_NEXT
+                        JSR             ASM_REPORT_PRINT_USED_ROW
+                        LDX             ASM_SLOT
+ASM_REPORT_PRINT_USED_NEXT:
+                        INX
+                        BRA             ASM_REPORT_PRINT_USED_LOOP
+ASM_REPORT_PRINT_USED_DONE:
+                        RTS
+
+ASM_REPORT_HAS_USED_SYMBOL:
+                        LDX             #$00
+ASM_REPORT_HAS_USED_LOOP:
+                        CPX             ASM_SYM_COUNT
+                        BEQ             ASM_REPORT_HAS_USED_NO
+                        LDA             ASM_SYM_FLAGS,X
+                        AND             #ASM_SYMF_USED
+                        BNE             ASM_REPORT_HAS_USED_YES
+                        INX
+                        BRA             ASM_REPORT_HAS_USED_LOOP
+ASM_REPORT_HAS_USED_NO:
+                        CLC
+                        RTS
+ASM_REPORT_HAS_USED_YES:
+                        SEC
+                        RTS
+
+ASM_REPORT_PRINT_USED_ROW:
+                        STX             ASM_SLOT
+                        JSR             ASM_SET_SYM_NAME_PTR_X
+                        LDX             ASM_SYM_PTR_LO
+                        LDY             ASM_SYM_PTR_HI
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_REPORT_PRINT_DEF_LINE
+                        LDX             #<ASM_REPORT_MSG_USED_REFS
+                        LDY             #>ASM_REPORT_MSG_USED_REFS
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_USECNT,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<ASM_REPORT_MSG_USED_FIRST
+                        LDY             #>ASM_REPORT_MSG_USED_FIRST
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_FIRSTREF_HI,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_FIRSTREF_LO,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_UNUSED:
+                        JSR             ASM_REPORT_HAS_UNUSED_SYMBOL
+                        BCC             ASM_REPORT_PRINT_UNUSED_DONE
+                        LDX             #<ASM_REPORT_MSG_UNUSED
+                        LDY             #>ASM_REPORT_MSG_UNUSED
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #$00
+ASM_REPORT_PRINT_UNUSED_LOOP:
+                        CPX             ASM_SYM_COUNT
+                        BEQ             ASM_REPORT_PRINT_UNUSED_DONE
+                        LDA             ASM_SYM_FLAGS,X
+                        AND             #ASM_SYMF_USED
+                        BNE             ASM_REPORT_PRINT_UNUSED_NEXT
+                        JSR             ASM_REPORT_PRINT_UNUSED_ROW
+                        LDX             ASM_SLOT
+ASM_REPORT_PRINT_UNUSED_NEXT:
+                        INX
+                        BRA             ASM_REPORT_PRINT_UNUSED_LOOP
+ASM_REPORT_PRINT_UNUSED_DONE:
+                        RTS
+
+ASM_REPORT_HAS_UNUSED_SYMBOL:
+                        LDX             #$00
+ASM_REPORT_HAS_UNUSED_LOOP:
+                        CPX             ASM_SYM_COUNT
+                        BEQ             ASM_REPORT_HAS_UNUSED_NO
+                        LDA             ASM_SYM_FLAGS,X
+                        AND             #ASM_SYMF_USED
+                        BEQ             ASM_REPORT_HAS_UNUSED_YES
+                        INX
+                        BRA             ASM_REPORT_HAS_UNUSED_LOOP
+ASM_REPORT_HAS_UNUSED_NO:
+                        CLC
+                        RTS
+ASM_REPORT_HAS_UNUSED_YES:
+                        SEC
+                        RTS
+
+ASM_REPORT_PRINT_UNUSED_ROW:
+                        STX             ASM_SLOT
+                        JSR             ASM_SET_SYM_NAME_PTR_X
+                        LDX             ASM_SYM_PTR_LO
+                        LDY             ASM_SYM_PTR_HI
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_REPORT_PRINT_DEF_LINE
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_REPORT_PRINT_DEF_LINE:
+                        LDX             #<ASM_REPORT_MSG_DEF
+                        LDY             #>ASM_REPORT_MSG_DEF
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_DEFLINE_HI,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_DEFLINE_LO,X
+                        JMP             ASM_RJ_WRITE_HEX_BYTE
+
+ASM_REPORT_PRINT_LIMIT_SEP:
+                        LDA             #'/'
+                        JSR             ASM_RJ_WRITE_BYTE
+                        LDA             #'$'
+                        JMP             ASM_RJ_WRITE_BYTE
+
 ASM_SMOKE_ASSEMBLE_LINE_ERR:
                         STA             ASM_SMOKE_EXPECT_STATUS
                         JSR             ASM_ASSEMBLE_LINE
@@ -3323,6 +4153,8 @@ ASM_SMOKE_INSTALL_COLLISION_ROW:
                         STA             ASM_SYM_HASH3
                         LDA             #$05
                         STA             ASM_SYM_NAME_LEN
+                        STZ             ASM_SYM_DEFLINE_LO
+                        STZ             ASM_SYM_DEFLINE_HI
                         STZ             ASM_SYM_USECNT
                         STZ             ASM_SYM_FIRSTREF_LO
                         STZ             ASM_SYM_FIRSTREF_HI
@@ -3419,6 +4251,7 @@ ASM_END_OK:
                         LDA             #ASM_STATUS_OK
                         STA             ASM_LAST_STATUS
                         STA             ASM_STATUS
+                        JSR             ASM_REPORT_PRINT_END_IF_NEEDED
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
                         SEC
@@ -3430,6 +4263,67 @@ ASM_END_FAILED:
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
                         CLC
+                        RTS
+
+ASM_REPORT_PRINT_END_IF_NEEDED:
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINT_END
+                        BEQ             ASM_REPORT_PRINT_END_DONE
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINTED
+                        BNE             ASM_REPORT_PRINT_END_DONE
+                        LDA             #ASM_STEP_REPORT
+                        STA             ASM_START_STEP
+                        JSR             ASM_RJOIN_INIT
+                        LDA             #ASM_STEP_REPORT
+                        STA             ASM_START_STEP
+                        BCC             ASM_REPORT_PRINT_END_DONE
+                        JSR             ASM_REPORT_COMPACT
+                        LDA             ASM_REPORT_FLAGS
+                        ORA             #ASM_REPORTF_PRINTED
+                        STA             ASM_REPORT_FLAGS
+ASM_REPORT_PRINT_END_DONE:
+                        RTS
+
+ASM_REPORT_PRINT_FAIL_IF_NEEDED:
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINT_FAIL
+                        BEQ             ASM_REPORT_PRINT_FAIL_DONE
+                        LDA             ASM_REPORT_FLAGS
+                        AND             #ASM_REPORTF_PRINTED
+                        BNE             ASM_REPORT_PRINT_FAIL_DONE
+                        LDA             #ASM_STEP_REPORT
+                        STA             ASM_START_STEP
+                        JSR             ASM_RJOIN_INIT
+                        LDA             #ASM_STEP_REPORT
+                        STA             ASM_START_STEP
+                        BCC             ASM_REPORT_PRINT_FAIL_DONE
+                        JSR             ASM_REPORT_COMPACT
+                        LDA             ASM_REPORT_FLAGS
+                        ORA             #ASM_REPORTF_PRINTED
+                        STA             ASM_REPORT_FLAGS
+ASM_REPORT_PRINT_FAIL_DONE:
+                        RTS
+
+ASM_REPORT_NOTE_REF:
+                        LDA             ASM_REF_COUNT
+                        CMP             #ASM_REF_MAX
+                        BCC             ASM_REPORT_NOTE_REF_HAVE_ROOM
+                        LDA             ASM_REPORT_FLAGS
+                        ORA             #ASM_REPORTF_TRUNC
+                        STA             ASM_REPORT_FLAGS
+                        LDA             #ASM_SESS_FAILED
+                        STA             ASM_SESSION_STATE
+                        LDA             #ASM_STATUS_BAD_FIX
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        CLC
+                        RTS
+ASM_REPORT_NOTE_REF_HAVE_ROOM:
+                        INC             ASM_REF_COUNT
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        SEC
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -3489,6 +4383,7 @@ ASM_ASSEMBLE_LINE_FAIL_A:
                         STA             ASM_LAST_STATUS
                         LDA             #ASM_SESS_FAILED
                         STA             ASM_SESSION_STATE
+                        JSR             ASM_REPORT_PRINT_FAIL_IF_NEEDED
                         LDA             ASM_STATUS
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
@@ -5427,6 +6322,10 @@ ASM_EMIT_DB_ATOM_WORD:
                         LDA             #(ASM_SYM_LOOK_SESSION|ASM_SYM_LOOK_MARK_USE)
                         JSR             ASM_LOOKUP_SYMBOL
                         BCS             ASM_EMIT_DB_ATOM_WORD_OK
+                        CMP             #ASM_STATUS_OK
+                        BEQ             ASM_EMIT_DB_ATOM_WORD_UNRESOLVED
+                        JMP             ASM_EMIT_DB_FAIL_A
+ASM_EMIT_DB_ATOM_WORD_UNRESOLVED:
                         LDA             #ASM_STATUS_BAD_WIDTH
                         JMP             ASM_EMIT_DB_FAIL_A
 ASM_EMIT_DB_ATOM_WORD_OK:
@@ -6325,7 +7224,12 @@ ASM_CLASS_LOAD_SYMBOL:
                         STA             ASM_NAME_PTR_HI
                         LDA             #(ASM_SYM_LOOK_SESSION|ASM_SYM_LOOK_MARK_USE)
                         JSR             ASM_LOOKUP_SYMBOL
-                        BCC             ASM_CLASS_LOAD_UNRESOLVED
+                        BCS             ASM_CLASS_LOAD_SYMBOL_FOUND
+                        CMP             #ASM_STATUS_OK
+                        BEQ             ASM_CLASS_LOAD_UNRESOLVED
+                        CLC
+                        RTS
+ASM_CLASS_LOAD_SYMBOL_FOUND:
                         LDA             ASM_VALUE_LO
                         STA             ASM_BASE_LO
                         LDA             ASM_VALUE_HI
@@ -6573,6 +7477,7 @@ ASM_CLEAR_STMT:
 ; IN : ASM_NAME_PTR/ASM_LEN and ASM_HASH0..3 describe canonical source name.
 ;      A bit0=session table, bit2=mark use.
 ; OUT: C=1,A=OK,X=slot,Y=1 when found; C=0,A=OK,X=$FF,Y=0 when not found.
+;      C=0,A=BAD_FIX when mark-use would overflow the report reference budget.
 ; ----------------------------------------------------------------------------
 ASM_LOOKUP_SYMBOL:
                         STA             ASM_FLAGS
@@ -6614,6 +7519,14 @@ ASM_LOOKUP_SYMBOL_HAVE_SLOT:
                         LDA             ASM_FLAGS
                         AND             #ASM_SYM_LOOK_MARK_USE
                         BEQ             ASM_LOOKUP_SYMBOL_LOAD
+                        JSR             ASM_REPORT_NOTE_REF
+                        BCS             ASM_LOOKUP_SYMBOL_MARK_REF_OK
+                        LDX             ASM_SLOT
+                        LDY             #$00
+                        CLC
+                        RTS
+ASM_LOOKUP_SYMBOL_MARK_REF_OK:
+                        LDX             ASM_SLOT
                         LDA             ASM_SYM_USECNT,X
                         BNE             ASM_LOOKUP_SYMBOL_MARK_INC
                         LDA             ASM_LINE_COUNT_LO
@@ -6688,6 +7601,10 @@ ASM_BIND_LABEL:
                         LDA             #$FF
                         STA             ASM_SYM_CARE_LO,X
                         STA             ASM_SYM_CARE_HI,X
+                        LDA             ASM_LINE_COUNT_LO
+                        STA             ASM_SYM_DEFLINE_LO,X
+                        LDA             ASM_LINE_COUNT_HI
+                        STA             ASM_SYM_DEFLINE_HI,X
                         STZ             ASM_SYM_USECNT,X
                         STZ             ASM_SYM_FIRSTREF_LO,X
                         STZ             ASM_SYM_FIRSTREF_HI,X
@@ -6763,6 +7680,10 @@ ASM_DEFINE_EQU_KIND_OK:
                         STA             ASM_SYM_CARE_LO,X
                         LDA             ASM_CARE_HI
                         STA             ASM_SYM_CARE_HI,X
+                        LDA             ASM_LINE_COUNT_LO
+                        STA             ASM_SYM_DEFLINE_LO,X
+                        LDA             ASM_LINE_COUNT_HI
+                        STA             ASM_SYM_DEFLINE_HI,X
                         STZ             ASM_SYM_USECNT,X
                         STZ             ASM_SYM_FIRSTREF_LO,X
                         STZ             ASM_SYM_FIRSTREF_HI,X
@@ -7251,6 +8172,16 @@ ASM_SYM_COUNT:         DB              $00
 ASM_FIX_COUNT:         DB              $00
 ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
+ASM_RJ_READ_LO:        DB              $00
+ASM_RJ_READ_HI:        DB              $00
+ASM_REPL_STATUS:       DB              $00
+ASM_REPL_LEN:          DB              $00
+ASM_REPL_OLD_PC_LO:    DB              $00
+ASM_REPL_OLD_PC_HI:    DB              $00
+ASM_REPL_DELTA:        DB              $00
+ASM_REPL_BYTE_INDEX:   DB              $00
+ASM_REPL_BYTE_PTR_LO:  DB              $00
+ASM_REPL_BYTE_PTR_HI:  DB              $00
 ASM_STMT_KIND:         DB              $00
 ASM_STMT_FLAGS:        DB              $00
 ASM_STMT_NAME_PTR_LO:  DB              $00
@@ -7301,6 +8232,8 @@ ASM_SYM_HASH1:         DS              ASM_SYM_MAX
 ASM_SYM_HASH2:         DS              ASM_SYM_MAX
 ASM_SYM_HASH3:         DS              ASM_SYM_MAX
 ASM_SYM_NAME_LEN:      DS              ASM_SYM_MAX
+ASM_SYM_DEFLINE_LO:    DS              ASM_SYM_MAX
+ASM_SYM_DEFLINE_HI:    DS              ASM_SYM_MAX
 ASM_SYM_USECNT:        DS              ASM_SYM_MAX
 ASM_SYM_FIRSTREF_LO:   DS              ASM_SYM_MAX
 ASM_SYM_FIRSTREF_HI:   DS              ASM_SYM_MAX
@@ -7318,8 +8251,9 @@ ASM_FIX_HASH2:         DS              ASM_FIX_MAX
 ASM_FIX_HASH3:         DS              ASM_FIX_MAX
 ASM_FIX_NAME_LEN:      DS              ASM_FIX_MAX
 ASM_FIX_NAME_TEXT:     DS              ASM_FIX_NAME_BYTES
+ASM_REPL_LINE_BUF:     DS              $0100
 
-ASM_SMOKE_LINE_OK:     DB              "ORG $6800",0
+ASM_SMOKE_LINE_OK:     DB              "ORG $7000",0
 ASM_SMOKE_LINE_TOKENS: DB              "LABEL: LDA #1",0
 ASM_SMOKE_LINE_CHAR:   DB              "'a'",0
 ASM_SMOKE_LINE_MASK:   DB              "%XXXXXXX1",0
@@ -7341,10 +8275,10 @@ ASM_SMOKE_PARSE_LABEL_LDA:
                         DB              "LABEL: LDA #1",0
 ASM_SMOKE_PARSE_EQU:   DB              "NAME EQU $12",0
 ASM_SMOKE_PARSE_DB:    DB              "SEED DB $52",0
-ASM_SMOKE_PARSE_ORG:   DB              "ORG $6800",0
+ASM_SMOKE_PARSE_ORG:   DB              "ORG $7000",0
 ASM_SMOKE_PARSE_END:   DB              "END",0
 ASM_SMOKE_PARSE_LABEL_ORG:
-                        DB              "LABEL ORG $6800",0
+                        DB              "LABEL ORG $7000",0
 ASM_SMOKE_PARSE_LABEL_END:
                         DB              "LABEL END",0
 ASM_SMOKE_PARSE_ORG_EMPTY:
@@ -7361,8 +8295,8 @@ ASM_SMOKE_PARSE_END_TAIL:
                         DB              "END X",0
 ASM_SMOKE_PARSE_DC:    DB              "DC $52",0
 ASM_SMOKE_PARSE_START: DB              "START",0
-ASM_PARSE_AT_ORG:      DB              "        ORG $6800",0
-ASM_PARSE_AT_OUT_EQU:  DB              "OUT EQU $6900",0
+ASM_PARSE_AT_ORG:      DB              "        ORG $7000",0
+ASM_PARSE_AT_OUT_EQU:  DB              "OUT EQU $7100",0
 ASM_PARSE_AT_COUNT_EQU:
                         DB              "COUNT EQU 16",0
 ASM_PARSE_AT_ASMTEST_LDX:
@@ -7383,7 +8317,7 @@ ASM_PARSE_AT_SEED_DB:
 ASM_PARSE_AT_DB_CONT:
                         DB              "        DB $53,$4D,$20,$54",0
 ASM_PARSE_AT_END:      DB              "        END",0
-ASM_CLASS_SUM_EQU:     DB              "SUM EQU $6910",0
+ASM_CLASS_SUM_EQU:     DB              "SUM EQU $7110",0
 ASM_CLASS_LDA_ZP:      DB              "        LDA $12",0
 ASM_CLASS_LDA_ABS:     DB              "        LDA $0012",0
 ASM_CLASS_ASL_A:       DB              "        ASL A",0
@@ -7404,9 +8338,9 @@ ASM_DIRECT_DB_UNKNOWN:
 ASM_DIRECT_ORG_CURRENT:
                         DB              "        ORG *",0
 ASM_DIRECT_ORG_FORWARD:
-                        DB              "        ORG $6810",0
+                        DB              "        ORG $7010",0
 ASM_DIRECT_ORG_BACKWARD:
-                        DB              "        ORG $680F",0
+                        DB              "        ORG $700F",0
 ASM_DIRECT_DS_FILL:    DB              "BUF DS 3,$AA",0
 ASM_DIRECT_DS_TRUNC:   DB              "        DS 2,$1234",0
 ASM_DIRECT_DS_EMPTY:   DB              "BUF DS",0
@@ -7414,8 +8348,8 @@ ASM_DIRECT_DS_RANGE:   DB              "        DS $0100",0
 ASM_DIRECT_DS_LIST:    DB              "PAT DS 6,$AA,$55,'A','5'",0
 ASM_DIRECT_DS_LIST_TRUNC:
                         DB              "        DS 3,$11,$22,$33,$44",0
-ASM_OPCODE_EXPECT:     DB              $A2,$00,$9C,$10,$69,$9D,$00,$69
-                        DB              $4D,$10,$69,$8D,$10,$69,$E8,$E0
+ASM_OPCODE_EXPECT:     DB              $A2,$00,$9C,$10,$71,$9D,$00,$71
+                        DB              $4D,$10,$71,$8D,$10,$71,$E8,$E0
                         DB              $10,$D0,$ED,$60
 ASM_DIRECT_DB_EXPECT:  DB              $FF,$0A,$41,$34,$12,$34,$12
 ASM_DIRECT_DS_EXPECT:  DB              $AA,$AA,$AA,$34,$34
@@ -7445,9 +8379,18 @@ ASM_HASH_THE_JOIN_EXEC_XY:
                         DB              $F7,$15,$AF,$A9
 ASM_HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.37 TESTS OK",0
+ASM_HASH_SYS_READ_CSTRING_EDIT_ECHO_UPPER:
+                        DB              $2C,$6D,$A7,$B3
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.50 REPL",0
+ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
+ASM_REPL_MSG_OK:       DB              "OK PC=$",0
+ASM_REPL_MSG_ERR:      DB              "ERR=$",0
+ASM_REPL_MSG_READ:     DB              "READ=$",0
+ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
+ASM_REPL_MSG_BYE:      DB              "BYE",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.50 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.37 TESTS FAIL",0
+                        DB              "ASM 2.50 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0
@@ -7506,6 +8449,8 @@ ASM_SMOKE_MSG_T_FIXUPS:
                         DB              " 5C FIXUPS",0
 ASM_SMOKE_MSG_T_DIRECT:
                         DB              " 5D DIRECT",0
+ASM_SMOKE_MSG_T_REPORT:
+                        DB              " 5E REPORT",0
 ASM_SMOKE_MSG_T_SYMBOLS:
                         DB              " 60 SYMBOLS",0
 ASM_SMOKE_MSG_T_LONG:  DB              " 80 LONG LINE",0
@@ -7513,6 +8458,30 @@ ASM_SMOKE_MSG_T_END:   DB              " 90 END",0
 ASM_SMOKE_MSG_W:       DB              "W=$",0
 ASM_SMOKE_MSG_SYM:     DB              " SYM=$",0
 ASM_SMOKE_MSG_PC:      DB              " PC=$",0
+ASM_REPORT_MSG_TITLE:  DB              "ASM REPORT",0
+ASM_REPORT_MSG_STATUS: DB              "STATUS=",0
+ASM_REPORT_MSG_OK:     DB              "OK",0
+ASM_REPORT_MSG_ERRLINE:
+                        DB              "ERRLINE=$",0
+ASM_REPORT_MSG_START:  DB              "START=$",0
+ASM_REPORT_MSG_PC:     DB              "PC=$",0
+ASM_REPORT_MSG_HIGH:   DB              "HIGH=$",0
+ASM_REPORT_MSG_BYTES:  DB              "BYTES=$",0
+ASM_REPORT_MSG_LINES:  DB              "LINES=$",0
+ASM_REPORT_MSG_SYMS:   DB              "SYMS=$",0
+ASM_REPORT_MSG_FIXUPS: DB              "FIXUPS=$",0
+ASM_REPORT_MSG_REFS:   DB              "REFS=$",0
+ASM_REPORT_MSG_TRUNC_YES:
+                        DB              "TRUNC=YES",0
+ASM_REPORT_MSG_TRUNC_NO:
+                        DB              "TRUNC=NO",0
+ASM_REPORT_MSG_USED:   DB              "USED",0
+ASM_REPORT_MSG_UNUSED: DB              "UNUSED",0
+ASM_REPORT_MSG_DEF:    DB              " DEF=$",0
+ASM_REPORT_MSG_USED_REFS:
+                        DB              " REFS=$",0
+ASM_REPORT_MSG_USED_FIRST:
+                        DB              " FIRST=$",0
 ASM_SMOKE_LINE_LONG:
                         DB              "12345678901234567890123456789012"
                         DB              "34567890123456789012345678901234",0

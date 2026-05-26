@@ -58,6 +58,7 @@ $rows = @(
     [pscustomobject]@{ Target = "routine-tree"; Category = "docs"; Description = "Alias for himon-routine-tree." }
     [pscustomobject]@{ Target = "routine-class-diagram"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_CLASS_DIAGRAM.md." }
     [pscustomobject]@{ Target = "routine-prefix-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_PREFIX_MAP.md." }
+    [pscustomobject]@{ Target = "routine-word-tree"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_WORD_TREE.md." }
     [pscustomobject]@{ Target = "himon-support-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/HIMON_SUPPORT_MAP.md." }
     [pscustomobject]@{ Target = "himon-command-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/HIMON_COMMAND_MAP.md." }
     [pscustomobject]@{ Target = "hash-routine-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/HASH_ROUTINE_MAP.md." }
