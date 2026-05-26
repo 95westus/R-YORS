@@ -1003,6 +1003,25 @@ ASM> W3: DB $4D
 OK PC=$7004 BYTES= 4D FIX=$7001
 ```
 
+Hardware-proven `ASM 2.60` fixup-site REPL proof on 2026-05-26:
+
+```text
+L S19
+L @2000
+L OK=4870 GO=2000
+>G 2184
+GO 2184
+ASM 2.60 REPL
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA W3
+OK PC=$7003 BYTES= AD FF FF
+ASM> LDY #$0E
+OK PC=$7005 BYTES= A0 0E
+ASM> W3 DB $4D
+OK PC=$7006 BYTES= 4D FIX=$7001
+```
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
