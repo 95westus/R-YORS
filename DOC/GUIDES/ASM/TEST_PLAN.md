@@ -353,7 +353,8 @@ Acceptance:
 ```text
 tail pointer is exact for operand/directive tails
 label binding is delayed until dispatch
-ASM_ASSEMBLE_LINE is parser/session spine only; no emission yet
+ASM_ASSEMBLE_LINE is the parser/session spine; dispatch binds labels and emits
+mnemonics/data
 one source line is one statement
 trailing non-comment junk is BAD OPER
 ```
@@ -706,7 +707,7 @@ OK PC=$7000
 
 This proves REPL entry, prompt output, resident line input, and error feedback.
 It is not yet an emission proof: `LDA #$FF` did not advance PC or print bytes in
-this run.
+this run. That gap is fixed in ASM 2.58.
 
 ASM 2.57 adds ASM-side support for the future seed vector pocket. During
 `ASM_RJOIN_INIT`, ASM first checks `$FFF8/$FFF9` for a `HASH ACQUIRE` pointer.
@@ -810,6 +811,33 @@ W=$E2DF SYM=$06 PC=$7000
 
 #LOADGO# ENTRY=2000
 RET A=00 X=00 Y=70 P=77 S=FD NV-BdIZC
+```
+
+ASM 2.58 completes the single-line REPL path by letting
+`ASM_DISPATCH_STATEMENT` bind label-only statements, bind label+mnemonic
+statements before emission, and call `ASM_EMIT` for mnemonic statements. The
+line smoke now proves `LABEL LDA #1` emits `$A9 $01` and advances PC to
+`$7002`, so the onboard REPL should report emitted bytes for typed instructions.
+This costs `$38` bytes over ASM 2.57.
+
+ASM 2.58 expected host-built S19 marker:
+
+```text
+L OK=47E5 GO=2000
+```
+
+Expected REPL shape:
+
+```text
+>G 2184
+GO 2184
+ASM 2.58 REPL
+ASM> LDA #$FF
+OK PC=$7002 BYTES= A9 FF
+ASM> ORG $7002
+OK PC=$7002
+ASM> LDA #$FF
+OK PC=$7004 BYTES= A9 FF
 ```
 
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
@@ -2137,9 +2165,9 @@ $6900-$690F = 52 2D 59 4F 52 53 20 41 53 4D 20 54 45 53 54 2E
 $6910       = 0F
 ```
 
-Host-side expected image comparison should be added before trusting onboard
-emission. The checker should compare emitted bytes, not just behavior, once the
-emitter is implemented.
+Host-side expected image comparison should be added before trusting the full
+sample assembly path. The checker should compare emitted bytes, not just
+behavior, as more source-file assembly plumbing lands.
 
 ## Regression Protocol
 

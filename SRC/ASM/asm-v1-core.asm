@@ -142,6 +142,7 @@ ASM_STEP_END           EQU             $90
 
 ASM_BEGINF_HAVE_PC     EQU             $01
 
+ASM_SMOKE_TARGET       EQU             $7000
 ASM_SMOKE_TARGET_LO    EQU             $00
 ASM_SMOKE_TARGET_HI    EQU             $70
 ASM_SMOKE_TARGET_FWD_LO EQU            $10
@@ -2082,8 +2083,8 @@ ASM_SMOKE_ASSEMBLE_LINE:
                         JSR             ASM_SMOKE_ASSEMBLE_LINE_CHECK_PC_TARGET
                         BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
 
-                        LDX             #<ASM_SMOKE_PARSE_LABEL
-                        LDY             #>ASM_SMOKE_PARSE_LABEL
+                        LDX             #<ASM_SMOKE_SYM_NOPE
+                        LDY             #>ASM_SMOKE_SYM_NOPE
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
 
@@ -2091,6 +2092,18 @@ ASM_SMOKE_ASSEMBLE_LINE:
                         LDY             #>ASM_SMOKE_PARSE_LABEL_LDA_NC
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        LDA             ASM_SMOKE_TARGET
+                        CMP             #$A9
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        LDA             ASM_SMOKE_TARGET+1
+                        CMP             #$01
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        LDA             ASM_PC_LO
+                        CMP             #$02
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
 
                         LDX             #<ASM_SMOKE_PARSE_EQU
                         LDY             #>ASM_SMOKE_PARSE_EQU
@@ -2105,7 +2118,9 @@ ASM_SMOKE_ASSEMBLE_LINE:
                         BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
                         LDA             ASM_SESSION_STATE
                         CMP             #ASM_SESS_ENDED
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        BEQ             ASM_SMOKE_ASSEMBLE_LINE_ENDED_OK
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+ASM_SMOKE_ASSEMBLE_LINE_ENDED_OK:
 
                         LDX             #<ASM_SMOKE_PARSE_LDA
                         LDY             #>ASM_SMOKE_PARSE_LDA
@@ -2143,18 +2158,19 @@ ASM_SMOKE_ASSEMBLE_LINE_CHECK_PC_TARGET:
 
 ASM_SMOKE_ASSEMBLE_LINE_CHECK_EQU:
                         LDA             ASM_SYM_COUNT
-                        CMP             #$01
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
-                        LDA             ASM_SYM_KIND
+                        BEQ             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        TAX
+                        DEX
+                        LDA             ASM_SYM_KIND,X
                         CMP             #ASM_SYMK_ADDR
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
-                        LDA             ASM_SYM_WIDTH
+                        LDA             ASM_SYM_WIDTH,X
                         CMP             #ASM_WIDTH_ZP
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
-                        LDA             ASM_SYM_VAL_LO
+                        LDA             ASM_SYM_VAL_LO,X
                         CMP             #$12
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
-                        LDA             ASM_SYM_VAL_HI
+                        LDA             ASM_SYM_VAL_HI,X
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
                         SEC
                         RTS
@@ -4420,8 +4436,7 @@ ASM_REPORT_NOTE_REF_HAVE_ROOM:
 ; IN : X/Y = NUL, CR, or LF-terminated source line.
 ; OUT: C=1,A=OK,X/Y=current PC if the line was accepted.
 ;      C=0,A=status,X/Y=current PC if the line was rejected.
-; NOTE: Parser/session spine only. Emission and real directive handlers are
-;       later layers.
+; NOTE: Parser/session spine. Dispatch binds labels and emits mnemonics/data.
 ; ----------------------------------------------------------------------------
 ASM_ASSEMBLE_LINE:
                         JSR             ASM_INC_LINE_COUNT
@@ -6051,7 +6066,7 @@ ASM_SET_TAIL_DONE:
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_DISPATCH_STATEMENT
 ; Current dispatch applies top-level statement policy and resolved ORG/EQU
-; expressions. Later layers bind PC labels, emit opcodes, and resolve fixups.
+; expressions, binds PC labels, emits mnemonics/data, and resolves fixups.
 ; ----------------------------------------------------------------------------
 ASM_DISPATCH_STATEMENT:
                         LDA             ASM_STMT_KIND
@@ -6065,11 +6080,23 @@ ASM_DISPATCH_NOT_ERROR:
 ASM_DISPATCH_NOT_EMPTY:
                         CMP             #ASM_STMT_LABEL_ONLY
                         BNE             ASM_DISPATCH_NOT_LABEL_ONLY
+                        JSR             ASM_BIND_LABEL
+                        BCC             ASM_DISPATCH_FAIL_NEAR
                         JMP             ASM_DISPATCH_OK
 ASM_DISPATCH_NOT_LABEL_ONLY:
                         CMP             #ASM_STMT_MNEM
                         BNE             ASM_DISPATCH_NOT_MNEM
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_HAS_NAME
+                        BEQ             ASM_DISPATCH_MNEM_NO_NAME
+                        JSR             ASM_BIND_LABEL
+                        BCC             ASM_DISPATCH_FAIL_NEAR
+ASM_DISPATCH_MNEM_NO_NAME:
+                        JSR             ASM_EMIT
+                        BCC             ASM_DISPATCH_FAIL_NEAR
                         JMP             ASM_DISPATCH_OK
+ASM_DISPATCH_FAIL_NEAR:
+                        JMP             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_NOT_MNEM:
                         CMP             #ASM_STMT_DIR
                         BEQ             ASM_DISPATCH_DIR
@@ -8401,17 +8428,17 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.57 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.58 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.57 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.57 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.58 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.58 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.57 TESTS FAIL",0
+                        DB              "ASM 2.58 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0

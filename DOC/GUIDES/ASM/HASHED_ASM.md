@@ -4909,6 +4909,11 @@ ASM 2.57 can seed its resident joiner from the future vector pocket at
 high byte (`>= $C0`), and can resolve `THE_JOIN_EXEC_XY`; otherwise ASM keeps
 using its local scanner bootstrap. HIMON/STR8 do not stamp that pocket yet.
 
+ASM 2.58 routes mnemonic statements through dispatch emission. Label-only
+statements bind the current PC, label+mnemonic statements bind before emission,
+and accepted mnemonic lines advance PC and write bytes in both smoke and REPL
+paths.
+
 Line numbers are physical source/session input lines counted from the start of
 the assembly session, including blank/comment lines. Blank/comment-only lines do
 not create reference rows, but they still advance the line counter so reported
