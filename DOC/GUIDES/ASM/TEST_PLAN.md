@@ -1052,6 +1052,30 @@ ASM> W3 DB $4D
 OK PC=$7006 BYTES= 4D DEF=$7005 FIX=$7001
 ```
 
+Hardware-proven `ASM 2.61` PC-definition REPL proof on 2026-05-26:
+
+```text
+L S19
+L @2000
+L OK=4890 GO=2000
+>G 2184
+GO 2184
+ASM 2.61 REPL
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA #$4D
+OK PC=$7002 BYTES= A9 4D
+ASM> LDY FOO
+ERR=$04 PC=$7002
+ASM> FOO: DB $7E
+OK PC=$7003 BYTES= 7E DEF=$7002
+```
+
+`LDY FOO` is expected to report bad mode in ASM 2.61 because the current `LDY`
+opcode path only accepts immediate mode. The proof of this slice is the
+following `FOO: DB $7E` line, which makes the PC-bound definition explicit as
+`DEF=$7002`.
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
