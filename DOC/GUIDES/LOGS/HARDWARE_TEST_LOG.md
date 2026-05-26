@@ -4,6 +4,49 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-05-26 ASM 2.51 Resident FNV Bootstrap NMI On HIMON
+
+### Summary
+
+Result: not green. STR8 successfully updated HIMON to `HIMON V 00.0525(2150)`,
+and ASM loaded as `L OK=4715 GO=2000`, but `GO 2000` entered the local RJOIN
+bootstrap scanner and was interrupted at `PC=$264E`.
+
+Map interpretation: `$264E` is inside `ASM_RJ_FIND_ADV`, before the smoke
+ladder starts. The follow-up 2.52 slice caches RJOIN/FNV resolution and starts
+the local bootstrap scan at `$C000` to avoid repeated long ROM scans.
+
+### Transcript Extract
+
+```text
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0525(2150)
+>L G
+L S19
+L @2000
+L OK=4715 GO=2000
+
+NMI PC=264E
+A=3C X=57 Y=00 P=A4 S=EF Nv-bdIzc
+>
+```
+
 ## 2026-05-26 ASM 2.50 Relocated Smoke Target Proof On HIMON
 
 ### Summary

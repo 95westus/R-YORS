@@ -247,7 +247,7 @@ ASM_RJ_HASH_SIG2       EQU             ('V'+$80)
 ASM_RJ_KIND_EXEC       EQU             $01
 ASM_RJ_KIND_EXEC_TEXT  EQU             $05
 ASM_RJ_KIND_EXEC_CONFIRM_TEXT EQU       $07
-ASM_RJ_SCAN_BASE_HI    EQU             $80
+ASM_RJ_SCAN_BASE_HI    EQU             $C0
 
 ASM_LINE_MAX           EQU             $3F
 ASM_SYM_MAX            EQU             $10
@@ -1010,6 +1010,12 @@ ASM_SMOKE_PRINT_FAIL_DIR_D3:
                         JMP             ASM_SMOKE_PRINT_LINE
 
 ASM_RJOIN_INIT:
+                        LDA             ASM_RJ_READY
+                        BEQ             ASM_RJOIN_INIT_SCAN
+                        SEC
+                        RTS
+ASM_RJOIN_INIT_SCAN:
+                        STZ             ASM_RJ_READY
                         LDA             #ASM_STEP_RJOIN_JOINER
                         STA             ASM_START_STEP
                         LDX             #<ASM_HASH_THE_JOIN_EXEC_XY
@@ -1045,15 +1051,20 @@ ASM_RJOIN_INIT:
                         BCC             ASM_RJOIN_INIT_FAIL
                         STX             ASM_RJ_FNV_UPDATE_LO
                         STY             ASM_RJ_FNV_UPDATE_HI
+                        LDA             #$01
+                        STA             ASM_RJ_READY
                         SEC
                         RTS
 ASM_RJOIN_INIT_FAIL:
+                        STZ             ASM_RJ_READY
                         CLC
                         RTS
 
 ASM_RJOIN_INIT_IO:
                         JSR             ASM_RJOIN_INIT
                         BCC             ASM_RJOIN_INIT_IO_FAIL
+                        LDA             ASM_RJ_READ_HI
+                        BNE             ASM_RJOIN_INIT_IO_READY
                         LDA             #ASM_STEP_RJOIN_READ
                         STA             ASM_START_STEP
                         LDX             #<ASM_HASH_SYS_READ_CSTRING_EDIT_ECHO_UPPER
@@ -1062,6 +1073,7 @@ ASM_RJOIN_INIT_IO:
                         BCC             ASM_RJOIN_INIT_IO_FAIL
                         STX             ASM_RJ_READ_LO
                         STY             ASM_RJ_READ_HI
+ASM_RJOIN_INIT_IO_READY:
                         SEC
                         RTS
 ASM_RJOIN_INIT_IO_FAIL:
@@ -8120,6 +8132,7 @@ ASM_SYM_COUNT:         DB              $00
 ASM_FIX_COUNT:         DB              $00
 ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
+ASM_RJ_READY:          DB              $00
 ASM_RJ_READ_LO:        DB              $00
 ASM_RJ_READ_HI:        DB              $00
 ASM_RJ_FNV_INIT_LO:    DB              $00
@@ -8337,16 +8350,16 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.51 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.52 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.51 TESTS OK",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.52 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.51 TESTS FAIL",0
+                        DB              "ASM 2.52 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0

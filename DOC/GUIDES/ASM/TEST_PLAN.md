@@ -468,6 +468,26 @@ ASM 2.51 TESTS OK
 
 Hardware proof for 2.51 is still pending.
 
+Hardware result for 2.51 on 2026-05-26: HIMON refreshed correctly and ASM loaded
+as `L OK=4715 GO=2000`, but `GO 2000` was interrupted with NMI at `PC=$264E`.
+That address maps to `ASM_RJ_FIND_ADV`, the local bootstrap scanner used while
+finding the first resident joiner. The 2.52 mitigation caches RJOIN/FNV
+resolution and starts the local bootstrap scan at `$C000` instead of `$8000`.
+This keeps the resident FNV win while removing repeated full-ROM scans from the
+smoke ladder and REPL loop.
+
+ASM 2.52 expected host-built S19 marker:
+
+```text
+L OK=472D GO=2000
+```
+
+Expected onboard success banner:
+
+```text
+ASM 2.52 TESTS OK
+```
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
