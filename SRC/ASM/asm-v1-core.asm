@@ -81,14 +81,10 @@ ASM_FIX_PTR_HI         EQU             $87
 ASM_SYM_PTR_LO         EQU             $84
 ASM_SYM_PTR_HI         EQU             $85
 
-ASM_RJ_JOINER_LO      EQU             ASM_SYM_PTR_LO
-ASM_RJ_JOINER_HI      EQU             ASM_SYM_PTR_HI
 ASM_RJ_JOIN_LO        EQU             ASM_FIX_PTR_LO
 ASM_RJ_JOIN_HI        EQU             ASM_FIX_PTR_HI
 ASM_RJ_HASH_PTR_LO    EQU             ASM_REF_PTR_LO
 ASM_RJ_HASH_PTR_HI    EQU             ASM_REF_PTR_HI
-ASM_RJ_WRITE_LO       EQU             ASM_TMP1_LO
-ASM_RJ_WRITE_HI       EQU             ASM_TMP1_HI
 ASM_RJ_STR_LO         EQU             ASM_TMP0_LO
 ASM_RJ_STR_HI         EQU             ASM_TMP0_HI
 ASM_RJ_SCAN_LO        EQU             ASM_SCAN_PTR_LO
@@ -1013,6 +1009,14 @@ ASM_SMOKE_PRINT_FAIL_DIR_D3:
 
 ASM_RJOIN_INIT:
                         LDA             ASM_RJ_READY
+                        BEQ             ASM_RJOIN_INIT_SCAN
+                        LDA             ASM_RJ_JOINER_HI
+                        BEQ             ASM_RJOIN_INIT_SCAN
+                        LDA             ASM_RJ_WRITE_HI
+                        BEQ             ASM_RJOIN_INIT_SCAN
+                        LDA             ASM_RJ_FNV_INIT_HI
+                        BEQ             ASM_RJOIN_INIT_SCAN
+                        LDA             ASM_RJ_FNV_UPDATE_HI
                         BEQ             ASM_RJOIN_INIT_SCAN
                         SEC
                         RTS
@@ -8148,6 +8152,10 @@ ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
 ASM_RJ_READY:          DB              $00
 ASM_RJ_PROGRESS:       DB              $00
+ASM_RJ_JOINER_LO:      DB              $00
+ASM_RJ_JOINER_HI:      DB              $00
+ASM_RJ_WRITE_LO:       DB              $00
+ASM_RJ_WRITE_HI:       DB              $00
 ASM_RJ_READ_LO:        DB              $00
 ASM_RJ_READ_HI:        DB              $00
 ASM_RJ_FNV_INIT_LO:    DB              $00
@@ -8365,17 +8373,17 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.54 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.55 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.54 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.54 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.55 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.55 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.54 TESTS FAIL",0
+                        DB              "ASM 2.55 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0

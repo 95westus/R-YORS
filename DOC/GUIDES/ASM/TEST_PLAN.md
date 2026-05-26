@@ -518,9 +518,10 @@ The live progress pass builds at `$474E`, a `$21` byte increase over 2.52's
 board show the last completed checkpoint.
 
 Hardware result for 2.53 on 2026-05-26: progress reached `30 TOKENS`, then the
-board reported `BRK 00 PC=0002`. The likely cause is that `ASM_SMOKE_TOKENS`
-depended on lexer state from the previous `20 LEX LINE` stage, but the new live
-progress print between stages uses scratch ZP before tokenization begins.
+board reported `BRK 00 PC=0002`. The first suspicion was that
+`ASM_SMOKE_TOKENS` depended on lexer state from the previous `20 LEX LINE`
+stage, because the new live progress print between stages uses scratch ZP
+before tokenization begins.
 
 ASM 2.54 makes `ASM_SMOKE_TOKENS` re-lex its own `ORG $7000` input before
 reading tokens, removing that cross-stage state dependency while keeping live
@@ -543,6 +544,37 @@ ASM 2.54 RUN
  40 VOCAB
 ...
 ASM 2.54 TESTS OK
+```
+
+Hardware result for 2.54 on 2026-05-26: progress again reached `30 TOKENS`,
+then reported `BRK 00 PC=0002`. That disproves the lexer-state theory. The
+better explanation is that `ASM_SMOKE_TOKENS` did pass far enough to parse
+decimal `#1`; decimal parsing uses `ASM_TMP1`, but the RJOIN BIO-write entry
+was cached in `ASM_TMP1` as well. The next progress print, `40 VOCAB`, then
+jumped through a clobbered writer pointer and landed at `$0000`.
+
+ASM 2.55 moves the resident joiner and BIO writer entries out of scratch ZP
+and into persistent ASM data, matching the already-persistent resident FNV
+entries. `ASM_RJOIN_INIT` also validates that cached high bytes are nonzero
+before accepting `ASM_RJ_READY`.
+
+ASM 2.55 expected host-built S19 marker:
+
+```text
+L OK=4775 GO=2000
+```
+
+Expected onboard progress shape:
+
+```text
+ 00 RJOIN
+ASM 2.55 RUN
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+...
+ASM 2.55 TESTS OK
 ```
 
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
