@@ -637,6 +637,77 @@ ASM 2.56 RUN
 ASM 2.56 TESTS OK
 ```
 
+Hardware-proven `ASM 2.56` resident-readline smoke on 2026-05-26:
+
+```text
+HIMON V 00.0525(2347)
+>#
+HASH     ENTRY K TEXT
+...
+A9AF15F7 DE77 05 HASH ACQUIRE
+4B9AEE1E E0FC 05 HASH OPEN
+A8802314 E176 05 HASH MIX
+...
+E2DD10AF D4C1 05 READ LINE
+B0051A80 C000 03 HIMON: V 00.0525(2347)
+A2AD0E18 F000 03 STR8: BOOTLOADER
+>L G
+L S19
+L @2000
+L OK=4784 GO=2000
+ 00 RJOIN
+ASM 2.56 RUN
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ASM REPORT
+STATUS=OK
+START=$7000
+PC=$700C
+BYTES=$000C
+REFS=$02/$10
+TRUNC=NO
+ 60 SYMBOLS
+ 80 LONG LINE
+ 90 END
+ASM 2.56 TESTS OK
+WARN WARN_DS_WRAP
+W=$E2DF SYM=$06 PC=$7000
+```
+
+The 2.56 REPL entry/readline proof also reached the prompt and accepted typed
+lines through resident `READ LINE`:
+
+```text
+>G 2184
+GO 2184
+ASM 2.56 REPL
+ASM> LDA #$FF
+OK PC=$7000
+ASM> LABEL:
+OK PC=$7000
+ASM> LDA LABEL
+OK PC=$7000
+ASM> ?
+ERR=$03 PC=$7000
+ASM> TXZ
+OK PC=$7000
+```
+
+This proves REPL entry, prompt output, resident line input, and error feedback.
+It is not yet an emission proof: `LDA #$FF` did not advance PC or print bytes in
+this run.
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
