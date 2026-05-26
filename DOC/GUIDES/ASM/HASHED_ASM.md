@@ -101,8 +101,10 @@ Core settled rules:
   W65C02S patterns may use `aaa bbb cc`, but irregular opcodes stay explicit.
 - RAM session state holds emitted bytes, symbol rows, fixup rows, reference rows,
   line buffer, and scratch in non-overlapping ranges.
-- ASM active zero-page scratch grows downward from `$AF`. HIMON/shared ZP may be
-  borrowed only as volatile scratch under the called routine's contract.
+- ASM active zero-page scratch grows downward from `$AF`. The shared FNV32
+  contract owns `$B0-$B3` for hash state and `$C7-$CA` for the multiply term.
+  Other HIMON/shared ZP may be borrowed only as volatile scratch under the
+  called routine's contract.
 - Lookup is layered for HIMON scale: RAM session symbols, resident/catalog
   symbols, then fixup if allowed. A future resident table can use `SYM3`
   base-40 prefix keys.
@@ -4772,16 +4774,19 @@ runs.
 Use of HIMON/shared zero page:
 
 ```text
-$B0-$CA  reserved expansion; do not consume casually in v1
+$B0-$B3  shared FNV32 hash state
+$B4-$C6  reserved expansion; do not consume casually in v1
+$C7-$CA  shared FNV32 multiply term
 $CB-$CC  CRC16 state; avoid unless a routine explicitly owns/saves it
 $CD-$EF  shared SYS/BIO/flash/utility scratch; volatile across service calls
 $F0-$FF  HIMON command/parser scratch; do not use for ASM proper
 ```
 
-An ASM routine may borrow shared ZP only as short-lived scratch when its own
-contract says so and it does not expect those bytes to survive calls into
-SYS/BIO/COR/PIN/flash/FNV/HIMON helper routines. If ASM needs a byte to survive
-such a call, put it in the `$AF`-down frame or in the RAM session state.
+ASM uses the shared FNV bytes while hashing source words and treats them as
+volatile across any nested RJOIN/hash lookup. Other shared ZP may be borrowed
+only as short-lived scratch when the routine contract says so. If ASM needs a
+byte to survive a call into SYS/BIO/COR/PIN/flash/FNV/HIMON helpers, put it in
+the `$AF`-down frame or in the RAM session state.
 
 The RAM ranges must not overlap:
 

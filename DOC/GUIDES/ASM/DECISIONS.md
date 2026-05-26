@@ -428,10 +428,11 @@ A [addr] [label[:]] MMM [operand] .
   reference/report table, line buffer, and parser scratch must be separate
   non-overlapping ranges; overlap is an assembly-context/range error.
 - ASM active zero-page scratch uses HIMON's currently free user ZP window and
-  grows downward from `$AF`. Persistent ASM state stays in RAM tables. HIMON
-  shared ZP may be borrowed only as volatile scratch under the called routine's
-  contract; ASM must not depend on shared bytes surviving SYS/BIO/COR/PIN/flash/
-  FNV/HIMON helper calls.
+  grows downward from `$AF`. The shared FNV32 contract owns `$B0-$B3` for hash
+  state and `$C7-$CA` for the multiply term. Persistent ASM state stays in RAM
+  tables. Other HIMON shared ZP may be borrowed only as volatile scratch under
+  the called routine's contract; ASM must not depend on shared bytes surviving
+  SYS/BIO/COR/PIN/flash/FNV/HIMON helper calls.
 - All ASM callable routine interfaces follow HIMON/THE routine style. ASM does
   not invent a private ABI. Each routine card must document inputs, outputs,
   carry/status meaning, preserves, clobbers, ASM zero-page frame bytes used, RAM

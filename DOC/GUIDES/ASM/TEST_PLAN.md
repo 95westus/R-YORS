@@ -444,6 +444,24 @@ WARN WARN_DS_WRAP
 W=$.... SYM=$06 PC=$7000
 ```
 
+ASM 2.51 keeps the same smoke ladder and target addresses, but removes ASM's
+local FNV multiply body. `ASM_BEGIN` now resolves resident `FNV1A_INIT` and
+`FNV1A_UPDATE_A_FAST` through RJOIN, and ASM word hashes use the shared FNV
+zero-page contract at `$B0-$B3/$C7-$CA`. The host-built S19 marker is:
+
+```text
+L OK=4715 GO=2000
+```
+
+Expected onboard success banner after loading a HIMON image with the resident
+FNV records is:
+
+```text
+ASM 2.51 TESTS OK
+```
+
+Hardware proof for 2.51 is still pending.
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
@@ -522,7 +540,7 @@ A minimal sequence for one-line feedback is:
 
 ```text
 G 2123
-ASM 2.50 REPL
+ASM 2.51 REPL
 ASM> LDA #1
 OK PC=$7002 BYTES= A9 01
 ASM> STA $7100

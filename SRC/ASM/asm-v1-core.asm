@@ -33,7 +33,7 @@
                         XDEF            ASM_DEFINE_EQU
 
 ; ----------------------------------------------------------------------------
-; ASM active zero-page frame, allocated downward from $AF.
+; ASM active zero-page frame, allocated downward from $AF, plus shared FNV ZP.
 ; Keep in sync with DOC/GUIDES/ASM/HASHED_ASM.md.
 ; ----------------------------------------------------------------------------
 ASM_LINE_PTR_LO        EQU             $AE
@@ -48,14 +48,14 @@ ASM_EMIT_PTR_LO        EQU             $A6
 ASM_EMIT_PTR_HI        EQU             $A7
 ASM_NAME_PTR_LO        EQU             $A4
 ASM_NAME_PTR_HI        EQU             $A5
-ASM_HASH0              EQU             $A0
-ASM_HASH1              EQU             $A1
-ASM_HASH2              EQU             $A2
-ASM_HASH3              EQU             $A3
-ASM_HASH_TMP0          EQU             $9C
-ASM_HASH_TMP1          EQU             $9D
-ASM_HASH_TMP2          EQU             $9E
-ASM_HASH_TMP3          EQU             $9F
+ASM_HASH0              EQU             $B0
+ASM_HASH1              EQU             $B1
+ASM_HASH2              EQU             $B2
+ASM_HASH3              EQU             $B3
+ASM_HASH_TMP0          EQU             $C7
+ASM_HASH_TMP1          EQU             $C8
+ASM_HASH_TMP2          EQU             $C9
+ASM_HASH_TMP3          EQU             $CA
 ASM_VALUE_LO           EQU             $9A
 ASM_VALUE_HI           EQU             $9B
 ASM_CARE_LO            EQU             $98
@@ -116,6 +116,7 @@ ASM_STATUS_BAD_LINE    EQU             $07
 ASM_STATUS_BAD_SYM     EQU             $08
 ASM_STATUS_BAD_FIX     EQU             $09
 ASM_STATUS_LOCAL_NYI   EQU             $0A
+ASM_STATUS_RJOIN       EQU             $0B
 
 ASM_STEP_BEGIN         EQU             $10
 ASM_STEP_LEX_OK        EQU             $20
@@ -134,6 +135,8 @@ ASM_STEP_SYMBOLS       EQU             $60
 ASM_STEP_RJOIN_JOINER  EQU             $71
 ASM_STEP_RJOIN_WRITE   EQU             $72
 ASM_STEP_RJOIN_READ    EQU             $73
+ASM_STEP_RJOIN_FNV_INIT EQU            $74
+ASM_STEP_RJOIN_FNV_UPDATE EQU          $75
 ASM_STEP_LONG_LINE     EQU             $80
 ASM_STEP_END           EQU             $90
 
@@ -1024,6 +1027,24 @@ ASM_RJOIN_INIT:
                         BCC             ASM_RJOIN_INIT_FAIL
                         STX             ASM_RJ_WRITE_LO
                         STY             ASM_RJ_WRITE_HI
+
+                        LDA             #ASM_STEP_RJOIN_FNV_INIT
+                        STA             ASM_START_STEP
+                        LDX             #<ASM_HASH_FNV1A_INIT
+                        LDY             #>ASM_HASH_FNV1A_INIT
+                        JSR             ASM_RJ_RESIDENT_XY
+                        BCC             ASM_RJOIN_INIT_FAIL
+                        STX             ASM_RJ_FNV_INIT_LO
+                        STY             ASM_RJ_FNV_INIT_HI
+
+                        LDA             #ASM_STEP_RJOIN_FNV_UPDATE
+                        STA             ASM_START_STEP
+                        LDX             #<ASM_HASH_FNV1A_UPDATE_A_FAST
+                        LDY             #>ASM_HASH_FNV1A_UPDATE_A_FAST
+                        JSR             ASM_RJ_RESIDENT_XY
+                        BCC             ASM_RJOIN_INIT_FAIL
+                        STX             ASM_RJ_FNV_UPDATE_LO
+                        STY             ASM_RJ_FNV_UPDATE_HI
                         SEC
                         RTS
 ASM_RJOIN_INIT_FAIL:
@@ -4179,12 +4200,22 @@ ASM_SMOKE_INSTALL_COLLISION_ROW:
 ;      A bit0 clear means use this module's scratch code buffer.
 ; OUT: C=1,A=OK,X/Y=current PC when session opened.
 ;      C=0,A=status on failure.
-; MEM: ZP $80-$AF active ASM frame; RAM session state below.
+; MEM: ZP $80-$AF active ASM frame; shared FNV ZP $B0-$B3/$C7-$CA;
+;      RAM session state below.
 ; ----------------------------------------------------------------------------
 ASM_BEGIN:
                         STA             ASM_FLAGS
                         STX             ASM_TMP0_LO
                         STY             ASM_TMP0_HI
+                        JSR             ASM_RJOIN_INIT
+                        BCS             ASM_BEGIN_RJOIN_OK
+                        LDA             #ASM_STATUS_RJOIN
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        CLC
+                        RTS
+
+ASM_BEGIN_RJOIN_OK:
                         JSR             ASM_CLEAR_SESSION
 
                         LDA             ASM_FLAGS
@@ -8042,93 +8073,10 @@ ASM_VALUE_MUL10_ADD_TMP0:
                         RTS
 
 ASM_FNV1A_INIT:
-                        LDX             #$03
-ASM_FNV1A_INIT_LOOP:
-                        LDA             ASM_FNV1A_OFFSET_BASIS,X
-                        STA             ASM_HASH0,X
-                        DEX
-                        BPL             ASM_FNV1A_INIT_LOOP
-                        RTS
+                        JMP             (ASM_RJ_FNV_INIT_LO)
 
 ASM_FNV1A_UPDATE_A_FAST:
-                        EOR             ASM_HASH0
-                        STA             ASM_HASH0
-                        JMP             ASM_FNV1A_MUL_PRIME_FAST
-
-ASM_FNV1A_MUL_PRIME_FAST:
-                        JSR             ASM_COPY_HASH_TO_TERM
-                        ASL             ASM_HASH_TMP0
-                        ROL             ASM_HASH_TMP1
-                        ROL             ASM_HASH_TMP2
-                        ROL             ASM_HASH_TMP3
-                        JSR             ASM_ADD_TERM_TO_HASH
-                        ASL             ASM_HASH_TMP0
-                        ROL             ASM_HASH_TMP1
-                        ROL             ASM_HASH_TMP2
-                        ROL             ASM_HASH_TMP3
-                        ASL             ASM_HASH_TMP0
-                        ROL             ASM_HASH_TMP1
-                        ROL             ASM_HASH_TMP2
-                        ROL             ASM_HASH_TMP3
-                        ASL             ASM_HASH_TMP0
-                        ROL             ASM_HASH_TMP1
-                        ROL             ASM_HASH_TMP2
-                        ROL             ASM_HASH_TMP3
-                        JSR             ASM_ADD_TERM_TO_HASH
-                        ASL             ASM_HASH_TMP0
-                        ROL             ASM_HASH_TMP1
-                        ROL             ASM_HASH_TMP2
-                        ROL             ASM_HASH_TMP3
-                        ASL             ASM_HASH_TMP0
-                        ROL             ASM_HASH_TMP1
-                        ROL             ASM_HASH_TMP2
-                        ROL             ASM_HASH_TMP3
-                        ASL             ASM_HASH_TMP0
-                        ROL             ASM_HASH_TMP1
-                        ROL             ASM_HASH_TMP2
-                        ROL             ASM_HASH_TMP3
-                        JSR             ASM_ADD_TERM_TO_HASH
-                        ASL             ASM_HASH_TMP0
-                        ROL             ASM_HASH_TMP1
-                        ROL             ASM_HASH_TMP2
-                        ROL             ASM_HASH_TMP3
-                        JSR             ASM_ADD_TERM_TO_HASH
-                        JMP             ASM_ADD_TERM1_TO_HASH3
-
-ASM_COPY_HASH_TO_TERM:
-                        LDX             #$03
-ASM_COPY_HASH_LOOP:
-                        LDA             ASM_HASH0,X
-                        STA             ASM_HASH_TMP0,X
-                        DEX
-                        BPL             ASM_COPY_HASH_LOOP
-                        RTS
-
-ASM_ADD_TERM_TO_HASH:
-                        CLC
-                        LDA             ASM_HASH0
-                        ADC             ASM_HASH_TMP0
-                        STA             ASM_HASH0
-                        LDA             ASM_HASH1
-                        ADC             ASM_HASH_TMP1
-                        STA             ASM_HASH1
-                        LDA             ASM_HASH2
-                        ADC             ASM_HASH_TMP2
-                        STA             ASM_HASH2
-                        LDA             ASM_HASH3
-                        ADC             ASM_HASH_TMP3
-                        STA             ASM_HASH3
-                        RTS
-
-ASM_ADD_TERM1_TO_HASH3:
-                        LDA             ASM_HASH3
-                        CLC
-                        ADC             ASM_HASH_TMP1
-                        STA             ASM_HASH3
-                        RTS
-
-ASM_FNV1A_OFFSET_BASIS:
-                        DB              $C5,$9D,$1C,$81
+                        JMP             (ASM_RJ_FNV_UPDATE_LO)
 
 ; ----------------------------------------------------------------------------
 ; Internal session clear.
@@ -8174,6 +8122,10 @@ ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
 ASM_RJ_READ_LO:        DB              $00
 ASM_RJ_READ_HI:        DB              $00
+ASM_RJ_FNV_INIT_LO:    DB              $00
+ASM_RJ_FNV_INIT_HI:    DB              $00
+ASM_RJ_FNV_UPDATE_LO:  DB              $00
+ASM_RJ_FNV_UPDATE_HI:  DB              $00
 ASM_REPL_STATUS:       DB              $00
 ASM_REPL_LEN:          DB              $00
 ASM_REPL_OLD_PC_LO:    DB              $00
@@ -8381,16 +8333,20 @@ ASM_HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
 ASM_HASH_SYS_READ_CSTRING_EDIT_ECHO_UPPER:
                         DB              $2C,$6D,$A7,$B3
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.50 REPL",0
+ASM_HASH_FNV1A_INIT:
+                        DB              $1E,$EE,$9A,$4B
+ASM_HASH_FNV1A_UPDATE_A_FAST:
+                        DB              $14,$23,$80,$A8
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.51 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.50 TESTS OK",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.51 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.50 TESTS FAIL",0
+                        DB              "ASM 2.51 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0
