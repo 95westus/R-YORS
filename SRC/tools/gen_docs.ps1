@@ -662,7 +662,7 @@ foreach ($docPath in ($sourcePathByDocPath.Keys | Where-Object { $_ -eq 'HIMON/h
         if ($pendingFnv -and $line -match "\bDB\b.*'F'\s*,\s*'N'\s*,\s*CMD_FNV_SIG2") {
             $pendingFnv.SawRecord = $true
         }
-        if ($pendingFnv -and $line -match ';\s*(\S+)\s+\$([0-9A-Fa-f]{8})\s+EXEC') {
+        if ($pendingFnv -and $line -match ';\s*(.+?)\s+\$([0-9A-Fa-f]{8})\s+EXEC') {
             $pendingFnv.Token = $matches[1]
             $pendingFnv.Hash = $matches[2].ToUpperInvariant()
             continue

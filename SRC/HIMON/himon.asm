@@ -3240,7 +3240,7 @@ CMD_CALL_ADDR:
                         JMP             (CMDP_ADDR_LO)
 
 FNV1A_INIT_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$1E,$EE,$9A,$4B,CMD_HASH_KIND_EXEC ; FNV1A_INIT $4B9AEE1E EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$6F,$4D,$FD,$0B,CMD_HASH_KIND_EXEC ; HASH OPEN $0BFD4D6F EXEC
 FNV1A_INIT:
                         LDX             #$03
 FNV1A_INIT_LOOP:
@@ -3319,7 +3319,7 @@ MATH_ADD_TERM1_TO_HASH3:
 ; stays resident; this one only expands the fixed 1,3,3,1 shift pattern.
 ; Tradeoff: spend a few ROM bytes to reduce software multiply loop overhead.
 FNV1A_UPDATE_A_FAST_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$14,$23,$80,$A8,CMD_HASH_KIND_EXEC ; FNV1A_UPDATE_A_FAST $A8802314 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$13,$DB,$26,$34,CMD_HASH_KIND_EXEC ; HASH MIX $3426DB13 EXEC
 FNV1A_UPDATE_A_FAST:
                         EOR             FNV_HASH0
                         STA             FNV_HASH0
