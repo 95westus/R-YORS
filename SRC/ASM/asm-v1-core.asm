@@ -1283,6 +1283,10 @@ ASM_SMOKE_FAIL_A:
                         JMP             ASM_SMOKE_FAIL
 
 ASM_SMOKE_TOKENS:
+                        LDX             #<ASM_SMOKE_LINE_OK
+                        LDY             #>ASM_SMOKE_LINE_OK
+                        JSR             ASM_LEX_LINE
+                        BCC             ASM_SMOKE_FAIL_A
                         JSR             ASM_NEXT_TOKEN
                         BCC             ASM_SMOKE_FAIL_A
                         LDA             ASM_TOK_KIND
@@ -8361,17 +8365,17 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.53 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.54 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.53 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.53 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.54 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.54 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.53 TESTS FAIL",0
+                        DB              "ASM 2.54 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0

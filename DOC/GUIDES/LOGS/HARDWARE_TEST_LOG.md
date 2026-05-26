@@ -4,19 +4,53 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-05-26 ASM 2.53 Progress Reaches Tokens Then BRK
+
+### Summary
+
+Result: not green, but the progress output did its job. ASM loaded as
+`L OK=474E GO=2000`, printed through `30 TOKENS`, then reported
+`BRK 00 PC=0002`.
+
+Working interpretation: `ASM_SMOKE_TOKENS` depended on lexer state from the
+prior `20 LEX LINE` stage. ASM 2.53 inserted progress output between those
+stages, and the printer uses scratch ZP before `ASM_SMOKE_TOKENS` reads the
+first token. ASM 2.54 makes the token smoke re-lex its own input before reading
+tokens.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=474E GO=2000
+ 00 RJOIN
+ASM 2.53 RUN
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+
+BRK 00 PC=0002
+A=20 X=46 Y=00 P=35 S=F5 Nv-BdIzC
+>
+```
+
 ## 2026-05-26 ASM 2.51 Resident FNV Bootstrap NMI On HIMON
 
 ### Summary
 
-Result: not green. STR8 successfully updated HIMON to `HIMON V 00.0525(2150)`,
-and ASM loaded as `L OK=4715 GO=2000`, but `GO 2000` entered the local RJOIN
-bootstrap scanner and was interrupted at `PC=$264E`.
+Result: inconclusive. STR8 successfully updated HIMON to
+`HIMON V 00.0525(2150)`, and ASM loaded as `L OK=4715 GO=2000`, but `GO 2000`
+entered the local RJOIN bootstrap scanner and was operator-interrupted at
+`PC=$264E` after an unexpected delay.
 
 Map interpretation: `$264E` is inside `ASM_RJ_FIND_ADV`, before the smoke
-ladder starts. The follow-up 2.52 slice caches RJOIN/FNV resolution and starts
-the local bootstrap scan at `$C000` to avoid repeated long ROM scans. The 2.53
-follow-up adds live smoke progress lines, beginning with `00 RJOIN` once the
-resident writer is known, so a paused board exposes the last checkpoint reached.
+ladder starts, so this NMI does not prove a crash. The follow-up 2.52 slice
+caches RJOIN/FNV resolution and starts the local bootstrap scan at `$C000` to
+avoid repeated long ROM scans. The 2.53 follow-up adds live smoke progress
+lines, beginning with `00 RJOIN` once the resident writer is known, so a paused
+board exposes the last checkpoint reached.
 
 ### Transcript Extract
 

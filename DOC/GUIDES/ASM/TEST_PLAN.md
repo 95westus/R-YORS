@@ -469,9 +469,10 @@ ASM 2.51 TESTS OK
 Hardware proof for 2.51 is still pending.
 
 Hardware result for 2.51 on 2026-05-26: HIMON refreshed correctly and ASM loaded
-as `L OK=4715 GO=2000`, but `GO 2000` was interrupted with NMI at `PC=$264E`.
-That address maps to `ASM_RJ_FIND_ADV`, the local bootstrap scanner used while
-finding the first resident joiner. The 2.52 mitigation caches RJOIN/FNV
+as `L OK=4715 GO=2000`, but `GO 2000` was operator-interrupted with NMI at
+`PC=$264E` after an unexpected delay. That address maps to `ASM_RJ_FIND_ADV`,
+the local bootstrap scanner used while finding the first resident joiner, so the
+NMI was not conclusive proof of a crash. The 2.52 mitigation caches RJOIN/FNV
 resolution and starts the local bootstrap scan at `$C000` instead of `$8000`.
 This keeps the resident FNV win while removing repeated full-ROM scans from the
 smoke ladder and REPL loop.
@@ -515,6 +516,34 @@ ASM 2.53 TESTS OK
 The live progress pass builds at `$474E`, a `$21` byte increase over 2.52's
 `$472D`, keeping most of the resident FNV size recovery while making a stuck
 board show the last completed checkpoint.
+
+Hardware result for 2.53 on 2026-05-26: progress reached `30 TOKENS`, then the
+board reported `BRK 00 PC=0002`. The likely cause is that `ASM_SMOKE_TOKENS`
+depended on lexer state from the previous `20 LEX LINE` stage, but the new live
+progress print between stages uses scratch ZP before tokenization begins.
+
+ASM 2.54 makes `ASM_SMOKE_TOKENS` re-lex its own `ORG $7000` input before
+reading tokens, removing that cross-stage state dependency while keeping live
+progress enabled.
+
+ASM 2.54 expected host-built S19 marker:
+
+```text
+L OK=4757 GO=2000
+```
+
+Expected onboard progress shape:
+
+```text
+ 00 RJOIN
+ASM 2.54 RUN
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+...
+ASM 2.54 TESTS OK
+```
 
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
