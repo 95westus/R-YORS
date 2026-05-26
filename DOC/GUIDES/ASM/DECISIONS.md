@@ -569,6 +569,11 @@ A [addr] [label[:]] MMM [operand] .
   `SYS_READ_CSTRING_ECHO_UPPER`, prints compact `OK`/`ERR` feedback, and
   reopens at the pre-error PC after a rejected line; v1 does not keep parsing
   after an error.
+- ASM 2.57 may use the future seed vector pocket for `HASH ACQUIRE`: read
+  `$FFF8/$FFF9`, reject `$FFFF` and high bytes below `$C0`, verify the pointer
+  by resolving `THE_JOIN_EXEC_XY`, then use it as the resident joiner. If any
+  check fails, keep the local scanner bootstrap. HIMON/STR8 seed-pocket
+  stamping remains a later upgrade.
 - `LDA #$1234` is `BAD RANGE` because immediate byte width is known but the
   value is too large. `LDA ($1234),Y` is `BAD MODE` because that data addressing
   form is zero-page-only. `LABEL END` is `BAD SYM`; `END X` is `BAD OPER`.

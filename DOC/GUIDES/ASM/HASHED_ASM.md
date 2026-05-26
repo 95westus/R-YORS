@@ -4904,6 +4904,11 @@ one-line REPL that calls resident `SYS_READ_CSTRING_ECHO_UPPER` through RJOIN,
 reports the new PC and up to 16 emitted bytes, and restarts the session
 after a rejected line.
 
+ASM 2.57 can seed its resident joiner from the future vector pocket at
+`$FFF8/$FFF9`. The seed is accepted only if it is not `$FFFF`, has a ROM-ish
+high byte (`>= $C0`), and can resolve `THE_JOIN_EXEC_XY`; otherwise ASM keeps
+using its local scanner bootstrap. HIMON/STR8 do not stamp that pocket yet.
+
 Line numbers are physical source/session input lines counted from the start of
 the assembly session, including blank/comment lines. Blank/comment-only lines do
 not create reference rows, but they still advance the line counter so reported

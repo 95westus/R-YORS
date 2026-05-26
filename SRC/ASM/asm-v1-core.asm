@@ -90,6 +90,10 @@ ASM_RJ_STR_HI         EQU             ASM_TMP0_HI
 ASM_RJ_SCAN_LO        EQU             ASM_SCAN_PTR_LO
 ASM_RJ_SCAN_HI        EQU             ASM_SCAN_PTR_HI
 
+ASM_SEED_HASH_ACQUIRE_LO EQU          $FFF8
+ASM_SEED_HASH_ACQUIRE_HI EQU          $FFF9
+ASM_SEED_ROM_MIN_HI      EQU          $C0
+
 ASM_TOK_KIND          EQU             ASM_MODE
 ASM_TOK_SUB           EQU             ASM_WIDTH
 ASM_TOK_FLAGS         EQU             ASM_FLAGS
@@ -1028,12 +1032,32 @@ ASM_RJOIN_INIT_SCAN:
                         STZ             ASM_RJ_READY
                         LDA             #ASM_STEP_RJOIN_JOINER
                         STA             ASM_START_STEP
+                        LDX             ASM_SEED_HASH_ACQUIRE_LO
+                        LDY             ASM_SEED_HASH_ACQUIRE_HI
+                        CPY             #ASM_SEED_ROM_MIN_HI
+                        BCC             ASM_RJOIN_INIT_SCAN_JOINER
+                        CPY             #$FF
+                        BNE             ASM_RJOIN_INIT_SEED_OK
+                        CPX             #$FF
+                        BEQ             ASM_RJOIN_INIT_SCAN_JOINER
+ASM_RJOIN_INIT_SEED_OK:
+                        STX             ASM_RJ_JOINER_LO
+                        STY             ASM_RJ_JOINER_HI
+                        LDX             #<ASM_HASH_THE_JOIN_EXEC_XY
+                        LDY             #>ASM_HASH_THE_JOIN_EXEC_XY
+                        JSR             ASM_RJ_RESIDENT_XY
+                        BCC             ASM_RJOIN_INIT_SCAN_JOINER
+                        STX             ASM_RJ_JOINER_LO
+                        STY             ASM_RJ_JOINER_HI
+                        BRA             ASM_RJOIN_INIT_JOINER_READY
+ASM_RJOIN_INIT_SCAN_JOINER:
                         LDX             #<ASM_HASH_THE_JOIN_EXEC_XY
                         LDY             #>ASM_HASH_THE_JOIN_EXEC_XY
                         JSR             ASM_RJ_JOIN_EXEC_XY
                         BCC             ASM_RJOIN_INIT_FAIL
                         STX             ASM_RJ_JOINER_LO
                         STY             ASM_RJ_JOINER_HI
+ASM_RJOIN_INIT_JOINER_READY:
 
                         LDA             #ASM_STEP_RJOIN_WRITE
                         STA             ASM_START_STEP
@@ -8377,17 +8401,17 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.56 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.57 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
 ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.56 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.56 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.57 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.57 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.56 TESTS FAIL",0
+                        DB              "ASM 2.57 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0

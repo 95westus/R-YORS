@@ -708,6 +708,35 @@ This proves REPL entry, prompt output, resident line input, and error feedback.
 It is not yet an emission proof: `LDA #$FF` did not advance PC or print bytes in
 this run.
 
+ASM 2.57 adds ASM-side support for the future seed vector pocket. During
+`ASM_RJOIN_INIT`, ASM first checks `$FFF8/$FFF9` for a `HASH ACQUIRE` pointer.
+It accepts the seed only when the high byte is ROM-ish (`>= $C0`) and the
+pointer is not `$FFFF`, then verifies it by resolving `THE_JOIN_EXEC_XY` through
+that seeded joiner. If the seed is absent, blank, non-ROM-ish, or cannot resolve
+the joiner hash, ASM falls back to the existing local scanner. HIMON does not
+stamp the seed pocket yet; this is ASM-only readiness for the later HIMON/STR8
+upgrade. The guarded seed path costs `$29` bytes over ASM 2.56 while the scanner
+fallback remains present.
+
+ASM 2.57 expected host-built S19 marker:
+
+```text
+L OK=47AD GO=2000
+```
+
+Expected onboard progress shape:
+
+```text
+ 00 RJOIN
+ASM 2.57 RUN
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+...
+ASM 2.57 TESTS OK
+```
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
