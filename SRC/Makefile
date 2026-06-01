@@ -231,10 +231,18 @@ ALL_TARGETS := \
 	hrec-join-proof \
 	asm-rjoin-proof \
 	asm-v1-core \
-	rom-append-calc \
-	fig-forth \
-	msbasic-osi \
-	msbasic-osi-ram
+	rom-append-calc
+
+# Local language S19/BIN targets consume ignored sources under LOCAL/. Include
+# them in all only when their local source homes are present.
+LOCAL_ALL_TARGETS :=
+ifneq ($(wildcard $(FIG_FORTH_INPUT)),)
+LOCAL_ALL_TARGETS += fig-forth
+endif
+ifneq ($(wildcard $(MSBASIC_SRC_ROOT)/*),)
+LOCAL_ALL_TARGETS += msbasic-osi msbasic-osi-ram
+endif
+ALL_TARGETS += $(LOCAL_ALL_TARGETS)
 
 RELEASE_TARGETS ?= \
 	himon \
@@ -244,8 +252,8 @@ RELEASE_TARGETS ?= \
 	test-flash \
 	rom-append-calc
 
-# Local language S19/BIN targets are built by all at 8000/A000. release-local
-# also builds the private composite ROM images; they are not L F-safe packages.
+# release-local builds the private composite ROM images; they are not L F-safe
+# packages.
 RELEASE_LOCAL_TARGETS ?= \
 	basic-himon-rom-bin \
 	basic-forth-himon-rom-bin
