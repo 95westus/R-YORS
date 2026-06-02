@@ -4,6 +4,43 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-01 ASM 2.61 Resident REPL Proof On HIMON
+
+### Summary
+
+`asm-v1-resident-2000.s19` loaded and entered the resident ASM REPL on hardware
+under `HIMON V 00.0601(1253)`. The run proves the lean resident image starts at
+`$2000`, accepts `ORG`, emits immediate and DB bytes at `$7000`, records a
+PC-bound label definition, and resolves that label in a later absolute `LDA`.
+
+Validated:
+
+- Resident S19 load marker: `L OK=2B82 GO=2000`.
+- Resident REPL entry at `$2000`: `ASM 2.61 REPL`.
+- Immediate emission: `LDA #$4D` -> `A9 4D`, PC `$7002`.
+- Label/data emission: `FOO: DB $7E` -> `7E`, `DEF=$7002`, PC `$7003`.
+- Symbol resolution: `LDA FOO` -> `AD 02 70`, PC `$7006`.
+
+### Transcript Extract
+
+```text
+HIMON V 00.0601(1253)
+>L G
+L S19
+L @2000
+L OK=2B82 GO=2000
+ASM 2.61 REPL
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA #$4D
+OK PC=$7002 BYTES= A9 4D
+ASM> FOO: DB $7E
+OK PC=$7003 BYTES= 7E DEF=$7002
+ASM> LDA FOO
+OK PC=$7006 BYTES= AD 02 70
+ASM>
+```
+
 ## 2026-05-26 ASM 2.53 Progress Reaches Tokens Then BRK
 
 ### Summary

@@ -1077,6 +1077,30 @@ ASM> POO LDA QQQ
 OK PC=$700C BYTES= AD FF FF DEF=$7009 FIX=$7007
 ```
 
+Resident-image hardware proof for `asm-v1-resident-2000.s19` on 2026-06-01:
+
+```text
+HIMON V 00.0601(1253)
+>L G
+L S19
+L @2000
+L OK=2B82 GO=2000
+ASM 2.61 REPL
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA #$4D
+OK PC=$7002 BYTES= A9 4D
+ASM> FOO: DB $7E
+OK PC=$7003 BYTES= 7E DEF=$7002
+ASM> LDA FOO
+OK PC=$7006 BYTES= AD 02 70
+ASM>
+```
+
+This proves the lean resident wrapper, without the standalone smoke ladder,
+enters the same REPL path at `$2000` and keeps the 2.61 emission/definition/
+symbol-resolution behavior.
+
 `LDY FOO` is expected to report bad mode in ASM 2.61 because the current `LDY`
 opcode path only accepts immediate mode. The proof of this slice is the
 following `FOO: DB $7E` line, which makes the PC-bound definition explicit as
