@@ -235,6 +235,18 @@ RET A=09 X=91 Y=09 P=75 S=FD NV-BdIzC
 >
 ```
 
+Post-run board dump excerpt for the same proof:
+
+```text
+>D 7000 71FF
+7000: A9 0A 20 B8 E7 8D 01 71 | 60 00 71 4D 10 71 8D 10 | .. ....q`.qM.q..
+7100: FF 41 FA 7A EB FC 54 F5 | FF E8 EF 77 6E F7 F8 F3 | .A.z..T....wn...
+>
+```
+
+Here `$7000-$7008` is the emitted `LDA #$0A`, resident `JSR`, `STA $7101`,
+`RTS` program, and `$7101=$41` is the executed resident utility result.
+
 ## Current Acceptance
 
 `ASMTEST_3000.asm` is now both the source-language acceptance sample and the
