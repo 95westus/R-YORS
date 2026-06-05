@@ -62,6 +62,8 @@ ASMRT_RUN:
                         STZ             $7005
                         STZ             $7006
                         STZ             $7007
+                        STZ             $7008
+                        STZ             $7101
 
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #ASMRT_TARGET_LO
@@ -79,13 +81,18 @@ ASMRT_RUN:
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASMRT_RETURN_FAIL
 
+                        LDX             #<LINE_JSR_HEX_NIB
+                        LDY             #>LINE_JSR_HEX_NIB
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASMRT_RETURN_FAIL
+
                         LDX             #<LINE_STA
                         LDY             #>LINE_STA
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASMRT_RETURN_FAIL
 
-                        LDX             #<LINE_JSR_PIN_READ
-                        LDY             #>LINE_JSR_PIN_READ
+                        LDX             #<LINE_RTS
+                        LDY             #>LINE_RTS
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASMRT_RETURN_FAIL
 
@@ -106,27 +113,34 @@ ASMRT_CHECK_BYTES:
                         CMP             #$A9
                         BNE             ASMRT_BAD_0
                         LDA             $7001
-                        CMP             #$42
+                        CMP             #$0A
                         BNE             ASMRT_BAD_1
                         LDA             $7002
-                        CMP             #$8D
+                        CMP             #$20
                         BNE             ASMRT_BAD_2
                         LDA             $7003
-                        CMP             #$00
-                        BNE             ASMRT_BAD_3
-                        LDA             $7004
-                        CMP             #$71
-                        BNE             ASMRT_BAD_4
-                        LDA             $7005
-                        CMP             #$20
-                        BNE             ASMRT_BAD_5
-                        LDA             $7006
                         CMP             #$FF
                         BNE             ASMRT_JOIN_LO_OK
-                        LDA             $7007
+                        LDA             $7004
                         CMP             #$FF
-                        BEQ             ASMRT_BAD_6
+                        BEQ             ASMRT_BAD_3
 ASMRT_JOIN_LO_OK:
+                        LDA             $7005
+                        CMP             #$8D
+                        BNE             ASMRT_BAD_4
+                        LDA             $7006
+                        CMP             #$01
+                        BNE             ASMRT_BAD_5
+                        LDA             $7007
+                        CMP             #$71
+                        BNE             ASMRT_BAD_6
+                        LDA             $7008
+                        CMP             #$60
+                        BNE             ASMRT_BAD_7
+                        JSR             $7000
+                        LDA             $7101
+                        CMP             #'A'
+                        BNE             ASMRT_BAD_8
                         LDA             #$00
                         SEC
                         RTS
@@ -159,6 +173,14 @@ ASMRT_BAD_6:
                         LDA             #$E6
                         CLC
                         RTS
+ASMRT_BAD_7:
+                        LDA             #$E7
+                        CLC
+                        RTS
+ASMRT_BAD_8:
+                        LDA             #$E8
+                        CLC
+                        RTS
 
 ASMRT_PRINT_LINE:
                         JSR             ASMRT_PRINT
@@ -172,7 +194,8 @@ MSG_TITLE:              DB              "ASM RT SMOKE",0
 MSG_PASS:               DB              "ASM RT OK",0
 MSG_FAIL:               DB              "ASM RT FAIL $",0
 LINE_ORG:               DB              "ORG $7000",0
-LINE_LDA:               DB              "LDA #$42",0
-LINE_STA:               DB              "STA $7100",0
-LINE_JSR_PIN_READ:      DB              "LABEL: JSR PIN_FTDI_READ_BYTE_NONBLOCK",0
+LINE_LDA:               DB              "LDA #$0A",0
+LINE_JSR_HEX_NIB:       DB              "LABEL: JSR UTL_HEX_NIBBLE_TO_ASCII",0
+LINE_STA:               DB              "STA $7101",0
+LINE_RTS:               DB              "RTS",0
 LINE_END:               DB              "END",0
