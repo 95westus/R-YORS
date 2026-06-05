@@ -119,6 +119,18 @@ RET A=09 X=33 Y=09 P=75 S=FD NV-BdIzC
 The pass/fail contract is the printed `ASM RT OK` line. The final `RET`
 registers are the monitor's post-return state after the wrapper's print path.
 
+ASM runtime readless trim on 2026-06-05:
+
+```text
+make -C SRC asm-test
+```
+
+The runtime-only build now omits the REPL-only readline resolver, read pointer
+cache, indirect read shim, and `SYS_READ_CSTRING_ECHO_UPPER` hash. The host
+gate passes with `asm-v1-runtime-2000.s19` at `$2676` bytes and
+`asm-v1-runtime-smoke-2000.s19` at `$283D` bytes. The current smoke-wrapper
+hardware retest should load as `L OK=283D GO=2000` and then print `ASM RT OK`.
+
 ## Current Acceptance
 
 `ASMTEST_3000.asm` is now both the source-language acceptance sample and the

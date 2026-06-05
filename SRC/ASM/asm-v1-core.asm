@@ -1166,6 +1166,8 @@ ASM_RJOIN_INIT_FAIL:
                         CLC
                         RTS
 
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_RJOIN_INIT_IO:
                         JSR             ASM_RJOIN_INIT
                         BCC             ASM_RJOIN_INIT_IO_FAIL
@@ -1185,6 +1187,7 @@ ASM_RJOIN_INIT_IO_READY:
 ASM_RJOIN_INIT_IO_FAIL:
                         CLC
                         RTS
+                        ENDIF
 
 ASM_RJ_JOIN_EXEC_XY:
                         JSR             ASM_RJ_FIND_XY
@@ -1218,8 +1221,11 @@ ASM_RJ_CALL_JOINER:
 ASM_RJ_WRITE_BYTE:
                         JMP             (ASM_RJ_WRITE_LO)
 
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_RJ_READ_CSTRING:
                         JMP             (ASM_RJ_READ_LO)
+                        ENDIF
 
 ASM_RJ_WRITE_CSTRING:
                         STX             ASM_RJ_STR_LO
@@ -8493,8 +8499,11 @@ ASM_RJ_JOINER_LO:      DB              $00
 ASM_RJ_JOINER_HI:      DB              $00
 ASM_RJ_WRITE_LO:       DB              $00
 ASM_RJ_WRITE_HI:       DB              $00
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_RJ_READ_LO:        DB              $00
 ASM_RJ_READ_HI:        DB              $00
+                        ENDIF
 ASM_RJ_FNV_INIT_LO:    DB              $00
 ASM_RJ_FNV_INIT_HI:    DB              $00
 ASM_RJ_FNV_UPDATE_LO:  DB              $00
@@ -8718,8 +8727,11 @@ ASM_HASH_THE_JOIN_EXEC_XY:
                         DB              $F7,$15,$AF,$A9
 ASM_HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER:
                         DB              $AF,$10,$DD,$E2
+                        ENDIF
 ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
