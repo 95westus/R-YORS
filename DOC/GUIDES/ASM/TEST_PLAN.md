@@ -77,6 +77,11 @@ native image at `$6800-$6826`, resolves the forward `SEED` fixup, accepts
 `$6900-$6910` output bytes. This completes the first `ASMTEST_3000` hardware
 bench gate.
 
+ASM 2.63 adds the host-side oracle for that proof. The checker now emits the
+fixed `ASMTEST_3000` sample image independently, resolves the forward `SEED`
+fixup, verifies the exact `$6800-$6826` byte stream and `$6827` end PC, and
+checks the expected `$6900-$6910` runtime output bytes.
+
 Current checker requirements:
 
 ```text
@@ -90,6 +95,9 @@ references resolve within the sample
 DB seed bytes are valid
 seed byte count is 16
 seed XOR checksum is $0F
+expected image starts at $6800 and ends at PC $6827
+emitted image bytes match the hardware-proven $6800-$6826 stream
+runtime output oracle matches $6900-$6910 seed/checksum bytes
 ```
 
 Current passing output:
@@ -98,6 +106,7 @@ Current passing output:
 ASMTEST_3000 OK org=$6800 lines=24 max=49 seed=16 checksum=$0F
 defs=ASMTEST,COUNT,LOOP,OUT,SEED,SUM
 refs=COUNT,LOOP,OUT,SEED,SUM
+image=$6800-$6826 bytes=39 output=$6900-$6910
 ```
 
 ## Test Levels
@@ -2461,9 +2470,9 @@ $6900-$690F = 52 2D 59 4F 52 53 20 41 53 4D 20 54 45 53 54 2E
 $6910       = 0F
 ```
 
-Host-side expected image comparison should be added before trusting the full
-sample assembly path. The checker should compare emitted bytes, not just
-behavior, as more source-file assembly plumbing lands.
+ASM 2.63 adds host-side expected image comparison before trusting the full
+sample assembly path. The checker compares emitted bytes and the runtime output
+oracle, not just source shape, as more source-file assembly plumbing lands.
 
 ## Regression Protocol
 
