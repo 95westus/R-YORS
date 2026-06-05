@@ -1186,8 +1186,21 @@ L OK=4A13 GO=2000
 Hardware note for 2026-06-05: an earlier `L OK=49FB GO=2000` 2.65 image
 reached `$70 ASMTEST` and failed with `S=$70 X=$00 Y=$02`; that failed bench
 attempt is logged in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`. The corrected
-stage-70 tail flow rebuilds as the `L OK=4A13` image above and needs a bench
-rerun.
+stage-70 tail flow rebuilds as the `L OK=4A13` image above.
+
+Hardware-proven `ASM 2.65` onboard ASMTEST smoke on 2026-06-05:
+
+```text
+L OK=4A13 GO=2000
+ASM 2.65 RUN
+ 60 SYMBOLS
+ 70 ASMTEST
+ 80 LONG LINE
+ 90 END
+ASM 2.65 TESTS OK
+W=$E2DF SYM=$00 PC=$6813
+RET A=00 X=13 Y=68
+```
 
 Expected onboard progress shape:
 
