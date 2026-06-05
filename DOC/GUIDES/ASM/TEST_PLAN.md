@@ -147,6 +147,19 @@ RET A=09 X=0E Y=09 P=75 S=FD NV-BdIzC
 >
 ```
 
+ASM runtime default-buffer trim on 2026-06-05:
+
+```text
+make -C SRC asm-test
+```
+
+The full ASM core keeps the `$0200` default `ASM_CODE_BUF` used by its smoke
+ladder. The runtime-only build now keeps a `$0100` default buffer instead,
+saving `$0100` loaded DATA bytes while preserving explicit-PC callers. The host
+gate passes with `asm-v1-runtime-2000.s19` at `$2576` bytes and
+`asm-v1-runtime-smoke-2000.s19` at `$273D` bytes. The current smoke-wrapper
+hardware retest should load as `L OK=273D GO=2000` and then print `ASM RT OK`.
+
 ## Current Acceptance
 
 `ASMTEST_3000.asm` is now both the source-language acceptance sample and the

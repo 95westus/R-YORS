@@ -8889,7 +8889,12 @@ ASM_VOC_KIND_TAB:      DB              $03,$01,$01,$01,$01,$01,$01,$01,$01,$01,$
                         DB              $01,$01,$04,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
                         DB              $03,$03
 
-ASM_CODE_BUF:          DS              $0200
+ASM_CODE_BUF:
+                        IF              ASM_RUNTIME_ONLY
+                        DS              $0100
+                        ELSE
+                        DS              $0200
+                        ENDIF
 
                         ENDMOD
                         END
