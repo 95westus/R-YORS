@@ -128,8 +128,24 @@ make -C SRC asm-test
 The runtime-only build now omits the REPL-only readline resolver, read pointer
 cache, indirect read shim, and `SYS_READ_CSTRING_ECHO_UPPER` hash. The host
 gate passes with `asm-v1-runtime-2000.s19` at `$2676` bytes and
-`asm-v1-runtime-smoke-2000.s19` at `$283D` bytes. The current smoke-wrapper
-hardware retest should load as `L OK=283D GO=2000` and then print `ASM RT OK`.
+`asm-v1-runtime-smoke-2000.s19` at `$283D` bytes.
+
+Hardware-proven readless ASM runtime smoke-wrapper on 2026-06-05:
+
+```text
+>L
+L S19
+L @2000
+L OK=283D GO=2000
+>G 2000
+GO 2000
+ASM RT SMOKE
+ASM RT OK
+
+#GO# ENTRY=2000
+RET A=09 X=0E Y=09 P=75 S=FD NV-BdIzC
+>
+```
 
 ## Current Acceptance
 
