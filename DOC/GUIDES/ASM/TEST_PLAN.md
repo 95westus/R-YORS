@@ -64,8 +64,9 @@ SRC/BUILD/s19/asm-v1-core-2000.s19
 
 The ASM core RAM proof links and loads at `$2000`. Its smoke assembly target is
 `$7000`, with data targets at `$7100/$7110`, so emitted self-test bytes stay out
-of the resident proof image as the core grows. `ASMTEST_3000.asm` remains the
-independent WDC sample and owns its own pasted-test `ORG $6800`.
+of the resident proof image as the core grows. ASM 2.65 adds an onboard
+ASMTEST mirror at those non-destructive smoke addresses. `ASMTEST_3000.asm`
+remains the independent WDC sample and owns its own pasted-test `ORG $6800`.
 
 ## Current Acceptance
 
@@ -88,6 +89,15 @@ checker with `-S19Path`; the checker validates S-record checksums, the S9 start
 address, and the exact `$6800-$6826` payload against the ASMTEST oracle. The
 regular `asm-test` target now runs this stronger host gate before building the
 ASM core.
+
+ASM 2.65 returns to onboard code work. The standalone ASM core smoke ladder now
+has a `$70 ASMTEST` stage that assembles the full `ASMTEST_3000` program shape
+through `ASM_ASSEMBLE_LINE`, including the forward `SEED` fixup and the full
+16-byte seed. To avoid overwriting the resident `$2000` proof image, this smoke
+uses the established non-destructive mirror addresses: `ORG $7000`,
+`OUT=$7100`, and `SUM=$7110`. It compares the emitted `$7000-$7026` image and
+the `$7027` PC/high-water result on-board before the final long-line and `END`
+checks run.
 
 Current checker requirements:
 
@@ -1160,6 +1170,32 @@ byte count. The transcript is recorded in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`
 A follow-up `$6800-$6FFF` display captures `$6900-$690F` as the 16 expected seed
 bytes and `$6910=$0F`, completing the `ASMTEST_3000` hardware bench gate.
 
+ASM 2.65 is the next code-bearing slice after that proof. It bumps the visible
+standalone and REPL banners to `ASM 2.65`, adds a `$70 ASMTEST` smoke checkpoint,
+and assembles the ASMTEST program shape on-board at `$7000` with output targets
+at `$7100/$7110`. This keeps the smoke non-destructive while proving the same
+line-by-line assembler path, forward `SEED` fixup, 16-byte seed payload, emitted
+image comparison, and `$7027` end PC inside the ASM core.
+
+ASM 2.65 expected host-built S19 marker:
+
+```text
+L OK=6A13 GO=2000
+```
+
+Expected onboard progress shape:
+
+```text
+ASM 2.65 RUN
+ 10 BEGIN
+ ...
+ 60 SYMBOLS
+ 70 ASMTEST
+ 80 LONG LINE
+ 90 END
+ASM 2.65 TESTS OK
+```
+
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
 ```text
@@ -2001,6 +2037,7 @@ $5C fixup record/patch smoke
 $5D DB/ORG/DS directive smoke
 $5E report-fact smoke
 $60 symbol smoke
+$70 ASMTEST_3000 onboard mirror smoke
 $71 RJOIN joiner lookup
 $72 RJOIN BIO write lookup
 $80 long-line rejection

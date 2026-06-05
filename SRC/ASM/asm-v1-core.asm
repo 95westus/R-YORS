@@ -132,6 +132,7 @@ ASM_STEP_FIXUPS        EQU             $5C
 ASM_STEP_DIRECTIVE     EQU             $5D
 ASM_STEP_REPORT        EQU             $5E
 ASM_STEP_SYMBOLS       EQU             $60
+ASM_STEP_ASMTEST       EQU             $70
 ASM_STEP_RJOIN_JOINER  EQU             $71
 ASM_STEP_RJOIN_WRITE   EQU             $72
 ASM_STEP_RJOIN_READ    EQU             $73
@@ -434,6 +435,14 @@ START_REPORT_OK:
                         BCS             START_SYMBOLS_OK
                         JMP             START_FAIL
 START_SYMBOLS_OK:
+                        LDA             #ASM_STEP_ASMTEST
+                        LDX             #<ASM_SMOKE_MSG_T_ASMTEST
+                        LDY             #>ASM_SMOKE_MSG_T_ASMTEST
+                        JSR             ASM_SMOKE_PROGRESS
+                        JSR             ASM_SMOKE_ASMTEST_3000
+                        BCS             START_ASMTEST_OK
+                        JMP             START_FAIL
+START_ASMTEST_OK:
 
                         LDA             #ASM_STEP_LONG_LINE
                         LDX             #<ASM_SMOKE_MSG_T_LONG
@@ -796,6 +805,8 @@ ASM_SMOKE_PRINT_FAIL_STAGE:
                         BEQ             ASM_SMOKE_PRINT_FAIL_DIRECT
                         CMP             #ASM_STEP_REPORT
                         BEQ             ASM_SMOKE_PRINT_FAIL_REPORT
+                        CMP             #ASM_STEP_ASMTEST
+                        BEQ             ASM_SMOKE_PRINT_FAIL_ASMTEST
                         RTS
 ASM_SMOKE_PRINT_FAIL_FIXUPS:
                         LDX             #<ASM_SMOKE_MSG_T_FIXUPS
@@ -808,6 +819,10 @@ ASM_SMOKE_PRINT_FAIL_DIRECT:
 ASM_SMOKE_PRINT_FAIL_REPORT:
                         LDX             #<ASM_SMOKE_MSG_T_REPORT
                         LDY             #>ASM_SMOKE_MSG_T_REPORT
+                        JMP             ASM_SMOKE_PRINT_LINE
+ASM_SMOKE_PRINT_FAIL_ASMTEST:
+                        LDX             #<ASM_SMOKE_MSG_T_ASMTEST
+                        LDY             #>ASM_SMOKE_MSG_T_ASMTEST
                         JMP             ASM_SMOKE_PRINT_LINE
 
 ASM_SMOKE_PRINT_FAIL_DETAIL:
@@ -2208,6 +2223,170 @@ ASM_SMOKE_ASSEMBLE_LINE_CHECK_EQU:
                         RTS
 
 ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_ASMTEST_FAIL_A:
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+
+ASM_SMOKE_ASMTEST_3000:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #<ASM_CODE_BUF
+                        LDY             #>ASM_CODE_BUF
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_ORG
+                        LDY             #>ASM_PARSE_AT_ORG
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_OUT_EQU
+                        LDY             #>ASM_PARSE_AT_OUT_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_CLASS_SUM_EQU
+                        LDY             #>ASM_CLASS_SUM_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_COUNT_EQU
+                        LDY             #>ASM_PARSE_AT_COUNT_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_ASMTEST_LDX
+                        LDY             #>ASM_PARSE_AT_ASMTEST_LDX
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_STZ
+                        LDY             #>ASM_PARSE_AT_STZ
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_LOOP_LDA
+                        LDY             #>ASM_PARSE_AT_LOOP_LDA
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_STA_OUT_X
+                        LDY             #>ASM_PARSE_AT_STA_OUT_X
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_EOR_SUM
+                        LDY             #>ASM_PARSE_AT_EOR_SUM
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_STA_SUM
+                        LDY             #>ASM_PARSE_AT_STA_SUM
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_INX
+                        LDY             #>ASM_PARSE_AT_INX
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_CPX
+                        LDY             #>ASM_PARSE_AT_CPX
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASMTEST_FAIL_A
+
+                        LDX             #<ASM_PARSE_AT_BNE
+                        LDY             #>ASM_PARSE_AT_BNE
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASMTEST_BNE_OK
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+ASM_SMOKE_ASMTEST_BNE_OK:
+
+                        LDX             #<ASM_PARSE_AT_RTS
+                        LDY             #>ASM_PARSE_AT_RTS
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASMTEST_RTS_OK
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+ASM_SMOKE_ASMTEST_RTS_OK:
+
+                        LDX             #<ASM_PARSE_AT_SEED_DB
+                        LDY             #>ASM_PARSE_AT_SEED_DB
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASMTEST_SEED_OK
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+ASM_SMOKE_ASMTEST_SEED_OK:
+
+                        LDX             #<ASM_PARSE_AT_DB_CONT
+                        LDY             #>ASM_PARSE_AT_DB_CONT
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASMTEST_DB_OK
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+ASM_SMOKE_ASMTEST_DB_OK:
+
+                        LDX             #<ASM_PARSE_AT_END
+                        LDY             #>ASM_PARSE_AT_END
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASMTEST_END_OK
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+ASM_SMOKE_ASMTEST_END_OK:
+
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ENDED
+                        BEQ             ASM_SMOKE_ASMTEST_ENDED_OK
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+ASM_SMOKE_ASMTEST_ENDED_OK:
+                        JSR             ASM_SMOKE_ASMTEST_CHECK_BYTES
+                        BCS             ASM_SMOKE_ASMTEST_BYTES_OK
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+ASM_SMOKE_ASMTEST_BYTES_OK:
+                        JSR             ASM_SMOKE_ASMTEST_CHECK_PC
+                        BCS             ASM_SMOKE_ASMTEST_PC_OK
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+ASM_SMOKE_ASMTEST_PC_OK:
+
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #<ASM_CODE_BUF
+                        LDY             #>ASM_CODE_BUF
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_ASMTEST_RESTORE_OK
+                        JMP             ASM_SMOKE_ASMTEST_FAIL
+ASM_SMOKE_ASMTEST_RESTORE_OK:
+                        SEC
+                        RTS
+
+ASM_SMOKE_ASMTEST_CHECK_BYTES:
+                        LDX             #$00
+ASM_SMOKE_ASMTEST_CHECK_LOOP:
+                        LDA             ASM_SMOKE_TARGET,X
+                        CMP             ASM_ASMTEST_EXPECT,X
+                        BEQ             ASM_SMOKE_ASMTEST_CHECK_BYTE_OK
+                        JMP             ASM_SMOKE_ASMTEST_CHECK_FAIL
+ASM_SMOKE_ASMTEST_CHECK_BYTE_OK:
+                        INX
+                        CPX             #$27
+                        BNE             ASM_SMOKE_ASMTEST_CHECK_LOOP
+                        SEC
+                        RTS
+
+ASM_SMOKE_ASMTEST_CHECK_PC:
+                        LDA             ASM_PC_LO
+                        CMP             #$27
+                        BNE             ASM_SMOKE_ASMTEST_CHECK_FAIL
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_ASMTEST_CHECK_FAIL
+                        LDA             ASM_HIGH_PC_LO
+                        CMP             #$27
+                        BNE             ASM_SMOKE_ASMTEST_CHECK_FAIL
+                        LDA             ASM_HIGH_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_ASMTEST_CHECK_FAIL
+                        SEC
+                        RTS
+
+ASM_SMOKE_ASMTEST_CHECK_FAIL:
+ASM_SMOKE_ASMTEST_FAIL:
                         CLC
                         RTS
 
@@ -8429,9 +8608,9 @@ ASM_PARSE_AT_CPX:      DB              "        CPX #COUNT",0
 ASM_PARSE_AT_BNE:      DB              "        BNE LOOP",0
 ASM_PARSE_AT_RTS:      DB              "        RTS",0
 ASM_PARSE_AT_SEED_DB:
-                        DB              "SEED    DB $52,$2D,$59,$4F",0
+                        DB              "SEED    DB $52,$2D,$59,$4F,$52,$53,$20,$41",0
 ASM_PARSE_AT_DB_CONT:
-                        DB              "        DB $53,$4D,$20,$54",0
+                        DB              "        DB $53,$4D,$20,$54,$45,$53,$54,$2E",0
 ASM_PARSE_AT_END:      DB              "        END",0
 ASM_CLASS_SUM_EQU:     DB              "SUM EQU $7110",0
 ASM_CLASS_LDA_ZP:      DB              "        LDA $12",0
@@ -8468,6 +8647,11 @@ ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
                         DB              $00,$71
                         DB              $4D,$10,$71,$8D,$10,$71,$E8,$E0
                         DB              $10,$D0,$EB,$60
+ASM_ASMTEST_EXPECT:    DB              $A2,$00,$9C,$10,$71,$BD,$17,$70
+                        DB              $9D,$00,$71,$4D,$10,$71,$8D,$10
+                        DB              $71,$E8,$E0,$10,$D0,$EF,$60,$52
+                        DB              $2D,$59,$4F,$52,$53,$20,$41,$53
+                        DB              $4D,$20,$54,$45,$53,$54,$2E
 ASM_DIRECT_DB_EXPECT:  DB              $FF,$0A,$41,$34,$12,$34,$12
 ASM_DIRECT_DS_EXPECT:  DB              $AA,$AA,$AA,$34,$34
 ASM_DIRECT_DS_LIST_EXPECT:
@@ -8502,7 +8686,7 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.61 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.65 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0
@@ -8510,10 +8694,10 @@ ASM_REPL_MSG_READ:     DB              "READ=$",0
 ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
 ASM_REPL_MSG_FIX:      DB              " FIX=$",0
 ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.61 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.61 TESTS OK",0
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.65 RUN",0
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.65 TESTS OK",0
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.61 TESTS FAIL",0
+                        DB              "ASM 2.65 TESTS FAIL",0
 ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
 ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
 ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0
@@ -8577,6 +8761,8 @@ ASM_SMOKE_MSG_T_REPORT:
                         DB              " 5E REPORT",0
 ASM_SMOKE_MSG_T_SYMBOLS:
                         DB              " 60 SYMBOLS",0
+ASM_SMOKE_MSG_T_ASMTEST:
+                        DB              " 70 ASMTEST",0
 ASM_SMOKE_MSG_T_LONG:  DB              " 80 LONG LINE",0
 ASM_SMOKE_MSG_T_END:   DB              " 90 END",0
 ASM_SMOKE_MSG_W:       DB              "W=$",0
