@@ -4,6 +4,93 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-05 ASM 2.65 ASMTEST Smoke Failed Bench Attempt
+
+### Summary
+
+Operator transcript pasted into Codex session. The standalone ASM core image
+loaded at `$2000`, printed the new `ASM 2.65 RUN` banner, and reached the new
+`$70 ASMTEST` onboard smoke checkpoint. The run failed inside that checkpoint
+with public `ASM_STATUS=OK`, so this is an internal smoke assertion failure,
+not a source-line API error.
+
+This run used load marker `L OK=49FB GO=2000`, which predates the corrected
+stage-70 tail flow. The local follow-up fix rebuilds as `L OK=4A13 GO=2000`;
+that corrected image still needs a bench rerun.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=49FB GO=2000
+ 00 RJOIN
+ASM 2.65 RUN
+ 10 BEGIN
+ 20 LEX LINE
+ 30 TOKENS
+ 40 VOCAB
+ 50 PARSER
+ 56 EXPR
+ 58 LINE
+ 59 EMIT
+ 5A OPERAND
+ 5B OPCODE
+ 5C FIXUPS
+ 5D DIRECT
+ 5E REPORT
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$7000
+PC=$700C
+HIGH=$700C
+BYTES=$000C
+LINES=$0006
+SYMS=$03/$10
+FIXUPS=$00/$08
+REFS=$02/$10
+TRUNC=NO
+USED
+ADDR DEF=$0002 REFS=$02 FIRST=$0003
+UNUSED
+SEED DEF=$0003
+BUF DEF=$0004
+ASM REPORT
+STATUS=$03
+ERRLINE=$0001
+START=$7000
+PC=$7000
+HIGH=$7000
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$00/$10
+TRUNC=NO
+ASM REPORT
+STATUS=$09
+ERRLINE=$0001
+START=$7000
+PC=$7000
+HIGH=$7000
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$10
+FIXUPS=$00/$08
+REFS=$10/$10
+TRUNC=YES
+ 60 SYMBOLS
+ 70 ASMTEST
+ASM 2.65 TESTS FAIL
+ 70 ASMTEST
+S=$70 X=$00 Y=$02
+
+#LOADGO# ENTRY=2000
+RET A=70 X=00 Y=02 P=74 S=FD NV-BdIzc
+```
+
 ## 2026-06-05 ASM 2.62 ASMTEST_3000 REPL Paste/Run Proof
 
 ### Summary

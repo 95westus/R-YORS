@@ -1180,8 +1180,14 @@ image comparison, and `$7027` end PC inside the ASM core.
 ASM 2.65 expected host-built S19 marker:
 
 ```text
-L OK=6A13 GO=2000
+L OK=4A13 GO=2000
 ```
+
+Hardware note for 2026-06-05: an earlier `L OK=49FB GO=2000` 2.65 image
+reached `$70 ASMTEST` and failed with `S=$70 X=$00 Y=$02`; that failed bench
+attempt is logged in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`. The corrected
+stage-70 tail flow rebuilds as the `L OK=4A13` image above and needs a bench
+rerun.
 
 Expected onboard progress shape:
 
