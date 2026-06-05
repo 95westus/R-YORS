@@ -69,8 +69,13 @@ independent WDC sample and owns its own pasted-test `ORG $6800`.
 
 ## Current Acceptance
 
-Today, before the full assembler exists, `ASMTEST_3000.asm` is a source-language
-acceptance sample. It is not yet expected to assemble onboard.
+`ASMTEST_3000.asm` is now both the source-language acceptance sample and the
+first full-source onboard paste proof. ASM 2.62 records a hardware transcript
+where the 2.61 resident REPL accepts the sample source, emits the expected
+native image at `$6800-$6826`, resolves the forward `SEED` fixup, accepts
+`END`, returns `A=$0F/X=$10` after `G 6800`, and captures the post-run
+`$6900-$6910` output bytes. This completes the first `ASMTEST_3000` hardware
+bench gate.
 
 Current checker requirements:
 
@@ -1110,6 +1115,26 @@ The same session also proves that a no-colon `label mnemonic` line binds the
 label before emitting the instruction. `POO LDA QQQ` binds `POO` at `$7009`,
 resolves the earlier `LDA POO` operand at patch site `$7007`, and still emits a
 new unresolved absolute `LDA QQQ` as `AD FF FF`.
+
+ASM 2.62 is a bench-proof slice on the existing 2.61 resident REPL path, not a
+new code banner. On 2026-06-05, the operator pasted the full
+`ASMTEST_3000.asm` source into `ASM 2.61 REPL`; comments and blank lines were
+accepted, first pristine `ORG $6800` established the sample origin, and the
+complete sample assembled through `END` with final `PC=$6827`. The emitted code
+dump at `$6800-$683F` shows the expected bytes:
+
+```text
+6800: A2 00 9C 10 69 BD 17 68 | 9D 00 69 4D 10 69 8D 10
+6810: 69 E8 E0 10 D0 EF 60 52 | 2D 59 4F 52 53 20 41 53
+6820: 4D 20 54 45 53 54 2E 00 | ...
+```
+
+The forward `SEED` fixup first emitted `BD FF FF`, then `SEED DB ...` reported
+`DEF=$6817 FIX=$6806`; the final dump confirms the operand was patched to
+`17 68`. `G 6800` returned `A=0F X=10`, matching the expected checksum and seed
+byte count. The transcript is recorded in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.
+A follow-up `$6800-$6FFF` display captures `$6900-$690F` as the 16 expected seed
+bytes and `$6910=$0F`, completing the `ASMTEST_3000` hardware bench gate.
 
 Hardware-proven `ASM 2.50` relocated-target smoke on 2026-05-26:
 
@@ -2499,4 +2524,6 @@ verify seed and checksum
 record transcript in HARDWARE_TEST_LOG
 ```
 
-Until then, mark ASM tests as host-proven or build-proven, not hardware-proven.
+ASM 2.62 captures the paste/load, `END`, emitted image, `G 6800` return
+registers, and post-run `$6900-$6910` output bytes on hardware. This is the
+first hardware-proven full `ASMTEST_3000` assembly path.

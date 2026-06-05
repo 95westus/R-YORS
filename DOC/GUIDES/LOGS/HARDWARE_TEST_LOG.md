@@ -4,6 +4,114 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-05 ASM 2.62 ASMTEST_3000 REPL Paste/Run Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The already-loaded ASM resident
+REPL was entered with `G 2184` and identified itself as `ASM 2.61 REPL`; this
+2.62 proof slice records the first full `ASMTEST_3000` source paste through the
+resident line-at-a-time assembler path.
+
+Validated:
+
+- Comment and blank source lines are accepted without advancing PC.
+- First pristine `ORG $6800` establishes the sample origin from the REPL's
+  initial `$7000` target.
+- `EQU`, label binding, mnemonic emission, `DB`, forward absolute fixup
+  resolution, and `END` all accept the sample.
+- The emitted image at `$6800-$6826` matches the expected W65C02 bytes,
+  including `LDA SEED,X` patched from `BD FF FF` to `BD 17 68`.
+- Running `$6800` returns `A=$0F` and `X=$10`, matching the sample checksum and
+  byte count.
+- A follow-up post-run display captures `$6900-$690F` as the expected seed
+  bytes and `$6910=$0F`, completing the `ASMTEST_3000` bench gate.
+
+### Transcript Extract
+
+```text
+>G 2184
+GO 2184
+ASM 2.61 REPL
+ASM> ; ASM V1 SMOKE TEST. PASTE/LOAD AS ASM SOURCE.
+OK PC=$7000
+ASM> ; RUN AT $6800, THEN DISPLAY $6900-$6910.
+OK PC=$7000
+ASM> ; EXPECTED: $6900-$690F SEED, $6910 CHECKSUM $0F.
+OK PC=$7000
+ASM>
+ASM>         ORG $6800
+OK PC=$6800
+ASM>
+ASM> OUT EQU $6900
+OK PC=$6800
+ASM> SUM EQU $6910
+OK PC=$6800
+ASM> COUNT EQU 16
+OK PC=$6800
+ASM>
+ASM> ASMTEST LDX #0
+OK PC=$6802 BYTES= A2 00 DEF=$6800
+ASM>         STZ SUM
+OK PC=$6805 BYTES= 9C 10 69
+ASM> LOOP    LDA SEED,X
+OK PC=$6808 BYTES= BD FF FF DEF=$6805
+ASM>         STA OUT,X
+OK PC=$680B BYTES= 9D 00 69
+ASM>         EOR SUM
+OK PC=$680E BYTES= 4D 10 69
+ASM>         STA SUM
+OK PC=$6811 BYTES= 8D 10 69
+ASM>         INX
+OK PC=$6812 BYTES= E8
+ASM>         CPX #COUNT
+OK PC=$6814 BYTES= E0 10
+ASM>         BNE LOOP
+OK PC=$6816 BYTES= D0 EF
+ASM>         RTS
+OK PC=$6817 BYTES= 60
+ASM>
+ASM> SEED    DB $52,$2D,$59,$4F,$52,$53,$20,$41
+OK PC=$681F BYTES= 52 2D 59 4F 52 53 20 41 DEF=$6817 FIX=$6806
+ASM>         DB $53,$4D,$20,$54,$45,$53,$54,$2E
+OK PC=$6827 BYTES= 53 4D 20 54 45 53 54 2E
+ASM>         END
+OK PC=$6827
+ASM>
+
+>D 6800 683F
+6800: A2 00 9C 10 69 BD 17 68 | 9D 00 69 4D 10 69 8D 10 | ....i..h..iM.i..
+6810: 69 E8 E0 10 D0 EF 60 52 | 2D 59 4F 52 53 20 41 53 | i.....`R-YORS AS
+6820: 4D 20 54 45 53 54 2E 00 | 00 00 00 00 00 00 00 00 | M TEST..........
+6830: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+
+>G 6800
+GO 6800
+
+#GO# ENTRY=6800
+RET A=0F X=10 Y=30 P=77 S=FD NV-BdIZC
+>
+```
+
+### Follow-Up Output Display
+
+The operator then displayed the wider `$6800-$6FFF` range. The relevant
+post-run output rows are:
+
+```text
+>D 6800 6FFF
+...
+6900: 52 2D 59 4F 52 53 20 41 | 53 4D 20 54 45 53 54 2E | R-YORS ASM TEST.
+6910: 0F 20 20 49 4F 20 53 4B | 49 D0 41 43 49 41 20 20 | .  IO SKI.ACIA
+...
+>
+```
+
+Interpretation: `$6900-$690F` contains the 16 expected seed bytes, and `$6910`
+contains the expected checksum byte `$0F`. Bytes after `$6910` are preexisting
+RAM contents outside the sample's output contract.
+
 ## 2026-06-01 ASM 2.61 Resident REPL Proof On HIMON
 
 ### Summary

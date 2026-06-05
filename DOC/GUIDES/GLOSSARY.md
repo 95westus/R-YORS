@@ -190,6 +190,11 @@ docs.
 - SMS: provisional way-future name for a System Messaging Service. The name may
   change. The concept is an operator/message-queue service for informational,
   action, inquiry, reply, and cancel-style system messages.
+- REPL: Read-Eval-Print Loop. In ASM, the resident line-at-a-time assembler
+  console: read one source line, assemble/evaluate it, print compact `OK`/`ERR`
+  feedback such as PC, bytes, definitions, and fixups, then loop for the next
+  line. This is the interactive proof path, not the full source-file assembly
+  driver.
 - TLA: three-letter acronym. Use one when it makes command output or source
   labels clearer; spell it out in this glossary when it becomes project
   vocabulary.
