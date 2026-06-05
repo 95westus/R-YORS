@@ -188,8 +188,24 @@ unknowns remain ordinary forward fixups. The smoke-wrapper now assembles
 `LABEL: JSR PIN_FTDI_READ_BYTE_NONBLOCK` and checks that the emitted bytes
 start with `20` and no longer contain the unresolved `FFFF` operand. The host
 gate passes with `asm-v1-runtime-2000.s19` at `$25A2` bytes and
-`asm-v1-runtime-smoke-2000.s19` at `$27BF` bytes. The current smoke-wrapper
-hardware retest should load as `L OK=27BF GO=2000` and then print `ASM RT OK`.
+`asm-v1-runtime-smoke-2000.s19` at `$27BF` bytes.
+
+Hardware-proven resident-JSR ASM runtime smoke-wrapper on 2026-06-05:
+
+```text
+>L
+L S19
+L @2000
+L OK=27BF GO=2000
+>G 2000
+GO 2000
+ASM RT SMOKE
+ASM RT OK
+
+#GO# ENTRY=2000
+RET A=09 X=69 Y=09 P=75 S=FD NV-BdIzC
+>
+```
 
 ## Current Acceptance
 
