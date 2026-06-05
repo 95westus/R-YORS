@@ -7623,8 +7623,15 @@ ASM_CLASS_LOAD_SYMBOL:
                         JSR             ASM_LOOKUP_SYMBOL
                         BCS             ASM_CLASS_LOAD_SYMBOL_FOUND
                         CMP             #ASM_STATUS_OK
-                        BEQ             ASM_CLASS_LOAD_UNRESOLVED
+                        BEQ             ASM_CLASS_LOAD_SYMBOL_MISS
                         CLC
+                        RTS
+ASM_CLASS_LOAD_SYMBOL_MISS:
+                        JSR             ASM_CLASS_LOAD_RESIDENT_JSR
+                        BCS             ASM_CLASS_LOAD_SYMBOL_RESIDENT
+                        JMP             ASM_CLASS_LOAD_UNRESOLVED
+ASM_CLASS_LOAD_SYMBOL_RESIDENT:
+                        SEC
                         RTS
 ASM_CLASS_LOAD_SYMBOL_FOUND:
                         LDA             ASM_VALUE_LO
@@ -7650,6 +7657,27 @@ ASM_CLASS_LOAD_SYMBOL_KEEP_WIDTH:
                         LDA             ASM_WIDTH
                         STA             ASM_TMP0_HI
                         SEC
+                        RTS
+
+ASM_CLASS_LOAD_RESIDENT_JSR:
+                        LDA             ASM_STMT_OP_ID
+                        CMP             #ASM_VID_JSR
+                        BNE             ASM_CLASS_LOAD_RESIDENT_NO
+                        LDX             #<ASM_HASH0
+                        LDY             #>ASM_HASH0
+                        JSR             ASM_RJ_RESIDENT_XY
+                        BCC             ASM_CLASS_LOAD_RESIDENT_NO
+                        STX             ASM_BASE_LO
+                        STY             ASM_BASE_HI
+                        LDA             #ASM_SYMK_ADDR
+                        STA             ASM_TMP0_LO
+                        LDA             #ASM_WIDTH_ABS
+                        STA             ASM_TMP0_HI
+                        STZ             ASM_TMP1_HI
+                        SEC
+                        RTS
+ASM_CLASS_LOAD_RESIDENT_NO:
+                        CLC
                         RTS
 
 ASM_CLASS_LOAD_UNRESOLVED:

@@ -59,6 +59,9 @@ ASMRT_RUN:
                         STZ             $7002
                         STZ             $7003
                         STZ             $7004
+                        STZ             $7005
+                        STZ             $7006
+                        STZ             $7007
 
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #ASMRT_TARGET_LO
@@ -78,6 +81,11 @@ ASMRT_RUN:
 
                         LDX             #<LINE_STA
                         LDY             #>LINE_STA
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASMRT_RETURN_FAIL
+
+                        LDX             #<LINE_JSR_PIN_READ
+                        LDY             #>LINE_JSR_PIN_READ
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASMRT_RETURN_FAIL
 
@@ -109,6 +117,16 @@ ASMRT_CHECK_BYTES:
                         LDA             $7004
                         CMP             #$71
                         BNE             ASMRT_BAD_4
+                        LDA             $7005
+                        CMP             #$20
+                        BNE             ASMRT_BAD_5
+                        LDA             $7006
+                        CMP             #$FF
+                        BNE             ASMRT_JOIN_LO_OK
+                        LDA             $7007
+                        CMP             #$FF
+                        BEQ             ASMRT_BAD_6
+ASMRT_JOIN_LO_OK:
                         LDA             #$00
                         SEC
                         RTS
@@ -133,6 +151,14 @@ ASMRT_BAD_4:
                         LDA             #$E4
                         CLC
                         RTS
+ASMRT_BAD_5:
+                        LDA             #$E5
+                        CLC
+                        RTS
+ASMRT_BAD_6:
+                        LDA             #$E6
+                        CLC
+                        RTS
 
 ASMRT_PRINT_LINE:
                         JSR             ASMRT_PRINT
@@ -148,4 +174,5 @@ MSG_FAIL:               DB              "ASM RT FAIL $",0
 LINE_ORG:               DB              "ORG $7000",0
 LINE_LDA:               DB              "LDA #$42",0
 LINE_STA:               DB              "STA $7100",0
+LINE_JSR_PIN_READ:      DB              "LABEL: JSR PIN_FTDI_READ_BYTE_NONBLOCK",0
 LINE_END:               DB              "END",0

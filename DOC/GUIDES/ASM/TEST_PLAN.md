@@ -97,8 +97,10 @@ vocabulary tables, while omitting the standalone smoke ladder, REPL, smoke test
 bodies, and their source/expected-byte strings.
 The smoke-wrapper image links a tiny `START` before the runtime, so `G 2000`
 is valid for that wrapper image. It assembles `ORG $7000`, `LDA #$42`,
-`STA $7100`, and `END` through the stripped runtime, verifies `$7000-$7004`
-equals `A9 42 8D 00 71`, and prints `ASM RT OK` on success or
+`STA $7100`, `LABEL: JSR PIN_FTDI_READ_BYTE_NONBLOCK`, and `END` through the
+stripped runtime. It verifies `$7000-$7004` equals `A9 42 8D 00 71`, then
+verifies the resident call emitted a real `JSR` opcode instead of the old
+unresolved `20 FF FF` placeholder. It prints `ASM RT OK` on success or
 `ASM RT FAIL $xx` on failure.
 
 Hardware-proven ASM runtime smoke-wrapper on 2026-06-05:
@@ -173,6 +175,21 @@ ASM RT OK
 RET A=09 X=0E Y=09 P=75 S=FD NV-BdIzC
 >
 ```
+
+ASM runtime resident-JSR host gate on 2026-06-05:
+
+```text
+make -C SRC asm-test
+```
+
+Unknown `JSR` operands now try the resident EXEC join after local session
+symbol lookup misses. Local labels and EQU names still win first; non-`JSR`
+unknowns remain ordinary forward fixups. The smoke-wrapper now assembles
+`LABEL: JSR PIN_FTDI_READ_BYTE_NONBLOCK` and checks that the emitted bytes
+start with `20` and no longer contain the unresolved `FFFF` operand. The host
+gate passes with `asm-v1-runtime-2000.s19` at `$25A2` bytes and
+`asm-v1-runtime-smoke-2000.s19` at `$27BF` bytes. The current smoke-wrapper
+hardware retest should load as `L OK=27BF GO=2000` and then print `ASM RT OK`.
 
 ## Current Acceptance
 
@@ -2482,6 +2499,7 @@ Fixup fixtures:
 
 ```text
 JSR FOO      -> 20 FF FF with abs16 fixup
+JSR PIN_FTDI_READ_BYTE_NONBLOCK -> 20 lo hi from resident EXEC join
 BNE FOO      -> D0 FF with rel8 fixup
 END          -> BAD FIX when a required fixup is still pending
 ```
@@ -2493,6 +2511,7 @@ known emitted bytes match W65C02S table
 irregular opcodes are explicit
 aaa-bbb-cc helpers are used only where regular
 unresolved operands create explicit fixup rows when the emitted mode is known
+unknown JSR operands prefer resident EXEC joins after local symbols miss
 ```
 
 ### ASM 2.20 Fixups
