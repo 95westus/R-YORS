@@ -12,8 +12,11 @@
 
                         MODULE          ASM_V1_CORE
 
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
                         XDEF            START
                         XDEF            ASM_REPL
+                        ENDIF
                         XDEF            ASM_BEGIN
                         XDEF            ASM_END
                         XDEF            ASM_ASSEMBLE_LINE
@@ -294,6 +297,9 @@ ASM_VID_REG_X          EQU             $50
 ASM_VID_REG_Y          EQU             $51
 
                         CODE
+
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 
 ; ----------------------------------------------------------------------------
 ; START
@@ -769,9 +775,14 @@ ASM_SMOKE_PROGRESS:
                         STA             ASM_START_STEP
                         JMP             ASM_SMOKE_PRINT_LINE
 
+                        ENDIF
+
 ASM_SMOKE_PRINT_LINE:
                         JSR             ASM_RJ_WRITE_CSTRING
                         JMP             ASM_RJ_PRINT_CRLF
+
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 
 ASM_SMOKE_PRINT_FAIL:
                         LDX             #<ASM_SMOKE_MSG_FAIL_TITLE
@@ -1063,6 +1074,8 @@ ASM_SMOKE_PRINT_FAIL_DIR_D3:
                         LDY             #>ASM_SMOKE_MSG_DIR_D3
                         JMP             ASM_SMOKE_PRINT_LINE
 
+                        ENDIF
+
 ASM_RJOIN_INIT:
                         LDA             ASM_RJ_READY
                         BEQ             ASM_RJOIN_INIT_SCAN
@@ -1115,12 +1128,15 @@ ASM_RJOIN_INIT_JOINER_READY:
                         BCC             ASM_RJOIN_INIT_FAIL
                         STX             ASM_RJ_WRITE_LO
                         STY             ASM_RJ_WRITE_HI
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
                         LDA             ASM_RJ_PROGRESS
                         BEQ             ASM_RJOIN_INIT_NO_PROGRESS
                         LDX             #<ASM_SMOKE_MSG_T_RJOIN
                         LDY             #>ASM_SMOKE_MSG_T_RJOIN
                         JSR             ASM_SMOKE_PRINT_LINE
 ASM_RJOIN_INIT_NO_PROGRESS:
+                        ENDIF
 
                         LDA             #ASM_STEP_RJOIN_FNV_INIT
                         STA             ASM_START_STEP
@@ -1358,6 +1374,9 @@ ASM_RJ_FIND_MATCH:
                         BNE             ASM_RJ_FIND_NO
                         SEC
                         RTS
+
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 
 ASM_SMOKE_FAIL_A:
                         JMP             ASM_SMOKE_FAIL
@@ -3921,6 +3940,8 @@ ASM_SMOKE_REPORT_FAIL:
                         CLC
                         RTS
 
+                        ENDIF
+
 ASM_REPORT_COMPACT:
                         LDX             #<ASM_REPORT_MSG_TITLE
                         LDY             #>ASM_REPORT_MSG_TITLE
@@ -4198,6 +4219,9 @@ ASM_REPORT_PRINT_LIMIT_SEP:
                         JSR             ASM_RJ_WRITE_BYTE
                         LDA             #'$'
                         JMP             ASM_RJ_WRITE_BYTE
+
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 
 ASM_SMOKE_ASSEMBLE_LINE_ERR:
                         STA             ASM_SMOKE_EXPECT_STATUS
@@ -4497,6 +4521,8 @@ ASM_SMOKE_INSTALL_COLLISION_ROW:
                         LDA             #$01
                         STA             ASM_SYM_COUNT
                         RTS
+
+                        ENDIF
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_BEGIN
@@ -8440,9 +8466,12 @@ ASM_CLEAR_SESSION:
 ASM_SESSION_STATE:     DB              $00
 ASM_LAST_STATUS:       DB              $00
 ASM_START_STEP:        DB              $00
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_FAIL_STEP:         DB              $00
 ASM_FAIL_STATUS:       DB              $00
 ASM_FAIL_SLOT:         DB              $00
+                        ENDIF
 ASM_LINE_COUNT_LO:     DB              $00
 ASM_LINE_COUNT_HI:     DB              $00
 ASM_PC_LO:             DB              $00
@@ -8470,12 +8499,15 @@ ASM_RJ_FNV_INIT_LO:    DB              $00
 ASM_RJ_FNV_INIT_HI:    DB              $00
 ASM_RJ_FNV_UPDATE_LO:  DB              $00
 ASM_RJ_FNV_UPDATE_HI:  DB              $00
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_REPL_STATUS:       DB              $00
 ASM_REPL_LEN:          DB              $00
 ASM_REPL_OLD_PC_LO:    DB              $00
 ASM_REPL_OLD_PC_HI:    DB              $00
 ASM_REPL_DELTA:        DB              $00
 ASM_REPL_BYTE_INDEX:   DB              $00
+                        ENDIF
 ASM_STMT_KIND:         DB              $00
 ASM_STMT_FLAGS:        DB              $00
 ASM_STMT_NAME_PTR_LO:  DB              $00
@@ -8491,11 +8523,14 @@ ASM_STMT_OP_ID:        DB              $00
 ASM_STMT_TAIL_PTR_LO:  DB              $00
 ASM_STMT_TAIL_PTR_HI:  DB              $00
 ASM_STMT_STATUS:       DB              $00
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_SMOKE_EXPECT_MODE: DB              $00
 ASM_SMOKE_EXPECT_STATUS:
                         DB              $00
 ASM_SMOKE_REPORT_FLAGS:
                         DB              $00
+                        ENDIF
 ASM_DS_COUNT:          DB              $00
 ASM_DS_FILL:           DB              $00
 ASM_DS_INIT_FLAG:      DB              $00
@@ -8545,6 +8580,8 @@ ASM_FIX_HASH2:         DS              ASM_FIX_MAX
 ASM_FIX_HASH3:         DS              ASM_FIX_MAX
 ASM_FIX_NAME_LEN:      DS              ASM_FIX_MAX
 ASM_FIX_NAME_TEXT:     DS              ASM_FIX_NAME_BYTES
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_REPL_LINE_BUF:     DS              $0100
 
 ASM_SMOKE_LINE_OK:     DB              "ORG $7000",0
@@ -8676,6 +8713,7 @@ ASM_SMOKE_SYM_COUNT_EQU:
 ASM_SMOKE_SYM_ERR_EQU:
                         DB              "ERR EQU %XXXXXXX1",0
 ASM_SMOKE_SYM_NOPE:    DB              "NOPE",0
+                        ENDIF
 ASM_HASH_THE_JOIN_EXEC_XY:
                         DB              $F7,$15,$AF,$A9
 ASM_HASH_BIO_WRITE_BYTE_BLOCK:
@@ -8686,6 +8724,8 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_REPL_MSG_TITLE:    DB              "ASM 2.65 REPL",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
@@ -8768,6 +8808,7 @@ ASM_SMOKE_MSG_T_END:   DB              " 90 END",0
 ASM_SMOKE_MSG_W:       DB              "W=$",0
 ASM_SMOKE_MSG_SYM:     DB              " SYM=$",0
 ASM_SMOKE_MSG_PC:      DB              " PC=$",0
+                        ENDIF
 ASM_REPORT_MSG_TITLE:  DB              "ASM REPORT",0
 ASM_REPORT_MSG_STATUS: DB              "STATUS=",0
 ASM_REPORT_MSG_OK:     DB              "OK",0
@@ -8792,9 +8833,12 @@ ASM_REPORT_MSG_USED_REFS:
                         DB              " REFS=$",0
 ASM_REPORT_MSG_USED_FIRST:
                         DB              " FIRST=$",0
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_SMOKE_LINE_LONG:
                         DB              "12345678901234567890123456789012"
                         DB              "34567890123456789012345678901234",0
+                        ENDIF
 
 ; Vocabulary slots are canonical-token sorted:
 ; A ADC AND ASL BBR BBS BCC BCS BEQ BIT BMI BNE BPL BRA BRK BVC BVS CLC

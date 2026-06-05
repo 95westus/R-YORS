@@ -129,6 +129,13 @@ ASM_V1_CORE_SRC := $(ASM_DIR)/asm-v1-core.asm
 ASM_V1_CORE_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-core.obj
 ASM_V1_CORE_S19 := $(S19_DIR)/asm-v1-core-2000.s19
 ASM_V1_CORE_LINKFLAGS := -g -s -t -c2000 -hm19 -j -o
+ASM_V1_RUNTIME_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-runtime.obj
+ASM_V1_RUNTIME_S19 := $(S19_DIR)/asm-v1-runtime-2000.s19
+ASM_V1_RUNTIME_LINKFLAGS := -g -s -t -c2000 -hm19 -j -o
+ASM_V1_RUNTIME_SMOKE_SRC := $(PROOFS_DIR)/asm-v1-runtime-smoke.asm
+ASM_V1_RUNTIME_SMOKE_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/asm-v1-runtime-smoke.obj
+ASM_V1_RUNTIME_SMOKE_S19 := $(S19_DIR)/asm-v1-runtime-smoke-2000.s19
+ASM_V1_RUNTIME_SMOKE_LINKFLAGS := -g -s -t -c2000 -hm19 -j -o
 ASMTEST_3000_SAMPLE := ../DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
 ASMTEST_3000_WDC_SIDE_OBJ := $(ASMTEST_3000_SAMPLE:.asm=.obj)
 ASMTEST_3000_WDC_SIDE_LST := $(ASMTEST_3000_SAMPLE:.asm=.lst)
@@ -231,6 +238,8 @@ ALL_TARGETS := \
 	hrec-join-proof \
 	asm-rjoin-proof \
 	asm-v1-core \
+	asm-v1-runtime \
+	asm-v1-runtime-smoke \
 	rom-append-calc
 
 # Local language S19/BIN targets consume ignored sources under LOCAL/. Include
@@ -396,6 +405,14 @@ asm-v1-core: $(ASM_V1_CORE_S19)
 	@echo "Built $(ASM_V1_CORE_S19)."
 	@$(MAKE) artifacts
 
+asm-v1-runtime: $(ASM_V1_RUNTIME_S19)
+	@echo "Built $(ASM_V1_RUNTIME_S19)."
+	@$(MAKE) artifacts
+
+asm-v1-runtime-smoke: $(ROM_LIB) $(ASM_V1_RUNTIME_SMOKE_S19)
+	@echo "Built $(ASM_V1_RUNTIME_SMOKE_S19)."
+	@$(MAKE) artifacts
+
 asmtest-6800-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE)"
 
@@ -414,7 +431,7 @@ asmtest-6800-wdc-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE) $(ASMTEST_3000_W
 asmtest-3000-wdc: asmtest-6800-wdc
 asmtest-3000-wdc-check: asmtest-6800-wdc-check
 
-asm-test: asmtest-6800-wdc-check asm-v1-core
+asm-test: asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke
 	@echo "ASM v1 smoke checks passed."
 
 calc-9a00-fnv-proof: $(ROM_LIB) $(CALC_9A00_FNV_PROOF_S19)
@@ -651,6 +668,33 @@ $(ASM_V1_CORE_S19): $(ASM_V1_CORE_OBJ)
 	@echo [ps] set S9 start $$2000 in $(ASM_V1_CORE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_V1_CORE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
 
+$(ASM_V1_CORE_OBJ): $(ASM_V1_CORE_SRC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) $<
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
+
+$(ASM_V1_RUNTIME_OBJ): $(ASM_V1_CORE_SRC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DASM_RUNTIME_ONLY $<
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
+
+$(ASM_V1_RUNTIME_SMOKE_OBJ): $(ASM_V1_RUNTIME_SMOKE_SRC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) $<
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
+
+$(ASM_V1_RUNTIME_S19): $(ASM_V1_RUNTIME_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(ASM_V1_RUNTIME_LINKFLAGS) $(ASM_V1_RUNTIME_S19) $(ASM_V1_RUNTIME_OBJ)
+	@echo [ps] set S9 start $$2000 in $(ASM_V1_RUNTIME_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_V1_RUNTIME_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
+$(ASM_V1_RUNTIME_SMOKE_S19): $(ASM_V1_RUNTIME_SMOKE_OBJ) $(ASM_V1_RUNTIME_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(ASM_V1_RUNTIME_SMOKE_LINKFLAGS) $(ASM_V1_RUNTIME_SMOKE_S19) $(ASM_V1_RUNTIME_SMOKE_OBJ) $(ASM_V1_RUNTIME_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$2000 in $(ASM_V1_RUNTIME_SMOKE_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_V1_RUNTIME_SMOKE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
 $(CALC_9A00_FNV_PROOF_S19): $(CALC_9A00_FNV_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(CALC_9A00_FNV_PROOF_LINKFLAGS) $(CALC_9A00_FNV_PROOF_S19) $(CALC_9A00_FNV_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
@@ -822,8 +866,8 @@ $(ASMTEST_3000_WDC_OBJ): $(ASMTEST_3000_SAMPLE) Makefile
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	@if not exist $(subst /,\,$(LST_DIR)) mkdir $(subst /,\,$(LST_DIR))
 	$(ASM) $(ASFLAGS) $<
-	@if exist $(subst /,\,$(ASMTEST_3000_WDC_SIDE_OBJ)) move /Y $(subst /,\,$(ASMTEST_3000_WDC_SIDE_OBJ)) $(subst /,\,$@)
-	@if exist $(subst /,\,$(ASMTEST_3000_WDC_SIDE_LST)) move /Y $(subst /,\,$(ASMTEST_3000_WDC_SIDE_LST)) $(subst /,\,$(ASMTEST_3000_WDC_LST))
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(ASMTEST_3000_WDC_SIDE_OBJ))' -Destination '$(subst /,\,$@)' -Force"
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(ASMTEST_3000_WDC_SIDE_LST))' -Destination '$(subst /,\,$(ASMTEST_3000_WDC_LST))' -Force"
 
 $(ASMTEST_3000_WDC_S19): $(ASMTEST_3000_WDC_OBJ) Makefile
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -836,9 +880,9 @@ $(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_GEN) -Src . -OutDir $(DOC_GENERATED_DIR)
 
 artifacts:
-	@echo [ps] move sidecar artifacts
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)','$(PROOFS_DIR)','$(ASM_DIR)','$(HIMON_DIR)','$(STR8_DIR)','$(TESTS_DIR)','$(LIB_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Move-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"
-	@echo "Moved sidecar artifacts into $(BUILD_DIR)/{lst,sym,map,bin,s19}."
+	@echo [ps] sync sidecar artifacts
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)','$(PROOFS_DIR)','$(ASM_DIR)','$(HIMON_DIR)','$(STR8_DIR)','$(TESTS_DIR)','$(LIB_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Copy-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Copy-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"
+	@echo "Synced sidecar artifacts into $(BUILD_DIR)/{lst,sym,map,bin,s19}."
 
 clean:
 	-del /f *.obj *.lst *.sym *.map *.bin >nul 2>nul
@@ -863,4 +907,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map routine-word-tree himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map routine-word-tree himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

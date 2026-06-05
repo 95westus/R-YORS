@@ -62,11 +62,62 @@ Current ASM core proof artifact:
 SRC/BUILD/s19/asm-v1-core-2000.s19
 ```
 
+Current ASM runtime build:
+
+```text
+make -C SRC asm-v1-runtime
+```
+
+Current ASM runtime artifact:
+
+```text
+SRC/BUILD/s19/asm-v1-runtime-2000.s19
+```
+
+Current ASM runtime smoke-wrapper build:
+
+```text
+make -C SRC asm-v1-runtime-smoke
+```
+
+Current ASM runtime smoke-wrapper artifact:
+
+```text
+SRC/BUILD/s19/asm-v1-runtime-smoke-2000.s19
+```
+
 The ASM core RAM proof links and loads at `$2000`. Its smoke assembly target is
 `$7000`, with data targets at `$7100/$7110`, so emitted self-test bytes stay out
 of the resident proof image as the core grows. ASM 2.65 adds an onboard
 ASMTEST mirror at those non-destructive smoke addresses. `ASMTEST_3000.asm`
 remains the independent WDC sample and owns its own pasted-test `ORG $6800`.
+The ASM runtime build uses the same source with `ASM_RUNTIME_ONLY` set. It keeps
+the callable assembler spine, RJOIN glue, report printer, session tables, and
+vocabulary tables, while omitting the standalone smoke ladder, REPL, smoke test
+bodies, and their source/expected-byte strings.
+The smoke-wrapper image links a tiny `START` before the runtime, so `G 2000`
+is valid for that wrapper image. It assembles `ORG $7000`, `LDA #$42`,
+`STA $7100`, and `END` through the stripped runtime, verifies `$7000-$7004`
+equals `A9 42 8D 00 71`, and prints `ASM RT OK` on success or
+`ASM RT FAIL $xx` on failure.
+
+Hardware-proven ASM runtime smoke-wrapper on 2026-06-05:
+
+```text
+>L G
+L S19
+L @2000
+L OK=2868 GO=2000
+ASM RT SMOKE
+ASM RT OK
+
+#LOADGO# ENTRY=2000
+RET A=09 X=33 Y=09 P=75 S=FD NV-BdIzC
+>
+```
+
+The pass/fail contract is the printed `ASM RT OK` line. The final `RET`
+registers are the monitor's post-return state after the wrapper's print path.
 
 ## Current Acceptance
 
@@ -2558,6 +2609,8 @@ Current `asm-test` expands to:
 ```text
 make -C SRC asmtest-6800-wdc-check
 make -C SRC asm-v1-core
+make -C SRC asm-v1-runtime
+make -C SRC asm-v1-runtime-smoke
 ```
 
 As layers are added, extend this list rather than replacing it:

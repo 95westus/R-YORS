@@ -6,6 +6,7 @@
 *.lst
 
 *.lib
+*.TMP
 
 *.exe
 *.out
