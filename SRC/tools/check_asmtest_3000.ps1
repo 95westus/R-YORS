@@ -1,5 +1,6 @@
 param(
-    [string]$SourcePath
+    [string]$SourcePath,
+    [string]$S19Path
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,6 +12,11 @@ if ([string]::IsNullOrWhiteSpace($SourcePath)) {
 
 if (-not (Test-Path -LiteralPath $SourcePath)) {
     throw "ASMTEST source not found: $SourcePath"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($S19Path) -and
+    -not (Test-Path -LiteralPath $S19Path)) {
+    throw "ASMTEST S19 not found: $S19Path"
 }
 
 $lineMax = 63
@@ -460,6 +466,123 @@ function Compare-ByteList {
     }
 }
 
+function Convert-S19Byte {
+    param([string]$Text, [int]$LineNo, [string]$Context)
+
+    if ($Text -notmatch '^[0-9A-Fa-f]{2}$') {
+        Fail-AsmTest $LineNo "bad S19 byte in ${Context}: $Text"
+    }
+
+    [Convert]::ToInt32($Text, 16)
+}
+
+function Assert-S19Checksum {
+    param([string]$Line, [int]$LineNo)
+
+    $sum = 0
+    for ($i = 2; $i -lt $Line.Length; $i += 2) {
+        $sum = ($sum + (Convert-S19Byte $Line.Substring($i, 2) $LineNo 'checksum')) -band 0xFF
+    }
+    if ($sum -ne 0xFF) {
+        Fail-AsmTest $LineNo "bad S19 checksum"
+    }
+}
+
+function Read-S19Image {
+    param([string]$Path)
+
+    $bytes = @{}
+    $start = $null
+    $s19Lines = Get-Content -LiteralPath $Path
+
+    for ($lineNo = 1; $lineNo -le $s19Lines.Count; $lineNo++) {
+        $line = $s19Lines[$lineNo - 1].Trim()
+        if ($line.Length -eq 0) {
+            continue
+        }
+        if ($line -notmatch '^S[0-9][0-9A-Fa-f]+$') {
+            Fail-AsmTest $lineNo "bad S19 record: $line"
+        }
+
+        $recordType = $line.Substring(1, 1)
+        $count = Convert-S19Byte $line.Substring(2, 2) $lineNo 'count'
+        $expectedLength = 4 + ($count * 2)
+        if ($line.Length -ne $expectedLength) {
+            Fail-AsmTest $lineNo ("S19 length {0}, expected {1}" -f $line.Length, $expectedLength)
+        }
+        Assert-S19Checksum $line $lineNo
+
+        switch ($recordType) {
+            '0' {
+                continue
+            }
+            '1' {
+                if ($count -lt 3) {
+                    Fail-AsmTest $lineNo "S1 record count too short"
+                }
+                $address = [Convert]::ToInt32($line.Substring(4, 4), 16)
+                $dataCount = $count - 3
+                $dataOffset = 8
+                for ($i = 0; $i -lt $dataCount; $i++) {
+                    $byteText = $line.Substring($dataOffset + ($i * 2), 2)
+                    $byte = Convert-S19Byte $byteText $lineNo 'data'
+                    $bytes[($address + $i) -band 0xFFFF] = $byte
+                }
+            }
+            '9' {
+                if ($count -ne 3) {
+                    Fail-AsmTest $lineNo "S9 record count must be 3"
+                }
+                $start = [Convert]::ToInt32($line.Substring(4, 4), 16)
+            }
+            default {
+                Fail-AsmTest $lineNo "unsupported S19 record type: S$recordType"
+            }
+        }
+    }
+
+    [pscustomobject]@{
+        Bytes = $bytes
+        Start = $start
+    }
+}
+
+function Compare-S19Image {
+    param([string]$Path)
+
+    $s19 = Read-S19Image $Path
+    if ($null -eq $s19.Start) {
+        Fail-AsmTest 0 "S19 start record is missing"
+    }
+    if ($s19.Start -ne $expectedImageStart) {
+        $gotStart = Format-AsmAddress $s19.Start
+        $wantStart = Format-AsmAddress $expectedImageStart
+        Fail-AsmTest 0 ("S19 start {0}, expected {1}" -f $gotStart, $wantStart)
+    }
+    if ($s19.Bytes.Count -ne $expectedImageBytes.Count) {
+        Fail-AsmTest 0 ("S19 data byte count {0}, expected {1}" -f `
+            $s19.Bytes.Count, $expectedImageBytes.Count)
+    }
+
+    $actual = New-Object System.Collections.Generic.List[int]
+    for ($i = 0; $i -lt $expectedImageBytes.Count; $i++) {
+        $address = ($expectedImageStart + $i) -band 0xFFFF
+        if (-not $s19.Bytes.ContainsKey($address)) {
+            Fail-AsmTest 0 ("S19 missing byte at {0}" -f (Format-AsmAddress $address))
+        }
+        [void]$actual.Add([int]$s19.Bytes[$address])
+    }
+
+    Compare-ByteList $actual $expectedImageBytes 'WDC S19 image'
+
+    $imageEnd = $expectedImageStart + $expectedImageBytes.Count - 1
+    $startText = Format-AsmAddress $expectedImageStart
+    $endText = Format-AsmAddress $imageEnd
+    $entryText = Format-AsmAddress $s19.Start
+    Write-Host ("wdc-s19={0}-{1} bytes={2} start={3}" -f `
+        $startText, $endText, $expectedImageBytes.Count, $entryText)
+}
+
 $lines = Get-Content -LiteralPath $SourcePath
 for ($lineNo = 1; $lineNo -le $lines.Count; $lineNo++) {
     $raw = $lines[$lineNo - 1]
@@ -659,3 +782,7 @@ $imageText = "image={0}-{1} bytes={2} output={3}-{4}" -f `
     $imageStartText, $imageEndText, $script:imageBytes.Count, `
     $outputStartText, $outputEndText
 Write-Host $imageText
+
+if (-not [string]::IsNullOrWhiteSpace($S19Path)) {
+    Compare-S19Image $S19Path
+}

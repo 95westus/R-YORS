@@ -408,9 +408,13 @@ asmtest-6800-wdc: $(ASMTEST_3000_WDC_S19)
 	@echo "Map: $(ASMTEST_3000_WDC_MAP)"
 	@echo "S19: $(ASMTEST_3000_WDC_S19)"
 
-asmtest-3000-wdc: asmtest-6800-wdc
+asmtest-6800-wdc-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE) $(ASMTEST_3000_WDC_S19)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE)" -S19Path "$(ASMTEST_3000_WDC_S19)"
 
-asm-test: asmtest-6800-check asm-v1-core
+asmtest-3000-wdc: asmtest-6800-wdc
+asmtest-3000-wdc-check: asmtest-6800-wdc-check
+
+asm-test: asmtest-6800-wdc-check asm-v1-core
 	@echo "ASM v1 smoke checks passed."
 
 calc-9a00-fnv-proof: $(ROM_LIB) $(CALC_9A00_FNV_PROOF_S19)
@@ -859,4 +863,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asmtest-6800-check asmtest-6800-wdc asmtest-3000-check asmtest-3000-wdc asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map routine-word-tree himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map routine-word-tree himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

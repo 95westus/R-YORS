@@ -32,13 +32,13 @@ Current host-side checker:
 make -C SRC asmtest-6800-check
 ```
 
-Current WDC proof build for the same sample:
+Current WDC proof/check build for the same sample:
 
 ```text
-make -C SRC asmtest-6800-wdc
+make -C SRC asmtest-6800-wdc-check
 ```
 
-This emits the independent WDC proof artifacts:
+This builds and checks the independent WDC proof artifacts:
 
 ```text
 SRC/BUILD/lst/asmtest-6800-wdc.lst
@@ -82,6 +82,13 @@ fixed `ASMTEST_3000` sample image independently, resolves the forward `SEED`
 fixup, verifies the exact `$6800-$6826` byte stream and `$6827` end PC, and
 checks the expected `$6900-$6910` runtime output bytes.
 
+ASM 2.64 wires the independent WDC proof image into the normal ASM regression
+gate. `asmtest-6800-wdc-check` builds `asmtest-6800-wdc.s19` and calls the same
+checker with `-S19Path`; the checker validates S-record checksums, the S9 start
+address, and the exact `$6800-$6826` payload against the ASMTEST oracle. The
+regular `asm-test` target now runs this stronger host gate before building the
+ASM core.
+
 Current checker requirements:
 
 ```text
@@ -98,6 +105,8 @@ seed XOR checksum is $0F
 expected image starts at $6800 and ends at PC $6827
 emitted image bytes match the hardware-proven $6800-$6826 stream
 runtime output oracle matches $6900-$6910 seed/checksum bytes
+optional WDC S19 payload matches the $6800-$6826 image oracle
+optional WDC S19 start record is $6800
 ```
 
 Current passing output:
@@ -107,6 +116,12 @@ ASMTEST_3000 OK org=$6800 lines=24 max=49 seed=16 checksum=$0F
 defs=ASMTEST,COUNT,LOOP,OUT,SEED,SUM
 refs=COUNT,LOOP,OUT,SEED,SUM
 image=$6800-$6826 bytes=39 output=$6900-$6910
+```
+
+Current WDC-backed passing output adds:
+
+```text
+wdc-s19=$6800-$6826 bytes=39 start=$6800
 ```
 
 ## Test Levels
@@ -2485,7 +2500,7 @@ make -C SRC asm-test
 Current `asm-test` expands to:
 
 ```text
-make -C SRC asmtest-6800-check
+make -C SRC asmtest-6800-wdc-check
 make -C SRC asm-v1-core
 ```
 
