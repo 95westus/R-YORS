@@ -11,6 +11,20 @@ Not eRRORS, but expect fewer.
 
 Pronounced **are-yors**.
 
+## Hash Flash
+
+One design goal just crossed from idea to board proof: ASM source can name a
+ROM-resident hashed routine directly.
+
+```asm
+LABEL: JSR PIN_FTDI_READ_BYTE_NONBLOCK
+```
+
+The ASM runtime now hashes the operand, asks HIMON/THE's executable resident
+catalog after local symbols miss, and emits a real `JSR` target instead of the
+old unresolved `20 FF FF` placeholder. The hardware transcript is recorded in
+[ASM TEST_PLAN.md](DOC/GUIDES/ASM/TEST_PLAN.md).
+
 ## Current Spark
 
 Search just made the full ladder: standalone RAM proof, joined RAM proof, and
