@@ -478,6 +478,23 @@ ERR=$03 BAD OPER PC=$704E
 ASM>
 ```
 
+Hardware-proven ASM 2.70 status-table trim on 2026-06-06:
+
+```text
+>L G
+L S19
+L @2000
+L OK=2AF6 GO=2000
+ASM RT PASTE
+... ASM_LINE_ECHO_7000.asm accepted through END ...
+ASM RT PASTE OK
+>G 7000
+GO 7000
+? HELLO WORLD!
+=> HELLO WORLD!
+?
+```
+
 ## Current Acceptance
 
 `ASMTEST_3000.asm` is now both the source-language acceptance sample and the
@@ -555,6 +572,13 @@ while making table-limit and parser failures readable at the paste prompt. The
 host gate passes with `asm-v1-runtime-paste-2000.s19` at `$2B53` bytes. The
 hardware transcript proves `ERR=$03 BAD OPER PC=$704E` for an invalid
 `BVF $4FRE` line and an immediate return to `ASM> `.
+
+ASM 2.70 keeps the 2.69 paste-driver behavior but trims the status-name printer
+from a compare/jump chain into low/high message pointer tables. The host gate
+passes with `asm-v1-runtime-paste-2000.s19` at `$2AF6` bytes, down from the
+2.69 `$2B53` proof image while preserving named errors and recovery. The
+hardware proof loads `L OK=2AF6 GO=2000`, accepts the line-echo sample through
+`END`, and echoes `HELLO WORLD!` from the emitted `$7000` program.
 
 Current checker requirements:
 

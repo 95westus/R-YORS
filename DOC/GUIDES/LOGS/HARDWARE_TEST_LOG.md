@@ -4,6 +4,70 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-06 ASM 2.70 Runtime Paste Status-Table Trim Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The table-trimmed
+`asm-v1-runtime-paste-2000.s19` image loaded with `L OK=2AF6 GO=2000`,
+accepted the `ASM_LINE_ECHO_7000.asm` sample through the paste driver,
+finalized with `ASM RT PASTE OK`, and ran the emitted `$7000` program.
+
+Validated:
+
+- The 2.70 low/high status-name pointer table build produces the expected
+  `$2AF6` paste image.
+- The smaller paste driver still accepts the line-echo sample through `END`.
+- The emitted `$7000` program still calls the resident read/write services and
+  echoes an interactive `HELLO WORLD!` line.
+- This preserves the 2.68 line-echo behavior after the 2.70 status-printer
+  size trim.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=2AF6 GO=2000
+ASM RT PASTE
+ASM>
+ASM> ; ASM V1 PASTE SAMPLE FOR ASM RT PASTE.
+OK PC=$7000
+ASM> ; RUN WITH G 7000. LINES ECHO BACK AFTER "=> ".
+OK PC=$7000
+ASM> ; TYPE Q OR . TO RETURN TO HIMON.
+OK PC=$7000
+ASM>
+ASM>         ORG $7000
+OK PC=$7000
+ASM> LINE    EQU $7100
+OK PC=$7000
+ASM>
+ASM>         BRA MAIN
+OK PC=$7002
+ASM> DONE    RTS
+OK PC=$7003
+ASM>
+ASM> MAIN    LDA #$3F
+OK PC=$7005
+... sample accepted through BRA ECHO ...
+ASM>         BRA ECHO
+OK PC=$704E
+ASM>
+ASM>         END
+OK PC=$704E
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=4C Y=0F P=75 S=FD NV-BdIzC
+>G 7000
+GO 7000
+? HELLO WORLD!
+=> HELLO WORLD!
+?
+```
+
 ## 2026-06-06 ASM 2.69 Runtime Paste Named-Error Recovery Proof
 
 ### Summary

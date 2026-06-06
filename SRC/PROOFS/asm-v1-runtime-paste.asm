@@ -38,6 +38,7 @@ ASMRP_STATUS_BAD_SYM   EQU             $08
 ASMRP_STATUS_BAD_FIX   EQU             $09
 ASMRP_STATUS_LOCAL_NYI EQU             $0A
 ASMRP_STATUS_RJOIN     EQU             $0B
+ASMRP_STATUS_NAME_UNKNOWN EQU          $0C
 
                         CODE
 START:
@@ -172,80 +173,17 @@ ASMRP_RECOVER_OK:
 
 ASMRP_PRINT_STATUS_NAME:
                         LDA             ASMRP_RESULT
-                        CMP             #ASMRP_STATUS_OK
-                        BEQ             ASMRP_STATUS_NAME_OK
-                        CMP             #ASMRP_STATUS_BAD_MNEM
-                        BEQ             ASMRP_STATUS_NAME_BAD_MNEM
-                        CMP             #ASMRP_STATUS_BAD_DIR
-                        BEQ             ASMRP_STATUS_NAME_BAD_DIR
-                        CMP             #ASMRP_STATUS_BAD_OPER
-                        BEQ             ASMRP_STATUS_NAME_BAD_OPER
-                        CMP             #ASMRP_STATUS_BAD_MODE
-                        BEQ             ASMRP_STATUS_NAME_BAD_MODE
-                        CMP             #ASMRP_STATUS_BAD_WIDTH
-                        BEQ             ASMRP_STATUS_NAME_BAD_WIDTH
-                        CMP             #ASMRP_STATUS_BAD_RANGE
-                        BEQ             ASMRP_STATUS_NAME_BAD_RANGE
-                        CMP             #ASMRP_STATUS_BAD_LINE
-                        BEQ             ASMRP_STATUS_NAME_BAD_LINE
-                        CMP             #ASMRP_STATUS_BAD_SYM
-                        BEQ             ASMRP_STATUS_NAME_BAD_SYM
-                        CMP             #ASMRP_STATUS_BAD_FIX
-                        BEQ             ASMRP_STATUS_NAME_BAD_FIX
-                        CMP             #ASMRP_STATUS_LOCAL_NYI
-                        BEQ             ASMRP_STATUS_NAME_LOCAL_NYI
-                        CMP             #ASMRP_STATUS_RJOIN
-                        BEQ             ASMRP_STATUS_NAME_RJOIN
-                        LDX             #<MSG_STATUS_UNKNOWN
-                        LDY             #>MSG_STATUS_UNKNOWN
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_OK:
-                        LDX             #<MSG_STATUS_OK
-                        LDY             #>MSG_STATUS_OK
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_BAD_MNEM:
-                        LDX             #<MSG_STATUS_BAD_MNEM
-                        LDY             #>MSG_STATUS_BAD_MNEM
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_BAD_DIR:
-                        LDX             #<MSG_STATUS_BAD_DIR
-                        LDY             #>MSG_STATUS_BAD_DIR
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_BAD_OPER:
-                        LDX             #<MSG_STATUS_BAD_OPER
-                        LDY             #>MSG_STATUS_BAD_OPER
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_BAD_MODE:
-                        LDX             #<MSG_STATUS_BAD_MODE
-                        LDY             #>MSG_STATUS_BAD_MODE
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_BAD_WIDTH:
-                        LDX             #<MSG_STATUS_BAD_WIDTH
-                        LDY             #>MSG_STATUS_BAD_WIDTH
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_BAD_RANGE:
-                        LDX             #<MSG_STATUS_BAD_RANGE
-                        LDY             #>MSG_STATUS_BAD_RANGE
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_BAD_LINE:
-                        LDX             #<MSG_STATUS_BAD_LINE
-                        LDY             #>MSG_STATUS_BAD_LINE
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_BAD_SYM:
-                        LDX             #<MSG_STATUS_BAD_SYM
-                        LDY             #>MSG_STATUS_BAD_SYM
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_BAD_FIX:
-                        LDX             #<MSG_STATUS_BAD_FIX
-                        LDY             #>MSG_STATUS_BAD_FIX
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_LOCAL_NYI:
-                        LDX             #<MSG_STATUS_LOCAL_NYI
-                        LDY             #>MSG_STATUS_LOCAL_NYI
-                        JMP             ASMRP_PRINT
-ASMRP_STATUS_NAME_RJOIN:
-                        LDX             #<MSG_STATUS_RJOIN
-                        LDY             #>MSG_STATUS_RJOIN
+                        CMP             #ASMRP_STATUS_NAME_UNKNOWN
+                        BCC             ASMRP_STATUS_NAME_HAVE_INDEX
+                        LDA             #ASMRP_STATUS_NAME_UNKNOWN
+ASMRP_STATUS_NAME_HAVE_INDEX:
+                        TAX
+                        LDA             ASMRP_STATUS_NAME_LO,X
+                        PHA
+                        LDA             ASMRP_STATUS_NAME_HI,X
+                        TAY
+                        PLA
+                        TAX
                         JMP             ASMRP_PRINT
 
 ASMRP_IS_DOT:
@@ -321,6 +259,35 @@ MSG_STATUS_BAD_FIX:     DB              " BAD FIX",0
 MSG_STATUS_LOCAL_NYI:   DB              " LOCAL NYI",0
 MSG_STATUS_RJOIN:       DB              " RJOIN",0
 MSG_STATUS_UNKNOWN:     DB              " STATUS",0
+
+ASMRP_STATUS_NAME_LO:
+                        DB              <MSG_STATUS_OK
+                        DB              <MSG_STATUS_BAD_MNEM
+                        DB              <MSG_STATUS_BAD_DIR
+                        DB              <MSG_STATUS_BAD_OPER
+                        DB              <MSG_STATUS_BAD_MODE
+                        DB              <MSG_STATUS_BAD_WIDTH
+                        DB              <MSG_STATUS_BAD_RANGE
+                        DB              <MSG_STATUS_BAD_LINE
+                        DB              <MSG_STATUS_BAD_SYM
+                        DB              <MSG_STATUS_BAD_FIX
+                        DB              <MSG_STATUS_LOCAL_NYI
+                        DB              <MSG_STATUS_RJOIN
+                        DB              <MSG_STATUS_UNKNOWN
+ASMRP_STATUS_NAME_HI:
+                        DB              >MSG_STATUS_OK
+                        DB              >MSG_STATUS_BAD_MNEM
+                        DB              >MSG_STATUS_BAD_DIR
+                        DB              >MSG_STATUS_BAD_OPER
+                        DB              >MSG_STATUS_BAD_MODE
+                        DB              >MSG_STATUS_BAD_WIDTH
+                        DB              >MSG_STATUS_BAD_RANGE
+                        DB              >MSG_STATUS_BAD_LINE
+                        DB              >MSG_STATUS_BAD_SYM
+                        DB              >MSG_STATUS_BAD_FIX
+                        DB              >MSG_STATUS_LOCAL_NYI
+                        DB              >MSG_STATUS_RJOIN
+                        DB              >MSG_STATUS_UNKNOWN
 
 ASMRP_PC_LO:            DB              $00
 ASMRP_PC_HI:            DB              $00
