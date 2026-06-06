@@ -11,6 +11,86 @@ Not eRRORS, but expect fewer.
 
 Pronounced **are-yors**.
 
+## Pasteable ASM Is Alive
+
+On 2026-06-06, the ASM v1 runtime crossed an important line: a program typed as
+ASM source on the board called a ROM-resident routine by name and ran.
+
+Original source listing:
+
+```asm
+ORG $7000
+MAIN: LDX #0
+LOOP LDA #$4D
+JSR BIO_FTDI_WRITE_BYTE_BLOCK
+INX
+BNE LOOP
+RTS
+END
+```
+
+Board paste/run transcript:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> MAIN: LDX #0
+OK PC=$7002
+ASM> LOOP LDA #$4D
+OK PC=$7004
+ASM> JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7007
+ASM> INX
+OK PC=$7008
+ASM> BNE LOOP
+OK PC=$700A
+ASM> RTS
+OK PC=$700B
+ASM> END
+OK PC=$700B
+ASM RT PASTE OK
+>G 7000
+GO 7000
+MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+... 256 total M characters ...
+>
+```
+
+That proves the paste driver can feed source lines into the stripped callable
+ASM runtime, resolve `BIO_FTDI_WRITE_BYTE_BLOCK` through HIMON/THE's resident
+hash catalog, emit a real `JSR`, and execute the generated program.
+
+The same runtime paste driver also produced a byte-level ASMTEST proof. Source
+was pasted into ASM, finalized with `END`, and the resulting RAM was dumped:
+
+```text
+ASM> ORG $7000
+...
+ASM> END
+OK PC=$7027
+ASM RT PASTE OK
+
+>D 7000 701F
+7000: A2 00 9C 10 71 BD 17 70 | 9D 00 71 4D 10 71 8D 10 | ....q..p..qM.q..
+7010: 71 E8 E0 10 D0 EF 60 52 | 2D 59 4F 52 53 20 41 53 | q.....`R-YORS AS
+>D 7100 711F
+7100: 52 2D 59 4F 52 53 20 41 | 53 4D 20 54 45 53 54 2E | R-YORS ASM TEST.
+7110: 0F 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>G 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=0F X=10 Y=30 P=77 S=FD NV-BdIZC
+>
+```
+
+Full hardware transcripts are in
+[HARDWARE_TEST_LOG.md](DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md), with the ASM gate
+tracked in [ASM TEST_PLAN.md](DOC/GUIDES/ASM/TEST_PLAN.md).
+
 ## Hash Flash
 
 One design goal just crossed from idea to board proof: ASM source can name a
