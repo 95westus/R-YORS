@@ -378,6 +378,36 @@ RET A=0F X=10 Y=30 P=77 S=FD NV-BdIZC
 >
 ```
 
+Hardware-proven ASM 2.66 runtime paste resident-write program on 2026-06-06:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> MAIN: LDX #0
+OK PC=$7002
+ASM> LOOP LDA #$4D
+OK PC=$7004
+ASM> JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7007
+ASM> INX
+OK PC=$7008
+ASM> BNE LOOP
+OK PC=$700A
+ASM> RTS
+OK PC=$700B
+ASM> END
+OK PC=$700B
+ASM RT PASTE OK
+>G 7000
+GO 7000
+MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+... 256 total M characters ...
+>
+```
+
 ## Current Acceptance
 
 `ASMTEST_3000.asm` is now both the source-language acceptance sample and the
@@ -417,6 +447,10 @@ The hardware proof loads `asm-v1-runtime-paste-2000.s19`, accepts the ASMTEST
 mirror source through `ASM> ` prompts, finalizes with `ASM RT PASTE OK`, shows
 the emitted `$7000` image with the forward `SEED` operand patched to `$7017`,
 and runs `G 7000` to `RET A=$0F/X=$10`.
+A follow-up hardware proof pastes a smaller live program that calls resident
+`BIO_FTDI_WRITE_BYTE_BLOCK`, emits `LDX/LDA/JSR/INX/BNE/RTS` at `$7000`, and
+runs it to print 256 `M` characters. That proves the paste path can assemble
+and execute a useful resident-call program, not only the ASMTEST oracle.
 From this point forward, the line-at-a-time interactive assembler path is
 operator-facing `ICO` (Input-Calc-Output). Older proof notes and hardware
 transcripts may still say `REPL`; those are left intact as evidence. The

@@ -4,6 +4,57 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-06 ASM 2.66 Runtime Paste Resident Write Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The already-loaded
+`asm-v1-runtime-paste-2000.s19` image was entered with `G 2000`, accepted a
+small source program through the paste driver, resolved
+`JSR BIO_FTDI_WRITE_BYTE_BLOCK` through the resident EXEC join path, finalized
+with `ASM RT PASTE OK`, and ran the emitted `$7000` program.
+
+Validated:
+
+- The paste driver accepts a useful hand-written program, not only the ASMTEST
+  oracle.
+- `BIO_FTDI_WRITE_BYTE_BLOCK` is the correct resident blocking FTDI write
+  routine name for pasted ASM source.
+- The emitted program uses only currently-supported ASM v1 opcodes:
+  `LDX #imm8`, `LDA #imm8`, `JSR abs16`, `INX`, `BNE`, and `RTS`.
+- Running `$7000` prints 256 `M` characters, proving the resident call operand
+  resolved, emitted, and executed.
+
+### Transcript Extract
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> MAIN: LDX #0
+OK PC=$7002
+ASM> LOOP LDA #$4D
+OK PC=$7004
+ASM> JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7007
+ASM> INX
+OK PC=$7008
+ASM> BNE LOOP
+OK PC=$700A
+ASM> RTS
+OK PC=$700B
+ASM> END
+OK PC=$700B
+ASM RT PASTE OK
+>G 7000
+GO 7000
+MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+... 256 total M characters ...
+>
+```
+
 ## 2026-06-06 ASM 2.66 Runtime Paste Driver Hardware Proof
 
 ### Summary
