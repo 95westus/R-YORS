@@ -509,10 +509,10 @@ START_FAIL_RETURN:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; ASM_REPL
-; Resident one-line assembler console. Reads through the ROM edit-line service,
-; assembles at ASM_SMOKE_TARGET, and prints the new PC plus emitted bytes.
-; A single "." line exits.
+; ASM_REPL / ICO
+; Resident Input-Calc-Output assembler console. Reads through the ROM edit-line
+; service, assembles at ASM_SMOKE_TARGET, and prints the new PC plus emitted
+; bytes. A single "." line exits.
 ; ----------------------------------------------------------------------------
 ASM_REPL:
                         JSR             ASM_RJOIN_INIT_IO
@@ -8766,7 +8766,7 @@ ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
                         IF              ASM_RUNTIME_ONLY
                         ELSE
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.65 REPL",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.65 ICO",0
 ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
 ASM_REPL_MSG_OK:       DB              "OK PC=$",0
 ASM_REPL_MSG_ERR:      DB              "ERR=$",0

@@ -4,6 +4,92 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-06 ASM 2.66 Runtime Paste Driver Hardware Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The runtime paste-driver image
+loaded at `$2000` with `L OK=2A0A GO=2000`, started as `ASM RT PASTE`, accepted
+the `$7000/$7100/$7110` ASMTEST mirror source line by line, and finalized with
+`ASM RT PASTE OK` after `END`.
+
+Validated:
+
+- The RAM-loaded paste driver can call the stripped ASM runtime through
+  `ASM_BEGIN` and `ASM_ASSEMBLE_LINE`.
+- `ORG`, `EQU`, labels, mnemonic emission, forward `SEED` fixup resolution,
+  `DB`, and `END` all accept through the pasted source path.
+- Each accepted line reports the expected next PC, ending at `$7027`.
+- The emitted image at `$7000` matches the ASMTEST mirror, including
+  `LDA SEED,X` patched to `BD 17 70`.
+- The final `G 7000` runs the emitted program and returns `A=$0F/X=$10`,
+  matching the expected checksum and seed byte count.
+
+The `$7100-$7110` display in this transcript appears before the final `G 7000`
+and already contains the expected output bytes. The final run register proof is
+the run-after-paste evidence in this entry.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=2A0A GO=2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> OUT EQU $7100
+OK PC=$7000
+ASM> SUM EQU $7110
+OK PC=$7000
+ASM> COUNT EQU 16
+OK PC=$7000
+ASM> ASMTEST LDX #0
+OK PC=$7002
+ASM> STZ SUM
+OK PC=$7005
+ASM> LOOP LDA SEED,X
+OK PC=$7008
+ASM> STA OUT,X
+OK PC=$700B
+ASM> EOR SUM
+OK PC=$700E
+ASM> STA SUM
+OK PC=$7011
+ASM> INX
+OK PC=$7012
+ASM> CPX #COUNT
+OK PC=$7014
+ASM> BNE LOOP
+OK PC=$7016
+ASM> RTS
+OK PC=$7017
+ASM> SEED DB $52,$2D,$59,$4F,$52,$53,$20,$41
+OK PC=$701F
+ASM> DB $53,$4D,$20,$54,$45,$53,$54,$2E
+OK PC=$7027
+ASM> END
+OK PC=$7027
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=F1 Y=0F P=75 S=FD NV-BdIzC
+>D 7000 701F
+7000: A2 00 9C 10 71 BD 17 70 | 9D 00 71 4D 10 71 8D 10 | ....q..p..qM.q..
+7010: 71 E8 E0 10 D0 EF 60 52 | 2D 59 4F 52 53 20 41 53 | q.....`R-YORS AS
+>D 7100 711F
+7100: 52 2D 59 4F 52 53 20 41 | 53 4D 20 54 45 53 54 2E | R-YORS ASM TEST.
+7110: 0F 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+>G 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=0F X=10 Y=30 P=77 S=FD NV-BdIZC
+>
+```
+
 ## 2026-06-05 ASM 2.65 ASMTEST Smoke Hardware Proof
 
 ### Summary

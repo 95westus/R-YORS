@@ -565,7 +565,8 @@ A [addr] [label[:]] MMM [operand] .
   `BAD MNEM`, `BAD DIR`, `BAD OPER`, `BAD MODE`, `BAD WIDTH`, `BAD RANGE`,
   `BAD LINE`, `BAD SYM`, `BAD FIX`, and `LOCAL NYI`.
 - ASM 2.50 stops on the first error. The first interactive path is a
-  line-at-a-time REPL. As of ASM 2.56 it calls resident
+  line-at-a-time ICO, historically called the ASM REPL. As of ASM 2.56 it calls
+  resident
   `SYS_READ_CSTRING_ECHO_UPPER`, prints compact `OK`/`ERR` feedback, and
   reopens at the pre-error PC after a rejected line; v1 does not keep parsing
   after an error.

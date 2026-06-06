@@ -4900,9 +4900,10 @@ sym_slot        RAM symbol slot if resolved locally, $FF if not local
 
 If the reference table fills in v1, stop with `BAD FIX` and `TRUNC=YES`. First
 ASM 2.50 behavior is stop on first error. The first interactive path is a
-one-line REPL that calls resident `SYS_READ_CSTRING_ECHO_UPPER` through RJOIN,
-reports the new PC and up to 16 emitted bytes, and restarts the session
-after a rejected line.
+one-line ICO that calls resident `SYS_READ_CSTRING_ECHO_UPPER` through RJOIN,
+reports the new PC and up to 16 emitted bytes, and restarts the session after a
+rejected line. Older notes and hardware transcripts may call this same path a
+REPL.
 
 ASM 2.57 can seed its resident joiner from the future vector pocket at
 `$FFF8/$FFF9`. The seed is accepted only if it is not `$FFFF`, has a ROM-ish
@@ -4911,16 +4912,16 @@ using its local scanner bootstrap. HIMON/STR8 do not stamp that pocket yet.
 
 ASM 2.58 routes mnemonic statements through dispatch emission. Label-only
 statements bind the current PC, label+mnemonic statements bind before emission,
-and accepted mnemonic lines advance PC and write bytes in both smoke and REPL
+and accepted mnemonic lines advance PC and write bytes in both smoke and ICO
 paths.
 
-ASM 2.59 fixes REPL emitted-byte display by using a zero-page indirect pointer
+ASM 2.59 fixes ICO emitted-byte display by using a zero-page indirect pointer
 for `(ptr),Y` reads and adds the `LDY #imm8` opcode path.
 
 ASM 2.60 records how many fixups a definition resolved and the last patch site,
-then prints that patch site in the REPL as `FIX=$hhhh`.
+then prints that patch site in the ICO as `FIX=$hhhh`.
 
-ASM 2.61 prints PC-bound label definitions in the REPL as `DEF=$hhhh`, using
+ASM 2.61 prints PC-bound label definitions in the ICO as `DEF=$hhhh`, using
 the pre-assembly PC for the accepted line. A forward definition such as
 `W3 DB $4D` can now report `BYTES= 4D DEF=$7005 FIX=$7001`, making the symbol's
 bound address explicit. The same rule covers no-colon `label mnemonic` lines:

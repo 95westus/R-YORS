@@ -98,6 +98,18 @@ Current ASM runtime ASMTEST-wrapper artifact:
 SRC/BUILD/s19/asm-v1-runtime-asmtest-2000.s19
 ```
 
+Current ASM runtime paste-driver build:
+
+```text
+make -C SRC asm-v1-runtime-paste
+```
+
+Current ASM runtime paste-driver artifact:
+
+```text
+SRC/BUILD/s19/asm-v1-runtime-paste-2000.s19
+```
+
 The ASM core RAM proof links and loads at `$2000`. Its smoke assembly target is
 `$7000`, with data targets at `$7100/$7110`, so emitted self-test bytes stay out
 of the resident proof image as the core grows. ASM 2.65 adds an onboard
@@ -105,8 +117,8 @@ ASMTEST mirror at those non-destructive smoke addresses. `ASMTEST_3000.asm`
 remains the independent WDC sample and owns its own pasted-test `ORG $6800`.
 The ASM runtime build uses the same source with `ASM_RUNTIME_ONLY` set. It keeps
 the callable assembler spine, RJOIN glue, report printer, session tables, and
-vocabulary tables, while omitting the standalone smoke ladder, REPL, smoke test
-bodies, and their source/expected-byte strings.
+vocabulary tables, while omitting the standalone smoke ladder, ICO/legacy-REPL
+driver, smoke test bodies, and their source/expected-byte strings.
 The smoke-wrapper image links a tiny `START` before the runtime, so `G 2000`
 is valid for that wrapper image. It assembles `ORG $7000`, `LDA #$0A`,
 `LABEL: JSR UTL_HEX_NIBBLE_TO_ASCII`, `STA $7101`, `RTS`, and `END` through
@@ -140,7 +152,7 @@ ASM runtime readless trim on 2026-06-05:
 make -C SRC asm-test
 ```
 
-The runtime-only build now omits the REPL-only readline resolver, read pointer
+The runtime-only build now omits the ICO-only readline resolver, read pointer
 cache, indirect read shim, and `SYS_READ_CSTRING_ECHO_UPPER` hash. The host
 gate passes with `asm-v1-runtime-2000.s19` at `$2676` bytes and
 `asm-v1-runtime-smoke-2000.s19` at `$283D` bytes.
@@ -291,6 +303,81 @@ RET A=11 X=52 Y=11 P=75 S=FD NV-BdIzC
 >
 ```
 
+ASM 2.66 runtime paste-driver host gate on 2026-06-05:
+
+```text
+make -C SRC asm-test
+```
+
+The stripped ASM runtime now has a separate paste driver wrapper. It starts an
+ASM session at `$7000`, reads echoed uppercase lines through the ROM
+`SYS_READ_CSTRING_ECHO_UPPER` service, feeds each non-empty line to
+`ASM_ASSEMBLE_LINE`, prints `OK PC=$hhhh` after accepted lines, and stops after
+an accepted `END` with `ASM RT PASTE OK`. A single `.` line exits without
+finalizing; the first ASM error prints `ERR=$xx PC=$hhhh` and returns to HIMON.
+This keeps the ASM runtime readless while giving the board a pasteable
+front-end again. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` at `$2A0A` bytes. The hardware retest should
+load as `L OK=2A0A GO=2000`, start with `ASM RT PASTE`, accept pasted ASM
+source lines at `ASM> ` prompts, and return after `END`.
+
+Hardware-proven ASM 2.66 runtime paste driver on 2026-06-06:
+
+```text
+>L G
+L S19
+L @2000
+L OK=2A0A GO=2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> OUT EQU $7100
+OK PC=$7000
+ASM> SUM EQU $7110
+OK PC=$7000
+ASM> COUNT EQU 16
+OK PC=$7000
+ASM> ASMTEST LDX #0
+OK PC=$7002
+ASM> STZ SUM
+OK PC=$7005
+ASM> LOOP LDA SEED,X
+OK PC=$7008
+ASM> STA OUT,X
+OK PC=$700B
+ASM> EOR SUM
+OK PC=$700E
+ASM> STA SUM
+OK PC=$7011
+ASM> INX
+OK PC=$7012
+ASM> CPX #COUNT
+OK PC=$7014
+ASM> BNE LOOP
+OK PC=$7016
+ASM> RTS
+OK PC=$7017
+ASM> SEED DB $52,$2D,$59,$4F,$52,$53,$20,$41
+OK PC=$701F
+ASM> DB $53,$4D,$20,$54,$45,$53,$54,$2E
+OK PC=$7027
+ASM> END
+OK PC=$7027
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=F1 Y=0F P=75 S=FD NV-BdIzC
+>D 7000 701F
+7000: A2 00 9C 10 71 BD 17 70 | 9D 00 71 4D 10 71 8D 10 | ....q..p..qM.q..
+7010: 71 E8 E0 10 D0 EF 60 52 | 2D 59 4F 52 53 20 41 53 | q.....`R-YORS AS
+>G 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=0F X=10 Y=30 P=77 S=FD NV-BdIZC
+>
+```
+
 ## Current Acceptance
 
 `ASMTEST_3000.asm` is now both the source-language acceptance sample and the
@@ -321,6 +408,20 @@ uses the established non-destructive mirror addresses: `ORG $7000`,
 `OUT=$7100`, and `SUM=$7110`. It compares the emitted `$7000-$7026` image and
 the `$7027` PC/high-water result on-board before the final long-line and `END`
 checks run.
+
+ASM 2.66 moves from wrapper-driven proof to pasteable board workflow. The
+runtime paste driver is not part of the stripped ASM runtime body; it is a small
+RAM-loaded front-end that owns ROM line input, prompt/output text, and failure
+return policy while calling the same `ASM_BEGIN` / `ASM_ASSEMBLE_LINE` spine.
+The hardware proof loads `asm-v1-runtime-paste-2000.s19`, accepts the ASMTEST
+mirror source through `ASM> ` prompts, finalizes with `ASM RT PASTE OK`, shows
+the emitted `$7000` image with the forward `SEED` operand patched to `$7017`,
+and runs `G 7000` to `RET A=$0F/X=$10`.
+From this point forward, the line-at-a-time interactive assembler path is
+operator-facing `ICO` (Input-Calc-Output). Older proof notes and hardware
+transcripts may still say `REPL`; those are left intact as evidence. The
+full-core interactive banner now says `ASM 2.65 ICO`; the current host build
+marker is `L OK=4A3E GO=2000`.
 
 Current checker requirements:
 
@@ -1394,7 +1495,7 @@ A follow-up `$6800-$6FFF` display captures `$6900-$690F` as the 16 expected seed
 bytes and `$6910=$0F`, completing the `ASMTEST_3000` hardware bench gate.
 
 ASM 2.65 is the next code-bearing slice after that proof. It bumps the visible
-standalone and REPL banners to `ASM 2.65`, adds a `$70 ASMTEST` smoke checkpoint,
+standalone and interactive banners to `ASM 2.65`, adds a `$70 ASMTEST` smoke checkpoint,
 and assembles the ASMTEST program shape on-board at `$7000` with output targets
 at `$7100/$7110`. This keeps the smoke non-destructive while proving the same
 line-by-line assembler path, forward `SEED` fixup, 16-byte seed payload, emitted
@@ -1509,10 +1610,10 @@ W=$E2F4 SYM=$06 PC=$7000
 ```
 
 The standalone `START` path remains the deterministic smoke ladder. The
-separate `ASM_REPL` entry uses resident `SYS_READ_CSTRING_ECHO_UPPER` through
-RJOIN, so pasted lines, backspace, Ctrl-C, CR/LF, and uppercase handling come
-from the ROM readline service. `ASM_REPL=$2184` is the remaining interactive
-bench proof.
+separate `ASM_REPL` entry is the ICO path and uses resident
+`SYS_READ_CSTRING_ECHO_UPPER` through RJOIN, so pasted lines, backspace,
+Ctrl-C, CR/LF, and uppercase handling come from the ROM readline service.
+`ASM_REPL=$2184` is the remaining interactive bench proof.
 A minimal sequence for one-line feedback is:
 
 ```text
@@ -2787,6 +2888,7 @@ make -C SRC asm-v1-core
 make -C SRC asm-v1-runtime
 make -C SRC asm-v1-runtime-smoke
 make -C SRC asm-v1-runtime-asmtest
+make -C SRC asm-v1-runtime-paste
 ```
 
 As layers are added, extend this list rather than replacing it:
