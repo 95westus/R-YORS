@@ -86,6 +86,18 @@ Current ASM runtime smoke-wrapper artifact:
 SRC/BUILD/s19/asm-v1-runtime-smoke-2000.s19
 ```
 
+Current ASM runtime ASMTEST-wrapper build:
+
+```text
+make -C SRC asm-v1-runtime-asmtest
+```
+
+Current ASM runtime ASMTEST-wrapper artifact:
+
+```text
+SRC/BUILD/s19/asm-v1-runtime-asmtest-2000.s19
+```
+
 The ASM core RAM proof links and loads at `$2000`. Its smoke assembly target is
 `$7000`, with data targets at `$7100/$7110`, so emitted self-test bytes stay out
 of the resident proof image as the core grows. ASM 2.65 adds an onboard
@@ -246,6 +258,38 @@ Post-run board dump excerpt for the same proof:
 
 Here `$7000-$7008` is the emitted `LDA #$0A`, resident `JSR`, `STA $7101`,
 `RTS` program, and `$7101=$41` is the executed resident utility result.
+
+ASM runtime ASMTEST execution host gate on 2026-06-05:
+
+```text
+make -C SRC asm-test
+```
+
+The stripped ASM runtime now has a separate ASMTEST wrapper. It drives
+`ASM_BEGIN`, `ASM_ASSEMBLE_LINE`, and `ASM_END` with the same `$7000` mirror of
+`ASMTEST_3000.asm` used by the full-core smoke, compares the emitted
+`$7000-$7026` image against the known oracle, executes `JSR $7000`, and verifies
+`$7100-$710F` is `R-YORS ASM TEST.` with `$7110=$0F`. The host gate passes with
+`asm-v1-runtime-asmtest-2000.s19` at `$28AA` bytes.
+
+Hardware-proven ASM runtime ASMTEST wrapper on 2026-06-05:
+
+```text
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0605(1413)
+>L G
+L S19
+L @2000
+L OK=28AA GO=2000
+ASM RT ASMTEST
+ASM RT ASMTEST OK
+
+#LOADGO# ENTRY=2000
+RET A=11 X=52 Y=11 P=75 S=FD NV-BdIzC
+>
+```
 
 ## Current Acceptance
 
@@ -2742,6 +2786,7 @@ make -C SRC asmtest-6800-wdc-check
 make -C SRC asm-v1-core
 make -C SRC asm-v1-runtime
 make -C SRC asm-v1-runtime-smoke
+make -C SRC asm-v1-runtime-asmtest
 ```
 
 As layers are added, extend this list rather than replacing it:
