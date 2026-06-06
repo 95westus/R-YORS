@@ -4,6 +4,175 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-06 ASM 2.68 Runtime Paste Line Echo Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The already-loaded
+`asm-v1-runtime-paste-2000.s19` image was entered with `G 2000`, accepted the
+`ASM_LINE_ECHO_7000.asm` sample through the paste driver, finalized with
+`ASM RT PASTE OK`, and ran the emitted `$7000` program interactively.
+
+Validated:
+
+- A pasteable sample can use resident `SYS_READ_CSTRING_ECHO_UPPER` and
+  `BIO_FTDI_WRITE_BYTE_BLOCK` together.
+- The sample stays within ASM v1 proof limits after the earlier `BAD_FIX=$09`
+  failure: only a small number of forward fixups are outstanding at once.
+- The emitted program prompts with `? `, echoes typed lines after `=> `, and
+  returns to HIMON when the operator enters `.`.
+- `LINE EQU $7100` keeps the input buffer on the established scratch data page
+  while code emits from `$7000` through `$704D`.
+
+### Transcript Extract
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>  ; ASM V1 PASTE SAMPLE FOR ASM RT PASTE.
+OK PC=$7000
+ASM> ; RUN WITH G 7000. LINES ECHO BACK AFTER "=> ".
+OK PC=$7000
+ASM> ; TYPE Q OR . TO RETURN TO HIMON.
+OK PC=$7000
+ASM>
+ASM>         ORG $7000
+OK PC=$7000
+ASM> LINE    EQU $7100
+OK PC=$7000
+ASM>
+ASM>         BRA MAIN
+OK PC=$7002
+ASM> DONE    RTS
+OK PC=$7003
+ASM>
+ASM> MAIN    LDA #$3F
+OK PC=$7005
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7008
+ASM>         LDA #$20
+OK PC=$700A
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$700D
+ASM>         LDX #<LINE
+OK PC=$700F
+ASM>         LDY #>LINE
+OK PC=$7011
+ASM>         JSR SYS_READ_CSTRING_ECHO_UPPER
+OK PC=$7014
+ASM>         BCC MAIN
+OK PC=$7016
+ASM>         BEQ MAIN
+OK PC=$7018
+ASM>         LDA LINE
+OK PC=$701B
+ASM>         EOR #'Q'
+OK PC=$701D
+ASM>         BEQ DONE
+OK PC=$701F
+ASM>         LDA LINE
+OK PC=$7022
+ASM>         EOR #'.'
+OK PC=$7024
+ASM>         BEQ DONE
+OK PC=$7026
+ASM>         LDA #$3D
+OK PC=$7028
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$702B
+ASM>         LDA #$3E
+OK PC=$702D
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7030
+ASM>         LDA #$20
+OK PC=$7032
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7035
+ASM>         LDX #0
+OK PC=$7037
+ASM> ECHO    LDA LINE,X
+OK PC=$703A
+ASM>         BNE OUT
+OK PC=$703C
+ASM>         LDA #$0D
+OK PC=$703E
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7041
+ASM>         LDA #$0A
+OK PC=$7043
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7046
+ASM>         BRA MAIN
+OK PC=$7048
+ASM> OUT     JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$704B
+ASM>         INX
+OK PC=$704C
+ASM>         BRA ECHO
+OK PC=$704E
+ASM>
+ASM>         END
+OK PC=$704E
+ASM RT PASTE OK
+>G 7000
+GO 7000
+? ?
+=> ?
+? H
+=> H
+? HELLO WORLD
+=> HELLO WORLD
+? .
+>
+```
+
+## 2026-06-06 ASM 2.67 Runtime Paste Local-Precedence Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The already-loaded
+`asm-v1-runtime-paste-2000.s19` image was entered with `G 2000`, accepted a
+short source program that deliberately defined a session symbol named
+`BIO_FTDI_WRITE_BYTE_BLOCK`, then assembled `JSR BIO_FTDI_WRITE_BYTE_BLOCK`.
+
+Validated:
+
+- A defined session symbol wins before the resident EXEC catalog fallback for
+  the same source name.
+- The emitted call operand is the local `$7000` target (`20 00 70`), not the
+  old unresolved `20 FF FF` placeholder and not the ROM resident routine.
+- Running `$7000` returns immediately through the locally defined `RTS`.
+- This proof covers defined-name precedence only; forward same-name policy is
+  still a separate ASM v1 decision.
+
+### Transcript Extract
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> BIO_FTDI_WRITE_BYTE_BLOCK: RTS
+OK PC=$7001
+ASM> JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7004
+ASM> RTS
+OK PC=$7005
+ASM> END
+OK PC=$7005
+ASM RT PASTE OK
+>G 7000
+GO 7000
+>D 7000 FF
+7000: 60 20 00 70 60 DF E2 E8 | D0 F8 60 4D 10 71 8D 10 | ` .p`.....`M.q..
+7010: 71 E8 E0 10 D0 EF 60 52 | 2D 59 4F 52 53 20 41 53 | q.....`R-YORS AS
+7020: 4D 20 54 45 53 54 2E 00 | 00 00 00 00 00 00 00 00 | M TEST..........
+... remaining displayed $7030-$70F0 bytes were $00 ...
+>
+```
+
 ## 2026-06-06 ASM 2.66 Runtime Paste Resident Write Proof
 
 ### Summary

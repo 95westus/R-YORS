@@ -408,6 +408,65 @@ MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 >
 ```
 
+Hardware-proven ASM 2.67 runtime paste local-precedence program on 2026-06-06:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> BIO_FTDI_WRITE_BYTE_BLOCK: RTS
+OK PC=$7001
+ASM> JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7004
+ASM> RTS
+OK PC=$7005
+ASM> END
+OK PC=$7005
+ASM RT PASTE OK
+>G 7000
+GO 7000
+>D 7000 FF
+7000: 60 20 00 70 60 DF E2 E8 | D0 F8 60 4D 10 71 8D 10 | ` .p`.....`M.q..
+7010: 71 E8 E0 10 D0 EF 60 52 | 2D 59 4F 52 53 20 41 53 | q.....`R-YORS AS
+7020: 4D 20 54 45 53 54 2E 00 | 00 00 00 00 00 00 00 00 | M TEST..........
+... remaining displayed $7030-$70F0 bytes were $00 ...
+>
+```
+
+Hardware-proven ASM 2.68 runtime paste line-echo sample on 2026-06-06:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>         ORG $7000
+OK PC=$7000
+ASM> LINE    EQU $7100
+OK PC=$7000
+ASM>         BRA MAIN
+OK PC=$7002
+ASM> DONE    RTS
+OK PC=$7003
+ASM> MAIN    LDA #$3F
+OK PC=$7005
+... sample accepted through END ...
+ASM>         END
+OK PC=$704E
+ASM RT PASTE OK
+>G 7000
+GO 7000
+? ?
+=> ?
+? H
+=> H
+? HELLO WORLD
+=> HELLO WORLD
+? .
+>
+```
+
 ## Current Acceptance
 
 `ASMTEST_3000.asm` is now both the source-language acceptance sample and the
@@ -456,6 +515,23 @@ operator-facing `ICO` (Input-Calc-Output). Older proof notes and hardware
 transcripts may still say `REPL`; those are left intact as evidence. The
 full-core interactive banner now says `ASM 2.65 ICO`; the current host build
 marker is `L OK=4A3E GO=2000`.
+
+ASM 2.67 locks down defined session-name precedence over resident EXEC fallback.
+The hardware proof pastes a label named `BIO_FTDI_WRITE_BYTE_BLOCK` at `$7000`
+before assembling `JSR BIO_FTDI_WRITE_BYTE_BLOCK`; the memory dump shows
+`60 20 00 70 60`, so the `JSR` operand points at the session-defined `RTS`.
+That proves lookup order is session symbols first and ROM-resident hashed EXEC
+catalog only after a local miss. Forward same-name locals remain a separate
+ASM v1 policy question.
+
+ASM 2.68 records the first hardware-proven pasteable interactive sample:
+`ASM_LINE_ECHO_7000.asm`. It assembles at `$7000`, uses `LINE EQU $7100` for
+its input buffer, calls resident `SYS_READ_CSTRING_ECHO_UPPER` for line input,
+and writes prompts/echo text through resident `BIO_FTDI_WRITE_BYTE_BLOCK`.
+The transcript proves the sample accepts single characters and a longer
+`HELLO WORLD` line, echoes each after `=> `, and returns to HIMON on `.`.
+This also captures the practical ASM v1 fixup-table lesson: keep pasted bench
+toys below the current eight outstanding forward-fixup proof limit.
 
 Current checker requirements:
 
@@ -538,6 +614,12 @@ ASMTEST_MIN.asm       ORG/EQU/DB/RTS only
 ASMTEST_BRANCH.asm    forward/backward branch range proof
 ASMTEST_FIXUP.asm     forward abs16/rel8/lo8/hi8 fixups
 ASMTEST_BITS.asm      RMB/SMB/BBR/BBS operand forms
+```
+
+Current pasteable bench toys:
+
+```text
+ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
 ```
 
 ### ASM 4.20 Bad Samples
