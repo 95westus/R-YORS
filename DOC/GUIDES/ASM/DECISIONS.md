@@ -491,6 +491,13 @@ A [addr] [label[:]] MMM [operand] .
   fixup if the operand mode allows a forward reference. The RAM session table is
   only the current workbench; a large resident/packed symbol table is a design
   goal, and assembling ASM/HIMON under ASM is a future acceptance test.
+- Future ASM may expose that lookup order as an explicit policy, either through
+  a HIMON command or an ASM directive. The default should remain local-first:
+  current session symbols, resident executable/catalog records, then forward
+  fixup. A later directive could name the search path in plain order, for
+  example `RESOLVE LOCAL,RCAT,RREC,FIXUP` or `SEARCH LOCAL,ROM,FIXUP`.
+  First implementation should be session-wide; block-scoped or per-reference
+  overrides are parked until there is real source pressure for them.
 - Large resident symbol tables may use a compact two-byte `SYM3` prefix key
   before full FNV/name comparison. `SYM3` packs the first three canonical
   characters using a base-40 alphabet: pad/end, `A-Z`, `0-9`, `_`, and two

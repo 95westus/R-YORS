@@ -24,9 +24,11 @@ ASM_BEGINF_HAVE_PC     EQU             $01
 ASMRA_TARGET_LO        EQU             $00
 ASMRA_TARGET_HI        EQU             $70
 ASMRA_RESULT           EQU             $67F1
-ASMRA_CODE_LEN         EQU             $27
+ASMRA_CODE_LEN         EQU             $34
 ASMRA_OUT_LEN          EQU             $10
-ASMRA_LINE_COUNT       EQU             $11
+ASMRA_LINE_COUNT       EQU             $15
+ASMRA_PUT_CSTR_JSR_LO  EQU             $1B
+ASMRA_PUT_CSTR_JSR_HI  EQU             $1C
 
                         CODE
 START:
@@ -89,6 +91,7 @@ ASMRA_LINE_OK:
                         RTS
 ASMRA_END_OK:
 
+                        JSR             ASMRA_PATCH_EXPECT
                         JSR             ASMRA_CHECK_IMAGE
                         BCS             ASMRA_IMAGE_OK
                         RTS
@@ -119,7 +122,23 @@ ASMRA_CLEAR_OUT_LOOP:
                         BPL             ASMRA_CLEAR_OUT_LOOP
                         RTS
 
+ASMRA_PATCH_EXPECT:
+                        LDA             $7000+ASMRA_PUT_CSTR_JSR_LO
+                        STA             EXPECT_IMAGE+ASMRA_PUT_CSTR_JSR_LO
+                        LDA             $7000+ASMRA_PUT_CSTR_JSR_HI
+                        STA             EXPECT_IMAGE+ASMRA_PUT_CSTR_JSR_HI
+                        RTS
+
 ASMRA_CHECK_IMAGE:
+                        LDA             $7000+ASMRA_PUT_CSTR_JSR_LO
+                        CMP             #$FF
+                        BNE             ASMRA_CHECK_IMAGE_NOT_FFFF
+                        LDA             $7000+ASMRA_PUT_CSTR_JSR_HI
+                        CMP             #$FF
+                        BEQ             ASMRA_BAD_IMAGE
+ASMRA_CHECK_IMAGE_NOT_FFFF:
+                        LDA             $7000+ASMRA_PUT_CSTR_JSR_HI
+                        BEQ             ASMRA_BAD_IMAGE
                         LDX             #$00
 ASMRA_CHECK_IMAGE_LOOP:
                         LDA             $7000,X
@@ -129,7 +148,7 @@ ASMRA_CHECK_IMAGE_LOOP:
                         CPX             #ASMRA_CODE_LEN
                         BNE             ASMRA_CHECK_IMAGE_LOOP
 
-                        LDA             $7027
+                        LDA             $7000+ASMRA_CODE_LEN
                         BNE             ASMRA_BAD_TRAIL
                         SEC
                         RTS
@@ -195,28 +214,39 @@ LINE_STA_SUM:           DB              "STA SUM",0
 LINE_INX:               DB              "INX",0
 LINE_CPX:               DB              "CPX #COUNT",0
 LINE_BNE:               DB              "BNE LOOP",0
+LINE_TEXT_LDX:          DB              "LDX #<TEXT",0
+LINE_TEXT_LDY:          DB              "LDY #>TEXT",0
+LINE_TEXT_JSR:          DB              "JSR BIO_FTDI_PUT_CSTR",0
 LINE_RTS:               DB              "RTS",0
 LINE_SEED_DB:           DB              "SEED DB $52,$2D,$59,$4F,$52,$53,$20,$41",0
 LINE_DB_CONT:           DB              "DB $53,$4D,$20,$54,$45,$53,$54,$2E",0
+LINE_TEXT_DB:           DB              "TEXT DB $52,$4A,$4F,$49,$4E,0",0
 LINE_END:               DB              "END",0
 
 LINE_PTR_LO:            DB              <LINE_ORG,<LINE_OUT_EQU,<LINE_SUM_EQU
                         DB              <LINE_COUNT_EQU,<LINE_LDX,<LINE_STZ
                         DB              <LINE_LOOP_LDA,<LINE_STA_OUT_X
                         DB              <LINE_EOR_SUM,<LINE_STA_SUM,<LINE_INX
-                        DB              <LINE_CPX,<LINE_BNE,<LINE_RTS
-                        DB              <LINE_SEED_DB,<LINE_DB_CONT,<LINE_END
+                        DB              <LINE_CPX,<LINE_BNE,<LINE_TEXT_LDX
+                        DB              <LINE_TEXT_LDY,<LINE_TEXT_JSR,<LINE_RTS
+                        DB              <LINE_SEED_DB,<LINE_DB_CONT
+                        DB              <LINE_TEXT_DB,<LINE_END
 LINE_PTR_HI:            DB              >LINE_ORG,>LINE_OUT_EQU,>LINE_SUM_EQU
                         DB              >LINE_COUNT_EQU,>LINE_LDX,>LINE_STZ
                         DB              >LINE_LOOP_LDA,>LINE_STA_OUT_X
                         DB              >LINE_EOR_SUM,>LINE_STA_SUM,>LINE_INX
-                        DB              >LINE_CPX,>LINE_BNE,>LINE_RTS
-                        DB              >LINE_SEED_DB,>LINE_DB_CONT,>LINE_END
+                        DB              >LINE_CPX,>LINE_BNE,>LINE_TEXT_LDX
+                        DB              >LINE_TEXT_LDY,>LINE_TEXT_JSR,>LINE_RTS
+                        DB              >LINE_SEED_DB,>LINE_DB_CONT
+                        DB              >LINE_TEXT_DB,>LINE_END
 
-EXPECT_IMAGE:           DB              $A2,$00,$9C,$10,$71,$BD,$17,$70
+EXPECT_IMAGE:           DB              $A2,$00,$9C,$10,$71,$BD,$1E,$70
                         DB              $9D,$00,$71,$4D,$10,$71,$8D,$10
-                        DB              $71,$E8,$E0,$10,$D0,$EF,$60,$52
+                        DB              $71,$E8,$E0,$10,$D0,$EF,$A2,$2E
+                        DB              $A0,$70,$20,$00,$00
+                        DB              $60,$52
                         DB              $2D,$59,$4F,$52,$53,$20,$41,$53
                         DB              $4D,$20,$54,$45,$53,$54,$2E
+                        DB              $52,$4A,$4F,$49,$4E,$00
 EXPECT_OUTPUT:          DB              $52,$2D,$59,$4F,$52,$53,$20,$41
                         DB              $53,$4D,$20,$54,$45,$53,$54,$2E

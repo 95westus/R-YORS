@@ -68,6 +68,34 @@ GO 7000
 ?
 ```
 
+### Additional Transcript Extract
+
+The same line-echo sample was rerun from an already-loaded paste wrapper. This
+run proves the emitted program still echoes longer mixed text and that embedded
+`.` characters are ordinary payload unless the line begins with `.`.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>         ORG $7000
+OK PC=$7000
+ASM> LINE    EQU $7100
+OK PC=$7000
+... ASM_LINE_ECHO_7000.asm accepted through END ...
+ASM>         END
+OK PC=$704E
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=4C Y=0F P=75 S=FD NV-BdIzC
+>G 7000
+GO 7000
+? HHHH HHH LJK.J.JLJKJ
+=> HHHH HHH LJK.J.JLJKJ
+?
+```
+
 ## 2026-06-06 ASM 2.69 Runtime Paste Named-Error Recovery Proof
 
 ### Summary

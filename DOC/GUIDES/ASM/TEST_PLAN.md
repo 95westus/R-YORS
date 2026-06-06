@@ -579,6 +579,19 @@ passes with `asm-v1-runtime-paste-2000.s19` at `$2AF6` bytes, down from the
 2.69 `$2B53` proof image while preserving named errors and recovery. The
 hardware proof loads `L OK=2AF6 GO=2000`, accepts the line-echo sample through
 `END`, and echoes `HELLO WORLD!` from the emitted `$7000` program.
+A follow-up board run started the already-loaded paste wrapper with `G 2000`,
+accepted the same sample through `END`, returned `A=$0F/X=$4C/Y=$0F`, and ran
+`G 7000` to echo `HHHH HHH LJK.J.JLJKJ`. Embedded dots in the line body echoed
+normally; only a leading `.` remains the exit command.
+
+ASM 2.71 adds a second resident-output RJOIN target to the runtime asmtest
+wrapper. HIMON now publishes `BIO_FTDI_PUT_CSTR` as executable FNV alias
+`$AEFA0F42`, pointing at the existing `SYS_WRITE_CSTRING` implementation. The
+asmtest source stream now assembles `LDX #<TEXT`, `LDY #>TEXT`, and
+`JSR BIO_FTDI_PUT_CSTR`; its byte oracle patches the expected operand from the
+emitted resident target while rejecting unresolved `$FFFF` and high-zero
+targets. The host `asm-test` gate passes with this resident-call extension.
+Board proof requires a HIMON image that includes `BIO_FTDI_PUT_CSTR_FNV`.
 
 Current checker requirements:
 

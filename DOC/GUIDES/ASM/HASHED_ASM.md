@@ -4457,6 +4457,38 @@ The RAM session table is only the current workbench. HIMON-scale symbols live in
 resident, packed, or generated symbol tables that ASM can search without copying
 them all into session RAM.
 
+### Future Lookup-Order Policy
+
+The default lookup order should stay local-first. A label defined by the current
+assembly session must be able to shadow a resident name, as proven by the
+`BIO_FTDI_WRITE_BYTE_BLOCK: RTS` test. After local lookup misses, ASM can ask
+resident catalogs/records for executable targets, and only then create a forward
+fixup when the operand class allows one.
+
+A later HIMON command or ASM directive may make that policy explicit. The useful
+unit is probably a session-wide search path first, not a per-reference syntax.
+Possible shapes:
+
+```asm
+        SEARCH LOCAL,RCAT,RREC,FIXUP
+        RESOLVE LOCAL,ROM,FIXUP
+```
+
+Candidate policy names should describe sources, not implementation details:
+
+```text
+LOCAL   current ASM session symbols
+RCAT    resident catalog entries, such as exported executable names
+RREC    resident records, such as richer symbol/fixup records
+ROM     shorthand for the current resident executable lookup path
+FIXUP   create a pending forward reference when legal
+```
+
+This would let bench code temporarily force resident names to win, disable
+resident lookup for a self-contained program, or separate future catalog classes
+without changing the core assembler default. Keep it parked until RCAT/RREC
+formats are concrete; today `LOCAL,ROM,FIXUP` is the proven behavior.
+
 When ASM is old enough to assemble ASM/HIMON-scale source, symbol pressure may
 require temporary RAM tables, flash workspace, compressed resident tables, or a
 mix of those. That is a future storage design problem. V1 keeps only the current

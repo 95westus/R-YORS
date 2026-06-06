@@ -18,12 +18,14 @@
                         XDEF            FNV1A_INIT_FNV
                         XDEF            FNV1A_UPDATE_A_FAST_FNV
                         XDEF            SYS_READ_CSTRING_ECHO_UPPER_FNV
+                        XDEF            BIO_FTDI_PUT_CSTR_FNV
                         XDEF            SYS_PRINT_IO_SLOT_SKIP
 
                         XREF            BIO_FTDI_READ_BYTE_BLOCK
                         XREF            BIO_FTDI_WRITE_BYTE_BLOCK
                         XREF            SYS_INIT
                         XREF            SYS_FLUSH_RX
+                        XREF            SYS_WRITE_CSTRING
                         XREF            SYS_WRITE_HEX_BYTE
                         XREF            SYS_WRITE_CRLF
                         XREF            SYS_VEC_ENTRY_NMI
@@ -3538,6 +3540,11 @@ SYS_READ_CSTRING_ECHO_UPPER_FNV:
                         DW              HIM_READ_LINE_ECHO_UPPER
                         DW              TXT_SYS_READ_CSTRING_ECHO_UPPER
 
+BIO_FTDI_PUT_CSTR_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$42,$0F,$FA,$AE,CMD_HASH_KIND_EXEC_TEXT ; BIO_FTDI_PUT_CSTR $AEFA0F42 EXEC+TEXT
+                        DW              SYS_WRITE_CSTRING
+                        DW              TXT_BIO_FTDI_PUT_CSTR
+
 HIMON_VERSION_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$80,$1A,$05,$B0,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; HIMON $B0051A80 EXEC+CONFIRM
                         DW              START
@@ -3557,6 +3564,7 @@ TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
 TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)
 TXT_SYS_READ_CSTRING_ECHO_UPPER:
                         DB              "READ LIN",('E'+$80)
+TXT_BIO_FTDI_PUT_CSTR:   DB              "PUT CST",('R'+$80)
 TXT_STR8:                DB              "STR8: BOOTLOADE",('R'+$80)
 MSG_PROMPT:              DB              ('>'+$80)
 MSG_UNKNOWN:             DB              ('?'+$80)
