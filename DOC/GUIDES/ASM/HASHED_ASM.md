@@ -2446,6 +2446,22 @@ the line is stored in an ASM input buffer
 `;` starts a comment outside quotes
 ```
 
+Future cooked echo/listing mode:
+
+```text
+raw input:     MAIN    LDA #$3F
+cooked print:  MAIN        LDA     #$3F
+```
+
+Instead of echoing the terminal input byte-for-byte, a future ASM-facing input
+driver or listing mode can reprint the parsed statement in stable columns.
+Labels, mnemonics/directives, and operands should each find their own display
+column after ASM has tokenized and classified the line. This is presentation,
+not source grammar: the assembler should still consume the same raw line, then
+print the cooked form from the parsed statement record. The useful version is
+small and boring: enough alignment to make pasted sessions readable, without
+turning the paste driver into a full listing generator.
+
 ASM proper line grammar is:
 
 ```text
