@@ -309,12 +309,12 @@ ASM 2.66 runtime paste-driver host gate on 2026-06-05:
 make -C SRC asm-test
 ```
 
-The stripped ASM runtime now has a separate paste driver wrapper. It starts an
-ASM session at `$7000`, reads echoed uppercase lines through the ROM
+ASM 2.66 adds a separate paste driver wrapper for the stripped runtime. It
+starts an ASM session at `$7000`, reads echoed uppercase lines through the ROM
 `SYS_READ_CSTRING_ECHO_UPPER` service, feeds each non-empty line to
 `ASM_ASSEMBLE_LINE`, prints `OK PC=$hhhh` after accepted lines, and stops after
 an accepted `END` with `ASM RT PASTE OK`. A single `.` line exits without
-finalizing; the first ASM error prints `ERR=$xx PC=$hhhh` and returns to HIMON.
+finalizing; 2.66 hex-only errors print `ERR=$xx PC=$hhhh` and return to HIMON.
 This keeps the ASM runtime readless while giving the board a pasteable
 front-end again. The host gate passes with
 `asm-v1-runtime-paste-2000.s19` at `$2A0A` bytes. The hardware retest should
@@ -467,6 +467,17 @@ GO 7000
 >
 ```
 
+Hardware-proven ASM 2.69 runtime paste named-error recovery on 2026-06-06:
+
+```text
+ASM>         BRA ECHO
+OK PC=$704E
+ASM>
+ASM> BVF $4FRE
+ERR=$03 BAD OPER PC=$704E
+ASM>
+```
+
 ## Current Acceptance
 
 `ASMTEST_3000.asm` is now both the source-language acceptance sample and the
@@ -532,6 +543,18 @@ The transcript proves the sample accepts single characters and a longer
 `HELLO WORLD` line, echoes each after `=> `, and returns to HIMON on `.`.
 This also captures the practical ASM v1 fixup-table lesson: keep pasted bench
 toys below the current eight outstanding forward-fixup proof limit.
+
+ASM 2.69 makes paste-driver failures self-describing and recoverable without
+changing ASM core status codes. The wrapper still prints the stable hex byte,
+but assembly errors now include the mnemonic status name before the PC:
+`ERR=$09 BAD FIX PC=$hhhh`, `ERR=$08 BAD SYM PC=$hhhh`, and so on. After the
+first ASM error, the wrapper calls `SYS_FLUSH_RX`, opens a fresh `$7000`
+session with `ASM_BEGIN`, and drops back to `ASM> ` instead of returning the
+rest of a pasted source burst to HIMON. This keeps board transcripts compact
+while making table-limit and parser failures readable at the paste prompt. The
+host gate passes with `asm-v1-runtime-paste-2000.s19` at `$2B53` bytes. The
+hardware transcript proves `ERR=$03 BAD OPER PC=$704E` for an invalid
+`BVF $4FRE` line and an immediate return to `ASM> `.
 
 Current checker requirements:
 

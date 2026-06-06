@@ -4,6 +4,34 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-06 ASM 2.69 Runtime Paste Named-Error Recovery Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The updated
+`asm-v1-runtime-paste-2000.s19` image had accepted the line-echo sample through
+`BRA ECHO`, then received an intentionally bad ASM line.
+
+Validated:
+
+- Paste-driver ASM errors now print both the stable status byte and the
+  mnemonic status name.
+- The invalid `BVF $4FRE` line reports `ERR=$03 BAD OPER PC=$704E`.
+- The paste driver returns to `ASM> ` instead of dropping back to HIMON.
+- This transcript proves the hardware-visible reprompt path. A longer pasted
+  burst can separately prove how much pending RX data was drained.
+
+### Transcript Extract
+
+```text
+ASM>         BRA ECHO
+OK PC=$704E
+ASM>
+ASM> BVF $4FRE
+ERR=$03 BAD OPER PC=$704E
+ASM>
+```
+
 ## 2026-06-06 ASM 2.68 Runtime Paste Line Echo Proof
 
 ### Summary

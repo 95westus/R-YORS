@@ -15,6 +15,7 @@
 
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
+                        XREF            SYS_FLUSH_RX
                         XREF            SYS_READ_CSTRING_ECHO_UPPER
                         XREF            SYS_WRITE_CSTRING
                         XREF            SYS_WRITE_CRLF
@@ -24,6 +25,19 @@ ASM_BEGINF_HAVE_PC     EQU             $01
 ASMRP_TARGET_LO        EQU             $00
 ASMRP_TARGET_HI        EQU             $70
 ASMRP_RESULT           EQU             $67F2
+
+ASMRP_STATUS_OK        EQU             $00
+ASMRP_STATUS_BAD_MNEM  EQU             $01
+ASMRP_STATUS_BAD_DIR   EQU             $02
+ASMRP_STATUS_BAD_OPER  EQU             $03
+ASMRP_STATUS_BAD_MODE  EQU             $04
+ASMRP_STATUS_BAD_WIDTH EQU             $05
+ASMRP_STATUS_BAD_RANGE EQU             $06
+ASMRP_STATUS_BAD_LINE  EQU             $07
+ASMRP_STATUS_BAD_SYM   EQU             $08
+ASMRP_STATUS_BAD_FIX   EQU             $09
+ASMRP_STATUS_LOCAL_NYI EQU             $0A
+ASMRP_STATUS_RJOIN     EQU             $0B
 
                         CODE
 START:
@@ -82,6 +96,8 @@ ASMRP_ASSEMBLE:
                         LDX             #<MSG_ERR
                         LDY             #>MSG_ERR
                         JSR             ASMRP_PRINT_STATUS_PC_LINE
+                        JSR             ASMRP_RECOVER_AFTER_ERROR
+                        BCS             ASMRP_LOOP
                         CLC
                         RTS
 
@@ -113,6 +129,7 @@ ASMRP_PRINT_STATUS_PC_LINE:
                         JSR             ASMRP_PRINT
                         LDA             ASMRP_RESULT
                         JSR             SYS_WRITE_HEX_BYTE
+                        JSR             ASMRP_PRINT_STATUS_NAME
                         LDX             #<MSG_PC
                         LDY             #>MSG_PC
                         BRA             ASMRP_PRINT_PC_TAIL
@@ -135,6 +152,101 @@ ASMRP_PRINT_LINE:
 
 ASMRP_PRINT:
                         JMP             SYS_WRITE_CSTRING
+
+ASMRP_RECOVER_AFTER_ERROR:
+                        JSR             SYS_FLUSH_RX
+
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #ASMRP_TARGET_LO
+                        LDY             #ASMRP_TARGET_HI
+                        JSR             ASM_BEGIN
+                        BCS             ASMRP_RECOVER_OK
+
+                        STA             ASMRP_RESULT
+                        JSR             ASMRP_PRINT_FAIL
+                        CLC
+                        RTS
+ASMRP_RECOVER_OK:
+                        SEC
+                        RTS
+
+ASMRP_PRINT_STATUS_NAME:
+                        LDA             ASMRP_RESULT
+                        CMP             #ASMRP_STATUS_OK
+                        BEQ             ASMRP_STATUS_NAME_OK
+                        CMP             #ASMRP_STATUS_BAD_MNEM
+                        BEQ             ASMRP_STATUS_NAME_BAD_MNEM
+                        CMP             #ASMRP_STATUS_BAD_DIR
+                        BEQ             ASMRP_STATUS_NAME_BAD_DIR
+                        CMP             #ASMRP_STATUS_BAD_OPER
+                        BEQ             ASMRP_STATUS_NAME_BAD_OPER
+                        CMP             #ASMRP_STATUS_BAD_MODE
+                        BEQ             ASMRP_STATUS_NAME_BAD_MODE
+                        CMP             #ASMRP_STATUS_BAD_WIDTH
+                        BEQ             ASMRP_STATUS_NAME_BAD_WIDTH
+                        CMP             #ASMRP_STATUS_BAD_RANGE
+                        BEQ             ASMRP_STATUS_NAME_BAD_RANGE
+                        CMP             #ASMRP_STATUS_BAD_LINE
+                        BEQ             ASMRP_STATUS_NAME_BAD_LINE
+                        CMP             #ASMRP_STATUS_BAD_SYM
+                        BEQ             ASMRP_STATUS_NAME_BAD_SYM
+                        CMP             #ASMRP_STATUS_BAD_FIX
+                        BEQ             ASMRP_STATUS_NAME_BAD_FIX
+                        CMP             #ASMRP_STATUS_LOCAL_NYI
+                        BEQ             ASMRP_STATUS_NAME_LOCAL_NYI
+                        CMP             #ASMRP_STATUS_RJOIN
+                        BEQ             ASMRP_STATUS_NAME_RJOIN
+                        LDX             #<MSG_STATUS_UNKNOWN
+                        LDY             #>MSG_STATUS_UNKNOWN
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_OK:
+                        LDX             #<MSG_STATUS_OK
+                        LDY             #>MSG_STATUS_OK
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_BAD_MNEM:
+                        LDX             #<MSG_STATUS_BAD_MNEM
+                        LDY             #>MSG_STATUS_BAD_MNEM
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_BAD_DIR:
+                        LDX             #<MSG_STATUS_BAD_DIR
+                        LDY             #>MSG_STATUS_BAD_DIR
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_BAD_OPER:
+                        LDX             #<MSG_STATUS_BAD_OPER
+                        LDY             #>MSG_STATUS_BAD_OPER
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_BAD_MODE:
+                        LDX             #<MSG_STATUS_BAD_MODE
+                        LDY             #>MSG_STATUS_BAD_MODE
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_BAD_WIDTH:
+                        LDX             #<MSG_STATUS_BAD_WIDTH
+                        LDY             #>MSG_STATUS_BAD_WIDTH
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_BAD_RANGE:
+                        LDX             #<MSG_STATUS_BAD_RANGE
+                        LDY             #>MSG_STATUS_BAD_RANGE
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_BAD_LINE:
+                        LDX             #<MSG_STATUS_BAD_LINE
+                        LDY             #>MSG_STATUS_BAD_LINE
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_BAD_SYM:
+                        LDX             #<MSG_STATUS_BAD_SYM
+                        LDY             #>MSG_STATUS_BAD_SYM
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_BAD_FIX:
+                        LDX             #<MSG_STATUS_BAD_FIX
+                        LDY             #>MSG_STATUS_BAD_FIX
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_LOCAL_NYI:
+                        LDX             #<MSG_STATUS_LOCAL_NYI
+                        LDY             #>MSG_STATUS_LOCAL_NYI
+                        JMP             ASMRP_PRINT
+ASMRP_STATUS_NAME_RJOIN:
+                        LDX             #<MSG_STATUS_RJOIN
+                        LDY             #>MSG_STATUS_RJOIN
+                        JMP             ASMRP_PRINT
 
 ASMRP_IS_DOT:
                         LDA             ASMRP_LINE_BUF
@@ -196,6 +308,19 @@ MSG_FAIL:               DB              "BEGIN=$",0
 MSG_PC:                 DB              " PC=$",0
 MSG_DONE:               DB              "ASM RT PASTE OK",0
 MSG_BYE:                DB              "ASM RT PASTE BYE",0
+MSG_STATUS_OK:          DB              " OK",0
+MSG_STATUS_BAD_MNEM:    DB              " BAD MNEM",0
+MSG_STATUS_BAD_DIR:     DB              " BAD DIR",0
+MSG_STATUS_BAD_OPER:    DB              " BAD OPER",0
+MSG_STATUS_BAD_MODE:    DB              " BAD MODE",0
+MSG_STATUS_BAD_WIDTH:   DB              " BAD WIDTH",0
+MSG_STATUS_BAD_RANGE:   DB              " BAD RANGE",0
+MSG_STATUS_BAD_LINE:    DB              " BAD LINE",0
+MSG_STATUS_BAD_SYM:     DB              " BAD SYM",0
+MSG_STATUS_BAD_FIX:     DB              " BAD FIX",0
+MSG_STATUS_LOCAL_NYI:   DB              " LOCAL NYI",0
+MSG_STATUS_RJOIN:       DB              " RJOIN",0
+MSG_STATUS_UNKNOWN:     DB              " STATUS",0
 
 ASMRP_PC_LO:            DB              $00
 ASMRP_PC_HI:            DB              $00
