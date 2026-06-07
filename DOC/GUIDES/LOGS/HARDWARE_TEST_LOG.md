@@ -4,6 +4,226 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-07 ASM 2.79 Edit-Line Paste Wrapper Board Smoke
+
+### Summary
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` at `$2000` with size `$2ECB` after the paste
+wrapper switched from `SYS_READ_CSTRING_ECHO_UPPER` to
+`SYS_READ_CSTRING_EDIT_ECHO_UPPER`.
+
+Validated:
+
+- The edit-line paste wrapper starts normally and accepts source lines.
+- `.T` still prints live symbol/fixup tables mid-session.
+- `END` still prints the final table block before `ASM RT PASTE OK`.
+- The emitted `$7000` program runs and fills `$7100-$71FF` with `$4D`.
+
+The earlier `$2D55` run in the same operator transcript captured the old reader
+returning `READ=$08` after Backspace. This `$2ECB` run proves the paste wrapper
+can use the editable reader on board without breaking the table/fixup workflow.
+The operator then confirmed Backspace and Delete on the same board with the
+short edit-key proof below.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=2ECB GO=2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA #$4D
+OK PC=$7002
+ASM> LDX #$00
+OK PC=$7004
+ASM> LOOP: STA TABLE,X
+OK PC=$7007
+ASM> .T
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7004  01 04 0E 0004 00  0000  LOOP
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 06   00  7005 7007 TABLE
+ASM> INX
+OK PC=$7008
+ASM> BEQ FORWARD
+OK PC=$700A
+ASM> .T
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7004  01 04 0E 0004 00  0000  LOOP
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 06   00  7005 7007 TABLE
+01 01 07   00  7009 700A FORWARD
+ASM> BRA LOOP
+OK PC=$700C
+ASM> FORWARD:
+OK PC=$700C
+ASM> RTS
+OK PC=$700D
+ASM> ORG $7100
+OK PC=$7100
+ASM> TABLE:
+OK PC=$7100
+ASM> END
+OK PC=$7100
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7004  01 04 0F 0004 01  0007  LOOP
+01 01 700C  01 04 0E 0008 00  0000  FORWARD
+02 01 7100  01 04 0E 000B 00  0000  TABLE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 06   00  7005 7007 TABLE
+01 02 07   00  7009 700A FORWARD
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=C0 Y=0F P=75 S=FD NV-BdIzC
+```
+
+The emitted program was then executed:
+
+```text
+>G 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=4D X=00 Y=30 P=77 S=FD NV-BdIZC
+>D 7000 71FF
+7100: 4D 4D 4D 4D 4D 4D 4D 4D | 4D 4D 4D 4D 4D 4D 4D 4D | MMMMMMMMMMMMMMMM
+7110: 4D 4D 4D 4D 4D 4D 4D 4D | 4D 4D 4D 4D 4D 4D 4D 4D | MMMMMMMMMMMMMMMM
+... $7120-$71FF also filled with $4D ...
+>
+```
+
+Edit-key confirmation:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> OR G
+... Backspace was used ...
+ASM> ORG $7600
+OK PC=$7600
+
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7600
+... Backspace, then Delete, then 55 ...
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7655
+OK PC=$7655
+ASM>
+```
+
+## 2026-06-07 ASM 2.78 Paste Table Printer Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board ran the ASM runtime
+paste wrapper from `$2000` after adding `ASM_PRINT_TABLES` to the paste path.
+The wrapper printed tables for `.T`, printed tables after failed `END`, and
+printed tables after successful `END` before `ASM RT PASTE OK`.
+
+Validated:
+
+- `.T` is a paste-driver command, not ASM source, and prints empty or populated
+  symbol/fixup rows mid-session.
+- Pending fixups are visible while source is still being entered.
+- Failed `END` keeps the original `BAD FIX` return status but prints the table
+  block after quenching RX.
+- Successful `END` prints the final table block before `ASM RT PASTE OK`.
+
+The same transcript also captured the old line reader returning `READ=$08`
+after Backspace, which led to the follow-up 2.79 switch to the existing editable
+line reader.
+
+### Transcript Extract
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> .T
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM> ORG $7000
+OK PC=$7000
+ASM> MAIN LDA #$4D
+OK PC=$7002
+ASM> STA TABLE,X
+OK PC=$7007
+ASM> .T
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7000  01 04 0E 0002 00  0000  MAIN
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 06   00  7005 7007 TABLE
+...
+ASM> END
+ERR=$09 BAD FIX PC=$7100
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7000  01 04 0F 0002 01  0008  MAIN
+01 01 7002  01 04 0E 0003 00  0000  INIT
+02 01 7100  01 04 0E 000A 00  0000  TABLE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 06   00  7005 7007 TABLE
+01 01 07   00  7009 700A FORWARD
+
+#GO# ENTRY=2000
+RET A=09 X=00 Y=71 P=74 S=FD NV-BdIzc
+```
+
+Successful finalization in the same operator session:
+
+```text
+ASM> FORWARD: RTS
+OK PC=$700D
+ASM> ORG $7100
+OK PC=$7100
+ASM> TABLE:
+OK PC=$7100
+ASM> END
+OK PC=$7100
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7000  01 04 0F 0002 01  0007  MAIN
+01 01 700C  01 04 0E 0008 00  0000  FORWARD
+02 01 7100  01 04 0E 000A 00  0000  TABLE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 06   00  7005 7007 TABLE
+01 02 07   00  7009 700A FORWARD
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=4A Y=0F P=75 S=FD NV-BdIzC
+>
+```
+
 ## 2026-06-07 ASM 2.77 Table Printer Board Proof
 
 ### Summary

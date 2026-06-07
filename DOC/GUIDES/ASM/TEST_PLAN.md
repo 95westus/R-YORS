@@ -786,6 +786,171 @@ RJOINASM RT ASMTEST OK
 >
 ```
 
+ASM 2.78 brings the same table printer into the runtime paste wrapper. The
+wrapper now recognizes a paste-driver command line `.T` (with optional trailing
+space, tab, or comment) and prints `ASM TABLES` without feeding that line to
+the assembler. An accepted `END` prints the tables before `ASM RT PASTE OK`.
+If `END` itself fails, for example because unresolved or out-of-range fixups
+remain, the wrapper first prints the existing `ERR=$xx ... PC=$hhhh` line,
+quenches RX, prints the tables, and then returns to HIMON with the original
+assembly failure status in `A` and current PC in `X/Y`. Non-`END` assembly
+errors stay compact and only quench/return.
+
+The plain `.` line still exits without finalizing the session or printing
+tables. Table-print failure is non-fatal to the paste wrapper and prints
+`TABLE=$xx`; normal assembler failure returns keep their original status. The
+host gate passes with `make -C SRC asm-test`; the updated
+`asm-v1-runtime-paste-2000.s19` total is `$2D55`.
+
+Hardware-proven ASM 2.78 paste table printer on 2026-06-07:
+
+```text
+ASM RT PASTE
+ASM> .T
+ASM TABLES
+SYMBOLS
+FIXUPS
+ASM> STA TABLE,X
+OK PC=$7007
+ASM> .T
+ASM TABLES
+SYMBOLS
+00 01 7000  01 04 0E 0002 00  0000  MAIN
+FIXUPS
+00 01 06   00  7005 7007 TABLE
+ASM> END
+ERR=$09 BAD FIX PC=$7100
+ASM TABLES
+SYMBOLS
+00 01 7000  01 04 0F 0002 01  0007  MAIN
+01 01 700C  01 04 0E 0008 00  0000  FORWARD
+02 01 7100  01 04 0E 000A 00  0000  TABLE
+FIXUPS
+00 02 06   00  7005 7007 TABLE
+01 01 07   00  7009 700A FORWARD
+```
+
+The same board session then resolved both pending fixups and showed accepted
+`END` printing the final table block before the success banner:
+
+```text
+ASM> FORWARD: RTS
+OK PC=$700D
+ASM> ORG $7100
+OK PC=$7100
+ASM> TABLE:
+OK PC=$7100
+ASM> END
+OK PC=$7100
+ASM TABLES
+SYMBOLS
+00 01 7000  01 04 0F 0002 01  0007  MAIN
+01 01 700C  01 04 0E 0008 00  0000  FORWARD
+02 01 7100  01 04 0E 000A 00  0000  TABLE
+FIXUPS
+00 02 06   00  7005 7007 TABLE
+01 02 07   00  7009 700A FORWARD
+ASM RT PASTE OK
+>
+```
+
+ASM 2.79 switches the runtime paste wrapper's input call from
+`SYS_READ_CSTRING_ECHO_UPPER` to `SYS_READ_CSTRING_EDIT_ECHO_UPPER`. This uses
+the existing editable echoed uppercase line input path, which handles
+Backspace as `$08` or `$7F`, ANSI Delete (`ESC[3~`), and left/right cursor
+editing. The host gate passes with `make -C SRC asm-test`; the updated
+`asm-v1-runtime-paste-2000.s19` total is `$2ECB`.
+
+Hardware-smoke ASM 2.79 edit-line paste wrapper on 2026-06-07:
+
+```text
+L OK=2ECB GO=2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA #$4D
+OK PC=$7002
+ASM> LDX #$00
+OK PC=$7004
+ASM> LOOP: STA TABLE,X
+OK PC=$7007
+ASM> .T
+ASM TABLES
+SYMBOLS
+00 01 7004  01 04 0E 0004 00  0000  LOOP
+FIXUPS
+00 01 06   00  7005 7007 TABLE
+ASM> INX
+OK PC=$7008
+ASM> BEQ FORWARD
+OK PC=$700A
+ASM> .T
+ASM TABLES
+SYMBOLS
+00 01 7004  01 04 0E 0004 00  0000  LOOP
+FIXUPS
+00 01 06   00  7005 7007 TABLE
+01 01 07   00  7009 700A FORWARD
+ASM> BRA LOOP
+OK PC=$700C
+ASM> FORWARD:
+OK PC=$700C
+ASM> RTS
+OK PC=$700D
+ASM> ORG $7100
+OK PC=$7100
+ASM> TABLE:
+OK PC=$7100
+ASM> END
+OK PC=$7100
+ASM TABLES
+SYMBOLS
+00 01 7004  01 04 0F 0004 01  0007  LOOP
+01 01 700C  01 04 0E 0008 00  0000  FORWARD
+02 01 7100  01 04 0E 000B 00  0000  TABLE
+FIXUPS
+00 02 06   00  7005 7007 TABLE
+01 02 07   00  7009 700A FORWARD
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=C0 Y=0F P=75 S=FD NV-BdIzC
+>G 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=4D X=00 Y=30 P=77 S=FD NV-BdIZC
+```
+
+The preceding `$2D55` board run captured the old reader returning `READ=$08`
+when Backspace was sent. The `$2ECB` run proves the paste wrapper can use the
+editable line reader on board while preserving `.T`, final table printing,
+fixup resolution, and emitted-code execution.
+
+Follow-up operator-confirmed edit-key proof on the same board:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> OR G
+... Backspace was used ...
+ASM> ORG $7600
+OK PC=$7600
+
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7600
+... Backspace, then Delete, then 55 ...
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7655
+OK PC=$7655
+ASM>
+```
+
 Current checker requirements:
 
 ```text

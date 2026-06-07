@@ -15,9 +15,10 @@
 
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
+                        XREF            ASM_PRINT_TABLES
                         XREF            SYS_FLUSH_RX
                         XREF            SYS_READ_CHAR_TIMEOUT_SPINDOWN
-                        XREF            SYS_READ_CSTRING_ECHO_UPPER
+                        XREF            SYS_READ_CSTRING_EDIT_ECHO_UPPER
                         XREF            SYS_WRITE_CSTRING
                         XREF            SYS_WRITE_CRLF
                         XREF            SYS_WRITE_HEX_BYTE
@@ -67,7 +68,7 @@ ASMRP_LOOP:
 
                         LDX             #<ASMRP_LINE_BUF
                         LDY             #>ASMRP_LINE_BUF
-                        JSR             SYS_READ_CSTRING_ECHO_UPPER
+                        JSR             SYS_READ_CSTRING_EDIT_ECHO_UPPER
                         BCS             ASMRP_READ_OK
 
                         STA             ASMRP_RESULT
@@ -78,6 +79,13 @@ ASMRP_LOOP:
 
 ASMRP_READ_OK:
                         BEQ             ASMRP_LOOP
+                        JSR             ASMRP_IS_TABLES
+                        BCC             ASMRP_CHECK_DOT
+
+                        JSR             ASMRP_PRINT_TABLES_CMD
+                        JMP             ASMRP_LOOP
+
+ASMRP_CHECK_DOT:
                         JSR             ASMRP_IS_DOT
                         BCC             ASMRP_ASSEMBLE
 
@@ -99,6 +107,8 @@ ASMRP_ASSEMBLE:
                         LDX             #<MSG_ERR
                         LDY             #>MSG_ERR
                         JSR             ASMRP_PRINT_STATUS_PC_LINE
+                        JSR             ASMRP_IS_END
+                        BCS             ASMRP_ABORT_WITH_TABLES
                         JMP             ASMRP_ABORT_WITH_RESULT
 
 ASMRP_ACCEPTED:
@@ -108,6 +118,7 @@ ASMRP_ACCEPTED:
                         JSR             ASMRP_IS_END
                         BCC             ASMRP_LOOP
 
+                        JSR             ASMRP_PRINT_TABLES_CMD
                         LDX             #<MSG_DONE
                         LDY             #>MSG_DONE
                         JSR             ASMRP_PRINT_LINE
@@ -155,11 +166,17 @@ ASMRP_PRINT:
 
 ASMRP_ABORT_WITH_RESULT:
                         JSR             ASMRP_QUENCH_RX
+ASMRP_RETURN_RESULT:
                         LDA             ASMRP_RESULT
                         LDX             ASMRP_PC_LO
                         LDY             ASMRP_PC_HI
                         CLC
                         RTS
+
+ASMRP_ABORT_WITH_TABLES:
+                        JSR             ASMRP_QUENCH_RX
+                        JSR             ASMRP_PRINT_TABLES_CMD
+                        BRA             ASMRP_RETURN_RESULT
 
 ASMRP_QUENCH_RX:
                         JSR             SYS_FLUSH_RX
@@ -182,6 +199,53 @@ ASMRP_STATUS_NAME_HAVE_INDEX:
                         PLA
                         TAX
                         JMP             ASMRP_PRINT
+
+ASMRP_PRINT_TABLES_CMD:
+                        JSR             ASM_PRINT_TABLES
+                        BCS             ASMRP_TABLES_DONE
+                        PHA
+                        LDX             #<MSG_TABLE
+                        LDY             #>MSG_TABLE
+                        JSR             ASMRP_PRINT
+                        PLA
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JMP             SYS_WRITE_CRLF
+ASMRP_TABLES_DONE:
+                        RTS
+
+ASMRP_IS_TABLES:
+                        LDY             #$00
+ASMRP_TABLES_SKIP:
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #' '
+                        BEQ             ASMRP_TABLES_ADV
+                        CMP             #$09
+                        BNE             ASMRP_TABLES_DOT
+ASMRP_TABLES_ADV:
+                        INY
+                        BRA             ASMRP_TABLES_SKIP
+ASMRP_TABLES_DOT:
+                        CMP             #'.'
+                        BNE             ASMRP_TABLES_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'T'
+                        BNE             ASMRP_TABLES_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        BEQ             ASMRP_TABLES_YES
+                        CMP             #' '
+                        BEQ             ASMRP_TABLES_YES
+                        CMP             #$09
+                        BEQ             ASMRP_TABLES_YES
+                        CMP             #';'
+                        BEQ             ASMRP_TABLES_YES
+ASMRP_TABLES_NO:
+                        CLC
+                        RTS
+ASMRP_TABLES_YES:
+                        SEC
+                        RTS
 
 ASMRP_IS_DOT:
                         LDA             ASMRP_LINE_BUF
@@ -240,6 +304,7 @@ MSG_OK:                 DB              "OK",0
 MSG_ERR:                DB              "ERR=$",0
 MSG_READ:               DB              "READ=$",0
 MSG_FAIL:               DB              "BEGIN=$",0
+MSG_TABLE:              DB              "TABLE=$",0
 MSG_PC:                 DB              " PC=$",0
 MSG_DONE:               DB              "ASM RT PASTE OK",0
 MSG_BYE:                DB              "ASM RT PASTE BYE",0
