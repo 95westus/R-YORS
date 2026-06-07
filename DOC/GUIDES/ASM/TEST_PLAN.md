@@ -50,6 +50,16 @@ For this proof, `ORG $6800` in the source sample owns placement. The WDC linker
 is run without a `-c` origin override so later dynamic linking policy can remain
 separate.
 
+Current opcode/addressing coverage audit:
+
+```text
+make -C SRC asm-opcode-coverage
+```
+
+This is a host-side source audit of `ASM_FIND_OPCODE`. It verifies the active
+v1 mnemonic/addressing rows and opcode bytes, and fails if a row is added,
+removed, or silently changes without updating the audit.
+
 Current ASM core build:
 
 ```text
@@ -950,6 +960,22 @@ ASM> ORG $7655
 OK PC=$7655
 ASM>
 ```
+
+ASM 2.80 opcode/addressing coverage audit on 2026-06-07:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.80 adds a host-side opcode coverage audit before the build smoke gates.
+The audit reads `SRC/ASM/asm-v1-core.asm`, extracts `ASM_FIND_OPCODE`, and
+verifies the current v1 active surface: `RTS`, `INX`, immediate `LDX/LDY/CPX`,
+`LDA/EOR` immediate/zero-page/absolute/indexed-X rows, `STA/STZ`
+zero-page/absolute/indexed-X rows, `ASL` implied/accumulator/zero-page/
+absolute/indexed-X rows, `JSR` absolute, and the `BCC/BCS/BEQ/BMI/BNE/BPL/BRA/
+BVC/BVS` relative rows. This is an audit gate only; it does not add new
+addressing modes or change paste behavior. The host gate passes; the audit
+reports `rows=39` and `mnemonics=20`.
 
 Current checker requirements:
 
@@ -3417,6 +3443,7 @@ make -C SRC asm-test
 Current `asm-test` expands to:
 
 ```text
+make -C SRC asm-opcode-coverage
 make -C SRC asmtest-6800-wdc-check
 make -C SRC asm-v1-core
 make -C SRC asm-v1-runtime
