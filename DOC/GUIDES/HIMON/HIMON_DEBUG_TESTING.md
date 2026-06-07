@@ -215,12 +215,34 @@ for retrying or skipping an instruction. Mutating `S` is sharp but legitimate
 for an expert monitor. If `S` remains a step alias in a given build, it should
 follow `N` instead of growing a separate syntax.
 
-`G` currently accepts only an address and performs a raw `JMP`. If register
-arguments are added, prefer treating the address argument as the new `PC` and
-then resuming through the existing context/`RTI` path instead of hand-loading
-registers before a `JMP`. That keeps `A`, `X`, `Y`, `P`, `S`, and `PC` behavior
-consistent with `X`. `G PC=hhhh` is unnecessary because `G hhhh` already names
-the target address.
+`G` currently accepts only an address. It starts a fresh execution, so it clears
+the saved BRK/NMI marker before transferring to the requested address. That
+lets a returning program print fresh `#GO# ... RET` telemetry even if the
+operator previously stopped in a trap. Later top-level input aborts can create a
+new BRK context, so `R` is not guaranteed to stay empty after the run. Use `X`,
+not `G`, to preserve and resume the saved trap context.
+
+If register arguments are added, prefer treating the address argument as the
+new `PC` and then resuming through the existing context/`RTI` path instead of
+hand-loading registers before a `JMP`. That keeps `A`, `X`, `Y`, `P`, `S`, and
+`PC` behavior consistent with `X`. `G PC=hhhh` is unnecessary because `G hhhh`
+already names the target address.
+
+Fresh-run policy check:
+
+```text
+load a returning RAM proof at $2000
+create a top-level abort trap, for example Ctrl-C at an empty HIMON prompt
+G 2000 should run the proof and print a fresh #GO# ... RET block
+R should not show the old trap; it may show NOCTX or a later top-level BRK 03
+```
+
+Board proof on `HIMON V 00.0606(2155)` first repeated the ASM runtime paste
+failure path and showed manual `G 2000` returning through `#GO# ... RET`. A
+follow-up in the same operator transcript created a live `NMI PC=40D2` context
+inside the ASM paste prompt, then `G 2000` still returned through fresh
+`#GO# ... RET`. A follow-up `R` printed `BRK 03 PC=C0D1`, which is the
+top-level HIMON input abort path, not the earlier NMI context.
 
 Keep raw `P=bb` as the exact status-register form. A friendlier future `F=`
 syntax can be added as sugar for individual flags, matching the printed flag

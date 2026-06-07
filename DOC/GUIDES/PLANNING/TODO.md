@@ -65,8 +65,9 @@
   every caller is audited. Bounded waits should use the existing timeout-shaped
   routines or small wrappers with an explicit loop-delay contract, leaving room
   for a timer backend later.
-- Promote the ASM runtime paste `ASMRP_QUENCH_RX` idea into a real shared
-  input-drain contract after the board proof settles. The reusable behavior is
+- ASM 2.76 deferred: promote the runtime paste `ASMRP_QUENCH_RX` idea into
+  a real shared input-drain contract after the board proof settles. The
+  reusable behavior is
   "drain current RX, then keep consuming until the sender has been quiet for an
   explicit idle window." A directly callable routine probably belongs at
   `SYS_QUENCH_RX` or concrete `BIO_FTDI_QUENCH_RX`, because it performs I/O.
@@ -74,12 +75,6 @@
   flush/read-timeout callbacks. First users: ASM paste abort, load abort,
   monitor command parse failure after pasted bursts, and future host-transfer
   recovery.
-- Decide HIMON's operator policy for ordinary `G` returns while a BRK/NMI
-  context is still valid. Current `CMD_EXEC_ADDR` preserves the active trap
-  context and suppresses fresh `#GO# ... RET` telemetry while `NMI_CTX_FLAG` is
-  set. Options include an explicit clear-context command, a separate
-  last-return slot, or keeping the current trap-first rule and documenting it at
-  the command help layer.
 - Add a tiny sorted-list helper for monitor tables such as breakpoint listing.
   `B L` may print slot order for now, but sorted address order will be easier
   to read once multiple breakpoints are active. For the current four breakpoint

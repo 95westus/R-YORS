@@ -634,9 +634,10 @@ ERR=$09 BAD FIX PC=$704E
 In that transcript, only the first failure prints an explicit `RET` block
 because it was launched by `L G` before any trap context was active. The later
 manual `G 2000` failures still return with `A=status`, `X/Y=current PC`, and
-`C=0`, but a separate top-level `BRK 03 PC=C0D1` left HIMON's trap context
-valid; current `CMD_EXEC_ADDR` preserves that context and suppresses ordinary
-return telemetry while `NMI_CTX_FLAG` is set.
+`C=0`, but a separate top-level `BRK 03 PC=C0D1` left that ROM's HIMON trap
+context valid; its `CMD_EXEC_ADDR` preserved the context and suppressed
+ordinary return telemetry while `NMI_CTX_FLAG` was set. Later HIMON work changes
+`G` to start a fresh run by clearing the saved trap context before transfer.
 
 The same transcript later shows `ERR=$06 BAD RANGE PC=$7403` after a second
 `ORG`. That is expected single-session fixup behavior, not stale state after a
@@ -666,6 +667,122 @@ RJOINASM RT ASMTEST OK
 >D 7100 FF
 7100: 52 2D 59 4F 52 53 20 41 | 53 4D 20 54 45 53 54 2E | R-YORS ASM TEST.
 7110: 0F 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+```
+
+ASM 2.76 is intentionally deferred. The quench behavior proven in 2.72 should
+be promoted later into a shared input-drain contract, probably named
+`SYS_QUENCH_RX` or concrete `BIO_FTDI_QUENCH_RX`, after the paste/load/monitor
+call sites settle enough to share the same idle-window policy.
+
+ASM 2.77 adds `ASM_PRINT_TABLES`, an exported ASM v1 runtime routine that
+prints the current RAM session symbol and fixup rows. The runtime asmtest
+wrapper calls it immediately after `ASM_END`, before patching the resident
+`BIO_FTDI_PUT_CSTR` expected operand and running the emitted `$7000` program.
+The printer uses the same resident output path as the compact report and emits
+serial-friendly rows:
+
+```text
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+...
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+...
+```
+
+How to read the ASMTEST symbol/fixup data:
+
+- All numeric fields are hexadecimal.
+- `SYMBOLS` rows are RAM session symbol rows. `SL` is the table slot, `ST` is
+  symbol state (`01` = defined), `VALUE` is the current value, `K` is symbol
+  kind (`00` = scalar value, `01` = address, `02` = mask), `W` is width
+  (`00` = none/untyped, `01` = byte, `02` = word, `03` = zero page,
+  `04` = absolute, `05` = mask8, `06` = mask16), `FL` is the symbol flag byte,
+  `DEF` is the physical source/session line that defined the symbol, `USE` is
+  the resolved use count, `FIRST` is the first source/session line that used
+  it, and `NAME` is canonical text.
+- Symbol flag bits are `01` used, `02` has text, `04` has care mask,
+  `08` came from a label, and `10` came from `EQU`. For example `OUT` has
+  `FL=17`, meaning used + text + care + `EQU`; `SEED` has `FL=0E`, meaning
+  text + care + label, but not used through symbol lookup.
+- `FIXUPS` rows are patch records that were created for forward or
+  resident-catalog operands. `SL` is the fixup slot, `ST` is fixup state
+  (`01` = pending, `02` = resolved, `80` = failed), `MODE` is operand mode
+  (`02` = immediate byte, `03` = zero page, `04` = absolute word,
+  `05` = zero page indexed by X, `06` = absolute indexed by X,
+  `07` = relative branch), `SEL` selects the full value or a byte
+  (`00` = full, `01` = low byte, `02` = high byte), `SITE` is the address
+  patched, `BASE` is the address after the placeholder operand and is used for
+  relative branch math, and `NAME` is the target text.
+- In the ASMTEST proof, `SEED` resolves an absolute-X fixup at `$7006` and the
+  two `TEXT` rows patch `#<TEXT` at `$7017` and `#>TEXT` at `$7019`.
+
+The initial host gate passed with `make -C SRC asm-test`. Built sizes from
+that gate were `asm-v1-core-2000.s19` total `$4BBE`,
+`asm-v1-runtime-2000.s19` total `$2722`,
+`asm-v1-runtime-asmtest-2000.s19` total `$2AB2`, and
+`asm-v1-runtime-paste-2000.s19` total `$2CD6`.
+
+Hardware-proven ASM 2.77 table printer on 2026-06-07:
+
+```text
+L OK=2AB2 GO=2000
+ASM RT ASMTEST
+ASM TABLES
+SYMBOLS
+SL ST VALUE K W FL DEF USE FIRST NAME
+00 01 7100 01 04 17 0002 01 0008 OUT
+01 01 7110 01 04 17 0003 03 0006 SUM
+02 01 0010 00 00 17 0004 01 000C COUNT
+03 01 7000 01 04 0E 0005 00 0000 ASMTEST
+04 01 7005 01 04 0F 0007 01 000D LOOP
+05 01 701E 01 04 0E 0012 00 0000 SEED
+06 01 702E 01 04 0E 0014 00 0000 TEXT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 06 00 7006 7008 SEED
+01 02 02 01 7017 7018 TEXT
+02 02 02 02 7019 701A TEXT
+RJOINASM RT ASMTEST OK
+
+#LOADGO# ENTRY=2000
+RET A=11 X=9D Y=11 P=75 S=FD NV-BdIzC
+>
+```
+
+The final return has carry set. `A/X/Y` are last-print-path residues from the
+wrapper after a successful `ASM RT ASMTEST OK`, not table-printer statuses.
+
+Follow-up ASM 2.77 column cleanup pads short row fields so headings stay lined
+up past `W` in `SYMBOLS` and past `MODE` in `FIXUPS`. The updated host gate
+passes with `make -C SRC asm-test`. Built sizes from that gate:
+`asm-v1-core-2000.s19` total `$4BD3`, `asm-v1-runtime-2000.s19` total `$2737`,
+`asm-v1-runtime-asmtest-2000.s19` total `$2AC7`, and
+`asm-v1-runtime-paste-2000.s19` total `$2CEB`.
+
+Hardware-proven ASM 2.77 column cleanup on 2026-06-07:
+
+```text
+L OK=2AC7 GO=2000
+ASM RT ASMTEST
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7100  01 04 17 0002 01  0008  OUT
+01 01 7110  01 04 17 0003 03  0006  SUM
+02 01 0010  00 00 17 0004 01  000C  COUNT
+03 01 7000  01 04 0E 0005 00  0000  ASMTEST
+04 01 7005  01 04 0F 0007 01  000D  LOOP
+05 01 701E  01 04 0E 0012 00  0000  SEED
+06 01 702E  01 04 0E 0014 00  0000  TEXT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 06   00  7006 7008 SEED
+01 02 02   01  7017 7018 TEXT
+02 02 02   02  7019 701A TEXT
+RJOINASM RT ASMTEST OK
 >
 ```
 

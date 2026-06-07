@@ -34,6 +34,7 @@
                         XDEF            ASM_LOOKUP_SYMBOL
                         XDEF            ASM_BIND_LABEL
                         XDEF            ASM_DEFINE_EQU
+                        XDEF            ASM_PRINT_TABLES
 
 ; ----------------------------------------------------------------------------
 ; ASM active zero-page frame, allocated downward from $AF, plus shared FNV ZP.
@@ -4224,6 +4225,156 @@ ASM_REPORT_PRINT_LIMIT_SEP:
                         LDA             #'/'
                         JSR             ASM_RJ_WRITE_BYTE
                         LDA             #'$'
+                        JMP             ASM_RJ_WRITE_BYTE
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_PRINT_TABLES
+; Print the current RAM session symbol and fixup rows.
+; OUT: C=1,A=OK when printed. C=0,A=RJOIN when resident output is unavailable.
+; ----------------------------------------------------------------------------
+ASM_PRINT_TABLES:
+                        LDA             #ASM_STEP_REPORT
+                        STA             ASM_START_STEP
+                        JSR             ASM_RJOIN_INIT
+                        BCS             ASM_PRINT_TABLES_READY
+                        LDA             #ASM_STATUS_RJOIN
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        CLC
+                        RTS
+
+ASM_PRINT_TABLES_READY:
+                        LDX             #<ASM_TABLE_MSG_TITLE
+                        LDY             #>ASM_TABLE_MSG_TITLE
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        JSR             ASM_PRINT_SYMBOL_TABLE
+                        JSR             ASM_PRINT_FIXUP_TABLE
+                        LDA             #ASM_STATUS_OK
+                        SEC
+                        RTS
+
+ASM_PRINT_SYMBOL_TABLE:
+                        LDX             #<ASM_TABLE_MSG_SYMBOLS
+                        LDY             #>ASM_TABLE_MSG_SYMBOLS
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_TABLE_MSG_SYM_HEAD
+                        LDY             #>ASM_TABLE_MSG_SYM_HEAD
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #$00
+ASM_PRINT_SYMBOL_LOOP:
+                        CPX             ASM_SYM_COUNT
+                        BEQ             ASM_PRINT_SYMBOL_DONE
+                        JSR             ASM_PRINT_SYMBOL_ROW
+                        LDX             ASM_SLOT
+                        INX
+                        BRA             ASM_PRINT_SYMBOL_LOOP
+ASM_PRINT_SYMBOL_DONE:
+                        RTS
+
+ASM_PRINT_SYMBOL_ROW:
+                        STX             ASM_SLOT
+                        TXA
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_STATE,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_VAL_HI,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_VAL_LO,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        JSR             ASM_TABLE_PRINT_SPACE
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_KIND,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_WIDTH,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_FLAGS,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_DEFLINE_HI,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_DEFLINE_LO,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_USECNT,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        JSR             ASM_TABLE_PRINT_SPACE
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_FIRSTREF_HI,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_FIRSTREF_LO,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        JSR             ASM_TABLE_PRINT_SPACE
+                        LDX             ASM_SLOT
+                        JSR             ASM_SET_SYM_NAME_PTR_X
+                        LDX             ASM_SYM_PTR_LO
+                        LDY             ASM_SYM_PTR_HI
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_PRINT_FIXUP_TABLE:
+                        LDX             #<ASM_TABLE_MSG_FIXUPS
+                        LDY             #>ASM_TABLE_MSG_FIXUPS
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_TABLE_MSG_FIX_HEAD
+                        LDY             #>ASM_TABLE_MSG_FIX_HEAD
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #$00
+ASM_PRINT_FIXUP_LOOP:
+                        CPX             ASM_FIX_COUNT
+                        BEQ             ASM_PRINT_FIXUP_DONE
+                        JSR             ASM_PRINT_FIXUP_ROW
+                        LDX             ASM_SLOT
+                        INX
+                        BRA             ASM_PRINT_FIXUP_LOOP
+ASM_PRINT_FIXUP_DONE:
+                        RTS
+
+ASM_PRINT_FIXUP_ROW:
+                        STX             ASM_SLOT
+                        TXA
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_FIX_STATE,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_FIX_MODE,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        JSR             ASM_TABLE_PRINT_SPACE
+                        JSR             ASM_TABLE_PRINT_SPACE
+                        LDX             ASM_SLOT
+                        LDA             ASM_FIX_SEL,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        JSR             ASM_TABLE_PRINT_SPACE
+                        LDX             ASM_SLOT
+                        LDA             ASM_FIX_SITE_HI,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SLOT
+                        LDA             ASM_FIX_SITE_LO,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_FIX_BASE_HI,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SLOT
+                        LDA             ASM_FIX_BASE_LO,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        JSR             ASM_SET_FIX_NAME_PTR_X
+                        LDX             ASM_FIX_PTR_LO
+                        LDY             ASM_FIX_PTR_HI
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        JMP             ASM_RJ_PRINT_CRLF
+
+ASM_TABLE_PRINT_BYTE_FIELD:
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+ASM_TABLE_PRINT_SPACE:
+                        LDA             #' '
                         JMP             ASM_RJ_WRITE_BYTE
 
                         IF              ASM_RUNTIME_ONLY
@@ -8873,6 +9024,13 @@ ASM_REPORT_MSG_USED_REFS:
                         DB              " REFS=$",0
 ASM_REPORT_MSG_USED_FIRST:
                         DB              " FIRST=$",0
+ASM_TABLE_MSG_TITLE:   DB              "ASM TABLES",0
+ASM_TABLE_MSG_SYMBOLS: DB              "SYMBOLS",0
+ASM_TABLE_MSG_SYM_HEAD:
+                        DB              "SL ST VALUE K  W  FL DEF  USE FIRST NAME",0
+ASM_TABLE_MSG_FIXUPS:  DB              "FIXUPS",0
+ASM_TABLE_MSG_FIX_HEAD:
+                        DB              "SL ST MODE SEL SITE BASE NAME",0
                         IF              ASM_RUNTIME_ONLY
                         ELSE
 ASM_SMOKE_LINE_LONG:

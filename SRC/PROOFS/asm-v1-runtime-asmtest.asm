@@ -16,6 +16,7 @@
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
                         XREF            ASM_END
+                        XREF            ASM_PRINT_TABLES
                         XREF            SYS_WRITE_CSTRING
                         XREF            SYS_WRITE_CRLF
                         XREF            SYS_WRITE_HEX_BYTE
@@ -90,6 +91,10 @@ ASMRA_LINE_OK:
                         BCS             ASMRA_END_OK
                         RTS
 ASMRA_END_OK:
+                        JSR             ASM_PRINT_TABLES
+                        BCS             ASMRA_TABLES_OK
+                        RTS
+ASMRA_TABLES_OK:
 
                         JSR             ASMRA_PATCH_EXPECT
                         JSR             ASMRA_CHECK_IMAGE

@@ -1058,6 +1058,10 @@ CMD_G:
                         JSR             CMD_SAVE_ENTRY
                         LDA             #CMD_EXEC_KIND_GO
                         STA             CMD_EXEC_KIND
+                        ; G clears the trap marker before run; X resumes it.
+                        STZ             NMI_CTX_FLAG
+                        STZ             TRAP_CAUSE
+                        STZ             TRAP_BRK_SIG
                         JMP             (CMDP_ADDR_LO)
 
 CMD_USAGE_G:

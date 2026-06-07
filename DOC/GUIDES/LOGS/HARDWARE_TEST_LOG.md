@@ -4,6 +4,202 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-07 ASM 2.77 Table Printer Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-asmtest-2000.s19` at `$2000` with size `$2AB2`, ran the
+runtime asmtest wrapper, printed the new `ASM TABLES` block, emitted and ran
+the `$7000` ASMTEST program, and finished with `ASM RT ASMTEST OK`.
+
+Validated:
+
+- `ASM_PRINT_TABLES` prints symbol rows after `ASM_END`.
+- Symbol rows expose slot, state, value, kind, width, flags, defining line,
+  use count, first-reference line, and name.
+- Fixup rows expose slot, state, mode, selector, site, base, and target name.
+- The three expected ASMTEST fixups resolve before table printing:
+  `SEED` absolute indexed at `$7006`, and `<TEXT`/`>TEXT` at `$7017/$7019`.
+- The emitted program still calls the resident `BIO_FTDI_PUT_CSTR` target and
+  prints `RJOIN`, then the wrapper reports `ASM RT ASMTEST OK`.
+
+The final `#LOADGO#` return has `P=75`, so carry is set. `A=11 X=9D Y=11` are
+the wrapper's last print-path register residues, not an ASM failure status.
+This transcript is the initial table-printer proof before the later
+column-padding cleanup. A follow-up `$2AC7` board run proved the padded row
+shape.
+
+### Transcript Extract
+
+```text
+L S19
+L @2000
+L OK=2AB2 GO=2000
+ASM RT ASMTEST
+ASM TABLES
+SYMBOLS
+SL ST VALUE K W FL DEF USE FIRST NAME
+00 01 7100 01 04 17 0002 01 0008 OUT
+01 01 7110 01 04 17 0003 03 0006 SUM
+02 01 0010 00 00 17 0004 01 000C COUNT
+03 01 7000 01 04 0E 0005 00 0000 ASMTEST
+04 01 7005 01 04 0F 0007 01 000D LOOP
+05 01 701E 01 04 0E 0012 00 0000 SEED
+06 01 702E 01 04 0E 0014 00 0000 TEXT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 06 00 7006 7008 SEED
+01 02 02 01 7017 7018 TEXT
+02 02 02 02 7019 701A TEXT
+RJOINASM RT ASMTEST OK
+
+#LOADGO# ENTRY=2000
+RET A=11 X=9D Y=11 P=75 S=FD NV-BdIzC
+>
+```
+
+### Column Padding Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=2AC7 GO=2000
+ASM RT ASMTEST
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7100  01 04 17 0002 01  0008  OUT
+01 01 7110  01 04 17 0003 03  0006  SUM
+02 01 0010  00 00 17 0004 01  000C  COUNT
+03 01 7000  01 04 0E 0005 00  0000  ASMTEST
+04 01 7005  01 04 0F 0007 01  000D  LOOP
+05 01 701E  01 04 0E 0012 00  0000  SEED
+06 01 702E  01 04 0E 0014 00  0000  TEXT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 06   00  7006 7008 SEED
+01 02 02   01  7017 7018 TEXT
+02 02 02   02  7019 701A TEXT
+RJOINASM RT ASMTEST OK
+>
+```
+
+## 2026-06-07 HIMON 00.0606(2155) G Fresh-Run Telemetry Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board first showed
+`HIMON V 00.0606(2141)` and a catalog record for
+`BIO_FTDI_PUT_CSTR_FNV` resolving `AEFA0F42` to `$E558`. The operator then
+entered STR8, updated the HIMON `$C000-$EFFF` range, and warm-booted
+`HIMON V 00.0606(2155)`.
+
+The updated ROM then loaded `asm-v1-runtime-paste-2000.s19` with
+`L OK=2B56 GO=2000`. Pasting `himon.asm` fails at unsupported `MODULE`, as
+expected. The first failure returns through `#LOADGO#`; repeating the same
+paste with manual `G 2000` now returns through a visible fresh `#GO# ... RET`
+block. A later run in the same operator transcript created a live NMI context
+inside the ASM paste prompt, then used `G 2000`; the returning ASM failure
+still printed fresh `#GO# ... RET`, proving `G` cleared the saved trap marker
+well enough for ordinary return telemetry.
+
+Follow-up `R` reported `BRK 03 PC=C0D1`, not `NOCTX`. That context is the
+top-level HIMON input abort path, and it is distinct from the earlier
+`NMI PC=40D2`; the proven contract for this slice is fresh `#GO#` return
+telemetry, not an empty debug context forever after the run.
+
+Validated:
+
+- STR8 `UPDATE HIMON C000-EFFF` programmed the 2155 HIMON update and warm boot
+  reported `HIMON V 00.0606(2155)`.
+- Manual `G 2000` into the ASM paste wrapper prints fresh `#GO#` return
+  telemetry after the first ASM error.
+- Manual `G 2000` also prints fresh `#GO#` return telemetry after a live
+  `NMI PC=40D2` context.
+- The ASM paste wrapper still reports `ERR=$01 BAD MNEM PC=$7000` with
+  `A=01 X=00 Y=70` on return.
+- `R` after the proof may report a later/top-level `BRK 03 PC=C0D1` context;
+  that does not invalidate the fresh `#GO#` return proof.
+
+### Transcript Extract
+
+```text
+HIMON V 00.0606(2141)
+>#
+HASH     ENTRY K TEXT
+...
+AEFA0F42 E558 05 PUT CSTR
+B0051A80 C000 03 HIMON: V 00.0606(2141)
+A2AD0E18 F000 03 STR8: BOOTLOADER
+>G F000
+GO F000
+...
+STR8 V0 #5F6A0F7A
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0606(2155)
+>L G
+L S19
+L @2000
+L OK=2B56 GO=2000
+ASM RT PASTE
+... comments accepted at $7000 ...
+ASM>                         MODULE          HIMON_APP
+ERR=$01 BAD MNEM PC=$7000
+
+#LOADGO# ENTRY=2000
+RET A=01 X=00 Y=70 P=74 S=FD NV-BdIzc
+>G 2000
+GO 2000
+ASM RT PASTE
+... comments accepted at $7000 ...
+ASM>                         MODULE          HIMON_APP
+ERR=$01 BAD MNEM PC=$7000
+
+#GO# ENTRY=2000
+RET A=01 X=00 Y=70 P=74 S=FD NV-BdIzc
+>
+
+BRK 03 PC=C0D1
+A=04 X=00 Y=7B P=77 S=FF NV-BdIZC
+>#
+...
+B0051A80 C000 03 HIMON: V 00.0606(2155)
+A2AD0E18 F000 03 STR8: BOOTLOADER
+>
+... cold boot path omitted; reload asm-v1-runtime-paste-2000.s19 ...
+L OK=2B56 GO=2000
+ASM RT PASTE
+ASM>
+NMI PC=40D2
+A=02 X=60 Y=42 P=E4 S=F1 NV-bdIzc
+>G 2000
+GO 2000
+ASM RT PASTE
+... comments accepted at $7000 ...
+ASM>                         MODULE          HIMON_APP
+ERR=$01 BAD MNEM PC=$7000
+
+#GO# ENTRY=2000
+RET A=01 X=00 Y=70 P=74 S=FD NV-BdIzc
+>
+>R
+
+BRK 03 PC=C0D1
+A=04 X=00 Y=7B P=77 S=FF NV-BdIZC
+>
+```
+
 ## 2026-06-07 ASM 2.73 BIO_FTDI_PUT_CSTR RJOIN Board Proof
 
 ### Summary
@@ -72,10 +268,10 @@ Validated:
 Observed separately: after the large `himon.asm` paste abort, HIMON reported
 `BRK 03 PC=C0D1`. In the current listing this maps to the top-level HIMON input
 abort path after `HIM_READ_LINE_ECHO_UPPER` returns `CMD_ABORT_TOP`, not to the
-ASM paste wrapper itself. Because that BRK leaves `NMI_CTX_FLAG` set, later
-manual `G 2000` runs in the same monitor session may return without printing a
-fresh `#GO# ... RET` block; `CMD_EXEC_ADDR` preserves the active trap context
-instead of overwriting it with ordinary return telemetry.
+ASM paste wrapper itself. In the ROM under test, that BRK left `NMI_CTX_FLAG`
+set, so later manual `G 2000` runs in the same monitor session could return
+without printing a fresh `#GO# ... RET` block; `CMD_EXEC_ADDR` preserved the
+active trap context instead of overwriting it with ordinary return telemetry.
 
 The later `ERR=$06 BAD RANGE PC=$7403` in the same operator transcript is also
 separate from paste-abort quenching. It came from one still-open ASM session:
