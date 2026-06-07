@@ -592,7 +592,8 @@ asmtest source stream now assembles `LDX #<TEXT`, `LDY #>TEXT`, and
 `JSR BIO_FTDI_PUT_CSTR`; its byte oracle patches the expected operand from the
 emitted resident target while rejecting unresolved `$FFFF` and high-zero
 targets. The host `asm-test` gate passes with this resident-call extension.
-Board proof requires a HIMON image that includes `BIO_FTDI_PUT_CSTR_FNV`.
+Board proof requires a HIMON image that includes `BIO_FTDI_PUT_CSTR_FNV`; that
+proof landed as ASM 2.73 after the HIMON update.
 
 ASM 2.72 changes the runtime paste wrapper's first-error policy from recover
 and reprompt to abort-to-HIMON. All failure exits now pass through the same
@@ -641,6 +642,32 @@ The same transcript later shows `ERR=$06 BAD RANGE PC=$7403` after a second
 `ORG`. That is expected single-session fixup behavior, not stale state after a
 quench abort: a `BRA MAINX` emitted near `$7000` remained pending and was later
 resolved by `MAINX` at `$7403`, beyond relative branch range.
+
+ASM 2.73 records the hardware proof for the 2.71 resident-output RJOIN target.
+After updating HIMON to `V 00.0606(2141)`, the runtime asmtest wrapper loaded
+as `L OK=292C GO=2000`, assembled `JSR BIO_FTDI_PUT_CSTR`, and ran the emitted
+program. The visible `RJOIN` text proves the emitted program called the resident
+PUT-CSTR alias, while the wrapper still verified the complete ASMTEST output.
+The board dump shows the emitted call as `20 58 E5` at `$701D`; the current
+HIMON map identifies `$E558` as `SYS_WRITE_CSTRING`, which is the payload of
+the `BIO_FTDI_PUT_CSTR_FNV` record.
+
+Hardware-proven ASM 2.73 `BIO_FTDI_PUT_CSTR` RJOIN on 2026-06-07:
+
+```text
+L OK=292C GO=2000
+ASM RT ASMTEST
+RJOINASM RT ASMTEST OK
+>D 7000 703F
+7000: A2 00 9C 10 71 BD 1E 70 | 9D 00 71 4D 10 71 8D 10 | ....q..p..qM.q..
+7010: 71 E8 E0 10 D0 EF A2 2E | A0 70 20 58 E5 60 52 2D | q........p X.`R-
+7020: 59 4F 52 53 20 41 53 4D | 20 54 45 53 54 2E 52 4A | YORS ASM TEST.RJ
+7030: 4F 49 4E 00 00 A2 00 BD | 00 71 D0 0C A9 0D 20 DF | OIN......q.... .
+>D 7100 FF
+7100: 52 2D 59 4F 52 53 20 41 | 53 4D 20 54 45 53 54 2E | R-YORS ASM TEST.
+7110: 0F 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+```
 
 Current checker requirements:
 

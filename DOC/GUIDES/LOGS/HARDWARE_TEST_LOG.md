@@ -4,6 +4,49 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-07 ASM 2.73 BIO_FTDI_PUT_CSTR RJOIN Board Proof
+
+### Summary
+
+Operator updated HIMON through STR8 and warm-booted `HIMON V 00.0606(2141)`.
+The `asm-v1-runtime-asmtest-2000.s19` image then loaded with
+`L OK=292C GO=2000` and ran the runtime ASMTEST wrapper against the updated
+resident catalog.
+
+Validated:
+
+- Runtime ASM can assemble `JSR BIO_FTDI_PUT_CSTR` as a resident-catalog
+  executable operand.
+- The emitted `$7000` program prints `RJOIN` through that assembled call before
+  the wrapper prints `ASM RT ASMTEST OK`.
+- The emitted operand at `$701D` is `20 58 E5`, a real `JSR $E558`, not the old
+  unresolved `20 FF FF` placeholder and not a high-zero target.
+- The current HIMON map identifies `$E558` as `SYS_WRITE_CSTRING`, matching
+  the `BIO_FTDI_PUT_CSTR_FNV` record payload.
+- The normal ASMTEST runtime result remains intact:
+  `$7100-$710F = "R-YORS ASM TEST."` and `$7110=$0F`.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=292C GO=2000
+ASM RT ASMTEST
+RJOINASM RT ASMTEST OK
+>D 7000 703F
+7000: A2 00 9C 10 71 BD 1E 70 | 9D 00 71 4D 10 71 8D 10 | ....q..p..qM.q..
+7010: 71 E8 E0 10 D0 EF A2 2E | A0 70 20 58 E5 60 52 2D | q........p X.`R-
+7020: 59 4F 52 53 20 41 53 4D | 20 54 45 53 54 2E 52 4A | YORS ASM TEST.RJ
+7030: 4F 49 4E 00 00 A2 00 BD | 00 71 D0 0C A9 0D 20 DF | OIN......q.... .
+>D 7100 FF
+7100: 52 2D 59 4F 52 53 20 41 | 53 4D 20 54 45 53 54 2E | R-YORS ASM TEST.
+7110: 0F 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+... remaining displayed $7120-$71F0 bytes were $00 ...
+>
+```
+
 ## 2026-06-07 ASM 2.72 Runtime Paste Quench-To-HIMON Proof
 
 ### Summary
