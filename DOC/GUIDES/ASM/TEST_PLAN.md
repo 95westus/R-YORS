@@ -571,7 +571,8 @@ rest of a pasted source burst to HIMON. This keeps board transcripts compact
 while making table-limit and parser failures readable at the paste prompt. The
 host gate passes with `asm-v1-runtime-paste-2000.s19` at `$2B53` bytes. The
 hardware transcript proves `ERR=$03 BAD OPER PC=$704E` for an invalid
-`BVF $4FRE` line and an immediate return to `ASM> `.
+`BVF $4FRE` line and an immediate return to `ASM> `. ASM 2.72 supersedes this
+reopen-on-error recovery policy for the runtime paste wrapper.
 
 ASM 2.70 keeps the 2.69 paste-driver behavior but trims the status-name printer
 from a compare/jump chain into low/high message pointer tables. The host gate
@@ -592,6 +593,54 @@ asmtest source stream now assembles `LDX #<TEXT`, `LDY #>TEXT`, and
 emitted resident target while rejecting unresolved `$FFFF` and high-zero
 targets. The host `asm-test` gate passes with this resident-call extension.
 Board proof requires a HIMON image that includes `BIO_FTDI_PUT_CSTR_FNV`.
+
+ASM 2.72 changes the runtime paste wrapper's first-error policy from recover
+and reprompt to abort-to-HIMON. All failure exits now pass through the same
+quench path: `ASM_BEGIN` failure, line-read failure, and
+`ASM_ASSEMBLE_LINE` failure. The wrapper prints the failure line, drains RX with
+`SYS_FLUSH_RX`, then uses `SYS_READ_CHAR_TIMEOUT_SPINDOWN` to keep consuming
+bytes until the sender has been quiet for the local idle window. It then returns
+to its caller with `C=0`, `A=status`, and `X/Y=current PC`. The current idle
+window is two `SYS_READ_CHAR_TIMEOUT_SPINDOWN` slices, roughly 57 ms at 8 MHz.
+It does not call `ASM_BEGIN` and does not emit another `ASM> ` prompt. This
+avoids treating the tail of a still-streaming host paste as a fresh `$7000` ASM
+session. The host `asm-test` gate passes with `asm-v1-runtime-paste-2000.s19`
+at `$2B56` bytes.
+
+Hardware-proven ASM 2.72 runtime paste quench-to-HIMON on 2026-06-07:
+
+```text
+L OK=2B56 GO=2000
+ASM RT PASTE
+ASM>                         MODULE          HIMON_APP
+ERR=$01 BAD MNEM PC=$7000
+#LOADGO# ENTRY=2000
+RET A=01 X=00 Y=70 P=74 S=FD NV-BdIzc
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>         ORGY $7000
+ERR=$01 BAD MNEM PC=$7000
+>G 2000
+GO 2000
+ASM RT PASTE
+... BRA MAINX leaves an unresolved fixup ...
+ASM>         END
+ERR=$09 BAD FIX PC=$704E
+>
+```
+
+In that transcript, only the first failure prints an explicit `RET` block
+because it was launched by `L G` before any trap context was active. The later
+manual `G 2000` failures still return with `A=status`, `X/Y=current PC`, and
+`C=0`, but a separate top-level `BRK 03 PC=C0D1` left HIMON's trap context
+valid; current `CMD_EXEC_ADDR` preserves that context and suppresses ordinary
+return telemetry while `NMI_CTX_FLAG` is set.
+
+The same transcript later shows `ERR=$06 BAD RANGE PC=$7403` after a second
+`ORG`. That is expected single-session fixup behavior, not stale state after a
+quench abort: a `BRA MAINX` emitted near `$7000` remained pending and was later
+resolved by `MAINX` at `$7403`, beyond relative branch range.
 
 Current checker requirements:
 

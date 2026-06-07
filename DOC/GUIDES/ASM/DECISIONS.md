@@ -577,6 +577,12 @@ A [addr] [label[:]] MMM [operand] .
   `SYS_READ_CSTRING_ECHO_UPPER`, prints compact `OK`/`ERR` feedback, and
   reopens at the pre-error PC after a rejected line; v1 does not keep parsing
   after an error.
+- ASM 2.72 keeps the runtime paste wrapper stricter than the line-at-a-time
+  ICO: all failure exits funnel through a quench path. It prints the failure,
+  drains RX with `SYS_FLUSH_RX`, then consumes timed input with
+  `SYS_READ_CHAR_TIMEOUT_SPINDOWN` until the sender is quiet for the local idle
+  window. It returns to HIMON with `C=0`, `A=status`, and `X/Y=current PC`;
+  it does not call `ASM_BEGIN` or show another `ASM> ` prompt.
 - ASM 2.57 may use the future seed vector pocket for `HASH ACQUIRE`: read
   `$FFF8/$FFF9`, reject `$FFFF` and high bytes below `$C0`, verify the pointer
   by resolving `THE_JOIN_EXEC_XY`, then use it as the resident joiner. If any

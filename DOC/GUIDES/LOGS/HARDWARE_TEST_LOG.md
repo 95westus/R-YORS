@@ -4,6 +4,93 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-07 ASM 2.72 Runtime Paste Quench-To-HIMON Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The
+`asm-v1-runtime-paste-2000.s19` image loaded with `L OK=2B56 GO=2000`.
+Runtime paste failures now print the named ASM error, quench RX using the
+failure funnel, and return to HIMON with failure registers instead of reopening
+`ASM> `.
+
+Validated:
+
+- Unsupported source such as `MODULE HIMON_APP` fails as
+  `ERR=$01 BAD MNEM PC=$7000`, then returns to HIMON as
+  `RET A=01 X=00 Y=70`.
+- A bad directive spelling such as `ORGY $7000` fails as
+  `ERR=$01 BAD MNEM PC=$7000` and returns directly to the HIMON prompt.
+- A pending unresolved fixup at `END` fails as `ERR=$09 BAD FIX PC=$704E` and
+  returns directly to the HIMON prompt.
+- No pasted source tail is accepted as a fresh `$7000` ASM session after these
+  failures.
+
+Observed separately: after the large `himon.asm` paste abort, HIMON reported
+`BRK 03 PC=C0D1`. In the current listing this maps to the top-level HIMON input
+abort path after `HIM_READ_LINE_ECHO_UPPER` returns `CMD_ABORT_TOP`, not to the
+ASM paste wrapper itself. Because that BRK leaves `NMI_CTX_FLAG` set, later
+manual `G 2000` runs in the same monitor session may return without printing a
+fresh `#GO# ... RET` block; `CMD_EXEC_ADDR` preserves the active trap context
+instead of overwriting it with ordinary return telemetry.
+
+The later `ERR=$06 BAD RANGE PC=$7403` in the same operator transcript is also
+separate from paste-abort quenching. It came from one still-open ASM session:
+`BRA MAINX` at `$7000` left a pending relative fixup, and a later `MAINX` label
+at `$7403` resolved that fixup out of branch range.
+
+### Transcript Extract
+
+```text
+>L G
+L S19
+L @2000
+L OK=2B56 GO=2000
+ASM RT PASTE
+ASM> ; ----------------------------------------------------------------------------
+OK PC=$7000
+... comments accepted at $7000 ...
+ASM>                         MODULE          HIMON_APP
+ERR=$01 BAD MNEM PC=$7000
+
+#LOADGO# ENTRY=2000
+RET A=01 X=00 Y=70 P=74 S=FD NV-BdIzc
+>
+
+BRK 03 PC=C0D1
+A=04 X=00 Y=7B P=77 S=FF NV-BdIZC
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>         ORGY $7000
+ERR=$01 BAD MNEM PC=$7000
+>G 2000
+GO 2000
+ASM RT PASTE
+... ASM_LINE_ECHO_7000.asm with BRA MAINX accepted through code body ...
+ASM>         END
+ERR=$09 BAD FIX PC=$704E
+>
+
+BRK 03 PC=C0D1
+A=04 X=00 Y=7B P=77 S=FF NV-BdIZC
+>G 2000
+GO 2000
+ASM RT PASTE
+... one session has BRA MAINX pending at $7000 ...
+ASM>         ORG $7400
+OK PC=$7400
+ASM> LINEX    EQU $7500
+OK PC=$7400
+ASM>         BRA MAINX
+OK PC=$7402
+ASM> DONEX    RTS
+OK PC=$7403
+ASM> MAINX    LDA #$3F
+ERR=$06 BAD RANGE PC=$7403
+>
+```
+
 ## 2026-06-06 ASM 2.70 Runtime Paste Status-Table Trim Proof
 
 ### Summary

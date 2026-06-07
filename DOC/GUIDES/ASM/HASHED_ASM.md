@@ -4953,6 +4953,13 @@ reports the new PC and up to 16 emitted bytes, and restarts the session after a
 rejected line. Older notes and hardware transcripts may call this same path a
 REPL.
 
+The runtime paste wrapper has a stricter burst-input policy as of ASM 2.72:
+all failure exits go through one quench path. After printing the failure line,
+the wrapper calls `SYS_FLUSH_RX`, then repeatedly consumes timed input with
+`SYS_READ_CHAR_TIMEOUT_SPINDOWN` until the sender is quiet for the local idle
+window. It returns to HIMON with `C=0`, `A=status`, and `X/Y=current PC`, and
+does not reopen an ASM session.
+
 ASM 2.57 can seed its resident joiner from the future vector pocket at
 `$FFF8/$FFF9`. The seed is accepted only if it is not `$FFFF`, has a ROM-ish
 high byte (`>= $C0`), and can resolve `THE_JOIN_EXEC_XY`; otherwise ASM keeps

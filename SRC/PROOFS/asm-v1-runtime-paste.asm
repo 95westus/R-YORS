@@ -16,6 +16,7 @@
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
                         XREF            SYS_FLUSH_RX
+                        XREF            SYS_READ_CHAR_TIMEOUT_SPINDOWN
                         XREF            SYS_READ_CSTRING_ECHO_UPPER
                         XREF            SYS_WRITE_CSTRING
                         XREF            SYS_WRITE_CRLF
@@ -25,6 +26,7 @@ ASM_BEGINF_HAVE_PC     EQU             $01
 ASMRP_TARGET_LO        EQU             $00
 ASMRP_TARGET_HI        EQU             $70
 ASMRP_RESULT           EQU             $67F2
+ASMRP_QUENCH_IDLE_SLICES EQU           $02
 
 ASMRP_STATUS_OK        EQU             $00
 ASMRP_STATUS_BAD_MNEM  EQU             $01
@@ -50,12 +52,13 @@ START:
                         LDX             #ASMRP_TARGET_LO
                         LDY             #ASMRP_TARGET_HI
                         JSR             ASM_BEGIN
+                        STX             ASMRP_PC_LO
+                        STY             ASMRP_PC_HI
                         BCS             ASMRP_LOOP
 
                         STA             ASMRP_RESULT
                         JSR             ASMRP_PRINT_FAIL
-                        CLC
-                        RTS
+                        JMP             ASMRP_ABORT_WITH_RESULT
 
 ASMRP_LOOP:
                         LDX             #<MSG_PROMPT
@@ -71,8 +74,7 @@ ASMRP_LOOP:
                         LDX             #<MSG_READ
                         LDY             #>MSG_READ
                         JSR             ASMRP_PRINT_STATUS_LINE
-                        CLC
-                        RTS
+                        JMP             ASMRP_ABORT_WITH_RESULT
 
 ASMRP_READ_OK:
                         BEQ             ASMRP_LOOP
@@ -97,10 +99,7 @@ ASMRP_ASSEMBLE:
                         LDX             #<MSG_ERR
                         LDY             #>MSG_ERR
                         JSR             ASMRP_PRINT_STATUS_PC_LINE
-                        JSR             ASMRP_RECOVER_AFTER_ERROR
-                        BCS             ASMRP_LOOP
-                        CLC
-                        RTS
+                        JMP             ASMRP_ABORT_WITH_RESULT
 
 ASMRP_ACCEPTED:
                         LDX             #<MSG_OK
@@ -154,21 +153,19 @@ ASMRP_PRINT_LINE:
 ASMRP_PRINT:
                         JMP             SYS_WRITE_CSTRING
 
-ASMRP_RECOVER_AFTER_ERROR:
-                        JSR             SYS_FLUSH_RX
-
-                        LDA             #ASM_BEGINF_HAVE_PC
-                        LDX             #ASMRP_TARGET_LO
-                        LDY             #ASMRP_TARGET_HI
-                        JSR             ASM_BEGIN
-                        BCS             ASMRP_RECOVER_OK
-
-                        STA             ASMRP_RESULT
-                        JSR             ASMRP_PRINT_FAIL
+ASMRP_ABORT_WITH_RESULT:
+                        JSR             ASMRP_QUENCH_RX
+                        LDA             ASMRP_RESULT
+                        LDX             ASMRP_PC_LO
+                        LDY             ASMRP_PC_HI
                         CLC
                         RTS
-ASMRP_RECOVER_OK:
-                        SEC
+
+ASMRP_QUENCH_RX:
+                        JSR             SYS_FLUSH_RX
+                        LDA             #ASMRP_QUENCH_IDLE_SLICES
+                        JSR             SYS_READ_CHAR_TIMEOUT_SPINDOWN
+                        BCS             ASMRP_QUENCH_RX
                         RTS
 
 ASMRP_PRINT_STATUS_NAME:
