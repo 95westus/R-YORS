@@ -1,18 +1,26 @@
-# ASM Interactive And Batch Sessions
+# Future ASM Interactive And Batch Sessions
 
-Status: design note for the monitor-facing ASM command surface.
+Status: parked future command-surface idea. This is not the current ASM path.
 
-## Core Idea
+## Current Rule
 
-Interactive and batch ASM are not two assemblers. They are two console contracts
-for the same full ASM session:
+Today, ASM has one operator-facing session input path. Human typing and pasted
+source are treated the same:
 
 ```text
-himon>ASM I   prompted interactive session
-himon>ASM B   quiet batch/paste session
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA #$41
+OK PC=$7002
+ASM> END
+OK PC=$7002
+ASM TABLES
+ASM RT PASTE OK
 ```
 
-Both modes use the same session spine:
+The current path feeds every accepted physical source line through the same
+assembler session spine:
 
 ```text
 ASM_BEGIN
@@ -20,13 +28,27 @@ ASM_ASSEMBLE_LINE
 ASM_END
 ```
 
-The source language, parser, symbol table, fixup table, emitter, and final
-`END` behavior are identical. The mode only controls what the HIMON-side input
-driver prints while it feeds source lines to the assembler.
+There is no present `ASM I`/`ASM B` split, no quiet batch wrapper, and no
+different behavior for pasted source. Paste handling remains ordinary line
+input plus the existing error/quench policy.
 
-## Session Boundary
+## Future Idea
 
-`END` is the real finalization boundary in both modes.
+A later HIMON command surface may choose to expose two wrappers:
+
+```text
+himon>ASM I   prompted interactive session
+himon>ASM B   quiet batch/paste session
+```
+
+If this is added later, both modes should still use the same source language,
+parser, symbol table, fixup table, emitter, and `END` finalization. The mode
+would control only console presentation.
+
+## Shared Session Boundary
+
+Whether ASM has one current wrapper or future `ASM I/B` wrappers, `END` remains
+the finalization boundary.
 
 Before `END`:
 
@@ -46,82 +68,14 @@ range and width checks for pending fixups are enforced
 the final status/report path runs
 ```
 
-Do not make interactive mode an immediate one-line assembler. A human at the
+Do not make interactive use an immediate one-line assembler. A human at the
 prompt still owns a full session, and fixups may span lines until `END`.
 
-## Interactive Mode
+## Source Syntax Boundary
 
-`ASM I` is for a human operator at the monitor.
-
-Expected console behavior:
-
-```text
-himon>ASM I
-asm> ORG $7000
-... per-line feedback ...
-asm> JSR LATER
-... pending fixup feedback if useful ...
-asm> LATER RTS
-... definition/fixup feedback if useful ...
-asm> END
-... final status/report ...
-himon>
-```
-
-Interactive mode may show:
-
-```text
-prompt before each input line
-accepted-line status
-current PC
-short emitted-byte listings
-definition or fixup hints
-named error/status text
-```
-
-The exact listing text is a wrapper/display decision. Existing hardware
-transcripts may show `ASM> `; the design point is that prompted mode has a
-visible ASM prompt and useful per-line feedback.
-
-## Batch Mode
-
-`ASM B` is for pasted or transmitted source.
-
-Expected console behavior:
-
-```text
-himon>ASM B
-ORG $7000
-JSR LATER
-LATER RTS
-END
-... final status/report ...
-himon>
-```
-
-Batch mode should not print:
-
-```text
-per-line prompts
-per-line accepted-line status
-per-line emitted-byte listings
-routine "OK PC=$hhhh" chatter
-```
-
-Batch mode may still print errors and final status/report output. It is quiet
-while accepted source lines are flowing, but it is not silent about failure.
-
-## No Source-Mode Directives
-
-Quiet/verbose selection is not ASM source syntax. Do not add `.Q`, `.V`, or
-similar source directives for this purpose.
-
-The mode is chosen by HIMON before the session begins:
-
-```text
-ASM I
-ASM B
-```
+Quiet/verbose selection, if it ever exists, is a wrapper choice. It is not ASM
+source syntax. Do not add `.Q`, `.V`, or similar source directives for this
+purpose.
 
 The source stream remains ordinary ASM source:
 
@@ -134,11 +88,8 @@ END
 
 ## Timing Detection
 
-Character timing may be used only as a display convenience inside `ASM I`.
-
-For example, if a human starts in `ASM I` and then pastes a burst of source, the
-input driver may temporarily suppress repeated prompts or per-line listings
-while the burst is active. That heuristic must not change assembler semantics:
+Character timing may be useful later as a display convenience, but it must not
+change assembler semantics:
 
 ```text
 same source line handling
@@ -147,18 +98,6 @@ same END finalization
 same error policy
 ```
 
-Explicit `ASM B` remains the deterministic batch path. Timing detection is not
-a substitute for the command mode.
-
-## Bare ASM
-
-If HIMON keeps a bare `ASM` command during transition, it should be treated as a
-compatibility alias for interactive mode:
-
-```text
-ASM      same as ASM I
-```
-
-That keeps the operator-facing default friendly while still giving scripted
-paste workflows a quiet `ASM B` path.
+Timing detection is not a current requirement and is not a substitute for any
+future explicit command mode.
 

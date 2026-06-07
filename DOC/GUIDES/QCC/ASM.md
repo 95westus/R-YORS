@@ -21,7 +21,7 @@ zero page           active ASM scratch grows downward from $AF
 calling             all callable routines follow HIMON/THE routine style
 fixups              emitted-byte patch records, $FF placeholders
 reports             basic session report required in v1
-input driver        `ASM I` prompted, `ASM B` quiet, same session spine
+input driver        one current path for typed/pasted lines
 large symbols       layered lookup, future HIMON-scale resident table
 SYM3                base-40 3-char prefix filter, not identity
 locals              reserved, LOCAL NYI in v1
@@ -74,7 +74,7 @@ ASM 2.20   fixups / patch records
 ASM 2.30   DC/DS/ORG/END directive handlers
 ASM 2.40   report/listing basics
 ASM 2.50   status/error model
-ASM 2.60   source input driver / interactive-batch handling
+ASM 2.60   source input driver / pasted-line handling
 
 ASM 3.00   memory overview
 ASM 3.10   RAM workspace map and table layouts
@@ -218,17 +218,17 @@ Concern: `ASM_END` should be idempotent after a clean end. A second direct call
 returns `OK` and does not print a second report. After a failed session, later
 calls return the stored failure status.
 
-## Q: How do interactive and batch ASM sessions differ?
+## Q: How does ASM treat typed versus pasted input today?
 
-Comment: They differ only in HIMON input-driver presentation. `ASM I` opens a
-prompted, human-facing session. `ASM B` opens a quiet batch/paste session. Both
-feed source lines through the same `ASM_BEGIN`, `ASM_ASSEMBLE_LINE`, and
-`ASM_END` spine, and both use `END` as the final fixup/report boundary.
+Comment: Today they are the same input path. The runtime console reads one
+physical source line, feeds it through `ASM_ASSEMBLE_LINE`, prints the same
+prompt/status feedback, and uses `END` as the final fixup/report boundary.
+Typing and pasting do not select different assembler modes.
 
 Concern: Do not put quiet/verbose controls into ASM source as `.Q`, `.V`, or
-similar directives. The mode is chosen before the source stream begins. Timing
-detection may suppress chatter inside `ASM I`, but explicit `ASM B` remains the
-deterministic batch path. See
+similar directives. A future `ASM I`/`ASM B` command split is only a parked
+presentation idea, and must still feed the same `ASM_BEGIN`,
+`ASM_ASSEMBLE_LINE`, and `ASM_END` spine if it is added later. See
 [../ASM/INTERACTIVE_BATCH.md](../ASM/INTERACTIVE_BATCH.md).
 
 ## Q: What is the v1 statement grammar?

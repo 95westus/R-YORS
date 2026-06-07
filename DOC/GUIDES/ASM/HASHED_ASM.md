@@ -70,10 +70,9 @@ Core settled rules:
 - ASM proper reads full source lines. For the current test, lines can be pasted
   into the assembler input stream. HIMON's `A [addr] ... .` form is legacy
   HIMON mini-assembler syntax, not an ASM input path.
-- The intended monitor command surface exposes `ASM I` and `ASM B` as two
-  drivers for the same full session. Interactive mode is prompted and chatty;
-  batch mode is quiet while accepted pasted/transmitted source lines flow. The
-  parser, fixups, emitter, and `END` finalization are identical. See
+- The current runtime console treats human typing and pasted source as the same
+  line input stream. A future `ASM I`/`ASM B` command split is only a parked
+  presentation idea; it is not today's ASM path. See
   [INTERACTIVE_BATCH.md](INTERACTIVE_BATCH.md).
 - The parser is hash-first. The first source token, after session-PC setup, is
   checked against ASM vocabulary. If it is not vocabulary, it is held as a
@@ -213,7 +212,7 @@ ASM 2.20   fixups / patch records
 ASM 2.30   DB/DS/ORG/END directive handlers
 ASM 2.40   report/listing basics
 ASM 2.50   status/error model
-ASM 2.60   source input driver / interactive-batch handling
+ASM 2.60   source input driver / pasted-line handling
 
 ASM 3.00   memory overview
 ASM 3.10   RAM workspace map and table layouts
@@ -4613,11 +4612,12 @@ EOF. `ASM_END` is idempotent after a clean end: a second direct call returns
 `C=1,A=OK` and does not print a second report. After a failed session, further
 line assembly returns the stored failure status.
 
-Monitor-facing input drivers choose presentation before the session begins.
-`ASM I` opens a prompted interactive session, while `ASM B` opens a quiet
-batch/paste session. Both feed physical source lines to this same spine and
-both rely on `END` as the normal finalization boundary. Quiet/verbose behavior
-is not ASM source syntax; do not add `.Q` or `.V` directives for it.
+The current monitor-facing runtime console treats typed and pasted source lines
+the same. Every accepted line feeds this same spine, and `END` remains the
+normal finalization boundary. A later `ASM I`/`ASM B` split may choose different
+presentation wrappers, but that is a future command-surface idea only.
+Quiet/verbose behavior is not ASM source syntax; do not add `.Q` or `.V`
+directives for it.
 
 ### ASM 1.30.1 ASM_BEGIN
 

@@ -3,7 +3,7 @@
 This file holds detailed settled decisions for ASM. It was split out from [DECISIONS.md](../DECISIONS.md) so the project-wide decision ledger stays readable.
 
 The broader design narrative remains in [HASHED_ASM.md](HASHED_ASM.md), the
-interactive/batch command-surface note is in
+future interactive/batch command-surface idea is parked in
 [INTERACTIVE_BATCH.md](INTERACTIVE_BATCH.md), and open questions/working notes
 remain in [../QCC/ASM.md](../QCC/ASM.md).
 
@@ -30,10 +30,10 @@ Settled v1 overview:
 - V1 reports the current session: address range, bytes, counts, unresolved
   fixups, used symbols with line numbers, unused session symbols, and resident
   symbols referenced.
-- Interactive and batch ASM are monitor input-driver modes for the same full
-  ASM session, selected as `ASM I` or `ASM B`. They are not separate parser or
-  fixup paths. `ASM I` is prompted and chatty; `ASM B` is quiet while accepted
-  source lines flow. Both modes finalize through `END`/`ASM_END`.
+- Current ASM uses one operator-facing session input path for typed and pasted
+  source. Pasting is not a separate batch mode today. The future `ASM I`/`ASM B`
+  split is only a parked command-surface idea, and it must not change parser,
+  fixup, emitter, or `END` behavior if added later.
 - ASM is designed to grow to HIMON-scale symbol tables. The RAM session table is
   the workbench; resident/packed symbol tables are the scalable library side.
 - ASM works with, uses, and respects the hashing/RJOIN split. Hashing finds
@@ -64,7 +64,7 @@ ASM 2.20   fixups / patch records
 ASM 2.30   DB/DS/ORG/END directive handlers
 ASM 2.40   report/listing basics
 ASM 2.50   status/error model
-ASM 2.60   source input driver / interactive-batch handling
+ASM 2.60   source input driver / pasted-line handling
 
 ASM 3.00   memory overview
 ASM 3.10   RAM workspace map and table layouts
@@ -584,14 +584,12 @@ A [addr] [label[:]] MMM [operand] .
   `SYS_READ_CSTRING_ECHO_UPPER`, prints compact `OK`/`ERR` feedback, and
   reopens at the pre-error PC after a rejected line; v1 does not keep parsing
   after an error.
-- The intended monitor-facing command surface is `ASM I` for a prompted
-  interactive session and `ASM B` for a quiet batch/paste session. Both modes
-  call the same `ASM_BEGIN` / `ASM_ASSEMBLE_LINE` / `ASM_END` spine and both
-  allow fixups to span input lines until `END`. Prompting, per-line status, PC
-  display, emitted-byte display, and definition/fixup hints belong to `ASM I`.
-  `ASM B` suppresses prompts and routine accepted-line chatter, but still
-  reports errors and final status. Do not add `.Q`/`.V` source directives for
-  this; the mode is selected by HIMON before the source stream begins.
+- The current runtime console treats human typing and pasted source as the same
+  line input stream. It calls the same `ASM_BEGIN` / `ASM_ASSEMBLE_LINE` /
+  `ASM_END` spine, allows fixups to span input lines until `END`, and uses the
+  same prompt/status/error/quench behavior for both typed and pasted lines. A
+  future `ASM I`/`ASM B` command split is parked as a later presentation idea,
+  not current behavior. Do not add `.Q`/`.V` source directives for this.
 - ASM 2.72 keeps the runtime paste wrapper stricter than the line-at-a-time
   ICO: all failure exits funnel through a quench path. It prints the failure,
   drains RX with `SYS_FLUSH_RX`, then consumes timed input with

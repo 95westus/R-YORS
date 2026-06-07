@@ -26,7 +26,7 @@ connect.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
 - [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and parked ideas.
 - [ASM](ASM/HASHED_ASM.md) - onboard assembler and symbol reference material,
-  including [ASM I/B sessions](ASM/INTERACTIVE_BATCH.md).
+  including the parked future [ASM I/B idea](ASM/INTERACTIVE_BATCH.md).
 - [QCC](QCC/INDEX.md) - active Questions, Comments, Concerns working notes.
 - [PLANNING](PLANNING/TODO.md) - near-term work and future direction.
 - [META](META/XREF.md) - bibliography and cross-reference.
