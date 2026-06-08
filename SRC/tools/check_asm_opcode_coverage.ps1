@@ -90,6 +90,13 @@ function Read-OpcodeForLabel {
 
 Add-ExpectedRow 'RTS' 'NONE' 0x60
 Add-ExpectedRow 'INX' 'NONE' 0xE8
+Add-ExpectedRow 'CLC' 'NONE' 0x18
+Add-ExpectedRow 'CLD' 'NONE' 0xD8
+Add-ExpectedRow 'CLI' 'NONE' 0x58
+Add-ExpectedRow 'CLV' 'NONE' 0xB8
+Add-ExpectedRow 'SEC' 'NONE' 0x38
+Add-ExpectedRow 'SED' 'NONE' 0xF8
+Add-ExpectedRow 'SEI' 'NONE' 0x78
 Add-ExpectedRow 'LDX' 'IMM8' 0xA2
 Add-ExpectedRow 'LDY' 'IMM8' 0xA0
 Add-ExpectedRow 'CPX' 'IMM8' 0xE0
@@ -232,6 +239,15 @@ foreach ($mnemonic in ($actualHandlers.Keys | Sort-Object)) {
     }
 
     $handlerBlock = Get-AsmLabelBlock $handlerLabel
+    $noneTableRow = [regex]::Match(
+        $handlerBlock,
+        '(?m)^\s*DB\s+ASM_VID_' + [regex]::Escape($mnemonic) + '\s*,\s*\$([0-9A-Fa-f]{2})\s*$'
+    )
+    if ($noneTableRow.Success) {
+        Add-ActualRow $mnemonic 'NONE' ([Convert]::ToInt32($noneTableRow.Groups[1].Value, 16)) $handlerLabel
+        continue
+    }
+
     $modeMatches = [regex]::Matches(
         $handlerBlock,
         'CMP\s+#ASM_OPM_([A-Z0-9_]+)\s*\n\s*BEQ\s+(ASM_FIND_OPCODE_[A-Z0-9_]+)'

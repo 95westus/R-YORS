@@ -4,6 +4,60 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-08 ASM 2.83 Implied Flag Opcode Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` at `$2000` with size `$2FE0` after ASM 2.83
+added implied-only opcode rows for `CLC`, `CLD`, `CLI`, `CLV`, `SEC`, `SED`,
+and `SEI`.
+
+Validated:
+
+- The runtime paste wrapper starts normally with the implied-opcode table active.
+- `CLC`, `CLD`, `CLI`, `CLV`, `SEC`, `SED`, and `SEI` assemble as one-byte
+  implied opcodes.
+- The final PC after all seven rows is `$7257`.
+- The emitted `$7250-$7256` bytes match the W65C02 opcode table.
+
+### Transcript
+
+```text
+>L G
+L S19
+
+L @2000
+L OK=2FE0 GO=2000
+ASM RT PASTE
+ASM> ORG $7250
+OK PC=$7250
+ASM> CLC
+OK PC=$7251
+ASM> CLD
+OK PC=$7252
+ASM> CLI
+OK PC=$7253
+ASM> CLV
+OK PC=$7254
+ASM> SEC
+OK PC=$7255
+ASM> SED
+OK PC=$7256
+ASM> SEI
+OK PC=$7257
+ASM> END
+OK PC=$7257
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7250 7256
+7250: 18 D8 58 B8 38 F8 78 | ..X.8.x
+```
+
 ## 2026-06-08 ASM 2.82 BIT Opcode Board Proof
 
 ### Summary

@@ -1081,6 +1081,50 @@ ASM RT PASTE OK
 7240: 89 12 24 12 2C 12 00 34 | 12 3C 12 00 | ..$.,..4.<..
 ```
 
+ASM 2.83 implied flag opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.83 adds the implied-only flag opcodes `CLC`, `CLD`, `CLI`, `CLV`,
+`SEC`, `SED`, and `SEI`. To keep the runtime paste image below the `$3000`
+size line, `RTS`, `INX`, and these flag mnemonics now share a compact
+implied-opcode table. This changes opcode lookup shape only; runtime paste
+prompting, status names, and table printing remain unchanged. The full-core
+opcode smoke emits all seven new rows into `ASM_CODE_BUF`, and the host opcode
+audit now reports `rows=69` and `mnemonics=31`. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` total `$2FE0`.
+
+Hardware-proven ASM 2.83 implied flag opcode paste emission on 2026-06-08:
+
+```text
+L OK=2FE0 GO=2000
+ASM RT PASTE
+ASM> ORG $7250
+OK PC=$7250
+ASM> CLC
+OK PC=$7251
+ASM> CLD
+OK PC=$7252
+ASM> CLI
+OK PC=$7253
+ASM> CLV
+OK PC=$7254
+ASM> SEC
+OK PC=$7255
+ASM> SED
+OK PC=$7256
+ASM> SEI
+OK PC=$7257
+ASM> END
+OK PC=$7257
+ASM RT PASTE OK
+
+>D 7250 7256
+7250: 18 D8 58 B8 38 F8 78 | ..X.8.x
+```
+
 Current checker requirements:
 
 ```text
@@ -3371,6 +3415,13 @@ BIT $12      -> 24 12
 BIT $0012    -> 2C 12 00
 BIT $12,X    -> 34 12
 BIT $0012,X  -> 3C 12 00
+CLC          -> 18
+CLD          -> D8
+CLI          -> 58
+CLV          -> B8
+SEC          -> 38
+SED          -> F8
+SEI          -> 78
 STZ #0       -> BAD MODE at opcode lookup
 ```
 
@@ -3383,6 +3434,7 @@ E8 E0 10 D0 EB 60 4A 4A 46 12 4E 12 00 56 12 5E 12 00
 2A 2A 26 12 2E 12 00 36 12 3E 12 00
 6A 6A 66 12 6E 12 00 76 12 7E 12 00
 89 12 24 12 2C 12 00 34 12 3C 12 00
+18 D8 58 B8 38 F8 78
 ```
 
 Fixup fixtures:
