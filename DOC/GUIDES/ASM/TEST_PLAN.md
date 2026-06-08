@@ -1656,6 +1656,119 @@ ASM> END
 7510: 6C 12 00 7C 12 00
 ```
 
+ASM 2.95 ALU/load/store indirect opcode matrix on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.95 enables the compact W65C02 indirect matrix for `ADC`, `SBC`, `AND`,
+`ORA`, `EOR`, `CMP`, `LDA`, and `STA`. Each mnemonic now has zero-page
+indexed-indirect `($12,X)`, zero-page indirect `($12)`, and zero-page
+indirect-indexed `($12),Y` rows. The row set follows the `aaa bbb cc` opcode
+shape:
+
+```text
+ADC ($12,X) -> 61 12    ADC ($12) -> 72 12    ADC ($12),Y -> 71 12
+SBC ($12,X) -> E1 12    SBC ($12) -> F2 12    SBC ($12),Y -> F1 12
+AND ($12,X) -> 21 12    AND ($12) -> 32 12    AND ($12),Y -> 31 12
+ORA ($12,X) -> 01 12    ORA ($12) -> 12 12    ORA ($12),Y -> 11 12
+EOR ($12,X) -> 41 12    EOR ($12) -> 52 12    EOR ($12),Y -> 51 12
+CMP ($12,X) -> C1 12    CMP ($12) -> D2 12    CMP ($12),Y -> D1 12
+LDA ($12,X) -> A1 12    LDA ($12) -> B2 12    LDA ($12),Y -> B1 12
+STA ($12,X) -> 81 12    STA ($12) -> 92 12    STA ($12),Y -> 91 12
+```
+
+`STA #imm` still does not exist and is intentionally not added. The full-core
+opcode smoke now emits `$0127` bytes, and the host opcode audit reports
+`rows=175` and `mnemonics=64`. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` total `$31FE`.
+
+Hardware-proven ASM 2.95 indirect matrix paste emission on 2026-06-08: the
+board loaded the `$31FE` paste image and proved all 24 indirect rows. The first
+paste accidentally omitted `ADC ($12)` at the blank prompt and proved the other
+23 rows; the focused follow-up proved `ADC ($12)` as `72 12`.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7530
+OK PC=$7530
+ASM> ADC ($12,X)
+OK PC=$7532
+ASM>
+ASM> ADC ($12),Y
+OK PC=$7534
+ASM> SBC ($12,X)
+OK PC=$7536
+ASM> SBC ($12)
+OK PC=$7538
+ASM> SBC ($12),Y
+OK PC=$753A
+ASM> AND ($12,X)
+OK PC=$753C
+ASM> AND ($12)
+OK PC=$753E
+ASM> AND ($12),Y
+OK PC=$7540
+ASM> ORA ($12,X)
+OK PC=$7542
+ASM> ORA ($12)
+OK PC=$7544
+ASM> ORA ($12),Y
+OK PC=$7546
+ASM> EOR ($12,X)
+OK PC=$7548
+ASM> EOR ($12)
+OK PC=$754A
+ASM> EOR ($12),Y
+OK PC=$754C
+ASM> CMP ($12,X)
+OK PC=$754E
+ASM> CMP ($12)
+OK PC=$7550
+ASM> CMP ($12),Y
+OK PC=$7552
+ASM> LDA ($12,X)
+OK PC=$7554
+ASM> LDA ($12)
+OK PC=$7556
+ASM> LDA ($12),Y
+OK PC=$7558
+ASM> STA ($12,X)
+OK PC=$755A
+ASM> STA ($12)
+OK PC=$755C
+ASM> STA ($12),Y
+OK PC=$755E
+ASM> END
+OK PC=$755E
+>D 7530 755F
+7530: 61 12 71 12 E1 12 F2 12 | F1 12 21 12 32 12 31 12
+7540: 01 12 12 12 11 12 41 12 | 52 12 51 12 C1 12 D2 12
+7550: D1 12 A1 12 B2 12 B1 12 | 81 12 92 12 91 12 00 00
+```
+
+The omitted row was then proved directly:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7555
+OK PC=$7555
+ASM> ADC ($12)
+OK PC=$7557
+ASM> END
+OK PC=$7557
+>D 7555 7557
+7555: 72 12 12
+```
+
+Only `$7555-$7556` belong to the emitted `ADC ($12)` instruction; `$7557` is
+outside the emitted two-byte row and retains prior memory.
+
 Current checker requirements:
 
 ```text

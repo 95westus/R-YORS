@@ -3980,3 +3980,110 @@ ASM RT PASTE OK
 
 Interpretation: `JMP ($0012)` emits `6C 12 00`, and `JMP ($0012,X)` emits
 `7C 12 00`. The final PC `$7516` proves both three-byte forms were accepted.
+
+## 2026-06-08 ASM 2.95 Indirect Matrix Proof
+
+Purpose: prove the W65C02 zero-page indirect opcode matrix for `ADC`, `SBC`,
+`AND`, `ORA`, `EOR`, `CMP`, `LDA`, and `STA`.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7530
+OK PC=$7530
+ASM> ADC ($12,X)
+OK PC=$7532
+ASM>
+ASM> ADC ($12),Y
+OK PC=$7534
+ASM> SBC ($12,X)
+OK PC=$7536
+ASM> SBC ($12)
+OK PC=$7538
+ASM> SBC ($12),Y
+OK PC=$753A
+ASM> AND ($12,X)
+OK PC=$753C
+ASM> AND ($12)
+OK PC=$753E
+ASM> AND ($12),Y
+OK PC=$7540
+ASM> ORA ($12,X)
+OK PC=$7542
+ASM> ORA ($12)
+OK PC=$7544
+ASM> ORA ($12),Y
+OK PC=$7546
+ASM> EOR ($12,X)
+OK PC=$7548
+ASM> EOR ($12)
+OK PC=$754A
+ASM> EOR ($12),Y
+OK PC=$754C
+ASM> CMP ($12,X)
+OK PC=$754E
+ASM> CMP ($12)
+OK PC=$7550
+ASM> CMP ($12),Y
+OK PC=$7552
+ASM> LDA ($12,X)
+OK PC=$7554
+ASM> LDA ($12)
+OK PC=$7556
+ASM> LDA ($12),Y
+OK PC=$7558
+ASM> STA ($12,X)
+OK PC=$755A
+ASM> STA ($12)
+OK PC=$755C
+ASM> STA ($12),Y
+OK PC=$755E
+ASM> END
+OK PC=$755E
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=F3 Y=0F P=75 S=FD NV-BdIzC
+>D 7530 755F
+7530: 61 12 71 12 E1 12 F2 12 | F1 12 21 12 32 12 31 12 | a.q.......!.2.1.
+7540: 01 12 12 12 11 12 41 12 | 52 12 51 12 C1 12 D2 12 | ......A.R.Q.....
+7550: D1 12 A1 12 B2 12 B1 12 | 81 12 92 12 91 12 00 00 | ................
+```
+
+The blank prompt after `ADC ($12,X)` means `ADC ($12)` was omitted from that
+paste. A focused follow-up proved the missing row:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7555
+OK PC=$7555
+ASM> ADC ($12)
+OK PC=$7557
+ASM> END
+OK PC=$7557
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=F3 Y=0F P=75 S=FD NV-BdIzC
+>D 7555 7557
+7555: 72 12 12 | r..
+>
+```
+
+Interpretation: the first run proves the 23 emitted rows in the dump; the
+second run proves `ADC ($12)` emits `72 12`. In the focused dump, only
+`$7555-$7556` are part of the emitted instruction. `$7557` is beyond the
+post-emission PC and retains prior memory.
