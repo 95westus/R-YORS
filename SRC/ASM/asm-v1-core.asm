@@ -283,6 +283,7 @@ ASM_VID_BMI            EQU             $0A
 ASM_VID_BNE            EQU             $0B
 ASM_VID_BPL            EQU             $0C
 ASM_VID_BRA            EQU             $0D
+ASM_VID_BRK            EQU             $0E
 ASM_VID_BVC            EQU             $0F
 ASM_VID_BVS            EQU             $10
 ASM_VID_CLC            EQU             $11
@@ -299,6 +300,7 @@ ASM_VID_EOR            EQU             $20
 ASM_VID_INC            EQU             $23
 ASM_VID_INX            EQU             $24
 ASM_VID_INY            EQU             $25
+ASM_VID_JMP            EQU             $26
 ASM_VID_JSR            EQU             $27
 ASM_VID_LDA            EQU             $28
 ASM_VID_LDX            EQU             $29
@@ -2840,14 +2842,22 @@ ASM_SMOKE_OPCODE:
                         LDY             #>ASM_PARSE_AT_RTS
                         JSR             ASM_SMOKE_EMIT_LINE
                         BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        LDX             #<ASM_OPCODE_JMP_ABS
+                        LDY             #>ASM_OPCODE_JMP_ABS
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
+                        LDX             #<ASM_OPCODE_BRK_IMM
+                        LDY             #>ASM_OPCODE_BRK_IMM
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_INDEX_ROWS
-                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_SHIFT_ROWS
-                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_BIT_ROWS
-                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_STORE_ROWS
-                        BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_RMW_ROWS
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_ALU_ROWS
@@ -3108,7 +3118,7 @@ ASM_SMOKE_OPCODE_CHECK_LOOP:
                         JMP             ASM_SMOKE_OPCODE_CHECK_FAIL
 ASM_SMOKE_OPCODE_CHECK_BYTE_OK:
                         INX
-                        CPX             #$EA
+                        CPX             #$EF
                         BNE             ASM_SMOKE_OPCODE_CHECK_LOOP
                         SEC
                         RTS
@@ -3122,7 +3132,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         SBC             ASM_START_PC_HI
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$EA
+                        CMP             #$EF
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_HIGH_PC_LO
                         SEC
@@ -3132,7 +3142,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         SBC             ASM_START_PC_HI
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$EA
+                        CMP             #$EF
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         SEC
                         RTS
@@ -5589,6 +5599,10 @@ ASM_FIND_OPCODE_TSB:
                         DB              ASM_VID_TSB,ASM_OPM_ABS16,$0C
 ASM_FIND_OPCODE_JSR:
                         DB              ASM_VID_JSR,ASM_OPM_ABS16,$20
+ASM_FIND_OPCODE_JMP:
+                        DB              ASM_VID_JMP,ASM_OPM_ABS16,$4C
+ASM_FIND_OPCODE_BRK:
+                        DB              ASM_VID_BRK,ASM_OPM_IMM8,$00
                         DB              $FF,$00,$00
 
 ASM_FIND_OPCODE_ASL:
@@ -9304,6 +9318,8 @@ ASM_CLASS_LDA_A:       DB              "        LDA A",0
 ASM_CLASS_LDA_DEC:     DB              "        LDA 12",0
 ASM_OPCODE_LOOP_LABEL: DB              "LOOP",0
 ASM_OPCODE_JSR_FOO:    DB              "        JSR FOO",0
+ASM_OPCODE_JMP_ABS:    DB              "        JMP $0012",0
+ASM_OPCODE_BRK_IMM:    DB              "        BRK #$12",0
 ASM_OPCODE_LDX_ZP:     DB              "        LDX $12",0
 ASM_OPCODE_LDX_ABS:    DB              "        LDX $0012",0
 ASM_OPCODE_LDX_ZPY:    DB              "        LDX $12,Y",0
@@ -9570,6 +9586,7 @@ ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
                         DB              $00,$71
                         DB              $4D,$10,$71,$8D,$10,$71,$E8,$E0
                         DB              $10,$D0,$EB,$60
+                        DB              $4C,$12,$00,$00,$12
                         DB              $A6,$12,$AE,$12,$00,$B6,$12
                         DB              $BE,$12,$00
                         DB              $A4,$12,$AC,$12,$00,$B4,$12

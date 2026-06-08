@@ -1538,6 +1538,19 @@ ASM RT PASTE OK
 >
 ```
 
+ASM 2.91 `JMP` and ABI-style `BRK` opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.91 adds absolute `JMP` and the HIMON ABI/API trap form `BRK #imm8`.
+`BRK` is deliberately not implied in ASM v1: it always emits the trap number
+byte after opcode `$00`, making `BRK #$12` emit `00 12`. The full-core opcode
+smoke now emits `$EF` bytes, and the host opcode audit reports `rows=148` and
+`mnemonics=64`. The host gate passes with `asm-v1-runtime-paste-2000.s19`
+total `$2FFA`.
+
 Current checker requirements:
 
 ```text
