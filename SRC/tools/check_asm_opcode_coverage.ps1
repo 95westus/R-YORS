@@ -119,11 +119,28 @@ Add-ExpectedRow 'RTI' 'NONE' 0x40
 Add-ExpectedRow 'LDX' 'IMM8' 0xA2
 Add-ExpectedRow 'LDY' 'IMM8' 0xA0
 Add-ExpectedRow 'CPX' 'IMM8' 0xE0
+Add-ExpectedRow 'CPY' 'IMM8' 0xC0
+Add-ExpectedRow 'CPY' 'ZP8' 0xC4
+Add-ExpectedRow 'CPY' 'ABS16' 0xCC
 
 Add-ExpectedRow 'STZ' 'ZP8' 0x64
 Add-ExpectedRow 'STZ' 'ABS16' 0x9C
 Add-ExpectedRow 'STZ' 'ZP_X' 0x74
 Add-ExpectedRow 'STZ' 'ABS_X' 0x9E
+
+Add-ExpectedRow 'STX' 'ZP8' 0x86
+Add-ExpectedRow 'STX' 'ABS16' 0x8E
+Add-ExpectedRow 'STX' 'ZP_Y' 0x96
+
+Add-ExpectedRow 'STY' 'ZP8' 0x84
+Add-ExpectedRow 'STY' 'ABS16' 0x8C
+Add-ExpectedRow 'STY' 'ZP_X' 0x94
+
+Add-ExpectedRow 'TRB' 'ZP8' 0x14
+Add-ExpectedRow 'TRB' 'ABS16' 0x1C
+
+Add-ExpectedRow 'TSB' 'ZP8' 0x04
+Add-ExpectedRow 'TSB' 'ABS16' 0x0C
 
 Add-ExpectedRow 'EOR' 'IMM8' 0x49
 Add-ExpectedRow 'EOR' 'ZP8' 0x45
@@ -264,6 +281,17 @@ foreach ($mnemonic in ($actualHandlers.Keys | Sort-Object)) {
     )
     if ($noneTableRow.Success) {
         Add-ActualRow $mnemonic 'NONE' ([Convert]::ToInt32($noneTableRow.Groups[1].Value, 16)) $handlerLabel
+        continue
+    }
+
+    $modeTableRows = [regex]::Matches(
+        $handlerBlock,
+        '(?m)^\s*DB\s+ASM_VID_' + [regex]::Escape($mnemonic) + '\s*,\s*ASM_OPM_([A-Z0-9_]+)\s*,\s*\$([0-9A-Fa-f]{2})\s*$'
+    )
+    if ($modeTableRows.Count -gt 0) {
+        foreach ($rowMatch in $modeTableRows) {
+            Add-ActualRow $mnemonic $rowMatch.Groups[1].Value ([Convert]::ToInt32($rowMatch.Groups[2].Value, 16)) $handlerLabel
+        }
         continue
     }
 

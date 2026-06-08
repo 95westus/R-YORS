@@ -1207,6 +1207,21 @@ ASM RT PASTE OK
 7270: FA 7A 40 | .z@
 ```
 
+ASM 2.86 STX/STY/TRB/TSB/CPY opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.86 adds active rows for `STX`, `STY`, `TRB`, `TSB`, and `CPY`.
+`STX $12,Y` introduces the current zero-page `,Y` operand mode; absolute `,Y`
+remains rejected until a mnemonic that needs it is added. The simple opcode
+families now share a compact `VID,MODE,OPCODE` table, covering the existing
+`LDX`, `LDY`, `CPX`, `STZ`, `EOR`, `STA`, `LDA`, `BIT`, and `JSR` rows plus
+the new rows. The full-core opcode smoke now emits `$7F` bytes, and the host
+opcode audit reports `rows=101` and `mnemonics=55`. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` total `$2F48`.
+
 Current checker requirements:
 
 ```text
