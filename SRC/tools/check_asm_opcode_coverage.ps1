@@ -116,6 +116,12 @@ Add-ExpectedRow 'LDA' 'ABS16' 0xAD
 Add-ExpectedRow 'LDA' 'ZP_X' 0xB5
 Add-ExpectedRow 'LDA' 'ABS_X' 0xBD
 
+Add-ExpectedRow 'BIT' 'IMM8' 0x89
+Add-ExpectedRow 'BIT' 'ZP8' 0x24
+Add-ExpectedRow 'BIT' 'ABS16' 0x2C
+Add-ExpectedRow 'BIT' 'ZP_X' 0x34
+Add-ExpectedRow 'BIT' 'ABS_X' 0x3C
+
 Add-ExpectedRow 'ASL' 'NONE' 0x0A
 Add-ExpectedRow 'ASL' 'ACC' 0x0A
 Add-ExpectedRow 'ASL' 'ZP8' 0x06

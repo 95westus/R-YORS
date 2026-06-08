@@ -1043,6 +1043,20 @@ ASM RT PASTE OK
 7220: 12 7E 12 00 | .~..
 ```
 
+ASM 2.82 `BIT` opcode rows on 2026-06-07:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.82 adds `BIT` opcode lookup rows for immediate, zero-page, absolute,
+zero-page X, and absolute X forms. The immediate row is the W65C02-specific
+`BIT #imm` opcode `$89`, making this slice the first non-shift 65C02-only
+opcode form in ASM v1. The full-core opcode smoke emits all five rows into
+`ASM_CODE_BUF`, and the host opcode audit now reports `rows=62` and
+`mnemonics=24`. The host gate passes with `asm-v1-runtime-paste-2000.s19`
+total `$2FBB`.
+
 Current checker requirements:
 
 ```text
@@ -3328,6 +3342,11 @@ ROR $12      -> 66 12
 ROR $0012    -> 6E 12 00
 ROR $12,X    -> 76 12
 ROR $0012,X  -> 7E 12 00
+BIT #$12     -> 89 12
+BIT $12      -> 24 12
+BIT $0012    -> 2C 12 00
+BIT $12,X    -> 34 12
+BIT $0012,X  -> 3C 12 00
 STZ #0       -> BAD MODE at opcode lookup
 ```
 
@@ -3339,6 +3358,7 @@ A2 00 A0 4D 9C 10 71 9D 00 71 4D 10 71 8D 10 71
 E8 E0 10 D0 EB 60 4A 4A 46 12 4E 12 00 56 12 5E 12 00
 2A 2A 26 12 2E 12 00 36 12 3E 12 00
 6A 6A 66 12 6E 12 00 76 12 7E 12 00
+89 12 24 12 2C 12 00 34 12 3C 12 00
 ```
 
 Fixup fixtures:
