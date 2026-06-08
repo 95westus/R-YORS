@@ -4087,3 +4087,33 @@ Interpretation: the first run proves the 23 emitted rows in the dump; the
 second run proves `ADC ($12)` emits `72 12`. In the focused dump, only
 `$7555-$7556` are part of the emitted instruction. `$7557` is beyond the
 post-emission PC and retains prior memory.
+
+## 2026-06-08 ASM 2.96 STA Absolute Y Proof
+
+Purpose: prove the remaining legal `STA` addressing row, absolute indexed Y.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3201 GO=2000
+ASM RT PASTE
+ASM> ORG $7560
+OK PC=$7560
+ASM> STA $0012,Y
+OK PC=$7563
+ASM> END
+OK PC=$7563
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7560 7562
+7560: 99 12 00 | ...
+>
+```
+
+Interpretation: `STA $0012,Y` emits `99 12 00`, and the final PC `$7563`
+proves the three-byte absolute indexed Y form was accepted.

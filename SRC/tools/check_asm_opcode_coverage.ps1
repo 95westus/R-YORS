@@ -275,6 +275,7 @@ Add-ExpectedRow 'STA' 'ABS16' 0x8D
 Add-ExpectedRow 'STA' 'ZP_IND' 0x92
 Add-ExpectedRow 'STA' 'ZP_X' 0x95
 Add-ExpectedRow 'STA' 'ZP_IND_Y' 0x91
+Add-ExpectedRow 'STA' 'ABS_Y' 0x99
 Add-ExpectedRow 'STA' 'ABS_X' 0x9D
 
 Add-ExpectedRow 'LDA' 'IMM8' 0xA9

@@ -1769,6 +1769,44 @@ OK PC=$7557
 Only `$7555-$7556` belong to the emitted `ADC ($12)` instruction; `$7557` is
 outside the emitted two-byte row and retains prior memory.
 
+ASM 2.96 `STA abs,Y` opcode row on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.96 completes the legal W65C02 `STA` row set by adding absolute indexed Y:
+
+```text
+STA $0012,Y -> 99 12 00
+```
+
+`STA #imm` still does not exist, and `STA $12,Y` is still intentionally not
+added because there is no zero-page Y `STA` opcode. The full-core opcode smoke
+now emits `$012A` bytes, and the host opcode audit reports `rows=176` and
+`mnemonics=64`. The host gate passes with `asm-v1-runtime-paste-2000.s19`
+total `$3201`.
+
+Hardware-proven ASM 2.96 `STA abs,Y` paste emission on 2026-06-08: the board
+loaded the `$3201` paste image, accepted `STA $0012,Y`, finalized through
+`END`, and dumped `99 12 00` at `$7560-$7562`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3201 GO=2000
+ASM RT PASTE
+ASM> ORG $7560
+OK PC=$7560
+ASM> STA $0012,Y
+OK PC=$7563
+ASM> END
+OK PC=$7563
+>D 7560 7562
+7560: 99 12 00
+```
+
 Current checker requirements:
 
 ```text

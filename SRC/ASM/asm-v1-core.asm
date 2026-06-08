@@ -3129,7 +3129,7 @@ ASM_SMOKE_OPCODE_INDIRECT_LOOP:
                         PLX
                         BCC             ASM_SMOKE_OPCODE_INDIRECT_FAIL
                         INX
-                        CPX             #$18
+                        CPX             #$19
                         BNE             ASM_SMOKE_OPCODE_INDIRECT_LOOP
                         SEC
                         RTS
@@ -3209,7 +3209,7 @@ ASM_SMOKE_OPCODE_CHECK_LOOP_HI:
                         JMP             ASM_SMOKE_OPCODE_CHECK_FAIL
 ASM_SMOKE_OPCODE_CHECK_BYTE_HI_OK:
                         INX
-                        CPX             #$28
+                        CPX             #$2B
                         BNE             ASM_SMOKE_OPCODE_CHECK_LOOP_HI
                         SEC
                         RTS
@@ -3224,7 +3224,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         CMP             #$01
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$27
+                        CMP             #$2A
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_HIGH_PC_LO
                         SEC
@@ -3235,7 +3235,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         CMP             #$01
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$27
+                        CMP             #$2A
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         SEC
                         RTS
@@ -5762,6 +5762,7 @@ ASM_FIND_OPCODE_STA:
                         DB              ASM_VID_STA,ASM_OPM_ZP_IND,$92
                         DB              ASM_VID_STA,ASM_OPM_ZP_X,$95
                         DB              ASM_VID_STA,ASM_OPM_ZP_IND_Y,$91
+                        DB              ASM_VID_STA,ASM_OPM_ABS_Y,$99
                         DB              ASM_VID_STA,ASM_OPM_ABS_X,$9D
 ASM_FIND_OPCODE_JMP:
                         DB              ASM_VID_JMP,ASM_OPM_ABS16,$4C
@@ -9801,6 +9802,7 @@ ASM_OPCODE_LDA_ZPINDY: DB              "        LDA ($12),Y",0
 ASM_OPCODE_STA_ZPXIND: DB              "        STA ($12,X)",0
 ASM_OPCODE_STA_ZPIND:  DB              "        STA ($12)",0
 ASM_OPCODE_STA_ZPINDY: DB              "        STA ($12),Y",0
+ASM_OPCODE_STA_ABSY:   DB              "        STA $0012,Y",0
 ASM_OPCODE_CLC:        DB              "        CLC",0
 ASM_OPCODE_CLD:        DB              "        CLD",0
 ASM_OPCODE_CLI:        DB              "        CLI",0
@@ -9945,7 +9947,7 @@ ASM_OPCODE_INDIRECT_PTR_LO:
                         DB              <ASM_OPCODE_LDA_ZPXIND,<ASM_OPCODE_LDA_ZPIND
                         DB              <ASM_OPCODE_LDA_ZPINDY
                         DB              <ASM_OPCODE_STA_ZPXIND,<ASM_OPCODE_STA_ZPIND
-                        DB              <ASM_OPCODE_STA_ZPINDY
+                        DB              <ASM_OPCODE_STA_ZPINDY,<ASM_OPCODE_STA_ABSY
 ASM_OPCODE_INDIRECT_PTR_HI:
                         DB              >ASM_OPCODE_ADC_ZPXIND,>ASM_OPCODE_ADC_ZPIND
                         DB              >ASM_OPCODE_ADC_ZPINDY
@@ -9962,7 +9964,7 @@ ASM_OPCODE_INDIRECT_PTR_HI:
                         DB              >ASM_OPCODE_LDA_ZPXIND,>ASM_OPCODE_LDA_ZPIND
                         DB              >ASM_OPCODE_LDA_ZPINDY
                         DB              >ASM_OPCODE_STA_ZPXIND,>ASM_OPCODE_STA_ZPIND
-                        DB              >ASM_OPCODE_STA_ZPINDY
+                        DB              >ASM_OPCODE_STA_ZPINDY,>ASM_OPCODE_STA_ABSY
 ASM_OPCODE_IMPLIED_PTR_LO:
                         DB              <ASM_OPCODE_CLC,<ASM_OPCODE_CLD
                         DB              <ASM_OPCODE_CLI,<ASM_OPCODE_CLV
@@ -10063,6 +10065,7 @@ ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
                         DB              $C1,$12,$D2,$12,$D1,$12
                         DB              $A1,$12,$B2,$12,$B1,$12
                         DB              $81,$12,$92,$12,$91,$12
+                        DB              $99,$12,$00
                         DB              $18,$D8,$58,$B8,$38,$F8,$78
                         DB              $EA,$CA,$88,$C8,$AA,$A8,$BA,$8A
                         DB              $9A,$98,$48,$08,$DA,$5A,$68,$28
