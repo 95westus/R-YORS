@@ -950,6 +950,12 @@ send SRC/BUILD/s19/himon-search-flash-bb80.s19
 >N              still steps trapped context
 ```
 
+Observed current ROM quote-command catalog text:
+
+```text
+270C92A5 C1D6 05 "[TEXT]" -> #5F6A0F7A# STR8 MATCH!
+```
+
 Observed K=`$03` flash-shadow proof before the K=`$05` split:
 
 ```text

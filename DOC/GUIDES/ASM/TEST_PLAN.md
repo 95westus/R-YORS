@@ -1270,6 +1270,20 @@ ASM RT PASTE OK
 7290: 1C 12 00 04 12 0C 12 00 | C0 12 C4 12 CC 12 00 | ...............
 ```
 
+ASM 2.87 `INC/DEC/CMP` opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.87 adds active rows for `INC`, `DEC`, and `CMP`. `INC` and `DEC`
+accept the W65C02 accumulator spelling `INC A`/`DEC A`, plus zero-page,
+absolute, zero-page indexed-X, and absolute indexed-X address forms; the
+operandless forms remain unsupported. `CMP` adds immediate and the same
+non-indirect address forms. The full-core opcode smoke now emits `$A1` bytes,
+and the host opcode audit reports `rows=116` and `mnemonics=58`. The host gate
+passes with `asm-v1-runtime-paste-2000.s19` total `$2F7D`.
+
 Current checker requirements:
 
 ```text

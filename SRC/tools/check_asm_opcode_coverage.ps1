@@ -123,6 +123,24 @@ Add-ExpectedRow 'CPY' 'IMM8' 0xC0
 Add-ExpectedRow 'CPY' 'ZP8' 0xC4
 Add-ExpectedRow 'CPY' 'ABS16' 0xCC
 
+Add-ExpectedRow 'CMP' 'IMM8' 0xC9
+Add-ExpectedRow 'CMP' 'ZP8' 0xC5
+Add-ExpectedRow 'CMP' 'ABS16' 0xCD
+Add-ExpectedRow 'CMP' 'ZP_X' 0xD5
+Add-ExpectedRow 'CMP' 'ABS_X' 0xDD
+
+Add-ExpectedRow 'INC' 'ACC' 0x1A
+Add-ExpectedRow 'INC' 'ZP8' 0xE6
+Add-ExpectedRow 'INC' 'ABS16' 0xEE
+Add-ExpectedRow 'INC' 'ZP_X' 0xF6
+Add-ExpectedRow 'INC' 'ABS_X' 0xFE
+
+Add-ExpectedRow 'DEC' 'ACC' 0x3A
+Add-ExpectedRow 'DEC' 'ZP8' 0xC6
+Add-ExpectedRow 'DEC' 'ABS16' 0xCE
+Add-ExpectedRow 'DEC' 'ZP_X' 0xD6
+Add-ExpectedRow 'DEC' 'ABS_X' 0xDE
+
 Add-ExpectedRow 'STZ' 'ZP8' 0x64
 Add-ExpectedRow 'STZ' 'ABS16' 0x9C
 Add-ExpectedRow 'STZ' 'ZP_X' 0x74

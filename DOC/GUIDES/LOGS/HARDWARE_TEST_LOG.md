@@ -3596,3 +3596,15 @@ ASM RT PASTE OK
 
 Interpretation: the dump matches the expected W65C02 opcodes:
 `86/8E/96`, `84/8C/94`, `14/1C`, `04/0C`, and `C0/C4/CC`.
+
+## 2026-06-08 HIMON Quote Catalog K=05 Proof
+
+Purpose: prove the quote-command FNV catalog entry now reports kind `$05` and
+prints the STR8 easter-egg text through the `#` catalog view.
+
+```text
+270C92A5 C1D6 05 "[TEXT]" -> #5F6A0F7A# STR8 MATCH!
+```
+
+Interpretation: hash `$270C92A5` resolves to entry `$C1D6`, kind `$05`
+(`EXEC+TEXT`), and its extra text advertises the quoted-text hash easter egg.
