@@ -3749,3 +3749,46 @@ ASM RT PASTE OK
 Interpretation: the dump matches the expected W65C02 opcodes:
 `69/65/6D/75/7D`, `E9/E5/ED/F5/FD`, `29/25/2D/35/3D`, and
 `09/05/0D/15/1D`.
+
+## 2026-06-08 ASM 2.89 Source-Width Address Proof
+
+Purpose: prove that source width, not numeric value, controls zero-page versus
+absolute address emission for `EQU` symbols.
+
+```text
+>L G
+L S19
+L @2000
+L OK=2FB9 GO=2000
+ASM RT PASTE
+ASM> ORG $7300
+OK PC=$7300
+ASM> ZP_OFFSET0 EQU $00
+OK PC=$7300
+ASM> ABS_OFFSET0 EQU $0000
+OK PC=$7300
+ASM> LDA ZP_OFFSET0
+OK PC=$7302
+ASM> LDA ABS_OFFSET0
+OK PC=$7305
+ASM> END
+OK PC=$7305
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 0000  01 03 17 0002 01  0004  ZP_OFFSET0
+01 01 0000  01 04 17 0003 01  0005  ABS_OFFSET0
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=AE Y=0F P=75 S=FD NV-BdIzC
+>D 7300 7304
+7300: A5 00 AD 00 00 | .....
+>
+```
+
+Interpretation: `ZP_OFFSET0` stores width `$03` and emits `A5 00`;
+`ABS_OFFSET0` stores width `$04` and emits `AD 00 00` despite having the
+same numeric value.
