@@ -172,6 +172,8 @@ Add-ExpectedRow 'STP' 'NONE' 0xDB
 for ($bit = 0; $bit -lt 8; $bit++) {
     Add-ExpectedRow 'RMB' ("BIT{0}_ZP" -f $bit) (0x07 + ($bit * 0x10))
     Add-ExpectedRow 'SMB' ("BIT{0}_ZP" -f $bit) (0x87 + ($bit * 0x10))
+    Add-ExpectedRow 'BBR' ("BIT{0}_ZP_REL" -f $bit) (0x0F + ($bit * 0x10))
+    Add-ExpectedRow 'BBS' ("BIT{0}_ZP_REL" -f $bit) (0x8F + ($bit * 0x10))
 }
 Add-ExpectedRow 'LDX' 'IMM8' 0xA2
 Add-ExpectedRow 'LDX' 'ZP8' 0xA6
@@ -418,19 +420,29 @@ function Add-ActualRow {
 
 foreach ($mnemonic in ($actualHandlers.Keys | Sort-Object)) {
     $handlerLabel = "ASM_FIND_OPCODE_$mnemonic"
-    if ($mnemonic -eq 'RMB' -or $mnemonic -eq 'SMB') {
+    if ($mnemonic -eq 'RMB' -or $mnemonic -eq 'SMB' -or
+            $mnemonic -eq 'BBR' -or $mnemonic -eq 'BBS') {
+        $mode = 'BIT_ZP'
+        $modeSuffix = 'ZP'
+        if ($mnemonic -eq 'BBR' -or $mnemonic -eq 'BBS') {
+            $mode = 'BIT_ZP_REL'
+            $modeSuffix = 'ZP_REL'
+        }
+
         $handlerBlock = Get-AsmLabelBlock $handlerLabel
         if (-not [regex]::IsMatch(
                 $handlerBlock,
-                'CMP\s+#ASM_OPM_BIT_ZP\s*\n\s*BEQ\s+ASM_FIND_OPCODE_' +
-                    [regex]::Escape($mnemonic) + '_BIT_ZP'
+                'CMP\s+#ASM_OPM_' + [regex]::Escape($mode) +
+                    '\s*\n\s*BEQ\s+ASM_FIND_OPCODE_' +
+                    [regex]::Escape($mnemonic) + '_' +
+                    [regex]::Escape($mode)
             )) {
-            Fail-OpcodeAudit "handler $mnemonic no longer checks BIT_ZP"
+            Fail-OpcodeAudit "handler $mnemonic no longer checks $mode"
         }
 
-        $baseOpcode = Read-OpcodeForLabel "ASM_FIND_OPCODE_${mnemonic}_BIT_ZP"
+        $baseOpcode = Read-OpcodeForLabel "ASM_FIND_OPCODE_${mnemonic}_$mode"
         for ($bit = 0; $bit -lt 8; $bit++) {
-            Add-ActualRow $mnemonic ("BIT{0}_ZP" -f $bit) `
+            Add-ActualRow $mnemonic ("BIT{0}_{1}" -f $bit, $modeSuffix) `
                 ($baseOpcode + ($bit * 0x10)) $handlerLabel
         }
         continue

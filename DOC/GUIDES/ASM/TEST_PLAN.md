@@ -1966,6 +1966,66 @@ ASM> END
 75A0: 37 12 B7 12
 ```
 
+ASM 3.00 `BBR/BBS bit,zp,target` opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 3.00 completes the W65C02 bit-memory branch syntax:
+
+```text
+BBR n,$12,TARGET -> (0F + n*10) 12 rel8
+BBS n,$12,TARGET -> (8F + n*10) 12 rel8
+```
+
+`n` is a resolved bit number from `0` through `7`. The zero-page operand must
+be resolved source-width zero-page in this slice; the branch target may be
+resolved immediately or fixed up from a later label. The full-core opcode smoke
+now emits `$014B` bytes, and the host opcode audit reports `rows=217` and
+`mnemonics=70`. The host gate passes with `asm-v1-runtime-paste-2000.s19`
+total `$33D5`; the standalone smoke also proves an unresolved
+`BBR 3,$12,FOO` relative fixup.
+
+Hardware-proven ASM 3.00 `BBR/BBS bit,zp,target` paste emission on
+2026-06-08: the board loaded the `$33D5` paste image, accepted both
+forward-label bit branches, resolved both fixups as mode `$10`, and dumped
+`3F 12 03 BF 12 01 EA EA` at `$75B0-$75B7`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=33D5 GO=2000
+ASM RT PASTE
+ASM> ORG $75B0
+OK PC=$75B0
+ASM> BBR 3,$12,T0
+OK PC=$75B3
+ASM> BBS 3,$12,T1
+OK PC=$75B6
+ASM> T0 NOP
+OK PC=$75B7
+ASM> T1 NOP
+OK PC=$75B8
+ASM> END
+OK PC=$75B8
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 75B6  01 04 0E 0004 00  0000  T0
+01 01 75B7  01 04 0E 0005 00  0000  T1
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 10   00  75B2 75B3 T0
+01 02 10   00  75B5 75B6 T1
+ASM RT PASTE OK
+>D 75B0 75B7
+#6999B497# HSH_NF!
+>D 75B0 75B7
+75B0: 3F 12 03 BF 12 01 EA EA
+```
+
 Current checker requirements:
 
 ```text
@@ -4151,6 +4211,7 @@ LDA #10    -> IMM8
 LDA $12    -> ZP8
 LDA $0012  -> ABS16
 RMB 3,$12  -> BIT_ZP
+BBR 3,$12,TARGET -> BIT_ZP_REL
 LDX #0     -> IMM8
 CPX #COUNT -> IMM8 from resolved EQU
 STZ SUM    -> ABS16 from resolved EQU
@@ -4171,7 +4232,6 @@ LDA <FOO   -> ZP8/lo8
 LDA #<FOO  -> IMM_LO8
 BRA FOO    -> REL8 fixup
 JSR FOO    -> ABS16 fixup
-BBR 3,$12,TARGET -> BIT_ZP_REL
 ```
 
 Acceptance:

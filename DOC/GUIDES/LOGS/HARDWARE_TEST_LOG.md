@@ -4232,3 +4232,47 @@ ASM RT PASTE OK
 Interpretation: `RMB 3,$12` emits `37 12`, `SMB 3,$12` emits `B7 12`, and
 final PC `$75A4` proves both two-byte bit-memory forms were accepted. The
 first line also proves optional whitespace after the comma is accepted.
+
+## 2026-06-08 ASM 3.00 BBR/BBS Proof
+
+Purpose: prove ASM emits W65C02 `BBR` and `BBS` bit-memory branch opcodes,
+including forward-label relative fixups.
+
+```text
+>L G
+L S19
+L @2000
+L OK=33D5 GO=2000
+ASM RT PASTE
+ASM> ORG $75B0
+OK PC=$75B0
+ASM> BBR 3,$12,T0
+OK PC=$75B3
+ASM> BBS 3,$12,T1
+OK PC=$75B6
+ASM> T0 NOP
+OK PC=$75B7
+ASM> T1 NOP
+OK PC=$75B8
+ASM> END
+OK PC=$75B8
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 75B6  01 04 0E 0004 00  0000  T0
+01 01 75B7  01 04 0E 0005 00  0000  T1
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 10   00  75B2 75B3 T0
+01 02 10   00  75B5 75B6 T1
+ASM RT PASTE OK
+>D 75B0 75B7
+#6999B497# HSH_NF!
+>D 75B0 75B7
+75B0: 3F 12 03 BF 12 01 EA EA | ?.......
+```
+
+Interpretation: `BBR 3,$12,T0` emits `3F 12 03`, `BBS 3,$12,T1` emits
+`BF 12 01`, and final PC `$75B8` proves both three-byte bit-branch forms were
+accepted. The resolved fixup rows show mode `$10`, sites `$75B2/$75B5`, and
+bases `$75B3/$75B6`, matching `BIT_ZP_REL` relative-byte placement.
