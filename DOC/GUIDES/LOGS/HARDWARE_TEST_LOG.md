@@ -3608,3 +3608,72 @@ prints the STR8 easter-egg text through the `#` catalog view.
 
 Interpretation: hash `$270C92A5` resolves to entry `$C1D6`, kind `$05`
 (`EXEC+TEXT`), and its extra text advertises the quoted-text hash easter egg.
+
+## 2026-06-08 ASM 2.87 INC/DEC/CMP Paste Proof
+
+Purpose: prove the ASM v1 runtime paste image at `$2000` emits the new
+`INC`, `DEC`, and `CMP` opcode rows.
+
+```text
+1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0607(2103)
+>L G
+L S19
+L @2000
+L OK=2F7D GO=2000
+ASM RT PASTE
+ASM> ORG $72A0
+OK PC=$72A0
+ASM> INC A
+OK PC=$72A1
+ASM> INC $12
+OK PC=$72A3
+ASM> INC $0012
+OK PC=$72A6
+ASM> INC $12,X
+OK PC=$72A8
+ASM> INC $0012,X
+OK PC=$72AB
+ASM> DEC A
+OK PC=$72AC
+ASM> DEC $12
+OK PC=$72AE
+ASM> DEC $0012
+OK PC=$72B1
+ASM> DEC $12,X
+OK PC=$72B3
+ASM> DEC $0012,X
+OK PC=$72B6
+ASM> CMP #$12
+OK PC=$72B8
+ASM> CMP $12
+OK PC=$72BA
+ASM> CMP $0012
+OK PC=$72BD
+ASM> CMP $12,X
+OK PC=$72BF
+ASM> CMP $0012,X
+OK PC=$72C2
+ASM> END
+OK PC=$72C2
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=72 Y=0F P=75 S=FD NV-BdIzC
+>D 72A0 72C1
+72A0: 1A E6 12 EE 12 00 F6 12 | FE 12 00 3A C6 12 CE 12 | ...........:....
+72B0: 00 D6 12 DE 12 00 C9 12 | C5 12 CD 12 00 D5 12 DD | ................
+72C0: 12 00 | ..
+>
+```
+
+Interpretation: the dump matches the expected W65C02 opcodes:
+`1A/E6/EE/F6/FE`, `3A/C6/CE/D6/DE`, and `C9/C5/CD/D5/DD`.
