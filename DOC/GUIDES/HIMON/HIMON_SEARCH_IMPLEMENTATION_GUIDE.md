@@ -944,6 +944,7 @@ Board proof:
 >L F            enter flash S19 load mode
 send SRC/BUILD/s19/himon-search-flash-bb80.s19
 ># S            should resolve S to $BB8C K=05 S: SEARCH FROM RAM TO HASHED HIMON CMD
+># "            should resolve " to K=05: HASH QUOTED TEXT TO FNV-1A
 >S BB80 BFFF 46 4E D6
 >S BB80 BFFF 'S: SEARCH'
 >N              still steps trapped context

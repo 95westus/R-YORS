@@ -370,7 +370,9 @@ CMD_HASH_LIST_DONE:
 ; uppercase by the top-level reader; leading/trailing spaces are not hashed.
 ; ----------------------------------------------------------------------------
 CMD_QUOTE_HASH_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$A5,$92,$0C,$27,CMD_HASH_KIND_EXEC ; " $270C92A5 EXEC
+                        DB              'F','N',CMD_FNV_SIG2,$A5,$92,$0C,$27,CMD_HASH_KIND_EXEC_TEXT ; " $270C92A5 K=05 EXEC+TEXT
+                        DW              CMD_QUOTE_HASH
+                        DW              TXT_CMD_QUOTE_HASH
 CMD_QUOTE_HASH:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_SKIP_SPACES
@@ -3563,6 +3565,7 @@ MSG_BANNER:              DB              $0D,$0A
                         INCLUDE         "himon-version.inc"
 TXT_BOOT_COLD_RESET:     DB              "BOOT_COLD_RESE",('T'+$80)
 TXT_BOOT_WARM_RESET:     DB              "BOOT_WARM_RESE",('T'+$80)
+TXT_CMD_QUOTE_HASH:      DB              $22,": HASH QUOTED TEXT TO FNV-1",('A'+$80)
 TXT_THE_JOIN_EXEC_XY:    DB              "HASH ACQUIR",('E'+$80)
 TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
 TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)

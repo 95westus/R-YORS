@@ -3539,3 +3539,60 @@ Interpretation:
   the parser fix.
 - Run a later STR8 destructive pass for `B` backup rotation and, separately,
   high-flash failure behavior.
+
+## 2026-06-08 ASM 2.86 STX/STY/TRB/TSB/CPY Paste Proof
+
+Purpose: prove the ASM v1 runtime paste image at `$2000` emits the new
+`STX`, `STY`, `TRB`, `TSB`, and `CPY` opcode rows, including zero-page `,Y`
+for `STX`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=2F48 GO=2000
+ASM RT PASTE
+ASM> ORG $7280
+OK PC=$7280
+ASM> STX $12
+OK PC=$7282
+ASM> STX $0012
+OK PC=$7285
+ASM> STX $12,Y
+OK PC=$7287
+ASM> STY $12
+OK PC=$7289
+ASM> STY $0012
+OK PC=$728C
+ASM> STY $12,X
+OK PC=$728E
+ASM> TRB $12
+OK PC=$7290
+ASM> TRB $0012
+OK PC=$7293
+ASM> TSB $12
+OK PC=$7295
+ASM> TSB $0012
+OK PC=$7298
+ASM> CPY #$12
+OK PC=$729A
+ASM> CPY $12
+OK PC=$729C
+ASM> CPY $0012
+OK PC=$729F
+ASM> END
+OK PC=$729F
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7280 729E
+7280: 86 12 8E 12 00 96 12 84 | 12 8C 12 00 94 12 14 12 | ................
+7290: 1C 12 00 04 12 0C 12 00 | C0 12 C4 12 CC 12 00 | ...............
+>
+```
+
+Interpretation: the dump matches the expected W65C02 opcodes:
+`86/8E/96`, `84/8C/94`, `14/1C`, `04/0C`, and `C0/C4/CC`.
