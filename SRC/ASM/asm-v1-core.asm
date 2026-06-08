@@ -2225,10 +2225,36 @@ ASM_SMOKE_ASSEMBLE_LINE:
                         JSR             ASM_SMOKE_ASSEMBLE_LINE_CHECK_EQU
                         BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
 
+ASM_SMOKE_ASSEMBLE_LINE_FAIL_B:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_WIDTH:
+                        LDX             #<ASM_SMOKE_PARSE_ZP0_EQU
+                        LDY             #>ASM_SMOKE_PARSE_ZP0_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_B
+
+                        LDX             #<ASM_SMOKE_PARSE_ABS0_EQU
+                        LDY             #>ASM_SMOKE_PARSE_ABS0_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_B
+
+                        LDX             #<ASM_SMOKE_PARSE_LDA_ZP0
+                        LDY             #>ASM_SMOKE_PARSE_LDA_ZP0
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_B
+
+                        LDX             #<ASM_SMOKE_PARSE_LDA_ABS0
+                        LDY             #>ASM_SMOKE_PARSE_LDA_ABS0
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_B
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_CHECK_WIDTH
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_B
+
                         LDX             #<ASM_SMOKE_PARSE_END
                         LDY             #>ASM_SMOKE_PARSE_END
                         JSR             ASM_ASSEMBLE_LINE
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_A
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL_B
                         LDA             ASM_SESSION_STATE
                         CMP             #ASM_SESS_ENDED
                         BEQ             ASM_SMOKE_ASSEMBLE_LINE_ENDED_OK
@@ -2245,7 +2271,7 @@ ASM_SMOKE_ASSEMBLE_LINE_ENDED_OK:
                         CMP             #ASM_SESS_FAILED
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL
                         LDA             ASM_LINE_COUNT_LO
-                        CMP             #$07
+                        CMP             #$0B
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL
 
                         LDA             #ASM_BEGINF_HAVE_PC
@@ -2284,6 +2310,28 @@ ASM_SMOKE_ASSEMBLE_LINE_CHECK_EQU:
                         CMP             #$12
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
                         LDA             ASM_SYM_VAL_HI,X
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        SEC
+                        RTS
+
+ASM_SMOKE_ASSEMBLE_LINE_CHECK_WIDTH:
+                        LDA             ASM_SMOKE_TARGET+2
+                        CMP             #$A5
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_SMOKE_TARGET+3
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_SMOKE_TARGET+4
+                        CMP             #$AD
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_SMOKE_TARGET+5
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_SMOKE_TARGET+6
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_PC_LO
+                        CMP             #$07
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_CHECK_FAIL
                         SEC
                         RTS
@@ -9146,6 +9194,14 @@ ASM_SMOKE_PARSE_LABEL_LDA_NC:
 ASM_SMOKE_PARSE_LABEL_LDA:
                         DB              "LABEL: LDA #1",0
 ASM_SMOKE_PARSE_EQU:   DB              "NAME EQU $12",0
+ASM_SMOKE_PARSE_ZP0_EQU:
+                        DB              "ZP_OFFSET0 EQU $00",0
+ASM_SMOKE_PARSE_ABS0_EQU:
+                        DB              "ABS_OFFSET0 EQU $0000",0
+ASM_SMOKE_PARSE_LDA_ZP0:
+                        DB              "LDA ZP_OFFSET0",0
+ASM_SMOKE_PARSE_LDA_ABS0:
+                        DB              "LDA ABS_OFFSET0",0
 ASM_SMOKE_PARSE_DB:    DB              "SEED DB $52",0
 ASM_SMOKE_PARSE_ORG:   DB              "ORG $7000",0
 ASM_SMOKE_PARSE_END:   DB              "END",0

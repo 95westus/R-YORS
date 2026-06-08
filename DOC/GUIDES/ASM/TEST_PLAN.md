@@ -1415,6 +1415,28 @@ ASM RT PASTE OK
 >
 ```
 
+ASM 2.89 source-width address contract on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.89 makes the zero-page/absolute-width mandate executable in the
+full-line smoke. Source spelling is the addressing contract: one-byte hex
+addresses are zero-page and four-byte hex addresses are absolute, even when
+the numeric value is `$0000`.
+
+```text
+ZP_OFFSET0 EQU $00
+ABS_OFFSET0 EQU $0000
+LDA ZP_OFFSET0   -> A5 00
+LDA ABS_OFFSET0  -> AD 00 00
+```
+
+The host gate passes with `asm-v1-runtime-paste-2000.s19` total `$2FB9`.
+No opcode rows changed; the opcode audit remains `rows=136` and
+`mnemonics=62`.
+
 Current checker requirements:
 
 ```text
