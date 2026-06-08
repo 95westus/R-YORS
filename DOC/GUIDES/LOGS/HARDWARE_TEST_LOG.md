@@ -3947,3 +3947,36 @@ ASM RT PASTE OK
 Interpretation: `BRK $12` emits `00 12` and `BRK #$13` emits `00 13`.
 The final PC `$7504` and dump prove both source forms are accepted by the
 runtime paste image.
+
+## 2026-06-08 ASM 2.94 JMP Indirect Proof
+
+Purpose: prove ASM emits absolute indirect `JMP ($addr)` and W65C02 absolute
+indexed indirect `JMP ($addr,X)`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=31B6 GO=2000
+ASM RT PASTE
+ASM> ORG $7510
+OK PC=$7510
+ASM> JMP ($0012)
+OK PC=$7513
+ASM> JMP ($0012,X)
+OK PC=$7516
+ASM> END
+OK PC=$7516
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7510 7515
+7510: 6C 12 00 7C 12 00 | l..|..
+>
+```
+
+Interpretation: `JMP ($0012)` emits `6C 12 00`, and `JMP ($0012,X)` emits
+`7C 12 00`. The final PC `$7516` proves both three-byte forms were accepted.

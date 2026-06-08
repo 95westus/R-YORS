@@ -238,6 +238,11 @@ ASM_OPM_ABS_X          EQU             $06
 ASM_OPM_REL8           EQU             $07
 ASM_OPM_ZP_Y           EQU             $08
 ASM_OPM_ABS_Y          EQU             $09
+ASM_OPM_ZP_IND         EQU             $0A
+ASM_OPM_ZP_X_IND       EQU             $0B
+ASM_OPM_ZP_IND_Y       EQU             $0C
+ASM_OPM_ABS_IND        EQU             $0D
+ASM_OPM_ABS_X_IND      EQU             $0E
 
 ASM_OPF_UNRESOLVED     EQU             $01
 
@@ -2689,6 +2694,46 @@ ASM_SMOKE_OPERANDS_LDA_ZP_OK:
                         JMP             ASM_SMOKE_OPERANDS_FAIL
 ASM_SMOKE_OPERANDS_LDA_ABS_OK:
 
+                        LDA             #ASM_OPM_ZP_IND
+                        LDX             #<ASM_CLASS_LDA_ZP_IND
+                        LDY             #>ASM_CLASS_LDA_ZP_IND
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_LDA_ZP_IND_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_LDA_ZP_IND_OK:
+
+                        LDA             #ASM_OPM_ZP_X_IND
+                        LDX             #<ASM_CLASS_LDA_ZPX_IND
+                        LDY             #>ASM_CLASS_LDA_ZPX_IND
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_LDA_ZPX_IND_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_LDA_ZPX_IND_OK:
+
+                        LDA             #ASM_OPM_ZP_IND_Y
+                        LDX             #<ASM_CLASS_LDA_ZP_INDY
+                        LDY             #>ASM_CLASS_LDA_ZP_INDY
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_LDA_ZP_INDY_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_LDA_ZP_INDY_OK:
+
+                        LDA             #ASM_OPM_ABS_IND
+                        LDX             #<ASM_OPCODE_JMP_IND
+                        LDY             #>ASM_OPCODE_JMP_IND
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_JMP_IND_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_JMP_IND_OK:
+
+                        LDA             #ASM_OPM_ABS_X_IND
+                        LDX             #<ASM_OPCODE_JMP_ABSXIND
+                        LDY             #>ASM_OPCODE_JMP_ABSXIND
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_JMP_ABSXIND_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_JMP_ABSXIND_OK:
+
                         LDA             #ASM_OPM_ABS16
                         LDX             #<ASM_PARSE_AT_STZ
                         LDY             #>ASM_PARSE_AT_STZ
@@ -2844,6 +2889,14 @@ ASM_SMOKE_OPCODE:
                         BCC             ASM_SMOKE_OPCODE_FAIL_A
                         LDX             #<ASM_OPCODE_JMP_ABS
                         LDY             #>ASM_OPCODE_JMP_ABS
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
+                        LDX             #<ASM_OPCODE_JMP_IND
+                        LDY             #>ASM_OPCODE_JMP_IND
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
+                        LDX             #<ASM_OPCODE_JMP_ABSXIND
+                        LDY             #>ASM_OPCODE_JMP_ABSXIND
                         JSR             ASM_SMOKE_EMIT_LINE
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
                         LDX             #<ASM_OPCODE_BRK_IMM
@@ -3122,7 +3175,7 @@ ASM_SMOKE_OPCODE_CHECK_LOOP:
                         JMP             ASM_SMOKE_OPCODE_CHECK_FAIL
 ASM_SMOKE_OPCODE_CHECK_BYTE_OK:
                         INX
-                        CPX             #$F1
+                        CPX             #$F7
                         BNE             ASM_SMOKE_OPCODE_CHECK_LOOP
                         SEC
                         RTS
@@ -3136,7 +3189,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         SBC             ASM_START_PC_HI
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$F1
+                        CMP             #$F7
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_HIGH_PC_LO
                         SEC
@@ -3146,7 +3199,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         SBC             ASM_START_PC_HI
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$F1
+                        CMP             #$F7
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         SEC
                         RTS
@@ -5652,6 +5705,8 @@ ASM_FIND_OPCODE_JSR:
 ASM_FIND_OPCODE_MODE_ROWS_B:
 ASM_FIND_OPCODE_JMP:
                         DB              ASM_VID_JMP,ASM_OPM_ABS16,$4C
+                        DB              ASM_VID_JMP,ASM_OPM_ABS_IND,$6C
+                        DB              ASM_VID_JMP,ASM_OPM_ABS_X_IND,$7C
 ASM_FIND_OPCODE_BRK:
                         DB              ASM_VID_BRK,ASM_OPM_IMM8,$00
                         DB              ASM_VID_BRK,ASM_OPM_ZP8,$00
@@ -5876,6 +5931,12 @@ ASM_EMIT_RESOLVED_OPERAND:
                         BEQ             ASM_EMIT_BYTE_OPERAND
                         CMP             #ASM_OPM_ZP_Y
                         BEQ             ASM_EMIT_BYTE_OPERAND
+                        CMP             #ASM_OPM_ZP_IND
+                        BEQ             ASM_EMIT_BYTE_OPERAND
+                        CMP             #ASM_OPM_ZP_X_IND
+                        BEQ             ASM_EMIT_BYTE_OPERAND
+                        CMP             #ASM_OPM_ZP_IND_Y
+                        BEQ             ASM_EMIT_BYTE_OPERAND
                         CMP             #ASM_OPM_REL8
                         BEQ             ASM_EMIT_REL8_OPERAND
                         CMP             #ASM_OPM_ABS16
@@ -5883,6 +5944,10 @@ ASM_EMIT_RESOLVED_OPERAND:
                         CMP             #ASM_OPM_ABS_X
                         BEQ             ASM_EMIT_WORD_OPERAND
                         CMP             #ASM_OPM_ABS_Y
+                        BEQ             ASM_EMIT_WORD_OPERAND
+                        CMP             #ASM_OPM_ABS_IND
+                        BEQ             ASM_EMIT_WORD_OPERAND
+                        CMP             #ASM_OPM_ABS_X_IND
                         BEQ             ASM_EMIT_WORD_OPERAND
                         LDA             #ASM_STATUS_BAD_MODE
                         JMP             ASM_EMIT_MNEM_FAIL_A
@@ -5965,6 +6030,12 @@ ASM_EMIT_FIXUP_STORED:
                         BEQ             ASM_EMIT_PLACEHOLDER_BYTE
                         CMP             #ASM_OPM_ZP_Y
                         BEQ             ASM_EMIT_PLACEHOLDER_BYTE
+                        CMP             #ASM_OPM_ZP_IND
+                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
+                        CMP             #ASM_OPM_ZP_X_IND
+                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
+                        CMP             #ASM_OPM_ZP_IND_Y
+                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
                         CMP             #ASM_OPM_REL8
                         BEQ             ASM_EMIT_PLACEHOLDER_BYTE
                         CMP             #ASM_OPM_ABS16
@@ -5972,6 +6043,10 @@ ASM_EMIT_FIXUP_STORED:
                         CMP             #ASM_OPM_ABS_X
                         BEQ             ASM_EMIT_PLACEHOLDER_WORD
                         CMP             #ASM_OPM_ABS_Y
+                        BEQ             ASM_EMIT_PLACEHOLDER_WORD
+                        CMP             #ASM_OPM_ABS_IND
+                        BEQ             ASM_EMIT_PLACEHOLDER_WORD
+                        CMP             #ASM_OPM_ABS_X_IND
                         BEQ             ASM_EMIT_PLACEHOLDER_WORD
                         LDA             #ASM_STATUS_BAD_MODE
                         JMP             ASM_EMIT_MNEM_FAIL_A
@@ -6054,6 +6129,10 @@ ASM_FIX_ADD_OPERAND_SIZE_X:
                         CMP             #ASM_OPM_ABS_X
                         BEQ             ASM_FIX_ADD_SIZE_WORD
                         CMP             #ASM_OPM_ABS_Y
+                        BEQ             ASM_FIX_ADD_SIZE_WORD
+                        CMP             #ASM_OPM_ABS_IND
+                        BEQ             ASM_FIX_ADD_SIZE_WORD
+                        CMP             #ASM_OPM_ABS_X_IND
                         BEQ             ASM_FIX_ADD_SIZE_WORD
                         BRA             ASM_FIX_ADD_SIZE_APPLY
 ASM_FIX_ADD_SIZE_WORD:
@@ -6215,11 +6294,21 @@ ASM_PATCH_FIXUP_X:
                         BEQ             ASM_PATCH_FIXUP_BYTE
                         CMP             #ASM_OPM_ZP_Y
                         BEQ             ASM_PATCH_FIXUP_BYTE
+                        CMP             #ASM_OPM_ZP_IND
+                        BEQ             ASM_PATCH_FIXUP_BYTE
+                        CMP             #ASM_OPM_ZP_X_IND
+                        BEQ             ASM_PATCH_FIXUP_BYTE
+                        CMP             #ASM_OPM_ZP_IND_Y
+                        BEQ             ASM_PATCH_FIXUP_BYTE
                         CMP             #ASM_OPM_ABS16
                         BEQ             ASM_PATCH_FIXUP_WORD
                         CMP             #ASM_OPM_ABS_X
                         BEQ             ASM_PATCH_FIXUP_WORD
                         CMP             #ASM_OPM_ABS_Y
+                        BEQ             ASM_PATCH_FIXUP_WORD
+                        CMP             #ASM_OPM_ABS_IND
+                        BEQ             ASM_PATCH_FIXUP_WORD
+                        CMP             #ASM_OPM_ABS_X_IND
                         BEQ             ASM_PATCH_FIXUP_WORD
                         LDA             #ASM_STATUS_BAD_MODE
                         CLC
@@ -7956,8 +8045,10 @@ ASM_CLASS_HAVE_TOKEN:
                         BNE             ASM_CLASS_NOT_IMMEDIATE
                         LDA             ASM_TOK_SUB
                         CMP             #'#'
-                        BNE             ASM_CLASS_NOT_IMMEDIATE
-                        JMP             ASM_CLASS_IMMEDIATE
+                        BEQ             ASM_CLASS_IMMEDIATE
+                        CMP             #'('
+                        BEQ             ASM_CLASS_INDIRECT
+                        JMP             ASM_CLASS_NOT_IMMEDIATE
 
 ASM_CLASS_NOT_IMMEDIATE:
                         JSR             ASM_CLASS_LOAD_ATOM
@@ -7965,7 +8056,9 @@ ASM_CLASS_NOT_IMMEDIATE:
                         JMP             ASM_CLASS_FAIL_A
 ASM_CLASS_HAVE_ATOM:
                         JSR             ASM_IS_BRANCH_OP
-                        BCC             ASM_CLASS_DIRECT
+                        BCS             ASM_CLASS_HAVE_BRANCH
+                        JMP             ASM_CLASS_DIRECT
+ASM_CLASS_HAVE_BRANCH:
                         JMP             ASM_CLASS_BRANCH
 
 ASM_CLASS_NONE:
@@ -8009,6 +8102,170 @@ ASM_CLASS_IMM_WIDTH_OK:
                         LDA             #ASM_WIDTH_BYTE
                         STA             ASM_WIDTH
                         LDA             #ASM_OPM_IMM8
+                        JMP             ASM_CLASS_OK_A
+
+ASM_CLASS_INDIRECT:
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_CLASS_INDIRECT_HAVE_ATOM
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_HAVE_ATOM:
+                        JSR             ASM_CLASS_LOAD_ATOM
+                        BCS             ASM_CLASS_INDIRECT_ATOM_OK
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_ATOM_OK:
+                        LDA             ASM_TMP0_LO
+                        CMP             #ASM_ATOM_REG
+                        BNE             ASM_CLASS_INDIRECT_NOT_REG
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_INDIRECT_NOT_REG:
+                        CMP             #ASM_SYMK_ADDR
+                        BEQ             ASM_CLASS_INDIRECT_ADDR_OK
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_INDIRECT_ADDR_OK:
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_CLASS_INDIRECT_HAVE_SUFFIX
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_HAVE_SUFFIX:
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_PUNCT
+                        BEQ             ASM_CLASS_INDIRECT_SUFFIX_PUNCT
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_INDIRECT_SUFFIX_PUNCT:
+                        LDA             ASM_TOK_SUB
+                        CMP             #')'
+                        BEQ             ASM_CLASS_INDIRECT_CLOSE
+                        CMP             #','
+                        BEQ             ASM_CLASS_INDIRECT_INNER_COMMA
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_INDIRECT_INNER_COMMA:
+                        JSR             ASM_CLASS_INDIRECT_PARSE_REG
+                        BCS             ASM_CLASS_INDIRECT_INNER_REG_OK
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_INNER_REG_OK:
+                        LDA             ASM_TMP1_LO
+                        CMP             #ASM_VID_REG_X
+                        BEQ             ASM_CLASS_INDIRECT_INNER_X
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_INDIRECT_INNER_X:
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_CLASS_INDIRECT_INNER_HAVE_CLOSE
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_INNER_HAVE_CLOSE:
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_PUNCT
+                        BNE             ASM_CLASS_INDIRECT_BAD_OPER_JMP
+                        LDA             ASM_TOK_SUB
+                        CMP             #')'
+                        BEQ             ASM_CLASS_INDIRECT_INNER_CLOSE_OK
+ASM_CLASS_INDIRECT_BAD_OPER_JMP:
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_INDIRECT_INNER_CLOSE_OK:
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASM_CLASS_INDIRECT_X_WIDTH
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_INDIRECT_X_WIDTH:
+                        LDA             ASM_TMP0_HI
+                        CMP             #ASM_WIDTH_ZP
+                        BNE             ASM_CLASS_INDIRECT_X_NOT_ZP
+                        JMP             ASM_CLASS_INDIRECT_ZP_X
+ASM_CLASS_INDIRECT_X_NOT_ZP:
+                        CMP             #ASM_WIDTH_ABS
+                        BNE             ASM_CLASS_INDIRECT_X_BAD_WIDTH
+                        JMP             ASM_CLASS_INDIRECT_ABS_X
+ASM_CLASS_INDIRECT_X_BAD_WIDTH:
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_INDIRECT_CLOSE:
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_CLASS_INDIRECT_AFTER_CLOSE
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_AFTER_CLOSE:
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_EOL
+                        BEQ             ASM_CLASS_INDIRECT_NO_INDEX
+                        CMP             #ASM_TOK_PUNCT
+                        BEQ             ASM_CLASS_INDIRECT_OUTER_PUNCT
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_INDIRECT_OUTER_PUNCT:
+                        LDA             ASM_TOK_SUB
+                        CMP             #','
+                        BEQ             ASM_CLASS_INDIRECT_OUTER_COMMA
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_INDIRECT_OUTER_COMMA:
+                        JSR             ASM_CLASS_INDIRECT_PARSE_REG
+                        BCS             ASM_CLASS_INDIRECT_OUTER_REG_OK
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_OUTER_REG_OK:
+                        LDA             ASM_TMP1_LO
+                        CMP             #ASM_VID_REG_Y
+                        BEQ             ASM_CLASS_INDIRECT_OUTER_Y
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_INDIRECT_OUTER_Y:
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASM_CLASS_INDIRECT_Y_WIDTH
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_INDIRECT_Y_WIDTH:
+                        LDA             ASM_TMP0_HI
+                        CMP             #ASM_WIDTH_ZP
+                        BEQ             ASM_CLASS_INDIRECT_ZP_Y
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_INDIRECT_NO_INDEX:
+                        LDA             ASM_TMP0_HI
+                        CMP             #ASM_WIDTH_ZP
+                        BEQ             ASM_CLASS_INDIRECT_ZP
+                        CMP             #ASM_WIDTH_ABS
+                        BEQ             ASM_CLASS_INDIRECT_ABS
+                        JMP             ASM_CLASS_BAD_WIDTH
+
+ASM_CLASS_INDIRECT_PARSE_REG:
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_CLASS_INDIRECT_PARSE_REG_TOKEN
+                        RTS
+ASM_CLASS_INDIRECT_PARSE_REG_TOKEN:
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_WORD
+                        BEQ             ASM_CLASS_INDIRECT_PARSE_REG_WORD
+                        LDA             #ASM_STATUS_BAD_MODE
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_PARSE_REG_WORD:
+                        JSR             ASM_LOOKUP_WORD
+                        BCS             ASM_CLASS_INDIRECT_PARSE_REG_LOOKUP
+                        LDA             #ASM_STATUS_BAD_MODE
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_PARSE_REG_LOOKUP:
+                        CPY             #ASM_VOC_REG
+                        BEQ             ASM_CLASS_INDIRECT_PARSE_REG_OK
+                        LDA             #ASM_STATUS_BAD_MODE
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_INDIRECT_PARSE_REG_OK:
+                        LDA             ASM_VOC_ID
+                        STA             ASM_TMP1_LO
+                        SEC
+                        RTS
+
+ASM_CLASS_INDIRECT_ZP:
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ZP_IND
+                        JMP             ASM_CLASS_OK_A
+ASM_CLASS_INDIRECT_ZP_X:
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ZP_X_IND
+                        JMP             ASM_CLASS_OK_A
+ASM_CLASS_INDIRECT_ZP_Y:
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ZP_IND_Y
+                        JMP             ASM_CLASS_OK_A
+ASM_CLASS_INDIRECT_ABS:
+                        LDA             #ASM_WIDTH_WORD
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ABS_IND
+                        JMP             ASM_CLASS_OK_A
+ASM_CLASS_INDIRECT_ABS_X:
+                        LDA             #ASM_WIDTH_WORD
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ABS_X_IND
                         JMP             ASM_CLASS_OK_A
 
 ASM_CLASS_BRANCH:
@@ -9365,12 +9622,18 @@ ASM_PARSE_AT_END:      DB              "        END",0
 ASM_CLASS_SUM_EQU:     DB              "SUM EQU $7110",0
 ASM_CLASS_LDA_ZP:      DB              "        LDA $12",0
 ASM_CLASS_LDA_ABS:     DB              "        LDA $0012",0
+ASM_CLASS_LDA_ZP_IND:  DB              "        LDA ($12)",0
+ASM_CLASS_LDA_ZPX_IND: DB              "        LDA ($12,X)",0
+ASM_CLASS_LDA_ZP_INDY: DB              "        LDA ($12),Y",0
 ASM_CLASS_ASL_A:       DB              "        ASL A",0
 ASM_CLASS_LDA_A:       DB              "        LDA A",0
 ASM_CLASS_LDA_DEC:     DB              "        LDA 12",0
 ASM_OPCODE_LOOP_LABEL: DB              "LOOP",0
 ASM_OPCODE_JSR_FOO:    DB              "        JSR FOO",0
 ASM_OPCODE_JMP_ABS:    DB              "        JMP $0012",0
+ASM_OPCODE_JMP_IND:    DB              "        JMP ($0012)",0
+ASM_OPCODE_JMP_ABSXIND:
+                        DB              "        JMP ($0012,X)",0
 ASM_OPCODE_BRK_IMM:    DB              "        BRK #$12",0
 ASM_OPCODE_BRK_ZP:     DB              "        BRK $12",0
 ASM_OPCODE_LDX_ZP:     DB              "        LDX $12",0
@@ -9639,8 +9902,9 @@ ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
                         DB              $00,$71
                         DB              $4D,$10,$71,$8D,$10,$71,$E8,$E0
                         DB              $10,$D0,$EB,$60
-                        DB              $4C,$12,$00,$00,$12
-                        DB              $00,$12
+                        DB              $4C,$12,$00
+                        DB              $6C,$12,$00,$7C,$12,$00
+                        DB              $00,$12,$00,$12
                         DB              $A6,$12,$AE,$12,$00,$B6,$12
                         DB              $BE,$12,$00
                         DB              $A4,$12,$AC,$12,$00,$B4,$12

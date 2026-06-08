@@ -1619,6 +1619,43 @@ ASM> END
 7500: 00 12 00 13 00 00 00 00
 ```
 
+ASM 2.94 `JMP` indirect opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.94 adds the parenthesized operand classifier modes needed by W65C02
+indirect addressing and enables the two remaining `JMP` rows:
+
+```text
+JMP ($0012)    -> 6C 12 00
+JMP ($0012,X)  -> 7C 12 00
+```
+
+The classifier now has distinct modes for zero-page indirect, zero-page
+indexed indirect, zero-page indirect indexed, absolute indirect, and absolute
+indexed indirect. This slice only adds opcode rows for the absolute `JMP`
+forms; zero-page indirect modes are parser groundwork for the later
+load/store/ALU indirect slice. The source-width rule still applies: `JMP
+($12)` classifies as zero-page indirect and remains unsupported by `JMP`. The
+full-core opcode smoke now emits `$F7` bytes, and the host opcode audit reports
+`rows=151` and `mnemonics=64`. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` total `$31B6`.
+
+Hardware-proven ASM 2.94 `JMP` indirect paste emission on 2026-06-08: the
+board loaded the `$31B6` paste image, accepted both indirect `JMP` forms,
+finalized through `END`, and dumped `6C 12 00 7C 12 00` at `$7510-$7515`.
+
+```text
+ASM> ORG $7510
+ASM> JMP ($0012)
+ASM> JMP ($0012,X)
+ASM> END
+>D 7510 7515
+7510: 6C 12 00 7C 12 00
+```
+
 Current checker requirements:
 
 ```text
@@ -1719,10 +1756,10 @@ BAD_LINE       source line longer than 63 visible chars
 BAD_SYM        duplicate symbol, reserved word as label, EQU without name
 BAD_MNEM       pending label followed by non-vocabulary operation
 BAD_DIR        parked directive used in v1
-BAD_OPER       missing operand, extra operand, grouping parentheses
+BAD_OPER       missing operand, extra operand, malformed parentheses
 BAD_WIDTH      LDA 12, $123, unknown bare DB ADDR
 BAD_RANGE      LDA #$1234, branch out of range, bit number 8
-BAD_MODE       LDA A, LDA ($1234),Y
+BAD_MODE       LDA A, unsupported classified operand mode
 BAD_FIX        unresolved required fixup at END
 LOCAL_NYI      .LOOP or ?LOOP
 ```

@@ -298,6 +298,8 @@ Add-ExpectedRow 'ROR' 'ABS_X' 0x7E
 
 Add-ExpectedRow 'JSR' 'ABS16' 0x20
 Add-ExpectedRow 'JMP' 'ABS16' 0x4C
+Add-ExpectedRow 'JMP' 'ABS_IND' 0x6C
+Add-ExpectedRow 'JMP' 'ABS_X_IND' 0x7C
 Add-ExpectedRow 'BRK' 'IMM8' 0x00
 Add-ExpectedRow 'BRK' 'ZP8' 0x00
 
