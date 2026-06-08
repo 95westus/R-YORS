@@ -1139,6 +1139,19 @@ instead of a live mid-session prompt command. A plain `.` line still exits the
 paste wrapper without finalizing the ASM session. The host gate passes with
 `asm-v1-runtime-paste-2000.s19` total `$2FA3`.
 
+ASM 2.85 implied CPU/register/stack opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.85 adds implied-only opcode rows for `NOP`, `DEX`, `DEY`, `INY`, `TAX`,
+`TAY`, `TSX`, `TXA`, `TXS`, `TYA`, `PHA`, `PHP`, `PHX`, `PHY`, `PLA`, `PLP`,
+`PLX`, `PLY`, and `RTI`. These join the existing implied-opcode table, so
+runtime growth is only the opcode rows. The full-core opcode smoke now emits
+`$60` bytes, and the host opcode audit reports `rows=88` and `mnemonics=50`.
+The host gate passes with `asm-v1-runtime-paste-2000.s19` total `$2FC9`.
+
 Current checker requirements:
 
 ```text
@@ -3436,6 +3449,25 @@ CLV          -> B8
 SEC          -> 38
 SED          -> F8
 SEI          -> 78
+NOP          -> EA
+DEX          -> CA
+DEY          -> 88
+INY          -> C8
+TAX          -> AA
+TAY          -> A8
+TSX          -> BA
+TXA          -> 8A
+TXS          -> 9A
+TYA          -> 98
+PHA          -> 48
+PHP          -> 08
+PHX          -> DA
+PHY          -> 5A
+PLA          -> 68
+PLP          -> 28
+PLX          -> FA
+PLY          -> 7A
+RTI          -> 40
 STZ #0       -> BAD MODE at opcode lookup
 ```
 
@@ -3449,6 +3481,8 @@ E8 E0 10 D0 EB 60 4A 4A 46 12 4E 12 00 56 12 5E 12 00
 6A 6A 66 12 6E 12 00 76 12 7E 12 00
 89 12 24 12 2C 12 00 34 12 3C 12 00
 18 D8 58 B8 38 F8 78
+EA CA 88 C8 AA A8 BA 8A 9A 98 48 08 DA 5A 68 28
+FA 7A 40
 ```
 
 Fixup fixtures:
