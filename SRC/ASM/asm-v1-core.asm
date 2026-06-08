@@ -5459,17 +5459,28 @@ ASM_FIND_OPCODE_RTI:
                         DB              $FF,$00
 
 ASM_FIND_OPCODE_MODE_TABLE:
+                        JSR             ASM_FIND_OPCODE_MODE_TABLE_A
+                        BCC             ASM_FIND_OPCODE_MODE_TABLE_A_MISS
+                        RTS
+ASM_FIND_OPCODE_MODE_TABLE_A_MISS:
+                        CMP             #ASM_STATUS_BAD_MNEM
+                        BEQ             ASM_FIND_OPCODE_MODE_TABLE_B
+                        CLC
+                        RTS
+
+; Keep all rows for a mnemonic in one shard; BAD_MODE does not fall through.
+ASM_FIND_OPCODE_MODE_TABLE_A:
                         STZ             ASM_TMP0_HI
                         LDX             #$00
 ASM_FIND_OPCODE_MODE_TABLE_LOOP:
-                        LDA             ASM_FIND_OPCODE_MODE_ROWS,X
+                        LDA             ASM_FIND_OPCODE_MODE_ROWS_A,X
                         CMP             #$FF
                         BEQ             ASM_FIND_OPCODE_MODE_TABLE_DONE
                         CMP             ASM_STMT_OP_ID
                         BNE             ASM_FIND_OPCODE_MODE_TABLE_NEXT
                         LDA             #$01
                         STA             ASM_TMP0_HI
-                        LDA             ASM_FIND_OPCODE_MODE_ROWS+1,X
+                        LDA             ASM_FIND_OPCODE_MODE_ROWS_A+1,X
                         CMP             ASM_MODE
                         BEQ             ASM_FIND_OPCODE_MODE_TABLE_HIT
 ASM_FIND_OPCODE_MODE_TABLE_NEXT:
@@ -5479,7 +5490,7 @@ ASM_FIND_OPCODE_MODE_TABLE_NEXT:
                         TAX
                         BRA             ASM_FIND_OPCODE_MODE_TABLE_LOOP
 ASM_FIND_OPCODE_MODE_TABLE_HIT:
-                        LDA             ASM_FIND_OPCODE_MODE_ROWS+2,X
+                        LDA             ASM_FIND_OPCODE_MODE_ROWS_A+2,X
                         JMP             ASM_FIND_OPCODE_OK_A
 ASM_FIND_OPCODE_MODE_TABLE_DONE:
                         LDA             ASM_TMP0_HI
@@ -5492,7 +5503,41 @@ ASM_FIND_OPCODE_MODE_TABLE_MISS:
                         CLC
                         RTS
 
-ASM_FIND_OPCODE_MODE_ROWS:
+ASM_FIND_OPCODE_MODE_TABLE_B:
+                        STZ             ASM_TMP0_HI
+                        LDX             #$00
+ASM_FIND_OPCODE_MODE_TABLE_B_LOOP:
+                        LDA             ASM_FIND_OPCODE_MODE_ROWS_B,X
+                        CMP             #$FF
+                        BEQ             ASM_FIND_OPCODE_MODE_TABLE_B_DONE
+                        CMP             ASM_STMT_OP_ID
+                        BNE             ASM_FIND_OPCODE_MODE_TABLE_B_NEXT
+                        LDA             #$01
+                        STA             ASM_TMP0_HI
+                        LDA             ASM_FIND_OPCODE_MODE_ROWS_B+1,X
+                        CMP             ASM_MODE
+                        BEQ             ASM_FIND_OPCODE_MODE_TABLE_B_HIT
+ASM_FIND_OPCODE_MODE_TABLE_B_NEXT:
+                        TXA
+                        CLC
+                        ADC             #$03
+                        TAX
+                        BRA             ASM_FIND_OPCODE_MODE_TABLE_B_LOOP
+ASM_FIND_OPCODE_MODE_TABLE_B_HIT:
+                        LDA             ASM_FIND_OPCODE_MODE_ROWS_B+2,X
+                        JMP             ASM_FIND_OPCODE_OK_A
+ASM_FIND_OPCODE_MODE_TABLE_B_DONE:
+                        LDA             ASM_TMP0_HI
+                        BEQ             ASM_FIND_OPCODE_MODE_TABLE_B_MISS
+                        LDA             #ASM_STATUS_BAD_MODE
+                        CLC
+                        RTS
+ASM_FIND_OPCODE_MODE_TABLE_B_MISS:
+                        LDA             #ASM_STATUS_BAD_MNEM
+                        CLC
+                        RTS
+
+ASM_FIND_OPCODE_MODE_ROWS_A:
 ASM_FIND_OPCODE_LDX:
                         DB              ASM_VID_LDX,ASM_OPM_IMM8,$A2
                         DB              ASM_VID_LDX,ASM_OPM_ZP8,$A6
@@ -5599,6 +5644,8 @@ ASM_FIND_OPCODE_TSB:
                         DB              ASM_VID_TSB,ASM_OPM_ABS16,$0C
 ASM_FIND_OPCODE_JSR:
                         DB              ASM_VID_JSR,ASM_OPM_ABS16,$20
+                        DB              $FF,$00,$00
+ASM_FIND_OPCODE_MODE_ROWS_B:
 ASM_FIND_OPCODE_JMP:
                         DB              ASM_VID_JMP,ASM_OPM_ABS16,$4C
 ASM_FIND_OPCODE_BRK:

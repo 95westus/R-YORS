@@ -1551,6 +1551,35 @@ smoke now emits `$EF` bytes, and the host opcode audit reports `rows=148` and
 `mnemonics=64`. The host gate passes with `asm-v1-runtime-paste-2000.s19`
 total `$2FFA`.
 
+ASM 2.92 mode-row table split on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+The first ASM 2.91 board test loaded the `$2FFA` paste image and froze while
+assembling `BRK #$12`. NMI reported `PC=29A7`, which mapped into the opcode
+mode-row scanner, not the emitted test program. The mode rows had grown past a
+single 8-bit `X` scan: after the first 255 data bytes, adding three wrapped the
+index and the scanner looped.
+
+ASM 2.92 keeps the same 148 opcode rows but splits the mode-row data into A/B
+shards. Rows for one mnemonic must stay in one shard because `BAD_MODE` remains
+authoritative once a mnemonic is found. The opcode coverage audit now also
+fails if any mode-row shard exceeds the 255-byte scanner limit. The host gate
+passes with `asm-v1-runtime-paste-2000.s19` total `$303D`.
+
+Hardware retest target:
+
+```text
+ASM> ORG $7340
+ASM> JMP $0012
+ASM> BRK #$12
+ASM> END
+>D 7340 7344
+7340: 4C 12 00 00 12
+```
+
 Current checker requirements:
 
 ```text

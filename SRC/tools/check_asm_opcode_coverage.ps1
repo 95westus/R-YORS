@@ -88,6 +88,57 @@ function Read-OpcodeForLabel {
     [Convert]::ToInt32($opcodeMatch.Groups[1].Value, 16)
 }
 
+function Assert-ModeRowShardFits {
+    param([string]$Label)
+
+    $start = -1
+    $labelPattern = '^' + [regex]::Escape($Label) + ':'
+    for ($i = 0; $i -lt $script:sectionLines.Count; $i++) {
+        if ($script:sectionLines[$i] -match $labelPattern) {
+            $start = $i
+            break
+        }
+    }
+    if ($start -lt 0) {
+        Fail-OpcodeAudit "missing row shard $Label"
+    }
+
+    $bytes = 0
+    $sawSentinel = $false
+    for ($i = $start + 1; $i -lt $script:sectionLines.Count; $i++) {
+        $line = $script:sectionLines[$i]
+        if ($line -match '^\s*DB\s+\$FF\s*,') {
+            $sawSentinel = $true
+            break
+        }
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+        if ($line -match '^\s*;') {
+            continue
+        }
+        if ($line -match '^[A-Z0-9_]+:') {
+            continue
+        }
+        if ($line -match (
+                '^\s*DB\s+ASM_VID_[A-Z0-9_]+\s*,\s*' +
+                'ASM_OPM_[A-Z0-9_]+\s*,\s*\$[0-9A-Fa-f]{2}\s*$'
+            )) {
+            $bytes += 3
+            continue
+        }
+    }
+
+    if (-not $sawSentinel) {
+        Fail-OpcodeAudit "row shard $Label has no `$FF sentinel"
+    }
+    if ($bytes -gt 255) {
+        Fail-OpcodeAudit (
+            "row shard $Label is $bytes bytes; 8-bit scanner limit is 255"
+        )
+    }
+}
+
 Add-ExpectedRow 'RTS' 'NONE' 0x60
 Add-ExpectedRow 'INX' 'NONE' 0xE8
 Add-ExpectedRow 'CLC' 'NONE' 0x18
@@ -299,6 +350,9 @@ if (-not [regex]::IsMatch(
     )) {
     Fail-OpcodeAudit 'branch common path no longer checks REL8'
 }
+
+Assert-ModeRowShardFits 'ASM_FIND_OPCODE_MODE_ROWS_A'
+Assert-ModeRowShardFits 'ASM_FIND_OPCODE_MODE_ROWS_B'
 
 $actualRows = @{}
 function Add-ActualRow {

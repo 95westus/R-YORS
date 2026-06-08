@@ -3848,3 +3848,35 @@ ASM RT PASTE OK
 
 Interpretation: the dump matches the expected W65C02 opcodes:
 `A2/A6/AE/B6/BE`, `A0/A4/AC/B4/BC`, and `E0/E4/EC`.
+
+## 2026-06-08 ASM 2.91 BRK Lookup Freeze
+
+Purpose: record the failed ASM 2.91 board proof for absolute `JMP` and
+ABI-style `BRK #imm8`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=2FFA GO=2000
+ASM RT PASTE
+ASM> ORG $7340
+OK PC=$7340
+ASM> JMP $0012
+OK PC=$7343
+ASM> BRK #$12
+ frozen, board locked, nmi to reset.
+NMI PC=29A7
+A=2D X=51 Y=00 P=24 S=F1 Nv-bdIzc
+>
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> BRK
+```
+
+Interpretation: the lockup happened while ASM was looking up `BRK #$12`,
+before it accepted the line and before the emitted test program could run. The
+NMI PC mapped into the old opcode mode-row scanner in the `$2FFA` image. The
+mode-row table had crossed the single 8-bit `X` scan limit, so the scanner
+wrapped instead of reaching the late `BRK` row.
