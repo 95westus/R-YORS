@@ -4276,3 +4276,40 @@ Interpretation: `BBR 3,$12,T0` emits `3F 12 03`, `BBS 3,$12,T1` emits
 `BF 12 01`, and final PC `$75B8` proves both three-byte bit-branch forms were
 accepted. The resolved fixup rows show mode `$10`, sites `$75B2/$75B5`, and
 bases `$75B3/$75B6`, matching `BIT_ZP_REL` relative-byte placement.
+
+## 2026-06-08 ASM 3.01 Transactional Error Recovery Proof
+
+Purpose: prove recoverable ASM line errors roll back PC/high-PC, leave the
+session active, and let the paste wrapper reprompt instead of returning to
+HIMON.
+
+```text
+>L G
+L S19
+L @2000
+L OK=347E GO=2000
+ASM RT PASTE
+ASM> ORG $75C0
+OK PC=$75C0
+ASM> BBR 3,$12,$9000
+ERR=$06 BAD RANGE PC=$75C0
+ASM> NOP
+OK PC=$75C1
+ASM> END
+OK PC=$75C1
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 75C0
+75C0: EA | .
+>
+```
+
+Interpretation: the out-of-range `BBR 3,$12,$9000` partially exercises the
+bit-branch emit path, but the reported PC remains `$75C0` and the wrapper
+immediately accepts another `ASM>` line. The accepted `NOP` advances to
+`$75C1`, `END` finalizes cleanly with empty tables, and the dump proves the
+accepted byte at `$75C0` is `EA`.

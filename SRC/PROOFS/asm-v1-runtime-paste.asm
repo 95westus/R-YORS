@@ -102,7 +102,7 @@ ASMRP_ASSEMBLE:
                         JSR             ASMRP_PRINT_STATUS_PC_LINE
                         JSR             ASMRP_IS_END
                         BCS             ASMRP_ABORT_WITH_TABLES
-                        JMP             ASMRP_ABORT_WITH_RESULT
+                        JMP             ASMRP_LOOP
 
 ASMRP_ACCEPTED:
                         LDX             #<MSG_OK

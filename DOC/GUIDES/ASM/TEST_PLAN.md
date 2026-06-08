@@ -804,7 +804,8 @@ If `END` itself fails, for example because unresolved or out-of-range fixups
 remain, the wrapper first prints the existing `ERR=$xx ... PC=$hhhh` line,
 quenches RX, prints the tables, and then returns to HIMON with the original
 assembly failure status in `A` and current PC in `X/Y`. Non-`END` assembly
-errors stay compact and only quench/return.
+errors stay compact and only quench/return. ASM 3.01 later supersedes that
+non-`END` policy with transactional rollback and reprompt.
 
 The plain `.` line still exits without finalizing the session or printing
 tables. Table-print failure is non-fatal to the paste wrapper and prints
@@ -2024,6 +2025,56 @@ ASM RT PASTE OK
 #6999B497# HSH_NF!
 >D 75B0 75B7
 75B0: 3F 12 03 BF 12 01 EA EA
+```
+
+ASM 3.01 transactional line errors on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+`ASM_ASSEMBLE_LINE` now checkpoints the active line's PC, high-PC, and table
+cursors before lex/parse/dispatch. Recoverable line errors restore that
+checkpoint, leave the ASM session active, and return the original status with
+the restored PC. Bytes already written to RAM by a failed line are not erased;
+they are outside the accepted image after high-PC rollback and the corrected
+line overwrites from the restored PC.
+
+The runtime paste wrapper now reprompts after non-`END` assembly errors instead
+of quenching RX and returning to HIMON. `END` failure remains finalization
+failure: the wrapper still prints tables and returns with the failing status.
+The host smoke includes a partial `BBR 3,$12,$9000` range failure followed by a
+successful `NOP` at the same start PC. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` total `$347E`.
+
+Hardware-proven ASM 3.01 transactional line error recovery on 2026-06-08:
+the board loaded the `$347E` paste image, rejected an out-of-range bit branch
+at restored PC `$75C0`, stayed at the `ASM>` prompt, accepted `NOP` at the same
+PC, finalized cleanly through `END`, and dumped `EA` at `$75C0`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=347E GO=2000
+ASM RT PASTE
+ASM> ORG $75C0
+OK PC=$75C0
+ASM> BBR 3,$12,$9000
+ERR=$06 BAD RANGE PC=$75C0
+ASM> NOP
+OK PC=$75C1
+ASM> END
+OK PC=$75C1
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 75C0
+75C0: EA | .
+>
 ```
 
 Current checker requirements:

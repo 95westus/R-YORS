@@ -2290,6 +2290,9 @@ ASM_SMOKE_ASSEMBLE_LINE_ENDED_OK:
                         CMP             #$0B
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_FAIL
 
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_TXN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FAIL
+
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #<ASM_CODE_BUF
                         LDY             #>ASM_CODE_BUF
@@ -2299,6 +2302,64 @@ ASM_SMOKE_ASSEMBLE_LINE_ENDED_OK:
                         RTS
 
 ASM_SMOKE_ASSEMBLE_LINE_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_ASSEMBLE_LINE_TXN:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #<ASM_CODE_BUF
+                        LDY             #>ASM_CODE_BUF
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+
+                        LDX             #<ASM_SMOKE_TXN_BBR_RANGE
+                        LDY             #>ASM_SMOKE_TXN_BBR_RANGE
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ACTIVE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_PC_LO
+                        CMP             #ASM_SMOKE_TARGET_LO
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_HIGH_PC_LO
+                        CMP             #ASM_SMOKE_TARGET_LO
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_HIGH_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_SYM_COUNT
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_FIX_COUNT
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+
+                        LDX             #<ASM_SMOKE_TXN_NOP
+                        LDY             #>ASM_SMOKE_TXN_NOP
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_CODE_BUF
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_PC_LO
+                        CMP             #$01
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_HIGH_PC_LO
+                        CMP             #$01
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        LDA             ASM_HIGH_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL:
                         CLC
                         RTS
 
@@ -5429,7 +5490,7 @@ ASM_REPORT_NOTE_REF_HAVE_ROOM:
 ; IN : X/Y = NUL, CR, or LF-terminated source line.
 ; OUT: C=1,A=OK,X/Y=current PC if the line was accepted.
 ;      C=0,A=status,X/Y=current PC if the line was rejected.
-; NOTE: Parser/session spine. Dispatch binds labels and emits mnemonics/data.
+; NOTE: Parser/session spine. Active-line failures roll PC/table cursors back.
 ; ----------------------------------------------------------------------------
 ASM_ASSEMBLE_LINE:
                         JSR             ASM_INC_LINE_COUNT
@@ -5439,9 +5500,10 @@ ASM_ASSEMBLE_LINE:
                         CMP             #ASM_SESS_FAILED
                         BEQ             ASM_ASSEMBLE_LINE_STORED_FAIL
                         LDA             #ASM_STATUS_BAD_OPER
-                        BRA             ASM_ASSEMBLE_LINE_FAIL_A
+                        JMP             ASM_ASSEMBLE_LINE_FATAL_FAIL_A
 
 ASM_ASSEMBLE_LINE_ACTIVE:
+                        JSR             ASM_LINE_SAVE
                         JSR             ASM_LEX_LINE
                         BCC             ASM_ASSEMBLE_LINE_FAIL_A
                         JSR             ASM_PARSE_HEAD
@@ -5478,13 +5540,79 @@ ASM_ASSEMBLE_LINE_RETURN_FAIL:
 ASM_ASSEMBLE_LINE_FAIL_A:
                         STA             ASM_STATUS
                         STA             ASM_LAST_STATUS
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_FAILED
+                        BEQ             ASM_ASSEMBLE_LINE_FAILED_FATAL
+                        JSR             ASM_LINE_ROLLBACK
+                        LDA             ASM_STATUS
+                        LDX             ASM_PC_LO
+                        LDY             ASM_PC_HI
+                        CLC
+                        RTS
+
+ASM_ASSEMBLE_LINE_FATAL_FAIL_A:
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
                         LDA             #ASM_SESS_FAILED
                         STA             ASM_SESSION_STATE
+ASM_ASSEMBLE_LINE_FAILED_FATAL:
                         JSR             ASM_REPORT_PRINT_FAIL_IF_NEEDED
                         LDA             ASM_STATUS
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
                         CLC
+                        RTS
+
+ASM_LINE_SAVE:
+                        LDA             ASM_PC_LO
+                        STA             ASM_LINE_PC_LO
+                        LDA             ASM_PC_HI
+                        STA             ASM_LINE_PC_HI
+                        LDA             ASM_HIGH_PC_LO
+                        STA             ASM_LINE_HIGH_PC_LO
+                        LDA             ASM_HIGH_PC_HI
+                        STA             ASM_LINE_HIGH_PC_HI
+                        LDA             ASM_SYM_COUNT
+                        STA             ASM_LINE_SYM_COUNT
+                        LDA             ASM_FIX_COUNT
+                        STA             ASM_LINE_FIX_COUNT
+                        LDA             ASM_REF_COUNT
+                        STA             ASM_LINE_REF_COUNT
+                        LDA             ASM_FIX_RESOLVE_COUNT
+                        STA             ASM_LINE_FIX_RESOLVE_COUNT
+                        LDA             ASM_FIX_LAST_SITE_LO
+                        STA             ASM_LINE_FIX_LAST_SITE_LO
+                        LDA             ASM_FIX_LAST_SITE_HI
+                        STA             ASM_LINE_FIX_LAST_SITE_HI
+                        LDA             ASM_REPORT_FLAGS
+                        STA             ASM_LINE_REPORT_FLAGS
+                        RTS
+
+ASM_LINE_ROLLBACK:
+                        LDA             ASM_LINE_PC_LO
+                        STA             ASM_PC_LO
+                        LDA             ASM_LINE_PC_HI
+                        STA             ASM_PC_HI
+                        LDA             ASM_LINE_HIGH_PC_LO
+                        STA             ASM_HIGH_PC_LO
+                        LDA             ASM_LINE_HIGH_PC_HI
+                        STA             ASM_HIGH_PC_HI
+                        LDA             ASM_LINE_SYM_COUNT
+                        STA             ASM_SYM_COUNT
+                        LDA             ASM_LINE_FIX_COUNT
+                        STA             ASM_FIX_COUNT
+                        LDA             ASM_LINE_REF_COUNT
+                        STA             ASM_REF_COUNT
+                        LDA             ASM_LINE_FIX_RESOLVE_COUNT
+                        STA             ASM_FIX_RESOLVE_COUNT
+                        LDA             ASM_LINE_FIX_LAST_SITE_LO
+                        STA             ASM_FIX_LAST_SITE_LO
+                        LDA             ASM_LINE_FIX_LAST_SITE_HI
+                        STA             ASM_FIX_LAST_SITE_HI
+                        LDA             ASM_LINE_REPORT_FLAGS
+                        STA             ASM_REPORT_FLAGS
+                        LDA             #ASM_SESS_ACTIVE
+                        STA             ASM_SESSION_STATE
                         RTS
 
 ASM_INC_LINE_COUNT:
@@ -5591,8 +5719,6 @@ ASM_UPDATE_HIGH_DONE:
 ASM_EMIT_FAIL_A:
                         STA             ASM_STATUS
                         STA             ASM_LAST_STATUS
-                        LDA             #ASM_SESS_FAILED
-                        STA             ASM_SESSION_STATE
                         LDA             ASM_STATUS
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
@@ -6448,8 +6574,6 @@ ASM_EMIT_PLACEHOLDER_WORD:
 ASM_EMIT_MNEM_FAIL_A:
                         STA             ASM_STATUS
                         STA             ASM_LAST_STATUS
-                        LDA             #ASM_SESS_FAILED
-                        STA             ASM_SESSION_STATE
                         LDA             ASM_STATUS
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
@@ -9988,6 +10112,20 @@ ASM_START_PC_LO:       DB              $00
 ASM_START_PC_HI:       DB              $00
 ASM_HIGH_PC_LO:        DB              $00
 ASM_HIGH_PC_HI:        DB              $00
+ASM_LINE_PC_LO:        DB              $00
+ASM_LINE_PC_HI:        DB              $00
+ASM_LINE_HIGH_PC_LO:   DB              $00
+ASM_LINE_HIGH_PC_HI:   DB              $00
+ASM_LINE_SYM_COUNT:    DB              $00
+ASM_LINE_FIX_COUNT:    DB              $00
+ASM_LINE_REF_COUNT:    DB              $00
+ASM_LINE_FIX_RESOLVE_COUNT:
+                        DB              $00
+ASM_LINE_FIX_LAST_SITE_LO:
+                        DB              $00
+ASM_LINE_FIX_LAST_SITE_HI:
+                        DB              $00
+ASM_LINE_REPORT_FLAGS: DB              $00
 ASM_SYM_COUNT:         DB              $00
 ASM_FIX_COUNT:         DB              $00
 ASM_FIX_RESOLVE_COUNT: DB              $00
@@ -10525,6 +10663,9 @@ ASM_OPCODE_IMPLIED_PTR_HI:
 ASM_FIXUP_JSR_FOO:     DB              "        JSR FOO",0
 ASM_FIXUP_BNE_FOO:     DB              "        BNE FOO",0
 ASM_FIXUP_BBR_FOO:     DB              "        BBR 3,$12,FOO",0
+ASM_SMOKE_TXN_BBR_RANGE:
+                        DB              "        BBR 3,$12,$9000",0
+ASM_SMOKE_TXN_NOP:     DB              "        NOP",0
 ASM_FIXUP_LDA_LO_FOO:  DB              "        LDA #<FOO",0
 ASM_FIXUP_LDA_HI_FOO:  DB              "        LDA #>FOO",0
 ASM_FIXUP_JSR_BAR:     DB              "        JSR BAR",0
