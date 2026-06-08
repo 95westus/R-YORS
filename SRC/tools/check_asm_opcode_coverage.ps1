@@ -167,6 +167,8 @@ Add-ExpectedRow 'PLP' 'NONE' 0x28
 Add-ExpectedRow 'PLX' 'NONE' 0xFA
 Add-ExpectedRow 'PLY' 'NONE' 0x7A
 Add-ExpectedRow 'RTI' 'NONE' 0x40
+Add-ExpectedRow 'WAI' 'NONE' 0xCB
+Add-ExpectedRow 'STP' 'NONE' 0xDB
 Add-ExpectedRow 'LDX' 'IMM8' 0xA2
 Add-ExpectedRow 'LDX' 'ZP8' 0xA6
 Add-ExpectedRow 'LDX' 'ABS16' 0xAE

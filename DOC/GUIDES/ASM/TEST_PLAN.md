@@ -1865,6 +1865,48 @@ OK PC=$7585
 7580: 12 00 F9 12 00
 ```
 
+ASM 2.98 `WAI/STP` opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.98 enables the two W65C02 implied low-power opcodes:
+
+```text
+WAI -> CB
+STP -> DB
+```
+
+These rows are assembly/emission coverage only. Board proof must assemble and
+dump the bytes; do not execute the emitted test program, because `WAI` waits
+for interrupt state and `STP` is reset-land. The full-core opcode smoke now
+emits `$0141` bytes, and the host opcode audit reports `rows=185` and
+`mnemonics=66`. The host gate passes with `asm-v1-runtime-paste-2000.s19`
+total `$321A`.
+
+Hardware-proven ASM 2.98 `WAI/STP` paste emission on 2026-06-08: the board
+loaded the `$321A` paste image, accepted both implied opcodes, finalized
+through `END`, and dumped `CB DB` at `$7590-$7591`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=321A GO=2000
+ASM RT PASTE
+ASM> ORG $7590
+OK PC=$7590
+ASM> WAI
+OK PC=$7591
+ASM> STP
+OK PC=$7592
+ASM> END
+OK PC=$7592
+>D 7590 7591
+7590: CB DB
+```
+
 Current checker requirements:
 
 ```text

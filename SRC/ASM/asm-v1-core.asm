@@ -330,6 +330,7 @@ ASM_VID_SEC            EQU             $3D
 ASM_VID_SED            EQU             $3E
 ASM_VID_SEI            EQU             $3F
 ASM_VID_STA            EQU             $41
+ASM_VID_STP            EQU             $43
 ASM_VID_STX            EQU             $44
 ASM_VID_STY            EQU             $45
 ASM_VID_STZ            EQU             $46
@@ -341,6 +342,7 @@ ASM_VID_TSX            EQU             $4B
 ASM_VID_TXA            EQU             $4C
 ASM_VID_TXS            EQU             $4D
 ASM_VID_TYA            EQU             $4E
+ASM_VID_WAI            EQU             $4F
 ASM_VID_REG_A          EQU             $00
 ASM_VID_REG_X          EQU             $50
 ASM_VID_REG_Y          EQU             $51
@@ -3177,7 +3179,7 @@ ASM_SMOKE_OPCODE_IMPLIED_LOOP:
                         PLX
                         BCC             ASM_SMOKE_OPCODE_IMPLIED_FAIL
                         INX
-                        CPX             #$1A
+                        CPX             #$1C
                         BNE             ASM_SMOKE_OPCODE_IMPLIED_LOOP
                         SEC
                         RTS
@@ -3235,7 +3237,7 @@ ASM_SMOKE_OPCODE_CHECK_LOOP_HI:
                         JMP             ASM_SMOKE_OPCODE_CHECK_FAIL
 ASM_SMOKE_OPCODE_CHECK_BYTE_HI_OK:
                         INX
-                        CPX             #$40
+                        CPX             #$42
                         BNE             ASM_SMOKE_OPCODE_CHECK_LOOP_HI
                         SEC
                         RTS
@@ -3250,7 +3252,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         CMP             #$01
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$3F
+                        CMP             #$41
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_HIGH_PC_LO
                         SEC
@@ -3261,7 +3263,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         CMP             #$01
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$3F
+                        CMP             #$41
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         SEC
                         RTS
@@ -5575,6 +5577,10 @@ ASM_FIND_OPCODE_PLY:
                         DB              ASM_VID_PLY,$7A
 ASM_FIND_OPCODE_RTI:
                         DB              ASM_VID_RTI,$40
+ASM_FIND_OPCODE_WAI:
+                        DB              ASM_VID_WAI,$CB
+ASM_FIND_OPCODE_STP:
+                        DB              ASM_VID_STP,$DB
                         DB              $FF,$00
 
 ASM_FIND_OPCODE_MODE_TABLE:
@@ -9869,6 +9875,8 @@ ASM_OPCODE_PLP:        DB              "        PLP",0
 ASM_OPCODE_PLX:        DB              "        PLX",0
 ASM_OPCODE_PLY:        DB              "        PLY",0
 ASM_OPCODE_RTI:        DB              "        RTI",0
+ASM_OPCODE_WAI:        DB              "        WAI",0
+ASM_OPCODE_STP:        DB              "        STP",0
 ASM_OPCODE_INDEX_PTR_LO:
                         DB              <ASM_OPCODE_LDX_ZP,<ASM_OPCODE_LDX_ABS
                         DB              <ASM_OPCODE_LDX_ZPY,<ASM_OPCODE_LDX_ABSY
@@ -10029,7 +10037,8 @@ ASM_OPCODE_IMPLIED_PTR_LO:
                         DB              <ASM_OPCODE_PHX,<ASM_OPCODE_PHY
                         DB              <ASM_OPCODE_PLA,<ASM_OPCODE_PLP
                         DB              <ASM_OPCODE_PLX,<ASM_OPCODE_PLY
-                        DB              <ASM_OPCODE_RTI
+                        DB              <ASM_OPCODE_RTI,<ASM_OPCODE_WAI
+                        DB              <ASM_OPCODE_STP
 ASM_OPCODE_IMPLIED_PTR_HI:
                         DB              >ASM_OPCODE_CLC,>ASM_OPCODE_CLD
                         DB              >ASM_OPCODE_CLI,>ASM_OPCODE_CLV
@@ -10044,7 +10053,8 @@ ASM_OPCODE_IMPLIED_PTR_HI:
                         DB              >ASM_OPCODE_PHX,>ASM_OPCODE_PHY
                         DB              >ASM_OPCODE_PLA,>ASM_OPCODE_PLP
                         DB              >ASM_OPCODE_PLX,>ASM_OPCODE_PLY
-                        DB              >ASM_OPCODE_RTI
+                        DB              >ASM_OPCODE_RTI,>ASM_OPCODE_WAI
+                        DB              >ASM_OPCODE_STP
 ASM_FIXUP_JSR_FOO:     DB              "        JSR FOO",0
 ASM_FIXUP_BNE_FOO:     DB              "        BNE FOO",0
 ASM_FIXUP_LDA_LO_FOO:  DB              "        LDA #<FOO",0
@@ -10123,7 +10133,7 @@ ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
                         DB              $18,$D8,$58,$B8,$38,$F8,$78
                         DB              $EA,$CA,$88,$C8,$AA,$A8,$BA,$8A
                         DB              $9A,$98,$48,$08,$DA,$5A,$68,$28
-                        DB              $FA,$7A,$40
+                        DB              $FA,$7A,$40,$CB,$DB
 ASM_ASMTEST_EXPECT:    DB              $A2,$00,$9C,$10,$71,$BD,$17,$70
                         DB              $9D,$00,$71,$4D,$10,$71,$8D,$10
                         DB              $71,$E8,$E0,$10,$D0,$EF,$60,$52
