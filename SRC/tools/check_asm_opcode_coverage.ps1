@@ -191,6 +191,7 @@ Add-ExpectedRow 'ADC' 'ABS16' 0x6D
 Add-ExpectedRow 'ADC' 'ZP_IND' 0x72
 Add-ExpectedRow 'ADC' 'ZP_X' 0x75
 Add-ExpectedRow 'ADC' 'ZP_IND_Y' 0x71
+Add-ExpectedRow 'ADC' 'ABS_Y' 0x79
 Add-ExpectedRow 'ADC' 'ABS_X' 0x7D
 
 Add-ExpectedRow 'SBC' 'IMM8' 0xE9
@@ -200,6 +201,7 @@ Add-ExpectedRow 'SBC' 'ABS16' 0xED
 Add-ExpectedRow 'SBC' 'ZP_IND' 0xF2
 Add-ExpectedRow 'SBC' 'ZP_X' 0xF5
 Add-ExpectedRow 'SBC' 'ZP_IND_Y' 0xF1
+Add-ExpectedRow 'SBC' 'ABS_Y' 0xF9
 Add-ExpectedRow 'SBC' 'ABS_X' 0xFD
 
 Add-ExpectedRow 'AND' 'IMM8' 0x29
@@ -209,6 +211,7 @@ Add-ExpectedRow 'AND' 'ABS16' 0x2D
 Add-ExpectedRow 'AND' 'ZP_IND' 0x32
 Add-ExpectedRow 'AND' 'ZP_X' 0x35
 Add-ExpectedRow 'AND' 'ZP_IND_Y' 0x31
+Add-ExpectedRow 'AND' 'ABS_Y' 0x39
 Add-ExpectedRow 'AND' 'ABS_X' 0x3D
 
 Add-ExpectedRow 'ORA' 'IMM8' 0x09
@@ -218,6 +221,7 @@ Add-ExpectedRow 'ORA' 'ABS16' 0x0D
 Add-ExpectedRow 'ORA' 'ZP_IND' 0x12
 Add-ExpectedRow 'ORA' 'ZP_X' 0x15
 Add-ExpectedRow 'ORA' 'ZP_IND_Y' 0x11
+Add-ExpectedRow 'ORA' 'ABS_Y' 0x19
 Add-ExpectedRow 'ORA' 'ABS_X' 0x1D
 
 Add-ExpectedRow 'CMP' 'IMM8' 0xC9
@@ -227,6 +231,7 @@ Add-ExpectedRow 'CMP' 'ABS16' 0xCD
 Add-ExpectedRow 'CMP' 'ZP_IND' 0xD2
 Add-ExpectedRow 'CMP' 'ZP_X' 0xD5
 Add-ExpectedRow 'CMP' 'ZP_IND_Y' 0xD1
+Add-ExpectedRow 'CMP' 'ABS_Y' 0xD9
 Add-ExpectedRow 'CMP' 'ABS_X' 0xDD
 
 Add-ExpectedRow 'INC' 'ACC' 0x1A
@@ -267,6 +272,7 @@ Add-ExpectedRow 'EOR' 'ABS16' 0x4D
 Add-ExpectedRow 'EOR' 'ZP_IND' 0x52
 Add-ExpectedRow 'EOR' 'ZP_X' 0x55
 Add-ExpectedRow 'EOR' 'ZP_IND_Y' 0x51
+Add-ExpectedRow 'EOR' 'ABS_Y' 0x59
 Add-ExpectedRow 'EOR' 'ABS_X' 0x5D
 
 Add-ExpectedRow 'STA' 'ZP_X_IND' 0x81
@@ -285,6 +291,7 @@ Add-ExpectedRow 'LDA' 'ABS16' 0xAD
 Add-ExpectedRow 'LDA' 'ZP_IND' 0xB2
 Add-ExpectedRow 'LDA' 'ZP_X' 0xB5
 Add-ExpectedRow 'LDA' 'ZP_IND_Y' 0xB1
+Add-ExpectedRow 'LDA' 'ABS_Y' 0xB9
 Add-ExpectedRow 'LDA' 'ABS_X' 0xBD
 
 Add-ExpectedRow 'BIT' 'IMM8' 0x89

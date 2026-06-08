@@ -4117,3 +4117,46 @@ ASM RT PASTE OK
 
 Interpretation: `STA $0012,Y` emits `99 12 00`, and the final PC `$7563`
 proves the three-byte absolute indexed Y form was accepted.
+
+## 2026-06-08 ASM 2.97 Accumulator Absolute Y Proof
+
+Purpose: prove the absolute indexed Y rows for `ORA`, `AND`, `EOR`, `ADC`,
+`LDA`, `CMP`, and `SBC`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3216 GO=2000
+ASM RT PASTE
+ASM> ORG $7570
+OK PC=$7570
+ASM> ORA $0012,Y
+OK PC=$7573
+ASM> AND $0012,Y
+OK PC=$7576
+ASM> EOR $0012,Y
+OK PC=$7579
+ASM> ADC $0012,Y
+OK PC=$757C
+ASM> LDA $0012,Y
+OK PC=$757F
+ASM> CMP $0012,Y
+OK PC=$7582
+ASM> SBC $0012,Y
+OK PC=$7585
+ASM> END
+OK PC=$7585
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7570 7584
+7570: 19 12 00 39 12 00 59 12 | 00 79 12 00 B9 12 00 D9 | ...9..Y..y......
+7580: 12 00 F9 12 00 | .....
+```
+
+Interpretation: the PC advances from `$7570` to `$7585`, and the dump proves
+all seven three-byte absolute indexed Y rows in order.

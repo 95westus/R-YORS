@@ -2907,6 +2907,10 @@ ASM_SMOKE_OPCODE:
                         LDY             #>ASM_OPCODE_BRK_ZP
                         JSR             ASM_SMOKE_EMIT_LINE
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
+                        BRA             ASM_SMOKE_OPCODE_ROWS_CONT
+ASM_SMOKE_OPCODE_FAIL_B:
+                        JMP             ASM_SMOKE_OPCODE_FAIL
+ASM_SMOKE_OPCODE_ROWS_CONT:
                         JSR             ASM_SMOKE_OPCODE_INDEX_ROWS
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_SHIFT_ROWS
@@ -2920,6 +2924,8 @@ ASM_SMOKE_OPCODE:
                         JSR             ASM_SMOKE_OPCODE_ALU_ROWS
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_INDIRECT_ROWS
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
+                        JSR             ASM_SMOKE_OPCODE_ABSY_ROWS
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_IMPLIED_ROWS
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
@@ -2950,8 +2956,6 @@ ASM_SMOKE_OPCODE_BAD_MODE_OK:
 ASM_SMOKE_OPCODE_RESTORE_OK:
                         SEC
                         RTS
-ASM_SMOKE_OPCODE_FAIL_B:
-                        JMP             ASM_SMOKE_OPCODE_FAIL
 
 ASM_SMOKE_OPCODE_SETUP:
                         LDA             #$00
@@ -3137,6 +3141,28 @@ ASM_SMOKE_OPCODE_INDIRECT_FAIL:
                         CLC
                         RTS
 
+ASM_SMOKE_OPCODE_ABSY_ROWS:
+                        LDX             #$00
+ASM_SMOKE_OPCODE_ABSY_LOOP:
+                        LDA             ASM_OPCODE_ABSY_PTR_LO,X
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_OPCODE_ABSY_PTR_HI,X
+                        STA             ASM_TMP0_HI
+                        PHX
+                        LDX             ASM_TMP0_LO
+                        LDY             ASM_TMP0_HI
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        PLX
+                        BCC             ASM_SMOKE_OPCODE_ABSY_FAIL
+                        INX
+                        CPX             #$07
+                        BNE             ASM_SMOKE_OPCODE_ABSY_LOOP
+                        SEC
+                        RTS
+ASM_SMOKE_OPCODE_ABSY_FAIL:
+                        CLC
+                        RTS
+
 ASM_SMOKE_OPCODE_IMPLIED_ROWS:
                         LDX             #$00
 ASM_SMOKE_OPCODE_IMPLIED_LOOP:
@@ -3209,7 +3235,7 @@ ASM_SMOKE_OPCODE_CHECK_LOOP_HI:
                         JMP             ASM_SMOKE_OPCODE_CHECK_FAIL
 ASM_SMOKE_OPCODE_CHECK_BYTE_HI_OK:
                         INX
-                        CPX             #$2B
+                        CPX             #$40
                         BNE             ASM_SMOKE_OPCODE_CHECK_LOOP_HI
                         SEC
                         RTS
@@ -3224,7 +3250,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         CMP             #$01
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$2A
+                        CMP             #$3F
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_HIGH_PC_LO
                         SEC
@@ -3235,7 +3261,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         CMP             #$01
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$2A
+                        CMP             #$3F
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         SEC
                         RTS
@@ -5700,6 +5726,7 @@ ASM_FIND_OPCODE_ADC:
                         DB              ASM_VID_ADC,ASM_OPM_ZP_IND,$72
                         DB              ASM_VID_ADC,ASM_OPM_ZP_X,$75
                         DB              ASM_VID_ADC,ASM_OPM_ZP_IND_Y,$71
+                        DB              ASM_VID_ADC,ASM_OPM_ABS_Y,$79
                         DB              ASM_VID_ADC,ASM_OPM_ABS_X,$7D
 ASM_FIND_OPCODE_SBC:
                         DB              ASM_VID_SBC,ASM_OPM_IMM8,$E9
@@ -5709,6 +5736,7 @@ ASM_FIND_OPCODE_SBC:
                         DB              ASM_VID_SBC,ASM_OPM_ZP_IND,$F2
                         DB              ASM_VID_SBC,ASM_OPM_ZP_X,$F5
                         DB              ASM_VID_SBC,ASM_OPM_ZP_IND_Y,$F1
+                        DB              ASM_VID_SBC,ASM_OPM_ABS_Y,$F9
                         DB              ASM_VID_SBC,ASM_OPM_ABS_X,$FD
 ASM_FIND_OPCODE_AND:
                         DB              ASM_VID_AND,ASM_OPM_IMM8,$29
@@ -5718,6 +5746,7 @@ ASM_FIND_OPCODE_AND:
                         DB              ASM_VID_AND,ASM_OPM_ZP_IND,$32
                         DB              ASM_VID_AND,ASM_OPM_ZP_X,$35
                         DB              ASM_VID_AND,ASM_OPM_ZP_IND_Y,$31
+                        DB              ASM_VID_AND,ASM_OPM_ABS_Y,$39
                         DB              ASM_VID_AND,ASM_OPM_ABS_X,$3D
 ASM_FIND_OPCODE_ORA:
                         DB              ASM_VID_ORA,ASM_OPM_IMM8,$09
@@ -5727,6 +5756,7 @@ ASM_FIND_OPCODE_ORA:
                         DB              ASM_VID_ORA,ASM_OPM_ZP_IND,$12
                         DB              ASM_VID_ORA,ASM_OPM_ZP_X,$15
                         DB              ASM_VID_ORA,ASM_OPM_ZP_IND_Y,$11
+                        DB              ASM_VID_ORA,ASM_OPM_ABS_Y,$19
                         DB              ASM_VID_ORA,ASM_OPM_ABS_X,$1D
 ASM_FIND_OPCODE_EOR:
                         DB              ASM_VID_EOR,ASM_OPM_IMM8,$49
@@ -5736,6 +5766,7 @@ ASM_FIND_OPCODE_EOR:
                         DB              ASM_VID_EOR,ASM_OPM_ZP_IND,$52
                         DB              ASM_VID_EOR,ASM_OPM_ZP_X,$55
                         DB              ASM_VID_EOR,ASM_OPM_ZP_IND_Y,$51
+                        DB              ASM_VID_EOR,ASM_OPM_ABS_Y,$59
                         DB              ASM_VID_EOR,ASM_OPM_ABS_X,$5D
 ASM_FIND_OPCODE_CMP:
                         DB              ASM_VID_CMP,ASM_OPM_IMM8,$C9
@@ -5745,6 +5776,7 @@ ASM_FIND_OPCODE_CMP:
                         DB              ASM_VID_CMP,ASM_OPM_ZP_IND,$D2
                         DB              ASM_VID_CMP,ASM_OPM_ZP_X,$D5
                         DB              ASM_VID_CMP,ASM_OPM_ZP_IND_Y,$D1
+                        DB              ASM_VID_CMP,ASM_OPM_ABS_Y,$D9
                         DB              ASM_VID_CMP,ASM_OPM_ABS_X,$DD
 ASM_FIND_OPCODE_LDA:
                         DB              ASM_VID_LDA,ASM_OPM_IMM8,$A9
@@ -5754,6 +5786,7 @@ ASM_FIND_OPCODE_LDA:
                         DB              ASM_VID_LDA,ASM_OPM_ZP_IND,$B2
                         DB              ASM_VID_LDA,ASM_OPM_ZP_X,$B5
                         DB              ASM_VID_LDA,ASM_OPM_ZP_IND_Y,$B1
+                        DB              ASM_VID_LDA,ASM_OPM_ABS_Y,$B9
                         DB              ASM_VID_LDA,ASM_OPM_ABS_X,$BD
 ASM_FIND_OPCODE_STA:
                         DB              ASM_VID_STA,ASM_OPM_ZP_X_IND,$81
@@ -9778,6 +9811,7 @@ ASM_OPCODE_ORA_ZP:     DB              "        ORA $12",0
 ASM_OPCODE_ORA_ABS:    DB              "        ORA $0012",0
 ASM_OPCODE_ORA_ZPX:    DB              "        ORA $12,X",0
 ASM_OPCODE_ORA_ABSX:   DB              "        ORA $0012,X",0
+ASM_OPCODE_ORA_ABSY:   DB              "        ORA $0012,Y",0
 ASM_OPCODE_ADC_ZPXIND: DB              "        ADC ($12,X)",0
 ASM_OPCODE_ADC_ZPIND:  DB              "        ADC ($12)",0
 ASM_OPCODE_ADC_ZPINDY: DB              "        ADC ($12),Y",0
@@ -9803,6 +9837,12 @@ ASM_OPCODE_STA_ZPXIND: DB              "        STA ($12,X)",0
 ASM_OPCODE_STA_ZPIND:  DB              "        STA ($12)",0
 ASM_OPCODE_STA_ZPINDY: DB              "        STA ($12),Y",0
 ASM_OPCODE_STA_ABSY:   DB              "        STA $0012,Y",0
+ASM_OPCODE_AND_ABSY:   DB              "        AND $0012,Y",0
+ASM_OPCODE_EOR_ABSY:   DB              "        EOR $0012,Y",0
+ASM_OPCODE_ADC_ABSY:   DB              "        ADC $0012,Y",0
+ASM_OPCODE_LDA_ABSY:   DB              "        LDA $0012,Y",0
+ASM_OPCODE_CMP_ABSY:   DB              "        CMP $0012,Y",0
+ASM_OPCODE_SBC_ABSY:   DB              "        SBC $0012,Y",0
 ASM_OPCODE_CLC:        DB              "        CLC",0
 ASM_OPCODE_CLD:        DB              "        CLD",0
 ASM_OPCODE_CLI:        DB              "        CLI",0
@@ -9965,6 +10005,16 @@ ASM_OPCODE_INDIRECT_PTR_HI:
                         DB              >ASM_OPCODE_LDA_ZPINDY
                         DB              >ASM_OPCODE_STA_ZPXIND,>ASM_OPCODE_STA_ZPIND
                         DB              >ASM_OPCODE_STA_ZPINDY,>ASM_OPCODE_STA_ABSY
+ASM_OPCODE_ABSY_PTR_LO:
+                        DB              <ASM_OPCODE_ORA_ABSY,<ASM_OPCODE_AND_ABSY
+                        DB              <ASM_OPCODE_EOR_ABSY,<ASM_OPCODE_ADC_ABSY
+                        DB              <ASM_OPCODE_LDA_ABSY,<ASM_OPCODE_CMP_ABSY
+                        DB              <ASM_OPCODE_SBC_ABSY
+ASM_OPCODE_ABSY_PTR_HI:
+                        DB              >ASM_OPCODE_ORA_ABSY,>ASM_OPCODE_AND_ABSY
+                        DB              >ASM_OPCODE_EOR_ABSY,>ASM_OPCODE_ADC_ABSY
+                        DB              >ASM_OPCODE_LDA_ABSY,>ASM_OPCODE_CMP_ABSY
+                        DB              >ASM_OPCODE_SBC_ABSY
 ASM_OPCODE_IMPLIED_PTR_LO:
                         DB              <ASM_OPCODE_CLC,<ASM_OPCODE_CLD
                         DB              <ASM_OPCODE_CLI,<ASM_OPCODE_CLV
@@ -10066,6 +10116,10 @@ ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
                         DB              $A1,$12,$B2,$12,$B1,$12
                         DB              $81,$12,$92,$12,$91,$12
                         DB              $99,$12,$00
+                        DB              $19,$12,$00,$39,$12,$00
+                        DB              $59,$12,$00,$79,$12,$00
+                        DB              $B9,$12,$00,$D9,$12,$00
+                        DB              $F9,$12,$00
                         DB              $18,$D8,$58,$B8,$38,$F8,$78
                         DB              $EA,$CA,$88,$C8,$AA,$A8,$BA,$8A
                         DB              $9A,$98,$48,$08,$DA,$5A,$68,$28

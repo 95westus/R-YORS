@@ -1807,6 +1807,64 @@ OK PC=$7563
 7560: 99 12 00
 ```
 
+ASM 2.97 accumulator/load/compare `abs,Y` opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.97 completes the absolute indexed Y rows for the accumulator ALU,
+`LDA`, and `CMP` mnemonics:
+
+```text
+ORA $0012,Y -> 19 12 00
+AND $0012,Y -> 39 12 00
+EOR $0012,Y -> 59 12 00
+ADC $0012,Y -> 79 12 00
+LDA $0012,Y -> B9 12 00
+CMP $0012,Y -> D9 12 00
+SBC $0012,Y -> F9 12 00
+```
+
+These pair with the already-proven `STA $0012,Y -> 99 12 00` row. There are
+no zero-page Y forms for these mnemonics. The full-core opcode smoke now emits
+`$013F` bytes, and the host opcode audit reports `rows=183` and
+`mnemonics=64`. The host gate passes with `asm-v1-runtime-paste-2000.s19`
+total `$3216`.
+
+Hardware-proven ASM 2.97 `abs,Y` paste emission on 2026-06-08: the board
+loaded the `$3216` paste image, accepted all seven rows, finalized through
+`END`, and dumped the expected byte stream at `$7570-$7584`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3216 GO=2000
+ASM RT PASTE
+ASM> ORG $7570
+OK PC=$7570
+ASM> ORA $0012,Y
+OK PC=$7573
+ASM> AND $0012,Y
+OK PC=$7576
+ASM> EOR $0012,Y
+OK PC=$7579
+ASM> ADC $0012,Y
+OK PC=$757C
+ASM> LDA $0012,Y
+OK PC=$757F
+ASM> CMP $0012,Y
+OK PC=$7582
+ASM> SBC $0012,Y
+OK PC=$7585
+ASM> END
+OK PC=$7585
+>D 7570 7584
+7570: 19 12 00 39 12 00 59 12 | 00 79 12 00 B9 12 00 D9
+7580: 12 00 F9 12 00
+```
+
 Current checker requirements:
 
 ```text
