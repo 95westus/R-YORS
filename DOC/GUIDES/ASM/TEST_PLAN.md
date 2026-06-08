@@ -2077,6 +2077,59 @@ ASM RT PASTE OK
 >
 ```
 
+ASM 3.02 transactional fixup-patch rollback on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+The line transaction now snapshots pre-existing fixup row states and the two
+bytes at each fixup patch site. If a failed line defines a label and resolves
+an earlier pending fixup before the later operand/mode check fails, rollback
+restores the fixup row to its prior state and restores the patched target
+bytes. New fixup rows from the failed line are still removed by restoring
+`ASM_FIX_COUNT`.
+
+The host smoke now assembles `BNE FOO`, rejects `FOO STA #$12` as `BAD MODE`
+after the label would have resolved the branch, verifies the branch operand is
+back to `$FF` and the fixup is pending again, then accepts `FOO NOP` and
+verifies the same fixup resolves to offset `$00`. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` total `$34F0`.
+
+Hardware-proven ASM 3.02 transactional fixup-patch rollback on 2026-06-08:
+the board loaded the `$34F0` paste image, rejected `FOO STA #$12` after the
+line had resolved an earlier `BNE FOO`, stayed in ASM at restored PC `$75D2`,
+then accepted `FOO NOP`, finalized cleanly, and dumped `D0 00 EA`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=34F0 GO=2000
+ASM RT PASTE
+ASM> ORG $75D0
+OK PC=$75D0
+ASM> BNE FOO
+OK PC=$75D2
+ASM> FOO STA #$12
+ERR=$04 BAD MODE PC=$75D2
+ASM> FOO NOP
+OK PC=$75D3
+ASM> END
+OK PC=$75D3
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 75D2  01 04 0E 0004 00  0000  FOO
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  75D1 75D2 FOO
+ASM RT PASTE OK
+>D 75D0 75D2
+75D0: D0 00 EA | ...
+>
+```
+
 Current checker requirements:
 
 ```text

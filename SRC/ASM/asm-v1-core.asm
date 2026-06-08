@@ -2357,9 +2357,91 @@ ASM_SMOKE_ASSEMBLE_LINE_TXN:
                         LDA             ASM_HIGH_PC_HI
                         CMP             #ASM_SMOKE_TARGET_HI
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
                         SEC
                         RTS
 ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #<ASM_CODE_BUF
+                        LDY             #>ASM_CODE_BUF
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+
+                        LDX             #<ASM_SMOKE_TXN_BNE_FOO
+                        LDY             #>ASM_SMOKE_TXN_BNE_FOO
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        LDA             ASM_CODE_BUF
+                        CMP             #$D0
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        LDA             ASM_CODE_BUF+1
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        LDA             ASM_FIX_COUNT
+                        CMP             #$01
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        LDA             ASM_FIX_STATE
+                        CMP             #ASM_FIX_PENDING
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_PHASE2
+ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_PHASE2:
+                        LDX             #<ASM_SMOKE_TXN_FOO_STA_IMM
+                        LDY             #>ASM_SMOKE_TXN_FOO_STA_IMM
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        CMP             #ASM_STATUS_BAD_MODE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        LDA             ASM_PC_LO
+                        CMP             #$02
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        LDA             ASM_SYM_COUNT
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        LDA             ASM_FIX_COUNT
+                        CMP             #$01
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_A
+                        LDA             ASM_FIX_STATE
+                        CMP             #ASM_FIX_PENDING
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_B
+                        LDA             ASM_CODE_BUF+1
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_B
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_PHASE3
+ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_B:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_PHASE3:
+                        LDX             #<ASM_SMOKE_TXN_FOO_NOP
+                        LDY             #>ASM_SMOKE_TXN_FOO_NOP
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_B
+                        LDA             ASM_FIX_STATE
+                        CMP             #ASM_FIX_RESOLVED
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_B
+                        LDA             ASM_CODE_BUF+1
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_B
+                        LDA             ASM_CODE_BUF+2
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_B
+                        LDA             ASM_PC_LO
+                        CMP             #$03
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_B
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL_B
+                        SEC
+                        RTS
+ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN_FAIL:
                         CLC
                         RTS
 
@@ -5586,9 +5668,37 @@ ASM_LINE_SAVE:
                         STA             ASM_LINE_FIX_LAST_SITE_HI
                         LDA             ASM_REPORT_FLAGS
                         STA             ASM_LINE_REPORT_FLAGS
+                        PHX
+                        PHY
+                        JSR             ASM_LINE_SAVE_FIXUPS
+                        PLY
+                        PLX
+                        RTS
+
+ASM_LINE_SAVE_FIXUPS:
+                        LDX             #$00
+ASM_LINE_SAVE_FIXUPS_LOOP:
+                        CPX             ASM_FIX_COUNT
+                        BCS             ASM_LINE_SAVE_FIXUPS_DONE
+                        LDA             ASM_FIX_STATE,X
+                        STA             ASM_LINE_FIX_STATE,X
+                        LDA             ASM_FIX_SITE_LO,X
+                        STA             ASM_FIX_PTR_LO
+                        LDA             ASM_FIX_SITE_HI,X
+                        STA             ASM_FIX_PTR_HI
+                        LDY             #$00
+                        LDA             (ASM_FIX_PTR_LO),Y
+                        STA             ASM_LINE_FIX_BYTE0,X
+                        INY
+                        LDA             (ASM_FIX_PTR_LO),Y
+                        STA             ASM_LINE_FIX_BYTE1,X
+                        INX
+                        BRA             ASM_LINE_SAVE_FIXUPS_LOOP
+ASM_LINE_SAVE_FIXUPS_DONE:
                         RTS
 
 ASM_LINE_ROLLBACK:
+                        JSR             ASM_LINE_RESTORE_FIXUPS
                         LDA             ASM_LINE_PC_LO
                         STA             ASM_PC_LO
                         LDA             ASM_LINE_PC_HI
@@ -5613,6 +5723,28 @@ ASM_LINE_ROLLBACK:
                         STA             ASM_REPORT_FLAGS
                         LDA             #ASM_SESS_ACTIVE
                         STA             ASM_SESSION_STATE
+                        RTS
+
+ASM_LINE_RESTORE_FIXUPS:
+                        LDX             #$00
+ASM_LINE_RESTORE_FIXUPS_LOOP:
+                        CPX             ASM_LINE_FIX_COUNT
+                        BCS             ASM_LINE_RESTORE_FIXUPS_DONE
+                        LDA             ASM_LINE_FIX_STATE,X
+                        STA             ASM_FIX_STATE,X
+                        LDA             ASM_FIX_SITE_LO,X
+                        STA             ASM_FIX_PTR_LO
+                        LDA             ASM_FIX_SITE_HI,X
+                        STA             ASM_FIX_PTR_HI
+                        LDY             #$00
+                        LDA             ASM_LINE_FIX_BYTE0,X
+                        STA             (ASM_FIX_PTR_LO),Y
+                        INY
+                        LDA             ASM_LINE_FIX_BYTE1,X
+                        STA             (ASM_FIX_PTR_LO),Y
+                        INX
+                        BRA             ASM_LINE_RESTORE_FIXUPS_LOOP
+ASM_LINE_RESTORE_FIXUPS_DONE:
                         RTS
 
 ASM_INC_LINE_COUNT:
@@ -10126,6 +10258,9 @@ ASM_LINE_FIX_LAST_SITE_LO:
 ASM_LINE_FIX_LAST_SITE_HI:
                         DB              $00
 ASM_LINE_REPORT_FLAGS: DB              $00
+ASM_LINE_FIX_STATE:    DS              ASM_FIX_MAX
+ASM_LINE_FIX_BYTE0:    DS              ASM_FIX_MAX
+ASM_LINE_FIX_BYTE1:    DS              ASM_FIX_MAX
 ASM_SYM_COUNT:         DB              $00
 ASM_FIX_COUNT:         DB              $00
 ASM_FIX_RESOLVE_COUNT: DB              $00
@@ -10666,6 +10801,10 @@ ASM_FIXUP_BBR_FOO:     DB              "        BBR 3,$12,FOO",0
 ASM_SMOKE_TXN_BBR_RANGE:
                         DB              "        BBR 3,$12,$9000",0
 ASM_SMOKE_TXN_NOP:     DB              "        NOP",0
+ASM_SMOKE_TXN_BNE_FOO: DB              "        BNE FOO",0
+ASM_SMOKE_TXN_FOO_STA_IMM:
+                        DB              "FOO STA #$12",0
+ASM_SMOKE_TXN_FOO_NOP: DB              "FOO NOP",0
 ASM_FIXUP_LDA_LO_FOO:  DB              "        LDA #<FOO",0
 ASM_FIXUP_LDA_HI_FOO:  DB              "        LDA #>FOO",0
 ASM_FIXUP_JSR_BAR:     DB              "        JSR BAR",0

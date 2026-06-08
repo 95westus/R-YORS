@@ -4313,3 +4313,86 @@ bit-branch emit path, but the reported PC remains `$75C0` and the wrapper
 immediately accepts another `ASM>` line. The accepted `NOP` advances to
 `$75C1`, `END` finalizes cleanly with empty tables, and the dump proves the
 accepted byte at `$75C0` is `EA`.
+
+## 2026-06-08 ASM 3.02 Transactional Fixup Rollback Proof
+
+Purpose: prove a failed labeled line that temporarily resolves an earlier
+pending fixup restores both the fixup row state and the already-patched target
+byte before returning to `ASM>`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=34F0 GO=2000
+ASM RT PASTE
+ASM> BNE FOO
+OK PC=$7002
+ASM> FOO STA #$12   ; FAILS AFTER RESOLVING FOO
+ERR=$04 BAD MODE PC=$7002
+ASM> FOO NOP        ; PROVES FIXUP WAS RESTORED AND CAN RESOLVE CLEANLY
+OK PC=$7003
+ASM>
+
+
+>L G
+L S19
+L @2000
+L OK=34F0 GO=2000
+ASM RT PASTE
+ASM> BNE FOO
+OK PC=$7002
+ASM> FOO STA #$12   ; FAILS AFTER RESOLVING FOO
+ERR=$04 BAD MODE PC=$7002
+ASM> FOO NOP        ; PROVES FIXUP WAS RESTORED AND CAN RESOLVE CLEANLY
+OK PC=$7003
+ASM> ORG 75DD0
+ERR=$03 BAD OPER PC=$7003
+ASM> END
+OK PC=$7003
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7002  01 04 0E 0003 00  0000  FOO
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  7001 7002 FOO
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=C2 Y=0F P=75 S=FD NV-BdIzC
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $75D0
+OK PC=$75D0
+ASM> BNE FOO
+OK PC=$75D2
+ASM> FOO STA #$12
+ERR=$04 BAD MODE PC=$75D2
+ASM> FOO NOP
+OK PC=$75D3
+ASM> END
+OK PC=$75D3
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 75D2  01 04 0E 0004 00  0000  FOO
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  75D1 75D2 FOO
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=C2 Y=0F P=75 S=FD NV-BdIzC
+>D 75D0 75D2
+75D0: D0 00 EA | ...
+>
+```
+
+Interpretation: `FOO STA #$12` fails after the `FOO` label would resolve the
+pending `BNE FOO`, but the next `FOO NOP` is accepted at the restored PC and
+the final dump shows `D0 00 EA`. The resolved fixup row reports mode `$07`,
+site `$75D1`, and base `$75D2`, proving the branch operand was restored and
+then resolved cleanly. The intervening `ORG 75DD0` typo also proves a normal
+non-`END` parser error continues to reprompt inside the same session.
