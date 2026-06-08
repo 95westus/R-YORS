@@ -2130,6 +2130,55 @@ ASM RT PASTE OK
 >
 ```
 
+Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
+the already-loaded `$34F0` paste image accepted a longer practical program at
+`ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and
+then ran from `$6600`. The program fills `$7800-$78FF` with `X EOR #$A5`,
+verifies the bytes, computes an 8-bit sum, and prints a hex/ascii dump through
+resident `BIO_FTDI_WRITE_BYTE_BLOCK`. The accepted version keeps output helper
+routines local and calls them by absolute address, avoiding the current small
+local-reference and fixup-table limits hit by earlier exploratory versions.
+
+Key board output:
+
+```text
+ASM> ORG $6600
+OK PC=$6600
+... long program accepted ...
+ASM> ORG $7800
+OK PC=$7800
+ASM> DS $FF,$00
+OK PC=$78FF
+ASM> DB $00
+OK PC=$7900
+ASM> DS 5,$00
+OK PC=$7905
+ASM> END
+OK PC=$7905
+ASM TABLES
+SYMBOLS
+... 12 symbols, including MAIN/FILL/VER/DUMP/HLOOP/ALOOP ...
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  6601 6602 MAIN
+01 02 07   00  6692 6693 VOK
+02 02 07   00  6730 6731 ADOT
+03 02 07   00  6734 6735 ADOT
+04 02 07   00  6739 673A ANEXT
+ASM RT PASTE OK
+>G 6600
+GO 6600
+
+RAM7800 TEST
+SUM=80 FAIL=00
+... 16 lines of $7800-$78FF hex/ascii dump ...
+DONE
+
+#GO# ENTRY=6600
+RET A=0A X=00 Y=30 P=77 S=FD NV-BdIZC
+>
+```
+
 Current checker requirements:
 
 ```text

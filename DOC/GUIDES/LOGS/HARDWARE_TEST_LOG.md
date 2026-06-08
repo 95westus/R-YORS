@@ -4396,3 +4396,97 @@ the final dump shows `D0 00 EA`. The resolved fixup row reports mode `$07`,
 site `$75D1`, and base `$75D2`, proving the branch operand was restored and
 then resolved cleanly. The intervening `ORG 75DD0` typo also proves a normal
 non-`END` parser error continues to reprompt inside the same session.
+
+## 2026-06-08 ASM 3.02 Long RAM7800 Paste/Run Proof
+
+Purpose: prove the current runtime paste assembler can accept and run a useful
+multi-section program, not only short opcode/proof snippets. The program
+starts at `$6600`, uses resident `BIO_FTDI_WRITE_BYTE_BLOCK` for output,
+reserves data/work bytes at `$7800-$7904`, fills `$7800-$78FF`, verifies the
+pattern, prints a checksum/fail count, and emits a hex/ascii dump.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $6600
+OK PC=$6600
+ASM> BRA MAIN
+OK PC=$6602
+ASM> HEX DB '0','1','2','3','4','5','6','7'
+OK PC=$660A
+ASM> DB '8','9','A','B','C','D','E','F'
+OK PC=$6612
+ASM> PHEX PHX
+OK PC=$6613
+... local hex/crlf helpers and main program accepted ...
+ASM> ORG $7800
+OK PC=$7800
+ASM> DS $FF,$00
+OK PC=$78FF
+ASM> DB $00
+OK PC=$7900
+ASM> DS 5,$00
+OK PC=$7905
+ASM> END
+OK PC=$7905
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 6602  01 04 0E 0003 00  0000  HEX
+01 01 6612  01 04 0E 0005 00  0000  PHEX
+02 01 662B  01 04 0E 0015 00  0000  PCRLF
+03 01 6636  01 04 0E 001A 00  0000  MAIN
+04 01 667A  01 04 0F 0035 01  0039  FILL
+05 01 668B  01 04 0F 003D 01  0047  VER
+06 01 6696  01 04 0E 0042 00  0000  VOK
+07 01 66EC  01 04 0F 0064 01  008D  DUMP
+08 01 6707  01 04 0F 006E 01  0074  HLOOP
+09 01 672A  01 04 0F 007C 01  0087  ALOOP
+0A 01 673A  01 04 0E 0083 00  0000  ADOT
+0B 01 673F  01 04 0E 0085 00  0000  ANEXT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  6601 6602 MAIN
+01 02 07   00  6692 6693 VOK
+02 02 07   00  6730 6731 ADOT
+03 02 07   00  6734 6735 ADOT
+04 02 07   00  6739 673A ANEXT
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=C2 Y=0F P=75 S=FD NV-BdIzC
+>G 6600
+GO 6600
+
+RAM7800 TEST
+SUM=80 FAIL=00
+
+7800: A5 A4 A7 A6 A1 A0 A3 A2 AD AC AF AE A9 A8 AB AA |................
+7810: B5 B4 B7 B6 B1 B0 B3 B2 BD BC BF BE B9 B8 BB BA |................
+7820: 85 84 87 86 81 80 83 82 8D 8C 8F 8E 89 88 8B 8A |................
+7830: 95 94 97 96 91 90 93 92 9D 9C 9F 9E 99 98 9B 9A |................
+7840: E5 E4 E7 E6 E1 E0 E3 E2 ED EC EF EE E9 E8 EB EA |................
+7850: F5 F4 F7 F6 F1 F0 F3 F2 FD FC FF FE F9 F8 FB FA |................
+7860: C5 C4 C7 C6 C1 C0 C3 C2 CD CC CF CE C9 C8 CB CA |................
+7870: D5 D4 D7 D6 D1 D0 D3 D2 DD DC DF DE D9 D8 DB DA |................
+7880: 25 24 27 26 21 20 23 22 2D 2C 2F 2E 29 28 2B 2A |%$'&! #"-,/.)(+*
+7890: 35 34 37 36 31 30 33 32 3D 3C 3F 3E 39 38 3B 3A |54761032=<?>98;:
+78A0: 05 04 07 06 01 00 03 02 0D 0C 0F 0E 09 08 0B 0A |................
+78B0: 15 14 17 16 11 10 13 12 1D 1C 1F 1E 19 18 1B 1A |................
+78C0: 65 64 67 66 61 60 63 62 6D 6C 6F 6E 69 68 6B 6A |edgfa`cbmlonihkj
+78D0: 75 74 77 76 71 70 73 72 7D 7C 7F 7E 79 78 7B 7A |utwvqpsr}|.~yx{z
+78E0: 45 44 47 46 41 40 43 42 4D 4C 4F 4E 49 48 4B 4A |EDGFA@CBMLONIHKJ
+78F0: 55 54 57 56 51 50 53 52 5D 5C 5F 5E 59 58 5B 5A |UTWVQPSR]\_^YX[Z
+DONE
+
+#GO# ENTRY=6600
+RET A=0A X=00 Y=30 P=77 S=FD NV-BdIZC
+>
+```
+
+Interpretation: `END` succeeded at `$7905`, all five remaining relative fixups
+were resolved, and the emitted program returned normally after printing
+`SUM=80 FAIL=00`. This is a hardware proof that the paste path can carry a
+larger useful program when it avoids unresolved resident helpers and stays
+within the current session table limits.
