@@ -1580,6 +1580,45 @@ ASM> END
 7340: 4C 12 00 00 12
 ```
 
+Hardware-proven ASM 2.92 `JMP/BRK #imm8` paste emission on 2026-06-08:
+the board loaded the `$303D` paste image, accepted `JMP $0012` and
+`BRK #$12`, finalized through `END`, and dumped `4C 12 00 00 12` at
+`$7340-$7344`.
+
+ASM 2.93 bare byte `BRK` alias on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.93 accepts both HIMON/WDC trap spellings:
+
+```text
+BRK #$12
+BRK $12
+```
+
+Both forms emit opcode `$00` followed by byte `$12`. This is an opcode-table
+alias: `BRK #$12` classifies as `IMM8`, `BRK $12` classifies as `ZP8`, and
+both rows map to opcode `$00`. The source-width rule still applies, so
+`BRK $0012` is not accepted as this byte trap form. The full-core opcode smoke
+now emits `$F1` bytes, and the host opcode audit reports `rows=149` and
+`mnemonics=64`. The host gate passes with `asm-v1-runtime-paste-2000.s19`
+total `$3040`.
+
+Hardware-proven ASM 2.93 bare byte `BRK` alias on 2026-06-08: the board
+loaded the `$3040` paste image, accepted `BRK $12` and `BRK #$13`, finalized
+through `END`, and dumped `00 12 00 13` at `$7500-$7503`.
+
+```text
+ASM> ORG $7500
+ASM> BRK $12
+ASM> BRK #$13
+ASM> END
+>D 7500 750F
+7500: 00 12 00 13 00 00 00 00
+```
+
 Current checker requirements:
 
 ```text

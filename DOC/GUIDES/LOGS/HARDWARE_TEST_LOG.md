@@ -3880,3 +3880,70 @@ before it accepted the line and before the emitted test program could run. The
 NMI PC mapped into the old opcode mode-row scanner in the `$2FFA` image. The
 mode-row table had crossed the single 8-bit `X` scan limit, so the scanner
 wrapped instead of reaching the late `BRK` row.
+
+## 2026-06-08 ASM 2.92 JMP/BRK Retest Proof
+
+Purpose: prove the split mode-row scanner fixes the ASM 2.91 `BRK #$12`
+lookup freeze and emits absolute `JMP` plus ABI-style `BRK #imm8`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=303D GO=2000
+ASM RT PASTE
+ASM> ORG $7340
+OK PC=$7340
+ASM> JMP $0012
+OK PC=$7343
+ASM> BRK #$12
+OK PC=$7345
+ASM> END
+OK PC=$7345
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7340 7344
+7340: 4C 12 00 00 12 | L....
+>
+```
+
+Interpretation: the `$303D` paste image reaches `END` normally. The dump
+matches `JMP $0012` as `4C 12 00` and `BRK #$12` as `00 12`.
+
+## 2026-06-08 ASM 2.93 BRK Byte Alias Proof
+
+Purpose: prove ASM accepts both HIMON/WDC byte trap spellings, `BRK $xx` and
+`BRK #$xx`, with the same two-byte emission shape.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3040 GO=2000
+ASM RT PASTE
+ASM> ORG $7500
+OK PC=$7500
+ASM> BRK $12
+OK PC=$7502
+ASM> BRK #$13
+OK PC=$7504
+ASM> END
+OK PC=$7504
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7500 750F
+7500: 00 12 00 13 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+```
+
+Interpretation: `BRK $12` emits `00 12` and `BRK #$13` emits `00 13`.
+The final PC `$7504` and dump prove both source forms are accepted by the
+runtime paste image.
