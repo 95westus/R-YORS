@@ -1125,6 +1125,20 @@ ASM RT PASTE OK
 7250: 18 D8 58 B8 38 F8 78 | ..X.8.x
 ```
 
+ASM 2.84 runtime paste END-only table printing on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.84 removes the runtime paste wrapper's mid-session `.T` command path.
+The table printer remains in the paste wrapper and still runs after accepted
+`END`, and after failed `END` once RX has been quenched. This keeps symbol,
+fixup, and status evidence tied to the assembler's finalization/resolve point
+instead of a live mid-session prompt command. A plain `.` line still exits the
+paste wrapper without finalizing the ASM session. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` total `$2FA3`.
+
 Current checker requirements:
 
 ```text

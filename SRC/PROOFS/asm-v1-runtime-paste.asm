@@ -79,13 +79,6 @@ ASMRP_LOOP:
 
 ASMRP_READ_OK:
                         BEQ             ASMRP_LOOP
-                        JSR             ASMRP_IS_TABLES
-                        BCC             ASMRP_CHECK_DOT
-
-                        JSR             ASMRP_PRINT_TABLES_CMD
-                        JMP             ASMRP_LOOP
-
-ASMRP_CHECK_DOT:
                         JSR             ASMRP_IS_DOT
                         BCC             ASMRP_ASSEMBLE
 
@@ -211,40 +204,6 @@ ASMRP_PRINT_TABLES_CMD:
                         JSR             SYS_WRITE_HEX_BYTE
                         JMP             SYS_WRITE_CRLF
 ASMRP_TABLES_DONE:
-                        RTS
-
-ASMRP_IS_TABLES:
-                        LDY             #$00
-ASMRP_TABLES_SKIP:
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #' '
-                        BEQ             ASMRP_TABLES_ADV
-                        CMP             #$09
-                        BNE             ASMRP_TABLES_DOT
-ASMRP_TABLES_ADV:
-                        INY
-                        BRA             ASMRP_TABLES_SKIP
-ASMRP_TABLES_DOT:
-                        CMP             #'.'
-                        BNE             ASMRP_TABLES_NO
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #'T'
-                        BNE             ASMRP_TABLES_NO
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        BEQ             ASMRP_TABLES_YES
-                        CMP             #' '
-                        BEQ             ASMRP_TABLES_YES
-                        CMP             #$09
-                        BEQ             ASMRP_TABLES_YES
-                        CMP             #';'
-                        BEQ             ASMRP_TABLES_YES
-ASMRP_TABLES_NO:
-                        CLC
-                        RTS
-ASMRP_TABLES_YES:
-                        SEC
                         RTS
 
 ASMRP_IS_DOT:
