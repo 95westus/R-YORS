@@ -4,6 +4,54 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-08 ASM 2.82 BIT Opcode Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` at `$2000` with size `$2FBB` after ASM 2.82
+added opcode lookup rows for `BIT`.
+
+Validated:
+
+- The runtime paste wrapper starts normally with `BIT` active.
+- `BIT` assembles in immediate, zero-page, absolute, zero-page X, and absolute
+  X forms.
+- The final PC after all five rows is `$724C`.
+- The emitted `$7240-$724B` bytes match the W65C02 opcode table, including
+  `BIT #imm` as `$89`.
+
+### Transcript
+
+```text
+L @2000
+L OK=2FBB GO=2000
+ASM RT PASTE
+ASM> ORG $7240
+OK PC=$7240
+ASM> BIT #$12
+OK PC=$7242
+ASM> BIT $12
+OK PC=$7244
+ASM> BIT $0012
+OK PC=$7247
+ASM> BIT $12,X
+OK PC=$7249
+ASM> BIT $0012,X
+OK PC=$724C
+ASM> END
+OK PC=$724C
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>
+
+7240: 89 12 24 12 2C 12 00 34 | 12 3C 12 00 | ..$.,..4.<..
+```
+
 ## 2026-06-07 ASM 2.81 LSR/ROL/ROR Opcode Board Proof
 
 ### Summary

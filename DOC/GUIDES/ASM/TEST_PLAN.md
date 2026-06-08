@@ -1057,6 +1057,30 @@ opcode form in ASM v1. The full-core opcode smoke emits all five rows into
 `mnemonics=24`. The host gate passes with `asm-v1-runtime-paste-2000.s19`
 total `$2FBB`.
 
+Hardware-proven ASM 2.82 `BIT` paste emission on 2026-06-08:
+
+```text
+L OK=2FBB GO=2000
+ASM RT PASTE
+ASM> ORG $7240
+OK PC=$7240
+ASM> BIT #$12
+OK PC=$7242
+ASM> BIT $12
+OK PC=$7244
+ASM> BIT $0012
+OK PC=$7247
+ASM> BIT $12,X
+OK PC=$7249
+ASM> BIT $0012,X
+OK PC=$724C
+ASM> END
+OK PC=$724C
+ASM RT PASTE OK
+
+7240: 89 12 24 12 2C 12 00 34 | 12 3C 12 00 | ..$.,..4.<..
+```
+
 Current checker requirements:
 
 ```text
