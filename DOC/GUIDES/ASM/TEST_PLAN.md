@@ -1488,6 +1488,56 @@ source-width exact. The full-core opcode smoke now emits `$EA` bytes, and the
 host opcode audit reports `rows=146` and `mnemonics=62`. The host gate passes
 with `asm-v1-runtime-paste-2000.s19` total `$2FF4`.
 
+Hardware-proven ASM 2.90 `LDX/LDY/CPX` paste emission on 2026-06-08:
+
+```text
+>L G
+L S19
+L @2000
+L OK=2FF4 GO=2000
+ASM RT PASTE
+ASM> ORG $7320
+OK PC=$7320
+ASM> LDX #$12
+OK PC=$7322
+ASM> LDX $12
+OK PC=$7324
+ASM> LDX $0012
+OK PC=$7327
+ASM> LDX $12,Y
+OK PC=$7329
+ASM> LDX $0012,Y
+OK PC=$732C
+ASM> LDY #$12
+OK PC=$732E
+ASM> LDY $12
+OK PC=$7330
+ASM> LDY $0012
+OK PC=$7333
+ASM> LDY $12,X
+OK PC=$7335
+ASM> LDY $0012,X
+OK PC=$7338
+ASM> CPX #$12
+OK PC=$733A
+ASM> CPX $12
+OK PC=$733C
+ASM> CPX $0012
+OK PC=$733F
+ASM> END
+OK PC=$733F
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7320 733E
+7320: A2 12 A6 12 AE 12 00 B6 | 12 BE 12 00 A0 12 A4 12 | ................
+7330: AC 12 00 B4 12 BC 12 00 | E0 12 E4 12 EC 12 00 | ...............
+>
+```
+
 Current checker requirements:
 
 ```text

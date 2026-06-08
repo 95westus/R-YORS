@@ -3792,3 +3792,59 @@ RET A=0F X=AE Y=0F P=75 S=FD NV-BdIzC
 Interpretation: `ZP_OFFSET0` stores width `$03` and emits `A5 00`;
 `ABS_OFFSET0` stores width `$04` and emits `AD 00 00` despite having the
 same numeric value.
+
+## 2026-06-08 ASM 2.90 LDX/LDY/CPX Paste Proof
+
+Purpose: prove the ASM v1 runtime paste image at `$2000` emits the completed
+`LDX`, `LDY`, and `CPX` direct address rows.
+
+```text
+>L G
+L S19
+L @2000
+L OK=2FF4 GO=2000
+ASM RT PASTE
+ASM> ORG $7320
+OK PC=$7320
+ASM> LDX #$12
+OK PC=$7322
+ASM> LDX $12
+OK PC=$7324
+ASM> LDX $0012
+OK PC=$7327
+ASM> LDX $12,Y
+OK PC=$7329
+ASM> LDX $0012,Y
+OK PC=$732C
+ASM> LDY #$12
+OK PC=$732E
+ASM> LDY $12
+OK PC=$7330
+ASM> LDY $0012
+OK PC=$7333
+ASM> LDY $12,X
+OK PC=$7335
+ASM> LDY $0012,X
+OK PC=$7338
+ASM> CPX #$12
+OK PC=$733A
+ASM> CPX $12
+OK PC=$733C
+ASM> CPX $0012
+OK PC=$733F
+ASM> END
+OK PC=$733F
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7320 733E
+7320: A2 12 A6 12 AE 12 00 B6 | 12 BE 12 00 A0 12 A4 12 | ................
+7330: AC 12 00 B4 12 BC 12 00 | E0 12 E4 12 EC 12 00 | ...............
+>
+```
+
+Interpretation: the dump matches the expected W65C02 opcodes:
+`A2/A6/AE/B6/BE`, `A0/A4/AC/B4/BC`, and `E0/E4/EC`.
