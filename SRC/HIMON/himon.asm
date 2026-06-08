@@ -3565,7 +3565,8 @@ MSG_BANNER:              DB              $0D,$0A
                         INCLUDE         "himon-version.inc"
 TXT_BOOT_COLD_RESET:     DB              "BOOT_COLD_RESE",('T'+$80)
 TXT_BOOT_WARM_RESET:     DB              "BOOT_WARM_RESE",('T'+$80)
-TXT_CMD_QUOTE_HASH:      DB              $22,": HASH QUOTED TEXT TO FNV-1",('A'+$80)
+TXT_CMD_QUOTE_HASH:      DB              $22,"[TEXT]",$22
+                        DB              " -> #5F6A0F7A# STR8 MATCH",('!'+$80)
 TXT_THE_JOIN_EXEC_XY:    DB              "HASH ACQUIR",('E'+$80)
 TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
 TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)
