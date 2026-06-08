@@ -977,6 +977,20 @@ BVC/BVS` relative rows. This is an audit gate only; it does not add new
 addressing modes or change paste behavior. The host gate passes; the audit
 reports `rows=39` and `mnemonics=20`.
 
+ASM 2.81 `LSR/ROL/ROR` opcode rows on 2026-06-07:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.81 adds opcode lookup rows for `LSR`, `ROL`, and `ROR`. Each mirrors the
+existing `ASL` surface: implied/accumulator, zero-page, absolute, zero-page X,
+and absolute X. The full-core opcode smoke emits all 18 new rows into
+`ASM_CODE_BUF` after the existing ASMTEST-shaped stream, and the host opcode
+audit now reports `rows=57` and `mnemonics=23`. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` total `$2F82`. This is host-proven only until a
+paste-driver board run records the emitted bytes.
+
 Current checker requirements:
 
 ```text
@@ -3238,14 +3252,30 @@ Current fixtures:
 
 ```text
 LDX #0       -> A2 00
+LDY #$4D     -> A0 4D
 STZ $7110    -> 9C 10 71
 STA $7100,X  -> 9D 00 71
 EOR $7110    -> 4D 10 71
 STA $7110    -> 8D 10 71
 INX          -> E8
 CPX #COUNT   -> E0 10
-BNE LOOP     -> D0 ED when LOOP is a resolved backward label
+BNE LOOP     -> D0 EB when LOOP is a resolved backward label
 RTS          -> 60
+LSR / LSR A  -> 4A
+LSR $12      -> 46 12
+LSR $0012    -> 4E 12 00
+LSR $12,X    -> 56 12
+LSR $0012,X  -> 5E 12 00
+ROL / ROL A  -> 2A
+ROL $12      -> 26 12
+ROL $0012    -> 2E 12 00
+ROL $12,X    -> 36 12
+ROL $0012,X  -> 3E 12 00
+ROR / ROR A  -> 6A
+ROR $12      -> 66 12
+ROR $0012    -> 6E 12 00
+ROR $12,X    -> 76 12
+ROR $0012,X  -> 7E 12 00
 STZ #0       -> BAD MODE at opcode lookup
 ```
 
@@ -3253,7 +3283,10 @@ The standalone `START` smoke emits this resolved byte stream into
 `ASM_CODE_BUF` and compares every byte:
 
 ```text
-A2 00 9C 10 69 9D 00 69 4D 10 69 8D 10 69 E8 E0 10 D0 ED 60
+A2 00 A0 4D 9C 10 71 9D 00 71 4D 10 71 8D 10 71
+E8 E0 10 D0 EB 60 4A 4A 46 12 4E 12 00 56 12 5E 12 00
+2A 2A 26 12 2E 12 00 36 12 3E 12 00
+6A 6A 66 12 6E 12 00 76 12 7E 12 00
 ```
 
 Fixup fixtures:

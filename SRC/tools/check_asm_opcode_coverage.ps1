@@ -123,6 +123,27 @@ Add-ExpectedRow 'ASL' 'ABS16' 0x0E
 Add-ExpectedRow 'ASL' 'ZP_X' 0x16
 Add-ExpectedRow 'ASL' 'ABS_X' 0x1E
 
+Add-ExpectedRow 'LSR' 'NONE' 0x4A
+Add-ExpectedRow 'LSR' 'ACC' 0x4A
+Add-ExpectedRow 'LSR' 'ZP8' 0x46
+Add-ExpectedRow 'LSR' 'ABS16' 0x4E
+Add-ExpectedRow 'LSR' 'ZP_X' 0x56
+Add-ExpectedRow 'LSR' 'ABS_X' 0x5E
+
+Add-ExpectedRow 'ROL' 'NONE' 0x2A
+Add-ExpectedRow 'ROL' 'ACC' 0x2A
+Add-ExpectedRow 'ROL' 'ZP8' 0x26
+Add-ExpectedRow 'ROL' 'ABS16' 0x2E
+Add-ExpectedRow 'ROL' 'ZP_X' 0x36
+Add-ExpectedRow 'ROL' 'ABS_X' 0x3E
+
+Add-ExpectedRow 'ROR' 'NONE' 0x6A
+Add-ExpectedRow 'ROR' 'ACC' 0x6A
+Add-ExpectedRow 'ROR' 'ZP8' 0x66
+Add-ExpectedRow 'ROR' 'ABS16' 0x6E
+Add-ExpectedRow 'ROR' 'ZP_X' 0x76
+Add-ExpectedRow 'ROR' 'ABS_X' 0x7E
+
 Add-ExpectedRow 'JSR' 'ABS16' 0x20
 
 Add-ExpectedRow 'BCC' 'REL8' 0x90
