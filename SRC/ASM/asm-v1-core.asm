@@ -243,6 +243,7 @@ ASM_OPM_ZP_X_IND       EQU             $0B
 ASM_OPM_ZP_IND_Y       EQU             $0C
 ASM_OPM_ABS_IND        EQU             $0D
 ASM_OPM_ABS_X_IND      EQU             $0E
+ASM_OPM_BIT_ZP         EQU             $0F
 
 ASM_OPF_UNRESOLVED     EQU             $01
 
@@ -321,6 +322,7 @@ ASM_VID_PLA            EQU             $33
 ASM_VID_PLP            EQU             $34
 ASM_VID_PLX            EQU             $35
 ASM_VID_PLY            EQU             $36
+ASM_VID_RMB            EQU             $37
 ASM_VID_ROL            EQU             $38
 ASM_VID_ROR            EQU             $39
 ASM_VID_RTI            EQU             $3A
@@ -329,6 +331,7 @@ ASM_VID_SBC            EQU             $3C
 ASM_VID_SEC            EQU             $3D
 ASM_VID_SED            EQU             $3E
 ASM_VID_SEI            EQU             $3F
+ASM_VID_SMB            EQU             $40
 ASM_VID_STA            EQU             $41
 ASM_VID_STP            EQU             $43
 ASM_VID_STX            EQU             $44
@@ -2688,6 +2691,28 @@ ASM_SMOKE_OPERANDS_CPX_HI_OK:
                         JMP             ASM_SMOKE_OPERANDS_FAIL
 ASM_SMOKE_OPERANDS_LDA_ZP_OK:
 
+                        LDA             #ASM_OPM_BIT_ZP
+                        LDX             #<ASM_CLASS_RMB_ZP
+                        LDY             #>ASM_CLASS_RMB_ZP
+                        JSR             ASM_SMOKE_CLASS_EXPECT
+                        BCS             ASM_SMOKE_OPERANDS_RMB_ZP_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_RMB_ZP_OK:
+                        LDA             ASM_TMP1_LO
+                        CMP             #$03
+                        BEQ             ASM_SMOKE_OPERANDS_RMB_BIT_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_RMB_BIT_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             #$12
+                        BEQ             ASM_SMOKE_OPERANDS_RMB_LO_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_RMB_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        BEQ             ASM_SMOKE_OPERANDS_RMB_HI_OK
+                        JMP             ASM_SMOKE_OPERANDS_FAIL
+ASM_SMOKE_OPERANDS_RMB_HI_OK:
+
                         LDA             #ASM_OPM_ABS16
                         LDX             #<ASM_CLASS_LDA_ABS
                         LDY             #>ASM_CLASS_LDA_ABS
@@ -2919,6 +2944,8 @@ ASM_SMOKE_OPCODE_ROWS_CONT:
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_BIT_ROWS
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
+                        JSR             ASM_SMOKE_OPCODE_BITMEM_ROWS
+                        BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_STORE_ROWS
                         BCC             ASM_SMOKE_OPCODE_FAIL_B
                         JSR             ASM_SMOKE_OPCODE_RMW_ROWS
@@ -3052,6 +3079,28 @@ ASM_SMOKE_OPCODE_BIT_LOOP:
                         SEC
                         RTS
 ASM_SMOKE_OPCODE_BIT_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_OPCODE_BITMEM_ROWS:
+                        LDX             #$00
+ASM_SMOKE_OPCODE_BITMEM_LOOP:
+                        LDA             ASM_OPCODE_BITMEM_PTR_LO,X
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_OPCODE_BITMEM_PTR_HI,X
+                        STA             ASM_TMP0_HI
+                        PHX
+                        LDX             ASM_TMP0_LO
+                        LDY             ASM_TMP0_HI
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        PLX
+                        BCC             ASM_SMOKE_OPCODE_BITMEM_FAIL
+                        INX
+                        CPX             #$02
+                        BNE             ASM_SMOKE_OPCODE_BITMEM_LOOP
+                        SEC
+                        RTS
+ASM_SMOKE_OPCODE_BITMEM_FAIL:
                         CLC
                         RTS
 
@@ -3237,7 +3286,7 @@ ASM_SMOKE_OPCODE_CHECK_LOOP_HI:
                         JMP             ASM_SMOKE_OPCODE_CHECK_FAIL
 ASM_SMOKE_OPCODE_CHECK_BYTE_HI_OK:
                         INX
-                        CPX             #$42
+                        CPX             #$46
                         BNE             ASM_SMOKE_OPCODE_CHECK_LOOP_HI
                         SEC
                         RTS
@@ -3252,7 +3301,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         CMP             #$01
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$41
+                        CMP             #$45
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_HIGH_PC_LO
                         SEC
@@ -3263,7 +3312,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         CMP             #$01
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$41
+                        CMP             #$45
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         SEC
                         RTS
@@ -5485,6 +5534,14 @@ ASM_FIND_OPCODE_NOT_BVC:
                         BNE             ASM_FIND_OPCODE_NOT_BVS
                         JMP             ASM_FIND_OPCODE_BVS
 ASM_FIND_OPCODE_NOT_BVS:
+                        CMP             #ASM_VID_RMB
+                        BNE             ASM_FIND_OPCODE_NOT_RMB
+                        JMP             ASM_FIND_OPCODE_RMB
+ASM_FIND_OPCODE_NOT_RMB:
+                        CMP             #ASM_VID_SMB
+                        BNE             ASM_FIND_OPCODE_NOT_SMB
+                        JMP             ASM_FIND_OPCODE_SMB
+ASM_FIND_OPCODE_NOT_SMB:
                         LDA             #ASM_STATUS_BAD_MODE
                         JMP             ASM_FIND_OPCODE_FAIL_A
 
@@ -5972,6 +6029,32 @@ ASM_FIND_OPCODE_BRANCH_OK:
                         LDA             ASM_TMP0_LO
                         JMP             ASM_FIND_OPCODE_OK_A
 
+ASM_FIND_OPCODE_RMB:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_BIT_ZP
+                        BEQ             ASM_FIND_OPCODE_RMB_BIT_ZP
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_RMB_BIT_ZP:
+                        LDA             #$07
+                        JMP             ASM_FIND_OPCODE_BIT_ZP_A
+ASM_FIND_OPCODE_SMB:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_BIT_ZP
+                        BEQ             ASM_FIND_OPCODE_SMB_BIT_ZP
+                        JMP             ASM_FIND_OPCODE_BAD_MODE
+ASM_FIND_OPCODE_SMB_BIT_ZP:
+                        LDA             #$87
+ASM_FIND_OPCODE_BIT_ZP_A:
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_TMP1_LO
+                        ASL
+                        ASL
+                        ASL
+                        ASL
+                        CLC
+                        ADC             ASM_TMP0_LO
+                        JMP             ASM_FIND_OPCODE_OK_A
+
 ASM_FIND_OPCODE_BAD_MODE:
                         LDA             #ASM_STATUS_BAD_MODE
 ASM_FIND_OPCODE_FAIL_A:
@@ -6036,6 +6119,8 @@ ASM_EMIT_RESOLVED_OPERAND:
                         CMP             #ASM_OPM_ZP_X_IND
                         BEQ             ASM_EMIT_BYTE_OPERAND
                         CMP             #ASM_OPM_ZP_IND_Y
+                        BEQ             ASM_EMIT_BYTE_OPERAND
+                        CMP             #ASM_OPM_BIT_ZP
                         BEQ             ASM_EMIT_BYTE_OPERAND
                         CMP             #ASM_OPM_REL8
                         BEQ             ASM_EMIT_REL8_OPERAND
@@ -6135,6 +6220,8 @@ ASM_EMIT_FIXUP_STORED:
                         CMP             #ASM_OPM_ZP_X_IND
                         BEQ             ASM_EMIT_PLACEHOLDER_BYTE
                         CMP             #ASM_OPM_ZP_IND_Y
+                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
+                        CMP             #ASM_OPM_BIT_ZP
                         BEQ             ASM_EMIT_PLACEHOLDER_BYTE
                         CMP             #ASM_OPM_REL8
                         BEQ             ASM_EMIT_PLACEHOLDER_BYTE
@@ -6399,6 +6486,8 @@ ASM_PATCH_FIXUP_X:
                         CMP             #ASM_OPM_ZP_X_IND
                         BEQ             ASM_PATCH_FIXUP_BYTE
                         CMP             #ASM_OPM_ZP_IND_Y
+                        BEQ             ASM_PATCH_FIXUP_BYTE
+                        CMP             #ASM_OPM_BIT_ZP
                         BEQ             ASM_PATCH_FIXUP_BYTE
                         CMP             #ASM_OPM_ABS16
                         BEQ             ASM_PATCH_FIXUP_WORD
@@ -8157,6 +8246,10 @@ ASM_CLASS_NOT_IMMEDIATE:
 ASM_CLASS_HAVE_ATOM:
                         JSR             ASM_IS_BRANCH_OP
                         BCS             ASM_CLASS_HAVE_BRANCH
+                        JSR             ASM_IS_BIT_ZP_OP
+                        BCC             ASM_CLASS_NOT_BIT_ZP
+                        JMP             ASM_CLASS_BIT_ZP
+ASM_CLASS_NOT_BIT_ZP:
                         JMP             ASM_CLASS_DIRECT
 ASM_CLASS_HAVE_BRANCH:
                         JMP             ASM_CLASS_BRANCH
@@ -8381,6 +8474,78 @@ ASM_CLASS_BRANCH_NOT_REG:
                         LDA             #ASM_WIDTH_BYTE
                         STA             ASM_WIDTH
                         LDA             #ASM_OPM_REL8
+                        JMP             ASM_CLASS_OK_A
+
+ASM_CLASS_BIT_ZP:
+                        LDA             ASM_TMP1_HI
+                        AND             #ASM_OPF_UNRESOLVED
+                        BEQ             ASM_CLASS_BIT_ZP_RESOLVED
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_BIT_ZP_RESOLVED:
+                        LDA             ASM_TMP0_LO
+                        CMP             #ASM_ATOM_REG
+                        BEQ             ASM_CLASS_BIT_ZP_BAD_MODE
+                        CMP             #ASM_SYMK_MASK
+                        BEQ             ASM_CLASS_BIT_ZP_BAD_WIDTH
+                        CMP             #ASM_SYMK_VALUE
+                        BEQ             ASM_CLASS_BIT_ZP_KIND_OK
+                        CMP             #ASM_SYMK_ADDR
+                        BEQ             ASM_CLASS_BIT_ZP_KIND_OK
+ASM_CLASS_BIT_ZP_BAD_WIDTH:
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_BIT_ZP_BAD_MODE:
+                        JMP             ASM_CLASS_BAD_MODE
+ASM_CLASS_BIT_ZP_KIND_OK:
+                        LDA             ASM_BASE_HI
+                        BEQ             ASM_CLASS_BIT_ZP_HI_OK
+                        JMP             ASM_CLASS_BAD_RANGE
+ASM_CLASS_BIT_ZP_HI_OK:
+                        LDA             ASM_BASE_LO
+                        CMP             #$08
+                        BCC             ASM_CLASS_BIT_ZP_RANGE_OK
+                        JMP             ASM_CLASS_BAD_RANGE
+ASM_CLASS_BIT_ZP_RANGE_OK:
+                        STA             ASM_TMP1_LO
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_CLASS_BIT_ZP_HAVE_COMMA
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_BIT_ZP_HAVE_COMMA:
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_PUNCT
+                        BNE             ASM_CLASS_BIT_ZP_BAD_OPER
+                        LDA             ASM_TOK_SUB
+                        CMP             #','
+                        BEQ             ASM_CLASS_BIT_ZP_COMMA_OK
+ASM_CLASS_BIT_ZP_BAD_OPER:
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_BIT_ZP_COMMA_OK:
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_CLASS_BIT_ZP_HAVE_ADDR
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_BIT_ZP_HAVE_ADDR:
+                        JSR             ASM_CLASS_LOAD_ATOM
+                        BCS             ASM_CLASS_BIT_ZP_ADDR_OK
+                        JMP             ASM_CLASS_FAIL_A
+ASM_CLASS_BIT_ZP_ADDR_OK:
+                        LDA             ASM_TMP0_LO
+                        CMP             #ASM_SYMK_ADDR
+                        BEQ             ASM_CLASS_BIT_ZP_ADDR_KIND_OK
+                        CMP             #ASM_ATOM_REG
+                        BEQ             ASM_CLASS_BIT_ZP_BAD_MODE
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_BIT_ZP_ADDR_KIND_OK:
+                        LDA             ASM_TMP0_HI
+                        CMP             #ASM_WIDTH_ZP
+                        BEQ             ASM_CLASS_BIT_ZP_ADDR_WIDTH_OK
+                        JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_BIT_ZP_ADDR_WIDTH_OK:
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASM_CLASS_BIT_ZP_END_OK
+                        JMP             ASM_CLASS_BAD_OPER
+ASM_CLASS_BIT_ZP_END_OK:
+                        LDA             #ASM_WIDTH_BYTE
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_BIT_ZP
                         JMP             ASM_CLASS_OK_A
 
 ASM_CLASS_DIRECT:
@@ -8846,6 +9011,18 @@ ASM_IS_BRANCH_OP:
                         CLC
                         RTS
 ASM_IS_BRANCH_YES:
+                        SEC
+                        RTS
+
+ASM_IS_BIT_ZP_OP:
+                        LDA             ASM_STMT_OP_ID
+                        CMP             #ASM_VID_RMB
+                        BEQ             ASM_IS_BIT_ZP_YES
+                        CMP             #ASM_VID_SMB
+                        BEQ             ASM_IS_BIT_ZP_YES
+                        CLC
+                        RTS
+ASM_IS_BIT_ZP_YES:
                         SEC
                         RTS
 
@@ -9721,6 +9898,7 @@ ASM_PARSE_AT_DB_CONT:
 ASM_PARSE_AT_END:      DB              "        END",0
 ASM_CLASS_SUM_EQU:     DB              "SUM EQU $7110",0
 ASM_CLASS_LDA_ZP:      DB              "        LDA $12",0
+ASM_CLASS_RMB_ZP:      DB              "        RMB 3,$12",0
 ASM_CLASS_LDA_ABS:     DB              "        LDA $0012",0
 ASM_CLASS_LDA_ZP_IND:  DB              "        LDA ($12)",0
 ASM_CLASS_LDA_ZPX_IND: DB              "        LDA ($12,X)",0
@@ -9769,6 +9947,8 @@ ASM_OPCODE_BIT_ZP:     DB              "        BIT $12",0
 ASM_OPCODE_BIT_ABS:    DB              "        BIT $0012",0
 ASM_OPCODE_BIT_ZPX:    DB              "        BIT $12,X",0
 ASM_OPCODE_BIT_ABSX:   DB              "        BIT $0012,X",0
+ASM_OPCODE_RMB3_ZP:    DB              "        RMB 3,$12",0
+ASM_OPCODE_SMB3_ZP:    DB              "        SMB 3,$12",0
 ASM_OPCODE_STX_ZP:     DB              "        STX $12",0
 ASM_OPCODE_STX_ABS:    DB              "        STX $0012",0
 ASM_OPCODE_STX_ZPY:    DB              "        STX $12,Y",0
@@ -9917,6 +10097,10 @@ ASM_OPCODE_BIT_PTR_HI:
                         DB              >ASM_OPCODE_BIT_IMM,>ASM_OPCODE_BIT_ZP
                         DB              >ASM_OPCODE_BIT_ABS,>ASM_OPCODE_BIT_ZPX
                         DB              >ASM_OPCODE_BIT_ABSX
+ASM_OPCODE_BITMEM_PTR_LO:
+                        DB              <ASM_OPCODE_RMB3_ZP,<ASM_OPCODE_SMB3_ZP
+ASM_OPCODE_BITMEM_PTR_HI:
+                        DB              >ASM_OPCODE_RMB3_ZP,>ASM_OPCODE_SMB3_ZP
 ASM_OPCODE_STORE_PTR_LO:
                         DB              <ASM_OPCODE_STX_ZP,<ASM_OPCODE_STX_ABS
                         DB              <ASM_OPCODE_STX_ZPY,<ASM_OPCODE_STY_ZP
@@ -10098,6 +10282,7 @@ ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
                         DB              $76,$12,$7E,$12,$00
                         DB              $89,$12,$24,$12,$2C,$12,$00
                         DB              $34,$12,$3C,$12,$00
+                        DB              $37,$12,$B7,$12
                         DB              $86,$12,$8E,$12,$00,$96,$12
                         DB              $84,$12,$8C,$12,$00,$94,$12
                         DB              $14,$12,$1C,$12,$00

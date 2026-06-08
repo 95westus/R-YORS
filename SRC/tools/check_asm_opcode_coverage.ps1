@@ -169,6 +169,10 @@ Add-ExpectedRow 'PLY' 'NONE' 0x7A
 Add-ExpectedRow 'RTI' 'NONE' 0x40
 Add-ExpectedRow 'WAI' 'NONE' 0xCB
 Add-ExpectedRow 'STP' 'NONE' 0xDB
+for ($bit = 0; $bit -lt 8; $bit++) {
+    Add-ExpectedRow 'RMB' ("BIT{0}_ZP" -f $bit) (0x07 + ($bit * 0x10))
+    Add-ExpectedRow 'SMB' ("BIT{0}_ZP" -f $bit) (0x87 + ($bit * 0x10))
+}
 Add-ExpectedRow 'LDX' 'IMM8' 0xA2
 Add-ExpectedRow 'LDX' 'ZP8' 0xA6
 Add-ExpectedRow 'LDX' 'ABS16' 0xAE
@@ -414,6 +418,24 @@ function Add-ActualRow {
 
 foreach ($mnemonic in ($actualHandlers.Keys | Sort-Object)) {
     $handlerLabel = "ASM_FIND_OPCODE_$mnemonic"
+    if ($mnemonic -eq 'RMB' -or $mnemonic -eq 'SMB') {
+        $handlerBlock = Get-AsmLabelBlock $handlerLabel
+        if (-not [regex]::IsMatch(
+                $handlerBlock,
+                'CMP\s+#ASM_OPM_BIT_ZP\s*\n\s*BEQ\s+ASM_FIND_OPCODE_' +
+                    [regex]::Escape($mnemonic) + '_BIT_ZP'
+            )) {
+            Fail-OpcodeAudit "handler $mnemonic no longer checks BIT_ZP"
+        }
+
+        $baseOpcode = Read-OpcodeForLabel "ASM_FIND_OPCODE_${mnemonic}_BIT_ZP"
+        for ($bit = 0; $bit -lt 8; $bit++) {
+            Add-ActualRow $mnemonic ("BIT{0}_ZP" -f $bit) `
+                ($baseOpcode + ($bit * 0x10)) $handlerLabel
+        }
+        continue
+    }
+
     if ($branchSet.ContainsKey($mnemonic)) {
         Add-ActualRow $mnemonic 'REL8' (Read-OpcodeForLabel $handlerLabel) $handlerLabel
         continue

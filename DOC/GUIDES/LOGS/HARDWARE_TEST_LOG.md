@@ -4198,3 +4198,37 @@ Interpretation: `WAI` emits `CB` at `$7590`, `STP` emits `DB` at `$7591`,
 and final PC `$7592` proves both one-byte implied forms were accepted. The
 first dump started at `$7591`, proving `STP`; the follow-up dump included both
 bytes.
+
+## 2026-06-08 ASM 2.99 RMB/SMB Proof
+
+Purpose: prove ASM emits W65C02 `RMB` and `SMB` bit-memory opcodes with the
+new `bit,zp` operand classifier.
+
+```text
+>L G
+L S19
+L @2000
+L OK=32F3 GO=2000
+ASM RT PASTE
+ASM> ORG $75A0
+OK PC=$75A0
+ASM> RMB 3, $12
+OK PC=$75A2
+ASM> SMB 3,$12
+OK PC=$75A4
+ASM> END
+OK PC=$75A4
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 75A0 75A3
+75A0: 37 12 B7 12 | 7...
+>
+```
+
+Interpretation: `RMB 3,$12` emits `37 12`, `SMB 3,$12` emits `B7 12`, and
+final PC `$75A4` proves both two-byte bit-memory forms were accepted. The
+first line also proves optional whitespace after the comma is accepted.

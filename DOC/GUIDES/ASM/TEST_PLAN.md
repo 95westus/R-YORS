@@ -1907,6 +1907,65 @@ OK PC=$7592
 7590: CB DB
 ```
 
+ASM 2.99 `RMB/SMB bit,zp` opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.99 adds the W65C02 reset/set memory bit syntax accepted by this
+assembler:
+
+```text
+RMB n,$12 -> (07 + n*10) 12
+SMB n,$12 -> (87 + n*10) 12
+```
+
+`n` is a resolved bit number from `0` through `7`. The zero-page operand must
+still be source-width zero-page: `$12`, a zero-page `EQU`, or a selected
+`<SYMBOL` fixup. The full-core opcode smoke now emits `$0145` bytes, and the
+host opcode audit reports `rows=201` and `mnemonics=68`. The host gate passes
+with `asm-v1-runtime-paste-2000.s19` total `$32F3`.
+
+Hardware-proven ASM 2.99 `RMB/SMB bit,zp` paste emission on 2026-06-08: the
+board loaded the `$32F3` paste image, accepted both comma forms, finalized
+through `END`, and dumped `37 12 B7 12` at `$75A0-$75A3`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=32F3 GO=2000
+ASM RT PASTE
+ASM> ORG $75A0
+OK PC=$75A0
+ASM> RMB 3, $12
+OK PC=$75A2
+ASM> SMB 3,$12
+OK PC=$75A4
+ASM> END
+OK PC=$75A4
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 75A0 75A3
+75A0: 37 12 B7 12
+```
+
+Minimal retest form:
+
+```text
+ASM> ORG $75A0
+ASM> RMB 3,$12
+ASM> SMB 3,$12
+ASM> END
+>D 75A0 75A3
+75A0: 37 12 B7 12
+```
+
 Current checker requirements:
 
 ```text
@@ -4091,6 +4150,7 @@ ASL A      -> ACC
 LDA #10    -> IMM8
 LDA $12    -> ZP8
 LDA $0012  -> ABS16
+RMB 3,$12  -> BIT_ZP
 LDX #0     -> IMM8
 CPX #COUNT -> IMM8 from resolved EQU
 STZ SUM    -> ABS16 from resolved EQU
@@ -4111,7 +4171,6 @@ LDA <FOO   -> ZP8/lo8
 LDA #<FOO  -> IMM_LO8
 BRA FOO    -> REL8 fixup
 JSR FOO    -> ABS16 fixup
-RMB 3,$12  -> BIT_ZP
 BBR 3,$12,TARGET -> BIT_ZP_REL
 ```
 
