@@ -4,6 +4,88 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-07 ASM 2.81 LSR/ROL/ROR Opcode Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` at `$2000` with size `$2F82` after ASM 2.81
+added opcode lookup rows for `LSR`, `ROL`, and `ROR`.
+
+Validated:
+
+- The runtime paste wrapper starts normally with the expanded opcode table.
+- `LSR`, `ROL`, and `ROR` assemble in implied, accumulator, zero-page,
+  absolute, zero-page X, and absolute X forms.
+- The final PC after all 18 rows is `$7224`.
+- The emitted `$7200-$7223` bytes match the W65C02 opcode table.
+
+### Transcript
+
+```text
+>L G
+L S19
+L @2000
+L OK=2F82 GO=2000
+ASM RT PASTE
+ASM> ORG $7200
+OK PC=$7200
+ASM> LSR
+OK PC=$7201
+ASM> LSR A
+OK PC=$7202
+ASM> LSR $12
+OK PC=$7204
+ASM> LSR $0012
+OK PC=$7207
+ASM> LSR $12,X
+OK PC=$7209
+ASM> LSR $0012,X
+OK PC=$720C
+ASM> ROL
+OK PC=$720D
+ASM> ROL A
+OK PC=$720E
+ASM> ROL $12
+OK PC=$7210
+ASM> ROL $0012
+OK PC=$7213
+ASM> ROL $12,X
+OK PC=$7215
+ASM> ROL $0012,X
+OK PC=$7218
+ASM> ROR
+OK PC=$7219
+ASM> ROR A
+OK PC=$721A
+ASM> ROR $12
+OK PC=$721C
+ASM> ROR $0012
+OK PC=$721F
+ASM> ROR $12,X
+OK PC=$7221
+ASM> ROR $0012,X
+OK PC=$7224
+ASM> END
+OK PC=$7224
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=77 Y=0F P=75 S=FD NV-BdIzC
+>
+
+>D 7200 7223
+7200: 4A 4A 46 12 4E 12 00 56 | 12 5E 12 00 2A 2A 26 12 | JJF.N..V.^..**&.
+7210: 2E 12 00 36 12 3E 12 00 | 6A 6A 66 12 6E 12 00 76 | ...6.>..jjf.n..v
+7220: 12 7E 12 00 | .~..
+>
+```
+
 ## 2026-06-07 ASM 2.79 Edit-Line Paste Wrapper Board Smoke
 
 ### Summary

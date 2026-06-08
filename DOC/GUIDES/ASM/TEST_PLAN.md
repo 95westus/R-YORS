@@ -988,8 +988,60 @@ existing `ASL` surface: implied/accumulator, zero-page, absolute, zero-page X,
 and absolute X. The full-core opcode smoke emits all 18 new rows into
 `ASM_CODE_BUF` after the existing ASMTEST-shaped stream, and the host opcode
 audit now reports `rows=57` and `mnemonics=23`. The host gate passes with
-`asm-v1-runtime-paste-2000.s19` total `$2F82`. This is host-proven only until a
-paste-driver board run records the emitted bytes.
+`asm-v1-runtime-paste-2000.s19` total `$2F82`.
+
+Hardware-proven ASM 2.81 `LSR/ROL/ROR` paste emission on 2026-06-07:
+
+```text
+L OK=2F82 GO=2000
+ASM RT PASTE
+ASM> ORG $7200
+OK PC=$7200
+ASM> LSR
+OK PC=$7201
+ASM> LSR A
+OK PC=$7202
+ASM> LSR $12
+OK PC=$7204
+ASM> LSR $0012
+OK PC=$7207
+ASM> LSR $12,X
+OK PC=$7209
+ASM> LSR $0012,X
+OK PC=$720C
+ASM> ROL
+OK PC=$720D
+ASM> ROL A
+OK PC=$720E
+ASM> ROL $12
+OK PC=$7210
+ASM> ROL $0012
+OK PC=$7213
+ASM> ROL $12,X
+OK PC=$7215
+ASM> ROL $0012,X
+OK PC=$7218
+ASM> ROR
+OK PC=$7219
+ASM> ROR A
+OK PC=$721A
+ASM> ROR $12
+OK PC=$721C
+ASM> ROR $0012
+OK PC=$721F
+ASM> ROR $12,X
+OK PC=$7221
+ASM> ROR $0012,X
+OK PC=$7224
+ASM> END
+OK PC=$7224
+ASM RT PASTE OK
+
+>D 7200 7223
+7200: 4A 4A 46 12 4E 12 00 56 | 12 5E 12 00 2A 2A 26 12 | JJF.N..V.^..**&.
+7210: 2E 12 00 36 12 3E 12 00 | 6A 6A 66 12 6E 12 00 76 | ...6.>..jjf.n..v
+7220: 12 7E 12 00 | .~..
+```
 
 Current checker requirements:
 
