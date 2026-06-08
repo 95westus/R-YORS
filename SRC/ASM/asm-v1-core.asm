@@ -237,6 +237,7 @@ ASM_OPM_ZP_X           EQU             $05
 ASM_OPM_ABS_X          EQU             $06
 ASM_OPM_REL8           EQU             $07
 ASM_OPM_ZP_Y           EQU             $08
+ASM_OPM_ABS_Y          EQU             $09
 
 ASM_OPF_UNRESOLVED     EQU             $01
 
@@ -2839,6 +2840,8 @@ ASM_SMOKE_OPCODE:
                         LDY             #>ASM_PARSE_AT_RTS
                         JSR             ASM_SMOKE_EMIT_LINE
                         BCC             ASM_SMOKE_OPCODE_FAIL_A
+                        JSR             ASM_SMOKE_OPCODE_INDEX_ROWS
+                        BCC             ASM_SMOKE_OPCODE_FAIL_A
                         JSR             ASM_SMOKE_OPCODE_SHIFT_ROWS
                         BCC             ASM_SMOKE_OPCODE_FAIL_A
                         JSR             ASM_SMOKE_OPCODE_BIT_ROWS
@@ -2908,6 +2911,28 @@ ASM_SMOKE_OPCODE_SETUP:
                         SEC
                         RTS
 ASM_SMOKE_OPCODE_SETUP_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_OPCODE_INDEX_ROWS:
+                        LDX             #$00
+ASM_SMOKE_OPCODE_INDEX_LOOP:
+                        LDA             ASM_OPCODE_INDEX_PTR_LO,X
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_OPCODE_INDEX_PTR_HI,X
+                        STA             ASM_TMP0_HI
+                        PHX
+                        LDX             ASM_TMP0_LO
+                        LDY             ASM_TMP0_HI
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        PLX
+                        BCC             ASM_SMOKE_OPCODE_INDEX_FAIL
+                        INX
+                        CPX             #$0A
+                        BNE             ASM_SMOKE_OPCODE_INDEX_LOOP
+                        SEC
+                        RTS
+ASM_SMOKE_OPCODE_INDEX_FAIL:
                         CLC
                         RTS
 
@@ -3083,7 +3108,7 @@ ASM_SMOKE_OPCODE_CHECK_LOOP:
                         JMP             ASM_SMOKE_OPCODE_CHECK_FAIL
 ASM_SMOKE_OPCODE_CHECK_BYTE_OK:
                         INX
-                        CPX             #$D1
+                        CPX             #$EA
                         BNE             ASM_SMOKE_OPCODE_CHECK_LOOP
                         SEC
                         RTS
@@ -3097,7 +3122,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         SBC             ASM_START_PC_HI
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$D1
+                        CMP             #$EA
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_HIGH_PC_LO
                         SEC
@@ -3107,7 +3132,7 @@ ASM_SMOKE_OPCODE_CHECK_PC:
                         SBC             ASM_START_PC_HI
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         LDA             ASM_TMP0_LO
-                        CMP             #$D1
+                        CMP             #$EA
                         BNE             ASM_SMOKE_OPCODE_CHECK_FAIL
                         SEC
                         RTS
@@ -5460,10 +5485,20 @@ ASM_FIND_OPCODE_MODE_TABLE_MISS:
 ASM_FIND_OPCODE_MODE_ROWS:
 ASM_FIND_OPCODE_LDX:
                         DB              ASM_VID_LDX,ASM_OPM_IMM8,$A2
+                        DB              ASM_VID_LDX,ASM_OPM_ZP8,$A6
+                        DB              ASM_VID_LDX,ASM_OPM_ABS16,$AE
+                        DB              ASM_VID_LDX,ASM_OPM_ZP_Y,$B6
+                        DB              ASM_VID_LDX,ASM_OPM_ABS_Y,$BE
 ASM_FIND_OPCODE_LDY:
                         DB              ASM_VID_LDY,ASM_OPM_IMM8,$A0
+                        DB              ASM_VID_LDY,ASM_OPM_ZP8,$A4
+                        DB              ASM_VID_LDY,ASM_OPM_ABS16,$AC
+                        DB              ASM_VID_LDY,ASM_OPM_ZP_X,$B4
+                        DB              ASM_VID_LDY,ASM_OPM_ABS_X,$BC
 ASM_FIND_OPCODE_CPX:
                         DB              ASM_VID_CPX,ASM_OPM_IMM8,$E0
+                        DB              ASM_VID_CPX,ASM_OPM_ZP8,$E4
+                        DB              ASM_VID_CPX,ASM_OPM_ABS16,$EC
 ASM_FIND_OPCODE_CPY:
                         DB              ASM_VID_CPY,ASM_OPM_IMM8,$C0
                         DB              ASM_VID_CPY,ASM_OPM_ZP8,$C4
@@ -5781,6 +5816,8 @@ ASM_EMIT_RESOLVED_OPERAND:
                         BEQ             ASM_EMIT_WORD_OPERAND
                         CMP             #ASM_OPM_ABS_X
                         BEQ             ASM_EMIT_WORD_OPERAND
+                        CMP             #ASM_OPM_ABS_Y
+                        BEQ             ASM_EMIT_WORD_OPERAND
                         LDA             #ASM_STATUS_BAD_MODE
                         JMP             ASM_EMIT_MNEM_FAIL_A
 
@@ -5868,6 +5905,8 @@ ASM_EMIT_FIXUP_STORED:
                         BEQ             ASM_EMIT_PLACEHOLDER_WORD
                         CMP             #ASM_OPM_ABS_X
                         BEQ             ASM_EMIT_PLACEHOLDER_WORD
+                        CMP             #ASM_OPM_ABS_Y
+                        BEQ             ASM_EMIT_PLACEHOLDER_WORD
                         LDA             #ASM_STATUS_BAD_MODE
                         JMP             ASM_EMIT_MNEM_FAIL_A
 ASM_EMIT_PLACEHOLDER_BYTE:
@@ -5947,6 +5986,8 @@ ASM_FIX_ADD_OPERAND_SIZE_X:
                         CMP             #ASM_OPM_ABS16
                         BEQ             ASM_FIX_ADD_SIZE_WORD
                         CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_FIX_ADD_SIZE_WORD
+                        CMP             #ASM_OPM_ABS_Y
                         BEQ             ASM_FIX_ADD_SIZE_WORD
                         BRA             ASM_FIX_ADD_SIZE_APPLY
 ASM_FIX_ADD_SIZE_WORD:
@@ -6111,6 +6152,8 @@ ASM_PATCH_FIXUP_X:
                         CMP             #ASM_OPM_ABS16
                         BEQ             ASM_PATCH_FIXUP_WORD
                         CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_PATCH_FIXUP_WORD
+                        CMP             #ASM_OPM_ABS_Y
                         BEQ             ASM_PATCH_FIXUP_WORD
                         LDA             #ASM_STATUS_BAD_MODE
                         CLC
@@ -7979,7 +8022,14 @@ ASM_CLASS_ADDR_INDEX_Y:
                         LDA             ASM_TMP0_HI
                         CMP             #ASM_WIDTH_ZP
                         BEQ             ASM_CLASS_ADDR_ZP_Y
+                        CMP             #ASM_WIDTH_ABS
+                        BEQ             ASM_CLASS_ADDR_ABS_Y
                         JMP             ASM_CLASS_BAD_WIDTH
+ASM_CLASS_ADDR_ABS_Y:
+                        LDA             #ASM_WIDTH_WORD
+                        STA             ASM_WIDTH
+                        LDA             #ASM_OPM_ABS_Y
+                        JMP             ASM_CLASS_OK_A
 ASM_CLASS_ADDR_ZP_Y:
                         LDA             #ASM_WIDTH_BYTE
                         STA             ASM_WIDTH
@@ -9254,6 +9304,16 @@ ASM_CLASS_LDA_A:       DB              "        LDA A",0
 ASM_CLASS_LDA_DEC:     DB              "        LDA 12",0
 ASM_OPCODE_LOOP_LABEL: DB              "LOOP",0
 ASM_OPCODE_JSR_FOO:    DB              "        JSR FOO",0
+ASM_OPCODE_LDX_ZP:     DB              "        LDX $12",0
+ASM_OPCODE_LDX_ABS:    DB              "        LDX $0012",0
+ASM_OPCODE_LDX_ZPY:    DB              "        LDX $12,Y",0
+ASM_OPCODE_LDX_ABSY:   DB              "        LDX $0012,Y",0
+ASM_OPCODE_LDY_ZP:     DB              "        LDY $12",0
+ASM_OPCODE_LDY_ABS:    DB              "        LDY $0012",0
+ASM_OPCODE_LDY_ZPX:    DB              "        LDY $12,X",0
+ASM_OPCODE_LDY_ABSX:   DB              "        LDY $0012,X",0
+ASM_OPCODE_CPX_ZP:     DB              "        CPX $12",0
+ASM_OPCODE_CPX_ABS:    DB              "        CPX $0012",0
 ASM_OPCODE_LSR_NONE:   DB              "        LSR",0
 ASM_OPCODE_LSR_A:      DB              "        LSR A",0
 ASM_OPCODE_LSR_ZP:     DB              "        LSR $12",0
@@ -9351,6 +9411,18 @@ ASM_OPCODE_PLP:        DB              "        PLP",0
 ASM_OPCODE_PLX:        DB              "        PLX",0
 ASM_OPCODE_PLY:        DB              "        PLY",0
 ASM_OPCODE_RTI:        DB              "        RTI",0
+ASM_OPCODE_INDEX_PTR_LO:
+                        DB              <ASM_OPCODE_LDX_ZP,<ASM_OPCODE_LDX_ABS
+                        DB              <ASM_OPCODE_LDX_ZPY,<ASM_OPCODE_LDX_ABSY
+                        DB              <ASM_OPCODE_LDY_ZP,<ASM_OPCODE_LDY_ABS
+                        DB              <ASM_OPCODE_LDY_ZPX,<ASM_OPCODE_LDY_ABSX
+                        DB              <ASM_OPCODE_CPX_ZP,<ASM_OPCODE_CPX_ABS
+ASM_OPCODE_INDEX_PTR_HI:
+                        DB              >ASM_OPCODE_LDX_ZP,>ASM_OPCODE_LDX_ABS
+                        DB              >ASM_OPCODE_LDX_ZPY,>ASM_OPCODE_LDX_ABSY
+                        DB              >ASM_OPCODE_LDY_ZP,>ASM_OPCODE_LDY_ABS
+                        DB              >ASM_OPCODE_LDY_ZPX,>ASM_OPCODE_LDY_ABSX
+                        DB              >ASM_OPCODE_CPX_ZP,>ASM_OPCODE_CPX_ABS
 ASM_OPCODE_SHIFT_PTR_LO:
                         DB              <ASM_OPCODE_LSR_NONE,<ASM_OPCODE_LSR_A
                         DB              <ASM_OPCODE_LSR_ZP,<ASM_OPCODE_LSR_ABS
@@ -9498,6 +9570,11 @@ ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
                         DB              $00,$71
                         DB              $4D,$10,$71,$8D,$10,$71,$E8,$E0
                         DB              $10,$D0,$EB,$60
+                        DB              $A6,$12,$AE,$12,$00,$B6,$12
+                        DB              $BE,$12,$00
+                        DB              $A4,$12,$AC,$12,$00,$B4,$12
+                        DB              $BC,$12,$00
+                        DB              $E4,$12,$EC,$12,$00
                         DB              $4A,$4A,$46,$12,$4E,$12,$00
                         DB              $56,$12,$5E,$12,$00
                         DB              $2A,$2A,$26,$12,$2E,$12,$00

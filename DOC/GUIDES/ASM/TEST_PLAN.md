@@ -1473,6 +1473,21 @@ RET A=0F X=AE Y=0F P=75 S=FD NV-BdIzC
 >
 ```
 
+ASM 2.90 `LDX/LDY/CPX` opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.90 completes the direct address rows for `LDX`, `LDY`, and `CPX`.
+`LDX` now accepts zero-page, absolute, zero-page indexed-Y, and absolute
+indexed-Y forms; `LDY` now accepts zero-page, absolute, zero-page indexed-X,
+and absolute indexed-X forms; `CPX` now accepts zero-page and absolute forms.
+This slice also adds the first `ABS_Y` operand mode so `LDX $0012,Y` remains
+source-width exact. The full-core opcode smoke now emits `$EA` bytes, and the
+host opcode audit reports `rows=146` and `mnemonics=62`. The host gate passes
+with `asm-v1-runtime-paste-2000.s19` total `$2FF4`.
+
 Current checker requirements:
 
 ```text
