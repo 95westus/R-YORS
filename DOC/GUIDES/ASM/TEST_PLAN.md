@@ -1350,6 +1350,71 @@ opcode smoke now emits `$D1` bytes, and the host opcode audit reports
 `rows=136` and `mnemonics=62`. The host gate passes with
 `asm-v1-runtime-paste-2000.s19` total `$2FB9`.
 
+Hardware-proven ASM 2.88 `ADC/SBC/AND/ORA` paste emission on 2026-06-08:
+
+```text
+>L G
+L S19
+L @2000
+L OK=2FB9 GO=2000
+ASM RT PASTE
+ASM> ORG $72D0
+OK PC=$72D0
+ASM> ADC #$12
+OK PC=$72D2
+ASM> ADC $12
+OK PC=$72D4
+ASM> ADC $0012
+OK PC=$72D7
+ASM> ADC $12,X
+OK PC=$72D9
+ASM> ADC $0012,X
+OK PC=$72DC
+ASM> SBC #$12
+OK PC=$72DE
+ASM> SBC $12
+OK PC=$72E0
+ASM> SBC $0012
+OK PC=$72E3
+ASM> SBC $12,X
+OK PC=$72E5
+ASM> SBC $0012,X
+OK PC=$72E8
+ASM> AND #$12
+OK PC=$72EA
+ASM> AND $12
+OK PC=$72EC
+ASM> AND $0012
+OK PC=$72EF
+ASM> AND $12,X
+OK PC=$72F1
+ASM> AND $0012,X
+OK PC=$72F4
+ASM> ORA #$12
+OK PC=$72F6
+ASM> ORA $12
+OK PC=$72F8
+ASM> ORA $0012
+OK PC=$72FB
+ASM> ORA $12,X
+OK PC=$72FD
+ASM> ORA $0012,X
+OK PC=$7300
+ASM> END
+OK PC=$7300
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 72D0 72FF
+72D0: 69 12 65 12 6D 12 00 75 | 12 7D 12 00 E9 12 E5 12 | i.e.m..u.}......
+72E0: ED 12 00 F5 12 FD 12 00 | 29 12 25 12 2D 12 00 35 | ........).%.-..5
+72F0: 12 3D 12 00 09 12 05 12 | 0D 12 00 15 12 1D 12 00 | .=..............
+>
+```
+
 Current checker requirements:
 
 ```text
