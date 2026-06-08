@@ -4,6 +4,88 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-06-08 ASM 2.85 Implied Opcode Batch Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` at `$2000` with size `$2FC9` after ASM 2.85
+added implied-only opcode rows for CPU/register/stack mnemonics.
+
+Validated:
+
+- The runtime paste wrapper starts normally with the expanded implied-opcode
+  table active.
+- `NOP`, `DEX`, `DEY`, `INY`, `TAX`, `TAY`, `TSX`, `TXA`, `TXS`, `TYA`,
+  `PHA`, `PHP`, `PHX`, `PHY`, `PLA`, `PLP`, `PLX`, `PLY`, and `RTI` assemble
+  as one-byte implied opcodes.
+- The final PC after all 19 rows is `$7273`.
+- The emitted `$7260-$7272` bytes match the W65C02 opcode table.
+
+### Transcript
+
+```text
+>L G
+L S19
+L @2000
+L OK=2FC9 GO=2000
+ASM RT PASTE
+ASM> ORG $7260
+OK PC=$7260
+ASM> NOP
+OK PC=$7261
+ASM> DEX
+OK PC=$7262
+ASM> DEY
+OK PC=$7263
+ASM> INY
+OK PC=$7264
+ASM> TAX
+OK PC=$7265
+ASM> TAY
+OK PC=$7266
+ASM> TSX
+OK PC=$7267
+ASM> TXA
+OK PC=$7268
+ASM> TXS
+OK PC=$7269
+ASM> TYA
+OK PC=$726A
+ASM> PHA
+OK PC=$726B
+ASM> PHP
+OK PC=$726C
+ASM> PHX
+OK PC=$726D
+ASM> PHY
+OK PC=$726E
+ASM> PLA
+OK PC=$726F
+ASM> PLP
+OK PC=$7270
+ASM> PLX
+OK PC=$7271
+ASM> PLY
+OK PC=$7272
+ASM> RTI
+OK PC=$7273
+ASM> END
+OK PC=$7273
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=BE Y=0F P=75 S=FD NV-BdIzC
+>D 7260 7272
+7260: EA CA 88 C8 AA A8 BA 8A | 9A 98 48 08 DA 5A 68 28 | ..........H..Zh(
+7270: FA 7A 40 | .z@
+```
+
 ## 2026-06-08 ASM 2.83 Implied Flag Opcode Board Proof
 
 ### Summary

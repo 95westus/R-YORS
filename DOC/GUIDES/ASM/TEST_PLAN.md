@@ -1152,6 +1152,61 @@ runtime growth is only the opcode rows. The full-core opcode smoke now emits
 `$60` bytes, and the host opcode audit reports `rows=88` and `mnemonics=50`.
 The host gate passes with `asm-v1-runtime-paste-2000.s19` total `$2FC9`.
 
+Hardware-proven ASM 2.85 implied CPU/register/stack opcode paste emission on
+2026-06-08:
+
+```text
+L OK=2FC9 GO=2000
+ASM RT PASTE
+ASM> ORG $7260
+OK PC=$7260
+ASM> NOP
+OK PC=$7261
+ASM> DEX
+OK PC=$7262
+ASM> DEY
+OK PC=$7263
+ASM> INY
+OK PC=$7264
+ASM> TAX
+OK PC=$7265
+ASM> TAY
+OK PC=$7266
+ASM> TSX
+OK PC=$7267
+ASM> TXA
+OK PC=$7268
+ASM> TXS
+OK PC=$7269
+ASM> TYA
+OK PC=$726A
+ASM> PHA
+OK PC=$726B
+ASM> PHP
+OK PC=$726C
+ASM> PHX
+OK PC=$726D
+ASM> PHY
+OK PC=$726E
+ASM> PLA
+OK PC=$726F
+ASM> PLP
+OK PC=$7270
+ASM> PLX
+OK PC=$7271
+ASM> PLY
+OK PC=$7272
+ASM> RTI
+OK PC=$7273
+ASM> END
+OK PC=$7273
+ASM RT PASTE OK
+
+>D 7260 7272
+7260: EA CA 88 C8 AA A8 BA 8A | 9A 98 48 08 DA 5A 68 28 | ..........H..Zh(
+7270: FA 7A 40 | .z@
+```
+
 Current checker requirements:
 
 ```text
