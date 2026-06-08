@@ -1337,6 +1337,19 @@ ASM RT PASTE OK
 72C0: 12 00 | ..
 ```
 
+ASM 2.88 `ADC/SBC/AND/ORA` opcode rows on 2026-06-08:
+
+```text
+make -C SRC asm-test
+```
+
+ASM 2.88 adds active rows for `ADC`, `SBC`, `AND`, and `ORA`, each with
+immediate, zero-page, absolute, zero-page indexed-X, and absolute indexed-X
+forms. Indirect and indexed-Y forms remain outside this slice. The full-core
+opcode smoke now emits `$D1` bytes, and the host opcode audit reports
+`rows=136` and `mnemonics=62`. The host gate passes with
+`asm-v1-runtime-paste-2000.s19` total `$2FB9`.
+
 Current checker requirements:
 
 ```text

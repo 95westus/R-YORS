@@ -123,6 +123,30 @@ Add-ExpectedRow 'CPY' 'IMM8' 0xC0
 Add-ExpectedRow 'CPY' 'ZP8' 0xC4
 Add-ExpectedRow 'CPY' 'ABS16' 0xCC
 
+Add-ExpectedRow 'ADC' 'IMM8' 0x69
+Add-ExpectedRow 'ADC' 'ZP8' 0x65
+Add-ExpectedRow 'ADC' 'ABS16' 0x6D
+Add-ExpectedRow 'ADC' 'ZP_X' 0x75
+Add-ExpectedRow 'ADC' 'ABS_X' 0x7D
+
+Add-ExpectedRow 'SBC' 'IMM8' 0xE9
+Add-ExpectedRow 'SBC' 'ZP8' 0xE5
+Add-ExpectedRow 'SBC' 'ABS16' 0xED
+Add-ExpectedRow 'SBC' 'ZP_X' 0xF5
+Add-ExpectedRow 'SBC' 'ABS_X' 0xFD
+
+Add-ExpectedRow 'AND' 'IMM8' 0x29
+Add-ExpectedRow 'AND' 'ZP8' 0x25
+Add-ExpectedRow 'AND' 'ABS16' 0x2D
+Add-ExpectedRow 'AND' 'ZP_X' 0x35
+Add-ExpectedRow 'AND' 'ABS_X' 0x3D
+
+Add-ExpectedRow 'ORA' 'IMM8' 0x09
+Add-ExpectedRow 'ORA' 'ZP8' 0x05
+Add-ExpectedRow 'ORA' 'ABS16' 0x0D
+Add-ExpectedRow 'ORA' 'ZP_X' 0x15
+Add-ExpectedRow 'ORA' 'ABS_X' 0x1D
+
 Add-ExpectedRow 'CMP' 'IMM8' 0xC9
 Add-ExpectedRow 'CMP' 'ZP8' 0xC5
 Add-ExpectedRow 'CMP' 'ABS16' 0xCD
