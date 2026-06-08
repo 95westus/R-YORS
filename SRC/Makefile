@@ -25,8 +25,8 @@ S19_DIR := $(BUILD_DIR)/s19
 ROM_BIN_STAMP_DEFAULT := $(shell powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-ddTHH:mmK'")
 ROM_BIN_STAMP ?= $(ROM_BIN_STAMP_DEFAULT)
 ROM_BIN_ARCHIVE_DIR := ROM_IMAGES
-HIMON_VISIBLE_STAMP_DEFAULT := $(shell powershell -NoProfile -Command "Get-Date -Format 'MMdd(HHmm)'")
-HIMON_VISIBLE_STAMP ?= $(HIMON_VISIBLE_STAMP_DEFAULT)
+HIMON_VISIBLE_STAMP ?=
+HIMON_VISIBLE_STAMP_ARG := $(if $(HIMON_VISIBLE_STAMP),-Stamp "$(HIMON_VISIBLE_STAMP)",)
 PYTHON ?= python
 
 LOCAL_ROOT ?= ../LOCAL
@@ -888,7 +888,7 @@ $(FIG_FORTH_C000_OBJ): $(FIG_FORTH_C000_SRC)
 
 .PHONY: himon-version-stamp
 himon-version-stamp: $(HIMON_VERSION_STAMP)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" -Stamp "$(HIMON_VISIBLE_STAMP)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" $(HIMON_VISIBLE_STAMP_ARG)
 
 $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) himon-version-stamp
 
