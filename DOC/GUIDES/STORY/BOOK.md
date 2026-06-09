@@ -81,7 +81,8 @@ that old assembler, linker, catalog, Forth, FNV, or CPU ideas were invented here
 The book should read in three layers:
 
 1. The story: why this exists, what changed, and what each piece is for.
-2. The machine: actual HIMON, STR8, FNV-era command records, flash, and catalog behavior.
+2. The machine: actual HIMON, STR8, ASM v1, FNV-era records, flash, and
+   catalog behavior.
 3. The questions: what is settled, what is only proved, and what remains open.
 
 ## How The Work Moves
@@ -118,6 +119,7 @@ Proof lives in the guide set:
 - [STR8.md](../STR8/STR8.md) - recovery/update anchor.
 - [CATALOG.md](../CATALOG/CATALOG.md) - callable routine surface and RREC seeds.
 - [HREC_JOIN_PROOF.md](../CATALOG/HREC_JOIN_PROOF.md) - hash record to callable entry proof.
+- [ASM/TEST_PLAN.md](../ASM/TEST_PLAN.md) - ASM v1 host and board proof gate.
 - [HARDWARE_TEST_LOG.md](../LOGS/HARDWARE_TEST_LOG.md) - board evidence.
 - [QCC.md](../QCC/INDEX.md) and topic QCC files - live questions.
 
@@ -518,8 +520,18 @@ Proof and notes:
 Answer:
 
 The assembler is where hash-first lookup becomes construction, not just
-dispatch. It can emit bodies, unresolved references, symbol records, aliases,
-and fixups that a later resolver can join.
+dispatch. ASM v1 is now a RAM-session W65C02S assembler, not only a future
+sketch. It loads at `$2000`, accepts typed or pasted source lines, emits
+native code into operator-selected RAM such as `$7000`, tracks
+symbols/references/fixups, and resolves resident routine names through the
+HIMON/THE RJOIN path before emitting a callable `JSR`.
+
+This is not self-hosting yet, and it is not a flash/catalog export format yet.
+The book should show the real middle state: a board can now receive source,
+assemble code, fix forward references, print session tables, recover from
+failed lines transactionally, call resident services by name, and run the
+generated program. Later RREC/RBODY/RF/RLNK records have to grow from that
+visible RAM-session behavior instead of replacing it with hand-waving.
 
 Questions:
 
@@ -527,10 +539,16 @@ Questions:
 - What records should assembly emit before the full catalog exists?
 - How does a fixup remain safe in RAM versus flash?
 - When should labels be text, hashes, or both?
+- What session evidence must survive when a RAM body becomes a sealed catalog
+  export?
+- Which opcode and addressing-mode rows are proof enough for ASM v1, and which
+  belong to later coverage work?
 
 Proof and notes:
 
 - [HASHED_ASM.md](../ASM/HASHED_ASM.md)
+- [ASM/DECISIONS.md](../ASM/DECISIONS.md)
+- [ASM/TEST_PLAN.md](../ASM/TEST_PLAN.md)
 - [QCC_ASM.md](../QCC/ASM.md)
 - [HASH_MAP.md](../HASH/HASH_MAP.md)
 
@@ -591,9 +609,41 @@ Proof and notes:
 - [HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](../HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md)
 - [QCC_HASH.md](../QCC/HASH.md)
 
+### Chapter 18: Pasteable ASM On The Board
+
+Answer:
+
+Pasteable ASM is the worked proof that the runtime can build useful code on
+the machine itself. The current board path loads the ASM runtime/paste image
+at `$2000`, starts it with `G 2000`, assembles source into RAM, finalizes
+with `END`, and runs the emitted program with an ordinary HIMON `G` command.
+
+The important proof is not only that opcodes appear in RAM. ASM has assembled
+programs that call resident HIMON/THE services by name, patch
+forward-reference fixups, print symbol/fixup tables, recover from bad
+non-`END` lines without poisoning the session, and run a larger `$6600`
+program that uses `$7800` data space and resident output. The proof path keeps
+source-width address policy honest: `$12` and `$0012` may name the same
+numeric address, but they are not the same instruction contract.
+
+Questions:
+
+- What makes an onboard assembly proof more convincing than a host-side smoke?
+- How much table/report output is enough for an operator to trust a session?
+- Which resident names should ASM be allowed to join before catalogs are rich?
+- When should a pasted RAM body become an exportable RBODY instead of a bench
+  scratch image?
+
+Proof and notes:
+
+- [ASM/TEST_PLAN.md](../ASM/TEST_PLAN.md)
+- [ASM/SAMPLES/ASMTEST_3000.asm](../ASM/SAMPLES/ASMTEST_3000.asm)
+- [ASM/SAMPLES/ASM_LINE_ECHO_7000.asm](../ASM/SAMPLES/ASM_LINE_ECHO_7000.asm)
+- [HARDWARE_TEST_LOG.md](../LOGS/HARDWARE_TEST_LOG.md)
+
 ## Part VI: What Stayed Simple On Purpose
 
-### Chapter 18: What Stayed Simple On Purpose
+### Chapter 19: What Stayed Simple On Purpose
 
 Answer:
 
@@ -616,7 +666,7 @@ Proof and notes:
 - [DYNAMIC_MEMORY_FIRST_STEPS.md](../MEMORY/DYNAMIC_MEMORY_FIRST_STEPS.md)
 - [QCC_MEMORY.md](../QCC/MEMORY.md)
 
-### Chapter 19: Naming, Vocabulary, And The Shape Of Thought
+### Chapter 20: Naming, Vocabulary, And The Shape Of Thought
 
 Answer:
 
@@ -637,7 +687,7 @@ Proof and notes:
 - [DECISIONS.md](../DECISIONS.md)
 - [CATALOG.md](../CATALOG/CATALOG.md)
 
-### Chapter 20: Questions The Book Should Keep Alive
+### Chapter 21: Questions The Book Should Keep Alive
 
 These are book-grade questions, not blockers:
 
@@ -648,6 +698,7 @@ These are book-grade questions, not blockers:
 - How does STR8-N replace a recovery-required provider?
 - Which routine contracts become universal, and which stay board-local?
 - When does HIMON stop being a monitor and become THE?
+- When does pasteable ASM stop being a RAM proof and become an export path?
 - What is the smallest self-hosted build loop that still feels honest?
 
 ## Drafting Order
@@ -656,17 +707,20 @@ Do not write the book in chapter order. Write from proof outward:
 
 1. Write the HIMON command/catalog dispatch chapter from current code and
    [HIMON_MAP.md](../HIMON/HIMON_MAP.md).
-2. Write STR8 recovery from [STR8.md](../STR8/STR8.md), [BRINGUP.md](../STR8/BRINGUP.md),
-   and [HARDWARE_TEST_LOG.md](../LOGS/HARDWARE_TEST_LOG.md).
+2. Write STR8 recovery from [STR8.md](../STR8/STR8.md),
+   [BRINGUP.md](../STR8/BRINGUP.md), and
+   [HARDWARE_TEST_LOG.md](../LOGS/HARDWARE_TEST_LOG.md).
 3. Write the FNV-to-CRC16 hash transition and records from
    [HASH.md](../HASH/HASH.md), [HASH_MAP.md](../HASH/HASH_MAP.md), and
    [HREC_JOIN_PROOF.md](../CATALOG/HREC_JOIN_PROOF.md).
 4. Write routines-made-from-routines from [CATALOG.md](../CATALOG/CATALOG.md),
    promoted helpers, and the range-parser/search path.
 5. Write catalog linking from [HASHED_ASM.md](../ASM/HASHED_ASM.md),
-   [QCC_ASM.md](../QCC/ASM.md), and
-   [QCC_CATALOG_LINKING.md](../QCC/CATALOG_LINKING.md).
-6. Finish with the reflective chapters: what stayed simple, what remains open,
+   [ASM/TEST_PLAN.md](../ASM/TEST_PLAN.md), [QCC_ASM.md](../QCC/ASM.md),
+   and [QCC_CATALOG_LINKING.md](../QCC/CATALOG_LINKING.md).
+6. Write pasteable ASM as a worked example from the 2026-06-06 through
+   2026-06-08 board proofs before claiming any self-hosted arc.
+7. Finish with the reflective chapters: what stayed simple, what remains open,
    and how the vocabulary shaped the system.
 
 ## Chapter Template
@@ -706,9 +760,11 @@ Pointers
 
 R-YORS is a small W65C02 system that grows from a monitor into a hashed runtime
 environment. HIMON provides the bench: commands, debugging, loading, flash
-guards, and current FNV-era dispatch. STR8 protects recovery. THE names the future lookup
-environment where records, bodies, fixups, and catalogs make code discoverable
-and linkable on the machine itself.
+guards, and current FNV-era dispatch. STR8 protects recovery. THE names the
+future lookup environment where records, bodies, fixups, and catalogs make code
+discoverable and linkable on the machine itself. ASM v1 proves the construction
+side: pasted source becomes native code, resident joins become real calls, and
+RAM fixups become visible session evidence.
 
 This book follows that path without pretending the destination arrived first.
 It keeps the false starts, proof apps, hardware transcripts, command grammar

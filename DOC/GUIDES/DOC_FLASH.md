@@ -41,6 +41,32 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: Book Spine Adds Pasteable ASM Proof
+
+```text
+2026
+         06
+                08
+                   22:25Z WLP2 Updated the book spine around the
+                               hardware-proven pasteable ASM path.
+```
+
+scope: `STORY/BOOK.md`, `DOC_FLASH.md`.
+
+change: The book now treats ASM v1 as a concrete RAM-session construction
+proof: load at `$2000`, paste or type source, emit native W65C02S code into
+RAM such as `$7000`, resolve resident calls through RJOIN, print session
+tables, recover from transactional line failures, and run emitted programs.
+
+effect: The stale story is that hashed ASM is only future catalog-linking
+direction. It is still not self-hosting and not a flash/export format, but the
+board now proves the middle state between monitor dispatch and catalog-built
+code.
+
+action: Use [STORY/BOOK.md](STORY/BOOK.md) for the narrative placement and
+[ASM/TEST_PLAN.md](ASM/TEST_PLAN.md) plus
+[LOGS/HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md) for the proof details.
+
 ## REDOC: Idea Provenance Tags Added
 
 ```text
