@@ -6638,7 +6638,7 @@ ASM_EMIT_WORD_LE:
                         CMP             #ASM_SESS_ACTIVE
                         BEQ             ASM_EMIT_WORD_ACTIVE
                         LDA             #ASM_STATUS_BAD_OPER
-                        JMP             ASM_EMIT_FAIL_A
+                        BRA             ASM_EMIT_FAIL_A
 ASM_EMIT_WORD_ACTIVE:
                         LDA             ASM_PC_HI
                         CMP             #ASM_TARGET_LIMIT_HI
@@ -6650,7 +6650,7 @@ ASM_EMIT_WORD_ACTIVE:
                         BNE             ASM_EMIT_WORD_TARGET_OK
 ASM_EMIT_WORD_BAD_RANGE:
                         LDA             #ASM_STATUS_BAD_RANGE
-                        JMP             ASM_EMIT_FAIL_A
+                        BRA             ASM_EMIT_FAIL_A
 ASM_EMIT_WORD_TARGET_OK:
                         LDA             ASM_PC_HI
                         CMP             #$FF
@@ -6659,7 +6659,7 @@ ASM_EMIT_WORD_TARGET_OK:
                         CMP             #$FE
                         BCC             ASM_EMIT_WORD_ROOM
                         LDA             #ASM_STATUS_BAD_RANGE
-                        JMP             ASM_EMIT_FAIL_A
+                        BRA             ASM_EMIT_FAIL_A
 ASM_EMIT_WORD_ROOM:
                         LDA             ASM_TMP0_LO
                         JSR             ASM_EMIT_BYTE
@@ -7234,41 +7234,41 @@ ASM_FIND_OPCODE_ROR_ACC:
                         JMP             ASM_FIND_OPCODE_OK_A
 ASM_FIND_OPCODE_ROR_ZP:
                         LDA             #$66
-                        JMP             ASM_FIND_OPCODE_OK_A
+                        BRA             ASM_FIND_OPCODE_OK_A
 ASM_FIND_OPCODE_ROR_ABS:
                         LDA             #$6E
-                        JMP             ASM_FIND_OPCODE_OK_A
+                        BRA             ASM_FIND_OPCODE_OK_A
 ASM_FIND_OPCODE_ROR_ZPX:
                         LDA             #$76
-                        JMP             ASM_FIND_OPCODE_OK_A
+                        BRA             ASM_FIND_OPCODE_OK_A
 ASM_FIND_OPCODE_ROR_ABSX:
                         LDA             #$7E
-                        JMP             ASM_FIND_OPCODE_OK_A
+                        BRA             ASM_FIND_OPCODE_OK_A
 
 ASM_FIND_OPCODE_BCC:
                         LDA             #$90
-                        JMP             ASM_FIND_OPCODE_BRANCH_A
+                        BRA             ASM_FIND_OPCODE_BRANCH_A
 ASM_FIND_OPCODE_BCS:
                         LDA             #$B0
-                        JMP             ASM_FIND_OPCODE_BRANCH_A
+                        BRA             ASM_FIND_OPCODE_BRANCH_A
 ASM_FIND_OPCODE_BEQ:
                         LDA             #$F0
-                        JMP             ASM_FIND_OPCODE_BRANCH_A
+                        BRA             ASM_FIND_OPCODE_BRANCH_A
 ASM_FIND_OPCODE_BMI:
                         LDA             #$30
-                        JMP             ASM_FIND_OPCODE_BRANCH_A
+                        BRA             ASM_FIND_OPCODE_BRANCH_A
 ASM_FIND_OPCODE_BNE:
                         LDA             #$D0
-                        JMP             ASM_FIND_OPCODE_BRANCH_A
+                        BRA             ASM_FIND_OPCODE_BRANCH_A
 ASM_FIND_OPCODE_BPL:
                         LDA             #$10
-                        JMP             ASM_FIND_OPCODE_BRANCH_A
+                        BRA             ASM_FIND_OPCODE_BRANCH_A
 ASM_FIND_OPCODE_BRA:
                         LDA             #$80
-                        JMP             ASM_FIND_OPCODE_BRANCH_A
+                        BRA             ASM_FIND_OPCODE_BRANCH_A
 ASM_FIND_OPCODE_BVC:
                         LDA             #$50
-                        JMP             ASM_FIND_OPCODE_BRANCH_A
+                        BRA             ASM_FIND_OPCODE_BRANCH_A
 ASM_FIND_OPCODE_BVS:
                         LDA             #$70
 ASM_FIND_OPCODE_BRANCH_A:
@@ -7276,41 +7276,41 @@ ASM_FIND_OPCODE_BRANCH_A:
                         LDA             ASM_MODE
                         CMP             #ASM_OPM_REL8
                         BEQ             ASM_FIND_OPCODE_BRANCH_OK
-                        JMP             ASM_FIND_OPCODE_BAD_MODE
+                        BRA             ASM_FIND_OPCODE_BAD_MODE
 ASM_FIND_OPCODE_BRANCH_OK:
                         LDA             ASM_TMP0_LO
-                        JMP             ASM_FIND_OPCODE_OK_A
+                        BRA             ASM_FIND_OPCODE_OK_A
 
 ASM_FIND_OPCODE_BBR:
                         LDA             ASM_MODE
                         CMP             #ASM_OPM_BIT_ZP_REL
                         BEQ             ASM_FIND_OPCODE_BBR_BIT_ZP_REL
-                        JMP             ASM_FIND_OPCODE_BAD_MODE
+                        BRA             ASM_FIND_OPCODE_BAD_MODE
 ASM_FIND_OPCODE_BBR_BIT_ZP_REL:
                         LDA             #$0F
-                        JMP             ASM_FIND_OPCODE_BIT_ZP_A
+                        BRA             ASM_FIND_OPCODE_BIT_ZP_A
 ASM_FIND_OPCODE_BBS:
                         LDA             ASM_MODE
                         CMP             #ASM_OPM_BIT_ZP_REL
                         BEQ             ASM_FIND_OPCODE_BBS_BIT_ZP_REL
-                        JMP             ASM_FIND_OPCODE_BAD_MODE
+                        BRA             ASM_FIND_OPCODE_BAD_MODE
 ASM_FIND_OPCODE_BBS_BIT_ZP_REL:
                         LDA             #$8F
-                        JMP             ASM_FIND_OPCODE_BIT_ZP_A
+                        BRA             ASM_FIND_OPCODE_BIT_ZP_A
 
 ASM_FIND_OPCODE_RMB:
                         LDA             ASM_MODE
                         CMP             #ASM_OPM_BIT_ZP
                         BEQ             ASM_FIND_OPCODE_RMB_BIT_ZP
-                        JMP             ASM_FIND_OPCODE_BAD_MODE
+                        BRA             ASM_FIND_OPCODE_BAD_MODE
 ASM_FIND_OPCODE_RMB_BIT_ZP:
                         LDA             #$07
-                        JMP             ASM_FIND_OPCODE_BIT_ZP_A
+                        BRA             ASM_FIND_OPCODE_BIT_ZP_A
 ASM_FIND_OPCODE_SMB:
                         LDA             ASM_MODE
                         CMP             #ASM_OPM_BIT_ZP
                         BEQ             ASM_FIND_OPCODE_SMB_BIT_ZP
-                        JMP             ASM_FIND_OPCODE_BAD_MODE
+                        BRA             ASM_FIND_OPCODE_BAD_MODE
 ASM_FIND_OPCODE_SMB_BIT_ZP:
                         LDA             #$87
 ASM_FIND_OPCODE_BIT_ZP_A:
@@ -7322,7 +7322,7 @@ ASM_FIND_OPCODE_BIT_ZP_A:
                         ASL
                         CLC
                         ADC             ASM_TMP0_LO
-                        JMP             ASM_FIND_OPCODE_OK_A
+                        BRA             ASM_FIND_OPCODE_OK_A
 
 ASM_FIND_OPCODE_BAD_MODE:
                         LDA             #ASM_STATUS_BAD_MODE
@@ -7377,42 +7377,18 @@ ASM_EMIT_OPCODE_WRITTEN:
                         JMP             ASM_EMIT_UNRESOLVED_OPERAND
 ASM_EMIT_RESOLVED_OPERAND:
                         LDA             ASM_MODE
-                        CMP             #ASM_OPM_NONE
-                        BEQ             ASM_EMIT_OK
-                        CMP             #ASM_OPM_ACC
-                        BEQ             ASM_EMIT_OK
-                        CMP             #ASM_OPM_IMM8
-                        BEQ             ASM_EMIT_BYTE_OPERAND
-                        CMP             #ASM_OPM_ZP8
-                        BEQ             ASM_EMIT_BYTE_OPERAND
-                        CMP             #ASM_OPM_ZP_X
-                        BEQ             ASM_EMIT_BYTE_OPERAND
-                        CMP             #ASM_OPM_ZP_Y
-                        BEQ             ASM_EMIT_BYTE_OPERAND
-                        CMP             #ASM_OPM_ZP_IND
-                        BEQ             ASM_EMIT_BYTE_OPERAND
-                        CMP             #ASM_OPM_ZP_X_IND
-                        BEQ             ASM_EMIT_BYTE_OPERAND
-                        CMP             #ASM_OPM_ZP_IND_Y
-                        BEQ             ASM_EMIT_BYTE_OPERAND
-                        CMP             #ASM_OPM_BIT_ZP
-                        BEQ             ASM_EMIT_BYTE_OPERAND
                         CMP             #ASM_OPM_BIT_ZP_REL
                         BEQ             ASM_EMIT_BIT_ZP_REL_OPERAND
                         CMP             #ASM_OPM_REL8
                         BEQ             ASM_EMIT_REL8_OPERAND
-                        CMP             #ASM_OPM_ABS16
-                        BEQ             ASM_EMIT_WORD_OPERAND
-                        CMP             #ASM_OPM_ABS_X
-                        BEQ             ASM_EMIT_WORD_OPERAND
-                        CMP             #ASM_OPM_ABS_Y
-                        BEQ             ASM_EMIT_WORD_OPERAND
-                        CMP             #ASM_OPM_ABS_IND
-                        BEQ             ASM_EMIT_WORD_OPERAND
-                        CMP             #ASM_OPM_ABS_X_IND
-                        BEQ             ASM_EMIT_WORD_OPERAND
-                        LDA             #ASM_STATUS_BAD_MODE
+                        JSR             ASM_MODE_PATCH_BYTES
+                        BCS             ASM_EMIT_RESOLVED_SIZE_OK
                         JMP             ASM_EMIT_MNEM_FAIL_A
+ASM_EMIT_RESOLVED_SIZE_OK:
+                        BEQ             ASM_EMIT_OK
+                        CMP             #$01
+                        BEQ             ASM_EMIT_BYTE_OPERAND
+                        BRA             ASM_EMIT_WORD_OPERAND
 
 ASM_EMIT_REL8_OPERAND:
                         JSR             ASM_PREP_REL8
@@ -7448,48 +7424,14 @@ ASM_EMIT_OK:
 
 ASM_EMIT_MNEM_ROOM:
                         LDA             ASM_MODE
-                        CMP             #ASM_OPM_NONE
-                        BEQ             ASM_EMIT_ROOM_ONE
-                        CMP             #ASM_OPM_ACC
-                        BEQ             ASM_EMIT_ROOM_ONE
                         CMP             #ASM_OPM_BIT_ZP_REL
                         BEQ             ASM_EMIT_ROOM_THREE
-                        CMP             #ASM_OPM_ABS16
-                        BEQ             ASM_EMIT_ROOM_THREE
-                        CMP             #ASM_OPM_ABS_X
-                        BEQ             ASM_EMIT_ROOM_THREE
-                        CMP             #ASM_OPM_ABS_Y
-                        BEQ             ASM_EMIT_ROOM_THREE
-                        CMP             #ASM_OPM_ABS_IND
-                        BEQ             ASM_EMIT_ROOM_THREE
-                        CMP             #ASM_OPM_ABS_X_IND
-                        BEQ             ASM_EMIT_ROOM_THREE
-                        CMP             #ASM_OPM_IMM8
-                        BEQ             ASM_EMIT_ROOM_TWO
-                        CMP             #ASM_OPM_ZP8
-                        BEQ             ASM_EMIT_ROOM_TWO
-                        CMP             #ASM_OPM_ZP_X
-                        BEQ             ASM_EMIT_ROOM_TWO
-                        CMP             #ASM_OPM_ZP_Y
-                        BEQ             ASM_EMIT_ROOM_TWO
-                        CMP             #ASM_OPM_ZP_IND
-                        BEQ             ASM_EMIT_ROOM_TWO
-                        CMP             #ASM_OPM_ZP_X_IND
-                        BEQ             ASM_EMIT_ROOM_TWO
-                        CMP             #ASM_OPM_ZP_IND_Y
-                        BEQ             ASM_EMIT_ROOM_TWO
-                        CMP             #ASM_OPM_BIT_ZP
-                        BEQ             ASM_EMIT_ROOM_TWO
-                        CMP             #ASM_OPM_REL8
-                        BEQ             ASM_EMIT_ROOM_TWO
-                        LDA             #ASM_STATUS_BAD_MODE
-                        CLC
+                        JSR             ASM_MODE_PATCH_BYTES
+                        BCS             ASM_EMIT_ROOM_SIZE_OK
                         RTS
-ASM_EMIT_ROOM_ONE:
-                        LDA             #$01
-                        BRA             ASM_EMIT_ROOM_FOR_A
-ASM_EMIT_ROOM_TWO:
-                        LDA             #$02
+ASM_EMIT_ROOM_SIZE_OK:
+                        CLC
+                        ADC             #$01
                         BRA             ASM_EMIT_ROOM_FOR_A
 ASM_EMIT_ROOM_THREE:
                         LDA             #$03
@@ -7512,6 +7454,18 @@ ASM_EMIT_ROOM_BAD_RANGE:
                         RTS
 ASM_EMIT_ROOM_OK:
                         LDA             #ASM_STATUS_OK
+                        SEC
+                        RTS
+
+ASM_MODE_PATCH_BYTES:
+                        LDX             ASM_MODE
+                        CPX             #(ASM_OPM_BIT_ZP_REL+1)
+                        BCC             ASM_MODE_PATCH_BYTES_OK
+                        LDA             #ASM_STATUS_BAD_MODE
+                        CLC
+                        RTS
+ASM_MODE_PATCH_BYTES_OK:
+                        LDA             ASM_OPM_PATCH_BYTES,X
                         SEC
                         RTS
 
@@ -7562,7 +7516,7 @@ ASM_EMIT_UNRESOLVED_OPERAND:
                         BEQ             ASM_EMIT_UNRESOLVED_BIT_ZP_REL
                         JSR             ASM_STORE_FIXUP_CURRENT
                         BCS             ASM_EMIT_FIXUP_STORED
-                        JMP             ASM_EMIT_MNEM_FAIL_A
+                        BRA             ASM_EMIT_MNEM_FAIL_A
 ASM_EMIT_UNRESOLVED_BIT_ZP_REL:
                         LDA             ASM_CARE_LO
                         JSR             ASM_EMIT_BYTE
@@ -7571,49 +7525,28 @@ ASM_EMIT_UNRESOLVED_BIT_ZP_REL:
 ASM_EMIT_UNRESOLVED_BIT_ZP_OK:
                         JSR             ASM_STORE_FIXUP_CURRENT
                         BCS             ASM_EMIT_UNRESOLVED_BIT_FIXUP_OK
-                        JMP             ASM_EMIT_MNEM_FAIL_A
+                        BRA             ASM_EMIT_MNEM_FAIL_A
 ASM_EMIT_UNRESOLVED_BIT_FIXUP_OK:
                         LDA             #$FF
                         JSR             ASM_EMIT_BYTE
                         BCC             ASM_EMIT_PLACEHOLDER_FAIL
                         JMP             ASM_EMIT_OK
 ASM_EMIT_FIXUP_STORED:
-                        LDA             ASM_MODE
-                        CMP             #ASM_OPM_IMM8
-                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
-                        CMP             #ASM_OPM_ZP8
-                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
-                        CMP             #ASM_OPM_ZP_X
-                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
-                        CMP             #ASM_OPM_ZP_Y
-                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
-                        CMP             #ASM_OPM_ZP_IND
-                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
-                        CMP             #ASM_OPM_ZP_X_IND
-                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
-                        CMP             #ASM_OPM_ZP_IND_Y
-                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
-                        CMP             #ASM_OPM_BIT_ZP
-                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
-                        CMP             #ASM_OPM_REL8
-                        BEQ             ASM_EMIT_PLACEHOLDER_BYTE
-                        CMP             #ASM_OPM_ABS16
+                        JSR             ASM_MODE_PATCH_BYTES
+                        BCS             ASM_EMIT_FIXUP_SIZE_OK
+                        BRA             ASM_EMIT_MNEM_FAIL_A
+ASM_EMIT_FIXUP_SIZE_OK:
+                        BEQ             ASM_EMIT_FIXUP_BAD_MODE
+                        CMP             #$02
                         BEQ             ASM_EMIT_PLACEHOLDER_WORD
-                        CMP             #ASM_OPM_ABS_X
-                        BEQ             ASM_EMIT_PLACEHOLDER_WORD
-                        CMP             #ASM_OPM_ABS_Y
-                        BEQ             ASM_EMIT_PLACEHOLDER_WORD
-                        CMP             #ASM_OPM_ABS_IND
-                        BEQ             ASM_EMIT_PLACEHOLDER_WORD
-                        CMP             #ASM_OPM_ABS_X_IND
-                        BEQ             ASM_EMIT_PLACEHOLDER_WORD
-                        LDA             #ASM_STATUS_BAD_MODE
-                        JMP             ASM_EMIT_MNEM_FAIL_A
 ASM_EMIT_PLACEHOLDER_BYTE:
                         LDA             #$FF
                         JSR             ASM_EMIT_BYTE
                         BCC             ASM_EMIT_PLACEHOLDER_FAIL
                         JMP             ASM_EMIT_OK
+ASM_EMIT_FIXUP_BAD_MODE:
+                        LDA             #ASM_STATUS_BAD_MODE
+                        BRA             ASM_EMIT_MNEM_FAIL_A
 ASM_EMIT_PLACEHOLDER_FAIL:
                         RTS
 ASM_EMIT_PLACEHOLDER_WORD:
@@ -7678,27 +7611,13 @@ ASM_STORE_FIXUP_HAVE_ROOM:
                         RTS
 
 ASM_FIX_ADD_OPERAND_SIZE_X:
-                        LDA             #$01
-                        STA             ASM_TMP0_LO
+                        PHX
                         LDA             ASM_FIX_MODE,X
-                        CMP             #ASM_OPM_ABS16
-                        BEQ             ASM_FIX_ADD_SIZE_WORD
-                        CMP             #ASM_OPM_ABS_X
-                        BEQ             ASM_FIX_ADD_SIZE_WORD
-                        CMP             #ASM_OPM_ABS_Y
-                        BEQ             ASM_FIX_ADD_SIZE_WORD
-                        CMP             #ASM_OPM_ABS_IND
-                        BEQ             ASM_FIX_ADD_SIZE_WORD
-                        CMP             #ASM_OPM_ABS_X_IND
-                        BEQ             ASM_FIX_ADD_SIZE_WORD
-                        BRA             ASM_FIX_ADD_SIZE_APPLY
-ASM_FIX_ADD_SIZE_WORD:
-                        LDA             #$02
-                        STA             ASM_TMP0_LO
-ASM_FIX_ADD_SIZE_APPLY:
-                        LDA             ASM_FIX_BASE_LO,X
+                        TAX
+                        LDA             ASM_OPM_PATCH_BYTES,X
+                        PLX
                         CLC
-                        ADC             ASM_TMP0_LO
+                        ADC             ASM_FIX_BASE_LO,X
                         STA             ASM_FIX_BASE_LO,X
                         LDA             ASM_FIX_BASE_HI,X
                         ADC             #$00
@@ -8596,7 +8515,7 @@ ASM_STORE_OP_FROM_LOOKUP:
                         LDA             ASM_STMT_FLAGS
                         ORA             #ASM_STMTF_BINDS_PC
                         STA             ASM_STMT_FLAGS
-                        JMP             ASM_SET_TAIL_FROM_PARSE
+                        BRA             ASM_SET_TAIL_FROM_PARSE
 ASM_STORE_OP_DIR:
                         LDA             #ASM_STMT_DIR
                         STA             ASM_STMT_KIND
@@ -8621,7 +8540,6 @@ ASM_STORE_OP_DIR_BINDS_PC:
                         ORA             #ASM_STMTF_BINDS_PC
                         STA             ASM_STMT_FLAGS
 ASM_STORE_OP_DIR_TAIL:
-                        JMP             ASM_SET_TAIL_FROM_PARSE
 
 ASM_SET_TAIL_FROM_PARSE:
                         JSR             ASM_SKIP_SPACES
@@ -8688,15 +8606,15 @@ ASM_DISPATCH_DIR:
                         LDA             ASM_STMT_OP_ID
                         CMP             #ASM_VID_EQU
                         BNE             ASM_DISPATCH_DIR_NOT_EQU
-                        JMP             ASM_DISPATCH_DIR_EQU
+                        BRA             ASM_DISPATCH_DIR_EQU
 ASM_DISPATCH_DIR_NOT_EQU:
                         CMP             #ASM_VID_ORG
                         BNE             ASM_DISPATCH_DIR_NOT_ORG
-                        JMP             ASM_DISPATCH_DIR_ORG
+                        BRA             ASM_DISPATCH_DIR_ORG
 ASM_DISPATCH_DIR_NOT_ORG:
                         CMP             #ASM_VID_END
                         BNE             ASM_DISPATCH_DIR_NOT_END
-                        JMP             ASM_DISPATCH_DIR_END
+                        BRA             ASM_DISPATCH_DIR_END
 ASM_DISPATCH_DIR_NOT_END:
                         CMP             #ASM_VID_DB
                         BNE             ASM_DISPATCH_DIR_NOT_DB
@@ -8752,11 +8670,11 @@ ASM_DISPATCH_DIR_ORG_PARSED:
                         LDA             ASM_MODE
                         CMP             #ASM_SYMK_ADDR
                         BEQ             ASM_DISPATCH_DIR_ORG_ADDR
-                        JMP             ASM_DISPATCH_BAD_WIDTH
+                        BRA             ASM_DISPATCH_BAD_WIDTH
 ASM_DISPATCH_DIR_ORG_ADDR:
                         JSR             ASM_SET_PC_FROM_VALUE
                         BCS             ASM_DISPATCH_DIR_ORG_SET
-                        JMP             ASM_DISPATCH_FAIL_A
+                        BRA             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_DIR_ORG_SET:
                         JMP             ASM_DISPATCH_OK
 
@@ -8764,76 +8682,76 @@ ASM_DISPATCH_DIR_END:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_NAME
                         BEQ             ASM_DISPATCH_DIR_END_NO_NAME
-                        JMP             ASM_DISPATCH_BAD_SYM
+                        BRA             ASM_DISPATCH_BAD_SYM
 ASM_DISPATCH_DIR_END_NO_NAME:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BEQ             ASM_DISPATCH_DIR_END_NO_TAIL
-                        JMP             ASM_DISPATCH_BAD_OPER
+                        BRA             ASM_DISPATCH_BAD_OPER
 ASM_DISPATCH_DIR_END_NO_TAIL:
-                        JMP             ASM_DISPATCH_OK
+                        BRA             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_DATA:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BNE             ASM_DISPATCH_DIR_DATA_HAVE_TAIL
-                        JMP             ASM_DISPATCH_BAD_OPER
+                        BRA             ASM_DISPATCH_BAD_OPER
 ASM_DISPATCH_DIR_DATA_HAVE_TAIL:
-                        JMP             ASM_DISPATCH_OK
+                        BRA             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_DB:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BNE             ASM_DISPATCH_DIR_DB_HAVE_TAIL
-                        JMP             ASM_DISPATCH_BAD_OPER
+                        BRA             ASM_DISPATCH_BAD_OPER
 ASM_DISPATCH_DIR_DB_HAVE_TAIL:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_NAME
                         BEQ             ASM_DISPATCH_DIR_DB_NO_NAME
                         JSR             ASM_BIND_LABEL
                         BCS             ASM_DISPATCH_DIR_DB_BOUND
-                        JMP             ASM_DISPATCH_FAIL_A
+                        BRA             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_DIR_DB_BOUND:
 ASM_DISPATCH_DIR_DB_NO_NAME:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_EMIT_DB
                         BCS             ASM_DISPATCH_DIR_DB_EMITTED
-                        JMP             ASM_DISPATCH_FAIL_A
+                        BRA             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_DIR_DB_EMITTED:
-                        JMP             ASM_DISPATCH_OK
+                        BRA             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_DS:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BNE             ASM_DISPATCH_DIR_DS_HAVE_TAIL
-                        JMP             ASM_DISPATCH_BAD_OPER
+                        BRA             ASM_DISPATCH_BAD_OPER
 ASM_DISPATCH_DIR_DS_HAVE_TAIL:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_NAME
                         BEQ             ASM_DISPATCH_DIR_DS_NO_NAME
                         JSR             ASM_BIND_LABEL
                         BCS             ASM_DISPATCH_DIR_DS_BOUND
-                        JMP             ASM_DISPATCH_FAIL_A
+                        BRA             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_DIR_DS_BOUND:
 ASM_DISPATCH_DIR_DS_NO_NAME:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_EMIT_DS
                         BCS             ASM_DISPATCH_DIR_DS_EMITTED
-                        JMP             ASM_DISPATCH_FAIL_A
+                        BRA             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_DIR_DS_EMITTED:
-                        JMP             ASM_DISPATCH_OK
+                        BRA             ASM_DISPATCH_OK
 
 ASM_DISPATCH_BAD_SYM:
                         LDA             #ASM_STATUS_BAD_SYM
-                        JMP             ASM_DISPATCH_FAIL_A
+                        BRA             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_BAD_OPER:
                         LDA             #ASM_STATUS_BAD_OPER
-                        JMP             ASM_DISPATCH_FAIL_A
+                        BRA             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_BAD_WIDTH:
                         LDA             #ASM_STATUS_BAD_WIDTH
-                        JMP             ASM_DISPATCH_FAIL_A
+                        BRA             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_STORED_FAIL:
                         LDA             ASM_STMT_STATUS
 
@@ -9982,7 +9900,6 @@ ASM_CLASS_HAVE_TOKEN:
                         BEQ             ASM_CLASS_IMMEDIATE
                         CMP             #'('
                         BEQ             ASM_CLASS_INDIRECT
-                        JMP             ASM_CLASS_NOT_IMMEDIATE
 
 ASM_CLASS_NOT_IMMEDIATE:
                         JSR             ASM_CLASS_LOAD_ATOM
@@ -11669,6 +11586,10 @@ ASM_FIX_HASH2:         DS              ASM_FIX_MAX
 ASM_FIX_HASH3:         DS              ASM_FIX_MAX
 ASM_FIX_NAME_LEN:      DS              ASM_FIX_MAX
 ASM_FIX_NAME_TEXT:     DS              ASM_FIX_NAME_BYTES
+ASM_OPM_PATCH_BYTES:
+                        DB              $00,$00,$01,$01,$02,$01,$02,$01
+                        DB              $01,$02,$01,$01,$01,$02,$02,$01
+                        DB              $01
                         IF              ASM_RUNTIME_ONLY
                         ELSE
 ASM_REPL_LINE_BUF:     DS              $0100
