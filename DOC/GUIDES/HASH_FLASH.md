@@ -29,6 +29,33 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: ASM EQU/ORG Expressions Gain Resolved +/- Math
+
+```text
+2026
+         06
+                09
+                   02:15Z WLP2 ASM_PARSE_EXPR now resolves known symbols and
+                               concrete + / - expression chains for EQU/ORG.
+```
+
+Current ASM v1 expression math is intentionally narrow:
+
+```text
+X EQU $0001
+Y EQU X+1
+SIZE EQU END_ADDR-START_ADDR
+ORG $7000+16
+```
+
+`ADDR + VALUE`, `VALUE + ADDR`, and `ADDR - VALUE` keep address width and range
+check it. `ADDR - ADDR` returns a scalar `VALUE` delta. Unknown compound
+expressions such as `FOO+1` are still rejected until fixup addends or forward
+`EQU` dependency solving exist.
+
+Raw instruction operands and DB/DS lists still use their existing atom parsers;
+stage operand math through an `EQU` for now, then use the resolved symbol.
+
 ## REHASH: Current HIMON K Bits And Catalog-Linking Direction
 
 ```text

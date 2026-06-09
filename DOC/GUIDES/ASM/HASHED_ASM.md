@@ -1402,19 +1402,20 @@ lookup answer must still be proven before ASM trusts the value.
 
 ## ASM 1.80 Expression Evaluator
 
-ASM 1.80 evaluates the small v1 expression language used by `EQU`, `ORG`, `DB`,
-`DS`, immediates, branch targets, and operand address fields. The source syntax
-is readable infix. RPN is allowed only as an internal implementation form.
+ASM 1.80 evaluates the small v1 expression language. The current source slice
+routes `ASM_PARSE_EXPR` through `EQU` and `ORG`; `DB`/`DS` lists and instruction
+operands still use their atom-specific parsers until caller terminator flags are
+added. The source syntax is readable infix. RPN is allowed only as an internal
+implementation form.
 
 Expression-evaluator jobs:
 
 ```text
-parse one expression from the current operand/directive tail
-resolve known symbols through ASM_LOOKUP_SYMBOL
-return value, kind, width, care mask, and selector flags
-honor strict left-to-right operator evaluation
+parse one resolved expression from the current directive tail
+resolve known RAM-session symbols through ASM_LOOKUP_SYMBOL
+return value, kind, width, and care mask
+honor strict left-to-right + and - evaluation
 reject grouping parentheses in expression context
-return single-symbol unresolved results when the caller allows fixups
 ```
 
 Not expression-evaluator jobs:
@@ -1426,19 +1427,22 @@ creating fixup rows directly
 defining symbols
 deciding DB/DS list structure
 moving the assembly PC
+creating unresolved-symbol fixup addends
 ```
 
 The evaluator tells the truth about the expression. The caller decides whether
-that result is legal for `EQU`, `ORG`, `DB`, a branch, or an instruction operand.
+that result is legal for `EQU`, `ORG`, `DB`, a branch, or an instruction operand
+as each caller is wired to the evaluator.
 
 ### ASM 1.80.1 Expression Boundary
 
-`ASM_PARSE_EXPR` parses one expression and stops at the caller's terminator:
+Current `ASM_PARSE_EXPR` parses one expression and stops only at expression-tail
+terminators:
 
 ```text
-EOL/comment       normal end for EQU/ORG/operand tail
-comma             normal end for DB/DS lists and multi-part operands
-right paren       normal end inside addressing forms when caller permits it
+NUL/EOL/comment   normal end for EQU/ORG tail
+comma             future DB/DS and indexed-operand terminator
+right paren       future terminator inside addressing forms
 ```
 
 The terminator is not part of the expression result. The caller owns the list or
@@ -1446,17 +1450,19 @@ operand grammar around the expression.
 
 ### ASM 1.80.2 Source Grammar
 
-V1 expression grammar:
+Current executable expression grammar:
 
 ```text
 expr      term { op term }*
-term      [selector] atom
-selector  < | >
 atom      decimal | hex | binary/mask | char | symbol | *
-op        one of + - | & ^
+op        one of + -
 ```
 
-The source syntax has no precedence:
+The target v1 language reserves `<`/`>` selectors and `|`, `&`, `^` logical/mask
+operators, but those are still separate operand/DB atom paths or future
+expression work in the current source slice.
+
+The target source syntax has no precedence:
 
 ```text
 A | B & C means (A | B) & C
@@ -1465,8 +1471,8 @@ A | B & C means (A | B) & C
 Parentheses are not expression grouping in v1. They remain operand punctuation
 for addressing forms such as `LDA ($12),Y`.
 
-`<` and `>` are prefix selectors on the following atom in v1. For selected
-compound values, stage the value through an `EQU`:
+`<` and `>` are prefix selectors on the following atom in the target v1
+language. For selected compound values, stage the value through an `EQU`:
 
 ```asm
 TMP EQU ADDR + 1
@@ -1500,56 +1506,61 @@ instead of storing a separate record.
 name        ASM_PARSE_EXPR
 purpose     parse and evaluate one v1 expression
 
-inputs      ASM_PARSE_PTR points at the first expression token
-            A flags:
-              bit0 allow one unresolved symbol result
-              bit1 mark symbol use/reference
-              bit2 comma may terminate expression
-              bit3 right paren may terminate expression
+inputs      X/Y points at the first byte of the expression tail
 
 outputs     C=1,A=OK with expression result fields filled
             C=0,A=status with error token/name stored if available
-            X/Y = ASM_PARSE_PTR after the expression, at the terminator
+            success: X/Y = expression value low/high
+            failure: X/Y = token pointer for the failing token
 
-carry       C=1 expression accepted, including allowed unresolved result
+carry       C=1 expression accepted
             C=0 expression rejected
 
 preserves   caller line buffer contents
 clobbers    A,X,Y,P, expression/token/symbol scratch
 ZP          ASM_PARSE_PTR, ASM_TOKEN_PTR, ASM_VALUE, ASM_CARE, ASM_WIDTH,
             ASM_FLAGS, ASM_HASH32, ASM_LEN, ASM_SLOT, ASM_STATUS
-RAM         reference rows/use counts if mark-use is set
+RAM         symbol use counts/references when known symbols are read
 stack       balanced; internal RPN scratch optional
 calls       ASM_NEXT_TOKEN, ASM_LOOKUP_SYMBOL, expression apply helpers
 
-errors      BAD OPER, BAD SYM, BAD WIDTH, BAD RANGE, BAD FIX, LOCAL NYI
+errors      BAD OPER, BAD SYM, BAD WIDTH, BAD RANGE
 ```
 
-Known examples:
+Current examples:
 
 ```asm
 COUNT EQU 10
-ADDR  EQU * - $20
-FLAGS EQU ERR_1 | ERR_2
-DB    'A'
-DB    <ADDR,>ADDR
+BASE  EQU $7000
+NEXT  EQU BASE+1
+SIZE  EQU NEXT-BASE
+ADDR  EQU * - 32
+ORG   $7000+16
 ```
+
+In the current executable slice, use a value operand for address offsets.
+Subtracting two address-typed expressions gives a scalar delta, as in
+`SIZE EQU END_ADDR-START_ADDR`.
 
 ### ASM 1.80.5 Operator Rules
 
 `+` and `-` are for known concrete values and addresses, not masks. Arithmetic
-does not promote or demote address width. The left operand carries the result's
-address-width intent, and the final value must fit that width.
+does not promote or demote address width. `ADDR + VALUE`, `VALUE + ADDR`, and
+`ADDR - VALUE` keep address-width intent and range-check the final value.
+`ADDR - ADDR` gives a `VALUE/NONE` delta. `ADDR + ADDR` and `VALUE - ADDR` are
+`BAD WIDTH`.
 
 ```text
-* - $20       left side is ABS, result remains ABS if in range
+* - 32        left side is ABS, result remains ABS if in range
 $12 + 1       left side is ZP, result must still fit ZP
 $00FF + 1     left side is ABS, result remains ABS if in range
+$0012-$0011   VALUE/NONE delta
 10 + 1        VALUE/NONE result
 ```
 
-`|`, `&`, and `^` are for known same-width values or masks. Mask operands carry
-`value`, `care`, and `width`.
+`|`, `&`, and `^` are target v1 logical/mask operators still to implement in
+`ASM_PARSE_EXPR`. They are for known same-width values or masks. Mask operands
+carry `value`, `care`, and `width`.
 
 ```text
 OR   known if both inputs are known, or either input is known 1

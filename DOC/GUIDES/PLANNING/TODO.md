@@ -75,6 +75,12 @@
   flush/read-timeout callbacks. First users: ASM paste abort, load abort,
   monitor command parse failure after pasted bursts, and future host-transfer
   recovery.
+- Next ASM onboard pass: board-test the host-proven expression-math slice that
+  was deliberately not hardware-tested in the commit that added resolved
+  `+`/`-` for `EQU`/`ORG`. Load the current ASM image, run the smoke ladder,
+  and paste a short runtime proof covering known-symbol math (`X EQU $0001`,
+  `Y EQU X+1`), address deltas (`SIZE EQU END_ADDR-START_ADDR`), and
+  `ORG $7000+16` / backward-ORG rejection.
 - Add a tiny sorted-list helper for monitor tables such as breakpoint listing.
   `B L` may print slot order for now, but sorted address order will be easier
   to read once multiple breakpoints are active. For the current four breakpoint

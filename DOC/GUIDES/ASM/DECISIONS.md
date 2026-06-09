@@ -292,22 +292,23 @@ A [addr] [label[:]] MMM [operand] .
 - ASM 1.80 owns the v1 expression evaluator. Source expressions are readable
   infix; internal RPN is allowed only as an implementation form when it saves
   W65C02S code.
-- `ASM_PARSE_EXPR` parses one expression from `ASM_PARSE_PTR` and returns
-  `KNOWN`, allowed `UNRESOLVED`, or `ERROR` with kind, width, value, care mask,
-  selector flags, and unresolved symbol name/hash when applicable. Caller flags
-  control whether one unresolved symbol is allowed and whether comma/right-paren
-  may terminate the expression.
-- ASM 1.80 grammar is `term {op term}*`, where a term is optional `<`/`>`
-  selector plus decimal, hex, binary/mask, character literal, symbol, or `*`.
-  Operators are `+`, `-`, `|`, `&`, and `^`.
+- Current `ASM_PARSE_EXPR` parses one expression from X/Y through
+  NUL/CR/LF/comment and returns a resolved result with kind, width, value, and
+  care mask. It resolves known RAM-session symbols and rejects unknown symbols
+  as `BAD SYM`. Unresolved expression results, caller terminator flags, and
+  fixup addends are later work.
+- ASM 1.80 current grammar is `term {op term}*`, where a term is decimal, hex,
+  binary/mask, character literal, known symbol, or `*`. Current executable
+  operators are `+` and `-`; `<`/`>` selectors and `|`, `&`, `^` remain v1
+  design targets until the operand/DB expression boundary is unified.
 - ASM 1.80 preserves the standout rule: expressions evaluate strictly
   left-to-right, with no operator precedence and no grouping parentheses.
 - `+` and `-` require known concrete values/addresses, not masks. Arithmetic
   keeps the left operand's address-width intent and range-checks the result; it
   does not promote or demote.
-- `|`, `&`, and `^` require known same-width values or masks. Mask results carry
-  value/care/width and may normalize to `VALUE` only when the care mask becomes
-  all ones.
+- Future `|`, `&`, and `^` require known same-width values or masks. Mask
+  results carry value/care/width and may normalize to `VALUE` only when the care
+  mask becomes all ones.
 - V1 unresolved expression results are limited to `SYMBOL`, `<SYMBOL`, and
   `>SYMBOL`. Compound unresolved expressions such as `FOO+1`, `>FOO+1`, and
   forward `NEXT EQU BASE+1` are not v1 until addend fixups or an `EQU`
@@ -364,13 +365,15 @@ A [addr] [label[:]] MMM [operand] .
   `COUNT EQU 10`, `ERR_1 EQU %XXXXXXX1`, `ERR_2 EQU %XXXXXX1X`, and
   `FLAGS EQU ERR_1 | ERR_2`.
 - `*` is the current assembly PC/location counter when used as an expression
-  term. `ADDR EQU * - $20` is not a forward `EQU`; it resolves immediately from
-  the current PC and a known literal. Because `*` is an address, the result is
-  an absolute/word-width value if it remains in `$0000-$FFFF`; underflow or
-  overflow is `BAD RANGE`.
-- ASM v1 expression operators are `+`, `-`, `|`, `&`, and `^`. Evaluation is
-  strictly left-to-right with no operator precedence. `A | B & C` means
-  `(A | B) & C`. Use a separate `EQU` if a staged result is needed.
+  term. `ADDR EQU * - 32` is not a forward `EQU`; it resolves immediately from
+  the current PC and a known value. Because `*` is an address, `ADDR - VALUE`
+  keeps address width if it remains in range. `ADDR - ADDR` produces a scalar
+  `VALUE` delta.
+- Current executable ASM v1 expression operators are `+` and `-`; `|`, `&`,
+  and `^` are reserved v1 logical/mask operators still to implement. Evaluation
+  is strictly left-to-right with no operator precedence. `A | B & C` will mean
+  `(A | B) & C` once logical operators land. Use a separate `EQU` if a staged
+  result is needed.
 - Unary minus is not v1 syntax. Use `0-1` if needed, then let the target context
   range-check the result. `DB -1` is `BAD OPER`.
 - Parentheses are not expression grouping in v1. `(` and `)` remain operand
@@ -385,7 +388,7 @@ A [addr] [label[:]] MMM [operand] .
   carries value, care mask, and width. `%XXXXXXX1` records value `$01`, care
   mask `$01`, width 8. `%XXXXXX1X` records value `$02`, care mask `$02`, width
   8. Concrete values carry an all-ones care mask.
-- For v1 mask/logical expressions, `|`, `&`, and `^` require known same-width
+- Future v1 mask/logical expressions `|`, `&`, and `^` require known same-width
   operands. Result kind is `MASK` if either input is `MASK`. Care-mask rules:
   OR is known if both inputs are known or either input is known 1; AND is known
   if both inputs are known or either input is known 0; XOR is known only if both

@@ -4300,9 +4300,11 @@ Current executable proof:
 make -C SRC asm-v1-core
 ```
 
-The standalone `START` smoke path now checks the resolved one-atom foothold
-used by `ORG` and `EQU`. Operators, symbols, selectors, and fixups remain
-future expression work.
+The standalone `START` smoke path now checks resolved expression math used by
+`ORG` and `EQU`: one-atom values, current-PC `*`, known session symbols, and
+strict left-to-right `+`/`-` over concrete values/addresses. Raw operand-tail
+math, DB/DS list expressions, selectors, logical/mask operators, forward `EQU`
+chains, and fixup addends remain future expression work.
 
 Current fixtures:
 
@@ -4313,13 +4315,17 @@ $0012                 -> ADDR/ABS
 'A'                   -> VALUE/BYTE
 %XXXXXXX1             -> MASK/MASK8
 *                     -> ADDR/ABS current PC
+$0012+1               -> ADDR/ABS $0013
+$12+1                 -> ADDR/ZP $13
+$0012-$0011           -> VALUE/NONE $0001
+$FF+1                 -> BAD RANGE
 $12 $34               -> BAD OPER
 ```
 
 Future fixtures:
 
 ```text
-* - $20               -> ADDR/ABS if in range
+* - 32                -> ADDR/ABS if in range
 ERR_1 | ERR_2         -> MASK or VALUE by care result
 FOO unresolved allowed -> UNRESOLVED
 <FOO unresolved allowed -> UNRESOLVED FORCE_LO
@@ -4335,6 +4341,8 @@ no precedence
 no grouping parentheses
 selectors apply to one atom in v1
 EQU unresolved is rejected
+ADDR - ADDR returns a VALUE delta
+ADDR +/- VALUE keeps ADDR width and range-checks it
 ```
 
 ### ASM 1.90 Operand Classifier
