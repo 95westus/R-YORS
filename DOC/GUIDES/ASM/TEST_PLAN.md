@@ -2928,6 +2928,54 @@ ASM RT PASTE OK
 >
 ```
 
+ASM 3.16 post-boundary duplicate-label recovery:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now repeats the label-only `AFTER` line after
+`LIMIT EQU *` and the first `AFTER` have both bound at `PC=$7E00`. The second
+`AFTER` must fail with `BAD SYM`, leave the active session at `PC=$7E00`, keep
+the symbol count at two, preserve the exact-fill byte at `$7DFF`, and allow a
+following `END` to finalize with the original `LIMIT` and `AFTER` symbols.
+
+Hardware-proven ASM 3.16 post-boundary duplicate-label recovery on 2026-06-09:
+the board loaded the `$3813` paste image, reached `PC=$7E00`, accepted
+`LIMIT EQU *` and the first label-only `AFTER`, rejected the duplicate `AFTER`
+with `BAD SYM PC=$7E00`, then finalized with one `LIMIT` row and one `AFTER`
+row at `7E00`. `$7DFF` remained the exact-fill `EA`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> LIMIT EQU *
+OK PC=$7E00
+ASM> AFTER
+OK PC=$7E00
+ASM> AFTER
+ERR=$08 BAD SYM PC=$7E00
+ASM> END
+OK PC=$7E00
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7E00  01 04 16 0003 00  0000  LIMIT
+01 01 7E00  01 04 0E 0004 00  0000  AFTER
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7DFF 7DFF
+7DFF: EA | .
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and

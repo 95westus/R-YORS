@@ -5562,3 +5562,44 @@ Interpretation: after reaching `PC=$7E00`, emitting lines still failed with
 `BAD RANGE`, but `LIMIT EQU *` and label-only `AFTER` both succeeded without
 writing memory. The symbol table records both at `7E00`, and the dump proves
 `$7DFF` remained `EA`.
+
+## 2026-06-09 ASM Current `$3813` Post-Boundary Duplicate-Label Recovery
+
+Purpose: prove that duplicate label-only binding fails cleanly at the protected
+limit while the original symbols, PC, and exact-fill byte remain intact enough
+for `END` finalization.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> LIMIT EQU *
+OK PC=$7E00
+ASM> AFTER
+OK PC=$7E00
+ASM> AFTER
+ERR=$08 BAD SYM PC=$7E00
+ASM> END
+OK PC=$7E00
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7E00  01 04 16 0003 00  0000  LIMIT
+01 01 7E00  01 04 0E 0004 00  0000  AFTER
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7DFF 7DFF
+7DFF: EA | .
+```
+
+Interpretation: the duplicate `AFTER` line failed with `BAD SYM` at
+`PC=$7E00`, but the session still finalized. The symbol table contains the
+original `LIMIT` and `AFTER` rows only, both at `7E00`, and `$7DFF` remained
+`EA`.
