@@ -155,6 +155,7 @@ ASM_SMOKE_TARGET_BACK_LO EQU           $0F
 ASM_SMOKE_DATA_HI      EQU             $71
 ASM_TARGET_LIMIT_HI    EQU             $7E
 ASM_TARGET_MAX_HI      EQU             $7D
+ASM_TARGET_THIRD_ADDR  EQU             $7DFD
 ASM_TARGET_PENULT_ADDR EQU             $7DFE
 ASM_TARGET_LAST_ADDR   EQU             $7DFF
 
@@ -2706,9 +2707,90 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_TWO:
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_TWO_FAIL
                         LDA             ASM_TARGET_LAST_ADDR
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_TWO_FAIL
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_TWO_FAIL:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$FD
+                        LDY             #ASM_TARGET_MAX_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_FAIL
+                        STZ             ASM_TARGET_THIRD_ADDR
+                        STZ             ASM_TARGET_PENULT_ADDR
+                        STZ             ASM_TARGET_LAST_ADDR
+                        LDX             #<ASM_CLASS_LDA_ABS
+                        LDY             #>ASM_CLASS_LDA_ABS
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_FAIL
+                        LDA             ASM_TARGET_THIRD_ADDR
+                        CMP             #$AD
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_FAIL
+                        LDA             ASM_TARGET_PENULT_ADDR
+                        CMP             #$12
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_FAIL
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_FAIL:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$FD
+                        LDY             #ASM_TARGET_MAX_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE_FAIL
+                        STZ             ASM_TARGET_THIRD_ADDR
+                        STZ             ASM_TARGET_PENULT_ADDR
+                        STZ             ASM_TARGET_LAST_ADDR
+                        LDX             #<ASM_SMOKE_TXN_DB_THREE
+                        LDY             #>ASM_SMOKE_TXN_DB_THREE
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE_FAIL
+                        LDA             ASM_TARGET_THIRD_ADDR
+                        CMP             #$12
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE_FAIL
+                        LDA             ASM_TARGET_PENULT_ADDR
+                        CMP             #$34
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$56
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE_FAIL
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE_FAIL:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$FD
+                        LDY             #ASM_TARGET_MAX_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_FAIL
+                        LDA             #$A5
+                        STA             ASM_TARGET_THIRD_ADDR
+                        STA             ASM_TARGET_PENULT_ADDR
+                        STA             ASM_TARGET_LAST_ADDR
+                        LDX             #<ASM_SMOKE_TXN_DS_THREE
+                        LDY             #>ASM_SMOKE_TXN_DS_THREE
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_FAIL
+                        LDA             ASM_TARGET_THIRD_ADDR
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_FAIL
+                        LDA             ASM_TARGET_PENULT_ADDR
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_FAIL
                         SEC
                         RTS
-ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_TWO_FAIL:
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_FAIL:
                         JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK:
                         LDA             ASM_SESSION_STATE
@@ -11724,6 +11806,10 @@ ASM_SMOKE_TXN_DB_PAIR: DB              "        DB $12,$34",0
 ASM_SMOKE_TXN_DS_PAIR: DB              "        DS 2,$00",0
 ASM_SMOKE_TXN_DB_ONE:  DB              "        DB $A5",0
 ASM_SMOKE_TXN_DS_ONE:  DB              "        DS 1,$5C",0
+ASM_SMOKE_TXN_DB_THREE:
+                        DB              "        DB $12,$34,$56",0
+ASM_SMOKE_TXN_DS_THREE:
+                        DB              "        DS 3,$00",0
 ASM_SMOKE_TXN_BNE_FOO: DB              "        BNE FOO",0
 ASM_SMOKE_TXN_FOO_STA_IMM:
                         DB              "FOO STA #$12",0

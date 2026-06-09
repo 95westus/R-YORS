@@ -2437,6 +2437,59 @@ ASM RT PASTE BYE
 >
 ```
 
+ASM 3.08 three-byte exact-fill boundary proof on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now also proves three-byte exact fills at the top
+of the protected target window. Starting at `$7DFD`, `LDA $0012`,
+`DB $12,$34,$56`, and `DS 3,$00` all succeed, finish at PC/high-water `$7E00`,
+and write exactly `$7DFD-$7DFF`. The current runtime paste image remains
+`asm-v1-runtime-paste-2000.s19` total `$3813`.
+
+Board retest for ASM 3.08 can reuse the `$3813` paste image. Each three-byte
+row should report `OK PC=$7E00`, and each dump should show the final three
+bytes written at `$7DFD-$7DFF`:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFD
+OK PC=$7DFD
+ASM> LDA $0012
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFD 7DFF
+7DFD: AD 12 00 | ...
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFD
+OK PC=$7DFD
+ASM> DB $12,$34,$56
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFD 7DFF
+7DFD: 12 34 56 | .4V
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFD
+OK PC=$7DFD
+ASM> DS 3,$00
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFD 7DFF
+7DFD: 00 00 00 | ...
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and
