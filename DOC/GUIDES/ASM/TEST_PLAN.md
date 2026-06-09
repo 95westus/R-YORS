@@ -2976,6 +2976,56 @@ ASM RT PASTE OK
 7DFF: EA | .
 ```
 
+ASM 3.17 post-boundary duplicate-`EQU` recovery:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now repeats `LIMIT EQU *` after the first
+post-boundary `EQU *` succeeds at `PC=$7E00`. The second `LIMIT EQU *` must
+fail with `BAD SYM`, leave the active session at `PC=$7E00`, keep the symbol
+count at one, preserve `$7DFF=EA`, and allow the remaining non-emitting symbol
+checks plus `END` to recover.
+
+Hardware-proven ASM 3.17 post-boundary duplicate-`EQU` recovery on
+2026-06-09: the board loaded the `$3813` paste image, accepted the first
+post-boundary `LIMIT EQU *`, rejected the duplicate `LIMIT EQU *` with
+`BAD SYM PC=$7E00`, then finalized with one `LIMIT` row at `7E00` and left
+`$7DFF` as `EA`. The extra `ASM> L G` line was a prompt-mismatch artifact
+typed while already inside ASM; it failed as `BAD MNEM PC=$7000` before the
+proof sequence began.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> L G
+ERR=$01 BAD MNEM PC=$7000
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> LIMIT EQU *
+OK PC=$7E00
+ASM> LIMIT EQU *
+ERR=$08 BAD SYM PC=$7E00
+ASM> END
+OK PC=$7E00
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7E00  01 04 16 0004 00  0000  LIMIT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and

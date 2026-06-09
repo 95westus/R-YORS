@@ -5603,3 +5603,45 @@ Interpretation: the duplicate `AFTER` line failed with `BAD SYM` at
 `PC=$7E00`, but the session still finalized. The symbol table contains the
 original `LIMIT` and `AFTER` rows only, both at `7E00`, and `$7DFF` remained
 `EA`.
+
+## 2026-06-09 ASM Current `$3813` Post-Boundary Duplicate-`EQU` Recovery
+
+Purpose: prove that duplicate `EQU` definition fails cleanly at the protected
+limit while the original symbol, PC, and exact-fill byte remain intact enough
+for `END` finalization.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> L G
+ERR=$01 BAD MNEM PC=$7000
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> LIMIT EQU *
+OK PC=$7E00
+ASM> LIMIT EQU *
+ERR=$08 BAD SYM PC=$7E00
+ASM> END
+OK PC=$7E00
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7E00  01 04 16 0004 00  0000  LIMIT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
+Interpretation: the duplicate `LIMIT EQU *` line failed with `BAD SYM` at
+`PC=$7E00`, but the session still finalized. The symbol table contains the
+original `LIMIT` row only at `7E00`, and `$7DFF` remained `EA`. The initial
+`ASM> L G` line was a prompt-mismatch artifact while already inside ASM and is
+not part of the duplicate-`EQU` proof.
