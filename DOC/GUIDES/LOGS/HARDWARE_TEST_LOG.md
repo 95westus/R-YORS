@@ -4490,3 +4490,135 @@ were resolved, and the emitted program returned normally after printing
 `SUM=80 FAIL=00`. This is a hardware proof that the paste path can carry a
 larger useful program when it avoids unresolved resident helpers and stays
 within the current session table limits.
+
+## 2026-06-09 ASM Current `$36B8` Fixup Rollback Retest
+
+Purpose: retest the transactional fixup-patch rollback proof against the
+current `asm-v1-runtime-paste-2000.s19` image. This verifies that the larger
+paste runtime still restores the pending branch fixup after a failed defining
+line, then resolves it cleanly when the corrected line is accepted.
+
+```text
+HIMON V 00.0608(1850)
+>L G
+L S19
+L @2000
+L OK=36B8 GO=2000
+ASM RT PASTE
+ASM> ORG $75D0
+OK PC=$75D0
+ASM> BNE FOO
+OK PC=$75D2
+ASM> FOO STA #$12
+ERR=$04 BAD MODE PC=$75D2
+ASM> FOO NOP
+OK PC=$75D3
+ASM> END
+OK PC=$75D3
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 75D2  01 04 0E 0004 00  0000  FOO
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  75D1 75D2 FOO
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=83 Y=0F P=75 S=FD NV-BdIzC
+>D 75D0 75D2
+75D0: D0 00 EA | ...
+>
+```
+
+Interpretation: the current `$36B8` paste image matches the expected rollback
+behavior. `FOO STA #$12` fails with `BAD MODE` at the restored `$75D2`, the
+session remains active, `FOO NOP` is accepted at `$75D2`, and the final dump
+shows the resolved branch plus `NOP` as `D0 00 EA`.
+
+## 2026-06-09 ASM Current `$36B8` ASMTEST_3000 Paste/Run Proof
+
+Purpose: prove the current `asm-v1-runtime-paste-2000.s19` image can still
+paste, assemble, finalize, run, and verify the full `ASMTEST_3000` acceptance
+sample. The source assembles at `$6800`, copies the 16-byte seed to
+`$6900-$690F`, stores the XOR checksum at `$6910`, and returns by `RTS`.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ; ASM V1 SMOKE TEST. PASTE/LOAD AS ASM SOURCE.
+OK PC=$7000
+ASM> ; RUN AT $6800, THEN DISPLAY $6900-$6910.
+OK PC=$7000
+ASM> ; EXPECTED: $6900-$690F SEED, $6910 CHECKSUM $0F.
+OK PC=$7000
+ASM>
+ASM>         ORG $6800
+OK PC=$6800
+ASM>
+ASM> OUT EQU $6900
+OK PC=$6800
+ASM> SUM EQU $6910
+OK PC=$6800
+ASM> COUNT EQU 16
+OK PC=$6800
+ASM>
+ASM> ASMTEST LDX #0
+OK PC=$6802
+ASM>         STZ SUM
+OK PC=$6805
+ASM> LOOP    LDA SEED,X
+OK PC=$6808
+ASM>         STA OUT,X
+OK PC=$680B
+ASM>         EOR SUM
+OK PC=$680E
+ASM>         STA SUM
+OK PC=$6811
+ASM>         INX
+OK PC=$6812
+ASM>         CPX #COUNT
+OK PC=$6814
+ASM>         BNE LOOP
+OK PC=$6816
+ASM>         RTS
+OK PC=$6817
+ASM>
+ASM> SEED    DB $52,$2D,$59,$4F,$52,$53,$20,$41
+OK PC=$681F
+ASM>         DB $53,$4D,$20,$54,$45,$53,$54,$2E
+OK PC=$6827
+ASM>         END
+OK PC=$6827
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 6900  01 04 17 0005 01  000B  OUT
+01 01 6910  01 04 17 0006 03  0009  SUM
+02 01 0010  00 00 17 0007 01  000F  COUNT
+03 01 6800  01 04 0E 0008 00  0000  ASMTEST
+04 01 6805  01 04 0F 000A 01  0010  LOOP
+05 01 6817  01 04 0E 0012 00  0000  SEED
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 06   00  6806 6808 SEED
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=83 Y=0F P=75 S=FD NV-BdIzC
+>G 6800
+GO 6800
+
+#GO# ENTRY=6800
+RET A=0F X=10 Y=30 P=77 S=FD NV-BdIZC
+>D 6900 6910
+6900: 52 2D 59 4F 52 53 20 41 | 53 4D 20 54 45 53 54 2E | R-YORS ASM TEST.
+6910: 0F | .
+>
+```
+
+Interpretation: `END` completed at `$6827`, the emitted program returned with
+`A=$0F` and `X=$10`, and the post-run dump matches the 16-byte seed plus
+checksum oracle. This completes the current `$36B8` full ASMTEST_3000 board
+proof.

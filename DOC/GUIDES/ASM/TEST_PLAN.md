@@ -2130,6 +2130,18 @@ ASM RT PASTE OK
 >
 ```
 
+Current-build retest on 2026-06-09 with HIMON `V 00.0608(1850)`: the board
+loaded `asm-v1-runtime-paste-2000.s19` as `L OK=36B8 GO=2000`, repeated the
+same rollback sequence, finalized through `END`, printed the `FOO` symbol and
+mode `$07` fixup row, and dumped `D0 00 EA` at `$75D0-$75D2`. This keeps the
+transactional rollback proof current after later runtime growth.
+
+Current-build ASMTEST_3000 proof on 2026-06-09 with the same `$36B8` paste
+image: the board accepted the full sample through `END` at `PC=$6827`, ran
+`G 6800` to `RET A=0F X=10`, and dumped `$6900-$6910` as
+`52 2D 59 4F 52 53 20 41 53 4D 20 54 45 53 54 2E 0F`. This keeps the minimum
+ASMTEST_3000 bench gate current for the latest runtime paste build.
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and
