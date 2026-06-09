@@ -5473,3 +5473,46 @@ ASM RT PASTE OK
 Interpretation: `END` finalized cleanly from `PC=$7E00` after the preceding
 hard-stop errors. Empty symbol/fixup tables printed normally, and the final
 dump proves `$7DFF` remained the exact-fill `EA`.
+
+## 2026-06-09 ASM Current `$3813` Post-Boundary Non-Emitting `EQU *`
+
+Purpose: prove that non-emitting symbol definition remains legal after
+exact-fill emission reaches `PC=$7E00`, while further emitting lines are still
+blocked by the protected target guard.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> LDA #$12
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DB $A5
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DS 1,$5C
+ERR=$06 BAD RANGE PC=$7E00
+ASM> LIMIT EQU *
+OK PC=$7E00
+ASM> END
+OK PC=$7E00
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7E00  01 04 16 0006 00  0000  LIMIT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
+Interpretation: after the session reached `PC=$7E00`, emitting lines still
+failed with `BAD RANGE`, but `LIMIT EQU *` succeeded without writing memory.
+The symbol table records `LIMIT=$7E00`, and the dump proves `$7DFF` remained
+the exact-fill `EA`.

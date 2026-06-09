@@ -2967,6 +2967,12 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP:
                         LDA             ASM_TARGET_LAST_ADDR
                         CMP             #$EA
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDX             #<ASM_SMOKE_TXN_LIMIT_EQU
+                        LDY             #>ASM_SMOKE_TXN_LIMIT_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
                         LDX             #<ASM_PARSE_AT_END
                         LDY             #>ASM_PARSE_AT_END
                         JSR             ASM_ASSEMBLE_LINE
@@ -3005,6 +3011,27 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK:
                         SEC
                         RTS
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK_FAIL:
+                        CLC
+                        RTS
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_CHECK:
+                        LDA             ASM_SYM_COUNT
+                        BEQ             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_FAIL
+                        TAX
+                        DEX
+                        LDA             ASM_SYM_KIND,X
+                        CMP             #ASM_SYMK_ADDR
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_FAIL
+                        LDA             ASM_SYM_WIDTH,X
+                        CMP             #ASM_WIDTH_ABS
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_FAIL
+                        LDA             ASM_SYM_VAL_LO,X
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_FAIL
+                        LDA             ASM_SYM_VAL_HI,X
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_FAIL:
                         CLC
                         RTS
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_PENULT_CHECK:
@@ -12029,6 +12056,8 @@ ASM_SMOKE_TXN_BNE_FOO: DB              "        BNE FOO",0
 ASM_SMOKE_TXN_FOO_STA_IMM:
                         DB              "FOO STA #$12",0
 ASM_SMOKE_TXN_FOO_NOP: DB              "FOO NOP",0
+ASM_SMOKE_TXN_LIMIT_EQU:
+                        DB              "LIMIT EQU *",0
 ASM_FIXUP_LDA_LO_FOO:  DB              "        LDA #<FOO",0
 ASM_FIXUP_LDA_HI_FOO:  DB              "        LDA #>FOO",0
 ASM_FIXUP_JSR_BAR:     DB              "        JSR BAR",0
