@@ -2519,34 +2519,97 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_TXN:
                         LDX             #$FF
                         LDY             #ASM_TARGET_MAX_HI
                         JSR             ASM_BEGIN
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A
                         LDA             #$5A
                         STA             ASM_TARGET_LAST_ADDR
                         LDX             #<ASM_SMOKE_TXN_LDA_IMM
                         LDY             #>ASM_SMOKE_TXN_LDA_IMM
                         JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ACTIVE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A
+                        LDA             ASM_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_TARGET_MAX_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A
+                        LDA             ASM_HIGH_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A
+                        LDA             ASM_HIGH_PC_HI
+                        CMP             #ASM_TARGET_MAX_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$5A
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL_A:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$FF
+                        LDY             #ASM_TARGET_MAX_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             #$6B
+                        STA             ASM_TARGET_LAST_ADDR
+                        LDX             #<ASM_SMOKE_TXN_DB_PAIR
+                        LDY             #>ASM_SMOKE_TXN_DB_PAIR
+                        JSR             ASM_ASSEMBLE_LINE
                         BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
                         CMP             #ASM_STATUS_BAD_RANGE
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
-                        LDA             ASM_SESSION_STATE
-                        CMP             #ASM_SESS_ACTIVE
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
-                        LDA             ASM_PC_LO
-                        CMP             #$FF
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
-                        LDA             ASM_PC_HI
-                        CMP             #ASM_TARGET_MAX_HI
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
-                        LDA             ASM_HIGH_PC_LO
-                        CMP             #$FF
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
-                        LDA             ASM_HIGH_PC_HI
-                        CMP             #ASM_TARGET_MAX_HI
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
                         LDA             ASM_TARGET_LAST_ADDR
-                        CMP             #$5A
+                        CMP             #$6B
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$FF
+                        LDY             #ASM_TARGET_MAX_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             #$7C
+                        STA             ASM_TARGET_LAST_ADDR
+                        LDX             #<ASM_SMOKE_TXN_DS_PAIR
+                        LDY             #>ASM_SMOKE_TXN_DS_PAIR
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$7C
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
                         SEC
+                        RTS
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK:
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ACTIVE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK_FAIL
+                        LDA             ASM_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK_FAIL
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_TARGET_MAX_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK_FAIL
+                        LDA             ASM_HIGH_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK_FAIL
+                        LDA             ASM_HIGH_PC_HI
+                        CMP             #ASM_TARGET_MAX_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK_FAIL:
+                        CLC
                         RTS
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL:
                         CLC
@@ -8267,6 +8330,22 @@ ASM_DISPATCH_OK:
 ; NOTE: ASM 2.30 supports resolved byte/word atoms only. DB fixups are later.
 ; ----------------------------------------------------------------------------
 ASM_EMIT_DB:
+                        STX             ASM_DB_TAIL_LO
+                        STY             ASM_DB_TAIL_HI
+                        STZ             ASM_DB_COUNT
+                        LDA             #$01
+                        STA             ASM_DB_COUNTING
+                        JSR             ASM_EMIT_DB_PASS
+                        BCC             ASM_EMIT_DB_RETURN
+                        LDA             ASM_DB_COUNT
+                        JSR             ASM_EMIT_ROOM_FOR_A
+                        BCS             ASM_EMIT_DB_ROOM_OK
+                        JMP             ASM_EMIT_DB_FAIL_A
+ASM_EMIT_DB_ROOM_OK:
+                        STZ             ASM_DB_COUNTING
+                        LDX             ASM_DB_TAIL_LO
+                        LDY             ASM_DB_TAIL_HI
+ASM_EMIT_DB_PASS:
                         STX             ASM_PARSE_PTR_LO
                         STY             ASM_PARSE_PTR_HI
 ASM_EMIT_DB_ITEM:
@@ -8298,6 +8377,9 @@ ASM_EMIT_DB_HAVE_TOKEN:
                         BNE             ASM_EMIT_DB_ITEM
                         SEC
 ASM_EMIT_DB_RETURN:
+                        BCS             ASM_EMIT_DB_RETURN_DONE
+                        STZ             ASM_DB_COUNTING
+ASM_EMIT_DB_RETURN_DONE:
                         RTS
 
 ASM_EMIT_DB_AFTER_ITEM:
@@ -8421,7 +8503,13 @@ ASM_EMIT_DB_ATOM_WORD:
                         STA             ASM_NAME_PTR_LO
                         LDA             ASM_TOKEN_PTR_HI
                         STA             ASM_NAME_PTR_HI
+                        LDA             ASM_DB_COUNTING
+                        BEQ             ASM_EMIT_DB_ATOM_WORD_MARK
+                        LDA             #ASM_SYM_LOOK_SESSION
+                        BRA             ASM_EMIT_DB_ATOM_WORD_LOOK
+ASM_EMIT_DB_ATOM_WORD_MARK:
                         LDA             #(ASM_SYM_LOOK_SESSION|ASM_SYM_LOOK_MARK_USE)
+ASM_EMIT_DB_ATOM_WORD_LOOK:
                         JSR             ASM_LOOKUP_SYMBOL
                         BCS             ASM_EMIT_DB_ATOM_WORD_OK
                         CMP             #ASM_STATUS_OK
@@ -8443,7 +8531,7 @@ ASM_EMIT_DB_ATOM_PUNCT:
                         CMP             #'>'
                         BEQ             ASM_EMIT_DB_ATOM_SEL_HI
                         LDA             #ASM_STATUS_BAD_OPER
-                        BRA             ASM_EMIT_DB_FAIL_A
+                        JMP             ASM_EMIT_DB_FAIL_A
 ASM_EMIT_DB_ATOM_PC:
                         LDA             ASM_PC_LO
                         STA             ASM_VALUE_LO
@@ -8476,12 +8564,27 @@ ASM_EMIT_DB_ATOM_SEL_PUNCT:
                         CMP             #'*'
                         BEQ             ASM_EMIT_DB_ATOM_PC
                         LDA             #ASM_STATUS_BAD_OPER
-                        BRA             ASM_EMIT_DB_FAIL_A
+                        JMP             ASM_EMIT_DB_FAIL_A
 
 ASM_EMIT_DB_VALUE:
                         LDA             ASM_MODE
                         CMP             #ASM_SYMK_MASK
-                        BEQ             ASM_EMIT_DB_BAD_WIDTH
+                        BNE             ASM_EMIT_DB_VALUE_KIND_OK
+                        JMP             ASM_EMIT_DB_BAD_WIDTH
+ASM_EMIT_DB_VALUE_KIND_OK:
+                        JSR             ASM_EMIT_DB_VALUE_LEN
+                        BCC             ASM_EMIT_DB_VALUE_LEN_FAIL
+                        LDA             ASM_DB_COUNTING
+                        BEQ             ASM_EMIT_DB_VALUE_EMIT
+                        LDA             ASM_DB_COUNT
+                        CLC
+                        ADC             ASM_TMP0_LO
+                        STA             ASM_DB_COUNT
+                        SEC
+                        RTS
+ASM_EMIT_DB_VALUE_LEN_FAIL:
+                        RTS
+ASM_EMIT_DB_VALUE_EMIT:
                         LDA             ASM_TMP1_LO
                         CMP             #ASM_FIX_SEL_LO
                         BEQ             ASM_EMIT_DB_VALUE_LO
@@ -8511,9 +8614,42 @@ ASM_EMIT_DB_VALUE_WORD:
                         LDA             ASM_VALUE_LO
                         LDX             ASM_VALUE_HI
                         JMP             ASM_EMIT_WORD_LE
+ASM_EMIT_DB_VALUE_LEN:
+                        LDA             ASM_TMP1_LO
+                        CMP             #ASM_FIX_SEL_LO
+                        BEQ             ASM_EMIT_DB_VALUE_LEN_BYTE
+                        CMP             #ASM_FIX_SEL_HI
+                        BEQ             ASM_EMIT_DB_VALUE_LEN_BYTE
+                        LDA             ASM_WIDTH
+                        CMP             #ASM_WIDTH_ABS
+                        BEQ             ASM_EMIT_DB_VALUE_LEN_WORD
+                        CMP             #ASM_WIDTH_WORD
+                        BEQ             ASM_EMIT_DB_VALUE_LEN_WORD
+                        CMP             #ASM_WIDTH_MASK8
+                        BEQ             ASM_EMIT_DB_VALUE_LEN_BAD_WIDTH
+                        CMP             #ASM_WIDTH_MASK16
+                        BEQ             ASM_EMIT_DB_VALUE_LEN_BAD_WIDTH
+                        CMP             #ASM_WIDTH_NONE
+                        BNE             ASM_EMIT_DB_VALUE_LEN_BYTE
+                        LDA             ASM_VALUE_HI
+                        BEQ             ASM_EMIT_DB_VALUE_LEN_BYTE
+ASM_EMIT_DB_VALUE_LEN_WORD:
+                        LDA             #$02
+                        STA             ASM_TMP0_LO
+                        SEC
+                        RTS
+ASM_EMIT_DB_VALUE_LEN_BYTE:
+                        LDA             #$01
+                        STA             ASM_TMP0_LO
+                        SEC
+                        RTS
+ASM_EMIT_DB_VALUE_LEN_BAD_WIDTH:
+                        LDA             #ASM_STATUS_BAD_WIDTH
+                        JMP             ASM_EMIT_DB_FAIL_A
 ASM_EMIT_DB_BAD_WIDTH:
                         LDA             #ASM_STATUS_BAD_WIDTH
 ASM_EMIT_DB_FAIL_A:
+                        STZ             ASM_DB_COUNTING
                         STA             ASM_STATUS
                         STA             ASM_LAST_STATUS
                         CLC
@@ -8575,6 +8711,10 @@ ASM_EMIT_DS_COUNT_SELECTOR_OK:
 ASM_EMIT_DS_COUNT_RANGE_OK:
                         LDA             ASM_VALUE_LO
                         STA             ASM_DS_COUNT
+                        JSR             ASM_EMIT_ROOM_FOR_A
+                        BCS             ASM_EMIT_DS_COUNT_ROOM_OK
+                        JMP             ASM_EMIT_DS_BAD_RANGE
+ASM_EMIT_DS_COUNT_ROOM_OK:
                         STZ             ASM_DS_FILL
                         STZ             ASM_DS_INIT_FLAG
                         STZ             ASM_DS_INIT_LEN
@@ -10844,6 +10984,7 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_FIX_PLAN_HASH3
                         STZ             ASM_FIX_PLAN_SEL
                         STZ             ASM_FIX_RESOLVE_COUNT
+                        STZ             ASM_DB_COUNTING
                         RTS
 
                         DATA
@@ -10943,6 +11084,10 @@ ASM_SMOKE_EXPECT_STATUS:
 ASM_SMOKE_REPORT_FLAGS:
                         DB              $00
                         ENDIF
+ASM_DB_COUNTING:       DB              $00
+ASM_DB_COUNT:          DB              $00
+ASM_DB_TAIL_LO:        DB              $00
+ASM_DB_TAIL_HI:        DB              $00
 ASM_DS_COUNT:          DB              $00
 ASM_DS_FILL:           DB              $00
 ASM_DS_INIT_FLAG:      DB              $00
@@ -11436,6 +11581,8 @@ ASM_SMOKE_TXN_BBR_RANGE:
                         DB              "        BBR 3,$12,$9000",0
 ASM_SMOKE_TXN_NOP:     DB              "        NOP",0
 ASM_SMOKE_TXN_LDA_IMM: DB              "        LDA #$12",0
+ASM_SMOKE_TXN_DB_PAIR: DB              "        DB $12,$34",0
+ASM_SMOKE_TXN_DS_PAIR: DB              "        DS 2,$00",0
 ASM_SMOKE_TXN_BNE_FOO: DB              "        BNE FOO",0
 ASM_SMOKE_TXN_FOO_STA_IMM:
                         DB              "FOO STA #$12",0

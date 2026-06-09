@@ -2238,6 +2238,57 @@ RET A=10 X=57 Y=10 P=75 S=FD NV-BdIzC
 >
 ```
 
+ASM 3.05 directive boundary preflight on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+`DB` now makes a measuring pass before emission and rejects a whole data row if
+its total byte count would cross into `$7E00+`; the measuring pass does not
+double-count symbol uses. `DS` now checks the parsed reserve count against the
+remaining target room before any initializer bytes or fill bytes are written.
+The host smoke extends the `$7DFF` boundary transaction proof to `DB $12,$34`
+and `DS 2,$00`, verifying both fail with `BAD RANGE`, preserve active session
+state and PC/high-water `$7DFF`, and leave the sentinel byte unchanged. The
+current runtime paste image is `asm-v1-runtime-paste-2000.s19` total `$3813`.
+
+Hardware-proven ASM 3.05 directive boundary preflight on 2026-06-09:
+the board loaded the `$3813` paste image, planted `NOP` at `$7DFF`, rejected
+both `DB $12,$34` and `DS 2,$00` at `$7DFF` with `ERR=$06 BAD RANGE PC=$7DFF`,
+and dumped `$7DFF` as the original `EA`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> DB $12,$34
+ERR=$06 BAD RANGE PC=$7DFF
+ASM> DS 2,$00
+ERR=$06 BAD RANGE PC=$7DFF
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and
