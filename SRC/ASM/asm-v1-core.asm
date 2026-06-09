@@ -2935,14 +2935,14 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP:
                         LDX             #<ASM_SMOKE_TXN_LDA_IMM
                         LDY             #>ASM_SMOKE_TXN_LDA_IMM
                         JSR             ASM_ASSEMBLE_LINE
-                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL_A
                         CMP             #ASM_STATUS_BAD_RANGE
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL_A
                         JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL_A
                         LDA             ASM_TARGET_LAST_ADDR
                         CMP             #$EA
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL_A
 
                         LDX             #<ASM_SMOKE_TXN_DB_ONE
                         LDY             #>ASM_SMOKE_TXN_DB_ONE
@@ -2969,6 +2969,12 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP:
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
                         LDX             #<ASM_SMOKE_TXN_LIMIT_EQU
                         LDY             #>ASM_SMOKE_TXN_LIMIT_EQU
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDX             #<ASM_SMOKE_TXN_AFTER_LABEL
+                        LDY             #>ASM_SMOKE_TXN_AFTER_LABEL
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
                         JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_EQU_CHECK
@@ -12058,6 +12064,8 @@ ASM_SMOKE_TXN_FOO_STA_IMM:
 ASM_SMOKE_TXN_FOO_NOP: DB              "FOO NOP",0
 ASM_SMOKE_TXN_LIMIT_EQU:
                         DB              "LIMIT EQU *",0
+ASM_SMOKE_TXN_AFTER_LABEL:
+                        DB              "AFTER",0
 ASM_FIXUP_LDA_LO_FOO:  DB              "        LDA #<FOO",0
 ASM_FIXUP_LDA_HI_FOO:  DB              "        LDA #>FOO",0
 ASM_FIXUP_JSR_BAR:     DB              "        JSR BAR",0

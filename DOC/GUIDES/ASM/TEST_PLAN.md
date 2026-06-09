@@ -2874,6 +2874,60 @@ ASM RT PASTE OK
 >
 ```
 
+ASM 3.15 post-boundary label-only binding on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now proves the label-only twin of the
+post-boundary `EQU *` case. After exact-fill emission reaches `PC=$7E00` and
+further emit attempts fail with `BAD RANGE`, `LIMIT EQU *` and a following
+label-only `AFTER` line both succeed without writing memory. Both symbols are
+recorded as absolute address symbols at `7E00`, and `END` finalizes without
+changing `$7DFF`. The current runtime paste image remains
+`asm-v1-runtime-paste-2000.s19` total `$3813`.
+
+Hardware-proven ASM 3.15 post-boundary label-only binding on 2026-06-09:
+the board loaded the `$3813` paste image, reached `PC=$7E00`, accepted both
+`LIMIT EQU *` and label-only `AFTER`, printed both symbols at value `7E00`, and
+left `$7DFF` as `EA`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> LDA #$12
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DB $A5
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DS 1,$5C
+ERR=$06 BAD RANGE PC=$7E00
+ASM> LIMIT EQU *
+OK PC=$7E00
+ASM> AFTER
+OK PC=$7E00
+ASM> END
+OK PC=$7E00
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7E00  01 04 16 0006 00  0000  LIMIT
+01 01 7E00  01 04 0E 0007 00  0000  AFTER
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and
