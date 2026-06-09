@@ -5433,3 +5433,43 @@ Interpretation: `NOP` wrote the final legal byte and advanced to `PC=$7E00`.
 The following `LDA #$12`, `DB $A5`, and `DS 1,$5C` attempts all failed with
 `ERR=$06 BAD RANGE PC=$7E00`. The final dump proves `$7DFF` remained the
 original `EA`.
+
+## 2026-06-09 ASM Current `$3813` Post-Boundary `END` Finalization
+
+Purpose: prove that the protected-limit hard stop does not poison finalization.
+After exact-fill emission reaches `PC=$7E00` and further emits fail with
+`BAD RANGE`, `END` must still succeed, print tables, and return
+`ASM RT PASTE OK`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> LDA #$12
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DB $A5
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DS 1, $5C
+ERR=$06 BAD RANGE PC=$7E00
+ASM> END
+OK PC=$7E00
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
+Interpretation: `END` finalized cleanly from `PC=$7E00` after the preceding
+hard-stop errors. Empty symbol/fixup tables printed normally, and the final
+dump proves `$7DFF` remained the exact-fill `EA`.

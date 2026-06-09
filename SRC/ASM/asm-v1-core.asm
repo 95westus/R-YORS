@@ -2912,22 +2912,25 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_CROSS:
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_CROSS_FAIL:
                         JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
 
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL_A:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP:
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #$FF
                         LDY             #ASM_TARGET_MAX_HI
                         JSR             ASM_BEGIN
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL_A
                         STZ             ASM_TARGET_LAST_ADDR
                         LDX             #<ASM_SMOKE_TXN_NOP
                         LDY             #>ASM_SMOKE_TXN_NOP
                         JSR             ASM_ASSEMBLE_LINE
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL_A
                         JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL_A
                         LDA             ASM_TARGET_LAST_ADDR
                         CMP             #$EA
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL_A
 
                         LDX             #<ASM_SMOKE_TXN_LDA_IMM
                         LDY             #>ASM_SMOKE_TXN_LDA_IMM
@@ -2961,6 +2964,21 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP:
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
                         JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
                         BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDX             #<ASM_PARSE_AT_END
+                        LDY             #>ASM_PARSE_AT_END
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ENDED
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDA             ASM_PC_LO
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
                         LDA             ASM_TARGET_LAST_ADDR
                         CMP             #$EA
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
