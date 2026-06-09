@@ -2289,6 +2289,59 @@ RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
 >
 ```
 
+ASM 3.06 exact-boundary directive positive proof on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now also proves the legal exact-fit directive
+case: `DB $A5` and `DS 1,$5C` at `$7DFF` both succeed, leave the active session
+PC/high-water at `$7E00`, and write only the final legal target byte. This keeps
+the `$7E00+` guard from accidentally rejecting the last byte of application RAM.
+The current runtime paste image remains `asm-v1-runtime-paste-2000.s19` total
+`$3813`.
+
+Hardware-proven ASM 3.06 exact-boundary directive positive proof on
+2026-06-09: the board reused the `$3813` paste image, accepted both one-byte
+`DB $A5` and `DS 1,$5C` at `$7DFF`, reported `OK PC=$7E00` for each, and dumped
+the emitted bytes at the final legal target address.
+
+```text
+>D 7DFF 7DFF
+7DFF: A5 | .
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> DB $A5
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFF 7DFF
+7DFF: A5 | .
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> DS 1,$5C
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFF 7DFF
+7DFF: 5C | \
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and

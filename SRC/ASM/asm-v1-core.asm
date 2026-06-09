@@ -2555,41 +2555,89 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB:
                         LDX             #$FF
                         LDY             #ASM_TARGET_MAX_HI
                         JSR             ASM_BEGIN
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_FAIL_A
                         LDA             #$6B
                         STA             ASM_TARGET_LAST_ADDR
                         LDX             #<ASM_SMOKE_TXN_DB_PAIR
                         LDY             #>ASM_SMOKE_TXN_DB_PAIR
                         JSR             ASM_ASSEMBLE_LINE
-                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_FAIL_A
                         CMP             #ASM_STATUS_BAD_RANGE
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_FAIL_A
                         JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_FAIL_A
                         LDA             ASM_TARGET_LAST_ADDR
                         CMP             #$6B
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_FAIL_A
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_FAIL_A:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
 
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS:
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #$FF
                         LDY             #ASM_TARGET_MAX_HI
                         JSR             ASM_BEGIN
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_FAIL_A
                         LDA             #$7C
                         STA             ASM_TARGET_LAST_ADDR
                         LDX             #<ASM_SMOKE_TXN_DS_PAIR
                         LDY             #>ASM_SMOKE_TXN_DS_PAIR
                         JSR             ASM_ASSEMBLE_LINE
-                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_FAIL_A
                         CMP             #ASM_STATUS_BAD_RANGE
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_FAIL_A
                         JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK
-                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_FAIL_A
                         LDA             ASM_TARGET_LAST_ADDR
                         CMP             #$7C
-                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_FAIL_A
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_ONE
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_FAIL_A:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_ONE:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$FF
+                        LDY             #ASM_TARGET_MAX_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_ONE_FAIL
+                        LDA             #$00
+                        STA             ASM_TARGET_LAST_ADDR
+                        LDX             #<ASM_SMOKE_TXN_DB_ONE
+                        LDY             #>ASM_SMOKE_TXN_DB_ONE
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_ONE_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_ONE_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$A5
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_ONE_FAIL
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_ONE
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_ONE_FAIL:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_ONE:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$FF
+                        LDY             #ASM_TARGET_MAX_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_ONE_FAIL
+                        LDA             #$00
+                        STA             ASM_TARGET_LAST_ADDR
+                        LDX             #<ASM_SMOKE_TXN_DS_ONE
+                        LDY             #>ASM_SMOKE_TXN_DS_ONE
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_ONE_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_ONE_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$5C
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_ONE_FAIL
                         SEC
                         RTS
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_ONE_FAIL:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK:
                         LDA             ASM_SESSION_STATE
                         CMP             #ASM_SESS_ACTIVE
@@ -2609,6 +2657,25 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK:
                         SEC
                         RTS
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK_FAIL:
+                        CLC
+                        RTS
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK:
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ACTIVE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_FAIL
+                        LDA             ASM_PC_LO
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_FAIL
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_FAIL
+                        LDA             ASM_HIGH_PC_LO
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_FAIL
+                        LDA             ASM_HIGH_PC_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_FAIL:
                         CLC
                         RTS
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL:
@@ -11583,6 +11650,8 @@ ASM_SMOKE_TXN_NOP:     DB              "        NOP",0
 ASM_SMOKE_TXN_LDA_IMM: DB              "        LDA #$12",0
 ASM_SMOKE_TXN_DB_PAIR: DB              "        DB $12,$34",0
 ASM_SMOKE_TXN_DS_PAIR: DB              "        DS 2,$00",0
+ASM_SMOKE_TXN_DB_ONE:  DB              "        DB $A5",0
+ASM_SMOKE_TXN_DS_ONE:  DB              "        DS 1,$5C",0
 ASM_SMOKE_TXN_BNE_FOO: DB              "        BNE FOO",0
 ASM_SMOKE_TXN_FOO_STA_IMM:
                         DB              "FOO STA #$12",0

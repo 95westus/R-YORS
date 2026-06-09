@@ -4999,3 +4999,49 @@ accepted `ORG $7DFF`, then rejected both `DB $12,$34` and `DS 2,$00` with the
 expected stable status byte/name, `ERR=$06 BAD RANGE`, at unchanged PC
 `$7DFF`. The final dump proves neither directive overwrote the existing byte at
 the boundary.
+
+## 2026-06-09 ASM Current `$3813` Exact-Boundary Directive Positive Proof
+
+Purpose: prove the companion positive edge for the directive boundary guard.
+One-byte `DB` and one-byte `DS` beginning at the last safe target byte `$7DFF`
+must succeed, write that byte, and advance PC/high-water to `$7E00`.
+
+```text
+>D 7DFF 7DFF
+7DFF: A5 | .
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> DB $A5
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFF 7DFF
+7DFF: A5 | .
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> DS 1,$5C
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFF 7DFF
+7DFF: 5C | \
+>
+```
+
+Interpretation: the already-loaded `$3813` paste image accepted exact-fit
+one-byte directive emissions at `$7DFF`. Both `DB $A5` and `DS 1,$5C` advanced
+to `PC=$7E00`, and the dumps prove each directive wrote the final legal target
+byte without tripping the `$7E00+` guard.
