@@ -5320,3 +5320,79 @@ Interpretation: after the crossing `LDA $0012` failed with
 `ERR=$06 BAD RANGE PC=$7DFE`, the same ASM session accepted `NOP` at the
 restored PC. The final dump proves only `$7DFE` changed to `EA`; `$7DFF`
 remained the sentinel `7E`.
+
+## 2026-06-09 ASM Current `$3813` Directive Range-Error Recovery Proof
+
+Purpose: prove that directive boundary `BAD RANGE` failures leave the same ASM
+paste session recoverable at the restored PC. After crossing `DB` and `DS`
+rows fail at `$7DFE`, a following legal `NOP` in the same session must assemble
+at `$7DFE`, advance to `$7DFF`, and leave the `$7DFF` sentinel untouched.
+
+```text
+L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $6E,$7F
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFE 7DFF
+7DFE: 6E 7F | n.
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $12, $23, $34
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> NOP
+OK PC=$7DFF
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: EA 7F | ..
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $70,$81
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 70 81 | p.
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DS 3, $00
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> NOP
+OK PC=$7DFF
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: EA 81 | ..
+>
+```
+
+Interpretation: both directive failures reported `ERR=$06 BAD RANGE PC=$7DFE`
+and left the same ASM session usable. The following `NOP` assembled at the
+restored PC and changed only `$7DFE` to `EA`; the final-byte sentinels `$7F`
+and `$81` remained unchanged. This board proof also covers comma-space
+directive operands in the runtime paste path.

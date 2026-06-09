@@ -2646,6 +2646,90 @@ RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
 >
 ```
 
+ASM 3.11 directive range-error same-session recovery on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now proves that crossing three-byte directive
+failures at `$7DFE` leave the paste session active and able to assemble the
+next legal line at the restored PC. After `DB $12,$34,$56` fails with
+`BAD RANGE`, a same-session `NOP` succeeds at `$7DFE`, advances PC/high-water
+to `$7DFF`, writes `EA`, and leaves the `$7DFF` sentinel unchanged. The same
+recovery path is also checked after `DS 3,$00`. The current runtime paste image
+remains `asm-v1-runtime-paste-2000.s19` total `$3813`.
+
+Hardware-proven ASM 3.11 directive range-error same-session recovery on
+2026-06-09: the board loaded the `$3813` paste image, proved a crossing `DB`
+directive can fail with `BAD RANGE` and then accept `NOP` in the same session,
+and repeated the same recovery proof for crossing `DS`. The board input used
+comma-space directive operands (`DB $12, $23, $34` and `DS 3, $00`), also
+exercising that accepted whitespace form.
+
+```text
+L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $6E,$7F
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFE 7DFF
+7DFE: 6E 7F | n.
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $12, $23, $34
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> NOP
+OK PC=$7DFF
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: EA 7F | ..
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $70,$81
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 70 81 | p.
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DS 3, $00
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> NOP
+OK PC=$7DFF
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: EA 81 | ..
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and
