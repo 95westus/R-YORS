@@ -2816,6 +2816,18 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_CROSS:
                         LDA             ASM_TARGET_LAST_ADDR
                         CMP             #$7E
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_CROSS_FAIL
+                        LDX             #<ASM_SMOKE_TXN_NOP
+                        LDY             #>ASM_SMOKE_TXN_NOP
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_CROSS_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_CROSS_FAIL
+                        LDA             ASM_TARGET_PENULT_ADDR
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_CROSS_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$7E
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_CROSS_FAIL
                         JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DB_THREE_CROSS
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LDA_THREE_CROSS_FAIL:
                         JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL

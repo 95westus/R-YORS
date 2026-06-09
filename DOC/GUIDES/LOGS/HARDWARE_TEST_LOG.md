@@ -5274,3 +5274,49 @@ Interpretation: the `$3813` paste image accepted the two-byte sentinel at
 preflight rejected the whole row before overwriting the remaining legal target
 bytes. The malformed `D 7DFEN7DFF` line is a manual dump typo, corrected by the
 next command.
+
+## 2026-06-09 ASM Current `$3813` Boundary Range-Error Recovery Proof
+
+Purpose: prove that a boundary `BAD RANGE` leaves the same ASM paste session
+recoverable at the restored PC. After a crossing `LDA $0012` fails at `$7DFE`,
+a following legal `NOP` in the same session must assemble at `$7DFE`, advance
+to `$7DFF`, and leave the `$7DFF` sentinel untouched.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $6D,$7E
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> LDA $0012
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> NOP
+OK PC=$7DFF
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: EA 7E | .~
+>
+```
+
+Interpretation: after the crossing `LDA $0012` failed with
+`ERR=$06 BAD RANGE PC=$7DFE`, the same ASM session accepted `NOP` at the
+restored PC. The final dump proves only `$7DFE` changed to `EA`; `$7DFF`
+remained the sentinel `7E`.

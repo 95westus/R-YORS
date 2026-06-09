@@ -2593,6 +2593,59 @@ RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
 >
 ```
 
+ASM 3.10 boundary range-error same-session recovery on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now proves that a crossing three-byte
+`LDA $0012` failure at `$7DFE` leaves the paste session active and able to
+assemble the next legal line at the restored PC. After the `BAD RANGE`, a
+same-session `NOP` succeeds at `$7DFE`, advances PC/high-water to `$7DFF`,
+writes `EA`, and leaves the sentinel byte at `$7DFF` unchanged. The current
+runtime paste image remains `asm-v1-runtime-paste-2000.s19` total `$3813`.
+
+Hardware-proven ASM 3.10 boundary range-error same-session recovery on
+2026-06-09: the board reused the `$3813` paste image, planted sentinel `6D 7E`
+at `$7DFE-$7DFF`, rejected crossing `LDA $0012` with
+`ERR=$06 BAD RANGE PC=$7DFE`, then accepted a same-session `NOP` at the restored
+PC and dumped `EA 7E`.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $6D,$7E
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> LDA $0012
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> NOP
+OK PC=$7DFF
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: EA 7E | .~
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and
