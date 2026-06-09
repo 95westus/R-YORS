@@ -2449,13 +2449,23 @@ of the protected target window. Starting at `$7DFD`, `LDA $0012`,
 and write exactly `$7DFD-$7DFF`. The current runtime paste image remains
 `asm-v1-runtime-paste-2000.s19` total `$3813`.
 
-Board retest for ASM 3.08 can reuse the `$3813` paste image. Each three-byte
-row should report `OK PC=$7E00`, and each dump should show the final three
-bytes written at `$7DFD-$7DFF`:
+Hardware-proven ASM 3.08 three-byte exact-fill boundary proof on 2026-06-09:
+the board warm-booted HIMON, loaded the `$3813` paste image, accepted exact-fill
+three-byte `LDA $0012`, `DB $12,$34,$56`, and `DS 3,$00` rows at `$7DFD`,
+reported `OK PC=$7E00` for each, and dumped the expected bytes at
+`$7DFD-$7DFF`.
 
 ```text
->G 2000
-GO 2000
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0608(1850)
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
 ASM RT PASTE
 ASM> ORG $7DFD
 OK PC=$7DFD
@@ -2463,17 +2473,24 @@ ASM> LDA $0012
 OK PC=$7E00
 ASM> .
 ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
 >D 7DFD 7DFF
 7DFD: AD 12 00 | ...
 >G 2000
 GO 2000
 ASM RT PASTE
+ASM>
 ASM> ORG $7DFD
 OK PC=$7DFD
 ASM> DB $12,$34,$56
 OK PC=$7E00
 ASM> .
 ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
 >D 7DFD 7DFF
 7DFD: 12 34 56 | .4V
 >G 2000
@@ -2485,8 +2502,94 @@ ASM> DS 3,$00
 OK PC=$7E00
 ASM> .
 ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
 >D 7DFD 7DFF
 7DFD: 00 00 00 | ...
+>
+```
+
+ASM 3.09 three-byte boundary-cross preflight on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now proves the crossing-by-one negative twin for
+three-byte rows. Starting at `$7DFE`, `LDA $0012`, `DB $12,$34,$56`, and
+`DS 3,$00` all fail with `BAD RANGE`, preserve active session state and
+PC/high-water `$7DFE`, and leave the two legal bytes at `$7DFE-$7DFF`
+unchanged. The current runtime paste image remains
+`asm-v1-runtime-paste-2000.s19` total `$3813`.
+
+Hardware-proven ASM 3.09 three-byte boundary-cross preflight on 2026-06-09:
+the board reused the `$3813` paste image, planted sentinel `6D 7E` at
+`$7DFE-$7DFF`, rejected crossing three-byte `LDA $0012`, `DB $12,$34,$56`, and
+`DS 3,$00` rows at `$7DFE` with `ERR=$06 BAD RANGE PC=$7DFE`, and dumped the
+unchanged sentinel after each failure. The transcript includes one malformed
+manual dump command, corrected on the following line.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $6D,$7E
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> LDA $0012
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFEN7DFF
+D start [end|+cnt]
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $12,$34,$56
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DS 3,$00
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
 >
 ```
 

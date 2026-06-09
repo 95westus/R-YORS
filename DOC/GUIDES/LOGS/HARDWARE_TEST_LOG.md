@@ -5128,3 +5128,149 @@ exact-fill rows at `$7DFE` and advanced to `PC=$7E00`. The dumps prove the
 expected bytes were written. The `HSH_NF` lines are HIMON prompt artifacts from
 commands pasted while outside ASM; the later `G 2000` sessions contain the valid
 assembler proof.
+
+## 2026-06-09 ASM Current `$3813` Three-Byte Exact-Fill Boundary Proof
+
+Purpose: prove the three-byte exact-fill edge at the top of the protected
+target window. `LDA $0012`, `DB $12,$34,$56`, and `DS 3,$00` beginning at
+`$7DFD` must all succeed, write `$7DFD-$7DFF`, and advance PC/high-water to
+`$7E00`.
+
+```text
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0608(1850)
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFD
+OK PC=$7DFD
+ASM> LDA $0012
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFD 7DFF
+7DFD: AD 12 00 | ...
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>
+ASM> ORG $7DFD
+OK PC=$7DFD
+ASM> DB $12,$34,$56
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFD 7DFF
+7DFD: 12 34 56 | .4V
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFD
+OK PC=$7DFD
+ASM> DS 3,$00
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFD 7DFF
+7DFD: 00 00 00 | ...
+>
+```
+
+Interpretation: after a warm HIMON boot and reload of the `$3813` paste image,
+all three three-byte exact-fill rows at `$7DFD` succeeded and advanced to
+`PC=$7E00`. The dumps prove the expected bytes were written through the last
+legal target address without tripping the `$7E00+` guard.
+
+## 2026-06-09 ASM Current `$3813` Three-Byte Boundary-Cross Preflight Proof
+
+Purpose: prove the crossing-by-one negative twin for three-byte rows at the top
+of the protected target window. `LDA $0012`, `DB $12,$34,$56`, and `DS 3,$00`
+beginning at `$7DFE` must all fail with `BAD RANGE`, leave PC/high-water at
+`$7DFE`, and preserve the legal bytes at `$7DFE-$7DFF`.
+
+```text
+BRK 03 PC=C0D1
+A=04 X=00 Y=7B P=77 S=FF NV-BdIZC
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $6D,$7E
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> LDA $0012
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFEN7DFF
+D start [end|+cnt]
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $12,$34,$56
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DS 3,$00
+ERR=$06 BAD RANGE PC=$7DFE
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 6D 7E | m~
+>
+```
+
+Interpretation: the `$3813` paste image accepted the two-byte sentinel at
+`$7DFE`, then rejected all three crossing three-byte rows with
+`ERR=$06 BAD RANGE PC=$7DFE`. Each corrected dump shows `6D 7E`, proving the
+preflight rejected the whole row before overwriting the remaining legal target
+bytes. The malformed `D 7DFEN7DFF` line is a manual dump typo, corrected by the
+next command.
