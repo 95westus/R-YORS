@@ -2142,6 +2142,49 @@ image: the board accepted the full sample through `END` at `PC=$6827`, ran
 `52 2D 59 4F 52 53 20 41 53 4D 20 54 45 53 54 2E 0F`. This keeps the minimum
 ASMTEST_3000 bench gate current for the latest runtime paste build.
 
+Current-build line-echo proof on 2026-06-09 with the same `$36B8` paste image:
+the board accepted `DOC/GUIDES/ASM/SAMPLES/ASM_LINE_ECHO_7000.asm` through
+`END` at `PC=$704E`, ran `G 7000`, echoed `?` and `ASM IS COOL` after `=> `,
+and returned to HIMON on `.` with `RET A=00 X=00 Y=00`.
+
+Current-build bad-input proof on 2026-06-09 with the same `$36B8` paste image:
+the board reported `BAD SYM`, `BAD DIR`, `BAD WIDTH`, `BAD RANGE`, `BAD MODE`,
+`LOCAL NYI`, and `BAD FIX` for the requested duplicate-symbol, parked-directive,
+width/range/mode, local-label, and unresolved-fixup cases.
+
+ASM 3.03 protected output-target guard on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+ASM now rejects explicit high output targets at `$7E00+`, protecting the
+monitor/debugger/vector/I/O window from runtime-pasted source. The host smoke
+checks both direct `ASM_BEGIN $7E00` and source-level `ORG $7E00`; both must
+return `BAD RANGE`. The current runtime paste image is
+`asm-v1-runtime-paste-2000.s19` total `$36FD`.
+
+Hardware-proven ASM 3.03 protected output-target guard on 2026-06-09:
+the board loaded the `$36FD` paste image, entered the paste wrapper, rejected
+`ORG $7E00` with `ERR=$06 BAD RANGE PC=$7000`, and exited normally on `.`. The
+operator also typed `G 2000` while already at `ASM>`, which correctly reported
+`BAD MNEM`; that prompt-mismatch artifact is not part of the guard proof.
+
+```text
+>L G
+L S19
+L @2000
+L OK=36FD GO=2000
+ASM RT PASTE
+ASM> G 2000
+ERR=$01 BAD MNEM PC=$7000
+ASM> ORG $7E00
+ERR=$06 BAD RANGE PC=$7000
+ASM> .
+ASM RT PASTE BYE
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and

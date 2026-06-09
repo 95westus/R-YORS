@@ -4622,3 +4622,265 @@ Interpretation: `END` completed at `$6827`, the emitted program returned with
 `A=$0F` and `X=$10`, and the post-run dump matches the 16-byte seed plus
 checksum oracle. This completes the current `$36B8` full ASMTEST_3000 board
 proof.
+
+## 2026-06-09 ASM Current `$36B8` ASM_LINE_ECHO_7000 Paste/Run Proof
+
+Purpose: prove the current `asm-v1-runtime-paste-2000.s19` image still accepts
+and runs the saved `DOC/GUIDES/ASM/SAMPLES/ASM_LINE_ECHO_7000.asm` sample. The
+sample assembles at `$7000`, uses `LINE EQU $7100`, calls resident input/output
+helpers, echoes input after `=> `, and returns to HIMON when the operator types
+`.` or `Q`.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ; ASM V1 PASTE SAMPLE FOR ASM RT PASTE.
+OK PC=$7000
+ASM> ; RUN WITH G 7000. LINES ECHO BACK AFTER "=> ".
+OK PC=$7000
+ASM> ; TYPE Q OR . TO RETURN TO HIMON.
+OK PC=$7000
+ASM>
+ASM>         ORG $7000
+OK PC=$7000
+ASM> LINE    EQU $7100
+OK PC=$7000
+ASM>
+ASM>         BRA MAIN
+OK PC=$7002
+ASM> DONE    RTS
+OK PC=$7003
+ASM>
+ASM> MAIN    LDA #$3F
+OK PC=$7005
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7008
+ASM>         LDA #$20
+OK PC=$700A
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$700D
+ASM>         LDX #<LINE
+OK PC=$700F
+ASM>         LDY #>LINE
+OK PC=$7011
+ASM>         JSR SYS_READ_CSTRING_ECHO_UPPER
+OK PC=$7014
+ASM>         BCC MAIN
+OK PC=$7016
+ASM>         BEQ MAIN
+OK PC=$7018
+ASM>         LDA LINE
+OK PC=$701B
+ASM>         EOR #'Q'
+OK PC=$701D
+ASM>         BEQ DONE
+OK PC=$701F
+ASM>         LDA LINE
+OK PC=$7022
+ASM>         EOR #'.'
+OK PC=$7024
+ASM>         BEQ DONE
+OK PC=$7026
+ASM>         LDA #$3D
+OK PC=$7028
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$702B
+ASM>         LDA #$3E
+OK PC=$702D
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7030
+ASM>         LDA #$20
+OK PC=$7032
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7035
+ASM>         LDX #0
+OK PC=$7037
+ASM> ECHO    LDA LINE,X
+OK PC=$703A
+ASM>         BNE OUT
+OK PC=$703C
+ASM>         LDA #$0D
+OK PC=$703E
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7041
+ASM>         LDA #$0A
+OK PC=$7043
+ASM>         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7046
+ASM>         BRA MAIN
+OK PC=$7048
+ASM> OUT     JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$704B
+ASM>         INX
+OK PC=$704C
+ASM>         BRA ECHO
+OK PC=$704E
+ASM>
+ASM>         END
+OK PC=$704E
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7100  01 04 17 0005 05  000C  LINE
+01 01 7002  01 04 0F 0007 02  0013  DONE
+02 01 7003  01 04 0F 0008 03  000F  MAIN
+03 01 7037  01 04 0F 001E 01  0027  ECHO
+04 01 7048  01 04 0E 0025 00  0000  OUT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  7001 7002 MAIN
+01 02 07   00  703B 703C OUT
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=83 Y=0F P=75 S=FD NV-BdIzC
+>G 7000
+GO 7000
+? ?
+=> ?
+? ASM IS COOL
+=> ASM IS COOL
+? .
+
+#GO# ENTRY=7000
+RET A=00 X=00 Y=00 P=77 S=FD NV-BdIZC
+>
+```
+
+Interpretation: the current `$36B8` paste runtime accepted the saved line-echo
+sample through `END` at `$704E`, resolved the `MAIN` and `OUT` branch fixups,
+and the emitted program echoed both `?` and `ASM IS COOL` before returning to
+HIMON on `.`.
+
+## 2026-06-09 ASM Current `$36B8` Bad-Input Status Proof
+
+Purpose: prove the current `asm-v1-runtime-paste-2000.s19` image reports the
+requested bad-input statuses at the paste prompt. The operator ran the cases in
+fresh paste sessions. Earlier combined-paste attempts produced `GORG` and
+HIMON `HSH_NF` boundary artifacts; those artifacts are not part of this proof.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> FOO NOP
+OK PC=$7001
+ASM> FOO NOP
+ERR=$08 BAD SYM PC=$7001
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=93 Y=10 P=75 S=FD NV-BdIzC
+```
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> DC $12
+ERR=$02 BAD DIR PC=$7000
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=93 Y=10 P=75 S=FD NV-BdIzC
+```
+
+```text
+ASM> LDA 12
+ERR=$05 BAD WIDTH PC=$7000
+```
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA #$1234
+ERR=$06 BAD RANGE PC=$7000
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=93 Y=10 P=75 S=FD NV-BdIzC
+```
+
+```text
+ASM> STA #$12
+ERR=$04 BAD MODE PC=$7000
+```
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> .LOOP NOP
+ERR=$0A LOCAL NYI PC=$7000
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=93 Y=10 P=75 S=FD NV-BdIzC
+```
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> BNE MISSING
+OK PC=$7002
+ASM> END
+ERR=$09 BAD FIX PC=$7002
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 07   00  7001 7002 MISSING
+
+#GO# ENTRY=2000
+RET A=09 X=02 Y=70 P=74 S=FD NV-BdIzc
+```
+
+Interpretation: the current paste runtime reports all requested bad-input
+classes by stable status byte and name: duplicate definition `BAD SYM`,
+reserved directive `BAD DIR`, decimal memory operand `BAD WIDTH`, oversized
+immediate `BAD RANGE`, unsupported mode `BAD MODE`, local label `LOCAL NYI`,
+and unresolved final fixup `BAD FIX`.
+
+## 2026-06-09 ASM Current `$36FD` Protected Output-Target Proof
+
+Purpose: prove the new high output-target guard in
+`asm-v1-runtime-paste-2000.s19`. ASM must reject source-level targets at
+`$7E00+`, protecting the monitor/debugger/vector/I/O window from pasted source.
+
+```text
+>L G
+L S19
+L @2000
+L OK=36FD GO=2000
+ASM RT PASTE
+ASM> G 2000
+ERR=$01 BAD MNEM PC=$7000
+ASM> ORG $7E00
+ERR=$06 BAD RANGE PC=$7000
+ASM> .
+ASM RT PASTE BYE
+>
+```
+
+Interpretation: the board loaded the `$36FD` paste image and rejected
+`ORG $7E00` with the expected stable status byte/name, `ERR=$06 BAD RANGE`, at
+the unchanged paste-wrapper PC `$7000`. The initial `ASM> G 2000` was typed
+after `L G` had already entered the paste wrapper, so it is a harmless prompt
+mismatch and not part of the guard behavior under test. The session remained
+usable and returned to HIMON on `.`.

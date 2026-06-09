@@ -153,6 +153,8 @@ ASM_SMOKE_TARGET_HI    EQU             $70
 ASM_SMOKE_TARGET_FWD_LO EQU            $10
 ASM_SMOKE_TARGET_BACK_LO EQU           $0F
 ASM_SMOKE_DATA_HI      EQU             $71
+ASM_TARGET_LIMIT_HI    EQU             $7E
+ASM_TARGET_MAX_HI      EQU             $7D
 
 ASM_SESS_IDLE          EQU             $00
 ASM_SESS_ACTIVE        EQU             $01
@@ -1016,43 +1018,89 @@ ASM_SMOKE_PRINT_FAIL_FIX_BA:
 ASM_SMOKE_PRINT_FAIL_DIR_DETAIL:
                         LDA             ASM_FAIL_SLOT
                         CMP             #$C1
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_C1
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_C2
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_C1
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_C2:
                         CMP             #$C2
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_C2
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_C3
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_C2
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_C3:
                         CMP             #$C3
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_C3
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_C4
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_C3
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_C4:
                         CMP             #$C4
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_C4
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_C5
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_C4
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_C5:
                         CMP             #$C5
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_C5
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_C6
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_C5
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_C6:
                         CMP             #$C6
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_C6
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_C7
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_C6
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_C7:
                         CMP             #$C7
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_C7
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_C8
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_C7
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_C8:
                         CMP             #$C8
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_C8
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_C9
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_C8
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_C9:
                         CMP             #$C9
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_C9
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_CA
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_C9
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_CA:
                         CMP             #$CA
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_CA
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_CB
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_CA
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_CB:
                         CMP             #$CB
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_CB
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_CC
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_CB
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_CC:
                         CMP             #$CC
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_CC
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_CD
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_CC
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_CD:
                         CMP             #$CD
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_CD
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_CE
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_CD
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_CE:
                         CMP             #$CE
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_CE
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_CF
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_CE
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_CF:
                         CMP             #$CF
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_CF
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_D0
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_CF
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_D0:
                         CMP             #$D0
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_D0
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_D1
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_D0
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_D1:
                         CMP             #$D1
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_D1
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_D2
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_D1
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_D2:
                         CMP             #$D2
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_D2
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_D3
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_D2
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_D3:
                         CMP             #$D3
-                        BEQ             ASM_SMOKE_PRINT_FAIL_DIR_D3
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_D4
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_D3
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_D4:
+                        CMP             #$D4
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_CHK_D5
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_D4
+ASM_SMOKE_PRINT_FAIL_DIR_CHK_D5:
+                        CMP             #$D5
+                        BNE             ASM_SMOKE_PRINT_FAIL_DIR_NO_MATCH
+                        JMP             ASM_SMOKE_PRINT_FAIL_DIR_D5
+ASM_SMOKE_PRINT_FAIL_DIR_NO_MATCH:
                         RTS
 ASM_SMOKE_PRINT_FAIL_DIR_C1:
                         LDX             #<ASM_SMOKE_MSG_DIR_C1
@@ -1129,6 +1177,14 @@ ASM_SMOKE_PRINT_FAIL_DIR_D2:
 ASM_SMOKE_PRINT_FAIL_DIR_D3:
                         LDX             #<ASM_SMOKE_MSG_DIR_D3
                         LDY             #>ASM_SMOKE_MSG_DIR_D3
+                        JMP             ASM_SMOKE_PRINT_LINE
+ASM_SMOKE_PRINT_FAIL_DIR_D4:
+                        LDX             #<ASM_SMOKE_MSG_DIR_D4
+                        LDY             #>ASM_SMOKE_MSG_DIR_D4
+                        JMP             ASM_SMOKE_PRINT_LINE
+ASM_SMOKE_PRINT_FAIL_DIR_D5:
+                        LDX             #<ASM_SMOKE_MSG_DIR_D5
+                        LDY             #>ASM_SMOKE_MSG_DIR_D5
                         JMP             ASM_SMOKE_PRINT_LINE
 
                         ENDIF
@@ -4109,6 +4165,19 @@ ASM_SMOKE_FIXUPS_FAIL:
                         RTS
 
 ASM_SMOKE_DIRECTIVES:
+                        LDA             #$D4
+                        STA             ASM_SLOT
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$00
+                        LDY             #ASM_TARGET_LIMIT_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_DIRECT_BEGIN_PROTECTED_ERR
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_BEGIN_PROTECTED_ERR:
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BEQ             ASM_SMOKE_DIRECT_BEGIN_PROTECTED_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_BEGIN_PROTECTED_OK:
                         LDA             #$C1
                         STA             ASM_SLOT
                         LDA             #$00
@@ -4273,6 +4342,15 @@ ASM_SMOKE_DIRECT_ORG_FORWARD_PC_OK:
                         BCS             ASM_SMOKE_DIRECT_ORG_BACK_OK
                         JMP             ASM_SMOKE_DIRECT_FAIL
 ASM_SMOKE_DIRECT_ORG_BACK_OK:
+                        LDA             #$D5
+                        STA             ASM_SLOT
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        LDX             #<ASM_DIRECT_ORG_PROTECTED
+                        LDY             #>ASM_DIRECT_ORG_PROTECTED
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_ERR
+                        BCS             ASM_SMOKE_DIRECT_ORG_PROTECTED_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_ORG_PROTECTED_OK:
                         LDA             #$CB
                         STA             ASM_SLOT
                         LDA             #$00
@@ -5539,6 +5617,17 @@ ASM_BEGIN_RJOIN_OK:
                         AND             #ASM_BEGINF_HAVE_PC
                         BEQ             ASM_BEGIN_DEFAULT_PC
 
+                        LDA             ASM_TMP0_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCC             ASM_BEGIN_EXPLICIT_PC_OK
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        LDX             ASM_TMP0_LO
+                        LDY             ASM_TMP0_HI
+                        CLC
+                        RTS
+ASM_BEGIN_EXPLICIT_PC_OK:
                         LDA             ASM_TMP0_LO
                         STA             ASM_PC_LO
                         STA             ASM_START_PC_LO
@@ -5876,6 +5965,12 @@ ASM_EMIT_BYTE:
                         JMP             ASM_EMIT_FAIL_A
 ASM_EMIT_BYTE_ACTIVE:
                         LDA             ASM_PC_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCC             ASM_EMIT_BYTE_TARGET_OK
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        JMP             ASM_EMIT_FAIL_A
+ASM_EMIT_BYTE_TARGET_OK:
+                        LDA             ASM_PC_HI
                         CMP             #$FF
                         BNE             ASM_EMIT_BYTE_ROOM
                         LDA             ASM_PC_LO
@@ -5914,6 +6009,18 @@ ASM_EMIT_WORD_LE:
                         LDA             #ASM_STATUS_BAD_OPER
                         JMP             ASM_EMIT_FAIL_A
 ASM_EMIT_WORD_ACTIVE:
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCS             ASM_EMIT_WORD_BAD_RANGE
+                        CMP             #ASM_TARGET_MAX_HI
+                        BNE             ASM_EMIT_WORD_TARGET_OK
+                        LDA             ASM_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_EMIT_WORD_TARGET_OK
+ASM_EMIT_WORD_BAD_RANGE:
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        JMP             ASM_EMIT_FAIL_A
+ASM_EMIT_WORD_TARGET_OK:
                         LDA             ASM_PC_HI
                         CMP             #$FF
                         BNE             ASM_EMIT_WORD_ROOM
@@ -9002,6 +9109,15 @@ ASM_SET_PC_HAVE_INITIAL:
                         CMP             ASM_PC_LO
                         BCC             ASM_SET_PC_BACKWARD
 ASM_SET_PC_APPLY:
+                        LDA             ASM_VALUE_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCC             ASM_SET_PC_TARGET_OK
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        CLC
+                        RTS
+ASM_SET_PC_TARGET_OK:
                         LDA             ASM_VALUE_LO
                         STA             ASM_PC_LO
                         LDA             ASM_VALUE_HI
@@ -11221,6 +11337,8 @@ ASM_DIRECT_ORG_FORWARD:
                         DB              "        ORG $7010",0
 ASM_DIRECT_ORG_BACKWARD:
                         DB              "        ORG $700F",0
+ASM_DIRECT_ORG_PROTECTED:
+                        DB              "        ORG $7E00",0
 ASM_DIRECT_DS_FILL:    DB              "BUF DS 3,$AA",0
 ASM_DIRECT_DS_TRUNC:   DB              "        DS 2,$1234",0
 ASM_DIRECT_DS_EMPTY:   DB              "BUF DS",0
@@ -11391,6 +11509,8 @@ ASM_SMOKE_MSG_DIR_D0:  DB              " D0 DS LIST EMIT",0
 ASM_SMOKE_MSG_DIR_D1:  DB              " D1 DS LIST BYTES",0
 ASM_SMOKE_MSG_DIR_D2:  DB              " D2 DS LIST PC",0
 ASM_SMOKE_MSG_DIR_D3:  DB              " D3 WARN_DS_WRAP",0
+ASM_SMOKE_MSG_DIR_D4:  DB              " D4 BEGIN HIGH",0
+ASM_SMOKE_MSG_DIR_D5:  DB              " D5 ORG HIGH",0
 ASM_SMOKE_MSG_WARN_DS_WRAP:
                         DB              "WARN WARN_DS_WRAP",0
 ASM_SMOKE_MSG_T_RJOIN: DB              " 00 RJOIN",0
