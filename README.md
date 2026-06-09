@@ -11,6 +11,54 @@ Not eRRORS, but expect fewer.
 
 Pronounced **are-yors**.
 
+## ASM Assembles Life On The Board
+
+On 2026-06-09, ASM v1 assembled and ran an interactive Conway's Life program
+from pasted source on the real W65C02 board.
+
+The source is:
+
+```text
+DOC/GUIDES/ASM/SAMPLES/life-rjoined-6800.asm
+```
+
+Board proof:
+
+```text
+L OK=3CB1 GO=2000
+ASM RT PASTE
+...
+ASM>         END
+OK PC=$7246
+ASM RT PASTE OK
+>G 6800
+GO 6800
+
+G0
+.#......
+..#.....
+###.....
+........
+........
+........
+........
+........
+
+N/R/Q>
+```
+
+The program starts at `$6800`, uses RJOIN-resolved resident I/O routines,
+renders an 8x8 torus Life board, accepts `N` or space for next generation,
+`R` for a pseudo-random board, and `Q` to return to HIMON. This is not only an
+opcode smoke test: ASM parsed a multi-page source file, managed 24 session
+symbols and 13 fixups, emitted code plus tables, resolved ROM routine names,
+then ran the generated program interactively.
+
+The full transcript is in
+[HARDWARE_TEST_LOG.md](DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md), announced in
+[HASH_FLASH.md](DOC/GUIDES/HASH_FLASH.md), and tracked in
+[ASM TEST_PLAN.md](DOC/GUIDES/ASM/TEST_PLAN.md).
+
 ## Pasteable ASM Is Alive
 
 On 2026-06-06, the ASM v1 runtime crossed an important line: a program typed as

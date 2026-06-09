@@ -270,12 +270,12 @@ ASM_RJ_KIND_EXEC_CONFIRM_TEXT EQU       $07
 ASM_RJ_SCAN_BASE_HI    EQU             $C0
 
 ASM_LINE_MAX           EQU             $3F
-ASM_SYM_MAX            EQU             $10
+ASM_SYM_MAX            EQU             $20
 ASM_SYM_NAME_MAX       EQU             $20
-ASM_FIX_MAX            EQU             $08
+ASM_FIX_MAX            EQU             $10
 ASM_FIX_NAME_MAX       EQU             $20
 ASM_FIX_NAME_BYTES     EQU             (ASM_FIX_MAX*ASM_FIX_NAME_MAX)
-ASM_REF_MAX            EQU             $10
+ASM_REF_MAX            EQU             $20
 ASM_VOC_COUNT          EQU             $52
 
 ASM_VID_DB             EQU             $18
@@ -4303,6 +4303,8 @@ ASM_SMOKE_FIXUPS:
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_SELECTED
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
+                        JSR             ASM_SMOKE_FIXUPS_NAME_SLOT8
+                        BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_PENDING_END
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
 
@@ -4661,6 +4663,31 @@ ASM_SMOKE_FIXUPS_SELECTED_HI:
                         RTS
 ASM_SMOKE_FIXUPS_SEL_HI_FAIL:
                         LDA             #$A6
+                        STA             ASM_SLOT
+                        CLC
+                        RTS
+
+ASM_SMOKE_FIXUPS_NAME_SLOT8:
+                        LDX             #$00
+                        JSR             ASM_SET_FIX_NAME_PTR_X
+                        LDA             ASM_FIX_PTR_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_FIX_PTR_HI
+                        STA             ASM_TMP1_HI
+                        LDX             #$08
+                        JSR             ASM_SET_FIX_NAME_PTR_X
+                        LDA             ASM_FIX_PTR_LO
+                        CMP             ASM_TMP1_LO
+                        BNE             ASM_SMOKE_FIXUPS_NAME_SLOT8_FAIL
+                        LDA             ASM_TMP1_HI
+                        CLC
+                        ADC             #$01
+                        CMP             ASM_FIX_PTR_HI
+                        BNE             ASM_SMOKE_FIXUPS_NAME_SLOT8_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_FIXUPS_NAME_SLOT8_FAIL:
+                        LDA             #$A8
                         STA             ASM_SLOT
                         CLC
                         RTS
@@ -7700,6 +7727,11 @@ ASM_STORE_FIXUP_NAME_TERM:
 ASM_SET_FIX_NAME_PTR_X:
                         PHX
                         TXA
+                        LSR
+                        LSR
+                        LSR
+                        STA             ASM_TMP0_HI
+                        TXA
                         ASL
                         ASL
                         ASL
@@ -7709,7 +7741,7 @@ ASM_SET_FIX_NAME_PTR_X:
                         ADC             #<ASM_FIX_NAME_TEXT
                         STA             ASM_FIX_PTR_LO
                         LDA             #>ASM_FIX_NAME_TEXT
-                        ADC             #$00
+                        ADC             ASM_TMP0_HI
                         STA             ASM_FIX_PTR_HI
                         PLX
                         RTS

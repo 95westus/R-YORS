@@ -5645,3 +5645,429 @@ Interpretation: the duplicate `LIMIT EQU *` line failed with `BAD SYM` at
 original `LIMIT` row only at `7E00`, and `$7DFF` remained `EA`. The initial
 `ASM> L G` line was a prompt-mismatch artifact while already inside ASM and is
 not part of the duplicate-`EQU` proof.
+
+## 2026-06-09 ASM Current `$3813` Life Sample Paste Assembly
+
+Purpose: prove that `DOC/GUIDES/ASM/SAMPLES/life-rjoined-6800.asm` assembles
+end-to-end through the current ASM runtime paste path after replacing the
+driver's repeated local routine references with fixed routine addresses.
+
+This transcript proves paste/assembly only. Runtime output is proven by the
+follow-on `G 6800` entry below.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ; ASM V1 TINY LIFE. PASTE/LOAD THROUGH ASM RT PASTE.
+OK PC=$7000
+ASM>         ORG $6800
+OK PC=$6800
+ASM>         JMP $68E9
+OK PC=$6803
+ASM> CRLF    LDA #$0D
+OK PC=$6805
+ASM> INIT    LDX #$00
+OK PC=$6810
+ASM> COPY    LDX #$00
+OK PC=$6823
+ASM> REND    JSR CRLF
+OK PC=$6837
+ASM> STEP    LDX #$00
+OK PC=$686E
+ASM> STORE   STA $7840,X
+OK PC=$68E3
+ASM>         RTS
+OK PC=$68E9
+ASM>         JSR $680E
+OK PC=$68EC
+ASM>         JSR $6834
+OK PC=$68EF
+ASM>         JSR $686C
+OK PC=$68F2
+ASM>         JSR $6821
+OK PC=$68F5
+ASM>         JSR $6834
+OK PC=$68F8
+ASM>         JSR $686C
+OK PC=$68FB
+ASM>         JSR $6821
+OK PC=$68FE
+ASM>         JSR $6834
+OK PC=$6901
+ASM>         JSR $686C
+OK PC=$6904
+ASM>         JSR $6821
+OK PC=$6907
+ASM>         JSR $6834
+OK PC=$690A
+ASM>         RTS
+OK PC=$690B
+ASM>         ORG $7000
+OK PC=$7000
+...
+ASM>         DB $01,$02,$03,$04,$05,$06,$07,$00
+OK PC=$7200
+ASM>         ORG $7200
+OK PC=$7200
+...
+ASM>         DB $00,$00,$00,$00,$00,$00,$00,$00
+OK PC=$7240
+ASM>         ORG $7240
+OK PC=$7240
+ASM>         DB $2E,$23
+OK PC=$7242
+ASM>         END
+OK PC=$7242
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 6803  01 04 0F 0006 03  001D  CRLF
+01 01 680E  01 04 0E 000B 00  0000  INIT
+02 01 6810  01 04 0F 000C 01  0011  ILOOP
+03 01 6821  01 04 0E 0014 00  0000  COPY
+04 01 6823  01 04 0F 0015 01  001A  CLOOP
+05 01 6834  01 04 0E 001D 00  0000  REND
+06 01 684F  01 04 0F 0029 01  0034  RROW
+07 01 6853  01 04 0F 002B 01  0031  RCOL
+08 01 686C  01 04 0E 0036 00  0000  STEP
+09 01 686E  01 04 0F 0037 01  006B  SLOOP
+0A 01 68D4  01 04 0E 0062 00  0000  BORN
+0B 01 68DE  01 04 0E 0067 00  0000  LIVE
+0C 01 68E0  01 04 0E 0068 00  0000  STORE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  68C5 68C6 BORN
+01 02 07   00  68CB 68CC LIVE
+02 02 07   00  68CF 68D0 LIVE
+03 02 07   00  68D3 68D4 STORE
+04 02 07   00  68D9 68DA LIVE
+05 02 07   00  68DD 68DE STORE
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=DA Y=0F P=75 S=FD NV-BdIzC
+>
+```
+
+Interpretation: the table-budgeted Life source now survives the full paste
+assembly path. The final PC is `$7242`, the symbol table contains 13 rows, and
+the fixup table contains the six expected resolved branch fixups. The earlier
+`BAD_FIX` at the third named `JSR STEP` is avoided by the fixed-address driver.
+
+## 2026-06-09 ASM Current `$3813` Life Sample Runtime
+
+Purpose: prove that the ASM-built `life-rjoined-6800.asm` image runs from
+`$6800`, prints the expected four 8x8 torus Life generations, and returns.
+
+```text
+>G 6800
+GO 6800
+
+G0
+.#......
+..#.....
+###.....
+........
+........
+........
+........
+........
+
+G1
+........
+#.#.....
+.##.....
+.#......
+........
+........
+........
+........
+
+G2
+........
+..#.....
+#.#.....
+.##.....
+........
+........
+........
+........
+
+G3
+........
+.#......
+..##....
+.##.....
+........
+........
+........
+........
+
+#GO# ENTRY=6800
+RET A=0A X=3F Y=00 P=77 S=FD NV-BdIZC
+>
+```
+
+Interpretation: the emitted program ran after the successful paste assembly,
+rendered `G0` through `G3` exactly as expected for the seeded glider, and
+returned through `RTS`.
+
+## 2026-06-09 ASM Current `$3CAB` Interactive Life Reserved-`START` Attempt
+
+Purpose: capture the first interactive/random `life-rjoined-6800.asm` board
+attempt. The runtime paste image loaded correctly at `$2000` with size `$3CAB`,
+but the sample used `START` as a label. `START` is a parked/reserved directive
+word in ASM v1, so the line was rejected with `BAD DIR`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3CAB GO=2000
+ASM RT PASTE
+ASM>         ORG $6800
+OK PC=$6800
+ASM>         JMP START
+OK PC=$6803
+...
+ASM> RAND8   LDA $D4
+OK PC=$692F
+ASM>         ASL A
+OK PC=$6930
+ASM>         BCC R8S
+OK PC=$6932
+ASM>         EOR #$1D
+OK PC=$6934
+ASM> R8S     STA $D4
+OK PC=$6936
+ASM>         RTS
+OK PC=$6937
+ASM> START   JSR INIT
+ERR=$02 BAD DIR PC=$6937
+ASM>         JSR REND
+OK PC=$693A
+...
+ASM>         END
+ERR=$09 BAD FIX PC=$7246
+ASM TABLES
+SYMBOLS
+...
+12 01 693A  01 04 0F 0094 03  00A6  LOOP
+13 01 693D  01 04 0F 0095 03  0097  GETKEY
+...
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 04   00  6801 6803 R8S
+...
+>G 6800
+GO 6800
+
+BRK 00 PC=0003
+A=01 X=30 Y=30 P=75 S=FB NV-BdIzC
+>
+```
+
+Interpretation: the source after the rejected `START` line kept assembling,
+but the top entry jump remained unresolved and `END` correctly failed with
+`BAD FIX`. The follow-on `G 6800` ran an incomplete image. The sample now uses
+`MAIN` for the entry label instead of the reserved word `START`.
+
+## 2026-06-09 ASM Current `$3CAB` Interactive Life Fixup Slot-8 Wrap
+
+Purpose: capture the second interactive/random `life-rjoined-6800.asm` board
+attempt. This run proves that the `MAIN` entry-label rename cleared the parked
+`START` directive collision, and exposes a separate fixup-name table bug when
+the 16-row fixup ceiling is used.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3CAB GO=2000
+ASM RT PASTE
+ASM>         ORG $6800
+OK PC=$6800
+ASM>         JMP MAIN
+OK PC=$6803
+...
+ASM> RAND8   LDA $D4
+OK PC=$692F
+ASM>         ASL A
+OK PC=$6930
+ASM>         BCC R8S
+OK PC=$6932
+ASM>         EOR #$1D
+OK PC=$6934
+ASM> R8S     STA $D4
+OK PC=$6936
+ASM>         RTS
+OK PC=$6937
+ASM> MAIN    JSR INIT
+OK PC=$693A
+...
+ASM> DONE    RTS
+OK PC=$6979
+...
+ASM>         ORG $7240
+OK PC=$7240
+ASM>         DB $2E,$23
+OK PC=$7242
+ASM>         DB $01,$00,$00,$00
+OK PC=$7246
+ASM>         END
+ERR=$09 BAD FIX PC=$7246
+ASM TABLES
+SYMBOLS
+...
+11 01 6934  01 04 0E 0090 00  0000  R8S
+12 01 6937  01 04 0E 0092 00  0000  MAIN
+13 01 693D  01 04 0F 0094 03  00A6  LOOP
+...
+17 01 6978  01 04 0E 00AE 00  0000  DONE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 04   00  6801 6803 R8S
+...
+08 02 07   00  6931 6932 R8S
+...
+0C 02 07   00  6962 6963 NEXTC
+>G 6800
+GO 6800
+
+BRK 00 PC=0003
+A=01 X=30 Y=30 P=75 S=FB NV-BdIzC
+>
+```
+
+Interpretation: symbol row 12 correctly defines `MAIN=$6937`, so the source
+syntax is no longer the blocker. Fixup row 0 should still name `MAIN`, but it
+prints `R8S`, matching row 8. With `ASM_FIX_MAX=$10` and 32-byte fixup names,
+row 8 starts exactly `$0100` bytes after row 0; the old fixup-name pointer math
+kept only the low byte of `slot * $20`, so slot 8 overwrote slot 0 text. The
+core now mirrors symbol-name pointer math by adding `slot >> 3` into the high
+byte, and the runtime built after this fix is `$3CB1`.
+
+## 2026-06-09 ASM Current `$3CB1` Interactive Life Paste and Random Run
+
+Purpose: prove that the fixed ASM runtime paste image assembles the
+interactive/random `life-rjoined-6800.asm` source end-to-end on hardware, keeps
+fixup slot 0 and slot 8 names distinct, and runs the resulting program from
+`$6800`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3CB1 GO=2000
+ASM RT PASTE
+ASM>         ORG $6800
+OK PC=$6800
+ASM>         JMP MAIN
+OK PC=$6803
+...
+ASM> MAIN    JSR INIT
+OK PC=$693A
+...
+ASM> DONE    RTS
+OK PC=$6979
+...
+ASM>         ORG $7240
+OK PC=$7240
+ASM>         DB $2E,$23
+OK PC=$7242
+ASM>         DB $01,$00,$00,$00
+OK PC=$7246
+ASM>         END
+OK PC=$7246
+ASM TABLES
+SYMBOLS
+...
+11 01 6934  01 04 0E 0090 00  0000  R8S
+12 01 6937  01 04 0E 0092 00  0000  MAIN
+13 01 693D  01 04 0F 0094 03  00A6  LOOP
+...
+17 01 6978  01 04 0E 00AE 00  0000  DONE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  6801 6803 MAIN
+01 02 07   00  68C9 68CA BORN
+02 02 07   00  68CF 68D0 LIVE
+03 02 07   00  68D3 68D4 LIVE
+04 02 07   00  68D7 68D8 STORE
+05 02 07   00  68DD 68DE LIVE
+06 02 07   00  68E1 68E2 STORE
+07 02 04   00  6917 6919 RAND8
+08 02 07   00  6931 6932 R8S
+09 02 07   00  6954 6955 NEXTC
+0A 02 07   00  695A 695B DONE
+0B 02 07   00  695E 695F RANDC
+0C 02 07   00  6962 6963 NEXTC
+ASM RT PASTE OK
+>G 6800
+GO 6800
+
+G0
+.#......
+..#.....
+###.....
+........
+........
+........
+........
+........
+
+N/R/Q>
+G0
+.###....
+........
+........
+..##..##
+#......#
+#.....#.
+...#...#
+#.......
+
+N/R/Q>
+G1
+.##.....
+..#.....
+........
+#.....##
+##......
+#.....#.
+#......#
+##.#....
+
+N/R/Q>
+G2
+#..#....
+.##.....
+.......#
+##.....#
+.#....#.
+........
+........
+.......#
+
+N/R/Q>
+G3
+###.....
+###.....
+..#....#
+.#....##
+.#.....#
+........
+........
+........
+
+N/R/Q>
+#GO# ENTRY=6800
+RET A=51 X=3F Y=00 P=77 S=FD NV-BdIZC
+>
+```
+
+Interpretation: `END` succeeds with fixup row 0 still naming `MAIN` and row 8
+still naming `R8S`, proving the slot-8 fixup-name pointer carry on the board.
+The program starts from `$6800`, renders the seeded `G0`, accepts `R` to fill a
+random board, advances through `G1` to `G3`, and exits through `Q`/`RTS`.

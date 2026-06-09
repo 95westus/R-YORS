@@ -3162,7 +3162,45 @@ Current pasteable bench toys:
 
 ```text
 ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
+life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
 ```
+
+`life-rjoined-6800.asm` is a deliberately table-budgeted full-program sample
+for the current ASM v1 ceiling. It starts at `$6800`, uses RJOIN for
+`BIO_FTDI_WRITE_BYTE_BLOCK` and `PIN_FTDI_READ_BYTE_NONBLOCK`, keeps its
+visible board at `$7800`, its next board at `$7840`, neighbor tables at
+`$7000-$71FF`, seed/character tables at `$7200/$7240`, and a random density
+map at `$7242`. Controls are `N` or space for next, `R` for random, and `Q` to
+return. The random seed in `$D4` stirs while waiting for a key, then an 8-bit
+LFSR fills the board on `R`.
+
+The source stays inside current paste constraints after the table-open slice:
+24 session symbols, 13 forward fixup rows, about 24 local report references,
+no operand-tail arithmetic, no local labels, no DB/DS expression math, and max
+source line length 55. Static layout check places the interactive code below
+the table block (`DONE` at `$6978`, tables still start at `$7000`, max emitted
+address `$7246`). The earlier hardware transcripts
+`2026-06-09 ASM Current $3813 Life Sample Paste Assembly` and
+`2026-06-09 ASM Current $3813 Life Sample Runtime` prove the prior
+non-interactive revision; `2026-06-09 ASM Current $3CB1 Interactive Life Paste
+and Random Run` proves the current interactive/random revision on hardware.
+The first interactive attempt used reserved word `START` as an entry label and
+correctly failed `BAD DIR`; the source now uses `MAIN`.
+The next `$3CAB` board attempt accepted `MAIN` but failed `END` because fixup
+name slot 8 aliased slot 0 text, changing the first unresolved `MAIN` fixup
+name to `R8S`; the core now carries `slot >> 3` into
+`ASM_SET_FIX_NAME_PTR_X`.
+
+The interactive/random slice opens the ASM table ceilings to:
+
+```text
+ASM_SYM_MAX=$20
+ASM_FIX_MAX=$10
+ASM_REF_MAX=$20
+```
+
+The standalone smoke path now includes a fixup-name slot-8 pointer check so
+the 16-row fixup table cannot silently wrap row 8 onto row 0 again.
 
 ### ASM 4.20 Bad Samples
 
@@ -5198,11 +5236,37 @@ make -C SRC asm-v1-core
 
 The standalone `START` smoke path now checks resolved expression math used by
 `ORG` and `EQU`: one-atom values, current-PC `*`, known session symbols, and
-strict left-to-right `+`/`-` over concrete values/addresses. Raw operand-tail
-math, DB/DS list expressions, selectors, logical/mask operators, forward `EQU`
-chains, and fixup addends remain future expression work.
+strict left-to-right `+`/`-` over concrete values/addresses. This is the
+current executable expression boundary:
 
-Current fixtures:
+```text
+WORKS
+ORG and EQU expression tails
+single atoms: decimal, hex, char, binary/mask, known symbol, *
+binary + and - between concrete VALUE and ADDR terms
+left-to-right evaluation only
+ADDR + VALUE, VALUE + ADDR, and ADDR - VALUE
+ADDR - ADDR returning a VALUE/NONE delta
+VALUE + VALUE and VALUE - VALUE
+ZP/ABS address width is retained and range-checked
+bad concrete arithmetic reports BAD RANGE or BAD WIDTH
+
+DOES NOT WORK YET
+mnemonic operand-tail math such as LDA $12+1 or BNE TARGET-2
+DB/DS list expression math such as DB BASE+1
+forward or unresolved addends such as FOO+1
+forward EQU dependency chains
+logical/mask operators |, &, ^
+selector-plus-addend combinations such as <FOO+1 or >FOO+1
+unary minus such as -1
+grouping parentheses or precedence
+```
+
+Raw operand-tail math, DB/DS list expressions, selectors combined with
+addends, logical/mask operators, forward `EQU` chains, and fixup addends remain
+future expression work.
+
+Current smoke fixtures:
 
 ```text
 10                    -> VALUE/NONE
@@ -5218,10 +5282,19 @@ $FF+1                 -> BAD RANGE
 $12 $34               -> BAD OPER
 ```
 
-Future fixtures:
+Additional same-rule examples that the current concrete `+`/`-` evaluator
+handles:
 
 ```text
 * - 32                -> ADDR/ABS if in range
+BASE+1                -> works after BASE is already defined
+END_ADDR-START_ADDR   -> VALUE/NONE delta after both labels are defined
+10+1                  -> VALUE/NONE $000B
+```
+
+Future fixtures:
+
+```text
 ERR_1 | ERR_2         -> MASK or VALUE by care result
 FOO unresolved allowed -> UNRESOLVED
 <FOO unresolved allowed -> UNRESOLVED FORCE_LO

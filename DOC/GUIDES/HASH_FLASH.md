@@ -29,6 +29,47 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: Pasteable ASM Runs Interactive Life
+
+```text
+2026
+         06
+                09
+                   05:24Z WLP2 ASM RT PASTE now assembles and runs the
+                               interactive 8x8 Life sample on hardware.
+```
+
+The public sample is:
+
+```text
+DOC/GUIDES/ASM/SAMPLES/life-rjoined-6800.asm
+```
+
+Load the current runtime paste image at `$2000`, paste the source, then run
+`G 6800`. The hardware-proven runtime size for this slice is:
+
+```text
+L OK=3CB1 GO=2000
+```
+
+The sample uses RJOIN-resolved resident `BIO_FTDI_WRITE_BYTE_BLOCK` and
+`PIN_FTDI_READ_BYTE_NONBLOCK`, emits code at `$6800`, keeps the visible Life
+board at `$7800`, and uses precomputed neighbor tables at `$7000-$71FF`.
+
+Controls:
+
+```text
+N or space   next generation
+R            random board
+Q            return to HIMON
+```
+
+The same proof also fixed the 16-row fixup-name table boundary: slot 8 now
+stays distinct from slot 0, so the top `JMP MAIN` fixup no longer gets its
+name overwritten by the later `R8S` branch fixup. Full board transcript is in
+[HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md), and acceptance notes are in
+[ASM/TEST_PLAN.md](ASM/TEST_PLAN.md).
+
 ## REHASH: ASM EQU/ORG Expressions Gain Resolved +/- Math
 
 ```text

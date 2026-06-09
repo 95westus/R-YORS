@@ -1542,6 +1542,29 @@ In the current executable slice, use a value operand for address offsets.
 Subtracting two address-typed expressions gives a scalar delta, as in
 `SIZE EQU END_ADDR-START_ADDR`.
 
+Current executable status:
+
+```text
+WORKS NOW
+ORG and EQU expression tails
+single concrete atoms: decimal, hex, char, binary/mask, known symbol, *
+resolved binary + and - over concrete VALUE and ADDR terms
+left-to-right evaluation with no precedence
+ADDR + VALUE, VALUE + ADDR, ADDR - VALUE
+ADDR - ADDR as a VALUE/NONE delta
+VALUE + VALUE and VALUE - VALUE
+ZP/ABS address width retention with range checks
+
+NOT YET
+mnemonic operand-tail arithmetic such as LDA $12+1
+DB/DS list arithmetic such as DB BASE+1
+forward addends such as FOO+1
+forward EQU dependency chains
+logical/mask operators |, &, ^
+selector addends such as <FOO+1 or >FOO+1
+unary minus and grouping parentheses
+```
+
 ### ASM 1.80.5 Operator Rules
 
 `+` and `-` are for known concrete values and addresses, not masks. Arithmetic
@@ -3230,6 +3253,11 @@ number
 ^                bitwise EOR/XOR
 ```
 
+Current executable ASM only implements resolved concrete `+` and `-` through
+`ASM_PARSE_EXPR`, used by `ORG` and `EQU`. The `|`, `&`, and `^` rows above are
+the target v1 mask/logical design and remain future work until the expression
+smoke covers them.
+
 Unary minus is not v1 syntax. Write `0-1` if you need to express subtraction
 from zero, then let the target context range-check the result. `DB -1` is
 `BAD OPER`.
@@ -4876,9 +4904,10 @@ fills; it must not spill into flash or overwrite neighboring RAM.
 The current proof-sized defaults are useful starting points:
 
 ```text
-ASM_SYM_MAX         16 symbol rows
-ASM_FIX_MAX          8 fixup rows
+ASM_SYM_MAX         32 symbol rows
+ASM_FIX_MAX         16 fixup rows
 ASM_FIX_NAME_MAX    32 bytes, 31 visible chars plus terminator
+ASM_REF_MAX         32 report-reference notes
 ASM_LINE_MAX        63 visible input chars
 ASM_CODE_BUF       512 bytes
 ```
