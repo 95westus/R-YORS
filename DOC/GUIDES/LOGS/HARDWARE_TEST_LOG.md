@@ -5045,3 +5045,86 @@ Interpretation: the already-loaded `$3813` paste image accepted exact-fit
 one-byte directive emissions at `$7DFF`. Both `DB $A5` and `DS 1,$5C` advanced
 to `PC=$7E00`, and the dumps prove each directive wrote the final legal target
 byte without tripping the `$7E00+` guard.
+
+## 2026-06-09 ASM Current `$3813` Two-Byte Exact-Fill Boundary Proof
+
+Purpose: prove the two-byte exact-fill edge at the top of the protected target
+window. `LDA #$12`, `DB $12,$34`, and `DS 2,$00` beginning at `$7DFE` must all
+succeed, write `$7DFE-$7DFF`, and advance PC/high-water to `$7E00`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> G 2000
+ERR=$01 BAD MNEM PC=$7000
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> LDA #$12
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFE 7DFF
+7DFE: A9 12 | ..
+>2000
+#D22EA097# HSH_NF!
+>ORG $7DFE
+#DEF80779# HSH_NF!
+>DB $12,$34
+#36CE7583# HSH_NF!
+>.
+#2B0C98F1# HSH_NF!
+>G 2000
+#6A99B62A# HSH_NF!
+>ORG $7DFE
+#DEF80779# HSH_NF!
+>DB $12,$34
+#36CE7583# HSH_NF!
+>.
+#2B0C98F1# HSH_NF!
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $12,$34
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 12 34 | .4
+>2000
+#D22EA097# HSH_NF!
+>ORG $7DFE
+#DEF80779# HSH_NF!
+>DS 2,$00
+#25CE5AC0# HSH_NF!
+>.
+#2B0C98F1# HSH_NF!
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DS 2,$00
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFE 7DFF
+7DFE: 00 00 | ..
+>
+```
+
+Interpretation: the current `$3813` paste image accepted all three two-byte
+exact-fill rows at `$7DFE` and advanced to `PC=$7E00`. The dumps prove the
+expected bytes were written. The `HSH_NF` lines are HIMON prompt artifacts from
+commands pasted while outside ASM; the later `G 2000` sessions contain the valid
+assembler proof.

@@ -2342,6 +2342,101 @@ RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
 >
 ```
 
+ASM 3.07 two-byte exact-fill boundary proof on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now proves multi-byte exact fills at the top of
+the protected target window. Starting at `$7DFE`, `LDA #$12`, `DB $12,$34`, and
+`DS 2,$00` all succeed, finish at PC/high-water `$7E00`, and write exactly the
+two final legal target bytes. The current runtime paste image remains
+`asm-v1-runtime-paste-2000.s19` total `$3813`.
+
+Hardware-proven ASM 3.07 two-byte exact-fill boundary proof on 2026-06-09:
+the board loaded the `$3813` paste image, accepted exact-fill two-byte
+`LDA #$12`, `DB $12,$34`, and `DS 2,$00` rows at `$7DFE`, reported
+`OK PC=$7E00` for each, and dumped the expected bytes at `$7DFE-$7DFF`.
+The transcript includes harmless prompt-state artifacts where commands were
+typed at HIMON instead of `ASM>`.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> G 2000
+ERR=$01 BAD MNEM PC=$7000
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> LDA #$12
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFE 7DFF
+7DFE: A9 12 | ..
+>2000
+#D22EA097# HSH_NF!
+>ORG $7DFE
+#DEF80779# HSH_NF!
+>DB $12,$34
+#36CE7583# HSH_NF!
+>.
+#2B0C98F1# HSH_NF!
+>G 2000
+#6A99B62A# HSH_NF!
+>ORG $7DFE
+#DEF80779# HSH_NF!
+>DB $12,$34
+#36CE7583# HSH_NF!
+>.
+#2B0C98F1# HSH_NF!
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> LDA #$12
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFE 7DFF
+7DFE: A9 12 | ..
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DB $12,$34
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFE 7DFF
+7DFE: 12 34 | .4
+>2000
+#D22EA097# HSH_NF!
+>ORG $7DFE
+#DEF80779# HSH_NF!
+>DS 2,$00
+#25CE5AC0# HSH_NF!
+>.
+#2B0C98F1# HSH_NF!
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFE
+OK PC=$7DFE
+ASM> DS 2,$00
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>D 7DFE 7DFF
+7DFE: 00 00 | ..
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and
