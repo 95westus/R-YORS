@@ -2908,9 +2908,65 @@ ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_CROSS:
                         LDA             ASM_TARGET_LAST_ADDR
                         CMP             #$81
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_CROSS_FAIL
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_CROSS_FAIL:
+                        JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$FF
+                        LDY             #ASM_TARGET_MAX_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        STZ             ASM_TARGET_LAST_ADDR
+                        LDX             #<ASM_SMOKE_TXN_NOP
+                        LDY             #>ASM_SMOKE_TXN_NOP
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+
+                        LDX             #<ASM_SMOKE_TXN_LDA_IMM
+                        LDY             #>ASM_SMOKE_TXN_LDA_IMM
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+
+                        LDX             #<ASM_SMOKE_TXN_DB_ONE
+                        LDY             #>ASM_SMOKE_TXN_DB_ONE
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+
+                        LDX             #<ASM_SMOKE_TXN_DS_ONE
+                        LDY             #>ASM_SMOKE_TXN_DS_ONE
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_CHECK
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL
                         SEC
                         RTS
-ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_DS_THREE_CROSS_FAIL:
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_LIMIT_STOP_FAIL:
                         JMP             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
 ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_CHECK:
                         LDA             ASM_SESSION_STATE

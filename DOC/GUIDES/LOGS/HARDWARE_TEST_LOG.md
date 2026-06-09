@@ -5396,3 +5396,40 @@ and left the same ASM session usable. The following `NOP` assembled at the
 restored PC and changed only `$7DFE` to `EA`; the final-byte sentinels `$7F`
 and `$81` remained unchanged. This board proof also covers comma-space
 directive operands in the runtime paste path.
+
+## 2026-06-09 ASM Current `$3813` Post-Exact-Fill Boundary Hard Stop
+
+Purpose: prove that once exact-fill emission advances the active paste session
+to `PC=$7E00`, further mnemonic and directive emission is rejected without
+touching the final legal target byte.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> LDA #$12
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DB $A5
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DS 1,$5C
+ERR=$06 BAD RANGE PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
+Interpretation: `NOP` wrote the final legal byte and advanced to `PC=$7E00`.
+The following `LDA #$12`, `DB $A5`, and `DS 1,$5C` attempts all failed with
+`ERR=$06 BAD RANGE PC=$7E00`. The final dump proves `$7DFF` remained the
+original `EA`.

@@ -2730,6 +2730,50 @@ RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
 >
 ```
 
+ASM 3.12 post-exact-fill boundary hard stop on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+The boundary transaction smoke now proves that after exact-fill emission reaches
+`PC=$7E00`, the active session rejects any further mnemonic or directive
+emission. `NOP` at `$7DFF` succeeds and writes `EA`; following `LDA #$12`,
+`DB $A5`, and `DS 1,$5C` lines all fail with `BAD RANGE PC=$7E00`, preserve
+PC/high-water `$7E00`, and leave `$7DFF` unchanged. The current runtime paste
+image remains `asm-v1-runtime-paste-2000.s19` total `$3813`.
+
+Hardware-proven ASM 3.12 post-exact-fill boundary hard stop on 2026-06-09:
+the board loaded the `$3813` paste image, accepted `NOP` at `$7DFF`, then
+rejected subsequent mnemonic and directive emission at `PC=$7E00` with
+`ERR=$06 BAD RANGE` while leaving `$7DFF` unchanged.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3813 GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> LDA #$12
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DB $A5
+ERR=$06 BAD RANGE PC=$7E00
+ASM> DS 1,$5C
+ERR=$06 BAD RANGE PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=EA Y=10 P=75 S=FD NV-BdIzC
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and
