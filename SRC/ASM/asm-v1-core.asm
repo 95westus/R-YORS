@@ -155,6 +155,7 @@ ASM_SMOKE_TARGET_BACK_LO EQU           $0F
 ASM_SMOKE_DATA_HI      EQU             $71
 ASM_TARGET_LIMIT_HI    EQU             $7E
 ASM_TARGET_MAX_HI      EQU             $7D
+ASM_TARGET_LAST_ADDR   EQU             $7DFF
 
 ASM_SESS_IDLE          EQU             $00
 ASM_SESS_ACTIVE        EQU             $01
@@ -2505,9 +2506,49 @@ ASM_SMOKE_ASSEMBLE_LINE_TXN:
                         BNE             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
                         JSR             ASM_SMOKE_ASSEMBLE_LINE_FIX_TXN
                         BCC             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_TXN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL
                         SEC
                         RTS
 ASM_SMOKE_ASSEMBLE_LINE_TXN_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_TXN:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #$FF
+                        LDY             #ASM_TARGET_MAX_HI
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             #$5A
+                        STA             ASM_TARGET_LAST_ADDR
+                        LDX             #<ASM_SMOKE_TXN_LDA_IMM
+                        LDY             #>ASM_SMOKE_TXN_LDA_IMM
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             ASM_SESSION_STATE
+                        CMP             #ASM_SESS_ACTIVE
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             ASM_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_TARGET_MAX_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             ASM_HIGH_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             ASM_HIGH_PC_HI
+                        CMP             #ASM_TARGET_MAX_HI
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        LDA             ASM_TARGET_LAST_ADDR
+                        CMP             #$5A
+                        BNE             ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_ASSEMBLE_LINE_BOUNDARY_FAIL:
                         CLC
                         RTS
 
@@ -6730,6 +6771,12 @@ ASM_EMIT_CLASS_OK:
                         BCS             ASM_EMIT_OPCODE_OK
                         JMP             ASM_EMIT_MNEM_FAIL_A
 ASM_EMIT_OPCODE_OK:
+                        STA             ASM_TMP0_LO
+                        JSR             ASM_EMIT_MNEM_ROOM
+                        BCS             ASM_EMIT_OPCODE_ROOM_OK
+                        JMP             ASM_EMIT_MNEM_FAIL_A
+ASM_EMIT_OPCODE_ROOM_OK:
+                        LDA             ASM_TMP0_LO
                         JSR             ASM_EMIT_BYTE
                         BCS             ASM_EMIT_OPCODE_WRITTEN
                         RTS
@@ -6806,6 +6853,75 @@ ASM_EMIT_OK:
                         STA             ASM_STATUS
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
+                        SEC
+                        RTS
+
+ASM_EMIT_MNEM_ROOM:
+                        LDA             ASM_MODE
+                        CMP             #ASM_OPM_NONE
+                        BEQ             ASM_EMIT_ROOM_ONE
+                        CMP             #ASM_OPM_ACC
+                        BEQ             ASM_EMIT_ROOM_ONE
+                        CMP             #ASM_OPM_BIT_ZP_REL
+                        BEQ             ASM_EMIT_ROOM_THREE
+                        CMP             #ASM_OPM_ABS16
+                        BEQ             ASM_EMIT_ROOM_THREE
+                        CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_EMIT_ROOM_THREE
+                        CMP             #ASM_OPM_ABS_Y
+                        BEQ             ASM_EMIT_ROOM_THREE
+                        CMP             #ASM_OPM_ABS_IND
+                        BEQ             ASM_EMIT_ROOM_THREE
+                        CMP             #ASM_OPM_ABS_X_IND
+                        BEQ             ASM_EMIT_ROOM_THREE
+                        CMP             #ASM_OPM_IMM8
+                        BEQ             ASM_EMIT_ROOM_TWO
+                        CMP             #ASM_OPM_ZP8
+                        BEQ             ASM_EMIT_ROOM_TWO
+                        CMP             #ASM_OPM_ZP_X
+                        BEQ             ASM_EMIT_ROOM_TWO
+                        CMP             #ASM_OPM_ZP_Y
+                        BEQ             ASM_EMIT_ROOM_TWO
+                        CMP             #ASM_OPM_ZP_IND
+                        BEQ             ASM_EMIT_ROOM_TWO
+                        CMP             #ASM_OPM_ZP_X_IND
+                        BEQ             ASM_EMIT_ROOM_TWO
+                        CMP             #ASM_OPM_ZP_IND_Y
+                        BEQ             ASM_EMIT_ROOM_TWO
+                        CMP             #ASM_OPM_BIT_ZP
+                        BEQ             ASM_EMIT_ROOM_TWO
+                        CMP             #ASM_OPM_REL8
+                        BEQ             ASM_EMIT_ROOM_TWO
+                        LDA             #ASM_STATUS_BAD_MODE
+                        CLC
+                        RTS
+ASM_EMIT_ROOM_ONE:
+                        LDA             #$01
+                        BRA             ASM_EMIT_ROOM_FOR_A
+ASM_EMIT_ROOM_TWO:
+                        LDA             #$02
+                        BRA             ASM_EMIT_ROOM_FOR_A
+ASM_EMIT_ROOM_THREE:
+                        LDA             #$03
+
+ASM_EMIT_ROOM_FOR_A:
+                        STA             ASM_TMP0_HI
+                        LDA             ASM_PC_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCS             ASM_EMIT_ROOM_BAD_RANGE
+                        CMP             #ASM_TARGET_MAX_HI
+                        BNE             ASM_EMIT_ROOM_OK
+                        LDA             ASM_PC_LO
+                        CLC
+                        ADC             ASM_TMP0_HI
+                        BCC             ASM_EMIT_ROOM_OK
+                        BEQ             ASM_EMIT_ROOM_OK
+ASM_EMIT_ROOM_BAD_RANGE:
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        CLC
+                        RTS
+ASM_EMIT_ROOM_OK:
+                        LDA             #ASM_STATUS_OK
                         SEC
                         RTS
 
@@ -11319,6 +11435,7 @@ ASM_FIXUP_BBR_FOO:     DB              "        BBR 3,$12,FOO",0
 ASM_SMOKE_TXN_BBR_RANGE:
                         DB              "        BBR 3,$12,$9000",0
 ASM_SMOKE_TXN_NOP:     DB              "        NOP",0
+ASM_SMOKE_TXN_LDA_IMM: DB              "        LDA #$12",0
 ASM_SMOKE_TXN_BNE_FOO: DB              "        BNE FOO",0
 ASM_SMOKE_TXN_FOO_STA_IMM:
                         DB              "FOO STA #$12",0

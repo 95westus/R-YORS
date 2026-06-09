@@ -2185,6 +2185,59 @@ ASM RT PASTE BYE
 >
 ```
 
+ASM 3.04 mnemonic boundary preflight on 2026-06-09:
+
+```text
+make -C SRC asm-test
+```
+
+Mnemonic emission now preflights the total opcode+operand byte count before
+writing the opcode. A two- or three-byte instruction at `$7DFF` fails with
+`BAD RANGE` before any byte is stored, so the line transaction has no partial
+opcode to clean up. The host smoke sets `$7DFF` to `$5A`, tries `LDA #$12`, and
+verifies `BAD RANGE`, active session state, restored PC/high-water `$7DFF`, and
+unchanged `$7DFF`. The current runtime paste image is
+`asm-v1-runtime-paste-2000.s19` total `$377C`.
+
+Hardware-proven ASM 3.04 mnemonic boundary preflight on 2026-06-09:
+the board loaded the `$377C` paste image, planted `NOP` at `$7DFF`, rejected a
+later `LDA #$12` at `$7DFF` with `ERR=$06 BAD RANGE PC=$7DFF`, and a manual
+HIMON dump confirmed `$7DFF` was still `EA`. A fast pasted dump command lost
+its leading `D` during the prompt transition and a later accidental `DORG`
+session assembled at the default `$7000`; neither artifact changes the
+`$7DFF` proof.
+
+```text
+>L G
+L S19
+L @2000
+L OK=377C GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>
+
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> LDA #$12
+ERR=$06 BAD RANGE PC=$7DFF
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=57 Y=10 P=75 S=FD NV-BdIzC
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
 Hardware-proven ASM 3.02 long RAM `$7800` paste/run proof on 2026-06-08:
 the already-loaded `$34F0` paste image accepted a longer practical program at
 `ORG $6600`, reserved/used data at `ORG $7800`, finalized at `PC=$7905`, and

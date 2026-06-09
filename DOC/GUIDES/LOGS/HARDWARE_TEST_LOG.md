@@ -4884,3 +4884,74 @@ the unchanged paste-wrapper PC `$7000`. The initial `ASM> G 2000` was typed
 after `L G` had already entered the paste wrapper, so it is a harmless prompt
 mismatch and not part of the guard behavior under test. The session remained
 usable and returned to HIMON on `.`.
+
+## 2026-06-09 ASM Current `$377C` Mnemonic Boundary Preflight Proof
+
+Purpose: prove the mnemonic emission boundary preflight in
+`asm-v1-runtime-paste-2000.s19`. A multi-byte mnemonic beginning at the last
+safe target byte `$7DFF` must fail before writing its opcode, leaving the
+existing byte at `$7DFF` unchanged.
+
+```text
+>L G
+L S19
+L @2000
+L OK=377C GO=2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> NOP
+OK PC=$7E00
+ASM> .
+ASM RT PASTE BYE
+>
+
+BRK 03 PC=C0D1
+A=04 X=00 Y=7B P=77 S=FF NV-BdIZC
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7DFF
+OK PC=$7DFF
+ASM> LDA #$12
+ERR=$06 BAD RANGE PC=$7DFF
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=57 Y=10 P=75 S=FD NV-BdIzC
+> 7DFF 7DFF
+#10A4CBA2# HSH_NF!
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> DORG $7DFF
+ERR=$01 BAD MNEM PC=$7000
+ASM> LDA #$12
+OK PC=$7002
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=57 Y=10 P=75 S=FD NV-BdIzC
+> 7DFF 7DFF
+#10A4CBA2# HSH_NF!
+>
+>
+```
+
+The final manual dump was typed after a stable HIMON prompt:
+
+```text
+>D 7DFF 7DFF
+7DFF: EA | .
+>
+```
+
+Interpretation: the first session planted `EA` at `$7DFF`. The second session
+accepted `ORG $7DFF`, rejected `LDA #$12` with `ERR=$06 BAD RANGE PC=$7DFF`,
+and stayed recoverable enough to exit on `.`. The final dump proves the failed
+two-byte mnemonic did not overwrite the existing `EA` opcode. The dropped
+leading `D` in the first dump attempts and the accidental `DORG` session are
+prompt/paste-timing artifacts; the `DORG` session assembled `LDA #$12` at the
+default `$7000`, unrelated to the `$7DFF` boundary proof.
