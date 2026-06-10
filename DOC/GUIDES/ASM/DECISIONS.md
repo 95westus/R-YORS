@@ -83,7 +83,7 @@ ASM 5.30   opcode table compression / aaa-bbb-cc helpers
 ASM 5.40   full opcode coverage audit
 
 ASM 6.00   future language
-ASM 6.10   local labels / scopes later
+ASM 6.10   local labels / scopes
 ASM 6.20   resident symbol table / HIMON-scale lookup
 ASM 6.30   richer reports / ref/xref
 ASM 6.40   flash/catalog seal/export later
@@ -182,11 +182,11 @@ A [addr] [label[:]] MMM [operand] .
 - V1 symbols are define-once. Any second definition of the same canonical symbol
   is `BAD SYM`, whether it is a PC label, colon label, or `EQU`. Later
   `SET`/`REDEF` machinery can be explicit if the assembler needs mutable names.
-- Dot and question mark are reserved for future local-label syntax. They are
-  prefix-only, not free-floating global symbol characters. In v1, `.NAME`,
-  `.NAME:`, `?NAME`, and `?NAME:` should fail with `LOCAL NYI`. `.` alone is a
-  legacy `A`/input-driver sentinel if used, not ASM source syntax. No v1
-  dot-directive aliases.
+- Dot and question mark are local-label prefixes. They are prefix-only, not
+  free-floating global symbol characters. In v1, `.NAME`, `.NAME:`, `?NAME`,
+  and `?NAME:` bind/reference local PC labels inside the most recent nonlocal
+  label scope. `.` alone is a legacy `A`/input-driver sentinel if used, not ASM
+  source syntax. No v1 dot-directive aliases.
 - Minimal v1 ASM directives follow WDC shape: `EQU`, `DB`, `DS`, `ORG`, and
   `END`. `DC`, `START`, `ENTRY`, and `EXTRN` are parked later directives, not
   v1.
@@ -223,7 +223,7 @@ A [addr] [label[:]] MMM [operand] .
 - V1 punctuation tokens are `#`, `,`, `(`, `)`, `<`, `>`, `+`, `-`, `*`, `|`,
   `&`, `^`, `:`, and `.`. A dot alone is not ASM source syntax; it is a
   legacy `A`/input-driver sentinel if used. Dot-prefixed names are returned as
-  `WORD` with `LOCAL_PREFIX` so v1 can return `LOCAL NYI`.
+  `WORD` with `LOCAL_PREFIX` so v1 can route them to the local table.
 - ASM 1.50 vocabulary lookup answers whether a canonical word is assembler
   vocabulary and what kind it is. Result kinds are `VOC_NONE`, `VOC_MNEM`,
   `VOC_DIR`, `VOC_REG`, `VOC_RESERVED`, and later `VOC_ALIAS`.
@@ -252,7 +252,7 @@ A [addr] [label[:]] MMM [operand] .
   Kinds are `EMPTY`, `LABEL_ONLY`, `MNEM`, `DIR`, and `ERROR`.
 - `ASM_PARSE_HEAD` fills the statement record from the prepared line. It uses a
   light head-word scan plus `ASM_LOOKUP_WORD`. It returns `BAD SYM`, `BAD MNEM`,
-  `BAD DIR`, `BAD OPER`, or `LOCAL NYI` for top-level statement errors.
+  `BAD DIR`, or `BAD OPER` for top-level statement errors.
 - `ASM_DISPATCH_STATEMENT` applies the top-level policy: label-only binds the
   pending name to current PC; mnemonic/DB/DS with a name bind current PC before
   emission/data handling; `EQU` requires a name and binds expression value;
@@ -580,7 +580,7 @@ A [addr] [label[:]] MMM [operand] .
   tokens; directives share the vocabulary rule but may be longer.
 - ASM v1 error vocabulary should stay compact and boring:
   `BAD MNEM`, `BAD DIR`, `BAD OPER`, `BAD MODE`, `BAD WIDTH`, `BAD RANGE`,
-  `BAD LINE`, `BAD SYM`, `BAD FIX`, and `LOCAL NYI`.
+  `BAD LINE`, `BAD SYM`, and `BAD FIX`.
 - ASM 2.50 stops on the first error. The first interactive path is a
   line-at-a-time ICO, historically called the ASM REPL. As of ASM 2.56 it calls
   resident

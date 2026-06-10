@@ -82,8 +82,9 @@ Core settled rules:
   join/prove the intended record, then emit the joined record's exact value.
 - `:` is optional label punctuation. Labels cannot be mnemonic, directive, or
   register names. `A`, `X`, and `Y` are reserved v1 register words.
-- Locals are reserved but not v1. `.NAME`, `.NAME:`, `?NAME`, and `?NAME:`
-  return `LOCAL NYI`.
+- Local labels are v1 label-only scope helpers. `.NAME`, `.NAME:`, `?NAME`,
+  and `?NAME:` bind or reference the current PC inside the most recent nonlocal
+  label scope; local `EQU` is not supported.
 - Address width is source intent. `$12` is zero page; `$0012` is absolute. No
   silent promotion or demotion.
 - `EQU` records source width when the expression has address width. Decimal
@@ -119,7 +120,7 @@ Core settled rules:
 Still open or later:
 
 - expression grouping parentheses and richer expression features
-- local-label implementation after `LOCAL NYI`
+- richer local-label report/export policy, if needed
 - resident HIMON-scale symbol table format/capacity
 - rich report/export formats and whole-image unused-symbol analysis
 - exact production RAM workspace addresses and memory policy validation
@@ -231,7 +232,7 @@ ASM 5.30   opcode table compression / aaa-bbb-cc helpers
 ASM 5.40   full opcode coverage audit
 
 ASM 6.00   future language
-ASM 6.10   local labels / scopes later
+ASM 6.10   local labels / scopes
 ASM 6.20   resident symbol table / HIMON-scale lookup
 ASM 6.30   richer reports / ref/xref
 ASM 6.40   flash/catalog seal/export later
@@ -587,9 +588,10 @@ _
 ?        local label prefix
 ```
 
-Global symbols must not begin with `0-9`. Dot and question mark are reserved
-local-prefix characters, are prefix-only, and should return `LOCAL NYI` in v1.
-Comma is not a symbol character. It is operand punctuation/separator:
+Global symbols must not begin with `0-9`. Dot and question mark are local-prefix
+characters and are prefix-only. Local names are capped at 15 visible characters
+including the prefix. Comma is not a symbol character. It is operand
+punctuation/separator:
 
 ```asm
         LDA     $12,X
@@ -599,7 +601,7 @@ Comma is not a symbol character. It is operand punctuation/separator:
 Colon is optional label punctuation and is not part of the symbol. A standalone
 dot is not ASM source syntax; if it is used as a paste/input sentinel, the input
 driver consumes it before `ASM_ASSEMBLE_LINE`. Dot-leading tokens such as
-`.LOOP` are reserved local symbols.
+`.LOOP` are local symbols in the active nonlocal label scope.
 
 Comments:
 
@@ -695,7 +697,7 @@ fold a-z to A-Z
 mask bit 7 before FNV update
 exclude optional trailing colon from hash and length
 set HAS_COLON if the colon was attached to the word
-keep leading . or ? in the token so v1 can return LOCAL NYI
+keep leading . or ? in the token so v1 can route local labels/references
 ```
 
 ### ASM 1.40.3 ASM_LEX_LINE
@@ -762,7 +764,7 @@ space/tab       skipped
 NUL/CR/LF       EOL
 ; outside quote EOL
 # , ( ) < > + - * | & ^ :   PUNCT
-.NAME/?NAME     WORD with LOCAL_PREFIX, later LOCAL NYI
+.NAME/?NAME     WORD with LOCAL_PREFIX
 . alone         PUNCT '.', later BAD OPER unless input driver consumed it
 'A'             CHAR, value $41
 'a'             CHAR, value $61
@@ -1056,7 +1058,7 @@ RAM         none except session error token/status on failure
 stack       balanced; return frame only
 calls       ASM_NEXT_TOKEN or light head-word scanner, ASM_LOOKUP_WORD
 
-errors      BAD SYM, BAD MNEM, BAD DIR, BAD OPER, LOCAL NYI
+errors      BAD SYM, BAD MNEM, BAD DIR, BAD OPER
 ```
 
 Head parse sketch:
@@ -1080,7 +1082,7 @@ if first is VOC_REG/VOC_RESERVED:
 if first is VOC_NONE:
     pending name = first word
     validate name shape
-    if local prefix: return LOCAL NYI
+    mark pending name as local if it has . or ? prefix
     skip whitespace
     if EOL/comment:
         STMT_KIND=LABEL_ONLY
@@ -1205,8 +1207,9 @@ owning resident HIMON-scale symbol storage
 
 ### ASM 1.70.1 Symbol Boundary
 
-V1 symbol handling is global-session only. Local labels are still `LOCAL NYI`,
-so the symbol table does not create local scopes yet.
+V1 symbol handling has global session symbols plus a compact local-label table.
+Local labels are label-only PC aliases scoped by the most recent nonlocal label.
+They do not enter the global symbol report or resident/export identity space.
 
 Lookup is layered by policy:
 
@@ -2408,11 +2411,10 @@ flowchart LR
    A. Label definition
       1. Canonicalize label text, stripping optional trailing `:`
       2. Reject mnemonic names as labels
-      3. If label uses a local prefix in v1, return `LOCAL NYI`
-      4. Future local labels qualify with the active scope
-      5. For PC labels, hash label and bind hash to current PC
-      6. Try pending fixups for that hash
-   B. Future local label scope
+      3. If label uses a local prefix, require an active nonlocal scope
+      4. For PC labels, hash label and bind hash to current PC
+      5. Try pending fixups for that hash
+   B. Local label scope
       1. A nonlocal label opens or changes the current local scope
       2. A local label is private to that scope/session
       3. Local fixups remain tied to the scope that created them
@@ -4329,8 +4331,8 @@ mental split:
 
 ```text
 NAME     ordinary/public or session symbol
-.NAME    assembler-local symbol, future
-?NAME    assembler-local symbol, future alternate prefix
+.NAME    assembler-local symbol
+?NAME    assembler-local symbol
 &NAME    possible future macro/SET-style variable
 ```
 
@@ -4338,7 +4340,7 @@ Lookup rule:
 
 ```text
 unprefixed NAME -> global/session/import/export symbol lookup
-.NAME or ?NAME  -> local lookup in the active local scope only, future
+.NAME or ?NAME  -> local lookup in the active local scope only
 ```
 
 There should be no silent fallback from local-prefixed `NAME` to unprefixed
@@ -4352,41 +4354,27 @@ a nonlocal label defines/changes the active local scope
 local definitions and local fixups are qualified by that scope
 ```
 
-For v1, all local-prefixed labels or operands fail clearly with `LOCAL NYI`.
-When locals are implemented later, a local label without an active nonlocal
-label should fail clearly. A RAM interactive mode may choose a session-local
-anonymous scope, but that scope must not be exportable.
+Current v1 locals are label-only: `.NAME`/`?NAME` may bind the current PC or
+reference another local label inside the active nonlocal label scope. Local
+`EQU` is not supported. A local label or local reference without an active
+nonlocal label fails clearly as `BAD SYM`. Opening a new nonlocal label while a
+local fixup is still unresolved fails as `BAD FIX`, so local references cannot
+silently leak into the next scope.
 
-Implementation model:
+Current implementation model:
 
 ```text
-canonical local text      = .LOOP
-active scope text         = INIT
-lookup identity           = INIT/.LOOP
-hash input                = canonical qualified identity
-symbol flags              = defined + local
+canonical local text      = .LOOP or ?LOOP
+active scope              = most recent nonlocal PC label
+lookup identity           = current local table row in that scope
+hash input                = canonical local text
+symbol flags              = local, label-only
 export/catalog visibility = no
 ```
 
-A compact later record can avoid storing the joined text by carrying both a
-scope hash and a local hash:
-
-```text
-scope_hash0..3
-local_hash0..3
-value_lo
-value_hi
-bank
-kind
-flags=local
-```
-
-That costs four extra bytes compared with one qualified hash, so the first
-implementation can simply hash the qualified canonical text and optionally keep
-name proof text in RAM.
-
-When local labels are implemented later, forward local labels work the same as
-forward global labels, except the fixup stores the scoped identity:
+Forward local labels work the same as forward global labels, except the fixup
+is marked local and must resolve before the next nonlocal label opens a new
+scope:
 
 ```asm
 A 3000 MAIN:  BRA .DONE .
@@ -4574,9 +4562,10 @@ still useful for letter-heavy text compression, but it cannot directly encode
 the whole `A-Z 0-9 _` plus end/pad alphabet three characters at a time. PackBits
 is more useful for repeated-byte streams than for ordinary symbol names.
 
-The local-prefix codes remain unused in v1 because local labels are `LOCAL NYI`.
-They are reserved so future `.LOOP` and `?LOOP` style local symbols can share
-the same `SYM3` machinery without changing the two-byte key.
+The local-prefix codes now feed the compact ASM-local table. `.LOOP` and
+`?LOOP` are session-local labels scoped by the most recent nonlocal PC label;
+they are not resident/export identities, but they still use the same folded text
+and hash machinery.
 
 Sorting a large resident symbol table by `SYM3`, then hash, then canonical text
 lets ASM skip most unrelated symbols before doing expensive text proof. FNV32
@@ -4905,9 +4894,11 @@ The current proof-sized defaults are useful starting points:
 
 ```text
 ASM_SYM_MAX         32 symbol rows
-ASM_FIX_MAX         16 fixup rows
+ASM_FIX_MAX         24 fixup rows
 ASM_FIX_NAME_MAX    32 bytes, 31 visible chars plus terminator
 ASM_REF_MAX         64 report-reference notes
+ASM_LOCAL_MAX       8 local label rows per active global scope
+ASM_LOCAL_NAME_MAX  16 bytes, 15 visible chars plus terminator
 ASM_LINE_MAX        63 visible input chars
 ASM_CODE_BUF       512 bytes
 ```

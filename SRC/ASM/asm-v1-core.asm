@@ -117,7 +117,6 @@ ASM_STATUS_BAD_RANGE   EQU             $06
 ASM_STATUS_BAD_LINE    EQU             $07
 ASM_STATUS_BAD_SYM     EQU             $08
 ASM_STATUS_BAD_FIX     EQU             $09
-ASM_STATUS_LOCAL_NYI   EQU             $0A
 ASM_STATUS_RJOIN       EQU             $0B
 
 ASM_STEP_BEGIN         EQU             $10
@@ -206,8 +205,10 @@ ASM_STMTF_HAS_TAIL    EQU             $04
 ASM_STMTF_BINDS_PC    EQU             $08
 ASM_STMTF_BINDS_EQU   EQU             $10
 ASM_STMTF_CONTROL     EQU             $20
+ASM_STMTF_LOCAL_NAME  EQU             $40
 
 ASM_SYM_LOOK_SESSION   EQU             $01
+ASM_SYM_LOOK_LOCAL     EQU             $02
 ASM_SYM_LOOK_MARK_USE  EQU             $04
 
 ASM_SYM_STATE_EMPTY    EQU             $00
@@ -256,6 +257,8 @@ ASM_ATOM_REG           EQU             $80
 ASM_FIX_SEL_FULL       EQU             $00
 ASM_FIX_SEL_LO         EQU             $01
 ASM_FIX_SEL_HI         EQU             $02
+ASM_FIX_SEL_MASK       EQU             $03
+ASM_FIXF_LOCAL         EQU             $80
 
 ASM_FIX_PENDING        EQU             $01
 ASM_FIX_RESOLVED       EQU             $02
@@ -264,10 +267,13 @@ ASM_FIX_FAILED         EQU             $80
 ASM_LINE_MAX           EQU             $3F
 ASM_SYM_MAX            EQU             $20
 ASM_SYM_NAME_MAX       EQU             $20
-ASM_FIX_MAX            EQU             $10
+ASM_FIX_MAX            EQU             $18
 ASM_FIX_NAME_MAX       EQU             $20
 ASM_FIX_NAME_BYTES     EQU             (ASM_FIX_MAX*ASM_FIX_NAME_MAX)
 ASM_REF_MAX            EQU             $40
+ASM_LOCAL_MAX          EQU             $08
+ASM_LOCAL_NAME_MAX     EQU             $10
+ASM_LOCAL_NAME_BYTES   EQU             (ASM_LOCAL_MAX*ASM_LOCAL_NAME_MAX)
 ASM_VOC_COUNT          EQU             $52
 
 ASM_VID_DB             EQU             $18
@@ -1736,11 +1742,14 @@ ASM_SMOKE_PARSE_AFTER_FAIL_D:
                         JSR             ASM_SMOKE_PARSE_ERR
                         BCC             ASM_SMOKE_PARSE_FAIL
 
-                        LDA             #ASM_STATUS_LOCAL_NYI
+                        LDA             #ASM_STMT_LABEL_ONLY
                         LDX             #<ASM_SMOKE_PARSE_LOCAL_LABEL
                         LDY             #>ASM_SMOKE_PARSE_LOCAL_LABEL
-                        JSR             ASM_SMOKE_PARSE_ERR
+                        JSR             ASM_SMOKE_PARSE_OK
                         BCC             ASM_SMOKE_PARSE_FAIL
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_LOCAL_NAME
+                        BEQ             ASM_SMOKE_PARSE_FAIL
 
                         LDA             #ASM_STATUS_BAD_DIR
                         LDX             #<ASM_SMOKE_PARSE_DC
@@ -4160,6 +4169,8 @@ ASM_SMOKE_FIXUPS:
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_NAME_SLOT8
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
+                        JSR             ASM_SMOKE_FIXUPS_LOCAL_LABELS
+                        BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_PENDING_END
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
 
@@ -4543,6 +4554,74 @@ ASM_SMOKE_FIXUPS_NAME_SLOT8:
                         RTS
 ASM_SMOKE_FIXUPS_NAME_SLOT8_FAIL:
                         LDA             #$A8
+                        STA             ASM_SLOT
+                        CLC
+                        RTS
+
+ASM_SMOKE_FIXUPS_LOCAL_LABELS:
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDX             #<ASM_FIXUP_LOCAL_MAIN_BRA
+                        LDY             #>ASM_FIXUP_LOCAL_MAIN_BRA
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDX             #<ASM_FIXUP_LOCAL_LDA
+                        LDY             #>ASM_FIXUP_LOCAL_LDA
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDX             #<ASM_FIXUP_LOCAL_SKIP
+                        LDY             #>ASM_FIXUP_LOCAL_SKIP
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDX             #<ASM_FIXUP_LOCAL_NEXT
+                        LDY             #>ASM_FIXUP_LOCAL_NEXT
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDX             #<ASM_PARSE_AT_END
+                        LDY             #>ASM_PARSE_AT_END
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDA             ASM_CODE_BUF
+                        CMP             #$80
+                        BNE             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDA             ASM_CODE_BUF+1
+                        CMP             #$02
+                        BNE             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDA             ASM_CODE_BUF+2
+                        CMP             #$A9
+                        BNE             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDA             ASM_CODE_BUF+3
+                        CMP             #$EE
+                        BNE             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDA             ASM_CODE_BUF+4
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDA             ASM_CODE_BUF+5
+                        CMP             #$EA
+                        BNE             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCC             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDX             #<ASM_FIXUP_LOCAL_MISS
+                        LDY             #>ASM_FIXUP_LOCAL_MISS
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        LDX             #<ASM_FIXUP_LOCAL_NEXT
+                        LDY             #>ASM_FIXUP_LOCAL_NEXT
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        CMP             #ASM_STATUS_BAD_FIX
+                        BNE             ASM_SMOKE_FIXUPS_LOCAL_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_FIXUPS_LOCAL_FAIL:
+                        LDA             #$A9
                         STA             ASM_SLOT
                         CLC
                         RTS
@@ -6340,6 +6419,10 @@ ASM_LINE_SAVE:
                         STA             ASM_LINE_SYM_COUNT
                         LDA             ASM_FIX_COUNT
                         STA             ASM_LINE_FIX_COUNT
+                        LDA             ASM_LOCAL_COUNT
+                        STA             ASM_LINE_LOCAL_COUNT
+                        LDA             ASM_LOCAL_SCOPE_ACTIVE
+                        STA             ASM_LINE_LOCAL_SCOPE_ACTIVE
                         LDA             ASM_REF_COUNT
                         STA             ASM_LINE_REF_COUNT
                         LDA             ASM_FIX_RESOLVE_COUNT
@@ -6393,6 +6476,10 @@ ASM_LINE_ROLLBACK:
                         STA             ASM_SYM_COUNT
                         LDA             ASM_LINE_FIX_COUNT
                         STA             ASM_FIX_COUNT
+                        LDA             ASM_LINE_LOCAL_COUNT
+                        STA             ASM_LOCAL_COUNT
+                        LDA             ASM_LINE_LOCAL_SCOPE_ACTIVE
+                        STA             ASM_LOCAL_SCOPE_ACTIVE
                         LDA             ASM_LINE_REF_COUNT
                         STA             ASM_REF_COUNT
                         LDA             ASM_LINE_FIX_RESOLVE_COUNT
@@ -7537,6 +7624,27 @@ ASM_FIX_HAS_PENDING_NO:
                         CLC
                         RTS
 
+ASM_FIX_HAS_PENDING_LOCAL:
+                        LDX             #$00
+ASM_FIX_HAS_PENDING_LOCAL_LOOP:
+                        CPX             ASM_FIX_COUNT
+                        BCS             ASM_FIX_HAS_PENDING_LOCAL_NO
+                        LDA             ASM_FIX_STATE,X
+                        CMP             #ASM_FIX_PENDING
+                        BNE             ASM_FIX_HAS_PENDING_LOCAL_NEXT
+                        LDA             ASM_FIX_SEL,X
+                        AND             #ASM_FIXF_LOCAL
+                        BNE             ASM_FIX_HAS_PENDING_LOCAL_YES
+ASM_FIX_HAS_PENDING_LOCAL_NEXT:
+                        INX
+                        BRA             ASM_FIX_HAS_PENDING_LOCAL_LOOP
+ASM_FIX_HAS_PENDING_LOCAL_YES:
+                        SEC
+                        RTS
+ASM_FIX_HAS_PENDING_LOCAL_NO:
+                        CLC
+                        RTS
+
 ASM_RESOLVE_FIXUPS_CURRENT:
                         STZ             ASM_FIX_RESOLVE_COUNT
                         LDX             #$00
@@ -7656,6 +7764,7 @@ ASM_PATCH_FIXUP_X:
 
 ASM_PATCH_FIXUP_BYTE:
                         LDA             ASM_FIX_SEL,X
+                        AND             #ASM_FIX_SEL_MASK
                         CMP             #ASM_FIX_SEL_LO
                         BEQ             ASM_PATCH_FIXUP_BYTE_LO
                         CMP             #ASM_FIX_SEL_HI
@@ -8255,9 +8364,6 @@ ASM_PARSE_FIRST_OP:
                         JMP             ASM_PARSE_OK
 
 ASM_PARSE_FIRST_NONE:
-                        LDA             ASM_TOK_FLAGS
-                        AND             #ASM_TF_LOCAL_PREFIX
-                        BNE             ASM_PARSE_LOCAL_NYI
                         JSR             ASM_STORE_NAME_FROM_TOKEN
                         JSR             ASM_NEXT_TOKEN
                         BCC             ASM_PARSE_FAIL_A
@@ -8305,9 +8411,6 @@ ASM_PARSE_BAD_OPER:
 ASM_PARSE_BAD_SYM:
                         LDA             #ASM_STATUS_BAD_SYM
                         BRA             ASM_PARSE_FAIL_A
-ASM_PARSE_LOCAL_NYI:
-                        LDA             #ASM_STATUS_LOCAL_NYI
-
 ASM_PARSE_FAIL_A:
                         STA             ASM_STATUS
                         STA             ASM_LAST_STATUS
@@ -8354,6 +8457,13 @@ ASM_STORE_NAME_FROM_TOKEN:
                         ORA             #ASM_STMTF_HAS_COLON
                         STA             ASM_STMT_FLAGS
 ASM_STORE_NAME_DONE:
+                        LDA             ASM_TOK_FLAGS
+                        AND             #ASM_TF_LOCAL_PREFIX
+                        BEQ             ASM_STORE_NAME_NOT_LOCAL
+                        LDA             ASM_STMT_FLAGS
+                        ORA             #ASM_STMTF_LOCAL_NAME
+                        STA             ASM_STMT_FLAGS
+ASM_STORE_NAME_NOT_LOCAL:
                         RTS
 
 ASM_STORE_OP_FROM_LOOKUP:
@@ -8776,6 +8886,17 @@ ASM_EMIT_DB_ATOM_WORD:
                         STA             ASM_NAME_PTR_LO
                         LDA             ASM_TOKEN_PTR_HI
                         STA             ASM_NAME_PTR_HI
+                        LDA             ASM_TOK_FLAGS
+                        AND             #ASM_TF_LOCAL_PREFIX
+                        BEQ             ASM_EMIT_DB_ATOM_WORD_GLOBAL
+                        LDA             ASM_LOCAL_SCOPE_ACTIVE
+                        BEQ             ASM_EMIT_DB_ATOM_WORD_BAD_SYM
+                        LDA             ASM_LEN
+                        CMP             #ASM_LOCAL_NAME_MAX
+                        BCS             ASM_EMIT_DB_ATOM_WORD_BAD_SYM
+                        LDA             #ASM_SYM_LOOK_LOCAL
+                        BRA             ASM_EMIT_DB_ATOM_WORD_LOOK
+ASM_EMIT_DB_ATOM_WORD_GLOBAL:
                         LDA             ASM_DB_COUNTING
                         BEQ             ASM_EMIT_DB_ATOM_WORD_MARK
                         LDA             #ASM_SYM_LOOK_SESSION
@@ -8794,6 +8915,9 @@ ASM_EMIT_DB_ATOM_WORD_UNRESOLVED:
 ASM_EMIT_DB_ATOM_WORD_OK:
                         SEC
                         RTS
+ASM_EMIT_DB_ATOM_WORD_BAD_SYM:
+                        LDA             #ASM_STATUS_BAD_SYM
+                        JMP             ASM_EMIT_DB_FAIL_A
 
 ASM_EMIT_DB_ATOM_PUNCT:
                         LDA             ASM_TOK_SUB
@@ -9329,7 +9453,23 @@ ASM_PARSE_EXPR_WORD:
                         STA             ASM_NAME_PTR_LO
                         LDA             ASM_TOKEN_PTR_HI
                         STA             ASM_NAME_PTR_HI
+                        LDA             ASM_TOK_FLAGS
+                        AND             #ASM_TF_LOCAL_PREFIX
+                        BEQ             ASM_PARSE_EXPR_WORD_GLOBAL
+                        LDA             ASM_LOCAL_SCOPE_ACTIVE
+                        BNE             ASM_PARSE_EXPR_WORD_LOCAL_ACTIVE
+                        JMP             ASM_PARSE_EXPR_BAD_SYM
+ASM_PARSE_EXPR_WORD_LOCAL_ACTIVE:
+                        LDA             ASM_LEN
+                        CMP             #ASM_LOCAL_NAME_MAX
+                        BCC             ASM_PARSE_EXPR_WORD_LOCAL_LEN_OK
+                        JMP             ASM_PARSE_EXPR_BAD_SYM
+ASM_PARSE_EXPR_WORD_LOCAL_LEN_OK:
+                        LDA             #ASM_SYM_LOOK_LOCAL
+                        BRA             ASM_PARSE_EXPR_WORD_LOOK
+ASM_PARSE_EXPR_WORD_GLOBAL:
                         LDA             #(ASM_SYM_LOOK_SESSION|ASM_SYM_LOOK_MARK_USE)
+ASM_PARSE_EXPR_WORD_LOOK:
                         JSR             ASM_LOOKUP_SYMBOL
                         BCS             ASM_PARSE_EXPR_WORD_FOUND
                         CMP             #ASM_STATUS_OK
@@ -10347,7 +10487,19 @@ ASM_CLASS_LOAD_SYMBOL:
                         STA             ASM_NAME_PTR_LO
                         LDA             ASM_TOKEN_PTR_HI
                         STA             ASM_NAME_PTR_HI
+                        LDA             ASM_TOK_FLAGS
+                        AND             #ASM_TF_LOCAL_PREFIX
+                        BEQ             ASM_CLASS_LOAD_GLOBAL_SYMBOL
+                        LDA             ASM_LOCAL_SCOPE_ACTIVE
+                        BEQ             ASM_CLASS_LOAD_SYMBOL_BAD_SYM
+                        LDA             ASM_LEN
+                        CMP             #ASM_LOCAL_NAME_MAX
+                        BCS             ASM_CLASS_LOAD_SYMBOL_BAD_SYM
+                        LDA             #(ASM_SYM_LOOK_LOCAL|ASM_SYM_LOOK_MARK_USE)
+                        BRA             ASM_CLASS_LOAD_SYMBOL_LOOK
+ASM_CLASS_LOAD_GLOBAL_SYMBOL:
                         LDA             #(ASM_SYM_LOOK_SESSION|ASM_SYM_LOOK_MARK_USE)
+ASM_CLASS_LOAD_SYMBOL_LOOK:
                         JSR             ASM_LOOKUP_SYMBOL
                         BCS             ASM_CLASS_LOAD_SYMBOL_FOUND
                         CMP             #ASM_STATUS_OK
@@ -10355,6 +10507,9 @@ ASM_CLASS_LOAD_SYMBOL:
                         CLC
                         RTS
 ASM_CLASS_LOAD_SYMBOL_MISS:
+                        LDA             ASM_TOK_FLAGS
+                        AND             #ASM_TF_LOCAL_PREFIX
+                        BNE             ASM_CLASS_LOAD_UNRESOLVED
                         JSR             ASM_CLASS_LOAD_RESIDENT_JSR
                         BCS             ASM_CLASS_LOAD_SYMBOL_RESIDENT
                         JMP             ASM_CLASS_LOAD_UNRESOLVED
@@ -10380,6 +10535,10 @@ ASM_CLASS_LOAD_SYMBOL_FOUND:
 ASM_CLASS_LOAD_SYMBOL_WIDTH_OK:
                         STA             ASM_TMP0_HI
                         SEC
+                        RTS
+ASM_CLASS_LOAD_SYMBOL_BAD_SYM:
+                        LDA             #ASM_STATUS_BAD_SYM
+                        CLC
                         RTS
 ASM_CLASS_LOAD_SYMBOL_KEEP_WIDTH:
                         LDA             ASM_WIDTH
@@ -10437,6 +10596,13 @@ ASM_CAPTURE_FIX_PLAN_CURRENT:
                         STA             ASM_FIX_PLAN_HASH2
                         LDA             ASM_HASH3
                         STA             ASM_FIX_PLAN_HASH3
+                        LDA             ASM_TOK_FLAGS
+                        AND             #ASM_TF_LOCAL_PREFIX
+                        BEQ             ASM_CAPTURE_FIX_PLAN_GLOBAL
+                        LDA             ASM_FIX_PLAN_SEL
+                        ORA             #ASM_FIXF_LOCAL
+                        STA             ASM_FIX_PLAN_SEL
+ASM_CAPTURE_FIX_PLAN_GLOBAL:
                         RTS
 
 ASM_LOAD_FIX_PLAN_CURRENT:
@@ -10666,6 +10832,11 @@ ASM_CLEAR_STMT:
 ; ----------------------------------------------------------------------------
 ASM_LOOKUP_SYMBOL:
                         STA             ASM_FLAGS
+                        AND             #ASM_SYM_LOOK_LOCAL
+                        BEQ             ASM_LOOKUP_SYMBOL_NOT_LOCAL
+                        JMP             ASM_LOOKUP_LOCAL_SYMBOL
+ASM_LOOKUP_SYMBOL_NOT_LOCAL:
+                        LDA             ASM_FLAGS
                         AND             #ASM_SYM_LOOK_SESSION
                         BNE             ASM_LOOKUP_SYMBOL_HAVE_SESSION
                         JMP             ASM_LOOKUP_SYMBOL_NONE
@@ -10756,13 +10927,77 @@ ASM_LOOKUP_SYMBOL_NONE:
                         CLC
                         RTS
 
+ASM_LOOKUP_LOCAL_SYMBOL:
+                        LDA             ASM_LOCAL_SCOPE_ACTIVE
+                        BEQ             ASM_LOOKUP_LOCAL_NONE
+                        LDX             #$00
+ASM_LOOKUP_LOCAL_LOOP:
+                        CPX             ASM_LOCAL_COUNT
+                        BEQ             ASM_LOOKUP_LOCAL_NONE
+                        LDA             ASM_HASH0
+                        CMP             ASM_LOCAL_HASH0,X
+                        BNE             ASM_LOOKUP_LOCAL_NEXT
+                        LDA             ASM_HASH1
+                        CMP             ASM_LOCAL_HASH1,X
+                        BNE             ASM_LOOKUP_LOCAL_NEXT
+                        LDA             ASM_HASH2
+                        CMP             ASM_LOCAL_HASH2,X
+                        BNE             ASM_LOOKUP_LOCAL_NEXT
+                        LDA             ASM_HASH3
+                        CMP             ASM_LOCAL_HASH3,X
+                        BNE             ASM_LOOKUP_LOCAL_NEXT
+                        LDA             ASM_LEN
+                        CMP             ASM_LOCAL_NAME_LEN,X
+                        BNE             ASM_LOOKUP_LOCAL_NEXT
+                        JSR             ASM_LOCAL_TEXT_MATCH_X
+                        BCC             ASM_LOOKUP_LOCAL_NEXT
+                        STX             ASM_SLOT
+                        LDA             ASM_LOCAL_VAL_LO,X
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_LOCAL_VAL_HI,X
+                        STA             ASM_VALUE_HI
+                        LDA             #$FF
+                        STA             ASM_CARE_LO
+                        STA             ASM_CARE_HI
+                        LDA             #ASM_SYMK_ADDR
+                        STA             ASM_MODE
+                        LDA             #ASM_WIDTH_ABS
+                        STA             ASM_WIDTH
+                        LDY             #$01
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        SEC
+                        RTS
+ASM_LOOKUP_LOCAL_NEXT:
+                        INX
+                        BRA             ASM_LOOKUP_LOCAL_LOOP
+ASM_LOOKUP_LOCAL_NONE:
+                        LDX             #$FF
+                        STX             ASM_SLOT
+                        LDY             #$00
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        CLC
+                        RTS
+
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_BIND_LABEL
 ; Define the current statement name as ADDR/ABS at the current ASM PC.
 ; ----------------------------------------------------------------------------
 ASM_BIND_LABEL:
                         JSR             ASM_LOAD_NAME_FROM_STMT
-                        BCC             ASM_BIND_LABEL_BAD
+                        BCS             ASM_BIND_LABEL_NAME_OK
+                        JMP             ASM_BIND_LABEL_BAD
+ASM_BIND_LABEL_NAME_OK:
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_LOCAL_NAME
+                        BEQ             ASM_BIND_GLOBAL_LABEL
+                        JMP             ASM_BIND_LOCAL_LABEL
+ASM_BIND_GLOBAL_LABEL:
+                        JSR             ASM_CLOSE_LOCAL_SCOPE
+                        BCS             ASM_BIND_GLOBAL_SCOPE_OK
+                        BRA             ASM_BIND_LABEL_FAIL_A
+ASM_BIND_GLOBAL_SCOPE_OK:
                         LDA             #ASM_SYM_LOOK_SESSION
                         JSR             ASM_LOOKUP_SYMBOL
                         BCS             ASM_BIND_LABEL_BAD
@@ -10823,13 +11058,76 @@ ASM_BIND_LABEL_FAIL_A:
                         CLC
                         RTS
 
+ASM_BIND_LOCAL_LABEL:
+                        LDA             ASM_LOCAL_SCOPE_ACTIVE
+                        BEQ             ASM_BIND_LOCAL_BAD_SYM
+                        LDA             ASM_LEN
+                        CMP             #ASM_LOCAL_NAME_MAX
+                        BCS             ASM_BIND_LOCAL_BAD_SYM
+                        LDA             #ASM_SYM_LOOK_LOCAL
+                        JSR             ASM_LOOKUP_SYMBOL
+                        BCS             ASM_BIND_LOCAL_BAD_SYM
+                        LDX             ASM_LOCAL_COUNT
+                        CPX             #ASM_LOCAL_MAX
+                        BCS             ASM_BIND_LOCAL_BAD_SYM
+                        STX             ASM_SLOT
+                        JSR             ASM_STORE_LOCAL_NAME_X
+                        LDA             ASM_PC_LO
+                        STA             ASM_LOCAL_VAL_LO,X
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_PC_HI
+                        STA             ASM_LOCAL_VAL_HI,X
+                        STA             ASM_VALUE_HI
+                        INC             ASM_LOCAL_COUNT
+                        PHX
+                        PHY
+                        JSR             ASM_RESOLVE_FIXUPS_CURRENT
+                        BCS             ASM_BIND_LOCAL_RESOLVED_OK
+                        STA             ASM_TMP0_LO
+                        PLY
+                        PLX
+                        LDA             ASM_TMP0_LO
+                        BRA             ASM_BIND_LABEL_FAIL_A
+ASM_BIND_LOCAL_RESOLVED_OK:
+                        PLY
+                        PLX
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        LDY             ASM_PC_HI
+                        SEC
+                        RTS
+ASM_BIND_LOCAL_BAD_SYM:
+                        LDA             #ASM_STATUS_BAD_SYM
+                        BRA             ASM_BIND_LABEL_FAIL_A
+
+ASM_CLOSE_LOCAL_SCOPE:
+                        JSR             ASM_FIX_HAS_PENDING_LOCAL
+                        BCC             ASM_CLOSE_LOCAL_SCOPE_OK
+                        LDA             #ASM_STATUS_BAD_FIX
+                        CLC
+                        RTS
+ASM_CLOSE_LOCAL_SCOPE_OK:
+                        STZ             ASM_LOCAL_COUNT
+                        LDA             #$01
+                        STA             ASM_LOCAL_SCOPE_ACTIVE
+                        LDA             #ASM_STATUS_OK
+                        SEC
+                        RTS
+
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_DEFINE_EQU
 ; Define the current statement name from resolved ASM_VALUE/CARE/MODE/WIDTH.
 ; ----------------------------------------------------------------------------
 ASM_DEFINE_EQU:
                         JSR             ASM_LOAD_NAME_FROM_STMT
-                        BCC             ASM_DEFINE_EQU_BAD_SYM
+                        BCS             ASM_DEFINE_EQU_NAME_OK
+                        JMP             ASM_DEFINE_EQU_BAD_SYM
+ASM_DEFINE_EQU_NAME_OK:
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_LOCAL_NAME
+                        BEQ             ASM_DEFINE_EQU_NOT_LOCAL
+                        JMP             ASM_DEFINE_EQU_BAD_SYM
+ASM_DEFINE_EQU_NOT_LOCAL:
                         LDA             ASM_MODE
                         CMP             #ASM_SYMK_VALUE
                         BEQ             ASM_DEFINE_EQU_KIND_OK
@@ -10971,6 +11269,67 @@ ASM_SYM_TEXT_MATCH_YES:
                         RTS
 ASM_SYM_TEXT_MATCH_NO:
                         CLC
+                        RTS
+
+ASM_STORE_LOCAL_NAME_X:
+                        LDA             ASM_HASH0
+                        STA             ASM_LOCAL_HASH0,X
+                        LDA             ASM_HASH1
+                        STA             ASM_LOCAL_HASH1,X
+                        LDA             ASM_HASH2
+                        STA             ASM_LOCAL_HASH2,X
+                        LDA             ASM_HASH3
+                        STA             ASM_LOCAL_HASH3,X
+                        LDA             ASM_LEN
+                        STA             ASM_LOCAL_NAME_LEN,X
+                        JSR             ASM_SET_LOCAL_NAME_PTR_X
+                        LDY             #$00
+ASM_STORE_LOCAL_NAME_LOOP:
+                        CPY             ASM_LEN
+                        BEQ             ASM_STORE_LOCAL_NAME_TERM
+                        LDA             (ASM_NAME_PTR_LO),Y
+                        AND             #$7F
+                        JSR             ASM_FOLD_UPPER_A
+                        STA             (ASM_SYM_PTR_LO),Y
+                        INY
+                        BRA             ASM_STORE_LOCAL_NAME_LOOP
+ASM_STORE_LOCAL_NAME_TERM:
+                        LDA             #$00
+                        STA             (ASM_SYM_PTR_LO),Y
+                        RTS
+
+ASM_LOCAL_TEXT_MATCH_X:
+                        JSR             ASM_SET_LOCAL_NAME_PTR_X
+                        LDY             #$00
+ASM_LOCAL_TEXT_MATCH_LOOP:
+                        CPY             ASM_LEN
+                        BEQ             ASM_LOCAL_TEXT_MATCH_YES
+                        LDA             (ASM_NAME_PTR_LO),Y
+                        AND             #$7F
+                        JSR             ASM_FOLD_UPPER_A
+                        CMP             (ASM_SYM_PTR_LO),Y
+                        BNE             ASM_LOCAL_TEXT_MATCH_NO
+                        INY
+                        BRA             ASM_LOCAL_TEXT_MATCH_LOOP
+ASM_LOCAL_TEXT_MATCH_YES:
+                        SEC
+                        RTS
+ASM_LOCAL_TEXT_MATCH_NO:
+                        CLC
+                        RTS
+
+ASM_SET_LOCAL_NAME_PTR_X:
+                        TXA
+                        ASL
+                        ASL
+                        ASL
+                        ASL
+                        CLC
+                        ADC             #<ASM_LOCAL_NAMES
+                        STA             ASM_SYM_PTR_LO
+                        LDA             #>ASM_LOCAL_NAMES
+                        ADC             #$00
+                        STA             ASM_SYM_PTR_HI
                         RTS
 
 ASM_SET_SYM_NAME_PTR_X:
@@ -11242,6 +11601,8 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_LINE_COUNT_HI
                         STZ             ASM_SYM_COUNT
                         STZ             ASM_FIX_COUNT
+                        STZ             ASM_LOCAL_COUNT
+                        STZ             ASM_LOCAL_SCOPE_ACTIVE
                         STZ             ASM_REF_COUNT
                         STZ             ASM_REPORT_FLAGS
                         STZ             ASM_FIX_PLAN_NAME_PTR_LO
@@ -11281,6 +11642,9 @@ ASM_LINE_HIGH_PC_LO:   DB              $00
 ASM_LINE_HIGH_PC_HI:   DB              $00
 ASM_LINE_SYM_COUNT:    DB              $00
 ASM_LINE_FIX_COUNT:    DB              $00
+ASM_LINE_LOCAL_COUNT:  DB              $00
+ASM_LINE_LOCAL_SCOPE_ACTIVE:
+                        DB              $00
 ASM_LINE_REF_COUNT:    DB              $00
 ASM_LINE_FIX_RESOLVE_COUNT:
                         DB              $00
@@ -11393,6 +11757,17 @@ ASM_SYM_USECNT:        DS              ASM_SYM_MAX
 ASM_SYM_FIRSTREF_LO:   DS              ASM_SYM_MAX
 ASM_SYM_FIRSTREF_HI:   DS              ASM_SYM_MAX
 ASM_SYM_NAMES:         DS              (ASM_SYM_MAX*ASM_SYM_NAME_MAX)
+ASM_LOCAL_COUNT:       DB              $00
+ASM_LOCAL_SCOPE_ACTIVE:
+                        DB              $00
+ASM_LOCAL_NAME_LEN:    DS              ASM_LOCAL_MAX
+ASM_LOCAL_VAL_LO:      DS              ASM_LOCAL_MAX
+ASM_LOCAL_VAL_HI:      DS              ASM_LOCAL_MAX
+ASM_LOCAL_HASH0:       DS              ASM_LOCAL_MAX
+ASM_LOCAL_HASH1:       DS              ASM_LOCAL_MAX
+ASM_LOCAL_HASH2:       DS              ASM_LOCAL_MAX
+ASM_LOCAL_HASH3:       DS              ASM_LOCAL_MAX
+ASM_LOCAL_NAMES:       DS              ASM_LOCAL_NAME_BYTES
 ASM_FIX_STATE:         DS              ASM_FIX_MAX
 ASM_FIX_MODE:          DS              ASM_FIX_MAX
 ASM_FIX_SEL:           DS              ASM_FIX_MAX
@@ -11872,6 +12247,12 @@ ASM_SMOKE_TXN_AFTER_LABEL:
                         DB              "AFTER",0
 ASM_FIXUP_LDA_LO_FOO:  DB              "        LDA #<FOO",0
 ASM_FIXUP_LDA_HI_FOO:  DB              "        LDA #>FOO",0
+ASM_FIXUP_LOCAL_MAIN_BRA:
+                        DB              "MAIN BRA .SKIP",0
+ASM_FIXUP_LOCAL_LDA:   DB              "        LDA #$EE",0
+ASM_FIXUP_LOCAL_SKIP:  DB              ".SKIP NOP",0
+ASM_FIXUP_LOCAL_NEXT:  DB              "NEXT NOP",0
+ASM_FIXUP_LOCAL_MISS:  DB              "MAIN BRA .MISS",0
 ASM_FIXUP_JSR_BAR:     DB              "        JSR BAR",0
 ASM_FIXUP_FOO_LABEL:   DB              "FOO",0
 ASM_DIRECT_ADDR_EQU:   DB              "ADDR EQU $1234",0

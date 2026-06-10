@@ -3195,12 +3195,17 @@ The interactive/random slice opens the ASM table ceilings to:
 
 ```text
 ASM_SYM_MAX=$20
-ASM_FIX_MAX=$10
+ASM_FIX_MAX=$18
 ASM_REF_MAX=$40
+ASM_LOCAL_MAX=$08
+ASM_LOCAL_NAME_MAX=$10
 ```
 
 The standalone smoke path now includes a fixup-name slot-8 pointer check so
-the 16-row fixup table cannot silently wrap row 8 onto row 0 again.
+the expanded fixup table cannot silently wrap row 8 onto row 0 again. The same
+host smoke now proves local labels by assembling a forward `BRA .SKIP`, binding
+`.SKIP` inside `MAIN`, opening `NEXT` after resolution, and rejecting a second
+sample where unresolved `.MISS` would cross into `NEXT`.
 
 ### ASM 4.20 Bad Samples
 
@@ -3210,15 +3215,15 @@ Required bad cases:
 
 ```text
 BAD_LINE       source line longer than 63 visible chars
-BAD_SYM        duplicate symbol, reserved word as label, EQU without name
+BAD_SYM        duplicate symbol, reserved word as label, EQU without name,
+               local label/reference before a global scope, or local EQU
 BAD_MNEM       pending label followed by non-vocabulary operation
 BAD_DIR        parked directive used in v1
 BAD_OPER       missing operand, extra operand, malformed parentheses
 BAD_WIDTH      LDA 12, $123, unknown bare DB ADDR
 BAD_RANGE      LDA #$1234, branch out of range, bit number 8
 BAD_MODE       LDA A, unsupported classified operand mode
-BAD_FIX        unresolved required fixup at END
-LOCAL_NYI      .LOOP or ?LOOP
+BAD_FIX        unresolved required fixup at END, unresolved local at scope close
 ```
 
 Each bad sample must document:
@@ -3292,7 +3297,7 @@ LABEL: LDA #1     -> WORD/HAS_COLON, WORD, PUNCT #, NUMBER
 'A' 'a' '''       -> CHAR values $41, $61, $27
 ; outside quote    -> EOL
 ; inside quote      -> char/string content later
-.LOOP ?LOOP        -> WORD LOCAL_PREFIX, later LOCAL NYI
+.LOOP ?LOOP        -> WORD LOCAL_PREFIX
 ```
 
 Acceptance:
@@ -3382,7 +3387,7 @@ SEED DB               -> BAD OPER
 DC $52                -> BAD DIR
 START                 -> BAD DIR
 A LDA #1              -> BAD SYM
-.LOOP                 -> LOCAL NYI
+.LOOP                 -> LABEL_ONLY with LOCAL_NAME flag
 ```
 
 Smoke parser-head fixtures adapted from `ASMTEST_3000`:
@@ -3790,7 +3795,7 @@ board was updated with STR8 `UPDATE HIMON C000-EFFF`. The board booted
 `BEGIN` because STR8 `U` does not touch the top sector:
 
 ```text
-L OK=3ACA GO=2000
+L OK=3EF4 GO=2000
 ASM RT PASTE
 BEGIN=$0B
 
@@ -5219,7 +5224,6 @@ $06 BAD_RANGE
 $07 BAD_LINE
 $08 BAD_SYM
 $09 BAD_FIX
-$0A LOCAL_NYI
 ```
 
 `Y` is `ASM_SLOT`, the last fixed-vocabulary slot touched by lookup. `$FF`
