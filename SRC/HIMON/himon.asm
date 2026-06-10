@@ -195,6 +195,10 @@ MON_INIT_COMMON:
                         STA             RESET_SIG2
                         LDA             #$3C
                         STA             RESET_SIG3
+                        LDA             #<THE_JOIN_EXEC_XY
+                        STA             RJOIN_EXEC_XY_LO
+                        LDA             #>THE_JOIN_EXEC_XY
+                        STA             RJOIN_EXEC_XY_HI
                         JSR             SYS_INIT
                         JSR             SYS_FLUSH_RX
 

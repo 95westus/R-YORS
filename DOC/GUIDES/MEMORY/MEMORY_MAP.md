@@ -177,7 +177,8 @@ $7A00-$7AFF   scratch buffer
 $7B00-$7BFF   command buffer
 $7C00-$7CFF   loader line buffer
 $7D00-$7DFF   loader data buffer
-$7E00-$7E45   free buffer spill / scratch
+$7E00-$7E01   HIMON-published RJOIN addr16 (`THE_JOIN_EXEC_XY`)
+$7E02-$7E45   free buffer spill / scratch
 $7E46-$7E65   debugger / assembler workspace
 $7E66-$7E75   FNV hash and command-exec metadata
 $7E76-$7E94   command/parser/keytest workspace

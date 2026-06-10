@@ -599,11 +599,18 @@ A [addr] [label[:]] MMM [operand] .
   `SYS_READ_CHAR_TIMEOUT_SPINDOWN` until the sender is quiet for the local idle
   window. It returns to HIMON with `C=0`, `A=status`, and `X/Y=current PC`;
   it does not call `ASM_BEGIN` or show another `ASM> ` prompt.
-- ASM 2.57 may use the future seed vector pocket for `HASH ACQUIRE`: read
-  `$FFF8/$FFF9`, reject `$FFFF` and high bytes below `$C0`, verify the pointer
-  by resolving `THE_JOIN_EXEC_XY`, then use it as the resident joiner. If any
-  check fails, keep the local scanner bootstrap. HIMON/STR8 seed-pocket
-  stamping remains a later upgrade.
+- Current seed-only ASM requires the `HASH ACQUIRE` seed at the fixed RAM cell
+  `$7E00/$7E01`. HIMON publishes the current `THE_JOIN_EXEC_XY` addr16 there
+  during common init, so the value follows HIMON if the resident join routine
+  moves. ASM rejects `$FFFF` and high bytes below `$C0`, then uses the pointer as
+  the resident joiner. The local scanner bootstrap is no longer carried in the
+  `$8000` ASM/no-header direction.
+- STR8 `U` / `UPDATE HIMON` programs only `$C000-$EFFF`, but that is enough for
+  the RAM seed contract: after HIMON starts, it publishes the new joiner address
+  without needing a top-sector `$FFF8/$FFF9` flash patch.
+- The intended layering is STR8 for boot/flash policy, T.H.E. for the hash/join
+  contract, HIMON for resident service publication, and ASM as a client of
+  those resident services.
 - `LDA #$1234` is `BAD RANGE` because immediate byte width is known but the
   value is too large. `LDA ($1234),Y` is `BAD MODE` because that data addressing
   form is zero-page-only. `LABEL END` is `BAD SYM`; `END X` is `BAD OPER`.

@@ -3196,7 +3196,7 @@ The interactive/random slice opens the ASM table ceilings to:
 ```text
 ASM_SYM_MAX=$20
 ASM_FIX_MAX=$10
-ASM_REF_MAX=$20
+ASM_REF_MAX=$40
 ```
 
 The standalone smoke path now includes a fixup-name slot-8 pointer check so
@@ -3777,6 +3777,45 @@ the joiner hash, ASM falls back to the existing local scanner. HIMON does not
 stamp the seed pocket yet; this is ASM-only readiness for the later HIMON/STR8
 upgrade. The guarded seed path costs `$29` bytes over ASM 2.56 while the scanner
 fallback remains present.
+
+Current seed-only ASM supersedes the ASM 2.57 fallback policy for the `$8000`
+ASM/no-header direction. `ASM_RJOIN_INIT` now requires `$7E00/$7E01` to hold a
+ROM-space `HASH ACQUIRE` seed and no longer carries the local scanner bootstrap.
+HIMON publishes the current `THE_JOIN_EXEC_XY` addr16 there during common init,
+so the seed follows the resident joiner if HIMON moves it.
+
+On 2026-06-09, the earlier `$FFF8/$FFF9` flash-pocket policy failed after a
+board was updated with STR8 `UPDATE HIMON C000-EFFF`. The board booted
+`HIMON V 00.0609(1739)`, loaded `ASM RT PASTE` at `$2000`, and failed before
+`BEGIN` because STR8 `U` does not touch the top sector:
+
+```text
+L OK=3ACA GO=2000
+ASM RT PASTE
+BEGIN=$0B
+
+#LOADGO# ENTRY=2000
+RET A=0B X=FF Y=FF P=F4 S=FD NV-BdIzc
+```
+
+Current host proof must include `make -C SRC asm-test` plus a HIMON build whose
+map shows both the RAM-published seed cell and `THE_JOIN_EXEC_XY`. Current board
+proof should check the RAM cell, then load ASM:
+
+```text
+>D 7E00 7E01
+expect low/high bytes of THE_JOIN_EXEC_XY, currently 8E DE
+>L G
+L S19
+send BUILD/s19/asm-v1-runtime-paste-2000.s19
+expect ASM RT PASTE to reach BEGIN and accept source
+```
+
+Hardware on `HIMON V 00.0609(1904)` reached `ASM RT PASTE`, accepted `.`, and
+dumped `$7E00: 8E DE`, proving the RAM seed path after a STR8 HIMON-only update.
+A later broad opcode/addressing paste failed at the 33rd named operand reference
+with `ERR=$09 BAD FIX`; that was the report-reference ceiling, not the seed.
+Current source raises `ASM_REF_MAX` to `$40` without adding table storage.
 
 ASM 2.57 expected host-built S19 marker:
 
@@ -5664,6 +5703,58 @@ $6910       = 0F
 ASM 2.63 adds host-side expected image comparison before trusting the full
 sample assembly path. The checker compares emitted bytes and the runtime output
 oracle, not just source shape, as more source-file assembly plumbing lands.
+
+## Hardware Proof: Directive/DS Shrink
+
+The directive dispatcher, `DS`, and expression-failure shrink was hardware
+proven on 2026-06-09 with HIMON V 00.0608(1850). Positive proof:
+
+```text
+ASM>         ORG $7200
+OK PC=$7200
+ASM> OUT     EQU $7100
+OK PC=$7200
+ASM> BASE    EQU $7200
+OK PC=$7200
+ASM> COUNT   EQU 3+2
+OK PC=$7200
+ASM> BUF     DS COUNT,$AA,$55
+OK PC=$7205
+ASM>         ORG BASE+16
+OK PC=$7210
+ASM> MARK    EQU *
+OK PC=$7210
+ASM>         DB <MARK,>MARK,COUNT
+OK PC=$7213
+ASM>         END
+OK PC=$7213
+ASM RT PASTE OK
+>D 7200 7204
+7200: AA 55 AA 55 AA | .U.U.
+>D 7210 7212
+7210: 10 72 05 | .r.
+```
+
+Negative proof keeps rejected `DS` lines from advancing PC and still accepts the
+following `DB`:
+
+```text
+ASM>         ORG $7220
+OK PC=$7220
+ASM>         DS %XXXXXXX1
+ERR=$05 BAD WIDTH PC=$7220
+ASM>         DS $0100
+ERR=$06 BAD RANGE PC=$7220
+ASM>         DS 1,%XXXXXXX1
+ERR=$05 BAD WIDTH PC=$7220
+ASM>         DB $5A
+OK PC=$7221
+ASM>         END
+OK PC=$7221
+ASM RT PASTE OK
+>D 7220
+7220: 5A | Z
+```
 
 ## Regression Protocol
 

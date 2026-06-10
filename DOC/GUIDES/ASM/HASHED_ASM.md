@@ -4907,7 +4907,7 @@ The current proof-sized defaults are useful starting points:
 ASM_SYM_MAX         32 symbol rows
 ASM_FIX_MAX         16 fixup rows
 ASM_FIX_NAME_MAX    32 bytes, 31 visible chars plus terminator
-ASM_REF_MAX         32 report-reference notes
+ASM_REF_MAX         64 report-reference notes
 ASM_LINE_MAX        63 visible input chars
 ASM_CODE_BUF       512 bytes
 ```
@@ -5011,10 +5011,13 @@ the wrapper calls `SYS_FLUSH_RX`, then repeatedly consumes timed input with
 window. It returns to HIMON with `C=0`, `A=status`, and `X/Y=current PC`, and
 does not reopen an ASM session.
 
-ASM 2.57 can seed its resident joiner from the future vector pocket at
-`$FFF8/$FFF9`. The seed is accepted only if it is not `$FFFF`, has a ROM-ish
-high byte (`>= $C0`), and can resolve `THE_JOIN_EXEC_XY`; otherwise ASM keeps
-using its local scanner bootstrap. HIMON/STR8 do not stamp that pocket yet.
+Current seed-only ASM requires its resident joiner seed at `$7E00/$7E01`.
+HIMON publishes the current `THE_JOIN_EXEC_XY` addr16 there during common init.
+The seed is accepted only if it is not `$FFFF` and has a ROM-ish high byte
+(`>= $C0`); ASM then treats that pointer as the `HASH ACQUIRE` joiner. The
+local scanner bootstrap is removed for the `$8000` ASM/no-header direction, and
+STR8 `U` / `UPDATE HIMON` works without patching top-sector flash because the
+seed cell is refreshed in RAM after HIMON starts.
 
 ASM 2.58 routes mnemonic statements through dispatch emission. Label-only
 statements bind the current PC, label+mnemonic statements bind before emission,

@@ -50,10 +50,17 @@ RESET_SIG2                EQU             $7EE8
 RESET_SIG3                EQU             $7EE9
 
 ; ----------------------------------------------------------------------------
+; Group C: resident published service-entry cells
+; ----------------------------------------------------------------------------
+RJOIN_EXEC_XY_LO           EQU             $7E00
+RJOIN_EXEC_XY_HI           EQU             $7E01
+
+; ----------------------------------------------------------------------------
 ; Group D: monitor/parser/load workspace (packed into the high 7E page)
 ; ----------------------------------------------------------------------------
 ; 7E page map:
-; - $7E00-$7E45 free buffer spill/scratch after page buffers
+; - $7E00-$7E01 resident published RJOIN addr16
+; - $7E02-$7E45 free buffer spill/scratch after page buffers
 ; - $7E46-$7E65 debugger/assembler workspace
 ; - $7E66-$7E75 hash record/exec metadata
 ; - $7E76-$7E94 command/parser/keytest workspace

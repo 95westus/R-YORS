@@ -91,11 +91,9 @@ ASM_RJ_HASH_PTR_LO    EQU             ASM_REF_PTR_LO
 ASM_RJ_HASH_PTR_HI    EQU             ASM_REF_PTR_HI
 ASM_RJ_STR_LO         EQU             ASM_TMP0_LO
 ASM_RJ_STR_HI         EQU             ASM_TMP0_HI
-ASM_RJ_SCAN_LO        EQU             ASM_SCAN_PTR_LO
-ASM_RJ_SCAN_HI        EQU             ASM_SCAN_PTR_HI
 
-ASM_SEED_HASH_ACQUIRE_LO EQU          $FFF8
-ASM_SEED_HASH_ACQUIRE_HI EQU          $FFF9
+ASM_SEED_HASH_ACQUIRE_LO EQU          $7E00
+ASM_SEED_HASH_ACQUIRE_HI EQU          $7E01
 ASM_SEED_ROM_MIN_HI      EQU          $C0
 
 ASM_TOK_KIND          EQU             ASM_MODE
@@ -263,19 +261,13 @@ ASM_FIX_PENDING        EQU             $01
 ASM_FIX_RESOLVED       EQU             $02
 ASM_FIX_FAILED         EQU             $80
 
-ASM_RJ_HASH_SIG2       EQU             ('V'+$80)
-ASM_RJ_KIND_EXEC       EQU             $01
-ASM_RJ_KIND_EXEC_TEXT  EQU             $05
-ASM_RJ_KIND_EXEC_CONFIRM_TEXT EQU       $07
-ASM_RJ_SCAN_BASE_HI    EQU             $C0
-
 ASM_LINE_MAX           EQU             $3F
 ASM_SYM_MAX            EQU             $20
 ASM_SYM_NAME_MAX       EQU             $20
 ASM_FIX_MAX            EQU             $10
 ASM_FIX_NAME_MAX       EQU             $20
 ASM_FIX_NAME_BYTES     EQU             (ASM_FIX_MAX*ASM_FIX_NAME_MAX)
-ASM_REF_MAX            EQU             $20
+ASM_REF_MAX            EQU             $40
 ASM_VOC_COUNT          EQU             $52
 
 ASM_VID_DB             EQU             $18
@@ -1194,44 +1186,30 @@ ASM_SMOKE_PRINT_FAIL_DIR_D5:
 
 ASM_RJOIN_INIT:
                         LDA             ASM_RJ_READY
-                        BEQ             ASM_RJOIN_INIT_SCAN
+                        BEQ             ASM_RJOIN_INIT_SEED
                         LDA             ASM_RJ_JOINER_HI
-                        BEQ             ASM_RJOIN_INIT_SCAN
+                        BEQ             ASM_RJOIN_INIT_SEED
                         LDA             ASM_RJ_WRITE_HI
-                        BEQ             ASM_RJOIN_INIT_SCAN
+                        BEQ             ASM_RJOIN_INIT_SEED
                         LDA             ASM_RJ_FNV_INIT_HI
-                        BEQ             ASM_RJOIN_INIT_SCAN
+                        BEQ             ASM_RJOIN_INIT_SEED
                         LDA             ASM_RJ_FNV_UPDATE_HI
-                        BEQ             ASM_RJOIN_INIT_SCAN
+                        BEQ             ASM_RJOIN_INIT_SEED
                         SEC
                         RTS
-ASM_RJOIN_INIT_SCAN:
+ASM_RJOIN_INIT_SEED:
                         STZ             ASM_RJ_READY
                         LDA             #ASM_STEP_RJOIN_JOINER
                         STA             ASM_START_STEP
                         LDX             ASM_SEED_HASH_ACQUIRE_LO
                         LDY             ASM_SEED_HASH_ACQUIRE_HI
                         CPY             #ASM_SEED_ROM_MIN_HI
-                        BCC             ASM_RJOIN_INIT_SCAN_JOINER
+                        BCC             ASM_RJOIN_INIT_FAIL
                         CPY             #$FF
                         BNE             ASM_RJOIN_INIT_SEED_OK
                         CPX             #$FF
-                        BEQ             ASM_RJOIN_INIT_SCAN_JOINER
+                        BEQ             ASM_RJOIN_INIT_FAIL
 ASM_RJOIN_INIT_SEED_OK:
-                        STX             ASM_RJ_JOINER_LO
-                        STY             ASM_RJ_JOINER_HI
-                        LDX             #<ASM_HASH_THE_JOIN_EXEC_XY
-                        LDY             #>ASM_HASH_THE_JOIN_EXEC_XY
-                        JSR             ASM_RJ_RESIDENT_XY
-                        BCC             ASM_RJOIN_INIT_SCAN_JOINER
-                        STX             ASM_RJ_JOINER_LO
-                        STY             ASM_RJ_JOINER_HI
-                        BRA             ASM_RJOIN_INIT_JOINER_READY
-ASM_RJOIN_INIT_SCAN_JOINER:
-                        LDX             #<ASM_HASH_THE_JOIN_EXEC_XY
-                        LDY             #>ASM_HASH_THE_JOIN_EXEC_XY
-                        JSR             ASM_RJ_JOIN_EXEC_XY
-                        BCC             ASM_RJOIN_INIT_FAIL
                         STX             ASM_RJ_JOINER_LO
                         STY             ASM_RJ_JOINER_HI
 ASM_RJOIN_INIT_JOINER_READY:
@@ -1305,19 +1283,6 @@ ASM_RJOIN_INIT_IO_FAIL:
                         RTS
                         ENDIF
 
-ASM_RJ_JOIN_EXEC_XY:
-                        JSR             ASM_RJ_FIND_XY
-                        BCC             ASM_RJ_JOIN_FAIL
-                        AND             #ASM_RJ_KIND_EXEC
-                        BEQ             ASM_RJ_JOIN_FAIL
-                        LDX             ASM_RJ_JOIN_LO
-                        LDY             ASM_RJ_JOIN_HI
-                        SEC
-                        RTS
-ASM_RJ_JOIN_FAIL:
-                        CLC
-                        RTS
-
 ASM_RJ_RESIDENT_XY:
                         STX             ASM_RJ_HASH_PTR_LO
                         STY             ASM_RJ_HASH_PTR_HI
@@ -1386,116 +1351,6 @@ ASM_RJ_PRINT_CRLF:
                         JSR             ASM_RJ_WRITE_BYTE
                         LDA             #$0A
                         JMP             ASM_RJ_WRITE_BYTE
-
-ASM_RJ_FIND_XY:
-                        STX             ASM_RJ_HASH_PTR_LO
-                        STY             ASM_RJ_HASH_PTR_HI
-                        STZ             ASM_RJ_SCAN_LO
-                        LDA             #ASM_RJ_SCAN_BASE_HI
-                        STA             ASM_RJ_SCAN_HI
-ASM_RJ_FIND_LOOP:
-                        JSR             ASM_RJ_FIND_AT_END
-                        BCS             ASM_RJ_FIND_FAIL
-                        JSR             ASM_RJ_FIND_IS_RECORD
-                        BCC             ASM_RJ_FIND_ADV
-                        JSR             ASM_RJ_FIND_MATCH
-                        BCS             ASM_RJ_FIND_FOUND
-ASM_RJ_FIND_ADV:
-                        INC             ASM_RJ_SCAN_LO
-                        BNE             ASM_RJ_FIND_LOOP
-                        INC             ASM_RJ_SCAN_HI
-                        BRA             ASM_RJ_FIND_LOOP
-
-ASM_RJ_FIND_FOUND:
-                        LDY             #$07
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        CMP             #ASM_RJ_KIND_EXEC_TEXT
-                        BEQ             ASM_RJ_FIND_FOUND_PTR
-                        CMP             #ASM_RJ_KIND_EXEC_CONFIRM_TEXT
-                        BEQ             ASM_RJ_FIND_FOUND_PTR
-                        CLC
-                        LDA             ASM_RJ_SCAN_LO
-                        ADC             #$08
-                        STA             ASM_RJ_JOIN_LO
-                        LDA             ASM_RJ_SCAN_HI
-                        ADC             #$00
-                        STA             ASM_RJ_JOIN_HI
-                        LDY             #$07
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        SEC
-                        RTS
-ASM_RJ_FIND_FOUND_PTR:
-                        LDY             #$08
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        STA             ASM_RJ_JOIN_LO
-                        INY
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        STA             ASM_RJ_JOIN_HI
-                        LDY             #$07
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        SEC
-                        RTS
-
-ASM_RJ_FIND_FAIL:
-                        CLC
-                        RTS
-
-ASM_RJ_FIND_AT_END:
-                        LDA             ASM_RJ_SCAN_HI
-                        CMP             #$FF
-                        BNE             ASM_RJ_FIND_NOT_END
-                        LDA             ASM_RJ_SCAN_LO
-                        CMP             #$F8
-                        BCS             ASM_RJ_FIND_END
-ASM_RJ_FIND_NOT_END:
-                        CLC
-                        RTS
-ASM_RJ_FIND_END:
-                        SEC
-                        RTS
-
-ASM_RJ_FIND_IS_RECORD:
-                        LDY             #$00
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        CMP             #'F'
-                        BNE             ASM_RJ_FIND_NO
-                        INY
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        CMP             #'N'
-                        BNE             ASM_RJ_FIND_NO
-                        INY
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        CMP             #ASM_RJ_HASH_SIG2
-                        BNE             ASM_RJ_FIND_NO
-                        SEC
-                        RTS
-ASM_RJ_FIND_NO:
-                        CLC
-                        RTS
-
-ASM_RJ_FIND_MATCH:
-                        LDY             #$03
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        LDY             #$00
-                        CMP             (ASM_RJ_HASH_PTR_LO),Y
-                        BNE             ASM_RJ_FIND_NO
-                        LDY             #$04
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        LDY             #$01
-                        CMP             (ASM_RJ_HASH_PTR_LO),Y
-                        BNE             ASM_RJ_FIND_NO
-                        LDY             #$05
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        LDY             #$02
-                        CMP             (ASM_RJ_HASH_PTR_LO),Y
-                        BNE             ASM_RJ_FIND_NO
-                        LDY             #$06
-                        LDA             (ASM_RJ_SCAN_LO),Y
-                        LDY             #$03
-                        CMP             (ASM_RJ_HASH_PTR_LO),Y
-                        BNE             ASM_RJ_FIND_NO
-                        SEC
-                        RTS
 
                         IF              ASM_RUNTIME_ONLY
                         ELSE
@@ -8605,21 +8460,13 @@ ASM_DISPATCH_NOT_MNEM:
 ASM_DISPATCH_DIR:
                         LDA             ASM_STMT_OP_ID
                         CMP             #ASM_VID_EQU
-                        BNE             ASM_DISPATCH_DIR_NOT_EQU
-                        BRA             ASM_DISPATCH_DIR_EQU
-ASM_DISPATCH_DIR_NOT_EQU:
+                        BEQ             ASM_DISPATCH_DIR_EQU
                         CMP             #ASM_VID_ORG
-                        BNE             ASM_DISPATCH_DIR_NOT_ORG
-                        BRA             ASM_DISPATCH_DIR_ORG
-ASM_DISPATCH_DIR_NOT_ORG:
+                        BEQ             ASM_DISPATCH_DIR_ORG
                         CMP             #ASM_VID_END
-                        BNE             ASM_DISPATCH_DIR_NOT_END
-                        BRA             ASM_DISPATCH_DIR_END
-ASM_DISPATCH_DIR_NOT_END:
+                        BEQ             ASM_DISPATCH_DIR_END
                         CMP             #ASM_VID_DB
-                        BNE             ASM_DISPATCH_DIR_NOT_DB
-                        JMP             ASM_DISPATCH_DIR_DB
-ASM_DISPATCH_DIR_NOT_DB:
+                        BEQ             ASM_DISPATCH_DIR_DB
                         CMP             #ASM_VID_DS
                         BNE             ASM_DISPATCH_DIR_NOT_DS
                         JMP             ASM_DISPATCH_DIR_DS
@@ -8641,13 +8488,9 @@ ASM_DISPATCH_DIR_EQU_HAVE_TAIL:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_PARSE_EXPR
-                        BCS             ASM_DISPATCH_DIR_EQU_PARSED
-                        JMP             ASM_DISPATCH_FAIL_A
-ASM_DISPATCH_DIR_EQU_PARSED:
+                        BCC             ASM_DISPATCH_FAIL_NEAR
                         JSR             ASM_DEFINE_EQU
-                        BCS             ASM_DISPATCH_DIR_EQU_DEFINED
-                        JMP             ASM_DISPATCH_FAIL_A
-ASM_DISPATCH_DIR_EQU_DEFINED:
+                        BCC             ASM_DISPATCH_FAIL_NEAR
                         JMP             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_ORG:
@@ -8664,18 +8507,14 @@ ASM_DISPATCH_DIR_ORG_HAVE_TAIL:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_PARSE_EXPR
-                        BCS             ASM_DISPATCH_DIR_ORG_PARSED
-                        JMP             ASM_DISPATCH_FAIL_A
-ASM_DISPATCH_DIR_ORG_PARSED:
+                        BCC             ASM_DISPATCH_FAIL_NEAR
                         LDA             ASM_MODE
                         CMP             #ASM_SYMK_ADDR
                         BEQ             ASM_DISPATCH_DIR_ORG_ADDR
                         BRA             ASM_DISPATCH_BAD_WIDTH
 ASM_DISPATCH_DIR_ORG_ADDR:
                         JSR             ASM_SET_PC_FROM_VALUE
-                        BCS             ASM_DISPATCH_DIR_ORG_SET
-                        BRA             ASM_DISPATCH_FAIL_A
-ASM_DISPATCH_DIR_ORG_SET:
+                        BCC             ASM_DISPATCH_FAIL_NEAR
                         JMP             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_END:
@@ -8691,14 +8530,6 @@ ASM_DISPATCH_DIR_END_NO_NAME:
 ASM_DISPATCH_DIR_END_NO_TAIL:
                         BRA             ASM_DISPATCH_OK
 
-ASM_DISPATCH_DIR_DATA:
-                        LDA             ASM_STMT_FLAGS
-                        AND             #ASM_STMTF_HAS_TAIL
-                        BNE             ASM_DISPATCH_DIR_DATA_HAVE_TAIL
-                        BRA             ASM_DISPATCH_BAD_OPER
-ASM_DISPATCH_DIR_DATA_HAVE_TAIL:
-                        BRA             ASM_DISPATCH_OK
-
 ASM_DISPATCH_DIR_DB:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
@@ -8709,16 +8540,12 @@ ASM_DISPATCH_DIR_DB_HAVE_TAIL:
                         AND             #ASM_STMTF_HAS_NAME
                         BEQ             ASM_DISPATCH_DIR_DB_NO_NAME
                         JSR             ASM_BIND_LABEL
-                        BCS             ASM_DISPATCH_DIR_DB_BOUND
-                        BRA             ASM_DISPATCH_FAIL_A
-ASM_DISPATCH_DIR_DB_BOUND:
+                        BCC             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_DIR_DB_NO_NAME:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_EMIT_DB
-                        BCS             ASM_DISPATCH_DIR_DB_EMITTED
-                        BRA             ASM_DISPATCH_FAIL_A
-ASM_DISPATCH_DIR_DB_EMITTED:
+                        BCC             ASM_DISPATCH_FAIL_A
                         BRA             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_DS:
@@ -8731,16 +8558,12 @@ ASM_DISPATCH_DIR_DS_HAVE_TAIL:
                         AND             #ASM_STMTF_HAS_NAME
                         BEQ             ASM_DISPATCH_DIR_DS_NO_NAME
                         JSR             ASM_BIND_LABEL
-                        BCS             ASM_DISPATCH_DIR_DS_BOUND
-                        BRA             ASM_DISPATCH_FAIL_A
-ASM_DISPATCH_DIR_DS_BOUND:
+                        BCC             ASM_DISPATCH_FAIL_A
 ASM_DISPATCH_DIR_DS_NO_NAME:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_EMIT_DS
-                        BCS             ASM_DISPATCH_DIR_DS_EMITTED
-                        BRA             ASM_DISPATCH_FAIL_A
-ASM_DISPATCH_DIR_DS_EMITTED:
+                        BCC             ASM_DISPATCH_FAIL_A
                         BRA             ASM_DISPATCH_OK
 
 ASM_DISPATCH_BAD_SYM:
@@ -9148,28 +8971,28 @@ ASM_EMIT_DS_RETURN:
 ASM_EMIT_DS_STORE_COUNT:
                         LDA             ASM_MODE
                         CMP             #ASM_SYMK_MASK
-                        BNE             ASM_EMIT_DS_COUNT_MODE_OK
-                        JMP             ASM_EMIT_DS_BAD_WIDTH
+                        BEQ             ASM_EMIT_DS_BAD_WIDTH_NEAR
 ASM_EMIT_DS_COUNT_MODE_OK:
                         LDA             ASM_TMP1_LO
-                        BEQ             ASM_EMIT_DS_COUNT_SELECTOR_OK
-                        JMP             ASM_EMIT_DS_BAD_WIDTH
+                        BNE             ASM_EMIT_DS_BAD_WIDTH_NEAR
 ASM_EMIT_DS_COUNT_SELECTOR_OK:
                         LDA             ASM_VALUE_HI
-                        BEQ             ASM_EMIT_DS_COUNT_RANGE_OK
-                        JMP             ASM_EMIT_DS_BAD_RANGE
+                        BNE             ASM_EMIT_DS_BAD_RANGE_NEAR
 ASM_EMIT_DS_COUNT_RANGE_OK:
                         LDA             ASM_VALUE_LO
                         STA             ASM_DS_COUNT
                         JSR             ASM_EMIT_ROOM_FOR_A
-                        BCS             ASM_EMIT_DS_COUNT_ROOM_OK
-                        JMP             ASM_EMIT_DS_BAD_RANGE
+                        BCC             ASM_EMIT_DS_BAD_RANGE_NEAR
 ASM_EMIT_DS_COUNT_ROOM_OK:
                         STZ             ASM_DS_FILL
                         STZ             ASM_DS_INIT_FLAG
                         STZ             ASM_DS_INIT_LEN
                         SEC
                         RTS
+ASM_EMIT_DS_BAD_WIDTH_NEAR:
+                        JMP             ASM_EMIT_DS_BAD_WIDTH
+ASM_EMIT_DS_BAD_RANGE_NEAR:
+                        JMP             ASM_EMIT_DS_BAD_RANGE
 
 ASM_EMIT_DS_PARSE_INIT:
                         JSR             ASM_SKIP_SPACES
@@ -9236,8 +9059,7 @@ ASM_EMIT_DS_INIT_DONE:
 ASM_EMIT_DS_INIT_VALUE:
                         LDA             ASM_MODE
                         CMP             #ASM_SYMK_MASK
-                        BNE             ASM_EMIT_DS_INIT_MODE_OK
-                        JMP             ASM_EMIT_DS_BAD_WIDTH
+                        BEQ             ASM_EMIT_DS_BAD_WIDTH_NEAR
 ASM_EMIT_DS_INIT_MODE_OK:
                         LDA             ASM_DS_COUNT
                         BEQ             ASM_EMIT_DS_INIT_VALUE_DONE
@@ -9362,16 +9184,16 @@ ASM_EMIT_DS_FAIL_A:
 ;      C=0,A=status on malformed or unsupported expression.
 ; NOTE: v1.80 resolved + and - only. No forward EQU chains or addend fixups.
 ; ----------------------------------------------------------------------------
+ASM_PARSE_EXPR_FAIL_NEAR:
+                        JMP             ASM_PARSE_EXPR_FAIL_A
 ASM_PARSE_EXPR:
                         STX             ASM_PARSE_PTR_LO
                         STY             ASM_PARSE_PTR_HI
                         JSR             ASM_NEXT_TOKEN
-                        BCS             ASM_PARSE_EXPR_HAVE_TOKEN
-                        JMP             ASM_PARSE_EXPR_FAIL_A
+                        BCC             ASM_PARSE_EXPR_FAIL_NEAR
 ASM_PARSE_EXPR_HAVE_TOKEN:
                         JSR             ASM_PARSE_EXPR_ATOM
-                        BCS             ASM_PARSE_EXPR_LOOP
-                        JMP             ASM_PARSE_EXPR_FAIL_A
+                        BCC             ASM_PARSE_EXPR_FAIL_NEAR
 
 ASM_PARSE_EXPR_LOOP:
                         JSR             ASM_SKIP_SPACES
@@ -9396,16 +9218,14 @@ ASM_PARSE_EXPR_OPERATOR:
                         JSR             ASM_PARSE_EXPR_SAVE_LEFT
                         JSR             ASM_ADV_PARSE
                         JSR             ASM_NEXT_TOKEN
-                        BCS             ASM_PARSE_EXPR_HAVE_RHS
-                        JMP             ASM_PARSE_EXPR_FAIL_A
+                        BCC             ASM_PARSE_EXPR_FAIL_NEAR
 ASM_PARSE_EXPR_HAVE_RHS:
                         JSR             ASM_PARSE_EXPR_ATOM
-                        BCS             ASM_PARSE_EXPR_APPLY
-                        JMP             ASM_PARSE_EXPR_FAIL_A
+                        BCC             ASM_PARSE_EXPR_FAIL_NEAR
 ASM_PARSE_EXPR_APPLY:
                         JSR             ASM_PARSE_EXPR_APPLY_OP
-                        BCS             ASM_PARSE_EXPR_LOOP
-                        JMP             ASM_PARSE_EXPR_FAIL_A
+                        BCC             ASM_PARSE_EXPR_FAIL_NEAR
+                        BRA             ASM_PARSE_EXPR_LOOP
 
 ASM_PARSE_EXPR_DONE:
                         LDA             #ASM_STATUS_OK
@@ -12169,8 +11989,6 @@ ASM_SMOKE_SYM_ERR_EQU:
                         DB              "ERR EQU %XXXXXXX1",0
 ASM_SMOKE_SYM_NOPE:    DB              "NOPE",0
                         ENDIF
-ASM_HASH_THE_JOIN_EXEC_XY:
-                        DB              $F7,$15,$AF,$A9
 ASM_HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
                         IF              ASM_RUNTIME_ONLY

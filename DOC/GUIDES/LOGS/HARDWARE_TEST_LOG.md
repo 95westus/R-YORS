@@ -6071,3 +6071,72 @@ Interpretation: `END` succeeds with fixup row 0 still naming `MAIN` and row 8
 still naming `R8S`, proving the slot-8 fixup-name pointer carry on the board.
 The program starts from `$6800`, renders the seeded `G0`, accepts `R` to fill a
 random board, advances through `G1` to `G3`, and exits through `Q`/`RTS`.
+
+## 2026-06-09 ASM Seed-Only Failure After STR8 HIMON-Only Update
+
+This transcript proves that STR8 `U` / `UPDATE HIMON C000-EFFF` does not patch
+the top-sector `$FFF8/$FFF9` join seed pocket. Seed-only ASM loads, but RJOIN
+initialization fails before `BEGIN` because the seed bytes are still `FF FF`.
+
+```text
+HIMON IN 3S. S=STR8  3
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+.........................................................................................................................................................................................................................................................................................................................................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0609(1739)
+>L G
+L S19
+L @2000
+L OK=3ACA GO=2000
+ASM RT PASTE
+BEGIN=$0B
+
+#LOADGO# ENTRY=2000
+RET A=0B X=FF Y=FF P=F4 S=FD NV-BdIzc
+>
+```
+
+Interpretation: the `$FFF8/$FFF9` flash-pocket seed policy is wrong for the
+fixed `C000-EFFF` update path. Current seed-only ASM uses the RAM-published
+joiner addr16 at `$7E00/$7E01`, which HIMON refreshes during common init.
+
+## 2026-06-09 HIMON-Published RAM RJOIN Seed Proof
+
+After moving the seed from the top flash pocket to HIMON-published RAM, the same
+STR8 HIMON-only update path boots `HIMON V 00.0609(1904)`, loads ASM at `$2000`,
+and reaches the paste prompt. Exiting with `.` returns cleanly, proving the
+seed-only ASM can initialize RJOIN from RAM:
+
+```text
+HIMON V 00.0609(1904)
+>L G
+L S19
+L @2000
+L OK=3ACA GO=2000
+ASM RT PASTE
+ASM> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=FC Y=10 P=75 S=FD NV-BdIzC
+>D 7E00 7E01
+7E00: 8E DE | ..
+>
+```
+
+The first broad opcode/addressing paste after this proof failed at `STA OUT6`
+with `ERR=$09 BAD FIX PC=$727B`. The symbol table already showed 32 named
+operand references, so the failure was the ASM report-reference ceiling, not a
+RJOIN seed failure. Current source raises that ceiling from `$20` to `$40`
+without allocating new table storage.
