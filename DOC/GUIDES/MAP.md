@@ -144,6 +144,7 @@ ASM/SYMBOL_XREF.md              symbol/routine cards and tags
 HASH/HASH_MAP.md                hash meanings and connections
 HASH/HASH.md                    FNV-era details and CRC16 pivot
 ASM/HASHED_ASM.md               assembler thesis and fixups
+ASM/ASM_CALL_MAP.md             renderable ASM routine-flow map
 STORY/BOOK.md                   narrative manuscript spine
 STORY/HISTORICAL_DOCUMENTS.md   lineage and evidence map
 ```
@@ -179,6 +180,7 @@ flowchart TD
     QCC --> QMEM[QCC_MEMORY]
 
     TECH --> HASM[HASHED_ASM]
+    HASM --> ACALL[ASM_CALL_MAP]
     TECH --> HASHMAP[HASH_MAP]
     HASHMAP --> HASH[HASH]
     HMAP --> HEDGE[HIMON_EDGE_DUMP]

@@ -14,7 +14,7 @@ source line         [label[:]] operation [operand]
 line limit          63 visible chars, tabs are whitespace
 parser              ASM hash-first vocabulary, pending definition names
 RJOIN               works with, uses, respects hash joins to proved records
-v1 directives       EQU, DC, DS, ORG, END
+v1 directives       EQU, DB, DS, ORG, END
 width rule          source spelling controls ZP/absolute, no silent conversion
 storage             RAM-session emitted bytes plus RAM sym/fix/ref tables
 zero page           active ASM scratch grows downward from $AF
@@ -24,7 +24,7 @@ reports             basic session report required in v1
 input driver        one current path for typed/pasted lines
 large symbols       layered lookup, future HIMON-scale resident table
 SYM3                base-40 3-char prefix filter, not identity
-locals              reserved, LOCAL NYI in v1
+locals              8 label-only locals per active global scope, 15 visible chars
 legacy A            not ASM; remove from HIMON after ASM compiles ASM
 ```
 
@@ -34,7 +34,7 @@ Still QCC/open:
 expression grouping parentheses and richer expression features
 explicit SET/REDEF syntax, if ever needed
 HBSTR/CSTR/PSTR as DC forms versus directives
-future local-label implementation
+local-label report/export polish
 resident HIMON-scale symbol table record/index format
 rich report/export formats
 production RAM workspace addresses and capacities
@@ -93,7 +93,7 @@ ASM 5.30   opcode table compression / aaa-bbb-cc helpers
 ASM 5.40   full opcode coverage audit
 
 ASM 6.00   future language
-ASM 6.10   local labels / scopes later
+ASM 6.10   local labels / scopes
 ASM 6.20   resident symbol table / HIMON-scale lookup
 ASM 6.30   richer reports / ref/xref
 ASM 6.40   flash/catalog seal/export later
@@ -309,7 +309,7 @@ Callable parser routines:
 ASM_PARSE_HEAD
 IN   prepared line / ASM_PARSE_PTR
 OUT  C=1,A=OK with STMT record filled
-ERR  C=0,A=BAD SYM/BAD MNEM/BAD DIR/BAD OPER/LOCAL NYI
+ERR  C=0,A=BAD SYM/BAD MNEM/BAD DIR/BAD OPER
 
 ASM_DISPATCH_STATEMENT
 IN   current STMT record
@@ -460,7 +460,7 @@ IN   ASM_PARSE_PTR at first expression token
      A bit2 comma may terminate expression
      A bit3 right paren may terminate expression
 OUT  C=1,A=OK with expression result filled
-ERR  C=0,A=BAD OPER/BAD SYM/BAD WIDTH/BAD RANGE/BAD FIX/LOCAL NYI
+ERR  C=0,A=BAD OPER/BAD SYM/BAD WIDTH/BAD RANGE/BAD FIX
 ```
 
 Operator policy:
@@ -663,7 +663,7 @@ NUL/CR/LF       EOL
 ; outside quote EOL
 # , ( ) < > + - * | & ^ :   PUNCT
 . alone         PUNCT '.', later BAD OPER unless input driver consumed it
-.NAME/?NAME     WORD with LOCAL_PREFIX, later LOCAL NYI
+.NAME/?NAME     WORD with LOCAL_PREFIX
 'A'/'a'/'''     CHAR
 123             NUMBER DEC
 $FF             NUMBER HEX
@@ -753,13 +753,14 @@ prefer a clear small symbol contract.
 V1 symbol characters:
 
 ```text
-A-Z 0-9 _
+A-Z 0-9 _ plus . or ? as local prefix
 ```
 
-A global symbol must not begin with `0-9`. Dot and question mark are reserved
-local-prefix characters, are prefix-only, and should return `LOCAL NYI` in v1.
-Comma is not a symbol character; it is operand punctuation for indexes and
-multi-part operands such as `BBR 3,$12,TARGET`.
+A global symbol must not begin with `0-9`. Dot and question mark are
+local-prefix characters and are prefix-only. Local labels are scoped under the
+most recent nonlocal PC label and are capped at 15 visible characters. Comma is
+not a symbol character; it is operand punctuation for indexes and multi-part
+operands such as `BBR 3,$12,TARGET`.
 
 `A`, `X`, and `Y` are reserved v1 register words and are not legal user symbols.
 
@@ -1050,8 +1051,8 @@ Concern: `SYM3` is not identity. It is only a filter/index. FNV32 plus canonical
 text remains the proof. Base-64 needs 18 bits for three characters, so it is not
 better for the 3-character/2-byte key. A 5-bit pack is still useful for some
 compressed text, but base-40 keeps digits and underscore in the three-character
-key. The `?` and `.` codes remain unused in v1 because locals are `LOCAL NYI`;
-they are reserved so future local symbols can reuse the same `SYM3` machinery.
+key. The `?` and `.` codes are used by ASM-local labels, not by global/export
+symbol identities.
 
 ## Q: What report is required in v1?
 
@@ -1156,9 +1157,9 @@ BAD OPER     malformed operand, extra junk, bad punctuation
 BAD MODE     mnemonic does not support that operand class
 BAD WIDTH    source spelling or symbol width does not supply required width
 BAD RANGE    value known but outside allowed range
-BAD SYM      bad name, duplicate definition, or missing required name
+BAD SYM      bad name, duplicate definition, missing required name, or local
+             label/reference before a global scope
 BAD FIX      unresolved or failed fixup at END
-LOCAL NYI    .NAME or ?NAME local syntax reserved but not implemented
 ```
 
 Trigger examples:
@@ -1177,18 +1178,21 @@ FOO EQU BAR             ; BAD SYM if BAR unresolved
 FOO EQU $12 / FOO:      ; BAD SYM duplicate
 LABEL END               ; BAD SYM
 END X                   ; BAD OPER
-.LOOP                   ; LOCAL NYI
+.LOOP                   ; BAD SYM until a nonlocal label opens local scope
 ```
 
 ## Q: What proof sizes should seed v1?
 
-Comment: The current `asm-rjoin-proof-3000.asm` defaults are good proof-sized
+Comment: The current `asm-v1-core.asm` RAM-session defaults are proof-sized
 starting points:
 
 ```text
-ASM_SYM_MAX         16 symbol rows
-ASM_FIX_MAX          8 fixup rows
+ASM_SYM_MAX         32 symbol rows
+ASM_FIX_MAX         24 fixup rows
+ASM_REF_MAX         64 report-reference rows
 ASM_FIX_NAME_MAX    32 bytes, 31 visible chars plus terminator
+ASM_LOCAL_MAX        8 local label rows per active global scope
+ASM_LOCAL_NAME_MAX  16 bytes, 15 visible chars plus terminator
 ASM_LINE_MAX        63 visible input chars
 ASM_CODE_BUF       512 bytes
 ```
@@ -1203,7 +1207,7 @@ Comment: These are deliberately not final v1 decisions yet:
 ```text
 expression grouping parentheses and richer expression features
 HBSTR/CSTR/PSTR as DC forms versus standalone directives
-future local-label implementation after v1 LOCAL NYI
+local-label report/export polish if needed
 rich listing/output/report export format for staged assembly
 exact production RAM workspace addresses and table capacities
 resident HIMON-scale symbol table record/index format and capacity
@@ -1265,7 +1269,7 @@ change source width.
 ASM_CLASS_OPERAND
 IN   mnemonic row/id and operand tail pointer
 OUT  C=1,A=OK with OP result filled
-ERR  C=0,A=BAD OPER/BAD MODE/BAD WIDTH/BAD RANGE/BAD FIX/LOCAL NYI
+ERR  C=0,A=BAD OPER/BAD MODE/BAD WIDTH/BAD RANGE/BAD FIX/BAD SYM
 ```
 
 Operand result:

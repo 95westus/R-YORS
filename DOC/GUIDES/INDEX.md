@@ -37,7 +37,8 @@ one-shot breakpoint and single-step behavior.
 - [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and [Hash Trash](HASH/HASH_TRASH.md).
 - [ASM](ASM/HASHED_ASM.md) - onboard assembler and symbol reference material;
   see [INTERACTIVE_BATCH.md](ASM/INTERACTIVE_BATCH.md) for the parked future
-  `ASM I/B` idea and [TEST_PLAN.md](ASM/TEST_PLAN.md) for ASM test gates.
+  `ASM I/B` idea, [ASM_CALL_MAP.md](ASM/ASM_CALL_MAP.md) for the routine-flow
+  map, and [TEST_PLAN.md](ASM/TEST_PLAN.md) for ASM test gates.
 - [QCC](QCC/INDEX.md) - Questions, Comments, Concerns working notes.
 - [LOGS](LOGS/HARDWARE_TEST_LOG.md) - hardware transcript proof.
 - [STORY](STORY/BOOK.md) - book spine and historical narrative.

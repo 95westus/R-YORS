@@ -8,6 +8,9 @@ record-shape sketches. The settled split is FNV32 for public/exported symbols
 and CRC16 or short IDs only for local/scoped tables where context handles
 collisions.
 
+Routine-flow orientation lives in [ASM_CALL_MAP.md](ASM_CALL_MAP.md). Keep that
+map renderable in Mermaid and use this file for the design contract.
+
 Current WDC-compatibility correction: `DB` is the active v1 data directive.
 `DC` is parked/reserved for now, so older `DC` examples in this narrative are
 historical unless repeated in [DECISIONS.md](DECISIONS.md).
@@ -1127,7 +1130,7 @@ calls       ASM_BIND_LABEL, directive handlers, ASM_CLASS_OPERAND, ASM_EMIT,
             ASM_TRY_FIXUPS, ASM_END, ASM_FAIL
 
 errors      BAD SYM, BAD DIR, BAD OPER, BAD MODE, BAD WIDTH, BAD RANGE,
-            BAD FIX, LOCAL NYI
+            BAD FIX
 ```
 
 Dispatch policy:
@@ -1159,7 +1162,6 @@ BAD SYM    bad/missing definition name, reserved word as label, LABEL ORG/END
 BAD MNEM   second word after pending name is not a mnemonic/directive
 BAD DIR    parked or unsupported directive used as an operation
 BAD OPER   missing/extra top-level operand tail, bad statement punctuation
-LOCAL NYI  .NAME or ?NAME seen where a symbol would otherwise be accepted
 ```
 
 Examples:
@@ -1172,7 +1174,7 @@ FOO BAR             ; BAD MNEM if BAR is not vocabulary
 ORG                 ; BAD OPER
 END X               ; BAD OPER
 START               ; BAD DIR in v1, parked directive
-.LOOP               ; LOCAL NYI
+.LOOP               ; BAD SYM until a nonlocal label opens local scope
 ```
 
 ## ASM 1.70 Symbol Table Basics
@@ -1639,7 +1641,6 @@ BAD SYM    unknown symbol when unresolved is not allowed, bad local, bad EQU
 BAD WIDTH  mask arithmetic, width mismatch, bad hex width, illegal selector
 BAD RANGE  arithmetic overflow/underflow or value does not fit retained width
 BAD FIX    reference table full when mark-use/reference recording is required
-LOCAL NYI  .NAME or ?NAME in expression
 ```
 
 ## ASM 1.90 Operand Classifier
@@ -1748,7 +1749,7 @@ RAM         reference rows/use counts through ASM_PARSE_EXPR when requested
 stack       balanced; expression parser may use its own scratch
 calls       ASM_NEXT_TOKEN, ASM_PARSE_EXPR, ASM_LOOKUP_SYMBOL
 
-errors      BAD OPER, BAD MODE, BAD WIDTH, BAD RANGE, BAD FIX, LOCAL NYI
+errors      BAD OPER, BAD MODE, BAD WIDTH, BAD RANGE, BAD FIX, BAD SYM
 ```
 
 The classifier consumes the whole operand tail for a mnemonic. Non-comment
@@ -1884,7 +1885,7 @@ BAD MODE   syntactically valid operand form not supported by mnemonic
 BAD WIDTH  decimal memory operand, unknown bare width, width mismatch
 BAD RANGE  bit number outside 0..7, known branch target out of rel8 range
 BAD FIX    reference/fixup planning table cannot be represented
-LOCAL NYI  local symbol seen inside operand expression
+BAD SYM    local reference without an active local scope
 ```
 
 ## Detailed ASM Working Hypothesis
@@ -3094,19 +3095,17 @@ ENTRY  exported entry symbol
 EXTRN  external/imported symbol
 ```
 
-No dot-directive aliases in v1. Dot-leading syntax is reserved for future local
-labels; v1 rejects local-prefixed names with `LOCAL NYI`:
+No dot-directive aliases in v1. Dot-leading syntax is local-label syntax:
 
 ```text
-.NAME:   future local label
-.NAME    future local symbol use
-?NAME:   future local label, alternate prefix
-?NAME    future local symbol use, alternate prefix
+.NAME:   local label in active nonlocal scope
+.NAME    local symbol use in active nonlocal scope
+?NAME:   local label, alternate prefix
+?NAME    local symbol use, alternate prefix
 .        legacy A/input-driver sentinel, not ASM source syntax
 ```
 
-This keeps the parser small and avoids splitting dot-leading syntax between
-locals and directives.
+This keeps dot-leading syntax from splitting between locals and directives.
 
 ## Address Width Contract
 
@@ -4260,13 +4259,9 @@ origin / next-PC basis when needed
 
 ## Local Labels Review
 
-Local labels are future machinery, not v1. In v1, any `.NAME`, `.NAME:`,
-`?NAME`, or `?NAME:` token should fail with `LOCAL NYI`. They remain reserved
-so globals cannot grow into names that later collide with local syntax.
-
-When implemented later, local labels will be useful for short branches inside
-one routine or one assembly session without polluting the public symbol/catalog
-space:
+Local labels are current v1 machinery for short branches inside one routine or
+one assembly session without polluting the public symbol/catalog space. They are
+label-only PC aliases. Local `EQU` is not supported.
 
 ```asm
 ORG $2000
@@ -4294,10 +4289,10 @@ DRAW/.LOOP -> $2102
 Chosen syntax:
 
 ```text
-.NAME:   define a local label, future
-.NAME    use a local label operand, future
-?NAME:   define a local label, future alternate prefix
-?NAME    use a local label operand, future alternate prefix
+.NAME:   define a local label
+.NAME    use a local label operand
+?NAME:   define a local label, alternate prefix
+?NAME    use a local label operand, alternate prefix
 .        legacy A/input-driver sentinel, not ASM source syntax
 ```
 
@@ -4305,10 +4300,12 @@ The parser rule is exact:
 
 ```text
 "." alone is handled by the input driver if used as a paste terminator
-".NAME" and "?NAME" are reserved local symbol tokens
+".NAME" and "?NAME" are local symbol tokens
 ```
 
-The `NAME` part follows normal label rules. For example, `.LDA:` should still
+The `NAME` part follows local-label rules: maximum 15 visible characters
+including the prefix, active only after a nonlocal PC label has opened a scope,
+and not visible to the global symbol report. For example, `.LDA:` should still
 fail because `LDA` is a mnemonic.
 
 Reserved dot-directive names are not legal local labels. If `.HBSTR`, `.CSTR`,
@@ -4395,7 +4392,7 @@ When `.DONE:` appears, the definition wakes only fixups for `MAIN/.DONE`.
 Starting another nonlocal label before `.DONE:` does not retarget the old fixup;
 it remains tied to `MAIN`.
 
-Future local labels should not be legal export names:
+Local labels are not legal export names:
 
 ```text
 EXPORT .LOOP     fail
@@ -4711,7 +4708,7 @@ calls       ASM_LEX_LINE, ASM_PARSE_HEAD, ASM_DISPATCH_STATEMENT, ASM_FAIL
             ASM_CLASS_OPERAND, ASM_EMIT, ASM_TRY_FIXUPS, and ASM_END.
 
 errors      BAD LINE, BAD MNEM, BAD DIR, BAD OPER, BAD MODE, BAD WIDTH,
-            BAD RANGE, BAD SYM, BAD FIX, LOCAL NYI
+            BAD RANGE, BAD SYM, BAD FIX
 ```
 
 Line behavior:
@@ -5246,9 +5243,9 @@ BAD OPER     malformed operand, extra junk, bad punctuation
 BAD MODE     mnemonic does not support that operand class
 BAD WIDTH    source spelling or symbol width does not supply required width
 BAD RANGE    value known but outside allowed range
-BAD SYM      bad name, duplicate definition, or missing required name
+BAD SYM      bad name, duplicate definition, missing required name, or local
+             label/reference before a nonlocal scope
 BAD FIX      unresolved or failed fixup at END
-LOCAL NYI    .NAME or ?NAME local syntax reserved but not implemented
 ```
 
 Trigger examples:
@@ -5267,7 +5264,7 @@ FOO EQU BAR             ; BAD SYM if BAR unresolved
 FOO EQU $12 / FOO:      ; BAD SYM duplicate
 LABEL END               ; BAD SYM
 END X                   ; BAD OPER
-.LOOP                   ; LOCAL NYI
+.LOOP                   ; BAD SYM until a nonlocal label opens local scope
 ```
 
 Compact code values may still use the short names:
@@ -5282,7 +5279,6 @@ BAD RANGE
 BAD LINE
 BAD SYM
 BAD FIX
-LOCAL NYI
 ```
 
 This is where `kind` becomes valuable. `JSR DATA_TABLE` should fail if `DATA_TABLE` is known as data and the assembler is in a strict mode.

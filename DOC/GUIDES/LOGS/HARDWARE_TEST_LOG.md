@@ -6222,3 +6222,236 @@ Interpretation: the result matches the expected oracle. `$7100=$80` proves the
 zero-page indexed, and zero-page indirect forms, `$7106=$81` proves accumulator
 shift/rotate emission, `$7107=$99` proves the forward `JSR SUB`, and
 `$7108=$4F` proves the absolute indirect jump through `$7330`.
+
+## 2026-06-10 ASM RJOIN Hash Stats First Board Attempt
+
+This board run used `HIMON V 00.0610(1344)` and the current `$3EF4`
+`ASM RT PASTE` image. It usefully failed the first
+`rjoin-hash-stats-7200.asm` sample shape. The source assembled code before
+defining string/buffer labels and used double-quoted `DB` strings. That filled
+all 24 fixup rows before `MAIN`, then hit `BAD OPER` on the unsupported string
+literal form.
+
+Relevant transcript excerpt:
+
+```text
+HIMON V 00.0610(1344)
+>L G
+L S19
+L @2000
+L OK=3EF4 GO=2000
+ASM RT PASTE
+ASM>         ORG $7200
+OK PC=$7200
+...
+ASM> NIB     CMP #$0A
+OK PC=$7279
+ASM>         BCC .DIG
+OK PC=$727B
+ASM>         CLC
+OK PC=$727C
+ASM>         ADC #$37
+OK PC=$727E
+ASM>         BRA .OUT
+OK PC=$7280
+ASM> .DIG    CLC
+OK PC=$7281
+ASM>         ADC #'0'
+OK PC=$7283
+ASM> .OUT    JSR BIO_FTDI_WRITE_BYTE_BLOCK
+OK PC=$7286
+ASM>         RTS
+OK PC=$7287
+
+ASM> MAIN    LDX #<MTIT
+ERR=$06 BAD RANGE PC=$7287
+ASM>         LDY #>MTIT
+ERR=$09 BAD FIX PC=$7287
+...
+ASM> MTIT    DB $0D,$0A,"RJOIN HASH STATS",$0D,$0A,0
+ERR=$03 BAD OPER PC=$7500
+ASM> MP      DB "TEXT> ",0
+ERR=$03 BAD OPER PC=$7500
+...
+ASM>         END
+ERR=$09 BAD FIX PC=$7640
+```
+
+The final table shows the fixup table was full at 24 rows (`00` through `17`)
+before `MAIN` could add any string/buffer fixups:
+
+```text
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 07   00  7201 7202 MAIN
+01 01 02   01  7203 7204 MBYE
+02 01 02   02  7205 7206 MBYE
+03 02 06   00  7214 7216 BUF
+04 02 07   00  7217 7218 .DONE
+05 02 06   00  7220 7222 BUF
+06 01 02   01  722F 7230 MSGL
+07 01 02   02  7231 7232 MSGL
+08 02 04   00  7238 723A HEX
+09 01 02   01  723B 723C MSGX
+0A 01 02   02  723D 723E MSGX
+0B 02 04   00  7244 7246 HEX
+0C 01 02   01  7247 7248 MSGH
+0D 01 02   02  7249 724A MSGH
+0E 02 04   00  7250 7252 HEX
+0F 02 04   00  7255 7257 HEX
+10 02 04   00  725A 725C HEX
+11 02 04   00  725F 7261 HEX
+12 02 02   01  7262 7263 MCR
+13 02 02   02  7264 7265 MCR
+14 02 04   00  726F 7271 NIB
+15 02 04   00  7275 7277 NIB
+16 02 07   00  727A 727B .DIG
+17 02 07   00  727F 7280 .OUT
+
+#LOADGO# ENTRY=2000
+RET A=09 X=40 Y=76 P=74 S=FD NV-BdIzc
+```
+
+First fix applied: spell C strings as v1-safe byte/character-list `DB` rows
+and move string/buffer definitions out of the forward-fixup path. The rerun
+target is documented in
+`DOC/GUIDES/ASM/SAMPLES/rjoin-hash-stats-7200-test.md`.
+
+## 2026-06-10 ASM RJOIN Hash Stats Backward ORG Board Attempt
+
+This board run used the byte/character-list `DB` spelling, but shaped the
+source as data first at `$7500/$7600`, then `ORG $7200` for code. That exposed
+the next assembler rule: `ORG` is monotonic in ASM v1. Moving backward from
+`$7640` to `$7200` returns `BAD RANGE` and leaves `PC` at `$7640`, so the
+program body assembled at `$7640`. Running `G 7200` then executed data bytes
+instead of code.
+
+Relevant transcript excerpt:
+
+```text
+ASM>         ORG $7500
+OK PC=$7500
+...
+ASM>         ORG $7600
+OK PC=$7600
+ASM> BUF     DS $40
+OK PC=$7640
+
+ASM>         ORG $7200
+ERR=$06 BAD RANGE PC=$7640
+ASM> LEN     EQU $30
+OK PC=$7640
+...
+ASM> MAIN    LDX #<MTIT
+OK PC=$7642
+...
+ASM>         END
+OK PC=$76F3
+ASM RT PASTE OK
+
+>G 7200
+GO 7200
+`......P`..i..`...U.....U.....U....0.
+#GO# ENTRY=7200
+RET A=36 X=30 Y=36 P=75 S=FD NV-BdIzC
+```
+
+The final source shape keeps the `$7200` entry first, defines data addresses
+with `EQU` constants, emits the executable code, then moves forward to emit
+the `$7500` strings and `$7600` buffer. That avoids both the fixup flood and
+the backward `ORG`.
+
+## 2026-06-10 ASM RJOIN Hash Stats Successful Board Proof
+
+This board run re-entered the already-loaded current `$3EF4`
+`ASM RT PASTE` image with `G 2000`, pasted the final
+`rjoin-hash-stats-7200.asm` shape, assembled through `END`, then ran `G 7200`.
+It proves the monotonic-`ORG`/`EQU` data-address shape, local labels, internal
+fixups, and resident RJOIN calls used by the sample.
+
+Table sanity from the accepted assembly:
+
+```text
+ASM>         ORG $7200
+OK PC=$7200
+...
+ASM>         ORG $7500
+OK PC=$7500
+...
+ASM>         ORG $7600
+OK PC=$7600
+ASM>         DS $40
+OK PC=$7640
+ASM>         END
+OK PC=$7640
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7500  01 04 17 0004 02  000F  MTIT
+01 01 7515  01 04 17 0005 02  0012  MP
+02 01 751C  01 04 17 0006 02  004A  MSGL
+03 01 7523  01 04 17 0007 02  004F  MSGX
+04 01 7529  01 04 17 0008 02  0054  MSGH
+05 01 752F  01 04 17 0009 02  005F  MCR
+06 01 7532  01 04 17 000A 02  0023  MBYE
+07 01 7600  01 04 17 000B 05  0015  BUF
+08 01 0030  01 03 17 000C 03  0027  LEN
+09 01 0031  01 03 17 000D 04  0028  XSUM
+0A 01 0032  01 03 17 000E 02  002D  IDX
+0B 01 7200  01 04 0E 000F 00  0000  MAIN
+0C 01 722E  01 04 0E 0023 00  0000  DONE
+0D 01 7236  01 04 0E 0027 00  0000  HASH
+0E 01 725A  01 04 0F 0038 02  0046  NIB
+0F 01 726A  01 04 0F 0041 06  004E  HEX
+10 01 7278  01 04 0E 004A 00  0000  SHOW
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  721B 721C .BLANK
+01 02 07   00  721F 7220 DONE
+02 02 07   00  7223 7224 DONE
+03 02 04   00  7225 7227 HASH
+04 02 04   00  7228 722A SHOW
+05 02 07   00  7243 7244 .DONE
+06 02 07   00  725D 725E .DIG
+07 02 07   00  7262 7263 .OUT
+ASM RT PASTE OK
+```
+
+Runtime proof:
+
+```text
+>G 7200
+GO 7200
+
+RJOIN HASH STATS
+TEXT> MAIN
+
+LEN=04 XOR=0B FNV=96272888
+TEXT> DONE
+
+LEN=04 XOR=00 FNV=100E2FB1
+TEXT> HASH
+
+LEN=04 XOR=12 FNV=CC18DB11
+TEXT> NIB
+
+LEN=03 XOR=45 FNV=55DEB5BE
+TEXT> HEX
+
+LEN=03 XOR=55 FNV=818F192A
+TEXT> SHOW
+
+LEN=04 XOR=03 FNV=A699B27C
+TEXT> HELLO
+
+LEN=05 XOR=42 FNV=32543B0B
+TEXT> R-YORS
+
+LEN=06 XOR=68 FNV=E48E4383
+TEXT> Q
+
+BYE
+
+#GO# ENTRY=7200
+RET A=07 X=32 Y=07 P=75 S=FD NV-BdIzC
+```

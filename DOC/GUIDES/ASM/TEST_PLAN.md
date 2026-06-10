@@ -2130,24 +2130,24 @@ ASM RT PASTE OK
 >
 ```
 
-Current-build retest on 2026-06-09 with HIMON `V 00.0608(1850)`: the board
-loaded `asm-v1-runtime-paste-2000.s19` as `L OK=36B8 GO=2000`, repeated the
-same rollback sequence, finalized through `END`, printed the `FOO` symbol and
-mode `$07` fixup row, and dumped `D0 00 EA` at `$75D0-$75D2`. This keeps the
-transactional rollback proof current after later runtime growth.
+Historical retest on 2026-06-09 with HIMON `V 00.0608(1850)`: the board loaded
+`asm-v1-runtime-paste-2000.s19` as `L OK=36B8 GO=2000`, repeated the same
+rollback sequence, finalized through `END`, printed the `FOO` symbol and mode
+`$07` fixup row, and dumped `D0 00 EA` at `$75D0-$75D2`. This is the
+transactional rollback proof for that runtime generation.
 
-Current-build ASMTEST_3000 proof on 2026-06-09 with the same `$36B8` paste
-image: the board accepted the full sample through `END` at `PC=$6827`, ran
-`G 6800` to `RET A=0F X=10`, and dumped `$6900-$6910` as
-`52 2D 59 4F 52 53 20 41 53 4D 20 54 45 53 54 2E 0F`. This keeps the minimum
-ASMTEST_3000 bench gate current for the latest runtime paste build.
+Historical ASMTEST_3000 proof on 2026-06-09 with the same `$36B8` paste image:
+the board accepted the full sample through `END` at `PC=$6827`, ran `G 6800`
+to `RET A=0F X=10`, and dumped `$6900-$6910` as
+`52 2D 59 4F 52 53 20 41 53 4D 20 54 45 53 54 2E 0F`. This is the minimum
+ASMTEST_3000 bench gate proof for that runtime generation.
 
-Current-build line-echo proof on 2026-06-09 with the same `$36B8` paste image:
+Historical line-echo proof on 2026-06-09 with the same `$36B8` paste image:
 the board accepted `DOC/GUIDES/ASM/SAMPLES/ASM_LINE_ECHO_7000.asm` through
 `END` at `PC=$704E`, ran `G 7000`, echoed `?` and `ASM IS COOL` after `=> `,
 and returned to HIMON on `.` with `RET A=00 X=00 Y=00`.
 
-Current-build bad-input proof on 2026-06-09 with the same `$36B8` paste image:
+Historical bad-input proof on 2026-06-09 with the same `$36B8` paste image:
 the board reported `BAD SYM`, `BAD DIR`, `BAD WIDTH`, `BAD RANGE`, `BAD MODE`,
 `LOCAL NYI`, and `BAD FIX` for the requested duplicate-symbol, parked-directive,
 width/range/mode, local-label, and unresolved-fixup cases.
@@ -2161,7 +2161,7 @@ make -C SRC asm-test
 ASM now rejects explicit high output targets at `$7E00+`, protecting the
 monitor/debugger/vector/I/O window from runtime-pasted source. The host smoke
 checks both direct `ASM_BEGIN $7E00` and source-level `ORG $7E00`; both must
-return `BAD RANGE`. The current runtime paste image is
+return `BAD RANGE`. At this proof step, the runtime paste image was
 `asm-v1-runtime-paste-2000.s19` total `$36FD`.
 
 Hardware-proven ASM 3.03 protected output-target guard on 2026-06-09:
@@ -2196,7 +2196,7 @@ writing the opcode. A two- or three-byte instruction at `$7DFF` fails with
 `BAD RANGE` before any byte is stored, so the line transaction has no partial
 opcode to clean up. The host smoke sets `$7DFF` to `$5A`, tries `LDA #$12`, and
 verifies `BAD RANGE`, active session state, restored PC/high-water `$7DFF`, and
-unchanged `$7DFF`. The current runtime paste image is
+unchanged `$7DFF`. At this proof step, the runtime paste image was
 `asm-v1-runtime-paste-2000.s19` total `$377C`.
 
 Hardware-proven ASM 3.04 mnemonic boundary preflight on 2026-06-09:
@@ -2250,8 +2250,9 @@ double-count symbol uses. `DS` now checks the parsed reserve count against the
 remaining target room before any initializer bytes or fill bytes are written.
 The host smoke extends the `$7DFF` boundary transaction proof to `DB $12,$34`
 and `DS 2,$00`, verifying both fail with `BAD RANGE`, preserve active session
-state and PC/high-water `$7DFF`, and leave the sentinel byte unchanged. The
-current runtime paste image is `asm-v1-runtime-paste-2000.s19` total `$3813`.
+state and PC/high-water `$7DFF`, and leave the sentinel byte unchanged. At this
+proof step, the runtime paste image was `asm-v1-runtime-paste-2000.s19` total
+`$3813`.
 
 Hardware-proven ASM 3.05 directive boundary preflight on 2026-06-09:
 the board loaded the `$3813` paste image, planted `NOP` at `$7DFF`, rejected
@@ -2299,7 +2300,8 @@ The boundary transaction smoke now also proves the legal exact-fit directive
 case: `DB $A5` and `DS 1,$5C` at `$7DFF` both succeed, leave the active session
 PC/high-water at `$7E00`, and write only the final legal target byte. This keeps
 the `$7E00+` guard from accidentally rejecting the last byte of application RAM.
-The current runtime paste image remains `asm-v1-runtime-paste-2000.s19` total
+At this proof step, the runtime paste image remained
+`asm-v1-runtime-paste-2000.s19` total
 `$3813`.
 
 Hardware-proven ASM 3.06 exact-boundary directive positive proof on
@@ -2351,7 +2353,8 @@ make -C SRC asm-test
 The boundary transaction smoke now proves multi-byte exact fills at the top of
 the protected target window. Starting at `$7DFE`, `LDA #$12`, `DB $12,$34`, and
 `DS 2,$00` all succeed, finish at PC/high-water `$7E00`, and write exactly the
-two final legal target bytes. The current runtime paste image remains
+two final legal target bytes. At this proof step, the runtime paste image
+remained
 `asm-v1-runtime-paste-2000.s19` total `$3813`.
 
 Hardware-proven ASM 3.07 two-byte exact-fill boundary proof on 2026-06-09:
@@ -2446,7 +2449,8 @@ make -C SRC asm-test
 The boundary transaction smoke now also proves three-byte exact fills at the top
 of the protected target window. Starting at `$7DFD`, `LDA $0012`,
 `DB $12,$34,$56`, and `DS 3,$00` all succeed, finish at PC/high-water `$7E00`,
-and write exactly `$7DFD-$7DFF`. The current runtime paste image remains
+and write exactly `$7DFD-$7DFF`. At this proof step, the runtime paste image
+remained
 `asm-v1-runtime-paste-2000.s19` total `$3813`.
 
 Hardware-proven ASM 3.08 three-byte exact-fill boundary proof on 2026-06-09:
@@ -2520,7 +2524,7 @@ The boundary transaction smoke now proves the crossing-by-one negative twin for
 three-byte rows. Starting at `$7DFE`, `LDA $0012`, `DB $12,$34,$56`, and
 `DS 3,$00` all fail with `BAD RANGE`, preserve active session state and
 PC/high-water `$7DFE`, and leave the two legal bytes at `$7DFE-$7DFF`
-unchanged. The current runtime paste image remains
+unchanged. At this proof step, the runtime paste image remained
 `asm-v1-runtime-paste-2000.s19` total `$3813`.
 
 Hardware-proven ASM 3.09 three-byte boundary-cross preflight on 2026-06-09:
@@ -2603,8 +2607,9 @@ The boundary transaction smoke now proves that a crossing three-byte
 `LDA $0012` failure at `$7DFE` leaves the paste session active and able to
 assemble the next legal line at the restored PC. After the `BAD RANGE`, a
 same-session `NOP` succeeds at `$7DFE`, advances PC/high-water to `$7DFF`,
-writes `EA`, and leaves the sentinel byte at `$7DFF` unchanged. The current
-runtime paste image remains `asm-v1-runtime-paste-2000.s19` total `$3813`.
+writes `EA`, and leaves the sentinel byte at `$7DFF` unchanged. At this proof
+step, the runtime paste image remained `asm-v1-runtime-paste-2000.s19` total
+`$3813`.
 
 Hardware-proven ASM 3.10 boundary range-error same-session recovery on
 2026-06-09: the board reused the `$3813` paste image, planted sentinel `6D 7E`
@@ -2657,8 +2662,8 @@ failures at `$7DFE` leave the paste session active and able to assemble the
 next legal line at the restored PC. After `DB $12,$34,$56` fails with
 `BAD RANGE`, a same-session `NOP` succeeds at `$7DFE`, advances PC/high-water
 to `$7DFF`, writes `EA`, and leaves the `$7DFF` sentinel unchanged. The same
-recovery path is also checked after `DS 3,$00`. The current runtime paste image
-remains `asm-v1-runtime-paste-2000.s19` total `$3813`.
+recovery path is also checked after `DS 3,$00`. At this proof step, the runtime
+paste image remained `asm-v1-runtime-paste-2000.s19` total `$3813`.
 
 Hardware-proven ASM 3.11 directive range-error same-session recovery on
 2026-06-09: the board loaded the `$3813` paste image, proved a crossing `DB`
@@ -2740,8 +2745,8 @@ The boundary transaction smoke now proves that after exact-fill emission reaches
 `PC=$7E00`, the active session rejects any further mnemonic or directive
 emission. `NOP` at `$7DFF` succeeds and writes `EA`; following `LDA #$12`,
 `DB $A5`, and `DS 1,$5C` lines all fail with `BAD RANGE PC=$7E00`, preserve
-PC/high-water `$7E00`, and leave `$7DFF` unchanged. The current runtime paste
-image remains `asm-v1-runtime-paste-2000.s19` total `$3813`.
+PC/high-water `$7E00`, and leave `$7DFF` unchanged. At this proof step, the
+runtime paste image remained `asm-v1-runtime-paste-2000.s19` total `$3813`.
 
 Hardware-proven ASM 3.12 post-exact-fill boundary hard stop on 2026-06-09:
 the board loaded the `$3813` paste image, accepted `NOP` at `$7DFF`, then
@@ -2784,8 +2789,8 @@ The boundary transaction smoke now proves that the protected-limit hard stop
 does not poison finalization. After `NOP` exactly fills `$7DFF` and advances
 to `PC=$7E00`, further `LDA #$12`, `DB $A5`, and `DS 1,$5C` emissions fail
 with `BAD RANGE PC=$7E00`; a following `END` still succeeds, leaves the session
-ended at `PC=$7E00`, and leaves `$7DFF` as `EA`. The current runtime paste
-image remains `asm-v1-runtime-paste-2000.s19` total `$3813`.
+ended at `PC=$7E00`, and leaves `$7DFF` as `EA`. At this proof step, the
+runtime paste image remained `asm-v1-runtime-paste-2000.s19` total `$3813`.
 
 Hardware-proven ASM 3.13 post-boundary `END` finalization on 2026-06-09:
 the board loaded the `$3813` paste image, reached `PC=$7E00` with an exact-fill
@@ -2833,8 +2838,9 @@ The boundary transaction smoke now proves that non-emitting symbol definition
 remains legal after exact-fill emission reaches `PC=$7E00`. After `NOP`
 exactly fills `$7DFF`, the active session rejects further emit attempts with
 `BAD RANGE PC=$7E00`, then accepts `LIMIT EQU *`, records `LIMIT=$7E00` as an
-absolute address symbol, and finalizes with `END` without changing `$7DFF`. The
-current runtime paste image remains `asm-v1-runtime-paste-2000.s19` total
+absolute address symbol, and finalizes with `END` without changing `$7DFF`. At
+this proof step, the runtime paste image remained
+`asm-v1-runtime-paste-2000.s19` total
 `$3813`.
 
 Hardware-proven ASM 3.14 post-boundary non-emitting `EQU *` on 2026-06-09:
@@ -2885,7 +2891,7 @@ post-boundary `EQU *` case. After exact-fill emission reaches `PC=$7E00` and
 further emit attempts fail with `BAD RANGE`, `LIMIT EQU *` and a following
 label-only `AFTER` line both succeed without writing memory. Both symbols are
 recorded as absolute address symbols at `7E00`, and `END` finalizes without
-changing `$7DFF`. The current runtime paste image remains
+changing `$7DFF`. At this proof step, the runtime paste image remained
 `asm-v1-runtime-paste-2000.s19` total `$3813`.
 
 Hardware-proven ASM 3.15 post-boundary label-only binding on 2026-06-09:
@@ -3163,7 +3169,59 @@ Current pasteable bench toys:
 ```text
 ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
 life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
+rjoin-hash-stats-7200.asm
+                         line length/XOR/FNV stats through ASM/RJOIN
+rjoin-hash-stats-7200-test.md
+                         board script for the hash-stats slice
 ```
+
+`rjoin-hash-stats-7200.asm` is the next small real-work board proof. It starts
+at `$7200`, predefines the data addresses with `EQU`, emits code first, then
+moves forward to `$7500` for strings and `$7600` for the `$40` byte input
+buffer. It exits on `Q` or `.`. All external calls are resident executable
+names resolved through ASM/RJOIN:
+`BIO_FTDI_PUT_CSTR`,
+`SYS_READ_CSTRING_ECHO_UPPER`, `FNV1A_INIT`, `FNV1A_UPDATE_A_FAST`, and
+`BIO_FTDI_WRITE_BYTE_BLOCK`. The program deliberately uses local labels in
+three scopes (`HASH`, `NIB`, and `MAIN`) plus forward and backward local
+branches. Predefining data addresses keeps the fixup table focused on
+code/control flow instead of string and buffer addresses, while keeping `ORG`
+monotonic.
+
+Hardware-proven RJOIN hash-stats target:
+
+```text
+follow rjoin-hash-stats-7200-test.md
+paste rjoin-hash-stats-7200.asm through ASM RT PASTE
+expect END OK with only internal control-flow fixups
+G 7200
+enter HELLO
+expect LEN=05 XOR=42 FNV=32543B0B
+enter R-YORS
+expect LEN=06 XOR=68 FNV=E48E4383
+enter Q or .
+expect BYE and return to HIMON
+```
+
+The accepted 2026-06-10 board proof re-entered the current `$3EF4`
+`ASM RT PASTE` image with `G 2000`, assembled the final source shape through
+`END`, and printed the expected table sanity:
+`MAIN=$7200`, `DONE=$722E`, `HASH=$7236`, `NIB=$725A`, `HEX=$726A`,
+`SHOW=$7278`, final `PC=$7640`, and eight internal control-flow fixups. Runtime
+checks matched the expected outputs for `HELLO` and `R-YORS`, then `Q` printed
+`BYE` and returned to HIMON.
+
+The first hardware attempt on `HIMON V 00.0610(1344)` usefully failed the
+earlier sample shape: forward string/buffer references filled all 24 fixup rows
+before `MAIN`, and double-quoted `DB` strings returned `BAD OPER`. The current
+sample uses byte/character-list `DB`.
+
+The second board attempt showed the other side of the same shaping rule:
+emitting data first and then issuing `ORG $7200` returned `BAD RANGE`, because
+ASM v1 requires monotonic `ORG`. The code therefore assembled at `$7640`, and
+`G 7200` executed data bytes. The current sample fixes that by defining data
+addresses as `EQU`, assembling executable code at `$7200`, then moving forward
+to emit the `$7500/$7600` data.
 
 `life-rjoined-6800.asm` is a deliberately table-budgeted full-program sample
 for the current ASM v1 ceiling. It starts at `$6800`, uses RJOIN for
@@ -3174,7 +3232,8 @@ map at `$7242`. Controls are `N` or space for next, `R` for random, and `Q` to
 return. The random seed in `$D4` stirs while waiting for a key, then an 8-bit
 LFSR fills the board on `R`.
 
-The source stays inside current paste constraints after the table-open slice:
+The source stayed inside the paste constraints used by that proof after the
+table-open slice:
 24 session symbols, 13 forward fixup rows, about 24 local report references,
 no operand-tail arithmetic, no local labels, no DB/DS expression math, and max
 source line length 55. Static layout check places the interactive code below
@@ -3183,7 +3242,7 @@ address `$7246`). The earlier hardware transcripts
 `2026-06-09 ASM Current $3813 Life Sample Paste Assembly` and
 `2026-06-09 ASM Current $3813 Life Sample Runtime` prove the prior
 non-interactive revision; `2026-06-09 ASM Current $3CB1 Interactive Life Paste
-and Random Run` proves the current interactive/random revision on hardware.
+and Random Run` proves that interactive/random revision on hardware.
 The first interactive attempt used reserved word `START` as an entry label and
 correctly failed `BAD DIR`; the source now uses `MAIN`.
 The next `$3CAB` board attempt accepted `MAIN` but failed `END` because fixup

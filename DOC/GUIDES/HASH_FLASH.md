@@ -45,8 +45,8 @@ The public sample is:
 DOC/GUIDES/ASM/SAMPLES/life-rjoined-6800.asm
 ```
 
-Load the current runtime paste image at `$2000`, paste the source, then run
-`G 6800`. The hardware-proven runtime size for this slice is:
+Load the current ASM runtime paste image at `$2000`, paste the source, then run
+`G 6800`. The hardware-proven runtime size for the original slice was:
 
 ```text
 L OK=3CB1 GO=2000

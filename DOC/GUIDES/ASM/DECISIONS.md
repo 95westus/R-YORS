@@ -337,8 +337,8 @@ A [addr] [label[:]] MMM [operand] .
   HIMON command input can carry longer text, but v1 ASM symbols should fail
   clearly above this cap.
 - ASM v1 symbol characters are uppercase letters, digits, underscore, and dot
-  for local labels, but a global symbol must not begin with a digit. Dot and
-  question mark are reserved local-prefix characters and are prefix-only.
+  or question mark for local labels, but a global symbol must not begin with a
+  digit. Dot and question mark are local-prefix characters and are prefix-only.
   A trailing colon is optional label punctuation, not part of the symbol. Comma
   is operand punctuation/separator, not a symbol character.
 - ASM v1 comments start with `;` and run to end of line.
@@ -493,9 +493,11 @@ A [addr] [label[:]] MMM [operand] .
   that saves code or cycles.
 - First implementation uses fixed table limits. If symbol or fixup space fills,
   fail with `BAD SYM` or `BAD FIX`; do not spill silently or start writing into
-  flash. The current proof sizes are 16 symbols, 8 fixups, 31 visible name
-  characters, 63 input characters, and a 512-byte code buffer; treat those as
-  proof defaults, not permanent language limits.
+  flash. The current proof sizes are 32 global symbols, 24 fixups, 64 report
+  references, 31 visible global-name characters, 8 local labels per active
+  global scope, 15 visible local-name characters, 63 input characters, and a
+  512-byte code buffer; treat those as proof defaults, not permanent language
+  limits.
 - ASM lookup is layered so it can grow to HIMON-scale symbol counts. V1 checks
   RAM session symbols first, then resident HIMON/catalog symbols, then creates a
   fixup if the operand mode allows a forward reference. The RAM session table is
