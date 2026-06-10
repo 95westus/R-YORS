@@ -6140,3 +6140,85 @@ with `ERR=$09 BAD FIX PC=$727B`. The symbol table already showed 32 named
 operand references, so the failure was the ASM report-reference ceiling, not a
 RJOIN seed failure. Current source raises that ceiling from `$20` to `$40`
 without allocating new table storage.
+
+## 2026-06-09 ASM RAM-Seed Opcode Addressing Smoke
+
+This follow-on board run uses the same `HIMON V 00.0609(1904)` /
+`ASM RT PASTE` image and a lower-reference opcode/addressing source. The source
+assembles cleanly through `END`, resolves selected-byte fixups, bit-branch
+fixups, absolute fixups, and a forward `JSR`, then executes from `$7200`.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>         ORG $7200
+OK PC=$7200
+ASM>         CLD
+OK PC=$7201
+ASM>         LDA #$00
+OK PC=$7203
+...
+ASM>         JSR SUB
+OK PC=$7281
+ASM>         JMP ($7330)
+OK PC=$7284
+ASM>
+ASM> JUMPED LDA #$4F
+OK PC=$7286
+ASM>         STA $7108
+OK PC=$7289
+ASM>         RTS
+OK PC=$728A
+ASM>
+ASM>         JMP ($7330,X)
+OK PC=$728D
+ASM>
+ASM> SUB     LDA #$99
+OK PC=$728F
+ASM>         STA $7107
+OK PC=$7292
+ASM>         RTS
+OK PC=$7293
+ASM>
+ASM> FAIL    STA $7100
+OK PC=$7296
+ASM>         RTS
+OK PC=$7297
+ASM>         END
+OK PC=$7297
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7223  01 04 0E 0012 00  0000  BIT1
+01 01 722B  01 04 0E 0015 00  0000  BIT2
+02 01 7284  01 04 0E 003E 00  0000  JUMPED
+03 01 728D  01 04 0E 0042 00  0000  SUB
+04 01 7293  01 04 0E 0045 00  0000  FAIL
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 02   01  720A 720B JUMPED
+01 02 02   02  720F 7210 JUMPED
+02 02 10   00  721D 721E BIT1
+03 02 04   00  7221 7223 FAIL
+04 02 10   00  7225 7226 BIT2
+05 02 04   00  7229 722B FAIL
+06 02 04   00  727F 7281 SUB
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=EC Y=0F P=75 S=FD NV-BdIzC
+>G 7200
+GO 7200
+
+#GO# ENTRY=7200
+RET A=4F X=01 Y=44 P=74 S=FD NV-BdIzc
+>D 7100 7108
+7100: 80 33 22 33 44 55 81 99 | 4F | .3"3DU..O
+```
+
+Interpretation: the result matches the expected oracle. `$7100=$80` proves the
+`SMB/RMB/BBS/BBR/TSB/TRB` path, `$7101-$7105` prove absolute indexed,
+zero-page indexed, and zero-page indirect forms, `$7106=$81` proves accumulator
+shift/rotate emission, `$7107=$99` proves the forward `JSR SUB`, and
+`$7108=$4F` proves the absolute indirect jump through `$7330`.

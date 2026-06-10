@@ -3817,6 +3817,18 @@ A later broad opcode/addressing paste failed at the 33rd named operand reference
 with `ERR=$09 BAD FIX`; that was the report-reference ceiling, not the seed.
 Current source raises `ASM_REF_MAX` to `$40` without adding table storage.
 
+The lower-reference board opcode/addressing smoke then assembled at `$7200`,
+resolved seven fixups, ran from `$7200`, and dumped the expected oracle:
+
+```text
+7100: 80 33 22 33 44 55 81 99 | 4F | .3"3DU..O
+```
+
+This proves the RAM-seeded ASM path can assemble and run bit branches,
+selected-byte immediates, absolute indexed, zero-page indexed, zero-page
+indirect, accumulator shift/rotate, forward `JSR`, absolute indirect `JMP`, and
+absolute-X indirect `JMP` emission in one board paste.
+
 ASM 2.57 expected host-built S19 marker:
 
 ```text
