@@ -216,6 +216,71 @@ some utility catalog entries are still NEEDS_PROOF
 Keeping them local is the safer choice until ASM is flash-resident and size is
 more important than local lexer speed.
 
+## Final ASM/HIMON Similarity Scan
+
+Scope: `SRC/ASM/asm-v1-core.asm`, HIMON monitor sources, and resident HIMON
+library routines. STR8 is deliberately out of scope.
+
+Result:
+
+```text
+No more safe one-off shrink remains before the flash/RAM split.
+The only attractive remaining shared family is output, and it should be moved
+as a group rather than as separate tiny calls.
+```
+
+Already shared or resolved:
+
+| ASM routine/use | HIMON/resident routine | Verdict |
+| --- | --- | --- |
+| `ASM_RJ_WRITE_BYTE` | `BIO_FTDI_WRITE_BYTE_BLOCK` / `WRITE BYTE` | done |
+| `ASM_RJ_READ_CSTRING` | `SYS_READ_CSTRING_ECHO_UPPER` / `READ LINE` | done |
+| `ASM_HEX_TO_NIBBLE` | `UTL_HEX_ASCII_TO_NIBBLE` / `HEX NIB` | done |
+| `ASM_FNV1A_INIT` | `FNV1A_INIT` / `HASH OPEN` | done |
+| `ASM_FNV1A_UPDATE_A_FAST` | `FNV1A_UPDATE_A_FAST` / `HASH MIX` | done |
+
+Remaining output overlaps:
+
+| ASM routine | Similar HIMON/resident routine | Recommendation |
+| --- | --- | --- |
+| `ASM_RJ_WRITE_CSTRING` | `BIO_FTDI_PUT_CSTR` / `SYS_WRITE_CSTRING` | candidate after flash split |
+| `ASM_RJ_WRITE_HEX_BYTE` | `SYS_WRITE_HEX_BYTE`, `BIO_WRITE_HEX_BYTE`, `UTL_HEX_BYTE_TO_ASCII_YX` | group with output work only |
+| `ASM_RJ_PRINT_CRLF` | `SYS_WRITE_CRLF`, `BIO_WRITE_CRLF` | group with output work only |
+
+Why not now:
+
+```text
+ASM_RJ_WRITE_CSTRING is about 22 bytes.
+ASM_RJ_WRITE_HEX_BYTE is about 32 bytes.
+ASM_RJ_PRINT_CRLF is about 10 bytes.
+
+Each extra resident call wants a hash constant, cache bytes, and init checks.
+One at a time, the plumbing can eat the win. As a group, especially once ASM is
+flash-resident, the policy is cleaner.
+```
+
+Similar but not good sharing targets:
+
+| ASM family | HIMON/resident similarity | Why it stays private |
+| --- | --- | --- |
+| `ASM_SKIP_SPACES`, `ASM_ADV_PARSE` | `CMD_SKIP_SPACES`, `CMD_ADV_PTR` | same shape, different pointer state |
+| `ASM_NEXT_TOKEN`, `ASM_LOOKUP_WORD` | `CMD_HASH_TOKEN`, command scanner | ASM token rules are richer and syntax-specific |
+| `ASM_IS_*`, `ASM_FOLD_UPPER_A` | `UTL_CHAR_*` | hot path, punctuation rules differ, utility helpers may use shared ZP |
+| `ASM_PARSE_*`, `ASM_VALUE_*` | `CMD_PARSE_HEX_*` | ASM expressions handle radix, width, symbols, locals, and fixups |
+| symbol/fixup/local tables | HIMON hash/catalog scanner | ASM-specific session metadata |
+| opcode/vocabulary lookup | HIMON disassembler/opcode helpers | inverse problem, different tables and contracts |
+
+Final recommendation:
+
+```text
+Do the flash/RAM split next.
+After that, consider one output-sharing experiment:
+  resolve PUT CSTR, WRITE HEX BYTE, and CRLF together
+  measure size and complexity as a group
+Leave lexer/parser/number code private unless a new resident parser contract is
+designed explicitly for ASM, not borrowed from HIMON command parsing.
+```
+
 ## Completed Slice
 
 ```text
