@@ -3,7 +3,9 @@
 This file holds detailed settled decisions for ASM. It was split out from [DECISIONS.md](../DECISIONS.md) so the project-wide decision ledger stays readable.
 
 The broader design narrative remains in [HASHED_ASM.md](HASHED_ASM.md), the
-future interactive/batch command-surface idea is parked in
+flash-resident `$8000` path is planned in
+[FLASH_8000_GAME_PLAN.md](FLASH_8000_GAME_PLAN.md), the future
+interactive/batch command-surface idea is parked in
 [INTERACTIVE_BATCH.md](INTERACTIVE_BATCH.md), and open questions/working notes
 remain in [../QCC/ASM.md](../QCC/ASM.md).
 
@@ -610,6 +612,10 @@ A [addr] [label[:]] MMM [operand] .
 - STR8 `U` / `UPDATE HIMON` programs only `$C000-$EFFF`, but that is enough for
   the RAM seed contract: after HIMON starts, it publishes the new joiner address
   without needing a top-sector `$FFF8/$FFF9` flash patch.
+- The first ASM flash slice is a fixed-address `L F` image, not an auto-placed
+  image. `asm-v1-flash` links the FNV record at `$8000`, uses `START` from the
+  map for the S9 entry, keeps emitted opcodes at `$2000+`, and currently places
+  ASM runtime UDATA at `$6000+` until the planned `$7DFF` downward arena exists.
 - The intended layering is STR8 for boot/flash policy, T.H.E. for the hash/join
   contract, HIMON for resident service publication, and ASM as a client of
   those resident services.

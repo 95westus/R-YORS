@@ -145,6 +145,11 @@ ASM_V1_RUNTIME_PASTE_SRC := $(PROOFS_DIR)/asm-v1-runtime-paste.asm
 ASM_V1_RUNTIME_PASTE_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/asm-v1-runtime-paste.obj
 ASM_V1_RUNTIME_PASTE_S19 := $(S19_DIR)/asm-v1-runtime-paste-2000.s19
 ASM_V1_RUNTIME_PASTE_LINKFLAGS := -g -s -t -c2000 -hm19 -j -o
+ASM_V1_FLASH_SRC := $(ASM_DIR)/asm-v1-flash.asm
+ASM_V1_FLASH_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash.obj
+ASM_V1_FLASH_RUNTIME_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash-runtime.obj
+ASM_V1_FLASH_S19 := $(S19_DIR)/asm-v1-flash-8000.s19
+ASM_V1_FLASH_LINKFLAGS := -g -s -t -c8000 -u6000 -hm19 -j -o
 ASMTEST_3000_SAMPLE := ../DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
 ASMTEST_3000_WDC_SIDE_OBJ := $(ASMTEST_3000_SAMPLE:.asm=.obj)
 ASMTEST_3000_WDC_SIDE_LST := $(ASMTEST_3000_SAMPLE:.asm=.lst)
@@ -251,6 +256,7 @@ ALL_TARGETS := \
 	asm-v1-runtime-smoke \
 	asm-v1-runtime-asmtest \
 	asm-v1-runtime-paste \
+	asm-v1-flash \
 	rom-append-calc
 
 # Local language S19/BIN targets consume ignored sources under LOCAL/. Include
@@ -432,6 +438,10 @@ asm-v1-runtime-paste: $(ROM_LIB) $(ASM_V1_RUNTIME_PASTE_S19)
 	@echo "Built $(ASM_V1_RUNTIME_PASTE_S19)."
 	@$(MAKE) artifacts
 
+asm-v1-flash: $(ASM_V1_FLASH_S19)
+	@echo "Built $(ASM_V1_FLASH_S19)."
+	@$(MAKE) artifacts
+
 asmtest-6800-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE)"
 
@@ -453,7 +463,7 @@ asmtest-3000-wdc-check: asmtest-6800-wdc-check
 asm-opcode-coverage: $(ASM_OPCODE_AUDIT) $(ASM_V1_CORE_SRC)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_OPCODE_AUDIT) -SourcePath "$(ASM_V1_CORE_SRC)"
 
-asm-test: asm-opcode-coverage asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste
+asm-test: asm-opcode-coverage asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash
 	@echo "ASM v1 smoke checks passed."
 
 calc-9a00-fnv-proof: $(ROM_LIB) $(CALC_9A00_FNV_PROOF_S19)
@@ -715,6 +725,16 @@ $(ASM_V1_RUNTIME_PASTE_OBJ): $(ASM_V1_RUNTIME_PASTE_SRC)
 	$(ASM) $(ASFLAGS) $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
 
+$(ASM_V1_FLASH_OBJ): $(ASM_V1_FLASH_SRC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) $<
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
+
+$(ASM_V1_FLASH_RUNTIME_OBJ): $(ASM_V1_CORE_SRC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DASM_RUNTIME_ONLY -DASM_FLASH_RUNTIME $<
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
+
 $(ASM_V1_RUNTIME_S19): $(ASM_V1_RUNTIME_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(ASM_V1_RUNTIME_LINKFLAGS) $(ASM_V1_RUNTIME_S19) $(ASM_V1_RUNTIME_OBJ)
@@ -738,6 +758,12 @@ $(ASM_V1_RUNTIME_PASTE_S19): $(ASM_V1_RUNTIME_PASTE_OBJ) $(ASM_V1_RUNTIME_OBJ) $
 	$(LINKER) $(ASM_V1_RUNTIME_PASTE_LINKFLAGS) $(ASM_V1_RUNTIME_PASTE_S19) $(ASM_V1_RUNTIME_PASTE_OBJ) $(ASM_V1_RUNTIME_OBJ) -L $(BUILD_DIR)\lib\rom
 	@echo [ps] set S9 start $$2000 in $(ASM_V1_RUNTIME_PASTE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_V1_RUNTIME_PASTE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
+$(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(ASM_V1_FLASH_LINKFLAGS) $(ASM_V1_FLASH_S19) $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
+	@echo [ps] set S9 start from START in $(ASM_V1_FLASH_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-v1-flash-8000.map') { '$(S19_DIR)/asm-v1-flash-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-v1-flash-8000.map') { '$(MAP_DIR)/asm-v1-flash-8000.map' } else { throw 'asm-v1-flash-8000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+START\s*$$' | Select-Object -First 1; if (-not $$m) { throw 'START not found in map' }; $$addr = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$sum = 3 + (($$addr -shr 8) -band 255) + ($$addr -band 255); $$chk = ($$sum -bxor 255) -band 255; $$rec = ('S903{0:X4}{1:X2}' -f $$addr, $$chk); $$lines = Get-Content -Path '$(ASM_V1_FLASH_S19)'; $$lines[-1] = $$rec; Set-Content -Path '$(ASM_V1_FLASH_S19)' -Value $$lines"
 
 $(CALC_9A00_FNV_PROOF_S19): $(CALC_9A00_FNV_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -951,4 +977,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-opcode-coverage asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map routine-word-tree himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-opcode-coverage asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map routine-word-tree himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term

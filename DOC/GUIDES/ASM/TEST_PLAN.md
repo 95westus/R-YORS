@@ -120,6 +120,18 @@ Current ASM runtime paste-driver artifact:
 SRC/BUILD/s19/asm-v1-runtime-paste-2000.s19
 ```
 
+Current ASM flash `$8000` build:
+
+```text
+make -C SRC asm-v1-flash
+```
+
+Current ASM flash artifact:
+
+```text
+SRC/BUILD/s19/asm-v1-flash-8000.s19
+```
+
 The ASM core RAM proof links and loads at `$2000`. Its smoke assembly target is
 `$7000`, with data targets at `$7100/$7110`, so emitted self-test bytes stay out
 of the resident proof image as the core grows. ASM 2.65 adds an onboard
@@ -5940,6 +5952,106 @@ ASM RT PASTE OK
 7220: 5A | Z
 ```
 
+## Flash $8000 Slice
+
+Host proof for the first flash-resident ASM slice:
+
+```text
+make -C SRC asm-v1-flash
+make -C SRC asm-test
+```
+
+The `asm-v1-flash-8000.s19` image is fixed-address for current `L F`:
+
+```text
+FNV record:  $8000, ASM hash $56AD7400
+S9 entry:    START from the link map, currently $800C
+S1 range:    $8000-$AD66
+UDATA:       $6000-$6DBA, omitted from S19
+default PC:  emitted opcodes start at $2000
+```
+
+Board proof script:
+
+```text
+; on host
+make -C SRC asm-v1-flash
+
+; on board, with the $8000 flash window erased/blank
+>L F
+send SRC/BUILD/s19/asm-v1-flash-8000.s19
+
+># K=5
+; expect an ASM V1 K05 row with hash 56AD7400 and entry near $800C
+
+>ASM
+; expect ASM FLASH and ASM> prompt
+
+ASM>         ORG $2000
+ASM>         LDA #$5A
+ASM>         STA $7100
+ASM>         RTS
+ASM>         END
+; expect ASM TABLES then ASM FLASH OK
+
+>G 2000
+>D 7100
+; expect 5A
+
+>D 7E00 7E01
+; expect the HIMON RJOIN seed still present and unchanged for the session
+```
+
+The fixed-image hash-command path is hardware-proven once a cold-boot board
+reaches HIMON, accepts `ASM`, enters the flash wrapper, assembles a RAM program,
+and runs the emitted code. The current proof uses the Life sample at `$2000`.
+
+First board smoke on HIMON V 00.0610(2014) loaded the image:
+
+```text
+L F S19
+L @8000
+LF OK WR=2D67 GO=800C
+>G 800C
+ASM FLASH
+ASM>
+BRK 00 PC=0002
+A=00 X=03 Y=60 P=75 S=F9 NV-BdIzC
+```
+
+`X=03 Y=60` is the flash wrapper line buffer at `$6003`. The likely failure
+was an indirect call through a cleared read vector after `ASM_BEGIN` called the
+shared RJOIN init. The fix keeps flash UDATA read-vector clearing in
+`ASM_RJOIN_INIT_IO` only, so generic `ASM_RJOIN_INIT` cannot clear the input
+routine after it has been resolved.
+
+Fixed-image fingerprint:
+
+```text
+>D 8173 8182
+8173: 9C 6A 61 AD 6A 61 F0 1B | AD 6D 61 F0 16 AD 6F 61
+
+>D 8218 8227
+8218: 9C 72 61 9C 73 61 20 73 | 81 90 1B AD 73 61 D0 14
+```
+
+If `$8173` still clears `$6172/$6173`, or `$8218` begins directly with
+`20 73 81`, the board is still executing the stale flash image.
+
+Accepted direct-entry board proof on HIMON V 00.0610(2014): after erasing/blanking the
+`$8000` window, the board loaded `asm-v1-flash-8000.s19` with current `L F`,
+reported `LF OK WR=2D67 GO=800C`, entered with `G 800C`, accepted the
+interactive Life source relocated to `ORG $2000`, printed `ASM FLASH OK`, then
+ran the emitted program with `G 2000`. The runtime printed Life boards and
+accepted `N/R/Q` input. This proves the fixed-address `L F` flash image and
+substantial flash-runtime assembly path.
+
+Accepted hash-command board proof on the same HIMON V 00.0610(2014): after a
+cold boot, HIMON accepted `>ASM`, printed `ASM FLASH`, accepted the same
+interactive Life source relocated to `ORG $2000`, printed `ASM FLASH OK`, then
+ran the emitted program with `G 2000` and showed the initial Life board. This
+closes the HIMON `ASM` hash-command proof for the fixed `$8000` image.
+
 ## Regression Protocol
 
 Before committing ASM code:
@@ -5958,6 +6070,7 @@ make -C SRC asm-v1-runtime
 make -C SRC asm-v1-runtime-smoke
 make -C SRC asm-v1-runtime-asmtest
 make -C SRC asm-v1-runtime-paste
+make -C SRC asm-v1-flash
 ```
 
 As layers are added, extend this list rather than replacing it:

@@ -1,6 +1,9 @@
 # Future ASM Interactive And Batch Sessions
 
 Status: parked future command-surface idea. This is not the current ASM path.
+The flash-resident `$8000` ASM plan in
+[FLASH_8000_GAME_PLAN.md](FLASH_8000_GAME_PLAN.md) treats this as a presentation
+split layered on top of the same assembler session spine.
 
 ## Current Rule
 
@@ -31,6 +34,10 @@ ASM_END
 There is no present `ASM I`/`ASM B` split, no quiet batch wrapper, and no
 different behavior for pasted source. Paste handling remains ordinary line
 input plus the existing error/quench policy.
+
+The first flash-resident wrapper, `asm-v1-flash`, is also a simple prompted
+session wrapper. It is meant to prove the `$8000` flash image and HIMON FNV
+entry path before adding prettier interactive or batch presentation modes.
 
 ## Future Idea
 
@@ -100,4 +107,3 @@ same error policy
 
 Timing detection is not a current requirement and is not a substitute for any
 future explicit command mode.
-

@@ -6729,3 +6729,302 @@ E2DD10AF D4D8 05 READ LINE
 AEFA0F42 E5AF 05 PUT CSTR
 >
 ```
+
+## 2026-06-10 ASM Flash `$8000` Life Paste/Run Proof
+
+This board run proves the first flash-resident ASM image loaded by current
+HIMON `L F`, entered at its S9/GO address `$800C`, accepted a large pasted
+program, resolved resident RJOIN names, emitted code/data into RAM, and ran a
+real interactive program from `$2000`.
+
+Scope of proof:
+
+```text
+HIMON:       V 00.0610(2014)
+flash load:  L F at $8000
+write size:  WR=2D67
+entry:       GO=800C, run by G 800C
+ASM image:   flash wrapper prints ASM FLASH / ASM>
+program:     tiny interactive Life, relocated to ORG $2000
+data:        neighbor tables at $7000-$71FF, seed/tile data at $7200-$7245
+runtime:     G 2000 prints boards and accepts N/R/Q input
+```
+
+This proves the `L F` fixed-address flash runtime path and the flash/RAM split
+for substantial work. This first direct-entry transcript does not by itself
+prove the HIMON `ASM` hash command; the follow-up proof below closes that path.
+
+Flash load and flash-wrapper entry:
+
+```text
+HIMON V 00.0610(2014)
+>D 8000 FF
+8000: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+...
+80F0: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+>L F
+L F S19
+L @8000
+LF OK WR=2D67 GO=800C
+>G 800C
+GO 800C
+ASM FLASH
+ASM>
+```
+
+The pasted program started at `$2000` and used resident names for output and
+input:
+
+```text
+ASM> ; ASM V1 TINY INTERACTIVE LIFE. PASTE VIA ASM RT PASTE.
+OK PC=$2000
+ASM> ; RUN G 6800. N OR SPACE=NEXT, R=RANDOM, Q=QUIT.
+OK PC=$2000
+ASM> ; RANDOM SEED STIRS WHILE WAITING FOR A KEY.
+OK PC=$2000
+ASM> ; USES RJOIN PIN READ AND BIO WRITE BYTE ROUTINES.
+OK PC=$2000
+ASM>
+ASM>         ORG $2000
+OK PC=$2000
+ASM>         JMP MAIN
+OK PC=$2003
+...
+ASM> GETKEY  INC $D4
+OK PC=$2142
+ASM>         JSR PIN_FTDI_READ_BYTE_NONBLOCK
+OK PC=$2145
+...
+ASM> DONE    RTS
+OK PC=$2179
+ASM>
+ASM>         ORG $7000
+OK PC=$7000
+...
+ASM>         ORG $7240
+OK PC=$7240
+ASM>         DB $2E,$23
+OK PC=$7242
+ASM>         DB $01,$00,$00,$00
+OK PC=$7246
+ASM>
+ASM>         END
+OK PC=$7246
+ASM TABLES
+```
+
+The final table shows 24 globals and 13 internal fixups; external resident
+calls did not create unresolved fixups:
+
+```text
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 2003  01 04 0F 0007 04  0020  CRLF
+01 01 200E  01 04 0F 000C 01  0092  INIT
+02 01 2010  01 04 0F 000D 01  0012  ILOOP
+03 01 2025  01 04 0F 0017 01  00AB  COPY
+04 01 2027  01 04 0F 0018 01  001D  CLOOP
+05 01 2038  01 04 0F 0020 03  0093  REND
+06 01 2053  01 04 0F 002C 01  0037  RROW
+07 01 2057  01 04 0F 002E 01  0034  RCOL
+08 01 2070  01 04 0F 0039 01  00AA  STEP
+09 01 2072  01 04 0F 003A 01  006E  SLOOP
+0A 01 20D8  01 04 0E 0065 00  0000  BORN
+0B 01 20E2  01 04 0E 006A 00  0000  LIVE
+0C 01 20E4  01 04 0E 006B 00  0000  STORE
+0D 01 20ED  01 04 0F 0070 01  0094  PROMPT
+0E 01 2114  01 04 0F 0080 01  00A7  RAND
+0F 01 2116  01 04 0F 0081 01  0089  RLOOP
+10 01 212D  01 04 0E 008C 00  0000  RAND8
+11 01 2134  01 04 0E 0090 00  0000  R8S
+12 01 2137  01 04 0E 0092 00  0000  MAIN
+13 01 213D  01 04 0F 0094 03  00A6  LOOP
+14 01 2140  01 04 0F 0095 03  0097  GETKEY
+15 01 2165  01 04 0E 00A7 00  0000  RANDC
+16 01 216D  01 04 0E 00AA 00  0000  NEXTC
+17 01 2178  01 04 0E 00AE 00  0000  DONE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  2001 2003 MAIN
+01 02 07   00  20C9 20CA BORN
+02 02 07   00  20CF 20D0 LIVE
+03 02 07   00  20D3 20D4 LIVE
+04 02 07   00  20D7 20D8 STORE
+05 02 07   00  20DD 20DE LIVE
+06 02 07   00  20E1 20E2 STORE
+07 02 04   00  2117 2119 RAND8
+08 02 07   00  2131 2132 R8S
+09 02 07   00  2154 2155 NEXTC
+0A 02 07   00  215A 215B DONE
+0B 02 07   00  215E 215F RANDC
+0C 02 07   00  2162 2163 NEXTC
+ASM FLASH OK
+
+#GO# ENTRY=800C
+RET A=0A X=09 Y=00 P=75 S=FD NV-BdIzC
+```
+
+Runtime proof from `$2000`:
+
+```text
+>G 2000
+GO 2000
+
+G0
+.#......
+..#.....
+###.....
+........
+........
+........
+........
+........
+
+N/R/Q>
+G0
+.......#
+....###.
+.#......
+...###..
+.....##.
+....####
+##..##..
+..##..#.
+
+N/R/Q>
+G1
+...##..#
+.....##.
+...#..#.
+....###.
+...#...#
+#......#
+###.....
+########
+
+...
+
+N/R/Q>
+G>
+.#......
+#.....##
+#....#..
+#.......
+.#....#.
+.##.....
+..#....#
+..#....#
+
+N/R/Q>
+#GO# ENTRY=2000
+RET A=51 X=3F Y=01 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-06-10 ASM Flash `$8000` Hash-Command Life Proof
+
+This follow-up cold-boot proof closes the remaining command-dispatch gap from
+the first flash `$8000` Life proof. HIMON found the flash ASM FNV command record
+and entered the same flash-resident ASM image through the `ASM` command rather
+than by `G 800C`.
+
+Scope of proof:
+
+```text
+HIMON:       V 00.0610(2014), cold boot after STR8 countdown
+entry:       HIMON command `ASM`
+ASM image:   flash wrapper prints ASM FLASH / ASM>
+program:     same tiny interactive Life source, relocated to ORG $2000
+result:      ASM FLASH OK, then G 2000 prints the initial Life board
+```
+
+Cold boot and command entry:
+
+```text
+HIMON IN 3S. S=STR8  3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0610(2014)
+>
+>ASM
+ASM FLASH
+ASM>
+```
+
+The flash ASM session accepted the Life source at `$2000`:
+
+```text
+ASM> ; ASM V1 TINY INTERACTIVE LIFE. PASTE VIA ASM RT PASTE.
+OK PC=$2000
+ASM> ; RUN G 6800. N OR SPACE=NEXT, R=RANDOM, Q=QUIT.
+OK PC=$2000
+ASM> ; RANDOM SEED STIRS WHILE WAITING FOR A KEY.
+OK PC=$2000
+ASM> ; USES RJOIN PIN READ AND BIO WRITE BYTE ROUTINES.
+OK PC=$2000
+ASM>
+ASM>         ORG $2000
+OK PC=$2000
+...
+ASM> GETKEY  INC $D4
+OK PC=$2142
+ASM>         JSR PIN_FTDI_READ_BYTE_NONBLOCK
+OK PC=$2145
+...
+ASM> DONE    RTS
+OK PC=$2179
+ASM>
+ASM>         ORG $7000
+OK PC=$7000
+...
+ASM>         ORG $7240
+OK PC=$7240
+ASM>         DB $2E,$23
+OK PC=$7242
+ASM>         DB $01,$00,$00,$00
+OK PC=$7246
+ASM>
+ASM>         END
+OK PC=$7246
+ASM TABLES
+```
+
+Final tables again showed 24 globals and 13 internal fixups, ending with a
+clean flash-wrapper success:
+
+```text
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 2003  01 04 0F 0007 04  0020  CRLF
+01 01 200E  01 04 0F 000C 01  0092  INIT
+...
+17 01 2178  01 04 0E 00AE 00  0000  DONE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  2001 2003 MAIN
+01 02 07   00  20C9 20CA BORN
+...
+0C 02 07   00  2162 2163 NEXTC
+ASM FLASH OK
+>
+```
+
+Runtime start from `$2000`:
+
+```text
+>G 2000
+GO 2000
+
+G0
+.#......
+..#.....
+###.....
+........
+........
+........
+........
+........
+
+N/R/Q>
+```

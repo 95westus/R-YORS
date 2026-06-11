@@ -35,6 +35,18 @@
                         XDEF            ASM_BIND_LABEL
                         XDEF            ASM_DEFINE_EQU
                         XDEF            ASM_PRINT_TABLES
+                        XDEF            ASM_RJ_WRITE_CSTRING
+                        XDEF            ASM_RJ_WRITE_HEX_BYTE
+                        XDEF            ASM_RJ_PRINT_CRLF
+                        IF              ASM_RUNTIME_ONLY
+                        IF              ASM_FLASH_RUNTIME
+                        XDEF            ASM_RJOIN_INIT_IO
+                        XDEF            ASM_RJ_READ_CSTRING
+                        ENDIF
+                        ELSE
+                        XDEF            ASM_RJOIN_INIT_IO
+                        XDEF            ASM_RJ_READ_CSTRING
+                        ENDIF
 
 ; ----------------------------------------------------------------------------
 ; ASM active zero-page frame, allocated downward from $AF, plus shared FNV ZP.
@@ -1192,6 +1204,9 @@ ASM_SMOKE_PRINT_FAIL_DIR_D5:
                         ENDIF
 
 ASM_RJOIN_INIT:
+                        IF              ASM_FLASH_RUNTIME
+                        STZ             ASM_RJ_READY
+                        ENDIF
                         LDA             ASM_RJ_READY
                         BEQ             ASM_RJOIN_INIT_SEED
                         LDA             ASM_RJ_JOINER_HI
@@ -1279,6 +1294,29 @@ ASM_RJOIN_INIT_FAIL:
                         RTS
 
                         IF              ASM_RUNTIME_ONLY
+                        IF              ASM_FLASH_RUNTIME
+ASM_RJOIN_INIT_IO:
+                        STZ             ASM_RJ_READ_LO
+                        STZ             ASM_RJ_READ_HI
+                        JSR             ASM_RJOIN_INIT
+                        BCC             ASM_RJOIN_INIT_IO_FAIL
+                        LDA             ASM_RJ_READ_HI
+                        BNE             ASM_RJOIN_INIT_IO_READY
+                        LDA             #ASM_STEP_RJOIN_READ
+                        STA             ASM_START_STEP
+                        LDX             #<ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
+                        LDY             #>ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
+                        JSR             ASM_RJ_RESIDENT_XY
+                        BCC             ASM_RJOIN_INIT_IO_FAIL
+                        STX             ASM_RJ_READ_LO
+                        STY             ASM_RJ_READ_HI
+ASM_RJOIN_INIT_IO_READY:
+                        SEC
+                        RTS
+ASM_RJOIN_INIT_IO_FAIL:
+                        CLC
+                        RTS
+                        ENDIF
                         ELSE
 ASM_RJOIN_INIT_IO:
                         JSR             ASM_RJOIN_INIT
@@ -1321,6 +1359,10 @@ ASM_RJ_WRITE_BYTE:
                         JMP             (ASM_RJ_WRITE_LO)
 
                         IF              ASM_RUNTIME_ONLY
+                        IF              ASM_FLASH_RUNTIME
+ASM_RJ_READ_CSTRING:
+                        JMP             (ASM_RJ_READ_LO)
+                        ENDIF
                         ELSE
 ASM_RJ_READ_CSTRING:
                         JMP             (ASM_RJ_READ_LO)
@@ -11598,7 +11640,11 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_DB_COUNTING
                         RTS
 
+                        IF              ASM_FLASH_RUNTIME
+                        UDATA
+                        ELSE
                         DATA
+                        ENDIF
 
 ASM_SESSION_STATE:     DB              $00
 ASM_LAST_STATUS:       DB              $00
@@ -11653,6 +11699,10 @@ ASM_RJ_WRITE_HI:       DB              $00
 ASM_RJ_HEX_NIB_LO:     DB              $00
 ASM_RJ_HEX_NIB_HI:     DB              $00
                         IF              ASM_RUNTIME_ONLY
+                        IF              ASM_FLASH_RUNTIME
+ASM_RJ_READ_LO:        DB              $00
+ASM_RJ_READ_HI:        DB              $00
+                        ENDIF
                         ELSE
 ASM_RJ_READ_LO:        DB              $00
 ASM_RJ_READ_HI:        DB              $00
@@ -11764,6 +11814,9 @@ ASM_FIX_HASH2:         DS              ASM_FIX_MAX
 ASM_FIX_HASH3:         DS              ASM_FIX_MAX
 ASM_FIX_NAME_LEN:      DS              ASM_FIX_MAX
 ASM_FIX_NAME_TEXT:     DS              ASM_FIX_NAME_BYTES
+
+                        DATA
+
 ASM_OPM_PATCH_BYTES:
                         DB              $00,$00,$01,$01,$02,$01,$02,$01
                         DB              $01,$02,$01,$01,$01,$02,$02,$01
@@ -12358,6 +12411,10 @@ ASM_HASH_BIO_WRITE_BYTE_BLOCK:
 ASM_HASH_UTL_HEX_ASCII_TO_NIBBLE:
                         DB              $B1,$14,$D7,$AD
                         IF              ASM_RUNTIME_ONLY
+                        IF              ASM_FLASH_RUNTIME
+ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER:
+                        DB              $AF,$10,$DD,$E2
+                        ENDIF
                         ELSE
 ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER:
                         DB              $AF,$10,$DD,$E2
@@ -12528,6 +12585,9 @@ ASM_VOC_KIND_TAB:      DB              $03,$01,$01,$01,$01,$01,$01,$01,$01,$01,$
                         DB              $01,$01,$04,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
                         DB              $03,$03
 
+                        IF              ASM_FLASH_RUNTIME
+                        UDATA
+                        ENDIF
 ASM_CODE_BUF:
                         IF              ASM_RUNTIME_ONLY
                         DS              $0100
