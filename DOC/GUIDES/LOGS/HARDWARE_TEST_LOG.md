@@ -7177,3 +7177,17 @@ BYE
 RET A=07 X=28 Y=07 P=75 S=FD NV-BdIzC
 >
 ```
+
+## 2026-06-11 HIMON Legacy A Removed
+
+After removing the legacy HIMON `A` mini-assembler command from the command
+catalog, the board now reports the expected hash-not-found result:
+
+```text
+>A
+#C40BF6CC# HSH_NF!
+>
+```
+
+This proves `A` is no longer a built-in HIMON executable record. Assembly now
+belongs to the flash-resident `ASM` command path.

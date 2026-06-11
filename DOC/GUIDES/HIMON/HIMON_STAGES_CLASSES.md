@@ -22,7 +22,6 @@ SRC/HIMON/fnv1a-hbstr-6000.asm
 SRC/ARCHIVE/himon/himonia-f.asm
 SRC/HIMON/himon.asm
 SRC/HIMON/himon-shared-eq.inc
-SRC/HIMON/himon-asm.inc
 SRC/HIMON/himon-debug.inc
 SRC/HIMON/himon-disasm.inc
 SRC/HIMON/himon-bootlog.inc
@@ -482,7 +481,8 @@ Current short commands group naturally like this:
 ?      help
 #      FNV/catalog list or lookup
 D M    memory display and modify
-U A    disassemble and assemble
+U      disassemble
+ASM    flash-resident assembler when present
 R X    register/context view, edit, and resume
 G L    execute, load, load/go, flash load
 B N    breakpoints and single step

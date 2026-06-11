@@ -136,7 +136,7 @@
 
 ## Assembler Direction
 
-- Treat `A [addr] [label:] MMM [operand] .` as the one-shot assembler shape.
+- Treat `ASM` as the assembly entry, with full source lines inside the session.
 - Support forward labels in v1 through fixup records.
 - Prefer RAM staging for flash targets when source may fail or generate fixups.
 - Export only after bytes and fixups are verified.

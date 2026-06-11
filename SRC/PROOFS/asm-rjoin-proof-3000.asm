@@ -2,10 +2,10 @@
 ; asm-rjoin-proof-3000.asm
 ; RAM-loaded ASM/RJOIN proof, linked at $3000.
 ;
-; This is not the existing A mini assembler.  A remains the numeric interactive
-; assembler.  ASM is the hash/RJOIN proof lane: source-ish names become FNV32
-; hashes, local symbols are checked first, resident runtime records are joined
-; second, and only resolved executable references emit native W65C02S code.
+; This is not the old A mini assembler.  ASM is the hash/RJOIN proof lane:
+; source-ish names become FNV32 hashes, local symbols are checked first,
+; resident runtime records are joined second, and only resolved executable
+; references emit native W65C02S code.
 ; ----------------------------------------------------------------------------
 
                         MODULE          ASM_RJOIN_PROOF_APP

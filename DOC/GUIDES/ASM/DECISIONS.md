@@ -18,9 +18,8 @@ Settled v1 overview:
   later seal/export path.
 - ASM proper reads full source lines, suitable for pasted input in the current
   test. Its source-line shape is `[label[:]] operation [operand]`. HIMON's
-  `A [addr] ... .` form is legacy mini-assembler syntax, not an ASM input path.
-  ASM was going to use `A`, but that plan is canceled. When ASM compiles ASM
-  successfully, remove `A` from HIMON. ASM parsing is hash-first, with
+  old `A [addr] ... .` form was legacy mini-assembler syntax, not an ASM input
+  path, and has been removed from HIMON. ASM parsing is hash-first, with
   non-vocabulary first tokens held as pending definition names.
 - Width is source intent. `$hh` means zero page, `$hhhh` means absolute, and no
   numeric-range promotion/demotion is allowed.
@@ -110,21 +109,21 @@ ASM 9.30   integrate input driver
 ASM 9.40   assemble ASMTEST_3000
 ASM 9.50   assemble larger proof
 ASM 9.90   ASM assembles ASM milestone
-ASM 9.99   remove legacy A from HIMON
+ASM 9.99   legacy A removed from HIMON
 ```
 
 - Future operator diagnostics use `ASM-xxxx`, not the course numbers. That
   keeps later S/36-style message IDs and WTOR/reply policy separate from design
   chapters. V1 still stops on the first error.
 
-- Legacy HIMON mini-assembler command, outside ASM:
+- Removed legacy HIMON mini-assembler command, outside ASM:
 
 ```text
 A [addr] [label[:]] MMM [operand] .
 ```
 
-- In the legacy `A` command, address comes before optional label. Do not route
-  ASM through `A`; ASM proper uses source lines and `ORG`/session PC state
+- In the removed legacy `A` command, address came before optional label. Do not
+  route ASM through `A`; ASM proper uses source lines and `ORG`/session PC state
   rather than a leading `A`.
 - ASM hashes canonical names and tokens, not raw numeric addresses, for
   resolution. Store exact addresses, banks, patch sites, and origins as fields.

@@ -277,12 +277,12 @@ D start end    dump memory through inclusive end
 S start end|+count bb|'TEXT' [...] search memory; skips $7Fxx I/O slots
 M addr         modify memory byte by byte
 U start +count disassemble
-A addr         assemble
 G addr         go to address
 STR8           enter STR8 at $F000
 L              load S-records to RAM
 L G            load S-records and go to S9 start
 L F            flash-load under the current guard
+ASM            enter flash-resident ASM when present
 R [regs]       display/edit trapped context registers
 B start        set one-shot breakpoint
 B C start      clear breakpoint

@@ -25,7 +25,7 @@ input driver        one current path for typed/pasted lines
 large symbols       layered lookup, future HIMON-scale resident table
 SYM3                base-40 3-char prefix filter, not identity
 locals              8 label-only locals per active global scope, 15 visible chars
-legacy A            not ASM; remove from HIMON after ASM compiles ASM
+legacy A            removed from HIMON after flash ASM proof
 ```
 
 Still QCC/open:
@@ -118,7 +118,7 @@ ASM 9.30   integrate input driver
 ASM 9.40   assemble ASMTEST_3000
 ASM 9.50   assemble larger proof
 ASM 9.90   ASM assembles ASM milestone
-ASM 9.99   remove legacy A from HIMON
+ASM 9.99   legacy A removed from HIMON
 ```
 
 Future operator diagnostics use `ASM-xxxx`, not the course numbers. That keeps

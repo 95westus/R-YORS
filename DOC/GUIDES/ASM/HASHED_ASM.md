@@ -17,11 +17,11 @@ Current WDC-compatibility correction: `DB` is the active v1 data directive.
 `DC` is parked/reserved for now, so older `DC` examples in this narrative are
 historical unless repeated in [DECISIONS.md](DECISIONS.md).
 
-HIMON's `A` command is legacy mini-assembler code. ASM was once going to use
-`A`, but that plan is canceled. ASM proper is its own hash-based source-line
-parser and emitter: it can start proof-sized, then grow into HIMON-scale symbol
-handling through its own hash-first vocabulary and symbol lookup. Once ASM can
-compile ASM successfully, remove `A` from HIMON.
+HIMON's old `A` command was legacy mini-assembler code. ASM was once going to
+use `A`, but that plan is canceled and `A` has been removed from HIMON. ASM
+proper is its own hash-based source-line parser and emitter: it can start
+proof-sized, then grow into HIMON-scale symbol handling through its own
+hash-first vocabulary and symbol lookup.
 
 The short version:
 
@@ -73,8 +73,8 @@ Core settled rules:
 - V1 input is proof-sized: 63 visible characters per source line. Spaces and
   tabs are whitespace; tabs have no column meaning.
 - ASM proper reads full source lines. For the current test, lines can be pasted
-  into the assembler input stream. HIMON's `A [addr] ... .` form is legacy
-  HIMON mini-assembler syntax, not an ASM input path.
+  into the assembler input stream. HIMON's old `A [addr] ... .` form was legacy
+  mini-assembler syntax, not an ASM input path, and is no longer in HIMON.
 - The current runtime console treats human typing and pasted source as the same
   line input stream. A future `ASM I`/`ASM B` command split is only a parked
   presentation idea; it is not today's ASM path. See
@@ -262,7 +262,7 @@ ASM 9.30   integrate input driver
 ASM 9.40   assemble ASMTEST_3000
 ASM 9.50   assemble larger proof
 ASM 9.90   ASM assembles ASM milestone
-ASM 9.99   remove legacy A from HIMON
+ASM 9.99   legacy A removed from HIMON
 ```
 
 Future operator diagnostics are a separate lane. Use `ASM-xxxx` for
@@ -280,7 +280,9 @@ The goal is to keep the system self-hosting-friendly:
 - support forward labels without requiring a full object format
 - stay close to HIMON's "routines of routines" shape
 
-This is not meant to replace a full WDC toolchain immediately. It is a small monitor-local resolver wrapped around the existing `A` assembler path.
+This is not meant to replace a full WDC toolchain immediately. It is a small
+monitor-local assembler and resolver, independent of the removed legacy `A`
+path.
 
 ## Has This Been Done Before?
 
@@ -350,7 +352,7 @@ with host-side checks for `ASMTEST_3000.asm`, then grows layer by layer as ASM
 adds tokenizing, vocabulary lookup, parsing, symbols, expressions, classification,
 emission, fixups, directives, and reports.
 
-## Legacy HIMON A Command Shape
+## Removed Legacy HIMON A Command Shape
 
 Keep this only as a record of the old HIMON mini-assembler command shape:
 
@@ -359,13 +361,13 @@ A [addr] [label[:]] MMM [operand] .
 ```
 
 This is not ASM source grammar, not an ASM wrapper, and not the hash-based ASM
-parser. ASM was going to use `A`; that is no longer the plan. When ASM can
-compile ASM successfully, remove `A` from HIMON.
+parser. ASM was going to use `A`; that plan is canceled, and `A` has been
+removed from HIMON.
 
 Meaning:
 
 ```text
-A          HIMON command: assemble one statement
+A          removed HIMON command: assemble one statement
 [addr]     optional explicit assembly address / PC set
 [label[:]] optional symbol definition; colon is allowed but not required
 MMM        mnemonic token
@@ -5319,8 +5321,8 @@ current assembly context.
 
 ## Legacy A Removal Point
 
-The old HIMON `A` mini-assembler is outside ASM. It remains only until ASM
-proves it can assemble ASM successfully:
+The old HIMON `A` mini-assembler is outside ASM and has been removed from
+HIMON:
 
 ```text
 A [addr] [label[:]] MMM [operand] .   legacy HIMON mini-assembler
@@ -5343,7 +5345,7 @@ EXPORT name     mark symbol visible for command/routine lookup
 Removal rule:
 
 ```text
-when ASM compiles ASM successfully, remove `A` from HIMON
+legacy `A` is removed; ASM owns assembly through its own source-line path
 ```
 
 Since forward labels are part of v1, `FIX` and `RESOLVE` are still useful design

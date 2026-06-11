@@ -1319,7 +1319,6 @@ CMD_Q:
 
                         INCLUDE         "HIMON/himon-debug.inc"
                         INCLUDE         "HIMON/himon-disasm.inc"
-                        INCLUDE         "HIMON/himon-asm.inc"
 
 ; ----------------------------------------------------------------------------
 ; Trap handlers
@@ -3600,7 +3599,7 @@ MSG_SEARCH_USAGE:        DB              "S START END|+COUNT BB|'TEXT' [...], ? 
 MSG_SEARCH_NF:           DB              "S N",('F'+$80)
 MSG_SEARCH_ABORT:        DB              "S ABOR",('T'+$80)
 MSG_SEARCH_EXTRA:        DB              "S: SEARCH FROM RAM TO HASHED HIMON CM",('D'+$80)
-MSG_HELP:                DB              "# ? S D M U R X G L B N A Q ",$22," STR",('8'+$80)
+MSG_HELP:                DB              "# ? S D M U R X G L B N Q ",$22," STR",('8'+$80)
 MSG_QUOTE_MATCH:         DB              " STR8 MATCH",('!'+$80)
 MSG_USAGE_D:             DB              "D start [end|+cnt",(']'+$80)
 MSG_USAGE_M:             DB              "M start [end|+cnt]",('.'+$80)
@@ -3646,7 +3645,6 @@ MSG_USAGE_BC:            DB              "B C start",(']'+$80)
 MSG_USAGE_BL:            DB              "B ",('L'+$80)
 MSG_USAGE_N:             DB              ('N'+$80)
 MSG_USAGE_U:             DB              "U start [end|+cnt",(']'+$80)
-MSG_USAGE_A:             DB              "A start [mne op]",(']'+$80)
 MSG_BP_SET:              DB              "BP ",('$'+$80)
 MSG_BP_CLR:              DB              "B C ",('$'+$80)
 MSG_BP_FULL:             DB              "BP FUL",('L'+$80)

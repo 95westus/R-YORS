@@ -238,21 +238,17 @@ Example:
 .long $89ABCDEF  -> $EF,$CD,$AB,$89
 ```
 
-## Tiny ASM Command Surface
+## ASM Command Surface
 
 ```text
-A [addr] [label:] MMM [operand] .
-                            assemble one statement
-DEF name addr kind         define a symbol manually
-SYM [name]                 list symbol(s)
-FIX                        list unresolved fixups
-RESOLVE                    attempt to apply all pending fixups
-FORGET name                remove or mark a symbol unavailable
-EXPORT name                mark symbol visible for command/routine lookup
+ASM                         enter flash-resident assembler when present
+[label[:]] operation [operand]
+                            source-line shape inside ASM
+ORG EQU DB DS END           current v1 directives
 ```
 
-`A [addr]` without a complete one-shot statement enters the interactive side of
-the assembler.
+HIMON's old `A` mini-assembler command has been removed. ASM owns assembly
+through a full source-line session, with `ORG`/session PC state and `END`.
 
 ## Useful Make Targets
 
