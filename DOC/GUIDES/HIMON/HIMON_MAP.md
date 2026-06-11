@@ -175,6 +175,18 @@ flowchart TD
     L --> AUTOGO[optional auto-go]
 ```
 
+Future loader direction: `L F` may grow an auto-place relocatable mode. In that
+mode HIMON would first validate and measure the S19 image, find an erased block
+inside the HIMON flash-load guard, rebase S-record addresses to the chosen
+block, write/verify the relocated bytes, and report the selected base plus go
+address. This is not current behavior, and it is not STR8 backup/restore or
+protected-window update.
+
+Relocation is deliberately narrow: plain S19 can be address-rebased, but it
+does not describe absolute operands embedded inside code. A future auto-place
+payload must be position-safe, rely on RJOIN/fixed external contracts, or carry
+explicit relocation metadata from ASM or host tooling.
+
 ### Trap, Breakpoint, And Step Edges
 
 ```mermaid
@@ -295,6 +307,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_S1`, `L_WRITE_DATA_BYTE` | Accepts S0/S1/S9, writes S1 data below `$8000`, tracks count and go address. | Loading to flash without `F` fails with `HINT L F`. |
 | S-record load and go | `L G` | `CMD_L` | Same as `L`, then jumps to S9 address or first data address fallback. | Sets exec kind to LOADGO before jump. |
 | S-record flash load | `L F` | `L_WRITE_DATA_BYTE_FLASH`, `FLASH_WRITE_BYTE_AXY` | Writes only blank `$FF` bytes in `$8000-$CFFF`, verifies readback, skips after first flash failure. | Protects HIMON fixed-entry area at `$D000+`; no sector erase yet. |
+| Future relocatable flash placement | future `L F` mode | future loader staging and flash-block scan | Would measure a relocatable S19 image, choose an erased block, rebase record addresses, write/verify, and report relocated entry. | Not current behavior; plain S19 cannot patch absolute operands inside code without relocation metadata. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Current patch is direct memory write, so RAM code is the sane target. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
 | Single step | `N` | `CMD_N`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by opcode length, plants a temporary BRK, resumes with `RTI`. | Does not emulate branch-taken paths yet. |

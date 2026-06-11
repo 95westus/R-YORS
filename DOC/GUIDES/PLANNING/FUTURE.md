@@ -190,6 +190,32 @@
   global writable range. Keep `FLASH_ADDR_ALLOWED_XY` as the conservative HIMON
   `L F` guard, keep raw erase/program routines as mechanism, and let STR8 define
   separate backup, restore, install/update, and bank-0-enrollment policies.
+- Consider a future HIMON `L F` auto-place mode for relocatable S19 payloads:
+  the operator types `L F`, sends S19, HIMON measures the incoming image span,
+  finds an erased flash block under the HIMON flash-load guard, rebases the S19
+  record addresses to that block, writes only blank bytes, verifies readback,
+  and reports the chosen base plus relocated go address. This is convenience
+  loading for applications or flash-resident ASM slices, not backup, restore, or
+  protected-window update.
+- Keep the relocation promise precise. Plain S19 carries load addresses and
+  bytes, not relocation records. HIMON can rebase S-record addresses, but it
+  cannot repair absolute addresses already encoded inside 65C02 instructions
+  unless the payload is position-safe or ASM/host tooling supplies relocation
+  metadata. Early eligible payloads should use RJOIN/resident calls, relative
+  branches, fixed external data addresses by contract, or a declared relocation
+  table.
+- Design `L F` auto-place as a staged/two-pass operation. It must validate
+  checksums and collect `min`, `max`, byte count, sparsity, and S9 start before
+  programming flash. If the whole stream cannot fit in RAM staging, the command
+  should do an analyze pass and ask the host to resend after reporting the
+  selected destination. Do not stream-write unknown-size data and then discover
+  the block was too small.
+- Treat the chosen flash block as a lease even when the payload itself has no
+  FNV header. The no-header ASM direction can keep payload bytes bare, but HIMON
+  still needs enough external fact to avoid overwriting occupied flash and to
+  report where the relocated entry landed. The first proof can use "bytes are
+  not `$FF`" as the occupancy rule; later managed flash should record name,
+  span, origin, hash/checksum, and entry in a small catalog or lease table.
 - Explore the next STR8 backup layout as a managed 64K arena across banks 0
   and 1: five 12K backup slots plus one 4K metadata sector for names, labels,
   origin records, checks, and roles. This would leave bank 2 for SYS/USR use
