@@ -6670,3 +6670,62 @@ RET A=A5 X=09 Y=30 P=75 S=FD NV-BdIzC
 7610: 00 09 0A 0F A5 00 00 00 | 00 00 00 00 00 00 00 00 | ................
 >
 ```
+
+## 2026-06-10 ASM RJOIN Hex-Nibble Negative Range Check
+
+This follow-up used the same current `$3EED` `ASM RT PASTE` image and verified
+the oversized immediate failure path after the resident hex-nibble conversion.
+`LDA #$1234` reports `BAD RANGE`, not `BAD WIDTH`, because the immediate byte
+mode is known and the parsed value is outside the allowed range.
+
+Transcript:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM>         ORG $7620
+OK PC=$7620
+ASM>         LDA #$1234
+ERR=$06 BAD RANGE PC=$7620
+ASM> END
+OK PC=$7620
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=D5 Y=0F P=75 S=FD NV-BdIzC
+>
+```
+
+## 2026-06-10 HIMON K05 Service Record Listing
+
+After the selected K01-to-K05 promotion, the board `# K=5` listing confirmed
+the active HIMON resident records expose the intended short text names.
+
+Transcript:
+
+```text
+># K=5
+HASH     ENTRY K TEXT
+270C92A5 C1E0 05 "[TEXT]" -> #5F6A0F7A# STR8 MATCH!
+D60C1322 C31F 05 S: SEARCH FROM RAM TO HASHED HIMON CMD
+A9AF15F7 DE8E 05 HASH ACQUIRE
+4B9AEE1E E113 05 HASH OPEN
+A8802314 E18D 05 HASH MIX
+20285B85 E2E8 05 READ BYTE
+379FE930 E307 05 WRITE BYTE
+43621C9C E4C1 05 READ CH
+F91947F8 E4D8 05 READ ECHO
+B85E3F10 E4E8 05 READ COOK
+ADD714B1 E5C3 05 HEX NIB
+7142DD21 E808 05 BYTE HEX
+D4C88B87 E82E 05 NIB HEX
+E2DD10AF D4D8 05 READ LINE
+AEFA0F42 E5AF 05 PUT CSTR
+>
+```

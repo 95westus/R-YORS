@@ -3183,8 +3183,10 @@ Hardware-proven RJOIN hex-nibble conversion target:
 
 ```text
 fresh HIMON build should expose UTL_HEX_ASCII_TO_NIBBLE_FNV
-current map proof: UTL_HEX_ASCII_TO_NIBBLE_FNV=$E577, entry=$E57F
+current map proof: UTL_HEX_ASCII_TO_NIBBLE_FNV=$E5B7, entry=$E5C3, text=$E5EC
+current S19 proof: ADD714B1 is K05 (`46 4E D6 B1 14 D7 AD 05`)
 fresh ASM build resolves hash $ADD714B1 during ASM_RJOIN_INIT
+fresh ASM runtime-paste image should load as `L OK=3F1F GO=2000`
 
 G 2000
 ASM RT PASTE
@@ -3212,7 +3214,7 @@ G 2000
 ASM RT PASTE
         ORG $7620
         LDA #$1234
-expect ERR=$05 BAD WIDTH
+expect ERR=$06 BAD RANGE
 ```
 
 The 2026-06-10 board proof updated HIMON, booted `HIMON V 00.0610(1937)`,
@@ -3221,7 +3223,33 @@ sample through `ASM RT PASTE OK`, ran `G 7600`, and confirmed the runtime
 oracle. `$7100-$7102` contained `0F A5 09`, and `$7610-$7614` contained
 `00 09 0A 0F A5`. This proves the resident
 `UTL_HEX_ASCII_TO_NIBBLE` path for `$` hex operands and `DB $xx` data on
-hardware. The negative bad-width check is still a useful follow-up.
+hardware. A follow-up board check showed `LDA #$1234` reports
+`ERR=$06 BAD RANGE PC=$7620`, matching the current immediate overflow policy.
+
+Current K05 service-record smoke target:
+
+```text
+flash/load HIMON V 00.0610(2012) or newer
+enter # to list resident records
+
+expect these active K05 rows:
+20285B85 ... 05 READ BYTE
+379FE930 ... 05 WRITE BYTE
+43621C9C ... 05 READ CH
+F91947F8 ... 05 READ ECHO
+B85E3F10 ... 05 READ COOK
+ADD714B1 ... 05 HEX NIB
+7142DD21 ... 05 BYTE HEX
+D4C88B87 ... 05 NIB HEX
+
+UTL_HEX_ASCII_YX_TO_BYTE_FNV is K05 in source with text HEX BYTE, but is not
+currently forced resident in the active HIMON image.
+```
+
+The 2026-06-10 board proof ran `# K=5` and confirmed the active service rows:
+`READ BYTE`, `WRITE BYTE`, `READ CH`, `READ ECHO`, `READ COOK`, `HEX NIB`,
+`BYTE HEX`, and `NIB HEX`. It also confirmed existing K05 rows `HASH ACQUIRE`,
+`HASH OPEN`, `HASH MIX`, `READ LINE`, and `PUT CSTR` remained visible.
 
 `local-label-stress-7400.asm` is the current hardware-proven local-label board
 proof. It starts at `$7400` and writes its oracle to `$7100-$710C`; no resident

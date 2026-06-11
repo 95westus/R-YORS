@@ -130,10 +130,14 @@ SYS_CHECK_ENUMERATED:
 ; - Delegates to backend routine `COR_FTDI_READ_CHAR`.
 ; ----------------------------------------------------------------------------
 SYS_READ_CHAR_FNV:
-                        DB              'F','N',('V'+$80),$9C,$1C,$62,$43,$01
+                        DB              'F','N',('V'+$80),$9C,$1C,$62,$43,$05 ; SYS_READ_CHAR $43621C9C EXEC+TEXT
+                        DW              SYS_READ_CHAR
+                        DW              SYS_READ_CHAR_TXT
 SYS_READ_CHAR:
                         JSR             COR_FTDI_READ_CHAR
                         RTS
+SYS_READ_CHAR_TXT:
+                        DB              "READ C",('H'+$80)
                         ENDMOD
 
                         MODULE          SYS_GET_CTRL_C
@@ -310,7 +314,9 @@ SYS_WRITE_CHAR_REPEAT:
 ; OUT: C/A semantics follow backend cooked-char contract
 ; ----------------------------------------------------------------------------
 SYS_READ_CHAR_ECHO_FNV:
-                        DB              'F','N',('V'+$80),$F8,$47,$19,$F9,$01
+                        DB              'F','N',('V'+$80),$F8,$47,$19,$F9,$05 ; SYS_READ_CHAR_ECHO $F91947F8 EXEC+TEXT
+                        DW              SYS_READ_CHAR_ECHO
+                        DW              SYS_READ_CHAR_ECHO_TXT
 SYS_READ_CHAR_ECHO:
                         JSR             COR_FTDI_READ_CHAR_COOKED_ECHO
                         RTS
@@ -327,10 +333,16 @@ SYS_READ_CHAR_ECHO:
 ; - Delegates to backend routine `COR_FTDI_READ_CHAR_COOKED_ECHO`.
 ; ----------------------------------------------------------------------------
 SYS_READ_CHAR_COOKED_ECHO_FNV:
-                        DB              'F','N',('V'+$80),$10,$3F,$5E,$B8,$01
+                        DB              'F','N',('V'+$80),$10,$3F,$5E,$B8,$05 ; SYS_READ_CHAR_COOKED_ECHO $B85E3F10 EXEC+TEXT
+                        DW              SYS_READ_CHAR_COOKED_ECHO
+                        DW              SYS_READ_CHAR_COOKED_ECHO_TXT
 SYS_READ_CHAR_COOKED_ECHO:
                         JSR             COR_FTDI_READ_CHAR_COOKED_ECHO
                         RTS
+SYS_READ_CHAR_ECHO_TXT:
+                        DB              "READ ECH",('O'+$80)
+SYS_READ_CHAR_COOKED_ECHO_TXT:
+                        DB              "READ COO",('K'+$80)
                         ENDMOD
 
                         END

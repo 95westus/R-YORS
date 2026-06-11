@@ -158,9 +158,9 @@ BIO_FTDI_READ_BYTE_NONBLOCK:
 ;   wait should use `BIO_FTDI_READ_BYTE_TMO` or an explicit timeout wrapper.
 ; - Returns only after a byte is read, or after external control flow such as an
 ;   interrupt/reset takes over.
-; - Emits current 8-byte FNV header signature immediately before the callable
-;   entry.  Existing callers must continue to call `BIO_FTDI_READ_BYTE_BLOCK`,
-;   not the `_FNV` label.
+; - Emits a current FNV EXEC+TEXT record immediately before the callable entry.
+;   Existing callers must continue to call `BIO_FTDI_READ_BYTE_BLOCK`, not the
+;   `_FNV` label.
 ; - X/Y preservation follows callee behavior.
 ; - NUGGET CLASS (chat): PUFF-PLUS.
 ;
@@ -177,11 +177,15 @@ BIO_FTDI_READ_BYTE_NONBLOCK:
                         XREF            PIN_FTDI_READ_BYTE_NONBLOCK
 
 BIO_FTDI_READ_BYTE_BLOCK_FNV:
-                        DB              'F','N',('V'+$80),$85,$5B,$28,$20,$01 ; BIO_FTDI_READ_BYTE_BLOCK $20285B85 EXEC
+                        DB              'F','N',('V'+$80),$85,$5B,$28,$20,$05 ; BIO_FTDI_READ_BYTE_BLOCK $20285B85 EXEC+TEXT
+                        DW              BIO_FTDI_READ_BYTE_BLOCK
+                        DW              BIO_FTDI_READ_BYTE_BLOCK_TXT
 BIO_FTDI_READ_BYTE_BLOCK:
                         JSR             PIN_FTDI_READ_BYTE_NONBLOCK
                         BCC             BIO_FTDI_READ_BYTE_BLOCK
                         RTS
+BIO_FTDI_READ_BYTE_BLOCK_TXT:
+                        DB              "READ BYT",('E'+$80)
                         ENDMOD
 
 
@@ -274,9 +278,9 @@ BIO_FTDI_WRITE_BYTE_NONBLOCK:
 ;   wrapper.
 ; - Returns only after the byte is accepted, or after external control flow
 ;   such as an interrupt/reset takes over.
-; - Emits current 8-byte FNV header signature immediately before the callable
-;   entry.  Existing callers must continue to call `BIO_FTDI_WRITE_BYTE_BLOCK`,
-;   not the `_FNV` label.
+; - Emits a current FNV EXEC+TEXT record immediately before the callable entry.
+;   Existing callers must continue to call `BIO_FTDI_WRITE_BYTE_BLOCK`, not the
+;   `_FNV` label.
 ; - X preserved.  Y preservation follows callee behavior.
 ; - NUGGET CLASS (chat): PUFF-PLUS.
 ;
@@ -293,13 +297,17 @@ BIO_FTDI_WRITE_BYTE_NONBLOCK:
                         XREF            PIN_FTDI_WRITE_BYTE_NONBLOCK
 
 BIO_FTDI_WRITE_BYTE_BLOCK_FNV:
-                        DB              'F','N',('V'+$80),$30,$E9,$9F,$37,$01 ; BIO_FTDI_WRITE_BYTE_BLOCK $379FE930 EXEC
+                        DB              'F','N',('V'+$80),$30,$E9,$9F,$37,$05 ; BIO_FTDI_WRITE_BYTE_BLOCK $379FE930 EXEC+TEXT
+                        DW              BIO_FTDI_WRITE_BYTE_BLOCK
+                        DW              BIO_FTDI_WRITE_BYTE_BLOCK_TXT
 BIO_FTDI_WRITE_BYTE_BLOCK:
                         PHX
 ?LOOP:                  JSR             PIN_FTDI_WRITE_BYTE_NONBLOCK
                         BCC             ?LOOP
                         PLX
                         RTS
+BIO_FTDI_WRITE_BYTE_BLOCK_TXT:
+                        DB              "WRITE BYT",('E'+$80)
                         ENDMOD
 
 

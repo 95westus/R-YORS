@@ -28,13 +28,15 @@
 ; EXCEPTIONS/NOTES:
 ; - High nibble of input is ignored.
 ; - Always returns success (SEC).
-; - Emits current 8-byte FNV header signature immediately before the callable
-;   entry. Existing callers must continue to call `UTL_HEX_NIBBLE_TO_ASCII`,
-;   not the `_FNV` label.
+; - Emits a current FNV EXEC+TEXT record immediately before the callable entry.
+;   Existing callers must continue to call `UTL_HEX_NIBBLE_TO_ASCII`, not the
+;   `_FNV` label.
 ; ----------------------------------------------------------------------------
                         XDEF            UTL_HEX_NIBBLE_TO_ASCII_FNV
 UTL_HEX_NIBBLE_TO_ASCII_FNV:
-                        DB              'F','N',('V'+$80),$87,$8B,$C8,$D4,$01 ; UTL_HEX_NIBBLE_TO_ASCII $D4C88B87 EXEC
+                        DB              'F','N',('V'+$80),$87,$8B,$C8,$D4,$05 ; UTL_HEX_NIBBLE_TO_ASCII $D4C88B87 EXEC+TEXT
+                        DW              UTL_HEX_NIBBLE_TO_ASCII
+                        DW              UTL_HEX_NIBBLE_TO_ASCII_TXT
 UTL_HEX_NIBBLE_TO_ASCII:
 
                         AND             #$0F
@@ -45,6 +47,8 @@ UTL_HEX_NIBBLE_TO_ASCII:
 ?ASC_0:                 ADC             #'0'
                         SEC
                         RTS
+UTL_HEX_NIBBLE_TO_ASCII_TXT:
+                        DB              "NIB HE",('X'+$80)
                         ENDMOD
 
                         MODULE          UTL_HEX_BYTE_TO_ASCII_YX
@@ -63,13 +67,15 @@ UTL_HEX_NIBBLE_TO_ASCII:
 ; EXCEPTIONS/NOTES:
 ; - Always returns success (SEC).
 ; - X/Y are call-clobbered.
-; - Emits current 8-byte FNV header signature immediately before the callable
-;   entry. Existing callers must continue to call `UTL_HEX_BYTE_TO_ASCII_YX`,
-;   not the `_FNV` label.
+; - Emits a current FNV EXEC+TEXT record immediately before the callable entry.
+;   Existing callers must continue to call `UTL_HEX_BYTE_TO_ASCII_YX`, not the
+;   `_FNV` label.
 ; ----------------------------------------------------------------------------
                         XDEF            UTL_HEX_BYTE_TO_ASCII_YX_FNV
 UTL_HEX_BYTE_TO_ASCII_YX_FNV:
-                        DB              'F','N',('V'+$80),$21,$DD,$42,$71,$01 ; UTL_HEX_BYTE_TO_ASCII_YX $7142DD21 EXEC
+                        DB              'F','N',('V'+$80),$21,$DD,$42,$71,$05 ; UTL_HEX_BYTE_TO_ASCII_YX $7142DD21 EXEC+TEXT
+                        DW              UTL_HEX_BYTE_TO_ASCII_YX
+                        DW              UTL_HEX_BYTE_TO_ASCII_YX_TXT
 UTL_HEX_BYTE_TO_ASCII_YX:
                         PHA
                         LSR             A
@@ -85,6 +91,8 @@ UTL_HEX_BYTE_TO_ASCII_YX:
                         PLA
                         SEC
                         RTS
+UTL_HEX_BYTE_TO_ASCII_YX_TXT:
+                        DB              "BYTE HE",('X'+$80)
                         ENDMOD
 
                         MODULE          UTL_HEX_ASCII_TO_NIBBLE
@@ -102,13 +110,15 @@ UTL_HEX_BYTE_TO_ASCII_YX:
 ;      C = 0 and A unchanged on invalid input
 ; EXCEPTIONS/NOTES:
 ; - Accepts uppercase and lowercase input.
-; - Emits current 8-byte FNV header signature immediately before the callable
-;   entry. Existing callers must continue to call `UTL_HEX_ASCII_TO_NIBBLE`,
-;   not the `_FNV` label.
+; - Emits a current FNV EXEC+TEXT record immediately before the callable entry.
+;   Existing callers must continue to call `UTL_HEX_ASCII_TO_NIBBLE`, not the
+;   `_FNV` label.
 ; ----------------------------------------------------------------------------
                         XDEF            UTL_HEX_ASCII_TO_NIBBLE_FNV
 UTL_HEX_ASCII_TO_NIBBLE_FNV:
-                        DB              'F','N',('V'+$80),$B1,$14,$D7,$AD,$01 ; UTL_HEX_ASCII_TO_NIBBLE $ADD714B1 EXEC
+                        DB              'F','N',('V'+$80),$B1,$14,$D7,$AD,$05 ; UTL_HEX_ASCII_TO_NIBBLE $ADD714B1 EXEC+TEXT
+                        DW              UTL_HEX_ASCII_TO_NIBBLE
+                        DW              UTL_HEX_ASCII_TO_NIBBLE_TXT
 UTL_HEX_ASCII_TO_NIBBLE:
                         CMP             #'0'
                         BCC             ?FAIL
@@ -140,6 +150,8 @@ UTL_HEX_ASCII_TO_NIBBLE:
 ?FAIL:
                         CLC
                         RTS
+UTL_HEX_ASCII_TO_NIBBLE_TXT:
+                        DB              "HEX NI",('B'+$80)
                         ENDMOD
 
                         MODULE          UTL_HEX_ASCII_YX_TO_BYTE
@@ -161,13 +173,15 @@ UTL_CONV_TMP_A             EQU             $E6
 ; EXCEPTIONS/NOTES:
 ; - Uses UTL_HEX_ASCII_TO_NIBBLE for validation/conversion.
 ; - X/Y are call-clobbered.
-; - Emits current 8-byte FNV header signature immediately before the callable
-;   entry. Existing callers must continue to call `UTL_HEX_ASCII_YX_TO_BYTE`,
-;   not the `_FNV` label.
+; - Emits a current FNV EXEC+TEXT record immediately before the callable entry.
+;   Existing callers must continue to call `UTL_HEX_ASCII_YX_TO_BYTE`, not the
+;   `_FNV` label.
 ; ----------------------------------------------------------------------------
                         XDEF            UTL_HEX_ASCII_YX_TO_BYTE_FNV
 UTL_HEX_ASCII_YX_TO_BYTE_FNV:
-                        DB              'F','N',('V'+$80),$6D,$3E,$0B,$EA,$01 ; UTL_HEX_ASCII_YX_TO_BYTE $EA0B3E6D EXEC
+                        DB              'F','N',('V'+$80),$6D,$3E,$0B,$EA,$05 ; UTL_HEX_ASCII_YX_TO_BYTE $EA0B3E6D EXEC+TEXT
+                        DW              UTL_HEX_ASCII_YX_TO_BYTE
+                        DW              UTL_HEX_ASCII_YX_TO_BYTE_TXT
 UTL_HEX_ASCII_YX_TO_BYTE:
                         TXA
                         JSR             UTL_HEX_ASCII_TO_NIBBLE
@@ -186,6 +200,8 @@ UTL_HEX_ASCII_YX_TO_BYTE:
 ?FAIL:
                         CLC
                         RTS
+UTL_HEX_ASCII_YX_TO_BYTE_TXT:
+                        DB              "HEX BYT",('E'+$80)
                         ENDMOD
 
                         END

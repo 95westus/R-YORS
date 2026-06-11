@@ -517,59 +517,75 @@ RREC BIO_FTDI_GET_CTRL_C
 RREC BIO_FTDI_READ_BYTE_BLOCK
   kind: routine/export
   hash32: $20285B85
-  hash_sig: 46 4E D6 85 5B 28 20 00
+  hash_sig: 46 4E D6 85 5B 28 20 05
+  record: K05 EXEC+TEXT
   entry: BIO_FTDI_READ_BYTE_BLOCK
+  text: READ BYTE
   contract: unbounded blocking FTDI byte read; out C=1,A=byte
   import: PIN_FTDI_READ_BYTE_NONBLOCK
-  proof: PROVEN, promoted 2026-05-15
+  proof: PROVEN, promoted 2026-05-15; K05 text promoted 2026-06-10
 
 RREC BIO_FTDI_WRITE_BYTE_BLOCK
   kind: routine/export
   hash32: $379FE930
-  hash_sig: 46 4E D6 30 E9 9F 37 00
+  hash_sig: 46 4E D6 30 E9 9F 37 05
+  record: K05 EXEC+TEXT
   entry: BIO_FTDI_WRITE_BYTE_BLOCK
+  text: WRITE BYTE
   contract: unbounded blocking FTDI byte write; in A=byte, out C=1,A preserved
   import: PIN_FTDI_WRITE_BYTE_NONBLOCK
-  proof: PROVEN, promoted 2026-05-15
+  proof: PROVEN, promoted 2026-05-15; K05 text promoted 2026-06-10
 
 RREC UTL_HEX_NIBBLE_TO_ASCII
   kind: routine/export
   hash32: $D4C88B87
-  hash_sig: 46 4E D6 87 8B C8 D4 00
+  hash_sig: 46 4E D6 87 8B C8 D4 05
+  record: K05 EXEC+TEXT
   entry: UTL_HEX_NIBBLE_TO_ASCII
+  text: NIB HEX
   contract: encode low nibble in A as uppercase ASCII hex; out C=1
   import: none
-  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15
+  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15; K05 text promoted 2026-06-10
 
 RREC UTL_HEX_BYTE_TO_ASCII_YX
   kind: routine/export
   hash32: $7142DD21
-  hash_sig: 46 4E D6 21 DD 42 71 00
+  hash_sig: 46 4E D6 21 DD 42 71 05
+  record: K05 EXEC+TEXT
   entry: UTL_HEX_BYTE_TO_ASCII_YX
+  text: BYTE HEX
   contract: encode A as two uppercase ASCII hex chars; A preserved, Y/X output
   import: UTL_HEX_NIBBLE_TO_ASCII
-  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15
+  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15; K05 text promoted 2026-06-10
 
 RREC UTL_HEX_ASCII_TO_NIBBLE
   kind: routine/export
   hash32: $ADD714B1
-  hash_sig: 46 4E D6 B1 14 D7 AD 00
+  hash_sig: 46 4E D6 B1 14 D7 AD 05
+  record: K05 EXEC+TEXT
   entry: UTL_HEX_ASCII_TO_NIBBLE
+  text: HEX NIB
   contract: parse ASCII hex char; valid C=1,A=0..15; invalid C=0,A unchanged
   import: none
-  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15
+  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15; K05 text promoted 2026-06-10
 
 RREC UTL_HEX_ASCII_YX_TO_BYTE
   kind: routine/export
   hash32: $EA0B3E6D
-  hash_sig: 46 4E D6 6D 3E 0B EA 00
+  hash_sig: 46 4E D6 6D 3E 0B EA 05
+  record: K05 EXEC+TEXT
   entry: UTL_HEX_ASCII_YX_TO_BYTE
+  text: HEX BYTE
   contract: parse Y/X ASCII hex pair into A; valid C=1,A=byte; invalid C=0
   import: UTL_HEX_ASCII_TO_NIBBLE
-  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15
+  proof: PROVEN, reviewed and hash-sig promoted 2026-05-15; K05 text promoted 2026-06-10
 ```
 
-The hash sigs are now emitted immediately before their routine entries:
+The promoted records are now a mixed but explicit set. Older K01 EXEC-only
+records still sit immediately before their routine entries. The selected BIO
+block and UTL hex rows above use K05 EXEC+TEXT: the eight-byte FNV signature
+ends in `$05`, followed by `DW entry` and `DW text` before the routine body.
+The `_FNV` label is the record start, not the callable address:
 `PIN_FTDI_INIT_FNV`, `PIN_FTDI_POLL_RX_READY_FNV`,
 `PIN_FTDI_READ_BYTE_NONBLOCK_FNV`, `PIN_FTDI_WRITE_BYTE_NONBLOCK_FNV`,
 `PIN_FTDI_CHECK_ENUMERATED_FNV`, `BIO_FTDI_INIT_FNV`,

@@ -135,14 +135,14 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 
 | routine | hash | class | in | out / flags | proof | notes | tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `SYS_READ_CHAR` | `$43621C9C` | SYS read char | none | `A=byte`, `C=1` | NEEDS_PROOF | normal blocking byte/char read | `SYS READ CHAR CARRY_STATUS` |
+| `SYS_READ_CHAR` | `$43621C9C` | SYS read char | none | `A=byte`, `C=1` | NEEDS_PROOF | normal blocking byte/char read; resident text `READ CH` | `SYS READ CHAR CARRY_STATUS` |
 | `SYS_POLL_CHAR` | `$D346E667` | SYS readiness | none | `C=1` byte available, `C=0` none | NEEDS_PROOF | non-consuming readiness check | `SYS POLL READ NONBLOCKING` |
 | `SYS_GET_CTRL_C` | `$BEB18931` | SYS control | none | `C=1`, `A=$03` if Ctrl-C consumed | NEEDS_PROOF | nonblocking abort/key check | `SYS CTRL_C NONBLOCKING` |
 | `SYS_READ_CHAR_SPINCOUNT` | `$13947FC4` | SYS read timed info | none | `C=1`, `A=byte`, `X/Y=elapsed slices` | NEEDS_PROOF | read with timing feedback | `SYS READ SPINCOUNT` |
 | `SYS_READ_CHAR_TIMEOUT_SPINDOWN` | `$03FBED1D` | SYS timed read | `A=timeout slices` | success: `C=1`, `A=byte`, `X=slices left` | NEEDS_PROOF | visible bounded wait | `SYS READ TIMEOUT SPINDOWN` |
-| `SYS_READ_CHAR_ECHO` | `$F91947F8` | SYS cooked char | none | backend cooked-char `A/C` | NEEDS_PROOF | short alias for cooked echoed char input | `SYS READ ECHO COOKED` |
-| `SYS_READ_CHAR_COOKED_ECHO` | `$B85E3F10` | SYS cooked char | none | backend cooked-char `A/C` | NEEDS_PROOF | echo/normalize single character | `SYS READ ECHO COOKED` |
-| `BIO_FTDI_READ_BYTE_BLOCK` | `$20285B85` | BIO read byte | none | `C=1`, `A=byte` | PROVEN | promoted stable unbounded FTDI byte read; use timeout callers for bounded waits | `BIO FTDI READ BYTE BLOCKING PROMOTED` |
+| `SYS_READ_CHAR_ECHO` | `$F91947F8` | SYS cooked char | none | backend cooked-char `A/C` | NEEDS_PROOF | short alias for cooked echoed char input; resident text `READ ECHO` | `SYS READ ECHO COOKED` |
+| `SYS_READ_CHAR_COOKED_ECHO` | `$B85E3F10` | SYS cooked char | none | backend cooked-char `A/C` | NEEDS_PROOF | echo/normalize single character; resident text `READ COOK` | `SYS READ ECHO COOKED` |
+| `BIO_FTDI_READ_BYTE_BLOCK` | `$20285B85` | BIO read byte | none | `C=1`, `A=byte` | PROVEN | promoted stable unbounded FTDI byte read; resident text `READ BYTE` | `BIO FTDI READ BYTE BLOCKING PROMOTED` |
 | `BIO_FTDI_READ_BYTE_NONBLOCK` | `$6A5E3370` | BIO read byte | none | `C=1,A=byte` ready; `C=0,A=0` none | WRAPS_PROVEN | smallest FTDI receive probe | `BIO FTDI READ BYTE NONBLOCKING` |
 | `PIN_FTDI_READ_BYTE_NONBLOCK` | `$483BB2DD` | PIN read byte | none | `C=1,A=byte` ready; `C=0,A=0` none | PROVEN | promoted top-shelf FTDI FIFO read; consumes FIFO byte on success | `PIN FTDI READ BYTE NONBLOCKING PROMOTED` |
 | `BIO_FTDI_READ_BYTE_TMO` | `$83426F30` | BIO timed read | none | bounded receive result | PARTIAL | retrying nonblocking read; no-data path has test harness evidence | `BIO FTDI READ TIMEOUT` |
@@ -179,7 +179,7 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `SYS_WRITE_LINE_XY` | `$59A0E7C5` | SYS write C line | `X/Y=source` | `C` follows trailing CRLF | NEEDS_PROOF | CSTR plus newline | `SYS WRITE CSTRING CRLF` |
 | `SYS_WRITE_HEX_BYTE` | `$A1722743` | SYS write hex | `A=byte` | `C=1`, `A` preserved | NEEDS_PROOF | print `A` as two uppercase hex chars | `SYS WRITE HEX BYTE PRESERVE_A` |
 | `SYS_WRITE_CRLF` | `$3F362368` | SYS newline | none | `C=1` success | NEEDS_PROOF | device-neutral CRLF | `SYS WRITE CRLF` |
-| `BIO_FTDI_WRITE_BYTE_BLOCK` | `$379FE930` | BIO write byte | `A=byte` | `C=1`, `A` preserved | PROVEN | promoted stable unbounded FTDI byte write; use timeout callers for bounded waits | `BIO FTDI WRITE BYTE BLOCKING PROMOTED` |
+| `BIO_FTDI_WRITE_BYTE_BLOCK` | `$379FE930` | BIO write byte | `A=byte` | `C=1`, `A` preserved | PROVEN | promoted stable unbounded FTDI byte write; resident text `WRITE BYTE` | `BIO FTDI WRITE BYTE BLOCKING PROMOTED` |
 | `BIO_FTDI_WRITE_BYTE_NONBLOCK` | `$8FAE8ABB` | BIO write byte | `A=byte` | `C=1` accepted, `C=0` timeout, `A` preserved | PARTIAL | success path has test harness evidence; timeout path still needs forced blocked-FIFO proof | `BIO FTDI WRITE BYTE NONBLOCKING` |
 | `PIN_FTDI_WRITE_BYTE_NONBLOCK` | `$D55FC6FC` | PIN write byte | `A=byte` | `C=1` accepted; `C=0` timeout; `A` preserved | PROVEN | promoted top-shelf FTDI FIFO write; timeout path has documented hardware limitation | `PIN FTDI WRITE BYTE NONBLOCKING PROMOTED` |
 | `BIO_FTDI_WRITE_BYTE_TMO` | `$DC28D281` | BIO timed write | `A=byte` | bounded transmit result, `A` preserved | NEEDS_PROOF | retrying nonblocking write | `BIO FTDI WRITE TIMEOUT` |
@@ -190,10 +190,10 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 
 | routine | hash | class | in | out / flags | proof | notes | tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `UTL_HEX_NIBBLE_TO_ASCII` | `$D4C88B87` | UTL hex encode | `A=byte` | low nibble as `'0'..'F'`, `C=1` | PROVEN | promoted small uppercase nibble encoder | `UTL HEX ENCODE NIBBLE PROMOTED` |
-| `UTL_HEX_BYTE_TO_ASCII_YX` | `$7142DD21` | UTL hex encode | `A=byte` | `A` preserved, `Y=hi ASCII`, `X=lo ASCII`, `C=1` | PROVEN | promoted byte-to-two-ASCII helper | `UTL HEX ENCODE BYTE PROMOTED` |
-| `UTL_HEX_ASCII_TO_NIBBLE` | `$ADD714B1` | UTL hex parse | `A=ASCII hex` | `C=1,A=nibble` success; `C=0,A` unchanged invalid | PROVEN | promoted parser for `0..9`, `A..F`, `a..f` | `UTL HEX PARSE NIBBLE PROMOTED` |
-| `UTL_HEX_ASCII_YX_TO_BYTE` | `$EA0B3E6D` | UTL hex parse | `Y=hi ASCII`, `X=lo ASCII` | `C=1,A=byte` success; `C=0` invalid | PROVEN | promoted two-char parser; uses `UTL_CONV_TMP_A=$E6` | `UTL HEX PARSE BYTE PROMOTED` |
+| `UTL_HEX_NIBBLE_TO_ASCII` | `$D4C88B87` | UTL hex encode | `A=byte` | low nibble as `'0'..'F'`, `C=1` | PROVEN | promoted small uppercase nibble encoder; resident text `NIB HEX` | `UTL HEX ENCODE NIBBLE PROMOTED` |
+| `UTL_HEX_BYTE_TO_ASCII_YX` | `$7142DD21` | UTL hex encode | `A=byte` | `A` preserved, `Y=hi ASCII`, `X=lo ASCII`, `C=1` | PROVEN | promoted byte-to-two-ASCII helper; resident text `BYTE HEX` | `UTL HEX ENCODE BYTE PROMOTED` |
+| `UTL_HEX_ASCII_TO_NIBBLE` | `$ADD714B1` | UTL hex parse | `A=ASCII hex` | `C=1,A=nibble` success; `C=0,A` unchanged invalid | PROVEN | promoted parser; resident text `HEX NIB` | `UTL HEX PARSE NIBBLE PROMOTED` |
+| `UTL_HEX_ASCII_YX_TO_BYTE` | `$EA0B3E6D` | UTL hex parse | `Y=hi ASCII`, `X=lo ASCII` | `C=1,A=byte` success; `C=0` invalid | PROVEN | promoted two-char parser; source text `HEX BYTE`; uses `UTL_CONV_TMP_A=$E6` | `UTL HEX PARSE BYTE PROMOTED` |
 | `UTL_CHAR_IS_PRINTABLE` | `$0566EC22` | UTL char test | `A=char` | `C=1` printable | NEEDS_PROOF | space through `~` | `UTL CHAR CLASSIFY PRINTABLE` |
 | `UTL_CHAR_IS_CONTROL` | `$7B454918` | UTL char test | `A=char` | `C=1` control | NEEDS_PROOF | `00..1F` or `7F` | `UTL CHAR CLASSIFY CONTROL` |
 | `UTL_CHAR_IS_DIGIT` | `$06BA7C90` | UTL char test | `A=char` | `C=1` digit | NEEDS_PROOF | decimal digit test | `UTL CHAR CLASSIFY DIGIT` |
@@ -509,8 +509,8 @@ RREC BIO_FTDI_READ_BYTE_BLOCK
   name:      BIO_FTDI_READ_BYTE_BLOCK
   hash32:    $20285B85
   stored:    hash0=$85 hash1=$5B hash2=$28 hash3=$20
-  hash_sig:  46 4E D6 85 5B 28 20 00
-             emitted as BIO_FTDI_READ_BYTE_BLOCK_FNV immediately before entry
+  hash_sig:  46 4E D6 85 5B 28 20 05
+             emitted as BIO_FTDI_READ_BYTE_BLOCK_FNV K05 EXEC+TEXT record
   provider:  active HIMON/BIO image
   body:      current ROM image or linked BIO body
   entry:     BIO_FTDI_READ_BYTE_BLOCK
@@ -535,8 +535,8 @@ RREC BIO_FTDI_WRITE_BYTE_BLOCK
   name:      BIO_FTDI_WRITE_BYTE_BLOCK
   hash32:    $379FE930
   stored:    hash0=$30 hash1=$E9 hash2=$9F hash3=$37
-  hash_sig:  46 4E D6 30 E9 9F 37 00
-             emitted as BIO_FTDI_WRITE_BYTE_BLOCK_FNV immediately before entry
+  hash_sig:  46 4E D6 30 E9 9F 37 05
+             emitted as BIO_FTDI_WRITE_BYTE_BLOCK_FNV K05 EXEC+TEXT record
   provider:  active HIMON/BIO image
   body:      current ROM image or linked BIO body
   entry:     BIO_FTDI_WRITE_BYTE_BLOCK
@@ -554,10 +554,10 @@ RREC BIO_FTDI_WRITE_BYTE_BLOCK
              or an explicit timeout wrapper
 ```
 
-The emitted hash sigs use the current HIMON 8-byte record shape. The final byte
-is `$00`, so current code interprets each entry as `hash_sig+8`. A future compact
-RREC can assign a cleaner routine/export kind without changing either routine
-contract.
+These BIO block records now use the K05 EXEC+TEXT shape. The first eight bytes
+end in `$05`, then the record carries `DW entry` and `DW text` before the
+callable routine body. Existing callers still call the routine entry label, not
+the `_FNV` label.
 
 ## Promoted UTL Hex Routine Hash Sigs / RREC Seeds
 
@@ -581,8 +581,8 @@ RREC UTL_HEX_NIBBLE_TO_ASCII
   name:      UTL_HEX_NIBBLE_TO_ASCII
   hash32:    $D4C88B87
   stored:    hash0=$87 hash1=$8B hash2=$C8 hash3=$D4
-  hash_sig:  46 4E D6 87 8B C8 D4 00
-             emitted as UTL_HEX_NIBBLE_TO_ASCII_FNV immediately before entry
+  hash_sig:  46 4E D6 87 8B C8 D4 05
+             emitted as UTL_HEX_NIBBLE_TO_ASCII_FNV K05 EXEC+TEXT record
   provider:  active utility library or resident ROM image
   body:      current linked UTL body
   entry:     UTL_HEX_NIBBLE_TO_ASCII
@@ -602,8 +602,8 @@ RREC UTL_HEX_BYTE_TO_ASCII_YX
   name:      UTL_HEX_BYTE_TO_ASCII_YX
   hash32:    $7142DD21
   stored:    hash0=$21 hash1=$DD hash2=$42 hash3=$71
-  hash_sig:  46 4E D6 21 DD 42 71 00
-             emitted as UTL_HEX_BYTE_TO_ASCII_YX_FNV immediately before entry
+  hash_sig:  46 4E D6 21 DD 42 71 05
+             emitted as UTL_HEX_BYTE_TO_ASCII_YX_FNV K05 EXEC+TEXT record
   provider:  active utility library or resident ROM image
   body:      current linked UTL body
   entry:     UTL_HEX_BYTE_TO_ASCII_YX
@@ -623,8 +623,8 @@ RREC UTL_HEX_ASCII_TO_NIBBLE
   name:      UTL_HEX_ASCII_TO_NIBBLE
   hash32:    $ADD714B1
   stored:    hash0=$B1 hash1=$14 hash2=$D7 hash3=$AD
-  hash_sig:  46 4E D6 B1 14 D7 AD 00
-             emitted as UTL_HEX_ASCII_TO_NIBBLE_FNV immediately before entry
+  hash_sig:  46 4E D6 B1 14 D7 AD 05
+             emitted as UTL_HEX_ASCII_TO_NIBBLE_FNV K05 EXEC+TEXT record
   provider:  active utility library or resident ROM image
   body:      current linked UTL body
   entry:     UTL_HEX_ASCII_TO_NIBBLE
@@ -644,8 +644,8 @@ RREC UTL_HEX_ASCII_YX_TO_BYTE
   name:      UTL_HEX_ASCII_YX_TO_BYTE
   hash32:    $EA0B3E6D
   stored:    hash0=$6D hash1=$3E hash2=$0B hash3=$EA
-  hash_sig:  46 4E D6 6D 3E 0B EA 00
-             emitted as UTL_HEX_ASCII_YX_TO_BYTE_FNV immediately before entry
+  hash_sig:  46 4E D6 6D 3E 0B EA 05
+             emitted as UTL_HEX_ASCII_YX_TO_BYTE_FNV K05 EXEC+TEXT record
   provider:  active utility library or resident ROM image
   body:      current linked UTL body
   entry:     UTL_HEX_ASCII_YX_TO_BYTE

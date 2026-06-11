@@ -81,7 +81,7 @@ not an ultra-hot output loop
 What is needed before converting ASM:
 
 ```text
-done: HIMON links UTL_HEX_ASCII_TO_NIBBLE_FNV resident at $E577 in the current build
+done: HIMON links UTL_HEX_ASCII_TO_NIBBLE_FNV resident as K05
 done: ASM_RJ_HEX_NIB_LO/HI cache slot
 done: ASM_HASH_UTL_HEX_ASCII_TO_NIBBLE = B1 14 D7 AD
 done: ASM_HEX_TO_NIBBLE wrapper
@@ -96,6 +96,46 @@ Net ASM win is small after adding the required startup lookup, cache bytes, and
 hash constant, but it moves the parser onto the resident-routine contract needed
 for the $8000/no-header direction.
 ```
+
+## K05 Text Batch
+
+The selected K01 records now carry short K05 EXEC+TEXT names:
+
+```text
+BIO_FTDI_READ_BYTE_BLOCK        READ BYTE
+BIO_FTDI_WRITE_BYTE_BLOCK       WRITE BYTE
+SYS_READ_CHAR                   READ CH
+SYS_READ_CHAR_ECHO              READ ECHO
+SYS_READ_CHAR_COOKED_ECHO       READ COOK
+UTL_HEX_NIBBLE_TO_ASCII         NIB HEX
+UTL_HEX_BYTE_TO_ASCII_YX        BYTE HEX
+UTL_HEX_ASCII_TO_NIBBLE         HEX NIB
+UTL_HEX_ASCII_YX_TO_BYTE        HEX BYTE
+```
+
+Current software build result:
+
+```text
+HIMON V 00.0610(2012)
+HIMON total: $2F88
+ASM runtime-paste total: $3F1F
+
+BIO_FTDI_READ_BYTE_BLOCK_FNV      $E2DC entry=$E2E8 text=$E2EE
+BIO_FTDI_WRITE_BYTE_BLOCK_FNV     $E2FB entry=$E307 text=$E30F
+SYS_READ_CHAR_FNV                 $E4B5 entry=$E4C1 text=$E4C5
+SYS_READ_CHAR_ECHO_FNV            $E4CC entry=$E4D8 text=$E4EC
+SYS_READ_CHAR_COOKED_ECHO_FNV     $E4DC entry=$E4E8 text=$E4F5
+UTL_HEX_ASCII_TO_NIBBLE_FNV       $E5B7 entry=$E5C3 text=$E5EC
+UTL_HEX_BYTE_TO_ASCII_YX_FNV      $E7FC entry=$E808 text=$E81A
+UTL_HEX_NIBBLE_TO_ASCII_FNV       $E822 entry=$E82E text=$E83A
+```
+
+`UTL_HEX_ASCII_YX_TO_BYTE_FNV` is K05 in source, but is not currently forced
+resident in the active HIMON image.
+
+Board proof: `# K=5` confirmed `READ BYTE`, `WRITE BYTE`, `READ CH`,
+`READ ECHO`, `READ COOK`, `HEX NIB`, `BYTE HEX`, and `NIB HEX` as active K05
+resident text rows.
 
 ## Output Helper Candidates
 
@@ -183,7 +223,8 @@ Goal: convert ASM_HEX_TO_NIBBLE to a resident RJOIN call.
 
 HIMON:
   confirmed UTL_HEX_ASCII_TO_NIBBLE_FNV in the active resident scan
-  current map: UTL_HEX_ASCII_TO_NIBBLE_FNV=$E577, entry=$E57F
+  current map: UTL_HEX_ASCII_TO_NIBBLE_FNV=$E5B7, entry=$E5C3, text=$E5EC
+  current S19 record bytes include 46 4E D6 B1 14 D7 AD 05
 
 ASM:
   added ASM_RJ_HEX_NIB_LO/HI cache
@@ -194,5 +235,5 @@ Tests:
   passed: make -C SRC asm-test
   passed: make -C SRC himon
   passed board: paste a short sample using $ hex operands and DB $xx
-  pending board: check a failure case such as LDA #$1234 still reports BAD WIDTH
+  passed board: LDA #$1234 reports ERR=$06 BAD RANGE
 ```
