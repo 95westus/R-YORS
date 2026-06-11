@@ -142,4 +142,9 @@ That avoids both the fixup flood and the backward ORG.
 The 2026-06-10 board proof accepted this shape, showed MAIN=$7200 and final
 PC=$7640 in the tables, then produced the expected LEN/XOR/FNV values for
 HELLO and R-YORS before returning to HIMON on Q.
+
+A later 2026-06-10 cold-boot proof started from G F000, reloaded the $3EF4
+ASM RT PASTE image with L S19/L @2000, accepted the same source, showed the
+same table sanity, reached the live TEXT> prompt after G 7200, produced the
+expected HELLO and R-YORS hashes, and returned to HIMON on Q.
 ```

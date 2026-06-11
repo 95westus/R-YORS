@@ -8,8 +8,10 @@ record-shape sketches. The settled split is FNV32 for public/exported symbols
 and CRC16 or short IDs only for local/scoped tables where context handles
 collisions.
 
-Routine-flow orientation lives in [ASM_CALL_MAP.md](ASM_CALL_MAP.md). Keep that
-map renderable in Mermaid and use this file for the design contract.
+Routine-flow orientation lives in [ASM_CALL_MAP.md](ASM_CALL_MAP.md). Shared
+routine/RJOIN candidate notes live in
+[ASM_SHARED_ROUTINES_AUDIT.md](ASM_SHARED_ROUTINES_AUDIT.md). Keep both maps
+and audits current as call ownership or RJOIN boundaries change.
 
 Current WDC-compatibility correction: `DB` is the active v1 data directive.
 `DC` is parked/reserved for now, so older `DC` examples in this narrative are

@@ -6455,3 +6455,218 @@ BYE
 #GO# ENTRY=7200
 RET A=07 X=32 Y=07 P=75 S=FD NV-BdIzC
 ```
+
+## 2026-06-10 ASM RJOIN Hash Stats Fresh Cold Full Runtime Proof
+
+This board run started from the resident ROM entry with `G F000`, cold-booted
+HIMON, reloaded the current `$3EF4` `ASM RT PASTE` image at `$2000`, pasted the
+committed `rjoin-hash-stats-7200.asm` source, reached the live program prompt
+after `G 7200`, produced the expected deterministic `HELLO` and `R-YORS`
+hashes, then returned to HIMON on `Q`. This proves the clean
+boot/load/assemble/full-runtime path for the committed sample shape.
+
+Relevant transcript excerpt:
+
+```text
+HIMON V 00.0610(1344)
+>G F000
+
+GO F000
+...
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0610(1344)
+>L G
+L S19
+L @2000
+L OK=3EF4 GO=2000
+ASM RT PASTE
+...
+ASM>         ORG $7200
+OK PC=$7200
+...
+ASM>         END
+OK PC=$7640
+ASM TABLES
+SYMBOLS
+...
+0B 01 7200  01 04 0E 000F 00  0000  MAIN
+0C 01 722E  01 04 0E 0023 00  0000  DONE
+0D 01 7236  01 04 0E 0027 00  0000  HASH
+0E 01 725A  01 04 0F 0038 02  0046  NIB
+0F 01 726A  01 04 0F 0041 06  004E  HEX
+10 01 7278  01 04 0E 004A 00  0000  SHOW
+FIXUPS
+...
+00 02 07   00  721B 721C .BLANK
+01 02 07   00  721F 7220 DONE
+02 02 07   00  7223 7224 DONE
+03 02 04   00  7225 7227 HASH
+04 02 04   00  7228 722A SHOW
+05 02 07   00  7243 7244 .DONE
+06 02 07   00  725D 725E .DIG
+07 02 07   00  7262 7263 .OUT
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=E2 Y=0F P=75 S=FD NV-BdIzC
+>G 7200
+GO 7200
+
+RJOIN HASH STATS
+TEXT>
+HELLO
+
+LEN=05 XOR=42 FNV=32543B0B
+TEXT> R-YORS
+
+LEN=06 XOR=68 FNV=E48E4383
+TEXT> Q
+
+BYE
+
+#GO# ENTRY=7200
+RET A=07 X=32 Y=07 P=75 S=FD NV-BdIzC
+>
+```
+
+## 2026-06-10 ASM Local Label Stress Hardware Proof
+
+This board run re-entered the current `$3EF4` `ASM RT PASTE` image with
+`G 2000`, pasted `local-label-stress-7400.asm`, assembled through `END`, ran
+`G 7400`, and dumped the expected runtime oracle at `$7100-$710C`. It proves
+the current local-label ceiling and scoping behavior on hardware: eight local
+rows under `MAIN`, `.LOOP`/`.DONE` name reuse under separate global scopes, the
+alternate `?NAME` prefix, and forward/backward local branches. No resident calls
+are used by this sample.
+
+Accepted table excerpt:
+
+```text
+ASM>         ORG $7400
+OK PC=$7400
+...
+ASM> .ABCDEFGHIJKLMN
+OK PC=$7439
+...
+ASM> ?FWD    BRA ?LOOP
+OK PC=$7489
+ASM>         END
+OK PC=$7489
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7400  01 04 0E 0004 00  0000  MAIN
+01 01 744D  01 04 0E 0026 00  0000  ONE
+02 01 7462  01 04 0E 0030 00  0000  TWO
+03 01 7477  01 04 0E 003A 00  0000  ALT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  7401 7402 .A
+01 02 07   00  740E 740F .B
+02 02 07   00  7415 7416 .C
+03 02 07   00  741C 741D .D
+04 02 07   00  7423 7424 .E
+05 02 07   00  742A 742B .F
+06 02 07   00  7431 7432 .G
+07 02 07   00  7438 7439 .ABCDEFGHIJKLMN
+08 02 04   00  743F 7441 ONE
+09 02 04   00  7442 7444 TWO
+0A 02 04   00  7445 7447 ALT
+0B 02 07   00  745B 745C .DONE
+0C 02 07   00  746B 746C .DONE
+0D 02 07   00  747B 747C ?FWD
+ASM RT PASTE OK
+```
+
+Runtime oracle:
+
+```text
+#GO# ENTRY=2000
+RET A=0F X=E2 Y=0F P=75 S=FD NV-BdIzC
+>G 7400
+GO 7400
+
+#GO# ENTRY=7400
+RET A=5C X=03 Y=00 P=75 S=FD NV-BdIzC
+>D 7100 710C
+#6999B497# HSH_NF!
+>D 7100 710C
+7100: A1 B2 C3 D4 E5 F6 07 8F | 03 00 2A 03 5C | ..........*.\
+>
+```
+
+## 2026-06-10 ASM RJOIN Hex-Nibble Hardware Proof
+
+This board run flashed the current HIMON update, booted `HIMON V
+00.0610(1937)`, loaded the current `$3EED` `ASM RT PASTE` image, and assembled
+a small hex-heavy sample at `$7600`. It proves the `ASM_HEX_TO_NIBBLE ->
+UTL_HEX_ASCII_TO_NIBBLE` conversion on hardware: ASM now resolves hash
+`$ADD714B1` through RJOIN at startup, then uses the resident utility for `$`
+hex operands and `DB $xx` data.
+
+Accepted assembly excerpt:
+
+```text
+HIMON V 00.0610(1937)
+>L G
+L S19
+L @2000
+L OK=3EED GO=2000
+ASM RT PASTE
+ASM>         ORG $7600
+OK PC=$7600
+ASM> OUT0    EQU $7100
+OK PC=$7600
+ASM> OUT1    EQU $7101
+OK PC=$7600
+ASM> OUT2    EQU $7102
+OK PC=$7600
+ASM>         LDA #$0F
+OK PC=$7602
+ASM>         STA OUT0
+OK PC=$7605
+ASM>         LDA #$A5
+OK PC=$7607
+ASM>         STA OUT1
+OK PC=$760A
+ASM>         LDX #$09
+OK PC=$760C
+ASM>         STX OUT2
+OK PC=$760F
+ASM>         RTS
+OK PC=$7610
+ASM> DATA    DB $00,$09,$0A,$0F,$A5
+OK PC=$7615
+ASM>         END
+OK PC=$7615
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7100  01 04 17 0002 01  0006  OUT0
+01 01 7101  01 04 17 0003 01  0008  OUT1
+02 01 7102  01 04 17 0004 01  000A  OUT2
+03 01 7610  01 04 0E 000C 00  0000  DATA
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+```
+
+Runtime oracle:
+
+```text
+#LOADGO# ENTRY=2000
+RET A=0F X=D5 Y=0F P=75 S=FD NV-BdIzC
+>G 7600
+GO 7600
+
+#GO# ENTRY=7600
+RET A=A5 X=09 Y=30 P=75 S=FD NV-BdIzC
+>D 7100 FF
+7100: 0F A5 09 D4 E5 F6 07 8F | 03 00 2A 03 5C 00 00 00 | ..........*.\...
+...
+>D 7610 761F
+7610: 00 09 0A 0F A5 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+```

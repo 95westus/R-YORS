@@ -139,6 +139,7 @@ ASM_STEP_RJOIN_WRITE   EQU             $72
 ASM_STEP_RJOIN_READ    EQU             $73
 ASM_STEP_RJOIN_FNV_INIT EQU            $74
 ASM_STEP_RJOIN_FNV_UPDATE EQU          $75
+ASM_STEP_RJOIN_HEX_NIB EQU             $76
 ASM_STEP_LONG_LINE     EQU             $80
 ASM_STEP_END           EQU             $90
 
@@ -1197,6 +1198,8 @@ ASM_RJOIN_INIT:
                         BEQ             ASM_RJOIN_INIT_SEED
                         LDA             ASM_RJ_WRITE_HI
                         BEQ             ASM_RJOIN_INIT_SEED
+                        LDA             ASM_RJ_HEX_NIB_HI
+                        BEQ             ASM_RJOIN_INIT_SEED
                         LDA             ASM_RJ_FNV_INIT_HI
                         BEQ             ASM_RJOIN_INIT_SEED
                         LDA             ASM_RJ_FNV_UPDATE_HI
@@ -1237,6 +1240,15 @@ ASM_RJOIN_INIT_JOINER_READY:
                         JSR             ASM_SMOKE_PRINT_LINE
 ASM_RJOIN_INIT_NO_PROGRESS:
                         ENDIF
+
+                        LDA             #ASM_STEP_RJOIN_HEX_NIB
+                        STA             ASM_START_STEP
+                        LDX             #<ASM_HASH_UTL_HEX_ASCII_TO_NIBBLE
+                        LDY             #>ASM_HASH_UTL_HEX_ASCII_TO_NIBBLE
+                        JSR             ASM_RJ_RESIDENT_XY
+                        BCC             ASM_RJOIN_INIT_FAIL
+                        STX             ASM_RJ_HEX_NIB_LO
+                        STY             ASM_RJ_HEX_NIB_HI
 
                         LDA             #ASM_STEP_RJOIN_FNV_INIT
                         STA             ASM_START_STEP
@@ -11494,39 +11506,8 @@ ASM_IS_DIGIT_NO:
                         CLC
                         RTS
 
-; Private mirror of UTL_HEX_ASCII_TO_NIBBLE for the standalone RAM proof.
-; Replace with the GP UTL routine once ASM import/linkage policy is settled.
 ASM_HEX_TO_NIBBLE:
-                        CMP             #'0'
-                        BCC             ASM_HEX_BAD
-                        CMP             #'9'+1
-                        BCC             ASM_HEX_DIGIT
-                        CMP             #'A'
-                        BCC             ASM_HEX_LOWER
-                        CMP             #'F'+1
-                        BCC             ASM_HEX_UPPER
-ASM_HEX_LOWER:
-                        CMP             #'a'
-                        BCC             ASM_HEX_BAD
-                        CMP             #'f'+1
-                        BCS             ASM_HEX_BAD
-                        SEC
-                        SBC             #$57
-                        SEC
-                        RTS
-ASM_HEX_UPPER:
-                        SEC
-                        SBC             #$37
-                        SEC
-                        RTS
-ASM_HEX_DIGIT:
-                        SEC
-                        SBC             #'0'
-                        SEC
-                        RTS
-ASM_HEX_BAD:
-                        CLC
-                        RTS
+                        JMP             (ASM_RJ_HEX_NIB_LO)
 
 ASM_FOLD_UPPER_A:
                         CMP             #'a'
@@ -11669,6 +11650,8 @@ ASM_RJ_JOINER_LO:      DB              $00
 ASM_RJ_JOINER_HI:      DB              $00
 ASM_RJ_WRITE_LO:       DB              $00
 ASM_RJ_WRITE_HI:       DB              $00
+ASM_RJ_HEX_NIB_LO:     DB              $00
+ASM_RJ_HEX_NIB_HI:     DB              $00
                         IF              ASM_RUNTIME_ONLY
                         ELSE
 ASM_RJ_READ_LO:        DB              $00
@@ -12372,6 +12355,8 @@ ASM_SMOKE_SYM_NOPE:    DB              "NOPE",0
                         ENDIF
 ASM_HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
+ASM_HASH_UTL_HEX_ASCII_TO_NIBBLE:
+                        DB              $B1,$14,$D7,$AD
                         IF              ASM_RUNTIME_ONLY
                         ELSE
 ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER:

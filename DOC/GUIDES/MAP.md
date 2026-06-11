@@ -145,6 +145,7 @@ HASH/HASH_MAP.md                hash meanings and connections
 HASH/HASH.md                    FNV-era details and CRC16 pivot
 ASM/HASHED_ASM.md               assembler thesis and fixups
 ASM/ASM_CALL_MAP.md             renderable ASM routine-flow map
+ASM/ASM_SHARED_ROUTINES_AUDIT.md ASM/HIMON shared-helper audit
 STORY/BOOK.md                   narrative manuscript spine
 STORY/HISTORICAL_DOCUMENTS.md   lineage and evidence map
 ```

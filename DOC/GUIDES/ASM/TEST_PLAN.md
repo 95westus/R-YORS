@@ -3169,11 +3169,85 @@ Current pasteable bench toys:
 ```text
 ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
 life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
+local-label-stress-7400.asm
+                         exact 8-local scope/reuse/?prefix stress sample
+local-label-stress-7400-test.md
+                         board script for the local-label stress slice
 rjoin-hash-stats-7200.asm
                          line length/XOR/FNV stats through ASM/RJOIN
 rjoin-hash-stats-7200-test.md
                          board script for the hash-stats slice
 ```
+
+Hardware-proven RJOIN hex-nibble conversion target:
+
+```text
+fresh HIMON build should expose UTL_HEX_ASCII_TO_NIBBLE_FNV
+current map proof: UTL_HEX_ASCII_TO_NIBBLE_FNV=$E577, entry=$E57F
+fresh ASM build resolves hash $ADD714B1 during ASM_RJOIN_INIT
+
+G 2000
+ASM RT PASTE
+        ORG $7600
+OUT0    EQU $7100
+OUT1    EQU $7101
+OUT2    EQU $7102
+        LDA #$0f
+        STA OUT0
+        LDA #$A5
+        STA OUT1
+        LDX #$09
+        STX OUT2
+        RTS
+DATA    DB $00,$09,$0a,$0F,$a5
+        END
+G 7600
+D 7100 7102
+expect 0F A5 09
+D 7610 7614
+expect 00 09 0A 0F A5
+
+negative check:
+G 2000
+ASM RT PASTE
+        ORG $7620
+        LDA #$1234
+expect ERR=$05 BAD WIDTH
+```
+
+The 2026-06-10 board proof updated HIMON, booted `HIMON V 00.0610(1937)`,
+loaded the current ASM paste image with `L OK=3EED GO=2000`, assembled the
+sample through `ASM RT PASTE OK`, ran `G 7600`, and confirmed the runtime
+oracle. `$7100-$7102` contained `0F A5 09`, and `$7610-$7614` contained
+`00 09 0A 0F A5`. This proves the resident
+`UTL_HEX_ASCII_TO_NIBBLE` path for `$` hex operands and `DB $xx` data on
+hardware. The negative bad-width check is still a useful follow-up.
+
+`local-label-stress-7400.asm` is the current hardware-proven local-label board
+proof. It starts at `$7400` and writes its oracle to `$7100-$710C`; no resident
+calls are needed. The `MAIN` scope deliberately consumes exactly eight local
+rows with `.A` through `.G` plus `.ABCDEFGHIJKLMN`, where the long local name is
+15 visible characters including the prefix. `ONE` and `TWO` both reuse `.LOOP`
+and `.DONE`, proving that the local table is scoped and reopened at each
+nonlocal label. `ALT` uses the alternate `?NAME` local prefix with both forward
+and backward references.
+
+Hardware-proven local-label stress target:
+
+```text
+follow local-label-stress-7400-test.md
+paste local-label-stress-7400.asm through ASM RT PASTE
+expect MAIN=$7400 ONE=$744D TWO=$7462 ALT=$7477 PC=$7489
+G 7400
+D 7100 710C
+expect A1 B2 C3 D4 E5 F6 07 8F 03 00 2A 03 5C
+```
+
+The 2026-06-10 board proof assembled the sample through `ASM RT PASTE OK`,
+reported only four global symbols (`MAIN`, `ONE`, `TWO`, and `ALT`), and kept
+fixups to rows `00-0D` under the `$18` ceiling. Runtime returned from `G 7400`
+with `RET A=5C X=03 Y=00`, and `D 7100 710C` produced
+`A1 B2 C3 D4 E5 F6 07 8F 03 00 2A 03 5C`.
 
 `rjoin-hash-stats-7200.asm` is the next small real-work board proof. It starts
 at `$7200`, predefines the data addresses with `EQU`, emits code first, then
@@ -3210,6 +3284,13 @@ The accepted 2026-06-10 board proof re-entered the current `$3EF4`
 `SHOW=$7278`, final `PC=$7640`, and eight internal control-flow fixups. Runtime
 checks matched the expected outputs for `HELLO` and `R-YORS`, then `Q` printed
 `BYE` and returned to HIMON.
+
+A later 2026-06-10 cold-boot board proof started from `G F000`, reached
+`BOOT COLD` / `RAM ZERO OK`, reloaded the same `$3EF4` paste image with
+`L S19` / `L @2000`, assembled the committed sample with the same symbol/fixup
+table sanity, reached the live `TEXT>` prompt after `G 7200`, produced the
+expected `HELLO` and `R-YORS` hashes, and returned to HIMON on `Q`. That proves
+the clean boot/load/assemble/full-runtime path for the committed sample.
 
 The first hardware attempt on `HIMON V 00.0610(1344)` usefully failed the
 earlier sample shape: forward string/buffer references filled all 24 fixup rows

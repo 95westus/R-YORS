@@ -1,0 +1,198 @@
+# ASM Shared Routine Audit
+
+Date: 2026-06-10
+
+Purpose: identify ASM-private helper routines that overlap with HIMON/ROM
+resident routines and decide which ones are good RJOIN/RREC candidates for the
+`L F` / `$8000` ASM direction.
+
+## Summary
+
+ASM is already using the most important resident services through RJOIN:
+
+```text
+THE_JOIN_EXEC_XY              HIMON-published join seed at $7E00/$7E01
+BIO_FTDI_WRITE_BYTE_BLOCK     blocking byte output
+SYS_READ_CSTRING_ECHO_UPPER   paste/interactive line input
+FNV1A_INIT                    shared FNV hash init
+FNV1A_UPDATE_A_FAST           shared FNV byte update
+```
+
+The first small shared-helper conversion is now done:
+
+```text
+ASM_HEX_TO_NIBBLE -> UTL_HEX_ASCII_TO_NIBBLE
+```
+
+`ASM_HEX_TO_NIBBLE` used to be a private 41-byte mirror of the promoted utility.
+ASM now resolves hash `$ADD714B1` during `ASM_RJOIN_INIT`, caches the resident
+entry, and leaves `ASM_HEX_TO_NIBBLE` as a 3-byte indirect jump. HIMON does not
+need a duplicate catalog row: `UTL_HEX_ASCII_TO_NIBBLE_FNV` is linked resident
+by `HIM_FNV_FORCE_RESIDENT`, and its raw EXEC record points directly at the
+callable entry.
+
+## Already Shared
+
+| ASM use | Resident routine | Status |
+| --- | --- | --- |
+| RJOIN seed | `THE_JOIN_EXEC_XY` | mandatory and hardware-proven via `$7E00/$7E01` |
+| Byte output | `BIO_FTDI_WRITE_BYTE_BLOCK` | ASM resolves at startup |
+| Line input | `SYS_READ_CSTRING_ECHO_UPPER` | ASM paste wrapper resolves when needed |
+| Hash init | `FNV1A_INIT` | ASM resolves at startup |
+| Hash update | `FNV1A_UPDATE_A_FAST` | ASM resolves at startup |
+| Hex ASCII parser | `UTL_HEX_ASCII_TO_NIBBLE` | ASM resolves at startup |
+
+## Completed Candidate
+
+### `ASM_HEX_TO_NIBBLE`
+
+Current ASM wrapper:
+
+```text
+ASM_HEX_TO_NIBBLE:
+    JMP (ASM_RJ_HEX_NIB_LO)
+```
+
+Former private routine:
+
+```text
+$277A-$27A2 = 41 bytes in the older asm-v1-core.lst
+```
+
+Current resolved resident target:
+
+```text
+UTL_HEX_ASCII_TO_NIBBLE
+hash32: $ADD714B1
+contract: A=ASCII hex; valid C=1,A=0..15; invalid C=0,A unchanged
+source: SRC/LIB/util/util-hex.asm
+```
+
+Why it is safe:
+
+```text
+same contract
+no ZP use
+no fixed RAM
+no stack
+not an ultra-hot output loop
+```
+
+What is needed before converting ASM:
+
+```text
+done: HIMON links UTL_HEX_ASCII_TO_NIBBLE_FNV resident at $E577 in the current build
+done: ASM_RJ_HEX_NIB_LO/HI cache slot
+done: ASM_HASH_UTL_HEX_ASCII_TO_NIBBLE = B1 14 D7 AD
+done: ASM_HEX_TO_NIBBLE wrapper
+done: board paste proof on HIMON V 00.0610(1937), ASM load OK=$3EED
+```
+
+Expected size result:
+
+```text
+Gross ASM private-code delete: 41-byte body -> 3-byte wrapper.
+Net ASM win is small after adding the required startup lookup, cache bytes, and
+hash constant, but it moves the parser onto the resident-routine contract needed
+for the $8000/no-header direction.
+```
+
+## Output Helper Candidates
+
+ASM currently carries these output helpers after resolving only the byte writer:
+
+```text
+ASM_RJ_WRITE_CSTRING    about 22 bytes
+ASM_RJ_WRITE_HEX_BYTE   about 32 bytes including nibble helper
+ASM_RJ_PRINT_CRLF       about 10 bytes
+```
+
+Resident-adjacent targets:
+
+```text
+BIO_FTDI_PUT_CSTR       already HIMON-published as EXEC+TEXT, points to SYS_WRITE_CSTRING
+SYS_WRITE_HEX_BYTE      catalogued, but not currently HIMON-published for RJOIN
+SYS_WRITE_CRLF          catalogued, but not currently HIMON-published for RJOIN
+BIO_WRITE_HEX_BYTE      catalogued, but not currently HIMON-published for RJOIN
+BIO_WRITE_CRLF          catalogued, but not currently HIMON-published for RJOIN
+```
+
+Recommendation:
+
+```text
+Do not convert these one at a time yet.
+```
+
+Reason:
+
+```text
+The private routines are small. Each new resident call needs a hash constant,
+a cached vector, and RJOIN init code. The byte savings only become interesting
+if we publish/acquire a small output group together or if ASM moves to flash and
+we accept more mandatory resident services.
+```
+
+Most reasonable output-sharing experiment:
+
+```text
+Resolve BIO_FTDI_PUT_CSTR for ASM internal C-string printing.
+Measure runtime paste size before/after.
+Keep ASM_RJ_WRITE_BYTE for single-character output.
+```
+
+## Keep Private For Now
+
+These overlap conceptually with utility routines but should stay private in the
+current RAM/runtime slice:
+
+```text
+ASM_SKIP_SPACES
+ASM_ADV_PARSE
+ASM_IS_TOKEN_DELIM
+ASM_IS_PUNCT
+ASM_IS_WORD_HEAD
+ASM_IS_WORD_BODY
+ASM_IS_ALPHA
+ASM_IS_DIGIT
+ASM_FOLD_UPPER_A
+ASM_VALUE_SHL4
+ASM_BIN_SHIFT
+ASM_VALUE_MUL10_ADD_TMP0
+```
+
+Reasons:
+
+```text
+lexer/parser hot path
+ASM-specific punctuation and delimiter rules
+ASM-specific parse pointer state
+tiny routines where RJOIN overhead likely loses
+some utility catalog entries are still NEEDS_PROOF
+```
+
+`ASM_FOLD_UPPER_A` maps conceptually to `UTL_CHAR_TO_UPPER`, and
+`ASM_IS_DIGIT` / `ASM_IS_ALPHA` map to `UTL_CHAR_IS_DIGIT` /
+`UTL_CHAR_IS_ALPHA`, but these are called repeatedly while tokenizing source.
+Keeping them local is the safer choice until ASM is flash-resident and size is
+more important than local lexer speed.
+
+## Completed Slice
+
+```text
+Goal: convert ASM_HEX_TO_NIBBLE to a resident RJOIN call.
+
+HIMON:
+  confirmed UTL_HEX_ASCII_TO_NIBBLE_FNV in the active resident scan
+  current map: UTL_HEX_ASCII_TO_NIBBLE_FNV=$E577, entry=$E57F
+
+ASM:
+  added ASM_RJ_HEX_NIB_LO/HI cache
+  resolves hash $ADD714B1 during ASM_RJOIN_INIT
+  replaced ASM_HEX_TO_NIBBLE with JMP (ASM_RJ_HEX_NIB_LO)
+
+Tests:
+  passed: make -C SRC asm-test
+  passed: make -C SRC himon
+  passed board: paste a short sample using $ hex operands and DB $xx
+  pending board: check a failure case such as LDA #$1234 still reports BAD WIDTH
+```
