@@ -4893,7 +4893,7 @@ The current proof-sized defaults are useful starting points:
 
 ```text
 ASM_SYM_MAX         32 symbol rows
-ASM_FIX_MAX         24 fixup rows
+ASM_FIX_MAX         32 fixup rows
 ASM_FIX_NAME_MAX    32 bytes, 31 visible chars plus terminator
 ASM_REF_MAX         64 report-reference notes
 ASM_LOCAL_MAX       8 local label rows per active global scope
@@ -4969,6 +4969,27 @@ When a symbol is defined, ASM scans pending fixups for matching hash/text/scope
 and attempts to patch rows whose mode and width are now valid. If a fixup cannot
 be represented after the symbol resolves, it fails clearly (`BAD FIX`,
 `BAD WIDTH`, or `BAD RANGE` as appropriate).
+
+`BAD FIX` is therefore a family of fixup failures, not only a table-full
+condition. At `END`, it means at least one required fixup remains pending or
+cannot be patched. The 2026-06-10 biorhythm board attempt is the useful
+counterexample: the table had 19 of 24 rows occupied, but `END` still returned
+`BAD FIX` because direct `JMP BIO_FTDI_WRITE_BYTE_BLOCK` and
+`JMP BIO_FTDI_PUT_CSTR` were not resident-lookup eligible in that older image.
+Those operands were stored as ordinary unresolved fixups and no later session
+label ever defined them.
+
+Current ASM treats direct resident `JSR name` and direct resident `JMP name` as
+RJOIN-eligible after RAM session lookup misses. That keeps local/session labels
+shadowing resident names, while allowing tail-call wrappers such as:
+
+```asm
+OUTA    JMP BIO_FTDI_WRITE_BYTE_BLOCK
+CRLF    JMP BIO_FTDI_PUT_CSTR
+```
+
+Other operand forms still become ordinary fixups unless a future resident
+symbol policy explicitly includes them.
 
 ### RAM Reference Rows
 
@@ -5163,6 +5184,11 @@ reference table full   BAD FIX, TRUNC=YES
 line too long          BAD LINE
 code target overflow   BAD RANGE
 ```
+
+`BAD FIX` at `END` with `FIXUPS` below the maximum should be diagnosed as an
+unresolved required target. Check the remaining `ST=01` pending rows and ask
+whether they are misspelled session labels, local labels closed by a new global
+scope, or resident operands that are not eligible for RJOIN in that image.
 
 ## Relationship To Flash
 

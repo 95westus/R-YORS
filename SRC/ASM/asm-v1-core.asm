@@ -280,7 +280,7 @@ ASM_FIX_FAILED         EQU             $80
 ASM_LINE_MAX           EQU             $3F
 ASM_SYM_MAX            EQU             $20
 ASM_SYM_NAME_MAX       EQU             $20
-ASM_FIX_MAX            EQU             $18
+ASM_FIX_MAX            EQU             $20
 ASM_FIX_NAME_MAX       EQU             $20
 ASM_FIX_NAME_BYTES     EQU             (ASM_FIX_MAX*ASM_FIX_NAME_MAX)
 ASM_REF_MAX            EQU             $40
@@ -10564,7 +10564,7 @@ ASM_CLASS_LOAD_SYMBOL_MISS:
                         LDA             ASM_TOK_FLAGS
                         AND             #ASM_TF_LOCAL_PREFIX
                         BNE             ASM_CLASS_LOAD_UNRESOLVED
-                        JSR             ASM_CLASS_LOAD_RESIDENT_JSR
+                        JSR             ASM_CLASS_LOAD_RESIDENT_EXEC
                         BCS             ASM_CLASS_LOAD_SYMBOL_RESIDENT
                         JMP             ASM_CLASS_LOAD_UNRESOLVED
 ASM_CLASS_LOAD_SYMBOL_RESIDENT:
@@ -10600,10 +10600,13 @@ ASM_CLASS_LOAD_SYMBOL_KEEP_WIDTH:
                         SEC
                         RTS
 
-ASM_CLASS_LOAD_RESIDENT_JSR:
+ASM_CLASS_LOAD_RESIDENT_EXEC:
                         LDA             ASM_STMT_OP_ID
                         CMP             #ASM_VID_JSR
+                        BEQ             ASM_CLASS_LOAD_RESIDENT_CALL
+                        CMP             #ASM_VID_JMP
                         BNE             ASM_CLASS_LOAD_RESIDENT_NO
+ASM_CLASS_LOAD_RESIDENT_CALL:
                         LDX             #<ASM_HASH0
                         LDY             #>ASM_HASH0
                         JSR             ASM_RJ_RESIDENT_XY

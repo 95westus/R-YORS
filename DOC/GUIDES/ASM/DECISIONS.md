@@ -495,7 +495,7 @@ A [addr] [label[:]] MMM [operand] .
   that saves code or cycles.
 - First implementation uses fixed table limits. If symbol or fixup space fills,
   fail with `BAD SYM` or `BAD FIX`; do not spill silently or start writing into
-  flash. The current proof sizes are 32 global symbols, 24 fixups, 64 report
+  flash. The current proof sizes are 32 global symbols, 32 fixups, 64 report
   references, 31 visible global-name characters, 8 local labels per active
   global scope, 15 visible local-name characters, 63 input characters, and a
   512-byte code buffer; treat those as proof defaults, not permanent language
@@ -542,6 +542,12 @@ A [addr] [label[:]] MMM [operand] .
   symbol table or name pool full is `BAD SYM`; fixup table full is `BAD FIX`;
   reference table full is `BAD FIX` with `TRUNC=YES`; line too long is
   `BAD LINE`; code target overflow is `BAD RANGE`.
+- `BAD FIX` at `END` can also mean "required fixup still unresolved", not only
+  "fixup table full." The 2026-06-10 biorhythm attempt showed this clearly:
+  the table held 19/24 rows, but `JMP BIO_FTDI_WRITE_BYTE_BLOCK` and
+  `JMP BIO_FTDI_PUT_CSTR` remained pending because that image only tried
+  resident lookup for direct `JSR name`. Current ASM allows direct resident
+  `JSR name` and `JMP name`; session-defined names still win first.
 - Future ASM must validate memory/access policy for the assembly context: HIMON
   builds may use system-owned zero page, I/O, and protected ranges; user
   assembly must be rejected or warned when it targets ranges outside its allowed

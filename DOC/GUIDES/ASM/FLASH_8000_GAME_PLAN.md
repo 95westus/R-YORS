@@ -54,8 +54,8 @@ target:       make -C SRC asm-v1-flash
 S19:          SRC/BUILD/s19/asm-v1-flash-8000.s19
 FNV record:   $8000, token hash $56AD7400 for ASM
 entry:        START from the link map, currently $800C
-S19 range:    $8000-$AD66 only
-runtime RAM:  UDATA at $6000-$6DBA, omitted from the S19
+S19 range:    $8000-$AD6A only
+runtime RAM:  UDATA at $6000-$6F32, omitted from the S19
 default emit: ASM_BEGIN starts emitted opcodes at $2000
 ```
 
@@ -67,7 +67,8 @@ Current board facts:
 ```text
 HIMON:       V 00.0610(2014)
 load:        L F at $8000
-write size:  WR=2D67
+proof WR:    WR=2D67 for the hardware-proven image
+current WR:  WR=2D6B expected from the current host image
 entry:       GO=800C, run by G 800C
 command:     cold-boot HIMON `ASM` enters the same flash image
 proof:       flash ASM assembled and ran interactive Life from $2000
@@ -261,7 +262,7 @@ RAM proof target still builds and passes
 ```
 
 Current status: host slice implemented. The map places code at `$8000`, data at
-`$A9CD`, and UDATA at `$6000`. The S19 contains only `$8000-$AD66` records.
+`$A9D1`, and UDATA at `$6000`. The S19 contains only `$8000-$AD6A` records.
 Hardware proof through `L F`, direct `G 800C`, and cold-boot HIMON `ASM`
 command dispatch is recorded in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.
 
@@ -460,7 +461,7 @@ Current proof limits:
 
 ```text
 globals:    32 rows, 31 visible chars
-fixups:     24 rows, 31 visible target chars
+fixups:     32 rows, 31 visible target chars
 refs:       64 count-only cap in current code
 locals:     8 rows per active global scope, 15 visible chars
 ```
@@ -477,9 +478,9 @@ refs:           no row table in current code, mostly a count/report cap
 Likely safe before flash:
 
 ```text
+FIX_MAX $18 -> $20     done, about +$0178 bytes
 REF_MAX $40 -> $80     cheap, if report-count headroom is useful
 LOCAL_MAX 8 -> 16      about +$00B8 bytes
-FIX_MAX $18 -> $20     about +$0178 bytes
 ```
 
 More expensive before flash:

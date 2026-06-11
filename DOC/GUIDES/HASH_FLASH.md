@@ -29,6 +29,118 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: Flash ASM Enters The World
+
+```text
+2026
+         06
+                10
+                   21:59Z WLP2 ASM is now a flash-resident HIMON command:
+                               L F loads it at $8000, # can find its FNV
+                               record, and `ASM` enters the assembler.
+```
+
+The current image is:
+
+```text
+SRC/BUILD/s19/asm-v1-flash-8000.s19
+FNV command hash: $56AD7400 for ASM
+entry:            $800C
+S19 range:        $8000-$AD6A
+expected load:    LF OK WR=2D6B GO=800C
+```
+
+The board proof loaded the fixed-address flash image with `L F`, entered it
+with the HIMON command `ASM`, pasted:
+
+```text
+DOC/GUIDES/ASM/SAMPLES/biorhythm-2000.asm
+```
+
+and assembled it successfully:
+
+```text
+ASM>         END
+OK PC=$2640
+ASM TABLES
+...
+ASM FLASH OK
+```
+
+Running the emitted program at `$2000` produced the biorhythm-style chart and
+returned to HIMON on `Q`:
+
+```text
+>G 2000
+
+BIORHYTHM
+DAY 0-255 OR Q> 172
+
+DAY $AC
+P 0 ...........*...........
+E + ....*.........|.............
+I + .......*........|................
+...
+DAY 0-255 OR Q> Q
+
+BYE
+```
+
+What changed in the command surface:
+
+```text
+ASM      now names a flash-resident assembler image
+L F      can deliver that fixed-address image into blank $8000+ flash
+RJOIN    lets emitted code call resident routines by name
+K05      executable+text records are now practical service names
+```
+
+Strengths right now:
+
+```text
+interactive paste assembly
+bare RAM program output at $2000+
+local labels and forward fixups
+session symbol/fixup tables
+resident JSR/JMP lookup through HIMON/THE
+hardware-proven real-work samples, not only byte or opcode smoke tests
+```
+
+Current limitations:
+
+```text
+fixed-address flash image; no L F erase, auto-place, or relocation yet
+ASM metadata still uses the current RAM arena, not the final $7DFF-down plan
+fixed tables: 32 globals, 32 fixups, 64 refs, 8 locals per global scope
+63 visible input chars per line
+no macros/includes/general forward expression addends yet
+source layout still matters; monotonic ORG is enforced
+resident lookup is direct-name JSR/JMP only in the current policy
+```
+
+This is the public shape of the next loop:
+
+```text
+STR8 -> HIMON -> ASM -> emitted RAM program
+```
+
+ASM programs do not need FNV headers unless they are deliberately exported
+or sealed later. The runtime has the hash identity; the ordinary output path
+stays plain opcodes.
+
+The important failure lesson from the same slice: `BAD FIX` does not always
+mean "fixup table full." A helper-first biorhythm attempt had only 19/24
+fixups but failed because the older image only tried resident lookup for
+`JSR name`; `JMP BIO_FTDI_*` tail wrappers stayed pending. Current ASM raises
+the fixup limit to 32 rows and resolves direct resident `JMP name` as well as
+`JSR name`.
+
+Full transcripts live in
+[HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md). The flash migration plan is
+[ASM/FLASH_8000_GAME_PLAN.md](ASM/FLASH_8000_GAME_PLAN.md), and the current
+board script is
+[ASM/SAMPLES/biorhythm-2000-test.md](ASM/SAMPLES/biorhythm-2000-test.md).
+
 ## REHASH: Pasteable ASM Runs Interactive Life
 
 ```text

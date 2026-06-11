@@ -3189,6 +3189,10 @@ rjoin-hash-stats-7200.asm
                          line length/XOR/FNV stats through ASM/RJOIN
 rjoin-hash-stats-7200-test.md
                          board script for the hash-stats slice
+biorhythm-2000.asm
+                         biorhythm-style phase chart through flash ASM/RJOIN
+biorhythm-2000-test.md
+                         board script for the biorhythm slice
 ```
 
 Hardware-proven RJOIN hex-nibble conversion target:
@@ -3332,6 +3336,39 @@ table sanity, reached the live `TEXT>` prompt after `G 7200`, produced the
 expected `HELLO` and `R-YORS` hashes, and returned to HIMON on `Q`. That proves
 the clean boot/load/assemble/full-runtime path for the committed sample.
 
+`biorhythm-2000.asm` is the current flash-ASM interactive real-work sample. It
+starts at `$2000`, reads a day number with `SYS_READ_CSTRING_ECHO_UPPER`, prints
+with `BIO_FTDI_PUT_CSTR` and `BIO_FTDI_WRITE_BYTE_BLOCK`, and draws physical,
+emotional, and intellectual phase lines for periods 23, 28, and 33. The sample
+uses helper-first source order so most internal `JSR/JMP` targets are already
+bound before use. The first board attempt used main-first source order and
+filled all 24 fixup rows before `JSR OUTA`, failing clearly as
+`ERR=$09 BAD FIX PC=$2126`. A later helper-first attempt on the JSR-only
+resident resolver still failed at `END` with 19/24 fixups because
+`JMP BIO_FTDI_WRITE_BYTE_BLOCK` and `JMP BIO_FTDI_PUT_CSTR` were not yet
+resident-lookup eligible. Current ASM raises `ASM_FIX_MAX` to `$20` and allows
+direct resident `JMP name` as well as `JSR name`.
+
+Hardware-proven biorhythm target:
+
+```text
+flash current asm-v1-flash-8000.s19 with L F
+expect LF OK WR=2D6B GO=800C
+enter >ASM
+paste biorhythm-2000.asm
+expect ASM FLASH OK
+expect SYMBOL rows 00-16 and FIXUP rows 00-10, all resolved
+G 2000
+enter 172, 173, 174, 175, Q
+expect DAY $AC, $AD, $AE, $AF charts, then BYE and HIMON return
+```
+
+This proof confirms the current resident `JMP name` lookup path because the
+accepted image contains the tail wrappers `OUTA JMP BIO_FTDI_WRITE_BYTE_BLOCK`
+and `CRLF ... JMP BIO_FTDI_PUT_CSTR` with no pending resident fixups at `END`.
+The `0`, `11`, `23`, and `256` cases remain good deterministic follow-up checks
+for the low-day chart and overflow rejection.
+
 The first hardware attempt on `HIMON V 00.0610(1344)` usefully failed the
 earlier sample shape: forward string/buffer references filled all 24 fixup rows
 before `MAIN`, and double-quoted `DB` strings returned `BAD OPER`. The current
@@ -3375,7 +3412,7 @@ The interactive/random slice opens the ASM table ceilings to:
 
 ```text
 ASM_SYM_MAX=$20
-ASM_FIX_MAX=$18
+ASM_FIX_MAX=$20
 ASM_REF_MAX=$40
 ASM_LOCAL_MAX=$08
 ASM_LOCAL_NAME_MAX=$10
@@ -5966,8 +6003,8 @@ The `asm-v1-flash-8000.s19` image is fixed-address for current `L F`:
 ```text
 FNV record:  $8000, ASM hash $56AD7400
 S9 entry:    START from the link map, currently $800C
-S1 range:    $8000-$AD66
-UDATA:       $6000-$6DBA, omitted from S19
+S1 range:    $8000-$AD6A
+UDATA:       $6000-$6F32, omitted from S19
 default PC:  emitted opcodes start at $2000
 ```
 
@@ -6029,14 +6066,14 @@ Fixed-image fingerprint:
 
 ```text
 >D 8173 8182
-8173: 9C 6A 61 AD 6A 61 F0 1B | AD 6D 61 F0 16 AD 6F 61
+8173: 9C 82 61 AD 82 61 F0 1B | AD 85 61 F0 16 AD 87 61
 
 >D 8218 8227
-8218: 9C 72 61 9C 73 61 20 73 | 81 90 1B AD 73 61 D0 14
+8218: 9C 8A 61 9C 8B 61 20 73 | 81 90 1B AD 8B 61 D0 14
 ```
 
 If `$8173` still clears `$6172/$6173`, or `$8218` begins directly with
-`20 73 81`, the board is still executing the stale flash image.
+`20 73 81`, the board is still executing the earlier stale flash image.
 
 Accepted direct-entry board proof on HIMON V 00.0610(2014): after erasing/blanking the
 `$8000` window, the board loaded `asm-v1-flash-8000.s19` with current `L F`,

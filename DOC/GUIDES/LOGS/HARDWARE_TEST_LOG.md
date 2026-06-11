@@ -7028,3 +7028,152 @@ G0
 
 N/R/Q>
 ```
+
+## 2026-06-10 ASM Flash Biorhythm Resident-JMP Fixup Lesson
+
+This failed board attempt is important because it separated two different
+causes of `BAD FIX`. The first biorhythm source shape really did fill the
+fixup table. The later helper-first source did not: it reached `END` with only
+19 of 24 fixup rows in use, but still failed because the flashed ASM image only
+tried resident EXEC lookup for direct `JSR name`, not direct `JMP name`.
+
+Observed setup:
+
+```text
+entry:     >ASM
+image:     flash ASM prints ASM FLASH / ASM>
+program:   DOC/GUIDES/ASM/SAMPLES/biorhythm-2000.asm helper-first shape
+result:    END returned ERR=$09 BAD FIX PC=$2640
+fixups:    rows 00-12 only, so not table-full
+```
+
+The unresolved rows included resident tail-call wrappers:
+
+```text
+01 01 04   00  2045 2047 BIO_FTDI_WRITE_BYTE_BLOCK
+02 01 04   00  204C 204E BIO_FTDI_PUT_CSTR
+```
+
+Those came from:
+
+```asm
+OUTA    JMP BIO_FTDI_WRITE_BYTE_BLOCK
+CRLF    ...
+        JMP BIO_FTDI_PUT_CSTR
+```
+
+The fix is twofold in the next host image:
+
+```text
+ASM_FIX_MAX grows from $18 to $20, raising fixups from 24 to 32 rows.
+Direct resident JMP name now uses the same RJOIN lookup path as direct JSR name.
+```
+
+Diagnostic rule captured from this failure:
+
+```text
+BAD FIX with FIXUPS at max      likely table full
+BAD FIX with FIXUPS below max   inspect pending rows; unresolved resident
+                                operands may be ineligible in that image
+```
+
+The updated host gate `make -C SRC asm-test` proves both direct resident `JSR`
+and resident tail `JMP` through the runtime smoke wrapper. The current
+`asm-v1-flash-8000.s19` image is expected to load as `WR=2D6B GO=800C`.
+
+## 2026-06-10 ASM Flash Biorhythm Resident-JMP Success
+
+This follow-up proves the fixup lesson above on hardware. The board flashed the
+current `$8000` ASM image, entered it through the HIMON `ASM` command, accepted
+the helper-first biorhythm source, and ran the emitted `$2000` program.
+
+Scope of proof:
+
+```text
+loader:    L F fixed-address flash load
+ASM image: asm-v1-flash-8000.s19, WR=2D6B GO=800C
+entry:     HIMON command `ASM`
+program:   DOC/GUIDES/ASM/SAMPLES/biorhythm-2000.asm
+result:    ASM FLASH OK, then G 2000 prints biorhythm-style charts
+inputs:    172, 173, 174, 175, Q
+```
+
+Flash load and ASM command entry:
+
+```text
+>L F
+L F S19
+L @8000
+LF OK WR=2D6B GO=800C
+>ASM
+ASM FLASH
+ASM>
+```
+
+The flash ASM session accepted the program through `END`:
+
+```text
+ASM>         END
+OK PC=$2640
+ASM TABLES
+...
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  2001 2003 MAIN
+01 02 07   00  2051 2052 .HEX
+...
+10 02 07   00  2183 2184 .BAD
+ASM FLASH OK
+```
+
+The important resident-tail-call evidence is that the previous pending rows for
+`BIO_FTDI_WRITE_BYTE_BLOCK` and `BIO_FTDI_PUT_CSTR` are gone. The wrappers:
+
+```asm
+OUTA    JMP BIO_FTDI_WRITE_BYTE_BLOCK
+CRLF    ...
+        JMP BIO_FTDI_PUT_CSTR
+```
+
+resolved at parse time through the new direct resident `JMP name` path, so no
+resident fixup remained at `END`.
+
+Runtime proof:
+
+```text
+>G 2000
+GO 2000
+
+BIORHYTHM
+DAY 0-255 OR Q> 172
+
+DAY $AC
+P 0 ...........*...........
+E + ....*.........|.............
+I + .......*........|................
+DAY 0-255 OR Q> 173
+
+DAY $AD
+P - ...........|*..........
+E + .....*........|.............
+I + ........*.......|................
+DAY 0-255 OR Q> 174
+
+DAY $AE
+P - ...........|.*.........
+E + ......*.......|.............
+I + .........*......|................
+DAY 0-255 OR Q> 175
+
+DAY $AF
+P - ...........|..*........
+E + .......*......|.............
+I + ..........*.....|................
+DAY 0-255 OR Q> Q
+
+BYE
+
+#GO# ENTRY=2000
+RET A=07 X=28 Y=07 P=75 S=FD NV-BdIzC
+>
+```

@@ -24,6 +24,11 @@ ASM_BEGINF_HAVE_PC     EQU             $01
 ASMRT_TARGET_LO        EQU             $00
 ASMRT_TARGET_HI        EQU             $70
 ASMRT_RESULT           EQU             $67F0
+ASMRT_CODE_LEN         EQU             $14
+ASMRT_JSR_LO           EQU             $03
+ASMRT_JSR_HI           EQU             $04
+ASMRT_TAIL_LO          EQU             $12
+ASMRT_TAIL_HI          EQU             $13
 
                         CODE
 START:
@@ -63,7 +68,19 @@ ASMRT_RUN:
                         STZ             $7006
                         STZ             $7007
                         STZ             $7008
+                        STZ             $7009
+                        STZ             $700A
+                        STZ             $700B
+                        STZ             $700C
+                        STZ             $700D
+                        STZ             $700E
+                        STZ             $700F
+                        STZ             $7010
+                        STZ             $7011
+                        STZ             $7012
+                        STZ             $7013
                         STZ             $7101
+                        STZ             $7102
 
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #ASMRT_TARGET_LO
@@ -91,8 +108,28 @@ ASMRT_RUN:
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASMRT_RETURN_FAIL
 
+                        LDX             #<LINE_LDA_B
+                        LDY             #>LINE_LDA_B
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASMRT_RETURN_FAIL
+
+                        LDX             #<LINE_JSR_TAIL
+                        LDY             #>LINE_JSR_TAIL
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASMRT_RETURN_FAIL
+
+                        LDX             #<LINE_STA_B
+                        LDY             #>LINE_STA_B
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASMRT_RETURN_FAIL
+
                         LDX             #<LINE_RTS
                         LDY             #>LINE_RTS
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASMRT_RETURN_FAIL
+
+                        LDX             #<LINE_TAIL_JMP
+                        LDY             #>LINE_TAIL_JMP
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASMRT_RETURN_FAIL
 
@@ -109,76 +146,66 @@ ASMRT_RETURN_FAIL:
                         RTS
 
 ASMRT_CHECK_BYTES:
-                        LDA             $7000
-                        CMP             #$A9
-                        BNE             ASMRT_BAD_0
-                        LDA             $7001
-                        CMP             #$0A
-                        BNE             ASMRT_BAD_1
-                        LDA             $7002
-                        CMP             #$20
-                        BNE             ASMRT_BAD_2
-                        LDA             $7003
+                        LDA             $7000+ASMRT_JSR_LO
                         CMP             #$FF
-                        BNE             ASMRT_JOIN_LO_OK
-                        LDA             $7004
+                        BNE             ASMRT_JSR_NOT_FFFF
+                        LDA             $7000+ASMRT_JSR_HI
                         CMP             #$FF
-                        BEQ             ASMRT_BAD_3
-ASMRT_JOIN_LO_OK:
-                        LDA             $7005
-                        CMP             #$8D
-                        BNE             ASMRT_BAD_4
-                        LDA             $7006
-                        CMP             #$01
-                        BNE             ASMRT_BAD_5
-                        LDA             $7007
-                        CMP             #$71
-                        BNE             ASMRT_BAD_6
-                        LDA             $7008
-                        CMP             #$60
-                        BNE             ASMRT_BAD_7
+                        BEQ             ASMRT_BAD_JOIN
+ASMRT_JSR_NOT_FFFF:
+                        LDA             $7000+ASMRT_JSR_HI
+                        BEQ             ASMRT_BAD_JOIN
+                        STA             EXPECT_IMAGE+ASMRT_JSR_HI
+                        LDA             $7000+ASMRT_JSR_LO
+                        STA             EXPECT_IMAGE+ASMRT_JSR_LO
+
+                        LDA             $7000+ASMRT_TAIL_LO
+                        CMP             #$FF
+                        BNE             ASMRT_TAIL_NOT_FFFF
+                        LDA             $7000+ASMRT_TAIL_HI
+                        CMP             #$FF
+                        BEQ             ASMRT_BAD_JOIN
+ASMRT_TAIL_NOT_FFFF:
+                        LDA             $7000+ASMRT_TAIL_HI
+                        BEQ             ASMRT_BAD_JOIN
+                        STA             EXPECT_IMAGE+ASMRT_TAIL_HI
+                        LDA             $7000+ASMRT_TAIL_LO
+                        STA             EXPECT_IMAGE+ASMRT_TAIL_LO
+
+                        LDX             #$00
+ASMRT_CHECK_IMAGE_LOOP:
+                        LDA             $7000,X
+                        CMP             EXPECT_IMAGE,X
+                        BNE             ASMRT_BAD_IMAGE
+                        INX
+                        CPX             #ASMRT_CODE_LEN
+                        BNE             ASMRT_CHECK_IMAGE_LOOP
+
                         JSR             $7000
                         LDA             $7101
                         CMP             #'A'
-                        BNE             ASMRT_BAD_8
+                        BNE             ASMRT_BAD_OUTPUT_A
+                        LDA             $7102
+                        CMP             #'B'
+                        BNE             ASMRT_BAD_OUTPUT_B
                         LDA             #$00
                         SEC
                         RTS
 
-ASMRT_BAD_0:
-                        LDA             #$E0
-                        CLC
-                        RTS
-ASMRT_BAD_1:
-                        LDA             #$E1
-                        CLC
-                        RTS
-ASMRT_BAD_2:
-                        LDA             #$E2
-                        CLC
-                        RTS
-ASMRT_BAD_3:
+ASMRT_BAD_JOIN:
                         LDA             #$E3
                         CLC
                         RTS
-ASMRT_BAD_4:
+ASMRT_BAD_IMAGE:
                         LDA             #$E4
                         CLC
                         RTS
-ASMRT_BAD_5:
+ASMRT_BAD_OUTPUT_A:
                         LDA             #$E5
                         CLC
                         RTS
-ASMRT_BAD_6:
+ASMRT_BAD_OUTPUT_B:
                         LDA             #$E6
-                        CLC
-                        RTS
-ASMRT_BAD_7:
-                        LDA             #$E7
-                        CLC
-                        RTS
-ASMRT_BAD_8:
-                        LDA             #$E8
                         CLC
                         RTS
 
@@ -197,5 +224,12 @@ LINE_ORG:               DB              "ORG $7000",0
 LINE_LDA:               DB              "LDA #$0A",0
 LINE_JSR_HEX_NIB:       DB              "LABEL: JSR UTL_HEX_NIBBLE_TO_ASCII",0
 LINE_STA:               DB              "STA $7101",0
+LINE_LDA_B:             DB              "LDA #$0B",0
+LINE_JSR_TAIL:          DB              "JSR TAIL",0
+LINE_STA_B:             DB              "STA $7102",0
 LINE_RTS:               DB              "RTS",0
+LINE_TAIL_JMP:          DB              "TAIL JMP UTL_HEX_NIBBLE_TO_ASCII",0
 LINE_END:               DB              "END",0
+EXPECT_IMAGE:           DB              $A9,$0A,$20,$FF,$FF,$8D,$01,$71
+                        DB              $A9,$0B,$20,$11,$70,$8D,$02,$71
+                        DB              $60,$4C,$FF,$FF

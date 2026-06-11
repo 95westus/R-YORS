@@ -11,152 +11,27 @@ Not eRRORS, but expect fewer.
 
 Pronounced **are-yors**.
 
-## ASM Assembles Life On The Board
+## Current Milestone
 
-On 2026-06-09, ASM v1 assembled and ran an interactive Conway's Life program
-from pasted source on the real W65C02 board.
+As of 2026-06-10, ASM v1 is a flash-resident HIMON command. `L F` loads
+`SRC/BUILD/s19/asm-v1-flash-8000.s19` at `$8000`, reports
+`WR=2D6B GO=800C`, and `ASM` enters the assembler through HIMON's FNV catalog.
 
-The source is:
+ASM assembles pasted W65C02 source into bare RAM programs at `$2000+`, supports
+local labels and forward fixups, and can resolve direct resident `JSR`/`JMP`
+targets through RJOIN/K05 records. It has run both the interactive Life sample
+and the biorhythm-style chart on the real board.
 
-```text
-DOC/GUIDES/ASM/SAMPLES/life-rjoined-6800.asm
-```
-
-Board proof:
-
-```text
-L OK=3CB1 GO=2000
-ASM RT PASTE
-...
-ASM>         END
-OK PC=$7246
-ASM RT PASTE OK
->G 6800
-GO 6800
-
-G0
-.#......
-..#.....
-###.....
-........
-........
-........
-........
-........
-
-N/R/Q>
-```
-
-The program starts at `$6800`, uses RJOIN-resolved resident I/O routines,
-renders an 8x8 torus Life board, accepts `N` or space for next generation,
-`R` for a pseudo-random board, and `Q` to return to HIMON. This is not only an
-opcode smoke test: ASM parsed a multi-page source file, managed 24 session
-symbols and 13 fixups, emitted code plus tables, resolved ROM routine names,
-then ran the generated program interactively.
-
-The full transcript is in
-[HARDWARE_TEST_LOG.md](DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md), announced in
-[HASH_FLASH.md](DOC/GUIDES/HASH_FLASH.md), and tracked in
-[ASM TEST_PLAN.md](DOC/GUIDES/ASM/TEST_PLAN.md).
-
-## Pasteable ASM Is Alive
-
-On 2026-06-06, the ASM v1 runtime crossed an important line: a program typed as
-ASM source on the board called a ROM-resident routine by name and ran.
-
-Original source listing:
-
-```asm
-ORG $7000
-MAIN: LDX #0
-LOOP LDA #$4D
-JSR BIO_FTDI_WRITE_BYTE_BLOCK
-INX
-BNE LOOP
-RTS
-END
-```
-
-Board paste/run transcript:
+Treat ASM as a young onboard workbench, not a finished hosted toolchain. Its
+current limits and hardware transcripts live in the ASM docs and proof logs:
 
 ```text
->G 2000
-GO 2000
-ASM RT PASTE
-ASM> ORG $7000
-OK PC=$7000
-ASM> MAIN: LDX #0
-OK PC=$7002
-ASM> LOOP LDA #$4D
-OK PC=$7004
-ASM> JSR BIO_FTDI_WRITE_BYTE_BLOCK
-OK PC=$7007
-ASM> INX
-OK PC=$7008
-ASM> BNE LOOP
-OK PC=$700A
-ASM> RTS
-OK PC=$700B
-ASM> END
-OK PC=$700B
-ASM RT PASTE OK
->G 7000
-GO 7000
-MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
-... 256 total M characters ...
->
+DOC/GUIDES/ASM/HASHED_ASM.md
+DOC/GUIDES/ASM/FLASH_8000_GAME_PLAN.md
+DOC/GUIDES/ASM/TEST_PLAN.md
+DOC/GUIDES/HASH_FLASH.md
+DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md
 ```
-
-That proves the paste driver can feed source lines into the stripped callable
-ASM runtime, resolve `BIO_FTDI_WRITE_BYTE_BLOCK` through HIMON/THE's resident
-hash catalog, emit a real `JSR`, and execute the generated program.
-
-The same runtime paste driver also produced a byte-level ASMTEST proof. Source
-was pasted into ASM, finalized with `END`, and the resulting RAM was dumped:
-
-```text
-ASM> ORG $7000
-...
-ASM> END
-OK PC=$7027
-ASM RT PASTE OK
-
->D 7000 701F
-7000: A2 00 9C 10 71 BD 17 70 | 9D 00 71 4D 10 71 8D 10 | ....q..p..qM.q..
-7010: 71 E8 E0 10 D0 EF 60 52 | 2D 59 4F 52 53 20 41 53 | q.....`R-YORS AS
->D 7100 711F
-7100: 52 2D 59 4F 52 53 20 41 | 53 4D 20 54 45 53 54 2E | R-YORS ASM TEST.
-7110: 0F 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
->G 7000
-GO 7000
-
-#GO# ENTRY=7000
-RET A=0F X=10 Y=30 P=77 S=FD NV-BdIZC
->
-```
-
-Full hardware transcripts are in
-[HARDWARE_TEST_LOG.md](DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md), with the ASM gate
-tracked in [ASM TEST_PLAN.md](DOC/GUIDES/ASM/TEST_PLAN.md).
-
-## Current Spark
-
-Search just made the full ladder: standalone RAM proof, joined RAM proof, and
-a flash-resident FNV command that HIMON can discover and run. Along the way a
-sneaky FTDI carry bug was caught and fixed, explaining the occasional extra
-hex digit in dumps.
-
-Details and transcripts live in
-[HARDWARE_TEST_LOG.md](DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md) and
-[HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](DOC/GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md).
-
-## Live Proof
-
-The clearest current transcript is
-[HIMON/STR8 Live Update Proof](DOC/GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.md).
-It shows bank 3 moving from HIMON `(2312)` to `(2317)` and back to `(2312)`:
-STR8 updates HIMON, HIMON proves the hash catalog filters and confirmed
-`BOOT_COLD_RESET`, then STR8 restores the earlier image.
 
 ## What This Is
 
@@ -171,11 +46,13 @@ The current product spine is:
 R-YORS
   STR8
   HIMON
+  ASM
 ```
 
 `R-YORS` is the whole project and runtime direction. `STR8` is the reset-time
 recovery/update guard. `HIMON` is the default monitor/debug/catalog workbench
-that STR8 boots into for ordinary use.
+that STR8 boots into for ordinary use. `ASM` is the emerging onboard assembler:
+flash-resident as a HIMON command, currently emitting user opcodes into RAM.
 
 ## What It Does
 
@@ -183,6 +60,7 @@ that STR8 boots into for ordinary use.
 R-YORS  keeps source, ROMs, maps, manuals, decisions, and generated reports together
 STR8    maps flash, backs up images, restores images, installs $C000 payloads
 HIMON   dumps/modifies memory, loads S19, disassembles, assembles, debugs RAM
+ASM     assembles W65C02 source on the board and emits bare RAM programs
 ```
 
 Current boot shape:
@@ -196,7 +74,7 @@ update gate has booted HIMON, OSI BASIC, and fig-FORTH as live images.
 
 ## Current Status
 
-Updated 2026-05-21.
+Updated 2026-06-10.
 
 STR8 is hardware-proven rotating three bootable images through the same guarded
 path:
@@ -215,6 +93,12 @@ known-good HIMON.
 HIMON's RAM-only debug path is hardware-proven for `B`, `B C`, `B L`, `N`, and
 `X`. One-shot breakpoints restore their original opcodes, debugger stops print
 as `@hhhh`, and invalid debug patch targets report `DBG RAM`.
+
+ASM is hardware-proven as both a RAM-loaded paste runtime and a flash-resident
+HIMON command. The current flash image loads at `$8000` through `L F`, enters as
+`ASM`, assembles source to `$2000+`, resolves resident routines through RJOIN,
+and has run the biorhythm-style chart and interactive Life samples on the
+board.
 
 Treat the system as bench-proven, not as a finished field updater. Keep an
 external programmer path and known-good image nearby.
