@@ -7191,3 +7191,104 @@ catalog, the board now reports the expected hash-not-found result:
 
 This proves `A` is no longer a built-in HIMON executable record. Assembly now
 belongs to the flash-resident `ASM` command path.
+
+## 2026-06-15 ASM Flash PACK40 Interactive Success
+
+This proves the ASM-native interactive PACK40 sample on hardware after retuning
+the flash ASM tables toward fixup-heavy paste sources.
+
+Scope of proof:
+
+```text
+STR8 update: UPDATE HIMON C000-EFFF, OK
+HIMON:       V 00.0615(2131)
+ASM image:   asm-v1-flash-8000.s19, WR=2E92 GO=800C
+program:     DOC/GUIDES/ASM/SAMPLES/pack40-interactive-2000.a
+tables:      ASM_SYM_MAX=$28 ASM_FIX_MAX=$60 ASM_REF_MAX=$A0
+result:      ASM FLASH OK, then G 2000 interactive pack/unpack success
+```
+
+The ASM paste accepted the whole source through `END`:
+
+```text
+ASM> ; NEEDS ASM TABLES SYM/FIX/REF/LOCAL $28/$60/$A0/$10.
+OK PC=$2000
+...
+ASM> RUN     LDX #<MTIT
+OK PC=$238B
+...
+ASM> .DONE   RTS
+OK PC=$23C9
+ASM>
+ASM>         END
+OK PC=$23C9
+ASM TABLES
+SYMBOLS
+...
+1D 01 2389  01 04 0E 01D2 00  0000  RUN
+FIXUPS
+...
+49 02 07   00  23B9 23BA .BAD
+ASM FLASH OK
+```
+
+The important table evidence is 30 global symbols and 74 resolved fixup rows,
+with no `ERR=` and no unresolved resident calls left at `END`.
+
+Runtime proof:
+
+```text
+>G 2000
+GO 2000
+
+PACK40 INT
+P PACK U UNPACK Q> P
+TEXT> HELLO
+
+PACKED=D432584D
+P PACK U UNPACK Q> U
+HEX> D432584D
+
+TEXT=HELLO
+P PACK U UNPACK Q> P
+TEXT> _
+
+PACKED=40E7
+P PACK U UNPACK Q> U
+HEX> 40E7
+
+TEXT=_
+P PACK U UNPACK Q> P
+TEXT> HELLO_
+
+PACKED=D4327D4D
+P PACK U UNPACK Q> U
+HEX> D4327D4D
+
+TEXT=HELLO_
+P PACK U UNPACK Q> P
+TEXT> HELLO_GOODBYE
+
+PACKED=D4327D4D272E6919401F
+P PACK U UNPACK Q> U
+HEX> D4327D4D272E6919401F
+
+TEXT=HELLO_GOODBYE
+P PACK U UNPACK Q> Q
+
+#GO# ENTRY=2000
+RET A=51 X=00 Y=00 P=77 S=FD NV-BdIZC
+>
+```
+
+Negative-path observations in the same run:
+
+```text
+menu input HELLO        -> ?
+empty pack input        -> ?
+invalid ':' in HELLO:   -> ?
+empty unpack hex input  -> ?
+```
+
+The `U` menu path now prompts `HEX>` and reaches `UNPIT`, proving the prior bad
+fall-through into `PACKIT` was table/fixup pressure from the earlier image.

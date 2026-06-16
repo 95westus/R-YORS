@@ -3185,7 +3185,8 @@ Current pasteable bench toys:
 ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
 pack40-roundtrip-2000.a self-contained PACK40 pack/unpack oracle
 pack40-interactive-2000.a
-                         interactive PACK40 pack/unpack exerciser
+                         hardware-proven interactive PACK40 pack/unpack
+                         exerciser
 life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
 local-label-stress-7400.asm
                          exact 8-local scope/reuse/?prefix stress sample
@@ -3433,6 +3434,12 @@ ASM_REF_MAX=$A0
 ASM_LOCAL_MAX=$10
 ASM_LOCAL_NAME_MAX=$10
 ```
+
+The 2026-06-15 hardware run in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md` proves
+`pack40-interactive-2000.a` with those limits. It accepted 30 globals and 74
+resolved fixup rows through `END`, then verified `P HELLO -> D432584D`,
+`U D432584D -> HELLO`, `_`, `HELLO_`, and `HELLO_GOODBYE` round trips. The
+negative paths rejected bare menu text, empty pack/hex input, and invalid `:`.
 
 The standalone smoke path now includes a fixup-name slot-8 pointer check so
 the expanded fixup table cannot silently wrap row 8 onto row 0 again. The same
