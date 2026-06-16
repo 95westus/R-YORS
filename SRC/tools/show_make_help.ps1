@@ -34,6 +34,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-search-proof"; Category = "test"; Description = "Build hash-resolved RAM search proof at 3000." }
     [pscustomobject]@{ Target = "himon-search-flash"; Category = "test"; Description = "Build low-flash K=05 S search command S19 at BB80 for L F." }
     [pscustomobject]@{ Target = "himon-search-for-himon"; Category = "test"; Description = "Assemble the native HIMON search port scaffold and guide pointer." }
+    [pscustomobject]@{ Target = "pack40-test"; Category = "test"; Description = "Build PACK40 pack/unpack string round-trip proof at 3000." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
     [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }
     [pscustomobject]@{ Target = "rom-append-calc"; Category = "app"; Description = "Build CALC command as a ROM append proof at B804." }

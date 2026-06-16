@@ -21,6 +21,8 @@ Settled v1 overview:
   old `A [addr] ... .` form was legacy mini-assembler syntax, not an ASM input
   path, and has been removed from HIMON. ASM parsing is hash-first, with
   non-vocabulary first tokens held as pending definition names.
+- From this point forward, ASM-native source files use `.a`; WDC source files
+  use `.asm`. Older paste samples may keep their legacy names until migrated.
 - Width is source intent. `$hh` means zero page, `$hhhh` means absolute, and no
   numeric-range promotion/demotion is allowed.
 - `EQU`, `DB`, `DW`, `DS`, `ORG`, and `END` are v1 directives. `EQU` must resolve

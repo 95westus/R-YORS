@@ -20,6 +20,9 @@ then prove the sample's expected result by an independent checker
 then feed it to the onboard ASM layer as that layer becomes available
 ```
 
+New ASM-native sample source files use `.a`. WDC source files use `.asm`.
+Legacy ASM paste samples with `.asm` names remain until they are migrated.
+
 The first active sample is:
 
 ```text
@@ -3180,6 +3183,7 @@ Current pasteable bench toys:
 
 ```text
 ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
+pack40-roundtrip-2000.a self-contained PACK40 pack/unpack oracle
 life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
 local-label-stress-7400.asm
                          exact 8-local scope/reuse/?prefix stress sample

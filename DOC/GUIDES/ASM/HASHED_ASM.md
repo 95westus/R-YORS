@@ -66,6 +66,16 @@ Settled ASM source line shape:
 [label[:]] operation [operand]
 ```
 
+Source-file naming convention from here forward:
+
+```text
+*.a    ASM-native source assembled by ASM
+*.asm  WDC assembler source assembled by wdc02as
+```
+
+Older ASM paste samples may still carry `.asm` until they are migrated, but new
+ASM-source samples should use `.a` so WDC compatibility is not implied.
+
 Core settled rules:
 
 - Source tokens are canonicalized to uppercase outside quotes, bit 7 is masked
@@ -1235,6 +1245,121 @@ are read-only candidates when that layer is added.
 The future "ASM assembles ASM/HIMON" goal may need temporary storage, flash
 workspace, compression, or both. That belongs to the resident-scale symbol table
 and workspace design later. Do not burden v1 symbol rows with that machinery.
+
+### ASM Assembling ASM: Table Limits And Chunking
+
+Raising the fixed v1 table limits is now a reasonable near-term experiment, but
+it is not the route to a monolithic "ASM assembles ASM" session. The active
+knobs live with the proof limits in `SRC/ASM/asm-v1-core.asm`:
+
+```text
+ASM_LINE_MAX
+ASM_SYM_MAX
+ASM_SYM_NAME_MAX
+ASM_FIX_MAX
+ASM_FIX_NAME_MAX
+ASM_REF_MAX
+ASM_LOCAL_MAX
+ASM_LOCAL_NAME_MAX
+```
+
+Keep the name-slot widths at the current values for now: global symbol and fixup
+name slots are 32 bytes, and local name slots are 16 bytes. Existing pointer
+math assumes those slot widths.
+
+Current approximate RAM costs:
+
+```text
+ASM_SYM_MAX    about 50 bytes per global symbol row
+ASM_FIX_MAX    about 47 bytes per fixup row
+ASM_REF_MAX    cheap report/count cap, not a real row table yet
+ASM_LOCAL_MAX  about 23 bytes per local row
+```
+
+PACK40 is useful directly against those costs because the expensive part of the
+symbol/fixup/local rows is the stored name text. Base-40 packs three folded name
+characters into two bytes. With the current name widths, a 32-byte global/fixup
+name slot can become a 22-byte packed slot, and a 16-byte local name slot can
+become a 12-byte packed slot. If the row layouts are later changed around those
+packed slots, rough row costs become about 40 bytes per global symbol row, about
+37 bytes per fixup row, and about 19 bytes per local row.
+
+That savings helps the chunked self-hosting plan in several ways:
+
+```text
+more names fit in each RAM assembly slice
+export/seal metadata for routine packs is smaller
+resident flash name catalogs spend fewer bytes on human-readable keys
+packed names can be compared before unpacking in many lookup paths
+serial/paste proof traffic can carry denser symbol/export tables
+```
+
+It does not make a single giant ASM session viable. PACK40 reduces name storage;
+it does not reduce the number of labels, the number of fixups, or the need to
+clear and seal between routine packs. Also, the current fixed tables are still
+plain byte-name tables; PACK40 is available as a helper now, while changing table
+row layouts needs a deliberate pointer-math pass.
+
+A practical first ROM-era bump to measure is:
+
+```text
+ASM_SYM_MAX    $40
+ASM_FIX_MAX    $40
+ASM_REF_MAX    $80
+ASM_LOCAL_MAX  $10
+```
+
+That adds about `$0CD8` bytes with the current table layout. Address terms are
+easy to blur here, so keep them separate:
+
+```text
+$2000  RAM-loaded ASM proof/runtime base, and flash command default emit target
+$7000  current smoke-test emitted-code target
+$8000  flash-resident ASM command CODE/FNV record link address
+$6000  current flash-runtime UDATA/table arena from the Makefile `-u6000`
+```
+
+So yes: the base RAM assembly/emission address is `$2000` in the active RAM and
+flash-command paths. `$6000` is not the base RAM address; it is where the
+flash-resident ASM runtime currently places mutable UDATA tables. Recent maps
+put `_END_UDATA` around `$6F33`, so the `$40/$40/$80/$10` bump should land near
+`$7C0B`, still below the protected RJOIN seed cell at `$7E00/$7E01`. Always
+verify the map after a bump, especially `_END_UDATA`.
+
+Important current hazard: flash ASM UDATA grows upward from `$6000`. It has not
+yet become the intended `$7DFF` downward metadata arena. Until collision checks
+exist, do not `ORG` emitted user code into `$6000+` while the flash ASM runtime
+is active.
+
+`asm-v1-core.asm` is much larger than this model can absorb in one session. A
+quick source scan is on the order of 2,240 label/EQU definitions; at roughly 50
+bytes per global row, those definitions alone exceed 100 KB of global symbol
+table. The self-hosting path is therefore chunked:
+
+```text
+use local labels inside routines so only routine entries remain global
+assemble routine packs/slices
+export/seal public names
+clear the ASM session
+assemble the next slice
+```
+
+The WDC source also needs adaptation to ASM semantics rather than WDC semantics.
+Known source-surface work includes `MODULE`, `XDEF`, `XREF`, `IF`/`ELSE`/`ENDIF`,
+`CODE`/`DATA`/`UDATA`, and long source lines. `DW` is now an ASM directive, but
+large-source assembly still needs either source compaction or a deliberate
+`ASM_LINE_MAX` increase.
+
+Use this as the near-term measurement loop:
+
+```text
+make -C SRC asm-test
+make -C SRC asm-v1-flash
+check _END_UDATA in SRC/BUILD/s19/asm-v1-flash-8000.map
+```
+
+Later, replace the fixed UDATA tables with the planned high-down arena and add
+explicit emitted-code/metadata collision checks.
 
 ### ASM 1.70.2 Session Symbol Row
 
@@ -4595,6 +4720,18 @@ for this key because three base-64 characters need 18 bits. A 5-bit pack is
 still useful for letter-heavy text compression, but it cannot directly encode
 the whole `A-Z 0-9 _` plus end/pad alphabet three characters at a time. PackBits
 is more useful for repeated-byte streams than for ordinary symbol names.
+
+`UTL_PACK40` is the first concrete helper for this base-40 lane. Its alphabet
+is `0=end/pad`, `1-26=A-Z`, `27-36=0-9`, `37=_`, `38=?`, and `39=.`. It packs
+three codes into one little-endian 16-bit value using
+`((c0 * 40) + c1) * 40 + c2`, and it includes generic C-string pack/unpack
+wrappers around the lower-level code/word routines. Today it is a RAM proof
+utility; later it can grow FNV headers and be loaded into flash as a resident
+routine pack.
+
+`DOC/GUIDES/ASM/SAMPLES/pack40-roundtrip-2000.a` is the matching ASM-native
+standalone proof source. It assembles at `$2000`, writes packed bytes to `$3000`,
+unpacked text to `$3020`, and `$AC` to `$3040` on success.
 
 The local-prefix codes now feed the compact ASM-local table. `.LOOP` and
 `?LOOP` are session-local labels scoped by the most recent nonlocal PC label;

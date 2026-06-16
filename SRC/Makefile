@@ -122,6 +122,10 @@ HREC_JOIN_PROOF_SRC := $(PROOFS_DIR)/hrec-join-proof.asm
 HREC_JOIN_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/hrec-join-proof.obj
 HREC_JOIN_PROOF_S19 := $(S19_DIR)/hrec-join-proof-4000.s19
 HREC_JOIN_PROOF_LINKFLAGS := -g -s -t -c4000 -hm19 -j -o
+PACK40_TEST_SRC := $(PROOFS_DIR)/pack40-test.asm
+PACK40_TEST_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/pack40-test.obj
+PACK40_TEST_S19 := $(S19_DIR)/pack40-test-3000.s19
+PACK40_TEST_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 ASM_RJOIN_PROOF_SRC := $(PROOFS_DIR)/asm-rjoin-proof-3000.asm
 ASM_RJOIN_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/asm-rjoin-proof-3000.obj
 ASM_RJOIN_PROOF_S19 := $(S19_DIR)/asm-rjoin-proof-3000.s19
@@ -191,6 +195,8 @@ MSBASIC_OSI_C000_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 MSBASIC_OSI_STR8_UPDATE_S19 := $(S19_DIR)/msbasic-osi-str8-update.s19
 FTDI_DRV_SRC := $(LIB_DIR)/ftdi/ftdi-drv.asm
 FTDI_DRV_INC := $(LIB_DIR)/ftdi/ftdi-drv.inc
+PACK40_UTIL_SRC := $(LIB_DIR)/util/util-pack40.asm
+PACK40_UTIL_OBJ := $(OBJ_DIR)/$(LIB_DIR)/util/util-pack40.obj
 
 ROM_EXTRA_SRC := $(wildcard $(TESTS_DIR)/ftdi-backend-debug.asm)
 ROM_SRC := $(foreach d,$(LIB_SUBDIRS),$(wildcard $(d)/*.asm)) $(ROM_EXTRA_SRC)
@@ -250,6 +256,7 @@ ALL_TARGETS := \
 	himon-search-flash \
 	himon-search-for-himon \
 	hrec-join-proof \
+	pack40-test \
 	asm-rjoin-proof \
 	asm-v1-core \
 	asm-v1-runtime \
@@ -412,6 +419,10 @@ himon-search-for-himon: $(HIMON_SEARCH_FOR_HIMON_OBJ)
 
 hrec-join-proof: $(ROM_LIB) $(HREC_JOIN_PROOF_S19)
 	@echo "Built $(HREC_JOIN_PROOF_S19)."
+	@$(MAKE) artifacts
+
+pack40-test: $(ROM_LIB) $(PACK40_TEST_S19)
+	@echo "Built $(PACK40_TEST_S19)."
 	@$(MAKE) artifacts
 
 asm-rjoin-proof: $(ROM_LIB) $(ASM_RJOIN_PROOF_S19)
@@ -687,6 +698,22 @@ $(HREC_JOIN_PROOF_S19): $(HREC_JOIN_PROOF_OBJ) $(ROM_LIB)
 	$(LINKER) $(HREC_JOIN_PROOF_LINKFLAGS) $(HREC_JOIN_PROOF_S19) $(HREC_JOIN_PROOF_OBJ) -L $(BUILD_DIR)\lib\rom
 	@echo [ps] set S9 start $$4000 in $(HREC_JOIN_PROOF_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(HREC_JOIN_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9034000BC'; Set-Content -Path $$p -Value $$lines"
+
+$(PACK40_TEST_S19): $(PACK40_TEST_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(PACK40_TEST_LINKFLAGS) $(PACK40_TEST_S19) $(PACK40_TEST_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$3000 in $(PACK40_TEST_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(PACK40_TEST_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+
+$(PACK40_UTIL_OBJ): $(PACK40_UTIL_SRC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) $<
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
+
+$(PACK40_TEST_OBJ): $(PACK40_TEST_SRC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) $<
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
 
 $(ASM_RJOIN_PROOF_S19): $(ASM_RJOIN_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -977,4 +1004,4 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof asm-rjoin-proof asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-opcode-coverage asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map routine-word-tree himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof pack40-test asm-rjoin-proof asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-opcode-coverage asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map routine-word-tree himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
