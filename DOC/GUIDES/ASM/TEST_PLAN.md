@@ -3183,6 +3183,8 @@ Current pasteable bench toys:
 
 ```text
 ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
+asm-directives-smoke-3000.a
+                         EQU/DB/DW/DS and small fixup table smoke
 pack40-roundtrip-2000.a self-contained PACK40 pack/unpack oracle
 pack40-interactive-2000.a
                          hardware-proven interactive PACK40 pack/unpack
