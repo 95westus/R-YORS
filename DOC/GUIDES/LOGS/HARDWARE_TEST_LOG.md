@@ -7346,3 +7346,53 @@ This proves the code path and status byte, plus the stable directive bytes up
 through `DS` and trailing `DB`. It does not prove `DB <pc_label`, because that
 line failed and emitted nothing. The sample source was revised to use
 `DW DATA,ENDD` after both labels are known for the address-word check.
+
+## 2026-06-16 ASM Directive Smoke Revised Board Success
+
+The corrected `DOC/GUIDES/ASM/SAMPLES/asm-directives-smoke-3000.a` board paste
+proves the intended compact directive smoke:
+
+```text
+ASM> ; TABLE BUDGET: 14 GLOBALS, 3 FIXUPS, 2 LOCALS.
+...
+ASM> RUN     BRA .COPY
+OK PC=$3002
+ASM>         DB $EA
+OK PC=$3003
+ASM> .COPY   LDX #$00
+OK PC=$3005
+...
+ASM> ADDRS   DW DATA,ENDD
+OK PC=$3033
+ASM>
+ASM>         END
+OK PC=$3033
+ASM TABLES
+SYMBOLS
+...
+0D 01 302F  01 04 0E 0022 00  0000  ADDRS
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  3001 3002 .COPY
+01 02 06   00  3006 3008 DATA
+02 02 04   00  3011 3013 MARK
+ASM FLASH OK
+```
+
+Runtime proof:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=19 Y=30 P=F5 S=FD NV-BdIzC
+>D 3100 31FF
+3100: A5 5A 52 59 34 12 12 00 | 0B 00 41 00 EE FF EE FF
+3110: 44 42 44 57 00 1A 30 2E | 30 00 00 00 00 00 00 00
+3120: AC 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00
+```
+
+This proves current ASM support for `EQU`, `DB`, `DW`, `DS`, local branch
+fixup, forward absolute operand fixups, known-label `DW DATA,ENDD`, and a
+small runtime copy oracle under the active table limits.

@@ -3184,7 +3184,7 @@ Current pasteable bench toys:
 ```text
 ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
 asm-directives-smoke-3000.a
-                         EQU/DB/DW/DS and small fixup table smoke
+                         hardware-proven EQU/DB/DW/DS and small fixup smoke
 pack40-roundtrip-2000.a self-contained PACK40 pack/unpack oracle
 pack40-interactive-2000.a
                          hardware-proven interactive PACK40 pack/unpack
@@ -3448,6 +3448,10 @@ The first `asm-directives-smoke-3000.a` board paste exposed that
 current flash ASM image. The sample now uses `DW DATA,ENDD` after both labels
 are known for its address-word check, while forward operand/local fixups still
 come from the executable code.
+
+The revised board run proves the corrected sample: 14 globals, 3 resolved
+fixups, 2 locals, `ASM FLASH OK`, `G 3000` returning `A=AC`, and copied bytes
+at `$3100` through `$3118` matching the sample's expected directive image.
 
 The standalone smoke path now includes a fixup-name slot-8 pointer check so
 the expanded fixup table cannot silently wrap row 8 onto row 0 again. The same
