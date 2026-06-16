@@ -7313,3 +7313,36 @@ in the top-level HIMON input-abort path. This is a HIMON prompt/abort context,
 not PACK40 code running after return. At the HIMON `>` prompt, `Q` is the
 quiesce command (`SEI`/`WAI`/re-enter), not an application quit command; without
 a waking interrupt it can look like a hang and require reset.
+
+## 2026-06-15 ASM Directive Smoke First Board Run
+
+The first `DOC/GUIDES/ASM/SAMPLES/asm-directives-smoke-3000.a` board paste
+proved the basic `EQU`, `DB`, `DW`, `DS`, forward operand fixup, and runtime
+copy path, but also exposed one current DB selector gap.
+
+The failing line:
+
+```text
+ASM>         DB <DATA,>DATA,<ENDD,>ENDD
+ERR=$05 BAD WIDTH PC=$3023
+```
+
+The session continued, accepted `END`, and ran:
+
+```text
+ASM FLASH OK
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=19 Y=30 P=F5 S=FD NV-BdIzC
+>D 3100 3121
+3100: A5 5A 52 59 34 12 12 00 | 0B 00 41 00 EE FF EE FF
+3110: 44 42 44 57 00 00 00 00 | 00 00 00 00 00 00 00 00
+3120: AC 00
+```
+
+This proves the code path and status byte, plus the stable directive bytes up
+through `DS` and trailing `DB`. It does not prove `DB <pc_label`, because that
+line failed and emitted nothing. The sample source was revised to use
+`DW DATA,ENDD` after both labels are known for the address-word check.

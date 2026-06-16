@@ -3443,6 +3443,12 @@ resolved fixup rows through `END`, then verified `P HELLO -> D432584D`,
 `U D432584D -> HELLO`, `_`, `HELLO_`, and `HELLO_GOODBYE` round trips. The
 negative paths rejected bare menu text, empty pack/hex input, and invalid `:`.
 
+The first `asm-directives-smoke-3000.a` board paste exposed that
+`DB <DATA,>DATA,<ENDD,>ENDD` with PC labels still fails as `BAD WIDTH` in the
+current flash ASM image. The sample now uses `DW DATA,ENDD` after both labels
+are known for its address-word check, while forward operand/local fixups still
+come from the executable code.
+
 The standalone smoke path now includes a fixup-name slot-8 pointer check so
 the expanded fixup table cannot silently wrap row 8 onto row 0 again. The same
 host smoke now proves local labels by assembling a forward `BRA .SKIP`, binding
