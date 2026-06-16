@@ -383,6 +383,8 @@ A [addr] [label[:]] MMM [operand] .
   available first to the current expression callers: `EQU`, `ORG`, and `DW`.
   `DB`/`DS` list expression math remains separate because those directives
   still use their byte/list atom parser, not the general expression-list path.
+  In short: keep `|`, `&`, and `^` as an `ASM_PARSE_EXPR` upgrade first, with
+  `DB` expression-list unification as a later, cleaner refactor.
 - Unary minus is not v1 syntax. Use `0-1` if needed, then let the target context
   range-check the result. `DB -1` is `BAD OPER`.
 - Parentheses are not expression grouping in v1. `(` and `)` remain operand
