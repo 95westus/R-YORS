@@ -5346,7 +5346,7 @@ $59 ASM_EMIT_BYTE/ASM_EMIT_WORD_LE smoke
 $5A ASM_CLASS_OPERAND smoke
 $5B ASM_FIND_OPCODE/ASM_EMIT smoke
 $5C fixup record/patch smoke
-$5D DB/ORG/DS directive smoke
+$5D DB/DW/ORG/DS directive smoke
 $5E report-fact smoke
 $60 symbol smoke
 $70 ASMTEST_3000 onboard mirror smoke
@@ -5402,6 +5402,10 @@ $D0 DS initializer-list emit failed
 $D1 emitted DS initializer-list bytes were wrong
 $D2 DS initializer-list PC/high-water was wrong
 $D3 DS partial initializer-list repeat did not set WARN_DS_WRAP
+$D6 DW emit failed
+$D7 emitted DW bytes were wrong
+$D8 DW PC/high-water was wrong
+$D9 empty DW did not fail BAD OPER
 ```
 
 For `$5E` report-fact smoke, `Y` identifies the report-state subtest:
@@ -5449,27 +5453,27 @@ for reserved/parked words:
 
 | Slot | Slot | Slot | Slot |
 | --- | --- | --- | --- |
-| $00 A REG | $15 CMP MNEM | $2A LDY MNEM | $3F SEI MNEM |
-| $01 ADC MNEM | $16 CPX MNEM | $2B LSR MNEM | $40 SMB MNEM |
-| $02 AND MNEM | $17 CPY MNEM | $2C NOP MNEM | $41 STA MNEM |
-| $03 ASL MNEM | $18 DB DIR | $2D ORA MNEM | $42 START RES |
-| $04 BBR MNEM | $19 DC RES | $2E ORG DIR | $43 STP MNEM |
-| $05 BBS MNEM | $1A DEC MNEM | $2F PHA MNEM | $44 STX MNEM |
-| $06 BCC MNEM | $1B DEX MNEM | $30 PHP MNEM | $45 STY MNEM |
-| $07 BCS MNEM | $1C DEY MNEM | $31 PHX MNEM | $46 STZ MNEM |
-| $08 BEQ MNEM | $1D DS DIR | $32 PHY MNEM | $47 TAX MNEM |
-| $09 BIT MNEM | $1E END DIR | $33 PLA MNEM | $48 TAY MNEM |
-| $0A BMI MNEM | $1F ENTRY RES | $34 PLP MNEM | $49 TRB MNEM |
-| $0B BNE MNEM | $20 EOR MNEM | $35 PLX MNEM | $4A TSB MNEM |
-| $0C BPL MNEM | $21 EQU DIR | $36 PLY MNEM | $4B TSX MNEM |
-| $0D BRA MNEM | $22 EXTRN RES | $37 RMB MNEM | $4C TXA MNEM |
-| $0E BRK MNEM | $23 INC MNEM | $38 ROL MNEM | $4D TXS MNEM |
-| $0F BVC MNEM | $24 INX MNEM | $39 ROR MNEM | $4E TYA MNEM |
-| $10 BVS MNEM | $25 INY MNEM | $3A RTI MNEM | $4F WAI MNEM |
-| $11 CLC MNEM | $26 JMP MNEM | $3B RTS MNEM | $50 X REG |
-| $12 CLD MNEM | $27 JSR MNEM | $3C SBC MNEM | $51 Y REG |
-| $13 CLI MNEM | $28 LDA MNEM | $3D SEC MNEM | |
-| $14 CLV MNEM | $29 LDX MNEM | $3E SED MNEM | |
+| $00 A REG | $15 CMP MNEM | $2A LDX MNEM | $3F SED MNEM |
+| $01 ADC MNEM | $16 CPX MNEM | $2B LDY MNEM | $40 SEI MNEM |
+| $02 AND MNEM | $17 CPY MNEM | $2C LSR MNEM | $41 SMB MNEM |
+| $03 ASL MNEM | $18 DB DIR | $2D NOP MNEM | $42 STA MNEM |
+| $04 BBR MNEM | $19 DC RES | $2E ORA MNEM | $43 START RES |
+| $05 BBS MNEM | $1A DEC MNEM | $2F ORG DIR | $44 STP MNEM |
+| $06 BCC MNEM | $1B DEX MNEM | $30 PHA MNEM | $45 STX MNEM |
+| $07 BCS MNEM | $1C DEY MNEM | $31 PHP MNEM | $46 STY MNEM |
+| $08 BEQ MNEM | $1D DS DIR | $32 PHX MNEM | $47 STZ MNEM |
+| $09 BIT MNEM | $1E DW DIR | $33 PHY MNEM | $48 TAX MNEM |
+| $0A BMI MNEM | $1F END DIR | $34 PLA MNEM | $49 TAY MNEM |
+| $0B BNE MNEM | $20 ENTRY RES | $35 PLP MNEM | $4A TRB MNEM |
+| $0C BPL MNEM | $21 EOR MNEM | $36 PLX MNEM | $4B TSB MNEM |
+| $0D BRA MNEM | $22 EQU DIR | $37 PLY MNEM | $4C TSX MNEM |
+| $0E BRK MNEM | $23 EXTRN RES | $38 RMB MNEM | $4D TXA MNEM |
+| $0F BVC MNEM | $24 INC MNEM | $39 ROL MNEM | $4E TXS MNEM |
+| $10 BVS MNEM | $25 INX MNEM | $3A ROR MNEM | $4F TYA MNEM |
+| $11 CLC MNEM | $26 INY MNEM | $3B RTI MNEM | $50 WAI MNEM |
+| $12 CLD MNEM | $27 JMP MNEM | $3C RTS MNEM | $51 X REG |
+| $13 CLI MNEM | $28 JSR MNEM | $3D SBC MNEM | $52 Y REG |
+| $14 CLV MNEM | $29 LDA MNEM | $3E SEC MNEM | |
 
 Required fixtures:
 
@@ -5514,6 +5518,7 @@ current executable expression boundary:
 ```text
 WORKS
 ORG and EQU expression tails
+DW expression lists
 single atoms: decimal, hex, char, binary/mask, known symbol, *
 binary + and - between concrete VALUE and ADDR terms
 left-to-right evaluation only
@@ -5812,13 +5817,19 @@ patch site is exact
 branch base is address after branch operand
 ```
 
-### ASM 2.30-2.34 Directives
+### ASM 2.30-2.35 Directives
 
 Current DB fixture:
 
 ```text
 ADDR EQU $1234
 SEED DB $FF,10,'A',$1234,<ADDR,>ADDR
+```
+
+Current DW fixture:
+
+```text
+WORD DW $1234,$12,10+1,'A'
 ```
 
 Current ORG fixtures:
@@ -5840,13 +5851,16 @@ PAT DS 6,$AA,$55,'A','5'
 DS 3,$11,$22,$33,$44
 ```
 
-Current DB/ORG/DS acceptance:
+Current DB/DW/ORG/DS acceptance:
 
 ```text
 DB emits byte/word by source/symbol width
 unknown bare DB ADDR is BAD WIDTH
 empty DB is BAD OPER
 DB emits FF 0A 41 34 12 34 12 for the current fixture
+DW emits each expression as a little-endian word
+DW emits 34 12 12 00 0B 00 41 00 for the current fixture
+empty DW is BAD OPER
 first pristine ORG may establish source origin from scratch PC
 ORG current is allowed
 ORG forward is allowed and updates high-water PC

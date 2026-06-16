@@ -98,10 +98,11 @@ Core settled rules:
   emitted bytes, not symbol equations.
 - `<` and `>` select low/high bytes. V1 applies them as prefix selectors on one
   atom. `*` is the current assembly PC.
-- V1 directives are `EQU`, `DB`, `DS`, `ORG`, and `END`. `DC`, `START`,
+- V1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, and `END`. `DC`, `START`,
   `ENTRY`, and `EXTRN` are parked.
 - `DB` v1 is simple byte/word/address data. `X'...'`, `B'...'`, `HBSTR`,
   `CSTR`, and `PSTR` are later.
+- `DW` emits each resolved expression as one little-endian 16-bit word.
 - `ORG` sets PC, emits no bytes, and never moves backward.
 - Unknown ordinary symbol operands default to absolute fixups unless the
   mnemonic forces another mode. Placeholder bytes are `$FF`.
@@ -215,7 +216,7 @@ ASM 1.90   operand classifier
 ASM 2.00   emission overview
 ASM 2.10   opcode emitter
 ASM 2.20   fixups / patch records
-ASM 2.30   DB/DS/ORG/END directive handlers
+ASM 2.30   DB/DW/DS/ORG/END directive handlers
 ASM 2.40   report/listing basics
 ASM 2.50   status/error model
 ASM 2.60   source input driver / pasted-line handling
@@ -523,6 +524,7 @@ Binding rule:
 ```text
 LABEL mnemonic operand      LABEL = current PC before emitting
 LABEL DB ...                LABEL = current PC before data
+LABEL DW ...                LABEL = current PC before word data
 LABEL DS ...                LABEL = current PC before storage
 LABEL EQU expr              LABEL = expression value
 LABEL alone                 LABEL = current PC
@@ -534,6 +536,7 @@ Directive shapes:
 ```text
 NAME EQU expr
 [NAME] DB item[,item...]
+[NAME] DW expr[,expr...]
 [NAME] DS count[,init...]
 ORG expr
 END
@@ -949,6 +952,7 @@ V1 active directive words:
 ```text
 DB
 DS
+DW
 END
 EQU
 ORG
@@ -1144,7 +1148,7 @@ EMPTY          accept, emit nothing
 LABEL_ONLY     bind pending name to current PC, try fixups
 MNEM no name   classify operand tail, emit instruction
 MNEM with name bind name to current PC, try fixups, then emit instruction
-DB/DS with name bind name to current PC, try fixups, then handle directive
+DB/DW/DS with name bind name to current PC, try fixups, then handle directive
 EQU with name  parse expression and define symbol value
 EQU no name    BAD SYM
 ORG with name  BAD SYM
@@ -1412,10 +1416,9 @@ lookup answer must still be proven before ASM trusts the value.
 ## ASM 1.80 Expression Evaluator
 
 ASM 1.80 evaluates the small v1 expression language. The current source slice
-routes `ASM_PARSE_EXPR` through `EQU` and `ORG`; `DB`/`DS` lists and instruction
-operands still use their atom-specific parsers until caller terminator flags are
-added. The source syntax is readable infix. RPN is allowed only as an internal
-implementation form.
+routes `ASM_PARSE_EXPR` through `EQU`, `ORG`, and `DW`; `DB`/`DS` lists and
+instruction operands still use their atom-specific parsers. The source syntax
+is readable infix. RPN is allowed only as an internal implementation form.
 
 Expression-evaluator jobs:
 
@@ -1434,14 +1437,14 @@ choosing opcodes
 choosing addressing mode from a whole operand
 creating fixup rows directly
 defining symbols
-deciding DB/DS list structure
+deciding DB/DW/DS list structure
 moving the assembly PC
 creating unresolved-symbol fixup addends
 ```
 
 The evaluator tells the truth about the expression. The caller decides whether
-that result is legal for `EQU`, `ORG`, `DB`, a branch, or an instruction operand
-as each caller is wired to the evaluator.
+that result is legal for `EQU`, `ORG`, `DW`, `DB`, a branch, or an instruction
+operand as each caller is wired to the evaluator.
 
 ### ASM 1.80.1 Expression Boundary
 
@@ -1449,8 +1452,8 @@ Current `ASM_PARSE_EXPR` parses one expression and stops only at expression-tail
 terminators:
 
 ```text
-NUL/EOL/comment   normal end for EQU/ORG tail
-comma             future DB/DS and indexed-operand terminator
+NUL/EOL/comment   normal end for EQU/ORG/DW tail
+comma             DW list terminator; future DB/DS and indexed-operand terminator
 right paren       future terminator inside addressing forms
 ```
 
@@ -1556,6 +1559,7 @@ Current executable status:
 ```text
 WORKS NOW
 ORG and EQU expression tails
+DW expression lists
 single concrete atoms: decimal, hex, char, binary/mask, known symbol, *
 resolved binary + and - over concrete VALUE and ADDR terms
 left-to-right evaluation with no precedence
@@ -1996,6 +2000,7 @@ flowchart TD
     EQU[Handle EQU]
     ORG[Handle ORG]
     DB[Handle DB]
+    DW[Handle DW]
     DS[Handle DS]
     MNEM[Handle mnemonic]
     EQUOK{EQU ok}
@@ -2040,6 +2045,7 @@ flowchart TD
     DISPATCH -->|org| ORG
     DISPATCH -->|end| ENDST
     DISPATCH -->|db| DB
+    DISPATCH -->|dw| DW
     DISPATCH -->|ds| DS
     DISPATCH -->|mnemonic| MNEM
     EQU --> EQUOK
@@ -2059,6 +2065,7 @@ flowchart TD
     FIX --> READ
     REF --> READ
     DB --> READ
+    DW --> READ
     DS --> READ
     FAIL --> REPORTFAIL
     REPORTFAIL --> ENDFAIL
@@ -2158,7 +2165,15 @@ ASM_DISPATCH_STATEMENT():
         if pending_name != NONE:
             ASM_DEFINE_PC_LABEL(pending_name)
             ASM_TRY_FIXUPS()
-        return ASM_DIRECTIVE_DC()
+        return ASM_DIRECTIVE_DB()
+
+    if op == DW:
+        if stmt has no tail:
+            return BAD_OPER
+        if pending_name != NONE:
+            ASM_DEFINE_PC_LABEL(pending_name)
+            ASM_TRY_FIXUPS()
+        return ASM_DIRECTIVE_DW()
 
     if op == DS:
         if stmt has no tail:
@@ -2409,8 +2424,8 @@ flowchart LR
    B. Source-line parse
       1. Each source line is parsed as `[label[:]] operation [operand]`
       2. A leading non-vocabulary token is held as a pending definition name
-      3. The operation decides the bind: mnemonic/`DB`/`DS` bind current PC;
-         `EQU` binds expression value; `ORG`/`END` reject the pending name
+      3. The operation decides the bind: mnemonic/`DB`/`DW`/`DS` bind current
+         PC; `EQU` binds expression value; `ORG`/`END` reject the pending name
 
 2. Symbol and label handling
    A. Label definition
@@ -2542,7 +2557,7 @@ Parse order:
 4. If it is not, hold it as a pending definition name, then hash the next token
    as the operation.
 5. Bind the pending name only after the operation is known:
-   - mnemonic, `DB`, or `DS`: current PC symbol
+   - mnemonic, `DB`, `DW`, or `DS`: current PC symbol
    - `EQU`: expression-value symbol
    - `ORG` or `END`: error in v1
    - no operation before statement end: current PC symbol, no emission
@@ -3076,6 +3091,7 @@ The v1 assembler directive surface should be IBM-ish and small:
 ```text
 EQU   define a constant/symbol value with width from source spelling
 DB    define initialized data bytes
+DW    define initialized little-endian words
 DS    reserve storage / advance assembly PC
 ORG   set assembly PC / location counter
 END   end the current assembly input
@@ -3086,6 +3102,7 @@ V1 directive shapes:
 ```text
 NAME EQU expr             name required; binds expression result
 [NAME] DB item[,item...]  optional current-PC data label
+[NAME] DW expr[,expr...]  optional current-PC word-data label
 [NAME] DS count[,init...] optional current-PC storage label
 ORG expr                  no leading name
 END                       no leading name, no operand
@@ -3790,13 +3807,15 @@ DB CSTR'HELLO'    C-string / ASCIIZ, final byte $00
 DB PSTR'HELLO'    Pascal/count-prefixed string
 ```
 
-Do not add `DB W'...'` in v1. Word data already has a plain source-width form:
-`DB $1234` emits `$34,$12`. A typed word-stream form can wait until word stream
-syntax is really needed.
+Do not add `DB W'...'` in v1. Word data has plain source forms: `DB $1234`
+emits `$34,$12`, and `DW expr[,expr...]` emits a little-endian word for each
+resolved expression. A typed word-stream form can wait until it is really
+needed.
 
 Minimal companion directives:
 
 ```text
+DW expr[,expr...] emit little-endian words
 DS n            reserve n bytes
 DS n,init-list  emit/fill initialized storage
 NAME EQU value  define a constant/symbol; value spelling records ZP vs absolute
@@ -3838,6 +3857,20 @@ emit an address word with byte fixups. Do not infer width from the eventual
 numeric value.
 Decimal `DB` items are byte data in v1. `DB 10` emits `$0A`; decimal values
 outside `$00-$FF` are `BAD RANGE` unless a later word-data form is added.
+
+`DW` emits one little-endian 16-bit word for each resolved expression:
+
+```asm
+DW $1234        ; emits $34,$12
+DW $12          ; emits $12,$00
+DW 10+1         ; emits $0B,$00
+DW 'A'          ; emits $41,$00
+DW *            ; emits current PC low, then high
+```
+
+Each `DW` element must resolve now and must not be a mask. Empty `DW`, a
+leading comma, and a trailing comma are `BAD OPER`. A `DW` label binds the
+current PC before the first word is emitted.
 
 `ORG` rules:
 
@@ -3908,7 +3941,7 @@ Keep this out of v1 unless compatibility pressure appears. The v1 directive
 path is:
 
 ```text
-EQU, DB, DS, ORG, END only
+EQU, DB, DW, DS, ORG, END only
 ```
 
 HBSTR remains a named later data form because it is part of Himon's command,
@@ -4137,7 +4170,7 @@ For each instruction line:
    token as the operation.
 5. Lookup mnemonic/directive/emitter family.
 6. Bind any pending definition according to the operation: current PC for
-   mnemonic/`DB`/`DS`, expression value for `EQU`, error for `ORG`/`END`, or
+   mnemonic/`DB`/`DW`/`DS`, expression value for `EQU`, error for `ORG`/`END`, or
    current PC with no emission if the statement ended after the definition name.
 7. Parse operand and determine addressing/fixup mode.
 8. If operand is numeric, emit encoded bytes.

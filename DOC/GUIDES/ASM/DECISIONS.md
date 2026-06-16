@@ -23,7 +23,7 @@ Settled v1 overview:
   non-vocabulary first tokens held as pending definition names.
 - Width is source intent. `$hh` means zero page, `$hhhh` means absolute, and no
   numeric-range promotion/demotion is allowed.
-- `EQU`, `DB`, `DS`, `ORG`, and `END` are v1 directives. `EQU` must resolve
+- `EQU`, `DB`, `DW`, `DS`, `ORG`, and `END` are v1 directives. `EQU` must resolve
   immediately; forward references use emitted-byte fixups only.
 - `DC` is parked for now because WDC source format wins. V1 vocabulary keeps
   `DC` reserved so using it as an operation returns `BAD DIR`, not a user
@@ -62,7 +62,7 @@ ASM 1.90   operand classifier
 ASM 2.00   emission overview
 ASM 2.10   opcode emitter
 ASM 2.20   fixups / patch records
-ASM 2.30   DB/DS/ORG/END directive handlers
+ASM 2.30   DB/DW/DS/ORG/END directive handlers
 ASM 2.40   report/listing basics
 ASM 2.50   status/error model
 ASM 2.60   source input driver / pasted-line handling
@@ -156,8 +156,8 @@ A [addr] [label[:]] MMM [operand] .
   token against the ASM vocabulary table. If it is a mnemonic or directive, it
   is the operation. If it is not, it is a pending definition name and the next
   token must be a mnemonic or directive.
-  Binding waits until the operation is known: mnemonic/`DB`/`DS` bind the name
-  to the current PC, while `EQU` binds the name to the expression value. A
+  Binding waits until the operation is known: mnemonic/`DB`/`DW`/`DS` bind the
+  name to the current PC, while `EQU` binds the name to the expression value. A
   leading definition name before `ORG` or `END` is an error in v1. If the
   statement ends after one pending definition name, it is a label-only line:
   bind the name to the current PC and emit nothing. Bare `EQU` without a
@@ -188,12 +188,13 @@ A [addr] [label[:]] MMM [operand] .
   and `?NAME:` bind/reference local PC labels inside the most recent nonlocal
   label scope. `.` alone is a legacy `A`/input-driver sentinel if used, not ASM
   source syntax. No v1 dot-directive aliases.
-- Minimal v1 ASM directives follow WDC shape: `EQU`, `DB`, `DS`, `ORG`, and
-  `END`. `DC`, `START`, `ENTRY`, and `EXTRN` are parked later directives, not
-  v1.
+- Minimal v1 ASM directives follow WDC shape: `EQU`, `DB`, `DW`, `DS`, `ORG`,
+  and `END`. `DC`, `START`, `ENTRY`, and `EXTRN` are parked later directives,
+  not v1.
 - V1 directive shapes are:
   `NAME EQU expr` with name required;
   `[NAME] DB item[,item...]` with optional current-PC label;
+  `[NAME] DW expr[,expr...]` with optional current-PC label;
   `[NAME] DS count[,init...]` with optional current-PC label;
   `ORG expr` with no leading name;
   `END` with no leading name and no operand.
@@ -255,9 +256,9 @@ A [addr] [label[:]] MMM [operand] .
   light head-word scan plus `ASM_LOOKUP_WORD`. It returns `BAD SYM`, `BAD MNEM`,
   `BAD DIR`, or `BAD OPER` for top-level statement errors.
 - `ASM_DISPATCH_STATEMENT` applies the top-level policy: label-only binds the
-  pending name to current PC; mnemonic/DB/DS with a name bind current PC before
-  emission/data handling; `EQU` requires a name and binds expression value;
-  `ORG` and `END` reject leading names; clean `END` calls `ASM_END`.
+  pending name to current PC; mnemonic/DB/DW/DS with a name bind current PC
+  before emission/data handling; `EQU` requires a name and binds expression
+  value; `ORG` and `END` reject leading names; clean `END` calls `ASM_END`.
 - ASM 1.60 may check whether an operand/directive tail exists or is absent, but
   detailed tail validity belongs to directive handlers, expression parsing, and
   operand classification.
@@ -422,6 +423,10 @@ A [addr] [label[:]] MMM [operand] .
   `DB <ADDR,>ADDR` for a v1 address-word workaround with byte fixups.
   Typed data forms such as `X'...'`, `B'...'`, `HBSTR'...'`, `CSTR'...'`, and
   `PSTR'...'` are parked later.
+- `DW expr[,expr...]` emits each resolved expression as one little-endian
+  16-bit word. `DW $1234,$12,10+1,'A'` emits `34 12 12 00 0B 00 41 00`.
+  Empty `DW`, leading/trailing commas, masks, and unresolved expressions fail
+  clearly.
 - Unknown ordinary symbol operands default to absolute fixups when the mnemonic
   does not force another mode. For example, `LDA FOO` emits the absolute form
   and creates an `abs16` fixup if `FOO` is unresolved.
@@ -621,6 +626,16 @@ A [addr] [label[:]] MMM [operand] .
   image. `asm-v1-flash` links the FNV record at `$8000`, uses `START` from the
   map for the S9 entry, keeps emitted opcodes at `$2000+`, and currently places
   ASM runtime UDATA at `$6000+` until the planned `$7DFF` downward arena exists.
+  `$6000` is the mutable table arena, not the base RAM emission address.
+- For the future "ASM assembles ASM" milestone, table-limit bumps are only a
+  measurement step. A first practical bump is `ASM_SYM_MAX=$40`,
+  `ASM_FIX_MAX=$40`, `ASM_REF_MAX=$80`, and `ASM_LOCAL_MAX=$10`, while keeping
+  the 32-byte global/fixup and 16-byte local name slots. That adds about
+  `$0CD8` bytes and should still fit below the `$7E00/$7E01` RJOIN seed with
+  the current `$6000+` UDATA layout, but `_END_UDATA` must be checked after
+  every bump. Self-hosting ASM must be chunked by routine pack/slice with
+  export/seal between sessions; a one-session assembly of `asm-v1-core.asm`
+  would need far more symbol storage than RAM can provide.
 - The intended layering is STR8 for boot/flash policy, T.H.E. for the hash/join
   contract, HIMON for resident service publication, and ASM as a client of
   those resident services.
