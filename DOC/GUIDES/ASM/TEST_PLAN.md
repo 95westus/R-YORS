@@ -3427,9 +3427,9 @@ ASM_LOCAL_NAME_MAX=$10
 The current flash ASM image uses the larger interactive-sample ceilings:
 
 ```text
-ASM_SYM_MAX=$40
-ASM_FIX_MAX=$40
-ASM_REF_MAX=$80
+ASM_SYM_MAX=$28
+ASM_FIX_MAX=$60
+ASM_REF_MAX=$A0
 ASM_LOCAL_MAX=$10
 ASM_LOCAL_NAME_MAX=$10
 ```

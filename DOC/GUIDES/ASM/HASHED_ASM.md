@@ -1300,17 +1300,19 @@ clear and seal between routine packs. Also, the current fixed tables are still
 plain byte-name tables; PACK40 is available as a helper now, while changing table
 row layouts needs a deliberate pointer-math pass.
 
-The active ROM-era table bump is:
+The active ROM-era table mix favors larger paste samples that are fixup-heavy
+but still modest in global symbols:
 
 ```text
-ASM_SYM_MAX    $40
-ASM_FIX_MAX    $40
-ASM_REF_MAX    $80
+ASM_SYM_MAX    $28
+ASM_FIX_MAX    $60
+ASM_REF_MAX    $A0
 ASM_LOCAL_MAX  $10
 ```
 
-That adds about `$0CD8` bytes with the current table layout. Address terms are
-easy to blur here, so keep them separate:
+Compared with the earlier `$20/$20/$40/$08` proof limits, that adds about
+`$0C20` bytes with the current table layout. Address terms are easy to blur
+here, so keep them separate:
 
 ```text
 $2000  RAM-loaded ASM proof/runtime base, and flash command default emit target
@@ -1322,8 +1324,8 @@ $6000  current flash-runtime UDATA/table arena from the Makefile `-u6000`
 So yes: the base RAM assembly/emission address is `$2000` in the active RAM and
 flash-command paths. `$6000` is not the base RAM address; it is where the
 flash-resident ASM runtime currently places mutable UDATA tables. Older maps
-put `_END_UDATA` around `$6F33`; with the `$40/$40/$80/$10` bump the flash map
-now places `_END_UDATA` at `$7C0B`, still below the protected RJOIN seed cell at
+put `_END_UDATA` around `$6F33`; with the current `$28/$60/$A0/$10` mix the
+flash map places `_END_UDATA` at `$7D3B`, below the protected RJOIN seed cell at
 `$7E00/$7E01`. Always verify the map after a bump, especially `_END_UDATA`.
 
 Important current hazard: flash ASM UDATA grows upward from `$6000`. It has not

@@ -278,12 +278,12 @@ ASM_FIX_RESOLVED       EQU             $02
 ASM_FIX_FAILED         EQU             $80
 
 ASM_LINE_MAX           EQU             $3F
-ASM_SYM_MAX            EQU             $40
+ASM_SYM_MAX            EQU             $28
 ASM_SYM_NAME_MAX       EQU             $20
-ASM_FIX_MAX            EQU             $40
+ASM_FIX_MAX            EQU             $60
 ASM_FIX_NAME_MAX       EQU             $20
 ASM_FIX_NAME_BYTES     EQU             (ASM_FIX_MAX*ASM_FIX_NAME_MAX)
-ASM_REF_MAX            EQU             $80
+ASM_REF_MAX            EQU             $A0
 ASM_LOCAL_MAX          EQU             $10
 ASM_LOCAL_NAME_MAX     EQU             $10
 ASM_LOCAL_NAME_BYTES   EQU             (ASM_LOCAL_MAX*ASM_LOCAL_NAME_MAX)
