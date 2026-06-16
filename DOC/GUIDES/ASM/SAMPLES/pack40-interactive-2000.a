@@ -1,0 +1,521 @@
+; ASM V1 INTERACTIVE PACK40 TEST. PASTE VIA FLASH ASM.
+; RUN G 2000. P PACKS TEXT TO HEX. U UNPACKS HEX TO TEXT.
+; INPUT TEXT ALPHABET: A-Z 0-9 _ ? .  Q OR . AT MENU QUITS.
+; HEX INPUT IS CONTIGUOUS PACKED BYTES, SPACES ARE ALLOWED.
+; NEEDS ASM TABLES SYM/FIX/REF/LOCAL $40/$40/$80/$10.
+; HELLO PACKS TO D432584D. UNPACK THAT HEX TO HELLO.
+
+        ORG $2000
+        JMP RUN
+
+MTIT    DB $0D,$0A,'P','A','C','K','4','0'
+        DB ' ','I','N','T',$0D,$0A,0
+MMENU   DB 'P',' ','P','A','C','K',' ','U',' '
+        DB 'U','N','P','A','C','K',' ','Q','>',' ',0
+MTEXT   DB 'T','E','X','T','>',' ',0
+MHEX    DB 'H','E','X','>',' ',0
+MPACK   DB $0D,$0A,'P','A','C','K','E','D','=',0
+MUNP    DB $0D,$0A,'T','E','X','T','=',0
+MBAD    DB $0D,$0A,'?',$0D,$0A,0
+
+NIB     CMP #$0A
+        BCC .DIG
+        CLC
+        ADC #$37
+        BRA .OUT
+.DIG    CLC
+        ADC #'0'
+.OUT    JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        RTS
+
+HEX     PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR NIB
+        PLA
+        AND #$0F
+        JMP NIB
+
+H2N     CMP #'0'
+        BCC .BAD
+        CMP #':'
+        BCC .DIG
+        CMP #'A'
+        BCC .BAD
+        CMP #'G'
+        BCS .BAD
+        SEC
+        SBC #'A'
+        CLC
+        ADC #$0A
+        SEC
+        RTS
+.DIG    SEC
+        SBC #'0'
+        SEC
+        RTS
+.BAD    CLC
+        RTS
+
+PARH    STZ $3B
+        LDX #$00
+        LDY #$00
+.LOOP   LDA $2800,X
+        BEQ .DONE
+        CMP #' '
+        BNE .HI
+        INX
+        BRA .LOOP
+.HI     JSR H2N
+        BCC .BAD
+        ASL A
+        ASL A
+        ASL A
+        ASL A
+        STA $3A
+        INX
+        LDA $2800,X
+        JSR H2N
+        BCC .BAD
+        ORA $3A
+        STA $2840,Y
+        INY
+        BEQ .BAD
+        STY $3B
+        INX
+        BRA .LOOP
+.DONE   LDA $3B
+        BEQ .BAD
+        SEC
+        RTS
+.BAD    CLC
+        RTS
+
+ADDA    CLC
+        ADC $37
+        STA $37
+        BCC .DONE
+        INC $38
+.DONE   RTS
+
+M40     LDA $37
+        STA $39
+        LDA $38
+        STA $3A
+        ASL $37
+        ROL $38
+        ASL $37
+        ROL $38
+        ASL $37
+        ROL $38
+        LDX #$05
+.LOOP   ASL $39
+        ROL $3A
+        DEX
+        BNE .LOOP
+        CLC
+        LDA $37
+        ADC $39
+        STA $37
+        LDA $38
+        ADC $3A
+        STA $38
+        RTS
+
+P3      STA $34
+        STX $35
+        STY $36
+        CMP #$28
+        BCS .FAIL
+        CPX #$28
+        BCS .FAIL
+        CPY #$28
+        BCS .FAIL
+        STZ $38
+        STA $37
+        JSR M40
+        LDA $35
+        JSR ADDA
+        JSR M40
+        LDA $36
+        JSR ADDA
+        LDX $37
+        LDY $38
+        SEC
+        RTS
+.FAIL   CLC
+        RTS
+
+INCS    INC $30
+        BNE .DONE
+        INC $31
+.DONE   RTS
+
+INCD    INC $32
+        BNE .DONE
+        INC $33
+.DONE   RTS
+
+A2C     CMP #$00
+        BEQ .ZERO
+        CMP #'A'
+        BCC .DIG
+        CMP #'['
+        BCS .DIG
+        SEC
+        SBC #'@'
+        SEC
+        RTS
+.DIG    CMP #'0'
+        BCC .UNDER
+        CMP #':'
+        BCS .UNDER
+        SEC
+        SBC #'0'
+        CLC
+        ADC #$1B
+        SEC
+        RTS
+.UNDER  CMP #'_'
+        BNE .Q
+        LDA #$25
+        SEC
+        RTS
+.Q      CMP #'?'
+        BNE .DOT
+        LDA #$26
+        SEC
+        RTS
+.DOT    CMP #'.'
+        BNE .FAIL
+        LDA #$27
+        SEC
+        RTS
+.ZERO   SEC
+        RTS
+.FAIL   CLC
+        RTS
+
+C2A     CMP #$28
+        BCS .FAIL
+        CMP #$00
+        BEQ .ZERO
+        CMP #$1B
+        BCS .NL
+        CLC
+        ADC #'@'
+        SEC
+        RTS
+.NL     CMP #$25
+        BCS .SPEC
+        CLC
+        ADC #$15
+        SEC
+        RTS
+.SPEC   CMP #$25
+        BNE .NUND
+        LDA #'_'
+        SEC
+        RTS
+.NUND   CMP #$26
+        BNE .DOT
+        LDA #'?'
+        SEC
+        RTS
+.DOT    LDA #'.'
+        SEC
+        RTS
+.ZERO   LDA #$00
+        SEC
+        RTS
+.FAIL   CLC
+        RTS
+
+WNUL    LDA #$00
+        LDY #$00
+        STA ($32),Y
+        RTS
+
+WWD     STY $3A
+        TXA
+        LDY #$00
+        STA ($32),Y
+        JSR INCD
+        LDA $3A
+        LDY #$00
+        STA ($32),Y
+        JSR INCD
+        CLC
+        LDA $3B
+        ADC #$02
+        BCS .FAIL
+        STA $3B
+        SEC
+        RTS
+.FAIL   CLC
+        RTS
+
+RWD     LDY #$00
+        LDA ($30),Y
+        TAX
+        JSR INCS
+        LDY #$00
+        LDA ($30),Y
+        STA $3A
+        JSR INCS
+        SEC
+        LDA $3D
+        SBC #$02
+        STA $3D
+        LDY $3A
+        RTS
+
+RCD     LDY #$00
+        LDA ($30),Y
+        BEQ .NUL
+        JSR A2C
+        BCC .FAIL
+        PHA
+        JSR INCS
+        INC $3C
+        BNE .OK
+        PLA
+        BRA .FAIL
+.OK     PLA
+        SEC
+        RTS
+.NUL    SEC
+        RTS
+.FAIL   CLC
+        RTS
+
+WCD     JSR C2A
+        BCC .FAIL
+        LDY #$00
+        STA ($32),Y
+        JSR INCD
+        INC $3C
+        BNE .OK
+.FAIL   CLC
+        RTS
+.OK     SEC
+        RTS
+
+U3      STX $37
+        STY $38
+        CPY #$FA
+        BCS .FAIL
+        STZ $34
+.D1600  LDA $38
+        CMP #$06
+        BCC .D1DONE
+        BNE .S1600
+        LDA $37
+        CMP #$40
+        BCC .D1DONE
+.S1600  SEC
+        LDA $37
+        SBC #$40
+        STA $37
+        LDA $38
+        SBC #$06
+        STA $38
+        INC $34
+        BRA .D1600
+.D1DONE STZ $35
+.D40    LDA $38
+        BNE .S40
+        LDA $37
+        CMP #$28
+        BCC .D4DONE
+.S40    SEC
+        LDA $37
+        SBC #$28
+        STA $37
+        LDA $38
+        SBC #$00
+        STA $38
+        INC $35
+        BRA .D40
+.D4DONE LDA $34
+        LDX $35
+        LDY $37
+        SEC
+        RTS
+.FAIL   CLC
+        RTS
+
+PACK    STZ $3B
+        STZ $3C
+.GROUP  STZ $34
+        STZ $35
+        STZ $36
+        JSR RCD
+        BCC .FAIL
+        BEQ .DONE
+        STA $34
+        JSR RCD
+        BCC .FAIL
+        BEQ .EMIT
+        STA $35
+        JSR RCD
+        BCC .FAIL
+        BEQ .EMIT
+        STA $36
+.EMIT   LDA $34
+        LDX $35
+        LDY $36
+        JSR P3
+        BCC .FAIL
+        JSR WWD
+        BCC .FAIL
+        BRA .GROUP
+.DONE   SEC
+        RTS
+.FAIL   CLC
+        RTS
+
+UNPACK  LDA $3B
+        STA $3D
+        AND #$01
+        BNE .FAIL
+        STZ $3C
+.LOOP   LDA $3D
+        BEQ .DONE
+        JSR RWD
+        JSR U3
+        BCC .FAIL
+        STA $34
+        STX $35
+        STY $36
+        LDA $34
+        BEQ .DONE
+        JSR WCD
+        BCC .FAIL
+        LDA $35
+        BEQ .DONE
+        JSR WCD
+        BCC .FAIL
+        LDA $36
+        BEQ .DONE
+        JSR WCD
+        BCC .FAIL
+        BRA .LOOP
+.DONE   JSR WNUL
+        SEC
+        RTS
+.FAIL   CLC
+        RTS
+
+PHEX    LDX #$00
+.LOOP   CPX $3B
+        BEQ .DONE
+        STX $3D
+        LDA $2840,X
+        JSR HEX
+        LDX $3D
+        INX
+        BRA .LOOP
+.DONE   LDA #$0D
+        JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        LDA #$0A
+        JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        RTS
+
+PACKIT  LDX #<MTEXT
+        LDY #>MTEXT
+        JSR BIO_FTDI_PUT_CSTR
+        LDX #$00
+        LDY #$28
+        JSR SYS_READ_CSTRING_ECHO_UPPER
+        BCC .FAIL
+        LDA $2800
+        BEQ .FAIL
+        LDA #$00
+        STA $30
+        LDA #$28
+        STA $31
+        LDA #$40
+        STA $32
+        LDA #$28
+        STA $33
+        JSR PACK
+        BCC .FAIL
+        LDX #<MPACK
+        LDY #>MPACK
+        JSR BIO_FTDI_PUT_CSTR
+        JSR PHEX
+        RTS
+.FAIL   LDX #<MBAD
+        LDY #>MBAD
+        JSR BIO_FTDI_PUT_CSTR
+        RTS
+
+UNPIT   LDX #<MHEX
+        LDY #>MHEX
+        JSR BIO_FTDI_PUT_CSTR
+        LDX #$00
+        LDY #$28
+        JSR SYS_READ_CSTRING_ECHO_UPPER
+        BCC .FAIL
+        JSR PARH
+        BCC .FAIL
+        LDA #$40
+        STA $30
+        LDA #$28
+        STA $31
+        LDA #$80
+        STA $32
+        LDA #$28
+        STA $33
+        JSR UNPACK
+        BCC .FAIL
+        LDX #<MUNP
+        LDY #>MUNP
+        JSR BIO_FTDI_PUT_CSTR
+        LDX #$80
+        LDY #$28
+        JSR BIO_FTDI_PUT_CSTR
+        LDA #$0D
+        JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        LDA #$0A
+        JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        RTS
+.FAIL   LDX #<MBAD
+        LDY #>MBAD
+        JSR BIO_FTDI_PUT_CSTR
+        RTS
+
+RUN     LDX #<MTIT
+        LDY #>MTIT
+        JSR BIO_FTDI_PUT_CSTR
+.LOOP   LDX #<MMENU
+        LDY #>MMENU
+        JSR BIO_FTDI_PUT_CSTR
+        LDX #$00
+        LDY #$28
+        JSR SYS_READ_CSTRING_ECHO_UPPER
+        BCC .LOOP
+        LDA $2800
+        BEQ .LOOP
+        CMP #'Q'
+        BEQ .DONE
+        CMP #'.'
+        BEQ .DONE
+        CMP #'P'
+        BNE .TRYU
+        JSR PACKIT
+        BRA .LOOP
+.TRYU   CMP #'U'
+        BNE .BAD
+        JSR UNPIT
+        BRA .LOOP
+.BAD    LDX #<MBAD
+        LDY #>MBAD
+        JSR BIO_FTDI_PUT_CSTR
+        BRA .LOOP
+.DONE   RTS
+
+        END

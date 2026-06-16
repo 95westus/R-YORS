@@ -1248,7 +1248,7 @@ and workspace design later. Do not burden v1 symbol rows with that machinery.
 
 ### ASM Assembling ASM: Table Limits And Chunking
 
-Raising the fixed v1 table limits is now a reasonable near-term experiment, but
+Raising the fixed v1 table limits is useful for larger interactive samples, but
 it is not the route to a monolithic "ASM assembles ASM" session. The active
 knobs live with the proof limits in `SRC/ASM/asm-v1-core.asm`:
 
@@ -1300,7 +1300,7 @@ clear and seal between routine packs. Also, the current fixed tables are still
 plain byte-name tables; PACK40 is available as a helper now, while changing table
 row layouts needs a deliberate pointer-math pass.
 
-A practical first ROM-era bump to measure is:
+The active ROM-era table bump is:
 
 ```text
 ASM_SYM_MAX    $40
@@ -1321,10 +1321,10 @@ $6000  current flash-runtime UDATA/table arena from the Makefile `-u6000`
 
 So yes: the base RAM assembly/emission address is `$2000` in the active RAM and
 flash-command paths. `$6000` is not the base RAM address; it is where the
-flash-resident ASM runtime currently places mutable UDATA tables. Recent maps
-put `_END_UDATA` around `$6F33`, so the `$40/$40/$80/$10` bump should land near
-`$7C0B`, still below the protected RJOIN seed cell at `$7E00/$7E01`. Always
-verify the map after a bump, especially `_END_UDATA`.
+flash-resident ASM runtime currently places mutable UDATA tables. Older maps
+put `_END_UDATA` around `$6F33`; with the `$40/$40/$80/$10` bump the flash map
+now places `_END_UDATA` at `$7C0B`, still below the protected RJOIN seed cell at
+`$7E00/$7E01`. Always verify the map after a bump, especially `_END_UDATA`.
 
 Important current hazard: flash ASM UDATA grows upward from `$6000`. It has not
 yet become the intended `$7DFF` downward metadata arena. Until collision checks

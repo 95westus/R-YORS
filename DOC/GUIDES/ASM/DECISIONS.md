@@ -630,14 +630,14 @@ A [addr] [label[:]] MMM [operand] .
   ASM runtime UDATA at `$6000+` until the planned `$7DFF` downward arena exists.
   `$6000` is the mutable table arena, not the base RAM emission address.
 - For the future "ASM assembles ASM" milestone, table-limit bumps are only a
-  measurement step. A first practical bump is `ASM_SYM_MAX=$40`,
+  measurement step. The current practical bump is `ASM_SYM_MAX=$40`,
   `ASM_FIX_MAX=$40`, `ASM_REF_MAX=$80`, and `ASM_LOCAL_MAX=$10`, while keeping
   the 32-byte global/fixup and 16-byte local name slots. That adds about
-  `$0CD8` bytes and should still fit below the `$7E00/$7E01` RJOIN seed with
-  the current `$6000+` UDATA layout, but `_END_UDATA` must be checked after
-  every bump. Self-hosting ASM must be chunked by routine pack/slice with
-  export/seal between sessions; a one-session assembly of `asm-v1-core.asm`
-  would need far more symbol storage than RAM can provide.
+  `$0CD8` bytes and currently maps `_END_UDATA` to `$7C0B`, below the
+  `$7E00/$7E01` RJOIN seed with the current `$6000+` UDATA layout. Check
+  `_END_UDATA` after every bump. Self-hosting ASM must be chunked by routine
+  pack/slice with export/seal between sessions; a one-session assembly of
+  `asm-v1-core.asm` would need far more symbol storage than RAM can provide.
 - The intended layering is STR8 for boot/flash policy, T.H.E. for the hash/join
   contract, HIMON for resident service publication, and ASM as a client of
   those resident services.

@@ -3184,6 +3184,8 @@ Current pasteable bench toys:
 ```text
 ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
 pack40-roundtrip-2000.a self-contained PACK40 pack/unpack oracle
+pack40-interactive-2000.a
+                         interactive PACK40 pack/unpack exerciser
 life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
 local-label-stress-7400.asm
                          exact 8-local scope/reuse/?prefix stress sample
@@ -3412,13 +3414,23 @@ name slot 8 aliased slot 0 text, changing the first unresolved `MAIN` fixup
 name to `R8S`; the core now carries `slot >> 3` into
 `ASM_SET_FIX_NAME_PTR_X`.
 
-The interactive/random slice opens the ASM table ceilings to:
+The interactive/random slice originally opened the ASM table ceilings to:
 
 ```text
 ASM_SYM_MAX=$20
 ASM_FIX_MAX=$20
 ASM_REF_MAX=$40
 ASM_LOCAL_MAX=$08
+ASM_LOCAL_NAME_MAX=$10
+```
+
+The current flash ASM image uses the larger interactive-sample ceilings:
+
+```text
+ASM_SYM_MAX=$40
+ASM_FIX_MAX=$40
+ASM_REF_MAX=$80
+ASM_LOCAL_MAX=$10
 ASM_LOCAL_NAME_MAX=$10
 ```
 
