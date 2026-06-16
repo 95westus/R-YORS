@@ -740,7 +740,7 @@ $lines = @('# R-YORS Routine Contracts') + $header
 foreach ($r in ($routines | Sort-Object File, Line, Name)) {
     $lines += '```text'
     $lines += "name:     $($r.Name)"
-    $lines += "hash:     $($r.Hash)"
+    $lines += if ($r.Hash) { "hash:     $($r.Hash)" } else { 'hash:' }
     $lines += "source:   $($r.File):$($r.Line)"
     if ($r.Tags) { $lines += "tags:     $($r.Tags)" }
     if ($r.Purpose) { $lines += "purpose:  $($r.Purpose)" }

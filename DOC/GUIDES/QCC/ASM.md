@@ -14,7 +14,7 @@ source line         [label[:]] operation [operand]
 line limit          63 visible chars, tabs are whitespace
 parser              ASM hash-first vocabulary, pending definition names
 RJOIN               works with, uses, respects hash joins to proved records
-v1 directives       EQU, DB, DS, ORG, END
+v1 directives       EQU, DB, DW, DS, ORG, END
 width rule          source spelling controls ZP/absolute, no silent conversion
 storage             RAM-session emitted bytes plus RAM sym/fix/ref tables
 zero page           active ASM scratch grows downward from $AF
@@ -24,7 +24,7 @@ reports             basic session report required in v1
 input driver        one current path for typed/pasted lines
 large symbols       layered lookup, future HIMON-scale resident table
 SYM3                base-40 3-char prefix filter, not identity
-locals              8 label-only locals per active global scope, 15 visible chars
+locals              16 label-only locals per active global scope, 15 visible chars
 legacy A            removed from HIMON after flash ASM proof
 ```
 
@@ -730,7 +730,7 @@ unless runtime text compare is present.
 V1 active directives:
 
 ```text
-DC DS END EQU ORG
+DB DW DS END EQU ORG
 ```
 
 Parked reserved directives:
@@ -1187,11 +1187,11 @@ Comment: The current `asm-v1-core.asm` RAM-session defaults are proof-sized
 starting points:
 
 ```text
-ASM_SYM_MAX         32 symbol rows
-ASM_FIX_MAX         24 fixup rows
-ASM_REF_MAX         64 report-reference rows
+ASM_SYM_MAX         40 symbol rows
+ASM_FIX_MAX         96 fixup rows
+ASM_REF_MAX         160 report-reference rows
 ASM_FIX_NAME_MAX    32 bytes, 31 visible chars plus terminator
-ASM_LOCAL_MAX        8 local label rows per active global scope
+ASM_LOCAL_MAX       16 local label rows per active global scope
 ASM_LOCAL_NAME_MAX  16 bytes, 15 visible chars plus terminator
 ASM_LINE_MAX        63 visible input chars
 ASM_CODE_BUF       512 bytes

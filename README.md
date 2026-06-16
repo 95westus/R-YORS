@@ -13,14 +13,15 @@ Pronounced **are-yors**.
 
 ## Current Milestone
 
-As of 2026-06-10, ASM v1 is a flash-resident HIMON command. `L F` loads
+As of 2026-06-15, ASM v1 is a flash-resident HIMON command. `L F` loads
 `SRC/BUILD/s19/asm-v1-flash-8000.s19` at `$8000`, reports
 `WR=2D6B GO=800C`, and `ASM` enters the assembler through HIMON's FNV catalog.
 
 ASM assembles pasted W65C02 source into bare RAM programs at `$2000+`, supports
-local labels and forward fixups, and can resolve direct resident `JSR`/`JMP`
-targets through RJOIN/K05 records. It has run both the interactive Life sample
-and the biorhythm-style chart on the real board.
+`EQU`/`DB`/`DW`/`DS`, local labels, forward fixups, and direct resident
+`JSR`/`JMP` targets through RJOIN/K05 records. It has run interactive Life,
+the biorhythm-style chart, PACK40 round trips, and directive smoke programs on
+the real board.
 
 Treat ASM as a young onboard workbench, not a finished hosted toolchain. Its
 current limits and hardware transcripts live in the ASM docs and proof logs:

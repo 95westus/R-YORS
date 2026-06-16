@@ -524,14 +524,17 @@ dispatch. ASM v1 is now a RAM-session W65C02S assembler, not only a future
 sketch. It loads at `$2000`, accepts typed or pasted source lines, emits
 native code into operator-selected RAM such as `$7000`, tracks
 symbols/references/fixups, and resolves resident routine names through the
-HIMON/THE RJOIN path before emitting a callable `JSR`.
+HIMON/THE RJOIN path before emitting callable jumps and subroutine calls.
 
 This is not self-hosting yet, and it is not a flash/catalog export format yet.
 The book should show the real middle state: a board can now receive source,
 assemble code, fix forward references, print session tables, recover from
-failed lines transactionally, call resident services by name, and run the
-generated program. Later RREC/RBODY/RF/RLNK records have to grow from that
-visible RAM-session behavior instead of replacing it with hand-waving.
+failed lines transactionally, emit `DB` and little-endian `DW` data, call
+resident services by name, and run the generated program. The PACK40
+round-trip and interactive samples are now part of that real middle state:
+compact-name machinery is useful code first, then future catalog machinery
+later. Later RREC/RBODY/RF/RLNK records have to grow from that visible
+RAM-session behavior instead of replacing it with hand-waving.
 
 Questions:
 

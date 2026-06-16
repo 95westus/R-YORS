@@ -244,7 +244,7 @@ Example:
 ASM                         enter flash-resident assembler when present
 [label[:]] operation [operand]
                             source-line shape inside ASM
-ORG EQU DB DS END           current v1 directives
+ORG EQU DB DW DS END        current v1 directives
 ```
 
 HIMON's old `A` mini-assembler command has been removed. ASM owns assembly

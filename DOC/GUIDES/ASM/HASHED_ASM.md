@@ -5066,11 +5066,11 @@ fills; it must not spill into flash or overwrite neighboring RAM.
 The current proof-sized defaults are useful starting points:
 
 ```text
-ASM_SYM_MAX         32 symbol rows
-ASM_FIX_MAX         32 fixup rows
+ASM_SYM_MAX         40 symbol rows
+ASM_FIX_MAX         96 fixup rows
 ASM_FIX_NAME_MAX    32 bytes, 31 visible chars plus terminator
-ASM_REF_MAX         64 report-reference notes
-ASM_LOCAL_MAX       8 local label rows per active global scope
+ASM_REF_MAX         160 report-reference notes
+ASM_LOCAL_MAX       16 local label rows per active global scope
 ASM_LOCAL_NAME_MAX  16 bytes, 15 visible chars plus terminator
 ASM_LINE_MAX        63 visible input chars
 ASM_CODE_BUF       512 bytes

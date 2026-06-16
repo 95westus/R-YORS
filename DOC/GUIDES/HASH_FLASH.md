@@ -111,7 +111,7 @@ Current limitations:
 ```text
 fixed-address flash image; no L F erase, auto-place, or relocation yet
 ASM metadata still uses the current RAM arena, not the final $7DFF-down plan
-fixed tables: 32 globals, 32 fixups, 64 refs, 8 locals per global scope
+fixed tables: 40 globals, 96 fixups, 160 refs, 16 locals per global scope
 63 visible input chars per line
 no macros/includes/general forward expression addends yet
 source layout still matters; monotonic ORG is enforced
@@ -131,8 +131,8 @@ stays plain opcodes.
 The important failure lesson from the same slice: `BAD FIX` does not always
 mean "fixup table full." A helper-first biorhythm attempt had only 19/24
 fixups but failed because the older image only tried resident lookup for
-`JSR name`; `JMP BIO_FTDI_*` tail wrappers stayed pending. Current ASM raises
-the fixup limit to 32 rows and resolves direct resident `JMP name` as well as
+`JSR name`; `JMP BIO_FTDI_*` tail wrappers stayed pending. Current ASM keeps a
+larger 96-row fixup table and resolves direct resident `JMP name` as well as
 `JSR name`.
 
 Full transcripts live in

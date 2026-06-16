@@ -3355,8 +3355,8 @@ filled all 24 fixup rows before `JSR OUTA`, failing clearly as
 `ERR=$09 BAD FIX PC=$2126`. A later helper-first attempt on the JSR-only
 resident resolver still failed at `END` with 19/24 fixups because
 `JMP BIO_FTDI_WRITE_BYTE_BLOCK` and `JMP BIO_FTDI_PUT_CSTR` were not yet
-resident-lookup eligible. Current ASM raises `ASM_FIX_MAX` to `$20` and allows
-direct resident `JMP name` as well as `JSR name`.
+resident-lookup eligible. Current ASM uses `ASM_FIX_MAX=$60` and allows direct
+resident `JMP name` as well as `JSR name`.
 
 Hardware-proven biorhythm target:
 
@@ -4072,7 +4072,8 @@ Hardware on `HIMON V 00.0609(1904)` reached `ASM RT PASTE`, accepted `.`, and
 dumped `$7E00: 8E DE`, proving the RAM seed path after a STR8 HIMON-only update.
 A later broad opcode/addressing paste failed at the 33rd named operand reference
 with `ERR=$09 BAD FIX`; that was the report-reference ceiling, not the seed.
-Current source raises `ASM_REF_MAX` to `$40` without adding table storage.
+That slice raised `ASM_REF_MAX` to `$40` without adding table storage; the
+current flash ASM image uses `ASM_REF_MAX=$A0`.
 
 The lower-reference board opcode/addressing smoke then assembled at `$7200`,
 resolved seven fixups, ran from `$7200`, and dumped the expected oracle:

@@ -448,8 +448,8 @@ Project-level summary:
   explicit symbols, references, and fixups.
 - Source width is intent: `$hh` is zero page, `$hhhh` is absolute, with no
   silent promotion or demotion.
-- V1 directives are `EQU`, `DC`, `DS`, `ORG`, and `END`; `START`, `ENTRY`, and
-  `EXTRN` stay parked.
+- V1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, and `END`; `DC`, `START`,
+  `ENTRY`, and `EXTRN` stay parked.
 - `EQU` resolves immediately in v1. Forward references are emitted-byte fixups,
   not symbol-equation dependency chains.
 - The `ASM n.nn` catalog now has the 1.xx front-end spine settled through
