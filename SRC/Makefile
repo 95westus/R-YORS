@@ -896,13 +896,13 @@ $(TFTDI_OBJ): $(FTDI_DRV_INC)
 
 $(ROM_LIB): $(ROM_OBJ)
 	@if not exist $(subst /,\,$(BUILD_DIR)\lib) mkdir $(subst /,\,$(BUILD_DIR)\lib)
-	@if exist $(ROM_LIB) del /f $(ROM_LIB)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(ROM_LIB)') { Remove-Item -LiteralPath '$(ROM_LIB)' -Force }"
 	$(LIB) -A $(ROM_LIB) $(ROM_OBJ)
 	@if exist LIB.TMP move /Y LIB.TMP $(ROM_LIB)
 
 $(TEST_LIB): $(TEST_LIB_OBJ)
 	@if not exist $(subst /,\,$(BUILD_DIR)\lib) mkdir $(subst /,\,$(BUILD_DIR)\lib)
-	@if exist $(TEST_LIB) del /f $(TEST_LIB)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(TEST_LIB)') { Remove-Item -LiteralPath '$(TEST_LIB)' -Force }"
 	$(LIB) -A $(TEST_LIB) $(TEST_LIB_OBJ)
 	@if exist LIB.TMP move /Y LIB.TMP $(TEST_LIB)
 
