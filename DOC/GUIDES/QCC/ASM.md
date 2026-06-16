@@ -470,6 +470,34 @@ Operator policy:
 | & ^   known same-width values/masks only
 ```
 
+Next implementation slice:
+
+```text
+goal       add OR, AND, and EOR to ASM_PARSE_EXPR
+symbols    | = bitwise OR, & = bitwise AND, ^ = bitwise EOR/XOR
+scope      current expression callers first: EQU, ORG, and DW
+not scope  DB/DS list expression math, raw operand-tail math, forward addends
+order      strict left-to-right, still no precedence or grouping parentheses
+state      resolved-now only; no forward EQU dependency solver
+```
+
+The practical first test should stage byte values through `EQU`, then prove the
+results with `DW` or with `DB` reading the already-resolved symbol atom:
+
+```asm
+A       EQU $12
+B       EQU $34
+ORV     EQU A|B        ; $36
+ANDV    EQU $F0&$3C    ; $30
+EORV    EQU $55^$0F    ; $5A
+WORDS   DW ORV,ANDV,EORV
+BYTES   DB ORV,ANDV,EORV
+```
+
+`BYTES` works only because each `DB` item is now a single resolved symbol atom.
+`DB A|B` remains a later DB-list expression feature until `DB` is deliberately
+rewired to call the expression evaluator for each comma-separated item.
+
 Arithmetic keeps the left operand's address-width intent. It does not promote
 or demote:
 

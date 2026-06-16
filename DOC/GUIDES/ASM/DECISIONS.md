@@ -378,6 +378,11 @@ A [addr] [label[:]] MMM [operand] .
   is strictly left-to-right with no operator precedence. `A | B & C` will mean
   `(A | B) & C` once logical operators land. Use a separate `EQU` if a staged
   result is needed.
+- The next expression slice should implement `|` OR, `&` AND, and `^` EOR in
+  `ASM_PARSE_EXPR`, not as special cases in directive emitters. That makes them
+  available first to the current expression callers: `EQU`, `ORG`, and `DW`.
+  `DB`/`DS` list expression math remains separate because those directives
+  still use their byte/list atom parser, not the general expression-list path.
 - Unary minus is not v1 syntax. Use `0-1` if needed, then let the target context
   range-check the result. `DB -1` is `BAD OPER`.
 - Parentheses are not expression grouping in v1. `(` and `)` remain operand

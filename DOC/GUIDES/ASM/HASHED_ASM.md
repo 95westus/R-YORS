@@ -1705,6 +1705,36 @@ selector addends such as <FOO+1 or >FOO+1
 unary minus and grouping parentheses
 ```
 
+Next expression slice proposal:
+
+```text
+implement |, &, and ^ in ASM_PARSE_EXPR
+spell them as OR, AND, and EOR/XOR in docs and tests
+make them available first through existing expression callers: EQU, ORG, DW
+keep them resolved-now; reject unresolved compound expressions
+keep strict left-to-right evaluation; no precedence and no parentheses
+leave DB/DS list expression math for a separate refactor
+```
+
+That last boundary is intentional. `DW` already treats each comma-separated item
+as an expression and then forces one little-endian word per result. `DB` and
+`DS` came up through an older byte/list path: they parse one atom at a time,
+own comma handling themselves, and emit byte or word data from that atom's
+recorded width. That path is good for small byte-data rows and for `DS`
+initializer reuse, but it is not yet the general expression-list path. Until it
+is rewired, write compound byte data through an `EQU`:
+
+```asm
+FLAGS   EQU A|B
+        DB FLAGS
+```
+
+not:
+
+```asm
+        DB A|B
+```
+
 ### ASM 1.80.5 Operator Rules
 
 `+` and `-` are for known concrete values and addresses, not masks. Arithmetic
