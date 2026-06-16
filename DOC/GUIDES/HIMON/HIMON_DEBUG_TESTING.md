@@ -241,8 +241,14 @@ Board proof on `HIMON V 00.0606(2155)` first repeated the ASM runtime paste
 failure path and showed manual `G 2000` returning through `#GO# ... RET`. A
 follow-up in the same operator transcript created a live `NMI PC=40D2` context
 inside the ASM paste prompt, then `G 2000` still returned through fresh
-`#GO# ... RET`. A follow-up `R` printed `BRK 03 PC=C0D1`, which is the
-top-level HIMON input abort path, not the earlier NMI context.
+`#GO# ... RET`. A follow-up `R` printed `BRK 03 PC=C0D1`, which was the
+top-level HIMON input abort path in that build, not the earlier NMI context.
+Current builds have shifted the same saved-PC report to `BRK 03 PC=C0DB`.
+
+At the HIMON `>` prompt, `Q` is quiesce, not "quit": it executes `SEI`, `WAI`,
+then re-enters HIMON when an interrupt wakes the CPU. Use app-local `Q` commands
+only inside apps that document them; after an app returns to `>`, run another
+monitor command such as `G 2000` or reset/re-enter explicitly.
 
 Keep raw `P=bb` as the exact status-register form. A friendlier future `F=`
 syntax can be added as sugar for individual flags, matching the printed flag

@@ -7292,3 +7292,24 @@ empty unpack hex input  -> ?
 
 The `U` menu path now prompts `HEX>` and reaches `UNPIT`, proving the prior bad
 fall-through into `PACKIT` was table/fixup pressure from the earlier image.
+
+Post-return observation from the same board session: after `Q` inside the
+PACK40 app returned cleanly through `#GO# ENTRY=2000`, a later top-level
+`BRK 03 PC=C0DB` appeared:
+
+```text
+#GO# ENTRY=2000
+RET A=51 X=00 Y=00 P=77 S=FD NV-BdIZC
+>
+
+BRK 03 PC=C0DB
+A=04 X=00 Y=7B P=77 S=FF NV-BdIZC
+>
+```
+
+In the current `himon-c000.map`, `MAIN_LOOP=$C0BF` and
+`MAIN_HAVE_LINE=$C0DE`; `$C0DB` is the saved PC after the intentional `BRK $03`
+in the top-level HIMON input-abort path. This is a HIMON prompt/abort context,
+not PACK40 code running after return. At the HIMON `>` prompt, `Q` is the
+quiesce command (`SEI`/`WAI`/re-enter), not an application quit command; without
+a waking interrupt it can look like a hang and require reset.
