@@ -184,6 +184,9 @@ boot bank. After enrollment it is just the oldest rotating backup.
 The next product direction is not "let the operator spend banks 0 and 1 by
 hand." STR8 should own banks 0 and 1 as a managed 64K backup arena, decide how
 much of each bank is taken, and print the storage plan before it commits.
+The ASM-facing movable-module/object-store direction is documented in
+[MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md); it must not silently consume
+STR8 recovery banks.
 
 Preferred future layout:
 

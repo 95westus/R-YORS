@@ -130,6 +130,9 @@
 - Later, the WDCMONv2 bridge should offer to preserve the original WDCMONv2/base
   image, bridge image, or provenance notes before conversion. That is a TODO for
   the bridge/install path, not today's STR8 RAM proof.
+- The future movable-module/object-store plan must treat that preserved
+  WDCMONv2/base image as a protected object or explicit bank role, not as
+  scratch flash. See [MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md).
 - Bank 0 starts as an optional base-image hold slot, but STR8 can enroll it into
   automatic backup rotation with a one-way in-flash flag. After enrollment,
   bank 0 is the oldest rotating backup slot.
@@ -176,6 +179,9 @@
 - Keep bank 3 cleaner for boot/current-monitor/catalog/trampoline material. The
   physical `$F000-$FFFF` sector contains STR8 and vectors, but only the chosen
   STR8 window is reserved from ordinary writes.
+- The planned direction after the required ASM board proofs is sealed movable
+  ASM modules plus a managed flash object store. The focused plan lives in
+  [MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md).
 - For the first STR8 recovery model, restore uses a whole 32K bank 0, 1, or 2
   image as the source for bank 3, writes ordinary bank 3 image bytes, and skips
   the selected STR8 protected window unless explicit STR8 install/update is

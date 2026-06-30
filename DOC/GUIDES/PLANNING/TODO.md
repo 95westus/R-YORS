@@ -85,6 +85,11 @@
   backward-ORG rejection check. Keep the `|`, `&`, and `^` logical/mask
   expression operators deferred; they are not the next ASM implementation
   slice.
+- After the required ASM board tests, the next ASM direction is sealed movable
+  modules and the managed flash object-store plan in
+  [MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md): seal RAM-emitted ASM output
+  with body length, entry offset, exports/imports, and relocation rows, then
+  prove install/move/run from bank 3 flash and RAM overlays.
 - Add a tiny sorted-list helper for monitor tables such as breakpoint listing.
   `B L` may print slot order for now, but sorted address order will be easier
   to read once multiple breakpoints are active. For the current four breakpoint

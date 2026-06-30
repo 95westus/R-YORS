@@ -12,6 +12,8 @@ Routine-flow orientation lives in [ASM_CALL_MAP.md](ASM_CALL_MAP.md). Shared
 routine/RJOIN candidate notes live in
 [ASM_SHARED_ROUTINES_AUDIT.md](ASM_SHARED_ROUTINES_AUDIT.md). Keep both maps
 and audits current as call ownership or RJOIN boundaries change.
+The planned post-board-test direction for sealed, relocatable ASM output lives
+in [MOVABLE_MODULES.md](MOVABLE_MODULES.md).
 
 Current WDC-compatibility correction: `DB` is the active v1 data directive.
 `DC` is parked/reserved for now, so older `DC` examples in this narrative are
