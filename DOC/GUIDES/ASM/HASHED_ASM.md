@@ -1705,7 +1705,7 @@ selector addends such as <FOO+1 or >FOO+1
 unary minus and grouping parentheses
 ```
 
-Next expression slice proposal:
+Deferred expression slice:
 
 ```text
 implement |, &, and ^ in ASM_PARSE_EXPR
@@ -1715,6 +1715,9 @@ keep them resolved-now; reject unresolved compound expressions
 keep strict left-to-right evaluation; no precedence and no parentheses
 leave DB/DS list expression math for a separate refactor
 ```
+
+This slice is deliberately deferred. The current next ASM pass remains the
+onboard proof of the already host-proven `+`/`-` expression math.
 
 That last boundary is intentional. `DW` already treats each comma-separated item
 as an expression and then forces one little-endian word per result. `DB` and
@@ -3434,8 +3437,8 @@ number
 
 Current executable ASM only implements resolved concrete `+` and `-` through
 `ASM_PARSE_EXPR`, used by `ORG` and `EQU`. The `|`, `&`, and `^` rows above are
-the target v1 mask/logical design and remain future work until the expression
-smoke covers them.
+the deferred v1 mask/logical design and remain future work until that slice is
+explicitly reopened.
 
 Unary minus is not v1 syntax. Write `0-1` if you need to express subtraction
 from zero, then let the target context range-check the result. `DB -1` is

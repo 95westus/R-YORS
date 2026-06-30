@@ -366,25 +366,26 @@ A [addr] [label[:]] MMM [operand] .
   single quote character. No C-style escapes in v1.
 - ASM source expressions use readable infix syntax. RPN is the preferred compact
   backend/evaluator form, but it is not source syntax. Simple examples:
-  `COUNT EQU 10`, `ERR_1 EQU %XXXXXXX1`, `ERR_2 EQU %XXXXXX1X`, and
-  `FLAGS EQU ERR_1 | ERR_2`.
+  `COUNT EQU 10`, `BASE EQU $7000`, `NEXT EQU BASE + 1`, and
+  `SIZE EQU END_ADDR - START_ADDR` after both labels are known.
 - `*` is the current assembly PC/location counter when used as an expression
   term. `ADDR EQU * - 32` is not a forward `EQU`; it resolves immediately from
   the current PC and a known value. Because `*` is an address, `ADDR - VALUE`
   keeps address width if it remains in range. `ADDR - ADDR` produces a scalar
   `VALUE` delta.
-- Current executable ASM v1 expression operators are `+` and `-`; `|`, `&`,
-  and `^` are reserved v1 logical/mask operators still to implement. Evaluation
-  is strictly left-to-right with no operator precedence. `A | B & C` will mean
-  `(A | B) & C` once logical operators land. Use a separate `EQU` if a staged
-  result is needed.
-- The next expression slice should implement `|` OR, `&` AND, and `^` EOR in
-  `ASM_PARSE_EXPR`, not as special cases in directive emitters. That makes them
-  available first to the current expression callers: `EQU`, `ORG`, and `DW`.
-  `DB`/`DS` list expression math remains separate because those directives
-  still use their byte/list atom parser, not the general expression-list path.
-  In short: keep `|`, `&`, and `^` as an `ASM_PARSE_EXPR` upgrade first, with
-  `DB` expression-list unification as a later, cleaner refactor.
+- Current executable ASM v1 expression operators are `+` and `-`. The `|`,
+  `&`, and `^` logical/mask operators are deferred for later implementation,
+  not the next ASM slice. When reopened, evaluate them strictly left-to-right
+  with no operator precedence; `A | B & C` will mean `(A | B) & C`. Use a
+  separate `EQU` if a staged result is needed.
+- When the deferred logical/mask slice is reopened, implement `|` OR, `&` AND,
+  and `^` EOR in `ASM_PARSE_EXPR`, not as special cases in directive emitters.
+  That will make them available first to the current expression callers: `EQU`,
+  `ORG`, and `DW`. `DB`/`DS` list expression math remains separate because
+  those directives still use their byte/list atom parser, not the general
+  expression-list path. In short: keep `|`, `&`, and `^` as an
+  `ASM_PARSE_EXPR` upgrade when they return, with `DB` expression-list
+  unification as a later, cleaner refactor.
 - Unary minus is not v1 syntax. Use `0-1` if needed, then let the target context
   range-check the result. `DB -1` is `BAD OPER`.
 - Parentheses are not expression grouping in v1. `(` and `)` remain operand

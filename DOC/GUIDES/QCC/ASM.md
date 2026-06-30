@@ -470,7 +470,7 @@ Operator policy:
 | & ^   known same-width values/masks only
 ```
 
-Next implementation slice:
+Deferred implementation slice:
 
 ```text
 goal       add OR, AND, and EOR to ASM_PARSE_EXPR
@@ -481,8 +481,9 @@ order      strict left-to-right, still no precedence or grouping parentheses
 state      resolved-now only; no forward EQU dependency solver
 ```
 
-The practical first test should stage byte values through `EQU`, then prove the
-results with `DW` or with `DB` reading the already-resolved symbol atom:
+Do not treat this as the next ASM implementation step. The practical first test
+when this slice is reopened should stage byte values through `EQU`, then prove
+the results with `DW` or with `DB` reading the already-resolved symbol atom:
 
 ```asm
 A       EQU $12

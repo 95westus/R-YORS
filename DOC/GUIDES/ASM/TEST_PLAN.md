@@ -5605,6 +5605,17 @@ END_ADDR-START_ADDR   -> VALUE/NONE delta after both labels are defined
 10+1                  -> VALUE/NONE $000B
 ```
 
+Pending board proof:
+
+```text
+DOC/GUIDES/ASM/SAMPLES/expr-math-7010.a
+DOC/GUIDES/ASM/SAMPLES/expr-math-7010-test.md
+```
+
+This sample deliberately avoids `A`, `X`, and `Y` as user symbols because they
+are reserved v1 register words. It stages address math through `EQU` names
+instead of unsupported operand-tail math such as `STA OUT+1`.
+
 Future fixtures:
 
 ```text
