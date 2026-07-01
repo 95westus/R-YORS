@@ -110,10 +110,10 @@ Core settled rules:
   emitted bytes, not symbol equations.
 - `<` and `>` select low/high bytes. V1 applies them as prefix selectors on one
   atom. `*` is the current assembly PC.
-- V1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, and `END`. `DC`, `START`,
-  `EXPORT`, and `IMPORT` are parked. `EXPORT NAME` will mark a defined global
-  label as a public module offset; `IMPORT NAME` will declare an intended
-  external/imported symbol.
+- V1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, `END`, and `EXPORT`. `DC`,
+  `START`, and `IMPORT` are parked. `EXPORT NAME` marks a defined global label
+  as a public module offset; `IMPORT NAME` will declare an intended
+  external/imported symbol later.
 - `DB` v1 is simple byte/word/address data. `X'...'`, `B'...'`, `HBSTR`,
   `CSTR`, and `PSTR` are later.
 - `DW` emits each resolved expression as one little-endian 16-bit word.
@@ -2961,8 +2961,9 @@ can still be assembled "as if" it lives at `$9A00` or `$F000`; only the physical
 bytes wait in RAM until commit. This is the preferred path for any source that
 may fail, duplicate code, or generate many fixups.
 
-`EXPORT` belongs after this stage: the symbol should become globally visible
-only after the staged image has resolved and committed cleanly.
+Source `EXPORT` may record sealed module offsets in RAM now. Making those
+symbols globally visible to a resident catalog still belongs after this stage:
+the staged image must resolve and commit cleanly before catalog publication.
 
 ### ASM Work Products And RAM Pressure
 
@@ -3278,13 +3279,13 @@ NAME EQU expr             name required; binds expression result
 [NAME] DS count[,init...] optional current-PC storage label
 ORG expr                  no leading name
 END                       no leading name, no operand
+EXPORT name               no leading name, defined global PC label operand
 ```
 
 Parked later directives:
 
 ```text
 START  program/module start, later source/member boundary
-EXPORT exported global symbol offset
 IMPORT external/imported symbol declaration
 ```
 
@@ -4079,6 +4080,28 @@ END has enough session facts to derive length as HIGH - START
 `BYTES` is `HIGH - START`. Publishing or storing those bytes as a movable object
 is a later explicit `SEAL`/export step, not an automatic side effect of `END`.
 
+`EXPORT NAME` is a post-definition directive in this pass. `NAME` must already
+be a defined global PC label in the live session. Local names, unknown names,
+`EQU` symbols, duplicate exports, and export-table overflow fail as `BAD SYM`;
+extra operands fail as `BAD OPER`.
+
+The first sealed export record is a compact RAM record, not a flash K bit:
+
+```text
+ASM_EXPORT_REC +0  count
+ASM_EXPORT_REC +1  total record length in bytes, including count/len header
+ASM_EXPORT_REC +2  repeated rows:
+                  offset_lo offset_hi
+                  source_name_len
+                  PACK40(name), three folded chars per little-endian word
+```
+
+Names are packed when `SEAL` is requested, while the ordinary symbol table is
+still live. The linker/import path can compare `name_len + packed bytes`
+directly, so no unpack routine is required for this first pass. Unpack is only
+needed later if a resident catalog or monitor command must print sealed export
+names after the original ASM symbol table is gone.
+
 Do not define `.BYTE`, `.WORD`, `.HBSTR`, or other dot aliases in v1. If a later
 assembler grows compatibility aliases, they should be ordinary mnemonic-like
 tokens such as `DB`, `DW`, or `FCC`, not dot-leading tokens.
@@ -4127,7 +4150,7 @@ Keep this out of v1 unless compatibility pressure appears. The v1 directive
 path is:
 
 ```text
-EQU, DB, DW, DS, ORG, END only
+EQU, DB, DW, DS, ORG, END, EXPORT only
 ```
 
 HBSTR remains a named later data form because it is part of Himon's command,

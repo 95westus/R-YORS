@@ -5586,7 +5586,7 @@ for reserved/parked words:
 | $0B BNE MNEM | $20 ENTRY RES | $35 PLP MNEM | $4A TRB MNEM |
 | $0C BPL MNEM | $21 EOR MNEM | $36 PLX MNEM | $4B TSB MNEM |
 | $0D BRA MNEM | $22 EQU DIR | $37 PLY MNEM | $4C TSX MNEM |
-| $0E BRK MNEM | $23 EXTRN RES | $38 RMB MNEM | $4D TXA MNEM |
+| $0E BRK MNEM | $23 EXPORT DIR | $38 RMB MNEM | $4D TXA MNEM |
 | $0F BVC MNEM | $24 INC MNEM | $39 ROL MNEM | $4E TXS MNEM |
 | $10 BVS MNEM | $25 INX MNEM | $3A ROR MNEM | $4F TYA MNEM |
 | $11 CLC MNEM | $26 INY MNEM | $3B RTI MNEM | $50 WAI MNEM |
@@ -6069,6 +6069,9 @@ SEAL.RELOC adds a separate RAM relocation record:
          site offset, and target offset. Kinds are $01 ABS16_INTERNAL,
          $02 LO8_INTERNAL, and $03 HI8_INTERNAL. Runtime paste/flash
          SEAL success prints SEAL REL @=$hhhh COUNT=$nn after SEAL REC.
+SEAL.EXPORT adds EXPORT NAME for defined global labels and emits a compact
+         PACK40 sealed export record. Runtime paste/flash SEAL success prints
+         SEAL EXP @=$hhhh COUNT=$nn LEN=$00nn only when exports exist.
 ASMRT.REPORT.TRIM keeps the older compact-report printer in the core/smoke
          build but compiles it out of ASM_RUNTIME_ONLY images. Runtime paste
          and flash use wrapper error lines, ASM TABLES, and SEAL REC/REL as
@@ -6130,6 +6133,11 @@ post-session SEAL reports FLAGS/BASE/END and rejects every FLAGS value except $0
 eligible post-session SEAL reports SEAL REC @/LEN/FNV after validation
 eligible post-session SEAL fills ASM_SEAL_REC with flags/base/end/len/FNV bytes
 eligible post-session SEAL reports SEAL REL @/COUNT after validation
+eligible post-session SEAL reports SEAL EXP @/COUNT/LEN when exports exist
+EXPORT accepts exactly one defined global PC label operand
+EXPORT rejects unknown names, local names, EQU symbols, duplicates, leading
+labels, and table overflow as BAD SYM
+EXPORT rejects extra operands as BAD OPER
 ASM TABLES prints a RELOCS section with SL/K/SITE/TARG rows
 internal label ABS16 references produce $01 relocation rows with site/target
 offsets from BASE
@@ -6713,6 +6721,96 @@ because it is backward from `PC=$7601`, not because `$7105` itself is
 protected. The same edge proof re-confirmed that `NEW` before `END` is source
 text and can define a label, and that monitor `D` dumps must be issued after
 exiting `SEAL>`.
+
+`SEAL.EXPORT` board proof observed. Positive proof:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7600
+OK PC=$7600
+ASM> MAIN JMP TARGET
+OK PC=$7603
+ASM> TARGET RTS
+OK PC=$7604
+ASM> EXPORT MAIN
+OK PC=$7604
+ASM> EXPORT TARGET
+OK PC=$7604
+ASM> END
+OK PC=$7604
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7600  01 04 0E 0002 00  0000  MAIN
+01 01 7603  01 04 0E 0003 00  0000  TARGET
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  7601 7603 TARGET
+RELOCS
+SL K  SITE TARG
+00 01 0001 0003
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7604
+SEAL REC @=$57EC LEN=$0004 FNV=$677CFADE
+SEAL REL @=$57F7 COUNT=$01
+SEAL EXP @=$5848 COUNT=$02 LEN=$0010
+SEAL> .
+>D 7600 7603
+7600: 4C 03 76 60 | L.v`
+>D 5848 +10
+5848: 02 10 00 00 04 71 51 80 | 57 03 00 06 3A 7D 9C 2C | .....qQ.W...:}.,
+```
+
+Negative proof:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7600
+OK PC=$7600
+ASM> MAIN RTS
+OK PC=$7601
+ASM> SIZE EQU $1234
+OK PC=$7601
+ASM> EXPORT MISSING
+ERR=$08 BAD SYM PC=$7601
+ASM> EXPORT .LOCAL
+ERR=$08 BAD SYM PC=$7601
+ASM> EXPORT SIZE
+ERR=$08 BAD SYM PC=$7601
+ASM> EXPORT MAIN X
+ERR=$03 BAD OPER PC=$7601
+ASM> LABEL EXPORT MAIN
+ERR=$08 BAD SYM PC=$7601
+ASM> EXPORT MAIN
+OK PC=$7601
+ASM> EXPORT MAIN
+ERR=$08 BAD SYM PC=$7601
+ASM> END
+OK PC=$7601
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7600  01 04 0E 0002 00  0000  MAIN
+01 01 1234  01 04 16 0003 00  0000  SIZE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7601
+SEAL REC @=$57EC LEN=$0001 FNV=$E50C2ABF
+SEAL REL @=$57F7 COUNT=$00
+SEAL EXP @=$5848 COUNT=$01 LEN=$0009
+SEAL> .
+>D 5848 +9
+5848: 01 09 00 00 04 71 51 80 | 57 | .....qQ.W
+```
 
 ## ASMTEST_3000 Final Acceptance
 
