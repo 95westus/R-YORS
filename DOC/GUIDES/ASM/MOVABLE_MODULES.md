@@ -118,6 +118,7 @@ flags bit0 valid after clean END
 base  = start_pc
 end   = high_water_pc, exclusive
 len   = end - base
+fnv   = FNV32 over bytes [base,end), derived only after validation passes
 ```
 
 These fields are cleared on session reset or fatal session failure. They are not
@@ -125,13 +126,17 @@ a K bit, not a flash record, and not a catalog publication.
 The ineligibility bits do not reject normal ASM source today; they give a later
 explicit `SEAL` command a clean reason to refuse a non-contiguous or unowned
 span.
+The FNV32 field is a RAM-only record preview; it proves exactly which emitted
+body bytes a later record would name, but it does not install or reserve
+anything in flash.
 
 The first post-session `SEAL` dry-run should stay RAM-only. It runs after
 `END`, consumes the frozen facts above, and writes no flash/catalog record.
 It accepts only `FLAGS=$01` and should report exact facts on success:
 
 ```text
-SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh LEN=$hhhh
+SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh
+SEAL REC LEN=$hhhh FNV=$hhhhhhhh
 ```
 
 On failure it should keep the output small and factual:

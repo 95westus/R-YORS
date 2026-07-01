@@ -6052,6 +6052,9 @@ ASM 2.50 adds the first post-session SEAL dry-run:
 SEAL.NEW adds validated SEAL> NEW:
          accepts only NEW or NEW ; comment, asks no Y/N question, and reopens
          ASM at the frozen END PC.
+SEAL.REC adds a RAM-only record preview after successful SEAL validation:
+         first line prints FLAGS/BASE/END, second line prints LEN and FNV32.
+         FNV32 hashes exactly the emitted bytes from BASE through END-1.
 Numeric report fields are hex in this first W65C02S printer.
 Second clean ASM_END returns OK without duplicating report state.
 ```
@@ -6083,7 +6086,9 @@ unused symbol report prints definition lines
 clean END leaves a valid RAM fact record matching START/HIGH/BYTES
 forward ORG and plain DS count set seal flags but remain valid ASM
 initialized DS count,$xx remains seal-owned
-post-session SEAL reports FLAGS and rejects every FLAGS value except $01
+post-session SEAL reports FLAGS/BASE/END and rejects every FLAGS value except $01
+eligible post-session SEAL reports SEAL REC LEN/FNV after validation
+ineligible post-session SEAL reports no SEAL REC line
 clean END switches runtime paste/flash wrappers to the SEAL> prompt
 SEAL> NEW prints OK PC=$end and returns to ASM> at the frozen END PC
 SEAL> NEW operands are rejected as BAD OPER without clearing frozen seal facts
@@ -6094,7 +6099,7 @@ post-END non-SEAL/non-NEW source is rejected without clearing frozen seal facts
 
 Hardware-proven `ASM 2.50` post-session `SEAL` dry-run on 2026-07-01 with
 HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
-`L OK=51C7 GO=2000`:
+`L OK=51C7 GO=2000`. This proof used the pre-FNV output shape:
 
 ```text
 $7000 clean tiny span        -> SEAL OK FLAGS=$01 BASE=$7000 END=$7003 LEN=$0003
@@ -6107,9 +6112,26 @@ $7500 hole plus plain DS     -> SEAL ERR=$02 FLAGS=$07
 The same proof shows clean `END` changing the wrapper prompt to `SEAL> ` and
 `.` exiting the post-session prompt through `ASM RT PASTE BYE`.
 
+Hardware-proven `SEAL.REC` clean tiny span on 2026-07-01 with
+HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
+`L OK=52E6 GO=2000`:
+
+```text
+$7600 clean tiny span        -> SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+                                SEAL REC LEN=$0003 FNV=$695B146E
+```
+
+Remaining `SEAL.REC` expected output keeps the same rejection lines and changes
+other eligible spans to:
+
+```text
+$7400 initialized DS count   -> SEAL OK FLAGS=$01 BASE=$7400 END=$7405
+                                SEAL REC LEN=$0005 FNV=$hhhhhhhh
+```
+
 Hardware-proven `SEAL> NEW` restart on 2026-07-01 with
 HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
-`L OK=5247 GO=2000`:
+`L OK=5247 GO=2000`. This proof also used the pre-FNV output shape:
 
 ```text
 SEAL> NEW X  -> ERR=$03 BAD OPER PC=$7603

@@ -36,6 +36,7 @@
                         XDEF            ASM_DEFINE_EQU
                         XDEF            ASM_PRINT_TABLES
                         XDEF            ASM_SEAL_VALIDATE
+                        XDEF            ASM_SEAL_COMPUTE_FNV
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
                         XDEF            ASM_RJ_PRINT_CRLF
@@ -46,6 +47,10 @@
                         XDEF            ASM_SEAL_END_HI
                         XDEF            ASM_SEAL_LEN_LO
                         XDEF            ASM_SEAL_LEN_HI
+                        XDEF            ASM_SEAL_FNV0
+                        XDEF            ASM_SEAL_FNV1
+                        XDEF            ASM_SEAL_FNV2
+                        XDEF            ASM_SEAL_FNV3
                         IF              ASM_RUNTIME_ONLY
                         IF              ASM_FLASH_RUNTIME
                         XDEF            ASM_RJOIN_INIT_IO
@@ -11992,7 +11997,8 @@ ASM_FNV1A_UPDATE_A_FAST:
 ; ----------------------------------------------------------------------------
 ; Minimal RAM record captured by clean END:
 ;   flags bit0 valid, bit1 hole, bit2 unowned bytes,
-;   base=start_pc, end=high_water_pc exclusive, len=end-base.
+;   base=start_pc, end=high_water_pc exclusive, len=end-base,
+;   fnv=FNV32 over bytes [base,end) after validation passes.
 ; This is not flash publication and not a K bit.
 ASM_SEAL_CAPTURE_END_FACTS:
                         LDA             ASM_START_PC_LO
@@ -12046,6 +12052,52 @@ ASM_SEAL_VALIDATE_OK:
                         SEC
                         RTS
 
+ASM_SEAL_COMPUTE_FNV:
+                        JSR             ASM_SEAL_VALIDATE
+                        BCS             ASM_SEAL_COMPUTE_FNV_OK
+                        RTS
+ASM_SEAL_COMPUTE_FNV_OK:
+                        JSR             ASM_FNV1A_INIT
+                        LDA             ASM_SEAL_BASE_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_SEAL_BASE_HI
+                        STA             ASM_SCAN_PTR_HI
+                        LDA             ASM_SEAL_LEN_LO
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_SEAL_LEN_HI
+                        STA             ASM_VALUE_HI
+                        ORA             ASM_VALUE_LO
+                        BEQ             ASM_SEAL_COMPUTE_FNV_DONE
+ASM_SEAL_COMPUTE_FNV_LOOP:
+                        LDY             #$00
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        JSR             ASM_FNV1A_UPDATE_A_FAST
+                        INC             ASM_SCAN_PTR_LO
+                        BNE             ASM_SEAL_COMPUTE_FNV_COUNT
+                        INC             ASM_SCAN_PTR_HI
+ASM_SEAL_COMPUTE_FNV_COUNT:
+                        DEC             ASM_VALUE_LO
+                        LDA             ASM_VALUE_LO
+                        CMP             #$FF
+                        BNE             ASM_SEAL_COMPUTE_FNV_MORE
+                        DEC             ASM_VALUE_HI
+ASM_SEAL_COMPUTE_FNV_MORE:
+                        LDA             ASM_VALUE_LO
+                        ORA             ASM_VALUE_HI
+                        BNE             ASM_SEAL_COMPUTE_FNV_LOOP
+ASM_SEAL_COMPUTE_FNV_DONE:
+                        LDA             ASM_HASH0
+                        STA             ASM_SEAL_FNV0
+                        LDA             ASM_HASH1
+                        STA             ASM_SEAL_FNV1
+                        LDA             ASM_HASH2
+                        STA             ASM_SEAL_FNV2
+                        LDA             ASM_HASH3
+                        STA             ASM_SEAL_FNV3
+                        LDA             #ASM_STATUS_OK
+                        SEC
+                        RTS
+
 ASM_SEAL_CLEAR:
                         STZ             ASM_SEAL_FLAGS
                         STZ             ASM_SEAL_BASE_LO
@@ -12054,6 +12106,10 @@ ASM_SEAL_CLEAR:
                         STZ             ASM_SEAL_END_HI
                         STZ             ASM_SEAL_LEN_LO
                         STZ             ASM_SEAL_LEN_HI
+                        STZ             ASM_SEAL_FNV0
+                        STZ             ASM_SEAL_FNV1
+                        STZ             ASM_SEAL_FNV2
+                        STZ             ASM_SEAL_FNV3
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -12113,6 +12169,10 @@ ASM_SEAL_END_LO:       DB              $00
 ASM_SEAL_END_HI:       DB              $00
 ASM_SEAL_LEN_LO:       DB              $00
 ASM_SEAL_LEN_HI:       DB              $00
+ASM_SEAL_FNV0:         DB              $00
+ASM_SEAL_FNV1:         DB              $00
+ASM_SEAL_FNV2:         DB              $00
+ASM_SEAL_FNV3:         DB              $00
 ASM_LINE_PC_LO:        DB              $00
 ASM_LINE_PC_HI:        DB              $00
 ASM_LINE_HIGH_PC_LO:   DB              $00

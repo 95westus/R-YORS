@@ -5057,13 +5057,16 @@ The first post-session `SEAL` dry-run accepts only `FLAGS=$01`. If the valid bit
 is clear, it reports `SEAL ERR=$01 FLAGS=$ff`; if the valid bit is set but any
 hole, unowned, or reserved bit is also set, it reports
 `SEAL ERR=$02 FLAGS=$ff`. On success it reports the exact frozen facts:
-`SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh LEN=$hhhh`.
+`SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh`, then a RAM-only record preview:
+`SEAL REC LEN=$hhhh FNV=$hhhhhhhh`. The FNV is FNV32 over the emitted bytes
+from `BASE` through `END-1`; it is derived after validation passes and is not a
+K bit, flash write, or catalog publication.
 The runtime paste and flash wrappers switch to the `SEAL> ` prompt after a
 clean `END` so `SEAL` can consume those frozen facts. `SEAL> ` is not normal
 ASM source mode; it is a small wrapper command window with three commands:
 
 ```text
-SEAL             validate and print the frozen facts
+SEAL             validate and print frozen facts plus record preview
 NEW              start a fresh ASM session at the frozen END PC
 .                exit the wrapper
 ```

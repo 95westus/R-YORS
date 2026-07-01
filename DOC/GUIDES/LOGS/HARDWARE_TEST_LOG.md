@@ -8034,3 +8034,39 @@ RET A=00 X=30 Y=30 P=77 S=FD NV-BdIZC
 7100: 00 70 1F 70 1F 00 00 00 | 00 00 00 00 00 00 00 00 | .p.p............
 >
 ```
+
+## 2026-07-01 ASM SEAL.REC FNV32 Runtime Paste Proof
+
+Operator transcript pasted into Codex session. The runtime paste image loaded
+at `$2000` with `L OK=52E6 GO=2000`. This proves the RAM-only `SEAL.REC`
+preview for an eligible clean-ended span: `BASE=$7600`, exclusive
+`END=$7603`, `LEN=$0003`, and FNV32 `$695B146E` over emitted bytes
+`A9 5A 60`.
+
+Transcript:
+
+```text
+>L G
+L S19
+L @2000
+L OK=52E6 GO=2000
+ASM RT PASTE
+ASM> ORG $7600
+OK PC=$7600
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC LEN=$0003 FNV=$695B146E
+SEAL>
+```
