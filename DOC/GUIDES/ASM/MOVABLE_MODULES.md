@@ -126,17 +126,26 @@ a K bit, not a flash record, and not a catalog publication.
 The ineligibility bits do not reject normal ASM source today; they give a later
 explicit `SEAL` command a clean reason to refuse a non-contiguous or unowned
 span.
-The FNV32 field is a RAM-only record preview; it proves exactly which emitted
-body bytes a later record would name, but it does not install or reserve
-anything in flash.
+The contiguous byte run at `ASM_SEAL_REC` is the RAM-only record. It proves
+exactly which emitted body bytes a later published record would name, but it
+does not install or reserve anything in flash. Its first shape is:
+
+```text
++$00 flags
++$01 base lo, +$02 base hi
++$03 end lo,  +$04 end hi
++$05 len lo,  +$06 len hi
++$07 fnv0, +$08 fnv1, +$09 fnv2, +$0A fnv3
+```
 
 The first post-session `SEAL` dry-run should stay RAM-only. It runs after
-`END`, consumes the frozen facts above, and writes no flash/catalog record.
+`END`, consumes the frozen facts above, fills `ASM_SEAL_REC`, and writes no
+flash/catalog record.
 It accepts only `FLAGS=$01` and should report exact facts on success:
 
 ```text
 SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh
-SEAL REC LEN=$hhhh FNV=$hhhhhhhh
+SEAL REC @=$hhhh LEN=$hhhh FNV=$hhhhhhhh
 ```
 
 On failure it should keep the output small and factual:

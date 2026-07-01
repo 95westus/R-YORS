@@ -6052,9 +6052,13 @@ ASM 2.50 adds the first post-session SEAL dry-run:
 SEAL.NEW adds validated SEAL> NEW:
          accepts only NEW or NEW ; comment, asks no Y/N question, and reopens
          ASM at the frozen END PC.
-SEAL.REC adds a RAM-only record preview after successful SEAL validation:
-         first line prints FLAGS/BASE/END, second line prints LEN and FNV32.
+SEAL.REC adds a RAM-only record after successful SEAL validation:
+         first line prints FLAGS/BASE/END, second line prints REC @, LEN, FNV32.
          FNV32 hashes exactly the emitted bytes from BASE through END-1.
+SEAL.REC.RAM gives the contiguous record bytes an exported ASM_SEAL_REC label:
+         flags, base lo/hi, end lo/hi, len lo/hi, fnv0..fnv3.
+SEAL.REC.PRINT factors the success printer into ASM_SEAL_PRINT_RECORD so
+         runtime paste and flash wrappers share the same SEAL OK/REC output.
 ASMRP.UDATA moves runtime-paste PC/post cells and the $0100 line buffer out of
          DATA into UDATA. It also replaces the fixed ASMRP_RESULT scratch cell
          with UDATA. This removes $0103 loaded bytes from the SEAL.REC image
@@ -6092,7 +6096,8 @@ clean END leaves a valid RAM fact record matching START/HIGH/BYTES
 forward ORG and plain DS count set seal flags but remain valid ASM
 initialized DS count,$xx remains seal-owned
 post-session SEAL reports FLAGS/BASE/END and rejects every FLAGS value except $01
-eligible post-session SEAL reports SEAL REC LEN/FNV after validation
+eligible post-session SEAL reports SEAL REC @/LEN/FNV after validation
+eligible post-session SEAL fills ASM_SEAL_REC with flags/base/end/len/FNV bytes
 ineligible post-session SEAL reports no SEAL REC line
 clean END switches runtime paste/flash wrappers to the SEAL> prompt
 SEAL> NEW prints OK PC=$end and returns to ASM> at the frozen END PC
@@ -6102,6 +6107,13 @@ ASM> NEW remains ordinary ASM source, not a wrapper command
 post-END non-SEAL/non-NEW source is rejected without clearing frozen seal facts
 runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
 state/result/line buffer in UDATA
+```
+
+Expected `SEAL.REC.RAM` tiny-span record bytes after sealing `ORG $7000`,
+`LDA #$5A`, `RTS`, `END`:
+
+```text
+ASM_SEAL_REC: 01 00 70 03 70 03 00 6E 14 5B 69
 ```
 
 Hardware-proven `ASM 2.50` post-session `SEAL` dry-run on 2026-07-01 with
@@ -6148,6 +6160,35 @@ while preserving the tiny-span SEAL/FNV result:
 $7000 clean tiny span        -> SEAL OK FLAGS=$01 BASE=$7000 END=$7003
                                 SEAL REC LEN=$0003 FNV=$695B146E
 SEAL> .                      -> ASM RT PASTE BYE
+```
+
+Hardware-proven `SEAL.REC.RAM` record bytes on 2026-07-01 with
+HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
+`L OK=51E3 GO=2000`. After the same `$7000` tiny span and successful `SEAL`,
+`ASM_SEAL_REC` was at `$52F9` in this image. Dumping through `$5304` includes
+one byte past the `$0B`-byte record; the record itself is `$52F9-$5303`:
+
+```text
+52F9: 01 00 70 03 70 03 00 6E | 14 5B 69 03 | ..p.p..n.[i.
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      ASM_SEAL_REC bytes
+```
+
+Hardware-proven `SEAL.REC.PRINT` factored success printer on 2026-07-01 with
+HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
+`L OK=51F4 GO=2000`. This proves the shared `ASM_SEAL_PRINT_RECORD` output
+prints the current `ASM_SEAL_REC` address and keeps the same tiny-span facts:
+
+```text
+$7000 clean tiny span        -> SEAL OK FLAGS=$01 BASE=$7000 END=$7003
+                                SEAL REC @=$52D0 LEN=$0003 FNV=$695B146E
+ASM_SEAL_REC $52D0-$52DA     -> 01 00 70 03 70 03 00 6E 14 5B 69
+```
+
+The observed dump continued past the `$0B`-byte record with the next RAM cells:
+
+```text
+52D0: 01 00 70 03 70 03 00 6E | 14 5B 69 03 70 03 70 | ..p.p..n.[i.p.p
 ```
 
 Hardware-proven `SEAL> NEW` restart on 2026-07-01 with

@@ -37,9 +37,12 @@
                         XDEF            ASM_PRINT_TABLES
                         XDEF            ASM_SEAL_VALIDATE
                         XDEF            ASM_SEAL_COMPUTE_FNV
+                        XDEF            ASM_SEAL_PRINT_RECORD
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
                         XDEF            ASM_RJ_PRINT_CRLF
+                        XDEF            ASM_SEAL_REC
+                        XDEF            ASM_SEAL_REC_END
                         XDEF            ASM_SEAL_FLAGS
                         XDEF            ASM_SEAL_BASE_LO
                         XDEF            ASM_SEAL_BASE_HI
@@ -200,6 +203,13 @@ ASM_REPORTF_TRUNC      EQU             $20
 ASM_SEALF_VALID        EQU             $01
 ASM_SEALF_HOLE         EQU             $02
 ASM_SEALF_UNOWNED      EQU             $04
+
+ASM_SEAL_REC_BYTES     EQU             $0B
+ASM_SEAL_REC_OFF_FLAGS EQU             $00
+ASM_SEAL_REC_OFF_BASE  EQU             $01
+ASM_SEAL_REC_OFF_END   EQU             $03
+ASM_SEAL_REC_OFF_LEN   EQU             $05
+ASM_SEAL_REC_OFF_FNV   EQU             $07
 
 ASM_TOK_EOL           EQU             $00
 ASM_TOK_WORD          EQU             $01
@@ -11999,6 +12009,12 @@ ASM_FNV1A_UPDATE_A_FAST:
 ;   flags bit0 valid, bit1 hole, bit2 unowned bytes,
 ;   base=start_pc, end=high_water_pc exclusive, len=end-base,
 ;   fnv=FNV32 over bytes [base,end) after validation passes.
+; ASM_SEAL_REC is the concrete byte record:
+;   +$00 flags
+;   +$01 base lo, +$02 base hi
+;   +$03 end lo,  +$04 end hi
+;   +$05 len lo,  +$06 len hi
+;   +$07..+$0A FNV32 lo..hi
 ; This is not flash publication and not a K bit.
 ASM_SEAL_CAPTURE_END_FACTS:
                         LDA             ASM_START_PC_LO
@@ -12098,6 +12114,54 @@ ASM_SEAL_COMPUTE_FNV_DONE:
                         SEC
                         RTS
 
+ASM_SEAL_PRINT_RECORD:
+                        LDX             #<ASM_SEAL_MSG_OK
+                        LDY             #>ASM_SEAL_MSG_OK
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_SEAL_FLAGS
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<ASM_SEAL_MSG_BASE
+                        LDY             #>ASM_SEAL_MSG_BASE
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_SEAL_BASE_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<ASM_SEAL_MSG_END
+                        LDY             #>ASM_SEAL_MSG_END
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_SEAL_END_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_END_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_RJ_PRINT_CRLF
+                        LDX             #<ASM_SEAL_MSG_REC
+                        LDY             #>ASM_SEAL_MSG_REC
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             #>ASM_SEAL_REC
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             #<ASM_SEAL_REC
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<ASM_SEAL_MSG_LEN
+                        LDY             #>ASM_SEAL_MSG_LEN
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_SEAL_LEN_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_LEN_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<ASM_SEAL_MSG_FNV
+                        LDY             #>ASM_SEAL_MSG_FNV
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_SEAL_FNV3
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_FNV2
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_FNV1
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_FNV0
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
+
 ASM_SEAL_CLEAR:
                         STZ             ASM_SEAL_FLAGS
                         STZ             ASM_SEAL_BASE_LO
@@ -12162,6 +12226,7 @@ ASM_START_PC_LO:       DB              $00
 ASM_START_PC_HI:       DB              $00
 ASM_HIGH_PC_LO:        DB              $00
 ASM_HIGH_PC_HI:        DB              $00
+ASM_SEAL_REC:
 ASM_SEAL_FLAGS:        DB              $00
 ASM_SEAL_BASE_LO:      DB              $00
 ASM_SEAL_BASE_HI:      DB              $00
@@ -12173,6 +12238,7 @@ ASM_SEAL_FNV0:         DB              $00
 ASM_SEAL_FNV1:         DB              $00
 ASM_SEAL_FNV2:         DB              $00
 ASM_SEAL_FNV3:         DB              $00
+ASM_SEAL_REC_END:
 ASM_LINE_PC_LO:        DB              $00
 ASM_LINE_PC_HI:        DB              $00
 ASM_LINE_HIGH_PC_LO:   DB              $00
@@ -13055,6 +13121,12 @@ ASM_REPORT_MSG_USED_REFS:
                         DB              " REFS=$",0
 ASM_REPORT_MSG_USED_FIRST:
                         DB              " FIRST=$",0
+ASM_SEAL_MSG_OK:       DB              "SEAL OK FLAGS=$",0
+ASM_SEAL_MSG_BASE:     DB              " BASE=$",0
+ASM_SEAL_MSG_END:      DB              " END=$",0
+ASM_SEAL_MSG_REC:      DB              "SEAL REC @=$",0
+ASM_SEAL_MSG_LEN:      DB              " LEN=$",0
+ASM_SEAL_MSG_FNV:      DB              " FNV=$",0
 ASM_TABLE_MSG_TITLE:   DB              "ASM TABLES",0
 ASM_TABLE_MSG_SYMBOLS: DB              "SYMBOLS",0
 ASM_TABLE_MSG_SYM_HEAD:

@@ -17,17 +17,8 @@
                         XREF            ASM_ASSEMBLE_LINE
                         XREF            ASM_PRINT_TABLES
                         XREF            ASM_SEAL_COMPUTE_FNV
+                        XREF            ASM_SEAL_PRINT_RECORD
                         XREF            ASM_SEAL_FLAGS
-                        XREF            ASM_SEAL_BASE_LO
-                        XREF            ASM_SEAL_BASE_HI
-                        XREF            ASM_SEAL_END_LO
-                        XREF            ASM_SEAL_END_HI
-                        XREF            ASM_SEAL_LEN_LO
-                        XREF            ASM_SEAL_LEN_HI
-                        XREF            ASM_SEAL_FNV0
-                        XREF            ASM_SEAL_FNV1
-                        XREF            ASM_SEAL_FNV2
-                        XREF            ASM_SEAL_FNV3
                         XREF            ASM_RJOIN_INIT_IO
                         XREF            ASM_RJ_READ_CSTRING
                         XREF            ASM_RJ_WRITE_CSTRING
@@ -188,48 +179,7 @@ ASMF_SEAL_CMD:
                         JSR             ASMF_PRINT_SEAL_FLAGS_TAIL
                         JMP             ASMF_LOOP
 ASMF_SEAL_OK:
-                        LDX             #<MSG_SEAL_OK
-                        LDY             #>MSG_SEAL_OK
-                        JSR             ASMF_PRINT
-                        LDA             ASM_SEAL_FLAGS
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             #<MSG_BASE
-                        LDY             #>MSG_BASE
-                        JSR             ASMF_PRINT
-                        LDA             ASM_SEAL_BASE_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_BASE_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             #<MSG_SEAL_END
-                        LDY             #>MSG_SEAL_END
-                        JSR             ASMF_PRINT
-                        LDA             ASM_SEAL_END_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_END_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        JSR             ASM_RJ_PRINT_CRLF
-                        LDX             #<MSG_SEAL_REC
-                        LDY             #>MSG_SEAL_REC
-                        JSR             ASMF_PRINT
-                        LDX             #<MSG_LEN
-                        LDY             #>MSG_LEN
-                        JSR             ASMF_PRINT
-                        LDA             ASM_SEAL_LEN_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_LEN_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             #<MSG_FNV
-                        LDY             #>MSG_FNV
-                        JSR             ASMF_PRINT
-                        LDA             ASM_SEAL_FNV3
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_FNV2
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_FNV1
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_FNV0
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        JSR             ASM_RJ_PRINT_CRLF
+                        JSR             ASM_SEAL_PRINT_RECORD
                         JMP             ASMF_LOOP
 
 ASMF_NEW_CMD:
@@ -492,14 +442,8 @@ MSG_READ:               DB              "READ=$",0
 MSG_FAIL:               DB              "BEGIN=$",0
 MSG_TABLE:              DB              "TABLE=$",0
 MSG_PC:                 DB              " PC=$",0
-MSG_SEAL_OK:            DB              "SEAL OK FLAGS=$",0
 MSG_SEAL_ERR:           DB              "SEAL ERR=$",0
 MSG_FLAGS:              DB              " FLAGS=$",0
-MSG_BASE:               DB              " BASE=$",0
-MSG_SEAL_END:           DB              " END=$",0
-MSG_SEAL_REC:           DB              "SEAL REC",0
-MSG_LEN:                DB              " LEN=$",0
-MSG_FNV:                DB              " FNV=$",0
 MSG_DONE:               DB              "ASM FLASH OK",0
 MSG_BYE:                DB              "ASM FLASH BYE",0
 MSG_STATUS_OK:          DB              " OK",0
