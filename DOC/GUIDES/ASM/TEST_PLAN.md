@@ -6075,8 +6075,8 @@ ASMRT.REPORT.TRIM keeps the older compact-report printer in the core/smoke
          the board-facing report surface.
 ASMRP.TARGET.7600 moves the runtime-paste default emit target from $7000 to
          $7600. The report trim reduced the paste load image by $0308 bytes,
-         but explicit ORG $7000 still overlaps live runtime data and can
-         corrupt parser/opcode metadata while the session is assembling.
+         but explicit ORG $7000 could still overlap live runtime data until
+         ASMRT.OVERLAP_GUARD made that a BAD RANGE error.
 ASMRT.SIZE.UDATA_BUF moves ASM_RUNTIME_ONLY ASM_CODE_BUF from loaded DATA to
          UDATA. Full core/smoke builds keep the $0200 loaded smoke buffer;
          runtime-only builds keep a $0100 RAM-only default buffer.
@@ -6085,6 +6085,11 @@ ASMRT.SIZE.SEAL_CLEAR replaces the manual ASM_SEAL_REC/ASM_RELOC_COUNT clear
 ASMRT.SIZE.CMD_MATCH factors paste/flash SEAL, END, and NEW recognizers around
          shared leading-whitespace and tail validators. SEAL/NEW keep strict
          no-operand behavior; END keeps the existing wrapper detection rule.
+ASMRT.OVERLAP_GUARD rejects output target spans that overlap the live ASM
+         runtime workspace before any byte is written. RAM-loaded runtime/core
+         images guard $2000..ASM_CODE_BUF-1; the flash wrapper guards
+         $6000..ASM_CODE_BUF-1. ASM_CODE_BUF remains a valid fallback output
+         buffer.
 SEAL.WRAP is requirements-only for now:
          a future WRAP batch command must hard-stop or quench on validation,
          record, export, or install failure before it can be used as a
@@ -6347,7 +6352,8 @@ previous `L OK=543B` relocation-classifier image. The first explicit
 `JMP (TARGET,X)` failed with `ERR=$08 BAD SYM PC=$7009` after earlier emitted
 bytes had overwritten part of the image. A following `G 2000` did not restore
 those loaded constants. Treat `$7000` as unsafe for current runtime-paste board
-tests; use `$7600` unless the test is deliberately proving overlap behavior.
+tests in pre-`ASMRT.OVERLAP_GUARD` images; newer images should reject that
+target with `BAD RANGE` before writing.
 
 Hardware-proven `ASMRT.REPORT.TRIM` plus `$7600` relocation classifier retest
 on 2026-07-01 with HIMON V 00.0630(2121) and the trimmed
@@ -6656,6 +6662,57 @@ cases:
   still sealed the tiny span cleanly.
 - Immediate `END` after fresh entry sealed a zero-length span:
   `BASE=$7600 END=$7600 LEN=$0000 FNV=$811C9DC5 COUNT=$00`.
+
+Hardware-proven `ASMRT.OVERLAP_GUARD` on 2026-07-01 with HIMON
+V 00.0701(1134) and `asm-v1-runtime-paste-2000.s19` loaded as
+`L OK=3469 GO=2000`. Compared with the previous `L OK=343B GO=2000` image,
+the guard costs `$002E` loaded bytes in the runtime-paste proof image.
+
+```text
+; old unsafe runtime-paste target now rejects before writing
+ASM> ORG $7000
+ERR=$06 BAD RANGE PC=$7600
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$hhhh LEN=$0003 FNV=$695B146E
+SEAL REL @=$hhhh COUNT=$00
+SEAL> .
+>D 7600 +3
+7600: A9 5A 60 | .Z`
+
+; nearby safe range above the current workspace must still assemble
+ASM> ORG $7200
+OK PC=$7200
+ASM> LDA #$5A
+OK PC=$7202
+ASM> RTS
+OK PC=$7203
+ASM> END
+OK PC=$7203
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7200 END=$7203
+SEAL REC @=$hhhh LEN=$0003 FNV=$695B146E
+SEAL REL @=$hhhh COUNT=$00
+SEAL> .
+>D 7200 7202
+7200: A9 5A 60 | .Z`
+```
+
+Follow-up map-edge proof on the same `L OK=3469 GO=2000` image showed
+`ASM_CODE_BUF=$7105`: `ORG $7104` rejects as `BAD RANGE`, while a fresh
+session can `ORG $7105`, emit `DB $AA`, and seal `BASE=$7105 END=$7106
+LEN=$0001 FNV=$AF0BD5BD COUNT=$00`. In the first session, a later
+`ORG $7105` after emitting one byte at `$7600` also rejects as `BAD RANGE`
+because it is backward from `PC=$7601`, not because `$7105` itself is
+protected. The same edge proof re-confirmed that `NEW` before `END` is source
+text and can define a label, and that monitor `D` dumps must be issued after
+exiting `SEAL>`.
 
 ## ASMTEST_3000 Final Acceptance
 

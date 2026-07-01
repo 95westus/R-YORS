@@ -634,9 +634,12 @@ A [addr] [label[:]] MMM [operand] .
   it does not call `ASM_BEGIN` or show another `ASM> ` prompt.
 - The runtime paste wrapper's default emitted-code target is `$7600`, leaving
   room below it for the loaded runtime body, DATA constants, and UDATA/line
-  buffer. Explicit `ORG` can still choose an unsafe range until the assembler
-  grows a real workspace-overlap guard; current board tests should avoid
-  `$7000` under `asm-v1-runtime-paste`.
+  buffer. ASM rejects output targets that overlap the live ASM workspace:
+  RAM-loaded runtime/core images protect `$2000..ASM_CODE_BUF-1`, and the
+  flash wrapper protects `$6000..ASM_CODE_BUF-1`. `ASM_CODE_BUF` itself remains
+  a valid fallback emission buffer. The guard is applied at explicit
+  `ASM_BEGIN`, `ORG`, and before emitting byte spans, so failures return
+  `BAD RANGE` before writing into the protected area.
 - `ASM_RUNTIME_ONLY` keeps the default `ASM_CODE_BUF` as UDATA, not loaded
   DATA. The callable runtime wrappers normally enter with explicit PCs, and the
   default buffer remains a RAM fallback without costing S19 bytes.

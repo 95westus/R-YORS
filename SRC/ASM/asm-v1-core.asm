@@ -195,6 +195,12 @@ ASM_TARGET_MAX_HI      EQU             $7D
 ASM_TARGET_THIRD_ADDR  EQU             $7DFD
 ASM_TARGET_PENULT_ADDR EQU             $7DFE
 ASM_TARGET_LAST_ADDR   EQU             $7DFF
+ASM_TARGET_GUARD_LO    EQU             $00
+                        IF              ASM_FLASH_RUNTIME
+ASM_TARGET_GUARD_HI    EQU             $60
+                        ELSE
+ASM_TARGET_GUARD_HI    EQU             $20
+                        ENDIF
 
 ASM_SESS_IDLE          EQU             $00
 ASM_SESS_ACTIVE        EQU             $01
@@ -6497,6 +6503,18 @@ ASM_BEGIN_RJOIN_OK:
                         RTS
 ASM_BEGIN_EXPLICIT_PC_OK:
                         LDA             ASM_TMP0_LO
+                        LDX             ASM_TMP0_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCS             ASM_BEGIN_EXPLICIT_PC_SAFE
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        LDX             ASM_TMP0_LO
+                        LDY             ASM_TMP0_HI
+                        CLC
+                        RTS
+ASM_BEGIN_EXPLICIT_PC_SAFE:
+                        LDA             ASM_TMP0_LO
                         STA             ASM_PC_LO
                         STA             ASM_START_PC_LO
                         LDA             ASM_TMP0_HI
@@ -6864,19 +6882,9 @@ ASM_EMIT_BYTE:
                         LDA             #ASM_STATUS_BAD_OPER
                         JMP             ASM_EMIT_FAIL_A
 ASM_EMIT_BYTE_ACTIVE:
-                        LDA             ASM_PC_HI
-                        CMP             #ASM_TARGET_LIMIT_HI
-                        BCC             ASM_EMIT_BYTE_TARGET_OK
-                        LDA             #ASM_STATUS_BAD_RANGE
-                        JMP             ASM_EMIT_FAIL_A
-ASM_EMIT_BYTE_TARGET_OK:
-                        LDA             ASM_PC_HI
-                        CMP             #$FF
-                        BNE             ASM_EMIT_BYTE_ROOM
-                        LDA             ASM_PC_LO
-                        CMP             #$FF
-                        BNE             ASM_EMIT_BYTE_ROOM
-                        LDA             #ASM_STATUS_BAD_RANGE
+                        LDA             #$01
+                        JSR             ASM_EMIT_ROOM_FOR_A
+                        BCS             ASM_EMIT_BYTE_ROOM
                         JMP             ASM_EMIT_FAIL_A
 ASM_EMIT_BYTE_ROOM:
                         LDA             ASM_PC_LO
@@ -6909,25 +6917,9 @@ ASM_EMIT_WORD_LE:
                         LDA             #ASM_STATUS_BAD_OPER
                         BRA             ASM_EMIT_FAIL_A
 ASM_EMIT_WORD_ACTIVE:
-                        LDA             ASM_PC_HI
-                        CMP             #ASM_TARGET_LIMIT_HI
-                        BCS             ASM_EMIT_WORD_BAD_RANGE
-                        CMP             #ASM_TARGET_MAX_HI
-                        BNE             ASM_EMIT_WORD_TARGET_OK
-                        LDA             ASM_PC_LO
-                        CMP             #$FF
-                        BNE             ASM_EMIT_WORD_TARGET_OK
-ASM_EMIT_WORD_BAD_RANGE:
-                        LDA             #ASM_STATUS_BAD_RANGE
-                        BRA             ASM_EMIT_FAIL_A
-ASM_EMIT_WORD_TARGET_OK:
-                        LDA             ASM_PC_HI
-                        CMP             #$FF
-                        BNE             ASM_EMIT_WORD_ROOM
-                        LDA             ASM_PC_LO
-                        CMP             #$FE
-                        BCC             ASM_EMIT_WORD_ROOM
-                        LDA             #ASM_STATUS_BAD_RANGE
+                        LDA             #$02
+                        JSR             ASM_EMIT_ROOM_FOR_A
+                        BCS             ASM_EMIT_WORD_ROOM
                         BRA             ASM_EMIT_FAIL_A
 ASM_EMIT_WORD_ROOM:
                         LDA             ASM_TMP0_LO
@@ -7709,17 +7701,31 @@ ASM_EMIT_ROOM_THREE:
                         LDA             #$03
 
 ASM_EMIT_ROOM_FOR_A:
-                        STA             ASM_TMP0_HI
+                        STA             ASM_ROOM_COUNT
+                        BEQ             ASM_EMIT_ROOM_OK
                         LDA             ASM_PC_HI
                         CMP             #ASM_TARGET_LIMIT_HI
                         BCS             ASM_EMIT_ROOM_BAD_RANGE
-                        CMP             #ASM_TARGET_MAX_HI
-                        BNE             ASM_EMIT_ROOM_OK
                         LDA             ASM_PC_LO
+                        LDX             ASM_PC_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCC             ASM_EMIT_ROOM_BAD_RANGE
+                        LDA             ASM_ROOM_COUNT
+                        SEC
+                        SBC             #$01
                         CLC
-                        ADC             ASM_TMP0_HI
-                        BCC             ASM_EMIT_ROOM_OK
-                        BEQ             ASM_EMIT_ROOM_OK
+                        ADC             ASM_PC_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_PC_HI
+                        ADC             #$00
+                        STA             ASM_TMP1_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCS             ASM_EMIT_ROOM_BAD_RANGE
+                        LDA             ASM_TMP1_LO
+                        LDX             ASM_TMP1_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCC             ASM_EMIT_ROOM_BAD_RANGE
+                        BRA             ASM_EMIT_ROOM_OK
 ASM_EMIT_ROOM_BAD_RANGE:
                         LDA             #ASM_STATUS_BAD_RANGE
                         CLC
@@ -7727,6 +7733,32 @@ ASM_EMIT_ROOM_BAD_RANGE:
 ASM_EMIT_ROOM_OK:
                         LDA             #ASM_STATUS_OK
                         SEC
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_TARGET_ADDR_OK
+; IN : A=address lo, X=address hi.
+; OUT: C=1 when the address is outside the protected ASM runtime workspace.
+;      C=0 when the address is inside [guard_start, ASM_CODE_BUF).
+; NOTE: ASM_CODE_BUF itself remains a valid fallback emission buffer.
+; ----------------------------------------------------------------------------
+ASM_TARGET_ADDR_OK:
+                        CPX             #ASM_TARGET_GUARD_HI
+                        BCC             ASM_TARGET_ADDR_SAFE
+                        BNE             ASM_TARGET_ADDR_CHECK_END
+                        CMP             #ASM_TARGET_GUARD_LO
+                        BCC             ASM_TARGET_ADDR_SAFE
+ASM_TARGET_ADDR_CHECK_END:
+                        CPX             #>ASM_CODE_BUF
+                        BCC             ASM_TARGET_ADDR_GUARDED
+                        BNE             ASM_TARGET_ADDR_SAFE
+                        CMP             #<ASM_CODE_BUF
+                        BCC             ASM_TARGET_ADDR_GUARDED
+ASM_TARGET_ADDR_SAFE:
+                        SEC
+                        RTS
+ASM_TARGET_ADDR_GUARDED:
+                        CLC
                         RTS
 
 ASM_MODE_PATCH_BYTES:
@@ -10437,6 +10469,16 @@ ASM_SET_PC_APPLY:
                         CLC
                         RTS
 ASM_SET_PC_TARGET_OK:
+                        LDA             ASM_VALUE_LO
+                        LDX             ASM_VALUE_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCS             ASM_SET_PC_TARGET_SAFE
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        CLC
+                        RTS
+ASM_SET_PC_TARGET_SAFE:
                         LDA             ASM_TMP0_LO
                         BNE             ASM_SET_PC_NO_HOLE
                         LDA             ASM_VALUE_HI
@@ -12617,6 +12659,7 @@ ASM_SMOKE_REPORT_FLAGS:
                         DB              $00
                         ENDIF
 ASM_DB_COUNTING:       DB              $00
+ASM_ROOM_COUNT:        DB              $00
 ASM_DB_COUNT:          DB              $00
 ASM_DB_TAIL_LO:        DB              $00
 ASM_DB_TAIL_HI:        DB              $00

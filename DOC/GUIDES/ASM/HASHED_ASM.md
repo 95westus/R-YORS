@@ -1320,7 +1320,8 @@ here, so keep them separate:
 
 ```text
 $2000  RAM-loaded ASM proof/runtime base, and flash command default emit target
-$7000  older smoke-test emitted-code target; unsafe for current runtime-paste
+$7000  older smoke-test emitted-code target; current runtime-paste rejects it
+       when it overlaps the live workspace
 $7600  current runtime-paste default emitted-code target
 $8000  flash-resident ASM command CODE/FNV record link address
 $6000  current flash-runtime UDATA/table arena from the Makefile `-u6000`
@@ -5207,8 +5208,11 @@ parser/expression scratch
 ```
 
 If the chosen code range overlaps the assembler's own RAM workspace, fail with
-a range/context error. The first implementation should stop cleanly when a table
-fills; it must not spill into flash or overwrite neighboring RAM.
+a range/context error before writing any bytes. The active guard protects
+`$2000..ASM_CODE_BUF-1` for RAM-loaded runtime/core images and
+`$6000..ASM_CODE_BUF-1` for the flash wrapper; `ASM_CODE_BUF` itself remains a
+valid fallback output buffer. The first implementation should stop cleanly when
+a table fills; it must not spill into flash or overwrite neighboring RAM.
 
 The current proof-sized defaults are useful starting points:
 

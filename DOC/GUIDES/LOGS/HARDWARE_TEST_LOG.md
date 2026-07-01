@@ -8619,6 +8619,156 @@ ASM RT PASTE BYE
 RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
 ```
 
+## 2026-07-01 ASMRT.OVERLAP_GUARD Proof
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` as `L OK=3469 GO=2000` on HIMON
+V 00.0701(1134). Compared with the previous `L OK=343B GO=2000` image, this
+puts the runtime-paste cost of the overlap guard at `$002E` loaded bytes.
+
+The first run proves the old unsafe `$7000` target now rejects with `BAD RANGE`
+before writing, and that the session remains usable at the default `$7600`
+target:
+
+```text
+>L G
+L S19
+L @2000
+L OK=3469 GO=2000
+ASM RT PASTE
+ASM> ORG $7000
+ERR=$06 BAD RANGE PC=$7600
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$5578 LEN=$0003 FNV=$695B146E
+SEAL REL @=$5583 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=3F Y=10 P=75 S=FD NV-BdIzC
+>D 7600 +3
+7600: A9 5A 60 | .Z`
+>D 5578 +3
+5578: 01 00 76 | ..v
+>D 5583 +1
+5583: 00 | .
+```
+
+The second run proves a nearby safe range above the current workspace still
+assembles and seals normally:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7200
+OK PC=$7200
+ASM> LDA #$5A
+OK PC=$7202
+ASM> RTS
+OK PC=$7203
+ASM> END
+OK PC=$7203
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7200 END=$7203
+SEAL REC @=$5578 LEN=$0003 FNV=$695B146E
+SEAL REL @=$5583 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=3F Y=10 P=75 S=FD NV-BdIzC
+>D 7200 7202
+7200: A9 5A 60 | .Z`
+```
+
+## 2026-07-01 ASMRT.OVERLAP_GUARD Map-Edge Proof
+
+Operator transcript pasted into Codex session. This follow-up uses the same
+`L OK=3469 GO=2000` runtime-paste image. It proves the current map edge:
+`ASM_CODE_BUF=$7105`, so `$7104` is guarded but `$7105` is a valid fallback
+output address. It also records two command-surface edges: `NEW` before `END`
+is parsed as source text, and monitor `D` is not accepted from the `SEAL>`
+prompt.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> >
+ERR=$03 BAD OPER PC=$7600
+ASM> ORG $7104
+ERR=$06 BAD RANGE PC=$7600
+ASM> DB $AA
+OK PC=$7601
+ASM> NEW
+OK PC=$7601
+ASM> ORG 7105
+ERR=$05 BAD WIDTH PC=$7601
+ASM> ORG $7105
+ERR=$06 BAD RANGE PC=$7601
+ASM> NEW
+ERR=$08 BAD SYM PC=$7601
+ASM> NEW
+ERR=$08 BAD SYM PC=$7601
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=3F Y=10 P=75 S=FD NV-BdIzC
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7105
+OK PC=$7105
+ASM> DB $AA
+OK PC=$7106
+ASM> END
+OK PC=$7106
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7105 END=$7106
+SEAL REC @=$5578 LEN=$0001 FNV=$AF0BD5BD
+SEAL REL @=$5583 COUNT=$00
+SEAL> D 7104 71FF
+ERR=$03 BAD OPER PC=$7106
+SEAL> D 5578 +1
+ERR=$03 BAD OPER PC=$7106
+SEAL> D 5583 +1
+ERR=$03 BAD OPER PC=$7106
+SEAL>
+```
+
 ## 2026-07-01 ASMRT.SIZE Session UDATA Optional Post-END Proof
 
 Operator transcript pasted into Codex session. The already-loaded
