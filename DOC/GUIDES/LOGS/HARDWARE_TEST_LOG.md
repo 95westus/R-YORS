@@ -8070,3 +8070,65 @@ SEAL OK FLAGS=$01 BASE=$7600 END=$7603
 SEAL REC LEN=$0003 FNV=$695B146E
 SEAL>
 ```
+
+## 2026-07-01 ASM SEAL.REC DS Eligibility Runtime Paste Proof
+
+Operator transcript pasted into Codex session. The board reused the already
+loaded `asm-v1-runtime-paste-2000.s19` image at `$2000`, previously proven as
+`L OK=52E6 GO=2000`. This proves initialized `DS count,$xx` bytes are owned and
+included in the FNV32 body, while plain `DS count` marks the span ineligible
+and emits no `SEAL REC` line.
+
+Transcript:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7400
+OK PC=$7400
+ASM> LDA #$5A
+OK PC=$7402
+ASM> DS 2,$FF
+OK PC=$7404
+ASM> RTS
+OK PC=$7405
+ASM> END
+OK PC=$7405
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7400 END=$7405
+SEAL REC LEN=$0005 FNV=$C2D38700
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=4C Y=10 P=75 S=FD NV-BdIzC
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7300
+OK PC=$7300
+ASM> LDA #$5A
+OK PC=$7302
+ASM> DS 2
+OK PC=$7304
+ASM> RTS
+OK PC=$7305
+ASM> END
+OK PC=$7305
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL ERR=$02 FLAGS=$05
+SEAL>
+```

@@ -6121,12 +6121,14 @@ $7600 clean tiny span        -> SEAL OK FLAGS=$01 BASE=$7600 END=$7603
                                 SEAL REC LEN=$0003 FNV=$695B146E
 ```
 
-Remaining `SEAL.REC` expected output keeps the same rejection lines and changes
-other eligible spans to:
+Hardware-proven `SEAL.REC` initialized-DS and plain-DS follow-up on
+2026-07-01 with the already-loaded `asm-v1-runtime-paste-2000.s19`
+`L OK=52E6 GO=2000` image:
 
 ```text
 $7400 initialized DS count   -> SEAL OK FLAGS=$01 BASE=$7400 END=$7405
-                                SEAL REC LEN=$0005 FNV=$hhhhhhhh
+                                SEAL REC LEN=$0005 FNV=$C2D38700
+$7300 plain DS count         -> SEAL ERR=$02 FLAGS=$05, no SEAL REC line
 ```
 
 Hardware-proven `SEAL> NEW` restart on 2026-07-01 with
