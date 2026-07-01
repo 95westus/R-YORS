@@ -61,6 +61,12 @@
   bytes at the BIO layer and require all RX consumers to read through BIO.
   Keep `BIO_FTDI_GET_CTRL_C` as a consuming long-scan abort poll for now; do
   not use it as a general non-destructive keyboard peek.
+- Fix HIMON long-output abort polling so board-script paste commands are not
+  eaten while `D`, catalog listing, or search output is still printing. Current
+  `HIM_CHECK_CTRL_C` polls by consuming one FTDI byte and discarding it when it
+  is not Ctrl-C; this can turn a queued `D 5848 +22` into `5848 +22` or `+22`.
+  The likely fix is a BIO-owned one-byte or small-ring RX lookahead/pushback
+  path, with normal HIMON line input consuming cached bytes before hardware.
 - Keep the `BIO_FTDI_*_BYTE_BLOCK` routines as unbounded blocking APIs unless
   every caller is audited. Bounded waits should use the existing timeout-shaped
   routines or small wrappers with an explicit loop-delay contract, leaving room
