@@ -166,6 +166,22 @@ $05  valid + unowned plain DS bytes
 $07  valid + hole + unowned
 ```
 
+After clean `END`, current wrappers switch to a small `SEAL> ` command window:
+
+```text
+SEAL             dry-run the frozen facts
+NEW              reopen ASM at the frozen END PC
+.                return to HIMON
+```
+
+`NEW` is deliberately validated and non-interactive. It accepts only bare `NEW`
+or `NEW ; comment` with optional surrounding spaces/tabs. It does not accept an
+address operand; the restart address is always the frozen `END` PC. It does not
+ask `Y/N` because the operator is already at the guarded post-session prompt,
+and extra confirmation would make paste scripts less deterministic. A valid
+`NEW` discards the frozen facts by starting a new ASM session and reports the
+restart point with `OK PC=$hhhh`.
+
 Seal v0 is a single contiguous body. The first `ORG` in a fresh/pristine ASM
 session may choose the source base and becomes `START`. After that, any
 forward `ORG` creates an unowned hole in the `[START,HIGH)` span, even though

@@ -16,6 +16,14 @@
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
                         XREF            ASM_PRINT_TABLES
+                        XREF            ASM_SEAL_VALIDATE
+                        XREF            ASM_SEAL_FLAGS
+                        XREF            ASM_SEAL_BASE_LO
+                        XREF            ASM_SEAL_BASE_HI
+                        XREF            ASM_SEAL_END_LO
+                        XREF            ASM_SEAL_END_HI
+                        XREF            ASM_SEAL_LEN_LO
+                        XREF            ASM_SEAL_LEN_HI
                         XREF            SYS_FLUSH_RX
                         XREF            SYS_READ_CHAR_TIMEOUT_SPINDOWN
                         XREF            SYS_READ_CSTRING_EDIT_ECHO_UPPER
@@ -55,6 +63,7 @@ START:
                         JSR             ASM_BEGIN
                         STX             ASMRP_PC_LO
                         STY             ASMRP_PC_HI
+                        STZ             ASMRP_POST_FLAG
                         BCS             ASMRP_LOOP
 
                         STA             ASMRP_RESULT
@@ -62,8 +71,15 @@ START:
                         JMP             ASMRP_ABORT_WITH_RESULT
 
 ASMRP_LOOP:
+                        LDA             ASMRP_POST_FLAG
+                        BEQ             ASMRP_PROMPT_ASM
+                        LDX             #<MSG_SEAL_PROMPT
+                        LDY             #>MSG_SEAL_PROMPT
+                        BRA             ASMRP_PROMPT_PRINT
+ASMRP_PROMPT_ASM:
                         LDX             #<MSG_PROMPT
                         LDY             #>MSG_PROMPT
+ASMRP_PROMPT_PRINT:
                         JSR             ASMRP_PRINT
 
                         LDX             #<ASMRP_LINE_BUF
@@ -80,8 +96,25 @@ ASMRP_LOOP:
 ASMRP_READ_OK:
                         BEQ             ASMRP_LOOP
                         JSR             ASMRP_IS_DOT
-                        BCC             ASMRP_ASSEMBLE
+                        BCS             ASMRP_QUIT
+                        LDA             ASMRP_POST_FLAG
+                        BEQ             ASMRP_ASSEMBLE
+                        JSR             ASMRP_IS_SEAL
+                        BCC             ASMRP_POST_CHECK_NEW
+                        JMP             ASMRP_SEAL_CMD
+ASMRP_POST_CHECK_NEW:
+                        JSR             ASMRP_IS_NEW
+                        BCC             ASMRP_POST_REJECT
+                        JMP             ASMRP_NEW_CMD
+ASMRP_POST_REJECT:
+                        LDA             #ASMRP_STATUS_BAD_OPER
+                        STA             ASMRP_RESULT
+                        LDX             #<MSG_ERR
+                        LDY             #>MSG_ERR
+                        JSR             ASMRP_PRINT_STATUS_PC_LINE
+                        JMP             ASMRP_LOOP
 
+ASMRP_QUIT:
                         LDX             #<MSG_BYE
                         LDY             #>MSG_BYE
                         JSR             ASMRP_PRINT_LINE
@@ -101,7 +134,9 @@ ASMRP_ASSEMBLE:
                         LDY             #>MSG_ERR
                         JSR             ASMRP_PRINT_STATUS_PC_LINE
                         JSR             ASMRP_IS_END
-                        BCS             ASMRP_ABORT_WITH_TABLES
+                        BCC             ASMRP_REJECT_CONTINUE
+                        JMP             ASMRP_ABORT_WITH_TABLES
+ASMRP_REJECT_CONTINUE:
                         JMP             ASMRP_LOOP
 
 ASMRP_ACCEPTED:
@@ -109,14 +144,76 @@ ASMRP_ACCEPTED:
                         LDY             #>MSG_OK
                         JSR             ASMRP_PRINT_PC_LINE
                         JSR             ASMRP_IS_END
-                        BCC             ASMRP_LOOP
+                        BCS             ASMRP_ACCEPTED_END
+                        JMP             ASMRP_LOOP
 
+ASMRP_ACCEPTED_END:
+                        LDA             #$01
+                        STA             ASMRP_POST_FLAG
                         JSR             ASMRP_PRINT_TABLES_CMD
                         LDX             #<MSG_DONE
                         LDY             #>MSG_DONE
                         JSR             ASMRP_PRINT_LINE
-                        SEC
-                        RTS
+                        JMP             ASMRP_LOOP
+
+ASMRP_SEAL_CMD:
+                        JSR             ASM_SEAL_VALIDATE
+                        BCS             ASMRP_SEAL_OK
+                        STA             ASMRP_RESULT
+                        LDX             #<MSG_SEAL_ERR
+                        LDY             #>MSG_SEAL_ERR
+                        JSR             ASMRP_PRINT
+                        LDA             ASMRP_RESULT
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             ASMRP_PRINT_SEAL_FLAGS_TAIL
+                        JMP             ASMRP_LOOP
+ASMRP_SEAL_OK:
+                        LDX             #<MSG_SEAL_OK
+                        LDY             #>MSG_SEAL_OK
+                        JSR             ASMRP_PRINT
+                        LDA             ASM_SEAL_FLAGS
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_BASE
+                        LDY             #>MSG_BASE
+                        JSR             ASMRP_PRINT
+                        LDA             ASM_SEAL_BASE_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_BASE_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_SEAL_END
+                        LDY             #>MSG_SEAL_END
+                        JSR             ASMRP_PRINT
+                        LDA             ASM_SEAL_END_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_END_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_LEN
+                        LDY             #>MSG_LEN
+                        JSR             ASMRP_PRINT
+                        LDA             ASM_SEAL_LEN_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_LEN_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        JMP             ASMRP_LOOP
+
+ASMRP_NEW_CMD:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             ASMRP_PC_LO
+                        LDY             ASMRP_PC_HI
+                        JSR             ASM_BEGIN
+                        STX             ASMRP_PC_LO
+                        STY             ASMRP_PC_HI
+                        BCS             ASMRP_NEW_OK
+                        STA             ASMRP_RESULT
+                        JSR             ASMRP_PRINT_FAIL
+                        JMP             ASMRP_ABORT_WITH_RESULT
+ASMRP_NEW_OK:
+                        STZ             ASMRP_POST_FLAG
+                        LDX             #<MSG_OK
+                        LDY             #>MSG_OK
+                        JSR             ASMRP_PRINT_PC_LINE
+                        JMP             ASMRP_LOOP
 
 ASMRP_PRINT_FAIL:
                         LDX             #<MSG_FAIL
@@ -156,6 +253,14 @@ ASMRP_PRINT_LINE:
 
 ASMRP_PRINT:
                         JMP             SYS_WRITE_CSTRING
+
+ASMRP_PRINT_SEAL_FLAGS_TAIL:
+                        LDX             #<MSG_FLAGS
+                        LDY             #>MSG_FLAGS
+                        JSR             ASMRP_PRINT
+                        LDA             ASM_SEAL_FLAGS
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JMP             SYS_WRITE_CRLF
 
 ASMRP_ABORT_WITH_RESULT:
                         JSR             ASMRP_QUENCH_RX
@@ -218,6 +323,53 @@ ASMRP_DOT_NO:
                         CLC
                         RTS
 
+ASMRP_IS_SEAL:
+                        LDY             #$00
+ASMRP_SEAL_SKIP:
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #' '
+                        BEQ             ASMRP_SEAL_ADV
+                        CMP             #$09
+                        BNE             ASMRP_SEAL_WORD
+ASMRP_SEAL_ADV:
+                        INY
+                        BRA             ASMRP_SEAL_SKIP
+ASMRP_SEAL_WORD:
+                        CMP             #'S'
+                        BNE             ASMRP_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'E'
+                        BNE             ASMRP_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'A'
+                        BNE             ASMRP_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'L'
+                        BNE             ASMRP_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        BEQ             ASMRP_YES
+                        CMP             #';'
+                        BEQ             ASMRP_YES
+                        CMP             #' '
+                        BEQ             ASMRP_SEAL_TAIL
+                        CMP             #$09
+                        BNE             ASMRP_NO
+ASMRP_SEAL_TAIL:
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        BEQ             ASMRP_YES
+                        CMP             #' '
+                        BEQ             ASMRP_SEAL_TAIL
+                        CMP             #$09
+                        BEQ             ASMRP_SEAL_TAIL
+                        CMP             #';'
+                        BEQ             ASMRP_YES
+                        BRA             ASMRP_NO
+
 ASMRP_IS_END:
                         LDY             #$00
 ASMRP_END_SKIP:
@@ -256,15 +408,70 @@ ASMRP_YES:
                         SEC
                         RTS
 
+ASMRP_IS_NEW:
+                        LDY             #$00
+ASMRP_NEW_SKIP:
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #' '
+                        BEQ             ASMRP_NEW_ADV
+                        CMP             #$09
+                        BNE             ASMRP_NEW_WORD
+ASMRP_NEW_ADV:
+                        INY
+                        BRA             ASMRP_NEW_SKIP
+ASMRP_NEW_WORD:
+                        CMP             #'N'
+                        BNE             ASMRP_NEW_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'E'
+                        BNE             ASMRP_NEW_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'W'
+                        BNE             ASMRP_NEW_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        BEQ             ASMRP_NEW_YES
+                        CMP             #';'
+                        BEQ             ASMRP_NEW_YES
+                        CMP             #' '
+                        BEQ             ASMRP_NEW_TAIL
+                        CMP             #$09
+                        BNE             ASMRP_NEW_NO
+ASMRP_NEW_TAIL:
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        BEQ             ASMRP_NEW_YES
+                        CMP             #' '
+                        BEQ             ASMRP_NEW_TAIL
+                        CMP             #$09
+                        BEQ             ASMRP_NEW_TAIL
+                        CMP             #';'
+                        BEQ             ASMRP_NEW_YES
+ASMRP_NEW_NO:
+                        CLC
+                        RTS
+ASMRP_NEW_YES:
+                        SEC
+                        RTS
+
                         DATA
 MSG_TITLE:              DB              "ASM RT PASTE",0
 MSG_PROMPT:             DB              "ASM> ",0
+MSG_SEAL_PROMPT:        DB              "SEAL> ",0
 MSG_OK:                 DB              "OK",0
 MSG_ERR:                DB              "ERR=$",0
 MSG_READ:               DB              "READ=$",0
 MSG_FAIL:               DB              "BEGIN=$",0
 MSG_TABLE:              DB              "TABLE=$",0
 MSG_PC:                 DB              " PC=$",0
+MSG_SEAL_OK:            DB              "SEAL OK FLAGS=$",0
+MSG_SEAL_ERR:           DB              "SEAL ERR=$",0
+MSG_FLAGS:              DB              " FLAGS=$",0
+MSG_BASE:               DB              " BASE=$",0
+MSG_SEAL_END:           DB              " END=$",0
+MSG_LEN:                DB              " LEN=$",0
 MSG_DONE:               DB              "ASM RT PASTE OK",0
 MSG_BYE:                DB              "ASM RT PASTE BYE",0
 MSG_STATUS_OK:          DB              " OK",0
@@ -312,5 +519,6 @@ ASMRP_STATUS_NAME_HI:
 
 ASMRP_PC_LO:            DB              $00
 ASMRP_PC_HI:            DB              $00
+ASMRP_POST_FLAG:        DB              $00
 
 ASMRP_LINE_BUF:         DS              $0100

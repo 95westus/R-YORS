@@ -4,6 +4,203 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-07-01 ASM SEAL NEW Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` at `$2000` with `L OK=5247 GO=2000` after
+adding the validated `SEAL> NEW` restart command.
+
+Validated:
+
+- `SEAL> NEW X` rejects as `ERR=$03 BAD OPER PC=$7603`.
+- Invalid `NEW` leaves the frozen seal facts intact.
+- `SEAL> SEAL` still reports the first frozen span as
+  `BASE=$7600 END=$7603 LEN=$0003`.
+- Bare `SEAL> NEW` reopens ASM at the frozen exclusive end PC and prints
+  `OK PC=$7603`.
+- The second session starts at `$7603`, ends at `$7606`, and seals as
+  `BASE=$7603 END=$7606 LEN=$0003`.
+- `.` exits cleanly from the final `SEAL> ` prompt.
+
+### Transcript
+
+```text
+HIMON V 00.0630(2121)
+>L G
+L S19
+L @2000
+L OK=5247 GO=2000
+ASM RT PASTE
+ASM> ORG $7600
+OK PC=$7600
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+ASM RT PASTE OK
+SEAL> NEW X
+ERR=$03 BAD OPER PC=$7603
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603 LEN=$0003
+SEAL> NEW
+OK PC=$7603
+ASM> LDA #$A5
+OK PC=$7605
+ASM> RTS
+OK PC=$7606
+ASM> END
+OK PC=$7606
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7603 END=$7606 LEN=$0003
+SEAL> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=B1 Y=10 P=75 S=FD NV-BdIzC
+>
+```
+
+## 2026-07-01 ASM SEAL Dry-Run Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` at `$2000` with `L OK=51C7 GO=2000` after the
+first post-`END` `SEAL` dry-run command was added.
+
+Validated:
+
+- Clean `END` switches the runtime paste wrapper from `ASM> ` to `SEAL> `.
+- `SEAL` accepts only `FLAGS=$01` and prints exact frozen base/end/length
+  facts on success.
+- A forward `ORG` after the initial `ORG` rejects with `ERR=$02 FLAGS=$03`.
+- Plain `DS count` rejects with `ERR=$02 FLAGS=$05`.
+- Initialized `DS count,$xx` stays seal-owned and remains accepted.
+- Combining forward `ORG` and plain `DS` rejects with `ERR=$02 FLAGS=$07`.
+- `.` exits cleanly from the post-session `SEAL> ` prompt.
+
+### Transcript Extracts
+
+```text
+HIMON V 00.0630(2121)
+>L G
+L S19
+L @2000
+L OK=51C7 GO=2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> LDA #$5A
+OK PC=$7002
+ASM> RTS
+OK PC=$7003
+ASM> END
+OK PC=$7003
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7000 END=$7003 LEN=$0003
+SEAL> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=31 Y=10 P=75 S=FD NV-BdIzC
+```
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7200
+OK PC=$7200
+ASM> JMP $7210
+OK PC=$7203
+ASM> ORG $7210
+OK PC=$7210
+ASM> LDA #$5A
+OK PC=$7212
+ASM> RTS
+OK PC=$7213
+ASM> END
+OK PC=$7213
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL ERR=$02 FLAGS=$03
+SEAL> .
+ASM RT PASTE BYE
+```
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7300
+OK PC=$7300
+ASM> LDA #$5A
+OK PC=$7302
+ASM> DS 2
+OK PC=$7304
+ASM> RTS
+OK PC=$7305
+ASM> END
+OK PC=$7305
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL ERR=$02 FLAGS=$05
+SEAL> .
+ASM RT PASTE BYE
+```
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7400
+OK PC=$7400
+ASM> LDA #$5A
+OK PC=$7402
+ASM> DS 2,$FF
+OK PC=$7404
+ASM> RTS
+OK PC=$7405
+ASM> END
+OK PC=$7405
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7400 END=$7405 LEN=$0005
+SEAL> .
+ASM RT PASTE BYE
+```
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7500
+OK PC=$7500
+ASM> JMP $7510
+OK PC=$7503
+ASM> ORG $7510
+OK PC=$7510
+ASM> LDA #$5A
+OK PC=$7512
+ASM> DS 2
+OK PC=$7514
+ASM> RTS
+OK PC=$7515
+ASM> END
+OK PC=$7515
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL ERR=$02 FLAGS=$07
+SEAL> .
+ASM RT PASTE BYE
+```
+
 ## 2026-07-01 ASM Seal Eligibility Flags Board Proof
 
 ### Summary

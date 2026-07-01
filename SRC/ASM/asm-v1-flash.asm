@@ -16,6 +16,14 @@
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
                         XREF            ASM_PRINT_TABLES
+                        XREF            ASM_SEAL_VALIDATE
+                        XREF            ASM_SEAL_FLAGS
+                        XREF            ASM_SEAL_BASE_LO
+                        XREF            ASM_SEAL_BASE_HI
+                        XREF            ASM_SEAL_END_LO
+                        XREF            ASM_SEAL_END_HI
+                        XREF            ASM_SEAL_LEN_LO
+                        XREF            ASM_SEAL_LEN_HI
                         XREF            ASM_RJOIN_INIT_IO
                         XREF            ASM_RJ_READ_CSTRING
                         XREF            ASM_RJ_WRITE_CSTRING
@@ -71,6 +79,7 @@ ASMF_IO_READY:
                         JSR             ASM_BEGIN
                         STX             ASMF_PC_LO
                         STY             ASMF_PC_HI
+                        STZ             ASMF_POST_FLAG
                         BCS             ASMF_LOOP
 
                         STA             ASMF_RESULT
@@ -78,8 +87,15 @@ ASMF_IO_READY:
                         JMP             ASMF_RETURN_RESULT
 
 ASMF_LOOP:
+                        LDA             ASMF_POST_FLAG
+                        BEQ             ASMF_PROMPT_ASM
+                        LDX             #<MSG_SEAL_PROMPT
+                        LDY             #>MSG_SEAL_PROMPT
+                        BRA             ASMF_PROMPT_PRINT
+ASMF_PROMPT_ASM:
                         LDX             #<MSG_PROMPT
                         LDY             #>MSG_PROMPT
+ASMF_PROMPT_PRINT:
                         JSR             ASMF_PRINT
 
                         LDX             #<ASMF_LINE_BUF
@@ -96,8 +112,25 @@ ASMF_LOOP:
 ASMF_READ_OK:
                         BEQ             ASMF_LOOP
                         JSR             ASMF_IS_DOT
-                        BCC             ASMF_ASSEMBLE
+                        BCS             ASMF_QUIT
+                        LDA             ASMF_POST_FLAG
+                        BEQ             ASMF_ASSEMBLE
+                        JSR             ASMF_IS_SEAL
+                        BCC             ASMF_POST_CHECK_NEW
+                        JMP             ASMF_SEAL_CMD
+ASMF_POST_CHECK_NEW:
+                        JSR             ASMF_IS_NEW
+                        BCC             ASMF_POST_REJECT
+                        JMP             ASMF_NEW_CMD
+ASMF_POST_REJECT:
+                        LDA             #ASMF_STATUS_BAD_OPER
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_ERR
+                        LDY             #>MSG_ERR
+                        JSR             ASMF_PRINT_STATUS_PC_LINE
+                        JMP             ASMF_LOOP
 
+ASMF_QUIT:
                         LDX             #<MSG_BYE
                         LDY             #>MSG_BYE
                         JSR             ASMF_PRINT_LINE
@@ -117,7 +150,9 @@ ASMF_ASSEMBLE:
                         LDY             #>MSG_ERR
                         JSR             ASMF_PRINT_STATUS_PC_LINE
                         JSR             ASMF_IS_END
-                        BCS             ASMF_ABORT_WITH_TABLES
+                        BCC             ASMF_REJECT_CONTINUE
+                        JMP             ASMF_ABORT_WITH_TABLES
+ASMF_REJECT_CONTINUE:
                         JMP             ASMF_LOOP
 
 ASMF_ACCEPTED:
@@ -125,14 +160,76 @@ ASMF_ACCEPTED:
                         LDY             #>MSG_OK
                         JSR             ASMF_PRINT_PC_LINE
                         JSR             ASMF_IS_END
-                        BCC             ASMF_LOOP
+                        BCS             ASMF_ACCEPTED_END
+                        JMP             ASMF_LOOP
 
+ASMF_ACCEPTED_END:
+                        LDA             #$01
+                        STA             ASMF_POST_FLAG
                         JSR             ASMF_PRINT_TABLES_CMD
                         LDX             #<MSG_DONE
                         LDY             #>MSG_DONE
                         JSR             ASMF_PRINT_LINE
-                        SEC
-                        RTS
+                        JMP             ASMF_LOOP
+
+ASMF_SEAL_CMD:
+                        JSR             ASM_SEAL_VALIDATE
+                        BCS             ASMF_SEAL_OK
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_SEAL_ERR
+                        LDY             #>MSG_SEAL_ERR
+                        JSR             ASMF_PRINT
+                        LDA             ASMF_RESULT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASMF_PRINT_SEAL_FLAGS_TAIL
+                        JMP             ASMF_LOOP
+ASMF_SEAL_OK:
+                        LDX             #<MSG_SEAL_OK
+                        LDY             #>MSG_SEAL_OK
+                        JSR             ASMF_PRINT
+                        LDA             ASM_SEAL_FLAGS
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<MSG_BASE
+                        LDY             #>MSG_BASE
+                        JSR             ASMF_PRINT
+                        LDA             ASM_SEAL_BASE_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<MSG_SEAL_END
+                        LDY             #>MSG_SEAL_END
+                        JSR             ASMF_PRINT
+                        LDA             ASM_SEAL_END_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_END_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<MSG_LEN
+                        LDY             #>MSG_LEN
+                        JSR             ASMF_PRINT
+                        LDA             ASM_SEAL_LEN_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_SEAL_LEN_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_RJ_PRINT_CRLF
+                        JMP             ASMF_LOOP
+
+ASMF_NEW_CMD:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             ASMF_PC_LO
+                        LDY             ASMF_PC_HI
+                        JSR             ASM_BEGIN
+                        STX             ASMF_PC_LO
+                        STY             ASMF_PC_HI
+                        BCS             ASMF_NEW_OK
+                        STA             ASMF_RESULT
+                        JSR             ASMF_PRINT_FAIL
+                        JMP             ASMF_RETURN_RESULT
+ASMF_NEW_OK:
+                        STZ             ASMF_POST_FLAG
+                        LDX             #<MSG_OK
+                        LDY             #>MSG_OK
+                        JSR             ASMF_PRINT_PC_LINE
+                        JMP             ASMF_LOOP
 
 ASMF_PRINT_FAIL:
                         LDX             #<MSG_FAIL
@@ -172,6 +269,14 @@ ASMF_PRINT_LINE:
 
 ASMF_PRINT:
                         JMP             ASM_RJ_WRITE_CSTRING
+
+ASMF_PRINT_SEAL_FLAGS_TAIL:
+                        LDX             #<MSG_FLAGS
+                        LDY             #>MSG_FLAGS
+                        JSR             ASMF_PRINT
+                        LDA             ASM_SEAL_FLAGS
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JMP             ASM_RJ_PRINT_CRLF
 
 ASMF_RETURN_RESULT:
                         LDA             ASMF_RESULT
@@ -224,6 +329,53 @@ ASMF_DOT_NO:
                         CLC
                         RTS
 
+ASMF_IS_SEAL:
+                        LDY             #$00
+ASMF_SEAL_SKIP:
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #' '
+                        BEQ             ASMF_SEAL_ADV
+                        CMP             #$09
+                        BNE             ASMF_SEAL_WORD
+ASMF_SEAL_ADV:
+                        INY
+                        BRA             ASMF_SEAL_SKIP
+ASMF_SEAL_WORD:
+                        CMP             #'S'
+                        BNE             ASMF_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'E'
+                        BNE             ASMF_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'A'
+                        BNE             ASMF_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'L'
+                        BNE             ASMF_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        BEQ             ASMF_YES
+                        CMP             #';'
+                        BEQ             ASMF_YES
+                        CMP             #' '
+                        BEQ             ASMF_SEAL_TAIL
+                        CMP             #$09
+                        BNE             ASMF_NO
+ASMF_SEAL_TAIL:
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        BEQ             ASMF_YES
+                        CMP             #' '
+                        BEQ             ASMF_SEAL_TAIL
+                        CMP             #$09
+                        BEQ             ASMF_SEAL_TAIL
+                        CMP             #';'
+                        BEQ             ASMF_YES
+                        BRA             ASMF_NO
+
 ASMF_IS_END:
                         LDY             #$00
 ASMF_END_SKIP:
@@ -262,16 +414,71 @@ ASMF_YES:
                         SEC
                         RTS
 
+ASMF_IS_NEW:
+                        LDY             #$00
+ASMF_NEW_SKIP:
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #' '
+                        BEQ             ASMF_NEW_ADV
+                        CMP             #$09
+                        BNE             ASMF_NEW_WORD
+ASMF_NEW_ADV:
+                        INY
+                        BRA             ASMF_NEW_SKIP
+ASMF_NEW_WORD:
+                        CMP             #'N'
+                        BNE             ASMF_NEW_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'E'
+                        BNE             ASMF_NEW_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'W'
+                        BNE             ASMF_NEW_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        BEQ             ASMF_NEW_YES
+                        CMP             #';'
+                        BEQ             ASMF_NEW_YES
+                        CMP             #' '
+                        BEQ             ASMF_NEW_TAIL
+                        CMP             #$09
+                        BNE             ASMF_NEW_NO
+ASMF_NEW_TAIL:
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        BEQ             ASMF_NEW_YES
+                        CMP             #' '
+                        BEQ             ASMF_NEW_TAIL
+                        CMP             #$09
+                        BEQ             ASMF_NEW_TAIL
+                        CMP             #';'
+                        BEQ             ASMF_NEW_YES
+ASMF_NEW_NO:
+                        CLC
+                        RTS
+ASMF_NEW_YES:
+                        SEC
+                        RTS
+
                         DATA
 ASMF_TEXT:              DB              "ASM V",('1'+$80)
 MSG_TITLE:              DB              "ASM FLASH",0
 MSG_PROMPT:             DB              "ASM> ",0
+MSG_SEAL_PROMPT:        DB              "SEAL> ",0
 MSG_OK:                 DB              "OK",0
 MSG_ERR:                DB              "ERR=$",0
 MSG_READ:               DB              "READ=$",0
 MSG_FAIL:               DB              "BEGIN=$",0
 MSG_TABLE:              DB              "TABLE=$",0
 MSG_PC:                 DB              " PC=$",0
+MSG_SEAL_OK:            DB              "SEAL OK FLAGS=$",0
+MSG_SEAL_ERR:           DB              "SEAL ERR=$",0
+MSG_FLAGS:              DB              " FLAGS=$",0
+MSG_BASE:               DB              " BASE=$",0
+MSG_SEAL_END:           DB              " END=$",0
+MSG_LEN:                DB              " LEN=$",0
 MSG_DONE:               DB              "ASM FLASH OK",0
 MSG_BYE:                DB              "ASM FLASH BYE",0
 MSG_STATUS_OK:          DB              " OK",0
@@ -321,6 +528,7 @@ ASMF_STATUS_NAME_HI:
 ASMF_RESULT:            DB              $00
 ASMF_PC_LO:             DB              $00
 ASMF_PC_HI:             DB              $00
+ASMF_POST_FLAG:         DB              $00
 ASMF_LINE_BUF:          DS              $0100
 
                         ENDMOD

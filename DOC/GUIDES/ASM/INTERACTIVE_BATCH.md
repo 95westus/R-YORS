@@ -20,6 +20,8 @@ ASM> END
 OK PC=$7002
 ASM TABLES
 ASM RT PASTE OK
+SEAL> .
+ASM RT PASTE BYE
 ```
 
 The current path feeds every accepted physical source line through the same
@@ -73,10 +75,16 @@ ASM_END resolves final fixups
 unresolved required fixups fail the session
 range and width checks for pending fixups are enforced
 the final status/report path runs
+clean success enters the wrapper's SEAL> command window
 ```
 
 Do not make interactive use an immediate one-line assembler. A human at the
 prompt still owns a full session, and fixups may span lines until `END`.
+
+After a clean `END`, `SEAL> ` is not source mode. It accepts only the wrapper
+commands `SEAL`, `NEW`, and `.`. `NEW` is a validated restart at the frozen
+`END` PC, not a general `ORG` replacement and not a confirmation prompt. Before
+`END`, `SEAL` and `NEW` remain ordinary source words at the `ASM> ` prompt.
 
 ## Source Syntax Boundary
 

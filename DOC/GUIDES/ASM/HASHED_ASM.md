@@ -5058,6 +5058,30 @@ is clear, it reports `SEAL ERR=$01 FLAGS=$ff`; if the valid bit is set but any
 hole, unowned, or reserved bit is also set, it reports
 `SEAL ERR=$02 FLAGS=$ff`. On success it reports the exact frozen facts:
 `SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh LEN=$hhhh`.
+The runtime paste and flash wrappers switch to the `SEAL> ` prompt after a
+clean `END` so `SEAL` can consume those frozen facts. `SEAL> ` is not normal
+ASM source mode; it is a small wrapper command window with three commands:
+
+```text
+SEAL             validate and print the frozen facts
+NEW              start a fresh ASM session at the frozen END PC
+.                exit the wrapper
+```
+
+`NEW` is valid only in the post-`END` `SEAL> ` window. It accepts only `NEW`,
+`NEW ; comment`, and the same optional leading/trailing spaces or tabs used by
+the other wrapper commands. It rejects operands such as `NEW $7000` or `NEW X`
+with `ERR=$03 BAD OPER PC=$hhhh`, leaves the frozen facts intact, and stays at
+`SEAL> `. A valid `NEW` calls `ASM_BEGIN` with the frozen exclusive end PC,
+prints `OK PC=$hhhh`, clears the old seal facts as part of opening the new
+session, and returns to `ASM> `. It does not ask for `Y/N`: the guarded prompt
+and explicit `NEW` command are the confirmation, and avoiding a second prompt
+keeps pasted tests deterministic.
+
+`SEAL` and `NEW` are wrapper commands only in this post-session window; before
+clean `END`, the active `ASM> ` prompt treats those words as normal ASM source.
+Other post-`END` source text is rejected by the wrapper without entering the
+core or clearing the seal facts.
 Sealed movable modules should start stricter than ordinary ASM: seal v0 accepts
 one contiguous body and should reject hole-producing forward `ORG` and plain
 uninitialized `DS count`; use initialized `DS count,$xx` when padding is

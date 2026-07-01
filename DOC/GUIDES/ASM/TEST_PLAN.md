@@ -6045,9 +6045,13 @@ ASM 2.48 captures clean-END seal span facts in RAM:
          base, exclusive end, and length = end - base.
 ASM 2.49 tracks seal ineligibility bits without rejecting ordinary ASM:
          forward ORG hole and plain DS count/unowned bytes.
-ASM 2.50 planned first post-session SEAL dry-run:
+ASM 2.50 adds the first post-session SEAL dry-run:
          accepts only FLAGS=$01; ERR=$01 means no clean END/valid bit clear;
          ERR=$02 means valid but not seal-eligible because FLAGS != $01.
+         Runtime paste/flash wrappers switch to SEAL> after clean END until ".".
+SEAL.NEW adds validated SEAL> NEW:
+         accepts only NEW or NEW ; comment, asks no Y/N question, and reopens
+         ASM at the frozen END PC.
 Numeric report fields are hex in this first W65C02S printer.
 Second clean ASM_END returns OK without duplicating report state.
 ```
@@ -6080,6 +6084,39 @@ clean END leaves a valid RAM fact record matching START/HIGH/BYTES
 forward ORG and plain DS count set seal flags but remain valid ASM
 initialized DS count,$xx remains seal-owned
 post-session SEAL reports FLAGS and rejects every FLAGS value except $01
+clean END switches runtime paste/flash wrappers to the SEAL> prompt
+SEAL> NEW prints OK PC=$end and returns to ASM> at the frozen END PC
+SEAL> NEW operands are rejected as BAD OPER without clearing frozen seal facts
+ASM> SEAL remains ordinary ASM source, not a wrapper command
+ASM> NEW remains ordinary ASM source, not a wrapper command
+post-END non-SEAL/non-NEW source is rejected without clearing frozen seal facts
+```
+
+Hardware-proven `ASM 2.50` post-session `SEAL` dry-run on 2026-07-01 with
+HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
+`L OK=51C7 GO=2000`:
+
+```text
+$7000 clean tiny span        -> SEAL OK FLAGS=$01 BASE=$7000 END=$7003 LEN=$0003
+$7200 forward ORG hole       -> SEAL ERR=$02 FLAGS=$03
+$7300 plain DS count         -> SEAL ERR=$02 FLAGS=$05
+$7400 initialized DS count   -> SEAL OK FLAGS=$01 BASE=$7400 END=$7405 LEN=$0005
+$7500 hole plus plain DS     -> SEAL ERR=$02 FLAGS=$07
+```
+
+The same proof shows clean `END` changing the wrapper prompt to `SEAL> ` and
+`.` exiting the post-session prompt through `ASM RT PASTE BYE`.
+
+Hardware-proven `SEAL> NEW` restart on 2026-07-01 with
+HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
+`L OK=5247 GO=2000`:
+
+```text
+SEAL> NEW X  -> ERR=$03 BAD OPER PC=$7603
+SEAL> SEAL   -> SEAL OK FLAGS=$01 BASE=$7600 END=$7603 LEN=$0003
+SEAL> NEW    -> OK PC=$7603, then ASM>
+second END   -> SEAL OK FLAGS=$01 BASE=$7603 END=$7606 LEN=$0003
+SEAL> .      -> ASM RT PASTE BYE
 ```
 
 ## ASMTEST_3000 Final Acceptance

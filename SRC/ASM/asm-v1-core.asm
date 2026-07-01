@@ -35,6 +35,7 @@
                         XDEF            ASM_BIND_LABEL
                         XDEF            ASM_DEFINE_EQU
                         XDEF            ASM_PRINT_TABLES
+                        XDEF            ASM_SEAL_VALIDATE
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
                         XDEF            ASM_RJ_PRINT_CRLF
@@ -137,6 +138,9 @@ ASM_STATUS_BAD_LINE    EQU             $07
 ASM_STATUS_BAD_SYM     EQU             $08
 ASM_STATUS_BAD_FIX     EQU             $09
 ASM_STATUS_RJOIN       EQU             $0B
+
+ASM_SEAL_STATUS_NO_END EQU             $01
+ASM_SEAL_STATUS_BAD_FLAGS EQU          $02
 
 ASM_STEP_BEGIN         EQU             $10
 ASM_STEP_LEX_OK        EQU             $20
@@ -12021,6 +12025,25 @@ ASM_SEAL_NOTE_UNOWNED:
                         LDA             ASM_SEAL_FLAGS
                         ORA             #ASM_SEALF_UNOWNED
                         STA             ASM_SEAL_FLAGS
+                        RTS
+
+ASM_SEAL_VALIDATE:
+                        LDA             ASM_SEAL_FLAGS
+                        AND             #ASM_SEALF_VALID
+                        BNE             ASM_SEAL_VALIDATE_HAVE_END
+                        LDA             #ASM_SEAL_STATUS_NO_END
+                        CLC
+                        RTS
+ASM_SEAL_VALIDATE_HAVE_END:
+                        LDA             ASM_SEAL_FLAGS
+                        CMP             #ASM_SEALF_VALID
+                        BEQ             ASM_SEAL_VALIDATE_OK
+                        LDA             #ASM_SEAL_STATUS_BAD_FLAGS
+                        CLC
+                        RTS
+ASM_SEAL_VALIDATE_OK:
+                        LDA             #ASM_STATUS_OK
+                        SEC
                         RTS
 
 ASM_SEAL_CLEAR:
