@@ -112,7 +112,9 @@ flash or publish a catalog record.
 Current ASM v1 code captures the clean-`END` fact record in RAM as:
 
 ```text
-flags bit0 valid
+flags bit0 valid after clean END
+      bit1 forward-ORG hole seen
+      bit2 plain DS count/unowned bytes seen
 base  = start_pc
 end   = high_water_pc, exclusive
 len   = end - base
@@ -120,6 +122,9 @@ len   = end - base
 
 These fields are cleared on session reset or fatal session failure. They are not
 a K bit, not a flash record, and not a catalog publication.
+The ineligibility bits do not reject normal ASM source today; they give a later
+explicit `SEAL` command a clean reason to refuse a non-contiguous or unowned
+span.
 
 Seal v0 is a single contiguous body. The first `ORG` in a fresh/pristine ASM
 session may choose the source base and becomes `START`. After that, any

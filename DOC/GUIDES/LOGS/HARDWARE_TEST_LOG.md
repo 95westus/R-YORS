@@ -4,6 +4,112 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+## 2026-07-01 ASM Seal Eligibility Flags Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` at `$2000` with size `$506F` after adding
+RAM-only seal eligibility flags for later explicit `SEAL` rejection.
+
+Validated:
+
+- Initialized `DS $20,$EE` owns and fills bytes in the preparation pass.
+- A later non-initial forward `ORG $7210` leaves the `$7203-$720F` hole
+  untouched as `$EE`.
+- Plain `DS 2` remains accepted by ordinary ASM and emits the current zero-fill
+  bytes at `$721B-$721C`.
+- Initialized `DS 3,$5A` remains accepted and emits owned bytes at
+  `$721D-$721F`.
+- The emitted code at `$7210` runs and writes `$7100-$7101 = 5A A5`.
+- The internal seal fact record at `$5189-$518F` is
+  `07 00 72 20 72 20 00`: flags `$07` means valid + hole + unowned, base
+  `$7200`, exclusive end `$7220`, length `$0020`.
+
+### Transcript
+
+```text
+HIMON V 00.0630(2121)
+>L G
+L S19
+L @2000
+L OK=506F GO=2000
+ASM RT PASTE
+ASM> ORG $7200
+OK PC=$7200
+ASM>  DS $20,$EE
+OK PC=$7220
+ASM> END
+OK PC=$7220
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#LOADGO# ENTRY=2000
+RET A=0F X=CA Y=0F P=75 S=FD NV-BdIzC
+>D 7200 721F
+7200: EE EE EE EE EE EE EE EE | EE EE EE EE EE EE EE EE | ................
+7210: EE EE EE EE EE EE EE EE | EE EE EE EE EE EE EE EE | ................
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG 7200
+ERR=$05 BAD WIDTH PC=$7000
+ASM> ORG $7200
+OK PC=$7200
+ASM> OUT EQU $7100
+OK PC=$7200
+ASM> OUT1 EQU $7101
+OK PC=$7200
+ASM> JMP $7210
+OK PC=$7203
+ASM> ORG $7210
+OK PC=$7210
+ASM> LDA #$5A
+OK PC=$7212
+ASM> STA OUT
+OK PC=$7215
+ASM> LDA #$A5
+OK PC=$7217
+ASM> STA OUT1
+OK PC=$721A
+ASM> RTS
+OK PC=$721B
+ASM> DS 2
+OK PC=$721D
+ASM> DS 3, $5A
+OK PC=$7220
+ASM> END
+OK PC=$7220
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7100  01 04 17 0003 01  0008  OUT
+01 01 7101  01 04 17 0004 01  000A  OUT1
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=CA Y=0F P=75 S=FD NV-BdIzC
+>G 7210
+GO 7210
+
+#GO# ENTRY=7210
+RET A=A5 X=30 Y=31 P=F5 S=FD NV-BdIzC
+>D 7100 710F
+7100: 5A A5 1F 70 1F 00 00 00 | 00 00 00 00 00 00 00 00 | Z..p............
+>D 7200 721F
+7200: 4C 10 72 EE EE EE EE EE | EE EE EE EE EE EE EE EE | L.r.............
+7210: A9 5A 8D 00 71 A9 A5 8D | 01 71 60 00 00 5A 5A 5A | .Z..q....q`..ZZZ
+>D 5189 518F
+5189: 07 00 72 20 72 20 00 | ..r r .
+>
+```
+
 ## 2026-06-08 ASM 2.85 Implied Opcode Batch Board Proof
 
 ### Summary

@@ -5019,7 +5019,9 @@ fix_limit       maximum fixup rows
 ref_count       used reference rows for reports
 ref_limit       maximum reference rows
 report_flags    xref truncated, report overflow, etc.
-seal_flags      bit0 valid after clean END
+seal_flags      bit0 valid after clean END,
+                bit1 forward-ORG hole seen,
+                bit2 plain DS count/unowned bytes seen
 seal_base       captured source base from start_pc
 seal_end        captured exclusive span end from high_water_pc
 seal_len        captured seal_end - seal_base
@@ -5046,6 +5048,11 @@ the full span `high_water_pc - start_pc`, including any forward-`ORG` gap.
 The current core also captures these facts into RAM on a clean `END` as
 `seal_base`, `seal_end`, and `seal_len`; this is only a fact record for a later
 explicit `SEAL` step.
+It also tracks future seal eligibility in `seal_flags`: a non-initial forward
+`ORG` marks the hole bit, and plain `DS count` marks the unowned-byte bit.
+Initialized `DS count,$xx` remains owned and does not set the unowned-byte bit.
+Ordinary ASM still accepts these forms; the flags are for a later explicit
+`SEAL` command to reject bad spans cleanly.
 Sealed movable modules should start stricter than ordinary ASM: seal v0 accepts
 one contiguous body and should reject hole-producing forward `ORG` and plain
 uninitialized `DS count`; use initialized `DS count,$xx` when padding is

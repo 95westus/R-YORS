@@ -189,6 +189,8 @@ ASM_REPORTF_PRINT_FAIL EQU             $10
 ASM_REPORTF_TRUNC      EQU             $20
 
 ASM_SEALF_VALID        EQU             $01
+ASM_SEALF_HOLE         EQU             $02
+ASM_SEALF_UNOWNED      EQU             $04
 
 ASM_TOK_EOL           EQU             $00
 ASM_TOK_WORD          EQU             $01
@@ -5403,8 +5405,8 @@ ASM_SMOKE_REPORT_CHECK_E9:
                         CMP             #ASM_SMOKE_TARGET_HI
                         BNE             ASM_SMOKE_REPORT_FAIL_E9
                         LDA             ASM_SEAL_FLAGS
-                        AND             #ASM_SEALF_VALID
-                        BEQ             ASM_SMOKE_REPORT_FAIL_E9
+                        CMP             #ASM_SEALF_VALID
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
                         LDA             ASM_SEAL_BASE_LO
                         CMP             #ASM_SMOKE_TARGET_LO
                         BNE             ASM_SMOKE_REPORT_FAIL_E9
@@ -6661,6 +6663,8 @@ ASM_LINE_SAVE:
                         STA             ASM_LINE_FIX_LAST_SITE_HI
                         LDA             ASM_REPORT_FLAGS
                         STA             ASM_LINE_REPORT_FLAGS
+                        LDA             ASM_SEAL_FLAGS
+                        STA             ASM_LINE_SEAL_FLAGS
                         PHX
                         PHY
                         JSR             ASM_LINE_SAVE_FIXUPS
@@ -6718,6 +6722,8 @@ ASM_LINE_ROLLBACK:
                         STA             ASM_FIX_LAST_SITE_HI
                         LDA             ASM_LINE_REPORT_FLAGS
                         STA             ASM_REPORT_FLAGS
+                        LDA             ASM_LINE_SEAL_FLAGS
+                        STA             ASM_SEAL_FLAGS
                         LDA             #ASM_SESS_ACTIVE
                         STA             ASM_SESSION_STATE
                         RTS
@@ -9477,6 +9483,13 @@ ASM_EMIT_DS_COUNT_TOKEN_OK:
                         BCC             ASM_EMIT_DS_RETURN
                         JSR             ASM_EMIT_DS_PARSE_INIT
                         BCC             ASM_EMIT_DS_RETURN
+; Plain DS emits filler today, but the bytes are not source-owned for sealing.
+                        LDA             ASM_DS_INIT_FLAG
+                        BNE             ASM_EMIT_DS_OWNED
+                        LDA             ASM_DS_COUNT
+                        BEQ             ASM_EMIT_DS_OWNED
+                        JSR             ASM_SEAL_NOTE_UNOWNED
+ASM_EMIT_DS_OWNED:
                         JSR             ASM_EMIT_DS_FILL_LOOP
 ASM_EMIT_DS_RETURN:
                         RTS
@@ -10180,6 +10193,17 @@ ASM_SET_PC_APPLY:
                         CLC
                         RTS
 ASM_SET_PC_TARGET_OK:
+                        LDA             ASM_TMP0_LO
+                        BNE             ASM_SET_PC_NO_HOLE
+                        LDA             ASM_VALUE_HI
+                        CMP             ASM_PC_HI
+                        BNE             ASM_SET_PC_MARK_HOLE
+                        LDA             ASM_VALUE_LO
+                        CMP             ASM_PC_LO
+                        BEQ             ASM_SET_PC_NO_HOLE
+ASM_SET_PC_MARK_HOLE:
+                        JSR             ASM_SEAL_NOTE_HOLE
+ASM_SET_PC_NO_HOLE:
                         LDA             ASM_VALUE_LO
                         STA             ASM_PC_LO
                         LDA             ASM_VALUE_HI
@@ -11963,8 +11987,9 @@ ASM_FNV1A_UPDATE_A_FAST:
 ; Internal seal span facts.
 ; ----------------------------------------------------------------------------
 ; Minimal RAM record captured by clean END:
-;   flags bit0 valid, base=start_pc, end=high_water_pc exclusive,
-;   len=end-base. This is not flash publication and not a K bit.
+;   flags bit0 valid, bit1 hole, bit2 unowned bytes,
+;   base=start_pc, end=high_water_pc exclusive, len=end-base.
+; This is not flash publication and not a K bit.
 ASM_SEAL_CAPTURE_END_FACTS:
                         LDA             ASM_START_PC_LO
                         STA             ASM_SEAL_BASE_LO
@@ -11981,7 +12006,20 @@ ASM_SEAL_CAPTURE_END_FACTS:
                         LDA             ASM_HIGH_PC_HI
                         SBC             ASM_START_PC_HI
                         STA             ASM_SEAL_LEN_HI
-                        LDA             #ASM_SEALF_VALID
+                        LDA             ASM_SEAL_FLAGS
+                        ORA             #ASM_SEALF_VALID
+                        STA             ASM_SEAL_FLAGS
+                        RTS
+
+ASM_SEAL_NOTE_HOLE:
+                        LDA             ASM_SEAL_FLAGS
+                        ORA             #ASM_SEALF_HOLE
+                        STA             ASM_SEAL_FLAGS
+                        RTS
+
+ASM_SEAL_NOTE_UNOWNED:
+                        LDA             ASM_SEAL_FLAGS
+                        ORA             #ASM_SEALF_UNOWNED
                         STA             ASM_SEAL_FLAGS
                         RTS
 
@@ -12069,6 +12107,7 @@ ASM_LINE_FIX_LAST_SITE_LO:
 ASM_LINE_FIX_LAST_SITE_HI:
                         DB              $00
 ASM_LINE_REPORT_FLAGS: DB              $00
+ASM_LINE_SEAL_FLAGS:   DB              $00
 ASM_LINE_FIX_STATE:    DS              ASM_FIX_MAX
 ASM_LINE_FIX_BYTE0:    DS              ASM_FIX_MAX
 ASM_LINE_FIX_BYTE1:    DS              ASM_FIX_MAX

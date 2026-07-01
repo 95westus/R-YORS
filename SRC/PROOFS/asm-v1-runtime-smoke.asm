@@ -160,8 +160,8 @@ ASMRT_RETURN_FAIL:
 
 ASMRT_CHECK_SEAL:
                         LDA             ASM_SEAL_FLAGS
-                        AND             #ASM_SEALF_VALID
-                        BEQ             ASMRT_BAD_SEAL
+                        CMP             #ASM_SEALF_VALID
+                        BNE             ASMRT_BAD_SEAL
                         LDA             ASM_SEAL_BASE_LO
                         CMP             #ASMRT_TARGET_LO
                         BNE             ASMRT_BAD_SEAL

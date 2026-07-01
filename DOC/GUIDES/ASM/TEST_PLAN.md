@@ -157,8 +157,8 @@ is valid for that wrapper image. It assembles `ORG $7000`, `LDA #$0A`,
 the stripped runtime. It verifies `$7000-$7008` equals
 `A9 0A 20 lo hi 8D 01 71 60` with a non-`FFFF` resident call target, then
 executes `JSR $7000` and requires `$7101='A'`. It also checks the clean-`END`
-seal fact record: valid flag set, base `$7000`, exclusive end `$7014`, and
-length `$0014`. This proves source name -> FNV hash -> resident EXEC join ->
+seal fact record: flags exactly valid, base `$7000`, exclusive end `$7014`,
+and length `$0014`. This proves source name -> FNV hash -> resident EXEC join ->
 emitted operand -> live call return, plus the RAM-only `END` span facts needed
 by a later explicit `SEAL`. It prints `ASM RT OK` on success or
 `ASM RT FAIL $xx` on failure; `$E7` means the seal fact record did not match.
@@ -212,6 +212,29 @@ defined `START_ADDR=$7000`, `END_ADDR=$701F`, and
 That paste-driver proof is an external span oracle for the same
 `base=$7000`, `end=$701F`, `len=$001F` facts; the direct internal
 `ASM_SEAL_*` check remains the smoke wrapper above.
+
+Seal eligibility flags were hardware-proven on 2026-07-01 with HIMON
+`V 00.0630(2121)` and `asm-v1-runtime-paste-2000.s19` loaded as
+`L OK=506F GO=2000`. The board first filled `$7200-$721F` using
+`DS $20,$EE`, then assembled a second source that jumped across a forward
+`ORG` hole, used plain `DS 2`, and used initialized `DS 3,$5A`.
+The emitted span proved ordinary ASM still accepts both ineligible shapes:
+
+```text
+7200: 4C 10 72 EE EE EE EE EE | EE EE EE EE EE EE EE EE | L.r.............
+7210: A9 5A 8D 00 71 A9 A5 8D | 01 71 60 00 00 5A 5A 5A | .Z..q....q`..ZZZ
+```
+
+Running `G 7210` wrote `$7100-$7101 = 5A A5`. The internal RAM fact record
+dumped as:
+
+```text
+5189: 07 00 72 20 72 20 00 | ..r r .
+```
+
+This decodes to flags `$07` (valid + forward-ORG hole + plain-DS unowned),
+base `$7200`, exclusive end `$7220`, and length `$0020`. The same source also
+proves initialized `DS count,$xx` stays owned: `$721D-$721F = 5A 5A 5A`.
 
 Initial hardware-proven ASM runtime smoke-wrapper on 2026-06-05:
 
@@ -6020,6 +6043,8 @@ ASM 2.46 stores session symbol definition lines.
 ASM 2.47 prints compact UNUSED rows with definition lines.
 ASM 2.48 captures clean-END seal span facts in RAM:
          base, exclusive end, and length = end - base.
+ASM 2.49 tracks seal ineligibility bits without rejecting ordinary ASM:
+         forward ORG hole and plain DS count/unowned bytes.
 Numeric report fields are hex in this first W65C02S printer.
 Second clean ASM_END returns OK without duplicating report state.
 ```
@@ -6032,6 +6057,7 @@ error line/status/token when failed
 start/current/high-water PC
 bytes emitted/reserved
 clean-END seal span facts
+seal ineligibility flags
 symbol/fixup/ref counts and limits
 unresolved fixups
 used symbols with lines
@@ -6048,6 +6074,8 @@ report overflow sets TRUNC=YES
 used symbol report prints count and first reference line
 unused symbol report prints definition lines
 clean END leaves a valid RAM fact record matching START/HIGH/BYTES
+forward ORG and plain DS count set seal flags but remain valid ASM
+initialized DS count,$xx remains seal-owned
 ```
 
 ## ASMTEST_3000 Final Acceptance
