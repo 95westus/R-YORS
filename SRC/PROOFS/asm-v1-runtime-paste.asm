@@ -4,6 +4,7 @@
 ;
 ; Link this wrapper before asm-v1-runtime.obj so START remains at $2000 while
 ; the runtime is reached only through exported callable routines.
+; CODE/DATA are loaded by HIMON L; UDATA is RAM-only wrapper state.
 ; ----------------------------------------------------------------------------
 
                         CHIP            65C02
@@ -38,7 +39,6 @@
 ASM_BEGINF_HAVE_PC     EQU             $01
 ASMRP_TARGET_LO        EQU             $00
 ASMRP_TARGET_HI        EQU             $70
-ASMRP_RESULT           EQU             $67F2
 ASMRP_QUENCH_IDLE_SLICES EQU           $02
 
 ASMRP_STATUS_OK        EQU             $00
@@ -538,6 +538,8 @@ ASMRP_STATUS_NAME_HI:
                         DB              >MSG_STATUS_RJOIN
                         DB              >MSG_STATUS_UNKNOWN
 
+                        UDATA
+ASMRP_RESULT:           DB              $00
 ASMRP_PC_LO:            DB              $00
 ASMRP_PC_HI:            DB              $00
 ASMRP_POST_FLAG:        DB              $00

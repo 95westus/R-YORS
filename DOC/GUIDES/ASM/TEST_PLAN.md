@@ -6055,6 +6055,11 @@ SEAL.NEW adds validated SEAL> NEW:
 SEAL.REC adds a RAM-only record preview after successful SEAL validation:
          first line prints FLAGS/BASE/END, second line prints LEN and FNV32.
          FNV32 hashes exactly the emitted bytes from BASE through END-1.
+ASMRP.UDATA moves runtime-paste PC/post cells and the $0100 line buffer out of
+         DATA into UDATA. It also replaces the fixed ASMRP_RESULT scratch cell
+         with UDATA. This removes $0103 loaded bytes from the SEAL.REC image
+         and avoids a fixed scratch address such as $6800, which remains used
+         by older documented ASMTEST paths.
 Numeric report fields are hex in this first W65C02S printer.
 Second clean ASM_END returns OK without duplicating report state.
 ```
@@ -6095,6 +6100,8 @@ SEAL> NEW operands are rejected as BAD OPER without clearing frozen seal facts
 ASM> SEAL remains ordinary ASM source, not a wrapper command
 ASM> NEW remains ordinary ASM source, not a wrapper command
 post-END non-SEAL/non-NEW source is rejected without clearing frozen seal facts
+runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
+state/result/line buffer in UDATA
 ```
 
 Hardware-proven `ASM 2.50` post-session `SEAL` dry-run on 2026-07-01 with
@@ -6129,6 +6136,18 @@ Hardware-proven `SEAL.REC` initialized-DS and plain-DS follow-up on
 $7400 initialized DS count   -> SEAL OK FLAGS=$01 BASE=$7400 END=$7405
                                 SEAL REC LEN=$0005 FNV=$C2D38700
 $7300 plain DS count         -> SEAL ERR=$02 FLAGS=$05, no SEAL REC line
+```
+
+Hardware-proven `ASMRP.UDATA` runtime-paste trim on 2026-07-01 with
+HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
+`L OK=51E3 GO=2000`. Compared with the prior `SEAL.REC` image at
+`L OK=52E6 GO=2000`, this proves the expected `$0103` loaded-byte savings
+while preserving the tiny-span SEAL/FNV result:
+
+```text
+$7000 clean tiny span        -> SEAL OK FLAGS=$01 BASE=$7000 END=$7003
+                                SEAL REC LEN=$0003 FNV=$695B146E
+SEAL> .                      -> ASM RT PASTE BYE
 ```
 
 Hardware-proven `SEAL> NEW` restart on 2026-07-01 with
