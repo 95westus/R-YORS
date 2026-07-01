@@ -6077,6 +6077,14 @@ ASMRP.TARGET.7600 moves the runtime-paste default emit target from $7000 to
          $7600. The report trim reduced the paste load image by $0308 bytes,
          but explicit ORG $7000 still overlaps live runtime data and can
          corrupt parser/opcode metadata while the session is assembling.
+ASMRT.SIZE.UDATA_BUF moves ASM_RUNTIME_ONLY ASM_CODE_BUF from loaded DATA to
+         UDATA. Full core/smoke builds keep the $0200 loaded smoke buffer;
+         runtime-only builds keep a $0100 RAM-only default buffer.
+ASMRT.SIZE.SEAL_CLEAR replaces the manual ASM_SEAL_REC/ASM_RELOC_COUNT clear
+         list with an indexed clear over the same bytes.
+ASMRT.SIZE.CMD_MATCH factors paste/flash SEAL, END, and NEW recognizers around
+         shared leading-whitespace and tail validators. SEAL/NEW keep strict
+         no-operand behavior; END keeps the existing wrapper detection rule.
 SEAL.WRAP is requirements-only for now:
          a future WRAP batch command must hard-stop or quench on validation,
          record, export, or install failure before it can be used as a
@@ -6135,6 +6143,10 @@ post-END non-SEAL/non-NEW source is rejected without clearing frozen seal facts
 runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
 state/result/line buffer in UDATA
 runtime paste wrapper default session starts at $7600, not $7000
+runtime-only ASM_CODE_BUF is UDATA and no longer contributes loaded S19 bytes
+SEAL> NEW after a prior SEAL clears stale record/FNV/reloc-count state
+SEAL/NEW post-session commands accept leading whitespace and trailing comments
+SEAL/NEW post-session commands reject operands as BAD OPER
 explicit ORG $7000 is not a safe current runtime-paste board-test target
 future WRAP failure prints one compact error and stops or quenches input before
 later source can be read as SEAL> commands
@@ -6472,6 +6484,94 @@ SEAL> NEW    -> OK PC=$7603, then ASM>
 second END   -> SEAL OK FLAGS=$01 BASE=$7603 END=$7606 LEN=$0003
 SEAL> .      -> ASM RT PASTE BYE
 ```
+
+Hardware-proven `ASMRT.SIZE.UDATA_BUF`, `ASMRT.SIZE.SEAL_CLEAR`, and
+`ASMRT.SIZE.CMD_MATCH` on 2026-07-01 with HIMON V 00.0630(2121) and
+`asm-v1-runtime-paste-2000.s19` loaded as `L OK=4FCF GO=2000`. Compared with
+the previous `L OK=5133 GO=2000` image, this shrank the loaded image by
+`$0164` bytes.
+
+The positive no-`ORG` test proves the runtime default PC still starts at
+`$7600`, the moved runtime-only `ASM_CODE_BUF` does not break ordinary paste
+assembly, and trailing `END`/`SEAL` comments are accepted:
+
+```text
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END ;COMMENT
+OK PC=$7603
+SEAL> SEAL ;COMMENT
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$51BB LEN=$0003 FNV=$695B146E
+SEAL REL @=$51C6 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+>D 7600 7603
+7600: A9 5A 60 00 | .Z`.
+>D 51BB +04
+51BB: 01 00 76 03 | ..v.
+>D 51C6 +01
+51C6: 00 | .
+```
+
+The strict `SEAL` tail test proves `SEAL X` rejects as `BAD OPER` without
+clearing frozen seal facts:
+
+```text
+SEAL> SEAL X
+ERR=$03 BAD OPER PC=$7603
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$51BB LEN=$0003 FNV=$695B146E
+SEAL REL @=$51C6 COUNT=$00
+```
+
+The `NEW ; COMMENT` plus empty-span test proves the loop clear resets stale
+FNV and relocation-count facts. The first span has one relocation row; after
+`NEW`, an immediate `END` seals a zero-length span with FNV basis and
+`COUNT=$00`:
+
+```text
+ASM> JMP TARGET
+OK PC=$7603
+ASM> TARGET RTS
+OK PC=$7604
+ASM> END
+OK PC=$7604
+RELOCS
+SL K  SITE TARG
+00 01 0001 0003
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7604
+SEAL REC @=$51BB LEN=$0004 FNV=$677CFADE
+SEAL REL @=$51C6 COUNT=$01
+SEAL> NEW ; COMMENT
+OK PC=$7604
+ASM> END
+OK PC=$7604
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7604 END=$7604
+SEAL REC @=$51BB LEN=$0000 FNV=$811C9DC5
+SEAL REL @=$51C6 COUNT=$00
+```
+
+The strict `NEW` tail test proves `NEW X` rejects without clearing the frozen
+tiny-span facts:
+
+```text
+SEAL> NEW X
+ERR=$03 BAD OPER PC=$7603
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$51BB LEN=$0003 FNV=$695B146E
+SEAL REL @=$51C6 COUNT=$00
+```
+
+Leading whitespace before post-`END` commands still needs a visible board
+transcript if that detail matters; the recognizer code accepts it, but this
+hardware capture shows trailing comments and operand rejection.
 
 ## ASMTEST_3000 Final Acceptance
 

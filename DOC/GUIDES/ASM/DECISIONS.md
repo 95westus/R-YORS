@@ -637,6 +637,13 @@ A [addr] [label[:]] MMM [operand] .
   buffer. Explicit `ORG` can still choose an unsafe range until the assembler
   grows a real workspace-overlap guard; current board tests should avoid
   `$7000` under `asm-v1-runtime-paste`.
+- `ASM_RUNTIME_ONLY` keeps the default `ASM_CODE_BUF` as UDATA, not loaded
+  DATA. The callable runtime wrappers normally enter with explicit PCs, and the
+  default buffer remains a RAM fallback without costing S19 bytes.
+- Paste and flash post-`END` recognizers share the same leading-whitespace and
+  tail-validation shape. `SEAL` and `NEW` stay strict wrapper commands: comments
+  are allowed, operands are rejected. `END` keeps the existing wrapper detection
+  rule so this refactor is size/presentation work, not a language change.
 - Current seed-only ASM requires the `HASH ACQUIRE` seed at the fixed RAM cell
   `$7E00/$7E01`. HIMON publishes the current `THE_JOIN_EXEC_XY` addr16 there
   during common init, so the value follows HIMON if the resident join routine

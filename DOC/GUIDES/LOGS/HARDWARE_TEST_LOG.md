@@ -8210,3 +8210,168 @@ RET A=10 X=72 Y=10 P=75 S=FD NV-BdIzC
 The `SEAL> D` rejection is expected because the post-`END` wrapper prompt
 accepts only `SEAL`, `NEW`, and `.`; HIMON `D` is available again after leaving
 the wrapper.
+
+## 2026-07-01 ASMRT.SIZE Runtime Buffer/Clear/Command Matcher Proof
+
+Operator transcript pasted into Codex session. The board loaded
+`asm-v1-runtime-paste-2000.s19` as `L OK=4FCF GO=2000`, proving the combined
+`ASMRT.SIZE.UDATA_BUF`, `ASMRT.SIZE.SEAL_CLEAR`, and `ASMRT.SIZE.CMD_MATCH`
+image was `$0164` smaller than the previous `L OK=5133 GO=2000` runtime-paste
+image.
+
+The first run proves that the runtime-only `ASM_CODE_BUF` move to UDATA did not
+break the paste wrapper's default `$7600` assembly target, and that trailing
+comments on `END` and `SEAL` remain accepted:
+
+```text
+>L G
+L S19
+L @2000
+L OK=4FCF GO=2000
+ASM RT PASTE
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END ;COMMENT
+OK PC=$7603
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL ;COMMENT
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$51BB LEN=$0003 FNV=$695B146E
+SEAL REL @=$51C6 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=0E Y=10 P=75 S=FD NV-BdIzC
+>D 7600 7603
+7600: A9 5A 60 00 | .Z`.
+>D 51BB +04
+51BB: 01 00 76 03 | ..v.
+>D 51C6 +01
+51C6: 00 | .
+```
+
+The strict `SEAL` tail test proves `SEAL X` is rejected without clearing the
+frozen seal facts:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL X
+ERR=$03 BAD OPER PC=$7603
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$51BB LEN=$0003 FNV=$695B146E
+SEAL REL @=$51C6 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+```
+
+The `NEW ; COMMENT` test proves the loop clear resets stale seal/FNV and
+relocation-count state. The first span produces one relocation row; after
+`NEW`, an immediate `END` seals a zero-length span with FNV basis and
+`COUNT=$00`:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> JMP TARGET
+OK PC=$7603
+ASM> TARGET RTS
+OK PC=$7604
+ASM> END
+OK PC=$7604
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7603  01 04 0E 0002 00  0000  TARGET
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  7601 7603 TARGET
+RELOCS
+SL K  SITE TARG
+00 01 0001 0003
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7604
+SEAL REC @=$51BB LEN=$0004 FNV=$677CFADE
+SEAL REL @=$51C6 COUNT=$01
+SEAL> NEW ; COMMENT
+OK PC=$7604
+ASM> END
+OK PC=$7604
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7604 END=$7604
+SEAL REC @=$51BB LEN=$0000 FNV=$811C9DC5
+SEAL REL @=$51C6 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+```
+
+The strict `NEW` tail test proves `NEW X` is rejected without clearing the
+frozen tiny-span facts:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> NEW X
+ERR=$03 BAD OPER PC=$7603
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$51BB LEN=$0003 FNV=$695B146E
+SEAL REL @=$51C6 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+```
+
+Leading whitespace before post-`END` commands was not visibly captured in this
+transcript. The refactored recognizer accepts it in code, but this hardware
+proof covers trailing comments and strict operand rejection.

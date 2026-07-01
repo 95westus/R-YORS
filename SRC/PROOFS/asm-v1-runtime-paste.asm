@@ -292,76 +292,33 @@ ASMRP_DOT_NO:
                         CLC
                         RTS
 
-ASMRP_IS_SEAL:
+ASMRP_SKIP_COMMAND_HEAD:
                         LDY             #$00
-ASMRP_SEAL_SKIP:
+ASMRP_SKIP_COMMAND_HEAD_LOOP:
                         LDA             ASMRP_LINE_BUF,Y
                         CMP             #' '
-                        BEQ             ASMRP_SEAL_ADV
+                        BEQ             ASMRP_SKIP_COMMAND_HEAD_ADV
                         CMP             #$09
-                        BNE             ASMRP_SEAL_WORD
-ASMRP_SEAL_ADV:
+                        BEQ             ASMRP_SKIP_COMMAND_HEAD_ADV
+                        RTS
+ASMRP_SKIP_COMMAND_HEAD_ADV:
                         INY
-                        BRA             ASMRP_SEAL_SKIP
-ASMRP_SEAL_WORD:
-                        CMP             #'S'
-                        BNE             ASMRP_NO
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #'E'
-                        BNE             ASMRP_NO
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #'A'
-                        BNE             ASMRP_NO
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #'L'
-                        BNE             ASMRP_NO
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        BEQ             ASMRP_YES
-                        CMP             #';'
-                        BEQ             ASMRP_YES
-                        CMP             #' '
-                        BEQ             ASMRP_SEAL_TAIL
-                        CMP             #$09
-                        BNE             ASMRP_NO
-ASMRP_SEAL_TAIL:
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        BEQ             ASMRP_YES
-                        CMP             #' '
-                        BEQ             ASMRP_SEAL_TAIL
-                        CMP             #$09
-                        BEQ             ASMRP_SEAL_TAIL
-                        CMP             #';'
-                        BEQ             ASMRP_YES
-                        BRA             ASMRP_NO
+                        BRA             ASMRP_SKIP_COMMAND_HEAD_LOOP
 
-ASMRP_IS_END:
-                        LDY             #$00
-ASMRP_END_SKIP:
+ASMRP_MATCH_STRICT_TAIL:
                         LDA             ASMRP_LINE_BUF,Y
+                        BEQ             ASMRP_YES
+                        CMP             #';'
+                        BEQ             ASMRP_YES
                         CMP             #' '
-                        BEQ             ASMRP_END_ADV
+                        BEQ             ASMRP_MATCH_STRICT_TAIL_ADV
                         CMP             #$09
-                        BNE             ASMRP_END_WORD
-ASMRP_END_ADV:
-                        INY
-                        BRA             ASMRP_END_SKIP
-ASMRP_END_WORD:
-                        CMP             #'E'
                         BNE             ASMRP_NO
+ASMRP_MATCH_STRICT_TAIL_ADV:
                         INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #'N'
-                        BNE             ASMRP_NO
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #'D'
-                        BNE             ASMRP_NO
-                        INY
+                        BRA             ASMRP_MATCH_STRICT_TAIL
+
+ASMRP_MATCH_LOOSE_TAIL:
                         LDA             ASMRP_LINE_BUF,Y
                         BEQ             ASMRP_YES
                         CMP             #' '
@@ -377,53 +334,54 @@ ASMRP_YES:
                         SEC
                         RTS
 
-ASMRP_IS_NEW:
-                        LDY             #$00
-ASMRP_NEW_SKIP:
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #' '
-                        BEQ             ASMRP_NEW_ADV
-                        CMP             #$09
-                        BNE             ASMRP_NEW_WORD
-ASMRP_NEW_ADV:
-                        INY
-                        BRA             ASMRP_NEW_SKIP
-ASMRP_NEW_WORD:
-                        CMP             #'N'
-                        BNE             ASMRP_NEW_NO
+ASMRP_IS_SEAL:
+                        JSR             ASMRP_SKIP_COMMAND_HEAD
+                        CMP             #'S'
+                        BNE             ASMRP_NO
                         INY
                         LDA             ASMRP_LINE_BUF,Y
                         CMP             #'E'
-                        BNE             ASMRP_NEW_NO
+                        BNE             ASMRP_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'A'
+                        BNE             ASMRP_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'L'
+                        BNE             ASMRP_NO
+                        INY
+                        BRA             ASMRP_MATCH_STRICT_TAIL
+
+ASMRP_IS_END:
+                        JSR             ASMRP_SKIP_COMMAND_HEAD
+                        CMP             #'E'
+                        BNE             ASMRP_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'N'
+                        BNE             ASMRP_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'D'
+                        BNE             ASMRP_NO
+                        INY
+                        BRA             ASMRP_MATCH_LOOSE_TAIL
+
+ASMRP_IS_NEW:
+                        JSR             ASMRP_SKIP_COMMAND_HEAD
+                        CMP             #'N'
+                        BNE             ASMRP_NO
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #'E'
+                        BNE             ASMRP_NO
                         INY
                         LDA             ASMRP_LINE_BUF,Y
                         CMP             #'W'
-                        BNE             ASMRP_NEW_NO
+                        BNE             ASMRP_NO
                         INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        BEQ             ASMRP_NEW_YES
-                        CMP             #';'
-                        BEQ             ASMRP_NEW_YES
-                        CMP             #' '
-                        BEQ             ASMRP_NEW_TAIL
-                        CMP             #$09
-                        BNE             ASMRP_NEW_NO
-ASMRP_NEW_TAIL:
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        BEQ             ASMRP_NEW_YES
-                        CMP             #' '
-                        BEQ             ASMRP_NEW_TAIL
-                        CMP             #$09
-                        BEQ             ASMRP_NEW_TAIL
-                        CMP             #';'
-                        BEQ             ASMRP_NEW_YES
-ASMRP_NEW_NO:
-                        CLC
-                        RTS
-ASMRP_NEW_YES:
-                        SEC
-                        RTS
+                        BRA             ASMRP_MATCH_STRICT_TAIL
 
                         DATA
 MSG_TITLE:              DB              "ASM RT PASTE",0

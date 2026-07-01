@@ -12442,18 +12442,11 @@ ASM_SEAL_PRINT_RECORD:
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASM_SEAL_CLEAR:
-                        STZ             ASM_SEAL_FLAGS
-                        STZ             ASM_SEAL_BASE_LO
-                        STZ             ASM_SEAL_BASE_HI
-                        STZ             ASM_SEAL_END_LO
-                        STZ             ASM_SEAL_END_HI
-                        STZ             ASM_SEAL_LEN_LO
-                        STZ             ASM_SEAL_LEN_HI
-                        STZ             ASM_SEAL_FNV0
-                        STZ             ASM_SEAL_FNV1
-                        STZ             ASM_SEAL_FNV2
-                        STZ             ASM_SEAL_FNV3
-                        STZ             ASM_RELOC_COUNT
+                        LDX             #(ASM_RELOC_COUNT-ASM_SEAL_REC)
+ASM_SEAL_CLEAR_LOOP:
+                        STZ             ASM_SEAL_REC,X
+                        DEX
+                        BPL             ASM_SEAL_CLEAR_LOOP
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -13485,14 +13478,14 @@ ASM_VOC_KIND_TAB:      DB              $03,$01,$01,$01,$01,$01,$01,$01,$01,$01,$
                         DB              $01,$01,$01,$04,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
                         DB              $01,$03,$03
 
+                        IF              ASM_RUNTIME_ONLY
+                        UDATA
+ASM_CODE_BUF:           DS              $0100
+                        ELSE
                         IF              ASM_FLASH_RUNTIME
                         UDATA
                         ENDIF
-ASM_CODE_BUF:
-                        IF              ASM_RUNTIME_ONLY
-                        DS              $0100
-                        ELSE
-                        DS              $0200
+ASM_CODE_BUF:           DS              $0200
                         ENDIF
 
                         ENDMOD

@@ -298,76 +298,33 @@ ASMF_DOT_NO:
                         CLC
                         RTS
 
-ASMF_IS_SEAL:
+ASMF_SKIP_COMMAND_HEAD:
                         LDY             #$00
-ASMF_SEAL_SKIP:
+ASMF_SKIP_COMMAND_HEAD_LOOP:
                         LDA             ASMF_LINE_BUF,Y
                         CMP             #' '
-                        BEQ             ASMF_SEAL_ADV
+                        BEQ             ASMF_SKIP_COMMAND_HEAD_ADV
                         CMP             #$09
-                        BNE             ASMF_SEAL_WORD
-ASMF_SEAL_ADV:
+                        BEQ             ASMF_SKIP_COMMAND_HEAD_ADV
+                        RTS
+ASMF_SKIP_COMMAND_HEAD_ADV:
                         INY
-                        BRA             ASMF_SEAL_SKIP
-ASMF_SEAL_WORD:
-                        CMP             #'S'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'E'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'A'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'L'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        BEQ             ASMF_YES
-                        CMP             #';'
-                        BEQ             ASMF_YES
-                        CMP             #' '
-                        BEQ             ASMF_SEAL_TAIL
-                        CMP             #$09
-                        BNE             ASMF_NO
-ASMF_SEAL_TAIL:
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        BEQ             ASMF_YES
-                        CMP             #' '
-                        BEQ             ASMF_SEAL_TAIL
-                        CMP             #$09
-                        BEQ             ASMF_SEAL_TAIL
-                        CMP             #';'
-                        BEQ             ASMF_YES
-                        BRA             ASMF_NO
+                        BRA             ASMF_SKIP_COMMAND_HEAD_LOOP
 
-ASMF_IS_END:
-                        LDY             #$00
-ASMF_END_SKIP:
+ASMF_MATCH_STRICT_TAIL:
                         LDA             ASMF_LINE_BUF,Y
+                        BEQ             ASMF_YES
+                        CMP             #';'
+                        BEQ             ASMF_YES
                         CMP             #' '
-                        BEQ             ASMF_END_ADV
+                        BEQ             ASMF_MATCH_STRICT_TAIL_ADV
                         CMP             #$09
-                        BNE             ASMF_END_WORD
-ASMF_END_ADV:
-                        INY
-                        BRA             ASMF_END_SKIP
-ASMF_END_WORD:
-                        CMP             #'E'
                         BNE             ASMF_NO
+ASMF_MATCH_STRICT_TAIL_ADV:
                         INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'N'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'D'
-                        BNE             ASMF_NO
-                        INY
+                        BRA             ASMF_MATCH_STRICT_TAIL
+
+ASMF_MATCH_LOOSE_TAIL:
                         LDA             ASMF_LINE_BUF,Y
                         BEQ             ASMF_YES
                         CMP             #' '
@@ -383,53 +340,54 @@ ASMF_YES:
                         SEC
                         RTS
 
-ASMF_IS_NEW:
-                        LDY             #$00
-ASMF_NEW_SKIP:
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #' '
-                        BEQ             ASMF_NEW_ADV
-                        CMP             #$09
-                        BNE             ASMF_NEW_WORD
-ASMF_NEW_ADV:
-                        INY
-                        BRA             ASMF_NEW_SKIP
-ASMF_NEW_WORD:
-                        CMP             #'N'
-                        BNE             ASMF_NEW_NO
+ASMF_IS_SEAL:
+                        JSR             ASMF_SKIP_COMMAND_HEAD
+                        CMP             #'S'
+                        BNE             ASMF_NO
                         INY
                         LDA             ASMF_LINE_BUF,Y
                         CMP             #'E'
-                        BNE             ASMF_NEW_NO
+                        BNE             ASMF_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'A'
+                        BNE             ASMF_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'L'
+                        BNE             ASMF_NO
+                        INY
+                        BRA             ASMF_MATCH_STRICT_TAIL
+
+ASMF_IS_END:
+                        JSR             ASMF_SKIP_COMMAND_HEAD
+                        CMP             #'E'
+                        BNE             ASMF_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'N'
+                        BNE             ASMF_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'D'
+                        BNE             ASMF_NO
+                        INY
+                        BRA             ASMF_MATCH_LOOSE_TAIL
+
+ASMF_IS_NEW:
+                        JSR             ASMF_SKIP_COMMAND_HEAD
+                        CMP             #'N'
+                        BNE             ASMF_NO
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #'E'
+                        BNE             ASMF_NO
                         INY
                         LDA             ASMF_LINE_BUF,Y
                         CMP             #'W'
-                        BNE             ASMF_NEW_NO
+                        BNE             ASMF_NO
                         INY
-                        LDA             ASMF_LINE_BUF,Y
-                        BEQ             ASMF_NEW_YES
-                        CMP             #';'
-                        BEQ             ASMF_NEW_YES
-                        CMP             #' '
-                        BEQ             ASMF_NEW_TAIL
-                        CMP             #$09
-                        BNE             ASMF_NEW_NO
-ASMF_NEW_TAIL:
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        BEQ             ASMF_NEW_YES
-                        CMP             #' '
-                        BEQ             ASMF_NEW_TAIL
-                        CMP             #$09
-                        BEQ             ASMF_NEW_TAIL
-                        CMP             #';'
-                        BEQ             ASMF_NEW_YES
-ASMF_NEW_NO:
-                        CLC
-                        RTS
-ASMF_NEW_YES:
-                        SEC
-                        RTS
+                        BRA             ASMF_MATCH_STRICT_TAIL
 
                         DATA
 ASMF_TEXT:              DB              "ASM V",('1'+$80)

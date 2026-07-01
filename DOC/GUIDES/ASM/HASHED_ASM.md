@@ -5220,7 +5220,8 @@ ASM_REF_MAX         160 report-reference notes
 ASM_LOCAL_MAX       16 local label rows per active global scope
 ASM_LOCAL_NAME_MAX  16 bytes, 15 visible chars plus terminator
 ASM_LINE_MAX        63 visible input chars
-ASM_CODE_BUF       512 bytes
+ASM_CODE_BUF       512 loaded bytes in full core/smoke builds;
+                   256 UDATA bytes in ASM_RUNTIME_ONLY builds
 ```
 
 Treat those as proof defaults, not permanent language limits.
