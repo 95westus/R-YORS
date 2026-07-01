@@ -8375,3 +8375,414 @@ ASM RT PASTE BYE
 Leading whitespace before post-`END` commands was not visibly captured in this
 transcript. The refactored recognizer accepts it in code, but this hardware
 proof covers trailing comments and strict operand rejection.
+
+## 2026-07-01 ASMRT.SIZE Session UDATA Proof
+
+Operator transcript pasted into Codex session. The board cold-booted through
+STR8 to HIMON V 00.0701(1134), then loaded `asm-v1-runtime-paste-2000.s19`
+as `L OK=343B GO=2000`. Compared with the previous `L OK=4FCF GO=2000`
+runtime-paste image, this proves the `ASMRT.SIZE.SESSION_UDATA` refactor saved
+`$1B94` loaded bytes while keeping runtime-paste behavior intact.
+
+The first run proves that moving runtime-only session state, seal records,
+relocation records, symbols, and fixups to UDATA still leaves the wrapper able
+to seed RJOIN, assemble at the default `$7600` target, and report the expected
+tiny-span seal facts:
+
+```text
+>L G
+L S19
+L @2000
+L OK=343B GO=2000
+ASM RT PASTE
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$554A LEN=$0003 FNV=$695B146E
+SEAL REL @=$5555 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+>D 7600 7603
+7600: A9 5A 60 00 | .Z`.
+>D 554A +3
+554A: 01 00 76 | ..v
+>D 5555 +1
+5555: 00 | .
+```
+
+The second run reused the already-loaded wrapper and dirtied runtime UDATA. It
+assembled a span with one relocation row, then `NEW` plus immediate `END`
+proved stale relocation and seal state are cleared before the next post-session
+seal:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> JMP TARGET
+OK PC=$7603
+ASM> TARGET RTS
+OK PC=$7604
+ASM> END
+OK PC=$7604
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7603  01 04 0E 0002 00  0000  TARGET
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  7601 7603 TARGET
+RELOCS
+SL K  SITE TARG
+00 01 0001 0003
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7604
+SEAL REC @=$554A LEN=$0004 FNV=$677CFADE
+SEAL REL @=$5555 COUNT=$01
+SEAL> NEW
+OK PC=$7604
+ASM> END
+OK PC=$7604
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7604 END=$7604
+SEAL REC @=$554A LEN=$0000 FNV=$811C9DC5
+SEAL REL @=$5555 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+>D 7600 7604
+7600: 4C 03 76 60 00 | L.v`.
+>D 554A +1
+554A: 01 | .
+>D 5555 +1
+5555: 00 | .
+```
+
+## 2026-07-01 ASMRT.SIZE Session UDATA Follow-up Proof
+
+Operator transcript pasted into Codex session. The same HIMON V 00.0701(1134)
+board session reloaded `asm-v1-runtime-paste-2000.s19` as
+`L OK=343B GO=2000` without another STR8/cold RAM-zero path, then exercised
+reload behavior, seal-negative flags, initialized `DS`, and relocation
+classification after the runtime-only session tables moved to UDATA.
+
+The reload proof still accepts the tiny span and reports the same seal/FNV
+facts. The fourth byte in the dump is outside the sealed 3-byte span and is
+stale RAM from an earlier program:
+
+```text
+>L G
+L S19
+L @2000
+L OK=343B GO=2000
+ASM RT PASTE
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$554A LEN=$0003 FNV=$695B146E
+SEAL REL @=$5555 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+>D 7600 7603
+7600: A9 5A 60 60 | .Z``
+>D 554A +3
+554A: 01 00 76 | ..v
+>D 5555 +1
+5555: 00 | .
+```
+
+Seal eligibility negative and initialized-`DS` cases:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> JMP $7610
+OK PC=$7603
+ASM> ORG $7610
+OK PC=$7610
+ASM> RTS
+OK PC=$7611
+ASM> END
+OK PC=$7611
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL ERR=$02 FLAGS=$03
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> LDA #$5A
+OK PC=$7602
+ASM> DS 2
+OK PC=$7604
+ASM> RTS
+OK PC=$7605
+ASM> END
+OK PC=$7605
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL ERR=$02 FLAGS=$05
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> LDA #$5A
+OK PC=$7602
+ASM> DS 2,$FF
+OK PC=$7604
+ASM> RTS
+OK PC=$7605
+ASM> END
+OK PC=$7605
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7605
+SEAL REC @=$554A LEN=$0005 FNV=$C2D38700
+SEAL REL @=$5555 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+```
+
+## 2026-07-01 ASMRT.SIZE Session UDATA Optional Post-END Proof
+
+Operator transcript pasted into Codex session. The already-loaded
+`L OK=343B GO=2000` runtime-paste image was entered repeatedly with `G 2000`
+to prove strict post-`END` command operands, label-only source behavior, and
+zero-length sealing after the runtime-only session tables moved to UDATA.
+
+Strict post-`END` operands are rejected without clearing frozen seal facts:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL X
+ERR=$03 BAD OPER PC=$7603
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$554A LEN=$0003 FNV=$695B146E
+SEAL REL @=$5555 COUNT=$00
+SEAL> NEW X
+ERR=$03 BAD OPER PC=$7603
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$554A LEN=$0003 FNV=$695B146E
+SEAL REL @=$5555 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+```
+
+`BOGUS` is accepted as a label-only statement at the current PC, not rejected
+as a bad mnemonic. Exiting that session with `.` did not poison the next fresh
+entry:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7600
+OK PC=$7600
+ASM> BOGUS
+OK PC=$7600
+ASM> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$554A LEN=$0003 FNV=$695B146E
+SEAL REL @=$5555 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+```
+
+Immediate `END` after fresh entry seals a zero-length span:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> END
+OK PC=$7600
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7600
+SEAL REC @=$554A LEN=$0000 FNV=$811C9DC5
+SEAL REL @=$5555 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+```
+
+Relocation classifier follow-up after the UDATA move:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> JMP TARGET
+OK PC=$7603
+ASM> LDA TARGET,X
+OK PC=$7606
+ASM> LDA TARGET,Y
+OK PC=$7609
+ASM> LDA #<TARGET
+OK PC=$760B
+ASM> LDA #>TARGET
+OK PC=$760D
+ASM> TARGET RTS
+OK PC=$760E
+ASM> END
+OK PC=$760E
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 760D  01 04 0E 0006 00  0000  TARGET
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  7601 7603 TARGET
+01 02 06   00  7604 7606 TARGET
+02 02 09   00  7607 7609 TARGET
+03 02 02   01  760A 760B TARGET
+04 02 02   02  760C 760D TARGET
+RELOCS
+SL K  SITE TARG
+00 01 0001 000D
+01 01 0004 000D
+02 01 0007 000D
+03 02 000A 000D
+04 03 000C 000D
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$760E
+SEAL REC @=$554A LEN=$000E FNV=$4C4AFAD7
+SEAL REL @=$5555 COUNT=$05
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=11 Y=10 P=75 S=FD NV-BdIzC
+```

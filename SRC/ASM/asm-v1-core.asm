@@ -1284,7 +1284,7 @@ ASM_SMOKE_PRINT_FAIL_DIR_D9:
                         ENDIF
 
 ASM_RJOIN_INIT:
-                        IF              ASM_FLASH_RUNTIME
+                        IF              ASM_RUNTIME_ONLY
                         STZ             ASM_RJ_READY
                         ENDIF
                         LDA             ASM_RJ_READY
@@ -12479,10 +12479,14 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_DB_COUNTING
                         RTS
 
+                        IF              ASM_RUNTIME_ONLY
+                        UDATA
+                        ELSE
                         IF              ASM_FLASH_RUNTIME
                         UDATA
                         ELSE
                         DATA
+                        ENDIF
                         ENDIF
 
 ASM_SESSION_STATE:     DB              $00

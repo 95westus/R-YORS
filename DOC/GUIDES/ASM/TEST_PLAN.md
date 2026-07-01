@@ -6573,6 +6573,90 @@ Leading whitespace before post-`END` commands still needs a visible board
 transcript if that detail matters; the recognizer code accepts it, but this
 hardware capture shows trailing comments and operand rejection.
 
+Hardware-proven `ASMRT.SIZE.SESSION_UDATA` on 2026-07-01 with HIMON
+V 00.0701(1134) and `asm-v1-runtime-paste-2000.s19` loaded as
+`L OK=343B GO=2000`. Compared with the previous `L OK=4FCF GO=2000` image,
+this shrank the loaded image by `$1B94` bytes. This proves runtime-only session
+state, seal records, relocation records, symbol tables, and fixup tables can
+live in UDATA while loaded DATA keeps only code and constants.
+
+The clean tiny-span proof still emits the same body and seal facts. The moved
+records now print at `$554A/$5555`, so dumps must follow the printed addresses:
+
+```text
+ASM> LDA #$5A
+OK PC=$7602
+ASM> RTS
+OK PC=$7603
+ASM> END
+OK PC=$7603
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7603
+SEAL REC @=$554A LEN=$0003 FNV=$695B146E
+SEAL REL @=$5555 COUNT=$00
+SEAL> .
+ASM RT PASTE BYE
+>D 7600 7603
+7600: A9 5A 60 00 | .Z`.
+>D 554A +3
+554A: 01 00 76 | ..v
+>D 5555 +1
+5555: 00 | .
+```
+
+The stale-state proof reran the already-loaded wrapper with prior runtime UDATA
+dirtied by the first session. It assembled a reloc-bearing span, then `NEW`
+and immediate `END` proved that stale relocation and seal facts are cleared:
+
+```text
+ASM> JMP TARGET
+OK PC=$7603
+ASM> TARGET RTS
+OK PC=$7604
+ASM> END
+OK PC=$7604
+RELOCS
+SL K  SITE TARG
+00 01 0001 0003
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7604
+SEAL REC @=$554A LEN=$0004 FNV=$677CFADE
+SEAL REL @=$5555 COUNT=$01
+SEAL> NEW
+OK PC=$7604
+ASM> END
+OK PC=$7604
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7604 END=$7604
+SEAL REC @=$554A LEN=$0000 FNV=$811C9DC5
+SEAL REL @=$5555 COUNT=$00
+```
+
+Follow-up board proof with the same `L OK=343B GO=2000` image confirmed the
+runtime-only UDATA move across reload, seal-negative, and relocation-classifier
+cases:
+
+- Reloading the image without another `STR8`/cold RAM zero still accepted the
+  tiny span and produced `LEN=$0003 FNV=$695B146E COUNT=$00`. The dump showed
+  `7600: A9 5A 60 60`; the final `$60` is outside the sealed 3-byte span and
+  is stale RAM from the prior program, not part of the seal body.
+- A non-initial forward `ORG` hole sealed as `SEAL ERR=$02 FLAGS=$03`.
+- Plain `DS 2` sealed as `SEAL ERR=$02 FLAGS=$05`.
+- Initialized `DS 2,$FF` stayed sealable as `FLAGS=$01 LEN=$0005
+  FNV=$C2D38700 COUNT=$00`.
+- The relocation classifier still emitted five rows for
+  `JMP TARGET`, `LDA TARGET,X`, `LDA TARGET,Y`, `LDA #<TARGET`,
+  `LDA #>TARGET`: three `$01` ABS16 rows, then `$02` LO8 and `$03` HI8, with
+  `SEAL REL @=$5555 COUNT=$05`.
+- Strict post-`END` commands still reject operands without clearing frozen
+  facts: `SEAL X` and `NEW X` both reported `ERR=$03 BAD OPER PC=$7603`, and
+  the later `SEAL` still reported `LEN=$0003 FNV=$695B146E COUNT=$00`.
+- `BOGUS` at statement head is accepted as a label-only statement at the
+  current PC, not as a bad mnemonic; after exiting with `.`, a fresh `G 2000`
+  still sealed the tiny span cleanly.
+- Immediate `END` after fresh entry sealed a zero-length span:
+  `BASE=$7600 END=$7600 LEN=$0000 FNV=$811C9DC5 COUNT=$00`.
+
 ## ASMTEST_3000 Final Acceptance
 
 When ASM has parser, symbols, expressions, classifier, emitter, directives, and

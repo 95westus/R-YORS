@@ -640,6 +640,11 @@ A [addr] [label[:]] MMM [operand] .
 - `ASM_RUNTIME_ONLY` keeps the default `ASM_CODE_BUF` as UDATA, not loaded
   DATA. The callable runtime wrappers normally enter with explicit PCs, and the
   default buffer remains a RAM fallback without costing S19 bytes.
+- `ASM_RUNTIME_ONLY` also keeps ASM session state, seal records, relocation
+  records, symbol tables, and fixup tables in UDATA. Runtime entry reseeds
+  RJOIN before consulting the RAM-ready flag, so stale RAM cannot skip pointer
+  setup. The loaded image carries code and constant tables; `ASM_BEGIN` owns
+  clearing per-session counters before source lines are accepted.
 - Paste and flash post-`END` recognizers share the same leading-whitespace and
   tail-validation shape. `SEAL` and `NEW` stay strict wrapper commands: comments
   are allowed, operands are rejected. `END` keeps the existing wrapper detection
