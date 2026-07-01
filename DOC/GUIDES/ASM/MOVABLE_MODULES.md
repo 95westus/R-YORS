@@ -93,6 +93,31 @@ relocation rows
 storage metadata
 ```
 
+`END` is allowed to derive the first span facts automatically. A clean `END`
+already has enough session state for:
+
+```text
+source base = ASM start PC
+span end    = ASM high-water PC, exclusive
+body length = span end - source base
+```
+
+This is the same value shape printed by the compact report as `BYTES`.
+`current PC` remains useful for diagnostics, but sealed-body length comes from
+exclusive `HIGH - START`, not from scanning RAM and not from guessing at erased
+`$FF` bytes. A later `SEAL` command should consume these ended-session facts and
+write the module record explicitly; plain `END` should not silently allocate
+flash or publish a catalog record.
+
+Seal v0 is a single contiguous body. The first `ORG` in a fresh/pristine ASM
+session may choose the source base and becomes `START`. After that, any
+forward `ORG` creates an unowned hole in the `[START,HIGH)` span, even though
+the assembler itself emits no fill bytes. Plain `DS count` has the same problem
+for sealing: it advances the span without defining reproducible body bytes. A
+v0 `SEAL` should reject both shapes. If the module needs padding or reserved
+bytes, express them as owned bytes with `DS count,init-list`, normally
+`DS count,$00`, so the sealed span is explicit and reproducible.
+
 The body is copied from the emitted RAM span. The source base is the assembly
 base used when the bytes were emitted, often `$2000`. Entry is an offset from
 the module body base, not a permanent absolute address.

@@ -4037,6 +4037,7 @@ current PC before the first word is emitted.
 `ORG` rules:
 
 ```text
+the first ORG in a fresh/pristine session sets the session start PC
 ORG may set PC forward
 ORG may set PC to the current PC
 ORG emits no bytes and does not fill skipped addresses
@@ -4048,12 +4049,25 @@ Backward `ORG` stays illegal. Do not add a RAM scratch overwrite exception; use
 explicit data emission or a monitor memory edit when intentional patching is
 needed.
 
+A later forward `ORG` updates the current PC and high-water PC but does not
+write or reserve the skipped bytes. `HIGH` is an exclusive span end, so
+`HIGH - START` includes the gap. For ordinary ASM this is legal forward
+placement. For a future sealed movable module, v0 should reject this
+hole-producing shape; use explicit initialized `DS` fill when the skipped range
+is meant to belong to the module body.
+
 `END` rules:
 
 ```text
 END attempts/reports final fixup resolution
 END fails if required fixups remain unresolved
+END has enough session facts to derive length as HIGH - START
 ```
+
+`END` finalizes the RAM session, not the catalog. It may report or expose
+`START`, `PC`, `HIGH`, and `BYTES`, where `HIGH` is the exclusive span end and
+`BYTES` is `HIGH - START`. Publishing or storing those bytes as a movable object
+is a later explicit `SEAL`/export step, not an automatic side effect of `END`.
 
 Do not define `.BYTE`, `.WORD`, `.HBSTR`, or other dot aliases in v1. If a later
 assembler grows compatibility aliases, they should be ordinary mnemonic-like
@@ -4995,7 +5009,7 @@ V1 keeps the live assembly state in RAM:
 ```text
 asm_pc          current assembly PC / location counter
 start_pc        first PC for this session or unit
-high_water_pc   highest byte address written/reserved so far
+high_water_pc   exclusive end of the furthest byte written/reserved so far
 status          active, ended, failed, unresolved
 line_count      session/source line counter
 sym_count       used symbol rows
@@ -5020,6 +5034,15 @@ ORG $2200      set ASM PC to $2200 after range validation
 ASM session setup and `ORG expr` use the same PC-setting path. Both must verify
 that the target address is valid for the current assembly context before future
 bytes are written there.
+
+The first `ORG` in a pristine session changes `start_pc`, `asm_pc`, and
+`high_water_pc` together. A later forward `ORG` changes `asm_pc` and advances
+`high_water_pc`, but it writes no bytes. The report `BYTES` value is therefore
+the full span `high_water_pc - start_pc`, including any forward-`ORG` gap.
+Sealed movable modules should start stricter than ordinary ASM: seal v0 accepts
+one contiguous body and should reject hole-producing forward `ORG` and plain
+uninitialized `DS count`; use initialized `DS count,$xx` when padding is
+intentional.
 
 ### ASM Zero Page Frame
 
