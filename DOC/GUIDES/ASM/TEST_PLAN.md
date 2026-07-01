@@ -5605,12 +5605,27 @@ END_ADDR-START_ADDR   -> VALUE/NONE delta after both labels are defined
 10+1                  -> VALUE/NONE $000B
 ```
 
-Pending board proof:
+Hardware-proven board proof:
 
 ```text
 DOC/GUIDES/ASM/SAMPLES/expr-math-7010.a
 DOC/GUIDES/ASM/SAMPLES/expr-math-7010-test.md
 ```
+
+The accepted HIMON `V 00.0615(2131)` / `ASM FLASH` transcript proves
+`ORG $7000+16`, `OUT+1`/`OUT+2`/`OUT+3`, `BASE+1`,
+`END_ADDR-START_ADDR = $000F`, immediate `#<NEXT`/`#>NEXT`, and
+`DB <NEXT,>NEXT,SIZE`. The table report shows `SIZE=$000F`, `DATA=$7025`,
+and no fixups. The dump shows the emitted `$7010-$7027` code/data oracle:
+`A9 5A 8D 00 71 A9 02 8D 01 71 A9 00 8D 02 71 A9 0F 8D 03 71 60 02 00 0F`,
+and `G 7010` returned normally with `A=$0F`. A follow-up `D 7100 FF` dump
+showed the direct runtime oracle at `$7100-$7103`: `5A 02 00 0F`. The
+same proof was retested on HIMON `V 00.0630(2008)` with `G 7010` followed by
+`D 7000 71FF`, again showing the emitted bytes and `$7100-$7103 = 5A 02 00 0F`.
+The same HIMON `V 00.0630(2008)` cold-boot proof also verified the
+backward-`ORG` negative path: after `ORG $7000+16` reached `PC=$7010`,
+`ORG $7000` reported `ERR=$06 BAD RANGE PC=$7010`. A top-level `>ASM NEW`
+entry reached the same flash wrapper behavior and repeated the same result.
 
 This sample deliberately avoids `A`, `X`, and `Y` as user symbols because they
 are reserved v1 register words. It stages address math through `EQU` names

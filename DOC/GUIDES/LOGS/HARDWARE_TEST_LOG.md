@@ -7396,3 +7396,199 @@ RET A=AC X=19 Y=30 P=F5 S=FD NV-BdIzC
 This proves current ASM support for `EQU`, `DB`, `DW`, `DS`, local branch
 fixup, forward absolute operand fixups, known-label `DW DATA,ENDD`, and a
 small runtime copy oracle under the active table limits.
+
+## 2026-06-30 ASM Flash Expression Math Board Proof
+
+### Summary
+
+Operator transcript pasted into Codex session. The board was running
+`HIMON V 00.0615(2131)` and entered the flash-resident `ASM` command.
+
+Validated:
+
+- `ORG $7000+16` starts assembly at `$7010`.
+- Known-symbol expression math resolves `OUT+1`, `OUT+2`, `OUT+3`, and
+  `BASE+1`.
+- Address-delta math resolves `SIZE EQU END_ADDR-START_ADDR` to `$000F`.
+- Selector atoms emit `#<NEXT = $02`, `#>NEXT = $00`, and
+  `DB <NEXT,>NEXT,SIZE = 02 00 0F`.
+- The final table has no fixups, `DATA=$7025`, and final `PC=$7028`.
+- `G 7010` returns normally with `A=$0F`; the dump of `$7010-$7027` matches
+  the emitted-code oracle.
+- A follow-up `D 7100 FF` dump shows the direct runtime oracle
+  `$7100-$7103 = 5A 02 00 0F`.
+
+### Transcript
+
+```text
+HIMON V 00.0615(2131)
+>ASM
+ASM FLASH
+ASM> ; ASM V1 EXPRESSION MATH PROOF.
+OK PC=$2000
+ASM> ; ASSEMBLE WITH ASM. RUN G 7010.
+OK PC=$2000
+ASM> ; PASS: $7100-$7103 = 5A 02 00 0F.
+OK PC=$2000
+ASM>
+ASM>         ORG $7000+16
+OK PC=$7010
+ASM>
+ASM> OUT     EQU $7100
+OK PC=$7010
+ASM> OUT1    EQU OUT+1
+OK PC=$7010
+ASM> OUT2    EQU OUT+2
+OK PC=$7010
+ASM> OUT3    EQU OUT+3
+OK PC=$7010
+ASM> BASE    EQU $0001
+OK PC=$7010
+ASM> NEXT    EQU BASE+1
+OK PC=$7010
+ASM>
+ASM> START_ADDR
+OK PC=$7010
+ASM>         LDA #$5A
+OK PC=$7012
+ASM>         STA OUT
+OK PC=$7015
+ASM>         LDA #<NEXT
+OK PC=$7017
+ASM>         STA OUT1
+OK PC=$701A
+ASM>         LDA #>NEXT
+OK PC=$701C
+ASM>         STA OUT2
+OK PC=$701F
+ASM> END_ADDR
+OK PC=$701F
+ASM> SIZE    EQU END_ADDR-START_ADDR
+OK PC=$701F
+ASM>         LDA #SIZE
+OK PC=$7021
+ASM>         STA OUT3
+OK PC=$7024
+ASM>         RTS
+OK PC=$7025
+ASM>
+ASM> DATA    DB <NEXT,>NEXT,SIZE
+OK PC=$7028
+ASM>
+ASM>         END
+OK PC=$7028
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7100  01 04 17 0005 04  0006  OUT
+01 01 7101  01 04 17 0006 01  000F  OUT1
+02 01 7102  01 04 17 0007 01  0011  OUT2
+03 01 7103  01 04 17 0008 01  0015  OUT3
+04 01 0001  01 04 17 0009 01  000A  BASE
+05 01 0002  01 04 17 000A 04  000E  NEXT
+06 01 7010  01 04 0F 000B 01  0013  START_ADDR
+07 01 701F  01 04 0F 0012 01  0013  END_ADDR
+08 01 000F  00 00 17 0013 02  0014  SIZE
+09 01 7025  01 04 0E 0017 00  0000  DATA
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM FLASH OK
+>G 7010
+GO 7010
+
+#GO# ENTRY=7010
+RET A=0F X=30 Y=31 P=75 S=FD NV-BdIzC
+>D 7000 FF
+7000: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7010: A9 5A 8D 00 71 A9 02 8D | 01 71 A9 00 8D 02 71 A9 | .Z..q....q....q.
+7020: 0F 8D 03 71 60 02 00 0F | 00 00 00 00 00 00 00 00 | ...q`...........
+7030: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7040: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7050: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7060: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7070: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7080: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7090: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+70A0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+70B0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+70C0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+70D0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+70E0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+70F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>D 7100 FF
+7100: 5A 02 00 0F 00 00 00 00 | 00 00 00 00 00 00 00 00 | Z...............
+7110: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7120: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7130: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7140: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7150: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7160: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7170: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7180: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7190: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+71A0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+71B0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+71C0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+71D0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+71E0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+71F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+```
+
+### 00.0630 Retest
+
+Operator follow-up on `HIMON V 00.0630(2008)` repeated the same
+`expr-math-7010.a` paste through `ASM FLASH OK`. The table values matched the
+00.0615 proof (`SIZE=$000F`, `DATA=$7025`, no fixups). The board then ran the
+emitted program and dumped the combined code/runtime range:
+
+```text
+>G 7010
+GO 7010
+
+#GO# ENTRY=7010
+RET A=0F X=30 Y=31 P=75 S=FD NV-BdIzC
+>D 7000 71FF
+7000: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7010: A9 5A 8D 00 71 A9 02 8D | 01 71 A9 00 8D 02 71 A9 | .Z..q....q....q.
+7020: 0F 8D 03 71 60 02 00 0F | 00 00 00 00 00 00 00 00 | ...q`...........
+7100: 5A 02 00 0F 00 00 00 00 | 00 00 00 00 00 00 00 00 | Z...............
+>
+```
+
+### Backward ORG Negative Check
+
+The same HIMON `V 00.0630(2008)` board was cold-booted through STR8 before the
+negative check. The flash ASM wrapper rejected a backward `ORG` exactly at the
+current expression-math boundary:
+
+```text
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+...
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0630(2008)
+>ASM
+ASM FLASH
+ASM> ORG $7000+16
+OK PC=$7010
+ASM> ORG $7000
+ERR=$06 BAD RANGE PC=$7010
+ASM> NEW
+OK PC=$7010
+ASM> .
+ASM FLASH BYE
+>ASM NEW
+ASM FLASH
+ASM> ORG $7000+16
+OK PC=$7010
+ASM> ORG $7000
+ERR=$06 BAD RANGE PC=$7010
+ASM>
+```
+
+This completes the optional negative path for `expr-math-7010.a`. It also shows
+that, after a clean STR8/HIMON boot, top-level `ASM NEW` enters the same flash
+ASM wrapper and does not prevent the `ORG $7000+16` expression from assembling.

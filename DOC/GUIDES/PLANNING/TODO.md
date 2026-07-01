@@ -75,16 +75,6 @@
   flush/read-timeout callbacks. First users: ASM paste abort, load abort,
   monitor command parse failure after pasted bursts, and future host-transfer
   recovery.
-- Next ASM onboard pass: board-test the host-proven expression-math slice that
-  was deliberately not hardware-tested in the commit that added resolved
-  `+`/`-` for `EQU`/`ORG`. Load the current ASM image, run the smoke ladder,
-  and paste
-  [expr-math-7010.a](../ASM/SAMPLES/expr-math-7010.a) using
-  [expr-math-7010-test.md](../ASM/SAMPLES/expr-math-7010-test.md). It covers
-  known-symbol math, address deltas, `ORG $7000+16`, and a separate
-  backward-ORG rejection check. Keep the `|`, `&`, and `^` logical/mask
-  expression operators deferred; they are not the next ASM implementation
-  slice.
 - After the required ASM board tests, the next ASM direction is sealed movable
   modules and the managed flash object-store plan in
   [MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md): seal RAM-emitted ASM output

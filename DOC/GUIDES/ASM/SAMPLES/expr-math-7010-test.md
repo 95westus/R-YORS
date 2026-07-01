@@ -67,6 +67,39 @@ expect:
 7100: 5A 02 00 0F
 ```
 
+Accepted hardware proof:
+
+```text
+HIMON V 00.0615(2131)
+ASM FLASH
+source accepted through END at PC=$7028
+SIZE table value: $000F
+DATA table value: $7025
+fixups: none
+G 7010 returned A=$0F
+D 7000 FF showed:
+7010: A9 5A 8D 00 71 A9 02 8D | 01 71 A9 00 8D 02 71 A9
+7020: 0F 8D 03 71 60 02 00 0F
+D 7100 FF showed:
+7100: 5A 02 00 0F 00 00 00 00 | 00 00 00 00 00 00 00 00
+```
+
+Accepted retest:
+
+```text
+HIMON V 00.0630(2008)
+ASM FLASH
+source accepted through END at PC=$7028
+same table values and no fixups
+G 7010 returned A=$0F
+D 7000 71FF showed the emitted $7010-$7027 oracle and
+7100: 5A 02 00 0F 00 00 00 00 | 00 00 00 00 00 00 00 00
+```
+
+The accepted transcript proves the assembly table values, generated code bytes,
+selector bytes, normal return after executing the emitted program, and the
+runtime oracle bytes at `$7100-$7103`.
+
 What this proves:
 
 ```text
@@ -85,7 +118,7 @@ selector atoms:
   DB <NEXT,>NEXT,SIZE emits 02 00 0F after the RTS
 ```
 
-Optional negative check in a fresh paste session:
+Hardware-proven negative check in a fresh paste session:
 
 ```text
         ORG $7000+16
@@ -97,6 +130,21 @@ Expected result:
 ```text
 ERR=$06 BAD RANGE PC=$7010
 ```
+
+Accepted hardware proof:
+
+```text
+HIMON V 00.0630(2008)
+>ASM
+ASM FLASH
+ASM> ORG $7000+16
+OK PC=$7010
+ASM> ORG $7000
+ERR=$06 BAD RANGE PC=$7010
+```
+
+The same cold-boot session also showed top-level `>ASM NEW` entering the flash
+ASM wrapper and producing the same `ORG $7000+16` / backward-`ORG` result.
 
 Notes:
 
