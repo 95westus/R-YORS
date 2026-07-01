@@ -5680,6 +5680,9 @@ ASM_SMOKE_REPORT_FAIL:
 
                         ENDIF
 
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
+
 ASM_REPORT_COMPACT:
                         LDX             #<ASM_REPORT_MSG_TITLE
                         LDY             #>ASM_REPORT_MSG_TITLE
@@ -5957,6 +5960,8 @@ ASM_REPORT_PRINT_LIMIT_SEP:
                         JSR             ASM_RJ_WRITE_BYTE
                         LDA             #'$'
                         JMP             ASM_RJ_WRITE_BYTE
+
+                        ENDIF
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_PRINT_TABLES
@@ -6568,6 +6573,14 @@ ASM_END_FAILED:
                         CLC
                         RTS
 
+                        IF              ASM_RUNTIME_ONLY
+
+ASM_REPORT_PRINT_END_IF_NEEDED:
+ASM_REPORT_PRINT_FAIL_IF_NEEDED:
+                        RTS
+
+                        ELSE
+
 ASM_REPORT_PRINT_END_IF_NEEDED:
                         LDA             ASM_REPORT_FLAGS
                         AND             #ASM_REPORTF_PRINT_END
@@ -6607,6 +6620,8 @@ ASM_REPORT_PRINT_FAIL_IF_NEEDED:
                         STA             ASM_REPORT_FLAGS
 ASM_REPORT_PRINT_FAIL_DONE:
                         RTS
+
+                        ENDIF
 
 ASM_REPORT_NOTE_REF:
                         LDA             ASM_REF_COUNT
@@ -13380,6 +13395,8 @@ ASM_SMOKE_MSG_W:       DB              "W=$",0
 ASM_SMOKE_MSG_SYM:     DB              " SYM=$",0
 ASM_SMOKE_MSG_PC:      DB              " PC=$",0
                         ENDIF
+                        IF              ASM_RUNTIME_ONLY
+                        ELSE
 ASM_REPORT_MSG_TITLE:  DB              "ASM REPORT",0
 ASM_REPORT_MSG_STATUS: DB              "STATUS=",0
 ASM_REPORT_MSG_OK:     DB              "OK",0
@@ -13404,6 +13421,7 @@ ASM_REPORT_MSG_USED_REFS:
                         DB              " REFS=$",0
 ASM_REPORT_MSG_USED_FIRST:
                         DB              " FIRST=$",0
+                        ENDIF
 ASM_SEAL_MSG_OK:       DB              "SEAL OK FLAGS=$",0
 ASM_SEAL_MSG_BASE:     DB              " BASE=$",0
 ASM_SEAL_MSG_END:      DB              " END=$",0

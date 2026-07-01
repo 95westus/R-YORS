@@ -29,7 +29,7 @@
 
 ASM_BEGINF_HAVE_PC     EQU             $01
 ASMRP_TARGET_LO        EQU             $00
-ASMRP_TARGET_HI        EQU             $70
+ASMRP_TARGET_HI        EQU             $76
 ASMRP_QUENCH_IDLE_SLICES EQU           $02
 
 ASMRP_STATUS_OK        EQU             $00

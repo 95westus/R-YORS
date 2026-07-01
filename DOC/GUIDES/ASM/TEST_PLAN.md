@@ -6069,6 +6069,14 @@ SEAL.RELOC adds a separate RAM relocation record:
          site offset, and target offset. Kinds are $01 ABS16_INTERNAL,
          $02 LO8_INTERNAL, and $03 HI8_INTERNAL. Runtime paste/flash
          SEAL success prints SEAL REL @=$hhhh COUNT=$nn after SEAL REC.
+ASMRT.REPORT.TRIM keeps the older compact-report printer in the core/smoke
+         build but compiles it out of ASM_RUNTIME_ONLY images. Runtime paste
+         and flash use wrapper error lines, ASM TABLES, and SEAL REC/REL as
+         the board-facing report surface.
+ASMRP.TARGET.7600 moves the runtime-paste default emit target from $7000 to
+         $7600. The report trim reduced the paste load image by $0308 bytes,
+         but explicit ORG $7000 still overlaps live runtime data and can
+         corrupt parser/opcode metadata while the session is assembling.
 SEAL.WRAP is requirements-only for now:
          a future WRAP batch command must hard-stop or quench on validation,
          record, export, or install failure before it can be used as a
@@ -6097,11 +6105,11 @@ resident symbols referenced later
 Acceptance:
 
 ```text
-first clean END prints compact report
-first failure prints error and compact report
-report overflow sets TRUNC=YES
-used symbol report prints count and first reference line
-unused symbol report prints definition lines
+core/smoke compact-report build: first clean END can print compact report
+core/smoke compact-report build: first failure can print error and compact report
+core/smoke compact-report build: report overflow sets TRUNC=YES
+core/smoke compact-report build: used symbol report prints count and first reference line
+core/smoke compact-report build: unused symbol report prints definition lines
 clean END leaves a valid RAM fact record matching START/HIGH/BYTES
 forward ORG and plain DS count set seal flags but remain valid ASM
 initialized DS count,$xx remains seal-owned
@@ -6126,6 +6134,8 @@ ASM> NEW remains ordinary ASM source, not a wrapper command
 post-END non-SEAL/non-NEW source is rejected without clearing frozen seal facts
 runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
 state/result/line buffer in UDATA
+runtime paste wrapper default session starts at $7600, not $7000
+explicit ORG $7000 is not a safe current runtime-paste board-test target
 future WRAP failure prints one compact error and stops or quenches input before
 later source can be read as SEAL> commands
 ```
@@ -6317,6 +6327,64 @@ SEAL REL @=$54A0 COUNT=$02
 The `$7020` metadata overwrite survives `G 2000` because the paste runtime's
 loaded DATA constants are not restored by starting a new ASM session. A reload
 or cold boot is required after such an overlap test.
+
+Hardware feedback after `ASMRT.REPORT.TRIM` on 2026-07-01 loaded the trimmed
+runtime paste image as `L OK=5133 GO=2000`, exactly `$0308` smaller than the
+previous `L OK=543B` relocation-classifier image. The first explicit
+`ORG $7000` test still overlapped live runtime data: `JMP (TARGET)` and
+`JMP (TARGET,X)` failed with `ERR=$08 BAD SYM PC=$7009` after earlier emitted
+bytes had overwritten part of the image. A following `G 2000` did not restore
+those loaded constants. Treat `$7000` as unsafe for current runtime-paste board
+tests; use `$7600` unless the test is deliberately proving overlap behavior.
+
+Hardware-proven `ASMRT.REPORT.TRIM` plus `$7600` relocation classifier retest
+on 2026-07-01 with HIMON V 00.0630(2121) and the trimmed
+`asm-v1-runtime-paste-2000.s19` image loaded as `L OK=5133 GO=2000`. The
+operator first typed ASM source at the HIMON prompt and saw `HSH_NF`, which
+confirms source must be entered only after `G 2000` reaches `ASM>`. The clean
+`L G` run then proved the same absolute-mode classifier facts at `$7600`:
+
+```text
+ASM> ORG $7600
+OK PC=$7600
+ASM> JMP TARGET
+OK PC=$7603
+ASM> LDA TARGET,X
+OK PC=$7606
+ASM> LDA TARGET,Y
+OK PC=$7609
+ASM> JMP (TARGET)
+OK PC=$760C
+ASM> JMP (TARGET,X)
+OK PC=$760F
+ASM> TARGET RTS
+OK PC=$7610
+ASM> END
+OK PC=$7610
+RELOCS
+SL K  SITE TARG
+00 01 0001 000F
+01 01 0004 000F
+02 01 0007 000F
+03 01 000A 000F
+04 01 000D 000F
+SEAL OK FLAGS=$01 BASE=$7600 END=$7610
+SEAL REC @=$521F LEN=$0010 FNV=$A2335158
+SEAL REL @=$522A COUNT=$05
+SEAL> D 7600 1F
+ERR=$03 BAD OPER PC=$7610
+```
+
+The post-session `SEAL> D` rejection is expected: `SEAL> ` accepts only
+`SEAL`, `NEW`, and `.`. The HIMON dumps after exiting the wrapper were:
+
+```text
+7600: 4C 0F 76 BD 0F 76 B9 0F | 76 6C 0F 76 7C 0F 76 60 | L.v..v..vl.v|.v`
+7610: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+521F: 01 00 76 10 76 10 00 58 | 51 33 A2 05 01 01 01 01 | ..v.v..XQ3......
+522F: 01 | .
+522A: 05 01 01 01 01 01 | ......
+```
 
 Hardware-proven `ASM 2.50` post-session `SEAL` dry-run on 2026-07-01 with
 HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`

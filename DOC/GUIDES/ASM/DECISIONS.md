@@ -553,9 +553,11 @@ A [addr] [label[:]] MMM [operand] .
   defined in the current session, and resident symbols referenced. Rich
   whole-image reports, memory policy reports, and full ref/xref exports are
   later tools.
-- V1 report timing is simple: `END` prints the report; the first error prints
-  `ASM ERR line status [token/name]`, then the compact report, then stops the
-  session. A separate `REPORT` command can be added later.
+- V1 report timing is split by build. The core/smoke compact-report build can
+  print the compact report at `END` or first failure. `ASM_RUNTIME_ONLY`
+  omits that printer and its strings; runtime paste/flash wrappers use their
+  error line, `ASM TABLES`, and post-END `SEAL` facts as the operator-visible
+  report path. A separate `REPORT` command can be added later.
 - ASM report line numbers are physical source/session input lines counted from
   the start of the assembly session, including blank/comment lines. References
   are only recorded for lines that define or use a symbol.
@@ -630,6 +632,11 @@ A [addr] [label[:]] MMM [operand] .
   `SYS_READ_CHAR_TIMEOUT_SPINDOWN` until the sender is quiet for the local idle
   window. It returns to HIMON with `C=0`, `A=status`, and `X/Y=current PC`;
   it does not call `ASM_BEGIN` or show another `ASM> ` prompt.
+- The runtime paste wrapper's default emitted-code target is `$7600`, leaving
+  room below it for the loaded runtime body, DATA constants, and UDATA/line
+  buffer. Explicit `ORG` can still choose an unsafe range until the assembler
+  grows a real workspace-overlap guard; current board tests should avoid
+  `$7000` under `asm-v1-runtime-paste`.
 - Current seed-only ASM requires the `HASH ACQUIRE` seed at the fixed RAM cell
   `$7E00/$7E01`. HIMON publishes the current `THE_JOIN_EXEC_XY` addr16 there
   during common init, so the value follows HIMON if the resident join routine

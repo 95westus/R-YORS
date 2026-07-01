@@ -8132,3 +8132,81 @@ SEAL> SEAL
 SEAL ERR=$02 FLAGS=$05
 SEAL>
 ```
+
+## 2026-07-01 ASMRT.REPORT.TRIM $7600 Relocation Classifier Proof
+
+Operator transcript pasted into Codex session. The board loaded the trimmed
+`asm-v1-runtime-paste-2000.s19` image as `L OK=5133 GO=2000`, proving the
+`ASMRT.REPORT.TRIM` image was `$0308` smaller than the previous `L OK=543B`
+relocation-classifier image. An earlier explicit `ORG $7000` attempt in the
+same transcript overlapped live runtime data and caused `JMP (TARGET)` and
+`JMP (TARGET,X)` to fail with `ERR=$08 BAD SYM PC=$7009`; the clean proof below
+uses `$7600`.
+
+Transcript excerpt:
+
+```text
+>L G
+L S19
+L @2000
+L OK=5133 GO=2000
+ASM RT PASTE
+ASM> ORG $7600
+OK PC=$7600
+ASM> JMP TARGET
+OK PC=$7603
+ASM> LDA TARGET,X
+OK PC=$7606
+ASM> LDA TARGET,Y
+OK PC=$7609
+ASM> JMP (TARGET)
+OK PC=$760C
+ASM> JMP (TARGET,X)
+OK PC=$760F
+ASM> TARGET RTS
+OK PC=$7610
+ASM> END
+OK PC=$7610
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 760F  01 04 0E 0007 00  0000  TARGET
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  7601 7603 TARGET
+01 02 06   00  7604 7606 TARGET
+02 02 09   00  7607 7609 TARGET
+03 02 0D   00  760A 760C TARGET
+04 02 0E   00  760D 760F TARGET
+RELOCS
+SL K  SITE TARG
+00 01 0001 000F
+01 01 0004 000F
+02 01 0007 000F
+03 01 000A 000F
+04 01 000D 000F
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7600 END=$7610
+SEAL REC @=$521F LEN=$0010 FNV=$A2335158
+SEAL REL @=$522A COUNT=$05
+SEAL> D 7600 1F
+ERR=$03 BAD OPER PC=$7610
+SEAL> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=72 Y=10 P=75 S=FD NV-BdIzC
+>D 7600 1F
+7600: 4C 0F 76 BD 0F 76 B9 0F | 76 6C 0F 76 7C 0F 76 60 | L.v..v..vl.v|.v`
+7610: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>D 521F +11
+521F: 01 00 76 10 76 10 00 58 | 51 33 A2 05 01 01 01 01 | ..v.v..XQ3......
+522F: 01 | .
+>D 522A +06
+522A: 05 01 01 01 01 01 | ......
+```
+
+The `SEAL> D` rejection is expected because the post-`END` wrapper prompt
+accepts only `SEAL`, `NEW`, and `.`; HIMON `D` is available again after leaving
+the wrapper.

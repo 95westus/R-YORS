@@ -1320,7 +1320,8 @@ here, so keep them separate:
 
 ```text
 $2000  RAM-loaded ASM proof/runtime base, and flash command default emit target
-$7000  current smoke-test emitted-code target
+$7000  older smoke-test emitted-code target; unsafe for current runtime-paste
+$7600  current runtime-paste default emitted-code target
 $8000  flash-resident ASM command CODE/FNV record link address
 $6000  current flash-runtime UDATA/table arena from the Makefile `-u6000`
 ```
@@ -4975,7 +4976,9 @@ clobbers    A,X,Y,P and ASM zero-page frame
 ZP          ASM_FIX_PTR, ASM_SYM_PTR, ASM_REF_PTR, hash/value/temp bytes
 RAM         fixup states, session status, report counters/flags
 stack       balanced; report and resolver helpers may use stack
-calls       ASM_RESOLVE_FIXUPS, ASM_REPORT_COMPACT, ASM_FAIL
+calls       ASM_RESOLVE_FIXUPS; compact-report builds may call
+            ASM_REPORT_COMPACT, while ASM_RUNTIME_ONLY uses no-op compact
+            report hooks and leaves board-facing output to wrappers
 
 errors      BAD FIX if required fixups remain or cannot patch
             BAD RANGE if a final branch/address fixup is out of range
@@ -4985,7 +4988,10 @@ errors      BAD FIX if required fixups remain or cannot patch
 End behavior:
 
 - `END` fails the assembly if required unresolved fixups remain.
-- Prints the compact v1 report on the first real end or first failure.
+- The core/smoke compact-report build can print the compact v1 report on the
+  first real end or first failure. `ASM_RUNTIME_ONLY` omits that printer and
+  its strings; runtime paste/flash wrappers print error lines, `ASM TABLES`,
+  and `SEAL REC`/`SEAL REL` facts instead.
 - A clean second direct `ASM_END` call returns `OK` without duplicating report
   output.
 - A failed second `ASM_END` call returns the stored failure status without
