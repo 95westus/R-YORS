@@ -6214,6 +6214,110 @@ Follow-up dumps proved the remaining parallel arrays:
 54E9: 00 00 00 | ...    target_hi
 ```
 
+Hardware-proven relocation classifier shrink on 2026-07-01 with HIMON
+V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
+`L OK=543B GO=2000`. This build derives `ABS16_INTERNAL` relocation kind from
+the mode patch-width table instead of a handwritten absolute-mode list. The
+board proof assembled all five full-width absolute operand forms without
+changing the relocation rows:
+
+```text
+ORG $7000
+JMP TARGET
+LDA TARGET,X
+LDA TARGET,Y
+JMP (TARGET)
+JMP (TARGET,X)
+TARGET RTS
+END
+```
+
+The resolved fixups and relocation rows were:
+
+```text
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  7001 7003 TARGET
+01 02 06   00  7004 7006 TARGET
+02 02 09   00  7007 7009 TARGET
+03 02 0D   00  700A 700C TARGET
+04 02 0E   00  700D 700F TARGET
+RELOCS
+SL K  SITE TARG
+00 01 0001 000F
+01 01 0004 000F
+02 01 0007 000F
+03 01 000A 000F
+04 01 000D 000F
+```
+
+The successful post-session `SEAL` and dumps were:
+
+```text
+SEAL OK FLAGS=$01 BASE=$7000 END=$7010
+SEAL REC @=$5495 LEN=$0010 FNV=$C3D3B3AE
+SEAL REL @=$54A0 COUNT=$05
+
+7000: 4C 0F 70 BD 0F 70 B9 0F | 70 6C 0F 70 7C 0F 70 60 | L.p..p..pl.p|.p`
+5495: 01 00 70 10 70 10 00 AE | B3 D3 C3 05 01 01 01 01 | ..p.p...........
+54A5: 01 | .
+54A0: 05 01 01 01 01 01 | ......
+```
+
+The same run exposed a runtime-paste overlap hazard for future board tests:
+after this shrink, `ASM_OPM_PATCH_BYTES` is at `$7021` in the paste image.
+A negative test that used `ORG $7020` overwrote that live metadata while the
+session was still assembling, so its `LDA $00` PC advance/checksum are not a
+valid classifier proof. Near-miss relocation tests should assemble above the
+runtime image and wrapper UDATA, for example at `$7600`.
+
+Freshly reloading the same `L OK=543B` image, then assembling the near-miss
+test at `$7600`, proved that `IMM8` selectors still produce only `$02/$03`
+relocation rows and that `ZP8`, `REL8`, and `BIT_ZP_REL` do not produce
+`ABS16_INTERNAL` relocation rows:
+
+```text
+ORG $7600
+LDA #<TARGET
+LDA #>TARGET
+LDA $00
+BNE TARGET
+BBR 3,$12,TARGET
+TARGET RTS
+END
+```
+
+The resolved fixups and relocation rows were:
+
+```text
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 02   01  7601 7602 TARGET
+01 02 02   02  7603 7604 TARGET
+02 02 07   00  7607 7608 TARGET
+03 02 10   00  760A 760B TARGET
+RELOCS
+SL K  SITE TARG
+00 02 0001 000B
+01 03 0003 000B
+```
+
+The successful post-session `SEAL` and dumps were:
+
+```text
+SEAL OK FLAGS=$01 BASE=$7600 END=$760C
+SEAL REC @=$5495 LEN=$000C FNV=$90D5C31B
+SEAL REL @=$54A0 COUNT=$02
+
+7600: A9 0B A9 76 A5 00 D0 03 | 3F 12 00 60 | ...v....?..`
+5495: 01 00 76 0C 76 0C 00 1B | C3 D5 90 02 02 | ..v.v........
+54A0: 02 02 03 | ...
+```
+
+The `$7020` metadata overwrite survives `G 2000` because the paste runtime's
+loaded DATA constants are not restored by starting a new ASM session. A reload
+or cold boot is required after such an overlap test.
+
 Hardware-proven `ASM 2.50` post-session `SEAL` dry-run on 2026-07-01 with
 HIMON V 00.0630(2121) and `asm-v1-runtime-paste-2000.s19`
 `L OK=51C7 GO=2000`. This proof used the pre-FNV output shape:

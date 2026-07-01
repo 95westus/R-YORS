@@ -8236,16 +8236,13 @@ ASM_RELOC_KIND_SEL_HI:
                         RTS
 
 ASM_RELOC_KIND_FOR_MODE_A:
-                        CMP             #ASM_OPM_ABS16
+                        TAY
+                        CPY             #(ASM_OPM_BIT_ZP_REL+1)
+                        BCS             ASM_RELOC_KIND_MODE_NO
+                        LDA             ASM_OPM_PATCH_BYTES,Y
+                        CMP             #$02
                         BEQ             ASM_RELOC_KIND_ABS16
-                        CMP             #ASM_OPM_ABS_X
-                        BEQ             ASM_RELOC_KIND_ABS16
-                        CMP             #ASM_OPM_ABS_Y
-                        BEQ             ASM_RELOC_KIND_ABS16
-                        CMP             #ASM_OPM_ABS_IND
-                        BEQ             ASM_RELOC_KIND_ABS16
-                        CMP             #ASM_OPM_ABS_X_IND
-                        BEQ             ASM_RELOC_KIND_ABS16
+ASM_RELOC_KIND_MODE_NO:
                         CLC
                         RTS
 ASM_RELOC_KIND_ABS16:
