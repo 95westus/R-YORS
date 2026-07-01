@@ -54,6 +54,14 @@
                         XDEF            ASM_SEAL_FNV1
                         XDEF            ASM_SEAL_FNV2
                         XDEF            ASM_SEAL_FNV3
+                        XDEF            ASM_RELOC_REC
+                        XDEF            ASM_RELOC_REC_END
+                        XDEF            ASM_RELOC_COUNT
+                        XDEF            ASM_RELOC_KIND
+                        XDEF            ASM_RELOC_SITE_LO
+                        XDEF            ASM_RELOC_SITE_HI
+                        XDEF            ASM_RELOC_TARGET_LO
+                        XDEF            ASM_RELOC_TARGET_HI
                         IF              ASM_RUNTIME_ONLY
                         IF              ASM_FLASH_RUNTIME
                         XDEF            ASM_RJOIN_INIT_IO
@@ -203,6 +211,8 @@ ASM_REPORTF_TRUNC      EQU             $20
 ASM_SEALF_VALID        EQU             $01
 ASM_SEALF_HOLE         EQU             $02
 ASM_SEALF_UNOWNED      EQU             $04
+ASM_SEALF_RELOC_TRUNC  EQU             $08
+ASM_SEALF_RELOC_BAD    EQU             $10
 
 ASM_SEAL_REC_BYTES     EQU             $0B
 ASM_SEAL_REC_OFF_FLAGS EQU             $00
@@ -294,6 +304,7 @@ ASM_OPM_BIT_ZP         EQU             $0F
 ASM_OPM_BIT_ZP_REL     EQU             $10
 
 ASM_OPF_UNRESOLVED     EQU             $01
+ASM_OPF_RELOC_INTERNAL EQU             $02
 
 ASM_ATOM_REG           EQU             $80
 
@@ -313,6 +324,10 @@ ASM_SYM_NAME_MAX       EQU             $20
 ASM_FIX_MAX            EQU             $60
 ASM_FIX_NAME_MAX       EQU             $20
 ASM_FIX_NAME_BYTES     EQU             (ASM_FIX_MAX*ASM_FIX_NAME_MAX)
+ASM_RELOC_MAX          EQU             $10
+ASM_RELOC_ABS16_INTERNAL EQU           $01
+ASM_RELOC_LO8_INTERNAL EQU             $02
+ASM_RELOC_HI8_INTERNAL EQU             $03
 ASM_REF_MAX            EQU             $A0
 ASM_LOCAL_MAX          EQU             $10
 ASM_LOCAL_NAME_MAX     EQU             $10
@@ -5965,6 +5980,7 @@ ASM_PRINT_TABLES_READY:
                         JSR             ASM_SMOKE_PRINT_LINE
                         JSR             ASM_PRINT_SYMBOL_TABLE
                         JSR             ASM_PRINT_FIXUP_TABLE
+                        JSR             ASM_PRINT_RELOC_TABLE
                         LDA             #ASM_STATUS_OK
                         SEC
                         RTS
@@ -6051,6 +6067,45 @@ ASM_PRINT_FIXUP_LOOP:
                         BRA             ASM_PRINT_FIXUP_LOOP
 ASM_PRINT_FIXUP_DONE:
                         RTS
+
+ASM_PRINT_RELOC_TABLE:
+                        LDX             #<ASM_TABLE_MSG_RELOCS
+                        LDY             #>ASM_TABLE_MSG_RELOCS
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #<ASM_TABLE_MSG_RELOC_HEAD
+                        LDY             #>ASM_TABLE_MSG_RELOC_HEAD
+                        JSR             ASM_SMOKE_PRINT_LINE
+                        LDX             #$00
+ASM_PRINT_RELOC_LOOP:
+                        CPX             ASM_RELOC_COUNT
+                        BEQ             ASM_PRINT_RELOC_DONE
+                        JSR             ASM_PRINT_RELOC_ROW
+                        LDX             ASM_SLOT
+                        INX
+                        BRA             ASM_PRINT_RELOC_LOOP
+ASM_PRINT_RELOC_DONE:
+                        RTS
+
+ASM_PRINT_RELOC_ROW:
+                        STX             ASM_SLOT
+                        TXA
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_RELOC_KIND,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_RELOC_SITE_HI,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SLOT
+                        LDA             ASM_RELOC_SITE_LO,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDX             ASM_SLOT
+                        LDA             ASM_RELOC_TARGET_HI,X
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SLOT
+                        LDA             ASM_RELOC_TARGET_LO,X
+                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        JMP             ASM_RJ_PRINT_CRLF
 
 ASM_PRINT_FIXUP_ROW:
                         STX             ASM_SLOT
@@ -6684,6 +6739,8 @@ ASM_LINE_SAVE:
                         STA             ASM_LINE_REPORT_FLAGS
                         LDA             ASM_SEAL_FLAGS
                         STA             ASM_LINE_SEAL_FLAGS
+                        LDA             ASM_RELOC_COUNT
+                        STA             ASM_LINE_RELOC_COUNT
                         PHX
                         PHY
                         JSR             ASM_LINE_SAVE_FIXUPS
@@ -6743,6 +6800,8 @@ ASM_LINE_ROLLBACK:
                         STA             ASM_REPORT_FLAGS
                         LDA             ASM_LINE_SEAL_FLAGS
                         STA             ASM_SEAL_FLAGS
+                        LDA             ASM_LINE_RELOC_COUNT
+                        STA             ASM_RELOC_COUNT
                         LDA             #ASM_SESS_ACTIVE
                         STA             ASM_SESSION_STATE
                         RTS
@@ -7581,6 +7640,9 @@ ASM_EMIT_RESOLVED_OPERAND:
                         JMP             ASM_EMIT_MNEM_FAIL_A
 ASM_EMIT_RESOLVED_SIZE_OK:
                         BEQ             ASM_EMIT_OK
+                        PHA
+                        JSR             ASM_RELOC_NOTE_RESOLVED_OPERAND
+                        PLA
                         CMP             #$01
                         BEQ             ASM_EMIT_BYTE_OPERAND
                         BRA             ASM_EMIT_WORD_OPERAND
@@ -7920,6 +7982,7 @@ ASM_RESOLVE_FIXUPS_PATCHED:
                         STA             ASM_FIX_LAST_SITE_LO
                         LDA             ASM_FIX_SITE_HI,X
                         STA             ASM_FIX_LAST_SITE_HI
+                        JSR             ASM_RELOC_NOTE_FIXUP_X
                         LDA             #ASM_FIX_RESOLVED
                         STA             ASM_FIX_STATE,X
 ASM_RESOLVE_FIXUPS_NEXT:
@@ -8079,6 +8142,156 @@ ASM_PATCH_FIXUP_REL8_BAD:
 ASM_PATCH_FIXUP_REL8_WRITE:
                         LDY             #$00
                         STA             (ASM_FIX_PTR_LO),Y
+                        SEC
+                        RTS
+
+ASM_RELOC_NOTE_RESOLVED_OPERAND:
+                        LDA             ASM_FLAGS
+                        AND             #ASM_OPF_RELOC_INTERNAL
+                        BEQ             ASM_RELOC_NOTE_RESOLVED_DONE
+                        JSR             ASM_RELOC_KIND_FOR_CURRENT
+                        BCC             ASM_RELOC_NOTE_RESOLVED_DONE
+                        PHA
+                        LDA             ASM_PC_LO
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_PC_HI
+                        STA             ASM_TMP0_HI
+                        LDA             ASM_FIX_PLAN_SEL
+                        AND             #ASM_FIX_SEL_MASK
+                        BEQ             ASM_RELOC_NOTE_RESOLVED_VALUE
+                        LDA             ASM_RELOC_PLAN_TARGET_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_RELOC_PLAN_TARGET_HI
+                        STA             ASM_TMP1_HI
+                        BRA             ASM_RELOC_NOTE_RESOLVED_STORE
+ASM_RELOC_NOTE_RESOLVED_VALUE:
+                        LDA             ASM_VALUE_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_VALUE_HI
+                        STA             ASM_TMP1_HI
+ASM_RELOC_NOTE_RESOLVED_STORE:
+                        PLA
+                        JSR             ASM_RELOC_STORE_A
+ASM_RELOC_NOTE_RESOLVED_DONE:
+                        SEC
+                        RTS
+
+ASM_RELOC_NOTE_FIXUP_X:
+                        PHX
+                        LDA             ASM_RELOC_RESOLVE_FLAGS
+                        AND             #ASM_OPF_RELOC_INTERNAL
+                        BEQ             ASM_RELOC_NOTE_FIXUP_DONE
+                        JSR             ASM_RELOC_KIND_FOR_FIXUP_X
+                        BCC             ASM_RELOC_NOTE_FIXUP_DONE
+                        PHA
+                        LDA             ASM_FIX_SITE_LO,X
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_FIX_SITE_HI,X
+                        STA             ASM_TMP0_HI
+                        LDA             ASM_VALUE_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_VALUE_HI
+                        STA             ASM_TMP1_HI
+                        PLA
+                        JSR             ASM_RELOC_STORE_A
+ASM_RELOC_NOTE_FIXUP_DONE:
+                        PLX
+                        SEC
+                        RTS
+
+ASM_RELOC_KIND_FOR_CURRENT:
+                        LDA             ASM_FIX_PLAN_SEL
+                        AND             #ASM_FIX_SEL_MASK
+                        JSR             ASM_RELOC_KIND_FOR_SEL_A
+                        BCS             ASM_RELOC_KIND_CURRENT_DONE
+                        LDA             ASM_MODE
+                        JMP             ASM_RELOC_KIND_FOR_MODE_A
+ASM_RELOC_KIND_CURRENT_DONE:
+                        RTS
+
+ASM_RELOC_KIND_FOR_FIXUP_X:
+                        LDA             ASM_FIX_SEL,X
+                        AND             #ASM_FIX_SEL_MASK
+                        JSR             ASM_RELOC_KIND_FOR_SEL_A
+                        BCS             ASM_RELOC_KIND_FIXUP_DONE
+                        LDA             ASM_FIX_MODE,X
+                        JMP             ASM_RELOC_KIND_FOR_MODE_A
+ASM_RELOC_KIND_FIXUP_DONE:
+                        RTS
+
+ASM_RELOC_KIND_FOR_SEL_A:
+                        CMP             #ASM_FIX_SEL_LO
+                        BEQ             ASM_RELOC_KIND_SEL_LO
+                        CMP             #ASM_FIX_SEL_HI
+                        BEQ             ASM_RELOC_KIND_SEL_HI
+                        CLC
+                        RTS
+ASM_RELOC_KIND_SEL_LO:
+                        LDA             #ASM_RELOC_LO8_INTERNAL
+                        SEC
+                        RTS
+ASM_RELOC_KIND_SEL_HI:
+                        LDA             #ASM_RELOC_HI8_INTERNAL
+                        SEC
+                        RTS
+
+ASM_RELOC_KIND_FOR_MODE_A:
+                        CMP             #ASM_OPM_ABS16
+                        BEQ             ASM_RELOC_KIND_ABS16
+                        CMP             #ASM_OPM_ABS_X
+                        BEQ             ASM_RELOC_KIND_ABS16
+                        CMP             #ASM_OPM_ABS_Y
+                        BEQ             ASM_RELOC_KIND_ABS16
+                        CMP             #ASM_OPM_ABS_IND
+                        BEQ             ASM_RELOC_KIND_ABS16
+                        CMP             #ASM_OPM_ABS_X_IND
+                        BEQ             ASM_RELOC_KIND_ABS16
+                        CLC
+                        RTS
+ASM_RELOC_KIND_ABS16:
+                        LDA             #ASM_RELOC_ABS16_INTERNAL
+                        SEC
+                        RTS
+
+ASM_RELOC_STORE_A:
+                        PHA
+                        LDX             ASM_RELOC_COUNT
+                        CPX             #ASM_RELOC_MAX
+                        BCC             ASM_RELOC_STORE_HAVE_ROOM
+                        PLA
+                        JSR             ASM_SEAL_NOTE_RELOC_TRUNC
+                        SEC
+                        RTS
+ASM_RELOC_STORE_HAVE_ROOM:
+                        LDA             ASM_TMP0_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        STA             ASM_RELOC_SITE_LO,X
+                        LDA             ASM_TMP0_HI
+                        SBC             ASM_START_PC_HI
+                        BCS             ASM_RELOC_STORE_SITE_OK
+                        PLA
+                        JSR             ASM_SEAL_NOTE_RELOC_BAD
+                        SEC
+                        RTS
+ASM_RELOC_STORE_SITE_OK:
+                        STA             ASM_RELOC_SITE_HI,X
+                        LDA             ASM_TMP1_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        STA             ASM_RELOC_TARGET_LO,X
+                        LDA             ASM_TMP1_HI
+                        SBC             ASM_START_PC_HI
+                        BCS             ASM_RELOC_STORE_TARGET_OK
+                        PLA
+                        JSR             ASM_SEAL_NOTE_RELOC_BAD
+                        SEC
+                        RTS
+ASM_RELOC_STORE_TARGET_OK:
+                        STA             ASM_RELOC_TARGET_HI,X
+                        PLA
+                        STA             ASM_RELOC_KIND,X
+                        INC             ASM_RELOC_COUNT
                         SEC
                         RTS
 
@@ -10285,6 +10498,8 @@ ASM_CLASS_OPERAND:
                         STY             ASM_PARSE_PTR_HI
                         STZ             ASM_TMP1_HI
                         STZ             ASM_FIX_PLAN_SEL
+                        STZ             ASM_RELOC_PLAN_TARGET_LO
+                        STZ             ASM_RELOC_PLAN_TARGET_HI
                         JSR             ASM_NEXT_TOKEN
                         BCS             ASM_CLASS_HAVE_TOKEN
                         JMP             ASM_CLASS_FAIL_A
@@ -10962,6 +11177,7 @@ ASM_CLASS_LOAD_SYMBOL_FOUND:
                         STA             ASM_BASE_HI
                         LDA             ASM_MODE
                         STA             ASM_TMP0_LO
+                        JSR             ASM_CLASS_MARK_RELOC_IF_LABEL
                         LDA             ASM_WIDTH
                         CMP             #ASM_WIDTH_ZP
                         BEQ             ASM_CLASS_LOAD_SYMBOL_WIDTH_OK
@@ -10983,6 +11199,24 @@ ASM_CLASS_LOAD_SYMBOL_KEEP_WIDTH:
                         LDA             ASM_WIDTH
                         STA             ASM_TMP0_HI
                         SEC
+                        RTS
+
+ASM_CLASS_MARK_RELOC_IF_LABEL:
+                        LDA             ASM_TOK_FLAGS
+                        AND             #ASM_TF_LOCAL_PREFIX
+                        BNE             ASM_CLASS_MARK_RELOC_YES
+                        LDA             ASM_SYM_FLAGS,X
+                        AND             #ASM_SYMF_FROM_LABEL
+                        BEQ             ASM_CLASS_MARK_RELOC_DONE
+ASM_CLASS_MARK_RELOC_YES:
+                        LDA             ASM_TMP1_HI
+                        ORA             #ASM_OPF_RELOC_INTERNAL
+                        STA             ASM_TMP1_HI
+                        LDA             ASM_BASE_LO
+                        STA             ASM_RELOC_PLAN_TARGET_LO
+                        LDA             ASM_BASE_HI
+                        STA             ASM_RELOC_PLAN_TARGET_HI
+ASM_CLASS_MARK_RELOC_DONE:
                         RTS
 
 ASM_CLASS_LOAD_RESIDENT_EXEC:
@@ -11475,6 +11709,8 @@ ASM_BIND_GLOBAL_SCOPE_OK:
                         STA             ASM_VALUE_LO
                         LDA             ASM_PC_HI
                         STA             ASM_VALUE_HI
+                        LDA             #ASM_OPF_RELOC_INTERNAL
+                        STA             ASM_RELOC_RESOLVE_FLAGS
                         PHX
                         PHY
                         JSR             ASM_RESOLVE_FIXUPS_CURRENT
@@ -11521,6 +11757,8 @@ ASM_BIND_LOCAL_LABEL:
                         STA             ASM_LOCAL_VAL_HI,X
                         STA             ASM_VALUE_HI
                         INC             ASM_LOCAL_COUNT
+                        LDA             #ASM_OPF_RELOC_INTERNAL
+                        STA             ASM_RELOC_RESOLVE_FLAGS
                         PHX
                         PHY
                         JSR             ASM_RESOLVE_FIXUPS_CURRENT
@@ -11613,6 +11851,7 @@ ASM_DEFINE_EQU_KIND_OK:
                         STZ             ASM_SYM_FIRSTREF_LO,X
                         STZ             ASM_SYM_FIRSTREF_HI,X
                         INC             ASM_SYM_COUNT
+                        STZ             ASM_RELOC_RESOLVE_FLAGS
                         PHX
                         PHY
                         JSR             ASM_RESOLVE_FIXUPS_CURRENT
@@ -12015,6 +12254,9 @@ ASM_FNV1A_UPDATE_A_FAST:
 ;   +$03 end lo,  +$04 end hi
 ;   +$05 len lo,  +$06 len hi
 ;   +$07..+$0A FNV32 lo..hi
+; ASM_RELOC_REC is separate RAM-only metadata:
+;   +$00 count, then parallel arrays kind/site_offset/target_offset.
+; First-pass kinds: $01 ABS16_INTERNAL, $02 LO8_INTERNAL, $03 HI8_INTERNAL.
 ; This is not flash publication and not a K bit.
 ASM_SEAL_CAPTURE_END_FACTS:
                         LDA             ASM_START_PC_LO
@@ -12046,6 +12288,18 @@ ASM_SEAL_NOTE_HOLE:
 ASM_SEAL_NOTE_UNOWNED:
                         LDA             ASM_SEAL_FLAGS
                         ORA             #ASM_SEALF_UNOWNED
+                        STA             ASM_SEAL_FLAGS
+                        RTS
+
+ASM_SEAL_NOTE_RELOC_TRUNC:
+                        LDA             ASM_SEAL_FLAGS
+                        ORA             #ASM_SEALF_RELOC_TRUNC
+                        STA             ASM_SEAL_FLAGS
+                        RTS
+
+ASM_SEAL_NOTE_RELOC_BAD:
+                        LDA             ASM_SEAL_FLAGS
+                        ORA             #ASM_SEALF_RELOC_BAD
                         STA             ASM_SEAL_FLAGS
                         RTS
 
@@ -12160,6 +12414,19 @@ ASM_SEAL_PRINT_RECORD:
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_SEAL_FNV0
                         JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_RJ_PRINT_CRLF
+                        LDX             #<ASM_SEAL_MSG_REL
+                        LDY             #>ASM_SEAL_MSG_REL
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             #>ASM_RELOC_REC
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             #<ASM_RELOC_REC
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<ASM_SEAL_MSG_COUNT
+                        LDY             #>ASM_SEAL_MSG_COUNT
+                        JSR             ASM_RJ_WRITE_CSTRING
+                        LDA             ASM_RELOC_COUNT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASM_SEAL_CLEAR:
@@ -12174,6 +12441,7 @@ ASM_SEAL_CLEAR:
                         STZ             ASM_SEAL_FNV1
                         STZ             ASM_SEAL_FNV2
                         STZ             ASM_SEAL_FNV3
+                        STZ             ASM_RELOC_COUNT
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -12199,6 +12467,9 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_FIX_PLAN_HASH2
                         STZ             ASM_FIX_PLAN_HASH3
                         STZ             ASM_FIX_PLAN_SEL
+                        STZ             ASM_RELOC_PLAN_TARGET_LO
+                        STZ             ASM_RELOC_PLAN_TARGET_HI
+                        STZ             ASM_RELOC_RESOLVE_FLAGS
                         STZ             ASM_FIX_RESOLVE_COUNT
                         STZ             ASM_DB_COUNTING
                         RTS
@@ -12239,6 +12510,14 @@ ASM_SEAL_FNV1:         DB              $00
 ASM_SEAL_FNV2:         DB              $00
 ASM_SEAL_FNV3:         DB              $00
 ASM_SEAL_REC_END:
+ASM_RELOC_REC:
+ASM_RELOC_COUNT:       DB              $00
+ASM_RELOC_KIND:        DS              ASM_RELOC_MAX
+ASM_RELOC_SITE_LO:     DS              ASM_RELOC_MAX
+ASM_RELOC_SITE_HI:     DS              ASM_RELOC_MAX
+ASM_RELOC_TARGET_LO:   DS              ASM_RELOC_MAX
+ASM_RELOC_TARGET_HI:   DS              ASM_RELOC_MAX
+ASM_RELOC_REC_END:
 ASM_LINE_PC_LO:        DB              $00
 ASM_LINE_PC_HI:        DB              $00
 ASM_LINE_HIGH_PC_LO:   DB              $00
@@ -12257,6 +12536,7 @@ ASM_LINE_FIX_LAST_SITE_HI:
                         DB              $00
 ASM_LINE_REPORT_FLAGS: DB              $00
 ASM_LINE_SEAL_FLAGS:   DB              $00
+ASM_LINE_RELOC_COUNT:  DB              $00
 ASM_LINE_FIX_STATE:    DS              ASM_FIX_MAX
 ASM_LINE_FIX_BYTE0:    DS              ASM_FIX_MAX
 ASM_LINE_FIX_BYTE1:    DS              ASM_FIX_MAX
@@ -12348,6 +12628,12 @@ ASM_FIX_PLAN_HASH1:    DB              $00
 ASM_FIX_PLAN_HASH2:    DB              $00
 ASM_FIX_PLAN_HASH3:    DB              $00
 ASM_FIX_PLAN_SEL:      DB              $00
+ASM_RELOC_PLAN_TARGET_LO:
+                        DB              $00
+ASM_RELOC_PLAN_TARGET_HI:
+                        DB              $00
+ASM_RELOC_RESOLVE_FLAGS:
+                        DB              $00
 ASM_SYM_STATE:         DS              ASM_SYM_MAX
 ASM_SYM_FLAGS:         DS              ASM_SYM_MAX
 ASM_SYM_KIND:          DS              ASM_SYM_MAX
@@ -13127,6 +13413,8 @@ ASM_SEAL_MSG_END:      DB              " END=$",0
 ASM_SEAL_MSG_REC:      DB              "SEAL REC @=$",0
 ASM_SEAL_MSG_LEN:      DB              " LEN=$",0
 ASM_SEAL_MSG_FNV:      DB              " FNV=$",0
+ASM_SEAL_MSG_REL:      DB              "SEAL REL @=$",0
+ASM_SEAL_MSG_COUNT:    DB              " COUNT=$",0
 ASM_TABLE_MSG_TITLE:   DB              "ASM TABLES",0
 ASM_TABLE_MSG_SYMBOLS: DB              "SYMBOLS",0
 ASM_TABLE_MSG_SYM_HEAD:
@@ -13134,6 +13422,9 @@ ASM_TABLE_MSG_SYM_HEAD:
 ASM_TABLE_MSG_FIXUPS:  DB              "FIXUPS",0
 ASM_TABLE_MSG_FIX_HEAD:
                         DB              "SL ST MODE SEL SITE BASE NAME",0
+ASM_TABLE_MSG_RELOCS:  DB              "RELOCS",0
+ASM_TABLE_MSG_RELOC_HEAD:
+                        DB              "SL K  SITE TARG",0
                         IF              ASM_RUNTIME_ONLY
                         ELSE
 ASM_SMOKE_LINE_LONG:

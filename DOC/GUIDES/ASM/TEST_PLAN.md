@@ -6064,6 +6064,15 @@ ASMRP.UDATA moves runtime-paste PC/post cells and the $0100 line buffer out of
          with UDATA. This removes $0103 loaded bytes from the SEAL.REC image
          and avoids a fixed scratch address such as $6800, which remains used
          by older documented ASMTEST paths.
+SEAL.RELOC adds a separate RAM relocation record:
+         ASM_RELOC_REC starts with COUNT, then parallel arrays for kind,
+         site offset, and target offset. Kinds are $01 ABS16_INTERNAL,
+         $02 LO8_INTERNAL, and $03 HI8_INTERNAL. Runtime paste/flash
+         SEAL success prints SEAL REL @=$hhhh COUNT=$nn after SEAL REC.
+SEAL.WRAP is requirements-only for now:
+         a future WRAP batch command must hard-stop or quench on validation,
+         record, export, or install failure before it can be used as a
+         multi-chunk paste primitive.
 Numeric report fields are hex in this first W65C02S printer.
 Second clean ASM_END returns OK without duplicating report state.
 ```
@@ -6077,6 +6086,7 @@ start/current/high-water PC
 bytes emitted/reserved
 clean-END seal span facts
 seal ineligibility flags
+relocation row count and RAM table address
 symbol/fixup/ref counts and limits
 unresolved fixups
 used symbols with lines
@@ -6098,6 +6108,15 @@ initialized DS count,$xx remains seal-owned
 post-session SEAL reports FLAGS/BASE/END and rejects every FLAGS value except $01
 eligible post-session SEAL reports SEAL REC @/LEN/FNV after validation
 eligible post-session SEAL fills ASM_SEAL_REC with flags/base/end/len/FNV bytes
+eligible post-session SEAL reports SEAL REL @/COUNT after validation
+ASM TABLES prints a RELOCS section with SL/K/SITE/TARG rows
+internal label ABS16 references produce $01 relocation rows with site/target
+offsets from BASE
+internal label #< and #> references produce $02/$03 relocation rows
+relative branches, EQU constants, and fixed external addresses produce no
+relocation rows
+relocation table overflow keeps ordinary ASM valid but sets a seal-ineligible
+FLAGS bit
 ineligible post-session SEAL reports no SEAL REC line
 clean END switches runtime paste/flash wrappers to the SEAL> prompt
 SEAL> NEW prints OK PC=$end and returns to ASM> at the frozen END PC
@@ -6107,6 +6126,8 @@ ASM> NEW remains ordinary ASM source, not a wrapper command
 post-END non-SEAL/non-NEW source is rejected without clearing frozen seal facts
 runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
 state/result/line buffer in UDATA
+future WRAP failure prints one compact error and stops or quenches input before
+later source can be read as SEAL> commands
 ```
 
 Expected `SEAL.REC.RAM` tiny-span record bytes after sealing `ORG $7000`,
@@ -6114,6 +6135,83 @@ Expected `SEAL.REC.RAM` tiny-span record bytes after sealing `ORG $7000`,
 
 ```text
 ASM_SEAL_REC: 01 00 70 03 70 03 00 6E 14 5B 69
+```
+
+Expected first-pass relocation table for a clean span at `$7000` with:
+
+```text
+START JMP TARGET
+      LDA #<TARGET
+      LDA #>TARGET
+TARGET RTS
+END
+```
+
+The emitted body is `4C 07 70 A9 07 A9 70 60`, and the reloc rows are:
+
+```text
+COUNT=$03
+row 0: kind=$01 site=$0001 target=$0007
+row 1: kind=$02 site=$0004 target=$0007
+row 2: kind=$03 site=$0006 target=$0007
+```
+
+Hardware-proven `SEAL.RELOC` internal relocation rows on 2026-07-01 with
+`asm-v1-runtime-paste-2000.s19`. The test assembled this source at `$7000`:
+
+```text
+ORG $7000
+MAIN JMP TARGET
+LDA #<TARGET
+LDA #>TARGET
+TARGET RTS
+END
+```
+
+The session resolved all three forward fixups and printed the expected
+relocation rows:
+
+```text
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  7001 7003 TARGET
+01 02 02   01  7004 7005 TARGET
+02 02 02   02  7006 7007 TARGET
+RELOCS
+SL K  SITE TARG
+00 01 0001 0007
+01 02 0004 0007
+02 03 0006 0007
+```
+
+The successful post-session `SEAL` reported the body facts and relocation-table
+address:
+
+```text
+SEAL OK FLAGS=$01 BASE=$7000 END=$7008
+SEAL REC @=$549D LEN=$0008 FNV=$1013A74B
+SEAL REL @=$54A8 COUNT=$03
+```
+
+The emitted body and first record bytes matched expectations:
+
+```text
+549D: 01 00 70 08 70 08 00 4B | A7 13 10 03 01 02 03 00 | ..p.p..K........
+54AD: 00 00 00 | ...
+54A8: 03 01 02 03 00 00 00 00 | ........
+7000: 4C 07 70 A9 07 A9 70 60 | 00 00 | L.p...p`..
+```
+
+Here `$549D-$54A7` is the `$0B`-byte `ASM_SEAL_REC`, `$54A8` is
+`ASM_RELOC_REC`, byte `$54A8=$03` is the relocation count, and
+`$54A9-$54AB = 01 02 03` are the first three kind entries.
+Follow-up dumps proved the remaining parallel arrays:
+
+```text
+54B9: 01 04 06 | ...    site_lo
+54C9: 00 00 00 | ...    site_hi
+54D9: 07 07 07 | ...    target_lo
+54E9: 00 00 00 | ...    target_hi
 ```
 
 Hardware-proven `ASM 2.50` post-session `SEAL` dry-run on 2026-07-01 with

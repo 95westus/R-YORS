@@ -111,7 +111,9 @@ Core settled rules:
 - `<` and `>` select low/high bytes. V1 applies them as prefix selectors on one
   atom. `*` is the current assembly PC.
 - V1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, and `END`. `DC`, `START`,
-  `ENTRY`, and `EXTRN` are parked.
+  `EXPORT`, and `IMPORT` are parked. `EXPORT NAME` will mark a defined global
+  label as a public module offset; `IMPORT NAME` will declare an intended
+  external/imported symbol.
 - `DB` v1 is simple byte/word/address data. `X'...'`, `B'...'`, `HBSTR`,
   `CSTR`, and `PSTR` are later.
 - `DW` emits each resolved expression as one little-endian 16-bit word.
@@ -974,8 +976,8 @@ Parked reserved directive words:
 
 ```text
 DC
-ENTRY
-EXTRN
+EXPORT
+IMPORT
 START
 ```
 
@@ -1347,6 +1349,12 @@ export/seal public names
 clear the ASM session
 assemble the next slice
 ```
+
+Before that chunk loop is made pasteable with `END` / `SEAL` / `WRAP` / `NEW`,
+`WRAP` must be specified as a batch-safe hard stop. A failed chunk wrap must not
+let later routine source be interpreted as post-`END` wrapper commands for the
+failed chunk. It should quench/drain pending input or return to HIMON after one
+useful diagnostic.
 
 The WDC source also needs adaptation to ASM semantics rather than WDC semantics.
 Known source-surface work includes `MODULE`, `XDEF`, `XREF`, `IF`/`ELSE`/`ENDIF`,
@@ -3274,8 +3282,8 @@ Parked later directives:
 
 ```text
 START  program/module start, later source/member boundary
-ENTRY  exported entry symbol
-EXTRN  external/imported symbol
+EXPORT exported global symbol offset
+IMPORT external/imported symbol declaration
 ```
 
 No dot-directive aliases in v1. Dot-leading syntax is local-label syntax:
@@ -5055,13 +5063,14 @@ Ordinary ASM still accepts these forms; the flags are for a later explicit
 `SEAL` command to reject bad spans cleanly.
 The first post-session `SEAL` dry-run accepts only `FLAGS=$01`. If the valid bit
 is clear, it reports `SEAL ERR=$01 FLAGS=$ff`; if the valid bit is set but any
-hole, unowned, or reserved bit is also set, it reports
+hole, unowned, relocation-error, or reserved bit is also set, it reports
 `SEAL ERR=$02 FLAGS=$ff`. On success it reports the exact frozen facts:
 `SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh`, then a RAM-only record:
-`SEAL REC @=$hhhh LEN=$hhhh FNV=$hhhhhhhh`. The `@` field is the RAM address
-of `ASM_SEAL_REC`; the FNV is FNV32 over the emitted bytes from `BASE` through
-`END-1`; it is derived after validation passes and is not a K bit, flash write,
-or catalog publication.
+`SEAL REC @=$hhhh LEN=$hhhh FNV=$hhhhhhhh`, followed by relocation metadata:
+`SEAL REL @=$hhhh COUNT=$nn`. The REC `@` field is the RAM address of
+`ASM_SEAL_REC`; the REL `@` field is the RAM address of `ASM_RELOC_REC`; the FNV
+is FNV32 over the emitted bytes from `BASE` through `END-1`; it is derived after
+validation passes and is not a K bit, flash write, or catalog publication.
 The concrete record is the contiguous byte run at `ASM_SEAL_REC`:
 
 ```text
@@ -5071,6 +5080,23 @@ The concrete record is the contiguous byte run at `ASM_SEAL_REC`:
 +$05 len lo,  +$06 len hi
 +$07 fnv0, +$08 fnv1, +$09 fnv2, +$0A fnv3
 ```
+
+`ASM_RELOC_REC` is a separate RAM-only table. Its first shape is a count byte
+followed by parallel arrays for kind, site offset, and target offset:
+
+```text
++$00 count
++$01.. kind[count]             $01 ABS16_INTERNAL, $02 LO8_INTERNAL, $03 HI8_INTERNAL
++... site_lo[count]
++... site_hi[count]
++... target_lo[count]
++... target_hi[count]
+```
+
+The first implementation records internal label relocation rows from
+already-resolved label operands and forward fixups that resolve through labels.
+`EQU` constants, fixed I/O/RAM addresses, resident calls/imports, and relative
+branches do not produce rows yet.
 
 The runtime paste and flash wrappers switch to the `SEAL> ` prompt after a
 clean `END` so `SEAL` can consume those frozen facts. `SEAL> ` is not normal
@@ -5627,6 +5653,7 @@ FIX             list unresolved fixups
 RESOLVE         attempt to apply all pending fixups
 FORGET name     remove or mark a symbol dead
 EXPORT name     mark symbol visible for command/routine lookup
+IMPORT name     declare expected external/imported symbol
 ```
 
 Removal rule:

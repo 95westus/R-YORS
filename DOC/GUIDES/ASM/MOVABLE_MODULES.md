@@ -138,6 +138,22 @@ does not install or reserve anything in flash. Its first shape is:
 +$07 fnv0, +$08 fnv1, +$09 fnv2, +$0A fnv3
 ```
 
+Relocation metadata is separate RAM-only state at `ASM_RELOC_REC`. Keeping it
+separate preserves the small `$0B`-byte body-fact record while still making
+relocation rows inspectable:
+
+```text
++$00 count
++$01.. kind[count]             $01 ABS16_INTERNAL, $02 LO8_INTERNAL, $03 HI8_INTERNAL
++... site_lo[count]
++... site_hi[count]
++... target_lo[count]
++... target_hi[count]
+```
+
+`site` and `target` are offsets from `ASM_SEAL_BASE`, not permanent absolute
+addresses.
+
 The first post-session `SEAL` dry-run should stay RAM-only. It runs after
 `END`, consumes the frozen facts above, fills `ASM_SEAL_REC`, and writes no
 flash/catalog record.
@@ -146,6 +162,7 @@ It accepts only `FLAGS=$01` and should report exact facts on success:
 ```text
 SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh
 SEAL REC @=$hhhh LEN=$hhhh FNV=$hhhhhhhh
+SEAL REL @=$hhhh COUNT=$nn
 ```
 
 On failure it should keep the output small and factual:
@@ -167,7 +184,9 @@ First-pass `SEAL FLAGS` bits:
 $01  valid clean-END facts are present
 $02  non-initial forward ORG hole was seen
 $04  plain DS count/unowned bytes were seen
-$08-$80 reserved; any reserved bit makes FLAGS ineligible
+$08  relocation table full/truncated
+$10  relocation row could not be expressed as a span offset
+$20-$80 reserved; any reserved bit makes FLAGS ineligible
 ```
 
 Useful composite `FLAGS` values:
@@ -178,6 +197,8 @@ $01  seal-eligible in v0
 $03  valid + forward-ORG hole
 $05  valid + unowned plain DS bytes
 $07  valid + hole + unowned
+$09  valid + relocation table truncated
+$11  valid + bad relocation row
 ```
 
 After clean `END`, current wrappers switch to a small `SEAL> ` command window:
@@ -195,6 +216,14 @@ ask `Y/N` because the operator is already at the guarded post-session prompt,
 and extra confirmation would make paste scripts less deterministic. A valid
 `NEW` discards the frozen facts by starting a new ASM session and reports the
 restart point with `OK PC=$hhhh`.
+
+Future `WRAP` is stronger than the dry-run `SEAL` command: it is the likely
+post-session batch primitive for validating, recording, exporting, or installing
+a sealed chunk. Before `WRAP` is accepted as a paste-batch command, failed
+validation, record build, export, or install work must be a hard stop. It should
+print one compact diagnostic and then quench/drain to the existing quiet-input
+boundary or return to HIMON. Later routine source must not be consumed as
+`SEAL> ` commands against stale frozen facts.
 
 Seal v0 is a single contiguous body. The first `ORG` in a fresh/pristine ASM
 session may choose the source base and becomes `START`. After that, any
@@ -214,6 +243,11 @@ kind of value required. Imported resident calls are resolved by RJOIN/catalog
 policy at load/install time unless the installer chooses to freeze the current
 address into the installed image.
 
+Source spelling decision: `EXPORT NAME` marks a defined global label as a public
+module offset. `IMPORT NAME` declares an intended external/imported symbol so a
+missing symbol is deliberate instead of a typo silently becoming an import.
+`ENTRY`/`EXTRN` are not the planned spellings.
+
 ## Relocation Rows
 
 Fixups answer "what was unresolved while assembling." Relocation rows answer
@@ -227,6 +261,11 @@ LO8_INTERNAL     one byte = low(base + target_offset)
 HI8_INTERNAL     one byte = high(base + target_offset)
 ABS16_IMPORT     two-byte imported address from RJOIN/catalog
 ```
+
+The first implemented RAM table records only internal label references:
+already-resolved labels and forward fixups that later resolve through a label
+binding. `EQU` constants, fixed hardware/RAM addresses, and resident calls are
+left unrelocated in this slice. Import relocation rows remain planned.
 
 Relative branches inside the same module need no relocation because the
 distance does not change when the whole body moves. Fixed hardware, I/O, and

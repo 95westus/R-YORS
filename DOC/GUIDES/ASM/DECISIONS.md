@@ -191,8 +191,10 @@ A [addr] [label[:]] MMM [operand] .
   label scope. `.` alone is a legacy `A`/input-driver sentinel if used, not ASM
   source syntax. No v1 dot-directive aliases.
 - Minimal v1 ASM directives follow WDC shape: `EQU`, `DB`, `DW`, `DS`, `ORG`,
-  and `END`. `DC`, `START`, `ENTRY`, and `EXTRN` are parked later directives,
-  not v1.
+  and `END`. `DC`, `START`, `EXPORT`, and `IMPORT` are parked later directives,
+  not v1. The module-boundary spelling is `EXPORT NAME` for a public global
+  label offset and `IMPORT NAME` for an intended external/imported symbol;
+  `ENTRY`/`EXTRN` are not the planned spellings.
 - V1 directive shapes are:
   `NAME EQU expr` with name required;
   `[NAME] DB item[,item...]` with optional current-PC label;
@@ -501,6 +503,11 @@ A [addr] [label[:]] MMM [operand] .
   patch site, operand mode/width, origin or branch-base address when needed,
   placeholder byte count, and state. Fixup tables use explicit state; never
   infer pending/resolved from `$FF` placeholder bytes.
+- ASM v1 RAM relocation rows are separate from fixups. Fixups record unresolved
+  assembly-time references; relocation rows record resolved references that
+  depend on the sealed module's future base. The first RAM table records
+  internal label rows only: `$01` ABS16_INTERNAL, `$02` LO8_INTERNAL, and `$03`
+  HI8_INTERNAL, with site and target stored as offsets from the seal base.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.
@@ -509,11 +516,11 @@ A [addr] [label[:]] MMM [operand] .
   that saves code or cycles.
 - First implementation uses fixed table limits. If symbol or fixup space fills,
   fail with `BAD SYM` or `BAD FIX`; do not spill silently or start writing into
-  flash. The current proof sizes are 40 global symbols, 96 fixups, 160 report
-  references, 31 visible global-name characters, 16 local labels per active
-  global scope, 15 visible local-name characters, 63 input characters, and a
-  512-byte code buffer; treat those as proof defaults, not permanent language
-  limits.
+  flash. The current proof sizes are 40 global symbols, 96 fixups, 16 internal
+  relocation rows, 160 report references, 31 visible global-name characters, 16
+  local labels per active global scope, 15 visible local-name characters, 63
+  input characters, and a 512-byte code buffer; treat those as proof defaults,
+  not permanent language limits.
 - ASM lookup is layered so it can grow to HIMON-scale symbol counts. V1 checks
   RAM session symbols first, then resident HIMON/catalog symbols, then creates a
   fixup if the operand mode allows a forward reference. The RAM session table is

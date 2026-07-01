@@ -86,6 +86,14 @@ commands `SEAL`, `NEW`, and `.`. `NEW` is a validated restart at the frozen
 `END` PC, not a general `ORG` replacement and not a confirmation prompt. Before
 `END`, `SEAL` and `NEW` remain ordinary source words at the `ASM> ` prompt.
 
+Any future post-`END` batch command that keeps the paste stream alive,
+especially `WRAP`, needs a hard-stop/quench-on-error rule before it is
+batch-safe. If validation, seal record construction, export, or install work
+fails, the wrapper must not consume following routine source as `SEAL> `
+commands. It should print one compact failure, then either quench/drain pending
+pasted input and return to HIMON or enter an explicit recovery state that
+ignores ordinary source until the operator chooses `NEW` or `.`.
+
 ## Source Syntax Boundary
 
 Quiet/verbose selection, if it ever exists, is a wrapper choice. It is not ASM
