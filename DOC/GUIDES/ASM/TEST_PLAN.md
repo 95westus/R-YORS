@@ -75,6 +75,13 @@ Current ASM core proof artifact:
 SRC/BUILD/s19/asm-v1-core-2000.s19
 ```
 
+The standalone core image is now a host/simulator smoke artifact, not the
+preferred RAM-load board proof. Its full smoke ladder plus DATA image can grow
+past the safe HIMON RAM-load window. Use the runtime smoke wrapper below for
+current board proof. It is intentionally not part of `make -C SRC all`; build
+it explicitly with `make -C SRC asm-v1-core` only when the standalone smoke
+ladder is needed.
+
 Current ASM runtime build:
 
 ```text
@@ -149,9 +156,62 @@ is valid for that wrapper image. It assembles `ORG $7000`, `LDA #$0A`,
 `LABEL: JSR UTL_HEX_NIBBLE_TO_ASCII`, `STA $7101`, `RTS`, and `END` through
 the stripped runtime. It verifies `$7000-$7008` equals
 `A9 0A 20 lo hi 8D 01 71 60` with a non-`FFFF` resident call target, then
-executes `JSR $7000` and requires `$7101='A'`. This proves source name ->
-FNV hash -> resident EXEC join -> emitted operand -> live call return. It
-prints `ASM RT OK` on success or `ASM RT FAIL $xx` on failure.
+executes `JSR $7000` and requires `$7101='A'`. It also checks the clean-`END`
+seal fact record: valid flag set, base `$7000`, exclusive end `$7014`, and
+length `$0014`. This proves source name -> FNV hash -> resident EXEC join ->
+emitted operand -> live call return, plus the RAM-only `END` span facts needed
+by a later explicit `SEAL`. It prints `ASM RT OK` on success or
+`ASM RT FAIL $xx` on failure; `$E7` means the seal fact record did not match.
+
+Current board-facing seal-span smoke:
+
+```text
+make -C SRC asm-v1-runtime-smoke
+SRC/BUILD/s19/asm-v1-runtime-smoke-2000.s19
+```
+
+The current image spans `$2000-$6BDB`, below the protected `$7E00` boundary.
+Board pass shape:
+
+```text
+>L G
+L S19
+L @2000
+L OK=4BDC GO=2000
+ASM RT SMOKE
+ASM RT OK
+```
+
+Hardware-proven on 2026-07-01 with HIMON `V 00.0630(2121)`:
+
+```text
+>L
+L S19
+L @2000
+L OK=4BDC GO=2000
+>G 2000
+GO 2000
+ASM RT SMOKE
+ASM RT OK
+
+#GO# ENTRY=2000
+RET A=09 X=3B Y=09 P=75 S=FD NV-BdIzC
+>
+```
+
+Companion runtime-paste proof on 2026-07-01 used
+`asm-v1-runtime-paste-2000.s19` at `L OK=502B GO=2000`. The pasted source
+defined `START_ADDR=$7000`, `END_ADDR=$701F`, and
+`SIZE=END_ADDR-START_ADDR`, then ran the emitted program. The table showed
+`SIZE=$001F`, and the runtime output at `$7100` was:
+
+```text
+7100: 00 70 1F 70 1F 00 ...
+```
+
+That paste-driver proof is an external span oracle for the same
+`base=$7000`, `end=$701F`, `len=$001F` facts; the direct internal
+`ASM_SEAL_*` check remains the smoke wrapper above.
 
 Initial hardware-proven ASM runtime smoke-wrapper on 2026-06-05:
 
@@ -5958,6 +6018,8 @@ ASM 2.44 counts mark-use symbol references in REFS.
 ASM 2.45 prints the first compact USED row with count and first-ref line.
 ASM 2.46 stores session symbol definition lines.
 ASM 2.47 prints compact UNUSED rows with definition lines.
+ASM 2.48 captures clean-END seal span facts in RAM:
+         base, exclusive end, and length = end - base.
 Numeric report fields are hex in this first W65C02S printer.
 Second clean ASM_END returns OK without duplicating report state.
 ```
@@ -5969,6 +6031,7 @@ status
 error line/status/token when failed
 start/current/high-water PC
 bytes emitted/reserved
+clean-END seal span facts
 symbol/fixup/ref counts and limits
 unresolved fixups
 used symbols with lines
@@ -5984,6 +6047,7 @@ first failure prints error and compact report
 report overflow sets TRUNC=YES
 used symbol report prints count and first reference line
 unused symbol report prints definition lines
+clean END leaves a valid RAM fact record matching START/HIGH/BYTES
 ```
 
 ## ASMTEST_3000 Final Acceptance

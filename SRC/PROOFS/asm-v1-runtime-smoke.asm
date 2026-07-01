@@ -16,15 +16,25 @@
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
                         XREF            ASM_END
+                        XREF            ASM_SEAL_FLAGS
+                        XREF            ASM_SEAL_BASE_LO
+                        XREF            ASM_SEAL_BASE_HI
+                        XREF            ASM_SEAL_END_LO
+                        XREF            ASM_SEAL_END_HI
+                        XREF            ASM_SEAL_LEN_LO
+                        XREF            ASM_SEAL_LEN_HI
                         XREF            SYS_WRITE_CSTRING
                         XREF            SYS_WRITE_CRLF
                         XREF            SYS_WRITE_HEX_BYTE
 
 ASM_BEGINF_HAVE_PC     EQU             $01
+ASM_SEALF_VALID        EQU             $01
 ASMRT_TARGET_LO        EQU             $00
 ASMRT_TARGET_HI        EQU             $70
 ASMRT_RESULT           EQU             $67F0
 ASMRT_CODE_LEN         EQU             $14
+ASMRT_END_LO           EQU             $14
+ASMRT_END_HI           EQU             $70
 ASMRT_JSR_LO           EQU             $03
 ASMRT_JSR_HI           EQU             $04
 ASMRT_TAIL_LO          EQU             $12
@@ -141,8 +151,40 @@ ASMRT_RUN:
                         JSR             ASM_END
                         BCC             ASMRT_RETURN_FAIL
 
+                        JSR             ASMRT_CHECK_SEAL
+                        BCC             ASMRT_RETURN_FAIL
+
                         JSR             ASMRT_CHECK_BYTES
 ASMRT_RETURN_FAIL:
+                        RTS
+
+ASMRT_CHECK_SEAL:
+                        LDA             ASM_SEAL_FLAGS
+                        AND             #ASM_SEALF_VALID
+                        BEQ             ASMRT_BAD_SEAL
+                        LDA             ASM_SEAL_BASE_LO
+                        CMP             #ASMRT_TARGET_LO
+                        BNE             ASMRT_BAD_SEAL
+                        LDA             ASM_SEAL_BASE_HI
+                        CMP             #ASMRT_TARGET_HI
+                        BNE             ASMRT_BAD_SEAL
+                        LDA             ASM_SEAL_END_LO
+                        CMP             #ASMRT_END_LO
+                        BNE             ASMRT_BAD_SEAL
+                        LDA             ASM_SEAL_END_HI
+                        CMP             #ASMRT_END_HI
+                        BNE             ASMRT_BAD_SEAL
+                        LDA             ASM_SEAL_LEN_LO
+                        CMP             #ASMRT_CODE_LEN
+                        BNE             ASMRT_BAD_SEAL
+                        LDA             ASM_SEAL_LEN_HI
+                        BNE             ASMRT_BAD_SEAL
+                        LDA             #$00
+                        SEC
+                        RTS
+ASMRT_BAD_SEAL:
+                        LDA             #$E7
+                        CLC
                         RTS
 
 ASMRT_CHECK_BYTES:

@@ -258,7 +258,6 @@ ALL_TARGETS := \
 	hrec-join-proof \
 	pack40-test \
 	asm-rjoin-proof \
-	asm-v1-core \
 	asm-v1-runtime \
 	asm-v1-runtime-smoke \
 	asm-v1-runtime-asmtest \

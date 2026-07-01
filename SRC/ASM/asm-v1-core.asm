@@ -38,6 +38,13 @@
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
                         XDEF            ASM_RJ_PRINT_CRLF
+                        XDEF            ASM_SEAL_FLAGS
+                        XDEF            ASM_SEAL_BASE_LO
+                        XDEF            ASM_SEAL_BASE_HI
+                        XDEF            ASM_SEAL_END_LO
+                        XDEF            ASM_SEAL_END_HI
+                        XDEF            ASM_SEAL_LEN_LO
+                        XDEF            ASM_SEAL_LEN_HI
                         IF              ASM_RUNTIME_ONLY
                         IF              ASM_FLASH_RUNTIME
                         XDEF            ASM_RJOIN_INIT_IO
@@ -180,6 +187,8 @@ ASM_REPORTF_PRINT_END  EQU             $04
 ASM_REPORTF_PRINTED    EQU             $08
 ASM_REPORTF_PRINT_FAIL EQU             $10
 ASM_REPORTF_TRUNC      EQU             $20
+
+ASM_SEALF_VALID        EQU             $01
 
 ASM_TOK_EOL           EQU             $00
 ASM_TOK_WORD          EQU             $01
@@ -5393,6 +5402,26 @@ ASM_SMOKE_REPORT_CHECK_E9:
                         LDA             ASM_HIGH_PC_HI
                         CMP             #ASM_SMOKE_TARGET_HI
                         BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_SEAL_FLAGS
+                        AND             #ASM_SEALF_VALID
+                        BEQ             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_SEAL_BASE_LO
+                        CMP             #ASM_SMOKE_TARGET_LO
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_SEAL_BASE_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_SEAL_END_LO
+                        CMP             #$0C
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_SEAL_END_HI
+                        CMP             #ASM_SMOKE_TARGET_HI
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_SEAL_LEN_LO
+                        CMP             #$0C
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
+                        LDA             ASM_SEAL_LEN_HI
+                        BNE             ASM_SMOKE_REPORT_FAIL_E9
                         BRA             ASM_SMOKE_REPORT_CHECK_EA
 ASM_SMOKE_REPORT_FAIL_E9:
                         JMP             ASM_SMOKE_REPORT_FAIL
@@ -6430,6 +6459,7 @@ ASM_END:
                         JSR             ASM_FIX_HAS_PENDING
                         BCC             ASM_END_OK
 
+                        JSR             ASM_SEAL_CLEAR
                         LDA             #ASM_SESS_FAILED
                         STA             ASM_SESSION_STATE
                         LDA             #ASM_STATUS_BAD_FIX
@@ -6446,7 +6476,9 @@ ASM_END_OK:
                         LDA             #ASM_STATUS_OK
                         STA             ASM_LAST_STATUS
                         STA             ASM_STATUS
+                        JSR             ASM_SEAL_CAPTURE_END_FACTS
                         JSR             ASM_REPORT_PRINT_END_IF_NEEDED
+                        LDA             #ASM_STATUS_OK
                         LDX             ASM_PC_LO
                         LDY             ASM_PC_HI
                         SEC
@@ -6512,6 +6544,8 @@ ASM_REPORT_NOTE_REF:
                         LDA             #ASM_STATUS_BAD_FIX
                         STA             ASM_STATUS
                         STA             ASM_LAST_STATUS
+                        JSR             ASM_SEAL_CLEAR
+                        LDA             ASM_STATUS
                         CLC
                         RTS
 ASM_REPORT_NOTE_REF_HAVE_ROOM:
@@ -6592,6 +6626,7 @@ ASM_ASSEMBLE_LINE_FATAL_FAIL_A:
                         LDA             #ASM_SESS_FAILED
                         STA             ASM_SESSION_STATE
 ASM_ASSEMBLE_LINE_FAILED_FATAL:
+                        JSR             ASM_SEAL_CLEAR
                         JSR             ASM_REPORT_PRINT_FAIL_IF_NEEDED
                         LDA             ASM_STATUS
                         LDX             ASM_PC_LO
@@ -11925,9 +11960,46 @@ ASM_FNV1A_UPDATE_A_FAST:
                         JMP             (ASM_RJ_FNV_UPDATE_LO)
 
 ; ----------------------------------------------------------------------------
+; Internal seal span facts.
+; ----------------------------------------------------------------------------
+; Minimal RAM record captured by clean END:
+;   flags bit0 valid, base=start_pc, end=high_water_pc exclusive,
+;   len=end-base. This is not flash publication and not a K bit.
+ASM_SEAL_CAPTURE_END_FACTS:
+                        LDA             ASM_START_PC_LO
+                        STA             ASM_SEAL_BASE_LO
+                        LDA             ASM_START_PC_HI
+                        STA             ASM_SEAL_BASE_HI
+                        LDA             ASM_HIGH_PC_LO
+                        STA             ASM_SEAL_END_LO
+                        LDA             ASM_HIGH_PC_HI
+                        STA             ASM_SEAL_END_HI
+                        LDA             ASM_HIGH_PC_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        STA             ASM_SEAL_LEN_LO
+                        LDA             ASM_HIGH_PC_HI
+                        SBC             ASM_START_PC_HI
+                        STA             ASM_SEAL_LEN_HI
+                        LDA             #ASM_SEALF_VALID
+                        STA             ASM_SEAL_FLAGS
+                        RTS
+
+ASM_SEAL_CLEAR:
+                        STZ             ASM_SEAL_FLAGS
+                        STZ             ASM_SEAL_BASE_LO
+                        STZ             ASM_SEAL_BASE_HI
+                        STZ             ASM_SEAL_END_LO
+                        STZ             ASM_SEAL_END_HI
+                        STZ             ASM_SEAL_LEN_LO
+                        STZ             ASM_SEAL_LEN_HI
+                        RTS
+
+; ----------------------------------------------------------------------------
 ; Internal session clear.
 ; ----------------------------------------------------------------------------
 ASM_CLEAR_SESSION:
+                        JSR             ASM_SEAL_CLEAR
                         STZ             ASM_SESSION_STATE
                         STZ             ASM_LAST_STATUS
                         STZ             ASM_LINE_COUNT_LO
@@ -11973,6 +12045,13 @@ ASM_START_PC_LO:       DB              $00
 ASM_START_PC_HI:       DB              $00
 ASM_HIGH_PC_LO:        DB              $00
 ASM_HIGH_PC_HI:        DB              $00
+ASM_SEAL_FLAGS:        DB              $00
+ASM_SEAL_BASE_LO:      DB              $00
+ASM_SEAL_BASE_HI:      DB              $00
+ASM_SEAL_END_LO:       DB              $00
+ASM_SEAL_END_HI:       DB              $00
+ASM_SEAL_LEN_LO:       DB              $00
+ASM_SEAL_LEN_HI:       DB              $00
 ASM_LINE_PC_LO:        DB              $00
 ASM_LINE_PC_HI:        DB              $00
 ASM_LINE_HIGH_PC_LO:   DB              $00

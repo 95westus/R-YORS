@@ -7592,3 +7592,142 @@ ASM>
 This completes the optional negative path for `expr-math-7010.a`. It also shows
 that, after a clean STR8/HIMON boot, top-level `ASM NEW` enters the same flash
 ASM wrapper and does not prevent the `ORG $7000+16` expression from assembling.
+
+## 2026-07-01 ASM Seal-Span Standalone Core Load Rejection
+
+The first attempted board proof for the clean-`END` seal-span facts tried to
+load the standalone `asm-v1-core-2000.s19` smoke image. The board rejected
+several records:
+
+```text
+>L
+L S19
+L @2000
+LERR
+L @7B20
+LERR
+L @7B30
+LERR
+L @7EA0
+L @7EB0
+```
+
+Interpretation: this is not a seal-span logic failure. The current standalone
+core smoke image is too large for the simple RAM-load board proof path; its
+linked image crosses the old safe HIMON RAM-load window. The board-facing proof
+for the clean-`END` fact record is now the smaller
+`asm-v1-runtime-smoke-2000.s19`, which links below `$7E00` and explicitly
+checks `base=$7000`, `end=$7014`, and `len=$0014` before printing
+`ASM RT OK`.
+
+## 2026-07-01 ASM Seal-Span Runtime Smoke Hardware Proof
+
+Operator transcript pasted into Codex session. The corrected board-facing
+runtime smoke image loaded at `$2000` with `L OK=4BDC GO=2000`, ran from
+`G 2000`, and printed `ASM RT OK`.
+
+Validated:
+
+- `asm-v1-runtime-smoke-2000.s19` fits the board RAM-load proof path.
+- The runtime wrapper assembled the `$7000` smoke body and ran it.
+- The wrapper checked the clean-`END` RAM fact record before the pass banner:
+  base `$7000`, exclusive end `$7014`, and length `$0014`.
+
+Transcript:
+
+```text
+HIMON V 00.0630(2121)
+>L
+L S19
+L @2000
+L OK=4BDC GO=2000
+>G 2000
+GO 2000
+ASM RT SMOKE
+ASM RT OK
+
+#GO# ENTRY=2000
+RET A=09 X=3B Y=09 P=75 S=FD NV-BdIzC
+>
+```
+
+## 2026-07-01 ASM Seal-Span Runtime Paste Companion Proof
+
+Operator transcript pasted into Codex session. The runtime paste image loaded
+at `$2000` with `L OK=502B GO=2000`. The pasted source defined start/end labels
+around an emitted `$7000` program, defined `SIZE EQU END_ADDR-START_ADDR`, and
+then ran the emitted program. This is an external span oracle for the same
+`base/end/length` shape that clean `END` captures internally.
+
+Validated:
+
+- `START_ADDR=$7000`, `END_ADDR=$701F`, and `SIZE=$001F` appeared in the final
+  symbol table.
+- The emitted program ran from `$7000`.
+- Runtime output at `$7100` recorded base low/high, end low/high, and length
+  low/high as `00 70 1F 70 1F 00`.
+
+Transcript extract:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> ORG $7000
+OK PC=$7000
+ASM> OUT EQU $7100
+OK PC=$7000
+ASM> OUT1 EQU OUT+1
+OK PC=$7000
+ASM> OUT2 EQU OUT+2
+OK PC=$7000
+ASM> OUT3 EQU OUT+3
+OK PC=$7000
+ASM> OUT4 EQU OUT+4
+OK PC=$7000
+ASM> OUT5 EQU OUT+5
+OK PC=$7000
+ASM> START_ADDR
+OK PC=$7000
+...
+ASM> RTS
+OK PC=$701F
+ASM> END_ADDR
+OK PC=$701F
+ASM> SIZE EQU END_ADDR-START_ADDR
+OK PC=$701F
+ASM> END
+OK PC=$701F
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 7100  01 04 17 0002 06  0003  OUT
+01 01 7101  01 04 17 0003 01  000C  OUT1
+02 01 7102  01 04 17 0004 01  000E  OUT2
+03 01 7103  01 04 17 0005 01  0010  OUT3
+04 01 7104  01 04 17 0006 01  0012  OUT4
+05 01 7105  01 04 17 0007 01  0014  OUT5
+06 01 7000  01 04 0F 0008 01  0017  START_ADDR
+07 01 701F  01 04 0F 0016 01  0017  END_ADDR
+08 01 001F  00 00 16 0017 00  0000  SIZE
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+ASM RT PASTE OK
+
+#GO# ENTRY=2000
+RET A=0F X=87 Y=0F P=75 S=FD NV-BdIzC
+>
+```
+
+Runtime proof:
+
+```text
+>G 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=00 X=30 Y=30 P=77 S=FD NV-BdIZC
+>D 7100 710F
+7100: 00 70 1F 70 1F 00 00 00 | 00 00 00 00 00 00 00 00 | .p.p............
+>
+```

@@ -5019,6 +5019,10 @@ fix_limit       maximum fixup rows
 ref_count       used reference rows for reports
 ref_limit       maximum reference rows
 report_flags    xref truncated, report overflow, etc.
+seal_flags      bit0 valid after clean END
+seal_base       captured source base from start_pc
+seal_end        captured exclusive span end from high_water_pc
+seal_len        captured seal_end - seal_base
 ```
 
 A new RAM ASM session starts at a configured scratch code origin unless the user
@@ -5039,6 +5043,9 @@ The first `ORG` in a pristine session changes `start_pc`, `asm_pc`, and
 `high_water_pc` together. A later forward `ORG` changes `asm_pc` and advances
 `high_water_pc`, but it writes no bytes. The report `BYTES` value is therefore
 the full span `high_water_pc - start_pc`, including any forward-`ORG` gap.
+The current core also captures these facts into RAM on a clean `END` as
+`seal_base`, `seal_end`, and `seal_len`; this is only a fact record for a later
+explicit `SEAL` step.
 Sealed movable modules should start stricter than ordinary ASM: seal v0 accepts
 one contiguous body and should reject hole-producing forward `ORG` and plain
 uninitialized `DS count`; use initialized `DS count,$xx` when padding is

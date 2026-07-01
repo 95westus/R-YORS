@@ -109,6 +109,18 @@ exclusive `HIGH - START`, not from scanning RAM and not from guessing at erased
 write the module record explicitly; plain `END` should not silently allocate
 flash or publish a catalog record.
 
+Current ASM v1 code captures the clean-`END` fact record in RAM as:
+
+```text
+flags bit0 valid
+base  = start_pc
+end   = high_water_pc, exclusive
+len   = end - base
+```
+
+These fields are cleared on session reset or fatal session failure. They are not
+a K bit, not a flash record, and not a catalog publication.
+
 Seal v0 is a single contiguous body. The first `ORG` in a fresh/pristine ASM
 session may choose the source base and becomes `START`. After that, any
 forward `ORG` creates an unowned hole in the `[START,HIGH)` span, even though
