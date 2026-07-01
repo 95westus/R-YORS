@@ -6045,6 +6045,9 @@ ASM 2.48 captures clean-END seal span facts in RAM:
          base, exclusive end, and length = end - base.
 ASM 2.49 tracks seal ineligibility bits without rejecting ordinary ASM:
          forward ORG hole and plain DS count/unowned bytes.
+ASM 2.50 planned first post-session SEAL dry-run:
+         accepts only FLAGS=$01; ERR=$01 means no clean END/valid bit clear;
+         ERR=$02 means valid but not seal-eligible because FLAGS != $01.
 Numeric report fields are hex in this first W65C02S printer.
 Second clean ASM_END returns OK without duplicating report state.
 ```
@@ -6076,6 +6079,7 @@ unused symbol report prints definition lines
 clean END leaves a valid RAM fact record matching START/HIGH/BYTES
 forward ORG and plain DS count set seal flags but remain valid ASM
 initialized DS count,$xx remains seal-owned
+post-session SEAL reports FLAGS and rejects every FLAGS value except $01
 ```
 
 ## ASMTEST_3000 Final Acceptance

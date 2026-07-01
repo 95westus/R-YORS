@@ -126,6 +126,46 @@ The ineligibility bits do not reject normal ASM source today; they give a later
 explicit `SEAL` command a clean reason to refuse a non-contiguous or unowned
 span.
 
+The first post-session `SEAL` dry-run should stay RAM-only. It runs after
+`END`, consumes the frozen facts above, and writes no flash/catalog record.
+It accepts only `FLAGS=$01` and should report exact facts on success:
+
+```text
+SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh LEN=$hhhh
+```
+
+On failure it should keep the output small and factual:
+
+```text
+SEAL ERR=$ee FLAGS=$ff
+```
+
+First-pass `SEAL ERR` values:
+
+```text
+$01  no clean END / valid bit clear
+$02  bad span flags: valid bit set, but FLAGS != $01
+```
+
+First-pass `SEAL FLAGS` bits:
+
+```text
+$01  valid clean-END facts are present
+$02  non-initial forward ORG hole was seen
+$04  plain DS count/unowned bytes were seen
+$08-$80 reserved; any reserved bit makes FLAGS ineligible
+```
+
+Useful composite `FLAGS` values:
+
+```text
+$00  no valid clean END facts
+$01  seal-eligible in v0
+$03  valid + forward-ORG hole
+$05  valid + unowned plain DS bytes
+$07  valid + hole + unowned
+```
+
 Seal v0 is a single contiguous body. The first `ORG` in a fresh/pristine ASM
 session may choose the source base and becomes `START`. After that, any
 forward `ORG` creates an unowned hole in the `[START,HIGH)` span, even though

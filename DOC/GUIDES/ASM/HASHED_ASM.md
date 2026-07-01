@@ -5053,6 +5053,11 @@ It also tracks future seal eligibility in `seal_flags`: a non-initial forward
 Initialized `DS count,$xx` remains owned and does not set the unowned-byte bit.
 Ordinary ASM still accepts these forms; the flags are for a later explicit
 `SEAL` command to reject bad spans cleanly.
+The first post-session `SEAL` dry-run accepts only `FLAGS=$01`. If the valid bit
+is clear, it reports `SEAL ERR=$01 FLAGS=$ff`; if the valid bit is set but any
+hole, unowned, or reserved bit is also set, it reports
+`SEAL ERR=$02 FLAGS=$ff`. On success it reports the exact frozen facts:
+`SEAL OK FLAGS=$01 BASE=$hhhh END=$hhhh LEN=$hhhh`.
 Sealed movable modules should start stricter than ordinary ASM: seal v0 accepts
 one contiguous body and should reject hole-producing forward `ORG` and plain
 uninitialized `DS count`; use initialized `DS count,$xx` when padding is
