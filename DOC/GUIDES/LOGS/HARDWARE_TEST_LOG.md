@@ -9950,3 +9950,67 @@ recognized as an import fixup. The relocation table printed
 matched the first five dumped import bytes `01 05 03 14 23`. The negative
 follow-up `JSR MISS` still failed `END` with `ERR=$09 BAD FIX`, left a pending
 non-import ABS16 fixup, and emitted no relocation row.
+
+## 2026-07-02 ASM IMPORT Selected-Byte Relocation Proof
+
+Purpose: prove the ASM `SEAL.IMPORT.BYTESEL` slice on real hardware: declared
+external `#<NAME` and `#>NAME` operands seal as `$05` LO8_IMPORT and `$06`
+HI8_IMPORT relocation rows, keep `$FF` byte placeholders, and preserve the
+single import metadata record.
+
+```text
+>L G
+L S19
+L @2000
+L OK=3A75 GO=2000
+ASM RT PASTE
+ASM> IMPORT EXT
+OK PC=$7860
+ASM> LDA #<EXT
+OK PC=$7862
+ASM> LDX #>EXT
+OK PC=$7864
+ASM> END
+OK PC=$7864
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 04 02   41  7861 7862 EXT
+01 04 02   42  7863 7864 EXT
+RELOCS
+SL K  SITE TARG
+00 05 0001 0000
+01 06 0003 0000
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7860 END=$7864
+SEAL REC @=$5A84 LEN=$0004 FNV=$36BEBFB2
+SEAL REL @=$5A8F COUNT=$02
+SEAL IMP @=$5BAA COUNT=$01 LEN=$0005
+SEAL> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=31 Y=10 P=75 S=FD NV-BdIzC
+>D 7860 7865
+7860: A9 FF A2 FF 00 00 | ......
+>D 5A84 +4
+5A84: 01 60 78 64 | .`xd
+>D 5A8F +2
+5A8F: 02 05 | ..
+>D 5BAA +5
+5BAA: 01 05 03 14 23 | ....#
+>
+```
+
+Result: pass. The board loaded `asm-v1-runtime-paste-2000.s19` as
+`L OK=3A75 GO=2000`, assembled at `ASM_CODE_BUF=$7860`, accepted
+`IMPORT EXT`, and emitted `LDA #<EXT` / `LDX #>EXT` as `A9 FF A2 FF`.
+`END` marked both fixups imported: selector `$41` is import plus low-byte
+selection, and selector `$42` is import plus high-byte selection. The relocation
+table printed `$05` LO8_IMPORT at site offset `$0001` and `$06` HI8_IMPORT at
+site offset `$0003`, both targeting import slot `$0000`. `SEAL REL` reported
+two rows and `SEAL IMP` reported the single `EXT` record whose dumped bytes
+began `01 05 03 14 23`.

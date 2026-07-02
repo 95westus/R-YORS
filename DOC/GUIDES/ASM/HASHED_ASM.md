@@ -4114,10 +4114,11 @@ word token that is not reserved ASM vocabulary. Local names, reserved words,
 duplicate imports, import-table overflow, and leading labels fail as `BAD SYM`;
 extra operands fail as `BAD OPER`. Matching unresolved global operands are
 tagged as imported fixups. At `END`, full-width two-byte import fixups are
-converted into `$04` ABS16_IMPORT relocation rows and marked imported, leaving
-the emitted operand bytes as `$FF/$FF` for a later installer/linker. Selected
-`#<IMPORT`/`#>IMPORT`, relative, and undeclared unresolved fixups still fail the
-ordinary `BAD FIX` path until more import relocation kinds exist.
+converted into `$04` ABS16_IMPORT relocation rows and marked imported. Selected
+byte imports are also accepted: `#<IMPORT` records `$05` LO8_IMPORT and
+`#>IMPORT` records `$06` HI8_IMPORT. The emitted operand bytes remain `$FF` or
+`$FF/$FF` for a later installer/linker. Relative, undeclared, and local
+unresolved fixups still fail the ordinary `BAD FIX` path.
 
 The first sealed import record is compact RAM metadata, not a flash K bit:
 
@@ -5144,7 +5145,8 @@ followed by parallel arrays for kind, site offset, and target offset:
 ```text
 +$00 count
 +$01.. kind[count]             $01 ABS16_INTERNAL, $02 LO8_INTERNAL,
-                               $03 HI8_INTERNAL, $04 ABS16_IMPORT
+                               $03 HI8_INTERNAL, $04 ABS16_IMPORT,
+                               $05 LO8_IMPORT, $06 HI8_IMPORT
 +... site_lo[count]
 +... site_hi[count]
 +... target_lo[count]
@@ -5153,11 +5155,11 @@ followed by parallel arrays for kind, site offset, and target offset:
 
 The first implementation records internal label relocation rows from
 already-resolved label operands and forward fixups that resolve through labels.
-It also records declared full-width import fixups as `$04` ABS16_IMPORT rows:
-`site` remains an offset from `ASM_SEAL_BASE`, `target_lo` is the import record
-slot, and `target_hi` is zero. `EQU` constants, fixed I/O/RAM addresses,
-resident calls, selected import bytes, and relative branches do not produce
-rows yet.
+It also records declared import fixups as import rows: full two-byte operands
+use `$04` ABS16_IMPORT, `#<NAME` uses `$05` LO8_IMPORT, and `#>NAME` uses `$06`
+HI8_IMPORT. `site` remains an offset from `ASM_SEAL_BASE`, `target_lo` is the
+import record slot, and `target_hi` is zero. `EQU` constants, fixed I/O/RAM
+addresses, resident calls, and relative branches do not produce rows yet.
 
 The runtime paste and flash wrappers switch to the `SEAL> ` prompt after a
 clean `END` so `SEAL` can consume those frozen facts. `SEAL> ` is not normal

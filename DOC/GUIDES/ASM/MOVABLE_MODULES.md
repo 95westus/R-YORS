@@ -145,7 +145,8 @@ relocation rows inspectable:
 ```text
 +$00 count
 +$01.. kind[count]             $01 ABS16_INTERNAL, $02 LO8_INTERNAL,
-                               $03 HI8_INTERNAL, $04 ABS16_IMPORT
+                               $03 HI8_INTERNAL, $04 ABS16_IMPORT,
+                               $05 LO8_IMPORT, $06 HI8_IMPORT
 +... site_lo[count]
 +... site_hi[count]
 +... target_lo[count]
@@ -153,8 +154,9 @@ relocation rows inspectable:
 ```
 
 For internal rows, `site` and `target` are offsets from `ASM_SEAL_BASE`, not
-permanent absolute addresses. For `$04` ABS16_IMPORT, `site` is still a base
-offset; `target_lo` carries the import slot index and `target_hi` is zero.
+permanent absolute addresses. For `$04` ABS16_IMPORT, `$05` LO8_IMPORT, and
+`$06` HI8_IMPORT, `site` is still a base offset; `target_lo` carries the import
+slot index and `target_hi` is zero.
 
 The first post-session `SEAL` dry-run should stay RAM-only. It runs after
 `END`, consumes the frozen facts above, fills `ASM_SEAL_REC`, and writes no
@@ -262,14 +264,17 @@ ABS16_INTERNAL   two-byte little-endian address = base + target_offset
 LO8_INTERNAL     one byte = low(base + target_offset)
 HI8_INTERNAL     one byte = high(base + target_offset)
 ABS16_IMPORT     two-byte imported address from RJOIN/catalog
+LO8_IMPORT       low byte of imported address
+HI8_IMPORT       high byte of imported address
 ```
 
 The first implemented RAM table records only internal label references:
 already-resolved labels and forward fixups that later resolve through a label
-binding. Declared full-width imported address fixups now record `$04`
-ABS16_IMPORT rows. `EQU` constants, fixed hardware/RAM addresses, selected
-import bytes, relative branches, and resident calls are left unrelocated in
-this slice.
+binding. Declared imported address fixups now record `$04` ABS16_IMPORT rows
+for full two-byte operands, `$05` LO8_IMPORT rows for selected low bytes, and
+`$06` HI8_IMPORT rows for selected high bytes. `EQU` constants, fixed
+hardware/RAM addresses, relative branches, and resident calls are left
+unrelocated in this slice.
 
 Relative branches inside the same module need no relocation because the
 distance does not change when the whole body moves. Fixed hardware, I/O, and
@@ -285,6 +290,8 @@ LDA TABLE             ABS16_INTERNAL when TABLE is inside the module
 LDA #<TABLE           LO8_INTERNAL
 LDA #>TABLE           HI8_INTERNAL
 JSR BIO_FTDI_PUT_CSTR ABS16_IMPORT, unless frozen at seal/install time
+LDA #<BIO_FTDI_PUT_CSTR LO8_IMPORT
+LDA #>BIO_FTDI_PUT_CSTR HI8_IMPORT
 BRA LOCAL_LABEL       no relocation
 STA $7100             fixed external address unless source declares otherwise
 ```

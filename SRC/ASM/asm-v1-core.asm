@@ -351,6 +351,8 @@ ASM_RELOC_ABS16_INTERNAL EQU           $01
 ASM_RELOC_LO8_INTERNAL EQU             $02
 ASM_RELOC_HI8_INTERNAL EQU             $03
 ASM_RELOC_ABS16_IMPORT EQU             $04
+ASM_RELOC_LO8_IMPORT EQU               $05
+ASM_RELOC_HI8_IMPORT EQU               $06
 ASM_EXPORT_MAX         EQU             $08
 ASM_EXPORT_NAME_PACK_MAX EQU           $16
 ASM_EXPORT_ROW_MAX     EQU             $19
@@ -4381,6 +4383,8 @@ ASM_SMOKE_FIXUPS:
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_IMPORT_ABS16
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
+                        JSR             ASM_SMOKE_FIXUPS_IMPORT_SELECTED
+                        BCC             ASM_SMOKE_FIXUPS_FAIL_A
 
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #ASM_SMOKE_TARGET_LO
@@ -4913,6 +4917,142 @@ ASM_SMOKE_FIXUPS_IMPORT_ABS16:
                         SEC
                         RTS
 ASM_SMOKE_FIXUPS_IMPORT_FAIL:
+                        LDA             #$AC
+                        STA             ASM_SLOT
+                        CLC
+                        RTS
+
+ASM_SMOKE_FIXUPS_IMPORT_SELECTED:
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_FIXUPS_IMP_SEL_BEGIN_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_BEGIN_OK:
+                        LDX             #<ASM_DIRECT_IMPORT_EXT
+                        LDY             #>ASM_DIRECT_IMPORT_EXT
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_FIXUPS_IMP_SEL_IMPORT_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_IMPORT_OK:
+                        LDX             #<ASM_FIXUP_LDA_LO_EXT
+                        LDY             #>ASM_FIXUP_LDA_LO_EXT
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCS             ASM_SMOKE_FIXUPS_IMP_SEL_LDA_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_LDA_OK:
+                        LDX             #<ASM_FIXUP_LDX_HI_EXT
+                        LDY             #>ASM_FIXUP_LDX_HI_EXT
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCS             ASM_SMOKE_FIXUPS_IMP_SEL_LDX_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_LDX_OK:
+                        LDA             ASM_CODE_BUF
+                        CMP             #$A9
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_B0_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_B0_OK:
+                        LDA             ASM_CODE_BUF+1
+                        CMP             #$FF
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_B1_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_B1_OK:
+                        LDA             ASM_CODE_BUF+2
+                        CMP             #$A2
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_B2_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_B2_OK:
+                        LDA             ASM_CODE_BUF+3
+                        CMP             #$FF
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_B3_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_B3_OK:
+                        LDA             ASM_FIX_COUNT
+                        CMP             #$02
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_COUNT_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_COUNT_OK:
+                        LDA             ASM_FIX_SEL
+                        AND             #ASM_FIXF_IMPORT
+                        BNE             ASM_SMOKE_FIXUPS_IMP_SEL_F0_IMPORT
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_F0_IMPORT:
+                        LDA             ASM_FIX_SEL
+                        AND             #ASM_FIX_SEL_MASK
+                        CMP             #ASM_FIX_SEL_LO
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_F0_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_F0_OK:
+                        LDA             ASM_FIX_SEL+1
+                        AND             #ASM_FIXF_IMPORT
+                        BNE             ASM_SMOKE_FIXUPS_IMP_SEL_F1_IMPORT
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_F1_IMPORT:
+                        LDA             ASM_FIX_SEL+1
+                        AND             #ASM_FIX_SEL_MASK
+                        CMP             #ASM_FIX_SEL_HI
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_F1_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_F1_OK:
+                        JSR             ASM_END
+                        BCS             ASM_SMOKE_FIXUPS_IMP_SEL_END_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_END_OK:
+                        LDA             ASM_FIX_STATE
+                        CMP             #ASM_FIX_IMPORTED
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_ST0_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_ST0_OK:
+                        LDA             ASM_FIX_STATE+1
+                        CMP             #ASM_FIX_IMPORTED
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_ST1_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_ST1_OK:
+                        LDA             ASM_RELOC_COUNT
+                        CMP             #$02
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_RC_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_RC_OK:
+                        LDA             ASM_RELOC_KIND
+                        CMP             #ASM_RELOC_LO8_IMPORT
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_K0_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_K0_OK:
+                        LDA             ASM_RELOC_KIND+1
+                        CMP             #ASM_RELOC_HI8_IMPORT
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_K1_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_K1_OK:
+                        LDA             ASM_RELOC_SITE_LO
+                        CMP             #$01
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_S0_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_S0_OK:
+                        LDA             ASM_RELOC_SITE_HI
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_SH0_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_SH0_OK:
+                        LDA             ASM_RELOC_SITE_LO+1
+                        CMP             #$03
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_S1_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_S1_OK:
+                        LDA             ASM_RELOC_SITE_HI+1
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_SEL_SH1_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+ASM_SMOKE_FIXUPS_IMP_SEL_SH1_OK:
+                        LDA             ASM_RELOC_TARGET_LO
+                        BNE             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+                        LDA             ASM_RELOC_TARGET_HI
+                        BNE             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+                        LDA             ASM_RELOC_TARGET_LO+1
+                        BNE             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+                        LDA             ASM_RELOC_TARGET_HI+1
+                        BNE             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_FIXUPS_IMP_SEL_FAIL:
                         LDA             #$AC
                         STA             ASM_SLOT
                         CLC
@@ -8434,7 +8574,13 @@ ASM_FIX_IMPORT_RELOC_X:
                         BEQ             ASM_FIX_IMPORT_RELOC_NO
                         LDA             ASM_FIX_SEL,X
                         AND             #ASM_FIX_SEL_MASK
-                        BNE             ASM_FIX_IMPORT_RELOC_NO
+                        BEQ             ASM_FIX_IMPORT_RELOC_ABS16
+                        CMP             #ASM_FIX_SEL_LO
+                        BEQ             ASM_FIX_IMPORT_RELOC_LO8
+                        CMP             #ASM_FIX_SEL_HI
+                        BEQ             ASM_FIX_IMPORT_RELOC_HI8
+                        BRA             ASM_FIX_IMPORT_RELOC_NO
+ASM_FIX_IMPORT_RELOC_ABS16:
                         LDA             ASM_FIX_MODE,X
                         TAY
                         CPY             #(ASM_OPM_BIT_ZP_REL+1)
@@ -8442,18 +8588,43 @@ ASM_FIX_IMPORT_RELOC_X:
                         LDA             ASM_OPM_PATCH_BYTES,Y
                         CMP             #$02
                         BNE             ASM_FIX_IMPORT_RELOC_NO
+                        LDA             #ASM_RELOC_ABS16_IMPORT
+                        JMP             ASM_RELOC_NOTE_IMPORT_FIXUP_X
+ASM_FIX_IMPORT_RELOC_LO8:
+                        LDA             ASM_FIX_MODE,X
+                        TAY
+                        CPY             #(ASM_OPM_BIT_ZP_REL+1)
+                        BCS             ASM_FIX_IMPORT_RELOC_NO
+                        LDA             ASM_OPM_PATCH_BYTES,Y
+                        CMP             #$01
+                        BNE             ASM_FIX_IMPORT_RELOC_NO
+                        LDA             #ASM_RELOC_LO8_IMPORT
+                        JMP             ASM_RELOC_NOTE_IMPORT_FIXUP_X
+ASM_FIX_IMPORT_RELOC_HI8:
+                        LDA             ASM_FIX_MODE,X
+                        TAY
+                        CPY             #(ASM_OPM_BIT_ZP_REL+1)
+                        BCS             ASM_FIX_IMPORT_RELOC_NO
+                        LDA             ASM_OPM_PATCH_BYTES,Y
+                        CMP             #$01
+                        BNE             ASM_FIX_IMPORT_RELOC_NO
+                        LDA             #ASM_RELOC_HI8_IMPORT
                         JMP             ASM_RELOC_NOTE_IMPORT_FIXUP_X
 ASM_FIX_IMPORT_RELOC_NO:
                         CLC
                         RTS
 
 ASM_RELOC_NOTE_IMPORT_FIXUP_X:
+                        PHA
                         JSR             ASM_IMPORT_FIND_FIXUP_X
                         BCC             ASM_RELOC_NOTE_IMPORT_NO
+                        PLA
+                        STA             ASM_TMP1_LO
                         JSR             ASM_RELOC_STORE_IMPORT_X
                         SEC
                         RTS
 ASM_RELOC_NOTE_IMPORT_NO:
+                        PLA
                         CLC
                         RTS
 
@@ -8507,7 +8678,7 @@ ASM_RELOC_STORE_IMPORT_SITE_OK:
                         LDA             ASM_IMPORT_INDEX
                         STA             ASM_RELOC_TARGET_LO,X
                         STZ             ASM_RELOC_TARGET_HI,X
-                        LDA             #ASM_RELOC_ABS16_IMPORT
+                        LDA             ASM_TMP1_LO
                         STA             ASM_RELOC_KIND,X
                         INC             ASM_RELOC_COUNT
                         PLX
@@ -14250,6 +14421,8 @@ ASM_SMOKE_TXN_AFTER_LABEL:
                         DB              "AFTER",0
 ASM_FIXUP_LDA_LO_FOO:  DB              "        LDA #<FOO",0
 ASM_FIXUP_LDA_HI_FOO:  DB              "        LDA #>FOO",0
+ASM_FIXUP_LDA_LO_EXT:  DB              "        LDA #<EXT",0
+ASM_FIXUP_LDX_HI_EXT:  DB              "        LDX #>EXT",0
 ASM_FIXUP_LOCAL_MAIN_BRA:
                         DB              "MAIN BRA .SKIP",0
 ASM_FIXUP_LOCAL_LDA:   DB              "        LDA #$EE",0

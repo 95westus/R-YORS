@@ -210,8 +210,9 @@ A [addr] [label[:]] MMM [operand] .
   `IMPORT` records compact PACK40 metadata and tags matching unresolved global
   operands as imports. It rejects local names, reserved words, duplicates,
   table overflow, and leading labels as `BAD SYM`; extra operands are `BAD
-  OPER`. At `END`, eligible full-width two-byte import fixups become `$04`
-  ABS16_IMPORT relocation rows instead of failing as unresolved `BAD FIX`.
+  OPER`. At `END`, eligible import fixups become import relocation rows instead
+  of failing as unresolved `BAD FIX`: `$04` ABS16_IMPORT for full two-byte
+  operands, `$05` LO8_IMPORT for `#<NAME`, and `$06` HI8_IMPORT for `#>NAME`.
 - ASM reads one full source line in v1, capped at 63 visible characters. Spaces
   and tabs are whitespace; tabs have no column meaning. Empty and comment-only
   lines are OK. An overlong line is `BAD LINE`.
@@ -518,9 +519,9 @@ A [addr] [label[:]] MMM [operand] .
   depend on the sealed module's future base or a later import provider. The
   RAM table records internal label rows as `$01` ABS16_INTERNAL, `$02`
   LO8_INTERNAL, and `$03` HI8_INTERNAL, with site and target stored as offsets
-  from the seal base. `$04` ABS16_IMPORT records a two-byte imported address:
-  site is still a seal-base offset, while target low carries the import slot
-  index and target high is zero.
+  from the seal base. `$04` ABS16_IMPORT, `$05` LO8_IMPORT, and `$06`
+  HI8_IMPORT record imported values: site is still a seal-base offset, while
+  target low carries the import slot index and target high is zero.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.

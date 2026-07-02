@@ -6067,8 +6067,9 @@ ASMRP.UDATA moves runtime-paste PC/post cells out of DATA into UDATA. It also
          paths.
 SEAL.RELOC adds a separate RAM relocation record:
          ASM_RELOC_REC starts with COUNT, then parallel arrays for kind,
-         site offset, and target offset. Kinds are $01 ABS16_INTERNAL,
-         $02 LO8_INTERNAL, and $03 HI8_INTERNAL. Runtime paste/flash
+         site offset, and target offset. The base internal kinds are $01
+         ABS16_INTERNAL, $02 LO8_INTERNAL, and $03 HI8_INTERNAL; import
+         slices extend the same table with $04/$05/$06. Runtime paste/flash
          SEAL success prints SEAL REL @=$hhhh COUNT=$nn after SEAL REC.
 SEAL.EXPORT adds EXPORT NAME for defined global labels and emits a compact
          PACK40 sealed export record. Runtime paste/flash SEAL success prints
@@ -6080,6 +6081,10 @@ SEAL.IMPORT.FIXUP tags matching unresolved global operands and converts
          eligible full-width two-byte import fixups into `$04` ABS16_IMPORT
          relocation rows at END. The emitted operand remains `$FF/$FF`; the
          relocation target low byte carries the import slot index.
+SEAL.IMPORT.BYTESEL accepts selected-byte declared imports: `#<NAME` records
+         `$05` LO8_IMPORT and `#>NAME` records `$06` HI8_IMPORT. The emitted
+         placeholder byte remains `$FF`; target low still carries the import
+         slot index.
 ASMRT.REPORT.TRIM keeps the older compact-report printer in the core/smoke
          build but compiles it out of ASM_RUNTIME_ONLY images. Runtime paste
          and flash use wrapper error lines, ASM TABLES, and SEAL REC/REL as
@@ -6164,16 +6169,18 @@ IMPORT rejects local names, reserved words, duplicates, leading labels, and
 table overflow as BAD SYM
 IMPORT rejects extra operands as BAD OPER
 declared IMPORT ABS16 fixups succeed at END as imported relocation rows
-declared IMPORT operands keep `$FF/$FF` placeholders until a later linker fills
-them
-relative, selected-byte, undeclared, and local unresolved fixups still fail END
-as BAD FIX
+declared IMPORT selected-byte fixups succeed at END as imported relocation rows
+declared IMPORT operands keep `$FF` or `$FF/$FF` placeholders until a later
+linker fills them
+relative, undeclared, and local unresolved fixups still fail END as BAD FIX
 ASM TABLES prints a RELOCS section with SL/K/SITE/TARG rows
 internal label ABS16 references produce $01 relocation rows with site/target
 offsets from BASE
 internal label #< and #> references produce $02/$03 relocation rows
 declared import ABS16 references produce $04 relocation rows with SITE as a
 BASE-relative offset and TARG low as the import slot
+declared import #< and #> references produce $05/$06 relocation rows with SITE
+as a BASE-relative offset and TARG low as the import slot
 relative branches, EQU constants, and fixed external addresses produce no
 relocation rows
 relocation table overflow keeps ordinary ASM valid but sets a seal-ineligible
@@ -6871,6 +6878,18 @@ fixup state `$04` with selector `$40`, and the relocation table showed
 the import dump began `01 05 03 14 23`. A follow-up `JSR MISS` without
 `IMPORT MISS` still failed `END` as `ERR=$09 BAD FIX`, with a pending
 non-import fixup and no relocation rows.
+
+The follow-up 2026-07-02 host `asm-test` slice extends declared imports to
+selected-byte operands. `IMPORT EXT`, `LDA #<EXT`, and `LDX #>EXT` now leave
+`A9 FF A2 FF` placeholders, accept `END`, mark both fixups imported, and record
+`$05` LO8_IMPORT and `$06` HI8_IMPORT rows at site offsets `$0001` and `$0003`,
+both targeting import slot `$0000`. Host build passed with
+`asm-v1-runtime-paste-2000.s19` load count `L OK=3A75 GO=2000`. Board proof on
+HIMON `V 00.0702(0707)` loaded the same image, assembled at
+`ASM_CODE_BUF=$7860`, printed fixup selectors `$41/$42`, relocation rows
+`00 05 0001 0000` and `01 06 0003 0000`, sealed with
+`SEAL REL @=$5A8F COUNT=$02` and `SEAL IMP @=$5BAA COUNT=$01 LEN=$0005`, and
+dumped `A9 FF A2 FF` at `$7860-$7863`.
 
 The first 2026-07-02 board attempt with
 `asm-v1-runtime-paste-2000.s19` loaded as `L OK=38FC GO=2000` failed before
