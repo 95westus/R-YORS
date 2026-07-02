@@ -109,6 +109,10 @@ say no more to the part that became too expensive or unsafe. This is not
 indecision. It is the real build record of a system small enough that every
 byte, bank, vector, and operator prompt can change the answer.
 
+Personal bench note, 2026-07-02 (COLLAB-AI):
+
+> Bad moods are weather, not character. Good work still gets done under cloudy weather.
+
 Proof lives in the guide set:
 
 - [PRODUCT_BOUNDARIES.md](../STR8/PRODUCT_BOUNDARIES.md) - R-YORS, STR8, IVI/LEAF,

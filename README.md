@@ -137,6 +137,10 @@ DOC/IDEAS.md
 Use those when writing the human arc. Use the operator and technical guides
 when trying to run or understand the machine.
 
+A small bench note in the book spine, dated 2026-07-02:
+
+> Bad moods are weather, not character. Good work still gets done under cloudy weather.
+
 ## Safety
 
 Some code here can erase or program flash memory. Running loaders, tests,
