@@ -6076,8 +6076,10 @@ SEAL.EXPORT adds EXPORT NAME for defined global labels and emits a compact
 SEAL.IMPORT adds IMPORT NAME as compact PACK40 metadata for intended external
          symbols. Runtime paste/flash SEAL success prints
          SEAL IMP @=$hhhh COUNT=$nn LEN=$00nn only when imports exist.
-         This slice does not resolve external fixups; imported references
-         still fail ordinary unresolved-fixup validation at END.
+SEAL.IMPORT.FIXUP tags matching unresolved global operands and converts
+         eligible full-width two-byte import fixups into `$04` ABS16_IMPORT
+         relocation rows at END. The emitted operand remains `$FF/$FF`; the
+         relocation target low byte carries the import slot index.
 ASMRT.REPORT.TRIM keeps the older compact-report printer in the core/smoke
          build but compiles it out of ASM_RUNTIME_ONLY images. Runtime paste
          and flash use wrapper error lines, ASM TABLES, and SEAL REC/REL as
@@ -6161,12 +6163,17 @@ IMPORT accepts exactly one global word operand and records PACK40 metadata
 IMPORT rejects local names, reserved words, duplicates, leading labels, and
 table overflow as BAD SYM
 IMPORT rejects extra operands as BAD OPER
-IMPORT metadata does not resolve external fixups yet; emitted references to an
-imported name still fail END as BAD FIX
+declared IMPORT ABS16 fixups succeed at END as imported relocation rows
+declared IMPORT operands keep `$FF/$FF` placeholders until a later linker fills
+them
+relative, selected-byte, undeclared, and local unresolved fixups still fail END
+as BAD FIX
 ASM TABLES prints a RELOCS section with SL/K/SITE/TARG rows
 internal label ABS16 references produce $01 relocation rows with site/target
 offsets from BASE
 internal label #< and #> references produce $02/$03 relocation rows
+declared import ABS16 references produce $04 relocation rows with SITE as a
+BASE-relative offset and TARG low as the import slot
 relative branches, EQU constants, and fixed external addresses produce no
 relocation rows
 relocation table overflow keeps ordinary ASM valid but sets a seal-ineligible
@@ -6839,13 +6846,31 @@ SEAL> .
 
 `SEAL.IMPORT` hardware-proven on 2026-07-02 with `asm-v1-runtime-paste-2000.s19`
 loaded as `L OK=3904 GO=2000`. The final board pass proved metadata-only
-`IMPORT` dispatch, negative parser/status handling, unresolved imported-reference
-fixup behavior, eight-entry table limit handling, and `SEAL IMP` named-record
-printing. In that image `ASM_CODE_BUF=$76EF` and `ASM_IMPORT_REC=$5A39`; the
+`IMPORT` dispatch, negative parser/status handling, the then-current unresolved
+imported-reference fixup behavior, eight-entry table limit handling, and `SEAL
+IMP` named-record printing. In that image `ASM_CODE_BUF=$76EF` and
+`ASM_IMPORT_REC=$5A39`; the
 positive `EXT`/`IO2` record dumped as `02 08 03 14 23 03 B5 3A`, the single
 `EXT` record dumped as `01 05 03 14 23`, and the eight-entry `I0`..`I7` record
 dumped as `08 1A 02 78 3C 02 A0 3C 02 C8 3C 02 F0 3C 02 18 3D 02 40 3D 02 68
 3D 02 90 3D`.
+
+The 2026-07-02 host `asm-test` slice after that board proof advances declared
+imports: `IMPORT EXT` plus `JSR EXT` now succeeds at `END`, marks the fixup
+state as imported, leaves the operand placeholder bytes `$FF/$FF`, and records
+a `$04` ABS16_IMPORT relocation row with `SITE=$0001` and import slot
+`TARG=$0000`.
+
+The same behavior is hardware-proven on 2026-07-02 with HIMON
+`V 00.0702(0707)` and `asm-v1-runtime-paste-2000.s19` loaded as
+`L OK=3A3C GO=2000`. The positive board pass assembled `IMPORT EXT` then
+`JSR EXT` at `ASM_CODE_BUF=$7827`; `END` succeeded, the table printer showed
+fixup state `$04` with selector `$40`, and the relocation table showed
+`00 04 0001 0000`. `SEAL` preserved the same proof with base `$7827`,
+`SEAL REL @=$5A56 COUNT=$01`, and `SEAL IMP @=$5B71 COUNT=$01 LEN=$0005`;
+the import dump began `01 05 03 14 23`. A follow-up `JSR MISS` without
+`IMPORT MISS` still failed `END` as `ERR=$09 BAD FIX`, with a pending
+non-import fixup and no relocation rows.
 
 The first 2026-07-02 board attempt with
 `asm-v1-runtime-paste-2000.s19` loaded as `L OK=38FC GO=2000` failed before

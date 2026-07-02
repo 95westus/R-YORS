@@ -9840,3 +9840,113 @@ prompting because the requested range crosses into monitor workspace. Direct
 protected starts at `$7A00`, `$7EFF`, `$7F00`, and `$8000` report their exact
 protected address, and the final dump confirms `$7A00` remains HIMON command
 buffer state rather than a modified byte.
+
+## 2026-07-02 ASM IMPORT ABS16 Relocation Proof
+
+Purpose: prove the ASM `IMPORT` fixup slice on real hardware after updating to
+HIMON `V 00.0702(0707)`: a declared external ABS16 reference seals as an
+import relocation row, keeps `$FF/$FF` operand placeholders, emits import
+metadata, and leaves undeclared unresolved references as `BAD FIX`.
+
+```text
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+
+HIMON IN 3S. S=STR8  3
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+..........................................................................................................................................................................................................................................................................................................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0702(0707)
+>L
+L S19
+L @2000
+L OK=3A3C GO=2000
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> IMPORT EXT
+OK PC=$7827
+ASM> JSR EXT
+OK PC=$782A
+ASM> END
+OK PC=$782A
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 04 04   40  7828 782A EXT
+RELOCS
+SL K  SITE TARG
+00 04 0001 0000
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$7827 END=$782A
+SEAL REC @=$5A4B LEN=$0003 FNV=$4C89D9ED
+SEAL REL @=$5A56 COUNT=$01
+SEAL IMP @=$5B71 COUNT=$01 LEN=$0005
+SEAL> .
+ASM RT PASTE BYE
+
+#GO# ENTRY=2000
+RET A=10 X=F8 Y=10 P=75 S=FD NV-BdIzC
+      8 782A
+D start [end|+cnt]
+>D 7827 782A
+7827: 20 FF FF 00 |  ...
+>D 5A4B +3
+5A4B: 01 27 78 | .'x
+>D 5A56 +1
+5A56: 01 | .
+>D 5B71 +6
+5B71: 01 05 03 14 23 60 | ....#`
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> JSR MISS
+OK PC=$782A
+ASM> END
+ERR=$09 BAD FIX PC=$782A
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 04   00  7828 782A MISS
+RELOCS
+SL K  SITE TARG
+
+#GO# ENTRY=2000
+RET A=09 X=2A Y=78 P=74 S=FD NV-BdIzc
+>D 7828 782A
+7828: FF FF 00 | ...
+>
+```
+
+Result: pass. The positive run loaded `asm-v1-runtime-paste-2000.s19` as
+`L OK=3A3C GO=2000`, assembled at `ASM_CODE_BUF=$7827`, accepted `IMPORT EXT`
+without advancing PC, emitted `JSR EXT` as `20 FF FF`, and accepted `END`.
+The fixup table row changed to state `$04` with selector `$40`, proving it was
+recognized as an import fixup. The relocation table printed
+`00 04 0001 0000`, proving ABS16 import relocation kind `$04`, site offset
+`$0001`, and import slot `$0000`. `SEAL IMP @=$5B71 COUNT=$01 LEN=$0005`
+matched the first five dumped import bytes `01 05 03 14 23`. The negative
+follow-up `JSR MISS` still failed `END` with `ERR=$09 BAD FIX`, left a pending
+non-import ABS16 fixup, and emitted no relocation row.

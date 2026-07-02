@@ -144,15 +144,17 @@ relocation rows inspectable:
 
 ```text
 +$00 count
-+$01.. kind[count]             $01 ABS16_INTERNAL, $02 LO8_INTERNAL, $03 HI8_INTERNAL
++$01.. kind[count]             $01 ABS16_INTERNAL, $02 LO8_INTERNAL,
+                               $03 HI8_INTERNAL, $04 ABS16_IMPORT
 +... site_lo[count]
 +... site_hi[count]
 +... target_lo[count]
 +... target_hi[count]
 ```
 
-`site` and `target` are offsets from `ASM_SEAL_BASE`, not permanent absolute
-addresses.
+For internal rows, `site` and `target` are offsets from `ASM_SEAL_BASE`, not
+permanent absolute addresses. For `$04` ABS16_IMPORT, `site` is still a base
+offset; `target_lo` carries the import slot index and `target_hi` is zero.
 
 The first post-session `SEAL` dry-run should stay RAM-only. It runs after
 `END`, consumes the frozen facts above, fills `ASM_SEAL_REC`, and writes no
@@ -264,8 +266,10 @@ ABS16_IMPORT     two-byte imported address from RJOIN/catalog
 
 The first implemented RAM table records only internal label references:
 already-resolved labels and forward fixups that later resolve through a label
-binding. `EQU` constants, fixed hardware/RAM addresses, and resident calls are
-left unrelocated in this slice. Import relocation rows remain planned.
+binding. Declared full-width imported address fixups now record `$04`
+ABS16_IMPORT rows. `EQU` constants, fixed hardware/RAM addresses, selected
+import bytes, relative branches, and resident calls are left unrelocated in
+this slice.
 
 Relative branches inside the same module need no relocation because the
 distance does not change when the whole body moves. Fixed hardware, I/O, and

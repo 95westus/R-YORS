@@ -207,11 +207,11 @@ A [addr] [label[:]] MMM [operand] .
   name.
   `EXPORT` rejects unknown names, local names, `EQU` symbols, duplicates, and
   table overflow as `BAD SYM`; extra operands are `BAD OPER`.
-  `IMPORT` records compact PACK40 metadata only in the first pass. It rejects
-  local names, reserved words, duplicates, table overflow, and leading labels
-  as `BAD SYM`; extra operands are `BAD OPER`. It does not resolve external
-  fixups yet, so an emitted reference to an imported name still fails the
-  ordinary unresolved fixup check at `END`.
+  `IMPORT` records compact PACK40 metadata and tags matching unresolved global
+  operands as imports. It rejects local names, reserved words, duplicates,
+  table overflow, and leading labels as `BAD SYM`; extra operands are `BAD
+  OPER`. At `END`, eligible full-width two-byte import fixups become `$04`
+  ABS16_IMPORT relocation rows instead of failing as unresolved `BAD FIX`.
 - ASM reads one full source line in v1, capped at 63 visible characters. Spaces
   and tabs are whitespace; tabs have no column meaning. Empty and comment-only
   lines are OK. An overlong line is `BAD LINE`.
@@ -515,9 +515,12 @@ A [addr] [label[:]] MMM [operand] .
   infer pending/resolved from `$FF` placeholder bytes.
 - ASM v1 RAM relocation rows are separate from fixups. Fixups record unresolved
   assembly-time references; relocation rows record resolved references that
-  depend on the sealed module's future base. The first RAM table records
-  internal label rows only: `$01` ABS16_INTERNAL, `$02` LO8_INTERNAL, and `$03`
-  HI8_INTERNAL, with site and target stored as offsets from the seal base.
+  depend on the sealed module's future base or a later import provider. The
+  RAM table records internal label rows as `$01` ABS16_INTERNAL, `$02`
+  LO8_INTERNAL, and `$03` HI8_INTERNAL, with site and target stored as offsets
+  from the seal base. `$04` ABS16_IMPORT records a two-byte imported address:
+  site is still a seal-base offset, while target low carries the import slot
+  index and target high is zero.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.
