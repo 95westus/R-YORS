@@ -94,7 +94,9 @@ rather than a hidden VM or broad runtime.
 - STR8 keeps `R` as reset. Do not use that exception to add new short
   destructive command spellings.
 - `C`, `M`, and `F` are not destructive shortcuts. `M` currently means
-  byte-by-byte modify in HIMON and is under command-surface review.
+  byte-by-byte modify in HIMON and is under command-surface review; it may
+  write only below monitor workspace and reports `M PROT=$hhhh` for protected
+  targets at `$7A00` or higher.
 - `S` single-step has moved to `N` in the HIMON command surface. Do not add
   `NEXT` as a command alias. A RAM-only single-step/next operation is not
   destructive; it plants only a temporary debugger trap in RAM and restores the

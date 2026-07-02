@@ -9799,3 +9799,44 @@ UPA remains writable while the following `$7A00` byte remained the monitor
 command buffer (`'D'`). The `$7B20` scratch run proved multi-byte writes, usage
 on invalid input (`GG`) with same-address reprompt, abort on `.`, and final
 cleanup to zero.
+
+## 2026-07-02 HIMON M Protected Range Proof
+
+Purpose: prove the tightened `M` write policy on real hardware after the
+`HIMON V 00.0702(0549)` build: `$79FF` remains writable, but a range crossing
+into monitor workspace and any start address at `$7A00` or higher is refused
+before the byte prompt/write path.
+
+```text
+>M 79FF
+79FF: 5A 5A
+>D 79F0 7A00
+79F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 5A | ...............Z
+7A00: 44 | D
+>M 79FF
+79FF: 5A 00
+>D 79F0 7A00
+79F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7A00: 44 | D
+>M 79FF +2
+M PROT=$7A00
+>M 7A00
+M PROT=$7A00
+>M 7EFF
+M PROT=$7EFF
+>M 7F00
+M PROT=$7F00
+>M 8000
+M PROT=$8000
+>D 79F0 7A00
+79F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7A00: 44 | D
+>
+```
+
+Result: pass. `M 79FF` still prompts and writes at the final UPA byte, and the
+restore returned `$79FF` to zero. `M 79FF +2` reports `M PROT=$7A00` without
+prompting because the requested range crosses into monitor workspace. Direct
+protected starts at `$7A00`, `$7EFF`, `$7F00`, and `$8000` report their exact
+protected address, and the final dump confirms `$7A00` remains HIMON command
+buffer state rather than a modified byte.

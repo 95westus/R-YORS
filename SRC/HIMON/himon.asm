@@ -979,6 +979,8 @@ CMD_M:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_PARSE_RANGE_REQUIRED
                         BCC             CMD_USAGE_M
+                        JSR             MON_MODIFY_RANGE_WRITABLE
+                        BCC             CMD_M_PROTECT
                         JSR             MON_MODIFY_RANGE
                         RTS
 
@@ -986,6 +988,17 @@ CMD_USAGE_M:
                         LDX             #<MSG_USAGE_M
                         LDY             #>MSG_USAGE_M
                         JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+CMD_M_PROTECT:
+                        LDX             #<MSG_M_PROTECT
+                        LDY             #>MSG_M_PROTECT
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             CMDP_ADDR_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMDP_ADDR_LO
+                        JSR             SYS_WRITE_HEX_BYTE
                         JSR             SYS_WRITE_CRLF
                         RTS
 
@@ -2191,6 +2204,30 @@ MON_MODIFY_ABORT:
                         RTS
 
 MON_MODIFY_DONE:
+                        RTS
+
+MON_MODIFY_RANGE_WRITABLE:
+                        LDA             CMD_RANGE_START_HI
+                        CMP             #>MON_WORK_BASE
+                        BCS             MON_MODIFY_PROTECT_START
+                        LDA             CMD_RANGE_END_HI
+                        CMP             #>MON_WORK_BASE
+                        BCS             MON_MODIFY_PROTECT_MON_BASE
+                        SEC
+                        RTS
+MON_MODIFY_PROTECT_START:
+                        LDA             CMD_RANGE_START_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             CMD_RANGE_START_HI
+                        STA             CMDP_ADDR_HI
+                        CLC
+                        RTS
+MON_MODIFY_PROTECT_MON_BASE:
+                        LDA             #<MON_WORK_BASE
+                        STA             CMDP_ADDR_LO
+                        LDA             #>MON_WORK_BASE
+                        STA             CMDP_ADDR_HI
+                        CLC
                         RTS
 
 MON_CURR_GT_END:
@@ -3603,6 +3640,7 @@ MSG_HELP:                DB              "# ? S D M U R X G L B N Q ",$22," STR"
 MSG_QUOTE_MATCH:         DB              " STR8 MATCH",('!'+$80)
 MSG_USAGE_D:             DB              "D start [end|+cnt",(']'+$80)
 MSG_USAGE_M:             DB              "M start [end|+cnt]",('.'+$80)
+MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)
 MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
