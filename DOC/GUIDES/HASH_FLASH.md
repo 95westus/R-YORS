@@ -457,9 +457,9 @@ memory-write probe. HIMON must not test `$8000-$FFFF` by storing `BRK` and
 reading it back. Generic memory edit, ROM, flash, and banked flash routines
 have their own policy.
 
-The first compact HIMON policy is stricter than "any RAM": synthetic debugger
-traps may be planted only in UPA `$2000-$77FF`. Zero page, hardware stack, low
-RAM, HIUPA/scratch, monitor/page-buffer RAM, I/O, and ROM/flash are rejected.
+The compact HIMON policy is stricter than "any RAM": synthetic debugger traps
+may be planted only in UPA `$2000-$79FF`. Zero page, hardware stack, low RAM,
+monitor workspace `$7A00-$7EFF`, I/O, and ROM/flash are rejected.
 This makes RAM-only `N` non-destructive in the command-safety sense: the user
 program byte is restored, and system-owned memory is not a patch target.
 

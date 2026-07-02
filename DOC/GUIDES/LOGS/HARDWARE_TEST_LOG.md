@@ -9571,3 +9571,174 @@ overflow cases returned the expected `BAD SYM` or `BAD OPER` status; and
 the expected unresolved fixup. `SEAL IMP` printed the real import record address
 and the positive, single-import, and table-limit dumps matched the expected
 PACK40 records.
+
+## 2026-07-02 HIMON High-RAM Workspace Boundary Proof
+
+Purpose: prove the updated HIMON high-RAM split on real hardware after STR8
+updated HIMON to `HIMON V 00.0702(0524)`: UPA/debug patchable RAM extends
+through `$79FF`, monitor workspace begins at `$7A00`, native `S` uses
+`SEARCH_PAT_BUF=$7DC0`, the I/O window remains skipped, and the runtime-paste
+wrapper still starts ASM at the default code buffer instead of a fixed `$7600`.
+
+```text
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0702(0524)
+>
+
+>D 79F0 7A10
+79F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7A00: 44 20 37 39 46 30 20 37 | 41 31 30 00 4D 4F 4E 27 | D 79F0 7A10.MON'
+7A10: 00 | .
+>D 7DB0 7DD0
+7DB0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7DC0: 48 49 4D 4F 4E 00 00 00 | 00 00 00 00 00 00 00 00 | HIMON...........
+7DD0: 00 | .
+>D 7EF0 800F
+7EF0: 00 10 C0 10 75 00 20 FD | 08 E1 6C CF C5 CF 13 D0 | ....u. ...l.....
+7F00: CS0      IO SKIP
+7F20: CS1      IO SKIP
+7F40: CS2      IO SKIP
+7F60: CS3      IO SKIP
+7F80: ACIA     IO SKIP
+7FA0: PIA      IO SKIP
+7FC0: VIA      IO SKIP
+7FE0: FTDI VIA IO SKIP
+8000: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+
+>B C 79FF
+BP NF
+>B 79FF
+BP $79FF
+>B L
+79FF 00
+>B C 79FF
+B C $79FF
+>B L
+>B 7A00
+DBG RAM
+>B 7EFF
+DBG RAM
+>B 7800
+BP $7800
+>B L
+7800 00
+>B C 7800
+B C $7800
+>B L
+
+>S 3000 +100 'NOTTHERE'
+S NF
+>S 0 FFFF 'HIMON'
+6400 6400: 48 49 4D 4F 4E 20 56 20 | 30 30 2E 30 37 30 32 28 | HIMON V 00.0702(
+6415 6410: 30 35 32 34 A9 48 49 4D | 4F 4E 3A 20 56 20 30 30 | 0524.HIMON: V 00
+65CD*65C0: 41 4D 20 54 4F 20 48 41 | 53 48 45 44 20 48 49 4D | AM TO HASHED HIM
+7A0A 7A00: 53 20 30 20 46 46 46 46 | 20 27 48 49 4D 4F 4E 27 | S 0 FFFF 'HIMON'
+7DC0 7DC0: 48 49 4D 4F 4E 45 52 45 | 00 00 00 00 00 00 00 00 | HIMONERE........
+7F00: CS0      IO SKIP
+7F20: CS1      IO SKIP
+7F40: CS2      IO SKIP
+7F60: CS3      IO SKIP
+7F80: ACIA     IO SKIP
+7FA0: PIA      IO SKIP
+7FC0: VIA      IO SKIP
+7FE0: FTDI VIA IO SKIP
+E400 E400: 48 49 4D 4F 4E 20 56 20 | 30 30 2E 30 37 30 32 28 | HIMON V 00.0702(
+E415 E410: 30 35 32 34 A9 48 49 4D | 4F 4E 3A 20 56 20 30 30 | 0524.HIMON: V 00
+E5CD*E5C0: 41 4D 20 54 4F 20 48 41 | 53 48 45 44 20 48 49 4D | AM TO HASHED HIM
+F879 F870: 5F 5F 5F 5F 2F 0D 8A 0D | 0A 48 49 4D 4F 4E 20 49 | ____/....HIMON I
+F8F8 F8F0: 0A 55 50 44 41 54 45 20 | 48 49 4D 4F 4E 20 43 30 | .UPDATE HIMON C0
+F959 F950: 41 54 41 0D 8A 0D 0A 47 | 20 48 49 4D 4F 4E 0D 8A | ATA....G HIMON..
+>D 7DC0 +10
+7DC0: 48 49 4D 4F 4E 45 52 45 | 00 00 00 00 00 00 00 00 | HIMONERE........
+>S 0 7EFF 'HI' 4D
+6400 6400: 48 49 4D 4F 4E 20 56 20 | 30 30 2E 30 37 30 32 28 | HIMON V 00.0702(
+6415 6410: 30 35 32 34 A9 48 49 4D | 4F 4E 3A 20 56 20 30 30 | 0524.HIMON: V 00
+65CD 65C0: 41 4D 20 54 4F 20 48 41 | 53 48 45 44 20 48 49 4D | AM TO HASHED HIM
+7DC0 7DC0: 48 49 4D 4F 4E 45 52 45 | 00 00 00 00 00 00 00 00 | HIMONERE........
+>S 0 FFFF 4D 'O'
+6402 6400: 48 49 4D 4F 4E 20 56 20 | 30 30 2E 30 37 30 32 28 | HIMON V 00.0702(
+6417 6410: 30 35 32 34 A9 48 49 4D | 4F 4E 3A 20 56 20 30 30 | 0524.HIMON: V 00
+65CF*65C0: 41 4D 20 54 4F 20 48 41 | 53 48 45 44 20 48 49 4D | AM TO HASHED HIM
+7DC0 7DC0: 4D 4F 4D 4F 4E 45 52 45 | 00 00 00 00 00 00 00 00 | MOMONERE........
+7DC2 7DC0: 4D 4F 4D 4F 4E 45 52 45 | 00 00 00 00 00 00 00 00 | MOMONERE........
+7F00: CS0      IO SKIP
+7F20: CS1      IO SKIP
+7F40: CS2      IO SKIP
+7F60: CS3      IO SKIP
+7F80: ACIA     IO SKIP
+7FA0: PIA      IO SKIP
+7FC0: VIA      IO SKIP
+7FE0: FTDI VIA IO SKIP
+E402 E400: 48 49 4D 4F 4E 20 56 20 | 30 30 2E 30 37 30 32 28 | HIMON V 00.0702(
+E417 E410: 30 35 32 34 A9 48 49 4D | 4F 4E 3A 20 56 20 30 30 | 0524.HIMON: V 00
+E5CF*E5C0: 41 4D 20 54 4F 20 48 41 | 53 48 45 44 20 48 49 4D | AM TO HASHED HIM
+F87B F870: 5F 5F 5F 5F 2F 0D 8A 0D | 0A 48 49 4D 4F 4E 20 49 | ____/....HIMON I
+F8FA F8F0: 0A 55 50 44 41 54 45 20 | 48 49 4D 4F 4E 20 43 30 | .UPDATE HIMON C0
+F95B F950: 41 54 41 0D 8A 0D 0A 47 | 20 48 49 4D 4F 4E 0D 8A | ATA....G HIMON..
+>S 3000 +0 20
+S START END|+COUNT BB|'TEXT' [...], ? HELP, Q QUIT
+>S 3000 +10
+S START END|+COUNT BB|'TEXT' [...], ? HELP, Q QUIT
+>S 3000 +10 GG
+S START END|+COUNT BB|'TEXT' [...], ? HELP, Q QUIT
+
+>L G
+L S19
+L @2000
+L OK=3904 GO=2000
+ASM RT PASTE
+ASM> RTS
+OK PC=$76F0
+ASM> IMPORT EXT
+OK PC=$76F0
+ASM> IMPORT IO2
+OK PC=$76F0
+ASM> END
+OK PC=$76F0
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM RT PASTE OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$76EF END=$76F0
+SEAL REC @=$5913 LEN=$0001 FNV=$E50C2ABF
+SEAL REL @=$591E COUNT=$00
+SEAL IMP @=$5A39 COUNT=$02 LEN=$0008
+SEAL> .
+ASM RT PASTE BYE
+
+#LOADGO# ENTRY=2000
+RET A=10 X=C0 Y=10 P=75 S=FD NV-BdIzC
+>D 76EF 76F0
+76EF: 60 FF | `.
+>
+```
+
+Result: pass. The dump across `$79F0-$7A10` shows `$7A00` as HIMON command
+workspace, `$7DC0` as the native search pattern buffer, and the `$7F00-$7FFF`
+I/O window still skipped during dumps/search. Breakpoint tests prove `$79FF`
+and `$7800` are now debug-patchable, while `$7A00` and `$7EFF` are rejected as
+monitor/debug RAM. Native `S` accepts quoted/hex pattern atoms, preserves usage
+errors for missing/invalid pattern input, and still skips I/O. The visible
+suffix bytes after `HIMON`/`MO` are stale bytes beyond the active pattern length;
+the self-hits at `$7DC0`/`$7DC2` are expected when the search range includes
+`SEARCH_PAT_BUF`. Runtime paste still loads as `L OK=3904 GO=2000`, emits only
+the `RTS` byte at `ASM_CODE_BUF=$76EF`, and seals two metadata-only imports at
+`ASM_IMPORT_REC=$5A39`.

@@ -61,6 +61,9 @@ himon-search-for-himon  native HIMON port scaffold and checklist
 `himon-search-static-proof` remains as a legacy build alias, but the shorter
 `himon-search-static` name is the one to use in new notes.
 
+Note: `$7900` references below this point are legacy proof addresses; resident
+HIMON now uses `$7DC0-$7DFF` for the active search pattern buffer.
+
 ## V0 Behavior
 
 `S` is a prompt command, not a debug trap. It parses, scans, prints hits, and
@@ -78,8 +81,7 @@ Target behavior:
   returning. Prefer `S NF` unless a better monitor-wide wording is chosen.
 - Ctrl-C during a long scan aborts search and returns to the prompt.
 - The pattern buffer is fixed-size. The RAM proof may own its own buffer; the
-  final HIMON integration must either reserve search workspace or explicitly
-  reuse an existing buffer only when its owner is inactive.
+  resident HIMON command reserves `$7DC0-$7DFF` for the active pattern.
 
 I/O policy must be boring. Reads from `$7F00-$7FFF` are memory-mapped I/O, so a
 mistyped all-memory search must not accidentally consume device state. Current
@@ -1282,9 +1284,9 @@ $C7-$CA spare/reserved
 That keeps the hot pointers in zero page without stealing the `$00-$AF`
 user/free region. It uses the reserved R-YORS/HIMON/THE/ASM expansion lane
 `$B0-$CA`; leave `$B0-$B3` alone because current hash display/filter code uses
-it. The pattern buffer can remain at `$7900` for the first native pass so the
-search core stays unchanged. The known side effect remains: whole-memory scans
-can find the active pattern bytes at `$7900`.
+it. The resident pattern buffer is `$7DC0-$7DFF`, inside monitor workspace and
+after the free `$7B00-$7DBF` scratch region. The known side effect remains:
+whole-memory scans can find the active pattern bytes at `$7DC0`.
 
 Do not build a runtime memory allocator for this native pass. HIMON commands
 are single-owner, foreground routines, and their scratch bytes are volatile
@@ -1349,7 +1351,7 @@ ensure $BB80 flash-shadow S is absent, erased, or in a different bank
     expected: RAM/current-line hits, named IO SKIP rows, ROM hits
 
 >S 3000 +100 'NOTTHERE'
-    expected: S NF, using a range that excludes $7900 pattern storage
+    expected: S NF, using a range that excludes $7DC0 pattern storage
 
 >D 7EF0 800F
     expected: D still prints the same named IO SKIP rows

@@ -106,9 +106,9 @@ rather than a hidden VM or broad runtime.
   Apostrophe text is a final tail in V0; there is no closing-quote parser and
   no return to hex parsing after text.
 - The first `N`/breakpoint patch policy is deliberately conservative:
-  synthetic debugger traps may be planted only in UPA `$2000-$77FF`. Reject
-  zero page, hardware stack, low RAM, HIUPA/scratch, monitor/page-buffer RAM,
-  I/O, and ROM/flash. This protects system-owned RAM as well as non-RAM.
+  synthetic debugger traps may be planted only in UPA `$2000-$79FF`. Reject
+  zero page, hardware stack, low RAM, monitor workspace `$7A00-$7EFF`, I/O,
+  and ROM/flash. This protects system-owned RAM as well as non-RAM.
 - The patchability check is HIMON system policy, not a user-callable routine
   contract. Keep the first W65C02S implementation as a tiny local debug fast
   path instead of a "routines of routines" framework. Promote a shared

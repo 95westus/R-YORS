@@ -374,7 +374,7 @@ context and `RTI`.
 The current debug implementation is conservative:
 
 ```text
-debug patch range:  $2000-$77FF
+debug patch range:  $2000-$79FF
 system RAM:         not patchable
 I/O:                not patchable
 ROM/flash:          not patchable

@@ -29,8 +29,8 @@ UTL_ADDR_BAND_ROM_HI       EQU             $08
 ;      $00 : $0000-$00FF
 ;      $01 : $0100-$01FF
 ;      $02 : $0200-$0FFF
-;      $03 : $1000-$77FF
-;      $04 : $7800-$7EFF
+;      $03 : $1000-$79FF
+;      $04 : $7A00-$7EFF
 ;      $05 : $7F00-$7FFF
 ;      $06 : $8000-$BFFF
 ;      $07 : $C000-$EFFF
@@ -47,7 +47,7 @@ UTL_ADDR16_GET_BAND:
                         BEQ             ?BAND_STACK
                         CMP             #$10
                         BCC             ?BAND_LOW_RAM
-                        CMP             #$78
+                        CMP             #$7A
                         BCC             ?BAND_MAIN_RAM
                         CMP             #$7F
                         BCC             ?BAND_IO_WINDOW

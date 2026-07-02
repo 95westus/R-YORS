@@ -623,7 +623,7 @@ DBG_ADDR_PATCHABLE:
                         LDA             CMDP_ADDR_HI
                         CMP             #>UPA_BASE
                         BCC             DBG_ADDR_PATCHABLE_FAIL
-                        CMP             #>HIUPA
+                        CMP             #>MON_WORK_BASE
                         BCS             DBG_ADDR_PATCHABLE_FAIL
                         SEC
                         RTS

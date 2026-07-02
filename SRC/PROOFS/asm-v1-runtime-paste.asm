@@ -28,8 +28,9 @@
                         XREF            SYS_WRITE_HEX_BYTE
 
 ASM_BEGINF_HAVE_PC     EQU             $01
-ASMRP_TARGET_LO        EQU             $00
-ASMRP_TARGET_HI        EQU             $76
+; Borrow HIMON CMD_BUF while ASM RT PASTE owns the console. HIMON overwrites
+; this page on the next monitor command after the wrapper returns.
+ASMRP_LINE_BUF         EQU             $7A00
 ASMRP_QUENCH_IDLE_SLICES EQU           $02
 
 ASMRP_STATUS_OK        EQU             $00
@@ -52,9 +53,7 @@ START:
                         LDY             #>MSG_TITLE
                         JSR             ASMRP_PRINT_LINE
 
-                        LDA             #ASM_BEGINF_HAVE_PC
-                        LDX             #ASMRP_TARGET_LO
-                        LDY             #ASMRP_TARGET_HI
+                        LDA             #$00
                         JSR             ASM_BEGIN
                         STX             ASMRP_PC_LO
                         STY             ASMRP_PC_HI
@@ -445,5 +444,3 @@ ASMRP_RESULT:           DB              $00
 ASMRP_PC_LO:            DB              $00
 ASMRP_PC_HI:            DB              $00
 ASMRP_POST_FLAG:        DB              $00
-
-ASMRP_LINE_BUF:         DS              $0100

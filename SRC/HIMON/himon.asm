@@ -2,7 +2,7 @@
 ; himon.asm
 ; Compact supervisory debug monitor for W65C02S with FNV-1a command dispatch.
 ; Memory map target:
-;   RAM   $0000-$7EFF (UPA $2000-$77FF, HIUPA $7800-$79FF)
+;   RAM   $0000-$7EFF (UPA $2000-$79FF, MON $7A00-$7EFF)
 ;   IO    $7F00-$7FFF
 ;   FLASH $8000-$FFFF
 ; ----------------------------------------------------------------------------
@@ -120,7 +120,7 @@ SEARCH_DIGITS            EQU             $C3
 SEARCH_PAT_LEN           EQU             $C4
 SEARCH_COUNT             EQU             $C5
 SEARCH_HIT_FLAG          EQU             $C6
-SEARCH_PAT_BUF           EQU             $7900
+SEARCH_PAT_BUF           EQU             $7DC0
 SEARCH_PAT_MAX           EQU             $40
 QUOTE_HASH_TARGET0       EQU             $7A
 QUOTE_HASH_TARGET1       EQU             $0F

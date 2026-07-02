@@ -53,7 +53,7 @@ FNV_TERM2               EQU             $79E8
 FNV_TERM3               EQU             $79E9
 FNV_INPUT_LEN           EQU             $79EA
 
-FNV_INPUT_BUF           EQU             $7A00
+FNV_INPUT_BUF           EQU             $7C00
 
                         CODE
 

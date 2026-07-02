@@ -171,12 +171,10 @@ $0200-$09FF   2K RAM flash worker/RJOIN code tray
 $0A00-$19FF   4K flash sector mirror / update image tray
 $1A00-$1FE8   RJOIN/debug trace and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map-result bytes
-$2000-$77FF   UPA, user program area
-$7800-$79FF   HIUPA, high user/scratch area
-$7A00-$7AFF   scratch buffer
-$7B00-$7BFF   command buffer
-$7C00-$7CFF   loader line buffer
-$7D00-$7DFF   loader data buffer
+$2000-$79FF   UPA, user program area; debug patchable RAM
+$7A00-$7AFF   command buffer
+$7B00-$7DBF   free scratch region; released from stale scratch/FNV input/loader ownership
+$7DC0-$7DFF   search pattern buffer
 $7E00-$7E01   HIMON-published RJOIN addr16 (`THE_JOIN_EXEC_XY`)
 $7E02-$7E45   free buffer spill / scratch
 $7E46-$7E65   debugger / assembler workspace

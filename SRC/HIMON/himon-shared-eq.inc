@@ -20,9 +20,9 @@ CRC16_HI                  EQU             $CC
 ; User program area and high-RAM ownership boundaries.
 ; ----------------------------------------------------------------------------
 UPA_BASE                   EQU             $2000
-UPA_END                    EQU             $77FF
-HIUPA                      EQU             $7800
-HIUPA_END                  EQU             $79FF
+UPA_END                    EQU             $79FF
+MON_WORK_BASE              EQU             $7A00
+MON_WORK_END               EQU             $7EFF
 
 ; ----------------------------------------------------------------------------
 ; Group A: NMI trap/resume context (8 bytes)
@@ -189,7 +189,6 @@ LOAD_FAIL_WRITE            EQU             $04
 LOAD_FAIL_NEED_FLASH       EQU             $05
 
 LOAD_RANGE_MAX             EQU             $08
-LOAD_DATA_MAX              EQU             $40
 LOAD_RANGE_BASE            EQU             $7EBE
 
 ; ----------------------------------------------------------------------------
@@ -256,10 +255,9 @@ ASM_MNEM_COUNT             EQU             $62
 ; ----------------------------------------------------------------------------
 ; Group E: page-aligned buffers
 ; ----------------------------------------------------------------------------
-SCRATCH_BUF                EQU             $7A00
-CMD_BUF                    EQU             $7B00
-LOAD_BUF                   EQU             $7C00
-LOAD_DATA_BUF              EQU             $7D00
+CMD_BUF                    EQU             $7A00
+FREE_BUF                   EQU             $7B00
+FREE_BUF_END               EQU             $7DBF
 
 ; keep reserved:
 ; - $0200-$09FF 2K RAM flash worker/RJOIN code tray
@@ -267,4 +265,4 @@ LOAD_DATA_BUF              EQU             $7D00
 ; - $1A00-$1FE8 RJOIN/debug trace and reserved low-RAM scratch
 ; - $1FE9-$1FFF STR8 worker/update state board
 ; - UPA_BASE-UPA_END user program area
-; - HIUPA-HIUPA_END high UPA/scratch area before page buffers
+; - MON_WORK_BASE-MON_WORK_END monitor workspace before the I/O window
