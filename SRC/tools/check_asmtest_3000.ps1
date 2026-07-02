@@ -52,8 +52,8 @@ $mnemonics = @(
     'ROR','RTI','RTS','SBC','SEC','SED','SEI','SMB','STA','STP','STX','STY',
     'STZ','TAX','TAY','TRB','TSB','TSX','TXA','TXS','TYA','WAI'
 )
-$directives = @('DB','DS','END','EQU','ORG')
-$parkedDirectives = @('DC','ENTRY','EXTRN','START')
+$directives = @('DB','DS','DW','END','EQU','EXPORT','IMPORT','ORG')
+$parkedDirectives = @('DC','START')
 $registers = @('A','X','Y')
 
 $mnemonicSet = @{}

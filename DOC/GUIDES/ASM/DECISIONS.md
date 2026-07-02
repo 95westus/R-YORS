@@ -191,7 +191,7 @@ A [addr] [label[:]] MMM [operand] .
   label scope. `.` alone is a legacy `A`/input-driver sentinel if used, not ASM
   source syntax. No v1 dot-directive aliases.
 - Minimal v1 ASM directives follow WDC shape: `EQU`, `DB`, `DW`, `DS`, `ORG`,
-  `END`, and `EXPORT`. `DC`, `START`, and `IMPORT` remain parked later
+  `END`, `EXPORT`, and `IMPORT`. `DC` and `START` remain parked later
   directives. The module-boundary spelling is `EXPORT NAME` for a public
   global label offset and `IMPORT NAME` for an intended external/imported
   symbol; `ENTRY`/`EXTRN` are not the planned spellings.
@@ -202,9 +202,16 @@ A [addr] [label[:]] MMM [operand] .
   `[NAME] DS count[,init...]` with optional current-PC label;
   `ORG expr` with no leading name;
   `END` with no leading name and no operand;
-  `EXPORT NAME` with no leading name and exactly one defined global label name.
+  `EXPORT NAME` with no leading name and exactly one defined global label name;
+  `IMPORT NAME` with no leading name and exactly one global intended external
+  name.
   `EXPORT` rejects unknown names, local names, `EQU` symbols, duplicates, and
   table overflow as `BAD SYM`; extra operands are `BAD OPER`.
+  `IMPORT` records compact PACK40 metadata only in the first pass. It rejects
+  local names, reserved words, duplicates, table overflow, and leading labels
+  as `BAD SYM`; extra operands are `BAD OPER`. It does not resolve external
+  fixups yet, so an emitted reference to an imported name still fails the
+  ordinary unresolved fixup check at `END`.
 - ASM reads one full source line in v1, capped at 63 visible characters. Spaces
   and tabs are whitespace; tabs have no column meaning. Empty and comment-only
   lines are OK. An overlong line is `BAD LINE`.

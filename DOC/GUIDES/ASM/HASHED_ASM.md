@@ -110,10 +110,10 @@ Core settled rules:
   emitted bytes, not symbol equations.
 - `<` and `>` select low/high bytes. V1 applies them as prefix selectors on one
   atom. `*` is the current assembly PC.
-- V1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, `END`, and `EXPORT`. `DC`,
-  `START`, and `IMPORT` are parked. `EXPORT NAME` marks a defined global label
-  as a public module offset; `IMPORT NAME` will declare an intended
-  external/imported symbol later.
+- V1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, `END`, `EXPORT`, and
+  `IMPORT`. `DC` and `START` are parked. `EXPORT NAME` marks a defined global
+  label as a public module offset; `IMPORT NAME` declares an intended
+  external/imported symbol as sealed metadata.
 - `DB` v1 is simple byte/word/address data. `X'...'`, `B'...'`, `HBSTR`,
   `CSTR`, and `PSTR` are later.
 - `DW` emits each resolved expression as one little-endian 16-bit word.
@@ -554,6 +554,8 @@ NAME EQU expr
 [NAME] DS count[,init...]
 ORG expr
 END
+EXPORT name
+IMPORT name
 ```
 
 Reject these in v1:
@@ -957,9 +959,12 @@ the first matching hash.
 
 ### ASM 1.50.5 Table Generation Checks
 
-Build the vocabulary table in alphabetical canonical-token order. Store the
-hash beside the dispatch facts. Runtime v1 may scan linearly; sorted order is
-for reproducibility, listings, and later binary search.
+Build the vocabulary table in alphabetical canonical-token order where IDs can
+move safely. Runtime v1 may scan linearly; sorted order is for reproducibility,
+listings, and later binary search. The current `IMPORT` directive deliberately
+reuses the old `$20 ENTRY` parked slot so existing opcode ids do not shift; any
+future binary search must either handle that exception or regenerate all slot
+ids and dependent opcode tables together.
 
 V1 active directive words:
 
@@ -969,6 +974,8 @@ DS
 DW
 END
 EQU
+EXPORT
+IMPORT
 ORG
 ```
 
@@ -976,8 +983,6 @@ Parked reserved directive words:
 
 ```text
 DC
-EXPORT
-IMPORT
 START
 ```
 
@@ -3268,6 +3273,8 @@ DW    define initialized little-endian words
 DS    reserve storage / advance assembly PC
 ORG   set assembly PC / location counter
 END   end the current assembly input
+EXPORT mark a defined global label as public module metadata
+IMPORT declare intended external/imported symbol metadata
 ```
 
 V1 directive shapes:
@@ -3280,13 +3287,13 @@ NAME EQU expr             name required; binds expression result
 ORG expr                  no leading name
 END                       no leading name, no operand
 EXPORT name               no leading name, defined global PC label operand
+IMPORT name               no leading name, global intended external name
 ```
 
 Parked later directives:
 
 ```text
 START  program/module start, later source/member boundary
-IMPORT external/imported symbol declaration
 ```
 
 No dot-directive aliases in v1. Dot-leading syntax is local-label syntax:
@@ -4102,6 +4109,23 @@ directly, so no unpack routine is required for this first pass. Unpack is only
 needed later if a resident catalog or monitor command must print sealed export
 names after the original ASM symbol table is gone.
 
+`IMPORT NAME` is a metadata declaration in this pass. `NAME` must be a global
+word token that is not reserved ASM vocabulary. Local names, reserved words,
+duplicate imports, import-table overflow, and leading labels fail as `BAD SYM`;
+extra operands fail as `BAD OPER`. This first pass does not resolve external
+fixups, so emitted references to imported names still fail the ordinary
+unresolved-fixup check at `END`.
+
+The first sealed import record is compact RAM metadata, not a flash K bit:
+
+```text
+ASM_IMPORT_REC +0  count
+ASM_IMPORT_REC +1  total record length in bytes, including count/len header
+ASM_IMPORT_REC +2  repeated rows:
+                  source_name_len
+                  PACK40(name), three folded chars per little-endian word
+```
+
 Do not define `.BYTE`, `.WORD`, `.HBSTR`, or other dot aliases in v1. If a later
 assembler grows compatibility aliases, they should be ordinary mnemonic-like
 tokens such as `DB`, `DW`, or `FCC`, not dot-leading tokens.
@@ -4150,7 +4174,7 @@ Keep this out of v1 unless compatibility pressure appears. The v1 directive
 path is:
 
 ```text
-EQU, DB, DW, DS, ORG, END, EXPORT only
+EQU, DB, DW, DS, ORG, END, EXPORT, IMPORT only
 ```
 
 HBSTR remains a named later data form because it is part of Himon's command,
