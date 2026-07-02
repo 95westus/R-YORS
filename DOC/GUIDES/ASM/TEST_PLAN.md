@@ -5568,7 +5568,8 @@ $09 BAD_FIX
 
 `Y` is `ASM_SLOT`, the last fixed-vocabulary slot touched by lookup. `$FF`
 means no vocabulary match. Slot kinds are `MNEM`, `DIR`, `REG`, and `RES`
-for reserved/parked words:
+for reserved/parked words. `IMPORT` reuses the old `$20 ENTRY` slot so opcode
+ids after `$20` remain stable:
 
 | Slot | Slot | Slot | Slot |
 | --- | --- | --- | --- |
@@ -5583,7 +5584,7 @@ for reserved/parked words:
 | $08 BEQ MNEM | $1D DS DIR | $32 PHX MNEM | $47 STZ MNEM |
 | $09 BIT MNEM | $1E DW DIR | $33 PHY MNEM | $48 TAX MNEM |
 | $0A BMI MNEM | $1F END DIR | $34 PLA MNEM | $49 TAY MNEM |
-| $0B BNE MNEM | $20 ENTRY RES | $35 PLP MNEM | $4A TRB MNEM |
+| $0B BNE MNEM | $20 IMPORT DIR | $35 PLP MNEM | $4A TRB MNEM |
 | $0C BPL MNEM | $21 EOR MNEM | $36 PLX MNEM | $4B TSB MNEM |
 | $0D BRA MNEM | $22 EQU DIR | $37 PLY MNEM | $4C TSX MNEM |
 | $0E BRK MNEM | $23 EXPORT DIR | $38 RMB MNEM | $4D TXA MNEM |
@@ -6059,11 +6060,11 @@ SEAL.REC.RAM gives the contiguous record bytes an exported ASM_SEAL_REC label:
          flags, base lo/hi, end lo/hi, len lo/hi, fnv0..fnv3.
 SEAL.REC.PRINT factors the success printer into ASM_SEAL_PRINT_RECORD so
          runtime paste and flash wrappers share the same SEAL OK/REC output.
-ASMRP.UDATA moves runtime-paste PC/post cells and the $0100 line buffer out of
-         DATA into UDATA. It also replaces the fixed ASMRP_RESULT scratch cell
-         with UDATA. This removes $0103 loaded bytes from the SEAL.REC image
-         and avoids a fixed scratch address such as $6800, which remains used
-         by older documented ASMTEST paths.
+ASMRP.UDATA moves runtime-paste PC/post cells out of DATA into UDATA. It also
+         replaces the fixed ASMRP_RESULT scratch cell with UDATA. This removes
+         loaded bytes from the SEAL.REC image and avoids a fixed scratch
+         address such as $6800, which remains used by older documented ASMTEST
+         paths.
 SEAL.RELOC adds a separate RAM relocation record:
          ASM_RELOC_REC starts with COUNT, then parallel arrays for kind,
          site offset, and target offset. Kinds are $01 ABS16_INTERNAL,
@@ -6072,6 +6073,11 @@ SEAL.RELOC adds a separate RAM relocation record:
 SEAL.EXPORT adds EXPORT NAME for defined global labels and emits a compact
          PACK40 sealed export record. Runtime paste/flash SEAL success prints
          SEAL EXP @=$hhhh COUNT=$nn LEN=$00nn only when exports exist.
+SEAL.IMPORT adds IMPORT NAME as compact PACK40 metadata for intended external
+         symbols. Runtime paste/flash SEAL success prints
+         SEAL IMP @=$hhhh COUNT=$nn LEN=$00nn only when imports exist.
+         This slice does not resolve external fixups; imported references
+         still fail ordinary unresolved-fixup validation at END.
 ASMRT.REPORT.TRIM keeps the older compact-report printer in the core/smoke
          build but compiles it out of ASM_RUNTIME_ONLY images. Runtime paste
          and flash use wrapper error lines, ASM TABLES, and SEAL REC/REL as
@@ -6093,6 +6099,18 @@ ASMRT.OVERLAP_GUARD rejects output target spans that overlap the live ASM
          images guard $2000..ASM_CODE_BUF-1; the flash wrapper guards
          $6000..ASM_CODE_BUF-1. ASM_CODE_BUF remains a valid fallback output
          buffer.
+ASMRP.TARGET.DEFAULT makes runtime-paste start with ASM_BEGIN's default
+         ASM_CODE_BUF instead of a fixed high-RAM target. The IMPORT metadata
+         slice grew runtime workspace past $7600, so the old fixed target
+         failed as BEGIN=$06 with X/Y reporting $7600. Do not replace it with
+         another fixed high-RAM target: $7800-$79FF is now user/patchable RAM,
+         while $7A00-$7EFF is monitor workspace. Let ASM choose ASM_CODE_BUF
+         and enforce overlap guards.
+ASMRP.SIZE.CMD_BUF reuses HIMON CMD_BUF at $7A00 as the runtime-paste input
+         line buffer instead of reserving a private $0100 UDATA page. This is
+         valid for L G / G 2000 because HIMON has yielded the console while ASM
+         runs, and HIMON overwrites CMD_BUF with the next monitor command after
+         the wrapper returns.
 SEAL.WRAP is requirements-only for now:
          a future WRAP batch command must hard-stop or quench on validation,
          record, export, or install failure before it can be used as a
@@ -6134,10 +6152,17 @@ eligible post-session SEAL reports SEAL REC @/LEN/FNV after validation
 eligible post-session SEAL fills ASM_SEAL_REC with flags/base/end/len/FNV bytes
 eligible post-session SEAL reports SEAL REL @/COUNT after validation
 eligible post-session SEAL reports SEAL EXP @/COUNT/LEN when exports exist
+eligible post-session SEAL reports SEAL IMP @/COUNT/LEN when imports exist
 EXPORT accepts exactly one defined global PC label operand
 EXPORT rejects unknown names, local names, EQU symbols, duplicates, leading
 labels, and table overflow as BAD SYM
 EXPORT rejects extra operands as BAD OPER
+IMPORT accepts exactly one global word operand and records PACK40 metadata
+IMPORT rejects local names, reserved words, duplicates, leading labels, and
+table overflow as BAD SYM
+IMPORT rejects extra operands as BAD OPER
+IMPORT metadata does not resolve external fixups yet; emitted references to an
+imported name still fail END as BAD FIX
 ASM TABLES prints a RELOCS section with SL/K/SITE/TARG rows
 internal label ABS16 references produce $01 relocation rows with site/target
 offsets from BASE
@@ -6154,8 +6179,8 @@ ASM> SEAL remains ordinary ASM source, not a wrapper command
 ASM> NEW remains ordinary ASM source, not a wrapper command
 post-END non-SEAL/non-NEW source is rejected without clearing frozen seal facts
 runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
-state/result/line buffer in UDATA
-runtime paste wrapper default session starts at $7600, not $7000
+state/result cells in UDATA and the input line borrowed from HIMON CMD_BUF
+runtime paste wrapper default session starts at ASM_CODE_BUF, not a fixed $7600
 runtime-only ASM_CODE_BUF is UDATA and no longer contributes loaded S19 bytes
 SEAL> NEW after a prior SEAL clears stale record/FNV/reloc-count state
 SEAL/NEW post-session commands accept leading whitespace and trailing comments
@@ -6810,6 +6835,150 @@ SEAL EXP @=$5848 COUNT=$01 LEN=$0009
 SEAL> .
 >D 5848 +9
 5848: 01 09 00 00 04 71 51 80 | 57 | .....qQ.W
+```
+
+`SEAL.IMPORT` hardware-proven on 2026-07-02 with `asm-v1-runtime-paste-2000.s19`
+loaded as `L OK=3904 GO=2000`. The final board pass proved metadata-only
+`IMPORT` dispatch, negative parser/status handling, unresolved imported-reference
+fixup behavior, eight-entry table limit handling, and `SEAL IMP` named-record
+printing. In that image `ASM_CODE_BUF=$76EF` and `ASM_IMPORT_REC=$5A39`; the
+positive `EXT`/`IO2` record dumped as `02 08 03 14 23 03 B5 3A`, the single
+`EXT` record dumped as `01 05 03 14 23`, and the eight-entry `I0`..`I7` record
+dumped as `08 1A 02 78 3C 02 A0 3C 02 C8 3C 02 F0 3C 02 18 3D 02 40 3D 02 68
+3D 02 90 3D`.
+
+The first 2026-07-02 board attempt with
+`asm-v1-runtime-paste-2000.s19` loaded as `L OK=38FC GO=2000` failed before
+this proof: `IMPORT EXT` behaved like an emitting unresolved ABS16 instruction,
+advanced PC by three, and produced a fixup. The cause was a vocabulary-table
+hash alignment bug: slot `$20` still held the old `ENTRY` hash while the
+`IMPORT` hash had displaced `INC` at slot `$24`. The source restored `IMPORT`
+to slot `$20`, restored `INC` to slot `$24`, and added host smoke coverage that
+`IMPORT EXT` is metadata-only.
+
+The second 2026-07-02 board attempt with the corrected vocabulary table proved
+metadata-only dispatch and negative parsing, but `SEAL IMP` printed a message
+string address (`$56DB`) with `COUNT=$00 LEN=$0020` instead of the import
+record. The cause was `ASM_SEAL_PRINT_NAMED_REC` saving the record pointer in
+`ASM_TMP0`, the same zero-page pair used by `ASM_RJ_WRITE_CSTRING` as its
+string cursor. Source now copies the named-record pointer to `ASM_TMP1` before
+printing label/count/len text.
+
+Positive metadata proof:
+In these snippets, `bbbb` is the `BASE` printed by `SEAL OK` and `eeee` is the
+exclusive `END` printed on the same line.
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> RTS
+OK PC=$eeee
+ASM> IMPORT EXT
+OK PC=$eeee
+ASM> IMPORT IO2
+OK PC=$eeee
+ASM> END
+OK PC=$eeee
+...
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$bbbb END=$eeee
+SEAL REC @=$hhhh LEN=$0001 FNV=$E50C2ABF
+SEAL REL @=$hhhh COUNT=$00
+SEAL IMP @=$iiii COUNT=$02 LEN=$0008
+SEAL> .
+>D bbbb bbbb
+bbbb: 60 | `
+>D iiii +08
+iiii: 02 08 03 14 23 03 B5 3A | ....#..:
+```
+
+Negative and metadata-only proof:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> RTS
+OK PC=$eeee
+ASM> IMPORT .LOCAL
+ERR=$08 BAD SYM PC=$eeee
+ASM> IMPORT ?LOCAL
+ERR=$08 BAD SYM PC=$eeee
+ASM> IMPORT LDA
+ERR=$08 BAD SYM PC=$eeee
+ASM> IMPORT EXT X
+ERR=$03 BAD OPER PC=$eeee
+ASM> LABEL IMPORT EXT
+ERR=$08 BAD SYM PC=$eeee
+ASM> IMPORT EXT
+OK PC=$eeee
+ASM> IMPORT EXT
+ERR=$08 BAD SYM PC=$eeee
+ASM> END
+OK PC=$eeee
+...
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$bbbb END=$eeee
+SEAL REC @=$hhhh LEN=$0001 FNV=$E50C2ABF
+SEAL REL @=$hhhh COUNT=$00
+SEAL IMP @=$iiii COUNT=$01 LEN=$0005
+SEAL> .
+>D iiii +05
+iiii: 01 05 03 14 23 | ....#
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> IMPORT MISS
+OK PC=$bbbb
+ASM> JSR MISS
+OK PC=$eeee
+ASM> END
+ERR=$09 BAD FIX PC=$eeee
+ASM> .
+ASM RT PASTE BYE
+```
+
+Table-limit proof:
+
+```text
+>G 2000
+GO 2000
+ASM RT PASTE
+ASM> RTS
+OK PC=$eeee
+ASM> IMPORT I0
+OK PC=$eeee
+ASM> IMPORT I1
+OK PC=$eeee
+ASM> IMPORT I2
+OK PC=$eeee
+ASM> IMPORT I3
+OK PC=$eeee
+ASM> IMPORT I4
+OK PC=$eeee
+ASM> IMPORT I5
+OK PC=$eeee
+ASM> IMPORT I6
+OK PC=$eeee
+ASM> IMPORT I7
+OK PC=$eeee
+ASM> IMPORT I8
+ERR=$08 BAD SYM PC=$eeee
+ASM> END
+OK PC=$eeee
+...
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$bbbb END=$eeee
+SEAL REC @=$hhhh LEN=$0001 FNV=$E50C2ABF
+SEAL REL @=$hhhh COUNT=$00
+SEAL IMP @=$iiii COUNT=$08 LEN=$001A
+SEAL> .
+>D iiii +1A
+iiii: 08 1A 02 78 3C 02 A0 3C | ...x<..<
+iiii: 02 C8 3C 02 F0 3C 02 18 | ..<..<..
+iiii: 3D 02 40 3D 02 68 3D 02 | =.@=.h=.
+iiii: 90 3D | .=
 ```
 
 ## ASMTEST_3000 Final Acceptance
