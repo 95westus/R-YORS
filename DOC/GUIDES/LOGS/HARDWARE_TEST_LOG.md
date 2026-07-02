@@ -9742,3 +9742,60 @@ the self-hits at `$7DC0`/`$7DC2` are expected when the search range includes
 `SEARCH_PAT_BUF`. Runtime paste still loads as `L OK=3904 GO=2000`, emits only
 the `RTS` byte at `ASM_CODE_BUF=$76EF`, and seals two metadata-only imports at
 `ASM_IMPORT_REC=$5A39`.
+
+## 2026-07-02 HIMON M High-UPA Modify Proof
+
+Purpose: prove HIMON `M start [end|+cnt]` can modify the new high-UPA boundary
+through `$79FF`, leaves `$7A00` as monitor command workspace, handles bad byte
+input by printing usage and reprompting the same address, and aborts cleanly on
+`.` without writing the prompted byte.
+
+```text
+>D 79F0 7A00
+79F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7A00: 44 | D
+>M 79FE +2
+79FE: 00 A5
+79FF: 00 5A
+>D 79F0 7A00
+79F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 A5 5A | ...............Z
+7A00: 44 | D
+>M 79FE +2
+79FE: A5 00
+79FF: 5A 00
+>D 79F0 7A00
+79F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+7A00: 44 | D
+
+>D 7B20 +10
+7B20: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>M 7B20 +4
+7B20: 00 11
+7B21: 00 22
+7B22: 00 33
+7B23: 00 44
+>D 7B20 +10
+7B20: 11 22 33 44 00 00 00 00 | 00 00 00 00 00 00 00 00 | ."3D............
+>M 7B24 +2
+7B24: 00 GG
+M start [end|+cnt].
+7B24: 00 33
+7B25: 00 .
+>D 7B20 +10
+7B20: 11 22 33 44 33 00 00 00 | 00 00 00 00 00 00 00 00 | ."3D3...........
+>M 7B20 +5
+7B20: 11 00
+7B21: 22 00
+7B22: 33 00
+7B23: 44 00
+7B24: 33 00
+>D 7B20 +10
+7B20: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+```
+
+Result: pass. `M 79FE +2` wrote and restored `$79FE-$79FF`, proving the end of
+UPA remains writable while the following `$7A00` byte remained the monitor
+command buffer (`'D'`). The `$7B20` scratch run proved multi-byte writes, usage
+on invalid input (`GG`) with same-address reprompt, abort on `.`, and final
+cleanup to zero.
