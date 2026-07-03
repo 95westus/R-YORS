@@ -213,6 +213,10 @@ A [addr] [label[:]] MMM [operand] .
   OPER`. At `END`, eligible import fixups become import relocation rows instead
   of failing as unresolved `BAD FIX`: `$04` ABS16_IMPORT for full two-byte
   operands, `$05` LO8_IMPORT for `#<NAME`, and `$06` HI8_IMPORT for `#>NAME`.
+  After the session/local symbol tables miss, declared imports are checked
+  before resident RJOIN. This makes explicit `IMPORT NAME` a force-deferred
+  spelling even when `NAME` is resident today; plain undeclared `JSR`/`JMP`
+  operands still RJOIN and bind to today's resident address.
 - ASM reads one full source line in v1, capped at 63 visible characters. Spaces
   and tabs are whitespace; tabs have no column meaning. Empty and comment-only
   lines are OK. An overlong line is `BAD LINE`.

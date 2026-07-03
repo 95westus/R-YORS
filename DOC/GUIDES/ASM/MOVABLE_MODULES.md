@@ -252,6 +252,11 @@ module offset. `IMPORT NAME` declares an intended external/imported symbol so a
 missing symbol is deliberate instead of a typo silently becoming an import.
 `ENTRY`/`EXTRN` are not the planned spellings.
 
+Use plain resident calls when you want to bind to the HIMON image that is
+running the assembler. Use `IMPORT NAME` when you want the sealed body to defer
+that name to the later installer/linker, even if RJOIN can resolve the same
+name today.
+
 ## Relocation Rows
 
 Fixups answer "what was unresolved while assembling." Relocation rows answer
@@ -289,9 +294,11 @@ JMP LOCAL_TAIL         ABS16_INTERNAL
 LDA TABLE             ABS16_INTERNAL when TABLE is inside the module
 LDA #<TABLE           LO8_INTERNAL
 LDA #>TABLE           HI8_INTERNAL
-JSR BIO_FTDI_PUT_CSTR ABS16_IMPORT, unless frozen at seal/install time
-LDA #<BIO_FTDI_PUT_CSTR LO8_IMPORT
-LDA #>BIO_FTDI_PUT_CSTR HI8_IMPORT
+JSR BIO_FTDI_PUT_CSTR resident RJOIN bind-now, no relocation
+IMPORT BIO_FTDI_PUT_CSTR force later import binding for that name
+JSR BIO_FTDI_PUT_CSTR ABS16_IMPORT after IMPORT
+LDA #<BIO_FTDI_PUT_CSTR LO8_IMPORT after IMPORT
+LDA #>BIO_FTDI_PUT_CSTR HI8_IMPORT after IMPORT
 BRA LOCAL_LABEL       no relocation
 STA $7100             fixed external address unless source declares otherwise
 ```

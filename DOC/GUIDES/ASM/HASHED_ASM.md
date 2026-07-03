@@ -4118,7 +4118,11 @@ converted into `$04` ABS16_IMPORT relocation rows and marked imported. Selected
 byte imports are also accepted: `#<IMPORT` records `$05` LO8_IMPORT and
 `#>IMPORT` records `$06` HI8_IMPORT. The emitted operand bytes remain `$FF` or
 `$FF/$FF` for a later installer/linker. Relative, undeclared, and local
-unresolved fixups still fail the ordinary `BAD FIX` path.
+unresolved fixups still fail the ordinary `BAD FIX` path. When a global symbol
+is not in the current ASM session table, ASM checks the declared import table
+before trying resident RJOIN. That makes `IMPORT NAME` a deliberate
+force-deferred binding, while a plain undeclared `JSR NAME` or `JMP NAME` still
+uses the resident address available in the running HIMON image.
 
 The first sealed import record is compact RAM metadata, not a flash K bit:
 

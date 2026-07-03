@@ -6085,6 +6085,10 @@ SEAL.IMPORT.BYTESEL accepts selected-byte declared imports: `#<NAME` records
          `$05` LO8_IMPORT and `#>NAME` records `$06` HI8_IMPORT. The emitted
          placeholder byte remains `$FF`; target low still carries the import
          slot index.
+SEAL.IMPORT.FORCE.DEFER makes explicit `IMPORT NAME` win over resident RJOIN
+         after the session table misses. Plain undeclared resident `JSR`/`JMP`
+         still RJOINs and binds now; declared uses of that same resident name
+         emit placeholders and import relocation rows.
 ASMRT.REPORT.TRIM keeps the older compact-report printer in the core/smoke
          build but compiles it out of ASM_RUNTIME_ONLY images. Runtime paste
          and flash use wrapper error lines, ASM TABLES, and SEAL REC/REL as
@@ -6181,6 +6185,10 @@ declared import ABS16 references produce $04 relocation rows with SITE as a
 BASE-relative offset and TARG low as the import slot
 declared import #< and #> references produce $05/$06 relocation rows with SITE
 as a BASE-relative offset and TARG low as the import slot
+explicit IMPORT of a resident RJOIN name still produces $04/$05/$06 import
+relocation rows instead of freezing today's resident address
+plain undeclared resident JSR/JMP operands still RJOIN and produce no import
+relocation rows
 relative branches, EQU constants, and fixed external addresses produce no
 relocation rows
 relocation table overflow keeps ordinary ASM valid but sets a seal-ineligible
@@ -6890,6 +6898,26 @@ HIMON `V 00.0702(0707)` loaded the same image, assembled at
 `00 05 0001 0000` and `01 06 0003 0000`, sealed with
 `SEAL REL @=$5A8F COUNT=$02` and `SEAL IMP @=$5BAA COUNT=$01 LEN=$0005`, and
 dumped `A9 FF A2 FF` at `$7860-$7863`.
+
+The follow-up 2026-07-02 host `asm-test` slice adds forced-deferred import
+precedence over resident RJOIN. A plain undeclared `JSR BIO_FTDI_PUT_CSTR`
+still resolves through RJOIN, stores no fixup, accepts `END`, and records no
+relocation rows. With `IMPORT BIO_FTDI_PUT_CSTR` declared first, the same
+resident name now emits `20 FF FF A9 FF A2 FF` for `JSR`, `#<`, and `#>`
+uses, marks three fixups imported, and records `$04/$05/$06` import relocation
+rows at site offsets `$0001/$0004/$0006`, all targeting import slot `$0000`.
+The matching board proof loaded `asm-v1-runtime-paste-2000.s19` as
+`L OK=3A78 GO=2000`. The plain resident pass assembled at
+`ASM_CODE_BUF=$7863`, ended at `$7866`, sealed with
+`SEAL REC @=$5A87 LEN=$0003 FNV=$69B61E6D` and
+`SEAL REL @=$5A92 COUNT=$00`, printed no `SEAL IMP`, and dumped
+`20 55 E1` at `$7863-$7865`. The forced-deferred pass used the same base,
+ended at `$786A`, printed fixup selectors `$40/$41/$42` and relocation rows
+`00 04 0001 0000`, `01 05 0004 0000`, and `02 06 0006 0000`, sealed with
+`SEAL REC @=$5A87 LEN=$0007 FNV=$039163CA`,
+`SEAL REL @=$5A92 COUNT=$03`, and
+`SEAL IMP @=$5BAD COUNT=$01 LEN=$000F`, and dumped
+`20 FF FF A9 FF A2 FF` at `$7863-$7869`.
 
 The first 2026-07-02 board attempt with
 `asm-v1-runtime-paste-2000.s19` loaded as `L OK=38FC GO=2000` failed before
