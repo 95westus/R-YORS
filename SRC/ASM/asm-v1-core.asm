@@ -40,6 +40,9 @@
                         XDEF            ASM_SEAL_PRINT_RECORD
                         XDEF            ASM_SEAL_RESOLVE_IMPORTS
                         XDEF            ASM_SEAL_RELOCATE
+                        IF              ASM_PACKAGE_ENABLED
+                        XDEF            ASM_SEAL_PACKAGE
+                        ENDIF
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
                         XDEF            ASM_RJ_PRINT_CRLF
@@ -76,6 +79,12 @@
                         XDEF            ASM_RELOCATE_BASE_LO
                         XDEF            ASM_RELOCATE_BASE_HI
                         XDEF            ASM_RELOCATE_COUNT
+                        IF              ASM_PACKAGE_ENABLED
+                        XDEF            ASM_PACKAGE_BASE_LO
+                        XDEF            ASM_PACKAGE_BASE_HI
+                        XDEF            ASM_PACKAGE_LEN_LO
+                        XDEF            ASM_PACKAGE_LEN_HI
+                        ENDIF
                         XDEF            ASM_PARSE_EXPR_REQUIRE_END
                         IF              ASM_RUNTIME_ONLY
                         IF              ASM_FLASH_RUNTIME
@@ -247,6 +256,20 @@ ASM_EXPORT_REC_OFF_BODY EQU            $02
 ASM_IMPORT_REC_OFF_COUNT EQU           $00
 ASM_IMPORT_REC_OFF_LEN EQU             $01
 ASM_IMPORT_REC_OFF_BODY EQU            $02
+ASM_PACKAGE_HDR_BYTES  EQU             $05
+ASM_PACKAGE_FIXED_BYTES EQU            $1B
+ASM_PACKAGE_VERSION    EQU             $01
+ASM_PACKAGE_SIG0       EQU             'A'
+ASM_PACKAGE_SIG1       EQU             'P'
+ASM_PACKAGE_TAG_SEAL   EQU             'S'
+ASM_PACKAGE_TAG_RELOC  EQU             'R'
+ASM_PACKAGE_TAG_EXPORT EQU             'E'
+ASM_PACKAGE_TAG_IMPORT EQU             'I'
+ASM_PACKAGE_TAG_BODY   EQU             'B'
+ASM_PACKAGE_OFF_SIG0   EQU             $00
+ASM_PACKAGE_OFF_SIG1   EQU             $01
+ASM_PACKAGE_OFF_VER    EQU             $02
+ASM_PACKAGE_OFF_TOTAL  EQU             $03
 
 ASM_TOK_EOL           EQU             $00
 ASM_TOK_WORD          EQU             $01
@@ -5501,6 +5524,141 @@ ASM_SMOKE_FIXUPS_RELOC_B6_OK:
                         BEQ             ASM_SMOKE_FIXUPS_RELOC_B7_OK
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_RELOC_B7_OK:
+                        IF              ASM_PACKAGE_ENABLED
+                        LDA             ASM_RELOCATE_BASE_LO
+                        CLC
+                        ADC             #$20
+                        TAX
+                        LDA             ASM_RELOCATE_BASE_HI
+                        ADC             #$00
+                        TAY
+                        JSR             ASM_SEAL_PACKAGE
+                        BCS             ASM_SMOKE_FIXUPS_PACKAGE_CALL_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_CALL_OK:
+                        LDA             ASM_PACKAGE_LEN_LO
+                        CMP             #$37
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_LEN_LO_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_LEN_LO_OK:
+                        LDA             ASM_PACKAGE_LEN_HI
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_LEN_HI_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_LEN_HI_OK:
+                        LDA             ASM_PACKAGE_BASE_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        STA             ASM_SCAN_PTR_HI
+                        LDY             #ASM_PACKAGE_OFF_SIG0
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_PACKAGE_SIG0
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_SIG0_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_SIG0_OK:
+                        LDY             #ASM_PACKAGE_OFF_SIG1
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_PACKAGE_SIG1
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_SIG1_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_SIG1_OK:
+                        LDY             #ASM_PACKAGE_OFF_VER
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_PACKAGE_VERSION
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_VER_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_VER_OK:
+                        LDY             #ASM_PACKAGE_OFF_TOTAL
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$37
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_TOTAL_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_TOTAL_OK:
+                        LDY             #$05
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_PACKAGE_TAG_SEAL
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_SEAL_TAG_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_SEAL_TAG_OK:
+                        LDY             #$12
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_PACKAGE_TAG_RELOC
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_TAG_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_REL_TAG_OK:
+                        LDY             #$13
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$10
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_LEN_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_REL_LEN_OK:
+                        LDY             #$14
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$03
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_COUNT_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_REL_COUNT_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_RELOC_ABS16_INTERNAL
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_K0_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_REL_K0_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_RELOC_LO8_INTERNAL
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_K1_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_REL_K1_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_RELOC_HI8_INTERNAL
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_K2_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_REL_K2_OK:
+                        LDY             #$18
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$01
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_S0_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_REL_S0_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$04
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_S1_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_REL_S1_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$06
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_S2_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_REL_S2_OK:
+                        LDA             ASM_SEAL_BASE_LO
+                        CLC
+                        ADC             #$07
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_SEAL_BASE_HI
+                        ADC             #$00
+                        STA             ASM_TMP0_HI
+                        LDY             #$2F
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$20
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_BODY0_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_BODY0_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_TMP0_LO
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_BODY1_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_BODY1_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_TMP0_HI
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_BODY2_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_BODY2_OK:
+                        ENDIF
                         SEC
                         RTS
 ASM_SMOKE_FIXUPS_RELOC_FAIL:
@@ -9305,6 +9463,278 @@ ASM_RELOCATE_PATCH_HI8:
                         STA             (ASM_EMIT_PTR_LO),Y
                         INC             ASM_RELOCATE_COUNT
                         RTS
+
+                        IF              ASM_PACKAGE_ENABLED
+ASM_SEAL_PACKAGE:
+                        STX             ASM_PACKAGE_BASE_LO
+                        STY             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_SEAL_COMPUTE_FNV
+                        BCS             ASM_SEAL_PACKAGE_HAVE_SEAL
+                        RTS
+ASM_SEAL_PACKAGE_HAVE_SEAL:
+                        JSR             ASM_PACKAGE_COMPUTE_LAYOUT
+                        JSR             ASM_PACKAGE_RANGE_OK
+                        BCS             ASM_SEAL_PACKAGE_RANGE_SAFE
+                        RTS
+ASM_SEAL_PACKAGE_RANGE_SAFE:
+                        JSR             ASM_PACKAGE_WRITE
+                        LDA             #ASM_STATUS_OK
+                        LDX             ASM_PACKAGE_BASE_LO
+                        LDY             ASM_PACKAGE_BASE_HI
+                        SEC
+                        RTS
+
+ASM_PACKAGE_COMPUTE_LAYOUT:
+                        LDA             ASM_RELOC_COUNT
+                        ASL             A
+                        ASL             A
+                        CLC
+                        ADC             ASM_RELOC_COUNT
+                        CLC
+                        ADC             #$01
+                        STA             ASM_PACKAGE_REL_LEN
+                        LDA             #ASM_PACKAGE_FIXED_BYTES
+                        CLC
+                        ADC             ASM_PACKAGE_REL_LEN
+                        STA             ASM_PACKAGE_LEN_LO
+                        LDA             #$00
+                        ADC             #$00
+                        STA             ASM_PACKAGE_LEN_HI
+                        LDA             ASM_PACKAGE_LEN_LO
+                        CLC
+                        ADC             ASM_EXPORT_REC_LEN
+                        STA             ASM_PACKAGE_LEN_LO
+                        LDA             ASM_PACKAGE_LEN_HI
+                        ADC             #$00
+                        STA             ASM_PACKAGE_LEN_HI
+                        LDA             ASM_PACKAGE_LEN_LO
+                        CLC
+                        ADC             ASM_IMPORT_REC_LEN
+                        STA             ASM_PACKAGE_LEN_LO
+                        LDA             ASM_PACKAGE_LEN_HI
+                        ADC             #$00
+                        STA             ASM_PACKAGE_LEN_HI
+                        LDA             ASM_PACKAGE_LEN_LO
+                        CLC
+                        ADC             ASM_SEAL_LEN_LO
+                        STA             ASM_PACKAGE_LEN_LO
+                        LDA             ASM_PACKAGE_LEN_HI
+                        ADC             ASM_SEAL_LEN_HI
+                        STA             ASM_PACKAGE_LEN_HI
+                        RTS
+
+ASM_PACKAGE_RANGE_OK:
+                        LDA             ASM_PACKAGE_LEN_LO
+                        ORA             ASM_PACKAGE_LEN_HI
+                        BEQ             ASM_PACKAGE_RANGE_BAD
+                        LDA             ASM_PACKAGE_BASE_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCS             ASM_PACKAGE_RANGE_BAD
+                        LDA             ASM_PACKAGE_BASE_LO
+                        LDX             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCC             ASM_PACKAGE_RANGE_BAD
+                        LDA             ASM_PACKAGE_BASE_LO
+                        CLC
+                        ADC             ASM_PACKAGE_LEN_LO
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        ADC             ASM_PACKAGE_LEN_HI
+                        BCS             ASM_PACKAGE_RANGE_BAD
+                        STA             ASM_VALUE_HI
+                        LDA             ASM_VALUE_LO
+                        SEC
+                        SBC             #$01
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_VALUE_HI
+                        SBC             #$00
+                        STA             ASM_TMP1_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCS             ASM_PACKAGE_RANGE_BAD
+                        LDA             ASM_TMP1_LO
+                        LDX             ASM_TMP1_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCC             ASM_PACKAGE_RANGE_BAD
+                        LDA             ASM_PACKAGE_BASE_HI
+                        CMP             ASM_SEAL_END_HI
+                        BCC             ASM_PACKAGE_RANGE_START_LT_END
+                        BNE             ASM_PACKAGE_RANGE_OK_DONE
+                        LDA             ASM_PACKAGE_BASE_LO
+                        CMP             ASM_SEAL_END_LO
+                        BCC             ASM_PACKAGE_RANGE_START_LT_END
+                        BRA             ASM_PACKAGE_RANGE_OK_DONE
+ASM_PACKAGE_RANGE_START_LT_END:
+                        LDA             ASM_SEAL_BASE_HI
+                        CMP             ASM_VALUE_HI
+                        BCC             ASM_PACKAGE_RANGE_BAD
+                        BNE             ASM_PACKAGE_RANGE_OK_DONE
+                        LDA             ASM_SEAL_BASE_LO
+                        CMP             ASM_VALUE_LO
+                        BCC             ASM_PACKAGE_RANGE_BAD
+ASM_PACKAGE_RANGE_OK_DONE:
+                        SEC
+                        RTS
+ASM_PACKAGE_RANGE_BAD:
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        CLC
+                        RTS
+
+ASM_PACKAGE_WRITE:
+                        LDA             ASM_PACKAGE_BASE_LO
+                        STA             ASM_EMIT_PTR_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        STA             ASM_EMIT_PTR_HI
+                        LDA             #ASM_PACKAGE_SIG0
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             #ASM_PACKAGE_SIG1
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             #ASM_PACKAGE_VERSION
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             ASM_PACKAGE_LEN_LO
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             ASM_PACKAGE_LEN_HI
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             #ASM_PACKAGE_TAG_SEAL
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             #ASM_SEAL_REC_BYTES
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             #<ASM_SEAL_REC
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             #>ASM_SEAL_REC
+                        STA             ASM_SCAN_PTR_HI
+                        LDA             #ASM_SEAL_REC_BYTES
+                        STA             ASM_VALUE_LO
+                        STZ             ASM_VALUE_HI
+                        JSR             ASM_PACKAGE_COPY_BYTES
+                        LDA             #ASM_PACKAGE_TAG_RELOC
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             ASM_PACKAGE_REL_LEN
+                        JSR             ASM_PACKAGE_WRITE_A
+                        JSR             ASM_PACKAGE_WRITE_RELOC_REC
+                        LDA             #ASM_PACKAGE_TAG_EXPORT
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             ASM_EXPORT_REC_LEN
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             #<ASM_EXPORT_REC
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             #>ASM_EXPORT_REC
+                        STA             ASM_SCAN_PTR_HI
+                        LDA             ASM_EXPORT_REC_LEN
+                        STA             ASM_VALUE_LO
+                        STZ             ASM_VALUE_HI
+                        JSR             ASM_PACKAGE_COPY_BYTES
+                        LDA             #ASM_PACKAGE_TAG_IMPORT
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             ASM_IMPORT_REC_LEN
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             #<ASM_IMPORT_REC
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             #>ASM_IMPORT_REC
+                        STA             ASM_SCAN_PTR_HI
+                        LDA             ASM_IMPORT_REC_LEN
+                        STA             ASM_VALUE_LO
+                        STZ             ASM_VALUE_HI
+                        JSR             ASM_PACKAGE_COPY_BYTES
+                        LDA             #ASM_PACKAGE_TAG_BODY
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             ASM_SEAL_LEN_LO
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             ASM_SEAL_LEN_HI
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDA             ASM_SEAL_BASE_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_SEAL_BASE_HI
+                        STA             ASM_SCAN_PTR_HI
+                        LDA             ASM_SEAL_LEN_LO
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_SEAL_LEN_HI
+                        STA             ASM_VALUE_HI
+                        JMP             ASM_PACKAGE_COPY_BYTES
+
+ASM_PACKAGE_WRITE_RELOC_REC:
+                        LDA             ASM_RELOC_COUNT
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             #$00
+ASM_PACKAGE_WRITE_RELOC_KIND:
+                        CPX             ASM_RELOC_COUNT
+                        BCS             ASM_PACKAGE_WRITE_RELOC_SITE_LO
+                        LDA             ASM_RELOC_KIND,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        INX
+                        BRA             ASM_PACKAGE_WRITE_RELOC_KIND
+ASM_PACKAGE_WRITE_RELOC_SITE_LO:
+                        LDX             #$00
+ASM_PACKAGE_WRITE_RELOC_SITE_LO_LOOP:
+                        CPX             ASM_RELOC_COUNT
+                        BCS             ASM_PACKAGE_WRITE_RELOC_SITE_HI
+                        LDA             ASM_RELOC_SITE_LO,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        INX
+                        BRA             ASM_PACKAGE_WRITE_RELOC_SITE_LO_LOOP
+ASM_PACKAGE_WRITE_RELOC_SITE_HI:
+                        LDX             #$00
+ASM_PACKAGE_WRITE_RELOC_SITE_HI_LOOP:
+                        CPX             ASM_RELOC_COUNT
+                        BCS             ASM_PACKAGE_WRITE_RELOC_TARGET_LO
+                        LDA             ASM_RELOC_SITE_HI,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        INX
+                        BRA             ASM_PACKAGE_WRITE_RELOC_SITE_HI_LOOP
+ASM_PACKAGE_WRITE_RELOC_TARGET_LO:
+                        LDX             #$00
+ASM_PACKAGE_WRITE_RELOC_TARGET_LO_LOOP:
+                        CPX             ASM_RELOC_COUNT
+                        BCS             ASM_PACKAGE_WRITE_RELOC_TARGET_HI
+                        LDA             ASM_RELOC_TARGET_LO,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        INX
+                        BRA             ASM_PACKAGE_WRITE_RELOC_TARGET_LO_LOOP
+ASM_PACKAGE_WRITE_RELOC_TARGET_HI:
+                        LDX             #$00
+ASM_PACKAGE_WRITE_RELOC_TARGET_HI_LOOP:
+                        CPX             ASM_RELOC_COUNT
+                        BCS             ASM_PACKAGE_WRITE_RELOC_DONE
+                        LDA             ASM_RELOC_TARGET_HI,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        INX
+                        BRA             ASM_PACKAGE_WRITE_RELOC_TARGET_HI_LOOP
+ASM_PACKAGE_WRITE_RELOC_DONE:
+                        RTS
+
+ASM_PACKAGE_COPY_BYTES:
+                        LDA             ASM_VALUE_LO
+                        ORA             ASM_VALUE_HI
+                        BEQ             ASM_PACKAGE_COPY_DONE
+ASM_PACKAGE_COPY_LOOP:
+                        LDY             #$00
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        JSR             ASM_PACKAGE_WRITE_A
+                        INC             ASM_SCAN_PTR_LO
+                        BNE             ASM_PACKAGE_COPY_COUNT
+                        INC             ASM_SCAN_PTR_HI
+ASM_PACKAGE_COPY_COUNT:
+                        DEC             ASM_VALUE_LO
+                        LDA             ASM_VALUE_LO
+                        CMP             #$FF
+                        BNE             ASM_PACKAGE_COPY_MORE
+                        DEC             ASM_VALUE_HI
+ASM_PACKAGE_COPY_MORE:
+                        LDA             ASM_VALUE_LO
+                        ORA             ASM_VALUE_HI
+                        BNE             ASM_PACKAGE_COPY_LOOP
+ASM_PACKAGE_COPY_DONE:
+                        RTS
+
+ASM_PACKAGE_WRITE_A:
+                        LDY             #$00
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INC             ASM_EMIT_PTR_LO
+                        BNE             ASM_PACKAGE_WRITE_A_DONE
+                        INC             ASM_EMIT_PTR_HI
+ASM_PACKAGE_WRITE_A_DONE:
+                        RTS
+
+                        ENDIF
 
 ASM_SEAL_RESOLVE_IMPORTS:
                         JSR             ASM_SEAL_VALIDATE
@@ -14601,6 +15031,13 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_RELOCATE_BASE_LO
                         STZ             ASM_RELOCATE_BASE_HI
                         STZ             ASM_RELOCATE_COUNT
+                        IF              ASM_PACKAGE_ENABLED
+                        STZ             ASM_PACKAGE_BASE_LO
+                        STZ             ASM_PACKAGE_BASE_HI
+                        STZ             ASM_PACKAGE_LEN_LO
+                        STZ             ASM_PACKAGE_LEN_HI
+                        STZ             ASM_PACKAGE_REL_LEN
+                        ENDIF
                         RTS
 
                         IF              ASM_RUNTIME_ONLY
@@ -14697,6 +15134,13 @@ ASM_IMPORT_RESOLVE_COUNT:
 ASM_RELOCATE_BASE_LO:  DB              $00
 ASM_RELOCATE_BASE_HI:  DB              $00
 ASM_RELOCATE_COUNT:    DB              $00
+                        IF              ASM_PACKAGE_ENABLED
+ASM_PACKAGE_BASE_LO:   DB              $00
+ASM_PACKAGE_BASE_HI:   DB              $00
+ASM_PACKAGE_LEN_LO:    DB              $00
+ASM_PACKAGE_LEN_HI:    DB              $00
+ASM_PACKAGE_REL_LEN:   DB              $00
+                        ENDIF
 ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
 ASM_RJ_READY:          DB              $00

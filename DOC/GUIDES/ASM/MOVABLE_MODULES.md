@@ -211,6 +211,7 @@ After clean `END`, current wrappers switch to a small `SEAL> ` command window:
 SEAL             dry-run the frozen facts
 RESOLVE          resolve import rows through current RJOIN and patch RAM body
 RELOCATE addr    copy body to RAM addr and patch internal relocation rows
+PACKAGE addr     write AP v1 package envelope at RAM addr
 NEW              reopen ASM at the frozen END PC
 .                return to HIMON
 ```
@@ -228,6 +229,15 @@ new RAM base, and applies internal `$01/$02/$03` relocation rows there. It does
 not resolve imports and does not publish or install the module. The current
 runtime overlap guard still applies, so a board proof should choose a
 destination above the emitted body and below `$7E00`.
+
+`PACKAGE address` writes the first stable object envelope. It is currently
+enabled in the full core smoke build and the flash-resident ASM wrapper; the
+RAM paste wrapper deliberately omits it to preserve workspace. The destination
+is a caller-chosen RAM address that passes the ASM target guard and does not
+overlap the sealed body. The envelope starts with `A P version total_lo
+total_hi`, followed by tagged sections: `S` seal record, `R` relocation record,
+`E` export record, `I` import record, and `B` body bytes. This packages the
+facts for later `LOAD`/`INSTALL`; it does not relocate, resolve, or run them.
 
 `NEW` is deliberately validated and non-interactive. It accepts only bare `NEW`
 or `NEW ; comment` with optional surrounding spaces/tabs. It does not accept an

@@ -20,11 +20,16 @@
                         XREF            ASM_SEAL_PRINT_RECORD
                         XREF            ASM_SEAL_RESOLVE_IMPORTS
                         XREF            ASM_SEAL_RELOCATE
+                        XREF            ASM_SEAL_PACKAGE
                         XREF            ASM_SEAL_FLAGS
                         XREF            ASM_IMPORT_RESOLVE_COUNT
                         XREF            ASM_RELOCATE_BASE_LO
                         XREF            ASM_RELOCATE_BASE_HI
                         XREF            ASM_RELOCATE_COUNT
+                        XREF            ASM_PACKAGE_BASE_LO
+                        XREF            ASM_PACKAGE_BASE_HI
+                        XREF            ASM_PACKAGE_LEN_LO
+                        XREF            ASM_PACKAGE_LEN_HI
                         XREF            ASM_PARSE_EXPR
                         XREF            ASM_PARSE_EXPR_REQUIRE_END
                         XREF            ASM_RJOIN_INIT_IO
@@ -139,6 +144,12 @@ ASMF_POST_CHECK_NEW_2:
                         BCC             ASMF_POST_CHECK_NEW_3
                         JMP             ASMF_RELOCATE_CMD
 ASMF_POST_CHECK_NEW_3:
+                        LDX             #<ASMF_CMD_PACKAGE
+                        LDY             #>ASMF_CMD_PACKAGE
+                        JSR             ASMF_MATCH_ARG_CMD
+                        BCC             ASMF_POST_CHECK_NEW_4
+                        JMP             ASMF_PACKAGE_CMD
+ASMF_POST_CHECK_NEW_4:
                         LDX             #<ASMF_CMD_NEW
                         LDY             #>ASMF_CMD_NEW
                         JSR             ASMF_MATCH_STRICT_CMD
@@ -254,6 +265,40 @@ ASMF_RELOCATE_OK:
                         LDY             #>MSG_RELOCATE_COUNT
                         JSR             ASMF_PRINT
                         LDA             ASM_RELOCATE_COUNT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_RJ_PRINT_CRLF
+                        JMP             ASMF_LOOP
+
+ASMF_PACKAGE_CMD:
+                        JSR             ASMF_PARSE_RELOCATE_ARG
+                        BCS             ASMF_PACKAGE_HAVE_ARG
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_PACKAGE_ERR
+                        LDY             #>MSG_PACKAGE_ERR
+                        JSR             ASMF_PRINT_STATUS_LINE
+                        JMP             ASMF_LOOP
+ASMF_PACKAGE_HAVE_ARG:
+                        JSR             ASM_SEAL_PACKAGE
+                        BCS             ASMF_PACKAGE_OK
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_PACKAGE_ERR
+                        LDY             #>MSG_PACKAGE_ERR
+                        JSR             ASMF_PRINT_STATUS_LINE
+                        JMP             ASMF_LOOP
+ASMF_PACKAGE_OK:
+                        LDX             #<MSG_PACKAGE_OK
+                        LDY             #>MSG_PACKAGE_OK
+                        JSR             ASMF_PRINT
+                        LDA             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_PACKAGE_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<MSG_PACKAGE_LEN
+                        LDY             #>MSG_PACKAGE_LEN
+                        JSR             ASMF_PRINT
+                        LDA             ASM_PACKAGE_LEN_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_PACKAGE_LEN_LO
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_RJ_PRINT_CRLF
                         JMP             ASMF_LOOP
@@ -508,6 +553,7 @@ ASMF_TEXT:              DB              "ASM V",('1'+$80)
 ASMF_CMD_SEAL:          DB              "SEAL",0
 ASMF_CMD_RESOLVE:       DB              "RESOLVE",0
 ASMF_CMD_RELOCATE:      DB              "RELOCATE",0
+ASMF_CMD_PACKAGE:       DB              "PACKAGE",0
 ASMF_CMD_NEW:           DB              "NEW",0
 ASMF_CMD_END:           DB              "END",0
 MSG_TITLE:              DB              "ASM FLASH",0
@@ -525,6 +571,9 @@ MSG_RESOLVE_OK:         DB              "RESOLVE OK COUNT=$",0
 MSG_RELOCATE_ERR:       DB              "RELOCATE ERR=$",0
 MSG_RELOCATE_OK:        DB              "RELOCATE OK BASE=$",0
 MSG_RELOCATE_COUNT:     DB              " COUNT=$",0
+MSG_PACKAGE_ERR:        DB              "PACKAGE ERR=$",0
+MSG_PACKAGE_OK:         DB              "PACKAGE OK @=$",0
+MSG_PACKAGE_LEN:        DB              " LEN=$",0
 MSG_FLAGS:              DB              " FLAGS=$",0
 MSG_DONE:               DB              "ASM FLASH OK",0
 MSG_BYE:                DB              "ASM FLASH BYE",0

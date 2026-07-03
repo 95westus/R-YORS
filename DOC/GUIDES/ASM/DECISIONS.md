@@ -535,6 +535,12 @@ A [addr] [label[:]] MMM [operand] .
   available only after clean `END`, copies the frozen body to the requested RAM
   base, applies `$01/$02/$03` internal relocation rows against that base, and
   leaves `$04/$05/$06` import rows for `RESOLVE` or a later installer.
+- `SEAL> PACKAGE address` is the first stable sealed-object envelope proof. It
+  is enabled in full core smoke and flash-resident ASM, while the stripped RAM
+  paste wrapper omits it to preserve board workspace. The AP v1 envelope stores
+  a header plus tagged SEAL, REL, EXP, IMP, and BODY sections; it packages
+  metadata for later `LOAD`/`INSTALL` work but does not resolve, relocate, or
+  run the body.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.

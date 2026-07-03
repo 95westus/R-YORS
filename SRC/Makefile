@@ -728,7 +728,7 @@ $(ASM_V1_CORE_S19): $(ASM_V1_CORE_OBJ)
 
 $(ASM_V1_CORE_OBJ): $(ASM_V1_CORE_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
-	$(ASM) $(ASFLAGS) $<
+	$(ASM) $(ASFLAGS) -DASM_PACKAGE_ENABLED $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
 
 $(ASM_V1_RUNTIME_OBJ): $(ASM_V1_CORE_SRC)
@@ -758,7 +758,7 @@ $(ASM_V1_FLASH_OBJ): $(ASM_V1_FLASH_SRC)
 
 $(ASM_V1_FLASH_RUNTIME_OBJ): $(ASM_V1_CORE_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
-	$(ASM) $(ASFLAGS) -DASM_RUNTIME_ONLY -DASM_FLASH_RUNTIME $<
+	$(ASM) $(ASFLAGS) -DASM_RUNTIME_ONLY -DASM_FLASH_RUNTIME -DASM_PACKAGE_ENABLED $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
 
 $(ASM_V1_RUNTIME_S19): $(ASM_V1_RUNTIME_OBJ)

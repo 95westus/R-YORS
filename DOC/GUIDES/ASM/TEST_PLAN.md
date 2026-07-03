@@ -6209,6 +6209,12 @@ RELOCATE ERR=$ee on failure and stays at SEAL>
 SEAL> RELOCATE rejects missing or extra operands as BAD OPER without clearing
 frozen seal facts
 SEAL> RELOCATE does not resolve `$04/$05/$06` import rows
+SEAL> PACKAGE address writes an AP v1 package envelope in full-core/flash ASM
+builds and reports PACKAGE OK @=$hhhh LEN=$hhhh
+SEAL> PACKAGE rejects missing or extra operands as BAD OPER without clearing
+frozen seal facts
+runtime paste deliberately omits PACKAGE until the package/load/install path
+has a smaller board-resident command shape
 relative branches, EQU constants, and fixed external addresses produce no
 relocation rows
 relocation table overflow keeps ordinary ASM valid but sets a seal-ineligible
@@ -6223,8 +6229,9 @@ ASM> SEAL remains ordinary ASM source, not a wrapper command
 ASM> NEW remains ordinary ASM source, not a wrapper command
 ASM> RESOLVE remains ordinary ASM source, not a wrapper command
 ASM> RELOCATE remains ordinary ASM source, not a wrapper command
-post-END non-SEAL/non-NEW/non-RESOLVE/non-RELOCATE source is rejected without
-clearing frozen seal facts
+ASM> PACKAGE remains ordinary ASM source, not a wrapper command
+post-END commands outside the wrapper command set are rejected without clearing
+frozen seal facts
 runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
 state/result cells in UDATA and the input line borrowed from HIMON CMD_BUF
 runtime paste wrapper default session starts at ASM_CODE_BUF, not a fixed $7600
@@ -7010,6 +7017,88 @@ image assembled the same body at `BASE=$7C82 END=$7C8A`; `SEAL` reported
 `RELOCATE OK BASE=$7D00 COUNT=$03`; `D 7C82 7C8A` showed
 `20 89 7C A9 89 A2 7C 60 00`, and `D 7D00 +8` showed
 `20 07 7D A9 07 A2 7D 60`.
+
+A follow-up board proof on the same `L OK=3E91 GO=2000` image ran the
+relocated RAM body. The source added fixed external result stores after the
+internal target address was loaded:
+
+```text
+JSR TARGET
+LDA #<TARGET
+LDX #>TARGET
+STA $7900
+STX $7901
+RTS
+TARGET RTS
+```
+
+It assembled at `BASE=$7C82 END=$7C91`, sealed as
+`SEAL REC @=$5EA2 LEN=$000F FNV=$EFFFDB38`, and kept the same three relocation
+rows with targets `000E`. After `RELOCATE $7D00`, `G 7D00` returned with
+`A=0E X=7D`, and `D 7900 +2` showed `0E 7D`. This proves the copied body runs
+from its relocated RAM base, internal `TARGET` was relinked to `$7D0E`, and the
+fixed external RAM stores at `$7900/$7901` were not relocated.
+
+The next host `asm-test` slice adds `SEAL> PACKAGE address` as the first stable
+object-envelope proof. `ASM_SEAL_PACKAGE` is built only when
+`ASM_PACKAGE_ENABLED` is set; the full core smoke and flash-resident ASM image
+include it, while the stripped runtime-paste image leaves it out. Host smoke
+packages the same internal relocation body, checks total length `$0037`, and
+verifies the AP v1 sequential envelope: header `A P 01 len_lo len_hi`, tagged
+seal section `S`, tagged relocation section `R`, tagged export section `E`,
+tagged import section `I`, and tagged body section `B`. The host gate passed
+with runtime paste back at `ASM_CODE_BUF=$7C82`, `_END_UDATA=$7D82`, and flash
+ASM carrying the package command with `ASM_CODE_BUF=$7EF8`,
+`_END_UDATA=$7FF8`.
+
+A runtime-paste negative board proof loaded the compact paste image as
+`L OK=3E91 GO=2000`, assembled the same body at `BASE=$7C82 END=$7C8A`, and
+sealed it with `SEAL REC @=$5EA2 LEN=$0008 FNV=$6786A5EA` and
+`SEAL REL @=$5EAD COUNT=$03`. At `SEAL>`, `PACKAGE $3000` returned
+`ERR=$03 BAD OPER PC=$7C8A`, proving the RAM paste wrapper rejects PACKAGE as
+an unsupported post-END command and leaves RAM at `$3000` untouched by this
+slice.
+
+Flash-board PACKAGE probe after installing `asm-v1-flash-8000.s19` and
+starting flash ASM with `>ASM`:
+
+```text
+JSR TARGET
+LDA #<TARGET
+LDX #>TARGET
+TARGET RTS
+END
+SEAL
+PACKAGE $3000
+.
+D 3000 +37
+```
+
+Expected structure is an AP v1 envelope at `$3000`. The FNV bytes in the seal
+section depend on the assembled body address, but the structural bytes should
+show `41 50 01 37 00` at the start, `53 0B` for the seal section, `52 10 03`
+for the three-row relocation section, `45 02 00 02` for the empty export
+record, `49 02 00 02` for the empty import record, and a final body section
+tagged `42 08 00`.
+
+The matching flash-board proof loaded the package-enabled flash image with
+`L F`, reporting `LF OK WR=3D49 GO=800C`, then started `ASM FLASH` with
+`>ASM`. The same body assembled at `BASE=$2000 END=$2008`, sealed as
+`SEAL REC @=$6111 LEN=$0008 FNV=$FFC39D9A`, and kept the three internal
+relocation rows. `PACKAGE $3000` reported
+`PACKAGE OK @=$3000 LEN=$0037`. `D 3000 +37` showed:
+
+```text
+3000: 41 50 01 37 00 53 0B 01 | 00 20 08 20 08 00 9A 9D
+3010: C3 FF 52 10 03 01 02 03 | 01 04 06 00 00 00 07 07
+3020: 07 00 00 00 45 02 00 02 | 49 02 00 02 42 08 00 20
+3030: 07 20 A9 07 A2 20 60
+```
+
+This proves the flash-resident wrapper accepts `PACKAGE`, writes the AP v1
+envelope to caller-chosen RAM, preserves internal relocation metadata as
+offset rows, carries empty EXP/IMP records, and copies the sealed body bytes
+unchanged.
 
 The first 2026-07-02 board attempt with
 `asm-v1-runtime-paste-2000.s19` loaded as `L OK=38FC GO=2000` failed before

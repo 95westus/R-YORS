@@ -5173,6 +5173,7 @@ ASM source mode; it is a small wrapper command window with these commands:
 SEAL             validate and print frozen facts plus the RAM record summary
 RESOLVE          resolve import rows through current RJOIN and patch RAM body
 RELOCATE addr    copy body to RAM addr and patch internal relocation rows
+PACKAGE addr     write AP v1 package envelope at RAM addr
 NEW              start a fresh ASM session at the frozen END PC
 .                exit the wrapper
 ```
@@ -5194,6 +5195,16 @@ internal relocation rows against that new base, and reports
 `RESOLVE` or a later installer. The destination must pass the current ASM target
 guard; in runtime-paste tests this usually means choosing a base above the
 current emitted body and below `$7E00`.
+
+`PACKAGE address` is valid only in the post-`END` `SEAL> ` window for builds
+that include the package builder. The first implementation is enabled in full
+core smoke and flash-resident ASM, not the stripped RAM paste wrapper. It
+validates the frozen seal, rebuilds the SEAL/REL/EXP/IMP facts, and writes an
+`AP` version-1 envelope at the requested RAM address. The envelope is
+sequential: header, tagged seal section `S`, tagged relocation section `R`,
+tagged export section `E`, tagged import section `I`, and tagged body section
+`B`. It preserves relocatable metadata for later load/install work; it does not
+resolve imports, relocate the body, or run code.
 
 `NEW` is valid only in the post-`END` `SEAL> ` window. It accepts only `NEW`,
 `NEW ; comment`, and the same optional leading/trailing spaces or tabs used by
