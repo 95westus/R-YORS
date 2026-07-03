@@ -210,6 +210,7 @@ After clean `END`, current wrappers switch to a small `SEAL> ` command window:
 ```text
 SEAL             dry-run the frozen facts
 RESOLVE          resolve import rows through current RJOIN and patch RAM body
+RELOCATE addr    copy body to RAM addr and patch internal relocation rows
 NEW              reopen ASM at the frozen END PC
 .                return to HIMON
 ```
@@ -220,6 +221,13 @@ declared import relocation rows through current resident RJOIN, patches the
 current emitted bytes in place, and reports the patched row count. It does not
 publish or install the module, and it leaves the import/relocation metadata
 visible for inspection.
+
+`RELOCATE address` is the first RAM overlay proof command. It accepts one ASM
+address expression, validates the frozen seal, copies the body bytes to that
+new RAM base, and applies internal `$01/$02/$03` relocation rows there. It does
+not resolve imports and does not publish or install the module. The current
+runtime overlap guard still applies, so a board proof should choose a
+destination above the emitted body and below `$7E00`.
 
 `NEW` is deliberately validated and non-interactive. It accepts only bare `NEW`
 or `NEW ; comment` with optional surrounding spaces/tabs. It does not accept an

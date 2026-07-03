@@ -20,8 +20,14 @@
                         XREF            ASM_SEAL_COMPUTE_FNV
                         XREF            ASM_SEAL_PRINT_RECORD
                         XREF            ASM_SEAL_RESOLVE_IMPORTS
+                        XREF            ASM_SEAL_RELOCATE
                         XREF            ASM_SEAL_FLAGS
                         XREF            ASM_IMPORT_RESOLVE_COUNT
+                        XREF            ASM_RELOCATE_BASE_LO
+                        XREF            ASM_RELOCATE_BASE_HI
+                        XREF            ASM_RELOCATE_COUNT
+                        XREF            ASM_PARSE_EXPR
+                        XREF            ASM_PARSE_EXPR_REQUIRE_END
                         XREF            SYS_FLUSH_RX
                         XREF            SYS_READ_CHAR_TIMEOUT_SPINDOWN
                         XREF            SYS_READ_CSTRING_EDIT_ECHO_UPPER
@@ -110,6 +116,12 @@ ASMRP_POST_CHECK_NEW:
                         BCC             ASMRP_POST_CHECK_NEW_2
                         JMP             ASMRP_RESOLVE_CMD
 ASMRP_POST_CHECK_NEW_2:
+                        LDX             #<ASMRP_CMD_RELOCATE
+                        LDY             #>ASMRP_CMD_RELOCATE
+                        JSR             ASMRP_MATCH_ARG_CMD
+                        BCC             ASMRP_POST_CHECK_NEW_3
+                        JMP             ASMRP_RELOCATE_CMD
+ASMRP_POST_CHECK_NEW_3:
                         LDX             #<ASMRP_CMD_NEW
                         LDY             #>ASMRP_CMD_NEW
                         JSR             ASMRP_MATCH_STRICT_CMD
@@ -193,6 +205,38 @@ ASMRP_RESOLVE_OK:
                         LDY             #>MSG_RESOLVE_OK
                         JSR             ASMRP_PRINT
                         LDA             ASM_IMPORT_RESOLVE_COUNT
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        JMP             ASMRP_LOOP
+
+ASMRP_RELOCATE_CMD:
+                        JSR             ASMRP_PARSE_RELOCATE_ARG
+                        BCS             ASMRP_RELOCATE_HAVE_ARG
+                        STA             ASMRP_RESULT
+                        LDX             #<MSG_RELOCATE_ERR
+                        LDY             #>MSG_RELOCATE_ERR
+                        JSR             ASMRP_PRINT_STATUS_LINE
+                        JMP             ASMRP_LOOP
+ASMRP_RELOCATE_HAVE_ARG:
+                        JSR             ASM_SEAL_RELOCATE
+                        BCS             ASMRP_RELOCATE_OK
+                        STA             ASMRP_RESULT
+                        LDX             #<MSG_RELOCATE_ERR
+                        LDY             #>MSG_RELOCATE_ERR
+                        JSR             ASMRP_PRINT_STATUS_LINE
+                        JMP             ASMRP_LOOP
+ASMRP_RELOCATE_OK:
+                        LDX             #<MSG_RELOCATE_OK
+                        LDY             #>MSG_RELOCATE_OK
+                        JSR             ASMRP_PRINT
+                        LDA             ASM_RELOCATE_BASE_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             ASM_RELOCATE_BASE_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             #<MSG_RELOCATE_COUNT
+                        LDY             #>MSG_RELOCATE_COUNT
+                        JSR             ASMRP_PRINT
+                        LDA             ASM_RELOCATE_COUNT
                         JSR             SYS_WRITE_HEX_BYTE
                         JSR             SYS_WRITE_CRLF
                         JMP             ASMRP_LOOP
@@ -366,44 +410,98 @@ ASMRP_YES:
                         RTS
 
 ASMRP_MATCH_STRICT_CMD:
+                        JSR             ASMRP_MATCH_CMD
+                        BCS             ASMRP_MATCH_STRICT_CMD_TAIL
+                        RTS
+ASMRP_MATCH_STRICT_CMD_TAIL:
+                        JMP             ASMRP_MATCH_STRICT_TAIL
+
+ASMRP_MATCH_ARG_CMD:
+                        JSR             ASMRP_MATCH_CMD
+                        BCS             ASMRP_MATCH_ARG_CMD_TAIL
+                        RTS
+ASMRP_MATCH_ARG_CMD_TAIL:
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #' '
+                        BEQ             ASMRP_MATCH_ARG_CMD_SKIP
+                        CMP             #$09
+                        BEQ             ASMRP_MATCH_ARG_CMD_SKIP
+                        CLC
+                        RTS
+ASMRP_MATCH_ARG_CMD_SKIP:
+                        INY
+                        LDA             ASMRP_LINE_BUF,Y
+                        CMP             #' '
+                        BEQ             ASMRP_MATCH_ARG_CMD_SKIP
+                        CMP             #$09
+                        BEQ             ASMRP_MATCH_ARG_CMD_SKIP
+                        TYA
+                        CLC
+                        ADC             #<ASMRP_LINE_BUF
+                        TAX
+                        LDA             #>ASMRP_LINE_BUF
+                        ADC             #$00
+                        TAY
+                        SEC
+                        RTS
+
+ASMRP_MATCH_CMD:
                         STX             ASMRP_CMD_PTR_LO
                         STY             ASMRP_CMD_PTR_HI
                         JSR             ASMRP_SKIP_COMMAND_HEAD
                         TYA
                         TAX
                         LDY             #$00
-ASMRP_MATCH_STRICT_CMD_LOOP:
+ASMRP_MATCH_CMD_LOOP:
                         LDA             (ASMRP_CMD_PTR_LO),Y
-                        BEQ             ASMRP_MATCH_STRICT_CMD_TAIL
+                        BEQ             ASMRP_MATCH_CMD_TAIL
                         CMP             ASMRP_LINE_BUF,X
-                        BNE             ASMRP_NO
+                        BNE             ASMRP_MATCH_CMD_NO
                         INX
                         INY
-                        BRA             ASMRP_MATCH_STRICT_CMD_LOOP
-ASMRP_MATCH_STRICT_CMD_TAIL:
+                        BRA             ASMRP_MATCH_CMD_LOOP
+ASMRP_MATCH_CMD_TAIL:
                         TXA
                         TAY
-                        JMP             ASMRP_MATCH_STRICT_TAIL
+                        SEC
+                        RTS
+ASMRP_MATCH_CMD_NO:
+                        CLC
+                        RTS
+
+ASMRP_PARSE_RELOCATE_ARG:
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASMRP_PARSE_RELOCATE_EXPR_OK
+                        RTS
+ASMRP_PARSE_RELOCATE_EXPR_OK:
+                        STX             ASMRP_RELOCATE_LO
+                        STY             ASMRP_RELOCATE_HI
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASMRP_PARSE_RELOCATE_TAIL_OK
+                        LDA             #ASMRP_STATUS_BAD_OPER
+                        CLC
+                        RTS
+ASMRP_PARSE_RELOCATE_TAIL_OK:
+                        LDX             ASMRP_RELOCATE_LO
+                        LDY             ASMRP_RELOCATE_HI
+                        SEC
+                        RTS
 
 ASMRP_IS_END:
-                        JSR             ASMRP_SKIP_COMMAND_HEAD
-                        CMP             #'E'
-                        BNE             ASMRP_NO
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #'N'
-                        BNE             ASMRP_NO
-                        INY
-                        LDA             ASMRP_LINE_BUF,Y
-                        CMP             #'D'
-                        BNE             ASMRP_NO
-                        INY
-                        BRA             ASMRP_MATCH_LOOSE_TAIL
+                        LDX             #<ASMRP_CMD_END
+                        LDY             #>ASMRP_CMD_END
+                        JSR             ASMRP_MATCH_CMD
+                        BCS             ASMRP_IS_END_TAIL
+                        RTS
+ASMRP_IS_END_TAIL:
+                        JMP             ASMRP_MATCH_LOOSE_TAIL
 
                         DATA
 ASMRP_CMD_SEAL:         DB              "SEAL",0
 ASMRP_CMD_RESOLVE:      DB              "RESOLVE",0
+ASMRP_CMD_RELOCATE:     DB              "RELOCATE",0
 ASMRP_CMD_NEW:          DB              "NEW",0
+ASMRP_CMD_END:          DB              "END",0
 MSG_TITLE:              DB              "ASM RT PASTE",0
 MSG_PROMPT:             DB              "ASM> ",0
 MSG_SEAL_PROMPT:        DB              "SEAL> ",0
@@ -416,6 +514,9 @@ MSG_PC:                 DB              " PC=$",0
 MSG_SEAL_ERR:           DB              "SEAL ERR=$",0
 MSG_RESOLVE_ERR:        DB              "RESOLVE ERR=$",0
 MSG_RESOLVE_OK:         DB              "RESOLVE OK COUNT=$",0
+MSG_RELOCATE_ERR:       DB              "RELOCATE ERR=$",0
+MSG_RELOCATE_OK:        DB              "RELOCATE OK BASE=$",0
+MSG_RELOCATE_COUNT:     DB              " COUNT=$",0
 MSG_FLAGS:              DB              " FLAGS=$",0
 MSG_DONE:               DB              "ASM RT PASTE OK",0
 MSG_BYE:                DB              "ASM RT PASTE BYE",0
@@ -467,3 +568,5 @@ ASMRP_RESULT:           DB              $00
 ASMRP_PC_LO:            DB              $00
 ASMRP_PC_HI:            DB              $00
 ASMRP_POST_FLAG:        DB              $00
+ASMRP_RELOCATE_LO:      DB              $00
+ASMRP_RELOCATE_HI:      DB              $00

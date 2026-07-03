@@ -531,6 +531,10 @@ A [addr] [label[:]] MMM [operand] .
   resident RJOIN, patches the current emitted bytes in place, and leaves the
   import/relocation metadata intact for inspection. It is not yet the final
   flash install/link policy.
+- `SEAL> RELOCATE address` is the first RAM-overlay move proof. It is
+  available only after clean `END`, copies the frozen body to the requested RAM
+  base, applies `$01/$02/$03` internal relocation rows against that base, and
+  leaves `$04/$05/$06` import rows for `RESOLVE` or a later installer.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.

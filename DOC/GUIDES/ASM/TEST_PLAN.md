@@ -6093,6 +6093,11 @@ SEAL.IMPORT.RESOLVE adds post-END `SEAL> RESOLVE` as a RAM-body proof command.
          It resolves `$04/$05/$06` import relocation rows through current
          resident RJOIN, patches the emitted body in place, and reports
          `RESOLVE OK COUNT=$nn` for patched rows.
+SEAL.RAM.RELOCATE adds post-END `SEAL> RELOCATE address` as the first RAM
+         overlay move proof. It copies the frozen sealed body to the requested
+         RAM base, applies only `$01/$02/$03` internal relocation rows there,
+         and reports `RELOCATE OK BASE=$hhhh COUNT=$nn`. Imports remain
+         separate and can still be handled by `RESOLVE`.
 ASMRT.REPORT.TRIM keeps the older compact-report printer in the core/smoke
          build but compiles it out of ASM_RUNTIME_ONLY images. Runtime paste
          and flash use wrapper error lines, ASM TABLES, and SEAL REC/REL as
@@ -6197,6 +6202,13 @@ SEAL> RESOLVE resolves declared import relocation rows through current resident
 RJOIN and patches the current RAM body in place
 SEAL> RESOLVE operands are rejected as BAD OPER without clearing frozen seal
 facts
+SEAL> RELOCATE address copies the frozen RAM body to the requested destination
+and patches internal `$01/$02/$03` rows against that destination base
+SEAL> RELOCATE reports RELOCATE OK BASE=$hhhh COUNT=$nn on success or
+RELOCATE ERR=$ee on failure and stays at SEAL>
+SEAL> RELOCATE rejects missing or extra operands as BAD OPER without clearing
+frozen seal facts
+SEAL> RELOCATE does not resolve `$04/$05/$06` import rows
 relative branches, EQU constants, and fixed external addresses produce no
 relocation rows
 relocation table overflow keeps ordinary ASM valid but sets a seal-ineligible
@@ -6210,8 +6222,9 @@ failure and stays at SEAL>
 ASM> SEAL remains ordinary ASM source, not a wrapper command
 ASM> NEW remains ordinary ASM source, not a wrapper command
 ASM> RESOLVE remains ordinary ASM source, not a wrapper command
-post-END non-SEAL/non-NEW/non-RESOLVE source is rejected without clearing
-frozen seal facts
+ASM> RELOCATE remains ordinary ASM source, not a wrapper command
+post-END non-SEAL/non-NEW/non-RESOLVE/non-RELOCATE source is rejected without
+clearing frozen seal facts
 runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
 state/result cells in UDATA and the input line borrowed from HIMON CMD_BUF
 runtime paste wrapper default session starts at ASM_CODE_BUF, not a fixed $7600
@@ -6950,6 +6963,53 @@ before `RESOLVE` with `SEAL REC @=$5C90 LEN=$0007 FNV=$039163CA`,
 same REL/IMP metadata but recomputed body FNV as `$5DCABFAE`. The patched body
 dump at `$7A6D-$7A73` was `20 55 E1 A9 55 A2 E1`, proving ABS16, LO8, and HI8
 import rows all resolved to the resident `BIO_FTDI_PUT_CSTR` address.
+
+The follow-up host `asm-test` slice adds `SEAL> RELOCATE address` for RAM
+overlay movement. The exported core routine `ASM_SEAL_RELOCATE` takes `X/Y` as
+the destination base, validates the frozen seal, copies `[BASE,END)` to that
+new RAM base, and applies only internal relocation rows: `$01` ABS16_INTERNAL,
+`$02` LO8_INTERNAL, and `$03` HI8_INTERNAL. It leaves import rows and import
+metadata untouched; `SEAL> RESOLVE` remains the separate proof for `$04/$05/$06`
+rows. Host smoke assembles:
+
+```text
+JSR TARGET
+LDA #<TARGET
+LDX #>TARGET
+TARGET RTS
+END
+```
+
+It then relocates the sealed body upward from the frozen end, expects three
+patched rows, and verifies the moved copy is `20 ll hh A9 ll A2 hh 60`, where
+`hhll` is the relocated `TARGET` address. Runtime paste/flash wrappers now
+accept post-END `RELOCATE address`, parse the address through the existing ASM
+expression parser, and print `RELOCATE OK BASE=$hhhh COUNT=$nn` or
+`RELOCATE ERR=$ee`. The matching host build produced
+`asm-v1-runtime-paste-2000.s19` with loaded CODE+DATA `$3EAC`. The matching
+board proof loaded it as `L OK=3EAC GO=2000`, assembled at
+`ASM_CODE_BUF=$7C9D`, and ended with `BASE=$7C9D END=$7CA5`. The table printer
+showed relocation rows `00 01 0001 0007`, `01 02 0004 0007`, and
+`02 03 0006 0007`; `SEAL` reported
+`SEAL REC @=$5EBD LEN=$0008 FNV=$E1048C04` and
+`SEAL REL @=$5EC8 COUNT=$03`. `RELOCATE $7D00` reported
+`RELOCATE OK BASE=$7D00 COUNT=$03`, and `D 7D00 +8` showed
+`20 07 7D A9 07 A2 7D 60`, proving the copied body now points at relocated
+`TARGET=$7D07`. The original body remained at `$7C9D` with operands still
+pointing at original `TARGET=$7CA4`.
+
+A same-day wrapper parser compaction replaced duplicate strict/argument command
+matching and the hand-coded END recognizer with a shared matcher in both
+runtime paste and flash. Behavior is unchanged; the host gate now produces
+`asm-v1-runtime-paste-2000.s19` with loaded CODE+DATA `$3E91` and
+`ASM_CODE_BUF=$7C82`, shrinking the board-load image by `$001B` from the
+`L OK=3EAC` RELOCATE proof above. The matching board proof on the compacted
+image assembled the same body at `BASE=$7C82 END=$7C8A`; `SEAL` reported
+`SEAL REC @=$5EA2 LEN=$0008 FNV=$6786A5EA` and
+`SEAL REL @=$5EAD COUNT=$03`. `RELOCATE $7D00` reported
+`RELOCATE OK BASE=$7D00 COUNT=$03`; `D 7C82 7C8A` showed
+`20 89 7C A9 89 A2 7C 60 00`, and `D 7D00 +8` showed
+`20 07 7D A9 07 A2 7D 60`.
 
 The first 2026-07-02 board attempt with
 `asm-v1-runtime-paste-2000.s19` loaded as `L OK=38FC GO=2000` failed before

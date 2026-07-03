@@ -5167,11 +5167,12 @@ addresses, resident calls, and relative branches do not produce rows yet.
 
 The runtime paste and flash wrappers switch to the `SEAL> ` prompt after a
 clean `END` so `SEAL` can consume those frozen facts. `SEAL> ` is not normal
-ASM source mode; it is a small wrapper command window with three commands:
+ASM source mode; it is a small wrapper command window with these commands:
 
 ```text
 SEAL             validate and print frozen facts plus the RAM record summary
 RESOLVE          resolve import rows through current RJOIN and patch RAM body
+RELOCATE addr    copy body to RAM addr and patch internal relocation rows
 NEW              start a fresh ASM session at the frozen END PC
 .                exit the wrapper
 ```
@@ -5183,6 +5184,16 @@ import relocation rows through current resident RJOIN, patches the emitted
 body in place, and reports `RESOLVE OK COUNT=$nn` for patched rows. The import
 metadata and relocation rows remain inspectable; a later installer can decide
 whether to freeze, copy, or preserve them.
+
+`RELOCATE address` is valid only in the post-`END` `SEAL> ` window. The address
+tail is parsed by the existing ASM expression parser and must end cleanly. The
+first implementation is a RAM-overlay proof command: it validates the frozen
+seal, copies the sealed body to the requested RAM base, applies `$01/$02/$03`
+internal relocation rows against that new base, and reports
+`RELOCATE OK BASE=$hhhh COUNT=$nn`. Import rows are deliberately left for
+`RESOLVE` or a later installer. The destination must pass the current ASM target
+guard; in runtime-paste tests this usually means choosing a base above the
+current emitted body and below `$7E00`.
 
 `NEW` is valid only in the post-`END` `SEAL> ` window. It accepts only `NEW`,
 `NEW ; comment`, and the same optional leading/trailing spaces or tabs used by

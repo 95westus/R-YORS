@@ -19,8 +19,14 @@
                         XREF            ASM_SEAL_COMPUTE_FNV
                         XREF            ASM_SEAL_PRINT_RECORD
                         XREF            ASM_SEAL_RESOLVE_IMPORTS
+                        XREF            ASM_SEAL_RELOCATE
                         XREF            ASM_SEAL_FLAGS
                         XREF            ASM_IMPORT_RESOLVE_COUNT
+                        XREF            ASM_RELOCATE_BASE_LO
+                        XREF            ASM_RELOCATE_BASE_HI
+                        XREF            ASM_RELOCATE_COUNT
+                        XREF            ASM_PARSE_EXPR
+                        XREF            ASM_PARSE_EXPR_REQUIRE_END
                         XREF            ASM_RJOIN_INIT_IO
                         XREF            ASM_RJ_READ_CSTRING
                         XREF            ASM_RJ_WRITE_CSTRING
@@ -127,6 +133,12 @@ ASMF_POST_CHECK_NEW:
                         BCC             ASMF_POST_CHECK_NEW_2
                         JMP             ASMF_RESOLVE_CMD
 ASMF_POST_CHECK_NEW_2:
+                        LDX             #<ASMF_CMD_RELOCATE
+                        LDY             #>ASMF_CMD_RELOCATE
+                        JSR             ASMF_MATCH_ARG_CMD
+                        BCC             ASMF_POST_CHECK_NEW_3
+                        JMP             ASMF_RELOCATE_CMD
+ASMF_POST_CHECK_NEW_3:
                         LDX             #<ASMF_CMD_NEW
                         LDY             #>ASMF_CMD_NEW
                         JSR             ASMF_MATCH_STRICT_CMD
@@ -210,6 +222,38 @@ ASMF_RESOLVE_OK:
                         LDY             #>MSG_RESOLVE_OK
                         JSR             ASMF_PRINT
                         LDA             ASM_IMPORT_RESOLVE_COUNT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_RJ_PRINT_CRLF
+                        JMP             ASMF_LOOP
+
+ASMF_RELOCATE_CMD:
+                        JSR             ASMF_PARSE_RELOCATE_ARG
+                        BCS             ASMF_RELOCATE_HAVE_ARG
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_RELOCATE_ERR
+                        LDY             #>MSG_RELOCATE_ERR
+                        JSR             ASMF_PRINT_STATUS_LINE
+                        JMP             ASMF_LOOP
+ASMF_RELOCATE_HAVE_ARG:
+                        JSR             ASM_SEAL_RELOCATE
+                        BCS             ASMF_RELOCATE_OK
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_RELOCATE_ERR
+                        LDY             #>MSG_RELOCATE_ERR
+                        JSR             ASMF_PRINT_STATUS_LINE
+                        JMP             ASMF_LOOP
+ASMF_RELOCATE_OK:
+                        LDX             #<MSG_RELOCATE_OK
+                        LDY             #>MSG_RELOCATE_OK
+                        JSR             ASMF_PRINT
+                        LDA             ASM_RELOCATE_BASE_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_RELOCATE_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<MSG_RELOCATE_COUNT
+                        LDY             #>MSG_RELOCATE_COUNT
+                        JSR             ASMF_PRINT
+                        LDA             ASM_RELOCATE_COUNT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_RJ_PRINT_CRLF
                         JMP             ASMF_LOOP
@@ -373,45 +417,99 @@ ASMF_YES:
                         RTS
 
 ASMF_MATCH_STRICT_CMD:
+                        JSR             ASMF_MATCH_CMD
+                        BCS             ASMF_MATCH_STRICT_CMD_TAIL
+                        RTS
+ASMF_MATCH_STRICT_CMD_TAIL:
+                        JMP             ASMF_MATCH_STRICT_TAIL
+
+ASMF_MATCH_ARG_CMD:
+                        JSR             ASMF_MATCH_CMD
+                        BCS             ASMF_MATCH_ARG_CMD_TAIL
+                        RTS
+ASMF_MATCH_ARG_CMD_TAIL:
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #' '
+                        BEQ             ASMF_MATCH_ARG_CMD_SKIP
+                        CMP             #$09
+                        BEQ             ASMF_MATCH_ARG_CMD_SKIP
+                        CLC
+                        RTS
+ASMF_MATCH_ARG_CMD_SKIP:
+                        INY
+                        LDA             ASMF_LINE_BUF,Y
+                        CMP             #' '
+                        BEQ             ASMF_MATCH_ARG_CMD_SKIP
+                        CMP             #$09
+                        BEQ             ASMF_MATCH_ARG_CMD_SKIP
+                        TYA
+                        CLC
+                        ADC             #<ASMF_LINE_BUF
+                        TAX
+                        LDA             #>ASMF_LINE_BUF
+                        ADC             #$00
+                        TAY
+                        SEC
+                        RTS
+
+ASMF_MATCH_CMD:
                         STX             ASMF_CMD_PTR_LO
                         STY             ASMF_CMD_PTR_HI
                         JSR             ASMF_SKIP_COMMAND_HEAD
                         TYA
                         TAX
                         LDY             #$00
-ASMF_MATCH_STRICT_CMD_LOOP:
+ASMF_MATCH_CMD_LOOP:
                         LDA             (ASMF_CMD_PTR_LO),Y
-                        BEQ             ASMF_MATCH_STRICT_CMD_TAIL
+                        BEQ             ASMF_MATCH_CMD_TAIL
                         CMP             ASMF_LINE_BUF,X
-                        BNE             ASMF_NO
+                        BNE             ASMF_MATCH_CMD_NO
                         INX
                         INY
-                        BRA             ASMF_MATCH_STRICT_CMD_LOOP
-ASMF_MATCH_STRICT_CMD_TAIL:
+                        BRA             ASMF_MATCH_CMD_LOOP
+ASMF_MATCH_CMD_TAIL:
                         TXA
                         TAY
-                        JMP             ASMF_MATCH_STRICT_TAIL
+                        SEC
+                        RTS
+ASMF_MATCH_CMD_NO:
+                        CLC
+                        RTS
+
+ASMF_PARSE_RELOCATE_ARG:
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASMF_PARSE_RELOCATE_EXPR_OK
+                        RTS
+ASMF_PARSE_RELOCATE_EXPR_OK:
+                        STX             ASMF_RELOCATE_LO
+                        STY             ASMF_RELOCATE_HI
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASMF_PARSE_RELOCATE_TAIL_OK
+                        LDA             #ASMF_STATUS_BAD_OPER
+                        CLC
+                        RTS
+ASMF_PARSE_RELOCATE_TAIL_OK:
+                        LDX             ASMF_RELOCATE_LO
+                        LDY             ASMF_RELOCATE_HI
+                        SEC
+                        RTS
 
 ASMF_IS_END:
-                        JSR             ASMF_SKIP_COMMAND_HEAD
-                        CMP             #'E'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'N'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'D'
-                        BNE             ASMF_NO
-                        INY
-                        BRA             ASMF_MATCH_LOOSE_TAIL
+                        LDX             #<ASMF_CMD_END
+                        LDY             #>ASMF_CMD_END
+                        JSR             ASMF_MATCH_CMD
+                        BCS             ASMF_IS_END_TAIL
+                        RTS
+ASMF_IS_END_TAIL:
+                        JMP             ASMF_MATCH_LOOSE_TAIL
 
                         DATA
 ASMF_TEXT:              DB              "ASM V",('1'+$80)
 ASMF_CMD_SEAL:          DB              "SEAL",0
 ASMF_CMD_RESOLVE:       DB              "RESOLVE",0
+ASMF_CMD_RELOCATE:      DB              "RELOCATE",0
 ASMF_CMD_NEW:           DB              "NEW",0
+ASMF_CMD_END:           DB              "END",0
 MSG_TITLE:              DB              "ASM FLASH",0
 MSG_PROMPT:             DB              "ASM> ",0
 MSG_SEAL_PROMPT:        DB              "SEAL> ",0
@@ -424,6 +522,9 @@ MSG_PC:                 DB              " PC=$",0
 MSG_SEAL_ERR:           DB              "SEAL ERR=$",0
 MSG_RESOLVE_ERR:        DB              "RESOLVE ERR=$",0
 MSG_RESOLVE_OK:         DB              "RESOLVE OK COUNT=$",0
+MSG_RELOCATE_ERR:       DB              "RELOCATE ERR=$",0
+MSG_RELOCATE_OK:        DB              "RELOCATE OK BASE=$",0
+MSG_RELOCATE_COUNT:     DB              " COUNT=$",0
 MSG_FLAGS:              DB              " FLAGS=$",0
 MSG_DONE:               DB              "ASM FLASH OK",0
 MSG_BYE:                DB              "ASM FLASH BYE",0
@@ -475,6 +576,8 @@ ASMF_RESULT:            DB              $00
 ASMF_PC_LO:             DB              $00
 ASMF_PC_HI:             DB              $00
 ASMF_POST_FLAG:         DB              $00
+ASMF_RELOCATE_LO:       DB              $00
+ASMF_RELOCATE_HI:       DB              $00
 ASMF_LINE_BUF:          DS              $0100
 
                         ENDMOD

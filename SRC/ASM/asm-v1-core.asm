@@ -39,6 +39,7 @@
                         XDEF            ASM_SEAL_COMPUTE_FNV
                         XDEF            ASM_SEAL_PRINT_RECORD
                         XDEF            ASM_SEAL_RESOLVE_IMPORTS
+                        XDEF            ASM_SEAL_RELOCATE
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
                         XDEF            ASM_RJ_PRINT_CRLF
@@ -72,6 +73,10 @@
                         XDEF            ASM_IMPORT_REC_COUNT
                         XDEF            ASM_IMPORT_REC_LEN
                         XDEF            ASM_IMPORT_RESOLVE_COUNT
+                        XDEF            ASM_RELOCATE_BASE_LO
+                        XDEF            ASM_RELOCATE_BASE_HI
+                        XDEF            ASM_RELOCATE_COUNT
+                        XDEF            ASM_PARSE_EXPR_REQUIRE_END
                         IF              ASM_RUNTIME_ONLY
                         IF              ASM_FLASH_RUNTIME
                         XDEF            ASM_RJOIN_INIT_IO
@@ -1005,43 +1010,85 @@ ASM_SMOKE_PRINT_FAIL_DETAIL_DONE:
 ASM_SMOKE_PRINT_FAIL_FIX_DETAIL:
                         LDA             ASM_FAIL_SLOT
                         CMP             #$A1
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_A1
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_A2
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_A1
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_A2:
                         CMP             #$A2
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_A2
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_A3
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_A2
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_A3:
                         CMP             #$A3
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_A3
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_A4
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_A3
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_A4:
                         CMP             #$A4
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_A4
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_A5
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_A4
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_A5:
                         CMP             #$A5
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_A5
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_A6
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_A5
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_A6:
                         CMP             #$A6
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_A6
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_A7
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_A6
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_A7:
                         CMP             #$A7
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_A7
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_AC
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_A7
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_AC:
                         CMP             #$AC
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_AC
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_AF
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_AC
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_AF:
                         CMP             #$AF
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_AF
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_B1
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_AF
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_B1:
                         CMP             #$B1
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_B1
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_B2
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_B1
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_B2:
                         CMP             #$B2
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_B2
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_B3
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_B2
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_B3:
                         CMP             #$B3
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_B3
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_B4
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_B3
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_B4:
                         CMP             #$B4
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_B4
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_B5
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_B4
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_B5:
                         CMP             #$B5
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_B5
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_B6
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_B5
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_B6:
                         CMP             #$B6
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_B6
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_B7
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_B6
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_B7:
                         CMP             #$B7
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_B7
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_B8
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_B7
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_B8:
                         CMP             #$B8
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_B8
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_B9
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_B8
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_B9:
                         CMP             #$B9
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_B9
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_BA
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_B9
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_BA:
                         CMP             #$BA
-                        BEQ             ASM_SMOKE_PRINT_FAIL_FIX_BA
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_CHK_BB
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_BA
+ASM_SMOKE_PRINT_FAIL_FIX_CHK_BB:
+                        CMP             #$BB
+                        BNE             ASM_SMOKE_PRINT_FAIL_FIX_NO_MATCH
+                        JMP             ASM_SMOKE_PRINT_FAIL_FIX_BB
+ASM_SMOKE_PRINT_FAIL_FIX_NO_MATCH:
                         RTS
 ASM_SMOKE_PRINT_FAIL_FIX_A1:
                         LDX             #<ASM_SMOKE_MSG_FIX_A1
@@ -1118,6 +1165,10 @@ ASM_SMOKE_PRINT_FAIL_FIX_B9:
 ASM_SMOKE_PRINT_FAIL_FIX_BA:
                         LDX             #<ASM_SMOKE_MSG_FIX_BA
                         LDY             #>ASM_SMOKE_MSG_FIX_BA
+                        JMP             ASM_SMOKE_PRINT_LINE
+ASM_SMOKE_PRINT_FAIL_FIX_BB:
+                        LDX             #<ASM_SMOKE_MSG_FIX_BB
+                        LDY             #>ASM_SMOKE_MSG_FIX_BB
                         JMP             ASM_SMOKE_PRINT_LINE
 ASM_SMOKE_PRINT_FAIL_DIR_DETAIL:
                         LDA             ASM_FAIL_SLOT
@@ -4389,6 +4440,8 @@ ASM_SMOKE_FIXUPS:
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_IMPORT_FORCE_DEFER
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
+                        JSR             ASM_SMOKE_FIXUPS_RELOCATE
+                        BCC             ASM_SMOKE_FIXUPS_FAIL_A
 
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #ASM_SMOKE_TARGET_LO
@@ -5312,6 +5365,145 @@ ASM_SMOKE_FIXUPS_IMP_DEF_PATCHED:
 ASM_SMOKE_FIXUPS_IMP_DEF_FAIL:
                         LDA             #$AC
                         STA             ASM_SLOT
+                        CLC
+                        RTS
+
+ASM_SMOKE_FIXUPS_RELOCATE:
+                        LDA             #$BB
+                        STA             ASM_SLOT
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_FIXUPS_RELOC_BEGIN_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_BEGIN_OK:
+                        LDX             #<ASM_FIXUP_JSR_TARGET
+                        LDY             #>ASM_FIXUP_JSR_TARGET
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCS             ASM_SMOKE_FIXUPS_RELOC_JSR_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_JSR_OK:
+                        LDX             #<ASM_FIXUP_LDA_LO_TARGET
+                        LDY             #>ASM_FIXUP_LDA_LO_TARGET
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCS             ASM_SMOKE_FIXUPS_RELOC_LDA_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_LDA_OK:
+                        LDX             #<ASM_FIXUP_LDX_HI_TARGET
+                        LDY             #>ASM_FIXUP_LDX_HI_TARGET
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCS             ASM_SMOKE_FIXUPS_RELOC_LDX_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_LDX_OK:
+                        LDX             #<ASM_FIXUP_TARGET_RTS
+                        LDY             #>ASM_FIXUP_TARGET_RTS
+                        JSR             ASM_SMOKE_EMIT_LINE
+                        BCS             ASM_SMOKE_FIXUPS_RELOC_TARGET_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_TARGET_OK:
+                        JSR             ASM_END
+                        BCS             ASM_SMOKE_FIXUPS_RELOC_END_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_END_OK:
+                        LDA             ASM_RELOC_COUNT
+                        CMP             #$03
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_RC_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_RC_OK:
+                        LDA             ASM_RELOC_KIND
+                        CMP             #ASM_RELOC_ABS16_INTERNAL
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_K0_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_K0_OK:
+                        LDA             ASM_RELOC_KIND+1
+                        CMP             #ASM_RELOC_LO8_INTERNAL
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_K1_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_K1_OK:
+                        LDA             ASM_RELOC_KIND+2
+                        CMP             #ASM_RELOC_HI8_INTERNAL
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_K2_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_K2_OK:
+                        LDA             ASM_SEAL_END_LO
+                        CLC
+                        ADC             #$10
+                        TAX
+                        LDA             ASM_SEAL_END_HI
+                        ADC             #$00
+                        TAY
+                        JSR             ASM_SEAL_RELOCATE
+                        BCS             ASM_SMOKE_FIXUPS_RELOC_CALL_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_CALL_OK:
+                        LDA             ASM_RELOCATE_COUNT
+                        CMP             #$03
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_PC_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_PC_OK:
+                        LDA             ASM_RELOCATE_BASE_LO
+                        CLC
+                        ADC             #$07
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_RELOCATE_BASE_HI
+                        ADC             #$00
+                        STA             ASM_TMP0_HI
+                        LDA             ASM_RELOCATE_BASE_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_RELOCATE_BASE_HI
+                        STA             ASM_SCAN_PTR_HI
+                        LDY             #$00
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$20
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_B0_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_B0_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_TMP0_LO
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_B1_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_B1_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_TMP0_HI
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_B2_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_B2_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$A9
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_B3_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_B3_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_TMP0_LO
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_B4_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_B4_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$A2
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_B5_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_B5_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_TMP0_HI
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_B6_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_B6_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #$60
+                        BEQ             ASM_SMOKE_FIXUPS_RELOC_B7_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_RELOC_B7_OK:
+                        SEC
+                        RTS
+ASM_SMOKE_FIXUPS_RELOC_FAIL:
                         CLC
                         RTS
 
@@ -8940,6 +9132,178 @@ ASM_RELOC_STORE_IMPORT_SITE_OK:
                         INC             ASM_RELOC_COUNT
                         PLX
                         SEC
+                        RTS
+
+ASM_SEAL_RELOCATE:
+                        STX             ASM_RELOCATE_BASE_LO
+                        STY             ASM_RELOCATE_BASE_HI
+                        STZ             ASM_RELOCATE_COUNT
+                        JSR             ASM_SEAL_VALIDATE
+                        BCS             ASM_SEAL_RELOCATE_HAVE_SEAL
+                        RTS
+ASM_SEAL_RELOCATE_HAVE_SEAL:
+                        JSR             ASM_SEAL_RELOCATE_RANGE_OK
+                        BCS             ASM_SEAL_RELOCATE_RANGE_SAFE
+                        RTS
+ASM_SEAL_RELOCATE_RANGE_SAFE:
+                        JSR             ASM_SEAL_RELOCATE_COPY_BODY
+                        LDX             #$00
+ASM_SEAL_RELOCATE_PATCH_LOOP:
+                        CPX             ASM_RELOC_COUNT
+                        BCS             ASM_SEAL_RELOCATE_DONE
+                        STX             ASM_SLOT
+                        LDA             ASM_RELOC_KIND,X
+                        JSR             ASM_INTERNAL_RELOC_KIND_A
+                        BCC             ASM_SEAL_RELOCATE_PATCH_NEXT
+                        JSR             ASM_RELOCATE_PATCH_ROW_X
+ASM_SEAL_RELOCATE_PATCH_NEXT:
+                        LDX             ASM_SLOT
+                        INX
+                        BRA             ASM_SEAL_RELOCATE_PATCH_LOOP
+ASM_SEAL_RELOCATE_DONE:
+                        LDA             #ASM_STATUS_OK
+                        LDX             ASM_RELOCATE_BASE_LO
+                        LDY             ASM_RELOCATE_BASE_HI
+                        SEC
+                        RTS
+
+ASM_INTERNAL_RELOC_KIND_A:
+                        CMP             #ASM_RELOC_ABS16_INTERNAL
+                        BEQ             ASM_INTERNAL_RELOC_KIND_YES
+                        CMP             #ASM_RELOC_LO8_INTERNAL
+                        BEQ             ASM_INTERNAL_RELOC_KIND_YES
+                        CMP             #ASM_RELOC_HI8_INTERNAL
+                        BEQ             ASM_INTERNAL_RELOC_KIND_YES
+                        CLC
+                        RTS
+ASM_INTERNAL_RELOC_KIND_YES:
+                        SEC
+                        RTS
+
+ASM_SEAL_RELOCATE_RANGE_OK:
+                        LDA             ASM_SEAL_LEN_LO
+                        ORA             ASM_SEAL_LEN_HI
+                        BNE             ASM_SEAL_RELOCATE_RANGE_NONZERO
+                        SEC
+                        RTS
+ASM_SEAL_RELOCATE_RANGE_NONZERO:
+                        LDA             ASM_RELOCATE_BASE_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCS             ASM_SEAL_RELOCATE_RANGE_BAD
+                        LDA             ASM_RELOCATE_BASE_LO
+                        LDX             ASM_RELOCATE_BASE_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCC             ASM_SEAL_RELOCATE_RANGE_BAD
+                        LDA             ASM_SEAL_LEN_LO
+                        SEC
+                        SBC             #$01
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_SEAL_LEN_HI
+                        SBC             #$00
+                        STA             ASM_TMP0_HI
+                        LDA             ASM_RELOCATE_BASE_LO
+                        CLC
+                        ADC             ASM_TMP0_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_RELOCATE_BASE_HI
+                        ADC             ASM_TMP0_HI
+                        BCS             ASM_SEAL_RELOCATE_RANGE_BAD
+                        STA             ASM_TMP1_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCS             ASM_SEAL_RELOCATE_RANGE_BAD
+                        LDA             ASM_TMP1_LO
+                        LDX             ASM_TMP1_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCC             ASM_SEAL_RELOCATE_RANGE_BAD
+                        SEC
+                        RTS
+ASM_SEAL_RELOCATE_RANGE_BAD:
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        CLC
+                        RTS
+
+ASM_SEAL_RELOCATE_COPY_BODY:
+                        LDA             ASM_SEAL_BASE_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_SEAL_BASE_HI
+                        STA             ASM_SCAN_PTR_HI
+                        LDA             ASM_RELOCATE_BASE_LO
+                        STA             ASM_EMIT_PTR_LO
+                        LDA             ASM_RELOCATE_BASE_HI
+                        STA             ASM_EMIT_PTR_HI
+                        LDA             ASM_SEAL_LEN_LO
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_SEAL_LEN_HI
+                        STA             ASM_VALUE_HI
+                        ORA             ASM_VALUE_LO
+                        BEQ             ASM_SEAL_RELOCATE_COPY_DONE
+ASM_SEAL_RELOCATE_COPY_LOOP:
+                        LDY             #$00
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INC             ASM_SCAN_PTR_LO
+                        BNE             ASM_SEAL_RELOCATE_COPY_DST
+                        INC             ASM_SCAN_PTR_HI
+ASM_SEAL_RELOCATE_COPY_DST:
+                        INC             ASM_EMIT_PTR_LO
+                        BNE             ASM_SEAL_RELOCATE_COPY_COUNT
+                        INC             ASM_EMIT_PTR_HI
+ASM_SEAL_RELOCATE_COPY_COUNT:
+                        DEC             ASM_VALUE_LO
+                        LDA             ASM_VALUE_LO
+                        CMP             #$FF
+                        BNE             ASM_SEAL_RELOCATE_COPY_MORE
+                        DEC             ASM_VALUE_HI
+ASM_SEAL_RELOCATE_COPY_MORE:
+                        LDA             ASM_VALUE_LO
+                        ORA             ASM_VALUE_HI
+                        BNE             ASM_SEAL_RELOCATE_COPY_LOOP
+ASM_SEAL_RELOCATE_COPY_DONE:
+                        RTS
+
+ASM_RELOCATE_PATCH_ROW_X:
+                        LDA             ASM_RELOCATE_BASE_LO
+                        CLC
+                        ADC             ASM_RELOC_SITE_LO,X
+                        STA             ASM_EMIT_PTR_LO
+                        LDA             ASM_RELOCATE_BASE_HI
+                        ADC             ASM_RELOC_SITE_HI,X
+                        STA             ASM_EMIT_PTR_HI
+                        LDA             ASM_RELOCATE_BASE_LO
+                        CLC
+                        ADC             ASM_RELOC_TARGET_LO,X
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_RELOCATE_BASE_HI
+                        ADC             ASM_RELOC_TARGET_HI,X
+                        STA             ASM_VALUE_HI
+                        LDA             ASM_RELOC_KIND,X
+                        CMP             #ASM_RELOC_ABS16_INTERNAL
+                        BEQ             ASM_RELOCATE_PATCH_ABS16
+                        CMP             #ASM_RELOC_LO8_INTERNAL
+                        BEQ             ASM_RELOCATE_PATCH_LO8
+                        CMP             #ASM_RELOC_HI8_INTERNAL
+                        BEQ             ASM_RELOCATE_PATCH_HI8
+                        RTS
+ASM_RELOCATE_PATCH_ABS16:
+                        LDY             #$00
+                        LDA             ASM_VALUE_LO
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INY
+                        LDA             ASM_VALUE_HI
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INC             ASM_RELOCATE_COUNT
+                        RTS
+ASM_RELOCATE_PATCH_LO8:
+                        LDY             #$00
+                        LDA             ASM_VALUE_LO
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INC             ASM_RELOCATE_COUNT
+                        RTS
+ASM_RELOCATE_PATCH_HI8:
+                        LDY             #$00
+                        LDA             ASM_VALUE_HI
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INC             ASM_RELOCATE_COUNT
                         RTS
 
 ASM_SEAL_RESOLVE_IMPORTS:
@@ -14234,6 +14598,9 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_EXPORT_COUNT
                         STZ             ASM_IMPORT_COUNT
                         STZ             ASM_IMPORT_RESOLVE_COUNT
+                        STZ             ASM_RELOCATE_BASE_LO
+                        STZ             ASM_RELOCATE_BASE_HI
+                        STZ             ASM_RELOCATE_COUNT
                         RTS
 
                         IF              ASM_RUNTIME_ONLY
@@ -14327,6 +14694,9 @@ ASM_EXPORT_COUNT:      DB              $00
 ASM_IMPORT_COUNT:      DB              $00
 ASM_IMPORT_RESOLVE_COUNT:
                         DB              $00
+ASM_RELOCATE_BASE_LO:  DB              $00
+ASM_RELOCATE_BASE_HI:  DB              $00
+ASM_RELOCATE_COUNT:    DB              $00
 ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
 ASM_RJ_READY:          DB              $00
@@ -14987,6 +15357,12 @@ ASM_FIXUP_LDA_LO_PUT_CSTR:
                         DB              "        LDA #<BIO_FTDI_PUT_CSTR",0
 ASM_FIXUP_LDX_HI_PUT_CSTR:
                         DB              "        LDX #>BIO_FTDI_PUT_CSTR",0
+ASM_FIXUP_JSR_TARGET:  DB              "        JSR TARGET",0
+ASM_FIXUP_LDA_LO_TARGET:
+                        DB              "        LDA #<TARGET",0
+ASM_FIXUP_LDX_HI_TARGET:
+                        DB              "        LDX #>TARGET",0
+ASM_FIXUP_TARGET_RTS:  DB              "TARGET RTS",0
 ASM_OPCODE_EXPECT:     DB              $A2,$00,$A0,$4D,$9C,$10,$71,$9D
                         DB              $00,$71
                         DB              $4D,$10,$71,$8D,$10,$71,$E8,$E0
@@ -15137,6 +15513,7 @@ ASM_SMOKE_MSG_FIX_B7:  DB              " B7 ABS16 RESOLVE",0
 ASM_SMOKE_MSG_FIX_B8:  DB              " B8 ABS16 PATCH LO",0
 ASM_SMOKE_MSG_FIX_B9:  DB              " B9 ABS16 PATCH HI",0
 ASM_SMOKE_MSG_FIX_BA:  DB              " BA ABS16 END",0
+ASM_SMOKE_MSG_FIX_BB:  DB              " BB RELOCATE",0
 ASM_SMOKE_MSG_DIR_C1:  DB              " C1 DB BEGIN",0
 ASM_SMOKE_MSG_DIR_C2:  DB              " C2 DB ADDR EQU",0
 ASM_SMOKE_MSG_DIR_C3:  DB              " C3 DB EMIT",0
