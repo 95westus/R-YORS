@@ -541,6 +541,12 @@ A [addr] [label[:]] MMM [operand] .
   a header plus tagged SEAL, REL, EXP, IMP, and BODY sections; it packages
   metadata for later `LOAD`/`INSTALL` work but does not resolve, relocate, or
   run the body.
+- `SEAL> CHECK address` is the first AP v1 package reader proof. It is enabled
+  in the same full-core/flash builds as `PACKAGE` and structurally validates the
+  envelope before later `LOAD` work. This slice checks header, range, section
+  order, section length accounting, relocation count shape, EXP/IMP record
+  length fields, and body length versus the seal record, but does not recompute
+  body FNV yet.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.
@@ -669,10 +675,12 @@ A [addr] [label[:]] MMM [operand] .
   room below it for the loaded runtime body, DATA constants, and UDATA/line
   buffer. ASM rejects output targets that overlap the live ASM workspace:
   RAM-loaded runtime/core images protect `$2000..ASM_CODE_BUF-1`, and the
-  flash wrapper protects `$6000..ASM_CODE_BUF-1`. `ASM_CODE_BUF` itself remains
-  a valid fallback emission buffer. The guard is applied at explicit
-  `ASM_BEGIN`, `ORG`, and before emitting byte spans, so failures return
-  `BAD RANGE` before writing into the protected area.
+  flash wrapper protects `$6000..ASM_CODE_BUF-1`. Runtime-paste `ASM_CODE_BUF`
+  remains a valid fallback emission buffer; flash ASM starts at explicit
+  `$2000`, and its high-RAM `ASM_CODE_BUF` is only an 8-byte guard fence ending
+  at the `$7F00` I/O page. The guard is applied at explicit `ASM_BEGIN`, `ORG`,
+  and before emitting byte spans, so failures return `BAD RANGE` before writing
+  into the protected area.
 - `ASM_RUNTIME_ONLY` keeps the default `ASM_CODE_BUF` as UDATA, not loaded
   DATA. The callable runtime wrappers normally enter with explicit PCs, and the
   default buffer remains a RAM fallback without costing S19 bytes.

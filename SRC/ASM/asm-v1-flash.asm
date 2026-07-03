@@ -21,6 +21,7 @@
                         XREF            ASM_SEAL_RESOLVE_IMPORTS
                         XREF            ASM_SEAL_RELOCATE
                         XREF            ASM_SEAL_PACKAGE
+                        XREF            ASM_SEAL_CHECK_PACKAGE
                         XREF            ASM_SEAL_FLAGS
                         XREF            ASM_IMPORT_RESOLVE_COUNT
                         XREF            ASM_RELOCATE_BASE_LO
@@ -150,6 +151,12 @@ ASMF_POST_CHECK_NEW_3:
                         BCC             ASMF_POST_CHECK_NEW_4
                         JMP             ASMF_PACKAGE_CMD
 ASMF_POST_CHECK_NEW_4:
+                        LDX             #<ASMF_CMD_CHECK
+                        LDY             #>ASMF_CMD_CHECK
+                        JSR             ASMF_MATCH_ARG_CMD
+                        BCC             ASMF_POST_CHECK_NEW_5
+                        JMP             ASMF_CHECK_CMD
+ASMF_POST_CHECK_NEW_5:
                         LDX             #<ASMF_CMD_NEW
                         LDY             #>ASMF_CMD_NEW
                         JSR             ASMF_MATCH_STRICT_CMD
@@ -288,6 +295,40 @@ ASMF_PACKAGE_HAVE_ARG:
 ASMF_PACKAGE_OK:
                         LDX             #<MSG_PACKAGE_OK
                         LDY             #>MSG_PACKAGE_OK
+                        JSR             ASMF_PRINT
+                        LDA             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_PACKAGE_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<MSG_PACKAGE_LEN
+                        LDY             #>MSG_PACKAGE_LEN
+                        JSR             ASMF_PRINT
+                        LDA             ASM_PACKAGE_LEN_HI
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDA             ASM_PACKAGE_LEN_LO
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_RJ_PRINT_CRLF
+                        JMP             ASMF_LOOP
+
+ASMF_CHECK_CMD:
+                        JSR             ASMF_PARSE_RELOCATE_ARG
+                        BCS             ASMF_CHECK_HAVE_ARG
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_CHECK_ERR
+                        LDY             #>MSG_CHECK_ERR
+                        JSR             ASMF_PRINT_STATUS_LINE
+                        JMP             ASMF_LOOP
+ASMF_CHECK_HAVE_ARG:
+                        JSR             ASM_SEAL_CHECK_PACKAGE
+                        BCS             ASMF_CHECK_OK
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_CHECK_ERR
+                        LDY             #>MSG_CHECK_ERR
+                        JSR             ASMF_PRINT_STATUS_LINE
+                        JMP             ASMF_LOOP
+ASMF_CHECK_OK:
+                        LDX             #<MSG_CHECK_OK
+                        LDY             #>MSG_CHECK_OK
                         JSR             ASMF_PRINT
                         LDA             ASM_PACKAGE_BASE_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
@@ -554,6 +595,7 @@ ASMF_CMD_SEAL:          DB              "SEAL",0
 ASMF_CMD_RESOLVE:       DB              "RESOLVE",0
 ASMF_CMD_RELOCATE:      DB              "RELOCATE",0
 ASMF_CMD_PACKAGE:       DB              "PACKAGE",0
+ASMF_CMD_CHECK:         DB              "CHECK",0
 ASMF_CMD_NEW:           DB              "NEW",0
 ASMF_CMD_END:           DB              "END",0
 MSG_TITLE:              DB              "ASM FLASH",0
@@ -574,6 +616,8 @@ MSG_RELOCATE_COUNT:     DB              " COUNT=$",0
 MSG_PACKAGE_ERR:        DB              "PACKAGE ERR=$",0
 MSG_PACKAGE_OK:         DB              "PACKAGE OK @=$",0
 MSG_PACKAGE_LEN:        DB              " LEN=$",0
+MSG_CHECK_ERR:          DB              "CHECK ERR=$",0
+MSG_CHECK_OK:           DB              "CHECK OK @=$",0
 MSG_FLAGS:              DB              " FLAGS=$",0
 MSG_DONE:               DB              "ASM FLASH OK",0
 MSG_BYE:                DB              "ASM FLASH BYE",0

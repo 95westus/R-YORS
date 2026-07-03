@@ -212,6 +212,7 @@ SEAL             dry-run the frozen facts
 RESOLVE          resolve import rows through current RJOIN and patch RAM body
 RELOCATE addr    copy body to RAM addr and patch internal relocation rows
 PACKAGE addr     write AP v1 package envelope at RAM addr
+CHECK addr       validate AP v1 package envelope at RAM addr
 NEW              reopen ASM at the frozen END PC
 .                return to HIMON
 ```
@@ -238,6 +239,12 @@ overlap the sealed body. The envelope starts with `A P version total_lo
 total_hi`, followed by tagged sections: `S` seal record, `R` relocation record,
 `E` export record, `I` import record, and `B` body bytes. This packages the
 facts for later `LOAD`/`INSTALL`; it does not relocate, resolve, or run them.
+
+`CHECK address` reads an AP v1 package envelope back from RAM and validates its
+shape. It verifies the header, guarded total range, section order, section
+length accounting, relocation count shape, EXP/IMP record length fields, and
+that the final body byte count matches the seal record. It does not recompute
+the body FNV yet and does not load, relocate, resolve, or run the package.
 
 `NEW` is deliberately validated and non-interactive. It accepts only bare `NEW`
 or `NEW ; comment` with optional surrounding spaces/tabs. It does not accept an

@@ -42,6 +42,7 @@
                         XDEF            ASM_SEAL_RELOCATE
                         IF              ASM_PACKAGE_ENABLED
                         XDEF            ASM_SEAL_PACKAGE
+                        XDEF            ASM_SEAL_CHECK_PACKAGE
                         ENDIF
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
@@ -163,6 +164,8 @@ ASM_VOC_ID            EQU             ASM_VALUE_LO
 ASM_VOC_DISP          EQU             ASM_VALUE_HI
 ASM_VOC_FLAGS         EQU             ASM_CARE_LO
 ASM_VOC_AUX           EQU             ASM_CARE_HI
+ASM_PACKAGE_SEAL_LEN_LO EQU           ASM_CARE_LO
+ASM_PACKAGE_SEAL_LEN_HI EQU           ASM_CARE_HI
 
 ; ----------------------------------------------------------------------------
 ; Status, session, and v1 proof limits.
@@ -5658,6 +5661,17 @@ ASM_SMOKE_FIXUPS_PACKAGE_BODY1_OK:
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_BODY2_OK
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_PACKAGE_BODY2_OK:
+                        LDX             ASM_PACKAGE_BASE_LO
+                        LDY             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_SEAL_CHECK_PACKAGE
+                        BCS             ASM_SMOKE_FIXUPS_PACKAGE_CHECK_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_CHECK_OK:
+                        LDA             ASM_PACKAGE_LEN_LO
+                        CMP             #$37
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_CHECK_LEN_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_CHECK_LEN_OK:
                         ENDIF
                         SEC
                         RTS
@@ -8647,7 +8661,8 @@ ASM_EMIT_ROOM_OK:
 ; IN : A=address lo, X=address hi.
 ; OUT: C=1 when the address is outside the protected ASM runtime workspace.
 ;      C=0 when the address is inside [guard_start, ASM_CODE_BUF).
-; NOTE: ASM_CODE_BUF itself remains a valid fallback emission buffer.
+; NOTE: Runtime-paste ASM_CODE_BUF is a fallback buffer; flash ASM uses its
+;       small high-RAM ASM_CODE_BUF only as the guard fence before I/O.
 ; ----------------------------------------------------------------------------
 ASM_TARGET_ADDR_OK:
                         CPX             #ASM_TARGET_GUARD_HI
@@ -9732,6 +9747,318 @@ ASM_PACKAGE_WRITE_A:
                         BNE             ASM_PACKAGE_WRITE_A_DONE
                         INC             ASM_EMIT_PTR_HI
 ASM_PACKAGE_WRITE_A_DONE:
+                        RTS
+
+ASM_SEAL_CHECK_PACKAGE:
+                        STX             ASM_PACKAGE_BASE_LO
+                        STY             ASM_PACKAGE_BASE_HI
+                        LDA             #ASM_PACKAGE_HDR_BYTES
+                        STA             ASM_PACKAGE_LEN_LO
+                        STZ             ASM_PACKAGE_LEN_HI
+                        JSR             ASM_PACKAGE_CHECK_RANGE_OK
+                        BCS             ASM_PACKAGE_CHECK_HAVE_HEADER
+                        RTS
+ASM_PACKAGE_CHECK_HAVE_HEADER:
+                        LDA             ASM_PACKAGE_BASE_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        STA             ASM_SCAN_PTR_HI
+                        LDY             #ASM_PACKAGE_OFF_SIG0
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_PACKAGE_SIG0
+                        BEQ             ASM_PACKAGE_CHECK_SIG0_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_SIG0_OK:
+                        LDY             #ASM_PACKAGE_OFF_SIG1
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_PACKAGE_SIG1
+                        BEQ             ASM_PACKAGE_CHECK_SIG1_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_SIG1_OK:
+                        LDY             #ASM_PACKAGE_OFF_VER
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_PACKAGE_VERSION
+                        BEQ             ASM_PACKAGE_CHECK_VER_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_VER_OK:
+                        LDY             #ASM_PACKAGE_OFF_TOTAL
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        STA             ASM_PACKAGE_LEN_LO
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        STA             ASM_PACKAGE_LEN_HI
+                        ORA             ASM_PACKAGE_LEN_LO
+                        BNE             ASM_PACKAGE_CHECK_TOTAL_NONZERO
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_TOTAL_NONZERO:
+                        JSR             ASM_PACKAGE_CHECK_RANGE_OK
+                        BCS             ASM_PACKAGE_CHECK_RANGE_SAFE
+                        RTS
+ASM_PACKAGE_CHECK_RANGE_SAFE:
+                        LDA             ASM_PACKAGE_BASE_LO
+                        CLC
+                        ADC             #ASM_PACKAGE_HDR_BYTES
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        ADC             #$00
+                        STA             ASM_SCAN_PTR_HI
+                        LDA             ASM_PACKAGE_LEN_LO
+                        SEC
+                        SBC             #ASM_PACKAGE_HDR_BYTES
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_PACKAGE_LEN_HI
+                        SBC             #$00
+                        STA             ASM_VALUE_HI
+                        BCS             ASM_PACKAGE_CHECK_SEAL
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+
+ASM_PACKAGE_CHECK_SEAL:
+                        LDA             #ASM_PACKAGE_TAG_SEAL
+                        JSR             ASM_PACKAGE_CHECK_TAG_LEN
+                        BCS             ASM_PACKAGE_CHECK_SEAL_TAG_OK
+                        RTS
+ASM_PACKAGE_CHECK_SEAL_TAG_OK:
+                        LDA             ASM_TMP0_LO
+                        CMP             #ASM_SEAL_REC_BYTES
+                        BEQ             ASM_PACKAGE_CHECK_SEAL_LEN_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_SEAL_LEN_OK:
+                        LDA             ASM_TMP0_LO
+                        JSR             ASM_PACKAGE_CHECK_NEED_A
+                        BCS             ASM_PACKAGE_CHECK_SEAL_ROOM_OK
+                        RTS
+ASM_PACKAGE_CHECK_SEAL_ROOM_OK:
+                        LDY             #ASM_SEAL_REC_OFF_FLAGS
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_SEALF_VALID
+                        BEQ             ASM_PACKAGE_CHECK_SEAL_FLAGS_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_SEAL_FLAGS_OK:
+                        LDY             #ASM_SEAL_REC_OFF_LEN
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        STA             ASM_PACKAGE_SEAL_LEN_LO
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        STA             ASM_PACKAGE_SEAL_LEN_HI
+                        LDA             ASM_TMP0_LO
+                        JSR             ASM_PACKAGE_CHECK_ADVANCE_A
+                        BCS             ASM_PACKAGE_CHECK_RELOC
+                        RTS
+
+ASM_PACKAGE_CHECK_RELOC:
+                        LDA             #ASM_PACKAGE_TAG_RELOC
+                        JSR             ASM_PACKAGE_CHECK_TAG_LEN
+                        BCS             ASM_PACKAGE_CHECK_RELOC_TAG_OK
+                        RTS
+ASM_PACKAGE_CHECK_RELOC_TAG_OK:
+                        LDA             ASM_TMP0_LO
+                        BNE             ASM_PACKAGE_CHECK_RELOC_LEN_NONZERO
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_RELOC_LEN_NONZERO:
+                        LDA             ASM_TMP0_LO
+                        JSR             ASM_PACKAGE_CHECK_NEED_A
+                        BCS             ASM_PACKAGE_CHECK_RELOC_ROOM_OK
+                        RTS
+ASM_PACKAGE_CHECK_RELOC_ROOM_OK:
+                        LDY             #$00
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        STA             ASM_SLOT
+                        CMP             #(ASM_RELOC_MAX+1)
+                        BCC             ASM_PACKAGE_CHECK_RELOC_COUNT_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_RELOC_COUNT_OK:
+                        ASL             A
+                        ASL             A
+                        CLC
+                        ADC             ASM_SLOT
+                        CLC
+                        ADC             #$01
+                        CMP             ASM_TMP0_LO
+                        BEQ             ASM_PACKAGE_CHECK_RELOC_SHAPE_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_RELOC_SHAPE_OK:
+                        LDA             ASM_TMP0_LO
+                        JSR             ASM_PACKAGE_CHECK_ADVANCE_A
+                        BCS             ASM_PACKAGE_CHECK_EXPORT
+                        RTS
+
+ASM_PACKAGE_CHECK_EXPORT:
+                        LDA             #ASM_PACKAGE_TAG_EXPORT
+                        JSR             ASM_PACKAGE_CHECK_REC_SECTION
+                        BCS             ASM_PACKAGE_CHECK_IMPORT
+                        RTS
+
+ASM_PACKAGE_CHECK_IMPORT:
+                        LDA             #ASM_PACKAGE_TAG_IMPORT
+                        JSR             ASM_PACKAGE_CHECK_REC_SECTION
+                        BCS             ASM_PACKAGE_CHECK_BODY
+                        RTS
+
+ASM_PACKAGE_CHECK_BODY:
+                        LDA             #$03
+                        JSR             ASM_PACKAGE_CHECK_NEED_A
+                        BCS             ASM_PACKAGE_CHECK_BODY_HDR_OK
+                        RTS
+ASM_PACKAGE_CHECK_BODY_HDR_OK:
+                        LDY             #$00
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_PACKAGE_TAG_BODY
+                        BEQ             ASM_PACKAGE_CHECK_BODY_TAG_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_BODY_TAG_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_PACKAGE_SEAL_LEN_LO
+                        BEQ             ASM_PACKAGE_CHECK_BODY_LO_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_BODY_LO_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_PACKAGE_SEAL_LEN_HI
+                        BEQ             ASM_PACKAGE_CHECK_BODY_HI_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_BODY_HI_OK:
+                        LDA             #$03
+                        JSR             ASM_PACKAGE_CHECK_ADVANCE_A
+                        BCS             ASM_PACKAGE_CHECK_BODY_LEFT_OK
+                        RTS
+ASM_PACKAGE_CHECK_BODY_LEFT_OK:
+                        LDA             ASM_VALUE_LO
+                        CMP             ASM_PACKAGE_SEAL_LEN_LO
+                        BEQ             ASM_PACKAGE_CHECK_BODY_LEFT_LO_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_BODY_LEFT_LO_OK:
+                        LDA             ASM_VALUE_HI
+                        CMP             ASM_PACKAGE_SEAL_LEN_HI
+                        BEQ             ASM_PACKAGE_CHECK_DONE
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_DONE:
+                        LDA             #ASM_STATUS_OK
+                        LDX             ASM_PACKAGE_BASE_LO
+                        LDY             ASM_PACKAGE_BASE_HI
+                        SEC
+                        RTS
+
+ASM_PACKAGE_CHECK_REC_SECTION:
+                        JSR             ASM_PACKAGE_CHECK_TAG_LEN
+                        BCS             ASM_PACKAGE_CHECK_REC_TAG_OK
+                        RTS
+ASM_PACKAGE_CHECK_REC_TAG_OK:
+                        LDA             ASM_TMP0_LO
+                        CMP             #$02
+                        BCS             ASM_PACKAGE_CHECK_REC_LEN_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_REC_LEN_OK:
+                        LDA             ASM_TMP0_LO
+                        JSR             ASM_PACKAGE_CHECK_NEED_A
+                        BCS             ASM_PACKAGE_CHECK_REC_ROOM_OK
+                        RTS
+ASM_PACKAGE_CHECK_REC_ROOM_OK:
+                        LDY             #$01
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_TMP0_LO
+                        BEQ             ASM_PACKAGE_CHECK_REC_SHAPE_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_REC_SHAPE_OK:
+                        LDA             ASM_TMP0_LO
+                        JMP             ASM_PACKAGE_CHECK_ADVANCE_A
+
+ASM_PACKAGE_CHECK_TAG_LEN:
+                        STA             ASM_TMP1_LO
+                        LDA             #$02
+                        JSR             ASM_PACKAGE_CHECK_NEED_A
+                        BCS             ASM_PACKAGE_CHECK_TAG_ROOM_OK
+                        RTS
+ASM_PACKAGE_CHECK_TAG_ROOM_OK:
+                        LDY             #$00
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_TMP1_LO
+                        BEQ             ASM_PACKAGE_CHECK_TAG_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_TAG_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        STA             ASM_TMP0_LO
+                        STZ             ASM_TMP0_HI
+                        LDA             #$02
+                        JMP             ASM_PACKAGE_CHECK_ADVANCE_A
+
+ASM_PACKAGE_CHECK_ADVANCE_A:
+                        STA             ASM_TMP1_HI
+                        JSR             ASM_PACKAGE_CHECK_NEED_A
+                        BCS             ASM_PACKAGE_CHECK_ADVANCE_ROOM
+                        RTS
+ASM_PACKAGE_CHECK_ADVANCE_ROOM:
+                        LDA             ASM_SCAN_PTR_LO
+                        CLC
+                        ADC             ASM_TMP1_HI
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_SCAN_PTR_HI
+                        ADC             #$00
+                        STA             ASM_SCAN_PTR_HI
+                        LDA             ASM_VALUE_LO
+                        SEC
+                        SBC             ASM_TMP1_HI
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_VALUE_HI
+                        SBC             #$00
+                        STA             ASM_VALUE_HI
+                        SEC
+                        RTS
+
+ASM_PACKAGE_CHECK_NEED_A:
+                        STA             ASM_TMP1_HI
+                        LDA             ASM_VALUE_HI
+                        BNE             ASM_PACKAGE_CHECK_NEED_OK
+                        LDA             ASM_VALUE_LO
+                        CMP             ASM_TMP1_HI
+                        BCS             ASM_PACKAGE_CHECK_NEED_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_RANGE
+ASM_PACKAGE_CHECK_NEED_OK:
+                        SEC
+                        RTS
+
+ASM_PACKAGE_CHECK_RANGE_OK:
+                        LDA             ASM_PACKAGE_LEN_LO
+                        ORA             ASM_PACKAGE_LEN_HI
+                        BEQ             ASM_PACKAGE_CHECK_BAD_RANGE
+                        LDA             ASM_PACKAGE_BASE_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCS             ASM_PACKAGE_CHECK_BAD_RANGE
+                        LDA             ASM_PACKAGE_BASE_LO
+                        LDX             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCC             ASM_PACKAGE_CHECK_BAD_RANGE
+                        LDA             ASM_PACKAGE_LEN_LO
+                        SEC
+                        SBC             #$01
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_PACKAGE_LEN_HI
+                        SBC             #$00
+                        STA             ASM_TMP0_HI
+                        LDA             ASM_PACKAGE_BASE_LO
+                        CLC
+                        ADC             ASM_TMP0_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        ADC             ASM_TMP0_HI
+                        BCS             ASM_PACKAGE_CHECK_BAD_RANGE
+                        STA             ASM_TMP1_HI
+                        CMP             #ASM_TARGET_LIMIT_HI
+                        BCS             ASM_PACKAGE_CHECK_BAD_RANGE
+                        LDA             ASM_TMP1_LO
+                        LDX             ASM_TMP1_HI
+                        JSR             ASM_TARGET_ADDR_OK
+                        BCC             ASM_PACKAGE_CHECK_BAD_RANGE
+                        SEC
+                        RTS
+ASM_PACKAGE_CHECK_BAD_RANGE:
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        CLC
+                        RTS
+ASM_PACKAGE_CHECK_BAD_LINE:
+                        LDA             #ASM_STATUS_BAD_LINE
+                        CLC
                         RTS
 
                         ENDIF
@@ -16109,7 +16436,11 @@ ASM_VOC_KIND_TAB:      DB              $03,$01,$01,$01,$01,$01,$01,$01,$01,$01,$
 
                         IF              ASM_RUNTIME_ONLY
                         UDATA
+                        IF              ASM_FLASH_RUNTIME
+ASM_CODE_BUF:           DS              $0008
+                        ELSE
 ASM_CODE_BUF:           DS              $0100
+                        ENDIF
                         ELSE
                         IF              ASM_FLASH_RUNTIME
                         UDATA

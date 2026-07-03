@@ -5174,6 +5174,7 @@ SEAL             validate and print frozen facts plus the RAM record summary
 RESOLVE          resolve import rows through current RJOIN and patch RAM body
 RELOCATE addr    copy body to RAM addr and patch internal relocation rows
 PACKAGE addr     write AP v1 package envelope at RAM addr
+CHECK addr       validate AP v1 package envelope at RAM addr
 NEW              start a fresh ASM session at the frozen END PC
 .                exit the wrapper
 ```
@@ -5205,6 +5206,14 @@ sequential: header, tagged seal section `S`, tagged relocation section `R`,
 tagged export section `E`, tagged import section `I`, and tagged body section
 `B`. It preserves relocatable metadata for later load/install work; it does not
 resolve imports, relocate the body, or run code.
+
+`CHECK address` is the matching AP v1 envelope validator. It is enabled in the
+same full-core/flash builds as `PACKAGE`, and omitted from the stripped RAM
+paste wrapper. It parses the package in RAM, checks header signature/version,
+guarded total range, tagged section order, section lengths, relocation count
+shape, EXP/IMP record length fields, and final body length versus the seal
+record. The first slice is structural only: it does not recompute the body FNV,
+load bytes elsewhere, resolve imports, or run the package.
 
 `NEW` is valid only in the post-`END` `SEAL> ` window. It accepts only `NEW`,
 `NEW ; comment`, and the same optional leading/trailing spaces or tabs used by
@@ -5301,9 +5310,11 @@ parser/expression scratch
 If the chosen code range overlaps the assembler's own RAM workspace, fail with
 a range/context error before writing any bytes. The active guard protects
 `$2000..ASM_CODE_BUF-1` for RAM-loaded runtime/core images and
-`$6000..ASM_CODE_BUF-1` for the flash wrapper; `ASM_CODE_BUF` itself remains a
-valid fallback output buffer. The first implementation should stop cleanly when
-a table fills; it must not spill into flash or overwrite neighboring RAM.
+`$6000..ASM_CODE_BUF-1` for the flash wrapper. Runtime-paste `ASM_CODE_BUF`
+remains a valid fallback output buffer; flash ASM starts at explicit `$2000`,
+so its high-RAM `ASM_CODE_BUF` is only a guard fence below the `$7F00` I/O page.
+The first implementation should stop cleanly when a table fills; it must not
+spill into flash or overwrite neighboring RAM.
 
 The current proof-sized defaults are useful starting points:
 
@@ -5316,7 +5327,8 @@ ASM_LOCAL_MAX       16 local label rows per active global scope
 ASM_LOCAL_NAME_MAX  16 bytes, 15 visible chars plus terminator
 ASM_LINE_MAX        63 visible input chars
 ASM_CODE_BUF       512 loaded bytes in full core/smoke builds;
-                   256 UDATA bytes in ASM_RUNTIME_ONLY builds
+                   256 UDATA bytes in runtime-paste builds;
+                   8 UDATA fence bytes in flash-runtime builds
 ```
 
 Treat those as proof defaults, not permanent language limits.

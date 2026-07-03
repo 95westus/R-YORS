@@ -6108,7 +6108,9 @@ ASMRP.TARGET.7600 moves the runtime-paste default emit target from $7000 to
          ASMRT.OVERLAP_GUARD made that a BAD RANGE error.
 ASMRT.SIZE.UDATA_BUF moves ASM_RUNTIME_ONLY ASM_CODE_BUF from loaded DATA to
          UDATA. Full core/smoke builds keep the $0200 loaded smoke buffer;
-         runtime-only builds keep a $0100 RAM-only default buffer.
+         runtime-paste keeps a $0100 RAM-only default buffer. Flash ASM uses
+         an explicit $2000 start and only keeps an 8-byte guard fence below
+         the $7F00 I/O page.
 ASMRT.SIZE.SEAL_CLEAR replaces the manual ASM_SEAL_REC/ASM_RELOC_COUNT clear
          list with an indexed clear over the same bytes.
 ASMRT.SIZE.CMD_MATCH factors paste/flash SEAL, END, and NEW recognizers around
@@ -6117,8 +6119,9 @@ ASMRT.SIZE.CMD_MATCH factors paste/flash SEAL, END, and NEW recognizers around
 ASMRT.OVERLAP_GUARD rejects output target spans that overlap the live ASM
          runtime workspace before any byte is written. RAM-loaded runtime/core
          images guard $2000..ASM_CODE_BUF-1; the flash wrapper guards
-         $6000..ASM_CODE_BUF-1. ASM_CODE_BUF remains a valid fallback output
-         buffer.
+         $6000..ASM_CODE_BUF-1. Runtime-paste ASM_CODE_BUF remains a valid
+         fallback output buffer; flash ASM_CODE_BUF is only a guard fence
+         because flash ASM begins at explicit $2000.
 ASMRP.TARGET.DEFAULT makes runtime-paste start with ASM_BEGIN's default
          ASM_CODE_BUF instead of a fixed high-RAM target. The IMPORT metadata
          slice grew runtime workspace past $7600, so the old fixed target
@@ -6213,8 +6216,13 @@ SEAL> PACKAGE address writes an AP v1 package envelope in full-core/flash ASM
 builds and reports PACKAGE OK @=$hhhh LEN=$hhhh
 SEAL> PACKAGE rejects missing or extra operands as BAD OPER without clearing
 frozen seal facts
+SEAL> CHECK address validates an AP v1 package envelope in full-core/flash ASM
+builds and reports CHECK OK @=$hhhh LEN=$hhhh
+SEAL> CHECK rejects missing or extra operands as BAD OPER without clearing
+frozen seal facts
 runtime paste deliberately omits PACKAGE until the package/load/install path
 has a smaller board-resident command shape
+runtime paste deliberately omits CHECK with PACKAGE
 relative branches, EQU constants, and fixed external addresses produce no
 relocation rows
 relocation table overflow keeps ordinary ASM valid but sets a seal-ineligible
@@ -6230,6 +6238,7 @@ ASM> NEW remains ordinary ASM source, not a wrapper command
 ASM> RESOLVE remains ordinary ASM source, not a wrapper command
 ASM> RELOCATE remains ordinary ASM source, not a wrapper command
 ASM> PACKAGE remains ordinary ASM source, not a wrapper command
+ASM> CHECK remains ordinary ASM source, not a wrapper command
 post-END commands outside the wrapper command set are rejected without clearing
 frozen seal facts
 runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
@@ -7049,7 +7058,7 @@ seal section `S`, tagged relocation section `R`, tagged export section `E`,
 tagged import section `I`, and tagged body section `B`. The host gate passed
 with runtime paste back at `ASM_CODE_BUF=$7C82`, `_END_UDATA=$7D82`, and flash
 ASM carrying the package command with `ASM_CODE_BUF=$7EF8`,
-`_END_UDATA=$7FF8`.
+`_END_UDATA=$7F00`.
 
 A runtime-paste negative board proof loaded the compact paste image as
 `L OK=3E91 GO=2000`, assembled the same body at `BASE=$7C82 END=$7C8A`, and
@@ -7099,6 +7108,38 @@ This proves the flash-resident wrapper accepts `PACKAGE`, writes the AP v1
 envelope to caller-chosen RAM, preserves internal relocation metadata as
 offset rows, carries empty EXP/IMP records, and copies the sealed body bytes
 unchanged.
+
+The next host `asm-test` slice adds `SEAL> CHECK address` as the first AP v1
+package reader proof. `ASM_SEAL_CHECK_PACKAGE` is built with
+`ASM_PACKAGE_ENABLED`, so full core smoke and flash-resident ASM include it and
+runtime paste still omits the package/check pair. Host smoke now packages the
+internal relocation body and immediately validates the generated envelope. The
+matching host gate keeps runtime paste unchanged at `ASM_CODE_BUF=$7C82`,
+`_END_UDATA=$7D82`; flash ASM carries `CHECK` with `ASM_CODE_BUF=$7EF8` and
+`_END_UDATA=$7F00`.
+
+Flash-board CHECK probe after the PACKAGE proof above:
+
+```text
+CHECK $3000
+.
+D 3000 +37
+```
+
+Expected success is `CHECK OK @=$3000 LEN=$0037`. The command validates the AP
+v1 header, guarded total range, section order, section length accounting,
+relocation count shape, EXP/IMP internal length fields, and final body length
+against the seal record. It does not recompute the body FNV yet.
+
+The matching flash-board proof loaded the fixed package/check flash image with
+`L F`, reporting `LF OK WR=3FDC GO=800C`. `ASM FLASH` assembled the same
+body at `BASE=$2000 END=$2008`, sealed as
+`SEAL REC @=$6111 LEN=$0008 FNV=$FFC39D9A`, and wrote
+`PACKAGE OK @=$3000 LEN=$0037`. `CHECK $3000` then reported
+`CHECK OK @=$3000 LEN=$0037`, and the final `D 3000 +37` dump matched the AP
+v1 envelope from the earlier package proof. This proves the flash-resident
+reader accepts the package it just wrote while the flash runtime UDATA now ends
+at `$7F00`, outside the `$7F00-$7FFF` I/O page.
 
 The first 2026-07-02 board attempt with
 `asm-v1-runtime-paste-2000.s19` loaded as `L OK=38FC GO=2000` failed before
