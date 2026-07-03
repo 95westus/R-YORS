@@ -38,6 +38,7 @@
                         XDEF            ASM_SEAL_VALIDATE
                         XDEF            ASM_SEAL_COMPUTE_FNV
                         XDEF            ASM_SEAL_PRINT_RECORD
+                        XDEF            ASM_SEAL_RESOLVE_IMPORTS
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
                         XDEF            ASM_RJ_PRINT_CRLF
@@ -70,6 +71,7 @@
                         XDEF            ASM_IMPORT_REC_END
                         XDEF            ASM_IMPORT_REC_COUNT
                         XDEF            ASM_IMPORT_REC_LEN
+                        XDEF            ASM_IMPORT_RESOLVE_COUNT
                         IF              ASM_RUNTIME_ONLY
                         IF              ASM_FLASH_RUNTIME
                         XDEF            ASM_RJOIN_INIT_IO
@@ -5278,6 +5280,33 @@ ASM_SMOKE_FIXUPS_IMP_DEF_SH2_OK:
                         BNE             ASM_SMOKE_FIXUPS_IMP_DEF_FAIL
                         LDA             ASM_RELOC_TARGET_HI+2
                         BNE             ASM_SMOKE_FIXUPS_IMP_DEF_FAIL
+                        JSR             ASM_SEAL_RESOLVE_IMPORTS
+                        BCS             ASM_SMOKE_FIXUPS_IMP_DEF_RESOLVE_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DEF_FAIL
+ASM_SMOKE_FIXUPS_IMP_DEF_RESOLVE_OK:
+                        LDA             ASM_IMPORT_RESOLVE_COUNT
+                        CMP             #$03
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DEF_RCNT_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DEF_FAIL
+ASM_SMOKE_FIXUPS_IMP_DEF_RCNT_OK:
+                        LDA             ASM_CODE_BUF+1
+                        CMP             ASM_CODE_BUF+4
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DEF_LOW_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DEF_FAIL
+ASM_SMOKE_FIXUPS_IMP_DEF_LOW_OK:
+                        LDA             ASM_CODE_BUF+2
+                        CMP             ASM_CODE_BUF+6
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DEF_HIGH_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DEF_FAIL
+ASM_SMOKE_FIXUPS_IMP_DEF_HIGH_OK:
+                        LDA             ASM_CODE_BUF+1
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_FIXUPS_IMP_DEF_PATCHED
+                        LDA             ASM_CODE_BUF+2
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_FIXUPS_IMP_DEF_PATCHED
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DEF_FAIL
+ASM_SMOKE_FIXUPS_IMP_DEF_PATCHED:
                         SEC
                         RTS
 ASM_SMOKE_FIXUPS_IMP_DEF_FAIL:
@@ -8910,6 +8939,269 @@ ASM_RELOC_STORE_IMPORT_SITE_OK:
                         STA             ASM_RELOC_KIND,X
                         INC             ASM_RELOC_COUNT
                         PLX
+                        SEC
+                        RTS
+
+ASM_SEAL_RESOLVE_IMPORTS:
+                        JSR             ASM_SEAL_VALIDATE
+                        BCS             ASM_SEAL_RESOLVE_HAVE_SEAL
+                        RTS
+ASM_SEAL_RESOLVE_HAVE_SEAL:
+                        STZ             ASM_IMPORT_RESOLVE_COUNT
+                        LDX             #$00
+ASM_IMPORT_RESOLVE_SCAN_LOOP:
+                        CPX             ASM_RELOC_COUNT
+                        BCS             ASM_IMPORT_RESOLVE_SCAN_DONE
+                        STX             ASM_SLOT
+                        LDA             ASM_RELOC_KIND,X
+                        JSR             ASM_IMPORT_RELOC_KIND_A
+                        BCC             ASM_IMPORT_RESOLVE_SCAN_NEXT
+                        JSR             ASM_IMPORT_RESOLVE_ROW_X
+                        BCS             ASM_IMPORT_RESOLVE_SCAN_NEXT
+                        RTS
+ASM_IMPORT_RESOLVE_SCAN_NEXT:
+                        LDX             ASM_SLOT
+                        INX
+                        BRA             ASM_IMPORT_RESOLVE_SCAN_LOOP
+ASM_IMPORT_RESOLVE_SCAN_DONE:
+                        LDX             #$00
+ASM_IMPORT_RESOLVE_PATCH_LOOP:
+                        CPX             ASM_RELOC_COUNT
+                        BCS             ASM_IMPORT_RESOLVE_DONE
+                        STX             ASM_SLOT
+                        LDA             ASM_RELOC_KIND,X
+                        JSR             ASM_IMPORT_RELOC_KIND_A
+                        BCC             ASM_IMPORT_RESOLVE_PATCH_NEXT
+                        JSR             ASM_IMPORT_RESOLVE_ROW_X
+                        BCS             ASM_IMPORT_RESOLVE_PATCH_HAVE_ADDR
+                        RTS
+ASM_IMPORT_RESOLVE_PATCH_HAVE_ADDR:
+                        JSR             ASM_IMPORT_PATCH_ROW_X
+ASM_IMPORT_RESOLVE_PATCH_NEXT:
+                        LDX             ASM_SLOT
+                        INX
+                        BRA             ASM_IMPORT_RESOLVE_PATCH_LOOP
+ASM_IMPORT_RESOLVE_DONE:
+                        LDA             #ASM_STATUS_OK
+                        SEC
+                        RTS
+
+ASM_IMPORT_RELOC_KIND_A:
+                        CMP             #ASM_RELOC_ABS16_IMPORT
+                        BEQ             ASM_IMPORT_RELOC_KIND_YES
+                        CMP             #ASM_RELOC_LO8_IMPORT
+                        BEQ             ASM_IMPORT_RELOC_KIND_YES
+                        CMP             #ASM_RELOC_HI8_IMPORT
+                        BEQ             ASM_IMPORT_RELOC_KIND_YES
+                        CLC
+                        RTS
+ASM_IMPORT_RELOC_KIND_YES:
+                        SEC
+                        RTS
+
+ASM_IMPORT_RESOLVE_ROW_X:
+                        LDA             ASM_RELOC_TARGET_HI,X
+                        BEQ             ASM_IMPORT_RESOLVE_ROW_SLOT_HI_OK
+                        LDA             #ASM_STATUS_BAD_SYM
+                        CLC
+                        RTS
+ASM_IMPORT_RESOLVE_ROW_SLOT_HI_OK:
+                        LDA             ASM_RELOC_TARGET_LO,X
+                        CMP             ASM_IMPORT_COUNT
+                        BCC             ASM_IMPORT_RESOLVE_ROW_SLOT_OK
+                        LDA             #ASM_STATUS_BAD_SYM
+                        CLC
+                        RTS
+ASM_IMPORT_RESOLVE_ROW_SLOT_OK:
+                        STA             ASM_IMPORT_INDEX
+                        TAX
+                        JSR             ASM_IMPORT_RESOLVE_SLOT_X
+                        LDX             ASM_SLOT
+                        RTS
+
+ASM_IMPORT_RESOLVE_SLOT_X:
+                        JSR             ASM_IMPORT_HASH_SLOT_X
+                        BCS             ASM_IMPORT_RESOLVE_SLOT_HASH_OK
+                        LDA             #ASM_STATUS_BAD_SYM
+                        CLC
+                        RTS
+ASM_IMPORT_RESOLVE_SLOT_HASH_OK:
+                        LDX             #<ASM_HASH0
+                        LDY             #>ASM_HASH0
+                        JSR             ASM_RJ_RESIDENT_XY
+                        BCS             ASM_IMPORT_RESOLVE_SLOT_FOUND
+                        LDA             #ASM_STATUS_RJOIN
+                        CLC
+                        RTS
+ASM_IMPORT_RESOLVE_SLOT_FOUND:
+                        STX             ASM_VALUE_LO
+                        STY             ASM_VALUE_HI
+                        SEC
+                        RTS
+
+ASM_IMPORT_PATCH_ROW_X:
+                        LDA             ASM_SEAL_BASE_LO
+                        CLC
+                        ADC             ASM_RELOC_SITE_LO,X
+                        STA             ASM_EMIT_PTR_LO
+                        LDA             ASM_SEAL_BASE_HI
+                        ADC             ASM_RELOC_SITE_HI,X
+                        STA             ASM_EMIT_PTR_HI
+                        LDA             ASM_RELOC_KIND,X
+                        CMP             #ASM_RELOC_ABS16_IMPORT
+                        BEQ             ASM_IMPORT_PATCH_ABS16
+                        CMP             #ASM_RELOC_LO8_IMPORT
+                        BEQ             ASM_IMPORT_PATCH_LO8
+                        CMP             #ASM_RELOC_HI8_IMPORT
+                        BEQ             ASM_IMPORT_PATCH_HI8
+                        RTS
+ASM_IMPORT_PATCH_ABS16:
+                        LDY             #$00
+                        LDA             ASM_VALUE_LO
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INY
+                        LDA             ASM_VALUE_HI
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INC             ASM_IMPORT_RESOLVE_COUNT
+                        RTS
+ASM_IMPORT_PATCH_LO8:
+                        LDY             #$00
+                        LDA             ASM_VALUE_LO
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INC             ASM_IMPORT_RESOLVE_COUNT
+                        RTS
+ASM_IMPORT_PATCH_HI8:
+                        LDY             #$00
+                        LDA             ASM_VALUE_HI
+                        STA             (ASM_EMIT_PTR_LO),Y
+                        INC             ASM_IMPORT_RESOLVE_COUNT
+                        RTS
+
+ASM_IMPORT_HASH_SLOT_X:
+                        STX             ASM_IMPORT_INDEX
+                        JSR             ASM_IMPORT_SET_PACK_SRC_X
+                        LDX             ASM_IMPORT_INDEX
+                        LDA             ASM_IMPORT_NAME_LEN,X
+                        STA             ASM_LEN
+                        JSR             ASM_FNV1A_INIT
+                        STZ             ASM_EXPORT_NAME_INDEX
+                        STZ             ASM_IMPORT_PACK_INDEX
+ASM_IMPORT_HASH_SLOT_LOOP:
+                        LDA             ASM_EXPORT_NAME_INDEX
+                        CMP             ASM_LEN
+                        BCS             ASM_IMPORT_HASH_SLOT_DONE
+                        JSR             ASM_IMPORT_UNPACK_NEXT3
+                        BCC             ASM_IMPORT_HASH_SLOT_FAIL
+                        LDA             ASM_P40_CODE0
+                        JSR             ASM_IMPORT_HASH_CODE_A
+                        BCC             ASM_IMPORT_HASH_SLOT_FAIL
+                        INC             ASM_EXPORT_NAME_INDEX
+                        LDA             ASM_EXPORT_NAME_INDEX
+                        CMP             ASM_LEN
+                        BCS             ASM_IMPORT_HASH_SLOT_DONE
+                        LDA             ASM_P40_CODE1
+                        JSR             ASM_IMPORT_HASH_CODE_A
+                        BCC             ASM_IMPORT_HASH_SLOT_FAIL
+                        INC             ASM_EXPORT_NAME_INDEX
+                        LDA             ASM_EXPORT_NAME_INDEX
+                        CMP             ASM_LEN
+                        BCS             ASM_IMPORT_HASH_SLOT_DONE
+                        LDA             ASM_P40_CODE2
+                        JSR             ASM_IMPORT_HASH_CODE_A
+                        BCC             ASM_IMPORT_HASH_SLOT_FAIL
+                        INC             ASM_EXPORT_NAME_INDEX
+                        BRA             ASM_IMPORT_HASH_SLOT_LOOP
+ASM_IMPORT_HASH_SLOT_DONE:
+                        SEC
+                        RTS
+ASM_IMPORT_HASH_SLOT_FAIL:
+                        CLC
+                        RTS
+
+ASM_IMPORT_UNPACK_NEXT3:
+                        LDY             ASM_IMPORT_PACK_INDEX
+                        LDA             (ASM_SYM_PTR_LO),Y
+                        STA             ASM_VALUE_LO
+                        INC             ASM_IMPORT_PACK_INDEX
+                        LDY             ASM_IMPORT_PACK_INDEX
+                        LDA             (ASM_SYM_PTR_LO),Y
+                        STA             ASM_VALUE_HI
+                        INC             ASM_IMPORT_PACK_INDEX
+                        STZ             ASM_P40_CODE0
+ASM_IMPORT_UNPACK_CODE0_LOOP:
+                        LDA             ASM_VALUE_LO
+                        SEC
+                        SBC             #$40
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_VALUE_HI
+                        SBC             #$06
+                        BCC             ASM_IMPORT_UNPACK_CODE0_DONE
+                        STA             ASM_VALUE_HI
+                        LDA             ASM_TMP0_LO
+                        STA             ASM_VALUE_LO
+                        INC             ASM_P40_CODE0
+                        BRA             ASM_IMPORT_UNPACK_CODE0_LOOP
+ASM_IMPORT_UNPACK_CODE0_DONE:
+                        STZ             ASM_P40_CODE1
+ASM_IMPORT_UNPACK_CODE1_LOOP:
+                        LDA             ASM_VALUE_LO
+                        SEC
+                        SBC             #$28
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_VALUE_HI
+                        SBC             #$00
+                        BCC             ASM_IMPORT_UNPACK_CODE1_DONE
+                        STA             ASM_VALUE_HI
+                        LDA             ASM_TMP0_LO
+                        STA             ASM_VALUE_LO
+                        INC             ASM_P40_CODE1
+                        BRA             ASM_IMPORT_UNPACK_CODE1_LOOP
+ASM_IMPORT_UNPACK_CODE1_DONE:
+                        LDA             ASM_VALUE_LO
+                        CMP             #$28
+                        BCC             ASM_IMPORT_UNPACK_CODE2_OK
+                        CLC
+                        RTS
+ASM_IMPORT_UNPACK_CODE2_OK:
+                        STA             ASM_P40_CODE2
+                        SEC
+                        RTS
+
+ASM_IMPORT_HASH_CODE_A:
+                        BEQ             ASM_IMPORT_HASH_CODE_FAIL
+                        CMP             #$1B
+                        BCS             ASM_IMPORT_HASH_CODE_DIGIT
+                        CLC
+                        ADC             #'@'
+                        BRA             ASM_IMPORT_HASH_CODE_UPDATE
+ASM_IMPORT_HASH_CODE_DIGIT:
+                        CMP             #$25
+                        BCS             ASM_IMPORT_HASH_CODE_SPECIAL
+                        SEC
+                        SBC             #$1B
+                        CLC
+                        ADC             #'0'
+                        BRA             ASM_IMPORT_HASH_CODE_UPDATE
+ASM_IMPORT_HASH_CODE_SPECIAL:
+                        CMP             #$25
+                        BEQ             ASM_IMPORT_HASH_CODE_UNDER
+                        CMP             #$26
+                        BEQ             ASM_IMPORT_HASH_CODE_Q
+                        CMP             #$27
+                        BEQ             ASM_IMPORT_HASH_CODE_DOT
+ASM_IMPORT_HASH_CODE_FAIL:
+                        CLC
+                        RTS
+ASM_IMPORT_HASH_CODE_UNDER:
+                        LDA             #'_'
+                        BRA             ASM_IMPORT_HASH_CODE_UPDATE
+ASM_IMPORT_HASH_CODE_Q:
+                        LDA             #'?'
+                        BRA             ASM_IMPORT_HASH_CODE_UPDATE
+ASM_IMPORT_HASH_CODE_DOT:
+                        LDA             #'.'
+ASM_IMPORT_HASH_CODE_UPDATE:
+                        JSR             ASM_FNV1A_UPDATE_A_FAST
                         SEC
                         RTS
 
@@ -13941,6 +14233,7 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_DB_COUNTING
                         STZ             ASM_EXPORT_COUNT
                         STZ             ASM_IMPORT_COUNT
+                        STZ             ASM_IMPORT_RESOLVE_COUNT
                         RTS
 
                         IF              ASM_RUNTIME_ONLY
@@ -14032,6 +14325,8 @@ ASM_FIX_LAST_SITE_LO:  DB              $00
 ASM_FIX_LAST_SITE_HI:  DB              $00
 ASM_EXPORT_COUNT:      DB              $00
 ASM_IMPORT_COUNT:      DB              $00
+ASM_IMPORT_RESOLVE_COUNT:
+                        DB              $00
 ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
 ASM_RJ_READY:          DB              $00

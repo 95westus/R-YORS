@@ -18,7 +18,9 @@
                         XREF            ASM_PRINT_TABLES
                         XREF            ASM_SEAL_COMPUTE_FNV
                         XREF            ASM_SEAL_PRINT_RECORD
+                        XREF            ASM_SEAL_RESOLVE_IMPORTS
                         XREF            ASM_SEAL_FLAGS
+                        XREF            ASM_IMPORT_RESOLVE_COUNT
                         XREF            ASM_RJOIN_INIT_IO
                         XREF            ASM_RJ_READ_CSTRING
                         XREF            ASM_RJ_WRITE_CSTRING
@@ -42,6 +44,9 @@ ASMF_STATUS_BAD_FIX    EQU             $09
 ASMF_STATUS_LOCAL_NYI  EQU             $0A
 ASMF_STATUS_RJOIN      EQU             $0B
 ASMF_STATUS_NAME_UNKNOWN EQU           $0C
+; Borrow ASM scratch ZP only inside wrapper command matching.
+ASMF_CMD_PTR_LO        EQU             $84
+ASMF_CMD_PTR_HI        EQU             $85
 
 ASMF_FNV_SIG2          EQU             $D6
 ASMF_KIND_EXEC_TEXT    EQU             $05
@@ -110,11 +115,21 @@ ASMF_READ_OK:
                         BCS             ASMF_QUIT
                         LDA             ASMF_POST_FLAG
                         BEQ             ASMF_ASSEMBLE
-                        JSR             ASMF_IS_SEAL
+                        LDX             #<ASMF_CMD_SEAL
+                        LDY             #>ASMF_CMD_SEAL
+                        JSR             ASMF_MATCH_STRICT_CMD
                         BCC             ASMF_POST_CHECK_NEW
                         JMP             ASMF_SEAL_CMD
 ASMF_POST_CHECK_NEW:
-                        JSR             ASMF_IS_NEW
+                        LDX             #<ASMF_CMD_RESOLVE
+                        LDY             #>ASMF_CMD_RESOLVE
+                        JSR             ASMF_MATCH_STRICT_CMD
+                        BCC             ASMF_POST_CHECK_NEW_2
+                        JMP             ASMF_RESOLVE_CMD
+ASMF_POST_CHECK_NEW_2:
+                        LDX             #<ASMF_CMD_NEW
+                        LDY             #>ASMF_CMD_NEW
+                        JSR             ASMF_MATCH_STRICT_CMD
                         BCC             ASMF_POST_REJECT
                         JMP             ASMF_NEW_CMD
 ASMF_POST_REJECT:
@@ -180,6 +195,23 @@ ASMF_SEAL_CMD:
                         JMP             ASMF_LOOP
 ASMF_SEAL_OK:
                         JSR             ASM_SEAL_PRINT_RECORD
+                        JMP             ASMF_LOOP
+
+ASMF_RESOLVE_CMD:
+                        JSR             ASM_SEAL_RESOLVE_IMPORTS
+                        BCS             ASMF_RESOLVE_OK
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_RESOLVE_ERR
+                        LDY             #>MSG_RESOLVE_ERR
+                        JSR             ASMF_PRINT_STATUS_LINE
+                        JMP             ASMF_LOOP
+ASMF_RESOLVE_OK:
+                        LDX             #<MSG_RESOLVE_OK
+                        LDY             #>MSG_RESOLVE_OK
+                        JSR             ASMF_PRINT
+                        LDA             ASM_IMPORT_RESOLVE_COUNT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_RJ_PRINT_CRLF
                         JMP             ASMF_LOOP
 
 ASMF_NEW_CMD:
@@ -340,24 +372,25 @@ ASMF_YES:
                         SEC
                         RTS
 
-ASMF_IS_SEAL:
+ASMF_MATCH_STRICT_CMD:
+                        STX             ASMF_CMD_PTR_LO
+                        STY             ASMF_CMD_PTR_HI
                         JSR             ASMF_SKIP_COMMAND_HEAD
-                        CMP             #'S'
+                        TYA
+                        TAX
+                        LDY             #$00
+ASMF_MATCH_STRICT_CMD_LOOP:
+                        LDA             (ASMF_CMD_PTR_LO),Y
+                        BEQ             ASMF_MATCH_STRICT_CMD_TAIL
+                        CMP             ASMF_LINE_BUF,X
                         BNE             ASMF_NO
+                        INX
                         INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'E'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'A'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'L'
-                        BNE             ASMF_NO
-                        INY
-                        BRA             ASMF_MATCH_STRICT_TAIL
+                        BRA             ASMF_MATCH_STRICT_CMD_LOOP
+ASMF_MATCH_STRICT_CMD_TAIL:
+                        TXA
+                        TAY
+                        JMP             ASMF_MATCH_STRICT_TAIL
 
 ASMF_IS_END:
                         JSR             ASMF_SKIP_COMMAND_HEAD
@@ -374,23 +407,11 @@ ASMF_IS_END:
                         INY
                         BRA             ASMF_MATCH_LOOSE_TAIL
 
-ASMF_IS_NEW:
-                        JSR             ASMF_SKIP_COMMAND_HEAD
-                        CMP             #'N'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'E'
-                        BNE             ASMF_NO
-                        INY
-                        LDA             ASMF_LINE_BUF,Y
-                        CMP             #'W'
-                        BNE             ASMF_NO
-                        INY
-                        BRA             ASMF_MATCH_STRICT_TAIL
-
                         DATA
 ASMF_TEXT:              DB              "ASM V",('1'+$80)
+ASMF_CMD_SEAL:          DB              "SEAL",0
+ASMF_CMD_RESOLVE:       DB              "RESOLVE",0
+ASMF_CMD_NEW:           DB              "NEW",0
 MSG_TITLE:              DB              "ASM FLASH",0
 MSG_PROMPT:             DB              "ASM> ",0
 MSG_SEAL_PROMPT:        DB              "SEAL> ",0
@@ -401,6 +422,8 @@ MSG_FAIL:               DB              "BEGIN=$",0
 MSG_TABLE:              DB              "TABLE=$",0
 MSG_PC:                 DB              " PC=$",0
 MSG_SEAL_ERR:           DB              "SEAL ERR=$",0
+MSG_RESOLVE_ERR:        DB              "RESOLVE ERR=$",0
+MSG_RESOLVE_OK:         DB              "RESOLVE OK COUNT=$",0
 MSG_FLAGS:              DB              " FLAGS=$",0
 MSG_DONE:               DB              "ASM FLASH OK",0
 MSG_BYE:                DB              "ASM FLASH BYE",0

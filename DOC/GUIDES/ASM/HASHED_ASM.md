@@ -5171,9 +5171,18 @@ ASM source mode; it is a small wrapper command window with three commands:
 
 ```text
 SEAL             validate and print frozen facts plus the RAM record summary
+RESOLVE          resolve import rows through current RJOIN and patch RAM body
 NEW              start a fresh ASM session at the frozen END PC
 .                exit the wrapper
 ```
+
+`RESOLVE` is valid only in the post-`END` `SEAL> ` window. It accepts only
+`RESOLVE` or `RESOLVE ; comment` with optional surrounding spaces/tabs. The
+first implementation is a RAM-body proof command: it resolves `$04/$05/$06`
+import relocation rows through current resident RJOIN, patches the emitted
+body in place, and reports `RESOLVE OK COUNT=$nn` for patched rows. The import
+metadata and relocation rows remain inspectable; a later installer can decide
+whether to freeze, copy, or preserve them.
 
 `NEW` is valid only in the post-`END` `SEAL> ` window. It accepts only `NEW`,
 `NEW ; comment`, and the same optional leading/trailing spaces or tabs used by

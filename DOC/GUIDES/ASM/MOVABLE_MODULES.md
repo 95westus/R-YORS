@@ -209,9 +209,17 @@ After clean `END`, current wrappers switch to a small `SEAL> ` command window:
 
 ```text
 SEAL             dry-run the frozen facts
+RESOLVE          resolve import rows through current RJOIN and patch RAM body
 NEW              reopen ASM at the frozen END PC
 .                return to HIMON
 ```
+
+`RESOLVE` is a RAM-body proof command in the post-`END` window. It accepts only
+bare `RESOLVE` or `RESOLVE ; comment`, validates the frozen seal facts, resolves
+declared import relocation rows through current resident RJOIN, patches the
+current emitted bytes in place, and reports the patched row count. It does not
+publish or install the module, and it leaves the import/relocation metadata
+visible for inspection.
 
 `NEW` is deliberately validated and non-interactive. It accepts only bare `NEW`
 or `NEW ; comment` with optional surrounding spaces/tabs. It does not accept an

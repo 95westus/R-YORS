@@ -526,6 +526,11 @@ A [addr] [label[:]] MMM [operand] .
   from the seal base. `$04` ABS16_IMPORT, `$05` LO8_IMPORT, and `$06`
   HI8_IMPORT record imported values: site is still a seal-base offset, while
   target low carries the import slot index and target high is zero.
+- `SEAL> RESOLVE` is the first RAM-body import resolver proof. It is available
+  only after clean `END`, resolves `$04/$05/$06` import rows through current
+  resident RJOIN, patches the current emitted bytes in place, and leaves the
+  import/relocation metadata intact for inspection. It is not yet the final
+  flash install/link policy.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.

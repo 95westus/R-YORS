@@ -6089,6 +6089,10 @@ SEAL.IMPORT.FORCE.DEFER makes explicit `IMPORT NAME` win over resident RJOIN
          after the session table misses. Plain undeclared resident `JSR`/`JMP`
          still RJOINs and binds now; declared uses of that same resident name
          emit placeholders and import relocation rows.
+SEAL.IMPORT.RESOLVE adds post-END `SEAL> RESOLVE` as a RAM-body proof command.
+         It resolves `$04/$05/$06` import relocation rows through current
+         resident RJOIN, patches the emitted body in place, and reports
+         `RESOLVE OK COUNT=$nn` for patched rows.
 ASMRT.REPORT.TRIM keeps the older compact-report printer in the core/smoke
          build but compiles it out of ASM_RUNTIME_ONLY images. Runtime paste
          and flash use wrapper error lines, ASM TABLES, and SEAL REC/REL as
@@ -6189,6 +6193,10 @@ explicit IMPORT of a resident RJOIN name still produces $04/$05/$06 import
 relocation rows instead of freezing today's resident address
 plain undeclared resident JSR/JMP operands still RJOIN and produce no import
 relocation rows
+SEAL> RESOLVE resolves declared import relocation rows through current resident
+RJOIN and patches the current RAM body in place
+SEAL> RESOLVE operands are rejected as BAD OPER without clearing frozen seal
+facts
 relative branches, EQU constants, and fixed external addresses produce no
 relocation rows
 relocation table overflow keeps ordinary ASM valid but sets a seal-ineligible
@@ -6197,9 +6205,13 @@ ineligible post-session SEAL reports no SEAL REC line
 clean END switches runtime paste/flash wrappers to the SEAL> prompt
 SEAL> NEW prints OK PC=$end and returns to ASM> at the frozen END PC
 SEAL> NEW operands are rejected as BAD OPER without clearing frozen seal facts
+SEAL> RESOLVE prints RESOLVE OK COUNT=$nn on success or RESOLVE ERR=$ee on
+failure and stays at SEAL>
 ASM> SEAL remains ordinary ASM source, not a wrapper command
 ASM> NEW remains ordinary ASM source, not a wrapper command
-post-END non-SEAL/non-NEW source is rejected without clearing frozen seal facts
+ASM> RESOLVE remains ordinary ASM source, not a wrapper command
+post-END non-SEAL/non-NEW/non-RESOLVE source is rejected without clearing
+frozen seal facts
 runtime paste wrapper keeps the same prompts and SEAL behavior with mutable
 state/result cells in UDATA and the input line borrowed from HIMON CMD_BUF
 runtime paste wrapper default session starts at ASM_CODE_BUF, not a fixed $7600
@@ -6918,6 +6930,26 @@ ended at `$786A`, printed fixup selectors `$40/$41/$42` and relocation rows
 `SEAL REL @=$5A92 COUNT=$03`, and
 `SEAL IMP @=$5BAD COUNT=$01 LEN=$000F`, and dumped
 `20 FF FF A9 FF A2 FF` at `$7863-$7869`.
+
+The next 2026-07-02 host `asm-test` slice adds `SEAL> RESOLVE` for current
+RAM-body import resolution. The resolver reconstructs each imported name hash
+from existing PACK40 metadata, resolves referenced import slots through
+resident RJOIN, and patches `$04/$05/$06` rows in place only after a validation
+scan succeeds. Host smoke extends the forced-deferred `BIO_FTDI_PUT_CSTR`
+case: after `END`, `ASM_SEAL_RESOLVE_IMPORTS` patches the `JSR`, `#<`, and
+`#>` bytes to a consistent resident address and reports
+`ASM_IMPORT_RESOLVE_COUNT=$03`. Runtime paste/flash wrappers now accept
+post-END `RESOLVE`, printing `RESOLVE OK COUNT=$nn` or `RESOLVE ERR=$ee`. The
+matching board proof loaded `asm-v1-runtime-paste-2000.s19` as
+`L OK=3C81 GO=2000`. The proof assembled at `ASM_CODE_BUF=$7A6D`, printed
+relocation rows `00 04 0001 0000`, `01 05 0004 0000`, and `02 06 0006 0000`,
+then `RESOLVE` reported `RESOLVE OK COUNT=$03`. A second run showed `SEAL`
+before `RESOLVE` with `SEAL REC @=$5C90 LEN=$0007 FNV=$039163CA`,
+`SEAL REL @=$5C9B COUNT=$03`, and
+`SEAL IMP @=$5DB6 COUNT=$01 LEN=$000F`; after `RESOLVE`, `SEAL` preserved the
+same REL/IMP metadata but recomputed body FNV as `$5DCABFAE`. The patched body
+dump at `$7A6D-$7A73` was `20 55 E1 A9 55 A2 E1`, proving ABS16, LO8, and HI8
+import rows all resolved to the resident `BIO_FTDI_PUT_CSTR` address.
 
 The first 2026-07-02 board attempt with
 `asm-v1-runtime-paste-2000.s19` loaded as `L OK=38FC GO=2000` failed before
