@@ -79,20 +79,22 @@ HIM_SVC_FNV_UPDATE_LO      EQU             $7E16
 HIM_SVC_FNV_UPDATE_HI      EQU             $7E17
 HIM_SVC_UPPER_LO           EQU             $7E18
 HIM_SVC_UPPER_HI           EQU             $7E19
-HIM_SVC_CHECKSUM           EQU             $7E1A
+HIM_SVC_WRITE_HBSTRING_LO  EQU             $7E1A
+HIM_SVC_WRITE_HBSTRING_HI  EQU             $7E1B
+HIM_SVC_CHECKSUM           EQU             $7E1C
 
 HIM_SVC_SIG0_VAL           EQU             'R'
 HIM_SVC_SIG1_VAL           EQU             'Y'
 HIM_SVC_VERSION_1          EQU             $01
-HIM_SVC_VECTOR_COUNT       EQU             $0A
+HIM_SVC_VECTOR_COUNT       EQU             $0B
 
 ; ----------------------------------------------------------------------------
 ; Group D: monitor/parser/load workspace (packed into the high 7E page)
 ; ----------------------------------------------------------------------------
 ; 7E page map:
 ; - $7E00-$7E01 resident published RJOIN addr16
-; - $7E02-$7E1A resident service vector block + checksum
-; - $7E1B-$7E45 free buffer spill/scratch after page buffers
+; - $7E02-$7E1C resident service vector block + checksum
+; - $7E1D-$7E45 free buffer spill/scratch after page buffers
 ; - $7E46-$7E65 debugger/assembler workspace
 ; - $7E66-$7E75 hash record/exec metadata
 ; - $7E76-$7E94 command/parser/keytest workspace

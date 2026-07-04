@@ -47,6 +47,7 @@
                         ENDIF
                         ENDIF
                         XDEF            ASM_RJ_WRITE_CSTRING
+                        XDEF            ASM_RJ_WRITE_HBSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
                         XDEF            ASM_RJ_PRINT_CRLF
                         XDEF            ASM_SEAL_REC
@@ -163,12 +164,12 @@ ASM_HIM_SVC_SIG1         EQU          $7E03
 ASM_HIM_SVC_VERSION      EQU          $7E04
 ASM_HIM_SVC_COUNT        EQU          $7E05
 ASM_HIM_SVC_JOIN_LO      EQU          $7E06
-ASM_HIM_SVC_CHECKSUM     EQU          $7E1A
+ASM_HIM_SVC_CHECKSUM     EQU          $7E1C
 ASM_HIM_SVC_SIG0_VAL     EQU          'R'
 ASM_HIM_SVC_SIG1_VAL     EQU          'Y'
 ASM_HIM_SVC_VERSION_1    EQU          $01
-ASM_HIM_SVC_VECTOR_COUNT EQU          $0A
-ASM_HIM_SVC_VECTOR_BYTES EQU          $14
+ASM_HIM_SVC_VECTOR_COUNT EQU          $0B
+ASM_HIM_SVC_VECTOR_BYTES EQU          $16
 
 ASM_TOK_KIND          EQU             ASM_MODE
 ASM_TOK_SUB           EQU             ASM_WIDTH
@@ -733,7 +734,7 @@ ASM_REPL_LOOP:
 ASM_REPL_PROMPT:
                         LDX             #<ASM_REPL_MSG_PROMPT
                         LDY             #>ASM_REPL_MSG_PROMPT
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDX             #<ASM_REPL_LINE_BUF
                         LDY             #>ASM_REPL_LINE_BUF
                         JSR             ASM_RJ_READ_CSTRING
@@ -823,7 +824,7 @@ ASM_REPL_REOPEN:
 ASM_REPL_PRINT_OK:
                         LDX             #<ASM_REPL_MSG_OK
                         LDY             #>ASM_REPL_MSG_OK
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PC_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_PC_LO
@@ -836,12 +837,12 @@ ASM_REPL_PRINT_OK:
 ASM_REPL_PRINT_ERR:
                         LDX             #<ASM_REPL_MSG_ERR
                         LDY             #>ASM_REPL_MSG_ERR
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_REPL_STATUS
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SMOKE_MSG_PC
                         LDY             #>ASM_SMOKE_MSG_PC
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_REPL_OLD_PC_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_REPL_OLD_PC_LO
@@ -851,7 +852,7 @@ ASM_REPL_PRINT_ERR:
 ASM_REPL_PRINT_READ_FAIL:
                         LDX             #<ASM_REPL_MSG_READ
                         LDY             #>ASM_REPL_MSG_READ
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_REPL_STATUS
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JMP             ASM_RJ_PRINT_CRLF
@@ -895,7 +896,7 @@ ASM_REPL_BYTES_HAVE_DELTA:
                         STZ             ASM_REPL_BYTE_INDEX
                         LDX             #<ASM_REPL_MSG_BYTES
                         LDY             #>ASM_REPL_MSG_BYTES
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
 ASM_REPL_BYTES_LOOP:
                         LDA             ASM_REPL_BYTE_INDEX
                         CMP             ASM_REPL_DELTA
@@ -915,7 +916,7 @@ ASM_REPL_PRINT_DEF:
                         BNE             ASM_REPL_PRINT_DEF_DONE
                         LDX             #<ASM_REPORT_MSG_DEF
                         LDY             #>ASM_REPORT_MSG_DEF
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_REPL_OLD_PC_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_REPL_OLD_PC_LO
@@ -928,7 +929,7 @@ ASM_REPL_PRINT_FIXUPS:
                         BEQ             ASM_REPL_PRINT_FIXUPS_DONE
                         LDX             #<ASM_REPL_MSG_FIX
                         LDY             #>ASM_REPL_MSG_FIX
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_FIX_LAST_SITE_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_FIX_LAST_SITE_LO
@@ -943,19 +944,19 @@ ASM_SMOKE_PRINT_PASS:
                         JSR             ASM_SMOKE_PRINT_WARNINGS
                         LDX             #<ASM_SMOKE_MSG_W
                         LDY             #>ASM_SMOKE_MSG_W
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_RJ_WRITE_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_RJ_WRITE_LO
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SMOKE_MSG_SYM
                         LDY             #>ASM_SMOKE_MSG_SYM
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SYM_COUNT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SMOKE_MSG_PC
                         LDY             #>ASM_SMOKE_MSG_PC
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PC_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_PC_LO
@@ -980,7 +981,7 @@ ASM_SMOKE_PROGRESS:
                         ENDIF
 
 ASM_SMOKE_PRINT_LINE:
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         JMP             ASM_RJ_PRINT_CRLF
 
                         IF              ASM_RUNTIME_ONLY
@@ -989,23 +990,23 @@ ASM_SMOKE_PRINT_LINE:
 ASM_SMOKE_PRINT_FAIL:
                         LDX             #<ASM_SMOKE_MSG_FAIL_TITLE
                         LDY             #>ASM_SMOKE_MSG_FAIL_TITLE
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         JSR             ASM_RJ_PRINT_CRLF
                         JSR             ASM_SMOKE_PRINT_FAIL_STAGE
                         JSR             ASM_SMOKE_PRINT_FAIL_DETAIL
                         LDX             #<ASM_SMOKE_MSG_FAIL_S
                         LDY             #>ASM_SMOKE_MSG_FAIL_S
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_FAIL_STEP
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SMOKE_MSG_FAIL_X
                         LDY             #>ASM_SMOKE_MSG_FAIL_X
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_FAIL_STATUS
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SMOKE_MSG_FAIL_Y
                         LDY             #>ASM_SMOKE_MSG_FAIL_Y
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_FAIL_SLOT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JMP             ASM_RJ_PRINT_CRLF
@@ -1619,6 +1620,26 @@ ASM_RJ_WRITE_CSTRING_LOOP:
                         BRA             ASM_RJ_WRITE_CSTRING_LOOP
 ASM_RJ_WRITE_CSTRING_DONE:
                         RTS
+                        ENDIF
+
+ASM_RJ_WRITE_HBSTRING:
+                        IF              ASM_FLASH_RUNTIME
+                        JMP             (ASM_RJ_HBSTR_LO)
+                        ELSE
+                        STX             ASM_RJ_STR_LO
+                        STY             ASM_RJ_STR_HI
+ASM_RJ_WRITE_HBSTRING_LOOP:
+                        LDY             #$00
+                        LDA             (ASM_RJ_STR_LO),Y
+                        BMI             ASM_RJ_WRITE_HBSTRING_LAST
+                        JSR             ASM_RJ_WRITE_BYTE
+                        INC             ASM_RJ_STR_LO
+                        BNE             ASM_RJ_WRITE_HBSTRING_LOOP
+                        INC             ASM_RJ_STR_HI
+                        BRA             ASM_RJ_WRITE_HBSTRING_LOOP
+ASM_RJ_WRITE_HBSTRING_LAST:
+                        AND             #$7F
+                        JMP             ASM_RJ_WRITE_BYTE
                         ENDIF
 
 ASM_RJ_WRITE_HEX_BYTE:
@@ -6672,7 +6693,7 @@ ASM_REPORT_COMPACT:
 ASM_REPORT_PRINT_STATUS:
                         LDX             #<ASM_REPORT_MSG_STATUS
                         LDY             #>ASM_REPORT_MSG_STATUS
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_STATUS
                         BEQ             ASM_REPORT_PRINT_STATUS_OK
                         LDA             #'$'
@@ -6688,7 +6709,7 @@ ASM_REPORT_PRINT_STATUS_OK:
 ASM_REPORT_PRINT_ERRLINE:
                         LDX             #<ASM_REPORT_MSG_ERRLINE
                         LDY             #>ASM_REPORT_MSG_ERRLINE
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_STATUS
                         BEQ             ASM_REPORT_PRINT_ERRLINE_ZERO
                         LDA             ASM_LINE_COUNT_HI
@@ -6706,7 +6727,7 @@ ASM_REPORT_PRINT_ERRLINE_ZERO:
 ASM_REPORT_PRINT_START:
                         LDX             #<ASM_REPORT_MSG_START
                         LDY             #>ASM_REPORT_MSG_START
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_START_PC_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_START_PC_LO
@@ -6716,7 +6737,7 @@ ASM_REPORT_PRINT_START:
 ASM_REPORT_PRINT_PC:
                         LDX             #<ASM_REPORT_MSG_PC
                         LDY             #>ASM_REPORT_MSG_PC
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PC_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_PC_LO
@@ -6726,7 +6747,7 @@ ASM_REPORT_PRINT_PC:
 ASM_REPORT_PRINT_HIGH:
                         LDX             #<ASM_REPORT_MSG_HIGH
                         LDY             #>ASM_REPORT_MSG_HIGH
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_HIGH_PC_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_HIGH_PC_LO
@@ -6736,7 +6757,7 @@ ASM_REPORT_PRINT_HIGH:
 ASM_REPORT_PRINT_BYTES:
                         LDX             #<ASM_REPORT_MSG_BYTES
                         LDY             #>ASM_REPORT_MSG_BYTES
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_HIGH_PC_LO
                         SEC
                         SBC             ASM_START_PC_LO
@@ -6751,7 +6772,7 @@ ASM_REPORT_PRINT_BYTES:
 ASM_REPORT_PRINT_LINES:
                         LDX             #<ASM_REPORT_MSG_LINES
                         LDY             #>ASM_REPORT_MSG_LINES
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_LINE_COUNT_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_LINE_COUNT_LO
@@ -6761,7 +6782,7 @@ ASM_REPORT_PRINT_LINES:
 ASM_REPORT_PRINT_SYMS:
                         LDX             #<ASM_REPORT_MSG_SYMS
                         LDY             #>ASM_REPORT_MSG_SYMS
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SYM_COUNT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_REPORT_PRINT_LIMIT_SEP
@@ -6772,7 +6793,7 @@ ASM_REPORT_PRINT_SYMS:
 ASM_REPORT_PRINT_FIXUPS:
                         LDX             #<ASM_REPORT_MSG_FIXUPS
                         LDY             #>ASM_REPORT_MSG_FIXUPS
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_FIX_COUNT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_REPORT_PRINT_LIMIT_SEP
@@ -6783,7 +6804,7 @@ ASM_REPORT_PRINT_FIXUPS:
 ASM_REPORT_PRINT_REFS:
                         LDX             #<ASM_REPORT_MSG_REFS
                         LDY             #>ASM_REPORT_MSG_REFS
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_REF_COUNT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_REPORT_PRINT_LIMIT_SEP
@@ -6850,13 +6871,13 @@ ASM_REPORT_PRINT_USED_ROW:
                         JSR             ASM_REPORT_PRINT_DEF_LINE
                         LDX             #<ASM_REPORT_MSG_USED_REFS
                         LDY             #>ASM_REPORT_MSG_USED_REFS
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDX             ASM_SLOT
                         LDA             ASM_SYM_USECNT,X
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_REPORT_MSG_USED_FIRST
                         LDY             #>ASM_REPORT_MSG_USED_FIRST
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDX             ASM_SLOT
                         LDA             ASM_SYM_FIRSTREF_HI,X
                         JSR             ASM_RJ_WRITE_HEX_BYTE
@@ -6915,7 +6936,7 @@ ASM_REPORT_PRINT_UNUSED_ROW:
 ASM_REPORT_PRINT_DEF_LINE:
                         LDX             #<ASM_REPORT_MSG_DEF
                         LDY             #>ASM_REPORT_MSG_DEF
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDX             ASM_SLOT
                         LDA             ASM_SYM_DEFLINE_HI,X
                         JSR             ASM_RJ_WRITE_HEX_BYTE
@@ -15260,19 +15281,19 @@ ASM_SEAL_COMPUTE_FNV_DONE:
 ASM_SEAL_PRINT_RECORD:
                         LDX             #<ASM_SEAL_MSG_OK
                         LDY             #>ASM_SEAL_MSG_OK
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_FLAGS
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SEAL_MSG_BASE
                         LDY             #>ASM_SEAL_MSG_BASE
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_BASE_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_SEAL_BASE_LO
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SEAL_MSG_END
                         LDY             #>ASM_SEAL_MSG_END
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_END_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_SEAL_END_LO
@@ -15280,21 +15301,21 @@ ASM_SEAL_PRINT_RECORD:
                         JSR             ASM_RJ_PRINT_CRLF
                         LDX             #<ASM_SEAL_MSG_REC
                         LDY             #>ASM_SEAL_MSG_REC
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             #>ASM_SEAL_REC
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             #<ASM_SEAL_REC
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SEAL_MSG_LEN
                         LDY             #>ASM_SEAL_MSG_LEN
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_LEN_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_SEAL_LEN_LO
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SEAL_MSG_FNV
                         LDY             #>ASM_SEAL_MSG_FNV
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_FNV3
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_SEAL_FNV2
@@ -15306,14 +15327,14 @@ ASM_SEAL_PRINT_RECORD:
                         JSR             ASM_RJ_PRINT_CRLF
                         LDX             #<ASM_SEAL_MSG_REL
                         LDY             #>ASM_SEAL_MSG_REL
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             #>ASM_RELOC_REC
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             #<ASM_RELOC_REC
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SEAL_MSG_COUNT
                         LDY             #>ASM_SEAL_MSG_COUNT
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_RELOC_COUNT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_RJ_PRINT_CRLF
@@ -15346,20 +15367,20 @@ ASM_SEAL_PRINT_NAMED_REC:
                         STA             ASM_TMP1_LO
                         LDA             ASM_TMP0_HI
                         STA             ASM_TMP1_HI
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_TMP1_HI
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDA             ASM_TMP1_LO
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SEAL_MSG_COUNT
                         LDY             #>ASM_SEAL_MSG_COUNT
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDY             #$00
                         LDA             (ASM_TMP1_LO),Y
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDX             #<ASM_SEAL_MSG_LEN
                         LDY             #>ASM_SEAL_MSG_LEN
-                        JSR             ASM_RJ_WRITE_CSTRING
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             #$00
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDY             #$01
@@ -15558,6 +15579,8 @@ ASM_RJ_FNV_UPDATE_HI:  DB              $00
                         IF              ASM_FLASH_RUNTIME
 ASM_RJ_UPPER_LO:       DB              $00
 ASM_RJ_UPPER_HI:       DB              $00
+ASM_RJ_HBSTR_LO:       DB              $00
+ASM_RJ_HBSTR_HI:       DB              $00
                         ENDIF
                         IF              ASM_RUNTIME_ONLY
                         ELSE
@@ -16321,144 +16344,144 @@ ASM_HASH_FNV1A_UPDATE_A_FAST:
                         ENDIF
                         IF              ASM_RUNTIME_ONLY
                         ELSE
-ASM_REPL_MSG_TITLE:    DB              "ASM 2.65 ICO",0
-ASM_REPL_MSG_PROMPT:   DB              "ASM> ",0
-ASM_REPL_MSG_OK:       DB              "OK PC=$",0
-ASM_REPL_MSG_ERR:      DB              "ERR=$",0
-ASM_REPL_MSG_READ:     DB              "READ=$",0
-ASM_REPL_MSG_BYTES:    DB              " BYTES=",0
-ASM_REPL_MSG_FIX:      DB              " FIX=$",0
-ASM_REPL_MSG_BYE:      DB              "BYE",0
-ASM_SMOKE_MSG_RUN:     DB              "ASM 2.65 RUN",0
-ASM_SMOKE_MSG_PASS:    DB              "ASM 2.65 TESTS OK",0
+ASM_REPL_MSG_TITLE:    DB              "ASM 2.65 IC",('O'+$80)
+ASM_REPL_MSG_PROMPT:   DB              "ASM>",(' '+$80)
+ASM_REPL_MSG_OK:       DB              "OK PC=",('$'+$80)
+ASM_REPL_MSG_ERR:      DB              "ERR=",('$'+$80)
+ASM_REPL_MSG_READ:     DB              "READ=",('$'+$80)
+ASM_REPL_MSG_BYTES:    DB              " BYTES",('='+$80)
+ASM_REPL_MSG_FIX:      DB              " FIX=",('$'+$80)
+ASM_REPL_MSG_BYE:      DB              "BY",('E'+$80)
+ASM_SMOKE_MSG_RUN:     DB              "ASM 2.65 RU",('N'+$80)
+ASM_SMOKE_MSG_PASS:    DB              "ASM 2.65 TESTS O",('K'+$80)
 ASM_SMOKE_MSG_FAIL_TITLE:
-                        DB              "ASM 2.65 TESTS FAIL",0
-ASM_SMOKE_MSG_FAIL_S:  DB              "S=$",0
-ASM_SMOKE_MSG_FAIL_X:  DB              " X=$",0
-ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=$",0
-ASM_SMOKE_MSG_FIX_A1:  DB              " A1 ABS16",0
-ASM_SMOKE_MSG_FIX_A2:  DB              " A2 REL8",0
-ASM_SMOKE_MSG_FIX_A3:  DB              " A3 REL8 RANGE",0
-ASM_SMOKE_MSG_FIX_A4:  DB              " A4 SELECT",0
-ASM_SMOKE_MSG_FIX_A5:  DB              " A5 LO8",0
-ASM_SMOKE_MSG_FIX_A6:  DB              " A6 HI8",0
-ASM_SMOKE_MSG_FIX_A7:  DB              " A7 PENDING END",0
-ASM_SMOKE_MSG_FIX_AC:  DB              " AC IMPORT",0
-ASM_SMOKE_MSG_FIX_AF:  DB              " AF SITE/BASE",0
-ASM_SMOKE_MSG_FIX_B1:  DB              " B1 ABS16 BEGIN",0
-ASM_SMOKE_MSG_FIX_B2:  DB              " B2 ABS16 EMIT",0
-ASM_SMOKE_MSG_FIX_B3:  DB              " B3 ABS16 BYTES",0
-ASM_SMOKE_MSG_FIX_B4:  DB              " B4 ABS16 ROW",0
-ASM_SMOKE_MSG_FIX_B5:  DB              " B5 ABS16 SITE",0
-ASM_SMOKE_MSG_FIX_B6:  DB              " B6 ABS16 BIND",0
-ASM_SMOKE_MSG_FIX_B7:  DB              " B7 ABS16 RESOLVE",0
-ASM_SMOKE_MSG_FIX_B8:  DB              " B8 ABS16 PATCH LO",0
-ASM_SMOKE_MSG_FIX_B9:  DB              " B9 ABS16 PATCH HI",0
-ASM_SMOKE_MSG_FIX_BA:  DB              " BA ABS16 END",0
-ASM_SMOKE_MSG_FIX_BB:  DB              " BB RELOCATE",0
-ASM_SMOKE_MSG_DIR_C1:  DB              " C1 DB BEGIN",0
-ASM_SMOKE_MSG_DIR_C2:  DB              " C2 DB ADDR EQU",0
-ASM_SMOKE_MSG_DIR_C3:  DB              " C3 DB EMIT",0
-ASM_SMOKE_MSG_DIR_C4:  DB              " C4 DB BYTES",0
-ASM_SMOKE_MSG_DIR_C5:  DB              " C5 DB PC",0
-ASM_SMOKE_MSG_DIR_C6:  DB              " C6 DB EMPTY",0
-ASM_SMOKE_MSG_DIR_C7:  DB              " C7 DB UNKNOWN",0
-ASM_SMOKE_MSG_DIR_C8:  DB              " C8 ORG CURRENT",0
-ASM_SMOKE_MSG_DIR_C9:  DB              " C9 ORG FORWARD",0
-ASM_SMOKE_MSG_DIR_CA:  DB              " CA ORG BACK",0
-ASM_SMOKE_MSG_DIR_CB:  DB              " CB DS EMIT",0
-ASM_SMOKE_MSG_DIR_CC:  DB              " CC DS BYTES",0
-ASM_SMOKE_MSG_DIR_CD:  DB              " CD DS PC",0
-ASM_SMOKE_MSG_DIR_CE:  DB              " CE DS EMPTY",0
-ASM_SMOKE_MSG_DIR_CF:  DB              " CF DS RANGE",0
-ASM_SMOKE_MSG_DIR_D0:  DB              " D0 DS LIST EMIT",0
-ASM_SMOKE_MSG_DIR_D1:  DB              " D1 DS LIST BYTES",0
-ASM_SMOKE_MSG_DIR_D2:  DB              " D2 DS LIST PC",0
-ASM_SMOKE_MSG_DIR_D3:  DB              " D3 WARN_DS_WRAP",0
-ASM_SMOKE_MSG_DIR_D4:  DB              " D4 BEGIN HIGH",0
-ASM_SMOKE_MSG_DIR_D5:  DB              " D5 ORG HIGH",0
-ASM_SMOKE_MSG_DIR_D6:  DB              " D6 DW EMIT",0
-ASM_SMOKE_MSG_DIR_D7:  DB              " D7 DW BYTES",0
-ASM_SMOKE_MSG_DIR_D8:  DB              " D8 DW PC",0
-ASM_SMOKE_MSG_DIR_D9:  DB              " D9 DW EMPTY",0
+                        DB              "ASM 2.65 TESTS FAI",('L'+$80)
+ASM_SMOKE_MSG_FAIL_S:  DB              "S=",('$'+$80)
+ASM_SMOKE_MSG_FAIL_X:  DB              " X=",('$'+$80)
+ASM_SMOKE_MSG_FAIL_Y:  DB              " Y=",('$'+$80)
+ASM_SMOKE_MSG_FIX_A1:  DB              " A1 ABS1",('6'+$80)
+ASM_SMOKE_MSG_FIX_A2:  DB              " A2 REL",('8'+$80)
+ASM_SMOKE_MSG_FIX_A3:  DB              " A3 REL8 RANG",('E'+$80)
+ASM_SMOKE_MSG_FIX_A4:  DB              " A4 SELEC",('T'+$80)
+ASM_SMOKE_MSG_FIX_A5:  DB              " A5 LO",('8'+$80)
+ASM_SMOKE_MSG_FIX_A6:  DB              " A6 HI",('8'+$80)
+ASM_SMOKE_MSG_FIX_A7:  DB              " A7 PENDING EN",('D'+$80)
+ASM_SMOKE_MSG_FIX_AC:  DB              " AC IMPOR",('T'+$80)
+ASM_SMOKE_MSG_FIX_AF:  DB              " AF SITE/BAS",('E'+$80)
+ASM_SMOKE_MSG_FIX_B1:  DB              " B1 ABS16 BEGI",('N'+$80)
+ASM_SMOKE_MSG_FIX_B2:  DB              " B2 ABS16 EMI",('T'+$80)
+ASM_SMOKE_MSG_FIX_B3:  DB              " B3 ABS16 BYTE",('S'+$80)
+ASM_SMOKE_MSG_FIX_B4:  DB              " B4 ABS16 RO",('W'+$80)
+ASM_SMOKE_MSG_FIX_B5:  DB              " B5 ABS16 SIT",('E'+$80)
+ASM_SMOKE_MSG_FIX_B6:  DB              " B6 ABS16 BIN",('D'+$80)
+ASM_SMOKE_MSG_FIX_B7:  DB              " B7 ABS16 RESOLV",('E'+$80)
+ASM_SMOKE_MSG_FIX_B8:  DB              " B8 ABS16 PATCH L",('O'+$80)
+ASM_SMOKE_MSG_FIX_B9:  DB              " B9 ABS16 PATCH H",('I'+$80)
+ASM_SMOKE_MSG_FIX_BA:  DB              " BA ABS16 EN",('D'+$80)
+ASM_SMOKE_MSG_FIX_BB:  DB              " BB RELOCAT",('E'+$80)
+ASM_SMOKE_MSG_DIR_C1:  DB              " C1 DB BEGI",('N'+$80)
+ASM_SMOKE_MSG_DIR_C2:  DB              " C2 DB ADDR EQ",('U'+$80)
+ASM_SMOKE_MSG_DIR_C3:  DB              " C3 DB EMI",('T'+$80)
+ASM_SMOKE_MSG_DIR_C4:  DB              " C4 DB BYTE",('S'+$80)
+ASM_SMOKE_MSG_DIR_C5:  DB              " C5 DB P",('C'+$80)
+ASM_SMOKE_MSG_DIR_C6:  DB              " C6 DB EMPT",('Y'+$80)
+ASM_SMOKE_MSG_DIR_C7:  DB              " C7 DB UNKNOW",('N'+$80)
+ASM_SMOKE_MSG_DIR_C8:  DB              " C8 ORG CURREN",('T'+$80)
+ASM_SMOKE_MSG_DIR_C9:  DB              " C9 ORG FORWAR",('D'+$80)
+ASM_SMOKE_MSG_DIR_CA:  DB              " CA ORG BAC",('K'+$80)
+ASM_SMOKE_MSG_DIR_CB:  DB              " CB DS EMI",('T'+$80)
+ASM_SMOKE_MSG_DIR_CC:  DB              " CC DS BYTE",('S'+$80)
+ASM_SMOKE_MSG_DIR_CD:  DB              " CD DS P",('C'+$80)
+ASM_SMOKE_MSG_DIR_CE:  DB              " CE DS EMPT",('Y'+$80)
+ASM_SMOKE_MSG_DIR_CF:  DB              " CF DS RANG",('E'+$80)
+ASM_SMOKE_MSG_DIR_D0:  DB              " D0 DS LIST EMI",('T'+$80)
+ASM_SMOKE_MSG_DIR_D1:  DB              " D1 DS LIST BYTE",('S'+$80)
+ASM_SMOKE_MSG_DIR_D2:  DB              " D2 DS LIST P",('C'+$80)
+ASM_SMOKE_MSG_DIR_D3:  DB              " D3 WARN_DS_WRA",('P'+$80)
+ASM_SMOKE_MSG_DIR_D4:  DB              " D4 BEGIN HIG",('H'+$80)
+ASM_SMOKE_MSG_DIR_D5:  DB              " D5 ORG HIG",('H'+$80)
+ASM_SMOKE_MSG_DIR_D6:  DB              " D6 DW EMI",('T'+$80)
+ASM_SMOKE_MSG_DIR_D7:  DB              " D7 DW BYTE",('S'+$80)
+ASM_SMOKE_MSG_DIR_D8:  DB              " D8 DW P",('C'+$80)
+ASM_SMOKE_MSG_DIR_D9:  DB              " D9 DW EMPT",('Y'+$80)
 ASM_SMOKE_MSG_WARN_DS_WRAP:
-                        DB              "WARN WARN_DS_WRAP",0
-ASM_SMOKE_MSG_T_RJOIN: DB              " 00 RJOIN",0
-ASM_SMOKE_MSG_T_BEGIN: DB              " 10 BEGIN",0
-ASM_SMOKE_MSG_T_LEX:   DB              " 20 LEX LINE",0
+                        DB              "WARN WARN_DS_WRA",('P'+$80)
+ASM_SMOKE_MSG_T_RJOIN: DB              " 00 RJOI",('N'+$80)
+ASM_SMOKE_MSG_T_BEGIN: DB              " 10 BEGI",('N'+$80)
+ASM_SMOKE_MSG_T_LEX:   DB              " 20 LEX LIN",('E'+$80)
 ASM_SMOKE_MSG_T_TOKENS:
-                        DB              " 30 TOKENS",0
-ASM_SMOKE_MSG_T_VOCAB: DB              " 40 VOCAB",0
-ASM_SMOKE_MSG_T_PARSE: DB              " 50 PARSER",0
-ASM_SMOKE_MSG_T_EXPR:  DB              " 56 EXPR",0
-ASM_SMOKE_MSG_T_LINE:  DB              " 58 LINE",0
-ASM_SMOKE_MSG_T_EMIT:  DB              " 59 EMIT",0
-ASM_SMOKE_MSG_T_OPER:  DB              " 5A OPERAND",0
+                        DB              " 30 TOKEN",('S'+$80)
+ASM_SMOKE_MSG_T_VOCAB: DB              " 40 VOCA",('B'+$80)
+ASM_SMOKE_MSG_T_PARSE: DB              " 50 PARSE",('R'+$80)
+ASM_SMOKE_MSG_T_EXPR:  DB              " 56 EXP",('R'+$80)
+ASM_SMOKE_MSG_T_LINE:  DB              " 58 LIN",('E'+$80)
+ASM_SMOKE_MSG_T_EMIT:  DB              " 59 EMI",('T'+$80)
+ASM_SMOKE_MSG_T_OPER:  DB              " 5A OPERAN",('D'+$80)
 ASM_SMOKE_MSG_T_OPCODE:
-                        DB              " 5B OPCODE",0
+                        DB              " 5B OPCOD",('E'+$80)
 ASM_SMOKE_MSG_T_FIXUPS:
-                        DB              " 5C FIXUPS",0
+                        DB              " 5C FIXUP",('S'+$80)
 ASM_SMOKE_MSG_T_DIRECT:
-                        DB              " 5D DIRECT",0
+                        DB              " 5D DIREC",('T'+$80)
 ASM_SMOKE_MSG_T_REPORT:
-                        DB              " 5E REPORT",0
+                        DB              " 5E REPOR",('T'+$80)
 ASM_SMOKE_MSG_T_SYMBOLS:
-                        DB              " 60 SYMBOLS",0
+                        DB              " 60 SYMBOL",('S'+$80)
 ASM_SMOKE_MSG_T_ASMTEST:
-                        DB              " 70 ASMTEST",0
-ASM_SMOKE_MSG_T_LONG:  DB              " 80 LONG LINE",0
-ASM_SMOKE_MSG_T_END:   DB              " 90 END",0
-ASM_SMOKE_MSG_W:       DB              "W=$",0
-ASM_SMOKE_MSG_SYM:     DB              " SYM=$",0
-ASM_SMOKE_MSG_PC:      DB              " PC=$",0
+                        DB              " 70 ASMTES",('T'+$80)
+ASM_SMOKE_MSG_T_LONG:  DB              " 80 LONG LIN",('E'+$80)
+ASM_SMOKE_MSG_T_END:   DB              " 90 EN",('D'+$80)
+ASM_SMOKE_MSG_W:       DB              "W=",('$'+$80)
+ASM_SMOKE_MSG_SYM:     DB              " SYM=",('$'+$80)
+ASM_SMOKE_MSG_PC:      DB              " PC=",('$'+$80)
                         ENDIF
                         IF              ASM_RUNTIME_ONLY
                         ELSE
-ASM_REPORT_MSG_TITLE:  DB              "ASM REPORT",0
-ASM_REPORT_MSG_STATUS: DB              "STATUS=",0
-ASM_REPORT_MSG_OK:     DB              "OK",0
+ASM_REPORT_MSG_TITLE:  DB              "ASM REPOR",('T'+$80)
+ASM_REPORT_MSG_STATUS: DB              "STATUS",('='+$80)
+ASM_REPORT_MSG_OK:     DB              "O",('K'+$80)
 ASM_REPORT_MSG_ERRLINE:
-                        DB              "ERRLINE=$",0
-ASM_REPORT_MSG_START:  DB              "START=$",0
-ASM_REPORT_MSG_PC:     DB              "PC=$",0
-ASM_REPORT_MSG_HIGH:   DB              "HIGH=$",0
-ASM_REPORT_MSG_BYTES:  DB              "BYTES=$",0
-ASM_REPORT_MSG_LINES:  DB              "LINES=$",0
-ASM_REPORT_MSG_SYMS:   DB              "SYMS=$",0
-ASM_REPORT_MSG_FIXUPS: DB              "FIXUPS=$",0
-ASM_REPORT_MSG_REFS:   DB              "REFS=$",0
+                        DB              "ERRLINE=",('$'+$80)
+ASM_REPORT_MSG_START:  DB              "START=",('$'+$80)
+ASM_REPORT_MSG_PC:     DB              "PC=",('$'+$80)
+ASM_REPORT_MSG_HIGH:   DB              "HIGH=",('$'+$80)
+ASM_REPORT_MSG_BYTES:  DB              "BYTES=",('$'+$80)
+ASM_REPORT_MSG_LINES:  DB              "LINES=",('$'+$80)
+ASM_REPORT_MSG_SYMS:   DB              "SYMS=",('$'+$80)
+ASM_REPORT_MSG_FIXUPS: DB              "FIXUPS=",('$'+$80)
+ASM_REPORT_MSG_REFS:   DB              "REFS=",('$'+$80)
 ASM_REPORT_MSG_TRUNC_YES:
-                        DB              "TRUNC=YES",0
+                        DB              "TRUNC=YE",('S'+$80)
 ASM_REPORT_MSG_TRUNC_NO:
-                        DB              "TRUNC=NO",0
-ASM_REPORT_MSG_USED:   DB              "USED",0
-ASM_REPORT_MSG_UNUSED: DB              "UNUSED",0
-ASM_REPORT_MSG_DEF:    DB              " DEF=$",0
+                        DB              "TRUNC=N",('O'+$80)
+ASM_REPORT_MSG_USED:   DB              "USE",('D'+$80)
+ASM_REPORT_MSG_UNUSED: DB              "UNUSE",('D'+$80)
+ASM_REPORT_MSG_DEF:    DB              " DEF=",('$'+$80)
 ASM_REPORT_MSG_USED_REFS:
-                        DB              " REFS=$",0
+                        DB              " REFS=",('$'+$80)
 ASM_REPORT_MSG_USED_FIRST:
-                        DB              " FIRST=$",0
+                        DB              " FIRST=",('$'+$80)
                         ENDIF
-ASM_SEAL_MSG_OK:       DB              "SEAL OK FLAGS=$",0
-ASM_SEAL_MSG_BASE:     DB              " BASE=$",0
-ASM_SEAL_MSG_END:      DB              " END=$",0
-ASM_SEAL_MSG_REC:      DB              "SEAL REC @=$",0
-ASM_SEAL_MSG_LEN:      DB              " LEN=$",0
-ASM_SEAL_MSG_FNV:      DB              " FNV=$",0
-ASM_SEAL_MSG_REL:      DB              "SEAL REL @=$",0
-ASM_SEAL_MSG_EXP:      DB              "SEAL EXP @=$",0
-ASM_SEAL_MSG_IMP:      DB              "SEAL IMP @=$",0
-ASM_SEAL_MSG_COUNT:    DB              " COUNT=$",0
-ASM_TABLE_MSG_TITLE:   DB              "ASM TABLES",0
-ASM_TABLE_MSG_SYMBOLS: DB              "SYMBOLS",0
+ASM_SEAL_MSG_OK:       DB              "SEAL OK FLAGS=",('$'+$80)
+ASM_SEAL_MSG_BASE:     DB              " BASE=",('$'+$80)
+ASM_SEAL_MSG_END:      DB              " END=",('$'+$80)
+ASM_SEAL_MSG_REC:      DB              "SEAL REC @=",('$'+$80)
+ASM_SEAL_MSG_LEN:      DB              " LEN=",('$'+$80)
+ASM_SEAL_MSG_FNV:      DB              " FNV=",('$'+$80)
+ASM_SEAL_MSG_REL:      DB              "SEAL REL @=",('$'+$80)
+ASM_SEAL_MSG_EXP:      DB              "SEAL EXP @=",('$'+$80)
+ASM_SEAL_MSG_IMP:      DB              "SEAL IMP @=",('$'+$80)
+ASM_SEAL_MSG_COUNT:    DB              " COUNT=",('$'+$80)
+ASM_TABLE_MSG_TITLE:   DB              "ASM TABLE",('S'+$80)
+ASM_TABLE_MSG_SYMBOLS: DB              "SYMBOL",('S'+$80)
 ASM_TABLE_MSG_SYM_HEAD:
-                        DB              "SL ST VALUE K  W  FL DEF  USE FIRST NAME",0
-ASM_TABLE_MSG_FIXUPS:  DB              "FIXUPS",0
+                        DB              "SL ST VALUE K  W  FL DEF  USE FIRST NAM",('E'+$80)
+ASM_TABLE_MSG_FIXUPS:  DB              "FIXUP",('S'+$80)
 ASM_TABLE_MSG_FIX_HEAD:
-                        DB              "SL ST MODE SEL SITE BASE NAME",0
-ASM_TABLE_MSG_RELOCS:  DB              "RELOCS",0
+                        DB              "SL ST MODE SEL SITE BASE NAM",('E'+$80)
+ASM_TABLE_MSG_RELOCS:  DB              "RELOC",('S'+$80)
 ASM_TABLE_MSG_RELOC_HEAD:
-                        DB              "SL K  SITE TARG",0
+                        DB              "SL K  SITE TAR",('G'+$80)
                         IF              ASM_RUNTIME_ONLY
                         ELSE
 ASM_SMOKE_LINE_LONG:

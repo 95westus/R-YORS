@@ -240,6 +240,7 @@ HIM_SVC_BOOT_TABLE:
                         DW              FNV1A_INIT
                         DW              FNV1A_UPDATE_A_FAST
                         DW              HIM_CHAR_TO_UPPER
+                        DW              HIM_WRITE_HBSTRING
 HIM_SVC_BOOT_TABLE_END:
 
 MON_START_INIT:

@@ -37,7 +37,7 @@
                         XREF            ASM_PARSE_EXPR_REQUIRE_END
                         XREF            ASM_RJOIN_INIT_IO
                         XREF            ASM_RJ_READ_CSTRING
-                        XREF            ASM_RJ_WRITE_CSTRING
+                        XREF            ASM_RJ_WRITE_HBSTRING
                         XREF            ASM_RJ_WRITE_HEX_BYTE
                         XREF            ASM_RJ_PRINT_CRLF
 
@@ -405,7 +405,7 @@ ASMF_PRINT_LINE:
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASMF_PRINT:
-                        JMP             ASM_RJ_WRITE_CSTRING
+                        JMP             ASM_RJ_WRITE_HBSTRING
 
 ASMF_PRINT_SEAL_FLAGS_TAIL:
                         LDX             #<MSG_FLAGS
@@ -606,44 +606,44 @@ ASMF_CMD_CHECK:         DB              "CHECK",0
                         ENDIF
 ASMF_CMD_NEW:           DB              "NEW",0
 ASMF_CMD_END:           DB              "END",0
-MSG_TITLE:              DB              "ASM FLASH",0
-MSG_PROMPT:             DB              "ASM> ",0
-MSG_SEAL_PROMPT:        DB              "SEAL> ",0
-MSG_OK:                 DB              "OK",0
-MSG_ERR:                DB              "ERR=$",0
-MSG_READ:               DB              "READ=$",0
-MSG_FAIL:               DB              "BEGIN=$",0
-MSG_TABLE:              DB              "TABLE=$",0
-MSG_PC:                 DB              " PC=$",0
-MSG_SEAL_ERR:           DB              "SEAL ERR=$",0
-MSG_RESOLVE_ERR:        DB              "RESOLVE ERR=$",0
-MSG_RESOLVE_OK:         DB              "RESOLVE OK COUNT=$",0
-MSG_RELOCATE_ERR:       DB              "RELOCATE ERR=$",0
-MSG_RELOCATE_OK:        DB              "RELOCATE OK BASE=$",0
-MSG_RELOCATE_COUNT:     DB              " COUNT=$",0
-MSG_PACKAGE_ERR:        DB              "PACKAGE ERR=$",0
-MSG_PACKAGE_OK:         DB              "PACKAGE OK @=$",0
-MSG_PACKAGE_LEN:        DB              " LEN=$",0
+MSG_TITLE:              DB              "ASM FLAS",('H'+$80)
+MSG_PROMPT:             DB              "ASM>",(' '+$80)
+MSG_SEAL_PROMPT:        DB              "SEAL>",(' '+$80)
+MSG_OK:                 DB              "O",('K'+$80)
+MSG_ERR:                DB              "ERR=",('$'+$80)
+MSG_READ:               DB              "READ=",('$'+$80)
+MSG_FAIL:               DB              "BEGIN=",('$'+$80)
+MSG_TABLE:              DB              "TABLE=",('$'+$80)
+MSG_PC:                 DB              " PC=",('$'+$80)
+MSG_SEAL_ERR:           DB              "SEAL ERR=",('$'+$80)
+MSG_RESOLVE_ERR:        DB              "RESOLVE ERR=",('$'+$80)
+MSG_RESOLVE_OK:         DB              "RESOLVE OK COUNT=",('$'+$80)
+MSG_RELOCATE_ERR:       DB              "RELOCATE ERR=",('$'+$80)
+MSG_RELOCATE_OK:        DB              "RELOCATE OK BASE=",('$'+$80)
+MSG_RELOCATE_COUNT:     DB              " COUNT=",('$'+$80)
+MSG_PACKAGE_ERR:        DB              "PACKAGE ERR=",('$'+$80)
+MSG_PACKAGE_OK:         DB              "PACKAGE OK @=",('$'+$80)
+MSG_PACKAGE_LEN:        DB              " LEN=",('$'+$80)
                         IF              ASM_PACKAGE_CHECK_ENABLED
-MSG_CHECK_ERR:          DB              "CHECK ERR=$",0
-MSG_CHECK_OK:           DB              "CHECK OK @=$",0
+MSG_CHECK_ERR:          DB              "CHECK ERR=",('$'+$80)
+MSG_CHECK_OK:           DB              "CHECK OK @=",('$'+$80)
                         ENDIF
-MSG_FLAGS:              DB              " FLAGS=$",0
-MSG_DONE:               DB              "ASM FLASH OK",0
-MSG_BYE:                DB              "ASM FLASH BYE",0
-MSG_STATUS_OK:          DB              " OK",0
-MSG_STATUS_BAD_MNEM:    DB              " BAD MNEM",0
-MSG_STATUS_BAD_DIR:     DB              " BAD DIR",0
-MSG_STATUS_BAD_OPER:    DB              " BAD OPER",0
-MSG_STATUS_BAD_MODE:    DB              " BAD MODE",0
-MSG_STATUS_BAD_WIDTH:   DB              " BAD WIDTH",0
-MSG_STATUS_BAD_RANGE:   DB              " BAD RANGE",0
-MSG_STATUS_BAD_LINE:    DB              " BAD LINE",0
-MSG_STATUS_BAD_SYM:     DB              " BAD SYM",0
-MSG_STATUS_BAD_FIX:     DB              " BAD FIX",0
-MSG_STATUS_LOCAL_NYI:   DB              " LOCAL NYI",0
-MSG_STATUS_RJOIN:       DB              " RJOIN",0
-MSG_STATUS_UNKNOWN:     DB              " STATUS",0
+MSG_FLAGS:              DB              " FLAGS=",('$'+$80)
+MSG_DONE:               DB              "ASM FLASH O",('K'+$80)
+MSG_BYE:                DB              "ASM FLASH BY",('E'+$80)
+MSG_STATUS_OK:          DB              " O",('K'+$80)
+MSG_STATUS_BAD_MNEM:    DB              " BAD MNE",('M'+$80)
+MSG_STATUS_BAD_DIR:     DB              " BAD DI",('R'+$80)
+MSG_STATUS_BAD_OPER:    DB              " BAD OPE",('R'+$80)
+MSG_STATUS_BAD_MODE:    DB              " BAD MOD",('E'+$80)
+MSG_STATUS_BAD_WIDTH:   DB              " BAD WIDT",('H'+$80)
+MSG_STATUS_BAD_RANGE:   DB              " BAD RANG",('E'+$80)
+MSG_STATUS_BAD_LINE:    DB              " BAD LIN",('E'+$80)
+MSG_STATUS_BAD_SYM:     DB              " BAD SY",('M'+$80)
+MSG_STATUS_BAD_FIX:     DB              " BAD FI",('X'+$80)
+MSG_STATUS_LOCAL_NYI:   DB              " LOCAL NY",('I'+$80)
+MSG_STATUS_RJOIN:       DB              " RJOI",('N'+$80)
+MSG_STATUS_UNKNOWN:     DB              " STATU",('S'+$80)
 
 ASMF_STATUS_NAME_LO:
                         DB              <MSG_STATUS_OK
