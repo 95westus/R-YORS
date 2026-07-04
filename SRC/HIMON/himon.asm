@@ -195,10 +195,7 @@ MON_INIT_COMMON:
                         STA             RESET_SIG2
                         LDA             #$3C
                         STA             RESET_SIG3
-                        LDA             #<THE_JOIN_EXEC_XY
-                        STA             RJOIN_EXEC_XY_LO
-                        LDA             #>THE_JOIN_EXEC_XY
-                        STA             RJOIN_EXEC_XY_HI
+                        JSR             MON_INIT_SERVICE_VECTORS
                         JSR             SYS_INIT
                         JSR             SYS_FLUSH_RX
 
@@ -212,6 +209,38 @@ MON_INIT_COMMON:
                         LDY             #>MON_IRQ_TRAP
                         JSR             SYS_VEC_SET_IRQ_NONBRK_XY
                         RTS
+
+MON_INIT_SERVICE_VECTORS:
+                        LDX             #HIM_SVC_BOOT_TABLE_END-HIM_SVC_BOOT_TABLE-1
+MON_INIT_SERVICE_VECTORS_LOOP:
+                        LDA             HIM_SVC_BOOT_TABLE,X
+                        STA             RJOIN_EXEC_XY_LO,X
+                        DEX
+                        BPL             MON_INIT_SERVICE_VECTORS_LOOP
+                        LDA             #$00
+                        LDX             #HIM_SVC_CHECKSUM-HIM_SVC_SIG0-1
+MON_INIT_SERVICE_CHECKSUM_LOOP:
+                        EOR             HIM_SVC_SIG0,X
+                        DEX
+                        BPL             MON_INIT_SERVICE_CHECKSUM_LOOP
+                        STA             HIM_SVC_CHECKSUM
+                        RTS
+
+HIM_SVC_BOOT_TABLE:
+                        DB              <THE_JOIN_EXEC_XY,>THE_JOIN_EXEC_XY
+                        DB              HIM_SVC_SIG0_VAL,HIM_SVC_SIG1_VAL
+                        DB              HIM_SVC_VERSION_1,HIM_SVC_VECTOR_COUNT
+                        DW              THE_JOIN_EXEC_XY
+                        DW              BIO_FTDI_WRITE_BYTE_BLOCK
+                        DW              SYS_WRITE_CSTRING
+                        DW              SYS_WRITE_HEX_BYTE
+                        DW              SYS_WRITE_CRLF
+                        DW              HIM_READ_LINE_ECHO_UPPER
+                        DW              UTL_HEX_ASCII_TO_NIBBLE
+                        DW              FNV1A_INIT
+                        DW              FNV1A_UPDATE_A_FAST
+                        DW              HIM_CHAR_TO_UPPER
+HIM_SVC_BOOT_TABLE_END:
 
 MON_START_INIT:
                         JSR             MON_INIT_COMMON
@@ -3284,11 +3313,31 @@ CMD_EXEC_ADDR:
                         RTS
 CMD_EXEC_ADDR_KEEP_TRAP:
                         PLA
-                        PLA
+                        PLP
+                        BCS             CMD_EXEC_ADDR_DONE
+                        CMP             #$00
+                        BEQ             CMD_EXEC_ADDR_DONE
+                        LDX             CMD_EXEC_KIND
+                        BNE             CMD_EXEC_ADDR_DONE
+                        LDX             CMD_EXEC_ENTRY_HI
+                        CPX             #$C0
+                        BCS             CMD_EXEC_ADDR_DONE
+                        JSR             CMD_EXEC_PRINT_FAIL
+CMD_EXEC_ADDR_DONE:
                         RTS
 
 CMD_CALL_ADDR:
                         JMP             (CMDP_ADDR_LO)
+
+CMD_EXEC_PRINT_FAIL:
+                        PHA
+                        JSR             MON_PRINT_HASH
+                        LDX             #<MSG_EXEC_ERR
+                        LDY             #>MSG_EXEC_ERR
+                        JSR             HIM_WRITE_HBSTRING
+                        PLA
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JMP             SYS_WRITE_CRLF
 
 FNV1A_INIT_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$1E,$EE,$9A,$4B,CMD_HASH_KIND_EXEC_TEXT ; FNV1A_INIT $4B9AEE1E EXEC+TEXT
@@ -3620,6 +3669,7 @@ MSG_HASH_NF:             DB              " HSH_NF",('!'+$80)
 MSG_HASH_HDR:            DB              "HASH     ENTRY K TEX",('T'+$80)
 MSG_HASH_ENTRY:          DB              " ENTRY",('='+$80)
 MSG_HASH_K:              DB              " K",('='+$80)
+MSG_EXEC_ERR:            DB              " EXEC ERR=",('$'+$80)
 MSG_HASH_USAGE:          DB              "# [K=hh|K<hh|K>hh|token",(']'+$80)
 MSG_RUN:                 DB              "RUN",(' '+$80)
 MSG_RUN_AT:              DB              " ",('@'+$80)

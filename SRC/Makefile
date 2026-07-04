@@ -239,17 +239,17 @@ HELP_QUERY := $(if $(Q),$(Q),$(SEARCH))
 TERMINAL ?=
 UPLOADER ?=
 
-ALL_TARGETS := \
-	himon \
-	str8 \
-	himon-str8-rom-bin \
+FIRMWARE_TARGETS ?= \
 	himon-str8-himon-update-s19 \
-	fnv1a-hbstr \
+	asm-v1-flash
+
+TEST_TARGETS ?= \
 	test-mon \
 	test-ftdi-drv \
 	test-ftdi-hal \
-	test-flash \
-	life \
+	test-flash
+
+PROOF_TARGETS ?= \
 	himon-debug-proof \
 	himon-search-static \
 	himon-search-proof \
@@ -258,23 +258,39 @@ ALL_TARGETS := \
 	hrec-join-proof \
 	pack40-test \
 	asm-rjoin-proof \
-	asm-v1-runtime \
 	asm-v1-runtime-smoke \
 	asm-v1-runtime-asmtest \
-	asm-v1-runtime-paste \
-	asm-v1-flash \
+	asm-v1-runtime-paste
+
+APP_TARGETS ?= \
+	life \
 	rom-append-calc
 
+ASM_TARGETS ?= \
+	asm-v1-runtime \
+	asm-v1-flash
+
+LAB_TARGETS := \
+	himon \
+	str8 \
+	himon-str8-rom-bin \
+	himon-str8-himon-update-s19 \
+	fnv1a-hbstr \
+	$(TEST_TARGETS) \
+	$(PROOF_TARGETS) \
+	$(ASM_TARGETS) \
+	$(APP_TARGETS)
+
 # Local language S19/BIN targets consume ignored sources under LOCAL/. Include
-# them in all only when their local source homes are present.
-LOCAL_ALL_TARGETS :=
+# them in the broad lab sweep only when their local source homes are present.
+LOCAL_LAB_TARGETS :=
 ifneq ($(wildcard $(FIG_FORTH_INPUT)),)
-LOCAL_ALL_TARGETS += fig-forth
+LOCAL_LAB_TARGETS += fig-forth
 endif
 ifneq ($(wildcard $(MSBASIC_SRC_ROOT)/*),)
-LOCAL_ALL_TARGETS += msbasic-osi msbasic-osi-ram
+LOCAL_LAB_TARGETS += msbasic-osi msbasic-osi-ram
 endif
-ALL_TARGETS += $(LOCAL_ALL_TARGETS)
+LAB_TARGETS += $(LOCAL_LAB_TARGETS)
 
 RELEASE_TARGETS ?= \
 	himon \
@@ -290,7 +306,24 @@ RELEASE_LOCAL_TARGETS ?= \
 	basic-himon-rom-bin \
 	basic-forth-himon-rom-bin
 
-all: $(ALL_TARGETS)
+all: firmware
+
+firmware: $(FIRMWARE_TARGETS)
+	@echo "Built focused firmware targets: $(FIRMWARE_TARGETS)"
+
+lab: $(LAB_TARGETS)
+	@echo "Built broad lab target set: $(LAB_TARGETS)"
+
+everything: lab
+
+proofs: $(PROOF_TARGETS)
+	@echo "Built proof targets: $(PROOF_TARGETS)"
+
+apps: $(APP_TARGETS)
+	@echo "Built app/demo targets: $(APP_TARGETS)"
+
+tests: $(TEST_TARGETS)
+	@echo "Built test targets: $(TEST_TARGETS)"
 
 help:
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(HELP_GEN) -Query "$(HELP_QUERY)"
@@ -339,6 +372,8 @@ himon-str8-rom-install-s19: $(HIMON_STR8_ROM_INSTALL_S19)
 
 himon-str8-himon-update-s19: $(HIMON_STR8_HIMON_UPDATE_S19)
 	@echo "Built $(HIMON_STR8_HIMON_UPDATE_S19)."
+
+himon-str8-update str8-himon-update str-himon-str-update: himon-str8-himon-update-s19
 
 rom-install-s19: himon-str8-rom-install-s19
 	@echo "Built primary ROM install S19."
@@ -451,6 +486,8 @@ asm-v1-runtime-paste: $(ROM_LIB) $(ASM_V1_RUNTIME_PASTE_S19)
 asm-v1-flash: $(ASM_V1_FLASH_S19)
 	@echo "Built $(ASM_V1_FLASH_S19)."
 	@$(MAKE) artifacts
+
+asm-flash: asm-v1-flash
 
 asmtest-6800-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE)"
@@ -1004,4 +1041,28 @@ else
 	$(TERMINAL)
 endif
 
-.PHONY: all help release release-local himon himon-rom himon-rom-bin himon-str8-rom-bin himon-rom-install-s19 himon-str8-rom-install-s19 himon-str8-himon-update-s19 himon-load himon-load-bin basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash life himon-debug-proof himon-search-static himon-search-static-proof himon-search-proof himon-search-flash himon-search-for-himon hrec-join-proof pack40-test asm-rjoin-proof asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-opcode-coverage asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 msbasic-osi-str8-update-s19 local-homes call-order routine-contracts himon-routine-tree routine-tree routine-class-diagram routine-prefix-map routine-word-tree himon-support-map himon-command-map hash-routine-map cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map map-of-maps routine-graph-insights routine-components routine-hash-comments docs docs-watch docs-html bin-check rom testing artifacts clean realclean upload term
+.PHONY: \
+	all firmware lab everything proofs apps tests help release release-local \
+	himon himon-rom himon-rom-bin himon-str8-rom-bin \
+	himon-rom-install-s19 himon-str8-rom-install-s19 \
+	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \
+	str-himon-str-update himon-load himon-load-bin \
+	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \
+	str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash \
+	life himon-debug-proof himon-search-static himon-search-static-proof \
+	himon-search-proof himon-search-flash himon-search-for-himon \
+	hrec-join-proof pack40-test asm-rjoin-proof asm-v1-core \
+	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \
+	asm-v1-runtime-paste asm-v1-flash asm-flash asm-opcode-coverage \
+	asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check \
+	asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check \
+	asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src \
+	fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src \
+	msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 \
+	msbasic-osi-str8-update-s19 local-homes call-order routine-contracts \
+	himon-routine-tree routine-tree routine-class-diagram routine-prefix-map \
+	routine-word-tree himon-support-map himon-command-map hash-routine-map \
+	cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map \
+	map-of-maps routine-graph-insights routine-components routine-hash-comments \
+	docs docs-watch docs-html bin-check rom testing artifacts clean realclean \
+	upload term

@@ -6,7 +6,13 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $rows = @(
-    [pscustomobject]@{ Target = "all"; Category = "build"; Description = "Build the main tracked and local target set." }
+    [pscustomobject]@{ Target = "all"; Category = "build"; Description = "Build the focused firmware set: HIMON STR8 update plus ASM flash." }
+    [pscustomobject]@{ Target = "firmware"; Category = "build"; Description = "Build the focused firmware set: himon-str8-himon-update-s19 and asm-v1-flash." }
+    [pscustomobject]@{ Target = "lab"; Category = "build"; Description = "Build the broad workbench sweep, including tests, proofs, demos, and local language images when present." }
+    [pscustomobject]@{ Target = "everything"; Category = "build"; Description = "Alias for lab." }
+    [pscustomobject]@{ Target = "proofs"; Category = "build"; Description = "Build proof targets only." }
+    [pscustomobject]@{ Target = "tests"; Category = "build"; Description = "Build test targets only." }
+    [pscustomobject]@{ Target = "apps"; Category = "build"; Description = "Build app/demo targets only." }
     [pscustomobject]@{ Target = "help"; Category = "build"; Description = "Show this target list. Filter with Q=term, e.g. make help Q=flash." }
     [pscustomobject]@{ Target = "release"; Category = "release"; Description = "Build docs plus tracked release artifacts: HIMON, fnv1a-hbstr, test-flash, rom-append-calc." }
     [pscustomobject]@{ Target = "release-local"; Category = "release"; Description = "Build release plus local/private ROM composites." }
@@ -17,6 +23,9 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-c000-install-8000.s19." }
     [pscustomobject]@{ Target = "himon-str8-rom-install-s19"; Category = "monitor"; Description = "Convert primary HIMON+STR8 ROM BIN to S1/S9 install transport: BUILD/s19/himon-str8-rom-install.s19." }
     [pscustomobject]@{ Target = "himon-str8-himon-update-s19"; Category = "monitor"; Description = "Build C000-EFFF S1/S9 stream for STR8 U / UPDATE HIMON: BUILD/s19/himon-str8-himon-update.s19." }
+    [pscustomobject]@{ Target = "himon-str8-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
+    [pscustomobject]@{ Target = "str8-himon-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
+    [pscustomobject]@{ Target = "str-himon-str-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for himon-str8-rom-install-s19." }
     [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000: BUILD/s19/himon-load-c000.s19." }
     [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image at BUILD/bin/himon-load-c000.bin." }
@@ -35,6 +44,9 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-search-flash"; Category = "test"; Description = "Build low-flash K=05 S search command S19 at BB80 for L F." }
     [pscustomobject]@{ Target = "himon-search-for-himon"; Category = "test"; Description = "Assemble the native HIMON search port scaffold and guide pointer." }
     [pscustomobject]@{ Target = "pack40-test"; Category = "test"; Description = "Build PACK40 pack/unpack string round-trip proof at 3000." }
+    [pscustomobject]@{ Target = "asm-flash"; Category = "asm"; Description = "Alias for asm-v1-flash." }
+    [pscustomobject]@{ Target = "asm-v1-flash"; Category = "asm"; Description = "Build flash ASM at 8000: BUILD/s19/asm-v1-flash-8000.s19." }
+    [pscustomobject]@{ Target = "asm-test"; Category = "asm"; Description = "Run the full ASM smoke/proof build set." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
     [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }
     [pscustomobject]@{ Target = "rom-append-calc"; Category = "app"; Description = "Build CALC command as a ROM append proof at B804." }

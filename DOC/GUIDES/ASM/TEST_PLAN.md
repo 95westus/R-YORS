@@ -4118,11 +4118,204 @@ stamp the seed pocket yet; this is ASM-only readiness for the later HIMON/STR8
 upgrade. The guarded seed path costs `$29` bytes over ASM 2.56 while the scanner
 fallback remains present.
 
-Current seed-only ASM supersedes the ASM 2.57 fallback policy for the `$8000`
-ASM/no-header direction. `ASM_RJOIN_INIT` now requires `$7E00/$7E01` to hold a
-ROM-space `HASH ACQUIRE` seed and no longer carries the local scanner bootstrap.
-HIMON publishes the current `THE_JOIN_EXEC_XY` addr16 there during common init,
-so the seed follows the resident joiner if HIMON moves it.
+Current seed/service-vector ASM supersedes the ASM 2.57 fallback policy for the
+`$8000` ASM/no-header direction. Non-flash runtime still requires `$7E00/$7E01`
+to hold a ROM-space `HASH ACQUIRE` seed and no longer carries the local scanner
+bootstrap. HIMON publishes the current `THE_JOIN_EXEC_XY` addr16 there during
+common init, so the seed follows the resident joiner if HIMON moves it.
+
+Flash ASM extends the seed with a versioned HIMON service vector block at
+`$7E02-$7E19`: signature `R Y`, version `$01`, count `$0A`, then resident
+vectors for join, byte output, C-string output, hex-byte output, CRLF, line
+input, hex-nibble conversion, FNV init, FNV update, and character uppercase.
+`$7E1A` holds an XOR checksum over `$7E02-$7E19`; XOR over `$7E02-$7E1A`
+must be `$00`. `ASM_RJOIN_INIT` in the flash profile validates the block and
+copies the contiguous vector bytes into its local cache instead of resolving
+those services by FNV on every startup.
+The 2026-07-04 host proof ran `make -C SRC asm-test` plus the HIMON ROM build;
+the maps showed `asm-v1-flash-8000` ending at `_END_DATA=$BCA2` with `$035E`
+below `$C000`, and the follow-up reporter build of `himon-rom-c000` ending at
+`_END_DATA=$EB81` with `$047F` below `$F000`.
+
+The current reporter build shifts the HIMON service routine targets. A fresh
+`D 7E00 7E1A` after boot should show:
+
+```text
+7E00: 60 DA 52 59 01 0A 60 DA | 00 DF A8 E1 AC E1 A4 E1 | `.RY..`.........
+7E10: 84 D0 BC E1 0C DD 86 DD | 13 D1 65 | ..........e
+```
+
+The matching board proof on `HIMON V 00.0703(2026)` warm-booted from STR8,
+dumped the service vector block, loaded `asm-v1-flash-8000.s19`, accepted
+lowercase `org`, assembled a tiny program, and ran it from RAM. This vector
+dump matched the pre-reporter host map byte-for-byte:
+
+```text
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0703(2026)
+>D 7E00 7E19
+7E00: 53 DA 52 59 01 0A 53 DA | CC DE 74 E1 78 E1 70 E1 | S.RY..S...t.x.p.
+7E10: 77 D0 88 E1 D8 DC 52 DD | 06 D1 | w.....R...
+>L F
+L F S19
+L @8000
+LF OK WR=3C94 GO=800C
+>ASM
+ASM FLASH
+ASM> ORG $2000
+OK PC=$2000
+ASM> LDA #$5A
+OK PC=$2002
+ASM> STA $7100
+OK PC=$2005
+ASM> RTS
+OK PC=$2006
+ASM> END
+OK PC=$2006
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM FLASH OK
+SEAL> G 2000
+ERR=$03 BAD OPER PC=$2006
+SEAL> .
+ASM FLASH BYE
+>G 2000
+GO 2000
+
+#GO# ENTRY=2000
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 7100
+7100: 5A | Z
+>M 7E05
+M PROT=$7E05
+```
+
+This proves the service-vector ABI, the appended uppercase vector, flash ASM
+startup through the copied vectors, the post-`END` command boundary, and the
+protected `$7E05` service-count cell.
+
+The same board then ran a deliberate service-count corruption proof. ASM
+rejected `STA 7E05` without `$` as a bad operand, accepted `STA $7E05`, emitted
+a RAM program that writes `$09` to the service-count byte, and returned from
+that program with `A=$09`. A following `ASM` command did not enter `ASM FLASH`,
+proving flash ASM rejects a service block whose count is below the required
+`$0A`. The first proof was captured before HIMON reported failed external hash
+command returns. With the follow-up diagnostic, the expected failed ASM command
+prints `#56AD7400# EXEC ERR=$0B` before returning to the HIMON prompt. This is
+expected: the monitor memory editor protects `$7E05`, but a running RAM program
+can still modify RAM. A warm/cold HIMON init restores the service vector block.
+
+```text
+ASM
+ASM FLASH
+ASM> LDA #$09
+OK PC=$2002
+ASM> STA 7E05
+ERR=$03 BAD OPER PC=$2002
+ASM> STA $7E05
+OK PC=$2005
+ASM> RTS
+OK PC=$2006
+ASM> .
+ASM FLASH BYE
+>G 2000
+GO 2000
+
+#GO# ENTRY=2000
+RET A=09 X=30 Y=30 P=75 S=FD NV-BdIzC
+>ASM
+>ASM
+>
+```
+
+Expected with the external hash-command failure reporter:
+
+```text
+>ASM
+#56AD7400# EXEC ERR=$0B
+>
+```
+
+The same diagnostic is expected after any single-byte corruption in
+`$7E02-$7E1A`, including a vector byte or the checksum byte, because flash ASM
+verifies the XOR checksum before copying the service vectors.
+
+Hardware-proven reporter/checksum proof on `HIMON V 00.0703(2230)` after STR8
+`UPDATE HIMON C000-EFFF`: the current update stream booted, `$7E1A` held the
+expected checksum `$65`, `asm-v1-flash-8000.s19` loaded as `$3CA2`, flash ASM
+entered normally, then a RAM program changed `$7E05` from `$0A` to `$FF`.
+Because `$FF` is still greater than the required vector count, this specifically
+proves the checksum path rather than only the count-minimum path. The next
+`ASM` command printed the external hash-command failure report with ASM's
+service/RJOIN status `$0B`.
+
+```text
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+.............................................................................................................................................................................................................................................................................................................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0703(2230)
+>D 7E00 7EFF
+7E00: 60 DA 52 59 01 0A 60 DA | 00 DF A8 E1 AC E1 A4 E1 | `.RY..`.........
+7E10: 84 D0 BC E1 0C DD 86 DD | 13 D1 65 00 00 00 00 00 | ..........e.....
+>L F
+L F S19
+L @8000
+LF OK WR=3CA2 GO=800C
+>ASM
+ASM FLASH
+ASM> .
+ASM FLASH BYE
+>ASM
+ASM FLASH
+ASM> LDA #$FF
+OK PC=$2002
+ASM> STA $7E05
+OK PC=$2005
+ASM> RTS
+OK PC=$2006
+ASM> .
+ASM FLASH BYE
+>G 2000
+GO 2000
+
+#GO# ENTRY=2000
+RET A=FF X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 7E00 7EFF
+7E00: 60 DA 52 59 01 FF 60 DA | 00 DF A8 E1 AC E1 A4 E1 | `.RY..`.........
+7E10: 84 D0 BC E1 0C DD 86 DD | 13 D1 65 00 00 00 00 00 | ..........e.....
+>ASM
+#56AD7400# EXEC ERR=$0B
+>
+```
+
+After the deliberate corruption, running HIMON from STR8 restored the service
+vector block and flash ASM entered normally again:
+
+```text
+>HIMON
+RUN HIMON: V 00.0703(2026) @C000 K=03 ? y
+BOOT WARM
+
+HIMON V 00.0703(2026)
+>ASM
+ASM FLASH
+ASM>
+```
 
 On 2026-06-09, the earlier `$FFF8/$FFF9` flash-pocket policy failed after a
 board was updated with STR8 `UPDATE HIMON C000-EFFF`. The board booted

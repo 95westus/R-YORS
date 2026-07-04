@@ -158,6 +158,17 @@ ASM_RJ_STR_HI         EQU             ASM_TMP0_HI
 ASM_SEED_HASH_ACQUIRE_LO EQU          $7E00
 ASM_SEED_HASH_ACQUIRE_HI EQU          $7E01
 ASM_SEED_ROM_MIN_HI      EQU          $C0
+ASM_HIM_SVC_SIG0         EQU          $7E02
+ASM_HIM_SVC_SIG1         EQU          $7E03
+ASM_HIM_SVC_VERSION      EQU          $7E04
+ASM_HIM_SVC_COUNT        EQU          $7E05
+ASM_HIM_SVC_JOIN_LO      EQU          $7E06
+ASM_HIM_SVC_CHECKSUM     EQU          $7E1A
+ASM_HIM_SVC_SIG0_VAL     EQU          'R'
+ASM_HIM_SVC_SIG1_VAL     EQU          'Y'
+ASM_HIM_SVC_VERSION_1    EQU          $01
+ASM_HIM_SVC_VECTOR_COUNT EQU          $0A
+ASM_HIM_SVC_VECTOR_BYTES EQU          $14
 
 ASM_TOK_KIND          EQU             ASM_MODE
 ASM_TOK_SUB           EQU             ASM_WIDTH
@@ -775,12 +786,13 @@ ASM_REPL_QUIT:
                         SEC
                         RTS
 ASM_REPL_IO_FAIL:
-                        JSR             ASM_RJOIN_INIT
-                        BCC             ASM_REPL_RETURN_FAIL
                         LDA             #ASM_STATUS_RJOIN
                         STA             ASM_REPL_STATUS
+                        JSR             ASM_RJOIN_INIT
+                        BCC             ASM_REPL_RETURN_FAIL
                         JSR             ASM_REPL_PRINT_READ_FAIL
 ASM_REPL_RETURN_FAIL:
+                        LDA             ASM_REPL_STATUS
                         CLC
                         RTS
 
@@ -1424,6 +1436,9 @@ ASM_RJOIN_INIT:
                         RTS
 ASM_RJOIN_INIT_SEED:
                         STZ             ASM_RJ_READY
+                        IF              ASM_FLASH_RUNTIME
+                        JMP             ASM_RJOIN_INIT_SERVICE_BLOCK
+                        ELSE
                         LDA             #ASM_STEP_RJOIN_JOINER
                         STA             ASM_START_STEP
                         LDX             ASM_SEED_HASH_ACQUIRE_LO
@@ -1488,6 +1503,7 @@ ASM_RJOIN_INIT_NO_PROGRESS:
                         STA             ASM_RJ_READY
                         SEC
                         RTS
+                        ENDIF
 ASM_RJOIN_INIT_FAIL:
                         STZ             ASM_RJ_READY
                         STZ             ASM_RJ_PROGRESS
@@ -1496,27 +1512,44 @@ ASM_RJOIN_INIT_FAIL:
 
                         IF              ASM_RUNTIME_ONLY
                         IF              ASM_FLASH_RUNTIME
-ASM_RJOIN_INIT_IO:
-                        STZ             ASM_RJ_READ_LO
-                        STZ             ASM_RJ_READ_HI
-                        JSR             ASM_RJOIN_INIT
-                        BCC             ASM_RJOIN_INIT_IO_FAIL
-                        LDA             ASM_RJ_READ_HI
-                        BNE             ASM_RJOIN_INIT_IO_READY
-                        LDA             #ASM_STEP_RJOIN_READ
-                        STA             ASM_START_STEP
-                        LDX             #<ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
-                        LDY             #>ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
-                        JSR             ASM_RJ_RESIDENT_XY
-                        BCC             ASM_RJOIN_INIT_IO_FAIL
-                        STX             ASM_RJ_READ_LO
-                        STY             ASM_RJ_READ_HI
-ASM_RJOIN_INIT_IO_READY:
+ASM_RJOIN_INIT_SERVICE_BLOCK:
+                        LDA             ASM_HIM_SVC_SIG0
+                        CMP             #ASM_HIM_SVC_SIG0_VAL
+                        BNE             ASM_RJOIN_INIT_FAIL
+                        LDA             ASM_HIM_SVC_SIG1
+                        CMP             #ASM_HIM_SVC_SIG1_VAL
+                        BNE             ASM_RJOIN_INIT_FAIL
+                        LDA             ASM_HIM_SVC_VERSION
+                        CMP             #ASM_HIM_SVC_VERSION_1
+                        BNE             ASM_RJOIN_INIT_FAIL
+                        LDA             ASM_HIM_SVC_COUNT
+                        CMP             #ASM_HIM_SVC_VECTOR_COUNT
+                        BCC             ASM_RJOIN_INIT_FAIL
+                        LDA             #$00
+                        LDX             #ASM_HIM_SVC_CHECKSUM-ASM_HIM_SVC_SIG0
+ASM_RJOIN_INIT_SERVICE_CHECK:
+                        EOR             ASM_HIM_SVC_SIG0,X
+                        DEX
+                        BPL             ASM_RJOIN_INIT_SERVICE_CHECK
+                        CMP             #$00
+                        BNE             ASM_RJOIN_INIT_FAIL
+                        LDX             #ASM_HIM_SVC_VECTOR_BYTES-1
+ASM_RJOIN_INIT_SERVICE_COPY:
+                        LDA             ASM_HIM_SVC_JOIN_LO,X
+                        STA             ASM_RJ_JOINER_LO,X
+                        DEX
+                        BPL             ASM_RJOIN_INIT_SERVICE_COPY
+                        LDA             ASM_RJ_JOINER_HI
+                        CMP             #ASM_SEED_ROM_MIN_HI
+                        BCC             ASM_RJOIN_INIT_FAIL
+                        STZ             ASM_RJ_PROGRESS
+                        LDA             #$01
+                        STA             ASM_RJ_READY
                         SEC
                         RTS
-ASM_RJOIN_INIT_IO_FAIL:
-                        CLC
-                        RTS
+
+ASM_RJOIN_INIT_IO:
+                        JMP             ASM_RJOIN_INIT
                         ENDIF
                         ELSE
 ASM_RJOIN_INIT_IO:
@@ -1570,6 +1603,9 @@ ASM_RJ_READ_CSTRING:
                         ENDIF
 
 ASM_RJ_WRITE_CSTRING:
+                        IF              ASM_FLASH_RUNTIME
+                        JMP             (ASM_RJ_CSTR_LO)
+                        ELSE
                         STX             ASM_RJ_STR_LO
                         STY             ASM_RJ_STR_HI
 ASM_RJ_WRITE_CSTRING_LOOP:
@@ -1583,8 +1619,12 @@ ASM_RJ_WRITE_CSTRING_LOOP:
                         BRA             ASM_RJ_WRITE_CSTRING_LOOP
 ASM_RJ_WRITE_CSTRING_DONE:
                         RTS
+                        ENDIF
 
 ASM_RJ_WRITE_HEX_BYTE:
+                        IF              ASM_FLASH_RUNTIME
+                        JMP             (ASM_RJ_HEX_BYTE_LO)
+                        ELSE
                         PHA
                         LSR
                         LSR
@@ -1606,12 +1646,17 @@ ASM_RJ_WRITE_HEX_DIGIT:
                         CLC
                         ADC             #'0'
                         JMP             ASM_RJ_WRITE_BYTE
+                        ENDIF
 
 ASM_RJ_PRINT_CRLF:
+                        IF              ASM_FLASH_RUNTIME
+                        JMP             (ASM_RJ_CRLF_LO)
+                        ELSE
                         LDA             #$0D
                         JSR             ASM_RJ_WRITE_BYTE
                         LDA             #$0A
                         JMP             ASM_RJ_WRITE_BYTE
+                        ENDIF
 
                         IF              ASM_RUNTIME_ONLY
                         ELSE
@@ -14735,6 +14780,9 @@ ASM_HEX_TO_NIBBLE:
                         JMP             (ASM_RJ_HEX_NIB_LO)
 
 ASM_FOLD_UPPER_A:
+                        IF              ASM_FLASH_RUNTIME
+                        JMP             (ASM_RJ_UPPER_LO)
+                        ELSE
                         CMP             #'a'
                         BCC             ASM_FOLD_UPPER_DONE
                         CMP             #'z'+1
@@ -14743,6 +14791,7 @@ ASM_FOLD_UPPER_A:
                         SBC             #$20
 ASM_FOLD_UPPER_DONE:
                         RTS
+                        ENDIF
 
 ASM_VALUE_SHL4:
                         ASL             ASM_VALUE_LO
@@ -15482,21 +15531,34 @@ ASM_RJ_JOINER_LO:      DB              $00
 ASM_RJ_JOINER_HI:      DB              $00
 ASM_RJ_WRITE_LO:       DB              $00
 ASM_RJ_WRITE_HI:       DB              $00
+                        IF              ASM_FLASH_RUNTIME
+ASM_RJ_CSTR_LO:        DB              $00
+ASM_RJ_CSTR_HI:        DB              $00
+ASM_RJ_HEX_BYTE_LO:    DB              $00
+ASM_RJ_HEX_BYTE_HI:    DB              $00
+ASM_RJ_CRLF_LO:        DB              $00
+ASM_RJ_CRLF_HI:        DB              $00
+ASM_RJ_READ_LO:        DB              $00
+ASM_RJ_READ_HI:        DB              $00
+ASM_RJ_HEX_NIB_LO:     DB              $00
+ASM_RJ_HEX_NIB_HI:     DB              $00
+                        ELSE
 ASM_RJ_HEX_NIB_LO:     DB              $00
 ASM_RJ_HEX_NIB_HI:     DB              $00
                         IF              ASM_RUNTIME_ONLY
-                        IF              ASM_FLASH_RUNTIME
-ASM_RJ_READ_LO:        DB              $00
-ASM_RJ_READ_HI:        DB              $00
-                        ENDIF
                         ELSE
 ASM_RJ_READ_LO:        DB              $00
 ASM_RJ_READ_HI:        DB              $00
+                        ENDIF
                         ENDIF
 ASM_RJ_FNV_INIT_LO:    DB              $00
 ASM_RJ_FNV_INIT_HI:    DB              $00
 ASM_RJ_FNV_UPDATE_LO:  DB              $00
 ASM_RJ_FNV_UPDATE_HI:  DB              $00
+                        IF              ASM_FLASH_RUNTIME
+ASM_RJ_UPPER_LO:       DB              $00
+ASM_RJ_UPPER_HI:       DB              $00
+                        ENDIF
                         IF              ASM_RUNTIME_ONLY
                         ELSE
 ASM_REPL_STATUS:       DB              $00
@@ -16237,6 +16299,8 @@ ASM_SMOKE_SYM_ERR_EQU:
                         DB              "ERR EQU %XXXXXXX1",0
 ASM_SMOKE_SYM_NOPE:    DB              "NOPE",0
                         ENDIF
+                        IF              ASM_FLASH_RUNTIME
+                        ELSE
 ASM_HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37
 ASM_HASH_UTL_HEX_ASCII_TO_NIBBLE:
@@ -16254,6 +16318,7 @@ ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B
 ASM_HASH_FNV1A_UPDATE_A_FAST:
                         DB              $14,$23,$80,$A8
+                        ENDIF
                         IF              ASM_RUNTIME_ONLY
                         ELSE
 ASM_REPL_MSG_TITLE:    DB              "ASM 2.65 ICO",0
