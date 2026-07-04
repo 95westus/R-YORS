@@ -485,13 +485,6 @@ DBG_PRINT_STEP_INFO:
                         JSR             DIS_WRITE_SPACE
                         LDA             DBG_TMP_OP
                         JSR             DIS_PRINT_MNEM_ID
-                        LDA             NMI_CTX_PCL
-                        STA             CMDP_ADDR_LO
-                        LDA             NMI_CTX_PCH
-                        STA             CMDP_ADDR_HI
-                        LDX             DBG_TMP_OPCODE
-                        LDA             ASM_OP_MODE,X
-                        JSR             DIS_PRINT_OPER_MODE
 DBG_PRINT_STEP_NO_MNEM:
                         LDA             DBG_TMP_OPCODE
                         BNE             DBG_PRINT_STEP_NO_BRK_SIG
@@ -528,31 +521,23 @@ DBG_PRINT_STEP_NO_BRK_SIG:
                         JMP             SYS_WRITE_CRLF
 
 DBG_OPCODE_LEN:
-                        LDX             DBG_TMP_OPCODE
-                        LDA             ASM_OP_MODE,X
-                        CMP             #ASM_MODE_ZP_REL
-                        BEQ             DBG_OPCODE_LEN_3
-                        CMP             #ASM_MODE_BRK
-                        BEQ             DBG_OPCODE_LEN_2
-                        CMP             #ASM_MODE_REL
-                        BEQ             DBG_OPCODE_LEN_2
-                        CMP             #ASM_MODE_ABS
-                        BCC             DBG_OPCODE_LEN_BYTE_OR_1
-                        CMP             #ASM_MODE_REL
-                        BCC             DBG_OPCODE_LEN_3
-DBG_OPCODE_LEN_BYTE_OR_1:
-                        CMP             #ASM_MODE_IMM
-                        BCS             DBG_OPCODE_LEN_2
-DBG_OPCODE_LEN_1:
-                        LDA             #$01
-                        SEC
-                        RTS
-DBG_OPCODE_LEN_3:
-                        LDA             #$03
-                        SEC
-                        RTS
-DBG_OPCODE_LEN_2:
-                        LDA             #$02
+                        LDA             DBG_TMP_OPCODE
+                        AND             #$03
+                        TAX
+                        LDA             DBG_TMP_OPCODE
+                        LSR             A
+                        LSR             A
+                        TAY
+                        LDA             ASM_OP_LEN_PACK,Y
+DBG_OPCODE_LEN_SHIFT:
+                        CPX             #$00
+                        BEQ             DBG_OPCODE_LEN_DONE
+                        LSR             A
+                        LSR             A
+                        DEX
+                        BRA             DBG_OPCODE_LEN_SHIFT
+DBG_OPCODE_LEN_DONE:
+                        AND             #$03
                         SEC
                         RTS
 
