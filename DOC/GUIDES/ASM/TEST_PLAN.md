@@ -7758,6 +7758,9 @@ Flash-wrapper size trim after this proof: accepted source lines and `SEAL> NEW`
 now print only `OK`, while rejected lines continue to print
 `ERR=$ee NAME PC=$hhhh`. This is host-gated by `make -C SRC asm-test` and needs
 fresh board proof before replacing the older `OK PC=$hhhh` transcripts.
+The same current flash-wrapper slice makes `.`/`ASM FLASH BYE` return to HIMON
+with `A=$00`, `X/Y=current PC`, and `C=1`; existing fatal exits return
+`A=status`, `X/Y=current PC`, and `C=0`.
 
 ## Regression Protocol
 

@@ -179,8 +179,7 @@ ASMF_QUIT:
                         LDX             #<MSG_BYE
                         LDY             #>MSG_BYE
                         JSR             ASMF_PRINT_LINE
-                        SEC
-                        RTS
+                        JMP             ASMF_RETURN_OK
 
 ASMF_ASSEMBLE:
                         LDX             #<ASMF_LINE_BUF
@@ -408,9 +407,14 @@ ASMF_PRINT_SEAL_FLAGS_TAIL:
 
 ASMF_RETURN_RESULT:
                         LDA             ASMF_RESULT
+                        CLC
+                        BRA             ASMF_RETURN_WITH_A
+ASMF_RETURN_OK:
+                        LDA             #ASMF_STATUS_OK
+                        SEC
+ASMF_RETURN_WITH_A:
                         LDX             ASMF_PC_LO
                         LDY             ASMF_PC_HI
-                        CLC
                         RTS
 
 ASMF_ABORT_WITH_TABLES:
