@@ -10014,3 +10014,100 @@ table printed `$05` LO8_IMPORT at site offset `$0001` and `$06` HI8_IMPORT at
 site offset `$0003`, both targeting import slot `$0000`. `SEAL REL` reported
 two rows and `SEAL IMP` reported the single `EXT` record whose dumped bytes
 began `01 05 03 14 23`.
+
+## 2026-07-04 ASM Flash PACKAGE-Only CHECK-Omitted Proof
+
+Purpose: prove the default flash-resident ASM image after the package-check
+diagnostic split. The image must still accept `PACKAGE`, write the AP v1
+envelope at caller-chosen RAM, and omit interactive `CHECK` so the flash image
+recovers headroom below `$C000`.
+
+```text
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+
+HIMON IN 3S. S=STR8  3
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+......................................................................................................................................................................................................................................................................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0703(1903)
+>L F
+L F S19
+L @8000
+LF OK WR=3D49 GO=800C
+>ASM
+ASM FLASH
+ASM> JSR TARGET
+OK PC=$2003
+ASM> LDA #<TARGET
+OK PC=$2005
+ASM> LDX #>TARGET
+OK PC=$2007
+ASM> TARGET RTS
+OK PC=$2008
+ASM> END
+OK PC=$2008
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 2007  01 04 0E 0004 00  0000  TARGET
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  2001 2003 TARGET
+01 02 02   01  2004 2005 TARGET
+02 02 02   02  2006 2007 TARGET
+RELOCS
+SL K  SITE TARG
+00 01 0001 0007
+01 02 0004 0007
+02 03 0006 0007
+ASM FLASH OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$2000 END=$2008
+SEAL REC @=$6111 LEN=$0008 FNV=$FFC39D9A
+SEAL REL @=$611C COUNT=$03
+SEAL> D 3000 FF
+ERR=$03 BAD OPER PC=$2008
+SEAL> PACKAGE $3000
+PACKAGE OK @=$3000 LEN=$0037
+SEAL> CHECK $3000
+ERR=$03 BAD OPER PC=$2008
+SEAL> .
+ASM FLASH BYE
+>D 3000 +7
+3000: 41 50 01 37 00 53 0B | AP.7.S.
+>D 3000 +37
+3000: 41 50 01 37 00 53 0B 01 | 00 20 08 20 08 00 9A 9D | AP.7.S... . ....
+3010: C3 FF 52 10 03 01 02 03 | 01 04 06 00 00 00 07 07 | ..R.............
+3020: 07 00 00 00 45 02 00 02 | 49 02 00 02 42 08 00 20 | ....E...I...B..
+3030: 07 20 A9 07 A2 20 60 | . ... `
+>
+```
+
+Result: pass. The default flash image loaded as `LF OK WR=3D49 GO=800C`,
+matching the package-only size after compiling out the interactive `CHECK`
+command. The flash wrapper assembled the internal-relocation body at
+`BASE=$2000 END=$2008`, sealed it with FNV `$FFC39D9A`, and wrote
+`PACKAGE OK @=$3000 LEN=$0037`. `CHECK $3000` returned
+`ERR=$03 BAD OPER PC=$2008`, proving `CHECK` is not present in the default
+post-`END` command set. The dump at `$3000` matches the AP v1 envelope shape:
+header `41 50 01 37 00`, seal section `53 0B`, three-row relocation section
+`52 10 03`, empty export/import records `45 02 00 02` and `49 02 00 02`, and
+body section `42 08 00`.

@@ -728,7 +728,7 @@ $(ASM_V1_CORE_S19): $(ASM_V1_CORE_OBJ)
 
 $(ASM_V1_CORE_OBJ): $(ASM_V1_CORE_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
-	$(ASM) $(ASFLAGS) -DASM_PACKAGE_ENABLED $<
+	$(ASM) $(ASFLAGS) -DASM_PACKAGE_ENABLED -DASM_PACKAGE_CHECK_ENABLED $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
 
 $(ASM_V1_RUNTIME_OBJ): $(ASM_V1_CORE_SRC)
@@ -790,6 +790,7 @@ $(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
 	$(LINKER) $(ASM_V1_FLASH_LINKFLAGS) $(ASM_V1_FLASH_S19) $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
 	@echo [ps] set S9 start from START in $(ASM_V1_FLASH_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-v1-flash-8000.map') { '$(S19_DIR)/asm-v1-flash-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-v1-flash-8000.map') { '$(MAP_DIR)/asm-v1-flash-8000.map' } else { throw 'asm-v1-flash-8000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+START\s*$$' | Select-Object -First 1; if (-not $$m) { throw 'START not found in map' }; $$addr = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$sum = 3 + (($$addr -shr 8) -band 255) + ($$addr -band 255); $$chk = ($$sum -bxor 255) -band 255; $$rec = ('S903{0:X4}{1:X2}' -f $$addr, $$chk); $$lines = Get-Content -Path '$(ASM_V1_FLASH_S19)'; $$lines[-1] = $$rec; Set-Content -Path '$(ASM_V1_FLASH_S19)' -Value $$lines"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-v1-flash-8000.map') { '$(S19_DIR)/asm-v1-flash-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-v1-flash-8000.map') { '$(MAP_DIR)/asm-v1-flash-8000.map' } else { throw 'asm-v1-flash-8000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA not found in map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$limit = 0xC000; $$minRoom = 0x0200; $$room = $$limit - $$end; if ($$room -lt $$minRoom) { throw ('asm-v1-flash too close to C000: _END_DATA={0:X4} room={1:X4} min={2:X4}' -f $$end, $$room, $$minRoom) }; Write-Host ('asm-v1-flash headroom to C000 = {0:X4} (_END_DATA={1:X4})' -f $$room, $$end)"
 
 $(CALC_9A00_FNV_PROOF_S19): $(CALC_9A00_FNV_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))

@@ -541,12 +541,13 @@ A [addr] [label[:]] MMM [operand] .
   a header plus tagged SEAL, REL, EXP, IMP, and BODY sections; it packages
   metadata for later `LOAD`/`INSTALL` work but does not resolve, relocate, or
   run the body.
-- `SEAL> CHECK address` is the first AP v1 package reader proof. It is enabled
-  in the same full-core/flash builds as `PACKAGE` and structurally validates the
-  envelope before later `LOAD` work. This slice checks header, range, section
-  order, section length accounting, relocation count shape, EXP/IMP record
-  length fields, and body length versus the seal record, but does not recompute
-  body FNV yet.
+- `SEAL> CHECK address` is the first AP v1 package reader proof. It remains
+  enabled in full-core smoke and optional diagnostic builds, but the default
+  flash-resident ASM image omits the interactive `CHECK` command after the
+  board proof because the `$8000-$BFFF` flash window was only `$24` bytes below
+  `$C000`. This slice checks header, range, section order, section length
+  accounting, relocation count shape, EXP/IMP record length fields, and body
+  length versus the seal record, but does not recompute body FNV yet.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.

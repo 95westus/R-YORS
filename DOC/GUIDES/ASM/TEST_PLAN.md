@@ -6216,13 +6216,14 @@ SEAL> PACKAGE address writes an AP v1 package envelope in full-core/flash ASM
 builds and reports PACKAGE OK @=$hhhh LEN=$hhhh
 SEAL> PACKAGE rejects missing or extra operands as BAD OPER without clearing
 frozen seal facts
-SEAL> CHECK address validates an AP v1 package envelope in full-core/flash ASM
-builds and reports CHECK OK @=$hhhh LEN=$hhhh
+SEAL> CHECK address validates an AP v1 package envelope in full-core or
+package-check diagnostic builds and reports CHECK OK @=$hhhh LEN=$hhhh
 SEAL> CHECK rejects missing or extra operands as BAD OPER without clearing
 frozen seal facts
 runtime paste deliberately omits PACKAGE until the package/load/install path
 has a smaller board-resident command shape
-runtime paste deliberately omits CHECK with PACKAGE
+runtime paste and default flash ASM deliberately omit CHECK after the board
+proof so package/load/install work has room below `$C000`
 relative branches, EQU constants, and fixed external addresses produce no
 relocation rows
 relocation table overflow keeps ordinary ASM valid but sets a seal-ineligible
@@ -7110,13 +7111,13 @@ offset rows, carries empty EXP/IMP records, and copies the sealed body bytes
 unchanged.
 
 The next host `asm-test` slice adds `SEAL> CHECK address` as the first AP v1
-package reader proof. `ASM_SEAL_CHECK_PACKAGE` is built with
-`ASM_PACKAGE_ENABLED`, so full core smoke and flash-resident ASM include it and
-runtime paste still omits the package/check pair. Host smoke now packages the
-internal relocation body and immediately validates the generated envelope. The
-matching host gate keeps runtime paste unchanged at `ASM_CODE_BUF=$7C82`,
-`_END_UDATA=$7D82`; flash ASM carries `CHECK` with `ASM_CODE_BUF=$7EF8` and
-`_END_UDATA=$7F00`.
+package reader proof. `ASM_SEAL_CHECK_PACKAGE` is built when
+`ASM_PACKAGE_CHECK_ENABLED` is set, so full core smoke packages the internal
+relocation body and immediately validates the generated envelope. Runtime paste
+omits the package/check pair. A flash diagnostic proof carried `CHECK` once for
+board validation with `ASM_CODE_BUF=$7EF8` and `_END_UDATA=$7F00`; the default
+flash-resident image later compiled the interactive `CHECK` command back out to
+recover headroom below `$C000`.
 
 Flash-board CHECK probe after the PACKAGE proof above:
 
@@ -7138,8 +7139,15 @@ body at `BASE=$2000 END=$2008`, sealed as
 `PACKAGE OK @=$3000 LEN=$0037`. `CHECK $3000` then reported
 `CHECK OK @=$3000 LEN=$0037`, and the final `D 3000 +37` dump matched the AP
 v1 envelope from the earlier package proof. This proves the flash-resident
-reader accepts the package it just wrote while the flash runtime UDATA now ends
-at `$7F00`, outside the `$7F00-$7FFF` I/O page.
+reader accepted the package it just wrote while the flash runtime UDATA ended
+at `$7F00`, outside the `$7F00-$7FFF` I/O page. After this proof, the default
+flash image omitted `CHECK` again; the package/check image reported
+`LF OK WR=3FDC GO=800C`, leaving only `$24` bytes below `$C000`, while the
+package-only flash image returned to about `WR=3D49`. The follow-up default
+flash proof on HIMON `V 00.0703(1903)` loaded as `LF OK WR=3D49 GO=800C`,
+assembled the same body at `BASE=$2000 END=$2008`, wrote
+`PACKAGE OK @=$3000 LEN=$0037`, rejected `CHECK $3000` as
+`ERR=$03 BAD OPER PC=$2008`, and dumped the matching AP v1 envelope at `$3000`.
 
 The first 2026-07-02 board attempt with
 `asm-v1-runtime-paste-2000.s19` loaded as `L OK=38FC GO=2000` failed before

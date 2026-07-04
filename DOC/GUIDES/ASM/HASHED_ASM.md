@@ -5174,7 +5174,7 @@ SEAL             validate and print frozen facts plus the RAM record summary
 RESOLVE          resolve import rows through current RJOIN and patch RAM body
 RELOCATE addr    copy body to RAM addr and patch internal relocation rows
 PACKAGE addr     write AP v1 package envelope at RAM addr
-CHECK addr       validate AP v1 package envelope at RAM addr
+CHECK addr       validate AP v1 package envelope at RAM addr in diagnostic builds
 NEW              start a fresh ASM session at the frozen END PC
 .                exit the wrapper
 ```
@@ -5207,13 +5207,16 @@ tagged export section `E`, tagged import section `I`, and tagged body section
 `B`. It preserves relocatable metadata for later load/install work; it does not
 resolve imports, relocate the body, or run code.
 
-`CHECK address` is the matching AP v1 envelope validator. It is enabled in the
-same full-core/flash builds as `PACKAGE`, and omitted from the stripped RAM
-paste wrapper. It parses the package in RAM, checks header signature/version,
-guarded total range, tagged section order, section lengths, relocation count
-shape, EXP/IMP record length fields, and final body length versus the seal
-record. The first slice is structural only: it does not recompute the body FNV,
-load bytes elsewhere, resolve imports, or run the package.
+`CHECK address` is the matching AP v1 envelope validator. It is enabled in
+full-core smoke and optional diagnostic builds, and omitted from the stripped
+RAM paste wrapper and the default flash-resident wrapper after the board proof.
+That keeps the `$8000-$BFFF` flash image away from the `$C000` HIMON boundary
+while preserving the reader routine for tests. It parses the package in RAM,
+checks header signature/version, guarded total range, tagged section order,
+section lengths, relocation count shape, EXP/IMP record length fields, and
+final body length versus the seal record. The first slice is structural only:
+it does not recompute the body FNV, load bytes elsewhere, resolve imports, or
+run the package.
 
 `NEW` is valid only in the post-`END` `SEAL> ` window. It accepts only `NEW`,
 `NEW ; comment`, and the same optional leading/trailing spaces or tabs used by

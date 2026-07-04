@@ -42,7 +42,9 @@
                         XDEF            ASM_SEAL_RELOCATE
                         IF              ASM_PACKAGE_ENABLED
                         XDEF            ASM_SEAL_PACKAGE
+                        IF              ASM_PACKAGE_CHECK_ENABLED
                         XDEF            ASM_SEAL_CHECK_PACKAGE
+                        ENDIF
                         ENDIF
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
@@ -5661,6 +5663,7 @@ ASM_SMOKE_FIXUPS_PACKAGE_BODY1_OK:
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_BODY2_OK
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_PACKAGE_BODY2_OK:
+                        IF              ASM_PACKAGE_CHECK_ENABLED
                         LDX             ASM_PACKAGE_BASE_LO
                         LDY             ASM_PACKAGE_BASE_HI
                         JSR             ASM_SEAL_CHECK_PACKAGE
@@ -5672,6 +5675,7 @@ ASM_SMOKE_FIXUPS_PACKAGE_CHECK_OK:
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_CHECK_LEN_OK
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_PACKAGE_CHECK_LEN_OK:
+                        ENDIF
                         ENDIF
                         SEC
                         RTS
@@ -9749,6 +9753,7 @@ ASM_PACKAGE_WRITE_A:
 ASM_PACKAGE_WRITE_A_DONE:
                         RTS
 
+                        IF              ASM_PACKAGE_CHECK_ENABLED
 ASM_SEAL_CHECK_PACKAGE:
                         STX             ASM_PACKAGE_BASE_LO
                         STY             ASM_PACKAGE_BASE_HI
@@ -10060,6 +10065,7 @@ ASM_PACKAGE_CHECK_BAD_LINE:
                         LDA             #ASM_STATUS_BAD_LINE
                         CLC
                         RTS
+                        ENDIF
 
                         ENDIF
 
