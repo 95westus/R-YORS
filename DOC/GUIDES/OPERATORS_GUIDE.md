@@ -276,7 +276,6 @@ D start +count dump memory by byte count
 D start end    dump memory through inclusive end
 S start end|+count bb|'TEXT' [...] search memory; skips $7Fxx I/O slots
 M addr         modify memory byte by byte below $7A00
-U start +count disassemble
 G addr         go to address
 STR8           enter STR8 at $F000
 L              load S-records to RAM

@@ -96,7 +96,6 @@ flowchart TD
     DISPATCH --> D[D CMD_D]
     DISPATCH --> S[S CMD_SEARCH]
     DISPATCH --> M[M CMD_M]
-    DISPATCH --> U[U CMD_U]
     DISPATCH --> R[R CMD_R]
     DISPATCH --> X[X CMD_X]
     DISPATCH --> G[G CMD_G]
@@ -116,8 +115,6 @@ flowchart TD
     S --> SSCAN[SEARCH_SCAN_RANGE]
     M --> RANGE
     M --> MEMMOD[MON_MODIFY_RANGE]
-    U --> RANGE
-    U --> DISONE[DIS_PRINT_ONE]
 
     R --> CTXREQ[MON_CTX_REQUIRE_VALID]
     R --> CTXPARSE[MON_CTX_PARSE_ASSIGN_LIST]
@@ -225,22 +222,20 @@ flowchart TD
     CMD_N --> RESUME[MON_CTX_RESUME_RTI]
 ```
 
-### Disassembler Edges
+### Debug Opcode Display Edges
 
 ```mermaid
 flowchart TD
-    CMD_U[U command] --> RANGE[CMD_PARSE_RANGE_REQUIRED]
-    CMD_U --> ONE[DIS_PRINT_ONE]
-    ONE --> ADDR[DBG_PRINT_CMD_ADDR]
-    ONE --> MNEMID[ASM_OP_MNEM_ID]
-    ONE --> MODE[ASM_OP_MODE]
-    ONE --> PMNEM[DIS_PRINT_MNEM_ID]
-    ONE --> POPER[DIS_PRINT_OPER_MODE]
-    POPER --> BYTE[DIS_PRINT_BYTE_OPER]
-    POPER --> ABS[DIS_PRINT_ABS_OPER]
-    POPER --> SUFFIX[DIS_WRITE_COMMA_X/Y]
-    CMD_U --> LEN[DBG_OPCODE_LEN]
+    CMD_N[N command] --> STEP[DBG_STEP_ONCE]
+    STEP --> LEN[DBG_OPCODE_LEN]
+    STEP --> INFO[DBG_PRINT_STEP_INFO]
+    INFO --> MNEMID[ASM_OP_MNEM_ID]
+    INFO --> PMNEM[DIS_PRINT_MNEM_ID]
 ```
+
+The old resident `U` unassemble command has been removed. HIMON keeps the
+compact opcode length and mnemonic data needed for `N` step diagnostics and
+debug register dumps.
 
 ### External Boundary
 
@@ -276,11 +271,10 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
 | Quoted hash | `"text"` | `CMD_QUOTE_HASH`, `FNV1A_*` | Prints FNV-1a32 for text through the closing quote and reports STR8 match on `#5F6A0F7A`. | Input is uppercased by HIMON and leading/trailing spaces are trimmed. |
-| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? S D M U R X G L B N Q " STR8`. |
+| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? S D M R X G L B N Q " STR8`. |
 | Memory dump | `D [start [end|+count]]` | `CMD_D`, `CMD_PARSE_RANGE_REQUIRED`, `MON_PRINT_MEM_RANGE` | Prints hex rows plus printable ASCII, abortable with Ctrl-C. | Bare `D` repeats the previous dump length from the next address. |
 | Memory search | `S start end\|+count bb\|'TEXT' [...]` | `CMD_SEARCH`, `SEARCH_PARSE_RANGE`, `SEARCH_PARSE_PATTERN`, `SEARCH_SCAN_RANGE` | Built-in K=$05 HIMON command; searches memory for mixed hex/text byte patterns, skips named `$7Fxx` I/O slots, reports `S NF` or `S ABORT`. | Token hash is `$D60C1322`; display text is `S: SEARCH FROM RAM TO HASHED HIMON CMD`. |
 | Memory modify | `M start [end|+count]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes only below monitor workspace, `.` aborts. | Protected ranges from `$7A00` upward report `M PROT=$hhhh`. Current short mutator remains under review; future bulk fill should be `FILL start end|+count bb`, not an `M` subform. |
-| Disassemble | `U start [end|+count]` | `CMD_U`, `DIS_PRINT_ONE`, `DBG_OPCODE_LEN` | Prints W65C02S opcode, mnemonic, and operand using opcode tables. | Shares opcode mode tables with single-step length calculation. |
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
@@ -291,7 +285,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Future relocatable flash placement | future `L F` mode | future loader staging and flash-block scan | Would measure a relocatable S19 image, choose an erased block, rebase record addresses, write/verify, and report relocated entry. | Not current behavior; plain S19 cannot patch absolute operands inside code without relocation metadata. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Current patch is direct memory write, so RAM code is the sane target. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
-| Single step | `N` | `CMD_N`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by opcode length, plants a temporary BRK, resumes with `RTI`. | Does not emulate branch-taken paths yet. |
+| Single step | `N` | `CMD_N`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by packed opcode length, prints mnemonic-only step diagnostics, plants a temporary BRK, resumes with `RTI`. | Does not emulate every control-transfer form yet; keeps compact opcode display data even though resident `U` was removed. |
 | Flash ASM | `ASM` when the flash ASM image is present | flash-resident FNV record | Enters the ASM v1 source-line assembler loaded by `L F`. | The legacy HIMON `A` mini-assembler has been removed from the core. |
 | Quiesce | `Q` | `CMD_Q` | Executes `SEI`, `WAI`, then re-enters HIMON. | IRQ wakes cleanly to monitor re-entry; NMI still follows the trap path through the debounce POC vector. |
 | Loaded-language bridge I/O | map-patched call addresses | `BIO_FTDI_READ_BYTE_BLOCK`, `BIO_FTDI_WRITE_BYTE_BLOCK` | Local composite images may patch direct calls from the current HIMON map. | Not a stable fixed-address ABI; rebuild patches must track the map. |

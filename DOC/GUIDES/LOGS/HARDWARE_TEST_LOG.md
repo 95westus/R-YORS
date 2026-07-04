@@ -10111,3 +10111,380 @@ post-`END` command set. The dump at `$3000` matches the AP v1 envelope shape:
 header `41 50 01 37 00`, seal section `53 0B`, three-row relocation section
 `52 10 03`, empty export/import records `45 02 00 02` and `49 02 00 02`, and
 body section `42 08 00`.
+
+## 2026-07-04 HIMON U Removal And Debug B/N Board Proof
+
+Purpose: prove commit `8f3a0d3` removed the resident `U` unassemble command
+without breaking HIMON debug entry, breakpoints, or single-step opcode display.
+
+Result: pass. HIMON `V 00.0704(1654)` help omitted `U`; both `U 2000` and bare
+`U` returned the normal hash-not-found path for hash `$D00C09B0`; protected
+memory still rejected `M 7E05`; `B 2002` listed original opcode `8D`; running
+the RAM body stopped at `@2002`; `N` printed `STEP PC=2002 OP=8D STA LEN=03
+NEXT=2005` and executed the store to `$7102`; an NMI during a `$2010` loop
+still produced debug context and `N` stepped the `JMP` with `NEXT=2010`.
+
+Transcript:
+
+```text
+B0 HOLD
+STR8>
+RESTORE B0->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B0->B3
+
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+
+HIMON IN 3S. S=STR8  3 2
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+......................................................................................................................................................................................................................................................................................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+?
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0704(1654)
+>
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+
+HIMON IN 3S. S=STR8  3 2 1
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0704(1654)
+>D 7E00 7E1C
+7E00: 63 D8 52 59 01 0B 63 D8 | 03 DD AB DF AF DF A7 DF | c.RY..c.........
+7E10: 87 CE BF DF 0F DB 89 DB | 16 CF 22 CF 83 | .........."..
+>?
+# ? S D M R X G L B N Q " STR8
+>U 2000
+#D00C09B0# HSH_NF!
+>U
+#D00C09B0# HSH_NF!
+>D 2000 +8
+2000: 20 07 20 A9 07 A2 20 60 |  . ... `
+>M 7E05
+M PROT=$7E05
+>ASM
+#56AD7400# HSH_NF!
+>L F
+L F S19
+L @8000
+LF OK WR=3C35 GO=800C
+>D 2000 +8
+2000: 20 07 20 A9 07 A2 20 60 |  . ... `
+>D 7E00 7E1C
+7E00: 63 D8 52 59 01 0B 63 D8 | 03 DD AB DF AF DF A7 DF | c.RY..c.........
+7E10: 87 CE BF DF 0F DB 89 DB | 16 CF 22 CF 83 | .........."..
+>ASM NEW
+ASM FLASH
+ASM> ORG $2000
+OK
+ASM> LDA #$5A
+OK
+ASM> STA $7102
+OK
+ASM> RTS
+OK
+ASM> END
+OK
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM FLASH OK
+SEAL> .
+ASM FLASH BYE
+>B 2002
+BP $2002
+>B L
+2002 8D
+>G 2000
+GO 2000
+
+@2002 A=5A X=30 Y=30 P=75 S=FB NV-BdIzC
+>D 7102
+7102: 00 | .
+>N
+STEP PC=2002 OP=8D STA LEN=03 NEXT=2005
+RESUME 2002
+
+@2005 A=5A X=30 Y=30 P=75 S=FB NV-BdIzC
+>D 7102
+7102: 5A | Z
+>B C 2002
+BP NF
+>B L
+>B C $2002
+BP NF
+>ASM NEW
+ASM FLASH
+ASM> ORG $2010
+OK
+ASM> NOP
+OK
+ASM> JMP $2010
+OK
+ASM> END
+OK
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM FLASH OK
+SEAL> .
+ASM FLASH BYE
+>G 2010
+GO 2010
+
+NMI PC=2011
+A=01 X=30 Y=31 P=65 S=FB NV-bdIzC
+>N
+STEP PC=2011 OP=4C JMP LEN=03 NEXT=2010
+RESUME 2011
+
+@2010 A=01 X=30 Y=31 P=75 S=FB NV-BdIzC
+>
+```
+
+## 2026-07-04 HIMON Packed Debug Opcode Length Board Proof
+
+Purpose: prove commit `8208f96` after trimming HIMON debug opcode display. The
+board must keep `N` single-step usable while replacing the full opcode mode
+table with packed opcode lengths and printing mnemonic-only step diagnostics.
+
+Result: pass. The board assembled a `$2020` RAM body whose bytes were
+`EA A9 12 8D 03 71 80 02 A9 EE 4C 2A 20`. `N` reported `LEN=01` for `NOP`,
+`LEN=02` for `LDA #imm`, `LEN=03` for `STA abs`, `LEN=02` plus taken target
+`NEXT=202A` for `BRA`, and `LEN=03` plus absolute target `NEXT=202A` for
+`JMP abs`. The step output stayed mnemonic-only: no immediate operand,
+absolute operand, branch displacement, or resolved operand text was printed.
+The `STA $7103` side effect stored `$12`, and the taken branch skipped
+`LDA #$EE`.
+
+Transcript:
+
+```text
+>ASM NEW
+ASM FLASH
+ASM> ORG $2020
+OK
+ASM> NOP
+OK
+ASM> LDA #$12
+OK
+ASM> STA $7103
+OK
+ASM> BRA SKIP
+OK
+ASM> LDA #$EE
+OK
+ASM> SKIP JMP SKIP
+OK
+ASM> END
+OK
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 202A  01 04 0F 0007 01  0007  SKIP
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 07   00  2027 2028 SKIP
+RELOCS
+SL K  SITE TARG
+00 01 000B 000A
+ASM FLASH OK
+SEAL> .
+ASM FLASH BYE
+>D 2020 202C
+2020: EA A9 12 8D 03 71 80 02 | A9 EE 4C 2A 20 | .....q....L*
+>B 2020
+BP $2020
+>B L
+2020 EA
+>G 2020
+GO 2020
+
+@2020 A=01 X=30 Y=32 P=75 S=FB NV-BdIzC
+>N
+STEP PC=2020 OP=EA NOP LEN=01 NEXT=2021
+RESUME 2020
+
+@2021 A=01 X=30 Y=32 P=75 S=FB NV-BdIzC
+>N
+STEP PC=2021 OP=A9 LDA LEN=02 NEXT=2023
+RESUME 2021
+
+@2023 A=12 X=30 Y=32 P=75 S=FB NV-BdIzC
+>N
+STEP PC=2023 OP=8D STA LEN=03 NEXT=2026
+RESUME 2023
+
+@2026 A=12 X=30 Y=32 P=75 S=FB NV-BdIzC
+>D 7103
+7103: 12 | .
+>N
+STEP PC=2026 OP=80 BRA LEN=02 NEXT=202A
+RESUME 2026
+
+@202A A=12 X=30 Y=32 P=75 S=FB NV-BdIzC
+>N
+STEP PC=202A OP=4C JMP LEN=03 NEXT=202A
+RESUME 202A
+
+@202A A=12 X=30 Y=32 P=75 S=FB NV-BdIzC
+>
+```
+
+## 2026-07-04 ASM Flash Plain OK Output Board Proof
+
+Purpose: prove commit `aa7ef42` after trimming accepted ASM flash output.
+Accepted source lines and `SEAL> NEW` should print plain `OK`, while rejected
+source and post-END commands should keep status name and PC context.
+
+Result: pass. Accepted `ASM>` source lines printed plain `OK`, accepted `END`
+printed plain `OK` before tables, and `SEAL> NEW` printed plain `OK` before
+returning to source mode. The bad source line `BVF $4FRE` preserved
+`ERR=$03 BAD OPER PC=$2205`, and the invalid post-END `D 3200 +1` preserved
+`ERR=$03 BAD OPER PC=$2206`. The generated body dumped as
+`A9 5A 8D 04 71 60 EA`, and running `$2200` stored `$5A` at `$7104`.
+
+Transcript:
+
+```text
+>ASM NEW
+ASM FLASH
+ASM> ORG $2200
+OK
+ASM> LDA #$5A
+OK
+ASM> STA $7104
+OK
+ASM> BVF $4FRE
+ERR=$03 BAD OPER PC=$2205
+ASM> RTS
+OK
+ASM> END
+OK
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM FLASH OK
+SEAL> D 3200 +1
+ERR=$03 BAD OPER PC=$2206
+SEAL> NEW
+OK
+ASM> NOP
+OK
+ASM> END
+OK
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM FLASH OK
+SEAL> .
+ASM FLASH BYE
+>D 2200 +7
+2200: A9 5A 8D 04 71 60 EA | .Z..q`.
+>G 2200
+GO 2200
+
+#GO# ENTRY=2200
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 7104
+7104: 5A | Z
+>
+```
+
+## 2026-07-04 ASM Flash BYE Return Status Board Proof
+
+Purpose: prove commit `d83212a` after changing ASM flash wrapper return
+status. A clean `.`/`ASM FLASH BYE` should return `A=$00` with carry set, while
+fatal exits should keep `A=status` with carry clear. Both paths should return
+`X/Y=current PC`.
+
+Result: pass. Direct entry with `G 800C`, `ORG $2300`, and `.` returned through
+HIMON as `RET A=00 X=00 Y=23 P=75 ... C`. Direct entry with `ORG $2400`,
+`JSR MISS`, and failing `END` printed `ERR=$09 BAD FIX PC=$2403`, then returned
+as `RET A=09 X=03 Y=24 P=74 ... c`. Entering through the resident `ASM` hash
+command and typing `.` returned to the prompt without `EXEC ERR`.
+
+Transcript:
+
+```text
+>G 800C
+GO 800C
+ASM FLASH
+ASM> ORG $2300
+OK
+ASM> .
+ASM FLASH BYE
+
+#GO# ENTRY=800C
+RET A=00 X=00 Y=23 P=75 S=FD NV-BdIzC
+>G 800C
+GO 800C
+ASM FLASH
+ASM> ORG $2400
+OK
+ASM> JSR MISS
+OK
+ASM> END
+ERR=$09 BAD FIX PC=$2403
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 04   00  2401 2403 MISS
+RELOCS
+SL K  SITE TARG
+
+#GO# ENTRY=800C
+RET A=09 X=03 Y=24 P=74 S=FD NV-BdIzc
+>ASM
+ASM FLASH
+ASM> .
+ASM FLASH BYE
+>
+```

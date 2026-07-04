@@ -281,11 +281,11 @@ First bench checkpoint:
 
 ```text
 3013 OP=18 CLC -> 3014
-3014 OP=90 BCC $02 -> 3018
+3014 OP=90 BCC -> 3018
 3018 OP=38 SEC -> 3019
-3019 OP=B0 BCS $02 -> 301D
+3019 OP=B0 BCS -> 301D
 301D OP=B8 CLV -> 301E
-301E OP=50 BVC $02 -> 3022
+301E OP=50 BVC -> 3022
 ```
 
 That sequence proves normal one-byte stepping and taken branch target
@@ -294,29 +294,29 @@ calculation for `BCC`, `BCS`, and `BVC`.
 Full branch bench checkpoint:
 
 ```text
-3022 OP=A9 LDA #$7F -> 3024
+3022 OP=A9 LDA -> 3024
 3024 OP=18 CLC -> 3025
-3025 OP=69 ADC #$01 -> 3027
-3027 OP=70 BVS $02 -> 302B
-302B OP=30 BMI $02 -> 302F
-302F OP=A9 LDA #$00 -> 3031
-3031 OP=F0 BEQ $02 -> 3035
-3035 OP=10 BPL $02 -> 3039
-3039 OP=A9 LDA #$01 -> 303B
-303B OP=D0 BNE $02 -> 303F
-303F OP=80 BRA $02 -> 3043
-3043 OP=A2 LDX #$37 -> 3045
-3045 OP=A0 LDY #$31 -> 3047
-3047 OP=20 JSR $304E -> 304A, prints DEBUG PROOF DONE
+3025 OP=69 ADC -> 3027
+3027 OP=70 BVS -> 302B
+302B OP=30 BMI -> 302F
+302F OP=A9 LDA -> 3031
+3031 OP=F0 BEQ -> 3035
+3035 OP=10 BPL -> 3039
+3039 OP=A9 LDA -> 303B
+303B OP=D0 BNE -> 303F
+303F OP=80 BRA -> 3043
+3043 OP=A2 LDX -> 3045
+3045 OP=A0 LDY -> 3047
+3047 OP=20 JSR -> 304A, prints DEBUG PROOF DONE
 304A OP=00 BRK $42 SIG=42 -> BRK 42 PC=304C
-304C OP=80 BRA $FE -> 304C
+304C OP=80 BRA -> 304C
 ```
 
 `BRK $42` is the pass stop. Continuing past it tests debug edge behavior, not
 the branch proof itself. The proof parks in a self-`BRA` idle loop after the
 pass stop so an extra `N` remains in known code instead of wandering into data
 or support routines. Repeated `N` after `BRK $42` should keep reporting
-`PC=304C OP=80 BRA $FE NEXT=304C`.
+`STEP PC=304C OP=80 BRA LEN=02 NEXT=304C`.
 
 BRK signature policy for this proof:
 
@@ -341,7 +341,7 @@ Useful manual checks:
 
 ```text
 >D 3000 30FF     inspect proof bytes
->U 3000 30FF     disassemble proof bytes
+>U 3000          should print HSH_NF; resident U was removed
 >B 3043          set a valid RAM breakpoint on LDX #$37
 >B L             list breakpoints
 >B C 3043        clear breakpoint
@@ -372,7 +372,7 @@ Breakpoint workflow check:
 Expected overlap hit:
 
 ```text
-STEP PC=303F OP=80 BRA $02 LEN=02 NEXT=3043
+STEP PC=303F OP=80 BRA LEN=02 NEXT=3043
  BP
 RESUME 303F
 @3043 A=01 X=1B Y=1B P=74 S=FB NV-BdIzc
@@ -397,6 +397,10 @@ B set/list/clear works for a RAM address in $2000-$77FF
 B reports BP FULL when all four slots are active
 B C reports BP NF when the address is not active
 N can resume into a user breakpoint when its step target overlaps one
+? does not list U
+U returns the normal HSH_NF unknown-command path
+N reports mnemonic-only output, with no operand bytes or resolved operands
+N reports correct packed lengths for 1-, 2-, and 3-byte opcodes
 ```
 
 Record the tested files:
@@ -408,6 +412,54 @@ MAP:   SRC/BUILD/map/himon-debug-proof-3000.map
 date:  yyyy-mm-dd
 notes: pass/fail and any BRK code seen
 ```
+
+## Resident U Removal Proof
+
+Commit `8f3a0d3` removed the user-facing `U` unassemble command while keeping
+the debug opcode tables and `B`/`N` workflows. Board proof on 2026-07-04 with
+HIMON `V 00.0704(1654)` showed:
+
+```text
+>?
+# ? S D M R X G L B N Q " STR8
+>U 2000
+#D00C09B0# HSH_NF!
+>U
+#D00C09B0# HSH_NF!
+```
+
+The same run loaded flash ASM, assembled a short RAM body, set a breakpoint at
+`$2002`, and verified `B L` printed `2002 8D`. Running from `$2000` stopped at
+`@2002`, `N` printed `STEP PC=2002 OP=8D STA LEN=03 NEXT=2005`, and the stepped
+store updated `$7102` to `$5A`. An NMI during a `$2010` loop still produced
+debug context, and `N` printed `STEP PC=2011 OP=4C JMP LEN=03 NEXT=2010`.
+This proves the old unassembler command is gone without removing the debug
+display data needed by single-step.
+
+## Packed Opcode Length Proof
+
+Commit `8208f96` replaced the full opcode mode table with `ASM_OP_LEN_PACK`
+and trimmed `N` step output to mnemonic-only. Board proof on 2026-07-04 used a
+RAM body at `$2020`:
+
+```text
+2020: EA A9 12 8D 03 71 80 02 | A9 EE 4C 2A 20 | .....q....L*
+```
+
+Single-step reported the expected packed lengths and next PCs:
+
+```text
+STEP PC=2020 OP=EA NOP LEN=01 NEXT=2021
+STEP PC=2021 OP=A9 LDA LEN=02 NEXT=2023
+STEP PC=2023 OP=8D STA LEN=03 NEXT=2026
+STEP PC=2026 OP=80 BRA LEN=02 NEXT=202A
+STEP PC=202A OP=4C JMP LEN=03 NEXT=202A
+```
+
+The `STA $7103` step stored `$12`, and the taken `BRA` skipped the following
+`LDA #$EE`, leaving `A=$12` at the self-`JMP`. The step lines stayed
+mnemonic-only: no immediate operand, absolute operand, branch displacement, or
+resolved operand text was printed.
 
 ## Promotion Rule
 

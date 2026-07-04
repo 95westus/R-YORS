@@ -7756,11 +7756,45 @@ closes the HIMON `ASM` hash-command proof for the fixed `$8000` image.
 
 Flash-wrapper size trim after this proof: accepted source lines and `SEAL> NEW`
 now print only `OK`, while rejected lines continue to print
-`ERR=$ee NAME PC=$hhhh`. This is host-gated by `make -C SRC asm-test` and needs
-fresh board proof before replacing the older `OK PC=$hhhh` transcripts.
+`ERR=$ee NAME PC=$hhhh`. This is host-gated by `make -C SRC asm-test`.
+Board proof on 2026-07-04 showed accepted `ORG`, `LDA`, `STA`, `RTS`, `END`,
+`SEAL> NEW`, `NOP`, and the second `END` all printing plain `OK`. The same run
+proved source rejection still prints `ERR=$03 BAD OPER PC=$2205`, post-END
+command rejection still prints `ERR=$03 BAD OPER PC=$2206`, the final bytes at
+`$2200` are `A9 5A 8D 04 71 60 EA`, and `G 2200` stores `$5A` at `$7104`.
 The same current flash-wrapper slice makes `.`/`ASM FLASH BYE` return to HIMON
 with `A=$00`, `X/Y=current PC`, and `C=1`; existing fatal exits return
-`A=status`, `X/Y=current PC`, and `C=0`.
+`A=status`, `X/Y=current PC`, and `C=0`. Board proof on 2026-07-04 entered the
+flash image directly with `G 800C`; after `ORG $2300` and `.`, HIMON printed
+`RET A=00 X=00 Y=23 P=75 ... C`. A second direct-entry run assembled
+`JSR MISS`, failed `END` with `ERR=$09 BAD FIX PC=$2403`, and HIMON printed
+`RET A=09 X=03 Y=24 P=74 ... c`. Entering through the resident `ASM` hash
+command and typing `.` returned cleanly to the HIMON prompt with no
+`EXEC ERR`.
+
+Hardware proof on HIMON `V 00.0704(1632)` with flash ASM loaded as
+`LF OK WR=3C35 GO=800C` proved the ASM-local 16-bit hex word printer after the
+2026-07-03 `Shrink ASM hex word output` size trim. The board rejected
+`BVF $4FRE` as `ERR=$03 BAD OPER PC=$2000`, then assembled an internal-reloc
+body at `$2000` with accepted lines printing plain `OK`. The table printer kept
+the expected symbol values `MAIN=$2000` and `TARGET=$2007`, fixup rows
+`SITE/BASE` of `2001/2003`, `2004/2005`, and `2006/2007`, and relocation rows
+`0001/0007`, `0004/0007`, and `0006/0007`.
+
+The same proof showed `SEAL` printing
+`SEAL OK FLAGS=$01 BASE=$2000 END=$2008`,
+`SEAL REC @=$6111 LEN=$0008 FNV=$FFC39D9A`, and
+`SEAL REL @=$611C COUNT=$03`. `RELOCATE $3000` printed
+`RELOCATE OK BASE=$3000 COUNT=$03`; the HIMON dump after leaving `SEAL>` showed
+`3000: 20 07 30 A9 07 A2 30 60`, and `G 3000` returned with `A=07 X=30`.
+`PACKAGE $3200` from the `SEAL>` prompt printed
+`PACKAGE OK @=$3200 LEN=$0037`; the `$3200 +37` dump began
+`41 50 01 37 00` and ended with the packaged original body
+`20 07 20 A9 07 A2 20 60`. This closes the board proof for the shared
+`ASM_RJ_WRITE_HEX_WORD_AX` output paths exercised by PC/error, table, SEAL,
+RELOCATE, and PACKAGE printing. `D` remains a HIMON command and is intentionally
+rejected at `SEAL>`; `PACKAGE` remains a post-END `SEAL>` command, not an
+`ASM>` source command.
 
 ## Regression Protocol
 
