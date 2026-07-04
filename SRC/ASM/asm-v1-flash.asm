@@ -203,7 +203,7 @@ ASMF_REJECT_CONTINUE:
 ASMF_ACCEPTED:
                         LDX             #<MSG_OK
                         LDY             #>MSG_OK
-                        JSR             ASMF_PRINT_PC_LINE
+                        JSR             ASMF_PRINT_LINE
                         JSR             ASMF_IS_END
                         BCS             ASMF_ACCEPTED_END
                         JMP             ASMF_LOOP
@@ -361,7 +361,7 @@ ASMF_NEW_OK:
                         STZ             ASMF_POST_FLAG
                         LDX             #<MSG_OK
                         LDY             #>MSG_OK
-                        JSR             ASMF_PRINT_PC_LINE
+                        JSR             ASMF_PRINT_LINE
                         JMP             ASMF_LOOP
 
 ASMF_PRINT_FAIL:
@@ -384,10 +384,6 @@ ASMF_PRINT_STATUS_PC_LINE:
                         LDY             #>MSG_PC
                         BRA             ASMF_PRINT_PC_TAIL
 
-ASMF_PRINT_PC_LINE:
-                        JSR             ASMF_PRINT
-                        LDX             #<MSG_PC
-                        LDY             #>MSG_PC
 ASMF_PRINT_PC_TAIL:
                         JSR             ASMF_PRINT
                         LDA             ASMF_PC_HI

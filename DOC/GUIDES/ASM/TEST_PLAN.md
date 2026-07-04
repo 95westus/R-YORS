@@ -7754,6 +7754,11 @@ interactive Life source relocated to `ORG $2000`, printed `ASM FLASH OK`, then
 ran the emitted program with `G 2000` and showed the initial Life board. This
 closes the HIMON `ASM` hash-command proof for the fixed `$8000` image.
 
+Flash-wrapper size trim after this proof: accepted source lines and `SEAL> NEW`
+now print only `OK`, while rejected lines continue to print
+`ERR=$ee NAME PC=$hhhh`. This is host-gated by `make -C SRC asm-test` and needs
+fresh board proof before replacing the older `OK PC=$hhhh` transcripts.
+
 ## Regression Protocol
 
 Before committing ASM code:
