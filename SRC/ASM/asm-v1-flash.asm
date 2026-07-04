@@ -39,6 +39,7 @@
                         XREF            ASM_RJ_READ_CSTRING
                         XREF            ASM_RJ_WRITE_HBSTRING
                         XREF            ASM_RJ_WRITE_HEX_BYTE
+                        XREF            ASM_RJ_WRITE_HEX_WORD_AX
                         XREF            ASM_RJ_PRINT_CRLF
 
 ASM_BEGINF_HAVE_PC     EQU             $01
@@ -269,9 +270,8 @@ ASMF_RELOCATE_OK:
                         LDY             #>MSG_RELOCATE_OK
                         JSR             ASMF_PRINT
                         LDA             ASM_RELOCATE_BASE_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_RELOCATE_BASE_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_RELOCATE_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_RELOCATE_COUNT
                         LDY             #>MSG_RELOCATE_COUNT
                         JSR             ASMF_PRINT
@@ -301,16 +301,14 @@ ASMF_PACKAGE_OK:
                         LDY             #>MSG_PACKAGE_OK
                         JSR             ASMF_PRINT
                         LDA             ASM_PACKAGE_BASE_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_PACKAGE_BASE_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_PACKAGE_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_PACKAGE_LEN
                         LDY             #>MSG_PACKAGE_LEN
                         JSR             ASMF_PRINT
                         LDA             ASM_PACKAGE_LEN_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_PACKAGE_LEN_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_PACKAGE_LEN_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JSR             ASM_RJ_PRINT_CRLF
                         JMP             ASMF_LOOP
 
@@ -336,16 +334,14 @@ ASMF_CHECK_OK:
                         LDY             #>MSG_CHECK_OK
                         JSR             ASMF_PRINT
                         LDA             ASM_PACKAGE_BASE_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_PACKAGE_BASE_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_PACKAGE_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_PACKAGE_LEN
                         LDY             #>MSG_PACKAGE_LEN
                         JSR             ASMF_PRINT
                         LDA             ASM_PACKAGE_LEN_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_PACKAGE_LEN_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_PACKAGE_LEN_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JSR             ASM_RJ_PRINT_CRLF
                         JMP             ASMF_LOOP
                         ENDIF
@@ -395,9 +391,8 @@ ASMF_PRINT_PC_LINE:
 ASMF_PRINT_PC_TAIL:
                         JSR             ASMF_PRINT
                         LDA             ASMF_PC_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASMF_PC_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASMF_PC_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASMF_PRINT_LINE:

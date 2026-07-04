@@ -49,6 +49,7 @@
                         XDEF            ASM_RJ_WRITE_CSTRING
                         XDEF            ASM_RJ_WRITE_HBSTRING
                         XDEF            ASM_RJ_WRITE_HEX_BYTE
+                        XDEF            ASM_RJ_WRITE_HEX_WORD_AX
                         XDEF            ASM_RJ_PRINT_CRLF
                         XDEF            ASM_SEAL_REC
                         XDEF            ASM_SEAL_REC_END
@@ -1668,6 +1669,12 @@ ASM_RJ_WRITE_HEX_DIGIT:
                         ADC             #'0'
                         JMP             ASM_RJ_WRITE_BYTE
                         ENDIF
+
+ASM_RJ_WRITE_HEX_WORD_AX:
+                        PHX
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        PLA
+                        JMP             ASM_RJ_WRITE_HEX_BYTE
 
 ASM_RJ_PRINT_CRLF:
                         IF              ASM_FLASH_RUNTIME
@@ -7004,12 +7011,10 @@ ASM_PRINT_SYMBOL_ROW:
                         LDX             ASM_SLOT
                         LDA             ASM_SYM_STATE,X
                         JSR             ASM_TABLE_PRINT_BYTE_FIELD
-                        LDX             ASM_SLOT
-                        LDA             ASM_SYM_VAL_HI,X
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             ASM_SLOT
-                        LDA             ASM_SYM_VAL_LO,X
-                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDY             ASM_SLOT
+                        LDA             ASM_SYM_VAL_HI,Y
+                        LDX             ASM_SYM_VAL_LO,Y
+                        JSR             ASM_TABLE_PRINT_WORD_FIELD
                         JSR             ASM_TABLE_PRINT_SPACE
                         LDX             ASM_SLOT
                         LDA             ASM_SYM_KIND,X
@@ -7020,22 +7025,18 @@ ASM_PRINT_SYMBOL_ROW:
                         LDX             ASM_SLOT
                         LDA             ASM_SYM_FLAGS,X
                         JSR             ASM_TABLE_PRINT_BYTE_FIELD
-                        LDX             ASM_SLOT
-                        LDA             ASM_SYM_DEFLINE_HI,X
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             ASM_SLOT
-                        LDA             ASM_SYM_DEFLINE_LO,X
-                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDY             ASM_SLOT
+                        LDA             ASM_SYM_DEFLINE_HI,Y
+                        LDX             ASM_SYM_DEFLINE_LO,Y
+                        JSR             ASM_TABLE_PRINT_WORD_FIELD
                         LDX             ASM_SLOT
                         LDA             ASM_SYM_USECNT,X
                         JSR             ASM_TABLE_PRINT_BYTE_FIELD
                         JSR             ASM_TABLE_PRINT_SPACE
-                        LDX             ASM_SLOT
-                        LDA             ASM_SYM_FIRSTREF_HI,X
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             ASM_SLOT
-                        LDA             ASM_SYM_FIRSTREF_LO,X
-                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDY             ASM_SLOT
+                        LDA             ASM_SYM_FIRSTREF_HI,Y
+                        LDX             ASM_SYM_FIRSTREF_LO,Y
+                        JSR             ASM_TABLE_PRINT_WORD_FIELD
                         JSR             ASM_TABLE_PRINT_SPACE
                         LDX             ASM_SLOT
                         JSR             ASM_SET_SYM_NAME_PTR_X
@@ -7087,18 +7088,14 @@ ASM_PRINT_RELOC_ROW:
                         LDX             ASM_SLOT
                         LDA             ASM_RELOC_KIND,X
                         JSR             ASM_TABLE_PRINT_BYTE_FIELD
-                        LDX             ASM_SLOT
-                        LDA             ASM_RELOC_SITE_HI,X
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             ASM_SLOT
-                        LDA             ASM_RELOC_SITE_LO,X
-                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
-                        LDX             ASM_SLOT
-                        LDA             ASM_RELOC_TARGET_HI,X
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             ASM_SLOT
-                        LDA             ASM_RELOC_TARGET_LO,X
-                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDY             ASM_SLOT
+                        LDA             ASM_RELOC_SITE_HI,Y
+                        LDX             ASM_RELOC_SITE_LO,Y
+                        JSR             ASM_TABLE_PRINT_WORD_FIELD
+                        LDY             ASM_SLOT
+                        LDA             ASM_RELOC_TARGET_HI,Y
+                        LDX             ASM_RELOC_TARGET_LO,Y
+                        JSR             ASM_TABLE_PRINT_WORD_FIELD
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASM_PRINT_FIXUP_ROW:
@@ -7117,18 +7114,14 @@ ASM_PRINT_FIXUP_ROW:
                         LDA             ASM_FIX_SEL,X
                         JSR             ASM_TABLE_PRINT_BYTE_FIELD
                         JSR             ASM_TABLE_PRINT_SPACE
-                        LDX             ASM_SLOT
-                        LDA             ASM_FIX_SITE_HI,X
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             ASM_SLOT
-                        LDA             ASM_FIX_SITE_LO,X
-                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
-                        LDX             ASM_SLOT
-                        LDA             ASM_FIX_BASE_HI,X
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDX             ASM_SLOT
-                        LDA             ASM_FIX_BASE_LO,X
-                        JSR             ASM_TABLE_PRINT_BYTE_FIELD
+                        LDY             ASM_SLOT
+                        LDA             ASM_FIX_SITE_HI,Y
+                        LDX             ASM_FIX_SITE_LO,Y
+                        JSR             ASM_TABLE_PRINT_WORD_FIELD
+                        LDY             ASM_SLOT
+                        LDA             ASM_FIX_BASE_HI,Y
+                        LDX             ASM_FIX_BASE_LO,Y
+                        JSR             ASM_TABLE_PRINT_WORD_FIELD
                         LDX             ASM_SLOT
                         JSR             ASM_SET_FIX_NAME_PTR_X
                         LDX             ASM_FIX_PTR_LO
@@ -7141,6 +7134,9 @@ ASM_TABLE_PRINT_BYTE_FIELD:
 ASM_TABLE_PRINT_SPACE:
                         LDA             #' '
                         JMP             ASM_RJ_WRITE_BYTE
+ASM_TABLE_PRINT_WORD_FIELD:
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
+                        BRA             ASM_TABLE_PRINT_SPACE
 
                         IF              ASM_RUNTIME_ONLY
                         ELSE
@@ -15288,50 +15284,43 @@ ASM_SEAL_PRINT_RECORD:
                         LDY             #>ASM_SEAL_MSG_BASE
                         JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_BASE_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_BASE_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SEAL_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<ASM_SEAL_MSG_END
                         LDY             #>ASM_SEAL_MSG_END
                         JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_END_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_END_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SEAL_END_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JSR             ASM_RJ_PRINT_CRLF
                         LDX             #<ASM_SEAL_MSG_REC
                         LDY             #>ASM_SEAL_MSG_REC
                         JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             #>ASM_SEAL_REC
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             #<ASM_SEAL_REC
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<ASM_SEAL_REC
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<ASM_SEAL_MSG_LEN
                         LDY             #>ASM_SEAL_MSG_LEN
                         JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_LEN_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_LEN_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SEAL_LEN_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<ASM_SEAL_MSG_FNV
                         LDY             #>ASM_SEAL_MSG_FNV
                         JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_FNV3
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_FNV2
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SEAL_FNV2
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDA             ASM_SEAL_FNV1
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_SEAL_FNV0
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_SEAL_FNV0
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JSR             ASM_RJ_PRINT_CRLF
                         LDX             #<ASM_SEAL_MSG_REL
                         LDY             #>ASM_SEAL_MSG_REL
                         JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             #>ASM_RELOC_REC
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             #<ASM_RELOC_REC
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             #<ASM_RELOC_REC
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<ASM_SEAL_MSG_COUNT
                         LDY             #>ASM_SEAL_MSG_COUNT
                         JSR             ASM_RJ_WRITE_HBSTRING
@@ -15369,9 +15358,8 @@ ASM_SEAL_PRINT_NAMED_REC:
                         STA             ASM_TMP1_HI
                         JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_TMP1_HI
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        LDA             ASM_TMP1_LO
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        LDX             ASM_TMP1_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<ASM_SEAL_MSG_COUNT
                         LDY             #>ASM_SEAL_MSG_COUNT
                         JSR             ASM_RJ_WRITE_HBSTRING
@@ -15381,11 +15369,11 @@ ASM_SEAL_PRINT_NAMED_REC:
                         LDX             #<ASM_SEAL_MSG_LEN
                         LDY             #>ASM_SEAL_MSG_LEN
                         JSR             ASM_RJ_WRITE_HBSTRING
-                        LDA             #$00
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
                         LDY             #$01
                         LDA             (ASM_TMP1_LO),Y
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        TAX
+                        LDA             #$00
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASM_SEAL_CLEAR:
