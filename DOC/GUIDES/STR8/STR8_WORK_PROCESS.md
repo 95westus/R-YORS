@@ -297,6 +297,21 @@ UPDATE STR8 accepts only $F000-$FFFF records.
 Do not add a mixed or raw-range S19 loader first. If a record lands outside the
 selected gate, the operation aborts before erase.
 
+After the current ASM flash-wrapper work settles, the next STR8 staging
+change should move the 4K sector buffer down into STR8-owned low RAM. Treat
+`$0900-$19FF` as reserved for flash work, using `$0900-$18FF` as the active
+4K sector image and `$1900-$19FF` as slack/control space. The worker still
+runs from `$0200-$08FF`, and the existing `$1FE9-$1FFF` worker/update board
+remains separate.
+
+That change would free `$4000-$6FFF` from STR8 update staging. Ordinary bank
+copy can still stage one 4K sector at a time. HIMON update should become a
+sector-streaming operation: fill the low 4K image for `$C000`, erase/write/
+verify `$C000`, then repeat for `$D000` and `$E000`. This trades the current
+"validate the whole C/D/E S19 before burn" shape for lower RAM pressure; keep
+the `$C000-$EFFF` gate, record checksum checks, confirmation, and STR8 recovery
+path intact.
+
 The 2026-05-17 fig-Forth and OSI BASIC bench passes proved that this same gate
 can install different `$C000-$EFFF` payloads while leaving STR8 alive in the top
 sector. That is useful for payload experiments, but it also makes the
