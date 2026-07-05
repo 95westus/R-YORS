@@ -605,6 +605,8 @@ DBG_PRINT_CMD_ADDR:
                         RTS
 
 DBG_ADDR_PATCHABLE:
+                        ; Breakpoints and step traps patch only user program
+                        ; RAM. MON_WORK_BASE and above remain protected.
                         LDA             CMDP_ADDR_HI
                         CMP             #>UPA_BASE
                         BCC             DBG_ADDR_PATCHABLE_FAIL

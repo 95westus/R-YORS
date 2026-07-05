@@ -2,8 +2,8 @@
 ; himon.asm
 ; Compact supervisory debug monitor for W65C02S with FNV-1a command dispatch.
 ; Memory map target:
-;   RAM   $0000-$7EFF (UPA $2000-$79FF, MON $7A00-$7EFF)
-;   IO    $7F00-$7FFF
+;   RAM   $0000-$7EFF (SYS_RAM_END; UPA $2000-$79FF, MON $7A00-$7EFF)
+;   IO    $7F00-$7FFF (SYS_IO_BASE-SYS_IO_END)
 ;   FLASH $8000-$FFFF
 ; ----------------------------------------------------------------------------
 
@@ -1492,7 +1492,7 @@ MON_CLEAR_RAM_BYTE:
                         BNE             MON_CLEAR_RAM_BYTE
                         INC             CMDP_PTR_HI
                         LDA             CMDP_PTR_HI
-                        CMP             #$7F
+                        CMP             #>SYS_IO_BASE
                         BEQ             MON_CLEAR_RAM_ZP_BEGIN
                         LDA             #$00
                         BRA             MON_CLEAR_RAM_PAGE

@@ -17,12 +17,17 @@ CRC16_LO                  EQU             $CB
 CRC16_HI                  EQU             $CC
 
 ; ----------------------------------------------------------------------------
-; User program area and high-RAM ownership boundaries.
+; User program area, monitor workspace, and hard memory-map boundaries.
+; SYS_RAM_END is the last RAM byte before memory-mapped I/O. User patch/write
+; surfaces may use stricter limits; today they stop before MON_WORK_BASE.
 ; ----------------------------------------------------------------------------
+SYS_RAM_END                EQU             $7EFF
+SYS_IO_BASE                EQU             $7F00
+SYS_IO_END                 EQU             $7FFF
 UPA_BASE                   EQU             $2000
 UPA_END                    EQU             $79FF
 MON_WORK_BASE              EQU             $7A00
-MON_WORK_END               EQU             $7EFF
+MON_WORK_END               EQU             SYS_RAM_END
 
 ; ----------------------------------------------------------------------------
 ; Group A: NMI trap/resume context (8 bytes)
@@ -299,4 +304,4 @@ FREE_BUF_END               EQU             $7DBF
 ; - $1A00-$1FE8 RJOIN/debug trace and reserved low-RAM scratch
 ; - $1FE9-$1FFF STR8 worker/update state board
 ; - UPA_BASE-UPA_END user program area
-; - MON_WORK_BASE-MON_WORK_END monitor workspace before the I/O window
+; - MON_WORK_BASE-MON_WORK_END monitor workspace before SYS_IO_BASE-SYS_IO_END

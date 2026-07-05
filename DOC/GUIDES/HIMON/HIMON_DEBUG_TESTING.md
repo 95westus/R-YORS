@@ -345,6 +345,11 @@ Useful manual checks:
 >B 3043          set a valid RAM breakpoint on LDX #$37
 >B L             list breakpoints
 >B C 3043        clear breakpoint
+>B 79FF          last user-program byte should be accepted when free
+>B C 79FF        clear it if accepted
+>B 7A00          should print DBG RAM
+>B 7EFF          should print DBG RAM
+>B 7F00          should print DBG RAM
 >B 8000          should print DBG RAM
 >B 3007          fill breakpoint slot 0
 >B 300A          fill breakpoint slot 1
@@ -392,8 +397,8 @@ R shows valid context
 N steps through the listed branch cases
 no BRK $E1-$E9 appears
 BRK $42 appears at the end
-B rejects non-UPA patch targets with DBG RAM
-B set/list/clear works for a RAM address in $2000-$77FF
+B rejects non-UPA patch targets with DBG RAM, including $7A00, $7EFF, and $7F00
+B set/list/clear works for a RAM address in $2000-$79FF
 B reports BP FULL when all four slots are active
 B C reports BP NF when the address is not active
 N can resume into a user breakpoint when its step target overlaps one
