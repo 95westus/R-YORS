@@ -10707,3 +10707,370 @@ SL K  SITE TARG
 RET A=09 X=03 Y=24 P=74 S=FD NV-BdIzc
 >
 ```
+
+## 2026-07-04 ASM Life Sample Fixed-Address Table Negative Attempt
+
+Purpose: capture the first board attempt to paste the tiny interactive Life
+sample through the flash ASM image after package BODY-FNV self-verification.
+This was a useful negative sample-layout test, not a proof of the later
+`ASM>$hhhh: ` prompt slice. The loaded image reported
+`LF OK WR=3C68 GO=800C`, which is the pre-PC-prompt build.
+
+Result: expected failure for the old sample shape. The source assembled code at
+`$2000`, but then attempted to place neighbor and seed tables at
+`$7000/$7200/$7240`. Current flash ASM protects `$6000-$7EFF` from assembly
+output because that range holds the live wrapper workspace, so each fixed table
+`ORG` returned `ERR=$06 BAD RANGE`. The following `DB` rows continued at the
+current PC and the program reached `ASM FLASH OK`, but runtime used the old
+hardcoded table addresses and rendered blank Life boards. The sample was then
+changed to emit those tables inline behind labels `N0..N7`, `SEED`, `CHARS`,
+and `RANDS`.
+
+Transcript excerpt:
+
+```text
+HIMON V 00.0704(2011)
+>L F
+L F S19
+L @8000
+LF OK WR=3C68 GO=800C
+>G 800C
+GO 800C
+ASM FLASH
+ASM> ; ASM V1 TINY INTERACTIVE LIFE. PASTE VIA ASM RT PASTE.
+ASM>         ORG $2000
+ASM>         JMP MAIN
+...
+ASM> DONE    RTS
+ASM>
+ASM>         ORG $7000
+ERR=$06 BAD RANGE PC=$2179
+ASM>         DB $3F,$38,$39,$3A,$3B,$3C,$3D,$3E
+...
+ASM>         ORG $7200
+ERR=$06 BAD RANGE PC=$2379
+ASM>         DB $00,$01,$00,$00,$00,$00,$00,$00
+...
+ASM>         ORG $7240
+ERR=$06 BAD RANGE PC=$23B9
+ASM>         DB $2E,$23
+ASM>         DB $01,$00,$00,$00
+ASM>
+ASM>         END
+ASM TABLES
+...
+ASM FLASH OK
+SEAL> .
+ASM FLASH BYE
+>G 2000
+GO 2000
+
+G0
+
+
+
+
+
+
+
+
+N/R/Q>
+G0
+
+
+
+
+
+
+
+
+N/R/Q>
+#GO# ENTRY=2000
+RET A=51 X=3F Y=45 P=77 S=FD NV-BdIZC
+>
+```
+
+## 2026-07-04 ASM PC Prompt And Life Inline-Table Seal Negative
+
+Purpose: prove the flash source prompt presentation change on hardware, then
+capture the follow-up Life sample result after moving its old `$7000/$7200`
+tables inline.
+
+Result: mixed. HIMON `V 00.0704(2039)` published the new `ASM V1` hash entry
+at `$800C`, and `ASM NEW` displayed source prompts in the new `ASM>$hhhh: `
+form. The Life source no longer hit `BAD RANGE`; it assembled through `END`
+with final PC `$23BF` and printed `ASM FLASH OK`. However, `SEAL` returned
+`SEAL ERR=$02 FLAGS=$09`. `FLAGS=$09` is `VALID|RELOC_TRUNC`, so this was not
+an assembly failure: the sample produced more internal relocation rows than the
+current 16-row relocation metadata record can hold. The source was then revised
+again to compute neighbors, seed, glyphs, and random density in code instead
+of using inline data labels.
+
+Transcript excerpt:
+
+```text
+HIMON V 00.0704(2039)
+>#
+HASH     ENTRY K TEXT
+56AD7400 800C 05 ASM V1
+...
+>ASM NEW
+ASM FLASH
+ASM>$2000: ; ASM V1 TINY INTERACTIVE LIFE. PASTE VIA ASM RT PASTE.
+ASM>$2000:         ORG $2000
+ASM>$2000:         JMP MAIN
+ASM>$2003:
+...
+ASM>$2179: N0      DB $3F,$38,$39,$3A,$3B,$3C,$3D,$3E
+...
+ASM>$2379: SEED    DB $00,$01,$00,$00,$00,$00,$00,$00
+...
+ASM>$23B9: CHARS   DB $2E,$23
+ASM>$23BB: RANDS   DB $01,$00,$00,$00
+ASM>$23BF:
+ASM>$23BF:         END
+ASM TABLES
+SYMBOLS
+...
+22 01 23BB  01 04 0E 00FB 00  0000  RANDS
+FIXUPS
+...
+17 02 07   00  2162 2163 NEXTC
+RELOCS
+SL K  SITE TARG
+00 01 0039 0003
+01 01 0049 0003
+02 01 0069 0003
+03 01 00EE 0003
+04 01 0117 012D
+05 01 0001 0137
+06 01 0138 000E
+07 01 013B 0038
+08 01 013E 00ED
+09 01 0166 0114
+0A 01 0169 0038
+0B 01 016E 0070
+0C 01 0171 0025
+0D 01 0174 0038
+0E 01 0076 0179
+0F 01 0080 01B9
+ASM FLASH OK
+SEAL> SEAL
+SEAL ERR=$02 FLAGS=$09
+SEAL>
+```
+
+## 2026-07-04 ASM Life Computed-Neighbor Seal Pass, Branch Negative
+
+Purpose: prove the computed-neighbor Life sample shape after removing fixed
+table ORGs and inline table data, then capture the remaining source-level
+runtime issue.
+
+Result: mixed. HIMON `V 00.0704(2055)` loaded the new PC-prompt flash ASM
+image as `LF OK WR=3C7B GO=800C`. The computed-neighbor Life source assembled
+without table ORGs, sealed cleanly with `SEAL OK FLAGS=$01 BASE=$2000
+END=$21CC`, and recorded `SEAL REL @=$611C COUNT=$0E`. The initial run printed
+the correct glider at `G0`, proving initialization and rendering. However, ASM
+correctly rejected `BNE SLOOP` as `ERR=$06 BAD RANGE PC=$213B`; the branch from
+`$213B` back to `$2085` is outside rel8 range. Because the rejected line emitted
+no loop branch, stepping only processed one cell and later generations went
+blank. The source was then changed to use `BEQ SDONE` followed by absolute
+`JMP SLOOP`.
+
+Transcript excerpt:
+
+```text
+HIMON V 00.0704(2055)
+>L F
+L F S19
+L @8000
+LF OK WR=3C7B GO=800C
+>ASM NEW
+ASM FLASH
+ASM>$2000: ; ASM V1 TINY INTERACTIVE LIFE. PASTE VIA ASM RT PASTE.
+...
+ASM>$2135: STORE   STA $7840,X
+ASM>$2138:         INX
+ASM>$2139:         CPX #$40
+ASM>$213B:         BNE SLOOP
+ERR=$06 BAD RANGE PC=$213B
+ASM>$213B:         RTS
+...
+ASM>$21CC:         END
+ASM TABLES
+...
+RELOCS
+SL K  SITE TARG
+00 01 0047 0003
+01 01 0057 0003
+02 01 007C 0003
+03 01 013D 0003
+04 01 0166 0180
+05 01 0001 018A
+06 01 018B 000E
+07 01 018E 0046
+08 01 0191 013C
+09 01 01B9 0163
+0A 01 01BC 0046
+0B 01 01C1 0083
+0C 01 01C4 0033
+0D 01 01C7 0046
+ASM FLASH OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$2000 END=$21CC
+SEAL REC @=$6111 LEN=$01CC FNV=$44B0FF57
+SEAL REL @=$611C COUNT=$0E
+SEAL> .
+ASM FLASH BYE
+>G 2000
+GO 2000
+
+G0
+.#......
+..#.....
+###.....
+........
+........
+........
+........
+........
+
+N/R/Q>
+G1
+........
+........
+........
+........
+........
+........
+........
+........
+```
+
+## 2026-07-04 ASM Life Computed-Neighbor Fixed-Branch Board Proof
+
+Purpose: close the current `life-rjoined-6800.asm` board proof after replacing
+the out-of-range `BNE SLOOP` with `BEQ SDONE` plus absolute `JMP SLOOP`.
+
+Result: pass. The source assembled with no `BAD RANGE`, finalized at
+`END=$21D1`, and sealed with `SEAL OK FLAGS=$01 BASE=$2000 END=$21D1`.
+Relocation metadata used all but one row of the current 16-row record:
+`SEAL REL @=$611C COUNT=$0F`. Running `G 2000` printed the seeded glider at
+`G0`; repeated `N`/space steps showed the expected glider progression across
+the toroidal 8x8 board. `R` reset the generation display to `G0` with random
+boards, and `Q` returned to HIMON with `RET A=51`.
+
+Transcript excerpt:
+
+```text
+>ASM NEW
+ASM FLASH
+ASM>$2000: ; ASM V1 TINY INTERACTIVE LIFE. PASTE VIA ASM RT PASTE.
+...
+ASM>$2135: STORE   STA $7840,X
+ASM>$2138:         INX
+ASM>$2139:         CPX #$40
+ASM>$213B:         BEQ SDONE
+ASM>$213D:         JMP SLOOP
+ASM>$2140: SDONE   RTS
+...
+ASM>$21D1:         END
+ASM TABLES
+...
+RELOCS
+SL K  SITE TARG
+00 01 0047 0003
+01 01 0057 0003
+02 01 007C 0003
+03 01 013E 0085
+04 01 0142 0003
+05 01 016B 0185
+06 01 0001 018F
+07 01 0190 000E
+08 01 0193 0046
+09 01 0196 0141
+0A 01 01BE 0168
+0B 01 01C1 0046
+0C 01 01C6 0083
+0D 01 01C9 0033
+0E 01 01CC 0046
+ASM FLASH OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$2000 END=$21D1
+SEAL REC @=$6111 LEN=$01D1 FNV=$442D7231
+SEAL REL @=$611C COUNT=$0F
+SEAL> .
+ASM FLASH BYE
+>G 2000
+GO 2000
+
+G0
+.#......
+..#.....
+###.....
+........
+........
+........
+........
+........
+
+N/R/Q>
+G1
+........
+#.#.....
+.##.....
+.#......
+........
+........
+........
+........
+
+N/R/Q>
+G2
+........
+..#.....
+#.#.....
+.##.....
+........
+........
+........
+........
+
+N/R/Q>
+GP
+.#......
+..#.....
+###.....
+........
+........
+........
+........
+........
+
+N/R/Q>
+GQ
+........
+#.#.....
+.##.....
+.#......
+........
+........
+........
+........
+
+N/R/Q>
+G0
+........
+........
+......##
+..###...
+...##...
+..#....#
+...##...
+....#..#
+
+N/R/Q>
+#GO# ENTRY=2000
+RET A=51 X=3F Y=00 P=77 S=FD NV-BdIZC
+>
+```

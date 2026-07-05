@@ -2,6 +2,9 @@
 ; RUN G 2000. N OR SPACE=NEXT, R=RANDOM, Q=QUIT.
 ; RANDOM SEED STIRS WHILE WAITING FOR A KEY.
 ; USES RJOIN PIN READ AND BIO WRITE BYTE ROUTINES.
+; USES USER ZERO-PAGE $30-$3B.
+; COMPUTES NEIGHBORS; NO TABLE ORG.
+; FLASH ASM PROTECTS $6000-$7EFF.
 
         ORG $2000
 
@@ -14,15 +17,20 @@ CRLF    LDA #$0D
         RTS
 
 INIT    LDX #$00
-ILOOP   LDA $7200,X
-        STA $7800,X
+ILOOP   STZ $7800,X
         STZ $7840,X
         INX
         CPX #$40
         BNE ILOOP
+        LDA #$01
+        STA $7801
+        STA $780A
+        STA $7810
+        STA $7811
+        STA $7812
         LDA #$A5
-        STA $D4
-        STZ $D5
+        STA $34
+        STZ $35
         RTS
 
 COPY    LDX #$00
@@ -32,80 +40,125 @@ CLOOP   LDA $7840,X
         INX
         CPX #$40
         BNE CLOOP
-        INC $D5
+        INC $35
         RTS
 
 REND    JSR CRLF
         LDA #'G'
         JSR BIO_FTDI_WRITE_BYTE_BLOCK
-        LDA $D5
+        LDA $35
         CLC
         ADC #'0'
         JSR BIO_FTDI_WRITE_BYTE_BLOCK
         JSR CRLF
         LDX #$00
-        STX $D0
+        STX $30
         LDA #$08
-        STA $D1
+        STA $31
 RROW    LDA #$08
-        STA $D2
-RCOL    LDX $D0
-        LDY $7800,X
-        LDA $7240,Y
-        JSR BIO_FTDI_WRITE_BYTE_BLOCK
-        INC $D0
-        DEC $D2
+        STA $32
+RCOL    LDX $30
+        LDA $7800,X
+        BEQ RDEAD
+        LDA #'#'
+        BRA RPUT
+RDEAD   LDA #'.'
+RPUT    JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        INC $30
+        DEC $32
         BNE RCOL
         JSR CRLF
-        DEC $D1
+        DEC $31
         BNE RROW
         RTS
 
 STEP    LDX #$00
-SLOOP   STZ $D3
+SLOOP   STZ $33
+        TXA
+        AND #$38
+        STA $36
+        TXA
+        AND #$07
+        STA $37
+        LDA $36
+        SEC
+        SBC #$08
+        AND #$38
+        STA $38
+        LDA $36
         CLC
-        LDY $7000,X
-        LDA $D3
+        ADC #$08
+        AND #$38
+        STA $39
+        LDA $37
+        SEC
+        SBC #$01
+        AND #$07
+        STA $3A
+        LDA $37
+        CLC
+        ADC #$01
+        AND #$07
+        STA $3B
+        CLC
+        LDA $38
+        ORA $3A
+        TAY
+        LDA $33
         ADC $7800,Y
-        STA $D3
-        LDY $7040,X
-        LDA $D3
+        STA $33
+        LDA $38
+        ORA $37
+        TAY
+        LDA $33
         ADC $7800,Y
-        STA $D3
-        LDY $7080,X
-        LDA $D3
+        STA $33
+        LDA $38
+        ORA $3B
+        TAY
+        LDA $33
         ADC $7800,Y
-        STA $D3
-        LDY $70C0,X
-        LDA $D3
+        STA $33
+        LDA $36
+        ORA $3A
+        TAY
+        LDA $33
         ADC $7800,Y
-        STA $D3
-        LDY $7100,X
-        LDA $D3
+        STA $33
+        LDA $36
+        ORA $3B
+        TAY
+        LDA $33
         ADC $7800,Y
-        STA $D3
-        LDY $7140,X
-        LDA $D3
+        STA $33
+        LDA $39
+        ORA $3A
+        TAY
+        LDA $33
         ADC $7800,Y
-        STA $D3
-        LDY $7180,X
-        LDA $D3
+        STA $33
+        LDA $39
+        ORA $37
+        TAY
+        LDA $33
         ADC $7800,Y
-        STA $D3
-        LDY $71C0,X
-        LDA $D3
+        STA $33
+        LDA $39
+        ORA $3B
+        TAY
+        LDA $33
         ADC $7800,Y
-        STA $D3
+        STA $33
         LDA $7800,X
         BEQ BORN
-        LDA $D3
+        LDA $33
         CMP #$02
         BEQ LIVE
         CMP #$03
         BEQ LIVE
         LDA #$00
         BRA STORE
-BORN    LDA $D3
+BORN    LDA $33
         CMP #$03
         BEQ LIVE
         LDA #$00
@@ -114,8 +167,9 @@ LIVE    LDA #$01
 STORE   STA $7840,X
         INX
         CPX #$40
-        BNE SLOOP
-        RTS
+        BEQ SDONE
+        JMP SLOOP
+SDONE   RTS
 
 PROMPT  JSR CRLF
         LDA #'N'
@@ -137,27 +191,29 @@ PROMPT  JSR CRLF
 RAND    LDX #$00
 RLOOP   JSR RAND8
         AND #$03
-        TAY
-        LDA $7242,Y
-        STA $7800,X
+        BEQ RON
+        LDA #$00
+        BRA RSTORE
+RON     LDA #$01
+RSTORE  STA $7800,X
         STZ $7840,X
         INX
         CPX #$40
         BNE RLOOP
-        STZ $D5
+        STZ $35
         RTS
 
-RAND8   LDA $D4
+RAND8   LDA $34
         ASL A
         BCC R8S
         EOR #$1D
-R8S     STA $D4
+R8S     STA $34
         RTS
 
 MAIN    JSR INIT
         JSR REND
 LOOP    JSR PROMPT
-GETKEY  INC $D4
+GETKEY  INC $34
         JSR PIN_FTDI_READ_BYTE_NONBLOCK
         BCC GETKEY
         AND #$7F
@@ -183,85 +239,5 @@ NEXTC   JSR STEP
         JSR REND
         BRA LOOP
 DONE    RTS
-
-        ORG $7000
-        DB $3F,$38,$39,$3A,$3B,$3C,$3D,$3E
-        DB $07,$00,$01,$02,$03,$04,$05,$06
-        DB $0F,$08,$09,$0A,$0B,$0C,$0D,$0E
-        DB $17,$10,$11,$12,$13,$14,$15,$16
-        DB $1F,$18,$19,$1A,$1B,$1C,$1D,$1E
-        DB $27,$20,$21,$22,$23,$24,$25,$26
-        DB $2F,$28,$29,$2A,$2B,$2C,$2D,$2E
-        DB $37,$30,$31,$32,$33,$34,$35,$36
-        DB $38,$39,$3A,$3B,$3C,$3D,$3E,$3F
-        DB $00,$01,$02,$03,$04,$05,$06,$07
-        DB $08,$09,$0A,$0B,$0C,$0D,$0E,$0F
-        DB $10,$11,$12,$13,$14,$15,$16,$17
-        DB $18,$19,$1A,$1B,$1C,$1D,$1E,$1F
-        DB $20,$21,$22,$23,$24,$25,$26,$27
-        DB $28,$29,$2A,$2B,$2C,$2D,$2E,$2F
-        DB $30,$31,$32,$33,$34,$35,$36,$37
-        DB $39,$3A,$3B,$3C,$3D,$3E,$3F,$38
-        DB $01,$02,$03,$04,$05,$06,$07,$00
-        DB $09,$0A,$0B,$0C,$0D,$0E,$0F,$08
-        DB $11,$12,$13,$14,$15,$16,$17,$10
-        DB $19,$1A,$1B,$1C,$1D,$1E,$1F,$18
-        DB $21,$22,$23,$24,$25,$26,$27,$20
-        DB $29,$2A,$2B,$2C,$2D,$2E,$2F,$28
-        DB $31,$32,$33,$34,$35,$36,$37,$30
-        DB $07,$00,$01,$02,$03,$04,$05,$06
-        DB $0F,$08,$09,$0A,$0B,$0C,$0D,$0E
-        DB $17,$10,$11,$12,$13,$14,$15,$16
-        DB $1F,$18,$19,$1A,$1B,$1C,$1D,$1E
-        DB $27,$20,$21,$22,$23,$24,$25,$26
-        DB $2F,$28,$29,$2A,$2B,$2C,$2D,$2E
-        DB $37,$30,$31,$32,$33,$34,$35,$36
-        DB $3F,$38,$39,$3A,$3B,$3C,$3D,$3E
-        DB $01,$02,$03,$04,$05,$06,$07,$00
-        DB $09,$0A,$0B,$0C,$0D,$0E,$0F,$08
-        DB $11,$12,$13,$14,$15,$16,$17,$10
-        DB $19,$1A,$1B,$1C,$1D,$1E,$1F,$18
-        DB $21,$22,$23,$24,$25,$26,$27,$20
-        DB $29,$2A,$2B,$2C,$2D,$2E,$2F,$28
-        DB $31,$32,$33,$34,$35,$36,$37,$30
-        DB $39,$3A,$3B,$3C,$3D,$3E,$3F,$38
-        DB $0F,$08,$09,$0A,$0B,$0C,$0D,$0E
-        DB $17,$10,$11,$12,$13,$14,$15,$16
-        DB $1F,$18,$19,$1A,$1B,$1C,$1D,$1E
-        DB $27,$20,$21,$22,$23,$24,$25,$26
-        DB $2F,$28,$29,$2A,$2B,$2C,$2D,$2E
-        DB $37,$30,$31,$32,$33,$34,$35,$36
-        DB $3F,$38,$39,$3A,$3B,$3C,$3D,$3E
-        DB $07,$00,$01,$02,$03,$04,$05,$06
-        DB $08,$09,$0A,$0B,$0C,$0D,$0E,$0F
-        DB $10,$11,$12,$13,$14,$15,$16,$17
-        DB $18,$19,$1A,$1B,$1C,$1D,$1E,$1F
-        DB $20,$21,$22,$23,$24,$25,$26,$27
-        DB $28,$29,$2A,$2B,$2C,$2D,$2E,$2F
-        DB $30,$31,$32,$33,$34,$35,$36,$37
-        DB $38,$39,$3A,$3B,$3C,$3D,$3E,$3F
-        DB $00,$01,$02,$03,$04,$05,$06,$07
-        DB $09,$0A,$0B,$0C,$0D,$0E,$0F,$08
-        DB $11,$12,$13,$14,$15,$16,$17,$10
-        DB $19,$1A,$1B,$1C,$1D,$1E,$1F,$18
-        DB $21,$22,$23,$24,$25,$26,$27,$20
-        DB $29,$2A,$2B,$2C,$2D,$2E,$2F,$28
-        DB $31,$32,$33,$34,$35,$36,$37,$30
-        DB $39,$3A,$3B,$3C,$3D,$3E,$3F,$38
-        DB $01,$02,$03,$04,$05,$06,$07,$00
-
-        ORG $7200
-        DB $00,$01,$00,$00,$00,$00,$00,$00
-        DB $00,$00,$01,$00,$00,$00,$00,$00
-        DB $01,$01,$01,$00,$00,$00,$00,$00
-        DB $00,$00,$00,$00,$00,$00,$00,$00
-        DB $00,$00,$00,$00,$00,$00,$00,$00
-        DB $00,$00,$00,$00,$00,$00,$00,$00
-        DB $00,$00,$00,$00,$00,$00,$00,$00
-        DB $00,$00,$00,$00,$00,$00,$00,$00
-
-        ORG $7240
-        DB $2E,$23
-        DB $01,$00,$00,$00
 
         END

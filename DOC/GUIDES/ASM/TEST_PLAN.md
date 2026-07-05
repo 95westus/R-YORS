@@ -3474,21 +3474,32 @@ addresses as `EQU`, assembling executable code at `$7200`, then moving forward
 to emit the `$7500/$7600` data.
 
 `life-rjoined-6800.asm` is a deliberately table-budgeted full-program sample
-for the current ASM v1 ceiling. It starts at `$6800`, uses RJOIN for
-`BIO_FTDI_WRITE_BYTE_BLOCK` and `PIN_FTDI_READ_BYTE_NONBLOCK`, keeps its
-visible board at `$7800`, its next board at `$7840`, neighbor tables at
-`$7000-$71FF`, seed/character tables at `$7200/$7240`, and a random density
-map at `$7242`. Controls are `N` or space for next, `R` for random, and `Q` to
-return. The random seed in `$D4` stirs while waiting for a key, then an 8-bit
-LFSR fills the board on `R`.
+for the current ASM v1 ceiling. The current flash-safe source starts at
+`$2000`, uses RJOIN for `BIO_FTDI_WRITE_BYTE_BLOCK` and
+`PIN_FTDI_READ_BYTE_NONBLOCK`, keeps its visible board at `$7800`, its next
+board at `$7840`, and uses user zero page `$30-$3B`. The current version has no
+neighbor, seed, glyph, or random-density tables; it computes the 8x8 torus
+neighbors in code and initializes the glider in code. Controls are `N` or space
+for next, `R` for random, and `Q` to return. The random seed in `$34` stirs
+while waiting for a key, then an 8-bit LFSR fills the board on `R`.
 
-The source stayed inside the paste constraints used by that proof after the
-table-open slice:
-24 session symbols, 13 forward fixup rows, about 24 local report references,
-no operand-tail arithmetic, no local labels, no DB/DS expression math, and max
-source line length 55. Static layout check places the interactive code below
-the table block (`DONE` at `$6978`, tables still start at `$7000`, max emitted
-address `$7246`). The earlier hardware transcripts
+The 2026-07-04 flash-ASM board attempt with the earlier fixed-address table
+shape usefully failed: `ORG $7000`, `ORG $7200`, and `ORG $7240` all returned
+`ERR=$06 BAD RANGE` because current flash ASM protects `$6000-$7EFF` from
+assembly output. The current sample fixes that by replacing those fixed table
+addresses with computed-neighbor code and code-initialized seed/glyph/random
+logic. A follow-up inline-table attempt assembled and ran into
+`SEAL ERR=$02 FLAGS=$09`, proving the 16-row relocation metadata table can
+truncate even when the fixup table has plenty of room. The current table-free
+shape seals below that relocation cap. Its first board run then found the
+computed-neighbor loop's `BNE SLOOP` was out of rel8 range from `$213B` to
+`$2085`; the source now uses `BEQ SDONE` plus absolute `JMP SLOOP`. It still
+uses `$7800/$7840` only at runtime after leaving ASM. The fixed-branch version
+is board-proven on 2026-07-04: `SEAL OK FLAGS=$01 BASE=$2000 END=$21D1`,
+`SEAL REL @=$611C COUNT=$0F`, initial glider, deterministic `N` stepping,
+random `R`, and `Q` return.
+
+The earlier hardware transcripts
 `2026-06-09 ASM Current $3813 Life Sample Paste Assembly` and
 `2026-06-09 ASM Current $3813 Life Sample Runtime` prove the prior
 non-interactive revision; `2026-06-09 ASM Current $3CB1 Interactive Life Paste
@@ -7784,6 +7795,12 @@ as `LF OK WR=3C38 GO=800C` and proved quiet accepted lines, explicit `.P`
 reporting, comment-tolerant `.P`, unchanged rejected-line PC reporting,
 source-mode-only `.P`, quiet `SEAL> NEW`, emitted bytes, execution, and direct
 return status.
+
+The next flash-wrapper presentation slice keeps accepted source lines quiet but
+prints the current source PC in the prompt as `ASM>$hhhh: `. `SEAL> ` remains
+unchanged, `.P` remains available in source mode, and rejected lines keep the
+same `ERR=$ee NAME PC=$hhhh` diagnostic. This change is host-gated by
+`make -C SRC asm-test` and still needs board capture.
 
 Quiet-success board proof excerpt:
 

@@ -5223,13 +5223,14 @@ resolve imports, or run the package.
 the other wrapper commands. It rejects operands such as `NEW $7000` or `NEW X`
 with `ERR=$03 BAD OPER PC=$hhhh`, leaves the frozen facts intact, and stays at
 `SEAL> `. A valid `NEW` calls `ASM_BEGIN` with the frozen exclusive end PC,
-prints `OK PC=$hhhh`, clears the old seal facts as part of opening the new
-session, and returns to `ASM> `. It does not ask for `Y/N`: the guarded prompt
-and explicit `NEW` command are the confirmation, and avoiding a second prompt
-keeps pasted tests deterministic.
+clears the old seal facts as part of opening the new session, and returns to
+source mode. Runtime-paste history may show `OK PC=$hhhh`; the flash-resident
+wrapper instead shows the current PC in the next prompt as `ASM>$hhhh: `. It
+does not ask for `Y/N`: the guarded prompt and explicit `NEW` command are the
+confirmation, and avoiding a second prompt keeps pasted tests deterministic.
 
 `SEAL` and `NEW` are wrapper commands only in this post-session window; before
-clean `END`, the active `ASM> ` prompt treats those words as normal ASM source.
+clean `END`, the active source prompt treats those words as normal ASM source.
 Other post-`END` source text is rejected by the wrapper without entering the
 core or clearing the seal facts.
 Sealed movable modules should start stricter than ordinary ASM: seal v0 accepts

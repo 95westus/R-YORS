@@ -36,11 +36,12 @@ There is no present `ASM I`/`ASM B` split, no quiet batch wrapper, and no
 different behavior for pasted source. Paste handling remains ordinary line
 input plus the existing error/quench policy.
 
-Successful `ASM> ` source lines are intentionally quiet in the flash-resident
-wrapper. Rejected source lines still print `ERR=$ee NAME PC=$hhhh`. While still
-in source mode, `.P` prints the current session PC as `PC=$hhhh` without
-assembling a source line. It accepts optional leading/trailing spaces, tabs,
-and trailing comments; a plain `.` still exits the wrapper.
+Successful source lines are intentionally quiet in the flash-resident wrapper.
+Its source-mode prompt includes the current PC as `ASM>$hhhh: `, while `SEAL> `
+stays unchanged. Rejected source lines still print `ERR=$ee NAME PC=$hhhh`.
+While still in source mode, `.P` prints the current session PC as `PC=$hhhh`
+without assembling a source line. It accepts optional leading/trailing spaces,
+tabs, and trailing comments; a plain `.` still exits the wrapper.
 
 The first flash-resident wrapper, `asm-v1-flash`, is also a simple prompted
 session wrapper. It is meant to prove the `$8000` flash image and HIMON FNV
@@ -91,7 +92,7 @@ commands `SEAL`, `RESOLVE`, `RELOCATE address`, `PACKAGE address`, optional
 diagnostic `CHECK address`, `NEW`, and `.`. `NEW` is a validated restart at the
 frozen `END` PC, not a general `ORG` replacement and not a confirmation prompt.
 Before `END`, `SEAL`, `RESOLVE`, `RELOCATE`, `PACKAGE`, `NEW`, and the rest of
-that post-`END` vocabulary remain ordinary source words at the `ASM> ` prompt.
+that post-`END` vocabulary remain ordinary source words at the source prompt.
 The `.P` command is source-mode only; it is not a `SEAL> ` command.
 
 Any future post-`END` batch command that keeps the paste stream alive,

@@ -110,6 +110,12 @@ ASMF_LOOP:
 ASMF_PROMPT_ASM:
                         LDX             #<MSG_PROMPT
                         LDY             #>MSG_PROMPT
+                        JSR             ASMF_PRINT
+                        LDA             ASMF_PC_HI
+                        LDX             ASMF_PC_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
+                        LDX             #<MSG_PROMPT_TAIL
+                        LDY             #>MSG_PROMPT_TAIL
 ASMF_PROMPT_PRINT:
                         JSR             ASMF_PRINT
 
@@ -173,7 +179,7 @@ ASMF_POST_REJECT:
                         LDX             #<MSG_ERR
                         LDY             #>MSG_ERR
                         JSR             ASMF_PRINT_STATUS_PC_LINE
-                        BRA             ASMF_LOOP
+                        JMP             ASMF_LOOP
 
 ASMF_QUIT:
                         LDX             #<MSG_BYE
@@ -606,7 +612,8 @@ ASMF_CMD_NEW:           DB              "NEW",0
 ASMF_CMD_END:           DB              "END",0
 ASMF_CMD_DOTP:          DB              ".P",0
 MSG_TITLE:              DB              "ASM FLAS",('H'+$80)
-MSG_PROMPT:             DB              "ASM>",(' '+$80)
+MSG_PROMPT:             DB              "ASM>",('$'+$80)
+MSG_PROMPT_TAIL:        DB              ":",(' '+$80)
 MSG_SEAL_PROMPT:        DB              "SEAL>",(' '+$80)
 MSG_ERR:                DB              "ERR=",('$'+$80)
 MSG_READ:               DB              "READ=",('$'+$80)
