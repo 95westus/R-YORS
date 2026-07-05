@@ -865,6 +865,7 @@ use no payload sectors at all.
 The metadata/catalog sector records where each payload came from:
 
 ```text
+status/lifecycle byte, erased $FF and cleared bit-by-bit as phases commit
 origin bank
 origin start
 requested length
@@ -879,6 +880,13 @@ hash/check
 generation
 compression kind, initially none
 ```
+
+The lifecycle byte is monotonic flash state, not a mutable enum. A later STR8
+store can clear bits after irreversible steps such as bytes written, BODY FNV
+verified, directory entry committed, install attempted, install verified, or
+superseded. Because flash can clear `1` bits to `0` without an erase, reset-time
+scan can ignore partially committed records and prefer the latest fully
+committed one.
 
 Erased-sector detection belongs in the backup path. If a source sector is all
 `$FF`, STR8 should record that sector as erased and store no payload bytes for

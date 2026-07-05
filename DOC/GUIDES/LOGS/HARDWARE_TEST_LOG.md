@@ -10489,6 +10489,114 @@ ASM FLASH BYE
 >
 ```
 
+## 2026-07-04 ASM PACKAGE BODY FNV Self-Verify Board Proof
+
+Purpose: prove the default flash ASM image now runs `PACKAGE` with written BODY
+FNV self-verification while keeping `CHECK` out of the default command surface.
+
+Result: pass. HIMON `V 00.0704(2011)` loaded the flash ASM image as
+`LF OK WR=3C68 GO=800C`. `PACKAGE $3200` returned
+`PACKAGE OK @=$3200 LEN=$0037`, proving the verifier did not false-fail on
+board. The dumped AP v1 envelope at `$3200` matched the expected structure and
+ended with the original sealed body `20 07 20 A9 07 A2 20 60`. Running the
+original RAM body at `$2000` returned `A=07 X=20`, confirming the assembled
+body still behaved as expected after packaging.
+
+Transcript:
+
+```text
+STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+
+HIMON IN 3S. S=STR8  3 2
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+RESTORE B0->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B0->B3
+
+____      ____    ____   ____      ____
+|   \    /   |   /    \  |   \    /
+|___/    |___|  |      | |___/    \___
+|   \    /   |  |      | |   \        \
+|    \  /    |   \____/  |    \   ____/
+
+HIMON IN 3S. S=STR8  3 2
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+......................................................................................................................................................................................................................................................................................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0704(2011)
+>L F
+L F S19
+L @8000
+LF OK WR=3C68 GO=800C
+>ASM
+ASM FLASH
+ASM> ORG $2000
+ASM> MAIN JSR TARGET
+ASM> LDA #<TARGET
+ASM> LDX #>TARGET
+ASM> TARGET RTS
+ASM> END
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 2000  01 04 0E 0002 00  0000  MAIN
+01 01 2007  01 04 0E 0005 00  0000  TARGET
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  2001 2003 TARGET
+01 02 02   01  2004 2005 TARGET
+02 02 02   02  2006 2007 TARGET
+RELOCS
+SL K  SITE TARG
+00 01 0001 0007
+01 02 0004 0007
+02 03 0006 0007
+ASM FLASH OK
+SEAL> SEAL
+SEAL OK FLAGS=$01 BASE=$2000 END=$2008
+SEAL REC @=$6111 LEN=$0008 FNV=$FFC39D9A
+SEAL REL @=$611C COUNT=$03
+SEAL> PACKAGE $3200
+PACKAGE OK @=$3200 LEN=$0037
+SEAL>
+SEAL> .
+ASM FLASH BYE
+>D 3200 +37
+3200: 41 50 01 37 00 53 0B 01 | 00 20 08 20 08 00 9A 9D | AP.7.S... . ....
+3210: C3 FF 52 10 03 01 02 03 | 01 04 06 00 00 00 07 07 | ..R.............
+3220: 07 00 00 00 45 02 00 02 | 49 02 00 02 42 08 00 20 | ....E...I...B..
+3230: 07 20 A9 07 A2 20 60 | . ... `
+>G 2000
+GO 2000
+
+#GO# ENTRY=2000
+RET A=07 X=20 Y=30 P=75 S=FD NV-BdIzC
+>
+```
+
 ## 2026-07-04 ASM Flash Quiet Success And .P Board Proof
 
 Purpose: prove the follow-up flash wrapper trim that removes `OK` from

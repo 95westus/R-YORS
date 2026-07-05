@@ -5736,6 +5736,32 @@ ASM_SMOKE_FIXUPS_PACKAGE_BODY1_OK:
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_BODY2_OK
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_PACKAGE_BODY2_OK:
+                        JSR             ASM_PACKAGE_VERIFY_BODY
+                        BCS             ASM_SMOKE_FIXUPS_PACKAGE_VERIFY_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_VERIFY_OK:
+                        LDA             ASM_PACKAGE_BASE_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        STA             ASM_SCAN_PTR_HI
+                        LDY             #$2F
+                        LDA             #$21
+                        STA             (ASM_SCAN_PTR_LO),Y
+                        JSR             ASM_PACKAGE_VERIFY_BODY
+                        BCC             ASM_SMOKE_FIXUPS_PACKAGE_VERIFY_FAIL_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_VERIFY_FAIL_OK:
+                        CMP             #ASM_STATUS_BAD_LINE
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_VERIFY_RESTORE
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_VERIFY_RESTORE:
+                        LDA             ASM_PACKAGE_BASE_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        STA             ASM_SCAN_PTR_HI
+                        LDY             #$2F
+                        LDA             #$20
+                        STA             (ASM_SCAN_PTR_LO),Y
                         IF              ASM_PACKAGE_CHECK_ENABLED
                         LDX             ASM_PACKAGE_BASE_LO
                         LDY             ASM_PACKAGE_BASE_HI
@@ -9559,6 +9585,12 @@ ASM_SEAL_PACKAGE_HAVE_SEAL:
                         RTS
 ASM_SEAL_PACKAGE_RANGE_SAFE:
                         JSR             ASM_PACKAGE_WRITE
+; Future flash object-store commit belongs in STR8/RAM-worker code: start with
+; an erased $FF lifecycle byte, then clear bits as write/verify phases complete.
+                        JSR             ASM_PACKAGE_VERIFY_BODY
+                        BCS             ASM_SEAL_PACKAGE_VERIFY_OK
+                        RTS
+ASM_SEAL_PACKAGE_VERIFY_OK:
                         LDA             #ASM_STATUS_OK
                         LDX             ASM_PACKAGE_BASE_LO
                         LDY             ASM_PACKAGE_BASE_HI
@@ -9731,6 +9763,29 @@ ASM_PACKAGE_WRITE:
                         LDA             ASM_SEAL_LEN_HI
                         STA             ASM_VALUE_HI
                         JMP             ASM_PACKAGE_COPY_BYTES
+
+ASM_PACKAGE_VERIFY_BODY:
+                        LDA             ASM_EMIT_PTR_LO
+                        SEC
+                        SBC             ASM_SEAL_LEN_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_EMIT_PTR_HI
+                        SBC             ASM_SEAL_LEN_HI
+                        STA             ASM_SCAN_PTR_HI
+                        JSR             ASM_FNV_SCAN_SEAL_LEN
+                        LDX             #$03
+ASM_PACKAGE_VERIFY_FNV:
+                        LDA             ASM_HASH0,X
+                        CMP             ASM_SEAL_FNV0,X
+                        BNE             ASM_PACKAGE_VERIFY_BAD_FNV
+                        DEX
+                        BPL             ASM_PACKAGE_VERIFY_FNV
+                        SEC
+                        RTS
+ASM_PACKAGE_VERIFY_BAD_FNV:
+                        LDA             #ASM_STATUS_BAD_LINE
+                        CLC
+                        RTS
 
 ASM_PACKAGE_WRITE_RELOC_REC:
                         LDA             ASM_RELOC_COUNT
@@ -15226,40 +15281,45 @@ ASM_SEAL_VALIDATE_OK:
                         SEC
                         RTS
 
+ASM_FNV_SCAN_SEAL_LEN:
+                        JSR             ASM_FNV1A_INIT
+                        LDA             ASM_SEAL_LEN_LO
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_SEAL_LEN_HI
+                        STA             ASM_VALUE_HI
+                        LDA             ASM_VALUE_HI
+                        ORA             ASM_VALUE_LO
+                        BEQ             ASM_FNV_SCAN_DONE
+ASM_FNV_SCAN_LOOP:
+                        LDY             #$00
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        JSR             ASM_FNV1A_UPDATE_A_FAST
+                        INC             ASM_SCAN_PTR_LO
+                        BNE             ASM_FNV_SCAN_COUNT
+                        INC             ASM_SCAN_PTR_HI
+ASM_FNV_SCAN_COUNT:
+                        DEC             ASM_VALUE_LO
+                        LDA             ASM_VALUE_LO
+                        CMP             #$FF
+                        BNE             ASM_FNV_SCAN_MORE
+                        DEC             ASM_VALUE_HI
+ASM_FNV_SCAN_MORE:
+                        LDA             ASM_VALUE_LO
+                        ORA             ASM_VALUE_HI
+                        BNE             ASM_FNV_SCAN_LOOP
+ASM_FNV_SCAN_DONE:
+                        RTS
+
 ASM_SEAL_COMPUTE_FNV:
                         JSR             ASM_SEAL_VALIDATE
                         BCS             ASM_SEAL_COMPUTE_FNV_OK
                         RTS
 ASM_SEAL_COMPUTE_FNV_OK:
-                        JSR             ASM_FNV1A_INIT
                         LDA             ASM_SEAL_BASE_LO
                         STA             ASM_SCAN_PTR_LO
                         LDA             ASM_SEAL_BASE_HI
                         STA             ASM_SCAN_PTR_HI
-                        LDA             ASM_SEAL_LEN_LO
-                        STA             ASM_VALUE_LO
-                        LDA             ASM_SEAL_LEN_HI
-                        STA             ASM_VALUE_HI
-                        ORA             ASM_VALUE_LO
-                        BEQ             ASM_SEAL_COMPUTE_FNV_DONE
-ASM_SEAL_COMPUTE_FNV_LOOP:
-                        LDY             #$00
-                        LDA             (ASM_SCAN_PTR_LO),Y
-                        JSR             ASM_FNV1A_UPDATE_A_FAST
-                        INC             ASM_SCAN_PTR_LO
-                        BNE             ASM_SEAL_COMPUTE_FNV_COUNT
-                        INC             ASM_SCAN_PTR_HI
-ASM_SEAL_COMPUTE_FNV_COUNT:
-                        DEC             ASM_VALUE_LO
-                        LDA             ASM_VALUE_LO
-                        CMP             #$FF
-                        BNE             ASM_SEAL_COMPUTE_FNV_MORE
-                        DEC             ASM_VALUE_HI
-ASM_SEAL_COMPUTE_FNV_MORE:
-                        LDA             ASM_VALUE_LO
-                        ORA             ASM_VALUE_HI
-                        BNE             ASM_SEAL_COMPUTE_FNV_LOOP
-ASM_SEAL_COMPUTE_FNV_DONE:
+                        JSR             ASM_FNV_SCAN_SEAL_LEN
                         LDA             ASM_HASH0
                         STA             ASM_SEAL_FNV0
                         LDA             ASM_HASH1

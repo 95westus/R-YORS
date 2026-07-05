@@ -239,15 +239,17 @@ overlap the sealed body. The envelope starts with `A P version total_lo
 total_hi`, followed by tagged sections: `S` seal record, `R` relocation record,
 `E` export record, `I` import record, and `B` body bytes. This packages the
 facts for later `LOAD`/`INSTALL`; it does not relocate, resolve, or run them.
+Before returning success, `PACKAGE` recomputes the written BODY FNV and compares
+it with the seal record.
 
 `CHECK address` reads an AP v1 package envelope back from RAM and validates its
 shape. It is a full-core/diagnostic command, not part of the default
 flash-resident command set after the board proof, because the flash image must
 keep room below `$C000` for the package/load/install path. It verifies the
 header, guarded total range, section order, section length accounting,
-relocation count shape, EXP/IMP record length fields, and that the final body
-byte count matches the seal record. It does not recompute the body FNV yet and
-does not load, relocate, resolve, or run the package.
+relocation count shape, EXP/IMP record length fields, and final body byte count
+against the seal record. It does not load, relocate, resolve, or run the
+package.
 
 `NEW` is deliberately validated and non-interactive. It accepts only bare `NEW`
 or `NEW ; comment` with optional surrounding spaces/tabs. It does not accept an
@@ -425,6 +427,13 @@ bank 3  live boot bank
 ```
 
 The operator-facing surface should print the role plan before committing.
+
+Future banked package storage should use a flash-native lifecycle byte in the
+directory record rather than changing AP v1. The erased value `$FF` means empty
+or uncommitted. Each durable phase clears one more bit, for example "package
+bytes written", "BODY FNV verified", "directory committed", and "superseded".
+Bank, sector, and offset remain ordinary directory fields; the lifecycle byte
+is only monotonic commit state.
 
 ## WDCMONv2 Conversion Bridge
 

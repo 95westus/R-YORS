@@ -5205,7 +5205,8 @@ validates the frozen seal, rebuilds the SEAL/REL/EXP/IMP facts, and writes an
 sequential: header, tagged seal section `S`, tagged relocation section `R`,
 tagged export section `E`, tagged import section `I`, and tagged body section
 `B`. It preserves relocatable metadata for later load/install work; it does not
-resolve imports, relocate the body, or run code.
+resolve imports, relocate the body, or run code. Before returning success, it
+recomputes the written BODY FNV and compares it with the seal record.
 
 `CHECK address` is the matching AP v1 envelope validator. It is enabled in
 full-core smoke and optional diagnostic builds, and omitted from the stripped
@@ -5214,9 +5215,8 @@ That keeps the `$8000-$BFFF` flash image away from the `$C000` HIMON boundary
 while preserving the reader routine for tests. It parses the package in RAM,
 checks header signature/version, guarded total range, tagged section order,
 section lengths, relocation count shape, EXP/IMP record length fields, and
-final body length versus the seal record. The first slice is structural only:
-it does not recompute the body FNV, load bytes elsewhere, resolve imports, or
-run the package.
+final body length versus the seal record. It does not load bytes elsewhere,
+resolve imports, or run the package.
 
 `NEW` is valid only in the post-`END` `SEAL> ` window. It accepts only `NEW`,
 `NEW ; comment`, and the same optional leading/trailing spaces or tabs used by

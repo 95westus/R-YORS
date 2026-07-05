@@ -6505,7 +6505,8 @@ SEAL> RELOCATE rejects missing or extra operands as BAD OPER without clearing
 frozen seal facts
 SEAL> RELOCATE does not resolve `$04/$05/$06` import rows
 SEAL> PACKAGE address writes an AP v1 package envelope in full-core/flash ASM
-builds and reports PACKAGE OK @=$hhhh LEN=$hhhh
+builds, self-verifies the written BODY FNV, and reports PACKAGE OK @=$hhhh
+LEN=$hhhh
 SEAL> PACKAGE rejects missing or extra operands as BAD OPER without clearing
 frozen seal facts
 SEAL> CHECK address validates an AP v1 package envelope in full-core or
@@ -7399,8 +7400,19 @@ relocation rows. `PACKAGE $3000` reported
 
 This proves the flash-resident wrapper accepts `PACKAGE`, writes the AP v1
 envelope to caller-chosen RAM, preserves internal relocation metadata as
-offset rows, carries empty EXP/IMP records, and copies the sealed body bytes
-unchanged.
+offset rows, carries empty EXP/IMP records, copies the sealed body bytes
+unchanged, and self-verifies the written BODY FNV before returning success.
+Host `asm-test` also corrupts the first BODY byte and requires the same package
+verifier to reject it with `BAD LINE` before restoring the byte.
+
+The BODY-FNV self-verify follow-up board proof ran on HIMON
+`V 00.0704(2011)`. The default flash ASM image loaded with
+`LF OK WR=3C68 GO=800C`, assembled the same body at
+`BASE=$2000 END=$2008`, sealed it as
+`SEAL REC @=$6111 LEN=$0008 FNV=$FFC39D9A`, and `PACKAGE $3200` returned
+`PACKAGE OK @=$3200 LEN=$0037`. The `$3200 +37` dump began
+`41 50 01 37 00` and ended with the original packaged body
+`20 07 20 A9 07 A2 20 60`; running `G 2000` returned `A=07 X=20`.
 
 The next host `asm-test` slice adds `SEAL> CHECK address` as the first AP v1
 package reader proof. `ASM_SEAL_CHECK_PACKAGE` is built when
@@ -7422,7 +7434,7 @@ D 3000 +37
 Expected success is `CHECK OK @=$3000 LEN=$0037`. The command validates the AP
 v1 header, guarded total range, section order, section length accounting,
 relocation count shape, EXP/IMP internal length fields, and final body length
-against the seal record. It does not recompute the body FNV yet.
+against the seal record.
 
 The matching flash-board proof loaded the fixed package/check flash image with
 `L F`, reporting `LF OK WR=3FDC GO=800C`. `ASM FLASH` assembled the same
