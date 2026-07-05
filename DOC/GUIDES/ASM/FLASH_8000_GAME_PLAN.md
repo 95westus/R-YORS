@@ -198,6 +198,12 @@ The tiny stub remains optional. `rom-append-calc` already proved the generic
 flash-call pattern, so the current work starts with the real flash runtime map
 instead of adding a separate doorway-only target.
 
+Future size-management work may split flash ASM into fixed visible 4K chunks at
+`$8000/$9000/$A000/$B000`. If all chunks stay visible, operator behavior can
+remain the same as today's flash ASM while the build gains sector-aligned
+ownership boundaries. True bank-switched chunks are a separate loader/trampoline
+problem and are parked in `DOC/GUIDES/QCC/ASM.md`.
+
 Stub oracle:
 
 ```text

@@ -1599,6 +1599,48 @@ needs assembler/linker help, range checking, and a rule for where islands are
 legal. The first assembler does not need this; record it as future machinery for
 when labels, fixups, and generated code layout are strong enough.
 
+## Q: Could flash ASM be split into fixed 4K chunks?
+
+Comment: Yes, as a proposal, if the first version keeps all chunks visible in
+the normal flash window. That can run much like today's flash-resident ASM:
+each chunk has a fixed CPU address, and cross-chunk calls are ordinary absolute
+`JSR`/`JMP` calls through named entry points.
+
+One possible sector-aligned shape:
+
+```text
+$8000-$8FFF   ASM0 front door, wrapper, command loop, shared print/status
+$9000-$9FFF   ASM1 lexer, parser, expression, vocabulary lookup
+$A000-$AFFF   ASM2 emitter, symbols, fixups, references, local labels
+$B000-$BFFF   ASM3 SEAL, RESOLVE, RELOCATE, PACKAGE, report/table helpers
+```
+
+This is not a size reduction by itself. Four visible 4K chunks still occupy the
+same `$8000-$BFFF` flash window. The value is different:
+
+```text
+sector-aligned install/update pieces
+clear ownership boundaries
+optional diagnostic chunks can be omitted or replaced later
+fixed entry tables make future package/install metadata easier
+```
+
+If all chunks remain visible, ASM can "run as it is today from flash." The
+build/link discipline changes, not the operator behavior. Shared mutable state
+still belongs in RAM, and chunk boundaries should use stable public entry
+labels or small jump tables rather than private cross-chunk branches.
+
+True bank-switched ASM chunks are a later and much harder idea. If only one
+chunk is visible at a time, ASM needs a RAM trampoline or resident dispatcher,
+must restore normal bank visibility before calling HIMON services, and must not
+fall through or branch into a chunk that is not mapped. That is a loader design,
+not just a linker layout.
+
+Concern: Fixed 4K chunking should not hide dependency sprawl. Before doing it,
+measure call edges and group routines by workflow. Good first cuts are shell /
+parser / emitter / seal-package. Bad cuts are arbitrary address splits that
+force every routine to call across a sector boundary.
+
 ## Q: Should R-YORS use self-modifying code?
 
 Comment: The current preference is no. Self-modifying code is not a general

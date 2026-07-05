@@ -895,6 +895,49 @@ OUT  C=0 failure, A=loader error
 MEM  AP_CALL uses a declared RAM work area and loader scratch
 ```
 
+A useful first overlay profile is a one-sector executable BODY:
+
+```text
+$2000-$2FFF   overlay executable BODY, BODY_LEN <= $1000
+$3000+        declared overlay UDATA / caller work / package scratch
+```
+
+This profile keeps the loader small: copy at most 4096 bytes to `$2000`,
+reserve or zero only the UDATA length declared by metadata, relocate against
+base `$2000`, call the selected entry, and return. It also matches 4K flash
+sector geometry for small stored packages. This is a profile for simple
+overlays, not a permanent AP package limit; larger packages can use a later
+profile with a larger code window or multiple load segments.
+
+Once ASM has produced an AP package and returned to HIMON, the later AP overlay
+call is not an ASM continuation. ASM's build-time RAM tables and flash-wrapper
+scratch no longer need to survive unless the operator explicitly wants to return
+to the same ASM session. That makes the middle RAM region available to an AP
+loader by contract:
+
+```text
+$2000-$2FFF   primary overlay BODY window
+$3000-$6FFF   overlay arena: import thunks, dependency bodies, UDATA, scratch
+$7000-$79FF   optional UPA/caller area only if explicitly reserved
+$7A00-$7EFF   HIMON monitor/service RAM, do not use
+$7F00-$7FFF   I/O, do not use
+```
+
+The caller must not be overwritten. If a RAM caller needs to resume after
+`JSR AP_CALL`, its code, stack assumptions, and live data must sit outside the
+chosen overlay BODY and arena, or the loader must choose a different
+non-overlapping destination profile.
+
+Imports from bank 3 resident HIMON/RJOIN services can resolve to direct
+absolute addresses after normal bank visibility is restored. Imports from any
+other bank are not just address patches: the loader must either load and
+relocate the dependency BODY into RAM, then patch the caller to that RAM entry,
+or patch the caller to a RAM thunk. The first version should prefer loading
+dependencies into RAM. Bank-switching thunks are only safe for specially marked
+imports that can run while the resident bank is hidden, or for thunks that
+switch banks only around a carefully isolated call and restore bank 3 before
+any HIMON/ROM service is touched.
+
 If the package imports HIMON services, restore the normal bank before resolving
 or calling those services. If the package is self-contained, the loader can be
 smaller, but it should still preserve the rule that ROM/HIMON calls are not
