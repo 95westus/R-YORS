@@ -2777,17 +2777,12 @@ CMD_L_PRINT_FAIL:
                         BEQ             CMD_L_PRINT_FAIL_ERASE
                         CMP             #LOAD_FAIL_WRITE
                         BEQ             CMD_L_PRINT_FAIL_WRITE
-                        CMP             #LOAD_FAIL_NEED_FLASH
-                        BEQ             CMD_L_PRINT_FAIL_NEED_FLASH
+                        PHA
                         LDX             #<MSG_L_ERR
                         LDY             #>MSG_L_ERR
                         JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
-
-CMD_L_PRINT_FAIL_NEED_FLASH:
-                        LDX             #<MSG_L_USE_F
-                        LDY             #>MSG_L_USE_F
-                        JSR             HIM_WRITE_HBSTRING
+                        PLA
+                        JSR             SYS_WRITE_HEX_BYTE
                         JMP             SYS_WRITE_CRLF
 
 CMD_L_PRINT_FAIL_PROTECT:
@@ -3704,14 +3699,13 @@ MSG_GO:                  DB              "GO",(' '+$80)
 MSG_L_READY:             DB              "L S1",('9'+$80)
 MSG_LF_READY:            DB              "L F S1",('9'+$80)
 MSG_L_STATUS:            DB              "L",('S'+$80)
-MSG_L_ERR:               DB              "LER",('R'+$80)
+MSG_L_ERR:               DB              "LERR=",('$'+$80)
 MSG_L_DONE:              DB              "L OK",('='+$80)
 MSG_LF_DONE:             DB              "LF OK WR",('='+$80)
 MSG_LF_FAIL_DONE:        DB              "LF FAIL",('='+$80)
 MSG_L_WR:                DB              " WR",('='+$80)
 MSG_L_SKIP:              DB              " SKIP",('='+$80)
 MSG_L_GO:                DB              " GO",('='+$80)
-MSG_L_USE_F:             DB              "HINT L ",('F'+$80)
 MSG_LF_PROTECT:          DB              "LF PROT",('='+$80)
 MSG_LF_ERASE:            DB              "LF ERASE",('='+$80)
 MSG_LF_WRITE:            DB              "LF WFAIL",('='+$80)

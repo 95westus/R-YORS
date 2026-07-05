@@ -434,11 +434,16 @@ LF PROT=7F00
 L S19
 S1048000007B
 L @8000
-HINT L F
+LERR=$05
 ```
 
 The first record is the hard RAM/I/O ceiling proof. The second confirms that
-the normal flash hint still belongs to `$8000+`, not the `$7Fxx` I/O page.
+the generic need-flash error still belongs to `$8000+`, not the `$7Fxx` I/O
+page.
+
+Loader fail codes are `$01` parse/checksum, `$02` protect, `$03` erase,
+`$04` write, and `$05` need flash. The compact generic form is `LERR=$ee`;
+flash/protect paths may still print address-rich `LF ...` diagnostics.
 
 ## Resident U Removal Proof
 
