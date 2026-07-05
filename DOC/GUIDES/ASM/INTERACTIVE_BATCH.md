@@ -13,11 +13,10 @@ source are treated the same:
 ```text
 ASM RT PASTE
 ASM> ORG $7000
-OK PC=$7000
 ASM> LDA #$41
-OK PC=$7002
+ASM> .P
+PC=$7002
 ASM> END
-OK PC=$7002
 ASM TABLES
 ASM RT PASTE OK
 SEAL> .
@@ -36,6 +35,12 @@ ASM_END
 There is no present `ASM I`/`ASM B` split, no quiet batch wrapper, and no
 different behavior for pasted source. Paste handling remains ordinary line
 input plus the existing error/quench policy.
+
+Successful `ASM> ` source lines are intentionally quiet in the flash-resident
+wrapper. Rejected source lines still print `ERR=$ee NAME PC=$hhhh`. While still
+in source mode, `.P` prints the current session PC as `PC=$hhhh` without
+assembling a source line. It accepts optional leading/trailing spaces, tabs,
+and trailing comments; a plain `.` still exits the wrapper.
 
 The first flash-resident wrapper, `asm-v1-flash`, is also a simple prompted
 session wrapper. It is meant to prove the `$8000` flash image and HIMON FNV
@@ -82,9 +87,12 @@ Do not make interactive use an immediate one-line assembler. A human at the
 prompt still owns a full session, and fixups may span lines until `END`.
 
 After a clean `END`, `SEAL> ` is not source mode. It accepts only the wrapper
-commands `SEAL`, `NEW`, and `.`. `NEW` is a validated restart at the frozen
-`END` PC, not a general `ORG` replacement and not a confirmation prompt. Before
-`END`, `SEAL` and `NEW` remain ordinary source words at the `ASM> ` prompt.
+commands `SEAL`, `RESOLVE`, `RELOCATE address`, `PACKAGE address`, optional
+diagnostic `CHECK address`, `NEW`, and `.`. `NEW` is a validated restart at the
+frozen `END` PC, not a general `ORG` replacement and not a confirmation prompt.
+Before `END`, `SEAL`, `RESOLVE`, `RELOCATE`, `PACKAGE`, `NEW`, and the rest of
+that post-`END` vocabulary remain ordinary source words at the `ASM> ` prompt.
+The `.P` command is source-mode only; it is not a `SEAL> ` command.
 
 Any future post-`END` batch command that keeps the paste stream alive,
 especially `WRAP`, needs a hard-stop/quench-on-error rule before it is

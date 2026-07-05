@@ -129,7 +129,7 @@ ASMF_READ_OK:
                         JSR             ASMF_IS_DOT
                         BCS             ASMF_QUIT
                         LDA             ASMF_POST_FLAG
-                        BEQ             ASMF_ASSEMBLE
+                        BEQ             ASMF_SOURCE_CMD
                         LDX             #<ASMF_CMD_SEAL
                         LDY             #>ASMF_CMD_SEAL
                         JSR             ASMF_MATCH_STRICT_CMD
@@ -173,13 +173,23 @@ ASMF_POST_REJECT:
                         LDX             #<MSG_ERR
                         LDY             #>MSG_ERR
                         JSR             ASMF_PRINT_STATUS_PC_LINE
-                        JMP             ASMF_LOOP
+                        BRA             ASMF_LOOP
 
 ASMF_QUIT:
                         LDX             #<MSG_BYE
                         LDY             #>MSG_BYE
                         JSR             ASMF_PRINT_LINE
                         JMP             ASMF_RETURN_OK
+
+ASMF_SOURCE_CMD:
+                        LDX             #<ASMF_CMD_DOTP
+                        LDY             #>ASMF_CMD_DOTP
+                        JSR             ASMF_MATCH_STRICT_CMD
+                        BCC             ASMF_ASSEMBLE
+                        LDX             #<(MSG_PC+1)
+                        LDY             #>(MSG_PC+1)
+                        JSR             ASMF_PRINT_PC_TAIL
+                        JMP             ASMF_LOOP
 
 ASMF_ASSEMBLE:
                         LDX             #<ASMF_LINE_BUF
@@ -200,9 +210,6 @@ ASMF_REJECT_CONTINUE:
                         JMP             ASMF_LOOP
 
 ASMF_ACCEPTED:
-                        LDX             #<MSG_OK
-                        LDY             #>MSG_OK
-                        JSR             ASMF_PRINT_LINE
                         JSR             ASMF_IS_END
                         BCS             ASMF_ACCEPTED_END
                         JMP             ASMF_LOOP
@@ -358,9 +365,6 @@ ASMF_NEW_CMD:
                         JMP             ASMF_RETURN_RESULT
 ASMF_NEW_OK:
                         STZ             ASMF_POST_FLAG
-                        LDX             #<MSG_OK
-                        LDY             #>MSG_OK
-                        JSR             ASMF_PRINT_LINE
                         JMP             ASMF_LOOP
 
 ASMF_PRINT_FAIL:
@@ -381,7 +385,6 @@ ASMF_PRINT_STATUS_PC_LINE:
                         JSR             ASMF_PRINT_STATUS_NAME
                         LDX             #<MSG_PC
                         LDY             #>MSG_PC
-                        BRA             ASMF_PRINT_PC_TAIL
 
 ASMF_PRINT_PC_TAIL:
                         JSR             ASMF_PRINT
@@ -601,10 +604,10 @@ ASMF_CMD_CHECK:         DB              "CHECK",0
                         ENDIF
 ASMF_CMD_NEW:           DB              "NEW",0
 ASMF_CMD_END:           DB              "END",0
+ASMF_CMD_DOTP:          DB              ".P",0
 MSG_TITLE:              DB              "ASM FLAS",('H'+$80)
 MSG_PROMPT:             DB              "ASM>",(' '+$80)
 MSG_SEAL_PROMPT:        DB              "SEAL>",(' '+$80)
-MSG_OK:                 DB              "O",('K'+$80)
 MSG_ERR:                DB              "ERR=",('$'+$80)
 MSG_READ:               DB              "READ=",('$'+$80)
 MSG_FAIL:               DB              "BEGIN=",('$'+$80)

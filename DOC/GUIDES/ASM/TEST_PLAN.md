@@ -7754,23 +7754,83 @@ interactive Life source relocated to `ORG $2000`, printed `ASM FLASH OK`, then
 ran the emitted program with `G 2000` and showed the initial Life board. This
 closes the HIMON `ASM` hash-command proof for the fixed `$8000` image.
 
-Flash-wrapper size trim after this proof: accepted source lines and `SEAL> NEW`
-now print only `OK`, while rejected lines continue to print
-`ERR=$ee NAME PC=$hhhh`. This is host-gated by `make -C SRC asm-test`.
+Flash-wrapper size trim after this proof first changed accepted source lines and
+`SEAL> NEW` to print only `OK`, while rejected lines continued to print
+`ERR=$ee NAME PC=$hhhh`.
 Board proof on 2026-07-04 showed accepted `ORG`, `LDA`, `STA`, `RTS`, `END`,
 `SEAL> NEW`, `NOP`, and the second `END` all printing plain `OK`. The same run
 proved source rejection still prints `ERR=$03 BAD OPER PC=$2205`, post-END
 command rejection still prints `ERR=$03 BAD OPER PC=$2206`, the final bytes at
 `$2200` are `A9 5A 8D 04 71 60 EA`, and `G 2200` stores `$5A` at `$7104`.
-The same current flash-wrapper slice makes `.`/`ASM FLASH BYE` return to HIMON
-with `A=$00`, `X/Y=current PC`, and `C=1`; existing fatal exits return
+The follow-up quiet-success slice removes even that success `OK` from accepted
+source lines and `SEAL> NEW`. Because the line-by-line PC echo is gone, source
+mode now accepts `.P` to print `PC=$hhhh` without assembling a line. `END` still
+prints tables and `ASM FLASH OK`, and rejected lines still print
+`ERR=$ee NAME PC=$hhhh`. This slice is host-gated by `make -C SRC asm-test`.
+Board proof on 2026-07-04 with HIMON `V 00.0704(1808)` loaded the flash image
+as `LF OK WR=3C38 GO=800C` and proved quiet accepted lines, explicit `.P`
+reporting, comment-tolerant `.P`, unchanged rejected-line PC reporting,
+source-mode-only `.P`, quiet `SEAL> NEW`, emitted bytes, execution, and direct
+return status.
+
+Quiet-success board proof excerpt:
+
+```text
+>ASM
+ASM FLASH
+ASM> .P
+PC=$2000
+ASM> ORG $2200
+ASM> .P
+PC=$2200
+ASM> LDA #$5A
+ASM> .P ; COMMENT OK
+PC=$2202
+ASM> STA $7104
+ASM> .P
+PC=$2205
+ASM> BVF $4FRE
+ERR=$03 BAD OPER PC=$2205
+ASM> .P
+PC=$2205
+ASM> RTS
+ASM> .P
+PC=$2206
+ASM> END
+ASM TABLES
+...
+ASM FLASH OK
+SEAL> .P
+ERR=$03 BAD OPER PC=$2206
+SEAL> NEW
+ASM> .P
+PC=$2206
+ASM> NOP
+ASM> .P
+PC=$2207
+ASM> END
+ASM TABLES
+...
+ASM FLASH OK
+SEAL> .
+ASM FLASH BYE
+>D 2200 +7
+2200: A9 5A 8D 04 71 60 EA | .Z..q`.
+>G 2200
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 7104
+7104: 5A | Z
+```
+
+The same flash-wrapper return-status slice makes `.`/`ASM FLASH BYE` return to
+HIMON with `A=$00`, `X/Y=current PC`, and `C=1`; existing fatal exits return
 `A=status`, `X/Y=current PC`, and `C=0`. Board proof on 2026-07-04 entered the
-flash image directly with `G 800C`; after `ORG $2300` and `.`, HIMON printed
-`RET A=00 X=00 Y=23 P=75 ... C`. A second direct-entry run assembled
-`JSR MISS`, failed `END` with `ERR=$09 BAD FIX PC=$2403`, and HIMON printed
+flash image directly with `G 800C`; after silent `ORG $2300` and `.`, HIMON
+printed `RET A=00 X=00 Y=23 P=75 ... C`. A second direct-entry run assembled
+silent `ORG $2400` and `JSR MISS`, failed `END` with
+`ERR=$09 BAD FIX PC=$2403`, and HIMON printed
 `RET A=09 X=03 Y=24 P=74 ... c`. Entering through the resident `ASM` hash
-command and typing `.` returned cleanly to the HIMON prompt with no
-`EXEC ERR`.
+command and typing `.` returned cleanly to the HIMON prompt with no `EXEC ERR`.
 
 Hardware proof on HIMON `V 00.0704(1632)` with flash ASM loaded as
 `LF OK WR=3C35 GO=800C` proved the ASM-local 16-bit hex word printer after the

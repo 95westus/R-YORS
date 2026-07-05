@@ -10488,3 +10488,114 @@ ASM> .
 ASM FLASH BYE
 >
 ```
+
+## 2026-07-04 ASM Flash Quiet Success And .P Board Proof
+
+Purpose: prove the follow-up flash wrapper trim that removes `OK` from
+successful accepted source lines and from `SEAL> NEW`, while adding source-mode
+`.P` as the explicit current-PC display command.
+
+Result: pass. With HIMON `V 00.0704(1808)` and flash ASM loaded as
+`LF OK WR=3C38 GO=800C`, accepted `ORG`, `LDA`, `STA`, `RTS`, `NOP`, `END`,
+and `SEAL> NEW` printed no `OK`. `.P` printed `PC=$hhhh` in source mode,
+including after trailing comment text; `.P` at `SEAL>` was rejected as
+`ERR=$03 BAD OPER PC=$2206`. The rejected `BVF $4FRE` line preserved
+`PC=$2205`. The emitted bytes at `$2200` were
+`A9 5A 8D 04 71 60 EA`, and `G 2200` stored `$5A` at `$7104`. Direct-entry
+return-status paths still returned `A=$00/C=1/X/Y=$2300` for clean `.` and
+`A=$09/C=0/X/Y=$2403` for unresolved-fixup `END`.
+
+Transcript:
+
+```text
+HIMON V 00.0704(1808)
+>L F
+L F S19
+L @8000
+LF OK WR=3C38 GO=800C
+>ASM
+ASM FLASH
+ASM> .P
+PC=$2000
+ASM> ORG $2200
+ASM> .P
+PC=$2200
+ASM> LDA #$5A
+ASM> .P ; COMMENT OK
+PC=$2202
+ASM> STA $7104
+ASM> .P
+PC=$2205
+ASM> BVF $4FRE
+ERR=$03 BAD OPER PC=$2205
+ASM> .P
+PC=$2205
+ASM> RTS
+ASM> .P
+PC=$2206
+ASM> END
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM FLASH OK
+SEAL> .P
+ERR=$03 BAD OPER PC=$2206
+SEAL> NEW
+ASM> .P
+PC=$2206
+ASM> NOP
+ASM> .P
+PC=$2207
+ASM> END
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+ASM FLASH OK
+SEAL> .
+ASM FLASH BYE
+>D 2200 +7
+2200: A9 5A 8D 04 71 60 EA | .Z..q`.
+>G 2200
+GO 2200
+
+#GO# ENTRY=2200
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 7104
+7104: 5A | Z
+>G 800C
+GO 800C
+ASM FLASH
+ASM> ORG $2300
+ASM> .
+ASM FLASH BYE
+
+#GO# ENTRY=800C
+RET A=00 X=00 Y=23 P=75 S=FD NV-BdIzC
+>G 800C
+GO 800C
+ASM FLASH
+ASM> ORG $2400
+ASM> JSR MISS
+ASM> END
+ERR=$09 BAD FIX PC=$2403
+ASM TABLES
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 01 04   00  2401 2403 MISS
+RELOCS
+SL K  SITE TARG
+
+#GO# ENTRY=800C
+RET A=09 X=03 Y=24 P=74 S=FD NV-BdIzc
+>
+```

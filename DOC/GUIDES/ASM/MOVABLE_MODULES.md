@@ -255,7 +255,7 @@ address operand; the restart address is always the frozen `END` PC. It does not
 ask `Y/N` because the operator is already at the guarded post-session prompt,
 and extra confirmation would make paste scripts less deterministic. A valid
 `NEW` discards the frozen facts by starting a new ASM session and reports the
-restart point with `OK PC=$hhhh`.
+restart point only if the operator asks for it with source-mode `.P`.
 
 Future `WRAP` is stronger than the dry-run `SEAL` command: it is the likely
 post-session batch primitive for validating, recording, exporting, or installing
