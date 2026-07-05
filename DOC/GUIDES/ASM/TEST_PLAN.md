@@ -7933,6 +7933,125 @@ expected bytes or record fields
 actual bytes or record fields
 ```
 
+## 2026-07-05 Afternoon RAM Split Gate
+
+Planned flash ASM memory split:
+
+```text
+$2000-$4FFF  ASM user output/package scratch while ASM is active
+$5000-$79FF  ASM private tables/work RAM
+$7A00-$7EFF  HIMON/service/debug RAM, protected
+$7F00-$7FFF  I/O, hard forbidden
+```
+
+Do this as two separate implementation slices. Slice one only changes the
+source/output boundary. Slice two moves flash ASM UDATA from `$6000` to `$5000`
+without growing tables. Table growth comes only after both slices are
+host-tested and board-proven.
+
+Host proof for the boundary slice:
+
+```text
+make -C SRC asm-test
+make -C SRC asm-v1-flash
+```
+
+Inspect the flash map after the boundary slice. ASM flash `_END_DATA` must stay
+below `$C000`, and the boundary code must still reject high RAM before any
+partial write. No UDATA growth is expected in this slice.
+
+Board proof for the boundary slice:
+
+```text
+ASM NEW
+ORG $2000
+LDA #$5A
+STA $7104
+RTS
+END
+.
+G 2000
+D 7104
+
+ASM NEW
+ORG $4FFF
+NOP
+END
+.
+D 4FFF +1
+
+ASM NEW
+ORG $4FFE
+LDA #$11
+.
+
+ASM NEW
+ORG $5000
+.
+
+ASM NEW
+ORG $7A00
+.
+
+ASM NEW
+ORG $7F00
+.
+```
+
+Expected board behavior:
+
+```text
+$2000 program assembles, runs, and writes $5A to $7104
+$4FFF single-byte emit succeeds
+$4FFE LDA #$11 rejects as ERR=$06 BAD RANGE before partial write
+ORG $5000 rejects as ERR=$06 BAD RANGE
+ORG $7A00 rejects as ERR=$06 BAD RANGE
+ORG $7F00 rejects as ERR=$06 BAD RANGE
+```
+
+Host proof for the UDATA-move slice:
+
+```text
+make -C SRC asm-test
+make -C SRC asm-v1-flash
+```
+
+Inspect the flash map after the UDATA move:
+
+```text
+_BEG_UDATA = $5000
+_END_UDATA < $7A00
+_END_DATA  < $C000
+```
+
+With unchanged table sizes, the projected UDATA end should be about `$6F0A`.
+Keep at least `$0100-$0200` reserved before `$7A00`; do not grow symbol,
+fixup, local, import, or export tables in the same slice as the move.
+
+Board proof for the UDATA-move slice should repeat the boundary proof and then
+exercise ordinary post-`END` records:
+
+```text
+ASM NEW
+ORG $2000
+MAIN JSR TARGET
+LDA #<TARGET
+LDX #>TARGET
+TARGET RTS
+END
+SEAL
+RELOCATE $3000
+PACKAGE $3200
+.
+D 3000 +8
+D 3200 +37
+G 3000
+```
+
+A larger paste, such as the computed-neighbor Life sample, should still
+assemble and run after the UDATA move. Record the transcript in the hardware
+log before marking the slice board-proven.
+
 ## Hardware Bench Gate
 
 Do not call ASM hardware-proven until the board has run the emitted code and the

@@ -242,6 +242,11 @@ facts for later `LOAD`/`INSTALL`; it does not relocate, resolve, or run them.
 Before returning success, `PACKAGE` recomputes the written BODY FNV and compares
 it with the seal record.
 
+Naming note: `RESIB` is a candidate informal package nickname using the same
+section initials as `Relocation`, `Export`, `Seal`, `Import`, and `Body`.
+Treat it as a human-facing handle only; it does not change the current AP v1
+wire order, which remains header, `S`, `R`, `E`, `I`, `B`.
+
 `CHECK address` reads an AP v1 package envelope back from RAM and validates its
 shape. It is a full-core/diagnostic command, not part of the default
 flash-resident command set after the board proof, because the flash image must
@@ -294,6 +299,43 @@ Use plain resident calls when you want to bind to the HIMON image that is
 running the assembler. Use `IMPORT NAME` when you want the sealed body to defer
 that name to the later installer/linker, even if RJOIN can resolve the same
 name today.
+
+## 2026-07-05 Afternoon ASM RAM Split Plan
+
+This is a planning contract for the next ASM memory-pressure slices, not the
+current board-proven behavior yet.
+
+The intended flash ASM split is:
+
+```text
+$0000-$1FFF  system/STR8/low RAM conventions; not ASM output
+$2000-$4FFF  ASM user code/data/package scratch while ASM is active
+$5000-$79FF  ASM private tables/work RAM
+$7A00-$7EFF  HIMON/service/debug RAM; protected
+$7F00-$7FFF  I/O; hard forbidden
+```
+
+This split relieves ASM RAM/table pressure by moving flash ASM workspace down
+from the current `$6000` base to `$5000`. It does not directly reduce the flash
+ROM image pressure below `$C000`.
+
+The first implementation slice should only enforce the new source/output
+boundary. Flash ASM should accept emitted bytes in `$2000-$4FFF`; it should
+reject `ORG $5000`, any multi-byte emit that would cross into `$5000`, and the
+existing protected HIMON/I/O ranges. The room check must happen before emitting
+any opcode or operand byte so boundary failures never leave a partial write.
+
+Only after that boundary is host-tested and board-proven should flash ASM UDATA
+move from `$6000` to `$5000`. Current unchanged table sizes would project the
+workspace end roughly `$1000` lower, leaving about `$0AF6` bytes before `$7A00`.
+Do not grow tables in the same slice as the move; first prove that the relocated
+workspace is stable.
+
+After the move is proven, spend the new RAM reserve deliberately. Preferred
+growth order is fixup/relocation rows, symbol rows, local-label capacity, then
+import/export record space. Keep at least `$0100-$0200` unused before `$7A00`
+so the new split does not immediately recreate the same pressure at the HIMON
+boundary.
 
 ## Relocation Rows
 
