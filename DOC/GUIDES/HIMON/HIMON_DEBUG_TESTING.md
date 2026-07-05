@@ -446,6 +446,13 @@ Loader fail codes are `$01` parse/checksum, `$02` protect, `$03` erase,
 `L F` protect/erase/write paths may still print address-rich `LF ...`
 diagnostics.
 
+Board proof on 2026-07-05 with HIMON `V 00.0705(0416)` showed
+`D 7EF0 8010` skipping all `$7Fxx` I/O rows, `M 7A00/7EFF/7F00` returning
+`M PROT`, `B 79FF` set/list/clear leaving `B L` empty, `B 7A00/7EFF/7F00/8000`
+returning `DBG RAM`, normal `L` returning `LERR=$02` for `S1047F00007C` and
+`LERR=$05` for `S1048000007B`, and `L F` preserving rich `LF PROT=C000` plus
+`LF FAIL=02 WR=0000 SKIP=0001 GO=0000`.
+
 ## Resident U Removal Proof
 
 Commit `8f3a0d3` removed the user-facing `U` unassemble command while keeping
