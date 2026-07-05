@@ -25,7 +25,8 @@ connect.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
 - [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and parked ideas.
-- [ASM](ASM/HASHED_ASM.md) - onboard assembler and symbol reference material,
+- [ASM](ASM/ASM_USER_GUIDE.md) - onboard assembler operator guide, with
+  [HASHED_ASM.md](ASM/HASHED_ASM.md) as the source/parser reference,
   including the [ASM call map](ASM/ASM_CALL_MAP.md),
   [shared-routine audit](ASM/ASM_SHARED_ROUTINES_AUDIT.md), and parked future
   [ASM I/B idea](ASM/INTERACTIVE_BATCH.md).

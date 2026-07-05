@@ -40,6 +40,7 @@ current limits, package/install direction, and hardware transcripts live in
 the ASM/HIMON docs and proof logs:
 
 ```text
+DOC/GUIDES/ASM/ASM_USER_GUIDE.md
 DOC/GUIDES/ASM/HASHED_ASM.md
 DOC/GUIDES/ASM/DECISIONS.md
 DOC/GUIDES/ASM/FLASH_8000_GAME_PLAN.md
@@ -142,6 +143,7 @@ DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md  board transcript proof
 
 ```text
 DOC/GUIDES/OPERATORS_GUIDE.md   use the board: STR8, HIMON, workflows
+DOC/GUIDES/ASM/ASM_USER_GUIDE.md use ASM: source, prompts, END/SEAL/PACKAGE
 DOC/GUIDES/TECHNICAL_GUIDE.md   understand the system: memory, flash, source
 DOC/GUIDES/REF.md               compact reference
 DOC/GUIDES/GLOSSARY.md          vocabulary contract
