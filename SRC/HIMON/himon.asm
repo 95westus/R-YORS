@@ -2771,12 +2771,15 @@ L_PARSE_FAIL_HAVE_CODE:
 
 CMD_L_PRINT_FAIL:
                         LDA             LOAD_FAIL_CODE
+                        LDX             LOAD_FLASH_MODE
+                        BEQ             ?GENERIC
                         CMP             #LOAD_FAIL_PROTECT
                         BEQ             CMD_L_PRINT_FAIL_PROTECT
                         CMP             #LOAD_FAIL_ERASE
                         BEQ             CMD_L_PRINT_FAIL_ERASE
                         CMP             #LOAD_FAIL_WRITE
                         BEQ             CMD_L_PRINT_FAIL_WRITE
+?GENERIC:
                         PHA
                         LDX             #<MSG_L_ERR
                         LDY             #>MSG_L_ERR

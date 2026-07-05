@@ -428,7 +428,7 @@ known-good recovery image, prove the guard with one-byte S1 records:
 L S19
 S1047F00007C
 L @7F00
-LF PROT=7F00
+LERR=$02
 
 >L
 L S19
@@ -443,7 +443,8 @@ page.
 
 Loader fail codes are `$01` parse/checksum, `$02` protect, `$03` erase,
 `$04` write, and `$05` need flash. The compact generic form is `LERR=$ee`;
-flash/protect paths may still print address-rich `LF ...` diagnostics.
+`L F` protect/erase/write paths may still print address-rich `LF ...`
+diagnostics.
 
 ## Resident U Removal Proof
 
