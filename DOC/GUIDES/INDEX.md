@@ -14,7 +14,10 @@ This is the full guide index for the current R-YORS documentation set.
 
 STR8 is hardware-proven rotating three bootable live-bank images: HIMON, OSI
 BASIC, and fig-FORTH. HIMON RAM-only debug is hardware-proven for current
-one-shot breakpoint and single-step behavior.
+one-shot breakpoint and single-step behavior, with the resident unassembler
+removed and the `$7F00-$7FFF` I/O page protected by dump/load/debug paths. ASM
+is flash-resident as a HIMON command and now has board-proven SEAL, RESOLVE,
+RELOCATE, and AP v1 PACKAGE flows.
 
 - [HASH_FLASH.md](./HASH_FLASH.md) - command-surface and milestone alerts.
 - [DOC_FLASH.md](./DOC_FLASH.md) - documentation-shape alerts.
@@ -36,6 +39,8 @@ one-shot breakpoint and single-step behavior.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
 - [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and [Hash Trash](HASH/HASH_TRASH.md).
 - [ASM](ASM/HASHED_ASM.md) - onboard assembler and symbol reference material;
+  see [DECISIONS.md](ASM/DECISIONS.md) for AP package/envelope/install
+  boundaries,
   see [INTERACTIVE_BATCH.md](ASM/INTERACTIVE_BATCH.md) for the parked future
   `ASM I/B` idea, [ASM_CALL_MAP.md](ASM/ASM_CALL_MAP.md) for the routine-flow
   map, [ASM_SHARED_ROUTINES_AUDIT.md](ASM/ASM_SHARED_ROUTINES_AUDIT.md) for

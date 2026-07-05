@@ -13,23 +13,38 @@ Pronounced **are-yors**.
 
 ## Current Milestone
 
-As of 2026-06-15, ASM v1 is a flash-resident HIMON command. `L F` loads
-`SRC/BUILD/s19/asm-v1-flash-8000.s19` at `$8000`, reports
-`WR=2D6B GO=800C`, and `ASM` enters the assembler through HIMON's FNV catalog.
+As of 2026-07-05, ASM v1 is a flash-resident HIMON command loaded at `$8000`
+and entered as `ASM` through HIMON's FNV/RJOIN catalog. The flash wrapper now
+uses a PC-bearing source prompt, `ASM>$hhhh:`, keeps accepted source lines
+quiet, and leaves explicit PC checks to `.P`.
 
 ASM assembles pasted W65C02 source into bare RAM programs at `$2000+`, supports
-`EQU`/`DB`/`DW`/`DS`, local labels, forward fixups, and direct resident
-`JSR`/`JMP` targets through RJOIN/K05 records. It has run interactive Life,
-the biorhythm-style chart, PACK40 round trips, and directive smoke programs on
-the real board.
+`EQU`/`DB`/`DW`/`DS`, local labels, `EXPORT`/`IMPORT`, forward fixups, direct
+resident `JSR`/`JMP` targets through RJOIN/K05 records, and post-`END`
+`SEAL>` work. The current post-`END` surface can seal, resolve imports,
+relocate a RAM body, and package an AP v1 envelope with tagged SEAL, REL, EXP,
+IMP, and BODY sections. `PACKAGE` self-verifies the written BODY FNV; the
+interactive `CHECK` reader remains a diagnostic/full-core proof, not part of
+the default flash image.
+
+HIMON has been trimmed and hardened around that path. The legacy resident
+mini-assembler `A` and HIMON's user-facing `U` unassemble command are gone;
+`B` and `N` remain for RAM debug. HIMON now exposes a small service vector
+block for shared helpers, skips `$7F00-$7FFF` I/O rows in `D`, rejects
+monitor/I/O/non-RAM debug patch targets, enforces the `$7EFF` RAM/I/O ceiling
+in loader smoke tests, reports compact normal loader failures as `LERR=$ee`,
+and keeps richer `L F` flash diagnostics for protected writes.
 
 Treat ASM as a young onboard workbench, not a finished hosted toolchain. Its
-current limits and hardware transcripts live in the ASM docs and proof logs:
+current limits, package/install direction, and hardware transcripts live in
+the ASM/HIMON docs and proof logs:
 
 ```text
 DOC/GUIDES/ASM/HASHED_ASM.md
+DOC/GUIDES/ASM/DECISIONS.md
 DOC/GUIDES/ASM/FLASH_8000_GAME_PLAN.md
 DOC/GUIDES/ASM/TEST_PLAN.md
+DOC/GUIDES/HIMON/HIMON_DEBUG_TESTING.md
 DOC/GUIDES/HASH_FLASH.md
 DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md
 ```
@@ -60,8 +75,8 @@ flash-resident as a HIMON command, currently emitting user opcodes into RAM.
 ```text
 R-YORS  keeps source, ROMs, maps, manuals, decisions, and generated reports together
 STR8    maps flash, backs up images, restores images, installs $C000 payloads
-HIMON   dumps/modifies memory, loads S19, disassembles, assembles, debugs RAM
-ASM     assembles W65C02 source on the board and emits bare RAM programs
+HIMON   dumps/modifies memory, loads S19/flash S19, debugs RAM, dispatches FNV/RJOIN services
+ASM     assembles W65C02 source, seals/relocates/packages RAM programs
 ```
 
 Current boot shape:
@@ -75,7 +90,7 @@ update gate has booted HIMON, OSI BASIC, and fig-FORTH as live images.
 
 ## Current Status
 
-Updated 2026-06-10.
+Updated 2026-07-05.
 
 STR8 is hardware-proven rotating three bootable images through the same guarded
 path:
@@ -93,13 +108,23 @@ known-good HIMON.
 
 HIMON's RAM-only debug path is hardware-proven for `B`, `B C`, `B L`, `N`, and
 `X`. One-shot breakpoints restore their original opcodes, debugger stops print
-as `@hhhh`, and invalid debug patch targets report `DBG RAM`.
+as `@hhhh`, invalid debug patch targets report `DBG RAM`, and the debug opcode
+display keeps the register dump while using compact opcode metadata. The
+resident unassemble command was removed; NMI-to-debug remains.
+
+HIMON loader and memory-boundary behavior is hardware-proven for the current
+RAM/I/O split: `$7F00-$7FFF` is skipped as I/O by `D`, protected by `M`, and
+rejected by normal `L` with `LERR=$02`; `L F` keeps address-rich failure
+diagnostics for protected flash writes.
 
 ASM is hardware-proven as both a RAM-loaded paste runtime and a flash-resident
 HIMON command. The current flash image loads at `$8000` through `L F`, enters as
 `ASM`, assembles source to `$2000+`, resolves resident routines through RJOIN,
 and has run the biorhythm-style chart and interactive Life samples on the
-board.
+board. The SEAL path is hardware-proven for internal relocation, import
+resolution, AP v1 package creation, and the package/body distinction: envelopes
+can be copied as data, while BODY execution at a different base requires
+relocation.
 
 Treat the system as bench-proven, not as a finished field updater. Keep an
 external programmer path and known-good image nearby.

@@ -847,6 +847,64 @@ blank. Unknown used bytes should be reported and preserved until a recognizer,
 header, catalog record, or explicit operator action gives STR8 enough authority
 to relocate them.
 
+## Q: Could a RAM program call an AP package stored in another bank?
+
+Comment: Yes, as a future banked overlay-call proposal. A RAM program could
+call a small AP loader stub, identify an installed AP v1 package in bank 2 or
+another managed flash location, copy that package BODY into a RAM work area,
+relocate it for that RAM base, resolve any imports, call the relocated entry,
+then return to the caller's next RAM instruction.
+
+The caller-facing shape could be:
+
+```text
+RAM caller
+  prepare package descriptor / destination RAM / entry selector
+  JSR AP_CALL
+  ; execution resumes here after package returns
+```
+
+`AP_CALL` is a loader/linker, not a direct far call into banked flash:
+
+```text
+save caller state required by the AP_CALL contract
+map/read the package bank or flash window
+copy AP BODY to the destination RAM work area
+restore normal HIMON/STR8 bank visibility before ROM/HIMON calls
+validate package when the validator exists
+relocate BODY for the RAM work-area base
+resolve imports against current resident services or catalog records
+JSR relocated_entry
+restore caller state required by the contract
+RTS to the original RAM caller
+```
+
+This keeps the installed flash package as an envelope. Moving or copying the
+envelope between flash holes does not relocate it. Relocation happens only when
+the BODY becomes an execution image in RAM or in a new executable flash
+artifact.
+
+A first convention can stay small:
+
+```text
+IN   package descriptor: bank/window/address/length or catalog handle
+IN   destination RAM base and limit
+IN   entry selector: default entry or named export
+OUT  C=1 success, A=package return code or loader status
+OUT  C=0 failure, A=loader error
+MEM  AP_CALL uses a declared RAM work area and loader scratch
+```
+
+If the package imports HIMON services, restore the normal bank before resolving
+or calling those services. If the package is self-contained, the loader can be
+smaller, but it should still preserve the rule that ROM/HIMON calls are not
+made while the selected flash bank hides the code that would be fetched.
+
+Concern: This proposal depends on a real package validation gate before
+trusting stored packages. Before validation exists, the same mechanism may be
+proved with known-good test packages, but cataloged packages should remain
+marked unvalidated and should not be published as generally callable services.
+
 ## Q: Where should ROM garbage collection live?
 
 Comment: STR8/STRAIGHTEN is the right home for dangerous sector rebuilds, or

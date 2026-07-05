@@ -548,6 +548,22 @@ A [addr] [label[:]] MMM [operand] .
   `$C000`. This slice checks header, range, section order, section length
   accounting, relocation count shape, EXP/IMP record length fields, and body
   length versus the seal record.
+- AP package addresses and execution addresses are separate. An AP envelope can
+  be copied from RAM to flash, from one flash hole to another, or back to RAM
+  as opaque bytes without relocation. Relocation is required only when the BODY
+  bytes are loaded or installed to execute at a base different from the sealed
+  base.
+- Future `LOAD`/`INSTALL` work may first store AP v1 packages without full AP
+  validation, provided the catalog marks them unvalidated and no command runs,
+  publishes, or trusts them as executable until validation is added. The later
+  validator should check the AP header, total range, section order and lengths,
+  BODY length, BODY FNV, and import/export shape before execution or RJOIN
+  publication.
+- The HREC/RJOIN `K` byte is kind metadata, not install lifecycle state. Current
+  resident records define `K` in source with bits for executable, confirmation,
+  and text/metadata. Future AP package/catalog kind should come from explicit
+  package metadata, with the spelling still unsettled. Until that exists,
+  installed AP packages should default to opaque non-executable objects.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.

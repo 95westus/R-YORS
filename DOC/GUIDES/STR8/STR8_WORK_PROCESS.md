@@ -228,6 +228,47 @@ bank 3 `$F000-$FFFF` sector cannot be rescued by onboard software after reset.
 The backup is still valuable because it gives an external programmer a known
 physical source sector to copy back to physical `$1F000-$1FFFF`.
 
+## Future AP Package Install Rail
+
+AP v1 package install starts as object storage, not execution. A first
+`INSTALL` path may search managed flash for an erased hole large enough for the
+package envelope, copy the envelope bytes from RAM or another flash location,
+read back the programmed bytes, and catalog the result as unvalidated. That is
+useful even before a full AP validator exists, but unvalidated packages must
+not be run, published to RJOIN, or treated as trusted code.
+
+Keep three facts separate:
+
+```text
+envelope location     where the AP package bytes live
+body execution base   where the BODY bytes will run
+catalog status        whether write, verify, validation, and commit happened
+```
+
+Moving the envelope does not require relocation. Loading or installing the BODY
+to execute at a different base does require relocation through the package REL
+section. A future loader can copy an installed package back to RAM as an
+envelope, load the BODY into RAM for execution, stage it through the STR8 flash
+tray, or create a relocated executable flash artifact, but those are distinct
+operations. The banked AP overlay-call proposal is parked in
+`DOC/GUIDES/QCC/STR8.md` until it becomes implementation work.
+
+Use a flash lifecycle/status byte separate from the HREC/RJOIN `K` kind byte.
+The erased value is `$FF`; install phases clear bits as they complete:
+
+```text
+$FF        erased / empty / never committed
+bit clear  write started
+bit clear  flash readback verified
+bit clear  AP package validated
+bit clear  imports resolved / load-ready
+bit clear  committed / active
+```
+
+`K` answers "what kind of record or callable thing is this?" and should come
+from source/package metadata. The lifecycle byte answers "how far did this
+flash install transaction get?" and is written by STR8/catalog code.
+
 ## Code Rules
 
 Keep STR8 small and literal:
