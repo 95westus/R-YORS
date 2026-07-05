@@ -2543,6 +2543,8 @@ L_WRITE_DATA_BYTE:
                         LDA             LOAD_DST_HI
                         CMP             #$80
                         BCS             L_WRITE_DATA_BYTE_NEED_FLASH
+                        CMP             #>SYS_IO_BASE
+                        BCS             L_WRITE_DATA_BYTE_PROTECT
                         LDA             LOAD_DST_LO
                         STA             CMDP_ADDR_LO
                         LDA             LOAD_DST_HI

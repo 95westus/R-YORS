@@ -418,6 +418,28 @@ date:  yyyy-mm-dd
 notes: pass/fail and any BRK code seen
 ```
 
+## Loader RAM Ceiling Smoke
+
+Current normal `L` must not write the `$7F00-$7FFF` I/O page. After flashing a
+known-good recovery image, prove the guard with one-byte S1 records:
+
+```text
+>L
+L S19
+S1047F00007C
+L @7F00
+LF PROT=7F00
+
+>L
+L S19
+S1048000007B
+L @8000
+HINT L F
+```
+
+The first record is the hard RAM/I/O ceiling proof. The second confirms that
+the normal flash hint still belongs to `$8000+`, not the `$7Fxx` I/O page.
+
 ## Resident U Removal Proof
 
 Commit `8f3a0d3` removed the user-facing `U` unassemble command while keeping
