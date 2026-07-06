@@ -8205,8 +8205,29 @@ END
 G 7000
 ```
 
-Expected: `END` prints no automatic `ASM TABLES`; `G 7000` prints
-`ASM SESSION REPORT`, `SYMBOLS`, `FIXUPS`, and `RELOCS`.
+Expected: `END` prints no automatic `ASM TABLES`; `G 7000` prints the
+external compact report header followed by the raw table sections:
+
+```text
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2004
+HIGH=$2004
+BYTES=$0004
+LINES=$0004
+SYMS=$02/$28
+FIXUPS=$01/$60
+REFS=$hh/$A0
+TRUNC=NO
+MAP END=$.... UDATA=$5000-....
+SESSION
+SYMBOLS
+FIXUPS
+RELOCS
+ASM REPORT OK
+```
 
 Flash ASM-native source form:
 
@@ -8260,15 +8281,91 @@ PACKAGE $3000               -> PKG OK @=$3000 L=$0022
 LOAD $3000 $3000            -> LOAD ERR=$06 BAD RANGE
 ```
 
-Host-built reporter board proof captured 2026-07-06:
+Combined package/load/run board proof captured 2026-07-06:
 
 ```text
-L @7000                     -> L OK=04B1 GO=7000
+ORG $2000
+MAIN JSR FORWARD
+BRA AFTER_BACK
+BACK RTS
+AFTER_BACK LDX #$03
+LOOP DEX
+BNE LOOP
+JSR BACK
+LDA #<FORWARD
+LDY #>FORWARD
+RTS
+FORWARD LDA #$5A
+RTS
+EXPORT MAIN
+EXPORT FORWARD
+EXPORT BACK
+END
+SEAL
+PACKAGE $3200
+INSTALL $3200
+LOAD $3200 $3000
+```
+
+The board produced:
+
+```text
+SEAL OK FLAGS=$01 BASE=$2000 END=$2016
+SEAL REL @=$5122 COUNT=$04
+SEAL EXP @=$5173 COUNT=$03 LEN=$0019
+PKG OK @=$3200 L=$0061
+INST @=$BDEE L=$0061
+LOAD OK=$3000 L=$0016 C=$04
+D 3000 3015 -> 20 13 30 80 01 60 A2 03 CA D0 FD 20 05 30 A9 13 A0 30 60 A9 5A 60
+G 3000      -> clean return, A=13 X=00 Y=30
+D BDEE BEED -> all $FF over the suggested install hole
+```
+
+The same pass proved the current import-package rejection path:
+
+```text
+ORG $2200
+IMPORT BIO_FTDI_PUT_CSTR
+MAIN JSR BIO_FTDI_PUT_CSTR
+LDA #<BIO_FTDI_PUT_CSTR
+LDX #>BIO_FTDI_PUT_CSTR
+END
+SEAL
+PACKAGE $3400
+LOAD $3400 $3000
+```
+
+Expected/current result:
+
+```text
+SEAL REL @=$5122 COUNT=$03
+SEAL IMP @=$523D COUNT=$01 LEN=$000F
+PKG OK @=$3400 L=$0043
+LOAD ERR=$09 BAD FIX
+```
+
+Host-built reporter board proof captured 2026-07-06 against the current compact
+format:
+
+```text
+L @7000                     -> L OK=06D5 GO=7000
 ASM NEW / ORG $2000 / ...
 END                         -> ASM OK, no automatic ASM TABLES
-G 7000                      -> ASM SESSION REPORT
+G 7000                      -> ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2004
+HIGH=$2004
+BYTES=$0004
+LINES=$0004
+SYMS=$02/$28
+FIXUPS=$01/$60
+REFS=$00/$A0
+TRUNC=NO
 MAP END=$BDEE UDATA=$5000-6F16
 COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 02 01 01 00 00 00 00
+UNUSED                      -> MAIN, TARGET
 SYMBOLS                     -> MAIN, TARGET
 FIXUPS                      -> TARGET row at SITE 2001 BASE 2003
 RELOCS                      -> 00 01 0001 0003
