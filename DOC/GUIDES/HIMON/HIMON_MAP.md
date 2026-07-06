@@ -295,14 +295,16 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 `D`:
 
 ```text
-CODE     $21A1 /  8609
-DATA     $060E /  1550
-TOTAL    $27AF / 10159
-_END_DATA = $E7AF
+CODE     $2192 /  8594
+DATA     $05C4 /  1476
+TOTAL    $2756 / 10070
+_END_DATA = $E756
 ```
 
 The previous resident-`S` map was about `$28A5` total, so this slice saves about
-`$00F6` / 246 bytes while adding D-local search. `CMD_SEARCH_FNV`,
+`$014F` / 335 bytes while adding D-local search, compacting I/O skip messages,
+and adding a HIMON-local one-byte RX lookahead for abort polling.
+`CMD_SEARCH_FNV`,
 `CMD_SEARCH`, and `MSG_SEARCH_*` are absent from the normal HIMON map; `D`
 search enters through `CMD_D_SEARCH_RANGE`.
 

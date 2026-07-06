@@ -11190,3 +11190,163 @@ LF PROT=C000
 LF FAIL=02 WR=0000 SKIP=0001 GO=0000
 >
 ```
+
+## 2026-07-06 HIMON Resident S Removal And D Search Board Proof
+
+### Summary
+
+HIMON `V 00.0706(0157)` proves:
+
+- Normal HIMON no longer exposes resident `S`: help omits it, `S` and `# S` report hash-not-found, and the post-update catalog has no `D60C1322 ... S` row.
+- `D` keeps suffix-completed dump ranges and bare-`D` continuation.
+- `D` rejects the old `+count` form.
+- `D` search reports `D NF`, prints hit address plus D-style context row, accepts short end tokens, accepts apostrophe text, and skips `$7F00-$7FFF` with compact I/O slot names.
+- A follow-up ROM-only `D 8000 FFFF 'HIMO'` search finds the five ROM `HIMON` text sites without RAM command-buffer or pattern-buffer hits.
+- Follow-up operator proof reports the HIMON-local RX lookahead paste fix tested PASS.
+
+### Transcript
+
+```text
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...........................................................................                  ...........................................................................                  ...........................................................................                  ...........................................................................                  ...............
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0706(0157)
+>D 0 FF
+0000: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+...
+00F0: 10 01 01 00 00 06 0F 46 | 00 02 FA 00 FF 00 F0 00 | .......F........
+>D 8 F
+0008: 00 00 00 00 00 00 00 00 | ........
+>D 88 F
+0088: 00 00 00 00 00 00 00 00 | ........
+>D
+0090: 00 00 00 00 00 00 00 00 | ........
+>D
+0098: 00 00 00 00 00 00 00 00 | ........
+>D
+00A0: 00 00 00 00 00 00 00 00 | ........
+>D
+00A8: 00 00 00 00 00 00 00 00 | ........
+>D C000 1
+C000: 78 D8 | x.
+>D
+C002: A2 FF | ..
+>D
+C004: 9A AD | ..
+>D
+C006: E6 7E | .~
+>D
+C008: C9 A5 | ..
+>S
+#D60C1322# HSH_NF!
+>#
+HASH     ENTRY K TEXT
+EC7A30F0 C030 03 BOOT_COLD_RESET
+5333AEAB C044 03 BOOT_WARM_RESET
+3A0CB08E C13D 01
+260C9112 C150 01
+270C92A5 C211 05 "[TEXT]" -> #5F6A0F7A# STR8 MATCH!
+C10BF213 C2B8 01
+C80BFD18 C55D 01
+D70C14B5 C596 01
+DD0C1E27 C5BB 01
+C20BF3A6 C5F5 01
+C90BFEAB C63D 01
+D40C0FFC C833 01
+C70BFB85 C840 01
+CB0C01D1 C8EB 01
+C2A5A6CE D220 01
+A9AF15F7 D7B5 05 HASH ACQUIRE
+4B9AEE1E DA64 05 HASH OPEN
+A8802314 DADE 05 HASH MIX
+20285B85 DC39 05 READ BYTE
+379FE930 DC58 05 WRITE BYTE
+483BB2DD DD94 01
+D55FC6FC DDBD 01
+BEB18931 DDFB 01
+43621C9C DE12 05 READ CH
+F91947F8 DE29 05 READ ECHO
+B85E3F10 DE39 05 READ COOK
+ADD714B1 DF14 05 HEX NIB
+2F6622B9 DFBC 01
+426150D2 DFD8 01
+30A462F2 DFEF 01
+226EDE8F E13D 01
+7142DD21 E159 05 BYTE HEX
+D4C88B87 E17F 05 NIB HEX
+E2DD10AF CDEE 05 READ LINE
+AEFA0F42 DF00 05 PUT CSTR
+B0051A80 C000 03 HIMON: V 00.0706(0157)
+A2AD0E18 F000 03 STR8: BOOTLOADER
+>?
+# ? D M R X G L B N Q " STR8
+># S
+D60C1322 HSH_NF!
+>D 0 +F
+D [a [b [bb|'t']]]
+>D C000 C0FF
+C000: 78 D8 A2 FF 9A AD E6 7E | C9 A5 D0 24 AD E7 7E C9 | x......~...$..~.
+...
+C0F0: A2 94 A0 E2 20 9A CE A9 | 01 85 F3 A2 00 A0 7A 20 | .... .........z
+>D C000 C0FF 78 DB
+D NF
+>D C000 C0FF 78
+C000 C000: 78 D8 A2 FF 9A AD E6 7E | C9 A5 D0 24 AD E7 7E C9 | x......~...$                  ..~.
+C030 C030: 78 D8 A2 FF 9A 4C C4 CD | 46 4E D6 AB AE 33 53 03 | x....L..FN..                  .3S.
+C044 C040: 44 C0 25 E2 78 D8 A2 FF | 9A A9 02 8D 75 7E 20 3A | D.%.x.......                  u~ :
+C060 C060: 78 D8 A2 FF 9A 20 6B C0 | 4C E6 C0 A9 A5 8D E6 7E | x.... k.L...                  ...~
+>D C000 FF 78 D8
+C000 C000: 78 D8 A2 FF 9A AD E6 7E | C9 A5 D0 24 AD E7 7E C9 | x......~...$                  ..~.
+C030 C030: 78 D8 A2 FF 9A 4C C4 CD | 46 4E D6 AB AE 33 53 03 | x....L..FN..                  .3S.
+C044 C040: 44 C0 25 E2 78 D8 A2 FF | 9A A9 02 8D 75 7E 20 3A | D.%.x.......                  u~ :
+C060 C060: 78 D8 A2 FF 9A 20 6B C0 | 4C E6 C0 A9 A5 8D E6 7E | x.... k.L...                  ...~
+>D C000 FFFF A2 FF 9A
+C002 C000: 78 D8 A2 FF 9A AD E6 7E | C9 A5 D0 24 AD E7 7E C9 | x......~...$                  ..~.
+C032 C030: 78 D8 A2 FF 9A 4C C4 CD | 46 4E D6 AB AE 33 53 03 | x....L..FN..                  .3S.
+C046 C040: 44 C0 25 E2 78 D8 A2 FF | 9A A9 02 8D 75 7E 20 3A | D.%.x.......                  u~ :
+C062 C060: 78 D8 A2 FF 9A 20 6B C0 | 4C E6 C0 A9 A5 8D E6 7E | x.... k.L...                  ...~
+F002 F000: 78 D8 A2 FF 9A 20 36 F0 | 20 26 F0 20 F7 F0 20 00 | x.... 6. &.                   .. .
+>D 0 FFFF 'HIMO'
+61EB 61E0: 18 0E AD A2 03 00 F0 84 | E2 0D 0A 48 49 4D 4F 4E | ...........H                  IMON
+6200 6200: 48 49 4D 4F 4E 3A 20 56 | 20 30 30 2E 30 37 30 36 | HIMON: V 00.                  0706
+7A0A 7A00: 44 20 30 20 46 46 46 46 | 20 27 48 49 4D 4F 27 00 | D 0 FFFF 'HI                  MO'.
+7DC0 7DC0: 48 49 4D 4F 00 00 00 00 | 00 00 00 00 00 00 00 00 | HIMO........                  ....
+7F00: CS0 IO SKIP
+7F20: CS1 IO SKIP
+7F40: CS2 IO SKIP
+7F60: CS3 IO SKIP
+7F80: ACIA IO SKIP
+7FA0: PIA IO SKIP
+7FC0: VIA IO SKIP
+7FE0: FTDI VIA IO SKIP
+E1EB E1E0: 18 0E AD A2 03 00 F0 84 | E2 0D 0A 48 49 4D 4F 4E | ...........H                  IMON
+E200 E200: 48 49 4D 4F 4E 3A 20 56 | 20 30 30 2E 30 37 30 36 | HIMON: V 00.                  0706
+F879 F870: 5F 5F 5F 5F 2F 0D 8A 0D | 0A 48 49 4D 4F 4E 20 49 | ____/....HIM                  ON I
+F8F8 F8F0: 0A 55 50 44 41 54 45 20 | 48 49 4D 4F 4E 20 43 30 | .UPDATE HIMO                  N C0
+F959 F950: 41 54 41 0D 8A 0D 0A 47 | 20 48 49 4D 4F 4E 0D 8A | ATA....G HIM                  ON..
+>
+```
+
+### Follow-up
+
+```text
+>D 8000 FFFF 'HIMO'
+E1EB E1E0: 18 0E AD A2 03 00 F0 84 | E2 0D 0A 48 49 4D 4F 4E | ...........HIMON
+E200 E200: 48 49 4D 4F 4E 3A 20 56 | 20 30 30 2E 30 37 30 36 | HIMON: V 00.0706
+F879 F870: 5F 5F 5F 5F 2F 0D 8A 0D | 0A 48 49 4D 4F 4E 20 49 | ____/....HIMON I
+F8F8 F8F0: 0A 55 50 44 41 54 45 20 | 48 49 4D 4F 4E 20 43 30 | .UPDATE HIMON C0
+F959 F950: 41 54 41 0D 8A 0D 0A 47 | 20 48 49 4D 4F 4E 0D 8A | ATA....G HIMON..
+```
+
+Operator follow-up: HIMON-local RX lookahead paste preservation test PASS.

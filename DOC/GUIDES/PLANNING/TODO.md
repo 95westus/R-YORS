@@ -44,24 +44,23 @@
   are `COPY start end|+count dest`, `FILL start end|+count bb`, and later
   `MOVE start end|+count dest`; flash/bank mutation stays behind full-word
   confirmed commands.
-- Board-prove the resident `D` dump/search grammar after the `S` removal:
-  `D start`, suffix-completed `D start end`, explicit-range byte search
-  `D start end bb...`, and text search `D start end 'TEXT'`. Confirm `S` is
-  not found in normal HIMON, `+count` is rejected by `D`, search skips
-  `$7F00-$7FFF`, and dump continuation is updated only by dump mode.
+- 2026-07-06 board proof recorded for resident `D` dump/search grammar after
+  the `S` removal: `D start`, suffix-completed `D start end`, explicit-range
+  byte search `D start end bb...`, text search `D start end 'TEXT'`, normal
+  HIMON `S` not found, `+count` rejected by `D`, `$7F00-$7FFF` skip reporting,
+  and dump continuation.
 - Document and design BIO-level FTDI RX lookahead before changing the stable
   input path. A true hardware peek is not available once
   `PIN_FTDI_READ_BYTE_NONBLOCK` reads the FIFO, so any general peek must cache
   bytes at the BIO layer and require all RX consumers to read through BIO.
   Keep `BIO_FTDI_GET_CTRL_C` as a consuming long-scan abort poll for now; do
   not use it as a general non-destructive keyboard peek.
-- Fix HIMON long-output abort polling so board-script paste commands are not
-  eaten while `D`, catalog listing, or search output is still printing. Current
-  `HIM_CHECK_CTRL_C` polls by consuming one FTDI byte and discarding it when it
-  is not Ctrl-C; this can turn a queued `D 5848 5869` into `5848 5869` or
-  `5869`.
-  The likely fix is a BIO-owned one-byte or small-ring RX lookahead/pushback
-  path, with normal HIMON line input consuming cached bytes before hardware.
+- 2026-07-06 board proof recorded: HIMON-local RX lookahead used by
+  long-output abort polling preserves the leading byte of pasted follow-up
+  commands. This fixes resident HIMON without changing the stable consuming
+  `BIO_FTDI_GET_CTRL_C` contract; a BIO-owned one-byte or small-ring lookahead
+  remains the future shared-layer design if other RX consumers need
+  non-destructive peeking.
 - Keep the `BIO_FTDI_*_BYTE_BLOCK` routines as unbounded blocking APIs unless
   every caller is audited. Bounded waits should use the existing timeout-shaped
   routines or small wrappers with an explicit loop-delay contract, leaving room

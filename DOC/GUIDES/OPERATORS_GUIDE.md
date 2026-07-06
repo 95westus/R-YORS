@@ -80,7 +80,7 @@ $F000-$FFFF    4K STR8 recovery sector
 Current combined-image facts:
 
 ```text
-HIMON:           $C000-$E7AE
+HIMON:           $C000-$E755
 STR8 image:      $F000-$FA82
 IVI entries:     NMI $F089, IRQ/BRK $F09D
 STR8 identity:   #5F6A0F7A

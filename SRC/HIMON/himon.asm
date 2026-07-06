@@ -77,6 +77,8 @@ CMD_EXEC_ENTRY_LO        EQU             $7E72
 CMD_EXEC_ENTRY_HI        EQU             $7E73
 CMD_EXEC_KIND            EQU             $7E74
 BOOT_REASON              EQU             $7E75
+HIM_RX_HAVE              EQU             $7E1D
+HIM_RX_BYTE              EQU             $7E1E
 CMD_EXEC_KIND_HASH       EQU             $00
 CMD_EXEC_KIND_GO         EQU             $01
 CMD_EXEC_KIND_LOADGO     EQU             $02
@@ -187,6 +189,7 @@ MON_INIT_COMMON:
                         JSR             MON_INIT_SERVICE_VECTORS
                         JSR             SYS_INIT
                         JSR             SYS_FLUSH_RX
+                        STZ             HIM_RX_HAVE
 
                         LDX             #<MON_NMI_TRAP_DEBOUNCE
                         LDY             #>MON_NMI_TRAP_DEBOUNCE
@@ -1386,7 +1389,7 @@ HIM_READ_LINE_SET_MODE:
                         STY             CMDP_PTR_HI
                         STZ             CMDP_REMAIN
 HIM_READ_LINE_LOOP:
-                        JSR             BIO_FTDI_READ_BYTE_BLOCK
+                        JSR             HIM_READ_BYTE_BLOCK
                         CMP             #$03
                         BEQ             HIM_READ_LINE_ABORT
                         CMP             #$0D
@@ -1457,6 +1460,17 @@ HIM_READ_LINE_ABORT:
 HIM_READ_LINE_ABORT_LINE:
                         LDA             #$03
                         CLC
+                        RTS
+
+HIM_READ_BYTE_BLOCK:
+                        LDA             HIM_RX_HAVE
+                        BEQ             HIM_READ_BYTE_HW
+                        STZ             HIM_RX_HAVE
+                        LDA             HIM_RX_BYTE
+                        SEC
+                        RTS
+HIM_READ_BYTE_HW:
+                        JSR             BIO_FTDI_READ_BYTE_BLOCK
                         RTS
 
 HIM_CHAR_TO_UPPER:
@@ -1984,58 +1998,32 @@ SYS_PRINT_IO_SLOT_SKIP:
                         LDA             #' '
                         JSR             BIO_FTDI_WRITE_BYTE_BLOCK
                         LDA             CMD_IO_TMP
-                        BEQ             SYS_PRINT_IO_SLOT_CS0
-                        CMP             #$20
-                        BEQ             SYS_PRINT_IO_SLOT_CS1
-                        CMP             #$40
-                        BEQ             SYS_PRINT_IO_SLOT_CS2
-                        CMP             #$60
-                        BEQ             SYS_PRINT_IO_SLOT_CS3
-                        CMP             #$80
-                        BEQ             SYS_PRINT_IO_SLOT_ACIA
-                        CMP             #$A0
-                        BEQ             SYS_PRINT_IO_SLOT_PIA
-                        CMP             #$C0
-                        BEQ             SYS_PRINT_IO_SLOT_VIA
-                        LDX             #<MSG_D_IO_FTDI
-                        LDY             #>MSG_D_IO_FTDI
-                        BRA             SYS_PRINT_IO_SLOT_TEXT
-SYS_PRINT_IO_SLOT_CS0:
-                        LDX             #<MSG_D_IO_CS0
-                        LDY             #>MSG_D_IO_CS0
-                        BRA             SYS_PRINT_IO_SLOT_TEXT
-SYS_PRINT_IO_SLOT_CS1:
-                        LDX             #<MSG_D_IO_CS1
-                        LDY             #>MSG_D_IO_CS1
-                        BRA             SYS_PRINT_IO_SLOT_TEXT
-SYS_PRINT_IO_SLOT_CS2:
-                        LDX             #<MSG_D_IO_CS2
-                        LDY             #>MSG_D_IO_CS2
-                        BRA             SYS_PRINT_IO_SLOT_TEXT
-SYS_PRINT_IO_SLOT_CS3:
-                        LDX             #<MSG_D_IO_CS3
-                        LDY             #>MSG_D_IO_CS3
-                        BRA             SYS_PRINT_IO_SLOT_TEXT
-SYS_PRINT_IO_SLOT_ACIA:
-                        LDX             #<MSG_D_IO_ACIA
-                        LDY             #>MSG_D_IO_ACIA
-                        BRA             SYS_PRINT_IO_SLOT_TEXT
-SYS_PRINT_IO_SLOT_PIA:
-                        LDX             #<MSG_D_IO_PIA
-                        LDY             #>MSG_D_IO_PIA
-                        BRA             SYS_PRINT_IO_SLOT_TEXT
-SYS_PRINT_IO_SLOT_VIA:
-                        LDX             #<MSG_D_IO_VIA
-                        LDY             #>MSG_D_IO_VIA
-SYS_PRINT_IO_SLOT_TEXT:
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        TAX
+                        LDA             MSG_D_IO_NAME_HI,X
+                        TAY
+                        LDA             MSG_D_IO_NAME_LO,X
+                        TAX
+                        JSR             HIM_WRITE_HBSTRING
+                        LDX             #<MSG_D_IO_SKIP
+                        LDY             #>MSG_D_IO_SKIP
                         JSR             HIM_WRITE_HBSTRING
                         JMP             SYS_WRITE_CRLF
 
 HIM_CHECK_CTRL_C:
+                        LDA             HIM_RX_HAVE
+                        BNE             HIM_CHECK_CTRL_C_NO
                         JSR             BIO_FTDI_READ_BYTE_NONBLOCK
                         BCC             HIM_CHECK_CTRL_C_NO
                         CMP             #$03
                         BEQ             HIM_CHECK_CTRL_C_YES
+                        STA             HIM_RX_BYTE
+                        LDA             #$01
+                        STA             HIM_RX_HAVE
 HIM_CHECK_CTRL_C_NO:
                         CLC
                         RTS
@@ -3053,7 +3041,8 @@ CMD_HASH_CONFIRM_ADDR:
                         LDX             #<MSG_RUN_Q
                         LDY             #>MSG_RUN_Q
                         JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_READ_CHAR_ECHO
+                        JSR             HIM_READ_BYTE_BLOCK
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
                         JSR             HIM_CHAR_TO_UPPER
                         CMP             #'Y'
                         PHP
@@ -3540,14 +3529,19 @@ MSG_HASH_USAGE:          DB              "# [K=hh|K<hh|K>hh|token",(']'+$80)
 MSG_RUN:                 DB              "RUN",(' '+$80)
 MSG_RUN_AT:              DB              " ",('@'+$80)
 MSG_RUN_Q:               DB              " ?",(' '+$80)
-MSG_D_IO_CS0:            DB              "CS0      IO SKI",('P'+$80)
-MSG_D_IO_CS1:            DB              "CS1      IO SKI",('P'+$80)
-MSG_D_IO_CS2:            DB              "CS2      IO SKI",('P'+$80)
-MSG_D_IO_CS3:            DB              "CS3      IO SKI",('P'+$80)
-MSG_D_IO_ACIA:           DB              "ACIA     IO SKI",('P'+$80)
-MSG_D_IO_PIA:            DB              "PIA      IO SKI",('P'+$80)
-MSG_D_IO_VIA:            DB              "VIA      IO SKI",('P'+$80)
-MSG_D_IO_FTDI:           DB              "FTDI VIA IO SKI",('P'+$80)
+MSG_D_IO_NAME_LO:        DB              <MSG_D_IO_CS0,<MSG_D_IO_CS1,<MSG_D_IO_CS2,<MSG_D_IO_CS3
+                        DB              <MSG_D_IO_ACIA,<MSG_D_IO_PIA,<MSG_D_IO_VIA,<MSG_D_IO_FTDI
+MSG_D_IO_NAME_HI:        DB              >MSG_D_IO_CS0,>MSG_D_IO_CS1,>MSG_D_IO_CS2,>MSG_D_IO_CS3
+                        DB              >MSG_D_IO_ACIA,>MSG_D_IO_PIA,>MSG_D_IO_VIA,>MSG_D_IO_FTDI
+MSG_D_IO_CS0:            DB              "CS",('0'+$80)
+MSG_D_IO_CS1:            DB              "CS",('1'+$80)
+MSG_D_IO_CS2:            DB              "CS",('2'+$80)
+MSG_D_IO_CS3:            DB              "CS",('3'+$80)
+MSG_D_IO_ACIA:           DB              "ACI",('A'+$80)
+MSG_D_IO_PIA:            DB              "PI",('A'+$80)
+MSG_D_IO_VIA:            DB              "VI",('A'+$80)
+MSG_D_IO_FTDI:           DB              "FTDI VI",('A'+$80)
+MSG_D_IO_SKIP:           DB              " IO SKI",('P'+$80)
 MSG_D_NF:                DB              "D N",('F'+$80)
 MSG_D_ABORT:             DB              "D ABOR",('T'+$80)
 MSG_HELP:                DB              "# ? D M R X G L B N Q ",$22," STR",('8'+$80)
