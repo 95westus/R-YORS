@@ -80,7 +80,7 @@ $F000-$FFFF    4K STR8 recovery sector
 Current combined-image facts:
 
 ```text
-HIMON:           $C000-$EE27
+HIMON:           $C000-$E7AE
 STR8 image:      $F000-$FA82
 IVI entries:     NMI $F089, IRQ/BRK $F09D
 STR8 identity:   #5F6A0F7A
@@ -93,9 +93,9 @@ vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0
 After burning, quick monitor checks should look like:
 
 ```text
-D C000 +10   78 D8 A2 FF 9A AD E6 7E ...
-D F000 +10   78 D8 A2 FF 9A 20 36 F0 ...
-D FD1E +10   08 78 AD 07 0A C9 04 F0 ...
+D C000 C00F  78 D8 A2 FF 9A AD E6 7E ...
+D F000 F00F  78 D8 A2 FF 9A 20 36 F0 ...
+D FD1E FD2D  08 78 AD F0 1F C9 04 F0 ...
 D FFFA FFFF  89 F0 00 F0 9D F0
 ```
 
@@ -272,9 +272,10 @@ STR8 rejects records outside `$C000-$EFFF` before erase.
 # [token]      list records, or resolve token without executing it
 "text"         print legacy FNV-1a32; reports STR8 match on #5F6A0F7A
 D              continue previous dump length from next address
-D start +count dump memory by byte count
+D start        dump one byte
 D start end    dump memory through inclusive end
-S start end|+count bb|'TEXT' [...] search memory; skips $7Fxx I/O slots
+D start end bb search hex bytes
+D start end 'text' search text; skips $7Fxx I/O slots
 M addr         modify memory byte by byte below $7A00
 G addr         go to address
 STR8           enter STR8 at $F000
@@ -297,21 +298,26 @@ rotation, and protected flash policy.
 ## HIMON Range Syntax
 
 ```text
-start end       end is inclusive
-start +count    count is the number of bytes
+D start            one byte
+D start end        inclusive end
+D start end bytes  search bytes
+D start end 'text' search text
 ```
 
-Short end tokens inherit the start high byte:
+The second hex token is an end token completed against `start` by digit width:
 
 ```text
-D 100 3       dumps $0100-$0103
-D 3000 FF     dumps $3000-$30FF
-D 3000 +100   dumps $3000-$30FF
+D 0 F         dumps $0000-$000F
+D 0 FF        dumps $0000-$00FF
+D 0 FFF       dumps $0000-$0FFF
+D 0 FFFF      dumps $0000-$FFFF
+D 30F0 F      dumps $30F0-$30FF
+D 30F0 FF     dumps $30F0-$30FF
+D 30F0 FFF    dumps $30F0-$3FFF
 ```
 
-A 3- or 4-hex-digit end token is a full address. `D 1000 FFF` resolves as
-`$0FFF` and is rejected because it lands before `$1000`; use `D 1000 1FFF` or
-`D 1000 +1000`.
+`D 30F0 10` is rejected because the completed end `$3010` is below start.
+`D 3000 4D` dumps `$3000-$304D`; `D 3000 30FF 4D` searches for byte `$4D`.
 
 Target behavior for bare `D` is continuation from the previous dump:
 
@@ -331,7 +337,7 @@ write a standalone RAM proof
 link it inside user program RAM, usually $2000-$77FF
 build an S19
 load it with HIMON L or L G
-debug with B, N, R, X, D, and U
+debug with B, N, R, X, and D
 promote clean code into HIMON or a payload image
 ```
 
@@ -341,7 +347,7 @@ Useful examples:
 make -C SRC life
 make -C SRC str8-ram
 make -C SRC himon-debug-proof
-make -C SRC himon-search-proof
+make -C SRC himon-search-proof   optional legacy search package proof
 ```
 
 On the board:

@@ -100,13 +100,9 @@ rather than a hidden VM or broad runtime.
 - `S` single-step has moved to `N` in the HIMON command surface. Do not add
   `NEXT` as a command alias. A RAM-only single-step/next operation is not
   destructive; it plants only a temporary debugger trap in RAM and restores the
-  original opcode. `S` is freed for memory search. Search is non-destructive:
-  hex byte tokens are the default pattern. After the range, parse one or more
-  pattern atoms:
-  byte tokens append bytes, and an apostrophe text atom appends the rest of the
-  line. Example: `S 0 FFFF 4D 4D 'M` searches for three `M` bytes.
-  Apostrophe text is a final tail in V0; there is no closing-quote parser and
-  no return to hex parsing after text.
+  original opcode. Resident HIMON does not own `S`; search now lives under `D`,
+  and old `S` search code can survive only as userland, proof, or alternate
+  flash-bank package material.
 - The first `N`/breakpoint patch policy is deliberately conservative:
   synthetic debugger traps may be planted only in UPA `$2000-$79FF`. Reject
   zero page, hardware stack, low RAM, monitor workspace `$7A00-$7EFF`, I/O,
@@ -135,31 +131,27 @@ rather than a hidden VM or broad runtime.
   aligned row base second, and `*` between them when the match continues into
   the next 16-byte display row. This preserves the useful BSO2 monitor
   search-display convention in HIMON's command language.
-- Range grammar for commands that accept ranges:
+- Shared range grammar for non-`D` commands that still accept ranges:
 
 ```text
 start end       end is inclusive
 start +count    count is the number of bytes
 ```
 
-- The current shared parser also accepts the tight form `start+count`, so
-  `D 1234+1` means exactly one byte at `$1234`.
-- A 1- or 2-hex-digit `end` token inherits the high byte from `start`.
-  This is a page-local end shorthand, not a count. Example: `D 3000 FF`
-  means `$3000-$30FF`, because the short end byte `$FF` inherits `$30` from
-  `$3000`. If the inherited end would land before `start`, reject it and
-  require a full end address or `+count`; `D 30F0 10` is ambiguous/dangerous,
-  so use `D 30F0 3110` or `D 30F0 +21`.
-- A 3- or 4-hex-digit `end` token is a full absolute address, not a
-  window-local shorthand. `D 1000 FFF` therefore resolves as `$0FFF` and is
-  rejected because it lands before `$1000`; use `D 1000 1FFF` or
-  `D 1000 +1000`. A future 3-digit window-local shorthand would need its own
-  explicit decision.
-- The `+count` form is deliberately explicit, but it should not be the common
-  typing path for page-local display. Common bench dumps should prefer
-  page-local end shorthand, such as `D 100 3` for `$0100-$0103` or
-  `D 3000 FF` for `$3000-$30FF`. Use `+count` when the operator means a byte
-  count, not an end byte.
+- `D` has its own range grammar and does not accept `+count` or tight
+  `start+count`. The second hex token is always an inclusive end token. It
+  completes against `start` by digit width: one digit completes the current
+  16-byte row, two digits complete the page, three digits complete the 4K
+  window, and four digits are a full address.
+- Examples: `D 0 F` means `$0000-$000F`; `D 0 FF` means `$0000-$00FF`;
+  `D 0 FFF` means `$0000-$0FFF`; `D 0 FFFF` means `$0000-$FFFF`;
+  `D 30F0 F` and `D 30F0 FF` both mean `$30F0-$30FF`;
+  `D 30F0 FFF` means `$30F0-$3FFF`; `D 30F0 10` is rejected because
+  completed end `$3010` is below start.
+- `D start end pattern` is search. The pattern is either one to sixteen hex
+  byte tokens or one apostrophe-quoted text atom. The second hex token still
+  belongs to the range, so `D 3000 4D` dumps `$3000-$304D`, while
+  `D 3000 30FF 4D` searches `$3000-$30FF` for byte `$4D`.
 - `D` without parameters should repeat the previous dump length starting at the
   byte after the previous dump. Example: `D 3000 FF` displays `$3000-$30FF`
   and records length `$0100`; the next bare `D` displays `$3100-$31FF`.

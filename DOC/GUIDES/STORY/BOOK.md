@@ -379,9 +379,11 @@ start end       inclusive end
 start +count    count bytes
 ```
 
-Short end tokens are page-local, so `D 3000 FF` means `$3000-$30FF`. Three- or
-four-digit ends are full addresses, so `D 1000 FFF` is not shorthand for
-`$1FFF`; use `D 1000 1FFF` or `D 1000 +1000`.
+For `D`, short end tokens complete against the start address by digit width:
+one digit completes the current 16-byte row, two digits complete the page,
+three digits complete the 4K window, and four digits are absolute. So
+`D 3000 FF` means `$3000-$30FF`, and `D 1000 FFF` means `$1000-$1FFF`.
+`D` no longer accepts `+count`.
 
 The loader language now also shows the difference between compact routine
 status and rich destructive diagnostics. Normal `L` failures can report

@@ -765,29 +765,30 @@ ERASE ...
                                `start end` plus explicit `start +count`.
 ```
 
-The target range grammar is:
+The shared range grammar for non-`D` commands is:
 
 ```text
 start end       end is inclusive
 start +count    count is the number of bytes
 ```
 
-Short end tokens inherit the high byte from `start` when that is safe. Common
-page-local display stays terse while true counts remain explicit. Use `+count`
-only when the operator means a byte count. If a short inherited end would land
-before `start`, use a full end address or `+count`.
+`D` now owns its own compact dump/search grammar and does not accept `+count`.
+Its second hex token is always an inclusive end token. One digit completes the
+current 16-byte row, two digits complete the current page, three digits complete
+the current 4K window, and four digits are an absolute end address. If the
+completed end is below the start, `D` reports usage.
 
 ```text
-D 100 3      dump $0100-$0103
-D 3000 FF    dump $3000-$30FF
-D 3000 +100  dump $3000-$30FF
+D 0 F          dump $0000-$000F
+D 3000 4D      dump $3000-$304D
+D 3000 30FF 4D search $3000-$30FF for byte $4D
 ```
 
 Bare `D` should repeat the previous dump length from the byte after the
 previous dump:
 
 ```text
-D 3000 FF
+D 3000 30FF
 D            dump $3100-$31FF
 ```
 
@@ -798,31 +799,32 @@ D            dump $3100-$31FF
          05
                 15
                    03:48Z WLP2 Resident HIMON no longer accepts `S` as
-                               step. `N` is the step command; `S` is reserved
-                               for search through the FNV command path.
+                               step. `N` is the step command; resident memory
+                               search is folded into `D`. Old `S` search
+                               proofs can remain as userland or alternate
+                               flash-bank packages.
                 12
-                   02:33Z WLP2 `S` moves from single-step to memory
-                               search; step/next moves to `N` only.
+                   02:33Z WLP2 Superseded direction: `S` moves from
+                               single-step to memory search; step/next moves
+                               to `N` only.
 ```
 
 `NEXT` is not a command alias in the resident surface. RAM-only `N` is
 non-destructive because it plants only a temporary debugger trap in RAM and
 restores the original opcode.
 
-Target search syntax is:
+Resident search syntax is:
 
 ```text
-S addr end|+count b0 [b1 ...]
-S addr end|+count b0 [b1 ...] 'TEXT
-S addr end|+count 'TEXT
+D start end b0 [b1 ... b15]
+D start end 'TEXT'
 ```
 
-Hex byte tokens are the default pattern. Apostrophe text is a final V0 tail:
-it consumes the rest of the command line. There is no closing-quote parser and
-no return to hex parsing after text.
+Hex byte tokens are the default pattern. Apostrophe text is one closed atom and
+cannot be mixed with trailing hex tokens.
 
 ```text
-S 0 FFFF 4D 4D 'M
+D 0 FFFF 4D 4D 4D
 ```
 
 That searches for three `M` bytes.

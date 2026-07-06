@@ -101,27 +101,16 @@ CMD_HASH_KIND_TEXT       EQU             $04
 CMD_HASH_KIND_EXEC_CONFIRM_TEXT EQU      (CMD_HASH_KIND_EXEC+CMD_HASH_KIND_CONFIRM)
 CMD_HASH_KIND_EXEC_TEXT  EQU             (CMD_HASH_KIND_EXEC+CMD_HASH_KIND_TEXT)
 CMD_HASH_SCAN_BASE_HI    EQU             $80
-SEARCH_LINE_LO           EQU             $B4
-SEARCH_LINE_HI           EQU             $B5
-SEARCH_WORD_LO           EQU             $B6
-SEARCH_WORD_HI           EQU             $B7
-SEARCH_START_LO          EQU             $B8
-SEARCH_START_HI          EQU             $B9
-SEARCH_END_LO            EQU             $BA
-SEARCH_END_HI            EQU             $BB
-SEARCH_SCAN_LO           EQU             $BC
-SEARCH_SCAN_HI           EQU             $BD
-SEARCH_MATCH_LO          EQU             $BE
-SEARCH_MATCH_HI          EQU             $BF
-SEARCH_ROW_LO            EQU             $C0
-SEARCH_ROW_HI            EQU             $C1
-SEARCH_TMP               EQU             $C2
-SEARCH_DIGITS            EQU             $C3
-SEARCH_PAT_LEN           EQU             $C4
-SEARCH_COUNT             EQU             $C5
-SEARCH_HIT_FLAG          EQU             $C6
-SEARCH_PAT_BUF           EQU             $7DC0
-SEARCH_PAT_MAX           EQU             $40
+D_MATCH_LO               EQU             $B4
+D_MATCH_HI               EQU             $B5
+D_SCAN_SAVE_LO           EQU             $B6
+D_SCAN_SAVE_HI           EQU             $B7
+D_END_SAVE_LO            EQU             $B8
+D_END_SAVE_HI            EQU             $B9
+D_PAT_LEN                EQU             $BA
+D_HIT_FLAG               EQU             $BB
+D_PAT_BUF                EQU             $7DC0
+D_PAT_MAX                EQU             $10
 QUOTE_HASH_TARGET0       EQU             $7A
 QUOTE_HASH_TARGET1       EQU             $0F
 QUOTE_HASH_TARGET2       EQU             $6A
@@ -498,7 +487,7 @@ CMD_QUOTE_HASH_NO_MATCH:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; D [start [end|+count]]
+; D [start [end [bb...|'TEXT']]]
 ; ----------------------------------------------------------------------------
 CMD_D_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$13,$F2,$0B,$C1,CMD_HASH_KIND_EXEC ; D $C10BF213 EXEC
@@ -507,18 +496,113 @@ CMD_D:
                         JSR             CMD_SKIP_SPACES
                         JSR             CMD_PEEK
                         BEQ             CMD_D_CONTINUE
-                        JSR             CMD_PARSE_RANGE_REQUIRED
+                        JSR             CMD_D_PARSE_RANGE
                         BCS             CMD_D_EXPLICIT_RANGE
                         JMP             CMD_USAGE_D
 CMD_D_CONTINUE:
                         JSR             CMD_D_REPEAT_RANGE
-                        BCC             CMD_USAGE_D
-                        BRA             CMD_D_RANGE_OK
+                        BCS             CMD_D_DUMP_RANGE
+                        JMP             CMD_USAGE_D
 CMD_D_EXPLICIT_RANGE:
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             CMD_D_DUMP_RANGE
+                        JSR             CMD_D_PARSE_PATTERN
+                        BCS             CMD_D_SEARCH_GO
+                        JMP             CMD_USAGE_D
+CMD_D_SEARCH_GO:
+                        JSR             CMD_D_SEARCH_RANGE
+                        RTS
+
+CMD_D_DUMP_RANGE:
                         JSR             CMD_D_SAVE_SPAN
-CMD_D_RANGE_OK:
                         JSR             MON_PRINT_MEM_RANGE
                         JSR             CMD_D_SAVE_NEXT
+                        RTS
+
+CMD_D_PARSE_RANGE:
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCS             CMD_D_PARSE_START_OK
+                        JMP             CMD_D_PARSE_RANGE_FAIL
+CMD_D_PARSE_START_OK:
+                        LDA             CMDP_ADDR_LO
+                        STA             CMD_RANGE_START_LO
+                        STA             CMD_RANGE_TMP_LO
+                        STA             CMDP_START_LO
+                        LDA             CMDP_ADDR_HI
+                        STA             CMD_RANGE_START_HI
+                        STA             CMD_RANGE_TMP_HI
+                        STA             CMDP_START_HI
+
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             CMD_D_DEFAULT_END
+                        CMP             #'+'
+                        BEQ             CMD_D_PARSE_RANGE_FAIL
+
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCS             CMD_D_PARSE_END_OK
+                        JMP             CMD_D_PARSE_RANGE_FAIL
+CMD_D_PARSE_END_OK:
+                        LDA             CMDP_TOKEN_LEN
+                        CMP             #$04
+                        BEQ             CMD_D_END_FULL
+                        CMP             #$03
+                        BEQ             CMD_D_END_WINDOW
+                        CMP             #$02
+                        BEQ             CMD_D_END_PAGE
+
+CMD_D_END_ROW:
+                        LDA             CMD_RANGE_START_HI
+                        STA             CMD_RANGE_END_HI
+                        LDA             CMD_RANGE_START_LO
+                        AND             #$F0
+                        ORA             CMDP_ADDR_LO
+                        STA             CMD_RANGE_END_LO
+                        BRA             CMD_D_CHECK_RANGE
+
+CMD_D_END_PAGE:
+                        LDA             CMD_RANGE_START_HI
+                        STA             CMD_RANGE_END_HI
+                        LDA             CMDP_ADDR_LO
+                        STA             CMD_RANGE_END_LO
+                        BRA             CMD_D_CHECK_RANGE
+
+CMD_D_END_WINDOW:
+                        LDA             CMD_RANGE_START_HI
+                        AND             #$F0
+                        ORA             CMDP_ADDR_HI
+                        STA             CMD_RANGE_END_HI
+                        LDA             CMDP_ADDR_LO
+                        STA             CMD_RANGE_END_LO
+                        BRA             CMD_D_CHECK_RANGE
+
+CMD_D_END_FULL:
+                        LDA             CMDP_ADDR_LO
+                        STA             CMD_RANGE_END_LO
+                        LDA             CMDP_ADDR_HI
+                        STA             CMD_RANGE_END_HI
+                        BRA             CMD_D_CHECK_RANGE
+
+CMD_D_DEFAULT_END:
+                        LDA             CMD_RANGE_START_LO
+                        STA             CMD_RANGE_END_LO
+                        LDA             CMD_RANGE_START_HI
+                        STA             CMD_RANGE_END_HI
+
+CMD_D_CHECK_RANGE:
+                        LDA             CMD_RANGE_END_HI
+                        CMP             CMD_RANGE_START_HI
+                        BCC             CMD_D_PARSE_RANGE_FAIL
+                        BNE             CMD_D_PARSE_RANGE_OK
+                        LDA             CMD_RANGE_END_LO
+                        CMP             CMD_RANGE_START_LO
+                        BCC             CMD_D_PARSE_RANGE_FAIL
+CMD_D_PARSE_RANGE_OK:
+                        SEC
+                        RTS
+CMD_D_PARSE_RANGE_FAIL:
+                        CLC
                         RTS
 
 CMD_D_REPEAT_RANGE:
@@ -576,429 +660,210 @@ CMD_USAGE_D:
                         JSR             SYS_WRITE_CRLF
                         RTS
 
-; ----------------------------------------------------------------------------
-; S start end|+count bb|'TEXT' [...]
-; ----------------------------------------------------------------------------
-CMD_SEARCH_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$22,$13,$0C,$D6,CMD_HASH_KIND_EXEC_TEXT ; S $D60C1322 EXEC+TEXT
-                        DW              CMD_SEARCH
-                        DW              MSG_SEARCH_EXTRA
-CMD_SEARCH:
+CMD_D_PARSE_PATTERN:
+                        STZ             D_PAT_LEN
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        CMP             #$27
+                        BEQ             CMD_D_PARSE_TEXT_PATTERN
+
+CMD_D_PARSE_BYTE_PATTERN:
+                        JSR             CMD_PARSE_HEX_BYTE_TOKEN
+                        BCC             CMD_D_PATTERN_FAIL
+                        JSR             CMD_D_APPEND_A
+                        BCC             CMD_D_PATTERN_FAIL
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        BEQ             CMD_D_PATTERN_DONE
+                        CMP             #$27
+                        BEQ             CMD_D_PATTERN_FAIL
+                        BRA             CMD_D_PARSE_BYTE_PATTERN
+
+CMD_D_PARSE_TEXT_PATTERN:
                         JSR             CMD_ADV_PTR
-                        LDA             CMDP_PTR_LO
-                        STA             SEARCH_LINE_LO
-                        LDA             CMDP_PTR_HI
-                        STA             SEARCH_LINE_HI
-                        JSR             SEARCH_PARSE_RANGE
-                        BCC             CMD_SEARCH_USAGE
-                        JSR             SEARCH_PARSE_PATTERN
-                        BCC             CMD_SEARCH_USAGE
-                        JSR             SEARCH_SCAN_RANGE
-                        RTS
+CMD_D_TEXT_PATTERN_LOOP:
+                        JSR             CMD_PEEK
+                        BEQ             CMD_D_PATTERN_FAIL
+                        CMP             #$27
+                        BEQ             CMD_D_TEXT_PATTERN_DONE
+                        JSR             CMD_D_APPEND_A
+                        BCC             CMD_D_PATTERN_FAIL
+                        JSR             CMD_ADV_PTR
+                        BRA             CMD_D_TEXT_PATTERN_LOOP
 
-CMD_SEARCH_USAGE:
-                        LDX             #<MSG_SEARCH_USAGE
-                        LDY             #>MSG_SEARCH_USAGE
-                        JSR             SEARCH_PRINT_LINE
-                        RTS
-
-SEARCH_PARSE_RANGE:
-                        JSR             SEARCH_PARSE_HEX_WORD
-                        BCC             SEARCH_PARSE_RANGE_FAIL
-                        LDA             SEARCH_WORD_LO
-                        STA             SEARCH_START_LO
-                        STA             SEARCH_SCAN_LO
-                        LDA             SEARCH_WORD_HI
-                        STA             SEARCH_START_HI
-                        STA             SEARCH_SCAN_HI
-
-                        JSR             SEARCH_SKIP_SPACES
-                        JSR             SEARCH_PEEK
-                        CMP             #'+'
-                        BEQ             SEARCH_PARSE_COUNT
-
-                        JSR             SEARCH_PARSE_HEX_WORD
-                        BCC             SEARCH_PARSE_RANGE_FAIL
-                        LDA             SEARCH_DIGITS
-                        CMP             #$03
-                        BCS             SEARCH_FULL_END
-                        LDA             SEARCH_START_HI
-                        STA             SEARCH_END_HI
-                        LDA             SEARCH_WORD_LO
-                        STA             SEARCH_END_LO
-                        BRA             SEARCH_CHECK_RANGE
-
-SEARCH_FULL_END:
-                        LDA             SEARCH_WORD_LO
-                        STA             SEARCH_END_LO
-                        LDA             SEARCH_WORD_HI
-                        STA             SEARCH_END_HI
-                        BRA             SEARCH_CHECK_RANGE
-
-SEARCH_PARSE_COUNT:
-                        JSR             SEARCH_ADV_LINE
-                        JSR             SEARCH_PARSE_HEX_WORD
-                        BCC             SEARCH_PARSE_RANGE_FAIL
-                        LDA             SEARCH_WORD_LO
-                        ORA             SEARCH_WORD_HI
-                        BEQ             SEARCH_PARSE_RANGE_FAIL
-                        LDA             SEARCH_WORD_LO
-                        BNE             SEARCH_COUNT_MINUS_1_LO
-                        DEC             SEARCH_WORD_HI
-SEARCH_COUNT_MINUS_1_LO:
-                        DEC             SEARCH_WORD_LO
-                        CLC
-                        LDA             SEARCH_START_LO
-                        ADC             SEARCH_WORD_LO
-                        STA             SEARCH_END_LO
-                        LDA             SEARCH_START_HI
-                        ADC             SEARCH_WORD_HI
-                        STA             SEARCH_END_HI
-                        BCS             SEARCH_PARSE_RANGE_FAIL
-
-SEARCH_CHECK_RANGE:
-                        LDA             SEARCH_END_HI
-                        CMP             SEARCH_START_HI
-                        BCC             SEARCH_PARSE_RANGE_FAIL
-                        BNE             SEARCH_PARSE_RANGE_OK
-                        LDA             SEARCH_END_LO
-                        CMP             SEARCH_START_LO
-                        BCC             SEARCH_PARSE_RANGE_FAIL
-SEARCH_PARSE_RANGE_OK:
+CMD_D_TEXT_PATTERN_DONE:
+                        LDA             D_PAT_LEN
+                        BEQ             CMD_D_PATTERN_FAIL
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_REQUIRE_EOL
+                        BCC             CMD_D_PATTERN_FAIL
                         SEC
                         RTS
-SEARCH_PARSE_RANGE_FAIL:
-                        CLC
-                        RTS
 
-SEARCH_PARSE_PATTERN:
-                        STZ             SEARCH_PAT_LEN
-SEARCH_PATTERN_LOOP:
-                        JSR             SEARCH_SKIP_SPACES
-                        JSR             SEARCH_PEEK
-                        BEQ             SEARCH_PATTERN_DONE
-                        CMP             #$27
-                        BEQ             SEARCH_PATTERN_TEXT
-                        JSR             SEARCH_PARSE_HEX_WORD
-                        BCC             SEARCH_PATTERN_FAIL
-                        LDA             SEARCH_WORD_HI
-                        BNE             SEARCH_PATTERN_FAIL
-                        LDA             SEARCH_WORD_LO
-                        JSR             SEARCH_APPEND_A
-                        BCC             SEARCH_PATTERN_FAIL
-                        BRA             SEARCH_PATTERN_LOOP
-
-SEARCH_PATTERN_TEXT:
-                        JSR             SEARCH_ADV_LINE
-                        STZ             SEARCH_COUNT
-SEARCH_PATTERN_TEXT_LOOP:
-                        JSR             SEARCH_PEEK
-                        BEQ             SEARCH_PATTERN_FAIL
-                        CMP             #$27
-                        BEQ             SEARCH_PATTERN_TEXT_DONE
-                        JSR             SEARCH_APPEND_A
-                        BCC             SEARCH_PATTERN_FAIL
-                        INC             SEARCH_COUNT
-                        JSR             SEARCH_ADV_LINE
-                        BRA             SEARCH_PATTERN_TEXT_LOOP
-
-SEARCH_PATTERN_TEXT_DONE:
-                        LDA             SEARCH_COUNT
-                        BEQ             SEARCH_PATTERN_FAIL
-                        JSR             SEARCH_ADV_LINE
-                        BRA             SEARCH_PATTERN_LOOP
-
-SEARCH_PATTERN_DONE:
-                        LDA             SEARCH_PAT_LEN
-                        BEQ             SEARCH_PATTERN_FAIL
+CMD_D_PATTERN_DONE:
+                        LDA             D_PAT_LEN
+                        BEQ             CMD_D_PATTERN_FAIL
                         SEC
                         RTS
-SEARCH_PATTERN_FAIL:
+CMD_D_PATTERN_FAIL:
                         CLC
                         RTS
 
-SEARCH_APPEND_A:
-                        STA             SEARCH_TMP
-                        LDA             SEARCH_PAT_LEN
-                        CMP             #SEARCH_PAT_MAX
-                        BCS             SEARCH_APPEND_FAIL
+CMD_D_APPEND_A:
+                        STA             CMDP_BYTE_TMP
+                        LDA             D_PAT_LEN
+                        CMP             #D_PAT_MAX
+                        BCS             CMD_D_APPEND_FAIL
                         TAY
-                        LDA             SEARCH_TMP
-                        STA             SEARCH_PAT_BUF,Y
-                        INC             SEARCH_PAT_LEN
+                        LDA             CMDP_BYTE_TMP
+                        STA             D_PAT_BUF,Y
+                        INC             D_PAT_LEN
                         SEC
                         RTS
-SEARCH_APPEND_FAIL:
+CMD_D_APPEND_FAIL:
                         CLC
                         RTS
 
-SEARCH_PARSE_HEX_WORD:
-                        JSR             SEARCH_SKIP_SPACES
-                        STZ             SEARCH_WORD_LO
-                        STZ             SEARCH_WORD_HI
-                        STZ             SEARCH_DIGITS
-                        JSR             SEARCH_PEEK
-                        CMP             #'$'
-                        BNE             SEARCH_HEX_LOOP
-                        JSR             SEARCH_ADV_LINE
-
-SEARCH_HEX_LOOP:
-                        JSR             SEARCH_PEEK
-                        JSR             CMD_HEX_ASCII_TO_NIBBLE
-                        BCC             SEARCH_HEX_DONE
-                        LDX             SEARCH_DIGITS
-                        CPX             #$04
-                        BCS             SEARCH_HEX_FAIL
-                        PHA
-                        ASL             SEARCH_WORD_LO
-                        ROL             SEARCH_WORD_HI
-                        ASL             SEARCH_WORD_LO
-                        ROL             SEARCH_WORD_HI
-                        ASL             SEARCH_WORD_LO
-                        ROL             SEARCH_WORD_HI
-                        ASL             SEARCH_WORD_LO
-                        ROL             SEARCH_WORD_HI
-                        PLA
-                        ORA             SEARCH_WORD_LO
-                        STA             SEARCH_WORD_LO
-                        INC             SEARCH_DIGITS
-                        JSR             SEARCH_ADV_LINE
-                        BRA             SEARCH_HEX_LOOP
-
-SEARCH_HEX_DONE:
-                        LDA             SEARCH_DIGITS
-                        BEQ             SEARCH_HEX_FAIL
-                        SEC
-                        RTS
-SEARCH_HEX_FAIL:
-                        CLC
-                        RTS
-
-SEARCH_SKIP_SPACES:
-                        JSR             SEARCH_PEEK
-                        CMP             #' '
-                        BEQ             SEARCH_SKIP_ADV
-                        CMP             #$09
-                        BEQ             SEARCH_SKIP_ADV
-                        RTS
-SEARCH_SKIP_ADV:
-                        JSR             SEARCH_ADV_LINE
-                        BRA             SEARCH_SKIP_SPACES
-
-SEARCH_PEEK:
-                        LDY             #$00
-                        LDA             (SEARCH_LINE_LO),Y
-                        RTS
-
-SEARCH_ADV_LINE:
-                        INC             SEARCH_LINE_LO
-                        BNE             SEARCH_ADV_DONE
-                        INC             SEARCH_LINE_HI
-SEARCH_ADV_DONE:
-                        RTS
-
-SEARCH_SCAN_RANGE:
-                        STZ             SEARCH_HIT_FLAG
-SEARCH_SCAN_LOOP:
-                        JSR             SEARCH_SCAN_GT_END
-                        BCS             SEARCH_SCAN_DONE
-                        LDA             SEARCH_SCAN_HI
-                        CMP             #$7F
-                        BNE             SEARCH_SCAN_NOT_IO
-                        LDA             SEARCH_SCAN_LO
-                        JSR             SYS_PRINT_IO_SLOT_SKIP
-                        LDA             SEARCH_SCAN_LO
-                        AND             #$E0
-                        CLC
-                        ADC             #$20
-                        STA             SEARCH_SCAN_LO
-                        LDA             #$7F
-                        ADC             #$00
-                        STA             SEARCH_SCAN_HI
-                        BRA             SEARCH_SCAN_LOOP
-
-SEARCH_SCAN_NOT_IO:
+CMD_D_SEARCH_RANGE:
+                        STZ             D_HIT_FLAG
+CMD_D_SEARCH_LOOP:
+                        JSR             MON_CURR_GT_END
+                        BCS             CMD_D_SEARCH_DONE
+                        JSR             MON_PRINT_MEM_IO_SKIP
+                        BCS             CMD_D_SEARCH_LOOP
                         JSR             HIM_CHECK_CTRL_C
-                        BCS             SEARCH_ABORT
-                        JSR             SEARCH_MATCH_AT
-                        BCC             SEARCH_SCAN_NEXT
+                        BCS             CMD_D_SEARCH_ABORT
+                        JSR             CMD_D_MATCH_AT
+                        BCC             CMD_D_SEARCH_NEXT
                         LDA             #$01
-                        STA             SEARCH_HIT_FLAG
-                        JSR             SEARCH_PRINT_HIT
+                        STA             D_HIT_FLAG
+                        JSR             CMD_D_PRINT_HIT
 
-SEARCH_SCAN_NEXT:
-                        LDA             SEARCH_SCAN_HI
-                        CMP             SEARCH_END_HI
-                        BNE             SEARCH_SCAN_INC
-                        LDA             SEARCH_SCAN_LO
-                        CMP             SEARCH_END_LO
-                        BEQ             SEARCH_SCAN_DONE
-SEARCH_SCAN_INC:
-                        INC             SEARCH_SCAN_LO
-                        BNE             SEARCH_SCAN_LOOP
-                        INC             SEARCH_SCAN_HI
-                        BRA             SEARCH_SCAN_LOOP
+CMD_D_SEARCH_NEXT:
+                        LDA             CMD_RANGE_TMP_HI
+                        CMP             CMD_RANGE_END_HI
+                        BNE             CMD_D_SEARCH_INC
+                        LDA             CMD_RANGE_TMP_LO
+                        CMP             CMD_RANGE_END_LO
+                        BEQ             CMD_D_SEARCH_DONE
+CMD_D_SEARCH_INC:
+                        JSR             CMD_INC_RANGE_TMP
+                        BRA             CMD_D_SEARCH_LOOP
 
-SEARCH_SCAN_DONE:
-                        LDA             SEARCH_HIT_FLAG
-                        BNE             SEARCH_SCAN_RETURN
-                        LDX             #<MSG_SEARCH_NF
-                        LDY             #>MSG_SEARCH_NF
-                        JSR             SEARCH_PRINT_LINE
-SEARCH_SCAN_RETURN:
+CMD_D_SEARCH_DONE:
+                        LDA             D_HIT_FLAG
+                        BNE             CMD_D_SEARCH_RETURN
+                        LDX             #<MSG_D_NF
+                        LDY             #>MSG_D_NF
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+CMD_D_SEARCH_RETURN:
                         RTS
 
-SEARCH_ABORT:
-                        LDX             #<MSG_SEARCH_ABORT
-                        LDY             #>MSG_SEARCH_ABORT
-                        JMP             SEARCH_PRINT_LINE
-
-SEARCH_SCAN_GT_END:
-                        LDA             SEARCH_SCAN_HI
-                        CMP             SEARCH_END_HI
-                        BCC             SEARCH_GT_NO
-                        BNE             SEARCH_GT_YES
-                        LDA             SEARCH_SCAN_LO
-                        CMP             SEARCH_END_LO
-                        BEQ             SEARCH_GT_NO
-                        BCC             SEARCH_GT_NO
-SEARCH_GT_YES:
-                        SEC
-                        RTS
-SEARCH_GT_NO:
-                        CLC
+CMD_D_SEARCH_ABORT:
+                        LDX             #<MSG_D_ABORT
+                        LDY             #>MSG_D_ABORT
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
                         RTS
 
-SEARCH_MATCH_GT_END:
-                        LDA             SEARCH_MATCH_HI
-                        CMP             SEARCH_END_HI
-                        BCC             SEARCH_GT_NO
-                        BNE             SEARCH_GT_YES
-                        LDA             SEARCH_MATCH_LO
-                        CMP             SEARCH_END_LO
-                        BEQ             SEARCH_GT_NO
-                        BCC             SEARCH_GT_NO
-                        BRA             SEARCH_GT_YES
-
-SEARCH_MATCH_AT:
-                        LDA             SEARCH_SCAN_LO
-                        STA             SEARCH_MATCH_LO
-                        LDA             SEARCH_SCAN_HI
-                        STA             SEARCH_MATCH_HI
+CMD_D_MATCH_AT:
+                        LDA             CMD_RANGE_TMP_LO
+                        STA             D_MATCH_LO
+                        LDA             CMD_RANGE_TMP_HI
+                        STA             D_MATCH_HI
                         LDX             #$00
-SEARCH_MATCH_LOOP:
-                        LDA             SEARCH_MATCH_HI
+CMD_D_MATCH_LOOP:
+                        LDA             D_MATCH_HI
                         CMP             #$7F
-                        BNE             SEARCH_MATCH_NOT_IO
+                        BEQ             CMD_D_MATCH_FAIL
+                        JSR             CMD_D_MATCH_GT_END
+                        BCS             CMD_D_MATCH_FAIL
+                        LDY             #$00
+                        LDA             (D_MATCH_LO),Y
+                        CMP             D_PAT_BUF,X
+                        BNE             CMD_D_MATCH_FAIL
+                        INX
+                        CPX             D_PAT_LEN
+                        BEQ             CMD_D_MATCH_YES
+                        INC             D_MATCH_LO
+                        BNE             CMD_D_MATCH_LOOP
+                        INC             D_MATCH_HI
+                        BNE             CMD_D_MATCH_LOOP
+CMD_D_MATCH_FAIL:
                         CLC
                         RTS
-SEARCH_MATCH_NOT_IO:
-                        JSR             SEARCH_MATCH_GT_END
-                        BCS             SEARCH_MATCH_FAIL
-                        LDY             #$00
-                        LDA             (SEARCH_MATCH_LO),Y
-                        CMP             SEARCH_PAT_BUF,X
-                        BNE             SEARCH_MATCH_FAIL
-                        INX
-                        CPX             SEARCH_PAT_LEN
-                        BEQ             SEARCH_MATCH_YES
-                        INC             SEARCH_MATCH_LO
-                        BNE             SEARCH_MATCH_LOOP
-                        INC             SEARCH_MATCH_HI
-                        BEQ             SEARCH_MATCH_FAIL
-                        BRA             SEARCH_MATCH_LOOP
-SEARCH_MATCH_YES:
+CMD_D_MATCH_YES:
                         SEC
                         RTS
-SEARCH_MATCH_FAIL:
+
+CMD_D_MATCH_GT_END:
+                        LDA             D_MATCH_HI
+                        CMP             CMD_RANGE_END_HI
+                        BCC             CMD_D_MATCH_GT_NO
+                        BNE             CMD_D_MATCH_GT_YES
+                        LDA             D_MATCH_LO
+                        CMP             CMD_RANGE_END_LO
+                        BEQ             CMD_D_MATCH_GT_NO
+                        BCC             CMD_D_MATCH_GT_NO
+CMD_D_MATCH_GT_YES:
+                        SEC
+                        RTS
+CMD_D_MATCH_GT_NO:
                         CLC
                         RTS
 
-SEARCH_PRINT_HIT:
-                        LDA             SEARCH_SCAN_HI
+CMD_D_PRINT_HIT:
+                        LDA             CMD_RANGE_TMP_LO
+                        STA             D_SCAN_SAVE_LO
+                        LDA             CMD_RANGE_TMP_HI
+                        STA             D_SCAN_SAVE_HI
+                        LDA             CMD_RANGE_END_LO
+                        STA             D_END_SAVE_LO
+                        LDA             CMD_RANGE_END_HI
+                        STA             D_END_SAVE_HI
+
+                        LDA             CMD_RANGE_TMP_HI
                         JSR             SYS_WRITE_HEX_BYTE
-                        LDA             SEARCH_SCAN_LO
+                        LDA             CMD_RANGE_TMP_LO
                         JSR             SYS_WRITE_HEX_BYTE
 
-                        LDA             SEARCH_SCAN_LO
+                        LDA             CMD_RANGE_TMP_LO
                         AND             #$0F
                         CLC
-                        ADC             SEARCH_PAT_LEN
+                        ADC             D_PAT_LEN
                         CMP             #$11
-                        BCC             SEARCH_HIT_SPACE
+                        BCC             CMD_D_HIT_SPACE
                         LDA             #'*'
-                        BRA             SEARCH_HIT_SEP
-SEARCH_HIT_SPACE:
+                        BRA             CMD_D_HIT_SEP
+CMD_D_HIT_SPACE:
                         LDA             #' '
-SEARCH_HIT_SEP:
+CMD_D_HIT_SEP:
                         JSR             BIO_FTDI_WRITE_BYTE_BLOCK
 
-                        LDA             SEARCH_SCAN_LO
+                        LDA             D_SCAN_SAVE_LO
                         AND             #$F0
-                        STA             SEARCH_ROW_LO
-                        LDA             SEARCH_SCAN_HI
-                        STA             SEARCH_ROW_HI
-                        JSR             SEARCH_PRINT_ROW_ADDR
-                        LDA             #':'
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        JSR             SEARCH_PRINT_ROW_BYTES
-                        JMP             SYS_WRITE_CRLF
+                        STA             CMD_RANGE_TMP_LO
+                        STA             CMDP_START_LO
+                        ORA             #$0F
+                        STA             CMD_RANGE_END_LO
+                        LDA             D_SCAN_SAVE_HI
+                        STA             CMD_RANGE_TMP_HI
+                        STA             CMDP_START_HI
+                        STA             CMD_RANGE_END_HI
+                        JSR             MON_PRINT_MEM_RANGE
 
-SEARCH_PRINT_ROW_ADDR:
-                        LDA             SEARCH_ROW_HI
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDA             SEARCH_ROW_LO
-                        JMP             SYS_WRITE_HEX_BYTE
-
-SEARCH_PRINT_ROW_BYTES:
-                        STZ             SEARCH_COUNT
-SEARCH_ROW_BYTE_LOOP:
-                        LDA             SEARCH_COUNT
-                        BEQ             SEARCH_ROW_BYTE_SPACE
-                        CMP             #$08
-                        BNE             SEARCH_ROW_BYTE_SPACE
-                        LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        LDA             #'|'
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-SEARCH_ROW_BYTE_SPACE:
-                        LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        LDY             SEARCH_COUNT
-                        LDA             (SEARCH_ROW_LO),Y
-                        JSR             SYS_WRITE_HEX_BYTE
-                        INC             SEARCH_COUNT
-                        LDA             SEARCH_COUNT
-                        CMP             #$10
-                        BCC             SEARCH_ROW_BYTE_LOOP
-
-                        LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        LDA             #'|'
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        STZ             SEARCH_COUNT
-SEARCH_ROW_ASCII_LOOP:
-                        LDY             SEARCH_COUNT
-                        LDA             (SEARCH_ROW_LO),Y
-                        CMP             #' '
-                        BCC             SEARCH_ROW_DOT
-                        CMP             #$7F
-                        BCC             SEARCH_ROW_ASCII_OUT
-SEARCH_ROW_DOT:
-                        LDA             #'.'
-SEARCH_ROW_ASCII_OUT:
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        INC             SEARCH_COUNT
-                        LDA             SEARCH_COUNT
-                        CMP             #$10
-                        BCC             SEARCH_ROW_ASCII_LOOP
+                        LDA             D_SCAN_SAVE_LO
+                        STA             CMD_RANGE_TMP_LO
+                        STA             CMDP_START_LO
+                        LDA             D_SCAN_SAVE_HI
+                        STA             CMD_RANGE_TMP_HI
+                        STA             CMDP_START_HI
+                        LDA             D_END_SAVE_LO
+                        STA             CMD_RANGE_END_LO
+                        LDA             D_END_SAVE_HI
+                        STA             CMD_RANGE_END_HI
                         RTS
-
-SEARCH_PRINT_LINE:
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
 
 ; ----------------------------------------------------------------------------
 ; M start [end|+count]
@@ -3683,13 +3548,11 @@ MSG_D_IO_ACIA:           DB              "ACIA     IO SKI",('P'+$80)
 MSG_D_IO_PIA:            DB              "PIA      IO SKI",('P'+$80)
 MSG_D_IO_VIA:            DB              "VIA      IO SKI",('P'+$80)
 MSG_D_IO_FTDI:           DB              "FTDI VIA IO SKI",('P'+$80)
-MSG_SEARCH_USAGE:        DB              "S START END|+COUNT BB|'TEXT' [...], ? HELP, Q QUI",('T'+$80)
-MSG_SEARCH_NF:           DB              "S N",('F'+$80)
-MSG_SEARCH_ABORT:        DB              "S ABOR",('T'+$80)
-MSG_SEARCH_EXTRA:        DB              "S: SEARCH FROM RAM TO HASHED HIMON CM",('D'+$80)
-MSG_HELP:                DB              "# ? S D M R X G L B N Q ",$22," STR",('8'+$80)
+MSG_D_NF:                DB              "D N",('F'+$80)
+MSG_D_ABORT:             DB              "D ABOR",('T'+$80)
+MSG_HELP:                DB              "# ? D M R X G L B N Q ",$22," STR",('8'+$80)
 MSG_QUOTE_MATCH:         DB              " STR8 MATCH",('!'+$80)
-MSG_USAGE_D:             DB              "D start [end|+cnt",(']'+$80)
+MSG_USAGE_D:             DB              "D [a [b [bb|'t']]",(']'+$80)
 MSG_USAGE_M:             DB              "M start [end|+cnt]",('.'+$80)
 MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)

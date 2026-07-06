@@ -7385,7 +7385,7 @@ END
 SEAL
 PACKAGE $3000
 .
-D 3000 +37
+D 3000 3036
 ```
 
 Expected structure is an AP v1 envelope at `$3000`. The FNV bytes in the seal
@@ -7400,7 +7400,7 @@ The matching flash-board proof loaded the package-enabled flash image with
 `>ASM`. The same body assembled at `BASE=$2000 END=$2008`, sealed as
 `SEAL REC @=$6111 LEN=$0008 FNV=$FFC39D9A`, and kept the three internal
 relocation rows. `PACKAGE $3000` reported
-`PACKAGE OK @=$3000 LEN=$0037`. `D 3000 +37` showed:
+`PACKAGE OK @=$3000 LEN=$0037`. `D 3000 3036` showed:
 
 ```text
 3000: 41 50 01 37 00 53 0B 01 | 00 20 08 20 08 00 9A 9D
@@ -7439,7 +7439,7 @@ Flash-board CHECK probe after the PACKAGE proof above:
 ```text
 CHECK $3000
 .
-D 3000 +37
+D 3000 3036
 ```
 
 Expected success is `CHECK OK @=$3000 LEN=$0037`. The command validates the AP
@@ -7452,7 +7452,7 @@ The matching flash-board proof loaded the fixed package/check flash image with
 body at `BASE=$2000 END=$2008`, sealed as
 `SEAL REC @=$6111 LEN=$0008 FNV=$FFC39D9A`, and wrote
 `PACKAGE OK @=$3000 LEN=$0037`. `CHECK $3000` then reported
-`CHECK OK @=$3000 LEN=$0037`, and the final `D 3000 +37` dump matched the AP
+`CHECK OK @=$3000 LEN=$0037`, and the final `D 3000 3036` dump matched the AP
 v1 envelope from the earlier package proof. This proves the flash-resident
 reader accepted the package it just wrote while the flash runtime UDATA ended
 at `$7F00`, outside the `$7F00-$7FFF` I/O page. After this proof, the default
@@ -7978,7 +7978,7 @@ ORG $4FFF
 NOP
 END
 .
-D 4FFF +1
+D 4FFF
 
 ASM NEW
 ORG $4FFE
@@ -8043,8 +8043,8 @@ SEAL
 RELOCATE $3000
 PACKAGE $3200
 .
-D 3000 +8
-D 3200 +37
+D 3000 3007
+D 3200 3236
 G 3000
 ```
 

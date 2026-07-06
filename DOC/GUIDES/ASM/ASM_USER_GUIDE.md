@@ -448,8 +448,8 @@ Expected behavior:
 From HIMON:
 
 ```text
-D 3000 +8
-D 3200 +37
+D 3000 3007
+D 3200 3236
 G 3000
 ```
 

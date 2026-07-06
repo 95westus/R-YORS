@@ -44,17 +44,11 @@
   are `COPY start end|+count dest`, `FILL start end|+count bb`, and later
   `MOVE start end|+count dest`; flash/bank mutation stays behind full-word
   confirmed commands.
-- Add `D` continuation state: bare `D` repeats the previous dump length from
-  the byte after the previous dump, e.g. `D 3000 FF` then `D` displays
-  `$3100-$31FF`.
-- Define and implement HIMON memory search using the shared range parser:
-  target `S addr end|+count b0 [b1 ...]` for hex-byte search,
-  `S addr end|+count 'TEXT` for text search, and the simple mixed tail
-  `S addr end|+count b0 [b1 ...] 'TEXT`. Treat apostrophe text as a final V0
-  tail, not a quoted atom that resumes parsing. Print hits as D-style context
-  rows: exact hit address, aligned row address, and `*` when the match crosses
-  a 16-byte display row. Current step/next moves to `N` only; do not add
-  `NEXT` as an alias.
+- Board-prove the resident `D` dump/search grammar after the `S` removal:
+  `D start`, suffix-completed `D start end`, explicit-range byte search
+  `D start end bb...`, and text search `D start end 'TEXT'`. Confirm `S` is
+  not found in normal HIMON, `+count` is rejected by `D`, search skips
+  `$7F00-$7FFF`, and dump continuation is updated only by dump mode.
 - Document and design BIO-level FTDI RX lookahead before changing the stable
   input path. A true hardware peek is not available once
   `PIN_FTDI_READ_BYTE_NONBLOCK` reads the FIFO, so any general peek must cache
@@ -64,7 +58,8 @@
 - Fix HIMON long-output abort polling so board-script paste commands are not
   eaten while `D`, catalog listing, or search output is still printing. Current
   `HIM_CHECK_CTRL_C` polls by consuming one FTDI byte and discarding it when it
-  is not Ctrl-C; this can turn a queued `D 5848 +22` into `5848 +22` or `+22`.
+  is not Ctrl-C; this can turn a queued `D 5848 5869` into `5848 5869` or
+  `5869`.
   The likely fix is a BIO-owned one-byte or small-ring RX lookahead/pushback
   path, with normal HIMON line input consuming cached bytes before hardware.
 - Keep the `BIO_FTDI_*_BYTE_BLOCK` routines as unbounded blocking APIs unless

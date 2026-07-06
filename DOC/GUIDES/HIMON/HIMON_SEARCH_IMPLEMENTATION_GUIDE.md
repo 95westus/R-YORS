@@ -1,10 +1,14 @@
 # HIMON Search Implementation Guide
 
-This guide turns the freed `S` command slot into HIMON memory search. The
-central workflow still starts outside the resident source: write and debug the
-routine in RAM, then build an S19 that writes the proven bytes into flash.
-After the flash load verifies, the S19 is no longer the thing being run; the
-code is now resident in the board's flash-backed "ROM" window.
+This is now a historical proof/package guide for the old `S` search work.
+Normal resident HIMON no longer owns an `S` command; resident memory search is
+folded into `D start end pattern`, and old `himon-search-*` artifacts are
+optional userland or alternate-flash-bank material.
+
+The workflow below is still useful when building a standalone search package:
+write and debug the routine in RAM, then build an S19 that writes the proven
+bytes into flash. After the flash load verifies, the S19 is no longer the thing
+being run; the code is now resident in that package flash window.
 
 The order is deliberate:
 
@@ -14,24 +18,24 @@ prove search as a RAM S19 under HIMON
 turn it into a low-flash FNV command-record S19
 load that record with L F only after the hole is proven blank
 run it from flash/ROM; the S19 becomes proof/delivery history
-fold the clean implementation into HIMON later
+keep it outside normal HIMON unless deliberately building an alternate package
 ```
 
 ## Current Anchors
 
-- `S` is no longer the resident step command; `N` owns step/next and `S` is
-  available for search.
-- Search syntax is already shaped as:
+- `S` is not a resident HIMON command in the normal image. `N` owns step/next,
+  and `D` owns resident dump/search.
+- Optional `S` packages keep the historical proof syntax:
 
 ```text
 S addr end b0 [b1 ...] 'TEXT' bx ...
 S addr +count b0 [b1 ...] 'TEXT' bx ...
 ```
 
-- After the range, each pattern atom is either a hex byte token or an
-  apostrophe-quoted text chunk. Text chunks can appear at the start, middle, or
-  end of the pattern. Use hex byte `$27` when the pattern must contain an
-  apostrophe byte.
+- For those optional packages, after the range each pattern atom is either a
+  hex byte token or an apostrophe-quoted text chunk. Text chunks can appear at
+  the start, middle, or end of the pattern. Use hex byte `$27` when the pattern
+  must contain an apostrophe byte.
 - Resident HIMON command input currently uppercases printable text before
   dispatch. The current RAM proof preserves printable input and only folds the
   command letter, so lowercase and mixed-case apostrophe text can be tested
@@ -46,16 +50,17 @@ B88F B880: ...
 
 - Current `L F` writes only blank bytes in `$8000-$BFFF` and protects
   `$C000-$FFFF`.
-- The command-record scanner starts at `$8000`. A flash FNV record for `S` below
-  `$C000` can own the search command before the integrated HIMON search body is
-  folded in.
-- The active search names are deliberately separate:
+- The command-record scanner starts at `$8000`. An alternate bank or userland
+  image can still provide a low-flash FNV record for `S`, but normal resident
+  HIMON does not include one.
+- The optional proof/package names are deliberately separate from resident
+  HIMON:
 
 ```text
 himon-search-static     standalone RAM proof with statically linked helpers
 himon-search-proof      RAM proof using runtime-discovered resident helpers
 himon-search-flash      low-flash K=$05 command record for L F delivery
-himon-search-for-himon  native HIMON port scaffold and checklist
+himon-search-for-himon  historical native port scaffold and checklist
 ```
 
 `himon-search-static-proof` remains as a legacy build alias, but the shorter
@@ -1106,14 +1111,14 @@ native HIMON command
 ```
 
 The flash command is the smallest standalone binary even though its source is
-larger than the static proof. That was the useful intermediate result: once
-HIMON owns the shell, command dispatch, confirmation text, and resident helper
-table, the command member only needs the search parser/scanner/printer plus a
-small import resolver. The native HIMON command removes that resolver too. The
-same `S` command has now made the trip from RAM proof to hash-visible flash
-resident code to built-in HIMON command.
+larger than the static proof. That was the useful intermediate result for the
+old path. The later resident direction supersedes this native-`S` material:
+normal HIMON removes `S` entirely and folds resident search into `D`.
 
-### What "Lay It Into HIMON" Means
+### What "Lay It Into HIMON" Meant
+
+Historical note: this section records the earlier native-`S` integration path.
+It is no longer the normal HIMON plan.
 
 The flash-shadow command is a resident command, but it is still outside the
 HIMON image. Laying it into HIMON means replacing the low-flash specimen with a
@@ -1419,8 +1424,9 @@ trusted. Either way, record the tradeoff in the log before writing flash.
 
 ## Phase 3: HIMON Integration
 
-When the RAM and flash-shadow behavior are both boring, fold the command into
-HIMON:
+Superseded native-`S` plan. The normal resident integration now removes `S` and
+keeps search under `D`; keep the old `himon-search-*` artifacts as optional
+proof/package material:
 
 - Move the search implementation into the HIMON source tree.
 - Use `SRC/PROOFS/himon-search-for-himon.asm` as the checklist for the

@@ -94,7 +94,6 @@ flowchart TD
     DISPATCH[CMD_DISPATCH_HASH] --> HELP[? CMD_HELP]
     DISPATCH --> HASHINFO[# CMD_HASH_INFO]
     DISPATCH --> D[D CMD_D]
-    DISPATCH --> S[S CMD_SEARCH]
     DISPATCH --> M[M CMD_M]
     DISPATCH --> R[R CMD_R]
     DISPATCH --> X[X CMD_X]
@@ -108,11 +107,10 @@ flowchart TD
     HASHINFO --> HASHLIST[CMD_HASH_LIST]
     HASHLIST --> HASHROW[CMD_HASH_PRINT_ROW]
 
-    D --> RANGE[CMD_PARSE_RANGE_REQUIRED]
+    D --> DRANGE[CMD_D_PARSE_RANGE]
+    D --> DPATTERN[CMD_D_PARSE_PATTERN]
+    D --> DSCAN[CMD_D_SEARCH_RANGE]
     D --> MEMPRINT[MON_PRINT_MEM_RANGE]
-    S --> SPARSE[SEARCH_PARSE_RANGE]
-    S --> SPATTERN[SEARCH_PARSE_PATTERN]
-    S --> SSCAN[SEARCH_SCAN_RANGE]
     M --> RANGE
     M --> MEMMOD[MON_MODIFY_RANGE]
 
@@ -272,9 +270,8 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
 | Quoted hash | `"text"` | `CMD_QUOTE_HASH`, `FNV1A_*` | Prints FNV-1a32 for text through the closing quote and reports STR8 match on `#5F6A0F7A`. | Input is uppercased by HIMON and leading/trailing spaces are trimmed. |
-| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? S D M R X G L B N Q " STR8`. |
-| Memory dump | `D [start [end|+count]]` | `CMD_D`, `CMD_PARSE_RANGE_REQUIRED`, `MON_PRINT_MEM_RANGE` | Prints hex rows plus printable ASCII, abortable with Ctrl-C. | Bare `D` repeats the previous dump length from the next address. |
-| Memory search | `S start end\|+count bb\|'TEXT' [...]` | `CMD_SEARCH`, `SEARCH_PARSE_RANGE`, `SEARCH_PARSE_PATTERN`, `SEARCH_SCAN_RANGE` | Built-in K=$05 HIMON command; searches memory for mixed hex/text byte patterns, skips named `$7Fxx` I/O slots, reports `S NF` or `S ABORT`. | Token hash is `$D60C1322`; display text is `S: SEARCH FROM RAM TO HASHED HIMON CMD`. |
+| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? D M R X G L B N Q " STR8`. |
+| Memory dump/search | `D [start [end [bb...|'TEXT']]]` | `CMD_D`, `CMD_D_PARSE_RANGE`, `CMD_D_PARSE_PATTERN`, `CMD_D_SEARCH_RANGE`, `MON_PRINT_MEM_RANGE` | Dumps a one-byte or inclusive range, or searches an explicit range for 1-16 hex bytes or one quoted text atom. | Bare `D` repeats the previous dump length from the next address. `+count` is not accepted by `D`; short end tokens complete against the start address by digit width. Search skips `$7F00-$7FFF`, reports `D NF` or `D ABORT`, and does not update dump continuation. |
 | Memory modify | `M start [end|+count]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes only below monitor workspace, `.` aborts. | Protected ranges from `$7A00` upward report `M PROT=$hhhh`; this is stricter than the hard `$7EFF` RAM ceiling. Current short mutator remains under review; future bulk fill should be `FILL start end|+count bb`, not an `M` subform. |
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
@@ -291,6 +288,23 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Quiesce | `Q` | `CMD_Q` | Executes `SEI`, `WAI`, then re-enters HIMON. | IRQ wakes cleanly to monitor re-entry; NMI still follows the trap path through the debounce POC vector. |
 | Loaded-language bridge I/O | map-patched call addresses | `BIO_FTDI_READ_BYTE_BLOCK`, `BIO_FTDI_WRITE_BYTE_BLOCK` | Local composite images may patch direct calls from the current HIMON map. | Not a stable fixed-address ABI; rebuild patches must track the map. |
 | Loaded-language return | `$8000` handoff for current composites | `START` | Re-enters HIMON through its reset/monitor entry. | A cleaner app-return contract is future work. |
+
+## Size Evidence
+
+2026-07-06 normal HIMON map after removing resident `S` and folding search into
+`D`:
+
+```text
+CODE     $21A1 /  8609
+DATA     $060E /  1550
+TOTAL    $27AF / 10159
+_END_DATA = $E7AF
+```
+
+The previous resident-`S` map was about `$28A5` total, so this slice saves about
+`$00F6` / 246 bytes while adding D-local search. `CMD_SEARCH_FNV`,
+`CMD_SEARCH`, and `MSG_SEARCH_*` are absent from the normal HIMON map; `D`
+search enters through `CMD_D_SEARCH_RANGE`.
 
 ## Edge Evidence Rules
 

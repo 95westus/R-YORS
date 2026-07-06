@@ -461,7 +461,7 @@ HIMON `V 00.0704(1654)` showed:
 
 ```text
 >?
-# ? S D M R X G L B N Q " STR8
+# ? D M R X G L B N Q " STR8
 >U 2000
 #D00C09B0# HSH_NF!
 >U

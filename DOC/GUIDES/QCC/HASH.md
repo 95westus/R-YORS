@@ -341,25 +341,15 @@ one or more atoms:
 
 ```text
 hex-byte      append one byte
-'text-tail   append text through end-of-line, then stop parsing pattern
+'text'        append one closed text atom, then require end-of-line
 ```
 
 That keeps the normal cases terse:
 
 ```text
-S addr end|+count b0 [b1 ...]
-S addr end|+count 'TEXT
+D addr end b0 [b1 ... b15]
+D addr end 'TEXT'
 ```
 
-and allows the small operator convenience:
-
-```text
-S 0 FFFF 4D 4D 'M
-```
-
-which searches for three `M` bytes.
-
-Concern: Keep apostrophe text as a final tail for the first implementation.
-There is no closing-quote parser and no return to hex parsing after text.
-Supporting text in the middle of the pattern would require quotes or escaping;
-that is not worth the parser cost for V0.
+Resident HIMON does not keep a separate `S` command. `D` owns both dump and
+search, and quoted text is not mixed with hex bytes in the same pattern.
