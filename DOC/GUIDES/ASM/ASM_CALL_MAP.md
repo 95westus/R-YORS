@@ -151,6 +151,7 @@ ASM_DISPATCH_STATEMENT owns top-level policy; classifiers should not decide
 whether a token is a label.
 Local labels are label-only PC aliases under the most recent nonlocal label.
 Unresolved local fixups cannot cross into the next nonlocal scope.
-ASM_PRINT_TABLES reports global symbols and fixups; locals are intentionally
-not global report/export names.
+Default flash ASM leaves detailed table reporting to the external
+asm-session-report proof; locals remain intentionally outside global
+report/export names.
 ```

@@ -526,15 +526,13 @@ A [addr] [label[:]] MMM [operand] .
   from the seal base. `$04` ABS16_IMPORT, `$05` LO8_IMPORT, and `$06`
   HI8_IMPORT record imported values: site is still a seal-base offset, while
   target low carries the import slot index and target high is zero.
-- `SEAL> RESOLVE` is the first RAM-body import resolver proof. It is available
-  only after clean `END`, resolves `$04/$05/$06` import rows through current
-  resident RJOIN, patches the current emitted bytes in place, and leaves the
-  import/relocation metadata intact for inspection. It is not yet the final
-  flash install/link policy.
+- The default flash image omits interactive `RESOLVE` in the first
+  `LOAD`/`INSTALL` slice. Import metadata remains packageable, but runnable
+  `LOAD` rejects imports with `BAD FIX`.
 - `SEAL> RELOCATE address` is the first RAM-overlay move proof. It is
   available only after clean `END`, copies the frozen body to the requested RAM
   base, applies `$01/$02/$03` internal relocation rows against that base, and
-  leaves `$04/$05/$06` import rows for `RESOLVE` or a later installer.
+  leaves `$04/$05/$06` import rows for a later installer.
 - `SEAL> PACKAGE address` is the first stable sealed-object envelope proof. It
   is enabled in full core smoke and flash-resident ASM, while the stripped RAM
   paste wrapper omits it to preserve board workspace. The AP v1 envelope stores
@@ -553,12 +551,18 @@ A [addr] [label[:]] MMM [operand] .
   as opaque bytes without relocation. Relocation is required only when the BODY
   bytes are loaded or installed to execute at a base different from the sealed
   base.
-- Future `LOAD`/`INSTALL` work may first store AP v1 packages without full AP
-  validation, provided the catalog marks them unvalidated and no command runs,
-  publishes, or trusts them as executable until validation is added. The later
-  validator should check the AP header, total range, section order and lengths,
-  BODY length, BODY FNV, and import/export shape before execution or RJOIN
-  publication.
+- `SEAL> LOAD pkg dest` is the first runnable AP path. It performs a minimal AP
+  parse, copies BODY to a destination that fits wholly in `$2000-$4FFF`, applies
+  internal `$01-$03` relocation rows, and rejects declared imports/import
+  relocation rows with `BAD FIX`. Full AP validation, BODY FNV verification,
+  import resolution, RJOIN publication, and banked execution are deferred. For
+  RAM package sources in this slice, the destination BODY must end before the AP
+  envelope begins; this conservative rule avoids self-overwriting copies while
+  keeping the resident loader small.
+- `SEAL> INSTALL pkg` is advisory only in this slice. It finds the first erased
+  contiguous visible flash hole in `$8000-$FEFF` large enough for the unchanged
+  AP envelope and prints the suggestion. The write form waits for banks 0-2
+  access/runability.
 - The HREC/RJOIN `K` byte is kind metadata, not install lifecycle state. Current
   resident records define `K` in source with bits for executable, confirmation,
   and text/metadata. Future AP package/catalog kind should come from explicit
@@ -567,6 +571,12 @@ A [addr] [label[:]] MMM [operand] .
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.
+- Default flash ASM keeps table printing out of the resident command surface.
+  `asm-session-report-7000.s19` is the host-built external table reporter, and
+  `asm-session-report-4800.a` is the flash ASM-native source snapshot for
+  preloading before the session being inspected. `asm-session-report-7000.a`
+  is retained for non-flash/runtime-paste ASM builds that still allow `$7000`
+  output.
 - RAM "rows" are conceptual records. A W65C02 implementation may store fields
   as parallel arrays indexed by slot, matching the current proof style, when
   that saves code or cycles.
@@ -611,9 +621,9 @@ A [addr] [label[:]] MMM [operand] .
   later tools.
 - V1 report timing is split by build. The core/smoke compact-report build can
   print the compact report at `END` or first failure. `ASM_RUNTIME_ONLY`
-  omits that printer and its strings; runtime paste/flash wrappers use their
-  error line, `ASM TABLES`, and post-END `SEAL` facts as the operator-visible
-  report path. A separate `REPORT` command can be added later.
+  omits that printer and its strings; runtime paste/flash wrappers use compact
+  error lines and post-END `SEAL` facts as the operator-visible report path.
+  The external `asm-session-report-7000` proof carries detailed table output.
 - ASM report line numbers are physical source/session input lines counted from
   the start of the assembly session, including blank/comment lines. References
   are only recorded for lines that define or use a symbol.
@@ -696,7 +706,7 @@ A [addr] [label[:]] MMM [operand] .
   room below it for the loaded runtime body, DATA constants, and UDATA/line
   buffer. ASM rejects output targets that overlap the live ASM workspace:
   RAM-loaded runtime/core images protect `$2000..ASM_CODE_BUF-1`, and the
-  flash wrapper protects `$6000..ASM_CODE_BUF-1`. Runtime-paste `ASM_CODE_BUF`
+  flash wrapper protects `$5000..ASM_CODE_BUF-1`. Runtime-paste `ASM_CODE_BUF`
   remains a valid fallback emission buffer; flash ASM starts at explicit
   `$2000`, and its high-RAM `ASM_CODE_BUF` is only an 8-byte guard fence ending
   at the `$7F00` I/O page. The guard is applied at explicit `ASM_BEGIN`, `ORG`,
@@ -725,9 +735,9 @@ A [addr] [label[:]] MMM [operand] .
   without needing a top-sector `$FFF8/$FFF9` flash patch.
 - The first ASM flash slice is a fixed-address `L F` image, not an auto-placed
   image. `asm-v1-flash` links the FNV record at `$8000`, uses `START` from the
-  map for the S9 entry, keeps emitted opcodes at `$2000+`, and currently places
-  ASM runtime UDATA at `$6000+` until the planned `$7DFF` downward arena exists.
-  `$6000` is the mutable table arena, not the base RAM emission address.
+  map for the S9 entry, keeps emitted opcodes in `$2000-$4FFF`, and places ASM
+  runtime UDATA at `$5000+`. `$5000` is the mutable table arena, not the base
+  RAM emission address.
 - For the future "ASM assembles ASM" milestone, table-limit bumps are only a
   measurement step. The current practical mix is `ASM_SYM_MAX=$28`,
   `ASM_FIX_MAX=$60`, `ASM_REF_MAX=$A0`, and `ASM_LOCAL_MAX=$10`, while keeping

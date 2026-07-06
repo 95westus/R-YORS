@@ -1329,20 +1329,17 @@ $7000  older smoke-test emitted-code target; current runtime-paste rejects it
        when it overlaps the live workspace
 $7600  current runtime-paste default emitted-code target
 $8000  flash-resident ASM command CODE/FNV record link address
-$6000  current flash-runtime UDATA/table arena from the Makefile `-u6000`
+$5000  current flash-runtime UDATA/table arena from the Makefile `-u5000`
 ```
 
 So yes: the base RAM assembly/emission address is `$2000` in the active RAM and
-flash-command paths. `$6000` is not the base RAM address; it is where the
-flash-resident ASM runtime currently places mutable UDATA tables. Older maps
-put `_END_UDATA` around `$6F33`; with the current `$28/$60/$A0/$10` mix the
-flash map places `_END_UDATA` at `$7D3B`, below the protected RJOIN seed cell at
-`$7E00/$7E01`. Always verify the map after a bump, especially `_END_UDATA`.
+flash-command paths. `$5000` is not the base RAM address; it is where the
+flash-resident ASM runtime currently places mutable UDATA tables. Always verify
+the map after a bump, especially `_END_UDATA`.
 
-Important current hazard: flash ASM UDATA grows upward from `$6000`. It has not
-yet become the intended `$7DFF` downward metadata arena. Until collision checks
-exist, do not `ORG` emitted user code into `$6000+` while the flash ASM runtime
-is active.
+Important current rule: flash ASM UDATA grows upward from `$5000`, while source
+emission is allowed only in `$2000-$4FFF`. Do not `ORG` emitted user code into
+`$5000+` while the flash ASM runtime is active.
 
 `asm-v1-core.asm` is much larger than this model can absorb in one session. A
 quick source scan is on the order of 2,240 label/EQU definitions; at roughly 50
@@ -5046,8 +5043,9 @@ End behavior:
 - `END` fails the assembly if required unresolved fixups remain.
 - The core/smoke compact-report build can print the compact v1 report on the
   first real end or first failure. `ASM_RUNTIME_ONLY` omits that printer and
-  its strings; runtime paste/flash wrappers print error lines, `ASM TABLES`,
-  and `SEAL REC`/`SEAL REL` facts instead.
+  its strings; runtime paste/flash wrappers print compact error lines and
+  post-END `SEAL` facts. Detailed table output now lives in the external
+  `asm-session-report-7000` proof.
 - A clean second direct `ASM_END` call returns `OK` without duplicating report
   output.
 - A failed second `ASM_END` call returns the stored failure status without
@@ -5171,31 +5169,28 @@ ASM source mode; it is a small wrapper command window with these commands:
 
 ```text
 SEAL             validate and print frozen facts plus the RAM record summary
-RESOLVE          resolve import rows through current RJOIN and patch RAM body
 RELOCATE addr    copy body to RAM addr and patch internal relocation rows
 PACKAGE addr     write AP v1 package envelope at RAM addr
+LOAD pkg dest    copy AP BODY to RAM and apply internal relocation rows only
+INSTALL pkg      suggest an erased visible flash hole for the AP envelope
 CHECK addr       validate AP v1 package envelope at RAM addr in diagnostic builds
 NEW              start a fresh ASM session at the frozen END PC
 .                exit the wrapper
 ```
 
-`RESOLVE` is valid only in the post-`END` `SEAL> ` window. It accepts only
-`RESOLVE` or `RESOLVE ; comment` with optional surrounding spaces/tabs. The
-first implementation is a RAM-body proof command: it resolves `$04/$05/$06`
-import relocation rows through current resident RJOIN, patches the emitted
-body in place, and reports `RESOLVE OK COUNT=$nn` for patched rows. The import
-metadata and relocation rows remain inspectable; a later installer can decide
-whether to freeze, copy, or preserve them.
+The default flash image omits interactive `RESOLVE` to keep room for
+`LOAD`/`INSTALL`. Import metadata remains packageable, and the first `LOAD`
+slice rejects declared imports/import relocation rows with `BAD FIX`.
 
 `RELOCATE address` is valid only in the post-`END` `SEAL> ` window. The address
 tail is parsed by the existing ASM expression parser and must end cleanly. The
 first implementation is a RAM-overlay proof command: it validates the frozen
 seal, copies the sealed body to the requested RAM base, applies `$01/$02/$03`
 internal relocation rows against that new base, and reports
-`RELOCATE OK BASE=$hhhh COUNT=$nn`. Import rows are deliberately left for
-`RESOLVE` or a later installer. The destination must pass the current ASM target
-guard; in runtime-paste tests this usually means choosing a base above the
-current emitted body and below `$7E00`.
+`REL OK BASE=$hhhh C=$nn`. Import rows are deliberately left for a later
+installer. The destination must pass the current ASM target guard; in
+runtime-paste tests this usually means choosing a base above the current emitted
+body and below `$7E00`.
 
 `PACKAGE address` is valid only in the post-`END` `SEAL> ` window for builds
 that include the package builder. The first implementation is enabled in full
@@ -5207,6 +5202,19 @@ tagged export section `E`, tagged import section `I`, and tagged body section
 `B`. It preserves relocatable metadata for later load/install work; it does not
 resolve imports, relocate the body, or run code. Before returning success, it
 recomputes the written BODY FNV and compares it with the seal record.
+
+`LOAD pkg dest` is valid only in the post-`END` `SEAL> ` window for the default
+flash image. It reads an AP v1 envelope from RAM or currently visible flash,
+copies BODY to a RAM destination, and applies only internal `$01-$03` relocation
+rows. The destination BODY span must fit wholly in `$2000-$4FFF`. It does a
+minimal AP parse, not full `CHECK` validation, and rejects declared imports or
+import relocation rows with `BAD FIX`.
+
+`INSTALL pkg` is valid only in the post-`END` `SEAL> ` window for the default
+flash image. It is read-only advisory: parse AP length, find the first erased
+contiguous visible flash hole in `$8000-$FEFF`, and print the suggested address
+and length. It does not write flash; `INSTALL pkg flash_addr` waits for banked
+flash support.
 
 `CHECK address` is the matching AP v1 envelope validator. It is enabled in
 full-core smoke and optional diagnostic builds, and omitted from the stripped
@@ -5314,7 +5322,7 @@ parser/expression scratch
 If the chosen code range overlaps the assembler's own RAM workspace, fail with
 a range/context error before writing any bytes. The active guard protects
 `$2000..ASM_CODE_BUF-1` for RAM-loaded runtime/core images and
-`$6000..ASM_CODE_BUF-1` for the flash wrapper. Runtime-paste `ASM_CODE_BUF`
+`$5000..ASM_CODE_BUF-1` for the flash wrapper. Runtime-paste `ASM_CODE_BUF`
 remains a valid fallback output buffer; flash ASM starts at explicit `$2000`,
 so its high-RAM `ASM_CODE_BUF` is only a guard fence below the `$7F00` I/O page.
 The first implementation should stop cleanly when a table fills; it must not

@@ -1,6 +1,6 @@
 # ASM User Guide
 
-Status: current operator guide for ASM v1 as of 2026-07-05. ASM is a young
+Status: current operator guide for ASM v1 as of 2026-07-06. ASM is a young
 onboard W65C02 workbench, not yet a finished hosted toolchain. The hardware
 proof source of truth remains [TEST_PLAN.md](TEST_PLAN.md).
 
@@ -26,7 +26,7 @@ ASM
 Expected entry:
 
 ```text
-ASM FLASH
+ASM
 ASM>$2000:
 ```
 
@@ -55,7 +55,7 @@ Exit either source mode or `SEAL>` with:
 .
 ```
 
-The flash wrapper prints `ASM FLASH BYE` and returns to HIMON.
+The flash wrapper prints `ASM BYE` and returns to HIMON.
 
 ## Quick Example
 
@@ -345,18 +345,9 @@ SEAL REL @=$hhhh COUNT=$nn
 
 If exports or imports exist, `SEAL` also prints `SEAL EXP` and/or `SEAL IMP`.
 
-`RESOLVE` resolves import rows through the current resident RJOIN catalog and
-patches the RAM body in place:
-
-```text
-RESOLVE
-```
-
-Success shape:
-
-```text
-RESOLVE OK COUNT=$nn
-```
+The default flash image omits the older interactive `RESOLVE` command in this
+slice. Import metadata can still be packaged, but `LOAD` rejects packages that
+declare imports or carry import relocation rows with `BAD FIX`.
 
 `RELOCATE address` copies the frozen body to a RAM destination and applies
 internal relocation rows there:
@@ -368,7 +359,7 @@ RELOCATE $3000
 Success shape:
 
 ```text
-RELOCATE OK BASE=$3000 COUNT=$nn
+REL OK BASE=$3000 C=$nn
 ```
 
 `RELOCATE` does not resolve import rows.
@@ -382,7 +373,7 @@ PACKAGE $3200
 Success shape:
 
 ```text
-PACKAGE OK @=$3200 LEN=$hhhh
+PKG OK @=$3200 L=$hhhh
 ```
 
 The envelope layout is:
@@ -401,9 +392,63 @@ not install to flash, resolve imports, relocate the body, or run code. The AP
 envelope can be copied as data; executing its BODY at a new address requires a
 relocation/load step.
 
+`LOAD pkg dest` reads an AP v1 envelope from RAM or currently visible flash,
+copies the BODY to RAM, and applies internal relocation rows only:
+
+```text
+LOAD $3200 $3000
+```
+
+Success shape:
+
+```text
+LOAD OK=$3000 L=$hhhh C=$nn
+```
+
+The destination BODY span must fit wholly in `$2000-$4FFF`. `LOAD` deliberately
+does only a minimal package parse in this slice; full `CHECK`/FNV validation is
+deferred. Declared imports and `$04-$06` import relocation rows fail with
+`LOAD ERR=$09 BAD FIX`. When loading from a RAM package in this first slice,
+place the package envelope above the destination BODY; flash ASM rejects RAM
+loads whose destination reaches into the package envelope.
+
+`INSTALL pkg` is read-only advisory in this slice:
+
+```text
+INSTALL $3200
+```
+
+Success shape:
+
+```text
+INST @=$hhhh L=$hhhh
+```
+
+It parses enough AP header/length information to find the first erased
+contiguous visible flash hole in `$8000-$FEFF` large enough for the whole
+envelope. It does not write flash. `INSTALL pkg flash_addr` remains a future
+banked-write form and is rejected by the default flash image for now.
+
 `CHECK address` exists only in full-core or package-check diagnostic builds.
 It is intentionally omitted from the default flash-resident ASM image to keep
 space below `$C000`.
+
+## External Session Report
+
+Default flash ASM no longer prints `ASM TABLES` after `END`. Use the external
+report proof when the live symbol/fixup/reloc tables are needed:
+
+```text
+make -C SRC asm-session-report
+```
+
+The host-built reporter is `SRC/BUILD/s19/asm-session-report-7000.s19`. Load it
+before the ASM session to inspect, then after `END` and `.` run `G 7000`.
+For flash ASM itself, the ASM-native source snapshot is
+`DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a`; because assembling that
+source uses ASM's own tables, it must also be assembled before the session it
+will inspect. `asm-session-report-7000.a` is kept for non-flash/runtime-paste
+ASM builds that still allow `$7000` output.
 
 `NEW` starts another source session at the frozen `END` PC:
 
@@ -435,6 +480,8 @@ Then at `SEAL>`:
 SEAL
 RELOCATE $3000
 PACKAGE $3200
+LOAD $3200 $3000
+INSTALL $3200
 .
 ```
 
@@ -444,6 +491,9 @@ Expected behavior:
 - `RELOCATE $3000` writes a runnable copy at `$3000`.
 - `PACKAGE $3200` writes an AP v1 envelope whose body still contains the
   original `$2000`-based bytes.
+- `LOAD $3200 $3000` reloads the package BODY to `$3000` and applies the same
+  internal relocation rows.
+- `INSTALL $3200` suggests an erased visible flash hole but does not write it.
 
 From HIMON:
 
@@ -481,8 +531,8 @@ PACKAGE $3200
 
 The body contains placeholder bytes for `EXT`, and the package contains an
 import record. A future loader/installer is responsible for resolving that
-import before execution. `RESOLVE` can patch imports now only when the imported
-name is present in the current resident RJOIN catalog.
+import before execution. The default flash `LOAD` command rejects this package
+with `BAD FIX` in the first internal-relocation-only slice.
 
 ## Memory Use
 
@@ -495,16 +545,17 @@ $2000        initial ASM source PC
 Current practical map while ASM is running:
 
 ```text
-$2000-$5FFF  user code/data/package workspace, choose non-overlapping areas
-$6000-$7EFF  protected ASM/HIMON workspace while ASM is active
+$2000-$4FFF  user code/data/package workspace, choose non-overlapping areas
+$5000-$7EFF  protected ASM/HIMON workspace while ASM is active
 $7F00-$7FFF  I/O, do not use
 ```
 
 The flash wrapper deliberately rejects direct assembly output into the protected
-high-RAM region. For example, `ORG $7000` is currently `BAD RANGE` in flash ASM.
+high-RAM region. For example, `ORG $5000` and `ORG $7000` are currently
+`BAD RANGE` in flash ASM.
 Runtime code may still use ordinary RAM after leaving ASM if it does not depend
 on returning to the same live ASM workspace. Future AP overlay work may use
-`$3000-$6FFF` after ASM has produced a package and returned to HIMON, but that
+`$3000-$4FFF` after ASM has produced a package and returned to HIMON, but that
 is a loader contract, not source-mode permission to assemble over ASM.
 
 Current proof-sized table limits:
@@ -572,7 +623,11 @@ Known limitations:
 - No string data directives yet: `HBSTR`, `CSTR`, `PSTR`, `X'...'`, and
   `B'...'` are parked later forms.
 - No default flash-image `CHECK` command.
-- `PACKAGE` writes an AP envelope but does not install or load it.
+- No default flash-image `RESOLVE` command; imported packages are packaged but
+  not loadable by the first `LOAD` slice.
+- `INSTALL` is advisory only and does not write flash yet.
+- `LOAD` does minimal AP parsing and internal relocation only; no full AP FNV
+  validation or import resolution yet.
 - Local labels are not exported, imported, or reported as public symbols.
 
 For design detail, see [HASHED_ASM.md](HASHED_ASM.md). For board evidence, see

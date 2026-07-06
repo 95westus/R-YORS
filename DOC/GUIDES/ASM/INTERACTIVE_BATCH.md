@@ -17,7 +17,6 @@ ASM> LDA #$41
 ASM> .P
 PC=$7002
 ASM> END
-ASM TABLES
 ASM RT PASTE OK
 SEAL> .
 ASM RT PASTE BYE
@@ -88,12 +87,17 @@ Do not make interactive use an immediate one-line assembler. A human at the
 prompt still owns a full session, and fixups may span lines until `END`.
 
 After a clean `END`, `SEAL> ` is not source mode. It accepts only the wrapper
-commands `SEAL`, `RESOLVE`, `RELOCATE address`, `PACKAGE address`, optional
-diagnostic `CHECK address`, `NEW`, and `.`. `NEW` is a validated restart at the
-frozen `END` PC, not a general `ORG` replacement and not a confirmation prompt.
-Before `END`, `SEAL`, `RESOLVE`, `RELOCATE`, `PACKAGE`, `NEW`, and the rest of
+commands `SEAL`, `RELOCATE address`, `PACKAGE address`, `LOAD pkg dest`,
+`INSTALL pkg`, optional diagnostic `CHECK address`, `NEW`, and `.`. The default
+flash image omits interactive `RESOLVE`; imported packages are rejected by the
+first `LOAD` slice with `BAD FIX`. `NEW` is a validated restart at the frozen
+`END` PC, not a general `ORG` replacement and not a confirmation prompt. Before
+`END`, `SEAL`, `RELOCATE`, `PACKAGE`, `LOAD`, `INSTALL`, `NEW`, and the rest of
 that post-`END` vocabulary remain ordinary source words at the source prompt.
-The `.P` command is source-mode only; it is not a `SEAL> ` command.
+The `.P` command is source-mode only; it is not a `SEAL> ` command. Default
+flash ASM does not print `ASM TABLES` automatically; use the external
+`asm-session-report-7000.s19` proof, or the flash-safe
+`asm-session-report-4800.a` ASM-native source, when table detail is needed.
 
 Any future post-`END` batch command that keeps the paste stream alive,
 especially `WRAP`, needs a hard-stop/quench-on-error rule before it is

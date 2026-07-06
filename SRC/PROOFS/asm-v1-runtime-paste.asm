@@ -16,7 +16,6 @@
 
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
-                        XREF            ASM_PRINT_TABLES
                         XREF            ASM_SEAL_COMPUTE_FNV
                         XREF            ASM_SEAL_PRINT_RECORD
                         XREF            ASM_SEAL_RESOLVE_IMPORTS
@@ -171,7 +170,6 @@ ASMRP_ACCEPTED:
 ASMRP_ACCEPTED_END:
                         LDA             #$01
                         STA             ASMRP_POST_FLAG
-                        JSR             ASMRP_PRINT_TABLES_CMD
                         LDX             #<MSG_DONE
                         LDY             #>MSG_DONE
                         JSR             ASMRP_PRINT_LINE
@@ -317,7 +315,6 @@ ASMRP_RETURN_RESULT:
 
 ASMRP_ABORT_WITH_TABLES:
                         JSR             ASMRP_QUENCH_RX
-                        JSR             ASMRP_PRINT_TABLES_CMD
                         BRA             ASMRP_RETURN_RESULT
 
 ASMRP_QUENCH_RX:
@@ -341,19 +338,6 @@ ASMRP_STATUS_NAME_HAVE_INDEX:
                         PLA
                         TAX
                         JMP             ASMRP_PRINT
-
-ASMRP_PRINT_TABLES_CMD:
-                        JSR             ASM_PRINT_TABLES
-                        BCS             ASMRP_TABLES_DONE
-                        PHA
-                        LDX             #<MSG_TABLE
-                        LDY             #>MSG_TABLE
-                        JSR             ASMRP_PRINT
-                        PLA
-                        JSR             SYS_WRITE_HEX_BYTE
-                        JMP             SYS_WRITE_CRLF
-ASMRP_TABLES_DONE:
-                        RTS
 
 ASMRP_IS_DOT:
                         LDA             ASMRP_LINE_BUF
@@ -509,7 +493,6 @@ MSG_OK:                 DB              "OK",0
 MSG_ERR:                DB              "ERR=$",0
 MSG_READ:               DB              "READ=$",0
 MSG_FAIL:               DB              "BEGIN=$",0
-MSG_TABLE:              DB              "TABLE=$",0
 MSG_PC:                 DB              " PC=$",0
 MSG_SEAL_ERR:           DB              "SEAL ERR=$",0
 MSG_RESOLVE_ERR:        DB              "RESOLVE ERR=$",0

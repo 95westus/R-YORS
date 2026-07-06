@@ -209,20 +209,18 @@ After clean `END`, current wrappers switch to a small `SEAL> ` command window:
 
 ```text
 SEAL             dry-run the frozen facts
-RESOLVE          resolve import rows through current RJOIN and patch RAM body
 RELOCATE addr    copy body to RAM addr and patch internal relocation rows
 PACKAGE addr     write AP v1 package envelope at RAM addr
+LOAD pkg dest    copy AP BODY to RAM and apply internal relocation rows only
+INSTALL pkg      suggest an erased visible flash hole for the AP envelope
 CHECK addr       validate AP v1 package envelope at RAM addr in diagnostic builds
 NEW              reopen ASM at the frozen END PC
 .                return to HIMON
 ```
 
-`RESOLVE` is a RAM-body proof command in the post-`END` window. It accepts only
-bare `RESOLVE` or `RESOLVE ; comment`, validates the frozen seal facts, resolves
-declared import relocation rows through current resident RJOIN, patches the
-current emitted bytes in place, and reports the patched row count. It does not
-publish or install the module, and it leaves the import/relocation metadata
-visible for inspection.
+The default flash image omits the older interactive `RESOLVE` command in this
+slice. Import metadata remains packageable, but `LOAD` rejects packages that
+declare imports or carry `$04-$06` import relocation rows with `BAD FIX`.
 
 `RELOCATE address` is the first RAM overlay proof command. It accepts one ASM
 address expression, validates the frozen seal, copies the body bytes to that
@@ -241,6 +239,23 @@ total_hi`, followed by tagged sections: `S` seal record, `R` relocation record,
 facts for later `LOAD`/`INSTALL`; it does not relocate, resolve, or run them.
 Before returning success, `PACKAGE` recomputes the written BODY FNV and compares
 it with the seal record.
+
+`LOAD pkg dest` is the first runnable AP path. It accepts one AP envelope from
+RAM or currently visible low flash, parses only the header/section lengths
+needed for this slice, copies BODY to a RAM destination, and applies `$01-$03`
+internal relocation rows. The destination BODY span must fit wholly in
+`$2000-$4FFF`. Declared import records or `$04-$06` import relocation rows are
+rejected with `BAD FIX`; full AP validation, BODY FNV verification, and import
+resolution are deferred until banks 0-2 access/runability are proven. For RAM
+package sources, this first slice requires the loaded BODY destination to end
+before the AP envelope begins, avoiding overlapping forward copies without a
+larger resident mover.
+
+`INSTALL pkg` is currently read-only advisory. It parses enough AP length
+information to find the first erased contiguous visible flash hole in
+`$8000-$FEFF` large enough for the unchanged envelope and prints that suggested
+address/length. It does not write flash. The future `INSTALL pkg flash_addr`
+banked-write form remains parked until banks 0-2 are functional.
 
 Naming note: `RESIB` is a candidate informal package nickname using the same
 section initials as `Relocation`, `Export`, `Seal`, `Import`, and `Body`.
@@ -302,8 +317,8 @@ name today.
 
 ## 2026-07-05 Afternoon ASM RAM Split Plan
 
-This is a planning contract for the next ASM memory-pressure slices, not the
-current board-proven behavior yet.
+This split is now the intended current flash ASM memory contract; board proof is
+still required before calling the slice hardware-proven.
 
 The intended flash ASM split is:
 
@@ -315,21 +330,12 @@ $7A00-$7EFF  HIMON/service/debug RAM; protected
 $7F00-$7FFF  I/O; hard forbidden
 ```
 
-This split relieves ASM RAM/table pressure by moving flash ASM workspace down
-from the current `$6000` base to `$5000`. It does not directly reduce the flash
-ROM image pressure below `$C000`.
-
-The first implementation slice should only enforce the new source/output
-boundary. Flash ASM should accept emitted bytes in `$2000-$4FFF`; it should
-reject `ORG $5000`, any multi-byte emit that would cross into `$5000`, and the
-existing protected HIMON/I/O ranges. The room check must happen before emitting
-any opcode or operand byte so boundary failures never leave a partial write.
-
-Only after that boundary is host-tested and board-proven should flash ASM UDATA
-move from `$6000` to `$5000`. Current unchanged table sizes would project the
-workspace end roughly `$1000` lower, leaving about `$0AF6` bytes before `$7A00`.
-Do not grow tables in the same slice as the move; first prove that the relocated
-workspace is stable.
+This split relieves ASM RAM/table pressure by moving flash ASM workspace from
+the old `$6000` base to `$5000`. Flash ASM accepts emitted bytes in
+`$2000-$4FFF`; it rejects `ORG $5000`, any multi-byte emit that would cross into
+`$5000`, and the existing protected HIMON/I/O ranges. The room check must happen
+before emitting any opcode or operand byte so boundary failures never leave a
+partial write.
 
 After the move is proven, spend the new RAM reserve deliberately. Preferred
 growth order is fixup/relocation rows, symbol rows, local-label capacity, then

@@ -15,17 +15,16 @@
 
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
-                        XREF            ASM_PRINT_TABLES
                         XREF            ASM_SEAL_COMPUTE_FNV
                         XREF            ASM_SEAL_PRINT_RECORD
-                        XREF            ASM_SEAL_RESOLVE_IMPORTS
                         XREF            ASM_SEAL_RELOCATE
                         XREF            ASM_SEAL_PACKAGE
+                        XREF            ASM_PACKAGE_LOAD
+                        XREF            ASM_PACKAGE_INSTALL_SUGGEST
                         IF              ASM_PACKAGE_CHECK_ENABLED
                         XREF            ASM_SEAL_CHECK_PACKAGE
                         ENDIF
                         XREF            ASM_SEAL_FLAGS
-                        XREF            ASM_IMPORT_RESOLVE_COUNT
                         XREF            ASM_RELOCATE_BASE_LO
                         XREF            ASM_RELOCATE_BASE_HI
                         XREF            ASM_RELOCATE_COUNT
@@ -33,6 +32,10 @@
                         XREF            ASM_PACKAGE_BASE_HI
                         XREF            ASM_PACKAGE_LEN_LO
                         XREF            ASM_PACKAGE_LEN_HI
+                        XREF            ASM_PACKAGE_BODY_LEN_LO
+                        XREF            ASM_PACKAGE_BODY_LEN_HI
+                        XREF            ASM_INSTALL_BASE_LO
+                        XREF            ASM_INSTALL_BASE_HI
                         XREF            ASM_PARSE_EXPR
                         XREF            ASM_PARSE_EXPR_REQUIRE_END
                         XREF            ASM_RJOIN_INIT_IO
@@ -142,32 +145,38 @@ ASMF_READ_OK:
                         BCC             ASMF_POST_CHECK_NEW
                         JMP             ASMF_SEAL_CMD
 ASMF_POST_CHECK_NEW:
-                        LDX             #<ASMF_CMD_RESOLVE
-                        LDY             #>ASMF_CMD_RESOLVE
-                        JSR             ASMF_MATCH_STRICT_CMD
-                        BCC             ASMF_POST_CHECK_NEW_2
-                        JMP             ASMF_RESOLVE_CMD
-ASMF_POST_CHECK_NEW_2:
                         LDX             #<ASMF_CMD_RELOCATE
                         LDY             #>ASMF_CMD_RELOCATE
                         JSR             ASMF_MATCH_ARG_CMD
-                        BCC             ASMF_POST_CHECK_NEW_3
+                        BCC             ASMF_POST_CHECK_NEW_2
                         JMP             ASMF_RELOCATE_CMD
-ASMF_POST_CHECK_NEW_3:
+ASMF_POST_CHECK_NEW_2:
                         LDX             #<ASMF_CMD_PACKAGE
                         LDY             #>ASMF_CMD_PACKAGE
                         JSR             ASMF_MATCH_ARG_CMD
-                        BCC             ASMF_POST_CHECK_NEW_4
+                        BCC             ASMF_POST_CHECK_NEW_3
                         JMP             ASMF_PACKAGE_CMD
+ASMF_POST_CHECK_NEW_3:
+                        LDX             #<ASMF_CMD_LOAD
+                        LDY             #>ASMF_CMD_LOAD
+                        JSR             ASMF_MATCH_ARG_CMD
+                        BCC             ASMF_POST_CHECK_NEW_4
+                        JMP             ASMF_LOAD_CMD
 ASMF_POST_CHECK_NEW_4:
+                        LDX             #<ASMF_CMD_INSTALL
+                        LDY             #>ASMF_CMD_INSTALL
+                        JSR             ASMF_MATCH_ARG_CMD
+                        BCC             ASMF_POST_CHECK_NEW_5
+                        JMP             ASMF_INSTALL_CMD
+ASMF_POST_CHECK_NEW_5:
                         IF              ASM_PACKAGE_CHECK_ENABLED
                         LDX             #<ASMF_CMD_CHECK
                         LDY             #>ASMF_CMD_CHECK
                         JSR             ASMF_MATCH_ARG_CMD
-                        BCC             ASMF_POST_CHECK_NEW_5
+                        BCC             ASMF_POST_CHECK_NEW_6
                         JMP             ASMF_CHECK_CMD
                         ENDIF
-ASMF_POST_CHECK_NEW_5:
+ASMF_POST_CHECK_NEW_6:
                         LDX             #<ASMF_CMD_NEW
                         LDY             #>ASMF_CMD_NEW
                         JSR             ASMF_MATCH_STRICT_CMD
@@ -223,7 +232,6 @@ ASMF_ACCEPTED:
 ASMF_ACCEPTED_END:
                         LDA             #$01
                         STA             ASMF_POST_FLAG
-                        JSR             ASMF_PRINT_TABLES_CMD
                         LDX             #<MSG_DONE
                         LDY             #>MSG_DONE
                         JSR             ASMF_PRINT_LINE
@@ -242,23 +250,6 @@ ASMF_SEAL_CMD:
                         JMP             ASMF_LOOP
 ASMF_SEAL_OK:
                         JSR             ASM_SEAL_PRINT_RECORD
-                        JMP             ASMF_LOOP
-
-ASMF_RESOLVE_CMD:
-                        JSR             ASM_SEAL_RESOLVE_IMPORTS
-                        BCS             ASMF_RESOLVE_OK
-                        STA             ASMF_RESULT
-                        LDX             #<MSG_RESOLVE_ERR
-                        LDY             #>MSG_RESOLVE_ERR
-                        JSR             ASMF_PRINT_STATUS_LINE
-                        JMP             ASMF_LOOP
-ASMF_RESOLVE_OK:
-                        LDX             #<MSG_RESOLVE_OK
-                        LDY             #>MSG_RESOLVE_OK
-                        JSR             ASMF_PRINT
-                        LDA             ASM_IMPORT_RESOLVE_COUNT
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        JSR             ASM_RJ_PRINT_CRLF
                         JMP             ASMF_LOOP
 
 ASMF_RELOCATE_CMD:
@@ -314,6 +305,81 @@ ASMF_PACKAGE_OK:
                         JSR             ASMF_PRINT
                         LDA             ASM_PACKAGE_BASE_HI
                         LDX             ASM_PACKAGE_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
+                        LDX             #<MSG_PACKAGE_LEN
+                        LDY             #>MSG_PACKAGE_LEN
+                        JSR             ASMF_PRINT
+                        LDA             ASM_PACKAGE_LEN_HI
+                        LDX             ASM_PACKAGE_LEN_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
+                        JSR             ASM_RJ_PRINT_CRLF
+                        JMP             ASMF_LOOP
+
+ASMF_LOAD_CMD:
+                        JSR             ASMF_PARSE_TWO_ARGS
+                        BCS             ASMF_LOAD_HAVE_ARGS
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_LOAD_ERR
+                        LDY             #>MSG_LOAD_ERR
+                        JSR             ASMF_PRINT_STATUS_NAMED_LINE
+                        JMP             ASMF_LOOP
+ASMF_LOAD_HAVE_ARGS:
+                        LDA             ASMF_ARG1_LO
+                        STA             ASM_RELOCATE_BASE_LO
+                        LDA             ASMF_ARG1_HI
+                        STA             ASM_RELOCATE_BASE_HI
+                        LDX             ASMF_ARG0_LO
+                        LDY             ASMF_ARG0_HI
+                        JSR             ASM_PACKAGE_LOAD
+                        BCS             ASMF_LOAD_OK
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_LOAD_ERR
+                        LDY             #>MSG_LOAD_ERR
+                        JSR             ASMF_PRINT_STATUS_NAMED_LINE
+                        JMP             ASMF_LOOP
+ASMF_LOAD_OK:
+                        LDX             #<MSG_LOAD_OK
+                        LDY             #>MSG_LOAD_OK
+                        JSR             ASMF_PRINT
+                        LDA             ASM_RELOCATE_BASE_HI
+                        LDX             ASM_RELOCATE_BASE_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
+                        LDX             #<MSG_PACKAGE_LEN
+                        LDY             #>MSG_PACKAGE_LEN
+                        JSR             ASMF_PRINT
+                        LDA             ASM_PACKAGE_BODY_LEN_HI
+                        LDX             ASM_PACKAGE_BODY_LEN_LO
+                        JSR             ASM_RJ_WRITE_HEX_WORD_AX
+                        LDX             #<MSG_RELOCATE_COUNT
+                        LDY             #>MSG_RELOCATE_COUNT
+                        JSR             ASMF_PRINT
+                        LDA             ASM_RELOCATE_COUNT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASM_RJ_PRINT_CRLF
+                        JMP             ASMF_LOOP
+
+ASMF_INSTALL_CMD:
+                        JSR             ASMF_PARSE_RELOCATE_ARG
+                        BCS             ASMF_INSTALL_HAVE_ARG
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_INSTALL_ERR
+                        LDY             #>MSG_INSTALL_ERR
+                        JSR             ASMF_PRINT_STATUS_NAMED_LINE
+                        JMP             ASMF_LOOP
+ASMF_INSTALL_HAVE_ARG:
+                        JSR             ASM_PACKAGE_INSTALL_SUGGEST
+                        BCS             ASMF_INSTALL_OK
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_INSTALL_ERR
+                        LDY             #>MSG_INSTALL_ERR
+                        JSR             ASMF_PRINT_STATUS_NAMED_LINE
+                        JMP             ASMF_LOOP
+ASMF_INSTALL_OK:
+                        LDX             #<MSG_INSTALL_OK
+                        LDY             #>MSG_INSTALL_OK
+                        JSR             ASMF_PRINT
+                        LDA             ASM_INSTALL_BASE_HI
+                        LDX             ASM_INSTALL_BASE_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_PACKAGE_LEN
                         LDY             #>MSG_PACKAGE_LEN
@@ -384,6 +450,13 @@ ASMF_PRINT_STATUS_LINE:
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JMP             ASM_RJ_PRINT_CRLF
 
+ASMF_PRINT_STATUS_NAMED_LINE:
+                        JSR             ASMF_PRINT
+                        LDA             ASMF_RESULT
+                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASMF_PRINT_STATUS_NAME
+                        JMP             ASM_RJ_PRINT_CRLF
+
 ASMF_PRINT_STATUS_PC_LINE:
                         JSR             ASMF_PRINT
                         LDA             ASMF_RESULT
@@ -427,7 +500,6 @@ ASMF_RETURN_WITH_A:
                         RTS
 
 ASMF_ABORT_WITH_TABLES:
-                        JSR             ASMF_PRINT_TABLES_CMD
                         BRA             ASMF_RETURN_RESULT
 
 ASMF_PRINT_STATUS_NAME:
@@ -444,19 +516,6 @@ ASMF_STATUS_NAME_HAVE_INDEX:
                         PLA
                         TAX
                         JMP             ASMF_PRINT
-
-ASMF_PRINT_TABLES_CMD:
-                        JSR             ASM_PRINT_TABLES
-                        BCS             ASMF_TABLES_DONE
-                        PHA
-                        LDX             #<MSG_TABLE
-                        LDY             #>MSG_TABLE
-                        JSR             ASMF_PRINT
-                        PLA
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
-                        JMP             ASM_RJ_PRINT_CRLF
-ASMF_TABLES_DONE:
-                        RTS
 
 ASMF_IS_DOT:
                         LDA             ASMF_LINE_BUF
@@ -590,6 +649,84 @@ ASMF_PARSE_RELOCATE_TAIL_OK:
                         SEC
                         RTS
 
+ASMF_PARSE_TWO_ARGS:
+                        STX             ASMF_CMD_PTR_LO
+                        STY             ASMF_CMD_PTR_HI
+                        LDY             #$00
+ASMF_PARSE_TWO_FIND_SPLIT:
+                        LDA             (ASMF_CMD_PTR_LO),Y
+                        BEQ             ASMF_PARSE_TWO_BAD_OPER
+                        CMP             #';'
+                        BEQ             ASMF_PARSE_TWO_BAD_OPER
+                        CMP             #' '
+                        BEQ             ASMF_PARSE_TWO_SPLIT
+                        CMP             #$09
+                        BEQ             ASMF_PARSE_TWO_SPLIT
+                        INY
+                        BRA             ASMF_PARSE_TWO_FIND_SPLIT
+ASMF_PARSE_TWO_SPLIT:
+                        STY             ASMF_SPLIT_OFF
+                        STA             ASMF_SPLIT_CHAR
+                        LDA             #$00
+                        STA             (ASMF_CMD_PTR_LO),Y
+                        LDX             ASMF_CMD_PTR_LO
+                        LDY             ASMF_CMD_PTR_HI
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASMF_PARSE_TWO_FIRST_OK
+                        PHA
+                        JSR             ASMF_PARSE_TWO_RESTORE
+                        PLA
+                        CLC
+                        RTS
+ASMF_PARSE_TWO_FIRST_OK:
+                        STX             ASMF_ARG0_LO
+                        STY             ASMF_ARG0_HI
+                        JSR             ASMF_PARSE_TWO_RESTORE
+                        LDY             ASMF_SPLIT_OFF
+ASMF_PARSE_TWO_SKIP:
+                        INY
+                        LDA             (ASMF_CMD_PTR_LO),Y
+                        BEQ             ASMF_PARSE_TWO_BAD_OPER
+                        CMP             #' '
+                        BEQ             ASMF_PARSE_TWO_SKIP
+                        CMP             #$09
+                        BEQ             ASMF_PARSE_TWO_SKIP
+                        CMP             #';'
+                        BEQ             ASMF_PARSE_TWO_BAD_OPER
+                        TYA
+                        CLC
+                        ADC             ASMF_CMD_PTR_LO
+                        TAX
+                        LDA             ASMF_CMD_PTR_HI
+                        ADC             #$00
+                        TAY
+                        JSR             ASM_PARSE_EXPR
+                        BCS             ASMF_PARSE_TWO_SECOND_OK
+                        RTS
+ASMF_PARSE_TWO_SECOND_OK:
+                        STX             ASMF_ARG1_LO
+                        STY             ASMF_ARG1_HI
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASMF_PARSE_TWO_DONE
+                        LDA             #ASMF_STATUS_BAD_OPER
+                        CLC
+                        RTS
+ASMF_PARSE_TWO_DONE:
+                        LDX             ASMF_ARG0_LO
+                        LDY             ASMF_ARG0_HI
+                        SEC
+                        RTS
+ASMF_PARSE_TWO_BAD_OPER:
+                        LDA             #ASMF_STATUS_BAD_OPER
+                        CLC
+                        RTS
+
+ASMF_PARSE_TWO_RESTORE:
+                        LDY             ASMF_SPLIT_OFF
+                        LDA             ASMF_SPLIT_CHAR
+                        STA             (ASMF_CMD_PTR_LO),Y
+                        RTS
+
 ASMF_IS_END:
                         LDX             #<ASMF_CMD_END
                         LDY             #>ASMF_CMD_END
@@ -602,53 +739,55 @@ ASMF_IS_END_TAIL:
                         DATA
 ASMF_TEXT:              DB              "ASM V",('1'+$80)
 ASMF_CMD_SEAL:          DB              "SEAL",0
-ASMF_CMD_RESOLVE:       DB              "RESOLVE",0
 ASMF_CMD_RELOCATE:      DB              "RELOCATE",0
 ASMF_CMD_PACKAGE:       DB              "PACKAGE",0
+ASMF_CMD_LOAD:          DB              "LOAD",0
+ASMF_CMD_INSTALL:       DB              "INSTALL",0
                         IF              ASM_PACKAGE_CHECK_ENABLED
 ASMF_CMD_CHECK:         DB              "CHECK",0
                         ENDIF
 ASMF_CMD_NEW:           DB              "NEW",0
 ASMF_CMD_END:           DB              "END",0
 ASMF_CMD_DOTP:          DB              ".P",0
-MSG_TITLE:              DB              "ASM FLAS",('H'+$80)
+MSG_TITLE:              DB              "AS",('M'+$80)
 MSG_PROMPT:             DB              "ASM>",('$'+$80)
 MSG_PROMPT_TAIL:        DB              ":",(' '+$80)
 MSG_SEAL_PROMPT:        DB              "SEAL>",(' '+$80)
 MSG_ERR:                DB              "ERR=",('$'+$80)
 MSG_READ:               DB              "READ=",('$'+$80)
 MSG_FAIL:               DB              "BEGIN=",('$'+$80)
-MSG_TABLE:              DB              "TABLE=",('$'+$80)
 MSG_PC:                 DB              " PC=",('$'+$80)
 MSG_SEAL_ERR:           DB              "SEAL ERR=",('$'+$80)
-MSG_RESOLVE_ERR:        DB              "RESOLVE ERR=",('$'+$80)
-MSG_RESOLVE_OK:         DB              "RESOLVE OK COUNT=",('$'+$80)
-MSG_RELOCATE_ERR:       DB              "RELOCATE ERR=",('$'+$80)
-MSG_RELOCATE_OK:        DB              "RELOCATE OK BASE=",('$'+$80)
-MSG_RELOCATE_COUNT:     DB              " COUNT=",('$'+$80)
-MSG_PACKAGE_ERR:        DB              "PACKAGE ERR=",('$'+$80)
-MSG_PACKAGE_OK:         DB              "PACKAGE OK @=",('$'+$80)
-MSG_PACKAGE_LEN:        DB              " LEN=",('$'+$80)
+MSG_RELOCATE_ERR:       DB              "REL ERR=",('$'+$80)
+MSG_RELOCATE_OK:        DB              "REL OK BASE=",('$'+$80)
+MSG_RELOCATE_COUNT:     DB              " C=",('$'+$80)
+MSG_PACKAGE_ERR:        DB              "PKG ERR=",('$'+$80)
+MSG_PACKAGE_OK:         DB              "PKG OK @=",('$'+$80)
+MSG_PACKAGE_LEN:        DB              " L=",('$'+$80)
+MSG_LOAD_ERR:           DB              "LOAD ERR=",('$'+$80)
+MSG_LOAD_OK:            DB              "LOAD OK=",('$'+$80)
+MSG_INSTALL_ERR:        DB              "INST ERR=",('$'+$80)
+MSG_INSTALL_OK:         DB              "INST @=",('$'+$80)
                         IF              ASM_PACKAGE_CHECK_ENABLED
 MSG_CHECK_ERR:          DB              "CHECK ERR=",('$'+$80)
 MSG_CHECK_OK:           DB              "CHECK OK @=",('$'+$80)
                         ENDIF
 MSG_FLAGS:              DB              " FLAGS=",('$'+$80)
-MSG_DONE:               DB              "ASM FLASH O",('K'+$80)
-MSG_BYE:                DB              "ASM FLASH BY",('E'+$80)
+MSG_DONE:               DB              "ASM O",('K'+$80)
+MSG_BYE:                DB              "ASM BY",('E'+$80)
 MSG_STATUS_OK:          DB              " O",('K'+$80)
-MSG_STATUS_BAD_MNEM:    DB              " BAD MNE",('M'+$80)
-MSG_STATUS_BAD_DIR:     DB              " BAD DI",('R'+$80)
-MSG_STATUS_BAD_OPER:    DB              " BAD OPE",('R'+$80)
-MSG_STATUS_BAD_MODE:    DB              " BAD MOD",('E'+$80)
-MSG_STATUS_BAD_WIDTH:   DB              " BAD WIDT",('H'+$80)
+MSG_STATUS_BAD_MNEM:    DB              " B",('M'+$80)
+MSG_STATUS_BAD_DIR:     DB              " B",('D'+$80)
+MSG_STATUS_BAD_OPER:    DB              " B",('O'+$80)
+MSG_STATUS_BAD_MODE:    DB              " BM",('O'+$80)
+MSG_STATUS_BAD_WIDTH:   DB              " B",('W'+$80)
 MSG_STATUS_BAD_RANGE:   DB              " BAD RANG",('E'+$80)
-MSG_STATUS_BAD_LINE:    DB              " BAD LIN",('E'+$80)
-MSG_STATUS_BAD_SYM:     DB              " BAD SY",('M'+$80)
+MSG_STATUS_BAD_LINE:    DB              " B",('L'+$80)
+MSG_STATUS_BAD_SYM:     DB              " B",('S'+$80)
 MSG_STATUS_BAD_FIX:     DB              " BAD FI",('X'+$80)
-MSG_STATUS_LOCAL_NYI:   DB              " LOCAL NY",('I'+$80)
-MSG_STATUS_RJOIN:       DB              " RJOI",('N'+$80)
-MSG_STATUS_UNKNOWN:     DB              " STATU",('S'+$80)
+MSG_STATUS_LOCAL_NYI:   DB              " NY",('I'+$80)
+MSG_STATUS_RJOIN:       DB              " R",('J'+$80)
+MSG_STATUS_UNKNOWN:     DB              " ",('?'+$80)
 
 ASMF_STATUS_NAME_LO:
                         DB              <MSG_STATUS_OK
@@ -686,6 +825,12 @@ ASMF_PC_HI:             DB              $00
 ASMF_POST_FLAG:         DB              $00
 ASMF_RELOCATE_LO:       DB              $00
 ASMF_RELOCATE_HI:       DB              $00
+ASMF_ARG0_LO:           DB              $00
+ASMF_ARG0_HI:           DB              $00
+ASMF_ARG1_LO:           DB              $00
+ASMF_ARG1_HI:           DB              $00
+ASMF_SPLIT_OFF:         DB              $00
+ASMF_SPLIT_CHAR:        DB              $00
 ASMF_LINE_BUF:          DS              $0100
 
                         ENDMOD

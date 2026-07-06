@@ -7983,6 +7983,13 @@ D 4FFF
 ASM NEW
 ORG $4FFE
 LDA #$11
+END
+.
+D 4FFE 4FFF
+
+ASM NEW
+ORG $4FFF
+LDA #$11
 .
 
 ASM NEW
@@ -8003,7 +8010,8 @@ Expected board behavior:
 ```text
 $2000 program assembles, runs, and writes $5A to $7104
 $4FFF single-byte emit succeeds
-$4FFE LDA #$11 rejects as ERR=$06 BAD RANGE before partial write
+$4FFE LDA #$11 exact-fit emit succeeds and writes A9 11 at $4FFE-$4FFF
+$4FFF LDA #$11 rejects as ERR=$06 BAD RANGE before partial write
 ORG $5000 rejects as ERR=$06 BAD RANGE
 ORG $7A00 rejects as ERR=$06 BAD RANGE
 ORG $7F00 rejects as ERR=$06 BAD RANGE
@@ -8051,6 +8059,224 @@ G 3000
 A larger paste, such as the computed-neighbor Life sample, should still
 assemble and run after the UDATA move. Record the transcript in the hardware
 log before marking the slice board-proven.
+
+## 2026-07-06 LOAD/INSTALL Host Gate
+
+Implemented host slice:
+
+```text
+make -C SRC asm-v1-flash
+make -C SRC asm-session-report
+make -C SRC asm-test
+```
+
+Expected map facts for the default flash image:
+
+```text
+_BEG_UDATA = $5000
+_END_DATA  <= $BE00
+headroom to $C000 >= $0200
+```
+
+Current host proof produced:
+
+```text
+asm-v1-flash headroom to C000 = 0212 (_END_DATA=BDEE)
+UDATA starts at $5000, ends at $6F16
+asm-session-report end = 74B1 (limit 7A00)
+```
+
+Default flash `SEAL>` command surface for this slice:
+
+```text
+SEAL
+RELOCATE addr
+PACKAGE addr
+LOAD pkg dest
+INSTALL pkg
+NEW
+.
+```
+
+The old interactive `RESOLVE` command is compiled out of the default flash
+image to make room for `LOAD`/`INSTALL`. Import metadata can still be packaged,
+but `LOAD` rejects declared imports and `$04-$06` import relocation rows with
+`BAD FIX`.
+
+Board proof checklist:
+
+```text
+ASM NEW
+ORG $4FFF
+NOP
+END
+.
+D 4FFF
+```
+
+Expected: single-byte emit at `$4FFF` succeeds.
+
+```text
+ASM NEW
+ORG $4FFF
+LDA #$11
+.
+```
+
+Expected: crossing `$5000` fails with `ERR=$06 BAD RANGE` before partial write.
+
+Internal package load/run proof:
+
+```text
+ASM NEW
+ORG $2000
+MAIN JSR TARGET
+LDA #<TARGET
+LDX #>TARGET
+TARGET RTS
+END
+PACKAGE $3200
+LOAD $3200 $3000
+.
+D 3000 3007
+G 3000
+```
+
+Expected `LOAD OK=$3000 L=$0008 C=$03`, bytes
+`20 07 30 A9 07 A2 30 60`, and a clean `G 3000` return.
+
+RAM package overlap proof:
+
+```text
+ASM NEW
+ORG $2000
+NOP
+RTS
+END
+PACKAGE $3000
+LOAD $3000 $3000
+.
+```
+
+Expected: `LOAD ERR=$06 BAD RANGE`. The first loader slice requires RAM package
+loads to copy downward, so the destination BODY must end before the AP envelope.
+
+Import rejection proof:
+
+```text
+ASM NEW
+ORG $2200
+IMPORT EXT
+MAIN JSR EXT
+END
+PACKAGE $3200
+LOAD $3200 $3000
+.
+```
+
+Expected: `LOAD ERR=$09 BAD FIX`.
+
+Install advisory proof:
+
+```text
+ASM NEW
+ORG $2000
+LDA #$5A
+RTS
+END
+PACKAGE $3200
+INSTALL $3200
+.
+```
+
+Expected: `INST @=$hhhh L=$hhhh`, where `$hhhh` is the first erased visible
+flash hole in `$8000-$FEFF`. The command must not write flash.
+
+External report proof:
+
+```text
+L              send SRC/BUILD/s19/asm-session-report-7000.s19 before ASM work
+ASM NEW
+ORG $2000
+MAIN JSR TARGET
+TARGET RTS
+END
+.
+G 7000
+```
+
+Expected: `END` prints no automatic `ASM TABLES`; `G 7000` prints
+`ASM SESSION REPORT`, `SYMBOLS`, `FIXUPS`, and `RELOCS`.
+
+Flash ASM-native source form:
+
+```text
+ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
+.
+ASM NEW        run the session to inspect
+...
+END
+.
+G 4800
+```
+
+Expected: the preloaded `$4800` reporter prints the same table sections.
+`asm-session-report-7000.a` is only for non-flash/runtime-paste ASM builds that
+still permit `$7000` output.
+
+Board result captured 2026-07-06:
+
+```text
+HIMON V 00.0706(1619)
+L F
+L @8000
+LF OK WR=3DEC GO=800C
+```
+
+The first board pass against the previous `$3DF2` flash image exposed
+`LOAD $3200 $3000 -> LOAD ERR=$03 BO`; the two-argument parser was using a
+UDATA pointer with `(ptr),Y`, so it read the wrong operand text. The fixed
+`$3DEC` image reuses the existing zero-page command pointer and produced:
+
+```text
+ORG $4FFF / NOP / END       -> ASM OK, D 4FFF = EA
+ORG $4FFF / LDA #$11        -> ERR=$06 BAD RANGE PC=$4FFF
+PACKAGE $3200               -> PKG OK @=$3200 L=$0037
+LOAD $3200 $3000            -> LOAD OK=$3000 L=$0008 C=$03
+D 3000 3007                 -> 20 07 30 A9 07 A2 30 60
+G 3000                      -> clean return, A=07 X=30 Y=30
+import package LOAD         -> LOAD ERR=$09 BAD FIX
+INSTALL $3200               -> INST @=$BDEC L=$0023
+D BDEC FF                   -> all $FF over suggested hole
+```
+
+The follow-up RAM overlap fix stores the computed load-end high byte before the
+overlap check. Current host image for that retest is:
+
+```text
+LF OK WR=3DEE GO=800C
+_END_DATA=$BDEE
+PACKAGE $3000               -> PKG OK @=$3000 L=$0022
+LOAD $3000 $3000            -> LOAD ERR=$06 BAD RANGE
+```
+
+Host-built reporter board proof captured 2026-07-06:
+
+```text
+L @7000                     -> L OK=04B1 GO=7000
+ASM NEW / ORG $2000 / ...
+END                         -> ASM OK, no automatic ASM TABLES
+G 7000                      -> ASM SESSION REPORT
+MAP END=$BDEE UDATA=$5000-6F16
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 02 01 01 00 00 00 00
+SYMBOLS                     -> MAIN, TARGET
+FIXUPS                      -> TARGET row at SITE 2001 BASE 2003
+RELOCS                      -> 00 01 0001 0003
+ASM REPORT OK
+```
+
+The LOAD/INSTALL/report extraction slice is board-proven on the current
+`$3DEE` flash ASM image.
 
 ## Hardware Bench Gate
 

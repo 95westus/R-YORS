@@ -149,11 +149,19 @@ ASM_V1_RUNTIME_PASTE_SRC := $(PROOFS_DIR)/asm-v1-runtime-paste.asm
 ASM_V1_RUNTIME_PASTE_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/asm-v1-runtime-paste.obj
 ASM_V1_RUNTIME_PASTE_S19 := $(S19_DIR)/asm-v1-runtime-paste-2000.s19
 ASM_V1_RUNTIME_PASTE_LINKFLAGS := -g -s -t -c2000 -hm19 -j -o
+ASM_SESSION_REPORT_SRC := $(PROOFS_DIR)/asm-session-report.asm
+ASM_SESSION_REPORT_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/asm-session-report.obj
+ASM_SESSION_REPORT_S19 := $(S19_DIR)/asm-session-report-7000.s19
+ASM_SESSION_REPORT_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
+ASM_SESSION_REPORT_INC_GEN := tools/emit_asm_session_report_inc.ps1
+ASM_SESSION_REPORT_INC := $(INC_DIR)/asm-session-report.inc
+ASM_SESSION_REPORT_A_FLASH := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
+ASM_SESSION_REPORT_A_RUNTIME := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-7000.a
 ASM_V1_FLASH_SRC := $(ASM_DIR)/asm-v1-flash.asm
 ASM_V1_FLASH_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash.obj
 ASM_V1_FLASH_RUNTIME_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash-runtime.obj
 ASM_V1_FLASH_S19 := $(S19_DIR)/asm-v1-flash-8000.s19
-ASM_V1_FLASH_LINKFLAGS := -g -s -t -c8000 -u6000 -hm19 -j -o
+ASM_V1_FLASH_LINKFLAGS := -g -s -t -c8000 -u5000 -hm19 -j -o
 ASMTEST_3000_SAMPLE := ../DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
 ASMTEST_3000_WDC_SIDE_OBJ := $(ASMTEST_3000_SAMPLE:.asm=.obj)
 ASMTEST_3000_WDC_SIDE_LST := $(ASMTEST_3000_SAMPLE:.asm=.lst)
@@ -260,7 +268,8 @@ PROOF_TARGETS ?= \
 	asm-rjoin-proof \
 	asm-v1-runtime-smoke \
 	asm-v1-runtime-asmtest \
-	asm-v1-runtime-paste
+	asm-v1-runtime-paste \
+	asm-session-report
 
 APP_TARGETS ?= \
 	life \
@@ -481,6 +490,10 @@ asm-v1-runtime-asmtest: $(ROM_LIB) $(ASM_V1_RUNTIME_ASMTEST_S19)
 
 asm-v1-runtime-paste: $(ROM_LIB) $(ASM_V1_RUNTIME_PASTE_S19)
 	@echo "Built $(ASM_V1_RUNTIME_PASTE_S19)."
+	@$(MAKE) artifacts
+
+asm-session-report: $(ROM_LIB) $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_A_FLASH) $(ASM_SESSION_REPORT_A_RUNTIME)
+	@echo "Built $(ASM_SESSION_REPORT_S19)."
 	@$(MAKE) artifacts
 
 asm-v1-flash: $(ASM_V1_FLASH_S19)
@@ -788,6 +801,15 @@ $(ASM_V1_RUNTIME_PASTE_OBJ): $(ASM_V1_RUNTIME_PASTE_SRC)
 	$(ASM) $(ASFLAGS) $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
 
+$(ASM_SESSION_REPORT_INC) $(ASM_SESSION_REPORT_A_FLASH) $(ASM_SESSION_REPORT_A_RUNTIME): $(ASM_V1_FLASH_S19) $(ASM_SESSION_REPORT_INC_GEN)
+	@if not exist $(subst /,\,$(INC_DIR)) mkdir $(subst /,\,$(INC_DIR))
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-v1-flash-8000.map') { '$(S19_DIR)/asm-v1-flash-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-v1-flash-8000.map') { '$(MAP_DIR)/asm-v1-flash-8000.map' } else { throw 'asm-v1-flash-8000.map not found' }; & '$(ASM_SESSION_REPORT_INC_GEN)' -MapPath $$map -OutPath '$(ASM_SESSION_REPORT_INC)' -AsmNativeFlashOut '$(ASM_SESSION_REPORT_A_FLASH)' -AsmNativeRuntimeOut '$(ASM_SESSION_REPORT_A_RUNTIME)'"
+
+$(ASM_SESSION_REPORT_OBJ): $(ASM_SESSION_REPORT_SRC) $(ASM_SESSION_REPORT_INC)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) $<
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
+
 $(ASM_V1_FLASH_OBJ): $(ASM_V1_FLASH_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) $<
@@ -821,6 +843,13 @@ $(ASM_V1_RUNTIME_PASTE_S19): $(ASM_V1_RUNTIME_PASTE_OBJ) $(ASM_V1_RUNTIME_OBJ) $
 	$(LINKER) $(ASM_V1_RUNTIME_PASTE_LINKFLAGS) $(ASM_V1_RUNTIME_PASTE_S19) $(ASM_V1_RUNTIME_PASTE_OBJ) $(ASM_V1_RUNTIME_OBJ) -L $(BUILD_DIR)\lib\rom
 	@echo [ps] set S9 start $$2000 in $(ASM_V1_RUNTIME_PASTE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_V1_RUNTIME_PASTE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
+$(ASM_SESSION_REPORT_S19): $(ASM_SESSION_REPORT_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(ASM_SESSION_REPORT_LINKFLAGS) $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$7000 in $(ASM_SESSION_REPORT_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_SESSION_REPORT_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S90370008C'; Set-Content -Path $$p -Value $$lines"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-session-report-7000.map') { '$(S19_DIR)/asm-session-report-7000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-session-report-7000.map') { '$(MAP_DIR)/asm-session-report-7000.map' } else { throw 'asm-session-report-7000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA not found in asm-session-report map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); if ($$end -gt 0x7A00) { throw ('asm-session-report crosses 7A00: _END_DATA={0:X4}' -f $$end) }; Write-Host ('asm-session-report end = {0:X4} (limit 7A00)' -f $$end)"
 
 $(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1053,7 +1082,7 @@ endif
 	himon-search-proof himon-search-flash himon-search-for-himon \
 	hrec-join-proof pack40-test asm-rjoin-proof asm-v1-core \
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \
-	asm-v1-runtime-paste asm-v1-flash asm-flash asm-opcode-coverage \
+	asm-v1-runtime-paste asm-session-report asm-v1-flash asm-flash asm-opcode-coverage \
 	asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check \
 	asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check \
 	asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src \
