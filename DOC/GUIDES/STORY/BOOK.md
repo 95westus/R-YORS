@@ -123,9 +123,94 @@ Proof lives in the guide set:
 - [STR8.md](../STR8/STR8.md) - recovery/update anchor.
 - [CATALOG.md](../CATALOG/CATALOG.md) - callable routine surface and RREC seeds.
 - [HREC_JOIN_PROOF.md](../CATALOG/HREC_JOIN_PROOF.md) - hash record to callable entry proof.
+- [ASM/ASM_USER_GUIDE.md](../ASM/ASM_USER_GUIDE.md) - current ASM operator guide.
+- [ASM/MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md) - sealed body, package, and overlay planning.
 - [ASM/TEST_PLAN.md](../ASM/TEST_PLAN.md) - ASM v1 host and board proof gate.
 - [HARDWARE_TEST_LOG.md](../LOGS/HARDWARE_TEST_LOG.md) - board evidence.
 - [QCC.md](../QCC/INDEX.md) and topic QCC files - live questions.
+
+## Recent Book Delta: 2026-07-01 Through 2026-07-05
+
+This section is a dated catch-up list for the book spine. It is not a full
+commit changelog. It names the features, removals, changed behavior, proofs,
+and design ideas that should be reflected when chapters are drafted.
+
+2026-07-01:
+
+- ASM runtime-paste state moved into UDATA, the runtime workspace shrank, and
+  output-overlap guards became explicit. This changed paste ASM from "emit into
+  a handy high-RAM spot" toward "protect the live assembler while emitting."
+- ASM gained sealed export records. `EXPORT name` became concrete metadata,
+  not only future catalog language.
+- HIMON RX lookahead behavior was documented so the operator-facing line input
+  story does not hide a bench-discovered edge.
+
+2026-07-02:
+
+- HIMON workspace moved above UPA and `M` writes into monitor workspace became
+  protected. This tightened the RAM ownership story around `$7A00-$7EFF`.
+- ASM `IMPORT name` became intentional metadata. Declared imports defer resident
+  binding instead of silently becoming today-address calls.
+- ASM seal records learned import fixups, selected-byte import fixups, and
+  relocation rows for internal and imported operands.
+- `SEAL> RESOLVE` became the proof command for resolving import rows through
+  current RJOIN and patching the RAM body in place.
+- `SEAL> RELOCATE address` became the RAM overlay proof: copy the sealed body
+  to a new base and patch internal relocation rows there.
+- `SEAL> PACKAGE address` became AP v1: a RAM envelope with tagged `S`, `R`,
+  `E`, `I`, and `B` sections. `CHECK` was proved as a diagnostic reader, then
+  kept out of the default flash image for space.
+
+2026-07-03:
+
+- HIMON service vectors became useful to ASM as a shared helper surface. ASM can
+  call resident output/string/hash-style helpers without carrying every copy
+  locally.
+- HIMON added an HB string service for ASM, and ASM's repeated hex-word output
+  paths were factored down for space.
+- Focused firmware builds and service diagnostics made the vector block easier
+  to inspect on the board.
+
+2026-07-04:
+
+- HIMON removed the user-facing `U` unassemble command. `B`, `N`, NMI-to-debug,
+  and the register dump remain; the debug opcode display was trimmed instead of
+  deleted.
+- HIMON loader behavior was hardened around the RAM/I/O boundary: `$7F00-$7FFF`
+  is not ordinary RAM, normal `L` reports compact `LERR=$ee`, and `L F` keeps
+  richer flash diagnostics.
+- ASM source success output became quiet, then the prompt gained the current PC
+  as `ASM>$hhhh:`. `.P` remains the explicit source-mode PC query.
+- ASM `.`/`ASM FLASH BYE` now returns status to HIMON with `A=rc` and
+  carry clear/set, so a caller can tell clean exit from failed `END`.
+- `PACKAGE` now recomputes the written BODY FNV before returning success.
+- The computed-neighbor Life sample proved that a larger interactive source can
+  still be assembled and run on the board under the tighter flash ASM rules.
+
+2026-07-05:
+
+- The current ASM user guide was added to pull operator behavior, syntax,
+  local labels, directives, `END`, `SEAL`, `RESOLVE`, `RELOCATE`, `PACKAGE`,
+  memory limits, and examples into one manual.
+- The HIMON loader RAM/I/O boundary proof was recorded: `D` skips I/O rows,
+  `M` protects monitor/I/O addresses, normal `L` rejects `$7F00` with
+  `LERR=$02`, and `L F` preserves address-rich protected-write diagnostics.
+- AP package/load/install planning advanced: moving the AP envelope inside
+  flash does not require relocation, but executing its BODY at a different base
+  does. Future install can search for a flash hole, store the envelope, then
+  later load/relocate the BODY into RAM or an overlay tray.
+- Banked overlay-call planning settled on a likely first profile: a one-sector
+  BODY such as `$2000-$2FFF`, with `$3000-$6FFF` available for thunks,
+  dependency bodies, UDATA, and scratch after ASM has returned to HIMON.
+- ASM-as-chunks planning was documented: flash ASM may eventually split into
+  several 4K bodies with stable entries, while the current flash command still
+  runs as one resident image.
+- The afternoon ASM RAM split plan was documented for future slices:
+  `$2000-$4FFF` as source output/package scratch while ASM is active,
+  `$5000-$79FF` as ASM private workspace, `$7A00-$7EFF` protected for HIMON,
+  and `$7F00-$7FFF` forbidden I/O.
+- `RESIB` was named as a candidate human nickname for the AP v1 package section
+  family. It does not change the current wire order.
 
 ## Part I: Why Hash-First?
 
@@ -252,10 +337,15 @@ Proof and notes:
 
 Answer:
 
-HIMON is where the system can be touched: command input, current FNV-era dispatch, memory
-dump/modify, loading, flashing under guard, disassembly, mini assembly, break,
-step, resume, and catalog inspection. It is the bench monitor, not the recovery
-anchor.
+HIMON is where the system can be touched: command input, current FNV-era
+dispatch, memory dump/modify, guarded S-record loading, guarded flash loading,
+break, step, resume, catalog inspection, and entry into the flash-resident ASM
+workbench. It is the bench monitor, not the recovery anchor.
+
+The old resident mini-assembler and the user-facing `U` unassemble command are
+gone. That removal is part of the story: HIMON kept the debug features that the
+board needs now, and made room for ASM and loader hardening instead of carrying
+two assembler stories at once.
 
 Questions:
 
@@ -264,6 +354,8 @@ Questions:
 - What should be debug UI, and what should be catalog/linking infrastructure?
 - How do command records, generated docs, and hardware transcripts reinforce
   each other?
+- Which old monitor conveniences should be removed once ASM or STR8 owns the
+  better version?
 
 Proof and notes:
 
@@ -291,12 +383,20 @@ Short end tokens are page-local, so `D 3000 FF` means `$3000-$30FF`. Three- or
 four-digit ends are full addresses, so `D 1000 FFF` is not shorthand for
 `$1FFF`; use `D 1000 1FFF` or `D 1000 +1000`.
 
+The loader language now also shows the difference between compact routine
+status and rich destructive diagnostics. Normal `L` failures can report
+`LERR=$ee`, including the hard RAM/I/O ceiling at `$7F00`; `L F` keeps
+address-rich diagnostics such as protected flash writes because the operator
+needs to know what range was refused.
+
 Questions:
 
 - Which short commands are worth keeping?
 - Which destructive operations must be full-word commands?
 - How should help text teach the safe mental model without becoming verbose?
 - When should the parser accept tight operator forms such as `1234+1`?
+- When should an error be only `ERR=$ee`, and when should it carry address and
+  count evidence?
 
 Proof and notes:
 
@@ -312,12 +412,20 @@ Break, step, resume, register editing, and trap context are not just monitor
 features. They define who owns the hardware stack, how context is saved, and
 what it means to continue after a trap.
 
+The current design keeps the hardware-useful parts: `B`, `B C`, `B L`, `N`,
+`X`, NMI-to-debug, one-shot breakpoint restoration, and the register dump. The
+old unassemble command was removed, but `N` still prints compact opcode/length
+metadata before resuming. This is the debug contract trimmed to what the board
+still proves.
+
 Questions:
 
 - Why does HIMON own the hardware stack on monitor entry?
 - What is the difference between `BRK`, NMI, a breakpoint, and a resume?
 - When should debugger state become command output, record output, or both?
 - Which debug features are proof obligations before user convenience?
+- How much disassembly belongs in live debug output before it becomes a ROM
+  cost instead of a bench tool?
 
 Proof and notes:
 
@@ -363,6 +471,11 @@ be named directly for bulk storage, retrieval, restore, and transport.
 STR8 V0 intentionally keeps console byte I/O private as `STR8_CON_*` rather
 than publishing duplicate `BIO_*` or `PIN_*` catalog providers.
 
+The July 2026 package work adds a future STR8-facing distinction: installing an
+AP envelope into flash is storage and catalog work, not the same as relocating
+and running the BODY. An envelope can move within flash unchanged. A BODY that
+executes at a new base needs relocation, import resolution, or both.
+
 Questions:
 
 - What must be true before reset enters STR8 first?
@@ -372,6 +485,8 @@ Questions:
 - When does S1/S9 stay enough, and when does bank-aware S2/S8 transport help?
 - When should STR8 call shared services, and when should it carry private code?
 - How does future STR8-N participate in catalogs without owning all catalogs?
+- When should STR8 merely store a package, and when should it load, relocate,
+  resolve, or install executable bytes?
 
 Proof and notes:
 
@@ -421,12 +536,26 @@ Flash is not just storage. It is a medium with erase sectors, one-way bit
 transitions, bank selection, protected ranges, source/destination policy, and
 recovery failure modes.
 
+The near-term AP package idea treats banked flash first as object storage.
+`INSTALL` can later search for an appropriately sized erased hole, write the
+package envelope, and mark progress by clearing bits in an initially erased
+status byte. Loading, relocating, resolving imports, and running the BODY are
+separate steps.
+
+A useful first overlay profile is a one-sector executable BODY loaded to
+`$2000-$2FFF`, with `$3000-$6FFF` available for thunks, dependencies, UDATA, and
+scratch after ASM has returned to HIMON. Moving the package envelope inside
+flash does not require relocation; executing the body somewhere else does.
+
 Questions:
 
 - Which operations are safe in HIMON, and which belong to STR8 or STR8-N?
 - What does it mean to restore an image while preserving the protected window?
 - How should bank 0 enrollment change backup semantics?
 - When do append-only records need condense or compress?
+- What is the first safe flash-hole allocator for AP package storage?
+- Which status bits should a flash install transaction clear as proof of
+  progress?
 
 Proof and notes:
 
@@ -524,21 +653,35 @@ Proof and notes:
 Answer:
 
 The assembler is where hash-first lookup becomes construction, not just
-dispatch. ASM v1 is now a RAM-session W65C02S assembler, not only a future
-sketch. It loads at `$2000`, accepts typed or pasted source lines, emits
-native code into operator-selected RAM such as `$7000`, tracks
-symbols/references/fixups, and resolves resident routine names through the
-HIMON/THE RJOIN path before emitting callable jumps and subroutine calls.
+dispatch. ASM v1 is now a flash-resident HIMON command loaded at `$8000` and
+entered as `ASM` through the current FNV/RJOIN catalog. Its source prompt shows
+the current PC as `ASM>$hhhh:`; accepted lines are quiet; `.P` is the explicit
+source-mode PC query; rejected lines still report `ERR=$ee NAME PC=$hhhh`.
 
-This is not self-hosting yet, and it is not a flash/catalog export format yet.
+ASM assembles W65C02 source into bare RAM programs, normally starting at
+`$2000`. It supports the working v1 syntax surface: labels, local labels,
+expressions, `ORG`, `EQU`, `DB`, `DW`, `DS`, `EXPORT`, `IMPORT`, and `END`.
+It tracks symbols, references, local scopes, fixups, relocation rows, export
+records, and import records. Direct resident calls can still resolve through
+RJOIN/K05 records, while declared imports deliberately defer binding for later
+package/load/install work.
+
+The post-`END` `SEAL>` window is the current bridge from bench assembly to
+movable module. `SEAL` freezes body facts. `RESOLVE` can patch declared imports
+through the current resident catalog. `RELOCATE address` copies the body to a
+new RAM base and applies internal relocation rows. `PACKAGE address` writes an
+AP v1 envelope with tagged seal, relocation, export, import, and body sections,
+then recomputes the written BODY FNV before returning success. `CHECK` exists
+as a diagnostic/full-core reader proof, but is not part of the default flash
+image.
+
+This is not self-hosting yet, and it is not the final flash catalog format yet.
 The book should show the real middle state: a board can now receive source,
 assemble code, fix forward references, print session tables, recover from
-failed lines transactionally, emit `DB` and little-endian `DW` data, call
-resident services by name, and run the generated program. The PACK40
-round-trip and interactive samples are now part of that real middle state:
-compact-name machinery is useful code first, then future catalog machinery
-later. Later RREC/RBODY/RF/RLNK records have to grow from that visible
-RAM-session behavior instead of replacing it with hand-waving.
+failed lines transactionally, export and import names, seal a body, relocate it,
+package it, and run both tiny proofs and larger interactive examples. Later
+RREC/RBODY/RF/RLNK records have to grow from that visible behavior instead of
+replacing it with hand-waving.
 
 Questions:
 
@@ -550,6 +693,9 @@ Questions:
   export?
 - Which opcode and addressing-mode rows are proof enough for ASM v1, and which
   belong to later coverage work?
+- When should AP v1 become the package spine for future RREC/RBODY work?
+- How should the `$2000-$4FFF` source-output arena and `$5000-$79FF` ASM
+  workspace split change table limits without making ASM less safe?
 
 Proof and notes:
 
@@ -608,7 +754,8 @@ one useful proof to a resident tool.
 Questions:
 
 - How should hits be printed?
-- What range syntax should search share with D/M/U/COPY/FILL?
+- What range syntax should search share with `D`, `M`, `L`, and future
+  copy/fill tools?
 - What should be in the proof app, and what should be promoted into HIMON?
 
 Proof and notes:
@@ -616,22 +763,34 @@ Proof and notes:
 - [HIMON_SEARCH_IMPLEMENTATION_GUIDE.md](../HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md)
 - [QCC_HASH.md](../QCC/HASH.md)
 
-### Chapter 18: Pasteable ASM On The Board
+### Chapter 18: Pasteable And Flash ASM On The Board
 
 Answer:
 
 Pasteable ASM is the worked proof that the runtime can build useful code on
-the machine itself. The current board path loads the ASM runtime/paste image
-at `$2000`, starts it with `G 2000`, assembles source into RAM, finalizes
-with `END`, and runs the emitted program with an ordinary HIMON `G` command.
+the machine itself. The earlier board path loaded the ASM runtime/paste image
+at `$2000`, started it with `G 2000`, assembled source into RAM, finalized with
+`END`, and ran the emitted program with an ordinary HIMON `G` command.
+
+The current board path is stronger: HIMON loads the flash-resident ASM image at
+`$8000` with `L F`, enters it as the `ASM` command, shows the PC-bearing
+`ASM>$hhhh:` prompt, assembles source at `$2000+`, and returns to HIMON with an
+explicit status. `SEAL>` then gives the operator module actions before leaving
+ASM: `SEAL`, `RESOLVE`, `RELOCATE`, `PACKAGE`, `NEW`, and `.`.
 
 The important proof is not only that opcodes appear in RAM. ASM has assembled
-programs that call resident HIMON/THE services by name, patch
-forward-reference fixups, print symbol/fixup tables, recover from bad
-non-`END` lines without poisoning the session, and run a larger `$6600`
-program that uses `$7800` data space and resident output. The proof path keeps
-source-width address policy honest: `$12` and `$0012` may name the same
-numeric address, but they are not the same instruction contract.
+programs that call resident HIMON/THE services by name, patch forward-reference
+fixups, print symbol/fixup/relocation tables, recover from bad non-`END` lines
+without poisoning the session, package AP v1 envelopes, relocate sealed bodies,
+and run larger interactive examples. The computed-neighbor Life source is a
+good book example because it ran under the tighter flash ASM guard without
+needing the old `$7000` output habit.
+
+The proof path keeps source-width address policy honest: `$12` and `$0012` may
+name the same numeric address, but they are not the same instruction contract.
+It also keeps memory ownership honest: current flash ASM protects high RAM
+while it is active, and the next planned split narrows source output toward
+`$2000-$4FFF` so `$5000-$79FF` can relieve ASM table pressure.
 
 Questions:
 
@@ -640,12 +799,17 @@ Questions:
 - Which resident names should ASM be allowed to join before catalogs are rich?
 - When should a pasted RAM body become an exportable RBODY instead of a bench
   scratch image?
+- What board transcript proves a package envelope, a relocated body, and the
+  original body are three different things?
+- Which large interactive source should become the canonical "ASM builds
+  something real" example?
 
 Proof and notes:
 
 - [ASM/TEST_PLAN.md](../ASM/TEST_PLAN.md)
 - [ASM/SAMPLES/ASMTEST_3000.asm](../ASM/SAMPLES/ASMTEST_3000.asm)
 - [ASM/SAMPLES/ASM_LINE_ECHO_7000.asm](../ASM/SAMPLES/ASM_LINE_ECHO_7000.asm)
+- [ASM/ASM_USER_GUIDE.md](../ASM/ASM_USER_GUIDE.md)
 - [HARDWARE_TEST_LOG.md](../LOGS/HARDWARE_TEST_LOG.md)
 
 ## Part VI: What Stayed Simple On Purpose
@@ -660,12 +824,21 @@ Current HIMON records use a readable proving signature. Destructive commands
 should be full words. Text compression is optional. Dynamic memory waits behind
 fixed workspaces and explicit policy.
 
+The same restraint now applies inside ASM. `CHECK` was proved and then removed
+from the default flash image because package/load/install needs the bytes.
+Accepted source lines went quiet, but rejected lines kept useful diagnostics.
+HIMON's unassemble command was removed, but debug stepping kept compact opcode
+evidence. The next RAM split should grow table room only after the new boundary
+is proven, not in the same slice that moves the workspace.
+
 Questions:
 
 - Which simplicity is permanent design?
 - Which simplicity is scaffolding?
 - How do you tell the difference?
 - When is cleverness worth its recovery cost?
+- Which diagnostic proofs should remain host/full-core only once the flash
+  image is tight?
 
 Proof and notes:
 
@@ -678,8 +851,13 @@ Proof and notes:
 Answer:
 
 The vocabulary is part of the system. STR8, HIMON, THE, RCAT, RREC, RBODY,
-RF, RLNK, BIO, PIN, COR, SYS, and REQUIRED_FOR_RECOVERY are not decoration.
-They mark ownership and prevent confused code.
+RF, RLNK, AP v1, BIO, PIN, COR, SYS, and REQUIRED_FOR_RECOVERY are not
+decoration. They mark ownership and prevent confused code.
+
+`RESIB` is a candidate human nickname for the AP v1 section family:
+relocation, export, seal, import, body. It is useful only if it helps people
+remember the package shape. It must not blur the current AP v1 wire order or
+pretend the nickname is a loader contract.
 
 Questions:
 
@@ -687,6 +865,7 @@ Questions:
 - Which names are too cute to carry a contract?
 - When should a new prefix exist?
 - How can glossary and code keep each other honest?
+- When is a nickname helpful, and when should it stay out of command syntax?
 
 Proof and notes:
 
@@ -707,6 +886,13 @@ These are book-grade questions, not blockers:
 - When does HIMON stop being a monitor and become THE?
 - When does pasteable ASM stop being a RAM proof and become an export path?
 - What is the smallest self-hosted build loop that still feels honest?
+- What is the first safe `LOAD`/`INSTALL` path for AP v1 packages?
+- How much validation belongs in `PACKAGE`, and how much belongs in the future
+  loader/installer?
+- Does the `$2000-$4FFF` output and `$5000-$79FF` ASM workspace split become a
+  permanent ASM contract or only the next pressure-relief step?
+- When should ASM move from one flash image to chunked 4K bodies with stable
+  entries?
 
 ## Drafting Order
 
@@ -724,9 +910,12 @@ Do not write the book in chapter order. Write from proof outward:
    promoted helpers, and the range-parser/search path.
 5. Write catalog linking from [HASHED_ASM.md](../ASM/HASHED_ASM.md),
    [ASM/TEST_PLAN.md](../ASM/TEST_PLAN.md), [QCC_ASM.md](../QCC/ASM.md),
-   and [QCC_CATALOG_LINKING.md](../QCC/CATALOG_LINKING.md).
-6. Write pasteable ASM as a worked example from the 2026-06-06 through
-   2026-06-08 board proofs before claiming any self-hosted arc.
+   [ASM/MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md), and
+   [QCC_CATALOG_LINKING.md](../QCC/CATALOG_LINKING.md).
+6. Write pasteable and flash ASM as a worked example from the 2026-06-06
+   through 2026-07-05 board proofs before claiming any self-hosted arc.
+   Include the shift from runtime paste, to flash `ASM`, to `SEAL>`, to AP v1
+   packages and relocation.
 7. Finish with the reflective chapters: what stayed simple, what remains open,
    and how the vocabulary shaped the system.
 
@@ -770,8 +959,10 @@ environment. HIMON provides the bench: commands, debugging, loading, flash
 guards, and current FNV-era dispatch. STR8 protects recovery. THE names the
 future lookup environment where records, bodies, fixups, and catalogs make code
 discoverable and linkable on the machine itself. ASM v1 proves the construction
-side: pasted source becomes native code, resident joins become real calls, and
-RAM fixups become visible session evidence.
+side: pasted and flash-resident source sessions become native code, resident
+joins become real calls, local labels and fixups become visible session
+evidence, and sealed bodies can be resolved, relocated, and packaged as AP v1
+envelopes.
 
 This book follows that path without pretending the destination arrived first.
 It keeps the false starts, proof apps, hardware transcripts, command grammar
