@@ -11202,7 +11202,14 @@ HIMON `V 00.0706(0157)` proves:
 - `D` rejects the old `+count` form.
 - `D` search reports `D NF`, prints hit address plus D-style context row, accepts short end tokens, accepts apostrophe text, and skips `$7F00-$7FFF` with compact I/O slot names.
 - A follow-up ROM-only `D 8000 FFFF 'HIMO'` search finds the five ROM `HIMON` text sites without RAM command-buffer or pattern-buffer hits.
-- Follow-up operator proof reports the HIMON-local RX lookahead paste fix tested PASS.
+- Follow-up paste proof shows a queued `D 7F00 FF` command survived a long
+  `D 0 FFFF` dump; the leading `D` was preserved instead of being consumed by
+  long-output Ctrl-C polling.
+- Follow-up loader proof shows positive `L`, manual `G`, breakpoint/single-step,
+  `L G` auto-go, normal `L` guard failures, and `L F` protected-write reporting.
+- Follow-up positive `L F` proof shows `$8000-$BFFF` blank, writes ASM to low
+  flash, exposes the `ASM` catalog row, enters via command lookup, enters via
+  direct `G 800C`, and rechecks D range/search continuation edges.
 
 ### Transcript
 
@@ -11349,4 +11356,239 @@ F8F8 F8F0: 0A 55 50 44 41 54 45 20 | 48 49 4D 4F 4E 20 43 30 | .UPDATE HIMON C0
 F959 F950: 41 54 41 0D 8A 0D 0A 47 | 20 48 49 4D 4F 4E 0D 8A | ATA....G HIMON..
 ```
 
-Operator follow-up: HIMON-local RX lookahead paste preservation test PASS.
+### Paste Preservation Follow-up
+
+This excerpt proves the HIMON-local RX lookahead fix. The operator queued a
+follow-up `D 7F00 FF` behind a long `D 0 FFFF`; after the long dump completed,
+HIMON read and executed the queued command with its leading `D` intact.
+
+```text
+>D 0 FFFF
+0000: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+0010: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+...
+F8F0: 0A 55 50 44 41 54 45 20 | 48 49 4D 4F 4E 20 43 30 | .UPDATE HIMON C0
+F900: 30 30 2D 45 46 46 46 3F | 20 59 3A A0 0D 0A 53 45 | 00-EFFF? Y:...SE
+F910: 4E 44 20 53 31 39 20 43 | 30 30 30 2D 45 46 46 46 | ND S19 C000-EFFF
+F920: 0D 8A 0D 0A 50 52 4F 47 | 52 41 4D 20 43 30 30 30 | ....PROGRAM C000
+F930: 2D 45 46 46 46 3F 20 59 | 3A A0 0D 0A 53 31 39 20 | -EFFF? Y:...S19
+F940: 46 41 49 4C 0D 8A 0D 0A | 4E 4F 20 53 31 39 20 44 | FAIL....NO S19 D
+F950: 41 54 41 0D 8A 0D 0A 47 | 20 48 49 4D 4F 4E 0D 8A | ATA....G HIMON..
+...
+FFF0: FF FF FF FF FF FF FF FF | FF FF 89 F0 00 F0 9D F0 | ................
+>D 7F00 FF
+7F00: CS0 IO SKIP
+7F20: CS1 IO SKIP
+7F40: CS2 IO SKIP
+7F60: CS3 IO SKIP
+7F80: ACIA IO SKIP
+7FA0: PIA IO SKIP
+7FC0: VIA IO SKIP
+7FE0: FTDI VIA IO SKIP
+>
+```
+
+### Loader And Guard Follow-up
+
+S19 records used for the current positive loader proof:
+
+```text
+S10E3000A9008D4858A95A8D4858605B
+S1045848005B
+S9033000CC
+```
+
+The `$3000` program zeros `$5848`, writes `$5A` to `$5848`, then returns. The
+separate `$5848` data record also preloads the proof byte to `$00` during load.
+
+S19 records used for negative guard proofs:
+
+```text
+; normal L into $7F00 I/O page, expect LERR=$02
+S1047F00AAD2
+
+; normal L into $8000 flash window, expect LERR=$05
+S1048000AAD1
+
+; L F into protected $C000+ region, expect LF PROT / LF FAIL
+S104C000AA91
+S9030000FC
+```
+
+Transcript excerpts:
+
+```text
+>L
+L S19
+L @3000
+L @5848
+L OK=0007 GO=3000
+>D 5848
+5848: 00 | .
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 5848
+5848: 5A | Z
+>B 3000
+BP $3000
+>G 3000
+GO 3000
+
+@3000 A=01 X=30 Y=30 P=75 S=FB NV-BdIzC
+>N
+STEP PC=3000 OP=A9 LDA LEN=02 NEXT=3002
+RESUME 3000
+
+@3002 A=5A X=30 Y=30 P=75 S=FB NV-BdIzC
+>D 3000 FF
+3000: A9 5A 8D 48 58 60 00 00 | 00 00 00 00 00 00 00 00 | .Z.HX`..........
+...
+30F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>L
+L S19
+L @3000
+L @5848
+L OK=000C GO=3000
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 5848
+5848: 5A | Z
+>D 3000 FF
+3000: A9 00 8D 48 58 A9 5A 8D | 48 58 60 00 00 00 00 00 | ...HX.Z.HX`.....
+...
+30F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>L G
+L S19
+L @3000
+L @5848
+L OK=000C GO=3000
+
+#LOADGO# ENTRY=3000
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 5848
+5848: 5A | Z
+```
+
+Malformed loader scratch during the same session is preserved below as an
+observed operator artifact. After the loader returned to the prompt, a pasted
+terminator was treated as an ordinary command and correctly reported
+hash-not-found.
+
+```text
+>L
+L S19
+LERR=$01
+
+LS03
+LERR=$01
+LERR=$01
+LERR=$01
+LERR=$01
+
+LS03
+
+LS03
+LERR=$00
+```
+
+Guard transcript:
+
+```text
+>L
+L S19
+L @7F00
+LERR=$02
+>L
+L S19
+L @7F00
+LERR=$02
+>L
+L S19
+L @8000
+LERR=$05
+>L
+L S19
+L @C000
+LERR=$05
+>S9030000FC
+#5C56ABD3# HSH_NF!
+>L F
+L F S19
+L @C000
+LF PROT=C000
+LF FAIL=02 WR=0000 SKIP=0001 GO=0000
+>
+```
+
+### Positive `L F` ASM Follow-up
+
+The board first proved the current low-flash window blank before flashing ASM:
+
+```text
+D 8000 BFFF
+8000: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+...
+BFF0: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+```
+
+The positive `L F` load wrote the ASM flash image and exposed the command
+record:
+
+```text
+>L F
+L F S19
+L @8000
+LF OK WR=3C7B GO=800C
+># ASM
+56AD7400 ENTRY=800C K=05  ASM V1
+>D 8000 BFFF
+8000: 46 4E D6 00 74 AD 56 05 | 0C 80 80 B8 20 EF 83 B0 | FN..t.V..... ...
+8010: 08 A9 0B A2 00 A0 00 18 | 60 A2 AF A0 B8 20 52 82 | ........`.... R.
+8020: A9 01 A2 00 A0 20 20 88 | 85 8E 01 60 8C 02 60 9C | .....  ....`..`.
+...
+BC70: 01 01 01 01 01 01 01 01 | 01 03 03 FF FF FF FF FF | ................
+BC80: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+...
+BFF0: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+```
+
+ASM entered both through the command scanner and direct entry:
+
+```text
+>ASM
+ASM FLASH
+ASM>$2000: .
+ASM FLASH BYE
+>G 800C
+GO 800C
+ASM FLASH
+ASM>$2000: .
+ASM FLASH BYE
+
+#GO# ENTRY=800C
+RET A=00 X=00 Y=20 P=75 S=FD NV-BdIzC
+```
+
+The same session rechecked D range and search edges:
+
+```text
+>D 30F0 10
+D [a [b [bb|'t']]]
+>D 30F0 F
+30F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>D 3000 30FF 4D
+D NF
+D
+#5E614B7E# HSH_NF!
+>D
+3100: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>D
+3110: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+```
