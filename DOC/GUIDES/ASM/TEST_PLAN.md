@@ -8542,6 +8542,262 @@ sample: the original unrelocated body deliberately checks for `$3123`-based
 relocated addresses and fails its target-address check at the original `$2000`
 base.
 
+## 2026-07-07 ENTRY + Resident AP Service Board Gate
+
+This is the combined bench proof for commit `fbf04bc`: `ENTRY` is now an ASM
+directive, `START` is an ordinary label again, and flash ASM package
+load/install paths call HIMON's resident AP service.
+
+Host prep:
+
+```text
+make -C SRC himon-rom
+make -C SRC asm-session-report
+make -C SRC asm-v1-flash
+make -C SRC asm-test
+```
+
+Board prep:
+
+```text
+update the board to the current HIMON image using the normal STR8/HIMON flow
+boot HIMON and record the visible version
+D 7E25 40
+L                       send SRC/BUILD/s19/asm-session-report-7000.s19
+L F                     send SRC/BUILD/s19/asm-v1-flash-8000.s19
+ASM
+```
+
+Expected service-cell proof before AP use:
+
+```text
+D 7E25 40    -> F1 D5 00 00 00 00 00 00 B2 D6 00 ... 00
+L            -> L OK=06D5 GO=7000
+L F          -> LF OK WR=3A08 GO=800C
+ASM          -> ASM FLASH
+```
+
+The exact HIMON version string should match the newly installed image. The
+`D 7E25 40` bytes prove the flash-install service vector at `$D5F1` and the AP
+service vector at `$D6B2` are resident before flash ASM starts.
+
+Pasteable ENTRY positive proof:
+
+```text
+ASM NEW
+ORG $2400
+START LDA #$5A
+RTS
+ENTRY START
+END
+SEAL
+PACKAGE $3200
+LOAD $3200 $3000
+INSTALL $3200
+INSTALL $3200 $hhhh
+LOAD $hhhh $3100
+.
+D 3215 321B
+D 3000 3002
+D 3100 3102
+G 3000
+G 3100
+G 7000
+```
+
+Use the address printed by `INSTALL $3200` as `$hhhh`. Expected results:
+
+```text
+END                         -> ASM OK
+SEAL                        -> SEAL OK
+PACKAGE $3200               -> PKG OK @=$3200 L=$002A
+D 3215 321B                 -> 45 09 01 09 00 00 05
+LOAD $3200 $3000            -> LOAD OK=$3000 L=$0003 C=$00
+INSTALL $3200               -> INST @=$hhhh L=$002A
+INSTALL $3200 $hhhh         -> INST @=$hhhh L=$002A
+LOAD $hhhh $3100            -> LOAD OK=$3100 L=$0003 C=$00
+D 3000 3002                 -> A9 5A 60
+D 3100 3102                 -> A9 5A 60
+G 3000                      -> RET A=5A
+G 3100                      -> RET A=5A
+G 7000                      -> COUNTS ... EXP ... shows EXP=$01,
+                                PKG @ LEN BODY INST $hhhh 002A 0003 $hhhh
+```
+
+The `D 3215 321B` row proves `ENTRY START` emitted an AP export section:
+`E`, section length `$09`, export count `$01`, export record length `$09`,
+entry offset `$0000`, and name length `$05`. The two `LOAD` commands prove both
+RAM-source AP loading and installed-flash AP loading through the same resident
+HIMON AP service.
+
+Pasteable ENTRY negative proof:
+
+```text
+ASM NEW
+ORG $2500
+ENTRY
+ENTRY MISSING
+START RTS
+ENTRY START
+ENTRY START
+.
+```
+
+Expected:
+
+```text
+ENTRY                       -> ERR=$03 BO
+ENTRY MISSING               -> ERR=$08 BS
+START RTS                   -> OK
+ENTRY START                 -> OK
+second ENTRY START          -> ERR=$08 BS
+.                           -> return to HIMON
+```
+
+Pasteable HIMON/AP positive proof, including resident service cells:
+
+```text
+ASM NEW
+ORG $2400
+START LDA #$5A
+RTS
+ENTRY START
+END
+PACKAGE $3200
+LOAD $3200 $3000
+INSTALL $3200
+INSTALL $3200 $hhhh
+LOAD $hhhh $3100
+.
+D 3000 3002
+D 3100 3102
+G 3000
+G 3100
+D 7E2D 40
+G 7000
+```
+
+Use the advisory address from `INSTALL $3200` as `$hhhh`. Expected:
+
+```text
+PACKAGE $3200               -> PKG OK @=$3200 L=$002A
+LOAD $3200 $3000            -> LOAD OK=$3000 L=$0003 C=$00
+INSTALL $3200               -> INST @=$hhhh L=$002A
+INSTALL $3200 $hhhh         -> INST @=$hhhh L=$002A
+LOAD $hhhh $3100            -> LOAD OK=$3100 L=$0003 C=$00
+D 3000 3002                 -> A9 5A 60
+D 3100 3102                 -> A9 5A 60
+G 3000                      -> RET A=5A
+G 3100                      -> RET A=5A
+D 7E2D 40                   -> AP vector B2 D6, OP=01, STATUS=00,
+                                SRC=$hhhh, DST=$3100, PKGLEN=$002A,
+                                BODYLEN=$0003, RELOCS=$00, IMPORTS=$00
+G 7000                      -> ASM REPORT OK, EXP=$01,
+                                PKG @ LEN BODY INST $hhhh 002A 0003 $hhhh
+```
+
+Pasteable HIMON/AP negative proof:
+
+```text
+ASM NEW
+ORG $2400
+START LDA #$5A
+RTS
+ENTRY START
+END
+PACKAGE $3200
+LOAD $3201 $3000
+LOAD $3200 $3200
+INSTALL $3200 $C000
+INSTALL $3200
+INSTALL $3200 $hhhh
+INSTALL $3200 $hhhh
+NEW
+ORG $2200
+IMPORT BIO_FTDI_PUT_CSTR
+MAIN JSR BIO_FTDI_PUT_CSTR
+END
+PACKAGE $3400
+LOAD $3400 $3000
+.
+```
+
+Use the advisory address from `INSTALL $3200` as `$hhhh`. Expected:
+
+```text
+PACKAGE $3200               -> PKG OK @=$3200 L=$002A
+LOAD $3201 $3000            -> LOAD ERR=$07 BL
+LOAD $3200 $3200            -> LOAD ERR=$06 BAD RANGE
+INSTALL $3200 $C000         -> INST ERR=$06 BAD RANGE
+INSTALL $3200               -> INST @=$hhhh L=$002A
+INSTALL $3200 $hhhh         -> INST @=$hhhh L=$002A
+second INSTALL $3200 $hhhh  -> INST ERR=$06 BAD RANGE
+IMPORT ... / MAIN JSR ...   -> accepted source
+PACKAGE $3400               -> PKG OK @=$3400 L=$0035
+LOAD $3400 $3000            -> LOAD ERR=$09 BAD FIX
+.                           -> return to HIMON
+```
+
+These negatives cover malformed AP source, RAM overlap, protected flash target,
+occupied flash target, and the current import boundary. The import case is
+important: AP can store import metadata today, but HIMON/AP `LOAD` rejects
+packages that need resident import binding until a later `LINK`/run slice.
+
+Extended SPIL proof:
+
+```text
+ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/spill-roundtrip-2000.a
+PACKAGE $3200
+INSTALL $3200
+INSTALL $3200 $hhhh
+LOAD $hhhh $3123
+.
+D 5848 5850
+G 3123
+D 5848 5850
+G 7000
+```
+
+Do not exit `SEAL>` before `LOAD $hhhh $3123`; `INSTALL` stores the AP envelope
+only. If `LOAD` is skipped, `G 3123` is expected to trap or run stale bytes
+because no relocated body has been copied to `$3123`.
+
+Expected:
+
+```text
+END                         -> ASM OK
+PACKAGE $3200               -> PKG OK @=$3200 L=$00FD
+INSTALL $3200               -> INST @=$hhhh L=$00FD
+INSTALL $3200 $hhhh         -> INST @=$hhhh L=$00FD
+LOAD $hhhh $3123            -> LOAD OK=$3123 L=$00B3 C=$07
+G 3123                      -> RET A=AC X=00 Y=32
+D 5848 5850                 -> AC 00 6E 31 6E 31 44 31 5A
+G 7000                      -> ASM REPORT OK, EXP=$01, PKG/INST use $hhhh
+```
+
+This extended pass is the real package lifecycle proof: `ENTRY MAIN` marks the
+entry/export metadata, the AP envelope installs to visible flash, HIMON's AP
+service loads the installed envelope to non-page-aligned `$3123`, and the
+relocated code self-checks the patched internal addresses.
+
+Board result captured 2026-07-07 in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`:
+the service-cell prep, compact ENTRY positive, ENTRY negative, HIMON/AP
+positive, and HIMON/AP negative blocks passed on HIMON `V 00.0707(1532)` with
+flash ASM `LF OK WR=3A08 GO=800C`. The extended SPIL paste assembled,
+packaged, and installed at `$BAB0`. The first attempt skipped
+`LOAD $BAB0 $3123` before leaving `SEAL>`, so `G 3123` trapped on
+unloaded/stale memory. A follow-up tail run then passed:
+`LOAD $BAB0 $3123 -> LOAD OK=$3123 L=$00B3 C=$07`,
+`G 3123 -> RET A=AC X=00 Y=32`, and
+`D 5848 5850 -> AC 00 6E 31 6E 31 44 31 5A`.
+
+The tail-only reporter was run from a fresh empty ASM session, so it showed
+empty live-session symbols/exports and `PKG @ LEN BODY INST BAB0 00FD 00B3
+0000`. That is expected for this recovery run; the pass criteria are the
+resident HIMON/AP `LOAD`, successful relocated execution, patched data bytes,
+and the retained seven AP relocation rows.
+
 ## Hardware Bench Gate
 
 Do not call ASM hardware-proven until the board has run the emitted code and the

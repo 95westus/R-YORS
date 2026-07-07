@@ -11592,3 +11592,185 @@ D
 3110: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
 >
 ```
+
+## 2026-07-07 ENTRY And Resident AP Service Board Proof
+
+Board transcript from HIMON `V 00.0707(1532)` proves the `fbf04bc` ENTRY/AP
+slice on hardware. STR8 restored B0 to B3, updated HIMON `$C000-$EFFF`, and
+booted the new monitor. The resident service cells were visible before loading
+flash ASM:
+
+```text
+>D 7E25 40
+7E25: F1 D5 00 00 00 00 00 00 | B2 D6 00 00 00 00 00 00 | ................
+7E35: 00 00 00 00 00 00 00 00 | 00 00 00 00 | ............
+>L
+L @7000
+L OK=06D5 GO=7000
+>L F
+L @8000
+LF OK WR=3A08 GO=800C
+```
+
+Compact ENTRY positive proof passed. `START` was accepted as a label,
+`ENTRY START` produced one export row, the AP envelope loaded from RAM and
+from installed flash, and both relocated bodies returned `A=5A`:
+
+```text
+ASM>$2400: START LDA #$5A
+ASM>$2402: RTS
+ASM>$2403: ENTRY START
+ASM>$2403: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$002A
+SEAL> LOAD $3200 $3000
+LOAD OK=$3000 L=$0003 C=$00
+SEAL> INSTALL $3200
+INST @=$BA08 L=$002A
+SEAL> INSTALL $3200 $BA08
+INST @=$BA08 L=$002A
+SEAL> LOAD $BA08 $3100
+LOAD OK=$3100 L=$0003 C=$00
+>D 3000 3002
+3000: A9 5A 60 | .Z`
+>D 3100 3102
+3100: A9 5A 60 | .Z`
+>G 3000
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>G 3100
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+```
+
+The reporter confirmed `EXP=$01`, map end `$BA08`, and the installed package
+as the final AP source:
+
+```text
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 01 00 00 01 00 00 00
+PKG @ LEN BODY INST BA08 002A 0003 BA08
+START DEF=$0002
+ASM REPORT OK
+```
+
+ENTRY negative proof also passed:
+
+```text
+ASM>$2500: ENTRY
+ERR=$03 BO PC=$2500
+ASM>$2500: ENTRY MISSING
+ERR=$08 BS PC=$2500
+ASM>$2500: START RTS
+ASM>$2501: ENTRY START
+ASM>$2501: ENTRY START
+ERR=$08 BS PC=$2501
+```
+
+The dedicated resident AP service proof passed with a later installed package
+at `$BA32`. The service request/result cells after `LOAD $BA32 $3100` show
+AP vector `$D6B2`, op `$01`, status `$00`, source `$BA32`, destination `$3100`,
+package length `$002A`, body length `$0003`, and zero reloc/import counts:
+
+```text
+>D 7E2D 40
+7E2D: B2 D6 01 00 32 BA 00 31 | 2A 00 59 BA 03 00 00 00 | ....2..1*.Y.....
+7E3D: 32 BA 46 BA | 2.F.
+```
+
+AP negative proof passed:
+
+```text
+SEAL> LOAD $3201 $3000
+LOAD ERR=$07 BL
+SEAL> LOAD $3200 $3200
+LOAD ERR=$06 BAD RANGE
+SEAL> INSTALL $3200 $C000
+INST ERR=$06 BAD RANGE
+SEAL> INSTALL $3200 $BA86
+INST @=$BA86 L=$002A
+SEAL> INSTALL $3200 $BA86
+INST ERR=$06 BAD RANGE
+SEAL> PACKAGE $3400
+PKG OK @=$3400 L=$0035
+SEAL> LOAD $3400 $3000
+LOAD ERR=$09 BAD FIX
+```
+
+The final SPIL paste assembled, packaged, and installed successfully, but the
+operator exited `SEAL>` before running `LOAD $BAB0 $3123`. The subsequent
+`G 3123` trapped on stale/unloaded memory, so the extended SPIL run remains
+incomplete rather than failed:
+
+```text
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$00FD
+SEAL> INSTALL $3200
+INST @=$BAB0 L=$00FD
+SEAL> INSTALL $3200 $BAB0
+INST @=$BAB0 L=$00FD
+SEAL> .
+ASM BYE
+>G 3123
+BRK 00 PC=3125
+```
+
+Follow-up SPIL tail proof closed the incomplete run by loading the installed
+AP envelope at `$BAB0` into `$3123` from a fresh empty ASM session:
+
+```text
+>ASM NEW
+ASM
+ASM>$2000: END
+ASM OK
+SEAL> LOAD $BAB0 $3123
+LOAD OK=$3123 L=$00B3 C=$07
+SEAL> .
+ASM BYE
+>G 3123
+GO 3123
+
+#GO# ENTRY=3123
+RET A=AC X=00 Y=32 P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 00 6E 31 6E 31 44 31 | 5A | ..n1n1D1Z
+```
+
+The reporter after the tail run came from the fresh empty session, so
+live-session symbols/exports were empty and `INST=0000`; the installed AP
+source, body size, and seven relocation rows remained visible:
+
+```text
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2000
+HIGH=$2000
+BYTES=$0000
+LINES=$0001
+SYMS=$00/$28
+FIXUPS=$00/$60
+REFS=$00/$A0
+TRUNC=NO
+MAP END=$BA08 UDATA=$5000-6F16
+SEAL FL BASE END LEN FNV 01 2000 2000 0000 00000000
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 00 00 07 00 00 00 07
+PKG @ LEN BODY INST BAB0 00FD 00B3 0000
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+00 02 003B 0021
+01 03 0040 0021
+02 01 0028 0048
+03 02 002B 004B
+04 03 0033 004B
+05 01 0049 004B
+06 01 0045 0051
+ASM REPORT OK
+```
