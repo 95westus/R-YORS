@@ -619,12 +619,12 @@ G 3000
 ```
 
 For a fuller current-life-cycle proof with no imports, paste
-`DOC/GUIDES/ASM/SAMPLES/life.a`. It exercises forward references, a backward
-branch, export metadata, internal code relocation, `PACKAGE`, `INSTALL`,
-`LOAD`, and `G`. Load it to non-page-aligned `$3123` so both low and high
-relocation bytes have to move. After running `G 3123`, `D 5848 50` should show
-`$5848=$AC`, `$5849=$00`, target pointers `$316E` at `$584A-$584D`, loop
-pointer `$3144` at `$584E-$584F`, and `$5850=$5A`.
+`DOC/GUIDES/ASM/SAMPLES/spill-roundtrip-2000.a`. It exercises forward
+references, a backward branch, export metadata, internal code relocation,
+`PACKAGE`, `INSTALL`, `LOAD`, and `G`. Load it to non-page-aligned `$3123` so
+both low and high relocation bytes have to move. After running `G 3123`,
+`D 5848 50` should show `$5848=$AC`, `$5849=$00`, target pointers `$316E` at
+`$584A-$584D`, loop pointer `$3144` at `$584E-$584F`, and `$5850=$5A`.
 
 The relocated body should begin:
 

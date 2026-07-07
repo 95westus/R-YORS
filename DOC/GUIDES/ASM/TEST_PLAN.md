@@ -8482,9 +8482,10 @@ G 7000                     -> ASM REPORT OK, PKG @ LEN BODY INST BDE0 0023 0003 
 D BD00 FF                  -> second AP envelope starts at BDE0 and continues past BDFF
 ```
 
-`life.a` first board paste against HIMON `V 00.0706(2013)` / flash ASM
-`LF OK WR=3D1B GO=800C` exposed two next-incarnation ASM requirements rather
-than a LOAD/INSTALL failure:
+The first paste of the SPIL roundtrip sample, then misleadingly named
+`life.a`, against HIMON `V 00.0706(2013)` / flash ASM `LF OK WR=3D1B GO=800C`
+exposed two next-incarnation ASM requirements rather than a LOAD/INSTALL
+failure:
 
 ```text
 START   BRA RUN       -> ERR=$02 BAD DIR
@@ -8497,8 +8498,31 @@ END                   -> ERR=$09 BAD FIX
 Future acceptance: `START` must either be a real directive or a legal label,
 and `DW TARGET`, `DB <TARGET`, and `DB >TARGET` must accept forward labels,
 patch them at `END`, and emit the corresponding internal relocation rows. The
-current `life.a` sample avoids those unsupported source forms so the present
-SPIL package/install/load/run path can still be tested.
+current `spill-roundtrip-2000.a` sample avoids those unsupported source forms
+so the present SPIL package/install/load/run path can still be tested.
+
+Corrected `spill-roundtrip-2000.a` board proof followed on the same
+HIMON/flash ASM generation. The transcript includes an installed AP envelope
+at `$BD1B` with length `$00FD`, a `LOAD` to non-page-aligned `$3123`, and the
+corrected source paste reaches clean `END`:
+
+```text
+MAIN    BRA RUN
+EXPORT MAIN
+...
+END                         -> ASM OK
+PACKAGE $3200               -> PKG OK @=$3200 L=$00FD
+INSTALL $3200               -> INST @=$BD1B L=$00FD
+INSTALL $3200 $BD1B         -> INST @=$BD1B L=$00FD
+LOAD $BD1B $3123            -> LOAD OK=$3123 L=$00B3 C=$07
+G 3123                      -> RET A=AC X=00 Y=32
+G 2000                      -> RET A=E3 X=00 Y=30
+```
+
+`G 3123` returning `A=AC` proves the corrected non-page-aligned relocated body
+success path. `G 2000` returning `A=E3` is expected for this sample: the
+original unrelocated body deliberately checks for `$3123`-based relocated
+addresses and fails its target-address check at the original `$2000` base.
 
 ## Hardware Bench Gate
 
