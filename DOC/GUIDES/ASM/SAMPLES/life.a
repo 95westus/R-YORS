@@ -1,0 +1,115 @@
+; ASM V1 INTERNAL SPILL LIFE SAMPLE.
+; NO IMPORTS: CURRENT LOAD REJECTS IMPORT PACKAGES WITH BAD FIX.
+; PROVES EXPORT METADATA, FORWARD JSR, FORWARD BRA, BACKWARD BNE,
+; INTERNAL CODE RELOCS, PACKAGE, INSTALL, LOAD, AND RUN.
+;
+; PROCESS:
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   PACKAGE $3200
+;   INSTALL $3200
+;   INSTALL $3200 $hhhh       ; USE THE SUGGESTED ERASED HOLE
+;   LOAD $hhhh $3123
+;   .
+;   G 3123
+;   D 5848 50
+;
+; PASS AFTER G 3123:
+;   $5848=$AC
+;   $5849=$00
+;   $584A/$584B = RUNTIME TARGET ADDRESS = $316E
+;   $584C/$584D = MIRROR TARGET ADDRESS = $316E
+;   $584E/$584F = RUNTIME LOOP ADDRESS = $3144
+;   $5850=$5A
+; TABLE BUDGET: 6 GLOBALS, 6 LOCALS, 6 RELOCS.
+
+        ORG $2000
+
+MAIN    BRA RUN
+        EXPORT MAIN
+
+RUN     LDA #$00
+        STA $5848
+        STA $5849
+        STA $584A
+        STA $584B
+        STA $584C
+        STA $584D
+        STA $584E
+        STA $584F
+        STA $5850
+
+        LDX #$03
+LOOP    DEX
+        BNE LOOP
+        STX $5849
+
+        JSR CALLF
+
+        LDA #<TARGET
+        STA $584A
+        STA $584C
+        LDA #>TARGET
+        STA $584B
+        STA $584D
+
+        LDA #<LOOP
+        STA $584E
+        LDA #>LOOP
+        STA $584F
+
+        JSR CHECK
+        RTS
+
+CALLF   JMP TARGET
+
+TARGET  LDA #$5A
+        STA $5850
+        RTS
+
+CHECK   LDA $5850
+        CMP #$5A
+        BNE .F1
+        LDA $5849
+        BNE .F2
+        LDA $584A
+        CMP #$6E
+        BNE .F3
+        LDA $584B
+        CMP #$31
+        BNE .F3
+        LDA $584C
+        CMP #$6E
+        BNE .F3
+        LDA $584D
+        CMP #$31
+        BNE .F3
+        LDA $584E
+        CMP #$44
+        BNE .F4
+        LDA $584F
+        CMP #$31
+        BNE .F4
+        LDA $584A
+        CMP $584C
+        BNE .F5
+        LDA $584B
+        CMP $584D
+        BNE .F5
+        LDA #$AC
+        STA $5848
+        RTS
+
+.F1     LDA #$E1
+        BRA .FAIL
+.F2     LDA #$E2
+        BRA .FAIL
+.F3     LDA #$E3
+        BRA .FAIL
+.F4     LDA #$E4
+        BRA .FAIL
+.F5     LDA #$E5
+.FAIL   STA $5848
+        RTS
+
+        END

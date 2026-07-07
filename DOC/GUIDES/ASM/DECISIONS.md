@@ -217,6 +217,19 @@ A [addr] [label[:]] MMM [operand] .
   before resident RJOIN. This makes explicit `IMPORT NAME` a force-deferred
   spelling even when `NAME` is resident today; plain undeclared `JSR`/`JMP`
   operands still RJOIN and bind to today's resident address.
+- The next ASM incarnation must make data directives first-class fixup and
+  relocation clients. `DW TARGET` should accept known and forward PC labels,
+  emit or later patch a little-endian word, and record an `$01`
+  `ABS16_INTERNAL` relocation row when the target is a session label.
+  `DB <TARGET` and `DB >TARGET` should do the same for `$02` `LO8_INTERNAL`
+  and `$03` `HI8_INTERNAL`. The dry-run/count pass must not reject forward
+  labels that have an unambiguous selected width. Later import-capable `LINK`
+  can extend the same path to `$04-$06` import rows.
+- Parked vocabulary must not permanently steal common user labels. In the next
+  ASM incarnation, either implement an actual `START` directive in the same
+  slice or release `START`/`START:` as an ordinary user label. Leaving `START`
+  reserved while it is not usable as syntax is too sharp for board-facing
+  source.
 - ASM reads one full source line in v1, capped at 63 visible characters. Spaces
   and tabs are whitespace; tabs have no column meaning. Empty and comment-only
   lines are OK. An overlong line is `BAD LINE`.
@@ -564,6 +577,11 @@ A [addr] [label[:]] MMM [operand] .
   suggestion. `SEAL> INSTALL pkg flash_addr` is the first low-flash write
   slice: it copies the AP envelope unchanged through HIMON's flash-install
   service. Banked banks 0-2 install/runability remains deferred.
+- The movable package lifecycle is named `SPILL`: `SEAL` freezes/checks facts,
+  `PACK` emits the AP envelope, `INSTALL` stores the AP envelope, `LOAD` reads
+  AP and relocates BODY into RAM, and future `LINK` binds imports in that loaded
+  overlay/temp-RAM image. Current command spelling for the `PACK` step remains
+  `PACKAGE`; the default flash image implements `SPIL` and defers `LINK`.
 - The HREC/RJOIN `K` byte is kind metadata, not install lifecycle state. Current
   resident records define `K` in source with bits for executable, confirmation,
   and text/metadata. Future AP package/catalog kind should come from explicit

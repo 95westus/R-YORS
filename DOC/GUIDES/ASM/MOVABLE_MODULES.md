@@ -219,6 +219,22 @@ NEW              reopen ASM at the frozen END PC
 .                return to HIMON
 ```
 
+The lifecycle name for this movable package path is `SPILL`:
+
+```text
+SEAL     freeze/check facts
+PACK     emit the AP envelope; current command spelling is PACKAGE
+INSTALL  store the AP envelope
+LOAD     read AP and relocate BODY into RAM
+LINK     future import binding in the loaded overlay/temp-RAM image
+```
+
+The current default flash slice implements `SPIL`; `LINK` is deferred. Future
+`LINK` should consume import metadata and `$04-$06` import relocation rows after
+`LOAD` has placed the BODY in destination RAM. It should patch that RAM image
+against resident/package providers and leave execution to a separate `G` or
+future run command.
+
 The default flash image omits the older interactive `RESOLVE` command in this
 slice. Import metadata remains packageable, but `LOAD` rejects packages that
 declare imports or carry `$04-$06` import relocation rows with `BAD FIX`.

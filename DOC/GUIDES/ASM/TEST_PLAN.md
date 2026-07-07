@@ -8482,6 +8482,24 @@ G 7000                     -> ASM REPORT OK, PKG @ LEN BODY INST BDE0 0023 0003 
 D BD00 FF                  -> second AP envelope starts at BDE0 and continues past BDFF
 ```
 
+`life.a` first board paste against HIMON `V 00.0706(2013)` / flash ASM
+`LF OK WR=3D1B GO=800C` exposed two next-incarnation ASM requirements rather
+than a LOAD/INSTALL failure:
+
+```text
+START   BRA RUN       -> ERR=$02 BAD DIR
+EXPORT START          -> ERR=$08 BAD SYM
+FWDVEC  DW TARGET     -> ERR=$08 BAD SYM
+FWDLO   DB <TARGET    -> ERR=$05 BAD WIDTH
+END                   -> ERR=$09 BAD FIX
+```
+
+Future acceptance: `START` must either be a real directive or a legal label,
+and `DW TARGET`, `DB <TARGET`, and `DB >TARGET` must accept forward labels,
+patch them at `END`, and emit the corresponding internal relocation rows. The
+current `life.a` sample avoids those unsupported source forms so the present
+SPIL package/install/load/run path can still be tested.
+
 ## Hardware Bench Gate
 
 Do not call ASM hardware-proven until the board has run the emitted code and the

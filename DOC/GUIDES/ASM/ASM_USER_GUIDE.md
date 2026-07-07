@@ -17,6 +17,23 @@ FNV/RJOIN catalog. It starts new source sessions at `$2000` unless source uses
 
 ## Current Operational Process
 
+The movable-package lifecycle is named `SPILL`:
+
+```text
+SEAL     freeze/check facts
+PACK     emit AP envelope; current command spelling is PACKAGE
+INSTALL  store AP envelope
+LOAD     read AP and relocate BODY into RAM
+LINK     future import binding in the loaded overlay/temp-RAM image
+```
+
+Current flash ASM implements `SPIL`: `SEAL`, `PACKAGE`, `INSTALL`, and `LOAD`.
+`LINK` is parked until imported packages can bind resident/package symbols
+without growing the default flash image too much. Future `LINK` should patch
+import relocation rows in the already loaded RAM image; it should make that
+overlay/temp-RAM body runnable, but execution remains a separate HIMON `G` or
+future run command.
+
 Build the current board artifacts on the host:
 
 ```text
@@ -601,6 +618,14 @@ D 3200 3236
 G 3000
 ```
 
+For a fuller current-life-cycle proof with no imports, paste
+`DOC/GUIDES/ASM/SAMPLES/life.a`. It exercises forward references, a backward
+branch, export metadata, internal code relocation, `PACKAGE`, `INSTALL`,
+`LOAD`, and `G`. Load it to non-page-aligned `$3123` so both low and high
+relocation bytes have to move. After running `G 3123`, `D 5848 50` should show
+`$5848=$AC`, `$5849=$00`, target pointers `$316E` at `$584A-$584D`, loop
+pointer `$3144` at `$584E-$584F`, and `$5850=$5A`.
+
 The relocated body should begin:
 
 ```text
@@ -718,8 +743,14 @@ Known limitations:
 - No `ASM I` / `ASM B` split yet; typing and pasting use the same line path.
 - No parentheses or precedence in expressions.
 - No forward `EQU` dependency solver.
+- No forward data fixups yet: `DW TARGET`, `DB <TARGET`, and `DB >TARGET`
+  require `TARGET` to be known in current flash ASM. The next ASM incarnation
+  should support those source forms and emit relocation rows for label data.
 - No string data directives yet: `HBSTR`, `CSTR`, `PSTR`, `X'...'`, and
   `B'...'` are parked later forms.
+- `START` is still a parked/reserved word, so use `MAIN` or another label
+  today. The next ASM incarnation should either implement a real `START`
+  directive or stop reserving that common label name.
 - No default flash-image `CHECK` command.
 - No default flash-image `RESOLVE` command; imported packages are packaged but
   not loadable by the first `LOAD` slice.

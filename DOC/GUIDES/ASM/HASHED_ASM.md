@@ -4049,6 +4049,15 @@ Each `DW` element must resolve now and must not be a mask. Empty `DW`, a
 leading comma, and a trailing comma are `BAD OPER`. A `DW` label binds the
 current PC before the first word is emitted.
 
+Next-incarnation requirement: data directives need the same fixup/relocation
+quality that code operands already have. `DW TARGET`, `DB <TARGET`, and
+`DB >TARGET` must work for known and forward session labels, create internal
+relocation rows when the data names PC labels, and fail only when the selected
+width cannot be represented or the fixup/relocation table is full. The count
+pass for `DB`/`DW` must be able to plan these rows without demanding that the
+label already be defined. Later import binding should reuse the same path for
+import relocation rows rather than creating a separate data-only mechanism.
+
 `ORG` rules:
 
 ```text
@@ -5182,6 +5191,12 @@ NEW              start a fresh ASM session at the frozen END PC
 The default flash image omits interactive `RESOLVE` to keep room for
 `LOAD`/`INSTALL`. Import metadata remains packageable, and the first `LOAD`
 slice rejects declared imports/import relocation rows with `BAD FIX`.
+
+The lifecycle name for this path is `SPILL`: `SEAL` freezes/checks facts,
+`PACK` emits the AP envelope, `INSTALL` stores the AP envelope, `LOAD` reads AP
+and relocates BODY into RAM, and future `LINK` binds imports in the loaded
+overlay/temp-RAM image. Current command spelling for `PACK` is `PACKAGE`, and
+the default flash image implements `SPIL` while `LINK` remains deferred.
 
 `RELOCATE address` is valid only in the post-`END` `SEAL> ` window. The address
 tail is parsed by the existing ASM expression parser and must end cleanly. The
