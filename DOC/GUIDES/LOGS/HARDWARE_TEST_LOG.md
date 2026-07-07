@@ -11906,6 +11906,31 @@ AP pkg dst
 >
 ```
 
-Result: resident HIMON `AP pkg dst` help, positive run, and command negatives
-passed with package `$BA08`, destination `$2800`, command hash `$3AD53794`,
-entry `$C66D`, and AP service vector `$D735`.
+The RAM load-window edge proof also passed. Flash destinations and destinations
+above the AP load window return `$06`; the same installed package runs at
+`$4000`, and `$5000` is rejected:
+
+```text
+>AP $7000 $BA08
+APERR=$06
+>AP $6000 $BA08
+APERR=$06
+>AP $BA08 $7000
+APERR=$06
+>AP $BA08 $6000
+APERR=$06
+>AP $BA08 $4000
+GO 4000
+
+#GO# ENTRY=4000
+RET A=A7 X=07 Y=40 P=F5 S=FD NV-BdIzC
+>AP $BA08 $5000
+APERR=$06
+>
+```
+
+Result: resident HIMON `AP pkg dst` help, positive run, command negatives, and
+RAM window edges passed with package `$BA08`, destination `$2800`, command hash
+`$3AD53794`, entry `$C66D`, and AP service vector `$D735`. For this package,
+`$4000` is a valid AP load/run destination and `$5000+` is outside the resident
+AP BODY load window.

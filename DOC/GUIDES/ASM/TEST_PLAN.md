@@ -8912,6 +8912,28 @@ AP $hhhh $hhhh             -> APERR=$06
 AP                          -> AP pkg dst
 ```
 
+Pasteable RAM-window edge proof:
+
+```text
+AP $7000 $hhhh
+AP $6000 $hhhh
+AP $hhhh $7000
+AP $hhhh $6000
+AP $hhhh $4000
+AP $hhhh $5000
+```
+
+Expected:
+
+```text
+AP $7000 $hhhh             -> APERR=$06
+AP $6000 $hhhh             -> APERR=$06
+AP $hhhh $7000             -> APERR=$06
+AP $hhhh $6000             -> APERR=$06
+AP $hhhh $4000             -> GO 4000, RET A=A7 X=07 Y=40
+AP $hhhh $5000             -> APERR=$06
+```
+
 Board result captured 2026-07-07 in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`:
 the erased-board quick positive proof passed on HIMON `V 00.0707(1652)` after
 STR8 updated HIMON and `L F` reloaded flash ASM. The installed package landed
@@ -8922,7 +8944,9 @@ with `RET A=A7 X=07 Y=28`. The first dump line at `$2800` was
 the BODY bytes. An earlier unsupported stress package propagated the shared AP
 service error as `APERR=$09`. The command negatives also passed:
 `AP $3201 $3000 -> APERR=$07`, `AP $BA08 $BA08 -> APERR=$06`, and bare `AP`
-printed `AP pkg dst`.
+printed `AP pkg dst`. The RAM-window edge proof passed too: destinations
+`$6000`, `$7000`, and `$5000` returned `APERR=$06`, while `AP $BA08 $4000`
+ran with `RET A=A7 X=07 Y=40`.
 
 ## Hardware Bench Gate
 
