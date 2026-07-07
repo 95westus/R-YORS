@@ -11774,3 +11774,138 @@ SL K  SITE TARG
 06 01 0045 0051
 ASM REPORT OK
 ```
+
+## 2026-07-07 HIMON AP Command Board Proof
+
+Board transcript from HIMON `V 00.0707(1652)` proves the new resident hashed
+`AP pkg dst` command can load and run an installed AP envelope after a flash
+erase/reload cycle. An earlier stress package that used unsupported relocation
+shape failed through the resident command with `APERR=$09`, which proves error
+propagation from the shared AP service but is not the clean positive gate:
+
+```text
+SEAL> LOAD $BAD8 $3123
+LOAD ERR=$09 BAD FIX
+...
+># AP
+3AD53794 ENTRY=C66D K=01
+>AP $BA08 $3133
+APERR=$09
+>D 7E2D 40
+7E2D: 35 D7 01 09 08 BA 33 31 | 45 00 3E BA 0F 00 03 00 | 5.....31E.>.....
+7E3D: 08 BA 1C BA | ....
+```
+
+After erasing/restoring flash, the board was updated through STR8/HIMON and
+flash ASM was reloaded:
+
+```text
+STR8 V0 #5F6A0F7A
+ROM $F000
+...
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0707(1652)
+>L F
+L F S19
+L @8000
+LF OK WR=3A08 GO=800C
+```
+
+The clean AP package uses only two internal low/high relocations and keeps the
+entry at BODY offset zero, matching the current V0 `AP pkg dst` command
+contract:
+
+```text
+>ASM NEW
+ASM
+ASM>$2000: ORG $2400
+ASM>$2400: MAIN LDX #<TARGET
+ASM>$2402: LDY #>TARGET
+ASM>$2404: LDA #$A7
+ASM>$2406: RTS
+ASM>$2407: TARGET DB $00
+ASM>$2408: ENTRY MAIN
+ASM>$2408: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$0039
+SEAL> LOAD $3200 $3000
+LOAD OK=$3000 L=$0008 C=$02
+SEAL> INSTALL $3200
+INST @=$BA08 L=$0039
+SEAL> INSTALL $3200 $BA08
+INST @=$BA08 L=$0039
+SEAL> LOAD $BA08 $3123
+LOAD OK=$3123 L=$0008 C=$02
+SEAL> .
+ASM BYE
+```
+
+Both ASM-driven loads ran correctly, then plain HIMON showed the `AP` usage and
+loaded/ran the installed envelope at a fresh RAM destination:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=A7 X=07 Y=30 P=F5 S=FD NV-BdIzC
+>G 3123
+GO 3123
+
+#GO# ENTRY=3123
+RET A=A7 X=2A Y=31 P=F5 S=FD NV-BdIzC
+>AP
+AP pkg dst
+>AP $BA08 $2800
+GO 2800
+
+#GO# ENTRY=2800
+RET A=A7 X=07 Y=28 P=F5 S=FD NV-BdIzC
+>D 2800 FF
+2800: A2 07 A0 28 A9 A7 60 00 | 00 00 00 00 00 00 00 00 | ...(..`.........
+2810: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+2820: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+2830: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+2840: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+2850: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+2860: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+2870: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+2880: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+2890: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+28A0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+28B0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+28C0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+28D0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+28E0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+28F0: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>
+```
+
+The command negatives then passed from the plain HIMON prompt: malformed AP
+source returned `$07`, destination overlap returned `$06`, and missing operands
+printed usage.
+
+```text
+>AP $3201 $3000
+APERR=$07
+>AP $BA08 $BA08
+APERR=$06
+>AP
+AP pkg dst
+>
+```
+
+Result: resident HIMON `AP pkg dst` help, positive run, and command negatives
+passed with package `$BA08`, destination `$2800`, command hash `$3AD53794`,
+entry `$C66D`, and AP service vector `$D735`.

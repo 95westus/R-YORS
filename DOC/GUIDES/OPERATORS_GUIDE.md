@@ -61,6 +61,29 @@ Do not press NMI while STR8 is mapping, erasing, programming, or restoring.
 Current short mutators are transition debt from the existing ROM/proof surface.
 Do not add new short destructive commands.
 
+## First Install Vs Normal Update
+
+Use an external flash programmer for the first R-YORS install on a blank board.
+Burn the combined image:
+
+```text
+SRC/BUILD/bin/himon-str8-rom.bin
+```
+
+That first burn installs the reset-owned STR8 recovery sector and the initial
+HIMON payload. Once the board boots STR8/HIMON, normal updates move onboard:
+
+```text
+STR8 U / UPDATE HIMON   update HIMON or another $C000-$EFFF payload stream
+HIMON L F               flash-load fixed-address low-flash tools, including ASM
+ASM PACKAGE/INSTALL     package and store AP envelopes for HIMON/AP to load
+```
+
+The external programmer stays as the last-resort recovery path if STR8 cannot
+run, the `$F000-$FFFF` recovery sector is damaged, or a full-chip replacement is
+intentional. Do not treat the programmer as the normal update path after the
+first successful STR8/HIMON boot.
+
 ## Current Image
 
 The primary burnable image is:

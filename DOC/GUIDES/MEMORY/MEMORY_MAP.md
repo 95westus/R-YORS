@@ -13,9 +13,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E7EA   HIMON CODE, START/standalone RESET entry at $C000
-$E7EB-$EDAE   HIMON DATA
-$EDAF-$FFF9   current image gap and future STR8/high-ROM space
+$C000-$E86D   HIMON CODE, START/standalone RESET entry at $C000
+$E86E-$EE46   HIMON DATA
+$EE47-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -27,9 +27,9 @@ explicit handoff contract; STR8 must not reserve those addresses.
 Current ROM hardware vectors:
 
 ```text
-$FFFA-$FFFB   NMI   = $E4ED
+$FFFA-$FFFB   NMI   = $E570
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $E4F0
+$FFFE-$FFFF   IRQ   = $E573
 ```
 
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank

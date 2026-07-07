@@ -12,6 +12,21 @@ payloads: HIMON, OSI BASIC, and fig-FORTH. Keep the programmer and a
 known-good image available as last-resort brick recovery while STR8's broader
 field-update and self-update paths are still being proved.
 
+## Bootstrap Boundary
+
+At this stage the external programmer is the first-install tool. Use it to burn
+the initial combined STR8/HIMON image onto a blank or fully erased part. After
+that image boots, routine work should stay onboard:
+
+```text
+STR8 U / UPDATE HIMON   replaces the $C000-$EFFF payload gate
+HIMON L F               writes fixed-address low-flash tools such as ASM
+```
+
+So the normal lifecycle is one programmer-assisted install, then STR8/HIMON
+self-maintenance. The programmer remains the recovery path if STR8 itself is
+unbootable or if the protected `$F000-$FFFF` recovery sector must be replaced.
+
 ## Current Target
 
 ```text
@@ -39,8 +54,8 @@ path is:
 T48 programmer image restore
 ```
 
-Required before real STR8 flash writes, even though it is not the normal update
-path:
+Required before real STR8 flash writes and for the initial R-YORS install, even
+though it is not the normal update path after STR8/HIMON boots:
 
 ```text
 known-good ROM image archived

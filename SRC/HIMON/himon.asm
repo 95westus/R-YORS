@@ -1033,6 +1033,66 @@ CMD_USAGE_G:
                         RTS
 
 ; ----------------------------------------------------------------------------
+; AP pkg dst -- load an AP package body to RAM and run dst.
+; V0 contract: the package ENTRY is at BODY offset zero.
+; ----------------------------------------------------------------------------
+CMD_AP_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$94,$37,$D5,$3A,CMD_HASH_KIND_EXEC ; AP $3AD53794 EXEC
+CMD_AP:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             CMD_USAGE_AP
+                        LDA             CMDP_ADDR_LO
+                        STA             HIM_AP_SRC_LO
+                        LDA             CMDP_ADDR_HI
+                        STA             HIM_AP_SRC_HI
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             CMD_USAGE_AP
+                        JSR             CMD_REQUIRE_EOL
+                        BCC             CMD_USAGE_AP
+                        LDA             CMDP_ADDR_LO
+                        STA             HIM_AP_DST_LO
+                        LDA             CMDP_ADDR_HI
+                        STA             HIM_AP_DST_HI
+                        LDA             #HIM_AP_OP_LOAD
+                        STA             HIM_AP_OP
+                        JSR             HIM_AP_SERVICE
+                        BCS             CMD_AP_LOAD_OK
+                        LDX             #<MSG_AP_ERR
+                        LDY             #>MSG_AP_ERR
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             HIM_AP_STATUS
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+CMD_AP_LOAD_OK:
+                        STX             CMDP_ADDR_LO
+                        STY             CMDP_ADDR_HI
+                        LDX             #<MSG_GO
+                        LDY             #>MSG_GO
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             CMDP_ADDR_HI
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             CMDP_ADDR_LO
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        JSR             CMD_SAVE_ENTRY
+                        LDA             #CMD_EXEC_KIND_GO
+                        STA             CMD_EXEC_KIND
+                        STZ             NMI_CTX_FLAG
+                        STZ             TRAP_CAUSE
+                        STZ             TRAP_BRK_SIG
+                        JMP             (CMDP_ADDR_LO)
+
+CMD_USAGE_AP:
+                        LDX             #<MSG_USAGE_AP
+                        LDY             #>MSG_USAGE_AP
+                        JSR             HIM_WRITE_HBSTRING
+                        JSR             SYS_WRITE_CRLF
+                        RTS
+
+; ----------------------------------------------------------------------------
 ; L  (S19-only loader: S1 data, S9 terminator; S0 skipped)
 ; ----------------------------------------------------------------------------
 CMD_L_FNV:
@@ -4428,7 +4488,7 @@ MSG_D_IO_FTDI:           DB              "FTDI VI",('A'+$80)
 MSG_D_IO_SKIP:           DB              " IO SKI",('P'+$80)
 MSG_D_NF:                DB              "D N",('F'+$80)
 MSG_D_ABORT:             DB              "D ABOR",('T'+$80)
-MSG_HELP:                DB              "# ? D M R X G L B N Q ",$22," STR",('8'+$80)
+MSG_HELP:                DB              "# ? D M R X G AP L B N Q ",$22," STR",('8'+$80)
 MSG_QUOTE_MATCH:         DB              " STR8 MATCH",('!'+$80)
 MSG_USAGE_D:             DB              "D [a [b [bb|'t']]",(']'+$80)
 MSG_USAGE_M:             DB              "M start [end|+cnt]",('.'+$80)
@@ -4436,10 +4496,12 @@ MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)
 MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
+MSG_USAGE_AP:            DB              "AP pkg dst",(' '+$80)
 MSG_USAGE_L:             DB              "L [G|F]",(' '+$80)
 MSG_NOCTX:               DB              "NOCT",('X'+$80)
 MSG_RESUME:              DB              "RESUME",(' '+$80)
 MSG_GO:                  DB              "GO",(' '+$80)
+MSG_AP_ERR:              DB              "APERR=",('$'+$80)
 MSG_L_READY:             DB              "L S1",('9'+$80)
 MSG_LF_READY:            DB              "L F S1",('9'+$80)
 MSG_L_STATUS:            DB              "L",('S'+$80)

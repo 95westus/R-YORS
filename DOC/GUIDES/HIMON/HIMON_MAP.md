@@ -270,17 +270,18 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
 | Quoted hash | `"text"` | `CMD_QUOTE_HASH`, `FNV1A_*` | Prints FNV-1a32 for text through the closing quote and reports STR8 match on `#5F6A0F7A`. | Input is uppercased by HIMON and leading/trailing spaces are trimmed. |
-| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? D M R X G L B N Q " STR8`. |
+| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? D M R X G AP L B N Q " STR8`. |
 | Memory dump/search | `D [start [end [bb...|'TEXT']]]` | `CMD_D`, `CMD_D_PARSE_RANGE`, `CMD_D_PARSE_PATTERN`, `CMD_D_SEARCH_RANGE`, `MON_PRINT_MEM_RANGE` | Dumps a one-byte or inclusive range, or searches an explicit range for 1-16 hex bytes or one quoted text atom. | Bare `D` repeats the previous dump length from the next address. `+count` is not accepted by `D`; short end tokens complete against the start address by digit width. Search skips `$7F00-$7FFF`, reports `D NF` or `D ABORT`, and does not update dump continuation. |
 | Memory modify | `M start [end|+count]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes only below monitor workspace, `.` aborts. | Protected ranges from `$7A00` upward report `M PROT=$hhhh`; this is stricter than the hard `$7EFF` RAM ceiling. Current short mutator remains under review; future bulk fill should be `FILL start end|+count bb`, not an `M` subform. |
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
+| AP package run | `AP pkg dst` | `CMD_AP`, `HIM_AP_SERVICE` | Loads an AP v1 envelope from RAM or visible flash to `$2000-$4FFF`, applies current internal relocations, then runs `dst`. | V0 keeps the ROM cost low by requiring the package entry to be BODY offset zero. It is not a package-name registry yet. |
 | Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; confirms, then jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; kind is `K03`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_S1`, `L_WRITE_DATA_BYTE` | Accepts S0/S1/S9, writes S1 data below `$7F00`, tracks count and go address. | `$7F00-$7FFF` reports `LERR=$02`; `$8000+` without `F` fails with `LERR=$05`. |
 | S-record load and go | `L G` | `CMD_L` | Same as `L`, then jumps to S9 address or first data address fallback. | Sets exec kind to LOADGO before jump. |
 | S-record flash load | `L F` | `L_WRITE_DATA_BYTE_FLASH`, `FLASH_WRITE_BYTE_AXY` | Writes only blank `$FF` bytes in `$8000-$CFFF`, verifies readback, skips after first flash failure. | Protects HIMON fixed-entry area at `$D000+`; no sector erase yet. |
-| AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_FIND_HOLE` | Parses AP v1 envelopes, loads BODY to `$2000-$4FFF`, applies internal `$01-$03` relocation rows, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` call this so AP package consumption survives after ASM exits. No direct HIMON command yet. |
+| AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_FIND_HOLE` | Parses AP v1 envelopes, loads BODY to `$2000-$4FFF`, applies internal `$01-$03` relocation rows, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` and HIMON `AP pkg dst` call this so AP package consumption survives after ASM exits. |
 | Future relocatable flash placement | future `L F` mode | future loader staging and flash-block scan | Would measure a relocatable S19 image, choose an erased block, rebase record addresses, write/verify, and report relocated entry. | Not current behavior; plain S19 cannot patch absolute operands inside code without relocation metadata. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Patch targets are limited to user program RAM below `$7A00`, so monitor RAM and `$7F00-$7FFF` I/O stay protected. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
@@ -323,6 +324,24 @@ AP service cells = $7E2D-$7E40
 This consumes most of the previous HIMON-to-`$F000` gap, leaving `$0251` bytes
 below the STR8 handoff line, but frees flash ASM by moving AP package
 parse/load/suggest into resident monitor code.
+
+2026-07-07 normal HIMON map after adding the resident hashed `AP pkg dst`
+runner:
+
+```text
+CODE     $286E / 10350
+DATA     $05D9 /  1497
+TOTAL    $2E47 / 11847
+_END_DATA = $EE47
+CMD_AP = $C66D
+HIM_AP_SERVICE = $D735
+AP command hash = $3AD53794
+AP service cells = $7E2D-$7E40
+```
+
+This leaves `$01B9` bytes below `$F000`. The command intentionally reuses the
+resident AP `LOAD` service and does not add a package-name registry or ENTRY
+export parser yet; v0 runs packages whose entry is at BODY offset zero.
 
 ## Edge Evidence Rules
 

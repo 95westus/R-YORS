@@ -89,6 +89,25 @@ reset -> STR8 -> HIMON -> user work
 STR8 is useful even if the payload is not HIMON. The same proven `$C000-$EFFF`
 update gate has booted HIMON, OSI BASIC, and fig-FORTH as live images.
 
+## Install And Update Boundary
+
+Today, an external flash programmer is required to put R-YORS on a blank board:
+burn the combined STR8/HIMON ROM image once, then boot the board into STR8 and
+HIMON.
+
+After that first install, ordinary bench updates should not need the external
+programmer:
+
+```text
+STR8 U / UPDATE HIMON   updates the $C000-$EFFF HIMON/payload image
+HIMON L F               installs fixed-address low-flash tools such as ASM
+ASM PACKAGE/INSTALL     stores AP envelopes for later HIMON/AP loading
+```
+
+Keep the programmer as the final recovery path for a bricked board, a damaged
+STR8/recovery sector, or deliberate whole-chip replacement. It is not the
+normal day-to-day update path once STR8/HIMON is alive.
+
 ## Current Status
 
 Updated 2026-07-05.

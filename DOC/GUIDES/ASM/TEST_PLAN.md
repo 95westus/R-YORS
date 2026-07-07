@@ -8798,6 +8798,132 @@ empty live-session symbols/exports and `PKG @ LEN BODY INST BAB0 00FD 00B3
 resident HIMON/AP `LOAD`, successful relocated execution, patched data bytes,
 and the retained seven AP relocation rows.
 
+## 2026-07-07 HIMON AP Command Board Gate
+
+This is the board gate for the resident hashed HIMON `AP pkg dst` command. The
+command is intentionally small: it calls the resident AP `LOAD` service, then
+runs `dst` through the existing monitor return-report path. V0 requires the AP
+package entry to be BODY offset zero; it does not yet parse ENTRY exports or
+install per-package command-name records.
+
+Host prep:
+
+```text
+make -C SRC himon-rom
+```
+
+Current host build facts:
+
+```text
+himon-rom-c000 _END_DATA=$EE47
+CMD_AP=$C66D
+HIM_AP_SERVICE=$D735
+AP command hash=$3AD53794
+HIM AP request/result cells=$7E2D-$7E40
+```
+
+Board prep:
+
+```text
+update the board to the current HIMON image using the normal STR8/HIMON flow
+boot HIMON and record the visible version
+D 7E2D 40
+```
+
+If the previous SPIL package at `$BAB0` is still installed in visible flash,
+use it directly. Otherwise rebuild/install the SPIL AP package with flash ASM,
+record the installed address as `$hhhh`, exit ASM, and run the command from the
+plain HIMON prompt.
+
+Pasteable erased-board quick positive proof:
+
+```text
+ASM NEW
+ORG $2400
+MAIN LDX #<TARGET
+LDY #>TARGET
+LDA #$A7
+RTS
+TARGET DB $00
+ENTRY MAIN
+END
+SEAL
+PACKAGE $3200
+LOAD $3200 $3000
+INSTALL $3200
+INSTALL $3200 $hhhh
+LOAD $hhhh $3123
+.
+G 3000
+G 3123
+AP
+AP $hhhh $2800
+D 2800 FF
+```
+
+Use the advisory address from `INSTALL $3200` as `$hhhh`. Expected:
+
+```text
+PACKAGE $3200               -> PKG OK @=$3200 L=$0039
+LOAD $3200 $3000            -> LOAD OK=$3000 L=$0008 C=$02
+INSTALL $3200               -> INST @=$hhhh L=$0039
+INSTALL $3200 $hhhh         -> INST @=$hhhh L=$0039
+LOAD $hhhh $3123            -> LOAD OK=$3123 L=$0008 C=$02
+G 3000                      -> RET A=A7 X=07 Y=30
+G 3123                      -> RET A=A7 X=2A Y=31
+AP                           -> AP pkg dst
+AP $hhhh $2800              -> GO 2800, RET A=A7 X=07 Y=28
+D 2800 FF                   -> A2 07 A0 28 A9 A7 60 00 ...
+```
+
+Pasteable positive proof using the existing `$BAB0` SPIL package:
+
+```text
+AP $BAB0 $3123
+D 5848 5850
+D 7E2D 40
+```
+
+Expected:
+
+```text
+AP $BAB0 $3123             -> GO 3123
+                              #GO# ENTRY=3123
+                              RET A=AC X=00 Y=32
+D 5848 5850                -> AC 00 6E 31 6E 31 44 31 5A
+D 7E2D 40                  -> AP vector $D735, OP=01, STATUS=00,
+                              SRC=$BAB0, DST=$3123, PKGLEN=$00FD,
+                              BODYLEN=$00B3, RELOCS=$07, IMPORTS=$00
+```
+
+Pasteable negative proof:
+
+```text
+AP $3201 $3000
+AP $hhhh $hhhh
+AP
+```
+
+Expected:
+
+```text
+AP $3201 $3000             -> APERR=$07
+AP $hhhh $hhhh             -> APERR=$06
+AP                          -> AP pkg dst
+```
+
+Board result captured 2026-07-07 in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`:
+the erased-board quick positive proof passed on HIMON `V 00.0707(1652)` after
+STR8 updated HIMON and `L F` reloaded flash ASM. The installed package landed
+at `$BA08`, `LOAD $BA08 $3123` returned `LOAD OK=$3123 L=$0008 C=$02`, `AP`
+printed `AP pkg dst`, and `AP $BA08 $2800` ran through the monitor return path
+with `RET A=A7 X=07 Y=28`. The first dump line at `$2800` was
+`A2 07 A0 28 A9 A7 60 00`, proving the resident command copied and relocated
+the BODY bytes. An earlier unsupported stress package propagated the shared AP
+service error as `APERR=$09`. The command negatives also passed:
+`AP $3201 $3000 -> APERR=$07`, `AP $BA08 $BA08 -> APERR=$06`, and bare `AP`
+printed `AP pkg dst`.
+
 ## Hardware Bench Gate
 
 Do not call ASM hardware-proven until the board has run the emitted code and the

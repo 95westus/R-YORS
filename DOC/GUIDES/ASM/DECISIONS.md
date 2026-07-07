@@ -572,6 +572,11 @@ A [addr] [label[:]] MMM [operand] .
   RAM package sources in this slice, the destination BODY must end before the AP
   envelope begins; this conservative rule avoids self-overwriting copies while
   keeping the resident loader small.
+- HIMON `AP pkg dest` is the first resident run command for installed AP
+  packages. It calls the same resident AP `LOAD` service and then runs `dest`
+  through the existing monitor return-report path. To keep ROM growth small,
+  v0 requires the package entry to be BODY offset zero and does not create
+  per-package command-name records yet.
 - `SEAL> INSTALL pkg` finds the first erased contiguous visible flash hole in
   `$8000-$FEFF` large enough for the unchanged AP envelope and prints the
   suggestion. `SEAL> INSTALL pkg flash_addr` is the first low-flash write
