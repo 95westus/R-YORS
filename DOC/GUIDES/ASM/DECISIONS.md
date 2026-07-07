@@ -577,6 +577,11 @@ A [addr] [label[:]] MMM [operand] .
   through the existing monitor return-report path. To keep ROM growth small,
   v0 requires the package entry to be BODY offset zero and does not create
   per-package command-name records yet.
+- Flash ASM uses HIMON's resident PACK40 encode service for the pure
+  `ASCII_TO_CODE` and `PACK3` primitives used by IMPORT/EXPORT metadata. ASM
+  still owns source/symbol-name iteration and non-flash builds keep local
+  PACK40 code. This recovers low-flash space without making HIMON understand
+  ASM's symbol tables.
 - `SEAL> INSTALL pkg` finds the first erased contiguous visible flash hole in
   `$8000-$FEFF` large enough for the unchanged AP envelope and prints the
   suggestion. `SEAL> INSTALL pkg flash_addr` is the first low-flash write

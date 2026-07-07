@@ -174,6 +174,10 @@ ASM_HIM_SVC_VERSION      EQU          $7E04
 ASM_HIM_SVC_COUNT        EQU          $7E05
 ASM_HIM_SVC_JOIN_LO      EQU          $7E06
 ASM_HIM_SVC_CHECKSUM     EQU          $7E1C
+ASM_HIM_SVC_PACK40_ASCII_LO EQU       $7E1F
+ASM_HIM_SVC_PACK40_ASCII_HI EQU       $7E20
+ASM_HIM_SVC_PACK40_PACK3_LO EQU       $7E21
+ASM_HIM_SVC_PACK40_PACK3_HI EQU       $7E22
 ASM_HIM_SVC_AP_LO        EQU          $7E2D
 ASM_HIM_SVC_AP_HI        EQU          $7E2E
 ASM_HIM_AP_OP            EQU          $7E2F
@@ -15775,6 +15779,14 @@ ASM_PACK40_READ_HAVE_CHAR:
                         JSR             ASM_PACK40_ASCII_TO_CODE
                         RTS
 
+                        IF              ASM_FLASH_RUNTIME
+ASM_PACK40_ASCII_TO_CODE:
+                        JMP             (ASM_HIM_SVC_PACK40_ASCII_LO)
+
+ASM_PACK40_PACK3:
+                        JMP             (ASM_HIM_SVC_PACK40_PACK3_LO)
+
+                        ELSE
 ASM_PACK40_ASCII_TO_CODE:
                         AND             #$7F
                         BEQ             ASM_PACK40_ASCII_ZERO
@@ -15883,6 +15895,7 @@ ASM_PACK40_MUL40_SHIFT32:
                         ADC             ASM_TMP1_HI
                         STA             ASM_VALUE_HI
                         RTS
+                        ENDIF
 
 ; ----------------------------------------------------------------------------
 ; Internal seal span facts.

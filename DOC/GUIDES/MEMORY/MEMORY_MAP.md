@@ -13,9 +13,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E86D   HIMON CODE, START/standalone RESET entry at $C000
-$E86E-$EE46   HIMON DATA
-$EE47-$FFF9   current image gap and future STR8/high-ROM space
+$C000-$E924   HIMON CODE, START/standalone RESET entry at $C000
+$E925-$EEFD   HIMON DATA
+$EEFE-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -27,9 +27,9 @@ explicit handoff contract; STR8 must not reserve those addresses.
 Current ROM hardware vectors:
 
 ```text
-$FFFA-$FFFB   NMI   = $E570
+$FFFA-$FFFB   NMI   = $E627
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $E573
+$FFFE-$FFFF   IRQ   = $E62A
 ```
 
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
@@ -178,7 +178,8 @@ $7DC0-$7DFF   search pattern buffer
 $7E00-$7E01   HIMON-published RJOIN addr16 (`THE_JOIN_EXEC_XY`)
 $7E02-$7E1C   HIMON resident service vector block + checksum
 $7E1D-$7E1E   HIMON RX lookahead
-$7E1F-$7E24   free buffer spill / scratch
+$7E1F-$7E22   optional PACK40 service vectors
+$7E23-$7E24   free buffer spill / scratch
 $7E25-$7E2C   optional flash-install service vector/request cells
 $7E2D-$7E40   optional AP package service vector/request/result cells
 $7E41-$7E45   AP package service scratch

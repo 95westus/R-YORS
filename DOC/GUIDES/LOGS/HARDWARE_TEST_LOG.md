@@ -11934,3 +11934,106 @@ RAM window edges passed with package `$BA08`, destination `$2800`, command hash
 `$3AD53794`, entry `$C66D`, and AP service vector `$D735`. For this package,
 `$4000` is a valid AP load/run destination and `$5000+` is outside the resident
 AP BODY load window.
+
+## 2026-07-07 Resident PACK40 Service Board Proof
+
+After restoring the boot sector and updating HIMON through STR8, HIMON reported
+`V 00.0707(1822)`. A first attempt to run `ASM NEW` before reloading flash ASM
+correctly showed hash misses (`HSH_NF`). After `L F` reloaded flash ASM, the
+resident PACK40 service vectors were present and flash ASM used them to emit AP
+metadata.
+
+```text
+>D 7E1F 22
+7E1F: 49 D7 89 D7 | I...
+>ASM NEW
+#56AD7400# HSH_NF!
+>ORG $2400
+#DEF80779# HSH_NF!
+...
+>L F
+L F S19
+L @8000
+LF OK WR=3966 GO=800C
+>D 7E1F 22
+7E1F: 49 D7 89 D7 | I...
+>ASM NEW
+ASM
+ASM>$2000: ORG $2400
+ASM>$2400: MAIN RTS
+ASM>$2401: EXPORT MAIN
+ASM>$2401: IMPORT BIO_FTDI_PUT_CSTR
+ASM>$2401: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$0035
+SEAL> D 3215 3230
+ERR=$03 BO PC=$2401
+SEAL> .
+ASM BYE
+>D 3215 3230
+3215: 45 09 01 09 00 00 04 71 | 51 80 57 49 0F 01 0F 11 | E......qQ.WI....
+3225: F7 0D 44 E8 8D 1A 5C 67 | CB E7 D0 7F | ..D...\g....
+```
+
+The dump at `$3215` starts at the AP export tag. It proves the resident PACK40
+service emitted `MAIN` as `71 51 80 57` and `BIO_FTDI_PUT_CSTR` as
+`F7 0D 44 E8 8D 1A 5C 67 CB E7 D0 7F`. The `SEAL> D` error is expected because
+`D` is a HIMON command; the dump passes after exiting SEAL with `.`.
+
+The direct resident service positive/negative board program also passed. It
+calls the two service vectors through `$7E1F` and `$7E21`, verifies accepted
+ASCII `'A'`, verifies `PACK3(1,2,3) = $0693`, then verifies invalid ASCII `'@'`
+and invalid PACK3 code `$28` are rejected.
+
+```text
+>ASM NEW
+ASM
+ASM>$2000: ORG $2400
+ASM>$2400: P40A JMP ($7E1F)
+ASM>$2403: P403 JMP ($7E21)
+ASM>$2406: MAIN LDA #'A'
+ASM>$2408: JSR P40A
+ASM>$240B: BCC FAIL
+ASM>$240D: CMP #$01
+ASM>$240F: BNE FAIL
+ASM>$2411: LDA #'@'
+ASM>$2413: JSR P40A
+ASM>$2416: BCS FAIL
+ASM>$2418: LDA #$01
+ASM>$241A: LDX #$02
+ASM>$241C: LDY #$03
+ASM>$241E: JSR P403
+ASM>$2421: BCC FAIL
+ASM>$2423: CPX #$93
+ASM>$2425: BNE FAIL
+ASM>$2427: CPY #$06
+ASM>$2429: BNE FAIL
+ASM>$242B: LDA #$28
+ASM>$242D: LDX #$00
+ASM>$242F: LDY #$00
+ASM>$2431: JSR P403
+ASM>$2434: BCS FAIL
+ASM>$2436: LDA #$A7
+ASM>$2438: BRA DONE
+ASM>$243A: FAIL LDA #$E1
+ASM>$243C: DONE STA $4900
+ASM>$243F: RTS
+ASM>$2440: ENTRY MAIN
+ASM>$2440: END
+ASM OK
+SEAL> .
+ASM BYE
+>G 2406
+GO 2406
+
+#GO# ENTRY=2406
+RET A=A7 X=00 Y=00 P=B4 S=FD Nv-BdIzc
+>D 4900 4900
+4900: A7 | .
+```
+
+Result: resident PACK40 service vector publication, flash ASM AP metadata use,
+and direct positive/negative service behavior all passed on hardware.

@@ -8948,6 +8948,131 @@ printed `AP pkg dst`. The RAM-window edge proof passed too: destinations
 `$6000`, `$7000`, and `$5000` returned `APERR=$06`, while `AP $BA08 $4000`
 ran with `RET A=A7 X=07 Y=40`.
 
+## 2026-07-07 Resident PACK40 Service Gate
+
+Flash ASM now calls HIMON's resident PACK40 encode service for the pure
+`ASCII_TO_CODE` and `PACK3` primitives used by IMPORT/EXPORT metadata. The
+ASM-specific symbol/name walking stays in ASM, and non-flash ASM builds keep
+their local PACK40 implementation.
+
+Host prep:
+
+```text
+make -C SRC himon-rom
+make -C SRC asm-v1-flash
+make -C SRC asm-test
+```
+
+Current host build facts:
+
+```text
+himon-rom-c000 _END_DATA=$EEFE
+HIM_PACK40_ASCII_TO_CODE=$D749
+HIM_PACK40_PACK3=$D789
+HIM_AP_SERVICE=$D7EC
+PACK40 service cells=$7E1F-$7E22
+asm-v1-flash _END_DATA=$B966
+asm-v1-flash headroom to $C000=$069A
+ASM_PACK40_ASCII_TO_CODE=$B525
+ASM_PACK40_PACK3=$B528
+```
+
+Pasteable board proof after updating HIMON and reloading flash ASM:
+
+```text
+D 7E1F 22
+ASM NEW
+ORG $2400
+MAIN RTS
+EXPORT MAIN
+IMPORT BIO_FTDI_PUT_CSTR
+END
+SEAL
+PACKAGE $3200
+.
+D 3215 3230
+```
+
+Expected:
+
+```text
+D 7E1F 22                  -> 49 D7 89 D7
+END                         -> ASM OK
+SEAL                        -> SEAL OK
+PACKAGE $3200               -> PKG OK @=$3200 L=$0035
+D 3215 3230                 -> 45 09 01 09 00 00 04 71
+                                51 80 57 49 0F 01 0F 11
+                                F7 0D 44 E8 8D 1A 5C 67
+                                CB E7 D0 7F
+```
+
+The dump starts at the AP export tag. It proves `MAIN` packs as
+`71 51 80 57` and `BIO_FTDI_PUT_CSTR` packs as
+`F7 0D 44 E8 8D 1A 5C 67 CB E7 D0 7F` through the resident service.
+
+Pasteable direct service positive/negative proof:
+
+```text
+ASM NEW
+ORG $2400
+P40A JMP ($7E1F)
+P403 JMP ($7E21)
+MAIN LDA #'A'
+JSR P40A
+BCC FAIL
+CMP #$01
+BNE FAIL
+LDA #'@'
+JSR P40A
+BCS FAIL
+LDA #$01
+LDX #$02
+LDY #$03
+JSR P403
+BCC FAIL
+CPX #$93
+BNE FAIL
+CPY #$06
+BNE FAIL
+LDA #$28
+LDX #$00
+LDY #$00
+JSR P403
+BCS FAIL
+LDA #$A7
+BRA DONE
+FAIL LDA #$E1
+DONE STA $4900
+RTS
+ENTRY MAIN
+END
+.
+G 2406
+D 4900 4900
+```
+
+Expected:
+
+```text
+END                         -> ASM OK
+G 2406                      -> RET A=A7 ...
+D 4900 4900                 -> A7
+```
+
+Failure code in `$4900`: `$E1` means the accepted ASCII path, invalid ASCII
+rejection, PACK3 positive path, or invalid PACK3 rejection failed.
+
+Board result captured 2026-07-07 in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`:
+after STR8 updated HIMON to `V 00.0707(1822)` and `L F` reloaded flash ASM,
+`D 7E1F 22` returned `49 D7 89 D7`. The flash ASM package proof passed:
+`PACKAGE $3200 -> PKG OK @=$3200 L=$0035`, and the HIMON dump at `$3215`
+matched the expected `MAIN` and `BIO_FTDI_PUT_CSTR` PACK40 bytes. The direct
+resident-service positive/negative proof also passed: `G 2406` returned
+`A=A7`, and `$4900` contained `$A7`, proving the `'A'` ASCII positive, `'@'`
+ASCII negative, `PACK3(1,2,3)` positive, and `$28` PACK3 negative cases. An
+attempted pre-`L F` run showed `HSH_NF`, confirming ASM must be resident before
+using `ASM NEW`.
+
 ## Hardware Bench Gate
 
 Do not call ASM hardware-proven until the board has run the emitted code and the

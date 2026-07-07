@@ -110,6 +110,14 @@ HIM_AP_RELOC_ABS16_INTERNAL EQU          $01
 HIM_AP_RELOC_LO8_INTERNAL EQU            $02
 HIM_AP_RELOC_HI8_INTERNAL EQU            $03
 
+HIM_P40_CODE0            EQU             $E6
+HIM_P40_CODE1            EQU             $E7
+HIM_P40_CODE2            EQU             $E8
+HIM_P40_VALUE_LO         EQU             $E9
+HIM_P40_VALUE_HI         EQU             $EA
+HIM_P40_TMP_LO           EQU             $EB
+HIM_P40_TMP_HI           EQU             $EC
+
 CMD_FLAG_TOP_INPUT       EQU             $01
 CMD_ABORT_TOP            EQU             $04
 ; Current FNV record format:
@@ -240,6 +248,14 @@ MON_INIT_SERVICE_CHECKSUM_LOOP:
                         DEX
                         BPL             MON_INIT_SERVICE_CHECKSUM_LOOP
                         STA             HIM_SVC_CHECKSUM
+                        LDA             #<HIM_PACK40_ASCII_TO_CODE
+                        STA             HIM_SVC_PACK40_ASCII_LO
+                        LDA             #>HIM_PACK40_ASCII_TO_CODE
+                        STA             HIM_SVC_PACK40_ASCII_HI
+                        LDA             #<HIM_PACK40_PACK3
+                        STA             HIM_SVC_PACK40_PACK3_LO
+                        LDA             #>HIM_PACK40_PACK3
+                        STA             HIM_SVC_PACK40_PACK3_HI
                         LDA             #<HIM_FLASH_INSTALL_COPY
                         STA             HIM_SVC_FLASH_INSTALL_LO
                         LDA             #>HIM_FLASH_INSTALL_COPY
@@ -2689,6 +2705,115 @@ HIM_FLASH_INSTALL_DONE:
                         RTS
 HIM_FLASH_INSTALL_BAD:
                         CLC
+                        RTS
+
+HIM_PACK40_ASCII_TO_CODE:
+                        AND             #$7F
+                        BEQ             HIM_PACK40_ASCII_ZERO
+                        JSR             HIM_CHAR_TO_UPPER
+                        CMP             #'A'
+                        BCC             HIM_PACK40_ASCII_DIGIT
+                        CMP             #'Z'+1
+                        BCS             HIM_PACK40_ASCII_DIGIT
+                        SEC
+                        SBC             #'@'
+                        SEC
+                        RTS
+HIM_PACK40_ASCII_DIGIT:
+                        CMP             #'0'
+                        BCC             HIM_PACK40_ASCII_UNDER
+                        CMP             #'9'+1
+                        BCS             HIM_PACK40_ASCII_UNDER
+                        SEC
+                        SBC             #'0'
+                        CLC
+                        ADC             #$1B
+                        SEC
+                        RTS
+HIM_PACK40_ASCII_UNDER:
+                        CMP             #'_'
+                        BNE             HIM_PACK40_ASCII_Q
+                        LDA             #$25
+                        SEC
+                        RTS
+HIM_PACK40_ASCII_Q:
+                        CMP             #'?'
+                        BNE             HIM_PACK40_ASCII_DOT
+                        LDA             #$26
+                        SEC
+                        RTS
+HIM_PACK40_ASCII_DOT:
+                        CMP             #'.'
+                        BNE             HIM_PACK40_ASCII_FAIL
+                        LDA             #$27
+                        SEC
+                        RTS
+HIM_PACK40_ASCII_ZERO:
+                        SEC
+                        RTS
+HIM_PACK40_ASCII_FAIL:
+                        CLC
+                        RTS
+
+HIM_PACK40_PACK3:
+                        STA             HIM_P40_CODE0
+                        STX             HIM_P40_CODE1
+                        STY             HIM_P40_CODE2
+                        CMP             #$28
+                        BCS             HIM_PACK40_PACK3_FAIL
+                        CPX             #$28
+                        BCS             HIM_PACK40_PACK3_FAIL
+                        CPY             #$28
+                        BCS             HIM_PACK40_PACK3_FAIL
+                        STZ             HIM_P40_VALUE_HI
+                        STA             HIM_P40_VALUE_LO
+                        JSR             HIM_PACK40_MUL40
+                        LDA             HIM_P40_CODE1
+                        JSR             HIM_PACK40_ADD_A
+                        JSR             HIM_PACK40_MUL40
+                        LDA             HIM_P40_CODE2
+                        JSR             HIM_PACK40_ADD_A
+                        LDX             HIM_P40_VALUE_LO
+                        LDY             HIM_P40_VALUE_HI
+                        SEC
+                        RTS
+HIM_PACK40_PACK3_FAIL:
+                        CLC
+                        RTS
+
+HIM_PACK40_ADD_A:
+                        CLC
+                        ADC             HIM_P40_VALUE_LO
+                        STA             HIM_P40_VALUE_LO
+                        BCC             HIM_PACK40_ADD_DONE
+                        INC             HIM_P40_VALUE_HI
+HIM_PACK40_ADD_DONE:
+                        RTS
+
+HIM_PACK40_MUL40:
+                        LDA             HIM_P40_VALUE_LO
+                        STA             HIM_P40_TMP_LO
+                        LDA             HIM_P40_VALUE_HI
+                        STA             HIM_P40_TMP_HI
+                        ASL             HIM_P40_VALUE_LO
+                        ROL             HIM_P40_VALUE_HI
+                        ASL             HIM_P40_VALUE_LO
+                        ROL             HIM_P40_VALUE_HI
+                        ASL             HIM_P40_VALUE_LO
+                        ROL             HIM_P40_VALUE_HI
+                        LDX             #$05
+HIM_PACK40_MUL40_SHIFT32:
+                        ASL             HIM_P40_TMP_LO
+                        ROL             HIM_P40_TMP_HI
+                        DEX
+                        BNE             HIM_PACK40_MUL40_SHIFT32
+                        CLC
+                        LDA             HIM_P40_VALUE_LO
+                        ADC             HIM_P40_TMP_LO
+                        STA             HIM_P40_VALUE_LO
+                        LDA             HIM_P40_VALUE_HI
+                        ADC             HIM_P40_TMP_HI
+                        STA             HIM_P40_VALUE_HI
                         RTS
 
 HIM_AP_SERVICE:

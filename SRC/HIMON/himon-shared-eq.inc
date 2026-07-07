@@ -87,6 +87,10 @@ HIM_SVC_UPPER_HI           EQU             $7E19
 HIM_SVC_WRITE_HBSTRING_LO  EQU             $7E1A
 HIM_SVC_WRITE_HBSTRING_HI  EQU             $7E1B
 HIM_SVC_CHECKSUM           EQU             $7E1C
+HIM_SVC_PACK40_ASCII_LO    EQU             $7E1F
+HIM_SVC_PACK40_ASCII_HI    EQU             $7E20
+HIM_SVC_PACK40_PACK3_LO    EQU             $7E21
+HIM_SVC_PACK40_PACK3_HI    EQU             $7E22
 HIM_SVC_FLASH_INSTALL_LO   EQU             $7E25
 HIM_SVC_FLASH_INSTALL_HI   EQU             $7E26
 HIM_FLASH_SRC_LO           EQU             $7E27
@@ -137,7 +141,8 @@ HIM_SVC_VECTOR_COUNT       EQU             $0B
 ; - $7E00-$7E01 resident published RJOIN addr16
 ; - $7E02-$7E1C resident service vector block + checksum
 ; - $7E1D-$7E1E HIMON RX lookahead cells
-; - $7E1F-$7E24 free buffer spill/scratch after page buffers
+; - $7E1F-$7E22 optional PACK40 service vectors
+; - $7E23-$7E24 free buffer spill/scratch after page buffers
 ; - $7E25-$7E2C optional flash-install service vector/request cells
 ; - $7E2D-$7E40 optional AP package service vector/request/result cells
 ; - $7E41-$7E45 AP package service scratch

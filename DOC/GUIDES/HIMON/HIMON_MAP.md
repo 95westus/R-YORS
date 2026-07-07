@@ -270,6 +270,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
 | Quoted hash | `"text"` | `CMD_QUOTE_HASH`, `FNV1A_*` | Prints FNV-1a32 for text through the closing quote and reports STR8 match on `#5F6A0F7A`. | Input is uppercased by HIMON and leading/trailing spaces are trimmed. |
+| PACK40 service | service vectors | `HIM_PACK40_ASCII_TO_CODE`, `HIM_PACK40_PACK3` | Converts ASCII to base-40 codes and packs three base-40 codes into the AP metadata word. | Published through `$7E1F-$7E22`; flash ASM calls this for IMPORT/EXPORT metadata so the encoder is not duplicated in low flash. |
 | Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? D M R X G AP L B N Q " STR8`. |
 | Memory dump/search | `D [start [end [bb...|'TEXT']]]` | `CMD_D`, `CMD_D_PARSE_RANGE`, `CMD_D_PARSE_PATTERN`, `CMD_D_SEARCH_RANGE`, `MON_PRINT_MEM_RANGE` | Dumps a one-byte or inclusive range, or searches an explicit range for 1-16 hex bytes or one quoted text atom. | Bare `D` repeats the previous dump length from the next address. `+count` is not accepted by `D`; short end tokens complete against the start address by digit width. Search skips `$7F00-$7FFF`, reports `D NF` or `D ABORT`, and does not update dump continuation. |
 | Memory modify | `M start [end|+count]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes only below monitor workspace, `.` aborts. | Protected ranges from `$7A00` upward report `M PROT=$hhhh`; this is stricter than the hard `$7EFF` RAM ceiling. Current short mutator remains under review; future bulk fill should be `FILL start end|+count bb`, not an `M` subform. |
@@ -342,6 +343,27 @@ AP service cells = $7E2D-$7E40
 This leaves `$01B9` bytes below `$F000`. The command intentionally reuses the
 resident AP `LOAD` service and does not add a package-name registry or ENTRY
 export parser yet; v0 runs packages whose entry is at BODY offset zero.
+
+2026-07-07 normal HIMON map after adding the resident PACK40 encode service
+used by flash ASM:
+
+```text
+CODE     $2925 / 10533
+DATA     $05D9 /  1497
+TOTAL    $2EFE / 12030
+_END_DATA = $EEFE
+CMD_AP = $C681
+HIM_PACK40_ASCII_TO_CODE = $D749
+HIM_PACK40_PACK3 = $D789
+HIM_AP_SERVICE = $D7EC
+PACK40 service cells = $7E1F-$7E22
+AP service cells = $7E2D-$7E40
+```
+
+This leaves `$0102` bytes below `$F000`. The PACK40 service only publishes the
+two pure primitives flash ASM needs (`ASCII_TO_CODE` and `PACK3`); ASM still
+owns symbol/name iteration and non-flash ASM builds keep their local PACK40
+implementation.
 
 ## Edge Evidence Rules
 
