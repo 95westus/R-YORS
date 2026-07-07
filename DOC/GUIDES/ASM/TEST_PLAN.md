@@ -3669,8 +3669,9 @@ make -C SRC asm-v1-core
 ```
 
 The standalone `START` smoke path now checks `LDA`, active `DB`, parked `DC`,
-`A`, `START`, and `FOO`. V1 stores the vocabulary row slot as the compact id
-until the emitter needs a separate opcode-family id.
+`A`, active `ENTRY`, ordinary-label `START`, and `FOO`. V1 stores the
+vocabulary row slot as the compact id until the emitter needs a separate
+opcode-family id.
 
 Required fixtures:
 
@@ -3679,7 +3680,8 @@ LDA -> VOC_MNEM
 DB  -> VOC_DIR
 DC  -> VOC_RESERVED parked
 A   -> VOC_REG
-START -> VOC_RESERVED parked
+ENTRY -> VOC_DIR
+START -> VOC_NONE with C=0,A=OK
 FOO -> VOC_NONE with C=0,A=OK
 ```
 
@@ -3731,7 +3733,7 @@ ORG                   -> BAD OPER
 NAME EQU              -> BAD OPER
 SEED DB               -> BAD OPER
 DC $52                -> BAD DIR
-START                 -> BAD DIR
+START                 -> LABEL_ONLY
 A LDA #1              -> BAD SYM
 .LOOP                 -> LABEL_ONLY with LOCAL_NAME flag
 ```
@@ -5879,8 +5881,8 @@ $09 BAD_FIX
 
 `Y` is `ASM_SLOT`, the last fixed-vocabulary slot touched by lookup. `$FF`
 means no vocabulary match. Slot kinds are `MNEM`, `DIR`, `REG`, and `RES`
-for reserved/parked words. `IMPORT` reuses the old `$20 ENTRY` slot so opcode
-ids after `$20` remain stable:
+for reserved/parked words. `IMPORT` reuses the old `$20 ENTRY` slot and
+`ENTRY` reuses the old `$43 START` slot so opcode ids remain stable:
 
 | Slot | Slot | Slot | Slot |
 | --- | --- | --- | --- |
@@ -5888,7 +5890,7 @@ ids after `$20` remain stable:
 | $01 ADC MNEM | $16 CPX MNEM | $2B LDY MNEM | $40 SEI MNEM |
 | $02 AND MNEM | $17 CPY MNEM | $2C LSR MNEM | $41 SMB MNEM |
 | $03 ASL MNEM | $18 DB DIR | $2D NOP MNEM | $42 STA MNEM |
-| $04 BBR MNEM | $19 DC RES | $2E ORA MNEM | $43 START RES |
+| $04 BBR MNEM | $19 DC RES | $2E ORA MNEM | $43 ENTRY DIR |
 | $05 BBS MNEM | $1A DEC MNEM | $2F ORG DIR | $44 STP MNEM |
 | $06 BCC MNEM | $1B DEX MNEM | $30 PHA MNEM | $45 STX MNEM |
 | $07 BCS MNEM | $1C DEY MNEM | $31 PHP MNEM | $46 STY MNEM |
@@ -8073,6 +8075,7 @@ log before marking the slice board-proven.
 Implemented host slice:
 
 ```text
+make -C SRC himon-rom
 make -C SRC asm-v1-flash
 make -C SRC asm-session-report
 make -C SRC asm-test
@@ -8082,17 +8085,20 @@ Expected map facts for the default flash image:
 
 ```text
 _BEG_UDATA = $5000
-_END_DATA  <= $BE00
-headroom to $C000 >= $0200
+_END_DATA  <= $BB00
+headroom to $C000 >= $0500
+himon-rom-c000 _END_DATA < $F000
 ```
 
 Current host proof produced:
 
 ```text
-asm-v1-flash headroom to C000 = 02E5 (_END_DATA=BD1B)
+asm-v1-flash headroom to C000 = 05F8 (_END_DATA=BA08)
 UDATA starts at $5000, ends at $6F16
 asm-session-report end = 76D5 (limit 7A00)
-himon-rom-c000 _END_DATA=$E833
+himon-rom-c000 _END_DATA=$EDAF
+HIM_AP_SERVICE=$D6B2
+HIM AP request/result cells = $7E2D-$7E40
 ```
 
 Default flash `SEAL>` command surface for this slice:
@@ -8112,6 +8118,13 @@ The old interactive `RESOLVE` command is compiled out of the default flash
 image to make room for `LOAD`/`INSTALL`. Import metadata can still be packaged,
 but `LOAD` rejects declared imports and `$04-$06` import relocation rows with
 `BAD FIX`.
+
+As of the 2026-07-07 resident-service split, the default flash image no longer
+carries its private AP package parser/loader. `LOAD`, `INSTALL pkg`, and
+`INSTALL pkg flash_addr` package parsing call HIMON's optional AP service at
+`$7E2D-$7E40`. `SEAL` and `PACKAGE` remain ASM-owned because they consume the
+current assembler session tables; package consumption is now a resident system
+service callable by future HIMON/STR8 surfaces after ASM exits.
 
 Default flash `SEAL` is now compact in this size slice: it computes the seal
 facts and prints `SEAL OK`, while detailed seal/export/import rows remain
@@ -8495,11 +8508,13 @@ FWDLO   DB <TARGET    -> ERR=$05 BAD WIDTH
 END                   -> ERR=$09 BAD FIX
 ```
 
-Future acceptance: `START` must either be a real directive or a legal label,
-and `DW TARGET`, `DB <TARGET`, and `DB >TARGET` must accept forward labels,
-patch them at `END`, and emit the corresponding internal relocation rows. The
-current `spill-roundtrip-2000.a` sample avoids those unsupported source forms
-so the present SPIL package/install/load/run path can still be tested.
+Current acceptance has moved: `START` is now a legal label, and `ENTRY MAIN`
+is the preferred source spelling for the package entry/public export row.
+`DW TARGET`, `DB <TARGET`, and `DB >TARGET` must still accept forward labels
+in a later ASM slice, patch them at `END`, and emit the corresponding internal
+relocation rows. The current `spill-roundtrip-2000.a` sample avoids those
+unsupported source forms so the present SPIL package/install/load/run path can
+still be tested.
 
 Corrected `spill-roundtrip-2000.a` board proof followed on the same
 HIMON/flash ASM generation. The transcript includes an installed AP envelope
@@ -8520,9 +8535,12 @@ G 2000                      -> RET A=E3 X=00 Y=30
 ```
 
 `G 3123` returning `A=AC` proves the corrected non-page-aligned relocated body
-success path. `G 2000` returning `A=E3` is expected for this sample: the
-original unrelocated body deliberately checks for `$3123`-based relocated
-addresses and fails its target-address check at the original `$2000` base.
+success path. The current source sample now uses `ENTRY MAIN` in place of the
+board-proven `EXPORT MAIN` line, producing the same export metadata row while
+making the entry intent explicit. `G 2000` returning `A=E3` is expected for this
+sample: the original unrelocated body deliberately checks for `$3123`-based
+relocated addresses and fails its target-address check at the original `$2000`
+base.
 
 ## Hardware Bench Gate
 

@@ -86,6 +86,30 @@ BOOT_REASON_NONE         EQU             $00
 BOOT_REASON_COLD         EQU             $01
 BOOT_REASON_WARM         EQU             $02
 
+HIM_AP_STATUS_OK         EQU             $00
+HIM_AP_STATUS_BAD_RANGE  EQU             $06
+HIM_AP_STATUS_BAD_LINE   EQU             $07
+HIM_AP_STATUS_BAD_FIX    EQU             $09
+HIM_AP_HDR_BYTES         EQU             $05
+HIM_AP_VERSION           EQU             $01
+HIM_AP_SIG0              EQU             'A'
+HIM_AP_SIG1              EQU             'P'
+HIM_AP_TAG_SEAL          EQU             'S'
+HIM_AP_TAG_RELOC         EQU             'R'
+HIM_AP_TAG_EXPORT        EQU             'E'
+HIM_AP_TAG_IMPORT        EQU             'I'
+HIM_AP_TAG_BODY          EQU             'B'
+HIM_AP_OFF_SIG0          EQU             $00
+HIM_AP_OFF_SIG1          EQU             $01
+HIM_AP_OFF_VER           EQU             $02
+HIM_AP_OFF_TOTAL         EQU             $03
+HIM_AP_SEAL_REC_BYTES    EQU             $0B
+HIM_AP_IMPORT_REC_OFF_COUNT EQU          $00
+HIM_AP_RELOC_MAX         EQU             $10
+HIM_AP_RELOC_ABS16_INTERNAL EQU          $01
+HIM_AP_RELOC_LO8_INTERNAL EQU            $02
+HIM_AP_RELOC_HI8_INTERNAL EQU            $03
+
 CMD_FLAG_TOP_INPUT       EQU             $01
 CMD_ABORT_TOP            EQU             $04
 ; Current FNV record format:
@@ -226,6 +250,16 @@ MON_INIT_SERVICE_CHECKSUM_LOOP:
                         STZ             HIM_FLASH_DST_HI
                         STZ             HIM_FLASH_LEN_LO
                         STZ             HIM_FLASH_LEN_HI
+                        LDA             #<HIM_AP_SERVICE
+                        STA             HIM_SVC_AP_LO
+                        LDA             #>HIM_AP_SERVICE
+                        STA             HIM_SVC_AP_HI
+                        LDA             #$00
+                        LDX             #(HIM_AP_REL_HI-HIM_AP_OP)
+MON_INIT_AP_CELLS_LOOP:
+                        STA             HIM_AP_OP,X
+                        DEX
+                        BPL             MON_INIT_AP_CELLS_LOOP
                         RTS
 
 HIM_SVC_BOOT_TABLE:
@@ -2594,6 +2628,757 @@ HIM_FLASH_INSTALL_DONE:
                         SEC
                         RTS
 HIM_FLASH_INSTALL_BAD:
+                        CLC
+                        RTS
+
+HIM_AP_SERVICE:
+                        LDA             #HIM_AP_STATUS_OK
+                        STA             HIM_AP_STATUS
+                        LDA             HIM_AP_OP
+                        CMP             #HIM_AP_OP_PARSE
+                        BEQ             HIM_AP_SERVICE_PARSE
+                        CMP             #HIM_AP_OP_LOAD
+                        BEQ             HIM_AP_SERVICE_LOAD
+                        CMP             #HIM_AP_OP_SUGGEST
+                        BEQ             HIM_AP_SERVICE_SUGGEST
+                        JMP             HIM_AP_BAD_LINE
+
+HIM_AP_SERVICE_PARSE:
+                        JMP             HIM_AP_PARSE_MIN
+
+HIM_AP_SERVICE_LOAD:
+                        JSR             HIM_AP_PARSE_MIN
+                        BCS             HIM_AP_LOAD_PARSED
+                        RTS
+HIM_AP_LOAD_PARSED:
+                        LDA             HIM_AP_IMPORT_COUNT
+                        BEQ             HIM_AP_LOAD_NO_IMPORTS
+                        JMP             HIM_AP_BAD_FIX
+HIM_AP_LOAD_NO_IMPORTS:
+                        JSR             HIM_AP_LOAD_RANGE_OK
+                        BCS             HIM_AP_LOAD_RANGE_SAFE
+                        RTS
+HIM_AP_LOAD_RANGE_SAFE:
+                        LDA             HIM_AP_SRC_HI
+                        CMP             #$50
+                        BCS             HIM_AP_LOAD_NO_OVERLAP
+                        LDA             HIM_AP_TMP2_HI
+                        CMP             HIM_AP_SRC_HI
+                        BCC             HIM_AP_LOAD_NO_OVERLAP
+                        BNE             HIM_AP_LOAD_OVERLAP_BAD
+                        LDA             HIM_AP_TMP2_LO
+                        CMP             HIM_AP_SRC_LO
+                        BCS             HIM_AP_LOAD_OVERLAP_BAD
+                        BRA             HIM_AP_LOAD_NO_OVERLAP
+HIM_AP_LOAD_OVERLAP_BAD:
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_LOAD_NO_OVERLAP:
+                        JSR             HIM_AP_COPY_BODY_TO_DST
+                        LDA             HIM_AP_REL_LO
+                        STA             CMDP_PTR_LO
+                        LDA             HIM_AP_REL_HI
+                        STA             CMDP_PTR_HI
+                        LDX             #$00
+HIM_AP_LOAD_PATCH_LOOP:
+                        CPX             HIM_AP_RELOC_COUNT
+                        BCS             HIM_AP_LOAD_DONE
+                        JSR             HIM_AP_RELOC_KIND_X
+                        JSR             HIM_AP_INTERNAL_KIND_A
+                        BCS             HIM_AP_LOAD_PATCH_ROW
+                        JMP             HIM_AP_BAD_FIX
+HIM_AP_LOAD_PATCH_ROW:
+                        JSR             HIM_AP_RELOC_SITE_OK_X
+                        BCS             HIM_AP_LOAD_PATCH_SITE_OK
+                        RTS
+HIM_AP_LOAD_PATCH_SITE_OK:
+                        JSR             HIM_AP_RELOC_PATCH_ROW_X
+                        INX
+                        BRA             HIM_AP_LOAD_PATCH_LOOP
+HIM_AP_LOAD_DONE:
+                        LDA             #HIM_AP_STATUS_OK
+                        STA             HIM_AP_STATUS
+                        LDX             HIM_AP_DST_LO
+                        LDY             HIM_AP_DST_HI
+                        SEC
+                        RTS
+
+HIM_AP_SERVICE_SUGGEST:
+                        JSR             HIM_AP_PARSE_MIN
+                        BCS             HIM_AP_SUGGEST_PARSED
+                        RTS
+HIM_AP_SUGGEST_PARSED:
+                        JSR             HIM_AP_FIND_HOLE
+                        BCS             HIM_AP_SUGGEST_FOUND
+                        RTS
+HIM_AP_SUGGEST_FOUND:
+                        LDA             #HIM_AP_STATUS_OK
+                        STA             HIM_AP_STATUS
+                        LDX             HIM_AP_INSTALL_LO
+                        LDY             HIM_AP_INSTALL_HI
+                        SEC
+                        RTS
+
+HIM_AP_PARSE_MIN:
+                        STZ             HIM_AP_RELOC_COUNT
+                        STZ             HIM_AP_IMPORT_COUNT
+                        STZ             HIM_AP_BODY_LO
+                        STZ             HIM_AP_BODY_HI
+                        STZ             HIM_AP_BODY_LEN_LO
+                        STZ             HIM_AP_BODY_LEN_HI
+                        STZ             HIM_AP_REL_LO
+                        STZ             HIM_AP_REL_HI
+                        LDA             #HIM_AP_HDR_BYTES
+                        STA             HIM_AP_PKG_LEN_LO
+                        STZ             HIM_AP_PKG_LEN_HI
+                        JSR             HIM_AP_SOURCE_RANGE_OK
+                        BCS             HIM_AP_PARSE_HEADER_RANGE
+                        RTS
+HIM_AP_PARSE_HEADER_RANGE:
+                        LDA             HIM_AP_SRC_LO
+                        STA             CMDP_PTR_LO
+                        LDA             HIM_AP_SRC_HI
+                        STA             CMDP_PTR_HI
+                        LDY             #HIM_AP_OFF_SIG0
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             #HIM_AP_SIG0
+                        BEQ             HIM_AP_PARSE_SIG0_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_SIG0_OK:
+                        LDY             #HIM_AP_OFF_SIG1
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             #HIM_AP_SIG1
+                        BEQ             HIM_AP_PARSE_SIG1_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_SIG1_OK:
+                        LDY             #HIM_AP_OFF_VER
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             #HIM_AP_VERSION
+                        BEQ             HIM_AP_PARSE_VER_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_VER_OK:
+                        LDY             #HIM_AP_OFF_TOTAL
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             HIM_AP_PKG_LEN_LO
+                        INY
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             HIM_AP_PKG_LEN_HI
+                        ORA             HIM_AP_PKG_LEN_LO
+                        BNE             HIM_AP_PARSE_LEN_NONZERO
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_LEN_NONZERO:
+                        JSR             HIM_AP_SOURCE_RANGE_OK
+                        BCS             HIM_AP_PARSE_RANGE_SAFE
+                        RTS
+HIM_AP_PARSE_RANGE_SAFE:
+                        LDA             HIM_AP_SRC_LO
+                        CLC
+                        ADC             #HIM_AP_HDR_BYTES
+                        STA             CMDP_PTR_LO
+                        LDA             HIM_AP_SRC_HI
+                        ADC             #$00
+                        STA             CMDP_PTR_HI
+                        LDA             HIM_AP_PKG_LEN_LO
+                        SEC
+                        SBC             #HIM_AP_HDR_BYTES
+                        STA             LOAD_LEN_LO
+                        LDA             HIM_AP_PKG_LEN_HI
+                        SBC             #$00
+                        STA             LOAD_LEN_HI
+                        BCS             HIM_AP_PARSE_SEAL
+                        JMP             HIM_AP_BAD_LINE
+
+HIM_AP_PARSE_SEAL:
+                        LDA             #HIM_AP_TAG_SEAL
+                        JSR             HIM_AP_TAG_LEN
+                        BCS             HIM_AP_PARSE_SEAL_TAG_OK
+                        RTS
+HIM_AP_PARSE_SEAL_TAG_OK:
+                        LDA             HIM_AP_TMP_LO
+                        CMP             #HIM_AP_SEAL_REC_BYTES
+                        BEQ             HIM_AP_PARSE_SEAL_LEN_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_SEAL_LEN_OK:
+                        LDA             HIM_AP_TMP_LO
+                        JSR             HIM_AP_ADVANCE_A
+                        BCS             HIM_AP_PARSE_RELOC
+                        RTS
+
+HIM_AP_PARSE_RELOC:
+                        LDA             #HIM_AP_TAG_RELOC
+                        JSR             HIM_AP_TAG_LEN
+                        BCS             HIM_AP_PARSE_RELOC_TAG_OK
+                        RTS
+HIM_AP_PARSE_RELOC_TAG_OK:
+                        LDA             HIM_AP_TMP_LO
+                        BNE             HIM_AP_PARSE_RELOC_LEN_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_RELOC_LEN_OK:
+                        STA             HIM_AP_REL_LEN
+                        LDA             HIM_AP_TMP_LO
+                        JSR             HIM_AP_NEED_A
+                        BCS             HIM_AP_PARSE_RELOC_ROOM_OK
+                        RTS
+HIM_AP_PARSE_RELOC_ROOM_OK:
+                        LDA             CMDP_PTR_LO
+                        STA             HIM_AP_REL_LO
+                        LDA             CMDP_PTR_HI
+                        STA             HIM_AP_REL_HI
+                        JSR             HIM_AP_CHECK_RELOC_REC
+                        BCS             HIM_AP_PARSE_RELOC_SHAPE_OK
+                        RTS
+HIM_AP_PARSE_RELOC_SHAPE_OK:
+                        LDA             HIM_AP_REL_LEN
+                        JSR             HIM_AP_ADVANCE_A
+                        BCS             HIM_AP_PARSE_EXPORT
+                        RTS
+
+HIM_AP_PARSE_EXPORT:
+                        LDA             #HIM_AP_TAG_EXPORT
+                        JSR             HIM_AP_TAG_LEN
+                        BCS             HIM_AP_PARSE_EXPORT_TAG_OK
+                        RTS
+HIM_AP_PARSE_EXPORT_TAG_OK:
+                        LDA             HIM_AP_TMP_LO
+                        JSR             HIM_AP_ADVANCE_A
+                        BCS             HIM_AP_PARSE_IMPORT
+                        RTS
+
+HIM_AP_PARSE_IMPORT:
+                        LDA             #HIM_AP_TAG_IMPORT
+                        JSR             HIM_AP_TAG_LEN
+                        BCS             HIM_AP_PARSE_IMPORT_TAG_OK
+                        RTS
+HIM_AP_PARSE_IMPORT_TAG_OK:
+                        LDA             HIM_AP_TMP_LO
+                        CMP             #$02
+                        BCS             HIM_AP_PARSE_IMPORT_LEN_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_IMPORT_LEN_OK:
+                        JSR             HIM_AP_NEED_A
+                        BCS             HIM_AP_PARSE_IMPORT_ROOM_OK
+                        RTS
+HIM_AP_PARSE_IMPORT_ROOM_OK:
+                        LDY             #HIM_AP_IMPORT_REC_OFF_COUNT
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             HIM_AP_IMPORT_COUNT
+                        LDA             HIM_AP_TMP_LO
+                        JSR             HIM_AP_ADVANCE_A
+                        BCS             HIM_AP_PARSE_BODY
+                        RTS
+
+HIM_AP_PARSE_BODY:
+                        LDA             #$03
+                        JSR             HIM_AP_NEED_A
+                        BCS             HIM_AP_PARSE_BODY_HDR_ROOM
+                        RTS
+HIM_AP_PARSE_BODY_HDR_ROOM:
+                        LDY             #$00
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             #HIM_AP_TAG_BODY
+                        BEQ             HIM_AP_PARSE_BODY_TAG_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_BODY_TAG_OK:
+                        INY
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             HIM_AP_BODY_LEN_LO
+                        INY
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             HIM_AP_BODY_LEN_HI
+                        LDA             #$03
+                        JSR             HIM_AP_ADVANCE_A
+                        BCS             HIM_AP_PARSE_BODY_LEFT_OK
+                        RTS
+HIM_AP_PARSE_BODY_LEFT_OK:
+                        LDA             LOAD_LEN_LO
+                        CMP             HIM_AP_BODY_LEN_LO
+                        BEQ             HIM_AP_PARSE_BODY_LEFT_LO_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_BODY_LEFT_LO_OK:
+                        LDA             LOAD_LEN_HI
+                        CMP             HIM_AP_BODY_LEN_HI
+                        BEQ             HIM_AP_PARSE_BODY_SAVE
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_BODY_SAVE:
+                        LDA             HIM_AP_BODY_LEN_LO
+                        ORA             HIM_AP_BODY_LEN_HI
+                        BNE             HIM_AP_PARSE_BODY_NONZERO
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_PARSE_BODY_NONZERO:
+                        LDA             CMDP_PTR_LO
+                        STA             HIM_AP_BODY_LO
+                        LDA             CMDP_PTR_HI
+                        STA             HIM_AP_BODY_HI
+                        LDA             #HIM_AP_STATUS_OK
+                        STA             HIM_AP_STATUS
+                        LDX             HIM_AP_SRC_LO
+                        LDY             HIM_AP_SRC_HI
+                        SEC
+                        RTS
+
+HIM_AP_CHECK_RELOC_REC:
+                        LDY             #$00
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             HIM_AP_TMP_LO
+                        CMP             #(HIM_AP_RELOC_MAX+1)
+                        BCC             HIM_AP_CHECK_RELOC_COUNT_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_CHECK_RELOC_COUNT_OK:
+                        ASL             A
+                        ASL             A
+                        CLC
+                        ADC             HIM_AP_TMP_LO
+                        CLC
+                        ADC             #$01
+                        CMP             HIM_AP_REL_LEN
+                        BEQ             HIM_AP_CHECK_RELOC_SHAPE_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_CHECK_RELOC_SHAPE_OK:
+                        LDA             HIM_AP_TMP_LO
+                        STA             HIM_AP_RELOC_COUNT
+                        SEC
+                        RTS
+
+HIM_AP_TAG_LEN:
+                        STA             HIM_AP_TMP2_LO
+                        LDA             #$02
+                        JSR             HIM_AP_NEED_A
+                        BCS             HIM_AP_TAG_LEN_ROOM_OK
+                        RTS
+HIM_AP_TAG_LEN_ROOM_OK:
+                        LDY             #$00
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             HIM_AP_TMP2_LO
+                        BEQ             HIM_AP_TAG_LEN_TAG_OK
+                        JMP             HIM_AP_BAD_LINE
+HIM_AP_TAG_LEN_TAG_OK:
+                        INY
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             HIM_AP_TMP_LO
+                        STZ             HIM_AP_TMP_HI
+                        LDA             #$02
+                        JMP             HIM_AP_ADVANCE_A
+
+HIM_AP_ADVANCE_A:
+                        STA             HIM_AP_TMP2_HI
+                        JSR             HIM_AP_NEED_A
+                        BCS             HIM_AP_ADVANCE_ROOM
+                        RTS
+HIM_AP_ADVANCE_ROOM:
+                        LDA             CMDP_PTR_LO
+                        CLC
+                        ADC             HIM_AP_TMP2_HI
+                        STA             CMDP_PTR_LO
+                        LDA             CMDP_PTR_HI
+                        ADC             #$00
+                        STA             CMDP_PTR_HI
+                        LDA             LOAD_LEN_LO
+                        SEC
+                        SBC             HIM_AP_TMP2_HI
+                        STA             LOAD_LEN_LO
+                        LDA             LOAD_LEN_HI
+                        SBC             #$00
+                        STA             LOAD_LEN_HI
+                        SEC
+                        RTS
+
+HIM_AP_NEED_A:
+                        STA             HIM_AP_TMP2_HI
+                        LDA             LOAD_LEN_HI
+                        BNE             HIM_AP_NEED_OK
+                        LDA             LOAD_LEN_LO
+                        CMP             HIM_AP_TMP2_HI
+                        BCS             HIM_AP_NEED_OK
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_NEED_OK:
+                        SEC
+                        RTS
+
+HIM_AP_SOURCE_RANGE_OK:
+                        LDA             HIM_AP_PKG_LEN_LO
+                        ORA             HIM_AP_PKG_LEN_HI
+                        BNE             HIM_AP_SOURCE_LEN_NONZERO
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_SOURCE_LEN_NONZERO:
+                        JSR             HIM_AP_SOURCE_BASE_OK
+                        BCS             HIM_AP_SOURCE_BASE_SAFE
+                        RTS
+HIM_AP_SOURCE_BASE_SAFE:
+                        LDA             HIM_AP_PKG_LEN_LO
+                        SEC
+                        SBC             #$01
+                        STA             HIM_AP_TMP_LO
+                        LDA             HIM_AP_PKG_LEN_HI
+                        SBC             #$00
+                        STA             HIM_AP_TMP_HI
+                        LDA             HIM_AP_SRC_LO
+                        CLC
+                        ADC             HIM_AP_TMP_LO
+                        STA             HIM_AP_TMP2_LO
+                        LDA             HIM_AP_SRC_HI
+                        ADC             HIM_AP_TMP_HI
+                        BCC             HIM_AP_SOURCE_LAST_NO_CARRY
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_SOURCE_LAST_NO_CARRY:
+                        STA             HIM_AP_TMP2_HI
+                        LDA             HIM_AP_SRC_HI
+                        CMP             #$50
+                        BCC             HIM_AP_SOURCE_RAM_RANGE
+                        LDA             HIM_AP_TMP2_HI
+                        CMP             #$FF
+                        BCC             HIM_AP_SOURCE_RANGE_GOOD
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_SOURCE_RAM_RANGE:
+                        LDA             HIM_AP_TMP2_HI
+                        CMP             #$50
+                        BCC             HIM_AP_SOURCE_RANGE_GOOD
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_SOURCE_RANGE_GOOD:
+                        SEC
+                        RTS
+
+HIM_AP_SOURCE_BASE_OK:
+                        LDA             HIM_AP_SRC_HI
+                        CMP             #$20
+                        BCS             HIM_AP_SOURCE_BASE_GE_20
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_SOURCE_BASE_GE_20:
+                        CMP             #$50
+                        BCC             HIM_AP_SOURCE_BASE_GOOD
+                        CMP             #$80
+                        BCS             HIM_AP_SOURCE_BASE_GE_80
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_SOURCE_BASE_GE_80:
+                        CMP             #$FF
+                        BCC             HIM_AP_SOURCE_BASE_GOOD
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_SOURCE_BASE_GOOD:
+                        SEC
+                        RTS
+
+HIM_AP_LOAD_RANGE_OK:
+                        LDA             HIM_AP_BODY_LEN_LO
+                        ORA             HIM_AP_BODY_LEN_HI
+                        BNE             HIM_AP_LOAD_LEN_NONZERO
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_LOAD_LEN_NONZERO:
+                        LDA             HIM_AP_DST_HI
+                        CMP             #$20
+                        BCS             HIM_AP_LOAD_BASE_GE_20
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_LOAD_BASE_GE_20:
+                        CMP             #$50
+                        BCC             HIM_AP_LOAD_BASE_LT_50
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_LOAD_BASE_LT_50:
+                        LDA             HIM_AP_BODY_LEN_LO
+                        SEC
+                        SBC             #$01
+                        STA             HIM_AP_TMP_LO
+                        LDA             HIM_AP_BODY_LEN_HI
+                        SBC             #$00
+                        STA             HIM_AP_TMP_HI
+                        LDA             HIM_AP_DST_LO
+                        CLC
+                        ADC             HIM_AP_TMP_LO
+                        STA             HIM_AP_TMP2_LO
+                        LDA             HIM_AP_DST_HI
+                        ADC             HIM_AP_TMP_HI
+                        BCC             HIM_AP_LOAD_LAST_NO_CARRY
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_LOAD_LAST_NO_CARRY:
+                        STA             HIM_AP_TMP2_HI
+                        CMP             #$50
+                        BCC             HIM_AP_LOAD_RANGE_GOOD
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_LOAD_RANGE_GOOD:
+                        SEC
+                        RTS
+
+HIM_AP_COPY_BODY_TO_DST:
+                        LDA             HIM_AP_BODY_LO
+                        STA             CMDP_PTR_LO
+                        LDA             HIM_AP_BODY_HI
+                        STA             CMDP_PTR_HI
+                        LDA             HIM_AP_DST_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             HIM_AP_DST_HI
+                        STA             CMDP_ADDR_HI
+                        LDA             HIM_AP_BODY_LEN_LO
+                        STA             LOAD_LEN_LO
+                        LDA             HIM_AP_BODY_LEN_HI
+                        STA             LOAD_LEN_HI
+                        ORA             LOAD_LEN_LO
+                        BEQ             HIM_AP_COPY_BODY_DONE
+HIM_AP_COPY_BODY_LOOP:
+                        LDY             #$00
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             (CMDP_ADDR_LO),Y
+                        INC             CMDP_PTR_LO
+                        BNE             HIM_AP_COPY_BODY_DST
+                        INC             CMDP_PTR_HI
+HIM_AP_COPY_BODY_DST:
+                        INC             CMDP_ADDR_LO
+                        BNE             HIM_AP_COPY_BODY_COUNT
+                        INC             CMDP_ADDR_HI
+HIM_AP_COPY_BODY_COUNT:
+                        DEC             LOAD_LEN_LO
+                        LDA             LOAD_LEN_LO
+                        CMP             #$FF
+                        BNE             HIM_AP_COPY_BODY_MORE
+                        DEC             LOAD_LEN_HI
+HIM_AP_COPY_BODY_MORE:
+                        LDA             LOAD_LEN_LO
+                        ORA             LOAD_LEN_HI
+                        BNE             HIM_AP_COPY_BODY_LOOP
+HIM_AP_COPY_BODY_DONE:
+                        RTS
+
+HIM_AP_RELOC_KIND_X:
+                        TXA
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (CMDP_PTR_LO),Y
+                        RTS
+
+HIM_AP_RELOC_SITE_LO_X:
+                        LDA             HIM_AP_RELOC_COUNT
+                        STA             HIM_AP_TMP2_LO
+                        TXA
+                        CLC
+                        ADC             HIM_AP_TMP2_LO
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (CMDP_PTR_LO),Y
+                        RTS
+
+HIM_AP_RELOC_SITE_HI_X:
+                        LDA             HIM_AP_RELOC_COUNT
+                        ASL             A
+                        STA             HIM_AP_TMP2_LO
+                        TXA
+                        CLC
+                        ADC             HIM_AP_TMP2_LO
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (CMDP_PTR_LO),Y
+                        RTS
+
+HIM_AP_RELOC_TARGET_LO_X:
+                        LDA             HIM_AP_RELOC_COUNT
+                        ASL             A
+                        CLC
+                        ADC             HIM_AP_RELOC_COUNT
+                        STA             HIM_AP_TMP2_LO
+                        TXA
+                        CLC
+                        ADC             HIM_AP_TMP2_LO
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (CMDP_PTR_LO),Y
+                        RTS
+
+HIM_AP_RELOC_TARGET_HI_X:
+                        LDA             HIM_AP_RELOC_COUNT
+                        ASL             A
+                        ASL             A
+                        STA             HIM_AP_TMP2_LO
+                        TXA
+                        CLC
+                        ADC             HIM_AP_TMP2_LO
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (CMDP_PTR_LO),Y
+                        RTS
+
+HIM_AP_INTERNAL_KIND_A:
+                        CMP             #HIM_AP_RELOC_ABS16_INTERNAL
+                        BEQ             HIM_AP_INTERNAL_KIND_YES
+                        CMP             #HIM_AP_RELOC_LO8_INTERNAL
+                        BEQ             HIM_AP_INTERNAL_KIND_YES
+                        CMP             #HIM_AP_RELOC_HI8_INTERNAL
+                        BEQ             HIM_AP_INTERNAL_KIND_YES
+                        CLC
+                        RTS
+HIM_AP_INTERNAL_KIND_YES:
+                        SEC
+                        RTS
+
+HIM_AP_RELOC_SITE_OK_X:
+                        JSR             HIM_AP_RELOC_KIND_X
+                        STA             HIM_AP_TMP2_HI
+                        CMP             #HIM_AP_RELOC_ABS16_INTERNAL
+                        BEQ             HIM_AP_RELOC_SITE_WORD
+                        LDA             #$00
+                        BRA             HIM_AP_RELOC_SITE_HAVE_ADD
+HIM_AP_RELOC_SITE_WORD:
+                        LDA             #$01
+HIM_AP_RELOC_SITE_HAVE_ADD:
+                        STA             HIM_AP_TMP2_LO
+                        JSR             HIM_AP_RELOC_SITE_LO_X
+                        STA             HIM_AP_TMP_LO
+                        JSR             HIM_AP_RELOC_SITE_HI_X
+                        STA             HIM_AP_TMP_HI
+                        LDA             HIM_AP_TMP2_LO
+                        CLC
+                        ADC             HIM_AP_TMP_LO
+                        STA             HIM_AP_TMP_LO
+                        LDA             HIM_AP_TMP_HI
+                        ADC             #$00
+                        BCC             HIM_AP_RELOC_SITE_NO_CARRY
+                        JMP             HIM_AP_BAD_FIX
+HIM_AP_RELOC_SITE_NO_CARRY:
+                        STA             HIM_AP_TMP_HI
+                        CMP             HIM_AP_BODY_LEN_HI
+                        BCC             HIM_AP_RELOC_SITE_GOOD
+                        BEQ             HIM_AP_RELOC_SITE_HI_EQ
+                        JMP             HIM_AP_BAD_FIX
+HIM_AP_RELOC_SITE_HI_EQ:
+                        LDA             HIM_AP_TMP_LO
+                        CMP             HIM_AP_BODY_LEN_LO
+                        BCC             HIM_AP_RELOC_SITE_GOOD
+                        JMP             HIM_AP_BAD_FIX
+HIM_AP_RELOC_SITE_GOOD:
+                        SEC
+                        RTS
+
+HIM_AP_RELOC_PATCH_ROW_X:
+                        JSR             HIM_AP_RELOC_SITE_LO_X
+                        STA             HIM_AP_TMP_LO
+                        JSR             HIM_AP_RELOC_SITE_HI_X
+                        STA             HIM_AP_TMP_HI
+                        LDA             HIM_AP_DST_LO
+                        CLC
+                        ADC             HIM_AP_TMP_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             HIM_AP_DST_HI
+                        ADC             HIM_AP_TMP_HI
+                        STA             CMDP_ADDR_HI
+                        JSR             HIM_AP_RELOC_TARGET_LO_X
+                        STA             HIM_AP_TMP_LO
+                        JSR             HIM_AP_RELOC_TARGET_HI_X
+                        STA             HIM_AP_TMP_HI
+                        LDA             HIM_AP_DST_LO
+                        CLC
+                        ADC             HIM_AP_TMP_LO
+                        STA             HIM_AP_TMP_LO
+                        LDA             HIM_AP_DST_HI
+                        ADC             HIM_AP_TMP_HI
+                        STA             HIM_AP_TMP_HI
+                        LDA             HIM_AP_TMP2_HI
+                        CMP             #HIM_AP_RELOC_ABS16_INTERNAL
+                        BEQ             HIM_AP_RELOC_PATCH_ABS16
+                        CMP             #HIM_AP_RELOC_LO8_INTERNAL
+                        BEQ             HIM_AP_RELOC_PATCH_LO8
+                        CMP             #HIM_AP_RELOC_HI8_INTERNAL
+                        BEQ             HIM_AP_RELOC_PATCH_HI8
+                        RTS
+HIM_AP_RELOC_PATCH_ABS16:
+                        LDY             #$00
+                        LDA             HIM_AP_TMP_LO
+                        STA             (CMDP_ADDR_LO),Y
+                        INY
+                        LDA             HIM_AP_TMP_HI
+                        STA             (CMDP_ADDR_LO),Y
+                        RTS
+HIM_AP_RELOC_PATCH_LO8:
+                        LDY             #$00
+                        LDA             HIM_AP_TMP_LO
+                        STA             (CMDP_ADDR_LO),Y
+                        RTS
+HIM_AP_RELOC_PATCH_HI8:
+                        LDY             #$00
+                        LDA             HIM_AP_TMP_HI
+                        STA             (CMDP_ADDR_LO),Y
+                        RTS
+
+HIM_AP_FIND_HOLE:
+                        STZ             CMDP_PTR_LO
+                        LDA             #$80
+                        STA             CMDP_PTR_HI
+HIM_AP_FIND_HOLE_LOOP:
+                        JSR             HIM_AP_HOLE_AT_SCAN
+                        BCS             HIM_AP_FIND_HOLE_FOUND
+                        INC             CMDP_PTR_LO
+                        BNE             HIM_AP_FIND_HOLE_NEXT
+                        INC             CMDP_PTR_HI
+HIM_AP_FIND_HOLE_NEXT:
+                        LDA             CMDP_PTR_HI
+                        CMP             #$FF
+                        BCC             HIM_AP_FIND_HOLE_LOOP
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_FIND_HOLE_FOUND:
+                        LDA             CMDP_PTR_LO
+                        STA             HIM_AP_INSTALL_LO
+                        LDA             CMDP_PTR_HI
+                        STA             HIM_AP_INSTALL_HI
+                        SEC
+                        RTS
+
+HIM_AP_HOLE_AT_SCAN:
+                        LDA             HIM_AP_PKG_LEN_LO
+                        SEC
+                        SBC             #$01
+                        STA             HIM_AP_TMP_LO
+                        LDA             HIM_AP_PKG_LEN_HI
+                        SBC             #$00
+                        STA             HIM_AP_TMP_HI
+                        LDA             CMDP_PTR_LO
+                        CLC
+                        ADC             HIM_AP_TMP_LO
+                        STA             HIM_AP_TMP2_LO
+                        LDA             CMDP_PTR_HI
+                        ADC             HIM_AP_TMP_HI
+                        BCS             HIM_AP_HOLE_NO
+                        CMP             #$FF
+                        BCS             HIM_AP_HOLE_NO
+                        LDA             CMDP_PTR_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             CMDP_PTR_HI
+                        STA             CMDP_ADDR_HI
+                        LDA             HIM_AP_PKG_LEN_LO
+                        STA             LOAD_LEN_LO
+                        LDA             HIM_AP_PKG_LEN_HI
+                        STA             LOAD_LEN_HI
+HIM_AP_HOLE_CHECK_LOOP:
+                        LDA             LOAD_LEN_LO
+                        ORA             LOAD_LEN_HI
+                        BEQ             HIM_AP_HOLE_YES
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+                        CMP             #$FF
+                        BNE             HIM_AP_HOLE_NO
+                        INC             CMDP_ADDR_LO
+                        BNE             HIM_AP_HOLE_COUNT
+                        INC             CMDP_ADDR_HI
+HIM_AP_HOLE_COUNT:
+                        DEC             LOAD_LEN_LO
+                        LDA             LOAD_LEN_LO
+                        CMP             #$FF
+                        BNE             HIM_AP_HOLE_CHECK_LOOP
+                        DEC             LOAD_LEN_HI
+                        BRA             HIM_AP_HOLE_CHECK_LOOP
+HIM_AP_HOLE_YES:
+                        SEC
+                        RTS
+HIM_AP_HOLE_NO:
+                        CLC
+                        RTS
+
+HIM_AP_BAD_FIX:
+                        LDA             #HIM_AP_STATUS_BAD_FIX
+                        BRA             HIM_AP_FAIL_A
+HIM_AP_BAD_RANGE:
+                        LDA             #HIM_AP_STATUS_BAD_RANGE
+                        BRA             HIM_AP_FAIL_A
+HIM_AP_BAD_LINE:
+                        LDA             #HIM_AP_STATUS_BAD_LINE
+HIM_AP_FAIL_A:
+                        STA             HIM_AP_STATUS
                         CLC
                         RTS
 

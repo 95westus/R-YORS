@@ -339,6 +339,7 @@ DW
 DS
 ORG
 END
+ENTRY
 EXPORT
 IMPORT
 ```
@@ -386,9 +387,15 @@ ORG $2000
 `END` closes the source session, resolves required fixups, prints the tables,
 and enters `SEAL>` on success.
 
+`ENTRY name` records a defined global PC label as the package entry name using
+the same compact public export row as `EXPORT name` in this size-first slice.
+Use `ENTRY name` instead of also exporting the same name.
+
 `EXPORT name` records a defined global PC label as public package metadata.
 `IMPORT name` declares an external symbol as intentional package metadata and
 forces matching operands to become import relocation rows.
+
+`START` is not reserved; it is available as an ordinary label.
 
 ## Instructions
 
@@ -748,9 +755,6 @@ Known limitations:
   should support those source forms and emit relocation rows for label data.
 - No string data directives yet: `HBSTR`, `CSTR`, `PSTR`, `X'...'`, and
   `B'...'` are parked later forms.
-- `START` is still a parked/reserved word, so use `MAIN` or another label
-  today. The next ASM incarnation should either implement a real `START`
-  directive or stop reserving that common label name.
 - No default flash-image `CHECK` command.
 - No default flash-image `RESOLVE` command; imported packages are packaged but
   not loadable by the first `LOAD` slice.

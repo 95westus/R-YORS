@@ -95,6 +95,35 @@ HIM_FLASH_DST_LO           EQU             $7E29
 HIM_FLASH_DST_HI           EQU             $7E2A
 HIM_FLASH_LEN_LO           EQU             $7E2B
 HIM_FLASH_LEN_HI           EQU             $7E2C
+HIM_SVC_AP_LO              EQU             $7E2D
+HIM_SVC_AP_HI              EQU             $7E2E
+HIM_AP_OP                  EQU             $7E2F
+HIM_AP_STATUS              EQU             $7E30
+HIM_AP_SRC_LO              EQU             $7E31
+HIM_AP_SRC_HI              EQU             $7E32
+HIM_AP_DST_LO              EQU             $7E33
+HIM_AP_DST_HI              EQU             $7E34
+HIM_AP_PKG_LEN_LO          EQU             $7E35
+HIM_AP_PKG_LEN_HI          EQU             $7E36
+HIM_AP_BODY_LO             EQU             $7E37
+HIM_AP_BODY_HI             EQU             $7E38
+HIM_AP_BODY_LEN_LO         EQU             $7E39
+HIM_AP_BODY_LEN_HI         EQU             $7E3A
+HIM_AP_RELOC_COUNT         EQU             $7E3B
+HIM_AP_IMPORT_COUNT        EQU             $7E3C
+HIM_AP_INSTALL_LO          EQU             $7E3D
+HIM_AP_INSTALL_HI          EQU             $7E3E
+HIM_AP_REL_LO              EQU             $7E3F
+HIM_AP_REL_HI              EQU             $7E40
+
+HIM_AP_OP_PARSE            EQU             $00
+HIM_AP_OP_LOAD             EQU             $01
+HIM_AP_OP_SUGGEST          EQU             $02
+HIM_AP_TMP_LO              EQU             $7E41
+HIM_AP_TMP_HI              EQU             $7E42
+HIM_AP_TMP2_LO             EQU             $7E43
+HIM_AP_TMP2_HI             EQU             $7E44
+HIM_AP_REL_LEN             EQU             $7E45
 
 HIM_SVC_SIG0_VAL           EQU             'R'
 HIM_SVC_SIG1_VAL           EQU             'Y'
@@ -110,7 +139,8 @@ HIM_SVC_VECTOR_COUNT       EQU             $0B
 ; - $7E1D-$7E1E HIMON RX lookahead cells
 ; - $7E1F-$7E24 free buffer spill/scratch after page buffers
 ; - $7E25-$7E2C optional flash-install service vector/request cells
-; - $7E2D-$7E45 free buffer spill/scratch after page buffers
+; - $7E2D-$7E40 optional AP package service vector/request/result cells
+; - $7E41-$7E45 AP package service scratch
 ; - $7E46-$7E65 debugger/assembler workspace
 ; - $7E66-$7E75 hash record/exec metadata
 ; - $7E76-$7E94 command/parser/keytest workspace

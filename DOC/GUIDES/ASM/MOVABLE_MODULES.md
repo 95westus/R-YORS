@@ -268,6 +268,16 @@ package sources, this first slice requires the loaded BODY destination to end
 before the AP envelope begins, avoiding overlapping forward copies without a
 larger resident mover.
 
+In the 2026-07-07 flash-size split, AP package consumption is resident HIMON
+service work. HIMON publishes an AP service vector plus request/result cells at
+`$7E2D-$7E40`; flash ASM's `LOAD`, `INSTALL pkg`, and package parse path call
+that service instead of carrying a private parser/loader. ASM still owns
+`SEAL` and `PACKAGE`, because those depend on the active assembler session and
+its symbol/relocation tables. If ASM is not resident, the `SEAL>` command
+surface is gone, but an installed AP envelope can be parsed/loaded by any
+resident caller that fills the HIMON AP service request block. A small HIMON or
+STR8 user command for that service remains the natural next slice.
+
 `INSTALL pkg` parses enough AP length information to find the first erased
 contiguous visible flash hole in `$8000-$FEFF` large enough for the unchanged
 envelope and prints that suggested address/length. `INSTALL pkg flash_addr`
@@ -323,10 +333,13 @@ kind of value required. Imported resident calls are resolved by RJOIN/catalog
 policy at load/install time unless the installer chooses to freeze the current
 address into the installed image.
 
-Source spelling decision: `EXPORT NAME` marks a defined global label as a public
-module offset. `IMPORT NAME` declares an intended external/imported symbol so a
+Source spelling decision: `ENTRY NAME` marks a defined global label as the
+package entry name and emits the same compact public export row as
+`EXPORT NAME` in the first size-first slice. `EXPORT NAME` marks other defined
+global labels as public module offsets. `IMPORT NAME` declares an intended
+external/imported symbol so a
 missing symbol is deliberate instead of a typo silently becoming an import.
-`ENTRY`/`EXTRN` are not the planned spellings.
+`EXTRN` is not the planned spelling.
 
 Use plain resident calls when you want to bind to the HIMON image that is
 running the assembler. Use `IMPORT NAME` when you want the sealed body to defer

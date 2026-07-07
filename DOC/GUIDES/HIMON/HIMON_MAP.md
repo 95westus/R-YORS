@@ -280,6 +280,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_S1`, `L_WRITE_DATA_BYTE` | Accepts S0/S1/S9, writes S1 data below `$7F00`, tracks count and go address. | `$7F00-$7FFF` reports `LERR=$02`; `$8000+` without `F` fails with `LERR=$05`. |
 | S-record load and go | `L G` | `CMD_L` | Same as `L`, then jumps to S9 address or first data address fallback. | Sets exec kind to LOADGO before jump. |
 | S-record flash load | `L F` | `L_WRITE_DATA_BYTE_FLASH`, `FLASH_WRITE_BYTE_AXY` | Writes only blank `$FF` bytes in `$8000-$CFFF`, verifies readback, skips after first flash failure. | Protects HIMON fixed-entry area at `$D000+`; no sector erase yet. |
+| AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_FIND_HOLE` | Parses AP v1 envelopes, loads BODY to `$2000-$4FFF`, applies internal `$01-$03` relocation rows, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` call this so AP package consumption survives after ASM exits. No direct HIMON command yet. |
 | Future relocatable flash placement | future `L F` mode | future loader staging and flash-block scan | Would measure a relocatable S19 image, choose an erased block, rebase record addresses, write/verify, and report relocated entry. | Not current behavior; plain S19 cannot patch absolute operands inside code without relocation metadata. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Patch targets are limited to user program RAM below `$7A00`, so monitor RAM and `$7F00-$7FFF` I/O stay protected. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
@@ -307,6 +308,21 @@ and adding a HIMON-local one-byte RX lookahead for abort polling.
 `CMD_SEARCH_FNV`,
 `CMD_SEARCH`, and `MSG_SEARCH_*` are absent from the normal HIMON map; `D`
 search enters through `CMD_D_SEARCH_RANGE`.
+
+2026-07-07 normal HIMON map after adding the resident AP package service:
+
+```text
+CODE     $27EB / 10219
+DATA     $05C4 /  1476
+TOTAL    $2DAF / 11695
+_END_DATA = $EDAF
+HIM_AP_SERVICE = $D6B2
+AP service cells = $7E2D-$7E40
+```
+
+This consumes most of the previous HIMON-to-`$F000` gap, leaving `$0251` bytes
+below the STR8 handoff line, but frees flash ASM by moving AP package
+parse/load/suggest into resident monitor code.
 
 ## Edge Evidence Rules
 

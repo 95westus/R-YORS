@@ -174,6 +174,29 @@ ASM_HIM_SVC_VERSION      EQU          $7E04
 ASM_HIM_SVC_COUNT        EQU          $7E05
 ASM_HIM_SVC_JOIN_LO      EQU          $7E06
 ASM_HIM_SVC_CHECKSUM     EQU          $7E1C
+ASM_HIM_SVC_AP_LO        EQU          $7E2D
+ASM_HIM_SVC_AP_HI        EQU          $7E2E
+ASM_HIM_AP_OP            EQU          $7E2F
+ASM_HIM_AP_STATUS        EQU          $7E30
+ASM_HIM_AP_SRC_LO        EQU          $7E31
+ASM_HIM_AP_SRC_HI        EQU          $7E32
+ASM_HIM_AP_DST_LO        EQU          $7E33
+ASM_HIM_AP_DST_HI        EQU          $7E34
+ASM_HIM_AP_PKG_LEN_LO    EQU          $7E35
+ASM_HIM_AP_PKG_LEN_HI    EQU          $7E36
+ASM_HIM_AP_BODY_LO       EQU          $7E37
+ASM_HIM_AP_BODY_HI       EQU          $7E38
+ASM_HIM_AP_BODY_LEN_LO   EQU          $7E39
+ASM_HIM_AP_BODY_LEN_HI   EQU          $7E3A
+ASM_HIM_AP_RELOC_COUNT   EQU          $7E3B
+ASM_HIM_AP_IMPORT_COUNT  EQU          $7E3C
+ASM_HIM_AP_INSTALL_LO    EQU          $7E3D
+ASM_HIM_AP_INSTALL_HI    EQU          $7E3E
+ASM_HIM_AP_REL_LO        EQU          $7E3F
+ASM_HIM_AP_REL_HI        EQU          $7E40
+ASM_HIM_AP_OP_PARSE      EQU          $00
+ASM_HIM_AP_OP_LOAD       EQU          $01
+ASM_HIM_AP_OP_SUGGEST    EQU          $02
 ASM_HIM_SVC_SIG0_VAL     EQU          'R'
 ASM_HIM_SVC_SIG1_VAL     EQU          'Y'
 ASM_HIM_SVC_VERSION_1    EQU          $01
@@ -436,6 +459,7 @@ ASM_VID_DS             EQU             $1D
 ASM_VID_DW             EQU             $1E
 ASM_VID_END            EQU             $1F
 ASM_VID_IMPORT         EQU             $20
+ASM_VID_ENTRY          EQU             $43
 ASM_VID_EXPORT         EQU             $23
 ASM_VID_EQU            EQU             $22
 ASM_VID_ORG            EQU             $2F
@@ -1872,7 +1896,13 @@ ASM_SMOKE_VOCAB:
                         JSR             ASM_SMOKE_LOOKUP
                         BCC             ASM_SMOKE_VOCAB_FAIL
 
-                        LDA             #ASM_VOC_RESERVED
+                        LDA             #ASM_VOC_DIR
+                        LDX             #<ASM_SMOKE_VOC_ENTRY
+                        LDY             #>ASM_SMOKE_VOC_ENTRY
+                        JSR             ASM_SMOKE_LOOKUP
+                        BCC             ASM_SMOKE_VOCAB_FAIL
+
+                        LDA             #ASM_VOC_NONE
                         LDX             #<ASM_SMOKE_VOC_START
                         LDY             #>ASM_SMOKE_VOC_START
                         JSR             ASM_SMOKE_LOOKUP
@@ -2135,10 +2165,10 @@ ASM_SMOKE_PARSE_AFTER_FAIL_D:
                         JSR             ASM_SMOKE_PARSE_ERR
                         BCC             ASM_SMOKE_PARSE_FAIL
 
-                        LDA             #ASM_STATUS_BAD_DIR
+                        LDA             #ASM_STMT_LABEL_ONLY
                         LDX             #<ASM_SMOKE_PARSE_START
                         LDY             #>ASM_SMOKE_PARSE_START
-                        JSR             ASM_SMOKE_PARSE_ERR
+                        JSR             ASM_SMOKE_PARSE_OK
                         BCC             ASM_SMOKE_PARSE_FAIL
 
                         JSR             ASM_SMOKE_PARSE_ASMTEST
@@ -6363,6 +6393,39 @@ ASM_SMOKE_DIRECT_IMPORT_EXT_X_OK:
                         BCS             ASM_SMOKE_DIRECT_IMPORT_DUP_OK
                         JMP             ASM_SMOKE_DIRECT_FAIL
 ASM_SMOKE_DIRECT_IMPORT_DUP_OK:
+                        LDA             #$DB
+                        STA             ASM_SLOT
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_DIRECT_ENTRY_BEGIN_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_ENTRY_BEGIN_OK:
+                        LDX             #<ASM_DIRECT_ENTRY_MAIN_LABEL
+                        LDY             #>ASM_DIRECT_ENTRY_MAIN_LABEL
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_ENTRY_LABEL_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_ENTRY_LABEL_OK:
+                        LDX             #<ASM_DIRECT_ENTRY_MAIN
+                        LDY             #>ASM_DIRECT_ENTRY_MAIN
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_ENTRY_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_ENTRY_OK:
+                        LDA             ASM_EXPORT_COUNT
+                        CMP             #$01
+                        BEQ             ASM_SMOKE_DIRECT_ENTRY_SLOT_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_ENTRY_SLOT_OK:
+                        LDA             #ASM_STATUS_BAD_SYM
+                        LDX             #<ASM_DIRECT_ENTRY_MAIN
+                        LDY             #>ASM_DIRECT_ENTRY_MAIN
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_ERR
+                        BCS             ASM_SMOKE_DIRECT_ENTRY_DUP_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_ENTRY_DUP_OK:
 
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #ASM_SMOKE_TARGET_LO
@@ -9707,6 +9770,137 @@ ASM_PACKAGE_WRITE_A:
 ASM_PACKAGE_WRITE_A_DONE:
                         RTS
 
+                        IF              ASM_FLASH_RUNTIME
+ASM_PACKAGE_LOAD:
+                        STX             ASM_PACKAGE_BASE_LO
+                        STY             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_PACKAGE_SERVICE_READY
+                        BCS             ASM_PACKAGE_LOAD_SERVICE_READY
+                        RTS
+ASM_PACKAGE_LOAD_SERVICE_READY:
+                        LDA             #ASM_HIM_AP_OP_LOAD
+                        STA             ASM_HIM_AP_OP
+                        JSR             ASM_PACKAGE_SET_SERVICE_REQUEST
+                        JSR             ASM_PACKAGE_CALL_HIM_AP
+                        BCS             ASM_PACKAGE_LOAD_SERVICE_OK
+                        LDA             ASM_HIM_AP_STATUS
+                        CLC
+                        RTS
+ASM_PACKAGE_LOAD_SERVICE_OK:
+                        JSR             ASM_PACKAGE_COPY_SERVICE_RESULTS
+                        LDA             #ASM_STATUS_OK
+                        LDX             ASM_RELOCATE_BASE_LO
+                        LDY             ASM_RELOCATE_BASE_HI
+                        SEC
+                        RTS
+
+ASM_PACKAGE_INSTALL_SUGGEST:
+                        STX             ASM_PACKAGE_BASE_LO
+                        STY             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_PACKAGE_SERVICE_READY
+                        BCS             ASM_PACKAGE_SUGGEST_SERVICE_READY
+                        RTS
+ASM_PACKAGE_SUGGEST_SERVICE_READY:
+                        LDA             #ASM_HIM_AP_OP_SUGGEST
+                        STA             ASM_HIM_AP_OP
+                        JSR             ASM_PACKAGE_SET_SERVICE_REQUEST
+                        JSR             ASM_PACKAGE_CALL_HIM_AP
+                        BCS             ASM_PACKAGE_SUGGEST_SERVICE_OK
+                        LDA             ASM_HIM_AP_STATUS
+                        CLC
+                        RTS
+ASM_PACKAGE_SUGGEST_SERVICE_OK:
+                        JSR             ASM_PACKAGE_COPY_SERVICE_RESULTS
+                        LDA             #ASM_STATUS_OK
+                        LDX             ASM_INSTALL_BASE_LO
+                        LDY             ASM_INSTALL_BASE_HI
+                        SEC
+                        RTS
+
+ASM_PACKAGE_PARSE_MIN:
+                        JSR             ASM_PACKAGE_SERVICE_READY
+                        BCS             ASM_PACKAGE_PARSE_SERVICE_READY
+                        RTS
+ASM_PACKAGE_PARSE_SERVICE_READY:
+                        LDA             #ASM_HIM_AP_OP_PARSE
+                        STA             ASM_HIM_AP_OP
+                        JSR             ASM_PACKAGE_SET_SERVICE_REQUEST
+                        JSR             ASM_PACKAGE_CALL_HIM_AP
+                        BCS             ASM_PACKAGE_PARSE_SERVICE_OK
+                        LDA             ASM_HIM_AP_STATUS
+                        CLC
+                        RTS
+ASM_PACKAGE_PARSE_SERVICE_OK:
+                        JSR             ASM_PACKAGE_COPY_SERVICE_RESULTS
+                        LDA             #ASM_STATUS_OK
+                        LDX             ASM_PACKAGE_BASE_LO
+                        LDY             ASM_PACKAGE_BASE_HI
+                        SEC
+                        RTS
+
+ASM_PACKAGE_SERVICE_READY:
+                        LDA             ASM_HIM_SVC_AP_HI
+                        CMP             #ASM_SEED_ROM_MIN_HI
+                        BCC             ASM_PACKAGE_SERVICE_FAIL
+                        CMP             #$FF
+                        BNE             ASM_PACKAGE_SERVICE_OK
+                        LDA             ASM_HIM_SVC_AP_LO
+                        CMP             #$FF
+                        BEQ             ASM_PACKAGE_SERVICE_FAIL
+ASM_PACKAGE_SERVICE_OK:
+                        SEC
+                        RTS
+ASM_PACKAGE_SERVICE_FAIL:
+                        LDA             #ASM_STATUS_RJOIN
+                        CLC
+                        RTS
+
+ASM_PACKAGE_SET_SERVICE_REQUEST:
+                        LDA             ASM_PACKAGE_BASE_LO
+                        STA             ASM_HIM_AP_SRC_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        STA             ASM_HIM_AP_SRC_HI
+                        LDA             ASM_RELOCATE_BASE_LO
+                        STA             ASM_HIM_AP_DST_LO
+                        LDA             ASM_RELOCATE_BASE_HI
+                        STA             ASM_HIM_AP_DST_HI
+                        RTS
+
+ASM_PACKAGE_COPY_SERVICE_RESULTS:
+                        LDA             ASM_HIM_AP_PKG_LEN_LO
+                        STA             ASM_PACKAGE_LEN_LO
+                        LDA             ASM_HIM_AP_PKG_LEN_HI
+                        STA             ASM_PACKAGE_LEN_HI
+                        LDA             ASM_HIM_AP_BODY_LO
+                        STA             ASM_PACKAGE_BODY_LO
+                        LDA             ASM_HIM_AP_BODY_HI
+                        STA             ASM_PACKAGE_BODY_HI
+                        LDA             ASM_HIM_AP_BODY_LEN_LO
+                        STA             ASM_PACKAGE_BODY_LEN_LO
+                        LDA             ASM_HIM_AP_BODY_LEN_HI
+                        STA             ASM_PACKAGE_BODY_LEN_HI
+                        LDA             ASM_HIM_AP_RELOC_COUNT
+                        STA             ASM_RELOC_COUNT
+                        STA             ASM_RELOCATE_COUNT
+                        ASL             A
+                        ASL             A
+                        CLC
+                        ADC             ASM_HIM_AP_RELOC_COUNT
+                        CLC
+                        ADC             #$01
+                        STA             ASM_PACKAGE_REL_LEN
+                        LDA             ASM_HIM_AP_IMPORT_COUNT
+                        STA             ASM_IMPORT_RESOLVE_COUNT
+                        LDA             ASM_HIM_AP_INSTALL_LO
+                        STA             ASM_INSTALL_BASE_LO
+                        LDA             ASM_HIM_AP_INSTALL_HI
+                        STA             ASM_INSTALL_BASE_HI
+                        RTS
+
+ASM_PACKAGE_CALL_HIM_AP:
+                        JMP             (ASM_HIM_SVC_AP_LO)
+
+                        ELSE
 ASM_PACKAGE_LOAD:
                         STX             ASM_PACKAGE_BASE_LO
                         STY             ASM_PACKAGE_BASE_HI
@@ -10333,6 +10527,8 @@ ASM_PACKAGE_MIN_BAD_LINE:
                         LDA             #ASM_STATUS_BAD_LINE
                         CLC
                         RTS
+
+                        ENDIF
 
                         IF              ASM_PACKAGE_CHECK_ENABLED
 ASM_SEAL_CHECK_PACKAGE:
@@ -11767,6 +11963,10 @@ ASM_DISPATCH_DIR_NOT_EXPORT:
                         BNE             ASM_DISPATCH_DIR_NOT_IMPORT
                         JMP             ASM_DISPATCH_DIR_IMPORT
 ASM_DISPATCH_DIR_NOT_IMPORT:
+                        CMP             #ASM_VID_ENTRY
+                        BNE             ASM_DISPATCH_DIR_NOT_ENTRY
+                        JMP             ASM_DISPATCH_DIR_ENTRY
+ASM_DISPATCH_DIR_NOT_ENTRY:
                         CMP             #ASM_VID_ORG
                         BNE             ASM_DISPATCH_DIR_NOT_ORG
                         JMP             ASM_DISPATCH_DIR_ORG
@@ -11849,6 +12049,25 @@ ASM_DISPATCH_DIR_IMPORT_HAVE_TAIL:
                         BCS             ASM_DISPATCH_DIR_IMPORT_OK
                         JMP             ASM_DISPATCH_FAIL_NEAR
 ASM_DISPATCH_DIR_IMPORT_OK:
+                        JMP             ASM_DISPATCH_OK
+
+ASM_DISPATCH_DIR_ENTRY:
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_HAS_NAME
+                        BEQ             ASM_DISPATCH_DIR_ENTRY_NO_NAME
+                        JMP             ASM_DISPATCH_BAD_SYM
+ASM_DISPATCH_DIR_ENTRY_NO_NAME:
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_HAS_TAIL
+                        BNE             ASM_DISPATCH_DIR_ENTRY_HAVE_TAIL
+                        JMP             ASM_DISPATCH_BAD_OPER
+ASM_DISPATCH_DIR_ENTRY_HAVE_TAIL:
+                        LDX             ASM_STMT_TAIL_PTR_LO
+                        LDY             ASM_STMT_TAIL_PTR_HI
+                        JSR             ASM_EXPORT_SYMBOL
+                        BCS             ASM_DISPATCH_DIR_ENTRY_OK
+                        JMP             ASM_DISPATCH_FAIL_NEAR
+ASM_DISPATCH_DIR_ENTRY_OK:
                         JMP             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_ORG:
@@ -16260,6 +16479,7 @@ ASM_SMOKE_VOC_DB:      DB              "DB",0
 ASM_SMOKE_VOC_DW:      DB              "DW",0
 ASM_SMOKE_VOC_DC:      DB              "DC",0
 ASM_SMOKE_VOC_IMPORT:  DB              "IMPORT",0
+ASM_SMOKE_VOC_ENTRY:   DB              "ENTRY",0
 ASM_SMOKE_VOC_A:       DB              "A",0
 ASM_SMOKE_VOC_Y:       DB              "Y",0
 ASM_SMOKE_VOC_START:   DB              "START",0
@@ -16749,6 +16969,9 @@ ASM_DIRECT_IMPORT_EXT: DB              "        IMPORT EXT",0
 ASM_DIRECT_IMPORT_LDA: DB              "        IMPORT LDA",0
 ASM_DIRECT_IMPORT_EXT_X:
                         DB              "        IMPORT EXT X",0
+ASM_DIRECT_ENTRY_MAIN_LABEL:
+                        DB              "MAIN RTS",0
+ASM_DIRECT_ENTRY_MAIN: DB              "        ENTRY MAIN",0
 ASM_DIRECT_IMPORT_PUT_CSTR:
                         DB              "        IMPORT BIO_FTDI_PUT_CSTR",0
 ASM_FIXUP_JSR_PUT_CSTR:
@@ -17020,43 +17243,43 @@ ASM_SMOKE_LINE_LONG:
                         DB              "34567890123456789012345678901234",0
                         ENDIF
 
-; Vocabulary slots are canonical-token sorted except IMPORT, which deliberately
-; reuses the old ENTRY parked slot so existing opcode ids do not shift.
+; Vocabulary slots are canonical-token sorted except IMPORT and ENTRY, which
+; reuse parked/reserved slots so existing opcode ids do not shift.
 ; A ADC AND ASL BBR BBS BCC BCS BEQ BIT BMI BNE BPL BRA BRK BVC BVS CLC
 ; CLD CLI CLV CMP CPX CPY DB DC DEC DEX DEY DS DW END IMPORT EOR EQU EXPORT
 ; INC
 ; INX INY JMP JSR LDA LDX LDY LSR NOP ORA ORG PHA PHP PHX PHY PLA PLP
-; PLX PLY RMB ROL ROR RTI RTS SBC SEC SED SEI SMB STA START STP STX STY
+; PLX PLY RMB ROL ROR RTI RTS SBC SEC SED SEI SMB STA ENTRY STP STX STY
 ; STZ TAX TAY TRB TSB TSX TXA TXS TYA WAI X Y.
 ASM_VOC_HASH0:         DB              $CC,$41,$C6,$93,$35,$A2,$63,$33,$C3,$50,$43,$BC,$B9,$DC,$9A,$DE
                         DB              $0E,$1B,$FA,$A9,$A4,$47,$FA,$8D,$83,$F0,$F3,$4E,$E1,$C0,$0C,$0A
                         DB              $D4,$1D,$62,$B3,$67,$32,$C5,$E0,$48,$34,$FF,$6C,$4E,$5E,$9F,$79
                         DB              $4C,$0F,$A7,$14,$A8,$0B,$73,$E0,$1E,$66,$54,$0E,$20,$D9,$92,$B3
-                        DB              $04,$6D,$39,$3F,$D6,$6E,$01,$48,$5A,$ED,$13,$76,$B8,$40,$96,$7D
+                        DB              $04,$6D,$39,$33,$D6,$6E,$01,$48,$5A,$ED,$13,$76,$B8,$40,$96,$7D
                         DB              $B4,$27,$94
 ASM_VOC_HASH1:         DB              $F6,$57,$6D,$75,$D2,$D0,$03,$EA,$77,$F6,$25,$6D,$54,$5A,$6A,$3D
                         DB              $57,$5E,$65,$54,$49,$F3,$21,$23,$75,$73,$FA,$22,$23,$5A,$61,$92
                         DB              $94,$F0,$E2,$77,$B3,$8F,$90,$0A,$45,$D9,$B4,$B3,$7B,$41,$0A,$07
                         DB              $BA,$D5,$E1,$E0,$D0,$B9,$AC,$AA,$68,$10,$39,$3A,$11,$1B,$71,$69
-                        DB              $7B,$46,$D4,$A6,$EB,$F8,$FA,$F5,$02,$03,$3C,$91,$81,$CF,$EB,$8E
+                        DB              $7B,$46,$D4,$1E,$EB,$F8,$FA,$F5,$02,$03,$3C,$91,$81,$CF,$EB,$8E
                         DB              $8F,$1E,$1C
 ASM_VOC_HASH2:         DB              $0B,$75,$66,$AD,$74,$74,$73,$72,$63,$81,$77,$7F,$97,$9C,$9C,$93
                         DB              $93,$6A,$6A,$6A,$6A,$6C,$25,$25,$CE,$CE,$0E,$0F,$0F,$CE,$CE,$43
                         DB              $65,$45,$4B,$F4,$C3,$C3,$C3,$85,$80,$47,$47,$47,$5D,$EE,$F8,$F8
                         DB              $F9,$F9,$F9,$F9,$EF,$EF,$EF,$EF,$E2,$E8,$E8,$AA,$AA,$F0,$01,$01
-                        DB              $01,$15,$25,$94,$25,$25,$25,$25,$34,$34,$58,$56,$56,$71,$71,$6E
+                        DB              $01,$15,$25,$41,$25,$25,$25,$25,$34,$34,$58,$56,$56,$71,$71,$6E
                         DB              $1F,$0C,$0C
 ASM_VOC_HASH3:         DB              $C4,$7C,$91,$57,$AD,$AC,$F4,$E4,$A2,$E5,$BA,$B6,$A3,$FA,$04,$E4
                         DB              $F4,$56,$5B,$50,$49,$8D,$47,$48,$36,$35,$47,$60,$61,$25,$29,$AF
                         DB              $76,$C3,$B0,$A5,$EB,$D4,$D5,$48,$1A,$E4,$CD,$CC,$CD,$A7,$E0,$DE
                         DB              $8E,$9F,$A7,$A6,$F6,$E7,$DF,$DE,$B1,$6F,$89,$CC,$B2,$35,$3E,$39
-                        DB              $44,$6F,$F8,$0D,$07,$0F,$10,$0D,$35,$36,$D5,$33,$29,$D2,$E4,$2E
+                        DB              $44,$6F,$F8,$A2,$07,$0F,$10,$0D,$35,$36,$D5,$33,$29,$D2,$E4,$2E
                         DB              $AF,$DD,$DC
 ASM_VOC_KIND_TAB:      DB              $03,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
                         DB              $01,$01,$01,$01,$01,$01,$01,$01,$02,$04,$01,$01,$01,$02,$02,$02
                         DB              $02,$01,$02,$02,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$02
                         DB              $01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
-                        DB              $01,$01,$01,$04,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
+                        DB              $01,$01,$01,$02,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
                         DB              $01,$03,$03
 
                         IF              ASM_RUNTIME_ONLY
