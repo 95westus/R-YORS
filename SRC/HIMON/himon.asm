@@ -216,6 +216,16 @@ MON_INIT_SERVICE_CHECKSUM_LOOP:
                         DEX
                         BPL             MON_INIT_SERVICE_CHECKSUM_LOOP
                         STA             HIM_SVC_CHECKSUM
+                        LDA             #<HIM_FLASH_INSTALL_COPY
+                        STA             HIM_SVC_FLASH_INSTALL_LO
+                        LDA             #>HIM_FLASH_INSTALL_COPY
+                        STA             HIM_SVC_FLASH_INSTALL_HI
+                        STZ             HIM_FLASH_SRC_LO
+                        STZ             HIM_FLASH_SRC_HI
+                        STZ             HIM_FLASH_DST_LO
+                        STZ             HIM_FLASH_DST_HI
+                        STZ             HIM_FLASH_LEN_LO
+                        STZ             HIM_FLASH_LEN_HI
                         RTS
 
 HIM_SVC_BOOT_TABLE:
@@ -2496,6 +2506,95 @@ L_FLASH_SET_PTR:
                         STA             CMDP_ADDR_LO
                         LDA             LOAD_DST_HI
                         STA             CMDP_ADDR_HI
+                        RTS
+
+HIM_FLASH_INSTALL_COPY:
+                        LDA             HIM_FLASH_LEN_LO
+                        ORA             HIM_FLASH_LEN_HI
+                        BEQ             HIM_FLASH_INSTALL_BAD_JMP
+                        LDA             HIM_FLASH_DST_HI
+                        CMP             #$80
+                        BCC             HIM_FLASH_INSTALL_BAD_JMP
+                        CMP             #$C0
+                        BCS             HIM_FLASH_INSTALL_BAD_JMP
+                        BRA             HIM_FLASH_INSTALL_RANGE_START
+HIM_FLASH_INSTALL_BAD_JMP:
+                        JMP             HIM_FLASH_INSTALL_BAD
+HIM_FLASH_INSTALL_RANGE_START:
+                        LDA             HIM_FLASH_LEN_LO
+                        SEC
+                        SBC             #$01
+                        STA             LOAD_TMP_LO
+                        LDA             HIM_FLASH_LEN_HI
+                        SBC             #$00
+                        STA             LOAD_TMP_HI
+                        LDA             HIM_FLASH_DST_LO
+                        CLC
+                        ADC             LOAD_TMP_LO
+                        STA             LOAD_LAST_LO
+                        LDA             HIM_FLASH_DST_HI
+                        ADC             LOAD_TMP_HI
+                        BCS             HIM_FLASH_INSTALL_BAD_JMP
+                        CMP             #$C0
+                        BCS             HIM_FLASH_INSTALL_BAD_JMP
+                        LDA             HIM_FLASH_SRC_LO
+                        STA             CMDP_PTR_LO
+                        LDA             HIM_FLASH_SRC_HI
+                        STA             CMDP_PTR_HI
+                        LDA             HIM_FLASH_DST_LO
+                        STA             LOAD_DST_LO
+                        LDA             HIM_FLASH_DST_HI
+                        STA             LOAD_DST_HI
+                        LDA             HIM_FLASH_LEN_LO
+                        STA             LOAD_LEN_LO
+                        LDA             HIM_FLASH_LEN_HI
+                        STA             LOAD_LEN_HI
+                        LDA             #$01
+                        STA             LOAD_FLASH_MODE
+                        STZ             LOAD_ABORT_MODE
+                        STZ             LOAD_SKIP_LO
+                        STZ             LOAD_SKIP_HI
+HIM_FLASH_INSTALL_LOOP:
+                        LDA             LOAD_LEN_LO
+                        ORA             LOAD_LEN_HI
+                        BEQ             HIM_FLASH_INSTALL_DONE
+                        LDY             #$00
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             CMD_IO_TMP
+                        JSR             L_FLASH_SET_PTR
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+                        CMP             #$FF
+                        BNE             HIM_FLASH_INSTALL_BAD
+                        LDA             CMD_IO_TMP
+                        LDX             LOAD_DST_LO
+                        LDY             LOAD_DST_HI
+                        JSR             FLASH_WRITE_BYTE_AXY
+                        BCC             HIM_FLASH_INSTALL_BAD
+                        JSR             L_FLASH_SET_PTR
+                        LDY             #$00
+                        LDA             (CMDP_ADDR_LO),Y
+                        CMP             CMD_IO_TMP
+                        BNE             HIM_FLASH_INSTALL_BAD
+                        INC             CMDP_PTR_LO
+                        BNE             HIM_FLASH_INSTALL_DST
+                        INC             CMDP_PTR_HI
+HIM_FLASH_INSTALL_DST:
+                        INC             LOAD_DST_LO
+                        BNE             HIM_FLASH_INSTALL_COUNT
+                        INC             LOAD_DST_HI
+HIM_FLASH_INSTALL_COUNT:
+                        DEC             LOAD_LEN_LO
+                        LDA             LOAD_LEN_LO
+                        CMP             #$FF
+                        BNE             HIM_FLASH_INSTALL_LOOP
+                        DEC             LOAD_LEN_HI
+                        BRA             HIM_FLASH_INSTALL_LOOP
+HIM_FLASH_INSTALL_DONE:
+                        SEC
+                        RTS
+HIM_FLASH_INSTALL_BAD:
+                        CLC
                         RTS
 
 L_NOTE_S1_ADDR:

@@ -213,6 +213,7 @@ RELOCATE addr    copy body to RAM addr and patch internal relocation rows
 PACKAGE addr     write AP v1 package envelope at RAM addr
 LOAD pkg dest    copy AP BODY to RAM and apply internal relocation rows only
 INSTALL pkg      suggest an erased visible flash hole for the AP envelope
+INSTALL pkg addr copy AP envelope unchanged to an erased visible flash hole
 CHECK addr       validate AP v1 package envelope at RAM addr in diagnostic builds
 NEW              reopen ASM at the frozen END PC
 .                return to HIMON
@@ -251,11 +252,12 @@ package sources, this first slice requires the loaded BODY destination to end
 before the AP envelope begins, avoiding overlapping forward copies without a
 larger resident mover.
 
-`INSTALL pkg` is currently read-only advisory. It parses enough AP length
-information to find the first erased contiguous visible flash hole in
-`$8000-$FEFF` large enough for the unchanged envelope and prints that suggested
-address/length. It does not write flash. The future `INSTALL pkg flash_addr`
-banked-write form remains parked until banks 0-2 are functional.
+`INSTALL pkg` parses enough AP length information to find the first erased
+contiguous visible flash hole in `$8000-$FEFF` large enough for the unchanged
+envelope and prints that suggested address/length. `INSTALL pkg flash_addr`
+copies the unchanged AP envelope to an erased visible low-flash hole through
+HIMON's flash-install service. Banked install across banks 0-2 remains parked
+until those banks are functional.
 
 Naming note: `RESIB` is a candidate informal package nickname using the same
 section initials as `Relocation`, `Export`, `Seal`, `Import`, and `Body`.

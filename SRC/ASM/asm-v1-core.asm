@@ -43,6 +43,9 @@
                         XDEF            ASM_SEAL_PACKAGE
                         XDEF            ASM_PACKAGE_LOAD
                         XDEF            ASM_PACKAGE_INSTALL_SUGGEST
+                        IF              ASM_FLASH_RUNTIME
+                        XDEF            ASM_PACKAGE_PARSE_MIN
+                        ENDIF
                         IF              ASM_PACKAGE_CHECK_ENABLED
                         XDEF            ASM_SEAL_CHECK_PACKAGE
                         ENDIF
@@ -15802,6 +15805,10 @@ ASM_SEAL_COMPUTE_FNV_OK:
                         SEC
                         RTS
 
+                        IF              ASM_FLASH_RUNTIME
+ASM_SEAL_PRINT_RECORD:
+                        RTS
+                        ELSE
 ASM_SEAL_PRINT_RECORD:
                         LDX             #<ASM_SEAL_MSG_OK
                         LDY             #>ASM_SEAL_MSG_OK
@@ -15903,6 +15910,7 @@ ASM_SEAL_PRINT_NAMED_REC:
                         LDA             #$00
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JMP             ASM_RJ_PRINT_CRLF
+                        ENDIF
 
 ASM_SEAL_CLEAR:
                         LDX             #(ASM_RELOC_COUNT-ASM_SEAL_REC)
@@ -16992,6 +17000,8 @@ ASM_REPORT_MSG_USED_REFS:
 ASM_REPORT_MSG_USED_FIRST:
                         DB              " FIRST=",('$'+$80)
                         ENDIF
+                        IF              ASM_FLASH_RUNTIME
+                        ELSE
 ASM_SEAL_MSG_OK:       DB              "SEAL OK FLAGS=",('$'+$80)
 ASM_SEAL_MSG_BASE:     DB              " BASE=",('$'+$80)
 ASM_SEAL_MSG_END:      DB              " END=",('$'+$80)
@@ -17002,6 +17012,7 @@ ASM_SEAL_MSG_REL:      DB              "SEAL REL @=",('$'+$80)
 ASM_SEAL_MSG_EXP:      DB              "SEAL EXP @=",('$'+$80)
 ASM_SEAL_MSG_IMP:      DB              "SEAL IMP @=",('$'+$80)
 ASM_SEAL_MSG_COUNT:    DB              " COUNT=",('$'+$80)
+                        ENDIF
                         IF              ASM_RUNTIME_ONLY
                         ELSE
 ASM_SMOKE_LINE_LONG:

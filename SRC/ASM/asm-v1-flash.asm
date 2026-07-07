@@ -16,11 +16,11 @@
                         XREF            ASM_BEGIN
                         XREF            ASM_ASSEMBLE_LINE
                         XREF            ASM_SEAL_COMPUTE_FNV
-                        XREF            ASM_SEAL_PRINT_RECORD
                         XREF            ASM_SEAL_RELOCATE
                         XREF            ASM_SEAL_PACKAGE
                         XREF            ASM_PACKAGE_LOAD
                         XREF            ASM_PACKAGE_INSTALL_SUGGEST
+                        XREF            ASM_PACKAGE_PARSE_MIN
                         IF              ASM_PACKAGE_CHECK_ENABLED
                         XREF            ASM_SEAL_CHECK_PACKAGE
                         ENDIF
@@ -65,6 +65,15 @@ ASMF_STATUS_NAME_UNKNOWN EQU           $0C
 ; Borrow ASM scratch ZP only inside wrapper command matching.
 ASMF_CMD_PTR_LO        EQU             $84
 ASMF_CMD_PTR_HI        EQU             $85
+
+HIM_SVC_FLASH_INSTALL_LO EQU           $7E25
+HIM_SVC_FLASH_INSTALL_HI EQU           $7E26
+HIM_FLASH_SRC_LO       EQU             $7E27
+HIM_FLASH_SRC_HI       EQU             $7E28
+HIM_FLASH_DST_LO       EQU             $7E29
+HIM_FLASH_DST_HI       EQU             $7E2A
+HIM_FLASH_LEN_LO       EQU             $7E2B
+HIM_FLASH_LEN_HI       EQU             $7E2C
 
 ASMF_FNV_SIG2          EQU             $D6
 ASMF_KIND_EXEC_TEXT    EQU             $05
@@ -249,7 +258,9 @@ ASMF_SEAL_CMD:
                         JSR             ASMF_PRINT_SEAL_FLAGS_TAIL
                         JMP             ASMF_LOOP
 ASMF_SEAL_OK:
-                        JSR             ASM_SEAL_PRINT_RECORD
+                        LDX             #<MSG_SEAL_OK
+                        LDY             #>MSG_SEAL_OK
+                        JSR             ASMF_PRINT_LINE
                         JMP             ASMF_LOOP
 
 ASMF_RELOCATE_CMD:
@@ -359,8 +370,48 @@ ASMF_LOAD_OK:
                         JMP             ASMF_LOOP
 
 ASMF_INSTALL_CMD:
+                        JSR             ASMF_PARSE_TWO_ARGS
+                        BCS             ASMF_INSTALL_HAVE_TWO_ARGS
+                        LDX             ASMF_CMD_PTR_LO
+                        LDY             ASMF_CMD_PTR_HI
                         JSR             ASMF_PARSE_RELOCATE_ARG
                         BCS             ASMF_INSTALL_HAVE_ARG
+                        STA             ASMF_RESULT
+                        LDX             #<MSG_INSTALL_ERR
+                        LDY             #>MSG_INSTALL_ERR
+                        JSR             ASMF_PRINT_STATUS_NAMED_LINE
+                        JMP             ASMF_LOOP
+ASMF_INSTALL_HAVE_TWO_ARGS:
+                        LDA             ASMF_ARG1_LO
+                        STA             ASM_INSTALL_BASE_LO
+                        STA             HIM_FLASH_DST_LO
+                        LDA             ASMF_ARG1_HI
+                        STA             ASM_INSTALL_BASE_HI
+                        STA             HIM_FLASH_DST_HI
+                        LDA             ASMF_ARG0_LO
+                        STA             ASM_PACKAGE_BASE_LO
+                        LDA             ASMF_ARG0_HI
+                        STA             ASM_PACKAGE_BASE_HI
+                        LDX             ASMF_ARG0_LO
+                        LDY             ASMF_ARG0_HI
+                        JSR             ASM_PACKAGE_PARSE_MIN
+                        BCC             ASMF_INSTALL_FAIL_A
+                        LDA             ASM_PACKAGE_BASE_LO
+                        STA             HIM_FLASH_SRC_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        STA             HIM_FLASH_SRC_HI
+                        LDA             ASM_PACKAGE_LEN_LO
+                        STA             HIM_FLASH_LEN_LO
+                        LDA             ASM_PACKAGE_LEN_HI
+                        STA             HIM_FLASH_LEN_HI
+                        LDA             HIM_SVC_FLASH_INSTALL_HI
+                        CMP             #$C0
+                        BCC             ASMF_INSTALL_BAD_RANGE
+                        JSR             ASMF_FLASH_INSTALL
+                        BCS             ASMF_INSTALL_OK
+ASMF_INSTALL_BAD_RANGE:
+                        LDA             #ASMF_STATUS_BAD_RANGE
+ASMF_INSTALL_FAIL_A:
                         STA             ASMF_RESULT
                         LDX             #<MSG_INSTALL_ERR
                         LDY             #>MSG_INSTALL_ERR
@@ -498,6 +549,9 @@ ASMF_RETURN_WITH_A:
                         LDX             ASMF_PC_LO
                         LDY             ASMF_PC_HI
                         RTS
+
+ASMF_FLASH_INSTALL:
+                        JMP             (HIM_SVC_FLASH_INSTALL_LO)
 
 ASMF_ABORT_WITH_TABLES:
                         BRA             ASMF_RETURN_RESULT
@@ -758,6 +812,7 @@ MSG_READ:               DB              "READ=",('$'+$80)
 MSG_FAIL:               DB              "BEGIN=",('$'+$80)
 MSG_PC:                 DB              " PC=",('$'+$80)
 MSG_SEAL_ERR:           DB              "SEAL ERR=",('$'+$80)
+MSG_SEAL_OK:            DB              "SEAL O",('K'+$80)
 MSG_RELOCATE_ERR:       DB              "REL ERR=",('$'+$80)
 MSG_RELOCATE_OK:        DB              "REL OK BASE=",('$'+$80)
 MSG_RELOCATE_COUNT:     DB              " C=",('$'+$80)

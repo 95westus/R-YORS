@@ -88,12 +88,13 @@ prompt still owns a full session, and fixups may span lines until `END`.
 
 After a clean `END`, `SEAL> ` is not source mode. It accepts only the wrapper
 commands `SEAL`, `RELOCATE address`, `PACKAGE address`, `LOAD pkg dest`,
-`INSTALL pkg`, optional diagnostic `CHECK address`, `NEW`, and `.`. The default
-flash image omits interactive `RESOLVE`; imported packages are rejected by the
-first `LOAD` slice with `BAD FIX`. `NEW` is a validated restart at the frozen
-`END` PC, not a general `ORG` replacement and not a confirmation prompt. Before
-`END`, `SEAL`, `RELOCATE`, `PACKAGE`, `LOAD`, `INSTALL`, `NEW`, and the rest of
-that post-`END` vocabulary remain ordinary source words at the source prompt.
+`INSTALL pkg`, `INSTALL pkg flash_addr`, optional diagnostic `CHECK address`,
+`NEW`, and `.`. The default flash image omits interactive `RESOLVE`; imported
+packages are rejected by the first `LOAD` slice with `BAD FIX`. `NEW` is a
+validated restart at the frozen `END` PC, not a general `ORG` replacement and
+not a confirmation prompt. Before `END`, `SEAL`, `RELOCATE`, `PACKAGE`, `LOAD`,
+`INSTALL`, `NEW`, and the rest of that post-`END` vocabulary remain ordinary
+source words at the source prompt.
 The `.P` command is source-mode only; it is not a `SEAL> ` command. Default
 flash ASM does not print `ASM TABLES` automatically; use the external
 `asm-session-report-7000.s19` proof, or the flash-safe

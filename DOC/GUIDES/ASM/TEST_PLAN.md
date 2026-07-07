@@ -4143,6 +4143,14 @@ HB-string output. `$7E1C` holds an XOR checksum over `$7E02-$7E1B`; XOR over
 `$7E02-$7E1C` must be `$00`. `ASM_RJOIN_INIT` in the flash profile validates
 the block and copies the contiguous vector bytes into its local cache instead
 of resolving those services by FNV on every startup.
+
+Current HIMON also publishes a compatibility extension outside that checked
+block at `$7E25-$7E2C`: `$7E25/$7E26` hold the flash-install copy service, and
+`$7E27-$7E2C` are its source, destination, and length request cells. Keeping
+this outside the `$7E02-$7E1C` checksum preserves the original count `$0B`
+service block while allowing `INSTALL pkg flash_addr` to call back into HIMON's
+proven flash byte writer.
+
 The 2026-07-04 HB-string host proof ran `make -C SRC asm-test`,
 `make -C SRC himon-rom-bin`, and the focused `make -C SRC all`; the maps showed
 `asm-v1-flash-8000` ending at `_END_DATA=$BC72` with `$038E` below `$C000`,
@@ -8081,9 +8089,10 @@ headroom to $C000 >= $0200
 Current host proof produced:
 
 ```text
-asm-v1-flash headroom to C000 = 0212 (_END_DATA=BDEE)
+asm-v1-flash headroom to C000 = 02E5 (_END_DATA=BD1B)
 UDATA starts at $5000, ends at $6F16
-asm-session-report end = 74B1 (limit 7A00)
+asm-session-report end = 76D5 (limit 7A00)
+himon-rom-c000 _END_DATA=$E833
 ```
 
 Default flash `SEAL>` command surface for this slice:
@@ -8094,6 +8103,7 @@ RELOCATE addr
 PACKAGE addr
 LOAD pkg dest
 INSTALL pkg
+INSTALL pkg flash_addr
 NEW
 .
 ```
@@ -8102,6 +8112,14 @@ The old interactive `RESOLVE` command is compiled out of the default flash
 image to make room for `LOAD`/`INSTALL`. Import metadata can still be packaged,
 but `LOAD` rejects declared imports and `$04-$06` import relocation rows with
 `BAD FIX`.
+
+Default flash `SEAL` is now compact in this size slice: it computes the seal
+facts and prints `SEAL OK`, while detailed seal/export/import rows remain
+available through the external session reporter and non-flash proof builds.
+`INSTALL pkg` remains read-only advisory. `INSTALL pkg flash_addr` asks HIMON's
+optional `$7E25-$7E2C` flash-install service to copy the AP envelope unchanged
+from RAM to an already erased visible `$8000-$BFFF` hole, byte-verifying through
+the existing `L F` flash writer. Banked `$C000+` install remains future work.
 
 Board proof checklist:
 
@@ -8191,6 +8209,29 @@ INSTALL $3200
 
 Expected: `INST @=$hhhh L=$hhhh`, where `$hhhh` is the first erased visible
 flash hole in `$8000-$FEFF`. The command must not write flash.
+
+Install write proof:
+
+```text
+ASM NEW
+ORG $2000
+LDA #$5A
+RTS
+END
+PACKAGE $3200
+INSTALL $3200
+INSTALL $3200 $hhhh
+LOAD $hhhh $3000
+.
+G 3000
+```
+
+Use the advisory address from the preceding `INSTALL $3200` as `$hhhh`.
+Expected: `INSTALL $3200 $hhhh` reports `INST @=$hhhh L=$0023`, then
+`LOAD $hhhh $3000` reports `LOAD OK=$3000 L=$0003 C=$00`, and `G 3000` returns
+with `A=5A`. Negative checks: `INSTALL $3200 $C000` reports
+`INST ERR=$06 BAD RANGE`, and re-running `INSTALL $3200 $hhhh` against the
+now-written hole reports `INST ERR=$06 BAD RANGE`.
 
 External report proof:
 
@@ -8321,6 +8362,29 @@ G 3000      -> clean return, A=13 X=00 Y=30
 D BDEE BEED -> all $FF over the suggested install hole
 ```
 
+Follow-up board attempt on the write slice exposed two practical details:
+the one-argument advisory path was restored after the two-argument parser
+clobbered `Y`, and `SEAL>` operands are ASM expressions, so a flash address
+must be entered with a `$` prefix (the attempted bare `BD0B` was parsed as a
+symbol and reported `BS`).
+
+The next board run reached the service with the fixed wrapper:
+
+```text
+LF OK WR=3D0F GO=800C
+PACKAGE $3200           -> PKG OK @=$3200 L=$0023
+INSTALL $3200           -> INST @=$BD0F L=$0023
+INSTALL $3200 $BD0F     -> INST @=$BD0F L=$0023
+LOAD $BD0F $3000        -> LOAD ERR=$07 BL
+D BD0F BD31             -> all $FF
+```
+
+That proved the wrapper parser and `$` expression issue were fixed, but the
+HIMON install service falsely returned success without committing bytes. The
+follow-up host patch makes the two-argument wrapper set `ASM_PACKAGE_BASE`
+explicitly and makes `HIM_FLASH_INSTALL_COPY` write/verify each byte directly
+through `FLASH_WRITE_BYTE_AXY` instead of sharing the S19 loader write helper.
+
 The same pass proved the current import-package rejection path:
 
 ```text
@@ -8344,8 +8408,8 @@ PKG OK @=$3400 L=$0043
 LOAD ERR=$09 BAD FIX
 ```
 
-Host-built reporter board proof captured 2026-07-06 against the current compact
-format:
+Host-built reporter board proof captured 2026-07-06 against the then-current
+compact format:
 
 ```text
 L @7000                     -> L OK=06D5 GO=7000
@@ -8372,8 +8436,51 @@ RELOCS                      -> 00 01 0001 0003
 ASM REPORT OK
 ```
 
-The LOAD/INSTALL/report extraction slice is board-proven on the current
-`$3DEE` flash ASM image.
+The first flash-write board rerun showed why the write failed before calling
+the service: `D 7E1D 24` reported `01 3B 00 32 0F BD 23 00`, proving the
+temporary flash-install vector overlapped HIMON's `$7E1D/$7E1E` RX lookahead
+cells. The service block moved to `$7E25-$7E2C`.
+
+The repaired LOAD/INSTALL/report extraction slice is board-proven on the
+`$3D1B` flash ASM image with HIMON `V 00.0706(1928)`:
+
+```text
+D 7E25 2C                  -> DD D5 00 00 00 00 00 00
+L F                         -> LF OK WR=3D1B GO=800C
+PACKAGE $3200               -> PKG OK @=$3200 L=$0023
+INSTALL $3200               -> INST @=$BD1B L=$0023
+INSTALL $3200 $BD1B         -> INST @=$BD1B L=$0023
+LOAD $BD1B $3000            -> LOAD OK=$3000 L=$0003 C=$00
+D BD1B BD3D                 -> AP envelope ending in A9 5A 60
+D 3000 3002                 -> A9 5A 60
+G 3000                      -> RET A=5A
+G 7000                      -> ASM REPORT OK, PKG @ LEN BODY INST BD1B 0023 0003 BD1B
+```
+
+Follow-up operator proof confirmed the command-mode rule for loading an
+installed AP envelope. Typing `LOAD $BD1B $3800` at the `ASM>$2000:` source
+prompt returns `ERR=$01 BM`; entering an empty `ASM NEW` / `END` session reaches
+`SEAL>`, where the same load succeeds:
+
+```text
+ASM NEW / END
+SEAL> LOAD $BD1B $3800     -> LOAD OK=$3800 L=$0003 C=$00
+SEAL> D 3800 FF            -> ERR=$03 BO
+D 3800 FF                  -> A9 5A 60 ...
+G 3800                     -> RET A=5A
+```
+
+The same board run confirmed occupied-hole and explicit-address behavior after
+the first package was installed at `$BD1B`:
+
+```text
+INSTALL $3200              -> INST @=$BD3E L=$0023
+INSTALL $3200 $BD1B        -> INST ERR=$06 BAD RANGE
+INSTALL $3200 $BDE0        -> INST @=$BDE0 L=$0023
+LOAD $BDE0 $3A12           -> LOAD OK=$3A12 L=$0003 C=$00
+G 7000                     -> ASM REPORT OK, PKG @ LEN BODY INST BDE0 0023 0003 BDE0
+D BD00 FF                  -> second AP envelope starts at BDE0 and continues past BDFF
+```
 
 ## Hardware Bench Gate
 

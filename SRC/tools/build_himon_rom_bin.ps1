@@ -149,5 +149,5 @@ Write-Host ("BIN                 = {0}" -f $BinPath)
 
 # Cleanup helper vector blob after successful BIN generation/validation.
 if (Test-Path -LiteralPath $TmpVecPath) {
-    Remove-Item -LiteralPath $TmpVecPath -Force
+    Remove-Item -LiteralPath $TmpVecPath -Force -ErrorAction SilentlyContinue
 }

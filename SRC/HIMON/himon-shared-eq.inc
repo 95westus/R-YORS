@@ -87,6 +87,14 @@ HIM_SVC_UPPER_HI           EQU             $7E19
 HIM_SVC_WRITE_HBSTRING_LO  EQU             $7E1A
 HIM_SVC_WRITE_HBSTRING_HI  EQU             $7E1B
 HIM_SVC_CHECKSUM           EQU             $7E1C
+HIM_SVC_FLASH_INSTALL_LO   EQU             $7E25
+HIM_SVC_FLASH_INSTALL_HI   EQU             $7E26
+HIM_FLASH_SRC_LO           EQU             $7E27
+HIM_FLASH_SRC_HI           EQU             $7E28
+HIM_FLASH_DST_LO           EQU             $7E29
+HIM_FLASH_DST_HI           EQU             $7E2A
+HIM_FLASH_LEN_LO           EQU             $7E2B
+HIM_FLASH_LEN_HI           EQU             $7E2C
 
 HIM_SVC_SIG0_VAL           EQU             'R'
 HIM_SVC_SIG1_VAL           EQU             'Y'
@@ -99,7 +107,10 @@ HIM_SVC_VECTOR_COUNT       EQU             $0B
 ; 7E page map:
 ; - $7E00-$7E01 resident published RJOIN addr16
 ; - $7E02-$7E1C resident service vector block + checksum
-; - $7E1D-$7E45 free buffer spill/scratch after page buffers
+; - $7E1D-$7E1E HIMON RX lookahead cells
+; - $7E1F-$7E24 free buffer spill/scratch after page buffers
+; - $7E25-$7E2C optional flash-install service vector/request cells
+; - $7E2D-$7E45 free buffer spill/scratch after page buffers
 ; - $7E46-$7E65 debugger/assembler workspace
 ; - $7E66-$7E75 hash record/exec metadata
 ; - $7E76-$7E94 command/parser/keytest workspace

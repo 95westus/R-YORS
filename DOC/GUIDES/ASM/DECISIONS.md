@@ -559,10 +559,11 @@ A [addr] [label[:]] MMM [operand] .
   RAM package sources in this slice, the destination BODY must end before the AP
   envelope begins; this conservative rule avoids self-overwriting copies while
   keeping the resident loader small.
-- `SEAL> INSTALL pkg` is advisory only in this slice. It finds the first erased
-  contiguous visible flash hole in `$8000-$FEFF` large enough for the unchanged
-  AP envelope and prints the suggestion. The write form waits for banks 0-2
-  access/runability.
+- `SEAL> INSTALL pkg` finds the first erased contiguous visible flash hole in
+  `$8000-$FEFF` large enough for the unchanged AP envelope and prints the
+  suggestion. `SEAL> INSTALL pkg flash_addr` is the first low-flash write
+  slice: it copies the AP envelope unchanged through HIMON's flash-install
+  service. Banked banks 0-2 install/runability remains deferred.
 - The HREC/RJOIN `K` byte is kind metadata, not install lifecycle state. Current
   resident records define `K` in source with bits for executable, confirmation,
   and text/metadata. Future AP package/catalog kind should come from explicit

@@ -15,6 +15,87 @@ The current flash image is loaded at `$8000` and enters through the HIMON
 FNV/RJOIN catalog. It starts new source sessions at `$2000` unless source uses
 `ORG`.
 
+## Current Operational Process
+
+Build the current board artifacts on the host:
+
+```text
+make -C SRC himon
+make -C SRC asm-v1-flash
+make -C SRC asm-session-report
+```
+
+On the board, update HIMON through STR8 when needed, then return with
+`G HIMON`. Load the optional external reporter first if table detail will be
+needed later:
+
+```text
+L              send SRC/BUILD/s19/asm-session-report-7000.s19
+```
+
+Load flash-resident ASM into the visible low-flash window:
+
+```text
+L F            send SRC/BUILD/s19/asm-v1-flash-8000.s19
+```
+
+The current flash image should report `LF OK WR=3D1B GO=800C`. A useful service
+sanity check after updating HIMON is:
+
+```text
+D 7E25 2C      expect DD D5 00 00 00 00 00 00 on HIMON V 00.0706(1928)
+```
+
+The prompt text below shows where each line is typed; do not paste the prompt
+characters. A normal assemble, package, install, load, and run session looks
+like this:
+
+```text
+>ASM NEW
+ASM>$2000: ORG $2000
+ASM>$2000: LDA #$5A
+ASM>$2002: RTS
+ASM>$2003: END
+SEAL> PACKAGE $3200
+SEAL> INSTALL $3200
+SEAL> INSTALL $3200 $BD1B
+SEAL> LOAD $BD1B $3000
+SEAL> .
+>D 3000 3002
+>G 3000
+```
+
+Use the address printed by `INSTALL $3200`; `$BD1B` is the current board-proven
+hole only for the present `$3D1B` flash ASM image. `INSTALL pkg` is advisory and
+does not write. `INSTALL pkg flash_addr` writes the unchanged AP envelope to an
+erased visible low-flash hole. In a memory dump, the installed package begins
+at the `AP` signature, for example `$BD1B`, not at an earlier row boundary such
+as `$BD10`. If that hole is already occupied, `INSTALL pkg` suggests the next
+erased hole, and an explicit install to the occupied address reports
+`INST ERR=$06 BAD RANGE`.
+
+To load an already-installed package later, enter an empty source session just
+to reach `SEAL>`:
+
+```text
+>ASM NEW
+ASM>$2000: END
+SEAL> LOAD $BD1B $3800
+SEAL> .
+>G 3800
+```
+
+Prompt ownership matters:
+
+```text
+ASM>$hhhh:   source lines only
+SEAL>        SEAL, RELOCATE, PACKAGE, LOAD, INSTALL, NEW, .
+>            HIMON commands such as D, G, L, #, STR8
+```
+
+For example, `D 3800 FF` at `SEAL>` reports `ERR=$03 BO`; exit with `.` and run
+the dump at HIMON's `>` prompt.
+
 ## Starting And Leaving
 
 From HIMON:
@@ -399,6 +480,18 @@ copies the BODY to RAM, and applies internal relocation rows only:
 LOAD $3200 $3000
 ```
 
+`LOAD` is a post-`END` `SEAL>` command, not an ASM source line. To load an
+already-installed flash package without assembling new code, open an empty
+session and immediately end it:
+
+```text
+>ASM NEW
+ASM>$2000: END
+SEAL> LOAD $BD1B $3800
+SEAL> .
+>G 3800
+```
+
 Success shape:
 
 ```text
@@ -412,7 +505,7 @@ deferred. Declared imports and `$04-$06` import relocation rows fail with
 place the package envelope above the destination BODY; flash ASM rejects RAM
 loads whose destination reaches into the package envelope.
 
-`INSTALL pkg` is read-only advisory in this slice:
+The one-argument `INSTALL pkg` form is read-only advisory:
 
 ```text
 INSTALL $3200
@@ -426,8 +519,13 @@ INST @=$hhhh L=$hhhh
 
 It parses enough AP header/length information to find the first erased
 contiguous visible flash hole in `$8000-$FEFF` large enough for the whole
-envelope. It does not write flash. `INSTALL pkg flash_addr` remains a future
-banked-write form and is rejected by the default flash image for now.
+envelope. `INSTALL pkg flash_addr` writes the unchanged AP envelope to an erased
+visible low-flash hole through HIMON's install service. Both operands are ASM
+expressions, so use `$` on literal hex addresses:
+
+```text
+INSTALL $3200 $hhhh
+```
 
 `CHECK address` exists only in full-core or package-check diagnostic builds.
 It is intentionally omitted from the default flash-resident ASM image to keep
@@ -625,7 +723,8 @@ Known limitations:
 - No default flash-image `CHECK` command.
 - No default flash-image `RESOLVE` command; imported packages are packaged but
   not loadable by the first `LOAD` slice.
-- `INSTALL` is advisory only and does not write flash yet.
+- `INSTALL pkg flash_addr` writes only erased currently visible low flash;
+  banked install across banks 0-2 is not implemented yet.
 - `LOAD` does minimal AP parsing and internal relocation only; no full AP FNV
   validation or import resolution yet.
 - Local labels are not exported, imported, or reported as public symbols.

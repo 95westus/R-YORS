@@ -1016,9 +1016,9 @@ $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_SRC)
 	@if not exist $(subst /,\,$(LST_DIR)) mkdir $(subst /,\,$(LST_DIR))
 	@if not exist $(subst /,\,$(SYM_DIR)) mkdir $(subst /,\,$(SYM_DIR))
 	$(ASM) $(ASFLAGS) $<
-	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
-	@if exist $(subst /,\,$(<:.asm=.lst)) move /Y $(subst /,\,$(<:.asm=.lst)) $(subst /,\,$(LST_DIR)/$(@F:.obj=.lst))
-	@if exist $(subst /,\,$(<:.asm=.sym)) move /Y $(subst /,\,$(<:.asm=.sym)) $(subst /,\,$(SYM_DIR)/$(@F:.obj=.sym))
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(subst /,\,$(<:.asm=.obj))') { Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force }"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(subst /,\,$(<:.asm=.lst))') { Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.lst))' -Destination '$(subst /,\,$(LST_DIR)/$(@F:.obj=.lst))' -Force }"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(subst /,\,$(<:.asm=.sym))') { Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.sym))' -Destination '$(subst /,\,$(SYM_DIR)/$(@F:.obj=.sym))' -Force }"
 
 $(OBJ_DIR)/%.obj: %.asm
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))

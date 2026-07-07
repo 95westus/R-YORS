@@ -5173,6 +5173,7 @@ RELOCATE addr    copy body to RAM addr and patch internal relocation rows
 PACKAGE addr     write AP v1 package envelope at RAM addr
 LOAD pkg dest    copy AP BODY to RAM and apply internal relocation rows only
 INSTALL pkg      suggest an erased visible flash hole for the AP envelope
+INSTALL pkg addr copy AP envelope unchanged to an erased visible flash hole
 CHECK addr       validate AP v1 package envelope at RAM addr in diagnostic builds
 NEW              start a fresh ASM session at the frozen END PC
 .                exit the wrapper
@@ -5211,10 +5212,11 @@ minimal AP parse, not full `CHECK` validation, and rejects declared imports or
 import relocation rows with `BAD FIX`.
 
 `INSTALL pkg` is valid only in the post-`END` `SEAL> ` window for the default
-flash image. It is read-only advisory: parse AP length, find the first erased
-contiguous visible flash hole in `$8000-$FEFF`, and print the suggested address
-and length. It does not write flash; `INSTALL pkg flash_addr` waits for banked
-flash support.
+flash image. The one-argument form parses AP length, finds the first erased
+contiguous visible flash hole in `$8000-$FEFF`, and prints the suggested address
+and length. `INSTALL pkg flash_addr` copies the unchanged AP envelope into an
+erased visible low-flash hole through HIMON's flash-install service; banked
+flash install remains future work.
 
 `CHECK address` is the matching AP v1 envelope validator. It is enabled in
 full-core smoke and optional diagnostic builds, and omitted from the stripped

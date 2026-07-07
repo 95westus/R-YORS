@@ -362,6 +362,49 @@ On the board:
 `L` clears active debug patches before accepting new S-records. Set
 breakpoints after loading the image they belong to.
 
+## Flash ASM Package Loop
+
+The current flash-resident ASM workflow uses three command layers:
+
+```text
+>            HIMON monitor commands
+ASM>$hhhh:   ASM source lines
+SEAL>        post-END package/load/install commands
+```
+
+Typical setup:
+
+```text
+>L              send SRC/BUILD/s19/asm-session-report-7000.s19 if reports are needed
+>L F            send SRC/BUILD/s19/asm-v1-flash-8000.s19
+>ASM
+```
+
+Typical package/install/load proof:
+
+```text
+ASM>$2000: ORG $2000
+ASM>$2000: LDA #$5A
+ASM>$2002: RTS
+ASM>$2003: END
+SEAL> PACKAGE $3200
+SEAL> INSTALL $3200
+SEAL> INSTALL $3200 $BD1B
+SEAL> LOAD $BD1B $3000
+SEAL> .
+>D 3000 3002
+>G 3000
+```
+
+Use the address printed by `INSTALL $3200`; `$BD1B` is the current
+board-proven hole for the present `$3D1B` flash ASM image. `INSTALL pkg` only
+suggests a hole. `INSTALL pkg flash_addr` writes the AP envelope to erased
+visible low flash. If that hole is occupied, `INSTALL pkg` suggests the next
+hole, and explicit overwrite attempts report `INST ERR=$06 BAD RANGE`. To load
+an installed package in a later session, enter `ASM NEW`, type `END`, run
+`LOAD $addr $dest` at `SEAL>`, exit with `.`, then run the destination from
+HIMON with `G`.
+
 ## HIMON Debug Notes
 
 RAM debug patching is limited to `$2000-$77FF`. If a breakpoint or step tries
