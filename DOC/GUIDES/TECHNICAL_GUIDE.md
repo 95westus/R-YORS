@@ -242,12 +242,19 @@ restores Bank 3 before returning to resident STR8
 Current RAM workspace:
 
 ```text
-$0200-$09FF   2K RAM flash worker/RJOIN code tray, STR8 copied from $FD1E-$FFEF at exact worker length
-$0A00-$19FF   4K flash sector mirror / update image tray
-$1A00-$1FE8   RJOIN/debug trace and reserved low-RAM scratch
+$0200-$09FF   flash worker tray, STR8 copied from $FD1E-$FFEF at exact worker length
+$0A00-$19FF   sector staging buffer
+$1A00-$1FE8   RJOIN/link scratch and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map bytes
-$4000-$4FFF   4K sector buffer for bank copy
-$4000-$6FFF   staged C/D/E sector buffers during U
+$2000-$4FFF   current AP/member load and run area
+$4000-$4FFF   current STR8 high-RAM sector buffer for bank copy
+$4000-$6FFF   current staged C/D/E sector buffers during U
+```
+
+Banked AP flow keeps storage and execution separate:
+
+```text
+bank N package -> $0A00 sector staging buffer -> AP load dst -> run dst
 ```
 
 `M` is read-only from the operator's point of view, but still uses the worker

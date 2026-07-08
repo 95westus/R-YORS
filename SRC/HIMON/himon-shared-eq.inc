@@ -346,8 +346,9 @@ FREE_BUF_END               EQU             $7DBF
 
 ; keep reserved:
 ; - $0200-$09FF 2K RAM flash worker/RJOIN code tray
-; - $0A00-$19FF 4K flash sector mirror / update image tray
-; - $1A00-$1FE8 RJOIN/debug trace and reserved low-RAM scratch
+; - $0A00-$19FF 4K sector staging buffer:
+;                  flash-sector mirror/update image or retained AP package
+; - $1A00-$1FE8 RJOIN/link debug trace and reserved low-RAM scratch
 ; - $1FE9-$1FFF STR8 worker/update state board
 ; - UPA_BASE-UPA_END user program area
 ; - MON_WORK_BASE-MON_WORK_END monitor workspace before SYS_IO_BASE-SYS_IO_END

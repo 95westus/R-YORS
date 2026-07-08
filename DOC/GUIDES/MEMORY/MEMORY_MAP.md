@@ -167,11 +167,11 @@ $00E6-$00E7   shared utility temp/scratch bytes
 $00E8-$00EF   shared pointer/length/flags/mode lane for FTDI/SYS/string helpers
 $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
-$0200-$09FF   2K RAM flash worker/RJOIN code tray
-$0A00-$19FF   4K flash sector mirror / update image tray
-$1A00-$1FE8   RJOIN/debug trace and reserved low-RAM scratch
+$0200-$09FF   flash worker/RJOIN code tray
+$0A00-$19FF   4K sector staging buffer
+$1A00-$1FE8   RJOIN/link debug trace and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map-result bytes
-$2000-$79FF   UPA, user program area; debug patchable RAM
+$2000-$79FF   UPA, user program area; current AP load/run range is $2000-$4FFF
 $7A00-$7AFF   command buffer
 $7B00-$7DBF   free scratch region; released from stale scratch/FNV input/loader ownership
 $7DC0-$7DFF   search pattern buffer
@@ -197,6 +197,12 @@ $7EF8-$7EFF   RAM vectors
 $7F00-$7FFF   I/O window
 ```
 
+The `$0A00-$19FF` sector staging buffer is retained staging, not an execution
+region. It can hold a complete flash-sector mirror/update image or a banked AP
+package envelope copied from banks 0-2. AP BODY bytes execute only after the AP
+loader relocates/links them into the requested load address, currently inside
+`$2000-$4FFF`.
+
 The UPA is also the natural first tray for future RREC-loaded commands. A
 CP/M-like convention such as `LOAD @6000 <hash>` can copy a banked RREC payload
 into RAM, apply relocation/fixups there, restore the normal flash bank, then run
@@ -221,11 +227,13 @@ $7FE0-$7FFF   FTDI VIA
 ```
 
 During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 owns the
-`$0200-$09FF` RAM worker-code tray and `$4000-$4FFF` 4K sector staging buffer.
-The current worker copy is exact-length inside that tray, but normal HIMON/user
-code should treat the whole tray as volatile while STR8 is performing flash
-work. During `U`, STR8 also uses `$5000-$6FFF` so it can stage all three HIMON
-sectors before the first erase.
+`$0200-$09FF` flash worker tray and the current high-RAM `$4000-$4FFF` sector
+buffer used by those implemented paths. The current worker copy is exact-length
+inside that tray, but normal HIMON/user code should treat the whole tray as
+volatile while STR8 is performing flash work. During `U`, STR8 also uses
+`$5000-$6FFF` so it can stage all three HIMON sectors before the first erase.
+The agreed low-RAM sector staging buffer name is `$0A00-$19FF`; consolidating
+older high-RAM staging into that buffer is future implementation work.
 
 STR8 also uses fixed low-RAM bytes `$1FE9-$1FFF` for bank/sector copy state,
 failure address reporting, startup flags, update state, and the `M` command's

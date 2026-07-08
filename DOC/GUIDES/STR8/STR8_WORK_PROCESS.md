@@ -245,12 +245,18 @@ body execution base   where the BODY bytes will run
 catalog status        whether write, verify, validation, and commit happened
 ```
 
+For the banked AP direction, the retained RAM envelope location is the
+`$0A00-$19FF` sector staging buffer. That buffer can hold a complete 4K
+flash-sector image or one banked AP package envelope copied from banks 0-2. It
+is staging only; AP BODY bytes run from the requested load address after
+relocation/linking.
+
 Moving the envelope does not require relocation. Loading or installing the BODY
 to execute at a different base does require relocation through the package REL
 section. A future loader can copy an installed package back to RAM as an
-envelope, load the BODY into RAM for execution, stage it through the STR8 flash
-tray, or create a relocated executable flash artifact, but those are distinct
-operations. The banked AP overlay-call proposal is parked in
+envelope, retain that envelope in the sector staging buffer, load the BODY into
+RAM for execution, or create a relocated executable flash artifact, but those
+are distinct operations. The banked AP overlay-call proposal is parked in
 `DOC/GUIDES/QCC/STR8.md` until it becomes implementation work.
 
 Use a flash lifecycle/status byte separate from the HREC/RJOIN `K` kind byte.
@@ -339,19 +345,19 @@ Do not add a mixed or raw-range S19 loader first. If a record lands outside the
 selected gate, the operation aborts before erase.
 
 After the current ASM flash-wrapper work settles, the next STR8 staging
-change should move the 4K sector buffer down into STR8-owned low RAM. Treat
-`$0900-$19FF` as reserved for flash work, using `$0900-$18FF` as the active
-4K sector image and `$1900-$19FF` as slack/control space. The worker still
-runs from `$0200-$08FF`, and the existing `$1FE9-$1FFF` worker/update board
-remains separate.
+change should move the 4K sector buffer down into STR8-owned low RAM. The older
+`$0900-$18FF` active-image sketch is superseded/deferred; the agreed low-RAM
+sector staging buffer is `$0A00-$19FF`, immediately after the `$0200-$09FF`
+flash worker tray. The existing `$1FE9-$1FFF` worker/update board remains
+separate.
 
 That change would free `$4000-$6FFF` from STR8 update staging. Ordinary bank
-copy can still stage one 4K sector at a time. HIMON update should become a
-sector-streaming operation: fill the low 4K image for `$C000`, erase/write/
-verify `$C000`, then repeat for `$D000` and `$E000`. This trades the current
-"validate the whole C/D/E S19 before burn" shape for lower RAM pressure; keep
-the `$C000-$EFFF` gate, record checksum checks, confirmation, and STR8 recovery
-path intact.
+copy can still stage one 4K sector at a time in the sector staging buffer.
+HIMON update should become a sector-streaming operation: fill the low 4K image
+for `$C000`, erase/write/verify `$C000`, then repeat for `$D000` and `$E000`.
+This trades the current "validate the whole C/D/E S19 before burn" shape for
+lower RAM pressure; keep the `$C000-$EFFF` gate, record checksum checks,
+confirmation, and STR8 recovery path intact.
 
 The 2026-05-17 fig-Forth and OSI BASIC bench passes proved that this same gate
 can install different `$C000-$EFFF` payloads while leaving STR8 alive in the top

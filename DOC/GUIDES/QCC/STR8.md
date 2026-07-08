@@ -851,9 +851,10 @@ to relocate them.
 
 Comment: Yes, as a future banked overlay-call proposal. A RAM program could
 call a small AP loader stub, identify an installed AP v1 package in bank 2 or
-another managed flash location, copy that package BODY into a RAM work area,
-relocate it for that RAM base, resolve any imports, call the relocated entry,
-then return to the caller's next RAM instruction.
+another managed flash location, copy the package envelope into the
+`$0A00-$19FF` sector staging buffer, relocate its BODY for the requested RAM
+load address, resolve any imports, call the relocated entry, then return to the
+caller's next RAM instruction.
 
 The caller-facing shape could be:
 
@@ -868,13 +869,13 @@ RAM caller
 
 ```text
 save caller state required by the AP_CALL contract
-map/read the package bank or flash window
-copy AP BODY to the destination RAM work area
+flash worker tray selects/copies banked bytes
+sector staging buffer retains the AP envelope
 restore normal HIMON/STR8 bank visibility before ROM/HIMON calls
 validate package when the validator exists
-relocate BODY for the RAM work-area base
+AP loader relocates/links BODY into requested load address
 resolve imports against current resident services or catalog records
-JSR relocated_entry
+code runs from requested load address
 restore caller state required by the contract
 RTS to the original RAM caller
 ```
@@ -892,7 +893,7 @@ IN   destination RAM base and limit
 IN   entry selector: default entry or named export
 OUT  C=1 success, A=package return code or loader status
 OUT  C=0 failure, A=loader error
-MEM  AP_CALL uses a declared RAM work area and loader scratch
+MEM  AP_CALL uses the sector staging buffer, requested load area, and loader scratch
 ```
 
 A useful first overlay profile is a one-sector executable BODY:
