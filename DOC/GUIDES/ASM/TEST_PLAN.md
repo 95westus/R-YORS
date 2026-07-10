@@ -8,6 +8,9 @@ The plan follows the ASM course map. Early tests prove the source contract and
 routine contracts before ASM can assemble real code. Later tests compare emitted
 bytes and fixup behavior.
 
+In this plan, OIL means **Overlay Integration Layer**. Historical gate headings
+retain the acronym used in their board transcripts.
+
 ## Test Rule
 
 Test the test before trusting the assembler.

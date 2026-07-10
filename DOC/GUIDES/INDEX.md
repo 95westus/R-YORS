@@ -56,8 +56,8 @@ RELOCATE, and AP v1 PACKAGE flows.
 - [QCC](QCC/INDEX.md) - Questions, Comments, Concerns working notes.
 - [LOGS](LOGS/HARDWARE_TEST_LOG.md) - hardware transcript proof.
 - [STORY](STORY/BOOK.md) - book spine and historical narrative.
-- [PLANNING](PLANNING/TODO.md) - TODO, future direction, and
-  [OIL .710 test plan](PLANNING/OIL_710_TEST_PLAN.md), plus the
+- [PLANNING](PLANNING/TODO.md) - TODO, future direction, and the
+  [Overlay Integration Layer .710 test plan](PLANNING/OIL_710_TEST_PLAN.md), plus the
   [historical code migration plan](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
 - [META](META/XREF.md) - bibliography and cross-reference.
 
@@ -69,8 +69,8 @@ the main operator/technical path.
 - [STORY/BOOK.md](STORY/BOOK.md) - manuscript spine.
 - [STORY/HISTORICAL_DOCUMENTS.md](STORY/HISTORICAL_DOCUMENTS.md) - lineage.
 - [TODO.md](PLANNING/TODO.md) - near-term work.
-- [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` OIL
-  on-board intensive test plan and size review.
+- [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` Overlay
+  Integration Layer board-test plan and size review.
 - [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - archive plan for retired sample,
   test, proof, demo, and one-off code/data.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.

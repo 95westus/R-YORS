@@ -53,8 +53,8 @@ board:
 ## Planning
 
 - [TODO.md](PLANNING/TODO.md) - near-term work.
-- [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` OIL on-board
-  intensive test rail and size-review recommendations.
+- [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` Overlay
+  Integration Layer board-test rail and size-review recommendations.
 - [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - plan for moving retired samples,
   tests, proofs, apps, and data into `SRC/ARCHIVE/`.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.

@@ -16,6 +16,23 @@ HIMON/himon-shared-eq.inc
 Direct `JSR` and `JMP` edges are the hard evidence. Some package-to-package
 arrows below are summaries so the map is readable.
 
+## OIL Subsystem Boundary
+
+OIL means **Overlay Integration Layer**. This top-level view keeps the runtime
+contract visible; the routine-level edge evidence remains below.
+
+```mermaid
+flowchart LR
+    ASM[ASM] --> AP[AP Object]
+    STORE[RAM / Visible Flash / Banked Flash] --> OIL[OIL]
+    AP --> STORE
+    HIMON[HIMON] --> OIL
+    OIL --> LOAD[Load / Relocate]
+    OIL --> STR8[STR8 Bank Services]
+    OIL --> RJOIN[Resident Imports]
+    LOAD --> RUN[Execution]
+```
+
 ## Edge Map
 
 ### Boot, Vectors, And Main Loop

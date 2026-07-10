@@ -37,6 +37,14 @@ HIMON
   owns ordinary inspection, loading, debug, disassembly, assembler direction,
   and current hash/catalog workbench behavior
 
+ASM
+  onboard assembler and AP object producer
+
+OIL
+  Overlay Integration Layer
+  carries AP objects from storage through load, relocation, resident-import
+  integration, and execution
+
 THE
   future hash/catalog resolver environment
   not the boot safety layer and not arbitrary command execution
@@ -52,6 +60,7 @@ R-YORS boots through STR8.
 STR8 keeps recovery/update safe.
 STR8 hands normal operation to HIMON or another payload.
 HIMON provides the default monitor/debug/catalog workbench.
+ASM creates AP objects; OIL integrates and runs them.
 ```
 
 ## Reader Paths
@@ -160,7 +169,7 @@ HASH/HASH.md                    FNV-era details and CRC16 pivot
 ASM/HASHED_ASM.md               assembler thesis and fixups
 ASM/ASM_CALL_MAP.md             renderable ASM routine-flow map
 ASM/ASM_SHARED_ROUTINES_AUDIT.md ASM/HIMON shared-helper audit
-PLANNING/OIL_710_TEST_PLAN.md .710 OIL board test rail and size review
+PLANNING/OIL_710_TEST_PLAN.md .710 Overlay Integration Layer board-test rail
 PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md retired code/data archive plan
 STORY/BOOK.md                   narrative manuscript spine
 STORY/HISTORICAL_DOCUMENTS.md   lineage and evidence map
@@ -170,44 +179,25 @@ STORY/HISTORICAL_DOCUMENTS.md   lineage and evidence map
 
 ```mermaid
 flowchart TD
-    README[README] --> DINDEX[DOC/INDEX]
-    DINDEX --> OP[OPERATORS_GUIDE]
-    DINDEX --> TECH[TECHNICAL_GUIDE]
-    DINDEX --> REF[REF]
-    DINDEX --> GLOSS[GLOSSARY]
-    DINDEX --> DEC[DECISIONS]
+    README[README] --> INDEX[DOC/INDEX]
+    INDEX --> OP[Operator Lane]
+    INDEX --> TECH[Technical Lane]
+    INDEX --> POLICY[Policy Lane]
+    INDEX --> STORY[Story Lane]
 
-    OP --> HLOG[HARDWARE_TEST_LOG]
-    OP --> HDBG[HIMON_DEBUG_TESTING]
-    TECH --> BOUND[PRODUCT_BOUNDARIES]
+    OP --> PROOF[Hardware Proof]
     TECH --> STR8[STR8]
-    STR8 --> SEDGE[STR8_EDGE_DUMP]
-    TECH --> MEM[MEMORY_MAP]
-    TECH --> HMAP[HIMON_MAP]
-    TECH --> CAT[CATALOG]
-    TECH --> GEN[DOC/GENERATED]
+    TECH --> HIMON[HIMON]
+    TECH --> ASM[ASM]
+    TECH --> OIL[OIL: Overlay Integration Layer]
+    TECH --> DATA[Memory / Catalog / Hash]
 
-    DEC --> DFLASH[DOC_FLASH]
-    DEC --> HFLASH[HASH_FLASH]
-    DEC --> QCC[QCC]
-    QCC --> QHASH[QCC_HASH]
-    QCC --> QFLASH[QCC_FLASH]
-    QCC --> QASM[QCC_ASM]
-    QCC --> QCL[QCC_CATALOG_LINKING]
-    QCC --> QSTR8[QCC_STR8]
-    QCC --> QMEM[QCC_MEMORY]
-
-    TECH --> HASM[HASHED_ASM]
-    HASM --> ACALL[ASM_CALL_MAP]
-    TECH --> HASHMAP[HASH_MAP]
-    HASHMAP --> HASH[HASH]
-    HMAP --> HEDGE[HIMON_EDGE_DUMP]
-    TECH --> SYM[SYMBOL_XREF]
-
-    DINDEX --> STORY[Story Lane]
-    STORY --> BOOK[BOOK]
-    STORY --> HIST[HISTORICAL_DOCUMENTS]
-    STORY --> IDEAS[DOC/IDEAS]
+    ASM --> OIL
+    HIMON --> OIL
+    STR8 --> OIL
+    OIL --> PROOF
+    POLICY --> DEC[Decisions / QCC]
+    STORY --> HIST[Book / History]
 ```
 
 ## Consistency Rules

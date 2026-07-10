@@ -24,6 +24,10 @@ prefer the specific form listed here instead of the bare word.
   dispatcher already uses FNV-1a32 for public command identity. THE is not the
   whole runtime.
 - ASM: the planned onboard assembler path.
+- OIL: Overlay Integration Layer. OIL is the runtime path that takes an AP
+  object from storage through loading, relocation, resident-import integration,
+  and execution. ASM creates AP objects; HIMON orchestrates OIL; STR8 supplies
+  bank-safe flash/link services; RJOIN resolves resident imports.
 - payload target: a bootable/installable monitor, application, tool, or ROM
   image selected by STR8. HIMON is the default payload target, not the only one.
 

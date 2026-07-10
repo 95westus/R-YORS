@@ -90,6 +90,19 @@ record kind/bank/address tells how to use the match
 Do not treat a hash as the whole identity once the catalog becomes writable or
 loadable from user-built modules.
 
+## OIL Hash Boundary
+
+OIL uses FNV-1a32 at the resident-import boundary. Checksums and CRCs may prove
+integrity, but they do not replace the public symbol identity.
+
+```mermaid
+flowchart LR
+    NAME[Exported Name] --> FNV[FNV-1a32]
+    FNV --> IMPORT[AP Import Record]
+    IMPORT --> OIL[OIL]
+    OIL --> RJOIN[Resident RJOIN Entry]
+```
+
 ## Legacy Variable-Width FNV Storage
 
 This is an older compact storage proposal layered on top of the FNV-1a policy.

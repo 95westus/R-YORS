@@ -159,7 +159,7 @@ HARDWARE_TEST_LOG.md
   HIMON_SEARCH_IMPLEMENTATION_GUIDE.md for the test intent behind each pass
 
 OIL_710_TEST_PLAN.md
-  records the `.710` OIL release test rail for Online Interactive Linker board
+  records the `.710` OIL release test rail for Overlay Integration Layer board
   proof
   depends on ASM sample AP packages, current HIMON/STR8 maps, and
   HARDWARE_TEST_LOG.md append-only transcript evidence

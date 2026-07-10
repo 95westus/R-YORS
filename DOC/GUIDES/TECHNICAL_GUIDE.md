@@ -1,8 +1,8 @@
 # R-YORS Technical Guide
 
-This is the canonical technical guide for the current R-YORS, STR8, and HIMON
-shape. It summarizes the architecture, build products, memory ownership, flash
-policy, and source layout without carrying the project story.
+This is the canonical technical guide for the current R-YORS, STR8, HIMON,
+ASM, and OIL shape. It summarizes the architecture, build products, memory
+ownership, flash policy, and source layout without carrying the project story.
 
 For board operation, read [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md). For the
 narrative lane, read [BOOK.md](STORY/BOOK.md),
@@ -17,13 +17,16 @@ STR8    reset-time recovery/update guard
 IVI     interrupt-vector indirection mechanism
 LEAF    future friendly front door over IVI
 HIMON   default monitor/debug/catalog/assembler payload
+ASM     onboard assembler and AP object producer
+OIL     Overlay Integration Layer for AP storage, load, relocation, imports, and run
 THE     future hash/catalog resolver environment
 ```
 
 Current boot relationship:
 
 ```text
-RESET -> STR8 -> HIMON -> user work
+RESET -> STR8 -> HIMON -> ASM creates AP objects
+                         OIL integrates and runs AP objects
 ```
 
 STR8 should remain useful even when the payload is not HIMON. HIMON is the
@@ -46,6 +49,10 @@ high-flash recovery from Bank 2 back to known-good HIMON
 
 HIMON has hardware proof for RAM-only debug commands `B`, `B C`, `B L`, `N`,
 and `X`, with one-shot breakpoints and `DBG RAM` rejection outside user RAM.
+
+OIL `.710` has hardware proof for RAM, visible-flash, and banked-flash AP
+sources; internal relocation; resident RJOIN imports; missing-import rejection;
+overlap guards; and execution.
 
 This is still a bench-proven recovery/update guard, not a field-updater or
 self-updater release.

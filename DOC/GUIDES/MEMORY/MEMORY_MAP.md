@@ -78,6 +78,21 @@ $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
 
+## OIL Address Boundary
+
+OIL keeps AP storage separate from AP execution:
+
+```text
+AP envelope in RAM, visible flash, or banked flash
+  -> stage and parse (banked flash uses $0A00-$19FF)
+  -> load BODY into $2000-$4FFF
+  -> apply relocation and resident imports
+  -> run the entry from RAM
+```
+
+A banked AP is staged one 4K sector at a time; it is not executed directly
+from the banked flash window.
+
 Local language images are built to sit below the protected HIMON/STR8 region:
 
 ```text

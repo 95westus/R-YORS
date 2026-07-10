@@ -23,6 +23,23 @@ locals per global scope   $10 / 16
 local visible chars       15
 ```
 
+## OIL Boundary
+
+ASM creates the AP object. The **Overlay Integration Layer** takes over when
+that object is stored, loaded, relocated, linked to resident imports, and run.
+
+```mermaid
+flowchart LR
+    SOURCE[ASM Source] --> ASM[ASM]
+    ASM --> SEAL[SEAL / PACKAGE]
+    SEAL --> AP[AP Object]
+    AP --> OIL[OIL]
+    OIL --> HIMON[HIMON Loader]
+    OIL --> STR8[STR8 Bank Services]
+    OIL --> RJOIN[RJOIN Imports]
+    OIL --> RUN[Body Execution]
+```
+
 ## Primary Flow
 
 ```mermaid

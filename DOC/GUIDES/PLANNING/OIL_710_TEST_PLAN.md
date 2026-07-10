@@ -1,10 +1,10 @@
-# OIL .710 On-Board Intensive Test Plan
+# OIL .710 Overlay Integration Layer Test Plan
 
 Release: `.710`
 
 Internal name: OIL
 
-TLA: Online Interactive Linker
+TLA: Overlay Integration Layer
 
 Deadline: 2026-07-10 16:20 CDT
 
@@ -15,8 +15,10 @@ for those unproven changes.
 
 ## Release Meaning
 
-OIL means the live board can assemble, package, load, link, and run AP bodies
-interactively, including resident RJOIN imports and banked AP package sources.
+OIL means the live board can carry AP objects from storage through load,
+relocation, resident-import integration, and execution, including banked AP
+package sources. ASM creates the object; OIL integrates it into the running
+system.
 The core release proof is not only that the code builds, but that HIMON can ask
 STR8 to stage a banked source sector, resolve AP import relocation rows through
 resident FNV records, apply internal AP relocations, and run the result from

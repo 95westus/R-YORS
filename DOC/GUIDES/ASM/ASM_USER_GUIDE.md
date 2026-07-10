@@ -84,7 +84,7 @@ The current flash image should report `LF OK WR=3969 GO=800C`. A useful service
 sanity check after updating HIMON is:
 
 ```text
-D 7E25 2C      expect F1 D6 00 00 00 00 00 00 on current OIL HIMON
+D 7E25 2C      expect F1 D6 00 00 00 00 00 00 on current Overlay Integration Layer (OIL) image
 ```
 
 The prompt text below shows where each line is typed; do not paste the prompt

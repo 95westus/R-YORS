@@ -13075,3 +13075,9 @@ confirmation, cancellation, B1 single-sector and `ALL` erase, B3 `8-B`
 protection, worker erase/verify, map reporting, backup rotation, and B3
 recovery are hardware-proven. B0/B2 erase selection and a forced worker
 failure remain optional negative/coverage tests.
+
+## 2026-07-10 OIL Terminology Note
+
+OIL now expands to **Overlay Integration Layer**. Earlier `.710` transcript
+headings and evidence retain their original acronym wording; they describe the
+same AP storage/load/relocation/import/run path under the settled name.
