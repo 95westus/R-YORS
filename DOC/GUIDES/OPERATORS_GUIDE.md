@@ -403,6 +403,20 @@ SEAL>        post-END package/load/install commands
 Typical setup:
 
 ```text
+>ASM            current make all image: ASM-F2 is already at $8000
+```
+
+After an ASM session, exit with `.` and run the built-in fixed-address reporter
+if table detail is needed:
+
+```text
+>AP $B969 $4800
+```
+
+Older board images and narrow development passes can still load the reporter
+and ASM-F2 explicitly:
+
+```text
 >L              send SRC/BUILD/s19/asm-session-report-7000.s19 if reports are needed
 >L F            send SRC/BUILD/s19/asm-v1-flash-8000.s19
 >ASM
@@ -468,6 +482,7 @@ Those jobs belong to STR8 or a future confirmed RAM updater.
 ## Build Commands
 
 ```text
+make all
 make release
 make release-local
 make docs-html
@@ -475,12 +490,14 @@ make -C SRC help
 make -C SRC himon
 make -C SRC str8
 make -C SRC himon-str8-rom-bin
+make -C SRC life
 ```
 
-`make release` regenerates source-derived docs, builds the tracked release set,
-and stamps the HIMON/STR8 ROM binary. `make docs-html` is an explicit/manual
-presentation rebuild only; `DOC/HTML` is ignored and untracked, and Markdown
-remains canonical.
+`make all` builds the current onboard 32K image and install S19. `make release`
+adds docs and release side artifacts. `make life` still builds a standalone
+loadable app S19/BIN without changing the onboard image. `make docs-html` is an
+explicit/manual presentation rebuild only; `DOC/HTML` is ignored and untracked,
+and Markdown remains canonical.
 
 ## Where To Go Next
 

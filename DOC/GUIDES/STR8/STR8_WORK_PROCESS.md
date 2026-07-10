@@ -29,6 +29,7 @@ selected worker modes and `$F006` for resident RJOIN AP import linking.
 The current build targets are:
 
 ```text
+make -C SRC all
 make -C SRC str8
 make -C SRC himon-str8-rom-bin
 make -C SRC himon-str8-rom-install-s19
@@ -98,12 +99,15 @@ Before the next feature, rerun this checklist on hardware for the current build:
 
 ```text
 Build:
+  make -C SRC all
   make -C SRC str8
   make -C SRC himon-str8-rom-bin
   make -C SRC himon-str8-rom-install-s19
 
 Artifact check:
   himon-str8-rom.bin is 32768 bytes
+  ASM-F2 starts at CPU $8000 and enters at $800C
+  built-in ASM report AP package runs with AP $B969 $4800
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
   worker source is CPU $FCE3-$FFEF

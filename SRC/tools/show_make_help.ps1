@@ -6,20 +6,20 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $rows = @(
-    [pscustomobject]@{ Target = "all"; Category = "build"; Description = "Build the focused firmware set: HIMON STR8 update plus ASM flash." }
-    [pscustomobject]@{ Target = "firmware"; Category = "build"; Description = "Build the focused firmware set: himon-str8-himon-update-s19 and asm-v1-flash." }
+    [pscustomobject]@{ Target = "all"; Category = "build"; Description = "Build the current onboard 32K image and install S19." }
+    [pscustomobject]@{ Target = "firmware"; Category = "build"; Description = "Build himon-str8-rom.bin plus himon-str8-rom-install.s19." }
     [pscustomobject]@{ Target = "lab"; Category = "build"; Description = "Build the broad workbench sweep, including tests, proofs, demos, and local language images when present." }
     [pscustomobject]@{ Target = "everything"; Category = "build"; Description = "Alias for lab." }
     [pscustomobject]@{ Target = "proofs"; Category = "build"; Description = "Build proof targets only." }
     [pscustomobject]@{ Target = "tests"; Category = "build"; Description = "Build test targets only." }
     [pscustomobject]@{ Target = "apps"; Category = "build"; Description = "Build app/demo targets only." }
     [pscustomobject]@{ Target = "help"; Category = "build"; Description = "Show this target list. Filter with Q=term, e.g. make help Q=flash." }
-    [pscustomobject]@{ Target = "release"; Category = "release"; Description = "Build docs plus tracked release artifacts: HIMON, fnv1a-hbstr, test-flash, rom-append-calc." }
+    [pscustomobject]@{ Target = "release"; Category = "release"; Description = "Build docs plus current onboard release artifacts." }
     [pscustomobject]@{ Target = "release-local"; Category = "release"; Description = "Build release plus local/private ROM composites." }
     [pscustomobject]@{ Target = "himon"; Category = "monitor"; Description = "Build current HIMON app S19 and ROM binary." }
     [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000: BUILD/s19/himon-rom-c000.s19." }
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom-c000.bin." }
-    [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K bank image with HIMON at C000, STR8 at F000, RESET=F000: BUILD/bin/himon-str8-rom.bin." }
+    [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K onboard image with ASM-F2/AP report in low flash, HIMON at C000, STR8 at F000: BUILD/bin/himon-str8-rom.bin." }
     [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-c000-install-8000.s19." }
     [pscustomobject]@{ Target = "himon-str8-rom-install-s19"; Category = "monitor"; Description = "Convert primary HIMON+STR8 ROM BIN to S1/S9 install transport: BUILD/s19/himon-str8-rom-install.s19." }
     [pscustomobject]@{ Target = "himon-str8-himon-update-s19"; Category = "monitor"; Description = "Build C000-EFFF S1/S9 stream for STR8 U / UPDATE HIMON: BUILD/s19/himon-str8-himon-update.s19." }
@@ -49,6 +49,7 @@ $rows = @(
     [pscustomobject]@{ Target = "bank3-erase"; Category = "test"; Description = "Build bank 3 `$8000-`$BFFF erase tool at 3000: BUILD/s19/bank3-erase-8000-bfff-3000.s19." }
     [pscustomobject]@{ Target = "asm-flash"; Category = "asm"; Description = "Alias for asm-v1-flash." }
     [pscustomobject]@{ Target = "asm-v1-flash"; Category = "asm"; Description = "Build flash ASM at 8000: BUILD/s19/asm-v1-flash-8000.s19." }
+    [pscustomobject]@{ Target = "asm-session-report-ap-bin"; Category = "asm"; Description = "Build fixed-address AP package for the ASM session reporter: BUILD/bin/asm-session-report-4800.ap.bin." }
     [pscustomobject]@{ Target = "asm-test"; Category = "asm"; Description = "Run the full ASM smoke/proof build set." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
     [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }

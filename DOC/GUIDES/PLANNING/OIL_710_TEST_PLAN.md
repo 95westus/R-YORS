@@ -782,6 +782,11 @@ Cons:
 
 Recommendation: keep external for `.710`.
 
+After `.710`, retire stale top-sector writer variants through
+[HISTORICAL_CODE_MIGRATION_PLAN.md](HISTORICAL_CODE_MIGRATION_PLAN.md). Keep
+the current STR8-N writer in place while it is still a board-ingested ASM-F2
+input.
+
 ### 9. Do Not Spend The Deadline Trimming ASM
 
 Plain words: ASM has room; STR8 and HIMON are the crowded shelves.

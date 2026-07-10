@@ -166,6 +166,8 @@ ASM_SESSION_REPORT_INC_GEN := tools/emit_asm_session_report_inc.ps1
 ASM_SESSION_REPORT_INC := $(INC_DIR)/asm-session-report.inc
 ASM_SESSION_REPORT_A_FLASH := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
 ASM_SESSION_REPORT_A_RUNTIME := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-7000.a
+ASM_SESSION_REPORT_AP_GEN := tools/build_ap_fixed_package.ps1
+ASM_SESSION_REPORT_AP_BIN := $(BIN_DIR)/asm-session-report-4800.ap.bin
 ASM_V1_FLASH_SRC := $(ASM_DIR)/asm-v1-flash.asm
 ASM_V1_FLASH_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash.obj
 ASM_V1_FLASH_RUNTIME_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash-runtime.obj
@@ -261,8 +263,8 @@ TERMINAL ?=
 UPLOADER ?=
 
 FIRMWARE_TARGETS ?= \
-	himon-str8-himon-update-s19 \
-	asm-v1-flash
+	himon-str8-rom-bin \
+	himon-str8-rom-install-s19
 
 TEST_TARGETS ?= \
 	test-mon \
@@ -316,12 +318,9 @@ endif
 LAB_TARGETS += $(LOCAL_LAB_TARGETS)
 
 RELEASE_TARGETS ?= \
-	himon \
 	himon-str8-rom-bin \
 	himon-str8-rom-install-s19 \
-	fnv1a-hbstr \
-	test-flash \
-	rom-append-calc
+	himon-str8-himon-update-s19
 
 # release-local builds the private composite ROM images; they are not L F-safe
 # packages.
@@ -332,7 +331,7 @@ RELEASE_LOCAL_TARGETS ?= \
 all: firmware
 
 firmware: $(FIRMWARE_TARGETS)
-	@echo "Built focused firmware targets: $(FIRMWARE_TARGETS)"
+	@echo "Built current onboard firmware targets: $(FIRMWARE_TARGETS)"
 
 lab: $(LAB_TARGETS)
 	@echo "Built broad lab target set: $(LAB_TARGETS)"
@@ -516,8 +515,12 @@ asm-v1-runtime-paste: $(ROM_LIB) $(ASM_V1_RUNTIME_PASTE_S19)
 	@echo "Built $(ASM_V1_RUNTIME_PASTE_S19)."
 	@$(MAKE) artifacts
 
-asm-session-report: $(ROM_LIB) $(ASM_SESSION_REPORT_FLASH_S19) $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_A_FLASH) $(ASM_SESSION_REPORT_A_RUNTIME)
-	@echo "Built $(ASM_SESSION_REPORT_FLASH_S19) and $(ASM_SESSION_REPORT_S19)."
+asm-session-report: $(ROM_LIB) $(ASM_SESSION_REPORT_FLASH_S19) $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_AP_BIN) $(ASM_SESSION_REPORT_A_FLASH) $(ASM_SESSION_REPORT_A_RUNTIME)
+	@echo "Built $(ASM_SESSION_REPORT_FLASH_S19), $(ASM_SESSION_REPORT_S19), and $(ASM_SESSION_REPORT_AP_BIN)."
+	@$(MAKE) artifacts
+
+asm-session-report-ap-bin: $(ASM_SESSION_REPORT_AP_BIN)
+	@echo "Built $(ASM_SESSION_REPORT_AP_BIN)."
 	@$(MAKE) artifacts
 
 asm-v1-flash: $(ASM_V1_FLASH_S19)
@@ -897,6 +900,10 @@ $(ASM_SESSION_REPORT_FLASH_S19): $(ASM_SESSION_REPORT_OBJ) $(ROM_LIB)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_SESSION_REPORT_FLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9034800B4'; Set-Content -Path $$p -Value $$lines"
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-session-report-4800.map') { '$(S19_DIR)/asm-session-report-4800.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-session-report-4800.map') { '$(MAP_DIR)/asm-session-report-4800.map' } else { throw 'asm-session-report-4800.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA not found in asm-session-report flash map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); if ($$end -gt 0x5000) { throw ('asm-session-report flash crosses 5000: _END_DATA={0:X4}' -f $$end) }; Write-Host ('asm-session-report flash end = {0:X4} (limit 5000)' -f $$end)"
 
+$(ASM_SESSION_REPORT_AP_BIN): $(ASM_SESSION_REPORT_FLASH_S19) $(ASM_SESSION_REPORT_AP_GEN)
+	@echo [ps] build $(ASM_SESSION_REPORT_AP_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_SESSION_REPORT_AP_GEN) -S19Path "$(ASM_SESSION_REPORT_FLASH_S19)" -MapPath "$(S19_DIR)/asm-session-report-4800.map" -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)" -BaseAddress 18432 -EntrySymbol "START" -ExportName "START"
+
 $(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(ASM_V1_FLASH_LINKFLAGS) $(ASM_V1_FLASH_S19) $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
@@ -966,9 +973,9 @@ $(BASIC_FORTH_HIMON_ROM_BIN): $(FIG_FORTH_S19) $(MSBASIC_OSI_S19) $(HIMON_ROM_S1
 	@echo [ps] stamp $(BASIC_FORTH_HIMON_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_FORTH_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
-$(HIMON_STR8_ROM_BIN): $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) tools/build_himon_str8_rom_bin.ps1 tools/stamp_rom_bin.ps1
+$(HIMON_STR8_ROM_BIN): $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) $(ASM_V1_FLASH_S19) $(ASM_SESSION_REPORT_AP_BIN) tools/build_himon_str8_rom_bin.ps1 tools/stamp_rom_bin.ps1
 	@echo [ps] build $(HIMON_STR8_ROM_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -BinPath "$(HIMON_STR8_ROM_BIN)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -AsmS19Path "$(ASM_V1_FLASH_S19)" -ApPackageBinPath "$(ASM_SESSION_REPORT_AP_BIN)" -BinPath "$(HIMON_STR8_ROM_BIN)"
 	@echo [ps] stamp $(HIMON_STR8_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_STR8_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
@@ -1143,7 +1150,7 @@ endif
 	himon-search-proof himon-search-flash himon-search-for-himon \
 	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase asm-v1-core \
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \
-	asm-v1-runtime-paste asm-session-report asm-v1-flash asm-flash asm-opcode-coverage \
+	asm-v1-runtime-paste asm-session-report asm-session-report-ap-bin asm-v1-flash asm-flash asm-opcode-coverage \
 	asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check \
 	asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check \
 	asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src \

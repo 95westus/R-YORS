@@ -1,0 +1,219 @@
+; LIFE16-COLUMN-2000.A
+; ASM-F2 BANKED AP EXAMPLE: 16X16 CONWAY LIFE COLUMN OSCILLATOR.
+;
+; BODY ORIGIN: $2000. NORMAL AP RUN DESTINATION: $3000.
+; BANKED STORE: USE BANKPUT-3000.A DEFAULTS TO STORE THE AP ENVELOPE
+; IN BANK 2 AT $9000, THEN RUN WITH:
+;   AP B2 $9000 $3000
+;
+; OUTPUT:
+;   PRINTS GENERATIONS G0 THROUGH G6.
+;   $5848 = $AC WHEN THE RUN COMPLETES.
+;   $5849 = LAST PRINTED GENERATION.
+;
+; RAM USED:
+;   $1100-$11FF CURRENT 16X16 BOARD
+;   $1200-$12FF NEXT 16X16 BOARD
+;   $30-$38     SCRATCH
+
+        ORG $2000
+
+        IMPORT BIO_FTDI_WRITE_BYTE_BLOCK
+
+MAIN    BRA RUN
+        ENTRY MAIN
+
+CUR     EQU $1100
+NXT     EQU $1200
+STAT    EQU $5848
+GEN     EQU $5849
+IDX     EQU $30
+ROW     EQU $31
+COL     EQU $32
+UPR     EQU $33
+DNR     EQU $34
+LFC     EQU $35
+RTC     EQU $36
+SUM     EQU $37
+COUNT   EQU $38
+
+RUN     JSR INIT
+        JSR RENDER
+        LDA #$06
+        STA COUNT
+RUNLP   JSR STEP
+        JSR COPY
+        INC GEN
+        JSR RENDER
+        DEC COUNT
+        BNE RUNLP
+        LDA #$AC
+        STA STAT
+        RTS
+
+INIT    STZ STAT
+        STZ GEN
+        LDX #$00
+CLRLP   STZ CUR,X
+        STZ NXT,X
+        INX
+        BNE CLRLP
+        LDA #$01
+        STA $1168
+        STA $1178
+        STA $1188
+        RTS
+
+COPY    LDX #$00
+COPYLP  LDA NXT,X
+        STA CUR,X
+        STZ NXT,X
+        INX
+        BNE COPYLP
+        RTS
+
+RENDER  JSR CRLF
+        LDA #'G'
+        JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        LDA GEN
+        CLC
+        ADC #'0'
+        JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        JSR CRLF
+        STZ IDX
+        LDA #$10
+        STA ROW
+RROW    LDA #$10
+        STA COL
+RCOL    LDX IDX
+        LDA CUR,X
+        BEQ RDEAD
+        LDA #'#'
+        BRA RPUT
+RDEAD   LDA #'.'
+RPUT    JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        INC IDX
+        DEC COL
+        BNE RCOL
+        JSR CRLF
+        DEC ROW
+        BNE RROW
+        RTS
+
+STEP    LDX #$00
+SLOOP   STX IDX
+        STZ SUM
+        TXA
+        AND #$F0
+        STA ROW
+        TXA
+        AND #$0F
+        STA COL
+        LDA ROW
+        SEC
+        SBC #$10
+        AND #$F0
+        STA UPR
+        LDA ROW
+        CLC
+        ADC #$10
+        AND #$F0
+        STA DNR
+        LDA COL
+        SEC
+        SBC #$01
+        AND #$0F
+        STA LFC
+        LDA COL
+        CLC
+        ADC #$01
+        AND #$0F
+        STA RTC
+
+        LDA UPR
+        ORA LFC
+        TAY
+        LDA SUM
+        CLC
+        ADC CUR,Y
+        STA SUM
+        LDA UPR
+        ORA COL
+        TAY
+        LDA SUM
+        CLC
+        ADC CUR,Y
+        STA SUM
+        LDA UPR
+        ORA RTC
+        TAY
+        LDA SUM
+        CLC
+        ADC CUR,Y
+        STA SUM
+        LDA ROW
+        ORA LFC
+        TAY
+        LDA SUM
+        CLC
+        ADC CUR,Y
+        STA SUM
+        LDA ROW
+        ORA RTC
+        TAY
+        LDA SUM
+        CLC
+        ADC CUR,Y
+        STA SUM
+        LDA DNR
+        ORA LFC
+        TAY
+        LDA SUM
+        CLC
+        ADC CUR,Y
+        STA SUM
+        LDA DNR
+        ORA COL
+        TAY
+        LDA SUM
+        CLC
+        ADC CUR,Y
+        STA SUM
+        LDA DNR
+        ORA RTC
+        TAY
+        LDA SUM
+        CLC
+        ADC CUR,Y
+        STA SUM
+
+        LDX IDX
+        LDA CUR,X
+        BEQ BORN
+        LDA SUM
+        CMP #$02
+        BEQ LIVE
+        CMP #$03
+        BEQ LIVE
+        LDA #$00
+        BRA STORE
+BORN    LDA SUM
+        CMP #$03
+        BEQ LIVE
+        LDA #$00
+        BRA STORE
+LIVE    LDA #$01
+STORE   LDX IDX
+        STA NXT,X
+        INX
+        BEQ SDONE
+        JMP SLOOP
+SDONE   RTS
+
+CRLF    LDA #$0D
+        JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        LDA #$0A
+        JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        RTS
+
+        END

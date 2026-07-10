@@ -9214,6 +9214,23 @@ vectors. Running `G 3003` printed `TW PRG` then `TW OK`, left
 `$1A00-$1A03` as `01 AC 00 00`, and the ROM dumps at
 `$F000/$FAA4/$FACE/$FCE3/$FFFA` matched the same image.
 
+## 2026-07-10 ASM-F2 Life16 Bank 2 Partial Proof
+
+Board result captured 2026-07-10 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: flash HIMON reported
+`HIMON V 00.0710(1553)` and flash ASM reported `ASM-F2`. The
+`life16-column-2000.a` source assembled cleanly, and `PACKAGE $3200` produced
+`PKG OK @=$3200 L=$01DE`.
+
+The follow-on bank write used `bank2put-8000-3000.a`, not the `$9000`
+`bankput-3000.a` helper used by the full Life walkthrough. The helper returned
+`A=$AC` and `$1A00=AC`, so the write path is partially proven, but the run
+commands tried `AP B2 $9000 $3000` and `AP B2 $A000 $3000`; both returned
+`APERR=$07` because neither source address matched the helper's `$8000`
+storage address. The next retry for that exact board state is
+`AP B2 $8000 $3000`. To follow the Life guide exactly, rerun
+`bankput-3000.a` and then use `AP B2 $9000 $3000`.
+
 ## Hardware Bench Gate
 
 Do not call ASM hardware-proven until the board has run the emitted code and the

@@ -84,6 +84,19 @@ HIMON is the normal monitor/debug/catalog/assembler environment. The old thread
 is still visible, but the center of gravity moved from firmware monitor to
 recoverable, inspectable, self-extending runtime.
 
+## Archive Boundary
+
+Historical source belongs under `SRC/ARCHIVE/`. The existing
+`SRC/ARCHIVE/himon/` shelf keeps retired monitor branches; future retired
+samples, tests, proofs, demo apps, helper scripts, and one-off data should move
+under the broader archive plan in
+[HISTORICAL_CODE_MIGRATION_PLAN.md](../PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
+
+Current in-use STR8-N, HIMON V, and ASM-F2 files keep their active structure.
+From this point forward, new code/data should be processed on board where
+practical and archived only when it becomes proof history rather than a current
+onboard input.
+
 ## Evidence Map
 
 - WDCMON/WDC monitor material is the launch/reference context for the board

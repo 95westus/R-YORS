@@ -14,23 +14,32 @@ keep their glossary meanings.
 SRC/HIMON   current monitor payload source
 SRC/STR8    current recovery/update source
 SRC/LIB     shared ROM support source
-SRC/PROOFS  board proofs and promotion scaffolds
-SRC/APPS    standalone applications
-SRC/TESTS   test harnesses
+SRC/ASM     current onboard assembler source
+SRC/PROOFS  transition lane for current proof scaffolds
+SRC/APPS    transition lane for current standalone applications
+SRC/TESTS   transition lane for current test harnesses
+SRC/ARCHIVE retired source and historical code/data
 SRC/BUILD   build output
 SRC/tools   host-side build/support scripts
 ```
 
-Current ASM file count:
+Tracked `.asm` source snapshot before executing the migration plan:
 
 ```text
 SRC/APPS:   2
+SRC/ASM:    2
+SRC/ARCHIVE: 4
 SRC/HIMON:  4
 SRC/STR8:   2
-SRC/LIB:   24
-SRC/PROOFS: 7
+SRC/LIB:   25
+SRC/PROOFS: 14
 SRC/TESTS:  6
 ```
+
+The intended steady state is narrower: active lanes contain only code/data used
+to create current onboard R-YORS images or board-ingested data. Retired
+samples, tests, proofs, demos, and one-off data move under `SRC/ARCHIVE/` by
+the plan in [PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
 
 ## Monitor Lineage
 
@@ -253,11 +262,13 @@ through a full source-line session, with `ORG`/session PC state and `END`.
 ## Useful Make Targets
 
 ```text
+make -C SRC all
 make -C SRC help
 make -C SRC help Q=flash
 make -C SRC himon
 make -C SRC str8
 make -C SRC himon-str8-rom-bin
+make -C SRC life
 make -C SRC str8-ram
 make -C SRC basic-himon-rom-bin
 make -C SRC basic-forth-himon-rom-bin
@@ -276,11 +287,23 @@ image for the programmer workflow. The file does not encode a bank number;
 bank 0-3 placement is managed through the T48 programmer or through
 R-YORS/STR8.
 
-`BUILD/bin/himon-str8-rom.bin` is the primary combined image: HIMON starts at
-CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
+`BUILD/bin/himon-str8-rom.bin` is the primary combined image built by
+`make -C SRC all`: ASM-F2 occupies low flash from `$8000`, HIMON starts at CPU
+`$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
 `$7000`, RESET points to STR8 at `$F000`, and NMI/IRQ point to STR8 IVI entries
 at `$F092`/`$F0A6`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
 the file, `$7FFA-$7FFF`.
+
+The current build also stores the fixed-address ASM session reporter as an AP
+package immediately after ASM-F2. The build prints the exact command; for the
+current image it is:
+
+```text
+AP $B969 $4800
+```
+
+Standalone app targets remain explicit. For example, `make -C SRC life` still
+emits `BUILD/s19/life-2000.s19` for a normal HIMON load.
 
 Current STR8 payload update images are fixed `$C000-$EFFF` S19 streams:
 `msbasic-osi-str8-update.s19` and `fig-forth-str8-update.s19`. They place OSI

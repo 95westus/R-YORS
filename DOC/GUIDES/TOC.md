@@ -29,6 +29,10 @@ connect.
 - [ASM](ASM/ASM_USER_GUIDE.md) - onboard assembler operator guide, with
   [ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) as the quick address-role
   operator guide,
+  [LIFE16_QUICK_CARD.md](ASM/LIFE16_QUICK_CARD.md) as the exact Life bench
+  sequence,
+  [LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) as the full bank-2 AP
+  example,
   [HASHED_ASM.md](ASM/HASHED_ASM.md) as the source/parser reference,
   including the [ASM call map](ASM/ASM_CALL_MAP.md),
   [shared-routine audit](ASM/ASM_SHARED_ROUTINES_AUDIT.md), and parked future
@@ -51,6 +55,8 @@ board:
 - [TODO.md](PLANNING/TODO.md) - near-term work.
 - [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` OIL on-board
   intensive test rail and size-review recommendations.
+- [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - plan for moving retired samples,
+  tests, proofs, apps, and data into `SRC/ARCHIVE/`.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.
 
 ## Core Thread

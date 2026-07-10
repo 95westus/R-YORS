@@ -12979,3 +12979,50 @@ assembled by ASM-F2, packaged at `$3200`, installed into bank 2 `$8000`, and
 run with `AP B2 $8000 $4800`. The report shown above inspects the
 `bank2put-8000-3000.a` installer session, so its counts and empty `RELOCS`
 section belong to the installer, not the reporter package itself.
+
+## 2026-07-10 ASM-F2 Life16 Column Bank 2 Partial Pass
+
+The next attached board transcript updated HIMON, entered flash ASM-F2, and
+pasted `DOC/GUIDES/ASM/SAMPLES/life16-column-2000.a`. The source assembled
+cleanly and packaged at `$3200`:
+
+```text
+UPDATE HIMON C000-EFFF? Y: y
+...
+HIMON V 00.0710(1553)
+>ASM
+ASM-F2
+...
+ASM>$215E:         END
+ASM OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$01DE
+```
+
+The session then assembled and ran `bank2put-8000-3000.a`. That helper stores
+the package in bank 2 at `$8000`; it returned success and left the expected
+status byte:
+
+```text
+>G 3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 1A00 4
+1A00: AC 00 00 00 00
+```
+
+The final run attempts used `$9000` and `$A000` as the banked AP source
+addresses:
+
+```text
+>AP B2 $9000 $3000
+APERR=$07
+>AP B2 $A000 $3000
+APERR=$07
+```
+
+Result: partial pass. Assembly, `PACKAGE`, and the bank 2 write helper passed,
+but the Life AP body has not yet been run from bank 2. The `APERR=$07` results
+match a source-address mismatch: the transcript used `bank2put-8000-3000.a`,
+so the matching retry is `AP B2 $8000 $3000`. To follow
+`DOC/GUIDES/ASM/LIFE16_BANK2_EXAMPLE.md` exactly, rerun the `$9000`
+`bankput-3000.a` helper and then run `AP B2 $9000 $3000`.

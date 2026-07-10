@@ -5,6 +5,10 @@
 - Keep HIMON hash dispatch small and inspectable.
 - Make STR8 the flash recovery/update boundary instead of scattering flash
   mutation policy across normal monitor commands.
+- Treat active host-side code/data as bootstrap material for current onboard
+  images, not as the long-term place for samples and proofs. New code/data
+  should be processed on board where practical, and retired bench artifacts
+  should follow [HISTORICAL_CODE_MIGRATION_PLAN.md](HISTORICAL_CODE_MIGRATION_PLAN.md).
 - Treat bank 3 `$F000-$FFFF` as the physical top erase sector, but protect only
   the selected STR8 protected window (`$FC00`, `$FA00`, `$F800`, `$F600`,
   `$F400`, `$F200`, or `$F000` through `$FFFF`) from ordinary writes.

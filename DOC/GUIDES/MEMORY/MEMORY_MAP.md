@@ -42,7 +42,7 @@ R-YORS/STR8.
 This is a target boundary, not a panic rule:
 
 ```text
-$8000-$BFFF   16K user code/data/app space
+$8000-$BFFF   16K low-flash code/data, currently ASM-F2 plus AP packages
 $C000-$EFFF   12K HIMON monitor/tools budget
 $F000-$FFFF    4K STR8 recovery-owned erase sector
 ```
@@ -53,23 +53,26 @@ dangerous top sector. HIMON should fit below `$F000`; if it outgrows 12K, that
 should be an intentional design decision because it eats the lower 16K user
 space.
 
-The primary combined image is `BUILD/bin/himon-str8-rom.bin`: HIMON starts at
-CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
-`$7000`, the STR8 RAM worker source is stored at CPU `$FCE3` / file offset
-`$7CE3`, copied into the `$0200-$09FF` RAM worker-code tray, and all live
-hardware vectors enter the STR8-owned top sector. RESET points to STR8 at
-`$F000`; NMI and IRQ/BRK point to STR8 IVI stubs at
-`$F092`/`$F0A6`, which dispatch through the RAM vector cells.
+The primary combined image is `BUILD/bin/himon-str8-rom.bin`: ASM-F2 starts at
+CPU `$8000` / file offset `$0000`, HIMON starts at CPU `$C000` / file offset
+`$4000`, STR8 starts at CPU `$F000` / file offset `$7000`, the STR8 RAM worker
+source is stored at CPU `$FCE3` / file offset `$7CE3`, copied into the
+`$0200-$09FF` RAM worker-code tray, and all live hardware vectors enter the
+STR8-owned top sector. RESET points to STR8 at `$F000`; NMI and IRQ/BRK point
+to STR8 IVI stubs at `$F092`/`$F0A6`, which dispatch through the RAM vector
+cells.
 
 Combined image layout:
 
 ```text
-$8000-$BFFF   current image gap
+$8000-$B968   ASM-F2 low-flash image, entry $800C
+$B969-$BF78   built-in ASM session reporter AP package, run AP $B969 $4800
+$BF79-$BFFF   current low-flash growth hole
 $C000-$EFE9   HIMON body
 $EFEA-$EFFF   current image gap inside the used E sector
-$F000-$FC68   STR8 resident shell, IVI stubs, HIMON updater, and AP services
+$F000-$FCC5   STR8 resident shell, IVI stubs, HIMON updater, and AP services
 $FA17         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$FC69-$FCE2   current contiguous top-sector growth hole
+$FCC6-$FCE2   current contiguous top-sector growth hole
 $FCE3-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray for B/E/M/U/0/1/2
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors

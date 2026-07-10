@@ -114,15 +114,15 @@ HIMON body:
 The live bank has a deliberate budget target:
 
 ```text
-$8000-$BFFF   16K user code/data/app space
+$8000-$BFFF   16K low-flash code/data, currently ASM-F2 plus AP packages
 $C000-$EFFF   12K HIMON monitor/tools budget
 $F000-$FFFF    4K STR8 recovery-owned erase sector
 ```
 
 This is a boundary target, not a panic rule. STR8 should stay inside the top
 4K sector and may use less than that. HIMON should fit below `$F000`; growing
-past the 12K budget should be an intentional call because it consumes user
-code/data space.
+past the 12K budget should be an intentional call because it consumes low-flash
+code/package space.
 
 The current V0 split is small, W65C02-specific, and gives STR8 the whole
 physical top flash sector so recovery code can keep growing without crowding

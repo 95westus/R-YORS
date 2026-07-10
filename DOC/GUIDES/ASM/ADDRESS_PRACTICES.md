@@ -41,6 +41,7 @@ $3123        useful non-page-aligned relocation proof destination
 $3200        common RAM AP envelope/package buffer
 $4800        fixed run address for asm-session-report-4800.a
 $8000        visible flash ASM address; also bank-window address for banked AP
+$B969        current built-in ASM session reporter AP package store address
 $9000        common banked AP package store address for smoke tests
 $0A00-$19FF  STR8 4K sector staging buffer
 $1A00        sample/tool status byte area
@@ -118,7 +119,8 @@ SEAL> PACKAGE $3200
 PKG OK @=$3200 L=$llll
 SEAL> .
 ASM BYE
->ASM NEW        paste bankput-3000.a or bank2put-8000-3000.a
+>D 3200 5       expect 41 50 lenlo lenhi version
+>ASM NEW        paste bankput-3000.a
 ASM>$30D4: END
 ASM OK
 SEAL> .
@@ -127,26 +129,34 @@ ASM BYE
 >D 1A00 8       expect AC at $1A00
 ```
 
-Then run the banked package from HIMON:
+Then run the ordinary banked package from HIMON:
 
 ```text
 >AP B2 $9000 $3000
-```
-
-or, for the fixed reporter package stored at bank 2 `$8000`:
-
-```text
->AP B2 $8000 $4800
 ```
 
 In `AP B2 $9000 $3000`, `$9000` is the AP envelope address in bank 2's flash
 address space, and `$3000` is the RAM destination/run address. The body does
 not execute from banked flash.
 
+Keep `$3200` unchanged between `PACKAGE $3200` and the completed `G 3000`
+writer run. Do not run `AP`, `LOAD`, or another `PACKAGE` in that interval.
+`bankput-3000.a` returns `$E2` when the package header or length at `$3200` is
+no longer valid.
+
+For the bench command sequence, use
+[LIFE16_QUICK_CARD.md](LIFE16_QUICK_CARD.md). For the reasons behind it, use
+[LIFE16_BANK2_EXAMPLE.md](LIFE16_BANK2_EXAMPLE.md). The example assembles
+`SAMPLES/life16-column-2000.a`, stores the AP envelope in bank 2 at `$9000`,
+and runs it with `AP B2 $9000 $3000`.
+
 ## Session Reporter From Bank 2
 
 The bank 2 reporter is special because it is fixed-address. It contains literal
 internal calls and must be loaded at `$4800`.
+
+Its `bank2put-8000-3000.a` helper stores at bank 2 `$8000`. Those `$8000` and
+`$4800` addresses belong to the reporter procedure, not the Life procedure.
 
 After the ASM session you want to inspect:
 

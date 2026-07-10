@@ -40,14 +40,35 @@ future run command.
 Build the current board artifacts on the host:
 
 ```text
-make -C SRC himon
-make -C SRC asm-v1-flash
+make -C SRC all
 make -C SRC asm-session-report
 ```
 
-On the board, update HIMON through STR8 when needed, then return with
-`G HIMON`. Load the optional external reporter first if table detail will be
-needed later:
+`make -C SRC all` creates the current 32K onboard image with ASM-F2 already in
+low flash and the fixed-address ASM session reporter stored as an AP package
+after ASM-F2. The build prints the exact reporter command; for the current
+image it is `AP $B969 $4800`.
+
+Some current board-ingested files still live under
+`DOC/GUIDES/ASM/SAMPLES/` because the present ASM-F2 workflow pastes or
+packages them directly. Treat the paths named in this guide as current until a
+replacement is documented; retired samples and proof-only sources move by the
+plan in [../PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md](../PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
+For the short Life bank-2 bench sequence, see
+[LIFE16_QUICK_CARD.md](LIFE16_QUICK_CARD.md). For the complete method and the
+reason behind each step, see [LIFE16_BANK2_EXAMPLE.md](LIFE16_BANK2_EXAMPLE.md).
+
+On a board burned with the `make all` image, update/install the full image and
+then return to HIMON with `G HIMON`; ASM-F2 is already present at `$8000`. If
+you need the session report after an ASM session, exit ASM with `.` and run:
+
+```text
+AP $B969 $4800
+```
+
+For an older board image or a narrow development pass, update HIMON through
+STR8 when needed, then return with `G HIMON`. Load the optional external
+reporter first if table detail will be needed later:
 
 ```text
 L              send SRC/BUILD/s19/asm-session-report-7000.s19
@@ -595,18 +616,29 @@ Default flash ASM no longer prints `ASM TABLES` after `END`. Use the external
 report proof when the live symbol/fixup/reloc tables are needed:
 
 ```text
+make -C SRC all
 make -C SRC asm-session-report
 ```
 
-The host-built reporter is `SRC/BUILD/s19/asm-session-report-7000.s19`. Load it
-before the ASM session to inspect, then after `END` and `.` run `G 7000`.
+The current `make all` image stores the fixed-address reporter as an AP package
+immediately after ASM-F2. After the ASM session to inspect, exit with `.` and
+run the build-reported AP command; for the current image:
+
+```text
+AP $B969 $4800
+```
+
+`make -C SRC asm-session-report` also builds the explicit reporter artifacts.
+The host-built RAM reporter is `SRC/BUILD/s19/asm-session-report-7000.s19`.
+Load it before the ASM session to inspect, then after `END` and `.` run
+`G 7000`.
 For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a` is a
 compact ASM-F2 source program generated with literal message addresses and
 single-character `DB` atoms. Assemble it before the session it will inspect,
 then after that session exits run `G 4800`. `asm-session-report-7000.a` is kept
 for non-flash/runtime-paste ASM builds that still allow `$7000` output.
 
-To store the reporter as an AP package in bank 2 `$8000`, assemble
+To manually store the reporter as an AP package in bank 2 `$8000`, assemble
 `asm-session-report-4800.a`, run `SEAL` and `PACKAGE $3200` at the `SEAL>`
 prompt, exit with `.`, assemble `bank2put-8000-3000.a`, exit, and run
 `G 3000`. A successful write leaves `$1A00=$AC`. This reporter package is

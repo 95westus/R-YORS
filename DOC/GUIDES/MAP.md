@@ -104,11 +104,20 @@ Support/
   SRC/LIB/ftdi/*.asm
   SRC/LIB/dev/*.asm
   SRC/LIB/util/*.asm
+
+ASM/
+  SRC/ASM/asm-v1-core.asm
+  SRC/ASM/asm-v1-flash.asm
 ```
 
 Legacy demos, harnesses, games, ACIA/PIA, and historical monitor experiments
 remain documented where useful, but they are outside the generated operational
 maps unless promoted.
+
+Active source lanes are reserved for code/data used to create current onboard
+R-YORS images or board-ingested data. Retired samples, tests, proofs, demos,
+and one-off data belong under `SRC/ARCHIVE/`; the migration plan is
+[PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
 
 `LOCAL/` is ignored and may contain private source homes:
 
@@ -126,6 +135,8 @@ LOCAL/s3x/
 OPERATORS_GUIDE.md              current board-facing guide
 ASM/ASM_USER_GUIDE.md           ASM operator guide
 ASM/ADDRESS_PRACTICES.md        ASM address-role operator guide
+ASM/LIFE16_QUICK_CARD.md        exact ASM-F2 Life bank-2 bench sequence
+ASM/LIFE16_BANK2_EXAMPLE.md     ASM-F2 16x16 Life AP bank-2 walkthrough
 TECHNICAL_GUIDE.md              current architecture guide
 REF.md                          compact reference
 GLOSSARY.md                     vocabulary only
@@ -150,6 +161,7 @@ ASM/HASHED_ASM.md               assembler thesis and fixups
 ASM/ASM_CALL_MAP.md             renderable ASM routine-flow map
 ASM/ASM_SHARED_ROUTINES_AUDIT.md ASM/HIMON shared-helper audit
 PLANNING/OIL_710_TEST_PLAN.md .710 OIL board test rail and size review
+PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md retired code/data archive plan
 STORY/BOOK.md                   narrative manuscript spine
 STORY/HISTORICAL_DOCUMENTS.md   lineage and evidence map
 ```

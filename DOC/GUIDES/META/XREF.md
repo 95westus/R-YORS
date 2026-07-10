@@ -165,6 +165,15 @@ OIL_710_TEST_PLAN.md
   HARDWARE_TEST_LOG.md append-only transcript evidence
   keeps size recommendations for STR8, HIMON, ASM, and R-YORS namespace moves
   separate from the release board transcript
+
+HISTORICAL_CODE_MIGRATION_PLAN.md
+  records the active-source boundary and the migration path for retired
+  samples, tests, proofs, demo apps, helper scripts, and one-off data
+  uses SRC/ARCHIVE/ as the historical source home
+  keeps current STR8-N, HIMON V, and ASM-F2 paths in place until a deliberate
+  replacement exists
+  relates to TECHNICAL_GUIDE.md, MAP.md, REF.md, TODO.md,
+  HISTORICAL_DOCUMENTS.md, and SRC/ARCHIVE/README.md
 ```
 
 ## Source Cross-Reference
@@ -197,6 +206,11 @@ ROM/util/*.asm
 
 Legacy demos, harnesses, games, ACIA/PIA, and historical monitor experiments
 are kept out of generated operational maps.
+
+The historical code migration plan narrows this boundary further: active
+source lanes should contain only code/data used to create current onboard
+R-YORS images or board-ingested data. Retired code/data belongs under
+`SRC/ARCHIVE/`.
 
 ## Cross-Reference Rules
 

@@ -7,6 +7,8 @@ This is the full guide index for the current R-YORS documentation set.
 - [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) - canonical board-facing guide for R-YORS, STR8, and HIMON operation.
 - [ASM/ASM_USER_GUIDE.md](ASM/ASM_USER_GUIDE.md) - operator guide for ASM source, prompts, END/SEAL, relocation, and packages.
 - [ASM/ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) - practical address-role guide for ASM, SEAL, PACKAGE, INSTALL, LOAD, and AP.
+- [ASM/LIFE16_QUICK_CARD.md](ASM/LIFE16_QUICK_CARD.md) - exact board commands and checkpoints for the ASM-F2 Life bank-2 procedure.
+- [ASM/LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) - complete ASM-F2 16x16 Life AP package, bank 2 storage, and run walkthrough.
 - [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
 - [REF.md](./REF.md) - compact reference sheet.
 - [GLOSSARY.md](./GLOSSARY.md) - vocabulary contract.
@@ -55,7 +57,8 @@ RELOCATE, and AP v1 PACKAGE flows.
 - [LOGS](LOGS/HARDWARE_TEST_LOG.md) - hardware transcript proof.
 - [STORY](STORY/BOOK.md) - book spine and historical narrative.
 - [PLANNING](PLANNING/TODO.md) - TODO, future direction, and
-  [OIL .710 test plan](PLANNING/OIL_710_TEST_PLAN.md).
+  [OIL .710 test plan](PLANNING/OIL_710_TEST_PLAN.md), plus the
+  [historical code migration plan](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
 - [META](META/XREF.md) - bibliography and cross-reference.
 
 ## Story And Planning
@@ -68,6 +71,8 @@ the main operator/technical path.
 - [TODO.md](PLANNING/TODO.md) - near-term work.
 - [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` OIL
   on-board intensive test plan and size review.
+- [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - archive plan for retired sample,
+  test, proof, demo, and one-off code/data.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.
 
 ## Current Generated Source Snapshot

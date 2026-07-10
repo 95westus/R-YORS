@@ -57,6 +57,7 @@ DOC/GUIDES/META/COMPAT/RTFM-str8.md
 DOC/GUIDES/META/XREF.md
 DOC/GUIDES/OPERATORS_GUIDE.md
 DOC/GUIDES/PLANNING/OIL_710_TEST_PLAN.md
+DOC/GUIDES/PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md
 DOC/GUIDES/PLANNING/FUTURE.md
 DOC/GUIDES/PLANNING/TODO.md
 DOC/GUIDES/QCC/ASM.md
@@ -133,6 +134,10 @@ DOC/GENERATED/STACK_DEPTH_MAP.md
   ladder and subsystem class families from current source plus guide evidence.
 - `STR8_WORK_PROCESS.md` records the current review, proof, implementation,
   and documentation loop for STR8 work.
+- `HISTORICAL_CODE_MIGRATION_PLAN.md` records the plan for moving retired
+  sample, test, proof, app, tool, and one-off data sources under
+  `SRC/ARCHIVE/` while keeping current STR8-N, HIMON V, and ASM-F2 paths
+  stable.
 - `QCC.md` defines Questions, Comments, Concerns as the working-note format for
   unsettled design topics; `QCC_*.md` pages keep topic-specific what-ifs before
   they graduate into `DECISIONS.md`.

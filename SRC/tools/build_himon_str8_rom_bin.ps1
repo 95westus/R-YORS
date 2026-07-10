@@ -5,6 +5,11 @@ param(
     [string]$Str8S19Path = "BUILD/s19/str8-f000.s19",
     [string]$WorkerMapPath = "BUILD/map/str8-worker-0200.map",
     [string]$WorkerS19Path = "BUILD/s19/str8-worker-0200.s19",
+    [string]$AsmMapPath = "",
+    [string]$AsmS19Path = "",
+    [string]$ApPackageBinPath = "",
+    [int]$ApPackageAddress = 0,
+    [int]$ApPackageLimit = 0xC000,
     [string]$BinPath = "BUILD/bin/himon-str8-rom.bin"
 )
 
@@ -185,6 +190,67 @@ function Import-S19RelocatedIntoImage {
     }
 }
 
+function Import-BinIntoImage {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][byte[]]$Image,
+        [Parameter(Mandatory = $true)][int]$BankOffset,
+        [Parameter(Mandatory = $true)][int]$StoreStart
+    )
+
+    [byte[]]$payload = [System.IO.File]::ReadAllBytes($Path)
+    if ($StoreStart -lt 0x8000 -or ($StoreStart + $payload.Length) -gt 0x10000) {
+        throw ("Binary payload {0} at {1:X4}+{2:X} is outside ROM bank image" -f $Path, $StoreStart, $payload.Length)
+    }
+
+    for ($i = 0; $i -lt $payload.Length; $i++) {
+        $absolute = $StoreStart + $i
+        $offset = $BankOffset + ($absolute - 0x8000)
+        $b = $payload[$i]
+        if ($Image[$offset] -ne 0xFF -and $Image[$offset] -ne $b) {
+            throw ("Conflicting bytes at {0:X4}: existing {1:X2}, new {2:X2} from {3}" -f $absolute, $Image[$offset], $b, $Path)
+        }
+        $Image[$offset] = $b
+    }
+}
+
+function Get-ApPackageBodyBase {
+    param([Parameter(Mandatory = $true)][byte[]]$Package)
+
+    if ($Package.Length -lt 5 -or $Package[0] -ne [byte][char]'A' -or $Package[1] -ne [byte][char]'P') {
+        throw "AP package header is missing"
+    }
+
+    $totalLength = [int]$Package[3] -bor ([int]$Package[4] -shl 8)
+    if ($totalLength -ne $Package.Length) {
+        throw ("AP package length field is {0:X4}; file length is {1:X4}" -f $totalLength, $Package.Length)
+    }
+
+    $pos = 5
+    while ($pos -lt $Package.Length) {
+        $tag = [char]$Package[$pos]
+        if ($tag -eq 'B') {
+            break
+        }
+        if (($pos + 1) -ge $Package.Length) {
+            throw "AP package section is truncated"
+        }
+        $sectionLength = [int]$Package[$pos + 1]
+        if (($pos + 2 + $sectionLength) -gt $Package.Length) {
+            throw "AP package section extends beyond file length"
+        }
+        if ($tag -eq 'S') {
+            if ($sectionLength -lt 0x0B) {
+                throw "AP seal section is too short"
+            }
+            return ([int]$Package[$pos + 3] -bor ([int]$Package[$pos + 4] -shl 8))
+        }
+        $pos += 2 + $sectionLength
+    }
+
+    throw "AP package seal section not found"
+}
+
 function Set-VectorByte {
     param(
         [Parameter(Mandatory = $true)][byte[]]$Image,
@@ -204,6 +270,15 @@ $Str8MapPath = Resolve-ArtifactPath -Path $Str8MapPath
 $Str8S19Path = Resolve-ArtifactPath -Path $Str8S19Path
 $WorkerMapPath = Resolve-ArtifactPath -Path $WorkerMapPath
 $WorkerS19Path = Resolve-ArtifactPath -Path $WorkerS19Path
+if ($AsmMapPath) {
+    $AsmMapPath = Resolve-ArtifactPath -Path $AsmMapPath
+}
+if ($AsmS19Path) {
+    $AsmS19Path = Resolve-ArtifactPath -Path $AsmS19Path
+}
+if ($ApPackageBinPath) {
+    $ApPackageBinPath = Resolve-ArtifactPath -Path $ApPackageBinPath
+}
 
 $himonStart = Get-SymbolAddress -MapPath $HimonMapPath -Name "START"
 $himonNmi = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_NMI"
@@ -241,6 +316,31 @@ $str8StateBase = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_STATE_BASE"
 $str8StateEnd = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_STATE_END"
 $str8WorkerStoreStart = (($str8WorkerStoreHi -band 0xFF) -shl 8) -bor ($str8WorkerStoreLo -band 0xFF)
 $str8WorkerCopyLen = (($str8WorkerCopyLenHi -band 0xFF) -shl 8) -bor ($str8WorkerCopyLenLo -band 0xFF)
+$asmBase = $null
+$asmStart = $null
+$asmEnd = $null
+$apPackageStart = $null
+$apPackageLength = 0
+$apPackageBodyBase = $null
+
+if ($AsmMapPath) {
+    $asmBase = Get-SymbolAddress -MapPath $AsmMapPath -Name "_BEG_CODE"
+    $asmStart = Get-SymbolAddress -MapPath $AsmMapPath -Name "START"
+    $asmEnd = Get-SymbolAddress -MapPath $AsmMapPath -Name "_END_DATA"
+}
+
+if ($ApPackageBinPath) {
+    [byte[]]$apPackageBytes = [System.IO.File]::ReadAllBytes($ApPackageBinPath)
+    $apPackageLength = $apPackageBytes.Length
+    $apPackageBodyBase = Get-ApPackageBodyBase -Package $apPackageBytes
+    if ($ApPackageAddress -ne 0) {
+        $apPackageStart = $ApPackageAddress
+    } elseif ($asmEnd -ne $null) {
+        $apPackageStart = $asmEnd
+    } else {
+        throw "AP package address was not supplied and ASM _END_DATA is unavailable"
+    }
+}
 
 if ($himonStart -ne 0xC000) {
     throw ("HIMON START is {0:X4}; expected C000" -f $himonStart)
@@ -308,6 +408,25 @@ if ($str8WorkerStoreStart -ne $workerStoreStart) {
 if ($str8WorkerCopyLen -ne $workerSize) {
     throw ("STR8 worker copy length constant is {0:X}; expected {1:X}. Update STR8_WORKER_COPY_LEN_LO/HI." -f $str8WorkerCopyLen, $workerSize)
 }
+if ($AsmS19Path -and -not $AsmMapPath) {
+    throw "ASM S19 was supplied without an ASM map"
+}
+if ($AsmMapPath) {
+    if ($asmBase -ne 0x8000) {
+        throw ("ASM-F2 _BEG_CODE is {0:X4}; expected 8000" -f $asmBase)
+    }
+    if ($asmStart -lt $asmBase -or $asmStart -ge $asmEnd) {
+        throw ("ASM-F2 START {0:X4} is outside occupied range {1:X4}-{2:X4}" -f $asmStart, $asmBase, $asmEnd)
+    }
+    if ($asmEnd -gt 0xC000) {
+        throw ("ASM-F2 crosses HIMON sector at C000; _END_DATA={0:X4}" -f $asmEnd)
+    }
+}
+if ($ApPackageBinPath) {
+    if ($apPackageStart -lt 0x8000 -or ($apPackageStart + $apPackageLength) -gt $ApPackageLimit) {
+        throw ("AP package at {0:X4}+{1:X} crosses limit {2:X4}" -f $apPackageStart, $apPackageLength, $ApPackageLimit)
+    }
+}
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $BinPath) | Out-Null
 
@@ -317,6 +436,12 @@ for ($i = 0; $i -lt $bin.Length; $i++) {
     $bin[$i] = 0xFF
 }
 
+if ($AsmS19Path) {
+    Import-S19IntoImage -Path $AsmS19Path -Image $bin -BankOffset $bankOffset
+}
+if ($ApPackageBinPath) {
+    Import-BinIntoImage -Path $ApPackageBinPath -Image $bin -BankOffset $bankOffset -StoreStart $apPackageStart
+}
 Import-S19IntoImage -Path $HimonS19Path -Image $bin -BankOffset $bankOffset
 Import-S19RelocatedIntoImage -Path $WorkerS19Path -Image $bin -BankOffset $bankOffset -RunStart $workerRunStart -StoreStart $workerStoreStart -StoreSize $workerStoreSize
 Import-S19IntoImage -Path $Str8S19Path -Image $bin -BankOffset $bankOffset
@@ -338,6 +463,17 @@ if ($bin.Length -ne 32768) {
 }
 
 $bankHead = $bin[$bankOffset..($bankOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
+$asmHead = $null
+if ($asmBase -ne $null) {
+    $asmHeadOffset = $bankOffset + ($asmBase - 0x8000)
+    $asmHead = $bin[$asmHeadOffset..($asmHeadOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
+}
+$apPackageHead = $null
+if ($apPackageStart -ne $null) {
+    $apHeadOffset = $bankOffset + ($apPackageStart - 0x8000)
+    $apHeadEndOffset = $apHeadOffset + [Math]::Min(0x000F, $apPackageLength - 1)
+    $apPackageHead = $bin[$apHeadOffset..$apHeadEndOffset] | ForEach-Object { "{0:X2}" -f $_ }
+}
 $workerHeadOffset = $bankOffset + ($workerStoreStart - 0x8000)
 $workerHead = $bin[$workerHeadOffset..($workerHeadOffset + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
 $himonHeadOffset = $bankOffset + ($himonStart - 0x8000)
@@ -349,10 +485,23 @@ $tail = $bin[($bankOffset + 0x7FFA)..($bankOffset + 0x7FFF)] | ForEach-Object { 
 
 Write-Host ("HIMON START/NMI/IRQ/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $himonStart, $himonNmi, $himonIrq, $himonEnd)
 Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Start, $str8Nmi, $str8Irq, $str8End)
+if ($asmBase -ne $null) {
+    Write-Host ("ASM-F2 BASE/START/END  = {0:X4}/{1:X4}/{2:X4}" -f $asmBase, $asmStart, $asmEnd)
+}
+if ($apPackageStart -ne $null) {
+    Write-Host ("AP REPORT STORE/LEN    = {0:X4}/{1:X}" -f $apPackageStart, $apPackageLength)
+    Write-Host ("AP REPORT RUN          = AP `${0} `${1}" -f ("{0:X4}" -f $apPackageStart), ("{0:X4}" -f $apPackageBodyBase))
+}
 Write-Host ("WORKER RUN/STORE/SIZE   = {0:X4}/{1:X4}-{2:X4}/{3:X}" -f $workerRunStart, $workerStoreStart, ($workerStoreStart + $workerSize - 1), $workerSize)
 Write-Host ("Vectors NMI/RESET/IRQ   = {0:X4}/{1:X4}/{2:X4}" -f $str8Nmi, $str8Start, $str8Irq)
 Write-Host ("Bank offset             = 0x{0:X5}" -f $bankOffset)
 Write-Host ("Bank start @ 8000       = {0}" -f ($bankHead -join " "))
+if ($asmHead -ne $null) {
+    Write-Host ("ASM-F2 @ {0:X4}          = {1}" -f $asmBase, ($asmHead -join " "))
+}
+if ($apPackageHead -ne $null) {
+    Write-Host ("AP REPORT @ {0:X4}       = {1}" -f $apPackageStart, ($apPackageHead -join " "))
+}
 Write-Host ("WORKER @ {0:X4}          = {1}" -f $workerStoreStart, ($workerHead -join " "))
 Write-Host ("HIMON @ {0:X4}            = {1}" -f $himonStart, ($himonHead -join " "))
 Write-Host ("STR8 @ {0:X4}            = {1}" -f $str8Start, ($str8Head -join " "))

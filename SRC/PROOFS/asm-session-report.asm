@@ -3,8 +3,10 @@
 ; External ASM v1 live-session reporter, linked at $7000.
 ;
 ; This program does not link against asm-v1-core.obj.  It reads the flash ASM
-; UDATA addresses generated from asm-v1-flash-8000.map, so it reports the live
-; session left behind by the flash-resident ASM command.
+; UDATA addresses generated from asm-v1-flash-8000.map and uses ASM-F2's
+; resident output helper entry points, so it reports the live session left
+; behind by the flash-resident ASM command without carrying another print
+; library copy in the package body.
 ; ----------------------------------------------------------------------------
 
                         CHIP            65C02
@@ -14,12 +16,12 @@
 
                         XDEF            START
 
-                        XREF            BIO_FTDI_WRITE_BYTE_BLOCK
-                        XREF            SYS_WRITE_CSTRING
-                        XREF            SYS_WRITE_CRLF
-                        XREF            SYS_WRITE_HEX_BYTE
-
                         INCLUDE         "asm-session-report.inc"
+
+BIO_FTDI_WRITE_BYTE_BLOCK EQU             ASM_RJ_WRITE_BYTE
+SYS_WRITE_CSTRING        EQU             ASM_RJ_WRITE_CSTRING
+SYS_WRITE_CRLF           EQU             ASM_RJ_PRINT_CRLF
+SYS_WRITE_HEX_BYTE       EQU             ASM_RJ_WRITE_HEX_BYTE
 
 ASMR_PTR_LO            EQU             $00
 ASMR_PTR_HI            EQU             $01

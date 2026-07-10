@@ -55,6 +55,8 @@ The story is intentionally outside the main operator/technical path:
 - [GUIDES/QCC](GUIDES/QCC/INDEX.md) - active design questions.
 - [GUIDES/LOGS](GUIDES/LOGS/HARDWARE_TEST_LOG.md) - hardware proof logs.
 - [GUIDES/PLANNING](GUIDES/PLANNING/TODO.md) - TODO and future notes.
+- [GUIDES/PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md](GUIDES/PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - plan for moving retired samples, tests, proofs, and demos into
+  `SRC/ARCHIVE/`.
 - [GUIDES/META](GUIDES/META/XREF.md) - bibliography and cross-reference.
 
 Generated source analysis lives in [GENERATED](./GENERATED).

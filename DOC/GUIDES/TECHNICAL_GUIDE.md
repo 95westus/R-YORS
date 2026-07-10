@@ -59,13 +59,26 @@ HIMON       SRC/HIMON/
 STR8        SRC/STR8/
 ROM         ROM support source alias in generated docs
 LIB         SRC/LIB/
-PROOFS      SRC/PROOFS/
-APPS        SRC/APPS/
-TESTS       SRC/TESTS/
+PROOFS      SRC/PROOFS/ transition lane for current proof scaffolds
+APPS        SRC/APPS/ transition lane for current standalone applications
+TESTS       SRC/TESTS/ transition lane for current test harnesses
+ARCHIVE     SRC/ARCHIVE/ retired source and historical code/data
 SRC/tools   host build and support scripts
 DOC         hand-written and generated documentation
 LOCAL       ignored local source homes
 ```
+
+Active source lanes should contain only code/data used to create current
+onboard R-YORS images or board-ingested data. Current in-use STR8-N, HIMON V,
+and ASM-F2 files keep their existing structure until a deliberate replacement
+exists. The cleanup plan for retired samples, tests, proofs, demos, and one-off
+data lives in
+[HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
+
+New code/data should be processed on board where practical: through HIMON,
+flash ASM-F2, AP packages, STR8 update/install flows, or later managed onboard
+records. Host-side sources and generators remain only where they still
+bootstrap or regenerate current onboard artifacts.
 
 Physical paths used by the current build:
 
@@ -74,6 +87,7 @@ SRC/HIMON/himon.asm
 SRC/HIMON/*.inc
 SRC/HIMON/fnv1a-fold.asm
 SRC/ASM/asm-v1-core.asm
+SRC/ASM/asm-v1-flash.asm
 SRC/STR8/str8.asm
 SRC/STR8/str8-worker.asm
 SRC/LIB/ftdi/*.asm
@@ -105,6 +119,7 @@ SRC/BUILD/s19/msbasic-osi-str8-update.s19
 Useful targets:
 
 ```text
+make all
 make release
 make release-local
 make docs-html
@@ -112,6 +127,7 @@ make -C SRC docs
 make -C SRC himon
 make -C SRC str8
 make -C SRC himon-str8-rom-bin
+make -C SRC life
 make -C SRC himon-str8-himon-update-s19
 make -C SRC fig-forth-str8-update-s19
 make -C SRC msbasic-osi-str8-update-s19
@@ -145,13 +161,15 @@ Bank 0  base/factory hold until enrolled into rotation
 The current target live-bank budget is:
 
 ```text
-$8000-$BFFF   16K user code/data
+$8000-$BFFF   16K low-flash code/data, currently ASM-F2 plus AP packages
 $C000-$EFFF   12K payload gate, currently HIMON
 $F000-$FFFF    4K STR8 recovery sector
 ```
 
-STR8 may use less than 4K, but the whole top erase sector is recovery-owned
-for V0 policy.
+In the current `make all` image, `$8000-$BFFF` is no longer empty user scratch:
+ASM-F2 is present at `$8000`, and the ASM session reporter AP package is stored
+immediately after ASM-F2. STR8 may use less than 4K, but the whole top erase
+sector is recovery-owned for V0 policy.
 
 Future bank planning may split the backup model into regions instead of whole
 banks. The current sketch treats banks 0 and 1 together as five 12K backup
@@ -164,10 +182,14 @@ roles; bank 2 becomes SYS/USR space; bank 3 remains the default boot bank with
 Current combined-image facts:
 
 ```text
+ASM-F2 base:    $8000
+ASM-F2 entry:   $800C
+ASM-F2 end:     $B969
+ASM report AP:  $B969-$BF78, run with AP $B969 $4800
 HIMON entry:     $C000
 HIMON body:      $C000-$EFE9
 STR8 entry:      $F000
-STR8 body:       $F000-$FC69
+STR8 body:       $F000-$FCC5
 STR8 identity:   #5F6A0F7A
 marker bytes:    $FA17 = 7A 0F 6A 5F
 worker source:   $FCE3-$FFEF
