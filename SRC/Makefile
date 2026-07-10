@@ -64,6 +64,7 @@ HIMON_STR8_ROM_BIN := $(BIN_DIR)/himon-str8-rom.bin
 HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
+STR8_TOP_STAGE_S19 := $(S19_DIR)/str8-top-stage-0a00.s19
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_LOAD_BIN := $(BIN_DIR)/himon-load-c000.bin
@@ -234,9 +235,13 @@ ROUTINE_COMPONENTS := $(DOC_GENERATED_DIR)/ROUTINE_COMPONENTS.md
 GENERATED_DOCS := $(CALL_ORDER) $(ROUTINE_CONTRACTS) $(HIMON_ROUTINE_TREE) $(ROUTINE_CLASS_DIAGRAM) $(ROUTINE_PREFIX_MAP) $(ROUTINE_WORD_TREE) $(HIMON_SUPPORT_MAP) $(HIMON_COMMAND_MAP) $(HASH_ROUTINE_MAP) $(CMD_FLOW_MAP) $(STACK_DEPTH_MAP) $(INTERRUPT_VECTOR_MAP) $(MAP_OF_MAPS) $(ROUTINE_GRAPH_INSIGHTS) $(ROUTINE_COMPONENTS)
 ROUTINE_HASH_COMMENTS_GEN := tools/gen_routine_hash_comments.ps1
 DOCS_GEN := tools/gen_docs.ps1
+EDGE_DOCS_GEN := tools/gen_edge_dump.ps1
 DOCS_WATCH := tools/watch_docs.ps1
 DOCS_HTML_GEN := tools/gen_html_docs.ps1
 DOC_HTML_DIR := ../DOC/HTML
+GUIDE_HIMON_EDGE_DUMP := ../DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md
+GUIDE_STR8_EDGE_DUMP := ../DOC/GUIDES/STR8/STR8_EDGE_DUMP.md
+EDGE_DOCS := $(GUIDE_HIMON_EDGE_DUMP) $(GUIDE_STR8_EDGE_DUMP)
 HELP_GEN := tools/show_make_help.ps1
 BIN_POLICY := tools/bin_policy.ps1
 BIN_CHECK := tools/check_bin_policy.ps1
@@ -383,6 +388,9 @@ himon-str8-himon-update-s19: $(HIMON_STR8_HIMON_UPDATE_S19)
 	@echo "Built $(HIMON_STR8_HIMON_UPDATE_S19)."
 
 himon-str8-update str8-himon-update str-himon-str-update: himon-str8-himon-update-s19
+
+str8-top-stage-s19: $(STR8_TOP_STAGE_S19)
+	@echo "Built $(STR8_TOP_STAGE_S19)."
 
 rom-install-s19: himon-str8-rom-install-s19
 	@echo "Built primary ROM install S19."
@@ -618,7 +626,10 @@ routine-hash-comments: $(ROUTINE_HASH_COMMENTS_GEN) $(CALL_ORDER_SRC)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ROUTINE_HASH_COMMENTS_GEN) -Src .
 	@echo "Updated routine HASH comments in .asm files."
 
-docs: $(GENERATED_DOCS)
+edge-docs: $(EDGE_DOCS)
+	@echo "Updated edge docs: $(EDGE_DOCS)."
+
+docs: $(GENERATED_DOCS) edge-docs
 	@echo "Updated docs: $(GENERATED_DOCS)."
 
 docs-watch:
@@ -938,6 +949,10 @@ $(HIMON_STR8_HIMON_UPDATE_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 	@echo [ps] build $(HIMON_STR8_HIMON_UPDATE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$(HIMON_STR8_HIMON_UPDATE_S19)" -BaseAddress 32768 -RangeStart 49152 -RangeEnd 61439 -StartAddress 49152 -OmitAllFFDataRecords
 
+$(STR8_TOP_STAGE_S19): $(HIMON_STR8_ROM_BIN) tools/build_str8_top_stage_s19.ps1
+	@echo [ps] build $(STR8_TOP_STAGE_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_str8_top_stage_s19.ps1 -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$(STR8_TOP_STAGE_S19)"
+
 $(MSBASIC_OSI_RAM_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(MSBASIC_OSI_RAM_LINKFLAGS) $(MSBASIC_OSI_RAM_S19) $(MSBASIC_OSI_OBJ)
@@ -1042,6 +1057,12 @@ $(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "New-Item -ItemType Directory -Force -Path '$(DOC_GENERATED_DIR)' | Out-Null"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_GEN) -Src . -OutDir $(DOC_GENERATED_DIR)
 
+$(GUIDE_HIMON_EDGE_DUMP): HIMON/himon.asm $(EDGE_DOCS_GEN)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(EDGE_DOCS_GEN) -SourcePath "HIMON/himon.asm" -OutPath "$@" -Title "HIMON Edge Dump" -DisplaySource "HIMON/himon.asm" -ReadableMap "[HIMON_MAP.md](HIMON_MAP.md)"
+
+$(GUIDE_STR8_EDGE_DUMP): STR8/str8.asm $(EDGE_DOCS_GEN)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(EDGE_DOCS_GEN) -SourcePath "STR8/str8.asm" -OutPath "$@" -Title "STR8 Edge Dump" -DisplaySource "STR8/str8.asm" -ReadableMap "[STR8.md](STR8.md)"
+
 artifacts:
 	@echo [ps] sync sidecar artifacts
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$pairs = @(@{Ext='lst';Dir='$(LST_DIR)'},@{Ext='sym';Dir='$(SYM_DIR)'},@{Ext='map';Dir='$(MAP_DIR)'},@{Ext='bin';Dir='$(BIN_DIR)'},@{Ext='s19';Dir='$(S19_DIR)'}); foreach ($$p in $$pairs) { New-Item -ItemType Directory -Force -Path $$p.Dir | Out-Null }; foreach ($$p in $$pairs) { $$src = @('$(APPS_DIR)','$(PROOFS_DIR)','$(ASM_DIR)','$(HIMON_DIR)','$(STR8_DIR)','$(TESTS_DIR)','$(LIB_DIR)'); if ($$p.Ext -ne 's19') { $$src += '$(S19_DIR)' }; $$dst = (Resolve-Path $$p.Dir).Path; Get-ChildItem -Recurse -File -Path $$src -Filter ('*.' + $$p.Ext) | Where-Object { $$_.DirectoryName -ne $$dst } | ForEach-Object { Copy-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force }; Get-ChildItem -File -Path . -Filter ('*.' + $$p.Ext) | ForEach-Object { Copy-Item -LiteralPath $$_.FullName -Destination (Join-Path $$p.Dir $$_.Name) -Force } }"
@@ -1075,7 +1096,7 @@ endif
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \
-	str-himon-str-update himon-load himon-load-bin \
+	str-himon-str-update str8-top-stage-s19 himon-load himon-load-bin \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \
 	str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash \
 	life himon-debug-proof himon-search-static himon-search-static-proof \
@@ -1093,5 +1114,5 @@ endif
 	routine-word-tree himon-support-map himon-command-map hash-routine-map \
 	cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map \
 	map-of-maps routine-graph-insights routine-components routine-hash-comments \
-	docs docs-watch docs-html bin-check rom testing artifacts clean realclean \
+	edge-docs docs docs-watch docs-html bin-check rom testing artifacts clean realclean \
 	upload term

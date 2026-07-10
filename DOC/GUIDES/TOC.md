@@ -20,7 +20,8 @@ connect.
 
 ## Detail Shelves
 
-- [STR8](STR8/STR8.md) - recovery, update, product boundaries, bringup, and work process.
+- [STR8](STR8/STR8.md) - recovery, update, product boundaries, bringup,
+  work process, and [edge evidence](STR8/STR8_EDGE_DUMP.md).
 - [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, and edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
@@ -46,6 +47,8 @@ board:
 ## Planning
 
 - [TODO.md](PLANNING/TODO.md) - near-term work.
+- [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` OIL on-board
+  intensive test rail and size-review recommendations.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.
 
 ## Core Thread

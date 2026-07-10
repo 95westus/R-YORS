@@ -24,6 +24,7 @@ STR8.md
   used by HASHED_ASM.md for flash commit/condense policy
   used by MAP.md for recovery/update ownership
   used by HISTORICAL_DOCUMENTS.md as the recovery-layer name
+  uses STR8_EDGE_DUMP.md as raw direct-edge evidence
 
 STR8_WORK_PROCESS.md
   records the current process for returning to STR8 work
@@ -147,10 +148,23 @@ HIMON_EDGE_DUMP.md
   keeps raw edge sites separate from the compact SYMBOL_XREF call tree and
   readable HIMON_MAP.md diagrams
 
+STR8_EDGE_DUMP.md
+  direct `JSR`/`JMP` edge dump for `STR8/str8.asm`
+  keeps raw recovery-monitor edge sites separate from STR8.md's readable
+  product and proof narrative
+
 HARDWARE_TEST_LOG.md
   records board transcript validation after tests are run
   references BRINGUP.md, HIMON_DEBUG_TESTING.md, HREC_JOIN_PROOF.md, and
   HIMON_SEARCH_IMPLEMENTATION_GUIDE.md for the test intent behind each pass
+
+OIL_710_TEST_PLAN.md
+  records the `.710` OIL release test rail for Online Interactive Linker board
+  proof
+  depends on ASM sample AP packages, current HIMON/STR8 maps, and
+  HARDWARE_TEST_LOG.md append-only transcript evidence
+  keeps size recommendations for STR8, HIMON, ASM, and R-YORS namespace moves
+  separate from the release board transcript
 ```
 
 ## Source Cross-Reference
@@ -158,12 +172,12 @@ HARDWARE_TEST_LOG.md
 Current generated operational source scan:
 
 ```text
-Source files scanned:  27
-XDEF declarations:     179
-XREF declarations:     143
-ROUTINE headers:       130
-JSR/JMP call sites:    989
-Unique direct edges:   779
+Source files scanned:  30
+XDEF declarations:     222
+XREF declarations:     152
+ROUTINE headers:       144
+JSR/JMP call sites:    1363
+Unique direct edges:   1103
 ```
 
 Current HIMON/STR8 operational files:

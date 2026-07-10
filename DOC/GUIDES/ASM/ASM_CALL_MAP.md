@@ -12,10 +12,14 @@ Current proof shape:
 runtime paste entry       $2000
 smoke output target       $7000
 protected ASM/RJOIN seed  $7E00-$7E01
-global symbols            32
-fixups                    24
-report refs               64
-locals per global scope    8
+HIMON AP service vector   $7E2D-$7E2E
+global symbols            $28 / 40
+fixups                    $60 / 96
+relocations               $10 / 16
+exports                   $08 / 8
+imports                   $08 / 8
+report refs               $A0 / 160
+locals per global scope   $10 / 16
 local visible chars       15
 ```
 
@@ -35,6 +39,8 @@ flowchart TD
     LINE["ASM_ASSEMBLE_LINE"]
     SAVE["ASM_LINE_SAVE"]
     ROLL["ASM_LINE_ROLLBACK"]
+    SEALCLEAR["ASM_SEAL_CLEAR"]
+    SEALCAP["ASM_SEAL_CAPTURE_END_FACTS"]
     LEX["ASM_LEX_LINE"]
     TOK["ASM_NEXT_TOKEN"]
     HEAD["ASM_PARSE_HEAD"]
@@ -55,6 +61,8 @@ flowchart TD
 
     BEGIN --> RJOIN
     BEGIN --> CLEAR
+    CLEAR --> SEALCLEAR
+    ENDASM --> SEALCAP
     ENDASM --> REPORTEND
 
     LINE --> SAVE
@@ -76,8 +84,12 @@ flowchart TD
     DISP["ASM_DISPATCH_STATEMENT"]
     BIND["ASM_BIND_LABEL"]
     EQU["ASM_DEFINE_EQU"]
+    EXPORT["ASM_EXPORT_SYMBOL"]
+    IMPORT["ASM_IMPORT_SYMBOL"]
+    ENTRY["ASM_EXPORT_SYMBOL / entry flag"]
     ORG["ASM_SET_PC_FROM_VALUE"]
     DB["ASM_EMIT_DB"]
+    DW["ASM_EMIT_DW"]
     DS["ASM_EMIT_DS"]
     EXPR["ASM_PARSE_EXPR"]
     CLASS["ASM_CLASS_OPERAND"]
@@ -90,19 +102,26 @@ flowchart TD
     FIXPLAN["ASM_CAPTURE_FIX_PLAN_CURRENT"]
     FIXSTORE["ASM_STORE_FIXUP_CURRENT"]
     FIXNAME["ASM_STORE_FIXUP_NAME_X"]
+    IMPORTFIX["ASM_FIX_IMPORT_RELOC_X"]
+    RELOCNOTE["ASM_RELOC_NOTE_*"]
     RESOLVE["ASM_RESOLVE_FIXUPS_CURRENT"]
     PATCH["ASM_PATCH_FIXUP_X"]
 
     DISP --> BIND
     DISP --> EQU
+    DISP --> EXPORT
+    DISP --> IMPORT
+    DISP --> ENTRY
     DISP --> ORG
     DISP --> DB
+    DISP --> DW
     DISP --> DS
     DISP --> EMIT
 
     EQU --> EXPR
     ORG --> EXPR
     DB --> EXPR
+    DW --> EXPR
     DS --> EXPR
 
     EMIT --> CLASS
@@ -110,6 +129,7 @@ flowchart TD
     EMIT --> BYTE
     EMIT --> WORD
     EMIT --> FIXSTORE
+    EMIT --> RELOCNOTE
 
     CLASS --> EXPR
     CLASS --> LOOKUP
@@ -117,6 +137,7 @@ flowchart TD
     CLASS --> FIXPLAN
 
     FIXSTORE --> FIXNAME
+    FIXSTORE --> IMPORTFIX
     BIND --> RESOLVE
     EQU --> RESOLVE
     RESOLVE --> PATCH
@@ -141,6 +162,35 @@ flowchart LR
     RESOLVE --> PATCH["ASM_PATCH_FIXUP_X"]
 ```
 
+## Seal Package And AP Flow
+
+```mermaid
+flowchart TD
+    ENDASM["ASM_END"] --> CAPTURE["ASM_SEAL_CAPTURE_END_FACTS"]
+
+    SEALCMD["SEAL command"] --> FNV["ASM_SEAL_COMPUTE_FNV"]
+    FNV --> VALIDATE["ASM_SEAL_VALIDATE"]
+    FNV --> HASHBODY["ASM_FNV_SCAN_SEAL_LEN"]
+    FNV --> EXPREC["ASM_EXPORT_BUILD_RECORD"]
+    FNV --> IMPREC["ASM_IMPORT_BUILD_RECORD"]
+    FNV --> RESIMP["ASM_SEAL_RESOLVE_IMPORTS"]
+
+    PACKAGECMD["PACKAGE command"] --> PACKAGE["ASM_SEAL_PACKAGE"]
+    PACKAGE --> FNV
+    PACKAGE --> LAYOUT["ASM_PACKAGE_COMPUTE_LAYOUT"]
+    PACKAGE --> WRITEPKG["ASM_PACKAGE_WRITE"]
+    PACKAGE --> VERIFYPKG["ASM_PACKAGE_VERIFY_BODY"]
+
+    LOADCMD["LOAD command"] --> LOADPKG["ASM_PACKAGE_LOAD"]
+    LOADPKG --> PARSEPKG["ASM_PACKAGE_PARSE_MIN"]
+    LOADPKG --> APVEC["HIMON AP service $7E2D-$7E2E"]
+    APVEC --> HIMAP["HIM_AP_SERVICE"]
+    HIMAP --> STR8LINK["STR8_AP_IMPORT_LINK_SERVICE"]
+
+    INSTALLCMD["INSTALL command"] --> SUGGEST["ASM_PACKAGE_INSTALL_SUGGEST"]
+    SUGGEST --> PARSEPKG
+```
+
 ## Edges To Remember
 
 ```text
@@ -151,6 +201,11 @@ ASM_DISPATCH_STATEMENT owns top-level policy; classifiers should not decide
 whether a token is a label.
 Local labels are label-only PC aliases under the most recent nonlocal label.
 Unresolved local fixups cannot cross into the next nonlocal scope.
+IMPORT forces a deferred import fixup even when the same name is resident and
+RJOIN-callable; plain undeclared resident operands still bind immediately.
+SEAL builds the seal, relocation, export, and import records. PACKAGE writes
+the AP envelope. LOAD delegates package consumption to the resident HIMON AP
+service, which calls the STR8 import-link service for resident RJOIN imports.
 Default flash ASM leaves detailed table reporting to the external
 asm-session-report proof; locals remain intentionally outside global
 report/export names.

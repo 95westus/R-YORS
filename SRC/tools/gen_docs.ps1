@@ -372,7 +372,8 @@ function Get-StackMermaidMapLines {
     param(
         [string]$Group,
         [object[]]$Rows,
-        [int]$MaxNodes = 14
+        [int]$MaxNodes = 10,
+        [int]$MaxEdges = 20
     )
 
     $lines = @()
@@ -414,7 +415,7 @@ function Get-StackMermaidMapLines {
 
     $nodeIds = @{}
     $usedIds = @{}
-    foreach ($key in ($edgeDepth.Keys | Sort-Object -Property @{Expression={$edgeDepth[$_]};Descending=$true}, @{Expression={$edgeCount[$_]};Descending=$true}, @{Expression={$edgeFrom[$_]}}, @{Expression={$edgeTo[$_]}})) {
+    foreach ($key in ($edgeDepth.Keys | Sort-Object -Property @{Expression={$edgeDepth[$_]};Descending=$true}, @{Expression={$edgeCount[$_]};Descending=$true}, @{Expression={$edgeFrom[$_]}}, @{Expression={$edgeTo[$_]}} | Select-Object -First $MaxEdges)) {
         $from = $edgeFrom[$key]
         $to = $edgeTo[$key]
         $fromId = Get-StackMermaidNodeId -Group $Group -Label $from -NodeIds $nodeIds -UsedIds $usedIds
@@ -754,9 +755,11 @@ Write-Doc -Name 'ROUTINE_CONTRACTS.md' -Lines $lines
 $lines = @('# R-YORS HIMON Routine Tree') + $header
 $lines += 'Tree scope: current HIMON source only (`HIMON/himon.asm` and HIMON include files).'
 $lines += ''
+$lines += 'Renderable graph is capped to the strongest 40 direct edges. Use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.'
+$lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart LR'
-foreach ($edge in ($himonTreeEdges | Select-Object -First 220)) {
+foreach ($edge in ($himonTreeEdges | Select-Object -First 40)) {
     $lines += ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Id (Get-DisplayName $edge.Source)), (Get-DisplayName $edge.Source), $edge.Count, (Mermaid-Id (Get-DisplayName $edge.Target)), (Get-DisplayName $edge.Target))
 }
 $lines += '```'
@@ -783,9 +786,11 @@ $prefixRows = @(
 )
 
 $lines = @('# R-YORS Routine Class Diagram') + $header
+$lines += 'Renderable graph is capped to the strongest 40 prefix edges. Use `ROUTINE_GRAPH_INSIGHTS.md` and the raw edge dumps for the complete graph.'
+$lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart LR'
-foreach ($row in ($prefixRows | Select-Object -First 120)) {
+foreach ($row in ($prefixRows | Select-Object -First 40)) {
     $lines += ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Prefix-Id $row.Source), $row.Source, $row.Count, (Mermaid-Prefix-Id $row.Target), $row.Target)
 }
 $lines += '```'
@@ -799,9 +804,11 @@ foreach ($g in ($routines | Group-Object { Get-Prefix $_.Name })) {
 $lines = @('# R-YORS Routine Prefix Map') + $header
 $lines += 'Prefix map over the operational source set. Node counts are routine headers; edge counts are direct `JSR`/`JMP` sites grouped by prefix.'
 $lines += ''
+$lines += 'Renderable graph is capped to the strongest 40 prefix edges.'
+$lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart LR'
-foreach ($row in ($prefixRows | Select-Object -First 160)) {
+foreach ($row in ($prefixRows | Select-Object -First 40)) {
     $sourceCount = if ($prefixRoutineCounts.ContainsKey($row.Source)) { $prefixRoutineCounts[$row.Source] } else { 0 }
     $targetCount = if ($prefixRoutineCounts.ContainsKey($row.Target)) { $prefixRoutineCounts[$row.Target] } else { 0 }
     $lines += ('    {0}["{1}<br/>{2} routines"] -->|{3}| {4}["{5}<br/>{6} routines"]' -f (Mermaid-Prefix-Id $row.Source), $row.Source, $sourceCount, $row.Count, (Mermaid-Prefix-Id $row.Target), $row.Target, $targetCount)
@@ -874,7 +881,7 @@ $wordPathCandidates = @(
     $wordPathRows |
     Where-Object { $_.Depth -eq 1 -or $_.Count -ge 2 } |
     Sort-Object -Property Depth, @{Expression='Count';Descending=$true}, Path |
-    Select-Object -First 260
+    Select-Object -First 40
 )
 
 foreach ($row in $wordPathCandidates) {
@@ -888,7 +895,7 @@ foreach ($row in $wordPathCandidates) {
 $lines = @('# R-YORS Routine Word Tree') + $header
 $lines += 'Hierarchy over callable-ish source symbols, split on `_`. Symbols come from routine headers and direct `JSR`/`JMP` source/target names in the operational source set.'
 $lines += ''
-$lines += 'The Mermaid graph keeps branches with at least two symbols, plus all root words. Edges are name containment, not call edges.'
+$lines += 'The Mermaid graph is capped to the strongest 40 name branches so it stays renderable. Edges are name containment, not call edges.'
 $lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart TD'
@@ -944,9 +951,11 @@ $himonPrefixRows = @(
 $lines = @('# R-YORS HIMON Support Map') + $header
 $lines += 'HIMON-only dependency map. This rolls current compatibility labels into HIMON and shows which support layers the monitor leans on.'
 $lines += ''
+$lines += 'Renderable graph is capped to the strongest 40 prefix edges.'
+$lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart LR'
-foreach ($row in ($himonPrefixRows | Select-Object -First 120)) {
+foreach ($row in ($himonPrefixRows | Select-Object -First 40)) {
     $lines += ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Prefix-Id $row.Source), $row.Source, $row.Count, (Mermaid-Prefix-Id $row.Target), $row.Target)
 }
 $lines += '```'
@@ -959,11 +968,11 @@ $himonCommandEdges = @(
         $himonCommandPrefixes -contains (Get-Prefix $_.Source) -or
         $himonCommandPrefixes -contains (Get-Prefix $_.Target)
     } |
-    Select-Object -First 180
+    Select-Object -First 40
 )
 
 $lines = @('# R-YORS HIMON Command Map') + $header
-$lines += 'HIMON command/debug/load/ASM call map, limited to direct edges and compacted for readability.'
+$lines += 'HIMON command/debug/load/ASM call map, limited to direct edges and compacted for readability. Renderable graph is capped to the strongest 40 command-surface edges; use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.'
 $lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart LR'
@@ -1014,9 +1023,11 @@ $hashAllLabelNames = @($hashLabels | ForEach-Object { $_.Name } | Sort-Object -U
 $lines = @('# R-YORS Hash Routine Map') + $header
 $lines += 'Scope: current source-derived hash path. This includes `CMD_HASH*`, `FNV1A_*`, `MATH_*HASH*`, `MON_PRINT_HASH`, `CMD_SAVE_HASH`, and `CMD_DISPATCH_HASH` labels plus their direct call neighbors. Routine header `[HASH:...]` IDs alone do not make a routine part of this map.'
 $lines += ''
+$lines += 'Renderable graph is capped to the strongest 40 hash-path edges; the Direct Edges section below lists the complete source-derived set.'
+$lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart LR'
-foreach ($edge in ($hashEdges | Select-Object -First 180)) {
+foreach ($edge in ($hashEdges | Select-Object -First 40)) {
     $lines += ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Id (Get-DisplayName $edge.Source)), (Get-DisplayName $edge.Source), $edge.Count, (Mermaid-Id (Get-DisplayName $edge.Target)), (Get-DisplayName $edge.Target))
 }
 foreach ($label in $hashIsolatedLabels) {
@@ -1479,7 +1490,7 @@ $lines += '- Does not add the hardware NMI/IRQ entry frame to trap rows; those r
 $lines += ''
 $lines += '## Command Stack Map'
 $lines += ''
-$lines += 'Renderable Mermaid node/edge map of command stack paths. Node labels show the highest stack depth seen on any command path that touches that node; edge labels show the highest stack depth seen on that route. The tables below remain the exact byte/source reference.'
+$lines += 'Renderable Mermaid node/edge map of command stack paths, capped to the deepest 20 route edges per HIMON/STR8 subgraph. Node labels show the highest stack depth seen on any command path that touches that node; edge labels show the highest stack depth seen on that route. The tables below remain the exact byte/source reference.'
 $lines += ''
 $lines += '```mermaid'
 $lines += '%%{init: {"theme": "base", "themeVariables": {"background": "#000000", "mainBkg": "#000000", "primaryColor": "#000000", "primaryBorderColor": "#d8d8d8", "primaryTextColor": "#ffffff", "lineColor": "#ffffff", "secondaryColor": "#000000", "tertiaryColor": "#000000", "clusterBkg": "#000000", "clusterBorder": "#999999", "edgeLabelBackground": "#000000"}}}%%'

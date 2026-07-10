@@ -263,9 +263,9 @@ in the protected top sector. IVI means Interrupt Vector Indirection; IVY is only
 the pronunciation and the current signature/symbol spelling.
 
 ```text
-NMI   -> STR8_IVY_ENTRY_NMI at $F089
+NMI   -> STR8_IVY_ENTRY_NMI at $F092
 RESET -> START at $F000
-IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F09D
+IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0A6
 ```
 
 On reset, STR8 seeds the IVI RAM cells with safe defaults before the boot
@@ -309,7 +309,7 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
-The current combined ROM stores the worker source at bank 3 `$FD1E-$FFEF`.
+The current combined ROM stores the worker source at bank 3 `$FCE3-$FFEF`.
 Before `B`, `E`, `M`, `U`, `0`, `1`, or `2`, resident STR8 at `$F000` copies
 that worker into the `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The
 worker uses `$1FE9-$1FFF` as its state/update board, uses `$4000-$4FFF` as the

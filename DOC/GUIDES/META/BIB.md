@@ -56,6 +56,7 @@ DOC/GUIDES/META/COMPAT/RTFM-R-YORS.md
 DOC/GUIDES/META/COMPAT/RTFM-str8.md
 DOC/GUIDES/META/XREF.md
 DOC/GUIDES/OPERATORS_GUIDE.md
+DOC/GUIDES/PLANNING/OIL_710_TEST_PLAN.md
 DOC/GUIDES/PLANNING/FUTURE.md
 DOC/GUIDES/PLANNING/TODO.md
 DOC/GUIDES/QCC/ASM.md
@@ -73,6 +74,7 @@ DOC/GUIDES/STR8/BRINGUP.md
 DOC/GUIDES/STR8/PRODUCT_BOUNDARIES.md
 DOC/GUIDES/STR8/STR8.md
 DOC/GUIDES/STR8/STR8_DECISION_REFERENCE.md
+DOC/GUIDES/STR8/STR8_EDGE_DUMP.md
 DOC/GUIDES/STR8/STR8_FLASH_UPDATE_PROPOSAL.md
 DOC/GUIDES/STR8/STR8_WORK_PROCESS.md
 DOC/GUIDES/TECHNICAL_GUIDE.md
@@ -125,6 +127,8 @@ DOC/GENERATED/STACK_DEPTH_MAP.md
 - Runtime command lookup in HIMON uses FNV-1a hashes over command text.
 - `HIMON_MAP.md` is the readable HIMON map; `HIMON_EDGE_DUMP.md` is the raw
   direct-edge listing.
+- `STR8_EDGE_DUMP.md` is the raw direct-edge listing for the STR8 recovery
+  monitor.
 - `HIMON_STAGES_CLASSES.md` reconstructs the Himon/Himonia/Himonia-F stage
   ladder and subsystem class families from current source plus guide evidence.
 - `STR8_WORK_PROCESS.md` records the current review, proof, implementation,

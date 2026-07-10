@@ -1,0 +1,237 @@
+; TOPWR-3000.A
+; BOARD-BUILDABLE TOP-SECTOR STAGE/PROGRAM TOOL.
+;
+; ENTRY POINTS AFTER ASSEMBLY:
+;   G 3000  COPY LIVE $F000-$FFFF INTO $0A00-$19FF
+;   G 3003  PROGRAM $0A00-$19FF BACK TO BANK 3 $F000-$FFFF
+;
+; WORKFLOW:
+;   1. ASSEMBLE THIS WITH FLASH ASM.
+;   2. G 3000 TO MIRROR THE LIVE TOP SECTOR INTO THE SECTOR STAGING BUFFER.
+;   3. LOAD OR OVERLAY THE REPLACEMENT TOP-SECTOR IMAGE INTO $0A00-$19FF.
+;      FOR S19, USE A REMAPPED IMAGE WHOSE $F000-$FFFF RECORDS ARE ADDRESSED
+;      AS $0A00-$19FF, OR OTHERWISE PATCH THE STAGED BUFFER DIRECTLY.
+;   4. G 3003 TO ERASE/PROGRAM/VERIFY THE FULL TOP SECTOR.
+;
+; STATUS:
+;   $1A01 = $AC OK
+;   $1A01 = $E1 ERASE TIMEOUT
+;   $1A01 = $E2 PROGRAM TIMEOUT
+;   $1A01 = $E3 VERIFY MISMATCH
+;   $1A02/$1A03 = FAIL ADDRESS FOR PROGRAM/VERIFY FAILURES
+;
+; THE WORKER IS COPIED TO $0200-$03FF AND DOES NOT CALL ROM WHILE FLASH IS
+; BUSY. IT USES $0A00-$19FF AS THE SECTOR STAGING BUFFER.
+
+        ORG $3000
+
+STAGE   JMP TSTAGE
+PROG    JMP TPROG
+
+MODE    EQU $1A00
+STAT    EQU $1A01
+FLO     EQU $1A02
+FHI     EQU $1A03
+SPLO    EQU $C8
+SPHI    EQU $C9
+DPLO    EQU $CA
+DPHI    EQU $CB
+
+WTRAY   EQU $0200
+
+TSTAGE  LDA #$00
+        STA MODE
+        BRA TRUN
+
+TPROG   LDA #$01
+        STA MODE
+
+TRUN    STZ STAT
+        STZ FLO
+        STZ FHI
+        LDA #<WSTART
+        STA SPLO
+        LDA #>WSTART
+        STA SPHI
+        STZ DPLO
+        LDA #$02
+        STA DPHI
+        LDX #$02
+CPAGE   LDY #$00
+CBYTE   LDA (SPLO),Y
+        STA (DPLO),Y
+        INY
+        BNE CBYTE
+        INC SPHI
+        INC DPHI
+        DEX
+        BNE CPAGE
+        JSR WTRAY
+        RTS
+
+; Everything below must remain position-independent after copy to $0200.
+; Use only relative branches plus fixed absolute hardware/RAM addresses.
+
+WSTART  PHP
+        SEI
+        LDA #$EE
+        TRB $7FEC
+        LDA #$EE
+        TSB $7FEC
+        LDA MODE
+        BNE WPROG
+
+        STZ $CD
+        LDA #$F0
+        STA $CE
+        STZ $CF
+        LDA #$0A
+        STA $D0
+WSPAGE  LDY #$00
+WSBYTE  LDA ($CD),Y
+        STA ($CF),Y
+        INY
+        BNE WSBYTE
+        INC $CE
+        INC $D0
+        LDA $D0
+        CMP #$1A
+        BNE WSPAGE
+        LDA #$AC
+        STA STAT
+        PLP
+        RTS
+
+WPROG   STZ $D1
+        LDA #$F0
+        STA $D2
+        LDA #$AA
+        STA $D555
+        LDA #$55
+        STA $AAAA
+        LDA #$80
+        STA $D555
+        LDA #$AA
+        STA $D555
+        LDA #$55
+        STA $AAAA
+        LDA #$30
+        LDY #$00
+        STA ($D1),Y
+        STZ $D4
+        STZ $D5
+        LDA #$08
+        STA $D6
+WEPOLL  LDY #$00
+        LDA ($D1),Y
+        CMP #$FF
+        BEQ WEROK
+        DEC $D4
+        BNE WEPOLL
+        DEC $D5
+        BNE WEPOLL
+        DEC $D6
+        BNE WEPOLL
+        LDA #$E1
+        STA STAT
+; Keep erase-timeout reset inline; WRESET is past the rel8 branch range here.
+        LDA #$F0
+        STA $D555
+        LDA #$EE
+        TRB $7FEC
+        LDA #$EE
+        TSB $7FEC
+        PLP
+        RTS
+
+WEROK   STZ $D1
+        LDA #$F0
+        STA $D2
+        STZ $CF
+        LDA #$0A
+        STA $D0
+WPBYTE  LDY #$00
+        LDA ($CF),Y
+        CMP #$FF
+        BEQ WPNEXT
+        STA $D3
+        LDA #$AA
+        STA $D555
+        LDA #$55
+        STA $AAAA
+        LDA #$A0
+        STA $D555
+        LDA $D3
+        STA ($D1),Y
+        STZ $D4
+        STZ $D5
+        LDA #$02
+        STA $D6
+WPPOLL  LDY #$00
+        LDA ($D1),Y
+        CMP $D3
+        BEQ WPNEXT
+        DEC $D4
+        BNE WPPOLL
+        DEC $D5
+        BNE WPPOLL
+        DEC $D6
+        BNE WPPOLL
+        LDA #$E2
+        STA STAT
+        LDA $D1
+        STA FLO
+        LDA $D2
+        STA FHI
+        BRA WRESET
+
+WPNEXT  INC $D1
+        INC $CF
+        BNE WPBYTE
+        INC $D2
+        INC $D0
+        LDA $D0
+        CMP #$1A
+        BNE WPBYTE
+
+        STZ $D1
+        LDA #$F0
+        STA $D2
+        STZ $CF
+        LDA #$0A
+        STA $D0
+WVPAGE  LDY #$00
+WVBYTE  LDA ($D1),Y
+        CMP ($CF),Y
+        BNE WVFAIL
+        INY
+        BNE WVBYTE
+        INC $D2
+        INC $D0
+        LDA $D0
+        CMP #$1A
+        BNE WVPAGE
+        LDA #$AC
+        STA STAT
+        LDA #$F0
+        STA $D555
+        PLP
+        RTS
+
+WVFAIL  LDA #$E3
+        STA STAT
+        TYA
+        STA FLO
+        LDA $D2
+        STA FHI
+
+WRESET  LDA #$F0
+        STA $D555
+        LDA #$EE
+        TRB $7FEC
+        LDA #$EE
+        TSB $7FEC
+        PLP
+        RTS
+
+        END

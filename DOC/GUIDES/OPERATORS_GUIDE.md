@@ -103,23 +103,23 @@ $F000-$FFFF    4K STR8 recovery sector
 Current combined-image facts:
 
 ```text
-HIMON:           $C000-$E755
-STR8 image:      $F000-$FA82
-IVI entries:     NMI $F089, IRQ/BRK $F09D
+HIMON:           $C000-$EFE9
+STR8 image:      $F000-$FC69
+IVI entries:     NMI $F092, IRQ/BRK $F0A6
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F76F = 7A 0F 6A 5F
-worker source:   $FD1E-$FFEF, copied to RAM when needed
+marker bytes:    $FA17 = 7A 0F 6A 5F
+worker source:   $FCE3-$FFEF, copied to RAM when needed
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0
+vectors:         $FFFA-$FFFF = 92 F0 00 F0 A6 F0
 ```
 
 After burning, quick monitor checks should look like:
 
 ```text
 D C000 C00F  78 D8 A2 FF 9A AD E6 7E ...
-D F000 F00F  78 D8 A2 FF 9A 20 36 F0 ...
-D FD1E FD2D  08 78 AD F0 1F C9 04 F0 ...
-D FFFA FFFF  89 F0 00 F0 9D F0
+D F000 F00F  4C 09 F0 4C 93 F3 4C 9A F3 78 D8 A2 FF 9A 20 3F
+D FCE3 FCF2  08 78 AD F0 1F C9 04 F0 ...
+D FFFA FFFF  92 F0 00 F0 A6 F0
 ```
 
 ## First Boot
@@ -229,6 +229,11 @@ STR8>G
 Run `B` before `U` when the current live image should be preserved in the
 backup chain. Do not run `B` after a temporary payload boots unless that
 payload should become recoverable.
+
+Updating the active STR8 top sector is a separate, dangerous operation. For the
+OIL `.710` procedure, build `make -C SRC str8-top-stage-s19`, stage with
+`DOC/GUIDES/ASM/SAMPLES/topwr-3000.a`, and follow
+[PLANNING/OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md#str8-top-sector-update-procedure).
 
 ## STR8 Payload Streams
 

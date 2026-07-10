@@ -279,7 +279,7 @@ R-YORS/STR8.
 `BUILD/bin/himon-str8-rom.bin` is the primary combined image: HIMON starts at
 CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
 `$7000`, RESET points to STR8 at `$F000`, and NMI/IRQ point to STR8 IVI entries
-at `$F089`/`$F09D`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
+at `$F092`/`$F0A6`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
 the file, `$7FFA-$7FFF`.
 
 Current STR8 payload update images are fixed `$C000-$EFFF` S19 streams:

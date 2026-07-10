@@ -12037,3 +12037,771 @@ RET A=A7 X=00 Y=00 P=B4 S=FD Nv-BdIzc
 
 Result: resident PACK40 service vector publication, flash ASM AP metadata use,
 and direct positive/negative service behavior all passed on hardware.
+
+## 2026-07-09 OIL .710 Preflight: STR8 Top-Sector Mismatch
+
+The attached board transcript is a preflight finding for `.710` OIL. It proves
+that the board can restore bank 0 to bank 3, update HIMON `$C000-$EFFF`, load
+the reporter, and load flash ASM. It does not prove the OIL STR8 top-sector
+changes. The board is running current HIMON over an older STR8 top sector.
+
+Transcript excerpts:
+
+```text
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+...
+STR8 V0 #5F6A0F7A
+ROM $F000
+? B E M U 0 1 2 G R
+B0 HOLD
+STR8>
+RESTORE B0->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B0->B3
+...
+STR8>
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0709(1413)
+>L
+L S19
+L @7000
+L OK=06D5 GO=7000
+>L F
+L F S19
+L @8000
+LF OK WR=3966 GO=800C
+```
+
+The OIL identity gate fails because `$F000` is still old STR8 boot code, not
+the current stable jump table:
+
+```text
+>D F000 F008
+F000: 78 D8 A2 FF 9A 20 36 F0 | 20 | x.... 6.
+```
+
+Current OIL expects:
+
+```text
+F000: 4C 09 F0 4C 93 F3 4C 9A F3
+```
+
+The vectors also match the older layout rather than the current OIL map:
+
+```text
+FFF0: FF FF FF FF FF FF FF FF | FF FF 89 F0 00 F0 9D F0 | ................
+```
+
+Current OIL expects `$FFFA-$FFFF = 92 F0 00 F0 A6 F0`.
+
+The dump also shows the older full ASCII STR8 banner and a stored worker in the
+older `$FDxx` region. Current OIL expects the shortened banner layout and the
+worker stored at `$FCE3-$FFEF`.
+
+Result: OIL full-board testing is blocked until the current STR8 top sector is
+loaded and Gate 0 is rerun. Do not run AP load/import or banked AP tests from
+this mixed image, because current HIMON calls STR8 service `$F006` after AP body
+copy and calls `$F003` for `AP Bn`, while the attached board image does not have
+those stable service entries.
+
+## 2026-07-09 OIL .710 Top Writer Assembly Failure
+
+The follow-up board transcript tried to prepare the `topwr-3000.a` top-sector
+writer after restoring bank 0 to bank 3, updating HIMON, loading the reporter,
+and loading flash ASM.
+
+Observed setup:
+
+```text
+HIMON V 00.0709(1446)
+>L
+L S19
+L @7000
+L OK=06D5 GO=7000
+>L F
+L F S19
+L @8000
+LF OK WR=3966 GO=800C
+>ASM
+ASM
+```
+
+The paste reached the erase/program worker body, then failed before `ASM OK`:
+
+```text
+ASM>$315F: WRESET  LDA #$F0
+ERR=$06 BAD RANGE PC=$315F
+...
+ASM>$316E:         END
+ERR=$09 BAD FIX PC=$316E
+#56AD7400# EXEC ERR=$09
+>
+```
+
+Result: no top-sector stage or program action was proved, and the active STR8
+top sector was not updated by this attempt. The failure was an ASM rel8 fixup
+range problem in the sample tool: the erase-timeout path used `BRA WRESET`,
+but `WRESET` was too far away after the rest of the worker body assembled. The
+sample has been corrected by keeping that erase-timeout reset sequence inline.
+
+Next action: paste the corrected `DOC/GUIDES/ASM/SAMPLES/topwr-3000.a` through
+`ASM NEW`, require `ASM OK`, then resume the OIL STR8 top-sector update
+procedure from `G 3000`.
+
+## 2026-07-09 OIL .710 STR8 Top-Sector And Gate 3 Import Linker Pass
+
+The follow-up board transcript proved the corrected top-sector writer, the
+current STR8 top-stage image, and the Gate 3 import linker patch path. The
+top writer assembled cleanly, staged live top-sector flash to `$0A00-$19FF`,
+loaded the rebuilt `str8-top-stage-0a00.s19`, and programmed bank 3
+`$F000-$FFFF`.
+
+Top-stage staging and flash signatures matched the rebuilt image. The `B7 F6`
+call site distinguishes this image from the earlier stale `AF F6` build:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=00 P=77 S=FD NV-BdIZC
+>D 1A00 1A03
+1A00: 00 AC 00 00 | ....
+>L
+L S19
+L @0A00
+L OK=1000 GO=0A00
+>D 0D90 0DAF
+0D90: 00 02 60 20 B7 F6 20 00 | 02 60 9C 30 7E 20 24 F4 | ..` .. ..`.0~ $.
+0DA0: A0 00 B1 CD 8D 16 1A AD | 3C 7E 8D 17 1A A2 00 EC | ........<~......
+>G 3003
+GO 3003
+
+#GO# ENTRY=3003
+RET A=F0 X=00 Y=00 P=77 S=FD NV-BdIZC
+>D 1A00 1A03
+1A00: 01 AC 00 00 | ....
+>D F390 F3AF
+F390: 00 02 60 20 B7 F6 20 00 | 02 60 9C 30 7E 20 24 F4 | ..` .. ..`.0~ $.
+F3A0: A0 00 B1 CD 8D 16 1A AD | 3C 7E 8D 17 1A A2 00 EC | ........<~......
+```
+
+A mistyped `ASMM NEW` produced expected hash-miss noise, then the operator
+entered `ASM` and replayed the `banked-rjoin-smoke.a` source. The AP package
+loaded to `$3000`, resolved declared import `BIO_FTDI_PUT_CSTR` through
+resident RJOIN, and patched all three import relocation rows. The final
+debug row shows kind `$06`, patch site `$300F`, resolved target `$E779`,
+relocation index `$04`, relocation count `$05`, and import count `$01`:
+
+```text
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$0075
+SEAL> LOAD $3200 $3000
+LOAD OK=$3000 L=$0028 C=$05
+SEAL> .
+ASM BYE
+>D 1A10 1A17
+1A10: 06 0F 30 79 E7 04 05 01 | ..0y....
+>D 3006 3008
+3006: 20 79 E7 |  y.
+>D 3000 3018
+3000: 80 00 A2 19 A0 30 20 79 | E7 A9 79 8D 4A 58 A9 E7 | .....0 y..y.JX..
+3010: 8D 4B 58 A9 AC 8D 48 58 | 60 | .KX...HX`
+>G 3000
+GO 3000
+
+BANK RJOIN
+
+#GO# ENTRY=3000
+RET A=AC X=19 Y=0E P=F5 S=FD NV-BdIzC
+>D 5848 5848
+5848: AC | .
+>D 584A 584B
+584A: 79 E7 | y.
+```
+
+The reporter confirmed the assembled source and relocation table:
+
+```text
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2028
+HIGH=$2028
+BYTES=$0028
+LINES=$0022
+SYMS=$03/$28
+FIXUPS=$06/$60
+REFS=$00/$A0
+TRUNC=NO
+MAP END=$B966 UDATA=$5000-6F16
+SEAL FL BASE END LEN FNV 01 2000 2028 0028 412277B7
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 03 06 05 01 01 01 05
+PKG @ LEN BODY INST 3200 0075 0028 0000
+RELOCS
+SL K  SITE TARG
+00 02 0003 0019
+01 03 0005 0019
+02 04 0007 0000
+03 05 000A 0000
+04 06 000F 0000
+ASM REPORT OK
+```
+
+Result: pass. The old Gate 3 failure mode (`20 FF FF` at `$3006` and debug
+patch site `$300A`) is gone. The import resolver returned `$E779`, the linker
+patched the ABS16/LO8/HI8 import sites at `$3007/$300A/$300F`, the loaded
+program printed `BANK RJOIN`, and the sample recorded `$5848=$AC` plus
+`$584A/$584B=$79/$E7`. Banked AP gates may now proceed from this STR8 top
+sector image.
+
+## 2026-07-09 OIL .710 Gate 4 Missing Import Negative Pass
+
+The next board transcript proved that unresolved declared imports fail during
+AP load without running the body. The operator first cleared the success byte:
+
+```text
+>M 5848
+5848: AC 00
+>D 5848
+5848: 00 | .
+```
+
+The package declared `OIL_MISSING_SYMBOL`, referenced it with `JSR`, and would
+have written `$AC` to `$5848` only if the body ran:
+
+```text
+>ASM NEW
+ASM
+ASM>$2000: ORG $2000
+ASM>$2000: IMPORT OIL_MISSING_SYMBOL
+ASM>$2000: MAIN JSR OIL_MISSING_SYMBOL
+ASM>$2003: LDA #$AC
+ASM>$2005: STA $5848
+ASM>$2008: RTS
+ASM>$2009: ENTRY MAIN
+ASM>$2009: END
+ASM OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$0042
+SEAL> LOAD $3200 $3000
+LOAD ERR=$09 BAD FIX
+SEAL> .
+ASM BYE
+>D 5848 5848
+5848: 00 | .
+```
+
+The reporter confirmed a single unresolved import relocation row and no import
+resolution:
+
+```text
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2009
+HIGH=$2009
+BYTES=$0009
+LINES=$0008
+SYMS=$01/$28
+FIXUPS=$01/$60
+REFS=$00/$A0
+TRUNC=NO
+MAP END=$B966 UDATA=$5000-6F16
+SEAL FL BASE END LEN FNV 01 2000 2009 0009 9CB2BF7D
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 01 01 01 01 01 00 00
+PKG @ LEN BODY INST 3200 0042 0000 0000
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 04 04   40  2001 2003 OIL_MISSING_SYMBOL
+RELOCS
+SL K  SITE TARG
+00 04 0001 0000
+ASM REPORT OK
+```
+
+Result: pass. Gate 4 proved the missing-import path returns `LOAD ERR=$09 BAD
+FIX`, does not jump into the AP body, and leaves the cleared success byte at
+`$5848=00`.
+
+## 2026-07-09 OIL .710 Gate 5 Bankput Rel8 Setup Failure
+
+The first Gate 5 board attempt assembled and packaged the no-import AP body
+cleanly:
+
+```text
+ASM>$2034:         END
+ASM OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$006A
+SEAL> .
+ASM BYE
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+START=$2000
+PC=$2034
+BYTES=$0034
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 04 05 03 01 00 00 00
+RELOCS
+SL K  SITE TARG
+00 01 000F 002E
+01 02 0012 002E
+02 03 0017 002E
+ASM REPORT OK
+```
+
+The subsequent `bankput-3000.a` paste failed before it could stage or program
+bank 2. Both attempts in that transcript hit the same assembler rel8 range
+issue: early conditional branches targeted the error tails too far below the
+main copy body.
+
+```text
+ASM>$30BA: BADCFG  LDA #$E0
+ERR=$06 BAD RANGE PC=$30BA
+ASM>$30BE: STAGEFAIL LDA #$E1
+ERR=$06 BAD RANGE PC=$30BE
+ASM>$30C2: BADAP   LDA #$E2
+ERR=$06 BAD RANGE PC=$30C2
+ASM>$30CC:         END
+ERR=$09 BAD FIX PC=$30CC
+#56AD7400# EXEC ERR=$09
+```
+
+Result: no banked AP execution was attempted and Gate 5 remains open. The
+failure is in the board-buildable installer sample, not in AP packaging or
+STR8. `DOC/GUIDES/ASM/SAMPLES/bankput-3000.a` has been corrected by moving the
+small `$E0/$E1/$E2` error exits next to the branches that target them, leaving
+only the nearby `$E4` program-failure tail at the end.
+
+## 2026-07-09 OIL .710 Gate 5 Bank Selection Mismatch
+
+The corrected `bankput-3000.a` assembled successfully and ran to `$1A00=$AC`,
+proving the rel8 sample fix and STR8 staged-sector/program path for the
+selected bank. The paste still had `BANK EQU $00`, so it programmed bank 0
+instead of the intended bank 2:
+
+```text
+ASM>$3000: BANK    EQU $00
+...
+ASM>$30D4:         END
+ASM OK
+SEAL> .
+ASM BYE
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 1A00 3
+1A00: AC 00 00 00 | ....
+```
+
+The following `AP B2 $9000 $3000` correctly failed because bank 2 did not
+contain the newly written AP envelope:
+
+```text
+>AP B2 $9000 $3000
+APERR=$07
+>D 5848 50
+5848: 00 E9 79 E7 85 E9 A5 EA | 65 | ..y.....e
+```
+
+The reporter showed this run was the installer source, not the AP body:
+
+```text
+ASM REPORT
+STATUS=OK
+START=$3000
+PC=$30D4
+BYTES=$00D4
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 24 0A 00 00 00 00 00
+PKG @ LEN BODY INST 0000 0000 0000 0000
+ASM REPORT OK
+```
+
+Result: Gate 5 remains open. This is an operator/sample-default mismatch, not
+an AP loader defect. The installer sample now defaults to `BANK EQU $02`, and
+the banked AP/RJOIN smoke sample comments now show `AP B2 $9000 $3000`.
+
+## 2026-07-09 OIL .710 Gate 5 SEAL Prompt Ordering Note
+
+The next retry pasted the corrected `bankput-3000.a` with `BANK EQU $02` and
+assembled cleanly:
+
+```text
+ASM>$3000: BANK    EQU $02
+...
+ASM>$30D4:         END
+ASM OK
+```
+
+The operator then typed `G 3000` at the `SEAL>` prompt, where `G` is not a
+SEAL command:
+
+```text
+SEAL> G 3000
+ERR=$03 BO PC=$30D4
+SEAL>
+```
+
+Result: Gate 5 remains open, but the bankput code itself is assembled at
+`$3000`. Exit SEAL with `.`, then run `G 3000` from HIMON before `AP B2`.
+The OIL plan and installer sample comments now spell out this prompt ordering.
+
+## 2026-07-09 OIL .710 Gate 5 Banked AP Without Imports Pass
+
+The next transcript repeated the corrected `bankput-3000.a` paste with
+`BANK EQU $02`. The operator again tried `G 3000` once from `SEAL>`, got the
+expected `BAD OPER`, then exited to HIMON and ran the assembled installer from
+the correct prompt:
+
+```text
+ASM>$3000: BANK    EQU $02
+...
+ASM>$30D4:         END
+ASM OK
+SEAL> G 3000
+ERR=$03 BO PC=$30D4
+SEAL> .
+ASM BYE
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 1A00 3
+1A00: AC 00 00 00 | ....
+```
+
+The banked AP command then loaded the AP envelope from bank 2 `$9000`, applied
+the internal relocation rows, and ran the no-import body from `$3000`:
+
+```text
+>AP B2 $9000 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 5848 50
+5848: AC E9 2E 30 85 E9 A5 EA | 5A | ...0....Z
+```
+
+Result: pass. Gate 5 proved `AP B2 pkg dst`, STR8 staged-sector bank source
+copy/program via `$F003`, HIMON AP load from a banked source window, and
+internal AP relocations without imports. `$5848=$AC`, `$584A/$584B=$2E/$30`
+record the relocated `TARGET` address `$302E`, and `$5850=$5A` proves the
+relocated target subroutine executed.
+
+## 2026-07-09 OIL .710 Gate 6 Banked AP With RJOIN Import Pass
+
+The Gate 6 transcript used the corrected bank installer with `BANK EQU $02`,
+then installed the already packaged `banked-rjoin-smoke.a` AP envelope into
+bank 2 `$9000`:
+
+```text
+ASM>$3000: BANK    EQU $02
+...
+ASM>$30D4:         END
+ASM OK
+SEAL> .
+ASM BYE
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A03
+1A00: AC 00 00 00 | ....
+```
+
+`AP B2 $9000 $3000` then loaded the banked AP source, resolved the declared
+resident RJOIN import, patched the import relocation rows, and ran the AP body:
+
+```text
+>AP B2 $9000 $3000
+GO 3000
+
+BANK RJOIN
+
+#GO# ENTRY=3000
+RET A=AC X=19 Y=0E P=F5 S=FD NV-BdIzC
+>D 1A10 1A17
+1A10: 06 0F 30 79 E7 04 05 01 | ..0y....
+>D 3006 8
+3006: 20 79 E7 |  y.
+>D 5848 5850
+5848: AC E9 79 E7 85 E9 A5 EA | 5A | ..y.....Z
+```
+
+Result: pass. Gate 6 proves the full OIL path: banked source sector staging,
+AP body copy, STR8 resident import linker, HIMON internal relocation handling,
+and AP execution. `$3006-$3008 = 20 79 E7` proves the JSR import was patched,
+`$1A10-$1A17` shows the final HI8 import row at `$300F` resolved to `$E779`,
+`BANK RJOIN` proves the resident string writer ran, `$5848=$AC` is the sample
+success byte, and `$584A/$584B=$79/$E7` records the resolved resident target.
+
+## 2026-07-09 OIL .710 Gate 7 Banked AP Error Surface Pass
+
+The Gate 7 transcript reused the good bank 2 `$9000` AP package and cleared
+`$5848` before each bad-input command. Each invalid banked AP form either
+printed usage or returned an AP error, and every follow-up dump kept the
+success byte clear:
+
+```text
+>M 5848
+5848: AC 00
+>AP B3 $9000 $3000
+AP [Bn] pkg dst
+>D 5848
+5848: 00 | .
+>M 5848
+5848: 00 00
+>AP B2 $7000 $3000
+APERR=$06
+>D 5848 5848
+5848: 00 | .
+>M 5848
+5848: 00 00
+>AP B2 $9000 $5000
+APERR=$06
+>D 5848 5848
+5848: 00 | .
+>M 5848
+5848: 00 00
+>AP B2 $9001 $3000
+APERR=$07
+>D 5848 5848
+5848: 00 | .
+>M 5848
+5848: 00 00
+>AP B2 $9000 $9000
+APERR=$06
+>D 5848 5848
+5848: 00 | .
+>M 5848
+5848: 00 00
+>AP B2 $9000 $3000 X
+AP [Bn] pkg dst
+>D 5848 5848
+5848: 00 | .
+```
+
+Result: pass. Gate 7 proves bad bank syntax, protected/invalid source or
+destination ranges, malformed AP source address, source/destination overlap,
+and extra operands fail safely. None of the bad-input paths ran the AP body or
+left a false success byte in `$5848`.
+
+## 2026-07-09 OIL .710 Gate 8 Overlap And Staging Regression Pass
+
+The Gate 8 transcript first built a tiny RAM AP package at `$3200` and proved
+the old visible-RAM overlap guard still rejects loading it onto itself:
+
+```text
+>ASM NEW
+ASM
+ASM>$2000: ORG $2000
+ASM>$2000: MAIN RTS
+ASM>$2001: ENTRY MAIN
+ASM>$2001: END
+ASM OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$0028
+SEAL> LOAD $3200 $3200
+LOAD ERR=$06 BAD RANGE
+SEAL> .
+ASM BYE
+```
+
+The same transcript then cleared `$5848` and reran the banked AP source path
+from the already installed bank 2 `$9000` RJOIN package:
+
+```text
+>M 5848
+5848: 00 00
+>AP B2 $9000 $3000
+GO 3000
+
+BANK RJOIN
+
+#GO# ENTRY=3000
+RET A=AC X=19 Y=0E P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC E9 79 E7 85 E9 A5 EA | 5A | ..y.....Z
+```
+
+Result: pass. Gate 8 proves the RAM overlap protection remains intact while
+the staged bank 2 AP source path still loads, links, and runs after the
+negative overlap case.
+
+## 2026-07-09 OIL .710 Gate 9 Existing Regression Shortlist Pass
+
+The Gate 9 transcript exercised the short non-destructive regression list after
+the banked AP gates. Bare `M` still prints usage:
+
+```text
+>M
+M start [end|+cnt].
+```
+
+Entering STR8 and letting the countdown finish returned through a cold boot and
+RAM clear to the expected HIMON image:
+
+```text
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+STR8
+
+HIMON IN 3S. S=STR8  3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0709(1850)
+```
+
+Flash ASM still entered and exited cleanly:
+
+```text
+>ASM
+ASM
+ASM>$2000: .
+ASM BYE
+```
+
+The first `G 7000` after cold boot trapped because `$7000` RAM had been zeroed
+by `RAM ZERO OK`; this is expected for a RAM-loaded reporter:
+
+```text
+>G 7000
+GO 7000
+
+BRK 00 PC=7002
+A=01 X=30 Y=30 P=75 S=FB NV-BdIzC
+```
+
+The banked RJOIN AP package still ran from bank 2 after the cold boot:
+
+```text
+>M 5848
+5848: 00 00
+>AP B2 $9000 $3000
+GO 3000
+
+BANK RJOIN
+
+#GO# ENTRY=3000
+RET A=AC X=19 Y=0E P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 00 79 E7 00 00 00 00 | 00 | ..y......
+```
+
+For this RJOIN sample only `$5848` and `$584A/$584B` are pass bytes; `$5850`
+is not written by the sample and was zero after the cold boot. The transcript
+then reacquired the reporter by hash command, warm-booted HIMON, reloaded the
+reporter S19 at `$7000`, and `G 7000` printed `ASM REPORT OK`:
+
+```text
+>#
+HASH     ENTRY K TEXT
+...
+56AD7400 800C 05 ASM V1
+...
+5333AEAB C044 03 BOOT_WARM_RESET
+...
+>BOOT_WARM_RESET
+RUN BOOT_WARM_RESET @C044 K=03 ? y
+BOOT WARM
+
+HIMON V 00.0709(1850)
+>L
+L S19
+L @7000
+L OK=06D5 GO=7000
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2001
+HIGH=$2001
+BYTES=$0001
+LINES=$0004
+SYMS=$01/$28
+FIXUPS=$00/$60
+REFS=$00/$A0
+TRUNC=NO
+MAP END=$B966 UDATA=$5000-6F16
+SEAL FL BASE END LEN FNV 01 2000 2001 0001 E50C2ABF
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 01 00 00 01 00 00 00
+PKG @ LEN BODY INST 3200 0028 0000 0000
+ASM REPORT OK
+```
+
+Result: pass. Gate 9 proves the monitor usage path, STR8 entry/cold boot,
+flash ASM entry/exit, banked AP execution after reboot, hash-command lookup,
+warm boot, and reloaded reporter all still behave as expected. The transient
+`BRK 00 PC=7002` is explained by cold-boot RAM clearing before the reporter was
+reloaded.
+
+## 2026-07-09 OIL .710 Gate 0 Identity And Fixed Entries Pass
+
+The final identity capture proves the board is running the current OIL layout
+after the STR8 top-sector update. The fixed STR8 entry jump table and CPU
+vectors match the release map:
+
+```text
+>D F000 F008
+F000: 4C 09 F0 4C 93 F3 4C 9A | F3 | L..L..L..
+>D FFFA FFFF
+FFFA: 92 F0 00 F0 A6 F0 | ......
+```
+
+The stored worker head is at the expected `$FCE3` location:
+
+```text
+>D FCE3 FCF2
+FCE3: 08 78 AD F0 1F C9 04 F0 | 11 C9 02 F0 12 C9 05 F0 | .x..............
+```
+
+The resident service cells show PACK40 vectors at `$7E1F-$7E22`, clear import
+pointer bytes at `$7E23-$7E24`, the flash service vector at `$7E25`, and the AP
+service vector at `$7E2D`, with request/result cells clear:
+
+```text
+>D 7E1F 7E24
+7E1F: B2 D7 F2 D7 00 00 | ......
+>D 7E25 7E40
+7E25: F1 D6 00 00 00 00 00 00 | 8E D8 00 00 00 00 00 00 | ................
+7E35: 00 00 00 00 00 00 00 00 | 00 00 00 00 | ............
+```
+
+The hash command and AP usage text also match the OIL command contract:
+
+```text
+># AP
+3AD53794 ENTRY=C687 K=01
+>AP
+AP [Bn] pkg dst
+```
+
+Result: pass. Gate 0 proves the board identity and stable service entries for
+the same image that passed Gates 3 through 9.

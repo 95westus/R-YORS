@@ -165,14 +165,14 @@ Current combined-image facts:
 
 ```text
 HIMON entry:     $C000
-HIMON body:      $C000-$EAF3
+HIMON body:      $C000-$EFE9
 STR8 entry:      $F000
-STR8 body:       $F000-$FA82
+STR8 body:       $F000-$FC69
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F76F = 7A 0F 6A 5F
-worker source:   $FD1E-$FFEF
+marker bytes:    $FA17 = 7A 0F 6A 5F
+worker source:   $FCE3-$FFEF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 89 F0 00 F0 9D F0
+vectors:         $FFFA-$FFFF = 92 F0 00 F0 A6 F0
 ```
 
 The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
@@ -195,9 +195,9 @@ jumps to HIMON at $C000 when the countdown expires
 Current vector path:
 
 ```text
-NMI      -> STR8 IVI entry at $F089 -> RAM vector $7EFA-$7EFB
+NMI      -> STR8 IVI entry at $F092 -> RAM vector $7EFA-$7EFB
 RESET    -> STR8 START at $F000
-IRQ/BRK  -> STR8 IVI entry at $F09D -> RAM vectors $7EFC-$7EFF
+IRQ/BRK  -> STR8 IVI entry at $F0A6 -> RAM vectors $7EFC-$7EFF
 ```
 
 HIMON patches the RAM targets after handoff. IVI is a mechanism, not a claim
@@ -242,7 +242,7 @@ restores Bank 3 before returning to resident STR8
 Current RAM workspace:
 
 ```text
-$0200-$09FF   flash worker tray, STR8 copied from $FD1E-$FFEF at exact worker length
+$0200-$09FF   flash worker tray, STR8 copied from $FCE3-$FFEF at exact worker length
 $0A00-$19FF   sector staging buffer
 $1A00-$1FE8   RJOIN/link scratch and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map bytes
@@ -257,23 +257,31 @@ Banked AP flow keeps storage and execution separate:
 bank N package -> $0A00 sector staging buffer -> AP load dst -> run dst
 ```
 
+STR8 also publishes two stable top-sector service entries for the minimal
+banked AP path:
+
+```text
+$F003   run selected STR8 worker mode after copying worker to $0200
+$F006   link AP import relocation rows against resident RJOIN symbols
+```
+
 `M` is read-only from the operator's point of view, but still uses the worker
 to switch banks and scan sectors.
 
 Current top-sector reserve policy:
 
 ```text
-$F000-$F76E  STR8 resident code
-             size $076F = 1903 bytes
+$F000-$FA16  STR8 resident code
+             size $0A17 = 2583 bytes
 
-$F76F-$FA82  STR8 resident data
-             size $0314 = 788 bytes
+$FA17-$FC68  STR8 resident data
+             size $0252 = 594 bytes
 
-$FA83-$FD1D  contiguous unused $FF growth hole
-             size $029B = 667 bytes
+$FC69-$FCE2  contiguous unused $FF growth hole
+             size $007A = 122 bytes
 
-$FD1E-$FFEF  stored STR8 RAM worker image
-             size $02D2 = 722 bytes
+$FCE3-$FFEF  stored STR8 RAM worker image
+             size $030D = 781 bytes
              linked at $0200 inside the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  STR8 config pocket
@@ -504,6 +512,7 @@ REF.md                        compact technical reference
 CATALOG/CATALOG.md            callable routine selection view
 HIMON/HIMON_MAP.md            readable HIMON capability map
 HIMON/HIMON_EDGE_DUMP.md      raw HIMON edge evidence
+STR8/STR8_EDGE_DUMP.md        raw STR8 edge evidence
 LOGS/HARDWARE_TEST_LOG.md     board transcript validation
 DOC/GENERATED/                source-derived maps and reports
 ```

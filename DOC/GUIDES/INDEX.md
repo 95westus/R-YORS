@@ -34,7 +34,7 @@ RELOCATE, and AP v1 PACKAGE flows.
 
 ## Guide Shelves
 
-- [STR8](STR8/STR8.md) - recovery, updates, product boundaries, bringup, work process.
+- [STR8](STR8/STR8.md) - recovery, updates, product boundaries, bringup, work process, and [edge evidence](STR8/STR8_EDGE_DUMP.md).
 - [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
@@ -51,7 +51,8 @@ RELOCATE, and AP v1 PACKAGE flows.
 - [QCC](QCC/INDEX.md) - Questions, Comments, Concerns working notes.
 - [LOGS](LOGS/HARDWARE_TEST_LOG.md) - hardware transcript proof.
 - [STORY](STORY/BOOK.md) - book spine and historical narrative.
-- [PLANNING](PLANNING/TODO.md) - TODO and future direction.
+- [PLANNING](PLANNING/TODO.md) - TODO, future direction, and
+  [OIL .710 test plan](PLANNING/OIL_710_TEST_PLAN.md).
 - [META](META/XREF.md) - bibliography and cross-reference.
 
 ## Story And Planning
@@ -62,6 +63,8 @@ the main operator/technical path.
 - [STORY/BOOK.md](STORY/BOOK.md) - manuscript spine.
 - [STORY/HISTORICAL_DOCUMENTS.md](STORY/HISTORICAL_DOCUMENTS.md) - lineage.
 - [TODO.md](PLANNING/TODO.md) - near-term work.
+- [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` OIL
+  on-board intensive test plan and size review.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.
 
 ## Current Generated Source Snapshot
@@ -69,12 +72,12 @@ the main operator/technical path.
 Quick scan of the operational HIMON/STR8 source set used by `DOC/GENERATED`:
 
 ```text
-Source files scanned:  27
-XDEF declarations:     179
-XREF declarations:     143
-ROUTINE headers:       130
-JSR/JMP call sites:    989
-Unique direct edges:   779
+Source files scanned:  30
+XDEF declarations:     222
+XREF declarations:     152
+ROUTINE headers:       144
+JSR/JMP call sites:    1363
+Unique direct edges:   1103
 ```
 
 Generated reports live in [../GENERATED](../GENERATED).

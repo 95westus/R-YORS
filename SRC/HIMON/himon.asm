@@ -109,6 +109,20 @@ HIM_AP_RELOC_MAX         EQU             $10
 HIM_AP_RELOC_ABS16_INTERNAL EQU          $01
 HIM_AP_RELOC_LO8_INTERNAL EQU            $02
 HIM_AP_RELOC_HI8_INTERNAL EQU            $03
+HIM_AP_RELOC_ABS16_IMPORT EQU            $04
+HIM_AP_RELOC_LO8_IMPORT EQU              $05
+HIM_AP_RELOC_HI8_IMPORT EQU              $06
+
+STR8_RUN_WORKER_SERVICE  EQU             $F003
+STR8_AP_IMPORT_LINK_SERVICE EQU          $F006
+STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
+STR8_COPY_MODE_STAGE_BANK_SECTOR EQU     $06
+STR8_MARK_SECTOR_HI      EQU             $1FE9
+STR8_COPY_SRC_BANK       EQU             $1FEE
+STR8_COPY_MODE           EQU             $1FF0
+STR8_STAGE_BUF_HI        EQU             $1FF6
+AP_STAGE_BUF_HI          EQU             $0A
+AP_STAGE_BUF_END_HI      EQU             $1A
 
 HIM_P40_CODE0            EQU             $E6
 HIM_P40_CODE1            EQU             $E7
@@ -266,6 +280,8 @@ MON_INIT_SERVICE_CHECKSUM_LOOP:
                         STZ             HIM_FLASH_DST_HI
                         STZ             HIM_FLASH_LEN_LO
                         STZ             HIM_FLASH_LEN_HI
+                        STZ             HIM_AP_IMPORT_LO
+                        STZ             HIM_AP_IMPORT_HI
                         LDA             #<HIM_AP_SERVICE
                         STA             HIM_SVC_AP_LO
                         LDA             #>HIM_AP_SERVICE
@@ -1057,20 +1073,31 @@ CMD_AP_FNV:
 CMD_AP:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_ADV_PTR
+                        JSR             CMD_SKIP_SPACES
+                        JSR             CMD_PEEK
+                        CMP             #'B'
+                        BEQ             CMD_AP_BANKED
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
-                        BCC             CMD_USAGE_AP
+                        BCS             CMD_AP_SRC_OK
+                        JMP             CMD_USAGE_AP
+CMD_AP_SRC_OK:
                         LDA             CMDP_ADDR_LO
                         STA             HIM_AP_SRC_LO
                         LDA             CMDP_ADDR_HI
                         STA             HIM_AP_SRC_HI
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
-                        BCC             CMD_USAGE_AP
+                        BCS             CMD_AP_DST_OK
+                        JMP             CMD_USAGE_AP
+CMD_AP_DST_OK:
                         JSR             CMD_REQUIRE_EOL
-                        BCC             CMD_USAGE_AP
+                        BCS             CMD_AP_EOL_OK
+                        JMP             CMD_USAGE_AP
+CMD_AP_EOL_OK:
                         LDA             CMDP_ADDR_LO
                         STA             HIM_AP_DST_LO
                         LDA             CMDP_ADDR_HI
                         STA             HIM_AP_DST_HI
+CMD_AP_LOAD_REQUEST:
                         LDA             #HIM_AP_OP_LOAD
                         STA             HIM_AP_OP
                         JSR             HIM_AP_SERVICE
@@ -1100,6 +1127,43 @@ CMD_AP_LOAD_OK:
                         STZ             TRAP_CAUSE
                         STZ             TRAP_BRK_SIG
                         JMP             (CMDP_ADDR_LO)
+
+CMD_AP_BANKED:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PEEK
+                        CMP             #'0'
+                        BCC             CMD_USAGE_AP
+                        CMP             #'3'
+                        BCS             CMD_USAGE_AP
+                        SEC
+                        SBC             #'0'
+                        STA             CMD_IO_TMP
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             CMD_USAGE_AP
+                        LDA             CMDP_ADDR_LO
+                        STA             CMDP_START_LO
+                        LDA             CMDP_ADDR_HI
+                        STA             CMDP_START_HI
+                        JSR             CMD_PARSE_HEX_WORD_TOKEN
+                        BCC             CMD_USAGE_AP
+                        JSR             CMD_REQUIRE_EOL
+                        BCC             CMD_USAGE_AP
+                        LDA             CMDP_ADDR_LO
+                        STA             HIM_AP_DST_LO
+                        LDA             CMDP_ADDR_HI
+                        STA             HIM_AP_DST_HI
+                        JSR             HIM_AP_STAGE_BANK_SOURCE
+                        BCC             CMD_AP_BANK_STAGE_FAIL
+                        JMP             CMD_AP_LOAD_REQUEST
+CMD_AP_BANK_STAGE_FAIL:
+                        LDX             #<MSG_AP_ERR
+                        LDY             #>MSG_AP_ERR
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             HIM_AP_STATUS
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        RTS
 
 CMD_USAGE_AP:
                         LDX             #<MSG_USAGE_AP
@@ -2816,6 +2880,35 @@ HIM_PACK40_MUL40_SHIFT32:
                         STA             HIM_P40_VALUE_HI
                         RTS
 
+HIM_AP_STAGE_BANK_SOURCE:
+                        LDA             CMDP_START_HI
+                        CMP             #$80
+                        BCC             HIM_AP_STAGE_BANK_BAD
+                        LDA             CMD_IO_TMP
+                        CMP             #$03
+                        BCS             HIM_AP_STAGE_BANK_BAD
+                        STA             STR8_COPY_SRC_BANK
+                        LDA             CMDP_START_HI
+                        AND             #$F0
+                        STA             STR8_MARK_SECTOR_HI
+                        LDA             #AP_STAGE_BUF_HI
+                        STA             STR8_STAGE_BUF_HI
+                        LDA             #STR8_COPY_MODE_STAGE_BANK_SECTOR
+                        STA             STR8_COPY_MODE
+                        JSR             STR8_RUN_WORKER_SERVICE
+                        BCC             HIM_AP_STAGE_BANK_BAD
+                        LDA             CMDP_START_LO
+                        STA             HIM_AP_SRC_LO
+                        LDA             CMDP_START_HI
+                        AND             #$0F
+                        CLC
+                        ADC             #AP_STAGE_BUF_HI
+                        STA             HIM_AP_SRC_HI
+                        SEC
+                        RTS
+HIM_AP_STAGE_BANK_BAD:
+                        JMP             HIM_AP_BAD_RANGE
+
 HIM_AP_SERVICE:
                         LDA             #HIM_AP_STATUS_OK
                         STA             HIM_AP_STATUS
@@ -2825,7 +2918,9 @@ HIM_AP_SERVICE:
                         CMP             #HIM_AP_OP_LOAD
                         BEQ             HIM_AP_SERVICE_LOAD
                         CMP             #HIM_AP_OP_SUGGEST
-                        BEQ             HIM_AP_SERVICE_SUGGEST
+                        BNE             HIM_AP_SERVICE_BAD_OP
+                        JMP             HIM_AP_SERVICE_SUGGEST
+HIM_AP_SERVICE_BAD_OP:
                         JMP             HIM_AP_BAD_LINE
 
 HIM_AP_SERVICE_PARSE:
@@ -2836,15 +2931,13 @@ HIM_AP_SERVICE_LOAD:
                         BCS             HIM_AP_LOAD_PARSED
                         RTS
 HIM_AP_LOAD_PARSED:
-                        LDA             HIM_AP_IMPORT_COUNT
-                        BEQ             HIM_AP_LOAD_NO_IMPORTS
-                        JMP             HIM_AP_BAD_FIX
-HIM_AP_LOAD_NO_IMPORTS:
                         JSR             HIM_AP_LOAD_RANGE_OK
                         BCS             HIM_AP_LOAD_RANGE_SAFE
                         RTS
 HIM_AP_LOAD_RANGE_SAFE:
                         LDA             HIM_AP_SRC_HI
+                        CMP             #$20
+                        BCC             HIM_AP_LOAD_NO_OVERLAP
                         CMP             #$50
                         BCS             HIM_AP_LOAD_NO_OVERLAP
                         LDA             HIM_AP_TMP2_HI
@@ -2859,6 +2952,10 @@ HIM_AP_LOAD_OVERLAP_BAD:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_NO_OVERLAP:
                         JSR             HIM_AP_COPY_BODY_TO_DST
+                        JSR             STR8_AP_IMPORT_LINK_SERVICE
+                        BCS             HIM_AP_LOAD_IMPORTS_OK
+                        RTS
+HIM_AP_LOAD_IMPORTS_OK:
                         LDA             HIM_AP_REL_LO
                         STA             CMDP_PTR_LO
                         LDA             HIM_AP_REL_HI
@@ -2870,6 +2967,8 @@ HIM_AP_LOAD_PATCH_LOOP:
                         JSR             HIM_AP_RELOC_KIND_X
                         JSR             HIM_AP_INTERNAL_KIND_A
                         BCS             HIM_AP_LOAD_PATCH_ROW
+                        JSR             HIM_AP_IMPORT_KIND_A
+                        BCS             HIM_AP_LOAD_PATCH_NEXT
                         JMP             HIM_AP_BAD_FIX
 HIM_AP_LOAD_PATCH_ROW:
                         JSR             HIM_AP_RELOC_SITE_OK_X
@@ -2877,6 +2976,7 @@ HIM_AP_LOAD_PATCH_ROW:
                         RTS
 HIM_AP_LOAD_PATCH_SITE_OK:
                         JSR             HIM_AP_RELOC_PATCH_ROW_X
+HIM_AP_LOAD_PATCH_NEXT:
                         INX
                         BRA             HIM_AP_LOAD_PATCH_LOOP
 HIM_AP_LOAD_DONE:
@@ -2912,6 +3012,8 @@ HIM_AP_PARSE_MIN:
                         STZ             HIM_AP_BODY_LEN_HI
                         STZ             HIM_AP_REL_LO
                         STZ             HIM_AP_REL_HI
+                        STZ             HIM_AP_IMPORT_LO
+                        STZ             HIM_AP_IMPORT_HI
                         LDA             #HIM_AP_HDR_BYTES
                         STA             HIM_AP_PKG_LEN_LO
                         STZ             HIM_AP_PKG_LEN_HI
@@ -3046,6 +3148,10 @@ HIM_AP_PARSE_IMPORT_ROOM_OK:
                         LDY             #HIM_AP_IMPORT_REC_OFF_COUNT
                         LDA             (CMDP_PTR_LO),Y
                         STA             HIM_AP_IMPORT_COUNT
+                        LDA             CMDP_PTR_LO
+                        STA             HIM_AP_IMPORT_LO
+                        LDA             CMDP_PTR_HI
+                        STA             HIM_AP_IMPORT_HI
                         LDA             HIM_AP_TMP_LO
                         JSR             HIM_AP_ADVANCE_A
                         BCS             HIM_AP_PARSE_BODY
@@ -3206,10 +3312,17 @@ HIM_AP_SOURCE_BASE_SAFE:
 HIM_AP_SOURCE_LAST_NO_CARRY:
                         STA             HIM_AP_TMP2_HI
                         LDA             HIM_AP_SRC_HI
+                        CMP             #$20
+                        BCC             HIM_AP_SOURCE_STAGE_RANGE
                         CMP             #$50
                         BCC             HIM_AP_SOURCE_RAM_RANGE
                         LDA             HIM_AP_TMP2_HI
                         CMP             #$FF
+                        BCC             HIM_AP_SOURCE_RANGE_GOOD
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_SOURCE_STAGE_RANGE:
+                        LDA             HIM_AP_TMP2_HI
+                        CMP             #AP_STAGE_BUF_END_HI
                         BCC             HIM_AP_SOURCE_RANGE_GOOD
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_SOURCE_RAM_RANGE:
@@ -3223,8 +3336,13 @@ HIM_AP_SOURCE_RANGE_GOOD:
 
 HIM_AP_SOURCE_BASE_OK:
                         LDA             HIM_AP_SRC_HI
+                        CMP             #AP_STAGE_BUF_HI
+                        BCC             HIM_AP_SOURCE_BASE_BAD
+                        CMP             #AP_STAGE_BUF_END_HI
+                        BCC             HIM_AP_SOURCE_BASE_GOOD
                         CMP             #$20
                         BCS             HIM_AP_SOURCE_BASE_GE_20
+HIM_AP_SOURCE_BASE_BAD:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_SOURCE_BASE_GE_20:
                         CMP             #$50
@@ -3393,10 +3511,25 @@ HIM_AP_INTERNAL_KIND_YES:
                         SEC
                         RTS
 
+HIM_AP_IMPORT_KIND_A:
+                        CMP             #HIM_AP_RELOC_ABS16_IMPORT
+                        BEQ             HIM_AP_IMPORT_KIND_YES
+                        CMP             #HIM_AP_RELOC_LO8_IMPORT
+                        BEQ             HIM_AP_IMPORT_KIND_YES
+                        CMP             #HIM_AP_RELOC_HI8_IMPORT
+                        BEQ             HIM_AP_IMPORT_KIND_YES
+                        CLC
+                        RTS
+HIM_AP_IMPORT_KIND_YES:
+                        SEC
+                        RTS
+
 HIM_AP_RELOC_SITE_OK_X:
                         JSR             HIM_AP_RELOC_KIND_X
                         STA             HIM_AP_TMP2_HI
                         CMP             #HIM_AP_RELOC_ABS16_INTERNAL
+                        BEQ             HIM_AP_RELOC_SITE_WORD
+                        CMP             #HIM_AP_RELOC_ABS16_IMPORT
                         BEQ             HIM_AP_RELOC_SITE_WORD
                         LDA             #$00
                         BRA             HIM_AP_RELOC_SITE_HAVE_ADD
@@ -4621,7 +4754,7 @@ MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)
 MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
-MSG_USAGE_AP:            DB              "AP pkg dst",(' '+$80)
+MSG_USAGE_AP:            DB              "AP [Bn] pkg dst",(' '+$80)
 MSG_USAGE_L:             DB              "L [G|F]",(' '+$80)
 MSG_NOCTX:               DB              "NOCT",('X'+$80)
 MSG_RESUME:              DB              "RESUME",(' '+$80)

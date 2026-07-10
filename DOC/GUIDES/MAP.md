@@ -134,6 +134,7 @@ HASH_FLASH.md                   command-surface and milestone alerts
 DOC_FLASH.md                    documentation-shape alerts
 STR8/PRODUCT_BOUNDARIES.md      product ownership lanes
 STR8/STR8.md                    STR8 design contract and direction
+STR8/STR8_EDGE_DUMP.md          raw direct-edge evidence
 STR8/STR8_WORK_PROCESS.md       STR8 proof/work rail
 LOGS/HARDWARE_TEST_LOG.md       board transcript validations
 HIMON/HIMON_DEBUG_TESTING.md    RAM debug proof process
@@ -147,6 +148,7 @@ HASH/HASH.md                    FNV-era details and CRC16 pivot
 ASM/HASHED_ASM.md               assembler thesis and fixups
 ASM/ASM_CALL_MAP.md             renderable ASM routine-flow map
 ASM/ASM_SHARED_ROUTINES_AUDIT.md ASM/HIMON shared-helper audit
+PLANNING/OIL_710_TEST_PLAN.md .710 OIL board test rail and size review
 STORY/BOOK.md                   narrative manuscript spine
 STORY/HISTORICAL_DOCUMENTS.md   lineage and evidence map
 ```
@@ -166,6 +168,7 @@ flowchart TD
     OP --> HDBG[HIMON_DEBUG_TESTING]
     TECH --> BOUND[PRODUCT_BOUNDARIES]
     TECH --> STR8[STR8]
+    STR8 --> SEDGE[STR8_EDGE_DUMP]
     TECH --> MEM[MEMORY_MAP]
     TECH --> HMAP[HIMON_MAP]
     TECH --> CAT[CATALOG]

@@ -243,7 +243,7 @@ output:  SRC/BUILD/s19/str8-f000.s19
 ```
 
 The current ROM proof links the resident shell at `$F000`. The worker image
-links for `$0200`, is stored in the combined ROM at `$FD1E-$FFEF`, and is
+links for `$0200`, is stored in the combined ROM at `$FCE3-$FFEF`, and is
 copied into the `$0200-$09FF` STR8 RAM tray before destructive flash work. The
 RAM proof image is linked at `$3000`, is launched under HIMON, and reserves
 `$4000-$4FFF` as copy-buffer RAM. The current copy worker stages one 4K erase

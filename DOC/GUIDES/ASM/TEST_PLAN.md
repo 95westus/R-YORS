@@ -9073,6 +9073,84 @@ ASCII negative, `PACK3(1,2,3)` positive, and `$28` PACK3 negative cases. An
 attempted pre-`L F` run showed `HSH_NF`, confirming ASM must be resident before
 using `ASM NEW`.
 
+## 2026-07-09 OIL .710 Gate 3 Import Linker Proof
+
+Board result captured 2026-07-09 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: after the corrected
+`topwr-3000.a` pass, the rebuilt STR8 top-stage image showed the expected
+`B7 F6` staging and flash signatures at `$0D94/$F394`. The
+`banked-rjoin-smoke.a` AP package then loaded to `$3000` with
+`LOAD OK=$3000 L=$0028 C=$05`.
+
+Gate 3 passes on this image. The linker debug row was
+`06 0F 30 79 E7 04 05 01`, proving the final HI8 import row patched site
+`$300F` with resolved resident address `$E779`; `$3006-$3008` dumped as
+`20 79 E7` instead of the old `20 FF FF`. Running `G 3000` printed
+`BANK RJOIN`, returned `A=$AC`, and left `$5848=$AC` plus
+`$584A/$584B=$79/$E7`. Banked AP gates may proceed after this proof.
+
+## 2026-07-09 OIL .710 Gate 4 Missing Import Proof
+
+Board result captured 2026-07-09 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: a package that declared
+`IMPORT OIL_MISSING_SYMBOL` and emitted `JSR OIL_MISSING_SYMBOL` assembled and
+packaged at `$3200`, then failed `LOAD $3200 $3000` with
+`LOAD ERR=$09 BAD FIX`. The pre-cleared success byte stayed `$5848=00`,
+proving the body did not run. The reporter showed one `$04` import relocation
+row at site `$0001`, import count `$01`, import-resolved count `$00`, and
+body installed length `$0000`.
+
+## 2026-07-09 OIL .710 Gate 5 Banked AP No-Import Proof
+
+Board result captured 2026-07-09 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: `banked-ap-smoke.a` packaged at
+`$3200` with three internal relocation rows, and the corrected
+`bankput-3000.a` installed that AP envelope into bank 2 `$9000` with
+`$1A00=AC`. `AP B2 $9000 $3000` then loaded and ran the package from RAM.
+The result dump was `$5848=$AC`, `$584A/$584B=$2E/$30`, and `$5850=$5A`,
+proving the banked source path and internal AP relocations without imports.
+
+## 2026-07-09 OIL .710 Gate 6 Banked RJOIN Import Proof
+
+Board result captured 2026-07-09 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: the corrected `bankput-3000.a`
+installed the `banked-rjoin-smoke.a` AP envelope into bank 2 `$9000`, then
+`AP B2 $9000 $3000` loaded, linked, and ran it. The AP printed
+`BANK RJOIN`, `$3006-$3008` dumped as `20 79 E7`, and the linker debug row
+was `06 0F 30 79 E7 04 05 01`. The result bytes were `$5848=$AC` and
+`$584A/$584B=$79/$E7`, proving the banked source path plus resident RJOIN
+import resolution and patching.
+
+## 2026-07-09 OIL .710 Gate 7 Banked AP Error Proof
+
+Board result captured 2026-07-09 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: invalid banked AP forms were rejected
+without running the package body. `AP B3 $9000 $3000` and
+`AP B2 $9000 $3000 X` printed usage, while protected/invalid ranges and
+overlap returned `APERR=$06` or `APERR=$07` as expected. `$5848` was cleared
+before each case and remained `$00` after every rejected command.
+
+## 2026-07-09 OIL .710 Gate 8 Overlap/Staging Proof
+
+Board result captured 2026-07-09 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: a tiny RAM AP package at `$3200`
+rejected `LOAD $3200 $3200` with `LOAD ERR=$06 BAD RANGE`, proving the
+visible-RAM overlap guard still fires. The already installed bank 2 RJOIN
+package then ran again with `AP B2 $9000 $3000`, printed `BANK RJOIN`, and
+left `$5848=$AC`, `$584A/$584B=$79/$E7`, and `$5850=$5A`, proving the banked
+source path still works after the overlap negative.
+
+## 2026-07-09 OIL .710 Gate 9 Regression Shortlist Proof
+
+Board result captured 2026-07-09 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: bare `M` printed usage, `STR8`
+entered the bootloader and returned through cold boot with `RAM ZERO OK`,
+flash `ASM` entered and exited cleanly, the bank 2 RJOIN AP package still ran
+after reboot, and the reporter printed `ASM REPORT OK` after being reloaded at
+`$7000`. The first post-cold-boot `G 7000` trapped at zeroed RAM; this is
+expected because the reporter is RAM-loaded and must be reloaded after
+`RAM ZERO OK`.
+
 ## Hardware Bench Gate
 
 Do not call ASM hardware-proven until the board has run the emitted code and the

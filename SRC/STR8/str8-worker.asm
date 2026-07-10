@@ -25,6 +25,7 @@ STR8_COPY_MODE_ENROLL   EQU             $02
 STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
 STR8_COPY_MODE_MAP      EQU             $04
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
+STR8_COPY_MODE_STAGE_BANK_SECTOR EQU    $06
 STR8_RESTORE_PROT_START_HI EQU          $C0
 
 STR8_CFG_FLAGS_ADDR     EQU             $FFF0
@@ -79,6 +80,8 @@ START:
                         BEQ             ?ENROLL
                         CMP             #STR8_COPY_MODE_PROGRAM_STAGED
                         BEQ             ?PROGRAM_STAGED
+                        CMP             #STR8_COPY_MODE_STAGE_BANK_SECTOR
+                        BEQ             ?STAGE_BANK_SECTOR
                         JSR             STR8W_COPY_BANKS
                         BRA             ?DONE
 ?MAP:
@@ -89,6 +92,9 @@ START:
                         BRA             ?DONE
 ?PROGRAM_STAGED:
                         JSR             STR8W_PROGRAM_STAGED_SECTOR
+                        BRA             ?DONE
+?STAGE_BANK_SECTOR:
+                        JSR             STR8W_STAGE_BANK_SECTOR
 ?DONE:
                         BCC             ?FAIL
                         JSR             STR8W_SELECT_BANK3
@@ -212,6 +218,17 @@ STR8W_PROGRAM_STAGED_SECTOR:
                         CLC
                         RTS
 
+STR8W_STAGE_BANK_SECTOR:
+                        LDA             STR8_COPY_SRC_BANK
+                        JSR             STR8W_BANK_SELECT_A
+                        STZ             STR8W_PTR_LO
+                        LDA             STR8_MARK_SECTOR_HI
+                        STA             STR8W_PTR_HI
+                        STZ             STR8W_BUF_LO
+                        JSR             STR8W_ACTIVE_BUF_HI
+                        STA             STR8W_BUF_HI
+                        JMP             STR8W_COPY_PTR_TO_ACTIVE_BUF
+
 STR8W_STAGE_SRC_SECTOR:
                         LDA             STR8_COPY_SRC_BANK
                         JSR             STR8W_BANK_SELECT_A
@@ -262,6 +279,20 @@ STR8W_COPY_PTR_TO_BUF:
                         INC             STR8W_BUF_HI
                         LDA             STR8W_BUF_HI
                         CMP             #STR8_SECTOR_BUF_END_HI
+                        BNE             ?PAGE
+                        RTS
+
+STR8W_COPY_PTR_TO_ACTIVE_BUF:
+?PAGE:
+                        LDY             #$00
+?BYTE:
+                        LDA             (STR8W_PTR_LO),Y
+                        STA             (STR8W_BUF_LO),Y
+                        INY
+                        BNE             ?BYTE
+                        INC             STR8W_PTR_HI
+                        INC             STR8W_BUF_HI
+                        JSR             STR8W_ACTIVE_BUF_END_REACHED
                         BNE             ?PAGE
                         RTS
 
@@ -385,6 +416,8 @@ STR8W_ACTIVE_BUF_HI:
                         LDA             STR8_COPY_MODE
                         CMP             #STR8_COPY_MODE_PROGRAM_STAGED
                         BEQ             ?STAGED
+                        CMP             #STR8_COPY_MODE_STAGE_BANK_SECTOR
+                        BEQ             ?STAGED
                         LDA             #STR8_SECTOR_BUF_HI
                         RTS
 ?STAGED:
@@ -394,6 +427,8 @@ STR8W_ACTIVE_BUF_HI:
 STR8W_ACTIVE_BUF_END_REACHED:
                         LDA             STR8_COPY_MODE
                         CMP             #STR8_COPY_MODE_PROGRAM_STAGED
+                        BEQ             ?STAGED
+                        CMP             #STR8_COPY_MODE_STAGE_BANK_SECTOR
                         BEQ             ?STAGED
                         LDA             STR8W_BUF_HI
                         CMP             #STR8_SECTOR_BUF_END_HI

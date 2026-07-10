@@ -10,6 +10,8 @@ system policy.
 
 Terms such as bank, sector, segment, protected window, owns, uses, requests,
 contract, buried, gone, and condense follow [GLOSSARY.md](../GLOSSARY.md).
+Raw direct `JSR`/`JMP` evidence lives in
+[STR8_EDGE_DUMP.md](STR8_EDGE_DUMP.md).
 
 STR8 is the protected recovery/update monitor for HIMON. It is not
 just a crash handler and not just a flash writer. It keeps the machine on a
@@ -175,17 +177,17 @@ packed against `$FFEF` and grows downward, and the remaining free space is one
 contiguous hole:
 
 ```text
-$F000-$F76E  STR8 resident code
-             size $076F = 1903 bytes
+$F000-$FA16  STR8 resident code
+             size $0A17 = 2583 bytes
 
-$F76F-$FA82  STR8 resident data
-             size $0314 = 788 bytes
+$FA17-$FC68  STR8 resident data
+             size $0252 = 594 bytes
 
-$FA83-$FD1D  contiguous unused $FF growth hole
-             size $029B = 667 bytes
+$FC69-$FCE2  contiguous unused $FF growth hole
+             size $007A = 122 bytes
 
-$FD1E-$FFEF  stored STR8 RAM worker image
-             size $02D2 = 722 bytes
+$FCE3-$FFEF  stored STR8 RAM worker image
+             size $030D = 781 bytes
              copied to and run from the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
@@ -382,7 +384,7 @@ first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can perform backup rotation with read-back verify
 first RAM proof can enroll bank 0 into rotation by clearing an in-flash flag bit
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current ROM build links STR8 at $F000 and stores a RAM worker at $FD1E-$FFEF
+current ROM build links STR8 at $F000 and stores a RAM worker at $FCE3-$FFEF
 current ROM build copies the worker to $0200 before B/U/0/1/2 flash mutation
 current ROM build copies the worker to $0200 before E config mutation
 current ROM build has working ?, B, E, M, U, 0, 1, 2, G, and R commands
@@ -392,8 +394,8 @@ current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data grows upward from $F000
-stored worker currently occupies $FD1E-$FFEF and grows downward
-current contiguous free hole is $FA83-$FD1D
+stored worker currently occupies $FCE3-$FFEF and grows downward
+current contiguous free hole is $FC69-$FCE2
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
@@ -616,7 +618,7 @@ flowchart TD
     G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $FD1E-$FFEF -> $0200]
+    B --> COPY[copy worker $FCE3-$FFEF -> $0200]
     E --> COPY
     RST --> COPY
     COPY --> WORKER[RAM flash worker]
@@ -812,7 +814,7 @@ B command, B0 ROT:  copy bank 1 -> bank 0, bank 2 -> bank 1, bank 3 -> bank 2
 
 Each 4K window reads from the source bank, writes the destination bank, and
 verifies by simple read-back compare. The `$F000` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$FD1E-$FFEF` into RAM
+policy by first copying its worker from bank 3 `$FCE3-$FFEF` into RAM
 `$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. Catalog
@@ -1012,6 +1014,17 @@ make -C SRC himon-str8-rom-install-s19
 
 It writes `BUILD/s19/himon-str8-rom-install.s19` from the vector-complete
 `BUILD/bin/himon-str8-rom.bin`.
+
+Current lab helper for the active top sector:
+
+```text
+make -C SRC str8-top-stage-s19
+```
+
+It writes `BUILD/s19/str8-top-stage-0a00.s19`, the vector-complete
+`$F000-$FFFF` sector remapped to RAM `$0A00-$19FF` for the
+`DOC/GUIDES/ASM/SAMPLES/topwr-3000.a` writer. This stream is for staged RAM
+sector replacement only; it is not a normal STR8 `U` payload stream.
 
 This is a good fit for ordinary HIMON body sectors. Updating `$C000-$EFFF`
 should rebuild only the touched HIMON sectors and leave the `$F000-$FFFF`

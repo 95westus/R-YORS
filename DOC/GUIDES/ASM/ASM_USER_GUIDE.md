@@ -450,9 +450,11 @@ SEAL REL @=$hhhh COUNT=$nn
 
 If exports or imports exist, `SEAL` also prints `SEAL EXP` and/or `SEAL IMP`.
 
-The default flash image omits the older interactive `RESOLVE` command in this
-slice. Import metadata can still be packaged, but `LOAD` rejects packages that
-declare imports or carry import relocation rows with `BAD FIX`.
+The default flash image omits the older interactive `RESOLVE` command. Import
+metadata can still be packaged. In the combined HIMON/STR8 image, `LOAD` and
+HIMON `AP` resolve declared imports that name resident RJOIN symbols through
+the STR8 import-link service at `$F006`; missing or non-resident imports still
+fail with `BAD FIX`.
 
 `RELOCATE address` copies the frozen body to a RAM destination and applies
 internal relocation rows there:
@@ -498,7 +500,8 @@ envelope can be copied as data; executing its BODY at a new address requires a
 relocation/load step.
 
 `LOAD pkg dest` reads an AP v1 envelope from RAM or currently visible flash,
-copies the BODY to RAM, and applies internal relocation rows only:
+copies the BODY to RAM, applies internal relocation rows, and resolves resident
+RJOIN import rows when the `$F006` STR8 import-link service is present:
 
 ```text
 LOAD $3200 $3000
@@ -524,10 +527,11 @@ LOAD OK=$3000 L=$hhhh C=$nn
 
 The destination BODY span must fit wholly in `$2000-$4FFF`. `LOAD` deliberately
 does only a minimal package parse in this slice; full `CHECK`/FNV validation is
-deferred. Declared imports and `$04-$06` import relocation rows fail with
-`LOAD ERR=$09 BAD FIX`. When loading from a RAM package in this first slice,
-place the package envelope above the destination BODY; flash ASM rejects RAM
-loads whose destination reaches into the package envelope.
+deferred. Resident imports are linked through RJOIN; missing imports,
+non-resident dependencies, and unsupported relocation rows fail with
+`LOAD ERR=$09 BAD FIX`. When loading from a RAM package, place the package
+envelope above the destination BODY; flash ASM rejects RAM loads whose
+destination reaches into the package envelope.
 
 The one-argument `INSTALL pkg` form is read-only advisory:
 
@@ -550,6 +554,23 @@ expressions, so use `$` on literal hex addresses:
 ```text
 INSTALL $3200 $hhhh
 ```
+
+Banked install across banks 0-2 is intentionally a board source tool in this
+slice, not a polished `INSTALL` command. Use
+`DOC/GUIDES/ASM/SAMPLES/bankput-3000.a`: it copies the selected bank sector
+into the `$0A00-$19FF` sector staging buffer, overlays the AP envelope, then
+programs/verifies that 4K sector through the `$F003` STR8 worker service.
+HIMON then runs a banked package with:
+
+```text
+AP B0 $9000 $3000
+AP B1 $9000 $3000
+AP B2 $9000 $3000
+```
+
+That path copies the banked AP envelope into the sector staging buffer, loads
+and links BODY bytes into `$2000-$4FFF`, and runs from the requested load
+address. It never executes directly from banked flash.
 
 `CHECK address` exists only in full-core or package-check diagnostic builds.
 It is intentionally omitted from the default flash-resident ASM image to keep
@@ -660,9 +681,9 @@ PACKAGE $3200
 ```
 
 The body contains placeholder bytes for `EXT`, and the package contains an
-import record. A future loader/installer is responsible for resolving that
-import before execution. The default flash `LOAD` command rejects this package
-with `BAD FIX` in the first internal-relocation-only slice.
+import record. The current HIMON/STR8 AP loader can resolve imported names that
+exist as resident RJOIN symbols, such as `BIO_FTDI_PUT_CSTR`. A made-up name
+like `EXT` still fails at load/run time with `BAD FIX`.
 
 ## Memory Use
 
@@ -756,12 +777,13 @@ Known limitations:
 - No string data directives yet: `HBSTR`, `CSTR`, `PSTR`, `X'...'`, and
   `B'...'` are parked later forms.
 - No default flash-image `CHECK` command.
-- No default flash-image `RESOLVE` command; imported packages are packaged but
-  not loadable by the first `LOAD` slice.
-- `INSTALL pkg flash_addr` writes only erased currently visible low flash;
-  banked install across banks 0-2 is not implemented yet.
-- `LOAD` does minimal AP parsing and internal relocation only; no full AP FNV
-  validation or import resolution yet.
+- No default flash-image `RESOLVE` command; import resolution happens only
+  during AP load/run through resident RJOIN.
+- `INSTALL pkg flash_addr` writes only erased currently visible low flash.
+  Banked install across banks 0-2 is currently `bankput-3000.a`, not a polished
+  command.
+- `LOAD` does minimal AP parsing and resident RJOIN import linking; no full AP
+  FNV validation or dependency manager yet.
 - Local labels are not exported, imported, or reported as public symbols.
 
 For design detail, see [HASHED_ASM.md](HASHED_ASM.md). For board evidence, see

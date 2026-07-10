@@ -849,12 +849,13 @@ to relocate them.
 
 ## Q: Could a RAM program call an AP package stored in another bank?
 
-Comment: Yes, as a future banked overlay-call proposal. A RAM program could
-call a small AP loader stub, identify an installed AP v1 package in bank 2 or
-another managed flash location, copy the package envelope into the
-`$0A00-$19FF` sector staging buffer, relocate its BODY for the requested RAM
-load address, resolve any imports, call the relocated entry, then return to the
-caller's next RAM instruction.
+Comment: Yes. The first minimal HIMON command path now exists for known AP
+packages in banks 0-2: `AP Bn pkg dst` copies the selected bank sector through
+the flash worker tray, retains the AP envelope in the `$0A00-$19FF` sector
+staging buffer, relocates/links BODY into the requested `$2000-$4FFF` load
+address, runs from that RAM address, then returns through the normal monitor
+run path. The richer RAM-caller `AP_CALL` contract below is still the future
+overlay-call proposal.
 
 The caller-facing shape could be:
 

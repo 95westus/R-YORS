@@ -20,9 +20,11 @@ R          reset
 ```
 
 The current ROM proof runs STR8 from bank 3 `$F000`, stores the RAM flash
-worker at `$FD1E-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
+worker at `$FCE3-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
 `$1FE9-$1FFF` for worker/update state, stages ordinary copy sectors through
 `$4000-$4FFF`, and stages HIMON update sectors through `$4000-$6FFF`.
+The top sector also exposes stable service entries at `$F003` for running
+selected worker modes and `$F006` for resident RJOIN AP import linking.
 
 The current build targets are:
 
@@ -104,8 +106,8 @@ Artifact check:
   himon-str8-rom.bin is 32768 bytes
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
-  worker source is CPU $FD1E-$FFEF
-  vectors point to STR8 IVI entries: F089/F000/F09D
+  worker source is CPU $FCE3-$FFEF
+  vectors point to STR8 IVI entries: F092/F000/F0A6
 
 Non-destructive STR8:
   reset enters STR8 countdown

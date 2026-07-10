@@ -55,22 +55,22 @@ space.
 
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: HIMON starts at
 CPU `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
-`$7000`, the STR8 RAM worker source is stored at CPU `$FD1E` / file offset
-`$7D1E`, copied into the `$0200-$09FF` RAM worker-code tray, and all live
+`$7000`, the STR8 RAM worker source is stored at CPU `$FCE3` / file offset
+`$7CE3`, copied into the `$0200-$09FF` RAM worker-code tray, and all live
 hardware vectors enter the STR8-owned top sector. RESET points to STR8 at
 `$F000`; NMI and IRQ/BRK point to STR8 IVI stubs at
-`$F089`/`$F09D`, which dispatch through the RAM vector cells.
+`$F092`/`$F0A6`, which dispatch through the RAM vector cells.
 
 Combined image layout:
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$EAF3   HIMON body
-$EAF4-$EFFF   current image gap inside the used E sector
-$F000-$FA82   STR8 resident shell, IVI stubs, and HIMON updater
-$F76F         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$FA83-$FD1D   current contiguous top-sector growth hole
-$FD1E-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray for B/E/M/U/0/1/2
+$C000-$EFE9   HIMON body
+$EFEA-$EFFF   current image gap inside the used E sector
+$F000-$FC68   STR8 resident shell, IVI stubs, HIMON updater, and AP services
+$FA17         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$FC69-$FCE2   current contiguous top-sector growth hole
+$FCE3-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray for B/E/M/U/0/1/2
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
@@ -179,7 +179,7 @@ $7E00-$7E01   HIMON-published RJOIN addr16 (`THE_JOIN_EXEC_XY`)
 $7E02-$7E1C   HIMON resident service vector block + checksum
 $7E1D-$7E1E   HIMON RX lookahead
 $7E1F-$7E22   optional PACK40 service vectors
-$7E23-$7E24   free buffer spill / scratch
+$7E23-$7E24   AP import record pointer after package parse
 $7E25-$7E2C   optional flash-install service vector/request cells
 $7E2D-$7E40   optional AP package service vector/request/result cells
 $7E41-$7E45   AP package service scratch
@@ -357,7 +357,7 @@ HIMON/himon-shared-eq.inc
 
 The combined `himon-str8-rom.bin` image places STR8 in bank 3's `$F000-$FFFF`
 top-ROM sector with the hardware vectors. HIMON starts at `$C000`, and the
-STR8 RAM-worker source is stored inside the top sector at `$FD1E-$FFEF`.
+STR8 RAM-worker source is stored inside the top sector at `$FCE3-$FFEF`.
 
 The physical erase unit remains 4K. The protected STR8 window starts at the
 highest boundary that fits:

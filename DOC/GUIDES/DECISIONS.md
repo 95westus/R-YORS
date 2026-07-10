@@ -535,6 +535,7 @@ DOC/IDEAS.md
 - `META/BIB.md` records source corpus/provenance only.
 - `HIMON/HIMON_MAP.md` is the readable HIMON edge/capability map.
 - `HIMON/HIMON_EDGE_DUMP.md` is the raw direct-edge evidence.
+- `STR8/STR8_EDGE_DUMP.md` is the raw STR8 direct-edge evidence.
 - Each concept should have one canonical home. Other documents may give a short
   summary and a link, but should not restate the full explanation.
 - Avoid reader pinball: if document A points to document B as the authority for

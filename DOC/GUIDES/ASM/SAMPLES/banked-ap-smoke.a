@@ -1,0 +1,48 @@
+; BANKED-AP-SMOKE.A
+; NO-IMPORT AP PACKAGE SMOKE FOR BANK 0-2 COPY/LOAD/RUN.
+;
+; BUILD:
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   END
+;   PACKAGE $3200
+;
+; INSTALL WITH BANKPUT-3000.A, THEN RUN FROM HIMON:
+;   AP B2 $9000 $3000
+;   D 5848 50
+;
+; PASS:
+;   $5848=$AC
+;   $584A/$584B = RELOCATED TARGET ADDRESS
+;   $5850=$5A
+
+        ORG $2000
+
+MAIN    BRA RUN
+        ENTRY MAIN
+
+RUN     STZ $5848
+        STZ $584A
+        STZ $584B
+        STZ $5850
+        JSR TARGET
+        LDA #<TARGET
+        STA $584A
+        LDA #>TARGET
+        STA $584B
+        LDA $5850
+        CMP #$5A
+        BNE FAIL
+        LDA #$AC
+        STA $5848
+        RTS
+
+FAIL    LDA #$E1
+        STA $5848
+        RTS
+
+TARGET  LDA #$5A
+        STA $5850
+        RTS
+
+        END

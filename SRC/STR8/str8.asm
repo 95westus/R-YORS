@@ -22,6 +22,8 @@
                         MODULE          STR8_APP
 
                         XDEF            START
+                        XDEF            STR8_RUN_WORKER_SERVICE
+                        XDEF            STR8_AP_IMPORT_LINK_SERVICE
                         XDEF            STR8_IVY_ENTRY_NMI
                         XDEF            STR8_IVY_ENTRY_IRQ_MASTER
                         XDEF            STR8_ID_MARKER_BYTES
@@ -72,10 +74,10 @@ STR8_WORKER_RUN         EQU             $0200
 STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_TRAY_SIZE   EQU             $0800
 STR8_WORKER_TRAY_END    EQU             $09FF
-STR8_WORKER_STORE_LO    EQU             $1E
-STR8_WORKER_STORE_HI    EQU             $FD
-STR8_WORKER_COPY_LEN_LO EQU             $D2
-STR8_WORKER_COPY_LEN_HI EQU             $02
+STR8_WORKER_STORE_LO    EQU             $E3
+STR8_WORKER_STORE_HI    EQU             $FC
+STR8_WORKER_COPY_LEN_LO EQU             $0D
+STR8_WORKER_COPY_LEN_HI EQU             $03
 STR8_DELAY_TICKS        EQU             $03
 STR8_DELAY_TICK_A       EQU             $26
 STR8_DELAY_FIRST_A      EQU             $27
@@ -89,7 +91,53 @@ STR8_COPY_MODE_ENROLL   EQU             $02
 STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
 STR8_COPY_MODE_MAP      EQU             $04
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
+STR8_COPY_MODE_STAGE_BANK_SECTOR EQU    $06
 STR8_RESTORE_PROT_START_HI EQU          $C0
+
+RJOIN_EXEC_XY_LO        EQU             $7E00
+HIM_SVC_FNV_INIT_LO     EQU             $7E14
+HIM_SVC_FNV_UPDATE_LO   EQU             $7E16
+HIM_AP_STATUS           EQU             $7E30
+HIM_AP_DST_LO           EQU             $7E33
+HIM_AP_DST_HI           EQU             $7E34
+HIM_AP_BODY_LEN_LO      EQU             $7E39
+HIM_AP_BODY_LEN_HI      EQU             $7E3A
+HIM_AP_RELOC_COUNT      EQU             $7E3B
+HIM_AP_IMPORT_COUNT     EQU             $7E3C
+HIM_AP_REL_LO           EQU             $7E3F
+HIM_AP_REL_HI           EQU             $7E40
+HIM_AP_IMPORT_LO        EQU             $7E23
+HIM_AP_IMPORT_HI        EQU             $7E24
+HIM_AP_RELOC_ABS16_IMPORT EQU           $04
+HIM_AP_RELOC_LO8_IMPORT EQU             $05
+HIM_AP_RELOC_HI8_IMPORT EQU             $06
+HIM_AP_STATUS_BAD_FIX   EQU             $09
+
+FNV_HASH0               EQU             $B0
+FNV_HASH3               EQU             $B3
+STR8_AP_PTR_LO          EQU             $CD
+STR8_AP_PTR_HI          EQU             $CE
+STR8_AP_ADDR_LO         EQU             $CF
+STR8_AP_ADDR_HI         EQU             $D0
+STR8_AP_TMP_LO          EQU             $D1
+STR8_AP_TMP_HI          EQU             $D2
+STR8_AP_IMP_PTR_LO      EQU             $D3
+STR8_AP_IMP_PTR_HI      EQU             $D4
+STR8_AP_NAME_INDEX      EQU             $D5
+STR8_AP_CODE0           EQU             $E6
+STR8_AP_CODE1           EQU             $E7
+STR8_AP_CODE2           EQU             $E8
+STR8_AP_VALUE_LO        EQU             $E9
+STR8_AP_VALUE_HI        EQU             $EA
+STR8_AP_PATCH_KIND      EQU             $1A10
+STR8_AP_PATCH_LO        EQU             $1A11
+STR8_AP_PATCH_HI        EQU             $1A12
+STR8_AP_RES_LO          EQU             $1A13
+STR8_AP_RES_HI          EQU             $1A14
+STR8_AP_INDEX           EQU             $1A15
+STR8_AP_RELOC_COUNT     EQU             $1A16
+STR8_AP_IMPORT_COUNT    EQU             $1A17
+STR8_AP_RELOC_OFFSET    EQU             $1A18
 
 STR8_PTR_LO             EQU             $CD
 STR8_PTR_HI             EQU             $CE
@@ -139,6 +187,17 @@ STR8_CON_FLUSH_RX_MAX   EQU             $FF
 ; 2026-05-07T19:14-05:00        WLP2        Timeout enters HIMON warm; S/s takes STR8.
 ; 2026-05-14T00:00-05:00        WLP2        Timeout enters HIMON cold after half delay.
 START:
+                        JMP             STR8_BOOT_START
+
+; Stable resident entry for HIMON/RAM tools. Caller sets the $1FE9-$1FFF
+; worker state board, then this copies the flash worker to $0200 and runs it.
+STR8_RUN_WORKER_SERVICE:
+                        JMP             STR8_RUN_WORKER_SERVICE_BODY
+
+STR8_AP_IMPORT_LINK_SERVICE:
+                        JMP             STR8_AP_IMPORT_LINK_SERVICE_BODY
+
+STR8_BOOT_START:
                         SEI
                         CLD
                         LDX             #$FF
@@ -737,6 +796,479 @@ STR8_RUN_COPY:
                         JSR             STR8_WORKER_RUN
                         RTS
                         ENDIF
+
+STR8_RUN_WORKER_SERVICE_BODY:
+                        IF              STR8_RAM_PROOF
+                        CLC
+                        RTS
+                        ELSE
+                        JSR             STR8_COPY_WORKER_TO_RAM
+                        JSR             STR8_WORKER_RUN
+                        RTS
+                        ENDIF
+
+STR8_AP_IMPORT_LINK_SERVICE_BODY:
+                        STZ             HIM_AP_STATUS
+                        JSR             STR8_AP_RELOAD_REL_PTR
+                        LDY             #$00
+                        LDA             (STR8_AP_PTR_LO),Y
+                        STA             STR8_AP_RELOC_COUNT
+                        LDA             HIM_AP_IMPORT_COUNT
+                        STA             STR8_AP_IMPORT_COUNT
+                        LDX             #$00
+?VALIDATE:
+                        CPX             STR8_AP_RELOC_COUNT
+                        BCS             ?PATCH_START
+                        STX             STR8_AP_INDEX
+                        JSR             STR8_AP_RELOAD_REL_PTR
+                        JSR             STR8_AP_RELOC_KIND_X
+                        JSR             STR8_AP_IMPORT_KIND_A
+                        BCC             ?VALIDATE_NEXT
+                        JSR             STR8_AP_IMPORT_SITE_OK_X
+                        BCC             STR8_AP_IMPORT_LINK_FAIL
+                        JSR             STR8_AP_IMPORT_RESOLVE_ROW_X
+                        BCC             STR8_AP_IMPORT_LINK_FAIL
+?VALIDATE_NEXT:
+                        LDX             STR8_AP_INDEX
+                        INX
+                        BRA             ?VALIDATE
+?PATCH_START:
+                        LDX             #$00
+?PATCH:
+                        CPX             STR8_AP_RELOC_COUNT
+                        BCS             ?DONE
+                        STX             STR8_AP_INDEX
+                        JSR             STR8_AP_RELOAD_REL_PTR
+                        JSR             STR8_AP_RELOC_KIND_X
+                        JSR             STR8_AP_IMPORT_KIND_A
+                        BCC             ?PATCH_NEXT
+                        JSR             STR8_AP_IMPORT_CAPTURE_ROW_X
+                        JSR             STR8_AP_IMPORT_RESOLVE_ROW_X
+                        BCC             STR8_AP_IMPORT_LINK_FAIL
+                        JSR             STR8_AP_IMPORT_PATCH_CAPTURED
+?PATCH_NEXT:
+                        LDX             STR8_AP_INDEX
+                        INX
+                        BRA             ?PATCH
+?DONE:
+                        JSR             STR8_AP_IMPORT_RESTORE_COUNTS
+                        SEC
+                        RTS
+
+STR8_AP_IMPORT_LINK_FAIL:
+                        JSR             STR8_AP_IMPORT_RESTORE_COUNTS
+                        LDA             #HIM_AP_STATUS_BAD_FIX
+                        STA             HIM_AP_STATUS
+                        CLC
+                        RTS
+
+STR8_AP_IMPORT_RESTORE_COUNTS:
+                        LDA             STR8_AP_RELOC_COUNT
+                        STA             HIM_AP_RELOC_COUNT
+                        LDA             STR8_AP_IMPORT_COUNT
+                        STA             HIM_AP_IMPORT_COUNT
+                        RTS
+
+STR8_AP_IMPORT_KIND_A:
+                        CMP             #HIM_AP_RELOC_ABS16_IMPORT
+                        BEQ             ?YES
+                        CMP             #HIM_AP_RELOC_LO8_IMPORT
+                        BEQ             ?YES
+                        CMP             #HIM_AP_RELOC_HI8_IMPORT
+                        BEQ             ?YES
+                        CLC
+                        RTS
+?YES:
+                        SEC
+                        RTS
+
+STR8_AP_RELOAD_REL_PTR:
+                        LDA             HIM_AP_REL_LO
+                        STA             STR8_AP_PTR_LO
+                        LDA             HIM_AP_REL_HI
+                        STA             STR8_AP_PTR_HI
+                        RTS
+
+STR8_AP_RELOC_KIND_X:
+                        TXA
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (STR8_AP_PTR_LO),Y
+                        RTS
+
+STR8_AP_RELOC_SITE_LO_X:
+                        LDA             STR8_AP_RELOC_COUNT
+                        STA             STR8_AP_RELOC_OFFSET
+                        TXA
+                        CLC
+                        ADC             STR8_AP_RELOC_OFFSET
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (STR8_AP_PTR_LO),Y
+                        RTS
+
+STR8_AP_RELOC_SITE_HI_X:
+                        LDA             STR8_AP_RELOC_COUNT
+                        ASL             A
+                        STA             STR8_AP_RELOC_OFFSET
+                        TXA
+                        CLC
+                        ADC             STR8_AP_RELOC_OFFSET
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (STR8_AP_PTR_LO),Y
+                        RTS
+
+STR8_AP_RELOC_TARGET_LO_X:
+                        LDA             STR8_AP_RELOC_COUNT
+                        ASL             A
+                        CLC
+                        ADC             STR8_AP_RELOC_COUNT
+                        STA             STR8_AP_RELOC_OFFSET
+                        TXA
+                        CLC
+                        ADC             STR8_AP_RELOC_OFFSET
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (STR8_AP_PTR_LO),Y
+                        RTS
+
+STR8_AP_RELOC_TARGET_HI_X:
+                        LDA             STR8_AP_RELOC_COUNT
+                        ASL             A
+                        ASL             A
+                        STA             STR8_AP_RELOC_OFFSET
+                        TXA
+                        CLC
+                        ADC             STR8_AP_RELOC_OFFSET
+                        CLC
+                        ADC             #$01
+                        TAY
+                        LDA             (STR8_AP_PTR_LO),Y
+                        RTS
+
+STR8_AP_IMPORT_SITE_OK_X:
+                        JSR             STR8_AP_RELOC_KIND_X
+                        CMP             #HIM_AP_RELOC_ABS16_IMPORT
+                        BEQ             ?WORD
+                        LDA             #$00
+                        BRA             ?ADD_READY
+?WORD:
+                        LDA             #$01
+?ADD_READY:
+                        STA             STR8_AP_TMP_LO
+                        JSR             STR8_AP_RELOC_SITE_LO_X
+                        CLC
+                        ADC             STR8_AP_TMP_LO
+                        STA             STR8_AP_TMP_LO
+                        LDA             #$00
+                        ADC             #$00
+                        STA             STR8_AP_TMP_HI
+                        JSR             STR8_AP_RELOC_SITE_HI_X
+                        CLC
+                        ADC             STR8_AP_TMP_HI
+                        BCS             ?BAD
+                        STA             STR8_AP_TMP_HI
+                        CMP             HIM_AP_BODY_LEN_HI
+                        BCC             ?OK
+                        BNE             ?BAD
+                        LDA             STR8_AP_TMP_LO
+                        CMP             HIM_AP_BODY_LEN_LO
+                        BCC             ?OK
+?BAD:
+                        CLC
+                        RTS
+?OK:
+                        SEC
+                        RTS
+
+STR8_AP_IMPORT_RESOLVE_ROW_X:
+                        JSR             STR8_AP_RELOC_TARGET_HI_X
+                        BNE             ?FAIL
+                        JSR             STR8_AP_RELOC_TARGET_LO_X
+                        CMP             STR8_AP_IMPORT_COUNT
+                        BCS             ?FAIL
+                        TAX
+                        JSR             STR8_AP_IMPORT_RESOLVE_SLOT_X
+                        BCC             ?FAIL
+                        LDX             STR8_AP_INDEX
+                        SEC
+                        RTS
+?FAIL:
+                        LDX             STR8_AP_INDEX
+                        CLC
+                        RTS
+
+STR8_AP_IMPORT_RESOLVE_SLOT_X:
+                        JSR             STR8_AP_IMPORT_HASH_SLOT_X
+                        BCC             ?FAIL
+                        LDX             #<FNV_HASH0
+                        LDY             #>FNV_HASH0
+                        JSR             STR8_AP_CALL_JOIN
+                        BCC             ?FAIL
+                        STX             STR8_AP_RES_LO
+                        STY             STR8_AP_RES_HI
+                        SEC
+                        RTS
+?FAIL:
+                        CLC
+                        RTS
+
+STR8_AP_IMPORT_HASH_SLOT_X:
+                        JSR             STR8_AP_IMPORT_ROW_PTR_X
+                        BCC             ?FAIL
+                        LDY             #$00
+                        LDA             (STR8_AP_IMP_PTR_LO),Y
+                        BEQ             ?FAIL
+                        STA             STR8_AP_TMP_HI
+                        INC             STR8_AP_IMP_PTR_LO
+                        BNE             ?PACK_PTR_OK
+                        INC             STR8_AP_IMP_PTR_HI
+?PACK_PTR_OK:
+                        LDA             STR8_AP_IMP_PTR_LO
+                        STA             STR8_AP_ADDR_LO
+                        LDA             STR8_AP_IMP_PTR_HI
+                        STA             STR8_AP_ADDR_HI
+                        JSR             STR8_AP_CALL_FNV_INIT
+                        STZ             STR8_AP_NAME_INDEX
+?LOOP:
+                        LDA             STR8_AP_NAME_INDEX
+                        CMP             STR8_AP_TMP_HI
+                        BCS             ?DONE
+                        JSR             STR8_AP_IMPORT_UNPACK_NEXT3
+                        BCC             ?FAIL
+                        LDA             STR8_AP_CODE0
+                        JSR             STR8_AP_IMPORT_HASH_CODE_A
+                        BCC             ?FAIL
+                        INC             STR8_AP_NAME_INDEX
+                        LDA             STR8_AP_NAME_INDEX
+                        CMP             STR8_AP_TMP_HI
+                        BCS             ?DONE
+                        LDA             STR8_AP_CODE1
+                        JSR             STR8_AP_IMPORT_HASH_CODE_A
+                        BCC             ?FAIL
+                        INC             STR8_AP_NAME_INDEX
+                        LDA             STR8_AP_NAME_INDEX
+                        CMP             STR8_AP_TMP_HI
+                        BCS             ?DONE
+                        LDA             STR8_AP_CODE2
+                        JSR             STR8_AP_IMPORT_HASH_CODE_A
+                        BCC             ?FAIL
+                        INC             STR8_AP_NAME_INDEX
+                        BRA             ?LOOP
+?DONE:
+                        SEC
+                        RTS
+?FAIL:
+                        CLC
+                        RTS
+
+STR8_AP_IMPORT_ROW_PTR_X:
+                        LDA             HIM_AP_IMPORT_LO
+                        STA             STR8_AP_IMP_PTR_LO
+                        LDA             HIM_AP_IMPORT_HI
+                        STA             STR8_AP_IMP_PTR_HI
+                        INC             STR8_AP_IMP_PTR_LO
+                        BNE             ?BODY
+                        INC             STR8_AP_IMP_PTR_HI
+?BODY:
+                        INC             STR8_AP_IMP_PTR_LO
+                        BNE             ?LOOP
+                        INC             STR8_AP_IMP_PTR_HI
+?LOOP:
+                        CPX             #$00
+                        BEQ             ?FOUND
+                        LDY             #$00
+                        LDA             (STR8_AP_IMP_PTR_LO),Y
+                        JSR             STR8_AP_IMPORT_ROW_BYTES_A
+                        BCC             ?FAIL
+                        CLC
+                        ADC             STR8_AP_IMP_PTR_LO
+                        STA             STR8_AP_IMP_PTR_LO
+                        BCC             ?NEXT
+                        INC             STR8_AP_IMP_PTR_HI
+?NEXT:
+                        DEX
+                        BRA             ?LOOP
+?FOUND:
+                        SEC
+                        RTS
+?FAIL:
+                        CLC
+                        RTS
+
+STR8_AP_IMPORT_ROW_BYTES_A:
+                        BEQ             ?FAIL
+                        STA             STR8_AP_TMP_LO
+                        LDA             #$01
+?LOOP:
+                        CLC
+                        ADC             #$02
+                        DEC             STR8_AP_TMP_LO
+                        BEQ             ?OK
+                        DEC             STR8_AP_TMP_LO
+                        BEQ             ?OK
+                        DEC             STR8_AP_TMP_LO
+                        BNE             ?LOOP
+?OK:
+                        SEC
+                        RTS
+?FAIL:
+                        CLC
+                        RTS
+
+STR8_AP_IMPORT_UNPACK_NEXT3:
+                        LDY             #$00
+                        LDA             (STR8_AP_ADDR_LO),Y
+                        STA             STR8_AP_VALUE_LO
+                        INC             STR8_AP_ADDR_LO
+                        BNE             ?HI
+                        INC             STR8_AP_ADDR_HI
+?HI:
+                        LDA             (STR8_AP_ADDR_LO),Y
+                        STA             STR8_AP_VALUE_HI
+                        INC             STR8_AP_ADDR_LO
+                        BNE             ?HAVE_WORD
+                        INC             STR8_AP_ADDR_HI
+?HAVE_WORD:
+                        STZ             STR8_AP_CODE0
+?CODE0:
+                        LDA             STR8_AP_VALUE_LO
+                        SEC
+                        SBC             #$40
+                        STA             STR8_AP_TMP_LO
+                        LDA             STR8_AP_VALUE_HI
+                        SBC             #$06
+                        BCC             ?CODE0_DONE
+                        STA             STR8_AP_VALUE_HI
+                        LDA             STR8_AP_TMP_LO
+                        STA             STR8_AP_VALUE_LO
+                        INC             STR8_AP_CODE0
+                        BRA             ?CODE0
+?CODE0_DONE:
+                        STZ             STR8_AP_CODE1
+?CODE1:
+                        LDA             STR8_AP_VALUE_LO
+                        SEC
+                        SBC             #$28
+                        STA             STR8_AP_TMP_LO
+                        LDA             STR8_AP_VALUE_HI
+                        SBC             #$00
+                        BCC             ?CODE1_DONE
+                        STA             STR8_AP_VALUE_HI
+                        LDA             STR8_AP_TMP_LO
+                        STA             STR8_AP_VALUE_LO
+                        INC             STR8_AP_CODE1
+                        BRA             ?CODE1
+?CODE1_DONE:
+                        LDA             STR8_AP_VALUE_LO
+                        CMP             #$28
+                        BCC             ?CODE2_OK
+                        CLC
+                        RTS
+?CODE2_OK:
+                        STA             STR8_AP_CODE2
+                        SEC
+                        RTS
+
+STR8_AP_IMPORT_HASH_CODE_A:
+                        BEQ             ?FAIL
+                        CMP             #$1B
+                        BCS             ?DIGIT
+                        CLC
+                        ADC             #'@'
+                        BRA             ?UPDATE
+?DIGIT:
+                        CMP             #$25
+                        BCS             ?SPECIAL
+                        SEC
+                        SBC             #$1B
+                        CLC
+                        ADC             #'0'
+                        BRA             ?UPDATE
+?SPECIAL:
+                        CMP             #$25
+                        BEQ             ?UNDER
+                        CMP             #$26
+                        BEQ             ?Q
+                        CMP             #$27
+                        BEQ             ?DOT
+?FAIL:
+                        CLC
+                        RTS
+?UNDER:
+                        LDA             #'_'
+                        BRA             ?UPDATE
+?Q:
+                        LDA             #'?'
+                        BRA             ?UPDATE
+?DOT:
+                        LDA             #'.'
+?UPDATE:
+                        JSR             STR8_AP_CALL_FNV_UPDATE
+                        SEC
+                        RTS
+
+STR8_AP_IMPORT_CAPTURE_ROW_X:
+                        JSR             STR8_AP_RELOC_KIND_X
+                        STA             STR8_AP_PATCH_KIND
+                        JSR             STR8_AP_RELOC_SITE_LO_X
+                        STA             STR8_AP_TMP_LO
+                        JSR             STR8_AP_RELOC_SITE_HI_X
+                        STA             STR8_AP_TMP_HI
+                        LDA             HIM_AP_DST_LO
+                        CLC
+                        ADC             STR8_AP_TMP_LO
+                        STA             STR8_AP_PATCH_LO
+                        LDA             HIM_AP_DST_HI
+                        ADC             STR8_AP_TMP_HI
+                        STA             STR8_AP_PATCH_HI
+                        RTS
+
+STR8_AP_IMPORT_PATCH_CAPTURED:
+                        LDA             STR8_AP_PATCH_LO
+                        STA             STR8_AP_ADDR_LO
+                        LDA             STR8_AP_PATCH_HI
+                        STA             STR8_AP_ADDR_HI
+                        LDA             STR8_AP_PATCH_KIND
+                        CMP             #HIM_AP_RELOC_ABS16_IMPORT
+                        BEQ             ?ABS16
+                        CMP             #HIM_AP_RELOC_LO8_IMPORT
+                        BEQ             ?LO8
+                        CMP             #HIM_AP_RELOC_HI8_IMPORT
+                        BEQ             ?HI8
+                        RTS
+?ABS16:
+                        LDY             #$00
+                        LDA             STR8_AP_RES_LO
+                        STA             (STR8_AP_ADDR_LO),Y
+                        INY
+                        LDA             STR8_AP_RES_HI
+                        STA             (STR8_AP_ADDR_LO),Y
+                        RTS
+?LO8:
+                        LDY             #$00
+                        LDA             STR8_AP_RES_LO
+                        STA             (STR8_AP_ADDR_LO),Y
+                        RTS
+?HI8:
+                        LDY             #$00
+                        LDA             STR8_AP_RES_HI
+                        STA             (STR8_AP_ADDR_LO),Y
+                        RTS
+
+STR8_AP_CALL_JOIN:
+                        JMP             (RJOIN_EXEC_XY_LO)
+
+STR8_AP_CALL_FNV_INIT:
+                        JMP             (HIM_SVC_FNV_INIT_LO)
+
+STR8_AP_CALL_FNV_UPDATE:
+                        JMP             (HIM_SVC_FNV_UPDATE_LO)
 
                         IF              STR8_RAM_PROOF
 ; ----------------------------------------------------------------------------
@@ -1598,11 +2130,7 @@ MSG_PROMPT:             DB              "STR8",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
 MSG_BOOT_BANNER:       DB              $0D,$0A
-                        DB              "____      ____    ____   ____      ____",$0D,$0A
-                        DB              "|   \    /   |   /    \  |   \    /",$0D,$0A
-                        DB              "|___/    |___|  |      | |___/    \___",$0D,$0A
-                        DB              "|   \    /   |  |      | |   \        \",$0D,$0A
-                        DB              "|    \  /    |   \____/  |    \   ____/",$0D,$8A
+                        DB              "STR8",$0D,$8A
 MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 3S. S=STR8 ",$A0
                         ENDIF
 

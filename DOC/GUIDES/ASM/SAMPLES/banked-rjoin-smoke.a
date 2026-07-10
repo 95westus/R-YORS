@@ -1,0 +1,38 @@
+; BANKED-RJOIN-SMOKE.A
+; IMPORT/RJOIN AP PACKAGE SMOKE FOR BANK 0-2 COPY/LOAD/RUN.
+;
+; BUILD:
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   END
+;   PACKAGE $3200
+;
+; INSTALL WITH BANKPUT-3000.A, THEN RUN FROM HIMON:
+;   AP B2 $9000 $3000
+;   D 5848 50
+;
+; PASS:
+;   PRINTS "BANK RJOIN"
+;   $5848=$AC
+;   $584A/$584B = RESOLVED BIO_FTDI_PUT_CSTR ADDRESS
+
+        ORG $2000
+
+        IMPORT BIO_FTDI_PUT_CSTR
+
+MAIN    BRA RUN
+        ENTRY MAIN
+
+RUN     LDX #<MSG
+        LDY #>MSG
+        JSR BIO_FTDI_PUT_CSTR
+        LDA #<BIO_FTDI_PUT_CSTR
+        STA $584A
+        LDA #>BIO_FTDI_PUT_CSTR
+        STA $584B
+        LDA #$AC
+        STA $5848
+        RTS
+MSG     DB $0D,$0A,'B','A','N','K',' '
+        DB 'R','J','O','I','N',$0D,$0A,0
+        END

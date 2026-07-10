@@ -26,6 +26,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-str8-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str8-himon-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str-himon-str-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
+    [pscustomobject]@{ Target = "str8-top-stage-s19"; Category = "monitor"; Description = "Build 0A00-19FF staged S19 from the vector-complete STR8 top sector: BUILD/s19/str8-top-stage-0a00.s19." }
     [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for himon-str8-rom-install-s19." }
     [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000: BUILD/s19/himon-load-c000.s19." }
     [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image at BUILD/bin/himon-load-c000.bin." }
@@ -64,6 +65,7 @@ $rows = @(
     [pscustomobject]@{ Target = "rom"; Category = "library"; Description = "Build shared ROM routine library." }
     [pscustomobject]@{ Target = "testing"; Category = "library"; Description = "Build shared testing support library." }
     [pscustomobject]@{ Target = "docs"; Category = "docs"; Description = "Regenerate source-derived docs." }
+    [pscustomobject]@{ Target = "edge-docs"; Category = "docs"; Description = "Regenerate guide raw edge dumps for HIMON and STR8." }
     [pscustomobject]@{ Target = "docs-watch"; Category = "docs"; Description = "Watch source and regenerate source-derived docs." }
     [pscustomobject]@{ Target = "call-order"; Category = "docs"; Description = "Regenerate DOC/GENERATED/CALL_ORDER.md." }
     [pscustomobject]@{ Target = "routine-contracts"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_CONTRACTS.md." }
