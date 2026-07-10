@@ -13,34 +13,40 @@ Pronounced **are-yors**.
 
 ## Current Milestone
 
-As of 2026-07-05, ASM v1 is a flash-resident HIMON command loaded at `$8000`
-and entered as `ASM` through HIMON's FNV/RJOIN catalog. The flash wrapper now
-uses a PC-bearing source prompt, `ASM>$hhhh:`, keeps accepted source lines
-quiet, and leaves explicit PC checks to `.P`.
+As of 2026-07-10, the board has the OIL `.710` path on hardware: HIMON can
+load, link, and run AP packages from banked flash, and the STR8 top sector can
+identify itself as `STR8-N V0 #5F6A0F7A` at `$FACE`.
 
-ASM assembles pasted W65C02 source into bare RAM programs at `$2000+`, supports
-`EQU`/`DB`/`DW`/`DS`, local labels, `EXPORT`/`IMPORT`, forward fixups, direct
-resident `JSR`/`JMP` targets through RJOIN/K05 records, and post-`END`
-`SEAL>` work. The current post-`END` surface can seal, resolve imports,
-relocate a RAM body, and package an AP v1 envelope with tagged SEAL, REL, EXP,
-IMP, and BODY sections. `PACKAGE` self-verifies the written BODY FNV; the
-interactive `CHECK` reader remains a diagnostic/full-core proof, not part of
-the default flash image.
+Flash ASM is now `ASM-F2`, loaded at `$8000` with `L F` as
+`LF OK WR=3969 GO=800C`. It enters through HIMON's FNV/RJOIN catalog as
+`ASM`, uses the PC-bearing prompt `ASM>$hhhh:`, assembles W65C02 source into
+RAM, seals contiguous bodies, packages AP v1 envelopes, loads packages into
+RAM, and can install AP envelopes to visible or banked flash by using the
+current helper sources.
 
-HIMON has been trimmed and hardened around that path. The legacy resident
-mini-assembler `A` and HIMON's user-facing `U` unassemble command are gone;
-`B` and `N` remain for RAM debug. HIMON now exposes a small service vector
-block for shared helpers, skips `$7F00-$7FFF` I/O rows in `D`, rejects
-monitor/I/O/non-RAM debug patch targets, enforces the `$7EFF` RAM/I/O ceiling
-in loader smoke tests, reports compact normal loader failures as `LERR=$ee`,
-and keeps richer `L F` flash diagnostics for protected writes.
+The current AP path can:
+
+```text
+PACKAGE $3200             write an AP envelope in RAM
+LOAD $3200 $3000          relocate/run a RAM package body
+INSTALL $3200 $hhhh       store an envelope in visible low flash
+AP $hhhh $3000            load/run an installed visible-flash package
+AP B2 $9000 $3000         load/link/run a package stored in bank 2
+AP B2 $8000 $4800         run the stored fixed-address ASM session reporter
+```
+
+HIMON now exposes the resident services this path needs, including the AP
+service, PACK40 helper service, flash-install service, and STR8-backed resident
+import linker. `AP B2` is board-proven with no-import packages, resident RJOIN
+imports, missing-import failure, bad-input rejection, and overlap protection.
 
 Treat ASM as a young onboard workbench, not a finished hosted toolchain. Its
-current limits, package/install direction, and hardware transcripts live in
-the ASM/HIMON docs and proof logs:
+current limits, package/install direction, address practices, and hardware
+transcripts live in the ASM/HIMON docs and proof logs:
 
 ```text
 DOC/GUIDES/ASM/ASM_USER_GUIDE.md
+DOC/GUIDES/ASM/ADDRESS_PRACTICES.md
 DOC/GUIDES/ASM/HASHED_ASM.md
 DOC/GUIDES/ASM/DECISIONS.md
 DOC/GUIDES/ASM/FLASH_8000_GAME_PLAN.md
@@ -75,25 +81,26 @@ flash-resident as a HIMON command, currently emitting user opcodes into RAM.
 
 ```text
 R-YORS  keeps source, ROMs, maps, manuals, decisions, and generated reports together
-STR8    maps flash, backs up images, restores images, installs $C000 payloads
-HIMON   dumps/modifies memory, loads S19/flash S19, debugs RAM, dispatches FNV/RJOIN services
-ASM     assembles W65C02 source, seals/relocates/packages RAM programs
+STR8-N  maps flash, backs up/restores images, installs $C000 payloads, serves bank flash work
+HIMON   dumps/modifies memory, loads S19/flash S19, debugs RAM, dispatches FNV/RJOIN/AP services
+ASM-F2  assembles W65C02 source, seals/relocates/packages/loads AP bodies
 ```
 
 Current boot shape:
 
 ```text
-reset -> STR8 -> HIMON -> user work
+reset -> STR8-N -> HIMON -> user work
 ```
 
-STR8 is useful even if the payload is not HIMON. The same proven `$C000-$EFFF`
+STR8-N is useful even if the payload is not HIMON. The same proven `$C000-$EFFF`
 update gate has booted HIMON, OSI BASIC, and fig-FORTH as live images.
 
 ## Install And Update Boundary
 
 Today, an external flash programmer is required to put R-YORS on a blank board:
 burn the combined STR8/HIMON ROM image once, then boot the board into STR8 and
-HIMON.
+HIMON. STR8-N also provides the current `$F003` bank/flash worker service and
+`$F006` AP import-link service used by HIMON/AP.
 
 After that first install, ordinary bench updates should not need the external
 programmer:
@@ -108,9 +115,32 @@ Keep the programmer as the final recovery path for a bricked board, a damaged
 STR8/recovery sector, or deliberate whole-chip replacement. It is not the
 normal day-to-day update path once STR8/HIMON is alive.
 
+## What We Can Do Today
+
+On a board with the current HIMON/STR8-N/ASM-F2 image, the proven working set
+is:
+
+```text
+boot through STR8-N into HIMON
+update the $C000-$EFFF HIMON/payload image through STR8
+load flash ASM-F2 with L F
+assemble RAM programs from ASM NEW
+SEAL, PACKAGE, LOAD, INSTALL, and run AP envelopes
+store AP envelopes in bank 2 and run them with AP B2
+resolve resident RJOIN imports during AP load/run
+run the bank-2 ASM session reporter with AP B2 $8000 $4800
+rewrite the STR8-N top sector with str8n-topwrite-3000.a when recovery is ready
+```
+
+The practical address guide for these flows is:
+
+```text
+DOC/GUIDES/ASM/ADDRESS_PRACTICES.md
+```
+
 ## Current Status
 
-Updated 2026-07-05.
+Updated 2026-07-10.
 
 STR8 is hardware-proven rotating three bootable images through the same guarded
 path:
@@ -137,14 +167,18 @@ RAM/I/O split: `$7F00-$7FFF` is skipped as I/O by `D`, protected by `M`, and
 rejected by normal `L` with `LERR=$02`; `L F` keeps address-rich failure
 diagnostics for protected flash writes.
 
-ASM is hardware-proven as both a RAM-loaded paste runtime and a flash-resident
-HIMON command. The current flash image loads at `$8000` through `L F`, enters as
-`ASM`, assembles source to `$2000+`, resolves resident routines through RJOIN,
-and has run the biorhythm-style chart and interactive Life samples on the
-board. The SEAL path is hardware-proven for internal relocation, import
-resolution, AP v1 package creation, and the package/body distinction: envelopes
-can be copied as data, while BODY execution at a different base requires
-relocation.
+ASM is hardware-proven as both a RAM-loaded paste runtime and flash-resident
+`ASM-F2`. The current flash image loads at `$8000` through `L F`, enters as
+`ASM-F2`, assembles source to `$2000+`, resolves resident routines through
+RJOIN, and has run the biorhythm-style chart and interactive Life samples on
+the board. The SEAL/AP path is hardware-proven for internal relocation,
+resident import resolution, AP v1 package creation, visible-flash install/load,
+banked `AP B2` load/run, and the package/body distinction: envelopes can be
+copied as data, while BODY execution at a different base requires relocation.
+
+The generated fixed-address session reporter can now live in bank 2 at `$8000`
+and run at `$4800`, so table/report detail is available after an ASM session
+without reloading a RAM reporter.
 
 Treat the system as bench-proven, not as a finished field updater. Keep an
 external programmer path and known-good image nearby.
@@ -163,6 +197,7 @@ DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md  board transcript proof
 ```text
 DOC/GUIDES/OPERATORS_GUIDE.md   use the board: STR8, HIMON, workflows
 DOC/GUIDES/ASM/ASM_USER_GUIDE.md use ASM: source, prompts, END/SEAL/PACKAGE
+DOC/GUIDES/ASM/ADDRESS_PRACTICES.md choose addresses for ASM/AP workflows
 DOC/GUIDES/TECHNICAL_GUIDE.md   understand the system: memory, flash, source
 DOC/GUIDES/REF.md               compact reference
 DOC/GUIDES/GLOSSARY.md          vocabulary contract
