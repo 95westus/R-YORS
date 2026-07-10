@@ -13026,3 +13026,52 @@ match a source-address mismatch: the transcript used `bank2put-8000-3000.a`,
 so the matching retry is `AP B2 $8000 $3000`. To follow
 `DOC/GUIDES/ASM/LIFE16_BANK2_EXAMPLE.md` exactly, rerun the `$9000`
 `bankput-3000.a` helper and then run `AP B2 $9000 $3000`.
+
+## 2026-07-10 ASM-F2 Interactive Banked Flash Erase Pass
+
+The attached board runs assembled
+`DOC/GUIDES/ASM/SAMPLES/flash-erase-bank.a` cleanly under ASM-F2:
+
+```text
+ASM>$33A2:         END
+ASM OK
+SEAL> .
+ASM BYE
+```
+
+Input validation rejected sector `1`, and an empty confirmation aborted with
+`A=$E0` and `ABORT - NO FLASH WRITE`. A confirmed single-sector run erased and
+verified bank 1 `$8000-$8FFF`, returned `A=$AC`, and changed only B1 sector 8
+from occupied to erased in the STR8 map.
+
+The `ALL` path then erased and verified all eight bank 1 sectors:
+
+```text
+ERASE B1:$8000-$8FFF ... OK
+ERASE B1:$9000-$9FFF ... OK
+ERASE B1:$A000-$AFFF ... OK
+ERASE B1:$B000-$BFFF ... OK
+ERASE B1:$C000-$CFFF ... OK
+ERASE B1:$D000-$DFFF ... OK
+ERASE B1:$E000-$EFFF ... OK
+ERASE B1:$F000-$FFFF ... OK
+BANK 1 ERASE COMPLETE
+RET A=AC
+```
+
+STR8 `B` subsequently copied B2 to B1 and B3 to B2, repopulating both backup
+banks. A later cancelled `ALL` request again returned `A=$E0` without writing,
+and a second confirmed bank 1 `ALL` run passed.
+
+For bank 3, the tool rejected `ALL` and sectors `C-F` with
+`? B3 ALLOWS ONLY 8-B`. Confirmed individual erases of B3 sectors `8`, `9`,
+`A`, and `B` each returned `A=$AC`; the STR8 map showed exactly those four
+sectors erased while `C-F` remained occupied. Finally, STR8 restored B2 to B3
+including high flash, the map returned B3 to fully occupied, and HIMON warm
+booted as `HIMON V 00.0710(1553)` with ASM-F2 still enterable.
+
+Result: pass. Interactive bank selection, sector validation, exact-`YES`
+confirmation, cancellation, B1 single-sector and `ALL` erase, B3 `8-B`
+protection, worker erase/verify, map reporting, backup rotation, and B3
+recovery are hardware-proven. B0/B2 erase selection and a forced worker
+failure remain optional negative/coverage tests.

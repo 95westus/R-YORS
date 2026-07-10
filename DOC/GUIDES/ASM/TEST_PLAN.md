@@ -9231,6 +9231,21 @@ storage address. The next retry for that exact board state is
 `AP B2 $8000 $3000`. To follow the Life guide exactly, rerun
 `bankput-3000.a` and then use `AP B2 $9000 $3000`.
 
+## 2026-07-10 ASM-F2 Interactive Banked Flash Erase Proof
+
+Board result captured 2026-07-10 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: `flash-erase-bank.a` assembled with
+`ASM OK`, rejected invalid sectors, and aborted an empty confirmation with
+`A=$E0` and no flash write. A single B1 sector erase and two B1 `ALL` passes
+returned `A=$AC`; STR8 maps verified the selected erased sectors. STR8 backup
+rotation then repopulated B1 from B2 and B2 from B3.
+
+The B3 guard rejected `ALL` and sectors `C-F`, while individual B3 sectors
+`8-B` erased and verified with `A=$AC`. The map showed only B3 `8-B` erased.
+Restoring B2 to B3 recovered the complete map, HIMON warm-booted, and ASM-F2
+remained enterable. The interactive erase tool is hardware-proven except for
+an optional forced worker-failure negative.
+
 ## Hardware Bench Gate
 
 Do not call ASM hardware-proven until the board has run the emitted code and the
