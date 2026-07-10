@@ -1,0 +1,49 @@
+name: Board proof / release evidence
+description: Capture hardware proof, release gates, and follow-up risk.
+title: "Proof: "
+labels:
+  - board-proof
+body:
+  - type: input
+    id: release
+    attributes:
+      label: Release or tag
+      description: Example: v0.710 or r2026-07-10.
+    validations:
+      required: true
+  - type: textarea
+    id: build
+    attributes:
+      label: Host build
+      description: Commands, commit, visible version stamp, and asset hashes.
+      value: |
+        Command:
+        Commit:
+        Visible stamp:
+        ROM SHA256:
+        Install S19 SHA256:
+        Update S19 SHA256:
+    validations:
+      required: true
+  - type: textarea
+    id: board
+    attributes:
+      label: Board evidence
+      description: Paste concise transcript excerpts or link to DOC/GUIDES/LOGS evidence.
+      value: |
+        Board:
+        Transcript:
+        Gates passed:
+    validations:
+      required: true
+  - type: textarea
+    id: caution
+    attributes:
+      label: Caution / remaining risk
+      description: Anything that should be called out in release notes.
+      value: |
+        Bench-proven:
+        Not field-ready:
+        Recovery path:
+    validations:
+      required: true

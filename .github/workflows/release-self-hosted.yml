@@ -1,0 +1,47 @@
+name: Release Build Self-Hosted
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Build release assets
+    runs-on:
+      - self-hosted
+      - windows
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Preflight whitespace
+        shell: powershell
+        run: git diff --check
+
+      - name: Build release
+        shell: powershell
+        run: make -C SRC release
+
+      - name: Write checksums
+        shell: powershell
+        run: |
+          $items = @(
+            'SRC/BUILD/bin/himon-str8-rom.bin',
+            'SRC/BUILD/s19/himon-str8-rom-install.s19',
+            'SRC/BUILD/s19/himon-str8-himon-update.s19'
+          )
+          $lines = foreach ($item in $items) {
+            $hash = Get-FileHash -LiteralPath $item -Algorithm SHA256
+            '{0}  {1}' -f $hash.Hash.ToLowerInvariant(), $item
+          }
+          Set-Content -LiteralPath 'SRC/BUILD/release-sha256.txt' -Value $lines -Encoding ASCII
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: r-yors-release-assets
+          path: |
+            SRC/BUILD/bin/himon-str8-rom.bin
+            SRC/BUILD/s19/himon-str8-rom-install.s19
+            SRC/BUILD/s19/himon-str8-himon-update.s19
+            SRC/BUILD/release-sha256.txt
+          retention-days: 30
