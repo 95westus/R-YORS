@@ -6,6 +6,7 @@ This is the full guide index for the current R-YORS documentation set.
 
 - [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) - canonical board-facing guide for R-YORS, STR8, and HIMON operation.
 - [ASM/ASM_USER_GUIDE.md](ASM/ASM_USER_GUIDE.md) - operator guide for ASM source, prompts, END/SEAL, relocation, and packages.
+- [ASM/ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) - practical address-role guide for ASM, SEAL, PACKAGE, INSTALL, LOAD, and AP.
 - [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
 - [REF.md](./REF.md) - compact reference sheet.
 - [GLOSSARY.md](./GLOSSARY.md) - vocabulary contract.
@@ -40,6 +41,8 @@ RELOCATE, and AP v1 PACKAGE flows.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
 - [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and [Hash Trash](HASH/HASH_TRASH.md).
 - [ASM](ASM/ASM_USER_GUIDE.md) - onboard assembler operator guide;
+  see [ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) for practical address
+  choices and command address roles,
   see [HASHED_ASM.md](ASM/HASHED_ASM.md) for source/parser/reference material,
   see [DECISIONS.md](ASM/DECISIONS.md) for AP package/envelope/install
   boundaries,

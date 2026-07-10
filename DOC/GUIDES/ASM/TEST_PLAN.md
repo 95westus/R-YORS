@@ -8301,17 +8301,22 @@ G 4800
 Expected: the preloaded `$4800` reporter prints the same table sections.
 `asm-session-report-7000.a` is only for non-flash/runtime-paste ASM builds that
 still permit `$7000` output.
-The flash-native `$4800` source is generated as a compact ASM-F1 program. The
+The flash-native `$4800` source is generated as a compact ASM-F2 program. The
 generator uses literal message addresses and single-character `DB` atoms, so it
-keeps the live program at 59 labels and avoids ASM-F1's double-quoted string
-gap while fitting under the current `$40` symbol limit.
+keeps the live program at 59 labels and avoids ASM-F2's double-quoted string
+gap while fitting under the current `$40` symbol limit. For AP storage, the
+generated source also resolves its internal `JSR`/`JMP` targets to fixed
+literal addresses and emits `ENTRY START`; load/run the package only at the
+same `$4800` origin.
 
 Bank 2 `$8000` AP storage path for the same reporter:
 
 ```text
 ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
-PACKAGE $3200 at SEAL>
+SEAL           at SEAL>, expect SEAL OK
+PACKAGE $3200  at SEAL>, expect PKG OK @=$3200
 .
+D 3200 3208    expect AP header: 41 50 ...
 ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/bank2put-8000-3000.a
 .
 G 3000         expect $1A00=$AC
@@ -8321,6 +8326,23 @@ END
 .
 AP B2 $8000 $4800
 ```
+
+If `PACKAGE $3200` reports `PKG ERR=$02` after the reporter itself assembled
+with `ASM OK`, the generated reporter is not package-clean. The 2026-07-10
+board run found this in an older generated `$4800` source whose internal label
+calls exceeded the AP relocation table (`ASM_RELOC_MAX=$10`) and left bad seal
+flags. Regenerate with `make -C SRC asm-session-report`; the fixed source uses
+literal internal call targets and should package for fixed-address `$4800` use.
+
+Board result captured 2026-07-10 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: the regenerated fixed-address
+`asm-session-report-4800.a` assembled under ASM-F2, `SEAL` succeeded, and
+`PACKAGE $3200` returned `PKG OK @=$3200 L=$0658`. The AP header dump started
+`41 50 01 58 06 53 0B 01 00`. The board-buildable
+`bank2put-8000-3000.a` installer then ran with `RET A=AC` and left
+`$1A00=AC`. Finally, `AP B2 $8000 $4800` ran the stored reporter from bank 2
+and printed `ASM REPORT OK`, proving the fixed-address package/install/run
+path while preserving the current relocation-row-cap TODO.
 
 Board result captured 2026-07-06:
 
@@ -9173,6 +9195,24 @@ after reboot, and the reporter printed `ASM REPORT OK` after being reloaded at
 `$7000`. The first post-cold-boot `G 7000` trapped at zeroed RAM; this is
 expected because the reporter is RAM-loaded and must be reloaded after
 `RAM ZERO OK`.
+
+## 2026-07-10 ASM-F2 STR8-N Topwriter Proof
+
+Board result captured 2026-07-10 in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: `L F` loaded the current flash ASM
+with `LF OK WR=3969 GO=800C`, and entering `ASM` printed `ASM-F2`.
+
+The generated `DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a` source then
+assembled cleanly under ASM-F2. This is the one-file top-sector writer with an
+embedded `$4000-$4FFF` image, so it exercises the enlarged table budget and a
+large literal `DB` paste without the earlier `BAD FIX` failure pattern.
+
+Running `G 3000` printed `TW STG` then `TW OK`, left `$1A00-$1A03` as
+`00 AC 00 00`, and staged bytes at `$0A00/$14A4/$14CE/$16E3/$19FA` matched
+the expected STR8-N jump table, prompt, `$FACE` identity, worker head, and
+vectors. Running `G 3003` printed `TW PRG` then `TW OK`, left
+`$1A00-$1A03` as `01 AC 00 00`, and the ROM dumps at
+`$F000/$FAA4/$FACE/$FCE3/$FFFA` matched the same image.
 
 ## Hardware Bench Gate
 

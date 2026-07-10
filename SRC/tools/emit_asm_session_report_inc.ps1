@@ -134,6 +134,16 @@ function Format-HexWord([int]$Value) {
     '$' + (($Value -band 0xffff).ToString('X4'))
 }
 
+function Test-AsmNativeMnemonic([string]$Token) {
+    $t = $Token.ToUpperInvariant()
+    return @(
+        'ADC','AND','BEQ','BNE','BCC','BCS','BRA','CLC','CMP','CPX',
+        'DEC','DEX','INC','INX','INY','JMP','JSR','LDA','LDX','LDY',
+        'ORA','RTS','SBC','SEC','STA','STX','STZ','TXA',
+        'DB','END','ENTRY','ORG'
+    ) -contains $t
+}
+
 function Get-AsmNumberValue([string]$Text) {
     $t = $Text.Trim()
     if ($t -match '^\$([0-9A-Fa-f]{1,4})$') {
@@ -151,18 +161,9 @@ function Get-AsmNativeLineSize([string]$Line) {
         return 0
     }
 
-    $mnemonics = @{
-        'ADC'=$true; 'AND'=$true; 'BEQ'=$true; 'BNE'=$true; 'BCC'=$true
-        'BCS'=$true; 'BRA'=$true; 'CLC'=$true; 'CMP'=$true; 'CPX'=$true
-        'DEX'=$true; 'INC'=$true; 'INX'=$true; 'INY'=$true; 'JMP'=$true
-        'JSR'=$true; 'LDA'=$true; 'LDX'=$true; 'LDY'=$true; 'RTS'=$true
-        'SBC'=$true; 'SEC'=$true; 'STA'=$true; 'STZ'=$true; 'TXA'=$true
-        'DB'=$true; 'END'=$true; 'ORG'=$true
-    }
-
     $parts = $s -split '\s+', 2
     $first = $parts[0].ToUpperInvariant()
-    if (-not $mnemonics.ContainsKey($first)) {
+    if (-not (Test-AsmNativeMnemonic $first)) {
         if ($parts.Count -lt 2) {
             return 0
         }
@@ -176,7 +177,7 @@ function Get-AsmNativeLineSize([string]$Line) {
         $op = $parts[1].Trim()
     }
 
-    if ($first -eq 'ORG' -or $first -eq 'END') {
+    if ($first -eq 'ORG' -or $first -eq 'END' -or $first -eq 'ENTRY') {
         return 0
     }
     if ($first -eq 'DB') {
@@ -208,6 +209,33 @@ function Get-AsmNativeLineSize([string]$Line) {
         return 2
     }
     return 3
+}
+
+function Get-AsmNativeLabelAddresses([string[]]$Lines, [string]$Org) {
+    $pc = [Convert]::ToInt32($Org, 16)
+    $labels = @{}
+    foreach ($line in $Lines) {
+        $s = $line.Trim()
+        if ($s.Length -ne 0 -and -not $s.StartsWith(';')) {
+            $parts = $s -split '\s+', 2
+            $first = $parts[0].TrimEnd(':')
+            if ($parts.Count -gt 1 -and -not (Test-AsmNativeMnemonic $first)) {
+                $labels[$first.ToUpperInvariant()] = $pc
+            }
+        }
+        $pc += Get-AsmNativeLineSize $line
+    }
+    return $labels
+}
+
+function Convert-AsmNativeInternalCallTargets([string]$Line, [hashtable]$Labels) {
+    if ($Line -match '^(?<pre>\s*(?:(?:[A-Za-z_][A-Za-z0-9_]*:?)\s+)?(?:JSR|JMP)\s+)(?<target>[A-Za-z_][A-Za-z0-9_]*)\s*$') {
+        $target = $matches['target'].ToUpperInvariant()
+        if ($Labels.ContainsKey($target)) {
+            return $matches['pre'] + (Format-HexWord $Labels[$target])
+        }
+    }
+    return $Line
 }
 
 function ConvertTo-DbCharAtom([int]$Code) {
@@ -252,6 +280,8 @@ function ConvertTo-CompactAsmNativeReport([string[]]$Native, [string]$Org) {
         $prefix = $Native[0..($msgStart - 1)]
     }
 
+    $labelAddrs = Get-AsmNativeLabelAddresses -Lines $prefix -Org $Org
+
     $pc = [Convert]::ToInt32($Org, 16)
     foreach ($line in $prefix) {
         $pc += Get-AsmNativeLineSize $line
@@ -272,6 +302,7 @@ function ConvertTo-CompactAsmNativeReport([string[]]$Native, [string]$Org) {
             $out = $out.Replace("#<$name", ('#' + (Format-HexByte $addr)))
             $out = $out.Replace("#>$name", ('#' + (Format-HexByte ($addr -shr 8))))
         }
+        $out = Convert-AsmNativeInternalCallTargets -Line $out -Labels $labelAddrs
         $resolved += $out
     }
 
@@ -281,6 +312,8 @@ function ConvertTo-CompactAsmNativeReport([string[]]$Native, [string]$Org) {
         $resolved += ConvertTo-DbCharLines $messages[$name]
     }
     $resolved += ''
+    $resolved += '; FIXED-ADDRESS AP ENTRY; LOAD/RUN AT THE SAME ORG.'
+    $resolved += '        ENTRY START'
     $resolved += '        END'
     return $resolved
 }
@@ -326,7 +359,59 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header) 
         ('; FLASH ASM OUTPUT HELPERS: {0} BYTE, {1} CSTR, {2} HEXB,' -f $char, $cstr, $hexb),
         ('; {0} HEXW AX, {1} CRLF.' -f $hexw, $crlf),
         '',
-        'START   LDX #<M0',
+        'START   JMP MAIN',
+        '',
+        ('PRC     JMP {0}' -f $cstr),
+        '',
+        'PL      JSR PRC',
+        ('        JMP {0}' -f $crlf),
+        '',
+        ('PBF     JSR {0}' -f $hexb),
+        "SP      LDA #' '",
+        ('        JMP {0}' -f $char),
+        '',
+        ('PWF     JSR {0}' -f $hexw),
+        '        BRA SP',
+        '',
+        ('PW      JMP {0}' -f $hexw),
+        '',
+        "PLIM    LDA #'/'",
+        ('        JSR {0}' -f $char),
+        "        LDA #'$'",
+        ('        JMP {0}' -f $char),
+        '',
+        'PPL     LDX $00',
+        '        LDY $01',
+        ('        JSR {0}' -f $cstr),
+        ('        JMP {0}' -f $crlf),
+        '',
+        'SSYM    STX $03',
+        ('        LDA #{0}' -f (Get-AddrLo 'ASM_SYM_NAMES')),
+        '        STA $00',
+        ('        LDA #{0}' -f (Get-AddrHi 'ASM_SYM_NAMES')),
+        '        STA $01',
+        '        LDX $03',
+        '        BRA SADD',
+        '',
+        'SFIX    STX $03',
+        ('        LDA #{0}' -f (Get-AddrLo 'ASM_FIX_NAME_TEXT')),
+        '        STA $00',
+        ('        LDA #{0}' -f (Get-AddrHi 'ASM_FIX_NAME_TEXT')),
+        '        STA $01',
+        '        LDX $03',
+        'SADD    BEQ SADDD',
+        'SADDL   CLC',
+        '        LDA $00',
+        '        ADC #$20',
+        '        STA $00',
+        '        LDA $01',
+        '        ADC #$00',
+        '        STA $01',
+        '        DEX',
+        '        BNE SADDL',
+        'SADDD   RTS',
+        '',
+        'MAIN    LDX #<M0',
         '        LDY #>M0',
         '        JSR PL',
         '        JSR PCMP',
@@ -773,56 +858,6 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header) 
         '        JSR PW',
         ('        JMP {0}' -f $crlf),
         '',
-        'SSYM    STX $03',
-        ('        LDA #{0}' -f (Get-AddrLo 'ASM_SYM_NAMES')),
-        '        STA $00',
-        ('        LDA #{0}' -f (Get-AddrHi 'ASM_SYM_NAMES')),
-        '        STA $01',
-        '        LDX $03',
-        '        BRA SADD',
-        '',
-        'SFIX    STX $03',
-        ('        LDA #{0}' -f (Get-AddrLo 'ASM_FIX_NAME_TEXT')),
-        '        STA $00',
-        ('        LDA #{0}' -f (Get-AddrHi 'ASM_FIX_NAME_TEXT')),
-        '        STA $01',
-        '        LDX $03',
-        'SADD    BEQ SADDD',
-        'SADDL   CLC',
-        '        LDA $00',
-        '        ADC #$20',
-        '        STA $00',
-        '        LDA $01',
-        '        ADC #$00',
-        '        STA $01',
-        '        DEX',
-        '        BNE SADDL',
-        'SADDD   RTS',
-        '',
-        ('PBF     JSR {0}' -f $hexb),
-        "SP      LDA #' '",
-        ('        JMP {0}' -f $char),
-        '',
-        ('PWF     JSR {0}' -f $hexw),
-        '        BRA SP',
-        '',
-        ('PW      JMP {0}' -f $hexw),
-        '',
-        "PLIM    LDA #'/'",
-        ('        JSR {0}' -f $char),
-        "        LDA #'$'",
-        ('        JMP {0}' -f $char),
-        '',
-        'PPL     LDX $00',
-        '        LDY $01',
-        ('        JSR {0}' -f $cstr),
-        ('        JMP {0}' -f $crlf),
-        '',
-        'PL      JSR PRC',
-        ('        JMP {0}' -f $crlf),
-        '',
-        ('PRC     JMP {0}' -f $cstr),
-        '',
         'M0      DB "ASM REPORT",0',
         'M1      DB "MAP END=$",0',
         'M2      DB " UDATA=$",0',
@@ -869,7 +904,8 @@ if ($AsmNativeFlashOut) {
         '; ASM-NATIVE SESSION REPORTER SNAPSHOT FOR FLASH ASM.',
         '; ASSEMBLE THIS BEFORE THE SESSION YOU WANT TO INSPECT.',
         '; THEN RUN ASM, EXIT WITH ''.'', AND RUN G 4800.',
-        '; OR PACKAGE $3200 AND STORE WITH BANK2PUT-8000-3000.A.'
+        '; OR PACKAGE $3200 AND STORE WITH BANK2PUT-8000-3000.A.',
+        '; FIXED-ADDRESS PACKAGE: RUN WITH AP B2 $8000 $4800.'
     )
 }
 

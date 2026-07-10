@@ -30,16 +30,16 @@ the release proved:
 ```text
 HIMON body/data end:             $EFE9
 HIMON headroom before STR8:      $0017
-STR8 body/data end:              $FC69
+STR8 body/data end:              $FCC5
 STR8 worker storage:             $FCE3-$FFEF
-STR8 top-sector hole:            $FC69-$FCE2, $007A bytes
+STR8 top-sector hole:            $FCC5-$FCE2, $001E bytes
 STR8 worker RAM body:            $0200-$050C, $030D bytes
 STR8 stable worker service:      $F003
 STR8 stable AP import service:   $F006
 STR8 IVI entries:                $F092/$F0A6
 6502 vectors:                    $FFFA-$FFFF = 92 F0 00 F0 A6 F0
-ASM flash body/data end:         $B966
-ASM flash headroom before HIMON: $069A
+ASM flash body/data end:         $B969
+ASM flash headroom before HIMON: $0697
 ```
 
 Release blocker: the attached board stamp is `HIMON V 00.0709(1413)`. A local
@@ -122,6 +122,16 @@ Stage vectors         = 92 F0 00 F0 A6 F0
 Do not use `str8-f000.s19` by itself for this job. It does not carry the full
 sector image with relocated worker bytes and final vectors.
 
+For the single-source ASM-F2 route, build the self-contained top-sector writer:
+
+```text
+make -C SRC str8-topwrite-a
+```
+
+The target emits `DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a`. That source
+embeds the top 4K image directly, stages it to `$0A00-$19FF`, then programs
+bank 3 `$F000-$FFFF`; no separate `str8-top-stage-0a00.s19` load is used.
+
 ### Board Preparation
 
 The board should be in HIMON with working `L`, `D`, `G`, and flash ASM. The
@@ -145,6 +155,56 @@ If assembly reports `ERR=$06 BAD RANGE PC=$315F` followed by
 `ERR=$09 BAD FIX`, the old `topwr-3000.a` was pasted. Use the current sample;
 the erase-timeout reset path is now inline so there is no too-far `BRA WRESET`
 fixup.
+
+### Single-Source ASM-F2 Topwriter Alternative
+
+Use this path when the goal is to rewrite bank 3 `$F000-$FFFF` from one pasted
+ASM source file, without a second S19 stage load:
+
+```text
+ASM NEW
+  paste DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a
+  expected: ASM OK
+.
+G 3000
+D 1A00 1A03
+  expected: 00 AC 00 00
+D 0A00 0A08
+  expected: 4C 09 F0 4C 93 F3 4C 9A F3
+D 14A4 14AA
+  expected: 53 54 52 38 2D 4E BE
+D 14CE 14E4
+  expected text: STR8-N V0 #5F6A0F7A
+D 16E3 16F2
+  expected: 08 78 AD F0 1F C9 04 F0 ...
+D 19FA 19FF
+  expected: 92 F0 00 F0 A6 F0
+```
+
+`G 3000` prints `TW STG` then `TW OK`. `$1A00=00` means stage mode,
+`$1A01=AC` means success, and `$1A02/$1A03=00 00` means no fail address.
+
+Only after the staged RAM bytes match, program the active top sector:
+
+```text
+G 3003
+D 1A00 1A03
+  expected: 01 AC 00 00
+D F000 F008
+  expected: 4C 09 F0 4C 93 F3 4C 9A F3
+D FAA4 FAAA
+  expected: 53 54 52 38 2D 4E BE
+D FACE FAE4
+  expected text: STR8-N V0 #5F6A0F7A
+D FCE3 FCF2
+  expected: 08 78 AD F0 1F C9 04 F0 ...
+D FFFA FFFF
+  expected: 92 F0 00 F0 A6 F0
+```
+
+`G 3003` prints `TW PRG` then `TW OK`. `$1A00=01` means program mode and
+`$1A01=AC` means the erase/program/verify pass completed. If `$1A01` is not
+`$AC`, stop and capture `$1A00-$1A03`.
 
 Stage the live top sector into RAM first:
 
@@ -283,8 +343,9 @@ After external recovery, rerun Gate 0 before any AP tests.
   names, AP status bytes, and any visible strings printed by AP payloads.
 - Use bank 2 first for destructive banked AP tests. Banks 0 and 1 should be
   used only after bank 2 passes and a restore path is accepted.
-- Do not run the top-sector program half of `topwr-3000.a` unless the release
-  action is explicitly to update the top sector.
+- Do not run the top-sector program half of `topwr-3000.a` or
+  `str8n-topwrite-3000.a` unless the release action is explicitly to update
+  the top sector.
 
 ## Gate 0: Identity And Fixed Entries
 
@@ -345,7 +406,7 @@ L F
   send SRC/BUILD/s19/asm-v1-flash-8000.s19
   expected current build: LF OK WR=3969 GO=800C
 ASM
-  expected: ASM-F1
+  expected: ASM-F2
 .
 ```
 
@@ -526,17 +587,18 @@ reload reporter S19 after any cold boot/RAM ZERO
 G 7000 reporter after reload or after each meaningful AP package
 ```
 
-Only run `topwr-3000.a` as a lab tool:
+Only run top-sector writers as lab tools:
 
 ```text
 G 3000
-  stage live $F000-$FFFF to $0A00-$19FF
+  stage/verify into $0A00-$19FF
 D 1A00 1A03
-  expected: stage status AC
+  expected: status AC in $1A01
 ```
 
-Do not run `G 3003` from `topwr-3000.a` unless the release task explicitly
-includes programming the top sector and a recovery path is ready.
+Do not run `G 3003` from `topwr-3000.a` or `str8n-topwrite-3000.a` unless the
+release task explicitly includes programming the top sector and a recovery path
+is ready.
 
 ## Final Release Evidence
 
@@ -562,10 +624,15 @@ Gates 3 through 9 proved RAM import linking, missing-import failure, banked
 AP without imports, banked AP with RJOIN import, banked AP bad-input handling,
 overlap rejection plus staged source acceptance, and the regression shortlist.
 
+Board result captured 2026-07-10 in the same log: flash ASM entered as
+`ASM-F2`, and `str8n-topwrite-3000.a` assembled, staged, programmed, and
+verified bank 3 `$F000-$FFFF` as `STR8-N V0 #5F6A0F7A` with `$1A00-$1A03`
+ending `01 AC 00 00`.
+
 ## Size Review And Optimization Recommendations
 
 The hard limits are plain: HIMON has only `$0017` bytes before STR8, and STR8
-has only `$007A` bytes free before the stored worker. ASM has `$069A` bytes
+has only `$001E` bytes free before the stored worker. ASM has `$0697` bytes
 free and is not the urgent size problem for this release.
 
 ### 1. Keep .710 Code Frozen Until Board Proof
@@ -581,7 +648,7 @@ Pros:
 
 Cons:
 
-- Leaves STR8 with only `$007A` bytes free.
+- Leaves STR8 with only `$001E` bytes free.
 - Leaves HIMON with only `$0017` bytes free.
 - Pushes cleanup pressure into the next release.
 
@@ -697,10 +764,10 @@ Cons:
 
 Recommendation: review after the OIL transcript shows the current split works.
 
-### 8. Keep `topwr-3000.a` External
+### 8. Keep Top-Sector Writers External
 
-Plain words: the top-sector writer is a useful shop tool, not something to
-stuff into resident STR8 right now.
+Plain words: `topwr-3000.a` and `str8n-topwrite-3000.a` are useful shop
+tools, not something to stuff into resident STR8 right now.
 
 Pros:
 

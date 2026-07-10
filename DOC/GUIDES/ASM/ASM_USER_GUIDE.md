@@ -15,6 +15,9 @@ The current flash image is loaded at `$8000` and enters through the HIMON
 FNV/RJOIN catalog. It starts new source sessions at `$2000` unless source uses
 `ORG`.
 
+For the short operator view of which address belongs to which command, see
+[ADDRESS_PRACTICES.md](ADDRESS_PRACTICES.md).
+
 ## Current Operational Process
 
 The movable-package lifecycle is named `SPILL`:
@@ -56,11 +59,11 @@ Load flash-resident ASM into the visible low-flash window:
 L F            send SRC/BUILD/s19/asm-v1-flash-8000.s19
 ```
 
-The current flash image should report `LF OK WR=3D1B GO=800C`. A useful service
+The current flash image should report `LF OK WR=3969 GO=800C`. A useful service
 sanity check after updating HIMON is:
 
 ```text
-D 7E25 2C      expect DD D5 00 00 00 00 00 00 on HIMON V 00.0706(1928)
+D 7E25 2C      expect F1 D6 00 00 00 00 00 00 on current OIL HIMON
 ```
 
 The prompt text below shows where each line is typed; do not paste the prompt
@@ -75,18 +78,18 @@ ASM>$2002: RTS
 ASM>$2003: END
 SEAL> PACKAGE $3200
 SEAL> INSTALL $3200
-SEAL> INSTALL $3200 $BD1B
-SEAL> LOAD $BD1B $3000
+SEAL> INSTALL $3200 $hhhh
+SEAL> LOAD $hhhh $3000
 SEAL> .
 >D 3000 3002
 >G 3000
 ```
 
-Use the address printed by `INSTALL $3200`; `$BD1B` is the current board-proven
-hole only for the present `$3D1B` flash ASM image. `INSTALL pkg` is advisory and
+Use the address printed by `INSTALL $3200`; `$hhhh` is an example placeholder,
+not a fixed address. `INSTALL pkg` is advisory and
 does not write. `INSTALL pkg flash_addr` writes the unchanged AP envelope to an
 erased visible low-flash hole. In a memory dump, the installed package begins
-at the `AP` signature, for example `$BD1B`, not at an earlier row boundary such
+at the `AP` signature, not at an earlier row boundary such
 as `$BD10`. If that hole is already occupied, `INSTALL pkg` suggests the next
 erased hole, and an explicit install to the occupied address reports
 `INST ERR=$06 BAD RANGE`.
@@ -97,7 +100,7 @@ to reach `SEAL>`:
 ```text
 >ASM NEW
 ASM>$2000: END
-SEAL> LOAD $BD1B $3800
+SEAL> LOAD $hhhh $3800
 SEAL> .
 >G 3800
 ```
@@ -124,7 +127,7 @@ ASM
 Expected entry:
 
 ```text
-ASM
+ASM-F2
 ASM>$2000:
 ```
 
@@ -514,7 +517,7 @@ session and immediately end it:
 ```text
 >ASM NEW
 ASM>$2000: END
-SEAL> LOAD $BD1B $3800
+SEAL> LOAD $hhhh $3800
 SEAL> .
 >G 3800
 ```
@@ -574,6 +577,14 @@ That path copies the banked AP envelope into the sector staging buffer, loads
 and links BODY bytes into `$2000-$4FFF`, and runs from the requested load
 address. It never executes directly from banked flash.
 
+For STR8 top-sector update or recovery work, use
+`DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a` only when the intended task is
+to rewrite bank 3 `$F000-$FFFF`. `G 3000` stages the embedded STR8-N image into
+`$0A00-$19FF` and should leave `$1A00-$1A03 = 00 AC 00 00`. After verifying
+the staged bytes, `G 3003` erases/programs/verifies the active top sector and
+should leave `$1A00-$1A03 = 01 AC 00 00`. The `$FACE` identity check should
+read `STR8-N V0 #5F6A0F7A`.
+
 `CHECK address` exists only in full-core or package-check diagnostic builds.
 It is intentionally omitted from the default flash-resident ASM image to keep
 space below `$C000`.
@@ -590,20 +601,26 @@ make -C SRC asm-session-report
 The host-built reporter is `SRC/BUILD/s19/asm-session-report-7000.s19`. Load it
 before the ASM session to inspect, then after `END` and `.` run `G 7000`.
 For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a` is a
-compact ASM-F1 source program generated with literal message addresses and
+compact ASM-F2 source program generated with literal message addresses and
 single-character `DB` atoms. Assemble it before the session it will inspect,
 then after that session exits run `G 4800`. `asm-session-report-7000.a` is kept
 for non-flash/runtime-paste ASM builds that still allow `$7000` output.
 
 To store the reporter as an AP package in bank 2 `$8000`, assemble
-`asm-session-report-4800.a`, run `PACKAGE $3200` at the `SEAL>` prompt, exit
-with `.`, assemble `bank2put-8000-3000.a`, exit, and run `G 3000`. A successful
-write leaves `$1A00=$AC`. After any later ASM session, reload and run the
-stored reporter with:
+`asm-session-report-4800.a`, run `SEAL` and `PACKAGE $3200` at the `SEAL>`
+prompt, exit with `.`, assemble `bank2put-8000-3000.a`, exit, and run
+`G 3000`. A successful write leaves `$1A00=$AC`. This reporter package is
+fixed-address: it has literal internal call targets and must be loaded/run at
+the same `$4800` origin. After any later ASM session, reload and run the stored
+reporter with:
 
 ```text
 AP B2 $8000 $4800
 ```
+
+If `PACKAGE $3200` reports `PKG ERR=$02`, regenerate the reporter source with
+`make -C SRC asm-session-report`; older generated sources could assemble but
+set bad seal flags by overflowing the AP relocation table.
 
 `NEW` starts another source session at the frozen `END` PC:
 

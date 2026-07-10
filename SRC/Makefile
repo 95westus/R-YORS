@@ -65,6 +65,8 @@ HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
 STR8_TOP_STAGE_S19 := $(S19_DIR)/str8-top-stage-0a00.s19
+STR8_TOPWRITE_A := ../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a
+STR8_TOPWRITE_A_GEN := tools/emit_str8_topwrite_a.ps1
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_LOAD_BIN := $(BIN_DIR)/himon-load-c000.bin
@@ -398,6 +400,9 @@ himon-str8-update str8-himon-update str-himon-str-update: himon-str8-himon-updat
 
 str8-top-stage-s19: $(STR8_TOP_STAGE_S19)
 	@echo "Built $(STR8_TOP_STAGE_S19)."
+
+str8-topwrite-a: $(STR8_TOPWRITE_A)
+	@echo "Built $(STR8_TOPWRITE_A)."
 
 rom-install-s19: himon-str8-rom-install-s19
 	@echo "Built primary ROM install S19."
@@ -983,6 +988,10 @@ $(STR8_TOP_STAGE_S19): $(HIMON_STR8_ROM_BIN) tools/build_str8_top_stage_s19.ps1
 	@echo [ps] build $(STR8_TOP_STAGE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_str8_top_stage_s19.ps1 -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$(STR8_TOP_STAGE_S19)"
 
+$(STR8_TOPWRITE_A): $(HIMON_STR8_ROM_BIN) $(ASM_V1_FLASH_S19) $(STR8_TOPWRITE_A_GEN)
+	@echo [ps] build $(STR8_TOPWRITE_A)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -OutPath "$(STR8_TOPWRITE_A)"
+
 $(MSBASIC_OSI_RAM_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(MSBASIC_OSI_RAM_LINKFLAGS) $(MSBASIC_OSI_RAM_S19) $(MSBASIC_OSI_OBJ)
@@ -1126,7 +1135,8 @@ endif
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \
-	str-himon-str-update str8-top-stage-s19 himon-load himon-load-bin \
+	str-himon-str-update str8-top-stage-s19 str8-topwrite-a \
+	himon-load himon-load-bin \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \
 	str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash \
 	life himon-debug-proof himon-search-static himon-search-static-proof \

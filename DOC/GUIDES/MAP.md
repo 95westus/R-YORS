@@ -125,6 +125,7 @@ LOCAL/s3x/
 ```text
 OPERATORS_GUIDE.md              current board-facing guide
 ASM/ASM_USER_GUIDE.md           ASM operator guide
+ASM/ADDRESS_PRACTICES.md        ASM address-role operator guide
 TECHNICAL_GUIDE.md              current architecture guide
 REF.md                          compact reference
 GLOSSARY.md                     vocabulary only

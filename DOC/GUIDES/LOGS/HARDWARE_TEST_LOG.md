@@ -12805,3 +12805,177 @@ AP [Bn] pkg dst
 
 Result: pass. Gate 0 proves the board identity and stable service entries for
 the same image that passed Gates 3 through 9.
+
+## 2026-07-10 ASM-F2 And Self-Contained STR8-N Topwriter Pass
+
+The attached board transcript first showed that restoring bank 0 to bank 3 had
+put the older top sector back in place, then reloaded the current flash ASM:
+
+```text
+>L F
+L F S19
+L @8000
+LF OK WR=3969 GO=800C
+>ASM
+ASM-F2
+```
+
+The operator pasted `DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a` through
+`ASM NEW`. The source assembled cleanly under ASM-F2, including the embedded
+4K top-sector image:
+
+```text
+ASM OK
+SEAL> .
+ASM BYE
+```
+
+The stage half copied the embedded image into `$0A00-$19FF`, verified it, and
+left success status in `$1A00-$1A03`:
+
+```text
+>G 3000
+TW STG
+TW OK
+>D 1A00 1A03
+1A00: 00 AC 00 00
+>D 0A00 8
+0A00: 4C 09 F0 4C 93 F3 4C 9A | F3 | L..L..L..
+>D 14A4 A
+14A4: 53 54 52 38 2D 4E BE | STR8-N.
+>D 14CE F2
+14CE: 0D 0A 53 54 52 38 2D 4E | 20 56 30 20 23 35 46 36 | ..STR8-N V0 #5F6
+>D 16E3 F2
+16E3: 08 78 AD F0 1F C9 04 F0 | 11 C9 02 F0 12 C9 05 F0 | .x..............
+>D 19FA FF
+19FA: 92 F0 00 F0 A6 F0 | ......
+```
+
+The program half erased/programmed/verified bank 3 `$F000-$FFFF` and left
+program success status:
+
+```text
+>G 3003
+TW PRG
+TW OK
+>D 1A00 3
+1A00: 01 AC 00 00
+>D F000 8
+F000: 4C 09 F0 4C 93 F3 4C 9A | F3 | L..L..L..
+>D FAA4 FAAA
+FAA4: 53 54 52 38 2D 4E BE | STR8-N.
+>D FACE FAE4
+FACE: 0D 0A 53 54 52 38 2D 4E | 20 56 30 20 23 35 46 36 | ..STR8-N V0 #5F6
+>D FCE3 F2
+FCE3: 08 78 AD F0 1F C9 04 F0 | 11 C9 02 F0 12 C9 05 F0 | .x..............
+>D FFFA F
+FFFA: 92 F0 00 F0 A6 F0 | ......
+```
+
+Result: pass. This proves the visible ASM rename to `ASM-F2` on the board and
+proves the one-file `str8n-topwrite-3000.a` path can stage and program the
+current STR8-N top sector without a separate top-stage S19 load. The `$FACE`
+identity now reads `STR8-N V0 #5F6A0F7A`, with the fixed jump table, worker
+head, and vector tail matching the current OIL map.
+
+## 2026-07-10 ASM-F2 Session Reporter Package Failure
+
+The same board transcript then pasted the generated
+`DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a` under flash ASM-F2. The
+reporter source assembled cleanly through `END`, proving the earlier forward
+fixup overflow was fixed:
+
+```text
+>ASM NEW
+ASM-F2
+ASM>$2000: ; ASM-NATIVE SESSION REPORTER SNAPSHOT FOR FLASH ASM.
+...
+ASM>$4E31:         END
+ASM OK
+```
+
+Packaging that generated reporter failed:
+
+```text
+SEAL> PACKAGE $3200
+PKG ERR=$02
+```
+
+Result: partial pass. The `.a` reporter itself is now ASM-F2-buildable, but
+the generated package form was not yet AP-package-clean. Host code inspection
+diagnosed `PKG ERR=$02` here as seal bad-flags caused by internal relocation
+pressure: the source used many internal `JSR`/`JMP` label operands while the
+AP relocation table holds only `ASM_RELOC_MAX=$10` rows. The generator has
+been updated to emit fixed literal internal call targets plus `ENTRY START`;
+the next board retry should rerun `SEAL`, then `PACKAGE $3200`, then install
+with `bank2put-8000-3000.a` and run only as `AP B2 $8000 $4800`.
+
+## 2026-07-10 ASM-F2 Fixed-Address Session Reporter Bank 2 Pass
+
+The follow-up board retry used the regenerated fixed-address reporter source.
+The source now emits literal internal `JSR`/`JMP` targets and a fixed
+`ENTRY START`, so the AP package has no oversized internal relocation burden:
+
+```text
+ASM>$4E31: ; FIXED-ADDRESS AP ENTRY; LOAD/RUN AT THE SAME ORG.
+ASM>$4E31:         ENTRY START
+ASM>$4E31:         END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$0658
+SEAL> .
+ASM BYE
+>D 3200 8
+3200: 41 50 01 58 06 53 0B 01 | 00 | AP.X.S...
+```
+
+The board then assembled `bank2put-8000-3000.a`, copied the AP envelope from
+`$3200` into the staged bank 2 `$8000` sector, programmed it through STR8, and
+left the expected success byte:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 1A00 8
+1A00: AC 00 00 00 00 00 00 00 | 00 | .........
+```
+
+Running the stored package from bank 2 loaded and executed the reporter at its
+fixed `$4800` origin:
+
+```text
+>AP B2 $8000 $4800
+GO 4800
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$3000
+PC=$30D4
+HIGH=$30D4
+BYTES=$00D4
+LINES=$008C
+SYMS=$24/$40
+FIXUPS=$0A/$80
+REFS=$3E/$C0
+TRUNC=NO
+MAP END=$B969 UDATA=$5000-79A6
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 24 0A 00 00 00 00 00
+PKG @ LEN BODY INST 0000 0000 0000 0000
+RELOCS
+SL K  SITE TARG
+ASM REPORT OK
+
+#GO# ENTRY=4800
+RET A=0D X=9D Y=0D P=75 S=FD NV-BdIzC
+```
+
+Result: pass. The fixed-address `asm-session-report-4800.a` can now be
+assembled by ASM-F2, packaged at `$3200`, installed into bank 2 `$8000`, and
+run with `AP B2 $8000 $4800`. The report shown above inspects the
+`bank2put-8000-3000.a` installer session, so its counts and empty `RELOCS`
+section belong to the installer, not the reporter package itself.

@@ -27,6 +27,7 @@ $rows = @(
     [pscustomobject]@{ Target = "str8-himon-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str-himon-str-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str8-top-stage-s19"; Category = "monitor"; Description = "Build 0A00-19FF staged S19 from the vector-complete STR8 top sector: BUILD/s19/str8-top-stage-0a00.s19." }
+    [pscustomobject]@{ Target = "str8-topwrite-a"; Category = "monitor"; Description = "Build self-contained ASM-F2 STR8-N top-sector writer: DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a." }
     [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for himon-str8-rom-install-s19." }
     [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000: BUILD/s19/himon-load-c000.s19." }
     [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image at BUILD/bin/himon-load-c000.bin." }
