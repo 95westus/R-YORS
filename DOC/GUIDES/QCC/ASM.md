@@ -1216,9 +1216,9 @@ Comment: The current `asm-v1-core.asm` RAM-session defaults are proof-sized
 starting points:
 
 ```text
-ASM_SYM_MAX         40 symbol rows
-ASM_FIX_MAX         96 fixup rows
-ASM_REF_MAX         160 report-reference rows
+ASM_SYM_MAX         64 symbol rows
+ASM_FIX_MAX         128 fixup rows
+ASM_REF_MAX         192 report-reference rows
 ASM_FIX_NAME_MAX    32 bytes, 31 visible chars plus terminator
 ASM_LOCAL_MAX       16 local label rows per active global scope
 ASM_LOCAL_NAME_MAX  16 bytes, 15 visible chars plus terminator

@@ -343,9 +343,9 @@ L
   expected: L OK=06D5 GO=7000
 L F
   send SRC/BUILD/s19/asm-v1-flash-8000.s19
-  expected current build: LF OK WR=3966 GO=800C
+  expected current build: LF OK WR=3969 GO=800C
 ASM
-  expected: ASM FLASH
+  expected: ASM-F1
 .
 ```
 

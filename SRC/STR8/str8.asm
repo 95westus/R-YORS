@@ -2119,22 +2119,22 @@ STR8_CON_WRITE_BYTE_NONBLOCK:
 STR8_ID_MARKER_BYTES:   DB              STR8_ID_MARKER0,STR8_ID_MARKER1
                         DB              STR8_ID_MARKER2,STR8_ID_MARKER3
 
-MSG_SCREEN:             DB              $0D,$0A,"STR8 V0 #5F6A0F7A",$0D,$0A
+MSG_SCREEN:             DB              $0D,$0A,"STR8-N V0 #5F6A0F7A",$0D,$0A
                         IF              STR8_RAM_PROOF
                         DB              "RAM $0200 BUF $4000-$4FFF",$0D,$0A
                         ELSE
                         DB              "ROM $F000",$0D,$0A
                         ENDIF
                         DB              "? B E M U 0 1 2 G R",$0D,$8A
-MSG_PROMPT:             DB              "STR8",('>'+$80)
+MSG_PROMPT:             DB              "STR8-N",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
 MSG_BOOT_BANNER:       DB              $0D,$0A
-                        DB              "STR8",$0D,$8A
-MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 3S. S=STR8 ",$A0
+                        DB              "STR8-N",$0D,$8A
+MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 3S. S=STR8-N ",$A0
                         ENDIF
 
-MSG_ID:                 DB              $0D,$0A,"STR8 V0 #5F6A0F7A",$0D,$8A
+MSG_ID:                 DB              $0D,$0A,"STR8-N V0 #5F6A0F7A",$0D,$8A
 MSG_B0_HOLD:            DB              "B0 HOLD",$0D,$8A
 MSG_B0_ROT:             DB              "B0 ROT",$0D,$8A
 MSG_UNKNOWN:            DB              $0D,$0A,"?",$0D,$8A

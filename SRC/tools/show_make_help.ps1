@@ -45,6 +45,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-search-flash"; Category = "test"; Description = "Build low-flash K=05 S search command S19 at BB80 for L F." }
     [pscustomobject]@{ Target = "himon-search-for-himon"; Category = "test"; Description = "Assemble the native HIMON search port scaffold and guide pointer." }
     [pscustomobject]@{ Target = "pack40-test"; Category = "test"; Description = "Build PACK40 pack/unpack string round-trip proof at 3000." }
+    [pscustomobject]@{ Target = "bank3-erase"; Category = "test"; Description = "Build bank 3 `$8000-`$BFFF erase tool at 3000: BUILD/s19/bank3-erase-8000-bfff-3000.s19." }
     [pscustomobject]@{ Target = "asm-flash"; Category = "asm"; Description = "Alias for asm-v1-flash." }
     [pscustomobject]@{ Target = "asm-v1-flash"; Category = "asm"; Description = "Build flash ASM at 8000: BUILD/s19/asm-v1-flash-8000.s19." }
     [pscustomobject]@{ Target = "asm-test"; Category = "asm"; Description = "Run the full ASM smoke/proof build set." }

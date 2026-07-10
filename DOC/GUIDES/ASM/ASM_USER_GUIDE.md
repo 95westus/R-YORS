@@ -560,12 +560,14 @@ slice, not a polished `INSTALL` command. Use
 `DOC/GUIDES/ASM/SAMPLES/bankput-3000.a`: it copies the selected bank sector
 into the `$0A00-$19FF` sector staging buffer, overlays the AP envelope, then
 programs/verifies that 4K sector through the `$F003` STR8 worker service.
-HIMON then runs a banked package with:
+`DOC/GUIDES/ASM/SAMPLES/bank2put-8000-3000.a` is the fixed variant for an AP
+envelope at bank 2 `$8000`. HIMON then runs a banked package with:
 
 ```text
 AP B0 $9000 $3000
 AP B1 $9000 $3000
 AP B2 $9000 $3000
+AP B2 $8000 $4800
 ```
 
 That path copies the banked AP envelope into the sector staging buffer, loads
@@ -587,11 +589,21 @@ make -C SRC asm-session-report
 
 The host-built reporter is `SRC/BUILD/s19/asm-session-report-7000.s19`. Load it
 before the ASM session to inspect, then after `END` and `.` run `G 7000`.
-For flash ASM itself, the ASM-native source snapshot is
-`DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a`; because assembling that
-source uses ASM's own tables, it must also be assembled before the session it
-will inspect. `asm-session-report-7000.a` is kept for non-flash/runtime-paste
-ASM builds that still allow `$7000` output.
+For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a` is a
+compact ASM-F1 source program generated with literal message addresses and
+single-character `DB` atoms. Assemble it before the session it will inspect,
+then after that session exits run `G 4800`. `asm-session-report-7000.a` is kept
+for non-flash/runtime-paste ASM builds that still allow `$7000` output.
+
+To store the reporter as an AP package in bank 2 `$8000`, assemble
+`asm-session-report-4800.a`, run `PACKAGE $3200` at the `SEAL>` prompt, exit
+with `.`, assemble `bank2put-8000-3000.a`, exit, and run `G 3000`. A successful
+write leaves `$1A00=$AC`. After any later ASM session, reload and run the
+stored reporter with:
+
+```text
+AP B2 $8000 $4800
+```
 
 `NEW` starts another source session at the frozen `END` PC:
 
@@ -712,9 +724,9 @@ is a loader contract, not source-mode permission to assemble over ASM.
 Current proof-sized table limits:
 
 ```text
-global symbols       40
-fixups               96
-report references    160
+global symbols       64
+fixups               128
+report references    192
 locals per scope     16
 line length          63 visible chars
 global name length   31 visible chars

@@ -602,17 +602,19 @@ A [addr] [label[:]] MMM [operand] .
   applicable. They drive the basic session report and xref view.
 - Default flash ASM keeps table printing out of the resident command surface.
   `asm-session-report-7000.s19` is the host-built external table reporter, and
-  `asm-session-report-4800.a` is the flash ASM-native source snapshot for
-  preloading before the session being inspected. `asm-session-report-7000.a`
-  is retained for non-flash/runtime-paste ASM builds that still allow `$7000`
-  output.
+  `asm-session-report-4800.a` is the flash ASM-native compact source program
+  for preloading before the session being inspected. It uses literal message
+  addresses and single-character `DB` atoms so it fits the raised symbol/fixup
+  limits without relying on double-quoted `DB` strings.
+  `asm-session-report-7000.a` is retained for non-flash/runtime-paste ASM
+  builds that still allow `$7000` output.
 - RAM "rows" are conceptual records. A W65C02 implementation may store fields
   as parallel arrays indexed by slot, matching the current proof style, when
   that saves code or cycles.
 - First implementation uses fixed table limits. If symbol or fixup space fills,
   fail with `BAD SYM` or `BAD FIX`; do not spill silently or start writing into
-  flash. The current proof sizes are 40 global symbols, 96 fixups, 16 internal
-  relocation rows, 160 report references, 31 visible global-name characters, 16
+  flash. The current proof sizes are 64 global symbols, 128 fixups, 16 internal
+  relocation rows, 192 report references, 31 visible global-name characters, 16
   local labels per active global scope, 15 visible local-name characters, 63
   input characters, and a 512-byte code buffer; treat those as proof defaults,
   not permanent language limits.
@@ -768,11 +770,11 @@ A [addr] [label[:]] MMM [operand] .
   runtime UDATA at `$5000+`. `$5000` is the mutable table arena, not the base
   RAM emission address.
 - For the future "ASM assembles ASM" milestone, table-limit bumps are only a
-  measurement step. The current practical mix is `ASM_SYM_MAX=$28`,
-  `ASM_FIX_MAX=$60`, `ASM_REF_MAX=$A0`, and `ASM_LOCAL_MAX=$10`, while keeping
+  measurement step. The current practical mix is `ASM_SYM_MAX=$40`,
+  `ASM_FIX_MAX=$80`, `ASM_REF_MAX=$C0`, and `ASM_LOCAL_MAX=$10`, while keeping
   the 32-byte global/fixup and 16-byte local name slots. It favors fixup-heavy
-  interactive samples; the flash map currently places `_END_UDATA` at `$7D3B`,
-  below the `$7E00/$7E01` RJOIN seed. Check `_END_UDATA` after every bump.
+  interactive samples; the flash map currently places `_END_UDATA` at `$79A6`,
+  below `$8000`. Check `_END_UDATA` after every bump.
   Self-hosting ASM must be chunked by routine pack/slice with export/seal
   between sessions; a one-session assembly of `asm-v1-core.asm` would need far
   more symbol storage than RAM can provide.

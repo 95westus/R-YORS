@@ -375,7 +375,7 @@ resident services through the RJOIN seed stored at `$7E00-$7E01`. Runtime paste
 source currently emits proof code around `$7000`; ASM output policy protects the
 monitor/debugger/vector/I/O window at `$7E00+`.
 
-Current RAM-session ceilings are 40 global symbols, 96 fixups, 160 report refs,
+Current RAM-session ceilings are 64 global symbols, 128 fixups, 192 report refs,
 and 16 label-only local labels per active global scope. The source contract,
 status model, and hardware proof trail live in [HASHED_ASM.md](ASM/HASHED_ASM.md)
 and [TEST_PLAN.md](ASM/TEST_PLAN.md). The renderable routine-flow map lives in

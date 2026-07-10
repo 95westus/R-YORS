@@ -3272,6 +3272,9 @@ pack40-roundtrip-2000.a self-contained PACK40 pack/unpack oracle
 pack40-interactive-2000.a
                          hardware-proven interactive PACK40 pack/unpack
                          exerciser
+bank3-erase-8000-bfff-3000.a
+                         bank 3 $8000-$BFFF erase tool using STR8 service;
+                         S19 target: make -C SRC bank3-erase
 life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
 local-label-stress-7400.asm
                          exact 8-local scope/reuse/?prefix stress sample
@@ -3438,7 +3441,7 @@ filled all 24 fixup rows before `JSR OUTA`, failing clearly as
 `ERR=$09 BAD FIX PC=$2126`. A later helper-first attempt on the JSR-only
 resident resolver still failed at `END` with 19/24 fixups because
 `JMP BIO_FTDI_WRITE_BYTE_BLOCK` and `JMP BIO_FTDI_PUT_CSTR` were not yet
-resident-lookup eligible. Current ASM uses `ASM_FIX_MAX=$60` and allows direct
+resident-lookup eligible. Current ASM uses `ASM_FIX_MAX=$80` and allows direct
 resident `JMP name` as well as `JSR name`.
 
 Hardware-proven biorhythm target:
@@ -3524,9 +3527,9 @@ ASM_LOCAL_NAME_MAX=$10
 The current flash ASM image uses the larger interactive-sample ceilings:
 
 ```text
-ASM_SYM_MAX=$28
-ASM_FIX_MAX=$60
-ASM_REF_MAX=$A0
+ASM_SYM_MAX=$40
+ASM_FIX_MAX=$80
+ASM_REF_MAX=$C0
 ASM_LOCAL_MAX=$10
 ASM_LOCAL_NAME_MAX=$10
 ```
@@ -4469,7 +4472,7 @@ dumped `$7E00: 8E DE`, proving the RAM seed path after a STR8 HIMON-only update.
 A later broad opcode/addressing paste failed at the 33rd named operand reference
 with `ERR=$09 BAD FIX`; that was the report-reference ceiling, not the seed.
 That slice raised `ASM_REF_MAX` to `$40` without adding table storage; the
-current flash ASM image uses `ASM_REF_MAX=$A0`.
+current flash ASM image uses `ASM_REF_MAX=$C0`.
 
 The lower-reference board opcode/addressing smoke then assembled at `$7200`,
 resolved seven fixups, ran from `$7200`, and dumped the expected oracle:
@@ -8093,8 +8096,8 @@ himon-rom-c000 _END_DATA < $F000
 Current host proof produced:
 
 ```text
-asm-v1-flash headroom to C000 = 05F8 (_END_DATA=BA08)
-UDATA starts at $5000, ends at $6F16
+asm-v1-flash headroom to C000 = 0697 (_END_DATA=B969)
+UDATA starts at $5000, ends at $79A6
 asm-session-report end = 76D5 (limit 7A00)
 himon-rom-c000 _END_DATA=$EDAF
 HIM_AP_SERVICE=$D6B2
@@ -8271,9 +8274,9 @@ PC=$2004
 HIGH=$2004
 BYTES=$0004
 LINES=$0004
-SYMS=$02/$28
-FIXUPS=$01/$60
-REFS=$hh/$A0
+SYMS=$02/$40
+FIXUPS=$01/$80
+REFS=$hh/$C0
 TRUNC=NO
 MAP END=$.... UDATA=$5000-....
 SESSION
@@ -8298,6 +8301,26 @@ G 4800
 Expected: the preloaded `$4800` reporter prints the same table sections.
 `asm-session-report-7000.a` is only for non-flash/runtime-paste ASM builds that
 still permit `$7000` output.
+The flash-native `$4800` source is generated as a compact ASM-F1 program. The
+generator uses literal message addresses and single-character `DB` atoms, so it
+keeps the live program at 59 labels and avoids ASM-F1's double-quoted string
+gap while fitting under the current `$40` symbol limit.
+
+Bank 2 `$8000` AP storage path for the same reporter:
+
+```text
+ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
+PACKAGE $3200 at SEAL>
+.
+ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/bank2put-8000-3000.a
+.
+G 3000         expect $1A00=$AC
+ASM NEW        run the session to inspect
+...
+END
+.
+AP B2 $8000 $4800
+```
 
 Board result captured 2026-07-06:
 

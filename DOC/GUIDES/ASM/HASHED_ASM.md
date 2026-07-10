@@ -1313,14 +1313,15 @@ The active ROM-era table mix favors larger paste samples that are fixup-heavy
 but still modest in global symbols:
 
 ```text
-ASM_SYM_MAX    $28
-ASM_FIX_MAX    $60
-ASM_REF_MAX    $A0
+ASM_SYM_MAX    $40
+ASM_FIX_MAX    $80
+ASM_REF_MAX    $C0
 ASM_LOCAL_MAX  $10
 ```
 
-Compared with the earlier `$20/$20/$40/$08` proof limits, that adds about
-`$0C20` bytes with the current table layout. Address terms are easy to blur
+Compared with the previous `$28/$60/$A0/$10` mix, that adds `$0A90` bytes.
+Compared with the earlier `$20/$20/$40/$08` proof limits, it adds about
+`$1898` bytes with the current table layout. Address terms are easy to blur
 here, so keep them separate:
 
 ```text
@@ -5348,10 +5349,10 @@ spill into flash or overwrite neighboring RAM.
 The current proof-sized defaults are useful starting points:
 
 ```text
-ASM_SYM_MAX         40 symbol rows
-ASM_FIX_MAX         96 fixup rows
+ASM_SYM_MAX         64 symbol rows
+ASM_FIX_MAX         128 fixup rows
 ASM_FIX_NAME_MAX    32 bytes, 31 visible chars plus terminator
-ASM_REF_MAX         160 report-reference notes
+ASM_REF_MAX         192 report-reference notes
 ASM_LOCAL_MAX       16 local label rows per active global scope
 ASM_LOCAL_NAME_MAX  16 bytes, 15 visible chars plus terminator
 ASM_LINE_MAX        63 visible input chars

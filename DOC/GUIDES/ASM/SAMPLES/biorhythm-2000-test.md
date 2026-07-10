@@ -34,7 +34,7 @@ Board preflight:
 HIMON V 00.0610(2014) or newer
 flash ASM image already loaded at $8000, or load SRC/BUILD/s19/asm-v1-flash-8000.s19 with L F
 ASM image must include direct resident JSR/JMP lookup and enough fixup rows for
-this sample; current flash ASM uses ASM_FIX_MAX=$60
+this sample; current flash ASM uses ASM_FIX_MAX=$80
 ```
 
 Enter flash ASM:

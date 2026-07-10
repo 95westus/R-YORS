@@ -126,6 +126,165 @@ function Write-AsciiLines([string]$Path, [string[]]$Lines) {
     Set-Content -LiteralPath $Path -Value $Lines -Encoding ASCII
 }
 
+function Format-HexByte([int]$Value) {
+    '$' + (($Value -band 0xff).ToString('X2'))
+}
+
+function Format-HexWord([int]$Value) {
+    '$' + (($Value -band 0xffff).ToString('X4'))
+}
+
+function Get-AsmNumberValue([string]$Text) {
+    $t = $Text.Trim()
+    if ($t -match '^\$([0-9A-Fa-f]{1,4})$') {
+        return [Convert]::ToInt32($matches[1], 16)
+    }
+    if ($t -match '^[0-9]+$') {
+        return [Convert]::ToInt32($t, 10)
+    }
+    return $null
+}
+
+function Get-AsmNativeLineSize([string]$Line) {
+    $s = $Line.Trim()
+    if ($s.Length -eq 0 -or $s.StartsWith(';')) {
+        return 0
+    }
+
+    $mnemonics = @{
+        'ADC'=$true; 'AND'=$true; 'BEQ'=$true; 'BNE'=$true; 'BCC'=$true
+        'BCS'=$true; 'BRA'=$true; 'CLC'=$true; 'CMP'=$true; 'CPX'=$true
+        'DEX'=$true; 'INC'=$true; 'INX'=$true; 'INY'=$true; 'JMP'=$true
+        'JSR'=$true; 'LDA'=$true; 'LDX'=$true; 'LDY'=$true; 'RTS'=$true
+        'SBC'=$true; 'SEC'=$true; 'STA'=$true; 'STZ'=$true; 'TXA'=$true
+        'DB'=$true; 'END'=$true; 'ORG'=$true
+    }
+
+    $parts = $s -split '\s+', 2
+    $first = $parts[0].ToUpperInvariant()
+    if (-not $mnemonics.ContainsKey($first)) {
+        if ($parts.Count -lt 2) {
+            return 0
+        }
+        $s = $parts[1].Trim()
+        $parts = $s -split '\s+', 2
+        $first = $parts[0].ToUpperInvariant()
+    }
+
+    $op = ''
+    if ($parts.Count -gt 1) {
+        $op = $parts[1].Trim()
+    }
+
+    if ($first -eq 'ORG' -or $first -eq 'END') {
+        return 0
+    }
+    if ($first -eq 'DB') {
+        if ($op.Length -eq 0) {
+            return 0
+        }
+        return (($op -split ',').Count)
+    }
+
+    if (@('RTS','CLC','SEC','INX','DEX','INY','TXA') -contains $first) {
+        return 1
+    }
+    if (@('BEQ','BNE','BCC','BCS','BRA') -contains $first) {
+        return 2
+    }
+    if (@('JSR','JMP') -contains $first) {
+        return 3
+    }
+    if ($op.StartsWith('#')) {
+        return 2
+    }
+    if ($op -match '^\(.+\),Y$') {
+        return 2
+    }
+
+    $base = ($op -replace ',[XY]$','').Trim()
+    $value = Get-AsmNumberValue $base
+    if ($null -ne $value -and $value -lt 0x100) {
+        return 2
+    }
+    return 3
+}
+
+function ConvertTo-DbCharAtom([int]$Code) {
+    if ($Code -ge 0x20 -and $Code -le 0x7e -and $Code -ne 0x27) {
+        return "'" + [char]$Code + "'"
+    }
+    return Format-HexByte $Code
+}
+
+function ConvertTo-DbCharLines([string]$Text) {
+    $atoms = @()
+    foreach ($ch in $Text.ToCharArray()) {
+        $atoms += ConvertTo-DbCharAtom ([int][char]$ch)
+    }
+    $atoms += '$00'
+
+    $lines = @()
+    for ($i = 0; $i -lt $atoms.Count; $i += 12) {
+        $end = [Math]::Min($i + 11, $atoms.Count - 1)
+        $lines += ('        DB ' + (($atoms[$i..$end]) -join ','))
+    }
+    return $lines
+}
+
+function ConvertTo-CompactAsmNativeReport([string[]]$Native, [string]$Org) {
+    $messages = [ordered]@{}
+    $msgStart = -1
+    for ($i = 0; $i -lt $Native.Count; $i++) {
+        if ($Native[$i] -match '^(M[0-9]+)\s+DB\s+"([^"]*)",0$') {
+            if ($msgStart -lt 0) {
+                $msgStart = $i
+            }
+            $messages[$matches[1]] = $matches[2]
+        }
+    }
+    if ($msgStart -lt 0) {
+        return $Native
+    }
+
+    $prefix = @()
+    if ($msgStart -gt 0) {
+        $prefix = $Native[0..($msgStart - 1)]
+    }
+
+    $pc = [Convert]::ToInt32($Org, 16)
+    foreach ($line in $prefix) {
+        $pc += Get-AsmNativeLineSize $line
+    }
+
+    $addrs = @{}
+    foreach ($name in $messages.Keys) {
+        $addrs[$name] = $pc
+        $pc += $messages[$name].Length + 1
+    }
+
+    $orderedNames = @($messages.Keys) | Sort-Object @{Expression={$_.Length};Descending=$true}, @{Expression={$_};Descending=$false}
+    $resolved = @()
+    foreach ($line in $prefix) {
+        $out = $line
+        foreach ($name in $orderedNames) {
+            $addr = $addrs[$name]
+            $out = $out.Replace("#<$name", ('#' + (Format-HexByte $addr)))
+            $out = $out.Replace("#>$name", ('#' + (Format-HexByte ($addr -shr 8))))
+        }
+        $resolved += $out
+    }
+
+    $resolved += '; MESSAGE TEXT USES LITERAL ADDRESSES TO SAVE SYMBOLS.'
+    foreach ($name in $messages.Keys) {
+        $resolved += ('; {0} {1}' -f $name, (Format-HexWord $addrs[$name]))
+        $resolved += ConvertTo-DbCharLines $messages[$name]
+    }
+    $resolved += ''
+    $resolved += '        END'
+    return $resolved
+}
+
 $lines = @(
     '; -------------------------------------------------------------------------',
     '; asm-session-report.inc',
@@ -701,6 +860,7 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header) 
         '        END'
     )
 
+    $native = ConvertTo-CompactAsmNativeReport -Native $native -Org $Org
     Write-AsciiLines -Path $OutFile -Lines $native
 }
 
@@ -708,14 +868,15 @@ if ($AsmNativeFlashOut) {
     New-AsmNativeReport -OutFile $AsmNativeFlashOut -Org '4800' -Header @(
         '; ASM-NATIVE SESSION REPORTER SNAPSHOT FOR FLASH ASM.',
         '; ASSEMBLE THIS BEFORE THE SESSION YOU WANT TO INSPECT.',
-        '; THEN RUN ASM, EXIT WITH ''.'', AND RUN G 4800.'
+        '; THEN RUN ASM, EXIT WITH ''.'', AND RUN G 4800.',
+        '; OR PACKAGE $3200 AND STORE WITH BANK2PUT-8000-3000.A.'
     )
 }
 
 if ($AsmNativeRuntimeOut) {
     New-AsmNativeReport -OutFile $AsmNativeRuntimeOut -Org '7000' -Header @(
-        '; ASM-NATIVE SESSION REPORTER SNAPSHOT FOR NON-FLASH/RUNTIME-PASTE ASM.',
-        '; DEFAULT FLASH ASM REJECTS ORG $7000; USE asm-session-report-4800.a THERE.',
+        '; ASM-NATIVE SESSION REPORTER FOR RUNTIME-PASTE ASM.',
+        '; FLASH ASM REJECTS ORG $7000; USE THE $4800 FILE THERE.',
         '; ASSEMBLE THIS BEFORE THE SESSION YOU WANT TO INSPECT.',
         '; THEN RUN ASM, EXIT WITH ''.'', AND RUN G 7000.'
     )

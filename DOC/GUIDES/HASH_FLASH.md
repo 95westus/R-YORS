@@ -111,7 +111,7 @@ Current limitations:
 ```text
 fixed-address flash image; no L F erase, auto-place, or relocation yet
 ASM metadata still uses the current RAM arena, not the final $7DFF-down plan
-fixed tables: 40 globals, 96 fixups, 160 refs, 16 locals per global scope
+fixed tables: 64 globals, 128 fixups, 192 refs, 16 locals per global scope
 63 visible input chars per line
 no macros/includes/general forward expression addends yet
 source layout still matters; monotonic ORG is enforced

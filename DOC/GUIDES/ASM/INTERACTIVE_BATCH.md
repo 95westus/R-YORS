@@ -98,7 +98,8 @@ source words at the source prompt.
 The `.P` command is source-mode only; it is not a `SEAL> ` command. Default
 flash ASM does not print `ASM TABLES` automatically; use the external
 `asm-session-report-7000.s19` proof, or the flash-safe
-`asm-session-report-4800.a` ASM-native source, when table detail is needed.
+`asm-session-report-4800.a` compact ASM-native source, when table detail is
+needed.
 
 Any future post-`END` batch command that keeps the paste stream alive,
 especially `WRAP`, needs a hard-stop/quench-on-error rule before it is

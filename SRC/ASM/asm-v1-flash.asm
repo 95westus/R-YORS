@@ -803,7 +803,7 @@ ASMF_CMD_CHECK:         DB              "CHECK",0
 ASMF_CMD_NEW:           DB              "NEW",0
 ASMF_CMD_END:           DB              "END",0
 ASMF_CMD_DOTP:          DB              ".P",0
-MSG_TITLE:              DB              "AS",('M'+$80)
+MSG_TITLE:              DB              "ASM-F",('1'+$80)
 MSG_PROMPT:             DB              "ASM>",('$'+$80)
 MSG_PROMPT_TAIL:        DB              ":",(' '+$80)
 MSG_SEAL_PROMPT:        DB              "SEAL>",(' '+$80)

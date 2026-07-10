@@ -13,12 +13,12 @@ runtime paste entry       $2000
 smoke output target       $7000
 protected ASM/RJOIN seed  $7E00-$7E01
 HIMON AP service vector   $7E2D-$7E2E
-global symbols            $28 / 40
-fixups                    $60 / 96
+global symbols            $40 / 64
+fixups                    $80 / 128
 relocations               $10 / 16
 exports                   $08 / 8
 imports                   $08 / 8
-report refs               $A0 / 160
+report refs               $C0 / 192
 locals per global scope   $10 / 16
 local visible chars       15
 ```
