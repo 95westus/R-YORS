@@ -368,6 +368,12 @@ the old `$6000` base to `$5000`. Flash ASM accepts emitted bytes in
 before emitting any opcode or operand byte so boundary failures never leave a
 partial write.
 
+Follow-on packageable-work convention: treat `$2000-$4FFF` as three 4K islands,
+not one undifferentiated scratch span. Use `$2000-$2FFF` for emitted BODY/helper
+code, `$3000-$3FFF` for AP overlay/load/run, and `$4000-$4FFF` for the RAM AP
+envelope. The existing runtime guard still rejects only `$5000+`; enforcing the
+`$2FFF` packageable BODY ceiling in ASM-F2 is a separate implementation step.
+
 After the move is proven, spend the new RAM reserve deliberately. Preferred
 growth order is fixup/relocation rows, symbol rows, local-label capacity, then
 import/export record space. Keep at least `$0100-$0200` unused before `$7A00`

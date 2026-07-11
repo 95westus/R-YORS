@@ -9249,6 +9249,94 @@ Restoring B2 to B3 recovered the complete map, HIMON warm-booted, and ASM-F2
 remained enterable. The interactive erase tool is hardware-proven except for
 an optional forced worker-failure negative.
 
+A later 2026-07-10 transcript on `HIMON V 00.0710(2024)` reassembled the same
+sample cleanly, then proved the expected package negative: `SEAL` returned
+`SEAL ERR=$02 FLAGS=$09`, and a fresh paste followed by `PACKAGE $3200`
+returned `PKG ERR=$02`. This is not an assembly failure; `FLAGS=$09` means the
+seal is valid but relocation metadata truncated. The tool is intentionally
+run-in-place from `$3000` after leaving `SEAL>` with `.`.
+
+A follow-up paste on `HIMON V 00.0710(1553)` included the new warning comments
+and still assembled cleanly. `PACKAGE $3800` returned `PKG ERR=$02`, followed
+by the same `SEAL ERR=$02 FLAGS=$09`, so the negative is not tied to `$3200`.
+
+## ASM-F2 Bank 0 AP Install Helper
+
+`DOC/GUIDES/ASM/SAMPLES/bank0ap-stage-2000.a` and
+`DOC/GUIDES/ASM/SAMPLES/bank0ap-commit-2000.a` are the planned
+board-buildable bank 0 AP envelope installer. The stage piece consumes the RAM
+AP envelope at `$4000`, asks for a bank 0 destination or Enter for
+auto-selection, stages the selected sector at `$0A00-$19FF`, overlays the AP
+envelope in the staged copy, and leaves `$1A06=$5A`. The commit piece requires
+exact `YES`, programs/verifies the staged sector, and clears `$1A06` after
+success.
+
+The 2026-07-11 board transcripts proved the setup AP package path with
+`banked-ap-smoke.a`: the first run packaged at `$3200`, and the 4K-island run
+packaged at `$4000`; both returned `PKG OK @=$hhhh L=$006A`, and the AP header
+dump began `41 50 01 6A 00 ...`. The first monolithic writer layout proved a
+placement negative: it emitted through the live package buffer, exceeded the
+global symbol budget, hit long `DB` source lines, and ended with
+`ERR=$09 BAD FIX`. The split `bank0ap-stage-2000.a` /
+`bank0ap-commit-2000.a` flow below keeps each source inside its 4K island and
+under ASM-F2's symbol and source-line limits.
+
+A follow-up stage paste reached `ASM OK`, but ASM-F2 rejected operand
+expressions `PKG+1`, `PKG+3`, and `PKG+4` with `ERR=$03 BO`; those lines did
+not emit, so `G 2000` returned the false package-header failure
+`FAIL $1A00=$E1` even though `$4000` contained a valid AP envelope. The stage
+source now uses named absolute constants `PKG1`, `PKG3`, and `PKG4` instead.
+The commit source likewise avoids `INBUF+n` operands for the `YES` check.
+
+ASM-F2 soon-update note: the `ERR=$07 BL` rows in that transcript are not just
+a sample cleanup issue. DB-heavy prompt/string sources need a less fragile
+source-line path, such as a longer paste buffer, explicit continuation, or
+first-class string directives. Until then, board samples must split long `DB`
+rows under the 63-visible-character line cap.
+
+Follow-up source direction: the bank 0 installer is split into stage and commit
+pieces instead of growing a single interactive helper. Static checks show
+`bank0ap-stage-2000.a` and `bank0ap-commit-2000.a` remain under the symbol
+budget and under the 63-visible-character source-line cap. The current map uses
+three 4K islands: helper/body emission `$2000-$2FFF`, AP overlay/load/run
+`$3000-$3FFF`, and RAM AP envelope buffer `$4000-$4FFF`. `$5xxx` is not
+scratch space for source-mode output; split again if any piece grows toward the
+edge of its island.
+
+Explicit-address board proof passed for bank 0 `$9000`: the patched commit
+piece assembled with no `ERR=` rows, `G 2000` printed `PROGRAM OK`, and
+`D 1A00 F` showed `AC 00 90 6A 00 90 00`. The first AP command used `#3000`
+and correctly printed usage; the corrected `AP B0 $9000 $3000` loaded and ran
+with `RET A=AC`. Runtime proof bytes were `$5848=$AC`, `$584A/$584B=$2E/$30`,
+and `$5850=$5A`; the intervening bytes are not owned by this smoke body.
+
+Printed AP board proof passed for bank 0 `$8000`: `bank0ap-print-smoke.a`
+assembled at `$2000`, `PACKAGE $4000` returned `PKG OK @=$4000 L=$007F`, the
+stage piece selected `$8000`, the commit piece printed `PROGRAM OK`, and
+`AP B0 $8000 $3000` printed `B0 AP RUN` before returning `A=AC`. The stable
+proof bytes are `$5848=$AC` and `$5850=$5A`; `$584A/$584B` records the
+resolved resident `BIO_FTDI_PUT_CSTR` address.
+
+A later follow-up ran the same committed bank 0 `$8000` package at AP RAM
+destinations `$2000`, `$3200`, and `$3400`; each printed `B0 AP RUN` and
+returned `A=AC`. Keep `$3000` as the default run destination. `$3200/$3400`
+are useful overlay-island variants, while `$2000` should be a final
+post-install proof only because it overwrites the helper/source island.
+
+The same transcript also caught an operator-mode negative: after running
+`PACKAGE $4000`, pasting `ASM NEW` and the stage source at the `SEAL>` prompt
+produced repeated `ERR=$03 BO`. The correct transition is `SEAL> .`, then
+`>ASM NEW`.
+After a later bank 0 erase, `AP B0 $8000 $3000` correctly returned
+`APERR=$07` because the package had been erased.
+
+Remaining optional board proof: run the auto-selected address before erasing
+bank 0, confirm the printed `$hhhh` works with `AP B0 $hhhh $3000`, and cover
+bad AP header, non-erased destination bytes, no staged write, over-sector
+package placement, and abort without write. The full prompt-by-prompt script
+lives in
+`DOC/GUIDES/ASM/SAMPLES/bank0ap-put-2000-test.md`.
+
 ## Hardware Bench Gate
 
 Do not call ASM hardware-proven until the board has run the emitted code and the

@@ -1,0 +1,225 @@
+; BANK0AP-COMMIT-2000.A
+; PIECE 2: PROGRAM A PREPARED BANK 0 AP ENVELOPE WRITE.
+;
+; FIRST RUN BANK0AP-STAGE-2000.A. THIS SOURCE EXPECTS:
+;   $0A00-$19FF = STAGED BANK 0 SECTOR WITH AP OVERLAY
+;   $1A01/$1A02 = DESTINATION ADDRESS
+;   $1A03/$1A04 = AP ENVELOPE LENGTH
+;   $1A05 = SECTOR HIGH BYTE
+;   $1A06 = $5A STAGE READY MARK
+;
+; RUN:
+;   PASTE THIS SOURCE
+;   SEAL> .
+;   >G 2000
+;
+; STATUS:
+;   $1A00 = $AC PROGRAM OK
+;   $1A00 = $E0 ABORTED
+;   $1A00 = $E6 PROGRAM/VERIFY FAILED
+;   $1A00 = $E7 NO VALID STAGED AP WRITE
+
+STAT    EQU $1A00
+DSTLO   EQU $1A01
+DSTHI   EQU $1A02
+LENLO   EQU $1A03
+LENHI   EQU $1A04
+SECHI   EQU $1A05
+READY   EQU $1A06
+INBUF   EQU $1A10
+INB1    EQU $1A11
+INB2    EQU $1A12
+INB3    EQU $1A13
+
+DPLO    EQU $CA
+DPHI    EQU $CB
+
+        ORG $2000
+
+RUN     STZ STAT
+        LDX #<MTITLE
+        LDY #>MTITLE
+        JSR PUTS
+        JSR CHECK
+        BCS .READY
+        JMP FAILA
+
+.READY  JSR PRINTDST
+        LDX #<MCONF
+        LDY #>MCONF
+        JSR PUTS
+        JSR READ
+        BCS .GOT
+        JMP ABORT
+
+.GOT    JSR ISYES
+        BCS .WRITE
+        JMP ABORT
+
+.WRITE  JSR PROGRAM
+        BCS DONE
+        JMP FAILA
+
+DONE    LDA #$AC
+        STA STAT
+        STZ READY
+        LDX #<MOK
+        LDY #>MOK
+        JSR PUTS
+        JSR PRINTDST
+        LDA STAT
+        RTS
+
+ABORT   LDA #$E0
+        STA STAT
+        LDX #<MABORT
+        LDY #>MABORT
+        JSR PUTS
+        LDA STAT
+        RTS
+
+FAILA   STA STAT
+        LDX #<MFAIL
+        LDY #>MFAIL
+        JSR PUTS
+        LDA STAT
+        JSR HEX
+        JSR CRLF
+        LDA STAT
+        RTS
+
+CHECK   LDA READY
+        CMP #$5A
+        BNE .BAD
+        LDA DSTHI
+        CMP #$80
+        BCC .BAD
+        LDA LENLO
+        ORA LENHI
+        BEQ .BAD
+        LDA SECHI
+        CMP #$80
+        BCC .BAD
+        JSR SETSTAGEPTR
+        LDY #$00
+        LDA (DPLO),Y
+        CMP #'A'
+        BNE .BAD
+        LDY #$01
+        LDA (DPLO),Y
+        CMP #'P'
+        BNE .BAD
+        LDY #$03
+        LDA (DPLO),Y
+        CMP LENLO
+        BNE .BAD
+        LDY #$04
+        LDA (DPLO),Y
+        CMP LENHI
+        BNE .BAD
+        SEC
+        RTS
+.BAD    LDA #$E7
+        CLC
+        RTS
+
+PROGRAM LDA #$00
+        STA $1FEF
+        LDA SECHI
+        STA $1FE9
+        LDA #$0A
+        STA $1FF6
+        LDA #$05
+        STA $1FF0
+        JSR $F003
+        BCS .OK
+        LDA #$E6
+        CLC
+        RTS
+.OK     SEC
+        RTS
+
+SETSTAGEPTR LDA DSTLO
+        STA DPLO
+        LDA DSTHI
+        AND #$0F
+        CLC
+        ADC #$0A
+        STA DPHI
+        RTS
+
+PRINTDST LDX #<MSEL
+        LDY #>MSEL
+        JSR PUTS
+        LDA DSTHI
+        JSR HEX
+        LDA DSTLO
+        JSR HEX
+        LDX #<MLEN
+        LDY #>MLEN
+        JSR PUTS
+        LDA LENHI
+        JSR HEX
+        LDA LENLO
+        JSR HEX
+        JSR CRLF
+        RTS
+
+ISYES   LDA INBUF
+        CMP #'Y'
+        BNE .NO
+        LDA INB1
+        CMP #'E'
+        BNE .NO
+        LDA INB2
+        CMP #'S'
+        BNE .NO
+        LDA INB3
+        BNE .NO
+        SEC
+        RTS
+.NO     CLC
+        RTS
+
+HEX     PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR .NIB
+        PLA
+        AND #$0F
+.NIB    CMP #$0A
+        BCC .DIG
+        CLC
+        ADC #$37
+        BRA OUT
+.DIG    CLC
+        ADC #'0'
+OUT     JMP BIO_FTDI_WRITE_BYTE_BLOCK
+
+READ    LDX #<INBUF
+        LDY #>INBUF
+        JMP SYS_READ_CSTRING_ECHO_UPPER
+
+PUTS    JMP BIO_FTDI_PUT_CSTR
+
+CRLF    LDA #$0D
+        JSR OUT
+        LDA #$0A
+        JMP OUT
+
+MTITLE  DB $0D,$0A,'B','0',' ','A','P',' '
+        DB 'C','O','M','M','I','T',$0D,$0A,0
+MSEL    DB 'B','0',' ','A','P',' ','@','$',0
+MLEN    DB ' ','L','=','$',0
+MCONF   DB 'T','Y','P','E',' ','Y','E','S'
+        DB ' ','T','O',' ','W','R','I','T','E'
+        DB '>',' ',0
+MOK     DB 'P','R','O','G','R','A','M',' ','O','K',$0D,$0A,0
+MFAIL   DB 'F','A','I','L',' ','$','1','A','0','0','=','$',0
+MABORT  DB 'A','B','O','R','T',' ','-',' ','N','O',' '
+        DB 'F','L','A','S','H',' '
+        DB 'W','R','I','T','E',$0D,$0A,0
+
+        END

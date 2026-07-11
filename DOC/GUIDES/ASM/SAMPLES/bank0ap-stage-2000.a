@@ -1,0 +1,457 @@
+; BANK0AP-STAGE-2000.A
+; PIECE 1: PREPARE A BANK 0 AP ENVELOPE WRITE.
+;
+; INPUT:
+;   AP ENVELOPE AT $4000, USUALLY FROM SEAL> PACKAGE $4000
+;
+; RUN:
+;   PASTE THIS SOURCE
+;   SEAL> .
+;   >G 2000
+;
+; RESULT:
+;   BANK 0 SECTOR IS STAGED AT $0A00-$19FF
+;   AP ENVELOPE IS OVERLAID IN THE STAGE BUFFER ONLY
+;   NO FLASH WRITE HAPPENS IN THIS PIECE
+;   THIS PIECE EMITS IN $2000-$2FFF
+;
+; NEXT:
+;   PASTE BANK0AP-COMMIT-2000.A
+;   >G 2000
+;
+; STATUS:
+;   $1A00 = $AC STAGE READY
+;   $1A00 = $E1 BAD AP HEADER/LENGTH AT $4000
+;   $1A00 = $E2 BAD DEST/LEN OR CROSSES 4K SECTOR
+;   $1A00 = $E3 NO ERASED BANK-0 HOLE FITS
+;   $1A00 = $E4 STAGE-COPY FAILED
+;   $1A00 = $E5 DESTINATION RANGE IS NOT ERASED
+;   $1A01/$1A02 = SELECTED BANK-0 PACKAGE ADDRESS, LO/HI
+;   $1A03/$1A04 = AP ENVELOPE LENGTH, LO/HI
+;   $1A05 = SELECTED SECTOR HIGH BYTE
+;   $1A06 = $5A STAGE READY MARK
+;   $4000 PACKAGE BUFFER ALLOWS LENGTH $0001-$1000
+
+PKG     EQU $4000
+PKG1    EQU $4001
+PKG3    EQU $4003
+PKG4    EQU $4004
+
+STAT    EQU $1A00
+DSTLO   EQU $1A01
+DSTHI   EQU $1A02
+LENLO   EQU $1A03
+LENHI   EQU $1A04
+SECHI   EQU $1A05
+READY   EQU $1A06
+INBUF   EQU $1A10
+
+SPLO    EQU $C8
+SPHI    EQU $C9
+DPLO    EQU $CA
+DPHI    EQU $CB
+CNTLO   EQU $CC
+CNTHI   EQU $CD
+
+        ORG $2000
+
+RUN     STZ STAT
+        STZ DSTLO
+        STZ DSTHI
+        STZ LENLO
+        STZ LENHI
+        STZ SECHI
+        STZ READY
+        LDX #<MTITLE
+        LDY #>MTITLE
+        JSR PUTS
+        JSR READPKG
+        BCS .PKGOK
+        JMP FAILA
+
+.PKGOK  JSR CHECKLEN
+        BCS .LENOK
+        JMP FAILA
+
+.LENOK  LDX #<MPKG
+        LDY #>MPKG
+        JSR PUTS
+        LDA LENHI
+        JSR HEX
+        LDA LENLO
+        JSR HEX
+        JSR CRLF
+
+.ASKDST LDX #<MDST
+        LDY #>MDST
+        JSR PUTS
+        JSR READ
+        BCS .HAVEDST
+        LDA #$E2
+        JMP FAILA
+
+.HAVEDST CMP #$00
+        BNE .PARSEDST
+        JSR FINDHOLE
+        BCS .CHOSEN
+        JMP FAILA
+
+.PARSEDST JSR PARADDR
+        BCS .USERDST
+        LDA #$E2
+        JMP FAILA
+
+.USERDST JSR SETSECTOR
+        JSR STAGE
+        BCS .STAGED
+        JMP FAILA
+
+.STAGED JSR CHECKHOLE
+        BCS .CHOSEN
+        JMP FAILA
+
+.CHOSEN JSR COPYPKG
+        LDA #$5A
+        STA READY
+        LDA #$AC
+        STA STAT
+        LDX #<MOK
+        LDY #>MOK
+        JSR PUTS
+        JSR PRINTDST
+        LDA STAT
+        RTS
+
+FAILA   STA STAT
+        STZ READY
+        LDX #<MFAIL
+        LDY #>MFAIL
+        JSR PUTS
+        LDA STAT
+        JSR HEX
+        JSR CRLF
+        LDA STAT
+        RTS
+
+READPKG LDA PKG
+        CMP #'A'
+        BNE .BAD
+        LDA PKG1
+        CMP #'P'
+        BNE .BAD
+        LDA PKG3
+        STA LENLO
+        LDA PKG4
+        STA LENHI
+        ORA LENLO
+        BNE .GOOD
+.BAD    LDA #$E1
+        CLC
+        RTS
+.GOOD   SEC
+        RTS
+
+CHECKLEN LDA LENHI
+        CMP #$10
+        BCC .GOOD
+        BNE .BAD
+        LDA LENLO
+        BEQ .GOOD
+.BAD    LDA #$E2
+        CLC
+        RTS
+.GOOD   SEC
+        RTS
+
+PARADDR LDX #$00
+        LDA INBUF,X
+        CMP #'$'
+        BNE .PHEX0
+        INX
+.PHEX0  LDA INBUF,X
+        JSR H2N
+        BCC .BAD
+        ASL A
+        ASL A
+        ASL A
+        ASL A
+        STA DSTHI
+        INX
+        LDA INBUF,X
+        JSR H2N
+        BCC .BAD
+        ORA DSTHI
+        STA DSTHI
+        INX
+        LDA INBUF,X
+        JSR H2N
+        BCC .BAD
+        ASL A
+        ASL A
+        ASL A
+        ASL A
+        STA DSTLO
+        INX
+        LDA INBUF,X
+        JSR H2N
+        BCC .BAD
+        ORA DSTLO
+        STA DSTLO
+        INX
+        LDA INBUF,X
+        BNE .BAD
+        LDA DSTHI
+        CMP #$80
+        BCC .BAD
+        SEC
+        RTS
+.BAD    CLC
+        RTS
+
+SETSECTOR LDA DSTHI
+        AND #$F0
+        STA SECHI
+        RTS
+
+FINDHOLE LDA #$80
+        STA SECHI
+.LOOP   STZ DSTLO
+        LDA SECHI
+        STA DSTHI
+        JSR STAGE
+        BCS .STAGED
+        RTS
+.STAGED JSR SCANHOLE
+        BCS .OK
+        LDA SECHI
+        CLC
+        ADC #$10
+        STA SECHI
+        BNE .LOOP
+        LDA #$E3
+        CLC
+        RTS
+.OK     SEC
+        RTS
+
+STAGE   LDA #$00
+        STA $1FEE
+        LDA SECHI
+        STA $1FE9
+        LDA #$0A
+        STA $1FF6
+        LDA #$06
+        STA $1FF0
+        JSR $F003
+        BCS .OK
+        LDA #$E4
+        CLC
+        RTS
+.OK     SEC
+        RTS
+
+SCANHOLE STZ SPLO
+        LDA #$0A
+        STA SPHI
+        STZ CNTLO
+        STZ CNTHI
+.LOOP   LDA SPHI
+        CMP #$1A
+        BNE .IN
+        CLC
+        RTS
+.IN     LDY #$00
+        LDA (SPLO),Y
+        CMP #$FF
+        BEQ .FF
+        STZ CNTLO
+        STZ CNTHI
+        JSR INCSP
+        BRA .LOOP
+.FF     LDA CNTLO
+        ORA CNTHI
+        BNE .COUNT
+        LDA SPLO
+        STA DSTLO
+        LDA SPHI
+        SEC
+        SBC #$0A
+        CLC
+        ADC SECHI
+        STA DSTHI
+.COUNT  INC CNTLO
+        BNE .FIT
+        INC CNTHI
+.FIT    JSR RUNFITS
+        BCS .OK
+        JSR INCSP
+        BRA .LOOP
+.OK     SEC
+        RTS
+
+RUNFITS LDA CNTHI
+        CMP LENHI
+        BCC .NO
+        BNE .YES
+        LDA CNTLO
+        CMP LENLO
+        BCC .NO
+.YES    SEC
+        RTS
+.NO     CLC
+        RTS
+
+INCSP   INC SPLO
+        BNE .DONE
+        INC SPHI
+.DONE   RTS
+
+SETSTAGEPTR LDA DSTLO
+        STA DPLO
+        LDA DSTHI
+        AND #$0F
+        CLC
+        ADC #$0A
+        STA DPHI
+        RTS
+
+SETCOUNT LDA LENLO
+        STA CNTLO
+        LDA LENHI
+        STA CNTHI
+        RTS
+
+CHECKHOLE JSR SETSTAGEPTR
+        JSR SETCOUNT
+.LOOP   LDA CNTLO
+        ORA CNTHI
+        BEQ .OK
+        LDA DPHI
+        CMP #$1A
+        BCC .ADDR
+        LDA #$E2
+        CLC
+        RTS
+.ADDR   LDY #$00
+        LDA (DPLO),Y
+        CMP #$FF
+        BNE .USED
+        JSR INCDP
+        JSR DECCNT
+        BRA .LOOP
+.USED   LDA #$E5
+        CLC
+        RTS
+.OK     SEC
+        RTS
+
+COPYPKG LDA #<PKG
+        STA SPLO
+        LDA #>PKG
+        STA SPHI
+        JSR SETSTAGEPTR
+        JSR SETCOUNT
+.LOOP   LDA CNTLO
+        ORA CNTHI
+        BEQ .DONE
+        LDY #$00
+        LDA (SPLO),Y
+        STA (DPLO),Y
+        INC SPLO
+        BNE .DST
+        INC SPHI
+.DST    JSR INCDP
+        JSR DECCNT
+        BRA .LOOP
+.DONE   RTS
+
+INCDP   INC DPLO
+        BNE .DONE
+        INC DPHI
+.DONE   RTS
+
+DECCNT  DEC CNTLO
+        LDA CNTLO
+        CMP #$FF
+        BNE .DONE
+        DEC CNTHI
+.DONE   RTS
+
+PRINTDST LDX #<MSEL
+        LDY #>MSEL
+        JSR PUTS
+        LDA DSTHI
+        JSR HEX
+        LDA DSTLO
+        JSR HEX
+        LDX #<MLEN
+        LDY #>MLEN
+        JSR PUTS
+        LDA LENHI
+        JSR HEX
+        LDA LENLO
+        JSR HEX
+        JSR CRLF
+        RTS
+
+H2N     CMP #'0'
+        BCC .BAD
+        CMP #':'
+        BCC .DIG
+        CMP #'A'
+        BCC .BAD
+        CMP #'G'
+        BCS .BAD
+        SEC
+        SBC #$37
+        SEC
+        RTS
+.DIG    SEC
+        SBC #'0'
+        SEC
+        RTS
+.BAD    CLC
+        RTS
+
+HEX     PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR .NIB
+        PLA
+        AND #$0F
+.NIB    CMP #$0A
+        BCC .DIG
+        CLC
+        ADC #$37
+        BRA OUT
+.DIG    CLC
+        ADC #'0'
+OUT     JMP BIO_FTDI_WRITE_BYTE_BLOCK
+
+READ    LDX #<INBUF
+        LDY #>INBUF
+        JMP SYS_READ_CSTRING_ECHO_UPPER
+
+PUTS    JMP BIO_FTDI_PUT_CSTR
+
+CRLF    LDA #$0D
+        JSR OUT
+        LDA #$0A
+        JMP OUT
+
+MTITLE  DB $0D,$0A,'B','0',' ','A','P',' '
+        DB 'S','T','A','G','E',$0D,$0A,0
+MPKG    DB 'P','K','G',' ','L','=','$',0
+MDST    DB 'D','S','T',' ','$','8','0','0','0'
+        DB '-','$','F','F','F','F',' ','O','R',' '
+        DB 'E','N','T','E','R','=','A','U','T','O'
+        DB '>',' ',0
+MSEL    DB 'S','T','A','G','E','D',' ','B','0'
+        DB ' ','A','P',' ','@','$',0
+MLEN    DB ' ','L','=','$',0
+MOK     DB 'S','T','A','G','E',' ','O','K',$0D,$0A,0
+MFAIL   DB 'F','A','I','L',' ','$','1','A','0','0','=','$',0
+
+        END

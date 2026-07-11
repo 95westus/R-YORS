@@ -1,0 +1,46 @@
+; BANK0AP-PRINT-SMOKE.A
+; IMPORT/RJOIN AP PACKAGE SMOKE FOR BANK 0 COPY/LOAD/RUN.
+;
+; BUILD:
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   END
+;   PACKAGE $4000
+;
+; INSTALL WITH BANK0AP-STAGE-2000.A AND BANK0AP-COMMIT-2000.A,
+; THEN RUN FROM HIMON:
+;   AP B0 $8000 $3000
+;   D 5848 50
+;
+; PASS:
+;   PRINTS "B0 AP RUN"
+;   $5848=$AC
+;   $584A/$584B = RESOLVED BIO_FTDI_PUT_CSTR ADDRESS
+;   $5850=$5A
+
+        ORG $2000
+
+        IMPORT BIO_FTDI_PUT_CSTR
+
+MAIN    BRA RUN
+        ENTRY MAIN
+
+RUN     STZ $5848
+        STZ $5850
+        LDX #<MSG
+        LDY #>MSG
+        JSR BIO_FTDI_PUT_CSTR
+        LDA #<BIO_FTDI_PUT_CSTR
+        STA $584A
+        LDA #>BIO_FTDI_PUT_CSTR
+        STA $584B
+        LDA #$5A
+        STA $5850
+        LDA #$AC
+        STA $5848
+        RTS
+
+MSG     DB $0D,$0A,'B','0',' ','A','P',' '
+        DB 'R','U','N',$0D,$0A,0
+
+        END

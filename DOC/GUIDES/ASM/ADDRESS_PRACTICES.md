@@ -39,6 +39,7 @@ $2000        default ASM source PC and common sealed-body origin
 $3000        common RAM load/run destination for AP bodies
 $3123        useful non-page-aligned relocation proof destination
 $3200        common RAM AP envelope/package buffer
+$4000        4K-split RAM AP envelope/package buffer
 $4800        fixed run address for asm-session-report-4800.a
 $8000        visible flash ASM address; also bank-window address for banked AP
 $B969        current built-in ASM session reporter AP package store address
@@ -50,8 +51,9 @@ $7F00-$7FFF  I/O page, do not use
 $F000-$FFFF  STR8 protected top sector
 ```
 
-Under flash ASM, keep generated code and AP load destinations in `$2000-$4FFF`.
-Do not assemble or load into `$5000-$7FFF`.
+Under the 4K-split flash ASM contract, keep packageable generated code in
+`$2000-$2FFF`, AP load/run overlays in `$3000-$3FFF`, and RAM AP envelopes in
+`$4000-$4FFF`. Do not assemble or load into `$5000-$7FFF`.
 
 ## RAM Package Recipe
 
@@ -119,7 +121,7 @@ SEAL> PACKAGE $3200
 PKG OK @=$3200 L=$llll
 SEAL> .
 ASM BYE
->D 3200 5       expect 41 50 lenlo lenhi version
+>D 3200 5       expect 41 50 version lenlo lenhi
 >ASM NEW        paste bankput-3000.a
 ASM>$30D4: END
 ASM OK
@@ -149,6 +151,51 @@ For the bench command sequence, use
 [LIFE16_BANK2_EXAMPLE.md](LIFE16_BANK2_EXAMPLE.md). The example assembles
 `SAMPLES/life16-column-2000.a`, stores the AP envelope in bank 2 at `$9000`,
 and runs it with `AP B2 $9000 $3000`.
+
+## Bank 0 AP Install
+
+Use this only when bank 0 is the intended AP package store. The helper is a
+two-piece `G 2000` flow, not an AP package itself. The stage piece consumes
+the RAM AP envelope at `$4000`, stages the selected bank 0 sector at
+`$0A00-$19FF`, and overlays the AP envelope in the staged copy only. The
+commit piece asks for `YES` and programs the staged sector.
+
+The flow follows the 4K split: helper code emits in `$2000-$2FFF`, the final
+AP body runs from the `$3000-$3FFF` overlay, and the RAM AP envelope lives at
+`$4000-$4FFF`. Do not let any piece cross into the next island; split again if
+needed.
+
+```text
+SEAL> PACKAGE $4000
+SEAL> .
+ASM BYE
+>ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/bank0ap-stage-2000.a
+ASM OK
+SEAL> .
+ASM BYE
+>G 2000
+>ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/bank0ap-commit-2000.a
+ASM OK
+SEAL> .
+ASM BYE
+>G 2000
+```
+
+At the `DST` prompt, enter a bank 0 address such as `$8000`, or press Enter to
+let the helper choose the first erased bank 0 hole that fits the AP envelope
+inside one 4K sector. After the stage piece, `$1A00=$AC`, `$1A01/$1A02` hold
+the selected package address, and `$1A06=$5A` marks the staged sector ready.
+After commit success, `$1A00=$AC` and `$1A06=00`. Run it with:
+
+```text
+>AP B0 $hhhh $3000
+```
+
+The current hand-held board card uses
+`DOC/GUIDES/ASM/SAMPLES/bank0ap-print-smoke.a`, packages it at `$4000`,
+stores it in bank 0 at `$8000`, and expects the AP body to print `B0 AP RUN`.
 
 ## Session Reporter From Bank 2
 

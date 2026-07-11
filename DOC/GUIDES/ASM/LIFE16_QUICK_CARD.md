@@ -44,10 +44,11 @@ ASM BYE
 3200: 41 50 01 DE 01
 ```
 
-Stop if the header is not `41 50` or the current Life package length is not
-`01 DE`. From this point until the bank writer finishes, `$3200` is the package
-buffer. Do not run `AP`, `LOAD`, or another `PACKAGE`; any of them can invalidate
-the package that the writer is about to copy.
+Stop if the header is not `41 50`, the AP version is not `01`, or the current
+Life package length bytes are not `DE 01` for printed length `$01DE`. From this
+point until the bank writer finishes, `$3200` is the package buffer. Do not run
+`AP`, `LOAD`, or another `PACKAGE`; any of them can invalidate the package that
+the writer is about to copy.
 
 ## 3. Store It At B2:$9000
 

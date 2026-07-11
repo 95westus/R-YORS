@@ -172,11 +172,11 @@ Check the package before starting the writer session:
 3200: 41 50 01 DE 01
 ```
 
-Reason: `41 50` is the AP signature and `01 DE` is the current Life package
-length. Stop if either differs. Do not run `AP`, `LOAD`, or another `PACKAGE`
-between this check and `G 3000`; `$3200` must remain the unchanged package
-buffer for `bankput-3000.a`. A damaged or replaced buffer makes the writer
-return `$E2`.
+Reason: `41 50` is the AP signature, `01` is the AP version, and `DE 01` is the
+current Life package length for printed length `$01DE`. Stop if any of those
+bytes differ. Do not run `AP`, `LOAD`, or another `PACKAGE` between this check
+and `G 3000`; `$3200` must remain the unchanged package buffer for
+`bankput-3000.a`. A damaged or replaced buffer makes the writer return `$E2`.
 
 ## Store The AP Envelope In Bank 2
 

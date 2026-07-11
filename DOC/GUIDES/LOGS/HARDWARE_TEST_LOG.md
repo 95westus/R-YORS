@@ -13081,3 +13081,266 @@ failure remain optional negative/coverage tests.
 OIL now expands to **Overlay Integration Layer**. Earlier `.710` transcript
 headings and evidence retain their original acronym wording; they describe the
 same AP storage/load/relocation/import/run path under the settled name.
+
+## 2026-07-10 ASM-F2 Flash Erase Package Negative
+
+The attached board transcript started from STR8-N and
+`HIMON V 00.0710(1951)`, updated the active HIMON image through the STR8
+`UPDATE HIMON C000-EFFF` gate, and warm-booted `HIMON V 00.0710(2024)`.
+`L F` then loaded flash ASM-F2:
+
+```text
+LF OK WR=3969 GO=800C
+>ASM
+ASM-F2
+```
+
+The transcript reassembled `DOC/GUIDES/ASM/SAMPLES/flash-erase-bank.a`
+cleanly, but then tried post-assembly packaging operations that are not the
+intended path for this fixed `$3000` RAM tool:
+
+```text
+ASM>$33A2:         END
+ASM OK
+SEAL> SEAL
+SEAL ERR=$02 FLAGS=$09
+...
+ASM>$33A2:         END
+ASM OK
+SEAL> PACKAGE $3200
+PKG ERR=$02
+```
+
+Result: negative proof. The source still assembles, and the earlier direct-run
+erase proof remains valid. `FLAGS=$09` is `VALID|RELOC_TRUNC`, so `SEAL` and
+`PACKAGE` reject this sample because its relocation metadata exceeds the
+current ASM-F2 relocation table. The operator path is to leave `SEAL>` with
+`.` and run `G 3000`; do not package this erase tool.
+
+A follow-up `HIMON V 00.0710(1553)` transcript pasted the updated source
+comments warning not to package the tool. The source still assembled cleanly,
+then `PACKAGE $3800` returned `PKG ERR=$02` and `SEAL` returned
+`SEAL ERR=$02 FLAGS=$09`, proving the package failure is independent of the
+chosen RAM package buffer.
+
+## 2026-07-11 ASM-F2 Bank 0 AP Install Placement Negative
+
+The attached board transcript started from an ASM prompt and assembled
+`DOC/GUIDES/ASM/SAMPLES/banked-ap-smoke.a` successfully:
+
+```text
+ASM>$2034:         END
+ASM OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$006A
+SEAL> .
+ASM BYE
+>D 3200 F
+3200: 41 50 01 6A 00 53 0B 01 | 00 20 34 20 34 00 5A 9D
+```
+
+The follow-on paste of the first `bank0ap-put-3000.a` layout then exceeded
+the global symbol budget, kept emitting source bytes from `$3000` toward
+`$3200`, and also contained prompt `DB` lines over ASM-F2's source line limit.
+The board reported many `ERR=$08 BS`, `ERR=$07 BL`, and `ERR=$09 BAD FIX`
+failures, ending with:
+
+```text
+ASM>$330B:         END
+ERR=$09 BAD FIX PC=$330B
+#56AD7400# EXEC ERR=$09
+```
+
+Result: negative proof. The AP body/package step is good, but the initial bank
+0 writer layout was invalid because it was too symbol-heavy, would clobber the
+RAM package buffer while assembling, and had overlong prompt source lines.
+
+Follow-up source direction: break the bank 0 installer into two smaller pieces.
+`bank0ap-stage-2000.a` stages the selected bank 0 sector, verifies an erased
+hole, and overlays the AP envelope in the staged copy without programming
+flash. `bank0ap-commit-2000.a` verifies the staged marker, requires exact
+`YES`, and programs the staged sector. The forward test flow uses three 4K
+islands: helper/body emission `$2000-$2FFF`, AP overlay/load/run
+`$3000-$3FFF`, and RAM AP envelope buffer `$4000-$4FFF`. This keeps the
+destructive action separate and leaves both source files comfortably under
+ASM-F2 table/line limits.
+
+## 2026-07-11 ASM-F2 Bank 0 AP Stage Operand Negative
+
+The 4K-island retry proved the RAM package address change was good:
+
+```text
+ASM>$2034:         END
+ASM OK
+SEAL> PACKAGE $4000
+PKG OK @=$4000 L=$006A
+SEAL> .
+ASM BYE
+>D 4000 F
+4000: 41 50 01 6A 00 53 0B 01 | 00 20 34 20 34 00 5A 9D
+```
+
+The first split stage source then assembled far enough to print `ASM OK`, but
+ASM-F2 rejected the package-header operands that used `label+offset` syntax:
+
+```text
+ASM>$20B8:         LDA PKG+1
+ERR=$03 BO PC=$20B8
+ASM>$20BC:         LDA PKG+3
+ERR=$03 BO PC=$20BC
+ASM>$20BF:         LDA PKG+4
+ERR=$03 BO PC=$20BF
+...
+>G 2000
+B0 AP STAGE
+FAIL $1A00=$E1
+RET A=E1 ...
+```
+
+Result: negative proof of an ASM-F2 operand-expression limit, not a bad AP
+envelope. Because the rejected lines did not emit, `READPKG` compared the
+`$4000` signature byte `'A'` against `'P'` and returned the false `$E1`
+package-header error. `bank0ap-stage-2000.a` now uses named absolute constants
+`PKG1`, `PKG3`, and `PKG4`; `bank0ap-commit-2000.a` similarly avoids
+`INBUF+n` operands in the confirmation parser.
+
+## 2026-07-11 ASM-F2 Bank 0 AP Explicit $9000 Pass
+
+The patched commit piece assembled cleanly after the stage piece left a valid
+staged write for bank 0 `$9000`:
+
+```text
+ASM>$21C5:         END
+ASM OK
+SEAL> .
+ASM BYE
+>G 2000
+GO 2000
+
+B0 AP COMMIT
+B0 AP @$9000 L=$006A
+TYPE YES TO WRITE> YES
+PROGRAM OK
+B0 AP @$9000 L=$006A
+
+#GO# ENTRY=2000
+RET A=AC X=79 Y=04 P=F5 S=FD NV-BdIzC
+>D 1A00 F
+1A00: AC 00 90 6A 00 90 00 00 | 00 00 00 00 00 00 00 00
+```
+
+The first AP run attempt used `#3000` and correctly printed usage. The
+corrected command loaded and ran the bank 0 AP package:
+
+```text
+>AP B0 $9000 #3000
+AP [Bn] pkg dst
+>AP B0 $9000 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 5848 50
+5848: AC C3 2E 30 C8 C9 58 5E | 5A
+```
+
+Result: pass for the explicit-address bank 0 install path. The proof bytes are
+`$5848=$AC`, `$584A/$584B=$2E/$30`, and `$5850=$5A`; the intervening bytes are
+not controlled by `banked-ap-smoke.a` and may contain prior RAM contents.
+
+## 2026-07-11 ASM-F2 Bank 0 Printed AP $8000 Pass
+
+After updating HIMON to `V 00.0710(2024)`, the printed AP smoke assembled and
+packaged at the 4K RAM envelope address:
+
+```text
+ASM>$2032:         END
+ASM OK
+SEAL> PACKAGE $4000
+PKG OK @=$4000 L=$007F
+```
+
+The first follow-up paste accidentally stayed in `SEAL>` mode:
+
+```text
+SEAL> ASM NEW
+ERR=$03 BO PC=$2032
+SEAL> ; BANK0AP-STAGE-2000.A
+ERR=$03 BO PC=$2032
+```
+
+Result: operator-mode negative. The package at `$4000` was good, but stage
+source must be pasted only after `SEAL> .` returns to the normal HIMON `>`
+prompt.
+
+The corrected stage/commit/run path then passed:
+
+```text
+>G 2000
+GO 2000
+
+B0 AP STAGE
+PKG L=$007F
+DST $8000-$FFFF OR ENTER=AUTO>
+STAGE OK
+STAGED B0 AP @$8000 L=$007F
+
+#GO# ENTRY=2000
+RET A=AC X=3A Y=04 P=F5 S=FD NV-BdIzC
+...
+>G 2000
+GO 2000
+
+B0 AP COMMIT
+B0 AP @$8000 L=$007F
+TYPE YES TO WRITE> YES
+PROGRAM OK
+B0 AP @$8000 L=$007F
+
+#GO# ENTRY=2000
+RET A=AC X=79 Y=04 P=F5 S=FD NV-BdIzC
+>AP B0 $8000 $3000
+GO 3000
+
+B0 AP RUN
+
+#GO# ENTRY=3000
+RET A=AC X=24 Y=0D P=F5 S=FD NV-BdIzC
+```
+
+A follow-up reused the same committed bank 0 `$8000` printed AP and changed
+only the AP RAM destination:
+
+```text
+>AP B0 $8000 $2000
+GO 2000
+
+B0 AP RUN
+
+#GO# ENTRY=2000
+RET A=AC X=24 Y=0D P=F5 S=FD NV-BdIzC
+>AP B0 $8000 $3200
+GO 3200
+
+B0 AP RUN
+
+#GO# ENTRY=3200
+RET A=AC X=24 Y=0D P=F5 S=FD NV-BdIzC
+>AP B0 $8000 $3400
+GO 3400
+
+B0 AP RUN
+
+#GO# ENTRY=3400
+RET A=AC X=24 Y=0D P=F5 S=FD NV-BdIzC
+```
+
+Result: pass. This proves the bank 0 `$8000` install path with an AP body that
+visibly prints from resident `BIO_FTDI_PUT_CSTR`. The follow-up also proves
+the same banked package relocates and runs at `$2000`, `$3200`, and `$3400`;
+`$3000` remains the normal destination, `$3200/$3400` are overlay-island
+variants, and `$2000` is a final RAM proof because it overwrites the
+helper/source island. A later auto-stage pass, run while the `$8000` package
+was still present, selected `$807F` and committed it successfully; the AP at
+`$807F` was not run before erase. Finally, erasing bank 0 `ALL` removed the
+installed AP packages, and `AP B0 $8000 $3000` correctly returned `APERR=$07`.

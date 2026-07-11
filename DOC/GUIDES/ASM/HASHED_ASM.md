@@ -586,6 +586,13 @@ empty or comment-only lines are OK
 too-long line returns BAD LINE
 ```
 
+Soon ASM-F2 work should make DB-heavy prompt/string sources less fragile than
+this physical-line cap. Candidate shapes are a larger paste-mode line buffer,
+an explicit continuation rule, or first-class string data forms such as
+`CSTR`/`PSTR`/`HBSTR`. Until that update lands, long prompt strings must be
+split across multiple `DB` rows, and `ERR=$07 BL` is the expected response to a
+single overlong source line.
+
 Before hashing, ASM canonicalizes source tokens this way:
 
 ```text
@@ -1341,6 +1348,13 @@ the map after a bump, especially `_END_UDATA`.
 Important current rule: flash ASM UDATA grows upward from `$5000`, while source
 emission is allowed only in `$2000-$4FFF`. Do not `ORG` emitted user code into
 `$5000+` while the flash ASM runtime is active.
+
+Packageable flash-ASM work should further subdivide that user range into 4K
+roles: `$2000-$2FFF` for emitted BODY/helper code, `$3000-$3FFF` for the AP
+overlay/load/run destination, and `$4000-$4FFF` for the RAM AP envelope. The
+current hard emission guard is still the `$5000` workspace boundary; making the
+`$2FFF` packageable-body ceiling a hard ASM-F2 range check is a follow-up
+implementation step.
 
 `asm-v1-core.asm` is much larger than this model can absorb in one session. A
 quick source scan is on the order of 2,240 label/EQU definitions; at roughly 50

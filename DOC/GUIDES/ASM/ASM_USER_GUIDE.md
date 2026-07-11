@@ -585,10 +585,14 @@ slice, not a polished `INSTALL` command. Use
 into the `$0A00-$19FF` sector staging buffer, overlays the AP envelope, then
 programs/verifies that 4K sector through the `$F003` STR8 worker service.
 `DOC/GUIDES/ASM/SAMPLES/bank2put-8000-3000.a` is the fixed variant for an AP
-envelope at bank 2 `$8000`. HIMON then runs a banked package with:
+envelope at bank 2 `$8000`. For bank 0 interactive install, prefer the split
+`bank0ap-stage-2000.a` then `bank0ap-commit-2000.a` flow. That path uses
+`PACKAGE $4000`, keeping helper emission, AP overlay/load, and RAM AP envelope
+storage in separate 4K islands. The destructive program step is separate from
+the stage/scan step. HIMON then runs a banked package with:
 
 ```text
-AP B0 $9000 $3000
+AP B0 $8000 $3000
 AP B1 $9000 $3000
 AP B2 $9000 $3000
 AP B2 $8000 $4800
@@ -757,7 +761,9 @@ $2000        initial ASM source PC
 Current practical map while ASM is running:
 
 ```text
-$2000-$4FFF  user code/data/package workspace, choose non-overlapping areas
+$2000-$2FFF  packageable ASM body/helper emission island
+$3000-$3FFF  AP overlay/load/run destination island
+$4000-$4FFF  RAM AP envelope/package buffer island
 $5000-$7EFF  protected ASM/HIMON workspace while ASM is active
 $7F00-$7FFF  I/O, do not use
 ```
@@ -830,6 +836,10 @@ RJOIN       resident routine lookup/service setup failed
 Known limitations:
 
 - No `ASM I` / `ASM B` split yet; typing and pasting use the same line path.
+- Soon ASM-F2 update: make DB-heavy prompt/string sources less fragile than
+  today's 63-visible-character physical line cap, either by a longer paste line
+  path, explicit continuation, or first-class string data forms. Until then,
+  split long `DB` rows manually; overlong rows correctly report `ERR=$07 BL`.
 - No parentheses or precedence in expressions.
 - No forward `EQU` dependency solver.
 - No forward data fixups yet: `DW TARGET`, `DB <TARGET`, and `DB >TARGET`
