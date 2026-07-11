@@ -8102,8 +8102,10 @@ Current host proof produced:
 asm-v1-flash headroom to C000 = 0697 (_END_DATA=B969)
 UDATA starts at $5000, ends at $79A6
 asm-session-report end = 76D5 (limit 7A00)
-himon-rom-c000 _END_DATA=$EDAF
-HIM_AP_SERVICE=$D6B2
+asm-session-report AP store = $B969-$BF78, len=$0610, run=$4800
+himon-rom-c000 _END_DATA=$F000
+CMD_ASMREPORT=$C687
+HIM_AP_SERVICE=$D8AA
 HIM AP request/result cells = $7E2D-$7E40
 ```
 
@@ -8311,6 +8313,39 @@ gap while fitting under the current `$40` symbol limit. For AP storage, the
 generated source also resolves its internal `JSR`/`JMP` targets to fixed
 literal addresses and emits `ENTRY START`; load/run the package only at the
 same `$4800` origin.
+
+Resident wrapped AP proof:
+
+```text
+make -C SRC himon-str8-rom-bin
+make -C SRC himon-str8-himon-update-s19
+```
+
+Expected host build facts:
+
+```text
+HIMON START/NMI/IRQ/END = C000/.../.../F000
+ASM-F2 BASE/START/END  = 8000/800C/B969
+AP REPORT STORE/LEN    = B969/610
+AP REPORT RUN          = AP $B969 $4800
+```
+
+Board script after updating HIMON:
+
+```text
+ASM NEW
+ORG $2000
+MAIN JSR TARGET
+TARGET RTS
+END
+.
+ASMREPORT
+```
+
+Expected: `ASMREPORT` prints `GO 4800`, runs the built-in AP package at
+`$4800`, prints the same `ASM REPORT ... ASM REPORT OK` table output, and then
+returns through HIMON's normal command-return path for entry `$4800`. This
+resident wrapper is host-built only until a hardware transcript captures it.
 
 Bank 2 `$8000` AP storage path for the same reporter:
 
@@ -9327,15 +9362,25 @@ The same transcript also caught an operator-mode negative: after running
 `PACKAGE $4000`, pasting `ASM NEW` and the stage source at the `SEAL>` prompt
 produced repeated `ERR=$03 BO`. The correct transition is `SEAL> .`, then
 `>ASM NEW`.
+The follow-up `PACKAGE $2000` attempt is the same class of placement error:
+`bank0ap-stage-2000.a` reads the AP envelope only from `$4000` and emits over
+`$2000`, so `G 2000` correctly reported `FAIL $1A00=$E1`.
 After a later bank 0 erase, `AP B0 $8000 $3000` correctly returned
 `APERR=$07` because the package had been erased.
 
-Remaining optional board proof: run the auto-selected address before erasing
-bank 0, confirm the printed `$hhhh` works with `AP B0 $hhhh $3000`, and cover
+Reporter auto-hole board proof passed: `asm-session-report-4800.a` packaged
+at `$4000`, the stage helper selected the first available bank 0 hole at
+`$807F` because `$8000-$807E` already held the print-smoke AP, the commit
+helper programmed `$807F L=$0658`, and `AP B0 $807F $4800` printed
+`ASM REPORT OK`. This proves `$4000` is only the temporary RAM envelope buffer,
+bank 0 `$hhhh` is the persistent storage address, and `$4800` is the fixed
+reporter runtime address.
+
+Remaining optional board proof: the print-smoke auto-address variant should
+confirm the printed `$hhhh` with `AP B0 $hhhh $3000`. Remaining negatives are
 bad AP header, non-erased destination bytes, no staged write, over-sector
 package placement, and abort without write. The full prompt-by-prompt script
-lives in
-`DOC/GUIDES/ASM/SAMPLES/bank0ap-put-2000-test.md`.
+lives in `DOC/GUIDES/ASM/SAMPLES/bank0ap-put-2000-test.md`.
 
 ## Hardware Bench Gate
 

@@ -19,6 +19,10 @@ $3000-$3FFF  AP overlay/load/run destination
 $4000-$4FFF  AP envelope buffer, max package length $1000
 ```
 
+For this flow, always use `PACKAGE $4000`. Do not use `PACKAGE $2000`: the
+stage and commit helpers emit at `$2000`, so they overwrite anything packaged
+there, and the stage helper only reads an AP envelope from `$4000`.
+
 If a source body or AP envelope grows toward the edge of its 4K island, split
 it instead of letting it cross into the next role.
 
@@ -363,6 +367,93 @@ expect 5848: AC ... ll hh ... | 5A
 
 If no erased bank 0 hole fits, expected stage status is `$1A00=$E3`.
 
+## ASM Session Reporter Auto-Hole Variant
+
+Use this when the goal is specifically to store
+`asm-session-report-4800.a` in the first available bank 0 hole. The AP
+envelope still belongs at `$4000` while staging; bank 0 storage is selected
+later by pressing Enter at the stage prompt.
+
+Build the reporter AP envelope:
+
+```text
+>ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
+END
+SEAL> PACKAGE $4000
+PKG OK @=$4000 L=$0658
+SEAL> .
+ASM BYE
+```
+
+Stage to the first erased bank 0 hole:
+
+```text
+>ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/bank0ap-stage-2000.a
+END
+SEAL> .
+ASM BYE
+>G 2000
+B0 AP STAGE
+PKG L=$0658
+DST $8000-$FFFF OR ENTER=AUTO>
+```
+
+At `ENTER=AUTO>`, press Enter. Expected:
+
+```text
+STAGE OK
+STAGED B0 AP @$hhhh L=$0658
+RET A=AC ...
+```
+
+If bank 0 is fully erased, `$hhhh` should be `$8000`. If an earlier AP package
+already occupies the start of bank 0, `$hhhh` should be the first later erased
+run large enough for `$0658` bytes.
+
+Commit the staged sector:
+
+```text
+>ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/bank0ap-commit-2000.a
+END
+SEAL> .
+ASM BYE
+>G 2000
+B0 AP COMMIT
+B0 AP @$hhhh L=$0658
+TYPE YES TO WRITE> YES
+PROGRAM OK
+B0 AP @$hhhh L=$0658
+RET A=AC ...
+```
+
+Run the stored reporter from bank 0:
+
+```text
+>AP B0 $hhhh $4800
+```
+
+Expected:
+
+```text
+GO 4800
+ASM REPORT
+...
+ASM REPORT OK
+RET ...
+```
+
+The reporter inspects the current ASM session tables. Immediately after the
+commit step, that usually means it reports the commit helper session. To report
+a later ASM session, leave that later session with `.`, then run the same
+`AP B0 $hhhh $4800` command.
+
+Hardware proof: with the `$8000-$807E` print-smoke package still present, this
+variant selected `$807F`, committed `L=$0658`, and `AP B0 $807F $4800` printed
+`ASM REPORT OK`. In a fully erased bank 0, expect `$8000` instead.
+
 ## Negative Checks
 
 Commit abort path:
@@ -408,6 +499,10 @@ Expected if `$4000` no longer starts with a valid `AP` envelope:
 FAIL $1A00=$E1
 RET A=E1 ...
 ```
+
+The same `$E1` is expected if the AP was packaged at `$2000` instead of
+`$4000`. In that case the stage source also overwrites the `$2000` package
+body while assembling.
 
 No staged write path during commit:
 

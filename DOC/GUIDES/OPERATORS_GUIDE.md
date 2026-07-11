@@ -411,8 +411,12 @@ After an ASM session, exit with `.` and run the built-in fixed-address reporter
 if table detail is needed:
 
 ```text
->AP $B969 $4800
+>ASMREPORT
 ```
+
+The current composite image expands this to the built-in AP package stored at
+`$B969`, loaded and run at `$4800`. That source address is generated from the
+ASM-F2 map at build time.
 
 Older board images and narrow development passes can still load the reporter
 and ASM-F2 explicitly:

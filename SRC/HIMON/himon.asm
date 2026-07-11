@@ -43,6 +43,7 @@
                         XREF            UTL_HEX_ASCII_TO_NIBBLE
 
                         INCLUDE         "HIMON/himon-shared-eq.inc"
+                        INCLUDE         "himon-asmreport.inc"
 
 TRAP_CAUSE               EQU             $7EEA
 TRAP_BRK_SIG             EQU             $7EEB
@@ -1068,6 +1069,17 @@ CMD_USAGE_G:
 ; AP pkg dst -- load an AP package body to RAM and run dst.
 ; V0 contract: the package ENTRY is at BODY offset zero.
 ; ----------------------------------------------------------------------------
+CMD_ASMREPORT_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$FA,$8E,$1E,$32,CMD_HASH_KIND_EXEC ; ASMREPORT $321E8EFA EXEC
+CMD_ASMREPORT:
+                        LDA             #ASMREPORT_AP_SRC_LO
+                        STA             HIM_AP_SRC_LO
+                        LDA             #ASMREPORT_AP_SRC_HI
+                        STA             HIM_AP_SRC_HI
+                        STZ             HIM_AP_DST_LO
+                        LDA             #ASMREPORT_AP_DST_HI
+                        STA             HIM_AP_DST_HI
+                        BRA             CMD_AP_LOAD_REQUEST
 CMD_AP_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$94,$37,$D5,$3A,CMD_HASH_KIND_EXEC ; AP $3AD53794 EXEC
 CMD_AP:
@@ -4746,16 +4758,16 @@ MSG_D_IO_FTDI:           DB              "FTDI VI",('A'+$80)
 MSG_D_IO_SKIP:           DB              " IO SKI",('P'+$80)
 MSG_D_NF:                DB              "D N",('F'+$80)
 MSG_D_ABORT:             DB              "D ABOR",('T'+$80)
-MSG_HELP:                DB              "# ? D M R X G AP L B N Q ",$22," STR",('8'+$80)
+MSG_HELP:                DB              "#? D M R X G AP L B N Q ",$22,"STR",('8'+$80)
 MSG_QUOTE_MATCH:         DB              " STR8 MATCH",('!'+$80)
 MSG_USAGE_D:             DB              "D [a [b [bb|'t']]",(']'+$80)
-MSG_USAGE_M:             DB              "M start [end|+cnt]",('.'+$80)
+MSG_USAGE_M:             DB              "M start [end|+cnt",(']'+$80)
 MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)
 MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
-MSG_USAGE_AP:            DB              "AP [Bn] pkg dst",(' '+$80)
-MSG_USAGE_L:             DB              "L [G|F]",(' '+$80)
+MSG_USAGE_AP:            DB              "AP [Bn] pkg ds",('t'+$80)
+MSG_USAGE_L:             DB              "L [G|F",(']'+$80)
 MSG_NOCTX:               DB              "NOCT",('X'+$80)
 MSG_RESUME:              DB              "RESUME",(' '+$80)
 MSG_GO:                  DB              "GO",(' '+$80)

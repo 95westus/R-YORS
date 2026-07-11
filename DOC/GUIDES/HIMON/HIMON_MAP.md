@@ -115,6 +115,8 @@ flowchart TD
     DISPATCH --> R[R CMD_R]
     DISPATCH --> X[X CMD_X]
     DISPATCH --> G[G CMD_G]
+    DISPATCH --> ASMREPORT[ASMREPORT CMD_ASMREPORT]
+    DISPATCH --> AP[AP CMD_AP]
     DISPATCH --> L[L CMD_L]
     DISPATCH --> B[B CMD_B]
     DISPATCH --> N[N CMD_N]
@@ -294,6 +296,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
+| ASM report wrapped AP | `ASMREPORT` | `CMD_ASMREPORT`, `HIM_AP_SERVICE` | Loads the built-in ASM session report AP from low flash to `$4800`, then runs it. | K01-only command hash `$321E8EFA`; no display-text record is carried. The source address is generated from the ASM-F2 `_END_DATA` map and is currently `$B969`. |
 | AP package run | `AP pkg dst` | `CMD_AP`, `HIM_AP_SERVICE` | Loads an AP v1 envelope from RAM or visible flash to `$2000-$4FFF`, applies current internal relocations, then runs `dst`. | V0 keeps the ROM cost low by requiring the package entry to be BODY offset zero. It is not a package-name registry yet. |
 | Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; confirms, then jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; kind is `K03`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_S1`, `L_WRITE_DATA_BYTE` | Accepts S0/S1/S9, writes S1 data below `$7F00`, tracks count and go address. | `$7F00-$7FFF` reports `LERR=$02`; `$8000+` without `F` fails with `LERR=$05`. |
@@ -381,6 +384,26 @@ This leaves `$0102` bytes below `$F000`. The PACK40 service only publishes the
 two pure primitives flash ASM needs (`ASCII_TO_CODE` and `PACK3`); ASM still
 owns symbol/name iteration and non-flash ASM builds keep their local PACK40
 implementation.
+
+2026-07-10 normal HIMON map after adding the resident `ASMREPORT` wrapped AP
+runner:
+
+```text
+CODE     $2A27 / 10791
+DATA     $05D9 /  1497
+TOTAL    $3000 / 12288
+_END_DATA = $F000
+CMD_ASMREPORT = $C687
+CMD_AP = $C6A3
+HIM_AP_SERVICE = $D8AA
+ASMREPORT command hash = $321E8EFA
+AP command hash = $3AD53794
+AP service cells = $7E2D-$7E40
+```
+
+This fills the HIMON sector exactly. `ASMREPORT` uses the existing resident AP
+loader, the generated built-in AP source after ASM-F2 (`$B969` in this build),
+and the fixed report runtime address `$4800`.
 
 ## Edge Evidence Rules
 

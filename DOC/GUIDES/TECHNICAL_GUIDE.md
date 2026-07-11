@@ -192,9 +192,9 @@ Current combined-image facts:
 ASM-F2 base:    $8000
 ASM-F2 entry:   $800C
 ASM-F2 end:     $B969
-ASM report AP:  $B969-$BF78, run with AP $B969 $4800
+ASM report AP:  $B969-$BF78, run with ASMREPORT -> $4800
 HIMON entry:     $C000
-HIMON body:      $C000-$EFE9
+HIMON body:      $C000-$EFFF
 STR8 entry:      $F000
 STR8 body:       $F000-$FCC5
 STR8 identity:   #5F6A0F7A
@@ -207,6 +207,11 @@ vectors:         $FFFA-$FFFF = 92 F0 00 F0 A6 F0
 The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
 `$F000`, and the reset vector at file offset `$7FFC`. NMI and IRQ/BRK vectors
 enter STR8 IVI stubs first.
+
+`ASMREPORT` is a compact HIMON FNV command wrapper around the built-in ASM
+session report AP. The build generates `BUILD/inc/himon-asmreport.inc` from
+the ASM-F2 `_END_DATA` map, so the AP source follows the end of ASM-F2; the
+current composite image stores it at `$B969` and loads/runs it at `$4800`.
 
 ## Boot And Handoff
 

@@ -13341,6 +13341,108 @@ the same banked package relocates and runs at `$2000`, `$3200`, and `$3400`;
 `$3000` remains the normal destination, `$3200/$3400` are overlay-island
 variants, and `$2000` is a final RAM proof because it overwrites the
 helper/source island. A later auto-stage pass, run while the `$8000` package
-was still present, selected `$807F` and committed it successfully; the AP at
-`$807F` was not run before erase. Finally, erasing bank 0 `ALL` removed the
-installed AP packages, and `AP B0 $8000 $3000` correctly returned `APERR=$07`.
+was still present, selected `$807F` and committed it successfully. That
+transcript did not run the `$807F` package before erase; the reporter-specific
+follow-up below reran the first-hole path and did run from `$807F`. Finally,
+erasing bank 0 `ALL` removed the installed AP packages, and
+`AP B0 $8000 $3000` correctly returned `APERR=$07`.
+
+## 2026-07-11 ASM-F2 Bank 0 AP Package Buffer Negative
+
+The same attached transcript later packaged the fixed-address session reporter
+at `$2000`:
+
+```text
+SEAL> PACKAGE $2000
+PKG OK @=$2000 L=$0658
+```
+
+The subsequent `bank0ap-stage-2000.a` paste assembled and ran, but reported
+the expected bad-package status:
+
+```text
+>G 2000
+GO 2000
+
+B0 AP STAGE
+FAIL $1A00=$E1
+
+#GO# ENTRY=2000
+RET A=E1 X=4A Y=0C P=F5 S=FD NV-BdIzC
+```
+
+Result: expected negative. The stage helper is deliberately hardwired to read
+the AP envelope from `$4000`, while `$2000` is the helper/source emission
+island. A package placed at `$2000` is both invisible to the stage helper and
+overwritten by the next helper paste. The hand-held bank 0 AP flow must keep
+`PACKAGE $4000` as the AP envelope buffer.
+
+## 2026-07-11 ASM-F2 Bank 0 Session Reporter Auto-Hole Pass
+
+The follow-up board transcript used the intended reporter flow: build the
+fixed-address session reporter AP envelope at `$4000`, press Enter at the
+stage prompt to choose the first bank 0 hole, commit the staged sector, and
+run the stored AP at its fixed `$4800` runtime address.
+
+With the earlier `$8000-$807E` print-smoke package still present, auto-hole
+selected `$807F` for the `$0658` reporter package:
+
+```text
+>G 2000
+GO 2000
+
+B0 AP STAGE
+PKG L=$0658
+DST $8000-$FFFF OR ENTER=AUTO>
+STAGE OK
+STAGED B0 AP @$807F L=$0658
+
+#GO# ENTRY=2000
+RET A=AC X=3A Y=04 P=F5 S=FD NV-BdIzC
+```
+
+The commit helper then programmed that staged sector:
+
+```text
+>G 2000
+GO 2000
+
+B0 AP COMMIT
+B0 AP @$807F L=$0658
+TYPE YES TO WRITE> YES
+PROGRAM OK
+B0 AP @$807F L=$0658
+
+#GO# ENTRY=2000
+RET A=AC X=79 Y=04 P=F5 S=FD NV-BdIzC
+```
+
+Finally, HIMON loaded and ran the stored reporter from bank 0:
+
+```text
+>AP B0 $807F $4800
+GO 4800
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$21C5
+HIGH=$21C5
+BYTES=$01C5
+LINES=$00CC
+SYMS=$22/$40
+FIXUPS=$3B/$80
+REFS=$25/$C0
+TRUNC=NO
+MAP END=$B969 UDATA=$5000-79A6
+...
+ASM REPORT OK
+
+#GO# ENTRY=4800
+RET A=0D X=9D Y=0D P=75 S=FD NV-BdIzC
+```
+
+Result: pass. This proves the auto-selected bank 0 storage path for
+`asm-session-report-4800.a`: `$4000` is only the temporary RAM envelope
+buffer, `$807F` was the first available bank 0 flash hole in this board state,
+and `$4800` remains the fixed AP runtime address.
