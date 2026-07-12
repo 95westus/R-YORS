@@ -1,0 +1,78 @@
+; DC-FWD-IMP-2000.A
+; COMBINED ASM-F2 BOARD SMOKE.
+;
+; BUILD:
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   END
+;   PACKAGE $3200
+;
+; STORE WITH BANKPUT-3000.A, THEN RUN:
+;   AP B2 $9000 $3000
+;   D 5848 5850
+;   D 3000 3020
+
+        ORG $2000
+
+        IMPORT BIO_FTDI_PUT_CSTR
+
+MAIN    BRA RUN
+        ENTRY MAIN
+
+FWDDB   DB FWD,<FWD,>FWD
+FWDDW   DW FWD
+CSTR    DC C,"OK"
+HBSTR   DC HB,"OK"
+PSTR    DC P,"OK"
+IMPDBW  DB BIO_FTDI_PUT_CSTR
+IMPDBL  DB <BIO_FTDI_PUT_CSTR
+IMPDBH  DB >BIO_FTDI_PUT_CSTR
+IMPDW   DW BIO_FTDI_PUT_CSTR
+
+FWD     RTS
+
+RUN     STZ $5848
+        STZ $5849
+        STZ $584A
+        STZ $584B
+        STZ $584C
+        STZ $584D
+        STZ $584E
+        STZ $584F
+        STZ $5850
+        JSR TESTDC
+        BCC FAIL
+        LDA #<BIO_FTDI_PUT_CSTR
+        STA $584A
+        LDA #>BIO_FTDI_PUT_CSTR
+        STA $584B
+        LDA #<FWD
+        STA $584C
+        LDA #>FWD
+        STA $584D
+        LDA #$AC
+        STA $5848
+        RTS
+
+FAIL    STA $5848
+        RTS
+
+TESTDC  LDX #$00
+TDCLP   LDA CSTR,X
+        CMP DCEXP,X
+        BNE TDCBAD
+        INX
+        CPX #$08
+        BNE TDCLP
+        LDA #$5A
+        STA $5850
+        SEC
+        RTS
+
+TDCBAD  LDA #$E1
+        CLC
+        RTS
+
+DCEXP   DB $4F,$4B,$00,$4F,$CB,$02,$4F,$4B
+
+        END

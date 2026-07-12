@@ -3548,12 +3548,12 @@ HIM_AP_RELOC_SITE_OK_X:
 HIM_AP_RELOC_SITE_WORD:
                         LDA             #$01
 HIM_AP_RELOC_SITE_HAVE_ADD:
-                        STA             HIM_AP_TMP2_LO
+                        PHA
                         JSR             HIM_AP_RELOC_SITE_LO_X
                         STA             HIM_AP_TMP_LO
                         JSR             HIM_AP_RELOC_SITE_HI_X
                         STA             HIM_AP_TMP_HI
-                        LDA             HIM_AP_TMP2_LO
+                        PLA
                         CLC
                         ADC             HIM_AP_TMP_LO
                         STA             HIM_AP_TMP_LO

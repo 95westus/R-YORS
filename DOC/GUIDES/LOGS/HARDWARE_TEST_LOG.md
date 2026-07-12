@@ -13446,3 +13446,371 @@ Result: pass. This proves the auto-selected bank 0 storage path for
 `asm-session-report-4800.a`: `$4000` is only the temporary RAM envelope
 buffer, `$807F` was the first available bank 0 flash hole in this board state,
 and `$4800` remains the fixed AP runtime address.
+
+## 2026-07-11 ASM-F2 DC/FWD/Import Data Bank 0 Diagnostic
+
+The attached board transcript next used the combined `DC`, forward data, and
+imported-data package. Bank 0 staging and commit both succeeded:
+
+```text
+B0 AP STAGE
+PKG L=$00F6
+DST $8000-$FFFF OR ENTER=AUTO>
+STAGE OK
+STAGED B0 AP @$86D7 L=$00F6
+...
+B0 AP COMMIT
+B0 AP @$86D7 L=$00F6
+TYPE YES TO WRITE> YES
+PROGRAM OK
+B0 AP @$86D7 L=$00F6
+```
+
+The load/run command then failed before the AP body executed:
+
+```text
+>AP B0 $86D7 $3000
+APERR=$09
+```
+
+Result: diagnostic failure for the combined imported-data package, not a bank 0
+installer failure. `APERR=$09` is HIMON AP `BAD_FIX`; the next capture should
+dump `$7E2D-$7E40` and the staged package at `$10D7` before another AP command
+overwrites the stage buffer.
+
+The follow-up AP/result dump showed the combined package parsed cleanly:
+
+```text
+>D 7E2D 40
+7E2D: 8E D8 01 09 D7 10 00 40 | F6 00 56 11 77 00 0F 01
+7E3D: 00 00 EB 10
+```
+
+Meaning: AP status `$09`, source `$10D7`, destination `$4000` from the later
+retry, package length `$00F6`, body `$1156`, body length `$0077`,
+relocation count `$0F`, import count `$01`, and relocation record `$10EB`.
+
+The AP package bytes also showed the expected relocation/import table:
+
+```text
+10EB: 0F
+10EC: 01 02 03 01 02 03 01 01 01 04 05 06 04 05 06
+10FB: 02 04 05 06 42 47 33 58 5B 10 12 13 14 38 3D
+1119: 16 16 16 16 16 16 55 08 6F 00 00 00 00 00 00
+1137: 45 09 ...
+1142: 49 0F 01 0F 11 F7 0D 44 E8 8D 1A 5C 67 CB E7 D0 7F
+1153: 42 77 00
+```
+
+The import record decodes to `BIO_FTDI_PUT_CSTR` and hashes to `$AEFA0F42`,
+matching the resident HIMON FNV row. The remaining failure is therefore live
+STR8 `$F006` import-link behavior, not malformed AP package metadata.
+
+The split no-import fixture passed from RAM:
+
+```text
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=08 Y=30 P=F5 S=FD NV-BdIzC
+>D 5848 50
+5848: AC 00 00 00 10 30 00 00 | 5A
+>D 3000 20
+3000: 80 0F 10 30 10 30 10 30 | 4F 4B 00 4F CB 02 4F 4B
+3010: 60 ...
+>D 7E2D 40
+7E2D: 8E D8 01 00 00 32 00 30 | BB 00 54 32 67 00 09 00
+7E3D: 00 00 14 32
+```
+
+Result: pass for `DC C/HB/P`, forward `DB`, forward selected-byte `DB`,
+forward `DW`, and internal AP relocation rows. Imported `DB/DW` data remains
+open until the live STR8 `$F006` linker behavior is resolved.
+
+The live top-sector head was then checked:
+
+```text
+F000: 4C 09 F0 4C 93 F3 4C 9A | F3
+```
+
+This matches the current STR8-N jump table, so the combined package failure is
+not explained by the older mixed HIMON/current-STR8 image. The next split is
+to rerun `banked-rjoin-smoke.a` from RAM for the known import-code `$04/$05/$06`
+case, then run `import-data-2000.a` for imported `DB/DW` data only.
+
+The RAM `banked-rjoin-smoke.a` rerun passed on the same board state:
+
+```text
+BANK RJOIN
+RET A=AC X=19 Y=0E P=F5 S=FD NV-BdIzC
+5848: AC 00 79 E7 10 30 00 00 | 5A
+3000: 80 00 A2 19 A0 30 20 79 | E7 A9 79 8D 4A 58 A9 E7
+7E2D: 8E D8 01 00 00 32 00 30 | 75 00 4D 32 28 00 05 01
+```
+
+That proves the current STR8 `$F006` import-link service still handles the
+known code-import `$04/$05/$06` package path.
+
+The first RAM `import-data-2000.a` run also loaded and linked successfully, but
+the runtime checker source used unsupported `LABEL+1` expressions:
+
+```text
+ASM>$201A:         LDA IMPW+1
+ERR=$03 BO PC=$201A
+ASM>$2035:         LDA IMPD+1
+ERR=$03 BO PC=$2035
+...
+RET A=E1 X=30 Y=30 P=F5 S=FD NV-BdIzC
+5848: E1 00 79 79 10 30 00 00 | 5A
+3000: 80 06 79 E7 79 E7 79 E7 | 9C 48 58 9C 49 58 9C 4A
+7E2D: 8E D8 01 00 00 32 00 30 | A2 00 5C 32 46 00 08 01
+```
+
+The `$3002-$3007` body bytes prove imported `DB name`, `DB <name`,
+`DB >name`, and `DW name` data constants were patched to `$E779` in RAM.
+The `A=E1` runtime failure is from the invalid high-byte checker reusing the
+low byte, not from AP import linking. The fixture was revised to use indexed
+high-byte reads (`IMPW,Y` and `IMPD,Y`); rerun it for a clean runtime `A=AC`
+before returning to the combined bank 0 case.
+
+The indexed-read revision added two more internal absolute relocation rows and
+reproduced the AP loader failure:
+
+```text
+>AP $3200 $3000
+APERR=$09
+>D 3000 3020
+3000: 80 06 79 E7 79 E7 79 E7 | 9C 48 58 9C 49 58 9C 4A
+3010: 58 9C 4B 58 AD 02 30 8D | 4A 58 A0 01 B9 02 30 8D
+>D 7E2D 40
+7E2D: 8E D8 01 09 00 32 00 30 | B4 00 66 32 4E 00 0A 01
+7E3D: 00 00 14 32
+```
+
+The service block shows status `$09`, source `$3200`, destination `$3000`,
+package length `$00B4`, body `$3266`, body length `$004E`, reloc count `$0A`,
+import count `$01`, and relocation record `$3214`. Because there was no `GO`,
+the `$5848` result bytes after this command were stale from the earlier failed
+runtime checker. The loaded body still proves the imported data bytes were
+patched before the loader failed.
+
+The full combined fixture was then rerun directly from RAM and reproduced the
+same AP loader failure, so the open case is not bank 0 source storage:
+
+```text
+>AP $3200 $3000
+APERR=$09
+>D 3000 3020
+3000: 80 15 16 30 16 30 16 30 | 4F 4B 00 4F CB 02 4F 4B
+3010: 79 E7 79 E7 79 E7 60 9C | 48 58 9C 49 58 9C 4A 58
+>D 7E2D 40
+7E2D: 8E D8 01 09 00 32 00 30 | F6 00 7F 32 77 00 0F 01
+7E3D: 00 00 14 32
+```
+
+The body head shows forward/internal data and imported data already patched.
+This narrows the remaining failure to HIMON AP's larger mixed relocation-table
+load path after STR8 import patching and before `GO`. The next capture should
+dump the combined loaded-body tail and relocation record with:
+
+```text
+D 3030 3078
+D 3214 3268
+```
+
+The `import-data-2000.a` proof fixture was revised again to keep the runtime
+checker fixed to AP destination `$3000`, reading `$3002-$3007` literally. That
+keeps the pure import-data proof to the four `$04/$05/$06` relocation rows and
+leaves the mixed-relocation failure as its own diagnostic.
+
+The requested combined-package tail and relocation-record dumps show the
+remaining mixed-table failure precisely:
+
+```text
+>D 3030 3078
+3030: 50 58 20 55 30 90 1A A9 | 79 8D 4A 58 A9 E7 8D 4B
+3040: 58 A9 16 8D 4C 58 A9 30 | 8D 4D 58 A9 AC 8D 48 58
+3050: 60 8D 48 58 60 A2 00 BD | 08 30 DD 6F 20 D0 0C E8
+3060: E0 08 D0 F3 A9 5A 8D 50 | 58 38 60 A9 E1 18 60 4F
+3070: 4B 00 4F CB 02 4F 4B 32 | A2
+>D 3214 3268
+3214: 0F 01 02 03 01 02 03 01 | 01 01 04 05 06 04 05 06
+3224: 02 04 05 06 42 47 33 58 | 5B 10 12 13 14 38 3D 00
+3234: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 16 16
+3244: 16 16 16 16 55 08 6F 00 | 00 00 00 00 00 00 00 00
+3254: 00 00 00 00 00 00 00 00 | 00 00 00 00 45 09 01 09
+3264: 00 00 04 71 51
+```
+
+Rows 0-7 of the internal relocation table patched successfully. Row 8 is the
+`CMP DCEXP,X` operand at body site `$005B`, target `$006F`; the loaded bytes
+at `$305A` remain `DD 6F 20` and should have become `DD 6F 30`. The import
+rows after it were already patched by STR8. This places the remaining failure
+in HIMON AP's internal relocation pass with a mixed relocation table, after
+STR8 import linking and before `GO`.
+
+The fixed-destination `import-data-2000.a` fixture then passed:
+
+```text
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 00 79 E7 10 30 00 00 | 5A
+>D 3000 3020
+3000: 80 06 79 E7 79 E7 79 E7 | 9C 48 58 9C 49 58 9C 4A
+3010: 58 9C 4B 58 AD 02 30 8D | 4A 58 AD 03 30 8D 4B 58
+>D 7E2D 40
+7E2D: 8E D8 01 00 00 32 00 30 | 94 00 48 32 4C 00 04 01
+7E3D: 00 00 14 32
+```
+
+Result: hardware proof for imported `DB name`, `DB <name`, `DB >name`, and
+`DW name` data constants through AP import relocation rows `$04/$05/$06`.
+
+Host-side mitigation: `SRC/HIMON/himon.asm` now reloads `HIM_AP_REL_LO/HI`
+into `CMDP_PTR_LO/HI` on each HIMON AP internal relocation-loop row, matching
+the defensive pattern used by STR8's import linker. Host build
+`make -C SRC himon-str8-rom-bin` passes with HIMON end `$EFEE`, still below
+STR8 at `$F000`. This HIMON loader fix is not hardware-proven until the updated
+image is flashed and the combined RAM fixture runs to `A=AC`.
+
+The updated HIMON image was then installed through STR8:
+
+```text
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...
+PROGRAM C000-EFFF? Y: y...
+OK
+G HIMON
+BOOT WARM
+
+HIMON V 00.0711(2100)
+```
+
+The combined fixture was pasted after the update, but the session exited with
+`.` and ran `G 3000` directly instead of packaging and loading through AP:
+
+```text
+SEAL> .
+ASM BYE
+>G 3000
+GO 3000
+RET A=AC X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 5848 F
+5848: AC 00 79 E7 85 E9 A5 EA
+```
+
+Do not count this as the patched AP-loader proof. It ran whatever stale body
+was already at `$3000`, and that stale body can pass after the source has been
+freshly assembled at `$2000` because the previously unrelocated row-8 operand
+still points at source-side `DCEXP` near `$206F`. The required proof remains
+`PACKAGE $3200`, `.`, then `AP $3200 $3000` on the updated HIMON image.
+
+The required AP retest was then run on the updated `HIMON V 00.0711(2100)`
+image:
+
+```text
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$00F6
+SEAL> .
+ASM BYE
+>AP $3200 $3000
+APERR=$09
+>D 3000 3020
+3000: 80 15 16 30 16 30 16 30 | 4F 4B 00 4F CB 02 4F 4B
+3010: 83 E7 83 E7 83 E7 60 9C | 48 58 9C 49 58 9C 4A 58
+>D 3058 3060
+3058: 08 30 DD 6F 20 D0 0C E8 | E0
+>D 7E2D 40
+7E2D: 8E D8 01 09 00 32 00 30 | F6 00 7F 32 77 00 0F 01
+7E3D: 00 00 14 32
+```
+
+Result: the first HIMON mitigation is not sufficient. The updated image is
+active because the resident import address moved to `$E783`, and STR8 still
+patches the import data rows. The HIMON internal relocation failure remains the
+same: row 8 still leaves the `CMP DCEXP,X` operand as `DD 6F 20` instead of
+`DD 6F 30`, and AP returns `$09` before `GO`.
+
+The follow-up scratch dump explains the failure:
+
+```text
+>D D8EE D91A
+D8EE: EC 3B 7E B0 26 AD 3F 7E | 85 FE AD 40 7E 85 FF 20
+D8FE: 7A DC 20 D2 DC B0 08 20 | E2 DC B0 0C 4C 35 DE 20
+D90E: F2 DC B0 01 60 20 43 DD | E8 80 D5 A9 00
+>D 7E41 7E45
+7E41: 79 00 1E 01 4C
+>D 00FC 00FF
+00FC: FF 00 FC 00
+```
+
+The first dump confirms the pointer-reload mitigation was installed. The
+scratch bytes identify the real bug: `HIM_AP_TMP2_LO=$1E`, which is
+`RELOC_COUNT*2`, and `HIM_AP_TMP_LO=$79`, which is row-8 site `$5B` plus
+`$1E`. `HIM_AP_RELOC_SITE_OK_X` was storing the 0/1 abs16 width addend in
+`HIM_AP_TMP2_LO`, then calling row-access helpers that reuse that same scratch
+byte for table offset math. Row 7 survived because `$58+$1E=$76` was still less
+than body length `$77`; row 8 failed because `$5B+$1E=$79`.
+
+Root-cause host fix: `HIM_AP_RELOC_SITE_OK_X` now preserves the 0/1 addend on
+the stack with `PHA`/`PLA` across `HIM_AP_RELOC_SITE_LO_X` and
+`HIM_AP_RELOC_SITE_HI_X`. The earlier pointer-reload mitigation was removed to
+keep the ROM smaller. Host build `make -C SRC himon-str8-rom-bin` now reports
+`HIMON V 00.0711(2113)` and HIMON end `$EFE0`, still below STR8 at `$F000`.
+This root-cause fix is not hardware-proven until the updated image is flashed
+and the combined RAM fixture runs through `PACKAGE $3200` and
+`AP $3200 $3000`.
+
+The root-cause fix was then installed and hardware-proven on the board:
+
+```text
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...
+PROGRAM C000-EFFF? Y: y...
+OK
+G HIMON
+BOOT WARM
+
+HIMON V 00.0711(2117)
+>L F
+L F S19
+L @8000
+LF OK WR=3C1B GO=800C
+```
+
+The combined fixture was pasted, packaged, loaded, and run through AP:
+
+```text
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$00F6
+SEAL> .
+ASM BYE
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=08 Y=30 P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 00 75 E7 16 30 00 00 | 5A
+>D 3000 3020
+3000: 80 15 16 30 16 30 16 30 | 4F 4B 00 4F CB 02 4F 4B
+3010: 75 E7 75 E7 75 E7 60 9C | 48 58 9C 49 58 9C 4A 58
+>D 3058 3060
+3058: 08 30 DD 6F 30 D0 0C E8 | E0
+>D 7E2D 40
+7E2D: 8E D8 01 00 00 32 00 30 | F6 00 7F 32 77 00 0F 01
+7E3D: 00 00 14 32
+```
+
+Result: pass. The combined AP package proves `DC C/HB/P`, forward `DB`,
+forward selected-byte `DB`, forward `DW`, imported `DB/DW` data constants, STR8
+import patching, and HIMON mixed internal/import relocation-table loading in one
+fresh RAM AP run. The row-8 operand is now correctly relocated as `DD 6F 30`,
+AP service status is `$00`, `$5848=$AC`, and `$5850=$5A`.

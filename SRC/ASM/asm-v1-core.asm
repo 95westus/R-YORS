@@ -426,6 +426,10 @@ ASM_FIX_SEL_MASK       EQU             $03
 ASM_FIXF_IMPORT        EQU             $40
 ASM_FIXF_LOCAL         EQU             $80
 
+ASM_DCM_C              EQU             $00
+ASM_DCM_HB             EQU             $01
+ASM_DCM_P              EQU             $02
+
 ASM_FIX_PENDING        EQU             $01
 ASM_FIX_RESOLVED       EQU             $02
 ASM_FIX_IMPORTED       EQU             $04
@@ -1876,7 +1880,7 @@ ASM_SMOKE_VOCAB:
                         JSR             ASM_SMOKE_LOOKUP
                         BCC             ASM_SMOKE_VOCAB_FAIL
 
-                        LDA             #ASM_VOC_RESERVED
+                        LDA             #ASM_VOC_DIR
                         LDX             #<ASM_SMOKE_VOC_DC
                         LDY             #>ASM_SMOKE_VOC_DC
                         JSR             ASM_SMOKE_LOOKUP
@@ -2110,73 +2114,104 @@ ASM_SMOKE_PARSE_AFTER_FAIL_D:
                         LDX             #<ASM_SMOKE_PARSE_LABEL_ORG
                         LDY             #>ASM_SMOKE_PARSE_LABEL_ORG
                         JSR             ASM_SMOKE_PARSE_ERR
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_LABEL_ORG_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_LABEL_ORG_OK:
 
                         LDA             #ASM_STATUS_BAD_OPER
                         LDX             #<ASM_SMOKE_PARSE_END_TAIL
                         LDY             #>ASM_SMOKE_PARSE_END_TAIL
                         JSR             ASM_SMOKE_PARSE_ERR
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_END_TAIL_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_END_TAIL_OK:
 
                         LDA             #ASM_STATUS_BAD_SYM
                         LDX             #<ASM_SMOKE_PARSE_LABEL_END
                         LDY             #>ASM_SMOKE_PARSE_LABEL_END
                         JSR             ASM_SMOKE_PARSE_ERR
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_LABEL_END_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_LABEL_END_OK:
 
                         LDA             #ASM_STATUS_BAD_OPER
                         LDX             #<ASM_SMOKE_PARSE_ORG_EMPTY
                         LDY             #>ASM_SMOKE_PARSE_ORG_EMPTY
                         JSR             ASM_SMOKE_PARSE_ERR
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_ORG_EMPTY_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_ORG_EMPTY_OK:
 
                         LDA             #ASM_STATUS_BAD_OPER
                         LDX             #<ASM_SMOKE_PARSE_EQU_EMPTY
                         LDY             #>ASM_SMOKE_PARSE_EQU_EMPTY
                         JSR             ASM_SMOKE_PARSE_ERR
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_EQU_EMPTY_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_EQU_EMPTY_OK:
 
                         LDA             #ASM_STATUS_BAD_OPER
                         LDX             #<ASM_SMOKE_PARSE_DB_EMPTY
                         LDY             #>ASM_SMOKE_PARSE_DB_EMPTY
                         JSR             ASM_SMOKE_PARSE_ERR
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_DB_EMPTY_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_DB_EMPTY_OK:
 
                         LDA             #ASM_STATUS_BAD_OPER
                         LDX             #<ASM_SMOKE_PARSE_DW_EMPTY
                         LDY             #>ASM_SMOKE_PARSE_DW_EMPTY
                         JSR             ASM_SMOKE_PARSE_ERR
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_DW_EMPTY_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_DW_EMPTY_OK:
 
                         LDA             #ASM_STATUS_BAD_SYM
                         LDX             #<ASM_SMOKE_PARSE_REG_LABEL
                         LDY             #>ASM_SMOKE_PARSE_REG_LABEL
                         JSR             ASM_SMOKE_PARSE_ERR
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_REG_LABEL_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_REG_LABEL_OK:
 
                         LDA             #ASM_STMT_LABEL_ONLY
                         LDX             #<ASM_SMOKE_PARSE_LOCAL_LABEL
                         LDY             #>ASM_SMOKE_PARSE_LOCAL_LABEL
                         JSR             ASM_SMOKE_PARSE_OK
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_LOCAL_LABEL_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_LOCAL_LABEL_OK:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_LOCAL_NAME
-                        BEQ             ASM_SMOKE_PARSE_FAIL
+                        BNE             ASM_SMOKE_PARSE_LOCAL_FLAG_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_LOCAL_FLAG_OK:
 
-                        LDA             #ASM_STATUS_BAD_DIR
+                        LDA             #ASM_STMT_DIR
                         LDX             #<ASM_SMOKE_PARSE_DC
                         LDY             #>ASM_SMOKE_PARSE_DC
-                        JSR             ASM_SMOKE_PARSE_ERR
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        JSR             ASM_SMOKE_PARSE_OK
+                        BCS             ASM_SMOKE_PARSE_DC_PARSE_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_DC_PARSE_OK:
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_BINDS_PC
+                        BNE             ASM_SMOKE_PARSE_DC_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_DC_OK:
 
                         LDA             #ASM_STMT_LABEL_ONLY
                         LDX             #<ASM_SMOKE_PARSE_START
                         LDY             #>ASM_SMOKE_PARSE_START
                         JSR             ASM_SMOKE_PARSE_OK
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_START_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_START_OK:
 
                         JSR             ASM_SMOKE_PARSE_ASMTEST
-                        BCC             ASM_SMOKE_PARSE_FAIL
+                        BCS             ASM_SMOKE_PARSE_ASMTEST_OK
+                        JMP             ASM_SMOKE_PARSE_FAIL
+ASM_SMOKE_PARSE_ASMTEST_OK:
                         SEC
                         RTS
 
@@ -4589,6 +4624,8 @@ ASM_SMOKE_FIXUPS:
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_IMPORT_SELECTED
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
+                        JSR             ASM_SMOKE_FIXUPS_IMPORT_DATA
+                        BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_IMPORT_FORCE_DEFER
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_RELOCATE
@@ -5262,6 +5299,100 @@ ASM_SMOKE_FIXUPS_IMP_SEL_SH1_OK:
                         RTS
 ASM_SMOKE_FIXUPS_IMP_SEL_FAIL:
                         LDA             #$AC
+                        STA             ASM_SLOT
+                        CLC
+                        RTS
+
+ASM_SMOKE_FIXUPS_IMPORT_DATA:
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_FIXUPS_IMP_DATA_BEGIN_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_BEGIN_OK:
+                        LDX             #<ASM_DIRECT_IMPORT_EXT
+                        LDY             #>ASM_DIRECT_IMPORT_EXT
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_FIXUPS_IMP_DATA_IMPORT_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_IMPORT_OK:
+                        LDX             #<ASM_DIRECT_DB_IMPORT_DATA
+                        LDY             #>ASM_DIRECT_DB_IMPORT_DATA
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_FIXUPS_IMP_DATA_DB_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_DB_OK:
+                        LDX             #<ASM_DIRECT_DW_IMPORT_DATA
+                        LDY             #>ASM_DIRECT_DW_IMPORT_DATA
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_FIXUPS_IMP_DATA_DW_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_DW_OK:
+                        LDX             #$00
+ASM_SMOKE_FIXUPS_IMP_DATA_BYTES_LOOP:
+                        LDA             ASM_CODE_BUF,X
+                        CMP             ASM_IMPORT_DATA_BYTES_EXPECT,X
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DATA_BYTE_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_BYTE_OK:
+                        INX
+                        CPX             #$06
+                        BNE             ASM_SMOKE_FIXUPS_IMP_DATA_BYTES_LOOP
+                        LDA             ASM_FIX_COUNT
+                        CMP             #$04
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DATA_FIX_COUNT_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_FIX_COUNT_OK:
+                        LDX             #$00
+ASM_SMOKE_FIXUPS_IMP_DATA_FIX_LOOP:
+                        LDA             ASM_FIX_SEL,X
+                        CMP             ASM_IMPORT_DATA_FIX_SEL_EXPECT,X
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DATA_FIX_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_FIX_OK:
+                        INX
+                        CPX             #$04
+                        BNE             ASM_SMOKE_FIXUPS_IMP_DATA_FIX_LOOP
+                        JSR             ASM_END
+                        BCS             ASM_SMOKE_FIXUPS_IMP_DATA_END_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_END_OK:
+                        LDA             ASM_RELOC_COUNT
+                        CMP             #$04
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DATA_RELOC_COUNT_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_RELOC_COUNT_OK:
+                        LDX             #$00
+ASM_SMOKE_FIXUPS_IMP_DATA_RELOC_LOOP:
+                        LDA             ASM_FIX_STATE,X
+                        CMP             #ASM_FIX_IMPORTED
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DATA_STATE_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_STATE_OK:
+                        LDA             ASM_RELOC_KIND,X
+                        CMP             ASM_IMPORT_DATA_RELOC_KIND_EXPECT,X
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DATA_KIND_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_KIND_OK:
+                        LDA             ASM_RELOC_SITE_LO,X
+                        CMP             ASM_IMPORT_DATA_RELOC_SITE_EXPECT,X
+                        BEQ             ASM_SMOKE_FIXUPS_IMP_DATA_SITE_OK
+                        JMP             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+ASM_SMOKE_FIXUPS_IMP_DATA_SITE_OK:
+                        LDA             ASM_RELOC_SITE_HI,X
+                        BNE             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+                        LDA             ASM_RELOC_TARGET_LO,X
+                        BNE             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+                        LDA             ASM_RELOC_TARGET_HI,X
+                        BNE             ASM_SMOKE_FIXUPS_IMP_DATA_FAIL
+                        INX
+                        CPX             #$04
+                        BNE             ASM_SMOKE_FIXUPS_IMP_DATA_RELOC_LOOP
+                        SEC
+                        RTS
+ASM_SMOKE_FIXUPS_IMP_DATA_FAIL:
+                        LDA             #$AD
                         STA             ASM_SLOT
                         CLC
                         RTS
@@ -6050,6 +6181,68 @@ ASM_SMOKE_DIRECT_DW_HIGH_HI_OK:
                         JMP             ASM_SMOKE_DIRECT_FAIL
 ASM_SMOKE_DIRECT_DW_HIGH_LO_OK:
 
+                        LDA             #$DD
+                        STA             ASM_SLOT
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_DIRECT_DC_BEGIN_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_BEGIN_OK:
+                        LDX             #<ASM_DIRECT_DC_C
+                        LDY             #>ASM_DIRECT_DC_C
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_C_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_C_OK:
+                        LDX             #<ASM_DIRECT_DC_HB
+                        LDY             #>ASM_DIRECT_DC_HB
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_HB_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_HB_OK:
+                        LDX             #<ASM_DIRECT_DC_P
+                        LDY             #>ASM_DIRECT_DC_P
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_P_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_P_OK:
+                        LDX             #$00
+ASM_SMOKE_DIRECT_DC_BYTES_LOOP:
+                        LDA             ASM_CODE_BUF,X
+                        CMP             ASM_DIRECT_DC_EXPECT,X
+                        BEQ             ASM_SMOKE_DIRECT_DC_BYTE_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_BYTE_OK:
+                        INX
+                        CPX             #$08
+                        BNE             ASM_SMOKE_DIRECT_DC_BYTES_LOOP
+                        LDA             ASM_PC_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        CMP             #$08
+                        BEQ             ASM_SMOKE_DIRECT_DC_PC_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_PC_OK:
+
+                        LDA             #$DE
+                        STA             ASM_SLOT
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_DIRECT_DC_BAD_BEGIN_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_BAD_BEGIN_OK:
+                        LDA             #ASM_STATUS_BAD_OPER
+                        LDX             #<ASM_DIRECT_DC_BAD
+                        LDY             #>ASM_DIRECT_DC_BAD
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_ERR
+                        BCS             ASM_SMOKE_DIRECT_DC_BAD_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_BAD_OK:
+
                         LDA             #$D9
                         STA             ASM_SLOT
                         LDA             #$00
@@ -6086,20 +6279,51 @@ ASM_SMOKE_DIRECT_EMPTY_OK:
 
                         LDA             #$C7
                         STA             ASM_SLOT
-                        LDA             #$00
-                        TAX
-                        TAY
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #ASM_SMOKE_TARGET_LO
+                        LDY             #ASM_SMOKE_TARGET_HI
                         JSR             ASM_BEGIN
-                        BCS             ASM_SMOKE_DIRECT_UNKNOWN_BEGIN_OK
+                        BCS             ASM_SMOKE_DIRECT_FORWARD_BEGIN_OK
                         JMP             ASM_SMOKE_DIRECT_FAIL
-ASM_SMOKE_DIRECT_UNKNOWN_BEGIN_OK:
-                        LDA             #ASM_STATUS_BAD_WIDTH
-                        LDX             #<ASM_DIRECT_DB_UNKNOWN
-                        LDY             #>ASM_DIRECT_DB_UNKNOWN
-                        JSR             ASM_SMOKE_ASSEMBLE_LINE_ERR
-                        BCS             ASM_SMOKE_DIRECT_UNKNOWN_OK
+ASM_SMOKE_DIRECT_FORWARD_BEGIN_OK:
+                        LDX             #<ASM_DIRECT_DB_FORWARD
+                        LDY             #>ASM_DIRECT_DB_FORWARD
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_FORWARD_DB_OK
                         JMP             ASM_SMOKE_DIRECT_FAIL
-ASM_SMOKE_DIRECT_UNKNOWN_OK:
+ASM_SMOKE_DIRECT_FORWARD_DB_OK:
+                        LDX             #<ASM_DIRECT_DW_FORWARD
+                        LDY             #>ASM_DIRECT_DW_FORWARD
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_FORWARD_DW_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_FORWARD_DW_OK:
+                        LDX             #<ASM_DIRECT_FORWARD_LABEL
+                        LDY             #>ASM_DIRECT_FORWARD_LABEL
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_FORWARD_LABEL_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_FORWARD_LABEL_OK:
+                        LDX             #$00
+ASM_SMOKE_DIRECT_FORWARD_BYTES_LOOP:
+                        LDA             ASM_SMOKE_TARGET,X
+                        CMP             ASM_DIRECT_FORWARD_EXPECT,X
+                        BEQ             ASM_SMOKE_DIRECT_FORWARD_BYTE_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_FORWARD_BYTE_OK:
+                        INX
+                        CPX             #$07
+                        BNE             ASM_SMOKE_DIRECT_FORWARD_BYTES_LOOP
+                        LDA             ASM_FIX_COUNT
+                        CMP             #$04
+                        BEQ             ASM_SMOKE_DIRECT_FORWARD_FIX_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_FORWARD_FIX_OK:
+                        LDA             ASM_RELOC_COUNT
+                        CMP             #$04
+                        BEQ             ASM_SMOKE_DIRECT_FORWARD_RELOC_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_FORWARD_RELOC_OK:
                         LDA             #$C8
                         STA             ASM_SLOT
                         LDA             #ASM_BEGINF_HAVE_PC
@@ -11239,6 +11463,8 @@ ASM_LEX_LINE_LOOP:
                         BEQ             ASM_LEX_LINE_OK
                         CMP             #$27
                         BEQ             ASM_LEX_LINE_QUOTE
+                        CMP             #'"'
+                        BEQ             ASM_LEX_LINE_DQUOTE
 
                         JSR             ASM_LEX_COUNT_CHAR
                         BCC             ASM_LEX_LINE_BAD
@@ -11264,6 +11490,29 @@ ASM_LEX_LINE_QUOTE:
                         BEQ             ASM_LEX_LINE_OK
                         CMP             #$0A
                         BEQ             ASM_LEX_LINE_OK
+                        JSR             ASM_LEX_COUNT_CHAR
+                        BCC             ASM_LEX_LINE_BAD
+                        INY
+                        BRA             ASM_LEX_LINE_LOOP
+
+ASM_LEX_LINE_DQUOTE:
+                        JSR             ASM_LEX_COUNT_CHAR
+                        BCC             ASM_LEX_LINE_BAD
+                        INY
+ASM_LEX_LINE_DQUOTE_LOOP:
+                        LDA             (ASM_LINE_PTR_LO),Y
+                        BEQ             ASM_LEX_LINE_OK
+                        CMP             #$0D
+                        BEQ             ASM_LEX_LINE_OK
+                        CMP             #$0A
+                        BEQ             ASM_LEX_LINE_OK
+                        CMP             #'"'
+                        BEQ             ASM_LEX_LINE_DQUOTE_CLOSE
+                        JSR             ASM_LEX_COUNT_CHAR
+                        BCC             ASM_LEX_LINE_BAD
+                        INY
+                        BRA             ASM_LEX_LINE_DQUOTE_LOOP
+ASM_LEX_LINE_DQUOTE_CLOSE:
                         JSR             ASM_LEX_COUNT_CHAR
                         BCC             ASM_LEX_LINE_BAD
                         INY
@@ -11881,6 +12130,8 @@ ASM_STORE_OP_DIR:
 ASM_STORE_OP_DIR_NOT_EQU:
                         CMP             #ASM_VID_DB
                         BEQ             ASM_STORE_OP_DIR_BINDS_PC
+                        CMP             #ASM_VID_DC
+                        BEQ             ASM_STORE_OP_DIR_BINDS_PC
                         CMP             #ASM_VID_DW
                         BEQ             ASM_STORE_OP_DIR_BINDS_PC
                         CMP             #ASM_VID_DS
@@ -11983,6 +12234,10 @@ ASM_DISPATCH_DIR_NOT_END:
                         BNE             ASM_DISPATCH_DIR_NOT_DB
                         JMP             ASM_DISPATCH_DIR_DB
 ASM_DISPATCH_DIR_NOT_DB:
+                        CMP             #ASM_VID_DC
+                        BNE             ASM_DISPATCH_DIR_NOT_DC
+                        JMP             ASM_DISPATCH_DIR_DC
+ASM_DISPATCH_DIR_NOT_DC:
                         CMP             #ASM_VID_DW
                         BNE             ASM_DISPATCH_DIR_NOT_DW
                         JMP             ASM_DISPATCH_DIR_DW
@@ -12008,13 +12263,17 @@ ASM_DISPATCH_DIR_EQU_HAVE_TAIL:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_PARSE_EXPR
-                        BCC             ASM_DISPATCH_FAIL_NEAR
+                        BCS             ASM_DISPATCH_DIR_EQU_EXPR_OK
+                        JMP             ASM_DISPATCH_FAIL_NEAR
+ASM_DISPATCH_DIR_EQU_EXPR_OK:
                         JSR             ASM_PARSE_EXPR_REQUIRE_END
                         BCS             ASM_DISPATCH_DIR_EQU_EXPR_END_OK
                         JMP             ASM_DISPATCH_BAD_OPER
 ASM_DISPATCH_DIR_EQU_EXPR_END_OK:
                         JSR             ASM_DEFINE_EQU
-                        BCC             ASM_DISPATCH_FAIL_NEAR
+                        BCS             ASM_DISPATCH_DIR_EQU_DEFINE_OK
+                        JMP             ASM_DISPATCH_FAIL_NEAR
+ASM_DISPATCH_DIR_EQU_DEFINE_OK:
                         JMP             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_EXPORT:
@@ -12110,12 +12369,12 @@ ASM_DISPATCH_DIR_END:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_NAME
                         BEQ             ASM_DISPATCH_DIR_END_NO_NAME
-                        BRA             ASM_DISPATCH_BAD_SYM
+                        JMP             ASM_DISPATCH_BAD_SYM
 ASM_DISPATCH_DIR_END_NO_NAME:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BEQ             ASM_DISPATCH_DIR_END_NO_TAIL
-                        BRA             ASM_DISPATCH_BAD_OPER
+                        JMP             ASM_DISPATCH_BAD_OPER
 ASM_DISPATCH_DIR_END_NO_TAIL:
                         JMP             ASM_DISPATCH_OK
 
@@ -12123,55 +12382,89 @@ ASM_DISPATCH_DIR_DB:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BNE             ASM_DISPATCH_DIR_DB_HAVE_TAIL
-                        BRA             ASM_DISPATCH_BAD_OPER
+                        JMP             ASM_DISPATCH_BAD_OPER
 ASM_DISPATCH_DIR_DB_HAVE_TAIL:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_NAME
                         BEQ             ASM_DISPATCH_DIR_DB_NO_NAME
                         JSR             ASM_BIND_LABEL
-                        BCC             ASM_DISPATCH_FAIL_A
+                        BCS             ASM_DISPATCH_DIR_DB_BIND_OK
+                        JMP             ASM_DISPATCH_FAIL_A
+ASM_DISPATCH_DIR_DB_BIND_OK:
 ASM_DISPATCH_DIR_DB_NO_NAME:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_EMIT_DB
-                        BCC             ASM_DISPATCH_FAIL_A
-                        BRA             ASM_DISPATCH_OK
+                        BCS             ASM_DISPATCH_DIR_DB_EMIT_OK
+                        JMP             ASM_DISPATCH_FAIL_A
+ASM_DISPATCH_DIR_DB_EMIT_OK:
+                        JMP             ASM_DISPATCH_OK
+
+ASM_DISPATCH_DIR_DC:
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_HAS_TAIL
+                        BNE             ASM_DISPATCH_DIR_DC_HAVE_TAIL
+                        JMP             ASM_DISPATCH_BAD_OPER
+ASM_DISPATCH_DIR_DC_HAVE_TAIL:
+                        LDA             ASM_STMT_FLAGS
+                        AND             #ASM_STMTF_HAS_NAME
+                        BEQ             ASM_DISPATCH_DIR_DC_NO_NAME
+                        JSR             ASM_BIND_LABEL
+                        BCS             ASM_DISPATCH_DIR_DC_BIND_OK
+                        JMP             ASM_DISPATCH_FAIL_A
+ASM_DISPATCH_DIR_DC_BIND_OK:
+ASM_DISPATCH_DIR_DC_NO_NAME:
+                        LDX             ASM_STMT_TAIL_PTR_LO
+                        LDY             ASM_STMT_TAIL_PTR_HI
+                        JSR             ASM_EMIT_DC
+                        BCS             ASM_DISPATCH_DIR_DC_EMIT_OK
+                        JMP             ASM_DISPATCH_FAIL_A
+ASM_DISPATCH_DIR_DC_EMIT_OK:
+                        JMP             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_DW:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BNE             ASM_DISPATCH_DIR_DW_HAVE_TAIL
-                        BRA             ASM_DISPATCH_BAD_OPER
+                        JMP             ASM_DISPATCH_BAD_OPER
 ASM_DISPATCH_DIR_DW_HAVE_TAIL:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_NAME
                         BEQ             ASM_DISPATCH_DIR_DW_NO_NAME
                         JSR             ASM_BIND_LABEL
-                        BCC             ASM_DISPATCH_FAIL_A
+                        BCS             ASM_DISPATCH_DIR_DW_BIND_OK
+                        JMP             ASM_DISPATCH_FAIL_A
+ASM_DISPATCH_DIR_DW_BIND_OK:
 ASM_DISPATCH_DIR_DW_NO_NAME:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_EMIT_DW
-                        BCC             ASM_DISPATCH_FAIL_A
-                        BRA             ASM_DISPATCH_OK
+                        BCS             ASM_DISPATCH_DIR_DW_EMIT_OK
+                        JMP             ASM_DISPATCH_FAIL_A
+ASM_DISPATCH_DIR_DW_EMIT_OK:
+                        JMP             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_DS:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
                         BNE             ASM_DISPATCH_DIR_DS_HAVE_TAIL
-                        BRA             ASM_DISPATCH_BAD_OPER
+                        JMP             ASM_DISPATCH_BAD_OPER
 ASM_DISPATCH_DIR_DS_HAVE_TAIL:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_NAME
                         BEQ             ASM_DISPATCH_DIR_DS_NO_NAME
                         JSR             ASM_BIND_LABEL
-                        BCC             ASM_DISPATCH_FAIL_A
+                        BCS             ASM_DISPATCH_DIR_DS_BIND_OK
+                        JMP             ASM_DISPATCH_FAIL_A
+ASM_DISPATCH_DIR_DS_BIND_OK:
 ASM_DISPATCH_DIR_DS_NO_NAME:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
                         JSR             ASM_EMIT_DS
-                        BCC             ASM_DISPATCH_FAIL_A
-                        BRA             ASM_DISPATCH_OK
+                        BCS             ASM_DISPATCH_DIR_DS_EMIT_OK
+                        JMP             ASM_DISPATCH_FAIL_A
+ASM_DISPATCH_DIR_DS_EMIT_OK:
+                        JMP             ASM_DISPATCH_OK
 
 ASM_DISPATCH_BAD_SYM:
                         LDA             #ASM_STATUS_BAD_SYM
@@ -12593,17 +12886,25 @@ ASM_EMIT_DB_ITEM:
                         JSR             ASM_SKIP_SPACES
                         LDY             #$00
                         LDA             (ASM_PARSE_PTR_LO),Y
-                        BEQ             ASM_EMIT_DB_BAD_OPER
+                        BEQ             ASM_EMIT_DB_ITEM_BAD_OPER
                         CMP             #$0D
-                        BEQ             ASM_EMIT_DB_BAD_OPER
+                        BEQ             ASM_EMIT_DB_ITEM_BAD_OPER
                         CMP             #$0A
-                        BEQ             ASM_EMIT_DB_BAD_OPER
+                        BEQ             ASM_EMIT_DB_ITEM_BAD_OPER
                         CMP             #';'
-                        BEQ             ASM_EMIT_DB_BAD_OPER
+                        BEQ             ASM_EMIT_DB_ITEM_BAD_OPER
                         CMP             #','
-                        BEQ             ASM_EMIT_DB_BAD_OPER
+                        BEQ             ASM_EMIT_DB_ITEM_BAD_OPER
+                        BRA             ASM_EMIT_DB_ITEM_HAVE_TEXT
+ASM_EMIT_DB_ITEM_BAD_OPER:
+                        JMP             ASM_EMIT_DB_BAD_OPER
+ASM_EMIT_DB_ITEM_HAVE_TEXT:
 
                         STZ             ASM_TMP1_LO
+                        STZ             ASM_FLAGS
+                        STZ             ASM_FIX_PLAN_SEL
+                        STZ             ASM_RELOC_PLAN_TARGET_LO
+                        STZ             ASM_RELOC_PLAN_TARGET_HI
                         JSR             ASM_NEXT_TOKEN
                         BCS             ASM_EMIT_DB_HAVE_TOKEN
                         RTS
@@ -12740,42 +13041,27 @@ ASM_EMIT_DB_ATOM_CHAR:
                         RTS
 
 ASM_EMIT_DB_ATOM_WORD:
-                        LDA             ASM_TOKEN_PTR_LO
-                        STA             ASM_NAME_PTR_LO
-                        LDA             ASM_TOKEN_PTR_HI
-                        STA             ASM_NAME_PTR_HI
-                        LDA             ASM_TOK_FLAGS
-                        AND             #ASM_TF_LOCAL_PREFIX
-                        BEQ             ASM_EMIT_DB_ATOM_WORD_GLOBAL
-                        LDA             ASM_LOCAL_SCOPE_ACTIVE
-                        BEQ             ASM_EMIT_DB_ATOM_WORD_BAD_SYM
-                        LDA             ASM_LEN
-                        CMP             #ASM_LOCAL_NAME_MAX
-                        BCS             ASM_EMIT_DB_ATOM_WORD_BAD_SYM
-                        LDA             #ASM_SYM_LOOK_LOCAL
-                        BRA             ASM_EMIT_DB_ATOM_WORD_LOOK
-ASM_EMIT_DB_ATOM_WORD_GLOBAL:
-                        LDA             ASM_DB_COUNTING
-                        BEQ             ASM_EMIT_DB_ATOM_WORD_MARK
-                        LDA             #ASM_SYM_LOOK_SESSION
-                        BRA             ASM_EMIT_DB_ATOM_WORD_LOOK
-ASM_EMIT_DB_ATOM_WORD_MARK:
-                        LDA             #(ASM_SYM_LOOK_SESSION|ASM_SYM_LOOK_MARK_USE)
-ASM_EMIT_DB_ATOM_WORD_LOOK:
-                        JSR             ASM_LOOKUP_SYMBOL
-                        BCS             ASM_EMIT_DB_ATOM_WORD_OK
-                        CMP             #ASM_STATUS_OK
-                        BEQ             ASM_EMIT_DB_ATOM_WORD_UNRESOLVED
-                        JMP             ASM_EMIT_DB_FAIL_A
-ASM_EMIT_DB_ATOM_WORD_UNRESOLVED:
-                        LDA             #ASM_STATUS_BAD_WIDTH
-                        JMP             ASM_EMIT_DB_FAIL_A
-ASM_EMIT_DB_ATOM_WORD_OK:
-                        SEC
-                        RTS
-ASM_EMIT_DB_ATOM_WORD_BAD_SYM:
+                        JSR             ASM_LOOKUP_WORD
+                        BCC             ASM_EMIT_DB_ATOM_WORD_NOT_RESERVED
                         LDA             #ASM_STATUS_BAD_SYM
                         JMP             ASM_EMIT_DB_FAIL_A
+ASM_EMIT_DB_ATOM_WORD_NOT_RESERVED:
+                        JSR             ASM_CLASS_LOAD_SYMBOL
+                        BCS             ASM_EMIT_DB_ATOM_WORD_OK
+                        JMP             ASM_EMIT_DB_FAIL_A
+ASM_EMIT_DB_ATOM_WORD_OK:
+                        LDA             ASM_BASE_LO
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_BASE_HI
+                        STA             ASM_VALUE_HI
+                        LDA             ASM_TMP0_LO
+                        STA             ASM_MODE
+                        LDA             ASM_TMP0_HI
+                        STA             ASM_WIDTH
+                        LDA             ASM_TMP1_HI
+                        STA             ASM_FLAGS
+                        SEC
+                        RTS
 
 ASM_EMIT_DB_ATOM_PUNCT:
                         LDA             ASM_TOK_SUB
@@ -12806,6 +13092,7 @@ ASM_EMIT_DB_ATOM_SEL_HI:
                         LDA             #ASM_FIX_SEL_HI
 ASM_EMIT_DB_ATOM_SEL_A:
                         STA             ASM_TMP1_LO
+                        STA             ASM_FIX_PLAN_SEL
                         JSR             ASM_NEXT_TOKEN
                         BCS             ASM_EMIT_DB_ATOM_SEL_TOKEN
                         RTS
@@ -12840,6 +13127,11 @@ ASM_EMIT_DB_VALUE_KIND_OK:
 ASM_EMIT_DB_VALUE_LEN_FAIL:
                         RTS
 ASM_EMIT_DB_VALUE_EMIT:
+                        LDA             ASM_FLAGS
+                        AND             #ASM_OPF_UNRESOLVED
+                        BEQ             ASM_EMIT_DB_VALUE_RESOLVED
+                        JMP             ASM_EMIT_DATA_UNRESOLVED
+ASM_EMIT_DB_VALUE_RESOLVED:
                         LDA             ASM_TMP1_LO
                         CMP             #ASM_FIX_SEL_LO
                         BEQ             ASM_EMIT_DB_VALUE_LO
@@ -12860,12 +13152,15 @@ ASM_EMIT_DB_VALUE_EMIT:
                         BEQ             ASM_EMIT_DB_VALUE_LO
                         BRA             ASM_EMIT_DB_VALUE_WORD
 ASM_EMIT_DB_VALUE_LO:
+                        JSR             ASM_EMIT_DATA_NOTE_RELOC
                         LDA             ASM_VALUE_LO
                         JMP             ASM_EMIT_BYTE
 ASM_EMIT_DB_VALUE_HI:
+                        JSR             ASM_EMIT_DATA_NOTE_RELOC
                         LDA             ASM_VALUE_HI
                         JMP             ASM_EMIT_BYTE
 ASM_EMIT_DB_VALUE_WORD:
+                        JSR             ASM_EMIT_DATA_NOTE_RELOC
                         LDA             ASM_VALUE_LO
                         LDX             ASM_VALUE_HI
                         JMP             ASM_EMIT_WORD_LE
@@ -12910,6 +13205,261 @@ ASM_EMIT_DB_FAIL_A:
                         CLC
                         RTS
 
+ASM_EMIT_DATA_UNRESOLVED:
+                        LDA             ASM_TMP1_LO
+                        BEQ             ASM_EMIT_DATA_UNRESOLVED_WORD
+                        LDA             #ASM_OPM_IMM8
+                        BRA             ASM_EMIT_DATA_UNRESOLVED_STORE
+ASM_EMIT_DATA_UNRESOLVED_WORD:
+                        LDA             #ASM_OPM_ABS16
+ASM_EMIT_DATA_UNRESOLVED_STORE:
+                        STA             ASM_MODE
+                        JSR             ASM_STORE_FIXUP_CURRENT
+                        BCS             ASM_EMIT_DATA_UNRESOLVED_STORED
+                        JMP             ASM_EMIT_DB_FAIL_A
+ASM_EMIT_DATA_UNRESOLVED_STORED:
+                        LDA             ASM_TMP1_LO
+                        BEQ             ASM_EMIT_DATA_UNRESOLVED_EMIT_WORD
+                        LDA             #$FF
+                        JMP             ASM_EMIT_BYTE
+ASM_EMIT_DATA_UNRESOLVED_EMIT_WORD:
+                        LDA             #$FF
+                        LDX             #$FF
+                        JMP             ASM_EMIT_WORD_LE
+
+ASM_EMIT_DATA_NOTE_RELOC:
+                        LDA             ASM_FLAGS
+                        AND             #ASM_OPF_RELOC_INTERNAL
+                        BEQ             ASM_EMIT_DATA_NOTE_RELOC_DONE
+                        LDA             ASM_PC_LO
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_PC_HI
+                        STA             ASM_TMP0_HI
+                        LDA             ASM_TMP1_LO
+                        AND             #ASM_FIX_SEL_MASK
+                        BEQ             ASM_EMIT_DATA_NOTE_RELOC_WORD
+                        JSR             ASM_RELOC_KIND_FOR_SEL_A
+                        BCC             ASM_EMIT_DATA_NOTE_RELOC_DONE
+                        PHA
+                        LDA             ASM_RELOC_PLAN_TARGET_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_RELOC_PLAN_TARGET_HI
+                        STA             ASM_TMP1_HI
+                        PLA
+                        JSR             ASM_RELOC_STORE_A
+                        BRA             ASM_EMIT_DATA_NOTE_RELOC_DONE
+ASM_EMIT_DATA_NOTE_RELOC_WORD:
+                        LDA             ASM_VALUE_LO
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_VALUE_HI
+                        STA             ASM_TMP1_HI
+                        LDA             #ASM_RELOC_ABS16_INTERNAL
+                        JSR             ASM_RELOC_STORE_A
+ASM_EMIT_DATA_NOTE_RELOC_DONE:
+                        SEC
+                        RTS
+
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_EMIT_DC
+; IN : X/Y = DC operand tail: C,"text" | HB,"text" | P,"text".
+; OUT: C=1,A=OK when emitted. C=0,A=status on failure.
+; ----------------------------------------------------------------------------
+ASM_EMIT_DC:
+                        STX             ASM_DB_TAIL_LO
+                        STY             ASM_DB_TAIL_HI
+                        JSR             ASM_EMIT_DC_COUNT
+                        BCC             ASM_EMIT_DC_RETURN
+                        LDA             ASM_DB_COUNT
+                        JSR             ASM_EMIT_ROOM_FOR_A
+                        BCS             ASM_EMIT_DC_ROOM_OK
+                        JMP             ASM_EMIT_DC_FAIL_A
+ASM_EMIT_DC_ROOM_OK:
+                        LDX             ASM_DB_TAIL_LO
+                        LDY             ASM_DB_TAIL_HI
+                        JSR             ASM_EMIT_DC_PARSE_HEAD
+                        BCC             ASM_EMIT_DC_RETURN
+                        LDA             ASM_DC_MODE
+                        CMP             #ASM_DCM_P
+                        BNE             ASM_EMIT_DC_CHARS_BEGIN
+                        LDA             ASM_DC_LEN
+                        JSR             ASM_EMIT_BYTE
+                        BCC             ASM_EMIT_DC_RETURN
+ASM_EMIT_DC_CHARS_BEGIN:
+                        LDA             ASM_DC_LEN
+                        STA             ASM_DB_COUNT
+ASM_EMIT_DC_CHAR_LOOP:
+                        LDA             ASM_DB_COUNT
+                        BEQ             ASM_EMIT_DC_CHARS_DONE
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        STA             ASM_TMP0_LO
+                        JSR             ASM_ADV_PARSE
+                        LDA             ASM_DC_MODE
+                        CMP             #ASM_DCM_HB
+                        BNE             ASM_EMIT_DC_PLAIN_CHAR
+                        DEC             ASM_DB_COUNT
+                        LDA             ASM_DB_COUNT
+                        BNE             ASM_EMIT_DC_HB_NOT_LAST
+                        LDA             ASM_TMP0_LO
+                        ORA             #$80
+                        BRA             ASM_EMIT_DC_CHAR_A
+ASM_EMIT_DC_HB_NOT_LAST:
+                        LDA             ASM_TMP0_LO
+                        BRA             ASM_EMIT_DC_CHAR_A
+ASM_EMIT_DC_PLAIN_CHAR:
+                        DEC             ASM_DB_COUNT
+                        LDA             ASM_TMP0_LO
+ASM_EMIT_DC_CHAR_A:
+                        JSR             ASM_EMIT_BYTE
+                        BCC             ASM_EMIT_DC_RETURN
+                        BRA             ASM_EMIT_DC_CHAR_LOOP
+ASM_EMIT_DC_CHARS_DONE:
+                        JSR             ASM_ADV_PARSE
+                        LDA             ASM_DC_MODE
+                        CMP             #ASM_DCM_C
+                        BNE             ASM_EMIT_DC_OK
+                        LDA             #$00
+                        JSR             ASM_EMIT_BYTE
+                        BCC             ASM_EMIT_DC_RETURN
+ASM_EMIT_DC_OK:
+                        LDA             #ASM_STATUS_OK
+                        STA             ASM_STATUS
+                        SEC
+ASM_EMIT_DC_RETURN:
+                        RTS
+
+ASM_EMIT_DC_COUNT:
+                        LDX             ASM_DB_TAIL_LO
+                        LDY             ASM_DB_TAIL_HI
+                        JSR             ASM_EMIT_DC_PARSE_HEAD
+                        BCC             ASM_EMIT_DC_RETURN
+                        STZ             ASM_DB_COUNT
+ASM_EMIT_DC_COUNT_LOOP:
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        BEQ             ASM_EMIT_DC_COUNT_BAD_OPER
+                        CMP             #$0D
+                        BEQ             ASM_EMIT_DC_COUNT_BAD_OPER
+                        CMP             #$0A
+                        BEQ             ASM_EMIT_DC_COUNT_BAD_OPER
+                        CMP             #'"'
+                        BEQ             ASM_EMIT_DC_COUNT_DONE
+                        INC             ASM_DB_COUNT
+                        JSR             ASM_ADV_PARSE
+                        BRA             ASM_EMIT_DC_COUNT_LOOP
+ASM_EMIT_DC_COUNT_BAD_OPER:
+                        JMP             ASM_EMIT_DC_BAD_OPER
+ASM_EMIT_DC_COUNT_DONE:
+                        LDA             ASM_DB_COUNT
+                        STA             ASM_DC_LEN
+                        JSR             ASM_ADV_PARSE
+                        JSR             ASM_PARSE_EXPR_REQUIRE_END
+                        BCS             ASM_EMIT_DC_TAIL_OK
+                        JMP             ASM_EMIT_DC_BAD_OPER
+ASM_EMIT_DC_TAIL_OK:
+                        LDA             ASM_DC_MODE
+                        CMP             #ASM_DCM_HB
+                        BNE             ASM_EMIT_DC_COUNT_TERM
+                        LDA             ASM_DC_LEN
+                        BNE             ASM_EMIT_DC_HB_LEN_OK
+                        JMP             ASM_EMIT_DC_BAD_OPER
+ASM_EMIT_DC_HB_LEN_OK:
+                        STA             ASM_DB_COUNT
+                        SEC
+                        RTS
+ASM_EMIT_DC_COUNT_TERM:
+                        LDA             ASM_DC_LEN
+                        CLC
+                        ADC             #$01
+                        BCC             ASM_EMIT_DC_COUNT_STORE
+                        JMP             ASM_EMIT_DC_BAD_RANGE
+ASM_EMIT_DC_COUNT_STORE:
+                        STA             ASM_DB_COUNT
+                        SEC
+                        RTS
+
+ASM_EMIT_DC_PARSE_HEAD:
+                        STX             ASM_PARSE_PTR_LO
+                        STY             ASM_PARSE_PTR_HI
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_EMIT_DC_MODE_TOKEN
+                        RTS
+ASM_EMIT_DC_MODE_TOKEN:
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_WORD
+                        BNE             ASM_EMIT_DC_BAD_OPER
+                        JSR             ASM_EMIT_DC_PARSE_MODE
+                        BCC             ASM_EMIT_DC_FAIL_A
+                        JSR             ASM_SKIP_SPACES
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        CMP             #','
+                        BNE             ASM_EMIT_DC_BAD_OPER
+                        JSR             ASM_ADV_PARSE
+                        JSR             ASM_SKIP_SPACES
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        CMP             #'"'
+                        BNE             ASM_EMIT_DC_BAD_OPER
+                        JSR             ASM_ADV_PARSE
+                        LDA             #ASM_STATUS_OK
+                        SEC
+                        RTS
+
+ASM_EMIT_DC_PARSE_MODE:
+                        LDA             ASM_LEN
+                        CMP             #$01
+                        BEQ             ASM_EMIT_DC_MODE_ONE
+                        CMP             #$02
+                        BEQ             ASM_EMIT_DC_MODE_TWO
+ASM_EMIT_DC_MODE_BAD:
+                        LDA             #ASM_STATUS_BAD_OPER
+                        CLC
+                        RTS
+ASM_EMIT_DC_MODE_ONE:
+                        LDY             #$00
+                        LDA             (ASM_TOKEN_PTR_LO),Y
+                        AND             #$DF
+                        CMP             #'C'
+                        BEQ             ASM_EMIT_DC_MODE_C
+                        CMP             #'P'
+                        BEQ             ASM_EMIT_DC_MODE_P
+                        BRA             ASM_EMIT_DC_MODE_BAD
+ASM_EMIT_DC_MODE_C:
+                        LDA             #ASM_DCM_C
+                        BRA             ASM_EMIT_DC_MODE_OK
+ASM_EMIT_DC_MODE_P:
+                        LDA             #ASM_DCM_P
+                        BRA             ASM_EMIT_DC_MODE_OK
+ASM_EMIT_DC_MODE_TWO:
+                        LDY             #$00
+                        LDA             (ASM_TOKEN_PTR_LO),Y
+                        AND             #$DF
+                        CMP             #'H'
+                        BNE             ASM_EMIT_DC_MODE_BAD
+                        INY
+                        LDA             (ASM_TOKEN_PTR_LO),Y
+                        AND             #$DF
+                        CMP             #'B'
+                        BNE             ASM_EMIT_DC_MODE_BAD
+                        LDA             #ASM_DCM_HB
+ASM_EMIT_DC_MODE_OK:
+                        STA             ASM_DC_MODE
+                        LDA             #ASM_STATUS_OK
+                        SEC
+                        RTS
+
+ASM_EMIT_DC_BAD_OPER:
+                        LDA             #ASM_STATUS_BAD_OPER
+                        BRA             ASM_EMIT_DC_FAIL_A
+ASM_EMIT_DC_BAD_RANGE:
+                        LDA             #ASM_STATUS_BAD_RANGE
+ASM_EMIT_DC_FAIL_A:
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+                        CLC
+                        RTS
+
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_EMIT_DW
 ; IN : X/Y = DW expression-list tail.
@@ -12939,18 +13489,38 @@ ASM_EMIT_DW_ITEM:
                         JSR             ASM_SKIP_SPACES
                         LDY             #$00
                         LDA             (ASM_PARSE_PTR_LO),Y
-                        BEQ             ASM_EMIT_DW_BAD_OPER
+                        BEQ             ASM_EMIT_DW_ITEM_BAD_OPER
                         CMP             #$0D
-                        BEQ             ASM_EMIT_DW_BAD_OPER
+                        BEQ             ASM_EMIT_DW_ITEM_BAD_OPER
                         CMP             #$0A
-                        BEQ             ASM_EMIT_DW_BAD_OPER
+                        BEQ             ASM_EMIT_DW_ITEM_BAD_OPER
                         CMP             #';'
-                        BEQ             ASM_EMIT_DW_BAD_OPER
+                        BEQ             ASM_EMIT_DW_ITEM_BAD_OPER
                         CMP             #','
-                        BEQ             ASM_EMIT_DW_BAD_OPER
+                        BEQ             ASM_EMIT_DW_ITEM_BAD_OPER
+                        BRA             ASM_EMIT_DW_ITEM_HAVE_TEXT
+ASM_EMIT_DW_ITEM_BAD_OPER:
+                        JMP             ASM_EMIT_DW_BAD_OPER
+ASM_EMIT_DW_ITEM_HAVE_TEXT:
 
-                        LDX             ASM_PARSE_PTR_LO
-                        LDY             ASM_PARSE_PTR_HI
+                        STZ             ASM_TMP1_LO
+                        STZ             ASM_FLAGS
+                        STZ             ASM_FIX_PLAN_SEL
+                        STZ             ASM_RELOC_PLAN_TARGET_LO
+                        STZ             ASM_RELOC_PLAN_TARGET_HI
+                        LDA             ASM_PARSE_PTR_LO
+                        STA             ASM_DB_ITEM_LO
+                        LDA             ASM_PARSE_PTR_HI
+                        STA             ASM_DB_ITEM_HI
+                        JSR             ASM_NEXT_TOKEN
+                        BCS             ASM_EMIT_DW_HAVE_TOKEN
+                        RTS
+ASM_EMIT_DW_HAVE_TOKEN:
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_WORD
+                        BEQ             ASM_EMIT_DW_WORD
+                        LDX             ASM_DB_ITEM_LO
+                        LDY             ASM_DB_ITEM_HI
                         JSR             ASM_PARSE_EXPR
                         BCC             ASM_EMIT_DW_RETURN
                         JSR             ASM_EMIT_DW_VALUE
@@ -12964,6 +13534,18 @@ ASM_EMIT_DW_RETURN:
                         BCS             ASM_EMIT_DW_RETURN_DONE
                         STZ             ASM_DB_COUNTING
 ASM_EMIT_DW_RETURN_DONE:
+                        RTS
+
+ASM_EMIT_DW_WORD:
+                        JSR             ASM_EMIT_DB_ATOM_WORD
+                        BCC             ASM_EMIT_DW_RETURN
+                        JSR             ASM_EMIT_DW_VALUE
+                        BCC             ASM_EMIT_DW_RETURN
+                        JSR             ASM_EMIT_DW_AFTER_ITEM
+                        BCC             ASM_EMIT_DW_RETURN
+                        LDA             ASM_TMP1_HI
+                        BNE             ASM_EMIT_DW_ITEM
+                        SEC
                         RTS
 
 ASM_EMIT_DW_AFTER_ITEM:
@@ -13008,6 +13590,16 @@ ASM_EMIT_DW_VALUE:
                         SEC
                         RTS
 ASM_EMIT_DW_VALUE_EMIT:
+                        LDA             ASM_FLAGS
+                        AND             #ASM_OPF_UNRESOLVED
+                        BEQ             ASM_EMIT_DW_VALUE_RESOLVED
+                        JMP             ASM_EMIT_DATA_UNRESOLVED
+ASM_EMIT_DW_VALUE_RESOLVED:
+                        LDA             ASM_FLAGS
+                        AND             #ASM_OPF_RELOC_INTERNAL
+                        BEQ             ASM_EMIT_DW_VALUE_NO_RELOC
+                        JSR             ASM_EMIT_DATA_NOTE_RELOC
+ASM_EMIT_DW_VALUE_NO_RELOC:
                         LDA             ASM_VALUE_LO
                         LDX             ASM_VALUE_HI
                         JMP             ASM_EMIT_WORD_LE
@@ -14507,9 +15099,19 @@ ASM_CLASS_LOAD_SYMBOL:
                         LDA             ASM_LEN
                         CMP             #ASM_LOCAL_NAME_MAX
                         BCS             ASM_CLASS_LOAD_SYMBOL_BAD_SYM
+                        LDA             ASM_DB_COUNTING
+                        BEQ             ASM_CLASS_LOAD_LOCAL_MARK
+                        LDA             #ASM_SYM_LOOK_LOCAL
+                        BRA             ASM_CLASS_LOAD_SYMBOL_LOOK
+ASM_CLASS_LOAD_LOCAL_MARK:
                         LDA             #(ASM_SYM_LOOK_LOCAL|ASM_SYM_LOOK_MARK_USE)
                         BRA             ASM_CLASS_LOAD_SYMBOL_LOOK
 ASM_CLASS_LOAD_GLOBAL_SYMBOL:
+                        LDA             ASM_DB_COUNTING
+                        BEQ             ASM_CLASS_LOAD_GLOBAL_MARK
+                        LDA             #ASM_SYM_LOOK_SESSION
+                        BRA             ASM_CLASS_LOAD_SYMBOL_LOOK
+ASM_CLASS_LOAD_GLOBAL_MARK:
                         LDA             #(ASM_SYM_LOOK_SESSION|ASM_SYM_LOOK_MARK_USE)
 ASM_CLASS_LOAD_SYMBOL_LOOK:
                         JSR             ASM_LOOKUP_SYMBOL
@@ -16403,6 +17005,10 @@ ASM_P40_CODE2:         DB              $00
 ASM_DB_COUNT:          DB              $00
 ASM_DB_TAIL_LO:        DB              $00
 ASM_DB_TAIL_HI:        DB              $00
+ASM_DB_ITEM_LO:        DB              $00
+ASM_DB_ITEM_HI:        DB              $00
+ASM_DC_MODE:           DB              $00
+ASM_DC_LEN:            DB              $00
 ASM_DS_COUNT:          DB              $00
 ASM_DS_FILL:           DB              $00
 ASM_DS_INIT_FLAG:      DB              $00
@@ -16543,7 +17149,7 @@ ASM_SMOKE_PARSE_LOCAL_LABEL:
                         DB              ".LOOP",0
 ASM_SMOKE_PARSE_END_TAIL:
                         DB              "END X",0
-ASM_SMOKE_PARSE_DC:    DB              "DC $52",0
+ASM_SMOKE_PARSE_DC:    DB              "DC C,",34,"OK",34,0
 ASM_SMOKE_PARSE_START: DB              "START",0
 ASM_PARSE_AT_ORG:      DB              "        ORG $7000",0
 ASM_PARSE_AT_OUT_EQU:  DB              "OUT EQU $7100",0
@@ -16960,9 +17566,16 @@ ASM_FIXUP_JSR_BAR:     DB              "        JSR BAR",0
 ASM_FIXUP_FOO_LABEL:   DB              "FOO",0
 ASM_DIRECT_ADDR_EQU:   DB              "ADDR EQU $1234",0
 ASM_DIRECT_DB_MIXED:   DB              "SEED DB $FF,10,'A',$1234,<ADDR,>ADDR",0
-ASM_DIRECT_DB_UNKNOWN:
-                        DB              "        DB NOPE",0
+ASM_DIRECT_DB_FORWARD:
+                        DB              "        DB FWD,<FWD,>FWD",0
+ASM_DIRECT_DW_FORWARD: DB              "        DW FWD",0
+ASM_DIRECT_FORWARD_LABEL:
+                        DB              "FWD RTS",0
 ASM_DIRECT_DW_LIST:    DB              "WORD DW $1234,$12,10+1,'A'",0
+ASM_DIRECT_DC_C:       DB              "CSTR DC C,",34,"OK",34,0
+ASM_DIRECT_DC_HB:      DB              "HBSTR DC HB,",34,"OK",34,0
+ASM_DIRECT_DC_P:       DB              "PSTR DC P,",34,"OK",34,0
+ASM_DIRECT_DC_BAD:     DB              "        DC HB,",34,34,0
 ASM_DIRECT_ORG_CURRENT:
                         DB              "        ORG *",0
 ASM_DIRECT_ORG_FORWARD:
@@ -16982,6 +17595,10 @@ ASM_DIRECT_IMPORT_EXT: DB              "        IMPORT EXT",0
 ASM_DIRECT_IMPORT_LDA: DB              "        IMPORT LDA",0
 ASM_DIRECT_IMPORT_EXT_X:
                         DB              "        IMPORT EXT X",0
+ASM_DIRECT_DB_IMPORT_DATA:
+                        DB              "        DB EXT,<EXT,>EXT",0
+ASM_DIRECT_DW_IMPORT_DATA:
+                        DB              "        DW EXT",0
 ASM_DIRECT_ENTRY_MAIN_LABEL:
                         DB              "MAIN RTS",0
 ASM_DIRECT_ENTRY_MAIN: DB              "        ENTRY MAIN",0
@@ -17064,6 +17681,17 @@ ASM_ASMTEST_EXPECT:    DB              $A2,$00,$9C,$10,$71,$BD,$17,$70
                         DB              $4D,$20,$54,$45,$53,$54,$2E
 ASM_DIRECT_DB_EXPECT:  DB              $FF,$0A,$41,$34,$12,$34,$12
 ASM_DIRECT_DW_EXPECT:  DB              $34,$12,$12,$00,$0B,$00,$41,$00
+ASM_DIRECT_FORWARD_EXPECT:
+                        DB              $06,$70,$06,$70,$06,$70,$60
+ASM_DIRECT_DC_EXPECT:  DB              $4F,$4B,$00,$4F,$CB,$02,$4F,$4B
+ASM_IMPORT_DATA_BYTES_EXPECT:
+                        DB              $FF,$FF,$FF,$FF,$FF,$FF
+ASM_IMPORT_DATA_FIX_SEL_EXPECT:
+                        DB              $40,$41,$42,$40
+ASM_IMPORT_DATA_RELOC_KIND_EXPECT:
+                        DB              $04,$05,$06,$04
+ASM_IMPORT_DATA_RELOC_SITE_EXPECT:
+                        DB              $00,$02,$03,$04
 ASM_DIRECT_DS_EXPECT:  DB              $AA,$AA,$AA,$34,$34
 ASM_DIRECT_DS_LIST_EXPECT:
                         DB              $AA,$55,$41,$35,$AA,$55,$11,$22
@@ -17289,7 +17917,7 @@ ASM_VOC_HASH3:         DB              $C4,$7C,$91,$57,$AD,$AC,$F4,$E4,$A2,$E5,$
                         DB              $44,$6F,$F8,$A2,$07,$0F,$10,$0D,$35,$36,$D5,$33,$29,$D2,$E4,$2E
                         DB              $AF,$DD,$DC
 ASM_VOC_KIND_TAB:      DB              $03,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
-                        DB              $01,$01,$01,$01,$01,$01,$01,$01,$02,$04,$01,$01,$01,$02,$02,$02
+                        DB              $01,$01,$01,$01,$01,$01,$01,$01,$02,$02,$01,$01,$01,$02,$02,$02
                         DB              $02,$01,$02,$02,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$02
                         DB              $01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
                         DB              $01,$01,$01,$02,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01

@@ -1,0 +1,55 @@
+; IMPORT-DATA-2000.A
+; IMPORTED DB/DW DATA CONSTANTS ONLY.
+;
+; FIXED $3000 RAM AP RUN:
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   END
+;   PACKAGE $3200
+;   .
+;   AP $3200 $3000
+;   D 5848 5850
+;   D 3000 3020
+
+        ORG $2000
+
+        IMPORT BIO_FTDI_PUT_CSTR
+
+MAIN    BRA RUN
+        ENTRY MAIN
+
+IMPW    DB BIO_FTDI_PUT_CSTR
+IMPL    DB <BIO_FTDI_PUT_CSTR
+IMPH    DB >BIO_FTDI_PUT_CSTR
+IMPD    DW BIO_FTDI_PUT_CSTR
+
+; Fixed $3000 reads keep this import-only.
+RUN     STZ $5848
+        STZ $5849
+        STZ $584A
+        STZ $584B
+        LDA $3002
+        STA $584A
+        LDA $3003
+        STA $584B
+        LDA $3004
+        CMP $584A
+        BNE BAD
+        LDA $3005
+        CMP $584B
+        BNE BAD
+        LDA $3006
+        CMP $584A
+        BNE BAD
+        LDA $3007
+        CMP $584B
+        BNE BAD
+        LDA #$AC
+        STA $5848
+        RTS
+
+BAD     LDA #$E1
+        STA $5848
+        RTS
+
+        END

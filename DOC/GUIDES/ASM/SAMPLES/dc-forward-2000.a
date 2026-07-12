@@ -1,0 +1,67 @@
+; DC-FWD-2000.A
+; DC C/HB/P PLUS FORWARD DB/DW. NO IMPORTS.
+;
+; FAST RAM AP RUN:
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   END
+;   PACKAGE $3200
+;   .
+;   AP $3200 $3000
+;   D 5848 5850
+;   D 3000 3020
+
+        ORG $2000
+
+MAIN    BRA RUN
+        ENTRY MAIN
+
+FWDDB   DB FWD,<FWD,>FWD
+FWDDW   DW FWD
+CSTR    DC C,"OK"
+HBSTR   DC HB,"OK"
+PSTR    DC P,"OK"
+
+FWD     RTS
+
+RUN     STZ $5848
+        STZ $5849
+        STZ $584A
+        STZ $584B
+        STZ $584C
+        STZ $584D
+        STZ $584E
+        STZ $584F
+        STZ $5850
+        JSR TESTDC
+        BCC FAIL
+        LDA #<FWD
+        STA $584C
+        LDA #>FWD
+        STA $584D
+        LDA #$AC
+        STA $5848
+        RTS
+
+FAIL    STA $5848
+        RTS
+
+TESTDC  LDX #$00
+TDCLP   LDA CSTR,X
+        CMP DCEXP,X
+        BNE TDCBAD
+        INX
+        CPX #$08
+        BNE TDCLP
+        LDA #$5A
+        STA $5850
+        SEC
+        RTS
+
+TDCBAD  LDA #$E1
+        CLC
+        RTS
+
+DCEXP   DB $4F,$4B,$00,$4F,$CB,$02,$4F,$4B
+
+        END

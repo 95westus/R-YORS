@@ -3674,7 +3674,7 @@ Current executable proof:
 make -C SRC asm-v1-core
 ```
 
-The standalone `START` smoke path now checks `LDA`, active `DB`, parked `DC`,
+The standalone `START` smoke path now checks `LDA`, active `DB`, active `DC`,
 `A`, active `ENTRY`, ordinary-label `START`, and `FOO`. V1 stores the
 vocabulary row slot as the compact id until the emitter needs a separate
 opcode-family id.
@@ -3684,7 +3684,7 @@ Required fixtures:
 ```text
 LDA -> VOC_MNEM
 DB  -> VOC_DIR
-DC  -> VOC_RESERVED parked
+DC  -> VOC_DIR
 A   -> VOC_REG
 ENTRY -> VOC_DIR
 START -> VOC_NONE with C=0,A=OK
@@ -3738,7 +3738,7 @@ END X                 -> BAD OPER
 ORG                   -> BAD OPER
 NAME EQU              -> BAD OPER
 SEED DB               -> BAD OPER
-DC $52                -> BAD DIR
+DC C,"OK"             -> DIR/DC, PC-binding string directive
 START                 -> LABEL_ONLY
 A LDA #1              -> BAD SYM
 .LOOP                 -> LABEL_ONLY with LOCAL_NAME flag
@@ -5805,6 +5805,7 @@ $A4 selected fixup group
 $A5 selected lo8 immediate
 $A6 selected hi8 immediate
 $A7 pending fixup at END
+$AD imported DB/DW data relocation rows were wrong
 $AF shared fixup site/base check
 $B1 abs16 BEGIN failed
 $B2 abs16 `JSR FOO` emit failed
@@ -5827,7 +5828,7 @@ $C3 mixed DB line failed
 $C4 emitted DB bytes were wrong
 $C5 DB PC/high-water was wrong
 $C6 empty DB did not fail BAD OPER
-$C7 unknown bare DB symbol did not fail BAD WIDTH
+$C7 forward DB/DW label fixup or relocation row was wrong
 $C8 ORG current did not preserve PC/high-water
 $C9 ORG forward did not advance PC/high-water
 $CA ORG backward did not fail BAD RANGE
@@ -5844,6 +5845,8 @@ $D6 DW emit failed
 $D7 emitted DW bytes were wrong
 $D8 DW PC/high-water was wrong
 $D9 empty DW did not fail BAD OPER
+$DD DC C/HB/P string emit failed
+$DE empty HB string did not fail BAD OPER
 ```
 
 For `$5E` report-fact smoke, `Y` identifies the report-state subtest:
@@ -5896,7 +5899,7 @@ for reserved/parked words. `IMPORT` reuses the old `$20 ENTRY` slot and
 | $01 ADC MNEM | $16 CPX MNEM | $2B LDY MNEM | $40 SEI MNEM |
 | $02 AND MNEM | $17 CPY MNEM | $2C LSR MNEM | $41 SMB MNEM |
 | $03 ASL MNEM | $18 DB DIR | $2D NOP MNEM | $42 STA MNEM |
-| $04 BBR MNEM | $19 DC RES | $2E ORA MNEM | $43 ENTRY DIR |
+| $04 BBR MNEM | $19 DC DIR | $2E ORA MNEM | $43 ENTRY DIR |
 | $05 BBS MNEM | $1A DEC MNEM | $2F ORG DIR | $44 STP MNEM |
 | $06 BCC MNEM | $1B DEX MNEM | $30 PHA MNEM | $45 STX MNEM |
 | $07 BCS MNEM | $1C DEY MNEM | $31 PHP MNEM | $46 STY MNEM |
@@ -6297,6 +6300,22 @@ Current DW fixture:
 WORD DW $1234,$12,10+1,'A'
 ```
 
+Current forward data fixture:
+
+```text
+DB FWD,<FWD,>FWD
+DW FWD
+FWD RTS
+```
+
+Current DC fixture:
+
+```text
+CSTR DC C,"OK"
+HBSTR DC HB,"OK"
+PSTR DC P,"OK"
+```
+
 Current ORG fixtures:
 
 ```text
@@ -6316,16 +6335,20 @@ PAT DS 6,$AA,$55,'A','5'
 DS 3,$11,$22,$33,$44
 ```
 
-Current DB/DW/ORG/DS acceptance:
+Current DB/DC/DW/ORG/DS acceptance:
 
 ```text
 DB emits byte/word by source/symbol width
-unknown bare DB ADDR is BAD WIDTH
+bare DB/DW forward symbols emit fixups and patch when the label is bound
 empty DB is BAD OPER
 DB emits FF 0A 41 34 12 34 12 for the current fixture
 DW emits each expression as a little-endian word
 DW emits 34 12 12 00 0B 00 41 00 for the current fixture
 empty DW is BAD OPER
+DC C emits bytes plus trailing 00
+DC HB emits bytes with bit 7 set on the final byte
+DC P emits count byte then bytes
+empty DC HB string is BAD OPER
 first pristine ORG may establish source origin from scratch PC
 ORG current is allowed
 ORG forward is allowed and updates high-water PC
@@ -6339,12 +6362,6 @@ reports print WARN WARN_DS_WRAP when WARN_DS_WRAP is set
 DS advances PC/high-water by count
 empty DS is BAD OPER
 DS count >255 is BAD RANGE
-```
-
-Parked for later directive slices:
-
-```text
-DC constants
 ```
 
 ### ASM 2.40 Report
@@ -8593,11 +8610,10 @@ END                   -> ERR=$09 BAD FIX
 
 Current acceptance has moved: `START` is now a legal label, and `ENTRY MAIN`
 is the preferred source spelling for the package entry/public export row.
-`DW TARGET`, `DB <TARGET`, and `DB >TARGET` must still accept forward labels
-in a later ASM slice, patch them at `END`, and emit the corresponding internal
-relocation rows. The current `spill-roundtrip-2000.a` sample avoids those
-unsupported source forms so the present SPIL package/install/load/run path can
-still be tested.
+The 2026-07-11 host slice accepts forward-label `DW TARGET`, `DB <TARGET`,
+and `DB >TARGET`, patches them when the label binds, and emits the
+corresponding internal relocation rows. The board SPIL sample still awaits a
+focused retest with those source forms restored.
 
 Corrected `spill-roundtrip-2000.a` board proof followed on the same
 HIMON/flash ASM generation. The transcript includes an installed AP envelope
@@ -9325,9 +9341,10 @@ The commit source likewise avoids `INBUF+n` operands for the `YES` check.
 
 ASM-F2 soon-update note: the `ERR=$07 BL` rows in that transcript are not just
 a sample cleanup issue. DB-heavy prompt/string sources need a less fragile
-source-line path, such as a longer paste buffer, explicit continuation, or
-first-class string directives. Until then, board samples must split long `DB`
-rows under the 63-visible-character line cap.
+source-line path, such as a longer paste buffer, explicit continuation, or the
+first-class `DC` string directives added in the 2026-07-11 host slice. Board
+samples must still keep individual source lines under the 63-visible-character
+line cap.
 
 Follow-up source direction: the bank 0 installer is split into stage and commit
 pieces instead of growing a single interactive helper. Static checks show
@@ -9381,6 +9398,155 @@ confirm the printed `$hhhh` with `AP B0 $hhhh $3000`. Remaining negatives are
 bad AP header, non-erased destination bytes, no staged write, over-sector
 package placement, and abort without write. The full prompt-by-prompt script
 lives in `DOC/GUIDES/ASM/SAMPLES/bank0ap-put-2000-test.md`.
+
+## 2026-07-11 ASM-F2 Forward/Imported Data and DC Host Gate
+
+Host gate:
+
+```text
+make -C SRC asm-test
+```
+
+The host gate passes with forward-label data fixups, imported-data relocation
+rows, and first-class string constants enabled. The flash link reports
+`_END_DATA=$BC1B`, so the ASM-F2 image remains inside the approved
+`$B969-$BFFF` low-flash hole and leaves `$03E5` bytes of headroom below
+`$C000`.
+
+New directive smoke coverage:
+
+```text
+DB FWD,<FWD,>FWD
+DW FWD
+FWD RTS
+```
+
+Assembled at `$7000`, this must patch to `06 70 06 70 06 70 60`, leave four
+fixup rows, and record four internal relocation rows. This proves forward
+`DB`, selected-byte `DB`, and forward `DW` reuse the existing fixup and
+relocation machinery.
+
+Imported-data smoke coverage:
+
+```text
+IMPORT EXT
+DB EXT,<EXT,>EXT
+DW EXT
+END
+```
+
+Before `END`, this emits six placeholder bytes: `FF FF FF FF FF FF`. `END`
+must convert the four data fixups into import relocation rows `$04,$05,$06,$04`
+at sites `$00,$02,$03,$04`, all targeting import slot `$00`.
+
+String directive smoke coverage:
+
+```text
+DC C,"OK"       -> 4F 4B 00
+DC HB,"OK"      -> 4F CB
+DC P,"OK"       -> 02 4F 4B
+DC HB,""        -> BAD OPER
+```
+
+`C` is NUL-terminated/ASCIIZ. `HB` is the HIMON-style high-bit-final string.
+`P` is length-prefixed. This slice does not add escapes, embedded quotes,
+continuation strings, or a longer line buffer.
+
+Board follow-up: the split `dc-forward-2000.a` AP package passed from RAM with
+`RET A=AC`, `$5848=$AC`, `$5850=$5A`, and the loaded body head
+`80 0F 10 30 10 30 10 30 4F 4B 00 4F CB 02 4F 4B 60`. This hardware-proves
+`DC C/HB/P`, forward `DB`, forward selected-byte `DB`, forward `DW`, and
+internal AP relocation rows.
+
+Import/export follow-up: imported data constants are hardware-proven in the
+split fixed-destination RAM fixture. The combined bank 0 package staged and
+committed successfully at
+`$86D7 L=$00F6`, but `AP B0 $86D7 $3000` returned `APERR=$09` (`BAD_FIX`)
+before the AP body ran. The captured package table is well-formed:
+`BODY=$1156 LEN=$0077`, `RELOCS=$0F`, `IMPORTS=$01`, `REL=$10EB`; the import
+record decodes to `BIO_FTDI_PUT_CSTR` and hashes to `$AEFA0F42`, matching the
+resident HIMON row. Treat the remaining failure as HIMON AP mixed-table
+internal relocation behavior after STR8 import patching, not assembler package
+shape, imported data emission, DC, forward data, or bank 0 flash-write failure.
+`EXPORT`/`ENTRY` metadata is unchanged by this slice.
+
+Pasteable combined board kit:
+
+```text
+DOC/GUIDES/ASM/SAMPLES/dc-forward-import-data-2000.a
+DOC/GUIDES/ASM/SAMPLES/dc-forward-import-data-2000-test.md
+DOC/GUIDES/ASM/SAMPLES/dc-forward-2000.a
+```
+
+The live top sector dump matched the current STR8-N jump table:
+`F000: 4C 09 F0 4C 93 F3 4C 9A F3`. This rules out the older mixed
+HIMON/STR8 image as the cause of the current `$09`.
+
+The RAM `banked-rjoin-smoke.a` rerun passed, printed `BANK RJOIN`, returned
+`A=AC`, and patched `BIO_FTDI_PUT_CSTR` to `$E779`, proving the current STR8
+`$F006` import-link path still handles the known code-import case. The first
+RAM `import-data-2000.a` run loaded with status `$00` and patched body bytes
+`$3002-$3007` to `79 E7 79 E7 79 E7`, proving imported `DB name`,
+`DB <name`, `DB >name`, and `DW name` data constants are linked through the
+AP package path. Its runtime returned `A=E1` only because the checker used
+unsupported `LABEL+1` expressions (`ERR=$03 BO` at `IMPW+1` and `IMPD+1`).
+
+The follow-up `import-data-2000.a` version that used indexed high-byte reads
+added two internal absolute relocation rows (`RELOCS=$0A`) and reproduced
+`APERR=$09` even though `$3002-$3007` were already patched to
+`79 E7 79 E7 79 E7`. The RAM combined fixture also reproduced `APERR=$09`
+with `RELOCS=$0F`, and its body head showed both internal forward data and
+imported data bytes patched. The combined tail/table capture showed rows 0-7
+of the internal relocation table patched successfully, while row 8
+(`CMP DCEXP,X` at body site `$005B`, target `$006F`) stayed `DD 6F 20` instead
+of relocating to `DD 6F 30`. This rules out bank 0 source storage; the open
+case is AP load's larger mixed relocation table path, after import patching and
+before `GO`.
+
+The fixed-destination `import-data-2000.a` fixture then passed with
+`RET A=AC`, `$5848=$AC`, body bytes `$3002-$3007 = 79 E7 79 E7 79 E7`, and
+service block `status=$00`, `RELOCS=$04`, `IMPORTS=$01`. This hardware-proves
+imported `DB name`, `DB <name`, `DB >name`, and `DW name` data constants through
+AP import relocation rows `$04/$05/$06`.
+
+First host-side mitigation: `SRC/HIMON/himon.asm` reloaded `HIM_AP_REL_LO/HI`
+into `CMDP_PTR_LO/HI` on each HIMON AP internal relocation-loop row, matching
+STR8's import-link defensive pattern. `make -C SRC himon-str8-rom-bin` passed
+with HIMON end `$EFEE`, still below STR8 at `$F000`.
+After the updated HIMON image was installed and reported `HIMON V 00.0711(2100)`,
+an immediate `G 3000` run returned `A=AC`, but it is not the AP-loader proof:
+the source had been assembled at `$2000` and no `PACKAGE`/`AP` command was run.
+Because the stale `$3000` body's failed row-8 operand still points at
+source-side `DCEXP` near `$206F`, this direct run can false-pass. The board
+proof must use `PACKAGE $3200`, `.`, then `AP $3200 $3000`.
+The required AP retest on the same updated image still returned `APERR=$09`.
+The import rows patched to the new resident address `$E783`, proving the new
+image is active and STR8 import linking still works, but row 8 remained
+`DD 6F 20` instead of `DD 6F 30`. The first HIMON mitigation is therefore not
+sufficient; the remaining failure is still the mixed-table internal relocation
+path at row 8.
+
+The follow-up scratch dump identified the root cause:
+`HIM_AP_TMP2_LO=$1E` (`RELOC_COUNT*2`) and `HIM_AP_TMP_LO=$79`
+(`site $5B + $1E`). `HIM_AP_RELOC_SITE_OK_X` stored the 0/1 abs16 width addend
+in `HIM_AP_TMP2_LO`, but the row-access helpers reuse that byte for table
+offset math. Row 7 survived by accident because `$58+$1E=$76` was still less
+than body length `$77`; row 8 failed because `$5B+$1E=$79`.
+
+Root-cause host fix: `HIM_AP_RELOC_SITE_OK_X` now keeps the 0/1 addend on the
+stack with `PHA`/`PLA` while calling `HIM_AP_RELOC_SITE_LO_X` and
+`HIM_AP_RELOC_SITE_HI_X`. The earlier pointer-reload mitigation was removed to
+keep the ROM smaller. `make -C SRC himon-str8-rom-bin` passes with
+`HIMON V 00.0711(2113)` and HIMON end `$EFE0`, still below STR8 at `$F000`.
+The fixed image was then installed as `HIMON V 00.0711(2117)`, ASM-F2 was
+reloaded with `L F` (`WR=3C1B GO=800C`), and the combined fixture passed through
+`PACKAGE $3200` and `AP $3200 $3000`: `RET A=AC`, `$5848=$AC`,
+`$584A/$584B=$E775`, `$584C/$584D=$3016`, `$5850=$5A`, AP service
+`status=$00`, and row 8 correctly relocated to `DD 6F 30`.
+
+This closes the combined board proof for `DC C/HB/P`, forward `DB`, forward
+selected-byte `DB`, forward `DW`, imported `DB/DW` data constants, STR8 import
+patching, and HIMON mixed internal/import relocation-table loading.
 
 ## Hardware Bench Gate
 
