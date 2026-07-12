@@ -42,7 +42,7 @@ $3200        common RAM AP envelope/package buffer
 $4000        4K-split RAM AP envelope/package buffer
 $4800        fixed run address for asm-session-report-4800.a
 $8000        visible flash ASM address; also bank-window address for banked AP
-$B969        current built-in ASM session reporter AP package store address
+B0:$hhhh     Bank 0 ASM session reporter AP package store address
 $9000        common banked AP package store address for smoke tests
 $0A00-$19FF  STR8 4K sector staging buffer
 $1A00        sample/tool status byte area

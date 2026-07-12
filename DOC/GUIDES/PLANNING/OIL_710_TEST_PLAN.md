@@ -30,8 +30,8 @@ These are the current map values to verify against board bytes before calling
 the release proved:
 
 ```text
-HIMON body/data end:             $EFE9
-HIMON headroom before STR8:      $0017
+HIMON body/data end:             $EFE4
+HIMON headroom before STR8:      $001C
 STR8 body/data end:              $FCC5
 STR8 worker storage:             $FCE3-$FFEF
 STR8 top-sector hole:            $FCC5-$FCE2, $001E bytes

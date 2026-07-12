@@ -13,9 +13,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E924   HIMON CODE, START/standalone RESET entry at $C000
-$E925-$EEFD   HIMON DATA
-$EEFE-$FFF9   current image gap and future STR8/high-ROM space
+$C000-$EA0A   HIMON CODE, START/standalone RESET entry at $C000
+$EA0B-$EFE3   HIMON DATA
+$EFE4-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -27,9 +27,9 @@ explicit handoff contract; STR8 must not reserve those addresses.
 Current ROM hardware vectors:
 
 ```text
-$FFFA-$FFFB   NMI   = $E627
+$FFFA-$FFFB   NMI   = $E70D
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $E62A
+$FFFE-$FFFF   IRQ   = $E710
 ```
 
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
@@ -42,7 +42,7 @@ R-YORS/STR8.
 This is a target boundary, not a panic rule:
 
 ```text
-$8000-$BFFF   16K low-flash code/data, currently ASM-F2 plus AP packages
+$8000-$BFFF   16K low-flash code/data, currently ASM-F2 plus headroom
 $C000-$EFFF   12K HIMON monitor/tools budget
 $F000-$FFFF    4K STR8 recovery-owned erase sector
 ```
@@ -66,10 +66,9 @@ Combined image layout:
 
 ```text
 $8000-$B968   ASM-F2 low-flash image, entry $800C
-$B969-$BF78   built-in ASM session reporter AP package, run AP $B969 $4800
-$BF79-$BFFF   current low-flash growth hole
-$C000-$EFE9   HIMON body
-$EFEA-$EFFF   current image gap inside the used E sector
+$B969-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
+$C000-$EFE3   HIMON body
+$EFE4-$EFFF   current image gap inside the used E sector
 $F000-$FCC5   STR8 resident shell, IVI stubs, HIMON updater, and AP services
 $FA17         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
 $FCC6-$FCE2   current contiguous top-sector growth hole

@@ -43,7 +43,6 @@
                         XREF            UTL_HEX_ASCII_TO_NIBBLE
 
                         INCLUDE         "HIMON/himon-shared-eq.inc"
-                        INCLUDE         "himon-asmreport.inc"
 
 TRAP_CAUSE               EQU             $7EEA
 TRAP_BRK_SIG             EQU             $7EEB
@@ -1069,17 +1068,6 @@ CMD_USAGE_G:
 ; AP pkg dst -- load an AP package body to RAM and run dst.
 ; V0 contract: the package ENTRY is at BODY offset zero.
 ; ----------------------------------------------------------------------------
-CMD_ASMREPORT_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$FA,$8E,$1E,$32,CMD_HASH_KIND_EXEC ; ASMREPORT $321E8EFA EXEC
-CMD_ASMREPORT:
-                        LDA             #ASMREPORT_AP_SRC_LO
-                        STA             HIM_AP_SRC_LO
-                        LDA             #ASMREPORT_AP_SRC_HI
-                        STA             HIM_AP_SRC_HI
-                        STZ             HIM_AP_DST_LO
-                        LDA             #ASMREPORT_AP_DST_HI
-                        STA             HIM_AP_DST_HI
-                        BRA             CMD_AP_LOAD_REQUEST
 CMD_AP_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$94,$37,$D5,$3A,CMD_HASH_KIND_EXEC ; AP $3AD53794 EXEC
 CMD_AP:

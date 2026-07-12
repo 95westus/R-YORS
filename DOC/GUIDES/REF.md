@@ -294,12 +294,12 @@ R-YORS/STR8.
 at `$F092`/`$F0A6`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
 the file, `$7FFA-$7FFF`.
 
-The current build also stores the fixed-address ASM session reporter as an AP
-package immediately after ASM-F2. The build prints the exact command; for the
-current image it is:
+The current build does not store the fixed-address ASM session reporter after
+ASM-F2. Keep that package in Bank 0 and run it with the selected Bank 0 store
+address:
 
 ```text
-AP $B969 $4800
+AP B0 $hhhh $4800
 ```
 
 Standalone app targets remain explicit. For example, `make -C SRC life` still

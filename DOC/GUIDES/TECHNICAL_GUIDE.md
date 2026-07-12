@@ -174,9 +174,10 @@ $F000-$FFFF    4K STR8 recovery sector
 ```
 
 In the current `make all` image, `$8000-$BFFF` is no longer empty user scratch:
-ASM-F2 is present at `$8000`, and the ASM session reporter AP package is stored
-immediately after ASM-F2. STR8 may use less than 4K, but the whole top erase
-sector is recovery-owned for V0 policy.
+ASM-F2 is present at `$8000`. The ASM session reporter AP is not stored in Bank
+3; keep that fixed-address reporter as a Bank 0 AP package and run it with
+`AP B0 $hhhh $4800`. STR8 may use less than 4K, but the whole top erase sector
+is recovery-owned for V0 policy.
 
 Future bank planning may split the backup model into regions instead of whole
 banks. The current sketch treats banks 0 and 1 together as five 12K backup
@@ -192,9 +193,10 @@ Current combined-image facts:
 ASM-F2 base:    $8000
 ASM-F2 entry:   $800C
 ASM-F2 end:     $B969
-ASM report AP:  $B969-$BF78, run with ASMREPORT -> $4800
+ASM low hole:   $B969-$BFFF
+ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
-HIMON body:      $C000-$EFFF
+HIMON body:      $C000-$EFE3
 STR8 entry:      $F000
 STR8 body:       $F000-$FCC5
 STR8 identity:   #5F6A0F7A
@@ -208,10 +210,9 @@ The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
 `$F000`, and the reset vector at file offset `$7FFC`. NMI and IRQ/BRK vectors
 enter STR8 IVI stubs first.
 
-`ASMREPORT` is a compact HIMON FNV command wrapper around the built-in ASM
-session report AP. The build generates `BUILD/inc/himon-asmreport.inc` from
-the ASM-F2 `_END_DATA` map, so the AP source follows the end of ASM-F2; the
-current composite image stores it at `$B969` and loads/runs it at `$4800`.
+The ASM session reporter is deliberately outside the Bank 3 composite image.
+Build it with `make -C SRC asm-session-report`, store the AP package in Bank 0,
+and run it with the banked AP command at its selected store address.
 
 ## Boot And Handoff
 

@@ -407,16 +407,16 @@ Typical setup:
 >ASM            current make all image: ASM-F2 is already at $8000
 ```
 
-After an ASM session, exit with `.` and run the built-in fixed-address reporter
-if table detail is needed:
+After an ASM session, exit with `.` and run the fixed-address reporter from its
+Bank 0 AP store address if table detail is needed:
 
 ```text
->ASMREPORT
+>AP B0 $hhhh $4800
 ```
 
-The current composite image expands this to the built-in AP package stored at
-`$B969`, loaded and run at `$4800`. That source address is generated from the
-ASM-F2 map at build time.
+The current composite image does not carry the reporter package in Bank 3.
+Build it with `make -C SRC asm-session-report` and install/store the package in
+Bank 0.
 
 Older board images and narrow development passes can still load the reporter
 and ASM-F2 explicitly:

@@ -8119,10 +8119,11 @@ Current host proof produced:
 asm-v1-flash headroom to C000 = 0697 (_END_DATA=B969)
 UDATA starts at $5000, ends at $79A6
 asm-session-report end = 76D5 (limit 7A00)
-asm-session-report AP store = $B969-$BF78, len=$0610, run=$4800
-himon-rom-c000 _END_DATA=$F000
-CMD_ASMREPORT=$C687
-HIM_AP_SERVICE=$D8AA
+asm-session-report AP bin len=$0610, run=$4800, stored outside Bank 3
+Bank 3 low-flash hole after ASM-F2 = $B969-$BFFF, len=$0697
+himon-rom-c000 _END_DATA=$EFE4
+CMD_AP=$C687
+HIM_AP_SERVICE=$D88E
 HIM AP request/result cells = $7E2D-$7E40
 ```
 
@@ -8331,23 +8332,24 @@ generated source also resolves its internal `JSR`/`JMP` targets to fixed
 literal addresses and emits `ENTRY START`; load/run the package only at the
 same `$4800` origin.
 
-Resident wrapped AP proof:
+Bank 0 reporter AP proof:
 
 ```text
 make -C SRC himon-str8-rom-bin
 make -C SRC himon-str8-himon-update-s19
+make -C SRC asm-session-report-ap-bin
 ```
 
 Expected host build facts:
 
 ```text
-HIMON START/NMI/IRQ/END = C000/.../.../F000
+HIMON START/NMI/IRQ/END = C000/E70D/E710/EFE4
 ASM-F2 BASE/START/END  = 8000/800C/B969
-AP REPORT STORE/LEN    = B969/610
-AP REPORT RUN          = AP $B969 $4800
+Bank 3 low-flash hole   = B969-BFFF, len=0697
+ASM report AP bin len   = 0610
 ```
 
-Board script after updating HIMON:
+Board script after updating HIMON and storing the reporter AP in Bank 0:
 
 ```text
 ASM NEW
@@ -8356,15 +8358,15 @@ MAIN JSR TARGET
 TARGET RTS
 END
 .
-ASMREPORT
+AP B0 $hhhh $4800
 ```
 
-Expected: `ASMREPORT` prints `GO 4800`, runs the built-in AP package at
+Expected: `AP B0 $hhhh $4800` prints `GO 4800`, runs the Bank 0 AP package at
 `$4800`, prints the same `ASM REPORT ... ASM REPORT OK` table output, and then
-returns through HIMON's normal command-return path for entry `$4800`. This
-resident wrapper is host-built only until a hardware transcript captures it.
+returns through HIMON's normal command-return path for entry `$4800`.
 
-Bank 2 `$8000` AP storage path for the same reporter:
+Older Bank 2 `$8000` AP storage path for the same reporter, retained as an
+alternate storage proof and not the current Bank 0 reporter placement:
 
 ```text
 ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a

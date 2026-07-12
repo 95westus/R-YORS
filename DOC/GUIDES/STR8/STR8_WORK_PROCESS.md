@@ -107,7 +107,7 @@ Build:
 Artifact check:
   himon-str8-rom.bin is 32768 bytes
   ASM-F2 starts at CPU $8000 and enters at $800C
-  built-in ASM report AP package runs with AP $B969 $4800
+  Bank 3 has no built-in ASM report AP; reporter runs from Bank 0 with AP B0 $hhhh $4800
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
   worker source is CPU $FCE3-$FFEF

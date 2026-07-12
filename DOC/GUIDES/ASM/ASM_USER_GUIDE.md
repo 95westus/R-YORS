@@ -45,9 +45,13 @@ make -C SRC asm-session-report
 ```
 
 `make -C SRC all` creates the current 32K onboard image with ASM-F2 already in
-low flash and the fixed-address ASM session reporter stored as an AP package
-after ASM-F2. The build prints the exact reporter command; for the current
-image it is `AP $B969 $4800`.
+low flash. Bank 3 does not carry the ASM session reporter AP; build or install
+that reporter separately and keep it as a Bank 0 AP. Run it with the explicit
+banked AP form:
+
+```text
+AP B0 $hhhh $4800
+```
 
 Some current board-ingested files still live under
 `DOC/GUIDES/ASM/SAMPLES/` because the present ASM-F2 workflow pastes or
@@ -60,10 +64,11 @@ reason behind each step, see [LIFE16_BANK2_EXAMPLE.md](LIFE16_BANK2_EXAMPLE.md).
 
 On a board burned with the `make all` image, update/install the full image and
 then return to HIMON with `G HIMON`; ASM-F2 is already present at `$8000`. If
-you need the session report after an ASM session, exit ASM with `.` and run:
+you need the session report after an ASM session, exit ASM with `.` and run the
+reporter AP from its Bank 0 store address:
 
 ```text
-AP $B969 $4800
+AP B0 $hhhh $4800
 ```
 
 For an older board image or a narrow development pass, update HIMON through
@@ -624,12 +629,12 @@ make -C SRC all
 make -C SRC asm-session-report
 ```
 
-The current `make all` image stores the fixed-address reporter as an AP package
-immediately after ASM-F2. After the ASM session to inspect, exit with `.` and
-run the build-reported AP command; for the current image:
+The current `make all` image does not store the fixed-address reporter after
+ASM-F2. After the ASM session to inspect, exit with `.` and run the reporter
+from its Bank 0 AP store address:
 
 ```text
-AP $B969 $4800
+AP B0 $hhhh $4800
 ```
 
 `make -C SRC asm-session-report` also builds the explicit reporter artifacts.
@@ -642,16 +647,15 @@ single-character `DB` atoms. Assemble it before the session it will inspect,
 then after that session exits run `G 4800`. `asm-session-report-7000.a` is kept
 for non-flash/runtime-paste ASM builds that still allow `$7000` output.
 
-To manually store the reporter as an AP package in bank 2 `$8000`, assemble
-`asm-session-report-4800.a`, run `SEAL` and `PACKAGE $3200` at the `SEAL>`
-prompt, exit with `.`, assemble `bank2put-8000-3000.a`, exit, and run
-`G 3000`. A successful write leaves `$1A00=$AC`. This reporter package is
-fixed-address: it has literal internal call targets and must be loaded/run at
-the same `$4800` origin. After any later ASM session, reload and run the stored
-reporter with:
+To manually store the reporter as an AP package in Bank 0, use the
+`bank0ap-stage-2000.a` flow in
+[SAMPLES/bank0ap-put-2000-test.md](SAMPLES/bank0ap-put-2000-test.md). This
+reporter package is fixed-address: it has literal internal call targets and
+must be loaded/run at the same `$4800` origin. After any later ASM session,
+reload and run the stored reporter with:
 
 ```text
-AP B2 $8000 $4800
+AP B0 $hhhh $4800
 ```
 
 If `PACKAGE $3200` reports `PKG ERR=$02`, regenerate the reporter source with
