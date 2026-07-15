@@ -23,7 +23,7 @@ expect ASM RT PASTE
 Paste the program:
 
 ```text
-paste DOC/GUIDES/ASM/SAMPLES/expr-math-7010.a
+paste DOC/GUIDES/ASM/SAMPLES/expr-math-transient-7010.a
 expect ASM RT PASTE OK
 ```
 

@@ -21,7 +21,7 @@ DOC/GUIDES/ASM/SAMPLES/life16-column-2000.a
 Helper:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/bankput-3000.a
+DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a
 ```
 
 ## What It Does
@@ -53,7 +53,7 @@ BODY from the banked AP envelope into RAM at `$3000`, applies relocation/import
 fixups, and runs it there. The program never executes from bank 2 flash.
 
 Bank 2 is used because it is the preferred test bank for banked AP storage.
-The `bankput-3000.a` helper preserves the rest of the target 4K sector by
+The `bankput-transient-3000.a` helper preserves the rest of the target 4K sector by
 copying the bank sector into the `$0A00-$19FF` staging buffer, overlaying the
 AP envelope, then programming the staged sector back.
 
@@ -81,7 +81,7 @@ RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
 1A00: AC 00 00 00 00 | .....
 ```
 
-That same transcript used `bank2put-8000-3000.a`, which stores the envelope at
+That same transcript used `bank2put-8000-transient-3000.a`, which stores the envelope at
 bank 2 `$8000`, then tried to run from `$9000` and `$A000`:
 
 ```text
@@ -93,7 +93,7 @@ APERR=$07
 
 `APERR=$07` is HIMON AP `BAD_LINE`, which is expected when the selected source
 address does not begin with an AP envelope. To complete that exact test state,
-run `AP B2 $8000 $3000`; to follow this guide exactly, use `bankput-3000.a`,
+run `AP B2 $8000 $3000`; to follow this guide exactly, use `bankput-transient-3000.a`,
 which defaults to `DST=$9000`, then run `AP B2 $9000 $3000`.
 
 Have a known-good programmer image ready before writing banked flash.
@@ -176,7 +176,7 @@ Reason: `41 50` is the AP signature, `01` is the AP version, and `DE 01` is the
 current Life package length for printed length `$01DE`. Stop if any of those
 bytes differ. Do not run `AP`, `LOAD`, or another `PACKAGE` between this check
 and `G 3000`; `$3200` must remain the unchanged package buffer for
-`bankput-3000.a`. A damaged or replaced buffer makes the writer return `$E2`.
+`bankput-transient-3000.a`. A damaged or replaced buffer makes the writer return `$E2`.
 
 ## Store The AP Envelope In Bank 2
 
@@ -189,12 +189,12 @@ Start a second ASM session:
 Paste:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/bankput-3000.a
+DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a
 ```
 
-Do not paste `bank2put-8000-3000.a`. It belongs to the fixed session reporter
+Do not paste `bank2put-8000-transient-3000.a`. It belongs to the fixed session reporter
 workflow and uses different store and run addresses. This Life procedure uses
-only `bankput-3000.a` and bank 2 `$9000`.
+only `bankput-transient-3000.a` and bank 2 `$9000`.
 
 Use the helper defaults:
 
@@ -297,5 +297,5 @@ Once bank 2 has the AP envelope, a later session only needs:
 >AP B2 $9000 $3000
 ```
 
-Do not re-run `bankput-3000.a` unless you intentionally want to replace the
+Do not re-run `bankput-transient-3000.a` unless you intentionally want to replace the
 stored AP envelope.

@@ -606,7 +606,7 @@ A [addr] [label[:]] MMM [operand] .
   for preloading before the session being inspected. It uses literal message
   addresses and single-character `DB` atoms so it fits the raised symbol/fixup
   limits without relying on double-quoted `DB` strings.
-  `asm-session-report-7000.a` is retained for non-flash/runtime-paste ASM
+  `asm-session-report-transient-7000.a` is retained for non-flash/runtime-paste ASM
   builds that still allow `$7000` output.
 - RAM "rows" are conceptual records. A W65C02 implementation may store fields
   as parallel arrays indexed by slot, matching the current proof style, when

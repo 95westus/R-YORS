@@ -66,13 +66,13 @@ Also keep current board-ingested/generated ASM sources in their existing paths
 until the Makefile and operator docs point somewhere else:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a
+DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
 DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
-DOC/GUIDES/ASM/SAMPLES/asm-session-report-7000.a
+DOC/GUIDES/ASM/SAMPLES/asm-session-report-transient-7000.a
 DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
 DOC/GUIDES/ASM/SAMPLES/banked-ap-smoke.a
 DOC/GUIDES/ASM/SAMPLES/banked-rjoin-smoke.a
-DOC/GUIDES/ASM/SAMPLES/bankput-3000.a
+DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a
 ```
 
 Those files are named like samples, but today they still support current

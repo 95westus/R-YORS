@@ -1023,7 +1023,7 @@ make -C SRC str8-top-stage-s19
 
 It writes `BUILD/s19/str8-top-stage-0a00.s19`, the vector-complete
 `$F000-$FFFF` sector remapped to RAM `$0A00-$19FF` for the
-`DOC/GUIDES/ASM/SAMPLES/topwr-3000.a` writer. This stream is for staged RAM
+`DOC/GUIDES/ASM/SAMPLES/topwr-transient-3000.a` writer. This stream is for staged RAM
 sector replacement only; it is not a normal STR8 `U` payload stream.
 
 This is a good fit for ordinary HIMON body sectors. Updating `$C000-$EFFF`

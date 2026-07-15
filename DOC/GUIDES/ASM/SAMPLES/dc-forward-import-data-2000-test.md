@@ -4,7 +4,7 @@ Purpose: one combined ASM-F2 board proof for `DC C/HB/P`, forward `DB/DW`,
 and imported `DB/DW` data constants through the AP package/link path.
 
 The default flow stores an AP package in bank 2 at `$9000` using the existing
-`bankput-3000.a` helper. A bank 0 variant follows for a persistent flash proof;
+`bankput-transient-3000.a` helper. A bank 0 variant follows for a persistent flash proof;
 use it only when the selected bank 0 sector is intentionally erased or reserved.
 
 ## 1. Build The AP Package
@@ -57,7 +57,7 @@ ASM NEW
 Paste:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/bankput-3000.a
+DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a
 ```
 
 Expected:
@@ -130,59 +130,38 @@ Bank 0 is OK for this combined proof when the target sector is intentionally
 available. This path writes persistent bank 0 flash, so do not use it for a
 quick smoke unless that sector has been reserved for AP package storage.
 
-For bank 0, always package the AP envelope at `$4000`; the stage and commit
-helpers emit at `$2000` and the overlay/load/run destination is `$3000`.
+For bank 0, package the AP envelope at `$3000`; the one-run installer then
+replaces the BODY source at `$2000` and preserves the envelope.
 
-Build the same AP package at `$4000`:
+Build the same AP package at `$3000`:
 
 ```text
 ASM NEW
 paste DOC/GUIDES/ASM/SAMPLES/dc-forward-import-data-2000.a
-PACKAGE $4000
+PACKAGE $3000
 .
-D 4000 403F
+D 3000 303F
 ```
 
 Expected:
 
 ```text
-PKG OK @=$4000 L=$hhhh
+PKG OK @=$3000 L=$hhhh
 ASM BYE
-4000: 41 50 01 ...
+3000: 41 50 01 ...
 ```
 
-Record the package length. Keep `$4000-$4FFF` untouched until the stage piece
-has finished.
+Record the package length. Keep `$3000-$3FFF` untouched until the one-run
+installer has returned.
 
-Stage the bank 0 sector, using explicit `$9000` here:
+Store the bank 0 sector, using explicit `$9000` here:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/bank0ap-stage-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/bank0ap-put-transient-2000.a
 .
 G 2000
 DST $8000-$FFFF OR ENTER=AUTO> $9000
-D 1A00 1A06
-```
-
-Expected:
-
-```text
-B0 AP STAGE
-PKG L=$hhhh
-STAGE OK
-STAGED B0 AP @$9000 L=$hhhh
-RET A=AC ...
-1A00: AC 00 90 ll hh 90 5A
-```
-
-Commit the staged sector:
-
-```text
-ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/bank0ap-commit-2000.a
-.
-G 2000
 TYPE YES TO WRITE> YES
 D 1A00 1A06
 ```
@@ -190,7 +169,9 @@ D 1A00 1A06
 Expected:
 
 ```text
-B0 AP COMMIT
+B0 AP PUT
+PKG L=$hhhh
+STAGE OK
 B0 AP @$9000 L=$hhhh
 PROGRAM OK
 B0 AP @$9000 L=$hhhh
@@ -198,8 +179,8 @@ RET A=AC ...
 1A00: AC 00 90 ll hh 90 00
 ```
 
-`$1A06` is cleared after a successful commit to prevent an accidental repeat
-write.
+`$1A06` is cleared after the installer returns, preventing an accidental
+repeat write.
 
 Run the bank 0 package:
 

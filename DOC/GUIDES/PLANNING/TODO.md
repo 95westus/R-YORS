@@ -6,7 +6,7 @@
   STR8-N, HIMON V, and ASM-F2 paths are stable:
   [HISTORICAL_CODE_MIGRATION_PLAN.md](HISTORICAL_CODE_MIGRATION_PLAN.md).
   Do not move current board-ingested sample/generated files such as
-  `str8n-topwrite-3000.a`, `asm-session-report-4800.a`, or `ASMTEST_3000.asm`
+  `str8n-topwrite-transient-3000.a`, `asm-session-report-4800.a`, or `ASMTEST_3000.asm`
   until their Makefile targets and operator docs have a replacement path.
 - Run the remaining STR8 V0 acceptance/regression pass from
   [STR8_WORK_PROCESS.md](../STR8/STR8_WORK_PROCESS.md): rebuild artifacts, record

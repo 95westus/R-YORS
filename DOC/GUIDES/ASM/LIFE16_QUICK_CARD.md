@@ -56,7 +56,7 @@ the writer is about to copy.
 >ASM NEW
 ```
 
-Paste `DOC/GUIDES/ASM/SAMPLES/bankput-3000.a`. After `END`:
+Paste `DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a`. After `END`:
 
 ```text
 ASM OK

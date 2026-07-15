@@ -233,7 +233,7 @@ payload should become recoverable.
 Updating the active STR8 top sector is a separate, dangerous operation. For the
 OIL (Overlay Integration Layer) `.710` procedure, build
 `make -C SRC str8-top-stage-s19`, stage with
-`DOC/GUIDES/ASM/SAMPLES/topwr-3000.a`, and follow
+`DOC/GUIDES/ASM/SAMPLES/topwr-transient-3000.a`, and follow
 [PLANNING/OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md#str8-top-sector-update-procedure).
 
 ## STR8 Payload Streams

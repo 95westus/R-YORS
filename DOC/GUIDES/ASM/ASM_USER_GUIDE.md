@@ -120,6 +120,27 @@ as `$BD10`. If that hole is already occupied, `INSTALL pkg` suggests the next
 erased hole, and an explicit install to the occupied address reports
 `INST ERR=$06 BAD RANGE`.
 
+## Return Status
+
+Runnable ASM samples use one top-level return convention:
+
+```text
+C=1  success; A=$00 or the sample's documented success status
+C=0  failure/abort; A=the documented nonzero status
+```
+
+HIMON captures flags immediately after a `G` or `AP` target returns, so the
+`RET ... C`/`RET ... c` display is authoritative. Internal subroutines may use
+carry for their own contracts; only the executable's final exit sets the
+top-level result.
+
+ASM-F2 keeps a nonzero result sticky for the active session. Typing `.` after
+any assembly, seal, package, load, install, or input failure returns `C=0` and
+that status in A. A clean session returns `C=1,A=$00`. Successful `ASM NEW` or
+`NEW` starts a fresh result. Because `ASM` is an FNV command rather than a
+direct `G`, HIMON renders its failed return as
+`#56AD7400# EXEC ERR=$hh` instead of a `RET` line.
+
 To load an already-installed package later, enter an empty source session just
 to reach `SEAL>`:
 
@@ -558,9 +579,8 @@ The destination BODY span must fit wholly in `$2000-$4FFF`. `LOAD` deliberately
 does only a minimal package parse in this slice; full `CHECK`/FNV validation is
 deferred. Resident imports are linked through RJOIN; missing imports,
 non-resident dependencies, and unsupported relocation rows fail with
-`LOAD ERR=$09 BAD FIX`. When loading from a RAM package, place the package
-envelope above the destination BODY; flash ASM rejects RAM loads whose
-destination reaches into the package envelope.
+`LOAD ERR=$09 BAD FIX`. A RAM package may be above or below its destination,
+but the complete envelope and destination BODY ranges must not overlap.
 
 The one-argument `INSTALL pkg` form is read-only advisory:
 
@@ -586,29 +606,35 @@ INSTALL $3200 $hhhh
 
 Banked install across banks 0-2 is intentionally a board source tool in this
 slice, not a polished `INSTALL` command. Use
-`DOC/GUIDES/ASM/SAMPLES/bankput-3000.a`: it copies the selected bank sector
+`DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a`: it copies the selected bank sector
 into the `$0A00-$19FF` sector staging buffer, overlays the AP envelope, then
 programs/verifies that 4K sector through the `$F003` STR8 worker service.
-`DOC/GUIDES/ASM/SAMPLES/bank2put-8000-3000.a` is the fixed variant for an AP
-envelope at bank 2 `$8000`. For bank 0 interactive install, prefer the split
-`bank0ap-stage-2000.a` then `bank0ap-commit-2000.a` flow. That path uses
-`PACKAGE $4000`, keeping helper emission, AP overlay/load, and RAM AP envelope
-storage in separate 4K islands. The destructive program step is separate from
-the stage/scan step. HIMON then runs a banked package with:
+`DOC/GUIDES/ASM/SAMPLES/bank2put-8000-transient-3000.a` is the fixed variant for an AP
+envelope at bank 2 `$8000`. For bank 0 interactive install, use the one-run
+`bank0ap-put-transient-2000.a` flow. That path uses `PACKAGE $3000`; the installer then
+replaces the BODY source at `$2000` while preserving the envelope at `$3000`.
+It stages and validates before accepting exact `YES` for the destructive
+program/verify step. HIMON then runs a banked package with:
 
 ```text
 AP B0 $8000 $3000
 AP B1 $9000 $3000
 AP B2 $9000 $3000
-AP B2 $8000 $4800
+AP B0 $hhhh $4800
 ```
 
 That path copies the banked AP envelope into the sector staging buffer, loads
 and links BODY bytes into `$2000-$4FFF`, and runs from the requested load
 address. It never executes directly from banked flash.
 
+Flash ASM keeps symbol names at `$0200-$09FF` and fixup names at
+`$0A00-$19FF`. `PACKAGE` serializes the required AP metadata before those
+tables are released. Any STR8 flash worker or banked `AP` operation then
+reuses that low RAM, so run `asm-session-report` before staging if symbol and
+fixup names from the current session are required.
+
 For STR8 top-sector update or recovery work, use
-`DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a` only when the intended task is
+`DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a` only when the intended task is
 to rewrite bank 3 `$F000-$FFFF`. `G 3000` stages the embedded STR8-N image into
 `$0A00-$19FF` and should leave `$1A00-$1A03 = 00 AC 00 00`. After verifying
 the staged bytes, `G 3003` erases/programs/verifies the active top sector and
@@ -630,11 +656,15 @@ make -C SRC asm-session-report
 ```
 
 The current `make all` image does not store the fixed-address reporter after
-ASM-F2. After the ASM session to inspect, exit with `.` and run the reporter
-from its Bank 0 AP store address:
+ASM-F2. If it is stored in Bank 0, load it before the session to inspect, then
+exit that session with `.` and run the resident copy:
 
 ```text
 AP B0 $hhhh $4800
+ASM NEW
+...target source...
+.
+G 4800
 ```
 
 `make -C SRC asm-session-report` also builds the explicit reporter artifacts.
@@ -644,21 +674,32 @@ Load it before the ASM session to inspect, then after `END` and `.` run
 For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a` is a
 compact ASM-F2 source program generated with literal message addresses and
 single-character `DB` atoms. Assemble it before the session it will inspect,
-then after that session exits run `G 4800`. `asm-session-report-7000.a` is kept
+then after that session exits run `G 4800`. `asm-session-report-transient-7000.a` is kept
 for non-flash/runtime-paste ASM builds that still allow `$7000` output.
 
 To manually store the reporter as an AP package in Bank 0, use the
-`bank0ap-stage-2000.a` flow in
+`bank0ap-put-transient-2000.a` flow in
 [SAMPLES/bank0ap-put-2000-test.md](SAMPLES/bank0ap-put-2000-test.md). This
 reporter package is fixed-address: it has literal internal call targets and
-must be loaded/run at the same `$4800` origin. After any later ASM session,
-reload and run the stored reporter with:
+must be loaded/run at the same `$4800` origin. It is also tied to the ASM-F2
+code/map layout used to generate it: rebuild, repackage, and reinstall the
+reporter after ASM-F2 code or map changes. A version-stamp-only rebuild with
+the same addresses does not invalidate it. Loading an older reporter at
+`$3000` traps when
+its literal `$48xx` calls escape the relocated body; loading it at `$4800`
+still fails if its hard-coded ASM helper/table addresses no longer match.
+Load the matching reporter before the session to inspect, because the banked
+load reuses low RAM:
 
 ```text
 AP B0 $hhhh $4800
+ASM NEW
+...target source...
+.
+G 4800
 ```
 
-If `PACKAGE $3200` reports `PKG ERR=$02`, regenerate the reporter source with
+If `PACKAGE $3000` reports `PKG ERR=$02`, regenerate the reporter source with
 `make -C SRC asm-session-report`; older generated sources could assemble but
 set bad seal flags by overflowing the AP relocation table.
 
@@ -765,20 +806,23 @@ $2000        initial ASM source PC
 Current practical map while ASM is running:
 
 ```text
+$0200-$09FF  symbol-name pool; released when STR8 reloads its worker
+$0A00-$19FF  fixup-name pool; released for flash sector staging
 $2000-$2FFF  packageable ASM body/helper emission island
-$3000-$3FFF  AP overlay/load/run destination island
-$4000-$4FFF  RAM AP envelope/package buffer island
-$5000-$7EFF  protected ASM/HIMON workspace while ASM is active
+$3000-$3FFF  Bank 0 AP envelope, then AP load/run space
+$4000-$4FFF  lower RAM output/load space
+$5000-$61A9  protected flash ASM UDATA in the current map
+$61AA-$7DFF  upper ASM output/scratch arena
+$7E00-$7EFF  HIMON service and monitor workspace
 $7F00-$7FFF  I/O, do not use
 ```
 
-The flash wrapper deliberately rejects direct assembly output into the protected
-high-RAM region. For example, `ORG $5000` and `ORG $7000` are currently
-`BAD RANGE` in flash ASM.
+The flash wrapper rejects output into its protected UDATA span. `ORG $5000`
+is `BAD RANGE`; the current map permits `ORG $61AA` through `$7DFF`.
 Runtime code may still use ordinary RAM after leaving ASM if it does not depend
 on returning to the same live ASM workspace. Future AP overlay work may use
-`$3000-$4FFF` after ASM has produced a package and returned to HIMON, but that
-is a loader contract, not source-mode permission to assemble over ASM.
+the upper arena, but HIMON AP load destinations remain `$2000-$4FFF` in this
+slice.
 
 Current proof-sized table limits:
 
@@ -855,7 +899,7 @@ Known limitations:
 - No default flash-image `RESOLVE` command; import resolution happens only
   during AP load/run through resident RJOIN.
 - `INSTALL pkg flash_addr` writes only erased currently visible low flash.
-  Banked install across banks 0-2 is currently `bankput-3000.a`, not a polished
+  Banked install across banks 0-2 is currently `bankput-transient-3000.a`, not a polished
   command.
 - `LOAD` does minimal AP parsing and resident RJOIN import linking; no full AP
   FNV validation or dependency manager yet.

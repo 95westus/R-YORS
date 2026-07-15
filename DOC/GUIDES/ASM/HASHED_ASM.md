@@ -4866,7 +4866,7 @@ wrappers around the lower-level code/word routines. Today it is a RAM proof
 utility; later it can grow FNV headers and be loaded into flash as a resident
 routine pack.
 
-`DOC/GUIDES/ASM/SAMPLES/pack40-roundtrip-2000.a` is the matching ASM-native
+`DOC/GUIDES/ASM/SAMPLES/pack40-roundtrip-transient-2000.a` is the matching ASM-native
 standalone proof source. It assembles at `$2000`, writes packed bytes to `$3000`,
 unpacked text to `$3020`, and `$AC` to `$3040` on success.
 

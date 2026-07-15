@@ -1,55 +1,43 @@
 # Bank 0 AP Put Board Test
 
-Purpose: prove the split bank 0 AP installer from an ASM prompt. This is a
-destructive bank 0 flash write. Use it only when bank 0 is intentionally
-available for AP package storage and you have accepted the recovery path.
+Purpose: prove the standard one-run Bank 0 AP installer from an ASM prompt.
+This is a destructive Bank 0 flash write. Use it only for an intentionally
+reserved AP sector and with a known recovery path.
 
-The flow is deliberately split:
+Status: the earlier split stage/commit path is hardware-proven. This card is
+the board-proof procedure for the new `bank0ap-put-transient-2000.a` combined transient.
+Record its result in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md` and
+`DOC/GUIDES/ASM/TEST_PLAN.md`; do not replace the earlier split transcript.
 
-```text
-bank0ap-stage-2000.a     stages the bank 0 sector and overlays the AP
-bank0ap-commit-2000.a    confirms YES and programs the staged sector
-```
-
-The flash ASM user/package RAM is split into three 4K roles:
+The fixed roles are:
 
 ```text
-$2000-$2FFF  ASM body/helper emission island
-$3000-$3FFF  AP overlay/load/run destination
-$4000-$4FFF  AP envelope buffer, max package length $1000
+$0200-$09FF  ASM symbol names until flash staging begins
+$0A00-$19FF  ASM fixup names, then 4K STR8 sector staging buffer
+$2000-$2FFF  RAM transient code and ordinary AP BODY source
+$3000-$3FFF  AP envelope, then normal load/run space after storage
 ```
 
-For this flow, always use `PACKAGE $4000`. Do not use `PACKAGE $2000`: the
-stage and commit helpers emit at `$2000`, so they overwrite anything packaged
-there, and the stage helper only reads an AP envelope from `$4000`.
+Use `PACKAGE $3000` for this procedure. Never package the target at `$2000`:
+the installer itself emits there. Every pasted source below already ends with
+`END`; do not type another `END` after the paste.
 
-If a source body or AP envelope grows toward the edge of its 4K island, split
-it instead of letting it cross into the next role.
+This card uses `bank0ap-print-smoke.a`, which prints from the loaded AP body
+and leaves `$5848=$AC`, `$5850=$5A`, and the imported
+`BIO_FTDI_PUT_CSTR` address at `$584A/$584B`.
 
-This script uses `bank0ap-print-smoke.a` because it prints from the AP body
-itself, then leaves stable proof bytes: `$5848=$AC` and `$5850=$5A`.
-`$584A/$584B` records the resolved resident `BIO_FTDI_PUT_CSTR` address.
+## Precondition: Erase The Destination
 
-## Precondition
-
-Start at a fresh ASM-F2 prompt:
-
-```text
-ASM-F2
-ASM>$2000:
-```
-
-Bank 0 must contain an erased destination range. The explicit-address path
-below uses bank 0 `$8000`; stop if you have not intentionally erased or
-reserved that range.
-
-If bank 0 `$8000-$8FFF` is not already erased, erase bank 0 sector 8 first:
+This explicit proof uses Bank 0 `$8000-$8FFF`. Stop if that sector is not
+intentionally available. If it is not erased, run the flash erase transient:
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/flash-erase-bank.a
+paste DOC/GUIDES/ASM/SAMPLES/flash-erase-bank-transient-2000.a
+ASM OK
 SEAL> .
->G 3000
+ASM BYE
+>G 2000
 BANK 0-3> 0
 SECTOR 8-F OR ALL> 8
 TYPE YES TO ERASE> YES
@@ -60,214 +48,103 @@ Expected:
 ```text
 OK
 BANK 0 ERASE COMPLETE
-RET A=AC ...
+RET A=AC ... C
 ```
+
+Do not use `G 3000` for the current erase sample; `$3000` is the normal AP
+load/run island.
 
 ## 1. Build The AP Envelope
 
-Paste:
-
 ```text
-DOC/GUIDES/ASM/SAMPLES/bank0ap-print-smoke.a
-```
-
-Expected:
-
-```text
-ASM>$2032:         END
+>ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/bank0ap-print-smoke.a
 ASM OK
-SEAL>
-```
-
-Package it in RAM:
-
-```text
-SEAL> PACKAGE $4000
-```
-
-Expected:
-
-```text
-PKG OK @=$4000 L=$007F
-```
-
-Verify the AP envelope header:
-
-```text
+SEAL> PACKAGE $3000
+PKG OK @=$3000 L=$007F
 SEAL> .
 ASM BYE
->D 4000 F
+>D 3000 F
 ```
 
-Expected:
+Expected header shape:
 
 ```text
-4000: 41 50 01 7F 00 53 0B 01 | 00 20 32 20 32 00 ...
+3000: 41 50 01 7F 00 ...
 ```
 
-The first five bytes are signature `41 50`, AP version `01`, and package
-length `7F 00` for printed length `$007F`. Keep `$4000` untouched until the
-stage piece finishes. Do not run `LOAD`, `AP`, or another `PACKAGE` yet.
+The first bytes are `41 50 01`, followed by little-endian package length. The
+current print-smoke package is `$007F`; record the actual length if the source
+changes. Do not run `LOAD`, `AP`, or another `PACKAGE` until the installer has
+returned.
 
-Do not paste the stage source while the prompt still says `SEAL>`. Exit with
-`.` first. If `ASM NEW` is typed at `SEAL>`, the board reports `ERR=$03 BO`;
-restart the stage paste from a normal HIMON `>` prompt.
+Do not run `G 2000` while the package source BODY is still present there.
+`PACKAGE` serializes imports but does not turn that source BODY into a linked
+direct-run image. Re-paste `bank0ap-put-transient-2000.a`, exit with `.`, and only then
+use `G 2000`.
 
-## 2. Stage The Bank 0 Sector
+## 2. Store The AP In Bank 0
 
 ```text
 >ASM NEW
-```
-
-Paste:
-
-```text
-DOC/GUIDES/ASM/SAMPLES/bank0ap-stage-2000.a
-```
-
-Expected assembly shape:
-
-```text
-ASM>$2000: RUN     STZ STAT
-ASM>$2003:         STZ DSTLO
-...
+paste DOC/GUIDES/ASM/SAMPLES/bank0ap-put-transient-2000.a
 ASM OK
-SEAL>
-```
-
-No `ERR=` rows should appear during the paste. If any line reports an error,
-stop and restart this piece with the current source.
-
-Current static sizing puts the stage helper end around `$2355`, leaving roughly
-`$0CAB` bytes before the `$3000` overlay boundary.
-
-Exit to HIMON. Do not package the stage tool:
-
-```text
 SEAL> .
 ASM BYE
-```
-
-Run the stage piece and choose bank 0 `$8000`:
-
-```text
 >G 2000
 ```
 
-Expected interaction:
+Do not change the installer's `ORG $2000` to `$3000`. `$3000` contains the AP
+envelope being consumed; assembling the transient there destroys its own input
+and correctly ends with `$1A00=$E1`.
+
+No `ERR=` row may appear during the paste. A rejected line is rolled back, so
+a later `END` can still print `ASM OK`; that does not make the skipped opcodes
+runnable. Stop and restart with the current source after any error row.
+
+Expected interaction. At the destination prompt, type `$8000`; at the write
+prompt, type exact upper-case `YES`:
 
 ```text
-B0 AP STAGE
+B0 AP PUT
 PKG L=$007F
 DST $8000-$FFFF OR ENTER=AUTO> $8000
 STAGE OK
-STAGED B0 AP @$8000 L=$007F
-
-#GO# ENTRY=2000
-RET A=AC ...
-```
-
-Verify stage status:
-
-```text
->D 1A00 1A06
-```
-
-Expected:
-
-```text
-1A00: AC 00 80 7F 00 80 5A
-```
-
-Meaning:
-
-```text
-$1A00 = AC       stage ready
-$1A01/$1A02      selected package address = $8000
-$1A03/$1A04      AP package length = $007F
-$1A05            selected sector high byte = $80
-$1A06 = 5A       commit-ready mark
-```
-
-For explicit `$8000`, the AP overlay starts at staged sector offset zero:
-
-```text
->D A00 F
-```
-
-Expected:
-
-```text
-0A00: 41 50 01 7F 00 53 0B 01 | 00 20 32 20 32 00 ...
-```
-
-## 3. Commit The Staged Sector
-
-Do not cold boot, run STR8, or run banked `AP` between the stage and commit
-pieces; `$0A00-$19FF` must remain the staged sector.
-
-```text
->ASM NEW
-```
-
-Paste:
-
-```text
-DOC/GUIDES/ASM/SAMPLES/bank0ap-commit-2000.a
-```
-
-Expected:
-
-```text
-ASM OK
-SEAL>
-```
-
-No `ERR=` rows should appear during the paste. If any line reports an error,
-stop and restart this piece with the current source.
-
-Exit to HIMON. Do not package the commit tool:
-
-```text
-SEAL> .
-ASM BYE
-```
-
-Run the commit piece:
-
-```text
->G 2000
-```
-
-Expected interaction:
-
-```text
-B0 AP COMMIT
 B0 AP @$8000 L=$007F
 TYPE YES TO WRITE> YES
 PROGRAM OK
 B0 AP @$8000 L=$007F
 
 #GO# ENTRY=2000
-RET A=AC ...
+RET A=AC ... C
 ```
 
-Verify final status:
+Dump the installer result:
 
 ```text
 >D 1A00 1A06
 ```
 
-Expected:
+Expected for this package and destination:
 
 ```text
 1A00: AC 00 80 7F 00 80 00
 ```
 
-`$1A06` is cleared after a successful program to prevent an accidental repeat
-commit.
+Meaning:
 
-## 4. Run The Stored AP Package
+```text
+$1A00       AC: program and verify succeeded
+$1A01/$1A02 selected package address: $8000
+$1A03/$1A04 package length: $007F
+$1A05       selected sector: $80
+$1A06       00: no staged write remains armed
+```
+
+`$1A03/$1A04` will differ if the AP package length differs. The installer
+clears `$1A06` on success, abort, and every reported failure.
+
+## 3. Load And Run The Stored AP
 
 ```text
 >AP B0 $8000 $3000
@@ -281,158 +158,75 @@ GO 3000
 B0 AP RUN
 
 #GO# ENTRY=3000
-RET A=AC ...
+RET A=AC ... C
 ```
 
-Verify the runtime oracle:
+Then:
 
 ```text
 >D 5848 5850
 ```
 
-Expected:
+Pass shape:
 
 ```text
 5848: AC xx ll hh xx xx xx xx | 5A
 ```
 
-Pass if the AP prints `B0 AP RUN`, `$5848=$AC`, `$5850=$5A`, and
-`$584A/$584B` is the resolved resident `BIO_FTDI_PUT_CSTR` address. The bytes
-shown as `xx` are not owned by this smoke program and may preserve prior RAM
-contents.
+Pass when the AP prints `B0 AP RUN`, `$5848=$AC`, `$5850=$5A`, and
+`$584A/$584B` is the resolved resident `BIO_FTDI_PUT_CSTR` address. Bytes
+shown as `xx` are not owned by this smoke program.
 
-If bank 0 is erased after this install, `AP B0 $8000 $3000` must fail with
-`APERR=$07` until the AP package is staged and committed again.
+The same stored ordinary AP can be tried at `$3200` or `$3400` after the
+`$3000` proof. Do not use `$2000` until all transient work is complete, since
+it overwrites the transient/source island.
 
-## Optional Destination Checks
+## 4. Auto Address Variant
 
-After the main `$3000` run passes, the same installed package can also be run
-at nearby RAM destinations:
-
-```text
->AP B0 $8000 $3200
-expect GO 3200, B0 AP RUN, then RET A=AC
-
->AP B0 $8000 $3400
-expect GO 3400, B0 AP RUN, then RET A=AC
-```
-
-Hardware also passed with destination `$2000`, but that overwrites the
-helper/source island. Use it only as a final proof after you are done staging
-and committing:
-
-```text
->AP B0 $8000 $2000
-expect GO 2000, B0 AP RUN, then RET A=AC
-```
-
-## Auto Address Variant
-
-Use this only on a separate run where bank 0 still has an erased hole large
-enough for the package. Rebuild the AP envelope at `$4000`, paste the stage
-piece, and run `G 2000` as above. At the destination prompt, press Enter:
+Rebuild the AP envelope at `$3000`, paste `bank0ap-put-transient-2000.a`, and run
+`G 2000` again. At the address prompt, press Enter:
 
 ```text
 DST $8000-$FFFF OR ENTER=AUTO>
 ```
 
-Expected stage result:
+Expected interaction:
 
 ```text
 STAGE OK
-STAGED B0 AP @$hhhh L=$007F
-RET A=AC ...
-```
-
-Then paste and run the commit piece:
-
-```text
-B0 AP COMMIT
 B0 AP @$hhhh L=$007F
 TYPE YES TO WRITE> YES
 PROGRAM OK
 B0 AP @$hhhh L=$007F
-RET A=AC ...
+RET A=AC ... C
 ```
 
-Use the printed address:
+Use the printed address in the subsequent run:
 
 ```text
 >AP B0 $hhhh $3000
-expect B0 AP RUN, then RET A=AC
-
->D 5848 5850
-expect 5848: AC ... ll hh ... | 5A
 ```
 
-If no erased bank 0 hole fits, expected stage status is `$1A00=$E3`.
+If no erased Bank 0 hole can hold the package within one sector, expect
+`FAIL $1A00=$E3` and `RET A=E3 ... c`.
 
-## ASM Session Reporter Auto-Hole Variant
+## 5. ASM Session Reporter
 
-Use this when the goal is specifically to store
-`asm-session-report-4800.a` in the first available bank 0 hole. The AP
-envelope still belongs at `$4000` while staging; bank 0 storage is selected
-later by pressing Enter at the stage prompt.
+The reporter has two useful forms.
 
-Build the reporter AP envelope:
+To prove the reporter against its own just-assembled session, build it at its
+fixed origin, make the envelope needed for later storage, and run the assembled
+body already present at `$4800`:
 
 ```text
 >ASM NEW
 paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
-END
-SEAL> PACKAGE $4000
-PKG OK @=$4000 L=$0658
+ASM OK
+SEAL> PACKAGE $3000
+PKG OK @=$3000 L=$hhhh
 SEAL> .
 ASM BYE
-```
-
-Stage to the first erased bank 0 hole:
-
-```text
->ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/bank0ap-stage-2000.a
-END
-SEAL> .
-ASM BYE
->G 2000
-B0 AP STAGE
-PKG L=$0658
-DST $8000-$FFFF OR ENTER=AUTO>
-```
-
-At `ENTER=AUTO>`, press Enter. Expected:
-
-```text
-STAGE OK
-STAGED B0 AP @$hhhh L=$0658
-RET A=AC ...
-```
-
-If bank 0 is fully erased, `$hhhh` should be `$8000`. If an earlier AP package
-already occupies the start of bank 0, `$hhhh` should be the first later erased
-run large enough for `$0658` bytes.
-
-Commit the staged sector:
-
-```text
->ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/bank0ap-commit-2000.a
-END
-SEAL> .
-ASM BYE
->G 2000
-B0 AP COMMIT
-B0 AP @$hhhh L=$0658
-TYPE YES TO WRITE> YES
-PROGRAM OK
-B0 AP @$hhhh L=$0658
-RET A=AC ...
-```
-
-Run the stored reporter from bank 0:
-
-```text
->AP B0 $hhhh $4800
+>G 4800
 ```
 
 Expected:
@@ -445,18 +239,32 @@ ASM REPORT OK
 RET ...
 ```
 
-The reporter inspects the current ASM session tables. Immediately after the
-commit step, that usually means it reports the commit helper session. To report
-a later ASM session, leave that later session with `.`, then run the same
-`AP B0 $hhhh $4800` command.
+The updated overlap check also permits the non-overlapping RAM proof
+`AP $3000 $4800`. Record that result separately from the banked proof.
 
-Hardware proof: with the `$8000-$807E` print-smoke package still present, this
-variant selected `$807F`, committed `L=$0658`, and `AP B0 $807F $4800` printed
-`ASM REPORT OK`. In a fully erased bank 0, expect `$8000` instead.
+To persist the reporter, keep the same `$3000` envelope and store it with the
+one-run installer from section 2. Record its printed Bank 0 address. The
+reporter must always run at `$4800`:
+
+```text
+>AP B0 $hhhh $4800
+```
+
+After the reporter is stored, load it at `$4800` before the later ASM session.
+Finish that target session with `.`, then use `G 4800`. Do not use banked `AP`
+after the target session: staging the package reuses `$0200-$19FF` and destroys
+the symbol/fixup names the reporter needs.
+
+Historical proof before the low-table relocation, 2026-07-12: the reordered
+installer assembled through `$2458`
+with zero errors, auto-selected Bank 0 `$8000`, programmed reporter package
+`L=$0658`, and left `AC 00 80 58 06 80 00` at `$1A00-$1A06`.
+`AP B0 $8000 $4800` then printed `ASM REPORT OK`; its report measured the
+installer at `FIXUPS=$62/$80` with `TRUNC=NO`.
 
 ## Negative Checks
 
-Commit abort path:
+Abort before any write:
 
 ```text
 TYPE YES TO WRITE>
@@ -466,55 +274,48 @@ Expected:
 
 ```text
 ABORT - NO FLASH WRITE
-RET A=E0 ...
+RET A=E0 ... c
+>D 1A00 1A06
+1A00: E0 ... 00
 ```
 
-After abort, `$1A06` remains `$5A`, so the same staged sector can still be
-committed by rerunning the commit piece and typing `YES`.
-
-Occupied destination path during stage:
+Occupied explicit destination:
 
 ```text
 DST $8000-$FFFF OR ENTER=AUTO> $8000
 ```
 
-Expected after `$8000` already contains the package:
+Expected after `$8000` already holds the package:
 
 ```text
 FAIL $1A00=$E5
-RET A=E5 ...
+RET A=E5 ... c
 ```
 
-Bad package path during stage:
+Bad or missing RAM envelope:
 
 ```text
 >ASM NEW
-paste bank0ap-stage-2000.a without rebuilding PACKAGE $4000 first
+paste bank0ap-put-transient-2000.a without rebuilding PACKAGE $3000 first
+SEAL> .
 >G 2000
 ```
 
-Expected if `$4000` no longer starts with a valid `AP` envelope:
+Expected when `$3000` does not start with a valid AP envelope:
 
 ```text
 FAIL $1A00=$E1
-RET A=E1 ...
+RET A=E1 ... c
 ```
 
-The same `$E1` is expected if the AP was packaged at `$2000` instead of
-`$4000`. In that case the stage source also overwrites the `$2000` package
-body while assembling.
+The same `$E1` is expected after `PACKAGE $2000`: the installer emits over
+that location and only reads the Bank 0 input envelope from `$3000`.
 
-No staged write path during commit:
+## Diagnostic Split Helpers
 
-```text
->ASM NEW
-paste bank0ap-commit-2000.a without running the stage piece first
->G 2000
-```
-
-Expected:
-
-```text
-FAIL $1A00=$E7
-RET A=E7 ...
-```
+`bank0ap-stage-transient-2000.a` and `bank0ap-commit-transient-2000.a` remain for investigation of
+the sector image between staging and programming. The stage helper leaves
+`$1A06=$5A`; the commit helper consumes that state. Do not boot, run `AP`, or
+assemble another source between those two diagnostic helpers. They are not the
+normal installation path and their existing board transcript remains valid
+historical evidence.
