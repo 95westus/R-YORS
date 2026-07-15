@@ -13814,3 +13814,540 @@ forward selected-byte `DB`, forward `DW`, imported `DB/DW` data constants, STR8
 import patching, and HIMON mixed internal/import relocation-table loading in one
 fresh RAM AP run. The row-8 operand is now correctly relocated as `DD 6F 30`,
 AP service status is `$00`, `$5848=$AC`, and `$5850=$5A`.
+
+## 2026-07-12 ASM-F2 Visible Version Pass And Reporter RAM-AP Negative
+
+The board backed up Bank 2 to Bank 1 and Bank 3 to Bank 2, updated HIMON, and
+loaded the current low-flash ASM image:
+
+```text
+HIMON V 00.0712(1728)
+>L F
+L F S19
+L @8000
+LF OK WR=3C29 GO=800C
+```
+
+After a STR8 cold boot and RAM clear, the independently stamped components
+reported matching versions:
+
+```text
+HIMON V 00.0712(1728)
+>ASM
+ASM-F2 00.0712(1728)
+ASM>$2000:
+```
+
+Result: pass. This proves the ASM-F2 visible `MMdd(HHmm)` stamp on board and
+confirms the `$BC29` low-flash image is active.
+
+The regenerated `asm-session-report-4800.a` then assembled cleanly through
+`END` and packaged at `$4000`:
+
+```text
+ASM>$4E31:         END
+ASM OK
+SEAL> PACKAGE $4000
+PKG OK @=$4000 L=$0658
+SEAL> .
+ASM BYE
+>D 4000 1F
+4000: 41 50 01 58 06 53 0B 01 | 00 48 31 4E 31 06 2B 9B
+4010: AE 30 52 01 00 45 09 01 | 09 00 00 05 E1 79 A0 73
+```
+
+Result: pass for reporter assembly and AP packaging under the stamped ASM-F2
+map. The board-built package remains `$0658`; the separate host-built fixed AP
+artifact is `$0610`.
+
+The attempted direct RAM-envelope self-run returned a range error:
+
+```text
+>AP $4000 $4800
+APERR=$06
+>D 4800 1F
+4800: 4C 5D 48 4C 8A 85 20 03 | 48 4C 9B 85 20 90 85 A9
+4810: 20 4C 84 85 20 93 85 80 | F6 4C 93 85 A9 2F 20 84
+```
+
+This is a loader-policy negative, not a reporter failure. The package occupies
+`$4000-$4657`; its `$0631` body would occupy `$4800-$4E30`. Those ranges are
+disjoint, but HIMON's current RAM-package overlap guard only accepts the
+destination-below-source layout. The `$4800` bytes were already present from
+assembling at `ORG $4800`, so they do not prove an AP copy occurred.
+
+The size-preserving workaround is `G 4800` for reporting the reporter's own
+live assembly session. The persistent proof remains
+`AP B0 $hhhh $4800` after storing the `$4000` envelope with the Bank 0
+installer; that path does not use the rejected RAM source layout.
+
+## 2026-07-12 Reporter Self-Report Pass And Combined Installer Fixup Negative
+
+The immediate reporter retry used the assembled body already resident at its
+fixed origin:
+
+```text
+>G 4800
+GO 4800
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$4800
+PC=$4E31
+HIGH=$4E31
+BYTES=$0631
+LINES=$022F
+SYMS=$3C/$40
+FIXUPS=$0E/$80
+REFS=$0B/$C0
+TRUNC=NO
+MAP END=$BC29 UDATA=$5000-79AA
+...
+PKG @ LEN BODY INST 4000 0658 0000 0000
+...
+ASM REPORT OK
+
+#GO# ENTRY=4800
+RET A=0D X=9D Y=0D P=75 S=FD NV-BdIzC
+```
+
+Result: pass. ASMREPORT can report its own just-completed ASM-F2 assembly by
+running `G 4800`; the report confirms clean session, seal, package, symbol,
+fixup, reference, and truncation state.
+
+The subsequent paste of the first combined `bank0ap-put-2000.a` layout reached
+the 128-row fixup limit:
+
+```text
+ASM>$2352:         LDA DSTHI
+ASM>$2355:         JSR HEX
+ERR=$09 BAD FIX PC=$2355
+...
+ASM>$2430:         END
+ASM OK
+SEAL>
+```
+
+The first rejected `JSR HEX` is forward-fixup row 129. Further forward calls,
+branches, and message addresses were rejected. The final `ASM OK` only means
+`END` accepted the transactionally retained lines; it does not repair skipped
+opcodes, so this image was correctly not run.
+
+The source fix keeps the one-run behavior but reorders static data and helpers:
+`$2000` jumps over all message text and the I/O/hex helpers to `RUN`. The 20
+message-address uses and repeated helper calls now resolve backward and do not
+consume fixup rows. A conservative source scan estimates no more than 111
+forward references, leaving at least 17 rows under `ASM_FIX_MAX=$80`. This
+reordered source awaits a clean zero-`ERR` board paste and `G 2000` proof.
+
+## 2026-07-12 One-Run Bank 0 Installer And Stored Reporter Pass
+
+The reordered `bank0ap-put-2000.a` retry assembled without any `ERR=` rows:
+
+```text
+ASM>$2458:         END
+ASM OK
+SEAL> .
+ASM BYE
+>G 2000
+GO 2000
+
+B0 AP PUT
+PKG L=$0658
+DST $8000-$FFFF OR ENTER=AUTO>
+STAGE OK
+B0 AP @$8000 L=$0658
+TYPE YES TO WRITE> YES
+PROGRAM OK
+B0 AP @$8000 L=$0658
+
+#GO# ENTRY=2000
+RET A=AC X=42 Y=04 P=F5 S=FD NV-BdIzC
+>D 1A00 6
+1A00: AC 00 80 58 06 80 00
+```
+
+Result: pass. The combined transient validated the `$4000` reporter envelope,
+auto-selected the first erased Bank 0 hole at `$8000`, staged the sector,
+required exact `YES`, programmed and verified the sector, cleared the ready
+marker, and returned `$AC` in one run.
+
+HIMON then loaded and ran the persistent reporter package from Bank 0:
+
+```text
+>AP B0 $8000 $4800
+GO 4800
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2458
+HIGH=$2458
+BYTES=$0458
+LINES=$020A
+SYMS=$3C/$40
+FIXUPS=$62/$80
+REFS=$B0/$C0
+TRUNC=NO
+MAP END=$BC29 UDATA=$5000-79AA
+...
+SEAL FL BASE END LEN FNV 09 2000 2458 0458 00000000
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 3C 62 10 00 00 00 00
+...
+ASM REPORT OK
+
+#GO# ENTRY=4800
+RET A=0D X=9D Y=0D P=75 S=FD NV-BdIzC
+```
+
+Result: pass. This completes the combined assemble/stage/confirm/program/verify
+and Bank 0 AP load/run proof. The report confirms the source used `$62` (98)
+of `$80` fixup rows, exactly matching the static correction, and the report
+itself was not truncated.
+
+The transient's seal row has `FL=09` and relocation count `$10`, meaning its
+package relocation metadata reached the 16-row limit and truncated. This is
+expected for a fixed `$2000` direct-run transient and does not affect `G 2000`.
+Do not package this installer. The persistent reporter package at
+`B0:$8000`, loaded at `$4800`, is now board-proven.
+
+## 2026-07-12 Compact `$3000` Package Partial Pass
+
+The updated board image reported `HIMON V 00.0712(2010)` and
+`ASM-F2 00.0712(2010)`. The generated fixed-address reporter assembled at
+`$4800-$4E77`, then packaged successfully at the new compact address:
+
+```text
+SEAL> PACKAGE $3000
+PKG OK @=$3000 L=$069E
+>AP $3000 $4800
+GO 4800
+...
+MAP END=$BC5F UDATA=$5000-61AA
+LOW=$0200-1A00 UPPER=$61AA-7E00
+...
+ASM REPORT OK
+```
+
+Result: pass for `PACKAGE $3000`, the relocated low/high RAM map, and the
+corrected upward non-overlapping RAM load. Entering `AP $3000 $4800` at the
+`SEAL>` prompt first produced `ERR=$03 BO`, correctly proving prompt ownership;
+the same command succeeded from HIMON.
+
+The subsequent Bank 0 install attempt used a modified paste with
+`ORG $3000`. The repository source is `bank0ap-put-2000.a` with `ORG $2000`.
+The modified transient therefore emitted through `$3000-$3458` and overwrote
+the reporter envelope before it ran. Its final result was the expected header
+failure for that corrupted input:
+
+```text
+>G 3000
+B0 AP PUT
+FAIL $1A00=$E1
+```
+
+This is not a `PKG_BASE=$3000` installer failure. It is a test-source address
+collision. The intervening `AP B0 $8000 $4000` was also intentionally too late
+to report names from the installer session: bank staging had already reused
+`$0200-$19FF`, and the resulting report showed valid high-table counts with
+corrupted symbol/fixup text. That negative capture confirms the documented
+reporter rule: preload the reporter before the target ASM session and use
+`G 4800` afterward.
+
+Still pending: rerun the unmodified installer at `G 2000`, auto placement,
+two packages in one sector, the preload-then-report lifecycle, and the `$1000`
+hardware envelope boundary.
+
+## 2026-07-12 Compact `$3000` Installer And Same-Sector Packing Pass
+
+The retry used the repository installer unchanged at `ORG $2000`. The reporter
+again packaged at `$3000` with `L=$069E`; direct `AP $3000 $4800` printed the
+new map and `ASM REPORT OK`. Re-pasting `bank0ap-put-2000.a`, exiting, and
+running `G 2000` then completed the compact install path:
+
+```text
+B0 AP PUT
+PKG L=$069E
+STAGE OK
+B0 AP @$8658 L=$069E
+PROGRAM OK
+B0 AP @$8658 L=$069E
+RET A=AC ...
+```
+
+Result: pass for `PKG_BASE=$3000`, the `ORG $2000` transient, AUTO placement,
+stage/program/verify, and placement immediately after an existing package.
+The existing Bank 0 package occupied `$8000-$8657`; AUTO selected `$8658`,
+the exact next byte.
+
+The print-smoke AP then packaged at `$3000` with `L=$007F`. An accidental
+`G 2000` before re-pasting the installer reached unresolved import placeholder
+code and trapped with `BRK 00 PC=0007`; a package BODY with resident imports is
+not a direct-run image. After the installer was correctly re-pasted at `$2000`,
+AUTO produced:
+
+```text
+B0 AP PUT
+PKG L=$007F
+STAGE OK
+B0 AP @$8CF6 L=$007F
+PROGRAM OK
+B0 AP @$8CF6 L=$007F
+RET A=AC ...
+```
+
+The layouts are exactly contiguous inside `$8000-$8FFF`:
+
+```text
+$8000-$8657  existing package, $0658 bytes
+$8658-$8CF5  new reporter,      $069E bytes
+$8CF6-$8D74  print smoke,       $007F bytes
+```
+
+This hardware-proves AUTO append and multiple independent AP envelopes sharing
+one flash sector. Pending checks are execution of `B0:$8CF6`, the reporter
+preload-then-`G 4800` lifecycle, and the exact `$1000/$1001` envelope boundary.
+
+## 2026-07-12 Stored Same-Sector AP Execution Pass
+
+The newly appended print-smoke package was loaded and run three consecutive
+times from its unaligned same-sector address:
+
+```text
+>AP B0 $8CF6 $3000
+GO 3000
+
+B0 AP RUN
+
+#GO# ENTRY=3000
+RET A=AC ...
+```
+
+All three runs printed `B0 AP RUN` and returned `$AC`. This closes execution,
+resident import linking, and repeatability for an AP appended after two other
+packages in the same `$8000-$8FFF` sector.
+
+The reporter was then preloaded from `B0:$8658` to `$4800`. Its automatic
+first execution printed valid high-table counts and `ASM REPORT OK`, while the
+symbol/fixup names were corrupted as expected because the banked load itself
+had just reused `$0200-$19FF`. The reporter code is now resident at `$4800`;
+assemble a fresh target session next and invoke `G 4800` without another
+banked `AP` to complete the lifecycle proof.
+
+## 2026-07-12 Reporter Version/Origin Negative Proof
+
+The board was updated to `HIMON/ASM-F2 00.0712(2115)` and flash ASM loaded as
+`LF OK WR=3C6D GO=800C`. Bank 0 `$8000` still held the reporter package built
+under ASM-F2 `00.0712(2010)`. That source identified flash end `$BC5F` and used
+the old ASM output helpers `$8584/$858A/$8590/$8593/$859B`; the `2115` map ends
+at `$BC6D` and places the corresponding helpers at
+`$8592/$8598/$859E/$85A1/$85A9`.
+
+The wrong-destination check behaved decisively:
+
+```text
+>AP B0 $8000 $3000
+GO 3000
+
+BRK 00 PC=485F
+A=01 X=30 Y=30 P=75 S=FB NV-BdIzC
+```
+
+The reporter is fixed at `$4800`; loading its body at `$3000` leaves literal
+`$48xx` calls pointing outside the relocated body. Loading the same stale
+package at its correct origin reached the reporter but its old helper calls
+produced concatenated and corrupt output:
+
+```text
+>AP B0 $8000 $4800
+GO 4800
+ASM REPORTMAP END=$ UDATA=$SESSION...
+```
+
+This second load was also after the target ASM session, so bank staging had
+already reused `$0200-$19FF`. Result: expected negative proof for both reporter
+image coupling and lifecycle ordering. It is not a pass for the reporter
+lifecycle or the new carry-return ABI. The next run must rebuild/reinstall the
+reporter from the current ASM map, preload it at `$4800` before the target
+session, and invoke only `G 4800` afterward.
+
+## 2026-07-15 Deferred ASM-F2 Proof Progress
+
+The board ran matching `HIMON/ASM-F2 00.0715(1804)` with the flash ASM image
+loaded as `LF OK WR=3C6D GO=800C`.
+
+The address-normalized `flash-erase-bank-transient-2000.a` assembled through
+`$23A5` and ran at its maintained `$2000` address. The destructive Bank 0
+`ALL` case erased and verified all eight sectors:
+
+```text
+>G 2000
+BANKED FLASH ERASE
+BANK 0-3> 0
+SECTOR 8-F OR ALL> ALL
+TYPE YES TO ERASE> YES
+...
+ERASE B0:$8000-$8FFF ... OK
+...
+ERASE B0:$F000-$FFFF ... OK
+BANK 0 ERASE COMPLETE
+RET A=AC X=3B Y=11 P=F5 ... C
+```
+
+Result: pass for the `$2000` transient address, full-bank erase/verify path,
+success status, and carry-set return. This closes the deferred normalized
+flash-erase proof.
+
+The current map-generated session reporter assembled at `$4800-$4E7F` and
+packaged at the compact RAM base:
+
+```text
+SEAL> PACKAGE $3000
+PKG OK @=$3000 L=$06A6
+```
+
+After Bank 0 was erased, `bank0ap-put-transient-2000.a` installed that package
+at the explicit unaligned address `$8100`:
+
+```text
+B0 AP PUT
+PKG L=$06A6
+DST $8000-$FFFF OR ENTER=AUTO> $8100
+STAGE OK
+B0 AP @$8100 L=$06A6
+TYPE YES TO WRITE> YES
+PROGRAM OK
+B0 AP @$8100 L=$06A6
+RET A=AC X=42 Y=04 P=F5 ... C
+```
+
+`AP B0 $8100 $4800` then loaded the fixed-origin reporter. It printed the
+current map (`END=$BC6D`, `UDATA=$5000-$61AA`), ended with `ASM REPORT OK`,
+and returned `A=$00` with carry set. Result: pass for current reporter rebuild,
+`PACKAGE $3000`, Bank 0 install, fixed-origin load, and clean reporter return.
+Because that immediate report followed the bank staging operation, the fresh
+target preload lifecycle remains open.
+
+The direct return-wrapper fixture passed both branches:
+
+```text
+>G 2000
+RET A=AC X=30 Y=30 P=F5 ... C
+>G 2004
+RET A=E1 X=34 Y=30 P=F4 ... c
+```
+
+Result: pass for HIMON preserving and displaying target carry on direct `G`.
+
+The failed-session test then entered bare `NOPE`. ASM-F2 emitted no error and
+exited normally because a lone unknown word is accepted as a pending label.
+This was an invalid negative fixture, not a sticky-status failure. The test
+card now uses the documented `FOO BAR` case to force `ERR=$01 BAD MNEM`.
+
+Still pending: preload the resident reporter, run `FOO BAR`, then use
+`G 4800`; repeat with a clean target session; package the exact `$1000`
+fixture; and reject the `$1001` fixture. Neither boundary fixture appears in
+this transcript.
+
+## 2026-07-15 Reporter Lifecycle Pass And Boundary-Fixture Negative
+
+The resident map-matched reporter at `$4800` captured an unambiguous failed
+ASM session. Both tested bad-mnemonic forms behaved correctly:
+
+```text
+ASM>$2000: NOPE #$01
+ERR=$01 BM PC=$2000
+...
+#56AD7400# EXEC ERR=$01
+
+ASM>$2000: FOO BAR
+ERR=$01 BM PC=$2000
+...
+#56AD7400# EXEC ERR=$01
+```
+
+After a fresh `FOO BAR` failure, direct `G 4800` printed `STATUS=$01`,
+`ERRLINE=$0001`, `PC/HIGH=$2000`, and zero bytes/symbols/fixups/references.
+It ended with `ASM REPORT OK` and preserved failure in its return ABI:
+
+```text
+#GO# ENTRY=4800
+RET A=01 X=DC Y=0D P=74 S=FD NV-BdIzc
+```
+
+A following clean session assembled `LDA #$AC` and `RTS` through `$2003`.
+Without reloading the reporter, `G 4800` printed `STATUS=OK`,
+`PC/HIGH=$2003`, `BYTES=$0003`, and returned:
+
+```text
+#GO# ENTRY=4800
+RET A=00 X=DC Y=0D P=77 S=FD NV-BdIZC
+```
+
+Result: pass for sticky ASM command failure, reporter failure status
+`A=$01/C=0`, clean-session reset, reporter success status `A=$00/C=1`, and the
+required preload-then-direct-`G 4800` lifecycle.
+
+The two package-boundary attempts exposed an error in the fixtures. ASM-F2
+rejected each oversized single `DS` count before emitting bytes:
+
+```text
+DS $0FE0,$A5
+ERR=$06 BAD RANGE PC=$2000
+...
+PKG OK @=$3000 L=$0020
+
+DS $0FE1,$A5
+ERR=$06 BAD RANGE PC=$2000
+...
+PKG OK @=$3000 L=$0020
+```
+
+This is the documented `DS count > $FF` negative. Because no BODY bytes were
+emitted, `$0020` is the correct empty-metadata package length; it proves
+neither the `$1000` acceptance nor `$1001` rejection boundary. The corrected
+fixtures use fifteen initialized `DS $FF,$A5` chunks plus `DS $EF,$A5` or
+`DS $F0,$A5`. Those two corrected package runs remain pending.
+
+## 2026-07-15 Exact AP Envelope Boundary Pass
+
+The corrected package-only fixtures used legal byte-sized initialized `DS`
+chunks. The exact fixture emitted BODY `$2000-$2FDF` and reached the expected
+exclusive end before sealing:
+
+```text
+ASM>$2EF1:         DS $EF,$A5
+ASM>$2FE0:         END
+ASM OK
+SEAL> PACKAGE $3000
+PKG OK @=$3000 L=$1000
+>D 3000 4
+3000: 41 50 01 00 10
+>D 3FF8 FFF
+3FF8: A5 A5 A5 A5 A5 A5 A5 A5
+```
+
+Result: pass. The maximum accepted envelope is exactly `$1000` bytes,
+including `$0020` metadata and `$0FE0` BODY bytes. Its header carries
+little-endian length `00 10`, and the BODY reaches the final byte at `$3FFF`.
+
+The oversize fixture added one BODY byte and reached `$2FE1` before sealing:
+
+```text
+ASM>$2EF1:         DS $F0,$A5
+ASM>$2FE1:         END
+ASM OK
+SEAL> PACKAGE $3000
+PKG ERR=$06
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$06
+```
+
+Result: pass. The `$1001` envelope is rejected as assembler status `$06`
+(`BAD RANGE`) before a package is produced. The earlier expected `$02` was a
+test-card error: `$02` is used for seal-policy failures, while the explicit
+package-length guard returns `$06`.
+
+Together with the reporter lifecycle and direct carry proofs, this closes the
+deferred compact AP RAM-layout board slice on `HIMON/ASM-F2 00.0715(1804)`.
