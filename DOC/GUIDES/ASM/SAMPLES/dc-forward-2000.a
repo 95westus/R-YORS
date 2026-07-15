@@ -41,9 +41,11 @@ RUN     STZ $5848
         STA $584D
         LDA #$AC
         STA $5848
+        SEC
         RTS
 
 FAIL    STA $5848
+        CLC
         RTS
 
 TESTDC  LDX #$00

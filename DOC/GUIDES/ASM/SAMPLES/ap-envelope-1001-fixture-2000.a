@@ -1,0 +1,24 @@
+; AP-ENVELOPE-1001-FIXTURE-2000.A
+; PACKAGE-ONLY NEGATIVE. DO NOT RUN WITH G.
+; EMPTY METADATA OVERHEAD=$0020, BODY=$0FE1.
+; DS COUNTS ARE BYTE-SIZED: 15*$FF+$F0=$0FE1.
+; EXPECT PACKAGE $3000 TO REPORT PKG ERR=$06 BAD RANGE.
+
+        ORG $2000
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $F0,$A5
+        END

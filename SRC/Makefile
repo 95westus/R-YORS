@@ -36,6 +36,7 @@ ASM_OPCODE_AUDIT := tools/check_asm_opcode_coverage.ps1
 HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
 FIG_FORTH_HIMON_PATCH := tools/patch_fig_forth_himon_addrs.ps1
 HIMON_VERSION_INC := $(INC_DIR)/himon-version.inc
+ASM_VERSION_INC := $(INC_DIR)/asm-version.inc
 BASIC_PROGRAMS_HOME ?= $(LOCAL_ROOT)/basic-programs
 FIG_FORTH_HOME ?= $(LOCAL_ROOT)/fig-forth
 FIG_FORTH_INPUT ?= $(FIG_FORTH_HOME)/source/ff6502.html
@@ -65,7 +66,7 @@ HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
 STR8_TOP_STAGE_S19 := $(S19_DIR)/str8-top-stage-0a00.s19
-STR8_TOPWRITE_A := ../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a
+STR8_TOPWRITE_A := ../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
 STR8_TOPWRITE_A_GEN := tools/emit_str8_topwrite_a.ps1
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
@@ -165,7 +166,7 @@ ASM_SESSION_REPORT_FLASH_LINKFLAGS := -g -s -t -c4800 -hm19 -j -o
 ASM_SESSION_REPORT_INC_GEN := tools/emit_asm_session_report_inc.ps1
 ASM_SESSION_REPORT_INC := $(INC_DIR)/asm-session-report.inc
 ASM_SESSION_REPORT_A_FLASH := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
-ASM_SESSION_REPORT_A_RUNTIME := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-7000.a
+ASM_SESSION_REPORT_A_RUNTIME := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-transient-7000.a
 ASM_SESSION_REPORT_AP_GEN := tools/build_ap_fixed_package.ps1
 ASM_SESSION_REPORT_AP_BIN := $(BIN_DIR)/asm-session-report-4800.ap.bin
 ASM_V1_FLASH_SRC := $(ASM_DIR)/asm-v1-flash.asm
@@ -173,6 +174,7 @@ ASM_V1_FLASH_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash.obj
 ASM_V1_FLASH_RUNTIME_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash-runtime.obj
 ASM_V1_FLASH_S19 := $(S19_DIR)/asm-v1-flash-8000.s19
 ASM_V1_FLASH_LINKFLAGS := -g -s -t -c8000 -u5000 -hm19 -j -o
+ASM_V1_FLASH_MAP_CHECK := tools/check_asm_flash_map.ps1
 ASMTEST_3000_SAMPLE := ../DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
 ASMTEST_3000_WDC_SIDE_OBJ := $(ASMTEST_3000_SAMPLE:.asm=.obj)
 ASMTEST_3000_WDC_SIDE_LST := $(ASMTEST_3000_SAMPLE:.asm=.lst)
@@ -852,7 +854,7 @@ $(ASM_SESSION_REPORT_OBJ): $(ASM_SESSION_REPORT_SRC) $(ASM_SESSION_REPORT_INC)
 	$(ASM) $(ASFLAGS) $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
 
-$(ASM_V1_FLASH_OBJ): $(ASM_V1_FLASH_SRC)
+$(ASM_V1_FLASH_OBJ): $(ASM_V1_FLASH_SRC) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
@@ -904,12 +906,13 @@ $(ASM_SESSION_REPORT_AP_BIN): $(ASM_SESSION_REPORT_FLASH_S19) $(ASM_SESSION_REPO
 	@echo [ps] build $(ASM_SESSION_REPORT_AP_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_SESSION_REPORT_AP_GEN) -S19Path "$(ASM_SESSION_REPORT_FLASH_S19)" -MapPath "$(S19_DIR)/asm-session-report-4800.map" -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)" -BaseAddress 18432 -EntrySymbol "START" -ExportName "START"
 
-$(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
+$(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ) $(ASM_V1_FLASH_MAP_CHECK)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(ASM_V1_FLASH_LINKFLAGS) $(ASM_V1_FLASH_S19) $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
 	@echo [ps] set S9 start from START in $(ASM_V1_FLASH_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-v1-flash-8000.map') { '$(S19_DIR)/asm-v1-flash-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-v1-flash-8000.map') { '$(MAP_DIR)/asm-v1-flash-8000.map' } else { throw 'asm-v1-flash-8000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+START\s*$$' | Select-Object -First 1; if (-not $$m) { throw 'START not found in map' }; $$addr = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$sum = 3 + (($$addr -shr 8) -band 255) + ($$addr -band 255); $$chk = ($$sum -bxor 255) -band 255; $$rec = ('S903{0:X4}{1:X2}' -f $$addr, $$chk); $$lines = Get-Content -Path '$(ASM_V1_FLASH_S19)'; $$lines[-1] = $$rec; Set-Content -Path '$(ASM_V1_FLASH_S19)' -Value $$lines"
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-v1-flash-8000.map') { '$(S19_DIR)/asm-v1-flash-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-v1-flash-8000.map') { '$(MAP_DIR)/asm-v1-flash-8000.map' } else { throw 'asm-v1-flash-8000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA not found in map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); $$limit = 0xC000; $$minRoom = 0x0200; $$room = $$limit - $$end; if ($$room -lt $$minRoom) { throw ('asm-v1-flash too close to C000: _END_DATA={0:X4} room={1:X4} min={2:X4}' -f $$end, $$room, $$minRoom) }; Write-Host ('asm-v1-flash headroom to C000 = {0:X4} (_END_DATA={1:X4})' -f $$room, $$end)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_V1_FLASH_MAP_CHECK) -MapPath "$(S19_DIR)/asm-v1-flash-8000.map"
 
 $(CALC_9A00_FNV_PROOF_S19): $(CALC_9A00_FNV_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1068,7 +1071,7 @@ $(FIG_FORTH_C000_OBJ): $(FIG_FORTH_C000_SRC)
 
 .PHONY: himon-version-stamp
 himon-version-stamp: $(HIMON_VERSION_STAMP)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" $(HIMON_VISIBLE_STAMP_ARG)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" -AsmOutPath "$(ASM_VERSION_INC)" $(HIMON_VISIBLE_STAMP_ARG)
 
 $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) himon-version-stamp
 

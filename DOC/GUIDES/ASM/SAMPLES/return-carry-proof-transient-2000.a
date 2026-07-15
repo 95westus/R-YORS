@@ -1,0 +1,17 @@
+; RETURN-CARRY-PROOF-TRANSIENT-2000.A
+; PROVES THE HIMON G/AP RETURN ABI.
+;
+;   G 2000  -> A=$AC, C=1
+;   G 2004  -> A=$E1, C=0
+
+        ORG $2000
+
+PASS    LDA #$AC
+        SEC
+        RTS
+
+FAIL    LDA #$E1
+        CLC
+        RTS
+
+        END

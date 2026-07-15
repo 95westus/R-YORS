@@ -112,6 +112,10 @@ HIM_AP_RELOC_HI8_INTERNAL EQU            $03
 HIM_AP_RELOC_ABS16_IMPORT EQU            $04
 HIM_AP_RELOC_LO8_IMPORT EQU              $05
 HIM_AP_RELOC_HI8_IMPORT EQU              $06
+HIM_AP_RAM_BASE_HI      EQU             $20
+HIM_AP_RAM_LIMIT_HI     EQU             $50
+HIM_AP_FLASH_BASE_HI    EQU             $80
+HIM_AP_FLASH_LIMIT_HI   EQU             $FF
 
 STR8_RUN_WORKER_SERVICE  EQU             $F003
 STR8_AP_IMPORT_LINK_SERVICE EQU          $F006
@@ -2936,18 +2940,30 @@ HIM_AP_LOAD_PARSED:
                         RTS
 HIM_AP_LOAD_RANGE_SAFE:
                         LDA             HIM_AP_SRC_HI
-                        CMP             #$20
+                        CMP             #HIM_AP_RAM_BASE_HI
                         BCC             HIM_AP_LOAD_NO_OVERLAP
-                        CMP             #$50
+                        CMP             #HIM_AP_RAM_LIMIT_HI
                         BCS             HIM_AP_LOAD_NO_OVERLAP
                         LDA             HIM_AP_TMP2_HI
                         CMP             HIM_AP_SRC_HI
                         BCC             HIM_AP_LOAD_NO_OVERLAP
-                        BNE             HIM_AP_LOAD_OVERLAP_BAD
+                        BNE             HIM_AP_LOAD_CHECK_AFTER
                         LDA             HIM_AP_TMP2_LO
                         CMP             HIM_AP_SRC_LO
-                        BCS             HIM_AP_LOAD_OVERLAP_BAD
-                        BRA             HIM_AP_LOAD_NO_OVERLAP
+                        BCC             HIM_AP_LOAD_NO_OVERLAP
+HIM_AP_LOAD_CHECK_AFTER:
+                        LDA             CMDP_PTR_LO
+                        CLC
+                        ADC             HIM_AP_BODY_LEN_LO
+                        TAX
+                        LDA             CMDP_PTR_HI
+                        ADC             HIM_AP_BODY_LEN_HI
+                        CMP             HIM_AP_DST_HI
+                        BCC             HIM_AP_LOAD_NO_OVERLAP
+                        BNE             HIM_AP_LOAD_OVERLAP_BAD
+                        CPX             HIM_AP_DST_LO
+                        BCC             HIM_AP_LOAD_NO_OVERLAP
+                        BEQ             HIM_AP_LOAD_NO_OVERLAP
 HIM_AP_LOAD_OVERLAP_BAD:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_NO_OVERLAP:
@@ -3312,12 +3328,12 @@ HIM_AP_SOURCE_BASE_SAFE:
 HIM_AP_SOURCE_LAST_NO_CARRY:
                         STA             HIM_AP_TMP2_HI
                         LDA             HIM_AP_SRC_HI
-                        CMP             #$20
+                        CMP             #HIM_AP_RAM_BASE_HI
                         BCC             HIM_AP_SOURCE_STAGE_RANGE
-                        CMP             #$50
+                        CMP             #HIM_AP_RAM_LIMIT_HI
                         BCC             HIM_AP_SOURCE_RAM_RANGE
                         LDA             HIM_AP_TMP2_HI
-                        CMP             #$FF
+                        CMP             #HIM_AP_FLASH_LIMIT_HI
                         BCC             HIM_AP_SOURCE_RANGE_GOOD
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_SOURCE_STAGE_RANGE:
@@ -3327,7 +3343,7 @@ HIM_AP_SOURCE_STAGE_RANGE:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_SOURCE_RAM_RANGE:
                         LDA             HIM_AP_TMP2_HI
-                        CMP             #$50
+                        CMP             #HIM_AP_RAM_LIMIT_HI
                         BCC             HIM_AP_SOURCE_RANGE_GOOD
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_SOURCE_RANGE_GOOD:
@@ -3340,18 +3356,18 @@ HIM_AP_SOURCE_BASE_OK:
                         BCC             HIM_AP_SOURCE_BASE_BAD
                         CMP             #AP_STAGE_BUF_END_HI
                         BCC             HIM_AP_SOURCE_BASE_GOOD
-                        CMP             #$20
+                        CMP             #HIM_AP_RAM_BASE_HI
                         BCS             HIM_AP_SOURCE_BASE_GE_20
 HIM_AP_SOURCE_BASE_BAD:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_SOURCE_BASE_GE_20:
-                        CMP             #$50
+                        CMP             #HIM_AP_RAM_LIMIT_HI
                         BCC             HIM_AP_SOURCE_BASE_GOOD
-                        CMP             #$80
+                        CMP             #HIM_AP_FLASH_BASE_HI
                         BCS             HIM_AP_SOURCE_BASE_GE_80
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_SOURCE_BASE_GE_80:
-                        CMP             #$FF
+                        CMP             #HIM_AP_FLASH_LIMIT_HI
                         BCC             HIM_AP_SOURCE_BASE_GOOD
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_SOURCE_BASE_GOOD:
@@ -3365,11 +3381,11 @@ HIM_AP_LOAD_RANGE_OK:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_LEN_NONZERO:
                         LDA             HIM_AP_DST_HI
-                        CMP             #$20
+                        CMP             #HIM_AP_RAM_BASE_HI
                         BCS             HIM_AP_LOAD_BASE_GE_20
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_BASE_GE_20:
-                        CMP             #$50
+                        CMP             #HIM_AP_RAM_LIMIT_HI
                         BCC             HIM_AP_LOAD_BASE_LT_50
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_BASE_LT_50:
@@ -3390,7 +3406,7 @@ HIM_AP_LOAD_BASE_LT_50:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_LAST_NO_CARRY:
                         STA             HIM_AP_TMP2_HI
-                        CMP             #$50
+                        CMP             #HIM_AP_RAM_LIMIT_HI
                         BCC             HIM_AP_LOAD_RANGE_GOOD
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_RANGE_GOOD:

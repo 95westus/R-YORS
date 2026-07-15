@@ -1,0 +1,24 @@
+; AP-ENVELOPE-1000-FIXTURE-2000.A
+; PACKAGE-ONLY FIXTURE. DO NOT RUN WITH G.
+; EMPTY METADATA OVERHEAD=$0020, BODY=$0FE0.
+; DS COUNTS ARE BYTE-SIZED: 15*$FF+$EF=$0FE0.
+; EXPECT PACKAGE $3000 TO REPORT L=$1000.
+
+        ORG $2000
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $FF,$A5
+        DS $EF,$A5
+        END

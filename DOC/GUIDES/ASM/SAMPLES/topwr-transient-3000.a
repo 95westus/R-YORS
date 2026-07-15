@@ -1,4 +1,4 @@
-; TOPWR-3000.A
+; TOPWR-TRANSIENT-3000.A
 ; BOARD-BUILDABLE TOP-SECTOR STAGE/PROGRAM TOOL.
 ;
 ; ENTRY POINTS AFTER ASSEMBLY:
@@ -67,6 +67,12 @@ CBYTE   LDA (SPLO),Y
         DEX
         BNE CPAGE
         JSR WTRAY
+        LDA STAT
+        CMP #$AC
+        BNE TFAIL
+        SEC
+        RTS
+TFAIL   CLC
         RTS
 
 ; Everything below must remain position-independent after copy to $0200.

@@ -46,10 +46,12 @@ RUN     STZ $5848
         BNE BAD
         LDA #$AC
         STA $5848
+        SEC
         RTS
 
 BAD     LDA #$E1
         STA $5848
+        CLC
         RTS
 
         END

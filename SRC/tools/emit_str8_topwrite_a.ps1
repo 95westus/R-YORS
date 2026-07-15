@@ -1,7 +1,7 @@
 param(
     [string]$BinPath = "BUILD/bin/himon-str8-rom.bin",
     [string]$AsmMapPath = "BUILD/s19/asm-v1-flash-8000.map",
-    [string]$OutPath = "../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-3000.a",
+    [string]$OutPath = "../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a",
     [int]$SourceOffset = 0x7000,
     [int]$StageAddress = 0x0A00,
     [int]$ImageAddress = 0x4000,
@@ -67,7 +67,7 @@ function Add-Line([string]$Line) {
     $script:lines.Add($Line)
 }
 
-Add-Line '; STR8N-TOPWRITE-3000.A'
+Add-Line '; STR8N-TOPWRITE-TRANSIENT-3000.A'
 Add-Line '; SELF-CONTAINED STR8-N TOP-SECTOR WRITER.'
 Add-Line '; ASSEMBLE WITH ASM-F2. NO SEPARATE STR8-TOP-STAGE S19 LOAD NEEDED.'
 Add-Line ';'
@@ -204,7 +204,10 @@ Add-Line '        CMP #$AC'
 Add-Line '        BNE PRERR'
 Add-Line '        LDX #<MOK'
 Add-Line '        LDY #>MOK'
-Add-Line '        JMP PL'
+Add-Line '        JSR PL'
+Add-Line '        LDA STAT'
+Add-Line '        SEC'
+Add-Line '        RTS'
 Add-Line 'PRERR   LDX #<MERR'
 Add-Line '        LDY #>MERR'
 Add-Line '        JSR PRC'
@@ -216,7 +219,10 @@ Add-Line '        JSR PRC'
 Add-Line '        LDA FHI'
 Add-Line '        LDX FLO'
 Add-Line '        JSR HEXW'
-Add-Line '        JMP CRLF'
+Add-Line '        JSR CRLF'
+Add-Line '        LDA STAT'
+Add-Line '        CLC'
+Add-Line '        RTS'
 Add-Line ''
 Add-Line 'PL      JSR PRC'
 Add-Line '        JMP CRLF'

@@ -1,4 +1,4 @@
-; BANK2PUT-8000-3000.A
+; BANK2PUT-8000-TRANSIENT-3000.A
 ; BOARD-BUILDABLE AP ENVELOPE INSTALLER FOR BANK 2 $8000.
 ;
 ; ASSEMBLE WITH FLASH ASM, EXIT SEAL WITH '.', THEN RUN G 3000.
@@ -55,6 +55,7 @@ RUN     STZ STAT
         BCC CFGDST
 BADCFG  LDA #$E0
         STA STAT
+        CLC
         RTS
 
 CFGDST  LDA #>DST
@@ -75,6 +76,7 @@ CFGOK   LDA #B2
         BCS STAGED
 STAGEFAIL LDA #$E1
         STA STAT
+        CLC
         RTS
 
 STAGED  LDA PKGSIG0
@@ -82,6 +84,7 @@ STAGED  LDA PKGSIG0
         BEQ SIG0OK
 BADAP   LDA #$E2
         STA STAT
+        CLC
         RTS
 
 SIG0OK  LDA PKGSIG1
@@ -131,6 +134,7 @@ CCHK    LDA LENLO
         BCC COPY
         LDA #$E3
         STA STAT
+        CLC
         RTS
 
 COPIED  LDA #B2
@@ -146,10 +150,12 @@ COPIED  LDA #B2
         BCC PROGFAIL
         LDA #$AC
         STA STAT
+        SEC
         RTS
 
 PROGFAIL LDA #$E4
         STA STAT
+        CLC
         RTS
 
         END

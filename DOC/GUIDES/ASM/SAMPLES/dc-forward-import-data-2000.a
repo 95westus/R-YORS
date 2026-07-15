@@ -7,7 +7,7 @@
 ;   END
 ;   PACKAGE $3200
 ;
-; STORE WITH BANKPUT-3000.A, THEN RUN:
+; STORE WITH BANKPUT-TRANSIENT-3000.A, THEN RUN:
 ;   AP B2 $9000 $3000
 ;   D 5848 5850
 ;   D 3000 3020
@@ -52,9 +52,11 @@ RUN     STZ $5848
         STA $584D
         LDA #$AC
         STA $5848
+        SEC
         RTS
 
 FAIL    STA $5848
+        CLC
         RTS
 
 TESTDC  LDX #$00

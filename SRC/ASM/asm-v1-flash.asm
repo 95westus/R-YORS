@@ -107,6 +107,7 @@ ASMF_IO_READY:
                         STX             ASMF_PC_LO
                         STY             ASMF_PC_HI
                         STZ             ASMF_POST_FLAG
+                        STZ             ASMF_RESULT
                         BCS             ASMF_LOOP
 
                         STA             ASMF_RESULT
@@ -203,7 +204,11 @@ ASMF_QUIT:
                         LDX             #<MSG_BYE
                         LDY             #>MSG_BYE
                         JSR             ASMF_PRINT_LINE
+                        LDA             ASMF_RESULT
+                        BNE             ASMF_QUIT_FAIL
                         JMP             ASMF_RETURN_OK
+ASMF_QUIT_FAIL:
+                        JMP             ASMF_RETURN_RESULT
 
 ASMF_SOURCE_CMD:
                         LDX             #<ASMF_CMD_DOTP
@@ -488,6 +493,7 @@ ASMF_NEW_CMD:
                         JMP             ASMF_RETURN_RESULT
 ASMF_NEW_OK:
                         STZ             ASMF_POST_FLAG
+                        STZ             ASMF_RESULT
                         JMP             ASMF_LOOP
 
 ASMF_PRINT_FAIL:
@@ -803,7 +809,7 @@ ASMF_CMD_CHECK:         DB              "CHECK",0
 ASMF_CMD_NEW:           DB              "NEW",0
 ASMF_CMD_END:           DB              "END",0
 ASMF_CMD_DOTP:          DB              ".P",0
-MSG_TITLE:              DB              "ASM-F",('2'+$80)
+                        INCLUDE         "asm-version.inc"
 MSG_PROMPT:             DB              "ASM>",('$'+$80)
 MSG_PROMPT_TAIL:        DB              ":",(' '+$80)
 MSG_SEAL_PROMPT:        DB              "SEAL>",(' '+$80)

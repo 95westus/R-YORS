@@ -1,44 +1,43 @@
-; BANK0AP-STAGE-2000.A
-; PIECE 1: PREPARE A BANK 0 AP ENVELOPE WRITE.
+; BANK0AP-PUT-TRANSIENT-2000.A
+; STANDARD ONE-RUN BANK 0 AP INSTALLER.
 ;
 ; INPUT:
-;   AP ENVELOPE AT $4000, USUALLY FROM SEAL> PACKAGE $4000
-;   DO NOT USE PACKAGE $2000 FOR THIS HELPER
-;   $2000 IS WHERE THIS SOURCE EMITS
+;   AP ENVELOPE AT PKG_BASE, DEFAULT $3000 FROM SEAL> PACKAGE $3000
+;   DO NOT USE PACKAGE $2000 FOR THIS TOOL
 ;
 ; RUN:
 ;   PASTE THIS SOURCE
 ;   SEAL> .
 ;   >G 2000
 ;
-; RESULT:
-;   BANK 0 SECTOR IS STAGED AT $0A00-$19FF
-;   AP ENVELOPE IS OVERLAID IN THE STAGE BUFFER ONLY
-;   NO FLASH WRITE HAPPENS IN THIS PIECE
-;   THIS PIECE EMITS IN $2000-$2FFF
-;   PRESS ENTER AT DST PROMPT FOR FIRST B0 HOLE
+; FLOW:
+;   VALIDATE -> STAGE -> SHOW DESTINATION -> TYPE YES -> PROGRAM/VERIFY
+;   PRESS ENTER AT DST PROMPT FOR THE FIRST B0 HOLE.
 ;
-; NEXT:
-;   PASTE BANK0AP-COMMIT-2000.A
-;   >G 2000
+; THIS IS A RAM TRANSIENT, NOT AN AP PACKAGE. IT EMITS AT $2000,
+; USES $0A00-$19FF AS THE STAGED SECTOR, AND LEAVES PKG_BASE UNCHANGED.
+; STARTING THE FLASH WORKER INVALIDATES ASM'S LOW-RAM NAME TABLES.
 ;
 ; STATUS:
-;   $1A00 = $AC STAGE READY
-;   $1A00 = $E1 BAD AP HEADER/LENGTH AT $4000
+;   $1A00 = $AC PROGRAM/VERIFY OK
+;   $1A00 = $E0 ABORTED BEFORE WRITE
+;   $1A00 = $E1 BAD AP HEADER/LENGTH AT PKG_BASE
 ;   $1A00 = $E2 BAD DEST/LEN OR CROSSES 4K SECTOR
 ;   $1A00 = $E3 NO ERASED BANK-0 HOLE FITS
 ;   $1A00 = $E4 STAGE-COPY FAILED
 ;   $1A00 = $E5 DESTINATION RANGE IS NOT ERASED
+;   $1A00 = $E6 PROGRAM/VERIFY FAILED
+;   $1A00 = $E7 STAGED AP CHECK FAILED
 ;   $1A01/$1A02 = SELECTED BANK-0 PACKAGE ADDRESS, LO/HI
 ;   $1A03/$1A04 = AP ENVELOPE LENGTH, LO/HI
 ;   $1A05 = SELECTED SECTOR HIGH BYTE
-;   $1A06 = $5A STAGE READY MARK
-;   $4000 PACKAGE BUFFER ALLOWS LENGTH $0001-$1000
+;   $1A06 = $00 AFTER RETURN
 
-PKG     EQU $4000
-PKG1    EQU $4001
-PKG3    EQU $4003
-PKG4    EQU $4004
+PKG_BASE EQU $3000
+PKG     EQU PKG_BASE
+PKG1    EQU PKG_BASE+1
+PKG3    EQU PKG_BASE+3
+PKG4    EQU PKG_BASE+4
 
 STAT    EQU $1A00
 DSTLO   EQU $1A01
@@ -48,6 +47,9 @@ LENHI   EQU $1A04
 SECHI   EQU $1A05
 READY   EQU $1A06
 INBUF   EQU $1A10
+INB1    EQU $1A11
+INB2    EQU $1A12
+INB3    EQU $1A13
 
 SPLO    EQU $C8
 SPHI    EQU $C9
@@ -57,6 +59,74 @@ CNTLO   EQU $CC
 CNTHI   EQU $CD
 
         ORG $2000
+
+; KEEP TEXT BEFORE CODE: ITS 20 ADDRESS USES THEN NEED NO FIXUP ROWS.
+        JMP RUN
+
+MTITLE  DB $0D,$0A,'B','0',' ','A','P',' ','P','U','T'
+        DB $0D,$0A,0
+MPKG    DB 'P','K','G',' ','L','=','$',0
+MDST    DB 'D','S','T',' ','$','8','0','0','0'
+        DB '-','$','F','F','F','F',' ','O','R',' '
+        DB 'E','N','T','E','R','=','A','U','T','O'
+        DB '>',' ',0
+MSEL    DB 'B','0',' ','A','P',' ','@','$',0
+MLEN    DB ' ','L','=','$',0
+MSTAGED DB 'S','T','A','G','E',' ','O','K',$0D,$0A,0
+MCONF   DB 'T','Y','P','E',' ','Y','E','S'
+        DB ' ','T','O',' ','W','R','I','T','E','>',' ',0
+MOK     DB 'P','R','O','G','R','A','M',' ','O','K',$0D,$0A,0
+MFAIL   DB 'F','A','I','L',' ','$','1','A','0','0','=','$',0
+MABORT  DB 'A','B','O','R','T',' ','-',' ','N','O',' '
+        DB 'F','L','A','S','H',' ','W','R','I','T','E'
+        DB $0D,$0A,0
+
+READ    LDX #<INBUF
+        LDY #>INBUF
+        JMP SYS_READ_CSTRING_ECHO_UPPER
+
+PUTS    JMP BIO_FTDI_PUT_CSTR
+
+H2N     CMP #'0'
+        BCC .BAD
+        CMP #':'
+        BCC .DIG
+        CMP #'A'
+        BCC .BAD
+        CMP #'G'
+        BCS .BAD
+        SEC
+        SBC #$37
+        SEC
+        RTS
+.DIG    SEC
+        SBC #'0'
+        SEC
+        RTS
+.BAD    CLC
+        RTS
+
+HEX     PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR .NIB
+        PLA
+        AND #$0F
+.NIB    CMP #$0A
+        BCC .DIG
+        CLC
+        ADC #$37
+        BRA OUT
+.DIG    CLC
+        ADC #'0'
+OUT     JMP BIO_FTDI_WRITE_BYTE_BLOCK
+
+CRLF    LDA #$0D
+        JSR OUT
+        LDA #$0A
+        JMP OUT
 
 RUN     STZ STAT
         STZ DSTLO
@@ -116,13 +186,48 @@ RUN     STZ STAT
 .CHOSEN JSR COPYPKG
         LDA #$5A
         STA READY
-        LDA #$AC
+        JSR CHECKSTAGE
+        BCS .READY
+        JMP FAILA
+
+.READY  LDX #<MSTAGED
+        LDY #>MSTAGED
+        JSR PUTS
+        JSR PRINTDST
+        LDX #<MCONF
+        LDY #>MCONF
+        JSR PUTS
+        JSR READ
+        BCS .GOT
+        JMP ABORT
+
+.GOT    JSR ISYES
+        BCS .WRITE
+        JMP ABORT
+
+.WRITE  JSR PROGRAM
+        BCS DONE
+        JMP FAILA
+
+DONE    LDA #$AC
         STA STAT
+        STZ READY
         LDX #<MOK
         LDY #>MOK
         JSR PUTS
         JSR PRINTDST
         LDA STAT
+        SEC
+        RTS
+
+ABORT   LDA #$E0
+        STA STAT
+        STZ READY
+        LDX #<MABORT
+        LDY #>MABORT
+        JSR PUTS
+        LDA STAT
+        CLC
         RTS
 
 FAILA   STA STAT
@@ -134,6 +239,7 @@ FAILA   STA STAT
         JSR HEX
         JSR CRLF
         LDA STAT
+        CLC
         RTS
 
 READPKG LDA PKG
@@ -368,6 +474,73 @@ COPYPKG LDA #<PKG
         BRA .LOOP
 .DONE   RTS
 
+CHECKSTAGE LDA READY
+        CMP #$5A
+        BNE .BAD
+        LDA DSTHI
+        CMP #$80
+        BCC .BAD
+        LDA LENLO
+        ORA LENHI
+        BEQ .BAD
+        LDA SECHI
+        CMP #$80
+        BCC .BAD
+        JSR SETSTAGEPTR
+        LDY #$00
+        LDA (DPLO),Y
+        CMP #'A'
+        BNE .BAD
+        LDY #$01
+        LDA (DPLO),Y
+        CMP #'P'
+        BNE .BAD
+        LDY #$03
+        LDA (DPLO),Y
+        CMP LENLO
+        BNE .BAD
+        LDY #$04
+        LDA (DPLO),Y
+        CMP LENHI
+        BNE .BAD
+        SEC
+        RTS
+.BAD    LDA #$E7
+        CLC
+        RTS
+
+PROGRAM LDA #$00
+        STA $1FEF
+        LDA SECHI
+        STA $1FE9
+        LDA #$0A
+        STA $1FF6
+        LDA #$05
+        STA $1FF0
+        JSR $F003
+        BCS .OK
+        LDA #$E6
+        CLC
+        RTS
+.OK     SEC
+        RTS
+
+ISYES   LDA INBUF
+        CMP #'Y'
+        BNE .NO
+        LDA INB1
+        CMP #'E'
+        BNE .NO
+        LDA INB2
+        CMP #'S'
+        BNE .NO
+        LDA INB3
+        BNE .NO
+        SEC
+        RTS
+.NO     CLC
+        RTS
+
 INCDP   INC DPLO
         BNE .DONE
         INC DPHI
@@ -396,65 +569,5 @@ PRINTDST LDX #<MSEL
         JSR HEX
         JSR CRLF
         RTS
-
-H2N     CMP #'0'
-        BCC .BAD
-        CMP #':'
-        BCC .DIG
-        CMP #'A'
-        BCC .BAD
-        CMP #'G'
-        BCS .BAD
-        SEC
-        SBC #$37
-        SEC
-        RTS
-.DIG    SEC
-        SBC #'0'
-        SEC
-        RTS
-.BAD    CLC
-        RTS
-
-HEX     PHA
-        LSR A
-        LSR A
-        LSR A
-        LSR A
-        JSR .NIB
-        PLA
-        AND #$0F
-.NIB    CMP #$0A
-        BCC .DIG
-        CLC
-        ADC #$37
-        BRA OUT
-.DIG    CLC
-        ADC #'0'
-OUT     JMP BIO_FTDI_WRITE_BYTE_BLOCK
-
-READ    LDX #<INBUF
-        LDY #>INBUF
-        JMP SYS_READ_CSTRING_ECHO_UPPER
-
-PUTS    JMP BIO_FTDI_PUT_CSTR
-
-CRLF    LDA #$0D
-        JSR OUT
-        LDA #$0A
-        JMP OUT
-
-MTITLE  DB $0D,$0A,'B','0',' ','A','P',' '
-        DB 'S','T','A','G','E',$0D,$0A,0
-MPKG    DB 'P','K','G',' ','L','=','$',0
-MDST    DB 'D','S','T',' ','$','8','0','0','0'
-        DB '-','$','F','F','F','F',' ','O','R',' '
-        DB 'E','N','T','E','R','=','A','U','T','O'
-        DB '>',' ',0
-MSEL    DB 'S','T','A','G','E','D',' ','B','0'
-        DB ' ','A','P',' ','@','$',0
-MLEN    DB ' ','L','=','$',0
-MOK     DB 'S','T','A','G','E',' ','O','K',$0D,$0A,0
-MFAIL   DB 'F','A','I','L',' ','$','1','A','0','0','=','$',0
 
         END

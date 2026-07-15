@@ -268,11 +268,11 @@ ASM_SMOKE_TARGET_FWD_LO EQU            $10
 ASM_SMOKE_TARGET_BACK_LO EQU           $0F
 ASM_SMOKE_DATA_HI      EQU             $71
                         IF              ASM_FLASH_RUNTIME
-ASM_TARGET_LIMIT_HI    EQU             $50
-ASM_TARGET_MAX_HI      EQU             $4F
-ASM_TARGET_THIRD_ADDR  EQU             $4FFD
-ASM_TARGET_PENULT_ADDR EQU             $4FFE
-ASM_TARGET_LAST_ADDR   EQU             $4FFF
+ASM_TARGET_LIMIT_HI    EQU             $7E
+ASM_TARGET_MAX_HI      EQU             $7D
+ASM_TARGET_THIRD_ADDR  EQU             $7DFD
+ASM_TARGET_PENULT_ADDR EQU             $7DFE
+ASM_TARGET_LAST_ADDR   EQU             $7DFF
                         ELSE
 ASM_TARGET_LIMIT_HI    EQU             $7E
 ASM_TARGET_MAX_HI      EQU             $7D
@@ -283,6 +283,9 @@ ASM_TARGET_LAST_ADDR   EQU             $7DFF
 ASM_TARGET_GUARD_LO    EQU             $00
                         IF              ASM_FLASH_RUNTIME
 ASM_TARGET_GUARD_HI    EQU             $50
+ASM_LOW_SYM_NAMES      EQU             $0200
+ASM_LOW_FIX_NAMES      EQU             $0A00
+ASM_LOW_TABLE_END      EQU             $1A00
                         ELSE
 ASM_TARGET_GUARD_HI    EQU             $20
                         ENDIF
@@ -319,6 +322,8 @@ ASM_IMPORT_REC_OFF_LEN EQU             $01
 ASM_IMPORT_REC_OFF_BODY EQU            $02
 ASM_PACKAGE_HDR_BYTES  EQU             $05
 ASM_PACKAGE_FIXED_BYTES EQU            $1B
+ASM_PACKAGE_MAX_LO     EQU             $00
+ASM_PACKAGE_MAX_HI     EQU             $10
 ASM_PACKAGE_VERSION    EQU             $01
 ASM_PACKAGE_SIG0       EQU             'A'
 ASM_PACKAGE_SIG1       EQU             'P'
@@ -5956,6 +5961,25 @@ ASM_SMOKE_FIXUPS_PACKAGE_CHECK_OK:
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_PACKAGE_CHECK_LEN_OK:
                         ENDIF
+                        STZ             ASM_PACKAGE_LEN_LO
+                        LDA             #ASM_PACKAGE_MAX_HI
+                        STA             ASM_PACKAGE_LEN_HI
+                        JSR             ASM_PACKAGE_LENGTH_OK
+                        BCS             ASM_SMOKE_FIXUPS_PACKAGE_MAX_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_MAX_OK:
+                        INC             ASM_PACKAGE_LEN_LO
+                        JSR             ASM_PACKAGE_LENGTH_OK
+                        BCC             ASM_SMOKE_FIXUPS_PACKAGE_OVERSIZE_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_OVERSIZE_OK:
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BEQ             ASM_SMOKE_FIXUPS_PACKAGE_LIMIT_DONE
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
+ASM_SMOKE_FIXUPS_PACKAGE_LIMIT_DONE:
+                        LDA             #$37
+                        STA             ASM_PACKAGE_LEN_LO
+                        STZ             ASM_PACKAGE_LEN_HI
                         ENDIF
                         SEC
                         RTS
@@ -8880,9 +8904,7 @@ ASM_EMIT_ROOM_OK:
 ; ROUTINE: ASM_TARGET_ADDR_OK
 ; IN : A=address lo, X=address hi.
 ; OUT: C=1 when the address is outside the protected ASM runtime workspace.
-;      C=0 when the address is inside [guard_start, ASM_CODE_BUF).
-; NOTE: Runtime-paste ASM_CODE_BUF is a fallback buffer; flash ASM uses its
-;       small high-RAM ASM_CODE_BUF only as the guard fence before I/O.
+;      C=0 when the address is inside [guard_start, ASM_WORKSPACE_END).
 ; ----------------------------------------------------------------------------
 ASM_TARGET_ADDR_OK:
                         CPX             #ASM_TARGET_GUARD_HI
@@ -8891,15 +8913,30 @@ ASM_TARGET_ADDR_OK:
                         CMP             #ASM_TARGET_GUARD_LO
                         BCC             ASM_TARGET_ADDR_SAFE
 ASM_TARGET_ADDR_CHECK_END:
-                        CPX             #>ASM_CODE_BUF
+                        CPX             #>ASM_WORKSPACE_END
                         BCC             ASM_TARGET_ADDR_GUARDED
                         BNE             ASM_TARGET_ADDR_SAFE
-                        CMP             #<ASM_CODE_BUF
+                        CMP             #<ASM_WORKSPACE_END
                         BCC             ASM_TARGET_ADDR_GUARDED
 ASM_TARGET_ADDR_SAFE:
                         SEC
                         RTS
 ASM_TARGET_ADDR_GUARDED:
+                        CLC
+                        RTS
+
+; A=start high byte is already known valid; ASM_TMP1 is the inclusive end.
+; A lower-arena range may not jump across the protected UDATA workspace.
+ASM_TARGET_RANGE_NO_GUARD_CROSS:
+                        CMP             #ASM_TARGET_GUARD_HI
+                        BCS             ASM_TARGET_RANGE_ONE_ARENA
+                        LDA             ASM_TMP1_HI
+                        CMP             #ASM_TARGET_GUARD_HI
+                        BCS             ASM_TARGET_RANGE_CROSSES_GUARD
+ASM_TARGET_RANGE_ONE_ARENA:
+                        SEC
+                        RTS
+ASM_TARGET_RANGE_CROSSES_GUARD:
                         CLC
                         RTS
 
@@ -9608,6 +9645,9 @@ ASM_SEAL_RELOCATE_RANGE_NONZERO:
                         LDX             ASM_TMP1_HI
                         JSR             ASM_TARGET_ADDR_OK
                         BCC             ASM_SEAL_RELOCATE_RANGE_BAD
+                        LDA             ASM_RELOCATE_BASE_HI
+                        JSR             ASM_TARGET_RANGE_NO_GUARD_CROSS
+                        BCC             ASM_SEAL_RELOCATE_RANGE_BAD
                         SEC
                         RTS
 ASM_SEAL_RELOCATE_RANGE_BAD:
@@ -9708,6 +9748,10 @@ ASM_SEAL_PACKAGE:
                         RTS
 ASM_SEAL_PACKAGE_HAVE_SEAL:
                         JSR             ASM_PACKAGE_COMPUTE_LAYOUT
+                        JSR             ASM_PACKAGE_LENGTH_OK
+                        BCS             ASM_SEAL_PACKAGE_LENGTH_SAFE
+                        RTS
+ASM_SEAL_PACKAGE_LENGTH_SAFE:
                         JSR             ASM_PACKAGE_RANGE_OK
                         BCS             ASM_SEAL_PACKAGE_RANGE_SAFE
                         RTS
@@ -9764,6 +9808,18 @@ ASM_PACKAGE_COMPUTE_LAYOUT:
                         STA             ASM_PACKAGE_LEN_HI
                         RTS
 
+ASM_PACKAGE_LENGTH_OK:
+                        LDA             ASM_PACKAGE_LEN_HI
+                        CMP             #ASM_PACKAGE_MAX_HI
+                        BCC             ASM_PACKAGE_LENGTH_GOOD
+                        BNE             ASM_PACKAGE_RANGE_BAD
+                        LDA             ASM_PACKAGE_LEN_LO
+                        CMP             #ASM_PACKAGE_MAX_LO
+                        BNE             ASM_PACKAGE_RANGE_BAD
+ASM_PACKAGE_LENGTH_GOOD:
+                        SEC
+                        RTS
+
 ASM_PACKAGE_RANGE_OK:
                         LDA             ASM_PACKAGE_LEN_LO
                         ORA             ASM_PACKAGE_LEN_HI
@@ -9795,6 +9851,9 @@ ASM_PACKAGE_RANGE_OK:
                         LDA             ASM_TMP1_LO
                         LDX             ASM_TMP1_HI
                         JSR             ASM_TARGET_ADDR_OK
+                        BCC             ASM_PACKAGE_RANGE_BAD
+                        LDA             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_TARGET_RANGE_NO_GUARD_CROSS
                         BCC             ASM_PACKAGE_RANGE_BAD
                         LDA             ASM_PACKAGE_BASE_HI
                         CMP             ASM_SEAL_END_HI
@@ -17050,7 +17109,11 @@ ASM_SYM_DEFLINE_HI:    DS              ASM_SYM_MAX
 ASM_SYM_USECNT:        DS              ASM_SYM_MAX
 ASM_SYM_FIRSTREF_LO:   DS              ASM_SYM_MAX
 ASM_SYM_FIRSTREF_HI:   DS              ASM_SYM_MAX
+                        IF              ASM_FLASH_RUNTIME
+ASM_SYM_NAMES          EQU             ASM_LOW_SYM_NAMES
+                        ELSE
 ASM_SYM_NAMES:         DS              (ASM_SYM_MAX*ASM_SYM_NAME_MAX)
+                        ENDIF
 ASM_EXPORT_SYM_SLOT:   DS              ASM_EXPORT_MAX
 ASM_IMPORT_NAME_LEN:   DS              ASM_IMPORT_MAX
 ASM_IMPORT_NAME_PACKS: DS              (ASM_IMPORT_MAX*ASM_EXPORT_NAME_PACK_MAX)
@@ -17077,7 +17140,11 @@ ASM_FIX_HASH1:         DS              ASM_FIX_MAX
 ASM_FIX_HASH2:         DS              ASM_FIX_MAX
 ASM_FIX_HASH3:         DS              ASM_FIX_MAX
 ASM_FIX_NAME_LEN:      DS              ASM_FIX_MAX
+                        IF              ASM_FLASH_RUNTIME
+ASM_FIX_NAME_TEXT      EQU             ASM_LOW_FIX_NAMES
+                        ELSE
 ASM_FIX_NAME_TEXT:     DS              ASM_FIX_NAME_BYTES
+                        ENDIF
 
                         DATA
 
@@ -17936,6 +18003,7 @@ ASM_CODE_BUF:           DS              $0100
                         ENDIF
 ASM_CODE_BUF:           DS              $0200
                         ENDIF
+ASM_WORKSPACE_END:
 
                         ENDMOD
                         END
