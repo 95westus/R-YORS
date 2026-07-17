@@ -416,6 +416,21 @@ status model, and hardware proof trail live in [HASHED_ASM.md](ASM/HASHED_ASM.md
 and [TEST_PLAN.md](ASM/TEST_PLAN.md). The renderable routine-flow map lives in
 [ASM_CALL_MAP.md](ASM/ASM_CALL_MAP.md).
 
+For AP packages, `ENTRY` is the public front door, `EXPORT` publishes other
+defined global labels, and `IMPORT` force-defers binding to load time. A plain
+undeclared resident `JSR`/`JMP` binds now against the HIMON/RJOIN image running
+the assembler and emits that concrete address. An imported call instead emits
+placeholder bytes plus import relocation rows; OIL/HIMON/STR8 resolves and
+patches those rows when the AP body is loaded. Current package metadata limits
+are 8 exports and 8 imports; the tighter practical AP limit is often the shared
+16-row relocation table.
+
+The low-RAM split moved symbol names to `$0200-$09FF` and fixup names to
+`$0A00-$19FF`, freeing high ASM workspace and giving STR8 a 4K sector staging
+buffer after `PACKAGE` has serialized the needed metadata. It changed pressure
+and placement, not the hard row ceilings by itself. Expand fixup/relocation
+capacity before symbols/locals, and expand import/export slots last.
+
 ## HIMON Debug Policy
 
 HIMON owns the hardware stack on monitor entry. Resume is explicit: rebuild

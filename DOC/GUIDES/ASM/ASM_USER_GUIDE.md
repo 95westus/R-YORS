@@ -445,6 +445,17 @@ Use `ENTRY name` instead of also exporting the same name.
 `IMPORT name` declares an external symbol as intentional package metadata and
 forces matching operands to become import relocation rows.
 
+Plain English:
+
+```text
+ENTRY   this is the package front door
+EXPORT  this package provides this global label for outside callers
+IMPORT  this package needs this global label from outside providers
+```
+
+Export only the intended public contract. Do not export every helper routine.
+For a normal AP program, `ENTRY MAIN` is usually the one public row needed.
+
 `START` is not reserved; it is available as an ordinary label.
 
 ## Instructions
@@ -468,6 +479,29 @@ Direct `JSR name` and `JMP name` first check the current session. If the name
 is not a session symbol and it is resident in the running HIMON/RJOIN catalog,
 ASM can emit the resident address directly. Declaring `IMPORT name` first
 forces deferred import metadata instead.
+
+The difference is binding time:
+
+```asm
+JSR BIO_FTDI_PUT_CSTR
+```
+
+With no `IMPORT`, ASM asks the running HIMON/RJOIN catalog for the address now
+and writes that concrete address into the emitted body. The package carries no
+import row for that call. Use this for a proof or body that is intentionally
+tied to the current resident image.
+
+```asm
+IMPORT BIO_FTDI_PUT_CSTR
+JSR BIO_FTDI_PUT_CSTR
+```
+
+With `IMPORT`, ASM leaves placeholder bytes in the body, writes import metadata,
+and records import relocation rows. HIMON/STR8/OIL resolves the name through the
+resident RJOIN catalog when the AP package is loaded, then patches the loaded
+RAM body. Use this when the package should stay movable and bind to whichever
+resident image loads it later. This costs one import slot and one relocation row
+for each patched address use.
 
 ## END Versus SEAL
 
@@ -829,6 +863,9 @@ Current proof-sized table limits:
 ```text
 global symbols       64
 fixups               128
+relocation rows      16
+exports              8
+imports              8
 report references    192
 locals per scope     16
 line length          63 visible chars
@@ -837,6 +874,14 @@ local name length    15 visible chars including . or ?
 ```
 
 These are implementation limits, not permanent language promises.
+
+The low-RAM split helped, but it did not automatically raise these row counts.
+Flash ASM now keeps symbol names in `$0200-$09FF` and fixup names in
+`$0A00-$19FF`, which frees the higher ASM workspace and gives STR8 a 4K sector
+staging buffer after package metadata has been serialized. The current row
+ceilings above are still deliberate constants. If they grow, grow
+fixup/relocation capacity first, then symbol/local capacity, then
+import/export slots.
 
 ## Error Codes
 
