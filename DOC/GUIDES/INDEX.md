@@ -46,6 +46,8 @@ RELOCATE, and AP v1 PACKAGE flows.
 - [ASM](ASM/ASM_USER_GUIDE.md) - onboard assembler operator guide;
   see [ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) for practical address
   choices and command address roles,
+  see [AP_LINKER_CURRENT_IMAGE_GATES.md](ASM/AP_LINKER_CURRENT_IMAGE_GATES.md)
+  for the frozen missing-import and banked-source current-image proof,
   see [HASHED_ASM.md](ASM/HASHED_ASM.md) for source/parser/reference material,
   see [DECISIONS.md](ASM/DECISIONS.md) for AP package/envelope/install
   boundaries,

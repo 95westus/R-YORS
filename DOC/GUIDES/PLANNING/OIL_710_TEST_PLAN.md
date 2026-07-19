@@ -13,6 +13,12 @@ asm-session-report`; the board is loaded; the tracked code changes have not yet
 been run on the board. This document is the release test rail and size review
 for those unproven changes.
 
+Historical note: this file preserves the original `.710` STR8-resident-linker
+rail and its then-current addresses. For the post-move HIMON-resident linker at
+`BIO_FTDI_PUT_CSTR=$E705`, use
+[AP_LINKER_CURRENT_IMAGE_GATES.md](../ASM/AP_LINKER_CURRENT_IMAGE_GATES.md).
+Do not substitute current targets into the old transcript expectations below.
+
 ## Release Meaning
 
 OIL means the live board can carry AP objects from storage through load,

@@ -145,6 +145,7 @@ LOCAL/s3x/
 OPERATORS_GUIDE.md              current board-facing guide
 ASM/ASM_USER_GUIDE.md           ASM operator guide
 ASM/ADDRESS_PRACTICES.md        ASM address-role operator guide
+ASM/AP_LINKER_CURRENT_IMAGE_GATES.md frozen moved-linker board gates
 ASM/LIFE16_QUICK_CARD.md        exact ASM-F2 Life bank-2 bench sequence
 ASM/LIFE16_BANK2_EXAMPLE.md     ASM-F2 16x16 Life AP bank-2 walkthrough
 TECHNICAL_GUIDE.md              current architecture guide

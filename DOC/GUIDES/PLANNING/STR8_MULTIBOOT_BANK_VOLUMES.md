@@ -423,8 +423,8 @@ but it is not the on-flash directory format.
 ## Implementation And Proof Sequence
 
 ```text
-1  missing-import atomicity proof on the current HIMON AP linker
-2  banked-source RJOIN proof on the current combined image
+1  PASS 2026-07-19: missing-import atomicity on the current HIMON AP linker
+2  PASS 2026-07-19: banked-source RJOIN on the current combined image
 3  evidence commit and size/map baseline
 4  RAM-only bank-select/reset-vector handoff prototype
 5  boot-bank validation and the per-bank payload/top-sector ABI

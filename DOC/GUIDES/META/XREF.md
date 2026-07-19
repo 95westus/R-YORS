@@ -41,6 +41,13 @@ STR8_MULTIBOOT_BANK_VOLUMES.md
   relates to DECISIONS.md, TECHNICAL_GUIDE.md, STR8_DECISION_REFERENCE.md,
   MEMORY_MAP.md, FUTURE.md, OIL_710_TEST_PLAN.md, and HARDWARE_TEST_LOG.md
 
+AP_LINKER_CURRENT_IMAGE_GATES.md
+  freezes the active missing-import, banked-RJOIN, and Bank-2 installer inputs
+  pins the current resident BIO_FTDI_PUT_CSTR result to $E705
+  gives the stop-on-failure atomicity gate and destructive banked-source rail
+  relates to TEST_PLAN.md, TODO.md, OIL_710_TEST_PLAN.md, and
+  HARDWARE_TEST_LOG.md
+
 DECISIONS.md
   records settled naming, hash, STR8, ASM, contract, local-home, and doc-shape calls
   should be checked before reopening design alternatives

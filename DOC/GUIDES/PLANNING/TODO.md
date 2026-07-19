@@ -2,12 +2,13 @@
 
 ## Near Term
 
-- Run the missing-import atomicity proof against the current HIMON-resident AP
-  linker: expect rejection, no body entry, and no partial import patch.
-- Run the banked-source RJOIN proof against the same current combined image,
-  then append both transcripts to `LOGS/HARDWARE_TEST_LOG.md` and commit the
-  evidence. These two gates precede multiboot work.
-- After those gates, follow
+- 2026-07-19 hardware pass: both current-image HIMON AP-linker gates are
+  closed. Missing-import validation returned `$09` without body entry or a
+  partial patch; banked-source RJOIN returned `A=$AC/C=1` with status `$00`
+  and resolved `BIO_FTDI_PUT_CSTR=$E705`. See
+  [AP_LINKER_CURRENT_IMAGE_GATES.md](../ASM/AP_LINKER_CURRENT_IMAGE_GATES.md)
+  and `LOGS/HARDWARE_TEST_LOG.md`.
+- With those gates closed, follow
   [STR8_MULTIBOOT_BANK_VOLUMES.md](STR8_MULTIBOOT_BANK_VOLUMES.md): prototype
   the selected-bank reset-vector handoff entirely from RAM before adding shared
   S19 services, 28K payload staging, or an append-only bank volume.

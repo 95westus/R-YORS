@@ -29,6 +29,8 @@ connect.
 - [ASM](ASM/ASM_USER_GUIDE.md) - onboard assembler operator guide, with
   [ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) as the quick address-role
   operator guide,
+  [AP_LINKER_CURRENT_IMAGE_GATES.md](ASM/AP_LINKER_CURRENT_IMAGE_GATES.md) as
+  the frozen moved-linker board-gate card,
   [LIFE16_QUICK_CARD.md](ASM/LIFE16_QUICK_CARD.md) as the exact Life bench
   sequence,
   [LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) as the full bank-2 AP

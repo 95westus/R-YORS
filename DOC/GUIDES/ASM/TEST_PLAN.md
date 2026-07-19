@@ -10082,3 +10082,64 @@ Result: the no-import package loaded and applied its internal relocations at
 `$3000`, called relocated `TARGET=$3030`, set `$5850=$5A`, and returned with
 `A=$AC/C=1`. Together with the two `$06` cases, this passes the current
 direct-RAM AP positive/range-negative group.
+
+## 2026-07-19 Current-Image AP Linker Gate Freeze
+
+The remaining moved-linker regressions now use the frozen fixtures and exact
+board sequence in
+[AP_LINKER_CURRENT_IMAGE_GATES.md](AP_LINKER_CURRENT_IMAGE_GATES.md).
+
+Frozen active sources:
+
+```text
+SAMPLES/banked-rjoin-smoke.a
+SAMPLES/bankput-transient-3000.a
+SAMPLES/missing-import-atomicity-2000.a
+```
+
+The missing-import fixture deliberately orders the valid
+`BIO_FTDI_PUT_CSTR` import before missing `OIL_MISSING_SYMBOL`. `AP $3200
+$3000` must fail with `$09` while both loaded JSR operands remain `20 FF FF`.
+Do not proceed to Bank 2 if the valid first import was partially patched.
+
+The banked-source gate overwrites Bank 2 sector `$9000-$9FFF` through the
+staging overlay. Its current-map expected resolver result is
+`BIO_FTDI_PUT_CSTR=$E705`, so the loaded JSR operand and result bytes must be
+`05 E7`; AP source cells must report staged source `$0A00`, destination
+`$3000`, and status `$00`.
+
+Make no linker or AP package-format changes while capturing these two gates.
+Append passing or failing transcripts to `LOGS/HARDWARE_TEST_LOG.md` and keep
+the gates open until all byte-level expectations pass.
+
+The 2026-07-19 Gate 1 transcript passes missing-import atomicity:
+
+```text
+APERR=$09
+$5848       = 00
+$3007-300C  = 20 FF FF 20 FF FF
+$7E30       = 09
+```
+
+The valid first import remained `$FFFF`; no partial patch occurred.
+
+The 2026-07-19 Gate 2 transcript passes banked-source RJOIN through Bank 2
+`$9000`:
+
+```text
+installer status = AC 00 00 00
+RET              = A=AC/C=1
+$5848            = AC
+$584A-$584B      = 05 E7
+$3006-$3008      = 20 05 E7
+$1A10-$1A17      = 06 0F 30 05 E7 04 05 01
+$0A00-$0A04      = 41 50 01 76 00
+$7E30            = 00
+$7E31-$7E32      = 00 0A
+$7E33-$7E34      = 00 30
+```
+
+The staged source, patched call, resolved-address result, debug row, and HIMON
+request cells all agree with `BIO_FTDI_PUT_CSTR=$E705`. Repeating the banked
+AP command produced the same successful execution. Gates 1 and 2 are closed
+for the current HIMON-resident AP linker image.

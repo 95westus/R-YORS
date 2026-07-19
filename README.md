@@ -59,10 +59,10 @@ Treat it as bench-proven rather than a finished field updater. Keep an external
 programmer and a known-good image nearby.
 
 The 2026-07-18 size-pass image has been installed on the board. Its fixed-width
-`D` path and positive RAM AP/RJOIN import path pass; missing-import atomicity
-and banked-source RJOIN remain explicit regression gates. The image retires the
-STR8 `M` map and the richer resident HIMON `D`/quoted-hash forms, and moves AP
-import linking from STR8 into HIMON while preserving `$F006` as a compatibility
+`D` path, positive RAM AP/RJOIN import path, missing-import atomicity, and
+banked-source RJOIN path are hardware-proven. The image retires the STR8 `M`
+map and the richer resident HIMON `D`/quoted-hash forms, and moves AP import
+linking from STR8 into HIMON while preserving `$F006` as a compatibility
 entry.
 
 ## Start Here

@@ -14603,3 +14603,325 @@ Result: pass. `$5848=$AC` and carry set are the fixture success result,
 `$584A/$584B=$30/$30` record relocated `TARGET=$3030`, and `$5850=$5A`
 proves that target executed. This closes the direct-RAM no-import AP positive
 and pairs it with the preceding source/destination range negatives.
+
+## 2026-07-19 HIMON AP Linker Missing-Import Atomicity Pass
+
+The current-image negative used the frozen
+`ASM/SAMPLES/missing-import-atomicity-2000.a` fixture. It declares valid
+`BIO_FTDI_PUT_CSTR` first and missing `OIL_MISSING_SYMBOL` second, then emits
+the corresponding JSRs at body offsets `$0007` and `$000A`. The visible
+assembler was `ASM-F2 00.0718(2045)`.
+
+Board transcript:
+
+```text
+ASM NEW
+ASM-F2 00.0718(2045)
+ASM>$2000: ; MISSING-IMPORT-ATOMICITY-2000.A
+ASM>$2000: ; CURRENT-IMAGE AP LINKER NEGATIVE FIXTURE.
+ASM>$2000: ;
+ASM>$2000: ; IMPORT ORDER IS DELIBERATE: VALID FIRST, MISSING SECOND.
+ASM>$2000: ; AFTER AP $3200 $3000 FAILS WITH $09, BOTH JSR OPERANDS AT
+ASM>$2000: ; $3007-$300C MUST STILL BE $FFFF. DO NOT REORDER THE IMPORTS OR CALLS.
+ASM>$2000:
+ASM>$2000:         ORG $2000
+ASM>$2000:
+ASM>$2000:         IMPORT BIO_FTDI_PUT_CSTR
+ASM>$2000:         IMPORT OIL_MISSING_SYMBOL
+ASM>$2000:
+ASM>$2000: MAIN    BRA RUN
+ASM>$2002:         ENTRY MAIN
+ASM>$2002:
+ASM>$2002: RUN     LDA #$E4
+ASM>$2004:         STA $5848
+ASM>$2007:         JSR BIO_FTDI_PUT_CSTR
+ASM>$200A:         JSR OIL_MISSING_SYMBOL
+ASM>$200D:         LDA #$AC
+ASM>$200F:         STA $5848
+ASM>$2012:         SEC
+ASM>$2013:         RTS
+ASM>$2014:         END
+ASM OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$005F
+SEAL> .
+ASM BYE
+>M 5848 00
+M start [end|+cnt]
+>M 5848
+5848: E4 00
+>AP $3200 $3000
+APERR=$09
+>D 5848
+5848: 00 | .
+>D 3007 300C
+3007: 20 FF FF 20 FF FF |  .. ..
+>D 7E2D 7E40
+7E2D: BF D5 01 09 00 32 00 30 | 5F 00 4B 32 14 00 02 02 | .....2.0_.K2....
+7E3D: 00 00 14 32 | ...2
+>
+```
+
+The tight `M 5848 00` form correctly produced usage under the current modify
+grammar. Interactive `M 5848` then changed the previous direct-run marker from
+`$E4` to `$00` before the AP attempt.
+
+Result: pass. Visible `APERR=$09` agrees with `HIM_AP_STATUS=$09` at `$7E30`.
+The request cells record source `$3200`, destination `$3000`, package length
+`$005F`, body pointer `$324B`, body length `$0014`, two relocation rows, and
+two imports. `$5848` remained `$00`, proving the body was not entered. Most
+importantly, `$3007-$300C = 20 FF FF 20 FF FF`: the valid first import was not
+patched before validation discovered the missing second import. This closes
+the HIMON-resident linker's missing-import/no-partial-patch gate. The
+banked-source RJOIN regression remains open.
+
+## 2026-07-19 HIMON AP Linker Banked-Source RJOIN Pass
+
+The current-image positive used the frozen `ASM/SAMPLES/banked-rjoin-smoke.a`
+package and `ASM/SAMPLES/bankput-transient-3000.a` installer. The AP envelope
+was already present at `$3200` with length `$0076`. The installer was visibly
+pinned to Bank 2, package `$3200`, and destination `$9000`; the visible
+assembler was `ASM-F2 00.0718(2045)`.
+
+Board transcript:
+
+```text
+D 3200 3204
+3200: 41 50 01 76 00 | AP.v.
+>ASM NEW
+ASM-F2 00.0718(2045)
+ASM>$2000: ; BANKPUT-TRANSIENT-3000.A
+ASM>$2000: ; BOARD-BUILDABLE AP ENVELOPE INSTALLER FOR FLASH BANKS 0-2.
+ASM>$2000: ;
+ASM>$2000: ; DEFAULTS TARGET BANK 2 FOR OVERLAY INTEGRATION LAYER (OIL) GATE TESTING.
+ASM>$2000: ; EDIT BANK, PKG, AND DST ONLY WHEN YOU INTEND A DIFFERENT TARGET, THEN
+ASM>$2000: ; ASSEMBLE WITH FLASH ASM, EXIT SEAL WITH '.', THEN RUN G 3000.
+ASM>$2000: ; BANK 0-2 IS THE PHYSICAL FLASH BANK. PKG IS A RAM AP ENVELOPE, USUALLY
+ASM>$2000: ; WRITTEN BY PACKAGE $3200. DST IS THE BANK-WINDOW ADDRESS WHERE THE AP
+ASM>$2000: ; ENVELOPE SHOULD LIVE, FOR EXAMPLE $9000.
+ASM>$2000: ;
+ASM>$2000: ; THIS PRESERVES THE REST OF THE 4K SECTOR:
+ASM>$2000: ;   BANK SECTOR -> $0A00 SECTOR STAGING BUFFER
+ASM>$2000: ;   OVERLAY AP ENVELOPE AT DST OFFSET
+ASM>$2000: ;   PROGRAM STAGED SECTOR BACK TO BANK
+ASM>$2000: ;
+ASM>$2000: ; STATUS:
+ASM>$2000: ;   $1A00 = $AC OK
+ASM>$2000: ;   $1A00 = $E0 BAD BANK OR DST
+ASM>$2000: ;   $1A00 = $E1 STAGE-COPY FAILED
+ASM>$2000: ;   $1A00 = $E2 BAD AP HEADER/LENGTH
+ASM>$2000: ;   $1A00 = $E3 AP CROSSES 4K SECTOR
+ASM>$2000: ;   $1A00 = $E4 PROGRAM/VERIFY FAILED
+ASM>$2000:
+ASM>$2000:         ORG $3000
+ASM>$3000:
+ASM>$3000: BANK    EQU $02
+ASM>$3000: PKG     EQU $3200
+ASM>$3000: DST     EQU $9000
+ASM>$3000:
+ASM>$3000: PKGSIG0 EQU PKG
+ASM>$3000: PKGSIG1 EQU PKG+1
+ASM>$3000: PKGLENL EQU PKG+3
+ASM>$3000: PKGLENH EQU PKG+4
+ASM>$3000:
+ASM>$3000: STAT    EQU $1A00
+ASM>$3000: LENLO   EQU $1A01
+ASM>$3000: LENHI   EQU $1A02
+ASM>$3000: SPLO    EQU $C8
+ASM>$3000: SPHI    EQU $C9
+ASM>$3000: DPLO    EQU $CA
+ASM>$3000: DPHI    EQU $CB
+ASM>$3000:
+ASM>$3000: STR8_SERVICE EQU $F003
+ASM>$3000: STR8_MARK_SECTOR_HI EQU $1FE9
+ASM>$3000: STR8_COPY_SRC_BANK EQU $1FEE
+ASM>$3000: STR8_COPY_DST_BANK EQU $1FEF
+ASM>$3000: STR8_COPY_MODE EQU $1FF0
+ASM>$3000: STR8_STAGE_BUF_HI EQU $1FF6
+ASM>$3000: MODE_PROGRAM_STAGED EQU $05
+ASM>$3000: MODE_STAGE_BANK_SECTOR EQU $06
+ASM>$3000:
+ASM>$3000: RUN     STZ STAT
+ASM>$3003:         LDA #BANK
+ASM>$3005:         CMP #$03
+ASM>$3007:         BCC CFGDST
+ASM>$3009: BADCFG  LDA #$E0
+ASM>$300B:         STA STAT
+ASM>$300E:         CLC
+ASM>$300F:         RTS
+ASM>$3010:
+ASM>$3010: CFGDST  LDA #>DST
+ASM>$3012:         CMP #$80
+ASM>$3014:         BCS CFGOK
+ASM>$3016:         BRA BADCFG
+ASM>$3018:
+ASM>$3018: CFGOK   LDA #BANK
+ASM>$301A:         STA STR8_COPY_SRC_BANK
+ASM>$301D:         LDA #>DST
+ASM>$301F:         AND #$F0
+ASM>$3021:         STA STR8_MARK_SECTOR_HI
+ASM>$3024:         LDA #$0A
+ASM>$3026:         STA STR8_STAGE_BUF_HI
+ASM>$3029:         LDA #MODE_STAGE_BANK_SECTOR
+ASM>$302B:         STA STR8_COPY_MODE
+ASM>$302E:         JSR STR8_SERVICE
+ASM>$3031:         BCS STAGED
+ASM>$3033: STAGEFAIL LDA #$E1
+ASM>$3035:         STA STAT
+ASM>$3038:         CLC
+ASM>$3039:         RTS
+ASM>$303A:
+ASM>$303A: STAGED  LDA PKGSIG0
+ASM>$303D:         CMP #'A'
+ASM>$303F:         BEQ SIG0OK
+ASM>$3041: BADAP   LDA #$E2
+ASM>$3043:         STA STAT
+ASM>$3046:         CLC
+ASM>$3047:         RTS
+ASM>$3048:
+ASM>$3048: SIG0OK  LDA PKGSIG1
+ASM>$304B:         CMP #'P'
+ASM>$304D:         BNE BADAP
+ASM>$304F:         LDA PKGLENL
+ASM>$3052:         STA LENLO
+ASM>$3055:         LDA PKGLENH
+ASM>$3058:         STA LENHI
+ASM>$305B:         ORA LENLO
+ASM>$305E:         BEQ BADAP
+ASM>$3060:
+ASM>$3060:         LDA #<PKG
+ASM>$3062:         STA SPLO
+ASM>$3064:         LDA #>PKG
+ASM>$3066:         STA SPHI
+ASM>$3068:         LDA #<DST
+ASM>$306A:         STA DPLO
+ASM>$306C:         LDA #>DST
+ASM>$306E:         AND #$0F
+ASM>$3070:         CLC
+ASM>$3071:         ADC #$0A
+ASM>$3073:         STA DPHI
+ASM>$3075:
+ASM>$3075: COPY    LDA LENLO
+ASM>$3078:         ORA LENHI
+ASM>$307B:         BEQ COPIED
+ASM>$307D:         LDY #$00
+ASM>$307F:         LDA (SPLO),Y
+ASM>$3081:         STA (DPLO),Y
+ASM>$3083:         INC SPLO
+ASM>$3085:         BNE CDST
+ASM>$3087:         INC SPHI
+ASM>$3089: CDST    INC DPLO
+ASM>$308B:         BNE CCOUNT
+ASM>$308D:         INC DPHI
+ASM>$308F: CCOUNT  DEC LENLO
+ASM>$3092:         LDA LENLO
+ASM>$3095:         CMP #$FF
+ASM>$3097:         BNE CCHK
+ASM>$3099:         DEC LENHI
+ASM>$309C: CCHK    LDA LENLO
+ASM>$309F:         ORA LENHI
+ASM>$30A2:         BEQ COPIED
+ASM>$30A4:         LDA DPHI
+ASM>$30A6:         CMP #$1A
+ASM>$30A8:         BCC COPY
+ASM>$30AA:         LDA #$E3
+ASM>$30AC:         STA STAT
+ASM>$30AF:         CLC
+ASM>$30B0:         RTS
+ASM>$30B1:
+ASM>$30B1: COPIED  LDA #BANK
+ASM>$30B3:         STA STR8_COPY_DST_BANK
+ASM>$30B6:         LDA #>DST
+ASM>$30B8:         AND #$F0
+ASM>$30BA:         STA STR8_MARK_SECTOR_HI
+ASM>$30BD:         LDA #$0A
+ASM>$30BF:         STA STR8_STAGE_BUF_HI
+ASM>$30C2:         LDA #MODE_PROGRAM_STAGED
+ASM>$30C4:         STA STR8_COPY_MODE
+ASM>$30C7:         JSR STR8_SERVICE
+ASM>$30CA:         BCC PROGFAIL
+ASM>$30CC:         LDA #$AC
+ASM>$30CE:         STA STAT
+ASM>$30D1:         SEC
+ASM>$30D2:         RTS
+ASM>$30D3:
+ASM>$30D3: PROGFAIL LDA #$E4
+ASM>$30D5:         STA STAT
+ASM>$30D8:         CLC
+ASM>$30D9:         RTS
+ASM>$30DA:
+ASM>$30DA:         END
+ASM OK
+SEAL> .
+ASM BYE
+>D 3200 3204
+3200: 41 50 01 76 00 | AP.v.
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A03
+1A00: AC 00 00 00 | ....
+>M 5848
+5848: 36 00
+>AP B2 $9000 $3000
+GO 3000
+
+BANK RJOIN
+
+#GO# ENTRY=3000
+RET A=AC X=1A Y=0E P=F5 S=FD NV-BdIzC
+>AP B2 $9000 $3000
+GO 3000
+
+BANK RJOIN
+
+#GO# ENTRY=3000
+RET A=AC X=1A Y=0E P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 3A 05 E7 4C 50 64 6D | 70 | .:..LPdmp
+>D 3006 3008
+3006: 20 05 E7 |  ..
+>D 1A10 1A17
+1A10: 06 0F 30 05 E7 04 05 01 | ..0.....
+>D 7E2D 7E40
+7E2D: BF D5 01 00 00 0A 00 30 | 76 00 4D 0A 29 00 05 01 | .......0v.M.)...
+7E3D: 00 00 14 0A | ....
+>D 0A00 0A08
+0A00: 41 50 01 76 00 53 0B 01 | 00 | AP.v.S...
+>AP B2 $9000 $3000
+GO 3000
+
+BANK RJOIN
+
+#GO# ENTRY=3000
+RET A=AC X=1A Y=0E P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 3A 05 E7 4C 50 64 6D | 70 | .:..LPdmp
+>D 3006 3008
+3006: 20 05 E7 |  ..
+>D 1A10 1A17
+1A10: 06 0F 30 05 E7 04 05 01 | ..0.....
+>D 7E2D 7E40
+7E2D: BF D5 01 00 00 0A 00 30 | 76 00 4D 0A 29 00 05 01 | .......0v.M.)...
+7E3D: 00 00 14 0A | ....
+>D 0A00 0A08
+0A00: 41 50 01 76 00 53 0B 01 | 00 | AP.v.S...
+>
+```
+
+Result: pass. The installer returned `$AC` with carry set and status bytes
+`AC 00 00 00`, proving the Bank 2 sector was staged, overlaid, programmed,
+and verified. Each `AP B2 $9000 $3000` invocation printed `BANK RJOIN` and
+returned `A=$AC/C=1`. `$584A/$584B = 05 E7` and `$3006-$3008 = 20 05 E7`
+prove the imported call resolved and was patched to current resident target
+`BIO_FTDI_PUT_CSTR=$E705`.
+
+The RJOIN debug row `06 0F 30 05 E7 04 05 01` records final patch kind `$06`,
+patch site `$300F`, target `$E705`, relocation index `$04`, five relocation
+rows, and one import. The HIMON request cells report status `$00`, source
+`$0A00`, destination `$3000`, package length `$0076`, body pointer `$0A4D`,
+and body length `$0029`; the staged header at `$0A00` begins
+`41 50 01 76 00`. This closes the banked-source RJOIN gate and, together with
+the preceding atomicity pass, closes both current-image AP-linker gates.

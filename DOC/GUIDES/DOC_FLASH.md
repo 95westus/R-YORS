@@ -41,6 +41,36 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: Current AP Linker Fixtures Frozen
+
+```text
+2026
+         07
+                19
+                   21:21Z WLP2 Promoted and froze the two remaining
+                               current-image AP linker board gates.
+```
+
+scope: `ASM/SAMPLES/banked-rjoin-smoke.a`,
+`ASM/SAMPLES/bankput-transient-3000.a`,
+`ASM/SAMPLES/missing-import-atomicity-2000.a`, `ASM/TEST_PLAN.md`, and
+`ASM/AP_LINKER_CURRENT_IMAGE_GATES.md`.
+
+change: The reviewed banked-RJOIN and Bank-2 installer fixtures moved
+byte-for-byte out of `SAMPLES/OLD CODE`; the valid-first/missing-second
+atomicity fixture is now active. The current proof pins
+`BIO_FTDI_PUT_CSTR=$E705` and exact loaded/debug/request bytes.
+
+effect: The old `.710` plan remains historical evidence with its old resident
+targets. The active rail stops before Bank 2 unless missing-import failure
+leaves both JSR operands at `$FFFF`. No linker or package-format changes belong
+in this proof cycle.
+
+action: Run
+[AP_LINKER_CURRENT_IMAGE_GATES.md](ASM/AP_LINKER_CURRENT_IMAGE_GATES.md),
+append the full transcripts to the hardware log, and close the TODO/README
+gates only after every byte-level expectation passes.
+
 ## REDOC: S28 Parked As Possible V2.xxx/V3 Transport
 
 ```text
