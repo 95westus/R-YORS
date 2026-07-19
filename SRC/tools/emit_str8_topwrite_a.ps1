@@ -1,6 +1,7 @@
 param(
     [string]$BinPath = "BUILD/bin/himon-str8-rom.bin",
     [string]$AsmMapPath = "BUILD/s19/asm-v1-flash-8000.map",
+    [string]$Str8MapPath = "BUILD/s19/str8-f000.map",
     [string]$OutPath = "../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a",
     [int]$SourceOffset = 0x7000,
     [int]$StageAddress = 0x0A00,
@@ -43,6 +44,9 @@ if (-not (Test-Path -LiteralPath $BinPath)) {
 if (-not (Test-Path -LiteralPath $AsmMapPath)) {
     throw ("ASM map not found: {0}" -f $AsmMapPath)
 }
+if (-not (Test-Path -LiteralPath $Str8MapPath)) {
+    throw ("STR8 map not found: {0}" -f $Str8MapPath)
+}
 
 $bin = [System.IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $BinPath).Path)
 if (($SourceOffset + $Length) -gt $bin.Length) {
@@ -52,10 +56,32 @@ if (($SourceOffset + $Length) -gt $bin.Length) {
 $top = New-Object byte[] $Length
 [Array]::Copy($bin, $SourceOffset, $top, 0, $Length)
 
-Assert-Bytes -Bytes $top -Offset 0x0000 -Expected @(0x4C,0x09,0xF0,0x4C,0x93,0xF3,0x4C,0x9A,0xF3) -Name "top head"
-Assert-Bytes -Bytes $top -Offset 0x0AA4 -Expected @(0x53,0x54,0x52,0x38,0x2D,0x4E,0xBE) -Name "STR8-N prompt"
-Assert-Bytes -Bytes $top -Offset 0x0ACE -Expected @(0x0D,0x0A,0x53,0x54,0x52,0x38,0x2D,0x4E,0x20,0x56,0x30,0x20,0x23,0x35,0x46,0x36,0x41,0x30,0x46,0x37,0x41,0x0D,0x8A) -Name "STR8-N FACE id"
-Assert-Bytes -Bytes $top -Offset 0x0FFA -Expected @(0x92,0xF0,0x00,0xF0,0xA6,0xF0) -Name "vectors"
+$str8Start = Get-MapSymbol -Path $Str8MapPath -Name "START"
+$str8Boot = Get-MapSymbol -Path $Str8MapPath -Name "STR8_BOOT_START"
+$str8WorkerBody = Get-MapSymbol -Path $Str8MapPath -Name "STR8_RUN_WORKER_SERVICE_BODY"
+$str8ApBody = Get-MapSymbol -Path $Str8MapPath -Name "STR8_AP_IMPORT_LINK_SERVICE_BODY"
+$str8Nmi = Get-MapSymbol -Path $Str8MapPath -Name "STR8_IVY_ENTRY_NMI"
+$str8Irq = Get-MapSymbol -Path $Str8MapPath -Name "STR8_IVY_ENTRY_IRQ_MASTER"
+$str8Screen = Get-MapSymbol -Path $Str8MapPath -Name "MSG_SCREEN"
+$str8Prompt = Get-MapSymbol -Path $Str8MapPath -Name "MSG_PROMPT"
+if ($str8Start -ne 0xF000) {
+    throw ("STR8 START is {0}; expected `$F000" -f (Format-HexWord $str8Start))
+}
+
+$screenOffset = $str8Screen - $str8Start
+$promptOffset = $str8Prompt - $str8Start
+Assert-Bytes -Bytes $top -Offset 0x0000 -Expected @(
+    0x4C, ($str8Boot -band 0xFF), (($str8Boot -shr 8) -band 0xFF),
+    0x4C, ($str8WorkerBody -band 0xFF), (($str8WorkerBody -shr 8) -band 0xFF),
+    0x4C, ($str8ApBody -band 0xFF), (($str8ApBody -shr 8) -band 0xFF)
+) -Name "top head"
+Assert-Bytes -Bytes $top -Offset $promptOffset -Expected @(0x53,0x54,0x52,0x38,0x2D,0x4E,0xBE) -Name "STR8-N prompt"
+Assert-Bytes -Bytes $top -Offset $screenOffset -Expected @(0x0D,0x0A,0x53,0x54,0x52,0x38,0x2D,0x4E,0x20,0x56,0x30,0x20,0x23,0x35,0x46,0x36,0x41,0x30,0x46,0x37,0x41,0x0D,0x0A) -Name "STR8-N FACE id"
+Assert-Bytes -Bytes $top -Offset 0x0FFA -Expected @(
+    ($str8Nmi -band 0xFF), (($str8Nmi -shr 8) -band 0xFF),
+    ($str8Start -band 0xFF), (($str8Start -shr 8) -band 0xFF),
+    ($str8Irq -band 0xFF), (($str8Irq -shr 8) -band 0xFF)
+) -Name "vectors"
 
 $cstr = Get-MapSymbol -Path $AsmMapPath -Name "ASM_RJ_WRITE_CSTRING"
 $hexb = Get-MapSymbol -Path $AsmMapPath -Name "ASM_RJ_WRITE_HEX_BYTE"
@@ -84,8 +110,8 @@ Add-Line ';   $1A01 = $E2 PROGRAM TIMEOUT'
 Add-Line ';   $1A01 = $E3 VERIFY MISMATCH'
 Add-Line ';   $1A02/$1A03 = FAIL ADDRESS WHEN AVAILABLE'
 Add-Line ';'
-Add-Line ('; FACE CHECK: ROM $FACE MAPS TO RAM {0}.' -f (Format-HexWord ($StageAddress + 0x0ACE)))
-Add-Line ('; PROMPT CHECK: ROM $FAA4 MAPS TO RAM {0}.' -f (Format-HexWord ($StageAddress + 0x0AA4)))
+Add-Line ('; FACE CHECK: ROM {0} MAPS TO RAM {1}.' -f (Format-HexWord $str8Screen), (Format-HexWord ($StageAddress + $screenOffset)))
+Add-Line ('; PROMPT CHECK: ROM {0} MAPS TO RAM {1}.' -f (Format-HexWord $str8Prompt), (Format-HexWord ($StageAddress + $promptOffset)))
 Add-Line ';'
 Add-Line '        ORG $3000'
 Add-Line ''
@@ -396,5 +422,5 @@ Write-Host ("STR8-N topwrite .a    = {0}" -f $OutPath)
 Write-Host ("Embedded ROM range    = F000-FFFF")
 Write-Host ("Embedded RAM range    = {0}-{1}" -f (Format-HexWord $ImageAddress), (Format-HexWord ($ImageAddress + $Length - 1)))
 Write-Host ("Stage RAM range       = {0}-{1}" -f (Format-HexWord $StageAddress), (Format-HexWord ($StageAddress + $Length - 1)))
-Write-Host ("FACE stage address    = {0}" -f (Format-HexWord ($StageAddress + 0x0ACE)))
-Write-Host ("Prompt stage address  = {0}" -f (Format-HexWord ($StageAddress + 0x0AA4)))
+Write-Host ("FACE ROM/stage address = {0}/{1}" -f (Format-HexWord $str8Screen), (Format-HexWord ($StageAddress + $screenOffset)))
+Write-Host ("Prompt ROM/stage addr  = {0}/{1}" -f (Format-HexWord $str8Prompt), (Format-HexWord ($StageAddress + $promptOffset)))

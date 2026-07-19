@@ -202,7 +202,8 @@ flowchart TD
     LOADPKG --> PARSEPKG["ASM_PACKAGE_PARSE_MIN"]
     LOADPKG --> APVEC["HIMON AP service $7E2D-$7E2E"]
     APVEC --> HIMAP["HIM_AP_SERVICE"]
-    HIMAP --> STR8LINK["STR8_AP_IMPORT_LINK_SERVICE"]
+    HIMAP --> HIMLINK["HIM_AP_IMPORT_LINK"]
+    F006["STR8 $F006 compatibility doorway"] --> APVEC
 
     INSTALLCMD["INSTALL command"] --> SUGGEST["ASM_PACKAGE_INSTALL_SUGGEST"]
     SUGGEST --> PARSEPKG
@@ -221,8 +222,9 @@ Unresolved local fixups cannot cross into the next nonlocal scope.
 IMPORT forces a deferred import fixup even when the same name is resident and
 RJOIN-callable; plain undeclared resident operands still bind immediately.
 SEAL builds the seal, relocation, export, and import records. PACKAGE writes
-the AP envelope. LOAD delegates package consumption to the resident HIMON AP
-service, which calls the STR8 import-link service for resident RJOIN imports.
+the AP envelope. LOAD delegates package consumption and resident RJOIN import
+linking to the resident HIMON AP service. STR8 `$F006` remains only as a stable
+compatibility doorway into the same service.
 Default flash ASM leaves detailed table reporting to the external
 asm-session-report proof; locals remain intentionally outside global
 report/export names.

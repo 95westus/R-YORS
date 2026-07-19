@@ -56,7 +56,10 @@ OSI BASIC  interactive programming payload
 fig-FORTH  threaded language payload
 ```
 
-The board proof covers `M`, `B`, `E`, Bank 0 rotation, the fixed
+The hardware log preserves the earlier `M` proof. The current resident command
+was retired in the 2026-07-18 size pass; current board behavior still needs a
+regression pass after that change. Existing proof covers `B`, `E`, Bank 0
+rotation, the fixed
 `$C000-$EFFF` `U` / `UPDATE HIMON` gate, HIMON U1->U2 update, booting OSI
 BASIC and fig-FORTH through that same gate, and restoring known-good HIMON from
 Bank 2 by the high-flash recovery path. This promotes STR8 from proposed
@@ -177,17 +180,17 @@ packed against `$FFEF` and grows downward, and the remaining free space is one
 contiguous hole:
 
 ```text
-$F000-$FA16  STR8 resident code
-             size $0A17 = 2583 bytes
+$F000-$F6C1  STR8 resident code
+             size $06C2 = 1730 bytes
 
-$FA17-$FC68  STR8 resident data
-             size $0252 = 594 bytes
+$F6C2-$F8AC  STR8 resident data
+             size $01EB = 491 bytes
 
-$FC69-$FCE2  contiguous unused $FF growth hole
-             size $007A = 122 bytes
+$F8AD-$FD25  contiguous unused $FF growth hole
+             size $0479 = 1145 bytes
 
-$FCE3-$FFEF  stored STR8 RAM worker image
-             size $030D = 781 bytes
+$FD26-$FFEF  stored STR8 RAM worker image
+             size $02CA = 714 bytes
              copied to and run from the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
@@ -384,18 +387,18 @@ first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can perform backup rotation with read-back verify
 first RAM proof can enroll bank 0 into rotation by clearing an in-flash flag bit
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current ROM build links STR8 at $F000 and stores a RAM worker at $FCE3-$FFEF
+current ROM build links STR8 at $F000 and stores a RAM worker at $FD26-$FFEF
 current ROM build copies the worker to $0200 before B/U/0/1/2 flash mutation
 current ROM build copies the worker to $0200 before E config mutation
-current ROM build has working ?, B, E, M, U, 0, 1, 2, G, and R commands
+current ROM build has ?, B, E, U, 0, 1, 2, G, and R commands
 current STR8 identity marker is `#5F6A0F7A`
 physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data grows upward from $F000
-stored worker currently occupies $FCE3-$FFEF and grows downward
-current contiguous free hole is $FC69-$FCE2
+stored worker currently occupies $FD26-$FFEF and grows downward
+current contiguous free hole is $F8AD-$FD25
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
@@ -618,7 +621,7 @@ flowchart TD
     G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $FCE3-$FFEF -> $0200]
+    B --> COPY[copy worker $FD26-$FFEF -> $0200]
     E --> COPY
     RST --> COPY
     COPY --> WORKER[RAM flash worker]
@@ -656,7 +659,7 @@ quit advanced mode
 Bad fit:
 
 ```text
-the normal ? B E M U 0 1 2 G R rescue/update path
+the normal ? B E U 0 1 2 G R rescue/update path
 automatic backup policy
 casual bank 0 erase before enrollment
 catalog garbage collection
@@ -814,7 +817,7 @@ B command, B0 ROT:  copy bank 1 -> bank 0, bank 2 -> bank 1, bank 3 -> bank 2
 
 Each 4K window reads from the source bank, writes the destination bank, and
 verifies by simple read-back compare. The `$F000` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$FCE3-$FFEF` into RAM
+policy by first copying its worker from bank 3 `$FD26-$FFEF` into RAM
 `$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. Catalog

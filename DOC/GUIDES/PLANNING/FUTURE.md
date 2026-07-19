@@ -186,6 +186,25 @@
 - The planned direction after the required ASM board proofs is sealed movable
   ASM modules plus a managed flash object store. The focused plan lives in
   [MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md).
+- Build the first managed store as an append-only typed object arena, not a
+  general hierarchical filesystem. Committed `RCAT`/`RREC` descriptors and
+  their `RBODY` payloads are authoritative. `RDICT`, `RTEXT`, and `RDATA` should
+  begin as record/body kinds or views, not independent allocation engines.
+- Treat directory, menu, and VTOC displays as projections over the catalog.
+  Keep `RIDX`/hash indexes and address caches rebuildable from committed
+  records; a damaged or stale cache must never make live objects disappear.
+- Use 4K erase sectors as the first allocation/reclaim unit. Give each managed
+  sector a small header with arena/version, generation, state, used boundary,
+  and checksum. Append new objects, commit them with a final one-way bit change,
+  invalidate old generations, and reclaim only through an explicit staged
+  `CONDENSE` operation with read-back verification.
+- Do not implement tree balancing, online wear leveling, or automatic garbage
+  collection in the first store. A bounded linear scan plus optional rebuilt
+  hash index is easier to recover and prove on W65C02. Add balancing only after
+  measurements show lookup or erase distribution is a real problem.
+- Keep one small root/VTOC locator redundant and boring: two generation-tagged
+  copies or a fixed root sector plus a fallback full-arena scan. The root names
+  catalog arenas; it does not duplicate every object entry.
 - For the first STR8 recovery model, restore uses a whole 32K bank 0, 1, or 2
   image as the source for bank 3, writes ordinary bank 3 image bytes, and skips
   the selected STR8 protected window unless explicit STR8 install/update is
@@ -280,6 +299,20 @@
   than carry alone. Carry should remain the quick success/fail signal; a kind byte
   can describe timeout, illegal `0 -> 1`, verified, erased, partially flippable,
   or exhausted/no-flippable-bits state for diagnostics and STR8 planning.
+
+## Small Monitor Direction
+
+- Do not shrink current HIMON in place into LOMON. Keep hardware-proven HIMON
+  as the full monitor/service host and build a separate size profile from shared
+  console, hex, load, dump/modify, go, vector, and service-vector routines.
+- A Wozmon-style prompt can fit below 1K, but the useful R-YORS base is larger:
+  AP parsing/loading, resident import linking, RJOIN/FNV resolution, safe bank
+  staging, and error reporting must be budgeted separately. Treat `<1K` as the
+  LOMON shell target, not as a promise for the complete AP/RJOIN substrate.
+- LOMON becomes a candidate base image only after it can load a full HIMON or
+  ASM AP from visible/banked storage, reject corrupt packages, and recover to a
+  prompt without depending on the module it is loading. Until then, current
+  HIMON remains the base and ASM-F2 remains an optional low-flash resident.
 
 ## Documentation Direction
 

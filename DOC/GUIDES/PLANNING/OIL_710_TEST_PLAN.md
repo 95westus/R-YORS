@@ -675,6 +675,11 @@ Cons:
 Recommendation: add after `.710` proof, or sooner only if documentation-only
 work remains and no firmware bytes change.
 
+2026-07-18 outcome: implemented. The composite-ROM builder now asserts the
+`$F003` and `$F006` symbols, verifies the `$F006` jump, and verifies the exact
+8-byte compatibility adapter that selects HIMON AP operation `$03` and jumps
+through `$7E2D-$7E2E`.
+
 ### 3. Fold HIMON AP Error Printing
 
 Plain words: HIMON prints AP failures in more than one path. A shared print
@@ -748,6 +753,14 @@ Cons:
 - More design and board proof than fits before `.710`.
 
 Recommendation: strong post-release design candidate, not a `.710` change.
+
+2026-07-18 outcome: implemented after the release proof. The linker is now
+`HIM_AP_IMPORT_LINK`; HIMON load paths call it directly, and STR8 `$F006`
+remains a stable compatibility doorway. HIMON ends at `$EF2D`, leaving `$00D3`
+before STR8. STR8 ends at `$F8AD` and the worker begins at `$FD26`, leaving a
+contiguous `$0479`-byte top-sector hole. The host build passes; a new board AP
+import-link regression is still required before calling this layout
+hardware-proven.
 
 ### 7. Share AP Relocation Helpers Between HIMON And STR8
 

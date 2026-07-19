@@ -1454,7 +1454,6 @@ $str8CommandDefs = @(
     [pscustomobject]@{ Command = 'B'; Entry = 'STR8_CMD_BACKUP'; Meaning = 'backup rotation' }
     [pscustomobject]@{ Command = 'E'; Entry = 'STR8_CMD_ENROLL_B0'; Meaning = 'enroll bank 0' }
     [pscustomobject]@{ Command = 'G'; Entry = 'STR8_CMD_G_HIMON'; Meaning = 'go HIMON' }
-    [pscustomobject]@{ Command = 'M'; Entry = 'STR8_CMD_M'; Meaning = 'flash map' }
     [pscustomobject]@{ Command = 'R'; Entry = 'STR8_CMD_RESET'; Meaning = 'reset vector' }
     [pscustomobject]@{ Command = 'U'; Entry = 'STR8_CMD_UPDATE_HIMON'; Meaning = 'update HIMON C000-EFFF' }
     [pscustomobject]@{ Command = '0/1/2'; Entry = 'STR8_CMD_RESTORE_A'; Meaning = 'restore selected bank' }

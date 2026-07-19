@@ -23,7 +23,6 @@ STR8_PROT_BUF_HI        EQU             $40
 STR8_COPY_MODE_RESTORE  EQU             $01
 STR8_COPY_MODE_ENROLL   EQU             $02
 STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
-STR8_COPY_MODE_MAP      EQU             $04
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
 STR8_COPY_MODE_STAGE_BANK_SECTOR EQU    $06
 STR8_RESTORE_PROT_START_HI EQU          $C0
@@ -53,7 +52,6 @@ STR8_MARK_ADDR_HI       EQU             $1FEB
 STR8_COPY_SRC_BANK      EQU             $1FEE
 STR8_COPY_DST_BANK      EQU             $1FEF
 STR8_COPY_MODE          EQU             $1FF0
-STR8_MAP_B0             EQU             $1FF2
 STR8_STAGE_BUF_HI       EQU             $1FF6
 
 STR8_SECTOR_BUF_HI      EQU             $40
@@ -69,13 +67,10 @@ STR8_FLASH_WRITE_TMO_HI EQU             $02
 
                         CODE
 ; 2026-05-07T19:14-05:00        WLP2        Restore-high mode resets through bank 3.
-; 2026-05-07T20:35-05:00        WLP2        MAP mode scans sectors into RAM mask bytes.
 START:
                         PHP
                         SEI
                         LDA             STR8_COPY_MODE
-                        CMP             #STR8_COPY_MODE_MAP
-                        BEQ             ?MAP
                         CMP             #STR8_COPY_MODE_ENROLL
                         BEQ             ?ENROLL
                         CMP             #STR8_COPY_MODE_PROGRAM_STAGED
@@ -83,9 +78,6 @@ START:
                         CMP             #STR8_COPY_MODE_STAGE_BANK_SECTOR
                         BEQ             ?STAGE_BANK_SECTOR
                         JSR             STR8W_COPY_BANKS
-                        BRA             ?DONE
-?MAP:
-                        JSR             STR8W_SCAN_MAP
                         BRA             ?DONE
 ?ENROLL:
                         JSR             STR8W_SET_B0_ENROLLED
@@ -118,38 +110,6 @@ START:
 ?TOP_FAIL:
                         PLP
                         JMP             STR8W_TOP_FAIL_HALT
-
-STR8W_SCAN_MAP:
-                        STZ             STR8_COPY_SRC_BANK
-?BANK:
-                        LDA             STR8_COPY_SRC_BANK
-                        JSR             STR8W_BANK_SELECT_A
-                        LDA             #$80
-                        STA             STR8_MARK_SECTOR_HI
-                        STZ             STR8W_DATA
-?SECTOR:
-                        JSR             STR8W_DST_SECTOR_ERASED
-                        BCS             ?ERASED
-                        SEC
-                        BRA             ?SHIFT
-?ERASED:
-                        CLC
-?SHIFT:
-                        ROL             STR8W_DATA
-                        LDA             STR8_MARK_SECTOR_HI
-                        CLC
-                        ADC             #$10
-                        STA             STR8_MARK_SECTOR_HI
-                        BNE             ?SECTOR
-                        LDX             STR8_COPY_SRC_BANK
-                        LDA             STR8W_DATA
-                        STA             STR8_MAP_B0,X
-                        INC             STR8_COPY_SRC_BANK
-                        LDA             STR8_COPY_SRC_BANK
-                        CMP             #$04
-                        BNE             ?BANK
-                        SEC
-                        RTS
 
 ; 2026-05-07T19:14-05:00        WLP2        Restore skips protected high sectors by mode.
 STR8W_COPY_BANKS:

@@ -14351,3 +14351,255 @@ package-length guard returns `$06`.
 
 Together with the reporter lifecycle and direct carry proofs, this closes the
 deferred compact AP RAM-layout board slice on `HIMON/ASM-F2 00.0715(1804)`.
+
+## 2026-07-18 HIMON/STR8 Size-Pass Onboard Installation And Fixed-Surface Pass
+
+The board began on the older STR8 surface with `M` still present and completed
+the confirmed backup rotation. The old STR8 `U` gate then installed the new
+HIMON payload before the recovery-sector change:
+
+```text
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...
+PROGRAM C000-EFFF? Y: y...
+OK
+STR8-N>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0718(2041)
+```
+
+The board erased bank 3 `$8000-$BFFF` with the RAM-resident erase transient,
+then loaded the matching current ASM-F2 image:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>L F
+L F S19
+L @8000
+LF OK WR=3C6D GO=800C
+>ASM NEW
+ASM-F2 00.0718(2045)
+```
+
+The regenerated `str8n-topwrite-transient-3000.a` assembled through `END` and
+staged its embedded sector without changing flash:
+
+```text
+>G 3000
+GO 3000
+TW STG
+TW OK
+
+#GO# ENTRY=3000
+RET A=AC X=20 Y=05 P=F5 S=FD NV-BdIzC
+>D 1A00 1A03
+1A00: 00 AC 00 00 | ....
+>D 0A00 0A08
+0A00: 4C 09 F0 4C 7C F3 4C 83 | F3 | L..L|.L..
+>D 0D83 0D8A
+0D83: A9 03 8D 2F 7E 6C 2D 7E | .../~l-~
+>D 10C2 10C5
+10C2: 7A 0F 6A 5F | z.j_
+>D 1726 1735
+1726: 08 78 AD F0 1F C9 02 F0 | 0D C9 05 F0 0E C9 06 F0 | .x..............
+>D 19FA 19FF
+19FA: 92 F0 00 F0 A6 F0 | ......
+```
+
+The destructive half then erased, programmed, and verified bank 3
+`$F000-$FFFF`. The live ROM dumps matched every staged checkpoint:
+
+```text
+>G 3003
+GO 3003
+TW PRG
+TW OK
+
+#GO# ENTRY=3003
+RET A=AC X=20 Y=05 P=F5 S=FD NV-BdIzC
+>D 1A00 1A03
+1A00: 01 AC 00 00 | ....
+>D F000 F008
+F000: 4C 09 F0 4C 7C F3 4C 83 | F3 | L..L|.L..
+>D F383 F38A
+F383: A9 03 8D 2F 7E 6C 2D 7E | .../~l-~
+>D F6C2 F6C5
+F6C2: 7A 0F 6A 5F | z.j_
+>D FD26 FD35
+FD26: 08 78 AD F0 1F C9 02 F0 | 0D C9 05 F0 0E C9 06 F0 | .x..............
+>D FFFA FFFF
+FFFA: 92 F0 00 F0 A6 F0 | ......
+```
+
+The newly installed recovery monitor entered with the retired `M` command
+absent and the deliberately rebuilt config pocket back at `B0 HOLD`:
+
+```text
+STR8-N V0 #5F6A0F7A
+ROM $F000
+? B E U 0 1 2 G R
+B0 HOLD
+STR8-N>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0718(2041)
+```
+
+Result: hardware pass for the HIMON-first/STR8-second update order, current
+low-flash ASM reload, top-writer stage/program/verify, `$F006->$F383` adapter,
+STR8 identity, worker relocation to `$FD26`, hardware vectors, new command
+surface, and warm entry to the current HIMON.
+
+The AP import-link regression remains open. The transcript assembled
+`banked-rjoin-smoke.a` but ran its body directly with `G 2000`, without first
+issuing `PACKAGE` and `LOAD`. The unresolved import trapped at
+`BRK F0 PC=FFFE`; that is an invalid lifecycle invocation, not evidence of a
+resident-linker failure. Direct `G 2000` on the no-import smoke returned
+`A=$AC/C=1`. Finally, `G 7000` cold-booted and printed `RAM ZERO OK`, so the
+following `G 7200` trapped on cleared RAM. Rerun the imported fixture through
+`PACKAGE $3200`, `LOAD $3200 $3000`, and `G 3000` without an intervening cold
+boot.
+
+## 2026-07-18 Simplified HIMON D Absolute-Range Pass
+
+The follow-up board transcript exercised the size-pass `D` command without
+the retired continuation, short-end, or search forms:
+
+```text
+>D
+D [a [b]]
+>D 1A00
+1A00: 00 | .
+>D 1A03 04
+D [a [b]]
+>D 1A00 1A01
+1A00: 00 00 | ..
+```
+
+Result: bare `D` reports usage, one address displays one byte, and the second
+address is absolute. `D 1A03 04` is therefore invalid because `$0004` is not
+strictly greater than `$1A03`; there is no legacy short-end completion.
+
+The board then proved inclusive page and full-address-space ranges:
+
+```text
+>D 0 FF
+0000: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+...
+00F0: 10 01 01 00 00 06 0F 46 | 00 02 FA 00 FF 00 F0 00 | .......F........
+>D 0 FFFF
+0000: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+...
+FFF0: FF FF FF FF FF FF FF FF | FF FF 92 F0 00 F0 A6 F0 | ................
+>D FFFA FFFF
+FFFA: 92 F0 00 F0 A6 F0 | ......
+>
+```
+
+Result: pass. `D 0 FF` displays `$0000-$00FF`; `D 0 FFFF` traverses the
+complete inclusive 16-bit address space, reaches `$FFFF`, and returns to the
+prompt. The final focused vector dump matches the installed STR8 image. This
+closes the simplified resident dump/range board regression. It does not add AP
+import-link evidence; that package/load/run proof remains pending.
+
+## 2026-07-18 HIMON-Resident AP Linker RAM Import Pass
+
+The follow-up board transcript used the required package/load/run lifecycle on
+HIMON `00.0718(2041)` and ASM-F2 `00.0718(2045)`. The imported RJOIN smoke
+packaged at `$3200`, loaded its `$0029`-byte body at `$3000`, printed through
+the resolved resident routine, and returned success:
+
+```text
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$0076
+SEAL> LOAD $3200 $3000
+LOAD OK=$3000 L=$0029 C=$05
+...
+>G 3000
+GO 3000
+
+BANK RJOIN
+
+#GO# ENTRY=3000
+RET A=AC X=1A Y=0E P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 00 05 E7 00 00 00 00 | 00 | .........
+```
+
+The linker debug row records a final HI8 import patch at `$300F`, resolved to
+the current `BIO_FTDI_PUT_CSTR` address `$E705`, with five relocation rows and
+one import:
+
+```text
+>D 1A10 1A17
+1A10: 06 0F 30 05 E7 04 05 01 | ..0.....
+```
+
+The HIMON AP request/result cells independently show service vector `$D5BF`,
+operation `$01` (`LOAD`), status `$00`, source `$3200`, destination `$3000`,
+package length `$0076`, body pointer `$324D`, body length `$0029`, relocation
+count `$05`, and import count `$01`:
+
+```text
+>D 7E2D 7E40
+7E2D: BF D5 01 00 00 32 00 30 | 76 00 4D 32 29 00 05 01 | .....2.0v.M2)...
+7E3D: 00 00 14 32 | ...2
+```
+
+Result: pass. `BANK RJOIN`, `A=$AC/C=1`, the recorded `$E705` address, linker
+debug row, and AP status `$00` close the positive RAM import regression for
+the linker moved from STR8 into HIMON. The missing-import/no-partial-patch and
+banked-source regressions remain separate open gates.
+
+The capture also ran the resident FNV helper interactively. In particular,
+`STAY HIGHDRATED` produced `$5F6A0F7A`, matching the installed STR8 identity:
+
+```text
+RJOIN HASH STATS
+TEXT> #
+LEN=01 XOR=23 FNV=260C9112
+TEXT> STAY HIGHDRATED
+LEN=0F XOR=33 FNV=5F6A0F7A
+TEXT> ZZX
+LEN=03 XOR=58 FNV=27ECE097
+```
+
+Finally, a no-import package at `$3200` produced two expected range errors:
+
+```text
+>AP B0 $3200 $9000
+APERR=$06
+>AP $3200 $8000
+APERR=$06
+```
+
+`AP B0` selects a banked flash source and therefore rejects source `$3200`;
+resident AP execution accepts destinations only in `$2000-$4FFF`, so `$9000`
+and `$8000` are invalid destinations. These are `BAD RANGE` negatives, not an
+AP-loader regression. While that RAM package remains intact, its matching
+positive command is `AP $3200 $3000`.
+
+The matching direct-RAM positive then loaded and ran the same package:
+
+```text
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 00 30 30 00 00 00 00 | 5A | ..00....Z
+```
+
+Result: pass. `$5848=$AC` and carry set are the fixture success result,
+`$584A/$584B=$30/$30` record relocated `TARGET=$3030`, and `$5850=$5A`
+proves that target executed. This closes the direct-RAM no-import AP positive
+and pairs it with the preceding source/destination range negatives.

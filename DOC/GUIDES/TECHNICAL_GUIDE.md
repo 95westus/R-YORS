@@ -192,16 +192,16 @@ Current combined-image facts:
 ```text
 ASM-F2 base:    $8000
 ASM-F2 entry:   $800C
-ASM-F2 end:     $B969
-ASM low hole:   $B969-$BFFF
+ASM-F2 end:     $BC6D
+ASM low hole:   $BC6D-$BFFF
 ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
-HIMON body:      $C000-$EFE3
+HIMON body:      $C000-$EF2C
 STR8 entry:      $F000
-STR8 body:       $F000-$FCC5
+STR8 body:       $F000-$F8AC
 STR8 identity:   #5F6A0F7A
-marker bytes:    $FA17 = 7A 0F 6A 5F
-worker source:   $FCE3-$FFEF
+marker bytes:    $F6C2 = 7A 0F 6A 5F
+worker source:   $FD26-$FFEF
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF = 92 F0 00 F0 A6 F0
 ```
@@ -277,7 +277,7 @@ restores Bank 3 before returning to resident STR8
 Current RAM workspace:
 
 ```text
-$0200-$09FF   flash worker tray, STR8 copied from $FCE3-$FFEF at exact worker length
+$0200-$09FF   flash worker tray, STR8 copied from $FD26-$FFEF at exact worker length
 $0A00-$19FF   sector staging buffer
 $1A00-$1FE8   RJOIN/link scratch and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map bytes
@@ -297,26 +297,26 @@ banked AP path:
 
 ```text
 $F003   run selected STR8 worker mode after copying worker to $0200
-$F006   link AP import relocation rows against resident RJOIN symbols
+$F006   compatibility jump into HIMON's resident AP import linker
 ```
 
-`M` is read-only from the operator's point of view, but still uses the worker
-to switch banks and scan sectors.
+The retired STR8 `M` map used the worker to switch banks and scan sectors. Its
+hardware transcript remains evidence, but it is not in the current prompt.
 
 Current top-sector reserve policy:
 
 ```text
-$F000-$FA16  STR8 resident code
-             size $0A17 = 2583 bytes
+$F000-$F6C1  STR8 resident code
+             size $06C2 = 1730 bytes
 
-$FA17-$FC68  STR8 resident data
-             size $0252 = 594 bytes
+$F6C2-$F8AC  STR8 resident data
+             size $01EB = 491 bytes
 
-$FC69-$FCE2  contiguous unused $FF growth hole
-             size $007A = 122 bytes
+$F8AD-$FD25  contiguous unused $FF growth hole
+             size $0479 = 1145 bytes
 
-$FCE3-$FFEF  stored STR8 RAM worker image
-             size $030D = 781 bytes
+$FD26-$FFEF  stored STR8 RAM worker image
+             size $02CA = 714 bytes
              linked at $0200 inside the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  STR8 config pocket
@@ -461,9 +461,10 @@ start end       end is inclusive
 start +count    count is the number of bytes
 ```
 
-One- or two-hex-digit end tokens inherit the high byte from `start`. Three- or
-four-hex-digit end tokens are full addresses. Bare `D` continues at the next
-address using the previous dump length.
+Current `D` is the deliberate exception: `D start [end]` accepts only an
+absolute inclusive end, requires it to be greater than start, and has no bare
+continuation. Other range-taking commands retain their documented shared
+grammar.
 
 The canonical policy is in [DECISIONS.md](./DECISIONS.md). Operator examples
 are in [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md).

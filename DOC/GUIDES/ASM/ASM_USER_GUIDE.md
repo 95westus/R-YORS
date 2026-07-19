@@ -537,8 +537,9 @@ If exports or imports exist, `SEAL` also prints `SEAL EXP` and/or `SEAL IMP`.
 The default flash image omits the older interactive `RESOLVE` command. Import
 metadata can still be packaged. In the combined HIMON/STR8 image, `LOAD` and
 HIMON `AP` resolve declared imports that name resident RJOIN symbols through
-the STR8 import-link service at `$F006`; missing or non-resident imports still
-fail with `BAD FIX`.
+HIMON's resident AP linker; missing or non-resident imports still fail with
+`BAD FIX`. STR8 keeps `$F006` only as a compatibility doorway into that HIMON
+service.
 
 `RELOCATE address` copies the frozen body to a RAM destination and applies
 internal relocation rows there:
@@ -585,7 +586,7 @@ relocation/load step.
 
 `LOAD pkg dest` reads an AP v1 envelope from RAM or currently visible flash,
 copies the BODY to RAM, applies internal relocation rows, and resolves resident
-RJOIN import rows when the `$F006` STR8 import-link service is present:
+RJOIN import rows through the resident HIMON AP service:
 
 ```text
 LOAD $3200 $3000

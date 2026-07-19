@@ -12,7 +12,6 @@ V0 recovery surface:
 ?          identity and Bank 0 state
 B          backup rotation
 E          enroll Bank 0 into rotation
-M          map used/erased sectors
 U          update HIMON from S19, fixed $C000-$EFFF gate
 0/1/2      restore selected backup bank to Bank 3
 G          go HIMON
@@ -20,11 +19,13 @@ R          reset
 ```
 
 The current ROM proof runs STR8 from bank 3 `$F000`, stores the RAM flash
-worker at `$FCE3-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
+worker at `$FD26-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
 `$1FE9-$1FFF` for worker/update state, stages ordinary copy sectors through
 `$4000-$4FFF`, and stages HIMON update sectors through `$4000-$6FFF`.
 The top sector also exposes stable service entries at `$F003` for running
-selected worker modes and `$F006` for resident RJOIN AP import linking.
+selected worker modes and `$F006` as an AP import-link compatibility doorway.
+The linker itself is resident HIMON code; `$F006` selects the AP `LINK`
+operation and jumps through HIMON's `$7E2D-$7E2E` AP service vector.
 
 The current build targets are:
 
@@ -38,7 +39,8 @@ make -C SRC fig-forth-str8-update-s19
 make -C SRC msbasic-osi-str8-update-s19
 ```
 
-The hardware log now proves the prompt, `M`, `G`, burn-check bytes, `B`
+The hardware log preserves earlier proof of the retired `M` map plus the
+current prompt, `G`, burn-check bytes, `B`
 backup rotation, `E` / Bank 0 enrollment, post-enrollment B0/B1/B2 rotation,
 `U` / `UPDATE HIMON` from visible U1 to visible U2, fig-Forth as a `$C000`
 payload, OSI BASIC as a `$C000` payload, and high-flash recovery from the
@@ -110,14 +112,13 @@ Artifact check:
   Bank 3 has no built-in ASM report AP; reporter runs from Bank 0 with AP B0 $hhhh $4800
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
-  worker source is CPU $FCE3-$FFEF
+  worker source is CPU $FD26-$FFEF
   vectors point to STR8 IVI entries: F092/F000/F0A6
 
 Non-destructive STR8:
   reset enters STR8 countdown
   S reaches STR8 prompt
   ? prints identity and B0 state
-  M scans all banks and restores Bank 3
   U rejects out-of-range S19 before erase
   G enters HIMON
   R resets through the live vector

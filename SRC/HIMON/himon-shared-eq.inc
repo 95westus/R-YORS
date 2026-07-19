@@ -126,6 +126,7 @@ HIM_AP_REL_HI              EQU             $7E40
 HIM_AP_OP_PARSE            EQU             $00
 HIM_AP_OP_LOAD             EQU             $01
 HIM_AP_OP_SUGGEST          EQU             $02
+HIM_AP_OP_LINK             EQU             $03
 HIM_AP_TMP_LO              EQU             $7E41
 HIM_AP_TMP_HI              EQU             $7E42
 HIM_AP_TMP2_LO             EQU             $7E43

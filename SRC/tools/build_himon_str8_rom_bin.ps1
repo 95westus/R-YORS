@@ -284,6 +284,7 @@ $himonStart = Get-SymbolAddress -MapPath $HimonMapPath -Name "START"
 $himonNmi = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_NMI"
 $himonIrq = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_IRQ_MASTER"
 $himonEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "_END_DATA"
+$himonApImportLink = Get-SymbolAddress -MapPath $HimonMapPath -Name "HIM_AP_IMPORT_LINK"
 $flashRamWorker = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_RAM_WORKER"
 $flashWorkerCodeTrayBase = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_WORKER_CODE_TRAY_BASE"
 $flashWorkerCodeTrayEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_WORKER_CODE_TRAY_END"
@@ -294,6 +295,9 @@ $flashTransientTrayEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_T
 $flashWorkerSize = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_WORKER_SIZE"
 
 $str8Start = Get-SymbolAddress -MapPath $Str8MapPath -Name "START"
+$str8WorkerService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RUN_WORKER_SERVICE"
+$str8ApLinkService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_AP_IMPORT_LINK_SERVICE"
+$str8ApLinkAdapter = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_AP_IMPORT_LINK_SERVICE_BODY"
 $str8Nmi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_IVY_ENTRY_NMI"
 $str8Irq = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_IVY_ENTRY_IRQ_MASTER"
 $str8End = Get-SymbolAddress -MapPath $Str8MapPath -Name "_END_DATA"
@@ -348,8 +352,17 @@ if ($himonStart -ne 0xC000) {
 if ($himonEnd -gt 0xF000) {
     throw ("HIMON crosses STR8 sector at F000; _END_DATA={0:X4}" -f $himonEnd)
 }
+if ($himonApImportLink -lt $himonStart -or $himonApImportLink -ge $himonEnd) {
+    throw ("HIMON AP import linker {0:X4} is outside HIMON {1:X4}-{2:X4}" -f $himonApImportLink, $himonStart, ($himonEnd - 1))
+}
 if ($str8Start -ne 0xF000) {
     throw ("STR8 START is {0:X4}; expected F000" -f $str8Start)
+}
+if ($str8WorkerService -ne 0xF003) {
+    throw ("STR8 worker service is {0:X4}; expected stable entry F003" -f $str8WorkerService)
+}
+if ($str8ApLinkService -ne 0xF006) {
+    throw ("STR8 AP link compatibility service is {0:X4}; expected stable entry F006" -f $str8ApLinkService)
 }
 if ($str8Nmi -lt 0xF000 -or $str8Nmi -ge 0x10000) {
     throw ("STR8 IVY NMI entry is {0:X4}; expected F000-FFFF" -f $str8Nmi)
@@ -483,8 +496,30 @@ $str8Head = $bin[$str8HeadOffset..($str8HeadOffset + 0x000F)] | ForEach-Object {
 $resetHead = $bin[($bankOffset + ($str8Start - 0x8000))..($bankOffset + ($str8Start - 0x8000) + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
 $tail = $bin[($bankOffset + 0x7FFA)..($bankOffset + 0x7FFF)] | ForEach-Object { "{0:X2}" -f $_ }
 
+$str8ApServiceOffset = $bankOffset + ($str8ApLinkService - 0x8000)
+[byte[]]$expectedApService = @(
+    0x4C,
+    ($str8ApLinkAdapter -band 0xFF),
+    (($str8ApLinkAdapter -shr 8) -band 0xFF)
+)
+for ($i = 0; $i -lt $expectedApService.Length; $i++) {
+    if ($bin[$str8ApServiceOffset + $i] -ne $expectedApService[$i]) {
+        throw ("STR8 F006 compatibility jump byte {0} is {1:X2}; expected {2:X2}" -f $i, $bin[$str8ApServiceOffset + $i], $expectedApService[$i])
+    }
+}
+
+$str8ApAdapterOffset = $bankOffset + ($str8ApLinkAdapter - 0x8000)
+[byte[]]$expectedApAdapter = @(0xA9, 0x03, 0x8D, 0x2F, 0x7E, 0x6C, 0x2D, 0x7E)
+for ($i = 0; $i -lt $expectedApAdapter.Length; $i++) {
+    if ($bin[$str8ApAdapterOffset + $i] -ne $expectedApAdapter[$i]) {
+        throw ("STR8 AP compatibility adapter byte {0} is {1:X2}; expected {2:X2}" -f $i, $bin[$str8ApAdapterOffset + $i], $expectedApAdapter[$i])
+    }
+}
+
 Write-Host ("HIMON START/NMI/IRQ/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $himonStart, $himonNmi, $himonIrq, $himonEnd)
+Write-Host ("HIMON AP IMPORT LINK     = {0:X4}" -f $himonApImportLink)
 Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Start, $str8Nmi, $str8Irq, $str8End)
+Write-Host ("STR8 SERVICES WORK/AP    = {0:X4}/{1:X4} -> {2:X4}" -f $str8WorkerService, $str8ApLinkService, $str8ApLinkAdapter)
 if ($asmBase -ne $null) {
     Write-Host ("ASM-F2 BASE/START/END  = {0:X4}/{1:X4}/{2:X4}" -f $asmBase, $asmStart, $asmEnd)
 }

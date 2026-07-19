@@ -245,7 +245,6 @@ STR8 V0 #5F6A0F7A
 ? = print tiny STR8 ID/state
 B = backup automatic image rotation, with verify
 E = enroll bank 0 into rotation, destructive, confirmed
-M = map bank/sector used or erased status
 U = update HIMON from fixed $C000-$EFFF S19 gate
 0 = restore bank 0 -> bank 3, with verify
 1 = restore bank 1 -> bank 3, with verify
@@ -309,8 +308,8 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
-The current combined ROM stores the worker source at bank 3 `$FCE3-$FFEF`.
-Before `B`, `E`, `M`, `U`, `0`, `1`, or `2`, resident STR8 at `$F000` copies
+The current combined ROM stores the worker source at bank 3 `$FD26-$FFEF`.
+Before `B`, `E`, `U`, `0`, `1`, or `2`, resident STR8 at `$F000` copies
 that worker into the `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The
 worker uses `$1FE9-$1FFF` as its state/update board, uses `$4000-$4FFF` as the
 4K bank-copy sector buffer, and restores bank 3 before returning. The `U` HIMON
@@ -427,7 +426,7 @@ WDCMONv2 transition documentation/tool
 Advanced sector maintenance means a confirmed mode that can select source and
 destination banks/sectors, erase a selected destination sector, copy one sector
 to another, and verify by read-back compare. It is useful for rescue and lab
-work, but it is not part of the small V0 `? B E M U 0 1 2 G R` command surface
+work, but it is not part of the small V0 `? B E U 0 1 2 G R` command surface
 and must not alter Bank 0 rotation policy except through the normal `E`
 enrollment command.
 

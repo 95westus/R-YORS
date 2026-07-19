@@ -6,7 +6,6 @@
 ;   ?  print tiny ID/state
 ;   B  backup rotation, with read-back verify built in
 ;   E  enroll bank 0 into backup rotation, one-way in-flash flag
-;   M  map bank/sector erased or used status
 ;   U  update HIMON from S19, fixed gate $C000-$EFFF
 ;   0  restore bank 0 -> bank 3, preserving selected STR8 window
 ;   1  restore bank 1 -> bank 3, preserving selected STR8 window
@@ -74,10 +73,10 @@ STR8_WORKER_RUN         EQU             $0200
 STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_TRAY_SIZE   EQU             $0800
 STR8_WORKER_TRAY_END    EQU             $09FF
-STR8_WORKER_STORE_LO    EQU             $E3
-STR8_WORKER_STORE_HI    EQU             $FC
-STR8_WORKER_COPY_LEN_LO EQU             $0D
-STR8_WORKER_COPY_LEN_HI EQU             $03
+STR8_WORKER_STORE_LO    EQU             $26
+STR8_WORKER_STORE_HI    EQU             $FD
+STR8_WORKER_COPY_LEN_LO EQU             $CA
+STR8_WORKER_COPY_LEN_HI EQU             $02
 STR8_DELAY_TICKS        EQU             $03
 STR8_DELAY_TICK_A       EQU             $26
 STR8_DELAY_FIRST_A      EQU             $27
@@ -89,55 +88,13 @@ STR8_COPY_MODE_FULL     EQU             $00
 STR8_COPY_MODE_RESTORE  EQU             $01
 STR8_COPY_MODE_ENROLL   EQU             $02
 STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
-STR8_COPY_MODE_MAP      EQU             $04
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
 STR8_COPY_MODE_STAGE_BANK_SECTOR EQU    $06
 STR8_RESTORE_PROT_START_HI EQU          $C0
 
-RJOIN_EXEC_XY_LO        EQU             $7E00
-HIM_SVC_FNV_INIT_LO     EQU             $7E14
-HIM_SVC_FNV_UPDATE_LO   EQU             $7E16
-HIM_AP_STATUS           EQU             $7E30
-HIM_AP_DST_LO           EQU             $7E33
-HIM_AP_DST_HI           EQU             $7E34
-HIM_AP_BODY_LEN_LO      EQU             $7E39
-HIM_AP_BODY_LEN_HI      EQU             $7E3A
-HIM_AP_RELOC_COUNT      EQU             $7E3B
-HIM_AP_IMPORT_COUNT     EQU             $7E3C
-HIM_AP_REL_LO           EQU             $7E3F
-HIM_AP_REL_HI           EQU             $7E40
-HIM_AP_IMPORT_LO        EQU             $7E23
-HIM_AP_IMPORT_HI        EQU             $7E24
-HIM_AP_RELOC_ABS16_IMPORT EQU           $04
-HIM_AP_RELOC_LO8_IMPORT EQU             $05
-HIM_AP_RELOC_HI8_IMPORT EQU             $06
-HIM_AP_STATUS_BAD_FIX   EQU             $09
-
-FNV_HASH0               EQU             $B0
-FNV_HASH3               EQU             $B3
-STR8_AP_PTR_LO          EQU             $CD
-STR8_AP_PTR_HI          EQU             $CE
-STR8_AP_ADDR_LO         EQU             $CF
-STR8_AP_ADDR_HI         EQU             $D0
-STR8_AP_TMP_LO          EQU             $D1
-STR8_AP_TMP_HI          EQU             $D2
-STR8_AP_IMP_PTR_LO      EQU             $D3
-STR8_AP_IMP_PTR_HI      EQU             $D4
-STR8_AP_NAME_INDEX      EQU             $D5
-STR8_AP_CODE0           EQU             $E6
-STR8_AP_CODE1           EQU             $E7
-STR8_AP_CODE2           EQU             $E8
-STR8_AP_VALUE_LO        EQU             $E9
-STR8_AP_VALUE_HI        EQU             $EA
-STR8_AP_PATCH_KIND      EQU             $1A10
-STR8_AP_PATCH_LO        EQU             $1A11
-STR8_AP_PATCH_HI        EQU             $1A12
-STR8_AP_RES_LO          EQU             $1A13
-STR8_AP_RES_HI          EQU             $1A14
-STR8_AP_INDEX           EQU             $1A15
-STR8_AP_RELOC_COUNT     EQU             $1A16
-STR8_AP_IMPORT_COUNT    EQU             $1A17
-STR8_AP_RELOC_OFFSET    EQU             $1A18
+HIM_SVC_AP_LO           EQU             $7E2D
+HIM_AP_OP               EQU             $7E2F
+HIM_AP_OP_LINK          EQU             $03
 
 STR8_PTR_LO             EQU             $CD
 STR8_PTR_HI             EQU             $CE
@@ -154,10 +111,6 @@ STR8_COPY_SRC_BANK      EQU             $1FEE
 STR8_COPY_DST_BANK      EQU             $1FEF
 STR8_COPY_MODE          EQU             $1FF0
 STR8_BOOT_KEY_ENABLE    EQU             $1FF1
-STR8_MAP_B0             EQU             $1FF2
-STR8_MAP_B1             EQU             $1FF3
-STR8_MAP_B2             EQU             $1FF4
-STR8_MAP_B3             EQU             $1FF5
 STR8_STAGE_BUF_HI       EQU             $1FF6
 STR8_UPD_MASK           EQU             $1FF7
 STR8_UPD_COUNT          EQU             $1FF8
@@ -451,7 +404,6 @@ STR8_READ_COMMAND:
 ; ----------------------------------------------------------------------------
 ; Command dispatch
 ; ----------------------------------------------------------------------------
-; 2026-05-07T20:35-05:00        WLP2        M dispatch reports physical flash map.
 STR8_DISPATCH_A:
                         CMP             #'0'
                         BNE             ?NOT_0
@@ -482,10 +434,6 @@ STR8_DISPATCH_A:
                         BNE             ?NOT_G
                         JMP             STR8_CMD_G_HIMON
 ?NOT_G:
-                        CMP             #'M'
-                        BNE             ?NOT_M
-                        JMP             STR8_CMD_M
-?NOT_M:
                         CMP             #'U'
                         BNE             ?NOT_U
                         JMP             STR8_CMD_UPDATE_HIMON
@@ -594,18 +542,6 @@ STR8_CMD_RESTORE_A:
                         JSR             STR8_RUN_COPY
                         BCC             STR8_CMD_COPY_FAIL
                         JMP             STR8_CMD_OK
-
-STR8_CMD_M:
-                        IF              STR8_RAM_PROOF
-                        JSR             STR8_SCAN_MAP
-                        ELSE
-                        LDA             #STR8_COPY_MODE_MAP
-                        STA             STR8_COPY_MODE
-                        JSR             STR8_COPY_WORKER_TO_RAM
-                        JSR             STR8_WORKER_RUN
-                        ENDIF
-                        BCC             STR8_CMD_COPY_FAIL
-                        JMP             STR8_PRINT_MAP
 
 ; 2026-05-17T21:20-05:00        WLP2        U is the first fixed-gate HIMON S19 update.
 STR8_CMD_UPDATE_HIMON:
@@ -808,501 +744,14 @@ STR8_RUN_WORKER_SERVICE_BODY:
                         ENDIF
 
 STR8_AP_IMPORT_LINK_SERVICE_BODY:
-                        STZ             HIM_AP_STATUS
-                        JSR             STR8_AP_RELOAD_REL_PTR
-                        LDY             #$00
-                        LDA             (STR8_AP_PTR_LO),Y
-                        STA             STR8_AP_RELOC_COUNT
-                        LDA             HIM_AP_IMPORT_COUNT
-                        STA             STR8_AP_IMPORT_COUNT
-                        LDX             #$00
-?VALIDATE:
-                        CPX             STR8_AP_RELOC_COUNT
-                        BCS             ?PATCH_START
-                        STX             STR8_AP_INDEX
-                        JSR             STR8_AP_RELOAD_REL_PTR
-                        JSR             STR8_AP_RELOC_KIND_X
-                        JSR             STR8_AP_IMPORT_KIND_A
-                        BCC             ?VALIDATE_NEXT
-                        JSR             STR8_AP_IMPORT_SITE_OK_X
-                        BCC             STR8_AP_IMPORT_LINK_FAIL
-                        JSR             STR8_AP_IMPORT_RESOLVE_ROW_X
-                        BCC             STR8_AP_IMPORT_LINK_FAIL
-?VALIDATE_NEXT:
-                        LDX             STR8_AP_INDEX
-                        INX
-                        BRA             ?VALIDATE
-?PATCH_START:
-                        LDX             #$00
-?PATCH:
-                        CPX             STR8_AP_RELOC_COUNT
-                        BCS             ?DONE
-                        STX             STR8_AP_INDEX
-                        JSR             STR8_AP_RELOAD_REL_PTR
-                        JSR             STR8_AP_RELOC_KIND_X
-                        JSR             STR8_AP_IMPORT_KIND_A
-                        BCC             ?PATCH_NEXT
-                        JSR             STR8_AP_IMPORT_CAPTURE_ROW_X
-                        JSR             STR8_AP_IMPORT_RESOLVE_ROW_X
-                        BCC             STR8_AP_IMPORT_LINK_FAIL
-                        JSR             STR8_AP_IMPORT_PATCH_CAPTURED
-?PATCH_NEXT:
-                        LDX             STR8_AP_INDEX
-                        INX
-                        BRA             ?PATCH
-?DONE:
-                        JSR             STR8_AP_IMPORT_RESTORE_COUNTS
-                        SEC
-                        RTS
-
-STR8_AP_IMPORT_LINK_FAIL:
-                        JSR             STR8_AP_IMPORT_RESTORE_COUNTS
-                        LDA             #HIM_AP_STATUS_BAD_FIX
-                        STA             HIM_AP_STATUS
-                        CLC
-                        RTS
-
-STR8_AP_IMPORT_RESTORE_COUNTS:
-                        LDA             STR8_AP_RELOC_COUNT
-                        STA             HIM_AP_RELOC_COUNT
-                        LDA             STR8_AP_IMPORT_COUNT
-                        STA             HIM_AP_IMPORT_COUNT
-                        RTS
-
-STR8_AP_IMPORT_KIND_A:
-                        CMP             #HIM_AP_RELOC_ABS16_IMPORT
-                        BEQ             ?YES
-                        CMP             #HIM_AP_RELOC_LO8_IMPORT
-                        BEQ             ?YES
-                        CMP             #HIM_AP_RELOC_HI8_IMPORT
-                        BEQ             ?YES
-                        CLC
-                        RTS
-?YES:
-                        SEC
-                        RTS
-
-STR8_AP_RELOAD_REL_PTR:
-                        LDA             HIM_AP_REL_LO
-                        STA             STR8_AP_PTR_LO
-                        LDA             HIM_AP_REL_HI
-                        STA             STR8_AP_PTR_HI
-                        RTS
-
-STR8_AP_RELOC_KIND_X:
-                        TXA
-                        CLC
-                        ADC             #$01
-                        TAY
-                        LDA             (STR8_AP_PTR_LO),Y
-                        RTS
-
-STR8_AP_RELOC_SITE_LO_X:
-                        LDA             STR8_AP_RELOC_COUNT
-                        STA             STR8_AP_RELOC_OFFSET
-                        TXA
-                        CLC
-                        ADC             STR8_AP_RELOC_OFFSET
-                        CLC
-                        ADC             #$01
-                        TAY
-                        LDA             (STR8_AP_PTR_LO),Y
-                        RTS
-
-STR8_AP_RELOC_SITE_HI_X:
-                        LDA             STR8_AP_RELOC_COUNT
-                        ASL             A
-                        STA             STR8_AP_RELOC_OFFSET
-                        TXA
-                        CLC
-                        ADC             STR8_AP_RELOC_OFFSET
-                        CLC
-                        ADC             #$01
-                        TAY
-                        LDA             (STR8_AP_PTR_LO),Y
-                        RTS
-
-STR8_AP_RELOC_TARGET_LO_X:
-                        LDA             STR8_AP_RELOC_COUNT
-                        ASL             A
-                        CLC
-                        ADC             STR8_AP_RELOC_COUNT
-                        STA             STR8_AP_RELOC_OFFSET
-                        TXA
-                        CLC
-                        ADC             STR8_AP_RELOC_OFFSET
-                        CLC
-                        ADC             #$01
-                        TAY
-                        LDA             (STR8_AP_PTR_LO),Y
-                        RTS
-
-STR8_AP_RELOC_TARGET_HI_X:
-                        LDA             STR8_AP_RELOC_COUNT
-                        ASL             A
-                        ASL             A
-                        STA             STR8_AP_RELOC_OFFSET
-                        TXA
-                        CLC
-                        ADC             STR8_AP_RELOC_OFFSET
-                        CLC
-                        ADC             #$01
-                        TAY
-                        LDA             (STR8_AP_PTR_LO),Y
-                        RTS
-
-STR8_AP_IMPORT_SITE_OK_X:
-                        JSR             STR8_AP_RELOC_KIND_X
-                        CMP             #HIM_AP_RELOC_ABS16_IMPORT
-                        BEQ             ?WORD
-                        LDA             #$00
-                        BRA             ?ADD_READY
-?WORD:
-                        LDA             #$01
-?ADD_READY:
-                        STA             STR8_AP_TMP_LO
-                        JSR             STR8_AP_RELOC_SITE_LO_X
-                        CLC
-                        ADC             STR8_AP_TMP_LO
-                        STA             STR8_AP_TMP_LO
-                        LDA             #$00
-                        ADC             #$00
-                        STA             STR8_AP_TMP_HI
-                        JSR             STR8_AP_RELOC_SITE_HI_X
-                        CLC
-                        ADC             STR8_AP_TMP_HI
-                        BCS             ?BAD
-                        STA             STR8_AP_TMP_HI
-                        CMP             HIM_AP_BODY_LEN_HI
-                        BCC             ?OK
-                        BNE             ?BAD
-                        LDA             STR8_AP_TMP_LO
-                        CMP             HIM_AP_BODY_LEN_LO
-                        BCC             ?OK
-?BAD:
-                        CLC
-                        RTS
-?OK:
-                        SEC
-                        RTS
-
-STR8_AP_IMPORT_RESOLVE_ROW_X:
-                        JSR             STR8_AP_RELOC_TARGET_HI_X
-                        BNE             ?FAIL
-                        JSR             STR8_AP_RELOC_TARGET_LO_X
-                        CMP             STR8_AP_IMPORT_COUNT
-                        BCS             ?FAIL
-                        TAX
-                        JSR             STR8_AP_IMPORT_RESOLVE_SLOT_X
-                        BCC             ?FAIL
-                        LDX             STR8_AP_INDEX
-                        SEC
-                        RTS
-?FAIL:
-                        LDX             STR8_AP_INDEX
-                        CLC
-                        RTS
-
-STR8_AP_IMPORT_RESOLVE_SLOT_X:
-                        JSR             STR8_AP_IMPORT_HASH_SLOT_X
-                        BCC             ?FAIL
-                        LDX             #<FNV_HASH0
-                        LDY             #>FNV_HASH0
-                        JSR             STR8_AP_CALL_JOIN
-                        BCC             ?FAIL
-                        STX             STR8_AP_RES_LO
-                        STY             STR8_AP_RES_HI
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_AP_IMPORT_HASH_SLOT_X:
-                        JSR             STR8_AP_IMPORT_ROW_PTR_X
-                        BCC             ?FAIL
-                        LDY             #$00
-                        LDA             (STR8_AP_IMP_PTR_LO),Y
-                        BEQ             ?FAIL
-                        STA             STR8_AP_TMP_HI
-                        INC             STR8_AP_IMP_PTR_LO
-                        BNE             ?PACK_PTR_OK
-                        INC             STR8_AP_IMP_PTR_HI
-?PACK_PTR_OK:
-                        LDA             STR8_AP_IMP_PTR_LO
-                        STA             STR8_AP_ADDR_LO
-                        LDA             STR8_AP_IMP_PTR_HI
-                        STA             STR8_AP_ADDR_HI
-                        JSR             STR8_AP_CALL_FNV_INIT
-                        STZ             STR8_AP_NAME_INDEX
-?LOOP:
-                        LDA             STR8_AP_NAME_INDEX
-                        CMP             STR8_AP_TMP_HI
-                        BCS             ?DONE
-                        JSR             STR8_AP_IMPORT_UNPACK_NEXT3
-                        BCC             ?FAIL
-                        LDA             STR8_AP_CODE0
-                        JSR             STR8_AP_IMPORT_HASH_CODE_A
-                        BCC             ?FAIL
-                        INC             STR8_AP_NAME_INDEX
-                        LDA             STR8_AP_NAME_INDEX
-                        CMP             STR8_AP_TMP_HI
-                        BCS             ?DONE
-                        LDA             STR8_AP_CODE1
-                        JSR             STR8_AP_IMPORT_HASH_CODE_A
-                        BCC             ?FAIL
-                        INC             STR8_AP_NAME_INDEX
-                        LDA             STR8_AP_NAME_INDEX
-                        CMP             STR8_AP_TMP_HI
-                        BCS             ?DONE
-                        LDA             STR8_AP_CODE2
-                        JSR             STR8_AP_IMPORT_HASH_CODE_A
-                        BCC             ?FAIL
-                        INC             STR8_AP_NAME_INDEX
-                        BRA             ?LOOP
-?DONE:
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_AP_IMPORT_ROW_PTR_X:
-                        LDA             HIM_AP_IMPORT_LO
-                        STA             STR8_AP_IMP_PTR_LO
-                        LDA             HIM_AP_IMPORT_HI
-                        STA             STR8_AP_IMP_PTR_HI
-                        INC             STR8_AP_IMP_PTR_LO
-                        BNE             ?BODY
-                        INC             STR8_AP_IMP_PTR_HI
-?BODY:
-                        INC             STR8_AP_IMP_PTR_LO
-                        BNE             ?LOOP
-                        INC             STR8_AP_IMP_PTR_HI
-?LOOP:
-                        CPX             #$00
-                        BEQ             ?FOUND
-                        LDY             #$00
-                        LDA             (STR8_AP_IMP_PTR_LO),Y
-                        JSR             STR8_AP_IMPORT_ROW_BYTES_A
-                        BCC             ?FAIL
-                        CLC
-                        ADC             STR8_AP_IMP_PTR_LO
-                        STA             STR8_AP_IMP_PTR_LO
-                        BCC             ?NEXT
-                        INC             STR8_AP_IMP_PTR_HI
-?NEXT:
-                        DEX
-                        BRA             ?LOOP
-?FOUND:
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_AP_IMPORT_ROW_BYTES_A:
-                        BEQ             ?FAIL
-                        STA             STR8_AP_TMP_LO
-                        LDA             #$01
-?LOOP:
-                        CLC
-                        ADC             #$02
-                        DEC             STR8_AP_TMP_LO
-                        BEQ             ?OK
-                        DEC             STR8_AP_TMP_LO
-                        BEQ             ?OK
-                        DEC             STR8_AP_TMP_LO
-                        BNE             ?LOOP
-?OK:
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_AP_IMPORT_UNPACK_NEXT3:
-                        LDY             #$00
-                        LDA             (STR8_AP_ADDR_LO),Y
-                        STA             STR8_AP_VALUE_LO
-                        INC             STR8_AP_ADDR_LO
-                        BNE             ?HI
-                        INC             STR8_AP_ADDR_HI
-?HI:
-                        LDA             (STR8_AP_ADDR_LO),Y
-                        STA             STR8_AP_VALUE_HI
-                        INC             STR8_AP_ADDR_LO
-                        BNE             ?HAVE_WORD
-                        INC             STR8_AP_ADDR_HI
-?HAVE_WORD:
-                        STZ             STR8_AP_CODE0
-?CODE0:
-                        LDA             STR8_AP_VALUE_LO
-                        SEC
-                        SBC             #$40
-                        STA             STR8_AP_TMP_LO
-                        LDA             STR8_AP_VALUE_HI
-                        SBC             #$06
-                        BCC             ?CODE0_DONE
-                        STA             STR8_AP_VALUE_HI
-                        LDA             STR8_AP_TMP_LO
-                        STA             STR8_AP_VALUE_LO
-                        INC             STR8_AP_CODE0
-                        BRA             ?CODE0
-?CODE0_DONE:
-                        STZ             STR8_AP_CODE1
-?CODE1:
-                        LDA             STR8_AP_VALUE_LO
-                        SEC
-                        SBC             #$28
-                        STA             STR8_AP_TMP_LO
-                        LDA             STR8_AP_VALUE_HI
-                        SBC             #$00
-                        BCC             ?CODE1_DONE
-                        STA             STR8_AP_VALUE_HI
-                        LDA             STR8_AP_TMP_LO
-                        STA             STR8_AP_VALUE_LO
-                        INC             STR8_AP_CODE1
-                        BRA             ?CODE1
-?CODE1_DONE:
-                        LDA             STR8_AP_VALUE_LO
-                        CMP             #$28
-                        BCC             ?CODE2_OK
-                        CLC
-                        RTS
-?CODE2_OK:
-                        STA             STR8_AP_CODE2
-                        SEC
-                        RTS
-
-STR8_AP_IMPORT_HASH_CODE_A:
-                        BEQ             ?FAIL
-                        CMP             #$1B
-                        BCS             ?DIGIT
-                        CLC
-                        ADC             #'@'
-                        BRA             ?UPDATE
-?DIGIT:
-                        CMP             #$25
-                        BCS             ?SPECIAL
-                        SEC
-                        SBC             #$1B
-                        CLC
-                        ADC             #'0'
-                        BRA             ?UPDATE
-?SPECIAL:
-                        CMP             #$25
-                        BEQ             ?UNDER
-                        CMP             #$26
-                        BEQ             ?Q
-                        CMP             #$27
-                        BEQ             ?DOT
-?FAIL:
-                        CLC
-                        RTS
-?UNDER:
-                        LDA             #'_'
-                        BRA             ?UPDATE
-?Q:
-                        LDA             #'?'
-                        BRA             ?UPDATE
-?DOT:
-                        LDA             #'.'
-?UPDATE:
-                        JSR             STR8_AP_CALL_FNV_UPDATE
-                        SEC
-                        RTS
-
-STR8_AP_IMPORT_CAPTURE_ROW_X:
-                        JSR             STR8_AP_RELOC_KIND_X
-                        STA             STR8_AP_PATCH_KIND
-                        JSR             STR8_AP_RELOC_SITE_LO_X
-                        STA             STR8_AP_TMP_LO
-                        JSR             STR8_AP_RELOC_SITE_HI_X
-                        STA             STR8_AP_TMP_HI
-                        LDA             HIM_AP_DST_LO
-                        CLC
-                        ADC             STR8_AP_TMP_LO
-                        STA             STR8_AP_PATCH_LO
-                        LDA             HIM_AP_DST_HI
-                        ADC             STR8_AP_TMP_HI
-                        STA             STR8_AP_PATCH_HI
-                        RTS
-
-STR8_AP_IMPORT_PATCH_CAPTURED:
-                        LDA             STR8_AP_PATCH_LO
-                        STA             STR8_AP_ADDR_LO
-                        LDA             STR8_AP_PATCH_HI
-                        STA             STR8_AP_ADDR_HI
-                        LDA             STR8_AP_PATCH_KIND
-                        CMP             #HIM_AP_RELOC_ABS16_IMPORT
-                        BEQ             ?ABS16
-                        CMP             #HIM_AP_RELOC_LO8_IMPORT
-                        BEQ             ?LO8
-                        CMP             #HIM_AP_RELOC_HI8_IMPORT
-                        BEQ             ?HI8
-                        RTS
-?ABS16:
-                        LDY             #$00
-                        LDA             STR8_AP_RES_LO
-                        STA             (STR8_AP_ADDR_LO),Y
-                        INY
-                        LDA             STR8_AP_RES_HI
-                        STA             (STR8_AP_ADDR_LO),Y
-                        RTS
-?LO8:
-                        LDY             #$00
-                        LDA             STR8_AP_RES_LO
-                        STA             (STR8_AP_ADDR_LO),Y
-                        RTS
-?HI8:
-                        LDY             #$00
-                        LDA             STR8_AP_RES_HI
-                        STA             (STR8_AP_ADDR_LO),Y
-                        RTS
-
-STR8_AP_CALL_JOIN:
-                        JMP             (RJOIN_EXEC_XY_LO)
-
-STR8_AP_CALL_FNV_INIT:
-                        JMP             (HIM_SVC_FNV_INIT_LO)
-
-STR8_AP_CALL_FNV_UPDATE:
-                        JMP             (HIM_SVC_FNV_UPDATE_LO)
+                        LDA             #HIM_AP_OP_LINK
+                        STA             HIM_AP_OP
+                        JMP             (HIM_SVC_AP_LO)
 
                         IF              STR8_RAM_PROOF
 ; ----------------------------------------------------------------------------
 ; Destructive RAM proof copy/verify routines
 ; ----------------------------------------------------------------------------
-STR8_SCAN_MAP:
-                        STZ             STR8_COPY_SRC_BANK
-?BANK:                 LDA             STR8_COPY_SRC_BANK
-                        JSR             FLSH_BANK_SELECT_A
-                        LDA             #$80
-                        STA             STR8_MARK_SECTOR_HI
-                        STZ             STR8_COPY_BUF_LO
-?SECTOR:               JSR             STR8_DST_SECTOR_ERASED
-                        BCS             ?ERASED
-                        SEC
-                        BRA             ?SHIFT
-?ERASED:               CLC
-?SHIFT:                ROL             STR8_COPY_BUF_LO
-                        LDA             STR8_MARK_SECTOR_HI
-                        CLC
-                        ADC             #$10
-                        STA             STR8_MARK_SECTOR_HI
-                        BNE             ?SECTOR
-                        LDX             STR8_COPY_SRC_BANK
-                        LDA             STR8_COPY_BUF_LO
-                        STA             STR8_MAP_B0,X
-                        INC             STR8_COPY_SRC_BANK
-                        LDA             STR8_COPY_SRC_BANK
-                        CMP             #$04
-                        BNE             ?BANK
-                        JSR             STR8_SELECT_BANK_3
-                        SEC
-                        RTS
-
 ; 2026-05-07T19:14-05:00        WLP2        Restore skips protected high sectors by mode.
 STR8_COPY_BANKS:
                         LDA             #$80
@@ -1889,86 +1338,6 @@ STR8_WRITE_DEC_DIGIT_A:
                         ADC             #'0'
                         JMP             STR8_WRITE_BYTE
 
-STR8_PRINT_MAP:
-                        LDX             #<MSG_MAP_HEADER
-                        LDY             #>MSG_MAP_HEADER
-                        JSR             STR8_PRINT_XY
-                        STZ             STR8_COPY_SRC_BANK
-?BANK:                 LDX             STR8_COPY_SRC_BANK
-                        LDA             STR8_MAP_B0,X
-                        JSR             STR8_PRINT_MAP_MASK_A
-                        INC             STR8_COPY_SRC_BANK
-                        LDA             STR8_COPY_SRC_BANK
-                        CMP             #$04
-                        BEQ             ?DONE
-                        JSR             STR8_PRINT_TWO_SPACES
-                        BRA             ?BANK
-?DONE:                 LDX             #<MSG_CRLF
-                        LDY             #>MSG_CRLF
-                        JSR             STR8_PRINT_XY
-                        LDX             #<MSG_MAP_GRID_HEADER
-                        LDY             #>MSG_MAP_GRID_HEADER
-                        JSR             STR8_PRINT_XY
-                        STZ             STR8_COPY_SRC_BANK
-?GRID_BANK:            JSR             STR8_PRINT_MAP_ROW
-                        INC             STR8_COPY_SRC_BANK
-                        LDA             STR8_COPY_SRC_BANK
-                        CMP             #$04
-                        BNE             ?GRID_BANK
-                        LDX             #<MSG_MAP_GRID_FOOTER
-                        LDY             #>MSG_MAP_GRID_FOOTER
-                        JMP             STR8_PRINT_XY
-
-STR8_PRINT_MAP_MASK_A:
-                        STA             STR8_COPY_BUF_LO
-                        LDA             #$08
-                        STA             STR8_COPY_BUF_HI
-?BIT:                  ASL             STR8_COPY_BUF_LO
-                        LDA             #'-'
-                        BCC             ?PRINT
-                        LDA             #'+'
-?PRINT:                JSR             STR8_WRITE_BYTE
-                        DEC             STR8_COPY_BUF_HI
-                        BNE             ?BIT
-                        RTS
-
-STR8_PRINT_MAP_ROW:
-                        LDA             #'B'
-                        JSR             STR8_WRITE_BYTE
-                        LDA             STR8_COPY_SRC_BANK
-                        JSR             STR8_WRITE_DEC_DIGIT_A
-                        LDX             #<MSG_MAP_ROW_MID
-                        LDY             #>MSG_MAP_ROW_MID
-                        JSR             STR8_PRINT_XY
-                        LDX             STR8_COPY_SRC_BANK
-                        LDA             STR8_MAP_B0,X
-                        JSR             STR8_PRINT_MAP_STARS_A
-                        LDX             #<MSG_MAP_ROW_END
-                        LDY             #>MSG_MAP_ROW_END
-                        JMP             STR8_PRINT_XY
-
-STR8_PRINT_MAP_STARS_A:
-                        STA             STR8_COPY_BUF_LO
-                        LDA             #$08
-                        STA             STR8_COPY_BUF_HI
-?BIT:                  ASL             STR8_COPY_BUF_LO
-                        LDA             #'.'
-                        BCC             ?PRINT
-                        LDA             #'*'
-?PRINT:                JSR             STR8_WRITE_BYTE
-                        DEC             STR8_COPY_BUF_HI
-                        BEQ             ?DONE
-                        LDA             #' '
-                        JSR             STR8_WRITE_BYTE
-                        BRA             ?BIT
-?DONE:                 RTS
-
-STR8_PRINT_TWO_SPACES:
-                        LDA             #' '
-                        JSR             STR8_WRITE_BYTE
-                        LDA             #' '
-                        JMP             STR8_WRITE_BYTE
-
                         IF              STR8_RAM_PROOF
 STR8_WRITE_HEX_BYTE_A:
                         PHA
@@ -2125,7 +1494,7 @@ MSG_SCREEN:             DB              $0D,$0A,"STR8-N V0 #5F6A0F7A",$0D,$0A
                         ELSE
                         DB              "ROM $F000",$0D,$0A
                         ENDIF
-                        DB              "? B E M U 0 1 2 G R",$0D,$8A
+                        DB              "? B E U 0 1 2 G R",$0D,$8A
 MSG_PROMPT:             DB              "STR8-N",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
@@ -2149,12 +1518,6 @@ MSG_UPDATE_WRITE:       DB              $0D,$0A,"PROGRAM C000-EFFF? Y:",$A0
 MSG_S19_FAIL:           DB              $0D,$0A,"S19 FAIL",$0D,$8A
 MSG_S19_NO_DATA:        DB              $0D,$0A,"NO S19 DATA",$0D,$8A
 MSG_G_HIMON:            DB              $0D,$0A,"G HIMON",$0D,$8A
-MSG_MAP_HEADER:         DB              $0D,$0A,"BANK0     BANK1     BANK2     BOOT",$0D,$8A
-MSG_MAP_GRID_HEADER:    DB              "     8 9 A B C D E F",$0D,$0A,"   +---------------+",$0D,$8A
-MSG_MAP_ROW_MID:        DB              " |",$A0
-MSG_MAP_ROW_END:        DB              " |",$0D,$8A
-MSG_MAP_GRID_FOOTER:    DB              "   +---------------+",$0D,$8A
-
 MSG_RESTORE_B:          DB              $0D,$0A,"RESTORE ",('B'+$80)
 MSG_ALREADY_ROT:        DB              $0D,$0A,"B0 ALREADY ROT",$0D,$8A
 

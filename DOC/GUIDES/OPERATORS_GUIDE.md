@@ -103,12 +103,12 @@ $F000-$FFFF    4K STR8 recovery sector
 Current combined-image facts:
 
 ```text
-HIMON:           $C000-$EFE9
-STR8 image:      $F000-$FC69
+HIMON:           $C000-$EF2C
+STR8 image:      $F000-$F8AC
 IVI entries:     NMI $F092, IRQ/BRK $F0A6
 STR8 identity:   #5F6A0F7A
-marker bytes:    $FA17 = 7A 0F 6A 5F
-worker source:   $FCE3-$FFEF, copied to RAM when needed
+marker bytes:    $F6C2 = 7A 0F 6A 5F
+worker source:   $FD26-$FFEF, copied to RAM when needed
 config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF = 92 F0 00 F0 A6 F0
 ```
@@ -117,8 +117,8 @@ After burning, quick monitor checks should look like:
 
 ```text
 D C000 C00F  78 D8 A2 FF 9A AD E6 7E ...
-D F000 F00F  4C 09 F0 4C 93 F3 4C 9A F3 78 D8 A2 FF 9A 20 3F
-D FCE3 FCF2  08 78 AD F0 1F C9 04 F0 ...
+D F000 F00F  4C 09 F0 4C 7C F3 4C 83 F3 78 D8 A2 FF 9A 20 3F
+D FD26 FD35  08 78 AD F0 1F C9 02 F0 ...
 D FFFA FFFF  92 F0 00 F0 A6 F0
 ```
 
@@ -152,7 +152,6 @@ enrollment, Bank 0 may be erased by future backups.
 ?       print STR8 ID/state, including #5F6A0F7A
 B       backup rotation, destructive, confirmed
 E       enroll Bank 0 into backup rotation, destructive, confirmed
-M       map banks/sectors as used + or erased -
 U       update $C000-$EFFF from S19, destructive, confirmed
 0       restore Bank 0 -> Bank 3, destructive, confirmed
 1       restore Bank 1 -> Bank 3, destructive, confirmed
@@ -161,9 +160,9 @@ G       go to HIMON at $C000
 R       reset through the live reset vector
 ```
 
-`M` is read-only, but it still switches flash banks through the RAM worker.
-Let it finish. The map prints eight sector characters per bank, corresponding
-to `$8000,$9000,$A000,$B000,$C000,$D000,$E000,$F000`.
+The former read-only `M` physical map was retired in the 2026-07-18 resident
+size pass. Its hardware transcript remains historical evidence; use host/image
+maps until a catalog-aware inventory view is implemented.
 
 ## STR8 Workflows
 
@@ -171,7 +170,6 @@ Check identity and bank state:
 
 ```text
 STR8>?
-STR8>M
 ```
 
 Back up the live image:
@@ -230,11 +228,26 @@ Run `B` before `U` when the current live image should be preserved in the
 backup chain. Do not run `B` after a temporary payload boots unless that
 payload should become recoverable.
 
-Updating the active STR8 top sector is a separate, dangerous operation. For the
-OIL (Overlay Integration Layer) `.710` procedure, build
-`make -C SRC str8-top-stage-s19`, stage with
-`DOC/GUIDES/ASM/SAMPLES/topwr-transient-3000.a`, and follow
-[PLANNING/OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md#str8-top-sector-update-procedure).
+Updating the active STR8 top sector is a separate, dangerous operation. Build
+the current self-contained writer and matching HIMON stream together:
+
+```text
+make -C SRC str8-topwrite-a himon-str8-himon-update-s19
+```
+
+For the 2026-07-18 linker-ownership migration, update HIMON first through the
+old STR8 `U` gate, verify HIMON, and only then assemble and run
+`DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a`. New HIMON calls its
+resident linker directly and remains usable with the old STR8 doorway. The
+reverse order temporarily puts the new `$F006` AP-operation adapter in front
+of an old HIMON service that does not implement that operation.
+
+Assemble the top writer after the HIMON update: STR8 `U` uses `$4000-$4FFF` as
+its sector buffer, which overwrites the writer's embedded top-sector image.
+`G 3000` only stages and verifies; `G 3003` immediately erases/programs/verifies
+bank 3 `$F000-$FFFF`. The generated sector deliberately restores `$FFF0-$FFF9`
+to erased bytes, so the post-update STR8 state is `B0 HOLD` until deliberately
+reenrolled.
 
 ## STR8 Payload Streams
 
@@ -299,12 +312,8 @@ STR8 rejects records outside `$C000-$EFFF` before erase.
 ```text
 ?              help
 # [token]      list records, or resolve token without executing it
-"text"         print legacy FNV-1a32; reports STR8 match on #5F6A0F7A
-D              continue previous dump length from next address
 D start        dump one byte
-D start end    dump memory through inclusive end
-D start end bb search hex bytes
-D start end 'text' search text; skips $7Fxx I/O slots
+D start end    dump memory through inclusive absolute end
 M addr         modify memory byte by byte below $7A00
 G addr         go to address
 STR8           enter STR8 at $F000
@@ -329,32 +338,18 @@ rotation, and protected flash policy.
 ```text
 D start            one byte
 D start end        inclusive end
-D start end bytes  search bytes
-D start end 'text' search text
 ```
 
-The second hex token is an end token completed against `start` by digit width:
+The second hex token is an absolute end address and must be greater than start:
 
 ```text
-D 0 F         dumps $0000-$000F
-D 0 FF        dumps $0000-$00FF
-D 0 FFF       dumps $0000-$0FFF
-D 0 FFFF      dumps $0000-$FFFF
-D 30F0 F      dumps $30F0-$30FF
-D 30F0 FF     dumps $30F0-$30FF
-D 30F0 FFF    dumps $30F0-$3FFF
+D 0000 000F  dumps $0000-$000F
+D 3000 30FF  dumps $3000-$30FF
 ```
 
-`D 30F0 10` is rejected because the completed end `$3010` is below start.
-`D 3000 4D` dumps `$3000-$304D`; `D 3000 30FF 4D` searches for byte `$4D`.
-
-Target behavior for bare `D` is continuation from the previous dump:
-
-```text
-D 3000 FF
-D
-D
-```
+`D 30F0 0010` and an equal start/end are rejected. Bare continuation, short
+end completion, quoted hashing, and resident byte/text search were removed in
+the 2026-07-18 size pass.
 
 ## HIMON RAM Proof Loop
 

@@ -25,7 +25,7 @@ RESET -> STR8-N -> HIMON -> ASM-F2 -> AP object
 
 | Part | Role |
 | --- | --- |
-| **STR8-N** | Reset-time recovery, flash maps, backup rotation, restore, payload updates, and bank-safe services |
+| **STR8-N** | Reset-time recovery, backup rotation, restore, payload updates, and bank-safe flash services |
 | **HIMON** | Monitor, loader, debugger, catalog/RJOIN services, and command host |
 | **ASM-F2** | Flash-resident onboard W65C02 assembler and AP object producer |
 | **OIL** | **Overlay Integration Layer**: AP storage, load, relocation, resident imports, and execution |
@@ -37,9 +37,9 @@ resolves resident imports.
 
 ## Current Board
 
-As of 2026-07-10, the current STR8-N/HIMON/ASM-F2 image is hardware-proven for:
+The 2026-07-10 STR8-N/HIMON/ASM-F2 image is hardware-proven for:
 
-- boot, flash mapping, backup rotation, restore, and guarded payload updates;
+- boot, backup rotation, restore, and guarded payload updates;
 - RAM inspection, S19 loading, one-shot breakpoints, and single-step debugging;
 - onboard W65C02 assembly, `SEAL`, `PACKAGE`, `LOAD`, `INSTALL`, and `AP`;
 - internal AP relocation and resident RJOIN import resolution;
@@ -56,6 +56,11 @@ on its own.
 
 Treat it as bench-proven rather than a finished field updater. Keep an external
 programmer and a known-good image nearby.
+
+The 2026-07-18 size-pass image is host-proven and awaits its board regression.
+It retires the STR8 `M` map and the richer resident HIMON `D`/quoted-hash forms,
+and moves AP import linking from STR8 into HIMON while preserving `$F006` as a
+compatibility entry.
 
 ## Start Here
 
@@ -84,10 +89,13 @@ The primary output is a complete 32K `$8000-$FFFF` bank image:
 ```text
 SRC/BUILD/bin/himon-str8-rom.bin
 
-$8000-$B968  ASM-F2, entry $800C
-$B969-$BF78  built-in ASM session reporter AP
-$C000-$EFE9  HIMON
-$F000-$FFFF  STR8-N, worker, configuration, and vectors
+$8000-$BC6C  ASM-F2, entry $800C
+$BC6D-$BFFF  low-flash growth/AP-store hole
+$C000-$EF2C  HIMON, including the resident AP import linker
+$EF2D-$EFFF  HIMON/STR8 growth hole
+$F000-$F8AC  STR8-N shell and service adapters
+$F8AD-$FD25  top-sector growth hole
+$FD26-$FFFF  worker, configuration, and vectors
 ```
 
 The matching first-install stream is:
@@ -139,7 +147,7 @@ where they bootstrap or regenerate current onboard artifacts.
 
 Flash operations can overwrite firmware, programs, data, and board
 configuration. Destructive STR8 and flash-utility paths require confirmation.
-Do not press NMI during flash mapping, erase, program, or restore operations.
+Do not press NMI during erase, program, or restore operations.
 
 ## Direction
 

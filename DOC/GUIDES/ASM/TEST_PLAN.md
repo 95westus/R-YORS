@@ -9903,3 +9903,182 @@ That rebuild/install prerequisite passed on 2026-07-15: the map-matched
 `00.0715(1804)` reporter package is `L=$06A6`, was installed at `B0:$8100`,
 and was loaded successfully at `$4800`. The fresh failed and clean target
 sessions followed by direct `G 4800` both passed later that day.
+
+## 2026-07-18 Resident AP Linker Ownership And Size Pass
+
+Status: host-build pass; fixed-surface board pass; AP-import regression pending.
+
+The resident-size pass removes quoted hashing and the HIMON `D` continuation,
+short-end, and embedded search forms. STR8-N removes its physical `M` map and
+moves AP import linking into HIMON. `$F006` remains the stable compatibility
+entry; its body selects AP operation `$03` and jumps through the existing HIMON
+AP vector at `$7E2D-$7E2E`.
+
+Host map result:
+
+```text
+HIMON CODE/DATA/END       = $2997/$0596/$EF2D
+HIM_AP_SERVICE            = $D5BF
+HIM_AP_IMPORT_LINK        = $DAEF
+HIMON gap before STR8     = $00D3
+STR8 CODE/DATA/END        = $06C2/$01EB/$F8AD
+STR8 $F006 adapter body   = $F383
+STR8 worker store/size    = $FD26-$FFEF/$02CA
+STR8 free contiguous hole = $F8AD-$FD25/$0479
+vectors                   = 92 F0 00 F0 A6 F0
+```
+
+`make -C SRC all` passes. The composite-ROM builder now asserts `$F003` and
+`$F006`, verifies the `$F006` absolute jump, verifies the exact adapter bytes
+`A9 03 8D 2F 7E 6C 2D 7E`, and requires `HIM_AP_IMPORT_LINK` to reside inside
+HIMON. `make -C SRC asm-test` also passes after correcting its stale Makefile
+path to the preserved `SAMPLES/OLD CODE/ASMTEST_3000.asm` fixture; the fixture
+itself and its hardware transcript were not moved or rewritten.
+
+Required board regression before hardware proof:
+
+```text
+D F000 F008
+  expect three stable JMP entries at F000/F003/F006
+D F383 F38A
+  expect A9 03 8D 2F 7E 6C 2D 7E
+D 3000
+  expect one-byte dump
+D
+  expect D usage
+enter STR8 and run ?
+  expect no M command in the prompt surface
+run the known RAM AP RJOIN import package
+  expect BANK RJOIN, A=$AC, and AP status $00
+run the missing-import package
+  expect BAD FIX/AP status $09 and no partial import patch
+run the known banked AP RJOIN package through AP Bn
+  expect the same resolved entry and return result as before the move
+```
+
+Do not rewrite earlier STR8 `M` or AP-link hardware transcripts. They remain
+the proof for the old image; append the new regression evidence when captured.
+
+The 2026-07-18 board transcript closes the onboard installation and fixed-
+surface portion. Old STR8 successfully updated HIMON to `00.0718(2041)`;
+`L F` then installed ASM-F2 `00.0718(2045)` as `LF OK WR=3C6D GO=800C`.
+The map-generated top writer assembled, staged, programmed, and verified the
+new bank 3 `$F000-$FFFF` sector:
+
+```text
+$1A00-$1A03 = 01 AC 00 00
+$F000-$F008 = 4C 09 F0 4C 7C F3 4C 83 F3
+$F383-$F38A = A9 03 8D 2F 7E 6C 2D 7E
+$F6C2-$F6C5 = 7A 0F 6A 5F
+$FD26-$FD35 = 08 78 AD F0 1F C9 02 F0 0D C9 05 F0 0E C9 06 F0
+$FFFA-$FFFF = 92 F0 00 F0 A6 F0
+```
+
+The new STR8 screen showed `? B E U 0 1 2 G R`, `B0 HOLD`, and returned to
+the current HIMON. This passes the fixed entries, adapter bytes, identity,
+worker position, vectors, retired-`M` command surface, and combined-image boot.
+
+A follow-up transcript closes the simplified resident `D` contract:
+
+```text
+D                     -> D [a [b]]
+D 1A00                -> one byte at $1A00
+D 1A03 04             -> D [a [b]]
+D 1A00 1A01           -> exactly two bytes
+D 0 FF                -> inclusive $0000-$00FF dump
+D 0 FFFF              -> inclusive full-address-space dump through $FFFF
+D FFFA FFFF           -> 92 F0 00 F0 A6 F0
+```
+
+`D 1A03 04` proves the second token is now an absolute address rather than a
+short-end completion: `$0004` is not greater than `$1A03`, so usage is the
+correct result. The full `$0000-$FFFF` dump reached the vector tail and
+returned to the prompt, proving the range loop handles the complete inclusive
+16-bit address space without falling into continuation semantics.
+
+The same transcript does not yet prove the moved import linker. The imported
+`banked-rjoin-smoke.a` body was entered with direct `G 2000`, before
+`PACKAGE`/`LOAD`; its unresolved import correctly ran into the placeholder and
+trapped at `BRK F0 PC=FFFE`. The no-import body then passed direct execution,
+which proves ordinary assembly/execution but not AP import binding. A later
+`G 7000` cold-booted the machine and printed `RAM ZERO OK`, so the subsequent
+`G 7200` trap was also expected: the just-assembled `$7200` program had been
+cleared.
+
+Resume the RAM import proof without a cold boot:
+
+```text
+ASM NEW
+  paste banked-rjoin-smoke.a
+PACKAGE $3200
+LOAD $3200 $3000
+.
+G 3000
+D 5848 5850
+D 7E2D 7E40
+```
+
+Expect `BANK RJOIN`, carry set with `A=$AC`, `$5848=$AC`, resolved resident
+address `$584A/$584B=$05/$E7`, and AP status `$00`. Only after this passes run
+the missing-import/no-partial-patch and banked-source variants.
+
+The follow-up 2026-07-18 board transcript closes this positive RAM import
+gate on HIMON `00.0718(2041)` and ASM-F2 `00.0718(2045)`:
+
+```text
+PKG OK @=$3200 L=$0076
+LOAD OK=$3000 L=$0029 C=$05
+...
+>G 3000
+BANK RJOIN
+RET A=AC X=1A Y=0E P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 00 05 E7 00 00 00 00 | 00
+>D 1A10 1A17
+1A10: 06 0F 30 05 E7 04 05 01
+>D 7E2D 7E40
+7E2D: BF D5 01 00 00 32 00 30 | 76 00 4D 32 29 00 05 01
+7E3D: 00 00 14 32
+```
+
+Result: pass. The resident AP request records operation `$01` (`LOAD`), status
+`$00`, source `$3200`, destination `$3000`, package length `$0076`, body
+`$324D`, body length `$0029`, five relocation rows, and one import. The linker
+debug row records final patch kind `$06` (HI8 import), patch site `$300F`,
+resolved address `$E705`, relocation index `$04`, relocation count `$05`, and
+import count `$01`. The printed string, `A=$AC/C=1`, and `$584A/$584B=$05/$E7`
+prove that the copy at `$3000` called the current resident string routine.
+This closes the positive regression for moving the AP linker from STR8 into
+HIMON. The missing-import/no-partial-patch and banked-source variants remain
+separate open gates.
+
+The same capture also exercised two AP range negatives after packaging the
+no-import smoke at `$3200`:
+
+```text
+>AP B0 $3200 $9000
+APERR=$06
+>AP $3200 $8000
+APERR=$06
+```
+
+Both are correct `BAD RANGE` results. `AP B0` requires a bank-visible package
+address at `$8000` or above, so `$3200` is not a banked source; AP execution
+destinations are limited to RAM `$2000-$4FFF`, so `$9000` and `$8000` are not
+valid destinations. The direct-RAM positive retry is `AP $3200 $3000`.
+
+That retry subsequently passed:
+
+```text
+>AP $3200 $3000
+GO 3000
+#GO# ENTRY=3000
+RET A=AC X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 5848 5850
+5848: AC 00 30 30 00 00 00 00 | 5A
+```
+
+Result: the no-import package loaded and applied its internal relocations at
+`$3000`, called relocated `TARGET=$3030`, set `$5850=$5A`, and returned with
+`A=$AC/C=1`. Together with the two `$06` cases, this passes the current
+direct-RAM AP positive/range-negative group.

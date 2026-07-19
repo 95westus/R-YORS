@@ -772,25 +772,18 @@ start end       end is inclusive
 start +count    count is the number of bytes
 ```
 
-`D` now owns its own compact dump/search grammar and does not accept `+count`.
-Its second hex token is always an inclusive end token. One digit completes the
-current 16-byte row, two digits complete the current page, three digits complete
-the current 4K window, and four digits are an absolute end address. If the
-completed end is below the start, `D` reports usage.
+Current 2026-07-18 `D` is deliberately smaller than the May design below. It
+accepts `D start [end]`; `end` is absolute and inclusive, and must be greater
+than `start`. It does not accept `+count`, short end completion, patterns, or
+bare continuation.
 
 ```text
-D 0 F          dump $0000-$000F
-D 3000 4D      dump $3000-$304D
-D 3000 30FF 4D search $3000-$30FF for byte $4D
+D 0000 000F  dump $0000-$000F
+D 3000 30FF  dump $3000-$30FF
 ```
 
-Bare `D` should repeat the previous dump length from the byte after the
-previous dump:
-
-```text
-D 3000 30FF
-D            dump $3100-$31FF
-```
+The earlier suffix-completion, search, and bare-continuation text is retained
+in hardware transcripts, not as the current command contract.
 
 ## REHASH: Search And Step
 
@@ -807,13 +800,18 @@ D            dump $3100-$31FF
                    02:33Z WLP2 Superseded direction: `S` moves from
                                single-step to memory search; step/next moves
                                to `N` only.
+         07
+                18
+                   20:10Z WLP2 Resident `D` search was retired in the size
+                               pass. Optional `S`/search packages remain
+                               userland or alternate-flash material.
 ```
 
 `NEXT` is not a command alias in the resident surface. RAM-only `N` is
 non-destructive because it plants only a temporary debugger trap in RAM and
 restores the original opcode.
 
-Resident search syntax is:
+Historical 2026-05 resident search syntax was:
 
 ```text
 D start end b0 [b1 ... b15]

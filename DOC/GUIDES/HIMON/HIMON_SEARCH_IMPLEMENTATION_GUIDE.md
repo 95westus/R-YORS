@@ -1,9 +1,9 @@
 # HIMON Search Implementation Guide
 
-This is now a historical proof/package guide for the old `S` search work.
-Normal resident HIMON no longer owns an `S` command; resident memory search is
-folded into `D start end pattern`, and old `himon-search-*` artifacts are
-optional userland or alternate-flash-bank material.
+This is now a historical proof/package guide for the old `S` and resident `D`
+search work. Normal resident HIMON owns neither search surface after the
+2026-07-18 size pass. Old `himon-search-*` artifacts remain optional userland
+or alternate-flash-bank material.
 
 The workflow below is still useful when building a standalone search package:
 write and debug the routine in RAM, then build an S19 that writes the proven
@@ -24,7 +24,7 @@ keep it outside normal HIMON unless deliberately building an alternate package
 ## Current Anchors
 
 - `S` is not a resident HIMON command in the normal image. `N` owns step/next,
-  and `D` owns resident dump/search.
+  and current `D` is dump-only: `D start [end]`.
 - Optional `S` packages keep the historical proof syntax:
 
 ```text
@@ -66,8 +66,8 @@ himon-search-for-himon  historical native port scaffold and checklist
 `himon-search-static-proof` remains as a legacy build alias, but the shorter
 `himon-search-static` name is the one to use in new notes.
 
-Note: `$7900` references below this point are legacy proof addresses; resident
-HIMON now uses `$7DC0-$7DFF` for the active search pattern buffer.
+Note: `$7900` and `$7DC0-$7DFF` references below this point are legacy proof
+addresses. Current resident HIMON does not reserve an active search buffer.
 
 ## V0 Behavior
 

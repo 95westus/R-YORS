@@ -55,6 +55,9 @@
   byte search `D start end bb...`, text search `D start end 'TEXT'`, normal
   HIMON `S` not found, `+count` rejected by `D`, `$7F00-$7FFF` skip reporting,
   and dump continuation.
+- 2026-07-18 size pass retired resident `D` search, short-end completion, and
+  dump continuation. Preserve the 2026-07-06 transcript as old-image evidence;
+  require a fresh board pass for current `D start [end]` behavior.
 - Document and design BIO-level FTDI RX lookahead before changing the stable
   input path. A true hardware peek is not available once
   `PIN_FTDI_READ_BYTE_NONBLOCK` reads the FIFO, so any general peek must cache

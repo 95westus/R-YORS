@@ -1,7 +1,10 @@
 # STR8 Flash Update Proposal
 
-This is the design note for STR8 flash update behavior. The first-pass `M`
-physical flash map is implemented, and the first compact HIMON updater is `U`.
+This is the historical design note for STR8 flash update behavior. The
+first-pass physical `M` map was implemented and hardware-proven, then removed
+from the current resident image in the 2026-07-18 size pass. Its transcripts
+remain evidence; the design below is retained as a reference for a later
+catalog-aware flash inventory tool. The compact HIMON updater remains `U`.
 Future richer update commands should remain simple enough to avoid target/range
 mistakes.
 

@@ -41,7 +41,7 @@ HIMON vectors:      HIMON controls IRQ/vector behavior in V0
 ```
 
 STR8 started as a RAM-launched test app. The current ROM proof is reset-entered
-and resident at `$F000`, with guarded `B`, `E`, `M`, `U`, `0`, `1`, and `2`
+and resident at `$F000`, with guarded `B`, `E`, `U`, `0`, `1`, and `2`
 paths. New destructive behavior should still begin as a read-only or RAM-safe
 proof before it becomes part of the reset-owned recovery path.
 
@@ -243,7 +243,7 @@ output:  SRC/BUILD/s19/str8-f000.s19
 ```
 
 The current ROM proof links the resident shell at `$F000`. The worker image
-links for `$0200`, is stored in the combined ROM at `$FCE3-$FFEF`, and is
+links for `$0200`, is stored in the combined ROM at `$FD26-$FFEF`, and is
 copied into the `$0200-$09FF` STR8 RAM tray before destructive flash work. The
 RAM proof image is linked at `$3000`, is launched under HIMON, and reserves
 `$4000-$4FFF` as copy-buffer RAM. The current copy worker stages one 4K erase

@@ -126,8 +126,6 @@ flowchart TD
     HASHLIST --> HASHROW[CMD_HASH_PRINT_ROW]
 
     D --> DRANGE[CMD_D_PARSE_RANGE]
-    D --> DPATTERN[CMD_D_PARSE_PATTERN]
-    D --> DSCAN[CMD_D_SEARCH_RANGE]
     D --> MEMPRINT[MON_PRINT_MEM_RANGE]
     M --> RANGE
     M --> MEMMOD[MON_MODIFY_RANGE]
@@ -287,10 +285,9 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | FNV-era command hashing | every command token | `CMD_HASH_TOKEN`, `FNV1A_*`, `MATH_*` | Computes the current HIMON command hash and saves it in command exec state. | FNV32 remains the public command/export identity hash; CRC16 is for compact local/scoped tables and checks. |
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
-| Quoted hash | `"text"` | `CMD_QUOTE_HASH`, `FNV1A_*` | Prints FNV-1a32 for text through the closing quote and reports STR8 match on `#5F6A0F7A`. | Input is uppercased by HIMON and leading/trailing spaces are trimmed. |
 | PACK40 service | service vectors | `HIM_PACK40_ASCII_TO_CODE`, `HIM_PACK40_PACK3` | Converts ASCII to base-40 codes and packs three base-40 codes into the AP metadata word. | Published through `$7E1F-$7E22`; flash ASM calls this for IMPORT/EXPORT metadata so the encoder is not duplicated in low flash. |
-| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? D M R X G AP L B N Q " STR8`. |
-| Memory dump/search | `D [start [end [bb...|'TEXT']]]` | `CMD_D`, `CMD_D_PARSE_RANGE`, `CMD_D_PARSE_PATTERN`, `CMD_D_SEARCH_RANGE`, `MON_PRINT_MEM_RANGE` | Dumps a one-byte or inclusive range, or searches an explicit range for 1-16 hex bytes or one quoted text atom. | Bare `D` repeats the previous dump length from the next address. `+count` is not accepted by `D`; short end tokens complete against the start address by digit width. Search skips `$7F00-$7FFF`, reports `D NF` or `D ABORT`, and does not update dump continuation. |
+| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? D M R X G AP L B N Q STR8`. |
+| Memory dump | `D start [end]` | `CMD_D`, `CMD_D_PARSE_RANGE`, `MON_PRINT_MEM_RANGE` | Dumps one byte when `end` is omitted, or an inclusive absolute range when `end` is present. | Bare `D`, short relative end tokens, continuation, and byte/text search were removed in the resident-size pass. An explicit end must be greater than start; `$7F00-$7FFF` is still reported as I/O rather than read as ordinary RAM. |
 | Memory modify | `M start [end|+count]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes only below monitor workspace, `.` aborts. | Protected ranges from `$7A00` upward report `M PROT=$hhhh`; this is stricter than the hard `$7EFF` RAM ceiling. Current short mutator remains under review; future bulk fill should be `FILL start end|+count bb`, not an `M` subform. |
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
@@ -300,7 +297,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_S1`, `L_WRITE_DATA_BYTE` | Accepts S0/S1/S9, writes S1 data below `$7F00`, tracks count and go address. | `$7F00-$7FFF` reports `LERR=$02`; `$8000+` without `F` fails with `LERR=$05`. |
 | S-record load and go | `L G` | `CMD_L` | Same as `L`, then jumps to S9 address or first data address fallback. | Sets exec kind to LOADGO before jump. |
 | S-record flash load | `L F` | `L_WRITE_DATA_BYTE_FLASH`, `FLASH_WRITE_BYTE_AXY` | Writes only blank `$FF` bytes in `$8000-$CFFF`, verifies readback, skips after first flash failure. | Protects HIMON fixed-entry area at `$D000+`; no sector erase yet. |
-| AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_FIND_HOLE` | Parses AP v1 envelopes, loads BODY to `$2000-$4FFF`, applies internal `$01-$03` relocation rows, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` and HIMON `AP pkg dst` call this so AP package consumption survives after ASM exits. |
+| AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_IMPORT_LINK`, `HIM_AP_FIND_HOLE` | Parses AP v1 envelopes, loads BODY to `$2000-$4FFF`, resolves RJOIN imports, applies internal/import relocation rows, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` and HIMON `AP pkg dst` call this so AP package consumption and linking survive after ASM exits. STR8 `$F006` is only a compatibility doorway. |
 | Future relocatable flash placement | future `L F` mode | future loader staging and flash-block scan | Would measure a relocatable S19 image, choose an erased block, rebase record addresses, write/verify, and report relocated entry. | Not current behavior; plain S19 cannot patch absolute operands inside code without relocation metadata. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Patch targets are limited to user program RAM below `$7A00`, so monitor RAM and `$7F00-$7FFF` I/O stay protected. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
@@ -400,6 +397,26 @@ AP service cells = $7E2D-$7E40
 This leaves `$001C` bytes below `$F000`. The reporter AP is now a separate
 Bank 0 package and Bank 3 keeps `$B969-$BFFF` as low-flash headroom after
 ASM-F2.
+
+2026-07-18 normal HIMON map after the resident-size pass and moving AP import
+linking out of STR8-N:
+
+```text
+CODE     $2997 / 10647
+DATA     $0596 /  1430
+TOTAL    $2F2D / 12077
+_END_DATA = $EF2D
+CMD_AP = $C3B8
+HIM_AP_SERVICE = $D5BF
+HIM_AP_IMPORT_LINK = $DAEF
+AP command hash = $3AD53794
+AP service cells = $7E2D-$7E40
+```
+
+This leaves `$00D3` bytes below `$F000`. The size pass removed quoted hashing
+and the resident `D` continuation/search forms, then used the released space
+for HIMON-owned AP import linking. STR8 `$F006` remains stable but now contains
+only a compatibility adapter into the resident AP service.
 
 ## Edge Evidence Rules
 

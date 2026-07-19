@@ -117,8 +117,31 @@ HIM_AP_RAM_LIMIT_HI     EQU             $50
 HIM_AP_FLASH_BASE_HI    EQU             $80
 HIM_AP_FLASH_LIMIT_HI   EQU             $FF
 
+; AP import-link scratch. The zero-page cells are shared service scratch; the
+; persistent cells live in the reserved RJOIN/link-debug area because FNV and
+; THE_JOIN_EXEC_XY may overwrite transient service state while resolving a row.
+HIM_AP_LINK_ADDR_LO     EQU             $CF
+HIM_AP_LINK_ADDR_HI     EQU             $D0
+HIM_AP_LINK_TMP_LO      EQU             $D1
+HIM_AP_LINK_TMP_HI      EQU             $D2
+HIM_AP_LINK_IMP_PTR_LO  EQU             $D3
+HIM_AP_LINK_IMP_PTR_HI  EQU             $D4
+HIM_AP_LINK_NAME_INDEX  EQU             $D5
+HIM_AP_LINK_CODE0       EQU             $E6
+HIM_AP_LINK_CODE1       EQU             $E7
+HIM_AP_LINK_CODE2       EQU             $E8
+HIM_AP_LINK_VALUE_LO    EQU             $E9
+HIM_AP_LINK_VALUE_HI    EQU             $EA
+HIM_AP_LINK_PATCH_KIND  EQU             $1A10
+HIM_AP_LINK_PATCH_LO    EQU             $1A11
+HIM_AP_LINK_PATCH_HI    EQU             $1A12
+HIM_AP_LINK_RES_LO      EQU             $1A13
+HIM_AP_LINK_RES_HI      EQU             $1A14
+HIM_AP_LINK_INDEX       EQU             $1A15
+HIM_AP_LINK_RELOC_COUNT EQU             $1A16
+HIM_AP_LINK_IMPORT_COUNT EQU            $1A17
+
 STR8_RUN_WORKER_SERVICE  EQU             $F003
-STR8_AP_IMPORT_LINK_SERVICE EQU          $F006
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
 STR8_COPY_MODE_STAGE_BANK_SECTOR EQU     $06
 STR8_MARK_SECTOR_HI      EQU             $1FE9
@@ -153,20 +176,6 @@ CMD_HASH_KIND_TEXT       EQU             $04
 CMD_HASH_KIND_EXEC_CONFIRM_TEXT EQU      (CMD_HASH_KIND_EXEC+CMD_HASH_KIND_CONFIRM)
 CMD_HASH_KIND_EXEC_TEXT  EQU             (CMD_HASH_KIND_EXEC+CMD_HASH_KIND_TEXT)
 CMD_HASH_SCAN_BASE_HI    EQU             $80
-D_MATCH_LO               EQU             $B4
-D_MATCH_HI               EQU             $B5
-D_SCAN_SAVE_LO           EQU             $B6
-D_SCAN_SAVE_HI           EQU             $B7
-D_END_SAVE_LO            EQU             $B8
-D_END_SAVE_HI            EQU             $B9
-D_PAT_LEN                EQU             $BA
-D_HIT_FLAG               EQU             $BB
-D_PAT_BUF                EQU             $7DC0
-D_PAT_MAX                EQU             $10
-QUOTE_HASH_TARGET0       EQU             $7A
-QUOTE_HASH_TARGET1       EQU             $0F
-QUOTE_HASH_TARGET2       EQU             $6A
-QUOTE_HASH_TARGET3       EQU             $5F
 
                         CODE
 START:
@@ -471,106 +480,9 @@ CMD_HASH_LIST_DONE:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; " text ["]
-; Hash text through the closing quote or end of line. Input is already folded
-; uppercase by the top-level reader; leading/trailing spaces are not hashed.
-; ----------------------------------------------------------------------------
-CMD_QUOTE_HASH_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$A5,$92,$0C,$27,CMD_HASH_KIND_EXEC_TEXT ; " $270C92A5 K=05 EXEC+TEXT
-                        DW              CMD_QUOTE_HASH
-                        DW              TXT_CMD_QUOTE_HASH
-CMD_QUOTE_HASH:
-                        JSR             CMD_ADV_PTR
-                        JSR             CMD_SKIP_SPACES
-                        LDA             CMDP_PTR_LO
-                        STA             CMDP_START_LO
-                        LDA             CMDP_PTR_HI
-                        STA             CMDP_START_HI
-CMD_QUOTE_FIND_END:
-                        JSR             CMD_PEEK
-                        BEQ             CMD_QUOTE_END_FOUND
-                        CMP             #'"'
-                        BEQ             CMD_QUOTE_END_FOUND
-                        JSR             CMD_ADV_PTR
-                        BRA             CMD_QUOTE_FIND_END
-CMD_QUOTE_END_FOUND:
-                        LDA             CMDP_PTR_LO
-                        STA             CMDP_ADDR_LO
-                        LDA             CMDP_PTR_HI
-                        STA             CMDP_ADDR_HI
-CMD_QUOTE_TRIM:
-                        LDA             CMDP_ADDR_LO
-                        CMP             CMDP_START_LO
-                        BNE             CMD_QUOTE_TRIM_HAVE_BYTE
-                        LDA             CMDP_ADDR_HI
-                        CMP             CMDP_START_HI
-                        BEQ             CMD_QUOTE_HASH_RANGE
-CMD_QUOTE_TRIM_HAVE_BYTE:
-                        LDA             CMDP_ADDR_LO
-                        BNE             CMD_QUOTE_TRIM_DEC_LO
-                        DEC             CMDP_ADDR_HI
-CMD_QUOTE_TRIM_DEC_LO:
-                        DEC             CMDP_ADDR_LO
-                        LDY             #$00
-                        LDA             (CMDP_ADDR_LO),Y
-                        CMP             #' '
-                        BEQ             CMD_QUOTE_TRIM
-                        CMP             #$09
-                        BEQ             CMD_QUOTE_TRIM
-                        INC             CMDP_ADDR_LO
-                        BNE             CMD_QUOTE_HASH_RANGE
-                        INC             CMDP_ADDR_HI
-CMD_QUOTE_HASH_RANGE:
-                        JSR             FNV1A_INIT
-                        LDA             CMDP_START_LO
-                        STA             CMDP_PTR_LO
-                        LDA             CMDP_START_HI
-                        STA             CMDP_PTR_HI
-CMD_QUOTE_HASH_LOOP:
-                        LDA             CMDP_PTR_LO
-                        CMP             CMDP_ADDR_LO
-                        BNE             CMD_QUOTE_HASH_BYTE
-                        LDA             CMDP_PTR_HI
-                        CMP             CMDP_ADDR_HI
-                        BEQ             CMD_QUOTE_HASH_DONE
-CMD_QUOTE_HASH_BYTE:
-                        JSR             CMD_PEEK
-                        AND             #$7F
-                        JSR             FNV1A_UPDATE_A_FAST
-                        JSR             CMD_ADV_PTR
-                        BRA             CMD_QUOTE_HASH_LOOP
-CMD_QUOTE_HASH_DONE:
-                        JSR             CMD_SAVE_HASH
-                        JSR             MON_PRINT_HASH
-                        JSR             CMD_QUOTE_HASH_MATCH
-                        BCC             CMD_QUOTE_HASH_CRLF
-                        LDX             #<MSG_QUOTE_MATCH
-                        LDY             #>MSG_QUOTE_MATCH
-                        JSR             HIM_WRITE_HBSTRING
-CMD_QUOTE_HASH_CRLF:
-                        JMP             SYS_WRITE_CRLF
-
-CMD_QUOTE_HASH_MATCH:
-                        LDA             FNV_HASH0
-                        CMP             #QUOTE_HASH_TARGET0
-                        BNE             CMD_QUOTE_HASH_NO_MATCH
-                        LDA             FNV_HASH1
-                        CMP             #QUOTE_HASH_TARGET1
-                        BNE             CMD_QUOTE_HASH_NO_MATCH
-                        LDA             FNV_HASH2
-                        CMP             #QUOTE_HASH_TARGET2
-                        BNE             CMD_QUOTE_HASH_NO_MATCH
-                        LDA             FNV_HASH3
-                        CMP             #QUOTE_HASH_TARGET3
-                        BNE             CMD_QUOTE_HASH_NO_MATCH
-                        SEC
-                        RTS
-CMD_QUOTE_HASH_NO_MATCH:
-                        CLC
-                        RTS
-
-; ----------------------------------------------------------------------------
-; D [start [end [bb...|'TEXT']]]
+; D [start [end]]
+; A missing end displays one byte. An explicit end is absolute and must be
+; strictly greater than start.
 ; ----------------------------------------------------------------------------
 CMD_D_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$13,$F2,$0B,$C1,CMD_HASH_KIND_EXEC ; D $C10BF213 EXEC
@@ -578,35 +490,14 @@ CMD_D:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_SKIP_SPACES
                         JSR             CMD_PEEK
-                        BEQ             CMD_D_CONTINUE
+                        BEQ             CMD_USAGE_D
                         JSR             CMD_D_PARSE_RANGE
-                        BCS             CMD_D_EXPLICIT_RANGE
-                        JMP             CMD_USAGE_D
-CMD_D_CONTINUE:
-                        JSR             CMD_D_REPEAT_RANGE
-                        BCS             CMD_D_DUMP_RANGE
-                        JMP             CMD_USAGE_D
-CMD_D_EXPLICIT_RANGE:
-                        JSR             CMD_SKIP_SPACES
-                        JSR             CMD_PEEK
-                        BEQ             CMD_D_DUMP_RANGE
-                        JSR             CMD_D_PARSE_PATTERN
-                        BCS             CMD_D_SEARCH_GO
-                        JMP             CMD_USAGE_D
-CMD_D_SEARCH_GO:
-                        JSR             CMD_D_SEARCH_RANGE
-                        RTS
-
-CMD_D_DUMP_RANGE:
-                        JSR             CMD_D_SAVE_SPAN
-                        JSR             MON_PRINT_MEM_RANGE
-                        JSR             CMD_D_SAVE_NEXT
-                        RTS
+                        BCC             CMD_USAGE_D
+                        JMP             MON_PRINT_MEM_RANGE
 
 CMD_D_PARSE_RANGE:
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
-                        BCS             CMD_D_PARSE_START_OK
-                        JMP             CMD_D_PARSE_RANGE_FAIL
+                        BCC             CMD_D_PARSE_RANGE_FAIL
 CMD_D_PARSE_START_OK:
                         LDA             CMDP_ADDR_LO
                         STA             CMD_RANGE_START_LO
@@ -620,120 +511,36 @@ CMD_D_PARSE_START_OK:
                         JSR             CMD_SKIP_SPACES
                         JSR             CMD_PEEK
                         BEQ             CMD_D_DEFAULT_END
-                        CMP             #'+'
-                        BEQ             CMD_D_PARSE_RANGE_FAIL
-
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
-                        BCS             CMD_D_PARSE_END_OK
-                        JMP             CMD_D_PARSE_RANGE_FAIL
+                        BCC             CMD_D_PARSE_RANGE_FAIL
 CMD_D_PARSE_END_OK:
-                        LDA             CMDP_TOKEN_LEN
-                        CMP             #$04
-                        BEQ             CMD_D_END_FULL
-                        CMP             #$03
-                        BEQ             CMD_D_END_WINDOW
-                        CMP             #$02
-                        BEQ             CMD_D_END_PAGE
-
-CMD_D_END_ROW:
-                        LDA             CMD_RANGE_START_HI
-                        STA             CMD_RANGE_END_HI
-                        LDA             CMD_RANGE_START_LO
-                        AND             #$F0
-                        ORA             CMDP_ADDR_LO
-                        STA             CMD_RANGE_END_LO
-                        BRA             CMD_D_CHECK_RANGE
-
-CMD_D_END_PAGE:
-                        LDA             CMD_RANGE_START_HI
-                        STA             CMD_RANGE_END_HI
-                        LDA             CMDP_ADDR_LO
-                        STA             CMD_RANGE_END_LO
-                        BRA             CMD_D_CHECK_RANGE
-
-CMD_D_END_WINDOW:
-                        LDA             CMD_RANGE_START_HI
-                        AND             #$F0
-                        ORA             CMDP_ADDR_HI
-                        STA             CMD_RANGE_END_HI
-                        LDA             CMDP_ADDR_LO
-                        STA             CMD_RANGE_END_LO
-                        BRA             CMD_D_CHECK_RANGE
-
-CMD_D_END_FULL:
                         LDA             CMDP_ADDR_LO
                         STA             CMD_RANGE_END_LO
                         LDA             CMDP_ADDR_HI
                         STA             CMD_RANGE_END_HI
-                        BRA             CMD_D_CHECK_RANGE
+                        JSR             CMD_REQUIRE_EOL
+                        BCC             CMD_D_PARSE_RANGE_FAIL
 
-CMD_D_DEFAULT_END:
-                        LDA             CMD_RANGE_START_LO
-                        STA             CMD_RANGE_END_LO
-                        LDA             CMD_RANGE_START_HI
-                        STA             CMD_RANGE_END_HI
-
-CMD_D_CHECK_RANGE:
                         LDA             CMD_RANGE_END_HI
                         CMP             CMD_RANGE_START_HI
                         BCC             CMD_D_PARSE_RANGE_FAIL
                         BNE             CMD_D_PARSE_RANGE_OK
                         LDA             CMD_RANGE_END_LO
                         CMP             CMD_RANGE_START_LO
+                        BEQ             CMD_D_PARSE_RANGE_FAIL
                         BCC             CMD_D_PARSE_RANGE_FAIL
 CMD_D_PARSE_RANGE_OK:
                         SEC
                         RTS
-CMD_D_PARSE_RANGE_FAIL:
-                        CLC
-                        RTS
-
-CMD_D_REPEAT_RANGE:
-                        LDA             CMD_DISP_NEXT_LO
-                        ORA             CMD_DISP_NEXT_HI
-                        BEQ             CMD_D_REPEAT_FAIL
-
-                        LDA             CMD_DISP_NEXT_LO
-                        STA             CMD_RANGE_START_LO
-                        STA             CMD_RANGE_TMP_LO
-                        STA             CMDP_START_LO
-                        LDA             CMD_DISP_NEXT_HI
-                        STA             CMD_RANGE_START_HI
-                        STA             CMD_RANGE_TMP_HI
-                        STA             CMDP_START_HI
-
+CMD_D_DEFAULT_END:
                         LDA             CMD_RANGE_START_LO
-                        CLC
-                        ADC             CMD_DISP_SPAN_LO
                         STA             CMD_RANGE_END_LO
                         LDA             CMD_RANGE_START_HI
-                        ADC             CMD_DISP_SPAN_HI
                         STA             CMD_RANGE_END_HI
-                        BCS             CMD_D_REPEAT_FAIL
                         SEC
                         RTS
-CMD_D_REPEAT_FAIL:
+CMD_D_PARSE_RANGE_FAIL:
                         CLC
-                        RTS
-
-CMD_D_SAVE_SPAN:
-                        LDA             CMD_RANGE_END_LO
-                        SEC
-                        SBC             CMD_RANGE_START_LO
-                        STA             CMD_DISP_SPAN_LO
-                        LDA             CMD_RANGE_END_HI
-                        SBC             CMD_RANGE_START_HI
-                        STA             CMD_DISP_SPAN_HI
-                        RTS
-
-CMD_D_SAVE_NEXT:
-                        LDA             CMD_RANGE_END_LO
-                        CLC
-                        ADC             #$01
-                        STA             CMD_DISP_NEXT_LO
-                        LDA             CMD_RANGE_END_HI
-                        ADC             #$00
-                        STA             CMD_DISP_NEXT_HI
                         RTS
 
 CMD_USAGE_D:
@@ -741,211 +548,6 @@ CMD_USAGE_D:
                         LDY             #>MSG_USAGE_D
                         JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
-                        RTS
-
-CMD_D_PARSE_PATTERN:
-                        STZ             D_PAT_LEN
-                        JSR             CMD_SKIP_SPACES
-                        JSR             CMD_PEEK
-                        CMP             #$27
-                        BEQ             CMD_D_PARSE_TEXT_PATTERN
-
-CMD_D_PARSE_BYTE_PATTERN:
-                        JSR             CMD_PARSE_HEX_BYTE_TOKEN
-                        BCC             CMD_D_PATTERN_FAIL
-                        JSR             CMD_D_APPEND_A
-                        BCC             CMD_D_PATTERN_FAIL
-                        JSR             CMD_SKIP_SPACES
-                        JSR             CMD_PEEK
-                        BEQ             CMD_D_PATTERN_DONE
-                        CMP             #$27
-                        BEQ             CMD_D_PATTERN_FAIL
-                        BRA             CMD_D_PARSE_BYTE_PATTERN
-
-CMD_D_PARSE_TEXT_PATTERN:
-                        JSR             CMD_ADV_PTR
-CMD_D_TEXT_PATTERN_LOOP:
-                        JSR             CMD_PEEK
-                        BEQ             CMD_D_PATTERN_FAIL
-                        CMP             #$27
-                        BEQ             CMD_D_TEXT_PATTERN_DONE
-                        JSR             CMD_D_APPEND_A
-                        BCC             CMD_D_PATTERN_FAIL
-                        JSR             CMD_ADV_PTR
-                        BRA             CMD_D_TEXT_PATTERN_LOOP
-
-CMD_D_TEXT_PATTERN_DONE:
-                        LDA             D_PAT_LEN
-                        BEQ             CMD_D_PATTERN_FAIL
-                        JSR             CMD_ADV_PTR
-                        JSR             CMD_REQUIRE_EOL
-                        BCC             CMD_D_PATTERN_FAIL
-                        SEC
-                        RTS
-
-CMD_D_PATTERN_DONE:
-                        LDA             D_PAT_LEN
-                        BEQ             CMD_D_PATTERN_FAIL
-                        SEC
-                        RTS
-CMD_D_PATTERN_FAIL:
-                        CLC
-                        RTS
-
-CMD_D_APPEND_A:
-                        STA             CMDP_BYTE_TMP
-                        LDA             D_PAT_LEN
-                        CMP             #D_PAT_MAX
-                        BCS             CMD_D_APPEND_FAIL
-                        TAY
-                        LDA             CMDP_BYTE_TMP
-                        STA             D_PAT_BUF,Y
-                        INC             D_PAT_LEN
-                        SEC
-                        RTS
-CMD_D_APPEND_FAIL:
-                        CLC
-                        RTS
-
-CMD_D_SEARCH_RANGE:
-                        STZ             D_HIT_FLAG
-CMD_D_SEARCH_LOOP:
-                        JSR             MON_CURR_GT_END
-                        BCS             CMD_D_SEARCH_DONE
-                        JSR             MON_PRINT_MEM_IO_SKIP
-                        BCS             CMD_D_SEARCH_LOOP
-                        JSR             HIM_CHECK_CTRL_C
-                        BCS             CMD_D_SEARCH_ABORT
-                        JSR             CMD_D_MATCH_AT
-                        BCC             CMD_D_SEARCH_NEXT
-                        LDA             #$01
-                        STA             D_HIT_FLAG
-                        JSR             CMD_D_PRINT_HIT
-
-CMD_D_SEARCH_NEXT:
-                        LDA             CMD_RANGE_TMP_HI
-                        CMP             CMD_RANGE_END_HI
-                        BNE             CMD_D_SEARCH_INC
-                        LDA             CMD_RANGE_TMP_LO
-                        CMP             CMD_RANGE_END_LO
-                        BEQ             CMD_D_SEARCH_DONE
-CMD_D_SEARCH_INC:
-                        JSR             CMD_INC_RANGE_TMP
-                        BRA             CMD_D_SEARCH_LOOP
-
-CMD_D_SEARCH_DONE:
-                        LDA             D_HIT_FLAG
-                        BNE             CMD_D_SEARCH_RETURN
-                        LDX             #<MSG_D_NF
-                        LDY             #>MSG_D_NF
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-CMD_D_SEARCH_RETURN:
-                        RTS
-
-CMD_D_SEARCH_ABORT:
-                        LDX             #<MSG_D_ABORT
-                        LDY             #>MSG_D_ABORT
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-                        RTS
-
-CMD_D_MATCH_AT:
-                        LDA             CMD_RANGE_TMP_LO
-                        STA             D_MATCH_LO
-                        LDA             CMD_RANGE_TMP_HI
-                        STA             D_MATCH_HI
-                        LDX             #$00
-CMD_D_MATCH_LOOP:
-                        LDA             D_MATCH_HI
-                        CMP             #$7F
-                        BEQ             CMD_D_MATCH_FAIL
-                        JSR             CMD_D_MATCH_GT_END
-                        BCS             CMD_D_MATCH_FAIL
-                        LDY             #$00
-                        LDA             (D_MATCH_LO),Y
-                        CMP             D_PAT_BUF,X
-                        BNE             CMD_D_MATCH_FAIL
-                        INX
-                        CPX             D_PAT_LEN
-                        BEQ             CMD_D_MATCH_YES
-                        INC             D_MATCH_LO
-                        BNE             CMD_D_MATCH_LOOP
-                        INC             D_MATCH_HI
-                        BNE             CMD_D_MATCH_LOOP
-CMD_D_MATCH_FAIL:
-                        CLC
-                        RTS
-CMD_D_MATCH_YES:
-                        SEC
-                        RTS
-
-CMD_D_MATCH_GT_END:
-                        LDA             D_MATCH_HI
-                        CMP             CMD_RANGE_END_HI
-                        BCC             CMD_D_MATCH_GT_NO
-                        BNE             CMD_D_MATCH_GT_YES
-                        LDA             D_MATCH_LO
-                        CMP             CMD_RANGE_END_LO
-                        BEQ             CMD_D_MATCH_GT_NO
-                        BCC             CMD_D_MATCH_GT_NO
-CMD_D_MATCH_GT_YES:
-                        SEC
-                        RTS
-CMD_D_MATCH_GT_NO:
-                        CLC
-                        RTS
-
-CMD_D_PRINT_HIT:
-                        LDA             CMD_RANGE_TMP_LO
-                        STA             D_SCAN_SAVE_LO
-                        LDA             CMD_RANGE_TMP_HI
-                        STA             D_SCAN_SAVE_HI
-                        LDA             CMD_RANGE_END_LO
-                        STA             D_END_SAVE_LO
-                        LDA             CMD_RANGE_END_HI
-                        STA             D_END_SAVE_HI
-
-                        LDA             CMD_RANGE_TMP_HI
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDA             CMD_RANGE_TMP_LO
-                        JSR             SYS_WRITE_HEX_BYTE
-
-                        LDA             CMD_RANGE_TMP_LO
-                        AND             #$0F
-                        CLC
-                        ADC             D_PAT_LEN
-                        CMP             #$11
-                        BCC             CMD_D_HIT_SPACE
-                        LDA             #'*'
-                        BRA             CMD_D_HIT_SEP
-CMD_D_HIT_SPACE:
-                        LDA             #' '
-CMD_D_HIT_SEP:
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-
-                        LDA             D_SCAN_SAVE_LO
-                        AND             #$F0
-                        STA             CMD_RANGE_TMP_LO
-                        STA             CMDP_START_LO
-                        ORA             #$0F
-                        STA             CMD_RANGE_END_LO
-                        LDA             D_SCAN_SAVE_HI
-                        STA             CMD_RANGE_TMP_HI
-                        STA             CMDP_START_HI
-                        STA             CMD_RANGE_END_HI
-                        JSR             MON_PRINT_MEM_RANGE
-
-                        LDA             D_SCAN_SAVE_LO
-                        STA             CMD_RANGE_TMP_LO
-                        STA             CMDP_START_LO
-                        LDA             D_SCAN_SAVE_HI
-                        STA             CMD_RANGE_TMP_HI
-                        STA             CMDP_START_HI
-                        LDA             D_END_SAVE_LO
-                        STA             CMD_RANGE_END_LO
-                        LDA             D_END_SAVE_HI
-                        STA             CMD_RANGE_END_HI
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -2922,13 +2524,21 @@ HIM_AP_SERVICE:
                         CMP             #HIM_AP_OP_LOAD
                         BEQ             HIM_AP_SERVICE_LOAD
                         CMP             #HIM_AP_OP_SUGGEST
-                        BNE             HIM_AP_SERVICE_BAD_OP
+                        BNE             HIM_AP_SERVICE_CHECK_LINK
                         JMP             HIM_AP_SERVICE_SUGGEST
+HIM_AP_SERVICE_CHECK_LINK:
+                        CMP             #HIM_AP_OP_LINK
+                        BEQ             HIM_AP_SERVICE_LINK
 HIM_AP_SERVICE_BAD_OP:
                         JMP             HIM_AP_BAD_LINE
 
 HIM_AP_SERVICE_PARSE:
                         JMP             HIM_AP_PARSE_MIN
+
+; Compatibility target for STR8's stable $F006 doorway. New HIMON load paths
+; call the same resident linker directly and leave HIM_AP_OP as LOAD.
+HIM_AP_SERVICE_LINK:
+                        JMP             HIM_AP_IMPORT_LINK
 
 HIM_AP_SERVICE_LOAD:
                         JSR             HIM_AP_PARSE_MIN
@@ -2968,7 +2578,7 @@ HIM_AP_LOAD_OVERLAP_BAD:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_NO_OVERLAP:
                         JSR             HIM_AP_COPY_BODY_TO_DST
-                        JSR             STR8_AP_IMPORT_LINK_SERVICE
+                        JSR             HIM_AP_IMPORT_LINK
                         BCS             HIM_AP_LOAD_IMPORTS_OK
                         RTS
 HIM_AP_LOAD_IMPORTS_OK:
@@ -3628,6 +3238,359 @@ HIM_AP_RELOC_PATCH_HI8:
                         LDY             #$00
                         LDA             HIM_AP_TMP_HI
                         STA             (CMDP_ADDR_LO),Y
+                        RTS
+
+; ----------------------------------------------------------------------------
+; AP resident import linker
+;
+; Validate every imported relocation and resolve every import before changing
+; the copied body. A second pass resolves again and patches the captured site,
+; preserving the existing all-or-nothing validation behavior of the former
+; STR8-N implementation while sharing HIMON's AP/FNV/RJOIN primitives.
+; ----------------------------------------------------------------------------
+HIM_AP_IMPORT_LINK:
+                        STZ             HIM_AP_STATUS
+                        JSR             HIM_AP_LINK_RELOAD_REL_PTR
+                        LDY             #$00
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             HIM_AP_LINK_RELOC_COUNT
+                        LDA             HIM_AP_IMPORT_COUNT
+                        STA             HIM_AP_LINK_IMPORT_COUNT
+                        LDX             #$00
+HIM_AP_LINK_VALIDATE:
+                        CPX             HIM_AP_LINK_RELOC_COUNT
+                        BCS             HIM_AP_LINK_PATCH_START
+                        STX             HIM_AP_LINK_INDEX
+                        JSR             HIM_AP_LINK_RELOAD_REL_PTR
+                        JSR             HIM_AP_RELOC_KIND_X
+                        JSR             HIM_AP_IMPORT_KIND_A
+                        BCC             HIM_AP_LINK_VALIDATE_NEXT
+                        JSR             HIM_AP_RELOC_SITE_OK_X
+                        BCC             HIM_AP_LINK_FAIL
+                        JSR             HIM_AP_LINK_RESOLVE_ROW_X
+                        BCC             HIM_AP_LINK_FAIL
+HIM_AP_LINK_VALIDATE_NEXT:
+                        LDX             HIM_AP_LINK_INDEX
+                        INX
+                        BRA             HIM_AP_LINK_VALIDATE
+
+HIM_AP_LINK_PATCH_START:
+                        LDX             #$00
+HIM_AP_LINK_PATCH:
+                        CPX             HIM_AP_LINK_RELOC_COUNT
+                        BCS             HIM_AP_LINK_DONE
+                        STX             HIM_AP_LINK_INDEX
+                        JSR             HIM_AP_LINK_RELOAD_REL_PTR
+                        JSR             HIM_AP_RELOC_KIND_X
+                        JSR             HIM_AP_IMPORT_KIND_A
+                        BCC             HIM_AP_LINK_PATCH_NEXT
+                        JSR             HIM_AP_LINK_CAPTURE_ROW_X
+                        JSR             HIM_AP_LINK_RESOLVE_ROW_X
+                        BCC             HIM_AP_LINK_FAIL
+                        JSR             HIM_AP_LINK_PATCH_CAPTURED
+HIM_AP_LINK_PATCH_NEXT:
+                        LDX             HIM_AP_LINK_INDEX
+                        INX
+                        BRA             HIM_AP_LINK_PATCH
+HIM_AP_LINK_DONE:
+                        JSR             HIM_AP_LINK_RESTORE_COUNTS
+                        SEC
+                        RTS
+
+HIM_AP_LINK_FAIL:
+                        JSR             HIM_AP_LINK_RESTORE_COUNTS
+                        LDA             #HIM_AP_STATUS_BAD_FIX
+                        STA             HIM_AP_STATUS
+                        CLC
+                        RTS
+
+HIM_AP_LINK_RESTORE_COUNTS:
+                        LDA             HIM_AP_LINK_RELOC_COUNT
+                        STA             HIM_AP_RELOC_COUNT
+                        LDA             HIM_AP_LINK_IMPORT_COUNT
+                        STA             HIM_AP_IMPORT_COUNT
+                        RTS
+
+HIM_AP_LINK_RELOAD_REL_PTR:
+                        LDA             HIM_AP_REL_LO
+                        STA             CMDP_PTR_LO
+                        LDA             HIM_AP_REL_HI
+                        STA             CMDP_PTR_HI
+                        RTS
+
+HIM_AP_LINK_RESOLVE_ROW_X:
+                        JSR             HIM_AP_RELOC_TARGET_HI_X
+                        BNE             HIM_AP_LINK_RESOLVE_ROW_FAIL
+                        JSR             HIM_AP_RELOC_TARGET_LO_X
+                        CMP             HIM_AP_LINK_IMPORT_COUNT
+                        BCS             HIM_AP_LINK_RESOLVE_ROW_FAIL
+                        TAX
+                        JSR             HIM_AP_LINK_RESOLVE_SLOT_X
+                        BCC             HIM_AP_LINK_RESOLVE_ROW_FAIL
+                        LDX             HIM_AP_LINK_INDEX
+                        SEC
+                        RTS
+HIM_AP_LINK_RESOLVE_ROW_FAIL:
+                        LDX             HIM_AP_LINK_INDEX
+                        CLC
+                        RTS
+
+HIM_AP_LINK_RESOLVE_SLOT_X:
+                        JSR             HIM_AP_LINK_HASH_SLOT_X
+                        BCC             HIM_AP_LINK_RESOLVE_SLOT_FAIL
+                        LDX             #<FNV_HASH0
+                        LDY             #>FNV_HASH0
+                        JSR             THE_JOIN_EXEC_XY
+                        BCC             HIM_AP_LINK_RESOLVE_SLOT_FAIL
+                        STX             HIM_AP_LINK_RES_LO
+                        STY             HIM_AP_LINK_RES_HI
+                        SEC
+                        RTS
+HIM_AP_LINK_RESOLVE_SLOT_FAIL:
+                        CLC
+                        RTS
+
+HIM_AP_LINK_HASH_SLOT_X:
+                        JSR             HIM_AP_LINK_IMPORT_ROW_PTR_X
+                        BCC             HIM_AP_LINK_HASH_SLOT_FAIL
+                        LDY             #$00
+                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
+                        BEQ             HIM_AP_LINK_HASH_SLOT_FAIL
+                        STA             HIM_AP_LINK_TMP_HI
+                        INC             HIM_AP_LINK_IMP_PTR_LO
+                        BNE             HIM_AP_LINK_HASH_PACK_PTR_OK
+                        INC             HIM_AP_LINK_IMP_PTR_HI
+HIM_AP_LINK_HASH_PACK_PTR_OK:
+                        LDA             HIM_AP_LINK_IMP_PTR_LO
+                        STA             HIM_AP_LINK_ADDR_LO
+                        LDA             HIM_AP_LINK_IMP_PTR_HI
+                        STA             HIM_AP_LINK_ADDR_HI
+                        JSR             FNV1A_INIT
+                        STZ             HIM_AP_LINK_NAME_INDEX
+HIM_AP_LINK_HASH_LOOP:
+                        LDA             HIM_AP_LINK_NAME_INDEX
+                        CMP             HIM_AP_LINK_TMP_HI
+                        BCS             HIM_AP_LINK_HASH_DONE
+                        JSR             HIM_AP_LINK_UNPACK_NEXT3
+                        BCC             HIM_AP_LINK_HASH_SLOT_FAIL
+                        LDA             HIM_AP_LINK_CODE0
+                        JSR             HIM_AP_LINK_HASH_CODE_A
+                        BCC             HIM_AP_LINK_HASH_SLOT_FAIL
+                        INC             HIM_AP_LINK_NAME_INDEX
+                        LDA             HIM_AP_LINK_NAME_INDEX
+                        CMP             HIM_AP_LINK_TMP_HI
+                        BCS             HIM_AP_LINK_HASH_DONE
+                        LDA             HIM_AP_LINK_CODE1
+                        JSR             HIM_AP_LINK_HASH_CODE_A
+                        BCC             HIM_AP_LINK_HASH_SLOT_FAIL
+                        INC             HIM_AP_LINK_NAME_INDEX
+                        LDA             HIM_AP_LINK_NAME_INDEX
+                        CMP             HIM_AP_LINK_TMP_HI
+                        BCS             HIM_AP_LINK_HASH_DONE
+                        LDA             HIM_AP_LINK_CODE2
+                        JSR             HIM_AP_LINK_HASH_CODE_A
+                        BCC             HIM_AP_LINK_HASH_SLOT_FAIL
+                        INC             HIM_AP_LINK_NAME_INDEX
+                        BRA             HIM_AP_LINK_HASH_LOOP
+HIM_AP_LINK_HASH_DONE:
+                        SEC
+                        RTS
+HIM_AP_LINK_HASH_SLOT_FAIL:
+                        CLC
+                        RTS
+
+HIM_AP_LINK_IMPORT_ROW_PTR_X:
+                        LDA             HIM_AP_IMPORT_LO
+                        STA             HIM_AP_LINK_IMP_PTR_LO
+                        LDA             HIM_AP_IMPORT_HI
+                        STA             HIM_AP_LINK_IMP_PTR_HI
+                        INC             HIM_AP_LINK_IMP_PTR_LO
+                        BNE             HIM_AP_LINK_IMPORT_ROW_BODY
+                        INC             HIM_AP_LINK_IMP_PTR_HI
+HIM_AP_LINK_IMPORT_ROW_BODY:
+                        INC             HIM_AP_LINK_IMP_PTR_LO
+                        BNE             HIM_AP_LINK_IMPORT_ROW_LOOP
+                        INC             HIM_AP_LINK_IMP_PTR_HI
+HIM_AP_LINK_IMPORT_ROW_LOOP:
+                        CPX             #$00
+                        BEQ             HIM_AP_LINK_IMPORT_ROW_FOUND
+                        LDY             #$00
+                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
+                        JSR             HIM_AP_LINK_IMPORT_ROW_BYTES_A
+                        BCC             HIM_AP_LINK_IMPORT_ROW_FAIL
+                        CLC
+                        ADC             HIM_AP_LINK_IMP_PTR_LO
+                        STA             HIM_AP_LINK_IMP_PTR_LO
+                        BCC             HIM_AP_LINK_IMPORT_ROW_NEXT
+                        INC             HIM_AP_LINK_IMP_PTR_HI
+HIM_AP_LINK_IMPORT_ROW_NEXT:
+                        DEX
+                        BRA             HIM_AP_LINK_IMPORT_ROW_LOOP
+HIM_AP_LINK_IMPORT_ROW_FOUND:
+                        SEC
+                        RTS
+HIM_AP_LINK_IMPORT_ROW_FAIL:
+                        CLC
+                        RTS
+
+HIM_AP_LINK_IMPORT_ROW_BYTES_A:
+                        BEQ             HIM_AP_LINK_IMPORT_ROW_BYTES_FAIL
+                        STA             HIM_AP_LINK_TMP_LO
+                        LDA             #$01
+HIM_AP_LINK_IMPORT_ROW_BYTES_LOOP:
+                        CLC
+                        ADC             #$02
+                        DEC             HIM_AP_LINK_TMP_LO
+                        BEQ             HIM_AP_LINK_IMPORT_ROW_BYTES_OK
+                        DEC             HIM_AP_LINK_TMP_LO
+                        BEQ             HIM_AP_LINK_IMPORT_ROW_BYTES_OK
+                        DEC             HIM_AP_LINK_TMP_LO
+                        BNE             HIM_AP_LINK_IMPORT_ROW_BYTES_LOOP
+HIM_AP_LINK_IMPORT_ROW_BYTES_OK:
+                        SEC
+                        RTS
+HIM_AP_LINK_IMPORT_ROW_BYTES_FAIL:
+                        CLC
+                        RTS
+
+HIM_AP_LINK_UNPACK_NEXT3:
+                        LDY             #$00
+                        LDA             (HIM_AP_LINK_ADDR_LO),Y
+                        STA             HIM_AP_LINK_VALUE_LO
+                        INC             HIM_AP_LINK_ADDR_LO
+                        BNE             HIM_AP_LINK_UNPACK_HI
+                        INC             HIM_AP_LINK_ADDR_HI
+HIM_AP_LINK_UNPACK_HI:
+                        LDA             (HIM_AP_LINK_ADDR_LO),Y
+                        STA             HIM_AP_LINK_VALUE_HI
+                        INC             HIM_AP_LINK_ADDR_LO
+                        BNE             HIM_AP_LINK_UNPACK_HAVE_WORD
+                        INC             HIM_AP_LINK_ADDR_HI
+HIM_AP_LINK_UNPACK_HAVE_WORD:
+                        STZ             HIM_AP_LINK_CODE0
+HIM_AP_LINK_UNPACK_CODE0:
+                        LDA             HIM_AP_LINK_VALUE_LO
+                        SEC
+                        SBC             #$40
+                        STA             HIM_AP_LINK_TMP_LO
+                        LDA             HIM_AP_LINK_VALUE_HI
+                        SBC             #$06
+                        BCC             HIM_AP_LINK_UNPACK_CODE0_DONE
+                        STA             HIM_AP_LINK_VALUE_HI
+                        LDA             HIM_AP_LINK_TMP_LO
+                        STA             HIM_AP_LINK_VALUE_LO
+                        INC             HIM_AP_LINK_CODE0
+                        BRA             HIM_AP_LINK_UNPACK_CODE0
+HIM_AP_LINK_UNPACK_CODE0_DONE:
+                        STZ             HIM_AP_LINK_CODE1
+HIM_AP_LINK_UNPACK_CODE1:
+                        LDA             HIM_AP_LINK_VALUE_LO
+                        SEC
+                        SBC             #$28
+                        STA             HIM_AP_LINK_TMP_LO
+                        LDA             HIM_AP_LINK_VALUE_HI
+                        SBC             #$00
+                        BCC             HIM_AP_LINK_UNPACK_CODE1_DONE
+                        STA             HIM_AP_LINK_VALUE_HI
+                        LDA             HIM_AP_LINK_TMP_LO
+                        STA             HIM_AP_LINK_VALUE_LO
+                        INC             HIM_AP_LINK_CODE1
+                        BRA             HIM_AP_LINK_UNPACK_CODE1
+HIM_AP_LINK_UNPACK_CODE1_DONE:
+                        LDA             HIM_AP_LINK_VALUE_LO
+                        CMP             #$28
+                        BCC             HIM_AP_LINK_UNPACK_CODE2_OK
+                        CLC
+                        RTS
+HIM_AP_LINK_UNPACK_CODE2_OK:
+                        STA             HIM_AP_LINK_CODE2
+                        SEC
+                        RTS
+
+HIM_AP_LINK_HASH_CODE_A:
+                        BEQ             HIM_AP_LINK_HASH_CODE_FAIL
+                        CMP             #$1B
+                        BCS             HIM_AP_LINK_HASH_CODE_DIGIT
+                        CLC
+                        ADC             #'@'
+                        BRA             HIM_AP_LINK_HASH_CODE_UPDATE
+HIM_AP_LINK_HASH_CODE_DIGIT:
+                        CMP             #$25
+                        BCS             HIM_AP_LINK_HASH_CODE_SPECIAL
+                        SEC
+                        SBC             #$1B
+                        CLC
+                        ADC             #'0'
+                        BRA             HIM_AP_LINK_HASH_CODE_UPDATE
+HIM_AP_LINK_HASH_CODE_SPECIAL:
+                        CMP             #$25
+                        BEQ             HIM_AP_LINK_HASH_CODE_UNDER
+                        CMP             #$26
+                        BEQ             HIM_AP_LINK_HASH_CODE_Q
+                        CMP             #$27
+                        BEQ             HIM_AP_LINK_HASH_CODE_DOT
+HIM_AP_LINK_HASH_CODE_FAIL:
+                        CLC
+                        RTS
+HIM_AP_LINK_HASH_CODE_UNDER:
+                        LDA             #'_'
+                        BRA             HIM_AP_LINK_HASH_CODE_UPDATE
+HIM_AP_LINK_HASH_CODE_Q:
+                        LDA             #'?'
+                        BRA             HIM_AP_LINK_HASH_CODE_UPDATE
+HIM_AP_LINK_HASH_CODE_DOT:
+                        LDA             #'.'
+HIM_AP_LINK_HASH_CODE_UPDATE:
+                        JSR             FNV1A_UPDATE_A_FAST
+                        SEC
+                        RTS
+
+HIM_AP_LINK_CAPTURE_ROW_X:
+                        JSR             HIM_AP_RELOC_KIND_X
+                        STA             HIM_AP_LINK_PATCH_KIND
+                        JSR             HIM_AP_RELOC_SITE_LO_X
+                        STA             HIM_AP_LINK_TMP_LO
+                        JSR             HIM_AP_RELOC_SITE_HI_X
+                        STA             HIM_AP_LINK_TMP_HI
+                        LDA             HIM_AP_DST_LO
+                        CLC
+                        ADC             HIM_AP_LINK_TMP_LO
+                        STA             HIM_AP_LINK_PATCH_LO
+                        LDA             HIM_AP_DST_HI
+                        ADC             HIM_AP_LINK_TMP_HI
+                        STA             HIM_AP_LINK_PATCH_HI
+                        RTS
+
+HIM_AP_LINK_PATCH_CAPTURED:
+                        LDA             HIM_AP_LINK_PATCH_LO
+                        STA             HIM_AP_LINK_ADDR_LO
+                        LDA             HIM_AP_LINK_PATCH_HI
+                        STA             HIM_AP_LINK_ADDR_HI
+                        LDA             HIM_AP_LINK_PATCH_KIND
+                        CMP             #HIM_AP_RELOC_ABS16_IMPORT
+                        BEQ             HIM_AP_LINK_PATCH_ABS16
+                        CMP             #HIM_AP_RELOC_LO8_IMPORT
+                        BEQ             HIM_AP_LINK_PATCH_LO8
+                        CMP             #HIM_AP_RELOC_HI8_IMPORT
+                        BEQ             HIM_AP_LINK_PATCH_HI8
+                        RTS
+HIM_AP_LINK_PATCH_ABS16:
+                        LDY             #$00
+                        LDA             HIM_AP_LINK_RES_LO
+                        STA             (HIM_AP_LINK_ADDR_LO),Y
+                        INY
+                        LDA             HIM_AP_LINK_RES_HI
+                        STA             (HIM_AP_LINK_ADDR_LO),Y
+                        RTS
+HIM_AP_LINK_PATCH_LO8:
+                        LDY             #$00
+                        LDA             HIM_AP_LINK_RES_LO
+                        STA             (HIM_AP_LINK_ADDR_LO),Y
+                        RTS
+HIM_AP_LINK_PATCH_HI8:
+                        LDY             #$00
+                        LDA             HIM_AP_LINK_RES_HI
+                        STA             (HIM_AP_LINK_ADDR_LO),Y
                         RTS
 
 HIM_AP_FIND_HOLE:
@@ -4727,8 +4690,6 @@ MSG_BANNER:              DB              $0D,$0A
                         INCLUDE         "himon-version.inc"
 TXT_BOOT_COLD_RESET:     DB              "BOOT_COLD_RESE",('T'+$80)
 TXT_BOOT_WARM_RESET:     DB              "BOOT_WARM_RESE",('T'+$80)
-TXT_CMD_QUOTE_HASH:      DB              $22,"[TEXT]",$22
-                        DB              " -> #5F6A0F7A# STR8 MATCH",('!'+$80)
 TXT_THE_JOIN_EXEC_XY:    DB              "HASH ACQUIR",('E'+$80)
 TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
 TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)
@@ -4760,11 +4721,8 @@ MSG_D_IO_PIA:            DB              "PI",('A'+$80)
 MSG_D_IO_VIA:            DB              "VI",('A'+$80)
 MSG_D_IO_FTDI:           DB              "FTDI VI",('A'+$80)
 MSG_D_IO_SKIP:           DB              " IO SKI",('P'+$80)
-MSG_D_NF:                DB              "D N",('F'+$80)
-MSG_D_ABORT:             DB              "D ABOR",('T'+$80)
-MSG_HELP:                DB              "#? D M R X G AP L B N Q ",$22,"STR",('8'+$80)
-MSG_QUOTE_MATCH:         DB              " STR8 MATCH",('!'+$80)
-MSG_USAGE_D:             DB              "D [a [b [bb|'t']]",(']'+$80)
+MSG_HELP:                DB              "#? D M R X G AP L B N Q STR",('8'+$80)
+MSG_USAGE_D:             DB              "D [a [b]",(']'+$80)
 MSG_USAGE_M:             DB              "M start [end|+cnt",(']'+$80)
 MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)

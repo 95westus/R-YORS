@@ -148,14 +148,10 @@ start +count    count is the number of bytes
   `D 30F0 F` and `D 30F0 FF` both mean `$30F0-$30FF`;
   `D 30F0 FFF` means `$30F0-$3FFF`; `D 30F0 10` is rejected because
   completed end `$3010` is below start.
-- `D start end pattern` is search. The pattern is either one to sixteen hex
-  byte tokens or one apostrophe-quoted text atom. The second hex token still
-  belongs to the range, so `D 3000 4D` dumps `$3000-$304D`, while
-  `D 3000 30FF 4D` searches `$3000-$30FF` for byte `$4D`.
-- `D` without parameters should repeat the previous dump length starting at the
-  byte after the previous dump. Example: `D 3000 FF` displays `$3000-$30FF`
-  and records length `$0100`; the next bare `D` displays `$3100-$31FF`.
-  If no previous dump range exists, bare `D` is a usage error.
+- `D start [end]` is the resident dump surface. Without `end` it displays one
+  byte; with `end` it displays an inclusive absolute range, and `end` must be
+  greater than `start`. Bare continuation, short end completion, and embedded
+  byte/text search were removed in the 2026-07-18 resident-size pass.
 
 ## STR8 Ownership
 
@@ -410,11 +406,15 @@ start +count    count is the number of bytes
 
 ## STR8 Call Surface
 
-- STR8 V0 does not reserve or depend on fixed cute-address entry slots.
+- STR8 exposes only two deliberate fixed service doorways: `$F003` runs a
+  selected RAM worker mode, and `$F006` is an AP import-link compatibility
+  adapter. These are build-guarded ABI entries, not a general cute-address
+  convention.
 - STR8 V0 should call its private `STR8_CON_*` console helpers directly for
   recovery I/O.
-- HIMON should reach resident STR8 routines through explicit imported labels or
-  a generated import file, not through hard-coded top-ROM vanity addresses.
+- HIMON uses `$F003` only for the bank-safe worker contract. AP import linking
+  is HIMON-owned; new HIMON load paths call `HIM_AP_IMPORT_LINK` directly, while
+  `$F006` remains for existing callers.
 
 ## STR8 Imports And Onboard Resolution
 
@@ -426,6 +426,9 @@ start +count    count is the number of bytes
 - `# label` is a HIMON command. It may eventually resolve HIMON catalog entries
   that point at callable STR8 routines, but STR8 V0 does not perform catalog
   lookup.
+- AP parsing, resident import resolution, and relocation policy belong to
+  HIMON. STR8 owns only bank-safe source staging and the `$F006` compatibility
+  adapter into HIMON's `$7E2D-$7E2E` AP service.
 - RAM targets can patch resolved addresses directly. Flash targets must either
   stage in RAM before the first write or restrict patching to legal flash
   1-to-0 transitions.

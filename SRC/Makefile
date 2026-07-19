@@ -175,9 +175,10 @@ ASM_V1_FLASH_RUNTIME_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash-runtime.obj
 ASM_V1_FLASH_S19 := $(S19_DIR)/asm-v1-flash-8000.s19
 ASM_V1_FLASH_LINKFLAGS := -g -s -t -c8000 -u5000 -hm19 -j -o
 ASM_V1_FLASH_MAP_CHECK := tools/check_asm_flash_map.ps1
-ASMTEST_3000_SAMPLE := ../DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
-ASMTEST_3000_WDC_SIDE_OBJ := $(ASMTEST_3000_SAMPLE:.asm=.obj)
-ASMTEST_3000_WDC_SIDE_LST := $(ASMTEST_3000_SAMPLE:.asm=.lst)
+ASMTEST_3000_SAMPLE_PATH := ../DOC/GUIDES/ASM/SAMPLES/OLD CODE/ASMTEST_3000.asm
+ASMTEST_3000_SAMPLE := ../DOC/GUIDES/ASM/SAMPLES/OLD\ CODE/ASMTEST_3000.asm
+ASMTEST_3000_WDC_SIDE_OBJ := $(ASMTEST_3000_SAMPLE_PATH:.asm=.obj)
+ASMTEST_3000_WDC_SIDE_LST := $(ASMTEST_3000_SAMPLE_PATH:.asm=.lst)
 ASMTEST_3000_WDC_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asmtest-6800-wdc.obj
 ASMTEST_3000_WDC_LST := $(LST_DIR)/asmtest-6800-wdc.lst
 ASMTEST_3000_WDC_MAP := $(MAP_DIR)/asmtest-6800-wdc.map
@@ -532,7 +533,7 @@ asm-v1-flash: $(ASM_V1_FLASH_S19)
 asm-flash: asm-v1-flash
 
 asmtest-6800-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE)
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE)"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE_PATH)"
 
 asmtest-3000-check: asmtest-6800-check
 
@@ -544,7 +545,7 @@ asmtest-6800-wdc: $(ASMTEST_3000_WDC_S19)
 	@echo "S19: $(ASMTEST_3000_WDC_S19)"
 
 asmtest-6800-wdc-check: $(ASMTEST_CHECK) $(ASMTEST_3000_SAMPLE) $(ASMTEST_3000_WDC_S19)
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE)" -S19Path "$(ASMTEST_3000_WDC_S19)"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASMTEST_CHECK) -SourcePath "$(ASMTEST_3000_SAMPLE_PATH)" -S19Path "$(ASMTEST_3000_WDC_S19)"
 
 asmtest-3000-wdc: asmtest-6800-wdc
 asmtest-3000-wdc-check: asmtest-6800-wdc-check
@@ -998,9 +999,9 @@ $(STR8_TOP_STAGE_S19): $(HIMON_STR8_ROM_BIN) tools/build_str8_top_stage_s19.ps1
 	@echo [ps] build $(STR8_TOP_STAGE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_str8_top_stage_s19.ps1 -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$(STR8_TOP_STAGE_S19)"
 
-$(STR8_TOPWRITE_A): $(HIMON_STR8_ROM_BIN) $(ASM_V1_FLASH_S19) $(STR8_TOPWRITE_A_GEN)
+$(STR8_TOPWRITE_A): $(HIMON_STR8_ROM_BIN) $(ASM_V1_FLASH_S19) $(STR8_S19) $(STR8_TOPWRITE_A_GEN)
 	@echo [ps] build $(STR8_TOPWRITE_A)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -OutPath "$(STR8_TOPWRITE_A)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-f000.map" -OutPath "$(STR8_TOPWRITE_A)"
 
 $(MSBASIC_OSI_RAM_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1092,7 +1093,7 @@ $(OBJ_DIR)/%.obj: %.asm
 $(ASMTEST_3000_WDC_OBJ): $(ASMTEST_3000_SAMPLE) Makefile
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	@if not exist $(subst /,\,$(LST_DIR)) mkdir $(subst /,\,$(LST_DIR))
-	$(ASM) $(ASFLAGS) $<
+	$(ASM) $(ASFLAGS) "$<"
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(ASMTEST_3000_WDC_SIDE_OBJ))' -Destination '$(subst /,\,$@)' -Force"
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(ASMTEST_3000_WDC_SIDE_LST))' -Destination '$(subst /,\,$(ASMTEST_3000_WDC_LST))' -Force"
 
