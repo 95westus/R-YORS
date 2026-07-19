@@ -74,6 +74,7 @@ Operator
 
 Technical
   TECHNICAL_GUIDE.md
+  PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md
   STR8/PRODUCT_BOUNDARIES.md
   STR8/STR8.md
   MEMORY/MEMORY_MAP.md
@@ -170,6 +171,7 @@ ASM/HASHED_ASM.md               assembler thesis and fixups
 ASM/ASM_CALL_MAP.md             renderable ASM routine-flow map
 ASM/ASM_SHARED_ROUTINES_AUDIT.md ASM/HIMON shared-helper audit
 PLANNING/OIL_710_TEST_PLAN.md .710 Overlay Integration Layer board-test rail
+PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md multiboot/S19/bank-volume direction
 PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md retired code/data archive plan
 STORY/BOOK.md                   narrative manuscript spine
 STORY/HISTORICAL_DOCUMENTS.md   lineage and evidence map

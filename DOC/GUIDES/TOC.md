@@ -55,6 +55,8 @@ board:
 - [TODO.md](PLANNING/TODO.md) - near-term work.
 - [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` Overlay
   Integration Layer board-test rail and size-review recommendations.
+- [STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) -
+  accepted multiboot, S19 ownership, and append-only bank-volume direction.
 - [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - plan for moving retired samples,
   tests, proofs, apps, and data into `SRC/ARCHIVE/`.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.

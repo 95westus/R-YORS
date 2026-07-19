@@ -2,6 +2,27 @@
 
 ## Near Term
 
+- Run the missing-import atomicity proof against the current HIMON-resident AP
+  linker: expect rejection, no body entry, and no partial import patch.
+- Run the banked-source RJOIN proof against the same current combined image,
+  then append both transcripts to `LOGS/HARDWARE_TEST_LOG.md` and commit the
+  evidence. These two gates precede multiboot work.
+- After those gates, follow
+  [STR8_MULTIBOOT_BANK_VOLUMES.md](STR8_MULTIBOOT_BANK_VOLUMES.md): prototype
+  the selected-bank reset-vector handoff entirely from RAM before adding shared
+  S19 services, 28K payload staging, or an append-only bank volume.
+- Refactor the duplicate S19 paths into a STR8 validated-record service before
+  adding formats. Buffer and checksum a complete record before HIMON applies
+  RAM policy or STR8 applies staging/flash policy. Preserve `L`, `L G`, and `U`
+  behavior in the first proof.
+- After that proof, add minimal Intel HEX16 types `00`/`01`, then an explicit
+  counted binary receiver with expected CRC16. Do not auto-detect raw binary or
+  feed it through the line reader; defer extended Intel HEX and XMODEM-style
+  protocols.
+- Do not schedule S2/S8 (`.s28`) before the bank ABI and ordinary format proofs.
+  Keep it as a possible `V2.xxx`/`V3` physical-flash transport using linear
+  `$00000-$1FFFF` addresses, an explicit target-bank cross-check, staged sector
+  writes, whole-image validation, and a commit-last bootable marker.
 - Execute the historical code migration plan in small batches after current
   STR8-N, HIMON V, and ASM-F2 paths are stable:
   [HISTORICAL_CODE_MIGRATION_PLAN.md](HISTORICAL_CODE_MIGRATION_PLAN.md).

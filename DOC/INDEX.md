@@ -16,6 +16,7 @@ DOC/GUIDES/TECHNICAL_GUIDE.md
 - [GUIDES/REF.md](./GUIDES/REF.md) - compact reference sheet.
 - [GUIDES/GLOSSARY.md](./GUIDES/GLOSSARY.md) - vocabulary contract.
 - [GUIDES/DECISIONS.md](./GUIDES/DECISIONS.md) - settled policy.
+- [GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](./GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - accepted next architecture for multiboot, S19 ownership, and bank volumes.
 
 ## Current Status
 

@@ -45,7 +45,8 @@ The 2026-07-10 STR8-N/HIMON/ASM-F2 image is hardware-proven for:
 - internal AP relocation and resident RJOIN import resolution;
 - AP objects loaded from RAM, visible flash, and banked flash;
 - missing-import rejection, overlap protection, and banked-input validation;
-- the built-in ASM session reporter AP at `$B969`, run with `AP $B969 $4800`;
+- the external ASM session reporter AP, kept in Bank 0 and run with
+  `AP B0 $hhhh $4800` from its selected store address;
 - interactive bank/sector flash erase with explicit confirmation and recovery;
 - standalone examples including the 16x16 column Life program.
 
@@ -57,10 +58,12 @@ on its own.
 Treat it as bench-proven rather than a finished field updater. Keep an external
 programmer and a known-good image nearby.
 
-The 2026-07-18 size-pass image is host-proven and awaits its board regression.
-It retires the STR8 `M` map and the richer resident HIMON `D`/quoted-hash forms,
-and moves AP import linking from STR8 into HIMON while preserving `$F006` as a
-compatibility entry.
+The 2026-07-18 size-pass image has been installed on the board. Its fixed-width
+`D` path and positive RAM AP/RJOIN import path pass; missing-import atomicity
+and banked-source RJOIN remain explicit regression gates. The image retires the
+STR8 `M` map and the richer resident HIMON `D`/quoted-hash forms, and moves AP
+import linking from STR8 into HIMON while preserving `$F006` as a compatibility
+entry.
 
 ## Start Here
 
@@ -68,6 +71,7 @@ compatibility entry.
 - [ASM User Guide](DOC/GUIDES/ASM/ASM_USER_GUIDE.md) - source entry, assembly, and AP commands
 - [Address Practices](DOC/GUIDES/ASM/ADDRESS_PRACTICES.md) - safe address choices for ASM and AP work
 - [OIL .710 Test Plan](DOC/GUIDES/PLANNING/OIL_710_TEST_PLAN.md) - Overlay Integration Layer board gates
+- [STR8 Multiboot, S19, And Bank Volumes](DOC/GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - accepted next architecture and proof order
 - [Life Quick Card](DOC/GUIDES/ASM/LIFE16_QUICK_CARD.md) - exact ASM-F2 bank-2 procedure
 - [Technical Guide](DOC/GUIDES/TECHNICAL_GUIDE.md) - architecture, flash policy, and build products
 - [Release Guide](DOC/GUIDES/RELEASES.md) - GitHub release assets, tag naming, and proof notes

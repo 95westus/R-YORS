@@ -2,6 +2,26 @@
 
 ## Architecture Direction
 
+- Follow the accepted multiboot/S19/bank-volume direction in
+  [STR8_MULTIBOOT_BANK_VOLUMES.md](STR8_MULTIBOOT_BANK_VOLUMES.md): keep Bank 3
+  as the physical-reset recovery root, reserve `$F000-$FFFF` in compatible
+  boot banks for STR8 and vectors, and give each selected bank a declared 28K
+  payload or storage role below it.
+- Finish the current-image missing-import atomicity and banked-source RJOIN
+  proofs before implementing the RAM bank-handoff prototype. Multiboot does not
+  supersede those AP/OIL gates.
+- Consolidate S19 decoding/checksum work as a callable STR8 mechanism while
+  HIMON retains RAM-load policy and STR8 owns flash mutation. Validate each
+  complete record into RAM before applying destination policy. Reuse that
+  descriptor service for minimal Intel HEX16 `00`/`01`, then explicit counted
+  BIN with CRC16; do not auto-detect raw binary. Treat the first managed bank
+  format as an append-only record log; defer balancing, directories, VTOCs,
+  caches, and compaction.
+- Park S2/S8 (`.s28`) as a possible `V2.xxx`/`V3` physical-flash transport.
+  Interpret its 24-bit field as linear device address `$00000-$1FFFF`, keep
+  ordinary updates in Banks 0-2, cross-check an explicit target bank, and
+  commit boot validity only after staged write/read-back and whole-image
+  validation. Do not spread 24-bit pointers into the 16-bit runtime.
 - Keep HIMON hash dispatch small and inspectable.
 - Make STR8 the flash recovery/update boundary instead of scattering flash
   mutation policy across normal monitor commands.

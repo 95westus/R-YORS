@@ -41,6 +41,95 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: S28 Parked As Possible V2.xxx/V3 Transport
+
+```text
+2026
+         07
+                19
+                   20:41Z WLP2 Parked S2/S8 physical-flash transport
+                               behind the bank ABI and loader proofs.
+```
+
+scope: `DECISIONS.md`, `TECHNICAL_GUIDE.md`, `QCC/STR8.md`,
+`PLANNING/FUTURE.md`, `PLANNING/TODO.md`, and
+`PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md`.
+
+change: S2/S8 (`.s28`) is now explicitly a possible `V2.xxx`/`V3` feature.
+Its 24-bit address means linear physical flash `$00000-$1FFFF`; it does not
+change W65C02 runtime pointers. The first form cross-checks one operator-named
+Bank 0-2 target and keeps Bank-3 payload/top-sector updates separate.
+
+effect: The earlier Intel HEX16 rule still rejects nonzero extended addresses.
+Bank-aware transport moves to the cheaper S-record extension instead. S28 does
+not write directly: records are validated, sectors or payloads are staged, the
+RAM worker programs and verifies them, and boot validity is committed last.
+
+action: Use `Possible V2.xxx/V3 S28 Physical-Flash Transport` in
+[STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
+Keep S19, missing-import atomicity, banked-source RJOIN, and the bank ABI ahead
+of this candidate.
+
+## REDOC: STR8 Loader Direction Adds Intel HEX And Counted BIN
+
+```text
+2026
+         07
+                19
+                   15:42Z WLP2 Extended the shared STR8 decoder direction
+                               to checked hex and binary transports.
+```
+
+scope: `DECISIONS.md`, `TECHNICAL_GUIDE.md`, `PLANNING/FUTURE.md`,
+`PLANNING/TODO.md`, and `PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md`.
+
+change: The proposed STR8 loader service now validates a complete input record
+into RAM before HIMON or STR8 applies destination policy. After preserving S19,
+the intended small additions are Intel HEX16 data/EOF records and an explicit
+counted raw-binary transfer with expected CRC16.
+
+effect: `HEX` does not mean full extended-address Intel HEX, and `BIN` is not
+an auto-detected or line-oriented stream. Raw binary requires an exact length,
+CRC16, a binary-capable sender, and a separate staged/confirmed flash update
+path. The documented byte counts are planning estimates until a linked map
+proves them.
+
+action: Use the `S19 Ownership`, `Validated-Record Service`, and `Additional
+Load Formats` sections in
+[STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
+Keep the missing-import and banked-source RJOIN hardware gates first.
+
+## REDOC: STR8 Multiboot And Bank-Volume Direction Recorded
+
+```text
+2026
+         07
+                19
+                   15:30Z WLP2 Recorded the Bank-3-rooted multiboot,
+                               shared S19, and append-only volume direction.
+```
+
+scope: `DECISIONS.md`, `TECHNICAL_GUIDE.md`, `MEMORY/MEMORY_MAP.md`,
+`STR8/STR8_DECISION_REFERENCE.md`, `PLANNING/FUTURE.md`, and
+`PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md`.
+
+change: Compatible banks now have a proposed `$8000-$EFFF` payload plus
+`$F000-$FFFF` STR8/vector contract, selected through a RAM boot trampoline.
+STR8 is the intended shared S19 decoder and flash-policy owner. Managed banks
+start as declared `IMAGE`, `VOLUME`, or bounded `MIXED` roles, with the first
+volume implemented as an append-only linear record log.
+
+effect: Banks 0-2 are no longer assumed to remain permanently passive backup
+slots, but the present bare `0`, `1`, and `2` commands are still destructive
+restore commands. The architecture does not bypass the current missing-import
+atomicity and banked-source RJOIN proof gates.
+
+action: Use
+[STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) as
+the canonical proposal and [DECISIONS.md](./DECISIONS.md) for its settled
+boundaries. Do not treat the proposed `G` family or 28K staging map as current
+firmware behavior.
+
 ## REDOC: Book Spine Adds Pasteable ASM Proof
 
 ```text

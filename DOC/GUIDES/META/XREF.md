@@ -33,6 +33,14 @@ STR8_WORK_PROCESS.md
   STR8_DECISION_REFERENCE.md, STR8_FLASH_UPDATE_PROPOSAL.md, BRINGUP.md,
   TODO.md, and HARDWARE_TEST_LOG.md
 
+STR8_MULTIBOOT_BANK_VOLUMES.md
+  canonical accepted direction for Bank-3-rooted multiboot, compatible-bank
+  layout, shared STR8 S19 mechanism, full-payload staging, and append-only
+  bank volumes
+  preserves the missing-import and banked-source AP proofs as the next gates
+  relates to DECISIONS.md, TECHNICAL_GUIDE.md, STR8_DECISION_REFERENCE.md,
+  MEMORY_MAP.md, FUTURE.md, OIL_710_TEST_PLAN.md, and HARDWARE_TEST_LOG.md
+
 DECISIONS.md
   records settled naming, hash, STR8, ASM, contract, local-home, and doc-shape calls
   should be checked before reopening design alternatives

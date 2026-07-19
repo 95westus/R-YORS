@@ -46,6 +46,24 @@ Flash write and erase routines always run from RAM.
 
 STR8 may use all RAM and zero page during recovery.
 
+## Accepted Multiboot Direction
+
+Physical reset remains rooted in Bank 3. A future compatible boot bank reserves
+`$F000-$FFFF` for STR8 and valid hardware vectors and owns `$8000-$EFFF` as a
+28K payload. STR8 switches banks and enters the selected reset vector from a
+RAM trampoline; flash-resident code must never switch away from the bank it is
+executing in.
+
+The present bare `0`, `1`, and `2` commands are still destructive Bank-3
+restore commands, not boot selectors. A future non-destructive `G` family may
+enter Bank-3 HIMON/ASM-F2 or boot a selected bank. S19 mechanism moves toward a
+callable STR8 service, while HIMON keeps RAM-load policy and STR8 keeps flash
+mutation. Banks used for records declare a storage role and begin with an
+append-only linear log.
+
+The full proposal, constraints, staging map, and hardware-proof order are in
+[STR8_MULTIBOOT_BANK_VOLUMES.md](../PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
+
 ## Flash Endurance
 
 The design assumes flash sectors have a finite erase endurance, roughly 100,000

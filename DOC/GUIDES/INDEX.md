@@ -10,6 +10,7 @@ This is the full guide index for the current R-YORS documentation set.
 - [ASM/LIFE16_QUICK_CARD.md](ASM/LIFE16_QUICK_CARD.md) - exact board commands and checkpoints for the ASM-F2 Life bank-2 procedure.
 - [ASM/LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) - complete ASM-F2 16x16 Life AP package, bank 2 storage, and run walkthrough.
 - [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
+- [PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - accepted multiboot, shared S19, 28K payload, and append-only bank-volume direction.
 - [REF.md](./REF.md) - compact reference sheet.
 - [GLOSSARY.md](./GLOSSARY.md) - vocabulary contract.
 - [DECISIONS.md](./DECISIONS.md) - settled calls.
@@ -71,6 +72,8 @@ the main operator/technical path.
 - [TODO.md](PLANNING/TODO.md) - near-term work.
 - [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` Overlay
   Integration Layer board-test plan and size review.
+- [STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) -
+  accepted STR8 multiboot, S19 ownership, and bank-volume architecture.
 - [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - archive plan for retired sample,
   test, proof, demo, and one-off code/data.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.

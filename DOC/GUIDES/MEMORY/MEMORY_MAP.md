@@ -77,6 +77,27 @@ $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
 
+## Proposed Compatible-Bank Layout
+
+The accepted multiboot direction applies this contract to each compatible
+boot bank; it is not implemented by the current restore commands:
+
+```text
+$8000-$EFFF   28K bank-owned payload: OS, BIOS, monitor, code, or data
+$F000-$FFFF    4K STR8-compatible recovery/service sector and vectors
+```
+
+Bank selection and selected-bank reset-vector entry must run from RAM because
+the whole `$8000-$FFFF` flash window changes banks. Guest code cannot call
+Bank-3-only HIMON/RJOIN addresses while another bank is selected.
+
+A future whole-payload stager can map `$8000-$EFFF` to RAM `$0A00-$79FF`.
+That is a proposed map, not current ownership: the existing `$1FE9-$1FFF`
+STR8 state lies inside it and must move, probably into the system-owned
+`$7A00-$7EFF` region, before 28K staging is safe. The `$F000-$FFFF` top sector
+remains a separate guarded update transaction. See
+[STR8_MULTIBOOT_BANK_VOLUMES.md](../PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
+
 ## OIL Address Boundary
 
 OIL keeps AP storage separate from AP execution:

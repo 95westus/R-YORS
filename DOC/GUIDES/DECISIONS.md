@@ -49,6 +49,42 @@ rather than a hidden VM or broad runtime.
   HIMON.
 - Do not treat Himonia-F and HIMON as permanently separate products.
 
+## STR8 Multiboot And Bank Volumes
+
+Accepted direction, not current command behavior: physical reset continues to
+select Bank 3 as the recovery root. A compatible boot bank reserves
+`$F000-$FFFF` for STR8 services and vectors and owns `$8000-$EFFF` as its 28K
+payload. Bank selection and reset-vector handoff run from RAM; selected-bank
+code must not depend on Bank-3-only HIMON/RJOIN addresses.
+
+STR8 will own the reusable S19 decode/checksum mechanism and all flash-mutation
+policy. HIMON keeps the `L`/`L G` RAM-load interface and destination policy and
+eventually delegates or retires `L F`. Banks used for managed storage declare
+an `IMAGE`, `VOLUME`, or bounded `MIXED` role; the first volume is an
+append-only, linearly reconstructible record log rather than a balancing tree
+or full filesystem.
+
+The shared loader mechanism validates a complete record into RAM before a
+HIMON or STR8 destination policy writes it. After S19 behavior is preserved,
+the first additional text format is 16-bit Intel HEX with data type `00` and
+EOF type `01`; extended-address forms remain deferred. Raw binary is never
+auto-detected or passed through the line reader. Its first form is an explicit
+destination plus exact byte count and expected CRC16, with flash mutation only
+through a separate staged and confirmed STR8 update path.
+
+S2/S8 (`.s28`) is parked as a possible `V2.xxx`/`V3` physical-flash transport,
+not as part of the first decoder implementation. If promoted, its 24-bit field
+means linear physical flash `$00000-$1FFFF`, ordinary authority is limited to
+Banks 0-2, and Bank-3 payload/top-sector writes remain separately guarded.
+The file address never bypasses sector staging, RAM-worker execution, read-back
+verification, or commit-last boot validity.
+
+The current destructive bare `0`, `1`, and `2` restore commands do not change
+until an explicit migration. The missing-import atomicity and banked-source
+RJOIN proofs remain ahead of multiboot implementation. The complete contract,
+proposed `G` command family, RAM staging implications, and proof order live in
+[STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
+
 ## Address Vocabulary
 
 - `$WLPB` is the preferred teaching mnemonic for a 16-bit hex address:

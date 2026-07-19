@@ -748,6 +748,11 @@ type S2 carries a 24-bit address, and S8 terminates a 24-bit-address transfer.
 The `.s28` name is the file/profile convention, not a separate `S28` record
 type.
 
+Status 2026-07-19: keep this as a possible `V2.xxx`/`V3` capability, after the
+shared S19 validated-record service and compatible-bank ABI are proven. The
+canonical current direction is
+[STR8_MULTIBOOT_BANK_VOLUMES.md](../PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
+
 That extra address byte can describe physical board flash directly. With four
 32K banks, STR8 can treat the transfer as physical SST39SF010A flash-chip
 addresses:
@@ -787,6 +792,13 @@ Concern: S2/S8 makes addressing richer, not safer by magic. STR8 still has to
 validate destination banks, protected windows, top-sector writes, bank 0 policy,
 factory slots, and self-update rules. For V0, S1/S9 remains enough; S2/S8 is a
 later STR8-N-style transport once the bank/range contract is firm.
+
+The first promoted command should name one target bank and reject S2 addresses
+outside it. Ordinary authority covers Banks 0-2; Bank-3 payload and top-sector
+updates stay separate. Sector streaming must not revisit an already committed
+sector, and the bank remains invalid/unbootable until whole-image validation
+passes and a boot-valid marker is committed last. S8 is metadata for a flash
+image, not authority for an immediate cross-bank jump.
 
 ## Q: Can future STR8 move flash chunks around?
 
