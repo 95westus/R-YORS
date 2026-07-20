@@ -830,7 +830,6 @@ CMD_L_SERVICE_OK:
                         STZ             LOAD_SKIP_LO
                         STZ             LOAD_SKIP_HI
                         STZ             LOAD_ABORT_MODE
-                        STZ             LOAD_WRITE_OK
                         STZ             LOAD_FAIL_ADDR_LO
                         STZ             LOAD_FAIL_ADDR_HI
                         STZ             LOAD_GO_VALID
@@ -2033,9 +2032,8 @@ CMD_PARSE_RANGE_FAIL:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; STR8 validated-record client.  Phase 3 sends each L F descriptor through
-; APPLY_LF; the retained byte sink below is no longer on this command path and
-; is removed only after the Phase-3 board gates close.
+; STR8 validated-record client.  L F sends each validated descriptor through
+; APPLY_LF.  The old HIMON byte-at-a-time L F sink was removed in Phase 4.
 ; ----------------------------------------------------------------------------
 L_STR8_REQUIRE_SERVICE:
                         LDA             STR8_REC_SIG0_ADDR
@@ -2309,83 +2307,8 @@ L_PARSE_RECORD_STR8_FLASH_FAIL_A:
                         CLC
                         RTS
 
-L_WRITE_DATA_BYTE:
-                        STA             CMD_IO_TMP
-                        STZ             LOAD_WRITE_OK
-                        LDA             LOAD_ABORT_MODE
-                        BEQ             L_WRITE_DATA_BYTE_FLASH_ACTIVE
-                        JSR             L_COUNT_SKIPPED_BYTE
-                        SEC
-                        RTS
-L_WRITE_DATA_BYTE_FLASH_ACTIVE:
-                        LDA             LOAD_DST_HI
-                        CMP             #$80
-                        BCC             L_WRITE_DATA_BYTE_PROTECT
-; 2026-05-07T22:58-05:00        WLP2        L F protects relocated HIMON/STR8 at $C000+.
-                        CMP             #$C0
-                        BCS             L_WRITE_DATA_BYTE_PROTECT
-                        JSR             L_FLASH_SET_PTR
-                        LDY             #$00
-                        LDA             (CMDP_ADDR_LO),Y
-                        STA             LOAD_FLASH_OLD
-                        CMP             CMD_IO_TMP
-                        BEQ             L_WRITE_DATA_BYTE_MATCH
-                        CMP             #$FF
-                        BNE             L_WRITE_DATA_BYTE_ERASE
-                        LDA             CMD_IO_TMP
-                        LDX             LOAD_DST_LO
-                        LDY             LOAD_DST_HI
-                        JSR             FLASH_WRITE_BYTE_AXY
-                        BCC             L_WRITE_DATA_BYTE_WRITE_FAIL
-                        JSR             L_FLASH_SET_PTR
-                        LDY             #$00
-                        LDA             (CMDP_ADDR_LO),Y
-                        CMP             CMD_IO_TMP
-                        BNE             L_WRITE_DATA_BYTE_WRITE_FAIL_A
-                        LDA             #$01
-                        STA             LOAD_WRITE_OK
-                        SEC
-                        RTS
-
-L_WRITE_DATA_BYTE_MATCH:
-                        LDA             #$01
-                        STA             LOAD_WRITE_OK
-                        SEC
-                        RTS
-
-L_WRITE_DATA_BYTE_PROTECT:
-                        JSR             L_COUNT_SKIPPED_BYTE
-                        LDA             #LOAD_FAIL_PROTECT
-                        STA             LOAD_FAIL_CODE
-                        CLC
-                        RTS
-
-L_WRITE_DATA_BYTE_ERASE:
-                        JSR             L_COUNT_SKIPPED_BYTE
-                        LDA             #LOAD_FAIL_ERASE
-                        STA             LOAD_FAIL_CODE
-                        CLC
-                        RTS
-
-L_WRITE_DATA_BYTE_WRITE_FAIL:
-                        JSR             L_FLASH_SET_PTR
-                        LDY             #$00
-                        LDA             (CMDP_ADDR_LO),Y
-L_WRITE_DATA_BYTE_WRITE_FAIL_A:
-                        STA             LOAD_FLASH_OLD
-                        JSR             L_COUNT_SKIPPED_BYTE
-                        LDA             #LOAD_FAIL_WRITE
-                        STA             LOAD_FAIL_CODE
-                        CLC
-                        RTS
-
-L_COUNT_SKIPPED_BYTE:
-                        INC             LOAD_SKIP_LO
-                        BNE             L_COUNT_SKIPPED_BYTE_DONE
-                        INC             LOAD_SKIP_HI
-L_COUNT_SKIPPED_BYTE_DONE:
-                        RTS
-
+; This pointer helper is retained for HIM_FLASH_INSTALL_COPY.  L F does not
+; call it: its complete-record mutation path is STR8_REC_OP_APPLY_LF above.
 L_FLASH_SET_PTR:
                         LDA             LOAD_DST_LO
                         STA             CMDP_ADDR_LO

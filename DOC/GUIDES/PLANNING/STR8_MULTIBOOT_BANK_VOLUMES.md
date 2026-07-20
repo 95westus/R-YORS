@@ -461,8 +461,8 @@ Phase 2  PASS 2026-07-20  HIMON L/L G/client parser board gates closed
 Phase 3  PASS 2026-07-20  HIMON L F/APPLY_LF whole-record board gates closed
          HIMON L F submits each validated S1 descriptor to STR8 APPLY_LF;
          whole-record preflight and failure diagnostics are provider-owned
-Phase 4  pending: remove the transitional HIMON L F byte sink and close the
-         ASM-F2 board proof
+Phase 4  PASS 2026-07-20  dead HIMON L F byte sink removed; ASM-F2
+         erase/reload/entry and cold-boot board proof closed
 ```
 
 The Phase-1 resident image publishes `4C xx xx 53 52 01 07` at `$F009-$F00F`.
@@ -498,9 +498,9 @@ count just as programmed bytes do.  On `LF_PROTECT`, `LF_NEED_ERASE`,
 and expected byte into its existing diagnostics and maps the public failure to
 `$02`, `$03`, or `$04`.  A record rejected by whole-record preflight contributes
 its complete length to `SKIP`, and later valid S1 records are parsed, counted
-as skipped, and drained through S9 without invoking the flash worker.  The old
-byte-at-a-time sink remains in the binary but is unreachable from `L F` until
-Phase 4 removes that transitional code after board proof.
+as skipped, and drained through S9 without invoking the flash worker.  Phase 4
+removes the old byte-at-a-time sink and its success flag from HIMON entirely;
+`L_FLASH_SET_PTR` remains solely for the separate AP flash-install service.
 
 ## Additional Load Formats
 

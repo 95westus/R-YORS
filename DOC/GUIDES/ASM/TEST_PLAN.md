@@ -10552,9 +10552,9 @@ vectors                   = 99 F0 00 F0 AD F0
 
 The linked `L_PARSE_RECORD_STR8_FLASH_DATA` path must set
 `STR8_REC_OP=$02`, call `$F009`, and map only `LF_PROTECT`, `LF_NEED_ERASE`,
-`LF_WRITE`, and `LF_VERIFY` to the public flash outcomes. The retained
-`L_WRITE_DATA_BYTE` routine is intentionally not reachable from that path; do
-not remove it until Phase 4.
+`LF_WRITE`, and `LF_VERIFY` to the public flash outcomes. Phase 4 subsequently
+removes the now-dead `L_WRITE_DATA_BYTE` routine and its `LOAD_WRITE_OK` flag;
+the unrelated `L_FLASH_SET_PTR` helper remains for AP flash installation.
 
 ### Phase-3 board prestaging
 
@@ -10679,3 +10679,123 @@ not remove it until Phase 4.
    Phase 3 passes only if all four gates above match exactly. `LF WFAIL` is a
    hardware fault result, not a substitute for the required positive worker
    gate.
+
+## 2026-07-20 STR8 S19 Migration Phase 4
+
+Status: HIMON sink-removal host and board pass. The accepted transcript is
+appended to `HARDWARE_TEST_LOG.md`. Phase 4 deletes the unreachable HIMON
+`L_WRITE_DATA_BYTE`/`L_COUNT_SKIPPED_BYTE` implementation and `LOAD_WRITE_OK`.
+`L F` has no direct byte-programming path: after parse it can reach flash only
+through `STR8_REC_OP_APPLY_LF` at `$F009`. `L_FLASH_SET_PTR` remains because
+the independent AP flash-install service still uses it.
+
+Host gates passed with:
+
+```text
+make -C SRC himon himon-str8-rom-bin himon-str8-himon-update-s19
+make -C SRC asm-test
+make -C SRC bank3-erase
+
+HIMON CODE/DATA/END       = $2922/$0596/$EEB8
+HIMON free to STR8        = $EEB8-$EFFF / $0148
+Phase-3 -> Phase-4 saving = $0086
+STR8 record entry/body    = $F009/$F392
+STR8 request/result RAM   = $7E95-$7EA8
+ASM-F2 base/start/end     = $8000/$800C/$BC6D
+ASM-F2 headroom to C000   = $0393
+
+Phase-4 HIMON candidate   = himon-str8-himon-update.s19
+HIMON visible version     = HIMON V 00.0720(1625)
+HIMON SHA-256             = 2E1EBEA35F18750FC0B65FE31D1F6B14CDBF9867C7B4C9234DA33B0BE161CEA8
+HIMON S1 / terminator     = C000-EEBF / S903C0003C
+ASM-F2 candidate          = asm-v1-flash-8000.s19
+ASM-F2 visible version    = ASM-F2 00.0720(1625)
+ASM-F2 SHA-256            = 612EE452AEAD3B05EABE8530CE4B991F211F1471108C0CB4737E3D5E5A0314DC
+ASM-F2 S1 / terminator    = 8000-BC6C / S903800C70
+RAM erase host fixture    = bank3-erase-8000-bfff-3000.s19
+RAM erase SHA-256         = AC5FDE6C91DA7E5823A10033085F146601DE06EFC50D241608C7AFA7BCCFA7F6
+RAM erase S1 / terminator = 3000-3070 / S9033000CC
+```
+
+The HIMON source and linked listing must contain no
+`L_WRITE_DATA_BYTE`, `L_COUNT_SKIPPED_BYTE`, or `LOAD_WRITE_OK` symbol. The
+active flash path must still emit `STR8_REC_OP=$02` followed by `JSR $F009`.
+
+### Phase-4 board prestaging
+
+1. Preserve an external-programmer recovery image, the Phase-3 HIMON update
+   candidate, and the current lower-flash ASM image. The required reload proof
+   intentionally erases Bank 3 `$8000-$BFFF`, which destroys the presently
+   installed ASM-F2 before it is reloaded.
+2. Install only the frozen Phase-4 C/D/E candidate
+   `SRC/BUILD/s19/himon-str8-himon-update.s19` (SHA-256
+   `2E1EBEA35F18750FC0B65FE31D1F6B14CDBF9867C7B4C9234DA33B0BE161CEA8`) through
+   STR8 `UPDATE HIMON C000-EFFF`. It contains S1 `$C000-$EEBF` followed by
+   `S903C0003C`. Warm boot HIMON and require `HIMON V 00.0720(1625)` plus:
+
+   ```text
+   >D F009 F00F
+   require: 4C 92 F3 53 52 01 07
+   ```
+
+3. Use the established board-buildable RAM erase utility while the currently
+   installed ASM-F2 is still present:
+
+   ```text
+   >ASM NEW
+   ; paste DOC/GUIDES/ASM/SAMPLES/bank3-erase-8000-bfff-transient-3000.a
+   .
+   >G 3000
+   >D 1A00 1A03
+   ```
+
+   Require `RET A=AC` with carry set and `1A00: AC 00 00 00`. Do not use `ASM`
+   after this point: the utility has erased its own `$8000-$BFFF` resident
+   image. The separately built RAM S19 fixture remains host-validated, but the
+   captured direct board transfer reported repeated `LERR=$01`/`LS03`; it is
+   not an approved erase route without a separate serial-framing proof.
+
+### Phase-4 board gates
+
+1. Confirm the erased lower flash before the reload:
+
+   ```text
+   >D 8000 800F
+   require: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+   ```
+
+2. Enter `L F` and send only the frozen
+   `SRC/BUILD/s19/asm-v1-flash-8000.s19` (SHA-256
+   `612EE452AEAD3B05EABE8530CE4B991F211F1471108C0CB4737E3D5E5A0314DC`). Its S1
+   range is `$8000-$BC6C` with terminator `S903800C70`. Require a complete
+   programmed load and the fixed flash entry:
+
+   ```text
+   require: LF OK WR=3C6D GO=800C
+   >D 8000 800F
+   require: 46 4E D6 00 74 AD 56 05 0C 80 87 B9 20 7B 85 B0
+   ```
+
+3. Prove that the reloaded ASM-F2 starts and assembles/runs a minimal RAM
+   routine through the normal HIMON command path:
+
+   ```text
+   >ASM NEW
+   ORG $3000
+   LDA #$5A
+   RTS
+   .
+   >G 3000
+   ```
+
+   Require the new ASM-F2 visible version and a normal monitor return with
+   `A=5A`. A source or prompt error is a Phase-4 failure; do not infer a pass
+   solely from the flash-header dump.
+
+4. Cold boot, require the Phase-4 HIMON version and the unchanged STR8 header,
+   then repeat `ASM NEW` followed immediately by `.`. Require the ASM-F2
+   banner and normal `ASM ... BYE` return. This proves the final loader pair is
+   usable after a RAM-clear boot, not only in the installation session.
+5. Append the unedited transcript, both candidate SHA-256 values, visible
+   HIMON/ASM-F2 versions, erase status row, and before/after `$8000` dumps to
+   `HARDWARE_TEST_LOG.md`. Phase 4 passes only when every gate above succeeds.

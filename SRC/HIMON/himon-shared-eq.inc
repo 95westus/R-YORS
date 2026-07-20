@@ -219,8 +219,8 @@ KEYT_ESC_BYTE              EQU             $7E94
 ; Persistent CMD_L state stays outside the STR8 V1 request/result block at
 ; $7E95-$7EA8. These cells overlay inactive command-hook scratch while the
 ; foreground loader owns the command processor. The remaining aliases inside
-; the service block are transient: line status before a call and L F byte-sink
-; diagnostics after a successful parse.
+; the service block are transient: line status before a call and APPLY_LF
+; diagnostics after the service returns.
 LOAD_FLASH_MODE            EQU             $7E78
 LOAD_REC_KIND              EQU             $7E79
 LOAD_FAIL_CODE             EQU             $7E7A
@@ -239,7 +239,6 @@ LOAD_SKIP_HI               EQU             $7E86
 
 LOAD_LINE_STATUS           EQU             $7E95
 LOAD_FLASH_OLD             EQU             $7E9C
-LOAD_WRITE_OK              EQU             $7EA7
 LOAD_AUTO_GO               EQU             $7EAA
 LOAD_HAVE_DATA             EQU             $7EAB
 LOAD_FIRST_LO              EQU             $7EAC

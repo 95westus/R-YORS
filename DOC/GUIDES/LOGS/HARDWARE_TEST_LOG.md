@@ -15555,3 +15555,101 @@ accepted; `$BFE2` was programmed and re-accepted as matching; the mixed record
 failed at `$BFE2` before `$BFE0/$BFE1` changed and drained the later S1 through
 S9 with `SKIP=0004`; `$C000` was protected without mutation; and the
 zero-length S1 completed without mutation.  Phase 3 is hardware-complete.
+
+## 2026-07-20 STR8 S19 Migration Phase 4: Sink Removal And ASM-F2 Board Pass
+
+The Phase-4 C/D/E update candidate was
+`himon-str8-himon-update.s19` (SHA-256
+`2E1EBEA35F18750FC0B65FE31D1F6B14CDBF9867C7B4C9234DA33B0BE161CEA8`), and
+the ASM-F2 reload candidate was `asm-v1-flash-8000.s19` (SHA-256
+`612EE452AEAD3B05EABE8530CE4B991F211F1471108C0CB4737E3D5E5A0314DC`).
+STR8 programmed the C/D/E candidate and warm booted the expected sink-free
+client:
+
+```text
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...
+PROGRAM C000-EFFF? Y: y...
+OK
+G HIMON
+BOOT WARM
+
+HIMON V 00.0720(1625)
+>D F009 F00F
+F009: 4C 92 F3 53 52 01 07 | L..SR..
+```
+
+An attempted direct serial load of the separately built RAM erase fixture
+reported repeated `LERR=$01`, intermittent `LS03`, and was stopped at
+`NMI PC=E544`; it did not become the erase route. This is recorded as a
+serial-transport/framing observation, not a loader or flash result. After the
+cold recovery boot, the established board-buildable erase source was assembled
+with the still-resident earlier ASM-F2 and ran successfully:
+
+```text
+HIMON V 00.0720(1625)
+>ASM NEW
+ASM-F2 00.0720(1143)
+; pasted bank3-erase-8000-bfff-transient-3000.a
+ASM OK
+SEAL> .
+ASM BYE
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A03
+1A00: AC 00 00 00 | ....
+>D 8000 800F
+8000: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+>ASM
+#56AD7400# HSH_NF!
+```
+
+`A=$AC` with carry set and `$1A00=$AC` prove that the RAM utility erased and
+verified all Bank-3 low-flash sectors. The `HSH_NF` result is expected after it
+erases the old ASM-F2 image. The Phase-4 `L F` path then programmed the whole
+fresh ASM-F2 image, entered it, assembled a minimal RAM routine, and returned
+its value:
+
+```text
+>L F
+L F S19
+L @8000
+LF OK WR=3C6D GO=800C
+>D 8000 800F
+8000: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0 | FN..t.V..... {..
+>ASM NEW
+ASM-F2 00.0720(1625)
+ASM>$2000: ORG $3000
+ASM>$3000: LDA #$5A
+ASM>$3002: RTS
+ASM>$3003: .
+ASM BYE
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+```
+
+A final cold boot preserved the Phase-4 HIMON and started the newly reloaded
+ASM-F2 normally:
+
+```text
+>2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0720(1625)
+>ASM NEW
+ASM-F2 00.0720(1625)
+ASM>$2000: .
+ASM BYE
+```
+
+This closes Phase 4: HIMON contains no remaining per-byte `L F` sink, the
+shared STR8 APPLY_LF path reloaded a fully erased low-flash ASM-F2 image, and
+the final HIMON/ASM-F2 pair survives a cold boot.
