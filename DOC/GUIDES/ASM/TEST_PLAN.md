@@ -11186,3 +11186,37 @@ The build stamp is wall-clock based (`MMDD(HHMM)`), so a later `make` produces
 a different visible version and SHA without a firmware-source change. The
 subsequent `00.0720(1726)` host rebuild/smoke pass is not the artifact installed
 in this transcript and must not replace the accepted `1719` identity above.
+
+## 2026-07-20 Roadmap Phase 3: Timestamped Host Evidence Baseline
+
+Status: host pass; no board action. This gate intentionally retains the normal
+wall-clock version stamps. A later run will therefore have new visible
+HIMON/ASM-F2 timestamps and SHA-256 values even when firmware source is
+unchanged. Compare map bounds, sizes, S19 ranges, checksums, and service ABI;
+do not require hash equality across different timestamps.
+
+Run:
+
+```text
+make -C SRC himon himon-str8-rom-bin himon-str8-himon-update-s19 asm-test bank3-erase
+```
+
+Require a zero exit status, the 217-row ASM opcode audit, ASMTEST checksum
+gate, and ASM-v1 smoke pass. Record the generated `HIMON V`/`ASM-F2` timestamp,
+the SHA-256 of the combined ROM, HIMON update S19, ASM-F2 S19, and RAM erase
+S19, and the linked faces below:
+
+```text
+HIMON CODE/DATA/END      = $2922/$0596/$EEB8
+STR8 START/NMI/IRQ/END   = $F000/$F099/$F0AD/$FB60
+STR8 record entry/body   = $F009/$F392 / ABI 53 52 01 07
+ASM-F2 CODE/DATA/END     = $3987/$02E6/$BC6D
+worker run/store/size    = $0200/$FCC9-$FFEF / 327 bytes
+vectors NMI/RESET/IRQ    = $F099/$F000/$F0AD
+```
+
+The accepted 2026-07-20 timestamped manifest, artifact ranges, hashes, and map
+head bytes are in
+[`STR8_MULTIBOOT_BANK_VOLUMES.md`](../PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
+This is evidence only: do not install a newly stamped host artifact merely to
+match this baseline.

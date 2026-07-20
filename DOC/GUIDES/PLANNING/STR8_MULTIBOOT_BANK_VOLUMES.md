@@ -724,7 +724,7 @@ but it is not the on-flash directory format.
 ```text
 1  PASS 2026-07-19: missing-import atomicity on the current HIMON AP linker
 2  PASS 2026-07-19: banked-source RJOIN on the current combined image
-3  evidence commit and size/map baseline
+3  PASS 2026-07-20: timestamped host evidence, size, map, and hash baseline
 4  RAM-only bank-select/reset-vector handoff prototype
 5  boot-bank validation and the per-bank payload/top-sector ABI
 6  shared validated-record STR8 S19 service; preserve existing behavior
@@ -738,6 +738,70 @@ but it is not the on-flash directory format.
 
 Every phase keeps a Bank-3 recovery path and adds hardware transcript evidence
 before the next phase depends on it.
+
+### 2026-07-20 Roadmap Phase 3: Timestamped Host Evidence Baseline
+
+This baseline is host-only and makes no board, flash, or external-programmer
+write. The source revision was `b20c1e0f5ced` before recording this baseline.
+The ordinary wall-clock stamp policy remains in effect; this particular build
+therefore identifies itself as `HIMON V 00.0720(1736)` and
+`ASM-F2 00.0720(1736)`. A later build is expected to carry a new timestamp and
+hash even if firmware source is unchanged.
+
+The following command passed on 2026-07-20:
+
+```text
+make -C SRC himon himon-str8-rom-bin himon-str8-himon-update-s19 asm-test bank3-erase
+```
+
+The combined ROM and map baseline is:
+
+```text
+combined ROM             = BUILD/bin/himon-str8-rom.bin
+combined ROM bytes       = 32768
+combined ROM SHA-256     = BCF1263D7EC3FD794B2CCC3B18E1A55A9B1A639FF8106794F210C89BE135A645
+
+HIMON CODE/DATA/END      = $2922/$0596/$EEB8
+HIMON START/NMI/IRQ      = $C000/$E624/$E627
+HIMON update S1 range    = $C000-$EEBF / 11968 bytes / 374 records
+HIMON update S9          = S903C0003C
+HIMON update SHA-256     = E0659210F19633D4B1D6B64CB0B94863561AE56C63315D03412663C128A00599
+
+STR8 START/NMI/IRQ/END   = $F000/$F099/$F0AD/$FB60
+STR8 work/AP service     = $F003/$F006 -> $F38A
+STR8 record entry/body   = $F009/$F392 / ABI 53 52 01 07
+STR8 record RAM/data     = $7E95-$7EA8 / $7B00
+worker run/store/size    = $0200/$FCC9-$FFEF / 327 bytes
+vectors NMI/RESET/IRQ    = $F099/$F000/$F0AD
+
+ASM-F2 CODE/DATA/END     = $3987/$02E6/$BC6D
+ASM-F2 S1 range          = $8000-$BC6C / 15469 bytes / 967 records
+ASM-F2 S9                = S903800C70
+ASM-F2 SHA-256           = 6A8DDCCF072758667543BEDBCA231348FD44448EBBA681D8761C17FB7EC6CB13
+ASM-F2 RAM map           = low $0200-$19FF; UDATA $5000-$61AA; upper $61AA-$7DFF
+ASM-F2 headroom to $C000 = $0393
+
+RAM erase S1 range       = $3000-$3070 / 113 bytes / 8 records
+RAM erase S9             = S9033000CC
+RAM erase SHA-256        = AC5FDE6C91DA7E5823A10033085F146601DE06EFC50D241608C7AFA7BCCFA7F6
+```
+
+The map face is stable at `$8000`, `$C000`, `$F000`, and `$FFFA-$FFFF`:
+
+```text
+$8000  46 4E D6 00 74 AD 56 05 0C 80 87 B9 20 7B 85 B0
+$C000  78 D8 A2 FF 9A AD E6 7E C9 A5 D0 24 AD E7 7E C9
+$F000  4C 10 F0 4C 83 F3 4C 8A F3 4C 92 F3 53 52 01 07
+$FCC9  08 78 AD F0 1F C9 02 F0 11 C9 05 F0 12 C9 06 F0
+$FFFA  99 F0 00 F0 AD F0
+```
+
+`asm-test` passed the 217-row opcode coverage audit, ASMTEST `$6800-$6826`
+checksum gate, and the ASM-v1 smoke suite. All four S19 artifacts above were
+independently checksum-validated while capturing this baseline. The active
+board remains on the separately recorded `HIMON 00.0720(1625)` / `ASM-F2
+00.0720(1719)` pair; do not install this timestamped host baseline merely to
+match its hashes.
 
 ## Remaining Open Decisions To Freeze Before Code
 
