@@ -463,9 +463,9 @@ Phase 3  PASS 2026-07-20  HIMON L F/APPLY_LF whole-record board gates closed
          whole-record preflight and failure diagnostics are provider-owned
 Phase 4  PASS 2026-07-20  dead HIMON L F byte sink removed; ASM-F2
          erase/reload/entry and cold-boot board proof closed
-Phase 5  ACTIVE 2026-07-20  non-destructive direct S19 serial transport proof
-         isolates the rejected generated RAM-fixture transfer before any
-         loader/parser change or approval of that fixture as an erase route
+Phase 5  PASS 2026-07-20  non-destructive direct S19 serial transport proof
+         eight full-width records file-sent through L G and executed from RAM;
+         no parser change is warranted and the erase route remains separate
 ```
 
 The Phase-1 resident image publishes `4C xx xx 53 52 01 07` at `$F009-$F00F`.

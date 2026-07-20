@@ -15653,3 +15653,54 @@ ASM BYE
 This closes Phase 4: HIMON contains no remaining per-byte `L F` sink, the
 shared STR8 APPLY_LF path reloaded a fully erased low-flash ASM-F2 image, and
 the final HIMON/ASM-F2 pair survives a cold boot.
+
+## 2026-07-20 STR8 S19 Migration Phase 5: Non-Destructive Serial Transport Pass
+
+The frozen RAM-only fixture
+`str8-l-transport-phase5-proof-3000.s19` (SHA-256
+`BB9D30C483A114502AE021A64961F1FE1D4C8E8895AD0A08E0781476C45C7002`) has eight
+42-character S1 records from `$3000-$307F`, followed by `S9033000CC`. It
+contains no flash service call. The following unedited board transcript proves
+that the direct file-send route accepted every record and executed only the
+RAM proof:
+
+```text
+>2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0720(1625)
+>D F000 F01F
+F000: 4C 10 F0 4C 83 F3 4C 8A | F3 4C 92 F3 53 52 01 07 | L..L..L..L..SR..
+F010: 78 D8 A2 FF 9A 20 46 F0 | 20 36 F0 20 07 F1 20 10 | x.... F. 6. .. .
+>D 4900 491F
+4900: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+4910: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>L G
+L S19
+L @3000
+L @3010
+L @3020
+L @3030
+L @3040
+L @3050
+L @3060
+L @3070
+L OK=0080 GO=3000
+
+#LOADGO# ENTRY=3000
+RET A=A5 X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 4900 491F
+4900: A5 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+4910: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>D 3000 301F
+3000: A9 A5 8D 00 49 60 EA EA | EA EA EA EA EA EA EA EA | ....I`..........
+3010: EA EA EA EA EA EA EA EA | EA EA EA EA EA EA EA EA | ................
+>
+```
+
+All eight S1 records were accepted, the entry returned `A=$A5`, and only the
+RAM sentinel changed. This closes Phase 5: the prior rejected erase-fixture
+transfer is not evidence of a HIMON line-length or STR8 parser defect. The
+separate destructive erase route remains subject to its own approval and
+preflight.

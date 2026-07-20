@@ -10802,13 +10802,11 @@ active flash path must still emit `STR8_REC_OP=$02` followed by `JSR $F009`.
 
 ## 2026-07-20 STR8 S19 Migration Phase 5
 
-Status: host fixture defined; board proof pending. Phase 5 does not change the
-resident parser or the flash worker. The Phase-4 direct transfer failure did
-not capture the transmitted bytes, so it cannot justify a parser change. The
-failed erase fixture consists of eight 42-character S1 records, and HIMON's
-line reader accepts up to 255 characters. Phase 5 therefore tests the actual
-serial file-send route with the same record count and width, but with a
-RAM-only fixture.
+Status: host and board pass. Phase 5 makes no resident parser or flash-worker
+change. The Phase-4 direct transfer failure did not capture the transmitted
+bytes, so it could not justify a parser change. The accepted Phase-5 transcript
+shows the same eight 42-character S1 records accepted through `L G`, followed
+by the RAM-only entry returning `A=$A5`; see `HARDWARE_TEST_LOG.md`.
 
 ### Phase-5 host gates
 
@@ -10870,7 +10868,7 @@ S9033000CC
    ```text
    >D 4900 4900
    >L G
-   L G S19
+   L S19
    ```
 
 2. Send `str8-l-transport-phase5-proof-3000.s19` unchanged through the exact
@@ -10878,12 +10876,19 @@ S9033000CC
 
    ```text
    L @3000
+   L @3010
+   L @3020
+   L @3030
+   L @3040
+   L @3050
+   L @3060
+   L @3070
    L OK=0080 GO=3000
    #LOADGO# ENTRY=3000
    RET A=A5
    >D 4900 4900
    4900: A5
-   >D 3000 307F
+   >D 3000 301F
    3000: A9 A5 8D 00 49 60 EA EA EA EA EA EA EA EA EA EA
    ```
 
@@ -10900,3 +10905,11 @@ S9033000CC
 4. Append the unedited result to `HARDWARE_TEST_LOG.md`. A PASS authorizes a
    separate decision on the RAM erase fixture; it does not itself authorize a
    destructive erase.
+
+### Phase-5 accepted board result
+
+On 2026-07-20, a cold board running `HIMON V 00.0720(1625)` accepted all eight
+fixture records at `$3000` through `$3070`, reported `L OK=0080 GO=3000`,
+returned `A=A5`, and changed only the RAM sentinel to `$A5`. This closes the
+non-destructive serial transport question. It does not approve or execute the
+separate Bank-3 erase fixture.
