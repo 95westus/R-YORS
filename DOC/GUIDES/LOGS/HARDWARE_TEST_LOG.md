@@ -15130,3 +15130,290 @@ ASM-F2 00.0719(1841)
 Accordingly, the closed STR8 V0 gates have no outstanding loader/recovery
 failure. The earlier failing line remains above as a transcript of its prior
 test state, not as a defect claim.
+
+## 2026-07-20 STR8 S19 Migration Phase 1 Installation Gate: Blocked
+
+The board accepted a HIMON `$C000-$EFFF` update through `U` and warm-booted
+`HIMON V 00.0719(1916)`.  The Phase-1 record proof S19 then loaded normally at
+`$3000` (`L OK=07C9 GO=3000`), but the mandatory resident-STR8 installation
+gate failed before any `$F009` test was run:
+
+```text
+>D F000 F01F
+F000: 4C 09 F0 4C 7C F3 4C 83 | F3 78 D8 A2 FF 9A 20 3F
+>D F975 F97F
+F975: FF FF FF FF FF FF FF FF | FF FF FF
+>D FCC9 FCCF
+FCC9: FF FF FF FF FF FF FF
+>D FFEF FFF1
+FFEF: EE FF FF
+>D FFFA FFFF
+FFFA: 92 F0 00 F0 A6 F0
+```
+
+This is the earlier STR8 V0 face: `$F009` is body code, not the required
+`4C 92 F3 53 52 01 07` record doorway/header; the expected worker head is not
+at `$FCC9`; and the vector tail is the V0 `92 F0 00 F0 A6 F0`, not the Phase-1
+`99 F0 00 F0 AD F0`.  Therefore this transcript is an installation-gate block,
+not a parser or `APPLY_LF` failure.
+
+The initial attempt to paste the generated proof's S19 records into `ASM NEW`
+produced `ERR=$08`; that is expected because ASM consumes assembly source, not
+Motorola S records.  The subsequent normal HIMON `L` correctly loaded the
+proof.  Next action: assemble the generated
+`str8n-topwrite-transient-3000.a` source under ASM-F2, require `G 3000` to
+leave `$1A00-$1A03 = 00 AC 00 00`, then require `G 3003` to leave
+`01 AC 00 00`.  Cold-boot and repeat the Phase-1 installation dumps before
+running the four proof entries.
+
+### Recovery and Phase-1 STR8 installation continuation
+
+The current HIMON had already become a Phase-2 client, so its `L`, `L G`, and
+`L F` forms all correctly returned `LERR=$06` against the old provider.  The
+operator had also erased Bank 3 `$8000-$BFFF`, removing flash ASM.  Recovery
+used the old STR8 `2` restore with confirmation to restore `B2->B3` and a
+negative answer to `FLASH C000-FFFF? Y:`.  It returned `OK`, preserved
+`HIMON V 00.0720(1143)`, and restored `ASM-F2 00.0718(2045)` plus the expected
+low-flash head:
+
+```text
+>D 8000 800F
+8000: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0
+```
+
+The generated topwriter then assembled under that recovered ASM.  Its stage
+and program calls both returned `$AC`, with the required rows:
+
+```text
+G 3000 -> TW STG / TW OK -> 1A00: 00 AC 00 00
+G 3003 -> TW PRG / TW OK -> 1A00: 01 AC 00 00
+```
+
+After cold boot, resident checks passed exactly:
+
+```text
+F000: 4C 10 F0 4C 83 F3 4C 8A F3 4C 92 F3 53 52 01 07
+F975: 7A 0F 6A 5F
+FCC9: 08 78 AD F0 1F C9 02 F0 11 C9 05 F0 12 C9 06 F0
+FFFA: 99 F0 00 F0 AD F0
+```
+
+The first execution of the original record proof then reached a successful S0
+service result (`A=$00`, carry set, status `$00`, kind `$01`) and preserved the
+`$6000-$6003 = 11 22 33 44` guard.  The fixture itself failed case 2, field
+`$10`, because it used an `$1Axx` descriptor pointer as a 65C02 zero-page
+indirect pointer; the observed expected byte was therefore unrelated (`$66`).
+The proof was corrected to keep that pointer at `$0B/$0C`, rebuilt, and now
+has `L OK=07BB GO=3000`.  No board recovery is needed; reload this revised S19
+and restart at `G 3000`.
+
+### Corrected Phase-1 proof: buffered parser/ABI and `APPLY_LF` pass
+
+The corrected `str8-record-phase1-proof-3000.s19` loaded at `$3000` as
+`L OK=07BB GO=3000`.  The buffered parser/ABI entry passed all 15 cases:
+
+```text
+>G 3000
+RET A=AC X=0F Y=01 P=35 S=FD Nv-BdIzC
+>D 1A00 1A17
+1A00: AC 01 0F 00 44 44 03 00 | 03 00 00 00 00 00 00 00
+1A10: 00 00 00 00 00 00 44 44
+>D 6000 6003
+6000: 11 22 33 44
+```
+
+`A=$AC`, `X=$0F`, `Y=$01`, and carry set in `P=$35` are the pass contract.
+The final `$44/$44` actual/expected pair is the successful last guard-byte
+comparison, not an error.  The guard remained intact.
+
+The non-erasing `APPLY_LF` entry also passed all six cases:
+
+```text
+>G 3003
+RET A=AC X=06 Y=02 P=35 S=FD Nv-BdIzC
+>D 1A00 1A17
+1A00: AC 02 06 00 46 46 00 01 | 00 02 00 00 80 01 00 00
+1A10: 00 00 00 00 00 80 46 46
+```
+
+This records the dynamically selected occupied byte at `$8000` (`$46`), its
+unchanged before/after value, and the matching resident-worker outcome.
+The remaining Phase-1 board gates are the console maximum-length and Ctrl-C
+entries, followed by the `U` decline/accepted-candidate gate.
+
+### Console-input limit characterization; abort and declined-update passes
+
+The first maximum-record attempt reached the console parser but failed as
+expected for a truncated input stream, not as a resident service failure:
+
+```text
+>G 3006
+RET A=E1 X=01 Y=01 P=74 S=FD NV-BdIzc
+>D 1A00 1A17
+1A00: E1 03 01 01 06 00 06 00 | 06 00 00 00 20 FC 00 00
+```
+
+`$06` is `BAD_HEX`; the captured terminal text ended at payload byte `$7B`.
+That is exactly 256 ASCII characters including the initial `S`, whereas the
+required maximum record is 514 characters.  The current serial-entry path
+therefore needs raw no-CR chunks of at most 200 characters, with the one CR
+sent only after the last chunk.  This is an input-tool limit; it does not
+invalidate the resident console parser.
+
+The independent console-abort entry passed:
+
+```text
+>G 3009
+RET A=AC X=01 Y=04 P=75 S=FD NV-BdIzC
+>D 1A00 1A17
+1A00: AC 04 01 00 0E 0E 0E 00 | 0E 00 00 00 00 00 00 00
+```
+
+The safe `U` decline gate also passed.  The `$C000-$C01F` dump before `U`,
+the `N` response to `UPDATE HIMON C000-EFFF? Y:`, and the post-warm-boot dump
+were byte-for-byte identical.  The accepted, pinned-Phase-1 `U` gate remains
+intentionally unrun.
+
+### Console maximum-record pass with raw no-CR chunks
+
+The 514-character record was retransmitted as 200/200/114-character raw
+chunks, with no CR between chunks and one CR after the final checksum.  The
+console maximum-record suite passed:
+
+```text
+>G 3006
+RET A=AC X=01 Y=03 P=35 S=FD Nv-BdIzC
+>D 1A00 1A17
+1A00: AC 03 01 00 FB FB 00 01 | 00 02 00 00 20 FC 00 00
+```
+
+`A=$AC`, `X=$01`, `Y=$03`, and carry set in `P=$35` close the console
+maximum-record gate.  `$FB/$FB` is the final decoded payload-byte comparison;
+the descriptor is `DATA/$2000/$FC`.  All four executable record-service
+proof entries and the safe `U` decline gate now pass.  Only the separately
+authorized accepted-update gate, with the pinned Phase-1 `f138d78` candidate,
+remains.
+
+### Accepted Phase-1-pinned `U` update: pass
+
+With explicit authorization, the board was cold-started and preflighted before
+the destructive gate.  The resident provider remained the installed Phase-1
+face and the pre-update HIMON was `00.0720(1143)`:
+
+```text
+>D F000 F00F
+F000: 4C 10 F0 4C 83 F3 4C 8A | F3 4C 92 F3 53 52 01 07
+>D C000 C00F
+C000: 78 D8 A2 FF 9A AD E6 7E | C9 A5 D0 24 AD E7 7E C9
+```
+
+The exact candidate was the clean-commit `f138d7839ea7a94638bd8203aeb0f5550f2138dd`
+C/D/E stream (`himon-phase1-f138d78-update.s19`, SHA-256
+`0C578349E76FAF4CCE3F6B392C0D06B971027E953137EF1468C2BA143CECFA1F`).
+STR8 accepted the S1 stream, reached the existing second confirmation, and
+completed the program/verify step:
+
+```text
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+```
+
+The warm handoff then reported the expected pinned image and its installed
+identity bytes:
+
+```text
+G HIMON -> BOOT WARM
+HIMON V 00.0720(1227)
+
+E9E8: A2 03 00 F0 67 EA 0D 0A | 48 49 4D 4F 4E 20 56 20
+E9F8: 30 30 2E 30 37 32 30 28 | 31 32 32 37 A9 48 49 4D
+F000: 4C 10 F0 4C 83 F3 4C 8A | F3 4C 92 F3 53 52 01 07
+```
+
+Finally, a cold boot returned `HIMON V 00.0720(1227)` and retained the same
+resident STR8 Phase-1 header through `$F01F`.  This closes the accepted `U`
+gate and completes all required Phase-1 board gates.
+
+## 2026-07-20 STR8 S19 Migration Phase 2: HIMON Client Board Pass
+
+The Phase-2 C/D/E candidate was built from the working tree as
+`himon-phase2-str8-client-0720-1307.s19` (SHA-256
+`574DAFFECEB70B82C94C0BA73CD237F28CDAE7DEACB06E8AA4142CD43AD84B51`).
+From the cold Phase-1 baseline (`HIMON V 00.0720(1227)`), the resident
+provider doorway preflight was exact:
+
+```text
+F009: 4C 92 F3 53 52 01 07
+```
+
+STR8 accepted the complete C/D/E stream and returned `OK`; warm boot then
+reported the expected Phase-2 client:
+
+```text
+HIMON V 00.0720(1307)
+F009: 4C 92 F3 53 52 01 07
+E993: A2 03 00 F0 12 EA 0D 0A | 48 49 4D 4F 4E 20 56 20
+E9A3: 30 30 2E 30 37 32 30 28 | 31 33 30 37 A9 48 49 4D
+```
+
+The loader gates passed:
+
+```text
+>L
+L @3000
+L OK=0004 GO=3000
+>D 3000 3003
+3000: A9 11 60 EA
+
+>L G
+L @3000
+L OK=0004 GO=3000
+#LOADGO# ENTRY=3000
+RET A=11 ... C
+
+>L
+S10460005A40                  ; deliberately bad checksum
+LERR=$01
+L OK=0000 GO=0000
+
+>L                                ; direct I/O range
+S1047F005A22
+LERR=$02
+>L                                ; normal mode must not write flash
+S10480005A21
+LERR=$05
+
+>L                                ; zero-length $FFFF data record
+S103FFFFFE
+S9030000FC
+L OK=0000 GO=0000
+
+>L                                ; overlapping STR8 decode buffer copy
+S1077B0111223344D2
+S9030000FC
+>D 7B00 7B04
+7B00: 11 11 22 33 44
+
+>L F                              ; already-matching visible flash
+S1078000464ED6000E
+S90380007C
+LF OK WR=0004 GO=8000
+>D 8000 8003
+8000: 46 4E D6 00
+```
+
+The bad-checksum guard byte at `$6000` was identical before and after the
+test.  A large runtime-smoke transport also completed all records and handed
+off correctly (`L OK=3A1A GO=2000`), but its own wrapper printed
+`ASM RT FAIL $06`.  Its current link map explains the result:
+`ASM_WORKSPACE_END=$8399`, while the wrapper's assembly target is `$7000`;
+ASM therefore correctly reports `BAD_RANGE=$06` before assembling.  This is a
+pre-existing runtime-image layout defect, independent of the Phase-2 loader.
+
+The completed record service is now the only S19 syntax/type/count/hex/checksum
+authority for HIMON `L`, `L G`, and the parsing half of `L F`; HIMON retained
+the observed policy, copy, accounting, GO, and transitional matching-flash
+behavior.  Phase 2 is hardware-complete.

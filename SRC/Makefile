@@ -139,6 +139,10 @@ BANK3_ERASE_SRC := $(PROOFS_DIR)/bank3-erase-8000-bfff-3000.asm
 BANK3_ERASE_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/bank3-erase-8000-bfff-3000.obj
 BANK3_ERASE_S19 := $(S19_DIR)/bank3-erase-8000-bfff-3000.s19
 BANK3_ERASE_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
+STR8_RECORD_PHASE1_PROOF_SRC := $(PROOFS_DIR)/str8-record-phase1-proof.asm
+STR8_RECORD_PHASE1_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/str8-record-phase1-proof.obj
+STR8_RECORD_PHASE1_PROOF_S19 := $(S19_DIR)/str8-record-phase1-proof-3000.s19
+STR8_RECORD_PHASE1_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 ASM_V1_CORE_SRC := $(ASM_DIR)/asm-v1-core.asm
 ASM_V1_CORE_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-core.obj
 ASM_V1_CORE_S19 := $(S19_DIR)/asm-v1-core-2000.s19
@@ -286,6 +290,7 @@ PROOF_TARGETS ?= \
 	pack40-test \
 	asm-rjoin-proof \
 	bank3-erase \
+	str8-record-phase1-proof \
 	asm-v1-runtime-smoke \
 	asm-v1-runtime-asmtest \
 	asm-v1-runtime-paste \
@@ -497,6 +502,10 @@ asm-rjoin-proof: $(ROM_LIB) $(ASM_RJOIN_PROOF_S19)
 
 bank3-erase: $(BANK3_ERASE_S19)
 	@echo "Built $(BANK3_ERASE_S19)."
+	@$(MAKE) artifacts
+
+str8-record-phase1-proof: $(STR8_RECORD_PHASE1_PROOF_S19)
+	@echo "Built $(STR8_RECORD_PHASE1_PROOF_S19)."
 	@$(MAKE) artifacts
 
 asm-v1-core: $(ASM_V1_CORE_S19)
@@ -716,6 +725,8 @@ $(STR8_OBJ): $(STR8_RECORD_EQ)
 
 $(STR8_WORKER_OBJ): $(STR8_RECORD_EQ)
 
+$(STR8_RECORD_PHASE1_PROOF_OBJ): $(STR8_RECORD_EQ)
+
 $(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_RAM_PROOF $<
@@ -813,6 +824,12 @@ $(BANK3_ERASE_S19): $(BANK3_ERASE_OBJ)
 	$(LINKER) $(BANK3_ERASE_LINKFLAGS) $(BANK3_ERASE_S19) $(BANK3_ERASE_OBJ)
 	@echo [ps] set S9 start $$3000 in $(BANK3_ERASE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(BANK3_ERASE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+
+$(STR8_RECORD_PHASE1_PROOF_S19): $(STR8_RECORD_PHASE1_PROOF_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(STR8_RECORD_PHASE1_PROOF_LINKFLAGS) $(STR8_RECORD_PHASE1_PROOF_S19) $(STR8_RECORD_PHASE1_PROOF_OBJ)
+	@echo [ps] set S9 start $$3000 in $(STR8_RECORD_PHASE1_PROOF_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_RECORD_PHASE1_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
 
 $(ASM_V1_CORE_S19): $(ASM_V1_CORE_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1079,7 +1096,7 @@ $(FIG_FORTH_C000_OBJ): $(FIG_FORTH_C000_SRC)
 himon-version-stamp: $(HIMON_VERSION_STAMP)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" -AsmOutPath "$(ASM_VERSION_INC)" $(HIMON_VISIBLE_STAMP_ARG)
 
-$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) himon-version-stamp
+$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) $(STR8_RECORD_EQ) himon-version-stamp
 
 $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
@@ -1157,7 +1174,7 @@ endif
 	str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash \
 	life himon-debug-proof himon-search-static himon-search-static-proof \
 	himon-search-proof himon-search-flash himon-search-for-himon \
-	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase asm-v1-core \
+	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase str8-record-phase1-proof asm-v1-core \
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \
 	asm-v1-runtime-paste asm-session-report asm-session-report-ap-bin asm-v1-flash asm-flash asm-opcode-coverage \
 	asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check \

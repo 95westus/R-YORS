@@ -455,9 +455,12 @@ Phase 0  PASS 2026-07-19  V1 policy and byte-level ABI frozen
 Phase 1  HOST PASS; HARDWARE PENDING
          STR8 provider, buffer/console parser, APPLY_LF worker mode, and
          converted STR8 U client implemented without changing HIMON
-Phase 2  pending: convert HIMON L and L G to the buffered STR8 parser
+Phase 2  HOST PASS; HARDWARE PENDING
+         HIMON L, L G, and the parse half of L F use the buffered STR8 parser;
+         private HIMON S19 syntax/checksum code removed
 Phase 3  pending: convert HIMON L F to STR8 APPLY_LF
-Phase 4  pending: remove the private HIMON parser and close ASM-F2 board proof
+Phase 4  pending: remove the transitional HIMON L F byte sink and close the
+         ASM-F2 board proof
 ```
 
 The Phase-1 resident image publishes `4C xx xx 53 52 01 07` at `$F009-$F00F`.
@@ -468,6 +471,21 @@ it receives one validated descriptor at a time and preflights a complete S1
 span before copying it into the C/D/E staging buffers. Phase 1 is not a board
 pass until the fixed header, parser negatives, converted `U`, and non-erasing
 APPLY_LF cases in the ASM test plan have transcript evidence.
+
+The Phase-2 HIMON image verifies the complete `53 52 01 07` service header
+before printing any loader-ready banner. Every `L` form sends the counted
+HIMON line buffer to `STR8_REC_OP_PARSE`; BAD_START through BAD_END retain the
+public `$01` parse failure, and service-contract failures return `$06`. Normal
+`L`/`L G` preflight the complete RAM span and copy the decoded `$7B00` record
+buffer with memmove semantics. `L F` also consumes the validated descriptor in
+this phase, but deliberately retains the old per-byte flash-policy sink until
+Phase 3 replaces it with `STR8_REC_OP_APPLY_LF`.
+
+Removing the duplicate S0/S1/S9 syntax, hex, count, and checksum routines in
+Phase 2 more than pays for the HIMON adapter: the linked HIMON exclusive end
+moves from `$EF2D` to `$EED8`, leaving `$0128` bytes before STR8 at `$F000`.
+This is a host result only until the ordered Phase-1 provider gates and the
+Phase-2 HIMON gates in the ASM test plan have board transcripts.
 
 ## Additional Load Formats
 

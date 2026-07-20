@@ -152,7 +152,8 @@ HIM_SVC_VECTOR_COUNT       EQU             $0B
 ; - $7E41-$7E45 AP package service scratch
 ; - $7E46-$7E65 debugger/assembler workspace
 ; - $7E66-$7E75 hash record/exec metadata
-; - $7E76-$7E94 command/parser/keytest workspace
+; - $7E76-$7E94 command/parser/keytest workspace; $7E78-$7E83 is reused by
+;                 persistent loader state while CMD_L owns the foreground
 ; - $7E95-$7EDD loader workspace and range table
 ; - $7EDE-$7EDF delay helper fixed RAM
 ; - $7EE0-$7EFF PIA/reset/trap/NMI/vector state
@@ -215,36 +216,30 @@ KEYT_ESC_BYTE              EQU             $7E94
 ; ----------------------------------------------------------------------------
 ; LOAD (S-Record) workspace
 ; ----------------------------------------------------------------------------
+; Persistent CMD_L state stays outside the STR8 V1 request/result block at
+; $7E95-$7EA8. These cells overlay inactive command-hook scratch while the
+; foreground loader owns the command processor. The remaining aliases inside
+; the service block are transient: line status before a call and L F byte-sink
+; diagnostics after a successful parse.
+LOAD_FLASH_MODE            EQU             $7E78
+LOAD_REC_KIND              EQU             $7E79
+LOAD_FAIL_CODE             EQU             $7E7A
+LOAD_DST_LO                EQU             $7E7B
+LOAD_DST_HI                EQU             $7E7C
+LOAD_GO_LO                 EQU             $7E7D
+LOAD_GO_HI                 EQU             $7E7E
+LOAD_GO_VALID              EQU             $7E7F
+LOAD_TOTAL_LO              EQU             $7E80
+LOAD_TOTAL_HI              EQU             $7E81
+LOAD_FAIL_ADDR_LO          EQU             $7E82
+LOAD_FAIL_ADDR_HI          EQU             $7E83
+LOAD_ABORT_MODE            EQU             $7E84
+LOAD_SKIP_LO               EQU             $7E85
+LOAD_SKIP_HI               EQU             $7E86
+
 LOAD_LINE_STATUS           EQU             $7E95
-LOAD_REC_TYPE              EQU             $7E96
-LOAD_FLASH_MODE            EQU             $7E96
-LOAD_REC_KIND              EQU             $7E97
-LOAD_ADDR_LEN              EQU             $7E98
-LOAD_FAIL_CODE             EQU             $7E98
-LOAD_COUNT                 EQU             $7E99
-LOAD_DATA_LEN              EQU             $7E9A
-LOAD_SUM                   EQU             $7E9B
-LOAD_CHK                   EQU             $7E9C
 LOAD_FLASH_OLD             EQU             $7E9C
-LOAD_DST_LO                EQU             $7E9D
-LOAD_DST_HI                EQU             $7E9E
-LOAD_GO_LO                 EQU             $7E9F
-LOAD_GO_HI                 EQU             $7EA0
-LOAD_GO_VALID              EQU             $7EA1
-LOAD_TOTAL_LO              EQU             $7EA2
-LOAD_TOTAL_HI              EQU             $7EA3
-LOAD_REC_LO                EQU             $7EA4
-LOAD_REC_HI                EQU             $7EA5
-LOAD_FAIL_ADDR_LO          EQU             $7EA4
-LOAD_FAIL_ADDR_HI          EQU             $7EA5
-LOAD_ADDR_B0               EQU             $7EA6
-LOAD_ADDR_B1               EQU             $7EA7
-LOAD_ADDR_B2               EQU             $7EA8
-LOAD_ADDR_B3               EQU             $7EA9
-LOAD_ABORT_MODE            EQU             $7EA6
 LOAD_WRITE_OK              EQU             $7EA7
-LOAD_SKIP_LO               EQU             $7EA8
-LOAD_SKIP_HI               EQU             $7EA9
 LOAD_AUTO_GO               EQU             $7EAA
 LOAD_HAVE_DATA             EQU             $7EAB
 LOAD_FIRST_LO              EQU             $7EAC
@@ -276,6 +271,7 @@ LOAD_FAIL_PROTECT          EQU             $02
 LOAD_FAIL_ERASE            EQU             $03
 LOAD_FAIL_WRITE            EQU             $04
 LOAD_FAIL_NEED_FLASH       EQU             $05
+LOAD_FAIL_SERVICE          EQU             $06
 
 LOAD_RANGE_MAX             EQU             $08
 LOAD_RANGE_BASE            EQU             $7EBE

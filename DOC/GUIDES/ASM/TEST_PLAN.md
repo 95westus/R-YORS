@@ -10228,27 +10228,287 @@ fixed legacy entries, STR8/worker non-overlap, and vectors before emitting the
 `SAMPLES/str8n-topwrite-transient-3000.a`; its current face/prompt checks map
 ROM `$F979/$F9AE` to staged RAM `$1379/$13AE`.
 
+### Executable Phase-1 board proof
+
+Build the RAM-only fixture and retain the generated S19 for the board:
+
+```text
+make -C SRC str8-record-phase1-proof
+SRC/BUILD/s19/str8-record-phase1-proof-3000.s19
+```
+
+It is self-contained, has no ROM-library dependency, and provides these fixed
+entry points after a normal HIMON `L` of its S19:
+
+```text
+G 3000  buffered parser/ABI suite          pass: A=AC X=0F Y=01 C=1
+G 3003  APPLY_LF non-erasing suite         pass: A=AC X=06 Y=02 C=1
+G 3006  console maximum-record suite       pass: A=AC X=01 Y=03 C=1
+G 3009  console Ctrl-C suite                pass: A=AC X=01 Y=04 C=1
+```
+
+All entries use `$1A00-$1A17` as a persistent result row.  `$1A00=$AC` is a
+pass and `$1A00=$E1` is a fixture assertion failure; `$1A01/$1A02/$1A03` then
+identify suite/case/field.  The rest of the row preserves the actual and
+expected bytes plus the latest service result and failure tuple.  Do not expect
+the result row to be zeroed on a pass.
+
+This HIMON's `D` command takes an inclusive end address, not a byte count.  Use
+these pasteable installation-gate dumps before `G 3000`:
+
+```text
+D F000 F00F
+D F975 F978
+D FCC9 FCC9
+D FFEF FFEF
+D FFFA FFFF
+```
+
+### Phase-1 board operator run card
+
+Run this sequence from the currently bootable board; it deliberately separates
+top-sector installation from record-service proof.  Do not use `L G` for the
+proof image because the four proof entries must be run separately.  Do not
+paste a Motorola S19 into `ASM NEW`: ASM accepts source only.
+
+1. **Freeze the staging material on the host.**  Retain the known-good
+   external-programmer recovery image and record its identity.  Build only the
+   needed STR8 material and retain these three distinct files:
+
+   ```text
+   make -C SRC str8 str8-top-stage-s19 str8-topwrite-a str8-record-phase1-proof
+
+   DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a  assembly source for ASM
+   SRC/BUILD/s19/str8-record-phase1-proof-3000.s19         S19 for HIMON L
+   DOC/GUIDES/ASM/SAMPLES/str8-record-phase1-max252.s19    one console input line
+   ```
+
+   The generated topwriter carries the new `$F000-$FFFF` image inside its
+   assembly source; it does not use the Phase-2 HIMON update S19.  The final
+   destructive `U` acceptance test requires a separately pinned Phase-1 HIMON
+   C/D/E artifact from `f138d78`; do not substitute the current tree's
+   `himon-str8-himon-update.s19`.
+
+2. **Prepare the board.**  Keep Bank 3 visible, end any ASM session with `.`,
+   and do not leave a RAM program whose state matters at `$3000-$4FFF` or
+   `$0A00-$19FF`.  The topwriter will use those ranges.  Ensure the currently
+   installed flash ASM enters successfully with `ASM`; if it does not, recover
+   ASM before proceeding.  The four service proof calls require no active ASM
+   session because the worker reuses ASM's low-RAM workspace.
+
+3. **Install STR8, but stage before programming.**  Enter `ASM NEW`, paste the
+   complete text of `str8n-topwrite-transient-3000.a`, and enter `.`.  Require
+   the normal `ASM OK` / `ASM BYE` exit.  Then run and inspect the staged image:
+
+   ```text
+   G 3000
+   D 1A00 1A03
+   D 0A00 0A0F
+   D 1375 1378
+   D 16C9 16D8
+   D 19FA 19FF
+   ```
+
+   Require `00 AC 00 00` at `$1A00`; the staged header
+   `4C 10 F0 4C 83 F3 4C 8A F3 4C 92 F3 53 52 01 07` at `$0A00`; identity
+   `7A 0F 6A 5F` at `$1375`; worker head
+   `08 78 AD F0 1F C9 02 F0 11 C9 05 F0 12 C9 06 F0` at `$16C9`; and vectors
+   `99 F0 00 F0 AD F0` at `$19FA`.  If any check differs, stop: do not run
+   `G 3003`.
+
+4. **Program and re-verify the top sector.**  With the recovery image still
+   available, run:
+
+   ```text
+   G 3003
+   D 1A00 1A03
+   ```
+
+   Require `01 AC 00 00`.  Cold boot, then require these resident bytes using
+   the inclusive-end form of `D`:
+
+   ```text
+   D F000 F00F
+   D F975 F978
+   D FCC9 FCD8
+   D FFFA FFFF
+   ```
+
+   They must match the staged header, identity, worker head, and vectors above.
+   `$F009-$F00F` must read `4C 92 F3 53 52 01 07`.  A pre-Phase-1 face such as
+   `$F009=78` or vectors `92 F0 00 F0 A6 F0` is an installation failure; do not
+   run the `APPLY_LF` proof on that image.
+
+5. **Load the proof without starting it.**  At HIMON, enter `L` and send
+   `str8-record-phase1-proof-3000.s19`.  Require `L @3000` and the normal
+   `L OK=07BB GO=3000` completion.  This is the correct S19 receiver; it is not
+   ASM input.  Then run each entry below and dump `$1A00-$1A17` after each one.
+
+   ```text
+   G 3000
+   D 1A00 1A17
+   D 6000 6003
+   ```
+
+   Require `RET A=AC X=0F Y=01` with carry set, `$1A00=AC`, and guard bytes
+   `11 22 33 44`.  This is the header/vector, buffered S0/S1/S9, lowercase,
+   BAD_START through BAD_END, bad request, and wrap-source suite.
+
+   ```text
+   G 3003
+   D 1A00 1A17
+   ```
+
+   Require `RET A=AC X=06 Y=02` with carry set and `$1A00=AC`.  The fixture
+   proves zero-length, lower/crossing/upper protection, NEED_ERASE diagnostics,
+   and the matching-only worker path; it never programs a differing byte.
+
+6. **Exercise the two console-only paths.**  Run `G 3006`, then use the serial
+   sender to transmit exactly the single CR-terminated line in
+   `str8-record-phase1-max252.s19`.  Do not send the proof S19 again.  A
+   sender which caps an individual paste at 256 characters must transmit the
+   line as raw no-CR chunks (200/200/114 characters is suitable), appending a
+   single CR only after the final chunk.  A CR or LF between chunks is an
+   invalid record terminator.  Require `RET A=AC X=01 Y=03` with carry set and
+   `$1A00=AC`.  Then run `G 3009`, send one Ctrl-C byte (`$03`), and require
+   `RET A=AC X=01 Y=04` with carry set and `$1A00=AC`.
+
+7. **Prove STR8 `U` first declines safely.**  This is safe and must precede
+   any accepted update:
+
+   ```text
+   D C000 C01F
+   U
+   N
+   D C000 C01F
+   ```
+
+   Require `UPDATE HIMON C000-EFFF? Y:`, an abort, and byte-for-byte identical
+   before/after dumps.
+
+8. **Accepted `U` gate — only with explicit Phase-1 authority.**  This rewrites
+   all C/D/E sectors.  After confirming the recovery path and the exact pinned
+   `f138d78` Phase-1 candidate, run `U`, answer `Y` to the first prompt, send
+   its complete C/D/E S19 including the final S9, require a dot per accepted
+   S1 and `PROGRAM C000-EFFF? Y:`, then answer `Y`.  Require `OK`, cold and
+   warm HIMON handoff, and the resident STR8 header still matching Step 4.
+   Stop before this step if the approved Phase-1 candidate is not available.
+
+9. Append the complete transcript, every result-row dump, image identities,
+   recovery-image identity, and the `U` decision to `HARDWARE_TEST_LOG.md`.
+
 Required Phase-1 board gates, in order:
 
 1. Retain the previous combined ROM as the external-programmer recovery image.
-2. Install STR8 first. Dump `$F000-$F00F` and require the exact bytes above;
-   also require identity `#5F6A0F7A`, worker `$FCC9-$FFEF`, and vector tail
-   `99 F0 00 F0 AD F0`.
-3. Run non-mutating buffered calls through `$F009` for valid S0, S1, and S9;
-   require kinds `$01/$02/$03`, S1 address/data/length, S9 entry-valid, and
-   success `A=$00/C=1/status=$00`.
-4. Exercise BAD_START through BAD_END, a wrapping buffer source, lowercase hex,
-   a 252-byte S1 payload, and Ctrl-C on the console source. Require the frozen
-   status byte and no policy-sink write on every failure.
-5. Enter STR8 `U`, decline its first confirmation, and verify no flash change.
-   Then use a known current HIMON C/D/E S19 stream: require one dot per accepted
-   S1, the existing second confirmation, successful C/D/E program/verify, and
-   a working HIMON cold/warm handoff afterward.
-6. Through a RAM proof caller, exercise `APPLY_LF` without erase: zero-length
-   success; `$7FFF`, crossing `$BFFF`, and `$C000` protect failures; an occupied
-   unequal byte returning NEED_ERASE with address/observed/expected; and a
-   record containing only already-matching bytes returning success without a
-   flash change.
+   Run the fixture only with Bank 3 visible, no active ASM session, and the
+   resident ROM service capability byte `$F00F=$07`; the `str8-ram` proof image
+   intentionally exposes only `$03` and cannot prove `APPLY_LF` success.
+2. Install STR8 first and dump these exact resident bytes before loading the
+   fixture:
 
-Do not install a HIMON client or remove the HIMON parser until all Phase-1
-provider gates pass and the transcript is appended to `HARDWARE_TEST_LOG.md`.
+   ```text
+   $F000-$F00F = 4C 10 F0 4C 83 F3 4C 8A F3 4C 92 F3 53 52 01 07
+   $F975-$F978 = 7A 0F 6A 5F       (identity #5F6A0F7A, little-endian)
+   $FCC9        = 08               (worker first byte)
+   $FFEF        = EE               (worker last byte; worker span $0327)
+   $FFFA-$FFFF = 99 F0 00 F0 AD F0
+   ```
+
+3. Load `str8-record-phase1-proof-3000.s19` with `L`, then run `G 3000` and
+   dump `$1A00-$1A17`.  The 15 checks cover the exact V1 header/vectors; valid
+   S0, S1, S9, and lowercase S1 descriptors/data; BAD_START through BAD_END;
+   BAD_OP, BAD_FORMAT, invalid source, and a `$FFF0+$11` wrapping source.
+   `$6000-$6003` is a guard and must remain `11 22 33 44` after every parse.
+4. Run `G 3003`.  The six checks cover zero-length `$FFFF` success, `$7FFF`,
+   `$BFFF+$02`, and `$C000` `LF_PROTECT` results; a dynamically found occupied
+   low-flash byte yielding `LF_NEED_ERASE` with exact address/observed/expected;
+   and the same already-matching byte succeeding through the RAM worker without
+   a flash change.  The fixture never passes a differing byte to the worker.
+5. Run `G 3006`, then send exactly the one CR-terminated line in
+   `SAMPLES/str8-record-phase1-max252.s19`.  It is the 514-character S1 record
+   for address `$2000`, payload `$00-$FB`, and checksum `$56`; the console suite
+   requires descriptor `DATA/$2000/$FC/$7B00` and every decoded byte.  Run
+   `G 3009` separately and send Ctrl-C (`$03`); it must return `ABORT=$0E/C=0`.
+6. Enter STR8 `U`, decline its first confirmation, and verify no flash change.
+   Then use a *Phase-1-pinned* HIMON C/D/E S19 stream: require one dot per
+   accepted S1, the existing second confirmation, successful C/D/E
+   program/verify, and a working HIMON cold/warm handoff afterward.  Do **not**
+   use `himon-str8-himon-update.s19` from the current Phase-2 working tree for
+   this provider gate; use the approved Phase-1 artifact (commit `f138d78`) or
+   a clean worktree built from it.
+7. Append the exact terminal transcript, `$1A00-$1A17` rows, image identities,
+   and any update prompt responses to `HARDWARE_TEST_LOG.md`; do not rewrite
+   prior hardware evidence.
+
+Do not install the Phase-2 HIMON client on a board until all Phase-1 provider
+gates pass and the transcript is appended to `HARDWARE_TEST_LOG.md`. Host-side
+client development may proceed, but that image is not yet deployable.
+
+## 2026-07-19 STR8 S19 Migration Phase 2
+
+Status: HIMON client host-build and loader board pass. The current
+`asm-v1-runtime-smoke-2000.s19` layout has a separate ASM workspace-placement
+defect recorded below; it is not a Phase-2 loader failure and is not used as a
+Phase-2 acceptance condition.
+
+Phase 2 moves all S19 syntax, type, count, hex, checksum, and line-end
+validation out of HIMON. `L`, `L G`, and the parse half of `L F` call the fixed
+buffered service at `$F009`. HIMON retains normal-RAM span policy, overlap-safe
+copy, accounting/progress, and GO selection. The existing `L F` per-byte flash
+sink remains transitional until Phase 3 switches it to `APPLY_LF`.
+
+Host gates passed with:
+
+```text
+make -C SRC himon
+make -C SRC himon-str8-rom-bin
+
+HIMON CODE/DATA/END       = $2942/$0596/$EED8
+HIMON free to STR8        = $EED8-$EFFF / $0128
+STR8 record entry/body    = $F009/$F392
+STR8 request/result RAM   = $7E95-$7EA8
+STR8 decoded buffer       = $7B00-$7BFB
+$F000-$F00F               = 4C 10 F0 4C 83 F3 4C 8A F3 4C 92 F3 53 52 01 07
+vectors                   = 99 F0 00 F0 AD F0
+```
+
+The current HIMON map must contain `L_STR8_REQUIRE_SERVICE` and
+`L_PARSE_RECORD_STR8`, and must not contain the removed private-parser symbols
+`L_PARSE_S0`, `L_PARSE_S1`, `L_PARSE_S9`, `L_PARSE_HEX_BYTE_STRICT`, or
+`L_VERIFY_CHECKSUM_EOL`.
+
+Required Phase-2 board gates, in order:
+
+1. Confirm the Phase-1 STR8 board pass, then install the Phase-2 HIMON client
+   through the already-proven STR8-first update path. Before any `L` test, dump
+   `$F009-$F00F` and require `4C 92 F3 53 52 01 07` for this build.
+2. Enter `L` and send `S1073000A91160EAC4` followed by `S9033000CC`. Require
+   `L @3000`, `L OK=0004 GO=3000`, and `$3000-$3003 = A9 11 60 EA`.
+3. Repeat with `L G`; require the same load summary, transfer to `$3000`, and a
+   normal return with A=`$11`. A large current runtime-smoke transport is a
+   useful non-blocking witness: require `L OK=3A1A GO=2000` before its entry.
+   Do not require `ASM RT OK` from the current artifact. Its map places
+   `ASM_WORKSPACE_END=$8399`, so its own `$7000` target is correctly rejected
+   as `BAD_RANGE=$06`; that is an ASM layout defect, not a loader/parser
+   outcome. Record the result separately and do not use it to accept or reject
+   Phase 2.
+4. Capture a byte at a safe RAM address, send a valid S1 for that address with
+   a deliberately bad checksum, require `LERR=01`, terminate with a valid S9,
+   and prove the captured byte did not change. This is the validate-before-copy
+   gate.
+5. Exercise normal-loader policy with `S1047F005A22` and
+   `S10480005A21`. Require `LERR=02` and `LERR=05`, respectively, with no I/O
+   or flash mutation. Also send zero-length `S103FFFFFE` plus `S9030000FC` and
+   require success with `L OK=0000 GO=0000`.
+6. Enter `L`, send `S1077B0111223344D2` and `S9030000FC`, then dump
+   `$7B00-$7B04`. Require `$7B01-$7B04 = 11 22 33 44`; repeated `$11` bytes
+   expose an incorrect forward copy over the overlapping STR8 data buffer.
+7. Verify the current image begins `$8000 = 46 4E D6 00`, enter `L F`, and send
+   `S1078000464ED6000E` plus `S90380007C`. Require a successful four-byte
+   already-matching load and unchanged flash. This proves the shared parser can
+   feed the transitional L F sink; destructive/preflight L F cases remain
+   Phase 3 gates.
+8. Append the exact transcript and image identities to
+   `HARDWARE_TEST_LOG.md`. Phase 2 passes when the provider-header, `L`, `L G`,
+   checksum/non-mutation, policy, zero-length, overlap, and matching `L F`
+   gates above pass.
