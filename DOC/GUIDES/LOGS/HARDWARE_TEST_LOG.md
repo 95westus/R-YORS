@@ -14925,3 +14925,208 @@ rows, and one import. The HIMON request cells report status `$00`, source
 and body length `$0029`; the staged header at `$0A00` begins
 `41 50 01 76 00`. This closes the banked-source RJOIN gate and, together with
 the preceding atomicity pass, closes both current-image AP-linker gates.
+
+## 2026-07-19 STR8 V0 Gate 1: Nonerased Lower-Sector Restore Pass
+
+Fixture: `ASM/SAMPLES/str8-restore-nonerased-3000.a`, frozen source hash
+`bd7f4cae699619e3154d7080c521b2f55bfb67d4`. Installed identities were
+STR8-N V0 `#5F6A0F7A`, HIMON `00.0718(2041)`, and ASM-F2 `00.0718(2045)`.
+
+The unchanged dry fixture assembled cleanly and left the expected harmless
+row. The captured execution proof follows.
+
+```text
+>D 1A00 1A07
+1A00: E0 00 00 00 00 00 02 90 | ........
+
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=F5 S=FD NV-BdIzC
+>D 1A00 1A07
+1A00: AC 50 BC 43 00 00 02 90 | .P.C....
+>D 9FF0
+9FF0: 43 | C
+
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+STR8-N
+
+HIMON IN 3S. S=STR8-N  3
+STR8-N V0 #5F6A0F7A
+ROM $F000
+? B E U 0 1 2 G R
+B0 HOLD
+STR8-N>
+RESTORE B2->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: n
+COPY B2->B3
+
+OK
+STR8-N>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0718(2041)
+>G 3003
+GO 3003
+
+#GO# ENTRY=3003
+RET A=AC X=03 Y=00 P=F5 S=FD NV-BdIzC
+>D 1A00 1A07
+1A00: AC 56 BC 43 00 00 02 90 | .V.C....
+>D 9FF0
+9FF0: BC | .
+```
+
+Result: pass. The armed preparation deliberately changed Bank 3 `$9FF0` from
+the staged Bank-2 source byte `$BC` to `$43`, then the normal B2-to-B3 restore
+with high flash declined restored `$BC`. `AC 56` and carry set prove the
+fixture compared all 4096 bytes of the restored `$9000-$9FFF` sector.
+
+The subsequent ASM-F2 S19 reload attempt did not complete:
+
+```text
+>L F
+L F S19
+L @8000
+LF ERASE=B9C8 OLD=38 NEW=39
+L @B9D0
+LF FAIL=03 WR=39C8 SKIP=029E GO=800C
+```
+
+ASM-F2 still opened and exited afterward. This reload failure is recorded as a
+separate recovery issue; it does not alter the completed Gate 1 proof.
+
+## 2026-07-19 STR8 V0 Gate 2: Parser-Safe Fixture Revision Required
+
+The original high-failure fixture was not armed. Board ASM-F2 rejected each
+`PATCH+offset` absolute operand with `ERR=$03`; after that tainted assembly,
+the unarmed check returned `A=E0/C=0` and the malformed armed copy returned
+`A=E2/C=0`. No high restore was started. The fixture was revised to use the
+equivalent explicit constants `$0275` through `$0279`; its new frozen hash is
+`11664524085cad0a74859c0b03a0a812ff27b860`. Gate 2 remains open pending a
+clean unchanged-board assembly and dry latch on that revision.
+
+## 2026-07-19 STR8 V0 Gate 2: Parser-Safe Latch Pass And Source-Match Stop
+
+The corrected frozen fixture
+`11664524085cad0a74859c0b03a0a812ff27b860` assembled cleanly on board, with
+no `ERR=$03`. Its unchanged latch was then proven:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=E0 X=30 Y=30 P=F4 S=FD NV-BdIzc
+>D 1A00 1A07
+1A00: E0 00 00 00 00 00 02 03 | ........
+```
+
+The same parser-safe source was reassembled with `ARM EQU $A5`. It returned
+before the worker patch and before any high-flash copy:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=E5 X=03 Y=FE P=B4 S=FD Nv-BdIzc
+```
+
+`$E5/C=0` is the intended Bank-2/Bank-3 `$C000-$FFFF` mismatch stop. `Y=$FE`
+is the first unequal byte offset in the current sector comparison. The board
+had updated Bank 3 to HIMON/ASM-F2 `00.0719(1841)` while Bank 2 still held the
+older source, so the source guard correctly prevented the terminal proof.
+
+The transcript also recorded a successful current ASM-F2 install before the
+lower restore:
+
+```text
+>L F
+L F S19
+L @8000
+LF OK WR=3C6D GO=800C
+>ASM NEW
+ASM-F2 00.0719(1841)
+```
+
+The later `LF FAIL=03` followed the ordinary B2-to-B3 lower restore, which
+replaces Bank 3 `$8000-$BFFF` from Bank 2. This correlation is recorded for
+the separate loader diagnosis; it is not a demonstrated causal mechanism.
+
+## 2026-07-19 STR8 V0 Gate 2: Post-Verify Failure Pass
+
+Before the terminal run, the RAM-resident
+`bank3-erase-8000-bfff-transient-3000.a` utility
+(`29fa3b26047a6a4b45e023322ecd62354f9a8573`) erased and verified Bank 3
+`$8000-$BFFF` (`RET A=AC/C=1`), after which the current ASM-F2 S19 installed
+successfully as `00.0719(1841)`:
+
+```text
+>L F
+L F S19
+L @8000
+LF OK WR=3C6D GO=800C
+```
+
+The lower-sector Gate 1 sequence subsequently restored the older Bank-2 ASM
+slice as expected. Gate 2 initially stopped at its nonwriting `$E5` source
+guard. STR8 then completed the intended `B0 HOLD` backup rotation, producing
+`COPY B2->B1`, `COPY B3->B2`, and `OK` (repeated once while keeping the same
+Bank 3 image), so Bank 2 became the current complete source.
+
+The parser-safe high fixture again passed its unchanged latch. Its `ARM=$A5`
+run made no normal GO return; after the reset sequence resumed at STR8 and
+warm HIMON entry, the retained verifier produced the required proof:
+
+```text
+>G 3003
+GO 3003
+
+#GO# ENTRY=3003
+RET A=AC X=33 Y=00 P=F5 S=FD NV-BdIzC
+>D 1A00 1A07
+1A00: AC 00 5A 00 00 F0 02 03 | ..Z.....
+>D FFFA FFFF
+FFFA: 92 F0 00 F0 A6 F0 | ......
+>D 9FF0
+9FF0: BC | .
+```
+
+Result: pass. The terminal failure path was reached only after the F-sector
+transaction completed (`$1A01=$00`), the guarded RAM hook was installed
+(`$1A02=$5A`), the retained Bank-2 and visible Bank-3 top sectors compared
+equal, and the expected STR8 vector tail remained executable. This closes the
+deterministic injected high-restore failure gate. It does not claim a physical
+failure during top-sector erase or programming.
+
+The following post-proof reload still stopped at:
+
+```text
+LF FAIL=03 WR=39C8 SKIP=029E GO=800C
+```
+
+That ASM-F2 reload behavior is retained as a separate regression.
+
+### Operator Correction: `LF FAIL=03` Was Prior Test State, Not A Regression
+
+The operator confirmed that the displayed `LF FAIL=03` belonged to the prior
+`$9000` test state. It is not an ASM-F2 loader regression. The valid recovery
+sequence erased Bank 3 `$8000-$EFFF`, then used `L F` with
+`asm-v1-flash-8000.s19`; the captured result was:
+
+```text
+L F S19
+L @8000
+LF OK WR=3C6D GO=800C
+ASM-F2 00.0719(1841)
+```
+
+Accordingly, the closed STR8 V0 gates have no outstanding loader/recovery
+failure. The earlier failing line remains above as a transcript of its prior
+test state, not as a defect claim.

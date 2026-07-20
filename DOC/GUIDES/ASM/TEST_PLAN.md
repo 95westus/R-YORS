@@ -10143,3 +10143,48 @@ The staged source, patched call, resolved-address result, debug row, and HIMON
 request cells all agree with `BIO_FTDI_PUT_CSTR=$E705`. Repeating the banked
 AP command produced the same successful execution. Gates 1 and 2 are closed
 for the current HIMON-resident AP linker image.
+
+## STR8 V0 Restore And High-Mode Failure Fixtures
+
+The STR8 V0 recovery gates have guarded board fixtures and an exact destructive
+run card in
+[STR8_V0_RESTORE_FAILURE_GATES.md](../STR8/STR8_V0_RESTORE_FAILURE_GATES.md).
+
+```text
+SAMPLES/str8-restore-nonerased-3000.a
+SAMPLES/str8-highfail-inject-3000.a
+```
+
+Both sources default to `ARM=$00`, which must return `$E0/C=0` without writing
+flash. Gate 1 complements the staged Bank-2 source byte corresponding to
+Bank-3 `$9FF0`, programs that deliberate collision, then requires the real
+ordinary `2` restore with high flash declined. Its post-restore entry compares
+all 4096 source and destination bytes and returns `$1A00-$1A01 = AC 56`.
+
+Gate 2 first requires Bank 2 and Bank 3 `$C000-$FFFF` to match byte-for-byte.
+It retains the Bank-2 top-sector source at `$0A00`, verifies the installed RAM
+worker patch signature `8D E9 1F D0 D2` at `$0275`, and patches only that RAM
+copy to return failure after the Bank-3 F sector verifies and the sector mark
+wraps to `$00`. The required terminal behavior is no GO return or reset. After
+physical reset and warm HIMON entry, its verifier requires:
+
+```text
+$1A00-$1A07 = AC 00 5A 00 00 F0 02 03
+$FFFA-$FFFF = 92 F0 00 F0 A6 F0
+```
+
+The verifier compares all 4096 top-sector bytes with the retained snapshot.
+The 2026-07-19 lower-sector transcript passed Gate 1: the deliberate `$9FF0`
+collision changed from `$BC` to `$43`, ordinary B2-to-B3 restore returned it
+to `$BC`, and the full-sector verifier returned `AC 56` with carry set.
+
+Gate 2 is also passed. Its first assembler preflight found that this board
+ASM-F2 does not accept `PATCH+offset` in absolute memory operands; the
+parser-safe revision uses explicit byte constants and passed its unchanged
+`$E0/C=0` latch. Its first armed run safely returned `$E5/C=0` with `Y=$FE`,
+proving Bank 2 and Bank 3 were not yet interchangeable. After the intentional
+`B0 HOLD` B3-to-B2 rotation, the armed call made no normal GO return. Following
+reset and warm HIMON entry, the verifier returned `AC 00 5A 00 00 F0 02 03`
+with carry set and the vector tail `92 F0 00 F0 A6 F0`. This closes the
+deterministic post-verify software failure path only; it does not simulate a
+physical failure during top-sector erase or programming.

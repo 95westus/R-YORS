@@ -44,9 +44,18 @@ current prompt, `G`, burn-check bytes, `B`
 backup rotation, `E` / Bank 0 enrollment, post-enrollment B0/B1/B2 rotation,
 `U` / `UPDATE HIMON` from visible U1 to visible U2, fig-Forth as a `$C000`
 payload, OSI BASIC as a `$C000` payload, and high-flash recovery from the
-backup chain. It explicitly does not yet prove restore over non-erased ordinary
-bytes below `$C000`, STR8 self-update, or the high-flash failure path with a
-sacrificial image.
+backup chain. The nonerased ordinary-byte restore proof below `$C000` and the
+deterministic post-verify high-flash failure proof both passed on 2026-07-19.
+It does not yet prove STR8 self-update or a physical flash failure during an
+erase/program operation.
+
+The pasteable fixtures and byte-level operator sequence for the first two gaps
+are now frozen in
+[STR8_V0_RESTORE_FAILURE_GATES.md](STR8_V0_RESTORE_FAILURE_GATES.md). The
+high-restore fixture injects failure after the RAM worker verifies the
+replacement `$F000` sector and proves the worker halts rather than returning
+through replaced ROM; it deliberately does not claim to simulate a physical
+failure during flash erase or programming.
 
 ## Start Here
 
@@ -125,12 +134,16 @@ Non-destructive STR8:
 
 Destructive STR8, separate bench pass:
   B before Bank 0 enrollment rotates 2->1 and 3->2
-  restore Bank 2 -> Bank 3 writes ordinary lower sectors and verifies
+  lower-sector nonerased collision gate passed 2026-07-19 (`AC 56`)
   E confirms and clears the Bank 0 rotation flag
   B after enrollment rotates 1->0, 2->1, and 3->2
   restore abort path leaves Bank 3 selected and STR8 usable
-  high-flash restore/failure behavior is tested only with a sacrificial image
+  injected high-flash post-verify failure gate passed 2026-07-19
 ```
+
+Use [STR8_V0_RESTORE_FAILURE_GATES.md](STR8_V0_RESTORE_FAILURE_GATES.md) for
+the guarded lower-sector collision and high-mode post-verify failure procedures.
+Both fixtures default to a nonwriting `ARM=$00` latch.
 
 Do not combine first-time destructive proofs. If a pass can erase Bank 0,
 rewrite Bank 3, or touch high flash, give it its own transcript and recovery

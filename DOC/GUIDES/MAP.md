@@ -159,6 +159,7 @@ STR8/PRODUCT_BOUNDARIES.md      product ownership lanes
 STR8/STR8.md                    STR8 design contract and direction
 STR8/STR8_EDGE_DUMP.md          raw direct-edge evidence
 STR8/STR8_WORK_PROCESS.md       STR8 proof/work rail
+STR8/STR8_V0_RESTORE_FAILURE_GATES.md guarded restore/failure gate card
 LOGS/HARDWARE_TEST_LOG.md       board transcript validations
 HIMON/HIMON_DEBUG_TESTING.md    RAM debug proof process
 MEMORY/MEMORY_MAP.md            address ownership

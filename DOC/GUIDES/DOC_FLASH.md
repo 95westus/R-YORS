@@ -41,6 +41,40 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: STR8 V0 Restore And Failure Fixtures Frozen
+
+```text
+2026
+         07
+                19
+                   22:06Z COLLAB-AI Added guarded pasteable fixtures for the
+                                    STR8 V0 recovery gates.
+```
+
+scope: `ASM/SAMPLES/str8-restore-nonerased-3000.a`,
+`ASM/SAMPLES/str8-highfail-inject-3000.a`,
+`STR8/STR8_V0_RESTORE_FAILURE_GATES.md`, `STR8_WORK_PROCESS.md`, and
+`ASM/TEST_PLAN.md`.
+
+change: Gate 1 creates a deliberate Bank-3 `$9FF0` collision, runs ordinary
+Bank-2 restore, and compares the complete restored 4K sector. Gate 2 verifies
+Bank-2/Bank-3 HIMON/STR8 equality, retains the Bank-2 top-sector source, and
+map-guards a RAM-worker fault injection after the Bank-3 `$F000` sector
+verifies. Both fixtures default to
+nonwriting `ARM=$00`.
+
+effect: High-restore software failure policy can be proved after a real
+top-sector erase/program/verify transaction using an identical known-good
+source. This does not claim to manufacture a physical failure during the
+erase/program operation; external programmer recovery remains mandatory.
+
+action: Both gates passed on 2026-07-19. Gate 1 returned `AC 56` after its
+complete lower-sector comparison; Gate 2 returned `AC 00 5A 00 00 F0 02 03`
+after terminal post-verify injection, reset, and top-sector comparison. The
+earlier `LF FAIL=03` belonged to the preceding `$9000` test state. Erasing
+`$8000-$EFFF`, then using `L F` with `asm-v1-flash-8000.s19`, is the proven
+ASM-F2 recovery path (`LF OK WR=3C6D GO=800C`).
+
 ## REDOC: Current AP Linker Fixtures Frozen
 
 ```text

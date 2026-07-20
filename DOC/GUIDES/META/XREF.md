@@ -28,10 +28,18 @@ STR8.md
 
 STR8_WORK_PROCESS.md
   records the current process for returning to STR8 work
-  starts with a V0 acceptance pass before new update commands or self-update
+  records the completed V0 acceptance gates before new update commands or self-update
   relates to OPERATORS_GUIDE.md, TECHNICAL_GUIDE.md, STR8.md,
   STR8_DECISION_REFERENCE.md, STR8_FLASH_UPDATE_PROPOSAL.md, BRINGUP.md,
   TODO.md, and HARDWARE_TEST_LOG.md
+
+STR8_V0_RESTORE_FAILURE_GATES.md
+  freezes guarded pasteable fixtures for nonerased lower-sector restore and
+  injected high-mode failure at the $F000 boundary
+  uses the stable STR8 worker service at $F003 and pins the current RAM-worker
+  patch signature before any destructive high-mode run
+  relates to STR8_WORK_PROCESS.md, TODO.md, ASM/SAMPLES, and
+  HARDWARE_TEST_LOG.md
 
 STR8_MULTIBOOT_BANK_VOLUMES.md
   canonical accepted direction for Bank-3-rooted multiboot, compatible-bank

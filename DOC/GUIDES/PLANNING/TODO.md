@@ -30,13 +30,6 @@
   Do not move current board-ingested sample/generated files such as
   `str8n-topwrite-transient-3000.a`, `asm-session-report-4800.a`, or `ASMTEST_3000.asm`
   until their Makefile targets and operator docs have a replacement path.
-- Run the remaining STR8 V0 acceptance/regression pass from
-  [STR8_WORK_PROCESS.md](../STR8/STR8_WORK_PROCESS.md): rebuild artifacts, record
-  image identity, smoke `?`/`M`/`U` reject/`G`/`R`, then separately rerun the
-  remaining lower-sector restore over non-erased bytes and high-flash failure
-  behavior checks with a programmer recovery path ready. `B`, `E`, B0 enrolled
-  rotation, `U`, visible HIMON U1->U2, fig-Forth payload, OSI BASIC payload,
-  and high-flash restores from the backup chain passed on 2026-05-17.
 - Keep `MEMORY_MAP.md` and `TECHNICAL_GUIDE.md` aligned with the current STR8
   RAM tray: worker-code tray at `$0200-$09FF`, 4K flash sector mirror at
   `$0A00-$19FF`, RJOIN/debug scratch at `$1A00-$1FE8`, STR8 state at
@@ -44,8 +37,9 @@
   `$4000-$4FFF`, and `U` update staging at `$4000-$6FFF`.
 - Define `FLSH_` suffix conventions for register-carried arguments, including
   `_A` and `_AX`.
-- Treat the current combined ROM protected-window start as `$F000`; revisit
-  shrink only after the V0 acceptance pass and size pressure make it useful.
+- Treat the current combined ROM protected-window start as `$F000`; the V0
+  acceptance gates are complete, so revisit shrink only if size pressure makes
+  it useful.
 - Keep the first `U` / `UPDATE HIMON` target path boring after the 2026-05-17
   hardware pass: compact S19, `$C000-$EFFF` gate, blank C/D/E staging,
   confirmed erase/write/verify, and no `$F000-$FFFF` update authority.

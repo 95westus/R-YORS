@@ -38,7 +38,7 @@ RELOCATE, and AP v1 PACKAGE flows.
 
 ## Guide Shelves
 
-- [STR8](STR8/STR8.md) - recovery, updates, product boundaries, bringup, work process, and [edge evidence](STR8/STR8_EDGE_DUMP.md).
+- [STR8](STR8/STR8.md) - recovery, updates, product boundaries, bringup, work process, the [V0 restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and [edge evidence](STR8/STR8_EDGE_DUMP.md).
 - [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.

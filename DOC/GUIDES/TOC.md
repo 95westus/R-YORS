@@ -21,7 +21,8 @@ connect.
 ## Detail Shelves
 
 - [STR8](STR8/STR8.md) - recovery, update, product boundaries, bringup,
-  work process, and [edge evidence](STR8/STR8_EDGE_DUMP.md).
+  work process, [restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md),
+  and [edge evidence](STR8/STR8_EDGE_DUMP.md).
 - [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, and edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
