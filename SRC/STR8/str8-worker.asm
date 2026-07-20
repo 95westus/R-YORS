@@ -14,6 +14,8 @@
                         XDEF            START
                         XDEF            STR8_WORKER_END
 
+                        INCLUDE         "STR8/str8-record-eq.inc"
+
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
 ; 2026-05-17T21:20-05:00        WLP2        Worker source storage formerly moved to $FC00.
 ; 2026-05-21T23:55-05:00        WLP2        Worker source is now packed down from $FFEF.
@@ -77,6 +79,8 @@ START:
                         BEQ             ?PROGRAM_STAGED
                         CMP             #STR8_COPY_MODE_STAGE_BANK_SECTOR
                         BEQ             ?STAGE_BANK_SECTOR
+                        CMP             #STR8_COPY_MODE_PROGRAM_RECORD
+                        BEQ             ?PROGRAM_RECORD
                         JSR             STR8W_COPY_BANKS
                         BRA             ?DONE
 ?ENROLL:
@@ -87,6 +91,9 @@ START:
                         BRA             ?DONE
 ?STAGE_BANK_SECTOR:
                         JSR             STR8W_STAGE_BANK_SECTOR
+                        BRA             ?DONE
+?PROGRAM_RECORD:
+                        JSR             STR8W_PROGRAM_RECORD
 ?DONE:
                         BCC             ?FAIL
                         JSR             STR8W_SELECT_BANK3
@@ -188,6 +195,57 @@ STR8W_STAGE_BANK_SECTOR:
                         JSR             STR8W_ACTIVE_BUF_HI
                         STA             STR8W_BUF_HI
                         JMP             STR8W_COPY_PTR_TO_ACTIVE_BUF
+
+; Program one preflighted S1 descriptor without erase. The resident service
+; has already required every destination byte to be equal or $FF; the worker
+; still skips equal bytes and records a reliable failure tuple on error.
+STR8W_PROGRAM_RECORD:
+                        JSR             STR8W_SELECT_BANK3
+                        LDA             STR8_REC_ADDR_LO
+                        STA             STR8W_ADDR_LO
+                        LDA             STR8_REC_ADDR_HI
+                        STA             STR8W_ADDR_HI
+                        LDA             #STR8_REC_DATA_BUF_LO
+                        STA             STR8W_BUF_LO
+                        LDA             #STR8_REC_DATA_BUF_HI
+                        STA             STR8W_BUF_HI
+                        LDX             STR8_REC_DATA_LEN
+                        BEQ             ?OK
+?BYTE:
+                        LDY             #$00
+                        LDA             (STR8W_BUF_LO),Y
+                        STA             STR8W_DATA
+                        LDA             (STR8W_ADDR_LO),Y
+                        CMP             STR8W_DATA
+                        BEQ             ?NEXT
+                        JSR             STR8W_FLASH_WRITE
+                        BCC             ?FAIL
+?NEXT:
+                        INC             STR8W_ADDR_LO
+                        BNE             ?DATA
+                        INC             STR8W_ADDR_HI
+?DATA:
+                        INC             STR8W_BUF_LO
+                        BNE             ?COUNT
+                        INC             STR8W_BUF_HI
+?COUNT:
+                        DEX
+                        BNE             ?BYTE
+?OK:
+                        SEC
+                        RTS
+?FAIL:
+                        LDA             STR8W_ADDR_LO
+                        STA             STR8_REC_FAIL_LO
+                        LDA             STR8W_ADDR_HI
+                        STA             STR8_REC_FAIL_HI
+                        LDY             #$00
+                        LDA             (STR8W_ADDR_LO),Y
+                        STA             STR8_REC_OBSERVED
+                        LDA             STR8W_DATA
+                        STA             STR8_REC_EXPECTED
+                        CLC
+                        RTS
 
 STR8W_STAGE_SRC_SECTOR:
                         LDA             STR8_COPY_SRC_BANK

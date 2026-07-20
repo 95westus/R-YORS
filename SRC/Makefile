@@ -78,6 +78,7 @@ FNV1A_HBSTR_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/fnv1a-hbstr-6000.obj
 FNV1A_HBSTR_S19 := $(S19_DIR)/fnv1a-hbstr-6000.s19
 FNV1A_HBSTR_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
 STR8_SRC := $(STR8_SUBDIR)/str8.asm
+STR8_RECORD_EQ := $(STR8_SUBDIR)/str8-record-eq.inc
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
 STR8_S19 := $(S19_DIR)/str8-f000.s19
 STR8_LINKFLAGS := -g -s -t -cF000 -hm19 -j -o
@@ -711,7 +712,11 @@ $(STR8_WORKER_S19): $(STR8_WORKER_OBJ)
 	@echo [ps] set S9 start $$0200 in $(STR8_WORKER_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
 
-$(STR8_RAM_OBJ): $(STR8_SRC)
+$(STR8_OBJ): $(STR8_RECORD_EQ)
+
+$(STR8_WORKER_OBJ): $(STR8_RECORD_EQ)
+
+$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_RAM_PROOF $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)

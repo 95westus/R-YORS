@@ -18,12 +18,13 @@ G          go HIMON
 R          reset
 ```
 
-The current ROM proof runs STR8 from bank 3 `$F000`, stores the RAM flash
-worker at `$FD26-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
+The current Phase-1 host build runs STR8 from bank 3 `$F000`, stores the RAM
+flash worker at `$FCC9-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
 `$1FE9-$1FFF` for worker/update state, stages ordinary copy sectors through
 `$4000-$4FFF`, and stages HIMON update sectors through `$4000-$6FFF`.
 The top sector also exposes stable service entries at `$F003` for running
-selected worker modes and `$F006` as an AP import-link compatibility doorway.
+selected worker modes, `$F006` as an AP import-link compatibility doorway, and
+`$F009` for the V1 validated-record service. `$F00C-$F00F` is `53 52 01 07`.
 The linker itself is resident HIMON code; `$F006` selects the AP `LINK`
 operation and jumps through HIMON's `$7E2D-$7E2E` AP service vector.
 
@@ -121,8 +122,9 @@ Artifact check:
   Bank 3 has no built-in ASM report AP; reporter runs from Bank 0 with AP B0 $hhhh $4800
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
-  worker source is CPU $FD26-$FFEF
-  vectors point to STR8 IVI entries: F092/F000/F0A6
+  worker source is CPU $FCC9-$FFEF
+  vectors point to STR8 IVI entries: F099/F000/F0AD
+  record service/header is F009/F00C-F00F = 53 52 01 07
 
 Non-destructive STR8:
   reset enters STR8 countdown

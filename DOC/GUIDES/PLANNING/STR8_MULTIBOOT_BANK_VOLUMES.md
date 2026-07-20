@@ -448,6 +448,27 @@ loader commands fail with `$06`; they never jump through an unverified `$F009`.
 The complete previous combined ROM remains the programmer-recovery artifact
 for the top-sector transition.
 
+#### S19 Migration Phase Status
+
+```text
+Phase 0  PASS 2026-07-19  V1 policy and byte-level ABI frozen
+Phase 1  HOST PASS; HARDWARE PENDING
+         STR8 provider, buffer/console parser, APPLY_LF worker mode, and
+         converted STR8 U client implemented without changing HIMON
+Phase 2  pending: convert HIMON L and L G to the buffered STR8 parser
+Phase 3  pending: convert HIMON L F to STR8 APPLY_LF
+Phase 4  pending: remove the private HIMON parser and close ASM-F2 board proof
+```
+
+The Phase-1 resident image publishes `4C xx xx 53 52 01 07` at `$F009-$F00F`.
+The combined-image builder now rejects a displaced entry, signature/version/
+capability mismatch, request-block mismatch, data-buffer mismatch, worker
+packing mismatch, or top-sector overlap. STR8 `U` is the first parser client:
+it receives one validated descriptor at a time and preflights a complete S1
+span before copying it into the C/D/E staging buffers. Phase 1 is not a board
+pass until the fixed header, parser negatives, converted `U`, and non-erasing
+APPLY_LF cases in the ASM test plan have transcript evidence.
+
 ## Additional Load Formats
 
 Additional formats follow the shared S19 service. They do not replace S19 as

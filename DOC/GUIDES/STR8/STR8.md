@@ -180,17 +180,17 @@ packed against `$FFEF` and grows downward, and the remaining free space is one
 contiguous hole:
 
 ```text
-$F000-$F6C1  STR8 resident code
-             size $06C2 = 1730 bytes
+$F000-$F974  STR8 resident code
+             size $0975 = 2421 bytes
 
-$F6C2-$F8AC  STR8 resident data
+$F975-$FB5F  STR8 resident data
              size $01EB = 491 bytes
 
-$F8AD-$FD25  contiguous unused $FF growth hole
-             size $0479 = 1145 bytes
+$FB60-$FCC8  contiguous unused $FF growth hole
+             size $0169 = 361 bytes
 
-$FD26-$FFEF  stored STR8 RAM worker image
-             size $02CA = 714 bytes
+$FCC9-$FFEF  stored STR8 RAM worker image
+             size $0327 = 807 bytes
              copied to and run from the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
@@ -387,18 +387,21 @@ first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can perform backup rotation with read-back verify
 first RAM proof can enroll bank 0 into rotation by clearing an in-flash flag bit
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current ROM build links STR8 at $F000 and stores a RAM worker at $FD26-$FFEF
+current host build links STR8 at $F000 and stores a RAM worker at $FCC9-$FFEF
 current ROM build copies the worker to $0200 before B/U/0/1/2 flash mutation
 current ROM build copies the worker to $0200 before E config mutation
 current ROM build has ?, B, E, U, 0, 1, 2, G, and R commands
+current host build exposes the V1 record service at $F009 with `SR`/`01`/`07`
+current host build converts `U` to the shared validate-first S19 parser
+record-service and converted-`U` hardware proof is pending
 current STR8 identity marker is `#5F6A0F7A`
 physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data grows upward from $F000
-stored worker currently occupies $FD26-$FFEF and grows downward
-current contiguous free hole is $F8AD-$FD25
+stored worker currently occupies $FCC9-$FFEF and grows downward
+current contiguous free hole is $FB60-$FCC8
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
@@ -621,7 +624,7 @@ flowchart TD
     G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $FD26-$FFEF -> $0200]
+    B --> COPY[copy worker $FCC9-$FFEF -> $0200]
     E --> COPY
     RST --> COPY
     COPY --> WORKER[RAM flash worker]
@@ -817,7 +820,7 @@ B command, B0 ROT:  copy bank 1 -> bank 0, bank 2 -> bank 1, bank 3 -> bank 2
 
 Each 4K window reads from the source bank, writes the destination bank, and
 verifies by simple read-back compare. The `$F000` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$FD26-$FFEF` into RAM
+policy by first copying its worker from bank 3 `$FCC9-$FFEF` into RAM
 `$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. Catalog

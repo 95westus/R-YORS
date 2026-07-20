@@ -23,6 +23,8 @@
                         XDEF            START
                         XDEF            STR8_RUN_WORKER_SERVICE
                         XDEF            STR8_AP_IMPORT_LINK_SERVICE
+                        XDEF            STR8_RECORD_SERVICE_ENTRY
+                        XDEF            STR8_RECORD_SERVICE_SIGNATURE
                         XDEF            STR8_IVY_ENTRY_NMI
                         XDEF            STR8_IVY_ENTRY_IRQ_MASTER
                         XDEF            STR8_ID_MARKER_BYTES
@@ -34,6 +36,8 @@
                         XREF            FLASH_SECTOR_ERASE_RAW_XY
                         XREF            FLASH_WRITE_BYTE_RAW_AXY
                         ENDIF
+
+                        INCLUDE         "STR8/str8-record-eq.inc"
 
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
 ; 2026-05-17T21:20-05:00        WLP2        Worker storage formerly moved to $FC00 to make room for U/HIMON update.
@@ -73,10 +77,10 @@ STR8_WORKER_RUN         EQU             $0200
 STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_TRAY_SIZE   EQU             $0800
 STR8_WORKER_TRAY_END    EQU             $09FF
-STR8_WORKER_STORE_LO    EQU             $26
-STR8_WORKER_STORE_HI    EQU             $FD
-STR8_WORKER_COPY_LEN_LO EQU             $CA
-STR8_WORKER_COPY_LEN_HI EQU             $02
+STR8_WORKER_STORE_LO    EQU             $C9
+STR8_WORKER_STORE_HI    EQU             $FC
+STR8_WORKER_COPY_LEN_LO EQU             $27
+STR8_WORKER_COPY_LEN_HI EQU             $03
 STR8_DELAY_TICKS        EQU             $03
 STR8_DELAY_TICK_A       EQU             $26
 STR8_DELAY_FIRST_A      EQU             $27
@@ -100,6 +104,11 @@ STR8_PTR_LO             EQU             $CD
 STR8_PTR_HI             EQU             $CE
 STR8_COPY_PTR_LO        EQU             $CF
 STR8_COPY_PTR_HI        EQU             $D0
+STR8_REC_WORK_REMAIN    EQU             $D1
+STR8_REC_WORK_SUM       EQU             $D2
+STR8_REC_WORK_COUNT     EQU             $D3
+STR8_REC_WORK_TMP       EQU             $D4
+STR8_REC_WORK_TYPE      EQU             $D5
 STR8_STATE_BASE         EQU             $1FE9
 STR8_STATE_END          EQU             $1FFF
 STR8_MARK_SECTOR_HI     EQU             $1FE9
@@ -149,6 +158,17 @@ STR8_RUN_WORKER_SERVICE:
 
 STR8_AP_IMPORT_LINK_SERVICE:
                         JMP             STR8_AP_IMPORT_LINK_SERVICE_BODY
+
+STR8_RECORD_SERVICE_ENTRY:
+                        JMP             STR8_RECORD_SERVICE_BODY
+STR8_RECORD_SERVICE_SIGNATURE:
+                        DB              STR8_REC_SIG0_VALUE,STR8_REC_SIG1_VALUE
+                        DB              STR8_REC_VERSION_VALUE
+                        IF              STR8_RAM_PROOF
+                        DB              (STR8_REC_CAP_BUFFER+STR8_REC_CAP_CONSOLE)
+                        ELSE
+                        DB              STR8_REC_CAPS_V1
+                        ENDIF
 
 STR8_BOOT_START:
                         SEI
@@ -748,6 +768,494 @@ STR8_AP_IMPORT_LINK_SERVICE_BODY:
                         STA             HIM_AP_OP
                         JMP             (HIM_SVC_AP_LO)
 
+; ----------------------------------------------------------------------------
+; V1 validated-record service. PARSE validates a complete S0/S1/S9 record into
+; $7B00 before publishing its descriptor. APPLY_LF performs whole-record policy
+; preflight before the ROM build invokes the RAM flash worker.
+; ----------------------------------------------------------------------------
+STR8_RECORD_SERVICE_BODY:
+                        CLD
+                        LDA             STR8_REC_OP
+                        CMP             #STR8_REC_OP_PARSE
+                        BEQ             STR8_REC_PARSE
+                        CMP             #STR8_REC_OP_APPLY_LF
+                        BNE             ?BAD_OP
+                        JMP             STR8_REC_APPLY_LF
+?BAD_OP:
+                        LDA             #STR8_REC_BAD_OP
+                        JMP             STR8_REC_FAIL_A
+
+STR8_REC_PARSE:
+                        JSR             STR8_REC_CLEAR_RESULT
+                        LDA             STR8_REC_FORMAT
+                        CMP             #STR8_REC_FORMAT_S19
+                        BEQ             ?FORMAT_OK
+                        LDA             #STR8_REC_BAD_FORMAT
+                        JMP             STR8_REC_FAIL_A
+?FORMAT_OK:
+                        LDA             STR8_REC_SOURCE
+                        CMP             #STR8_REC_SOURCE_CONSOLE+1
+                        BCC             ?SOURCE_OK
+                        LDA             #STR8_REC_BAD_SOURCE
+                        JMP             STR8_REC_FAIL_A
+?SOURCE_OK:
+                        LDA             STR8_REC_SRC_LO
+                        STA             STR8_PTR_LO
+                        LDA             STR8_REC_SRC_HI
+                        STA             STR8_PTR_HI
+                        LDA             STR8_REC_SRC_LEN
+                        STA             STR8_REC_WORK_REMAIN
+                        LDA             STR8_REC_SOURCE
+                        CMP             #STR8_REC_SOURCE_BUFFER
+                        BNE             ?CONSOLE_START
+
+                        ; Validate the inclusive end without rejecting a
+                        ; one-byte span at $FFFF.
+                        LDA             STR8_REC_WORK_REMAIN
+                        BEQ             ?BUFFER_START
+                        DEC             A
+                        CLC
+                        ADC             STR8_PTR_LO
+                        BCC             ?BUFFER_START
+                        LDA             STR8_PTR_HI
+                        CMP             #$FF
+                        BNE             ?BUFFER_START
+                        LDA             #STR8_REC_BAD_SOURCE
+                        JMP             STR8_REC_FAIL_A
+
+?CONSOLE_START:
+                        JSR             STR8_REC_READ_CHAR
+                        BCS             ?CONSOLE_HAVE_CHAR
+                        JMP             STR8_REC_FAIL_READ_START
+?CONSOLE_HAVE_CHAR:
+                        CMP             #$0D
+                        BEQ             ?CONSOLE_START
+                        CMP             #$0A
+                        BEQ             ?CONSOLE_START
+                        BRA             ?HAVE_START
+?BUFFER_START:
+                        JSR             STR8_REC_READ_CHAR
+                        BCS             ?HAVE_START
+                        JMP             STR8_REC_FAIL_READ_START
+?HAVE_START:
+                        AND             #$DF
+                        CMP             #'S'
+                        BEQ             ?HAVE_S
+                        LDA             #STR8_REC_BAD_START
+                        JMP             STR8_REC_FAIL_A
+?HAVE_S:
+                        JSR             STR8_REC_READ_CHAR
+                        BCS             ?HAVE_TYPE
+                        JMP             STR8_REC_FAIL_READ_TYPE
+?HAVE_TYPE:
+                        STA             STR8_REC_WORK_TYPE
+                        CMP             #'0'
+                        BEQ             STR8_REC_PARSE_BODY
+                        CMP             #'1'
+                        BEQ             STR8_REC_PARSE_BODY
+                        CMP             #'9'
+                        BEQ             STR8_REC_PARSE_BODY
+                        LDA             #STR8_REC_BAD_TYPE
+                        JMP             STR8_REC_FAIL_A
+
+STR8_REC_PARSE_BODY:
+                        STZ             STR8_REC_WORK_SUM
+                        JSR             STR8_REC_READ_SUM_BYTE
+                        BCS             ?HAVE_COUNT
+                        JMP             STR8_REC_FAIL_READ_HEX
+?HAVE_COUNT:
+                        STA             STR8_REC_WORK_COUNT
+                        CMP             #$03
+                        BCS             ?COUNT_MIN_OK
+                        LDA             #STR8_REC_BAD_COUNT
+                        JMP             STR8_REC_FAIL_A
+?COUNT_MIN_OK:
+                        LDA             STR8_REC_WORK_TYPE
+                        CMP             #'9'
+                        BNE             ?COUNT_OK
+                        LDA             STR8_REC_WORK_COUNT
+                        CMP             #$03
+                        BEQ             ?COUNT_OK
+                        LDA             #STR8_REC_BAD_COUNT
+                        JMP             STR8_REC_FAIL_A
+?COUNT_OK:
+                        JSR             STR8_REC_READ_SUM_BYTE
+                        BCS             ?HAVE_ADDR_HI
+                        JMP             STR8_REC_FAIL_READ_HEX
+?HAVE_ADDR_HI:
+                        STA             STR8_REC_ADDR_HI
+                        JSR             STR8_REC_READ_SUM_BYTE
+                        BCS             ?HAVE_ADDR_LO
+                        JMP             STR8_REC_FAIL_READ_HEX
+?HAVE_ADDR_LO:
+                        STA             STR8_REC_ADDR_LO
+                        LDA             STR8_REC_WORK_COUNT
+                        SEC
+                        SBC             #$03
+                        STA             STR8_REC_DATA_LEN
+                        STA             STR8_REC_WORK_COUNT
+                        LDX             #$00
+?DATA:
+                        LDA             STR8_REC_WORK_COUNT
+                        BEQ             ?CHECKSUM
+                        JSR             STR8_REC_READ_SUM_BYTE
+                        BCS             ?HAVE_DATA_BYTE
+                        JMP             STR8_REC_FAIL_READ_HEX
+?HAVE_DATA_BYTE:
+                        STA             STR8_REC_DATA_BUF,X
+                        INX
+                        DEC             STR8_REC_WORK_COUNT
+                        BRA             ?DATA
+?CHECKSUM:
+                        JSR             STR8_REC_READ_SUM_BYTE
+                        BCS             ?HAVE_CHECKSUM
+                        JMP             STR8_REC_FAIL_READ_HEX
+?HAVE_CHECKSUM:
+                        LDA             STR8_REC_WORK_SUM
+                        CMP             #$FF
+                        BEQ             ?CHECKSUM_OK
+                        LDA             #STR8_REC_BAD_CHECKSUM
+                        JMP             STR8_REC_FAIL_A
+?CHECKSUM_OK:
+                        LDA             STR8_REC_SOURCE
+                        CMP             #STR8_REC_SOURCE_BUFFER
+                        BNE             ?CONSOLE_END
+                        LDA             STR8_REC_WORK_REMAIN
+                        BEQ             ?PUBLISH
+                        LDA             #STR8_REC_BAD_END
+                        JMP             STR8_REC_FAIL_A
+?CONSOLE_END:
+                        JSR             STR8_REC_READ_CHAR
+                        BCS             ?HAVE_END
+                        JMP             STR8_REC_FAIL_READ_END
+?HAVE_END:
+                        CMP             #$0D
+                        BEQ             ?PUBLISH
+                        CMP             #$0A
+                        BEQ             ?PUBLISH
+                        LDA             #STR8_REC_BAD_END
+                        JMP             STR8_REC_FAIL_A
+
+?PUBLISH:
+                        LDA             #STR8_REC_DATA_BUF_LO
+                        STA             STR8_REC_DATA_LO
+                        LDA             #STR8_REC_DATA_BUF_HI
+                        STA             STR8_REC_DATA_HI
+                        LDA             STR8_REC_WORK_TYPE
+                        CMP             #'0'
+                        BNE             ?NOT_METADATA
+                        LDA             #STR8_REC_KIND_METADATA
+                        STA             STR8_REC_KIND
+                        JMP             STR8_REC_RETURN_OK
+?NOT_METADATA:
+                        CMP             #'1'
+                        BNE             ?END
+                        LDA             #STR8_REC_KIND_DATA
+                        STA             STR8_REC_KIND
+                        JMP             STR8_REC_RETURN_OK
+?END:
+                        LDA             #STR8_REC_KIND_END
+                        STA             STR8_REC_KIND
+                        LDA             #STR8_REC_FLAG_ENTRY_VALID
+                        STA             STR8_REC_FLAGS
+                        LDA             STR8_REC_ADDR_LO
+                        STA             STR8_REC_ENTRY_LO
+                        LDA             STR8_REC_ADDR_HI
+                        STA             STR8_REC_ENTRY_HI
+                        JMP             STR8_REC_RETURN_OK
+
+STR8_REC_FAIL_READ_START:
+                        LDX             #STR8_REC_BAD_START
+                        BRA             STR8_REC_FAIL_READ_X
+STR8_REC_FAIL_READ_TYPE:
+                        LDX             #STR8_REC_BAD_TYPE
+                        BRA             STR8_REC_FAIL_READ_X
+STR8_REC_FAIL_READ_HEX:
+                        LDX             #STR8_REC_BAD_HEX
+                        BRA             STR8_REC_FAIL_READ_X
+STR8_REC_FAIL_READ_END:
+                        LDX             #STR8_REC_BAD_END
+STR8_REC_FAIL_READ_X:
+                        LDA             STR8_REC_STATUS
+                        CMP             #STR8_REC_ABORT
+                        BNE             ?NOT_ABORT
+                        JMP             STR8_REC_RETURN_CURRENT_FAIL
+?NOT_ABORT:
+                        TXA
+                        JMP             STR8_REC_FAIL_A
+
+STR8_REC_APPLY_LF:
+                        JSR             STR8_REC_CLEAR_FAILURE
+                        LDA             STR8_REC_FORMAT
+                        CMP             #STR8_REC_FORMAT_S19
+                        BEQ             ?FORMAT_OK
+                        LDA             #STR8_REC_BAD_FORMAT
+                        JMP             STR8_REC_FAIL_A
+?FORMAT_OK:
+                        LDA             STR8_REC_KIND
+                        CMP             #STR8_REC_KIND_DATA
+                        BEQ             ?KIND_OK
+                        LDA             #STR8_REC_BAD_TYPE
+                        JMP             STR8_REC_FAIL_A
+?KIND_OK:
+                        LDA             STR8_REC_FLAGS
+                        BEQ             ?FLAGS_OK
+                        LDA             #STR8_REC_BAD_FORMAT
+                        JMP             STR8_REC_FAIL_A
+?FLAGS_OK:
+                        LDA             STR8_REC_DATA_LO
+                        CMP             #STR8_REC_DATA_BUF_LO
+                        BNE             ?BAD_DATA
+                        LDA             STR8_REC_DATA_HI
+                        CMP             #STR8_REC_DATA_BUF_HI
+                        BEQ             ?DATA_PTR_OK
+?BAD_DATA:
+                        LDA             #STR8_REC_BAD_SOURCE
+                        JMP             STR8_REC_FAIL_A
+?DATA_PTR_OK:
+                        LDA             STR8_REC_DATA_LEN
+                        CMP             #STR8_REC_DATA_MAX+1
+                        BCC             ?LENGTH_OK
+                        LDA             #STR8_REC_BAD_COUNT
+                        JMP             STR8_REC_FAIL_A
+?LENGTH_OK:
+                        LDA             STR8_REC_DATA_LEN
+                        BNE             ?NONEMPTY
+                        JMP             STR8_REC_RETURN_OK
+?NONEMPTY:
+                        LDA             STR8_REC_ADDR_HI
+                        CMP             #$80
+                        BCC             ?PROTECT_START
+                        CMP             #$C0
+                        BCS             ?PROTECT_START
+                        LDA             STR8_REC_DATA_LEN
+                        DEC             A
+                        CLC
+                        ADC             STR8_REC_ADDR_LO
+                        LDA             STR8_REC_ADDR_HI
+                        ADC             #$00
+                        CMP             #$C0
+                        BCC             ?PREFLIGHT_INIT
+                        STZ             STR8_REC_FAIL_LO
+                        LDA             #$C0
+                        STA             STR8_REC_FAIL_HI
+                        LDA             #STR8_REC_LF_PROTECT
+                        JMP             STR8_REC_FAIL_A
+?PROTECT_START:
+                        LDA             STR8_REC_ADDR_LO
+                        STA             STR8_REC_FAIL_LO
+                        LDA             STR8_REC_ADDR_HI
+                        STA             STR8_REC_FAIL_HI
+                        LDA             #STR8_REC_LF_PROTECT
+                        JMP             STR8_REC_FAIL_A
+
+?PREFLIGHT_INIT:
+                        JSR             STR8_REC_LOAD_APPLY_POINTERS
+?PREFLIGHT:
+                        LDY             #$00
+                        LDA             (STR8_PTR_LO),Y
+                        STA             STR8_REC_WORK_TMP
+                        CMP             (STR8_COPY_PTR_LO),Y
+                        BEQ             ?PREFLIGHT_NEXT
+                        CMP             #$FF
+                        BEQ             ?PREFLIGHT_NEXT
+                        JSR             STR8_REC_CAPTURE_APPLY_FAILURE
+                        LDA             #STR8_REC_LF_NEED_ERASE
+                        JMP             STR8_REC_FAIL_A
+?PREFLIGHT_NEXT:
+                        JSR             STR8_REC_ADVANCE_APPLY_POINTERS
+                        DEC             STR8_REC_WORK_COUNT
+                        BNE             ?PREFLIGHT
+
+                        IF              STR8_RAM_PROOF
+                        ; The relocated proof image has no stored RAM worker.
+                        LDA             #STR8_REC_LF_WRITE
+                        JMP             STR8_REC_FAIL_A
+                        ELSE
+                        LDA             STR8_COPY_MODE
+                        PHA
+                        LDA             #STR8_COPY_MODE_PROGRAM_RECORD
+                        STA             STR8_COPY_MODE
+                        JSR             STR8_COPY_WORKER_TO_RAM
+                        JSR             STR8_WORKER_RUN
+                        LDA             #$00
+                        ADC             #$00
+                        STA             STR8_REC_WORK_TMP
+                        PLA
+                        STA             STR8_COPY_MODE
+                        LDA             STR8_REC_WORK_TMP
+                        BNE             ?VERIFY_INIT
+                        LDA             #STR8_REC_LF_WRITE
+                        JMP             STR8_REC_FAIL_A
+                        ENDIF
+
+?VERIFY_INIT:
+                        JSR             STR8_REC_LOAD_APPLY_POINTERS
+?VERIFY:
+                        LDY             #$00
+                        LDA             (STR8_PTR_LO),Y
+                        STA             STR8_REC_WORK_TMP
+                        CMP             (STR8_COPY_PTR_LO),Y
+                        BEQ             ?VERIFY_NEXT
+                        JSR             STR8_REC_CAPTURE_APPLY_FAILURE
+                        LDA             #STR8_REC_LF_VERIFY
+                        JMP             STR8_REC_FAIL_A
+?VERIFY_NEXT:
+                        JSR             STR8_REC_ADVANCE_APPLY_POINTERS
+                        DEC             STR8_REC_WORK_COUNT
+                        BNE             ?VERIFY
+                        JMP             STR8_REC_RETURN_OK
+
+STR8_REC_LOAD_APPLY_POINTERS:
+                        LDA             STR8_REC_ADDR_LO
+                        STA             STR8_PTR_LO
+                        LDA             STR8_REC_ADDR_HI
+                        STA             STR8_PTR_HI
+                        LDA             #STR8_REC_DATA_BUF_LO
+                        STA             STR8_COPY_PTR_LO
+                        LDA             #STR8_REC_DATA_BUF_HI
+                        STA             STR8_COPY_PTR_HI
+                        LDA             STR8_REC_DATA_LEN
+                        STA             STR8_REC_WORK_COUNT
+                        RTS
+
+STR8_REC_ADVANCE_APPLY_POINTERS:
+                        INC             STR8_PTR_LO
+                        BNE             ?DATA
+                        INC             STR8_PTR_HI
+?DATA:
+                        INC             STR8_COPY_PTR_LO
+                        BNE             ?DONE
+                        INC             STR8_COPY_PTR_HI
+?DONE:
+                        RTS
+
+STR8_REC_CAPTURE_APPLY_FAILURE:
+                        LDA             STR8_PTR_LO
+                        STA             STR8_REC_FAIL_LO
+                        LDA             STR8_PTR_HI
+                        STA             STR8_REC_FAIL_HI
+                        LDA             STR8_REC_WORK_TMP
+                        STA             STR8_REC_OBSERVED
+                        LDY             #$00
+                        LDA             (STR8_COPY_PTR_LO),Y
+                        STA             STR8_REC_EXPECTED
+                        RTS
+
+STR8_REC_CLEAR_RESULT:
+                        STZ             STR8_REC_KIND
+                        STZ             STR8_REC_FLAGS
+                        STZ             STR8_REC_ADDR_LO
+                        STZ             STR8_REC_ADDR_HI
+                        STZ             STR8_REC_DATA_LEN
+                        STZ             STR8_REC_ENTRY_LO
+                        STZ             STR8_REC_ENTRY_HI
+                        STZ             STR8_REC_DATA_LO
+                        STZ             STR8_REC_DATA_HI
+STR8_REC_CLEAR_FAILURE:
+                        STZ             STR8_REC_STATUS
+                        STZ             STR8_REC_FAIL_LO
+                        STZ             STR8_REC_FAIL_HI
+                        STZ             STR8_REC_OBSERVED
+                        STZ             STR8_REC_EXPECTED
+                        RTS
+
+STR8_REC_READ_SUM_BYTE:
+                        JSR             STR8_REC_READ_HEX_BYTE
+                        BCC             ?FAIL
+                        PHA
+                        CLC
+                        ADC             STR8_REC_WORK_SUM
+                        STA             STR8_REC_WORK_SUM
+                        PLA
+                        SEC
+?FAIL:
+                        RTS
+
+STR8_REC_READ_HEX_BYTE:
+                        JSR             STR8_REC_READ_CHAR
+                        BCC             ?FAIL
+                        JSR             STR8_REC_HEX_ASCII_TO_NIBBLE
+                        BCC             ?FAIL
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        STA             STR8_REC_WORK_TMP
+                        JSR             STR8_REC_READ_CHAR
+                        BCC             ?FAIL
+                        JSR             STR8_REC_HEX_ASCII_TO_NIBBLE
+                        BCC             ?FAIL
+                        ORA             STR8_REC_WORK_TMP
+                        SEC
+?FAIL:
+                        RTS
+
+STR8_REC_HEX_ASCII_TO_NIBBLE:
+                        CMP             #'0'
+                        BCC             ?FAIL
+                        CMP             #'9'+1
+                        BCC             ?DIGIT
+                        AND             #$DF
+                        CMP             #'A'
+                        BCC             ?FAIL
+                        CMP             #'F'+1
+                        BCS             ?FAIL
+                        SEC
+                        SBC             #('A'-10)
+                        SEC
+                        RTS
+?DIGIT:
+                        SEC
+                        SBC             #'0'
+                        SEC
+                        RTS
+?FAIL:
+                        CLC
+                        RTS
+
+STR8_REC_READ_CHAR:
+                        LDA             STR8_REC_SOURCE
+                        CMP             #STR8_REC_SOURCE_BUFFER
+                        BEQ             ?BUFFER
+                        JSR             STR8_READ_BYTE
+                        CMP             #$03
+                        BNE             ?OK
+                        LDA             #STR8_REC_ABORT
+                        STA             STR8_REC_STATUS
+                        CLC
+                        RTS
+?BUFFER:
+                        LDA             STR8_REC_WORK_REMAIN
+                        BEQ             ?EMPTY
+                        LDY             #$00
+                        LDA             (STR8_PTR_LO),Y
+                        INC             STR8_PTR_LO
+                        BNE             ?COUNT
+                        INC             STR8_PTR_HI
+?COUNT:
+                        DEC             STR8_REC_WORK_REMAIN
+?OK:
+                        SEC
+                        RTS
+?EMPTY:
+                        CLC
+                        RTS
+
+STR8_REC_RETURN_OK:
+                        STZ             STR8_REC_STATUS
+                        LDA             #STR8_REC_OK
+                        SEC
+                        RTS
+STR8_REC_RETURN_CURRENT_FAIL:
+                        LDA             STR8_REC_STATUS
+                        CLC
+                        RTS
+STR8_REC_FAIL_A:
+                        STA             STR8_REC_STATUS
+                        CLC
+                        RTS
+
                         IF              STR8_RAM_PROOF
 ; ----------------------------------------------------------------------------
 ; Destructive RAM proof copy/verify routines
@@ -1043,102 +1551,64 @@ STR8_STAGE_HIMON_BLANK:
 
 STR8_READ_HIMON_S19:
 ?RECORD:
-                        JSR             STR8_S19_READ_START
+                        LDA             #STR8_REC_OP_PARSE
+                        STA             STR8_REC_OP
+                        LDA             #STR8_REC_FORMAT_S19
+                        STA             STR8_REC_FORMAT
+                        LDA             #STR8_REC_SOURCE_CONSOLE
+                        STA             STR8_REC_SOURCE
+                        JSR             STR8_RECORD_SERVICE_BODY
                         BCC             ?FAIL
-                        CMP             #'0'
-                        BEQ             ?SKIP
-                        CMP             #'1'
+                        LDA             STR8_REC_KIND
+                        CMP             #STR8_REC_KIND_METADATA
+                        BEQ             ?RECORD
+                        CMP             #STR8_REC_KIND_DATA
                         BEQ             ?DATA
-                        CMP             #'9'
+                        CMP             #STR8_REC_KIND_END
                         BEQ             ?TERM
                         BRA             ?FAIL
-?SKIP:
-                        JSR             STR8_S19_PARSE_SKIP
-                        BCC             ?FAIL
-                        BRA             ?RECORD
 ?DATA:
-                        JSR             STR8_S19_PARSE_S1
+                        JSR             STR8_STAGE_HIMON_RECORD
                         BCC             ?FAIL
                         LDA             #'.'
                         JSR             STR8_WRITE_BYTE
                         BRA             ?RECORD
 ?TERM:
-                        JSR             STR8_S19_PARSE_SKIP
-                        BCC             ?FAIL
                         SEC
                         RTS
 ?FAIL:
                         CLC
                         RTS
 
-STR8_S19_READ_START:
-?READ:
-                        JSR             STR8_READ_BYTE
-                        CMP             #$0D
-                        BEQ             ?READ
-                        CMP             #$0A
-                        BEQ             ?READ
-                        AND             #$DF
-                        CMP             #'S'
-                        BNE             ?FAIL
-                        JSR             STR8_READ_BYTE
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_S19_PARSE_SKIP:
-                        JSR             STR8_S19_BEGIN_COUNT
-                        BCC             ?FAIL
-                        JSR             STR8_S19_READ_SUM_BYTE
-                        BCC             ?FAIL
-                        JSR             STR8_S19_READ_SUM_BYTE
-                        BCC             ?FAIL
-                        LDA             STR8_UPD_COUNT
-                        SEC
-                        SBC             #$03
-                        BCC             ?FAIL
-                        STA             STR8_UPD_DATA_LEN
-?DATA:
-                        LDA             STR8_UPD_DATA_LEN
-                        BNE             ?MORE_DATA
-                        JMP             STR8_S19_VERIFY_CHECKSUM
-?MORE_DATA:
-                        JSR             STR8_S19_READ_SUM_BYTE
-                        BCC             ?FAIL
-                        DEC             STR8_UPD_DATA_LEN
-                        BRA             ?DATA
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_S19_PARSE_S1:
-                        JSR             STR8_S19_BEGIN_COUNT
-                        BCC             ?FAIL
-                        JSR             STR8_S19_READ_SUM_BYTE
-                        BCC             ?FAIL
-                        STA             STR8_UPD_DST_HI
-                        JSR             STR8_S19_READ_SUM_BYTE
-                        BCC             ?FAIL
+STR8_STAGE_HIMON_RECORD:
+                        LDA             STR8_REC_ADDR_LO
                         STA             STR8_UPD_DST_LO
-                        LDA             STR8_UPD_COUNT
-                        SEC
-                        SBC             #$03
-                        BCC             ?FAIL
+                        LDA             STR8_REC_ADDR_HI
+                        STA             STR8_UPD_DST_HI
+                        LDA             STR8_REC_DATA_LEN
                         STA             STR8_UPD_DATA_LEN
+                        BEQ             ?OK
+                        LDA             STR8_UPD_DST_HI
+                        CMP             #$C0
+                        BCC             ?FAIL
+                        CMP             #$F0
+                        BCS             ?FAIL
+                        LDA             STR8_UPD_DATA_LEN
+                        DEC             A
+                        CLC
+                        ADC             STR8_UPD_DST_LO
+                        LDA             STR8_UPD_DST_HI
+                        ADC             #$00
+                        CMP             #$F0
+                        BCS             ?FAIL
+                        LDX             #$00
 ?DATA:
                         LDA             STR8_UPD_DATA_LEN
-                        BNE             ?MORE_DATA
-                        JMP             STR8_S19_VERIFY_CHECKSUM
-?MORE_DATA:
-                        JSR             STR8_READ_HEX_BYTE
-                        BCC             ?FAIL
-                        STA             STR8_UPD_TMP
-                        JSR             STR8_S19_SUM_ADD_A
-                        LDA             STR8_UPD_TMP
+                        BEQ             ?OK
+                        LDA             STR8_REC_DATA_BUF,X
                         JSR             STR8_STAGE_HIMON_BYTE
                         BCC             ?FAIL
+                        INX
                         INC             STR8_UPD_DST_LO
                         BNE             ?COUNT
                         INC             STR8_UPD_DST_HI
@@ -1149,6 +1619,9 @@ STR8_S19_PARSE_S1:
 ?NEXT:
                         DEC             STR8_UPD_DATA_LEN
                         BRA             ?DATA
+?OK:
+                        SEC
+                        RTS
 ?FAIL:
                         CLC
                         RTS
@@ -1190,90 +1663,6 @@ STR8_MARK_HIMON_SECTOR:
                         LDA             #$01
 ?SET:
                         TSB             STR8_UPD_MASK
-                        RTS
-
-STR8_S19_BEGIN_COUNT:
-                        STZ             STR8_UPD_SUM
-                        JSR             STR8_S19_READ_SUM_BYTE
-                        BCC             ?FAIL
-                        STA             STR8_UPD_COUNT
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_S19_READ_SUM_BYTE:
-                        JSR             STR8_READ_HEX_BYTE
-                        BCC             ?FAIL
-                        PHA
-                        JSR             STR8_S19_SUM_ADD_A
-                        PLA
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_S19_SUM_ADD_A:
-                        CLC
-                        ADC             STR8_UPD_SUM
-                        STA             STR8_UPD_SUM
-                        RTS
-
-STR8_S19_VERIFY_CHECKSUM:
-                        JSR             STR8_READ_HEX_BYTE
-                        BCC             ?FAIL
-                        JSR             STR8_S19_SUM_ADD_A
-                        LDA             STR8_UPD_SUM
-                        CMP             #$FF
-                        BNE             ?FAIL
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_READ_HEX_BYTE:
-                        JSR             STR8_READ_BYTE
-                        JSR             STR8_HEX_ASCII_TO_NIBBLE
-                        BCC             ?FAIL
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        STA             STR8_UPD_TMP
-                        JSR             STR8_READ_BYTE
-                        JSR             STR8_HEX_ASCII_TO_NIBBLE
-                        BCC             ?FAIL
-                        ORA             STR8_UPD_TMP
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_HEX_ASCII_TO_NIBBLE:
-                        CMP             #'0'
-                        BCC             ?FAIL
-                        CMP             #'9'+1
-                        BCC             ?DIGIT
-                        AND             #$DF
-                        CMP             #'A'
-                        BCC             ?FAIL
-                        CMP             #'F'+1
-                        BCS             ?FAIL
-                        SEC
-                        SBC             #('A'-10)
-                        SEC
-                        RTS
-?DIGIT:
-                        SEC
-                        SBC             #'0'
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
                         RTS
 
 STR8_PROGRAM_HIMON_UPDATE:

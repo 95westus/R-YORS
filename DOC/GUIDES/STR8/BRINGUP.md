@@ -242,13 +242,18 @@ output:  SRC/BUILD/s19/str8-f000.s19
          SRC/BUILD/s19/str8-worker-0200.s19
 ```
 
-The current ROM proof links the resident shell at `$F000`. The worker image
-links for `$0200`, is stored in the combined ROM at `$FD26-$FFEF`, and is
+The current Phase-1 host build links the resident shell at `$F000`. The worker
+image links for `$0200`, is stored in the combined ROM at `$FCC9-$FFEF`, and is
 copied into the `$0200-$09FF` STR8 RAM tray before destructive flash work. The
 RAM proof image is linked at `$3000`, is launched under HIMON, and reserves
 `$4000-$4FFF` as copy-buffer RAM. The current copy worker stages one 4K erase
 sector at a time through that buffer. The ROM `U` updater uses `$4000-$6FFF`
 to stage HIMON C/D/E sectors before erase/write.
+
+The host-built top-sector header is `$F000-$F00F = 4C 10 F0 4C 83 F3 4C 8A
+F3 4C 92 F3 53 52 01 07`. `$F009` is the V1 validated-record service, and
+`$F00C-$F00F` is its `SR` signature, version, and capabilities. This new
+provider and the converted `U` path remain hardware-pending.
 
 RAM proof command `B` is the destructive backup cascade. Before Bank 0
 enrollment it copies `2->1` and `3->2`. After `E` enrollment it copies `1->0`,

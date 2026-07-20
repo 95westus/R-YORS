@@ -298,6 +298,12 @@ $str8Start = Get-SymbolAddress -MapPath $Str8MapPath -Name "START"
 $str8WorkerService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RUN_WORKER_SERVICE"
 $str8ApLinkService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_AP_IMPORT_LINK_SERVICE"
 $str8ApLinkAdapter = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_AP_IMPORT_LINK_SERVICE_BODY"
+$str8RecordService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RECORD_SERVICE_ENTRY"
+$str8RecordServiceBody = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RECORD_SERVICE_BODY"
+$str8RecordSignature = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RECORD_SERVICE_SIGNATURE"
+$str8RecordOp = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_REC_OP"
+$str8RecordExpected = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_REC_EXPECTED"
+$str8RecordDataBuffer = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_REC_DATA_BUF"
 $str8Nmi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_IVY_ENTRY_NMI"
 $str8Irq = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_IVY_ENTRY_IRQ_MASTER"
 $str8End = Get-SymbolAddress -MapPath $Str8MapPath -Name "_END_DATA"
@@ -363,6 +369,18 @@ if ($str8WorkerService -ne 0xF003) {
 }
 if ($str8ApLinkService -ne 0xF006) {
     throw ("STR8 AP link compatibility service is {0:X4}; expected stable entry F006" -f $str8ApLinkService)
+}
+if ($str8RecordService -ne 0xF009) {
+    throw ("STR8 record service is {0:X4}; expected stable entry F009" -f $str8RecordService)
+}
+if ($str8RecordSignature -ne 0xF00C) {
+    throw ("STR8 record-service signature is {0:X4}; expected F00C" -f $str8RecordSignature)
+}
+if ($str8RecordOp -ne 0x7E95 -or $str8RecordExpected -ne 0x7EA8) {
+    throw ("STR8 record request/result block is {0:X4}-{1:X4}; expected 7E95-7EA8" -f $str8RecordOp, $str8RecordExpected)
+}
+if ($str8RecordDataBuffer -ne 0x7B00) {
+    throw ("STR8 record data buffer is {0:X4}; expected 7B00" -f $str8RecordDataBuffer)
 }
 if ($str8Nmi -lt 0xF000 -or $str8Nmi -ge 0x10000) {
     throw ("STR8 IVY NMI entry is {0:X4}; expected F000-FFFF" -f $str8Nmi)
@@ -508,6 +526,19 @@ for ($i = 0; $i -lt $expectedApService.Length; $i++) {
     }
 }
 
+$str8RecordServiceOffset = $bankOffset + ($str8RecordService - 0x8000)
+[byte[]]$expectedRecordHeader = @(
+    0x4C,
+    ($str8RecordServiceBody -band 0xFF),
+    (($str8RecordServiceBody -shr 8) -band 0xFF),
+    0x53, 0x52, 0x01, 0x07
+)
+for ($i = 0; $i -lt $expectedRecordHeader.Length; $i++) {
+    if ($bin[$str8RecordServiceOffset + $i] -ne $expectedRecordHeader[$i]) {
+        throw ("STR8 F009 record header byte {0} is {1:X2}; expected {2:X2}" -f $i, $bin[$str8RecordServiceOffset + $i], $expectedRecordHeader[$i])
+    }
+}
+
 $str8ApAdapterOffset = $bankOffset + ($str8ApLinkAdapter - 0x8000)
 [byte[]]$expectedApAdapter = @(0xA9, 0x03, 0x8D, 0x2F, 0x7E, 0x6C, 0x2D, 0x7E)
 for ($i = 0; $i -lt $expectedApAdapter.Length; $i++) {
@@ -520,6 +551,8 @@ Write-Host ("HIMON START/NMI/IRQ/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $himonSta
 Write-Host ("HIMON AP IMPORT LINK     = {0:X4}" -f $himonApImportLink)
 Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Start, $str8Nmi, $str8Irq, $str8End)
 Write-Host ("STR8 SERVICES WORK/AP    = {0:X4}/{1:X4} -> {2:X4}" -f $str8WorkerService, $str8ApLinkService, $str8ApLinkAdapter)
+Write-Host ("STR8 RECORD ENTRY/BODY   = {0:X4}/{1:X4}; ABI 53 52 01 07" -f $str8RecordService, $str8RecordServiceBody)
+Write-Host ("STR8 RECORD RAM          = {0:X4}-{1:X4}; DATA {2:X4}" -f $str8RecordOp, $str8RecordExpected, $str8RecordDataBuffer)
 if ($asmBase -ne $null) {
     Write-Host ("ASM-F2 BASE/START/END  = {0:X4}/{1:X4}/{2:X4}" -f $asmBase, $asmStart, $asmEnd)
 }

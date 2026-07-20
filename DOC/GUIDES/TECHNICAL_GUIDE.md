@@ -215,12 +215,12 @@ ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
 HIMON body:      $C000-$EF2C
 STR8 entry:      $F000
-STR8 body:       $F000-$F8AC
+STR8 body:       $F000-$FB5F
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F6C2 = 7A 0F 6A 5F
-worker source:   $FD26-$FFEF
+marker bytes:    $F975 = 7A 0F 6A 5F
+worker source:   $FCC9-$FFEF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 92 F0 00 F0 A6 F0
+vectors:         $FFFA-$FFFF = 99 F0 00 F0 AD F0
 ```
 
 The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
@@ -247,9 +247,9 @@ jumps to HIMON at $C000 when the countdown expires
 Current vector path:
 
 ```text
-NMI      -> STR8 IVI entry at $F092 -> RAM vector $7EFA-$7EFB
+NMI      -> STR8 IVI entry at $F099 -> RAM vector $7EFA-$7EFB
 RESET    -> STR8 START at $F000
-IRQ/BRK  -> STR8 IVI entry at $F0A6 -> RAM vectors $7EFC-$7EFF
+IRQ/BRK  -> STR8 IVI entry at $F0AD -> RAM vectors $7EFC-$7EFF
 ```
 
 HIMON patches the RAM targets after handoff. IVI is a mechanism, not a claim
@@ -294,7 +294,7 @@ restores Bank 3 before returning to resident STR8
 Current RAM workspace:
 
 ```text
-$0200-$09FF   flash worker tray, STR8 copied from $FD26-$FFEF at exact worker length
+$0200-$09FF   flash worker tray, STR8 copied from $FCC9-$FFEF at exact worker length
 $0A00-$19FF   sector staging buffer
 $1A00-$1FE8   RJOIN/link scratch and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map bytes
@@ -315,6 +315,8 @@ banked AP path:
 ```text
 $F003   run selected STR8 worker mode after copying worker to $0200
 $F006   compatibility jump into HIMON's resident AP import linker
+$F009   V1 validated-record operation multiplexer
+$F00C-$F00F  `53 52 01 07`: `SR`, ABI 1, buffer/console/`L F` capabilities
 ```
 
 The retired STR8 `M` map used the worker to switch banks and scan sectors. Its
@@ -323,17 +325,17 @@ hardware transcript remains evidence, but it is not in the current prompt.
 Current top-sector reserve policy:
 
 ```text
-$F000-$F6C1  STR8 resident code
-             size $06C2 = 1730 bytes
+$F000-$F974  STR8 resident code
+             size $0975 = 2421 bytes
 
-$F6C2-$F8AC  STR8 resident data
+$F975-$FB5F  STR8 resident data
              size $01EB = 491 bytes
 
-$F8AD-$FD25  contiguous unused $FF growth hole
-             size $0479 = 1145 bytes
+$FB60-$FCC8  contiguous unused $FF growth hole
+             size $0169 = 361 bytes
 
-$FD26-$FFEF  stored STR8 RAM worker image
-             size $02CA = 714 bytes
+$FCC9-$FFEF  stored STR8 RAM worker image
+             size $0327 = 807 bytes
              linked at $0200 inside the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  STR8 config pocket

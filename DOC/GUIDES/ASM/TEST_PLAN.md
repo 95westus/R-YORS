@@ -10188,3 +10188,67 @@ reset and warm HIMON entry, the verifier returned `AC 00 5A 00 00 F0 02 03`
 with carry set and the vector tail `92 F0 00 F0 A6 F0`. This closes the
 deterministic post-verify software failure path only; it does not simulate a
 physical failure during top-sector erase or programming.
+
+## 2026-07-19 STR8 S19 Migration Phase 1
+
+Status: provider host-build pass; hardware proof pending. HIMON still owns and
+uses its private `L`/`L G`/`L F` parser in this phase.
+
+Phase 1 adds the V1 STR8 record-service doorway, a validate-first S0/S1/S9
+parser with buffered and private-console sources, conservative `APPLY_LF`, and
+a RAM-worker record-program mode. STR8 `U` is converted to consume the shared
+console parser. It stages an S1 only after the complete record and complete
+`$C000-$EFFF` span pass; flash erase/program remains behind the existing second
+confirmation.
+
+Host gates passed with:
+
+```text
+make -C SRC str8
+make -C SRC himon-str8-rom-bin
+make -C SRC str8-top-stage-s19
+make -C SRC str8-topwrite-a
+
+STR8 CODE/DATA/END        = $0975/$01EB/$FB60
+STR8 record entry/body    = $F009/$F392
+STR8 request/result RAM   = $7E95-$7EA8
+STR8 decoded buffer       = $7B00-$7BFB
+STR8 worker run/store     = $0200/$FCC9-$FFEF
+STR8 worker size          = $0327
+STR8 free contiguous hole = $FB60-$FCC8/$0169
+vectors                   = 99 F0 00 F0 AD F0
+$F000-$F00F               = 4C 10 F0 4C 83 F3 4C 8A F3 4C 92 F3 53 52 01 07
+top-stage head/vectors     = 4C 10 F0 4C 83 F3 4C 8A / 99 F0 00 F0 AD F0
+```
+
+The combined-image builder now checks the `$F009` jump and exact
+`53 52 01 07` header, `$7E95-$7EA8` block, `$7B00` buffer, worker packing,
+fixed legacy entries, STR8/worker non-overlap, and vectors before emitting the
+32K image. The generated standalone installer is
+`SAMPLES/str8n-topwrite-transient-3000.a`; its current face/prompt checks map
+ROM `$F979/$F9AE` to staged RAM `$1379/$13AE`.
+
+Required Phase-1 board gates, in order:
+
+1. Retain the previous combined ROM as the external-programmer recovery image.
+2. Install STR8 first. Dump `$F000-$F00F` and require the exact bytes above;
+   also require identity `#5F6A0F7A`, worker `$FCC9-$FFEF`, and vector tail
+   `99 F0 00 F0 AD F0`.
+3. Run non-mutating buffered calls through `$F009` for valid S0, S1, and S9;
+   require kinds `$01/$02/$03`, S1 address/data/length, S9 entry-valid, and
+   success `A=$00/C=1/status=$00`.
+4. Exercise BAD_START through BAD_END, a wrapping buffer source, lowercase hex,
+   a 252-byte S1 payload, and Ctrl-C on the console source. Require the frozen
+   status byte and no policy-sink write on every failure.
+5. Enter STR8 `U`, decline its first confirmation, and verify no flash change.
+   Then use a known current HIMON C/D/E S19 stream: require one dot per accepted
+   S1, the existing second confirmation, successful C/D/E program/verify, and
+   a working HIMON cold/warm handoff afterward.
+6. Through a RAM proof caller, exercise `APPLY_LF` without erase: zero-length
+   success; `$7FFF`, crossing `$BFFF`, and `$C000` protect failures; an occupied
+   unequal byte returning NEED_ERASE with address/observed/expected; and a
+   record containing only already-matching bytes returning success without a
+   flash change.
+
+Do not install a HIMON client or remove the HIMON parser until all Phase-1
+provider gates pass and the transcript is appended to `HARDWARE_TEST_LOG.md`.
