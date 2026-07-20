@@ -2033,7 +2033,9 @@ CMD_PARSE_RANGE_FAIL:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; STR8 validated-record client and transitional L F byte sink
+; STR8 validated-record client.  Phase 3 sends each L F descriptor through
+; APPLY_LF; the retained byte sink below is no longer on this command path and
+; is removed only after the Phase-3 board gates close.
 ; ----------------------------------------------------------------------------
 L_STR8_REQUIRE_SERVICE:
                         LDA             STR8_REC_SIG0_ADDR
@@ -2122,13 +2124,15 @@ L_PARSE_RECORD_STR8_DATA:
                         LDA             STR8_REC_ADDR_HI
                         STA             LOAD_DST_HI
                         STA             LOAD_LAST_HI
+                        LDA             LOAD_FLASH_MODE
+                        BEQ             L_PARSE_RECORD_STR8_DATA_NORMAL
+                        JMP             L_PARSE_RECORD_STR8_FLASH_DATA
+L_PARSE_RECORD_STR8_DATA_NORMAL:
                         LDA             STR8_REC_DATA_LEN
                         BNE             L_PARSE_RECORD_STR8_NONEMPTY
                         JMP             L_PARSE_RECORD_STR8_DATA_DONE
 L_PARSE_RECORD_STR8_NONEMPTY:
-                        LDA             LOAD_FLASH_MODE
-                        BEQ             L_PARSE_RECORD_STR8_RAM_DATA
-                        JMP             L_PARSE_RECORD_STR8_FLASH_DATA
+                        JMP             L_PARSE_RECORD_STR8_RAM_DATA
 
 L_PARSE_RECORD_STR8_NEED_FLASH:
                         LDA             #LOAD_FAIL_NEED_FLASH
@@ -2222,36 +2226,87 @@ L_PARSE_RECORD_STR8_DATA_DONE:
                         SEC
                         RTS
 
-; Transitional Phase-2 sink: parsing is shared, while L F retains its existing
-; per-byte flash policy until Phase 3 replaces this loop with APPLY_LF.
+; Phase 3: apply the descriptor just published by PARSE through STR8.  The
+; service preflights every byte before its RAM worker changes flash, so a
+; NEED_ERASE result leaves the entire record untouched.  HIMON keeps its
+; user-facing error mapping, progress and terminal S9 behavior.
 L_PARSE_RECORD_STR8_FLASH_DATA:
+                        LDA             STR8_REC_DATA_LEN
+                        BEQ             L_PARSE_RECORD_STR8_FLASH_APPLY
                         JSR             L_NOTE_S1_ADDR
-                        STZ             LOAD_LINE_STATUS
-L_PARSE_RECORD_STR8_FLASH_NEXT:
-                        LDX             LOAD_LINE_STATUS
-                        LDA             STR8_REC_DATA_BUF,X
-                        JSR             L_WRITE_DATA_BYTE
-                        BCC             L_PARSE_RECORD_STR8_FLASH_FAIL
-                        INC             LOAD_DST_LO
-                        BNE             L_PARSE_RECORD_STR8_FLASH_COUNT
-                        INC             LOAD_DST_HI
-L_PARSE_RECORD_STR8_FLASH_COUNT:
-                        LDA             LOAD_WRITE_OK
-                        BEQ             L_PARSE_RECORD_STR8_FLASH_SKIP_TOTAL
-                        INC             LOAD_TOTAL_LO
-                        BNE             L_PARSE_RECORD_STR8_FLASH_SKIP_TOTAL
+L_PARSE_RECORD_STR8_FLASH_APPLY:
+                        LDA             LOAD_ABORT_MODE
+                        BNE             L_PARSE_RECORD_STR8_FLASH_SKIP
+                        LDA             #STR8_REC_OP_APPLY_LF
+                        STA             STR8_REC_OP
+                        JSR             STR8_RECORD_SERVICE
+                        BCC             L_PARSE_RECORD_STR8_FLASH_SERVICE_FAIL
+                        LDA             STR8_REC_DATA_LEN
+                        CLC
+                        ADC             LOAD_TOTAL_LO
+                        STA             LOAD_TOTAL_LO
+                        BCC             L_PARSE_RECORD_STR8_FLASH_ADVANCE
                         INC             LOAD_TOTAL_HI
-L_PARSE_RECORD_STR8_FLASH_SKIP_TOTAL:
-                        INC             LOAD_LINE_STATUS
-                        LDA             LOAD_LINE_STATUS
-                        CMP             STR8_REC_DATA_LEN
-                        BNE             L_PARSE_RECORD_STR8_FLASH_NEXT
+                        BRA             L_PARSE_RECORD_STR8_FLASH_ADVANCE
+L_PARSE_RECORD_STR8_FLASH_SKIP:
+                        LDA             STR8_REC_DATA_LEN
+                        CLC
+                        ADC             LOAD_SKIP_LO
+                        STA             LOAD_SKIP_LO
+                        BCC             L_PARSE_RECORD_STR8_FLASH_ADVANCE
+                        INC             LOAD_SKIP_HI
+L_PARSE_RECORD_STR8_FLASH_ADVANCE:
+                        LDA             LOAD_DST_LO
+                        CLC
+                        ADC             STR8_REC_DATA_LEN
+                        STA             LOAD_DST_LO
+                        LDA             LOAD_DST_HI
+                        ADC             #$00
+                        STA             LOAD_DST_HI
                         LDA             LOAD_DST_LO
                         STA             LOAD_LAST_LO
                         LDA             LOAD_DST_HI
                         STA             LOAD_LAST_HI
                         BRA             L_PARSE_RECORD_STR8_DATA_DONE
-L_PARSE_RECORD_STR8_FLASH_FAIL:
+
+L_PARSE_RECORD_STR8_FLASH_SERVICE_FAIL:
+                        LDA             STR8_REC_FAIL_LO
+                        STA             LOAD_DST_LO
+                        LDA             STR8_REC_FAIL_HI
+                        STA             LOAD_DST_HI
+                        LDA             STR8_REC_OBSERVED
+                        STA             LOAD_FLASH_OLD
+                        LDA             STR8_REC_EXPECTED
+                        STA             CMD_IO_TMP
+                        LDA             STR8_REC_DATA_LEN
+                        CLC
+                        ADC             LOAD_SKIP_LO
+                        STA             LOAD_SKIP_LO
+                        BCC             L_PARSE_RECORD_STR8_FLASH_MAP_STATUS
+                        INC             LOAD_SKIP_HI
+L_PARSE_RECORD_STR8_FLASH_MAP_STATUS:
+                        LDA             STR8_REC_STATUS
+                        CMP             #STR8_REC_LF_PROTECT
+                        BEQ             L_PARSE_RECORD_STR8_FLASH_PROTECT
+                        CMP             #STR8_REC_LF_NEED_ERASE
+                        BEQ             L_PARSE_RECORD_STR8_FLASH_ERASE
+                        CMP             #STR8_REC_LF_WRITE
+                        BEQ             L_PARSE_RECORD_STR8_FLASH_WRITE
+                        CMP             #STR8_REC_LF_VERIFY
+                        BEQ             L_PARSE_RECORD_STR8_FLASH_WRITE
+                        LDA             #LOAD_FAIL_SERVICE
+                        BRA             L_PARSE_RECORD_STR8_FLASH_FAIL_A
+L_PARSE_RECORD_STR8_FLASH_PROTECT:
+                        LDA             #LOAD_FAIL_PROTECT
+                        BRA             L_PARSE_RECORD_STR8_FLASH_FAIL_A
+L_PARSE_RECORD_STR8_FLASH_ERASE:
+                        LDA             #LOAD_FAIL_ERASE
+                        BRA             L_PARSE_RECORD_STR8_FLASH_FAIL_A
+L_PARSE_RECORD_STR8_FLASH_WRITE:
+                        LDA             #LOAD_FAIL_WRITE
+L_PARSE_RECORD_STR8_FLASH_FAIL_A:
+                        STA             LOAD_FAIL_CODE
+                        CLC
                         RTS
 
 L_WRITE_DATA_BYTE:

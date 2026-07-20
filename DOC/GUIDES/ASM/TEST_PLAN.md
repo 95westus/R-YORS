@@ -10191,8 +10191,9 @@ physical failure during top-sector erase or programming.
 
 ## 2026-07-19 STR8 S19 Migration Phase 1
 
-Status: provider host-build pass; hardware proof pending. HIMON still owns and
-uses its private `L`/`L G`/`L F` parser in this phase.
+Status: provider host and hardware pass; the accepted Phase-1 transcript is in
+`HARDWARE_TEST_LOG.md`. HIMON still owns and uses its private `L`/`L G`/`L F`
+parser in this phase.
 
 Phase 1 adds the V1 STR8 record-service doorway, a validate-first S0/S1/S9
 parser with buffered and private-console sources, conservative `APPLY_LF`, and
@@ -10470,6 +10471,11 @@ STR8 request/result RAM   = $7E95-$7EA8
 STR8 decoded buffer       = $7B00-$7BFB
 $F000-$F00F               = 4C 10 F0 4C 83 F3 4C 8A F3 4C 92 F3 53 52 01 07
 vectors                   = 99 F0 00 F0 AD F0
+
+Phase-3 candidate          = himon-str8-himon-update.s19
+HIMON visible version      = HIMON V 00.0720(1339)
+SHA-256                    = 2459583A4E97E8F895C10BBAFC741A1E5ECE4BAC392036B5048CAB4683CCB1C5
+S1 range / terminator      = C000-EF20 / S903C0003C
 ```
 
 The current HIMON map must contain `L_STR8_REQUIRE_SERVICE` and
@@ -10512,3 +10518,164 @@ Required Phase-2 board gates, in order:
    `HARDWARE_TEST_LOG.md`. Phase 2 passes when the provider-header, `L`, `L G`,
    checksum/non-mutation, policy, zero-length, overlap, and matching `L F`
    gates above pass.
+
+## 2026-07-20 STR8 S19 Migration Phase 3
+
+Status: HIMON client host and board pass. The accepted transcript is appended
+to `HARDWARE_TEST_LOG.md`. Phase 3 changes only the flash branch of `L F`:
+after STR8 has parsed and published a valid S1 descriptor, HIMON invokes
+`STR8_REC_OP_APPLY_LF` at `$F009`. Normal `L` and `L G`, record syntax, the
+public command text, S9 handling, and the fixed STR8 provider remain unchanged.
+
+`APPLY_LF` preflights the entire record before its RAM worker writes a byte. A
+record containing an `$FF` destination followed by a conflicting non-`$FF`
+destination must therefore produce `LERR=$03`/`LF ERASE` without programming
+the earlier `$FF` bytes. HIMON maps STR8 protect to `$02`, need-erase to `$03`,
+and worker/write/verify failures to `$04`. A rejected record's entire S1 length
+is counted as `SKIP`; following valid S1 records are parsed and counted as
+skipped until S9 terminates the command.
+
+Host gates passed with:
+
+```text
+make -C SRC himon himon-str8-rom-bin himon-str8-himon-update-s19
+make -C SRC asm-test asm-v1-runtime-smoke
+
+HIMON CODE/DATA/END       = $29A8/$0596/$EF3E
+HIMON free to STR8        = $EF3E-$EFFF / $00C2
+STR8 record entry/body    = $F009/$F392
+STR8 request/result RAM   = $7E95-$7EA8
+STR8 decoded buffer       = $7B00-$7BFB
+$F000-$F00F               = 4C 10 F0 4C 83 F3 4C 8A F3 4C 92 F3 53 52 01 07
+vectors                   = 99 F0 00 F0 AD F0
+```
+
+The linked `L_PARSE_RECORD_STR8_FLASH_DATA` path must set
+`STR8_REC_OP=$02`, call `$F009`, and map only `LF_PROTECT`, `LF_NEED_ERASE`,
+`LF_WRITE`, and `LF_VERIFY` to the public flash outcomes. The retained
+`L_WRITE_DATA_BYTE` routine is intentionally not reachable from that path; do
+not remove it until Phase 4.
+
+### Phase-3 board prestaging
+
+1. Keep the external-programmer recovery image and the current Phase-2 HIMON
+   update stream available. Start from a cold board with Bank 3 visible. Do not
+   begin if the STR8 header is not exact:
+
+   ```text
+   >D F009 F00F
+   F009: 4C 92 F3 53 52 01 07
+   ```
+
+2. Use only the already-built
+   `SRC/BUILD/s19/himon-str8-himon-update.s19` candidate with SHA-256
+   `2459583A4E97E8F895C10BBAFC741A1E5ECE4BAC392036B5048CAB4683CCB1C5`.
+   Its S1 records span `$C000-$EF20` and its terminator is `S903C0003C`. Do not
+   rebuild or substitute it during this board run. At STR8, accept the two
+   existing prompts and send that exact C/D/E S19 stream:
+
+   ```text
+   >STR8
+   UPDATE HIMON C000-EFFF? Y: y
+   SEND S19 C000-EFFF
+   PROGRAM C000-EFFF? Y: y
+   >G HIMON
+   ```
+
+   Require `HIMON V 00.0720(1339)`, then repeat `D F009 F00F`. If either update
+   confirmation, the version, or the header differs, stop and recover; do not
+   run an `L F` record.
+
+3. The board card below uses `$BFE0-$BFE3` as a four-byte Bank-3 scratch area.
+   It is beyond the current ASM-F2 image end `$BC6D`, but it is usable only if
+   the actual cold-board dump is all `$FF`. Do not substitute another address
+   without regenerating the S19 checksums and expected diagnostics.
+
+   ```text
+   >D 8000 8003
+   require: 46 4E D6 00
+   >D BFE0 BFE3
+   require: FF FF FF FF
+   ```
+
+### Phase-3 board gates
+
+1. Prove the active path accepts an already-matching record:
+
+   ```text
+   >L F
+   S1078000464ED6000E
+   S90380007C
+
+   require: LF OK WR=0004 GO=8000
+   >D 8000 8003
+   require: 46 4E D6 00
+   ```
+
+2. Prove the STR8 RAM worker can program a known blank scratch byte, then that
+   the same byte is accepted as already matching:
+
+   ```text
+   >L F
+   S104BFE25A00
+   S903BFE25B
+
+   require: LF OK WR=0001 GO=BFE2
+   >D BFE0 BFE3
+   require: FF FF 5A FF
+
+   >L F
+   S104BFE25A00
+   S903BFE25B
+
+   require: LF OK WR=0001 GO=BFE2
+   >D BFE0 BFE3
+   require: FF FF 5A FF
+   ```
+
+3. Prove complete-record preflight, first-failure latching, later-record
+   drain, and accounting. The first S1 would program `$BFE0/$BFE1` under the
+   old byte sink before failing at `$BFE2`; Phase 3 must leave both bytes `$FF`.
+   The second S1 must be parsed but skipped after the first failure.
+
+   ```text
+   >L F
+   S106BFE0A1A20017
+   S104BFE3A3B6
+   S903BFE05D
+
+   require first diagnostic: LF ERASE=BFE2 OLD=5A NEW=00
+   require final summary:    LF FAIL=03 WR=0000 SKIP=0004 GO=BFE0
+   >D BFE0 BFE3
+   require: FF FF 5A FF
+   ```
+
+4. Prove provider-owned Bank-3 protection and zero-length success:
+
+   ```text
+   >D C000 C000
+   require baseline: 78
+
+   >L F
+   S104C0005AE1
+   S903C0003C
+
+   require first diagnostic: LF PROT=C000
+   require final summary:    LF FAIL=02 WR=0000 SKIP=0001 GO=C000
+   >D C000 C000
+   require: 78
+
+   >L F
+   S103BFE05D
+   S903BFE05D
+
+   require: LF OK WR=0000 GO=BFE0
+   >D BFE0 BFE3
+   require: FF FF 5A FF
+   ```
+
+5. Append the unedited terminal transcript, candidate SHA-256, HIMON visible
+   version, header dumps, and scratch-area dumps to `HARDWARE_TEST_LOG.md`.
+   Phase 3 passes only if all four gates above match exactly. `LF WFAIL` is a
+   hardware fault result, not a substitute for the required positive worker
+   gate.

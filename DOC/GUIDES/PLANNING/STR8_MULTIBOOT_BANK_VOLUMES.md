@@ -452,13 +452,15 @@ for the top-sector transition.
 
 ```text
 Phase 0  PASS 2026-07-19  V1 policy and byte-level ABI frozen
-Phase 1  HOST PASS; HARDWARE PENDING
+Phase 1  PASS 2026-07-20  provider/header/parser/U/APPLY_LF board gates closed
          STR8 provider, buffer/console parser, APPLY_LF worker mode, and
          converted STR8 U client implemented without changing HIMON
-Phase 2  HOST PASS; HARDWARE PENDING
+Phase 2  PASS 2026-07-20  HIMON L/L G/client parser board gates closed
          HIMON L, L G, and the parse half of L F use the buffered STR8 parser;
          private HIMON S19 syntax/checksum code removed
-Phase 3  pending: convert HIMON L F to STR8 APPLY_LF
+Phase 3  PASS 2026-07-20  HIMON L F/APPLY_LF whole-record board gates closed
+         HIMON L F submits each validated S1 descriptor to STR8 APPLY_LF;
+         whole-record preflight and failure diagnostics are provider-owned
 Phase 4  pending: remove the transitional HIMON L F byte sink and close the
          ASM-F2 board proof
 ```
@@ -468,9 +470,9 @@ The combined-image builder now rejects a displaced entry, signature/version/
 capability mismatch, request-block mismatch, data-buffer mismatch, worker
 packing mismatch, or top-sector overlap. STR8 `U` is the first parser client:
 it receives one validated descriptor at a time and preflights a complete S1
-span before copying it into the C/D/E staging buffers. Phase 1 is not a board
-pass until the fixed header, parser negatives, converted `U`, and non-erasing
-APPLY_LF cases in the ASM test plan have transcript evidence.
+span before copying it into the C/D/E staging buffers. The fixed header, parser
+negatives, converted `U`, and non-erasing APPLY_LF cases have their accepted
+Phase-1 transcript evidence in `HARDWARE_TEST_LOG.md`.
 
 The Phase-2 HIMON image verifies the complete `53 52 01 07` service header
 before printing any loader-ready banner. Every `L` form sends the counted
@@ -484,8 +486,21 @@ Phase 3 replaces it with `STR8_REC_OP_APPLY_LF`.
 Removing the duplicate S0/S1/S9 syntax, hex, count, and checksum routines in
 Phase 2 more than pays for the HIMON adapter: the linked HIMON exclusive end
 moves from `$EF2D` to `$EED8`, leaving `$0128` bytes before STR8 at `$F000`.
-This is a host result only until the ordered Phase-1 provider gates and the
-Phase-2 HIMON gates in the ASM test plan have board transcripts.
+The ordered Phase-1 provider gates and Phase-2 HIMON gates have board
+transcripts in `HARDWARE_TEST_LOG.md`.  The remaining Phase-3 gate is limited
+to the `L F` APPLY_LF handoff and its whole-record flash behavior.
+
+In Phase 3, HIMON sends the descriptor published by the immediately preceding
+successful `PARSE` call to `STR8_REC_OP_APPLY_LF`, including a zero-length S1.
+On success, the complete S1 count contributes to `WR`; already-matching bytes
+count just as programmed bytes do.  On `LF_PROTECT`, `LF_NEED_ERASE`,
+`LF_WRITE`, or `LF_VERIFY`, HIMON copies STR8's failing address, observed byte,
+and expected byte into its existing diagnostics and maps the public failure to
+`$02`, `$03`, or `$04`.  A record rejected by whole-record preflight contributes
+its complete length to `SKIP`, and later valid S1 records are parsed, counted
+as skipped, and drained through S9 without invoking the flash worker.  The old
+byte-at-a-time sink remains in the binary but is unreachable from `L F` until
+Phase 4 removes that transitional code after board proof.
 
 ## Additional Load Formats
 
