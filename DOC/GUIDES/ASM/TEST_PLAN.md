@@ -10913,3 +10913,119 @@ fixture records at `$3000` through `$3070`, reported `L OK=0080 GO=3000`,
 returned `A=A5`, and changed only the RAM sentinel to `$A5`. This closes the
 non-destructive serial transport question. It does not approve or execute the
 separate Bank-3 erase fixture.
+
+## 2026-07-20 STR8 S19 Migration Phase 6
+
+Status: host and board direct-load pass. This is a post-migration safety gate,
+distinct from the older multiboot roadmap item 6 that introduced the shared
+STR8 S19 service. Phase 6 sends the exact Bank-3 erase fixture through normal
+`L`, verifies its RAM image, and prohibits execution. `G 3000`, `L G`, `ASM`,
+and `L F` are out of scope for this phase.
+
+### Phase-6 host gates
+
+```text
+make -C SRC bank3-erase
+```
+
+The only permitted artifact is
+`SRC/BUILD/s19/bank3-erase-8000-bfff-3000.s19`, with SHA-256
+`AC5FDE6C91DA7E5823A10033085F146601DE06EFC50D241608C7AFA7BCCFA7F6`. It has
+eight S1 records spanning `$3000-$3070`, followed by `S9033000CC`, and contains
+113 bytes. Its first and last records are:
+
+```text
+S11330009C001A9C011A9C021A9C031A205930A98C
+S104307060FB
+S9033000CC
+```
+
+### Phase-6 board prestaging
+
+1. Preserve the external-programmer recovery image and the current ASM-F2
+   reload candidate. Start from a cold board with Bank 3 visible. Confirm the
+   resident service face and record the current low-flash head before loading:
+
+   ```text
+   >D F000 F00F
+   require: 4C 10 F0 4C 83 F3 4C 8A  F3 4C 92 F3 53 52 01 07
+   >D 8000 800F
+   require: 46 4E D6 00 74 AD 56 05  0C 80 87 B9 20 7B 85 B0
+   >D 3000 3070
+   require: cold-RAM baseline (no erase-fixture execution)
+   ```
+
+2. Build and hash the frozen artifact above. Use the same serial file-send
+   route proved in Phase 5. This phase enters plain `L`, not `L G` or `L F`.
+   Send the file unchanged; do not paste it into ASM.
+3. **Hard stop:** after the S9 record, the erase program is present only in
+   RAM. Do not type `G 3000`. If it is typed or if execution is uncertain, cold
+   boot before continuing and treat the phase as failed pending a complete
+   recovery review.
+
+### Phase-6 board gates
+
+1. Start the non-executing loader and send the frozen artifact:
+
+   ```text
+   >L
+   L S19
+   ```
+
+   Require one address report per S1 record, then normal completion without a
+   `#LOADGO#` block:
+
+   ```text
+   L @3000
+   L @3010
+   L @3020
+   L @3030
+   L @3040
+   L @3050
+   L @3060
+   L @3070
+   L OK=0071 GO=3000
+   ```
+
+2. Verify the loaded RAM image and the unchanged low-flash head. These dumps
+   are inclusive-end-address dumps:
+
+   ```text
+   >D 3000 300F
+   require: 9C 00 1A 9C 01 1A 9C 02  1A 9C 03 1A 20 59 30 A9
+   >D 3070
+   require: 3070: 60
+   >D 8000 800F
+   require: 46 4E D6 00 74 AD 56 05  0C 80 87 B9 20 7B 85 B0
+   ```
+
+3. Cold boot to discard the RAM-resident erase program. Require the normal
+   HIMON banner and the unchanged `$F000-$F00F` header:
+
+   ```text
+   >2 1
+   BOOT COLD
+   RAM ZERO OK
+
+   HIMON V 00.0720(1625)
+   >D F000 F00F
+   require: 4C 10 F0 4C 83 F3 4C 8A  F3 4C 92 F3 53 52 01 07
+   ```
+
+   Phase 6 passes only if no execution occurred and all gates above match
+   exactly.
+4. Append the unedited transcript, artifact SHA-256, sender settings, RAM
+   dumps, and post-cold-boot header dump to `HARDWARE_TEST_LOG.md`. A Phase-6
+   PASS proves transport and byte identity only; it does not authorize the
+   Bank-3 erase. A separate explicit execution authorization, recovery-image
+   check, and erase/reload run card are required first.
+
+### Phase-6 accepted board result
+
+On 2026-07-20, the final cold-boot-to-cold-boot board segment accepted all
+eight fixture records through plain `L`, reported `L OK=0071 GO=3000`, and
+showed the expected RAM head and final RTS byte while `$8000-$800F` remained
+unchanged. No `#LOADGO#` block or `G 3000` occurred. HIMON's single-address
+dump form is required for the final byte: `D 3070 3070` reports usage, while
+`D 3070` correctly reports `3070: 60`. This closes the direct-load safety
+gate only; it does not approve execution of the RAM erase program.

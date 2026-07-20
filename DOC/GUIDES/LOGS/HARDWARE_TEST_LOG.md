@@ -15704,3 +15704,67 @@ RAM sentinel changed. This closes Phase 5: the prior rejected erase-fixture
 transfer is not evidence of a HIMON line-length or STR8 parser defect. The
 separate destructive erase route remains subject to its own approval and
 preflight.
+
+## 2026-07-20 STR8 S19 Migration Phase 6: Erase Fixture Direct-Load Pass
+
+The frozen host artifact remains
+`bank3-erase-8000-bfff-3000.s19` (SHA-256
+`AC5FDE6C91DA7E5823A10033085F146601DE06EFC50D241608C7AFA7BCCFA7F6`), with
+eight S1 records `$3000-$3070` and `S9033000CC`. The following unedited final
+cold-boot-to-cold-boot transcript is the Phase-6 portion of the supplied board
+session. It loads the fixture through plain `L`; it does not execute `$3000`.
+
+```text
+>2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0720(1625)
+>D F000 F00F
+F000: 4C 10 F0 4C 83 F3 4C 8A | F3 4C 92 F3 53 52 01 07 | L..L..L..L..SR..
+>D 8000 800F
+8000: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0 | FN..t.V..... {..
+>D 3000 3070
+3000: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+3010: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+3020: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+3030: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+3040: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+3050: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+3060: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+3070: 00 | .
+>L
+L S19
+L @3000
+L @3010
+L @3020
+L @3030
+L @3040
+L @3050
+L @3060
+L @3070
+L OK=0071 GO=3000
+>D 3000 300F
+3000: 9C 00 1A 9C 01 1A 9C 02 | 1A 9C 03 1A 20 59 30 A9 | ............ Y0.
+>D 3070 3070
+D [a [b]]
+>D 3070
+3070: 60 | `
+>D 8000 800F
+8000: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0 | FN..t.V..... {..
+>2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0720(1625)
+>D F000 F00F
+F000: 4C 10 F0 4C 83 F3 4C 8A | F3 4C 92 F3 53 52 01 07 | L..L..L..L..SR..
+>
+```
+
+The RAM image began at the expected bytes and ended in the expected RTS;
+every S1 address was accepted, the low-flash head was unchanged, and the final
+cold boot cleared the RAM program. The `D 3070 3070` usage response is a
+monitor syntax observation, not a loader fault; the subsequent `D 3070` dump
+is the accepted one-byte verification. Phase 6 passes. It does not authorize
+the destructive Bank-3 erase execution.

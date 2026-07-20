@@ -466,6 +466,8 @@ Phase 4  PASS 2026-07-20  dead HIMON L F byte sink removed; ASM-F2
 Phase 5  PASS 2026-07-20  non-destructive direct S19 serial transport proof
          eight full-width records file-sent through L G and executed from RAM;
          no parser change is warranted and the erase route remains separate
+Phase 6  PASS 2026-07-20  direct-load verification of the Bank-3 erase S19
+         fixture into RAM only; execution of $3000 remained out of scope
 ```
 
 The Phase-1 resident image publishes `4C xx xx 53 52 01 07` at `$F009-$F00F`.
