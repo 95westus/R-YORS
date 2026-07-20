@@ -15768,3 +15768,85 @@ cold boot cleared the RAM program. The `D 3070 3070` usage response is a
 monitor syntax observation, not a loader fault; the subsequent `D 3070` dump
 is the accepted one-byte verification. Phase 6 passes. It does not authorize
 the destructive Bank-3 erase execution.
+
+## 2026-07-20 STR8 S19 Migration Phase 7: Bank-3 Erase And ASM-F2 Recovery Pass
+
+The direct RAM erase fixture was the Phase-6-verified
+`bank3-erase-8000-bfff-3000.s19` (SHA-256
+`AC5FDE6C91DA7E5823A10033085F146601DE06EFC50D241608C7AFA7BCCFA7F6`). The
+accepted reload candidate as sent to the board was
+`asm-v1-flash-8000.s19`, visible as `ASM-F2 00.0720(1719)`, SHA-256
+`18D81FFD7A4AF30A9077C7367FE20CFF972C80F1239A550ACF830A0945AF163D`.
+
+```text
+>2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0720(1625)
+>D F000 F00F
+F000: 4C 10 F0 4C 83 F3 4C 8A | F3 4C 92 F3 53 52 01 07 | L..L..L..L..SR..
+>D 8000 800F
+8000: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0 | FN..t.V..... {..
+>ASM NEW
+ASM-F2 00.0720(1625)
+ASM>$2000: .
+ASM BYE
+>L G
+L S19
+L @3000
+L @3010
+L @3020
+L @3030
+L @3040
+L @3050
+L @3060
+L @3070
+L OK=0071 GO=3000
+
+#LOADGO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A03
+1A00: AC 00 00 00 | ....
+>D 8000 800F
+8000: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+>L F
+L F S19
+L @8000
+LF OK WR=3C6D GO=800C
+>D 8000 800F
+8000: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0 | FN..t.V..... {..
+>ASM NEW
+ASM-F2 00.0720(1719)
+ASM>$2000: ORG $3000
+ASM>$3000: LDA #$5A
+ASM>$3002: RTS
+ASM>$3003: .
+ASM BYE
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0720(1625)
+>D F000 F00F
+F000: 4C 10 F0 4C 83 F3 4C 8A | F3 4C 92 F3 53 52 01 07 | L..L..L..L..SR..
+>ASM NEW
+ASM-F2 00.0720(1719)
+ASM>$2000: .
+ASM BYE
+>
+```
+
+The erase fixture returned `$AC` with carry set, its status row was clean, the
+low-flash head was all `$FF` after erase and restored after `L F`, and both the
+live `$5A` proof and final cold boot passed. Phase 7 is hardware-complete.
+
+The version stamp is generated from the current time. A later host build
+reported `ASM-F2 00.0720(1726)` and passed `asm-test`; it is a separate
+post-install smoke artifact, not a change to the accepted board candidate
+recorded above.

@@ -11029,3 +11029,160 @@ unchanged. No `#LOADGO#` block or `G 3000` occurred. HIMON's single-address
 dump form is required for the final byte: `D 3070 3070` reports usage, while
 `D 3070` correctly reports `3070: 60`. This closes the direct-load safety
 gate only; it does not approve execution of the RAM erase program.
+
+## 2026-07-20 STR8 S19 Migration Phase 7
+
+Status: host and destructive board erase/reload pass. Phase 7 is the separately
+authorized execution step following Phase 6. It erases physical Bank 3
+`$8000-$BFFF`, deliberately destroys the installed ASM-F2, then reloads the
+frozen ASM-F2 image through `L F`. It does not update HIMON or the STR8 top
+sector.
+
+### Phase-7 frozen artifacts and host gates
+
+Run before the board procedure:
+
+```text
+make -C SRC asm-test bank3-erase
+```
+
+Use only these two generated files after verifying their SHA-256 values:
+
+```text
+RAM erase fixture          = bank3-erase-8000-bfff-3000.s19
+RAM erase SHA-256          = AC5FDE6C91DA7E5823A10033085F146601DE06EFC50D241608C7AFA7BCCFA7F6
+RAM erase S1 / terminator  = 3000-3070 / S9033000CC
+
+ASM-F2 reload fixture      = asm-v1-flash-8000.s19
+ASM-F2 visible version     = ASM-F2 00.0720(1719)
+ASM-F2 SHA-256             = 18D81FFD7A4AF30A9077C7367FE20CFF972C80F1239A550ACF830A0945AF163D
+ASM-F2 S1 / terminator     = 8000-BC6C / S903800C70
+ASM-F2 head / entry        = 46 4E D6 00 74 AD 56 05 0C 80 87 B9 20 7B 85 B0 / 800C
+```
+
+Host validation passed: `asm-test` reports the normal 217-row opcode coverage
+and ASM smoke suite; the erase fixture has eight checksum-valid S1 records;
+the reload fixture has 967 checksum-valid S1 records covering `$8000-$BC6C`.
+There have been no `SRC/ASM`, `SRC/HIMON`, or `SRC/STR8` source changes since
+the Phase-4 firmware pass; the reload version/hash change is a regenerated
+build identity.
+
+### Phase-7 destructive board prestaging
+
+1. Retain an external-programmer recovery image that can restore Bank 3, both
+   frozen S19 files above, and the terminal transcript. Do not start until the
+   recovery path is physically available.
+2. Start from a cold board with Bank 3 visible. Require the current resident
+   face and live ASM-F2 before beginning:
+
+   ```text
+   >2 1
+   BOOT COLD
+   RAM ZERO OK
+
+   HIMON V 00.0720(1625)
+   >D F000 F00F
+   require: 4C 10 F0 4C 83 F3 4C 8A  F3 4C 92 F3 53 52 01 07
+   >D 8000 800F
+   require: 46 4E D6 00 74 AD 56 05  0C 80 87 B9 20 7B 85 B0
+   >ASM NEW
+   require: ASM-F2 00.0720(1625)
+   ASM>$2000: .
+   ASM BYE
+   ```
+
+3. Confirm that the RAM erase fixture SHA-256 is exactly the value above. This
+   phase now intentionally uses `L G`; do not substitute an interactive source
+   paste or the broad Banked Flash Erase tool.
+
+### Phase-7 board gates
+
+1. Load and execute only `bank3-erase-8000-bfff-3000.s19`:
+
+   ```text
+   >L G
+   L S19
+   ```
+
+   Require all eight `L @3000` through `L @3070` reports, then:
+
+   ```text
+   L OK=0071 GO=3000
+   #LOADGO# ENTRY=3000
+   RET A=AC ... C
+   >D 1A00 1A03
+   require: AC 00 00 00
+   >D 8000 800F
+   require: FF FF FF FF FF FF FF FF  FF FF FF FF FF FF FF FF
+   ```
+
+   `A=$AC` and carry set are required. A return of `$E1`, a clear carry, or any
+   nonzero byte in `$1A01-$1A03` is an erase failure: stop, do not reload with
+   `L F`, and preserve the transcript for recovery review.
+
+2. The old ASM-F2 is now erased. Do not invoke `ASM`. Enter `L F` and send only
+   `asm-v1-flash-8000.s19` with the frozen Phase-7 SHA-256 above. Require:
+
+   ```text
+   >L F
+   L F S19
+   L @8000
+   require: LF OK WR=3C6D GO=800C
+   >D 8000 800F
+   require: 46 4E D6 00 74 AD 56 05  0C 80 87 B9 20 7B 85 B0
+   ```
+
+   Any `LF FAIL`, `LF ERASE`, `LF PROT`, or short/mismatched `WR` is a recovery
+   stop. Do not attempt to assemble or execute from the incomplete image.
+
+3. Prove the reloaded ASM-F2 is live and can assemble a RAM routine:
+
+   ```text
+   >ASM NEW
+   require: ASM-F2 00.0720(1719)
+   ASM>$2000: ORG $3000
+   ASM>$3000: LDA #$5A
+   ASM>$3002: RTS
+   ASM>$3003: .
+   ASM BYE
+   >G 3000
+   require: RET A=5A
+   ```
+
+4. Cold boot to prove the recovered pair persists beyond the installation
+   session:
+
+   ```text
+   >2 1
+   BOOT COLD
+   RAM ZERO OK
+
+   HIMON V 00.0720(1625)
+   >D F000 F00F
+   require: 4C 10 F0 4C 83 F3 4C 8A  F3 4C 92 F3 53 52 01 07
+   >ASM NEW
+   require: ASM-F2 00.0720(1719)
+   ASM>$2000: .
+   ASM BYE
+   ```
+
+5. Append the unedited transcript, both artifact SHA-256 values, erase status
+   row, pre/post `$8000` dumps, live ASM proof, and cold-boot proof to
+   `HARDWARE_TEST_LOG.md`. Phase 7 passes only if every gate succeeds. It
+   changes Bank 3 low flash only; it does not authorize Bank 0, Bank 1, Bank 2,
+   HIMON, or STR8 top-sector writes.
+
+### Phase-7 accepted board result
+
+On 2026-07-20, the board erased and verified Bank 3 `$8000-$BFFF` through the
+direct `L G` RAM fixture (`RET A=AC`, carry set, `$1A00-$1A03=AC 00 00 00`),
+then reloaded the candidate identified as `ASM-F2 00.0720(1719)`. The fixture
+printed `LF OK WR=3C6D GO=800C`; the reloaded ASM assembled and ran the `$5A`
+RAM routine, and a final cold boot restarted it normally. This is the accepted
+board candidate: `asm-v1-flash-8000.s19`, SHA-256
+`18D81FFD7A4AF30A9077C7367FE20CFF972C80F1239A550ACF830A0945AF163D`.
+
+The build stamp is wall-clock based (`MMDD(HHMM)`), so a later `make` produces
+a different visible version and SHA without a firmware-source change. The
+subsequent `00.0720(1726)` host rebuild/smoke pass is not the artifact installed
+in this transcript and must not replace the accepted `1719` identity above.

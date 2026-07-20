@@ -468,6 +468,8 @@ Phase 5  PASS 2026-07-20  non-destructive direct S19 serial transport proof
          no parser change is warranted and the erase route remains separate
 Phase 6  PASS 2026-07-20  direct-load verification of the Bank-3 erase S19
          fixture into RAM only; execution of $3000 remained out of scope
+Phase 7  PASS 2026-07-20  Bank-3 $8000-$BFFF erase via the direct-loaded RAM
+         fixture, followed by ASM-F2 00.0720(1719) reload and cold-boot proof
 ```
 
 The Phase-1 resident image publishes `4C xx xx 53 52 01 07` at `$F009-$F00F`.
