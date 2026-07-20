@@ -57,12 +57,14 @@ select Bank 3 as the recovery root. A compatible boot bank reserves
 payload. Bank selection and reset-vector handoff run from RAM; selected-bank
 code must not depend on Bank-3-only HIMON/RJOIN addresses.
 
-STR8 will own the reusable S19 decode/checksum mechanism and all flash-mutation
-policy. HIMON keeps the `L`/`L G` RAM-load interface and destination policy and
-eventually delegates or retires `L F`. Banks used for managed storage declare
-an `IMAGE`, `VOLUME`, or bounded `MIXED` role; the first volume is an
-append-only, linearly reconstructible record log rather than a balancing tree
-or full filesystem.
+STR8 owns the reusable S19 decode/checksum mechanism and all flash-mutation
+policy. HIMON keeps the `L`/`L G` RAM-load interface and destination policy.
+The first migration retains `L F` but delegates its validated-record flash
+application to STR8; retiring the command remains optional after an equivalent
+STR8 operator path is proven. Banks used for managed storage declare an
+`IMAGE`, `VOLUME`, or bounded `MIXED` role; the first volume is an append-only,
+linearly reconstructible record log rather than a balancing tree or full
+filesystem.
 
 The shared loader mechanism validates a complete record into RAM before a
 HIMON or STR8 destination policy writes it. After S19 behavior is preserved,
@@ -71,6 +73,33 @@ EOF type `01`; extended-address forms remain deferred. Raw binary is never
 auto-detected or passed through the line reader. Its first form is an explicit
 destination plus exact byte count and expected CRC16, with flash mutation only
 through a separate staged and confirmed STR8 update path.
+
+The V1 callable record-service ABI is frozen. STR8 retains `$F000`, `$F003`,
+and `$F006`, adds a stable operation-multiplexer doorway at `$F009`, and
+publishes signature/version/capabilities at `$F00C-$F00F` as
+`53 52 01 07` (`SR`, ABI 1, buffered S19 + console S19 + conservative `L F`
+apply). The fixed 20-byte request/result block is `$7E95-$7EA8`; decoded S0/S1
+payload uses `$7B00-$7BFB`, large enough for the S1 maximum of 252 bytes. V1
+operations are PARSE (`$01`) and APPLY_LF (`$02`). PARSE supports a bounded RAM
+source or STR8's private console and returns S0 metadata, S1 data, or S9
+end/entry only after complete syntax/count/checksum/termination validation.
+
+APPLY_LF accepts only a validated S1 descriptor, preflights the complete
+nonempty span inside Bank 3 `$8000-$BFFF`, accepts matching or `$FF`
+destination bytes, and uses the STR8 RAM worker to program differing bytes and
+verify them. It never erases. HIMON preserves public loader failures `$01-$05`
+and adds `$06` for a missing, mismatched, or internally invalid STR8 service.
+New HIMON verifies the fixed signature, ABI version, and required capability
+bits before `$F009`; it does not call an old top sector accidentally.
+
+The migration installation order is STR8 first and HIMON second. Old HIMON
+continues to work over new STR8 because the first three fixed entries remain
+stable. After the new top sector passes its fixed-header, identity, worker, and
+vector gates, its shared-parser `U` path installs the new HIMON client. A new
+HIMON over old or mismatched STR8 refuses `L`, `L G`, and `L F` with `$06`.
+The byte-level ABI, status table, clobber rules, S19 profile, and proof order
+live in
+[STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
 
 S2/S8 (`.s28`) is parked as a possible `V2.xxx`/`V3` physical-flash transport,
 not as part of the first decoder implementation. If promoted, its 24-bit field

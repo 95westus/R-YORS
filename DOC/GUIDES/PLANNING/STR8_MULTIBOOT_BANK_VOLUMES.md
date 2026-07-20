@@ -210,6 +210,244 @@ internal parser labels. The service needs a byte-source contract and a request/
 result block; format-specific code should share hex-byte decoding, address and
 length fields, record buffering, and status codes.
 
+### Frozen V1 STR8 Record-Service ABI
+
+This subsection is the accepted V1 contract for the first shared S19
+implementation. It freezes the callable boundary before code moves. The entry,
+header, RAM cells, operation values, result values, and compatibility rules are
+not current behavior until the implementation and hardware gates pass.
+
+#### Fixed Top-Sector Header
+
+The existing fixed entries remain compatible and the record service extends
+the jump table without moving them:
+
+```text
+$F000-$F002  JMP STR8_BOOT_START
+$F003-$F005  JMP STR8_RUN_WORKER_SERVICE_BODY
+$F006-$F008  JMP STR8_AP_IMPORT_LINK_SERVICE_BODY
+$F009-$F00B  JMP STR8_RECORD_SERVICE_BODY
+$F00C        $53  'S'  record-service signature byte 0
+$F00D        $52  'R'  record-service signature byte 1
+$F00E        $01       record-service ABI version
+$F00F        $07       V1 capability bits
+$F010        first unconstrained STR8 boot-body address
+```
+
+`SR` means STR8 Record service. Capability bits are:
+
+```text
+$01  parse S19 from a caller-supplied RAM buffer
+$02  acquire and parse S19 from the private STR8 console
+$04  apply a validated S1 record through the conservative L F flash policy
+```
+
+Unknown capability bits are ignored. A V1 HIMON image requires signature
+`53 52`, version `$01`, and every capability needed by the requested command.
+The first production HIMON/STR8 pair requires all three bits. Missing or
+mismatched capability fails before HIMON prints the loader-ready banner; HIMON
+reports `LERR=$06`, returns A=`$06` with carry clear, and receives no S19 data.
+
+#### Request/Result Block And Record Buffer
+
+The V1 block occupies 20 bytes of the loader workspace that the shared service
+replaces:
+
+```text
+address  name                 direction  meaning
+$7E95    STR8_REC_OP          request    operation number
+$7E96    STR8_REC_FORMAT      request/apply  format number
+$7E97    STR8_REC_SOURCE      request    byte-source number
+$7E98    STR8_REC_STATUS      result     canonical service status
+$7E99    STR8_REC_SRC_LO      request    buffered-source pointer low
+$7E9A    STR8_REC_SRC_HI      request    buffered-source pointer high
+$7E9B    STR8_REC_SRC_LEN     request    buffered-source byte count
+$7E9C    STR8_REC_KIND        result/apply  metadata, data, or end
+$7E9D    STR8_REC_FLAGS       result/apply  descriptor flags
+$7E9E    STR8_REC_ADDR_LO     result/apply  record address low
+$7E9F    STR8_REC_ADDR_HI     result/apply  record address high
+$7EA0    STR8_REC_DATA_LEN    result/apply  validated payload length, 0..252
+$7EA1    STR8_REC_ENTRY_LO    result     optional entry address low
+$7EA2    STR8_REC_ENTRY_HI    result     optional entry address high
+$7EA3    STR8_REC_DATA_LO     result/apply  validated-data pointer low
+$7EA4    STR8_REC_DATA_HI     result/apply  validated-data pointer high
+$7EA5    STR8_REC_FAIL_LO     result     failing flash address low
+$7EA6    STR8_REC_FAIL_HI     result     failing flash address high
+$7EA7    STR8_REC_OBSERVED    result     byte read at a flash failure
+$7EA8    STR8_REC_EXPECTED    result     requested byte at a flash failure
+```
+
+The decoded record buffer is `$7B00-$7BFB`, exactly 252 bytes. `$7BFC-$7BFF`
+remain unallocated by this ABI. Successful S0 and S1 descriptors return data
+pointer `$7B00`; S9 returns length zero and the same harmless pointer value.
+The service may overwrite the record buffer while parsing a record that later
+fails. On failure only `STR8_REC_STATUS` is authoritative; descriptor fields
+and buffer contents are invalid, and no destination-policy sink has run.
+
+The request/result block is foreground scratch, not persistent state. HIMON
+keeps command totals, first/last addresses, load mode, drain state, and the
+final GO address outside `$7E95-$7EA8`. Other monitor operations may reuse the
+block after the record-service call returns.
+
+#### Values And Operations
+
+```text
+operation
+$01  STR8_REC_OP_PARSE
+$02  STR8_REC_OP_APPLY_LF
+
+format
+$01  STR8_REC_FORMAT_S19
+
+source
+$00  STR8_REC_SOURCE_BUFFER
+$01  STR8_REC_SOURCE_CONSOLE
+
+record kind
+$00  STR8_REC_KIND_NONE
+$01  STR8_REC_KIND_METADATA   S0
+$02  STR8_REC_KIND_DATA       S1
+$03  STR8_REC_KIND_END        S9
+
+descriptor flags
+$01  STR8_REC_FLAG_ENTRY_VALID
+```
+
+`STR8_REC_OP_PARSE` requires format S19. Buffer source requires a nonwrapping
+source span named by `SRC_HI:SRC_LO` and `SRC_LEN`; the parser consumes exactly
+that many bytes and rejects trailing bytes after the checksum. The NUL that
+HIMON's line reader stores is outside `SRC_LEN` and is not part of the record.
+HIMON buffer mode remains limited to its 255-byte input line; STR8 console
+mode can accept the full S1 count and 252-byte decoded payload.
+
+Console source ignores the source pointer and length. It skips leading CR/LF,
+accepts Ctrl-C as an abort, requires `S` after the skipped line endings, and
+requires CR or LF immediately after the checksum. It consumes one terminator;
+the next call skips a remaining LF from a CR/LF pair. Both sources accept lower
+or upper case hex.
+
+`STR8_REC_OP_APPLY_LF` ignores the source fields and accepts only an S19 DATA
+descriptor whose data pointer is `$7B00` and whose length is at most 252. A
+zero-length S1 succeeds without inspecting or changing flash. Nonzero spans
+must not wrap and must lie wholly in Bank 3 `$8000-$BFFF`.
+
+For APPLY_LF, FORMAT, KIND, FLAGS, ADDR, DATA_LEN, and DATA are inputs copied
+from the preceding successful PARSE result. APPLY_LF preserves those descriptor
+fields and overwrites only STATUS and the four failure-diagnostic fields.
+
+Before mutation, APPLY_LF preflights the complete record. A destination byte is
+acceptable when it already equals the requested byte or is `$FF`. Any other
+value fails the complete record with NEED_ERASE before a byte from that record
+is programmed. A successful preflight runs the flash operation from the STR8
+RAM worker, programs only differing bytes, verifies read-back, and restores
+Bank 3 before return. It never erases a sector. Matching bytes count toward
+HIMON's accepted `WR` total exactly as they do in the current `L F` command.
+
+#### Canonical Status Values
+
+```text
+$00  STR8_REC_OK
+$01  STR8_REC_BAD_OP
+$02  STR8_REC_BAD_FORMAT
+$03  STR8_REC_BAD_SOURCE
+$04  STR8_REC_BAD_START
+$05  STR8_REC_BAD_TYPE
+$06  STR8_REC_BAD_HEX
+$07  STR8_REC_BAD_COUNT
+$08  STR8_REC_BAD_CHECKSUM
+$09  STR8_REC_BAD_END
+$0A  STR8_REC_LF_PROTECT
+$0B  STR8_REC_LF_NEED_ERASE
+$0C  STR8_REC_LF_WRITE
+$0D  STR8_REC_LF_VERIFY
+$0E  STR8_REC_ABORT
+```
+
+BAD_START means that the next record does not begin with `S`. BAD_TYPE means
+that the record is not S0, S1, or S9. BAD_COUNT includes count less than three
+and S9 count other than three. BAD_END includes buffered trailing text and a
+missing console line terminator. LF_PROTECT covers a wrapping or out-of-range
+nonempty flash span.
+
+For LF_PROTECT, NEED_ERASE, WRITE, and VERIFY, `FAIL_HI:FAIL_LO` names the
+first failing destination. OBSERVED and EXPECTED are valid for NEED_ERASE and
+VERIFY; WRITE fills them when the worker has a reliable read-back value.
+
+HIMON preserves its public loader status surface through this mapping:
+
+```text
+STR8 BAD_START..BAD_END       -> LOAD_FAIL_PARSE       $01
+HIMON RAM/protect policy      -> LOAD_FAIL_PROTECT     $02
+STR8 LF_PROTECT               -> LOAD_FAIL_PROTECT     $02
+STR8 LF_NEED_ERASE            -> LOAD_FAIL_ERASE       $03
+STR8 LF_WRITE or LF_VERIFY    -> LOAD_FAIL_WRITE       $04
+HIMON normal L into flash     -> LOAD_FAIL_NEED_FLASH  $05
+bad/missing STR8 service ABI  -> LOAD_FAIL_SERVICE     $06
+```
+
+BAD_OP, BAD_FORMAT, or BAD_SOURCE from a correctly built HIMON client are
+internal service-contract failures and also map to `$06`. `L F` continues to
+drain and validate records through S9 after its first flash-policy failure,
+latching the first public failure and counting later S1 bytes as skipped.
+
+#### S19 Profile And Descriptor Rules
+
+V1 accepts only S0, S1, and S9. The count participates in the S-record sum and
+includes address, data, and checksum bytes. The complete byte sum, including
+the checksum, must equal `$FF`.
+
+```text
+S0  count >= 3; return METADATA, 16-bit address, and 0..252 metadata bytes
+S1  count >= 3; return DATA, 16-bit destination, and 0..252 data bytes
+S9  count = 3; return END, zero data length, address as ENTRY, ENTRY_VALID set
+```
+
+Unsupported S-record types fail with BAD_TYPE. S2/S8 remain deferred. The
+parser publishes a successful descriptor only after count, syntax, checksum,
+and input termination all pass.
+
+HIMON retains its current V1 RAM classifications: a nonempty S1 span must not
+wrap; bytes below `$7F00` are the normal RAM-write domain, `$7F00-$7FFF` is
+protected, and `$8000+` requires a flash-capable command. HIMON preflights the
+complete RAM span before copying so a boundary failure does not partially
+apply the record. Because `$7B00` remains inside the compatible RAM domain,
+the HIMON copy adapter must provide memmove semantics when a destination
+overlaps the shared record buffer. Tightening the ordinary loader boundary to
+`MON_WORK_BASE=$7A00` is a separate policy decision, not part of this ABI.
+
+#### Machine Contract
+
+Entry requires Bank 3 visible, decimal mode clear, a balanced caller stack,
+and a valid request block. The service is foreground-only and non-reentrant.
+It may clobber A, X, Y, N, Z, V, the shared zero-page scratch `$CD-$D6`, the
+request/result block, and the record buffer. It leaves decimal mode clear,
+restores the caller's interrupt-disable state after any RAM-worker operation,
+and returns with a balanced stack.
+
+Success returns carry set, A=`$00`, and status `$00`. Failure returns carry
+clear with A and `STR8_REC_STATUS` set to the same nonzero status. X, Y, and
+the arithmetic flags other than carry are undefined on return.
+
+#### Compatibility And Installation Order
+
+Old HIMON remains compatible with new STR8 because `$F000`, `$F003`, and
+`$F006` retain their meanings and old HIMON keeps its private parser. New HIMON
+must not call `$F009` until the fixed signature, ABI version, and required
+capabilities pass.
+
+The required onboard cutover is therefore STR8 first, HIMON second:
+
+1. Install and verify the new STR8 top sector while old HIMON still loads S19.
+2. Verify `$F000-$F00F`, STR8 identity, worker placement, and vector tail.
+3. Use the new STR8 `U` path, already converted to this parser, to install the
+   new HIMON client.
+4. Prove `L`, `L G`, and `L F`, then reload and enter ASM-F2 through `L F`.
+
+New HIMON over old or mismatched STR8 is a detected unsupported pairing. Its
+loader commands fail with `$06`; they never jump through an unverified `$F009`.
+The complete previous combined ROM remains the programmer-recovery artifact
+for the top-sector transition.
+
 ## Additional Load Formats
 
 Additional formats follow the shared S19 service. They do not replace S19 as
@@ -440,7 +678,7 @@ but it is not the on-flash directory format.
 Every phase keeps a Bank-3 recovery path and adds hardware transcript evidence
 before the next phase depends on it.
 
-## Open Decisions To Freeze Before Code
+## Remaining Open Decisions To Freeze Before Code
 
 - Exact boot-bank validity marker, version, checksum, and compatibility rules.
 - Exact RAM-trampoline entry/exit register and stack contract.
@@ -450,8 +688,6 @@ before the next phase depends on it.
 - Atomic download/install rules and validation strength for a full payload.
 - Initial on-flash record header and interrupted-write commit encoding.
 - Which bank first becomes `VOLUME` after Bank 2 is retained as recovery.
-- Exact STR8 request/result block, record-buffer location, and stable service
-  entry or operation number.
 - Exact CRC-16/CCITT byte order and host-sender handshake for counted BIN.
 - Exact S28 image manifest/seal, monotonic-sector rule, and commit-last
   boot-valid marker if the V2.xxx/V3 transport is promoted.
