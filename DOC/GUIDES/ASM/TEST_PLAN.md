@@ -10799,3 +10799,104 @@ active flash path must still emit `STR8_REC_OP=$02` followed by `JSR $F009`.
 5. Append the unedited transcript, both candidate SHA-256 values, visible
    HIMON/ASM-F2 versions, erase status row, and before/after `$8000` dumps to
    `HARDWARE_TEST_LOG.md`. Phase 4 passes only when every gate above succeeds.
+
+## 2026-07-20 STR8 S19 Migration Phase 5
+
+Status: host fixture defined; board proof pending. Phase 5 does not change the
+resident parser or the flash worker. The Phase-4 direct transfer failure did
+not capture the transmitted bytes, so it cannot justify a parser change. The
+failed erase fixture consists of eight 42-character S1 records, and HIMON's
+line reader accepts up to 255 characters. Phase 5 therefore tests the actual
+serial file-send route with the same record count and width, but with a
+RAM-only fixture.
+
+### Phase-5 host gates
+
+Build the fixture:
+
+```text
+make -C SRC str8-l-transport-phase5-proof
+```
+
+`SRC/BUILD/s19/str8-l-transport-phase5-proof-3000.s19` must contain eight S1
+records from `$3000-$307F`, each with 16 data bytes (42 printable S19
+characters), followed by `S9033000CC`. The frozen artifact SHA-256 is
+`BB9D30C483A114502AE021A64961F1FE1D4C8E8895AD0A08E0781476C45C7002`.
+Its 128-byte payload begins:
+
+```text
+3000: A9 A5 8D 00 49 60 EA EA EA EA EA EA EA EA EA EA
+```
+
+The fixture calls no STR8 service and contains no flash address or command. On
+execution it writes only RAM `$4900=$A5` and returns `A=$A5`.
+
+The complete generated transport stream is:
+
+```text
+S1133000A9A58D004960EAEAEAEAEAEAEAEAEAEA14
+S1133010EAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEA0C
+S1133020EAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAFC
+S1133030EAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEC
+S1133040EAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEADC
+S1133050EAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEACC
+S1133060EAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEABC
+S1133070EAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAAC
+S9033000CC
+```
+
+### Phase-5 board prestaging
+
+1. Start from a cold board with Bank 3 visible. Preserve the external-programmer
+   recovery image but do not install any new ROM or flash image for this phase.
+   Require the established resident face:
+
+   ```text
+   >D F009 F00F
+   require: 4C 92 F3 53 52 01 07
+   ```
+
+2. Build the fixture above and record its SHA-256 before sending. Use the same
+   serial file-send mechanism that rejected the Phase-4 RAM erase fixture. Send
+   the generated file unchanged: do not paste it into `ASM`, and do not run the
+   erase fixture in this phase.
+3. The fixture writes only `$3000-$307F` and `$4900`; those are the only RAM
+   locations this phase may change. Flash must not be erased or programmed.
+
+### Phase-5 board gates
+
+1. Baseline the RAM sentinel, then enter the load-and-go command:
+
+   ```text
+   >D 4900 4900
+   >L G
+   L G S19
+   ```
+
+2. Send `str8-l-transport-phase5-proof-3000.s19` unchanged through the exact
+   file-send path. Require all of the following:
+
+   ```text
+   L @3000
+   L OK=0080 GO=3000
+   #LOADGO# ENTRY=3000
+   RET A=A5
+   >D 4900 4900
+   4900: A5
+   >D 3000 307F
+   3000: A9 A5 8D 00 49 60 EA EA EA EA EA EA EA EA EA EA
+   ```
+
+   The precise `RET` register decoration is monitor-dependent; `A=A5` and the
+   sentinel are required. No flash dump is a pass criterion because this proof
+   has no flash operation.
+
+3. If any `LERR` appears, do not retry the erase fixture and do not infer a
+   parser defect. Capture the complete terminal transcript, the SHA-256 of the
+   file actually sent, sender settings (including line ending and pacing), and
+   the first error. Recover normally without executing `$3000`; Phase 5 remains
+   open until the transport is reproducible or the transmitted stream identifies
+   a concrete decoder defect.
+4. Append the unedited result to `HARDWARE_TEST_LOG.md`. A PASS authorizes a
+   separate decision on the RAM erase fixture; it does not itself authorize a
+   destructive erase.
