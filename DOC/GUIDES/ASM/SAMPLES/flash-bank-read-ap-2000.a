@@ -1,0 +1,291 @@
+; FLASH-BANK-READ-AP-2000.A
+; MOVABLE RAM AP: STAGE ONE FLASH BANK SECTOR AND CRC16 IT.
+;
+; BUILD WITH ASM-F2 AT $2000, THEN PACKAGE $3000.
+; AP B0 $HHHH $3000 PROMPTS FOR BANK/SECTOR AS TWO CHARACTERS,
+; FOR EXAMPLE 2F FOR BANK 2 $F000-$FFFF.
+; THE BODY RUNS FROM RAM AND CALLS THE STR8 WORKER AT $F003.
+; EXPECT BODY=$01FB, RELOCS=$0D, PACKAGE=$0289.
+; EXPORT LEN=$0F; TWO-IMPORT RECORD LEN=$22.
+; THE ONBOARD PACKAGE RESULT IS THE FINAL AUTHORITY.
+;
+; FLASH TRANSACTION CARD (FTC) $1B00-$1B0F:
+;   +00 STATUS      OUT: AC OK, E0 BAD BANK/SECTOR,
+;                       E1 STAGE FAIL
+;   +01 BANK        IN:  00-03
+;   +02 SECTOR_HI   IN:  80,90,A0,B0,C0,D0,E0,F0
+;   +03 BUFFER_HI   OUT: 40, AIR RUN/TRAY BAY $4000-$4FFF
+;   +04/+05 CRC16   OUT: CRC-16/CCITT-FALSE, LO/HI
+;   +06/+07 FAIL    OUT: STR8 FAIL ADDRESS WHEN AVAILABLE
+;   +08 READY       CLEARED; OWNED BY ERASE-WRITE PACKAGE
+;   +09/+0A ARM     CLEARED; OWNED BY ERASE-WRITE PACKAGE
+;
+; SUCCESS RETURNS A=$AC AND C=1.
+; FAILURE RETURNS A=STATUS AND C=0.
+; THIS PACKAGE NEVER ERASES OR PROGRAMS FLASH.
+; FORMATTED TEXT/SCRATCH USES $1B20-$1B52.
+; CONSOLE INPUT DECK (CID) USES $1C00-$1CFE.
+
+        ORG $2000
+
+        IMPORT BIO_FTDI_PUT_CSTR
+        IMPORT SYS_READ_CSTRING_ECHO_UPPER
+
+FB_STATUS EQU $1B00
+FB_BANK   EQU $1B01
+FB_SECTOR EQU $1B02
+FB_BUFFER EQU $1B03
+FB_CRCLO  EQU $1B04
+FB_CRCHI  EQU $1B05
+FB_FAILLO EQU $1B06
+FB_FAILHI EQU $1B07
+FB_READY  EQU $1B08
+FB_ARM0   EQU $1B09
+FB_ARM1   EQU $1B0A
+; Keep the monitor's full 254-character input allowance away from the
+; request/result block and the formatted result line.
+FB_INPUT  EQU $1C00
+FB_TEXT   EQU $1B20
+FB_MSGLO  EQU $1B50
+FB_MSGHI  EQU $1B51
+FB_UIOK   EQU $1B52
+
+; AP-private scratch after ASM has returned to HIMON.
+PTRLO     EQU $A0
+PTRHI     EQU $A1
+CRCLO     EQU $A2
+CRCHI     EQU $A3
+
+STR8_SERVICE EQU $F003
+STR8_MARK_SECTOR_HI EQU $1FE9
+STR8_MARK_ADDR_LO EQU $1FEA
+STR8_MARK_ADDR_HI EQU $1FEB
+STR8_COPY_SRC_BANK EQU $1FEE
+STR8_COPY_MODE EQU $1FF0
+STR8_STAGE_BUF_HI EQU $1FF6
+
+MODE_STAGE_BANK_SECTOR EQU $06
+BUFFER_HI EQU $40
+
+FLASH_BANK_READ LDA #<FBR_MSGS
+        ENTRY FLASH_BANK_READ
+        STA FB_MSGLO
+        LDA #>FBR_MSGS
+        STA FB_MSGHI
+        STZ FB_UIOK
+        LDX FB_MSGLO
+        LDY FB_MSGHI
+        JSR BIO_FTDI_PUT_CSTR
+        LDX #<FB_INPUT
+        LDY #>FB_INPUT
+        JSR SYS_READ_CSTRING_ECHO_UPPER
+        BCC .BAD
+        LDA FB_INPUT+2
+        BNE .BAD
+        LDA FB_INPUT
+        CMP #'0'
+        BCC .BAD
+        CMP #'4'
+        BCS .BAD
+        SEC
+        SBC #'0'
+        STA FB_BANK
+        LDA FB_INPUT+1
+        CMP #'8'
+        BCC .BAD
+        CMP #':'
+        BCC .DIG
+        CMP #'A'
+        BCC .BAD
+        CMP #'G'
+        BCS .BAD
+        SEC
+        SBC #$37
+        BRA .SECVAL
+.DIG    AND #$0F
+.SECVAL ASL A
+        ASL A
+        ASL A
+        ASL A
+        STA FB_SECTOR
+        LDA #$A5
+        STA FB_UIOK
+        JSR FBR_RUN
+        BRA .SHOW
+.BAD    STZ FB_CRCLO
+        STZ FB_CRCHI
+        STZ FB_FAILLO
+        STZ FB_FAILHI
+        LDA #BUFFER_HI
+        STA FB_BUFFER
+        LDA #$E0
+        STA FB_STATUS
+
+.SHOW   LDA FB_MSGLO
+        CLC
+        ADC #$18
+        STA PTRLO
+        LDA FB_MSGHI
+        ADC #$00
+        STA PTRHI
+        LDX #$00
+        LDY #$00
+.COPY   LDA (PTRLO),Y
+        STA FB_TEXT,X
+        BEQ .COPIED
+        INX
+        INY
+        BRA .COPY
+.COPIED LDX #$0B
+        LDA FB_STATUS
+        JSR FBR_HEX_STORE
+        LDA FB_UIOK
+        BEQ .NOPATCH
+        LDA FB_INPUT
+        STA $1B30
+        LDA FB_INPUT+1
+        STA $1B34
+.NOPATCH LDX #$1E
+        LDA FB_CRCHI
+        JSR FBR_HEX_STORE
+        LDX #$20
+        LDA FB_CRCLO
+        JSR FBR_HEX_STORE
+        LDX #<FB_TEXT
+        LDY #>FB_TEXT
+        JSR BIO_FTDI_PUT_CSTR
+        LDA FB_STATUS
+        CMP #$AC
+        BEQ .OK
+        CLC
+        RTS
+.OK     SEC
+        RTS
+
+FBR_RUN STZ FB_STATUS
+        STZ FB_CRCLO
+        STZ FB_CRCHI
+        STZ FB_FAILLO
+        STZ FB_FAILHI
+        STZ FB_READY
+        STZ FB_ARM0
+        STZ FB_ARM1
+        LDA #BUFFER_HI
+        STA FB_BUFFER
+        JSR FBR_VALIDATE
+        BCS FBR_STAGE
+        JMP FBR_FAIL
+
+FBR_STAGE LDA FB_BANK
+        STA STR8_COPY_SRC_BANK
+        LDA FB_SECTOR
+        STA STR8_MARK_SECTOR_HI
+        LDA #BUFFER_HI
+        STA STR8_STAGE_BUF_HI
+        LDA #MODE_STAGE_BANK_SECTOR
+        STA STR8_COPY_MODE
+        JSR STR8_SERVICE
+        BCS FBR_CRC16
+        LDA STR8_MARK_ADDR_LO
+        STA FB_FAILLO
+        LDA STR8_MARK_ADDR_HI
+        STA FB_FAILHI
+        LDA #$E1
+        JMP FBR_FAIL
+
+FBR_CRC16 LDA #$FF
+        STA CRCLO
+        STA CRCHI
+        STZ PTRLO
+        LDA #BUFFER_HI
+        STA PTRHI
+        LDX #$10
+FBR_PAGE LDY #$00
+FBR_BYTE LDA (PTRLO),Y
+        JSR FBR_CRC_BYTE
+        INY
+        BNE FBR_BYTE
+        INC PTRHI
+        DEX
+        BNE FBR_PAGE
+        LDA CRCLO
+        STA FB_CRCLO
+        LDA CRCHI
+        STA FB_CRCHI
+        LDA #$AC
+        STA FB_STATUS
+        SEC
+        RTS
+
+FBR_CRC_BYTE EOR CRCHI
+        STA CRCHI
+        PHX
+        LDX #$08
+FBR_CRC_BIT ASL CRCLO
+        ROL CRCHI
+        BCC FBR_CRC_NEXT
+        LDA CRCLO
+        EOR #$21
+        STA CRCLO
+        LDA CRCHI
+        EOR #$10
+        STA CRCHI
+FBR_CRC_NEXT DEX
+        BNE FBR_CRC_BIT
+        PLX
+        RTS
+
+FBR_VALIDATE LDA FB_BANK
+        CMP #$04
+        BCS FBR_BAD_CFG
+        LDA FB_SECTOR
+        CMP #$80
+        BCC FBR_BAD_CFG
+        AND #$0F
+        BNE FBR_BAD_CFG
+        SEC
+        RTS
+FBR_BAD_CFG LDA #$E0
+        CLC
+        RTS
+
+FBR_FAIL STA FB_STATUS
+        LDA FB_STATUS
+        CLC
+        RTS
+
+FBR_HEX_STORE PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        CMP #$0A
+        BCC .HIDIG
+        CLC
+        ADC #$37
+        BRA .HISTORE
+.HIDIG CLC
+        ADC #'0'
+.HISTORE STA FB_TEXT,X
+        INX
+        PLA
+        AND #$0F
+        CMP #$0A
+        BCC .LODIG
+        CLC
+        ADC #$37
+        BRA .LOSTORE
+.LODIG CLC
+        ADC #'0'
+.LOSTORE STA FB_TEXT,X
+        RTS
+
+FBR_MSGS DB $0D,$0A,'F','L','A','S','H',' '
+        DB 'R','E','A','D',' ','B','/','S',' '
+        DB '(','2','F',')','>',' ',0
+        DB $0D,$0A,'R','E','A','D',' ','S','T','=','$'
+        DB '0','0',' ','B','=','?',' ','S','=','?','0','0','0'
+        DB ' ','C','R','C','=','$','0','0','0','0'
+        DB ' ','B','U','F','=','$','4','0','0','0',$0D,$0A,0
+
+        END

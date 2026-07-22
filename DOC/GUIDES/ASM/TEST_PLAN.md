@@ -9325,6 +9325,52 @@ ran with `G 2000`, erased and verified every Bank 0 sector from `$8000-$FFFF`,
 printed `BANK 0 ERASE COMPLETE`, and returned `A=$AC` with carry set. This
 full-bank run supersedes the requested short single-sector address proof.
 
+### Fixed-Load Banked Erase AP Gate
+
+`DOC/GUIDES/ASM/SAMPLES/flash-erase-bank-ap-2000.a` is a new, separate
+fixed-load AP form of the proven direct-run erase tool. It retains the `$2000`
+RAM contract and literalizes every internal absolute call, jump, and text
+pointer from the board-proven `$2000-$23A5` map. Its required package gate is
+`SEAL REL ... COUNT=$00`; it must never be treated as a movable AP.
+
+Package it at `$3000`, store it with the resident Bank-0 PUT AP, then invoke
+`AP B0 ERASEPKG $2000`. First take the legal Bank 1 sector-8 path and press
+Enter at the exact-`YES` prompt. Require `ABORT - NO FLASH WRITE` and
+`A=$E0/C=0`. This proves package loading and the non-destructive command path
+without an erase after the intentional installer write. The separate
+hand-held card is `DOC/GUIDES/ASM/SAMPLES/flash-erase-bank-ap-2000-test.md`.
+
+The 2026-07-21 non-destructive board gate passed on HIMON/ASM-F2
+`00.0721(1742)`: it produced `PKG OK @=$3000 L=$03D6`, the resident PUT AP
+stored it at Bank-0 `$9486`, and `AP B0 $9486 $2000` reached the erase front
+door before an empty bank reply returned `ABORT - NO FLASH WRITE` with
+`A=$E0/C=0`. This proves the fixed-load package, Bank-0 storage, AP load, and
+safe abort path. The transcript did not print a separate relocation-count
+line, so the package result is the recorded seal evidence.
+
+An explicitly reserved destructive follow-up may erase/verify one selected
+sector. The AP executes from RAM after loading, so it can erase the Bank-0
+sector containing its stored package, but that deliberately destroys that
+stored copy; retain a recovery path. That destructive AP path remains pending.
+
+### Fixed-Load Flash Bank/Sector Dump AP Gate
+
+`DOC/GUIDES/ASM/SAMPLES/flash-bank-dump-ap-2000.a` is the read-only companion
+to the erase AP. It is fixed-load at `$2000`, stages a selected physical Bank
+`0-3` and sector `8-F` into `$4000-$4FFF`, and displays the 4K image in
+16-byte hex/ASCII rows, pausing every 256 bytes. Enter continues; `Q` returns
+without any flash write. Its required package gate is `SEAL REL ... COUNT=$00`.
+
+Package it at `$3000`, store it through the resident PUT AP, then invoke
+`AP B0 DUMPPKG $2000`. Select known Bank 2 sector F, compare the first displayed
+row with `D 4000 403F`, and enter `Q` at the first page prompt. Require
+`ABORT - NO FLASH WRITE` with `A=$E0/C=0`. The full pasteable card is
+`DOC/GUIDES/ASM/SAMPLES/flash-bank-dump-ap-2000-test.md`. A preliminary
+2026-07-21 board paste emitted `ERR=$07` on overlong data lines and `ERR=$03`
+on standalone labels; the resulting `$8C8B` / `$0231` package is invalid and
+must not be invoked. The source now uses short data rows and label-plus-opcode
+lines. Board evidence for the corrected source remains pending.
+
 ## ASM-F2 Bank 0 AP Install Helper
 
 `DOC/GUIDES/ASM/SAMPLES/bank0ap-stage-transient-2000.a` and
@@ -9447,11 +9493,103 @@ package `L=$0658`, accepted exact `YES`, printed `PROGRAM OK`, and returned
 `REFS=$B0/$C0`, `TRUNC=NO`, and `ASM REPORT OK`. The reported `$62` fixups
 confirm the reordered source uses 98 rows and leaves 30 free.
 
-The transient's detailed seal row reports `FL=09` and `REL=10`: its 16-row
-relocation metadata filled and truncated. That does not affect its intended
-fixed-address `G 2000` execution and is why this utility must not be packaged.
+That revision's detailed seal row reports `FL=09` and `REL=10`: its 16-row
+relocation metadata filled and truncated. That did not affect its intended
+fixed-address `G 2000` execution and is why the 2026-07-12 revision could not
+be packaged.
+
+The historical successor preserved the `$2000-$245A` body, replaced internal
+absolute calls and text pointers with fixed literals, added offset-zero entry
+`BANK0_AP_PUT`, and remained directly runnable for bootstrap. That historical
+fixed-load package was `$0486` with zero relocation rows. The current
+appendable revision adds framed-tail scanning and trace rows while preserving
+that fixed-load contract: require `SEAL REL ... COUNT=$00` before packaging.
+`AP B0 PUTPKG $2000` remains a board gate for each rebuilt installer image,
+not evidence retroactively added to this older pass.
 Remaining optional negatives are non-`YES` abort, occupied-address `$E5`, bad
 package `$E1`, no-hole `$E3`, and forced worker failure.
+
+### Append-Only AUTO Allocator Board Gate
+
+Status: host/harness pass; board evidence pending. The current installer is
+the first revision whose AUTO path reads `AP/01` declared lengths, appends only
+to a clean sector tail, and prints its allocation decision. It is conservative
+framing validation, not a repair tool: malformed or dirty data closes a sector.
+
+With an already-resident earlier installer recorded as `OLDPUTPKG`, first
+package the current source at `$3000` and use the earlier installer to append
+the new one. Record the new printed address as `NEWPUTPKG`; this is the one
+intentional Bank-0 write in the gate.
+
+```text
+>ASM NEW
+paste bank0ap-put-transient-2000.a
+...require SEAL REL ... COUNT=$00...
+SEAL> PACKAGE $3000
+...require PKG OK; record its actual length...
+SEAL> .
+ASM BYE
+>AP B0 OLDPUTPKG $2000
+...type YES only at the intentional installer-store confirmation...
+...record the printed B0 address as NEWPUTPKG...
+```
+
+Build a small ordinary AP envelope at `$3000`, run `AP B0 NEWPUTPKG $2000`,
+and press Enter at `DST`. Require `AUTO B0:$hhhh APPEND` at the exact byte
+after the last framed envelope. At the following `TYPE YES` prompt, press
+Enter to require `ABORT - NO FLASH WRITE` and `$1A00=$E0`. This proves the
+same-sector choice without adding a test package.
+
+Then build the movable reporter (`L=$0C8B`) at `$3000`, run the same resident
+installer, and again press Enter at `DST`. Require at least one visible
+`TAIL=$hhhh SHORT; NEED=$0C8B` or `CLOSED` trace before a later
+`AUTO B0:$hhhh APPEND` candidate. Abort at the confirmation prompt. This
+proves that AUTO advances to a later sector only after the current one cannot
+append the complete envelope; neither trace run writes flash.
+
+Stop if the source seals with any relocation row or if `PACKAGE` reports any
+error. Do not use arbitrary `$FF` bytes, a torn capsule, or a damaged sector
+as a reclamation test: this allocator must leave those sectors closed.
+
+### Movable ASM Session Reporter Board Gate
+
+`DOC/GUIDES/ASM/SAMPLES/asm-session-report-ap-2000.a` is the movable,
+map-matched successor to the fixed `$4800` reporter. Host generation and WDC
+assembly prove BODY `$0C5F` at source `$2000-$2C5E`, one ordinary relocation,
+224 private idempotent relocation rows, and expected package `$0C8B` at
+`$3000-$3C8A`. Legal HIMON AP destinations are `$2000-$43A1`; use `$4000`
+for this proof.
+
+```text
+>ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-ap-2000.a
+ASM OK
+SEAL> PACKAGE $3000
+PKG OK @=$3000 L=$0C8B
+SEAL> .
+ASM BYE
+>AP B0 PUTPKG $2000
+...record PROGRAM OK address as REPORTPKG...
+>AP B0 REPORTPKG $4000
+...a preliminary ASM REPORT runs...
+>ASM NEW
+...assemble and END the target session...
+SEAL> .
+ASM BYE
+>G 4000
+```
+
+Require the post-session run to print the target session correctly, return
+with carry set on an OK session, and include the current zones: symbols
+`$0200-$09FF`, fixups `$0A00-$19FF`, tool `$1A00-$1FE8`, STR8
+`$1FE9-$1FFF`, `$2000/$3000/$4000` islands, UDATA `$5000-$61A9`, safe
+`$61AA-$79FF`, and volatile `$7A00-$7DFF`. Repeat `G 4000`; output and return
+must match, proving the private relocation pass is idempotent.
+
+Do not run a banked `AP` after the target session; staging reuses its low name
+tables. This remains a pending board gate and must not be recorded as hardware
+proof until the transcript supplies the actual `PKG OK`, Bank-0 address,
+report text, and return rows.
 
 ### 2026-07-12 ASM-F2 Visible Version Board Proof
 
@@ -10009,7 +10147,7 @@ Resume the RAM import proof without a cold boot:
 
 ```text
 ASM NEW
-  paste banked-rjoin-smoke.a
+  paste OLD CODE/banked-rjoin-smoke.a
 PACKAGE $3200
 LOAD $3200 $3000
 .
@@ -10089,10 +10227,10 @@ The remaining moved-linker regressions now use the frozen fixtures and exact
 board sequence in
 [AP_LINKER_CURRENT_IMAGE_GATES.md](AP_LINKER_CURRENT_IMAGE_GATES.md).
 
-Frozen active sources:
+Frozen sources:
 
 ```text
-SAMPLES/banked-rjoin-smoke.a
+SAMPLES/OLD CODE/banked-rjoin-smoke.a
 SAMPLES/bankput-transient-3000.a
 SAMPLES/missing-import-atomicity-2000.a
 ```

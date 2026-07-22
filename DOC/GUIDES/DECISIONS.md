@@ -57,6 +57,30 @@ select Bank 3 as the recovery root. A compatible boot bank reserves
 payload. Bank selection and reset-vector handoff run from RAM; selected-bank
 code must not depend on Bank-3-only HIMON/RJOIN addresses.
 
+- The manual non-destructive launch spelling is `J0`, `J1`, or `J2`. It
+  validates the selected bank, including a CRC gate, before a RAM trampoline
+  selects the bank and follows its reset vector. Failures are terse and return
+  to Bank-3 STR8 without changing flash.
+- Every accepted target supplies its own STR8-compatible top sector. Its boot
+  descriptor supplies the default payload entry instead of assuming Bank 3's
+  `$C000` HIMON. An alternate-bank payload may therefore put a WDCMONv2
+  menu/wrapper at `$8000` while retaining STR8 recovery at `$F000-$FFFF`.
+- A later timed boot may launch a validated Bank 0-2. It never changes the
+  physical reset rule: reset still selects Bank 3.
+- Bank 2 is the planned first handoff proof after read-back confirms the
+  operator-reported fresh `B3 -> B2` copy. Bank 0 `$8000`, currently holding
+  the ASM-session-reporter AP package, is not a sacrificial proof target.
+- The V1 Boot Passport Block (BPB) is `$F010-$F01F`; the STR8 boot body moves
+  to `$F020`. Its `S8B1` passport supplies flags, image kind, default entry,
+  complete-bank CRC16, a four-byte display tag, and an `$A5` commit-last seal.
+  CRC16 covers `$8000-$FFFF` with its own two stored bytes treated as zero.
+- The `J` RAM tail disables interrupts, clears decimal mode, resets the stack
+  pointer to `$FF`, selects the validated bank, and jumps through its `$FFFC`
+  reset vector. A failed validation restores Bank 3 and does not write flash.
+- A future simple updater must offer separate presets for `$8000-$BFFF`,
+  `$C000-$EFFF`, and `$F000-$FFFF`. The spelling and transport are deferred;
+  the top-region preset remains separately and strongly guarded.
+
 STR8 owns the reusable S19 decode/checksum mechanism and all flash-mutation
 policy. HIMON keeps the `L`/`L G` RAM-load interface and destination policy.
 The first migration retains `L F` but delegates its validated-record flash

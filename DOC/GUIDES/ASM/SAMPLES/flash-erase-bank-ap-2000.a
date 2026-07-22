@@ -1,0 +1,400 @@
+; FLASH-ERASE-BANK-AP-2000.A
+; FIXED-LOAD, BANK-0-STORABLE VERSION OF THE BANKED SECTOR ERASE TOOL.
+;
+; THIS IS AN AP ONLY AT ITS FIXED RAM LOAD ADDRESS $2000.  BUILD IT WITH
+; FLASH ASM, REQUIRE SEAL REL COUNT=$00, THEN PACKAGE AT $3000.  STORE THAT
+; CAPSULE WITH THE BANK-0 PUT INSTALLER.  LATER RUN:
+;
+;   AP B0 ERASEPKG $2000
+;
+; AP LOADS THE BODY INTO RAM BEFORE THE PROMPT.  IT MAY THEREFORE ERASE THE
+; BANK-0 SECTOR THAT HOLDS ERASEPKG, BUT THAT INTENTIONALLY DESTROYS THE
+; STORED COPY AFTER THE CURRENT RAM RUN.  RETAIN A SEPARATE RECOVERY PATH.
+;
+; DIRECT-RUN BOOTSTRAP REMAINS VALID:
+;
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   SEAL> .
+;   G 2000
+;
+; THIS SOURCE IS A FIXED $2000 IMAGE, NOT A MOVABLE AP.  EVERY INTERNAL
+; ABSOLUTE CALL, JUMP, AND TEXT POINTER IS A LITERAL FROM THE $2000 MAP.
+; THAT KEEPS THE AP METADATA TABLE-FREE: SEAL REL ... COUNT=$00.  RECALCULATE
+; THE LITERALS IF THE BODY LAYOUT CHANGES.  ITS THREE HIMON I/O CALLS RESOLVE
+; TO THE CURRENT IMAGE, SO REBUILD/REINSTALL IT AFTER A HIMON ADDRESS CHANGE.
+;
+; ENTER BANK 0-3, THEN SECTOR 8-F OR ALL FOR $8000-$FFFF.
+; THE TOOL REQUIRES THE EXACT WORD YES BEFORE IT CHANGES FLASH.
+;
+; USES THE STR8 RAM WORKER THROUGH $F003.  EACH 4K STAGING IMAGE IS FILLED
+; WITH $FF; PROGRAM-STAGED ERASES AND VERIFIES IT.
+;
+; WARNING: THIS DESTROYS THE SELECTED BANK AND SECTOR(S).
+; BANK 3 IS LIMITED TO 8-B.  C-F HOLD CODE THIS TOOL NEEDS.
+;
+; STATUS:
+;   $1A00 = $AC OK
+;   $1A00 = $E0 ABORTED
+;   $1A00 = $E1 ERASE/VERIFY FAILED
+;   $1A01 = SELECTED OR FAILING SECTOR HIGH BYTE
+;   $1A02/$1A03 = STR8 FAIL ADDRESS WHEN AVAILABLE
+;   $1A05 = SELECTED BANK
+
+        ORG $2000
+FLASH_ERASE_BANK_AP BRA RUN
+        ENTRY FLASH_ERASE_BANK_AP
+
+RUN     STZ $1A00
+        STZ $1A01
+        STZ $1A02
+        STZ $1A03
+        STZ $1A04
+        STZ $1A05
+        LDX #$8D              ; MTITLE
+        LDY #$22
+        JSR $2280             ; PUTS
+
+ASKBANK LDX #$A4              ; MBANK
+        LDY #$22
+        JSR $2280             ; PUTS
+        JSR $2279             ; READ
+        BCS HAVEBANK
+        JMP $2153             ; ABORT
+HAVEBANK CMP #$00
+        BEQ ASKBANK
+        JSR $2164             ; PARBANK
+        BCS ASK
+        LDX #$62              ; MBADBANK
+        LDY #$23
+        JSR $2280             ; PUTS
+        JMP $201B             ; ASKBANK
+
+ASK     LDX #$AF              ; MASK
+        LDY #$22
+        JSR $2280             ; PUTS
+        JSR $2279             ; READ
+        BCS HAVEIN
+        JMP $2153             ; ABORT
+HAVEIN  CMP #$00
+        BEQ ASK
+        JSR $217E             ; PARSE
+        BCS PARSED
+        JMP $2149             ; BAD
+
+PARSED  JSR $21D4             ; SAFE
+        BCS SELECTED
+        LDX #$75              ; MUNSAFE
+        LDY #$23
+        JSR $2280             ; PUTS
+        JMP $203D             ; ASK
+
+SELECTED LDA $1A04
+        CMP #$08
+        BNE WARNONE
+        LDX #$C3              ; MWARNALL
+        LDY #$22
+        JSR $2280             ; PUTS
+        JSR $2256             ; PRBANK
+        LDX #$D6              ; MALLRANGE
+        LDY #$22
+        JSR $2280             ; PUTS
+        BRA CONFIRM
+
+WARNONE LDX #$E5              ; MWARNONE
+        LDY #$22
+        JSR $2280             ; PUTS
+        JSR $2256             ; PRBANK
+        LDA #':'
+        JSR $2276             ; OUT
+        JSR $2223             ; PRANGE
+
+CONFIRM LDX #$F8              ; MCONFIRM
+        LDY #$22
+        JSR $2280             ; PUTS
+        JSR $2279             ; READ
+        BCS HAVECONF
+        JMP $2153             ; ABORT
+HAVECONF JSR $21ED             ; ISYES
+        BCS ERASEOK
+        JMP $2153             ; ABORT
+
+ERASEOK LDX #$0E              ; MBEGIN
+        LDY #$23
+        JSR $2280             ; PUTS
+        JSR $220B             ; FILLFF
+
+NEXT    LDX #$18              ; MERASE
+        LDY #$23
+        JSR $2280             ; PUTS
+        JSR $2256             ; PRBANK
+        LDA #':'
+        JSR $2276             ; OUT
+        JSR $2223             ; PRANGE
+        LDX #$20              ; MDOTS
+        LDY #$23
+        JSR $2280             ; PUTS
+
+        LDA $1A05
+        STA $1FEF
+        LDA $1A01
+        STA $1FE9
+        LDA #$0A
+        STA $1FF6
+        LDA #$05
+        STA $1FF0
+        JSR $F003
+        BCC FAIL
+
+        LDX #$26              ; MOK
+        LDY #$23
+        JSR $2280             ; PUTS
+        DEC $1A04
+        BEQ DONE
+        LDA $1A01
+        CLC
+        ADC #$10
+        STA $1A01
+        BRA NEXT
+
+DONE    STZ $1A01
+        LDA #$AC
+        STA $1A00
+        LDX #$35              ; MDONE
+        LDY #$23
+        JSR $2280             ; PUTS
+        JSR $2256             ; PRBANK
+        LDX #$3B              ; MCOMPLETE
+        LDY #$23
+        JSR $2280             ; PUTS
+        LDA $1A00
+        SEC
+        RTS
+
+FAIL    LDA #$E1
+        STA $1A00
+        LDA $1FEA
+        STA $1A02
+        LDA $1FEB
+        STA $1A03
+        LDX #$2B              ; MFAIL
+        LDY #$23
+        JSR $2280             ; PUTS
+        LDA $1A03
+        JSR $225F             ; HEX
+        LDA $1A02
+        JSR $225F             ; HEX
+        JSR $2283             ; CRLF
+        LDA $1A00
+        CLC
+        RTS
+
+BAD     LDX #$4D              ; MBAD
+        LDY #$23
+        JSR $2280             ; PUTS
+        JMP $203D             ; ASK
+
+ABORT   LDA #$E0
+        STA $1A00
+        LDX #$8C              ; MABORT
+        LDY #$23
+        JSR $2280             ; PUTS
+        LDA $1A00
+        CLC
+        RTS
+
+PARBANK LDA $1A11
+        BNE PBBAD
+        LDA $1A10
+        CMP #'0'
+        BCC PBBAD
+        CMP #'4'
+        BCS PBBAD
+        SEC
+        SBC #'0'
+        STA $1A05
+        SEC
+        RTS
+PBBAD   CLC
+        RTS
+
+PARSE   LDA $1A10
+        CMP #'A'
+        BNE ONE
+        LDA $1A11
+        CMP #'L'
+        BNE ONE
+        LDA $1A12
+        CMP #'L'
+        BNE ONE
+        LDA $1A13
+        BNE PBAD
+        LDA #$80
+        STA $1A01
+        LDA #$08
+        STA $1A04
+        SEC
+        RTS
+
+ONE     LDA $1A11
+        BNE PBAD
+        LDA $1A10
+        CMP #'8'
+        BCC PBAD
+        CMP #':'
+        BCC PDIGIT
+        CMP #'A'
+        BCC PBAD
+        CMP #'G'
+        BCS PBAD
+        SEC
+        SBC #$37
+        BRA PSHIFT
+
+PDIGIT  SEC
+        SBC #'0'
+PSHIFT  ASL A
+        ASL A
+        ASL A
+        ASL A
+        STA $1A01
+        LDA #$01
+        STA $1A04
+        SEC
+        RTS
+PBAD    CLC
+        RTS
+
+SAFE    LDA $1A05
+        CMP #$03
+        BNE SAFEOK
+        LDA $1A04
+        CMP #$08
+        BEQ SAFEBAD
+        LDA $1A01
+        CMP #$C0
+        BCS SAFEBAD
+SAFEOK  SEC
+        RTS
+SAFEBAD CLC
+        RTS
+
+ISYES   LDA $1A10
+        CMP #'Y'
+        BNE NYES
+        LDA $1A11
+        CMP #'E'
+        BNE NYES
+        LDA $1A12
+        CMP #'S'
+        BNE NYES
+        LDA $1A13
+        BNE NYES
+        SEC
+        RTS
+NYES    CLC
+        RTS
+
+FILLFF  STZ $CA
+        LDA #$0A
+        STA $CB
+FPAGE   LDY #$00
+        LDA #$FF
+FBYTE   STA ($CA),Y
+        INY
+        BNE FBYTE
+        INC $CB
+        LDA $CB
+        CMP #$1A
+        BNE FPAGE
+        RTS
+
+PRANGE  LDA #'$'
+        JSR $2276             ; OUT
+        LDA $1A01
+        JSR $225F             ; HEX
+        LDA #'0'
+        JSR $2276             ; OUT
+        LDA #'0'
+        JSR $2276             ; OUT
+        LDA #'-'
+        JSR $2276             ; OUT
+        LDA #'$'
+        JSR $2276             ; OUT
+        LDA $1A01
+        CLC
+        ADC #$0F
+        JSR $225F             ; HEX
+        LDA #'F'
+        JSR $2276             ; OUT
+        LDA #'F'
+        JSR $2276             ; OUT
+        RTS
+
+PRBANK  LDA $1A05
+        CLC
+        ADC #'0'
+        JMP $2276             ; OUT
+
+HEX     PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR $226A             ; NIB
+        PLA
+        AND #$0F
+NIB     CMP #$0A
+        BCC NDIG
+        CLC
+        ADC #$37
+        BRA OUT
+NDIG    CLC
+        ADC #'0'
+OUT     JMP BIO_FTDI_WRITE_BYTE_BLOCK
+
+READ    LDX #$10
+        LDY #$1A
+        JMP SYS_READ_CSTRING_ECHO_UPPER
+
+PUTS    JMP BIO_FTDI_PUT_CSTR
+
+CRLF    LDA #$0D
+        JSR $2276             ; OUT
+        LDA #$0A
+        JMP $2276             ; OUT
+
+MTITLE  DB $0D,$0A,'B','A','N','K','E','D',' '
+        DB 'F','L','A','S','H'
+        DB ' ','E','R','A','S','E',$0D,$0A,0
+MBANK   DB 'B','A','N','K',' ','0','-','3','>',' ',0
+MASK    DB 'S','E','C','T','O','R',' ','8','-','F',' ','O','R'
+        DB ' ','A','L','L','>',' ',0
+MWARNALL DB $0D,$0A,'W','A','R','N','I','N','G',':',' '
+        DB 'E','R','A','S','E',' ','B',0
+MALLRANGE DB ' ','$','8','0','0','0','-','$','F','F','F','F'
+        DB $0D,$0A,0
+MWARNONE DB $0D,$0A,'W','A','R','N','I','N','G',':',' '
+        DB 'E','R','A','S','E',' ','B',0
+MCONFIRM DB $0D,$0A,'T','Y','P','E',' ','Y','E','S',' ','T','O'
+        DB ' ','E','R','A','S','E','>',' ',0
+MBEGIN  DB $0D,$0A,'B','E','G','I','N',$0D,$0A,0
+MERASE  DB 'E','R','A','S','E',' ','B',0
+MDOTS   DB ' ','.','.','.',' ',0
+MOK     DB 'O','K',$0D,$0A,0
+MFAIL   DB 'F','A','I','L',' ','A','T',' ','$',0
+MDONE   DB 'B','A','N','K',' ',0
+MCOMPLETE DB ' ','E','R','A','S','E',' '
+        DB 'C','O','M','P','L','E','T','E',$0D,$0A,0
+MBAD    DB '?',' ','E','N','T','E','R',' ','8','-','F'
+        DB ' ','O','R'
+        DB ' ','A','L','L',$0D,$0A,0
+MBADBANK DB '?',' ','E','N','T','E','R',' ','B','A','N','K'
+        DB ' ','0','-','3',$0D,$0A,0
+MUNSAFE DB '?',' ','B','3',' ','A','L','L','O','W','S',' '
+        DB 'O','N','L','Y',' ','8','-','B',$0D,$0A,0
+MABORT  DB 'A','B','O','R','T',' ','-',' ','N','O',' '
+        DB 'F','L','A','S','H'
+        DB ' ','W','R','I','T','E',$0D,$0A,0
+
+        END

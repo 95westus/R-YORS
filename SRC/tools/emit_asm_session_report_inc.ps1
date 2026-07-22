@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory=$true)][string]$MapPath,
     [Parameter(Mandatory=$true)][string]$OutPath,
     [string]$AsmNativeFlashOut,
-    [string]$AsmNativeRuntimeOut
+    [string]$AsmNativeRuntimeOut,
+    [string]$AsmNativeMovableOut
 )
 
 $required = @(
@@ -145,7 +146,7 @@ function Test-AsmNativeMnemonic([string]$Token) {
     return @(
         'ADC','AND','BEQ','BNE','BCC','BCS','BRA','CLC','CMP','CPX',
         'DEC','DEX','INC','INX','INY','JMP','JSR','LDA','LDX','LDY',
-        'ORA','RTS','SBC','SEC','STA','STX','STZ','TXA',
+        'ORA','PLA','RTS','SBC','SEC','STA','STX','STZ','TSX','TXA',
         'DB','END','ENTRY','ORG'
     ) -contains $t
 }
@@ -193,7 +194,7 @@ function Get-AsmNativeLineSize([string]$Line) {
         return (($op -split ',').Count)
     }
 
-    if (@('RTS','CLC','SEC','INX','DEX','INY','TXA') -contains $first) {
+    if (@('RTS','CLC','SEC','INX','DEX','INY','PLA','TSX','TXA') -contains $first) {
         return 1
     }
     if (@('BEQ','BNE','BCC','BCS','BRA') -contains $first) {
@@ -324,6 +325,324 @@ function ConvertTo-CompactAsmNativeReport([string[]]$Native, [string]$Org) {
     return $resolved
 }
 
+function Test-AsmNativeRel8Ranges([string[]]$Lines, [string]$Org, [hashtable]$Labels) {
+    $pc = [Convert]::ToInt32($Org, 16)
+    foreach ($line in $Lines) {
+        if ($line -match '^\s*(?:(?:[.A-Za-z_][.A-Za-z0-9_]*:?)\s+)?(?:BEQ|BNE|BCC|BCS|BRA)\s+(?<target>[.A-Za-z_][.A-Za-z0-9_]*)\s*$') {
+            $target = $matches['target'].ToUpperInvariant()
+            if (-not $Labels.ContainsKey($target)) {
+                throw "Unknown relative-branch target in movable reporter: $target"
+            }
+            $distance = $Labels[$target] - ($pc + 2)
+            if ($distance -lt -128 -or $distance -gt 127) {
+                throw ('Relative branch out of range in movable reporter: {0} ({1})' -f $line.Trim(), $distance)
+            }
+        }
+        $pc += Get-AsmNativeLineSize $line
+    }
+}
+
+function Add-SelfRelocAsmNativeReport([string[]]$Native) {
+    $startIndex = [Array]::IndexOf($Native, 'START   JMP MAIN')
+    if ($startIndex -lt 0) {
+        throw 'Movable reporter could not find START.'
+    }
+
+    $boot = @(
+        'START   JSR BOOT',
+        '        JMP MAIN',
+        '',
+        '; BOOT GETS THE ACTUAL LOAD BASE FROM ITS OWN JSR RETURN ADDRESS.',
+        '; $05-$0D ARE BOOT-ONLY ZP SCRATCH. THE RBT IS IDEMPOTENT.',
+        'BOOT    TSX',
+        '        LDA $0101,X',
+        '        SEC',
+        '        SBC #$02',
+        '        STA $05',
+        '        LDA $0102,X',
+        '        SBC #$00',
+        '        STA $06',
+        '        LDA $05',
+        '        CLC',
+        '        ADC #__TABLE_LO__',
+        '        STA $07',
+        '        LDA $06',
+        '        ADC #__TABLE_HI__',
+        '        STA $08',
+        '        LDY #$00',
+        '        LDA ($07),Y',
+        "        CMP #'S'",
+        '        BNE .BFAIL',
+        '        INY',
+        '        LDA ($07),Y',
+        "        CMP #'R'",
+        '        BNE .BFAIL',
+        '        INY',
+        '        LDA ($07),Y',
+        '        CMP #$01',
+        '        BNE .BFAIL',
+        '        INY',
+        '        LDA ($07),Y',
+        '        STA $0D',
+        '        BEQ .BFAIL',
+        '        LDA $07',
+        '        CLC',
+        '        ADC #$04',
+        '        STA $07',
+        '        LDA $08',
+        '        ADC #$00',
+        '        STA $08',
+        '        BRA .BLOOP',
+        '.BFAIL  PLA',
+        '        PLA',
+        '        LDA #$E1',
+        '        CLC',
+        '        RTS',
+        '.BLOOP  LDY #$00',
+        '        LDA ($07),Y',
+        '        STA $04',
+        '        INY',
+        '        LDA ($07),Y',
+        '        CLC',
+        '        ADC $05',
+        '        STA $09',
+        '        INY',
+        '        LDA ($07),Y',
+        '        ADC $06',
+        '        STA $0A',
+        '        INY',
+        '        LDA ($07),Y',
+        '        CLC',
+        '        ADC $05',
+        '        STA $0B',
+        '        INY',
+        '        LDA ($07),Y',
+        '        ADC $06',
+        '        STA $0C',
+        '        LDA $04',
+        '        CMP #$01',
+        '        BEQ .BABS',
+        '        CMP #$02',
+        '        BEQ .BLO',
+        '        CMP #$03',
+        '        BNE .BFAIL',
+        '        LDY #$00',
+        '        LDA $0C',
+        '        STA ($09),Y',
+        '        BRA .BNEXT',
+        '.BLO    LDY #$00',
+        '        LDA $0B',
+        '        STA ($09),Y',
+        '        BRA .BNEXT',
+        '.BABS   LDY #$00',
+        '        LDA $0B',
+        '        STA ($09),Y',
+        '        INY',
+        '        LDA $0C',
+        '        STA ($09),Y',
+        '.BNEXT  LDA $07',
+        '        CLC',
+        '        ADC #$05',
+        '        STA $07',
+        '        LDA $08',
+        '        ADC #$00',
+        '        STA $08',
+        '        DEC $0D',
+        '        BNE .BLOOP',
+        '        RTS'
+    )
+    $Native = @($Native[0..($startIndex - 1)] + $boot + $Native[($startIndex + 1)..($Native.Count - 1)])
+
+    $mapCallIndex = [Array]::IndexOf($Native, '        JSR PMAP')
+    if ($mapCallIndex -lt 0) {
+        throw 'Movable reporter could not find PMAP call.'
+    }
+    $Native = @($Native[0..$mapCallIndex] + '        JSR PZONE' + $Native[($mapCallIndex + 1)..($Native.Count - 1)])
+
+    $messageIndex = -1
+    for ($i = 0; $i -lt $Native.Count; $i++) {
+        if ($Native[$i] -match '^M0\s+DB\s+') {
+            $messageIndex = $i
+            break
+        }
+    }
+    if ($messageIndex -lt 0) {
+        throw 'Movable reporter could not find message block.'
+    }
+    $zoneRoutine = @(
+        'PZONE   LDX #<M36',
+        '        LDY #>M36',
+        '        JSR PL',
+        '        LDX #<M37',
+        '        LDY #>M37',
+        '        JSR PL',
+        '        LDX #<M38',
+        '        LDY #>M38',
+        '        JSR PL',
+        '        LDX #<M39',
+        '        LDY #>M39',
+        '        JSR PL',
+        '        LDX #<M40',
+        '        LDY #>M40',
+        '        JMP PL',
+        ''
+    )
+    $Native = @($Native[0..($messageIndex - 1)] + $zoneRoutine + $Native[$messageIndex..($Native.Count - 1)])
+
+    $udataBegin = [Convert]::ToInt32((Get-SymbolHex '_BEG_UDATA'), 16)
+    $udataEnd = [Convert]::ToInt32((Get-SymbolHex '_END_UDATA'), 16)
+    $targetLimit = [Convert]::ToInt32((Get-SymbolHex 'ASM_TARGET_LIMIT_HI'), 16) -shl 8
+    $volatileBegin = 0x7a00
+    if ($targetLimit -lt $volatileBegin) {
+        throw 'Movable reporter target limit is below the $7A00 volatile boundary.'
+    }
+    $zoneMessages = @(
+        'M36     DB "LOW SYM=$0200-$09FF FIX=$0A00-$19FF",0',
+        'M37     DB "LOW TOOL=$1A00-$1FE8 STR8=$1FE9-$1FFF",0',
+        'M38     DB "ISLANDS=$2000/$3000/$4000 (4K EACH)",0',
+        ('M39     DB "ASM UDATA={0}-{1}",0' -f (Format-HexWord $udataBegin), (Format-HexWord ($udataEnd - 1))),
+        ('M40     DB "SAFE={0}-{1} VOL={2}-{3}",0' -f (Format-HexWord $udataEnd), (Format-HexWord ($volatileBegin - 1)), (Format-HexWord $volatileBegin), (Format-HexWord ($targetLimit - 1)))
+    )
+    $endIndex = [Array]::IndexOf($Native, '        END')
+    if ($endIndex -lt 0) {
+        throw 'Movable reporter could not find END.'
+    }
+    $Native = @($Native[0..($endIndex - 1)] + $zoneMessages + '' + $Native[$endIndex..($Native.Count - 1)])
+    return $Native
+}
+
+function ConvertTo-SelfRelocAsmNativeReport([string[]]$Native, [string]$Org) {
+    $origin = [Convert]::ToInt32($Org, 16)
+    $messages = [ordered]@{}
+    $msgStart = -1
+    for ($i = 0; $i -lt $Native.Count; $i++) {
+        if ($Native[$i] -match '^(M[0-9]+)\s+DB\s+"([^"]*)",0$') {
+            if ($msgStart -lt 0) {
+                $msgStart = $i
+            }
+            $messages[$matches[1]] = $matches[2]
+        }
+    }
+    if ($msgStart -lt 0) {
+        throw 'Movable reporter has no message block.'
+    }
+
+    $prefix = @($Native[0..($msgStart - 1)])
+    $labelAddrs = Get-AsmNativeLabelAddresses -Lines $prefix -Org $Org
+    Test-AsmNativeRel8Ranges -Lines $prefix -Org $Org -Labels $labelAddrs
+    $globalLabelCount = @($labelAddrs.Keys | Where-Object { -not $_.StartsWith('.') }).Count
+    $symbolLimit = [Convert]::ToInt32((Get-SymbolHex 'ASM_SYM_MAX'), 16)
+    if ($globalLabelCount -gt $symbolLimit) {
+        throw ('Movable reporter needs {0} global symbols; ASM limit is {1}.' -f $globalLabelCount, $symbolLimit)
+    }
+
+    $pc = $origin
+    foreach ($line in $prefix) {
+        $pc += Get-AsmNativeLineSize $line
+    }
+    $messageAddrs = @{}
+    foreach ($name in $messages.Keys) {
+        $messageAddrs[$name] = $pc
+        $pc += $messages[$name].Length + 1
+    }
+
+    $rows = @()
+    $resolved = @()
+    $orderedNames = @($messages.Keys) | Sort-Object @{Expression={$_.Length};Descending=$true}, @{Expression={$_};Descending=$false}
+    $linePc = $origin
+    foreach ($line in $prefix) {
+        $out = $line
+        foreach ($name in $orderedNames) {
+            $addr = $messageAddrs[$name]
+            if ($out.Contains("#<$name")) {
+                $rows += [pscustomobject]@{ Kind = 2; Site = ($linePc + 1 - $origin); Target = ($addr - $origin) }
+                $out = $out.Replace("#<$name", ('#' + (Format-HexByte $addr)))
+            }
+            if ($out.Contains("#>$name")) {
+                $rows += [pscustomobject]@{ Kind = 3; Site = ($linePc + 1 - $origin); Target = ($addr - $origin) }
+                $out = $out.Replace("#>$name", ('#' + (Format-HexByte ($addr -shr 8))))
+            }
+        }
+
+        if ($out -match '^(?<pre>\s*(?:(?:[A-Za-z_][A-Za-z0-9_]*:?)\s+)?(?:JSR|JMP)\s+)(?<target>[A-Za-z_][A-Za-z0-9_]*)\s*$') {
+            $target = $matches['target'].ToUpperInvariant()
+            if ($labelAddrs.ContainsKey($target) -and $out.Trim() -ne 'START   JSR BOOT'.Trim()) {
+                $rows += [pscustomobject]@{ Kind = 1; Site = ($linePc + 1 - $origin); Target = ($labelAddrs[$target] - $origin) }
+                $out = $matches['pre'] + (Format-HexWord $labelAddrs[$target])
+            }
+        }
+        $resolved += $out
+        $linePc += Get-AsmNativeLineSize $line
+    }
+
+    if ($rows.Count -eq 0 -or $rows.Count -gt 255) {
+        throw ('Movable reporter private relocation count is invalid: {0}' -f $rows.Count)
+    }
+    $seenSites = @{}
+    foreach ($row in $rows) {
+        if ($row.Site -lt 0 -or $row.Site -gt 0xffff -or $row.Target -lt 0 -or $row.Target -gt 0xffff) {
+            throw 'Movable reporter private relocation row exceeds 16 bits.'
+        }
+        if ($seenSites.ContainsKey($row.Site)) {
+            throw ('Duplicate movable reporter relocation site: {0}' -f (Format-HexWord $row.Site))
+        }
+        $seenSites[$row.Site] = $true
+    }
+
+    $resolved += '; MESSAGE TEXT USES SOURCE-ORG ADDRESSES PATCHED BY BOOT.'
+    foreach ($name in $messages.Keys) {
+        $resolved += ('; {0} {1}' -f $name, (Format-HexWord $messageAddrs[$name]))
+        $resolved += ConvertTo-DbCharLines $messages[$name]
+    }
+
+    $tableAddress = $pc
+    $tableOffset = $tableAddress - $origin
+    foreach ($row in $rows) {
+        $siteWidth = if ($row.Kind -eq 1) { 2 } else { 1 }
+        if (($row.Site + $siteWidth) -gt $tableOffset -or $row.Target -ge $tableOffset) {
+            throw 'Movable reporter private relocation points outside code/message body.'
+        }
+    }
+    $resolved = @($resolved | ForEach-Object {
+        $_.Replace('__TABLE_LO__', (Format-HexByte $tableOffset)).Replace('__TABLE_HI__', (Format-HexByte ($tableOffset -shr 8)))
+    })
+    $resolved += ''
+    $resolved += '; REPORTER REBASE TABLE (RBT): MAGIC, VERSION, COUNT; THEN K/SITE/TARGET.'
+    $resolved += ('        DB ''S'',''R'',$01,{0}' -f (Format-HexByte $rows.Count))
+    foreach ($row in $rows) {
+        $resolved += ('        DB {0},{1},{2},{3},{4}' -f (Format-HexByte $row.Kind), (Format-HexByte $row.Site), (Format-HexByte ($row.Site -shr 8)), (Format-HexByte $row.Target), (Format-HexByte ($row.Target -shr 8)))
+    }
+
+    $bodyLength = ($tableOffset + 4 + (5 * $rows.Count))
+    $packageLength = $bodyLength + 0x2c
+    $maxDestination = 0x5000 - $bodyLength
+    if ($bodyLength -gt 0x1000) {
+        throw ('Movable reporter body exceeds one 4K island: {0}' -f (Format-HexWord $bodyLength))
+    }
+    if ($packageLength -gt 0x1000) {
+        throw ('Movable reporter AP package exceeds one 4K island: {0}' -f (Format-HexWord $packageLength))
+    }
+    if ((0x4000 + $bodyLength) -gt 0x5000) {
+        throw ('Movable reporter does not fit at recommended $4000 load: end={0}' -f (Format-HexWord (0x4000 + $bodyLength)))
+    }
+
+    $resolved = @($resolved | ForEach-Object {
+        $_.Replace('__BODY_LEN__', (Format-HexWord $bodyLength)).Replace('__PACKAGE_LEN__', (Format-HexWord $packageLength)).Replace('__PRIVATE_COUNT__', (Format-HexByte $rows.Count)).Replace('__MAX_DEST__', (Format-HexWord $maxDestination))
+    })
+    $ordinaryRelocs = @($resolved | Where-Object {
+        $_ -match '^\s*(?:(?:[A-Za-z_][A-Za-z0-9_]*:?)\s+)?(?:JSR|JMP)\s+[A-Za-z_][A-Za-z0-9_]*\s*$'
+    })
+    if ($ordinaryRelocs.Count -ne 1 -or $ordinaryRelocs[0].Trim() -ne 'START   JSR BOOT'.Trim()) {
+        throw ('Movable reporter must retain only START JSR BOOT as an ordinary relocation; found {0} symbolic calls.' -f $ordinaryRelocs.Count)
+    }
+
+    $resolved += ''
+    $resolved += '; MOVABLE AP ENTRY. BOOT MAY BE RUN AGAIN AT THE SAME ADDRESS.'
+    $resolved += '        ENTRY START'
+    $resolved += '        END'
+    return $resolved
+}
+
 $lines = @(
     '; -------------------------------------------------------------------------',
     '; asm-session-report.inc',
@@ -345,7 +664,7 @@ $lines += @(
 
 Write-AsciiLines -Path $OutPath -Lines $lines
 
-function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header) {
+function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, [switch]$Movable) {
     $char = Get-Addr 'ASM_RJ_WRITE_BYTE'
     $cstr = Get-Addr 'ASM_RJ_WRITE_CSTRING'
     $hexb = Get-Addr 'ASM_RJ_WRITE_HEX_BYTE'
@@ -931,7 +1250,12 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header) 
         '        END'
     )
 
-    $native = ConvertTo-CompactAsmNativeReport -Native $native -Org $Org
+    if ($Movable) {
+        $native = Add-SelfRelocAsmNativeReport -Native $native
+        $native = ConvertTo-SelfRelocAsmNativeReport -Native $native -Org $Org
+    } else {
+        $native = ConvertTo-CompactAsmNativeReport -Native $native -Org $Org
+    }
     Write-AsciiLines -Path $OutFile -Lines $native
 }
 
@@ -954,5 +1278,21 @@ if ($AsmNativeRuntimeOut) {
         '; USE THE $4800 FILE FOR A HIMON-LOADABLE BANK AP.',
         '; ASSEMBLE THIS BEFORE THE SESSION YOU WANT TO INSPECT.',
         '; THEN RUN ASM, EXIT WITH ''.'', AND RUN G 7000.'
+    )
+}
+
+if ($AsmNativeMovableOut) {
+    New-AsmNativeReport -OutFile $AsmNativeMovableOut -Org '2000' -Movable -Header @(
+        '; ASM-SESSION-REPORT-AP-2000.A',
+        '; SELF-RELOCATING, MAP-MATCHED ASM SESSION REPORTER AP SOURCE.',
+        '; BODY=__BODY_LEN__; AP PACKAGE=__PACKAGE_LEN__; PRIVATE ROWS=__PRIVATE_COUNT__.',
+        '; REBUILD/REINSTALL AFTER ASM-F2 CODE OR MAP CHANGES.',
+        '; ASM NEW, PASTE THIS FILE, THEN PACKAGE $3000.',
+        '; STORE THE PACKAGE IN BANK 0 AT A CHOSEN FREE FLASH ADDRESS.',
+        '; BEFORE THE SESSION TO INSPECT: AP B0 $XXXX $4000; THEN RUN ASM.',
+        '; AFTER THAT SESSION, EXIT WITH ''.'' AND RUN G 4000.',
+        '; LEGAL AP BODY DESTINATIONS=$2000-__MAX_DEST__; $4000 IS RECOMMENDED.',
+        '; $2000 IS THE AIR BUILD BAY; $4000 IS THE RUN/TRAY BAY.',
+        '; DO NOT LOAD/AP IT AFTER THE SESSION: THAT WOULD REPLACE ASM SESSION DATA.'
     )
 }

@@ -13,11 +13,11 @@ Do not change the linker, AP package format, fixture bodies, import order, or
 resident catalog during this proof. If a gate exposes an implementation fault,
 stop and preserve the transcript before beginning a separate fix.
 
-## Frozen Fixtures
+## Archived Frozen Fixtures
 
-The reviewed `banked-rjoin-smoke.a` and `bankput-transient-3000.a` sources were
-promoted byte-for-byte from `SAMPLES/OLD CODE` into the active samples
-directory. The three proof inputs are frozen as these Git blobs:
+The reviewed `banked-rjoin-smoke.a` and `bankput-transient-3000.a` sources are
+frozen proof inputs. `banked-rjoin-smoke.a` is now archived in `SAMPLES/OLD
+CODE`; the three proof inputs retain these Git blobs:
 
 ```text
 3522dd3bbfa2f4adaa9fc7bb4babf4b981f5f534  banked-rjoin-smoke.a
@@ -25,9 +25,9 @@ aae0f1ebcc3d9cd82b16e1da828e3c055a7223a1  bankput-transient-3000.a
 58f106005e0c6db5493d0e39eddfeaccd4dc0d21  missing-import-atomicity-2000.a
 ```
 
-Active paths:
+Archived/current paths:
 
-- [banked-rjoin-smoke.a](SAMPLES/banked-rjoin-smoke.a)
+- [banked-rjoin-smoke.a](SAMPLES/OLD%20CODE/banked-rjoin-smoke.a)
 - [bankput-transient-3000.a](SAMPLES/bankput-transient-3000.a)
 - [missing-import-atomicity-2000.a](SAMPLES/missing-import-atomicity-2000.a)
 
@@ -108,7 +108,7 @@ Build and install the frozen package:
 
 ```text
 ASM NEW
-  paste SAMPLES/banked-rjoin-smoke.a
+  paste SAMPLES/OLD CODE/banked-rjoin-smoke.a
 PACKAGE $3200
 .
 ASM NEW

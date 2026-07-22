@@ -85,6 +85,7 @@ $rows = @(
     [pscustomobject]@{ Target = "interrupt-vector-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/INTERRUPT_VECTOR_MAP.md for IRQ/NMI/BRK vectors." }
     [pscustomobject]@{ Target = "irq-vector-map"; Category = "docs"; Description = "Alias for interrupt-vector-map." }
     [pscustomobject]@{ Target = "map-of-maps"; Category = "docs"; Description = "Regenerate DOC/GENERATED/MAP_OF_MAPS.md." }
+    [pscustomobject]@{ Target = "control-deck-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/CONTROL_DECK_MAP.md." }
     [pscustomobject]@{ Target = "routine-graph-insights"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_GRAPH_INSIGHTS.md." }
     [pscustomobject]@{ Target = "routine-components"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_COMPONENTS.md." }
     [pscustomobject]@{ Target = "routine-hash-comments"; Category = "docs"; Description = "Refresh generated routine hash comments in ASM files." }

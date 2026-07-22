@@ -85,7 +85,8 @@ ASM-F2 recovery path (`LF OK WR=3C6D GO=800C`).
                                current-image AP linker board gates.
 ```
 
-scope: `ASM/SAMPLES/banked-rjoin-smoke.a`,
+scope at the time: `ASM/SAMPLES/banked-rjoin-smoke.a` (now archived as
+`ASM/SAMPLES/OLD CODE/banked-rjoin-smoke.a`),
 `ASM/SAMPLES/bankput-transient-3000.a`,
 `ASM/SAMPLES/missing-import-atomicity-2000.a`, `ASM/TEST_PLAN.md`, and
 `ASM/AP_LINKER_CURRENT_IMAGE_GATES.md`.

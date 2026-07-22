@@ -277,7 +277,7 @@ fixture:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/banked-rjoin-smoke.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD CODE/banked-rjoin-smoke.a
 PACKAGE $3200
 .
 AP $3200 $3000

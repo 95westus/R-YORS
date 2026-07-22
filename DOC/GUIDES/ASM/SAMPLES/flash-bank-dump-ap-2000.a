@@ -1,0 +1,300 @@
+; FLASH-BANK-DUMP-AP-2000.A
+; FIXED-LOAD, READ-ONLY 4K FLASH-SECTOR DUMP AP.
+;
+; PACKAGE AT $3000 ONLY AFTER THE REQUIRED SEAL REL ... COUNT=$00, STORE THE
+; CAPSULE IN BANK 0 WITH THE PUT AP, THEN RUN IT AT ITS ONLY LEGAL ADDRESS:
+;
+;   AP B0 DUMPPKG $2000
+;
+; IT PROMPTS SEPARATELY FOR BANK 0-3 AND SECTOR 8-F, STAGES THAT PHYSICAL 4K
+; SECTOR AT $4000-$4FFF, AND DISPLAYS 16-BYTE HEX/ASCII ROWS IN 256-BYTE
+; PAGES.  AT EACH MORE PROMPT, ENTER CONTINUES; Q RETURNS WITHOUT WRITING.
+;
+; THIS AP NEVER ERASES OR PROGRAMS FLASH.  IT IS FIXED AT $2000: INTERNAL
+; ABSOLUTE CALLS, JUMPS, AND TEXT POINTERS ARE LITERALS FROM ITS MAP, KEEPING
+; THE AP RELOCATION TABLE EMPTY.  RECALCULATE THOSE LITERALS IF ITS BODY
+; LAYOUT CHANGES.  REBUILD/REINSTALL AFTER A HIMON I/O ADDRESS-MAP CHANGE.
+;
+; STATUS $1A00: AC COMPLETE, E0 ABORT/BAD TRANSPORT, E1 STAGE FAILURE.
+; $1A01 = SELECTED BANK; $1A02 = SELECTED SECTOR HIGH BYTE.
+
+DSTAT   EQU $1A00
+DBANK   EQU $1A01
+DSECHI  EQU $1A02
+DPAGES  EQU $1A03
+DROWS   EQU $1A04
+PTRLO   EQU $C8
+PTRHI   EQU $C9
+ADDRLO  EQU $CA
+ADDRHI  EQU $CB
+INBUF   EQU $1A10
+
+        ORG $2000
+FLASH_BANK_DUMP JMP $20B4
+        ENTRY FLASH_BANK_DUMP
+
+; Keep every DB source line short: board ASM rejects overlong paste lines.
+FBD_MTITLE DB $0D,$0A,'F','L','A','S','H',' '
+        DB 'B','A','N','K',' ','D','U','M'
+        DB 'P',$0D,$0A,0
+FBD_MBANK DB 'B','A','N','K',' ','0','-','3'
+        DB '>',' ',0
+FBD_MSECTOR DB 'S','E','C','T','O','R',' '
+        DB '8','-','F','>',' ',0
+FBD_MBADBANK DB '?',' ','B','A','N','K',' ','0'
+        DB '-','3',$0D,$0A,0
+FBD_MBADSECTOR DB '?',' ','S','E','C','T','O','R'
+        DB ' ','8','-','F',$0D,$0A,0
+FBD_MDUMP DB $0D,$0A,'D','U','M','P',' ','B',0
+FBD_MMORE DB $0D,$0A,'-','-',' ','M','O','R','E'
+        DB ' ','(','E','N','T','E','R','='
+        DB 'N','E','X','T',',',' ','Q','='
+        DB 'Q','U','I','T',')','>',' ',0
+FBD_MCOMPLETE DB $0D,$0A,'D','U','M','P',' ','C'
+        DB 'O','M','P','L','E','T','E',$0D
+        DB $0A,0
+FBD_MABORT DB $0D,$0A,'A','B','O','R','T',' ','-'
+        DB ' ','N','O',' ','F','L','A','S'
+        DB 'H',' ','W','R','I','T','E',$0D
+        DB $0A,0
+FBD_MSTAGEFAIL DB $0D,$0A,'S','T','A','G','E',' '
+        DB 'F','A','I','L',' ','A','T',' ','$',0
+
+FBD_RUN STZ DSTAT
+        STZ DBANK
+        STZ DSECHI
+        LDX #$03              ; FBD_MTITLE
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+
+FBD_ASKBANK LDX #$17          ; FBD_MBANK
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+        JSR $2293             ; FBD_READ
+        BCS FBD_BANKREADOK
+        JMP $2254             ; FBD_ABORT
+FBD_BANKREADOK LDA INBUF+1
+        BEQ FBD_BANKLENOK
+        JMP $2223             ; FBD_BADBANK
+FBD_BANKLENOK LDA INBUF
+        CMP #'0'
+        BCS FBD_BANKLOWOK
+        JMP $2223             ; FBD_BADBANK
+FBD_BANKLOWOK CMP #'4'
+        BCC FBD_BANKOK
+        JMP $2223             ; FBD_BADBANK
+FBD_BANKOK SEC
+        SBC #'0'
+        STA DBANK
+
+FBD_ASKSECTOR LDX #$22        ; FBD_MSECTOR
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+        JSR $2293             ; FBD_READ
+        BCS FBD_SECREADOK
+        JMP $2254             ; FBD_ABORT
+FBD_SECREADOK LDA INBUF+1
+        BEQ FBD_SECLENOK
+        JMP $222D             ; FBD_BADSECTOR
+FBD_SECLENOK LDA INBUF
+        CMP #'8'
+        BCS FBD_SECHIGHOK
+        JMP $222D             ; FBD_BADSECTOR
+FBD_SECHIGHOK CMP #':'
+        BCC FBD_SECDIGIT
+        CMP #'A'
+        BCS FBD_SECLETTEROK
+        JMP $222D             ; FBD_BADSECTOR
+FBD_SECLETTEROK CMP #'G'
+        BCC FBD_SECOK
+        JMP $222D             ; FBD_BADSECTOR
+FBD_SECOK SEC
+        SBC #$37
+        BRA FBD_SECSHIFT
+FBD_SECDIGIT SEC
+        SBC #'0'
+FBD_SECSHIFT ASL A
+        ASL A
+        ASL A
+        ASL A
+        STA DSECHI
+
+FBD_STAGE LDA DBANK
+        STA $1FEE
+        LDA DSECHI
+        STA $1FE9
+        LDA #$40
+        STA $1FF6
+        LDA #$06
+        STA $1FF0
+        JSR $F003
+        BCS FBD_STAGEOK
+        JMP $2237             ; FBD_STAGEFAIL
+FBD_STAGEOK LDX #$4B          ; FBD_MDUMP
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+        LDA DBANK
+        CLC
+        ADC #'0'
+        JSR $2290             ; FBD_OUT
+        LDA #':'
+        JSR $2290             ; FBD_OUT
+        LDA #'$'
+        JSR $2290             ; FBD_OUT
+        LDA DSECHI
+        JSR $2279             ; FBD_HEX
+        LDA #$00
+        JSR $2279             ; FBD_HEX
+        LDA #'-'
+        JSR $2290             ; FBD_OUT
+        LDA #'$'
+        JSR $2290             ; FBD_OUT
+        LDA DSECHI
+        CLC
+        ADC #$0F
+        JSR $2279             ; FBD_HEX
+        LDA #$FF
+        JSR $2279             ; FBD_HEX
+
+        STZ PTRLO
+        LDA #$40
+        STA PTRHI
+        STZ ADDRLO
+        LDA DSECHI
+        STA ADDRHI
+        LDA #$10
+        STA DPAGES
+
+FBD_PAGE LDA #$10
+        STA DROWS
+FBD_ROW JSR $229D             ; FBD_CRLF
+        LDA ADDRHI
+        JSR $2279             ; FBD_HEX
+        LDA ADDRLO
+        JSR $2279             ; FBD_HEX
+        LDA #':'
+        JSR $2290             ; FBD_OUT
+        LDA #' '
+        JSR $2290             ; FBD_OUT
+        LDY #$00
+FBD_HEXBYTE LDA (PTRLO),Y
+        JSR $2279             ; FBD_HEX
+        LDA #' '
+        JSR $2290             ; FBD_OUT
+        INY
+        CPY #$10
+        BNE FBD_HEXBYTE
+        LDA #'|'
+        JSR $2290             ; FBD_OUT
+        LDY #$00
+FBD_ASCII LDA (PTRLO),Y
+        CMP #$20
+        BCC FBD_DOT
+        CMP #$7F
+        BCS FBD_DOT
+        JSR $2290             ; FBD_OUT
+        BRA FBD_ASCIINEXT
+FBD_DOT LDA #'.'
+        JSR $2290             ; FBD_OUT
+FBD_ASCIINEXT INY
+        CPY #$10
+        BNE FBD_ASCII
+        LDA #'|'
+        JSR $2290             ; FBD_OUT
+        JSR $2262             ; FBD_ADVANCE
+        DEC DROWS
+        BNE FBD_ROW
+        DEC DPAGES
+        BEQ FBD_DONE
+        LDX #$54              ; FBD_MMORE
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+        JSR $2293             ; FBD_READ
+        BCC FBD_ABORT
+        LDA INBUF
+        CMP #'Q'
+        BEQ FBD_ABORT
+        BRA FBD_PAGE
+
+FBD_DONE LDX #$75             ; FBD_MCOMPLETE
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+        LDA #$AC
+        STA DSTAT
+        SEC
+        RTS
+
+FBD_BADBANK LDX #$2F          ; FBD_MBADBANK
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+        JMP $20C4             ; FBD_ASKBANK
+
+FBD_BADSECTOR LDX #$3C        ; FBD_MBADSECTOR
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+        JMP $20F2             ; FBD_ASKSECTOR
+
+FBD_STAGEFAIL LDX #$A2        ; FBD_MSTAGEFAIL
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+        LDA $1FEB
+        JSR $2279             ; FBD_HEX
+        LDA $1FEA
+        JSR $2279             ; FBD_HEX
+        JSR $229D             ; FBD_CRLF
+        LDA #$E1
+        STA DSTAT
+        CLC
+        RTS
+
+FBD_ABORT LDX #$87            ; FBD_MABORT
+        LDY #$20
+        JSR $229A             ; FBD_PUTS
+        LDA #$E0
+        STA DSTAT
+        CLC
+        RTS
+
+FBD_ADVANCE CLC
+        LDA PTRLO
+        ADC #$10
+        STA PTRLO
+        BCC FBD_PTRDONE
+        INC PTRHI
+FBD_PTRDONE CLC
+        LDA ADDRLO
+        ADC #$10
+        STA ADDRLO
+        BCC FBD_ADDRDONE
+        INC ADDRHI
+FBD_ADDRDONE RTS
+
+FBD_HEX PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR $2284             ; FBD_NIB
+        PLA
+        AND #$0F
+FBD_NIB CMP #$0A
+        BCC FBD_NDIG
+        CLC
+        ADC #$37
+        BRA FBD_OUT
+FBD_NDIG CLC
+        ADC #'0'
+FBD_OUT JMP BIO_FTDI_WRITE_BYTE_BLOCK
+
+FBD_READ LDX #$10
+        LDY #$1A
+        JMP SYS_READ_CSTRING_ECHO_UPPER
+
+FBD_PUTS JMP BIO_FTDI_PUT_CSTR
+
+FBD_CRLF LDA #$0D
+        JSR $2290             ; FBD_OUT
+        LDA #$0A
+        JMP $2290             ; FBD_OUT
+
+        END

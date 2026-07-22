@@ -15850,3 +15850,128 @@ The version stamp is generated from the current time. A later host build
 reported `ASM-F2 00.0720(1726)` and passed `asm-test`; it is a separate
 post-install smoke artifact, not a change to the accepted board candidate
 recorded above.
+
+## 2026-07-20 Bank-0 Flash-Bank AP Package And Install Pass
+
+The supplied board session began with the requested STR8 backup cycle and then
+entered the established monitor and assembler pair:
+
+```text
+COPY B2->B1
+
+COPY B3->B2
+
+OK
+STR8-N>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0720(1625)
+>ASM NEW
+ASM-F2 00.0720(1719)
+```
+
+It assembled, packaged, and installed the original non-interactive read AP:
+
+```text
+ASM>$20BF:         END
+ASM OK
+SEAL>
+SEAL> PACKAGE $3000
+PKG OK @=$3000 L=$0100
+...
+>G 2000
+GO 2000
+
+B0 AP PUT
+PKG L=$0100
+DST $8000-$FFFF OR ENTER=AUTO>
+STAGE OK
+B0 AP @$86A6 L=$0100
+TYPE YES TO WRITE> YES
+PROGRAM OK
+B0 AP @$86A6 L=$0100
+
+#GO# ENTRY=2000
+RET A=AC X=42 Y=04 P=F5 S=FD NV-BdIzC
+```
+
+It then assembled, packaged, and installed the original non-interactive
+erase/write AP:
+
+```text
+ASM>$214F:         END
+ASM OK
+SEAL> PACKAGE $3000
+PKG OK @=$3000 L=$01B4
+...
+>G 2000
+GO 2000
+
+B0 AP PUT
+PKG L=$01B4
+DST $8000-$FFFF OR ENTER=AUTO>
+STAGE OK
+B0 AP @$87A6 L=$01B4
+TYPE YES TO WRITE> YES
+PROGRAM OK
+B0 AP @$87A6 L=$01B4
+
+#GO# ENTRY=2000
+RET A=AC X=42 Y=04 P=F5 S=FD NV-BdIzC
+```
+
+The recorded package and entry contract is:
+
+| AP | Bank-0 envelope | Envelope length | Exported body offset | Intended RAM entry |
+|---|---:|---:|---:|---:|
+| `FLASH_BANK_READ` | `$86A6` | `$0100` | `$0000` | `$3000` |
+| `FLASH_BANK_ERASE_WRITE` | `$87A6` | `$01B4` | `$0000` | `$3000` |
+
+The installer entry was `$2000`. The read AP stages one selected 4K bank
+sector at `$4000-$4FFF` and calculates its CRC without mutating flash. The
+write AP preflights a complete sector image already in that RAM tray, then can
+erase, program, and fully verify one permitted sector.
+
+Evidence boundary: this transcript proves the two old source bodies assembled,
+their exact envelopes were produced, and the installer successfully wrote
+those envelopes into Bank 0. It contains no `AP B0` invocation, so it is not a
+runtime read or erase/write proof. The `$3000` RAM entry follows the recorded
+package/load contract and offset-zero exports; it was not exercised here.
+
+The source files were subsequently changed to make both AP front doors
+interactive. The read successor asks for `B/S` and prints status and CRC. The
+write successor asks for `B/S`, prints the preflight CRC, and requires exact
+`YES` before committing. Host W65C02 assembly passes; new package and Bank-0
+installation addresses remain open board gates. The expected new envelopes
+are `$0289` for read and `$0387` for erase/write. The existing `$86A6` and
+`$87A6` packages remain the earlier non-interactive builds.
+
+## 2026-07-21 Fixed-Load Banked Erase AP Package/Abort Proof
+
+Board HIMON/ASM-F2 was `00.0721(1742)`. The legacy direct-run
+`flash-erase-bank-transient-2000.a` retained its expected `PKG ERR=$02`
+negative. The separate fixed-load `flash-erase-bank-ap-2000.a` assembled,
+then `PACKAGE $3000` returned `PKG OK @=$3000 L=$03D6`.
+
+The resident Bank-0 PUT AP at `$9000` staged and programmed that envelope at
+`$9486`, returning `PROGRAM OK` and `A=$AC/C=1`. `AP B0 $9486 $2000` loaded
+the AP into RAM and displayed `BANKED FLASH ERASE`. An empty response at
+`BANK 0-3>` returned `ABORT - NO FLASH WRITE` with `A=$E0` and carry clear.
+This is a non-destructive proof of the fixed-load package, Bank-0 storage, AP
+load, interactive entry, and abort behavior. It is not an erase/verify proof.
+
+## 2026-07-21 Flash Dump AP Rejected Paste (Not A Board Proof)
+
+The first board paste of `flash-bank-dump-ap-2000.a` was not a valid build.
+ASM-F2 reported repeated `ERR=$07 BL` errors on overlong `DB` source lines and
+`ERR=$03 BO` errors where a standalone label had been pasted before its
+instruction. ASM-F2 continues after such a source-line rejection, so the
+later `ASM OK` did not mean every intended byte had been emitted.
+
+The resulting `PACKAGE $3000` envelope was `L=$0231`, and the resident PUT AP
+stored it at `$8C8B`. `AP B0 $8C8B $2000` then stopped at `BRK 00 PC=2292`.
+That package is invalid test debris: do not run or rely on `$8C8B`. This is a
+source-paste rejection, not a runtime result for the dump AP. The corrected
+source splits its data records into short rows and puts each control-flow label
+on the same source line as its first instruction; its board gate remains open.

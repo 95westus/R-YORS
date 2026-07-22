@@ -426,7 +426,7 @@ and continue only if `ASM` enters the flash resident assembler.
 Purpose: isolate the new STR8 `$F006` AP import-link service before adding
 banked source staging.
 
-Use `DOC/GUIDES/ASM/SAMPLES/banked-rjoin-smoke.a` as a RAM package:
+Use archived `DOC/GUIDES/ASM/SAMPLES/OLD CODE/banked-rjoin-smoke.a` as a RAM package:
 
 ```text
 ASM NEW
@@ -514,11 +514,12 @@ accepts overwriting the `$9000` sector in those backup banks.
 Purpose: prove the full OIL path: banked source sector, AP body copy, STR8
 resident import linker, HIMON internal relocator, and AP execution.
 
-Use `banked-rjoin-smoke.a` and `bankput-transient-3000.a`, first on bank 2:
+Use archived `OLD CODE/banked-rjoin-smoke.a` and
+`bankput-transient-3000.a`, first on bank 2:
 
 ```text
 ASM NEW
-  paste banked-rjoin-smoke.a
+  paste OLD CODE/banked-rjoin-smoke.a
 PACKAGE $3200
 ASM NEW
   paste bankput-transient-3000.a, verify BANK=$02, PKG=$3200, DST=$9000

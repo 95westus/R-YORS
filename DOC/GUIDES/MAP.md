@@ -45,6 +45,10 @@ OIL
   carries AP objects from storage through load, relocation, resident-import
   integration, and execution
 
+Deck Plan
+  bench-facing names for the control blocks and phase-owned work areas:
+  APC, LRS, AIR, FTC, RFD/RTC/RPT, RSC, and the future BPB
+
 THE
   future hash/catalog resolver environment
   not the boot safety layer and not arbitrary command execution
@@ -162,7 +166,8 @@ STR8/STR8_WORK_PROCESS.md       STR8 proof/work rail
 STR8/STR8_V0_RESTORE_FAILURE_GATES.md guarded restore/failure gate card
 LOGS/HARDWARE_TEST_LOG.md       board transcript validations
 HIMON/HIMON_DEBUG_TESTING.md    RAM debug proof process
-MEMORY/MEMORY_MAP.md            address ownership
+  MEMORY/MEMORY_MAP.md            address ownership
+  ../GENERATED/CONTROL_DECK_MAP.md layered Deck Plan/control-block atlas
 CATALOG/CATALOG.md              callable routine selection view
 HIMON/HIMON_MAP.md              readable HIMON capability map
 HIMON/HIMON_EDGE_DUMP.md        raw direct-edge evidence
@@ -195,11 +200,13 @@ flowchart TD
     TECH --> ASM[ASM]
     TECH --> OIL[OIL: Overlay Integration Layer]
     TECH --> DATA[Memory / Catalog / Hash]
+    TECH --> DECKS[Control Deck Atlas]
 
     ASM --> OIL
     HIMON --> OIL
     STR8 --> OIL
     OIL --> PROOF
+    DECKS --> OIL
     POLICY --> DEC[Decisions / QCC]
     STORY --> HIST[Book / History]
 ```

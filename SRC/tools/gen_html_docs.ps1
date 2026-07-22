@@ -669,9 +669,16 @@ pre code {
 }
 
 pre.mermaid {
-  background: #000000;
-  color: #ffffff;
-  border: 1px solid #333333;
+  background: #ffffff;
+  color: #181818;
+  border: 1px solid var(--line);
+}
+
+pre.mermaid svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
 }
 
 .site-footer {

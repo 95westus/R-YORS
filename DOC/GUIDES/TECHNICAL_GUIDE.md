@@ -315,7 +315,7 @@ banked AP path:
 ```text
 $F003   run selected STR8 worker mode after copying worker to $0200
 $F006   compatibility jump into HIMON's resident AP import linker
-$F009   V1 validated-record operation multiplexer
+$F009   RFD: V1 validated-record operation multiplexer
 $F00C-$F00F  `53 52 01 07`: `SR`, ABI 1, buffer/console/`L F` capabilities
 ```
 

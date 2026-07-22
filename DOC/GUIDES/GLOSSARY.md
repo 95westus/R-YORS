@@ -148,6 +148,81 @@ flowchart TD
 Example: HIMON uses catalog lookup and may request condense. STR8 or catalog
 maintenance owns dangerous sector rebuilds.
 
+## Deck Plan Terms
+
+The **Deck Plan** is the friendly, bench-facing name for the small set of
+control blocks and phase-owned RAM areas that make an AP, flash, or boot
+operation understandable. It does not replace the formal address map. Use the
+formal name and address on first mention; the Deck Plan name is the short form
+that makes transcripts and diagrams easier to follow.
+
+- **AP Capsule (APC):** the serialized AP envelope: seal, relocation rows,
+  export/import records, and BODY. An APC is stored or moved as data; OIL must
+  load it into RAM before its BODY executes.
+- **Low-RAM Switchyard (LRS):** `$0200-$19FF`, the phase-owned overlap area.
+  ASM uses its two name lanes; STR8 uses the same space for the RAM worker and
+  a staged sector. See the Switchyard Rule.
+- **Symbol Name Lane (SNL):** `$0200-$09FF` while an ASM session owns the LRS.
+- **Fixup Name Lane (FNL):** `$0A00-$19FF` while an ASM session owns the LRS.
+- **Worker Code Tray (WCT):** `$0200-$09FF` while STR8 owns the LRS. It holds
+  copied RAM worker code and is volatile during flash work.
+- **Sector Staging Deck (SSD):** `$0A00-$19FF` while STR8 owns the LRS. It
+  holds one complete 4K flash-sector image or a staged banked AP Capsule.
+- **Flash Transaction Card (FTC):** `$1B00-$1B0F` in the interactive flash APs.
+  It carries status, bank/sector request, tray location, CRC, failure address,
+  and write-preflight/arm state.
+- **Console Input Deck (CID):** `$1C00-$1CFE`, the interactive AP line-input
+  buffer. It is deliberately clear of the FTC and STR8 state.
+- **Record Payload Tray (RPT):** `$7B00-$7BFB`, the 252-byte decoded S19
+  payload produced by the validated-record service. It lives inside the VOD
+  and is transient: its matching RTC descriptor says what the bytes mean.
+- **Record Transit Card (RTC):** `$7E95-$7EA8`, the frozen V1 validated-record
+  request/result block. It carries the `PARSE` or `APPLY_LF` request and then
+  the decoded kind, address, length, payload pointer, entry, and failure data.
+- **Record Frontdoor (RFD):** `$F009-$F00F`, the STR8 validated-record jump
+  entry and its `SR/01` signature/capability bytes. A caller uses the RTC, then
+  enters through this frontdoor; it does not jump into STR8's private parser.
+- **Recovery State Capsule (RSC):** `$1FE9-$1FFF`, STR8's compact bank, sector,
+  copy, worker-result, and update-state control block.
+- **AP Island Runway (AIR):** the ordinary AP working islands `$2000-$4FFF`.
+  Its three named bays are **Build Bay** `$2000-$2FFF`, **Envelope Bay**
+  `$3000-$3FFF`, and **Run/Tray Bay** `$4000-$4FFF`.
+- **ASM Work Hold (AWH):** `$5000-$61A9`, current flash-ASM UDATA.
+- **Safe Output Deck (SOD):** `$61AA-$79FF`, the current upper output/scratch
+  region below volatile monitor work.
+- **Volatile Output Deck (VOD):** `$7A00-$7DFF`, command and monitor scratch
+  territory; do not treat it as durable AP storage.
+- **High Service Deck (HSD):** `$7E00-$7EFF`, published service vectors,
+  package/loader cells, the STR8 RTC, debugger state, trap context, and RAM
+  vectors. “High” means high RAM, not ownership by only HIMON or STR8.
+- **I/O Bulkhead (IOB):** `$7F00-$7FFF`, side-effectful device-register space;
+  it is a boundary, not ordinary RAM.
+- **Boot Passport Block (BPB):** the planned selected-bank descriptor at
+  `$F010-$F01F`: `S8B1`, flags, image kind, default entry, bank CRC, display
+  tag, reserved byte, and commit-last seal.
+- **Reporter Rebase Table (RBT):** the movable session reporter's private
+  `SR/01` table. It rebases the reporter's internal addresses after the normal
+  AP loader has relocated its entry call. It is not a change to the AP Capsule
+  format.
+
+The supporting phrases are deliberate rules, not decorations:
+
+- **Capsule Rule:** an APC is not executable in its stored location. It must
+  travel through OIL into RAM first.
+- **Switchyard Rule:** one phase owns the LRS at a time. A banked `AP` or STR8
+  worker operation may replace ASM's SNL/FNL data; never stage a package after
+  the ASM session whose names you intend to report.
+- **Runway Rule:** the Run/Tray Bay has one occupant. A 4K flash-sector tray,
+  a loaded AP body, and the `$4000` movable reporter are mutually exclusive.
+- **Card Rule:** a destructive flash commit consumes a valid FTC preflight;
+  its requested sector and buffer CRC must still match when exact `YES` is
+  accepted.
+- **Transit Rule:** a successful record parse leaves a matched RTC descriptor
+  and RPT payload tray. Treat them as one transient unit; if either area can
+  have been reused, parse the record again before applying it.
+- **Passport Rule:** a BPB is only a claim until its magic, constraints, seal,
+  vectors, and complete-bank CRC have all been validated from RAM.
+
 ## Source Aliases
 
 Generated docs and guide navigation use operational aliases so old source lanes

@@ -17,6 +17,8 @@ FNV/RJOIN catalog. It starts new source sessions at `$2000` unless source uses
 
 For the short operator view of which address belongs to which command, see
 [ADDRESS_PRACTICES.md](ADDRESS_PRACTICES.md).
+For the current Bank-0 package ledger and exact AP entry meanings, see
+[SAMPLES/bank0-ap-entry-points.md](SAMPLES/bank0-ap-entry-points.md).
 
 ## Current Operational Process
 
@@ -46,11 +48,11 @@ make -C SRC asm-session-report
 
 `make -C SRC all` creates the current 32K onboard image with ASM-F2 already in
 low flash. Bank 3 does not carry the ASM session reporter AP; build or install
-that reporter separately and keep it as a Bank 0 AP. Run it with the explicit
-banked AP form:
+that reporter separately and keep it as a Bank 0 AP. The preferred movable
+form uses `$4000` as its conventional RAM destination:
 
 ```text
-AP B0 $hhhh $4800
+AP B0 $hhhh $4000
 ```
 
 Some current board-ingested files still live under
@@ -64,11 +66,15 @@ reason behind each step, see [LIFE16_BANK2_EXAMPLE.md](LIFE16_BANK2_EXAMPLE.md).
 
 On a board burned with the `make all` image, update/install the full image and
 then return to HIMON with `G HIMON`; ASM-F2 is already present at `$8000`. If
-you need the session report after an ASM session, exit ASM with `.` and run the
-reporter AP from its Bank 0 store address:
+you will need a session report, load the reporter AP before starting that ASM
+session. Exit the session with `.`, then rerun the RAM copy with `G 4000`:
 
 ```text
-AP B0 $hhhh $4800
+AP B0 $hhhh $4000
+ASM NEW
+...target source...
+.
+G 4000
 ```
 
 For an older board image or a narrow development pass, update HIMON through
@@ -645,18 +651,24 @@ slice, not a polished `INSTALL` command. Use
 into the `$0A00-$19FF` sector staging buffer, overlays the AP envelope, then
 programs/verifies that 4K sector through the `$F003` STR8 worker service.
 `DOC/GUIDES/ASM/SAMPLES/bank2put-8000-transient-3000.a` is the fixed variant for an AP
-envelope at bank 2 `$8000`. For bank 0 interactive install, use the one-run
-`bank0ap-put-transient-2000.a` flow. That path uses `PACKAGE $3000`; the installer then
-replaces the BODY source at `$2000` while preserving the envelope at `$3000`.
-It stages and validates before accepting exact `YES` for the destructive
-program/verify step. HIMON then runs a banked package with:
+envelope at bank 2 `$8000`. For Bank 0 interactive install, use
+`bank0ap-put-transient-2000.a`. It can be bootstrapped once with `G 2000`,
+stored as a fixed-load Bank-0 AP, and later run with
+`AP B0 PUTPKG $2000`. That reloads the installer over the target BODY at
+`$2000` while preserving the target envelope at `$3000`. It stages and
+validates before accepting exact `YES` for the destructive program/verify
+step. HIMON then runs a banked package with:
 
 ```text
 AP B0 $8000 $3000
 AP B1 $9000 $3000
 AP B2 $9000 $3000
+AP B0 $hhhh $4000
 AP B0 $hhhh $4800
 ```
+
+The final two lines are the movable and legacy fixed session-reporter forms,
+respectively.
 
 That path copies the banked AP envelope into the sector staging buffer, loads
 and links BODY bytes into `$2000-$4FFF`, and runs from the requested load
@@ -690,49 +702,52 @@ make -C SRC all
 make -C SRC asm-session-report
 ```
 
-The current `make all` image does not store the fixed-address reporter after
-ASM-F2. If it is stored in Bank 0, load it before the session to inspect, then
-exit that session with `.` and run the resident copy:
+The current `make all` image does not store a reporter after ASM-F2. The
+preferred generated source is `asm-session-report-ap-2000.a`: it packages at
+`$3000`, can load anywhere from `$2000-$43A1`, and conventionally uses
+`$4000`. If it is stored in Bank 0, load it before the session to inspect,
+then exit that session with `.` and run the resident copy:
 
 ```text
-AP B0 $hhhh $4800
+AP B0 $hhhh $4000
 ASM NEW
 ...target source...
 .
-G 4800
+G 4000
 ```
 
 `make -C SRC asm-session-report` also builds the explicit reporter artifacts.
 The host-built RAM reporter is `SRC/BUILD/s19/asm-session-report-7000.s19`.
 Load it before the ASM session to inspect, then after `END` and `.` run
 `G 7000`.
-For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a` is a
-compact ASM-F2 source program generated with literal message addresses and
-single-character `DB` atoms. Assemble it before the session it will inspect,
-then after that session exits run `G 4800`. `asm-session-report-transient-7000.a` is kept
-for non-flash/runtime-paste ASM builds that still allow `$7000` output.
+For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-ap-2000.a`
+is a compact, pasteable `.a` source. It prints the split low-RAM pools, the
+`$2000/$3000/$4000` islands, high UDATA, safe output, and volatile regions.
+Its complete internal body self-relocates; its current ASM helper/table calls
+remain map-matched. The legacy `asm-session-report-4800.a` fixed-load source
+and `asm-session-report-transient-7000.a` non-flash/runtime-paste source are
+retained.
 
 To manually store the reporter as an AP package in Bank 0, use the
 `bank0ap-put-transient-2000.a` flow in
-[SAMPLES/bank0ap-put-2000-test.md](SAMPLES/bank0ap-put-2000-test.md). This
-reporter package is fixed-address: it has literal internal call targets and
-must be loaded/run at the same `$4800` origin. It is also tied to the ASM-F2
-code/map layout used to generate it: rebuild, repackage, and reinstall the
-reporter after ASM-F2 code or map changes. A version-stamp-only rebuild with
-the same addresses does not invalidate it. Loading an older reporter at
-`$3000` traps when
-its literal `$48xx` calls escape the relocated body; loading it at `$4800`
-still fails if its hard-coded ASM helper/table addresses no longer match.
-Load the matching reporter before the session to inspect, because the banked
+[SAMPLES/bank0ap-put-2000-test.md](SAMPLES/bank0ap-put-2000-test.md). Rebuild,
+repackage, and reinstall either reporter after ASM-F2 code or map changes. A
+version-stamp-only rebuild with unchanged addresses does not invalidate it.
+Load the matching reporter before the session to inspect, because a banked
 load reuses low RAM:
 
 ```text
-AP B0 $hhhh $4800
+AP B0 $hhhh $4000
 ASM NEW
 ...target source...
 .
-G 4800
+G 4000
 ```
+
+For an existing legacy package, substitute `$4800` in both commands. That
+older body is not load-relocatable: loading it elsewhere lets its literal
+`$48xx` calls escape the body. Either form also fails when its hard-coded ASM
+helper/table addresses no longer match the running ASM-F2 map.
 
 If `PACKAGE $3000` reports `PKG ERR=$02`, regenerate the reporter source with
 `make -C SRC asm-session-report`; older generated sources could assemble but

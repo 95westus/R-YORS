@@ -40,6 +40,10 @@ contract. A completely independent 32K image is possible only when it provides
 its own safe reset vectors and accepts that Bank-3 STR8 services are not mapped
 while that bank is selected.
 
+Physical reset is always Bank 3. The first selected-bank launch is manual and
+non-persistent; a later timed boot may automatically launch a validated Bank
+0, 1, or 2, but it does not change the physical-reset recovery rule.
+
 ## What This Changes
 
 This broadens STR8 from "restore Bank 3 from a stored full-bank copy" toward a
@@ -90,45 +94,132 @@ flowchart LR
     R[Physical reset] --> B3[Bank 3 STR8]
     B3 -->|default| H[Bank 3 HIMON]
     B3 -->|ASM| A[Bank 3 ASM-F2 at $800C]
-    B3 -->|boot bank n| T[RAM trampoline]
+    B3 -->|J0, J1, or J2| P[BPB Passport Gate]
+    P --> T[RAM handoff ramp]
     T --> S[Select bank at $7FEC]
     S --> V[JMP through selected $FFFC vector]
     V --> G[Guest payload initializes itself]
 ```
 
-The first handoff contract should be deliberately small:
+The V1 handoff contract is deliberately small and frozen:
 
 ```text
 interrupts disabled
 decimal mode cleared
-stack and RAM-vector ownership explicitly documented
+stack pointer reset to $FF
 selected bank stable before vector fetch
+JMP through the selected bank's $FFFC reset vector
 guest reset code owns subsequent RAM/peripheral initialization
 ```
 
-The exact register values and whether the trampoline resets the stack pointer
-are implementation decisions to freeze before the first board proof. The guest
-must not call Bank-3-only HIMON/RJOIN addresses after selection. It needs its
-own BIOS, replicated stable STR8 service entries, or a separately designed RAM
-BIOS.
+Validation and final handoff both execute from RAM. The launch tail performs
+`SEI`, `CLD`, `LDX #$FF`, `TXS`, selects the target bank, and executes
+`JMP ($FFFC)`. A, X, Y, and the arithmetic flags other than I/D are not part of
+the guest contract. The guest must not call Bank-3-only HIMON/RJOIN addresses
+after selection. It needs its own BIOS, replicated stable STR8 service entries,
+or a separately designed RAM BIOS.
+
+The accepted first target model is an R-YORS-compatible bank: control enters
+that bank through its reset vector and therefore its own STR8 top sector. STR8
+then enters the bank's declared default payload rather than assuming Bank 3's
+HIMON address. This permits an alternate bank whose `$8000` payload is a small
+menu/wrapper around stock WDCMONv2 while keeping STR8 reset and recovery at
+`$F000-$FFFF`.
+
+The current copied Bank-3 image has enough machinery for a RAM trampoline to
+select it and follow its reset vector. It does not yet have the selected-bank
+descriptor, CRC gate, `J` command, or descriptor-driven replacement for the
+hard-coded `$C000` HIMON default. Those are required before this is a supported
+multiboot feature rather than a raw handoff experiment.
+
+### Frozen V1 Boot Passport Block (BPB)
+
+The 16 bytes immediately after the existing fixed STR8 header are the **Boot
+Passport Block (BPB)**. It is the selected-bank descriptor, but the passport
+name emphasizes its rule: it claims an image identity and intended entry; it
+does not authorize a launch until RAM-side validation has accepted it. The
+Bank-3-compatible STR8 boot body moves from `$F010` to `$F020`; the fixed
+`$F000` jump targets `$F020`.
+
+```text
+address       bytes/name       meaning
+$F010-$F013   53 38 42 31      ASCII "S8B1"; STR8 boot descriptor V1
+$F014         flags            bit 0=AUTO_OK; bits 1-7 must be zero
+$F015         image kind       00 generic, 01 R-YORS, 02 WDCMONv2, 03 recovery
+$F016-$F017   entry            default payload entry, little-endian
+$F018-$F019   CRC16            complete-bank CRC, little-endian
+$F01A-$F01D   tag              four display bytes, such as RYOR or WDC2
+$F01E         reserved         must be zero in V1
+$F01F         seal             $A5; programmed last by a boot-image installer
+```
+
+Image kind and tag are menu/display hints, not execution authority. An unknown
+image kind does not bypass or weaken validation. Manual `J0`/`J1`/`J2` does not
+require `AUTO_OK`; the later timed-boot feature must require it. There is no
+bank-number field, so an otherwise valid image can be copied among Banks 0-2
+without rewriting its identity.
+
+The CRC algorithm is CRC-16/CCITT-FALSE: polynomial `$1021`, initial `$FFFF`,
+no reflection, no final XOR. It covers all 32768 bytes `$8000-$FFFF`, including
+STR8, configuration bytes, and vectors, while treating `$F018/$F019` as two
+zero bytes. The stored order is low byte, then high byte. A table-driven or
+nibble-driven implementation may trade some recovered STR8 data space for a
+shorter visible pause without changing this result.
+
+V1 validation, performed from RAM, requires all of the following before launch:
+
+1. Bank number is 0, 1, or 2.
+2. `$F000` is `JMP $F020`; the fixed STR8 service/header face remains present.
+3. Descriptor magic, flags, reserved byte, and `$A5` seal are valid.
+4. Default payload entry lies in `$8000-$EFFF`.
+5. Reset vector is `$F000`; NMI and IRQ vectors lie in `$F000-$FFFF`.
+6. Recomputed complete-bank CRC equals the stored CRC.
+
+Any failure selects Bank 3 again and returns a terse error without changing
+flash. This is the Passport Rule. A successful validation proceeds directly to
+the frozen RAM handoff.
 
 ## Proposed Command Surface
 
 Do not overload the current destructive restore commands during the migration.
 Keep bare `0`, `1`, and `2` as the current restore path until it is deliberately
-retired. Add a non-destructive launch family under `G`:
+retired. The accepted non-destructive launch family is `J`:
 
 ```text
-G or G H     enter Bank 3 HIMON
-G A          enter Bank 3 ASM-F2 at $800C
-G 0          boot Bank 0 through its reset vector
-G 1          boot Bank 1 through its reset vector
-G 2          boot Bank 2 through its reset vector
+J0          validate and boot Bank 0 through its reset vector
+J1          validate and boot Bank 1 through its reset vector
+J2          validate and boot Bank 2 through its reset vector
 ```
 
-Those spellings are proposed, not implemented. New destructive operations must
-keep the existing four-or-more-character rule, for example `RESTORE`,
-`FORMAT`, `ERASE`, or `BACKUP` with explicit confirmation.
+`J` is accepted design, not current behavior. It must be CRC-gated, leave flash
+unchanged, and report terse validation failures before returning to Bank-3
+STR8. New destructive operations must keep the existing four-or-more-character
+rule, for example `RESTORE`, `FORMAT`, `ERASE`, or `BACKUP` with explicit
+confirmation.
+
+Bank 2 is the intended first handoff proof because the operator reports one
+fresh backup cycle (`B3 -> B2`, then the former `B2 -> B1`). That report is not
+a substitute for transcript evidence: the proof first reads Bank 2 back and
+compares its fixed header, vectors, and CRC against Bank 3. Bank 0's current
+`$8000` ASM-session-reporter package remains out of this proof.
+
+## Future Three-Region Update Interface
+
+The future operator path needs simple named presets for the three natural
+image regions, without requiring the operator to type raw sector addresses:
+
+```text
+$8000-$BFFF  lower payload region   four 4K sectors
+$C000-$EFFF  monitor/system region  three 4K sectors
+$F000-$FFFF  STR8/top region        one 4K sector
+```
+
+This is an accepted future requirement, not a current command. One updater may
+share the validated transport, staging, CRC, erase/program, and read-back
+mechanisms, but the three regions remain separate authorities. The top-region
+choice needs the strongest confirmation and must preserve the fixed header,
+descriptor rules, vectors, and commit-last seal. Exact command spelling and
+transport are deferred until the selected-bank boot proof is closed.
 
 ## S19 Ownership
 
@@ -226,12 +317,13 @@ the jump table without moving them:
 $F000-$F002  JMP STR8_BOOT_START
 $F003-$F005  JMP STR8_RUN_WORKER_SERVICE_BODY
 $F006-$F008  JMP STR8_AP_IMPORT_LINK_SERVICE_BODY
-$F009-$F00B  JMP STR8_RECORD_SERVICE_BODY
+$F009-$F00B  RFD: JMP STR8_RECORD_SERVICE_BODY
 $F00C        $53  'S'  record-service signature byte 0
 $F00D        $52  'R'  record-service signature byte 1
 $F00E        $01       record-service ABI version
 $F00F        $07       V1 capability bits
-$F010        first unconstrained STR8 boot-body address
+$F010        current STR8 boot-body address; planned BPB reserves $F010-$F01F
+$F020        planned STR8 boot-body address after BPB promotion
 ```
 
 `SR` means STR8 Record service. Capability bits are:
@@ -255,7 +347,7 @@ replaces:
 
 ```text
 address  name                 direction  meaning
-$7E95    STR8_REC_OP          request    operation number
+$7E95    RTC/STR8_REC_OP      request    operation number
 $7E96    STR8_REC_FORMAT      request/apply  format number
 $7E97    STR8_REC_SOURCE      request    byte-source number
 $7E98    STR8_REC_STATUS      result     canonical service status
@@ -277,7 +369,7 @@ $7EA7    STR8_REC_OBSERVED    result     byte read at a flash failure
 $7EA8    STR8_REC_EXPECTED    result     requested byte at a flash failure
 ```
 
-The decoded record buffer is `$7B00-$7BFB`, exactly 252 bytes. `$7BFC-$7BFF`
+The decoded Record Payload Tray (RPT) is `$7B00-$7BFB`, exactly 252 bytes. `$7BFC-$7BFF`
 remain unallocated by this ABI. Successful S0 and S1 descriptors return data
 pointer `$7B00`; S9 returns length zero and the same harmless pointer value.
 The service may overwrite the record buffer while parsing a record that later
@@ -805,10 +897,11 @@ match its hashes.
 
 ## Remaining Open Decisions To Freeze Before Code
 
-- Exact boot-bank validity marker, version, checksum, and compatibility rules.
-- Exact RAM-trampoline entry/exit register and stack contract.
-- Whether compatible banks carry identical STR8 bytes or only the same small
-  service ABI.
+- Exact compatibility rule for same-build STR8 versus a matching small service
+  ABI. Each accepted bank does carry its own STR8-compatible reset path.
+- Timed-boot delay, cancel key, and how the default Bank 0-2 choice is stored.
+- Exact command spelling and input transport for the future three-region
+  `$8000-$BFFF`, `$C000-$EFFF`, and `$F000-$FFFF` updater.
 - Where the current `$1FE9-$1FFF` state moves for a 28K staging build.
 - Atomic download/install rules and validation strength for a full payload.
 - Initial on-flash record header and interrupted-write commit encoding.

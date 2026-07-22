@@ -40,7 +40,9 @@ RELOCATE, and AP v1 PACKAGE flows.
 
 - [STR8](STR8/STR8.md) - recovery, updates, product boundaries, bringup, work process, the [V0 restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and [edge evidence](STR8/STR8_EDGE_DUMP.md).
 - [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, edge evidence.
-- [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
+- [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction;
+  see the generated [Control Deck Map](../GENERATED/CONTROL_DECK_MAP.md) for
+  the LRS/AIR/FTC/RFD-RTC-RPT/RSC bench view.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
 - [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and [Hash Trash](HASH/HASH_TRASH.md).
 - [ASM](ASM/ASM_USER_GUIDE.md) - onboard assembler operator guide;

@@ -1,22 +1,46 @@
 ; BANK0AP-PUT-TRANSIENT-2000.A
-; STANDARD ONE-RUN BANK 0 AP INSTALLER.
+; STANDARD BANK 0 AP INSTALLER; DIRECT-RUN OR FIXED-LOAD AP.
 ;
 ; INPUT:
-;   AP ENVELOPE AT PKG_BASE, DEFAULT $3000 FROM SEAL> PACKAGE $3000
+;   AP CAPSULE AT PKG_BASE, DEFAULT AIR ENVELOPE BAY $3000 FROM
+;   SEAL> PACKAGE $3000
 ;   DO NOT USE PACKAGE $2000 FOR THIS TOOL
 ;
-; RUN:
+; DIRECT RUN:
 ;   PASTE THIS SOURCE
 ;   SEAL> .
 ;   >G 2000
 ;
-; FLOW:
-;   VALIDATE -> STAGE -> SHOW DESTINATION -> TYPE YES -> PROGRAM/VERIFY
-;   PRESS ENTER AT DST PROMPT FOR THE FIRST B0 HOLE.
+; BOOTSTRAP ITS OWN RESIDENT COPY:
+;   SEAL> PACKAGE $3000
+;   SEAL> .
+;   >G 2000
+;   RECORD THE PRINTED BANK-0 ADDRESS AS $PUTPKG
 ;
-; THIS IS A RAM TRANSIENT, NOT AN AP PACKAGE. IT EMITS AT $2000,
-; USES $0A00-$19FF AS THE STAGED SECTOR, AND LEAVES PKG_BASE UNCHANGED.
+; LATER, WITH A TARGET PACKAGE AT $3000, RUN THE RESIDENT COPY WITH:
+;   >AP B0 $PUTPKG $2000
+; $PUTPKG IS THIS INSTALLER'S BANK-0 CAPSULE ADDRESS. $2000 IS
+; ITS REQUIRED RAM LOAD ADDRESS. THE TARGET CAPSULE REMAINS AT $3000.
+;
+; FLOW:
+;   VALIDATE -> STAGE -> APPEND-SCAN -> SHOW DESTINATION -> TYPE YES
+;   -> PROGRAM/VERIFY. PRESS ENTER AT DST PROMPT FOR AUTO APPEND.
+;
+; THIS FIXED-LOAD AP EMITS IN THE AIR BUILD BAY AT $2000, USES THE SSD
+; AT $0A00-$19FF AS THE STAGED SECTOR, AND LEAVES PKG_BASE UNCHANGED.
+; INTERNAL ABSOLUTE CALLS AND
+; TEXT POINTERS ARE LITERAL SO THE PACKAGE DOES NOT TRUNCATE RELOCS.
+; ITS THREE HIMON I/O CALLS ARE CURRENT-IMAGE ADDRESSES SO THE SAME BODY
+; CAN BOOTSTRAP WITH G 2000; REBUILD IT AFTER HIMON ADDRESS CHANGES.
 ; STARTING THE FLASH WORKER INVALIDATES ASM'S LOW-RAM NAME TABLES.
+; AUTO follows complete AP/01 envelope lengths and appends only in a clean
+; erased tail of a sector. It never reuses an interior $FF run. AUTO may move
+; to the next sector only when the current sector is closed or its clean tail
+; is too short. The trace says why.
+;
+; APPENDSCAN'S ENTRY, CLOSE PATH, AND TEXT POINTERS BELOW ARE FIXED $2000
+; LITERALS. THAT KEEPS THIS PACKAGE AT SEAL REL COUNT=$00. IF ITS SIZE OR
+; LAYOUT CHANGES, RECALCULATE THOSE LITERALS BEFORE PACKAGING IT.
 ;
 ; STATUS:
 ;   $1A00 = $AC PROGRAM/VERIFY OK
@@ -32,6 +56,7 @@
 ;   $1A03/$1A04 = AP ENVELOPE LENGTH, LO/HI
 ;   $1A05 = SELECTED SECTOR HIGH BYTE
 ;   $1A06 = $00 AFTER RETURN
+;   $1A07-$1A0D = VOLATILE AUTO-SCAN CURSOR/LENGTH/TAIL/TRACE STATE
 
 PKG_BASE EQU $3000
 PKG     EQU PKG_BASE
@@ -51,6 +76,14 @@ INB1    EQU $1A11
 INB2    EQU $1A12
 INB3    EQU $1A13
 
+CURLO   EQU $1A07
+CURHI   EQU $1A08
+CANLO   EQU $1A09
+CANHI   EQU $1A0A
+ATRACE  EQU $1A0B
+TAILLO  EQU $1A0C
+TAILHI  EQU $1A0D
+
 SPLO    EQU $C8
 SPHI    EQU $C9
 DPLO    EQU $CA
@@ -61,7 +94,8 @@ CNTHI   EQU $CD
         ORG $2000
 
 ; KEEP TEXT BEFORE CODE: ITS 20 ADDRESS USES THEN NEED NO FIXUP ROWS.
-        JMP RUN
+BANK0_AP_PUT JMP $20E3
+        ENTRY BANK0_AP_PUT
 
 MTITLE  DB $0D,$0A,'B','0',' ','A','P',' ','P','U','T'
         DB $0D,$0A,0
@@ -111,7 +145,7 @@ HEX     PHA
         LSR A
         LSR A
         LSR A
-        JSR .NIB
+        JSR $20CA
         PLA
         AND #$0F
 .NIB    CMP #$0A
@@ -124,9 +158,9 @@ HEX     PHA
 OUT     JMP BIO_FTDI_WRITE_BYTE_BLOCK
 
 CRLF    LDA #$0D
-        JSR OUT
+        JSR $20D6
         LDA #$0A
-        JMP OUT
+        JMP $20D6
 
 RUN     STZ STAT
         STZ DSTLO
@@ -135,87 +169,87 @@ RUN     STZ STAT
         STZ LENHI
         STZ SECHI
         STZ READY
-        LDX #<MTITLE
-        LDY #>MTITLE
-        JSR PUTS
-        JSR READPKG
+        LDX #$03
+        LDY #$20
+        JSR $20A0
+        JSR $21DE
         BCS .PKGOK
-        JMP FAILA
+        JMP $21C3
 
-.PKGOK  JSR CHECKLEN
+.PKGOK  JSR $2203
         BCS .LENOK
-        JMP FAILA
+        JMP $21C3
 
-.LENOK  LDX #<MPKG
-        LDY #>MPKG
-        JSR PUTS
+.LENOK  LDX #$11
+        LDY #$20
+        JSR $20A0
         LDA LENHI
-        JSR HEX
+        JSR $20BF
         LDA LENLO
-        JSR HEX
-        JSR CRLF
+        JSR $20BF
+        JSR $20D9
 
-.ASKDST LDX #<MDST
-        LDY #>MDST
-        JSR PUTS
-        JSR READ
+.ASKDST LDX #$19
+        LDY #$20
+        JSR $20A0
+        JSR $2099
         BCS .HAVEDST
         LDA #$E2
-        JMP FAILA
+        JMP $21C3
 
 .HAVEDST CMP #$00
         BNE .PARSEDST
-        JSR FINDHOLE
+        JSR $2278
         BCS .CHOSEN
-        JMP FAILA
+        JMP $21C3
 
-.PARSEDST JSR PARADDR
+.PARSEDST JSR $2217
         BCS .USERDST
         LDA #$E2
-        JMP FAILA
+        JMP $21C3
 
-.USERDST JSR SETSECTOR
-        JSR STAGE
+.USERDST JSR $226F
+        JSR $22A2
         BCS .STAGED
-        JMP FAILA
+        JMP $21C3
 
-.STAGED JSR CHECKHOLE
+.STAGED JSR $2344
         BCS .CHOSEN
-        JMP FAILA
+        JMP $21C3
 
-.CHOSEN JSR COPYPKG
+.CHOSEN JSR $2370
         LDA #$5A
         STA READY
-        JSR CHECKSTAGE
+        JSR $2399
         BCS .READY
-        JMP FAILA
+        JMP $21C3
 
-.READY  LDX #<MSTAGED
-        LDY #>MSTAGED
-        JSR PUTS
-        JSR PRINTDST
-        LDX #<MCONF
-        LDY #>MCONF
-        JSR PUTS
-        JSR READ
+.READY  LDX #$47
+        LDY #$20
+        JSR $20A0
+        JSR $2431
+        LDX #$52
+        LDY #$20
+        JSR $20A0
+        JSR $2099
         BCS .GOT
-        JMP ABORT
+        JMP $21AF
 
-.GOT    JSR ISYES
+.GOT    JSR $2401
         BCS .WRITE
-        JMP ABORT
+        JMP $21AF
 
-.WRITE  JSR PROGRAM
+.WRITE  JSR $23E1
         BCS DONE
-        JMP FAILA
+        JMP $21C3
 
 DONE    LDA #$AC
         STA STAT
         STZ READY
-        LDX #<MOK
-        LDY #>MOK
-        JSR PUTS
-        JSR PRINTDST
+        LDX #$66
+        LDY #$20
+        JSR $20A0
+        JSR $2431
         LDA STAT
         SEC
         RTS
@@ -223,21 +257,21 @@ DONE    LDA #$AC
 ABORT   LDA #$E0
         STA STAT
         STZ READY
-        LDX #<MABORT
-        LDY #>MABORT
-        JSR PUTS
+        LDX #$80
+        LDY #$20
+        JSR $20A0
         LDA STAT
         CLC
         RTS
 
 FAILA   STA STAT
         STZ READY
-        LDX #<MFAIL
-        LDY #>MFAIL
-        JSR PUTS
+        LDX #$73
+        LDY #$20
+        JSR $20A0
         LDA STAT
-        JSR HEX
-        JSR CRLF
+        JSR $20BF
+        JSR $20D9
         LDA STAT
         CLC
         RTS
@@ -278,7 +312,7 @@ PARADDR LDX #$00
         BNE .PHEX0
         INX
 .PHEX0  LDA INBUF,X
-        JSR H2N
+        JSR $20A3
         BCC .BAD
         ASL A
         ASL A
@@ -287,13 +321,13 @@ PARADDR LDX #$00
         STA DSTHI
         INX
         LDA INBUF,X
-        JSR H2N
+        JSR $20A3
         BCC .BAD
         ORA DSTHI
         STA DSTHI
         INX
         LDA INBUF,X
-        JSR H2N
+        JSR $20A3
         BCC .BAD
         ASL A
         ASL A
@@ -302,7 +336,7 @@ PARADDR LDX #$00
         STA DSTLO
         INX
         LDA INBUF,X
-        JSR H2N
+        JSR $20A3
         BCC .BAD
         ORA DSTLO
         STA DSTLO
@@ -327,10 +361,10 @@ FINDHOLE LDA #$80
 .LOOP   STZ DSTLO
         LDA SECHI
         STA DSTHI
-        JSR STAGE
+        JSR $22A2
         BCS .STAGED
         RTS
-.STAGED JSR SCANHOLE
+.STAGED JSR $245B             ; APPENDSCAN
         BCS .OK
         LDA SECHI
         CLC
@@ -375,7 +409,7 @@ SCANHOLE STZ SPLO
         BEQ .FF
         STZ CNTLO
         STZ CNTHI
-        JSR INCSP
+        JSR $2322
         BRA .LOOP
 .FF     LDA CNTLO
         ORA CNTHI
@@ -391,9 +425,9 @@ SCANHOLE STZ SPLO
 .COUNT  INC CNTLO
         BNE .FIT
         INC CNTHI
-.FIT    JSR RUNFITS
+.FIT    JSR $230E
         BCS .OK
-        JSR INCSP
+        JSR $2322
         BRA .LOOP
 .OK     SEC
         RTS
@@ -430,8 +464,8 @@ SETCOUNT LDA LENLO
         STA CNTHI
         RTS
 
-CHECKHOLE JSR SETSTAGEPTR
-        JSR SETCOUNT
+CHECKHOLE JSR $2329
+        JSR $2339
 .LOOP   LDA CNTLO
         ORA CNTHI
         BEQ .OK
@@ -445,8 +479,8 @@ CHECKHOLE JSR SETSTAGEPTR
         LDA (DPLO),Y
         CMP #$FF
         BNE .USED
-        JSR INCDP
-        JSR DECCNT
+        JSR $241F
+        JSR $2426
         BRA .LOOP
 .USED   LDA #$E5
         CLC
@@ -454,12 +488,12 @@ CHECKHOLE JSR SETSTAGEPTR
 .OK     SEC
         RTS
 
-COPYPKG LDA #<PKG
+COPYPKG LDA #$00
         STA SPLO
-        LDA #>PKG
+        LDA #$30
         STA SPHI
-        JSR SETSTAGEPTR
-        JSR SETCOUNT
+        JSR $2329
+        JSR $2339
 .LOOP   LDA CNTLO
         ORA CNTHI
         BEQ .DONE
@@ -469,8 +503,8 @@ COPYPKG LDA #<PKG
         INC SPLO
         BNE .DST
         INC SPHI
-.DST    JSR INCDP
-        JSR DECCNT
+.DST    JSR $241F
+        JSR $2426
         BRA .LOOP
 .DONE   RTS
 
@@ -486,7 +520,7 @@ CHECKSTAGE LDA READY
         LDA SECHI
         CMP #$80
         BCC .BAD
-        JSR SETSTAGEPTR
+        JSR $2329
         LDY #$00
         LDA (DPLO),Y
         CMP #'A'
@@ -553,21 +587,193 @@ DECCNT  DEC CNTLO
         DEC CNTHI
 .DONE   RTS
 
-PRINTDST LDX #<MSEL
-        LDY #>MSEL
-        JSR PUTS
+PRINTDST LDX #$39
+        LDY #$20
+        JSR $20A0
         LDA DSTHI
-        JSR HEX
+        JSR $20BF
         LDA DSTLO
-        JSR HEX
-        LDX #<MLEN
-        LDY #>MLEN
-        JSR PUTS
+        JSR $20BF
+        LDX #$42
+        LDY #$20
+        JSR $20A0
         LDA LENHI
-        JSR HEX
+        JSR $20BF
         LDA LENLO
-        JSR HEX
-        JSR CRLF
+        JSR $20BF
+        JSR $20D9
         RTS
+
+; ---------------------------------------------------------------------------
+; APPENDSCAN
+; IN : $0A00-$19FF = staged Bank-0 sector, SECHI = sector high byte.
+;      LENLO/LENHI = requested AP envelope length.
+; OUT: C=1 and DSTLO/DSTHI = append location, or C=0 when this sector is
+;      closed or its clean tail is too short. A trace row is always printed.
+; NOTE: Each occupied item must begin AP/01 and its declared length must end
+;       in this sector. This is deliberately conservative framing validation:
+;       malformed data closes the sector rather than being treated as a hole.
+; ---------------------------------------------------------------------------
+APPENDSCAN STZ CURLO
+        STZ CURHI
+.LOOP   LDA CURHI
+        CMP #$10
+        BCS .EARLYCLOSE
+
+        LDA CURLO
+        STA SPLO
+        LDA CURHI
+        CLC
+        ADC #$0A
+        STA SPHI
+
+        LDY #$00
+        LDA (SPLO),Y
+        CMP #$FF
+        BEQ .TAIL
+        CMP #'A'
+        BNE .EARLYCLOSE
+        INY
+        LDA (SPLO),Y
+        CMP #'P'
+        BNE .EARLYCLOSE
+        INY
+        LDA (SPLO),Y
+        CMP #$01
+        BNE .EARLYCLOSE
+
+        ; A five-byte header may not start in the final four sector bytes.
+        LDA CURHI
+        CMP #$0F
+        BNE .HDR
+        LDA CURLO
+        CMP #$FC
+        BCS .EARLYCLOSE
+.EARLYCLOSE JMP $2537         ; APPENDSCAN.CLOSED
+.HDR    LDY #$03
+        LDA (SPLO),Y
+        STA CANLO
+        INY
+        LDA (SPLO),Y
+        STA CANHI
+        ORA CANLO
+        BEQ .EARLYCLOSE
+        LDA CANHI
+        BNE .ADD
+        LDA CANLO
+        CMP #$05
+        BCC .EARLYCLOSE
+
+.ADD    LDA CURLO
+        CLC
+        ADC CANLO
+        STA CURLO
+        LDA CURHI
+        ADC CANHI
+        STA CURHI
+        BCS .EARLYCLOSE
+        CMP #$10
+        BCC .LOOP
+        BNE .EARLYCLOSE
+        LDA CURLO
+        BEQ .EARLYCLOSE
+        BRA .EARLYCLOSE
+
+.TAIL   ; A tail is appendable only when it stays erased through $xFFF.
+.TCHECK LDA SPHI
+        CMP #$1A
+        BEQ .TCLEAN
+        LDY #$00
+        LDA (SPLO),Y
+        CMP #$FF
+        BNE .EARLYCLOSE
+        INC SPLO
+        BNE .TCHECK
+        INC SPHI
+        BRA .TCHECK
+
+.TCLEAN LDA #$00
+        SEC
+        SBC CURLO
+        STA TAILLO
+        LDA #$10
+        SBC CURHI
+        STA TAILHI
+        LDA TAILHI
+        CMP LENHI
+        BCC .SHORT
+        BNE .FOUND
+        LDA TAILLO
+        CMP LENLO
+        BCC .SHORT
+
+.FOUND  LDA CURLO
+        STA DSTLO
+        LDA SECHI
+        CLC
+        ADC CURHI
+        STA DSTHI
+        LDA #$02
+        STA ATRACE
+        BRA .REPORT
+
+.SHORT  LDA #$01
+        STA ATRACE
+        BRA .REPORT
+
+.CLOSED STZ ATRACE
+
+.REPORT LDX #$9D              ; MAUTOPFX
+        LDY #$25
+        JSR $20A0
+        LDA SECHI
+        CLC
+        ADC CURHI
+        JSR $20BF
+        LDA CURLO
+        JSR $20BF
+
+        LDA ATRACE
+        BEQ .RCLOSED
+        CMP #$01
+        BEQ .RSHORT
+
+.RFOUND LDX #$C6              ; MAUTOAPPEND
+        LDY #$25
+        JSR $20A0
+        JSR $20D9
+        SEC
+        RTS
+
+.RCLOSED LDX #$A7             ; MAUTOCLOSED
+        LDY #$25
+        JSR $20A0
+        JSR $20D9
+        CLC
+        RTS
+
+.RSHORT LDX #$AF              ; MAUTOTAIL
+        LDY #$25
+        JSR $20A0
+        LDA TAILHI
+        JSR $20BF
+        LDA TAILLO
+        JSR $20BF
+        LDX #$B7              ; MAUTOSHORT
+        LDY #$25
+        JSR $20A0
+        LDA LENHI
+        JSR $20BF
+        LDA LENLO
+        JSR $20BF
+        JSR $20D9
+        CLC
+        RTS
+
+MAUTOPFX    DB 'A','U','T','O',' ','B','0',':','$',0
+MAUTOCLOSED DB ' ','C','L','O','S','E','D',0
+MAUTOTAIL   DB ' ','T','A','I','L','=','$',0
+MAUTOSHORT  DB ' ','S','H','O','R','T',';',' ','N','E','E','D','=','$',0
+MAUTOAPPEND DB ' ','A','P','P','E','N','D',0
 
         END

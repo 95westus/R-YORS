@@ -1,0 +1,436 @@
+; FLASH-BANK-ERASE-WRITE-AP-2000.A
+; MOVABLE RAM AP: ERASE/WRITE/VERIFY ONE COMPLETE 4K SECTOR.
+;
+; BUILD WITH ASM-F2 AT $2000, THEN PACKAGE $3000.
+; AP B0 $HHHH $3000 PROMPTS FOR BANK/SECTOR AS TWO CHARACTERS,
+; FOR EXAMPLE 2F FOR BANK 2 $F000-$FFFF.
+; THE COMPLETE CANDIDATE SECTOR MUST ALREADY BE IN THE AIR RUN/TRAY BAY
+; AT $4000-$4FFF.
+; THE BODY RUNS FROM RAM AND CALLS THE STR8 WORKER AT $F003.
+; EXPECT BODY=$02EE, RELOCS=$0E, PACKAGE=$0387.
+; EXPORT LEN=$15; TWO-IMPORT RECORD LEN=$22.
+; THE ONBOARD PACKAGE RESULT IS THE FINAL AUTHORITY.
+;
+; THE AP PREFLIGHTS THE REQUEST AND PRINTS ITS BUFFER CRC.
+; IT REQUIRES EXACT YES BEFORE CALLING THE FLASH WORKER.
+; RELOADING THE PACKAGE CANCELS THE PREFLIGHT COOKIE.
+;
+; FLASH TRANSACTION CARD (FTC) $1B00-$1B0F:
+;   +00 STATUS      OUT: 5A READY, AC WRITTEN/VERIFIED,
+;                       E0-E4 FAIL
+;   +01 BANK        IN/OUT: 00-03
+;   +02 SECTOR_HI   IN/OUT: 80,90,A0,B0,C0,D0,E0,F0
+;   +03 BUFFER_HI   OUT: 40, AIR RUN/TRAY BAY $4000-$4FFF
+;   +04/+05 CRC16   OUT: CURRENT BUFFER CRC, LO/HI
+;   +06/+07 FAIL    OUT: STR8 FAIL ADDRESS WHEN AVAILABLE
+;   +08 READY       OUT: 5A AFTER PREFLIGHT,
+;                       CLEARED AFTER COMMIT
+;   +09/+0A ARM     PRIVATE ONE-SHOT COMMIT ARM
+;   +0B SNAP_BANK   PRIVATE PREFLIGHT SNAPSHOT
+;   +0C SNAP_SECTOR PRIVATE PREFLIGHT SNAPSHOT
+;   +0D/+0E SNAPCRC PRIVATE PREFLIGHT SNAPSHOT
+;
+; STATUS:
+;   5A PREFLIGHT READY; NO FLASH WRITE OCCURRED
+;   AC ERASE/WRITE/FULL-SECTOR VERIFY PASSED
+;   E0 BAD BANK/SECTOR OR FORBIDDEN BANK-3 C000-FFFF
+;   E1 COMMIT WITHOUT A VALID PREFLIGHT
+;   E2 REQUEST OR BUFFER CHANGED AFTER PREFLIGHT
+;   E3 STR8 ERASE/PROGRAM/VERIFY FAILED
+;   E4 OPERATOR DID NOT TYPE EXACT YES
+;
+; ALLOWS BANKS 0-2 $8000-$FFFF AND BANK 3 $8000-$BFFF.
+; BANK 3 $C000-$FFFF STAYS WITH STR8 UPDATE/RECOVERY PATHS.
+; FORMATTED TEXT/SCRATCH USES $1B20-$1B53.
+; CONSOLE INPUT DECK (CID) USES $1C00-$1CFE.
+
+        ORG $2000
+
+        IMPORT BIO_FTDI_PUT_CSTR
+        IMPORT SYS_READ_CSTRING_ECHO_UPPER
+
+FB_STATUS EQU $1B00
+FB_BANK   EQU $1B01
+FB_SECTOR EQU $1B02
+FB_BUFFER EQU $1B03
+FB_CRCLO  EQU $1B04
+FB_CRCHI  EQU $1B05
+FB_FAILLO EQU $1B06
+FB_FAILHI EQU $1B07
+FB_READY  EQU $1B08
+FB_ARM0   EQU $1B09
+FB_ARM1   EQU $1B0A
+FB_SBANK  EQU $1B0B
+FB_SSECTOR EQU $1B0C
+FB_SCRCLO EQU $1B0D
+FB_SCRCHI EQU $1B0E
+; Keep the monitor's full 254-character input allowance away from the
+; request/result block and the formatted confirmation line.
+FB_INPUT  EQU $1C00
+FB_TEXT   EQU $1B20
+FB_MSGLO  EQU $1B50
+FB_MSGHI  EQU $1B51
+FB_TMPHI  EQU $1B52
+FB_TMPLO  EQU $1B53
+
+; AP-private scratch after ASM has returned to HIMON.
+CKLO      EQU $A0
+CKHI      EQU $A1
+PTRLO     EQU $A2
+PTRHI     EQU $A3
+CRCLO     EQU $A4
+CRCHI     EQU $A5
+
+STR8_SERVICE EQU $F003
+STR8_MARK_SECTOR_HI EQU $1FE9
+STR8_MARK_ADDR_LO EQU $1FEA
+STR8_MARK_ADDR_HI EQU $1FEB
+STR8_COPY_DST_BANK EQU $1FEF
+STR8_COPY_MODE EQU $1FF0
+STR8_STAGE_BUF_HI EQU $1FF6
+
+MODE_PROGRAM_STAGED EQU $05
+BUFFER_HI EQU $40
+
+FLASH_BANK_ERASE_WRITE LDA #<FBEW_COOKIE
+        ENTRY FLASH_BANK_ERASE_WRITE
+        STA CKLO
+        LDA #>FBEW_COOKIE
+        STA CKHI
+        LDA #<FBEW_MSGS
+        STA FB_MSGLO
+        LDA #>FBEW_MSGS
+        STA FB_MSGHI
+        LDX FB_MSGLO
+        LDY FB_MSGHI
+        JSR BIO_FTDI_PUT_CSTR
+        LDX #<FB_INPUT
+        LDY #>FB_INPUT
+        JSR SYS_READ_CSTRING_ECHO_UPPER
+        BCC .BAD_INPUT
+        LDA FB_INPUT+2
+        BNE .BAD_INPUT
+        LDA FB_INPUT
+        CMP #'0'
+        BCC .BAD_INPUT
+        CMP #'4'
+        BCS .BAD_INPUT
+        SEC
+        SBC #'0'
+        STA FB_BANK
+        LDA FB_INPUT+1
+        CMP #'8'
+        BCC .BAD_INPUT
+        CMP #':'
+        BCC .DIG
+        CMP #'A'
+        BCC .BAD_INPUT
+        CMP #'G'
+        BCS .BAD_INPUT
+        SEC
+        SBC #$37
+        BRA .SECVAL
+.DIG    AND #$0F
+.SECVAL ASL A
+        ASL A
+        ASL A
+        ASL A
+        STA FB_SECTOR
+        LDA FB_BANK
+        CMP #$03
+        BNE .REQUEST_OK
+        LDA FB_SECTOR
+        CMP #$C0
+        BCS .BAD_INPUT
+        BRA .REQUEST_OK
+.BAD_INPUT STZ FB_READY
+        STZ FB_ARM0
+        STZ FB_ARM1
+        LDY #$00
+        LDA #$00
+        STA (CKLO),Y
+        LDA #$E0
+        STA FB_STATUS
+        CLC
+        RTS
+
+.REQUEST_OK JSR FBEW_RUN
+        BCC .RETURN
+        JSR FBEW_BUILD_READY
+        LDX #<FB_TEXT
+        LDY #>FB_TEXT
+        JSR BIO_FTDI_PUT_CSTR
+        LDX #<FB_INPUT
+        LDY #>FB_INPUT
+        JSR SYS_READ_CSTRING_ECHO_UPPER
+        BCC .ABORT
+        LDA FB_INPUT+3
+        BNE .ABORT
+        LDA FB_INPUT
+        CMP #'Y'
+        BNE .ABORT
+        LDA FB_INPUT+1
+        CMP #'E'
+        BNE .ABORT
+        LDA FB_INPUT+2
+        CMP #'S'
+        BNE .ABORT
+        LDA #$A5
+        STA FB_ARM0
+        LDA #$5A
+        STA FB_ARM1
+        JSR FBEW_RUN
+.RETURN RTS
+
+.ABORT  STZ FB_READY
+        STZ FB_ARM0
+        STZ FB_ARM1
+        LDY #$00
+        LDA #$00
+        STA (CKLO),Y
+        LDA #$E4
+        STA FB_STATUS
+        CLC
+        RTS
+
+FBEW_BUILD_READY LDA FB_MSGLO
+        CLC
+        ADC #$19
+        STA PTRLO
+        LDA FB_MSGHI
+        ADC #$00
+        STA PTRHI
+        LDX #$00
+        LDY #$00
+.COPY   LDA (PTRLO),Y
+        STA FB_TEXT,X
+        BEQ .COPIED
+        INX
+        INY
+        BRA .COPY
+.COPIED LDA FB_BANK
+        CLC
+        ADC #'0'
+        STA $1B29
+        LDA FB_SECTOR
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        CMP #$0A
+        BCC .SECDIG
+        CLC
+        ADC #$37
+        BRA .SECSTORE
+.SECDIG CLC
+        ADC #'0'
+.SECSTORE STA $1B2B
+        LDA FB_CRCHI
+        STA FB_TMPHI
+        LDA FB_CRCLO
+        STA FB_TMPLO
+        LDY #$00
+        LDX #$15
+.HEXBYTE LDA FB_TMPHI,Y
+        PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        CMP #$0A
+        BCC .HIDIG
+        CLC
+        ADC #$37
+        BRA .HISTORE
+.HIDIG CLC
+        ADC #'0'
+.HISTORE STA FB_TEXT,X
+        INX
+        PLA
+        AND #$0F
+        CMP #$0A
+        BCC .LODIG
+        CLC
+        ADC #$37
+        BRA .LOSTORE
+.LODIG CLC
+        ADC #'0'
+.LOSTORE STA FB_TEXT,X
+        INX
+        INY
+        CPY #$02
+        BNE .HEXBYTE
+        RTS
+
+FBEW_RUN STZ FB_STATUS
+        STZ FB_FAILLO
+        STZ FB_FAILHI
+        LDA #BUFFER_HI
+        STA FB_BUFFER
+        LDA FB_BANK
+        CMP #$04
+        BCS .BAD_CFG
+        LDA FB_SECTOR
+        CMP #$80
+        BCC .BAD_CFG
+        AND #$0F
+        BNE .BAD_CFG
+        LDA FB_BANK
+        CMP #$03
+        BNE .CFG_OK
+        LDA FB_SECTOR
+        CMP #$C0
+        BCS .BAD_CFG
+.CFG_OK LDY #$00
+        LDA (CKLO),Y
+        CMP #$A6
+        BNE FBEW_PREFLIGHT
+        LDA FB_ARM0
+        CMP #$A5
+        BNE FBEW_PREFLIGHT
+        LDA FB_ARM1
+        CMP #$5A
+        BEQ FBEW_COMMIT
+        BRA FBEW_PREFLIGHT
+.BAD_CFG STZ FB_READY
+        STZ FB_ARM0
+        STZ FB_ARM1
+        LDY #$00
+        LDA #$00
+        STA (CKLO),Y
+        LDA #$E0
+        STA FB_STATUS
+        CLC
+        RTS
+
+FBEW_PREFLIGHT STZ FB_ARM0
+        STZ FB_ARM1
+        JSR FBEW_CRC16
+        LDA FB_BANK
+        STA FB_SBANK
+        LDA FB_SECTOR
+        STA FB_SSECTOR
+        LDA FB_CRCLO
+        STA FB_SCRCLO
+        LDA FB_CRCHI
+        STA FB_SCRCHI
+        LDY #$00
+        LDA #$A6
+        STA (CKLO),Y
+        LDA #$5A
+        STA FB_READY
+        STA FB_STATUS
+        SEC
+        RTS
+
+FBEW_COMMIT STZ FB_ARM0
+        STZ FB_ARM1
+        LDA FB_READY
+        CMP #$5A
+        BNE FBEW_NOT_READY
+        LDA FB_BANK
+        CMP FB_SBANK
+        BNE FBEW_CHANGED
+        LDA FB_SECTOR
+        CMP FB_SSECTOR
+        BNE FBEW_CHANGED
+        JSR FBEW_CRC16
+        LDA FB_CRCLO
+        CMP FB_SCRCLO
+        BNE FBEW_CHANGED
+        LDA FB_CRCHI
+        CMP FB_SCRCHI
+        BNE FBEW_CHANGED
+
+        LDA FB_BANK
+        STA STR8_COPY_DST_BANK
+        LDA FB_SECTOR
+        STA STR8_MARK_SECTOR_HI
+        LDA #BUFFER_HI
+        STA STR8_STAGE_BUF_HI
+        LDA #MODE_PROGRAM_STAGED
+        STA STR8_COPY_MODE
+        JSR STR8_SERVICE
+        BCC FBEW_WORKER_FAIL
+        STZ FB_READY
+        LDY #$00
+        LDA #$00
+        STA (CKLO),Y
+        LDA #$AC
+        STA FB_STATUS
+        SEC
+        RTS
+
+FBEW_NOT_READY LDA #$E1
+        BRA FBEW_FAIL_CLEAR
+FBEW_CHANGED LDA #$E2
+        BRA FBEW_FAIL_CLEAR
+FBEW_WORKER_FAIL LDA STR8_MARK_ADDR_LO
+        STA FB_FAILLO
+        LDA STR8_MARK_ADDR_HI
+        STA FB_FAILHI
+        LDA #$E3
+
+FBEW_FAIL_CLEAR STZ FB_READY
+        STZ FB_ARM0
+        STZ FB_ARM1
+        LDY #$00
+        PHA
+        LDA #$00
+        STA (CKLO),Y
+        PLA
+        STA FB_STATUS
+        CLC
+        RTS
+
+FBEW_CRC16 LDA #$FF
+        STA CRCLO
+        STA CRCHI
+        STZ PTRLO
+        LDA #BUFFER_HI
+        STA PTRHI
+        LDX #$10
+FBEW_PAGE LDY #$00
+FBEW_BYTE LDA (PTRLO),Y
+        JSR FBEW_CRC_BYTE
+        INY
+        BNE FBEW_BYTE
+        INC PTRHI
+        DEX
+        BNE FBEW_PAGE
+        LDA CRCLO
+        STA FB_CRCLO
+        LDA CRCHI
+        STA FB_CRCHI
+        RTS
+
+FBEW_CRC_BYTE EOR CRCHI
+        STA CRCHI
+        PHX
+        LDX #$08
+FBEW_CRC_BIT ASL CRCLO
+        ROL CRCHI
+        BCC FBEW_CRC_NEXT
+        LDA CRCLO
+        EOR #$21
+        STA CRCLO
+        LDA CRCHI
+        EOR #$10
+        STA CRCHI
+FBEW_CRC_NEXT DEX
+        BNE FBEW_CRC_BIT
+        PLX
+        RTS
+
+FBEW_MSGS DB $0D,$0A,'F','L','A','S','H',' '
+        DB 'W','R','I','T','E',' ','B','/','S',' '
+        DB '(','2','F',')','>',' ',0
+        DB $0D,$0A,'R','E','A','D','Y',' ','B','?',' '
+        DB '?','0','0','0',' ','C','R','C','=','$'
+        DB '0','0','0','0'
+        DB ' ','T','Y','P','E',' ','Y','E','S','>',' ',0
+
+; Package-local latch. Packaged initial value is always zero.
+FBEW_COOKIE DB $00
+
+        END

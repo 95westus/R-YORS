@@ -341,6 +341,97 @@ function Escape-MermaidLabel {
     return $text
 }
 
+function Get-MapFamily {
+    param([string]$Name)
+    $prefix = Get-Prefix $Name
+    if ($prefix -in @('HIMON', 'HIM', 'MON', 'CMD', 'CMDP', 'LOAD', 'ASM', 'DIS', 'DBG', 'THE', 'RJOIN', 'OIL')) {
+        return 'Monitor / command'
+    }
+    if ($prefix -in @('FNV1A', 'MATH', 'CRC', 'HASH')) {
+        return 'Hash / math'
+    }
+    if ($prefix -in @('STR8', 'STR8W', 'FLASH', 'FLSH', 'BANK', 'AP')) {
+        return 'Recovery / flash'
+    }
+    if ($prefix -in @('SYS', 'COR', 'BIO', 'PIN', 'FTDI', 'PIA', 'UTL', 'DEV', 'LOCAL')) {
+        return 'System / device'
+    }
+    return 'Other'
+}
+
+function Get-MermaidBreakdownLines {
+    param(
+        [object[]]$Rows,
+        [string]$OverviewLabel,
+        [scriptblock]$GroupKey,
+        [scriptblock]$FormatEdge,
+        [string]$Direction = 'LR',
+        [int]$MaxEdges = 12
+    )
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    $items = @($Rows)
+    if ($items.Count -eq 0) {
+        $lines.Add('- No direct edges found in current source scope.')
+        return $lines.ToArray()
+    }
+
+    $groups = @(
+        $items |
+        Group-Object -Property { & $GroupKey $_ } |
+        ForEach-Object {
+            [pscustomobject]@{
+                Name = $_.Name
+                Rows = @($_.Group)
+                Count = $_.Count
+            }
+        } |
+        Sort-Object -Property @{Expression='Count';Descending=$true}, Name
+    )
+
+    $lines.Add('## Top-Down Overview')
+    $lines.Add('')
+    $lines.Add("The overview groups the $OverviewLabel edges by source family. The detail panels retain every shown edge, with no Mermaid panel exceeding $MaxEdges edges.")
+    $lines.Add('')
+    $lines.Add('```mermaid')
+    $lines.Add("flowchart $Direction")
+    $rootId = 'MAP_ROOT_' + (($OverviewLabel -replace '[^A-Za-z0-9]', '_').ToUpperInvariant())
+    $rootLabel = Escape-MermaidLabel ("{0}<br/>{1} shown edges" -f $OverviewLabel, $items.Count)
+    $shownGroups = @($groups | Select-Object -First 11)
+    foreach ($group in $shownGroups) {
+        $groupId = 'MAP_FAMILY_' + (($group.Name -replace '[^A-Za-z0-9]', '_').ToUpperInvariant())
+        $groupLabel = Escape-MermaidLabel ("{0}<br/>{1} edges" -f $group.Name, $group.Count)
+        $lines.Add(('    {0}["{1}"] --> {2}["{3}"]' -f $rootId, $rootLabel, $groupId, $groupLabel))
+    }
+    if ($groups.Count -gt $shownGroups.Count) {
+        $remainingGroups = @($groups | Select-Object -Skip $shownGroups.Count)
+        $remainingRows = ($remainingGroups | Measure-Object Count -Sum).Sum
+        $lines.Add(('    {0}["{1}"] --> MAP_FAMILY_OTHER["Other<br/>{2} edges in {3} families"]' -f $rootId, $rootLabel, $remainingRows, $remainingGroups.Count))
+    }
+    $lines.Add('```')
+    $lines.Add('')
+    $lines.Add('## Family Detail')
+
+    foreach ($group in $groups) {
+        $groupRows = @($group.Rows)
+        $partCount = [int][Math]::Ceiling($groupRows.Count / [double]$MaxEdges)
+        for ($part = 0; $part -lt $partCount; $part++) {
+            $partRows = @($groupRows | Select-Object -Skip ($part * $MaxEdges) -First $MaxEdges)
+            $partTitle = if ($partCount -gt 1) { " (part $($part + 1) of $partCount)" } else { '' }
+            $lines.Add('')
+            $lines.Add("### $($group.Name)$partTitle")
+            $lines.Add('')
+            $lines.Add('```mermaid')
+            $lines.Add("flowchart $Direction")
+            foreach ($row in $partRows) {
+                $lines.Add((& $FormatEdge $row))
+            }
+            $lines.Add('```')
+        }
+    }
+    return $lines.ToArray()
+}
+
 function Get-StackMermaidNodeId {
     param(
         [string]$Group,
@@ -755,14 +846,13 @@ Write-Doc -Name 'ROUTINE_CONTRACTS.md' -Lines $lines
 $lines = @('# R-YORS HIMON Routine Tree') + $header
 $lines += 'Tree scope: current HIMON source only (`HIMON/himon.asm` and HIMON include files).'
 $lines += ''
-$lines += 'Renderable graph is capped to the strongest 40 direct edges. Use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.'
+$lines += 'The 40 strongest direct edges are shown as a top-down family overview and short detail panels. Use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.'
 $lines += ''
-$lines += '```mermaid'
-$lines += 'flowchart LR'
-foreach ($edge in ($himonTreeEdges | Select-Object -First 40)) {
-    $lines += ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Id (Get-DisplayName $edge.Source)), (Get-DisplayName $edge.Source), $edge.Count, (Mermaid-Id (Get-DisplayName $edge.Target)), (Get-DisplayName $edge.Target))
+$routineEdgeFormat = {
+    param($edge)
+    return ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Id (Get-DisplayName $edge.Source)), (Get-DisplayName $edge.Source), $edge.Count, (Mermaid-Id (Get-DisplayName $edge.Target)), (Get-DisplayName $edge.Target))
 }
-$lines += '```'
+$lines += Get-MermaidBreakdownLines -Rows ($himonTreeEdges | Select-Object -First 40) -OverviewLabel 'HIMON direct calls' -GroupKey { param($edge) Get-MapFamily $edge.Source } -FormatEdge $routineEdgeFormat
 Write-Doc -Name 'HIMON_ROUTINE_TREE.md' -Lines $lines
 
 $prefixRows = @(
@@ -786,14 +876,13 @@ $prefixRows = @(
 )
 
 $lines = @('# R-YORS Routine Class Diagram') + $header
-$lines += 'Renderable graph is capped to the strongest 40 prefix edges. Use `ROUTINE_GRAPH_INSIGHTS.md` and the raw edge dumps for the complete graph.'
+$lines += 'The 40 strongest prefix edges are shown as a top-down family overview and short detail panels. Use `ROUTINE_GRAPH_INSIGHTS.md` and the raw edge dumps for the complete graph.'
 $lines += ''
-$lines += '```mermaid'
-$lines += 'flowchart LR'
-foreach ($row in ($prefixRows | Select-Object -First 40)) {
-    $lines += ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Prefix-Id $row.Source), $row.Source, $row.Count, (Mermaid-Prefix-Id $row.Target), $row.Target)
+$prefixEdgeFormat = {
+    param($row)
+    return ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Prefix-Id $row.Source), $row.Source, $row.Count, (Mermaid-Prefix-Id $row.Target), $row.Target)
 }
-$lines += '```'
+$lines += Get-MermaidBreakdownLines -Rows ($prefixRows | Select-Object -First 40) -OverviewLabel 'Prefix calls' -GroupKey { param($row) Get-MapFamily $row.Source } -FormatEdge $prefixEdgeFormat
 Write-Doc -Name 'ROUTINE_CLASS_DIAGRAM.md' -Lines $lines
 
 $prefixRoutineCounts = @{}
@@ -804,16 +893,15 @@ foreach ($g in ($routines | Group-Object { Get-Prefix $_.Name })) {
 $lines = @('# R-YORS Routine Prefix Map') + $header
 $lines += 'Prefix map over the operational source set. Node counts are routine headers; edge counts are direct `JSR`/`JMP` sites grouped by prefix.'
 $lines += ''
-$lines += 'Renderable graph is capped to the strongest 40 prefix edges.'
+$lines += 'The 40 strongest prefix edges are shown as a top-down family overview and short detail panels.'
 $lines += ''
-$lines += '```mermaid'
-$lines += 'flowchart LR'
-foreach ($row in ($prefixRows | Select-Object -First 40)) {
+$prefixCountEdgeFormat = {
+    param($row)
     $sourceCount = if ($prefixRoutineCounts.ContainsKey($row.Source)) { $prefixRoutineCounts[$row.Source] } else { 0 }
     $targetCount = if ($prefixRoutineCounts.ContainsKey($row.Target)) { $prefixRoutineCounts[$row.Target] } else { 0 }
-    $lines += ('    {0}["{1}<br/>{2} routines"] -->|{3}| {4}["{5}<br/>{6} routines"]' -f (Mermaid-Prefix-Id $row.Source), $row.Source, $sourceCount, $row.Count, (Mermaid-Prefix-Id $row.Target), $row.Target, $targetCount)
+    return ('    {0}["{1}<br/>{2} routines"] -->|{3}| {4}["{5}<br/>{6} routines"]' -f (Mermaid-Prefix-Id $row.Source), $row.Source, $sourceCount, $row.Count, (Mermaid-Prefix-Id $row.Target), $row.Target, $targetCount)
 }
-$lines += '```'
+$lines += Get-MermaidBreakdownLines -Rows ($prefixRows | Select-Object -First 40) -OverviewLabel 'Prefix map' -GroupKey { param($row) Get-MapFamily $row.Source } -FormatEdge $prefixCountEdgeFormat
 Write-Doc -Name 'ROUTINE_PREFIX_MAP.md' -Lines $lines
 
 $routineWordNameSet = @{}
@@ -895,20 +983,21 @@ foreach ($row in $wordPathCandidates) {
 $lines = @('# R-YORS Routine Word Tree') + $header
 $lines += 'Hierarchy over callable-ish source symbols, split on `_`. Symbols come from routine headers and direct `JSR`/`JMP` source/target names in the operational source set.'
 $lines += ''
-$lines += 'The Mermaid graph is capped to the strongest 40 name branches so it stays renderable. Edges are name containment, not call edges.'
+$lines += 'The strongest 40 name branches are split into a top-down family overview and short detail panels. Edges are name containment, not call edges.'
 $lines += ''
-$lines += '```mermaid'
-$lines += 'flowchart TD'
-$lines += ('    RW_ROOT["ROUTINES<br/>{0} symbols"]' -f $routineWordNames.Count)
-for ($depth = 1; $depth -le $maxWordTreeDepth; $depth++) {
-    foreach ($row in ($wordPathRows | Where-Object { $_.Depth -eq $depth -and $selectedWordPaths.ContainsKey($_.Path) } | Sort-Object -Property Parent, @{Expression='Count';Descending=$true}, Token)) {
-        $parentId = if ([string]::IsNullOrWhiteSpace($row.Parent)) { 'RW_ROOT' } else { Mermaid-WordTree-Id $row.Parent }
-        $nodeId = Mermaid-WordTree-Id $row.Path
-        $label = Escape-MermaidLabel ("{0}<br/>{1}" -f $row.Token, $row.Count)
-        $lines += ('    {0} --> {1}["{2}"]' -f $parentId, $nodeId, $label)
-    }
+$wordTreeRows = @(
+    $wordPathRows |
+    Where-Object { $_.Depth -ge 1 -and $selectedWordPaths.ContainsKey($_.Path) } |
+    Sort-Object -Property Depth, @{Expression='Count';Descending=$true}, Parent, Token
+)
+$wordTreeEdgeFormat = {
+    param($row)
+    $parentId = if ([string]::IsNullOrWhiteSpace($row.Parent)) { 'RW_ROOT' } else { Mermaid-WordTree-Id $row.Parent }
+    $nodeId = Mermaid-WordTree-Id $row.Path
+    $label = Escape-MermaidLabel ("{0}<br/>{1}" -f $row.Token, $row.Count)
+    return ('    {0} --> {1}["{2}"]' -f $parentId, $nodeId, $label)
 }
-$lines += '```'
+$lines += Get-MermaidBreakdownLines -Rows $wordTreeRows -OverviewLabel ("Routine word tree ({0} symbols)" -f $routineWordNames.Count) -GroupKey { param($row) Get-MapFamily (($row.Path -split '_')[0]) } -FormatEdge $wordTreeEdgeFormat -Direction 'TD'
 $lines += ''
 $lines += '## Largest Branches'
 $lines += ''
@@ -951,14 +1040,9 @@ $himonPrefixRows = @(
 $lines = @('# R-YORS HIMON Support Map') + $header
 $lines += 'HIMON-only dependency map. This rolls current compatibility labels into HIMON and shows which support layers the monitor leans on.'
 $lines += ''
-$lines += 'Renderable graph is capped to the strongest 40 prefix edges.'
+$lines += 'The 40 strongest prefix edges are shown as a top-down family overview and short detail panels.'
 $lines += ''
-$lines += '```mermaid'
-$lines += 'flowchart LR'
-foreach ($row in ($himonPrefixRows | Select-Object -First 40)) {
-    $lines += ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Prefix-Id $row.Source), $row.Source, $row.Count, (Mermaid-Prefix-Id $row.Target), $row.Target)
-}
-$lines += '```'
+$lines += Get-MermaidBreakdownLines -Rows ($himonPrefixRows | Select-Object -First 40) -OverviewLabel 'HIMON support calls' -GroupKey { param($row) Get-MapFamily $row.Source } -FormatEdge $prefixEdgeFormat
 Write-Doc -Name 'HIMON_SUPPORT_MAP.md' -Lines $lines
 
 $himonCommandPrefixes = @('HIMON', 'MON', 'CMD', 'CMDP', 'LOAD', 'ASM', 'DIS', 'DBG', 'FNV1A', 'MATH')
@@ -972,14 +1056,9 @@ $himonCommandEdges = @(
 )
 
 $lines = @('# R-YORS HIMON Command Map') + $header
-$lines += 'HIMON command/debug/load/ASM call map, limited to direct edges and compacted for readability. Renderable graph is capped to the strongest 40 command-surface edges; use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.'
+$lines += 'HIMON command/debug/load/ASM call map, limited to direct edges and compacted for readability. The 40 strongest command-surface edges are split into a top-down family overview and short detail panels; use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.'
 $lines += ''
-$lines += '```mermaid'
-$lines += 'flowchart LR'
-foreach ($edge in $himonCommandEdges) {
-    $lines += ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Id (Get-DisplayName $edge.Source)), (Get-DisplayName $edge.Source), $edge.Count, (Mermaid-Id (Get-DisplayName $edge.Target)), (Get-DisplayName $edge.Target))
-}
-$lines += '```'
+$lines += Get-MermaidBreakdownLines -Rows $himonCommandEdges -OverviewLabel 'HIMON command calls' -GroupKey { param($edge) Get-MapFamily $edge.Source } -FormatEdge $routineEdgeFormat
 Write-Doc -Name 'HIMON_COMMAND_MAP.md' -Lines $lines
 
 $hashSourceFiles = @('HIMON/himon.asm', 'HIMON/fnv1a-fold.asm')
@@ -1023,17 +1102,20 @@ $hashAllLabelNames = @($hashLabels | ForEach-Object { $_.Name } | Sort-Object -U
 $lines = @('# R-YORS Hash Routine Map') + $header
 $lines += 'Scope: current source-derived hash path. This includes `CMD_HASH*`, `FNV1A_*`, `MATH_*HASH*`, `MON_PRINT_HASH`, `CMD_SAVE_HASH`, and `CMD_DISPATCH_HASH` labels plus their direct call neighbors. Routine header `[HASH:...]` IDs alone do not make a routine part of this map.'
 $lines += ''
-$lines += 'Renderable graph is capped to the strongest 40 hash-path edges; the Direct Edges section below lists the complete source-derived set.'
+$lines += 'The strongest 40 hash-path edges are split into a top-down family overview and short detail panels; the Direct Edges section below lists the complete source-derived set.'
 $lines += ''
-$lines += '```mermaid'
-$lines += 'flowchart LR'
-foreach ($edge in ($hashEdges | Select-Object -First 40)) {
-    $lines += ('    {0}[{1}] -->|{2}| {3}[{4}]' -f (Mermaid-Id (Get-DisplayName $edge.Source)), (Get-DisplayName $edge.Source), $edge.Count, (Mermaid-Id (Get-DisplayName $edge.Target)), (Get-DisplayName $edge.Target))
+$lines += Get-MermaidBreakdownLines -Rows ($hashEdges | Select-Object -First 40) -OverviewLabel 'Hash-path calls' -GroupKey { param($edge) Get-MapFamily $edge.Source } -FormatEdge $routineEdgeFormat
+if ($hashIsolatedLabels.Count -gt 0) {
+    $lines += ''
+    $lines += '### Isolated Hash Labels'
+    $lines += ''
+    $lines += '```mermaid'
+    $lines += 'flowchart LR'
+    foreach ($label in $hashIsolatedLabels) {
+        $lines += ('    {0}[{1}]' -f (Mermaid-Id (Get-DisplayName $label.Name)), (Get-DisplayName $label.Name))
+    }
+    $lines += '```'
 }
-foreach ($label in $hashIsolatedLabels) {
-    $lines += ('    {0}[{1}]' -f (Mermaid-Id (Get-DisplayName $label.Name)), (Get-DisplayName $label.Name))
-}
-$lines += '```'
 $lines += ''
 $lines += '## Hash Labels'
 $lines += ''
@@ -1119,6 +1201,20 @@ function Format-CmdFlow-Node {
 $lines = @('# R-YORS Command Flow Map') + $header
 $lines += 'Scope: current HIMON command dispatch/resolve/run/return flow. This is a source-derived guide map for the hashed command path in `HIMON/himon.asm`, not a full call graph of every command body.'
 $lines += ''
+$lines += '## Top-Level Stages'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
+$lines += '    PROMPT["Prompt and input"] --> HASHSTAGE["Hash token"]'
+$lines += '    HASHSTAGE --> RESOLVE["Resolve catalog record"]'
+$lines += '    RESOLVE --> RUNSTAGE["Run and report"]'
+$lines += '    RESOLVE --> MISSSTAGE["Print unresolved hash"]'
+$lines += '    RUNSTAGE --> PROMPT'
+$lines += '    MISSSTAGE --> PROMPT'
+$lines += '```'
+$lines += ''
+$lines += '## 1. Prompt And Hash'
+$lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart TD'
 $lines += ('    LOOP["{0}"] --> READ["read prompt line<br/>HIM_READ_LINE_ECHO_UPPER"]' -f (Format-CmdFlow-Node 'MAIN_LOOP' 'prompt and wait'))
@@ -1131,7 +1227,13 @@ $lines += ('    HASH --> HASHLOOP["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_TOKE
 $lines += ('    HASHLOOP --> UPDATE["{0}"]' -f (Format-CmdFlow-Node 'FNV1A_UPDATE_A' 'update hash with byte'))
 $lines += '    UPDATE --> HASHLOOP'
 $lines += ('    HASHLOOP --> DONE["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_TOKEN_DONE' 'restore token pointer'))
-$lines += ('    DONE --> SAVEHASH["{0}"]' -f (Format-CmdFlow-Node 'CMD_SAVE_HASH' 'save hash to exec state'))
+$lines += '```'
+$lines += ''
+$lines += '## 2. Resolve The Catalog Record'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
+$lines += ('    DONE["{0}"] --> SAVEHASH["{1}"]' -f (Format-CmdFlow-Node 'CMD_HASH_TOKEN_DONE' 'restore token pointer'), (Format-CmdFlow-Node 'CMD_SAVE_HASH' 'save hash to exec state'))
 $lines += ('    SAVEHASH --> DISPATCH["{0}"]' -f (Format-CmdFlow-Node 'CMD_DISPATCH_HASH' 'dispatch by hash'))
 $lines += ('    DISPATCH --> SCANINIT["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_SCAN_INIT' 'start catalog scan'))
 $lines += ('    SCANINIT --> SCANLOOP["{0}"]' -f (Format-CmdFlow-Node 'CMD_DISPATCH_SCAN_LOOP' 'scan records'))
@@ -1141,9 +1243,15 @@ $lines += ('    NEXTREC --> ISREC["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_IS_R
 $lines += ('    NEXTREC -->|none| MISS["{0}"]' -f (Format-CmdFlow-Node 'CMD_DISPATCH_SCAN_MISS' 'no record found'))
 $lines += ('    ISREC --> MATCH["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_RECORD_MATCH' 'compare hash0..3'))
 $lines += ('    MATCH -->|no| ADV["{0}"]' -f (Format-CmdFlow-Node 'CMD_DISPATCH_SCAN_NEXT' 'advance scan'))
-$lines += ('    ADV --> SCANLOOP')
+$lines += '    ADV --> SCANLOOP'
 $lines += ('    MATCH -->|yes| EXECOK["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_RECORD_IS_EXEC' 'kind is executable?'))
-$lines += '    EXECOK -->|no| ADV'
+$lines += '```'
+$lines += ''
+$lines += '## 3. Run, Return, Or Miss'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
+$lines += '    EXECOK["kind is executable?"] -->|no| ADV["advance scan"]'
 $lines += ('    EXECOK -->|yes| ENTRY["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_RECORD_ENTRY' 'entry = record+8'))
 $lines += ('    ENTRY --> SAVEENTRY["{0}"]' -f (Format-CmdFlow-Node 'CMD_SAVE_ENTRY' 'save entry'))
 $lines += ('    SAVEENTRY --> RUN["{0}"]' -f (Format-CmdFlow-Node 'CMD_EXEC_ADDR' 'run command and capture return'))
@@ -1151,8 +1259,8 @@ $lines += ('    RUN --> CALL["{0}"]' -f (Format-CmdFlow-Node 'CMD_CALL_ADDR' 'ju
 $lines += '    CALL --> BODY["command body<br/>CMD_D / CMD_L / CMD_Q / ..."]'
 $lines += '    BODY -->|RTS| RUN'
 $lines += ('    RUN --> RETPRINT["{0}"]' -f (Format-CmdFlow-Node 'MON_PRINT_RET_AND_REGS' 'print return/register state'))
-$lines += '    RETPRINT --> LOOP'
-$lines += ('    MISS --> PRHASH["{0}"]' -f (Format-CmdFlow-Node 'MON_PRINT_HASH' 'print unresolved hash'))
+$lines += '    RETPRINT --> LOOP["prompt and wait"]'
+$lines += ('    MISS["no record found"] --> PRHASH["{0}"]' -f (Format-CmdFlow-Node 'MON_PRINT_HASH' 'print unresolved hash'))
 $lines += '    PRHASH --> LOOP'
 $lines += '```'
 $lines += ''
@@ -1267,7 +1375,19 @@ $lines += '$7EFC-$7EFD  VEC_IRQ_BRK target cell'
 $lines += '$7EFE-$7EFF  VEC_IRQ_NONBRK target cell'
 $lines += '```'
 $lines += ''
-$lines += '## Flow'
+$lines += '## Top-Level Routes'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
+$lines += '    HARDWARE["Hardware vectors"] --> RESETROUTE["Reset and RAM-vector setup"]'
+$lines += '    HARDWARE --> NMIROUTE["NMI route"]'
+$lines += '    HARDWARE --> IRQROUTE["IRQ / BRK split"]'
+$lines += '    COMMANDS["Debug commands"] --> RESUMEROUTE["Resume / step route"]'
+$lines += '    RESETROUTE --> NMIROUTE'
+$lines += '    RESETROUTE --> IRQROUTE'
+$lines += '```'
+$lines += ''
+$lines += '## 1. Reset And Safe Defaults'
 $lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart TD'
@@ -1278,34 +1398,54 @@ $lines += '    SYSINIT --> VECINIT["' + (Format-Interrupt-Node 'SYS_VEC_INIT' 's
 $lines += '    VECINIT --> DEFNMI["' + (Format-Interrupt-Node 'SYS_VEC_DEFAULT_NMI' 'default NMI snapshot then RTI') + '"]'
 $lines += '    VECINIT --> DEFBRK["' + (Format-Interrupt-Node 'SYS_VEC_DEFAULT_IRQ_BRK' 'default BRK RTI') + '"]'
 $lines += '    VECINIT --> DEFIRQ["' + (Format-Interrupt-Node 'SYS_VEC_DEFAULT_IRQ_NONBRK' 'default IRQ RTI') + '"]'
+$lines += '```'
 $lines += ''
-$lines += '    INIT --> SETNMI["' + (Format-Interrupt-Node 'SYS_VEC_SET_NMI_XY' 'patch NMI RAM vector') + '"]'
+$lines += '## 2. Install Current Trap Targets'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
+$lines += '    INIT["monitor init / re-entry setup"] --> SETNMI["' + (Format-Interrupt-Node 'SYS_VEC_SET_NMI_XY' 'patch NMI RAM vector') + '"]'
 $lines += '    INIT --> SETBRK["' + (Format-Interrupt-Node 'SYS_VEC_SET_IRQ_BRK_XY' 'patch BRK RAM vector') + '"]'
 $lines += '    INIT --> SETIRQ["' + (Format-Interrupt-Node 'SYS_VEC_SET_IRQ_NONBRK_XY' 'patch IRQ RAM vector') + '"]'
 $lines += '    SETNMI --> VECNMI["$7EFA-$7EFB<br/>VEC_NMI = MON_NMI_TRAP_DEBOUNCE"]'
 $lines += '    SETBRK --> VECBRK["$7EFC-$7EFD<br/>VEC_IRQ_BRK = MON_BRK_TRAP"]'
 $lines += '    SETIRQ --> VECIRQ["$7EFE-$7EFF<br/>VEC_IRQ_NONBRK = MON_IRQ_TRAP"]'
+$lines += '```'
 $lines += ''
+$lines += '## 3. NMI Route'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
 $lines += '    NMIV["$FFFA-$FFFB<br/>NMI vector"] --> NMIENTRY["' + (Format-Interrupt-Node 'SYS_VEC_ENTRY_NMI' 'NMI trampoline') + '"]'
-$lines += '    NMIENTRY --> VECNMI'
+$lines += '    NMIENTRY --> VECNMI["$7EFA-$7EFB<br/>VEC_NMI"]'
 $lines += '    VECNMI --> NMITRAP["' + (Format-Interrupt-Node 'MON_NMI_TRAP_DEBOUNCE' 'debounce then save NMI context') + '"]'
 $lines += '    NMITRAP -->|bounce| RTINMI["RTI"]'
 $lines += '    NMITRAP --> REENTER["' + (Format-Interrupt-Node 'MON_REENTER' 'reset stack and re-enter monitor') + '"]'
 $lines += '    NMIBASE["' + (Format-Interrupt-Node 'MON_NMI_TRAP' 'baseline NMI context path') + '"] --> REENTER'
-$lines += '    REENTER --> INIT'
+$lines += '    REENTER --> INIT["monitor init / re-entry setup"]'
+$lines += '```'
 $lines += ''
+$lines += '## 4. IRQ And BRK Route'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
 $lines += '    IRQV["$FFFE-$FFFF<br/>IRQ/BRK vector"] --> IRQMASTER["' + (Format-Interrupt-Node 'SYS_VEC_ENTRY_IRQ_MASTER' 'IRQ master trampoline') + '"]'
 $lines += '    IRQMASTER --> SPLIT["inspect stacked P bit 4<br/>BRK flag?"]'
-$lines += '    SPLIT -->|BRK| VECBRK'
-$lines += '    SPLIT -->|IRQ| VECIRQ'
+$lines += '    SPLIT -->|BRK| VECBRK["$7EFC-$7EFD<br/>VEC_IRQ_BRK"]'
+$lines += '    SPLIT -->|IRQ| VECIRQ["$7EFE-$7EFF<br/>VEC_IRQ_NONBRK"]'
 $lines += '    VECBRK --> BRKTRAP["' + (Format-Interrupt-Node 'MON_BRK_TRAP' 'save BRK context') + '"]'
 $lines += '    BRKTRAP --> DBGBRK["' + (Format-Interrupt-Node 'DBG_HANDLE_BRK' 'breakpoint / step handler') + '"]'
-$lines += '    DBGBRK -->|breakpoint hit| REENTER'
+$lines += '    DBGBRK -->|breakpoint hit| REENTER["monitor re-entry"]'
 $lines += '    DBGBRK -->|plain BRK| BRKNORMAL["' + (Format-Interrupt-Node 'MON_BRK_TRAP_NORMAL' 'capture BRK signature') + '"]'
 $lines += '    BRKNORMAL --> REENTER'
 $lines += '    VECIRQ --> IRQTRAP["' + (Format-Interrupt-Node 'MON_IRQ_TRAP' 'current IRQ owner') + '"]'
 $lines += '    IRQTRAP --> RTIIRQ["RTI"]'
+$lines += '```'
 $lines += ''
+$lines += '## 5. Resume And Single Step'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart LR'
 $lines += '    CMDX["' + (Format-Interrupt-Node 'CMD_X' 'resume command') + '"] --> RESUME["' + (Format-Interrupt-Node 'MON_CTX_RESUME_RTI' 'rebuild stack frame') + '"]'
 $lines += '    CMDN["' + (Format-Interrupt-Node 'CMD_N' 'single-step command') + '"] --> STEP["' + (Format-Interrupt-Node 'DBG_STEP_ONCE' 'patch temporary BRK') + '"]'
 $lines += '    STEP --> RESUME'
@@ -1489,20 +1629,30 @@ $lines += '- Does not add the hardware NMI/IRQ entry frame to trap rows; those r
 $lines += ''
 $lines += '## Command Stack Map'
 $lines += ''
-$lines += 'Renderable Mermaid node/edge map of command stack paths, capped to the deepest 20 route edges per HIMON/STR8 subgraph. Node labels show the highest stack depth seen on any command path that touches that node; edge labels show the highest stack depth seen on that route. The tables below remain the exact byte/source reference.'
+$lines += 'The stack diagrams use a top-down split: a small HIMON/STR8 overview, then one short route panel per owner. Each route panel is capped to the deepest 12 edges. Node labels show the highest stack depth seen on any command path that touches that node; edge labels show the highest stack depth seen on that route. The tables below remain the exact byte/source reference.'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart LR'
+$lines += '    COMMANDS["Command stack paths"] --> HSTACK["HIMON routes"]'
+$lines += '    COMMANDS --> SSTACK["STR8 routes"]'
+$lines += '```'
+$lines += ''
+$lines += '### HIMON Command Routes'
 $lines += ''
 $lines += '```mermaid'
 $lines += '%%{init: {"theme": "base", "themeVariables": {"background": "#000000", "mainBkg": "#000000", "primaryColor": "#000000", "primaryBorderColor": "#d8d8d8", "primaryTextColor": "#ffffff", "lineColor": "#ffffff", "secondaryColor": "#000000", "tertiaryColor": "#000000", "clusterBkg": "#000000", "clusterBorder": "#999999", "edgeLabelBackground": "#000000"}}}%%'
 $lines += 'flowchart LR'
 $lines += '    classDef default fill:#000000,stroke:#d8d8d8,color:#ffffff;'
-$lines += '    subgraph HSTACK["HIMON command stack paths"]'
-$lines += Get-StackMermaidMapLines -Group 'HIMON' -Rows ($himonCommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command, Entry)
-$lines += '    end'
-$lines += '    subgraph SSTACK["STR8 command stack paths"]'
-$lines += Get-StackMermaidMapLines -Group 'STR8' -Rows ($str8CommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command, Entry)
-$lines += '    end'
-$lines += '    style HSTACK fill:#000000,stroke:#999999,color:#ffffff'
-$lines += '    style SSTACK fill:#000000,stroke:#999999,color:#ffffff'
+$lines += Get-StackMermaidMapLines -Group 'HIMON' -Rows ($himonCommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command, Entry) -MaxEdges 12
+$lines += '```'
+$lines += ''
+$lines += '### STR8 Command Routes'
+$lines += ''
+$lines += '```mermaid'
+$lines += '%%{init: {"theme": "base", "themeVariables": {"background": "#000000", "mainBkg": "#000000", "primaryColor": "#000000", "primaryBorderColor": "#d8d8d8", "primaryTextColor": "#ffffff", "lineColor": "#ffffff", "secondaryColor": "#000000", "tertiaryColor": "#000000", "clusterBkg": "#000000", "clusterBorder": "#999999", "edgeLabelBackground": "#000000"}}}%%'
+$lines += 'flowchart LR'
+$lines += '    classDef default fill:#000000,stroke:#d8d8d8,color:#ffffff;'
+$lines += Get-StackMermaidMapLines -Group 'STR8' -Rows ($str8CommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command, Entry) -MaxEdges 12
 $lines += '```'
 $lines += ''
 $lines += '## Application Entries'
@@ -1561,6 +1711,120 @@ foreach ($row in $str8OwnedStackRows) {
 
 Write-Doc -Name 'STACK_DEPTH_MAP.md' -Lines $lines
 
+$lines = @('# R-YORS Control Deck Map') + $header
+$lines += 'Scope: generated Deck Plan atlas for the current control blocks, phase-owned RAM areas, record transit service, AP Capsule route, interactive flash tools, and planned selected-bank passport. The formal address authority remains [GUIDES/MEMORY/MEMORY_MAP.md](../GUIDES/MEMORY/MEMORY_MAP.md).'
+$lines += ''
+$lines += 'This atlas intentionally uses a top-down breakdown. Each Mermaid view has one job and a small number of edges; follow the links and the address table instead of trying to read the whole machine from one diagram.'
+$lines += ''
+$lines += '## Deck Plan Legend'
+$lines += ''
+$lines += '| Name | Address or scope | Owner/phase | Practical meaning |'
+$lines += '| --- | --- | --- | --- |'
+$lines += '| AP Capsule (APC) | RAM, visible flash, or banked flash | OIL transport | Serialized AP envelope; it is data until loaded into RAM. |'
+$lines += '| Low-RAM Switchyard (LRS) | `$0200-$19FF` | ASM or STR8, never both | ASM names change over to worker code and a staged sector. |'
+$lines += '| Symbol/Fixup Name Lanes (SNL/FNL) | `$0200-$09FF` / `$0A00-$19FF` | ASM session | Low name tables used for assembly and reporting. |'
+$lines += '| Worker Code Tray / Sector Staging Deck (WCT/SSD) | `$0200-$09FF` / `$0A00-$19FF` | STR8 flash/banked AP work | RAM worker code plus one full 4K staged sector. |'
+$lines += '| Flash Transaction Card / Console Input Deck (FTC/CID) | `$1B00-$1B0F` / `$1C00-$1CFE` | Interactive flash AP | Request/result, CRC, write arm, and safe line input. |'
+$lines += '| Record Payload Tray / Record Transit Card (RPT/RTC) | `$7B00-$7BFB` / `$7E95-$7EA8` | STR8 record service | Decoded S19 bytes and their frozen request/result descriptor. |'
+$lines += '| Record Frontdoor (RFD) | `$F009-$F00F` | STR8 record service | Fixed jump entry plus `SR/01` signature and capability bytes. |'
+$lines += '| Recovery State Capsule (RSC) | `$1FE9-$1FFF` | STR8 | Compact bank/sector/copy/update control state. |'
+$lines += '| AP Island Runway (AIR) | `$2000-$4FFF` | AP lifecycle | Build Bay `$2000`, Envelope Bay `$3000`, Run/Tray Bay `$4000`. |'
+$lines += '| ASM Work Hold / Safe / Volatile decks (AWH/SOD/VOD) | `$5000-$61A9` / `$61AA-$79FF` / `$7A00-$7DFF` | ASM/HIMON | Current UDATA, safe upper output, then volatile command/monitor work. |'
+$lines += '| High Service Deck / I/O Bulkhead (HSD/IOB) | `$7E00-$7EFF` / `$7F00-$7FFF` | HIMON/STR8 / devices | Published service state, including RTC, and side-effectful device boundary. |'
+$lines += '| Boot Passport Block (BPB) | planned `$F010-$F01F` | future STR8 selected-bank launch | `S8B1` identity, entry, CRC, tag, and commit-last seal. |'
+$lines += '| Reporter Rebase Table (RBT) | movable reporter BODY-relative | session reporter | Private `SR/01` rows that rebase internal addresses; not an AP Capsule ABI field. |'
+$lines += ''
+$lines += '## 1. Control Plane Overview'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
+$lines += '    OP["Operator or source"] --> HIM["HIMON and OIL"]'
+$lines += '    APC["AP Capsule"] --> HIM'
+$lines += '    STR8["STR8 recovery control"] --> LRS["Low-RAM Switchyard"]'
+$lines += '    HIM --> LRS'
+$lines += '    LRS --> AIR["AP Island Runway"]'
+$lines += '    HIM --> AIR'
+$lines += '    AIR --> STORE["Banked AP Capsule store"]'
+$lines += '    BPB["Boot Passport Block planned"] --> STR8'
+$lines += '```'
+$lines += ''
+$lines += '## 2. Low-RAM Switchyard'
+$lines += ''
+$lines += 'The Switchyard Rule is the crucial ownership rule: an ASM session and a STR8/banked-AP operation do not own these lanes at the same time.'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart TD'
+$lines += '    LRS["Low-RAM Switchyard<br/>$0200-$19FF"] -->|ASM session| SNL["Symbol Name Lane<br/>$0200-$09FF"]'
+$lines += '    LRS -->|ASM session| FNL["Fixup Name Lane<br/>$0A00-$19FF"]'
+$lines += '    LRS -->|STR8 flash work| WCT["Worker Code Tray<br/>$0200-$09FF"]'
+$lines += '    LRS -->|STR8 flash work| SSD["Sector Staging Deck<br/>$0A00-$19FF"]'
+$lines += '```'
+$lines += ''
+$lines += '## 3. AP Capsule Route Through The AIR'
+$lines += ''
+$lines += 'The Capsule Rule says storage is not execution. The Runway Rule says the `$4000-$4FFF` Run/Tray Bay has one occupant: a sector tray, a loaded AP, or the movable reporter.'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart LR'
+$lines += '    BB["Build Bay<br/>$2000-$2FFF"] --> EB["Envelope Bay<br/>$3000-$3FFF"]'
+$lines += '    EB --> PUT["BANK0_AP_PUT"]'
+$lines += '    PUT --> SSD["SSD<br/>$0A00-$19FF"]'
+$lines += '    SSD --> B0["Bank 0 APC store"]'
+$lines += '    B0 --> OIL["HIMON AP or OIL"]'
+$lines += '    OIL --> RTB["Run or Tray Bay<br/>$4000-$4FFF"]'
+$lines += '```'
+$lines += ''
+$lines += '## 4. Interactive Flash Card'
+$lines += ''
+$lines += 'The Card Rule keeps an erase/program action tied to the exact request and sector image that were preflighted.'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart LR'
+$lines += '    OP["Operator"] --> CID["Console Input Deck<br/>$1C00-$1CFE"]'
+$lines += '    CID --> AP["Interactive flash AP"]'
+$lines += '    AP --> FTC["Flash Transaction Card<br/>$1B00-$1B0F"]'
+$lines += '    FTC --> RSC["Recovery State Capsule<br/>$1FE9-$1FFF"]'
+$lines += '    RSC --> W["STR8 RAM worker"]'
+$lines += '    W --> FTC'
+$lines += '```'
+$lines += ''
+$lines += '## 5. Selected-Bank Passport Gate'
+$lines += ''
+$lines += 'This is planned behavior, not a current STR8 command. The Passport Rule says the BPB must be fully validated in RAM before a selected bank is entered.'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart LR'
+$lines += '    RESET["Physical reset"] --> B3["Bank 3 STR8"]'
+$lines += '    B3 --> BPB["BPB validation"]'
+$lines += '    BPB --> RAMP["RAM handoff ramp"]'
+$lines += '    RAMP --> LATCH["Bank latch $7FEC"]'
+$lines += '    LATCH --> VECTOR["Selected $FFFC vector"]'
+$lines += '    VECTOR --> GUEST["Selected-bank payload"]'
+$lines += '```'
+$lines += ''
+$lines += '## 6. Validated Record Transit'
+$lines += ''
+$lines += 'The Transit Rule keeps the decoded RPT bytes and their RTC descriptor together. This is a current service, unlike the planned passport gate.'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart LR'
+$lines += '    SRC["S19 source"] --> RFD["Record Frontdoor<br/>$F009-$F00F"]'
+$lines += '    RFD --> RTC["Record Transit Card<br/>$7E95-$7EA8"]'
+$lines += '    RTC --> PARSE["STR8 validates record"]'
+$lines += '    PARSE --> RPT["Record Payload Tray<br/>$7B00-$7BFB"]'
+$lines += '    PARSE --> RTC'
+$lines += '    RTC --> APPLY["Caller may apply valid DATA"]'
+$lines += '```'
+$lines += ''
+$lines += '## Use At The Bench'
+$lines += ''
+$lines += '- Before an `AP B0` load, record which AIR bay contains the Capsule and which will receive the BODY.'
+$lines += '- Before a destructive flash action, identify the FTC request, the Run/Tray Bay image, and the RSC worker state that will be consumed.'
+$lines += '- Before reporting an ASM session, obey the Switchyard Rule: preload the reporter, finish the session, then run the resident reporter without another banked `AP`.'
+$lines += '- Before applying an S19 DATA record, identify the RFD, the matching RTC descriptor, and the RPT payload tray; parse again if either transient area was reused.'
+$lines += '- Before future selected-bank launch, treat the BPB as an untrusted passport until all Passport Rule checks pass.'
+Write-Doc -Name 'CONTROL_DECK_MAP.md' -Lines $lines
+
 $lines = @('# R-YORS Map Of Maps') + $header
 $lines += 'Scope: atlas for map-shaped R-YORS documentation. Guide maps are hand-maintained design/navigation maps; generated maps are source-derived and refreshed by `make -C SRC docs`.'
 $lines += ''
@@ -1574,6 +1838,7 @@ $lines += '| Check vocabulary before naming something | [GUIDES/GLOSSARY.md](../
 $lines += '| Check settled calls | [GUIDES/DECISIONS.md](../GUIDES/DECISIONS.md) | Decisions that should not reopen accidentally. |'
 $lines += '| Explore unsettled design thinking | [GUIDES/QCC.md](../GUIDES/QCC/INDEX.md) | Questions, Comments, Concerns index. |'
 $lines += '| Understand memory and flash ranges | [GUIDES/MEMORY_MAP.md](../GUIDES/MEMORY/MEMORY_MAP.md) | Current RAM/ROM/flash ownership. |'
+$lines += '| Follow active control blocks and AP working areas | [CONTROL_DECK_MAP.md](./CONTROL_DECK_MAP.md) | Deck Plan: LRS, AIR, FTC, RFD/RTC/RPT, RSC, and planned BPB. |'
 $lines += '| Understand hash meanings | [GUIDES/HASH_MAP.md](../GUIDES/HASH/HASH_MAP.md) | Hash concepts, widths, records, and catalog direction. |'
 $lines += '| Understand HIMON subsystems | [GUIDES/HIMON_MAP.md](../GUIDES/HIMON/HIMON_MAP.md) | Curated monitor capability and subsystem maps. |'
 $lines += '| Understand command dispatch flow | [CMD_FLOW_MAP.md](./CMD_FLOW_MAP.md) | Prompt, hash, resolve, run, return. |'
@@ -1589,60 +1854,57 @@ $lines += '| See class-level call shape | [ROUTINE_CLASS_DIAGRAM.md](./ROUTINE_C
 $lines += '| See routine inventory and contracts | [CALL_ORDER.md](./CALL_ORDER.md), [ROUTINE_CONTRACTS.md](./ROUTINE_CONTRACTS.md) | Source order and routine contracts. |'
 $lines += '| See graph statistics | [ROUTINE_GRAPH_INSIGHTS.md](./ROUTINE_GRAPH_INSIGHTS.md), [ROUTINE_COMPONENTS.md](./ROUTINE_COMPONENTS.md) | Hot callees, busy callers, component counts. |'
 $lines += ''
-$lines += '## Map Families'
+$lines += '## Map Families: Top Level'
 $lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart TD'
 $lines += '    MOM[MAP_OF_MAPS] --> ENTRY[DOC/INDEX]'
-$lines += '    ENTRY --> GIDX[GUIDES/INDEX]'
-$lines += '    GIDX --> TOC[GUIDES/TOC]'
-$lines += '    GIDX --> GMAP[GUIDES/MAP]'
-$lines += ''
 $lines += '    MOM --> GUIDE[Hand-maintained guide maps]'
-$lines += '    GUIDE --> GMAP'
-$lines += '    GUIDE --> GLOSS[GUIDES/GLOSSARY]'
-$lines += '    GUIDE --> DEC[GUIDES/DECISIONS]'
-$lines += '    GUIDE --> QCC[GUIDES/QCC]'
-$lines += '    GUIDE --> MEM[GUIDES/MEMORY/MEMORY_MAP]'
-$lines += '    GUIDE --> HASH[GUIDES/HASH/HASH_MAP]'
-$lines += '    GUIDE --> HIMON[GUIDES/HIMON/HIMON_MAP]'
-$lines += '    GUIDE --> STR8[GUIDES/STR8/STR8]'
-$lines += '    GUIDE --> ASM[GUIDES/ASM/HASHED_ASM]'
-$lines += ''
 $lines += '    MOM --> GEN[Generated source maps]'
-$lines += '    GEN --> CALL[CALL_ORDER]'
-$lines += '    GEN --> CONTRACTS[ROUTINE_CONTRACTS]'
-$lines += '    GEN --> TREE[HIMON_ROUTINE_TREE]'
-$lines += '    GEN --> FLOW[CMD_FLOW_MAP]'
-$lines += '    GEN --> STACK[STACK_DEPTH_MAP]'
-$lines += '    GEN --> IVEC[INTERRUPT_VECTOR_MAP]'
-$lines += '    GEN --> HRASH[HASH_ROUTINE_MAP]'
-$lines += '    GEN --> HCOMMAND[HIMON_COMMAND_MAP]'
-$lines += '    GEN --> HSUPPORT[HIMON_SUPPORT_MAP]'
-$lines += '    GEN --> PREFIX[ROUTINE_PREFIX_MAP]'
-$lines += '    GEN --> WORDTREE[ROUTINE_WORD_TREE]'
-$lines += '    GEN --> CLASS[ROUTINE_CLASS_DIAGRAM]'
-$lines += '    GEN --> INSIGHTS[ROUTINE_GRAPH_INSIGHTS]'
-$lines += '    GEN --> COMPONENTS[ROUTINE_COMPONENTS]'
+$lines += '    MOM --> BENCH[Bench control atlas]'
+$lines += '    GUIDE --> GIDX[GUIDES/INDEX and MAP]'
+$lines += '    GEN --> EXEC[execution maps]'
+$lines += '    GEN --> ROUTINE[routine maps]'
+$lines += '    GEN --> ANALYSIS[analysis maps]'
+$lines += '    BENCH --> DECKS[CONTROL_DECK_MAP]'
+$lines += '```'
 $lines += ''
-$lines += '    HASH --> HRASH'
-$lines += '    HIMON --> FLOW'
-$lines += '    HIMON --> IVEC'
-$lines += '    HIMON --> STACK'
-$lines += '    STR8 --> STACK'
-$lines += '    MEM --> IVEC'
-$lines += '    HIMON --> HCOMMAND'
-$lines += '    FLOW --> HRASH'
-$lines += '    TREE --> HCOMMAND'
-$lines += '    PREFIX --> CLASS'
-$lines += '    PREFIX --> WORDTREE'
-$lines += '    COMPONENTS --> PREFIX'
+$lines += '### Guide Map Family'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart LR'
+$lines += '    GUIDE[Hand-maintained guides] --> GLOSS[Glossary]'
+$lines += '    GUIDE --> DEC[Decisions]'
+$lines += '    GUIDE --> QCC[QCC]'
+$lines += '    GUIDE --> MEM[Memory Map]'
+$lines += '    GUIDE --> HASH[Hash Map]'
+$lines += '    GUIDE --> HIMON[HIMON Map]'
+$lines += '    GUIDE --> STR8[STR8 guides]'
+$lines += '    GUIDE --> ASM[ASM guides]'
+$lines += '```'
+$lines += ''
+$lines += '### Generated Source Map Family'
+$lines += ''
+$lines += '```mermaid'
+$lines += 'flowchart LR'
+$lines += '    EXEC[Execution maps] --> FLOW[CMD_FLOW_MAP]'
+$lines += '    EXEC --> STACK[STACK_DEPTH_MAP]'
+$lines += '    EXEC --> IVEC[INTERRUPT_VECTOR_MAP]'
+$lines += '    ROUTINE[Routine maps] --> CALL[CALL_ORDER]'
+$lines += '    ROUTINE --> TREE[HIMON_ROUTINE_TREE]'
+$lines += '    ROUTINE --> PREFIX[ROUTINE_PREFIX_MAP]'
+$lines += '    ROUTINE --> WORDTREE[ROUTINE_WORD_TREE]'
+$lines += '    ROUTINE --> CLASS[ROUTINE_CLASS_DIAGRAM]'
+$lines += '    ANALYSIS[Analysis maps] --> CONTRACTS[ROUTINE_CONTRACTS]'
+$lines += '    ANALYSIS --> INSIGHTS[ROUTINE_GRAPH_INSIGHTS]'
+$lines += '    ANALYSIS --> COMPONENTS[ROUTINE_COMPONENTS]'
+$lines += '    ANALYSIS --> HCOMMAND[HIMON_COMMAND_MAP and HASH_ROUTINE_MAP]'
 $lines += '```'
 $lines += ''
 $lines += '## Freshness'
 $lines += ''
 $lines += '- Generated maps are refreshed by `make -C SRC docs`.'
-$lines += '- Individual generated maps can be refreshed with targets such as `make -C SRC stack-depth-map`, `make -C SRC cmd-flow-map`, `make -C SRC hash-routine-map`, `make -C SRC routine-prefix-map`, or `make -C SRC routine-word-tree`.'
+$lines += '- Individual generated maps can be refreshed with targets such as `make -C SRC control-deck-map`, `make -C SRC stack-depth-map`, `make -C SRC cmd-flow-map`, `make -C SRC hash-routine-map`, `make -C SRC routine-prefix-map`, or `make -C SRC routine-word-tree`.'
 $lines += '- Guide maps are design/reference documents. They should be updated when terminology, policy, or document roles change.'
 $lines += ''
 $lines += '## Boundaries'

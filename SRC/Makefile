@@ -176,6 +176,7 @@ ASM_SESSION_REPORT_INC_GEN := tools/emit_asm_session_report_inc.ps1
 ASM_SESSION_REPORT_INC := $(INC_DIR)/asm-session-report.inc
 ASM_SESSION_REPORT_A_FLASH := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
 ASM_SESSION_REPORT_A_RUNTIME := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-transient-7000.a
+ASM_SESSION_REPORT_A_MOVABLE := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-ap-2000.a
 ASM_SESSION_REPORT_AP_GEN := tools/build_ap_fixed_package.ps1
 ASM_SESSION_REPORT_AP_BIN := $(BIN_DIR)/asm-session-report-4800.ap.bin
 ASM_V1_FLASH_SRC := $(ASM_DIR)/asm-v1-flash.asm
@@ -252,9 +253,10 @@ CMD_FLOW_MAP := $(DOC_GENERATED_DIR)/CMD_FLOW_MAP.md
 STACK_DEPTH_MAP := $(DOC_GENERATED_DIR)/STACK_DEPTH_MAP.md
 INTERRUPT_VECTOR_MAP := $(DOC_GENERATED_DIR)/INTERRUPT_VECTOR_MAP.md
 MAP_OF_MAPS := $(DOC_GENERATED_DIR)/MAP_OF_MAPS.md
+CONTROL_DECK_MAP := $(DOC_GENERATED_DIR)/CONTROL_DECK_MAP.md
 ROUTINE_GRAPH_INSIGHTS := $(DOC_GENERATED_DIR)/ROUTINE_GRAPH_INSIGHTS.md
 ROUTINE_COMPONENTS := $(DOC_GENERATED_DIR)/ROUTINE_COMPONENTS.md
-GENERATED_DOCS := $(CALL_ORDER) $(ROUTINE_CONTRACTS) $(HIMON_ROUTINE_TREE) $(ROUTINE_CLASS_DIAGRAM) $(ROUTINE_PREFIX_MAP) $(ROUTINE_WORD_TREE) $(HIMON_SUPPORT_MAP) $(HIMON_COMMAND_MAP) $(HASH_ROUTINE_MAP) $(CMD_FLOW_MAP) $(STACK_DEPTH_MAP) $(INTERRUPT_VECTOR_MAP) $(MAP_OF_MAPS) $(ROUTINE_GRAPH_INSIGHTS) $(ROUTINE_COMPONENTS)
+GENERATED_DOCS := $(CALL_ORDER) $(ROUTINE_CONTRACTS) $(HIMON_ROUTINE_TREE) $(ROUTINE_CLASS_DIAGRAM) $(ROUTINE_PREFIX_MAP) $(ROUTINE_WORD_TREE) $(HIMON_SUPPORT_MAP) $(HIMON_COMMAND_MAP) $(HASH_ROUTINE_MAP) $(CMD_FLOW_MAP) $(STACK_DEPTH_MAP) $(INTERRUPT_VECTOR_MAP) $(MAP_OF_MAPS) $(CONTROL_DECK_MAP) $(ROUTINE_GRAPH_INSIGHTS) $(ROUTINE_COMPONENTS)
 ROUTINE_HASH_COMMENTS_GEN := tools/gen_routine_hash_comments.ps1
 DOCS_GEN := tools/gen_docs.ps1
 EDGE_DOCS_GEN := tools/gen_edge_dump.ps1
@@ -537,7 +539,7 @@ asm-v1-runtime-paste: $(ROM_LIB) $(ASM_V1_RUNTIME_PASTE_S19)
 	@echo "Built $(ASM_V1_RUNTIME_PASTE_S19)."
 	@$(MAKE) artifacts
 
-asm-session-report: $(ROM_LIB) $(ASM_SESSION_REPORT_FLASH_S19) $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_AP_BIN) $(ASM_SESSION_REPORT_A_FLASH) $(ASM_SESSION_REPORT_A_RUNTIME)
+asm-session-report: $(ROM_LIB) $(ASM_SESSION_REPORT_FLASH_S19) $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_AP_BIN) $(ASM_SESSION_REPORT_A_FLASH) $(ASM_SESSION_REPORT_A_RUNTIME) $(ASM_SESSION_REPORT_A_MOVABLE)
 	@echo "Built $(ASM_SESSION_REPORT_FLASH_S19), $(ASM_SESSION_REPORT_S19), and $(ASM_SESSION_REPORT_AP_BIN)."
 	@$(MAKE) artifacts
 
@@ -656,6 +658,9 @@ irq-vector-map: interrupt-vector-map
 
 map-of-maps: $(MAP_OF_MAPS)
 	@echo "Updated $(MAP_OF_MAPS)."
+
+control-deck-map: $(CONTROL_DECK_MAP)
+	@echo "Updated $(CONTROL_DECK_MAP)."
 
 routine-graph-insights: $(ROUTINE_GRAPH_INSIGHTS)
 	@echo "Updated $(ROUTINE_GRAPH_INSIGHTS)."
@@ -888,6 +893,9 @@ $(ASM_SESSION_REPORT_A_FLASH): $(ASM_SESSION_REPORT_INC) $(ASM_SESSION_REPORT_IN
 
 $(ASM_SESSION_REPORT_A_RUNTIME): $(ASM_SESSION_REPORT_INC) $(ASM_SESSION_REPORT_INC_GEN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-v1-flash-8000.map') { '$(S19_DIR)/asm-v1-flash-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-v1-flash-8000.map') { '$(MAP_DIR)/asm-v1-flash-8000.map' } else { throw 'asm-v1-flash-8000.map not found' }; & '$(ASM_SESSION_REPORT_INC_GEN)' -MapPath $$map -OutPath '$(ASM_SESSION_REPORT_INC)' -AsmNativeRuntimeOut '$(ASM_SESSION_REPORT_A_RUNTIME)'"
+
+$(ASM_SESSION_REPORT_A_MOVABLE): $(ASM_SESSION_REPORT_INC) $(ASM_SESSION_REPORT_INC_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-v1-flash-8000.map') { '$(S19_DIR)/asm-v1-flash-8000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-v1-flash-8000.map') { '$(MAP_DIR)/asm-v1-flash-8000.map' } else { throw 'asm-v1-flash-8000.map not found' }; & '$(ASM_SESSION_REPORT_INC_GEN)' -MapPath $$map -OutPath '$(ASM_SESSION_REPORT_INC)' -AsmNativeMovableOut '$(ASM_SESSION_REPORT_A_MOVABLE)'"
 
 $(ASM_SESSION_REPORT_OBJ): $(ASM_SESSION_REPORT_SRC) $(ASM_SESSION_REPORT_INC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
@@ -1203,6 +1211,6 @@ endif
 	himon-routine-tree routine-tree routine-class-diagram routine-prefix-map \
 	routine-word-tree himon-support-map himon-command-map hash-routine-map \
 	cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map \
-	map-of-maps routine-graph-insights routine-components routine-hash-comments \
+	map-of-maps control-deck-map routine-graph-insights routine-components routine-hash-comments \
 	edge-docs docs docs-watch docs-html bin-check rom testing artifacts clean realclean \
 	upload term

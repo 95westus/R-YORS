@@ -3,6 +3,10 @@
 This is the easy-to-find memory map for the current HIMON ROM build and
 the RAM workspace it uses.
 
+For the bench-facing names and layered diagrams of the active control areas,
+see [Control Deck Map](../../GENERATED/CONTROL_DECK_MAP.md). The formal ranges
+in this file remain authoritative.
+
 The map below is definitive for the current generated `himon-rom` image.
 It is not the final STR8/HIMON split. STR8 is intended to own the highest
 recovery region and hand normal operation to HIMON.
@@ -100,12 +104,12 @@ remains a separate guarded update transaction. See
 
 ## OIL Address Boundary
 
-OIL keeps AP storage separate from AP execution:
+OIL keeps an AP Capsule (APC) in storage separate from its executable BODY:
 
 ```text
-AP envelope in RAM, visible flash, or banked flash
-  -> stage and parse (banked flash uses $0A00-$19FF)
-  -> load BODY into $2000-$4FFF
+AP Capsule in RAM, visible flash, or banked flash
+  -> stage and parse (banked flash uses the SSD at $0A00-$19FF)
+  -> load BODY into the AIR at $2000-$4FFF
   -> apply relocation and resident imports
   -> run the entry from RAM
 ```
@@ -205,13 +209,18 @@ $00E6-$00E7   shared utility temp/scratch bytes
 $00E8-$00EF   shared pointer/length/flags/mode lane for FTDI/SYS/string helpers
 $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
-$0200-$09FF   flash worker/RJOIN code tray
-$0A00-$19FF   4K sector staging buffer
+$0200-$09FF   LRS: SNL during ASM, WCT during STR8 flash work
+$0A00-$19FF   LRS: FNL during ASM, SSD during STR8 flash work
 $1A00-$1FE8   RJOIN/link debug trace and reserved low-RAM scratch
-$1FE9-$1FFF   STR8 worker/update state board
-$2000-$79FF   UPA, user program area; current AP load/run range is $2000-$4FFF
-$7A00-$7AFF   command buffer
-$7B00-$7DFF   free monitor scratch/expansion region
+$1B00-$1B0F   FTC used by interactive flash APs
+$1C00-$1CFE   CID used by interactive flash APs
+$1FE9-$1FFF   RSC: STR8 worker/update state
+$2000-$4FFF   AIR: Build Bay, Envelope Bay, and Run/Tray Bay
+$5000-$61A9   AWH: flash ASM UDATA
+$61AA-$79FF   SOD: safe upper output/scratch
+$7A00-$7AFF   VOD: command buffer and volatile monitor scratch
+$7B00-$7BFB   RPT: validated-record decoded payload tray (252 bytes)
+$7BFC-$7DFF   VOD: remaining volatile monitor scratch
 $7E00-$7E01   HIMON-published RJOIN addr16 (`THE_JOIN_EXEC_XY`)
 $7E02-$7E1C   HIMON resident service vector block + checksum
 $7E1D-$7E1E   HIMON RX lookahead
@@ -223,7 +232,8 @@ $7E41-$7E45   AP package service scratch
 $7E46-$7E65   debugger / assembler workspace
 $7E66-$7E75   FNV hash and command-exec metadata
 $7E76-$7E94   command/parser/keytest workspace
-$7E95-$7EDD   loader workspace and range table
+$7E95-$7EA8   RTC: STR8 validated-record request/result card
+$7EA9-$7EDD   HSD loader workspace and range table
 $7EDE-$7EDF   delay helper fixed RAM
 $7EE0-$7EE5   PIA state / lock
 $7EE6-$7EE9   reset signature
@@ -231,14 +241,20 @@ $7EEA-$7EEC   trap cause / BRK signature / NMI debounce
 $7EED-$7EEF   IVI vector-table signature bytes, ASCII "IVY"
 $7EF0-$7EF7   NMI context capture
 $7EF8-$7EFF   RAM vectors
-$7F00-$7FFF   I/O window
+$7F00-$7FFF   IOB: side-effectful I/O window
 ```
 
-The `$0A00-$19FF` sector staging buffer is retained staging, not an execution
-region. It can hold a complete flash-sector mirror/update image or a banked AP
-package envelope copied from banks 0-2. AP BODY bytes execute only after the AP
-loader relocates/links them into the requested load address, currently inside
-`$2000-$4FFF`.
+The LRS is a switchyard, not two permanent data stores. The `$0A00-$19FF` SSD
+is retained staging, not an execution region. It can hold a complete
+flash-sector mirror/update image or a banked AP Capsule copied from banks 0-2.
+AP BODY bytes execute only after the AP loader relocates/links them into the
+requested AIR load address, currently inside `$2000-$4FFF`.
+
+The RPT and RTC are a second, smaller handoff pair: STR8's Record Frontdoor
+(`$F009-$F00F`) parses an S19 record into the RPT and publishes its descriptor
+in the RTC. They are volatile service areas, not ordinary application buffers;
+follow the Transit Rule in the [glossary](../GLOSSARY.md) before calling the
+record `APPLY_LF` operation.
 
 The UPA is also the natural first tray for future RREC-loaded commands. A
 CP/M-like convention such as `LOAD @6000 <hash>` can copy a banked RREC payload
@@ -263,18 +279,18 @@ $7FC0-$7FDF   VIA
 $7FE0-$7FFF   FTDI VIA
 ```
 
-During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 owns the
-`$0200-$09FF` flash worker tray and the current high-RAM `$4000-$4FFF` sector
-buffer used by those implemented paths. The current worker copy is exact-length
-inside that tray, but normal HIMON/user code should treat the whole tray as
-volatile while STR8 is performing flash work. During `U`, STR8 also uses
+During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 owns the WCT
+at `$0200-$09FF` and the current AIR Run/Tray Bay `$4000-$4FFF` sector buffer
+used by those implemented paths. The current worker copy is exact-length inside
+the WCT, but normal HIMON/user code should treat the whole tray as volatile
+while STR8 is performing flash work. During `U`, STR8 also uses
 `$5000-$6FFF` so it can stage all three HIMON sectors before the first erase.
-The agreed low-RAM sector staging buffer name is `$0A00-$19FF`; consolidating
-older high-RAM staging into that buffer is future implementation work.
+The SSD is `$0A00-$19FF`; consolidating older high-RAM staging into that deck
+is future implementation work.
 
-STR8 also uses fixed low-RAM bytes `$1FE9-$1FFF` for bank/sector copy state,
-failure address reporting, startup flags, and update state. `$1FF2-$1FF5` are
-currently unassigned after retirement of the resident `M` physical map.
+STR8 also uses the RSC at `$1FE9-$1FFF` for bank/sector copy state, failure
+address reporting, startup flags, and update state. `$1FF2-$1FF5` are currently
+unassigned after retirement of the resident `M` physical map.
 
 The `$1A00-$1FE8` reserved range is the preferred future home for a compact
 hash/RJOIN debug stack. That stack should be a breadcrumb trace for dynamic
