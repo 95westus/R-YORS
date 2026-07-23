@@ -121,6 +121,18 @@
 
 ## Board Onboarding Direction
 
+- Define a standalone WDCMONv2 S19 flash utility.  It is launched on a
+  WDCMONv2 board and is not an extension of the HIMON/STR8 loader contract.
+- Its first deliverable is read/create only.  It must not erase or program
+  flash.
+  - `READ` takes a selected flash range and emits checksum-valid `S1` data
+    records followed by an `S9` termination record.
+  - `CREATE` takes a selected RAM or ROM range and emits the same
+    checksum-valid `S1`/`S9` S19 image form.
+- `WRITE` is deferred.  When it is introduced, it must receive S19, validate
+  the complete input before any destructive operation, then require an
+  explicit commit gate before erase, program, and verify.
+
 - Support a WDCMONv2-to-R-YORS installation bridge for boards that already boot
   the current WDC monitor.
 - This is mainly for a new WDC board owner, not for a board that already has
