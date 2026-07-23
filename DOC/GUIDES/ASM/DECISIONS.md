@@ -577,6 +577,22 @@ A [addr] [label[:]] MMM [operand] .
   through the existing monitor return-report path. To keep ROM growth small,
   v0 requires the package entry to be BODY offset zero and does not create
   per-package command-name records yet.
+- The planned pure-overlay profile is a fixed-base installed image, distinct
+  from a relocatable AP envelope. It occupies `$4000-$4FFF`, with a 16-byte
+  validation/ABI header at `$4000` and a BODY based at `$4010`. Its source bank
+  and sector may vary, but its execution base does not. It uses the resident
+  `RY` service vectors instead of AP IMPORT/EXPORT records. This profile is a
+  settled design contract, not a current HIMON command.
+- An active pure overlay reserves `$4000-$4FFF`. A banked AP load retains the
+  existing `$0A00-$19FF` flash-source staging area and loads its BODY wholly
+  within `$2000-$3FFF`. The future coexistence guard must reject an AP BODY
+  that reaches `$4000`; changing HIMON's current `$0A00` staging selection is
+  not required. STR8's caller-selected 4K destination can load the overlay
+  sector itself directly into `$4000-$4FFF`.
+- A single-slot overlay may tail-chain to another overlay but cannot make a
+  normal returning call to it, because the callee replaces the caller. It may
+  call an AP helper through the resident AP service: the AP BODY lives in
+  `$2000-$3FFF`, returns with `RTS`, and leaves the active overlay intact.
 - Flash ASM uses HIMON's resident PACK40 encode service for the pure
   `ASCII_TO_CODE` and `PACK3` primitives used by IMPORT/EXPORT metadata. ASM
   still owns source/symbol-name iteration and non-flash builds keep local

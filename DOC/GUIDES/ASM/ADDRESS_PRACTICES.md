@@ -70,6 +70,29 @@ For the compact Bank 0 flow, keep transient code and packageable BODY bytes in
 HIMON AP loader still limits BODY destinations to `$2000-$4FFF`; flash ASM may
 emit into the separate upper arena beginning at the map-reported workspace end.
 
+## Planned Pure Overlay Coexistence
+
+This is an agreed future contract, not the current HIMON behavior:
+
+```text
+$0A00-$19FF  flash-sector and banked AP source staging
+$2000-$3FFF  AP BODY/helper load and return space
+$4000-$400F  active pure-overlay header
+$4010-$4FFF  active fixed-base overlay BODY
+```
+
+The current banked `AP` command may retain `$0A00-$19FF` as its staging deck,
+then load the AP BODY wholly below `$4000`. The overlay itself can be loaded
+directly into `$4000-$4FFF` through STR8's existing selectable 4K staging
+destination. Once active, it owns that island; the same bytes cannot
+simultaneously serve a flash-sector tool, reporter, or another AP destination.
+
+A different source bank/sector does not move the overlay's execution address;
+the BODY still begins at `$4010`. One active overlay may tail-chain to another,
+but a normal returning overlay-to-overlay call needs a reload manager or a
+second slot. An overlay may make a returning call to an AP helper loaded in
+`$2000-$3FFF`, because that AP does not overwrite the overlay slot.
+
 ## Current AP Envelope Limit
 
 The current `$1000` limit is on the complete serialized AP envelope, not on

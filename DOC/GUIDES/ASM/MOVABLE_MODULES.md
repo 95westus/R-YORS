@@ -346,6 +346,67 @@ running the assembler. Use `IMPORT NAME` when you want the sealed body to defer
 that name to the later installer/linker, even if RJOIN can resolve the same
 name today.
 
+## Pure Overlay Profile
+
+Status: settled planning contract, not implemented as a pure-overlay command in
+the current HIMON image. The memory split preserves the current banked `AP`
+source-staging path.
+
+A pure overlay is an installed, fixed-base execution image, not an AP envelope
+with its metadata merely removed. AP relocation/import metadata has already
+been consumed when an equivalent overlay image is built. The remaining small
+header identifies and validates the image and its resident-service ABI:
+
+```text
+$4000-$400F  OV header: magic/version/flags, body length, entry offset,
+              BODY FNV32, required RY service version/count/capabilities
+$4010-$4FFF  fixed-base overlay BODY; maximum $0FF0 bytes
+```
+
+The source bank and 4K flash-sector address may vary. Execution remains at the
+fixed `$4010` body base, so selecting another source sector does not turn the
+image into an AP. A variable execution base would instead require AP-style
+relocation, position-independent code, or a separately linked image for each
+allowed overlay slot.
+
+The first overlay profile uses the resident `RY` service-vector block as its
+external ABI. It therefore does not require AP `IMPORT` or `EXPORT` sections:
+the header supplies one entry offset, and calls to resident services go through
+fixed vectors. Named late binding, multiple public entries, or movement to an
+arbitrary execution base remain AP jobs.
+
+### Overlay/AP Coexistence Map
+
+```text
+$0A00-$19FF  flash-sector and banked AP source staging
+$2000-$3FFF  loaded AP BODY/helper space
+$4000-$4FFF  active pure overlay image; must survive for its whole call
+```
+
+This split removes the banked-AP staging conflict without changing HIMON's
+current staging address. A banked AP load may continue to stage its source
+sector at `$0A00-$19FF`, restore bank 3, and load the AP BODY wholly within
+`$2000-$3FFF`. The staged envelope is disposable after the BODY has been
+validated, relocated, and linked. The coexistence rule is that an AP called by
+the active overlay must not load at or extend into `$4000`.
+
+Loading the overlay itself may use STR8's existing caller-selected 4K staging
+destination to copy its flash sector directly to `$4000-$4FFF`. Once active,
+the overlay owns that island. Existing tools that use `$4000-$4FFF` as a flash
+sector tray, reporter, or AP destination are mutually exclusive with the
+overlay and must use another tray or run only after the overlay is discarded.
+
+With one fixed overlay slot, an overlay cannot make an ordinary returning call
+to another overlay: loading the callee destroys the caller and its return
+continuation. The first profile permits tail chaining, where overlay A asks the
+resident manager to replace it with overlay B and does not expect to return.
+Reloading A after B or adding multiple overlay slots is later manager policy.
+
+An overlay may call a loaded AP helper through the resident AP service. HIMON
+stages and loads the AP outside the overlay slot, the overlay calls the AP BODY
+entry in `$2000-$3FFF`, and the AP returns with `RTS`. In this relationship,
+the overlay is the active execution context and APs are callable modules.
+
 ## 2026-07-05 Afternoon ASM RAM Split Plan
 
 This split is now the intended current flash ASM memory contract; board proof is
