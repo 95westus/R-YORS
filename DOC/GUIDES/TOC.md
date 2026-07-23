@@ -64,6 +64,8 @@ board:
   accepted multiboot, S19 ownership, and append-only bank-volume direction.
 - [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - plan for moving retired samples,
   tests, proofs, apps, and data into `SRC/ARCHIVE/`.
+- [DATA_STRUCTURE_OPPORTUNITIES.md](PLANNING/DATA_STRUCTURE_OPPORTUNITIES.md) -
+  audit of shared byte schemas, fixed-address ABIs, and compact table layouts.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.
 
 ## Core Thread

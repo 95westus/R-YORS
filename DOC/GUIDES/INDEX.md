@@ -63,7 +63,8 @@ RELOCATE, and AP v1 PACKAGE flows.
 - [STORY](STORY/BOOK.md) - book spine and historical narrative.
 - [PLANNING](PLANNING/TODO.md) - TODO, future direction, and the
   [Overlay Integration Layer .710 test plan](PLANNING/OIL_710_TEST_PLAN.md), plus the
-  [historical code migration plan](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
+  [historical code migration plan](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md)
+  and [data-structure opportunities audit](PLANNING/DATA_STRUCTURE_OPPORTUNITIES.md).
 - [META](META/XREF.md) - bibliography and cross-reference.
 
 ## Story And Planning
@@ -80,6 +81,8 @@ the main operator/technical path.
   accepted STR8 multiboot, S19 ownership, and bank-volume architecture.
 - [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - archive plan for retired sample,
   test, proof, demo, and one-off code/data.
+- [DATA_STRUCTURE_OPPORTUNITIES.md](PLANNING/DATA_STRUCTURE_OPPORTUNITIES.md) -
+  shared schema, fixed-ABI, table-generation, and structure-of-arrays audit.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.
 
 ## Current Generated Source Snapshot
