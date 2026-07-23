@@ -25,6 +25,33 @@ run it again
 This is the first real proof that ASM output has enough truth attached to
 survive movement.
 
+## Long-Range Operator Goal
+
+The eventual user-facing goal may take either or both of these forms:
+
+```text
+L F        accept a sealed package, choose a legal destination, and relocate
+           it while staging the load/install
+
+PACKAGES   let the user select a named package, then install it into flash
+           through the guarded write/verify/commit path
+```
+
+These are two front ends to the same package facts, relocation engine, catalog,
+placement policy, and flash worker. `L F` relocation should mean applying the
+package's explicit relocation rows; rebasing plain S19 record addresses alone
+cannot repair absolute addresses encoded in W65C02 instructions.
+
+"Flash on the fly" describes the operator experience, not an unsafe streaming
+write. The implementation should first validate the complete package and
+destination plan, show the selected role/range, obtain any required
+confirmation, stage affected sectors in RAM, write and verify them, and publish
+the catalog/activation record last.
+
+This is a long-range direction. It does not change the current conservative
+`L F` contract or make a package-selection UI part of the first movable-module
+proof.
+
 ## Ground Rules
 
 Do not infer code length from `$FF`. `$FF` can be opcode/data, an erased flash

@@ -218,6 +218,12 @@
 - The planned direction after the required ASM board proofs is sealed movable
   ASM modules plus a managed flash object store. The focused plan lives in
   [MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md).
+- Keep two related long-range operator goals open: `L F` may eventually accept
+  a sealed package and relocate it while choosing a legal destination, and a
+  catalog/menu may let the user select a named package for guarded on-the-fly
+  flash installation. Both should consume the same package metadata,
+  relocation rows, placement policy, and write/verify/commit-last machinery;
+  neither changes the current conservative `L F` contract.
 - Build the first managed store as an append-only typed object arena, not a
   general hierarchical filesystem. Committed `RCAT`/`RREC` descriptors and
   their `RBODY` payloads are authoritative. `RDICT`, `RTEXT`, and `RDATA` should
