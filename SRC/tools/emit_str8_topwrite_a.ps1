@@ -62,13 +62,13 @@ $str8WorkerBody = Get-MapSymbol -Path $Str8MapPath -Name "STR8_RUN_WORKER_SERVIC
 $str8ApBody = Get-MapSymbol -Path $Str8MapPath -Name "STR8_AP_IMPORT_LINK_SERVICE_BODY"
 $str8Nmi = Get-MapSymbol -Path $Str8MapPath -Name "STR8_IVY_ENTRY_NMI"
 $str8Irq = Get-MapSymbol -Path $Str8MapPath -Name "STR8_IVY_ENTRY_IRQ_MASTER"
-$str8Screen = Get-MapSymbol -Path $Str8MapPath -Name "MSG_SCREEN"
+$str8Id = Get-MapSymbol -Path $Str8MapPath -Name "MSG_ID"
 $str8Prompt = Get-MapSymbol -Path $Str8MapPath -Name "MSG_PROMPT"
 if ($str8Start -ne 0xF000) {
     throw ("STR8 START is {0}; expected `$F000" -f (Format-HexWord $str8Start))
 }
 
-$screenOffset = $str8Screen - $str8Start
+$idOffset = $str8Id - $str8Start
 $promptOffset = $str8Prompt - $str8Start
 Assert-Bytes -Bytes $top -Offset 0x0000 -Expected @(
     0x4C, ($str8Boot -band 0xFF), (($str8Boot -shr 8) -band 0xFF),
@@ -76,7 +76,7 @@ Assert-Bytes -Bytes $top -Offset 0x0000 -Expected @(
     0x4C, ($str8ApBody -band 0xFF), (($str8ApBody -shr 8) -band 0xFF)
 ) -Name "top head"
 Assert-Bytes -Bytes $top -Offset $promptOffset -Expected @(0x53,0x54,0x52,0x38,0x2D,0x4E,0xBE) -Name "STR8-N prompt"
-Assert-Bytes -Bytes $top -Offset $screenOffset -Expected @(0x0D,0x0A,0x53,0x54,0x52,0x38,0x2D,0x4E,0x20,0x56,0x30,0x20,0x23,0x35,0x46,0x36,0x41,0x30,0x46,0x37,0x41,0x0D,0x0A) -Name "STR8-N FACE id"
+Assert-Bytes -Bytes $top -Offset $idOffset -Expected @(0x0D,0x0A,0x53,0x54,0x52,0x38,0x2D,0x4E,0x20,0x56,0x30,0x20,0x23,0x35,0x46,0x36,0x41,0x30,0x46,0x37,0x41,0x0D,0x8A) -Name "STR8-N FACE id"
 Assert-Bytes -Bytes $top -Offset 0x0FFA -Expected @(
     ($str8Nmi -band 0xFF), (($str8Nmi -shr 8) -band 0xFF),
     ($str8Start -band 0xFF), (($str8Start -shr 8) -band 0xFF),
@@ -110,7 +110,7 @@ Add-Line ';   $1A01 = $E2 PROGRAM TIMEOUT'
 Add-Line ';   $1A01 = $E3 VERIFY MISMATCH'
 Add-Line ';   $1A02/$1A03 = FAIL ADDRESS WHEN AVAILABLE'
 Add-Line ';'
-Add-Line ('; FACE CHECK: ROM {0} MAPS TO RAM {1}.' -f (Format-HexWord $str8Screen), (Format-HexWord ($StageAddress + $screenOffset)))
+Add-Line ('; FACE CHECK: ROM {0} MAPS TO RAM {1}.' -f (Format-HexWord $str8Id), (Format-HexWord ($StageAddress + $idOffset)))
 Add-Line ('; PROMPT CHECK: ROM {0} MAPS TO RAM {1}.' -f (Format-HexWord $str8Prompt), (Format-HexWord ($StageAddress + $promptOffset)))
 Add-Line ';'
 Add-Line '        ORG $3000'
@@ -422,5 +422,5 @@ Write-Host ("STR8-N topwrite .a    = {0}" -f $OutPath)
 Write-Host ("Embedded ROM range    = F000-FFFF")
 Write-Host ("Embedded RAM range    = {0}-{1}" -f (Format-HexWord $ImageAddress), (Format-HexWord ($ImageAddress + $Length - 1)))
 Write-Host ("Stage RAM range       = {0}-{1}" -f (Format-HexWord $StageAddress), (Format-HexWord ($StageAddress + $Length - 1)))
-Write-Host ("FACE ROM/stage address = {0}/{1}" -f (Format-HexWord $str8Screen), (Format-HexWord ($StageAddress + $screenOffset)))
+Write-Host ("FACE ROM/stage address = {0}/{1}" -f (Format-HexWord $str8Id), (Format-HexWord ($StageAddress + $idOffset)))
 Write-Host ("Prompt ROM/stage addr  = {0}/{1}" -f (Format-HexWord $str8Prompt), (Format-HexWord ($StageAddress + $promptOffset)))

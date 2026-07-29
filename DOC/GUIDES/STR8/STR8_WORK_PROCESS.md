@@ -9,9 +9,8 @@ Current STR8 is not just a sketch anymore. The code and docs agree on a small
 V0 recovery surface:
 
 ```text
-?          identity and Bank 0 state
-B          backup rotation
-E          enroll Bank 0 into rotation
+?          identity
+B          back up Bank 3 to selected Bank 0, 1, or 2
 U          update HIMON from S19, fixed $C000-$EFFF gate
 0/1/2      restore selected backup bank to Bank 3
 G          go HIMON
@@ -19,7 +18,7 @@ R          reset
 ```
 
 The current Phase-1 host build runs STR8 from bank 3 `$F000`, stores the RAM
-flash worker at `$FCC9-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
+flash worker at `$FD60-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
 `$1FE9-$1FFF` for worker/update state, stages ordinary copy sectors through
 `$4000-$4FFF`, and stages HIMON update sectors through `$4000-$6FFF`.
 The top sector also exposes stable service entries at `$F003` for running
@@ -40,15 +39,15 @@ make -C SRC fig-forth-str8-update-s19
 make -C SRC msbasic-osi-str8-update-s19
 ```
 
-The hardware log preserves earlier proof of the retired `M` map plus the
-current prompt, `G`, burn-check bytes, `B`
-backup rotation, `E` / Bank 0 enrollment, post-enrollment B0/B1/B2 rotation,
-`U` / `UPDATE HIMON` from visible U1 to visible U2, fig-Forth as a `$C000`
-payload, OSI BASIC as a `$C000` payload, and high-flash recovery from the
-backup chain. The nonerased ordinary-byte restore proof below `$C000` and the
-deterministic post-verify high-flash failure proof both passed on 2026-07-19.
-It does not yet prove STR8 self-update or a physical flash failure during an
-erase/program operation.
+The hardware log preserves earlier proof of the retired `M` map, backup
+rotation, and Bank 0 enrollment policy plus `G`, burn-check bytes, `U` /
+`UPDATE HIMON` from visible U1 to visible U2, fig-Forth as a `$C000` payload,
+OSI BASIC as a `$C000` payload, and high-flash recovery from the backup chain.
+The current explicit-destination `B` replacement is not covered by those old
+rotation transcripts. The nonerased ordinary-byte restore proof below `$C000`
+and the deterministic post-verify high-flash failure proof both passed on
+2026-07-19. It does not yet prove STR8 self-update or a physical flash failure
+during an erase/program operation.
 
 The pasteable fixtures and byte-level operator sequence for the first two gaps
 are now frozen in
@@ -122,8 +121,8 @@ Artifact check:
   Bank 3 has no built-in ASM report AP; reporter runs from Bank 0 with AP B0 $hhhh $4800
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
-  worker source is CPU $FCC9-$FFEF
-  vectors point to STR8 IVI entries: F099/F000/F0AD
+  worker source is CPU $FD60-$FFEF
+  vectors point to STR8 IVI entries: F098/F000/F0AC
   record service/header is F009/F00C-F00F = 53 52 01 07
 
 Non-destructive STR8:
@@ -135,10 +134,12 @@ Non-destructive STR8:
   R resets through the live vector
 
 Destructive STR8, separate bench pass:
-  B before Bank 0 enrollment rotates 2->1 and 3->2
+  B rejects destinations other than 0, 1, or 2 before erase
+  B to Bank 0 changes only Bank 0 and verifies against Bank 3
+  B to Bank 1 changes only Bank 1 and verifies against Bank 3
+  B to Bank 2 changes only Bank 2 and verifies against Bank 3
+  E is unknown and the old Bank 0 enrollment bit has no effect
   lower-sector nonerased collision gate passed 2026-07-19 (`AC 56`)
-  E confirms and clears the Bank 0 rotation flag
-  B after enrollment rotates 1->0, 2->1, and 3->2
   restore abort path leaves Bank 3 selected and STR8 usable
   injected high-flash post-verify failure gate passed 2026-07-19
 ```
@@ -308,7 +309,7 @@ V0 verification is read-back compare, not FNV
 Bank 3 must be restored before resident STR8 prints status
 the worker must not call ROM or HIMON while banks can change
 NMI is not part of the flash-mutation control path
-Bank 0 policy changes only through enrollment or an explicit future rebuild
+Bank 0 has no enrollment protection; B treats 0, 1, and 2 as explicit targets
 top-sector changes are full-sector transactions
 ```
 

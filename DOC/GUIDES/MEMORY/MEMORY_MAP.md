@@ -60,10 +60,10 @@ space.
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: ASM-F2 starts at
 CPU `$8000` / file offset `$0000`, HIMON starts at CPU `$C000` / file offset
 `$4000`, STR8 starts at CPU `$F000` / file offset `$7000`, the STR8 RAM worker
-source is stored at CPU `$FD26` / file offset `$7D26`, copied into the
+source is stored at CPU `$FD60` / file offset `$7D60`, copied into the
 `$0200-$09FF` RAM worker-code tray, and all live hardware vectors enter the
 STR8-owned top sector. RESET points to STR8 at `$F000`; NMI and IRQ/BRK point
-to STR8 IVI stubs at `$F092`/`$F0A6`, which dispatch through the RAM vector
+to STR8 IVI stubs at `$F098`/`$F0AC`, which dispatch through the RAM vector
 cells.
 
 Combined image layout:
@@ -71,12 +71,12 @@ Combined image layout:
 ```text
 $8000-$BC6C   ASM-F2 low-flash image, entry $800C
 $BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
-$C000-$EF2C   HIMON body, including resident AP import linker
-$EF2D-$EFFF   current image gap inside the used E sector
-$F000-$F8AC   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
-$F6C2         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$F8AD-$FD25   current contiguous top-sector growth hole
-$FD26-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray for B/E/U/0/1/2
+$C000-$EEB7   HIMON body, including resident AP import linker
+$EEB8-$EFFF   current image gap inside the used E sector
+$F000-$F9B2   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
+$F844         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$F9B3-$FD5F   current contiguous top-sector growth hole
+$FD60-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray for B/U/0/1/2
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
@@ -408,7 +408,7 @@ HIMON/himon-shared-eq.inc
 
 The combined `himon-str8-rom.bin` image places STR8 in bank 3's `$F000-$FFFF`
 top-ROM sector with the hardware vectors. HIMON starts at `$C000`, and the
-STR8 RAM-worker source is stored inside the top sector at `$FD26-$FFEF`.
+STR8 RAM-worker source is stored inside the top sector at `$FD60-$FFEF`.
 
 The physical erase unit remains 4K. The protected STR8 window starts at the
 highest boundary that fits:

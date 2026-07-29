@@ -11358,3 +11358,222 @@ head bytes are in
 [`STR8_MULTIBOOT_BANK_VOLUMES.md`](../PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
 This is evidence only: do not install a newly stamped host artifact merely to
 match this baseline.
+
+## 2026-07-23 STR8-N Resident And Worker Code-Size Pass
+
+Status: **host and hardware acceptance pass**. The 2026-07-28 runs installed
+the pinned HIMON and ASM-F2, staged/programmed STR8, and completed every
+resident, worker, record-service, loader, restore, compatibility, reset, and
+four-bank convergence gate in the on-board card.
+
+### Incremental Hardware Chronology
+
+The resume directions below record the sequence of partial bench runs. They
+are retained as diagnostic history and are superseded by the completed
+sections 9-13 result near the end of this chronology.
+
+No CRC capture followed either selected backup, so the no-cascade gate remains
+open. The ordinary-restore run also lacked a differential high-sector CRC.
+A following read-only continuation matched the state-aware `RUN2-PRE` table
+exactly: Bank 0 retained its old image, Bank 1 contained erased lower sectors
+and current C-F sectors, and Banks 2 and 3 matched the pinned candidate. This
+closes the final `U` plus `L F` recovery CRC and preserves the intended
+differential state. Resume at the invalid-input and `B2` block at the top of
+the run card, prove normal restore with Bank 0, recover through Bank 2, and
+then test `B0` and `B1`. The CRC fixture remains at `$3000`; no firmware
+reinstall or fixture repaste is required before the `B2` test.
+
+A subsequent attempt did not execute that `B2` backup: two `B` destination
+prompts visibly received empty input and aborted, then main-menu command `2`
+performed another exact Bank-2 high restore. It reset normally. The operator
+reassembled the CRC fixture, and the complete table remained identical to
+`RUN2-PRE`; thus no bank state was lost and no no-cascade evidence was
+created. The run card now presents the destination replies as input-only,
+prompt-synchronized steps. Resume there with the resident fixture still at
+`$3000`.
+
+The next safe-input continuation successfully selected backup destinations 2
+and 1, printed only `2 ERASE?` and `1 ERASE?` respectively, then received `n`
+for both and aborted. A complete CRC rerun remained identical to `RUN2-PRE`.
+This passes destination parsing, destination-specific confirmation, and
+negative confirmation without write. It does not prove a selected copy or
+no-cascade. Resume with the positive `B`, destination `2`, confirmation `y`
+sequence in the run card; the fixture remains resident at `$3000`.
+
+The positive continuation then selected Bank 2. An initial non-`y`
+confirmation (`2`) aborted safely; the repeated selection received `y`,
+printed only `COPY B3->B2`, and returned `OK`. The complete post-copy CRC table
+was identical to `RUN2-PRE`: Bank 1 retained its distinctive erased-low row,
+Bank 0 was unchanged, and Banks 2 and 3 remained exact. This closes the
+hardware `B2` selected-destination/no-cascade gate and specifically rules out
+the legacy `B2->B1` cascade. Resume with the differential ordinary restore
+from Bank 0 in the run card. The CRC fixture remains resident at `$3000`;
+after that proof, recover the live lower image through exact Bank 2.
+
+The first differential-restore attempt remained nondestructive. The backup
+destination prompt again received empty input, and `RESTORE B0->B3?` received
+`n`, so both aborted before flash. A bare `3000` produced only a HIMON lookup
+error; the corrected `G 3000` run reproduced all `RUN2-PRE` rows. No recovery
+is needed. The run card now emphasizes the two distinct restore answers:
+`y` at `RESTORE B0->B3?`, followed by `n` only at
+`FLASH C000-FFFF?`.
+
+The next run positively copied Bank 3 to Bank 0 and returned `OK`, then
+performed `RESTORE B0->B3` with the required `y`/`n` confirmation pair and
+returned `OK`. Because the backup made Bank 0 exact before the restore, this
+was a same-image normal restore rather than the intended differential
+high-preservation proof. No Bank-2 recovery is required; Bank 3 should already
+be exact. The board ended at STR8 with the CRC fixture still resident. Resume
+with the immediate full-table capture. Bank 0, Bank 2, and Bank 3 must be
+exact, while Bank 1 must retain its erased-low row. The stronger differential
+normal-restore check is now paired with the section-12 `$FFF0=FE`
+compatibility gate, where Bank 0 and Bank 3 have detectably different
+F-sector CRCs.
+
+The post-operation CRC then matched exactly: all `$FFF0` bytes were `$FF`,
+Banks 0, 2, and 3 had the pinned row, and Bank 1 retained its four erased-low
+pairs. This closes the positive `B0` selected-destination/no-cascade gate,
+proves the unselected distinctive Bank 1 was untouched, and confirms the
+same-image normal restore ended on the canonical candidate. Resume with the
+still-pending invalid backup destination `3` and positive Bank-1 copy. The
+fixture remains resident at `$3000`.
+
+A later run used main-menu command `1` rather than `B` followed by destination
+1. It therefore performed a full `B1->B3` restore and reset. Because Bank 1
+still had erased lower sectors, `ASM NEW` became unavailable and the cleared
+RAM fixture trapped, as expected. `L F` restored the current ASM, and a
+reassembled CRC fixture proved Bank 3 exact again while Bank 1 remained
+distinctive. The run then exercised same-image Bank-0 normal and high restores,
+reloaded ASM after the reset, and ended with the same exact CRC table. No
+positive Bank-1 backup occurred. The card now explicitly says: type `B` at
+`STR8-N>`, wait for the destination prompt, then type `1`.
+
+The positive Bank-1 continuation then printed only `COPY B3->B1`, returned
+`OK`, and the full CRC table showed `$FFF0=FF` plus the pinned row in all four
+banks. The malformed `D1A00` command produced only a harmless lookup failure;
+the corrected dump is accepted. This closes the positive Bank-1 path and
+leaves all backup banks canonical. Together with the differential B2 and B0
+captures, the selected-destination/no-cascade copy behavior passes. The
+operator confirms the final unechoed backup response was destination `3`, not
+empty input. Source inspection agrees with the transcript: invalid values
+branch to `ABORT` before the call that echoes valid destinations. With no
+`ERASE?`, `COPY`, or reset, the invalid-destination gate passes. Sections 6
+and 7 are complete; continue at the section-8 worker-tail fixture.
+
+The section-8 fixture assembled cleanly and returned `A=$AC` with carry set.
+Its exact result was `$1A00-$1A03 = AC 05 46 46`, and Bank-3 `$8000` remained
+`$46`. All five worker cases pass: current copy bounds/guards, shared-poll
+immediate success, forced timeout/reset, impossible 0-to-1 write rejection,
+and factored unlock/reset. No erase or program command was issued.
+
+The final continuation completed sections 9-13. The record fixture loaded
+with `L OK=07BB GO=3000` and returned the four accepted `A/X/Y` rows
+`AC/0F/01`, `AC/06/02`, `AC/01/03`, and `AC/01/04`; the transport fixture
+loaded with `L OK=0080 GO=3000` and published `$A5` at `$4900`. `L F` passed
+matching, erased-byte, repeated-byte, and erase-required behavior. Empty and
+out-of-range `U` inputs failed before any `PROGRAM` prompt.
+
+The legacy active-low `$FFF0=FE` image was staged, programmed, and accepted
+as unprotected by a successful `B3->B0` copy. After restoring the canonical
+`$FFF0=FF` live image, the CRC fixture showed Bank 0's deliberate `$FE`
+F-sector row ending `4A B0` and Banks 1-3's canonical `$FF` rows ending
+`6E 18`. A normal `B0->B3` restore with high flash declined left those rows
+distinct, proving high-sector preservation. The final `B3->B0` cleanup made
+all four rows canonical. Main-menu reset then produced `BOOT COLD`, and the
+final `$FFF0-$FFFF` readback was all `$FF` through `$FFF9` followed by pinned
+vectors `98 F0 00 F0 AC F0`. Hardware acceptance is complete.
+
+The complete paste-ready procedure, frozen artifact hashes, installation
+order, per-command expectations, four-bank CRC fixture, and worker-tail
+failure fixture are in
+[`STR8_SIZE_PASS_BOARD_TEST.md`](../STR8/STR8_SIZE_PASS_BOARD_TEST.md).
+Use that card at the bench; the list below is the acceptance summary.
+
+This pass is deliberately split at the RAM-worker boundary. The resident
+changes share command, copy, result-clear, record-publication, console, and
+HIMON-staging paths. The worker changes share buffer-copy and flash-polling
+paths, normalize the active buffer through `STR8_STAGE_BUF_HI`, and remove
+state transitions that cannot occur within the validated record and sector
+bounds. The `$AA/$55` flash unlock pair is now a RAM-worker subroutine and
+passed the section-8 board fixture. The final candidate also replaces
+cascading backup with one confirmed Bank-3-to-selected Bank-0/1/2 copy and
+removes `E`, enrollment state, and worker enrollment mode.
+
+Compiled size result:
+
+```text
+area                  baseline             candidate            change
+resident CODE         $0975 / 2421         $0844 / 2116         -$0131 / -305
+resident DATA         $01EB /  491         $016F /  367         -$007C / -124
+resident total        $0B60 / 2912         $09B3 / 2483         -$01AD / -429
+RAM worker            $0327 /  807         $0290 /  656         -$0097 / -151
+contiguous hole       $0169 /  361         $03AD /  941         +$0244 / +580
+```
+
+Candidate map and fixed faces:
+
+```text
+resident CODE          = $F000-$F843
+resident DATA          = $F844-$F9B2
+contiguous $FF hole    = $F9B3-$FD5F
+worker store/run       = $FD60-$FFEF / $0200
+STR8 START/NMI/IRQ/END = $F000/$F098/$F0AC/$F9B3
+record entry/body      = $F009/$F2DA
+$F000-$F00F            = 4C 10 F0 4C CB F2 4C D2 F2 4C DA F2 53 52 01 07
+vectors                = 98 F0 00 F0 AC F0
+identity marker        = $F844 = 7A 0F 6A 5F
+record RAM/data        = $7E95-$7EA8 / $7B00
+```
+
+The stable service entries remain `$F003`, `$F006`, and `$F009`.
+`$F00C-$F00F` remains `53 52 01 07`, so the published record ABI did not
+move or change. The top-write generator now validates `MSG_ID` through the
+link map because the identity and screen remainder no longer share one stored
+string.
+
+Host gates completed with zero exit status:
+
+```text
+make -C SRC str8
+make -C SRC str8-record-phase1-proof
+make -C SRC str8-l-transport-phase5-proof
+make -C SRC asm-test
+make -C SRC himon-str8-rom-bin
+make -C SRC str8-top-stage-s19
+make -C SRC str8-topwrite-a
+make -C SRC himon-str8-rom-install-s19
+make -C SRC edge-docs
+make -C SRC all
+```
+
+The combined-image packer accepted the exact worker size and store address,
+the `$0A00-$19FF` top-stage artifact contains 4096 bytes with the candidate
+vectors, and the install S19 covers `$8000-$FFFF` with S1/S9 records.
+`asm-test` retained the 217-row opcode audit, ASMTEST checksum gate, and smoke
+suite.
+
+Before board installation, retain an external-programmer recovery image and
+run these candidate-specific gates:
+
+1. Read back `$F000-$F00F`, `$F844-$F847`, `$FD60`, `$FFEF`, and
+   `$FFFA-$FFFF`; require the bytes and bounds above.
+2. Exercise `?`, `G`, and `R`, and require `0`, `1`, and `2` to dispatch to
+   their matching restore confirmations while `3` and `E` remain unknown.
+3. Require `B` to reject non-`0/1/2` destinations before erase. With retained
+   fingerprints for all three backup banks, run separately recoverable `B0`,
+   `B1`, and `B2` tests. Each must print only `COPY B3->Bn`, match Bank 3 after
+   verify, and leave both unselected banks unchanged. Repeat one test with the
+   old `$FFF0` enrollment bit clear and prove it has no effect.
+4. Prove normal restore still preserves Bank 3 `$C000-$FFFF`, then separately
+   prove the explicitly confirmed high-flash restore resets through Bank 3.
+5. Run `U` with data in each of the C, D, and E sectors and verify all three
+   staged sectors. Also require an empty stream and an out-of-range record to
+   abort before erase.
+6. Exercise the record-service `L F` program path with equal, erased, and
+   needs-erase destinations.
+7. Capture erase/write success and timeout/failure behavior to cover the
+   shared flash unlock and polling tails.
+
+The decisive transcript outputs are retained in
+[`HARDWARE_TEST_LOG.md`](../LOGS/HARDWARE_TEST_LOG.md). This candidate is now
+both host- and hardware-proven.

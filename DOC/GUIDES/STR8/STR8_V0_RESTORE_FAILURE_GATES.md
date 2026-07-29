@@ -10,7 +10,8 @@ Gate 2  injected high-restore failure after the $F000 sector verifies
 Status on 2026-07-19: both gates passed on hardware and their evidence is
 appended to `LOGS/HARDWARE_TEST_LOG.md`. Gate 2's revised source assembled,
 passed its nonwriting latch, safely reported a Bank-2/Bank-3 mismatch, then
-passed after an intentional B3-to-B2 backup rotation. It tests the installed
+passed after an intentional B3-to-B2 backup under the then-current rotation
+policy. It tests the installed
 STR8 RAM worker through its stable `$F003` service; neither fixture changes
 STR8 firmware or its ROM-resident worker.
 
@@ -188,26 +189,28 @@ The row records the first mismatch as `FAIL-LO` at `$1A03`, `FAIL-PAGE` at
 
 ### Establish a deliberate matched Bank 2 source
 
-Do this only if replacing Bank 1 and Bank 2 is intended. With `B0 HOLD`, the
-normal STR8 backup rotation erases Bank 1 and Bank 2, copies Bank 2 to Bank 1,
-then copies the current complete Bank 3 image to Bank 2. It is the required
-way to make the high-test source exactly equal to the live target:
+For the current explicit-destination candidate, do this only if replacing Bank
+2 is intended. `B` with destination `2` copies the current complete Bank 3
+image to Bank 2 and leaves Banks 0 and 1 unchanged:
 
 ```text
 STR8
   answer y to HIMON's RUN confirmation
   press S during "HIMON IN 3S"
 B
-BACKUP ERASE B1/B2. Y: y
-  answer y only after confirming Bank 1 may be replaced
+BACKUP B3 TO B0/1/2: 2
+ ERASE? Y:y
+  answer y only after confirming Bank 2 may be replaced
 ```
 
-Require `COPY B2->B1`, `COPY B3->B2`, and `OK`. Then return warm to HIMON and
+Require `COPY B3->B2` and `OK`, with no Bank 0 or Bank 1 copy. Then return warm to HIMON and
 paste the unchanged high fixture again with `ARM EQU $00`; require the clean
 dry result above. Reassemble it with `ARM EQU $A5` only when ready to commit
 the terminal test: after a successful source-match preflight it immediately
-patches the RAM worker and starts the high restore. This rotation is a
-deliberate backup operation, not part of the injected-failure proof itself.
+patches the RAM worker and starts the high restore. This selected backup is a
+deliberate operation, not part of the injected-failure proof itself. The
+accepted 2026-07-19 transcript used the retired two-step rotation and remains
+historical evidence for that installed image.
 
 The actual installed worker must then take its high-mode failure branch,
 reselect Bank 3, reset the flash command state, disable IRQ, and halt forever

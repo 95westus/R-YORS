@@ -21,9 +21,11 @@ OSI BASIC  interactive BASIC payload
 fig-FORTH  threaded language payload
 ```
 
-The proven STR8 path includes flash map reporting, backup rotation, Bank 0
-enrollment, `U` / `UPDATE HIMON`, HIMON U1-to-U2 update, temporary BASIC and
-Forth payloads, and recovery back to known-good HIMON from backup flash.
+The hardware log preserves proof of the earlier backup rotation and Bank 0
+enrollment policy, plus `U` / `UPDATE HIMON`, HIMON U1-to-U2 update, temporary
+BASIC and Forth payloads, and recovery back to known-good HIMON from backup
+flash. The current candidate replaces rotation/enrollment with an explicit
+single-bank backup destination and still requires its board regression.
 
 Treat this as a bench-proven recovery/update guard, not a finished field
 updater. Keep a known-good image and an external programmer path nearby.
@@ -103,23 +105,23 @@ $F000-$FFFF    4K STR8 recovery sector
 Current combined-image facts:
 
 ```text
-HIMON:           $C000-$EF2C
-STR8 image:      $F000-$F8AC
-IVI entries:     NMI $F092, IRQ/BRK $F0A6
+HIMON:           $C000-$EEB7
+STR8 image:      $F000-$F9B2
+IVI entries:     NMI $F098, IRQ/BRK $F0AC
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F6C2 = 7A 0F 6A 5F
-worker source:   $FD26-$FFEF, copied to RAM when needed
+marker bytes:    $F844 = 7A 0F 6A 5F
+worker source:   $FD60-$FFEF, copied to RAM when needed
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 92 F0 00 F0 A6 F0
+vectors:         $FFFA-$FFFF = 98 F0 00 F0 AC F0
 ```
 
 After burning, quick monitor checks should look like:
 
 ```text
 D C000 C00F  78 D8 A2 FF 9A AD E6 7E ...
-D F000 F00F  4C 09 F0 4C 7C F3 4C 83 F3 78 D8 A2 FF 9A 20 3F
-D FD26 FD35  08 78 AD F0 1F C9 02 F0 ...
-D FFFA FFFF  92 F0 00 F0 A6 F0
+D F000 F00F  4C 10 F0 4C CB F2 4C D2 F2 4C DA F2 53 52 01 07
+D FD60 FD6F  08 78 AD F0 1F C9 05 F0 ...
+D FFFA FFFF  98 F0 00 F0 AC F0
 ```
 
 ## First Boot
@@ -138,20 +140,20 @@ expires, STR8 jumps to HIMON at `$C000`.
 
 ```text
 Bank 3  live reset/boot image
-Bank 2  newest backup image
-Bank 1  older backup image
-Bank 0  base/factory hold until enrolled
+Bank 2  selectable backup image
+Bank 1  selectable backup image
+Bank 0  selectable backup image
 ```
 
-Bank 0 is not ordinary rotation space until `E` is confirmed in STR8. After
-enrollment, Bank 0 may be erased by future backups.
+`B` may target Bank 0, 1, or 2. None of the three backup banks has special
+protection; the selected destination is erased only after the target is shown
+and `Y` is confirmed.
 
 ## STR8 Commands
 
 ```text
-?       print STR8 ID/state, including #5F6A0F7A
-B       backup rotation, destructive, confirmed
-E       enroll Bank 0 into backup rotation, destructive, confirmed
+?       print STR8 ID, including #5F6A0F7A
+B       back up Bank 3 to selected Bank 0/1/2, destructive, confirmed
 U       update $C000-$EFFF from S19, destructive, confirmed
 0       restore Bank 0 -> Bank 3, destructive, confirmed
 1       restore Bank 1 -> Bank 3, destructive, confirmed
@@ -166,7 +168,7 @@ maps until a catalog-aware inventory view is implemented.
 
 ## STR8 Workflows
 
-Check identity and bank state:
+Check identity:
 
 ```text
 STR8>?
@@ -176,30 +178,15 @@ Back up the live image:
 
 ```text
 STR8>B
-... confirm with Y only if the rotation is intended ...
+BACKUP B3 TO B0/1/2: 2
+ ERASE? Y:y
+COPY B3->B2
+... one verified Bank 3 -> Bank 2 copy ...
 ```
 
-Before Bank 0 enrollment, backup rotates:
-
-```text
-Bank 2 -> Bank 1
-Bank 3 -> Bank 2
-```
-
-After Bank 0 enrollment, backup rotates:
-
-```text
-Bank 1 -> Bank 0
-Bank 2 -> Bank 1
-Bank 3 -> Bank 2
-```
-
-Enroll Bank 0 only when losing its current contents is acceptable:
-
-```text
-STR8>E
-... confirm with Y ...
-```
+Choose `0`, `1`, or `2`. Only the selected bank is replaced; the other two
+backup banks are not cascaded or changed. `E` is no longer a command, and an
+old `$FFF0` enrollment bit has no effect.
 
 Restore an older image:
 
@@ -224,9 +211,9 @@ OK
 STR8>G
 ```
 
-Run `B` before `U` when the current live image should be preserved in the
-backup chain. Do not run `B` after a temporary payload boots unless that
-payload should become recoverable.
+Run `B` before `U` when the current live image should be preserved in a chosen
+backup bank. Do not run `B` after a temporary payload boots unless that payload
+should become recoverable.
 
 Updating the active STR8 top sector is a separate, dangerous operation. Build
 the current self-contained writer and matching HIMON stream together:
@@ -246,8 +233,14 @@ Assemble the top writer after the HIMON update: STR8 `U` uses `$4000-$4FFF` as
 its sector buffer, which overwrites the writer's embedded top-sector image.
 `G 3000` only stages and verifies; `G 3003` immediately erases/programs/verifies
 bank 3 `$F000-$FFFF`. The generated sector deliberately restores `$FFF0-$FFF9`
-to erased bytes, so the post-update STR8 state is `B0 HOLD` until deliberately
-reenrolled.
+to erased bytes; those bytes no longer control Bank 0 backup access.
+
+For the current code-size/explicit-backup candidate, use the complete
+paste-ready board card:
+[`STR8_SIZE_PASS_BOARD_TEST.md`](STR8/STR8_SIZE_PASS_BOARD_TEST.md). It pins
+the exact files and hashes, installs HIMON/ASM/STR8 in the safe order, records
+all four bank CRCs around each `B`, and includes the RAM-only worker timeout
+and failure-tail proof.
 
 ## STR8 Payload Streams
 

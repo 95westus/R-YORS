@@ -128,9 +128,9 @@ sector is erased/rebuilt.
 
 ```text
 bank 3 = live executable system ROM / reset boot image
-bank 2 = most recent backup image
-bank 1 = previous backup image
-bank 0 = optional WDCMONv2/base hold, unless enrolled into rotation
+bank 2 = selectable backup image
+bank 1 = selectable backup image
+bank 0 = selectable backup image
 ```
 
 Banks 0-2 are storage banks for now. STR8 reads, copies, verifies, and writes
@@ -138,11 +138,9 @@ them, but does not execute from them.
 
 Bank 0 may eventually hold the board's original live WDCMONv2/base image, but
 saving that image is a TODO for the future WDCMONv2-to-R-YORS bridge and is not
-part of today's STR8 RAM proof. Until the operator runs `E`, bank 0 is held out
-of automatic backup rotation. After `E` confirms the destructive policy change
-and clears the in-flash enrollment bit, bank 0 joins the rotation permanently
-until erase/reflash or a deliberate STR8 config rebuild. The current proof uses
-bit 0 of `$FFF0`: erased/set means `B0 HOLD`, cleared means `B0 ROT`.
+part of today's STR8 RAM proof. Current `B` treats Bank 0 like Bank 1 and Bank
+2: the operator names it as the sole destination and separately confirms the
+erase. There is no enrollment state; the old `$FFF0` bit is ignored.
 
 ## First Recovery Target
 
@@ -166,26 +164,18 @@ $8000-$FFFF = complete ROM bank image
 
 ## First Backup Target
 
-`B` backs up the active bank 3 image while preserving earlier backups. Before
-Bank 0 enrollment:
+`B` backs up the active Bank 3 image to one explicitly selected destination:
 
 ```text
-copy bank 2 -> bank 1
-copy bank 3 -> bank 2
+select bank 0, 1, or 2
+confirm the selected destination erase
+copy bank 3 -> selected bank
 verify copied bytes by read-back/byte compare
 ```
 
-After Bank 0 enrollment:
-
-```text
-copy bank 1 -> bank 0
-copy bank 2 -> bank 1
-copy bank 3 -> bank 2
-verify copied bytes by read-back/byte compare
-```
-
-This keeps bank 2 as the most recent recovery image, bank 1 as the previous
-recovery image, and enrolled bank 0 as the oldest automatic recovery image.
+The two unselected backup banks remain unchanged. STR8 does not impose newest,
+previous, or oldest roles; the operator chooses which recovery image to
+replace.
 
 Base-image preservation remains separate future bridge work:
 
@@ -193,9 +183,9 @@ Base-image preservation remains separate future bridge work:
 TODO bridge/install path = offer to save original WDCMONv2/base image
 ```
 
-Restoring bank 0 means restoring whatever bank 0 currently holds. Before
-enrollment it may be a WDCMONv2/base image and may remove R-YORS from the live
-boot bank. After enrollment it is just the oldest rotating backup.
+Restoring bank 0 means restoring whatever bank 0 currently holds. It may be an
+explicit backup or a WDCMONv2/base image and may remove R-YORS from the live
+boot bank.
 
 ## Future Partitioned Backup Target
 
@@ -260,9 +250,8 @@ STR8/HIMON -> L F style flash loader
 
 ```text
 STR8 V0 #5F6A0F7A
-? = print tiny STR8 ID/state
-B = backup automatic image rotation, with verify
-E = enroll bank 0 into rotation, destructive, confirmed
+? = print tiny STR8 ID
+B = back up Bank 3 to selected Bank 0, 1, or 2, destructive, confirmed
 U = update HIMON from fixed $C000-$EFFF S19 gate
 0 = restore bank 0 -> bank 3, with verify
 1 = restore bank 1 -> bank 3, with verify
@@ -280,9 +269,9 @@ in the protected top sector. IVI means Interrupt Vector Indirection; IVY is only
 the pronunciation and the current signature/symbol spelling.
 
 ```text
-NMI   -> STR8_IVY_ENTRY_NMI at $F092
+NMI   -> STR8_IVY_ENTRY_NMI at $F098
 RESET -> START at $F000
-IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0A6
+IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0AC
 ```
 
 On reset, STR8 seeds the IVI RAM cells with safe defaults before the boot
@@ -326,8 +315,8 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
-The current combined ROM stores the worker source at bank 3 `$FD26-$FFEF`.
-Before `B`, `E`, `U`, `0`, `1`, or `2`, resident STR8 at `$F000` copies
+The current combined ROM stores the worker source at bank 3 `$FD60-$FFEF`.
+Before `B`, `U`, `0`, `1`, or `2`, resident STR8 at `$F000` copies
 that worker into the `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The
 worker uses `$1FE9-$1FFF` as its state/update board, uses `$4000-$4FFF` as the
 4K bank-copy sector buffer, and restores bank 3 before returning. The `U` HIMON
@@ -444,14 +433,13 @@ WDCMONv2 transition documentation/tool
 Advanced sector maintenance means a confirmed mode that can select source and
 destination banks/sectors, erase a selected destination sector, copy one sector
 to another, and verify by read-back compare. It is useful for rescue and lab
-work, but it is not part of the small V0 `? B E U 0 1 2 G R` command surface
-and must not alter Bank 0 rotation policy except through the normal `E`
-enrollment command.
+work, but it is not part of the small V0 `? B U 0 1 2 G R` command surface
+and must name and confirm every destination without cascading.
 
 ## Core Rule
 
-Bank 3 boots. Bank 2 is latest backup. Bank 1 is previous backup. Bank 0 is
-held unless the one-way enrollment flag makes it the oldest rotating backup.
+Bank 3 boots. Banks 0, 1, and 2 are explicit backup destinations with no
+automatic age order or Bank 0 enrollment protection.
 
 STR8 restores bank 3 from whole 32K ROM bank images, skipping the selected STR8
 protected window unless an explicit STR8 install/update is requested. Then HIMON

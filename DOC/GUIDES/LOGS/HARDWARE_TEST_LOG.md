@@ -15975,3 +15975,1003 @@ That package is invalid test debris: do not run or rely on `$8C8B`. This is a
 source-paste rejection, not a runtime result for the dump AP. The corrected
 source splits its data records into short rows and puts each control-flow label
 on the same source line as its first instruction; its board gate remains open.
+
+## 2026-07-28 STR8 Size-Pass Installation Pass, CRC Fixture Paste Stop
+
+This is an incomplete acceptance run. It proves the frozen HIMON, ASM-F2, and
+STR8 installation/readback path, but it stopped before bank fingerprints,
+selected-destination backup, restore, record-service, worker-tail, and legacy
+`$FFF0` gates.
+
+The board began on the previous `00.0721(1742)` HIMON/ASM image and the old
+cascading STR8 command surface. The old image's `B` printed:
+
+```text
+BACKUP ERASE B1/B2. Y: y
+COPY B2->B1
+
+COPY B3->B2
+
+OK
+```
+
+That is pre-candidate behavior and is not evidence for the new explicit
+destination command.
+
+The old STR8 provider accepted the pinned C/D/E stream and the board entered
+the new HIMON:
+
+```text
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+
+HIMON V 00.0728(1751)
+```
+
+The board-built Bank-3 low-flash erase fixture succeeded:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A03
+1A00: AC 00 00 00 | ....
+>D 8000 800F
+8000: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+```
+
+`L F` then installed the pinned ASM image:
+
+```text
+>L F
+L F S19
+L @8000
+LF OK WR=3C6D GO=800C
+>D 8000 800F
+8000: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0 | FN..t.V..... {..
+>ASM NEW
+ASM-F2 00.0728(1751)
+```
+
+The self-contained topwriter assembled cleanly. Its nonwriting stage matched
+every frozen checkpoint:
+
+```text
+>G 3000
+GO 3000
+TW STG
+TW OK
+
+#GO# ENTRY=3000
+RET A=AC X=20 Y=05 P=F5 S=FD NV-BdIzC
+>D 1A00 1A0F
+1A00: 00 AC 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+>D 0A00 0A0F
+0A00: 4C 10 F0 4C CB F2 4C D2 | F2 4C DA F2 53 52 01 07 | L..L..L..L..SR..
+>D 1244 1247
+1244: 7A 0F 6A 5F | z.j_
+>D 1760 176F
+1760: 08 78 AD F0 1F C9 05 F0 | 0D C9 06 F0 0E C9 07 F0 | .x..............
+>D 19E0 19EF
+19E0: 04 48 A9 EE 1C EC 7F 68 | 0C EC 7F 60 CC CE EC EE | .H.....h...`....
+>D 19F0 19FF
+19F0: FF FF FF FF FF FF FF FF | FF FF 98 F0 00 F0 AC F0 | ................
+```
+
+The destructive top-sector half completed and returned success:
+
+```text
+>G 3003
+GO 3003
+TW PRG
+TW OK
+
+#GO# ENTRY=3003
+RET A=AC X=20 Y=05 P=F5 S=FD NV-BdIzC
+>D 1A00 1A03
+1A00: 01 AC 00 00 | ....
+```
+
+The subsequent cold boot reported `HIMON V 00.0728(1751)` and every resident
+checkpoint matched the staged image:
+
+```text
+>D F000 F00F
+F000: 4C 10 F0 4C CB F2 4C D2 | F2 4C DA F2 53 52 01 07 | L..L..L..L..SR..
+>D F844 F847
+F844: 7A 0F 6A 5F | z.j_
+>D FD60 FD6F
+FD60: 08 78 AD F0 1F C9 05 F0 | 0D C9 06 F0 0E C9 07 F0 | .x..............
+>D FFE0 FFEF
+FFE0: 04 48 A9 EE 1C EC 7F 68 | 0C EC 7F 60 CC CE EC EE | .H.....h...`....
+>D FFF0 FFFF
+FFF0: FF FF FF FF FF FF FF FF | FF FF 98 F0 00 F0 AC F0 | ................
+>ASM NEW
+ASM-F2 00.0728(1751)
+```
+
+The first paste of `str8-bank-crc-all-3000.a` was rejected at its CRC bit-loop
+label:
+
+```text
+ASM>$30B7: BIT     ASL CRCLO
+ERR=$03 BO PC=$30B7
+...
+ASM>$30C8:         BNE BIT
+...
+ERR=$09 BAD FIX PC=$30CC
+#56AD7400# EXEC ERR=$09
+>
+```
+
+`BIT` is a 65C02 mnemonic, so ASM-F2 parsed it as an instruction rather than a
+label. No `G 3000` followed this rejected assembly and the fixture never called
+STR8 or changed flash. The source now uses `CRCBIT`; the corrected file is
+`DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a`, SHA-256
+`D92C504C1501241F3FC791C11F081178E4B053211C3D9F7B15B5F1A5F7891326`.
+Resume the acceptance card at section 5. The installed firmware does not need
+to be rewritten.
+
+## 2026-07-28 STR8 Size-Pass CRC, Command, And Restore Continuation
+
+This continuation assembled the corrected `CRCBIT` fixture cleanly and ran all
+32 read-only sector fingerprints. Status, the retired `$FFF0` bytes, and the
+complete first table were:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A04
+1A00: AC 00 00 00 00 | .....
+>D 1A08 1A0B
+1A08: FF FF FF FF | ....
+>D 1A10 1A4F
+1A10: 3A FC 4E 26 D9 A8 E1 0F | E1 0F E1 0F E1 0F E1 0F | :.N&............
+1A20: EC B7 36 70 CE 76 62 95 | C6 84 1A F2 FB 3C 77 1E | ..6p.vb......<w.
+1A30: EC B7 36 70 CE 76 B2 73 | C6 84 1A F2 93 6D 77 1E | ..6p.v.s.....mw.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+```
+
+This passes the corrected fixture itself, all four `$FFF0=FF` observations,
+and the exact frozen Bank-3 fingerprint.
+
+The candidate command screen omitted `E`. `?` printed only the identity, and
+`E` used the unknown-command path:
+
+```text
+STR8-N V0 #5F6A0F7A
+ROM $F000
+? B U 0 1 2 G R
+STR8-N>
+STR8-N V0 #5F6A0F7A
+STR8-N>
+?
+STR8-N>
+```
+
+An explicit Bank-2 backup printed only the selected copy:
+
+```text
+BACKUP B3 TO B0/1/2:  2 ERASE? Y: y
+COPY B3->B2
+
+OK
+```
+
+A subsequent high restore from Bank 2 printed its one copy and reset through
+the candidate STR8/HIMON. An empty backup selection later aborted before any
+erase:
+
+```text
+RESTORE B2->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B2->B3
+
+STR8-N
+...
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0728(1751)
+...
+BACKUP B3 TO B0/1/2:
+ABORT
+```
+
+The operator then deliberately erased Bank-3 `$8000-$BFFF`, observed `$8000`
+as `$FF`, and backed that state to Bank 1. Consequently this Bank-1 copy is
+not the canonical candidate:
+
+```text
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 8000
+8000: FF | .
+...
+BACKUP B3 TO B0/1/2:  1 ERASE? Y: y
+COPY B3->B1
+
+OK
+```
+
+High restores from exact Bank 2 and the erased-low Bank 1 both reset as
+designed and visibly selected the requested source. A normal Bank-2 lower
+restore returned instead of resetting and recovered the first ASM byte:
+
+```text
+RESTORE B2->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: n
+COPY B2->B3
+
+OK
+STR8-N>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0728(1751)
+>D 8000
+8000: 46 | F
+```
+
+This exercises the normal-restore return path and lower copy, but it is not
+the formal high-preservation proof because no differential C-F CRC was
+captured.
+
+After a final erased-low Bank-1 high restore, the positive C/D/E update
+completed and returned to the pinned HIMON. The first byte of every updated
+sector matched the candidate:
+
+```text
+UPDATE HIMON C000-EFFF? Y: y
+SEND S19 C000-EFFF
+...................................................................
+PROGRAM C000-EFFF? Y: y...
+OK
+...
+HIMON V 00.0728(1751)
+>D C000
+C000: 78 | x
+>D D000
+D000: A0 | .
+>D E000
+E000: B1 | .
+>D 8000
+8000: FF | .
+```
+
+The current ASM was then reloaded:
+
+```text
+>L F
+L F S19
+L @8000
+LF OK WR=3C6D GO=800C
+>ASM NEW
+ASM-F2 00.0728(1751)
+ASM>$2000: .
+ASM BYE
+```
+
+Evidence boundary: the corrected CRC fixture, pinned pre-copy Bank-3 image,
+candidate command surface, removed `E`, empty backup abort, selected-copy
+output, both restore control-flow paths, positive `U`, and final current ASM
+identity passed. No CRC table was captured after `B2`, `B1`, the normal
+restore, or the final recovery. Therefore selected-destination no-cascade,
+normal-restore high preservation, and final canonical Bank-3 identity remain
+open. The transcript also did not run the worker-tail, record-service,
+`L F` equal/erased/needs-erase, negative `U`, legacy `$FFF0=FE`, or final `R`
+gates.
+
+The operations predict Bank 0 unchanged, Bank 1 with erased lower sectors and
+current C-F, Bank 2 exact, and Bank 3 exact after `U` plus `L F`. The
+state-aware continuation at the top of
+`DOC/GUIDES/STR8/STR8_SIZE_PASS_BOARD_TEST.md` begins by measuring that state
+and stops on any mismatch before further writes.
+
+## 2026-07-28 STR8 Size-Pass State-Aware `RUN2-PRE` Proof
+
+The board cold-booted the pinned HIMON and assembled the corrected CRC fixture
+cleanly:
+
+```text
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0728(1751)
+>ASM NEW
+ASM-F2 00.0728(1751)
+...
+ASM>$30B7: CRCBIT  ASL CRCLO
+...
+ASM>$30CA:         BNE CRCBIT
+...
+ASM OK
+SEAL> .
+ASM BYE
+```
+
+The read-only run returned success with carry set. All four retired
+enrollment bytes were `$FF`, and every row exactly matched the predicted
+post-recovery state:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A04
+1A00: AC 00 00 00 00 | .....
+>D 1A08 1A0B
+1A08: FF FF FF FF | ....
+>D 1A10 1A4F
+1A10: 3A FC 4E 26 D9 A8 E1 0F | E1 0F E1 0F E1 0F E1 0F | :.N&............
+1A20: E1 0F E1 0F E1 0F E1 0F | C6 84 1A F2 47 98 6E 18 | ............G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+>
+```
+
+This closes the final canonical Bank-3 CRC after the preceding `U` plus
+`L F` recovery. It also proves the intended differential setup: Bank 0 is
+unchanged, Bank 1 has erased lower sectors and candidate high sectors, and
+Banks 2 and 3 are exact candidates. The fixture remains resident at `$3000`.
+
+No backup or restore occurred in this continuation. Selected-destination
+no-cascade and differential normal-restore preservation therefore remain
+open. The next destructive operation is the state-aware Bank-2 backup in
+`DOC/GUIDES/STR8/STR8_SIZE_PASS_BOARD_TEST.md`; Bank 1 must remain unchanged
+afterward.
+
+## 2026-07-28 STR8 Size-Pass Aborted `B` Inputs And Exact B2 Restore
+
+This continuation entered the candidate STR8. Main-menu command `3` took the
+unknown-command path. Two backup prompts then aborted without a visible
+destination:
+
+```text
+STR8-N>
+?
+STR8-N>
+BACKUP B3 TO B0/1/2:
+ABORT
+STR8-N>
+BACKUP B3 TO B0/1/2:
+ABORT
+```
+
+Because neither prompt echoed `2` and neither printed `2 ERASE?`, `COPY
+B3->B2`, or `OK`, this is not a Bank-2 backup and contributes no no-cascade
+evidence. The next input was main-menu command `2`, which invoked restore:
+
+```text
+STR8-N>
+RESTORE B2->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B2->B3
+
+STR8-N
+
+HIMON IN 3S. S=STR8-N  3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0728(1751)
+```
+
+Bank 2 and Bank 3 were exact candidates before this operation, so the high
+restore was expected to be content-neutral. It exercised the reset path again
+but cleared the RAM fixture. The operator reassembled the corrected fixture,
+which returned success and reproduced the entire prior state:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 1A00 14FF
+D [a [b]]
+>D 1A00 1A50
+1A00: AC 00 00 00 00 00 00 00 | FF FF FF FF 00 00 00 00 | ................
+1A10: 3A FC 4E 26 D9 A8 E1 0F | E1 0F E1 0F E1 0F E1 0F | :.N&............
+1A20: E1 0F E1 0F E1 0F E1 0F | C6 84 1A F2 47 98 6E 18 | ............G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A50: 00 | .
+>
+```
+
+The first dump command had a mistyped end address (`14FF`) and was rejected
+by HIMON; it did not alter memory or flash. The corrected dump proves all
+`$FFF0` bytes remain `$FF`, Bank 0 and Bank 1 retain their differential rows,
+and Banks 2 and 3 remain exact.
+
+The board ended at HIMON with the CRC fixture resident at `$3000`. The next
+operation remains the selected Bank-2 backup. The acceptance card now
+separates keyboard input from expected output so the destination `2` is
+entered while `BACKUP B3 TO B0/1/2:` is waiting.
+
+## 2026-07-28 STR8 Size-Pass Backup Selection And Negative Confirmation
+
+This continuation again entered the candidate STR8. Main-menu command `3`
+used the unknown-command path and an empty backup destination aborted. The
+operator then supplied valid destinations 2 and 1, and STR8 printed the
+matching confirmation for each:
+
+```text
+STR8-N>
+?
+STR8-N>
+BACKUP B3 TO B0/1/2:
+ABORT
+STR8-N>
+BACKUP B3 TO B0/1/2:  2 ERASE? Y: n
+ABORT
+STR8-N>
+BACKUP B3 TO B0/1/2:  1 ERASE? Y: n
+ABORT
+STR8-N>
+G HIMON
+BOOT WARM
+```
+
+There was no `COPY` line or `OK` after either selection. These are valid
+negative-confirmation tests: destinations 2 and 1 route to their own prompts,
+and `n` prevents flash mutation. They are not selected-copy or no-cascade
+proofs.
+
+The resident CRC fixture then returned success and reproduced the full
+differential table:
+
+```text
+> G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A50
+1A00: AC 00 00 00 00 00 00 00 | FF FF FF FF 00 00 00 00 | ................
+1A10: 3A FC 4E 26 D9 A8 E1 0F | E1 0F E1 0F E1 0F E1 0F | :.N&............
+1A20: E1 0F E1 0F E1 0F E1 0F | C6 84 1A F2 47 98 6E 18 | ............G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A50: 00 | .
+>
+```
+
+Thus no flash changed: Bank 1 remains distinctive and Banks 2 and 3 remain
+exact. The board ended at HIMON with the fixture resident at `$3000`. The
+next required destructive input is `y` at the selected Bank-2 `2 ERASE? Y:`
+prompt, followed by a CRC proof that Bank 1 did not change.
+
+## 2026-07-28 STR8 Size-Pass Positive B2 No-Cascade Proof
+
+The first Bank-2 selection received `2` rather than `y` at its erase
+confirmation and aborted safely. The repeated selection received `y`, copied
+only to Bank 2, and returned success:
+
+```text
+STR8-N>
+BACKUP B3 TO B0/1/2:  2 ERASE? Y: 2
+ABORT
+STR8-N>
+BACKUP B3 TO B0/1/2:  2 ERASE? Y: y
+COPY B3->B2
+
+OK
+STR8-N>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0728(1751)
+```
+
+There was no `B2->B1`, `B1->B0`, or second copy line. The resident read-only
+fixture returned success after the write:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A50
+1A00: AC 00 00 00 00 00 00 00 | FF FF FF FF 00 00 00 00 | ................
+1A10: 3A FC 4E 26 D9 A8 E1 0F | E1 0F E1 0F E1 0F E1 0F | :.N&............
+1A20: E1 0F E1 0F E1 0F E1 0F | C6 84 1A F2 47 98 6E 18 | ............G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A50: 00 | .
+>
+```
+
+Every byte matches `RUN2-PRE`. Bank 2 equals Bank 3, Bank 0 is unchanged, and
+Bank 1 retains its distinctive four erased-low CRC pairs. A legacy cascade
+would have changed Bank 1 to the exact candidate row, so this is the
+hardware-selected-destination/no-cascade proof for `B2`.
+
+The board ended at HIMON with the CRC fixture resident at `$3000`. Bank 0
+remains distinctive and is the source for the next differential normal
+restore. That gate must answer `n` at `FLASH C000-FFFF?`, prove Bank-3 C-F
+unchanged by CRC, then recover the exact candidate through Bank 2.
+
+## 2026-07-28 STR8 Size-Pass Differential Restore Abort
+
+This attempt did not reach a flash operation. The backup destination prompt
+received empty input, and the first Bank-0 restore confirmation received `n`:
+
+```text
+STR8-N>
+BACKUP B3 TO B0/1/2:
+ABORT
+STR8-N>
+RESTORE B0->B3? Y: n
+ABORT
+STR8-N>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0728(1751)
+```
+
+Because the first restore question was declined, STR8 never printed
+`WARN: MAY NOT BOOT`, never asked `FLASH C000-FFFF?`, and never copied Bank 0.
+The differential restore therefore remains pending.
+
+At HIMON, a bare `3000` was interpreted as a name lookup and failed harmlessly.
+The corrected `G 3000` invocation returned success and proved the complete
+bank state was unchanged:
+
+```text
+> 3000
+#1ED86626# HSH_NF!
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A50
+1A00: AC 00 00 00 00 00 00 00 | FF FF FF FF 00 00 00 00 | ................
+1A10: 3A FC 4E 26 D9 A8 E1 0F | E1 0F E1 0F E1 0F E1 0F | :.N&............
+1A20: E1 0F E1 0F E1 0F E1 0F | C6 84 1A F2 47 98 6E 18 | ............G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A50: 00 | .
+>
+```
+
+The board ended at HIMON with the CRC fixture resident at `$3000`. No recovery
+is needed. On the next attempt, type `y` at `RESTORE B0->B3?` and type `n`
+only after the separate `FLASH C000-FFFF?` prompt appears.
+
+## 2026-07-28 STR8 Size-Pass Positive B0 And Same-Image Normal Restore
+
+The run first selected Bank 0 as a positive backup destination. It printed
+only the requested copy and returned success:
+
+```text
+STR8-N>
+BACKUP B3 TO B0/1/2:  0 ERASE? Y: y
+COPY B3->B0
+
+OK
+```
+
+This operation replaced Bank 0's distinctive old image with the exact
+Bank-3 candidate. The operator then supplied the correct two-answer sequence
+for ordinary restore:
+
+```text
+STR8-N>
+RESTORE B0->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: n
+COPY B0->B3
+
+OK
+STR8-N>
+```
+
+The normal-restore prompt, lower-copy path, `OK` return, and high-flash
+decline all executed. However, Bank 0 and Bank 3 were identical before this
+restore, so it is not a differential proof that high data from the source was
+excluded.
+
+The transcript ended at STR8 before a post-operation CRC capture. Bank 3
+should already be exact, so a Bank-2 recovery is neither required nor desired
+at this point. The CRC fixture remains in RAM. The immediate next action is
+`G`, then `G 3000` and the full table. Bank 0, Bank 2, and Bank 3 must be the
+exact row, and Bank 1 must retain its four erased-low pairs. That capture will
+close the positive Bank-0 selected-destination/no-cascade gate.
+
+Because the original distinctive Bank-0 high sectors were overwritten, the
+stronger normal-restore proof is deferred to the legacy `$FFF0=FE` gate. That
+gate now uses Bank 0's `$B04A` modified F-sector CRC against canonical Bank
+3's `$186E`, performs a lower-only Bank-0 restore, and requires the
+differential high CRCs to remain unchanged.
+
+## 2026-07-28 STR8 Size-Pass Positive B0 Post-Copy CRC
+
+The operator returned warm to HIMON and ran the resident read-only fixture:
+
+```text
+?
+STR8-N>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0728(1751)
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A50
+1A00: AC 00 00 00 00 00 00 00 | FF FF FF FF 00 00 00 00 | ................
+1A10: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A20: E1 0F E1 0F E1 0F E1 0F | C6 84 1A F2 47 98 6E 18 | ............G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A50: 00 | .
+>
+```
+
+All `$FFF0` bytes remain `$FF`. Bank 0 now exactly matches Bank 3, while the
+unselected Bank 1 retains its distinctive erased-low row and Bank 2 remains
+exact. This closes the positive Bank-0 selected-destination/no-cascade gate.
+It also confirms that the subsequent same-image normal restore ended on the
+exact Bank-3 candidate.
+
+The initial `?` is an unknown-command response at STR8 and has no state
+effect. The board ended at HIMON with the CRC fixture resident at `$3000`.
+The next gates are invalid backup destination `3`, followed by the positive
+Bank-1 copy and final all-four-banks exact CRC.
+
+## 2026-07-28 STR8 Size-Pass Bank-1 Restore And Recovery
+
+This run did not execute a Bank-1 backup. Main-menu command `1` selected
+restore, and both confirmations were accepted:
+
+```text
+STR8-N>
+RESTORE B1->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B1->B3
+
+STR8-N
+
+HIMON IN 3S. S=STR8-N  3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0728(1751)
+```
+
+Bank 1 still contained erased lower sectors and current high sectors, so the
+full restore intentionally replaced Bank-3 ASM with erased data. The reset
+cleared the RAM fixture. The resulting failures were expected consequences
+of those two facts, not new firmware defects:
+
+```text
+>ASM NEW
+#56AD7400# HSH_NF!
+>G 3000
+GO 3000
+
+BRK 00 PC=3002
+...
+```
+
+`L F` reinstalled the pinned ASM:
+
+```text
+>L F
+L F S19
+L @8000
+LF OK WR=3C6D GO=800C
+>ASM NEW
+ASM-F2 00.0728(1751)
+```
+
+After the operator reassembled the CRC fixture, Bank 3 was exact again and
+Bank 1 remained distinctive. The run then performed another Bank-0 normal
+restore with high flash declined; its CRC table remained unchanged. A
+subsequent exact Bank-0 high restore reset and cleared RAM again:
+
+```text
+RESTORE B0->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: n
+COPY B0->B3
+
+OK
+...
+RESTORE B0->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B0->B3
+
+STR8-N
+...
+BOOT COLD
+RAM ZERO OK
+```
+
+The immediate `G 3000` trap and mistyped `AASM NEW` after reset were harmless.
+The operator again loaded ASM with `L F`, assembled the corrected fixture, and
+finished on the fully recovered state:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 1A00 1A50
+1A00: AC 00 00 00 00 00 00 00 | FF FF FF FF 00 00 00 00 | ................
+1A10: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A20: E1 0F E1 0F E1 0F E1 0F | C6 84 1A F2 47 98 6E 18 | ............G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A50: 00 | .
+>
+```
+
+Banks 0, 2, and 3 are exact; Bank 1 still has erased lower sectors/current
+high sectors. The CRC fixture is resident at `$3000`. No Bank-1 backup or
+invalid backup-destination-3 test occurred. For the remaining positive test,
+the operator must type `B` at `STR8-N>`, wait for
+`BACKUP B3 TO B0/1/2:`, and only then type `1`.
+
+## 2026-07-28 STR8 Size-Pass Positive B1 And Four-Bank Convergence
+
+The operator selected Bank 1 through the backup prompt. STR8 printed only the
+requested copy and returned success:
+
+```text
+BACKUP B3 TO B0/1/2:  1 ERASE? Y: y
+COPY B3->B1
+
+OK
+STR8-N>
+G HIMON
+BOOT WARM
+
+HIMON V 00.0728(1751)
+```
+
+The first dump spelling omitted the space after `D` and caused only a
+harmless HIMON lookup failure. The corrected dump showed complete
+four-bank convergence:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D1A00 1A50
+#0943D2CD# HSH_NF!
+>D 1A00 1A50
+1A00: AC 00 00 00 00 00 00 00 | FF FF FF FF 00 00 00 00 | ................
+1A10: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A20: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A50: 00 | .
+```
+
+All four `$FFF0` values are `$FF`, and every bank has the pinned candidate
+row. This closes the positive Bank-1 backup path. Combined with the earlier
+differential post-copy captures for Bank 2 and Bank 0, the selected-copy and
+no-cascade behavior passes for all three destinations.
+
+The operator reentered STR8, but the final backup destination prompt again
+received empty input:
+
+```text
+BACKUP B3 TO B0/1/2:
+ABORT
+STR8-N>
+```
+
+This is another safe empty-input pass, not the invalid-destination-3 test.
+The board ended at STR8 with all banks canonical and the CRC fixture resident.
+Type `B`, wait for `BACKUP B3 TO B0/1/2:`, then type `3`; it must abort without
+an erase/copy. After that one non-writing gate, continue to the worker-tail
+fixture.
+
+## 2026-07-28 STR8 Invalid-Destination Echo Clarification
+
+The operator confirms that the final backup-destination response in the
+preceding entry was `3`, not empty input:
+
+```text
+BACKUP B3 TO B0/1/2:
+ABORT
+STR8-N>
+```
+
+The lack of a printed `3` is expected firmware behavior, not missing terminal
+input. `STR8_CMD_BACKUP` reads the byte, rejects values below `'0'` or at/above
+`'3'`, and branches directly to `ABORT`. It calls
+`STR8_CON_WRITE_BYTE_BLOCK` to republish the destination only after the range
+check passes. Therefore valid selections appear before `ERASE?`, while invalid
+`3` remains unechoed.
+
+This clarification closes the invalid backup-destination gate. No `ERASE?`,
+`COPY`, or reset followed the input. Combined with the accepted B0/B1/B2 copy
+and CRC evidence, sections 6 and 7 pass. The board remains at STR8 with all
+four banks canonical; the next gate is the section-8 worker-tail fixture.
+
+## 2026-07-28 STR8 Shared Worker-Tail Board Proof
+
+The operator returned warm to the pinned HIMON, assembled
+`str8-worker-tail-proof-3000.a` cleanly with `ASM-F2 00.0728(1751)`, and ran
+the RAM-only fixture:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=03 Y=00 P=F5 S=FD NV-BdIzC
+>D 1A00 1A04
+1A00: AC 05 46 46 00 | ..FF.
+>D 8000
+8000: 46 | F
+>
+```
+
+The exact `AC 05 46 46` row proves all five cases completed and Bank-3
+`$8000` was unchanged. This covers the candidate worker's exact copy
+bounds/guards, shared polling immediate-success path, forced timeout and flash
+reset return, impossible 0-to-1 write rejection without a program command,
+and the factored `$AA/$55` unlock/reset tail. The fixture issued no erase or
+program command.
+
+Section 8 passes on hardware. The board ended at HIMON with all flash banks
+canonical and the worker fixture at `$3000`. The next gate is the
+section-9 current-face record-service regression.
+
+## 2026-07-28 STR8 Size-Pass Final Hardware Acceptance
+
+The 3,478-line source transcript has SHA-256
+`F1CDBCAB8E3131AD59DB9DF35D82A458D996340B901ADA1AFFF0D0E6F8CA1E07`.
+The operator continued with the same frozen board candidate:
+
+```text
+HIMON V 00.0728(1751)
+ASM-F2 00.0728(1751)
+STR8-N V0 #5F6A0F7A
+```
+
+The section-9 current-face record fixture loaded at the required entry and
+all four service cases returned the accepted status/case/length rows:
+
+```text
+L OK=07BB GO=3000
+RET A=AC X=0F Y=01 P=35 S=FD Nv-BdIzC
+6000: 11 22 33 44 | ."3D
+RET A=AC X=06 Y=02 P=35 S=FD Nv-BdIzC
+RET A=AC X=01 Y=03 P=35 S=FD Nv-BdIzC
+RET A=AC X=01 Y=04 P=75 S=FD NV-BdIzC
+```
+
+The separate `L G` transport fixture also passed:
+
+```text
+L OK=0080 GO=3000
+#LOADGO# ENTRY=3000
+RET A=A5 X=30 Y=30 P=F5 S=FD NV-BdIzC
+4900: A5 | .
+```
+
+Section 10 exercised all four `L F` byte-programming decisions. The matching
+write, erased-byte write, and repeated matching write succeeded. The
+zero-over-`$5A` case correctly refused a required erase without changing the
+scratch row:
+
+```text
+LF OK WR=0004 GO=8000
+8000: 46 | F
+LF OK WR=0001 GO=BFE2
+BFE0: FF FF 5A FF | ..Z.
+LF OK WR=0001 GO=BFE2
+BFE0: FF FF 5A FF | ..Z.
+LF ERASE=BFE2 OLD=5A NEW=00
+LF FAIL=03 WR=0000 SKIP=0004 GO=BFE0
+BFE0: FF FF 5A FF | ..Z.
+```
+
+An exact Bank-2 normal restore with high flash declined returned `OK`, and the
+subsequent CRC fixture showed all banks canonical and the scratch row erased.
+Section 11 then sent the empty/out-of-range negative `U` inputs. They produced
+`S19 FAIL`, `NO S19 DATA`, and an additional `S19 FAIL`; no `PROGRAM` prompt
+or flash operation followed. A full CRC rerun remained canonical.
+
+Section 12 first staged and programmed the deliberate legacy enrollment byte
+`$FFF0=FE` while retaining the pinned vectors:
+
+```text
+TW STG
+TW OK
+19F0: FE | .
+TW PRG
+TW OK
+1A00: 01 AC 00 00 | ....
+FFF0: FE FF FF FF FF FF FF FF | FF FF 98 F0 00 F0 AC F0 | ................
+```
+
+STR8 accepted that legacy active-low bit as unprotected. A selected Bank-0
+backup printed `COPY B3->B0` and returned `OK`, with no enrollment gate.
+The exact top writer was then reassembled, staged with canonical `$FFF0=FF`,
+programmed successfully, and verified with the pinned vectors.
+
+The read-only CRC fixture captured the intended differential state:
+
+```text
+1A00: AC 00 00 00 00 00 00 00 | FE FF FF FF 00 00 00 00 | ................
+1A10: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 4A B0 | ..6p.v4.....G.J.
+1A20: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+```
+
+The operator then selected normal Bank-0 restore and declined high flash:
+
+```text
+RESTORE B0->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: n
+COPY B0->B3
+
+OK
+```
+
+The complete post-restore CRC table was byte-for-byte identical to the
+differential table above. Bank 0 retained `$FFF0=FE` and its F-sector CRC
+`4A B0`, while live Bank 3 retained `$FFF0=FF` and CRC `6E 18`. This is the
+decisive hardware proof that the ordinary restore does not copy the protected
+high sector.
+
+A final selected `B3->B0` cleanup returned `OK`. All four `$FFF0` bytes then
+read `$FF`, and every bank converged to the pinned candidate row:
+
+```text
+1A00: AC 00 00 00 00 00 00 00 | FF FF FF FF 00 00 00 00 | ................
+1A10: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A20: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A30: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+1A40: EC B7 36 70 CE 76 34 9B | C6 84 1A F2 47 98 6E 18 | ..6p.v4.....G.n.
+```
+
+Finally, section 13 exercised the STR8 reset command. The board cold-booted,
+cleared RAM, and retained the canonical top sector and fixed vectors:
+
+```text
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0728(1751)
+FFF0: FF FF FF FF FF FF FF FF | FF FF 98 F0 00 F0 AC F0 | ................
+```
+
+Sections 9-13 pass. Together with the prior entries for installation,
+resident faces, command parsing, non-cascading B0/B1/B2 backup, restore
+behavior, and the shared worker tail, this completes on-board acceptance of
+the STR8 resident and worker size pass. The board finished with the exact
+candidate in all four banks and no remaining recovery action.

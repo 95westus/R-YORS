@@ -48,18 +48,21 @@ interfaces, not current commands; see
 
 ## Current Proof State
 
-As of 2026-05-18, STR8 has hardware proof for:
+The hardware log preserves proof for:
 
 ```text
 flash map by bank/sector
-backup rotation before and after Bank 0 enrollment
-Bank 0 enrollment
+retired backup rotation before and after retired Bank 0 enrollment
 fixed $C000-$EFFF S19 update gate
 HIMON U1-to-U2 update
 bootable OSI BASIC payload through the same gate
 bootable fig-FORTH payload through the same gate
 high-flash recovery from Bank 2 back to known-good HIMON
 ```
+
+The current candidate removes rotation and enrollment. `B` selects exactly one
+destination bank, 0, 1, or 2, for a verified Bank-3 copy. That new policy is
+host-built but remains board-pending.
 
 HIMON has hardware proof for RAM-only debug commands `B`, `B C`, `B L`, `N`,
 and `X`, with one-shot breakpoints and `DBG RAM` rejection outside user RAM.
@@ -215,12 +218,12 @@ ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
 HIMON body:      $C000-$EF2C
 STR8 entry:      $F000
-STR8 body:       $F000-$FB5F
+STR8 body:       $F000-$F9B2
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F975 = 7A 0F 6A 5F
-worker source:   $FCC9-$FFEF
+marker bytes:    $F844 = 7A 0F 6A 5F
+worker source:   $FD60-$FFEF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 99 F0 00 F0 AD F0
+vectors:         $FFFA-$FFFF = 98 F0 00 F0 AC F0
 ```
 
 The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
@@ -247,9 +250,9 @@ jumps to HIMON at $C000 when the countdown expires
 Current vector path:
 
 ```text
-NMI      -> STR8 IVI entry at $F099 -> RAM vector $7EFA-$7EFB
+NMI      -> STR8 IVI entry at $F098 -> RAM vector $7EFA-$7EFB
 RESET    -> STR8 START at $F000
-IRQ/BRK  -> STR8 IVI entry at $F0AD -> RAM vectors $7EFC-$7EFF
+IRQ/BRK  -> STR8 IVI entry at $F0AC -> RAM vectors $7EFC-$7EFF
 ```
 
 HIMON patches the RAM targets after handoff. IVI is a mechanism, not a claim
@@ -294,7 +297,7 @@ restores Bank 3 before returning to resident STR8
 Current RAM workspace:
 
 ```text
-$0200-$09FF   flash worker tray, STR8 copied from $FCC9-$FFEF at exact worker length
+$0200-$09FF   flash worker tray, STR8 copied from $FD60-$FFEF at exact worker length
 $0A00-$19FF   sector staging buffer
 $1A00-$1FE8   RJOIN/link scratch and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map bytes
@@ -325,17 +328,17 @@ hardware transcript remains evidence, but it is not in the current prompt.
 Current top-sector reserve policy:
 
 ```text
-$F000-$F974  STR8 resident code
-             size $0975 = 2421 bytes
+$F000-$F843  STR8 resident code
+             size $0844 = 2116 bytes
 
-$F975-$FB5F  STR8 resident data
-             size $01EB = 491 bytes
+$F844-$F9B2  STR8 resident data
+             size $016F = 367 bytes
 
-$FB60-$FCC8  contiguous unused $FF growth hole
-             size $0169 = 361 bytes
+$F9B3-$FD5F  contiguous unused $FF growth hole
+             size $03AD = 941 bytes
 
-$FCC9-$FFEF  stored STR8 RAM worker image
-             size $0327 = 807 bytes
+$FD60-$FFEF  stored STR8 RAM worker image
+             size $0290 = 656 bytes
              linked at $0200 inside the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  STR8 config pocket
@@ -374,34 +377,23 @@ same path has booted HIMON, OSI BASIC, and fig-FORTH.
 
 ## STR8 Backup And Restore
 
-Before Bank 0 enrollment:
+`B` reads a destination digit, accepts only `0` through `2`, echoes the chosen
+bank, and requires a separate `Y` confirmation. It then performs exactly one
+full-bank copy:
 
 ```text
-B:  Bank 2 -> Bank 1
-    Bank 3 -> Bank 2
+B + 0:  Bank 3 -> Bank 0
+B + 1:  Bank 3 -> Bank 1
+B + 2:  Bank 3 -> Bank 2
 ```
 
-After Bank 0 enrollment:
-
-```text
-B:  Bank 1 -> Bank 0
-    Bank 2 -> Bank 1
-    Bank 3 -> Bank 2
-```
+The other backup banks are unchanged. Bank 0 has no enrollment or special
+protection, and `E` is not a command. The old `$FFF0` rotation bit is ignored.
 
 Restore commands copy selected backup banks into Bank 3 and verify by read-back
 compare. Ordinary restore preserves the protected high region. A separately
 confirmed high-flash recovery path exists for restoring known-good HIMON over a
 bad `$C000` payload.
-
-Bank 0 enrollment clears bit 0 at `$FFF0`:
-
-```text
-bit set/erased  = B0 HOLD
-bit cleared     = B0 ROT
-```
-
-Leaving rotation requires erase/reflash or deliberate STR8 config rebuild.
 
 ## HIMON Implementation
 

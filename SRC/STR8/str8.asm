@@ -3,9 +3,8 @@
 ; STR8 V0 small recovery proof.
 ;
 ; Command surface:
-;   ?  print tiny ID/state
-;   B  backup rotation, with read-back verify built in
-;   E  enroll bank 0 into backup rotation, one-way in-flash flag
+;   ?  print tiny ID
+;   B  back up bank 3 to selected bank 0, 1, or 2, with read-back verify
 ;   U  update HIMON from S19, fixed gate $C000-$EFFF
 ;   0  restore bank 0 -> bank 3, preserving selected STR8 window
 ;   1  restore bank 1 -> bank 3, preserving selected STR8 window
@@ -42,12 +41,10 @@
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
 ; 2026-05-17T21:20-05:00        WLP2        Worker storage formerly moved to $FC00 to make room for U/HIMON update.
 ; 2026-05-21T23:55-05:00        WLP2        Worker now packs down from $FFEF so the free hole is contiguous.
+; 2026-07-23T13:07-05:00        Codex       Size pass shares resident paths and repacks the smaller worker.
+; 2026-07-23T17:27-05:00        Codex       B selects one destination; E/enrollment is removed.
 STR8_PROT_START_HI      EQU             $F0
 STR8_PROT_BUF_HI        EQU             $40
-STR8_CFG_FLAGS_ADDR     EQU             $FFF0
-STR8_CFG_FLAGS_LO       EQU             $F0
-STR8_CFG_FLAGS_HI       EQU             $FF
-STR8_CFG_B0_ROT_MASK    EQU             $01
 ; STR8 identity marker. The source phrase is private.
 STR8_ID_MARKER0         EQU             $7A
 STR8_ID_MARKER1         EQU             $0F
@@ -77,10 +74,10 @@ STR8_WORKER_RUN         EQU             $0200
 STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_TRAY_SIZE   EQU             $0800
 STR8_WORKER_TRAY_END    EQU             $09FF
-STR8_WORKER_STORE_LO    EQU             $C9
-STR8_WORKER_STORE_HI    EQU             $FC
-STR8_WORKER_COPY_LEN_LO EQU             $27
-STR8_WORKER_COPY_LEN_HI EQU             $03
+STR8_WORKER_STORE_LO    EQU             $60
+STR8_WORKER_STORE_HI    EQU             $FD
+STR8_WORKER_COPY_LEN_LO EQU             $90
+STR8_WORKER_COPY_LEN_HI EQU             $02
 STR8_DELAY_TICKS        EQU             $03
 STR8_DELAY_TICK_A       EQU             $26
 STR8_DELAY_FIRST_A      EQU             $27
@@ -90,7 +87,6 @@ STR8_SPLASH_DELAY_A     EQU             $13
 
 STR8_COPY_MODE_FULL     EQU             $00
 STR8_COPY_MODE_RESTORE  EQU             $01
-STR8_COPY_MODE_ENROLL   EQU             $02
 STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
 STR8_COPY_MODE_STAGE_BANK_SECTOR EQU    $06
@@ -122,14 +118,9 @@ STR8_COPY_MODE          EQU             $1FF0
 STR8_BOOT_KEY_ENABLE    EQU             $1FF1
 STR8_STAGE_BUF_HI       EQU             $1FF6
 STR8_UPD_MASK           EQU             $1FF7
-STR8_UPD_COUNT          EQU             $1FF8
 STR8_UPD_DATA_LEN       EQU             $1FF9
-STR8_UPD_SUM            EQU             $1FFA
 STR8_UPD_DST_LO         EQU             $1FFB
 STR8_UPD_DST_HI         EQU             $1FFC
-STR8_UPD_TMP            EQU             $1FFD
-STR8_UPD_TOTAL_LO       EQU             $1FFE
-STR8_UPD_TOTAL_HI       EQU             $1FFF
 STR8_SECTOR_BUF_HI      EQU             $40
 STR8_SECTOR_BUF_END_HI  EQU             $50
 
@@ -255,7 +246,6 @@ STR8_IVY_SIG_OK:
                         LDA             STR8_IVY_SIG2
                         CMP             #STR8_IVY_SIG2_VAL
                         BNE             ?NO
-                        SEC
                         RTS
 ?NO:                   CLC
                         RTS
@@ -375,7 +365,7 @@ STR8_PRINT_COUNTDOWN_A:
                         CMP             #$01
                         BEQ             ?DONE
                         LDA             #' '
-                        JSR             STR8_WRITE_BYTE
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
 ?DONE:                 RTS
 
 ; One $27 tick plus five $26 ticks equals the utility's $E5 6.502s profile.
@@ -402,10 +392,12 @@ STR8_BOOT_KEY_POLL:
                         ENDIF
 
 STR8_PRINT_SCREEN:
+                        LDX             #<MSG_ID
+                        LDY             #>MSG_ID
+                        JSR             STR8_PRINT_XY
                         LDX             #<MSG_SCREEN
                         LDY             #>MSG_SCREEN
-                        JSR             STR8_PRINT_XY
-                        JMP             STR8_PRINT_B0_STATE
+                        JMP             STR8_PRINT_XY
 
 STR8_CMD_LOOP:
                         JSR             STR8_PRINT_PROMPT
@@ -414,7 +406,7 @@ STR8_CMD_LOOP:
                         BRA             STR8_CMD_LOOP
 
 STR8_READ_COMMAND:
-                        JSR             STR8_READ_BYTE
+                        JSR             STR8_CON_READ_BYTE_BLOCK
                         CMP             #$0D
                         BEQ             STR8_READ_COMMAND
                         CMP             #$0A
@@ -426,20 +418,12 @@ STR8_READ_COMMAND:
 ; ----------------------------------------------------------------------------
 STR8_DISPATCH_A:
                         CMP             #'0'
-                        BNE             ?NOT_0
-                        LDA             #$00
+                        BCC             ?NOT_RESTORE
+                        CMP             #'3'
+                        BCS             ?NOT_RESTORE
+                        AND             #$03
                         JMP             STR8_CMD_RESTORE_A
-?NOT_0:
-                        CMP             #'1'
-                        BNE             ?NOT_1
-                        LDA             #$01
-                        JMP             STR8_CMD_RESTORE_A
-?NOT_1:
-                        CMP             #'2'
-                        BNE             ?NOT_2
-                        LDA             #$02
-                        JMP             STR8_CMD_RESTORE_A
-?NOT_2:
+?NOT_RESTORE:
                         CMP             #'?'
                         BNE             ?NOT_ID
                         JMP             STR8_CMD_ID
@@ -448,8 +432,6 @@ STR8_DISPATCH_A:
                         AND             #$DF
                         CMP             #'B'
                         BEQ             STR8_CMD_BACKUP
-                        CMP             #'E'
-                        BEQ             STR8_CMD_ENROLL_B0
                         CMP             #'G'
                         BNE             ?NOT_G
                         JMP             STR8_CMD_G_HIMON
@@ -467,69 +449,35 @@ STR8_DISPATCH_A:
 STR8_CMD_ID:
                         LDX             #<MSG_ID
                         LDY             #>MSG_ID
-                        JSR             STR8_PRINT_XY
-                        JMP             STR8_PRINT_B0_STATE
+                        JMP             STR8_PRINT_XY
 
 STR8_CMD_BACKUP:
-                        JSR             STR8_CFG_B0_ENROLLED
-                        BCS             ?WITH_B0
-                        LDX             #<MSG_BACKUP_WARN
-                        LDY             #>MSG_BACKUP_WARN
+                        LDX             #<MSG_BACKUP_DEST
+                        LDY             #>MSG_BACKUP_DEST
+                        JSR             STR8_PRINT_XY
+                        JSR             STR8_READ_COMMAND
+                        CMP             #'0'
+                        BCC             ?ABORT
+                        CMP             #'3'
+                        BCS             ?ABORT
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
+                        AND             #$03
+                        STA             STR8_COPY_DST_BANK
+                        LDA             #$03
+                        STA             STR8_COPY_SRC_BANK
+                        STZ             STR8_COPY_MODE
+                        LDX             #<MSG_BACKUP_CONFIRM
+                        LDY             #>MSG_BACKUP_CONFIRM
                         JSR             STR8_PRINT_XY
                         JSR             STR8_CONFIRM_Y
-                        BCS             ?DO_21
-                        JMP             STR8_CMD_ABORT
-?DO_21:
-                        JSR             STR8_COPY_FULL_2_TO_1
-                        BCS             ?DO_32
-                        JMP             STR8_CMD_COPY_FAIL
-?DO_32:
-                        JSR             STR8_COPY_FULL_3_TO_2
-                        BCS             ?BACK_OK
-                        JMP             STR8_CMD_COPY_FAIL
-?BACK_OK:
+                        BCC             ?ABORT
+                        JSR             STR8_RUN_COPY
+                        BCC             ?COPY_FAIL
                         JMP             STR8_CMD_OK
-?WITH_B0:
-                        LDX             #<MSG_BACKUP_B0_WARN
-                        LDY             #>MSG_BACKUP_B0_WARN
-                        JSR             STR8_PRINT_XY
-                        JSR             STR8_CONFIRM_Y
-                        BCS             ?DO_10
+?ABORT:
                         JMP             STR8_CMD_ABORT
-?DO_10:
-                        JSR             STR8_COPY_FULL_1_TO_0
-                        BCS             ?DO_B0_21
+?COPY_FAIL:
                         JMP             STR8_CMD_COPY_FAIL
-?DO_B0_21:
-                        JSR             STR8_COPY_FULL_2_TO_1
-                        BCS             ?DO_B0_32
-                        JMP             STR8_CMD_COPY_FAIL
-?DO_B0_32:
-                        JSR             STR8_COPY_FULL_3_TO_2
-                        BCS             ?BACK_B0_OK
-                        JMP             STR8_CMD_COPY_FAIL
-?BACK_B0_OK:
-                        JMP             STR8_CMD_OK
-
-STR8_CMD_ENROLL_B0:
-                        JSR             STR8_CFG_B0_ENROLLED
-                        BCC             ?NEED_ENROLL
-                        LDX             #<MSG_ALREADY_ROT
-                        LDY             #>MSG_ALREADY_ROT
-                        JMP             STR8_PRINT_XY
-?NEED_ENROLL:
-                        LDX             #<MSG_ENROLL_WARN
-                        LDY             #>MSG_ENROLL_WARN
-                        JSR             STR8_PRINT_XY
-                        JSR             STR8_CONFIRM_Y
-                        BCS             ?CONFIRMED
-                        JMP             STR8_CMD_ABORT
-?CONFIRMED:
-                        JSR             STR8_CFG_SET_B0_ENROLLED
-                        BCS             ?CFG_OK
-                        JMP             STR8_CMD_CFG_FAIL
-?CFG_OK:
-                        JMP             STR8_CMD_OK
 
 ; 2026-05-07T19:14-05:00        WLP2        Restore can optionally include high flash.
 ; 2026-05-07T22:16-05:00        WLP2        Restore flushes RX between double confirmations.
@@ -648,99 +596,10 @@ STR8_CMD_COPY_FAIL:
                         ENDIF
                         JMP             STR8_PRINT_COPY_FAIL
 
-STR8_CMD_CFG_FAIL:
-                        IF              STR8_RAM_PROOF
-                        JSR             STR8_SELECT_BANK_3
-                        ENDIF
-                        LDX             #<MSG_CFG_FAIL
-                        LDY             #>MSG_CFG_FAIL
-                        JMP             STR8_PRINT_XY
-
 STR8_CMD_UNKNOWN:
                         LDX             #<MSG_UNKNOWN
                         LDY             #>MSG_UNKNOWN
                         JMP             STR8_PRINT_XY
-
-; ----------------------------------------------------------------------------
-; Tiny state/config
-; ----------------------------------------------------------------------------
-STR8_CFG_B0_ENROLLED:
-                        IF              STR8_RAM_PROOF
-                        JSR             STR8_SELECT_BANK_3
-                        ENDIF
-                        LDA             STR8_CFG_FLAGS_ADDR
-                        AND             #STR8_CFG_B0_ROT_MASK
-                        BEQ             ?YES
-                        CLC
-                        RTS
-?YES:                   SEC
-                        RTS
-
-STR8_PRINT_B0_STATE:
-                        JSR             STR8_CFG_B0_ENROLLED
-                        BCS             ?ROT
-                        LDX             #<MSG_B0_HOLD
-                        LDY             #>MSG_B0_HOLD
-                        JMP             STR8_PRINT_XY
-?ROT:                   LDX             #<MSG_B0_ROT
-                        LDY             #>MSG_B0_ROT
-                        JMP             STR8_PRINT_XY
-
-STR8_CFG_SET_B0_ENROLLED:
-                        IF              STR8_RAM_PROOF
-                        JSR             STR8_SELECT_BANK_3
-                        LDA             STR8_CFG_FLAGS_ADDR
-                        AND             #($FF-STR8_CFG_B0_ROT_MASK)
-                        LDX             #STR8_CFG_FLAGS_LO
-                        LDY             #STR8_CFG_FLAGS_HI
-                        JSR             FLASH_WRITE_BYTE_RAW_AXY
-                        BCC             ?FAIL
-                        JSR             STR8_CFG_B0_ENROLLED
-                        BCC             ?FAIL
-                        SEC
-                        RTS
-?FAIL:                  CLC
-                        RTS
-                        ELSE
-                        LDA             #STR8_COPY_MODE_ENROLL
-                        STA             STR8_COPY_MODE
-                        JSR             STR8_COPY_WORKER_TO_RAM
-                        JSR             STR8_WORKER_RUN
-                        BCC             ?FAIL
-                        JSR             STR8_CFG_B0_ENROLLED
-                        BCC             ?FAIL
-                        SEC
-                        RTS
-?FAIL:                  CLC
-                        RTS
-                        ENDIF
-
-; ----------------------------------------------------------------------------
-; Bank copy entry points
-; ----------------------------------------------------------------------------
-STR8_COPY_FULL_1_TO_0:
-                        LDA             #$01
-                        STA             STR8_COPY_SRC_BANK
-                        LDA             #$00
-                        STA             STR8_COPY_DST_BANK
-                        STZ             STR8_COPY_MODE
-                        JMP             STR8_RUN_COPY
-
-STR8_COPY_FULL_2_TO_1:
-                        LDA             #$02
-                        STA             STR8_COPY_SRC_BANK
-                        LDA             #$01
-                        STA             STR8_COPY_DST_BANK
-                        STZ             STR8_COPY_MODE
-                        JMP             STR8_RUN_COPY
-
-STR8_COPY_FULL_3_TO_2:
-                        LDA             #$03
-                        STA             STR8_COPY_SRC_BANK
-                        LDA             #$02
-                        STA             STR8_COPY_DST_BANK
-                        STZ             STR8_COPY_MODE
-                        JMP             STR8_RUN_COPY
 
 STR8_RUN_COPY:
                         JSR             STR8_PRINT_COPY_PAIR
@@ -942,15 +801,10 @@ STR8_REC_PARSE_BODY:
                         LDA             #STR8_REC_DATA_BUF_HI
                         STA             STR8_REC_DATA_HI
                         LDA             STR8_REC_WORK_TYPE
-                        CMP             #'0'
-                        BNE             ?NOT_METADATA
-                        LDA             #STR8_REC_KIND_METADATA
-                        STA             STR8_REC_KIND
-                        JMP             STR8_REC_RETURN_OK
-?NOT_METADATA:
-                        CMP             #'1'
-                        BNE             ?END
-                        LDA             #STR8_REC_KIND_DATA
+                        CMP             #'9'
+                        BEQ             ?END
+                        AND             #$0F
+                        INC             A
                         STA             STR8_REC_KIND
                         JMP             STR8_REC_RETURN_OK
 ?END:
@@ -1143,21 +997,16 @@ STR8_REC_CAPTURE_APPLY_FAILURE:
                         RTS
 
 STR8_REC_CLEAR_RESULT:
-                        STZ             STR8_REC_KIND
-                        STZ             STR8_REC_FLAGS
-                        STZ             STR8_REC_ADDR_LO
-                        STZ             STR8_REC_ADDR_HI
-                        STZ             STR8_REC_DATA_LEN
-                        STZ             STR8_REC_ENTRY_LO
-                        STZ             STR8_REC_ENTRY_HI
-                        STZ             STR8_REC_DATA_LO
-                        STZ             STR8_REC_DATA_HI
+                        LDX             #(STR8_REC_DATA_HI-STR8_REC_KIND)
+?RESULT:               STZ             STR8_REC_KIND,X
+                        DEX
+                        BPL             ?RESULT
 STR8_REC_CLEAR_FAILURE:
                         STZ             STR8_REC_STATUS
-                        STZ             STR8_REC_FAIL_LO
-                        STZ             STR8_REC_FAIL_HI
-                        STZ             STR8_REC_OBSERVED
-                        STZ             STR8_REC_EXPECTED
+                        LDX             #(STR8_REC_EXPECTED-STR8_REC_FAIL_LO)
+?FAILURE:              STZ             STR8_REC_FAIL_LO,X
+                        DEX
+                        BPL             ?FAILURE
                         RTS
 
 STR8_REC_READ_SUM_BYTE:
@@ -1187,7 +1036,6 @@ STR8_REC_READ_HEX_BYTE:
                         JSR             STR8_REC_HEX_ASCII_TO_NIBBLE
                         BCC             ?FAIL
                         ORA             STR8_REC_WORK_TMP
-                        SEC
 ?FAIL:
                         RTS
 
@@ -1203,12 +1051,10 @@ STR8_REC_HEX_ASCII_TO_NIBBLE:
                         BCS             ?FAIL
                         SEC
                         SBC             #('A'-10)
-                        SEC
                         RTS
 ?DIGIT:
                         SEC
                         SBC             #'0'
-                        SEC
                         RTS
 ?FAIL:
                         CLC
@@ -1218,7 +1064,7 @@ STR8_REC_READ_CHAR:
                         LDA             STR8_REC_SOURCE
                         CMP             #STR8_REC_SOURCE_BUFFER
                         BEQ             ?BUFFER
-                        JSR             STR8_READ_BYTE
+                        JSR             STR8_CON_READ_BYTE_BLOCK
                         CMP             #$03
                         BNE             ?OK
                         LDA             #STR8_REC_ABORT
@@ -1279,7 +1125,7 @@ STR8_COPY_BANKS:
                         JSR             STR8_VERIFY_DST_SECTOR
                         BCC             ?FAIL
                         LDA             #'.'
-                        JSR             STR8_WRITE_BYTE
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
 ?NEXT_SECTOR:
                         LDA             STR8_MARK_SECTOR_HI
                         CLC
@@ -1457,14 +1303,13 @@ STR8_SELECT_BANK_3:
 STR8_CONFIRM_Y:
                         JSR             STR8_READ_COMMAND
                         PHA
-                        JSR             STR8_WRITE_BYTE
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         PLA
                         AND             #$DF
                         CMP             #'Y'
                         BEQ             ?YES
                         CLC
-                        RTS
-?YES:                   SEC
+?YES:
                         RTS
 
 STR8_PRINT_COPY_PAIR:
@@ -1495,8 +1340,8 @@ STR8_COPY_WORKER_TO_RAM:
                         STZ             STR8_COPY_PTR_LO
                         LDA             #STR8_WORKER_RUN_HI
                         STA             STR8_COPY_PTR_HI
+                        IF              STR8_WORKER_COPY_LEN_HI
                         LDX             #STR8_WORKER_COPY_LEN_HI
-                        BEQ             ?TAIL_START
 ?PAGE:
                         LDY             #$00
 ?BYTE:
@@ -1508,8 +1353,9 @@ STR8_COPY_WORKER_TO_RAM:
                         INC             STR8_COPY_PTR_HI
                         DEX
                         BNE             ?PAGE
-?TAIL_START:
+                        ELSE
                         LDY             #$00
+                        ENDIF
 ?TAIL:
                         CPY             #STR8_WORKER_COPY_LEN_LO
                         BEQ             ?DONE
@@ -1528,8 +1374,6 @@ STR8_COPY_WORKER_TO_RAM:
 ; ----------------------------------------------------------------------------
 STR8_UPD_INIT:
                         STZ             STR8_UPD_MASK
-                        STZ             STR8_UPD_TOTAL_LO
-                        STZ             STR8_UPD_TOTAL_HI
                         RTS
 
 STR8_STAGE_HIMON_BLANK:
@@ -1571,7 +1415,7 @@ STR8_READ_HIMON_S19:
                         JSR             STR8_STAGE_HIMON_RECORD
                         BCC             ?FAIL
                         LDA             #'.'
-                        JSR             STR8_WRITE_BYTE
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         BRA             ?RECORD
 ?TERM:
                         SEC
@@ -1601,22 +1445,25 @@ STR8_STAGE_HIMON_RECORD:
                         ADC             #$00
                         CMP             #$F0
                         BCS             ?FAIL
+                        LDA             #$01
+                        TSB             STR8_UPD_MASK
                         LDX             #$00
 ?DATA:
                         LDA             STR8_UPD_DATA_LEN
                         BEQ             ?OK
+                        LDA             STR8_UPD_DST_HI
+                        AND             #$7F
+                        STA             STR8_PTR_HI
+                        LDA             STR8_UPD_DST_LO
+                        STA             STR8_PTR_LO
+                        LDY             #$00
                         LDA             STR8_REC_DATA_BUF,X
-                        JSR             STR8_STAGE_HIMON_BYTE
-                        BCC             ?FAIL
+                        STA             (STR8_PTR_LO),Y
                         INX
                         INC             STR8_UPD_DST_LO
                         BNE             ?COUNT
                         INC             STR8_UPD_DST_HI
 ?COUNT:
-                        INC             STR8_UPD_TOTAL_LO
-                        BNE             ?NEXT
-                        INC             STR8_UPD_TOTAL_HI
-?NEXT:
                         DEC             STR8_UPD_DATA_LEN
                         BRA             ?DATA
 ?OK:
@@ -1624,45 +1471,6 @@ STR8_STAGE_HIMON_RECORD:
                         RTS
 ?FAIL:
                         CLC
-                        RTS
-
-STR8_STAGE_HIMON_BYTE:
-                        STA             STR8_UPD_TMP
-                        LDA             STR8_UPD_DST_HI
-                        CMP             #$C0
-                        BCC             ?FAIL
-                        CMP             #$F0
-                        BCS             ?FAIL
-                        SEC
-                        SBC             #$80
-                        STA             STR8_PTR_HI
-                        LDA             STR8_UPD_DST_LO
-                        STA             STR8_PTR_LO
-                        LDY             #$00
-                        LDA             STR8_UPD_TMP
-                        STA             (STR8_PTR_LO),Y
-                        JSR             STR8_MARK_HIMON_SECTOR
-                        SEC
-                        RTS
-?FAIL:
-                        CLC
-                        RTS
-
-STR8_MARK_HIMON_SECTOR:
-                        LDA             STR8_UPD_DST_HI
-                        CMP             #$D0
-                        BCC             ?C
-                        CMP             #$E0
-                        BCC             ?D
-                        LDA             #$04
-                        BRA             ?SET
-?D:
-                        LDA             #$02
-                        BRA             ?SET
-?C:
-                        LDA             #$01
-?SET:
-                        TSB             STR8_UPD_MASK
                         RTS
 
 STR8_PROGRAM_HIMON_UPDATE:
@@ -1695,7 +1503,7 @@ STR8_PROGRAM_HIMON_SECTOR_AX:
                         JSR             STR8_WORKER_RUN
                         BCC             ?FAIL
                         LDA             #'.'
-                        JSR             STR8_WRITE_BYTE
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         SEC
                         RTS
 ?FAIL:
@@ -1725,7 +1533,7 @@ STR8_WRITE_DEC_DIGIT_A:
                         AND             #$0F
                         CLC
                         ADC             #'0'
-                        JMP             STR8_WRITE_BYTE
+                        JMP             STR8_CON_WRITE_BYTE_BLOCK
 
                         IF              STR8_RAM_PROOF
 STR8_WRITE_HEX_BYTE_A:
@@ -1742,10 +1550,10 @@ STR8_WRITE_HEX_NIBBLE_A:
                         BCC             ?DIGIT
                         CLC
                         ADC             #$37
-                        JMP             STR8_WRITE_BYTE
+                        JMP             STR8_CON_WRITE_BYTE_BLOCK
 ?DIGIT:                 CLC
                         ADC             #'0'
-                        JMP             STR8_WRITE_BYTE
+                        JMP             STR8_CON_WRITE_BYTE_BLOCK
                         ENDIF
 
 ; ----------------------------------------------------------------------------
@@ -1762,18 +1570,12 @@ STR8_PRINT_XY:
                         LDY             #$00
 ?LOOP:                  LDA             (STR8_PTR_LO),Y
                         BMI             ?LAST
-                        JSR             STR8_WRITE_BYTE
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         INY
                         BNE             ?LOOP
                         INC             STR8_PTR_HI
                         BRA             ?LOOP
 ?LAST:                  AND             #$7F
-                        JMP             STR8_WRITE_BYTE
-
-STR8_READ_BYTE:
-                        JMP             STR8_CON_READ_BYTE_BLOCK
-
-STR8_WRITE_BYTE:
                         JMP             STR8_CON_WRITE_BYTE_BLOCK
 
 STR8_CON_INIT:
@@ -1834,16 +1636,6 @@ STR8_CON_WRITE_BYTE_BLOCK:
                         PLX
                         RTS
 
-STR8_CON_POLL_TX_READY:
-                        PHA
-                        ; TXE# is bit 0; invert it into carry without a branch.
-                        LDA             STR8_CON_VIA_CTRL
-                        AND             #STR8_CON_PN_TXE
-                        EOR             #STR8_CON_PN_TXE
-                        LSR             A
-                        PLA
-                        RTS
-
 STR8_CON_WRITE_BYTE_NONBLOCK:
                         PHA
                         SEC
@@ -1877,13 +1669,14 @@ STR8_CON_WRITE_BYTE_NONBLOCK:
 STR8_ID_MARKER_BYTES:   DB              STR8_ID_MARKER0,STR8_ID_MARKER1
                         DB              STR8_ID_MARKER2,STR8_ID_MARKER3
 
-MSG_SCREEN:             DB              $0D,$0A,"STR8-N V0 #5F6A0F7A",$0D,$0A
+MSG_ID:                 DB              $0D,$0A,"STR8-N V0 #5F6A0F7A",$0D,$8A
+MSG_SCREEN:
                         IF              STR8_RAM_PROOF
                         DB              "RAM $0200 BUF $4000-$4FFF",$0D,$0A
                         ELSE
                         DB              "ROM $F000",$0D,$0A
                         ENDIF
-                        DB              "? B E U 0 1 2 G R",$0D,$8A
+                        DB              "? B U 0 1 2 G R",$0D,$8A
 MSG_PROMPT:             DB              "STR8-N",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
@@ -1892,13 +1685,9 @@ MSG_BOOT_BANNER:       DB              $0D,$0A
 MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 3S. S=STR8-N ",$A0
                         ENDIF
 
-MSG_ID:                 DB              $0D,$0A,"STR8-N V0 #5F6A0F7A",$0D,$8A
-MSG_B0_HOLD:            DB              "B0 HOLD",$0D,$8A
-MSG_B0_ROT:             DB              "B0 ROT",$0D,$8A
 MSG_UNKNOWN:            DB              $0D,$0A,"?",$0D,$8A
 MSG_OK:                 DB              $0D,$0A,"OK",$0D,$8A
 MSG_ABORT:              DB              $0D,$0A,"ABORT",$0D,$8A
-MSG_CFG_FAIL:           DB              $0D,$0A,"CFG FAIL",$0D,$8A
 MSG_COPY_FAIL:          DB              $0D,$0A,"COPY FAIL",$0D,$8A
 MSG_UPDATE_ROM_ONLY:    DB              $0D,$0A,"U ROM ONLY",$0D,$8A
 MSG_UPDATE_HIMON:       DB              $0D,$0A,"UPDATE HIMON C000-EFFF? Y:",$A0
@@ -1908,11 +1697,9 @@ MSG_S19_FAIL:           DB              $0D,$0A,"S19 FAIL",$0D,$8A
 MSG_S19_NO_DATA:        DB              $0D,$0A,"NO S19 DATA",$0D,$8A
 MSG_G_HIMON:            DB              $0D,$0A,"G HIMON",$0D,$8A
 MSG_RESTORE_B:          DB              $0D,$0A,"RESTORE ",('B'+$80)
-MSG_ALREADY_ROT:        DB              $0D,$0A,"B0 ALREADY ROT",$0D,$8A
 
-MSG_BACKUP_WARN:        DB              $0D,$0A,"BACKUP ERASE B1/B2. Y:",$A0
-MSG_BACKUP_B0_WARN:     DB              $0D,$0A,"BACKUP ERASE B0/B1/B2. Y:",$A0
-MSG_ENROLL_WARN:        DB              $0D,$0A,"B0 ROT ON. NEXT B ERASES B0. Y:",$A0
+MSG_BACKUP_DEST:        DB              $0D,$0A,"BACKUP B3 TO B0/1/2: ",$A0
+MSG_BACKUP_CONFIRM:     DB              " ERASE? Y:",$A0
 MSG_RESTORE_WARN:       DB              "->B3? Y:",$A0
 MSG_FLASH_HI_WARN:      DB              $0D,$0A,"WARN: MAY NOT BOOT",$0D,$0A,"FLASH C000-FFFF? Y:",$A0
 MSG_COPY_B:             DB              $0D,$0A,"COPY ",('B'+$80)

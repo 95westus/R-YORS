@@ -47,8 +47,8 @@ and debug tools.
 
 ## Milestone Snapshot
 
-The current STR8 hardware milestone is image rotation and recovery, proven with
-three bootable live-bank payloads:
+The STR8 hardware milestone is image backup and recovery, proven with three
+bootable live-bank payloads:
 
 ```text
 HIMON      recovery/inspection monitor
@@ -56,14 +56,15 @@ OSI BASIC  interactive programming payload
 fig-FORTH  threaded language payload
 ```
 
-The hardware log preserves the earlier `M` proof. The current resident command
-was retired in the 2026-07-18 size pass; current board behavior still needs a
-regression pass after that change. Existing proof covers `B`, `E`, Bank 0
-rotation, the fixed
-`$C000-$EFFF` `U` / `UPDATE HIMON` gate, HIMON U1->U2 update, booting OSI
-BASIC and fig-FORTH through that same gate, and restoring known-good HIMON from
-Bank 2 by the high-flash recovery path. This promotes STR8 from proposed
-recovery idea to bench-proven recovery/update guard.
+The hardware log preserves the earlier `M` proof and the retired cascading `B`
+and Bank 0 enrollment behavior. The current resident `M` and `E` commands are
+removed; `B` now selects one destination bank and still needs a board
+regression. Existing proof also covers the fixed `$C000-$EFFF` `U` / `UPDATE
+HIMON` gate, HIMON U1->U2 update, booting OSI BASIC and fig-FORTH through that
+same gate, and restoring known-good HIMON from Bank 2 by the high-flash
+recovery path. This promotes STR8 from proposed recovery idea to bench-proven
+recovery/update guard while keeping the changed backup policy explicitly
+hardware-pending.
 
 The milestone does not make STR8 a finished field-updater. STR8 self-update,
 whole-ROM install, catalog-aware repair, raw range update, and original
@@ -80,17 +81,12 @@ bank 3 restore: write ordinary image bytes by guarded flash flow
 protected STR8 window: skip unless explicit STR8 install/update is requested
 ```
 
-Bank 0 begins as the optional WDCMONv2/base-image hold slot. A future
-WDCMONv2-to-R-YORS bridge should offer to save the board's original live base
-flash image before conversion, but that preservation flow is a TODO and is not
-part of today's STR8 test target.
-
-Until explicitly enrolled, bank 0 is excluded from automatic backup rotation.
-The STR8 `E` command enrolls bank 0 after a destructive confirmation and sets a
-one-way in-flash flag. The current proof uses bit 0 of `$FFF0`: erased/set
-means `B0 HOLD`, cleared means `B0 ROT`. After enrollment, automatic backup
-rotates `1 -> 0`, `2 -> 1`, and `3 -> 2`. Bank 0 then remains in the rotation
-until erase/reflash or a deliberate STR8 configuration rebuild.
+Bank 0 is an explicit backup destination on the same terms as Bank 1 and Bank
+2. A future WDCMONv2-to-R-YORS bridge should offer to save the board's original
+live base flash image before conversion, but that preservation flow is a TODO
+and is not part of today's STR8 test target. `B` names one destination and
+requires confirmation; there is no automatic cascade, `E` command, or Bank 0
+enrollment flag.
 
 First principle: STR8 cannot safely erase the code it is currently running
 from. Self-recovery therefore needs either a protected window that is not erased
@@ -180,17 +176,17 @@ packed against `$FFEF` and grows downward, and the remaining free space is one
 contiguous hole:
 
 ```text
-$F000-$F974  STR8 resident code
-             size $0975 = 2421 bytes
+$F000-$F843  STR8 resident code
+             size $0844 = 2116 bytes
 
-$F975-$FB5F  STR8 resident data
-             size $01EB = 491 bytes
+$F844-$F9B2  STR8 resident data
+             size $016F = 367 bytes
 
-$FB60-$FCC8  contiguous unused $FF growth hole
-             size $0169 = 361 bytes
+$F9B3-$FD5F  contiguous unused $FF growth hole
+             size $03AD = 941 bytes
 
-$FCC9-$FFEF  stored STR8 RAM worker image
-             size $0327 = 807 bytes
+$FD60-$FFEF  stored STR8 RAM worker image
+             size $0290 = 656 bytes
              copied to and run from the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
@@ -384,13 +380,11 @@ W65C02-specific code is allowed
 first implementation is a RAM-resident S19 launched under HIMON
 first RAM proof image links at $3000
 first RAM proof reserves $4000-$4FFF as the 4K copy buffer
-first RAM proof can perform backup rotation with read-back verify
-first RAM proof can enroll bank 0 into rotation by clearing an in-flash flag bit
+first RAM proof can back up bank 3 to selected bank 0, 1, or 2 with read-back verify
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current host build links STR8 at $F000 and stores a RAM worker at $FCC9-$FFEF
+current host build links STR8 at $F000 and stores a RAM worker at $FD60-$FFEF
 current ROM build copies the worker to $0200 before B/U/0/1/2 flash mutation
-current ROM build copies the worker to $0200 before E config mutation
-current ROM build has ?, B, E, U, 0, 1, 2, G, and R commands
+current ROM build has ?, B, U, 0, 1, 2, G, and R commands
 current host build exposes the V1 record service at $F009 with `SR`/`01`/`07`
 current host build converts `U` to the shared validate-first S19 parser
 record-service and converted-`U` hardware proof is pending
@@ -400,8 +394,8 @@ current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data grows upward from $F000
-stored worker currently occupies $FCC9-$FFEF and grows downward
-current contiguous free hole is $FB60-$FCC8
+stored worker currently occupies $FD60-$FFEF and grows downward
+current contiguous free hole is $F9B3-$FD5F
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
@@ -529,7 +523,7 @@ STR8's recovery contract.
 
 This is the future high-level STR8/HIMON shape. It keeps STR8 small while
 allowing later catalog-aware flash mutation. V0 is simpler: image-based
-restore/verify and backup rotation.
+restore/verify and explicitly selected backup.
 
 ```mermaid
 flowchart TD
@@ -584,9 +578,8 @@ that it has enough serial I/O and flash safety to repair the machine.
 V0 command surface should be closer to this:
 
 ```text
-?          print tiny STR8 ID/state
-B          backup rotation, with verify built in
-E          enroll bank 0 into backup rotation, destructive, confirmed
+?          print tiny STR8 ID
+B          back up bank 3 to selected bank 0, 1, or 2, destructive, confirmed
 0          restore bank 0 to bank 3, with verify built in
 1          restore bank 1 to bank 3, with verify built in
 2          restore bank 2 to bank 3, with verify built in
@@ -599,10 +592,9 @@ repair, and richer loading are later features. The recovery loader should avoid
 the full assembler, full catalog UI, compression tools, and rich command parser.
 Those belong in HIMON once normal operation is safe.
 
-There is no casual bank 0 erase command in the first command surface. `E` is the
-only Bank 0 policy change: it confirms the destructive consequence, sets the
-one-way rotation flag, and lets future `B` commands use bank 0 as the oldest
-automatic backup slot.
+Bank 0 is no longer protected by a separate policy state. `B` accepts Bank 0,
+1, or 2 only after naming the destination and then receiving a separate `Y`
+confirmation.
 
 ## Current Command Worker Map
 
@@ -614,9 +606,8 @@ flowchart TD
     RESET[RESET vector] --> STR8[STR8 shell at $F000]
     STR8 --> PROMPT[STR8 prompt]
 
-    PROMPT --> Q[? ID/state]
+    PROMPT --> Q[? ID]
     PROMPT --> B[B backup]
-    PROMPT --> E[E enroll Bank 0]
     PROMPT --> RST[0/1/2 restore]
     PROMPT --> G[G go HIMON]
     PROMPT --> R[R reset]
@@ -624,8 +615,7 @@ flowchart TD
     G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $FCC9-$FFEF -> $0200]
-    E --> COPY
+    B --> COPY[copy worker $FD60-$FFEF -> $0200]
     RST --> COPY
     COPY --> WORKER[RAM flash worker]
     WORKER --> FLASH[bank select / erase / write / verify]
@@ -662,19 +652,19 @@ quit advanced mode
 Bad fit:
 
 ```text
-the normal ? B E U 0 1 2 G R rescue/update path
-automatic backup policy
-casual bank 0 erase before enrollment
+the normal ? B U 0 1 2 G R rescue/update path
+implicit or cascading backup policy
+an unconfirmed bank 0 erase
 catalog garbage collection
 rich monitor UI
 ```
 
 Guard rails:
 
-- Advanced copy must never silently change the Bank 0 enrollment flag. `E`
-  remains the ordinary Bank 0 policy command.
-- Writes to live bank 3, Bank 0 before enrollment, the selected STR8 protected
-  window, or the hardware vector bytes need refusal or loud confirmation.
+- Advanced copy must name its destination and must not silently cascade into
+  another bank.
+- Writes to live bank 3, any backup bank, the selected STR8 protected window,
+  or the hardware vector bytes need refusal or loud confirmation.
 - The running STR8 code, RAM flash worker, and staged sector image must not be
   erased out from under the operation.
 - Copy must verify immediately by read-back compare. A separate later verify is
@@ -757,29 +747,22 @@ The first STR8 bank policy is image-oriented:
 
 ```text
 bank 3 = live reset/boot image
-bank 2 = most recent backup image
-bank 1 = previous backup image
-bank 0 = optional WDCMONv2/base hold, unless enrolled into rotation
+bank 2 = selectable backup image
+bank 1 = selectable backup image
+bank 0 = selectable backup image
 ```
 
-On a backup request before bank 0 enrollment:
+On a backup request:
 
 ```text
-copy bank 2 -> bank 1
-copy bank 3 -> bank 2
+prompt for bank 0, 1, or 2
+confirm the selected bank erase
+copy bank 3 -> selected bank
+verify by read-back compare
 ```
 
-On a backup request after `E` enrolls bank 0:
-
-```text
-copy bank 1 -> bank 0
-copy bank 2 -> bank 1
-copy bank 3 -> bank 2
-```
-
-The `E` enrollment flag is intentionally one-way under ordinary flash rules.
-Once the flag is set, bank 0 stays in automatic rotation until erase/reflash or
-a deliberate STR8 configuration rebuild.
+The other two backup banks are unchanged. Bank 0 has no separate enrollment or
+protection state, and the old `$FFF0` bit is ignored.
 
 On a recovery/restore request:
 
@@ -788,9 +771,9 @@ restore ordinary bytes from selected 32K bank image 0, 1, or 2 -> bank 3
 skip selected STR8 protected window unless explicit STR8 install/update is requested
 ```
 
-Restoring bank 0 means restoring whatever bank 0 currently holds. Before
-enrollment that may be a WDCMONv2/base image and may remove R-YORS from the live
-boot image. After enrollment it is simply the oldest rotating backup image.
+Restoring bank 0 means restoring whatever bank 0 currently holds. That may be a
+selected backup or an older WDCMONv2/base image and may remove R-YORS from the
+live boot image.
 
 Saving the board's original WDCMONv2/base flash image remains a future bridge
 TODO, not a requirement for today's STR8 RAM proof.
@@ -813,14 +796,13 @@ Full-bank copy in the current RAM-resident S19 proof stages one 4K erase sector
 at a time through `$4000-$4FFF`:
 
 ```text
-B command, B0 HOLD: copy bank 2 -> bank 1, then bank 3 -> bank 2
-B command, B0 ROT:  copy bank 1 -> bank 0, bank 2 -> bank 1, bank 3 -> bank 2
+B command + 0/1/2:  copy bank 3 -> selected bank only
 0/1/2 commands:     copy selected bank -> bank 3 while preserving STR8 bytes
 ```
 
 Each 4K window reads from the source bank, writes the destination bank, and
 verifies by simple read-back compare. The `$F000` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$FCC9-$FFEF` into RAM
+policy by first copying its worker from bank 3 `$FD60-$FFEF` into RAM
 `$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. Catalog
@@ -981,8 +963,7 @@ restore bank 3 before printing status
 ```
 
 The 1->0 direct-program shortcut is later optimization, not the first
-target-update contract. V0 may still clear tiny one-way config bits such as
-`B0 HOLD -> B0 ROT`, but monitor replacement should be a whole-sector rebuild.
+target-update contract. Monitor replacement should be a whole-sector rebuild.
 
 S19 is only the transport format. STR8 should collect or merge S19 data into a
 complete 4K RAM sector image before flash is touched. This preserves bytes that

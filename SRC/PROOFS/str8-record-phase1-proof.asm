@@ -1000,9 +1000,9 @@ P1_CHECK_ROM_FACE:
                         RTS
 
                         DATA
-P1_HEADER_BYTES:        DB              $4C,$10,$F0,$4C,$83,$F3,$4C,$8A
-                        DB              $F3,$4C,$92,$F3,$53,$52,$01,$07
-P1_VECTOR_BYTES:        DB              $99,$F0,$00,$F0,$AD,$F0
+P1_HEADER_BYTES:        DB              $4C,$10,$F0,$4C,$CB,$F2,$4C,$D2
+                        DB              $F2,$4C,$DA,$F2,$53,$52,$01,$07
+P1_VECTOR_BYTES:        DB              $98,$F0,$00,$F0,$AC,$F0
 P1_GUARD_BYTES:         DB              $11,$22,$33,$44
 
 ; Successful result descriptors, beginning at STR8_REC_KIND ($7E9C).

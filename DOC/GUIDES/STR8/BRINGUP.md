@@ -41,9 +41,9 @@ HIMON vectors:      HIMON controls IRQ/vector behavior in V0
 ```
 
 STR8 started as a RAM-launched test app. The current ROM proof is reset-entered
-and resident at `$F000`, with guarded `B`, `E`, `U`, `0`, `1`, and `2`
-paths. New destructive behavior should still begin as a read-only or RAM-safe
-proof before it becomes part of the reset-owned recovery path.
+and resident at `$F000`, with guarded `B`, `U`, `0`, `1`, and `2` paths. New
+destructive behavior should still begin as a read-only or RAM-safe proof before
+it becomes part of the reset-owned recovery path.
 
 ## Escape Path
 
@@ -68,10 +68,11 @@ keeps the T48 as the final escape hatch.
 
 ## Bringup Order And Remaining Rail
 
-The early bringup order below is mostly historical now. Bank 0 enrollment,
+The early bringup order below is historical. The retired Bank 0 enrollment and
 backup rotation, the fixed `$C000-$EFFF` `U` gate, HIMON U1->U2 update, OSI
-BASIC and fig-FORTH payload update, and high-flash recovery back to HIMON have
-all passed on hardware. STR8 self-update and broader field-update policy remain
+BASIC and fig-FORTH payload update, and high-flash recovery back to HIMON all
+passed on hardware. The current explicit-destination `B` policy still needs its
+board regression. STR8 self-update and broader field-update policy remain
 future work.
 
 ```text
@@ -92,27 +93,22 @@ future work.
 
 ```text
 bank 3  live reset/boot image
-bank 2  most recent backup image
-bank 1  previous backup image
-bank 0  optional WDCMONv2/base hold, unless enrolled into rotation
+bank 2  selectable backup image
+bank 1  selectable backup image
+bank 0  selectable backup image
 ```
 
-Automatic backup request before bank 0 enrollment:
+Current backup request:
 
 ```text
-copy bank 2 -> bank 1
-copy bank 3 -> bank 2
+prompt for destination bank 0, 1, or 2
+confirm the selected destination erase
+copy bank 3 -> selected bank
 verify copied bytes by read-back
 ```
 
-After `E` enrolls bank 0:
-
-```text
-copy bank 1 -> bank 0
-copy bank 2 -> bank 1
-copy bank 3 -> bank 2
-verify copied bytes by read-back
-```
+There is no cascade and no `E` command. Bank 0 is accepted on the same terms as
+Bank 1 or Bank 2; the old enrollment flag is ignored.
 
 Saving the board's original WDCMONv2/base flash image is still desired, but it
 belongs to the future bridge/install path. It is not part of today's STR8 RAM
@@ -127,9 +123,8 @@ skip selected STR8 protected window
 verify restored bytes by read-back
 ```
 
-Restoring bank 0 restores whatever bank 0 currently holds. Before enrollment it
-may be a saved WDCMONv2/base image. After enrollment it is the oldest rotating
-backup.
+Restoring bank 0 restores whatever image the operator most recently placed
+there, or any earlier base image that has not been overwritten.
 
 ## Protected Window
 
@@ -201,9 +196,9 @@ Do not make the marker a catalog. It is only a V0 recovery sanity check.
 wrong bank selected
 source image marker missing
 verify mismatch after copy
-backup rotation interrupted after first copy
-bank 0 enrollment requested without confirmation
-bank 0 enrollment flag write fails or verifies wrong
+invalid backup destination accepted
+backup destination changed without confirmation
+an unselected backup bank changed
 restore interrupted before bank 3 is valid
 top-sector erase succeeds but rewrite fails
 protected-window write requested without explicit STR8 install/update
@@ -218,8 +213,7 @@ that is still possible.
 STR8_INIT
 STR8_PRINT_SCREEN
 STR8_CMD_LOOP
-STR8_CMD_BACKUP        RAM proof: real backup cascade with verify
-STR8_CMD_ENROLL_B0     RAM proof: clear one-way bank 0 rotation flag
+STR8_CMD_BACKUP        RAM proof: selected Bank 3 backup with verify
 STR8_CMD_RESTORE_0     RAM proof: restore bank 0 -> bank 3, preserve STR8 bytes
 STR8_CMD_RESTORE_1     RAM proof: restore bank 1 -> bank 3, preserve STR8 bytes
 STR8_CMD_RESTORE_2     RAM proof: restore bank 2 -> bank 3, preserve STR8 bytes
@@ -243,25 +237,22 @@ output:  SRC/BUILD/s19/str8-f000.s19
 ```
 
 The current Phase-1 host build links the resident shell at `$F000`. The worker
-image links for `$0200`, is stored in the combined ROM at `$FCC9-$FFEF`, and is
+image links for `$0200`, is stored in the combined ROM at `$FD60-$FFEF`, and is
 copied into the `$0200-$09FF` STR8 RAM tray before destructive flash work. The
 RAM proof image is linked at `$3000`, is launched under HIMON, and reserves
 `$4000-$4FFF` as copy-buffer RAM. The current copy worker stages one 4K erase
 sector at a time through that buffer. The ROM `U` updater uses `$4000-$6FFF`
 to stage HIMON C/D/E sectors before erase/write.
 
-The host-built top-sector header is `$F000-$F00F = 4C 10 F0 4C 83 F3 4C 8A
-F3 4C 92 F3 53 52 01 07`. `$F009` is the V1 validated-record service, and
+The host-built top-sector header is `$F000-$F00F = 4C 10 F0 4C CB F2 4C D2
+F2 4C DA F2 53 52 01 07`. `$F009` is the V1 validated-record service, and
 `$F00C-$F00F` is its `SR` signature, version, and capabilities. This new
 provider and the converted `U` path remain hardware-pending.
 
-RAM proof command `B` is the destructive backup cascade. Before Bank 0
-enrollment it copies `2->1` and `3->2`. After `E` enrollment it copies `1->0`,
-`2->1`, and `3->2`. Each copy stages one 4K sector through `$4000-$4FFF`,
-erases the destination sector, writes it, and verifies by read-back compare.
-
-RAM proof command `E` clears bit 0 of `$FFF0` after confirmation. Erased/set
-means `B0 HOLD`; cleared means `B0 ROT`.
+RAM proof command `B` prompts for Bank 0, 1, or 2, confirms that destination,
+then copies only Bank 3 to the selected bank. Each copy stages one 4K sector
+through `$4000-$4FFF`, erases the destination sector, writes it, and verifies by
+read-back compare. `E` and the Bank 0 enrollment policy are removed.
 
 RAM proof commands `0`, `1`, and `2` restore the selected source bank to live
 bank 3. The normal restore path preserves `$C000-$FFFF` from bank 3 unless the
