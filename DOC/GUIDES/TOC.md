@@ -64,6 +64,9 @@ board:
   Integration Layer board-test rail and size-review recommendations.
 - [STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) -
   accepted `J0`-`J2` implementation and proof plan for unrelated 32K systems.
+- [STR8_STRING_BANK_INSTALL_GAME_PLAN.md](PLANNING/STR8_STRING_BANK_INSTALL_GAME_PLAN.md) -
+  proposed common HB/NUL ABI, Bank-3 supervisor installer, and later optional
+  home-aware guest-worker contract.
 - [STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) -
   retained S19/bank-volume direction and superseded compatible-bank design.
 - [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - plan for moving retired samples,

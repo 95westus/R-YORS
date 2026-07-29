@@ -49,6 +49,15 @@ STR8_MULTIBOOT_BANK_VOLUMES.md
   relates to DECISIONS.md, TECHNICAL_GUIDE.md, STR8_DECISION_REFERENCE.md,
   MEMORY_MAP.md, FUTURE.md, OIL_710_TEST_PLAN.md, and HARDWARE_TEST_LOG.md
 
+STR8_STRING_BANK_INSTALL_GAME_PLAN.md
+  freezes returning-worker home-bank policy while leaving implementation
+  proposed
+  defines the Bank-3 supervisor installer, NOT_SUPERVISOR/BAD_HOME outcomes,
+  no-ROM-return restoration failure, and bank-local common HB/NUL ABI
+  separates the first installer from the later optional HOME_BANK guest worker
+  relates to STR8_J012_OPAQUE_BANK_PLAN.md,
+  STR8_GUEST_IMAGE_QUALIFICATION.md, DECISIONS.md, and current STR8 worker
+
 AP_LINKER_CURRENT_IMAGE_GATES.md
   freezes the active missing-import, banked-RJOIN, and Bank-2 installer inputs
   pins the current resident BIO_FTDI_PUT_CSTR result to $E705

@@ -79,6 +79,36 @@ If Bank 3 `$F000-$FFFF` is replaced by WOZMON or another unrelated top sector,
 this STR8 selector no longer exists. Supporting that arrangement would require
 a different reset supervisor or external hardware and is outside this plan.
 
+## Returning RAM Workers And Home-Bank Ownership
+
+The successful `J0`-`J2` handoff is a non-returning operation. A RAM worker
+that temporarily selects another bank and then returns has a stricter
+home-bank contract.
+
+The first Bank 0-2 installer is a Bank-3 supervisor service:
+
+- it verifies that the actual current bank is 3 before selecting or mutating
+  another bank;
+- entry from Bank 0-2 fails with `NOT_SUPERVISOR`;
+- every returning path restores and verifies Bank 3 before entering ROM;
+- a home-bank mismatch reports `BAD_HOME`; and
+- failure to restore and verify Bank 3 never returns into ROM. The failure
+  path remains entirely in RAM until physical reset.
+
+A reusable worker that a guest could call from Bank 0-2 is a later optional
+specification, not part of the first installer. Such a worker requires an
+explicit `HOME_BANK`, verifies that home on entry, and restores and verifies
+that same home before returning. It must not assume Bank 3 merely because the
+current STR8 worker does.
+
+NMI vector ownership follows the bank selected at the instant of the vector
+fetch. Therefore every temporary-bank worker must keep NMI quiescent and must
+not call a home-bank ROM service, including the common HB string ABI, until
+the coherent home bank has been restored.
+
+The complete proposed worker, installer, and string contract lives in
+[STR8_STRING_BANK_INSTALL_GAME_PLAN.md](STR8_STRING_BANK_INSTALL_GAME_PLAN.md).
+
 ## Bank Roles Are Configuration, Not ABI
 
 The current and possible future roles are inventory facts, not meanings built

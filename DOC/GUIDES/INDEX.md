@@ -11,6 +11,7 @@ This is the full guide index for the current R-YORS documentation set.
 - [ASM/LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) - complete ASM-F2 16x16 Life AP package, bank 2 storage, and run walkthrough.
 - [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
 - [PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` implementation, size, recovery, and hardware-proof plan for opaque 32K banks.
+- [PLANNING/STR8_STRING_BANK_INSTALL_GAME_PLAN.md](PLANNING/STR8_STRING_BANK_INSTALL_GAME_PLAN.md) - proposed common HB/NUL ABI, Bank-3 supervisor installer, and optional future home-aware guest-worker contract.
 - [STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) -
   important per-image warm-handoff, peripheral, vector, CRC, and recovery
   qualification procedure for unrelated 32K systems.
@@ -89,6 +90,9 @@ the main operator/technical path.
   Integration Layer board-test plan and size review.
 - [STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) -
   accepted STR8 `J0`-`J2` opaque-bank implementation and board-proof plan.
+- [STR8_STRING_BANK_INSTALL_GAME_PLAN.md](PLANNING/STR8_STRING_BANK_INSTALL_GAME_PLAN.md) -
+  proposed common HB/NUL string ABI, Bank-3-owned Bank 0-2 installer, and
+  explicit later `HOME_BANK` guest-worker contract.
 - [STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) -
   retained S19 ownership/bank-volume architecture plus superseded J/BPB
   design history.
