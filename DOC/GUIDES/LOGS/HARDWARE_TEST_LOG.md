@@ -16975,3 +16975,461 @@ resident faces, command parsing, non-cascading B0/B1/B2 backup, restore
 behavior, and the shared worker tail, this completes on-board acceptance of
 the STR8 resident and worker size pass. The board finished with the exact
 candidate in all four banks and no remaining recovery action.
+
+## 2026-07-28 STR8 J0-J2 Read-Only Inventory And RAM Handoff Proof
+
+The 1,431-line operator transcript is 25,453 bytes and has SHA-256
+`AC5A9E549227EE48D7F7B40F7C2E8415F37945BFB403DDE57C256315672AAAC5`.
+The operator first completed a confirmed Bank-3 `$C000-$EFFF` `U` update;
+Bank 3 then cold-booted HIMON `V 00.0728(2121)`. The inventory below is the
+post-update baseline. No flash mutation occurred during the inventory or
+subsequent `J` handoffs.
+
+The read-only whole-bank fixture assembled at `$3000`, returned `$AC`, and
+left the explicit bank latch at Bank 3:
+
+```text
+RET A=AC X=03 Y=0F P=B5 S=FD Nv-BdIzC
+1A00: AC 00 00 00 00 EE 03 00 | 00 00 00 00 00 00 00 00 | ................
+1A10: 59 4B 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5 | YK..............
+1A20: 3D 2A 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5 | =*..............
+1A30: EF 04 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5 | ................
+1A40: 80 4F 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5 | .O..............
+```
+
+Decoded provisional inventory:
+
+```text
+Bank 0  full-image CRC $4B59
+Bank 1  full-image CRC $2A3D
+Bank 2  full-image CRC $04EF
+Bank 3  full-image CRC $4F80
+
+all banks  NMI $F098, RESET $F000, IRQ $F0AC
+all banks  F000-F003 = A0 00 B1 CF
+all banks  F00C-F00F = 04 B0 0C A5
+```
+
+The fixture was run a second time after the first `J2` cycle and produced the
+same status, latch, CRC, vector, and face records.
+
+The host candidate RAM image loaded as `L OK=0B4C GO=3000` and identified
+itself as Bank 3:
+
+```text
+STR8-N V0 #5F6A0F7A B3
+RAM $0200 BUF $4000-$4FFF
+? B U 0 1 2 J0 J1 J2 G R
+```
+
+All three requested handoffs entered a target through its own `$F000` reset
+path without `JERR`. Physical reset after every target returned to the
+installed Bank-3 STR8 and HIMON `V 00.0728(2121)`:
+
+```text
+J B2 -> target HIMON V 00.0728(2113) -> reset -> Bank 3 V 00.0728(2121)
+J B1 -> target HIMON V 00.0728(2113) -> reset -> Bank 3 V 00.0728(2121)
+J B0 -> target HIMON V 00.0728(2042) -> reset -> Bank 3 V 00.0728(2121)
+```
+
+A repeated `L G` attempt with no valid S19 stream produced many `LERR=$01`
+lines between the `J2` and `J1` cycles. It was not a `J` failure and physical
+reset again recovered Bank 3.
+
+Phase A passes. Phase B proves the RAM candidate's parser, direct RAM bank
+handoff, and physical-reset recovery for all three banks. Two acceptance
+items remain before resident installation: Banks 1 and 2 need a read-only
+identity distinction because both banners report version `2113` (their
+reported ASM presence differs), and a final whole-bank inventory must prove
+the baseline CRCs remained unchanged after the last `J1`/`J0` cycles. The
+resident stored-worker mode `$08` path remains uninstalled and unproven.
+
+## 2026-07-28 STR8 J0-J2 Identity Follow-Up And Bank-3 State Change
+
+The 2,337-line follow-up transcript is 40,073 bytes and has SHA-256
+`F46E69444B5103004AF0931CD59E106D145D1AF182F65D5FFD12D004759B8B31`.
+
+The direct target dumps distinguish the two targets that share HIMON version
+`2113`:
+
+```text
+J B2
+HIMON V 00.0728(2113)
+8000: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0
+
+J B1
+HIMON V 00.0728(2113)
+8000: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF
+```
+
+Bank 2 has the expected ASM-F2 low-flash face; Bank 1 is erased at
+`$8000-$800F`. A subsequent Bank-0 dump was also erased there, and `ASM NEW`
+returned `#56AD7400# HSH_NF!`, independently confirming that Bank 0 lacks ASM.
+This closes the Bank-1/Bank-2 identity ambiguity in the RAM handoff proof.
+
+The later part of the session is not a clean non-destructive post-`J`
+inventory. After the Bank-0 test, the operator invoked the Bank-3 bootloader,
+attempted `L F`, and then explicitly confirmed a full high-flash
+Bank-2-to-Bank-3 restore:
+
+```text
+LF ERASE=B9CC OLD=31 NEW=35
+LF FAIL=03 WR=39C0 SKIP=02AD GO=800C
+
+RESTORE B2->B3? Y: y
+WARN: MAY NOT BOOT
+FLASH C000-FFFF? Y: y
+COPY B2->B3
+```
+
+The final inventory completed and restored the latch to Bank 3:
+
+```text
+1A00: AC 00 00 00 00 EE 03 00 | 00 00 00 00 00 00 00 00
+1A10: 59 4B 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A20: 3D 2A 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A30: EF 04 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A40: EF 04 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+```
+
+Banks 0-2 retained their original CRCs `$4B59/$2A3D/$04EF`. Bank 3 changed
+from the post-`U` baseline `$4F80` to `$04EF` and now exactly matches Bank 2,
+as expected after the confirmed full restore. Its low face is the ASM-F2
+signature and it boots HIMON `V 00.0728(2113)`, not the prior Bank-3
+`V 00.0728(2121)`.
+
+The identity follow-up passes, but the full-bank restore deliberately
+invalidates the requested clean post-`J` Bank-3 comparison. Do not install the
+resident `J` candidate until the intended Bank-3 payload is chosen. The
+recommended recovery of the reported layout is to repeat the previously
+successful `$C000-$EFFF` `U` update, restore HIMON `2121`, and require a fresh
+inventory of `$4B59/$2A3D/$04EF/$4F80` with PCR `$EE` and decoded Bank 3 before
+the top-sector install.
+
+## 2026-07-28 STR8 J0-J2 Bank-3 Recovery And Clean CRC Acceptance
+
+The 4,324-line continuation transcript is 81,772 bytes and has SHA-256
+`F5199F7754F1DF246B5E6D7CCC24B7F36E06B45ACDEC8E73BF47A88D680E55DC`.
+It includes the prior sessions and then continues through the requested
+Bank-3 recovery and clean read-only comparisons.
+
+The operator repeated the proven `$C000-$EFFF` `U` update after the earlier
+full Bank-2-to-Bank-3 restore. Programming returned `OK`; warm and cold boot
+both reported HIMON `V 00.0728(2121)`. The recovered pre-jump inventory was:
+
+```text
+1A00: AC 00 00 00 00 EE 03 00 | 00 00 00 00 00 00 00 00
+1A10: 59 4B 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A20: 3D 2A 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A30: EF 04 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A40: 80 4F 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+```
+
+This restores the intended full-image CRCs:
+
+```text
+Bank 0 $4B59   Bank 1 $2A3D   Bank 2 $04EF   Bank 3 $4F80
+```
+
+The exact `$0B4C` RAM candidate then executed `J2`, entered target HIMON
+`2113`, and recovered by physical reset to Bank-3 HIMON `2121`. A complete
+inventory immediately afterward matched the recovered baseline byte for
+byte. Some invalid `L G` transport text produced `LERR=$01`/`LS03` before
+that reset; it issued no flash operation and did not change the inventory.
+
+The operator next executed `J0`, entered target HIMON `2042`, confirmed its
+missing ASM hash, and physically reset to Bank 3. The final complete inventory
+again matched the recovered baseline byte for byte:
+
+```text
+1A00: AC 00 00 00 00 EE 03 00 | 00 00 00 00 00 00 00 00
+1A10: 59 4B 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A20: 3D 2A 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A30: EF 04 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A40: 80 4F 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+```
+
+No `L F`, restore, backup, or other flash mutation occurred between the
+recovered baseline and final inventory. Together with the earlier successful
+`J1` entry, reset recovery, Bank-1 erased low-face proof, and unchanged Bank-1
+CRC, this closes Phase A and the direct-RAM Phase B acceptance for all three
+targets. It proves the direct RAM candidate's bank selection, plausible-vector
+handoff, physical-reset recovery, and non-destructive behavior on the current
+board images.
+
+The live top sector is still the older STR8 without `J` commands. Resident
+worker mode `$08` has not executed on hardware. Phase C installation and its
+post-install resident `J2`/`J1`/`J0` sequence remain the only implementation
+acceptance gate.
+
+## 2026-07-28 STR8 J0-J2 Resident Installation Partial Acceptance
+
+The 552-line Phase-C transcript is 12,098 bytes and has SHA-256
+`10E7FD3F4A619D7D7958AD2FF8F244C7DE73055E8A8D0359DE53E741641AE808`.
+It begins after the protected Bank-3 top sector was installed; the actual
+TopWriter `S`/`V`/`P` programming exchange is not present.
+
+The installed result cold-boots through the new Bank-3 prompt, times out into
+the intended HIMON `2121`, and exposes the resident candidate command surface:
+
+```text
+B3 HIMON IN 3S. S=STR8-N  3 2 1
+BOOT COLD
+RAM ZERO OK
+HIMON V 00.0728(2121)
+
+STR8-N V0 #5F6A0F7A B3
+ROM $F000
+? B U 0 1 2 J0 J1 J2 G R
+```
+
+The only post-install table in the capture reports PCR `$EE`, decoded Bank 3,
+unchanged Banks 0-2 CRCs, provisional Bank-3 CRC `$0D8A`, and the new hardware
+vectors:
+
+```text
+1A00: AC 00 00 00 00 EE 03 00 | 00 00 00 00 00 00 00 00
+1A10: 59 4B 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A20: 3D 2A 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A30: EF 04 98 F0 00 F0 AC F0 | A0 00 B1 CF 04 B0 0C A5
+1A40: 8A 0D 9A F0 00 F0 AE F0 | A0 00 B1 CF 04 B0 0C A5
+```
+
+This is useful diagnostic evidence, but not the final inventory gate. The old
+fixture was assembled and started while Bank 2 was visible after the RAM
+candidate's `J2`. Its `G 3000` run produced anomalous `... OK` and repeated
+STR8 boot output. A later confirmed `U` rewrote Bank 3 `$C000-$EFFF`; the
+table above was dumped only after that warm boot and was not recomputed
+afterward. The final corrected fixture must start from Bank-3 HIMON and
+reconfirm all four CRCs.
+
+The resident ROM path then executed `J1`, entered HIMON `2113` without ASM,
+and recovered by physical reset to the installed Bank-3 prompt. Resident `J0`
+subsequently entered HIMON `2042` without `JERR`. The transcript ends at that
+target, before the required physical-reset recovery and final inventory.
+Resident `J2` was not exercised; the `J2` near the beginning used the loaded
+`$0B4C` RAM candidate.
+
+The zero `$1A00-$1A4F` dumps after the `J1` and `J0` target boots are expected
+consequences of `RAM ZERO OK`; they are not inventory results.
+
+### Inventory face-field correction
+
+Review of `str8-jump-inventory-3000.a` found that the record comments promised
+Bank `$F000-$F003` and `$F00C-$F00F`, but the implementation read staged RAM
+`$4F00-$4F03` and `$4F0C-$4F0F`. For a `$F000` sector staged at
+`$4000-$4FFF`, those locations correspond to Bank `$FF00` and `$FF0C`, not
+`$F000` and `$F00C`. Therefore every prior full-image CRC and vector result is
+valid, but the trailing eight bytes in each historical record are FF-page
+face bytes. They are not evidence of the STR8 service header.
+
+The fixture is corrected to read `$4000-$4003` and `$400C-$400F`. It must run
+from Bank 3 because `$F003` is the live installed STR8 service contract. Final
+Phase C acceptance requires:
+
+```text
+physical reset from the current J0 target -> Bank 3 HIMON 2121
+resident J2 -> target HIMON 2113 -> physical reset -> Bank 3
+corrected inventory status/PCR/bank = AC/EE/03
+Bank 0-2 CRCs = $4B59/$2A3D/$04EF
+Bank 3 CRC = $0D8A
+Bank 3 F000-F003 = 4C 10 F0 4C
+Bank 3 F00C-F00F = 53 52 01 07
+direct marker/worker/vector dumps match the installed candidate
+```
+
+The resident candidate is installed and resident `J1` plus target entry for
+`J0` pass. Do not yet call resident `J0`-`J2` fully hardware-proven.
+
+## 2026-07-28 STR8 J0-J2 Resident Functional Acceptance And Echo Gap
+
+The 334-line follow-up transcript is 9,346 bytes and has SHA-256
+`2D761D78F2F888663A7233A5C6B673AD3B4B6567A4EBE91C3F648A3A3188C2F5`.
+
+The first cycle began at the Bank-0 target left by the preceding transcript.
+Physical reset returned to the Bank-3 countdown and HIMON `2121`, closing
+resident `J0` reset recovery. The operator then entered the resident ROM
+STR8, selected `J2`, reached target HIMON `2113`, and physically reset back to
+Bank 3. This closes the resident worker-mode `$08` functional handoff and
+reset-recovery matrix for `J0`, `J1`, and `J2`.
+
+From Bank-3 HIMON, the corrected inventory fixture assembled at `$3000`,
+returned `A=$AC/C=1`, and reported PCR `$EE` with decoded Bank 3:
+
+```text
+1A00: AC 00 00 00 00 EE 03 00 | 00 00 00 00 00 00 00 00
+1A10: 59 4B 98 F0 00 F0 AC F0 | 4C 10 F0 4C 53 52 01 07
+1A20: 3D 2A 98 F0 00 F0 AC F0 | 4C 10 F0 4C 53 52 01 07
+1A30: EF 04 98 F0 00 F0 AC F0 | 4C 10 F0 4C 53 52 01 07
+1A40: DB E4 9A F0 00 F0 AE F0 | 4C 10 F0 4C 53 52 01 07
+```
+
+The authoritative installed full-image CRCs are therefore:
+
+```text
+Bank 0 $4B59   Bank 1 $2A3D   Bank 2 $04EF   Bank 3 $E4DB
+```
+
+The corrected face fields prove that every bank currently begins with the
+`$F000` STR8 jump and `SR/01/07` service header. The direct installed-image
+checks also match the candidate exactly:
+
+```text
+F000: 4C 10 F0 4C 19 F3 4C 20 F3 4C 28 F3 53 52 01 07
+F8D4: 7A 0F 6A 5F
+FD16: 08 78 AD F0 1F C9 05 F0 11 C9 06 F0 12 C9 07 F0
+FFF0: FF FF FF FF FF FF FF FF FF FF 9A F0 00 F0 AE F0
+```
+
+This supersedes provisional Bank-3 CRC `$0D8A`, which came from the anomalous
+old-fixture run. Banks 0-2 retain their established CRCs, and the installed
+resident `J0`-`J2` handoff is functionally hardware-proven. The original
+TopWriter `S`/`V`/`P` exchange is still absent, but the installed bytes,
+vectors, inventory, boot behavior, and all three handoffs are now captured.
+
+The operator also identified a user-interface gap: typed `J0`, `J1`, and `J2`
+do not appear after `STR8-N>`. The parser is not losing the bytes—the
+transcript shows the resulting `J B0` and `J B2` lines and successful
+handoffs. `STR8_READ_COMMAND` consumes input without echo; unlike confirmation
+and backup operands, the `J` command path did not write either byte back.
+
+The host source now echoes the recognized `J` and every consumed operand byte.
+This is a new six-byte resident-only follow-up candidate. It does not alter the
+worker, handoff state, bank selection, or vectors. It is not installed in this
+transcript. The regenerated 31,052-byte
+`str8n-topwrite-transient-3000.a` has SHA-256
+`974B8B1F68A62B378BE3E18E4439692CA178D7F6CC14FCBEA69B4DB240DA8F64`.
+It needs a protected top-sector install plus visible-command smoke before the
+echo behavior is hardware-proven.
+
+## 2026-07-28 STR8 J Echo RAM Pass And Protected-Sector Install
+
+The 1,685-line continuation transcript is 55,168 bytes and has SHA-256
+`224980B628304641BB8B5BFDA9428C2EBA183663A2D9AAEFA0FF7C93A598CF66`.
+It includes the preceding functional-acceptance material, then continues with
+the new echo candidate's RAM preflight and protected-sector installation.
+
+From Bank-3 HIMON, the new RAM candidate loaded at the exact expected length:
+
+```text
+L OK=0B52 GO=3000
+
+STR8-N V0 #5F6A0F7A B3
+RAM $0200 BUF $4000-$4FFF
+? B U 0 1 2 J0 J1 J2 G R
+STR8-N>J2
+J B2
+```
+
+This is the first hardware proof that the added echo writes display the
+two-byte command. The handoff selected Bank 2's older top-sector STR8 surface,
+which lacks the Bank-3 suffix and `J` help, and physical reset returned to the
+installed Bank-3 image. The transcript does not reload the RAM candidate for
+`J1` or `J0`; later invisible `J B1`/`J B0` cycles still use the pre-echo
+resident ROM.
+
+The regenerated TopWriter then assembled through `END` at `$5000` and executed
+the complete guarded menu sequence:
+
+```text
+TOPWRITER
+TW> S
+TW STG
+TW OK
+TW> V
+TW OK
+TW> P
+TW OK
+TYPE WRITE TO PROGRAM B3> WRITE
+TW PRG
+TW OK
+```
+
+The writer was assembled and launched while Bank 2's ASM-F2 `2113` image was
+visible rather than from the recommended Bank-3 starting point. Its
+self-contained RAM worker explicitly targeted Bank 3, stage verification
+passed, programming/read-back verification returned `TW OK`, and the following
+physical reset cold-booted Bank 3 into HIMON `2121`.
+
+The six-byte echo follow-up is therefore installed and bootable. The capture
+ends at HIMON before resident `J0`/`J1`/`J2` echo is exercised. Final
+acceptance still requires:
+
+```text
+resident prompt visibly shows J0, J1, and J2
+each prints matching J Bn and reset-recovers to Bank 3
+F000-F00F = 4C 10 F0 4C 1F F3 4C 26 F3 4C 2E F3 53 52 01 07
+F8DA-F8DD = 7A 0F 6A 5F
+worker head and vectors remain unchanged
+corrected inventory records a new Bank-3 CRC
+Banks 0-2 remain $4B59/$2A3D/$04EF before and after the three handoffs
+```
+
+## 2026-07-28 STR8 J Echo Resident And CRC Acceptance
+
+The 1,115-line final transcript is 28,577 bytes and has SHA-256
+`F322AE26E29A262E31B5A9EF1F7C19EAF7476A5C82708B8634511400913C71FE`.
+
+The opening `$1A00-$1A4F` dump is all zero because it immediately follows a
+cold boot with `RAM ZERO OK`; it is not an inventory result. Direct dumps then
+confirmed the installed echo-build image:
+
+```text
+F000: 4C 10 F0 4C 1F F3 4C 26 F3 4C 2E F3 53 52 01 07
+F8DA: 7A 0F 6A 5F
+FD16: 08 78 AD F0 1F C9 05 F0 11 C9 06 F0 12 C9 07 F0
+FFFA: 9A F0 00 F0 AE F0
+```
+
+An `L G` attempt followed by repeated `LERR=$01` contained no valid S19 input.
+It performed no flash operation, and physical reset returned to the installed
+Bank-3 HIMON `2121`.
+
+From Bank 3, the corrected inventory fixture assembled at `$3000`, returned
+`A=$AC/C=1`, and reported PCR `$EE` with decoded Bank 3:
+
+```text
+1A00: AC 00 00 00 00 EE 03 00 | 00 00 00 00 00 00 00 00
+1A10: 59 4B 98 F0 00 F0 AC F0 | 4C 10 F0 4C 53 52 01 07
+1A20: 3D 2A 98 F0 00 F0 AC F0 | 4C 10 F0 4C 53 52 01 07
+1A30: EF 04 98 F0 00 F0 AC F0 | 4C 10 F0 4C 53 52 01 07
+1A40: 63 46 9A F0 00 F0 AE F0 | 4C 10 F0 4C 53 52 01 07
+```
+
+The authoritative installed echo-build CRCs are:
+
+```text
+Bank 0 $4B59   Bank 1 $2A3D   Bank 2 $04EF   Bank 3 $4663
+```
+
+Resident STR8 then visibly accepted and executed every V1 handoff:
+
+```text
+STR8-N>J0
+J B0
+... HIMON V 00.0728(2042)
+
+STR8-N>J1
+J B1
+... HIMON V 00.0728(2113)
+
+STR8-N>J2
+J B2
+... HIMON V 00.0728(2113)
+```
+
+The transcript returns to the Bank-3 STR8 surface between targets, recording
+physical-reset recovery. Thus the parser echo, resident RAM-worker mode `$08`,
+target selection, and current target identities pass for all three banks.
+
+After `J2`, the operator first assembled the fixture while Bank 2 was visible,
+despite its `RUN ONLY FROM BANK 3` requirement. `G 3000` cold-booted Bank 3
+instead of returning `A=$AC`; that run is invalid and is not used as inventory
+evidence. From the recovered Bank-3 HIMON `2121`, the fixture was reassembled
+and run again. It returned `A=$AC/C=1`, PCR `$EE`, decoded Bank 3, and exactly
+the same `$4B59/$2A3D/$04EF/$4663` CRCs shown above. Final direct dumps again
+matched the installed header, marker, worker head, and vectors.
+
+The echo-build resident `J0`-`J2` implementation is fully hardware-accepted on
+the recorded board images. V1 still performs vector plausibility only.
+Identity and CRC authentication require future Bank-3-owned metadata.

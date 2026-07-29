@@ -16,13 +16,17 @@ DOC/GUIDES/TECHNICAL_GUIDE.md
 - [GUIDES/REF.md](./GUIDES/REF.md) - compact reference sheet.
 - [GUIDES/GLOSSARY.md](./GUIDES/GLOSSARY.md) - vocabulary contract.
 - [GUIDES/DECISIONS.md](./GUIDES/DECISIONS.md) - settled policy.
-- [GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](./GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - accepted next architecture for multiboot, S19 ownership, and bank volumes.
+- [GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](./GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` opaque-bank implementation and hardware-proof plan.
+- [GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](./GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - required per-image handoff, peripheral, vector, CRC, and recovery procedure for unrelated 32K guests.
+- [GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](./GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - retained S19/bank-volume direction and superseded compatible-bank design history.
 
 ## Current Status
 
-STR8 is hardware-proven rotating three bootable images: HIMON, OSI BASIC, and
-fig-FORTH. HIMON RAM-only debug is hardware-proven for the current one-shot
-breakpoint and single-step surface.
+The compatible fixed `$C000-$EFFF` payload path has hardware proof for HIMON,
+OSI BASIC, and fig-FORTH. That is not opaque 32K `Jn` qualification.
+`J0`-`J2` is hardware-proven on the recorded R-YORS bank images; every
+unrelated guest requires its own H/P/V/CRC record. HIMON RAM-only debug is
+hardware-proven for the current one-shot breakpoint and single-step surface.
 
 - [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md) - milestone and command alerts.
 - [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md) - documentation-shape alerts.

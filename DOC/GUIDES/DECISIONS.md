@@ -52,34 +52,43 @@ rather than a hidden VM or broad runtime.
 ## STR8 Multiboot And Bank Volumes
 
 Accepted direction, not current command behavior: physical reset continues to
-select Bank 3 as the recovery root. A compatible boot bank reserves
-`$F000-$FFFF` for STR8 services and vectors and owns `$8000-$EFFF` as its 28K
-payload. Bank selection and reset-vector handoff run from RAM; selected-bank
-code must not depend on Bank-3-only HIMON/RJOIN addresses.
+select Bank 3 as the recovery root and timeout default. Bank 3 must retain
+STR8 for that selector/recovery contract. Banks 0-2 are opaque, unrelated 32K
+systems and own all of `$8000-$FFFF`; their top sectors may contain STR8,
+WOZMON, another monitor, an OS, a language, or arbitrary system content.
+Bank-selection, target-vector inspection, and final handoff run from RAM.
 
 - The manual non-destructive launch spelling is `J0`, `J1`, or `J2`. It
-  validates the selected bank, including a CRC gate, before a RAM trampoline
-  selects the bank and follows its reset vector. Failures are terse and return
-  to Bank-3 STR8 without changing flash.
-- Every accepted target supplies its own STR8-compatible top sector. Its boot
-  descriptor supplies the default payload entry instead of assuming Bank 3's
-  `$C000` HIMON. An alternate-bank payload may therefore put a WDCMONv2
-  menu/wrapper at `$8000` while retaining STR8 recovery at `$F000-$FFFF`.
-- A later timed boot may launch a validated Bank 0-2. It never changes the
-  physical reset rule: reset still selects Bank 3.
-- Bank 2 is the planned first handoff proof after read-back confirms the
-  operator-reported fresh `B3 -> B2` copy. Bank 0 `$8000`, currently holding
-  the ASM-session-reporter AP package, is not a sacrificial proof target.
-- The V1 Boot Passport Block (BPB) is `$F010-$F01F`; the STR8 boot body moves
-  to `$F020`. Its `S8B1` passport supplies flags, image kind, default entry,
-  complete-bank CRC16, a four-byte display tag, and an `$A5` commit-last seal.
-  CRC16 covers `$8000-$FFFF` with its own two stored bytes treated as zero.
+  applies a reset-vector plausibility gate, then follows the selected bank's
+  `$FFFC` vector. `$8000-$FFFE` is accepted; lower addresses and `$FFFF` are
+  refused. This catches obvious data/erased banks but is not an identity or
+  integrity proof.
+- No target-resident BPB, STR8 signature, fixed service entry, compatible top
+  sector, or reserved byte is required. Stronger role/tag/CRC validation must
+  use Bank-3-owned metadata outside the opaque target.
+- That external validation metadata is a future requirement before unattended
+  launch, timed alternate-bank boot, or managed mixed-system operation. It
+  must bind bank number, full-image CRC, reset vector, image role, build
+  tag/timestamp, and enabled/committed state without reserving target bytes.
 - The `J` RAM tail disables interrupts, clears decimal mode, resets the stack
-  pointer to `$FF`, selects the validated bank, and jumps through its `$FFFC`
-  reset vector. A failed validation restores Bank 3 and does not write flash.
+  pointer to `$FF`, selects the target, reads and validates its reset vector,
+  and jumps through a RAM-held pointer. A failed validation restores Bank 3
+  and does not write flash. A successful handoff never returns to STR8.
+- Once Bank 0-2 is selected, Bank 3 STR8 is unmapped and cannot enforce
+  timeout or recovery. Physical reset is the universal return path.
+- A later timed alternate-bank boot is deferred. The current timeout stays in
+  Bank 3 and enters its local default payload.
+- Bank roles are configuration, not command semantics. `J1` does not mean OSI
+  BASIC and `J2` does not mean FORTH.
 - A future simple updater must offer separate presets for `$8000-$BFFF`,
   `$C000-$EFFF`, and `$F000-$FFFF`. The spelling and transport are deferred;
-  the top-region preset remains separately and strongly guarded.
+  the top-region preset remains separately and strongly guarded because it may
+  contain unrelated guest code.
+
+The current `J0`-`J2` implementation and proof contract lives in
+[STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md). The
+older compatible-bank/BPB design is retained as superseded history in
+[STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
 
 STR8 owns the reusable S19 decode/checksum mechanism and all flash-mutation
 policy. HIMON keeps the `L`/`L G` RAM-load interface and destination policy.
@@ -116,7 +125,8 @@ and adds `$06` for a missing, mismatched, or internally invalid STR8 service.
 New HIMON verifies the fixed signature, ABI version, and required capability
 bits before `$F009`; it does not call an old top sector accidentally.
 
-The migration installation order is STR8 first and HIMON second. Old HIMON
+The Bank-3 loader-service migration installation order is STR8 first and HIMON
+second. Old HIMON
 continues to work over new STR8 because the first three fixed entries remain
 stable. After the new top sector passes its fixed-header, identity, worker, and
 vector gates, its shared-parser `U` path installs the new HIMON client. A new
@@ -133,10 +143,11 @@ The file address never bypasses sector staging, RAM-worker execution, read-back
 verification, or commit-last boot validity.
 
 The current destructive bare `0`, `1`, and `2` restore commands do not change
-until an explicit migration. The missing-import atomicity and banked-source
-RJOIN proofs remain ahead of multiboot implementation. The complete contract,
-proposed `G` command family, RAM staging implications, and proof order live in
-[STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
+until an explicit migration. They must be treated carefully once banks have
+unrelated roles: a high restore from an opaque guest can replace Bank 3 STR8.
+The AP missing-import and banked-source RJOIN gates are complete. The current
+`J` command, RAM-handoff, size, recovery, and proof order live in
+[STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md).
 
 ## Address Vocabulary
 

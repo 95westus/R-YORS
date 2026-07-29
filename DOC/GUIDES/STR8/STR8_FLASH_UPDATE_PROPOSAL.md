@@ -420,13 +420,14 @@ STR8_SECTOR_ERASED
 
 ## Mermaid Map
 
+### Boot And Map Reporting
+
 ```mermaid
 flowchart TD
     RESET["Reset"] --> STR8["STR8"]
     STR8 --> BOOT{"S pressed during countdown?"}
     BOOT -->|no| HIMON["HIMON warm boot"]
     BOOT -->|yes| PROMPT["STR8 prompt"]
-
     PROMPT --> M["M: condensed flash map"]
     M --> SCAN_BANK["For each bank 0..3"]
     SCAN_BANK --> SCAN_SECTOR["For each sector 8..F"]
@@ -437,15 +438,25 @@ flowchart TD
     PROMPT --> DETAIL["future detail scan: semantic sector labels"]
     DETAIL --> SEMANTIC["Example BOOT = ----+HHS"]
     SEMANTIC --> PROMPT
+```
 
-    PROMPT --> UPD["UPDATE: guided named-target menu"]
+### Guided Update Selection
+
+```mermaid
+flowchart TD
+    PROMPT["STR8 prompt"] --> UPD["UPDATE: guided named-target menu"]
     UPD --> UH["UPDATE HIMON: default monitor profile"]
     UPD --> US["UPDATE STR8: recovery/top sector"]
     US --> CONFIRM["Require literal STR8 confirmation"]
     UH --> STAGE["Stage complete sector/image"]
     CONFIRM --> STAGE
+```
 
-    STAGE --> PRESERVE["Preserve protected bytes, config, vectors"]
+### Erase, Program, And Verify
+
+```mermaid
+flowchart TD
+    STAGE["Stage complete sector/image"] --> PRESERVE["Preserve protected bytes, config, vectors"]
     PRESERVE --> ENSURE["STR8_ENSURE_SECTOR_ERASED"]
     ENSURE --> ALREADY{"Sector all $FF?"}
     ALREADY -->|yes| PROGRAM["Program non-$FF bytes"]

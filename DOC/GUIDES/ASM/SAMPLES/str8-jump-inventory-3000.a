@@ -1,0 +1,248 @@
+; STR8-JUMP-INVENTORY-3000.A
+; READ-ONLY PRE-J0-J2 BANK INVENTORY FIXTURE.
+;
+; ASSEMBLE WITH THE CURRENT FLASH ASM:
+;   >ASM NEW
+;   PASTE THIS COMPLETE FILE
+;   ASM>$hhhh: .
+;   ASM BYE
+;   >G 3000
+;   >D 1A00 1A06
+;   >D 1A10 1A4F
+;
+; RUN ONLY FROM BANK 3: $F003 MUST BE THE INSTALLED STR8 SERVICE.
+; RE-PASTE THIS SOURCE AFTER UPDATES; AN OLD ASSEMBLED COPY MAY BE STALE.
+;
+; THE FIXTURE CALLS STR8 $F003 MODE $06 TO STAGE ALL EIGHT 4K SECTORS
+; FROM EACH PHYSICAL FLASH BANK. IT COMPUTES ONE CRC-16/CCITT-FALSE OVER
+; EACH COMPLETE $8000-$FFFF IMAGE AND CAPTURES TOP-SECTOR ID/VECTOR BYTES.
+; IT NEVER ERASES OR PROGRAMS FLASH. IT DOES REPLACE RAM $4000-$4FFF.
+;
+; STATUS:
+;   $1A00 = $AC COMPLETE, $E1 STR8 STAGE FAILURE
+;   $1A01 = FAILING BANK
+;   $1A02 = FAILING SECTOR HIGH BYTE
+;   $1A03/$1A04 = STR8 FAIL ADDRESS, LOW/HIGH
+;   $1A05 = MASKED VIA PCR AFTER THE FINAL STAGE; EXPECT $EE
+;   $1A06 = DECODED BANK 0-3, OR $FF IF PCR MODE IS NOT EXPLICIT
+;
+; FOUR 16-BYTE RECORDS:
+;   $1A10-$1A1F = BANK 0
+;   $1A20-$1A2F = BANK 1
+;   $1A30-$1A3F = BANK 2
+;   $1A40-$1A4F = BANK 3
+;
+; RECORD:
+;   +$00/$01 = COMPLETE 32K CRC, LOW/HIGH
+;   +$02-$07 = NMI, RESET, IRQ VECTORS AS $FFFA-$FFFF
+;   +$08-$0B = BYTES $F000-$F003
+;   +$0C-$0F = BYTES $F00C-$F00F
+;
+; SUCCESS RETURNS A=$AC AND C=1. FAILURE RETURNS A=$E1 AND C=0.
+
+        ORG $3000
+
+STATUS  EQU $1A00
+FAILBNK EQU $1A01
+FAILSEC EQU $1A02
+FAILLO  EQU $1A03
+FAILHI  EQU $1A04
+PCRRAW  EQU $1A05
+BANKNOW EQU $1A06
+TABLE   EQU $1A10
+
+PTRLO   EQU $A0
+PTRHI   EQU $A1
+CRCLO   EQU $A2
+CRCHI   EQU $A3
+RESLO   EQU $A4
+RESHI   EQU $A5
+
+STR8_SERVICE EQU $F003
+MARK_SECTOR  EQU $1FE9
+MARK_ADDR_LO EQU $1FEA
+MARK_ADDR_HI EQU $1FEB
+COPY_SRC     EQU $1FEE
+COPY_MODE    EQU $1FF0
+STAGE_BUF_HI EQU $1FF6
+
+MODE_STAGE_BANK_SECTOR EQU $06
+BUFFER_HI EQU $40
+VIA_PCR EQU $7FEC
+PCR_MASK EQU $EE
+
+START   STZ STATUS
+        STZ FAILBNK
+        STZ FAILSEC
+        STZ FAILLO
+        STZ FAILHI
+        STZ PCRRAW
+        LDA #$FF
+        STA BANKNOW
+        LDA #<TABLE
+        STA RESLO
+        LDA #>TABLE
+        STA RESHI
+        STZ COPY_SRC
+
+BANK    LDA #$FF
+        STA CRCLO
+        STA CRCHI
+        LDA #$80
+        STA MARK_SECTOR
+
+SECTOR LDA #BUFFER_HI
+        STA STAGE_BUF_HI
+        LDA #MODE_STAGE_BANK_SECTOR
+        STA COPY_MODE
+        JSR STR8_SERVICE
+        BCC FAIL
+        JSR CRC16
+        LDA MARK_SECTOR
+        CMP #$F0
+        BNE NEXT
+        JSR STORE
+
+NEXT    LDA MARK_SECTOR
+        CLC
+        ADC #$10
+        STA MARK_SECTOR
+        BNE SECTOR
+        LDA RESLO
+        CLC
+        ADC #$10
+        STA RESLO
+        BCC NEXTBANK
+        INC RESHI
+NEXTBANK INC COPY_SRC
+        LDA COPY_SRC
+        CMP #$04
+        BNE BANK
+        LDA VIA_PCR
+        AND #PCR_MASK
+        STA PCRRAW
+        JSR DECODE
+        STA BANKNOW
+        LDA #$AC
+        STA STATUS
+        SEC
+        RTS
+
+FAIL    LDA COPY_SRC
+        STA FAILBNK
+        LDA MARK_SECTOR
+        STA FAILSEC
+        LDA MARK_ADDR_LO
+        STA FAILLO
+        LDA MARK_ADDR_HI
+        STA FAILHI
+        LDA VIA_PCR
+        AND #PCR_MASK
+        STA PCRRAW
+        JSR DECODE
+        STA BANKNOW
+        LDA #$E1
+        STA STATUS
+        CLC
+        RTS
+
+STORE   LDY #$00
+        LDA CRCLO
+        STA (RESLO),Y
+        INY
+        LDA CRCHI
+        STA (RESLO),Y
+        INY
+        LDA $4FFA
+        STA (RESLO),Y
+        INY
+        LDA $4FFB
+        STA (RESLO),Y
+        INY
+        LDA $4FFC
+        STA (RESLO),Y
+        INY
+        LDA $4FFD
+        STA (RESLO),Y
+        INY
+        LDA $4FFE
+        STA (RESLO),Y
+        INY
+        LDA $4FFF
+        STA (RESLO),Y
+        INY
+        LDA $4000
+        STA (RESLO),Y
+        INY
+        LDA $4001
+        STA (RESLO),Y
+        INY
+        LDA $4002
+        STA (RESLO),Y
+        INY
+        LDA $4003
+        STA (RESLO),Y
+        INY
+        LDA $400C
+        STA (RESLO),Y
+        INY
+        LDA $400D
+        STA (RESLO),Y
+        INY
+        LDA $400E
+        STA (RESLO),Y
+        INY
+        LDA $400F
+        STA (RESLO),Y
+        RTS
+
+DECODE  LDA PCRRAW
+        LDX #$00
+DECLOOP CMP BANKBITS,X
+        BEQ DECOK
+        INX
+        CPX #$04
+        BNE DECLOOP
+        LDA #$FF
+        CLC
+        RTS
+DECOK   TXA
+        SEC
+        RTS
+
+CRC16   STZ PTRLO
+        LDA #BUFFER_HI
+        STA PTRHI
+        LDX #$10
+
+PAGE    LDY #$00
+BYTE    LDA (PTRLO),Y
+        JSR CRCBYTE
+        INY
+        BNE BYTE
+        INC PTRHI
+        DEX
+        BNE PAGE
+        RTS
+
+CRCBYTE EOR CRCHI
+        STA CRCHI
+        PHX
+        LDX #$08
+CRCBIT  ASL CRCLO
+        ROL CRCHI
+        BCC BITNEXT
+        LDA CRCLO
+        EOR #$21
+        STA CRCLO
+        LDA CRCHI
+        EOR #$10
+        STA CRCHI
+BITNEXT DEX
+        BNE CRCBIT
+        PLX
+        RTS
+
+BANKBITS DB $CC,$CE,$EC,$EE
+
+        END

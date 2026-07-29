@@ -2112,52 +2112,39 @@ need to exist somewhere.
 
 ### ASM Source Process Tree
 
+#### Source Front End And Name Binding
+
 ```mermaid
 flowchart TD
-    LINE[Source line]
-    CLEAN[Clean line]
-    PC[Session PC]
-    FIRST[Hash first token]
-    VOCAB{Vocabulary}
-    OP[Operation token]
-    PENDING[Pending name]
-    BIND{Bind name}
-    DEFPC[Define PC symbol]
-    DEFEQU[Define EQU symbol]
-    BADDEF[Bad definition]
-    EMITTER[Emitter]
-    FIXTRY[Try fixups]
-    OPERAND[Class operand]
-    KNOWN{Known value}
-    ENCODE[Encode bytes]
-    MAKEFIX[Create fixup]
-    WRITE[Write bytes]
-    ADVANCE[Advance PC]
-    DONE[Next source line]
-
-    LINE --> CLEAN
-    CLEAN --> PC
-    PC --> FIRST
-    FIRST --> VOCAB
-    VOCAB -->|yes| OP
-    VOCAB -->|no| PENDING
+    LINE[Source line] --> CLEAN[Clean line]
+    CLEAN --> PC[Session PC]
+    PC --> FIRST[Hash first token]
+    FIRST --> VOCAB{Vocabulary}
+    VOCAB -->|yes| OP[Operation token]
+    VOCAB -->|no| PENDING[Pending name]
     PENDING --> OP
-    OP --> BIND
-    BIND -->|pc| DEFPC
-    BIND -->|equ| DEFEQU
-    BIND -->|bad| BADDEF
-    BIND -->|none| EMITTER
-    DEFPC --> FIXTRY
+    OP --> BIND{Bind name}
+    BIND -->|pc| DEFPC[Define PC symbol]
+    BIND -->|equ| DEFEQU[Define EQU symbol]
+    BIND -->|bad| BADDEF[Bad definition]
+    BIND -->|none| EMITTER[Emitter]
+    DEFPC --> FIXTRY[Try fixups]
     DEFEQU --> FIXTRY
     FIXTRY --> EMITTER
-    EMITTER --> OPERAND
-    OPERAND --> KNOWN
-    KNOWN -->|yes| ENCODE
-    KNOWN -->|no| MAKEFIX
-    ENCODE --> WRITE
+```
+
+#### Emit And Fixup
+
+```mermaid
+flowchart TD
+    EMITTER[Emitter] --> OPERAND[Class operand]
+    OPERAND --> KNOWN{Known value}
+    KNOWN -->|yes| ENCODE[Encode bytes]
+    KNOWN -->|no| MAKEFIX[Create fixup]
+    ENCODE --> WRITE[Write bytes]
     MAKEFIX --> WRITE
-    WRITE --> ADVANCE
-    ADVANCE --> DONE
+    WRITE --> ADVANCE[Advance PC]
+    ADVANCE --> DONE[Next source line]
 ```
 
 ### ASM V1 End-To-End Pass
@@ -2165,103 +2152,88 @@ flowchart TD
 This is the first buildable shape: one source line in, native bytes/table
 changes out. The boxes are routine-sized jobs, not necessarily one routine each.
 
+#### Session And Line Classification
+
 ```mermaid
 flowchart TD
-    START[Init session]
-    READ[Read line]
-    HAVE{Have line}
-    ENDST[End session]
-    LINE[Assemble line]
-    PREP[Prepare line]
-    EMPTY{Empty line}
-    COUNT[Count line]
-    FIRST[First token]
-    VOCAB{Vocabulary}
-    OPER[Operation]
-    PENDING[Pending name]
-    MORE{More tokens}
-    NEXTOP[Next token]
-    OPNEXT{Operation token}
-    LABELONLY[Label only]
-    BINDPC[Bind PC label]
-    WAKE[Try fixups]
-    DISPATCH{Operation class}
-    EQU[Handle EQU]
-    ORG[Handle ORG]
-    DB[Handle DB]
-    DW[Handle DW]
-    DS[Handle DS]
-    MNEM[Handle mnemonic]
-    EQUOK{EQU ok}
-    ORGOK{ORG ok}
-    CLASS[Class operand]
-    OPC[Find opcode]
-    OPCOK{Opcode ok}
-    EMIT[Emit bytes]
-    NEEDFIX{Needs fixup}
-    FIX[Add fixup]
-    REF[Add reference]
-    FAIL[Set error]
-    REPORTFAIL[Report error]
-    RESOLVE[Resolve fixups]
-    LEFT{Fixups left}
-    ENDFAIL[End failed]
-    REPORT[Report session]
-
-    START --> READ
-    READ --> HAVE
-    HAVE -->|no| ENDST
-    HAVE -->|yes| LINE
-    LINE --> PREP
-    PREP --> EMPTY
-    EMPTY -->|yes| COUNT
+    START[Init session] --> READ[Read line]
+    READ --> HAVE{Have line}
+    HAVE -->|no| ENDST[End session]
+    HAVE -->|yes| LINE[Assemble line]
+    LINE --> PREP[Prepare line]
+    PREP --> EMPTY{Empty line}
+    EMPTY -->|yes| COUNT[Count line]
     COUNT --> READ
-    EMPTY -->|no| FIRST
-    FIRST --> VOCAB
-    VOCAB -->|yes| OPER
-    VOCAB -->|no| PENDING
-    PENDING --> MORE
-    MORE -->|no| LABELONLY
-    MORE -->|yes| NEXTOP
-    NEXTOP --> OPNEXT
-    OPNEXT -->|no| FAIL
+    EMPTY -->|no| FIRST[First token]
+    FIRST --> VOCAB{Vocabulary}
+    VOCAB -->|yes| OPER[Operation]
+    VOCAB -->|no| PENDING[Pending name]
+    PENDING --> MORE{More tokens}
+    MORE -->|no| LABELONLY[Label only]
+    MORE -->|yes| NEXTOP[Next token]
+    NEXTOP --> OPNEXT{Operation token}
+    OPNEXT -->|no| FAIL[Set error]
     OPNEXT -->|yes| OPER
-    LABELONLY --> BINDPC
-    BINDPC --> WAKE
-    WAKE --> READ
-    OPER --> DISPATCH
-    DISPATCH -->|equ| EQU
-    DISPATCH -->|org| ORG
-    DISPATCH -->|end| ENDST
-    DISPATCH -->|db| DB
-    DISPATCH -->|dw| DW
-    DISPATCH -->|ds| DS
-    DISPATCH -->|mnemonic| MNEM
-    EQU --> EQUOK
-    EQUOK -->|no| FAIL
-    EQUOK -->|yes| READ
-    ORG --> ORGOK
+```
+
+#### Label-Only Line
+
+```mermaid
+flowchart TD
+    LABELONLY[Label only] --> BINDPC[Bind PC label]
+    BINDPC --> WAKE[Try fixups]
+    WAKE --> READ[Read line]
+```
+
+#### Operation Dispatch And Directives
+
+```mermaid
+flowchart TD
+    OPER[Operation] --> DISPATCH{Operation class}
+    DISPATCH -->|equ| EQU[Handle EQU]
+    DISPATCH -->|org| ORG[Handle ORG]
+    DISPATCH -->|end| ENDST[End session]
+    DISPATCH -->|db| DB[Handle DB]
+    DISPATCH -->|dw| DW[Handle DW]
+    DISPATCH -->|ds| DS[Handle DS]
+    DISPATCH -->|mnemonic| MNEM[Handle mnemonic]
+    EQU --> EQUOK{EQU ok}
+    EQUOK -->|no| FAIL[Set error]
+    EQUOK -->|yes| READ[Read line]
+    ORG --> ORGOK{ORG ok}
     ORGOK -->|no| FAIL
     ORGOK -->|yes| READ
-    MNEM --> CLASS
-    CLASS --> OPC
-    OPC --> OPCOK
-    OPCOK -->|no| FAIL
-    OPCOK -->|yes| EMIT
-    EMIT --> NEEDFIX
-    NEEDFIX -->|yes| FIX
-    NEEDFIX -->|no| REF
-    FIX --> READ
-    REF --> READ
     DB --> READ
     DW --> READ
     DS --> READ
-    FAIL --> REPORTFAIL
-    REPORTFAIL --> ENDFAIL
-    ENDST --> RESOLVE
-    RESOLVE --> LEFT
+```
+
+#### Mnemonic Emission
+
+```mermaid
+flowchart TD
+    MNEM[Handle mnemonic] --> CLASS[Class operand]
+    CLASS --> OPC[Find opcode]
+    OPC --> OPCOK{Opcode ok}
+    OPCOK -->|no| FAIL[Set error]
+    OPCOK -->|yes| EMIT[Emit bytes]
+    EMIT --> NEEDFIX{Needs fixup}
+    NEEDFIX -->|yes| FIX[Add fixup]
+    NEEDFIX -->|no| REF[Add reference]
+    FIX --> READ[Read line]
+    REF --> READ
+```
+
+#### End And Failure
+
+```mermaid
+flowchart TD
+    FAIL[Set error] --> REPORTFAIL[Report error]
+    REPORTFAIL --> ENDFAIL[End failed]
+    ENDST[End session] --> RESOLVE[Resolve fixups]
+    RESOLVE --> LEFT{Fixups left}
     LEFT -->|yes| ENDFAIL
-    LEFT -->|no| REPORT
+    LEFT -->|no| REPORT[Report session]
 ```
 
 ### ASM V1 Pseudocode

@@ -37,13 +37,14 @@ flowchart LR
 
 ### Boot, Vectors, And Main Loop
 
+#### Reset And Service Initialization
+
 ```mermaid
 flowchart TD
     START[START] --> COLD{reset signature valid?}
     COLD -->|no| CLEAR[MON_CLEAR_RAM]
     COLD -->|yes| INIT[MON_START_INIT]
     CLEAR --> INIT
-
     REENTER[MON_REENTER] --> INIT
     INIT --> SYSINIT[SYS_INIT]
     INIT --> FLUSH[SYS_FLUSH_RX]
@@ -54,8 +55,13 @@ flowchart TD
     INIT --> BANNER[HIM_WRITE_HBSTRING]
     INIT --> STOPREGS[MON_PRINT_STOP_AND_REGS]
     INIT --> LOOP[MAIN_LOOP]
+```
 
-    LOOP --> PROMPT[HIM_WRITE_HBSTRING]
+#### Prompt, Read, And Dispatch
+
+```mermaid
+flowchart TD
+    LOOP[MAIN_LOOP] --> PROMPT[HIM_WRITE_HBSTRING]
     LOOP --> READ[HIM_READ_LINE_ECHO_UPPER]
     READ --> UPPER[HIM_CHAR_TO_UPPER]
     READ --> ADV[CMD_ADV_PTR]
@@ -69,6 +75,8 @@ flowchart TD
 
 ### FNV Catalog Dispatch
 
+#### Token Hash And FNV Math
+
 ```mermaid
 flowchart TD
     HASH[CMD_HASH_TOKEN] --> FNVINIT[FNV1A_INIT]
@@ -78,14 +86,18 @@ flowchart TD
     TOKENLOOP --> UPDATE[FNV1A_UPDATE_A]
     TOKENLOOP --> ADV[CMD_ADV_PTR]
     HASH --> SAVEHASH[CMD_SAVE_HASH]
-
     UPDATE --> MUL[FNV1A_MUL_PRIME]
     MUL --> COPY[MATH_COPY_HASH_TO_TERM]
     MUL --> SHLADD[MATH_SHLADD_TERM_N]
     SHLADD --> SHL[MATH_SHL_TERM_N]
     SHLADD --> ADD[MATH_ADD_TERM_TO_HASH]
     MUL --> ADD1[MATH_ADD_TERM1_TO_HASH3]
+```
 
+#### Catalog Scan And Execute
+
+```mermaid
+flowchart TD
     DISPATCH[CMD_DISPATCH_HASH] --> SCANINIT[CMD_HASH_SCAN_INIT]
     DISPATCH --> LOOP[CMD_DISPATCH_SCAN_LOOP]
     LOOP --> NEXTREC[CMD_HASH_SCAN_NEXT_RECORD]
@@ -106,6 +118,8 @@ flowchart TD
 
 ### Command Surface
 
+#### Command Index
+
 ```mermaid
 flowchart TD
     DISPATCH[CMD_DISPATCH_HASH] --> HELP[? CMD_HELP]
@@ -120,34 +134,49 @@ flowchart TD
     DISPATCH --> B[B CMD_B]
     DISPATCH --> N[N CMD_N]
     DISPATCH --> Q[Q CMD_Q]
+```
 
-    HASHINFO --> HASHFIND[CMD_HASH_FIND]
+#### Hash And Memory Commands
+
+```mermaid
+flowchart TD
+    HASHINFO[# CMD_HASH_INFO] --> HASHFIND[CMD_HASH_FIND]
     HASHINFO --> HASHLIST[CMD_HASH_LIST]
     HASHLIST --> HASHROW[CMD_HASH_PRINT_ROW]
-
-    D --> DRANGE[CMD_D_PARSE_RANGE]
+    D[D CMD_D] --> DRANGE[CMD_D_PARSE_RANGE]
     D --> MEMPRINT[MON_PRINT_MEM_RANGE]
-    M --> RANGE
+    M[M CMD_M] --> RANGE[CMD_PARSE_RANGE_REQUIRED]
     M --> MEMMOD[MON_MODIFY_RANGE]
+```
 
-    R --> CTXREQ[MON_CTX_REQUIRE_VALID]
+#### Context And Go Commands
+
+```mermaid
+flowchart TD
+    R[R CMD_R] --> CTXREQ[MON_CTX_REQUIRE_VALID]
     R --> CTXPARSE[MON_CTX_PARSE_ASSIGN_LIST]
     R --> STOPREGS[MON_PRINT_STOP_AND_REGS]
-    X --> CTXREQ
+    X[X CMD_X] --> CTXREQ
     X --> CTXPARSE
     X --> RESUME[MON_CTX_RESUME_RTI]
-
-    G --> HEXWORD[CMD_PARSE_HEX_WORD_TOKEN]
+    G[G CMD_G] --> HEXWORD[CMD_PARSE_HEX_WORD_TOKEN]
     G --> SAVEENTRY[CMD_SAVE_ENTRY]
     G --> GOINDIRECT[indirect JMP to target]
+```
 
-    L --> LOADMAP[S19 loader map]
-    B --> DBGMAP[breakpoint map]
-    N --> STEPMAP[step map]
-    Q --> QUIESCE[SEI / WAI / MON_REENTER]
+#### Loader, Debug, And Quit Commands
+
+```mermaid
+flowchart TD
+    L[L CMD_L] --> LOADMAP[S19 loader map]
+    B[B CMD_B] --> DBGMAP[breakpoint map]
+    N[N CMD_N] --> STEPMAP[step map]
+    Q[Q CMD_Q] --> QUIESCE[SEI / WAI / MON_REENTER]
 ```
 
 ### Loader And Flash Write Edges
+
+#### Receive And Record Types
 
 ```mermaid
 flowchart TD
@@ -155,22 +184,31 @@ flowchart TD
     L --> READY[print ready]
     L --> READ[HIM_READ_LINE_UPPER]
     READ --> PARSE[L_PARSE_RECORD]
-
     PARSE --> S0[L_PARSE_S0]
     PARSE --> S1[L_PARSE_S1]
     PARSE --> S9[L_PARSE_S9]
     S0 --> SKIP[S0 skipped after checksum]
     S9 --> GOSAVE[LOAD_GO saved]
+```
 
-    S1 --> NOTE[L_NOTE_S1_ADDR]
+#### Destination Policy
+
+```mermaid
+flowchart TD
+    S1[L_PARSE_S1] --> NOTE[L_NOTE_S1_ADDR]
     S1 --> WRITE[L_WRITE_DATA_BYTE]
     WRITE --> RAM{LOAD_FLASH_MODE?}
     RAM -->|no and dst < $7F00| RAMWRITE[store to RAM]
     RAM -->|no and $7Fxx| RAMPROTECT[LOAD_FAIL_PROTECT]
     RAM -->|no and dst >= $8000| NEEDF[LOAD_FAIL_NEED_FLASH]
     RAM -->|yes| FLASHGATE[flash write gate]
+```
 
-    FLASHGATE --> PROTECT[protect below $8000 and at/above $D000]
+#### Flash Write And Finish
+
+```mermaid
+flowchart TD
+    FLASHGATE[flash write gate] --> PROTECT[protect below $8000 and at/above $D000]
     FLASHGATE --> OLD[read old byte]
     OLD -->|same| MATCH[L_WRITE_DATA_BYTE_MATCH]
     OLD -->|not $FF| ERASE[LOAD_FAIL_ERASE]
@@ -178,9 +216,8 @@ flowchart TD
     FLASHWRITE --> VERIFY[read-back verify]
     VERIFY -->|ok| WROTE[LOAD_WRITE_OK]
     VERIFY -->|bad| WFAIL[LOAD_FAIL_WRITE]
-
-    S1 --> CHK[L_VERIFY_CHECKSUM_EOL]
-    L --> DONE[done status]
+    S1[L_PARSE_S1] --> CHK[L_VERIFY_CHECKSUM_EOL]
+    L[CMD_L] --> DONE[done status]
     L --> AUTOGO[optional auto-go]
 ```
 
@@ -198,6 +235,8 @@ explicit relocation metadata from ASM or host tooling.
 
 ### Trap, Breakpoint, And Step Edges
 
+#### NMI Paths
+
 ```mermaid
 flowchart TD
     SETNMI[SYS_VEC_SET_NMI_XY] --> POC[MON_NMI_TRAP_DEBOUNCE]
@@ -208,7 +247,12 @@ flowchart TD
     DELAY --> REENTER[MON_REENTER]
     BASE[MON_NMI_TRAP baseline] --> BASESAVE[NMI_CTX_* save]
     BASESAVE --> REENTER
+```
 
+#### BRK Trap Path
+
+```mermaid
+flowchart TD
     BRK[MON_BRK_TRAP] --> BRKSAVE[NMI_CTX_* save]
     BRK --> HANDLE[DBG_HANDLE_BRK]
     HANDLE --> STEPHIT[step BRK hit]
@@ -216,10 +260,15 @@ flowchart TD
     HANDLE --> NONE[normal BRK]
     STEPHIT --> RESTORE[restore original opcode]
     BPHIT --> RESTORE
-    RESTORE --> REENTER
+    RESTORE --> REENTER[MON_REENTER]
     NONE --> SIG[TRAP_BRK_SIG capture]
     SIG --> REENTER
+```
 
+#### Breakpoint Command
+
+```mermaid
+flowchart TD
     CMD_B[B command] --> SET[DBG_SET_BP]
     CMD_B --> CLR[DBG_CLEAR_BP]
     CMD_B --> LIST[DBG_LIST_BP]
@@ -227,12 +276,17 @@ flowchart TD
     SET --> FINDADDR[DBG_FIND_BP_ADDR]
     CLR --> FINDADDR
     LIST --> PRINT[SYS_WRITE_HEX_BYTE]
+```
 
+#### Single-Step Command
+
+```mermaid
+flowchart TD
     CMD_N[N command] --> CTX[MON_CTX_REQUIRE_VALID]
     CMD_N --> STEP[DBG_STEP_ONCE]
     STEP --> OPLEN[DBG_OPCODE_LEN]
     STEP --> STEPINFO[DBG_PRINT_STEP_INFO]
-    STEP --> FINDADDR
+    STEP --> FINDADDR[DBG_FIND_BP_ADDR]
     STEP --> PATCH[patch temporary BRK]
     CMD_N --> RESUME[MON_CTX_RESUME_RTI]
 ```

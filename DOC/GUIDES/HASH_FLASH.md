@@ -29,6 +29,189 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: STR8 J Echo Fully Accepted
+
+```text
+2026
+         07
+                29
+                   04:10Z WLP2 Passed resident visible J0, J1, and J2 plus
+                               the final direct and CRC acceptance gates.
+```
+
+The installed image displayed `STR8-N>J0`, `STR8-N>J1`, and `STR8-N>J2`,
+printed each matching `J Bn` line, and entered the intended target systems.
+Physical reset recovered Bank 3 between runs.
+
+Corrected Bank-3-started inventories before and after the handoffs returned
+`$AC/$EE/03` and matched at `$4B59/$2A3D/$04EF/$4663`. Direct header, marker,
+worker, and vector dumps match the echo build. The intervening fixture run
+started from Bank 2 and cold-booted Bank 3, so it is not inventory evidence;
+the fixture was reassembled and rerun correctly from Bank 3.
+
+`J0`-`J2` V1 and its visible command echo are fully hardware-accepted.
+Identity and CRC authentication remain a future Bank-3-owned metadata
+requirement; V1 validates reset-vector plausibility only.
+
+## REHASH: STR8 J Echo Build Installed
+
+```text
+2026
+         07
+                29
+                   04:01Z WLP2 Passed RAM J2 echo and installed the
+                               six-byte resident echo follow-up.
+```
+
+The `$0B52` RAM candidate displayed `STR8-N>J2`, printed `J B2`, selected
+Bank 2, and reset-recovered to Bank 3. The regenerated TopWriter then passed
+`S`, `V`, and confirmed `P`; programming/read-back verification returned
+`TW OK`, and Bank 3 cold-booted HIMON `2121`.
+
+The echo build is installed and bootable. Resident visible `J0`, `J1`, and
+`J2`, direct new-image faces, the new Bank-3 CRC, and unchanged pre/post
+handoff CRCs remain. The writer ran from Bank-2 ASM-F2 rather than the
+recommended Bank-3 start, so the final direct and inventory checks are
+mandatory.
+
+## REHASH: STR8 J0-J2 Functional Pass; Echo Fix Built
+
+```text
+2026
+         07
+                29
+                   03:48Z COLLAB-AI Closed resident J0-J2 function and added
+                               visible two-byte J command echo on the host.
+```
+
+Physical reset recovered Bank 3 after resident `J0` and resident `J2`.
+Together with the earlier resident `J1` result, worker mode `$08` now passes
+all three target/reset cycles.
+
+The corrected Bank-3-started inventory returned `$AC/$EE/03` and authoritative
+CRCs `$4B59/$2A3D/$04EF/$E4DB`. Its face fields contain
+`4C 10 F0 4C | 53 52 01 07`; direct header, marker, worker, config, and vector
+dumps also match. `$E4DB` supersedes provisional `$0D8A`.
+
+The installed image accepts `J0`-`J2` but does not echo the typed bytes. The
+host source now writes the recognized `J` and each operand byte before the
+existing `J Bn` status line. This adds six resident bytes, ends at `$FA69`,
+and leaves a `$02AD` worker gap. Host builds and ASM smoke tests pass. The
+echo follow-up still needs protected top-sector installation and
+visible-command hardware smoke.
+
+## REHASH: STR8 J0-J2 Resident Candidate Installed
+
+```text
+2026
+         07
+                29
+                   03:36Z WLP2 Installed the resident J candidate; J1 and
+                               J0 target entry pass, with final gates pending.
+```
+
+The installed Bank-3 top sector prints the Bank-3 countdown, exposes
+`J0 J1 J2`, and times out to HIMON `2121`. A provisional table reports
+full-image CRC `$0D8A`, vectors NMI `$F09A`, RESET `$F000`, and IRQ `$F0AE`,
+with Banks 0-2 still `$4B59/$2A3D/$04EF`. Because that old fixture started
+under Bank 2 and its retained table was dumped after a later `U`, the corrected
+Bank-3-started rerun remains the authoritative CRC gate.
+
+Resident `J1` entered its target and reset-recovered to Bank 3. Resident `J0`
+entered its target; its reset recovery, resident `J2`, and the final corrected
+inventory/direct-face checks remain.
+
+The inventory fixture's face fields had used staged `$4F00/$4F0C`, which
+represent Bank `$FF00/$FF0C`, not `$F000/$F00C`. Its whole-image CRC and
+vector results remain valid. The fixture now uses staged `$4000/$400C`; final
+proof must show the installed `4C 10 F0 4C` and `53 52 01 07` header bytes.
+
+## REHASH: STR8 J0-J2 Direct-RAM Phase Accepted
+
+```text
+2026
+         07
+                29
+                   03:24Z WLP2 Restored Bank 3 and closed the clean
+                               non-destructive direct-RAM handoff gate.
+```
+
+The repeated `U` update restored Bank 3 to HIMON `2121` and full-image CRC
+`$4F80`. Baseline, post-`J2`, and final post-`J0` inventories matched
+`$4B59/$2A3D/$04EF/$4F80` byte for byte, with PCR `$EE` and decoded Bank 3.
+Together with the prior `J1` entry/reset and low-face identity proof, Phase A
+and direct-RAM Phase B are accepted for Banks 0-2.
+
+The later entry above records the resident installation and partial proof.
+
+## REHASH: Bank 3 Now Mirrors Bank 2
+
+```text
+2026
+         07
+                29
+                   03:14Z WLP2 Distinguished J1/J2, then explicitly restored
+                               the complete Bank-2 image into Bank 3.
+```
+
+The `J2` target exposed the ASM-F2 face at `$8000`; `J1` exposed erased low
+flash. This closes the identity ambiguity left by their shared HIMON `2113`
+banner.
+
+An intervening `L F` attempt and confirmed high-flash `B2->B3` restore mean the
+last CRC dump is not a clean post-`J` comparison. Banks 0-2 remain
+`$4B59/$2A3D/$04EF`; Bank 3 changed from `$4F80` to `$04EF` and now boots the
+Bank-2 HIMON `2113` image. Reconcile the intended Bank-3 payload and capture a
+new inventory before installing the resident `J` candidate. The later entry
+above records that completed recovery and clean comparison.
+
+## REHASH: STR8 J0-J2 RAM Handoffs Pass
+
+```text
+2026
+         07
+                29
+                   03:02Z WLP2 Phase A inventory and direct RAM J0-J2
+                               handoffs passed with reset recovery to Bank 3.
+```
+
+The board recorded full-image CRCs `$4B59`, `$2A3D`, `$04EF`, and `$4F80` for
+Banks 0-3. The fixture returned `$AC`, PCR `$EE`, and decoded Bank 3. The
+`$3000` candidate then entered all three target reset paths without `JERR`;
+physical reset returned to Bank 3 after each.
+
+The later entry above records the Bank-1/Bank-2 identity distinction and the
+subsequent deliberate Bank-3 state change.
+
+## REHASH: STR8 J0-J2 Host Candidate Built
+
+```text
+2026
+         07
+                29
+                   02:31Z COLLAB-AI Added non-destructive J0-J2 opaque-bank
+                               handoff to the host-built STR8 candidate.
+```
+
+The parser accepts `J0`, `J1`, `J2`, and their spaced/lowercase forms. It
+prints `J Bn`, copies the worker to RAM, selects the target from RAM, accepts
+only a reset vector in `$8000-$FFFE`, clears decimal mode, sets the stack to
+`$FF`, and jumps without returning. Failure restores Bank 3 and prints the
+captured vector. No `J` path erases or programs flash.
+
+The current candidate measures:
+
+```text
+resident end          $FA63
+worker store/size     $FD16-$FFEF / $02DA
+resident/worker gap   $FA63-$FD15 / $02B3
+```
+
+The build now enforces a minimum `$0200` gap and resident/worker agreement for
+mode `$08` and state `$1FF2-$1FF5`. Host STR8, firmware, and ASM regression
+builds pass. The later entry above records the read-only inventory and direct
+RAM handoff results.
+
 ## REHASH: Flash ASM Enters The World
 
 ```text
@@ -139,7 +322,7 @@ Full transcripts live in
 [HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md). The flash migration plan is
 [ASM/FLASH_8000_GAME_PLAN.md](ASM/FLASH_8000_GAME_PLAN.md), and the current
 board script is
-[ASM/SAMPLES/biorhythm-2000-test.md](ASM/SAMPLES/biorhythm-2000-test.md).
+[ASM/SAMPLES/OLD CODE/biorhythm-2000-test.md](<ASM/SAMPLES/OLD CODE/biorhythm-2000-test.md>).
 
 ## REHASH: Pasteable ASM Runs Interactive Life
 

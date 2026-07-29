@@ -491,6 +491,8 @@ later if it earns its keep.
 
 ## Mermaid Flow
 
+### Bootstrap And Joined Services
+
 ```mermaid
 flowchart TD
     START["START at $4000"] --> JOINJ["HREC_JOIN_INIT local scan joins THE_JOIN_EXEC_XY"]
@@ -501,7 +503,6 @@ flowchart TD
     JOINW -->|found| SAVEW["Save joined WRITE entry"]
     SAVEW --> TITLE["Print proof title"]
     TITLE --> JOINER["Print JOINER hash, entry, OK"]
-
     JOINER --> READ["Resident joiner joins BIO_FTDI_READ_BYTE_BLOCK"]
     READ --> READOK["Print READ hash, entry, and OK/NF"]
     READOK --> FLUSH["Join BIO_FTDI_FLUSH_RX"]
@@ -509,27 +510,34 @@ flowchart TD
     FLUSHOK --> CTRL["Join BIO_FTDI_GET_CTRL_C"]
     CTRL --> CTRLOK["Print CTRL hash, entry, and OK/NF"]
     CTRLOK --> HEX["Join UTL_HEX_ASCII_TO_NIBBLE"]
+```
 
-    HEX -->|missing| HEXNF["Print HEX NF"]
+### HEX, Missing-Record, And Kind Gates
+
+```mermaid
+flowchart TD
+    HEX["Join UTL_HEX_ASCII_TO_NIBBLE"] -->|missing| HEXNF["Print HEX NF"]
     HEX -->|found| CALLA["Call joined HEX with 'A'"]
     CALLA -->|C=1 and A=$0A| HEXOK["Print HEX hash, entry, IN=A OUT=$0A, OK"]
     CALLA -->|wrong result| HEXBAD["Print HEX hash, entry, BAD"]
-
-    HEXNF --> MISS
+    HEXNF --> MISS["Try made-up hash $DEADBEEF"]
     HEXOK --> MISS
     HEXBAD --> MISS
-
-    MISS["Try made-up hash $DEADBEEF"] -->|not found| MISSOK["Print MISSING hash, E=----, NF OK"]
+    MISS -->|not found| MISSOK["Print MISSING hash, E=----, NF OK"]
     MISS -->|found| MISSBAD["Print MISSING hash, entry, BAD"]
-    MISSOK --> KIND
+    MISSOK --> KIND["Force kind byte $02 through EXEC gate"]
     MISSBAD --> KIND
-
-    KIND["Force kind byte $02 through EXEC gate"] -->|rejected| KINDOK["Print KIND K=$02 OK"]
+    KIND -->|rejected| KINDOK["Print KIND K=$02 OK"]
     KIND -->|accepted| KINDBAD["Print KIND K=$02 BAD"]
-    KINDOK --> HEXINV
-    KINDBAD --> HEXINV
+```
 
-    HEXINV["Join HEX again and call with 'G'"] -->|C=0 invalid input| HEXINVOK["Print HEXINV hash, entry, IN=G C=0, OK"]
+### Invalid Input, Pointer Record, And User Loop
+
+```mermaid
+flowchart TD
+    KINDOK["K=$02 rejected"] --> HEXINV["Join HEX again and call with 'G'"]
+    KINDBAD["K=$02 accepted"] --> HEXINV
+    HEXINV -->|C=0 invalid input| HEXINVOK["Print HEXINV hash, entry, IN=G C=0, OK"]
     HEXINV -->|accepted or missing| HEXINVBAD["Print HEXINV BAD/NF"]
     HEXINVOK --> PTR["Resolve RAM-local K=$03 pointer record"]
     HEXINVBAD --> PTR

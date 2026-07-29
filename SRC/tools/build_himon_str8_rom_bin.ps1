@@ -312,10 +312,17 @@ $workerRunStart = Get-SymbolAddress -MapPath $WorkerMapPath -Name "START"
 $workerRunEnd = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_WORKER_END"
 $workerStateBase = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_STATE_BASE"
 $workerStateEnd = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_STATE_END"
+$workerJumpMode = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_COPY_MODE_JUMP_BANK"
+$workerJumpBank = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_JUMP_BANK"
+$workerJumpVecLo = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_JUMP_VEC_LO"
+$workerJumpVecHi = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_JUMP_VEC_HI"
+$workerJumpStatus = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_JUMP_STATUS"
 $workerSize = $workerRunEnd - $workerRunStart
 $workerStoreEndExclusive = 0xFFF0
 $workerStoreStart = $workerStoreEndExclusive - $workerSize
 $workerStoreSize = $workerSize
+$str8WorkerGapMin = 0x0200
+$str8WorkerGap = $workerStoreStart - $str8End
 $str8WorkerStoreLo = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_STORE_LO"
 $str8WorkerStoreHi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_STORE_HI"
 $str8WorkerCopyLenLo = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_COPY_LEN_LO"
@@ -324,6 +331,11 @@ $str8WorkerTraySize = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER
 $str8WorkerTrayEnd = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_TRAY_END"
 $str8StateBase = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_STATE_BASE"
 $str8StateEnd = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_STATE_END"
+$str8JumpMode = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_COPY_MODE_JUMP_BANK"
+$str8JumpBank = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_JUMP_BANK"
+$str8JumpVecLo = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_JUMP_VEC_LO"
+$str8JumpVecHi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_JUMP_VEC_HI"
+$str8JumpStatus = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_JUMP_STATUS"
 $str8WorkerStoreStart = (($str8WorkerStoreHi -band 0xFF) -shl 8) -bor ($str8WorkerStoreLo -band 0xFF)
 $str8WorkerCopyLen = (($str8WorkerCopyLenHi -band 0xFF) -shl 8) -bor ($str8WorkerCopyLenLo -band 0xFF)
 $asmBase = $null
@@ -391,6 +403,9 @@ if ($str8Irq -lt 0xF000 -or $str8Irq -ge 0x10000) {
 if ($str8End -gt $workerStoreStart) {
     throw ("STR8 crosses worker storage at {0:X4}; _END_DATA={1:X4}" -f $workerStoreStart, $str8End)
 }
+if ($str8WorkerGap -lt $str8WorkerGapMin) {
+    throw ("STR8 resident/worker gap is {0:X}; minimum is {1:X} ({2:X4}-{3:X4})" -f $str8WorkerGap, $str8WorkerGapMin, $str8End, ($workerStoreStart - 1))
+}
 if ($workerRunStart -ne 0x0200) {
     throw ("STR8 worker START is {0:X4}; expected 0200" -f $workerRunStart)
 }
@@ -411,6 +426,15 @@ if ($str8StateEnd -ne 0x1FFF) {
 }
 if ($workerStateBase -ne $str8StateBase -or $workerStateEnd -ne $str8StateEnd) {
     throw ("STR8 worker state board {0:X4}-{1:X4}; expected resident {2:X4}-{3:X4}" -f $workerStateBase, $workerStateEnd, $str8StateBase, $str8StateEnd)
+}
+if ($str8JumpMode -ne 0x08 -or $workerJumpMode -ne $str8JumpMode) {
+    throw ("STR8 J mode resident/worker is {0:X2}/{1:X2}; expected 08/08" -f $str8JumpMode, $workerJumpMode)
+}
+if ($str8JumpBank -ne 0x1FF2 -or $str8JumpVecLo -ne 0x1FF3 -or $str8JumpVecHi -ne 0x1FF4 -or $str8JumpStatus -ne 0x1FF5) {
+    throw ("STR8 J state is {0:X4}/{1:X4}/{2:X4}/{3:X4}; expected 1FF2/1FF3/1FF4/1FF5" -f $str8JumpBank, $str8JumpVecLo, $str8JumpVecHi, $str8JumpStatus)
+}
+if ($workerJumpBank -ne $str8JumpBank -or $workerJumpVecLo -ne $str8JumpVecLo -or $workerJumpVecHi -ne $str8JumpVecHi -or $workerJumpStatus -ne $str8JumpStatus) {
+    throw ("STR8 worker J state {0:X4}/{1:X4}/{2:X4}/{3:X4} differs from resident" -f $workerJumpBank, $workerJumpVecLo, $workerJumpVecHi, $workerJumpStatus)
 }
 if ($flashWorkerCodeTrayBase -ne $workerRunStart -or $flashWorkerCodeTrayEnd -ne $str8WorkerTrayEnd) {
     throw ("Flash worker code tray {0:X4}-{1:X4}; expected STR8 tray {2:X4}-{3:X4}" -f $flashWorkerCodeTrayBase, $flashWorkerCodeTrayEnd, $workerRunStart, $str8WorkerTrayEnd)
@@ -561,6 +585,7 @@ if ($apPackageStart -ne $null) {
     Write-Host ("AP REPORT RUN          = AP `${0} `${1}" -f ("{0:X4}" -f $apPackageStart), ("{0:X4}" -f $apPackageBodyBase))
 }
 Write-Host ("WORKER RUN/STORE/SIZE   = {0:X4}/{1:X4}-{2:X4}/{3:X}" -f $workerRunStart, $workerStoreStart, ($workerStoreStart + $workerSize - 1), $workerSize)
+Write-Host ("STR8 RES/WORKER GAP      = {0:X4}-{1:X4}/{2:X} (min {3:X})" -f $str8End, ($workerStoreStart - 1), $str8WorkerGap, $str8WorkerGapMin)
 Write-Host ("Vectors NMI/RESET/IRQ   = {0:X4}/{1:X4}/{2:X4}" -f $str8Nmi, $str8Start, $str8Irq)
 Write-Host ("Bank offset             = 0x{0:X5}" -f $bankOffset)
 Write-Host ("Bank start @ 8000       = {0}" -f ($bankHead -join " "))

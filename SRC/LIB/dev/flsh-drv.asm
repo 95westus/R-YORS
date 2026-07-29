@@ -7,6 +7,7 @@
 
                         MODULE          FLSH_DRV
 
+                        XDEF            FLSH_BANK_GET_A
                         XDEF            FLSH_BANK_SELECT_A
                         XDEF            FLSH_BANK_SELECT_3
 
@@ -14,6 +15,37 @@ FLSH_FTDI_VIA_PCR       EQU             $7FEC
 FLSH_BANK_PCR_MASK      EQU             $EE
 
                         CODE
+; ----------------------------------------------------------------------------
+; ROUTINE: FLSH_BANK_GET_A
+; TIER: L0
+; TAGS: FLASH, BANK, DRIVER, VIA-PCR, W65C02
+; PURPOSE: Decode the explicit SXB flash-bank latch mode from VIA PCR.
+; IN : none
+; OUT: recognized: A = bank 0-3, C=1
+;      unknown:    A = raw masked PCR state, C=0
+; CLOBBERS: X
+; EXCEPTIONS/NOTES:
+; - PCR reset/input mode is not an explicit output pattern. Board pull-ups
+;   physically select Bank 3 in that state, but this routine returns C=0.
+; - Call FLSH_BANK_SELECT_3 first when software needs a canonical readable
+;   Bank-3 output pattern.
+; ----------------------------------------------------------------------------
+FLSH_BANK_GET_A:
+                        LDA             FLSH_FTDI_VIA_PCR
+                        AND             #FLSH_BANK_PCR_MASK
+                        LDX             #$03
+?MATCH:
+                        CMP             FLSH_BANK_BIT_TABLE,X
+                        BEQ             ?FOUND
+                        DEX
+                        BPL             ?MATCH
+                        CLC
+                        RTS
+?FOUND:
+                        TXA
+                        SEC
+                        RTS
+
 ; ----------------------------------------------------------------------------
 ; ROUTINE: FLSH_BANK_SELECT_A  [HASH:ED3AF020]
 ; TIER: L0

@@ -1,12 +1,12 @@
 # STR8 Multiboot, S19, And Bank-Volume Direction
 
-This is the canonical architecture record for booting alternate flash banks,
-consolidating S19 handling, and introducing managed bank storage. It records an
-accepted direction, not current command behavior or a completed on-board
-format.
+This is the architecture record for consolidating S19 handling and introducing
+managed bank storage. Its original compatible-bank multiboot design is retained
+as design history, but it is no longer the implementation authority for
+`J0`-`J2`.
 
 ```text
-status:     accepted direction; implementation and hardware proof pending
+status:     mixed: S19/volume direction retained; original J/BPB design superseded
 provenance: ORIG-WLP2, COLLAB-AI
 evidence:   DERIVED-SRC for addresses and current code ownership
 ```
@@ -15,11 +15,30 @@ The current board image and hardware transcripts remain the source of truth.
 In particular, the present bare STR8 `0`, `1`, and `2` commands restore Bank 3;
 they do not boot the selected bank.
 
+## 2026-07-28 Opaque-Bank Revision
+
+The original multiboot sections below assumed a 28K payload plus a shared,
+STR8-compatible top sector and a `$F010-$F01F` Boot Passport Block in every
+boot target. That assumption is superseded.
+
+The accepted `J0`-`J2` model now treats Banks 0-2 as opaque, unrelated 32K
+systems. A target owns all of `$8000-$FFFF`; its top sector may contain STR8,
+WOZMON, another monitor, or arbitrary system content. Bank 3 alone retains
+STR8 as the physical-reset selector and timeout/recovery root. The first
+handoff validates only reset-vector plausibility and executes entirely from
+RAM. Stronger identity or CRC policy must use metadata held outside the opaque
+target image.
+
+The detailed and current implementation authority is
+[STR8_J012_OPAQUE_BANK_PLAN.md](STR8_J012_OPAQUE_BANK_PLAN.md). BPB, compatible
+top-sector, per-target STR8, and 28K boot-payload passages below are retained
+only to preserve the earlier design trail. The shared loader, S19 ownership,
+transport, and bank-volume material remains active where it does not depend on
+those superseded boot assumptions.
+
 ## Decision
 
-Bank 3 remains the physical-reset recovery root. A bootable bank reserves its
-top 4K sector for STR8 or a future ABI-compatible STR8 build and owns the 28K
-payload below it:
+Superseded J/BPB design history follows. It is not the current boot contract:
 
 ```text
 $8000-$EFFF  selected-bank payload: OS, BIOS, monitor, code, or data

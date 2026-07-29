@@ -8,10 +8,37 @@
   and resolved `BIO_FTDI_PUT_CSTR=$E705`. See
   [AP_LINKER_CURRENT_IMAGE_GATES.md](../ASM/AP_LINKER_CURRENT_IMAGE_GATES.md)
   and `LOGS/HARDWARE_TEST_LOG.md`.
-- With those gates closed, follow
-  [STR8_MULTIBOOT_BANK_VOLUMES.md](STR8_MULTIBOOT_BANK_VOLUMES.md): prototype
-  the selected-bank reset-vector handoff entirely from RAM before adding shared
-  S19 services, 28K payload staging, or an append-only bank volume.
+- The
+  [STR8_J012_OPAQUE_BANK_PLAN.md](STR8_J012_OPAQUE_BANK_PLAN.md) board rails
+  now pass through resident V1 acceptance: the read-only inventory recorded
+  distinct full-image CRCs, and the
+  `$3000` candidate handed off through `J2`, `J1`, and `J0` with physical-reset
+  recovery to Bank 3 every time. The follow-up distinguished Bank 2's ASM-F2
+  face from erased Bank 1 low flash. A later confirmed full `B2->B3` restore
+  intentionally changed Bank 3 from CRC `$4F80`/HIMON `2121` to
+  `$04EF`/HIMON `2113`. The repeated `U` recovery restored `$4F80`/HIMON
+  `2121`, and clean inventories before/after new handoffs matched
+  `$4B59/$2A3D/$04EF/$4F80` with PCR `$EE` and decoded Bank 3. Phase A and
+  direct-RAM Phase B are accepted. Phase C resident `J0`/`J1`/`J2`, reset
+  recovery, corrected inventory, and direct faces now pass. The authoritative
+  pre-echo CRCs were `$4B59/$2A3D/$04EF/$E4DB`. That functionally accepted
+  pre-echo image did not display typed `Jn`; the host source added a six-byte
+  resident-only echo fix.
+  Its `$0B52` RAM `J2` echo passes, and the regenerated top sector is installed
+  through `S`/`V`/confirmed `P`; Bank 3 cold-boots afterward. Resident visible
+  `J0`, `J1`, and `J2`, exact direct faces, reset recovery, and matching
+  pre/post CRC inventories now pass. The accepted installed CRCs are
+  `$4B59/$2A3D/$04EF/$4663`. No J0-J2 V1 hardware gate remains. Treat Banks
+  0-2 as unrelated 32K systems; do not reserve a shared top sector or BPB.
+  Future managed or unattended launches require Bank-3-owned identity and CRC
+  metadata; V1 validates reset-vector plausibility only.
+- Before placing an unrelated OSI BASIC, FORTH, WOZMON, or other system into
+  routine `Jn` use, complete
+  [STR8 guest qualification](../STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) for
+  that exact 32K build and destination bank. Warm handoff, surviving
+  peripheral state, reset/NMI/IRQ vectors, full-image CRC, and physical-reset
+  recovery are per-image gates even though the V1 bank-switch mechanism is
+  already accepted.
 - Refactor the duplicate S19 paths into a STR8 validated-record service before
   adding formats. Buffer and checksum a complete record before HIMON applies
   RAM policy or STR8 applies staging/flash policy. Preserve `L`, `L G`, and `U`

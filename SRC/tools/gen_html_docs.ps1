@@ -126,6 +126,8 @@ foreach ($source in $MarkdownSources) {
     $MarkdownOutputBySource[$rel] = ConvertTo-OutputRelativePath $rel
 }
 
+$LinkedAssetSources = New-Object 'System.Collections.Generic.Dictionary[string,string]' ([System.StringComparer]::OrdinalIgnoreCase)
+
 function Resolve-SourceRelativeLink {
     param(
         [string]$Target,
@@ -164,7 +166,8 @@ function Resolve-SourceRelativeLink {
         Join-Path $RepoRoot ($sourceDirRel -replace "/", [System.IO.Path]::DirectorySeparatorChar)
     }
 
-    $targetFull = [System.IO.Path]::GetFullPath((Join-Path $baseFull ($pathPart -replace "/", [System.IO.Path]::DirectorySeparatorChar)))
+    $decodedPathPart = [System.Uri]::UnescapeDataString($pathPart)
+    $targetFull = [System.IO.Path]::GetFullPath((Join-Path $baseFull ($decodedPathPart -replace "/", [System.IO.Path]::DirectorySeparatorChar)))
     if (-not $targetFull.StartsWith($RepoRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
         return $targetNoAngles
     }
@@ -172,6 +175,10 @@ function Resolve-SourceRelativeLink {
     $targetRel = Get-RepoRelativePath $targetFull
     if ((Test-Path -LiteralPath $targetFull -PathType Leaf) -and $MarkdownOutputBySource.ContainsKey($targetRel)) {
         return $MarkdownOutputBySource[$targetRel] + $fragment
+    }
+
+    if (Test-Path -LiteralPath $targetFull -PathType Leaf) {
+        $LinkedAssetSources[$targetRel] = $targetFull
     }
 
     if ($targetRel.EndsWith(".md", [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -737,6 +744,13 @@ if (Test-Path -LiteralPath $assetRoot) {
     }
 }
 
+foreach ($assetRel in $LinkedAssetSources.Keys) {
+    $assetOutRel = ConvertTo-AssetOutputRelativePath $assetRel
+    $assetOut = Join-Path $OutDir ($assetOutRel -replace "/", [System.IO.Path]::DirectorySeparatorChar)
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $assetOut) | Out-Null
+    Copy-Item -LiteralPath $LinkedAssetSources[$assetRel] -Destination $assetOut -Force
+}
+
 $dirsNeedingIndex = @()
 foreach ($source in $MarkdownSources) {
     $rel = Get-RepoRelativePath $source.FullName
@@ -782,3 +796,4 @@ foreach ($dirRel in $dirsNeedingIndex) {
 
 Write-Host ("Generated HTML docs: {0}" -f $OutDir)
 Write-Host ("Markdown pages: {0}" -f (($MarkdownSources | Measure-Object).Count))
+Write-Host ("Linked assets: {0}" -f $LinkedAssetSources.Count)

@@ -9,6 +9,7 @@
 ;   0  restore bank 0 -> bank 3, preserving selected STR8 window
 ;   1  restore bank 1 -> bank 3, preserving selected STR8 window
 ;   2  restore bank 2 -> bank 3, preserving selected STR8 window
+;   J0/J1/J2  non-destructive reset-vector handoff to opaque bank 0/1/2
 ;   G  go HIMON
 ;   R  reset through the live bank 3 reset vector
 ;
@@ -37,6 +38,7 @@
                         ENDIF
 
                         INCLUDE         "STR8/str8-record-eq.inc"
+                        INCLUDE         "STR8/str8-jump-eq.inc"
 
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
 ; 2026-05-17T21:20-05:00        WLP2        Worker storage formerly moved to $FC00 to make room for U/HIMON update.
@@ -74,9 +76,9 @@ STR8_WORKER_RUN         EQU             $0200
 STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_TRAY_SIZE   EQU             $0800
 STR8_WORKER_TRAY_END    EQU             $09FF
-STR8_WORKER_STORE_LO    EQU             $60
+STR8_WORKER_STORE_LO    EQU             $16
 STR8_WORKER_STORE_HI    EQU             $FD
-STR8_WORKER_COPY_LEN_LO EQU             $90
+STR8_WORKER_COPY_LEN_LO EQU             $DA
 STR8_WORKER_COPY_LEN_HI EQU             $02
 STR8_DELAY_TICKS        EQU             $03
 STR8_DELAY_TICK_A       EQU             $26
@@ -128,6 +130,8 @@ STR8_CON_VIA_CTRL       EQU             $7FE0
 STR8_CON_VIA_DATA       EQU             $7FE1
 STR8_CON_VIA_DDRB       EQU             $7FE2
 STR8_CON_VIA_DDRA       EQU             $7FE3
+STR8_FTDI_VIA_PCR       EQU             $7FEC
+STR8_BANK_PCR_BANK3     EQU             $EE
 STR8_CON_PN_TXE         EQU             $01
 STR8_CON_PN_RXF         EQU             $02
 STR8_CON_PN_WR          EQU             $04
@@ -187,16 +191,15 @@ STR8_BOOT_START:
 ; STR8 lifecycle
 ; ----------------------------------------------------------------------------
 ; 2026-05-07T19:14-05:00        WLP2        Init flushes RX and gates boot-key polling.
+; 2026-07-28T21:35-05:00        Codex       Init makes pull-up Bank 3 explicit in PCR.
 STR8_INIT:
                         JSR             STR8_CON_INIT
                         JSR             STR8_CON_FLUSH_RX
                         LDA             #$00
-                        BCC             ?KEY_FLAG
-                        LDA             #$01
-?KEY_FLAG:             STA             STR8_BOOT_KEY_ENABLE
-                        IF              STR8_RAM_PROOF
-                        JSR             STR8_SELECT_BANK_3
-                        ENDIF
+                        ROL
+                        STA             STR8_BOOT_KEY_ENABLE
+                        LDA             #STR8_BANK_PCR_BANK3
+                        STA             STR8_FTDI_VIA_PCR
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -432,6 +435,11 @@ STR8_DISPATCH_A:
                         AND             #$DF
                         CMP             #'B'
                         BEQ             STR8_CMD_BACKUP
+                        CMP             #'J'
+                        BNE             ?NOT_J
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
+                        JMP             STR8_CMD_JUMP_BANK
+?NOT_J:
                         CMP             #'G'
                         BNE             ?NOT_G
                         JMP             STR8_CMD_G_HIMON
@@ -450,6 +458,44 @@ STR8_CMD_ID:
                         LDX             #<MSG_ID
                         LDY             #>MSG_ID
                         JMP             STR8_PRINT_XY
+
+; 2026-07-28T21:19-05:00        Codex       J0-J2 hand off opaque banks from RAM.
+; 2026-07-28T22:48-05:00        Codex       Echo the two-byte J command at the prompt.
+STR8_CMD_JUMP_BANK:
+?OPERAND:
+                        JSR             STR8_READ_COMMAND
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
+                        CMP             #' '
+                        BEQ             ?OPERAND
+                        CMP             #'0'
+                        BCC             ?BAD
+                        CMP             #'3'
+                        BCS             ?BAD
+                        AND             #$03
+                        STA             STR8_JUMP_BANK
+                        STZ             STR8_JUMP_VEC_LO
+                        STZ             STR8_JUMP_VEC_HI
+                        STZ             STR8_JUMP_STATUS
+                        LDX             #<MSG_JUMP_B
+                        LDY             #>MSG_JUMP_B
+                        JSR             STR8_PRINT_XY
+                        LDA             STR8_JUMP_BANK
+                        JSR             STR8_WRITE_DEC_DIGIT_A
+                        LDX             #<MSG_CRLF
+                        LDY             #>MSG_CRLF
+                        JSR             STR8_PRINT_XY
+                        JSR             STR8_CON_FLUSH_RX
+                        LDA             #STR8_COPY_MODE_JUMP_BANK
+                        STA             STR8_COPY_MODE
+                        IF              STR8_RAM_PROOF
+                        JSR             STR8_JUMP_BANK_RAM
+                        ELSE
+                        JSR             STR8_COPY_WORKER_TO_RAM
+                        JSR             STR8_WORKER_RUN
+                        ENDIF
+                        JMP             STR8_PRINT_JUMP_FAIL
+?BAD:
+                        JMP             STR8_CMD_UNKNOWN
 
 STR8_CMD_BACKUP:
                         LDX             #<MSG_BACKUP_DEST
@@ -1529,13 +1575,29 @@ STR8_PRINT_COPY_FAIL:
                         JMP             STR8_PRINT_XY
                         ENDIF
 
+STR8_PRINT_JUMP_FAIL:
+                        LDX             #<MSG_JUMP_FAIL_B
+                        LDY             #>MSG_JUMP_FAIL_B
+                        JSR             STR8_PRINT_XY
+                        LDA             STR8_JUMP_BANK
+                        JSR             STR8_WRITE_DEC_DIGIT_A
+                        LDX             #<MSG_JUMP_FAIL_VEC
+                        LDY             #>MSG_JUMP_FAIL_VEC
+                        JSR             STR8_PRINT_XY
+                        LDA             STR8_JUMP_VEC_HI
+                        JSR             STR8_WRITE_HEX_BYTE_A
+                        LDA             STR8_JUMP_VEC_LO
+                        JSR             STR8_WRITE_HEX_BYTE_A
+                        LDX             #<MSG_CRLF
+                        LDY             #>MSG_CRLF
+                        JMP             STR8_PRINT_XY
+
 STR8_WRITE_DEC_DIGIT_A:
                         AND             #$0F
                         CLC
                         ADC             #'0'
                         JMP             STR8_CON_WRITE_BYTE_BLOCK
 
-                        IF              STR8_RAM_PROOF
 STR8_WRITE_HEX_BYTE_A:
                         PHA
                         LSR             A
@@ -1554,6 +1616,50 @@ STR8_WRITE_HEX_NIBBLE_A:
 ?DIGIT:                 CLC
                         ADC             #'0'
                         JMP             STR8_CON_WRITE_BYTE_BLOCK
+
+                        IF              STR8_RAM_PROOF
+; RAM-proof equivalent of worker mode $08. All code and bank-select helpers
+; remain in RAM after the visible $8000-$FFFF bank window changes.
+STR8_JUMP_BANK_RAM:
+                        PHP
+                        SEI
+                        LDA             STR8_JUMP_BANK
+                        CMP             #$03
+                        BCS             ?BAD_BANK
+                        JSR             FLSH_BANK_SELECT_A
+                        LDA             STR8_RESET_VECTOR
+                        STA             STR8_JUMP_VEC_LO
+                        LDA             STR8_RESET_VECTOR+1
+                        STA             STR8_JUMP_VEC_HI
+                        CMP             #$80
+                        BCC             ?LOW_VECTOR
+                        CMP             #$FF
+                        BNE             ?GO
+                        LDA             STR8_JUMP_VEC_LO
+                        CMP             #$FF
+                        BEQ             ?ERASED_VECTOR
+?GO:
+                        LDA             #STR8_JUMP_STATUS_GO
+                        STA             STR8_JUMP_STATUS
+                        SEI
+                        CLD
+                        LDX             #$FF
+                        TXS
+                        JMP             (STR8_JUMP_VEC_LO)
+?BAD_BANK:
+                        LDA             #STR8_JUMP_STATUS_BANK
+                        BRA             ?FAIL
+?LOW_VECTOR:
+                        LDA             #STR8_JUMP_STATUS_LOW
+                        BRA             ?FAIL
+?ERASED_VECTOR:
+                        LDA             #STR8_JUMP_STATUS_ERASED
+?FAIL:
+                        STA             STR8_JUMP_STATUS
+                        JSR             FLSH_BANK_SELECT_3
+                        PLP
+                        CLC
+                        RTS
                         ENDIF
 
 ; ----------------------------------------------------------------------------
@@ -1669,20 +1775,20 @@ STR8_CON_WRITE_BYTE_NONBLOCK:
 STR8_ID_MARKER_BYTES:   DB              STR8_ID_MARKER0,STR8_ID_MARKER1
                         DB              STR8_ID_MARKER2,STR8_ID_MARKER3
 
-MSG_ID:                 DB              $0D,$0A,"STR8-N V0 #5F6A0F7A",$0D,$8A
+MSG_ID:                 DB              $0D,$0A,"STR8-N V0 #5F6A0F7A B3",$0D,$8A
 MSG_SCREEN:
                         IF              STR8_RAM_PROOF
                         DB              "RAM $0200 BUF $4000-$4FFF",$0D,$0A
                         ELSE
                         DB              "ROM $F000",$0D,$0A
                         ENDIF
-                        DB              "? B U 0 1 2 G R",$0D,$8A
+                        DB              "? B U 0 1 2 J0 J1 J2 G R",$0D,$8A
 MSG_PROMPT:             DB              "STR8-N",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
 MSG_BOOT_BANNER:       DB              $0D,$0A
                         DB              "STR8-N",$0D,$8A
-MSG_BOOT_PROMPT:        DB              $0D,$0A,"HIMON IN 3S. S=STR8-N ",$A0
+MSG_BOOT_PROMPT:        DB              $0D,$0A,"B3 HIMON IN 3S. S=STR8-N ",$A0
                         ENDIF
 
 MSG_UNKNOWN:            DB              $0D,$0A,"?",$0D,$8A
@@ -1696,6 +1802,9 @@ MSG_UPDATE_WRITE:       DB              $0D,$0A,"PROGRAM C000-EFFF? Y:",$A0
 MSG_S19_FAIL:           DB              $0D,$0A,"S19 FAIL",$0D,$8A
 MSG_S19_NO_DATA:        DB              $0D,$0A,"NO S19 DATA",$0D,$8A
 MSG_G_HIMON:            DB              $0D,$0A,"G HIMON",$0D,$8A
+MSG_JUMP_B:             DB              $0D,$0A,"J ",('B'+$80)
+MSG_JUMP_FAIL_B:        DB              $0D,$0A,"JERR ",('B'+$80)
+MSG_JUMP_FAIL_VEC:      DB              " V=",('$'+$80)
 MSG_RESTORE_B:          DB              $0D,$0A,"RESTORE ",('B'+$80)
 
 MSG_BACKUP_DEST:        DB              $0D,$0A,"BACKUP B3 TO B0/1/2: ",$A0

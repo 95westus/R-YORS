@@ -445,6 +445,8 @@ any later free-list heap
 
 ## Class Map
 
+### Runtime Spine
+
 ```mermaid
 flowchart TD
     BOOT["START / MON_START"] --> LOOP["MAIN_LOOP"]
@@ -454,23 +456,32 @@ flowchart TD
     HASH --> FNV["FNV1A_*"]
     FNV --> MATH["MATH_*"]
     HASH --> EXEC["CMD_EXEC_ADDR"]
+```
 
-    CMD --> MEMCMD["D/M memory commands"]
+### Command And Application Classes
+
+```mermaid
+flowchart TD
+    CMD["CMD_* command surface"] --> MEMCMD["D/M memory commands"]
     CMD --> LOAD["L_* loader"]
     CMD --> CTX["MON_CTX_*"]
     CMD --> DBG["DBG_*"]
     CMD --> DIS["DIS_*"]
     CMD --> ASM["ASM_*"]
-
     LOAD --> FLASH["FLASH_* blank-write"]
     CTX --> TRAP["NMI/BRK/IRQ trap state"]
     DBG --> TRAP
-    EXEC --> APPRET["loaded app return / map-patched bridge"]
+    EXEC["CMD_EXEC_ADDR"] --> APPRET["loaded app return / map-patched bridge"]
+```
 
+### System I/O Boundary
+
+```mermaid
+flowchart TD
     SYS["SYS_*"] --> BIO["BIO_*"]
     BIO --> PIN["PIN_*"]
-    HIM --> SYS
-    BOOT --> SYS
+    HIM["HIM_* input/output"] --> SYS
+    BOOT["START / MON_START"] --> SYS
 ```
 
 ## Current Command-Class Surface

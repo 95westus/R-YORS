@@ -47,7 +47,7 @@ OIL
 
 Deck Plan
   bench-facing names for the control blocks and phase-owned work areas:
-  APC, LRS, AIR, FTC, RFD/RTC/RPT, RSC, and the future BPB
+  APC, LRS, AIR, FTC, RFD/RTC/RPT, RSC, and a future external bank inventory
 
 THE
   future hash/catalog resolver environment

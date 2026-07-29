@@ -41,6 +41,61 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: Independent STR8 Guests Require Per-Image Qualification
+
+```text
+2026
+         07
+                29
+                   04:17Z COLLAB-AI Added the required H/P/V/CRC procedure
+                               for every unrelated STR8 guest image.
+```
+
+scope: new
+`STR8/STR8_GUEST_IMAGE_QUALIFICATION.md`, the opaque-bank plan, board rail,
+operator guide, STR8 guide, and navigation indexes.
+
+change: warm handoff, surviving peripheral state, reset/NMI/IRQ vectors,
+full-image CRC, and physical-reset recovery now have one generic qualification
+record and procedure.
+
+effect: the accepted R-YORS `J0`-`J2` proof cannot be treated as approval for
+OSI BASIC, FORTH, WOZMON, or any other image, build, configuration, or
+destination bank.
+
+action: qualify each exact 32K guest image before routine `Jn` use. Repeat
+affected gates after any image, vector, wrapper, device-profile, or bank
+change.
+
+## REDOC: STR8 J0-J2 Now Uses Opaque 32K Banks
+
+```text
+2026
+         07
+                29
+                   02:03Z COLLAB-AI Replaced the shared STR8 top-sector/BPB
+                               assumption with an opaque-bank J0-J2 plan.
+```
+
+scope: `DECISIONS.md`, `TECHNICAL_GUIDE.md`, `PLANNING/TODO.md`,
+`PLANNING/FUTURE.md`, `PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md`,
+`PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md`, and navigation indexes.
+
+change: Bank 3 remains the STR8 physical-reset and timeout root. Banks 0-2 now
+own their complete `$8000-$FFFF` images; `$F000-$FFFF` may be STR8, WOZMON, or
+unrelated system content. `J0`-`J2` use a RAM-only reset-vector handoff and do
+not require a target BPB or compatible top sector.
+
+effect: The remembered 28K payload plus common STR8 top-sector design is stale
+for `J`. After handoff, Bank 3 STR8 is unmapped; physical reset is the universal
+recovery path. Reset-vector plausibility is not image identity or CRC proof.
+
+action: Use
+[STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) for the
+implementation, space, recovery, and hardware-test sequence. Use
+[STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) only
+for retained loader/volume direction and explicitly marked design history.
+
 ## REDOC: STR8 V0 Restore And Failure Fixtures Frozen
 
 ```text

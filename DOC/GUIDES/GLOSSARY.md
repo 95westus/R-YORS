@@ -197,9 +197,9 @@ that makes transcripts and diagrams easier to follow.
   vectors. “High” means high RAM, not ownership by only HIMON or STR8.
 - **I/O Bulkhead (IOB):** `$7F00-$7FFF`, side-effectful device-register space;
   it is a boundary, not ordinary RAM.
-- **Boot Passport Block (BPB):** the planned selected-bank descriptor at
-  `$F010-$F01F`: `S8B1`, flags, image kind, default entry, bank CRC, display
-  tag, reserved byte, and commit-last seal.
+- **Boot Passport Block (BPB):** a superseded selected-bank descriptor design
+  at `$F010-$F01F`. It is preserved as design history; opaque `J0`-`J2`
+  targets reserve no BPB or other fixed bytes.
 - **Reporter Rebase Table (RBT):** the movable session reporter's private
   `SR/01` table. It rebases the reporter's internal addresses after the normal
   AP loader has relocated its entry call. It is not a change to the AP Capsule
@@ -220,8 +220,9 @@ The supporting phrases are deliberate rules, not decorations:
 - **Transit Rule:** a successful record parse leaves a matched RTC descriptor
   and RPT payload tray. Treat them as one transient unit; if either area can
   have been reused, parse the record again before applying it.
-- **Passport Rule:** a BPB is only a claim until its magic, constraints, seal,
-  vectors, and complete-bank CRC have all been validated from RAM.
+- **Opaque-Bank Rule:** a `J0`-`J2` target owns all of `$8000-$FFFF`.
+  Reset-vector plausibility is only a boot gate, not proof of image identity or
+  integrity; stronger checks need Bank-3-owned external metadata.
 
 ## Source Aliases
 

@@ -60,10 +60,10 @@ space.
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: ASM-F2 starts at
 CPU `$8000` / file offset `$0000`, HIMON starts at CPU `$C000` / file offset
 `$4000`, STR8 starts at CPU `$F000` / file offset `$7000`, the STR8 RAM worker
-source is stored at CPU `$FD60` / file offset `$7D60`, copied into the
+source is stored at CPU `$FD16` / file offset `$7D16`, copied into the
 `$0200-$09FF` RAM worker-code tray, and all live hardware vectors enter the
 STR8-owned top sector. RESET points to STR8 at `$F000`; NMI and IRQ/BRK point
-to STR8 IVI stubs at `$F098`/`$F0AC`, which dispatch through the RAM vector
+to STR8 IVI stubs at `$F09A`/`$F0AE`, which dispatch through the RAM vector
 cells.
 
 Combined image layout:
@@ -73,34 +73,33 @@ $8000-$BC6C   ASM-F2 low-flash image, entry $800C
 $BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
 $C000-$EEB7   HIMON body, including resident AP import linker
 $EEB8-$EFFF   current image gap inside the used E sector
-$F000-$F9B2   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
-$F844         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$F9B3-$FD5F   current contiguous top-sector growth hole
-$FD60-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray for B/U/0/1/2
+$F000-$FA68   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
+$F8DA         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$FA69-$FD15   current contiguous top-sector growth hole
+$FD16-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
 
-## Proposed Compatible-Bank Layout
+## Proposed Opaque-Bank J Layout
 
-The accepted multiboot direction applies this contract to each compatible
-boot bank; it is not implemented by the current restore commands:
+The accepted `J0`-`J2` direction treats Banks 0-2 as unrelated 32K systems; it
+is not implemented by the current restore commands:
 
 ```text
-$8000-$EFFF   28K bank-owned payload: OS, BIOS, monitor, code, or data
-$F000-$FFFF    4K STR8-compatible recovery/service sector and vectors
+$8000-$FFFF   opaque bank-owned system image, including its own vectors
 ```
 
 Bank selection and selected-bank reset-vector entry must run from RAM because
 the whole `$8000-$FFFF` flash window changes banks. Guest code cannot call
 Bank-3-only HIMON/RJOIN addresses while another bank is selected.
 
-A future whole-payload stager can map `$8000-$EFFF` to RAM `$0A00-$79FF`.
-That is a proposed map, not current ownership: the existing `$1FE9-$1FFF`
-STR8 state lies inside it and must move, probably into the system-owned
-`$7A00-$7EFF` region, before 28K staging is safe. The `$F000-$FFFF` top sector
-remains a separate guarded update transaction. See
-[STR8_MULTIBOOT_BANK_VOLUMES.md](../PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
+Bank 3 remains different: physical reset and timeout enter its STR8 supervisor,
+whose current layout is listed above. Banks 0-2 reserve no STR8 top sector,
+Boot Passport Block, shared service entries, or other fixed bytes. Their
+`$F000-$FFFF` content may be STR8, WOZMON, another monitor, or unrelated
+system code. See
+[STR8_J012_OPAQUE_BANK_PLAN.md](../PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md).
 
 ## OIL Address Boundary
 
@@ -289,8 +288,8 @@ The SSD is `$0A00-$19FF`; consolidating older high-RAM staging into that deck
 is future implementation work.
 
 STR8 also uses the RSC at `$1FE9-$1FFF` for bank/sector copy state, failure
-address reporting, startup flags, and update state. `$1FF2-$1FF5` are currently
-unassigned after retirement of the resident `M` physical map.
+address reporting, startup flags, and update state. `J0`-`J2` use
+`$1FF2-$1FF5` for target bank, reset-vector low/high, and handoff status.
 
 The `$1A00-$1FE8` reserved range is the preferred future home for a compact
 hash/RJOIN debug stack. That stack should be a breadcrumb trace for dynamic
@@ -408,7 +407,7 @@ HIMON/himon-shared-eq.inc
 
 The combined `himon-str8-rom.bin` image places STR8 in bank 3's `$F000-$FFFF`
 top-ROM sector with the hardware vectors. HIMON starts at `$C000`, and the
-STR8 RAM-worker source is stored inside the top sector at `$FD60-$FFEF`.
+STR8 RAM-worker source is stored inside the top sector at `$FD16-$FFEF`.
 
 The physical erase unit remains 4K. The protected STR8 window starts at the
 highest boundary that fits:

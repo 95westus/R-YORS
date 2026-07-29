@@ -48,20 +48,26 @@ STR8 may use all RAM and zero page during recovery.
 
 ## Accepted Multiboot Direction
 
-Physical reset remains rooted in Bank 3. A future compatible boot bank reserves
-`$F000-$FFFF` for STR8 and valid hardware vectors and owns `$8000-$EFFF` as a
-28K payload. STR8 switches banks and enters the selected reset vector from a
-RAM trampoline; flash-resident code must never switch away from the bank it is
-executing in.
+Physical reset and timeout remain rooted in Bank 3 STR8. Banks 0-2 are opaque,
+unrelated 32K systems and own all of `$8000-$FFFF`; their top sectors may
+contain STR8, WOZMON, another monitor, or any system-specific content. STR8
+switches banks, reads the selected reset vector, and completes the handoff from
+a RAM trampoline. Flash-resident code must never switch away from the bank it
+is executing in.
 
 The present bare `0`, `1`, and `2` commands are still destructive Bank-3
-restore commands, not boot selectors. A future non-destructive `G` family may
-enter Bank-3 HIMON/ASM-F2 or boot a selected bank. S19 mechanism moves toward a
-callable STR8 service, while HIMON keeps RAM-load policy and STR8 keeps flash
-mutation. Banks used for records declare a storage role and begin with an
-append-only linear log.
+restore commands, not boot selectors. The accepted non-destructive spelling is
+`J0`, `J1`, or `J2`; each applies only a reset-vector plausibility gate before
+handoff. No target BPB, STR8 ABI, or common memory layout is required.
+After handoff Bank 3 is unmapped, so physical reset is the universal recovery
+path. S19 mechanism moves toward a callable Bank-3 STR8 service, while HIMON
+keeps RAM-load policy and STR8 keeps flash mutation. Banks used for records
+declare a storage role and begin with an append-only linear log.
 
-The full proposal, constraints, staging map, and hardware-proof order are in
+The current command, space, recovery, and hardware-proof plan is in
+[STR8_J012_OPAQUE_BANK_PLAN.md](../PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md).
+The shared S19/bank-volume direction and superseded compatible-bank design
+history remain in
 [STR8_MULTIBOOT_BANK_VOLUMES.md](../PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
 
 ## Flash Endurance
@@ -269,9 +275,9 @@ in the protected top sector. IVI means Interrupt Vector Indirection; IVY is only
 the pronunciation and the current signature/symbol spelling.
 
 ```text
-NMI   -> STR8_IVY_ENTRY_NMI at $F098
+NMI   -> STR8_IVY_ENTRY_NMI at $F09A
 RESET -> START at $F000
-IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0AC
+IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0AE
 ```
 
 On reset, STR8 seeds the IVI RAM cells with safe defaults before the boot
@@ -315,12 +321,13 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
-The current combined ROM stores the worker source at bank 3 `$FD60-$FFEF`.
-Before `B`, `U`, `0`, `1`, or `2`, resident STR8 at `$F000` copies
+The current combined ROM stores the worker source at bank 3 `$FD16-$FFEF`.
+Before `B`, `U`, `0`, `1`, `2`, or `J0`-`J2`, resident STR8 at `$F000` copies
 that worker into the `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The
 worker uses `$1FE9-$1FFF` as its state/update board, uses `$4000-$4FFF` as the
-4K bank-copy sector buffer, and restores bank 3 before returning. The `U` HIMON
-updater also uses `$5000-$6FFF` so C/D/E can all be staged before erase.
+4K bank-copy sector buffer, and restores bank 3 before returning on ordinary
+worker paths. Successful `J` handoff does not return. The `U` HIMON updater
+also uses `$5000-$6FFF` so C/D/E can all be staged before erase.
 
 The current RAM worker copies full 32K banks with a 4K buffer:
 
@@ -433,13 +440,15 @@ WDCMONv2 transition documentation/tool
 Advanced sector maintenance means a confirmed mode that can select source and
 destination banks/sectors, erase a selected destination sector, copy one sector
 to another, and verify by read-back compare. It is useful for rescue and lab
-work, but it is not part of the small V0 `? B U 0 1 2 G R` command surface
+work, but it is not part of the small
+`? B U 0 1 2 J0 J1 J2 G R` command surface
 and must name and confirm every destination without cascading.
 
 ## Core Rule
 
-Bank 3 boots. Banks 0, 1, and 2 are explicit backup destinations with no
-automatic age order or Bank 0 enrollment protection.
+Bank 3 boots. Banks 0, 1, and 2 are opaque 32K systems with operator-assigned
+roles. The legacy `B` command can still overwrite any selected destination;
+there is no automatic age order or Bank 0 enrollment protection.
 
 STR8 restores bank 3 from whole 32K ROM bank images, skipping the selected STR8
 protected window unless an explicit STR8 install/update is requested. Then HIMON

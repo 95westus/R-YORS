@@ -95,17 +95,24 @@ debt.
 
 ```text
 bank 3:
-  live reset/boot image
+  R-YORS with ASM and newest/timestamped STR8; reset/default
 
 bank 2:
-  most recent backup image
+  R-YORS with ASM
 
 bank 1:
-  previous backup image
+  different R-YORS build without ASM
 
 bank 0:
-  optional WDCMONv2/base hold, unless enrolled into rotation
+  R-YORS without ASM
 ```
+
+Those are the operator-reported 2026-07-28 live contents, not fixed bank
+semantics. The host-built STR8 candidate adds non-destructive `J0`, `J1`, and
+`J2`: it moves the final select/read/jump path into RAM, accepts a target reset
+vector in `$8000-$FFFE`, and writes no flash. Hardware proof is pending.
+Identity and CRC remain a required future Bank-3-owned manifest gate before
+unattended or timed alternate-bank boot.
 
 Flash-bank and flash-window vocabulary:
 
@@ -291,7 +298,7 @@ R-YORS/STR8.
 `make -C SRC all`: ASM-F2 occupies low flash from `$8000`, HIMON starts at CPU
 `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
 `$7000`, RESET points to STR8 at `$F000`, and NMI/IRQ point to STR8 IVI entries
-at `$F098`/`$F0AC`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
+at `$F09A`/`$F0AE`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
 the file, `$7FFA-$7FFF`.
 
 The current build does not store the fixed-address ASM session reporter after

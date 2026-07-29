@@ -32,10 +32,14 @@ RESET -> STR8 -> HIMON -> ASM creates AP objects
 STR8 should remain useful even when the payload is not HIMON. HIMON is the
 bundled workbench and default `$C000` payload, not the reason STR8 exists.
 
-Accepted future direction keeps physical reset rooted in Bank 3 while allowing
-a RAM trampoline to boot a compatible Bank 0-2 image through that bank's reset
-vector. The preferred per-bank contract gives `$8000-$EFFF` to the selected
-payload and reserves `$F000-$FFFF` for STR8-compatible services and vectors.
+Accepted future direction keeps physical reset and timeout rooted in Bank 3
+STR8 while allowing a RAM trampoline to boot an opaque Bank 0-2 image through
+that bank's reset vector. Each target owns its complete `$8000-$FFFF`; its top
+sector may contain STR8, WOZMON, another monitor, or any system-specific code.
+No target BPB or shared STR8 ABI is required. After handoff Bank 3 is unmapped,
+so physical reset is the universal recovery path. See
+[STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md).
+
 STR8 also becomes the shared S19 decode/checksum and flash-mutation boundary;
 HIMON retains its RAM-load user interface and policy. The shared decoder first
 validates complete records in RAM, then can cheaply grow to minimal Intel
@@ -43,7 +47,7 @@ HEX16 and explicit counted BIN/CRC16 without mixing those formats with flash
 policy. S2/S8 (`.s28`) remains a possible `V2.xxx`/`V3` linear physical-flash
 transport, not a change to the 16-bit runtime. Managed storage begins as an
 append-only record volume, not a full filesystem. These are proposed
-interfaces, not current commands; see
+interfaces, not current commands; the retained loader/volume design lives in
 [STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
 
 ## Current Proof State
@@ -216,14 +220,14 @@ ASM-F2 end:     $BC6D
 ASM low hole:   $BC6D-$BFFF
 ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
-HIMON body:      $C000-$EF2C
+HIMON body:      $C000-$EEB7
 STR8 entry:      $F000
-STR8 body:       $F000-$F9B2
+STR8 body:       $F000-$FA68
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F844 = 7A 0F 6A 5F
-worker source:   $FD60-$FFEF
+marker bytes:    $F8DA = 7A 0F 6A 5F
+worker source:   $FD16-$FFEF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 98 F0 00 F0 AC F0
+vectors:         $FFFA-$FFFF = 9A F0 00 F0 AE F0
 ```
 
 The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
@@ -250,9 +254,9 @@ jumps to HIMON at $C000 when the countdown expires
 Current vector path:
 
 ```text
-NMI      -> STR8 IVI entry at $F098 -> RAM vector $7EFA-$7EFB
+NMI      -> STR8 IVI entry at $F09A -> RAM vector $7EFA-$7EFB
 RESET    -> STR8 START at $F000
-IRQ/BRK  -> STR8 IVI entry at $F0AC -> RAM vectors $7EFC-$7EFF
+IRQ/BRK  -> STR8 IVI entry at $F0AE -> RAM vectors $7EFC-$7EFF
 ```
 
 HIMON patches the RAM targets after handoff. IVI is a mechanism, not a claim
@@ -277,6 +281,7 @@ Resident STR8:
 ```text
 owns reset-time prompt and countdown
 owns command parsing for the recovery prompt
+owns J0-J2 target parsing and pre-jump bank display
 owns fixed S19 update-gate validation
 keeps private console helpers as STR8_CON_*
 copies the flash worker from ROM to RAM
@@ -290,14 +295,14 @@ runs from $0200
 switches flash banks
 erases and programs selected sectors
 copies and verifies bank images
-scans sector emptiness for M
-restores Bank 3 before returning to resident STR8
+validates and enters an opaque bank through its reset vector for J0-J2
+restores Bank 3 before returning on ordinary worker success/failure
 ```
 
 Current RAM workspace:
 
 ```text
-$0200-$09FF   flash worker tray, STR8 copied from $FD60-$FFEF at exact worker length
+$0200-$09FF   flash worker tray, STR8 copied from $FD16-$FFEF at exact worker length
 $0A00-$19FF   sector staging buffer
 $1A00-$1FE8   RJOIN/link scratch and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map bytes
@@ -328,17 +333,17 @@ hardware transcript remains evidence, but it is not in the current prompt.
 Current top-sector reserve policy:
 
 ```text
-$F000-$F843  STR8 resident code
-             size $0844 = 2116 bytes
+$F000-$F8D9  STR8 resident code
+             size $08DA = 2266 bytes
 
-$F844-$F9B2  STR8 resident data
-             size $016F = 367 bytes
+$F8DA-$FA68  STR8 resident data
+             size $018F = 399 bytes
 
-$F9B3-$FD5F  contiguous unused $FF growth hole
-             size $03AD = 941 bytes
+$FA69-$FD15  contiguous unused $FF growth hole
+             size $02AD = 685 bytes
 
-$FD60-$FFEF  stored STR8 RAM worker image
-             size $0290 = 656 bytes
+$FD16-$FFEF  stored STR8 RAM worker image
+             size $02DA = 730 bytes
              linked at $0200 inside the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  STR8 config pocket
@@ -374,6 +379,11 @@ then erases/writes/verifies the three sectors.
 This gate is named `UPDATE HIMON` in the current prompt because HIMON is the
 default payload. Technically it is a fixed `$C000-$EFFF` payload installer. The
 same path has booted HIMON, OSI BASIC, and fig-FORTH.
+
+That payload-gate result is not H/P/V/C qualification of an unrelated opaque
+32K image entered through `Jn`. Use
+[STR8_GUEST_IMAGE_QUALIFICATION.md](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md)
+before promoting such an image.
 
 ## STR8 Backup And Restore
 

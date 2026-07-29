@@ -13,12 +13,13 @@ V0 recovery surface:
 B          back up Bank 3 to selected Bank 0, 1, or 2
 U          update HIMON from S19, fixed $C000-$EFFF gate
 0/1/2      restore selected backup bank to Bank 3
+J0/J1/J2   non-destructive opaque-bank reset-vector handoff
 G          go HIMON
 R          reset
 ```
 
 The current Phase-1 host build runs STR8 from bank 3 `$F000`, stores the RAM
-flash worker at `$FD60-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
+flash worker at `$FD16-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
 `$1FE9-$1FFF` for worker/update state, stages ordinary copy sectors through
 `$4000-$4FFF`, and stages HIMON update sectors through `$4000-$6FFF`.
 The top sector also exposes stable service entries at `$F003` for running
@@ -26,6 +27,12 @@ selected worker modes, `$F006` as an AP import-link compatibility doorway, and
 `$F009` for the V1 validated-record service. `$F00C-$F00F` is `53 52 01 07`.
 The linker itself is resident HIMON code; `$F006` selects the AP `LINK`
 operation and jumps through HIMON's `$7E2D-$7E2E` AP service vector.
+
+The `J` candidate uses mode `$08` and `$1FF2-$1FF5` for target, reset-vector,
+and status state. Resident STR8 prints the selected bank, copies the worker to
+RAM, and never regains control after a successful select/vector jump. Invalid
+vectors restore Bank 3 and return an error. The candidate builds; board proof
+is pending.
 
 The current build targets are:
 
@@ -121,8 +128,8 @@ Artifact check:
   Bank 3 has no built-in ASM report AP; reporter runs from Bank 0 with AP B0 $hhhh $4800
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
-  worker source is CPU $FD60-$FFEF
-  vectors point to STR8 IVI entries: F098/F000/F0AC
+  worker source is CPU $FD16-$FFEF
+  vectors point to STR8 IVI entries: F09A/F000/F0AE
   record service/header is F009/F00C-F00F = 53 52 01 07
 
 Non-destructive STR8:

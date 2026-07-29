@@ -2,14 +2,15 @@
 
 ## Architecture Direction
 
-- Follow the accepted multiboot/S19/bank-volume direction in
-  [STR8_MULTIBOOT_BANK_VOLUMES.md](STR8_MULTIBOOT_BANK_VOLUMES.md): keep Bank 3
-  as the physical-reset recovery root, reserve `$F000-$FFFF` in compatible
-  boot banks for STR8 and vectors, and give each selected bank a declared 28K
-  payload or storage role below it.
+- Follow the accepted `J0`-`J2` direction in
+  [STR8_J012_OPAQUE_BANK_PLAN.md](STR8_J012_OPAQUE_BANK_PLAN.md): keep Bank 3
+  STR8 as the physical-reset and timeout root, and treat every Bank 0-2 target
+  as an opaque 32K system owning `$8000-$FFFF`. Do not require a target BPB,
+  STR8 top sector, or common payload layout.
 - Finish the current-image missing-import atomicity and banked-source RJOIN
-  proofs before implementing the RAM bank-handoff prototype. Multiboot does not
-  supersede those AP/OIL gates.
+  proofs before implementing the RAM bank-handoff prototype. Those AP/OIL
+  gates are complete; preserve their transcripts while beginning the handoff
+  work.
 - Consolidate S19 decoding/checksum work as a callable STR8 mechanism while
   HIMON retains RAM-load policy and STR8 owns flash mutation. Validate each
   complete record into RAM before applying destination policy. Reuse that

@@ -21,8 +21,10 @@ connect.
 ## Detail Shelves
 
 - [STR8](STR8/STR8.md) - recovery, update, product boundaries, bringup,
-  work process, [restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md),
-  and [edge evidence](STR8/STR8_EDGE_DUMP.md).
+  work process, [J0-J2 first board test](STR8/STR8_J012_BOARD_TEST.md),
+  [independent guest qualification](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md),
+  [restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and
+  [edge evidence](STR8/STR8_EDGE_DUMP.md).
 - [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, and edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction;
   see the generated [Control Deck Map](../GENERATED/CONTROL_DECK_MAP.md) for
@@ -60,8 +62,10 @@ board:
 - [TODO.md](PLANNING/TODO.md) - near-term work.
 - [OIL_710_TEST_PLAN.md](PLANNING/OIL_710_TEST_PLAN.md) - `.710` Overlay
   Integration Layer board-test rail and size-review recommendations.
+- [STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) -
+  accepted `J0`-`J2` implementation and proof plan for unrelated 32K systems.
 - [STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) -
-  accepted multiboot, S19 ownership, and append-only bank-volume direction.
+  retained S19/bank-volume direction and superseded compatible-bank design.
 - [HISTORICAL_CODE_MIGRATION_PLAN.md](PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - plan for moving retired samples,
   tests, proofs, apps, and data into `SRC/ARCHIVE/`.
 - [DATA_STRUCTURE_OPPORTUNITIES.md](PLANNING/DATA_STRUCTURE_OPPORTUNITIES.md) -

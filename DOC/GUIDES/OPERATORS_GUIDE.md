@@ -21,6 +21,11 @@ OSI BASIC  interactive BASIC payload
 fig-FORTH  threaded language payload
 ```
 
+That historical proof covers the fixed `$C000-$EFFF` payload gate in a
+compatible bank layout. It does not qualify OSI BASIC or fig-FORTH as an
+unrelated opaque 32K `Jn` guest. Full-bank guest qualification is a separate
+procedure.
+
 The hardware log preserves proof of the earlier backup rotation and Bank 0
 enrollment policy, plus `U` / `UPDATE HIMON`, HIMON U1-to-U2 update, temporary
 BASIC and Forth payloads, and recovery back to known-good HIMON from backup
@@ -106,22 +111,22 @@ Current combined-image facts:
 
 ```text
 HIMON:           $C000-$EEB7
-STR8 image:      $F000-$F9B2
-IVI entries:     NMI $F098, IRQ/BRK $F0AC
+STR8 image:      $F000-$FA68
+IVI entries:     NMI $F09A, IRQ/BRK $F0AE
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F844 = 7A 0F 6A 5F
-worker source:   $FD60-$FFEF, copied to RAM when needed
+marker bytes:    $F8DA = 7A 0F 6A 5F
+worker source:   $FD16-$FFEF, copied to RAM when needed
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 98 F0 00 F0 AC F0
+vectors:         $FFFA-$FFFF = 9A F0 00 F0 AE F0
 ```
 
 After burning, quick monitor checks should look like:
 
 ```text
 D C000 C00F  78 D8 A2 FF 9A AD E6 7E ...
-D F000 F00F  4C 10 F0 4C CB F2 4C D2 F2 4C DA F2 53 52 01 07
-D FD60 FD6F  08 78 AD F0 1F C9 05 F0 ...
-D FFFA FFFF  98 F0 00 F0 AC F0
+D F000 F00F  4C 10 F0 4C 1F F3 4C 26 F3 4C 2E F3 53 52 01 07
+D FD16 FD25  08 78 AD F0 1F C9 05 F0 11 C9 06 F0 12 C9 07 F0
+D FFFA FFFF  9A F0 00 F0 AE F0
 ```
 
 ## First Boot
@@ -130,7 +135,7 @@ On reset, STR8 initializes IVI vector cells and FTDI console I/O, prints the
 R-YORS banner, then prints:
 
 ```text
-HIMON IN 3S. S=STR8
+B3 HIMON IN 3S. S=STR8-N
 ```
 
 Press `S` during the countdown to enter the STR8 prompt. If the countdown
@@ -139,15 +144,17 @@ expires, STR8 jumps to HIMON at `$C000`.
 ## Flash Banks
 
 ```text
-Bank 3  live reset/boot image
-Bank 2  selectable backup image
-Bank 1  selectable backup image
-Bank 0  selectable backup image
+Bank 3  R-YORS with ASM and newest/timestamped STR8; reset/default
+Bank 2  R-YORS with ASM
+Bank 1  different R-YORS build without ASM
+Bank 0  R-YORS without ASM
 ```
 
-`B` may target Bank 0, 1, or 2. None of the three backup banks has special
-protection; the selected destination is erased only after the target is shown
-and `Y` is confirmed.
+These are the operator-reported 2026-07-28 live roles, not meanings encoded in
+the bank numbers. `B` may still target Bank 0, 1, or 2. None has special
+protection; the selected destination is erased after the target is shown and
+`Y` is confirmed. On this mixed-version board, do not use `B` unless replacing
+that exact target is intended.
 
 ## STR8 Commands
 
@@ -158,9 +165,23 @@ U       update $C000-$EFFF from S19, destructive, confirmed
 0       restore Bank 0 -> Bank 3, destructive, confirmed
 1       restore Bank 1 -> Bank 3, destructive, confirmed
 2       restore Bank 2 -> Bank 3, destructive, confirmed
+J0      non-destructive RAM handoff through Bank 0 reset vector
+J1      non-destructive RAM handoff through Bank 1 reset vector
+J2      non-destructive RAM handoff through Bank 2 reset vector
 G       go to HIMON at $C000
 R       reset through the live reset vector
 ```
+
+`J0`-`J2` are installed in the current Bank-3 STR8. Their direct-RAM and
+resident target/reset matrix passes on hardware, as do the corrected inventory
+and direct installed-image checks. The six-byte echo follow-up passed its RAM
+`J2` preflight, guarded TopWriter `S`/`V`/`P` sequence, and resident visible
+`J0`/`J1`/`J2` smoke. The accepted installed CRCs are
+`$4B59/$2A3D/$04EF/$4663`. A jump accepts only reset vectors
+`$8000-$FFFE`, writes no flash, and prints `J Bn` before handoff. After a
+successful jump, physical reset is the universal return to Bank 3.
+Use [STR8_J012_BOARD_TEST.md](STR8/STR8_J012_BOARD_TEST.md) for the guarded
+read-only inventory, RAM handoff, and resident-install sequence.
 
 The former read-only `M` physical map was retired in the 2026-07-18 resident
 size pass. Its hardware transcript remains historical evidence; use host/image
@@ -173,6 +194,31 @@ Check identity:
 ```text
 STR8>?
 ```
+
+After the candidate is installed and its read-only gates pass, launch a known
+bank without changing it:
+
+```text
+STR8-N>J2
+J B2
+... Bank 2 starts through its own $FFFC vector ...
+```
+
+Use only a bank whose complete-image CRC and vectors were inventoried first.
+The vector gate detects obvious erased/data images; it does not prove identity
+or integrity. Bank-3-owned identity and CRC metadata is a future requirement
+before managed or unattended alternate-bank launch.
+
+> **IMPORTANT: AN UNRELATED SYSTEM NEEDS ITS OWN QUALIFICATION**
+>
+> Passing `J0`-`J2` with the current R-YORS banks does not approve OSI BASIC,
+> FORTH, WOZMON, or another image. Qualify the exact image and destination
+> bank for warm handoff, surviving peripheral state, all three vectors,
+> pre/post full-bank CRCs, and physical-reset recovery before routine use.
+
+Follow
+[STR8_GUEST_IMAGE_QUALIFICATION.md](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md)
+for the generic H/P/V/C record and step-by-step procedure.
 
 Back up the live image:
 

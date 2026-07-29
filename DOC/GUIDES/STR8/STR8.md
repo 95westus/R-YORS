@@ -176,17 +176,17 @@ packed against `$FFEF` and grows downward, and the remaining free space is one
 contiguous hole:
 
 ```text
-$F000-$F843  STR8 resident code
-             size $0844 = 2116 bytes
+$F000-$F8D9  STR8 resident code
+             size $08DA = 2266 bytes
 
-$F844-$F9B2  STR8 resident data
-             size $016F = 367 bytes
+$F8DA-$FA68  STR8 resident data
+             size $018F = 399 bytes
 
-$F9B3-$FD5F  contiguous unused $FF growth hole
-             size $03AD = 941 bytes
+$FA69-$FD15  contiguous unused $FF growth hole
+             size $02AD = 685 bytes
 
-$FD60-$FFEF  stored STR8 RAM worker image
-             size $0290 = 656 bytes
+$FD16-$FFEF  stored STR8 RAM worker image
+             size $02DA = 730 bytes
              copied to and run from the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
@@ -382,9 +382,14 @@ first RAM proof image links at $3000
 first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can back up bank 3 to selected bank 0, 1, or 2 with read-back verify
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current host build links STR8 at $F000 and stores a RAM worker at $FD60-$FFEF
-current ROM build copies the worker to $0200 before B/U/0/1/2 flash mutation
-current ROM build has ?, B, U, 0, 1, 2, G, and R commands
+current host build links STR8 at $F000 and stores a RAM worker at $FD16-$FFEF
+current ROM build copies the worker to $0200 before B/U/0/1/2 mutation or J handoff
+current ROM build has ?, B, U, 0, 1, 2, J0, J1, J2, G, and R commands
+J0/J1/J2 direct RAM mechanics and reset recovery pass on hardware
+J0/J1/J2 resident candidate is installed
+resident J0/J1/J2 target/reset matrix and corrected inventory pass
+echo follow-up RAM J2 and resident visible J0/J1/J2 smoke pass
+accepted installed CRCs are B0 $4B59, B1 $2A3D, B2 $04EF, B3 $4663
 current host build exposes the V1 record service at $F009 with `SR`/`01`/`07`
 current host build converts `U` to the shared validate-first S19 parser
 record-service and converted-`U` hardware proof is pending
@@ -394,8 +399,8 @@ current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data grows upward from $F000
-stored worker currently occupies $FD60-$FFEF and grows downward
-current contiguous free hole is $F9B3-$FD5F
+stored worker currently occupies $FD16-$FFEF and grows downward
+current contiguous free hole is $FA69-$FD15
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
@@ -408,6 +413,12 @@ no relocation replay
 no command-text compression in STR8 itself
 no rich user interface
 ```
+
+The accepted `J0`-`J2` result applies to the recorded R-YORS images. Every
+unrelated system requires its own warm-handoff, peripheral, vector, and CRC
+qualification. Use
+[STR8_GUEST_IMAGE_QUALIFICATION.md](STR8_GUEST_IMAGE_QUALIFICATION.md) for the
+generic procedure.
 
 V0 should do only enough to keep boot and flash mutation recoverable:
 
@@ -525,42 +536,50 @@ This is the future high-level STR8/HIMON shape. It keeps STR8 small while
 allowing later catalog-aware flash mutation. V0 is simpler: image-based
 restore/verify and explicitly selected backup.
 
+### Entry, Validation, And Handoff
+
 ```mermaid
 flowchart TD
     RESET[RESET vector] --> STR8_ENTRY[STR8 entry]
     NMI[NMI vector] --> STR8_TRAP[STR8 trap/recovery entry]
     IRQ[IRQ/BRK vector] --> STR8_TRAP
-
     STR8_ENTRY --> ANCHOR[selected STR8 protected window]
     STR8_TRAP --> ANCHOR
     ANCHOR --> BOOTCHECK[boot/check HIMON body]
-
     BOOTCHECK --> SAFE{HIMON valid?}
     SAFE -->|yes| HANDOFF[handoff to HIMON]
     SAFE -->|no| RECOVERY[minimal recovery mode]
-
     HANDOFF --> HIMON[HIMON monitor]
     HIMON --> ASM[hashed ASM / user build]
     ASM --> LF[L F or flash install request]
     LF --> STR8_API[STR8 guard routines]
-
     RECOVERY --> STR8_API
-    STR8_API --> SCAN[scan fixed writable flash ranges]
+```
+
+### Range Selection And Policy
+
+```mermaid
+flowchart TD
+    STR8_API[STR8 guard routines] --> SCAN[scan fixed writable flash ranges]
     SCAN --> CLASSIFY[classify protected, erased, image, unknown]
     CLASSIFY --> CHOOSE[user or fixed policy chooses destination]
     CHOOSE --> RANGE{protected range?}
     RANGE -->|yes| REFUSE[refuse or require recovery authority]
     RANGE -->|no| PLAN[plan write/erase transaction]
+```
 
-    PLAN --> STAGE{RAM staged?}
+### Flash Transaction
+
+```mermaid
+flowchart TD
+    PLAN[plan write/erase transaction] --> STAGE{RAM staged?}
     STAGE -->|yes| RAMIMG[assemble/verify image in RAM]
     STAGE -->|no| DIRECT[direct erased-flash write]
     RAMIMG --> PROGRAM[program flash bytes]
     DIRECT --> PROGRAM
-
     PROGRAM --> VERIFY[verify flash]
     VERIFY --> OK{verified?}
-    OK -->|no| RECOVERY
+    OK -->|no| RECOVERY[minimal recovery mode]
     OK -->|yes| CATALOG[future catalog/export commit]
     CATALOG --> RETURN[return to HIMON or recovery prompt]
 ```
@@ -580,9 +599,11 @@ V0 command surface should be closer to this:
 ```text
 ?          print tiny STR8 ID
 B          back up bank 3 to selected bank 0, 1, or 2, destructive, confirmed
+U          update Bank 3 $C000-$EFFF from validated S19, confirmed
 0          restore bank 0 to bank 3, with verify built in
 1          restore bank 1 to bank 3, with verify built in
 2          restore bank 2 to bank 3, with verify built in
+J0/J1/J2   non-destructive opaque-bank reset-vector handoff
 G          go HIMON
 R          reset through the live reset vector
 ```
@@ -609,25 +630,29 @@ flowchart TD
     PROMPT --> Q[? ID]
     PROMPT --> B[B backup]
     PROMPT --> RST[0/1/2 restore]
+    PROMPT --> J[J0/J1/J2 handoff]
     PROMPT --> G[G go HIMON]
     PROMPT --> R[R reset]
 
     G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $FD60-$FFEF -> $0200]
+    B --> COPY[copy worker $FD16-$FFEF -> $0200]
     RST --> COPY
+    J --> COPY
     COPY --> WORKER[RAM flash worker]
     WORKER --> FLASH[bank select / erase / write / verify]
     FLASH --> BANK3[restore Bank 3]
     BANK3 --> STR8
+    WORKER --> GUEST[validated target reset vector]
 
     Q --> STR8
 ```
 
 The worker does not call ROM, HIMON, or BIO while flash banks are being changed.
-It restores Bank 3 and returns carry/status; the resident STR8 shell prints the
-result.
+Ordinary worker paths restore Bank 3 and return carry/status so resident STR8
+can print the result. Successful `J` handoff resets software CPU state and
+jumps through the RAM-held target vector without returning.
 
 ## Future Advanced Sector Tool
 
@@ -652,7 +677,7 @@ quit advanced mode
 Bad fit:
 
 ```text
-the normal ? B U 0 1 2 G R rescue/update path
+the normal ? B U 0 1 2 J0 J1 J2 G R rescue/update/handoff path
 implicit or cascading backup policy
 an unconfirmed bank 0 erase
 catalog garbage collection
@@ -802,7 +827,7 @@ B command + 0/1/2:  copy bank 3 -> selected bank only
 
 Each 4K window reads from the source bank, writes the destination bank, and
 verifies by simple read-back compare. The `$F000` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$FD60-$FFEF` into RAM
+policy by first copying its worker from bank 3 `$FD16-$FFEF` into RAM
 `$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. Catalog

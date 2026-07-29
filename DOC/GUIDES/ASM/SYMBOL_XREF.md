@@ -398,13 +398,14 @@ For the readable command/subsystem maps and full HIMON capability map, see
 [HIMON_MAP.md](../HIMON/HIMON_MAP.md). For the direct generated-style edge
 listing, see [HIMON_EDGE_DUMP.md](../HIMON/HIMON_EDGE_DUMP.md).
 
+### Reset And Initialization
+
 ```mermaid
 flowchart TD
     START --> MON_COLD_RESET
     START --> MON_START_INIT
     MON_COLD_RESET --> MON_CLEAR_RAM
     MON_CLEAR_RAM --> MON_START_INIT
-
     MON_START_INIT --> SYS_INIT
     MON_START_INIT --> SYS_FLUSH_RX
     MON_START_INIT --> SYS_VEC_SET_NMI_XY
@@ -415,16 +416,25 @@ flowchart TD
     MON_START_INIT --> SYS_WRITE_CRLF
     MON_START_INIT --> MON_PRINT_STOP_AND_REGS
     MON_START_INIT --> MAIN_LOOP
+```
 
+### Main Loop And Input
+
+```mermaid
+flowchart TD
     MAIN_LOOP --> HIM_WRITE_HBSTRING
     MAIN_LOOP --> HIM_READ_LINE_ECHO_UPPER
     MAIN_LOOP --> MAIN_HAVE_LINE
-
     MAIN_HAVE_LINE --> CMD_SKIP_SPACES
     MAIN_HAVE_LINE --> CMD_PEEK
     MAIN_HAVE_LINE --> CMD_HASH_TOKEN
     MAIN_HAVE_LINE --> CMD_DISPATCH_HASH
+```
 
+### Hash Math
+
+```mermaid
+flowchart TD
     CMD_HASH_TOKEN --> FNV1A_INIT
     CMD_HASH_TOKEN --> CMD_PEEK
     CMD_HASH_TOKEN --> FNV1A_UPDATE_A
@@ -434,7 +444,12 @@ flowchart TD
     FNV1A_MUL_PRIME --> MATH_SHLADD_TERM_N
     FNV1A_MUL_PRIME --> MATH_ADD_TERM_TO_RES
     FNV1A_MUL_PRIME --> MATH_COPY_RES_TO_HASH
+```
 
+### Catalog Dispatch
+
+```mermaid
+flowchart TD
     CMD_DISPATCH_HASH --> CMD_HASH_FIND
     CMD_DISPATCH_HASH --> CMD_HASH_RECORD_IS_EXEC
     CMD_DISPATCH_HASH --> CMD_HASH_RECORD_ENTRY
@@ -444,10 +459,14 @@ flowchart TD
     CMD_HASH_FIND --> CMD_HASH_SCAN_NEXT_RECORD
     CMD_HASH_FIND --> CMD_HASH_RECORD_MATCH
     CMD_HASH_SCAN_NEXT_RECORD --> CMD_HASH_IS_RECORD
-
     CMD_EXEC_ADDR --> CMD_CALL_ADDR
     CMD_EXEC_ADDR --> MON_PRINT_RET_AND_REGS
+```
 
+### Command Workers
+
+```mermaid
+flowchart TD
     CMD_HELP --> HIM_WRITE_HBSTRING
     CMD_HASH_INFO --> CMD_HASH_FIND
     CMD_HASH_INFO --> CMD_HASH_PRINT_ROW
@@ -462,7 +481,12 @@ flowchart TD
     CMD_G --> CMD_PARSE_HEX_WORD_TOKEN
     CMD_G --> CMD_SAVE_ENTRY
     CMD_G --> CMD_EXEC_ADDR
+```
 
+### Loader
+
+```mermaid
+flowchart TD
     CMD_L --> L_PARSE_RECORD
     L_PARSE_RECORD --> L_PARSE_S0
     L_PARSE_RECORD --> L_PARSE_S1
@@ -470,14 +494,18 @@ flowchart TD
     L_PARSE_RECORD --> L_PARSE_HEX_BYTE_STRICT
     L_PARSE_S1 --> L_WRITE_DATA_BYTE
     L_WRITE_DATA_BYTE --> FLASH_WRITE_BYTE_AXY
+```
 
+### Traps And I/O
+
+```mermaid
+flowchart TD
     MON_NMI_TRAP --> MON_REENTER
     MON_NMI_TRAP_DEBOUNCE --> RTIDUP[RTI NMI during debounce window]
     MON_NMI_TRAP_DEBOUNCE --> MON_REENTER
     MON_BRK_TRAP --> DBG_HANDLE_BRK
     MON_BRK_TRAP --> MON_REENTER
     MON_IRQ_TRAP --> MON_REENTER
-
     BIO_FTDI_WRITE_BYTE_BLOCK --> PIN_FTDI_WRITE_BYTE_NONBLOCK
     BIO_FTDI_READ_BYTE_BLOCK --> PIN_FTDI_READ_BYTE_NONBLOCK
 ```

@@ -15,6 +15,7 @@
                         XDEF            STR8_WORKER_END
 
                         INCLUDE         "STR8/str8-record-eq.inc"
+                        INCLUDE         "STR8/str8-jump-eq.inc"
 
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
 ; 2026-05-17T21:20-05:00        WLP2        Worker source storage formerly moved to $FC00.
@@ -75,6 +76,8 @@ START:
                         BEQ             ?STAGE_BANK_SECTOR
                         CMP             #STR8_COPY_MODE_PROGRAM_RECORD
                         BEQ             ?PROGRAM_RECORD
+                        CMP             #STR8_COPY_MODE_JUMP_BANK
+                        BEQ             ?JUMP_BANK
                         JSR             STR8W_COPY_BANKS
                         BRA             ?DONE
 ?PROGRAM_STAGED:
@@ -85,6 +88,9 @@ START:
                         BRA             ?DONE
 ?PROGRAM_RECORD:
                         JSR             STR8W_PROGRAM_RECORD
+                        BRA             ?DONE
+?JUMP_BANK:
+                        JSR             STR8W_JUMP_BANK
 ?DONE:
                         BCC             ?FAIL
                         JSR             STR8W_SELECT_BANK3
@@ -108,6 +114,45 @@ START:
 ?TOP_FAIL:
                         PLP
                         JMP             STR8W_TOP_FAIL_HALT
+
+; Non-destructive opaque-bank handoff. Success resets CPU software state and
+; never returns. Failure returns through START, which restores Bank 3 first.
+STR8W_JUMP_BANK:
+                        LDA             STR8_JUMP_BANK
+                        CMP             #$03
+                        BCS             ?BAD_BANK
+                        JSR             STR8W_BANK_SELECT_A
+                        LDA             STR8_RESET_VECTOR
+                        STA             STR8_JUMP_VEC_LO
+                        LDA             STR8_RESET_VECTOR+1
+                        STA             STR8_JUMP_VEC_HI
+                        CMP             #$80
+                        BCC             ?LOW_VECTOR
+                        CMP             #$FF
+                        BNE             ?GO
+                        LDA             STR8_JUMP_VEC_LO
+                        CMP             #$FF
+                        BEQ             ?ERASED_VECTOR
+?GO:
+                        LDA             #STR8_JUMP_STATUS_GO
+                        STA             STR8_JUMP_STATUS
+                        SEI
+                        CLD
+                        LDX             #$FF
+                        TXS
+                        JMP             (STR8_JUMP_VEC_LO)
+?BAD_BANK:
+                        LDA             #STR8_JUMP_STATUS_BANK
+                        BRA             ?FAIL
+?LOW_VECTOR:
+                        LDA             #STR8_JUMP_STATUS_LOW
+                        BRA             ?FAIL
+?ERASED_VECTOR:
+                        LDA             #STR8_JUMP_STATUS_ERASED
+?FAIL:
+                        STA             STR8_JUMP_STATUS
+                        CLC
+                        RTS
 
 ; 2026-05-07T19:14-05:00        WLP2        Restore skips protected high sectors by mode.
 STR8W_COPY_BANKS:
