@@ -3,11 +3,16 @@
 ; ASSEMBLE WITH ASM-F2. NO SEPARATE STR8-TOP-STAGE S19 LOAD NEEDED.
 ;
 ; ENTRY POINTS AFTER ASSEMBLY:
-;   G 3000  COPY EMBEDDED IMAGE $4000-$4FFF TO $0A00-$19FF
+;   G 3000  OPEN TEXT OPERATION MENU
 ;   G 3003  ERASE/PROGRAM/VERIFY BANK 3 $F000-$FFFF FROM $0A00
 ;
+; MENU OPERATIONS:
+;   S STAGE+VERIFY, V VERIFY STAGE, P PROGRAM, I STATUS, Q QUIT
+;   P FIRST VERIFIES THE STAGE, THEN REQUIRES THE WORD WRITE.
+;   G 3003 IS THE RAW COMPATIBILITY ENTRY AND HAS NO CONFIRMATION.
+;
 ; STATUS:
-;   $1A00 = MODE, $00 STAGE OR $01 PROGRAM
+;   $1A00 = MODE, $00 STAGE, $01 PROGRAM, OR $02 VERIFY
 ;   $1A01 = $AC OK
 ;   $1A01 = $E0 STAGE COPY/VERIFY MISMATCH
 ;   $1A01 = $E1 ERASE TIMEOUT
@@ -20,8 +25,8 @@
 ;
         ORG $3000
 
-STAGE   JMP TSTAGE
-PROG    JMP TPROG
+        JMP TMENU
+        JMP TPROG
 
 MODE    EQU $1A00
 STAT    EQU $1A01
@@ -33,10 +38,78 @@ DPLO    EQU $CA
 DPHI    EQU $CB
 
 CSTR    EQU $8598
+READ    EQU $8595
 HEXB    EQU $859E
 HEXW    EQU $85A1
 CRLF    EQU $85A9
 WTRAY   EQU $0200
+
+TMENU   LDX #<MHELP
+        LDY #>MHELP
+        JSR PL
+MLOOP   LDX #<MPMT
+        LDY #>MPMT
+        JSR CSTR
+        LDX #$10
+        LDY #$1A
+        JSR READ
+        BCC MLOOP
+        LDA $1A10
+        CMP #'S'
+        BEQ OPSTG
+        CMP #'V'
+        BEQ OPVFY
+        CMP #'P'
+        BEQ OPPRG
+        CMP #'I'
+        BEQ OPSTA
+        CMP #'Q'
+        BEQ MQUIT
+MNO     LDX #<MHELP
+        LDY #>MHELP
+        JSR PL
+        BRA MLOOP
+MQUIT   LDA STAT
+        CMP #$AC
+        RTS
+OPSTG   JSR TSTAGE
+        BRA MLOOP
+OPVFY   JSR TVERIFY
+        BRA MLOOP
+OPSTA   JSR TINFO
+        BRA MLOOP
+OPPRG   JSR TVERIFY
+        BCC MLOOP
+        LDX #<MCFM
+        LDY #>MCFM
+        JSR CSTR
+        LDX #$10
+        LDY #$1A
+        JSR READ
+        BCC NOGO
+        LDA $1A10
+        CMP #'W'
+        BNE NOGO
+        LDA $1A11
+        CMP #'R'
+        BNE NOGO
+        LDA $1A12
+        CMP #'I'
+        BNE NOGO
+        LDA $1A13
+        CMP #'T'
+        BNE NOGO
+        LDA $1A14
+        CMP #'E'
+        BNE NOGO
+        LDA $1A15
+        BNE NOGO
+        JSR TPROG
+        JMP MLOOP
+NOGO    LDX #<MCAN
+        LDY #>MCAN
+        JSR PL
+        JMP MLOOP
 
 TSTAGE  LDX #<MSTG
         LDY #>MSTG
@@ -52,6 +125,20 @@ TSTAGE  LDX #<MSTG
         STA STAT
         JMP PRSTAT
 STGERR  LDA #$E0
+        STA STAT
+        JMP PRSTAT
+
+TVERIFY LDA #$02
+        STA MODE
+        STZ STAT
+        STZ FLO
+        STZ FHI
+        JSR VSTG
+        BCC VFYERR
+        LDA #$AC
+        STA STAT
+        JMP PRSTAT
+VFYERR  LDA #$E0
         STA STAT
         JMP PRSTAT
 
@@ -141,12 +228,12 @@ PRSTAT  LDA STAT
         RTS
 PRERR   LDX #<MERR
         LDY #>MERR
-        JSR PRC
+        JSR CSTR
         LDA STAT
         JSR HEXB
         LDX #<MAT
         LDY #>MAT
-        JSR PRC
+        JSR CSTR
         LDA FHI
         LDX FLO
         JSR HEXW
@@ -155,9 +242,28 @@ PRERR   LDX #<MERR
         CLC
         RTS
 
-PL      JSR PRC
+TINFO   LDX #<MSTAT
+        LDY #>MSTAT
+        JSR CSTR
+        LDA MODE
+        JSR HEXB
+        LDX #<MRES
+        LDY #>MRES
+        JSR CSTR
+        LDA STAT
+        JSR HEXB
+        LDX #<MAT
+        LDY #>MAT
+        JSR CSTR
+        LDA FHI
+        LDX FLO
+        JSR HEXW
+        JSR CRLF
+        SEC
+        RTS
+
+PL      JSR CSTR
         JMP CRLF
-PRC     JMP CSTR
 
 ; RAM worker copied to $0200. No ROM calls while flash is busy.
 WSTART  PHP
@@ -299,11 +405,31 @@ WRESET  LDA #$F0
         PLP
         RTS
 
+MHELP   DB 'T','O','P','W','R','I','T','E'
+        DB 'R',$0D,$0A,'S',' ','S','T','A'
+        DB 'G','E','+','V','E','R','I','F'
+        DB 'Y',$0D,$0A,'V',' ','V','E','R'
+        DB 'I','F','Y',' ','S','T','A','G'
+        DB 'E',$0D,$0A,'P',' ','P','R','O'
+        DB 'G','R','A','M',' ','B','A','N'
+        DB 'K',' ','3',$0D,$0A,'I',' ','S'
+        DB 'T','A','T','U','S',$0D,$0A,'Q'
+        DB ' ','Q','U','I','T',$00
+MPMT    DB 'T','W','>',' ',$00
+MCFM    DB 'T','Y','P','E',' ','W','R','I'
+        DB 'T','E',' ','T','O',' ','P','R'
+        DB 'O','G','R','A','M',' ','B','3'
+        DB '>',' ',$00
+MCAN    DB 'T','W',' ','C','A','N','C','E'
+        DB 'L',$00
 MSTG    DB 'T','W',' ','S','T','G',$00
 MPRG    DB 'T','W',' ','P','R','G',$00
 MOK     DB 'T','W',' ','O','K',$00
 MERR    DB 'T','W',' ','E','R','R','=','$',$00
 MAT     DB ' ','@','=','$',$00
+MSTAT   DB 'T','W',' ','M','O','D','E','='
+        DB '$',$00
+MRES    DB ' ','R','E','S','=','$',$00
 
         ORG $4000
 ; EMBEDDED TOP SECTOR IMAGE. ROM $F000-$FFFF.

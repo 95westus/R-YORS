@@ -242,8 +242,8 @@ Before starting:
 4. Save any Bank 0-2 content that must survive. The backup tests intentionally
    replace all three backup banks, one at a time.
 5. End every ASM session with `.` before using a HIMON command.
-6. Do not type `G 3003` unless the immediately preceding topwriter stage and
-   byte dumps match this card.
+6. Do not select TopWriter `P` or type raw-entry `G 3003` unless the
+   immediately preceding topwriter stage and byte dumps match this card.
 
 Stop immediately on:
 
@@ -410,9 +410,16 @@ The file ends with `END`. Enter `.` at `SEAL>` and require `ASM BYE` with no
 ```text
 >G 3000
 GO 3000
+TOPWRITER
+S STAGE+VERIFY
+V VERIFY STAGE
+P PROGRAM BANK 3
+I STATUS
+Q QUIT
+TW> S
 TW STG
 TW OK
-
+TW> Q
 #GO# ENTRY=3000
 RET A=AC ... C
 >D 1A00 1A03
@@ -435,19 +442,28 @@ Require:
 ```
 
 `$19F0-$19F9` being erased is intentional. If one byte differs, stop. Do not
-run `G 3003`.
+select `P` or run raw-entry `G 3003`.
 
 ### 4.5 Program and verify the top sector
 
 With programmer recovery still ready:
 
 ```text
->G 3003
-GO 3003
+>G 3000
+GO 3000
+TOPWRITER
+S STAGE+VERIFY
+V VERIFY STAGE
+P PROGRAM BANK 3
+I STATUS
+Q QUIT
+TW> P
+TW OK
+TYPE WRITE TO PROGRAM B3> WRITE
 TW PRG
 TW OK
-
-#GO# ENTRY=3003
+TW> Q
+#GO# ENTRY=3000
 RET A=AC ... C
 >D 1A00 1A03
 ```
@@ -987,6 +1003,10 @@ Reassemble the exact topwriter, run its safe stage, and inspect:
 
 ```text
 >G 3000
+TW> S
+TW STG
+TW OK
+TW> Q
 >D 19F0 19F0
 19F0: FF
 >M 19F0
@@ -1028,9 +1048,19 @@ sector without the RAM patch:
 
 ```text
 >G 3000
+TW> S
+TW STG
+TW OK
+TW> Q
 >D 19F0 19F0
 19F0: FF
->G 3003
+>G 3000
+TW> P
+TW OK
+TYPE WRITE TO PROGRAM B3> WRITE
+TW PRG
+TW OK
+TW> Q
 ```
 
 Require `TW OK`, cold boot, `$FFF0=FF`, and the pinned vectors. Bank 0 still

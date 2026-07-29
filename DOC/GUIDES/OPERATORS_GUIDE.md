@@ -231,9 +231,14 @@ of an old HIMON service that does not implement that operation.
 
 Assemble the top writer after the HIMON update: STR8 `U` uses `$4000-$4FFF` as
 its sector buffer, which overwrites the writer's embedded top-sector image.
-`G 3000` only stages and verifies; `G 3003` immediately erases/programs/verifies
-bank 3 `$F000-$FFFF`. The generated sector deliberately restores `$FFF0-$FFF9`
-to erased bytes; those bytes no longer control Bank 0 backup access.
+`G 3000` opens TopWriter's text-operation menu. Use `S` to stage and verify,
+`V` to recheck the stage, `I` to print the saved mode/result/failure address,
+and `Q` to return to HIMON. `P` first rechecks the complete stage, then requires
+the exact confirmation word `WRITE` before it erases/programs/verifies bank 3
+`$F000-$FFFF`. `G 3003` remains the raw, unconfirmed compatibility entry for
+scripted or deliberately modified-stage tests. The generated sector
+deliberately restores `$FFF0-$FFF9` to erased bytes; those bytes no longer
+control Bank 0 backup access.
 
 For the current code-size/explicit-backup candidate, use the complete
 paste-ready board card:

@@ -11577,3 +11577,43 @@ run these candidate-specific gates:
 The decisive transcript outputs are retained in
 [`HARDWARE_TEST_LOG.md`](../LOGS/HARDWARE_TEST_LOG.md). This candidate is now
 both host- and hardware-proven.
+
+## 2026-07-28 TopWriter Text-Operation Menu
+
+The generated self-contained top-sector writer now enters a text-operation
+menu at `$3000`:
+
+```text
+TOPWRITER
+S STAGE+VERIFY
+V VERIFY STAGE
+P PROGRAM BANK 3
+I STATUS
+Q QUIT
+TW>
+```
+
+`S` retains the existing embedded-image copy and full stage verification.
+`V` reruns that verification without copying and records mode `$02`. `I`
+prints the saved mode, result, and failure address. `P` first requires a
+successful full-stage verification, then accepts only the exact uppercase
+line `WRITE` before calling the existing RAM flash worker. Empty input,
+Ctrl-C, an invalid menu key, a failed preflight, or any other confirmation
+line returns to the nonwriting menu path.
+
+The raw `$3003` program entry remains unchanged for scripted compatibility and
+for the section-12 test that deliberately changes a staged byte. It is
+intentionally unconfirmed and remains documented as a bench-only escape
+hatch.
+
+The generator resolves the existing `ASM_RJ_READ_CSTRING` shim from the
+current ASM-F2 link map instead of adding a new resident dependency. The
+generated source uses 63 of 64 available ASM-F2 user symbols and keeps every
+non-comment source line at or below 63 visible characters. Host syntax and
+branch-range assembly passed under WDC 65C02 tools. Run
+`make -C SRC asm-test` and `make -C SRC str8-topwrite-a` before board use.
+
+Board acceptance remains required for the new interactive surface. At the
+bench, prove `S`, `V`, `I`, invalid input, canceled `P`, confirmed `P`, and
+`Q`; append that transcript to the hardware log without rewriting the
+existing raw-entry proof.
