@@ -39,6 +39,13 @@
   peripheral state, reset/NMI/IRQ vectors, full-image CRC, and physical-reset
   recovery are per-image gates even though the V1 bank-switch mechanism is
   already accepted.
+- Defer the common STR8 HB/NUL printer and product-prefix optimization proposed
+  in pushed planning commit `4b73509`. Its isolated proof costs about 51-55
+  bytes; complete retirement saves only about 25-32 bytes and requires broad
+  STR8/HIMON/ASM/C-string/NMI/hardware regression work. Keep the
+  hardware-proven `ae60409` code/data layout, existing string routines,
+  `$F00C-$F00F = 53 52 01 07`, and current zero-page allocation. Reopen only
+  for demonstrated size pressure or a separate functional need.
 - Refactor the duplicate S19 paths into a STR8 validated-record service before
   adding formats. Buffer and checksum a complete record before HIMON applies
   RAM policy or STR8 applies staging/flash policy. Preserve `L`, `L G`, and `U`

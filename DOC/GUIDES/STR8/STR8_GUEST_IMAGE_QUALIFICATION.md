@@ -80,10 +80,6 @@ RAM initialization:
 warm-entry address:
 known NMI sources:
 known IRQ sources:
-bank/mutation commands:
-RAM worker class:         disabled, supervisor-only, or home-aware
-HOME_BANK source/check:
-temporary target policy:
 rollback image/location:
 H result:
 P result:
@@ -168,43 +164,6 @@ Test the guest from deliberately non-default but safe states when possible:
 Record PASS only when the guest initializes what it needs without changing
 banks unexpectedly. Record every state that the test deliberately did not
 cover.
-
-## Guest Bank-Switch And Worker Qualification
-
-An opaque guest is not required to expose a bank-switch or flash-mutation
-command. Qualification must determine which of these contracts the exact
-image implements:
-
-1. **Disabled:** bank/mutation commands are absent or reject all use.
-2. **Supervisor-only:** commands operate only from their documented
-   supervisor bank and reject entry from a guest bank.
-3. **Home-aware:** a returning RAM worker carries an explicit `HOME_BANK`,
-   verifies the actual bank against it on entry, and restores and verifies it
-   before returning.
-
-A guest command does not qualify merely because it reaches a familiar address
-after selecting another bank. The same `$Fxxx` address names different bytes
-in different banks. Accidental execution through a matching address is a
-failure, not an ABI.
-
-For every returning guest worker, require evidence that:
-
-- the actual bank equals `HOME_BANK` before any bank selection or mutation;
-- the target bank and mutation authority are bounded explicitly;
-- all selected-bank instructions, helpers, state, and failure paths are in
-  RAM;
-- no home-bank ROM routine, literal, printer, or HB ABI is used while the
-  target bank is selected;
-- all NMI sources remain quiescent throughout the temporary selection;
-- every returning path restores and verifies `HOME_BANK`; and
-- restoration failure remains in RAM and never returns into ROM.
-
-The current Bank-3 `$F003` worker is a Bank-3 supervisor implementation. Its
-hard-wired Bank-3 restoration is not a reusable guest ABI. A general
-home-aware guest worker is a later optional specification and is not part of
-the first Bank 0-2 installer. The controlling policy and proposed installer
-contract live in
-[STR8_STRING_BANK_INSTALL_GAME_PLAN.md](../PLANNING/STR8_STRING_BANK_INSTALL_GAME_PLAN.md).
 
 ## Procedure 3: Vector Qualification
 
@@ -296,7 +255,6 @@ After physical reset returns to Bank 3:
 | --- | --- |
 | Handoff | visible `Jn`, correct guest identity, stable basic operation |
 | Peripheral | startup survives warm state; bank selection stays correct |
-| Bank worker | commands disabled, or documented home policy and restoration proof |
 | Reset vector | exact value, in range, points to present startup code |
 | NMI | source quiescent during handoff; handler qualified before use |
 | IRQ/BRK | remains masked until initialized; handler qualified before use |

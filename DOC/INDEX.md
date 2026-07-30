@@ -17,7 +17,6 @@ DOC/GUIDES/TECHNICAL_GUIDE.md
 - [GUIDES/GLOSSARY.md](./GUIDES/GLOSSARY.md) - vocabulary contract.
 - [GUIDES/DECISIONS.md](./GUIDES/DECISIONS.md) - settled policy.
 - [GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](./GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` opaque-bank implementation and hardware-proof plan.
-- [GUIDES/PLANNING/STR8_STRING_BANK_INSTALL_GAME_PLAN.md](./GUIDES/PLANNING/STR8_STRING_BANK_INSTALL_GAME_PLAN.md) - proposed common HB/NUL ABI, Bank-3-owned Bank 0-2 installer, restoration-failure policy, and optional future `HOME_BANK` worker contract.
 - [GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](./GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - required per-image handoff, peripheral, vector, CRC, and recovery procedure for unrelated 32K guests.
 - [GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](./GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - retained S19/bank-volume direction and superseded compatible-bank design history.
 

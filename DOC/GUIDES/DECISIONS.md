@@ -76,20 +76,6 @@ Bank-selection, target-vector inspection, and final handoff run from RAM.
   and does not write flash. A successful handoff never returns to STR8.
 - Once Bank 0-2 is selected, Bank 3 STR8 is unmapped and cannot enforce
   timeout or recovery. Physical reset is the universal return path.
-- The first returning Bank 0-2 installer is a Bank-3 supervisor service. It
-  verifies that the actual current bank is 3, rejects other entry with
-  `NOT_SUPERVISOR`, restores and verifies Bank 3 before returning, and reports
-  a detected home mismatch as `BAD_HOME`. A restoration failure never returns
-  into ROM; it remains on a RAM-only failure path until physical reset.
-- A reusable returning guest worker is a later optional specification, not
-  part of the first installer. It must carry an explicit `HOME_BANK`, verify
-  that home on entry, and restore and verify the same home before returning.
-  Guest qualification must prove bank/mutation commands disabled,
-  supervisor-only, or genuinely home-aware.
-- The HB ABI is unchanged by this worker policy. It is local to the selected
-  coherent R-YORS bank and is never called while a temporary worker has
-  another bank selected. This does not change the accepted `J0`-`J2` handoff
-  ABI.
 - A later timed alternate-bank boot is deferred. The current timeout stays in
   Bank 3 and enters its local default payload.
 - Bank roles are configuration, not command semantics. `J1` does not mean OSI
@@ -103,9 +89,20 @@ The current `J0`-`J2` implementation and proof contract lives in
 [STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md). The
 older compatible-bank/BPB design is retained as superseded history in
 [STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
-The proposed common-string ABI, supervisor installer, restoration-failure
-policy, and optional future `HOME_BANK` contract live in
-[STR8_STRING_BANK_INSTALL_GAME_PLAN.md](PLANNING/STR8_STRING_BANK_INSTALL_GAME_PLAN.md).
+
+The pushed planning experiment at `4b73509` proposed a STR8-owned common
+HB/NUL string routine, `$C5/$C6` pointer cells, a new fixed entry/capability,
+and product-prefix compression. The 2026-07-29 size review found that the
+isolated proof would add about 51-55 bytes and that full cross-product
+retirement would recover only about 25-32 bytes after extensive STR8, HIMON,
+ASM, C-string, NMI, fixed-entry, and hardware regression testing. That is too
+little return for the ABI and proof cost, so the optimization is deferred and
+the published tree is restored to the hardware-proven `ae60409` baseline.
+Current HB/C-string routines, service vectors, `$F00C-$F00F = 53 52 01 07`,
+and zero-page ownership remain unchanged. Reconsider only under demonstrated
+size pressure or a separate functional requirement. A future Bank 0-2
+installer remains a separate safety specification, not a reason to introduce
+the string ABI.
 
 STR8 owns the reusable S19 decode/checksum mechanism and all flash-mutation
 policy. HIMON keeps the `L`/`L G` RAM-load interface and destination policy.

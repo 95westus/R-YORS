@@ -41,6 +41,13 @@
   fits, with `MEM` as a future core memory-ownership layer beneath public
   `SYS` calls.
 - Keep CSTR, HBSTR, and packed command-text forms explicit at API boundaries.
+- Keep the common STR8 HB/NUL printer and product-prefix experiment deferred.
+  The pushed `4b73509` planning pass measured too little return--about 25-32
+  bytes after complete migration--for its fixed-entry, zero-page, NMI,
+  compatibility, and hardware-proof cost. The hardware-proven `ae60409`
+  string/service layout remains the baseline. Revisit only when measured size
+  pressure or a genuine cross-product service requirement justifies the full
+  proof.
 - Treat future dynamic memory as `MEM_*`: hardware-constrained RAM and
   zero-page ownership policy, not `PIN_*`/`BIO_*` device access.
 - Keep STR8 fixed-buffer-only. HIMON can adopt `MEM_*` later, starting with

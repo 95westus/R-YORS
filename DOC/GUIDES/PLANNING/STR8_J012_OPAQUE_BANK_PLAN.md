@@ -79,36 +79,6 @@ If Bank 3 `$F000-$FFFF` is replaced by WOZMON or another unrelated top sector,
 this STR8 selector no longer exists. Supporting that arrangement would require
 a different reset supervisor or external hardware and is outside this plan.
 
-## Returning RAM Workers And Home-Bank Ownership
-
-The successful `J0`-`J2` handoff is a non-returning operation. A RAM worker
-that temporarily selects another bank and then returns has a stricter
-home-bank contract.
-
-The first Bank 0-2 installer is a Bank-3 supervisor service:
-
-- it verifies that the actual current bank is 3 before selecting or mutating
-  another bank;
-- entry from Bank 0-2 fails with `NOT_SUPERVISOR`;
-- every returning path restores and verifies Bank 3 before entering ROM;
-- a home-bank mismatch reports `BAD_HOME`; and
-- failure to restore and verify Bank 3 never returns into ROM. The failure
-  path remains entirely in RAM until physical reset.
-
-A reusable worker that a guest could call from Bank 0-2 is a later optional
-specification, not part of the first installer. Such a worker requires an
-explicit `HOME_BANK`, verifies that home on entry, and restores and verifies
-that same home before returning. It must not assume Bank 3 merely because the
-current STR8 worker does.
-
-NMI vector ownership follows the bank selected at the instant of the vector
-fetch. Therefore every temporary-bank worker must keep NMI quiescent and must
-not call a home-bank ROM service, including the common HB string ABI, until
-the coherent home bank has been restored.
-
-The complete proposed worker, installer, and string contract lives in
-[STR8_STRING_BANK_INSTALL_GAME_PLAN.md](STR8_STRING_BANK_INSTALL_GAME_PLAN.md).
-
 ## Bank Roles Are Configuration, Not ABI
 
 The current and possible future roles are inventory facts, not meanings built
@@ -498,6 +468,22 @@ unused RAM tray         1318 bytes
 stop-gate headroom      $00AD (173 bytes)
 ```
 
+The 2026-07-29 clean rebuild after restoring the `ae60409` baseline reports
+the complete flash-region budget:
+
+| Region | Product | CODE | DATA | End | Remaining to region limit |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `$8000-$BFFF` | ASM-F2 | `$3987` | `$02E6` | `$BC6D` | `$0393` (915 bytes) to `$C000` |
+| `$C000-$EFFF` | HIMON | `$2922` | `$0596` | `$EEB8` | `$0148` (328 bytes) to `$F000` |
+| `$F000-$FFFF` | STR8 resident | `$08DA` | `$018F` | `$FA69` | `$0597` (1431 bytes) to `$10000`, raw |
+
+STR8's raw `$0597` remainder is not one free span. The stored RAM worker owns
+`$FD16-$FFEF` (`$02DA`, 730 bytes), and `$FFF0-$FFFF` remains the
+configuration/vector tail. The usable contiguous resident/worker gap is
+`$FA69-$FD15`, `$02AD` (685 bytes), with `$00AD` (173 bytes) above the frozen
+`$0200` stop gate. ASM-F2 also links `$11AA` bytes of UDATA at `$5000`; that RAM
+workspace is not part of its `$8000-$BFFF` flash consumption.
+
 Apply these size rules:
 
 - Record resident end, worker start/end, exact gap, and RAM worker length after
@@ -730,7 +716,12 @@ These choices do not block the RAM handoff proof:
 - whether timed boot may later target a registered Bank 0-2 system;
 - whether guests share a tiny published bank-query source snippet;
 - whether a reset-like peripheral normalization profile is needed for specific
-  OSI BASIC, FORTH, or WOZMON builds.
+  OSI BASIC, FORTH, or WOZMON builds;
+- whether size pressure ever justifies reopening the deferred common HB/NUL
+  printer and product-prefix optimization. The `4b73509` planning experiment
+  was restored to the hardware-proven `ae60409` baseline after finding only
+  about 25-32 bytes of final savings for broad cross-product and hardware
+  proof cost.
 
 None of those decisions may reintroduce a required metadata block into the
 opaque Bank 0-2 images.
