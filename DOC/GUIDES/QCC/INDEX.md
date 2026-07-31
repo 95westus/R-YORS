@@ -68,3 +68,5 @@ fit a small inspectable 6502 runtime, it does not belong in the first path.
   scanning, and recovery/update responsibilities.
 - [QCC_MEMORY.md](MEMORY.md) - RAM/IO/flash ranges, 4K selectors,
   allocation questions, and bit-helper direction.
+- [QCC_HARDWARE.md](HARDWARE.md) - ACIA-side/board and USB FTDI power-domain,
+  suspend, back-power, and electrical-preflight concerns.

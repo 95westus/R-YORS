@@ -41,6 +41,30 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## QCC: FTDI/Board Dual-Power Concern Recorded
+
+```text
+2026
+         07
+                30
+                   02:06Z COLLAB-AI Added a parked hardware power-domain
+                               warning for simultaneous board and USB power.
+```
+
+scope: new [QCC_HARDWARE.md](QCC/HARDWARE.md) and the QCC index.
+
+change: ACIA-side/board power combined with a USB-powered FTDI is now an
+explicit hardware concern. The note separates STR8 `PWE#` traffic gating from
+electrical isolation and records the laptop-suspend case.
+
+effect: An enumeration check must not be treated as proof against tied
+supplies, phantom powering, or backfeed while the CPU/VIA is unpowered.
+
+action: consult the hardware QCC and establish the actual VBUS/VCC/VCCIO,
+jumper, ground, and isolation topology before simultaneous-power testing. The
+concern is parked outside the current STR8 selector work unless explicitly
+reopened.
+
 ## REDOC: Independent STR8 Guests Require Per-Image Qualification
 
 ```text
