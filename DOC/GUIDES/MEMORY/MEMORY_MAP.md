@@ -60,10 +60,10 @@ space.
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: ASM-F2 starts at
 CPU `$8000` / file offset `$0000`, HIMON starts at CPU `$C000` / file offset
 `$4000`, STR8 starts at CPU `$F000` / file offset `$7000`, the STR8 RAM worker
-source is stored at CPU `$FD16` / file offset `$7D16`, copied into the
+source is stored at CPU `$FD03` / file offset `$7D03`, copied into the
 `$0200-$09FF` RAM worker-code tray, and all live hardware vectors enter the
 STR8-owned top sector. RESET points to STR8 at `$F000`; NMI and IRQ/BRK point
-to STR8 IVI stubs at `$F0BD`/`$F0D1`, which dispatch through the RAM vector
+to STR8 IVI stubs at `$F0C0`/`$F0D4`, which dispatch through the RAM vector
 cells.
 
 Combined image layout:
@@ -71,12 +71,12 @@ Combined image layout:
 ```text
 $8000-$BC6C   ASM-F2 low-flash image, entry $800C
 $BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
-$C000-$EEB7   HIMON body, including resident AP import linker
-$EEB8-$EFFF   current image gap inside the used E sector
-$F000-$FABF   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
-$F91E         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$FAC0-$FD15   current contiguous top-sector growth hole
-$FD16-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray
+$C000-$EECB   HIMON body, including resident AP import linker
+$EECC-$EFFF   current image gap inside the used E sector
+$F000-$FAEE   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
+$F950         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$FAEF-$FD02   current contiguous top-sector growth hole
+$FD03-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
@@ -291,6 +291,21 @@ STR8 also uses the RSC at `$1FE9-$1FFF` for bank/sector copy state, failure
 address reporting, startup flags, and update state. `J0`-`J2` use
 `$1FF2-$1FF5` for target bank, reset-vector low/high, and handoff status.
 
+The published Bank Jump Record occupies the RSC tail:
+
+| Address | Symbol | Published value |
+| ---: | --- | --- |
+| `$1FFD` | `STR8_BANK_JUMP_SIG0` | `$42` (`B`) |
+| `$1FFE` | `STR8_BANK_JUMP_SIG1` | `$4A` (`J`) |
+| `$1FFF` | `STR8_BANK_LAST_JUMP` | last validated target bank `0`-`2`, or `$FF` |
+
+The RAM worker commits the signed record after selecting the target and
+validating its reset vector, immediately before the final jump. HIMON cold
+start preserves a valid record through RAM clearing and republishes `42 4A FF`
+when no valid target is available. Thus `D 1FFD 1FFF` reports the bank selected
+for the preceding successful STR8 handoff rather than the Bank 3 selection
+that is live after returning to HIMON.
+
 The `$1A00-$1FE8` reserved range is the preferred future home for a compact
 hash/RJOIN debug stack. That stack should be a breadcrumb trace for dynamic
 join/load/fixup failures, not the CPU stack and not required for normal success
@@ -407,7 +422,7 @@ HIMON/himon-shared-eq.inc
 
 The combined `himon-str8-rom.bin` image places STR8 in bank 3's `$F000-$FFFF`
 top-ROM sector with the hardware vectors. HIMON starts at `$C000`, and the
-STR8 RAM-worker source is stored inside the top sector at `$FD16-$FFEF`.
+STR8 RAM-worker source is stored inside the top sector at `$FD03-$FFEF`.
 
 The physical erase unit remains 4K. The protected STR8 window starts at the
 highest boundary that fits:

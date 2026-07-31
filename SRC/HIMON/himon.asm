@@ -44,6 +44,7 @@
 
                         INCLUDE         "HIMON/himon-shared-eq.inc"
                         INCLUDE         "STR8/str8-record-eq.inc"
+                        INCLUDE         "STR8/str8-jump-eq.inc"
 
 TRAP_CAUSE               EQU             $7EEA
 TRAP_BRK_SIG             EQU             $7EEB
@@ -196,13 +197,13 @@ START:
                         LDA             RESET_SIG3
                         CMP             #$3C
                         BNE             MON_COLD_RESET
-                        JMP             BOOT_RESET_WARM_BODY
+                        JMP             HIMON_WARM_START_BODY
 
-BOOT_COLD_RESET_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$F0,$30,$7A,$EC,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; BOOT_COLD_RESET $EC7A30F0 EXEC+CONFIRM
-                        DW              BOOT_RESET_COLD
-                        DW              TXT_BOOT_COLD_RESET
-BOOT_RESET_COLD:
+HIMON_COLD_START_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$21,$56,$73,$D5,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; HCOLD $D5735621 EXEC+CONFIRM
+                        DW              HIMON_COLD_START
+                        DW              TXT_HCOLD
+HIMON_COLD_START:
 MON_COLD_RESET:
                         SEI
                         CLD
@@ -210,16 +211,16 @@ MON_COLD_RESET:
                         TXS
                         JMP             MON_CLEAR_RAM
 
-BOOT_WARM_RESET_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$AB,$AE,$33,$53,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; BOOT_WARM_RESET $5333AEAB EXEC+CONFIRM
-                        DW              BOOT_RESET_WARM
-                        DW              TXT_BOOT_WARM_RESET
-BOOT_RESET_WARM:
+HIMON_WARM_START_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$1A,$06,$DE,$81,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; HWARM $81DE061A EXEC+CONFIRM
+                        DW              HIMON_WARM_START
+                        DW              TXT_HWARM
+HIMON_WARM_START:
                         SEI
                         CLD
                         LDX             #$FF
                         TXS
-BOOT_RESET_WARM_BODY:
+HIMON_WARM_START_BODY:
                         LDA             #BOOT_REASON_WARM
                         STA             BOOT_REASON
                         JSR             DBG_CLEAR_ALL
@@ -1150,6 +1151,18 @@ MON_IRQ_TRAP:
 ; Reset-time RAM clear
 ; ----------------------------------------------------------------------------
 MON_CLEAR_RAM:
+                        LDX             #STR8_BANK_NONE
+                        LDA             STR8_BANK_JUMP_SIG0
+                        CMP             #STR8_BANK_JUMP_SIG0_VALUE
+                        BNE             MON_CLEAR_RAM_BEGIN
+                        LDA             STR8_BANK_JUMP_SIG1
+                        CMP             #STR8_BANK_JUMP_SIG1_VALUE
+                        BNE             MON_CLEAR_RAM_BEGIN
+                        LDA             STR8_BANK_LAST_JUMP
+                        CMP             #$03
+                        BCS             MON_CLEAR_RAM_BEGIN
+                        TAX
+MON_CLEAR_RAM_BEGIN:
                         STZ             CMDP_PTR_LO
                         LDA             #$01
                         STA             CMDP_PTR_HI
@@ -1168,11 +1181,19 @@ MON_CLEAR_RAM_BYTE:
                         BRA             MON_CLEAR_RAM_PAGE
 
 MON_CLEAR_RAM_ZP_BEGIN:
+                        TXA
+                        TAY
                         LDX             #$00
 MON_CLEAR_RAM_ZP:
                         STZ             $00,X
                         INX
                         BNE             MON_CLEAR_RAM_ZP
+                        TYA
+                        STA             STR8_BANK_LAST_JUMP
+                        LDA             #STR8_BANK_JUMP_SIG0_VALUE
+                        STA             STR8_BANK_JUMP_SIG0
+                        LDA             #STR8_BANK_JUMP_SIG1_VALUE
+                        STA             STR8_BANK_JUMP_SIG1
                         LDA             #BOOT_REASON_COLD
                         STA             BOOT_REASON
                         JMP             MON_START_INIT
@@ -4625,8 +4646,8 @@ CMD_STR8_FNV:
 
 MSG_BANNER:              DB              $0D,$0A
                         INCLUDE         "himon-version.inc"
-TXT_BOOT_COLD_RESET:     DB              "BOOT_COLD_RESE",('T'+$80)
-TXT_BOOT_WARM_RESET:     DB              "BOOT_WARM_RESE",('T'+$80)
+TXT_HCOLD:               DB              "HCOL",('D'+$80)
+TXT_HWARM:               DB              "HWAR",('M'+$80)
 TXT_THE_JOIN_EXEC_XY:    DB              "HASH ACQUIR",('E'+$80)
 TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
 TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)

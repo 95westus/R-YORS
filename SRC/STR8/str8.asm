@@ -81,9 +81,9 @@ STR8_WORKER_RUN         EQU             $0200
 STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_TRAY_SIZE   EQU             $0800
 STR8_WORKER_TRAY_END    EQU             $09FF
-STR8_WORKER_STORE_LO    EQU             $16
+STR8_WORKER_STORE_LO    EQU             $03
 STR8_WORKER_STORE_HI    EQU             $FD
-STR8_WORKER_COPY_LEN_LO EQU             $DA
+STR8_WORKER_COPY_LEN_LO EQU             $ED
 STR8_WORKER_COPY_LEN_HI EQU             $02
 STR8_DELAY_TICKS        EQU             $03
 STR8_DELAY_TICK_A       EQU             $26
@@ -124,6 +124,7 @@ STR8_COPY_SRC_BANK      EQU             $1FEE
 STR8_COPY_DST_BANK      EQU             $1FEF
 STR8_COPY_MODE          EQU             $1FF0
 STR8_BOOT_KEY_ENABLE    EQU             $1FF1
+STR8_INPUT_SKIP_LF      EQU             $1FF1
 STR8_STAGE_BUF_HI       EQU             $1FF6
 STR8_UPD_MASK           EQU             $1FF7
 STR8_UPD_DATA_LEN       EQU             $1FF9
@@ -205,6 +206,7 @@ STR8_BOOT_START:
 ?STR8_KEY:             JSR             STR8_CON_FLUSH_RX
 ?STR8_TAKEOVER:
                         ENDIF
+                        STZ             STR8_INPUT_SKIP_LF
                         JSR             STR8_PRINT_SCREEN
                         JMP             STR8_CMD_LOOP
 
@@ -409,9 +411,12 @@ STR8_DELAY_COUNTDOWN_TICK_A:
 ?FIRST:                LDA             #STR8_DELAY_FIRST_A
 ?WAIT:                 BRA             STR8_DELAY_FIXED_A
 
+; 2026-07-31T14:32-05:00        Codex       Echo selector letters uppercase.
 STR8_BOOT_KEY_POLL:
                         JSR             STR8_CON_READ_BYTE_NONBLOCK
                         BCC             ?NO
+                        JSR             STR8_TO_UPPER_A
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         CMP             #'0'
                         BCC             ?NOT_DIGIT
                         CMP             #'4'
@@ -437,16 +442,49 @@ STR8_PRINT_SCREEN:
 STR8_CMD_LOOP:
                         JSR             STR8_PRINT_PROMPT
                         JSR             STR8_READ_COMMAND
+                        CMP             #$00
+                        BNE             ?DISPATCH
+                        JSR             STR8_CMD_ABORT
+                        BRA             STR8_CMD_LOOP
+?DISPATCH:
                         JSR             STR8_DISPATCH_A
                         BRA             STR8_CMD_LOOP
 
+; 2026-07-31T14:32-05:00        Codex       Uppercase echo; controls cancel.
+; OUT: A=uppercase printable byte, or zero for Backspace/Delete/CR/LF.
+;      A CRLF pair produces one zero result; the paired LF is consumed later.
 STR8_READ_COMMAND:
+?READ:
                         JSR             STR8_CON_READ_BYTE_BLOCK
-                        CMP             #$0D
-                        BEQ             STR8_READ_COMMAND
+                        LDX             STR8_INPUT_SKIP_LF
+                        BEQ             ?CONTROL
+                        STZ             STR8_INPUT_SKIP_LF
                         CMP             #$0A
-                        BEQ             STR8_READ_COMMAND
+                        BEQ             ?READ
+?CONTROL:
+                        CMP             #$0D
+                        BEQ             ?CR
+                        CMP             #$0A
+                        BEQ             ?CANCEL
+                        CMP             #$08
+                        BEQ             ?CANCEL
+                        CMP             #$7F
+                        BEQ             ?CANCEL
+                        JSR             STR8_TO_UPPER_A
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         RTS
+?CR:                   INC             STR8_INPUT_SKIP_LF
+?CANCEL:               LDA             #$00
+                        RTS
+
+; IN/OUT: A=ASCII byte; lowercase a-z becomes uppercase.
+STR8_TO_UPPER_A:
+                        CMP             #'a'
+                        BCC             ?DONE
+                        CMP             #$7B
+                        BCS             ?DONE
+                        AND             #$DF
+?DONE:                 RTS
 
 ; ----------------------------------------------------------------------------
 ; Command dispatch
@@ -464,12 +502,10 @@ STR8_DISPATCH_A:
                         JMP             STR8_CMD_ID
 ?NOT_ID:
 
-                        AND             #$DF
                         CMP             #'B'
                         BEQ             STR8_CMD_BACKUP
                         CMP             #'J'
                         BNE             ?NOT_J
-                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         JMP             STR8_CMD_JUMP_BANK
 ?NOT_J:
                         CMP             #'G'
@@ -496,7 +532,10 @@ STR8_CMD_ID:
 STR8_CMD_JUMP_BANK:
 ?OPERAND:
                         JSR             STR8_READ_COMMAND
-                        JSR             STR8_CON_WRITE_BYTE_BLOCK
+                        CMP             #$00
+                        BNE             ?HAVE_OPERAND
+                        JMP             STR8_CMD_ABORT
+?HAVE_OPERAND:
                         CMP             #' '
                         BEQ             ?OPERAND
                         CMP             #'0'
@@ -518,7 +557,6 @@ STR8_CMD_BACKUP:
                         BCC             ?ABORT
                         CMP             #'3'
                         BCS             ?ABORT
-                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         AND             #$03
                         STA             STR8_COPY_DST_BANK
                         LDA             #$03
@@ -1400,10 +1438,6 @@ STR8_SELECT_BANK_3:
 
 STR8_CONFIRM_Y:
                         JSR             STR8_READ_COMMAND
-                        PHA
-                        JSR             STR8_CON_WRITE_BYTE_BLOCK
-                        PLA
-                        AND             #$DF
                         CMP             #'Y'
                         BEQ             ?YES
                         CLC
@@ -1697,6 +1731,13 @@ STR8_JUMP_BANK_RAM:
                         CLD
                         LDX             #$FF
                         TXS
+                        STZ             STR8_BANK_JUMP_SIG1
+                        LDA             STR8_JUMP_BANK
+                        STA             STR8_BANK_LAST_JUMP
+                        LDA             #STR8_BANK_JUMP_SIG0_VALUE
+                        STA             STR8_BANK_JUMP_SIG0
+                        LDA             #STR8_BANK_JUMP_SIG1_VALUE
+                        STA             STR8_BANK_JUMP_SIG1
                         JMP             (STR8_JUMP_VEC_LO)
 ?BAD_BANK:
                         LDA             #STR8_JUMP_STATUS_BANK

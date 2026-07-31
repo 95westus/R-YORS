@@ -17664,3 +17664,248 @@ handoffs, and interactive `J1`/`J2` evidence recorded above.
 Result: the boot-selector candidate is accepted with no remaining gates.
 Future delay tuning creates a changed candidate and reopens only the affected
 timing and selector observations.
+
+## 2026-07-31 TopWriter Menu Operator Clarification
+
+The operator confirms the complete TopWriter menu surface was exercised:
+`S`, `V`, `I`, invalid input, canceled `P`, confirmed `P`, and `Q`. Existing
+capture-backed entries above already show two successful `S`/`V`/confirmed-`P`
+sequences and `Q`. The `I`, invalid-input, and canceled-`P` cases are recorded
+as operator-declared acceptance because no separate excerpt is retained.
+
+The earlier visibility ambiguity belongs to the STR8 reset-time selector, not
+TopWriter. TopWriter calls the ASM-F2 echoed uppercase line reader, while the
+accepted STR8 selector consumed its single-byte input without echo. Current
+source work after this accepted image changes STR8 interactive input to echo
+all human-entered control bytes; that changed candidate requires its own
+compact visibility regression.
+
+## 2026-07-31 TopWriter Status Capture
+
+The operator supplied a distinct 1,051-line, 43,037-byte transcript with
+SHA-256
+`70A9A1EA05C217CEC9DFB25C5F33D18683AFD00CA1F5EFAB37DD3CBE010E9F14`.
+It records assembly of the self-contained TopWriter through `ASM OK` and ends
+with the status operation:
+
+```text
+TOPWRITER
+S STAGE+VERIFY
+V VERIFY STAGE
+P PROGRAM BANK 3
+I STATUS
+Q QUIT
+TW> I
+TW MODE=$00 RES=$00 @=$0000
+TW>
+```
+
+This upgrades `I` from operator-declared to capture-backed acceptance. Invalid
+menu input and canceled `P` remain operator-declared. The transcript embeds
+the accepted STR8-N `00.0730(2338)` top sector with face check `$F922`; it
+predates the current complete-interactive-echo source candidate and does not
+close that candidate's visibility regression.
+
+The same capture also reinforces the input-path distinction: reset-time STR8
+choices lead to the selected action without printing the typed choice, while
+TopWriter visibly echoes `I`. This is historical evidence for the accepted
+pre-echo selector image, not proof of the later echo change.
+
+## 2026-07-31 TopWriter Canceled Program Capture
+
+The operator supplied the continuation that closes the canceled-`P` menu
+gate:
+
+```text
+>G 3000
+GO 3000
+TOPWRITER
+S STAGE+VERIFY
+V VERIFY STAGE
+P PROGRAM BANK 3
+I STATUS
+Q QUIT
+TW> S
+TW STG
+TW OK
+TW> V
+TW OK
+TW> P
+TW OK
+TYPE WRITE TO PROGRAM B3>
+TW CANCEL
+TW>
+```
+
+`S` copied and verified the staged sector, `V` independently verified it, and
+`P` completed its required preflight verification. The empty confirmation did
+not equal `WRITE`, so control took the cancellation path. No `TW PRG` appears;
+the erase/program worker was not called.
+
+The preceding automatic `#GO# ENTRY=3000` returned `A=$E0`. It is not used as
+acceptance evidence because the explicit manual run immediately afterward
+restaged the image and passed both verification paths. Canceled `P` is now
+capture-backed. Invalid TopWriter menu input remains operator-declared.
+
+## 2026-07-31 HIMON HCOLD And HWARM Hardware Acceptance
+
+The operator supplied a 1,192-line, 46,912-byte session transcript with
+SHA-256
+`EE31D239412D7E015FB5D521F857F12434B68814A185A966C99FEED677D8197E`.
+The session first used the self-contained TopWriter to install the
+`STR8-N V 00.0731(1317)` top sector, then used STR8 `U` to install successive
+HIMON candidates. The final `HIMON V 00.0731(1400)` image exposes the renamed
+HIMON startup entries:
+
+```text
+>#
+HASH     ENTRY K TEXT
+56AD7400 800C 05 ASM V1
+D5735621 C030 03 HCOLD
+81DE061A C044 03 HWARM
+...
+B0051A80 C000 03 HIMON: V 00.0731(1400)
+A2AD0E18 F000 03 STR8: BOOTLOADER
+```
+
+The hashes, entry addresses, confirm kind, and display text all match the
+host-built catalog. The old `BOOT_COLD_RESET` and `BOOT_WARM_RESET` records
+are absent from the final listing.
+
+Both exact commands pass the confirmed execution path on hardware:
+
+```text
+>HWARM
+RUN HWARM @C044 K=03 ? y
+BOOT WARM
+
+HIMON V 00.0731(1400)
+>HCOLD
+RUN HCOLD @C030 K=03 ? y
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0731(1400)
+>
+```
+
+`HWARM` returns to HIMON without the cold RAM-clear report. `HCOLD` reports
+`RAM ZERO OK` and returns to HIMON, proving the intended destructive cold
+startup behavior. The short HIMON-owned command names are hardware-accepted;
+STR8-N remains the owner of reset and boot selection.
+
+## 2026-07-31 STR8 Interactive Echo And Cancel Hardware Proof
+
+The operator supplied a 1,409-line, 54,729-byte session transcript with
+SHA-256
+`302444B4A7299EBF0AF926BC9BEB6D647D950688ACAC6BBDAB5DE5D5E1E14687`.
+The self-contained TopWriter installed `STR8-N V 00.0731(1438)`. Its identity
+line has no copied bank suffix:
+
+```text
+STR8-N V 00.0731(1438) #5F6A0F7A
+```
+
+The reset selector displayed the lowercase `s` test as uppercase `S`. At the
+resident prompt, command, operand, and confirmation bytes were likewise
+displayed uppercase and exactly once. The ordered cancel matrix exercised
+Backspace at the first blank backup-destination prompt and empty Enter at a
+blank confirmation prompt; both reached `ABORT`. Invalid lowercase `z` was
+displayed as `Z` and aborted. Representative output:
+
+```text
+STR8-N>B
+BACKUP B3 TO B0/1/2:
+ABORT
+STR8-N>B
+BACKUP B3 TO B0/1/2:  1 ERASE? Y:
+ABORT
+STR8-N>B
+BACKUP B3 TO B0/1/2:  2 ERASE? Y: Z
+ABORT
+STR8-N>J0
+J B0
+```
+
+Confirmed `B0` completed `COPY B3->B0` / `OK`. Blank and invalid `U`
+confirmations aborted without entering the S19 stream, while a valid `Y`
+entered it and a blank program confirmation aborted. Bare restore prompts
+also accepted blank or invalid responses as aborts. `J0` then entered the
+guest and its reset path returned to Bank 3 HIMON. This closes the requested
+uppercase-echo, Backspace, and Enter-as-negative behavior for the installed
+candidate. Delete shares the Backspace source branch but is not separately
+identified by this plain terminal capture.
+
+## 2026-07-31 Bank Check ASM-F2 String-Literal Negative
+
+The same session attempted `bank_check.a` twice. All code and the four-byte
+mode table assembled through `$30D8`, but ASM-F2 rejected each quoted string
+operand with `ERR=$03 BO`; `END` then correctly reported the unresolved
+result as `ERR=$09 BAD FIX`:
+
+```text
+ASM>$30D8: MHEAD   DB $0D,$0A,"BANK CHECK PCR=$",$00
+ERR=$03 BO PC=$30D8
+...
+ASM>$30D8:         END
+ERR=$09 BAD FIX PC=$30D8
+```
+
+Changing one operand to a multi-character single-quoted string produced the
+same result, confirming that ASM-F2 requires individual character-byte
+operands. The repository sample now spells all messages as lists such as
+`DB 'B','A','N','K'`. This transcript is a source-compatibility negative, not
+runtime proof of the corrected bank checker.
+
+## 2026-07-31 Bank Check Corrected Hardware Acceptance
+
+The operator supplied the 1,803-line, 66,898-byte follow-up transcript with
+SHA-256
+`936A55A90A6F5FA12E0E9BB8D332FD0A3A2E9641D1B5E3B8CCC0CCA748B02E4E`.
+The corrected individual-character form assembled without any error through
+the expected end address:
+
+```text
+ASM>$3130:         DB 'P','L','I','C','I','T',$00
+ASM>$3137:
+ASM>$3137:         END
+ASM OK
+```
+
+Running the checker returned the explicit Bank-3 PCR mode, both select lines
+high, status `$AC`, and carry set:
+
+```text
+>G 3000
+GO 3000
+
+BANK CHECK PCR=$EE SELECT=$EE FA15=1 FAMS=1 BANK=3 EXPLICIT
+
+#GO# ENTRY=3000
+RET A=AC X=0A Y=09 P=77 S=FD NV-BdIZC
+```
+
+The session then entered reset-time Bank 0 through STR8, observed `J B0` and
+`BOOT IN 3S`, cold-reset back through Bank 3 HIMON, reassembled the corrected
+source, and obtained the same output and return state a second time. This
+closes corrected ASM-F2 source compatibility and the read-only explicit
+Bank-3 decode path. The program still reports programmed PCR mode rather than
+independently measuring CA2/FA15 or CB2/FAMS pin voltage; the other three
+explicit table modes were not separately forced in this capture.
+
+## 2026-07-31 Bank Check Retirement And Bank Jump Record Supersession
+
+The two Bank Check entries above remain as an exact historical transcript, but
+their diagnostic is retired. The second execution did occur after STR8 selected
+Bank 0. The guest then reset/returned through STR8 and HIMON, which explicitly
+selected Bank 3 before `bank_check.a` read PCR. Its repeated Bank 3 result was
+therefore the current selection, not evidence against the preceding Bank 0
+handoff.
+
+The repository sample and its ordinary documentation have been removed. The
+replacement host candidate records a successful validated `J0`-`J2` target
+immediately before the final jump and publishes it at `$1FFD-$1FFF` as
+`42 4A bank`. HIMON preserves a valid signed record through cold RAM clearing;
+`42 4A FF` means no valid target is known. This entry documents supersession
+only. The new Bank Jump Record still requires the separate hardware proof; no
+claim in the historical transcript is being rewritten as that proof.

@@ -88,7 +88,7 @@ if ($top[$idEndOffset - 1] -ne 0x0D) {
     throw "STR8-N FACE id is missing its final CR"
 }
 $idText = [System.Text.Encoding]::ASCII.GetString($top, $idOffset + 2, $idEndOffset - $idOffset - 3)
-if ($idText -notmatch '^STR8-N V 00\.\d{4}\(\d{4}\) #5F6A0F7A B3$') {
+if ($idText -notmatch '^STR8-N V 00\.\d{4}\(\d{4}\) #5F6A0F7A$') {
     throw ("STR8-N FACE id has unexpected text: {0}" -f $idText)
 }
 Assert-Bytes -Bytes $top -Offset 0x0FFA -Expected @(

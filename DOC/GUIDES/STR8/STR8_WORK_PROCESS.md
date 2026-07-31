@@ -19,7 +19,7 @@ R          reset
 ```
 
 The current Phase-1 host build runs STR8 from bank 3 `$F000`, stores the RAM
-flash worker at `$FD16-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
+flash worker at `$FD03-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
 `$1FE9-$1FFF` for worker/update state, stages ordinary copy sectors through
 `$4000-$4FFF`, and stages HIMON update sectors through `$4000-$6FFF`.
 The top sector also exposes stable service entries at `$F003` for running
@@ -28,11 +28,13 @@ selected worker modes, `$F006` as an AP import-link compatibility doorway, and
 The linker itself is resident HIMON code; `$F006` selects the AP `LINK`
 operation and jumps through HIMON's `$7E2D-$7E2E` AP service vector.
 
-The `J` candidate uses mode `$08` and `$1FF2-$1FF5` for target, reset-vector,
-and status state. Resident STR8 prints the selected bank, copies the worker to
-RAM, and never regains control after a successful select/vector jump. Invalid
-vectors restore Bank 3 and return an error. The candidate builds; board proof
-is pending.
+The `J` path uses mode `$08` and `$1FF2-$1FF5` for transient target,
+reset-vector, and status state. Resident STR8 prints the selected bank, copies
+the worker to RAM, and never regains control after a successful select/vector
+jump. Invalid vectors restore Bank 3 and return an error. The handoff path is
+hardware-proven. The current follow-up publishes `$1FFD-$1FFF = 42 4A nn` as
+the durable Bank Jump Record; host build and clear-path checks pass, while
+board proof of that new record is pending.
 
 The current build targets are:
 
@@ -128,9 +130,10 @@ Artifact check:
   Bank 3 has no built-in ASM report AP; reporter runs from Bank 0 with AP B0 $hhhh $4800
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
-  worker source is CPU $FD16-$FFEF
-  vectors point to STR8 IVI entries: F0BD/F000/F0D1
+  worker source is CPU $FD03-$FFEF
+  vectors point to STR8 IVI entries: F0C0/F000/F0D4
   record service/header is F009/F00C-F00F = 53 52 01 07
+  bank jump record is 1FFD-1FFF = 42 4A bank/FF
 
 Non-destructive STR8:
   reset stays silent for about 4 seconds, then flushes RX
@@ -141,12 +144,18 @@ Non-destructive STR8:
   selector 0/1/2 prints J Bn and BOOT IN 3S, pauses, then enters that bank
   selector 0/1/2 and prompt J0/J1/J2 leave all bank CRCs unchanged
   prompt J0/J1/J2 remain immediate and do not print BOOT IN 3S
+  after J0/J1/J2 returns through HIMON, D 1FFD 1FFF shows 42 4A 00/01/02
+  HCOLD preserves the valid signed record; no valid record becomes 42 4A FF
   boot-selector candidate is accepted on hardware
   queued-input flush and warm-3 RAM retention pass on hardware
   reset-time 1/2 delayed handoffs pass on hardware
   reset-time 0 is operator-accepted
   current delay profile and remaining matrix are operator-accepted
   future delay changes reopen the affected timing and selector observations
+  accepted selector image does not echo reset-time input
+  installed 00.0731(1438) echoes printable input uppercase before dispatch
+  Backspace and CR/LF cancel on hardware; CRLF counts as one response
+  Delete shares the Backspace source branch but lacks a distinct board marker
   ? prints identity and B0 state
   U rejects out-of-range S19 before erase
   G enters HIMON

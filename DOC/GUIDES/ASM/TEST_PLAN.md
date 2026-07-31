@@ -11613,7 +11613,92 @@ non-comment source line at or below 63 visible characters. Host syntax and
 branch-range assembly passed under WDC 65C02 tools. Run
 `make -C SRC asm-test` and `make -C SRC str8-topwrite-a` before board use.
 
-Board acceptance remains required for the new interactive surface. At the
-bench, prove `S`, `V`, `I`, invalid input, canceled `P`, confirmed `P`, and
-`Q`; append that transcript to the hardware log without rewriting the
-existing raw-entry proof.
+Board acceptance is complete for the new interactive surface. Captured runs
+prove `S`, `V`, `I`, canceled `P`, confirmed `P`, and `Q`; the operator
+confirms invalid input was also exercised. That remaining case is
+operator-declared because no separate transcript excerpt was retained. See the
+appended clarifications in
+[`HARDWARE_TEST_LOG.md`](../LOGS/HARDWARE_TEST_LOG.md).
+
+## 2026-07-31 STR8 Complete Interactive Echo
+
+Current source now echoes every printable human-entered STR8 input byte in
+uppercase. The shared `STR8_READ_COMMAND` path uppercases prompt commands,
+operands, invalid backup destinations, and confirmation responses before both
+echo and dispatch. Backspace/Delete and CR or LF return a negative/cancel
+response; a CRLF pair is consumed as one response. The reset-time selector
+also uppercases a consumed letter before echo and validation. S19 record
+payload is a transport stream and remains deliberately unechoed.
+
+The centralization removes the older special-case echo calls, so `J0`, valid
+backup destinations, and `Y` confirmations must still appear exactly once.
+After installing this changed top-sector candidate, capture one compact board
+proof containing:
+
+```text
+reset selector: invalid byte, 3, S, and s echo as uppercase
+STR8-N prompt: ?, J0, invalid B destination, and declined confirmation
+Backspace/Delete and empty Enter take the cancel/abort path
+no accepted byte is doubled
+```
+
+The previously accepted selector behavior remains historical evidence, but
+the changed echo candidate required its own visibility regression.
+
+The installed `STR8-N V 00.0731(1438)` capture now proves the identity line
+without a copied bank suffix, uppercase single echo at reset and resident
+prompts, Backspace cancellation, empty-Enter cancellation, invalid `Z`
+rejection, valid `B0` confirmation, and visible `J0` dispatch. The ordered
+blank-input matrix distinguishes the requested Backspace and Enter cases;
+the terminal stream itself does not render either control byte. Delete shares
+the Backspace source branch but was not separately identified. The capture
+and SHA-256 are retained in
+[`HARDWARE_TEST_LOG.md`](../LOGS/HARDWARE_TEST_LOG.md).
+
+## 2026-07-31 HIMON HCOLD And HWARM Acceptance
+
+The renamed HIMON startup records are hardware-proven in
+`HIMON V 00.0731(1400)`:
+
+```text
+D5735621 C030 03 HCOLD
+81DE061A C044 03 HWARM
+```
+
+The final catalog omits the former `BOOT_COLD_RESET` and `BOOT_WARM_RESET`
+records. Confirmed `HWARM` at `$C044` returned directly to HIMON, while
+confirmed `HCOLD` at `$C030` reported `RAM ZERO OK` before returning. This
+closes the catalog-identity and execution gates for both renamed commands.
+STR8-N continues to own reset and boot selection.
+
+The decisive capture and its SHA-256 fingerprint are appended to
+[`HARDWARE_TEST_LOG.md`](../LOGS/HARDWARE_TEST_LOG.md). This proof does not by
+itself close the separate complete-interactive-echo regression above.
+
+## 2026-07-31 STR8 Bank Jump Record
+
+The PCR-based sample is retired and removed. Its last run did
+follow a Bank 0 handoff, but by the time the sample executed STR8 had returned
+through reset and explicitly selected Bank 3. Reading PCR then could only show
+the current Bank 3 state; it could not identify the preceding handoff.
+
+The replacement is a published Bank Jump Record in the STR8 Recovery State
+Capsule:
+
+```text
+$1FFD  $42  B signature
+$1FFE  $4A  J commit signature
+$1FFF  $00/$01/$02 last validated STR8 jump, or $FF unknown
+```
+
+The RAM worker commits the record only after target selection and reset-vector
+validation, immediately before the final `JMP`. HIMON validates the signature
+before cold RAM clearing, carries a valid bank through the clear, and rebuilds
+the record afterward. Invalid or uninitialized state becomes `42 4A FF`.
+
+Host acceptance requires `make -C SRC str8`, `make -C SRC himon`, and
+`make -C SRC himon-str8-rom-bin`. The combined builder checks record address
+agreement across resident STR8, the RAM worker, and HIMON, and checks the
+`42/4A/FF` ABI values. Board acceptance remains pending; follow
+[`STR8_BANK_JUMP_RECORD_BOARD_TEST.md`](../STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md)
+and append the raw transcript without altering earlier hardware evidence.

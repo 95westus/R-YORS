@@ -10,6 +10,11 @@ SHA-256:      A8ED60EF826D0931B09CF8EA52AB8A1B5299B0488C324044DBE0B626712FBF46
 source date:  2026-07-30
 ```
 
+This file preserves the accepted boot-selector image and its historical map.
+The later Bank Jump Record candidate changes both HIMON and the packed worker;
+use [`STR8_BANK_JUMP_RECORD_BOARD_TEST.md`](STR8_BANK_JUMP_RECORD_BOARD_TEST.md)
+for its current addresses and proof gates.
+
 The candidate changes Bank 3 `$F000-$FFFF`. Keep an external programmer and a
 known-good Bank 3 image available before installation. Do not treat a successful
 host build as board acceptance.
@@ -21,7 +26,7 @@ physical reset
   initialize IVI, private console I/O, and explicit Bank 3 selection
   wait silently about 4 seconds
   drain queued RX with the existing bounded flush
-  print STR8-N V 00.mmdd(hhmm) #5F6A0F7A B3
+  print STR8-N V 00.mmdd(hhmm) #5F6A0F7A
   open the existing 3-second selector
 
 selector timeout  -> Bank 3 HIMON cold

@@ -285,9 +285,9 @@ in the protected top sector. IVI means Interrupt Vector Indirection; IVY is only
 the pronunciation and the current signature/symbol spelling.
 
 ```text
-NMI   -> STR8_IVY_ENTRY_NMI at $F0BD
+NMI   -> STR8_IVY_ENTRY_NMI at $F0C0
 RESET -> START at $F000
-IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0D1
+IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0D4
 ```
 
 On reset, STR8 seeds the IVI RAM cells with safe defaults before the boot
@@ -331,7 +331,7 @@ STR8 copies the flash worker into RAM before erase, write, or bank-copy
 operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
-The current combined ROM stores the worker source at bank 3 `$FD16-$FFEF`.
+The current combined ROM stores the worker source at bank 3 `$FD03-$FFEF`.
 Before `B`, `U`, `0`, `1`, `2`, `J0`-`J2`, or a reset-time Bank 0-2
 selection, resident STR8 at `$F000` copies that worker into the
 `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The worker uses
@@ -339,6 +339,13 @@ selection, resident STR8 at `$F000` copies that worker into the
 sector buffer, and restores bank 3 before returning on ordinary worker paths.
 Successful opaque-bank handoff does not return. The `U` HIMON updater also
 uses `$5000-$6FFF` so C/D/E can all be staged before erase.
+
+For a successful `J0`-`J2` handoff, the worker publishes a signed Bank Jump
+Record at `$1FFD-$1FFF`: `$42,$4A,bank`. The commit occurs after bank selection
+and reset-vector validation, immediately before `JMP`. HIMON preserves a valid
+record across cold RAM clearing; `$42,$4A,$FF` means no validated jump is
+known. This is historical handoff state, not a decode of the currently live
+PCR bank selection.
 
 The current RAM worker copies full 32K banks with a 4K buffer:
 

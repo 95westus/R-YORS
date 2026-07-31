@@ -140,6 +140,13 @@ STR8W_JUMP_BANK:
                         CLD
                         LDX             #$FF
                         TXS
+                        STZ             STR8_BANK_JUMP_SIG1
+                        LDA             STR8_JUMP_BANK
+                        STA             STR8_BANK_LAST_JUMP
+                        LDA             #STR8_BANK_JUMP_SIG0_VALUE
+                        STA             STR8_BANK_JUMP_SIG0
+                        LDA             #STR8_BANK_JUMP_SIG1_VALUE
+                        STA             STR8_BANK_JUMP_SIG1
                         JMP             (STR8_JUMP_VEC_LO)
 ?BAD_BANK:
                         LDA             #STR8_JUMP_STATUS_BANK

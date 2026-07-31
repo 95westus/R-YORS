@@ -110,23 +110,25 @@ $F000-$FFFF    4K STR8 recovery sector
 Current combined-image facts:
 
 ```text
-HIMON:           $C000-$EEB7
-STR8 image:      $F000-$FABF
-IVI entries:     NMI $F0BD, IRQ/BRK $F0D1
+HIMON:           $C000-$EECB
+STR8 image:      $F000-$FAEE
+IVI entries:     NMI $F0C0, IRQ/BRK $F0D4
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F91E = 7A 0F 6A 5F
-worker source:   $FD16-$FFEF, copied to RAM when needed
+marker bytes:    $F950 = 7A 0F 6A 5F
+worker source:   $FD03-$FFEF, copied to RAM when needed
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = BD F0 00 F0 D1 F0
+vectors:         $FFFA-$FFFF = C0 F0 00 F0 D4 F0
+bank jump record:$1FFD-$1FFF = 42 4A bank/FF
 ```
 
 After burning, quick monitor checks should look like:
 
 ```text
 D C000 C00F  78 D8 A2 FF 9A AD E6 7E ...
-D F000 F00F  4C 10 F0 4C 63 F3 4C 6A F3 4C 72 F3 53 52 01 07
-D FD16 FD25  08 78 AD F0 1F C9 05 F0 11 C9 06 F0 12 C9 07 F0
-D FFFA FFFF  BD F0 00 F0 D1 F0
+D F000 F00F  4C 10 F0 4C 9C F3 4C A3 F3 4C AB F3 53 52 01 07
+D FD03 FD12  08 78 AD F0 1F C9 05 F0 11 C9 06 F0 12 C9 07 F0
+D FFFA FFFF  C0 F0 00 F0 D4 F0
+D 1FFD 1FFF  42 4A FF
 ```
 
 ## First Boot
@@ -136,7 +138,7 @@ silently for approximately four seconds, drains queued input, prints its
 make-time identity, then opens the existing three-second selector:
 
 ```text
-STR8-N V 00.mmdd(hhmm) #5F6A0F7A B3
+STR8-N V 00.mmdd(hhmm) #5F6A0F7A
 B3 0/1/2=BOOT 3=HIMON S=STR8 3 2 1
 ```
 
@@ -189,6 +191,10 @@ J2      non-destructive RAM handoff through Bank 2 reset vector
 G       go to HIMON at $C000
 R       reset through the live reset vector
 ```
+
+STR8 echoes printable command and response letters in uppercase. Backspace,
+Delete, or an empty Enter cancels the current command or confirmation; a
+terminal CRLF pair is treated as one cancel response.
 
 `J0`-`J2` are installed in the current Bank-3 STR8. Their direct-RAM and
 resident target/reset matrix passes on hardware, as do the corrected inventory

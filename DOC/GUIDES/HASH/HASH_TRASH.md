@@ -69,9 +69,9 @@ That gives dangerous entries a clean shape:
 K=$03  executable + confirm, exact name only
 ```
 
-`BOOT_COLD_RESET`, `BOOT_WARM_RESET`, flash erase/write, and future reset or
-recovery commands should stay exact-only unless there is a strong reason to
-make them expandable. Friendly interactive commands could eventually use:
+`HCOLD`, `HWARM`, flash erase/write, and future reset or recovery commands
+should stay exact-only unless there is a strong reason to make them
+expandable. Friendly interactive commands could eventually use:
 
 ```text
 K=$05  executable + expandable

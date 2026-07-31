@@ -293,6 +293,9 @@ $flashSectorMirrorEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_SE
 $flashTransientTrayBase = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_TRANSIENT_TRAY_BASE"
 $flashTransientTrayEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_TRANSIENT_TRAY_END"
 $flashWorkerSize = Get-SymbolAddress -MapPath $HimonMapPath -Name "FLASH_WORKER_SIZE"
+$himonBankJumpSig0 = Get-SymbolAddress -MapPath $HimonMapPath -Name "STR8_BANK_JUMP_SIG0"
+$himonBankJumpSig1 = Get-SymbolAddress -MapPath $HimonMapPath -Name "STR8_BANK_JUMP_SIG1"
+$himonBankLastJump = Get-SymbolAddress -MapPath $HimonMapPath -Name "STR8_BANK_LAST_JUMP"
 
 $str8Start = Get-SymbolAddress -MapPath $Str8MapPath -Name "START"
 $str8WorkerService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RUN_WORKER_SERVICE"
@@ -317,6 +320,9 @@ $workerJumpBank = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_JUMP_BAN
 $workerJumpVecLo = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_JUMP_VEC_LO"
 $workerJumpVecHi = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_JUMP_VEC_HI"
 $workerJumpStatus = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_JUMP_STATUS"
+$workerBankJumpSig0 = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_BANK_JUMP_SIG0"
+$workerBankJumpSig1 = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_BANK_JUMP_SIG1"
+$workerBankLastJump = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_BANK_LAST_JUMP"
 $workerSize = $workerRunEnd - $workerRunStart
 $workerStoreEndExclusive = 0xFFF0
 $workerStoreStart = $workerStoreEndExclusive - $workerSize
@@ -336,6 +342,12 @@ $str8JumpBank = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_JUMP_BANK"
 $str8JumpVecLo = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_JUMP_VEC_LO"
 $str8JumpVecHi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_JUMP_VEC_HI"
 $str8JumpStatus = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_JUMP_STATUS"
+$str8BankJumpSig0 = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_BANK_JUMP_SIG0"
+$str8BankJumpSig1 = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_BANK_JUMP_SIG1"
+$str8BankLastJump = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_BANK_LAST_JUMP"
+$str8BankJumpSig0Value = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_BANK_JUMP_SIG0_VALUE"
+$str8BankJumpSig1Value = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_BANK_JUMP_SIG1_VALUE"
+$str8BankNone = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_BANK_NONE"
 $str8WorkerStoreStart = (($str8WorkerStoreHi -band 0xFF) -shl 8) -bor ($str8WorkerStoreLo -band 0xFF)
 $str8WorkerCopyLen = (($str8WorkerCopyLenHi -band 0xFF) -shl 8) -bor ($str8WorkerCopyLenLo -band 0xFF)
 $asmBase = $null
@@ -435,6 +447,18 @@ if ($str8JumpBank -ne 0x1FF2 -or $str8JumpVecLo -ne 0x1FF3 -or $str8JumpVecHi -n
 }
 if ($workerJumpBank -ne $str8JumpBank -or $workerJumpVecLo -ne $str8JumpVecLo -or $workerJumpVecHi -ne $str8JumpVecHi -or $workerJumpStatus -ne $str8JumpStatus) {
     throw ("STR8 worker J state {0:X4}/{1:X4}/{2:X4}/{3:X4} differs from resident" -f $workerJumpBank, $workerJumpVecLo, $workerJumpVecHi, $workerJumpStatus)
+}
+if ($str8BankJumpSig0 -ne 0x1FFD -or $str8BankJumpSig1 -ne 0x1FFE -or $str8BankLastJump -ne 0x1FFF) {
+    throw ("STR8 Bank Jump Record is {0:X4}/{1:X4}/{2:X4}; expected 1FFD/1FFE/1FFF" -f $str8BankJumpSig0, $str8BankJumpSig1, $str8BankLastJump)
+}
+if ($str8BankJumpSig0Value -ne 0x42 -or $str8BankJumpSig1Value -ne 0x4A -or $str8BankNone -ne 0xFF) {
+    throw ("STR8 Bank Jump Record values are {0:X2}/{1:X2}/{2:X2}; expected 42/4A/FF" -f $str8BankJumpSig0Value, $str8BankJumpSig1Value, $str8BankNone)
+}
+if ($workerBankJumpSig0 -ne $str8BankJumpSig0 -or $workerBankJumpSig1 -ne $str8BankJumpSig1 -or $workerBankLastJump -ne $str8BankLastJump) {
+    throw ("STR8 worker Bank Jump Record {0:X4}/{1:X4}/{2:X4} differs from resident" -f $workerBankJumpSig0, $workerBankJumpSig1, $workerBankLastJump)
+}
+if ($himonBankJumpSig0 -ne $str8BankJumpSig0 -or $himonBankJumpSig1 -ne $str8BankJumpSig1 -or $himonBankLastJump -ne $str8BankLastJump) {
+    throw ("HIMON Bank Jump Record {0:X4}/{1:X4}/{2:X4} differs from STR8" -f $himonBankJumpSig0, $himonBankJumpSig1, $himonBankLastJump)
 }
 if ($flashWorkerCodeTrayBase -ne $workerRunStart -or $flashWorkerCodeTrayEnd -ne $str8WorkerTrayEnd) {
     throw ("Flash worker code tray {0:X4}-{1:X4}; expected STR8 tray {2:X4}-{3:X4}" -f $flashWorkerCodeTrayBase, $flashWorkerCodeTrayEnd, $workerRunStart, $str8WorkerTrayEnd)
@@ -577,6 +601,7 @@ Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Star
 Write-Host ("STR8 SERVICES WORK/AP    = {0:X4}/{1:X4} -> {2:X4}" -f $str8WorkerService, $str8ApLinkService, $str8ApLinkAdapter)
 Write-Host ("STR8 RECORD ENTRY/BODY   = {0:X4}/{1:X4}; ABI 53 52 01 07" -f $str8RecordService, $str8RecordServiceBody)
 Write-Host ("STR8 RECORD RAM          = {0:X4}-{1:X4}; DATA {2:X4}" -f $str8RecordOp, $str8RecordExpected, $str8RecordDataBuffer)
+Write-Host ("BANK JUMP RECORD         = {0:X4}-{1:X4}; 42 4A bank/FF" -f $str8BankJumpSig0, $str8BankLastJump)
 if ($asmBase -ne $null) {
     Write-Host ("ASM-F2 BASE/START/END  = {0:X4}/{1:X4}/{2:X4}" -f $asmBase, $asmStart, $asmEnd)
 }

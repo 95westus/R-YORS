@@ -436,8 +436,9 @@ optional HBSTR for `#` display and confirm prompts. `EXTRA` is not an alias,
 not a second command name, and not automatically passed to the called routine.
 
 The text pointer is a display/prompt field, not a typed-name alias. If an alias
-is ever wanted, it must be a deliberate second record with its own hash. The
-current reset exports are only `BOOT_COLD_RESET` and `BOOT_WARM_RESET`.
+is ever wanted, it must be a deliberate second record with its own hash. HIMON
+currently exports the confirmed `HCOLD` and `HWARM` startup entries; STR8-N
+owns reset and boot selection.
 
 Catalog linking follows imports recursively. A user choosing a low-level input
 provider such as `PIN_READ_BYTE_NB` should flash only the PIN-level body. A user

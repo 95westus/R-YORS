@@ -48,7 +48,9 @@ if ($Str8OutPath) {
     if ($parent) {
         New-Item -ItemType Directory -Force -Path $parent | Out-Null
     }
-    $str8Line = 'MSG_ID:                 DB              $0D,$0A,"' + $str8SourceVersion + ' #5F6A0F7A B3",$0D,$8A'
+    # The top sector is copied across banks, and STR8 normalizes the latch to
+    # Bank 3 before printing. A fixed bank suffix would not identify its origin.
+    $str8Line = 'MSG_ID:                 DB              $0D,$0A,"' + $str8SourceVersion + ' #5F6A0F7A",$0D,$8A'
     [System.IO.File]::WriteAllText($Str8OutPath, $str8Line + [Environment]::NewLine, [System.Text.Encoding]::ASCII)
 }
 

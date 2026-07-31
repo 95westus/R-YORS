@@ -295,6 +295,22 @@ as one small handoff record:
 | `$1FF4` | `STR8_JUMP_VEC_HI` | selected target reset-vector high byte |
 | `$1FF5` | `STR8_JUMP_STATUS` | validation/failure detail |
 
+The 2026-07-31 follow-up also publishes a committed Bank Jump Record at the
+tail of the same Recovery State Capsule:
+
+| Address | Implemented name | Use |
+| ---: | --- | --- |
+| `$1FFD` | `STR8_BANK_JUMP_SIG0` | `$42` (`B`) signature |
+| `$1FFE` | `STR8_BANK_JUMP_SIG1` | `$4A` (`J`) commit signature |
+| `$1FFF` | `STR8_BANK_LAST_JUMP` | validated target `0`-`2`, or `$FF` |
+
+The worker invalidates the second signature byte, writes the selected bank and
+first signature, then writes the second signature as the commit. This happens
+after target selection and vector validation, immediately before the final
+jump. HIMON validates and carries this byte through cold RAM clearing, then
+reconstructs the record. It therefore reports the preceding handoff, not the
+Bank 3 PCR state that is live after HIMON regains control.
+
 Add one worker mode without renumbering current modes:
 
 ```text
@@ -476,6 +492,23 @@ stored worker length    $02DA (730 bytes)
 unused RAM tray         1318 bytes
 stop-gate headroom      $00AD (173 bytes)
 ```
+
+The Bank Jump Record follow-up adds 19 worker bytes and moves the packed worker
+down while retaining the stop gate:
+
+```text
+resident STR8 end       $FAEF
+stored worker           $FD03-$FFEF
+resident/worker gap     $FAEF-$FD02 = $0214 (532 bytes)
+RAM worker tray         $0200-$09FF = 2048 bytes
+stored worker length    $02ED (749 bytes)
+unused RAM tray         1299 bytes
+stop-gate headroom      $0014 (20 bytes)
+```
+
+The combined-image builder checks `$1FFD-$1FFF` across resident STR8, the RAM
+worker, and HIMON, checks the `$42/$4A/$FF` ABI values, and rejects less than
+`$0200` contiguous resident/worker gap.
 
 The 2026-07-29 clean rebuild after restoring the `ae60409` baseline reports
 the complete flash-region budget:

@@ -242,12 +242,17 @@ output:  SRC/BUILD/s19/str8-f000.s19
 ```
 
 The current Phase-1 host build links the resident shell at `$F000`. The worker
-image links for `$0200`, is stored in the combined ROM at `$FD16-$FFEF`, and is
+image links for `$0200`, is stored in the combined ROM at `$FD03-$FFEF`, and is
 copied into the `$0200-$09FF` STR8 RAM tray before destructive flash work. The
 RAM proof image is linked at `$3000`, is launched under HIMON, and reserves
 `$4000-$4FFF` as copy-buffer RAM. The current copy worker stages one 4K erase
 sector at a time through that buffer. The ROM `U` updater uses `$4000-$6FFF`
 to stage HIMON C/D/E sectors before erase/write.
+
+The current `J0`-`J2` follow-up publishes `$1FFD-$1FFF = 42 4A nn` immediately
+before entering a validated target. HIMON cold start preserves a valid record;
+inspect it with `D 1FFD 1FFF`. This Bank Jump Record change requires HIMON and
+STR8 to be installed together for board proof.
 
 The host-built top-sector header is `$F000-$F00F = 4C 10 F0 4C 17 F3 4C 1E
 F3 4C 26 F3 53 52 01 07`. `$F009` is the V1 validated-record service, and

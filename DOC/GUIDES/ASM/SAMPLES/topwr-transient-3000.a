@@ -7,10 +7,13 @@
 ;
 ; WORKFLOW:
 ;   1. ASSEMBLE THIS WITH FLASH ASM.
-;   2. G 3000 TO MIRROR THE LIVE TOP SECTOR INTO THE SECTOR STAGING BUFFER.
-;   3. LOAD OR OVERLAY THE REPLACEMENT TOP-SECTOR IMAGE INTO $0A00-$19FF.
-;      FOR S19, USE A REMAPPED IMAGE WHOSE $F000-$FFFF RECORDS ARE ADDRESSED
-;      AS $0A00-$19FF, OR OTHERWISE PATCH THE STAGED BUFFER DIRECTLY.
+;   2. G 3000 TO MIRROR THE LIVE TOP SECTOR INTO
+;      THE $0A00-$19FF STAGING BUFFER.
+;   3. LOAD OR OVERLAY THE REPLACEMENT TOP-SECTOR IMAGE
+;      INTO $0A00-$19FF.
+;      FOR S19, REMAP THE IMAGE SO ITS $F000-$FFFF RECORDS
+;      ARE ADDRESSED AS $0A00-$19FF. OTHERWISE PATCH THE
+;      STAGED BUFFER DIRECTLY.
 ;   4. G 3003 TO ERASE/PROGRAM/VERIFY THE FULL TOP SECTOR.
 ;
 ; STATUS:
@@ -20,8 +23,8 @@
 ;   $1A01 = $E3 VERIFY MISMATCH
 ;   $1A02/$1A03 = FAIL ADDRESS FOR PROGRAM/VERIFY FAILURES
 ;
-; THE WORKER IS COPIED TO $0200-$03FF AND DOES NOT CALL ROM WHILE FLASH IS
-; BUSY. IT USES $0A00-$19FF AS THE SECTOR STAGING BUFFER.
+; THE WORKER IS COPIED TO $0200-$03FF. IT DOES NOT CALL ROM
+; WHILE FLASH IS BUSY. IT USES $0A00-$19FF AS STAGING RAM.
 
         ORG $3000
 
@@ -32,6 +35,7 @@ MODE    EQU $1A00
 STAT    EQU $1A01
 FLO     EQU $1A02
 FHI     EQU $1A03
+; Source and destination pointers used to copy the worker.
 SPLO    EQU $C8
 SPHI    EQU $C9
 DPLO    EQU $CA
@@ -39,6 +43,7 @@ DPHI    EQU $CB
 
 WTRAY   EQU $0200
 
+; Select stage or program, then enter their shared launcher.
 TSTAGE  LDA #$00
         STA MODE
         BRA TRUN
@@ -46,6 +51,7 @@ TSTAGE  LDA #$00
 TPROG   LDA #$01
         STA MODE
 
+; Clear the result tuple before copying two pages to the tray.
 TRUN    STZ STAT
         STZ FLO
         STZ FHI
@@ -66,7 +72,9 @@ CBYTE   LDA (SPLO),Y
         INC DPHI
         DEX
         BNE CPAGE
+; The copied image begins at the same offset as WSTART.
         JSR WTRAY
+; Return C=1 only when the worker stored its success marker.
         LDA STAT
         CMP #$AC
         BNE TFAIL
@@ -75,24 +83,36 @@ CBYTE   LDA (SPLO),Y
 TFAIL   CLC
         RTS
 
-; Everything below must remain position-independent after copy to $0200.
-; Use only relative branches plus fixed absolute hardware/RAM addresses.
+; Everything below must remain position-independent after its
+; copy to $0200. Use relative branches and fixed addresses.
+;
+; Worker zero-page map:
+;   $CD/$CE flash source pointer for staging
+;   $CF/$D0 staging-buffer pointer
+;   $D1/$D2 flash destination or verify pointer
+;   $D3     byte being programmed
+;   $D4-$D6 flash-operation timeout counter
 
+; Do not call ROM or run an interrupt while flash is busy.
 WSTART  PHP
         SEI
+; Select Bank 3 by replacing the VIA PCR bank-select bits.
         LDA #$EE
         TRB $7FEC
         LDA #$EE
         TSB $7FEC
+; MODE=0 stages the live sector; any other value programs it.
         LDA MODE
         BNE WPROG
 
+; Copy Bank 3 $F000-$FFFF to staging RAM $0A00-$19FF.
         STZ $CD
         LDA #$F0
         STA $CE
         STZ $CF
         LDA #$0A
         STA $D0
+; Y copies one page; the high bytes count all sixteen pages.
 WSPAGE  LDY #$00
 WSBYTE  LDA ($CD),Y
         STA ($CF),Y
@@ -108,9 +128,11 @@ WSBYTE  LDA ($CD),Y
         PLP
         RTS
 
+; Point at Bank 3 sector $F000 before issuing sector erase.
 WPROG   STZ $D1
         LDA #$F0
         STA $D2
+; Unlock, request erase, unlock, then erase sector $F000.
         LDA #$AA
         STA $D555
         LDA #$55
@@ -124,6 +146,7 @@ WPROG   STZ $D1
         LDA #$30
         LDY #$00
         STA ($D1),Y
+; Poll the erased value with a three-byte timeout counter.
         STZ $D4
         STZ $D5
         LDA #$08
@@ -140,9 +163,10 @@ WEPOLL  LDY #$00
         BNE WEPOLL
         LDA #$E1
         STA STAT
-; Keep erase-timeout reset inline; WRESET is past the rel8 branch range here.
+; Keep this reset inline because WRESET is outside rel8 range.
         LDA #$F0
         STA $D555
+; Reassert Bank 3 before returning to ROM after the failure.
         LDA #$EE
         TRB $7FEC
         LDA #$EE
@@ -150,6 +174,7 @@ WEPOLL  LDY #$00
         PLP
         RTS
 
+; Walk flash at $F000 and the staged image at $0A00 together.
 WEROK   STZ $D1
         LDA #$F0
         STA $D2
@@ -158,9 +183,11 @@ WEROK   STZ $D1
         STA $D0
 WPBYTE  LDY #$00
         LDA ($CF),Y
+; Erased bytes already contain $FF and need no program pulse.
         CMP #$FF
         BEQ WPNEXT
         STA $D3
+; Flash unlock followed by the byte-program command.
         LDA #$AA
         STA $D555
         LDA #$55
@@ -169,6 +196,7 @@ WPBYTE  LDY #$00
         STA $D555
         LDA $D3
         STA ($D1),Y
+; Poll until the flash byte matches or the timeout expires.
         STZ $D4
         STZ $D5
         LDA #$02
@@ -191,6 +219,7 @@ WPPOLL  LDY #$00
         STA FHI
         BRA WRESET
 
+; Advance both pointers. A low-byte wrap finishes one page.
 WPNEXT  INC $D1
         INC $CF
         BNE WPBYTE
@@ -200,6 +229,7 @@ WPNEXT  INC $D1
         CMP #$1A
         BNE WPBYTE
 
+; Compare the complete programmed sector with the staged image.
         STZ $D1
         LDA #$F0
         STA $D2
@@ -219,11 +249,13 @@ WVBYTE  LDA ($D1),Y
         BNE WVPAGE
         LDA #$AC
         STA STAT
+; Leave flash in read-array mode before returning success.
         LDA #$F0
         STA $D555
         PLP
         RTS
 
+; Save the first mismatching flash address for the caller.
 WVFAIL  LDA #$E3
         STA STAT
         TYA
@@ -231,6 +263,7 @@ WVFAIL  LDA #$E3
         LDA $D2
         STA FHI
 
+; Reset flash command state and make Bank 3 visible again.
 WRESET  LDA #$F0
         STA $D555
         LDA #$EE

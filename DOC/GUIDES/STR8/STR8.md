@@ -176,17 +176,17 @@ packed against `$FFEF` and grows downward, and the remaining free space is one
 contiguous hole:
 
 ```text
-$F000-$F91D  STR8 resident code
-             size $091E = 2334 bytes
+$F000-$F94F  STR8 resident code
+             size $0950 = 2384 bytes
 
-$F91E-$FABF  STR8 resident data
-             size $01A2 = 418 bytes
+$F950-$FAEE  STR8 resident data
+             size $019F = 415 bytes
 
-$FAC0-$FD15  contiguous unused $FF growth hole
-             size $0256 = 598 bytes
+$FAEF-$FD02  contiguous unused $FF growth hole
+             size $0214 = 532 bytes
 
-$FD16-$FFEF  stored STR8 RAM worker image
-             size $02DA = 730 bytes
+$FD03-$FFEF  stored STR8 RAM worker image
+             size $02ED = 749 bytes
              copied to and run from the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
@@ -388,11 +388,12 @@ first RAM proof image links at $3000
 first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can back up bank 3 to selected bank 0, 1, or 2 with read-back verify
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current host build links STR8 at $F000 and stores a RAM worker at $FD16-$FFEF
+current host build links STR8 at $F000 and stores a RAM worker at $FD03-$FFEF
 current ROM build copies the worker to $0200 before B/U/0/1/2 mutation or J handoff
 current ROM build has ?, B, U, 0, 1, 2, J0, J1, J2, G, and R commands
 current host boot-selector build accepts 0/1/2/3/S after a post-delay RX flush
 STR8-N, HIMON, and ASM-F2 share one local `00.mmdd(hhmm)` make-time stamp
+STR8 identity omits a bank suffix because the top sector is copied across banks
 boot-selector 0/1/2 reuses the J worker after an additional 3-second pause
 boot-selector timeout still enters Bank 3 HIMON cold
 boot-selector 3 enters HIMON warm with RAM preserved; 3 and S act immediately
@@ -402,10 +403,17 @@ boot-selector reset-time 1/2 delayed handoffs pass on hardware
 boot-selector reset-time 0 is operator-accepted
 boot-selector current delay profile and remaining matrix are operator-accepted
 future delay changes reopen the affected timing and selector observations
+accepted boot-selector image consumes reset-time choices without echo
+installed 00.0731(1438) echoes printable input uppercase before dispatch
+Backspace and CR/LF cancel on hardware; a CRLF pair is one response
+Delete shares the Backspace source branch but lacks a distinct board marker
 J0/J1/J2 direct RAM mechanics and reset recovery pass on hardware
 J0/J1/J2 resident candidate is installed
 resident J0/J1/J2 target/reset matrix and corrected inventory pass
 echo follow-up RAM J2 and resident visible J0/J1/J2 smoke pass
+current host candidate publishes `42 4A bank` at $1FFD-$1FFF before final J
+HIMON preserves a valid Bank Jump Record through cold RAM clearing
+Bank Jump Record host checks pass; new persistence board proof is pending
 accepted installed CRCs are B0 $4B59, B1 $2A3D, B2 $04EF, B3 $4663
 current host build exposes the V1 record service at $F009 with `SR`/`01`/`07`
 current host build converts `U` to the shared validate-first S19 parser
@@ -416,8 +424,8 @@ current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data grows upward from $F000
-stored worker currently occupies $FD16-$FFEF and grows downward
-current contiguous free hole is $FAC0-$FD15
+stored worker currently occupies $FD03-$FFEF and grows downward
+current contiguous free hole is $FAEF-$FD02
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
@@ -654,14 +662,15 @@ flowchart TD
     G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $FD16-$FFEF -> $0200]
+    B --> COPY[copy worker $FD03-$FFEF -> $0200]
     RST --> COPY
     J --> COPY
     COPY --> WORKER[RAM flash worker]
     WORKER --> FLASH[bank select / erase / write / verify]
     FLASH --> BANK3[restore Bank 3]
     BANK3 --> STR8
-    WORKER --> GUEST[validated target reset vector]
+    WORKER --> BJR[publish $1FFD-$1FFF = BJ + bank]
+    BJR --> GUEST[validated target reset vector]
 
     Q --> STR8
 ```
@@ -844,7 +853,7 @@ B command + 0/1/2:  copy bank 3 -> selected bank only
 
 Each 4K window reads from the source bank, writes the destination bank, and
 verifies by simple read-back compare. The `$F000` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$FD16-$FFEF` into RAM
+policy by first copying its worker from bank 3 `$FD03-$FFEF` into RAM
 `$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
 operator explicitly confirms high flash, so HIMON, the ROM worker, and the
 protected STR8/vector window remain usable after a normal restore. Catalog

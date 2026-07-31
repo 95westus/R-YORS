@@ -220,14 +220,14 @@ ASM-F2 end:     $BC6D
 ASM low hole:   $BC6D-$BFFF
 ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
-HIMON body:      $C000-$EEB7
+HIMON body:      $C000-$EECB
 STR8 entry:      $F000
-STR8 body:       $F000-$FABF
+STR8 body:       $F000-$FAEE
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F91E = 7A 0F 6A 5F
-worker source:   $FD16-$FFEF
+marker bytes:    $F950 = 7A 0F 6A 5F
+worker source:   $FD03-$FFEF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = BD F0 00 F0 D1 F0
+vectors:         $FFFA-$FFFF = C0 F0 00 F0 D4 F0
 ```
 
 The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
@@ -247,7 +247,7 @@ sets the CPU to a known monitor/recovery state
 seeds IVI RAM vector cells with safe defaults
 initializes FTDI console I/O
 waits silently about 4 seconds and drains queued RX
-prints `STR8-N V 00.mmdd(hhmm) #5F6A0F7A B3`
+prints `STR8-N V 00.mmdd(hhmm) #5F6A0F7A`
 opens a 3-second 0/1/2/3/S selector
 times out to enter Bank 3 HIMON cold
 accepts 3 to enter HIMON warm and preserve RAM
@@ -258,9 +258,9 @@ accepts 0/1/2, announces the bank, waits about 3 more seconds, then uses the J h
 Current vector path:
 
 ```text
-NMI      -> STR8 IVI entry at $F0BD -> RAM vector $7EFA-$7EFB
+NMI      -> STR8 IVI entry at $F0C0 -> RAM vector $7EFA-$7EFB
 RESET    -> STR8 START at $F000
-IRQ/BRK  -> STR8 IVI entry at $F0D1 -> RAM vectors $7EFC-$7EFF
+IRQ/BRK  -> STR8 IVI entry at $F0D4 -> RAM vectors $7EFC-$7EFF
 ```
 
 HIMON patches the RAM targets after handoff. IVI is a mechanism, not a claim
@@ -306,7 +306,7 @@ restores Bank 3 before returning on ordinary worker success/failure
 Current RAM workspace:
 
 ```text
-$0200-$09FF   flash worker tray, STR8 copied from $FD16-$FFEF at exact worker length
+$0200-$09FF   flash worker tray, STR8 copied from $FD03-$FFEF at exact worker length
 $0A00-$19FF   sector staging buffer
 $1A00-$1FE8   RJOIN/link scratch and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map bytes
@@ -314,6 +314,12 @@ $2000-$4FFF   current AP/member load and run area
 $4000-$4FFF   current STR8 high-RAM sector buffer for bank copy
 $4000-$6FFF   current staged C/D/E sector buffers during U
 ```
+
+The RSC tail publishes the last successful opaque-bank handoff as a signed
+Bank Jump Record: `$1FFD-$1FFF = 42 4A nn`, where `nn` is Bank 0, 1, or 2.
+`42 4A FF` means no valid target is known. The STR8 RAM worker commits the
+record immediately before the final jump, and HIMON preserves it through cold
+RAM clearing so it can be inspected later with `D 1FFD 1FFF`.
 
 Banked AP flow keeps storage and execution separate:
 
@@ -337,17 +343,17 @@ hardware transcript remains evidence, but it is not in the current prompt.
 Current top-sector reserve policy:
 
 ```text
-$F000-$F91D  STR8 resident code
-             size $091E = 2334 bytes
+$F000-$F94F  STR8 resident code
+             size $0950 = 2384 bytes
 
-$F91E-$FABF  STR8 resident data
-             size $01A2 = 418 bytes
+$F950-$FAEE  STR8 resident data
+             size $019F = 415 bytes
 
-$FAC0-$FD15  contiguous unused $FF growth hole
-             size $0256 = 598 bytes
+$FAEF-$FD02  contiguous unused $FF growth hole
+             size $0214 = 532 bytes
 
-$FD16-$FFEF  stored STR8 RAM worker image
-             size $02DA = 730 bytes
+$FD03-$FFEF  stored STR8 RAM worker image
+             size $02ED = 749 bytes
              linked at $0200 inside the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  STR8 config pocket
