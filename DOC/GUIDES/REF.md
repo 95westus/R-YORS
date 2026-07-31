@@ -298,7 +298,7 @@ R-YORS/STR8.
 `make -C SRC all`: ASM-F2 occupies low flash from `$8000`, HIMON starts at CPU
 `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
 `$7000`, RESET points to STR8 at `$F000`, and NMI/IRQ point to STR8 IVI entries
-at `$F09A`/`$F0AE`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
+at `$F0BD`/`$F0D1`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
 the file, `$7FFA-$7FFF`.
 
 The current build does not store the fixed-address ASM session reporter after

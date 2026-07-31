@@ -222,12 +222,12 @@ ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
 HIMON body:      $C000-$EEB7
 STR8 entry:      $F000
-STR8 body:       $F000-$FA68
+STR8 body:       $F000-$FABF
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F8DA = 7A 0F 6A 5F
+marker bytes:    $F91E = 7A 0F 6A 5F
 worker source:   $FD16-$FFEF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 9A F0 00 F0 AE F0
+vectors:         $FFFA-$FFFF = BD F0 00 F0 D1 F0
 ```
 
 The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
@@ -246,17 +246,21 @@ On reset, STR8:
 sets the CPU to a known monitor/recovery state
 seeds IVI RAM vector cells with safe defaults
 initializes FTDI console I/O
-prints the R-YORS banner and countdown
-waits for S to enter STR8
-jumps to HIMON at $C000 when the countdown expires
+waits silently about 4 seconds and drains queued RX
+prints `STR8-N V 00.mmdd(hhmm) #5F6A0F7A B3`
+opens a 3-second 0/1/2/3/S selector
+times out to enter Bank 3 HIMON cold
+accepts 3 to enter HIMON warm and preserve RAM
+accepts S/s to enter STR8
+accepts 0/1/2, announces the bank, waits about 3 more seconds, then uses the J handoff
 ```
 
 Current vector path:
 
 ```text
-NMI      -> STR8 IVI entry at $F09A -> RAM vector $7EFA-$7EFB
+NMI      -> STR8 IVI entry at $F0BD -> RAM vector $7EFA-$7EFB
 RESET    -> STR8 START at $F000
-IRQ/BRK  -> STR8 IVI entry at $F0AE -> RAM vectors $7EFC-$7EFF
+IRQ/BRK  -> STR8 IVI entry at $F0D1 -> RAM vectors $7EFC-$7EFF
 ```
 
 HIMON patches the RAM targets after handoff. IVI is a mechanism, not a claim
@@ -333,14 +337,14 @@ hardware transcript remains evidence, but it is not in the current prompt.
 Current top-sector reserve policy:
 
 ```text
-$F000-$F8D9  STR8 resident code
-             size $08DA = 2266 bytes
+$F000-$F91D  STR8 resident code
+             size $091E = 2334 bytes
 
-$F8DA-$FA68  STR8 resident data
-             size $018F = 399 bytes
+$F91E-$FABF  STR8 resident data
+             size $01A2 = 418 bytes
 
-$FA69-$FD15  contiguous unused $FF growth hole
-             size $02AD = 685 bytes
+$FAC0-$FD15  contiguous unused $FF growth hole
+             size $0256 = 598 bytes
 
 $FD16-$FFEF  stored STR8 RAM worker image
              size $02DA = 730 bytes

@@ -176,14 +176,14 @@ packed against `$FFEF` and grows downward, and the remaining free space is one
 contiguous hole:
 
 ```text
-$F000-$F8D9  STR8 resident code
-             size $08DA = 2266 bytes
+$F000-$F91D  STR8 resident code
+             size $091E = 2334 bytes
 
-$F8DA-$FA68  STR8 resident data
-             size $018F = 399 bytes
+$F91E-$FABF  STR8 resident data
+             size $01A2 = 418 bytes
 
-$FA69-$FD15  contiguous unused $FF growth hole
-             size $02AD = 685 bytes
+$FAC0-$FD15  contiguous unused $FF growth hole
+             size $0256 = 598 bytes
 
 $FD16-$FFEF  stored STR8 RAM worker image
              size $02DA = 730 bytes
@@ -296,7 +296,13 @@ Reference normal operation:
 ```text
 RESET enters STR8 at $F000
 STR8 seeds IVI RAM vectors with safe defaults
-STR8 waits for S, or times out to HIMON
+STR8 waits silently about 4 seconds and flushes RX
+STR8 prints its shared make-time `STR8-N V 00.mmdd(hhmm)` identity
+STR8 opens a 3-second selector
+selector timeout cold-starts Bank 3 HIMON
+selector 3 warm-starts HIMON and preserves RAM
+selector S/s enters STR8
+selector 0/1/2 announces the bank, waits about 3 more seconds, and uses the J handoff
 STR8 validates HIMON
 STR8 hands off to HIMON
 HIMON installs NMI/BRK/IRQ handlers through STR8 or SYS_VEC calls
@@ -385,6 +391,17 @@ first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 byte
 current host build links STR8 at $F000 and stores a RAM worker at $FD16-$FFEF
 current ROM build copies the worker to $0200 before B/U/0/1/2 mutation or J handoff
 current ROM build has ?, B, U, 0, 1, 2, J0, J1, J2, G, and R commands
+current host boot-selector build accepts 0/1/2/3/S after a post-delay RX flush
+STR8-N, HIMON, and ASM-F2 share one local `00.mmdd(hhmm)` make-time stamp
+boot-selector 0/1/2 reuses the J worker after an additional 3-second pause
+boot-selector timeout still enters Bank 3 HIMON cold
+boot-selector 3 enters HIMON warm with RAM preserved; 3 and S act immediately
+boot-selector candidate is accepted on hardware
+boot-selector queued-input flush and warm-3 RAM retention pass on hardware
+boot-selector reset-time 1/2 delayed handoffs pass on hardware
+boot-selector reset-time 0 is operator-accepted
+boot-selector current delay profile and remaining matrix are operator-accepted
+future delay changes reopen the affected timing and selector observations
 J0/J1/J2 direct RAM mechanics and reset recovery pass on hardware
 J0/J1/J2 resident candidate is installed
 resident J0/J1/J2 target/reset matrix and corrected inventory pass
@@ -400,7 +417,7 @@ protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data grows upward from $F000
 stored worker currently occupies $FD16-$FFEF and grows downward
-current contiguous free hole is $FA69-$FD15
+current contiguous free hole is $FAC0-$FD15
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF

@@ -129,12 +129,24 @@ Artifact check:
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
   worker source is CPU $FD16-$FFEF
-  vectors point to STR8 IVI entries: F09A/F000/F0AE
+  vectors point to STR8 IVI entries: F0BD/F000/F0D1
   record service/header is F009/F00C-F00F = 53 52 01 07
 
 Non-destructive STR8:
-  reset enters STR8 countdown
-  S reaches STR8 prompt
+  reset stays silent for about 4 seconds, then flushes RX
+  STR8-N prints the same local make-time stamp as HIMON and ASM-F2
+  selector timeout enters Bank 3 HIMON cold
+  selector 3 enters HIMON warm and preserves RAM
+  S and s reach the STR8 prompt
+  selector 0/1/2 prints J Bn and BOOT IN 3S, pauses, then enters that bank
+  selector 0/1/2 and prompt J0/J1/J2 leave all bank CRCs unchanged
+  prompt J0/J1/J2 remain immediate and do not print BOOT IN 3S
+  boot-selector candidate is accepted on hardware
+  queued-input flush and warm-3 RAM retention pass on hardware
+  reset-time 1/2 delayed handoffs pass on hardware
+  reset-time 0 is operator-accepted
+  current delay profile and remaining matrix are operator-accepted
+  future delay changes reopen the affected timing and selector observations
   ? prints identity and B0 state
   U rejects out-of-range S19 before erase
   G enters HIMON

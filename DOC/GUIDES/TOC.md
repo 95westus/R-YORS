@@ -21,7 +21,8 @@ connect.
 ## Detail Shelves
 
 - [STR8](STR8/STR8.md) - recovery, update, product boundaries, bringup,
-  work process, [J0-J2 first board test](STR8/STR8_J012_BOARD_TEST.md),
+  work process, [boot-selector board test](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md),
+  [J0-J2 first board test](STR8/STR8_J012_BOARD_TEST.md),
   [independent guest qualification](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md),
   [restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and
   [edge evidence](STR8/STR8_EDGE_DUMP.md).

@@ -111,35 +111,53 @@ Current combined-image facts:
 
 ```text
 HIMON:           $C000-$EEB7
-STR8 image:      $F000-$FA68
-IVI entries:     NMI $F09A, IRQ/BRK $F0AE
+STR8 image:      $F000-$FABF
+IVI entries:     NMI $F0BD, IRQ/BRK $F0D1
 STR8 identity:   #5F6A0F7A
-marker bytes:    $F8DA = 7A 0F 6A 5F
+marker bytes:    $F91E = 7A 0F 6A 5F
 worker source:   $FD16-$FFEF, copied to RAM when needed
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 9A F0 00 F0 AE F0
+vectors:         $FFFA-$FFFF = BD F0 00 F0 D1 F0
 ```
 
 After burning, quick monitor checks should look like:
 
 ```text
 D C000 C00F  78 D8 A2 FF 9A AD E6 7E ...
-D F000 F00F  4C 10 F0 4C 1F F3 4C 26 F3 4C 2E F3 53 52 01 07
+D F000 F00F  4C 10 F0 4C 63 F3 4C 6A F3 4C 72 F3 53 52 01 07
 D FD16 FD25  08 78 AD F0 1F C9 05 F0 11 C9 06 F0 12 C9 07 F0
-D FFFA FFFF  9A F0 00 F0 AE F0
+D FFFA FFFF  BD F0 00 F0 D1 F0
 ```
 
 ## First Boot
 
-On reset, STR8 initializes IVI vector cells and FTDI console I/O, prints the
-R-YORS banner, then prints:
+On reset, STR8 initializes IVI vector cells and FTDI console I/O, waits
+silently for approximately four seconds, drains queued input, prints its
+make-time identity, then opens the existing three-second selector:
 
 ```text
-B3 HIMON IN 3S. S=STR8-N
+STR8-N V 00.mmdd(hhmm) #5F6A0F7A B3
+B3 0/1/2=BOOT 3=HIMON S=STR8 3 2 1
 ```
 
-Press `S` during the countdown to enter the STR8 prompt. If the countdown
-expires, STR8 jumps to HIMON at `$C000`.
+STR8-N, HIMON, and ASM-F2 receive the same local `00.mmdd(hhmm)` stamp during
+one build.
+
+If the selector expires, STR8 cold-starts Bank 3 HIMON at `$C000`. `3`
+immediately warm-starts HIMON so RAM is preserved, and `S` or `s` enters the
+STR8 prompt. `0`, `1`, or `2` prints the selected bank, drains trailing input,
+prints `BOOT IN 3S`, waits approximately three more seconds, then uses the same
+non-destructive reset-vector handoff as `J0`, `J1`, or `J2`. Interactive
+`J0`-`J2` remain immediate and bare digits at the STR8 prompt remain
+destructive restore commands.
+
+The boot-selector protected install, visible build identity, cold timeout,
+STR8 takeover, queued-input flush, and warm-`3` RAM retention have hardware
+proof. Reset-time Bank 1 and Bank 2 delayed handoffs pass by capture, and
+Bank 0 is operator-accepted. The operator has accepted the current delay
+profile and all remaining selector and inventory gates. See
+[STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md).
+Any future delay change requires the affected timing checks to be repeated.
 
 ## Flash Banks
 

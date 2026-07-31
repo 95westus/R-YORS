@@ -11,6 +11,7 @@ This is the full guide index for the current R-YORS documentation set.
 - [ASM/LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) - complete ASM-F2 16x16 Life AP package, bank 2 storage, and run walkthrough.
 - [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
 - [PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` implementation, size, recovery, and hardware-proof plan for opaque 32K banks.
+- [STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - pending reset-time `0`/`1`/`2`/`3`/`S` selector board-proof rail.
 - [STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) -
   important per-image warm-handoff, peripheral, vector, CRC, and recovery
   qualification procedure for unrelated 32K systems.
@@ -46,7 +47,8 @@ RELOCATE, and AP v1 PACKAGE flows.
 ## Guide Shelves
 
 - [STR8](STR8/STR8.md) - recovery, updates, product boundaries, bringup, work
-  process, the [J0-J2 first board test](STR8/STR8_J012_BOARD_TEST.md), the
+  process, the [boot-selector board test](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md),
+  the [J0-J2 first board test](STR8/STR8_J012_BOARD_TEST.md), the
   [V0 restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and
   [edge evidence](STR8/STR8_EDGE_DUMP.md).
 - [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, edge evidence.

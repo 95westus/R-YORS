@@ -17433,3 +17433,234 @@ matched the installed header, marker, worker head, and vectors.
 The echo-build resident `J0`-`J2` implementation is fully hardware-accepted on
 the recorded board images. V1 still performs vector plausibility only.
 Identity and CRC authentication require future Bank-3-owned metadata.
+
+## 2026-07-30 STR8 Boot Selector Protected Install And Partial Smoke
+
+The 2,815-line, 115,732-byte transcript has SHA-256
+`14C5354474081424AC4689F264103992754B409B4356BDFAEAC7AE29316018F5`.
+It begins on the earlier unstamped STR8-N image, cold-times out through
+`BOOT COLD` and `RAM ZERO OK` into HIMON `00.0728(2121)`, and assembles the
+self-contained guarded TopWriter with ASM-F2 `00.0728(2113)`.
+
+The first protected-sector install embedded STR8-N `00.0730(2331)`. Assembly
+reached `$5000`, and the complete guarded exchange passed:
+
+```text
+TW> S
+TW STG
+TW OK
+TW> V
+TW OK
+TW> P
+TW OK
+TYPE WRITE TO PROGRAM B3> WRITE
+TW PRG
+TW OK
+TW> Q
+RET A=AC X=10 Y=00 P=77 S=FD NV-BdIZC
+```
+
+The staged `$F000-$FFFF` sector is fully present in the transcript. Its
+SHA-256 is
+`6F5504BFCB63452F439895F0DBDDFF422E1330BE70C04A1491DB6686D5ACDB4F`.
+After programming, reset printed:
+
+```text
+STR8-N V 00.0730(2331) #5F6A0F7A B3
+B3 0/1/2=BOOT 3=HIMON S=STR8  3 2 1
+BOOT COLD
+RAM ZERO OK
+HIMON V 00.0728(2121)
+```
+
+This proves the stamped reset face and cold-timeout path. Later partial
+countdowns enter the STR8 screen and `G HIMON` reports `BOOT WARM`; because
+selector input is not echoed, the capture proves takeover but does not
+separately identify uppercase versus lowercase `S`.
+
+The session also passes an aborted `U`, a verified `B3->B0` backup, an accepted
+HIMON `U`, and the established confirmed `B2->B3` restore. That restore
+temporarily returns the board to an earlier unstamped STR8 image. HIMON is then
+updated to `00.0730(2338)`, and a second self-contained TopWriter is assembled.
+Its full `S`/`V`/confirmed-`P` exchange also returns `A=$AC`.
+
+The final installed `$F000-$FFFF` sector reports:
+
+```text
+STR8-N V 00.0730(2338) #5F6A0F7A B3
+```
+
+Its SHA-256 is
+`39D1797DBB301C771FE91A68AB5634AF9E45398AAB89135C1254A05FB705A615`,
+and all 4,096 bytes match the current host BIN's top sector. That host
+`himon-str8-rom.bin` has SHA-256
+`A8ED60EF826D0931B09CF8EA52AB8A1B5299B0488C324044DBE0B626712FBF46`;
+the transcript does not install that full combined BIN as one operation. The
+final visible Bank-3 component identities are STR8-N `00.0730(2338)`, HIMON
+`00.0730(2338)`, and ASM-F2 `00.0728(2113)`. The ASM stamp remains older
+because this was a top-sector install plus HIMON-only `U`, not a full combined
+image install.
+
+The capture ends after a verified `B3->B2` backup:
+
+```text
+BACKUP B3 TO B0/1/2:  2 ERASE? Y: y
+COPY B3->B2
+OK
+```
+
+That operation intentionally changes Bank 2. No final inventory or CRC table
+is present, so this transcript cannot close the non-destructive selector
+matrix. Timed four-second attach behavior, queued-input flushing, selector `3`
+RAM retention, reset-time `0`/`1`/`2`, invalid-input continuation, and the
+post-test four-bank inventory remain pending.
+
+## 2026-07-30 STR8 Boot Selector Warm-3 And Flush Follow-Up
+
+The 1,039-line, 42,742-byte continuation transcript has SHA-256
+`AAECA204DA54B3C8E85580F7F2DAFD574FDD846F568B6BEB8C020D0F95B2C174`.
+It begins by completing the previously recorded verified `B3->B2` backup.
+Interactive `J2` then enters the copied current image immediately, without
+`BOOT IN 3S`:
+
+```text
+STR8-N>J2
+J B2
+
+STR8-N V 00.0730(2338) #5F6A0F7A B3
+B3 0/1/2=BOOT 3=HIMON S=STR8  3 2 1
+BOOT COLD
+RAM ZERO OK
+HIMON V 00.0730(2338)
+```
+
+Interactive `J1` likewise enters Bank 1 immediately. Its older unstamped
+STR8-N and HIMON `00.0728(2113)` identities distinguish it from the current
+Bank 2 and Bank 3 images. These observations pass the immediate interactive
+`J1` and `J2` regression cases; `J0` is not present in this continuation.
+
+The operator then assembled TopWriter at `$3000`, launched it successfully,
+quit, reset, and selected `3`. The capture reports warm entry and launches the
+same RAM-resident program again:
+
+```text
+STR8-N V 00.0730(2338) #5F6A0F7A B3
+B3 0/1/2=BOOT 3=HIMON S=STR8  3
+BOOT WARM
+
+HIMON V 00.0730(2338)
+>G 3000
+GO 3000
+TOPWRITER
+S STAGE+VERIFY
+V VERIFY STAGE
+P PROGRAM BANK 3
+I STATUS
+Q QUIT
+TW> Q
+```
+
+The intact executable TopWriter body is the RAM sentinel. Its successful
+post-reset execution closes selector `3` warm-entry and RAM-retention proof.
+Only `Q` is used in this TopWriter session; it performs no stage or program
+operation.
+
+The operator separately reports that input queued during the silent attach
+period was discarded before the selector opened. A discarded byte produces no
+terminal token, so this is recorded as operator-observed hardware proof of the
+bounded pre-selector RX flush.
+
+The delay values are intentionally not accepted as final timing in this pass.
+The current build still uses approximately 4.003 seconds before the banner and
+3.010 seconds before a selected Bank 0-2 handoff at 8 MHz, but those values may
+be tuned. Any timing change requires the attach/flush and selected-bank delay
+observations to be repeated.
+
+Reset-time `0`/`1`/`2`, invalid-input continuation, separately observed
+uppercase/lowercase `S`, interactive `J0`, and a fresh post-test four-bank
+inventory remain open.
+
+## 2026-07-30 STR8 Boot Selector Bank 1 And Bank 2 Follow-Up
+
+The operator-supplied continuation passes the reset-time Bank 1 path:
+
+```text
+STR8-N V 00.0730(2338) #5F6A0F7A B3
+B3 0/1/2=BOOT 3=HIMON S=STR8  3 2
+J B1
+BOOT IN 3S
+
+STR8-N
+HIMON IN 3S. S=STR8-N  3 2 1
+BOOT COLD
+RAM ZERO OK
+HIMON V 00.0728(2113)
+```
+
+`J B1` and `BOOT IN 3S` prove that the reset selector used the delayed bank
+handoff rather than the immediate prompt command. The older unstamped STR8-N
+and HIMON `00.0728(2113)` identities visibly authenticate the Bank 1 guest.
+The later stamped Bank 3 face shows recovery to the current image.
+
+The subsequent `G 3000` reaches `BRK 00 PC=3002`. This is expected after the
+Bank 1 guest explicitly reports `BOOT COLD` and `RAM ZERO OK`; it is not a
+failure of the separately accepted selector `3` warm-retention path.
+
+The continuation also passes the reset-time Bank 2 route:
+
+```text
+STR8-N V 00.0730(2338) #5F6A0F7A B3
+B3 0/1/2=BOOT 3=HIMON S=STR8  3
+J B2
+BOOT IN 3S
+
+STR8-N V 00.0730(2338) #5F6A0F7A B3
+B3 0/1/2=BOOT 3=HIMON S=STR8  3 2 1
+BOOT COLD
+RAM ZERO OK
+HIMON V 00.0730(2338)
+```
+
+Bank 2 contains the verified Bank-3 copy made earlier in the session, so the
+matching stamped STR8-N and HIMON `00.0730(2338)` identities are the expected
+guest result. That copied STR8 reset path explicitly reselects Bank 3 before
+continuing, as designed.
+
+These observations close the functional reset-time `1` and `2` cases,
+including the additional-delay route. They do not measure or freeze the
+duration. Reset-time `0`, delay tuning, invalid-input continuation, separately
+observed uppercase/lowercase `S`, interactive `J0`, and the final inventory
+remain open.
+
+## 2026-07-30 STR8 Boot Selector Bank 0 Operator Acceptance
+
+The operator explicitly accepts the reset-time Bank 0 selector case. No new
+terminal transcript accompanies this acceptance, so it is recorded as
+operator-declared rather than capture-backed evidence.
+
+Together with the captured Bank 1 and Bank 2 results, this closes the
+functional reset-time `0`/`1`/`2` selector set and its additional-delay route.
+It does not freeze the delay duration or replace the remaining invalid-input,
+separate `S`/`s`, interactive `J0`, and final-inventory gates.
+
+## 2026-07-30 STR8 Boot Selector Final Operator Acceptance
+
+The operator explicitly accepts all remaining boot-selector gates for the
+installed `00.0730(2338)` candidate:
+
+- the current approximately 4.003-second attach delay;
+- the current approximately 3.010-second selected-bank delay;
+- invalid-input continuation;
+- uppercase and lowercase `S`;
+- the interactive `J0` regression;
+- the final non-destructive bank inventory.
+
+No additional terminal capture, elapsed-time measurement, or CRC table
+accompanies this closure. These items are therefore operator-declared
+acceptance, distinct from the capture-backed protected install, stamped face,
+cold timeout, STR8 takeover, warm-`3` RAM retention, RX flush, Bank 1/2 delayed
+handoffs, and interactive `J1`/`J2` evidence recorded above.
+
+Result: the boot-selector candidate is accepted with no remaining gates.
+Future delay tuning creates a changed candidate and reopens only the affected
+timing and selector observations.

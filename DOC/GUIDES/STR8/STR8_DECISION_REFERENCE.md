@@ -58,7 +58,10 @@ is executing in.
 The present bare `0`, `1`, and `2` commands are still destructive Bank-3
 restore commands, not boot selectors. The accepted non-destructive spelling is
 `J0`, `J1`, or `J2`; each applies only a reset-vector plausibility gate before
-handoff. No target BPB, STR8 ABI, or common memory layout is required.
+handoff. During the reset-owned boot selector only, digits `0`, `1`, and `2`
+select the matching non-destructive handoff, with an additional three-second
+pause before the bank changes. The prompt command meanings do not change. No
+target BPB, STR8 ABI, or common memory layout is required.
 After handoff Bank 3 is unmapped, so physical reset is the universal recovery
 path. S19 mechanism moves toward a callable Bank-3 STR8 service, while HIMON
 keeps RAM-load policy and STR8 keeps flash mutation. Banks used for records
@@ -240,7 +243,13 @@ remain byte-for-byte clean, so metadata is not placed in front of copied data.
 Today:
 
 ```text
-STR8 timeout or G -> HIMON
+reset -> silent approximately 4-second attach delay -> bounded RX flush
+print shared make-time STR8-N build identity
+selector timeout -> Bank 3 HIMON cold
+selector 3 -> HIMON warm with RAM preserved
+selector S/s -> STR8 prompt
+selector 0/1/2 -> announce bank -> approximately 3-second pause -> RAM handoff
+STR8 G -> HIMON warm
 ```
 
 Future:
@@ -262,6 +271,7 @@ U = update HIMON from fixed $C000-$EFFF S19 gate
 0 = restore bank 0 -> bank 3, with verify
 1 = restore bank 1 -> bank 3, with verify
 2 = restore bank 2 -> bank 3, with verify
+J0/J1/J2 = non-destructive opaque-bank handoff
 G = go HIMON
 R = reset
 ```
@@ -275,9 +285,9 @@ in the protected top sector. IVI means Interrupt Vector Indirection; IVY is only
 the pronunciation and the current signature/symbol spelling.
 
 ```text
-NMI   -> STR8_IVY_ENTRY_NMI at $F09A
+NMI   -> STR8_IVY_ENTRY_NMI at $F0BD
 RESET -> START at $F000
-IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0AE
+IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0D1
 ```
 
 On reset, STR8 seeds the IVI RAM cells with safe defaults before the boot
@@ -322,12 +332,13 @@ operations. The RAM worker owns flash mutation and bank switching while the
 operation is active.
 
 The current combined ROM stores the worker source at bank 3 `$FD16-$FFEF`.
-Before `B`, `U`, `0`, `1`, `2`, or `J0`-`J2`, resident STR8 at `$F000` copies
-that worker into the `$0200-$09FF` STR8 RAM tray and then calls `$0200`. The
-worker uses `$1FE9-$1FFF` as its state/update board, uses `$4000-$4FFF` as the
-4K bank-copy sector buffer, and restores bank 3 before returning on ordinary
-worker paths. Successful `J` handoff does not return. The `U` HIMON updater
-also uses `$5000-$6FFF` so C/D/E can all be staged before erase.
+Before `B`, `U`, `0`, `1`, `2`, `J0`-`J2`, or a reset-time Bank 0-2
+selection, resident STR8 at `$F000` copies that worker into the
+`$0200-$09FF` STR8 RAM tray and then calls `$0200`. The worker uses
+`$1FE9-$1FFF` as its state/update board, uses `$4000-$4FFF` as the 4K bank-copy
+sector buffer, and restores bank 3 before returning on ordinary worker paths.
+Successful opaque-bank handoff does not return. The `U` HIMON updater also
+uses `$5000-$6FFF` so C/D/E can all be staged before erase.
 
 The current RAM worker copies full 32K banks with a 4K buffer:
 

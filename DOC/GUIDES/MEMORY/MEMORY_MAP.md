@@ -63,7 +63,7 @@ CPU `$8000` / file offset `$0000`, HIMON starts at CPU `$C000` / file offset
 source is stored at CPU `$FD16` / file offset `$7D16`, copied into the
 `$0200-$09FF` RAM worker-code tray, and all live hardware vectors enter the
 STR8-owned top sector. RESET points to STR8 at `$F000`; NMI and IRQ/BRK point
-to STR8 IVI stubs at `$F09A`/`$F0AE`, which dispatch through the RAM vector
+to STR8 IVI stubs at `$F0BD`/`$F0D1`, which dispatch through the RAM vector
 cells.
 
 Combined image layout:
@@ -73,9 +73,9 @@ $8000-$BC6C   ASM-F2 low-flash image, entry $800C
 $BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
 $C000-$EEB7   HIMON body, including resident AP import linker
 $EEB8-$EFFF   current image gap inside the used E sector
-$F000-$FA68   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
-$F8DA         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$FA69-$FD15   current contiguous top-sector growth hole
+$F000-$FABF   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
+$F91E         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
+$FAC0-$FD15   current contiguous top-sector growth hole
 $FD16-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors

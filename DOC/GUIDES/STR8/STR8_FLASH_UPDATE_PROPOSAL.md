@@ -219,17 +219,16 @@ ordinary update/install proof.
 ## First STR8 Self-Update Candidate
 
 The first STR8 self-update candidate should be intentionally small: an
-observable identity string change, not new behavior. HIMON and STR8 should look
-visually related, but their time bases differ:
+observable identity string change, not new behavior. The current combined
+build gives STR8-N, HIMON, and ASM-F2 one local make-time stamp:
 
 ```text
-HIMON V 00.mmdd(hhmm)   local time
-STR8  V 00.mmdd(hhmm)Z  UTC time
+HIMON V 00.mmdd(hhmm)    local time
+STR8-N V 00.mmdd(hhmm)   same local build stamp
 ```
 
-The `Z` is part of the STR8 convention so serial transcripts show that the
-stamp is UTC. Do not use a timestamp-only proof when a reproducible release
-identity is needed; the timestamp is the bench-visible proof marker.
+Do not use a timestamp-only proof when a reproducible release identity is
+needed; the timestamp is the bench-visible proof marker.
 
 ## EDU Top-Sector Recovery Rule
 

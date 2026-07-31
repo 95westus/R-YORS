@@ -41,6 +41,15 @@ future requirement.
 The exact first-board command rail is
 [STR8_J012_BOARD_TEST.md](../STR8/STR8_J012_BOARD_TEST.md).
 
+Post-V1 note: the host-built reset-selector follow-up adds boot-time
+`0`/`1`/`2` choices that reuse the accepted `J0`-`J2` worker after an
+additional three-second pause. It also accepts `3` to warm-start HIMON while
+preserving RAM and `S` for STR8 after a silent attach delay and RX flush. It
+does not change prompt `J0`-`J2` or bare restore commands. Its separate pending
+proof rail is
+[STR8_BOOT_SELECTOR_BOARD_TEST.md](../STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md).
+The frozen V1 record below remains the authority for the original `J` proof.
+
 ## Frozen Machine Model
 
 Bank 3 is the boot supervisor and physical-reset recovery root. Banks 0-2 are

@@ -187,8 +187,9 @@ The AP missing-import and banked-source RJOIN gates are complete. The current
 - Any discovered older date stamps are cleanup debt, not precedent.
 - Firmware identity banners may use the compact visual monitor form instead of
   ISO 8601 when screen space and serial transcripts benefit from it. HIMON uses
-  local time as `HIMON V 00.mmdd(hhmm)`. STR8 uses the matching UTC form
-  `STR8  V 00.mmdd(hhmm)Z`; the trailing `Z` is part of the STR8 convention.
+  local time as `HIMON V 00.mmdd(hhmm)`. STR8-N uses the same local build
+  stamp as `STR8-N V 00.mmdd(hhmm)` so one combined build is visibly matched
+  across STR8-N, HIMON, and ASM-F2.
   This exception is for firmware-visible identity strings, not for docs, logs,
   source comments, or generated artifacts.
 

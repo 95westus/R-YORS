@@ -37,6 +37,7 @@ HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
 FIG_FORTH_HIMON_PATCH := tools/patch_fig_forth_himon_addrs.ps1
 HIMON_VERSION_INC := $(INC_DIR)/himon-version.inc
 ASM_VERSION_INC := $(INC_DIR)/asm-version.inc
+STR8_VERSION_INC := $(INC_DIR)/str8-version.inc
 BASIC_PROGRAMS_HOME ?= $(LOCAL_ROOT)/basic-programs
 FIG_FORTH_HOME ?= $(LOCAL_ROOT)/fig-forth
 FIG_FORTH_INPUT ?= $(FIG_FORTH_HOME)/source/ff6502.html
@@ -735,7 +736,7 @@ $(STR8_WORKER_S19): $(STR8_WORKER_OBJ)
 	@echo [ps] set S9 start $$0200 in $(STR8_WORKER_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
 
-$(STR8_OBJ): $(STR8_RECORD_EQ)
+$(STR8_OBJ): $(STR8_RECORD_EQ) himon-version-stamp
 
 $(STR8_WORKER_OBJ): $(STR8_RECORD_EQ)
 
@@ -743,7 +744,7 @@ $(STR8_RECORD_PHASE1_PROOF_OBJ): $(STR8_RECORD_EQ)
 
 $(STR8_L_TRANSPORT_PHASE5_PROOF_OBJ): $(STR8_RECORD_EQ)
 
-$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ)
+$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_RAM_PROOF $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
@@ -1119,7 +1120,7 @@ $(FIG_FORTH_C000_OBJ): $(FIG_FORTH_C000_SRC)
 
 .PHONY: himon-version-stamp
 himon-version-stamp: $(HIMON_VERSION_STAMP)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" -AsmOutPath "$(ASM_VERSION_INC)" $(HIMON_VISIBLE_STAMP_ARG)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" -AsmOutPath "$(ASM_VERSION_INC)" -Str8OutPath "$(STR8_VERSION_INC)" $(HIMON_VISIBLE_STAMP_ARG)
 
 $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) $(STR8_RECORD_EQ) himon-version-stamp
 

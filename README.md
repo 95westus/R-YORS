@@ -144,8 +144,8 @@ $8000-$BC6C  ASM-F2, entry $800C
 $BC6D-$BFFF  low-flash growth/AP-store hole
 $C000-$EEB7  HIMON, including the resident AP import linker
 $EEB8-$EFFF  HIMON/STR8 growth hole
-$F000-$FA68  STR8-N shell, data, IVI stubs, updater, and adapters
-$FA69-$FD15  top-sector growth hole
+$F000-$FABF  STR8-N shell, data, IVI stubs, updater, and adapters
+$FAC0-$FD15  top-sector growth hole
 $FD16-$FFEF  stored RAM worker
 $FFF0-$FFF9  configuration pocket
 $FFFA-$FFFF  hardware vectors

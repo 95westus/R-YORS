@@ -3,6 +3,8 @@ param(
 
     [string]$AsmOutPath,
 
+    [string]$Str8OutPath,
+
     [string]$SourcePath,
 
     [string]$Stamp = (Get-Date -Format 'MMdd(HHmm)')
@@ -14,6 +16,8 @@ $sourceVersion = "HIMON V 00.$sourceStamp"
 $hashVersion = "HIMON: V 00.$sourceStamp"
 $asmDisplayVersion = "ASM-F2 00.$Stamp"
 $asmSourceVersion = "ASM-F2 00.$sourceStamp"
+$str8DisplayVersion = "STR8-N V 00.$Stamp"
+$str8SourceVersion = "STR8-N V 00.$sourceStamp)"
 
 $lines = @(
     'MSG_HIMON_VERSION_TEXT:  DB              "' + $sourceVersion + '",('')''+$80)'
@@ -39,6 +43,15 @@ if ($AsmOutPath) {
     [System.IO.File]::WriteAllText($AsmOutPath, $asmLine + [Environment]::NewLine, [System.Text.Encoding]::ASCII)
 }
 
+if ($Str8OutPath) {
+    $parent = Split-Path -Parent $Str8OutPath
+    if ($parent) {
+        New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    }
+    $str8Line = 'MSG_ID:                 DB              $0D,$0A,"' + $str8SourceVersion + ' #5F6A0F7A B3",$0D,$8A'
+    [System.IO.File]::WriteAllText($Str8OutPath, $str8Line + [Environment]::NewLine, [System.Text.Encoding]::ASCII)
+}
+
 if ($SourcePath) {
     $resolved = Resolve-Path -LiteralPath $SourcePath -ErrorAction Stop
     $text = [System.IO.File]::ReadAllText($resolved)
@@ -52,11 +65,14 @@ if ($SourcePath) {
     }
 }
 
-if (-not $OutPath -and -not $AsmOutPath -and -not $SourcePath) {
-    throw "Specify -OutPath, -AsmOutPath, or -SourcePath"
+if (-not $OutPath -and -not $AsmOutPath -and -not $Str8OutPath -and -not $SourcePath) {
+    throw "Specify -OutPath, -AsmOutPath, -Str8OutPath, or -SourcePath"
 }
 
 Write-Host ("HIMON visible version   = {0}" -f $displayVersion)
 if ($AsmOutPath) {
     Write-Host ("ASM-F2 visible version  = {0}" -f $asmDisplayVersion)
+}
+if ($Str8OutPath) {
+    Write-Host ("STR8-N visible version  = {0}" -f $str8DisplayVersion)
 }
