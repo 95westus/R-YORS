@@ -112,6 +112,15 @@ if (Test-Path -LiteralPath $readme) {
     $MarkdownSources += Get-Item -LiteralPath $readme
 }
 
+$srcRoot = Join-Path $RepoRoot "SRC"
+if (Test-Path -LiteralPath $srcRoot) {
+    $srcBuildRoot = Join-Path $srcRoot "BUILD"
+    $MarkdownSources += Get-ChildItem -LiteralPath $srcRoot -Recurse -File -Filter "README.md" |
+        Where-Object {
+            -not $_.FullName.StartsWith($srcBuildRoot, [System.StringComparison]::OrdinalIgnoreCase)
+        }
+}
+
 $docRoot = Join-Path $RepoRoot "DOC"
 if (Test-Path -LiteralPath $docRoot) {
     $MarkdownSources += Get-ChildItem -LiteralPath $docRoot -Recurse -File -Filter "*.md" |
@@ -474,10 +483,11 @@ function Get-NavHtml {
     $currentDir = Split-Path -Parent $currentOutFull
     $homeHref = Get-RelativePathCompat -FromDirectory $currentDir -ToPath (Join-Path $OutDir "index.html")
     $readmeHref = Get-RelativePathCompat -FromDirectory $currentDir -ToPath (Join-Path $OutDir "README.html")
+    $readmesHref = Get-RelativePathCompat -FromDirectory $currentDir -ToPath (Join-Path $OutDir "READMES.html")
     $guidesHref = Get-RelativePathCompat -FromDirectory $currentDir -ToPath (Join-Path $OutDir "GUIDES/INDEX.html")
     $generatedHref = Get-RelativePathCompat -FromDirectory $currentDir -ToPath (Join-Path $OutDir "GENERATED/index.html")
     $logoHref = Get-RelativePathCompat -FromDirectory $currentDir -ToPath (Join-Path $OutDir "branding/logo-r-yors.svg")
-    return "<div class=`"nav-start`"><a class=`"back-link`" href=`"$homeHref`" onclick=`"if (history.length > 1) { history.back(); return false; }`">Back</a><a class=`"brand`" href=`"$homeHref`"><img class=`"brand-logo`" src=`"$logoHref`" alt=`"R-YORS logo`"><span>R-YORS Docs</span></a></div><nav><a href=`"$readmeHref`">README</a><a href=`"$guidesHref`">Guides</a><a href=`"$generatedHref`">Generated</a></nav>"
+    return "<div class=`"nav-start`"><a class=`"back-link`" href=`"$homeHref`" onclick=`"if (history.length > 1) { history.back(); return false; }`">Back</a><a class=`"brand`" href=`"$homeHref`"><img class=`"brand-logo`" src=`"$logoHref`" alt=`"R-YORS logo`"><span>R-YORS Docs</span></a></div><nav><a href=`"$readmeHref`">README</a><a href=`"$readmesHref`">READMEs</a><a href=`"$guidesHref`">Guides</a><a href=`"$generatedHref`">Generated</a></nav>"
 }
 
 function Convert-ToHtmlPage {
@@ -733,6 +743,21 @@ foreach ($source in $MarkdownSources) {
     Write-Utf8File -Path (Join-Path $OutDir ($outRel -replace "/", [System.IO.Path]::DirectorySeparatorChar)) -Text $html
 }
 
+$repositoryReadmes = @($MarkdownSources | Where-Object { $_.Name -ieq "README.md" })
+$readmeIndexLines = New-Object System.Collections.Generic.List[string]
+$readmeIndexLines.Add('<h1>Repository READMEs</h1>')
+$readmeIndexLines.Add('<p>Generated HTML views of the root README and README files under <code>SRC</code>.</p>')
+$readmeIndexLines.Add('<ul>')
+foreach ($source in $repositoryReadmes) {
+    $sourceRel = Get-RepoRelativePath $source.FullName
+    $outRel = $MarkdownOutputBySource[$sourceRel]
+    $readmeIndexLines.Add(('<li><a href="{0}">{1}</a></li>' -f (Encode-Html $outRel), (Encode-Html $sourceRel)))
+}
+$readmeIndexLines.Add('</ul>')
+$readmeIndexModified = ($repositoryReadmes | Sort-Object LastWriteTime -Descending | Select-Object -First 1).LastWriteTime
+$readmeIndexHtml = Convert-ToHtmlPage -Title 'Repository READMEs' -Body ($readmeIndexLines -join "`n") -SourceRelativePath 'repository README files' -OutputRelativePath 'READMES.html' -SourceModified $readmeIndexModified -GeneratedAt $generatedAt -HasMermaid $false
+Write-Utf8File -Path (Join-Path $OutDir 'READMES.html') -Text $readmeIndexHtml
+
 $assetRoot = Join-Path $RepoRoot "DOC/branding"
 if (Test-Path -LiteralPath $assetRoot) {
     Get-ChildItem -LiteralPath $assetRoot -Recurse -File | ForEach-Object {
@@ -793,6 +818,23 @@ foreach ($dirRel in $dirsNeedingIndex) {
     $html = Convert-ToHtmlPage -Title (Split-Path -Leaf $dirRel) -Body $body -SourceRelativePath $dirRel -OutputRelativePath $dirOutRel -SourceModified $dirModified -GeneratedAt $generatedAt -HasMermaid $false
     Write-Utf8File -Path (Join-Path $OutDir ($dirOutRel -replace "/", [System.IO.Path]::DirectorySeparatorChar)) -Text $html
 }
+
+$rootIndexPath = Join-Path $RepoRoot 'index.html'
+$rootIndexHtml = @"
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=DOC/HTML/index.html">
+  <title>R-YORS Documentation</title>
+</head>
+<body>
+  <p><a href="DOC/HTML/index.html">Open the generated R-YORS documentation.</a></p>
+</body>
+</html>
+"@
+Write-Utf8File -Path $rootIndexPath -Text $rootIndexHtml
 
 Write-Host ("Generated HTML docs: {0}" -f $OutDir)
 Write-Host ("Markdown pages: {0}" -f (($MarkdownSources | Measure-Object).Count))

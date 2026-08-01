@@ -3,6 +3,8 @@
 This map explains how the hand-written docs fit together. Markdown is
 canonical; `DOC/HTML` and the root `index.html` redirect are generated,
 ignored, untracked presentation and are only rebuilt on explicit request.
+The HTML snapshot covers all Markdown under `DOC`, the root README, and every
+repository `README.md` under `SRC`.
 
 ## Main Spine
 
@@ -25,7 +27,8 @@ R-YORS
 
 STR8
   reset-time recovery/update guard
-  maps flash, rotates backups, restores images, installs $C000 payloads
+  rotates backups, restores images, installs $C000 payloads
+  validates opaque-bank handoffs and publishes the pending-proof Bank Jump Record
   owns protected top-sector policy while STR8 is active
 
 IVI / LEAF
@@ -47,7 +50,7 @@ OIL
 
 Deck Plan
   bench-facing names for the control blocks and phase-owned work areas:
-  APC, LRS, AIR, FTC, RFD/RTC/RPT, RSC, and a future external bank inventory
+  APC, LRS, AIR, FTC, RFD/RTC/RPT, RSC, the Bank Jump Record, and a future external bank inventory
 
 THE
   future hash/catalog resolver environment
@@ -119,14 +122,13 @@ Support/
   SRC/LIB/dev/*.asm
   SRC/LIB/util/*.asm
 
-ASM/
-  SRC/ASM/asm-v1-core.asm
-  SRC/ASM/asm-v1-flash.asm
 ```
 
 Legacy demos, harnesses, games, ACIA/PIA, and historical monitor experiments
 remain documented where useful, but they are outside the generated operational
-maps unless promoted.
+maps unless promoted. Current `SRC/ASM` remains active build source, but it is
+documented through the ASM-specific hand-maintained maps rather than the
+operational HIMON/STR8 routine generator.
 
 Active source lanes are reserved for code/data used to create current onboard
 R-YORS images or board-ingested data. Retired samples, tests, proofs, demos,
@@ -160,22 +162,23 @@ QCC/                            active design questions
 HASH_FLASH.md                   command-surface and milestone alerts
 DOC_FLASH.md                    documentation-shape alerts
 STR8/PRODUCT_BOUNDARIES.md      product ownership lanes
-STR8/STR8.md                    STR8 design contract and direction
+STR8/STR8.md                    STR8 top-level routine map, design contract, and direction
+STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md pending `$1FFD-$1FFF` proof rail
 STR8/STR8_EDGE_DUMP.md          raw direct-edge evidence
 STR8/STR8_WORK_PROCESS.md       STR8 proof/work rail
 STR8/STR8_V0_RESTORE_FAILURE_GATES.md guarded restore/failure gate card
 LOGS/HARDWARE_TEST_LOG.md       board transcript validations
 HIMON/HIMON_DEBUG_TESTING.md    RAM debug proof process
-  MEMORY/MEMORY_MAP.md            address ownership
-  ../GENERATED/CONTROL_DECK_MAP.md layered Deck Plan/control-block atlas
+MEMORY/MEMORY_MAP.md            address ownership
+../GENERATED/CONTROL_DECK_MAP.md layered Deck Plan/control-block atlas
 CATALOG/CATALOG.md              callable routine selection view
-HIMON/HIMON_MAP.md              readable HIMON capability map
+HIMON/HIMON_MAP.md              readable HIMON top-level routine and capability map
 HIMON/HIMON_EDGE_DUMP.md        raw direct-edge evidence
 ASM/SYMBOL_XREF.md              symbol/routine cards and tags
 HASH/HASH_MAP.md                hash meanings and connections
 HASH/HASH.md                    FNV-era details and CRC16 pivot
 ASM/HASHED_ASM.md               assembler thesis and fixups
-ASM/ASM_CALL_MAP.md             renderable ASM routine-flow map
+ASM/ASM_CALL_MAP.md             renderable ASM top-level routine-purpose and flow map
 ASM/ASM_SHARED_ROUTINES_AUDIT.md ASM/HIMON shared-helper audit
 PLANNING/OIL_710_TEST_PLAN.md .710 Overlay Integration Layer board-test rail
 PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md multiboot/S19/bank-volume direction

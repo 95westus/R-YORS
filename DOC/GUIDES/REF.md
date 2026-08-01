@@ -108,11 +108,12 @@ bank 0:
 ```
 
 Those are the operator-reported 2026-07-28 live contents, not fixed bank
-semantics. The host-built STR8 candidate adds non-destructive `J0`, `J1`, and
-`J2`: it moves the final select/read/jump path into RAM, accepts a target reset
-vector in `$8000-$FFFE`, and writes no flash. Hardware proof is pending.
-Identity and CRC remain a required future Bank-3-owned manifest gate before
-unattended or timed alternate-bank boot.
+semantics. Current STR8 provides hardware-proven non-destructive `J0`, `J1`,
+and `J2`: it moves the final select/read/jump path into RAM, accepts a target
+reset vector in `$8000-$FFFE`, and writes no flash. Identity and CRC remain a
+required future Bank-3-owned manifest gate before unattended or timed
+alternate-bank boot. The separate `$1FFD-$1FFF` Bank Jump Record persistence
+proof remains pending.
 
 Flash-bank and flash-window vocabulary:
 

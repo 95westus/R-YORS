@@ -41,6 +41,50 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## REDOC: HTML Coverage Expanded
+
+```text
+2026
+         07
+                31
+                   23:11Z COLLAB-AI Expanded generated HTML coverage to
+                               repository README files under SRC.
+```
+
+scope: `SRC/tools/gen_html_docs.ps1`, HTML output, indexes, and READMEs.
+
+change: The HTML generator now includes repository `README.md` files under
+`SRC` as well as the root README and all Markdown under `DOC`.
+
+effect: Component and subsystem README files now have browsable generated HTML
+counterparts alongside the guide set.
+
+action: regenerate with `make -C SRC docs-html` and open the generated README
+index when navigating repository-local explanations.
+
+## REDOC: STR8, HIMON, And ASM Routine Purpose Maps
+
+```text
+2026
+         07
+                31
+                   23:45Z COLLAB-AI Added top-level routine descriptions to
+                               each canonical code map as Mermaid diagrams.
+```
+
+scope: `STR8/STR8.md`, `HIMON/HIMON_MAP.md`, `ASM/ASM_CALL_MAP.md`, navigation
+indexes, the map atlas, HTML output, and the book spine.
+
+change: Each subsystem now opens with a curated Mermaid view whose nodes pair
+real routine labels with plain-language code responsibilities. The detailed
+edge maps and complete HIMON/STR8 edge dumps remain in place below them.
+
+effect: Readers can identify the principal code entrances and owned behavior
+before descending into call-edge evidence.
+
+action: start with the top-level routine guide in the subsystem's canonical
+map, then use the detailed diagrams or edge dump for implementation review.
+
 ## QCC: FTDI/Board Dual-Power Concern Recorded
 
 ```text

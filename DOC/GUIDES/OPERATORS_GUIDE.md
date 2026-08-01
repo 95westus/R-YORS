@@ -29,8 +29,10 @@ procedure.
 The hardware log preserves proof of the earlier backup rotation and Bank 0
 enrollment policy, plus `U` / `UPDATE HIMON`, HIMON U1-to-U2 update, temporary
 BASIC and Forth payloads, and recovery back to known-good HIMON from backup
-flash. The current candidate replaces rotation/enrollment with an explicit
-single-bank backup destination and still requires its board regression.
+flash. The current image replaces rotation/enrollment with an explicit
+single-bank backup destination. Its reset selector, uppercase interactive echo,
+and `J0`-`J2` handoff are hardware-accepted. The follow-up Bank Jump Record is
+host-accepted and still requires its separate persistence transcript.
 
 Treat this as a bench-proven recovery/update guard, not a finished field
 updater. Keep a known-good image and an external programmer path nearby.
@@ -120,6 +122,11 @@ config pocket:   $FFF0-$FFF9
 vectors:         $FFFA-$FFFF = C0 F0 00 F0 D4 F0
 bank jump record:$1FFD-$1FFF = 42 4A bank/FF
 ```
+
+The displayed Bank Jump Record bytes describe the host-accepted follow-up ABI.
+Do not treat them as board-proven persistence until the dedicated
+[Bank Jump Record board test](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) is
+completed and appended to the hardware log.
 
 After burning, quick monitor checks should look like:
 

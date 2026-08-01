@@ -663,8 +663,9 @@ DOC/IDEAS.md
   cross-references. Generated docs should remain evidence or views, not the
   primary hand-written explanation.
 - HTML pages under `DOC/HTML` and the root `index.html` redirect are generated,
-  ignored, untracked presentation views of the Markdown docs. Do not hand-edit
-  them or treat them as canonical explanations. Regenerate them with
+  ignored, untracked presentation views of Markdown under `DOC`, the root
+  README, and repository `README.md` files under `SRC`. Do not hand-edit them
+  or treat them as canonical explanations. Regenerate them with
   `make docs-html` only when explicitly requested.
 - Use `flowchart` for process or decision sequence. Use `graph` for node/edge
   structure such as call paths or stack-depth paths. Use `map`, `guide map`,

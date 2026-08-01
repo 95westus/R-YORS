@@ -89,7 +89,7 @@ $rows = @(
     [pscustomobject]@{ Target = "routine-graph-insights"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_GRAPH_INSIGHTS.md." }
     [pscustomobject]@{ Target = "routine-components"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_COMPONENTS.md." }
     [pscustomobject]@{ Target = "routine-hash-comments"; Category = "docs"; Description = "Refresh generated routine hash comments in ASM files." }
-    [pscustomobject]@{ Target = "docs-html"; Category = "docs"; Description = "Generate DOC/HTML static pages from the current Markdown docs snapshot." }
+    [pscustomobject]@{ Target = "docs-html"; Category = "docs"; Description = "Generate DOC/HTML from DOC Markdown plus repository README files." }
     [pscustomobject]@{ Target = "artifacts"; Category = "housekeeping"; Description = "Move sidecar artifacts into BUILD/{lst,sym,map,bin,s19}." }
     [pscustomobject]@{ Target = "bin-check"; Category = "housekeeping"; Description = "Check generated BIN files for expected ROM image size and reset-vector policy." }
     [pscustomobject]@{ Target = "clean"; Category = "housekeeping"; Description = "Remove generated app-side files and BUILD." }

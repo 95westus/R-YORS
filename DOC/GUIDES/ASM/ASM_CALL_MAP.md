@@ -23,6 +23,34 @@ locals per global scope   $10 / 16
 local visible chars       15
 ```
 
+## Top-Level Routine Guide
+
+This is the routine-and-purpose view of `SRC/ASM/asm-v1-flash.asm` and
+`SRC/ASM/asm-v1-core.asm`. Each node names the actual routine first and then
+describes the code it owns. The diagrams later in this file retain the
+smaller review paths and direct routine relationships.
+
+```mermaid
+flowchart LR
+    ENTRY["flash START / ASM_REPL<br/>Run the interactive assembler command, console I/O, and session prompts"] --> BEGIN["ASM_BEGIN<br/>Open or reset one transactional assembly session at the selected PC"]
+    BEGIN --> LINE["ASM_ASSEMBLE_LINE<br/>Assemble one physical line atomically; roll state back on failure"]
+    LINE --> LEX["ASM_LEX_LINE / ASM_NEXT_TOKEN<br/>Prepare the line and stream canonical tokens"]
+    LEX --> HEAD["ASM_PARSE_HEAD<br/>Classify label, directive, mnemonic, and operand-tail roles"]
+    HEAD --> POLICY["ASM_DISPATCH_STATEMENT<br/>Apply top-level statement policy and select the owning routine"]
+
+    POLICY --> SYMBOL["ASM_BIND_LABEL / ASM_DEFINE_EQU<br/>Create symbols and resolve fixups now made concrete"]
+    POLICY --> DATA["ASM_EMIT_DB / ASM_EMIT_DC / ASM_EMIT_DW / ASM_EMIT_DS<br/>Emit directive-owned byte, string, word, or storage data"]
+    POLICY --> EMIT["ASM_EMIT<br/>Classify a mnemonic operand, choose an opcode, and emit or defer it"]
+    SYMBOL --> EXPR["ASM_PARSE_EXPR<br/>Evaluate v1 expressions while preserving address/value meaning"]
+    DATA --> EXPR
+    EMIT --> OPER["ASM_CLASS_OPERAND / ASM_FIND_OPCODE<br/>Select addressing mode, opcode, fixup, and relocation policy"]
+
+    LINE --> ENDASM["ASM_END<br/>Resolve remaining fixups and close the session as ended or failed"]
+    ENDASM --> SEAL["ASM_SEAL_COMPUTE_FNV<br/>Validate the image and build seal, relocation, export, and import records"]
+    SEAL --> PACKAGE["ASM_SEAL_PACKAGE<br/>Write and verify the AP envelope around the assembled body"]
+    PACKAGE --> LOAD["ASM_PACKAGE_LOAD / ASM_PACKAGE_INSTALL_SUGGEST<br/>Delegate AP placement, resident-import linking, and loading to HIMON"]
+```
+
 ## OIL Boundary
 
 ASM creates the AP object. The **Overlay Integration Layer** takes over when

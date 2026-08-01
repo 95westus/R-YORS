@@ -32,12 +32,12 @@ RESET -> STR8 -> HIMON -> ASM creates AP objects
 STR8 should remain useful even when the payload is not HIMON. HIMON is the
 bundled workbench and default `$C000` payload, not the reason STR8 exists.
 
-Accepted future direction keeps physical reset and timeout rooted in Bank 3
-STR8 while allowing a RAM trampoline to boot an opaque Bank 0-2 image through
-that bank's reset vector. Each target owns its complete `$8000-$FFFF`; its top
-sector may contain STR8, WOZMON, another monitor, or any system-specific code.
-No target BPB or shared STR8 ABI is required. After handoff Bank 3 is unmapped,
-so physical reset is the universal recovery path. See
+Current hardware-proven behavior keeps physical reset and timeout rooted in
+Bank 3 STR8 while a RAM trampoline boots an opaque Bank 0-2 image through that
+bank's reset vector. Each target owns its complete `$8000-$FFFF`; its top sector
+may contain STR8, WOZMON, another monitor, or any system-specific code. No
+target BPB or shared STR8 ABI is required. After handoff Bank 3 is unmapped, so
+physical reset is the universal recovery path. See
 [STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md).
 
 STR8 also becomes the shared S19 decode/checksum and flash-mutation boundary;
@@ -45,9 +45,10 @@ HIMON retains its RAM-load user interface and policy. The shared decoder first
 validates complete records in RAM, then can cheaply grow to minimal Intel
 HEX16 and explicit counted BIN/CRC16 without mixing those formats with flash
 policy. S2/S8 (`.s28`) remains a possible `V2.xxx`/`V3` linear physical-flash
-transport, not a change to the 16-bit runtime. Managed storage begins as an
-append-only record volume, not a full filesystem. These are proposed
-interfaces, not current commands; the retained loader/volume design lives in
+transport, not a change to the 16-bit runtime. The validate-first S19 record
+service and converted `U` path are current and hardware-proven; Intel HEX16,
+counted BIN/CRC16, S2/S8, and managed append-only volumes remain proposed
+interfaces rather than current commands. The retained loader/volume design lives in
 [STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
 
 ## Current Proof State
@@ -64,9 +65,12 @@ bootable fig-FORTH payload through the same gate
 high-flash recovery from Bank 2 back to known-good HIMON
 ```
 
-The current candidate removes rotation and enrollment. `B` selects exactly one
-destination bank, 0, 1, or 2, for a verified Bank-3 copy. That new policy is
-host-built but remains board-pending.
+The current image removes rotation and enrollment. `B` selects exactly one
+destination bank, 0, 1, or 2, for a verified Bank-3 copy. The selected-bank
+policy, the reset-time selector, and non-destructive `J0`-`J2` handoff are
+hardware-accepted. The follow-up Bank Jump Record is host-accepted and remains
+board-pending; see
+[STR8_BANK_JUMP_RECORD_BOARD_TEST.md](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md).
 
 HIMON has hardware proof for RAM-only debug commands `B`, `B C`, `B L`, `N`,
 and `X`, with one-shot breakpoints and `DBG RAM` rejection outside user RAM.
@@ -74,9 +78,8 @@ and `X`, with one-shot breakpoints and `DBG RAM` rejection outside user RAM.
 OIL `.710` has hardware proof for RAM, visible-flash, and banked-flash AP
 sources; internal relocation; resident RJOIN imports; missing-import rejection;
 overlap guards; and execution in its original layout. After the AP linker moved
-from STR8 into HIMON, the positive RAM-import regression passed on the current
-image. Missing-import atomicity and banked-source RJOIN remain the two explicit
-current-image regression gates.
+from STR8 into HIMON, the positive RAM-import, missing-import atomicity, and
+banked-source RJOIN regressions all passed on the current image.
 
 This is still a bench-proven recovery/update guard, not a field-updater or
 self-updater release.

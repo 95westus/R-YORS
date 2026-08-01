@@ -43,11 +43,13 @@ default payload, currently HIMON.
 
 ## Current Board
 
-The installed 2026-07-29 STR8-N echo image is hardware-proven for:
+The installed 2026-07-31 STR8-N echo image is hardware-proven for:
 
 - Bank-3 reset, the visible three-second countdown, and timeout into the
   Bank-3 HIMON default;
 - visible `J0`, `J1`, and `J2` commands, each followed by its `J Bn` status;
+- uppercase single echo for reset-time and resident interactive input, with
+  Backspace and empty Enter taking the cancel path;
 - non-destructive RAM-resident bank selection, target reset-vector validation,
   and handoff into Banks 0-2;
 - physical-reset recovery to Bank 3 after every accepted `Jn` handoff;
@@ -63,6 +65,12 @@ The installed 2026-07-29 STR8-N echo image is hardware-proven for:
   `AP B0 $hhhh $4800` from its selected store address;
 - interactive bank/sector flash erase with explicit confirmation and recovery;
 - standalone examples including the 16x16 column Life program.
+
+The follow-up Bank Jump Record is host-accepted but still awaits its separate
+board transcript. It publishes `$1FFD-$1FFF = 42 4A nn` after a validated
+`J0`-`J2` handoff, preserves a valid record through HIMON cold clear, and uses
+`42 4A FF` when no validated target is known. See the
+[Bank Jump Record board test](DOC/GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md).
 
 The current bank contents are:
 
@@ -117,6 +125,7 @@ HIMON while preserving `$F006` as a compatibility entry.
 - [OIL .710 Test Plan](DOC/GUIDES/PLANNING/OIL_710_TEST_PLAN.md) - Overlay Integration Layer board gates
 - [STR8 J0-J2 Opaque-Bank Plan](DOC/GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted implementation, size, recovery, and proof record
 - [STR8 J0-J2 Board Test](DOC/GUIDES/STR8/STR8_J012_BOARD_TEST.md) - exact inventory, handoff, reset, and CRC acceptance rail
+- [STR8 Bank Jump Record Board Test](DOC/GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence proof for `$1FFD-$1FFF`
 - [STR8 Guest Image Qualification](DOC/GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - mandatory handoff, peripheral, vector, and CRC procedure for unrelated systems
 - [STR8 S19 And Bank Volumes](DOC/GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - loader/volume direction and superseded compatible-bank design history
 - [Life Quick Card](DOC/GUIDES/ASM/LIFE16_QUICK_CARD.md) - exact ASM-F2 bank-2 procedure
@@ -142,11 +151,11 @@ SRC/BUILD/bin/himon-str8-rom.bin
 
 $8000-$BC6C  ASM-F2, entry $800C
 $BC6D-$BFFF  low-flash growth/AP-store hole
-$C000-$EEB7  HIMON, including the resident AP import linker
-$EEB8-$EFFF  HIMON/STR8 growth hole
-$F000-$FABF  STR8-N shell, data, IVI stubs, updater, and adapters
-$FAC0-$FD15  top-sector growth hole
-$FD16-$FFEF  stored RAM worker
+$C000-$EECB  HIMON, including the resident AP import linker
+$EECC-$EFFF  HIMON/STR8 growth hole
+$F000-$FAEE  STR8-N shell, data, IVI stubs, updater, and adapters
+$FAEF-$FD02  top-sector growth hole
+$FD03-$FFEF  stored RAM worker
 $FFF0-$FFF9  configuration pocket
 $FFFA-$FFFF  hardware vectors
 ```
@@ -164,7 +173,7 @@ make all                       complete current onboard image
 make life                      standalone loadable Life S19/BIN
 make -C SRC help Q=<term>      find related targets
 make release                   image plus release-side artifacts
-make docs-html                 explicit generated HTML rebuild
+make docs-html                 HTML rebuild for docs and repository READMEs
 ```
 
 `make life` does not change the onboard image. It preserves the simple

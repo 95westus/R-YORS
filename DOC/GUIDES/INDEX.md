@@ -11,7 +11,8 @@ This is the full guide index for the current R-YORS documentation set.
 - [ASM/LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) - complete ASM-F2 16x16 Life AP package, bank 2 storage, and run walkthrough.
 - [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
 - [PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` implementation, size, recovery, and hardware-proof plan for opaque 32K banks.
-- [STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - pending reset-time `0`/`1`/`2`/`3`/`S` selector board-proof rail.
+- [STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - accepted reset-time `0`/`1`/`2`/`3`/`S` selector proof record.
+- [STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence proof for the host-accepted Bank Jump Record.
 - [STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) -
   important per-image warm-handoff, peripheral, vector, CRC, and recovery
   qualification procedure for unrelated 32K systems.
@@ -30,7 +31,9 @@ H/P/V/C record. HIMON RAM-only debug is hardware-proven for current one-shot
 breakpoint and single-step behavior, with the resident unassembler removed and
 the `$7F00-$7FFF` I/O page protected by dump/load/debug paths. ASM is
 flash-resident as a HIMON command and now has board-proven SEAL, RESOLVE,
-RELOCATE, and AP v1 PACKAGE flows.
+RELOCATE, and AP v1 PACKAGE flows. The current uppercase STR8 interactive
+surface is hardware-accepted; the Bank Jump Record follow-up remains
+host-accepted with board persistence proof pending.
 
 - [HASH_FLASH.md](./HASH_FLASH.md) - command-surface and milestone alerts.
 - [DOC_FLASH.md](./DOC_FLASH.md) - documentation-shape alerts.
@@ -46,12 +49,15 @@ RELOCATE, and AP v1 PACKAGE flows.
 
 ## Guide Shelves
 
-- [STR8](STR8/STR8.md) - recovery, updates, product boundaries, bringup, work
+- [STR8](STR8/STR8.md) - top-level routine-purpose map, recovery, updates,
+  product boundaries, bringup, work
   process, the [boot-selector board test](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md),
   the [J0-J2 first board test](STR8/STR8_J012_BOARD_TEST.md), the
+  [Bank Jump Record board test](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md), the
   [V0 restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and
   [edge evidence](STR8/STR8_EDGE_DUMP.md).
-- [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, edge evidence.
+- [HIMON](HIMON/HIMON_MAP.md) - top-level routine-purpose map, subsystem maps,
+  stage notes, debug, search, and edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction;
   see the generated [Control Deck Map](../GENERATED/CONTROL_DECK_MAP.md) for
   the LRS/AIR/FTC/RFD-RTC-RPT/RSC bench view.
@@ -66,8 +72,9 @@ RELOCATE, and AP v1 PACKAGE flows.
   see [DECISIONS.md](ASM/DECISIONS.md) for AP package/envelope/install
   boundaries,
   see [INTERACTIVE_BATCH.md](ASM/INTERACTIVE_BATCH.md) for the parked future
-  `ASM I/B` idea, [ASM_CALL_MAP.md](ASM/ASM_CALL_MAP.md) for the routine-flow
-  map, [ASM_SHARED_ROUTINES_AUDIT.md](ASM/ASM_SHARED_ROUTINES_AUDIT.md) for
+  `ASM I/B` idea, [ASM_CALL_MAP.md](ASM/ASM_CALL_MAP.md) for the top-level
+  routine-purpose and routine-flow maps,
+  [ASM_SHARED_ROUTINES_AUDIT.md](ASM/ASM_SHARED_ROUTINES_AUDIT.md) for
   RJOIN/shared-helper candidates, and [TEST_PLAN.md](ASM/TEST_PLAN.md) for ASM
   test gates.
 - [QCC](QCC/INDEX.md) - Questions, Comments, Concerns working notes.
@@ -106,11 +113,11 @@ Quick scan of the operational HIMON/STR8 source set used by `DOC/GENERATED`:
 
 ```text
 Source files scanned:  30
-XDEF declarations:     222
+XDEF declarations:     225
 XREF declarations:     152
-ROUTINE headers:       144
-JSR/JMP call sites:    1363
-Unique direct edges:   1103
+ROUTINE headers:       145
+JSR/JMP call sites:    1254
+Unique direct edges:   989
 ```
 
 Generated reports live in [../GENERATED](../GENERATED).

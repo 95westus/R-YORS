@@ -4,7 +4,7 @@ This is the guarded first-board rail for the host-built opaque-bank `J0`-`J2`
 candidate. It assumes the 2026-07-28 operator-reported layout:
 
 This document preserves the accepted pre-selector image and transcript. The
-new reset-time `0`/`1`/`2`/`3`/`S` follow-up has its own pending procedure in
+later reset-time `0`/`1`/`2`/`3`/`S` follow-up has its own accepted record in
 [STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8_BOOT_SELECTOR_BOARD_TEST.md); do not
 rewrite the historical addresses, CRCs, or boot text below.
 

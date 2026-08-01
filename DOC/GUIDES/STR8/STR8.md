@@ -45,6 +45,37 @@ HIMON provides the monitor, command dispatch, assembler, catalog lookup,
 and debug tools.
 ```
 
+## Top-Level Routine Guide
+
+This is the readable routine-level entrance to `SRC/STR8/str8.asm` and
+`SRC/STR8/str8-worker.asm`. Each box starts with the actual routine label and
+then states its top-level purpose. The arrows summarize control flow and
+service ownership; [STR8_EDGE_DUMP.md](STR8_EDGE_DUMP.md) retains the complete
+direct `JSR`/`JMP` evidence.
+
+```mermaid
+flowchart LR
+    RESET["START / STR8_BOOT_START<br/>Reset entry; initialize IVY and console, then open the startup selector"] --> SELECT{"Startup choice"}
+    SELECT -->|S| SHELL["STR8_CMD_LOOP<br/>Recovery shell; read and dispatch one operator command"]
+    SELECT -->|timeout or 3| HIMON["STR8_ENTER_HIMON_COLD / WARM<br/>Transfer normal operation to Bank 3 HIMON"]
+    SELECT -->|0, 1, or 2| JUMP["STR8_BOOT_JUMP_BANK_A<br/>Prepare a delayed, non-destructive selected-bank handoff"]
+
+    SHELL --> DISPATCH["STR8_DISPATCH_A<br/>Route ?, B, U, 0-2, J, G, and R"]
+    DISPATCH --> BACKUP["STR8_CMD_BACKUP<br/>Confirm and copy live Bank 3 to one selected backup bank"]
+    DISPATCH --> RESTORE["STR8_CMD_RESTORE_A<br/>Double-confirm and restore a selected backup into Bank 3"]
+    DISPATCH --> UPDATE["STR8_CMD_UPDATE_HIMON<br/>Stage, validate, program, and verify the fixed HIMON S19 window"]
+    DISPATCH --> JUMP
+
+    BACKUP --> COPY["STR8_RUN_COPY<br/>Publish copy state and enter the RAM-safe mutation path"]
+    RESTORE --> COPY
+    COPY --> WORKER["STR8 worker START<br/>Dispatch copy, sector, record-program, or bank-jump work from RAM"]
+    WORKER --> FLASH["STR8W_COPY_BANKS / STR8W_PROGRAM_DST_SECTOR / STR8W_PROGRAM_RECORD<br/>Stage, erase, program, and read-back verify flash"]
+
+    RECORD["STR8_RECORD_SERVICE_ENTRY<br/>Validate S19 records and preflight whole-record apply policy"] --> WORKER
+    SERVICE["STR8_RUN_WORKER_SERVICE<br/>Stable resident doorway; copy the worker to $0200 and run it"] --> WORKER
+    APLINK["STR8_AP_IMPORT_LINK_SERVICE<br/>Compatibility doorway into the HIMON AP resident-import linker"] --> HIMON
+```
+
 ## Milestone Snapshot
 
 The STR8 hardware milestone is image backup and recovery, proven with three
@@ -58,13 +89,13 @@ fig-FORTH  threaded language payload
 
 The hardware log preserves the earlier `M` proof and the retired cascading `B`
 and Bank 0 enrollment behavior. The current resident `M` and `E` commands are
-removed; `B` now selects one destination bank and still needs a board
-regression. Existing proof also covers the fixed `$C000-$EFFF` `U` / `UPDATE
-HIMON` gate, HIMON U1->U2 update, booting OSI BASIC and fig-FORTH through that
-same gate, and restoring known-good HIMON from Bank 2 by the high-flash
-recovery path. This promotes STR8 from proposed recovery idea to bench-proven
-recovery/update guard while keeping the changed backup policy explicitly
-hardware-pending.
+removed; `B` now selects one destination bank. Existing proof covers that
+selected-bank surface, the fixed `$C000-$EFFF` `U` / `UPDATE HIMON` gate,
+HIMON U1->U2 update, booting OSI BASIC and fig-FORTH through that same gate,
+and restoring known-good HIMON from Bank 2 by the high-flash recovery path.
+The reset selector and opaque-bank `J0`-`J2` handoff are also hardware-accepted.
+This promotes STR8 from proposed recovery idea to bench-proven recovery/update
+guard. The separate Bank Jump Record persistence proof remains pending.
 
 The milestone does not make STR8 a finished field-updater. STR8 self-update,
 whole-ROM install, catalog-aware repair, raw range update, and original
@@ -417,7 +448,7 @@ Bank Jump Record host checks pass; new persistence board proof is pending
 accepted installed CRCs are B0 $4B59, B1 $2A3D, B2 $04EF, B3 $4663
 current host build exposes the V1 record service at $F009 with `SR`/`01`/`07`
 current host build converts `U` to the shared validate-first S19 parser
-record-service and converted-`U` hardware proof is pending
+record-service transport, direct load, erase/apply, and recovery pass on hardware
 current STR8 identity marker is `#5F6A0F7A`
 physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000

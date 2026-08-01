@@ -33,6 +33,13 @@ STR8_WORK_PROCESS.md
   STR8_DECISION_REFERENCE.md, STR8_FLASH_UPDATE_PROPOSAL.md, BRINGUP.md,
   TODO.md, and HARDWARE_TEST_LOG.md
 
+STR8_BANK_JUMP_RECORD_BOARD_TEST.md
+  freezes the pending board rail for `$1FFD-$1FFF = 42 4A bank/FF`
+  requires the combined HIMON/STR8 image because the worker commits the record
+  and HIMON preserves it through cold RAM clearing
+  relates to STR8.md, STR8_J012_OPAQUE_BANK_PLAN.md, MEMORY_MAP.md,
+  TEST_PLAN.md, and HARDWARE_TEST_LOG.md
+
 STR8_V0_RESTORE_FAILURE_GATES.md
   freezes guarded pasteable fixtures for nonerased lower-sector restore and
   injected high-mode failure at the $F000 boundary
@@ -205,11 +212,11 @@ Current generated operational source scan:
 
 ```text
 Source files scanned:  30
-XDEF declarations:     222
+XDEF declarations:     225
 XREF declarations:     152
-ROUTINE headers:       144
-JSR/JMP call sites:    1363
-Unique direct edges:   1103
+ROUTINE headers:       145
+JSR/JMP call sites:    1254
+Unique direct edges:   989
 ```
 
 Current HIMON/STR8 operational files:

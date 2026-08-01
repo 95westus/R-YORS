@@ -121,6 +121,9 @@ Proof lives in the guide set:
 - [HASH.md](../HASH/HASH.md) and [HASH_MAP.md](../HASH/HASH_MAP.md) - hash lookup and catalog model.
 - [HIMON_MAP.md](../HIMON/HIMON_MAP.md) - monitor capability map.
 - [STR8.md](../STR8/STR8.md) - recovery/update anchor.
+- [STR8_J012_BOARD_TEST.md](../STR8/STR8_J012_BOARD_TEST.md) - first opaque-bank handoff proof.
+- [STR8_BOOT_SELECTOR_BOARD_TEST.md](../STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - accepted reset selector proof.
+- [STR8_BANK_JUMP_RECORD_BOARD_TEST.md](../STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence rail for the Bank Jump Record.
 - [CATALOG.md](../CATALOG/CATALOG.md) - callable routine surface and RREC seeds.
 - [HREC_JOIN_PROOF.md](../CATALOG/HREC_JOIN_PROOF.md) - hash record to callable entry proof.
 - [ASM/ASM_USER_GUIDE.md](../ASM/ASM_USER_GUIDE.md) - current ASM operator guide.
@@ -211,6 +214,61 @@ and design ideas that should be reflected when chapters are drafted.
   and `$7F00-$7FFF` forbidden I/O.
 - `RESIB` was named as a candidate human nickname for the AP v1 package section
   family. It does not change the current wire order.
+
+## Recent Book Delta: 2026-07-06 Through 2026-07-31
+
+This second catch-up carries the story from AP envelopes into OIL, shared STR8
+transport, and opaque-bank boot. It also keeps the proof boundary explicit:
+the Bank Jump Record is host-accepted but is not yet hardware-proven.
+
+2026-07-06 through 2026-07-10:
+
+- ASM completed its first `INSTALL`/`LOAD` lifecycle, added `SPILL` recovery
+  evidence and an explicit `ENTRY` directive, and made the selected entry part
+  of AP execution rather than an assumed body base.
+- HIMON gained the resident AP service and `AP` runner. OIL became the name for
+  the layer that loads an AP object, relocates its BODY, resolves resident
+  imports, and transfers control.
+- Banked AP work stopped being only a format exercise. The board stored and ran
+  Life, erased a selected flash bank sector through a guarded utility, installed
+  a Bank-0 AP, and ran the external ASM session reporter from a banked package.
+
+2026-07-11 through 2026-07-20:
+
+- ASM added `DC` strings and data relocations, then adopted the compact AP
+  workspace map. The reporter moved out of the resident image and became a
+  Bank-0 package, making storage, load address, and run address visibly
+  different things.
+- The AP import linker moved from STR8 into HIMON. `$F006` remains a
+  compatibility doorway, but HIMON owns resident import resolution while STR8
+  stays focused on recovery and transport.
+- STR8 gained a shared S19 record service and the old `L F` byte sink was
+  retired. Transport, direct load, erase/apply, and recovery phases were proved
+  in sequence rather than declared complete from one happy-path transcript.
+
+2026-07-21 through 2026-07-31:
+
+- The documentation gained the Control Deck atlas and compact source-derived
+  maps.
+- The canonical STR8, HIMON, and ASM maps now open with Mermaid-renderable
+  top-level routine guides: actual routine names stay visible, while each node
+  explains the code responsibility in plain language.
+- STR8 was size-trimmed without abandoning the protected worker model.
+  TopWriter acquired a visible text menu and its stage, verify, status,
+  cancellation, program, and quit routes were accepted on the board.
+- `J0`, `J1`, and `J2` became hardware-proven non-destructive handoffs to
+  opaque 32K banks. A bank number is deliberately not a system identity; every
+  unrelated guest still needs independent handoff, peripheral, vector, and CRC
+  qualification.
+- The reset-time `0`/`1`/`2`/`3`/`S` selector was accepted. The current STR8
+  interactive path echoes printable input once in uppercase and treats
+  Backspace and empty Enter as cancellation. HIMON's confirmed startup names
+  became the shorter hardware-proven `HCOLD` and `HWARM`.
+- A misleading PCR-based bank checker was retired. Its replacement is the
+  signed Bank Jump Record at `$1FFD-$1FFF`: `42 4A bank`, or `42 4A FF` when no
+  validated handoff is known. The worker commits only after selection and
+  vector validation, and HIMON preserves a valid record through cold clear.
+  Host checks pass; the dedicated board persistence transcript remains open.
 
 ## Part I: Why Hash-First?
 
@@ -442,8 +500,10 @@ Proof and notes:
 Answer:
 
 STR8 exists so recovery does not depend on the thing being recovered. It is the
-board management product: safe boot, flash map, backup, restore, target install,
-verify, protected-window policy, and handoff.
+board management product: safe boot, backup, restore, target install, verify,
+protected-window policy, reset-time selection, and opaque-bank handoff. The
+earlier resident `M` flash map is historical proof, not part of the current
+size-conscious prompt.
 
 HIMON is the default workbench payload, not the reason STR8 exists. STR8 should
 be useful to someone who wants to install WDCMONv2, BETTERMON, BASIC, FORTH, a
@@ -478,6 +538,12 @@ AP envelope into flash is storage and catalog work, not the same as relocating
 and running the BODY. An envelope can move within flash unchanged. A BODY that
 executes at a new base needs relocation, import resolution, or both.
 
+The July opaque-bank work adds a second distinction: `J0`-`J2` names physical
+banks, not operating systems. STR8 validates the selected reset vector and
+hands the whole `$8000-$FFFF` window to the guest. Physical reset is the
+universal return. The Bank Jump Record is deliberately historical state about
+the last validated handoff, not a claim about the currently selected latch.
+
 Questions:
 
 - What must be true before reset enters STR8 first?
@@ -489,6 +555,10 @@ Questions:
 - How does future STR8-N participate in catalogs without owning all catalogs?
 - When should STR8 merely store a package, and when should it load, relocate,
   resolve, or install executable bytes?
+- What evidence must qualify an unrelated 32K guest before its `Jn` handoff is
+  considered supported?
+- How should the Bank Jump Record grow, if ever, without pretending it is a
+  complete bank identity passport?
 
 Proof and notes:
 
@@ -497,6 +567,8 @@ Proof and notes:
 - [OPERATORS_GUIDE.md](../OPERATORS_GUIDE.md)
 - [TECHNICAL_GUIDE.md](../TECHNICAL_GUIDE.md)
 - [BRINGUP.md](../STR8/BRINGUP.md)
+- [STR8_J012_BOARD_TEST.md](../STR8/STR8_J012_BOARD_TEST.md)
+- [STR8_BANK_JUMP_RECORD_BOARD_TEST.md](../STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md)
 - [QCC_STR8.md](../QCC/STR8.md)
 
 ### Chapter 9: Flash, Purge, And REQUIRED_FOR_RECOVERY
@@ -538,6 +610,11 @@ Flash is not just storage. It is a medium with erase sectors, one-way bit
 transitions, bank selection, protected ranges, source/destination policy, and
 recovery failure modes.
 
+The four 32K banks now also form a multiboot surface. Bank 3 owns reset and
+STR8; Banks 0-2 are opaque guests entered through `J0`-`J2`. Non-destructive
+handoff and exact-image qualification are separate from backup rotation and AP
+object storage.
+
 The near-term AP package idea treats banked flash first as object storage.
 `INSTALL` can later search for an appropriately sized erased hole, write the
 package envelope, and mark progress by clearing bits in an initially erased
@@ -565,6 +642,7 @@ Proof and notes:
 - [STR8_FLASH_UPDATE_PROPOSAL.md](../STR8/STR8_FLASH_UPDATE_PROPOSAL.md)
 - [QCC_FLASH.md](../QCC/FLASH.md)
 - [MEMORY_MAP.md](../MEMORY/MEMORY_MAP.md)
+- [STR8_GUEST_IMAGE_QUALIFICATION.md](../STR8/STR8_GUEST_IMAGE_QUALIFICATION.md)
 
 ## Part IV: Catalog Linking
 
@@ -884,6 +962,8 @@ These are book-grade questions, not blockers:
 - How should collision candidates be shown on board?
 - What is the first safe catalog condense transaction?
 - How does STR8-N replace a recovery-required provider?
+- What is the smallest useful successor to the three-byte Bank Jump Record,
+  and what evidence would justify changing it?
 - Which routine contracts become universal, and which stay board-local?
 - When does HIMON stop being a monitor and become THE?
 - When does pasteable ASM stop being a RAM proof and become an export path?
@@ -915,10 +995,13 @@ Do not write the book in chapter order. Write from proof outward:
    [ASM/MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md), and
    [QCC_CATALOG_LINKING.md](../QCC/CATALOG_LINKING.md).
 6. Write pasteable and flash ASM as a worked example from the 2026-06-06
-   through 2026-07-05 board proofs before claiming any self-hosted arc.
+   through 2026-07-31 board proofs before claiming any self-hosted arc.
    Include the shift from runtime paste, to flash `ASM`, to `SEAL>`, to AP v1
-   packages and relocation.
-7. Finish with the reflective chapters: what stayed simple, what remains open,
+   packages, relocation, OIL execution, Bank-0 storage, and the external
+   reporter.
+7. Write the opaque-bank turn from the `J0`-`J2` and reset-selector transcripts,
+   then stop at the explicit hardware-pending boundary for the Bank Jump Record.
+8. Finish with the reflective chapters: what stayed simple, what remains open,
    and how the vocabulary shaped the system.
 
 ## Chapter Template

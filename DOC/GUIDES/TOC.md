@@ -20,13 +20,16 @@ connect.
 
 ## Detail Shelves
 
-- [STR8](STR8/STR8.md) - recovery, update, product boundaries, bringup,
+- [STR8](STR8/STR8.md) - top-level routine-purpose map, recovery, update,
+  product boundaries, bringup,
   work process, [boot-selector board test](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md),
   [J0-J2 first board test](STR8/STR8_J012_BOARD_TEST.md),
+  [Bank Jump Record board test](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md),
   [independent guest qualification](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md),
   [restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and
   [edge evidence](STR8/STR8_EDGE_DUMP.md).
-- [HIMON](HIMON/HIMON_MAP.md) - monitor maps, stage notes, debug, search, and edge evidence.
+- [HIMON](HIMON/HIMON_MAP.md) - top-level routine-purpose and subsystem maps,
+  stage notes, debug, search, and edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction;
   see the generated [Control Deck Map](../GENERATED/CONTROL_DECK_MAP.md) for
   the LRS/AIR/FTC/RFD-RTC-RPT/RSC bench view.
@@ -42,7 +45,7 @@ connect.
   [LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) as the full bank-2 AP
   example,
   [HASHED_ASM.md](ASM/HASHED_ASM.md) as the source/parser reference,
-  including the [ASM call map](ASM/ASM_CALL_MAP.md),
+  including the [ASM top-level routine and call map](ASM/ASM_CALL_MAP.md),
   [shared-routine audit](ASM/ASM_SHARED_ROUTINES_AUDIT.md), and parked future
   [ASM I/B idea](ASM/INTERACTIVE_BATCH.md).
 - [QCC](QCC/INDEX.md) - active Questions, Comments, Concerns working notes.

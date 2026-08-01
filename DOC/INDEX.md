@@ -17,7 +17,8 @@ DOC/GUIDES/TECHNICAL_GUIDE.md
 - [GUIDES/GLOSSARY.md](./GUIDES/GLOSSARY.md) - vocabulary contract.
 - [GUIDES/DECISIONS.md](./GUIDES/DECISIONS.md) - settled policy.
 - [GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](./GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` opaque-bank implementation and hardware-proof plan.
-- [GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](./GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - pending board-proof rail for the reset-time `0`/`1`/`2`/`3`/`S` selector.
+- [GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](./GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - accepted reset-time `0`/`1`/`2`/`3`/`S` selector proof record.
+- [GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md](./GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence proof for the host-accepted `$1FFD-$1FFF` Bank Jump Record.
 - [GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](./GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - required per-image handoff, peripheral, vector, CRC, and recovery procedure for unrelated 32K guests.
 - [GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](./GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - retained S19/bank-volume direction and superseded compatible-bank design history.
 
@@ -28,8 +29,9 @@ OSI BASIC, and fig-FORTH. That is not opaque 32K `Jn` qualification.
 `J0`-`J2` is hardware-proven on the recorded R-YORS bank images; every
 unrelated guest requires its own H/P/V/CRC record. HIMON RAM-only debug is
 hardware-proven for the current one-shot breakpoint and single-step surface.
-The reset-time `0`/`1`/`2`/`3`/`S` selector follow-up is host-built and awaits
-its separate board transcript.
+The reset-time `0`/`1`/`2`/`3`/`S` selector and the current uppercase
+interactive echo are hardware-accepted. The follow-up Bank Jump Record is
+host-accepted and awaits its separate persistence transcript.
 
 - [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md) - milestone and command alerts.
 - [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md) - documentation-shape alerts.

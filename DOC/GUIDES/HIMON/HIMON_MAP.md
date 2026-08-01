@@ -16,6 +16,34 @@ HIMON/himon-shared-eq.inc
 Direct `JSR` and `JMP` edges are the hard evidence. Some package-to-package
 arrows below are summaries so the map is readable.
 
+## Top-Level Routine Guide
+
+This first view describes the principal control routines in
+`SRC/HIMON/himon.asm` and its active includes. Each node carries a real routine
+label plus its top-level purpose. Arrows summarize the main control and service
+routes; the smaller diagrams below and
+[HIMON_EDGE_DUMP.md](HIMON_EDGE_DUMP.md) provide direct-edge detail.
+
+```mermaid
+flowchart TD
+    RESET["START / HIMON_COLD_START / HIMON_WARM_START<br/>Choose cold or warm monitor entry and establish CPU/session state"] --> INIT["MON_START_INIT<br/>Initialize system services, vectors, boot state, and the monitor banner"]
+    INIT --> LOOP["MAIN_LOOP<br/>Prompt, read one command line, normalize it, and start dispatch"]
+    LOOP --> HASH["CMD_HASH_TOKEN<br/>Hash the command token with FNV-1a and preserve the lookup key"]
+    HASH --> DISPATCH["CMD_DISPATCH_HASH<br/>Scan resident FNV records, resolve the command, and execute it"]
+
+    DISPATCH --> LOAD["CMD_L<br/>Receive S19, enforce RAM/flash policy, verify records, and optionally run"]
+    DISPATCH --> AP["CMD_AP<br/>Load an AP package from RAM or banked storage and transfer to its entry"]
+    DISPATCH --> DEBUG["CMD_B / CMD_N<br/>Manage one-shot breakpoints and prepare one instruction step"]
+    DISPATCH --> MEM["CMD_D / CMD_M / CMD_R / CMD_X / CMD_G<br/>Inspect memory/context, edit state, resume, or jump"]
+
+    AP --> APSVC["HIM_AP_SERVICE<br/>Validate, parse, relocate, load, link, or suggest placement for an AP object"]
+    APSVC --> LINK["HIM_AP_IMPORT_LINK<br/>Resolve AP imports through resident FNV records and patch relocation sites"]
+    DEBUG --> CTX["MON_CTX_RESUME_RTI / DBG_HANDLE_BRK<br/>Restore saved context or capture a breakpoint/step stop"]
+
+    JOIN["THE_JOIN_FIND / THE_JOIN_EXEC_XY<br/>Find or execute a resident callable FNV record by hash"] --> DISPATCH
+    JOIN --> LINK
+```
+
 ## OIL Subsystem Boundary
 
 OIL means **Overlay Integration Layer**. This top-level view keeps the runtime
