@@ -17909,3 +17909,50 @@ immediately before the final jump and publishes it at `$1FFD-$1FFF` as
 `42 4A FF` means no valid target is known. This entry documents supersession
 only. The new Bank Jump Record still requires the separate hardware proof; no
 claim in the historical transcript is being rewritten as that proof.
+
+## 2026-07-31 Dense 32K S19 Flash-Pause FTDI/Tera Term Acceptance
+
+The operator supplied a 674-line, 20,701-byte Windows Tera Term transcript with
+SHA-256
+`434B348164CC72F7826BBC1F751791B040B1958F5D5F67FF43FC5F3EA10A9F05`.
+The board reported STR8-N `00.0731(1517)`, HIMON `00.0731(1515)`, and ASM-F2
+`00.0728(2113)`. ASM-F2 accepted the complete fixed-load proof through `END`:
+
+```text
+ASM>$232D: CRLF    LDA #$0D
+ASM>$232F:         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+ASM>$2332:         LDA #$0A
+ASM>$2334:         JMP BIO_FTDI_WRITE_BYTE_BLOCK
+ASM>$2337:
+ASM>$2337:         END
+ASM OK
+```
+
+The operator used Windows Tera Term Send File with both bulk and sequential
+reads. Their order is immaterial for this test and is not assigned to
+individual runs in the transcript. All three captured executions received the
+dense 32K all-zero S19, paused target reads for real Bank-0 sector
+erase/program/full-sector verification, validated S9 `$0000`, programmed the
+held final sector, printed eight dots, and returned `A=$AC` with carry set:
+
+```text
+SEND BANK0-ZERO-8000-FFFF.S19 NOW
+........ 8 SECTORS ERASED/PROGRAMMED/VERIFIED
+
+#GO# ENTRY=2000
+RET A=AC X=71 Y=25 P=F5 S=FD NV-BdIzC
+```
+
+Repeating the all-zero image still exercised erase and program: Bank 0 held
+programmed `$00`, not erased `$FF`, before each repeat. No checksum, ordering,
+coverage, S9, flash, verification, or transport failure occurred. This closes
+the dense 32K transport-with-real-flash-pauses gate for the tested Windows
+Tera Term and FTDI FIFO profile. The dense 28K FTDI form remains open.
+
+**ACIA warning:** this proof does not qualify an ACIA receive path. The FTDI
+and Windows queues retained the stream while target reads stopped. A typical
+ACIA has shallow receive storage and may overrun during erase/program/verify;
+an interrupt-fed RAM ring cannot drain while the RAM flash worker masks
+interrupts. ACIA support remains explicitly unproven and unsupported until a
+documented pacing or flow-control profile passes separate dense 32K and 28K
+hardware proofs.

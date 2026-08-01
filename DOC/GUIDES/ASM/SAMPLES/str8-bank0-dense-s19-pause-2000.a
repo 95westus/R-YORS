@@ -1,0 +1,317 @@
+; STR8-BANK0-DENSE-S19-PAUSE-2000.A
+; DESTRUCTIVE RAM PROOF: ERASE/PROGRAM/VERIFY ALL OF BANK 0.
+;
+; IMPORTANT: THIS PROVES WINDOWS TERA TERM SEND FILE OVER
+; THE CURRENT FTDI FIFO PATH ONLY. DO NOT GENERALIZE IT TO
+; AN ACIA. AN ACIA MAY OVERRUN WHILE FLASH STOPS ALL READS.
+; ACIA NEEDS ITS OWN PACING/FLOW-CONTROL PROFILE AND PROOF.
+;
+; ASSEMBLE WITH CURRENT FLASH ASM-F2 AT ORG $2000.
+; AFTER END, TYPE . AT SEAL>, THEN G 2000 WITH BANK 3 VISIBLE.
+;
+; ACCEPTS ONLY DENSE S0/S1/S9 COVERING $8000-$FFFF.
+; REQUIRES EVERY S1 DATA BYTE AND S9 TO BE $00.
+; HOLDS $F000-$FFFF UNTIL S9 MATCHES THE RESET VECTOR.
+;
+; AFTER EXACT CONFIRMATION, SEND:
+;   BUILD/BANK0-ZERO-8000-FFFF.S19
+;
+; $8000-$EFFF IS WRITTEN WHILE THE HOST IS STILL SENDING.
+; EACH REAL FLASH OPERATION PAUSES TARGET S19 RECEPTION.
+; $F000-$FFFF IS WRITTEN ONLY AFTER S9. SUCCESS PRINTS EIGHT
+; DOTS AND RETURNS TO HIMON WITH BANK 3 VISIBLE.
+;
+; FAILURE AFTER SEND BEGINS HALTS UNTIL PHYSICAL RESET.
+; QUEUED S19 CANNOT BECOME HIMON COMMANDS.
+; BANK 0 IS INTENTIONALLY NONBOOTABLE.
+;
+; $1A00-$1A0A STATUS:
+;   +00 STATUS  00 RUN, AC PASS, E0 ABI, E1 CANCEL,
+;               E2 PARSE,
+;               E3 DATA/ORDER,
+;               E4 FLASH/VERIFY, E5 S9/FINAL
+;   +01 CURRENT SECTOR HI
+;   +02/+03 NEXT EXPECTED S1 ADDRESS
+;   +04 S0 SEEN, +05 DATA PHASE
+;   +06 RECORD BYTES LEFT, +07 RECORD INDEX
+;   +08 FINAL SECTOR READY, +09 SECTORS WRITTEN
+;   +0A PARSER DETAIL FROM $7E98
+; WORKER FAILURE ADDRESS REMAINS AT $1FEA/$1FEB.
+;
+; ASM-F2 RESOLVES THE HIMON CONSOLE ROUTINE NAMES.
+
+        ORG $2000
+
+        JMP START
+
+MHEAD   DC C,"BANK0 DENSE S19 FLASH-PAUSE PROOF"
+MWARN   DC C,"ERASES BANK0 $8000-$FFFF"
+MCFM    DC C,"TYPE WRITE B0:"
+MSEND   DC C,"SEND BANK0-ZERO-8000-FFFF.S19 NOW"
+MDOT    DC C,"."
+MOK     DC C," 8 SECTORS ERASED/PROGRAMMED/VERIFIED"
+MFAIL   DC C,"FAIL: STOP SEND AND PHYSICAL RESET"
+MABI    DC C,"STR8 SR/01/07 REQUIRED"
+MCAN    DC C,"ABORT"
+MKEY    DC C,"WRITE B0"
+
+START   CLD
+        STZ $1A00
+        STZ $1A0A
+        LDA $F00C
+        CMP #$53
+        BEQ .A1
+        JMP BADABI
+.A1     LDA $F00D
+        CMP #$52
+        BEQ .A2
+        JMP BADABI
+.A2     LDA $F00E
+        CMP #$01
+        BEQ .A3
+        JMP BADABI
+.A3     LDA $F00F
+        CMP #$07
+        BEQ CONFIRM
+        JMP BADABI
+
+CONFIRM LDX #<MHEAD
+        LDY #>MHEAD
+        JSR BIO_FTDI_PUT_CSTR
+        JSR CRLF
+        LDX #<MWARN
+        LDY #>MWARN
+        JSR BIO_FTDI_PUT_CSTR
+        JSR CRLF
+        LDX #<MCFM
+        LDY #>MCFM
+        JSR BIO_FTDI_PUT_CSTR
+        LDX #$00
+        LDY #$1C
+        JSR SYS_READ_CSTRING_ECHO_UPPER
+        BCS .C1
+        JMP CANCEL
+.C1     LDX #$00
+.C2     LDA $1C00,X
+        CMP MKEY,X
+        BEQ .C3
+        JMP CANCEL
+.C3     CMP #$00
+        BEQ INIT
+        INX
+        BRA .C2
+
+INIT    STZ $1A04
+        STZ $1A05
+        STZ $1A06
+        STZ $1A07
+        STZ $1A08
+        STZ $1A09
+        STZ $1A0A
+        LDA #$80
+        STA $1A01
+        STZ $1A02
+        STA $1A03
+        LDX #<MSEND
+        LDY #>MSEND
+        JSR BIO_FTDI_PUT_CSTR
+        JSR CRLF
+
+PARSE   LDA #$01
+        STA $7E95
+        STA $7E96
+        STA $7E97
+        JSR $F009
+        BCS .P1
+        JMP BADPARSE
+.P1     LDA $7E9C
+        CMP #$01
+        BEQ META
+        CMP #$02
+        BEQ DATA
+        CMP #$03
+        BNE .P2
+        JMP ENDREC
+.P2     JMP BADDATA
+
+META    LDA $1A05
+        BEQ .M1
+        JMP BADDATA
+.M1     LDA $1A04
+        BEQ .M2
+        JMP BADDATA
+.M2     INC $1A04
+        JMP PARSE
+
+DATA    LDA $1A04
+        CMP #$01
+        BEQ .D0
+        JMP BADDATA
+.D0     LDA $1A05
+        BNE .D1
+        INC $1A05
+.D1     LDA $1A02
+        ORA $1A03
+        BNE .D2
+        JMP BADDATA
+.D2     LDA $7E9E
+        CMP $1A02
+        BEQ .D3
+        JMP BADDATA
+.D3     LDA $7E9F
+        CMP $1A03
+        BEQ .D4
+        JMP BADDATA
+.D4     LDA $7EA0
+        BNE .D5
+        JMP BADDATA
+.D5     STA $1A06
+        STZ $1A07
+
+COPY    LDA $1A02
+        ORA $1A03
+        BNE .B1
+        JMP BADDATA
+.B1     LDX $1A07
+        LDA $7B00,X
+        BEQ .B2
+        JMP BADDATA
+.B2     LDA $1A02
+        STA $A0
+        LDA $1A03
+        AND #$0F
+        CLC
+        ADC #$0A
+        STA $A1
+        LDY #$00
+        LDA #$00
+        STA ($A0),Y
+        INC $1A07
+        INC $1A02
+        BNE .B4
+        INC $1A03
+        LDA $1A03
+        AND #$0F
+        BNE .B4
+        JSR SECDONE
+.B4     DEC $1A06
+        BEQ .B5
+        JMP COPY
+.B5     JMP PARSE
+
+ENDREC LDA $1A05
+        CMP #$01
+        BEQ .E1
+        JMP BADS9
+.E1     LDA $1A02
+        ORA $1A03
+        BEQ .E2
+        JMP BADS9
+.E2     LDA $1A08
+        CMP #$5A
+        BEQ .E3
+        JMP BADS9
+.E3     LDA $7E9D
+        CMP #$01
+        BEQ .E4
+        JMP BADS9
+.E4     LDA $7EA1
+        ORA $7EA2
+        BEQ .E5
+        JMP BADS9
+.E5     LDA $19FC
+        ORA $19FD
+        BEQ .E6
+        JMP BADS9
+.E6     JSR PROG
+        LDA $1A09
+        CMP #$08
+        BEQ SUCCESS
+        JMP BADS9
+
+SECDONE LDA $1A01
+        CMP #$F0
+        BNE .S1
+        LDA #$5A
+        STA $1A08
+        SEC
+        RTS
+.S1     JSR PROG
+        LDA $1A01
+        CLC
+        ADC #$10
+        STA $1A01
+        SEC
+        RTS
+
+PROG    STZ $1FEF
+        LDA $1A01
+        STA $1FE9
+        LDA #$0A
+        STA $1FF6
+        LDA #$05
+        STA $1FF0
+        JSR $F003
+        BCS .G1
+        JMP BADWORK
+.G1     INC $1A09
+        LDX #<MDOT
+        LDY #>MDOT
+        JSR BIO_FTDI_PUT_CSTR
+        SEC
+        RTS
+
+SUCCESS LDA #$AC
+        STA $1A00
+        LDX #<MOK
+        LDY #>MOK
+        JSR BIO_FTDI_PUT_CSTR
+        JSR CRLF
+        LDA $1A00
+        SEC
+        RTS
+
+BADPARSE LDA $7E98
+        STA $1A0A
+        LDA #$E2
+        BRA BAD
+BADDATA LDA #$E3
+        BRA BAD
+BADWORK LDA #$E4
+        BRA BAD
+BADS9   LDA #$E5
+
+BAD     STA $1A00
+        LDX #<MFAIL
+        LDY #>MFAIL
+        JSR BIO_FTDI_PUT_CSTR
+        JSR CRLF
+        SEI
+HALT    BRA HALT
+
+BADABI  LDA #$E0
+        STA $1A00
+        LDX #<MABI
+        LDY #>MABI
+        JSR BIO_FTDI_PUT_CSTR
+        JSR CRLF
+        LDA $1A00
+        CLC
+        RTS
+
+CANCEL  LDA #$E1
+        STA $1A00
+        LDX #<MCAN
+        LDY #>MCAN
+        JSR BIO_FTDI_PUT_CSTR
+        JSR CRLF
+        LDA $1A00
+        CLC
+        RTS
+
+CRLF    LDA #$0D
+        JSR BIO_FTDI_WRITE_BYTE_BLOCK
+        LDA #$0A
+        JMP BIO_FTDI_WRITE_BYTE_BLOCK
+
+        END

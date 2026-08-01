@@ -1,8 +1,8 @@
 # STR8-N Four-Bank Installer V1 Plan
 
 ```text
-status:       DESIGN FROZEN; IMPLEMENTATION PENDING
-next gate:    DENSE 32K S19 TRANSPORT PROOF WITH FLASH-LENGTH PAUSES
+status:       DESIGN FROZEN; 32K FTDI TRANSPORT PROVEN
+next gate:    DENSE 28K FTDI TRANSPORT PROOF; ACIA UNQUALIFIED
 source date:  2026-07-31
 ```
 
@@ -15,6 +15,12 @@ loader or grants permission to execute.
 V1 deliberately does not include a volume manager, mutable bank descriptions,
 wear balancing, sparse S19 input, or the external S19 backup generator. Those
 remain later work.
+
+> **Transport warning:** the accepted 32K result applies only to Windows Tera
+> Term Send File over the current FTDI FIFO path. It does not qualify an ACIA.
+> An ACIA may overrun while erase/program/verify stops target reads, especially
+> when the RAM flash worker masks interrupts. ACIA operation is unsupported
+> until its own pacing or flow-control profile passes the complete dense proof.
 
 ## Hardware and Recovery Contract
 
@@ -296,7 +302,9 @@ a defined idle boundary. Queued S19 input must never become STR8-N commands.
 
 ## Mandatory Dense Transport Proof
 
-This is the next implementation and hardware gate.
+The 32K FTDI half of this gate passed on 2026-07-31. The dense 28K FTDI form is
+the next transport gate. Every other physical receive path remains separately
+unqualified.
 
 The existing three-sector HIMON updater is useful evidence, but it receives its
 entire 12K S19 into RAM before programming. It therefore does not prove that
@@ -320,6 +328,41 @@ profile passes.
 
 The proof image must be dense and near worst case. Sparse input must not be
 used to hide a buffering or backpressure failure.
+
+### 2026-07-31 Windows Tera Term/FTDI 32K Result
+
+The real-flash Bank-0 proof supersedes the synthetic-pause requirement for the
+32K FTDI case. Windows Tera Term Send File completed with both bulk and
+sequential reads; their order is irrelevant to this gate. Three captured runs
+each printed eight completed-sector dots and returned `A=$AC`, carry set:
+
+```text
+SEND BANK0-ZERO-8000-FFFF.S19 NOW
+........ 8 SECTORS ERASED/PROGRAMMED/VERIFIED
+RET A=AC X=71 Y=25 P=F5 S=FD NV-BdIzC
+```
+
+These were real erase/program/full-sector-verify pauses. Repeating the all-zero
+image did not turn the test into an equal-byte fast path: a programmed-zero
+sector is not erased `$FF`, so every sector was erased and then programmed
+again. Exact S19 checksums, dense ordering, full `$8000-$FFFF` coverage, S9
+`$0000`, the held final sector, and read-back verification all completed.
+
+This result qualifies only the tested Windows Tera Term plus FTDI FIFO stack.
+The FTDI and host queues can retain data while the target is not reading. A
+typical ACIA has only a shallow hardware receive path and may overrun almost
+immediately during the same flash pause. An interrupt-fed RAM ring does not
+solve the interval while the flash worker has interrupts masked.
+
+Before any ACIA path is called supported, it must use and document one of:
+
+- hardware flow control that stops the sender before receive capacity is lost;
+- explicit host pacing or a sector ACK/resume protocol;
+- an XOFF/XON protocol sent before and after the no-read interval; or
+- complete pre-flash staging outside the affected receive path.
+
+The selected ACIA profile must then repeat the dense 32K and 28K proofs. The
+FTDI pass is not acceptable evidence for that ACIA gate.
 
 ## Directory Byte Programming
 
@@ -500,8 +543,10 @@ V1 is accepted only when:
   tests pass.
 - Backspace, Delete, uppercase echo, CR, LF, CR/LF, and empty-abort behavior
   pass.
-- The dense 32K and 28K transport-with-pauses proofs pass with a documented
-  terminal profile.
+- The dense 32K and 28K transport-with-pauses proofs pass for the supported
+  FTDI terminal profile. The 32K half passed on 2026-07-31; 28K remains open.
+- Any claimed ACIA support has its own documented pacing/flow-control profile
+  and passes both dense proofs; otherwise ACIA remains explicitly unsupported.
 - Power interruption at every transaction stage leaves the target
   nonlaunchable until a successful retry completes.
 - The final sector is never programmed before S9 validation.
