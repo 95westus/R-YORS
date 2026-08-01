@@ -17947,7 +17947,8 @@ Repeating the all-zero image still exercised erase and program: Bank 0 held
 programmed `$00`, not erased `$FF`, before each repeat. No checksum, ordering,
 coverage, S9, flash, verification, or transport failure occurred. This closes
 the dense 32K transport-with-real-flash-pauses gate for the tested Windows
-Tera Term and FTDI FIFO profile. The dense 28K FTDI form remains open.
+Tera Term and FTDI FIFO profile. At this proof step the dense 28K FTDI form
+remained open; the following entry closes it.
 
 **ACIA warning:** this proof does not qualify an ACIA receive path. The FTDI
 and Windows queues retained the stream while target reads stopped. A typical
@@ -17956,3 +17957,79 @@ an interrupt-fed RAM ring cannot drain while the RAM flash worker masks
 interrupts. ACIA support remains explicitly unproven and unsupported until a
 documented pacing or flow-control profile passes separate dense 32K and 28K
 hardware proofs.
+
+## 2026-07-31 Dense 28K S19 Flash-Pause FTDI/Tera Term Acceptance And T48 Backup
+
+The operator supplied a 1,033-line, 32,062-byte Windows Tera Term transcript
+with SHA-256
+`058AEA26AE5B41785D4871AFB2111C15AC0517145AB170B108A6B736F1532233`.
+The board reported STR8-N `00.0731(1517)`, HIMON `00.0731(1515)`, and ASM-F2
+`00.0728(2113)`. ASM-F2 accepted the separate 28K source through `$2351`:
+
+```text
+ASM>$2347: CRLF    LDA #$0D
+ASM>$2349:         JSR BIO_FTDI_WRITE_BYTE_BLOCK
+ASM>$234C:         LDA #$0A
+ASM>$234E:         JMP BIO_FTDI_WRITE_BYTE_BLOCK
+ASM>$2351:
+ASM>$2351:         END
+ASM OK
+```
+
+The proof required exact confirmation `WRITE B0 28K`, accepted 896 contiguous
+32-byte S1 records covering `$8000-$EFFF`, required every data byte to equal
+`$5A`, and validated S9 `$8000`. Bank 0 was the disposable real-flash timing
+sink so the RAM proof did not erase the Bank-3 HIMON console routines it still
+used. Sectors `$8000-$DFFF` were erased, programmed, and verified while the
+host continued sending. Sector `$E000-$EFFF` was held until S9 validation and
+then committed. The board printed seven completion dots and returned `$AC`
+with carry set:
+
+```text
+source SHA-256 B9208703E49A11B7A2E4987D6099DC788D4054B135F4D0F981B137BC1A0406B9
+S19   SHA-256 73B75CB7EDAB18B334E7F956C706B25A1CC240D2151FE86ECE720657154D457B
+S19 bytes/records/data = 68182/898/$7000
+```
+
+```text
+SEND STR8-28K-5A-8000-EFFF.S19 NOW
+....... 7 SECTORS ERASED/PROGRAMMED/VERIFIED
+
+#GO# ENTRY=2000
+RET A=AC X=84 Y=25 P=F5 S=FD NV-BdIzC
+```
+
+This closes the dense 28K transport-with-real-flash-pauses gate for the same
+Windows Tera Term and FTDI FIFO path as the accepted 32K proof. It does not
+qualify an ACIA path.
+
+The operator also supplied the post-test T48 full-chip readback
+`BUILD/RYORS-0731-S19-TRANSPORT-TESTS-IMAGE BACKUP.BIN`. It is exactly 131,072
+bytes and has SHA-256
+`746AF1572F5E2AD4D121C683BDA65DCBCC76B7EFAFED5E58998A9E5D95A52772`.
+Its physical Bank-0 range `$00000-$06FFF` contains 28,672 consecutive `$5A`
+bytes and `$07000-$07FFF` contains 4,096 consecutive `$00` bytes, with no
+mismatches. This independently corroborates the expected post-test state:
+CPU `$8000-$EFFF` was replaced by the 28K proof and CPU `$F000-$FFFF` retained
+the earlier all-zero 32K-test content.
+
+The same readback is retained as the exact Bank-2 and Bank-3 recovery source.
+The extracted 32K images are distinct and must not be interchanged:
+
+```text
+Bank 2  chip $10000-$17FFF  CPU $8000-$FFFF
+        STR8-N/HIMON 00.0731(1438)/00.0731(1438)
+        SHA-256 E261EEC99B9387507BAEA85F0A1E80F68DC98A4C016CC83D0AEDAD9E46690685
+        BUILD/RYORS-0731-S19-TRANSPORT-TESTS-BANK2-1438-BACKUP.BIN
+
+Bank 3  chip $18000-$1FFFF  CPU $8000-$FFFF
+        STR8-N/HIMON 00.0731(1517)/00.0731(1515)
+        SHA-256 B5BAA7C6287C9B5DF584F23F31D0E4E2D3453E7EB449B45CC5E45CEEE6DEB75E
+        BUILD/RYORS-0731-S19-TRANSPORT-TESTS-BANK3-1517-BACKUP.BIN
+```
+
+Each extracted file is exactly 32,768 bytes and exactly matches its source
+slice in the T48 readback. The filenames record intended placement; a raw 32K
+`.BIN` does not encode its bank number. Restoring with the programmer must
+place Bank 2 at chip offset `$10000` and Bank 3 at `$18000`. The original 128K
+file remains the byte-exact full-chip recovery capture.

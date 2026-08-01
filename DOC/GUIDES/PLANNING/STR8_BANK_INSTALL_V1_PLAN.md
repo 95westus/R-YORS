@@ -1,8 +1,8 @@
 # STR8-N Four-Bank Installer V1 Plan
 
 ```text
-status:       DESIGN FROZEN; 32K FTDI TRANSPORT PROVEN
-next gate:    DENSE 28K FTDI TRANSPORT PROOF; ACIA UNQUALIFIED
+status:       DESIGN FROZEN; 32K/28K FTDI TRANSPORT PROVEN
+next gate:    TOP-SECTOR LAYOUT AND SIZE ASSERTIONS; ACIA UNQUALIFIED
 source date:  2026-07-31
 ```
 
@@ -302,9 +302,8 @@ a defined idle boundary. Queued S19 input must never become STR8-N commands.
 
 ## Mandatory Dense Transport Proof
 
-The 32K FTDI half of this gate passed on 2026-07-31. The dense 28K FTDI form is
-the next transport gate. Every other physical receive path remains separately
-unqualified.
+The dense 32K and 28K FTDI forms both passed on 2026-07-31. Every other
+physical receive path remains separately unqualified.
 
 The existing three-sector HIMON updater is useful evidence, but it receives its
 entire 12K S19 into RAM before programming. It therefore does not prove that
@@ -347,6 +346,29 @@ image did not turn the test into an equal-byte fast path: a programmed-zero
 sector is not erased `$FF`, so every sector was erased and then programmed
 again. Exact S19 checksums, dense ordering, full `$8000-$FFFF` coverage, S9
 `$0000`, the held final sector, and read-back verification all completed.
+
+### 2026-07-31 Windows Tera Term/FTDI 28K Result
+
+The separate RAM proof accepted the dense `$8000-$EFFF` Bank-3 transport
+shape while using Bank 0 only as a disposable real-flash timing sink. Every
+S1 data byte was `$5A`. It programmed sectors `$8000-$DFFF` during reception,
+held `$E000-$EFFF` until S9 `$8000` validated, then programmed and verified
+that final sector. Bank 0 sector `F` and all of Bank 3 remained untouched by
+the proof code.
+
+```text
+SEND STR8-28K-5A-8000-EFFF.S19 NOW
+....... 7 SECTORS ERASED/PROGRAMMED/VERIFIED
+RET A=AC X=84 Y=25 P=F5 S=FD NV-BdIzC
+```
+
+A post-test 128K T48 readback independently contains exactly `$5A` at the
+Bank-0 physical range `$00000-$06FFF` and `$00` at `$07000-$07FFF`, matching
+the 28K run after the earlier full-bank zero proof. The complete readback has
+SHA-256
+`746AF1572F5E2AD4D121C683BDA65DCBCC76B7EFAFED5E58998A9E5D95A52772`.
+The detailed transcript and per-bank recovery hashes are recorded in the
+hardware test log.
 
 This result qualifies only the tested Windows Tera Term plus FTDI FIFO stack.
 The FTDI and host queues can retain data while the target is not reading. A
@@ -544,7 +566,7 @@ V1 is accepted only when:
 - Backspace, Delete, uppercase echo, CR, LF, CR/LF, and empty-abort behavior
   pass.
 - The dense 32K and 28K transport-with-pauses proofs pass for the supported
-  FTDI terminal profile. The 32K half passed on 2026-07-31; 28K remains open.
+  FTDI terminal profile. Both forms passed on 2026-07-31.
 - Any claimed ACIA support has its own documented pacing/flow-control profile
   and passes both dense proofs; otherwise ACIA remains explicitly unsupported.
 - Power interruption at every transaction stage leaves the target
