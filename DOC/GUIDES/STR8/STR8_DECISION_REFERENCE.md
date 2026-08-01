@@ -73,6 +73,12 @@ The shared S19/bank-volume direction and superseded compatible-bank design
 history remain in
 [STR8_MULTIBOOT_BANK_VOLUMES.md](../PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
 
+The accepted four-bank installer, fixed Bank-3 directory, transaction journal,
+and dense-S19 implementation plan are frozen in
+[STR8_BANK_INSTALL_V1_PLAN.md](../PLANNING/STR8_BANK_INSTALL_V1_PLAN.md). Sparse
+S19 transport is recorded there as a future enhancement rather than a V1
+requirement.
+
 ## Flash Endurance
 
 The design assumes flash sectors have a finite erase endurance, roughly 100,000
