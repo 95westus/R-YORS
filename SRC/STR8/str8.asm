@@ -4,23 +4,20 @@
 ;
 ; Command surface:
 ;   ?  print tiny ID
-;   B  back up bank 3 to selected bank 0, 1, or 2, with read-back verify
 ;   U  update HIMON from S19, fixed gate $C000-$EFFF
-;   0  restore bank 0 -> bank 3, preserving selected STR8 window
-;   1  restore bank 1 -> bank 3, preserving selected STR8 window
-;   2  restore bank 2 -> bank 3, preserving selected STR8 window
-;   J0/J1/J2  non-destructive reset-vector handoff to opaque bank 0/1/2
+;   J0/J1/J2/J3  non-destructive reset-vector handoff to bank 0/1/2/3
 ;   G  go HIMON
-;   R  reset through the live bank 3 reset vector
+;   R  reset through the live bank reset vector
 ;
-; Reset waits about 4 seconds, flushes RX, then opens a 3-second selector.
-; Timeout cold-starts Bank 3 HIMON; 3 warm-starts HIMON to preserve RAM; S
-; enters STR8; 0-2 announce the selected bank, wait about 3 more seconds, then
-; reuse the non-destructive J handoff.
+; Reset shows the attach progress, flushes RX, then opens a 6-second selector.
+; Timeout cold-starts the local $C000 target; 3 warm-starts it to preserve RAM.
+; An erased $C000 entry face falls into the STR8 menu. S enters STR8; 0-2
+; announce the selected bank, wait about 3 more seconds, then reuse the
+; non-destructive J handoff.
 ;
 ; The RAM proof build performs destructive bank copies directly from RAM. The
 ; resident ROM build copies a worker from high flash to $0200, then runs
-; destructive copy/erase/write/verify and one-way config writes from RAM.
+; destructive stage/erase/write/verify and one-way config writes from RAM.
 ; ----------------------------------------------------------------------------
 
                         MODULE          STR8_APP
@@ -51,8 +48,6 @@
 ; 2026-05-21T23:55-05:00        WLP2        Worker now packs down from $FFEF so the free hole is contiguous.
 ; 2026-07-23T13:07-05:00        Codex       Size pass shares resident paths and repacks the smaller worker.
 ; 2026-07-23T17:27-05:00        Codex       B selects one destination; E/enrollment is removed.
-STR8_PROT_START_HI      EQU             $F0
-STR8_PROT_BUF_HI        EQU             $40
 ; STR8 identity marker. The source phrase is private.
 STR8_ID_MARKER0         EQU             $7A
 STR8_ID_MARKER1         EQU             $0F
@@ -83,28 +78,27 @@ STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_TRAY_SIZE   EQU             $0800
 STR8_WORKER_TRAY_END    EQU             $09FF
                         IF              STR8_V1_LAYOUT
-STR8_WORKER_STORE_LO    EQU             $C3
-STR8_WORKER_STORE_HI    EQU             $FC
+STR8_WORKER_STORE_LO    EQU             $53
+STR8_WORKER_STORE_HI    EQU             $FD
                         ELSE
-STR8_WORKER_STORE_LO    EQU             $03
+STR8_WORKER_STORE_LO    EQU             $93
 STR8_WORKER_STORE_HI    EQU             $FD
                         ENDIF
-STR8_WORKER_COPY_LEN_LO EQU             $ED
+STR8_WORKER_COPY_LEN_LO EQU             $5D
 STR8_WORKER_COPY_LEN_HI EQU             $02
-STR8_DELAY_TICKS        EQU             $03
-STR8_DELAY_TICK_A       EQU             $26
-STR8_DELAY_FIRST_A      EQU             $27
+STR8_DELAY_TICKS        EQU             $06
+STR8_DELAY_TICK_A       EQU             $23    ; 0.994s at 8 MHz
+STR8_DELAY_FIRST_A      EQU             $24    ; 1.022s at 8 MHz
 STR8_DELAY_TICK_X       EQU             $B6
 STR8_DELAY_TICK_Y       EQU             $F8
-STR8_ATTACH_DELAY_A     EQU             $8D    ; 4.003s at 8 MHz
+STR8_ATTACH_DELAY_TICKS EQU             $10
+STR8_ATTACH_TICK_A      EQU             $0D    ; 0.369s at 8 MHz
+STR8_ATTACH_LONG_MIN    EQU             $0E    ; first three ticks are long
+STR8_ATTACH_LONG_A      EQU             $0E    ; 0.398s at 8 MHz
 STR8_BANK_BOOT_DELAY_A  EQU             $6A    ; 3.010s at 8 MHz
 
-STR8_COPY_MODE_FULL     EQU             $00
-STR8_COPY_MODE_RESTORE  EQU             $01
-STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
 STR8_COPY_MODE_STAGE_BANK_SECTOR EQU    $06
-STR8_RESTORE_PROT_START_HI EQU          $C0
 
 HIM_SVC_AP_LO           EQU             $7E2D
 HIM_AP_OP               EQU             $7E2F
@@ -124,8 +118,6 @@ STR8_STATE_END          EQU             $1FFF
 STR8_MARK_SECTOR_HI     EQU             $1FE9
 STR8_MARK_ADDR_LO       EQU             $1FEA
 STR8_MARK_ADDR_HI       EQU             $1FEB
-STR8_COPY_BUF_LO        EQU             $1FEC
-STR8_COPY_BUF_HI        EQU             $1FED
 STR8_COPY_SRC_BANK      EQU             $1FEE
 STR8_COPY_DST_BANK      EQU             $1FEF
 STR8_COPY_MODE          EQU             $1FF0
@@ -136,15 +128,10 @@ STR8_UPD_MASK           EQU             $1FF7
 STR8_UPD_DATA_LEN       EQU             $1FF9
 STR8_UPD_DST_LO         EQU             $1FFB
 STR8_UPD_DST_HI         EQU             $1FFC
-STR8_SECTOR_BUF_HI      EQU             $40
-STR8_SECTOR_BUF_END_HI  EQU             $50
-
 STR8_CON_VIA_CTRL       EQU             $7FE0
 STR8_CON_VIA_DATA       EQU             $7FE1
 STR8_CON_VIA_DDRB       EQU             $7FE2
 STR8_CON_VIA_DDRA       EQU             $7FE3
-STR8_FTDI_VIA_PCR       EQU             $7FEC
-STR8_BANK_PCR_BANK3     EQU             $EE
 STR8_CON_PN_TXE         EQU             $01
 STR8_CON_PN_RXF         EQU             $02
 STR8_CON_PN_WR          EQU             $04
@@ -156,6 +143,7 @@ STR8_CON_FLUSH_RX_MAX   EQU             $FF
                         CODE
 ; 2026-05-07T19:14-05:00        WLP2        Timeout enters HIMON warm; S/s takes STR8.
 ; 2026-05-14T00:00-05:00        WLP2        Timeout enters HIMON cold after half delay.
+; 2026-08-02T00:00-05:00        Codex       Missing local C000 target falls into STR8.
 START:
                         JMP             STR8_BOOT_START
 
@@ -212,6 +200,7 @@ STR8_BOOT_START:
 ?STR8_KEY:             JSR             STR8_CON_FLUSH_RX
 ?STR8_TAKEOVER:
                         ENDIF
+STR8_ENTER_MENU:
                         STZ             STR8_INPUT_SKIP_LF
                         JSR             STR8_PRINT_SCREEN
                         JMP             STR8_CMD_LOOP
@@ -220,13 +209,10 @@ STR8_BOOT_START:
 ; STR8 lifecycle
 ; ----------------------------------------------------------------------------
 ; 2026-05-07T19:14-05:00        WLP2        Init flushes RX and gates boot-key polling.
-; 2026-07-28T21:35-05:00        Codex       Init makes pull-up Bank 3 explicit in PCR.
 ; 2026-07-30T00:00-05:00        Codex       Boot arms input after the attach delay.
+; 2026-08-01T00:00-05:00        Codex       Preserve a J-selected bank through startup.
 STR8_INIT:
-                        JSR             STR8_CON_INIT
-                        LDA             #STR8_BANK_PCR_BANK3
-                        STA             STR8_FTDI_VIA_PCR
-                        RTS
+                        JMP             STR8_CON_INIT
 
 STR8_BOOT_INPUT_ARM:
                         JSR             STR8_CON_FLUSH_RX
@@ -329,6 +315,8 @@ STR8_IVY_ENTRY_IRQ_MASTER:
                         RTI
 
 STR8_ENTER_HIMON_COLD:
+                        JSR             STR8_BOOT_TARGET_AVAILABLE
+                        BCC             STR8_ENTER_MENU_NO_BOOT
                         STZ             STR8_HIMON_RESET_SIG0
                         STZ             STR8_HIMON_RESET_SIG1
                         STZ             STR8_HIMON_RESET_SIG2
@@ -336,6 +324,8 @@ STR8_ENTER_HIMON_COLD:
                         JMP             STR8_HIMON_START
 
 STR8_ENTER_HIMON_WARM:
+                        JSR             STR8_BOOT_TARGET_AVAILABLE
+                        BCC             STR8_ENTER_MENU_NO_BOOT
                         LDA             #$A5
                         STA             STR8_HIMON_RESET_SIG0
                         LDA             #$5A
@@ -346,10 +336,51 @@ STR8_ENTER_HIMON_WARM:
                         STA             STR8_HIMON_RESET_SIG3
                         JMP             STR8_HIMON_START
 
+; Minimal generic HIMON/user-app availability gate. A richer directory/CRC
+; policy can replace this later; V0 only refuses an erased $C000 entry face.
+STR8_BOOT_TARGET_AVAILABLE:
+                        LDY             #$00
+?BYTE:                 LDA             STR8_HIMON_START,Y
+                        CMP             #$FF
+                        BNE             ?YES
+                        INY
+                        CPY             #$10
+                        BNE             ?BYTE
+                        CLC
+                        RTS
+?YES:                  SEC
+                        RTS
+
+STR8_ENTER_MENU_NO_BOOT:
+                        JSR             STR8_CON_FLUSH_RX
+                        LDX             #<MSG_NO_BOOT
+                        LDY             #>MSG_NO_BOOT
+                        JSR             STR8_PRINT_XY
+                        JMP             STR8_ENTER_MENU
+
                         IF              STR8_RAM_PROOF
                         ELSE
+; 2026-08-02T00:00-05:00        Codex       Show 16 dots over six-second attach.
 STR8_ATTACH_DELAY:
-                        LDA             #STR8_ATTACH_DELAY_A
+                        LDX             #<MSG_CRLF
+                        LDY             #>MSG_CRLF
+                        JSR             STR8_PRINT_XY
+                        LDA             #STR8_ATTACH_DELAY_TICKS
+?TICK:                 PHA
+                        CMP             #STR8_ATTACH_LONG_MIN
+                        BCC             ?SHORT
+                        LDA             #STR8_ATTACH_LONG_A
+                        BRA             ?WAIT
+?SHORT:
+                        LDA             #STR8_ATTACH_TICK_A
+?WAIT:
+                        JSR             STR8_DELAY_FIXED_A
+                        LDA             #'.'
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
+                        PLA
+                        DEC             A
+                        BNE             ?TICK
+                        RTS
 STR8_DELAY_FIXED_A:
                         LDX             #STR8_DELAY_TICK_X
                         LDY             #STR8_DELAY_TICK_Y
@@ -408,7 +439,7 @@ STR8_PRINT_COUNTDOWN_A:
                         JSR             STR8_CON_WRITE_BYTE_BLOCK
 ?DONE:                 RTS
 
-; One $27 tick plus two $26 ticks form the current three-step countdown.
+; One $24 tick plus five $23 ticks form the six-second prompt countdown.
 STR8_DELAY_COUNTDOWN_TICK_A:
                         CMP             #STR8_DELAY_TICKS
                         BEQ             ?FIRST
@@ -496,20 +527,10 @@ STR8_TO_UPPER_A:
 ; Command dispatch
 ; ----------------------------------------------------------------------------
 STR8_DISPATCH_A:
-                        CMP             #'0'
-                        BCC             ?NOT_RESTORE
-                        CMP             #'3'
-                        BCS             ?NOT_RESTORE
-                        AND             #$03
-                        JMP             STR8_CMD_RESTORE_A
-?NOT_RESTORE:
                         CMP             #'?'
                         BNE             ?NOT_ID
                         JMP             STR8_CMD_ID
 ?NOT_ID:
-
-                        CMP             #'B'
-                        BEQ             STR8_CMD_BACKUP
                         CMP             #'J'
                         BNE             ?NOT_J
                         JMP             STR8_CMD_JUMP_BANK
@@ -535,6 +556,7 @@ STR8_CMD_ID:
 
 ; 2026-07-28T21:19-05:00        Codex       J0-J2 hand off opaque banks from RAM.
 ; 2026-07-28T22:48-05:00        Codex       Echo the two-byte J command at the prompt.
+; 2026-08-02T00:00-05:00        Codex       J3 returns a running STR8 copy to Bank 3.
 STR8_CMD_JUMP_BANK:
 ?OPERAND:
                         JSR             STR8_READ_COMMAND
@@ -546,72 +568,13 @@ STR8_CMD_JUMP_BANK:
                         BEQ             ?OPERAND
                         CMP             #'0'
                         BCC             ?BAD
-                        CMP             #'3'
+                        CMP             #'4'
                         BCS             ?BAD
                         AND             #$03
                         JSR             STR8_JUMP_BANK_PREP_A
                         JMP             STR8_JUMP_BANK_LAUNCH
 ?BAD:
                         JMP             STR8_CMD_UNKNOWN
-
-STR8_CMD_BACKUP:
-                        LDX             #<MSG_BACKUP_DEST
-                        LDY             #>MSG_BACKUP_DEST
-                        JSR             STR8_PRINT_XY
-                        JSR             STR8_READ_COMMAND
-                        CMP             #'0'
-                        BCC             ?ABORT
-                        CMP             #'3'
-                        BCS             ?ABORT
-                        AND             #$03
-                        STA             STR8_COPY_DST_BANK
-                        LDA             #$03
-                        STA             STR8_COPY_SRC_BANK
-                        STZ             STR8_COPY_MODE
-                        LDX             #<MSG_BACKUP_CONFIRM
-                        LDY             #>MSG_BACKUP_CONFIRM
-                        JSR             STR8_PRINT_XY
-                        JSR             STR8_CONFIRM_Y
-                        BCC             ?ABORT
-                        JSR             STR8_RUN_COPY
-                        BCC             ?COPY_FAIL
-                        JMP             STR8_CMD_OK
-?ABORT:
-                        JMP             STR8_CMD_ABORT
-?COPY_FAIL:
-                        JMP             STR8_CMD_COPY_FAIL
-
-; 2026-05-07T19:14-05:00        WLP2        Restore can optionally include high flash.
-; 2026-05-07T22:16-05:00        WLP2        Restore flushes RX between double confirmations.
-STR8_CMD_RESTORE_A:
-                        STA             STR8_COPY_SRC_BANK
-                        LDX             #<MSG_RESTORE_B
-                        LDY             #>MSG_RESTORE_B
-                        JSR             STR8_PRINT_XY
-                        LDA             STR8_COPY_SRC_BANK
-                        JSR             STR8_WRITE_DEC_DIGIT_A
-                        LDX             #<MSG_RESTORE_WARN
-                        LDY             #>MSG_RESTORE_WARN
-                        JSR             STR8_PRINT_XY
-                        JSR             STR8_CONFIRM_Y
-                        BCS             ?CONFIRMED
-                        JMP             STR8_CMD_ABORT
-?CONFIRMED:
-                        JSR             STR8_CON_FLUSH_RX
-                        LDX             #<MSG_FLASH_HI_WARN
-                        LDY             #>MSG_FLASH_HI_WARN
-                        JSR             STR8_PRINT_XY
-                        JSR             STR8_CONFIRM_Y
-                        BCS             ?FLASH_HI
-                        LDA             #STR8_COPY_MODE_RESTORE
-                        BRA             ?SET_MODE
-?FLASH_HI:             LDA             #STR8_COPY_MODE_RESTORE_FLASH_HI
-?SET_MODE:             STA             STR8_COPY_MODE
-                        LDA             #$03
-                        STA             STR8_COPY_DST_BANK
-                        JSR             STR8_RUN_COPY
-                        BCC             STR8_CMD_COPY_FAIL
-                        JMP             STR8_CMD_OK
 
 ; 2026-05-17T21:20-05:00        WLP2        U is the first fixed-gate HIMON S19 update.
 STR8_CMD_UPDATE_HIMON:
@@ -742,17 +705,6 @@ STR8_JUMP_BANK_LAUNCH:
                         JSR             STR8_WORKER_RUN
                         ENDIF
                         JMP             STR8_PRINT_JUMP_FAIL
-
-STR8_RUN_COPY:
-                        JSR             STR8_PRINT_COPY_PAIR
-                        IF              STR8_RAM_PROOF
-                        JSR             STR8_COPY_BANKS
-                        RTS
-                        ELSE
-                        JSR             STR8_COPY_WORKER_TO_RAM
-                        JSR             STR8_WORKER_RUN
-                        RTS
-                        ENDIF
 
 STR8_RUN_WORKER_SERVICE_BODY:
                         IF              STR8_RAM_PROOF
@@ -1245,198 +1197,6 @@ STR8_REC_FAIL_A:
                         RTS
 
                         IF              STR8_RAM_PROOF
-; ----------------------------------------------------------------------------
-; Destructive RAM proof copy/verify routines
-; ----------------------------------------------------------------------------
-; 2026-05-07T19:14-05:00        WLP2        Restore skips protected high sectors by mode.
-STR8_COPY_BANKS:
-                        LDA             #$80
-                        STA             STR8_MARK_SECTOR_HI
-?SECTOR:                LDA             STR8_COPY_MODE
-                        CMP             #STR8_COPY_MODE_RESTORE
-                        BNE             ?COPY_SECTOR
-                        LDA             STR8_MARK_SECTOR_HI
-                        CMP             #STR8_RESTORE_PROT_START_HI
-                        BCS             ?NEXT_SECTOR
-?COPY_SECTOR:           JSR             STR8_STAGE_SRC_SECTOR
-                        JSR             STR8_PRESERVE_STR8_IF_RESTORE
-                        JSR             STR8_ERASE_DST_SECTOR
-                        BCC             ?FAIL
-                        JSR             STR8_PROGRAM_DST_SECTOR
-                        BCC             ?FAIL
-                        JSR             STR8_VERIFY_DST_SECTOR
-                        BCC             ?FAIL
-                        LDA             #'.'
-                        JSR             STR8_CON_WRITE_BYTE_BLOCK
-?NEXT_SECTOR:
-                        LDA             STR8_MARK_SECTOR_HI
-                        CLC
-                        ADC             #$10
-                        STA             STR8_MARK_SECTOR_HI
-                        BNE             ?SECTOR
-                        SEC
-                        RTS
-?FAIL:                  CLC
-                        RTS
-
-STR8_STAGE_SRC_SECTOR:
-                        LDA             STR8_COPY_SRC_BANK
-                        JSR             FLSH_BANK_SELECT_A
-                        STZ             STR8_PTR_LO
-                        LDA             STR8_MARK_SECTOR_HI
-                        STA             STR8_PTR_HI
-                        STZ             STR8_COPY_PTR_LO
-                        LDA             #STR8_SECTOR_BUF_HI
-                        STA             STR8_COPY_PTR_HI
-?PAGE:                  LDY             #$00
-?BYTE:                  LDA             (STR8_PTR_LO),Y
-                        STA             (STR8_COPY_PTR_LO),Y
-                        INY
-                        BNE             ?BYTE
-                        INC             STR8_PTR_HI
-                        INC             STR8_COPY_PTR_HI
-                        LDA             STR8_COPY_PTR_HI
-                        CMP             #STR8_SECTOR_BUF_END_HI
-                        BNE             ?PAGE
-                        RTS
-
-STR8_PRESERVE_STR8_IF_RESTORE:
-                        LDA             STR8_COPY_MODE
-                        CMP             #STR8_COPY_MODE_RESTORE
-                        BNE             ?DONE
-                        LDA             STR8_MARK_SECTOR_HI
-                        CMP             #$F0
-                        BNE             ?DONE
-                        JSR             STR8_STAGE_B3_PROTECTED
-?DONE:                  RTS
-
-STR8_STAGE_B3_PROTECTED:
-                        JSR             STR8_SELECT_BANK_3
-                        STZ             STR8_PTR_LO
-                        LDA             #STR8_PROT_START_HI
-                        STA             STR8_PTR_HI
-                        STZ             STR8_COPY_PTR_LO
-                        LDA             #STR8_PROT_BUF_HI
-                        STA             STR8_COPY_PTR_HI
-?PAGE:                  LDY             #$00
-?BYTE:                  LDA             (STR8_PTR_LO),Y
-                        STA             (STR8_COPY_PTR_LO),Y
-                        INY
-                        BNE             ?BYTE
-                        INC             STR8_PTR_HI
-                        INC             STR8_COPY_PTR_HI
-                        LDA             STR8_COPY_PTR_HI
-                        CMP             #STR8_SECTOR_BUF_END_HI
-                        BNE             ?PAGE
-                        RTS
-
-; 2026-05-07T19:14-05:00        WLP2        Skip erased sectors and verify erase completion.
-STR8_ERASE_DST_SECTOR:
-                        LDA             STR8_COPY_DST_BANK
-                        JSR             FLSH_BANK_SELECT_A
-                        JSR             STR8_DST_SECTOR_ERASED
-                        BCS             ?OK
-                        LDX             STR8_MARK_ADDR_LO
-                        LDY             STR8_MARK_ADDR_HI
-                        JSR             FLASH_SECTOR_ERASE_RAW_XY
-                        BCC             ?FAIL
-                        JSR             STR8_DST_SECTOR_ERASED
-                        BCS             ?OK
-?FAIL:                 CLC
-                        RTS
-?OK:                   SEC
-                        RTS
-
-; OUT: C=1 if the selected destination sector is all $FF.
-;      C=0 and STR8_MARK_ADDR_* names the first non-erased byte otherwise.
-STR8_DST_SECTOR_ERASED:
-                        STZ             STR8_PTR_LO
-                        LDA             STR8_MARK_SECTOR_HI
-                        STA             STR8_PTR_HI
-?PAGE:                  LDY             #$00
-?BYTE:                  LDA             (STR8_PTR_LO),Y
-                        CMP             #$FF
-                        BNE             ?NOT_ERASED
-                        INY
-                        BNE             ?BYTE
-                        INC             STR8_PTR_HI
-                        LDA             STR8_PTR_HI
-                        SEC
-                        SBC             STR8_MARK_SECTOR_HI
-                        CMP             #$10
-                        BNE             ?PAGE
-                        SEC
-                        RTS
-?NOT_ERASED:           TYA
-                        STA             STR8_MARK_ADDR_LO
-                        LDA             STR8_PTR_HI
-                        STA             STR8_MARK_ADDR_HI
-                        CLC
-                        RTS
-
-STR8_PROGRAM_DST_SECTOR:
-                        LDA             STR8_COPY_DST_BANK
-                        JSR             FLSH_BANK_SELECT_A
-                        STZ             STR8_MARK_ADDR_LO
-                        LDA             STR8_MARK_SECTOR_HI
-                        STA             STR8_MARK_ADDR_HI
-                        STZ             STR8_COPY_BUF_LO
-                        LDA             #STR8_SECTOR_BUF_HI
-                        STA             STR8_COPY_BUF_HI
-?BYTE:                  LDA             STR8_COPY_BUF_LO
-                        STA             STR8_PTR_LO
-                        LDA             STR8_COPY_BUF_HI
-                        STA             STR8_PTR_HI
-                        LDY             #$00
-                        LDA             (STR8_PTR_LO),Y
-                        CMP             #$FF
-                        BEQ             ?NEXT
-                        LDX             STR8_MARK_ADDR_LO
-                        LDY             STR8_MARK_ADDR_HI
-                        JSR             FLASH_WRITE_BYTE_RAW_AXY
-                        BCC             ?FAIL
-?NEXT:                  INC             STR8_MARK_ADDR_LO
-                        INC             STR8_COPY_BUF_LO
-                        BNE             ?BYTE
-                        INC             STR8_MARK_ADDR_HI
-                        INC             STR8_COPY_BUF_HI
-                        LDA             STR8_COPY_BUF_HI
-                        CMP             #STR8_SECTOR_BUF_END_HI
-                        BNE             ?BYTE
-                        SEC
-                        RTS
-?FAIL:                  CLC
-                        RTS
-
-STR8_VERIFY_DST_SECTOR:
-                        LDA             STR8_COPY_DST_BANK
-                        JSR             FLSH_BANK_SELECT_A
-                        STZ             STR8_PTR_LO
-                        LDA             STR8_MARK_SECTOR_HI
-                        STA             STR8_PTR_HI
-                        STZ             STR8_COPY_PTR_LO
-                        LDA             #STR8_SECTOR_BUF_HI
-                        STA             STR8_COPY_PTR_HI
-?PAGE:                  LDY             #$00
-?BYTE:                  LDA             (STR8_PTR_LO),Y
-                        CMP             (STR8_COPY_PTR_LO),Y
-                        BNE             ?FAIL
-                        INY
-                        BNE             ?BYTE
-                        INC             STR8_PTR_HI
-                        INC             STR8_COPY_PTR_HI
-                        LDA             STR8_COPY_PTR_HI
-                        CMP             #STR8_SECTOR_BUF_END_HI
-                        BNE             ?PAGE
-                        SEC
-                        RTS
-?FAIL:                  TYA
-                        STA             STR8_MARK_ADDR_LO
-                        LDA             STR8_PTR_HI
-                        STA             STR8_MARK_ADDR_HI
-                        CLC
-                        RTS
-
 STR8_SELECT_BANK_3:
                         JSR             FLSH_BANK_SELECT_3
                         RTS
@@ -1449,21 +1209,6 @@ STR8_CONFIRM_Y:
                         CLC
 ?YES:
                         RTS
-
-STR8_PRINT_COPY_PAIR:
-                        LDX             #<MSG_COPY_B
-                        LDY             #>MSG_COPY_B
-                        JSR             STR8_PRINT_XY
-                        LDA             STR8_COPY_SRC_BANK
-                        JSR             STR8_WRITE_DEC_DIGIT_A
-                        LDX             #<MSG_TO_B
-                        LDY             #>MSG_TO_B
-                        JSR             STR8_PRINT_XY
-                        LDA             STR8_COPY_DST_BANK
-                        JSR             STR8_WRITE_DEC_DIGIT_A
-                        LDX             #<MSG_CRLF
-                        LDY             #>MSG_CRLF
-                        JMP             STR8_PRINT_XY
 
                         IF              STR8_RAM_PROOF
                         ELSE
@@ -1716,7 +1461,7 @@ STR8_JUMP_BANK_RAM:
                         PHP
                         SEI
                         LDA             STR8_JUMP_BANK
-                        CMP             #$03
+                        CMP             #STR8_BANK_COUNT
                         BCS             ?BAD_BANK
                         JSR             FLSH_BANK_SELECT_A
                         LDA             STR8_RESET_VECTOR
@@ -1881,12 +1626,12 @@ MSG_SCREEN:
                         ELSE
                         DB              "ROM $F000",$0D,$0A
                         ENDIF
-                        DB              "? B U 0 1 2 J0 J1 J2 G R",$0D,$8A
+                        DB              "? U J0 J1 J2 J3 G R",$0D,$8A
 MSG_PROMPT:             DB              "STR8-N",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
 MSG_BOOT_PROMPT:        DB              $0D,$0A
-                        DB              "B3 0/1/2=BOOT 3=HIMON S=STR8 ",$A0
+                        DB              "0/1/2=BOOT 3=HIMON S=STR8 ",$A0
 MSG_BOOT_BANK_WAIT:     DB              "BOOT IN 3S",$0D,$8A
                         ENDIF
 
@@ -1901,17 +1646,10 @@ MSG_UPDATE_WRITE:       DB              $0D,$0A,"PROGRAM C000-EFFF? Y:",$A0
 MSG_S19_FAIL:           DB              $0D,$0A,"S19 FAIL",$0D,$8A
 MSG_S19_NO_DATA:        DB              $0D,$0A,"NO S19 DATA",$0D,$8A
 MSG_G_HIMON:            DB              $0D,$0A,"G HIMON",$0D,$8A
+MSG_NO_BOOT:            DB              $0D,$0A,"NO BOOT @C000",$0D,$8A
 MSG_JUMP_B:             DB              $0D,$0A,"J ",('B'+$80)
 MSG_JUMP_FAIL_B:        DB              $0D,$0A,"JERR ",('B'+$80)
 MSG_JUMP_FAIL_VEC:      DB              " V=",('$'+$80)
-MSG_RESTORE_B:          DB              $0D,$0A,"RESTORE ",('B'+$80)
-
-MSG_BACKUP_DEST:        DB              $0D,$0A,"BACKUP B3 TO B0/1/2: ",$A0
-MSG_BACKUP_CONFIRM:     DB              " ERASE? Y:",$A0
-MSG_RESTORE_WARN:       DB              "->B3? Y:",$A0
-MSG_FLASH_HI_WARN:      DB              $0D,$0A,"WARN: MAY NOT BOOT",$0D,$0A,"FLASH C000-FFFF? Y:",$A0
-MSG_COPY_B:             DB              $0D,$0A,"COPY ",('B'+$80)
-MSG_TO_B:               DB              "->",('B'+$80)
                         IF              STR8_RAM_PROOF
 MSG_COPY_FAIL_AT:       DB              $0D,$0A,"COPY FAIL @ ",('$'+$80)
                         ENDIF

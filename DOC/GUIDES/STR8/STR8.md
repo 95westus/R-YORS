@@ -57,19 +57,18 @@ direct `JSR`/`JMP` evidence.
 flowchart LR
     RESET["START / STR8_BOOT_START<br/>Reset entry; initialize IVY and console, then open the startup selector"] --> SELECT{"Startup choice"}
     SELECT -->|S| SHELL["STR8_CMD_LOOP<br/>Recovery shell; read and dispatch one operator command"]
-    SELECT -->|timeout or 3| HIMON["STR8_ENTER_HIMON_COLD / WARM<br/>Transfer normal operation to Bank 3 HIMON"]
+    SELECT -->|timeout or 3| BOOTCHECK{"Local $C000 entry face available?"}
+    BOOTCHECK -->|yes| HIMON["STR8_ENTER_HIMON_COLD / WARM<br/>Transfer normal operation to the local app"]
+    BOOTCHECK -->|all $FF| SHELL
     SELECT -->|0, 1, or 2| JUMP["STR8_BOOT_JUMP_BANK_A<br/>Prepare a delayed, non-destructive selected-bank handoff"]
 
-    SHELL --> DISPATCH["STR8_DISPATCH_A<br/>Route ?, B, U, 0-2, J, G, and R"]
-    DISPATCH --> BACKUP["STR8_CMD_BACKUP<br/>Confirm and copy live Bank 3 to one selected backup bank"]
-    DISPATCH --> RESTORE["STR8_CMD_RESTORE_A<br/>Double-confirm and restore a selected backup into Bank 3"]
+    SHELL --> DISPATCH["STR8_DISPATCH_A<br/>Route ?, U, J, G, and R; B and bare 0-2 are retired"]
     DISPATCH --> UPDATE["STR8_CMD_UPDATE_HIMON<br/>Stage, validate, program, and verify the fixed HIMON S19 window"]
     DISPATCH --> JUMP
+    DISPATCH --> HIMON
 
-    BACKUP --> COPY["STR8_RUN_COPY<br/>Publish copy state and enter the RAM-safe mutation path"]
-    RESTORE --> COPY
-    COPY --> WORKER["STR8 worker START<br/>Dispatch copy, sector, record-program, or bank-jump work from RAM"]
-    WORKER --> FLASH["STR8W_COPY_BANKS / STR8W_PROGRAM_DST_SECTOR / STR8W_PROGRAM_RECORD<br/>Stage, erase, program, and read-back verify flash"]
+    UPDATE --> WORKER["STR8 worker START<br/>Accept only modes $05-$08; every other byte fails before an operation call"]
+    WORKER --> FLASH["STR8W_PROGRAM_DST_SECTOR / STR8W_PROGRAM_RECORD<br/>Erase, program, and read-back verify validated flash work"]
 
     RECORD["STR8_RECORD_SERVICE_ENTRY<br/>Validate S19 records and preflight whole-record apply policy"] --> WORKER
     SERVICE["STR8_RUN_WORKER_SERVICE<br/>Stable resident doorway; copy the worker to $0200 and run it"] --> WORKER
@@ -87,15 +86,22 @@ OSI BASIC  interactive programming payload
 fig-FORTH  threaded language payload
 ```
 
-The hardware log preserves the earlier `M` proof and the retired cascading `B`
-and Bank 0 enrollment behavior. The current resident `M` and `E` commands are
-removed; `B` now selects one destination bank. Existing proof covers that
-selected-bank surface, the fixed `$C000-$EFFF` `U` / `UPDATE HIMON` gate,
-HIMON U1->U2 update, booting OSI BASIC and fig-FORTH through that same gate,
-and restoring known-good HIMON from Bank 2 by the high-flash recovery path.
-The reset selector and opaque-bank `J0`-`J2` handoff are also hardware-accepted.
-This promotes STR8 from proposed recovery idea to bench-proven recovery/update
-guard. The separate Bank Jump Record persistence proof remains pending.
+The hardware log preserves the earlier `M` proof, cascading `B`, Bank 0
+enrollment, selected-bank backup, and restore behavior as retired history.
+Resident `M`, `E`, `B`, and bare `0`-`2` are now removed. The current candidate
+retains the fixed `$C000-$EFFF` `U` / `UPDATE HIMON` gate and opaque-bank
+`J0`-`J2` mechanism. The copy/restore reclaim and fail-closed worker dispatcher
+are independently board-accepted on `00.0801(2234)`. That capture's Bank-1 and
+Bank-2 images contain STR8 at their reset entry and immediately remap Bank 3,
+so their `J1`/`J2` traces are not sustained guest-boot proof. Current source
+removes the unconditional PCR `$EE` startup write and restores the original
+preserve-selected-bank contract. Repaired `00.0802(1323)` is installed, and a
+distinct Bank-2 HIMON `0731` payload proves that reset-selector `2` preserves
+Bank 2 through copied STR8 startup. The direct-run maintenance utility has also
+completed verified Bank-3-to-Bank-0/1/2 full copies. Distinct older Bank-1 and
+Bank-2 payloads accept cross-bank selector routes without remapping Bank 3.
+Resident cross-bank `J0`-`J3` now pass with distinguishable target images.
+The separate Bank Jump Record persistence proof remains pending.
 
 The milestone does not make STR8 a finished field-updater. STR8 self-update,
 whole-ROM install, catalog-aware repair, raw range update, and original
@@ -103,7 +109,7 @@ WDCMONv2/base-image preservation remain separate future work.
 
 ## Core Questions
 
-V0's recovery target is settled:
+The retired V0 recovery target was:
 
 ```text
 restore from a whole 32K ROM image in bank 0, 1, or 2
@@ -207,17 +213,17 @@ packed against `$FFEF` and grows downward, and the remaining free space is one
 contiguous hole:
 
 ```text
-$F000-$F94F  STR8 resident code
-             size $0950 = 2384 bytes
+$F000-$F8AF  STR8 resident code
+             size $08B0 = 2224 bytes
 
-$F950-$FAEE  STR8 resident data
-             size $019F = 415 bytes
+$F8B0-$F9D0  STR8 resident data
+             size $0121 = 289 bytes
 
-$FAEF-$FD02  contiguous unused $FF growth hole
-             size $0214 = 532 bytes
+$F9D1-$FD92  contiguous unused $FF growth hole
+             size $03C2 = 962 bytes
 
-$FD03-$FFEF  stored STR8 RAM worker image
-             size $02ED = 749 bytes
+$FD93-$FFEF  stored STR8 RAM worker image
+             size $025D = 605 bytes
              copied to and run from the $0200-$09FF RAM worker-code tray
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
@@ -327,9 +333,9 @@ Reference normal operation:
 ```text
 RESET enters STR8 at $F000
 STR8 seeds IVI RAM vectors with safe defaults
-STR8 waits silently about 4 seconds and flushes RX
+STR8 prints 16 progress dots over about 6 seconds, then flushes RX
 STR8 prints its shared make-time `STR8-N V 00.mmdd(hhmm)` identity
-STR8 opens a 3-second selector
+STR8 opens an approximately 6-second selector
 selector timeout cold-starts Bank 3 HIMON
 selector 3 warm-starts HIMON and preserves RAM
 selector S/s enters STR8
@@ -408,7 +414,7 @@ protected policy window should be no larger than STR8 actually needs. STR8
 should not grow into a full monitor just because the sector is special; HIMON
 still owns the rich interactive environment.
 
-## STR8 V0 Constraints
+## STR8 V0 Evidence and Current Transition
 
 V0 should stay deliberately small:
 
@@ -419,49 +425,69 @@ first RAM proof image links at $3000
 first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can back up bank 3 to selected bank 0, 1, or 2 with read-back verify
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current host build links STR8 at $F000 and stores a RAM worker at $FD03-$FFEF
-current ROM build copies the worker to $0200 before B/U/0/1/2 mutation or J handoff
-current ROM build has ?, B, U, 0, 1, 2, J0, J1, J2, G, and R commands
+current host build links STR8 at $F000 and stores a RAM worker at $FD93-$FFEF
+current ROM build copies the worker to $0200 before U mutation or J handoff
+current transitional ROM build has ?, U, J0, J1, J2, G, and R commands
+current worker accepts only modes $05-$08; all other mode bytes fail closed
+reclaim candidate 00.0801(2234) is installed and board-accepted
+retired B and bare 0/1/2 commands return ? on that installed candidate
+all 252 unrecognized worker modes return without dispatch in the RAM board proof
+00.0801 J1/J2 reach a STR8-bearing target that immediately remaps Bank 3
+the resulting Bank-3 banner is not proof that a Bank-1/2 release stayed selected
+current source removes the startup PCR write and preserves a J-selected bank
+repaired 00.0802(1323) is installed; selector 2 sustains distinct Bank-2 HIMON 0731
+direct-run full-bank copy is board-accepted for Bank 3 to Banks 0, 1, and 2
+distinct payloads accept cross-bank selector routes into Banks 1 and 2
+resident cross-bank J0/J1/J2 and sustained Bank-0/1/2 selection are board-accepted
+distinct 1509-to-1518 return accepts J3 software handoff from Bank 0 to Bank 3
 current host boot-selector build accepts 0/1/2/3/S after a post-delay RX flush
+current host attach delay prints 16 dots over about 5.991 seconds before the banner
+queued attach-time input is flushed after dot 16
+the 16-dot emitter and dot-time queued-input rejection are host- and board-accepted
+current host selector prompt counts 6 5 4 3 2 1 over about 5.991 seconds
+the six-second selector-prompt timeout and key acceptance are board-accepted
 STR8-N, HIMON, and ASM-F2 share one local `00.mmdd(hhmm)` make-time stamp
-STR8 identity omits a bank suffix because the top sector is copied across banks
+STR8 identity omits a bank suffix instead of publishing a guessed bank number
 boot-selector 0/1/2 reuses the J worker after an additional 3-second pause
 boot-selector timeout still enters Bank 3 HIMON cold
 boot-selector 3 enters HIMON warm with RAM preserved; 3 and S act immediately
-boot-selector candidate is accepted on hardware
+the earlier three-count boot-selector candidate is accepted on hardware
 boot-selector queued-input flush and warm-3 RAM retention pass on hardware
 boot-selector reset-time 1/2 delayed handoffs pass on hardware
 boot-selector reset-time 0 is operator-accepted
-boot-selector current delay profile and remaining matrix are operator-accepted
+boot-selector six-second prompting delay supersedes the accepted three-count profile
 future delay changes reopen the affected timing and selector observations
 accepted boot-selector image consumes reset-time choices without echo
 installed 00.0731(1438) echoes printable input uppercase before dispatch
 Backspace and CR/LF cancel on hardware; a CRLF pair is one response
 Delete shares the Backspace source branch but lacks a distinct board marker
 J0/J1/J2 direct RAM mechanics and reset recovery pass on hardware
-J0/J1/J2 resident candidate is installed
-resident J0/J1/J2 target/reset matrix and corrected inventory pass
+J0/J1/J2/J3 resident candidate is installed
+resident J0/J1/J2/J3 target/reset matrix and corrected inventory pass
 echo follow-up RAM J2 and resident visible J0/J1/J2 smoke pass
 current host candidate publishes `42 4A bank` at $1FFD-$1FFF before final J
-HIMON preserves a valid Bank Jump Record through cold RAM clearing
-Bank Jump Record host checks pass; new persistence board proof is pending
-accepted installed CRCs are B0 $4B59, B1 $2A3D, B2 $04EF, B3 $4663
+shared bank count accepts record banks 0-3 in STR8, worker, and HIMON cold clear
+Bank-3 record publication and HCOLD persistence pass on HIMON 00.0802(1536)
+full Bank Jump Record J0/J1/J2, invalid-vector, and CRC matrix remains pending
+earlier accepted installed CRCs were B0 $4B59, B1 $2A3D, B2 $04EF, B3 $4663
+post-reclaim inventory CRCs are B0 $5B4A, B1 $19F9, B2 $19F9, B3 $068B
 current host build exposes the V1 record service at $F009 with `SR`/`01`/`07`
 current host build converts `U` to the shared validate-first S19 parser
 record-service transport, direct load, erase/apply, and recovery pass on hardware
-current STR8 identity marker is `#5F6A0F7A`
+current STR8 binary identity marker is `7A 0F 6A 5F`; the banner omits it
+the no-hash 00.0802(1404) banner is board-accepted
 physical top erase sector is bank 3 $F000-$FFFF
 current protected STR8 proof window starts at $F000
 protected bytes are flashed through a separate STR8 install/update path
 non-STR8 top-sector updates use read/stage/erase/full-sector-write/verify
 STR8 code/data grows upward from $F000
-stored worker currently occupies $FD03-$FFEF and grows downward
-current contiguous free hole is $FAEF-$FD02
+stored worker currently occupies $FD93-$FFEF and grows downward
+current contiguous free hole is $F9D1-$FD92
 STR8 code/data/recovery lives from selected start through $FFEF
 one-time board/version/config window is $FFF0-$FFF9
 hardware vector block is $FFFA-$FFFF
-V0 uses whole 32K ROM bank images as recovery and backup sources
-V0 bank copy uses a 4K RAM buffer one erase sector at a time
+retired V0 used whole 32K ROM bank images as recovery and backup sources
+retired V0 bank copy used a 4K RAM buffer one erase sector at a time
 V0 HIMON controls IRQ/vector behavior
 V0 has no catalog lookup
 no flash garbage collection
@@ -480,7 +506,7 @@ V0 should do only enough to keep boot and flash mutation recoverable:
 
 ```text
 reset entry
-startup delay before first console output
+16-dot, approximately six-second attach progress before the build identity
 initialize FTDI/VIA console path directly
 leave IRQ/vector policy with HIMON/reference system in V0
 boot check
@@ -512,9 +538,13 @@ At boot, STR8 should be able to:
 - provide a minimal serial/FTDI path if the normal monitor body cannot run
 - expose flash repair/install commands
 
-In the current implementation, this is mostly policy, fixed gates, guarded
-flash mutation, and a small resident prompt. Richer validation and repair can
-grow later.
+The current minimal availability gate scans the first 16 bytes at local
+`$C000`. If all 16 are `$FF`, both the timeout/cold path and the `3` or `G`
+warm path print `NO BOOT @C000` and enter the resident STR8 menu. This prevents
+an erased HIMON or user-app window from transferring execution into blank
+flash. It is an availability test, not an integrity test: a partial or corrupt
+image with any programmed byte in that 16-byte entry face can still pass.
+Directory identity and image CRC remain the later stronger gate.
 
 ## WDCMONv2 Board-Onboarding Bridge
 
@@ -641,37 +671,30 @@ flowchart TD
 ```
 
 The future core rule is that normal work may begin in HIMON, but flash mutation
-can cross a STR8 boundary before bytes are trusted. V0 does not do
-catalog-shaped work; it restores and verifies fixed bank images with the
-protected STR8 window handled separately.
+can cross a STR8 boundary before bytes are trusted. The retired V0 surface did
+not do catalog-shaped work. The current transition retains only the validated
+fixed-window updater until the bank installer replaces it.
 
 ## Minimal Recovery
 
 Minimal recovery is not full HIMON. It is a small HIMON-lite only in the sense
 that it has enough serial I/O and flash safety to repair the machine.
 
-V0 command surface should be closer to this:
+The current transitional command surface is:
 
 ```text
 ?          print tiny STR8 ID
-B          back up bank 3 to selected bank 0, 1, or 2, destructive, confirmed
 U          update Bank 3 $C000-$EFFF from validated S19, confirmed
-0          restore bank 0 to bank 3, with verify built in
-1          restore bank 1 to bank 3, with verify built in
-2          restore bank 2 to bank 3, with verify built in
-J0/J1/J2   non-destructive opaque-bank reset-vector handoff
+J0/J1/J2/J3 non-destructive selected-bank reset-vector handoff
 G          go HIMON
 R          reset through the live reset vector
 ```
 
-STR8 keeps `R` as reset. `L S`, `L F`, `GO addr`, standalone verify, catalog
-repair, and richer loading are later features. The recovery loader should avoid
-the full assembler, full catalog UI, compression tools, and rich command parser.
-Those belong in HIMON once normal operation is safe.
-
-Bank 0 is no longer protected by a separate policy state. `B` accepts Bank 0,
-1, or 2 only after naming the destination and then receiving a separate `Y`
-confirmation.
+`B` and bare `0`, `1`, and `2` are retired and return `?`. `U` remains only
+until `I` supplies the V1 selected-bank installer; `G` remains only until `J3`
+supplies the directory-gated Bank-3 local-entry handoff. STR8 keeps `R` as
+reset. `L S`, `L F`, `GO addr`, standalone verify, catalog repair, and richer
+loading remain outside the minimal supervisor.
 
 ## Current Command Worker Map
 
@@ -684,20 +707,18 @@ flowchart TD
     STR8 --> PROMPT[STR8 prompt]
 
     PROMPT --> Q[? ID]
-    PROMPT --> B[B backup]
-    PROMPT --> RST[0/1/2 restore]
-    PROMPT --> J[J0/J1/J2 handoff]
+    PROMPT --> U[U fixed HIMON S19 update]
+    PROMPT --> J[J0/J1/J2/J3 handoff]
     PROMPT --> G[G go HIMON]
     PROMPT --> R[R reset]
 
     G --> HIMON[HIMON at $C000]
     R --> RESETV[live reset vector]
 
-    B --> COPY[copy worker $FD03-$FFEF -> $0200]
-    RST --> COPY
+    U --> COPY[copy worker $FD93-$FFEF -> $0200]
     J --> COPY
-    COPY --> WORKER[RAM flash worker]
-    WORKER --> FLASH[bank select / erase / write / verify]
+    COPY --> WORKER[RAM worker: accept only modes $05-$08]
+    WORKER --> FLASH[validated sector/record erase / write / verify]
     FLASH --> BANK3[restore Bank 3]
     BANK3 --> STR8
     WORKER --> BJR[publish $1FFD-$1FFF = BJ + bank]
@@ -734,7 +755,7 @@ quit advanced mode
 Bad fit:
 
 ```text
-the normal ? B U 0 1 2 J0 J1 J2 G R rescue/update/handoff path
+the transitional ? U J0 J1 J2 J3 G R update/handoff path
 implicit or cascading backup policy
 an unconfirmed bank 0 erase
 catalog garbage collection
@@ -823,9 +844,9 @@ This is not V0. A future simple scan can look for erased `$FF` runs and known
 record signatures. Later scans can understand module headers, checksums,
 sequence numbers, and append-only catalog entries.
 
-## Bank Use Intent
+## Retired V0 Bank Use Intent
 
-The first STR8 bank policy is image-oriented:
+The first STR8 bank policy was image-oriented:
 
 ```text
 bank 3 = live reset/boot image
@@ -834,7 +855,7 @@ bank 1 = selectable backup image
 bank 0 = selectable backup image
 ```
 
-On a backup request:
+On a retired V0 backup request:
 
 ```text
 prompt for bank 0, 1, or 2
@@ -846,7 +867,7 @@ verify by read-back compare
 The other two backup banks are unchanged. Bank 0 has no separate enrollment or
 protection state, and the old `$FFF0` bit is ignored.
 
-On a recovery/restore request:
+On a retired V0 recovery/restore request:
 
 ```text
 restore ordinary bytes from selected 32K bank image 0, 1, or 2 -> bank 3
@@ -874,7 +895,7 @@ STR8_RESTORE_FACTORY
 FLASH_S19_BOARD_RESET_TO_FACTORY
 ```
 
-Full-bank copy in the current RAM-resident S19 proof stages one 4K erase sector
+The retired V0 RAM-resident S19 proof staged full-bank copy one 4K erase sector
 at a time through `$4000-$4FFF`:
 
 ```text
@@ -882,16 +903,15 @@ B command + 0/1/2:  copy bank 3 -> selected bank only
 0/1/2 commands:     copy selected bank -> bank 3 while preserving STR8 bytes
 ```
 
-Each 4K window reads from the source bank, writes the destination bank, and
-verifies by simple read-back compare. The `$F000` ROM build uses the same copy
-policy by first copying its worker from bank 3 `$FD03-$FFEF` into RAM
-`$0200-$09FF`. Ordinary restore into bank 3 preserves `$C000-$FFFF` unless the
-operator explicitly confirms high flash, so HIMON, the ROM worker, and the
-protected STR8/vector window remain usable after a normal restore. Catalog
-lookup, hashed metadata, wear leveling, and cycle counts are later work.
+Each V0 4K window read from the source bank, wrote the destination bank, and
+verified by simple read-back compare. The accepted V0 `$F000` ROM candidate
+copied its then-current worker from Bank 3 `$FD03-$FFEF` into RAM
+`$0200-$09FF`. Those copy/restore modes are now retired; the current worker
+accepts only `$05-$08`. Catalog lookup, hashed metadata, wear leveling, and
+cycle counts are later work.
 
 Partitioned-bank layouts remain QCC thought experiments until promoted. They
-are not part of the current `B`, `0`, `1`, and `2` recovery contract.
+are not part of the retired `B`, `0`, `1`, and `2` recovery contract.
 
 ## Next Partitioned Backup Direction
 
@@ -1257,7 +1277,7 @@ aggressive compression ratio.
 ## Open Decisions
 
 - What fixed image marker/check should STR8 V0 use for whole-image recovery
-- Should whole-image recovery use the STR8 identity marker `#5F6A0F7A`, a
+- Should whole-image recovery use the STR8 marker `7A 0F 6A 5F`, a
   separate per-image check, or both?
 - Which catalog, compact-hash, scan, and vector-layer hooks should future
   STR8-N/STRAIGHTEN offer without requiring ownership of user memory or

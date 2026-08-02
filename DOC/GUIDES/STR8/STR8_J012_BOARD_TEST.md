@@ -483,3 +483,266 @@ requirement; V1 checks reset-vector plausibility only.
 > [STR8_GUEST_IMAGE_QUALIFICATION.md](STR8_GUEST_IMAGE_QUALIFICATION.md) for
 > the generic procedure before approving an exact OSI BASIC, FORTH, WOZMON, or
 > other guest image.
+
+## 2026-08-01 Selected-Bank Startup Repair Gate
+
+This focused gate supersedes the requirement that generic `STR8_INIT` write
+PCR `$EE`. That write was intended only to make the hardware-reset/pull-up
+Bank-3 state explicit to a software decoder. It causes a copied STR8 image in
+Bank 0-2 to remap Bank 3 as soon as its reset entry runs.
+
+Install the corrected top sector in Bank 3, then prove these cases in order:
+
+1. Physical reset starts the corrected Bank-3 STR8 image through the board
+   pull-ups. Enter STR8 and record its identity.
+2. Copy that complete corrected Bank-3 image to a disposable Bank 0, 1, or 2.
+   An older destination containing the retired startup write is not a valid
+   repair candidate until overwritten.
+3. From Bank 3 issue the matching `J0`, `J1`, or `J2`. Do not press physical
+   reset before collecting the selected-bank evidence.
+4. Require the copied STR8 identity and the bank-neutral selector text. Because
+   source and copy have the same identity, also run a RAM-resident bank probe
+   or inspect a bank-distinguishing byte while the selected image is live.
+   Require the PCR pattern and decoded bank to match the `J` destination; for
+   Bank 2 the expected output pattern is `$EC` and the decoded bank is `$02`.
+   For the copied current image, the smallest direct check is to choose `3`
+   from that selected STR8 selector, enter its local HIMON warm, and dump
+   `$7FEC` with `D 7FEC 7FEC`; Bank 2 must show `$EC`. This path changes only
+   the HIMON warm signature, not the bank.
+5. Press physical reset and require recovery to the Bank-3 image.
+
+Repeat for the other disposable banks when practical. A same-version banner
+alone is insufficient because it cannot distinguish the selected copy from
+Bank 3. Acceptance requires both sustained execution and independent bank
+evidence before physical reset. Existing Bank-0/1/2 images assembled with the
+retired PCR `$EE` write will continue to return to Bank 3 and must not be used
+as evidence for this repair.
+
+### 2026-08-02 Partial Result
+
+Corrected TopWriter installation passed and physical reset reached Bank-3
+STR8 `00.0802(1323)` with the bank-neutral selector. The subsequent `J2`
+banner is not accepted as Bank-2 proof because Bank 2 still contains the old
+startup and could remap the newly repaired Bank 3. The bank-copy utility then
+assembled through `ASM OK`, but its direct package import jumped to `$0000`
+before any prompt or worker call. No copy occurred. Current utility source uses
+the published HIMON service vectors directly; steps 2-5 remain open.
+
+### 2026-08-02 Full-Copy and Bank-2 Persistence Result
+
+The corrected direct-run bank-copy utility assembled through `ASM OK` and
+`SEAL`. Its Bank-3-to-Bank-2 and Bank-3-to-Bank-1 operations each completed all
+eight 4K sectors, printed `OK`, and returned `A=$AC` with carry set in worker
+mode `$05`.
+
+Bank 2 was copied while it contained HIMON `00.0731(1515)`. Bank 3 was then
+updated to HIMON `00.0802(1334)`, and that newer image was copied to Bank 1.
+Later the reset selector's `2` path cold-entered HIMON `00.0731(1515)`. This
+distinct payload identity proves that the repaired STR8 startup preserved Bank
+2; a remap to Bank 3 would have reached `00.0802(1334)`. Choosing `3` from the
+Bank-2 STR8 selector also warm-entered the same local `0731` HIMON.
+
+`J1` reached HIMON `00.0802(1334)`, but Banks 1 and 3 shared that identity, so
+independent Bank-1 persistence remains open. A direct resident `J2` run with
+the distinguishing Bank-2 payload and physical-reset recovery after this exact
+copy/selector sequence are not included. The transcript was captured just
+before removal of the visible `#5F6A0F7A` banner hash, so the hash-bearing
+`00.0802(1323)` banners are expected and do not test that later change.
+
+### 2026-08-02 Direct J1/J2 and Bank-0 Copy Follow-Up
+
+No-hash STR8/HIMON `00.0802(1404)` was installed in Bank 3. The direct-run
+copy utility then completed a verified Bank-3-to-Bank-0 copy with eight sector
+dots, `OK`, and `A=$AC` with carry set.
+
+Banks 1 and 2 remained deliberately distinguishable from Bank 3. Selector `1`
+and resident `J1` both reached hash-bearing STR8 `00.0802(1323)` and HIMON
+`00.0802(1334)`. Selector `2` and resident `J2` both reached hash-bearing STR8
+`00.0802(1323)` and HIMON `00.0731(1515)`. The selector routes close
+independent sustained Bank-1 and Bank-2 execution. Resident `J1` was issued
+from Bank 1 and resident `J2` from Bank 2, so these are self-target command
+smokes rather than cross-bank direct-J proof.
+
+Selector `0` and resident `J0` reached copied `1404`, but Banks 0 and 3 were
+byte-identical, so those traces do not independently prove sustained Bank 0.
+Cross-bank resident `J1`/`J2` and physical-reset recovery after this exact
+matrix are not present. Those gates remain open.
+
+### Operator Continuation: Cross-Bank J0/J2
+
+A later continuation directly crossed from a current `1404` image through
+`J2` into Bank-2 STR8 `1323`, accepting cross-bank resident `J2`. It also
+crossed from an old `1323` image through `J0` into Bank-0 STR8/HIMON `1404`,
+accepting cross-bank resident `J0` and independently distinguishing sustained
+Bank 0.
+
+The direct `J1` trace moved between Banks 2 and 1, which both display STR8
+`1323`, and selected `S` before their distinct HIMON identities could be
+observed. Cross-bank resident `J1` and physical-reset recovery after the exact
+matrix remain open. `D 7FEC` returned `FTDI VIA IO SKIP`, so no PCR byte was
+observed or claimed.
+
+### 2026-08-02 Sixteen-Dot Cross-Bank Follow-Up
+
+The current direct-run copy utility verified Bank 3 to Bank 2 before the HIMON
+update, then verified Bank 3 to Bank 1 after it. This left Bank 2 and Bank 0
+distinguishable, but made Banks 1 and 3 identical:
+
+```text
+Bank 3  STR8 1420 / HIMON 1425
+Bank 2  STR8 1420 / HIMON 1404
+Bank 1  STR8 1420 / HIMON 1425
+Bank 0  STR8 1404 / HIMON 1404, four-dot attach
+```
+
+A power-off reset recovered to Bank-3 STR8/HIMON `1420/1425`. The reset
+selector then traversed Bank 2, Bank 1, and Bank 0. Bank 2 is distinguished by
+HIMON `1404`, and Bank 0 by its older four-dot STR8 `1404`; Bank 1 and Bank 3
+are exact `1420/1425` copies and cannot be distinguished by this trace.
+
+From Bank 0, resident `J1` crossed from four-dot STR8 `1404` into sixteen-dot
+STR8 `1420`. That target could be either Bank 1 or an accidental Bank-3 remap
+because both contain the exact same image, so direct-J1 remains open. The
+following direct `J2` entered STR8 `1420`; `G` then reached HIMON `1404`,
+independently distinguishing Bank 2 and reconfirming cross-bank direct-J2.
+
+The power-off proves recovery to Bank 3 after this install/maintenance session.
+It does not claim a separate physical reset after every individual direct
+handoff. To close direct-J1, make Bank 1 and Bank 3 observably different before
+the run, or use a bank-state probe that works with this console configuration.
+
+### 2026-08-02 Distinct Bank-1 Closure
+
+The operator followed the prescribed distinguishing sequence. The bank-copy
+utility first rejected the wrong confirmation `WRITE 31` without writing
+flash, then accepted `COPY 31` and verified all eight sectors from Bank 3 to
+Bank 1. Bank 1 therefore retained STR8/HIMON `1440` while a later TopWriter and
+`U` update advanced only Bank 3 to STR8/HIMON `1452`.
+
+The resulting four-bank identities were independently distinguishable:
+
+```text
+Bank 3  STR8 1452 / HIMON 1452
+Bank 1  STR8 1440 / HIMON 1440
+Bank 2  STR8 1420 / HIMON 1404
+Bank 0  STR8 1404 / HIMON 1404, four-dot attach
+```
+
+Bank-3 selector `1` first reached Bank-1 STR8 `1440`, accepting sustained
+Bank-1 selection against a distinct `1452` Bank 3. The direct-command chain
+then moved Bank 1 through `J2` into distinct Bank-2 STR8 `1420`. From Bank 2,
+resident `J1` reached Bank-1 STR8 `1440`; `G` warm-entered local HIMON `1440`:
+
+```text
+STR8-N V 00.0802(1420)
+STR8-N>J1
+J B1
+................
+STR8-N V 00.0802(1440)
+STR8-N>G
+G HIMON
+BOOT WARM
+HIMON V 00.0802(1440)
+```
+
+An accidental Bank-3 remap would have displayed `1452`, while a wrong Bank-0
+or Bank-2 selection would have displayed `1404` or `1420`. This independently
+accepts cross-bank resident `J1`. Together with the prior distinguishable
+`J0` and `J2` results, the complete resident `J0/J1/J2` surface is now
+hardware-accepted.
+
+## 2026-08-02 J3 Bank-3 Software Return Candidate
+
+Status: host and board pass.
+
+The current source extends the same non-destructive RAM handoff from `J0-J2`
+to `J0-J3`. `J3` is an explicit software return to Bank 3 for a copied STR8
+running in Bank 0-2. Reset-selector `3`, prompt `G`, and prompt `R` remain local
+to the currently selected bank; physical reset remains the universal recovery
+path for a guest that does not contain STR8.
+
+The resident parser, RAM-proof handoff, and stored worker now accept bank bytes
+`$00-$03` and reject `$04-$FF`. The worker bank-select table was already the
+complete `$CC,$CE,$EC,$EE` table. The release check executes the dispatcher for
+all 256 mode bytes, checks the J range and table, and reports:
+
+```text
+ACTIVE MODES            = 05 06 07 08
+JUMP BANK RANGE         = 00-03
+REJECTED MODE BYTES     = 252
+STR8 WORKER MODE CHECK  = PASS
+```
+
+Only the help text grows. Code and worker remain `$08B0` and `$025D` bytes;
+resident data becomes `$0121` bytes, the normal image ends at `$F9D0`, and the
+V1 reserve is `$F9D1-$FD52`, `$0382` bytes. The generated TopWriter retains
+the face check at `$F8B4` and moves the prompt check to `$F8EE`.
+
+### Board Gate
+
+The source bank must itself contain this J3-capable STR8. An unrelated guest
+cannot acquire `J3` merely because Bank 3 has it. Use one disposable copied
+STR8 bank for the smallest proof:
+
+1. Install the candidate in Bank 3 and confirm help contains `J3`.
+2. Copy that complete image to one disposable Bank 0, 1, or 2 and verify all
+   eight sectors.
+3. Advance only the Bank-3 STR8 identity, leaving the copied source bank on the
+   previous identity. This makes a return to Bank 3 independently visible.
+4. Enter the copied bank, choose `S`, issue `J3`, and require:
+
+```text
+STR8-N>J3
+J B3
+................
+STR8-N V 00.mmdd(newer)
+```
+
+5. Choose `S`, then `G`, and require the newer Bank-3 HIMON identity. If the
+   Bank Jump Record is inspected, `$1FFD-$1FFF` must be `42 4A 03`.
+6. Confirm `J4` prints `?`. Reconfirm that `G`, `R`, and reset-selector `3`
+   retain their documented local-bank behavior.
+
+One independently distinguished copied-bank run is sufficient for the shared
+worker path. Repeating from Banks 0, 1, and 2 is useful regression coverage but
+is not required to establish the bank-byte-3 mechanism.
+
+### Partial Board Result
+
+The first J3-capable candidate assembled, staged, verified, and programmed
+Bank 3 successfully. Installed STR8 `00.0802(1509)` advertised
+`? U J0 J1 J2 J3 G R`, and the matching HIMON update advanced Bank 3 to
+`00.0802(1514)`. The direct-run bank-copy utility then copied and verified all
+eight sectors from Bank 3 to Bank 0.
+
+Selector `0` entered the Bank-0 copy. From that copy, `J3` printed `J B3`,
+re-entered STR8, and subsequently reached HIMON. This accepts the installed
+parser and a functional Bank-3 handoff smoke. It does not independently prove
+the selected destination because Banks 0 and 3 were exact
+STR8/HIMON `1509/1514` copies during the run.
+
+The same transcript then advanced only Bank 3 to STR8/HIMON
+`00.0802(1518)`. Bank 0 remains the verified `1509/1514` copy, so no more copy
+or flash preparation is required. Close the gate with this short sequence:
+
+```text
+from Bank-3 STR8 1518, choose selector 0
+require Bank-0 STR8 1509
+choose S
+issue J3
+require J B3, then Bank-3 STR8 1518
+choose S, then G
+require Bank-3 HIMON 1518
+```
+
+That distinguishable return has now been captured. From Bank-3 STR8 `1518`,
+selector `0` entered Bank-0 STR8 `1509`. The operator selected `S` and issued
+`J3`; STR8 printed `J B3` and re-entered distinct STR8 `1518`. Its normal
+timeout then cold-entered distinct HIMON `1518`. An accidental stay in Bank 0
+would have displayed STR8 `1509` and HIMON `1514`, so the destination is
+independently identified. J3 is hardware-accepted.
+
+The later HIMON `00.0802(1536)` run also proves the Bank Jump Record side
+effect: after the distinct Bank-0-to-Bank-3 `J3`, cold entry reported
+`42 4A 03`; a confirmed `HCOLD` preserved the same bytes. `J4` rejection
+remains a useful regression check, not an acceptance gate.

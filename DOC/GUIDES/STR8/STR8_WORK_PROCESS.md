@@ -13,7 +13,7 @@ V0 recovery surface:
 B          back up Bank 3 to selected Bank 0, 1, or 2
 U          update HIMON from S19, fixed $C000-$EFFF gate
 0/1/2      restore selected backup bank to Bank 3
-J0/J1/J2   non-destructive opaque-bank reset-vector handoff
+J0/J1/J2/J3 non-destructive selected-bank reset-vector handoff
 G          go HIMON
 R          reset
 ```
@@ -130,28 +130,34 @@ Artifact check:
   Bank 3 has no built-in ASM report AP; reporter runs from Bank 0 with AP B0 $hhhh $4800
   HIMON starts at CPU $C000
   STR8 starts at CPU $F000
-  worker source is CPU $FD03-$FFEF
-  vectors point to STR8 IVI entries: F0C0/F000/F0D4
+  worker source is CPU $FD93-$FFEF
+  vectors point to STR8 IVI entries: F0BA/F000/F0CE
   record service/header is F009/F00C-F00F = 53 52 01 07
   bank jump record is 1FFD-1FFF = 42 4A bank/FF
 
 Non-destructive STR8:
-  reset stays silent for about 4 seconds, then flushes RX
+  reset prints 16 dots over about 5.991 seconds, then flushes RX
   STR8-N prints the same local make-time stamp as HIMON and ASM-F2
+  selector prompt counts 6 5 4 3 2 1 over about 5.991 seconds
   selector timeout enters Bank 3 HIMON cold
   selector 3 enters HIMON warm and preserves RAM
   S and s reach the STR8 prompt
   selector 0/1/2 prints J Bn and BOOT IN 3S, pauses, then enters that bank
   selector 0/1/2 and prompt J0/J1/J2 leave all bank CRCs unchanged
   prompt J0/J1/J2 remain immediate and do not print BOOT IN 3S
-  after J0/J1/J2 returns through HIMON, D 1FFD 1FFF shows 42 4A 00/01/02
-  HCOLD preserves the valid signed record; no valid record becomes 42 4A FF
-  boot-selector candidate is accepted on hardware
-  queued-input flush and warm-3 RAM retention pass on hardware
+  distinct 1452/1440/1420/1404 bank identities accept cross-bank J0/J1/J2
+  distinct 1509-to-1518 Bank-0-to-Bank-3 return accepts resident J3
+  host Bank Jump Record range is 00-03 in STR8, worker, and HIMON cold clear
+  J3 record 42 4A 03 survives cold entry and explicit HCOLD on HIMON 1536
+  J0/J1/J2, invalid-vector, and CRC record gates remain separate
+  earlier three-count boot-selector candidate is accepted on hardware
+  16-dot queued-input flush and warm-3 RAM retention pass on hardware
   reset-time 1/2 delayed handoffs pass on hardware
   reset-time 0 is operator-accepted
-  current delay profile and remaining matrix are operator-accepted
+  six-second prompting delay supersedes the accepted three-count profile
   future delay changes reopen the affected timing and selector observations
+  superseded four-dot and current 16-dot emitters pass on hardware
+  current six-second prompting timeout and key acceptance pass on hardware
   accepted selector image does not echo reset-time input
   installed 00.0731(1438) echoes printable input uppercase before dispatch
   Backspace and CR/LF cancel on hardware; CRLF counts as one response

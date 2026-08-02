@@ -1,0 +1,423 @@
+; STR8-BANK-COPY-2000.A
+; INTERACTIVE FULL 32K BANK COPY FOR ASM-F2.
+;
+; ASSEMBLE AND RUN:
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   SEAL> .
+;   G 2000
+; RUN ONLY FROM AN INITIALIZED HIMON/ASM-F2 SESSION. THIS DIRECT-RUN SOURCE
+; CALLS THE PUBLISHED HIMON SERVICE VECTORS AND HAS NO PACKAGE IMPORTS.
+;
+; SOURCE MAY BE BANK 0-3. DESTINATION MAY BE BANK 0-2.
+; BANK 3 IS NEVER A DESTINATION: ITS LIVE STR8 SUPERVISOR, HIMON, AND
+; RESET RECOVERY PATH MUST NOT BE REPLACED BY THIS MAINTENANCE TOOL.
+;
+; THE TOOL COPIES $8000-$FFFF IN EIGHT 4K TRANSACTIONS. EACH TRANSACTION
+; STAGES THE SOURCE THROUGH STR8 WORKER MODE $06, THEN ERASES IF NEEDED,
+; PROGRAMS, AND FULL-SECTOR VERIFIES THROUGH MODE $05. BANK 3 IS VISIBLE
+; AGAIN BEFORE THIS RAM PROGRAM PRINTS OR CALLS HIMON.
+;
+; WARNING: COPY PRESERVES AN IMAGE; IT DOES NOT REPAIR ITS STARTUP CODE.
+; A SOURCE WITH THE STR8 SERVICE SIGNATURE GETS A VISIBLE WARNING. INSTALLED
+; IMAGES THAT CONTAIN THE RETIRED STARTUP PCR $EE WRITE WILL RETURN TO BANK 3.
+; THE CORRECTED 2026-08-01 STR8 SOURCE LEAVES A J-SELECTED BANK UNCHANGED.
+;
+; THIS IS NOT AN ATOMIC OPERATION. POWER LOSS LEAVES A PARTIAL DESTINATION.
+; THE SOURCE IS READ ONLY. THE DESTINATION IS DESTRUCTIVE AFTER THE EXACT
+; CONFIRMATION `COPY XY`, WHERE X IS SOURCE AND Y IS DESTINATION.
+;
+; RAM MAP:
+;   $0200-$045C  STR8 RAM WORKER
+;   $0A00-$19FF  ONE 4K STAGED SECTOR
+;   $1B00-$1B09  RESULT/STATE
+;   $1C00-$1CFE  INPUT BUFFER
+;   $2000-...    THIS PROGRAM
+;   $7E02-$7E1C  HIMON RY/01 PUBLISHED SERVICE TABLE
+;
+; RESULT $1B00-$1B09:
+;   +00 STATUS    $AC OK, $E0 ABORT, $E1 STAGE FAIL,
+;                 $E2 PROGRAM/VERIFY FAIL, $E6 BAD RESET VECTOR
+;   +01 SOURCE    $00-$03
+;   +02 SECTOR    CURRENT OR FAILING SECTOR HIGH BYTE
+;   +03 DEST      $00-$02
+;   +04/+05 FAIL  STR8 FAIL ADDRESS, LO/HI, WHEN AVAILABLE
+;   +06/+07 RESET SOURCE RESET VECTOR, LO/HI
+;   +08 COUNT     COMPLETED SECTORS, $00-$08
+;   +09 FLAGS     BIT 0 = SOURCE HAS STR8 SERVICE SIGNATURE
+
+        ORG $2000
+
+BC_INPUT  EQU $1C00
+STR8_SERVICE EQU $F003
+HIM_WRITE_BYTE EQU $7E08
+HIM_WRITE_CSTR EQU $7E0A
+HIM_READ_CSTR EQU $7E10
+
+BANK_COPY JMP BC_MAIN
+
+BC_TITLE DB $0D,$0A,'S','T','R','8',' ','B','A','N','K',' '
+        DB 'C','O','P','Y',' ','$','8','0','0','0','-','$'
+        DB 'F','F','F','F'
+        DB $0D,$0A,0
+BC_MSRC DB 'S','O','U','R','C','E',' ','B','A','N','K',' '
+        DB '0','-','3'
+        DB '>',' ',0
+BC_MDST DB 'D','E','S','T',' ','B','A','N','K',' ','0','-','2'
+        DB '>',' ',0
+BC_MBAD DB '?',' ','E','N','T','E','R',' ','O','N','E',' '
+        DB 'B','A','N','K'
+        DB ' ','D','I','G','I','T',$0D,$0A,0
+BC_MSAME DB '?',' ','S','O','U','R','C','E',' '
+        DB 'E','Q','U','A','L','S',' '
+        DB 'D','E','S','T',$0D,$0A,0
+BC_MVEC DB '?',' ','S','O','U','R','C','E',' ','H','A','S',' '
+        DB 'N','O',' '
+        DB 'J','-','A','B','L','E',' ','R','E','S','E','T',' '
+        DB 'V','E','C','T','O','R'
+        DB $0D,$0A,0
+BC_MSTR8 DB 'W','A','R','N','I','N','G',':',' '
+        DB 'S','O','U','R','C','E',' ','H','A','S',' '
+        DB 'S','T','R','8',';',' ','I','T',' ','M','A','Y',' '
+        DB 'S','E','L','E','C','T',' ','B','3',$0D,$0A,0
+BC_MCOPY DB 'C','O','P','Y',' ','B',0
+BC_MTO DB '-','>','B',0
+BC_MRANGE DB ' ','$','8','0','0','0','-','$','F','F','F','F'
+        DB $0D,$0A,0
+BC_MTYPE DB 'T','Y','P','E',' ','C','O','P','Y',' ',0
+BC_MGO DB $0D,$0A,'C','O','P','Y','I','N','G',' ',0
+BC_MOK DB ' ','O','K',$0D,$0A,0
+BC_MABORT DB 'A','B','O','R','T',' ','-',' ','N','O',' '
+        DB 'F','L','A','S','H'
+        DB ' ','W','R','I','T','E',$0D,$0A,0
+BC_MSTAGE DB $0D,$0A,'S','T','A','G','E',' '
+        DB 'F','A','I','L',' '
+        DB 'S','E','C','T','O','R',' ','$',0
+BC_MPROGRAM DB $0D,$0A,'P','R','O','G','R','A','M','/'
+        DB 'V','E','R','I','F','Y'
+        DB ' ','F','A','I','L',' ','A','T',' ','$',0
+
+BC_READ LDX #<BC_INPUT
+        LDY #>BC_INPUT
+        JMP (HIM_READ_CSTR)
+
+BC_PUTS JMP (HIM_WRITE_CSTR)
+
+BC_OUT  JMP (HIM_WRITE_BYTE)
+
+BC_CRLF LDA #$0D
+        JSR BC_OUT
+        LDA #$0A
+        JMP BC_OUT
+
+BC_BANK LDA $1B01,X
+        CLC
+        ADC #'0'
+        JMP BC_OUT
+
+BC_HEX  PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR BC_NIB
+        PLA
+        AND #$0F
+BC_NIB  CMP #$0A
+        BCC BC_NDIG
+        CLC
+        ADC #$37
+        JMP BC_OUT
+BC_NDIG CLC
+        ADC #'0'
+        JMP BC_OUT
+
+; ASM-F2 V1 has no unresolved symbol+addend operands.
+; Use absolute offsets so END has no addend fixups.
+BC_PARSE_BANK LDA $1C01
+        BNE BC_PB_BAD
+        LDA BC_INPUT
+        CMP #'0'
+        BCC BC_PB_BAD
+        CMP #'4'
+        BCS BC_PB_BAD
+        SEC
+        SBC #'0'
+        SEC
+        RTS
+BC_PB_BAD CLC
+        RTS
+
+BC_STAGE LDA $1B01
+        STA $1FEE
+        LDA $1B02
+        STA $1FE9
+        LDA #$0A
+        STA $1FF6
+        LDA #$06
+        STA $1FF0
+        JMP STR8_SERVICE
+
+BC_PROGRAM LDA $1B03
+        STA $1FEF
+        LDA $1B02
+        STA $1FE9
+        LDA #$0A
+        STA $1FF6
+        LDA #$05
+        STA $1FF0
+        JMP STR8_SERVICE
+
+BC_SHOW_PLAN LDX #<BC_MCOPY
+        LDY #>BC_MCOPY
+        JSR BC_PUTS
+        LDX #$00
+        JSR BC_BANK
+        LDX #<BC_MTO
+        LDY #>BC_MTO
+        JSR BC_PUTS
+        LDX #$02
+        JSR BC_BANK
+        LDX #<BC_MRANGE
+        LDY #>BC_MRANGE
+        JMP BC_PUTS
+
+BC_CONFIRM LDX #<BC_MTYPE
+        LDY #>BC_MTYPE
+        JSR BC_PUTS
+        LDX #$00
+        JSR BC_BANK
+        LDX #$02
+        JSR BC_BANK
+        LDA #'>'
+        JSR BC_OUT
+        LDA #' '
+        JSR BC_OUT
+        JSR BC_READ
+        BCC BC_CF_BAD
+        LDA $1C07
+        BNE BC_CF_BAD
+        LDA BC_INPUT
+        CMP #'C'
+        BNE BC_CF_BAD
+        LDA $1C01
+        CMP #'O'
+        BNE BC_CF_BAD
+        LDA $1C02
+        CMP #'P'
+        BNE BC_CF_BAD
+        LDA $1C03
+        CMP #'Y'
+        BNE BC_CF_BAD
+        LDA $1C04
+        CMP #' '
+        BNE BC_CF_BAD
+        LDA $1B01
+        CLC
+        ADC #'0'
+        CMP $1C05
+        BNE BC_CF_BAD
+        LDA $1B03
+        CLC
+        ADC #'0'
+        CMP $1C06
+        BNE BC_CF_BAD
+        SEC
+        RTS
+BC_CF_BAD CLC
+        RTS
+
+BC_SOURCE_CHECK LDA #$F0
+        STA $1B02
+        JSR BC_STAGE
+        BCC BC_SC_FAIL
+        LDA $19FC
+        STA $1B06
+        LDA $19FD
+        STA $1B07
+        CMP #$80
+        BCC BC_SC_BADV
+        CMP #$FF
+        BNE BC_SC_SIG
+        LDA $1B06
+        CMP #$FF
+        BEQ BC_SC_BADV
+BC_SC_SIG LDA $0A0C
+        CMP #'S'
+        BNE BC_SC_OK
+        LDA $0A0D
+        CMP #'R'
+        BNE BC_SC_OK
+        LDA $0A0E
+        CMP #$01
+        BNE BC_SC_OK
+        LDA $0A0F
+        CMP #$07
+        BNE BC_SC_OK
+        LDA #$01
+        STA $1B09
+        LDX #<BC_MSTR8
+        LDY #>BC_MSTR8
+        JSR BC_PUTS
+BC_SC_OK SEC
+        RTS
+BC_SC_BADV LDA #$E6
+        STA $1B00
+        LDX #<BC_MVEC
+        LDY #>BC_MVEC
+        JSR BC_PUTS
+        CLC
+        RTS
+BC_SC_FAIL LDA #$E1
+        STA $1B00
+        CLC
+        RTS
+
+BC_FAIL_STAGE LDA #$E1
+        STA $1B00
+        LDX #<BC_MSTAGE
+        LDY #>BC_MSTAGE
+        JSR BC_PUTS
+        LDA $1B02
+        JSR BC_HEX
+        JSR BC_CRLF
+        LDA $1B00
+        CLC
+        RTS
+
+BC_FAIL_PROGRAM LDA #$E2
+        STA $1B00
+        LDA $1FEA
+        STA $1B04
+        LDA $1FEB
+        STA $1B05
+        LDX #<BC_MPROGRAM
+        LDY #>BC_MPROGRAM
+        JSR BC_PUTS
+        LDA $1B05
+        JSR BC_HEX
+        LDA $1B04
+        JSR BC_HEX
+        JSR BC_CRLF
+        LDA $1B00
+        CLC
+        RTS
+
+BC_ABORT LDA #$E0
+        STA $1B00
+        LDX #<BC_MABORT
+        LDY #>BC_MABORT
+        JSR BC_PUTS
+        LDA $1B00
+        CLC
+        RTS
+
+BC_MAIN STZ $1B00
+        STZ $1B01
+        STZ $1B02
+        STZ $1B03
+        STZ $1B04
+        STZ $1B05
+        STZ $1B06
+        STZ $1B07
+        STZ $1B08
+        STZ $1B09
+        LDX #<BC_TITLE
+        LDY #>BC_TITLE
+        JSR BC_PUTS
+
+BC_ASK_SOURCE LDX #<BC_MSRC
+        LDY #>BC_MSRC
+        JSR BC_PUTS
+        JSR BC_READ
+        BCS BC_SOURCE_READ
+        JMP BC_ABORT
+BC_SOURCE_READ
+        LDA BC_INPUT
+        BEQ BC_ABORT
+        JSR BC_PARSE_BANK
+        BCS BC_HAVE_SOURCE
+        LDX #<BC_MBAD
+        LDY #>BC_MBAD
+        JSR BC_PUTS
+        BRA BC_ASK_SOURCE
+BC_HAVE_SOURCE STA $1B01
+
+BC_ASK_DEST LDX #<BC_MDST
+        LDY #>BC_MDST
+        JSR BC_PUTS
+        JSR BC_READ
+        BCS BC_DEST_READ
+        JMP BC_ABORT
+BC_DEST_READ
+        LDA BC_INPUT
+        BNE BC_DEST_TEXT
+        JMP BC_ABORT
+BC_DEST_TEXT
+        JSR BC_PARSE_BANK
+        BCC BC_BAD_DEST
+        CMP #$03
+        BCS BC_BAD_DEST
+        CMP $1B01
+        BEQ BC_SAME_DEST
+        STA $1B03
+        BRA BC_PREFLIGHT
+BC_BAD_DEST LDX #<BC_MBAD
+        LDY #>BC_MBAD
+        JSR BC_PUTS
+        BRA BC_ASK_DEST
+BC_SAME_DEST LDX #<BC_MSAME
+        LDY #>BC_MSAME
+        JSR BC_PUTS
+        BRA BC_ASK_DEST
+
+BC_PREFLIGHT JSR BC_SOURCE_CHECK
+        BCS BC_PREFLIGHT_OK
+        LDA $1B00
+        CMP #$E6
+        BEQ BC_RETURN_FAIL
+        JMP BC_FAIL_STAGE
+BC_PREFLIGHT_OK JSR BC_SHOW_PLAN
+        JSR BC_CONFIRM
+        BCS BC_CONFIRMED
+        JMP BC_ABORT
+BC_CONFIRMED
+        LDX #<BC_MGO
+        LDY #>BC_MGO
+        JSR BC_PUTS
+        LDA #$80
+        STA $1B02
+
+BC_NEXT JSR BC_STAGE
+        BCS BC_NEXT_STAGED
+        JMP BC_FAIL_STAGE
+BC_NEXT_STAGED
+        JSR BC_PROGRAM
+        BCS BC_NEXT_PROGRAMMED
+        JMP BC_FAIL_PROGRAM
+BC_NEXT_PROGRAMMED
+        INC $1B08
+        LDA #'.'
+        JSR BC_OUT
+        LDA $1B02
+        CLC
+        ADC #$10
+        STA $1B02
+        BNE BC_NEXT
+
+        LDA #$F0
+        STA $1B02
+        LDA #$AC
+        STA $1B00
+        LDX #<BC_MOK
+        LDY #>BC_MOK
+        JSR BC_PUTS
+        LDA $1B00
+        SEC
+        RTS
+
+BC_RETURN_FAIL LDA $1B00
+        CLC
+        RTS
+
+        END

@@ -83,6 +83,11 @@ STR8_SRC := $(STR8_SUBDIR)/str8.asm
 STR8_RECORD_EQ := $(STR8_SUBDIR)/str8-record-eq.inc
 STR8_DIRECTORY_EQ := $(STR8_SUBDIR)/str8-directory-eq.inc
 STR8_DIRECTORY_CHECK := tools/check_str8_directory_v1.ps1
+STR8_WORKER_MODE_CHECK := tools/check_str8_worker_modes.ps1
+STR8_BANK_COPY_CHECK := tools/check_str8_bank_copy_source.ps1
+STR8_BANK_COPY_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-copy-2000.a
+STR8_BANK_MAINT_CHECK := tools/check_str8_bank_maint_source.ps1
+STR8_BANK_MAINT_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
 STR8_S19 := $(S19_DIR)/str8-f000.s19
 STR8_V1_LAYOUT_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-v1-layout.obj
@@ -282,9 +287,14 @@ HELP_QUERY := $(if $(Q),$(Q),$(SEARCH))
 TERMINAL ?=
 UPLOADER ?=
 
+# TopWriter is an install artifact and must track the current combined ROM.
 FIRMWARE_TARGETS ?= \
 	himon-str8-rom-bin \
-	himon-str8-rom-install-s19
+	himon-str8-rom-install-s19 \
+	str8-topwrite-a \
+	str8-bank-copy-source-check \
+	str8-bank-maint-source-check \
+	str8-worker-mode-check
 
 TEST_TARGETS ?= \
 	test-mon \
@@ -342,7 +352,11 @@ LAB_TARGETS += $(LOCAL_LAB_TARGETS)
 RELEASE_TARGETS ?= \
 	himon-str8-rom-bin \
 	himon-str8-rom-install-s19 \
-	himon-str8-himon-update-s19
+	himon-str8-himon-update-s19 \
+	str8-topwrite-a \
+	str8-bank-copy-source-check \
+	str8-bank-maint-source-check \
+	str8-worker-mode-check
 
 # release-local builds the private composite ROM images; they are not L F-safe
 # packages.
@@ -414,6 +428,15 @@ str8-v1-layout-preview: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)
 
 str8-directory-check: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN) $(STR8_DIRECTORY_EQ) $(STR8_DIRECTORY_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)"
+
+str8-worker-mode-check: $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) $(STR8_WORKER_MODE_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_MODE_CHECK) -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)"
+
+str8-bank-copy-source-check: $(STR8_BANK_COPY_SOURCE) $(STR8_BANK_COPY_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_COPY_CHECK) -SourcePath "$(STR8_BANK_COPY_SOURCE)"
+
+str8-bank-maint-source-check: $(STR8_BANK_MAINT_SOURCE) $(STR8_BANK_MAINT_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_MAINT_CHECK) -SourcePath "$(STR8_BANK_MAINT_SOURCE)"
 
 himon-rom-install-s19: $(HIMON_ROM_INSTALL_S19)
 	@echo "Built $(HIMON_ROM_INSTALL_S19)."
@@ -1219,7 +1242,8 @@ endif
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
-	str8-v1-layout-preview str8-directory-check \
+	str8-v1-layout-preview str8-directory-check str8-worker-mode-check \
+	str8-bank-copy-source-check str8-bank-maint-source-check \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \
 	str-himon-str-update str8-top-stage-s19 str8-topwrite-a \

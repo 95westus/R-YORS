@@ -115,6 +115,11 @@ required future Bank-3-owned manifest gate before unattended or timed
 alternate-bank boot. The separate `$1FFD-$1FFF` Bank Jump Record persistence
 proof remains pending.
 
+The current host candidate extends the same RAM handoff with `J3`, providing
+an explicit software return from a copied STR8 in Bank 0-2 to Bank 3. `J3` is
+installed and board-accepted by a distinguishable Bank-0 `1509` to Bank-3
+`1518` return. Physical reset remains the recovery path for unrelated guests.
+
 Flash-bank and flash-window vocabulary:
 
 ```text
@@ -299,7 +304,7 @@ R-YORS/STR8.
 `make -C SRC all`: ASM-F2 occupies low flash from `$8000`, HIMON starts at CPU
 `$C000` / file offset `$4000`, STR8 starts at CPU `$F000` / file offset
 `$7000`, RESET points to STR8 at `$F000`, and NMI/IRQ point to STR8 IVI entries
-at `$F0C0`/`$F0D4`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
+at `$F0BA`/`$F0CE`. Hardware vectors at CPU `$FFFA-$FFFF` live at the tail of
 the file, `$7FFA-$7FFF`.
 
 The current build does not store the fixed-address ASM session reporter after

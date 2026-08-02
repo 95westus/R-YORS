@@ -1,0 +1,656 @@
+; STR8-BANK-MAINT-2000.A
+; INTERACTIVE BANK COPY/ERASE MAINTENANCE FOR ASM-F2.
+;
+; ASSEMBLE AND RUN:
+;   ASM NEW
+;   PASTE THIS SOURCE
+;   SEAL> .
+;   G 2000
+;
+; C COPIES $8000-$FFFF FROM SOURCE BANK 0-3 TO DESTINATION 0-2.
+; E ERASES ONE 4K SECTOR OR THE ALLOWED BANK RANGE:
+;   BANKS 0-2: 8-F, ALL, OR AN X-Y RANGE WITHIN 8-F.
+;   BANK 3:     8-E, ALL, OR AN X-Y RANGE WITHIN 8-E.
+; A IS SECTOR A. ALL IS THE COMPLETE VALID RANGE. B3 SECTOR F IS PROTECTED.
+; M READS ALL BANK/SECTOR CONTENTS: E=ERASED, U=USED, P=PROTECTED B3F.
+; C/E/M, ABORT, AND SAFE FAILURES RETURN TO THIS MENU. Q RETURNS TO HIMON.
+; BANK-3 ERASE REMAINS THE EXCEPTION AND RETURNS DIRECTLY TO STR8.
+;
+; THE INSTALLED STR8 $F003 RAM WORKER SKIPS A PHYSICAL ERASE WHEN THE
+; STAGED $FF SECTOR IS ALREADY ERASED. EVERY PROGRAMMED SECTOR IS VERIFIED.
+; BANK 3 ERASE PRINTS ITS LAST MESSAGE BEFORE THE FIRST ERASE, MAKES NO
+; LATER HIMON CALLS, AND JUMPS DIRECTLY TO STR8 $F000 ON SUCCESS OR FAILURE.
+; AT THE STR8 COUNTDOWN, SELECT S; HIMON MAY HAVE BEEN ERASED.
+;
+; COPY IS NOT ATOMIC. POWER LOSS CAN LEAVE A PARTIAL DESTINATION.
+; A SOURCE WITH THE STR8 SERVICE SIGNATURE PRINTS !STR8 BEFORE CONFIRMATION.
+; ERASE REQUIRES EXACT `ERASE BS`, `ERASE BX-Y`, OR `ERASE BALL`.
+; B IS THE BANK. COPY REQUIRES EXACT `COPY XY`.
+;
+; RAM MAP:
+;   $0200-$045C  STR8 RAM WORKER
+;   $0A00-$19FF  ONE 4K STAGED SECTOR
+;   $1B00-$1B0B  RESULT/STATE
+;   $1C00-$1CFE  INPUT BUFFER
+;   $2000-...    THIS PROGRAM
+;
+; RESULT:
+;   $1B00 STATUS: $AC OK, $E0 ABORT, $E1 STAGE FAIL,
+;                 $E2 PROGRAM/VERIFY FAIL, $E6 BAD RESET VECTOR
+;   $1B01 OPERATION: C, E, M, OR Q
+;   $1B02 SOURCE/ERASE BANK
+;   $1B03 DESTINATION BANK
+;   $1B04 CURRENT/FAILING SECTOR HIGH BYTE
+;   $1B05 COMPLETED/REMAINING SECTOR COUNT
+;   $1B06/$1B07 STR8 FAIL ADDRESS, LO/HI
+;   $1B08-$1B0A ERASE SELECTION; $1B0B LENGTH, ONE OR THREE
+
+        ORG $2000
+
+BM_INPUT EQU $1C00
+STR8_SERVICE EQU $F003
+HIM_WRITE_BYTE EQU $7E08
+HIM_WRITE_CSTR EQU $7E0A
+HIM_READ_CSTR EQU $7E10
+
+BM_MAIN STZ $1B00
+        STZ $1B01
+        STZ $1B02
+        STZ $1B03
+        STZ $1B04
+        STZ $1B05
+        STZ $1B06
+        STZ $1B07
+        STZ $1B08
+        STZ $1B09
+        STZ $1B0A
+        STZ $1B0B
+        LDX #<BM_MTITLE
+        LDY #>BM_MTITLE
+        JSR BM_PUTS
+        JSR BM_READ
+        BCC BM_ABORT
+        LDA $1C01
+        BNE BM_MAIN
+        LDA BM_INPUT
+        BEQ BM_ABORT
+        CMP #'C'
+        BEQ ?COPY
+        CMP #'E'
+        BEQ ?ERASE
+        CMP #'M'
+        BEQ ?MAP
+        CMP #'Q'
+        BNE BM_MAIN
+        STA $1B01
+        LDA #$AC
+        STA $1B00
+        SEC
+        RTS
+?MAP   JMP BM_MAP
+?ERASE JMP BM_ERASE
+?COPY  JMP BM_COPY
+
+BM_ABORT LDA #$E0
+        STA $1B00
+        LDA #'A'
+        JSR BM_OUT
+        LDA #'B'
+        JSR BM_OUT
+        LDA #'O'
+        JSR BM_OUT
+        LDA #'R'
+        JSR BM_OUT
+        LDA #'T'
+        JSR BM_OUT
+        LDA #$0D
+        JSR BM_OUT
+        LDA #$0A
+        JSR BM_OUT
+        JMP BM_MAIN
+
+BM_READ LDX #<BM_INPUT
+        LDY #>BM_INPUT
+        JMP (HIM_READ_CSTR)
+
+BM_PUTS JMP (HIM_WRITE_CSTR)
+
+BM_OUT  JMP (HIM_WRITE_BYTE)
+
+BM_PARSE_BANK LDA $1C01
+        BNE BM_PB_BAD
+        LDA BM_INPUT
+        CMP #'0'
+        BCC BM_PB_BAD
+        CMP #'4'
+        BCS BM_PB_BAD
+        SEC
+        SBC #'0'
+        SEC
+        RTS
+BM_PB_BAD CLC
+        RTS
+
+BM_STAGE LDA $1B02
+        STA $1FEE
+        LDA $1B04
+        STA $1FE9
+        LDA #$0A
+        STA $1FF6
+        LDA #$06
+        STA $1FF0
+        JMP STR8_SERVICE
+
+BM_PROGRAM LDA $1B03
+        STA $1FEF
+        LDA $1B04
+        STA $1FE9
+        LDA #$0A
+        STA $1FF6
+        LDA #$05
+        STA $1FF0
+        JMP STR8_SERVICE
+
+BM_FILL LDA #$0A
+        STA $CB
+        STZ $CA
+        LDX #$10
+        LDA #$FF
+?FPAGE LDY #$00
+?FBYTE STA ($CA),Y
+        INY
+        BNE ?FBYTE
+        INC $CB
+        DEX
+        BNE ?FPAGE
+        RTS
+
+; Read-only live map: E=erased, U=used, P=protected Bank-3 F.
+BM_MAP  LDA #'M'
+        STA $1B01
+        LDX #<BM_MMAP
+        LDY #>BM_MMAP
+        JSR BM_PUTS
+        STZ $1B02
+?BANK   LDA #'B'
+        JSR BM_OUT
+        LDA $1B02
+        CLC
+        ADC #'0'
+        JSR BM_OUT
+        LDA #$80
+        STA $1B04
+?SECTOR LDA #' '
+        JSR BM_OUT
+        LDA $1B02
+        CMP #$03
+        BNE ?STAGE
+        LDA $1B04
+        CMP #$F0
+        BNE ?STAGE
+        LDA #'P'
+        BRA ?MARK
+?STAGE  JSR BM_STAGE
+        BCS ?SCAN
+        JMP BM_FSTAGE
+?SCAN   STZ $CA
+        LDA #$0A
+        STA $CB
+        LDX #$10
+?PAGE   LDY #$00
+?BYTE   LDA ($CA),Y
+        CMP #$FF
+        BNE ?USED
+        INY
+        BNE ?BYTE
+        INC $CB
+        DEX
+        BNE ?PAGE
+        LDA #'E'
+        BRA ?MARK
+?USED   LDA #'U'
+?MARK   JSR BM_OUT
+        LDA $1B04
+        CLC
+        ADC #$10
+        STA $1B04
+        BNE ?SECTOR
+        LDA #$0D
+        JSR BM_OUT
+        LDA #$0A
+        JSR BM_OUT
+        INC $1B02
+        LDA $1B02
+        CMP #$04
+        BCC ?BANK
+        JMP BM_SUCCESS
+
+BM_CABORT JMP BM_ABORT
+BM_COPY LDA #'C'
+        STA $1B01
+BM_CSRC LDX #<BM_MSRC
+        LDY #>BM_MSRC
+        JSR BM_PUTS
+        JSR BM_READ
+        BCC BM_CABORT
+        LDA BM_INPUT
+        BEQ BM_CABORT
+        JSR BM_PARSE_BANK
+        BCC BM_CSRC
+        STA $1B02
+BM_CDST LDX #<BM_MDST
+        LDY #>BM_MDST
+        JSR BM_PUTS
+        JSR BM_READ
+        BCC BM_CABORT
+        LDA BM_INPUT
+        BEQ BM_CABORT
+        JSR BM_PARSE_BANK
+        BCC BM_CDST
+        CMP #$03
+        BCS BM_CDST
+        CMP $1B02
+        BEQ BM_CDST
+        STA $1B03
+
+; Require a source reset vector in $8000-$FFFE before destructive copy.
+        LDA #$F0
+        STA $1B04
+        JSR BM_STAGE
+        BCS BM_CVECTOR
+        JMP BM_FSTAGE
+BM_CVECTOR
+        LDA $19FD
+        CMP #$80
+        BCC BM_CVEC
+        CMP #$FF
+        BNE BM_CCONF
+        LDA $19FC
+        CMP #$FF
+        BNE BM_CCONF
+BM_CVEC LDA #$E6
+        STA $1B00
+        JMP BM_FAIL
+
+BM_CCONF LDA $0A0C
+        CMP #'S'
+        BNE BM_CTYPE
+        LDA $0A0D
+        CMP #'R'
+        BNE BM_CTYPE
+        LDA $0A0E
+        CMP #$01
+        BNE BM_CTYPE
+        LDA $0A0F
+        CMP #$07
+        BNE BM_CTYPE
+        LDA #'!'
+        JSR BM_OUT
+        LDA #'S'
+        JSR BM_OUT
+        LDA #'T'
+        JSR BM_OUT
+        LDA #'R'
+        JSR BM_OUT
+        LDA #'8'
+        JSR BM_OUT
+        LDA #$0D
+        JSR BM_OUT
+        LDA #$0A
+        JSR BM_OUT
+BM_CTYPE LDX #<BM_MCTYPE
+        LDY #>BM_MCTYPE
+        JSR BM_PUTS
+        LDA $1B02
+        CLC
+        ADC #'0'
+        JSR BM_OUT
+        LDA $1B03
+        CLC
+        ADC #'0'
+        JSR BM_OUT
+        LDA #'>'
+        JSR BM_OUT
+        LDA #' '
+        JSR BM_OUT
+        JSR BM_READ
+        BCC BM_CNO
+        LDA $1C07
+        BNE BM_CNO
+        LDA BM_INPUT
+        CMP #'C'
+        BNE BM_CNO
+        LDA $1C01
+        CMP #'O'
+        BNE BM_CNO
+        LDA $1C02
+        CMP #'P'
+        BNE BM_CNO
+        LDA $1C03
+        CMP #'Y'
+        BNE BM_CNO
+        LDA $1C04
+        CMP #' '
+        BNE BM_CNO
+        LDA $1B02
+        CLC
+        ADC #'0'
+        CMP $1C05
+        BNE BM_CNO
+        LDA $1B03
+        CLC
+        ADC #'0'
+        CMP $1C06
+        BEQ BM_CYES
+BM_CNO JMP BM_ABORT
+BM_CYES LDA #$0D
+        JSR BM_OUT
+        LDA #$0A
+        JSR BM_OUT
+        LDA #$80
+        STA $1B04
+        STZ $1B05
+BM_CLOOP JSR BM_STAGE
+        BCS BM_CSTAGED
+        JMP BM_FSTAGE
+BM_CSTAGED
+        JSR BM_PROGRAM
+        BCS BM_CWRITTEN
+        JMP BM_FPROGRAM
+BM_CWRITTEN
+        INC $1B05
+        LDA #'.'
+        JSR BM_OUT
+        LDA $1B04
+        CLC
+        ADC #$10
+        STA $1B04
+        BNE BM_CLOOP
+        JMP BM_SUCCESS
+
+BM_ERASE LDA #'E'
+        STA $1B01
+BM_EBANK LDX #<BM_MBANK
+        LDY #>BM_MBANK
+        JSR BM_PUTS
+        JSR BM_READ
+        BCC BM_EABORT
+        LDA BM_INPUT
+        BEQ BM_EABORT
+        JSR BM_PARSE_BANK
+        BCC BM_EBANK
+        STA $1B02
+        STA $1B03
+        BRA BM_ESECTOR
+BM_EABORT JMP BM_ABORT
+BM_ESECTOR LDX #<BM_MSEC02
+        LDY #>BM_MSEC02
+        JSR BM_PUTS
+        JSR BM_READ
+        BCC BM_EABORT
+        LDA BM_INPUT
+        BEQ BM_EABORT
+        CMP #'A'
+        BNE BM_ENOTALL
+        LDA $1C01
+        CMP #'L'
+        BNE BM_ENOTALL
+        LDA $1C02
+        CMP #'L'
+        BNE BM_ESECTOR
+        LDA $1C03
+        BNE BM_ESECTOR
+BM_EALL LDA #$80
+        STA $1B04
+        LDA #$08
+        STA $1B05
+        LDA $1B02
+        CMP #$03
+        BNE BM_EASEL
+        DEC $1B05
+BM_EASEL LDA #'A'
+        STA $1B08
+        LDA #'L'
+        STA $1B09
+        STA $1B0A
+        LDA #$03
+        STA $1B0B
+        JMP BM_ECONF
+
+BM_ENOTALL LDA $1C01
+        BEQ BM_ESINGLE
+        CMP #'-'
+        BNE BM_ESECTOR
+        LDA $1C03
+        BNE BM_ESECTOR
+        LDA BM_INPUT
+        JSR BM_EHEX
+        BCC BM_ESECTOR
+        STA $1B04
+        LDA $1C02
+        JSR BM_EHEX
+        BCC BM_ESECTOR
+        CMP $1B04
+        BCC BM_ESECTOR
+        SEC
+        SBC $1B04
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        INC A
+        STA $1B05
+        LDA BM_INPUT
+        STA $1B08
+        LDA #'-'
+        STA $1B09
+        LDA $1C02
+        STA $1B0A
+        LDA #$03
+        STA $1B0B
+        JMP BM_ECONF
+
+BM_ESINGLE LDA BM_INPUT
+        JSR BM_EHEX
+        BCS BM_ESOK
+        JMP BM_ESECTOR
+BM_ESOK
+        STA $1B04
+        LDA #$01
+        STA $1B05
+        LDA BM_INPUT
+        STA $1B08
+        STZ $1B09
+        STZ $1B0A
+        LDA #$01
+        STA $1B0B
+        JMP BM_ECONF
+
+; Convert 8, 9, A-F to a sector high byte and enforce Bank-3 max E.
+BM_EHEX SEC
+        SBC #'8'
+        BCC BM_EBAD
+        CMP #$0F
+        BCS BM_EBAD
+        TAX
+        LDA BM_ETABLE,X
+        BEQ BM_EBAD
+        CMP #$F0
+        BEQ BM_ECHECKF
+        SEC
+        RTS
+BM_ECHECKF LDX $1B02
+        CPX #$03
+        BEQ BM_EBAD
+        LDA #$F0
+        SEC
+        RTS
+BM_EBAD CLC
+        RTS
+BM_ETABLE DB $80,$90,$00,$00,$00,$00,$00,$00,$00
+        DB $A0,$B0,$C0,$D0,$E0,$F0
+
+BM_ECONF LDX #<BM_METYPE
+        LDY #>BM_METYPE
+        JSR BM_PUTS
+        LDA $1B02
+        CLC
+        ADC #'0'
+        JSR BM_OUT
+        LDA $1B08
+        JSR BM_OUT
+        LDA $1B0B
+        CMP #$01
+        BEQ BM_ESELEND
+        LDA $1B09
+        JSR BM_OUT
+        LDA $1B0A
+        JSR BM_OUT
+BM_ESELEND
+        LDA #'>'
+        JSR BM_OUT
+        LDA #' '
+        JSR BM_OUT
+        JSR BM_READ
+        BCC BM_ENO
+        LDA BM_INPUT
+        CMP #'E'
+        BNE BM_ENO
+        LDA $1C01
+        CMP #'R'
+        BNE BM_ENO
+        LDA $1C02
+        CMP #'A'
+        BNE BM_ENO
+        LDA $1C03
+        CMP #'S'
+        BNE BM_ENO
+        LDA $1C04
+        CMP #'E'
+        BNE BM_ENO
+        LDA $1C05
+        CMP #' '
+        BNE BM_ENO
+        LDA $1B02
+        CLC
+        ADC #'0'
+        CMP $1C06
+        BNE BM_ENO
+        LDA $1B08
+        CMP $1C07
+        BNE BM_ENO
+        LDA $1B0B
+        CMP #$01
+        BEQ BM_EONELEN
+        LDA $1B09
+        CMP $1C08
+        BNE BM_ENO
+        LDA $1B0A
+        CMP $1C09
+        BNE BM_ENO
+        LDA $1C0A
+        BEQ BM_EYES
+        BNE BM_ENO
+BM_EONELEN LDA $1C08
+        BEQ BM_EYES
+BM_ENO JMP BM_ABORT
+BM_EYES
+        JSR BM_FILL
+        LDA #$0D
+        JSR BM_OUT
+        LDA #$0A
+        JSR BM_OUT
+        LDA $1B02
+        CMP #$03
+        BNE BM_ELOOP
+        SEI
+
+; No HIMON calls are permitted below here while erasing Bank 3.
+BM_ELOOP JSR BM_PROGRAM
+        BCS BM_EWRITTEN
+        JMP BM_FPROGRAM
+BM_EWRITTEN
+        LDA $1B02
+        CMP #$03
+        BEQ BM_ENODOT
+        LDA #'.'
+        JSR BM_OUT
+BM_ENODOT LDA $1B04
+        CLC
+        ADC #$10
+        STA $1B04
+        DEC $1B05
+        BNE BM_ELOOP
+        LDA $1B02
+        CMP #$03
+        BNE BM_SUCCESS
+        LDA #$AC
+        STA $1B00
+        JMP $F000
+
+BM_FSTAGE LDA #$E1
+        BRA BM_FAILCODE
+BM_FPROGRAM LDA #$E2
+        LDX $1FEA
+        STX $1B06
+        LDX $1FEB
+        STX $1B07
+BM_FAILCODE STA $1B00
+        LDA $1B01
+        CMP #'E'
+        BNE BM_FAIL
+        LDA $1B02
+        CMP #$03
+        BNE BM_FAIL
+        JMP $F000
+BM_FAIL LDA #'!'
+        JSR BM_OUT
+        LDA #$0D
+        JSR BM_OUT
+        LDA #$0A
+        JSR BM_OUT
+        JMP BM_MAIN
+
+BM_SUCCESS LDA #$AC
+        STA $1B00
+        LDA #' '
+        JSR BM_OUT
+        LDA #'O'
+        JSR BM_OUT
+        LDA #'K'
+        JSR BM_OUT
+        LDA #$0D
+        JSR BM_OUT
+        LDA #$0A
+        JSR BM_OUT
+        JMP BM_MAIN
+
+BM_MTITLE DB $0D,$0A,'S','T','R','8',' ','B','A','N','K',' '
+        DB 'M','A','I','N','T',$0D,$0A
+        DB 'B','3',' ','E','R','A','S','E',' ','R','E','T','U'
+        DB 'R','N','S',' ','T','O',' ','S','T','R','8',';',' '
+        DB 'S','E','L','E','C','T'
+        DB ' ','S',$0D,$0A
+        DB '!','S','T','R','8','=','S','O','U','R','C','E',' '
+        DB 'H','A','S',' ','S','T','R','8',$0D,$0A
+        DB 'C','=','C','O','P','Y',' ','E','=','E','R','A'
+        DB 'S','E',' ','M','=','M','A','P',' ','Q','=','Q','U'
+        DB 'I','T'
+        DB '>',' ',0
+BM_MMAP DB $0D,$0A,'B','A','N','K',' ','8',' ','9',' ','A'
+        DB ' ','B',' ','C',' ','D',' ','E',' ','F',$0D,$0A
+        DB 'E','=','E','R','A','S','E','D',' ','U','=','U','S'
+        DB 'E','D',' ','P','=','B','3','F',' ','P','R','O','T'
+        DB 'E','C','T','E','D'
+        DB $0D,$0A,0
+BM_MSRC DB 'S','O','U','R','C','E',' ','B','A','N','K',' '
+        DB '0','-','3','>',' ',0
+BM_MDST DB 'D','E','S','T',' ','B','A','N','K',' ','0','-','2'
+        DB '>',' ',0
+BM_MBANK DB 'B','A','N','K',' ','0','-','3','>',' ',0
+BM_MSEC02 DB 'S','E','C','T','O','R',' ','8','-','F',','
+        DB ' ','A','L','L',',',' ','O','R',' ','X','-','Y',';'
+        DB ' ','B','3',' ','M','A','X',' ','E','>',' ',0
+BM_MCTYPE DB 'T','Y','P','E',' ','C','O','P','Y',' ',0
+BM_METYPE DB 'T','Y','P','E',' ','E','R','A','S','E',' ',0
+        END

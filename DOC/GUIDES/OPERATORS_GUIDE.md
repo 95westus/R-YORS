@@ -31,7 +31,7 @@ enrollment policy, plus `U` / `UPDATE HIMON`, HIMON U1-to-U2 update, temporary
 BASIC and Forth payloads, and recovery back to known-good HIMON from backup
 flash. The current image replaces rotation/enrollment with an explicit
 single-bank backup destination. Its reset selector, uppercase interactive echo,
-and `J0`-`J2` handoff are hardware-accepted. The follow-up Bank Jump Record is
+and `J0`-`J3` handoff are hardware-accepted. The follow-up Bank Jump Record is
 host-accepted and still requires its separate persistence transcript.
 
 Treat this as a bench-proven recovery/update guard, not a finished field
@@ -113,13 +113,12 @@ Current combined-image facts:
 
 ```text
 HIMON:           $C000-$EECB
-STR8 image:      $F000-$FAEE
-IVI entries:     NMI $F0C0, IRQ/BRK $F0D4
-STR8 identity:   #5F6A0F7A
-marker bytes:    $F950 = 7A 0F 6A 5F
-worker source:   $FD03-$FFEF, copied to RAM when needed
+STR8 image:      $F000-$F9D0
+IVI entries:     NMI $F0BA, IRQ/BRK $F0CE
+STR8 ROM marker: $F8B0 = 7A 0F 6A 5F (not displayed in banner)
+worker source:   $FD93-$FFEF, copied to RAM when needed
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = C0 F0 00 F0 D4 F0
+vectors:         $FFFA-$FFFF = BA F0 00 F0 CE F0
 bank jump record:$1FFD-$1FFF = 42 4A bank/FF
 ```
 
@@ -140,13 +139,15 @@ D 1FFD 1FFF  42 4A FF
 
 ## First Boot
 
-On reset, STR8 initializes IVI vector cells and FTDI console I/O, waits
-silently for approximately four seconds, drains queued input, prints its
-make-time identity, then opens the existing three-second selector:
+On reset, STR8 initializes IVI vector cells and FTDI console I/O and prints 16
+progress dots across an approximately 5.991-second attach interval. It then
+drains queued input, prints its make-time identity, and opens the existing
+approximately six-second selector:
 
 ```text
-STR8-N V 00.mmdd(hhmm) #5F6A0F7A
-B3 0/1/2=BOOT 3=HIMON S=STR8 3 2 1
+................
+STR8-N V 00.mmdd(hhmm)
+0/1/2=BOOT 3=HIMON S=STR8 6 5 4 3 2 1
 ```
 
 STR8-N, HIMON, and ASM-F2 receive the same local `00.mmdd(hhmm)` stamp during
@@ -157,14 +158,20 @@ immediately warm-starts HIMON so RAM is preserved, and `S` or `s` enters the
 STR8 prompt. `0`, `1`, or `2` prints the selected bank, drains trailing input,
 prints `BOOT IN 3S`, waits approximately three more seconds, then uses the same
 non-destructive reset-vector handoff as `J0`, `J1`, or `J2`. Interactive
-`J0`-`J2` remain immediate and bare digits at the STR8 prompt remain
-destructive restore commands.
+`J0`-`J2` remain immediate. Bare digits at the STR8 prompt are not commands.
 
 The boot-selector protected install, visible build identity, cold timeout,
 STR8 takeover, queued-input flush, and warm-`3` RAM retention have hardware
 proof. Reset-time Bank 1 and Bank 2 delayed handoffs pass by capture, and
-Bank 0 is operator-accepted. The operator has accepted the current delay
-profile and all remaining selector and inventory gates. See
+Bank 0 is operator-accepted. The operator accepted the earlier selector delay
+profile and all remaining selector and inventory gates. The superseded
+four-dot display and current 16-dot/six-second emitter both run correctly on
+hardware. A power cycle captured 14 of the 16 dots because the serial path was
+not yet ready for the first two characters; already-live entries repeatedly
+captured all 16. The six-second `6 5 4 3 2 1` prompting delay has hardware
+proof for both a complete no-input timeout and a key accepted at count 6.
+The operator also verified that input sent during the dots is discarded before
+the selector opens. The attach-display and prompting-delay gates are complete. See
 [STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md).
 Any future delay change requires the affected timing checks to be repeated.
 
@@ -186,7 +193,7 @@ that exact target is intended.
 ## STR8 Commands
 
 ```text
-?       print STR8 ID, including #5F6A0F7A
+?       print STR8 version identity
 B       back up Bank 3 to selected Bank 0/1/2, destructive, confirmed
 U       update $C000-$EFFF from S19, destructive, confirmed
 0       restore Bank 0 -> Bank 3, destructive, confirmed
@@ -195,6 +202,7 @@ U       update $C000-$EFFF from S19, destructive, confirmed
 J0      non-destructive RAM handoff through Bank 0 reset vector
 J1      non-destructive RAM handoff through Bank 1 reset vector
 J2      non-destructive RAM handoff through Bank 2 reset vector
+J3      non-destructive RAM handoff through Bank 3 reset vector
 G       go to HIMON at $C000
 R       reset through the live reset vector
 ```
@@ -213,6 +221,15 @@ and direct installed-image checks. The six-byte echo follow-up passed its RAM
 successful jump, physical reset is the universal return to Bank 3.
 Use [STR8_J012_BOARD_TEST.md](STR8/STR8_J012_BOARD_TEST.md) for the guarded
 read-only inventory, RAM handoff, and resident-install sequence.
+
+The current host candidate adds `J3` as an explicit software return to Bank 3
+for a copied STR8 running in Bank 0-2. It reuses the same RAM worker and vector
+gate; `G`, `R`, and reset-selector `3` retain their local-bank meanings. An
+unrelated guest that does not contain STR8 cannot issue `J3`, so physical reset
+remains the universal recovery path. The installed parser and a Bank-0
+functional handoff smoke pass. A later distinguishable run entered Bank-0
+STR8 `1509`, issued `J3`, and reached Bank-3 STR8/HIMON `1518`; J3 is
+board-accepted.
 
 The former read-only `M` physical map was retired in the 2026-07-18 resident
 size pass. Its hardware transcript remains historical evidence; use host/image

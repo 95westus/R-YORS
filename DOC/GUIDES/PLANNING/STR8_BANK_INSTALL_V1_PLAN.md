@@ -1,9 +1,9 @@
 # STR8-N Four-Bank Installer V1 Plan
 
 ```text
-status:       DESIGN FROZEN; V1 DIRECTORY HOST CONTRACT CHECKED
-next gate:    V0 RECLAIM AND RESIDENT DIRECTORY VALIDATION; ACIA UNQUALIFIED
-source date:  2026-07-31
+status:       DESIGN FROZEN; V0 RECLAIM BOARD-PROVEN; WORKER FAIL-CLOSED
+next gate:    RESIDENT DIRECTORY VALIDATION; ACIA UNQUALIFIED
+source date:  2026-08-01
 ```
 
 This is the accepted V1 plan for turning the WDC board into four independently
@@ -123,12 +123,15 @@ when all sixteen transactions are consumed. A partial first-install descriptor
 is record-INVALID and nonlaunchable even when its independently scanned journal
 correctly reports STARTED and the same retry pair.
 
-A direct resident validator trial measured `$0115` bytes. Without the planned
-V0 reclaim it would reduce the V1 resident/worker reserve from `$01D4` to
-`$00BF`, violating the hard `$0100` floor by `$0041`. The build gate correctly
-rejected that layout, so this slice adds no resident validator and no flash
-mutation. Resident promotion follows the already-planned V0 command/message
-and worker-mode reclaim.
+A direct resident validator trial measured `$0115` bytes. Before V0 reclaim it
+would have reduced the V1 resident/worker reserve from `$01D4` to `$00BF`,
+violating the hard `$0100` floor by `$0041`; the build gate correctly rejected
+that layout. The completed copy/restore reclaim raised the pre-validator
+reserve to `$03A4`; the later 16-dot attach display and leading newline use
+`$001F`, and the `J3` help text uses `$0003`, leaving the current reserve at
+`$0382`. Promoting the same validator would leave `$026D`.
+Resident promotion is the next slice; this host-contract slice itself still
+adds no resident validator and no flash mutation.
 
 ## Seal and Install Journal
 
@@ -192,6 +195,11 @@ The V1 prompt is:
 ? I J0 J1 J2 J3 R
 ```
 
+During the measured reclaim transition, before `I` lands, the compiled prompt
+is `? U J0 J1 J2 J3 G R`. The hardware-proven `U` updater remains until
+`I` replaces it, and `G` remains until the directory-gated Bank-3 local-entry
+handoff replaces it. `B` and bare `0`, `1`, and `2` are already retired.
+
 `?` prints the STR8-N identity and compact directory status. `I` installs a
 bank image. `J0` through `J3` perform non-destructive handoff. `R` selects Bank
 3 and resets into STR8-N.
@@ -213,8 +221,11 @@ Command and prompted input use a small shared line editor:
 The STR8-N version line contains no guessed bank suffix:
 
 ```text
-STR8-N V 00.xxxx(xxxx) #5F6A0F7A
+STR8-N V 00.xxxx(xxxx)
 ```
+
+The binary marker bytes `7A 0F 6A 5F` remain in ROM for image recognition;
+they are not operator-facing banner text.
 
 ## `I` Operator Flow
 
@@ -443,8 +454,12 @@ Immediately before the final jump, the RAM worker publishes:
 $1FFD-$1FFF = $42 $4A bank
 ```
 
-The accepted bank range expands from `$00-$02` to `$00-$03`. HIMON cold-clear
-preservation changes its validation from bank `<3` to bank `<4`.
+The transitional source now uses shared `STR8_BANK_COUNT=$04` in STR8, its RAM
+worker, and HIMON cold-clear preservation. This accepts record banks `$00-$03`
+and prevents the pre-J3 `<3` preservation bound from returning. The compiled
+host gate passes. HIMON `00.0802(1536)` preserves `42 4A 03` through both the
+J3 cold entry and an explicit `HCOLD`, accepting the corrected Bank-3 path on
+hardware. The broader record matrix remains a separate gate.
 
 The directory is checked while Bank 3 is visible. Launch state and the selected
 entry are copied into RAM before another bank is selected.
@@ -462,7 +477,58 @@ $08  JUMP_BANK
 
 Mode `$06` remains required by HIMON AP support. The V0 full-copy and restore
 modes are retired. The worker dispatcher explicitly rejects every unrecognized
-mode.
+mode. `make -C SRC str8-worker-mode-check` executes the compiled dispatcher
+prefix for all 256 byte values: `$05-$08` must reach their exact entry points,
+and all other 252 values must return carry clear before calling any operation.
+
+The `STR8-N V 00.0801(2234)` board proof installed the reclaimed image through
+TopWriter, confirmed that `B` and bare `0`, `1`, and `2` all return `?`, and
+ran a RAM fixture across all 252 unrecognized mode bytes. The fixture returned
+`A=$AC`, carry set, with its four-byte failure record still zero. This accepts
+the reclaim slice.
+
+The same capture invoked reset-time Bank 2 and resident `J2` and `J1`, but it
+does not prove a sustained guest boot. Banks 1 and 2 contain a STR8-bearing
+image with reset vector `$F000`; after each `J Bn`, the next visible banner is
+Bank-3 `00.0801(2234)`. The selected image's STR8 initialization writes the
+Bank-3 PCR value before printing, so it remaps Bank 3 immediately. This is a
+regression from the earlier hardware-proven opaque-bank behavior, not an
+accepted guest contract. Current source removes that unconditional write and
+leaves the selected bank unchanged. Repaired `00.0802(1323)` is installed, and
+a later full Bank-3-to-Bank-2 copy retained the distinct older Bank-2 HIMON
+`0731` payload through reset-selector `2` and cold entry after Bank 3 had been
+updated to HIMON `1334`. This accepts sustained Bank-2 startup. The same
+direct-run utility also completed a verified Bank-3-to-Bank-1 copy, but Banks
+1 and 3 shared the `1334` identity in that capture. A later no-hash Bank-3
+`1404` install made the older Bank-1 `1323/1334` and Bank-2 `1323/0731`
+payloads independently distinguishable; the cross-bank selector routes retained
+Banks 1 and 2. Resident `J1` and `J2` were then self-target tests from those
+already-selected banks, not cross-bank direct-J proof. The same utility also
+completed a verified Bank-3-to-Bank-0 copy. Because Banks 0 and 3 were then
+byte-identical, that capture alone did not prove Bank-0 persistence. A terminal
+continuation later crossed directly from an old `1323` bank through `J0` into
+Bank-0 `1404`, independently accepting Bank 0, and crossed from a `1404` bank
+through direct `J2` into Bank-2 `1323`. A later 16-dot run crossed from
+distinct Bank-0 `1404` through `J1` into a `1420/1425` image, but Banks 1 and
+3 were exact copies at that point; it therefore does not independently prove
+that Bank 1 remained selected. The following direct `J2` reached distinct
+Bank-2 HIMON `1404` and reconfirmed that destination. Cross-bank direct `J1`
+was then closed with four distinct bank identities: Bank-2 STR8 `1420` issued
+`J1`, reached Bank-1 STR8 `1440`, and warm-entered its local HIMON `1440`,
+while Bank 3 had already advanced to STR8/HIMON `1452`. Cross-bank direct
+`J0/J1/J2` and sustained Bank-0/1/2 execution are accepted. The later V1
+directory, installer, migration, persistent bank handoff, and complete
+`$05-$08` acceptance gates remain open.
+
+The transitional host image now also accepts `J3` through the same RAM worker,
+providing an explicit software return from a copied STR8 to Bank 3 before the
+directory manager lands. Its range/table and normal/RAM builds pass. The
+installed parser and a Bank-0 functional handoff smoke also pass, but the
+first source and target images were identical. The follow-up entered Bank-0
+STR8 `1509`, issued `J3`, and reached distinct Bank-3 STR8/HIMON `1518`; the
+transitional J3 path is board-accepted. The later V1 work still must
+directory-gate `J0-J3` and replace this raw Bank-3 reset-vector return with the
+published local entry.
 
 ## TopWriter Migration and Preservation
 
@@ -487,7 +553,7 @@ is an explicit full-image operation, not an `I3` payload installation.
 
 ## Current Size Baseline and Budget
 
-The accepted preimplementation host build reports:
+The accepted preimplementation host build reported:
 
 ```text
 STR8 resident code/data  $F000-$FAEE  size $0AEF = 2799
@@ -495,27 +561,39 @@ stored worker            $FD03-$FFEF  size $02ED = 749
 resident/worker gap      $FAEF-$FD02  size $0214 = 532
 ```
 
-Moving the unchanged worker below the directory would produce:
+The first V0 reclaim slice removed `B`, bare `0/1/2`, their resident clients,
+and worker copy/restore modes `$00/$01/$03`. It retained `U`, `G`, and worker
+modes `$05-$08`. The current 16-dot attach countdown adds 31 resident bytes.
+The current measured build reports:
 
 ```text
-stored worker            $FCC3-$FFAF
-resident/worker gap      $FAEF-$FCC2  size $01D4 = 468
+STR8 resident code/data  $F000-$F9D0  size $09D1 = 2513
+stored worker            $FD53-$FFAF  size $025D = 605
+resident/worker gap      $F9D1-$FD52  size $0382 = 898
 required post-I reserve                 $0100 = 256
-immediate growth room                   $00D4 = 212
+immediate growth room                   $0282 = 642
 ```
 
+The reclaim originally removed `$0140` resident bytes and `$0090` worker bytes,
+`$01D0` total. The 16-dot display consumes `$001F` and `J3` consumes `$0003`
+of that resident saving, leaving a net `$011E` resident and `$01AE` total
+reduction from the baseline.
+Promoting the measured `$0115` directory validator without any further
+optimization would leave `$026D` between resident code and the packed worker,
+including `$016D` beyond the hard `$0100` floor.
+
 The 2026-08-01 host preflight now enforces this future layout on every normal
-combined-ROM build while leaving the current image unchanged. The accepted
-preflight output is:
+combined-ROM build while leaving the legacy top-sector layout selected. The
+accepted preflight output is:
 
 ```text
-V1 PREFLIGHT WORKER       = FCC3-FFAF/2ED (not emitted)
+V1 PREFLIGHT WORKER       = FD53-FFAF/25D (not emitted)
 V1 PREFLIGHT DIRECTORY    = FFB0-FFEF/40 (not emitted)
-V1 PREFLIGHT RESERVE      = FAEF-FCC2/1D4 (min 100)
+V1 PREFLIGHT RESERVE      = F9D1-FD52/382 (min 100)
 V1 PREFLIGHT CONFIG/VECT  = FFF0-FFFF unchanged
 ```
 
-The normal builder still emits the current worker at `$FD03-$FFEF`; it does
+The normal builder emits the current worker at `$FD93-$FFEF`; it does
 not reserve directory bytes or alter TopWriter output. The separate guarded
 target:
 
@@ -524,18 +602,17 @@ make -C SRC str8-v1-layout-preview
 ```
 
 builds `BUILD/bin/himon-str8-v1-layout-preview.bin` with the worker at
-`$FCC3-$FFAF` and all 64 directory bytes at `$FFB0-$FFEF` equal to `$FF`.
+`$FD53-$FFAF` and all 64 directory bytes at `$FFB0-$FFEF` equal to `$FF`.
 It uses a separately assembled STR8 image whose worker-copy constant matches
-`$FCC3`. The preview target is not part of `all`, `firmware`, or `release`; it
+`$FD53`. The preview target is not part of `all`, `firmware`, or `release`; it
 does not produce an install S19, TopWriter, or stamped ROM image. It is not a
 flashable migration artifact. Actual onboard V1 layout installation remains
 gated on the explicit migration path and directory-preserving later TopWriter
 behavior.
 
-Estimated reclaim is approximately 727 resident bytes from retired V0 command
-clients and messages, plus 120-155 worker bytes from retired full-copy and
-restore paths. That gives the new installer approximately 1059-1094 bytes while
-retaining the hard `$0100` floor.
+The remaining final command-surface reclaim occurs only as `I` replaces `U`
+and directory-gated `J3` replaces `G`. Their proven transitional paths are not
+removed merely to gain space.
 
 The gross installer estimate remains 700-1100 bytes. The build gate, not the
 estimate, decides acceptance. If the first implementation is too large, it is

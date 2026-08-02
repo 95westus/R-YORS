@@ -1,6 +1,6 @@
 ; ----------------------------------------------------------------------------
 ; str8-jump-eq.inc
-; Shared resident/worker constants for non-destructive J0-J2 handoff.
+; Shared resident/worker constants for non-destructive J0-J3 handoff.
 ; ----------------------------------------------------------------------------
 
 STR8_COPY_MODE_JUMP_BANK EQU           $08
@@ -19,6 +19,7 @@ STR8_BANK_LAST_JUMP     EQU             $1FFF
 
 STR8_BANK_JUMP_SIG0_VALUE EQU           'B'
 STR8_BANK_JUMP_SIG1_VALUE EQU           'J'
+STR8_BANK_COUNT         EQU             $04
 STR8_BANK_NONE          EQU             $FF
 
 STR8_JUMP_STATUS_NONE   EQU             $00

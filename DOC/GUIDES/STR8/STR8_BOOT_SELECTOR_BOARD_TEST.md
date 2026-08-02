@@ -23,11 +23,11 @@ host build as board acceptance.
 
 ```text
 physical reset
-  initialize IVI, private console I/O, and explicit Bank 3 selection
+  initialize IVI and private console I/O without changing the selected bank
   wait silently about 4 seconds
   drain queued RX with the existing bounded flush
-  print STR8-N V 00.mmdd(hhmm) #5F6A0F7A
-  open the existing 3-second selector
+  print STR8-N V 00.mmdd(hhmm)
+  open the approximately 6-second selector
 
 selector timeout  -> Bank 3 HIMON cold
 3                 -> Bank 3 HIMON warm immediately, preserving RAM
@@ -42,9 +42,9 @@ S or s            -> STR8 prompt immediately
 Bare `0`, `1`, and `2` at the STR8 prompt remain destructive restore commands.
 Prompt `J0`, `J1`, and `J2` remain immediate and must not print `BOOT IN 3S`.
 
-The software delays are approximately 4.003 seconds and 3.010 seconds at
-8 MHz and are accepted for this candidate. The established selector countdown
-remains approximately 3 seconds. Any future timing change creates a changed
+The current attach and selector-prompt delays are each approximately 5.991
+seconds at 8 MHz. The separate selected-bank `BOOT IN 3S` delay remains
+approximately 3.010 seconds. Any future timing change creates a changed
 candidate and reopens the corresponding hardware timing observation. One
 combined host build gives STR8-N, HIMON, and ASM-F2 the same local stamp. A
 top-sector-only install must match STR8-N against its staged top-sector
@@ -222,6 +222,11 @@ reselects Bank 3 before continuing. These captures prove that `1` and `2`
 invoke the additional-delay route and reach their expected guests; they do
 not constitute an elapsed-time measurement.
 
+The 2026-08-01 diagnosis supersedes the interpretation above: the copied
+image's unconditional Bank-3 selection was a startup regression, not required
+handoff behavior. Current source preserves the bank selected by `1`, `2`, or
+`J0`-`J2`; see `STR8_J012_BOARD_TEST.md` for the focused repair gate.
+
 ### Reset-Time Bank 0 Operator Acceptance
 
 The operator explicitly accepts the reset-time Bank 0 selector. No additional
@@ -296,3 +301,275 @@ captures remain the source for capture-backed evidence.
 This candidate has no remaining selector gates. A future delay adjustment
 changes the candidate and requires the affected timing and selector
 observations to be repeated.
+
+## 2026-08-02 Four-Dot Attach Follow-Up
+
+Status: partial board pass; exact power-cycle count and dot-time RX flush open.
+
+Current source replaces the first silent attach interval with four visible dot
+ticks. Each tick is approximately 0.994 seconds at 8 MHz, for approximately
+3.975 seconds total before the identity. The terminal result must be:
+
+```text
+....
+STR8-N V 00.mmdd(hhmm)
+```
+
+The dots are progress only; they do not arm selector input. The bounded RX
+flush still occurs after the fourth dot and before the identity and selector.
+For focused board acceptance:
+
+1. Reset with no input and require exactly four dots, about one second apart,
+   followed by the identity and normal selector.
+2. Type `2` during the dot interval and require it to be discarded. The normal
+   selector must time out to Bank-3 HIMON cold.
+3. Reset, wait until the identity/selector appears, then enter `S`; require
+   immediate STR8 takeover.
+4. Reconfirm selector timeout and one known Bank-0/1/2 route. The later
+   three-second `BOOT IN 3S` delay is unchanged.
+
+This source change adds 23 resident bytes. It moves the STR8 code/data end to
+`$F9C5` and leaves the normal resident/worker gap at `$F9C6-$FD92`, `$03CD`
+bytes. The previous silent-delay acceptance remains valid only for its recorded
+candidate; it does not accept this visible-dot revision.
+
+### 2026-08-02 Board Result
+
+The current `$F8AC/$F8E3` TopWriter assembled and passed stage, verify, and
+confirmed program. A power-off reset reached no-hash STR8 `00.0802(1404)`, but
+the first captured line was `>...`, not a separate four-dot line. Later live
+Bank-3 and copied Bank-0 STR8 entries repeatedly produced exactly:
+
+```text
+....
+STR8-N V 00.0802(1404)
+```
+
+This accepts the four-dot routine and line formatting on hardware. It does not
+close step 1 for a power cycle because that capture contains only three visible
+dots, and it does not close step 2 because no byte was injected during the dot
+interval. Repeat those two focused checks with the terminal already attached
+and a hardware reset that does not disconnect the serial adapter.
+
+Normal `S`, timeout/cold entry, selector Bank 0/1/2 routes, and prompt
+`J0`/`J1`/`J2` continued to work in the same session. The later `BOOT IN 3S`
+delay was unchanged.
+
+## 2026-08-02 Sixteen-Dot / Six-Second Follow-Up
+
+Status: host and board pass; all attach-display gates complete.
+
+The current candidate supersedes the four-dot timing with 16 emitted dots over
+approximately 5.991 seconds:
+
+```text
+................
+STR8-N V 00.mmdd(hhmm)
+```
+
+The first three ticks are approximately 0.398 seconds each; the remaining
+thirteen are approximately 0.369 seconds each. Selector input remains disabled
+through the sequence, and the bounded RX flush occurs after dot 16.
+
+A true power cycle also resets the FTDI bridge and forces USB enumeration and
+terminal reconnection. The CPU can transmit early dots before the host has
+reopened the serial path, so a power-cycle transcript may legitimately omit
+leading dots. The superseded candidate's repeated four-dot output with an
+already-live connection is evidence that its loop was correct. Use a hardware
+reset that leaves the FTDI/USB connection enumerated when proving the exact
+16-dot count.
+
+Board acceptance requires:
+
+1. With the terminal already connected, hardware-reset the CPU and require all
+   16 dots followed by the no-hash identity.
+2. On another reset, send `2` during the dots. Require it to be discarded and
+   require selector timeout to local HIMON unless a new post-flush key is sent.
+3. Reconfirm `S` after the banner and one `0`/`1`/`2` selector route. The later
+   `BOOT IN 3S` delay is unchanged.
+
+The 16-dot scheduler adds 8 bytes over the four-dot version, 31 bytes total
+over the no-progress baseline. The later `J3` help addition adds 3 more bytes.
+Current STR8 code/data ends at `$F9D0`; the normal gap is `$F9D1-$FD92`,
+`$03C2` bytes, and the V1 preflight reserve is `$F9D1-$FD52`, `$0382` bytes.
+The generated TopWriter checks the current face at `$F8B4` and prompt at
+`$F8EE`.
+
+### 2026-08-02 Board Result
+
+The `$F8B4/$F8EB` TopWriter assembled, staged, verified, and programmed the
+no-hash STR8 `00.0802(1420)` candidate. Already-live STR8 entries repeatedly
+printed exactly 16 dots on their own line before the identity. The power-off
+capture began with only 14 visible dots:
+
+```text
+>..............
+STR8-N V 00.0802(1420)
+```
+
+The same installed image printed all 16 dots on every later entry. That
+contrast accepts the 16-dot emitter and supports the expected explanation:
+the CPU emitted the first two characters before the power-cycled FTDI/host
+serial path was ready. A true power-cycle transcript is therefore not an
+exact-count gate; use an already-enumerated reset when an exact reset capture
+is wanted.
+
+The same run selected Banks 2, 1, and 0 in sequence. Bank 2 was independently
+distinguished by HIMON `1404`, and Bank 0 by its older four-dot STR8 `1404`
+image. Bank 1 and Bank 3 were exact `1420/1425` copies, so the Bank-1 trace is
+not an independent persistence observation in this session; the earlier
+distinct-payload Bank-1 proof remains authoritative. `S` and the later
+`BOOT IN 3S` handoff remained correct. No byte was injected during the 16-dot
+interval in that capture, so the post-dot RX-flush behavior remained the only
+focused gate until the later operator acceptance below.
+
+## 2026-08-02 Six-Second Prompting Delay
+
+Status: host and board pass.
+
+This change does not alter the 16-dot attach sequence. After dot 16, the RX
+flush, and the STR8-N identity, the boot selector now displays:
+
+```text
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+```
+
+One approximately 1.022-second tick followed by five approximately
+0.994-second ticks gives a modeled selector-prompt interval of approximately
+5.991 seconds at 8 MHz. The later `BOOT IN 3S` pause after choosing Bank 0, 1,
+or 2 is unchanged at approximately 3.010 seconds. The constant-only change has
+no resident code-size or address effect.
+
+Board acceptance requires one no-input timeout showing `6 5 4 3 2 1`, plus
+one valid selector key accepted during the extended prompt. The already-proven
+16-dot count does not need to be repeated unless its output changes.
+
+### Board Result
+
+The `$F8B4/$F8EB` TopWriter assembled through `ASM OK` and `SEAL`, then passed
+stage, verify, confirmed Bank-3 program, and return. The installed candidate
+identified as STR8/HIMON `00.0802(1440)`. With no selector input it displayed
+the full prompting countdown and cold-entered local HIMON:
+
+```text
+STR8-N V 00.0802(1440)
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+HIMON V 00.0802(1440)
+```
+
+On the next live entry, `0` was accepted during the first count:
+
+```text
+STR8-N V 00.0802(1440)
+0/1/2=BOOT 3=HIMON S=STR8  6 0
+J B0
+BOOT IN 3S
+```
+
+This closes the no-input timeout and extended-prompt key gates. Bank 0 then
+ran its older four-dot/three-count `1404` image, confirming that only Bank 3
+received the new top sector. The separate three-second selected-bank pause
+remained present. Exact wall-clock measurement was not supplied; acceptance
+is based on all six modeled ticks executing on hardware.
+
+### Distinct Bank-1 Follow-Up
+
+After copying Bank-3 `1440` to Bank 1, the operator advanced only Bank 3 to
+STR8/HIMON `1452`. From that distinct Bank-3 image, reset selector `1` printed
+`J B1`, retained the separate `BOOT IN 3S` pause, and reached Bank-1 STR8
+`1440`. This independently reconfirms the reset-time Bank-1 route and proves
+the selected bank remained active after startup.
+
+### Operator Acceptance: Dot-Time Input Rejection
+
+The operator explicitly verified that input sent during the 16-dot attach
+interval is discarded by the post-dot RX flush and is not consumed as a boot
+selector response. Discarded input intentionally leaves no printable terminal
+token, so this is operator-observed hardware proof. This closes the last
+attach-display gate.
+
+## 2026-08-02 Unavailable Local-App Fallback
+
+Status: host and board pass.
+
+STR8 now checks the first 16 bytes at the selected bank's local `$C000` before
+the timeout/cold handoff and before the `3` or `G` warm handoff. An all-`$FF`
+entry face prints `NO BOOT @C000` and enters the STR8 menu. This is the small
+safe response to an erased HIMON or user-app window; it does not claim that a
+non-erased target is complete or valid.
+
+Keep the current HIMON update S19 available before the destructive check.
+Using the direct-run maintenance utility, select `E`, Bank 3, and range `8-E`,
+then enter the exact confirmation `ERASE 38-E`. Sector F and STR8 remain
+installed. At the next STR8 selector, provide no input and require:
+
+```text
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+
+NO BOOT @C000
+STR8-N V ...
+ROM $F000
+? U J0 J1 J2 J3 G R
+STR8-N>
+```
+
+There must be no second attach-dot sequence and no reset loop. Issue `G` and
+require `G HIMON`, followed by `NO BOOT @C000` and the same resident prompt.
+Then use `U` to reinstall HIMON and verify both no-input cold entry and `G`
+warm entry normally reach the restored image.
+
+An empty Bank 0-3 selected with `Jn` remains covered by the separate reset-
+vector gate: it must print `JERR Bn V=FFFF` and return to the menu without
+jumping. Append the raw board transcript after the new local-`$C000` behavior
+is observed; the earlier erased-Bank-3 capture documents the failure that this
+gate is intended to close, not acceptance of the fix.
+
+### Board Result
+
+STR8 `00.0802(1709)` and the direct-run maintenance utility assembled and ran
+on the board. The operator selected `E`, Bank 3, sector C, and entered the
+exact `ERASE 3C` confirmation. The utility made no post-erase HIMON call and
+returned through the still-resident Bank-3 STR8 sector F.
+
+No selector input was supplied. After the complete six-count timeout, the
+candidate detected the erased `$C000-$C00F` entry face and entered its menu:
+
+```text
+................
+STR8-N V 00.0802(1709)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+
+NO BOOT @C000
+
+STR8-N V 00.0802(1709)
+ROM $F000
+? U J0 J1 J2 J3 G R
+STR8-N>
+```
+
+There was no second attach sequence or reset loop. `U` then reprogrammed and
+verified `$C000-$EFFF`; the following `G` printed `BOOT WARM` and entered
+HIMON `00.0802(1657)`. This hardware-accepts the requested no-input fallback
+and recovery path.
+
+The focused follow-up erased Bank-3 range `9-D`, allowed the no-input timeout
+to return to the menu, and then issued `G` while `$C000` was still erased:
+
+```text
+STR8-N>G
+G HIMON
+
+NO BOOT @C000
+
+STR8-N V 00.0802(1709)
+ROM $F000
+? U J0 J1 J2 J3 G R
+STR8-N>
+```
+
+A new STR8 entry then selected `3` during count `6` and produced the same
+`NO BOOT @C000` menu fallback. The no-input/cold, `G` warm, and selector-`3`
+warm paths are now all directly hardware-accepted.

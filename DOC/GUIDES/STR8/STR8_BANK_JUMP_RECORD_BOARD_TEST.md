@@ -1,12 +1,12 @@
 # STR8 Bank Jump Record Board Test
 
 This is the hardware-proof rail for the published record of the last validated
-STR8 `J0`-`J2` handoff.
+STR8 `J0`-`J3` handoff.
 
 ```text
-status:       HOST ACCEPTED; HARDWARE PENDING
-candidate:    himon-str8-rom.bin
-source date:  2026-07-31
+status:       J3 COLD FIX HOST+HARDWARE PASS; FULL RECORD MATRIX PENDING
+candidate:    himon-str8-rom.bin / current post-fix HIMON update S19
+source date:  2026-08-02
 record:       $1FFD-$1FFF = 42 4A bank/FF
 ```
 
@@ -19,16 +19,17 @@ external recovery path available.
 
 ```text
 HIMON START/NMI/IRQ/END = C000/E64C/E64F/EECC
-STR8 START/NMI/IRQ/END  = F000/F0C0/F0D4/FAEF
-WORKER RUN/STORE/SIZE   = 0200/FD03-FFEF/2ED
-STR8 RES/WORKER GAP     = FAEF-FD02/214 (min 200)
-BANK JUMP RECORD        = 1FFD-1FFF; 42 4A bank/FF
-Vectors NMI/RESET/IRQ   = F0C0/F000/F0D4
+STR8 START/NMI/IRQ/END  = F000/F0BA/F0CE/F9D1
+WORKER RUN/STORE/SIZE   = 0200/FD93-FFEF/25D
+STR8 RES/WORKER GAP     = F9D1-FD92/3C2 (min 200)
+BANK JUMP RECORD        = 1FFD-1FFF; 42 4A bank/FF; banks 00-03
+Vectors NMI/RESET/IRQ   = F0BA/F000/F0CE
 ```
 
 The combined-image build must reject disagreement in the record addresses
 among resident STR8, the RAM worker, and HIMON. It must also reject signature
-or unknown-bank values other than `$42`, `$4A`, and `$FF`.
+or bank-count disagreement. The shared `STR8_BANK_COUNT=$04` makes valid bank
+bytes `$00-$03`; `$FF` remains the explicit unknown value.
 
 ## Contract Under Test
 
@@ -36,6 +37,7 @@ or unknown-bank values other than `$42`, `$4A`, and `$FF`.
 successful J0 -> before JMP publish 42 4A 00
 successful J1 -> before JMP publish 42 4A 01
 successful J2 -> before JMP publish 42 4A 02
+successful J3 -> before JMP publish 42 4A 03
 invalid target/vector -> do not replace the preceding committed record
 HIMON warm start -> RAM is not cleared; record remains unchanged
 HIMON cold start -> preserve a valid record and republish its bank
@@ -56,10 +58,37 @@ PCR still selects that bank after the guest resets or returns through Bank 3.
    `42 4A 00`.
 5. Repeat the handoff and cold-preservation check for `J1` and `J2`, expecting
    `42 4A 01` and `42 4A 02`.
-6. Exercise an invalid or erased-vector handoff if a safe fixture is available.
+6. From a copied STR8 bank, issue `J3`, allow Bank-3 STR8 to time out through
+   `RAM ZERO` into the updated HIMON, and run `D 1FFD 1FFF`. Expect
+   `42 4A 03`. Run `HCOLD` and repeat the dump; it must remain `42 4A 03`.
+7. Exercise an invalid or erased-vector handoff if a safe fixture is available.
    Confirm that it returns to Bank 3 and does not commit a new record.
-7. Recheck all four bank CRCs. The non-destructive handoff tests must not alter
+8. Recheck all four bank CRCs. The non-destructive handoff tests must not alter
    flash.
+
+The J3 switching path itself is already hardware-accepted. The updated test is
+specifically for the corrected HIMON cold-clear bound: the earlier `CMP #$03`
+rejected record byte `$03`, while the shared `$04` bound preserves Banks 0-3.
+The instruction size and all resident addresses are unchanged.
+
+## 2026-08-02 J3 Cold-Preservation Acceptance
+
+The updated HIMON `00.0802(1536)` installed through resident `U`. From
+Bank-3 STR8 `1518`, selector `0` entered the verified Bank-0 STR8 `1509` copy.
+Its resident `J3` returned to Bank-3 STR8 `1518`; the normal timeout then
+entered updated HIMON through `BOOT COLD` and `RAM ZERO OK`.
+
+The first dump proved that the corrected cold clear preserved Bank 3:
+
+```text
+>D 1FFD 1FFF
+1FFD: 42 4A 03 | BJ.
+```
+
+An explicit confirmed `HCOLD` printed `BOOT COLD` and `RAM ZERO OK`; the repeat
+dump remained exactly `42 4A 03`. This closes the J3 cold-preservation fix.
+The complete board card still retains its separate unknown baseline,
+J0/J1/J2, invalid-vector, and final CRC gates.
 
 Append the raw transcript and candidate fingerprint to the hardware log. Do
 not rewrite the earlier accepted selector/J evidence, whose addresses belong

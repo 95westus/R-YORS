@@ -60,10 +60,10 @@ space.
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: ASM-F2 starts at
 CPU `$8000` / file offset `$0000`, HIMON starts at CPU `$C000` / file offset
 `$4000`, STR8 starts at CPU `$F000` / file offset `$7000`, the STR8 RAM worker
-source is stored at CPU `$FD03` / file offset `$7D03`, copied into the
+source is stored at CPU `$FD93` / file offset `$7D93`, copied into the
 `$0200-$09FF` RAM worker-code tray, and all live hardware vectors enter the
 STR8-owned top sector. RESET points to STR8 at `$F000`; NMI and IRQ/BRK point
-to STR8 IVI stubs at `$F0C0`/`$F0D4`, which dispatch through the RAM vector
+to STR8 IVI stubs at `$F0BA`/`$F0CE`, which dispatch through the RAM vector
 cells.
 
 Combined image layout:
@@ -73,10 +73,10 @@ $8000-$BC6C   ASM-F2 low-flash image, entry $800C
 $BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
 $C000-$EECB   HIMON body, including resident AP import linker
 $EECC-$EFFF   current image gap inside the used E sector
-$F000-$FAEE   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
-$F950         STR8 identity marker bytes: 7A 0F 6A 5F (#5F6A0F7A)
-$FAEF-$FD02   current contiguous top-sector growth hole
-$FD03-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray
+$F000-$F9D0   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
+$F8B0         STR8 binary marker bytes: 7A 0F 6A 5F (not displayed)
+$F9D1-$FD92   current contiguous top-sector growth hole
+$FD93-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
@@ -288,7 +288,7 @@ The SSD is `$0A00-$19FF`; consolidating older high-RAM staging into that deck
 is future implementation work.
 
 STR8 also uses the RSC at `$1FE9-$1FFF` for bank/sector copy state, failure
-address reporting, startup flags, and update state. `J0`-`J2` use
+address reporting, startup flags, and update state. `J0`-`J3` use
 `$1FF2-$1FF5` for target bank, reset-vector low/high, and handoff status.
 
 The published Bank Jump Record occupies the RSC tail:
@@ -297,7 +297,7 @@ The published Bank Jump Record occupies the RSC tail:
 | ---: | --- | --- |
 | `$1FFD` | `STR8_BANK_JUMP_SIG0` | `$42` (`B`) |
 | `$1FFE` | `STR8_BANK_JUMP_SIG1` | `$4A` (`J`) |
-| `$1FFF` | `STR8_BANK_LAST_JUMP` | last validated target bank `0`-`2`, or `$FF` |
+| `$1FFF` | `STR8_BANK_LAST_JUMP` | last validated target bank `0`-`3`, or `$FF` |
 
 The RAM worker commits the signed record after selecting the target and
 validating its reset vector, immediately before the final jump. HIMON cold

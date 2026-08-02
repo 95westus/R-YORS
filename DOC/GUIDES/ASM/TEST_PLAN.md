@@ -11688,7 +11688,7 @@ Capsule:
 ```text
 $1FFD  $42  B signature
 $1FFE  $4A  J commit signature
-$1FFF  $00/$01/$02 last validated STR8 jump, or $FF unknown
+$1FFF  $00/$01/$02/$03 last validated STR8 jump, or $FF unknown
 ```
 
 The RAM worker commits the record only after target selection and reset-vector
@@ -11699,6 +11699,277 @@ the record afterward. Invalid or uninitialized state becomes `42 4A FF`.
 Host acceptance requires `make -C SRC str8`, `make -C SRC himon`, and
 `make -C SRC himon-str8-rom-bin`. The combined builder checks record address
 agreement across resident STR8, the RAM worker, and HIMON, and checks the
-`42/4A/FF` ABI values. Board acceptance remains pending; follow
+`42/4A/FF` ABI values. It also requires shared `STR8_BANK_COUNT=$04` and scans
+the compiled HIMON cold-clear path for the matching `$04` upper bound. Board
+acceptance remains pending; follow
 [`STR8_BANK_JUMP_RECORD_BOARD_TEST.md`](../STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md)
 and append the raw transcript without altering earlier hardware evidence.
+
+The 2026-08-02 J3 handoff exposed a cold-preservation mismatch without
+invalidating the handoff itself. STR8 and its RAM worker accepted Bank 3 and
+committed `42 4A 03`, but HIMON still used `CMP #$03 / BCS` and therefore
+republished `$FF` during `RAM ZERO`. Current source uses the shared count in all
+three consumers. Code and data sizes and every resident address are unchanged;
+the updated HIMON now requires a `J3`, `D 1FFD 1FFF`, `HCOLD`, and repeat-dump
+board proof.
+
+That focused proof now passes on HIMON `00.0802(1536)`. Bank-0 STR8 `1509`
+issued `J3`, reached Bank-3 STR8 `1518`, and timed out through `BOOT COLD` and
+`RAM ZERO OK`. `D 1FFD 1FFF` reported `42 4A 03`; confirmed `HCOLD` repeated
+the cold clear and the second dump remained `42 4A 03`. The J3 preservation
+fix is hardware-accepted. The full record card's unknown, J0/J1/J2,
+invalid-vector, and final CRC gates remain separate.
+
+## 2026-08-01 STR8 Full-Bank Copy Maintenance Sample
+
+[`str8-bank-copy-2000.a`](SAMPLES/str8-bank-copy-2000.a) is a direct-run
+ASM-F2 utility for duplicating a qualified 32K image between onboard banks.
+It accepts source Bank 0-3 and destination Bank 0-2, refuses source equal to
+destination, and never permits Bank 3 as a destination. It stages and verifies
+each `$1000`-byte sector through the installed STR8 `$F003` service using
+worker modes `$06` and `$05`. The worker skips erase when the destination
+sector is already erased.
+
+The utility checks the source reset vector before confirmation and warns when
+the staged `$F000` sector has the `SR/01/07` STR8 signature. That warning is
+material: copying an installed STR8-bearing image preserves whatever startup
+behavior it contains. Images with the retired unconditional PCR `$EE` write
+immediately select Bank 3. Corrected 2026-08-01 source leaves a J-selected bank
+unchanged, but the repair must be installed before copying it as a guest.
+
+The current direct-run source has 61 defined user symbols, no imports, and all
+non-comment lines fit within 63 visible characters. It calls the published
+HIMON service vectors at `$7E08`, `$7E0A`, and `$7E10`, which HIMON initializes
+before entering ASM-F2. The source assembles cleanly under the host WDC 65C02
+assembler, covering opcodes, addressing modes, fixups, and branch ranges. The
+2026-08-02 direct-run board proofs completed verified Bank-3-to-Bank-0,
+Bank-3-to-Bank-1, and Bank-3-to-Bank-2 copies.
+
+Board proof must use a disposable destination and retain a programmer recovery
+image. Run:
+
+```text
+ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/str8-bank-copy-2000.a
+SEAL> .
+G 2000
+```
+
+Choose source and destination, verify the displayed direction, and type the
+exact `COPY XY` confirmation. Success prints eight dots and `OK`, returns
+`A=$AC` with carry set, and leaves `$1B08=$08`. Record inventories before and
+after, then run `Jn`. A persistent target-specific banner is required for the
+J-able gate; `J Bn` followed by a Bank-3 STR8 banner is not acceptance.
+
+The 2026-08-02 first board paste exposed an ASM-F2 V1 source-compatibility
+error before any copy ran. Operands `BC_INPUT+1` through `BC_INPUT+7` produced
+`ERR=$03 BO`; `END` then rejected their unresolved addend fixups with
+`ERR=$09 BAD FIX PC=$23D9`. The source now uses resolved absolute addresses
+`$1C01-$1C07`. A directive-only `IMPORT`/`ENTRY` to `XREF`/`XDEF` conversion
+still assembles cleanly with the host WDC assembler. At this point in the test
+history, a fresh ASM-F2 board assembly and destructive copy remained pending.
+
+The next board paste closed the ASM-F2 assembly gate: it reached `ASM OK` and
+`SEAL` without `BO` or `BAD FIX`. Direct `G 2000` then stopped at
+`BRK 00 PC=0003` before printing the title. `X=$03` and `Y=$20` are the exact
+`BC_TITLE` pointer, proving execution reached `BC_PUTS`; its package `IMPORT`
+target was not linked for direct execution and transferred to `$0000`. No bank
+prompt or flash operation ran. The source now removes `IMPORT` and `ENTRY` and
+uses the initialized HIMON service-vector table directly.
+
+The subsequent corrected direct-run paste reached `ASM OK` and `SEAL` and ran
+from `$2000`. Confirmed Bank 3 to Bank 2 and Bank 3 to Bank 1 operations each
+printed eight sector dots and `OK`, then returned `A=$AC`, carry set, in worker
+mode `$05`. Bank 2 was copied before Bank-3 HIMON changed from `0731` to `1334`.
+After that update, the reset selector's `2` path cold-entered the distinct
+Bank-2 HIMON `0731` payload, accepting sustained Bank-2 startup. `J1` reached
+`1334`, but Bank 1 and Bank 3 shared that identity, so independent Bank-1
+persistence remains open. A direct resident `J2` run with the distinguishing
+payload is not in this transcript. The capture predates removal of the visible
+STR8 banner hash; its hash-bearing `00.0802(1323)` banner is expected.
+
+A later 2026-08-02 capture completed the missing Bank-3-to-Bank-0 operation
+with eight dots, `OK`, `A=$AC`, and carry set. It then installed no-hash STR8
+`00.0802(1404)`. With that distinct Bank-3 identity, resident `J1` reached old
+STR8/HIMON `1323/1334`, and resident `J2` reached old STR8/HIMON `1323/0731`.
+The cross-bank selector routes close sustained Bank-1 and Bank-2 execution.
+The resident commands were issued only after their target banks were already
+selected, so they are self-target smoke rather than cross-bank direct-J proof.
+Bank 0 was an exact `1404` copy of Bank 3, so its selector and resident `J0`
+traces are not independently distinguishing.
+
+The operator's continuation then issued direct `J2` from a current `1404`
+bank and reached Bank-2 STR8 `1323`, accepting cross-bank resident `J2`. It
+also issued direct `J0` from an old `1323` bank and reached Bank-0 STR8/HIMON
+`1404`, accepting cross-bank resident `J0` and sustained Bank 0. A later
+16-dot run issued direct `J1` from distinct Bank-0 STR8 `1404` and reached a
+STR8/HIMON `1420/1425` image. Banks 1 and 3 were exact copies, so that result
+cannot distinguish the requested Bank 1 from an accidental Bank-3 remap and
+does not close the direct-J1 gate. Its following direct `J2` reached distinct
+Bank-2 HIMON `1404`, reconfirming cross-bank resident `J2`.
+
+The subsequent `00.0802(1440)` TopWriter run installed the six-count STR8-N
+prompting delay without moving the `$F8B4/$F8EB` face/prompt checks. Stage,
+verify, confirmed program, and return all passed. The installed image executed
+the full `6 5 4 3 2 1` no-input countdown and cold-entered HIMON `1440`; on
+the next entry it accepted `0` during count `6`, printed `J B0` and the
+unchanged `BOOT IN 3S`, then entered Bank-0 STR8 `1404`. This hardware-accepts
+the extended prompting timeout and key polling. The approximately 5.991-second
+duration remains cycle-modeled rather than stopwatch-measured. It adds no code
+or data bytes. The later direct-J traces do not close `J1` because Banks 1 and
+3 still share an identical current payload.
+
+A final distinguishing run copied Bank-3 `1440` to Bank 1 with all eight
+sectors verified, then advanced only Bank 3 to STR8/HIMON `1452`. The first
+incorrect confirmation `WRITE 31` returned `ABORT - NO FLASH WRITE`; the exact
+`COPY 31` retry completed with `A=$AC`, carry set. From Bank-3 `1452`, selector
+`1` reached Bank-1 `1440`. The later direct chain reached Bank-2 `1420`, issued
+resident `J1`, returned to Bank-1 STR8 `1440`, and warm-entered local HIMON
+`1440`. Bank 3 was `1452`, Bank 2 was `1420`, and Bank 0 was `1404`, so the
+Bank-1 target is independently identified. This closes cross-bank resident
+`J1`; the complete `J0/J1/J2` resident handoff surface is hardware-accepted.
+
+The operator subsequently declared the remaining 16-dot RX-flush test passed:
+input sent during the attach dots was discarded before the selector opened and
+was not consumed as a selector response. Because successful rejection emits no
+terminal marker, this is recorded as operator-observed hardware proof. The
+16-dot attach-display slice now has no remaining board gate.
+
+The next host slice adds `J3` as the explicit software return from a copied
+STR8 in Bank 0-2 to Bank 3. It changes only three existing range immediates and
+adds the three-byte ` J3` help suffix. Normal and RAM-proof STR8 builds pass;
+the stored worker remains `$025D` bytes and the worker checker now requires
+bank range `$00-$03` plus table `$CC/$CE/$EC/$EE`. The current measured layout
+is resident `$F000-$F9D0`, normal gap `$F9D1-$FD92` (`$03C2`), and V1 reserve
+`$F9D1-$FD52` (`$0382`). TopWriter face/prompt checks are `$F8B4/$F8EE`.
+
+Partial board proof now passes. The candidate installed as STR8 `1509`,
+advertised `J3`, and was copied with all eight sectors verified from Bank 3 to
+Bank 0. Selector `0` entered that copy; `J3` printed `J B3`, re-entered STR8,
+and reached HIMON. Because both banks were identical `1509/1514` images at
+that point, the trace accepts the parser and functional handoff smoke but not
+the destination identity. The transcript then advanced only Bank 3 to
+STR8/HIMON `1518`, leaving Bank 0 at `1509/1514`.
+
+The non-destructive follow-up closes the gate. From Bank-3 `1518`, selector
+`0` entered Bank-0 STR8 `1509`. The operator chose `S` and issued `J3`; it
+printed `J B3`, entered distinct Bank-3 STR8 `1518`, and its normal timeout
+cold-entered distinct HIMON `1518`. A stay in Bank 0 would have exposed
+STR8/HIMON `1509/1514`, so the destination is independently proved. J3 is
+board-accepted. Bank Jump Record `42 4A 03` and `J4` rejection remain useful
+secondary checks. An unrelated guest without STR8 still requires physical
+reset or its own Bank-3 return routine.
+
+`make -C SRC str8-bank-copy-source-check` is now a firmware/release gate. It
+rejects `IMPORT`/`ENTRY`, unresolved symbol addends, non-comment source lines
+over 63 characters, more than 64 symbols, changed HIMON service bindings, or
+any WDC assembly error. The current source passes with 61 of 64 symbols.
+
+## 2026-08-02 Combined STR8 Bank Maintenance Source
+
+[`str8-bank-maint-2000.a`](SAMPLES/str8-bank-maint-2000.a) is a new direct-run
+ASM-F2 utility integrating generalized full-bank copy and selective erase.
+`C` copies `$8000-$FFFF` from source Bank 0-3 to destination Bank 0-2. It
+refuses a same-bank copy, refuses Bank 3 as a destination, qualifies the
+source reset vector, prints `!STR8` when the source has the published STR8
+service signature, and uses the existing mode `$06` stage plus mode `$05`
+erase/program/full-sector-verify loop.
+
+`M` is a read-only live bank/sector map. It stages and scans sectors `8-F` in
+Banks 0-3 and prints `E` for all-`$FF` erased sectors or `U` for used sectors.
+Bank-3 sector F is not staged and is shown as `P`, identifying the protected
+STR8 sector. The heading is `BANK 8 9 A B C D E F`; rows are `B0` through
+`B3`.
+
+`Q` quits cleanly to HIMON without a flash operation. It records operation
+`Q`, status `$AC`, and returns with carry set.
+
+The utility is otherwise persistent. Copy, map, Bank 0-2 erase, abort, and
+recoverable failure return to the maintenance menu; `Q` is the only normal
+return to HIMON. Bank-3 erase remains the required exception: it makes no
+post-erase HIMON calls and jumps to STR8 because sectors C-E may have removed
+the HIMON services used by the menu.
+
+`E` accepts Bank 0-3. Banks 0-2 accept a single sector `8-F`, an ordered `X-Y`
+range within `8-F`, or `ALL` for all eight sectors. Bank 3 accepts a single
+sector `8-E`, an ordered range within `8-E`, or `ALL` for `$8000-$EFFF`;
+sector F is rejected for Bank 3. A single `A` therefore means sector A, while
+`ALL` means the complete valid range. The `$0A00-$19FF` stage is filled with
+`$FF`, so mode `$05` provides the existing already-erased scan, conditional
+physical erase, program pass, and full-sector verify.
+
+Exact destructive confirmations are `COPY XY`, `ERASE BS`, `ERASE BX-Y`, and
+`ERASE BALL`. Empty input at the operation, bank, sector, or confirmation
+prompt aborts. Once a Bank-3 erase begins, interrupts are disabled and the
+program makes no HIMON calls. It records success or failure in
+`$1B00-$1B07` and jumps to STR8 at `$F000`. The operator must select `S` at
+STR8; Bank-3 HIMON may have been erased.
+
+The host gate is:
+
+```text
+make -C SRC str8-bank-maint-source-check
+```
+
+It currently passes WDC assembly with 63 of 64 ASM-F2 global symbols and a
+maximum of 8 of 16 local labels in one scope. It also checks line length,
+direct HIMON service bindings, worker modes `$05/$06`, Bank-3 destination
+rejection, Bank-3 sector-F rejection, ordered range validation, `ALL`, the
+seven-sector Bank-3 all count, read-only map staging and markers, post-erase
+output suppression, `SEI`, and direct `$F000` return. Hardware proof is
+partial.
+
+The 2026-08-02 board run assembled the persistent/Q source through `ASM OK`
+and `SEAL`. `M` printed all four eight-sector rows, used `E/U` markers, and
+showed `P` at B3F, then returned to the maintenance menu. A confirmed
+`ERASE 3C` erased Bank-3 sector C and transferred directly to STR8 without a
+post-erase HIMON call. STR8 `1709` then identified the blank local `$C000`
+entry face, printed `NO BOOT @C000`, and entered its menu. A later confirmed
+Bank-3 `ERASE 39-D` exercised ordered-range parsing and progressed through
+sector C, again producing the blank-entry fallback. This accepts map,
+post-map looping, single-sector and partial ordered-range Bank-3 erase,
+sector-F survival, and direct STR8 return. The result board was not inspected
+after `9-D`, so complete range success through sector D is not claimed.
+Bank 0-2 erase, repeated-erased skip, `ALL`, copy, abort, failure, and `Q`
+remain separate maintenance-tool gates.
+
+Board assembly is:
+
+```text
+ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a
+SEAL> .
+G 2000
+```
+
+First prove empty-input abort and incorrect exact-confirmation abort without a
+write. Run `M` first and require four eight-column rows, valid `E/U` markers,
+and `P` at B3F. For destructive proof, use a disposable Bank 0-2 target and
+compare a readback or CRC against `$FF` after a single sector, a repeated
+already-erased sector, an `X-Y` range, and `ALL`. Before a Bank-3 `ALL` proof,
+retain a current HIMON update S19 and record a CRC of Bank-3 sector F. After
+`ERASE 3ALL`, select `S`, reinstall HIMON with `U`, and confirm the sector-F
+CRC did not change.
+
+## 2026-08-02 STR8 Unavailable Local-App Fallback
+
+The timeout/cold and `3` or `G` warm paths now share a minimal local `$C000`
+availability gate. If the first 16 bytes are all `$FF`, STR8 prints
+`NO BOOT @C000` and enters its resident menu instead of executing erased flash.
+The existing `Jn` path continues to use reset-vector validation for opaque
+Bank 0-3 targets.
+
+`make -C SRC str8-worker-mode-check` verifies in the linked STR8 image that
+both local-app entries call the gate and branch to the shared menu fallback,
+that the gate scans `$C000-$C00F` for all `$FF`, and that the published message
+and final menu jump remain present. Resident and RAM-proof assembly, full
+firmware layout checks, and the worker's 256-mode fail-closed sweep must also
+pass. The destructive board procedure is documented in
+[`STR8_BOOT_SELECTOR_BOARD_TEST.md`](../STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md);
+The fallback is fully hardware-accepted on STR8 `00.0802(1709)`. After a
+confirmed Bank-3 sector-C erase, the no-input/cold path entered the resident
+prompt without a second attach/reset cycle, accepted `U`, restored
+`$C000-$EFFF`, and warm-entered HIMON `00.0802(1657)`. A focused second erase
+then directly proved both warm routes while `$C000` was unavailable: resident
+`G` and startup selector `3` each printed `NO BOOT @C000` and returned to the
+STR8 menu.

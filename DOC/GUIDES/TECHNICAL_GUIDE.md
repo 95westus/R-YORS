@@ -67,7 +67,7 @@ high-flash recovery from Bank 2 back to known-good HIMON
 
 The current image removes rotation and enrollment. `B` selects exactly one
 destination bank, 0, 1, or 2, for a verified Bank-3 copy. The selected-bank
-policy, the reset-time selector, and non-destructive `J0`-`J2` handoff are
+policy, the reset-time selector, and non-destructive `J0`-`J3` handoff are
 hardware-accepted. The follow-up Bank Jump Record is host-accepted and remains
 board-pending; see
 [STR8_BANK_JUMP_RECORD_BOARD_TEST.md](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md).
@@ -225,12 +225,11 @@ ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
 HIMON body:      $C000-$EECB
 STR8 entry:      $F000
-STR8 body:       $F000-$FAEE
-STR8 identity:   #5F6A0F7A
-marker bytes:    $F950 = 7A 0F 6A 5F
-worker source:   $FD03-$FFEF
+STR8 body:       $F000-$F9D0
+marker bytes:    $F8B0 = 7A 0F 6A 5F
+worker source:   $FD93-$FFEF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = C0 F0 00 F0 D4 F0
+vectors:         $FFFA-$FFFF = BA F0 00 F0 CE F0
 ```
 
 The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
@@ -249,9 +248,9 @@ On reset, STR8:
 sets the CPU to a known monitor/recovery state
 seeds IVI RAM vector cells with safe defaults
 initializes FTDI console I/O
-waits silently about 4 seconds and drains queued RX
-prints `STR8-N V 00.mmdd(hhmm) #5F6A0F7A`
-opens a 3-second 0/1/2/3/S selector
+prints 16 dots over about 5.991 seconds and drains queued RX
+prints `STR8-N V 00.mmdd(hhmm)`
+opens an approximately 6-second 0/1/2/3/S selector
 times out to enter Bank 3 HIMON cold
 accepts 3 to enter HIMON warm and preserve RAM
 accepts S/s to enter STR8
@@ -261,9 +260,9 @@ accepts 0/1/2, announces the bank, waits about 3 more seconds, then uses the J h
 Current vector path:
 
 ```text
-NMI      -> STR8 IVI entry at $F0C0 -> RAM vector $7EFA-$7EFB
+NMI      -> STR8 IVI entry at $F0BA -> RAM vector $7EFA-$7EFB
 RESET    -> STR8 START at $F000
-IRQ/BRK  -> STR8 IVI entry at $F0D4 -> RAM vectors $7EFC-$7EFF
+IRQ/BRK  -> STR8 IVI entry at $F0CE -> RAM vectors $7EFC-$7EFF
 ```
 
 HIMON patches the RAM targets after handoff. IVI is a mechanism, not a claim
@@ -288,7 +287,7 @@ Resident STR8:
 ```text
 owns reset-time prompt and countdown
 owns command parsing for the recovery prompt
-owns J0-J2 target parsing and pre-jump bank display
+owns J0-J3 target parsing and pre-jump bank display
 owns fixed S19 update-gate validation
 keeps private console helpers as STR8_CON_*
 copies the flash worker from ROM to RAM
@@ -302,7 +301,7 @@ runs from $0200
 switches flash banks
 erases and programs selected sectors
 copies and verifies bank images
-validates and enters an opaque bank through its reset vector for J0-J2
+validates and enters a selected bank through its reset vector for J0-J3
 restores Bank 3 before returning on ordinary worker success/failure
 ```
 
@@ -319,7 +318,7 @@ $4000-$6FFF   current staged C/D/E sector buffers during U
 ```
 
 The RSC tail publishes the last successful opaque-bank handoff as a signed
-Bank Jump Record: `$1FFD-$1FFF = 42 4A nn`, where `nn` is Bank 0, 1, or 2.
+Bank Jump Record: `$1FFD-$1FFF = 42 4A nn`, where `nn` is Bank 0 through 3.
 `42 4A FF` means no valid target is known. The STR8 RAM worker commits the
 record immediately before the final jump, and HIMON preserves it through cold
 RAM clearing so it can be inspected later with `D 1FFD 1FFF`.

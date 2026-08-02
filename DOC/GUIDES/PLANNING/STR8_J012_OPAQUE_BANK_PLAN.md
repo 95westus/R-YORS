@@ -44,7 +44,7 @@ The exact first-board command rail is
 Post-V1 note: the host-built reset-selector follow-up adds boot-time
 `0`/`1`/`2` choices that reuse the accepted `J0`-`J2` worker after an
 additional three-second pause. It also accepts `3` to warm-start HIMON while
-preserving RAM and `S` for STR8 after a silent attach delay and RX flush. It
+preserving RAM and `S` for STR8 after a 16-dot attach delay and RX flush. It
 does not change prompt `J0`-`J2` or bare restore commands. Its separate pending
 proof rail is
 [STR8_BOOT_SELECTOR_BOARD_TEST.md](../STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md).
@@ -265,10 +265,10 @@ CLOBBER: X as required by the table scan
 The decoder must recognize the four explicit output-mode patterns. It must
 also document the reset exception: immediately after reset the PCR may still
 be in its input-mode reset state while pull-ups physically select Bank 3.
-Bank 3 STR8 may report Bank 3 from the reset invariant until it explicitly
-normalizes the latch with `FLSH_BANK_SELECT_3`.
+Bank 3 STR8 may report Bank 3 from the physical-reset invariant without
+normalizing the latch.
 
-Recommended implementation:
+The original implementation recommendation was:
 
 1. At Bank 3 STR8 initialization, explicitly select Bank 3 once the console/VIA
    setup makes that safe.
@@ -278,6 +278,15 @@ Recommended implementation:
    can implement the same small query.
 4. Keep image identity separate. `B2` says which physical bank is visible; it
    does not say "FORTH."
+
+That first item is superseded. It was intended to convert the VIA's reset/input
+PCR state into canonical output pattern `$EE` so a software bank decoder could
+report Bank 3 deterministically. It was not required to select Bank 3: the
+board pull-ups already do that on physical reset. More importantly, a copied
+STR8 image entered through `J0`-`J2` executes the same initialization and the
+write destroys the selected-bank handoff by remapping Bank 3. Generic STR8
+startup must therefore leave PCR unchanged. Failure paths and explicit
+operations may still select Bank 3 deliberately.
 
 STR8 cannot display the current bank after handing off to an unrelated guest.
 The guest must display it itself, or the operator must infer it from the
@@ -416,13 +425,11 @@ timeout      -> Bank 3 default payload
 ```
 
 For the current R-YORS image, timeout continues to enter Bank 3 HIMON cold.
-The timeout code does not execute `J3` and does not touch the bank latch except
-for optional normalization to Bank 3 during initialization.
+The timeout code does not execute `J3` and does not touch the bank latch.
 
-The visible startup text should eventually say `BANK 3` so the operator knows
-which selector is active. Do not promise the name of the Bank 3 payload in the
-generic mechanism; today it is HIMON, but a later Bank 3 STR8 build could
-choose a different local default.
+The visible startup text is bank-neutral because the same image may be entered
+from Bank 0-2 through `J`. Do not promise the name of the local payload in the
+generic mechanism.
 
 ## Destructive Command Interaction
 

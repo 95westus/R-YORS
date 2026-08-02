@@ -22,6 +22,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K onboard image with ASM-F2/AP report in low flash, HIMON at C000, STR8 at F000: BUILD/bin/himon-str8-rom.bin." }
     [pscustomobject]@{ Target = "str8-v1-layout-preview"; Category = "monitor"; Description = "Build the guarded, nonflashable V1 worker/directory layout preview BIN; produces no install S19, TopWriter, or ROM stamp." }
     [pscustomobject]@{ Target = "str8-directory-check"; Category = "monitor"; Description = "Run host boundary/progression validation of frozen V1 directory records and journals against the guarded preview BIN." }
+    [pscustomobject]@{ Target = "str8-worker-mode-check"; Category = "monitor"; Description = "Execute the compiled worker dispatcher for all 256 mode bytes; require only 05-08 and fail closed for the other 252." }
     [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-c000-install-8000.s19." }
     [pscustomobject]@{ Target = "himon-str8-rom-install-s19"; Category = "monitor"; Description = "Convert primary HIMON+STR8 ROM BIN to S1/S9 install transport: BUILD/s19/himon-str8-rom-install.s19." }
     [pscustomobject]@{ Target = "himon-str8-himon-update-s19"; Category = "monitor"; Description = "Build C000-EFFF S1/S9 stream for STR8 U / UPDATE HIMON: BUILD/s19/himon-str8-himon-update.s19." }
@@ -30,13 +31,14 @@ $rows = @(
     [pscustomobject]@{ Target = "str-himon-str-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str8-top-stage-s19"; Category = "monitor"; Description = "Build 0A00-19FF staged S19 from the vector-complete STR8 top sector: BUILD/s19/str8-top-stage-0a00.s19." }
     [pscustomobject]@{ Target = "str8-topwrite-a"; Category = "monitor"; Description = "Build self-contained ASM-F2 STR8-N top-sector writer: DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a." }
+    [pscustomobject]@{ Target = "str8-bank-copy-source-check"; Category = "monitor"; Description = "Validate the direct-run ASM-F2 full-bank copy source and host-assemble it." }
     [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for himon-str8-rom-install-s19." }
     [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000: BUILD/s19/himon-load-c000.s19." }
     [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image at BUILD/bin/himon-load-c000.bin." }
     [pscustomobject]@{ Target = "basic-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000 and HIMON at C000." }
     [pscustomobject]@{ Target = "basic-forth-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000, fig-Forth at A000, and HIMON at C000." }
-    [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build STR8 V0 F000 boot image and RAM proof image." }
-    [pscustomobject]@{ Target = "str8-ram"; Category = "test"; Description = "Build RAM-launched STR8 bank-select/blank-check/copy/marker proof at 3000." }
+    [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build current STR8-N F000 image, RAM proof image, and fail-closed RAM worker." }
+    [pscustomobject]@{ Target = "str8-ram"; Category = "test"; Description = "Build RAM-launched STR8 console and bank-handoff proof at 3000." }
     [pscustomobject]@{ Target = "fnv1a-hbstr"; Category = "test"; Description = "Build FNV-1a/HBSTR proving app linked at 6000." }
     [pscustomobject]@{ Target = "test-flash"; Category = "test"; Description = "Build flash command/install proving app linked at 3000." }
     [pscustomobject]@{ Target = "test-mon"; Category = "test"; Description = "Build monitor test app." }

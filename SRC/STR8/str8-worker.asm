@@ -1,11 +1,11 @@
 ; ----------------------------------------------------------------------------
 ; str8-worker.asm
-; RAM-resident STR8 bank-copy worker.
+; RAM-resident STR8 flash-service worker.
 ;
 ; This image links for $0200, must fit in the $0200-$09FF STR8 RAM worker tray,
-; is stored in high flash packed against $FFEF, and is copied to $0200 before
-; destructive STR8 bank operations. Keep it independent: once running, it must
-; not call ROM code because it switches flash banks and may erase bank 3's top
+; is stored in high flash packed below the active layout ceiling, and is copied
+; to $0200 before flash or bank operations. Keep it independent: once running,
+; it must not call ROM code because it switches flash banks and may erase bank 3's top
 ; sector.
 ; ----------------------------------------------------------------------------
 
@@ -22,14 +22,9 @@
 ; 2026-05-21T23:55-05:00        WLP2        Worker source is now packed down from $FFEF.
 ; 2026-07-23T13:07-05:00        Codex       Size pass shares buffer and flash-operation tails.
 ; 2026-07-23T17:27-05:00        Codex       Enrollment mode is removed with the E command.
-STR8_PROT_START_HI      EQU             $F0
-STR8_PROT_BUF_HI        EQU             $40
-
-STR8_COPY_MODE_RESTORE  EQU             $01
-STR8_COPY_MODE_RESTORE_FLASH_HI EQU     $03
+; 2026-08-01T22:15-05:00        Codex       V0 copy/restore modes retire; unknown modes fail closed.
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
 STR8_COPY_MODE_STAGE_BANK_SECTOR EQU    $06
-STR8_RESTORE_PROT_START_HI EQU          $C0
 
 STR8_RESET_VECTOR       EQU             $FFFC
 
@@ -54,8 +49,6 @@ STR8_COPY_DST_BANK      EQU             $1FEF
 STR8_COPY_MODE          EQU             $1FF0
 STR8_STAGE_BUF_HI       EQU             $1FF6
 
-STR8_SECTOR_BUF_HI      EQU             $40
-
 STR8_FTDI_VIA_PCR       EQU             $7FEC
 STR8_BANK_PCR_MASK      EQU             $EE
 
@@ -65,7 +58,8 @@ STR8_FLASH_ERASE_TMO_HI EQU             $08
 STR8_FLASH_WRITE_TMO_HI EQU             $02
 
                         CODE
-; 2026-05-07T19:14-05:00        WLP2        Restore-high mode resets through bank 3.
+; Only the four published V1 modes may reach a worker operation. Any other
+; value returns C=0 before selecting a bank or touching flash.
 START:
                         PHP
                         SEI
@@ -78,8 +72,9 @@ START:
                         BEQ             ?PROGRAM_RECORD
                         CMP             #STR8_COPY_MODE_JUMP_BANK
                         BEQ             ?JUMP_BANK
-                        JSR             STR8W_COPY_BANKS
-                        BRA             ?DONE
+                        PLP
+                        CLC
+                        RTS
 ?PROGRAM_STAGED:
                         JSR             STR8W_PROGRAM_STAGED_SECTOR
                         BRA             ?DONE
@@ -94,32 +89,20 @@ START:
 ?DONE:
                         BCC             ?FAIL
                         JSR             STR8W_SELECT_BANK3
-                        LDA             STR8_COPY_MODE
-                        CMP             #STR8_COPY_MODE_RESTORE_FLASH_HI
-                        BEQ             ?RESET
                         PLP
                         SEC
                         RTS
-?RESET:
-                        PLP
-                        JMP             (STR8_RESET_VECTOR)
 ?FAIL:
                         JSR             STR8W_SELECT_BANK3
-                        LDA             STR8_COPY_MODE
-                        CMP             #STR8_COPY_MODE_RESTORE_FLASH_HI
-                        BEQ             ?TOP_FAIL
                         PLP
                         CLC
                         RTS
-?TOP_FAIL:
-                        PLP
-                        JMP             STR8W_TOP_FAIL_HALT
 
 ; Non-destructive opaque-bank handoff. Success resets CPU software state and
 ; never returns. Failure returns through START, which restores Bank 3 first.
 STR8W_JUMP_BANK:
                         LDA             STR8_JUMP_BANK
-                        CMP             #$03
+                        CMP             #STR8_BANK_COUNT
                         BCS             ?BAD_BANK
                         JSR             STR8W_BANK_SELECT_A
                         LDA             STR8_RESET_VECTOR
@@ -158,37 +141,6 @@ STR8W_JUMP_BANK:
                         LDA             #STR8_JUMP_STATUS_ERASED
 ?FAIL:
                         STA             STR8_JUMP_STATUS
-                        CLC
-                        RTS
-
-; 2026-05-07T19:14-05:00        WLP2        Restore skips protected high sectors by mode.
-STR8W_COPY_BANKS:
-                        LDA             #$80
-                        STA             STR8_MARK_SECTOR_HI
-?SECTOR:
-                        LDA             STR8_COPY_MODE
-                        CMP             #STR8_COPY_MODE_RESTORE
-                        BNE             ?COPY_SECTOR
-                        LDA             STR8_MARK_SECTOR_HI
-                        CMP             #STR8_RESTORE_PROT_START_HI
-                        BCS             ?NEXT_SECTOR
-?COPY_SECTOR:
-                        JSR             STR8W_STAGE_SRC_SECTOR
-                        JSR             STR8W_PRESERVE_IF_RESTORE
-                        JSR             STR8W_ERASE_DST_SECTOR
-                        BCC             ?FAIL
-                        JSR             STR8W_PROGRAM_DST_SECTOR
-                        BCC             ?FAIL
-                        JSR             STR8W_VERIFY_DST_SECTOR
-                        BCC             ?FAIL
-?NEXT_SECTOR:
-                        LDA             STR8_MARK_SECTOR_HI
-                        CLC
-                        ADC             #$10
-                        STA             STR8_MARK_SECTOR_HI
-                        BNE             ?SECTOR
-                        RTS
-?FAIL:
                         CLC
                         RTS
 
@@ -266,40 +218,6 @@ STR8W_PROGRAM_RECORD:
                         CLC
                         RTS
 
-STR8W_STAGE_SRC_SECTOR:
-                        LDA             STR8_COPY_SRC_BANK
-                        JSR             STR8W_BANK_SELECT_A
-                        STZ             STR8W_PTR_LO
-                        LDA             STR8_MARK_SECTOR_HI
-                        STA             STR8W_PTR_HI
-                        STZ             STR8W_BUF_LO
-                        LDA             #STR8_SECTOR_BUF_HI
-                        STA             STR8_STAGE_BUF_HI
-                        STA             STR8W_BUF_HI
-                        JMP             STR8W_COPY_PTR_TO_BUF
-
-; 2026-05-07T19:14-05:00        WLP2        Restore-high mode bypasses top-sector preserve.
-; 2026-05-07T22:58-05:00        WLP2        Worker source now sits inside protected F sector.
-STR8W_PRESERVE_IF_RESTORE:
-                        LDA             STR8_COPY_MODE
-                        CMP             #STR8_COPY_MODE_RESTORE
-                        BNE             ?DONE
-                        LDA             STR8_MARK_SECTOR_HI
-                        CMP             #$F0
-                        BEQ             ?PRESERVE_STR8
-?DONE:
-                        RTS
-?PRESERVE_STR8:
-                        JSR             STR8W_SELECT_BANK3
-                        STZ             STR8W_PTR_LO
-                        LDA             #STR8_PROT_START_HI
-                        STA             STR8W_PTR_HI
-                        STZ             STR8W_BUF_LO
-                        LDA             #STR8_PROT_BUF_HI
-                        STA             STR8W_BUF_HI
-                        JMP             STR8W_COPY_PTR_TO_BUF
-
-STR8W_COPY_PTR_TO_BUF:
 STR8W_COPY_PTR_TO_ACTIVE_BUF:
 ?PAGE:
                         LDY             #$00
@@ -495,13 +413,6 @@ STR8W_FLASH_RESET_FAIL:
                         STA             STR8_FLASH_UNLOCK1
                         CLC
                         RTS
-
-STR8W_TOP_FAIL_HALT:
-                        LDA             #$F0
-                        STA             STR8_FLASH_UNLOCK1
-                        SEI
-?HALT_LOOP:
-                        BRA             ?HALT_LOOP
 
 STR8W_SELECT_BANK3:
                         LDA             #$03

@@ -1,0 +1,360 @@
+param(
+    [string]$HimonMapPath = "BUILD/map/himon-rom-c000.map",
+    [string]$HimonS19Path = "BUILD/s19/himon-rom-c000.s19",
+    [string]$Str8MapPath = "BUILD/map/str8-f000.map",
+    [string]$Str8S19Path = "BUILD/s19/str8-f000.s19",
+    [string]$WorkerMapPath = "BUILD/map/str8-worker-0200.map",
+    [string]$WorkerS19Path = "BUILD/s19/str8-worker-0200.s19"
+)
+
+$ErrorActionPreference = "Stop"
+
+function Read-MapSymbols {
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "Missing map: $Path"
+    }
+    $symbols = @{}
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        if ($line -match '^\s*([0-9A-Fa-f]{8})\s+(\S+)\s*$') {
+            $symbols[$Matches[2].ToUpperInvariant()] = [Convert]::ToInt32($Matches[1], 16)
+        }
+    }
+    return $symbols
+}
+
+function Get-Symbol {
+    param([hashtable]$Symbols, [string]$Name)
+
+    $key = $Name.ToUpperInvariant()
+    if (-not $Symbols.ContainsKey($key)) {
+        throw "Missing symbol: $Name"
+    }
+    return [int]$Symbols[$key]
+}
+
+function Read-S19Memory {
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "Missing S19: $Path"
+    }
+    [byte[]]$memory = New-Object byte[] 65536
+    foreach ($raw in Get-Content -LiteralPath $Path) {
+        $line = $raw.Trim()
+        if (-not $line.StartsWith('S1', [System.StringComparison]::Ordinal)) {
+            continue
+        }
+        $count = [Convert]::ToInt32($line.Substring(2, 2), 16)
+        if ($line.Length -ne (4 + ($count * 2))) {
+            throw "Bad S1 length: $line"
+        }
+        $sum = $count
+        for ($i = 0; $i -lt $count; $i++) {
+            $sum += [Convert]::ToInt32($line.Substring(4 + ($i * 2), 2), 16)
+        }
+        if (($sum -band 0xFF) -ne 0xFF) {
+            throw "Bad S1 checksum: $line"
+        }
+        $address = [Convert]::ToInt32($line.Substring(4, 4), 16)
+        $dataLength = $count - 3
+        for ($i = 0; $i -lt $dataLength; $i++) {
+            $memory[$address + $i] = [Convert]::ToByte($line.Substring(8 + ($i * 2), 2), 16)
+        }
+    }
+    return ,$memory
+}
+
+function Test-ByteSequence {
+    param(
+        [byte[]]$Memory,
+        [int]$Start,
+        [int]$EndExclusive,
+        [byte[]]$Sequence
+    )
+
+    for ($address = $Start; $address -le ($EndExclusive - $Sequence.Length); $address++) {
+        $match = $true
+        for ($i = 0; $i -lt $Sequence.Length; $i++) {
+            if ($Memory[$address + $i] -ne $Sequence[$i]) {
+                $match = $false
+                break
+            }
+        }
+        if ($match) { return $true }
+    }
+    return $false
+}
+
+function Test-AbsoluteCall {
+    param(
+        [byte[]]$Memory,
+        [int]$Start,
+        [int]$EndExclusive,
+        [int]$Target
+    )
+
+    [byte[]]$call = 0x20, ($Target -band 0xFF), (($Target -shr 8) -band 0xFF)
+    return Test-ByteSequence $Memory $Start $EndExclusive $call
+}
+
+function Test-RelativeBranch {
+    param(
+        [byte[]]$Memory,
+        [int]$Start,
+        [int]$EndExclusive,
+        [byte]$Opcode,
+        [int]$Target
+    )
+
+    for ($address = $Start; $address -lt ($EndExclusive - 1); $address++) {
+        if ($Memory[$address] -ne $Opcode) { continue }
+        $offset = [int]$Memory[$address + 1]
+        if ($offset -ge 0x80) { $offset -= 0x100 }
+        if (($address + 2 + $offset) -eq $Target) { return $true }
+    }
+    return $false
+}
+
+function Invoke-DispatcherPrefix {
+    param(
+        [byte[]]$Memory,
+        [int]$Start,
+        [int]$ModeAddress,
+        [byte]$Mode
+    )
+
+    $pc = $Start
+    $a = 0
+    $p = 0x01       # Start with carry set so unknown-mode CLC is proved.
+    $stack = New-Object System.Collections.Generic.Stack[int]
+
+    for ($step = 0; $step -lt 64; $step++) {
+        $opcode = $Memory[$pc]
+        switch ($opcode) {
+            0x08 { # PHP
+                $stack.Push($p)
+                $pc++
+                continue
+            }
+            0x78 { # SEI
+                $p = $p -bor 0x04
+                $pc++
+                continue
+            }
+            0xAD { # LDA absolute
+                $address = ([int]$Memory[$pc + 1]) -bor (([int]$Memory[$pc + 2]) -shl 8)
+                if ($address -eq $ModeAddress) {
+                    $a = $Mode
+                } else {
+                    $a = $Memory[$address]
+                }
+                $pc += 3
+                continue
+            }
+            0xC9 { # CMP immediate
+                $value = $Memory[$pc + 1]
+                $p = $p -band 0xFC
+                if ($a -ge $value) { $p = $p -bor 0x01 }
+                if ($a -eq $value) { $p = $p -bor 0x02 }
+                $pc += 2
+                continue
+            }
+            0xF0 { # BEQ relative
+                $offset = [int][sbyte]$Memory[$pc + 1]
+                $pc += 2
+                if (($p -band 0x02) -ne 0) { $pc += $offset }
+                continue
+            }
+            0x28 { # PLP
+                if ($stack.Count -eq 0) { throw ('PLP underflow for mode ${0:X2}' -f $Mode) }
+                $p = $stack.Pop()
+                $pc++
+                continue
+            }
+            0x18 { # CLC
+                $p = $p -band 0xFE
+                $pc++
+                continue
+            }
+            0x20 { # JSR absolute: stop at the first operation dispatch.
+                $target = ([int]$Memory[$pc + 1]) -bor (([int]$Memory[$pc + 2]) -shl 8)
+                return [pscustomobject]@{ Action = 'JSR'; Target = $target; Carry = (($p -band 1) -ne 0) }
+            }
+            0x60 { # RTS
+                return [pscustomobject]@{ Action = 'RTS'; Target = -1; Carry = (($p -band 1) -ne 0) }
+            }
+            default {
+                throw ('Unsupported dispatcher opcode ${0:X2} at ${1:X4} for mode ${2:X2}' -f $opcode, $pc, $Mode)
+            }
+        }
+    }
+    throw ('Dispatcher did not terminate for mode ${0:X2}' -f $Mode)
+}
+
+$himonSymbols = Read-MapSymbols $HimonMapPath
+$str8Symbols = Read-MapSymbols $Str8MapPath
+$workerSymbols = Read-MapSymbols $WorkerMapPath
+$himonMemory = Read-S19Memory $HimonS19Path
+$str8Memory = Read-S19Memory $Str8S19Path
+$memory = Read-S19Memory $WorkerS19Path
+
+$himonBankCount = Get-Symbol $himonSymbols 'STR8_BANK_COUNT'
+$str8BankCount = Get-Symbol $str8Symbols 'STR8_BANK_COUNT'
+$workerBankCount = Get-Symbol $workerSymbols 'STR8_BANK_COUNT'
+if ($himonBankCount -ne 0x04 -or $str8BankCount -ne $himonBankCount -or $workerBankCount -ne $himonBankCount) {
+    throw ('Bank count HIMON/STR8/worker is {0:X2}/{1:X2}/{2:X2}; expected 04/04/04' -f $himonBankCount, $str8BankCount, $workerBankCount)
+}
+
+$himonClearStart = Get-Symbol $himonSymbols 'MON_CLEAR_RAM'
+$himonClearBegin = Get-Symbol $himonSymbols 'MON_CLEAR_RAM_BEGIN'
+$himonColdRangeFound = $false
+for ($address = $himonClearStart; $address -le ($himonClearBegin - 3); $address++) {
+    if ($himonMemory[$address] -eq 0xC9 -and
+        $himonMemory[$address + 1] -eq $himonBankCount -and
+        $himonMemory[$address + 2] -eq 0xB0) {
+        $himonColdRangeFound = $true
+        break
+    }
+}
+if (-not $himonColdRangeFound) { throw 'HIMON cold clear must preserve Bank Jump Record banks 00-03' }
+
+$residentJumpStart = Get-Symbol $str8Symbols 'STR8_CMD_JUMP_BANK'
+$residentJumpEnd = Get-Symbol $str8Symbols 'STR8_CMD_UPDATE_HIMON'
+$residentRangeFound = $false
+for ($address = $residentJumpStart; $address -lt ($residentJumpEnd - 1); $address++) {
+    if ($str8Memory[$address] -eq 0xC9 -and $str8Memory[$address + 1] -eq 0x34) {
+        $residentRangeFound = $true
+        break
+    }
+}
+if (-not $residentRangeFound) { throw 'Resident J parser must accept through ASCII 3' }
+
+[byte[]]$expectedHelp = [System.Text.Encoding]::ASCII.GetBytes('? U J0 J1 J2 J3 G R')
+$helpFound = $false
+for ($address = 0xF000; $address -le (0xFFF0 - $expectedHelp.Length); $address++) {
+    $match = $true
+    for ($i = 0; $i -lt $expectedHelp.Length; $i++) {
+        if ($str8Memory[$address + $i] -ne $expectedHelp[$i]) {
+            $match = $false
+            break
+        }
+    }
+    if ($match) {
+        $helpFound = $true
+        break
+    }
+}
+if (-not $helpFound) { throw 'Resident help does not publish J3' }
+
+$coldEntry = Get-Symbol $str8Symbols 'STR8_ENTER_HIMON_COLD'
+$warmEntry = Get-Symbol $str8Symbols 'STR8_ENTER_HIMON_WARM'
+$availability = Get-Symbol $str8Symbols 'STR8_BOOT_TARGET_AVAILABLE'
+$noBootEntry = Get-Symbol $str8Symbols 'STR8_ENTER_MENU_NO_BOOT'
+$menuEntry = Get-Symbol $str8Symbols 'STR8_ENTER_MENU'
+$attachDelay = Get-Symbol $str8Symbols 'STR8_ATTACH_DELAY'
+$noBootMessage = Get-Symbol $str8Symbols 'MSG_NO_BOOT'
+
+foreach ($entry in @(
+        @{ Name = 'cold'; Start = $coldEntry; End = $warmEntry },
+        @{ Name = 'warm'; Start = $warmEntry; End = $availability }
+    )) {
+    if (-not (Test-AbsoluteCall $str8Memory $entry.Start $entry.End $availability)) {
+        throw ('STR8 {0} C000 entry does not call the availability gate' -f $entry.Name)
+    }
+    if (-not (Test-RelativeBranch $str8Memory $entry.Start $entry.End 0x90 $noBootEntry)) {
+        throw ('STR8 {0} C000 entry does not BCC to the menu fallback' -f $entry.Name)
+    }
+}
+
+[byte[]]$entryFaceScan = 0xA0, 0x00, 0xB9, 0x00, 0xC0, 0xC9, 0xFF
+if (-not (Test-ByteSequence $str8Memory $availability $noBootEntry $entryFaceScan) -or
+    -not (Test-ByteSequence $str8Memory $availability $noBootEntry ([byte[]](0xC0, 0x10))) -or
+    -not (Test-ByteSequence $str8Memory $availability $noBootEntry ([byte[]](0x18, 0x60, 0x38, 0x60)))) {
+    throw 'STR8 C000 availability gate must reject an all-FF 16-byte entry face'
+}
+
+[byte[]]$menuJump = 0x4C, ($menuEntry -band 0xFF), (($menuEntry -shr 8) -band 0xFF)
+if (-not (Test-ByteSequence $str8Memory $noBootEntry $attachDelay $menuJump)) {
+    throw 'STR8 unavailable-target path does not enter the resident menu'
+}
+
+[byte[]]$expectedNoBoot = [System.Text.Encoding]::ASCII.GetBytes('NO BOOT @C000')
+if ($str8Memory[$noBootMessage] -ne 0x0D -or
+    $str8Memory[$noBootMessage + 1] -ne 0x0A -or
+    -not (Test-ByteSequence $str8Memory ($noBootMessage + 2) ($noBootMessage + 2 + $expectedNoBoot.Length) $expectedNoBoot) -or
+    $str8Memory[$noBootMessage + 2 + $expectedNoBoot.Length] -ne 0x0D -or
+    $str8Memory[$noBootMessage + 3 + $expectedNoBoot.Length] -ne 0x8A) {
+    throw 'STR8 unavailable-target message changed'
+}
+
+$retiredResident = @(
+    'STR8_CMD_BACKUP',
+    'STR8_CMD_RESTORE_A',
+    'STR8_RUN_COPY',
+    'STR8_PRINT_COPY_PAIR'
+)
+$retiredWorker = @(
+    'STR8W_COPY_BANKS',
+    'STR8W_STAGE_SRC_SECTOR',
+    'STR8W_PRESERVE_IF_RESTORE',
+    'STR8W_TOP_FAIL_HALT'
+)
+foreach ($name in $retiredResident) {
+    if ($str8Symbols.ContainsKey($name)) { throw "Retired resident symbol remains: $name" }
+}
+foreach ($name in $retiredWorker) {
+    if ($workerSymbols.ContainsKey($name)) { throw "Retired worker symbol remains: $name" }
+}
+
+$expected = @{
+    0x05 = Get-Symbol $workerSymbols 'STR8W_PROGRAM_STAGED_SECTOR'
+    0x06 = Get-Symbol $workerSymbols 'STR8W_STAGE_BANK_SECTOR'
+    0x07 = Get-Symbol $workerSymbols 'STR8W_PROGRAM_RECORD'
+    0x08 = Get-Symbol $workerSymbols 'STR8W_JUMP_BANK'
+}
+if ((Get-Symbol $workerSymbols 'STR8_COPY_MODE_PROGRAM_STAGED') -ne 0x05) { throw 'PROGRAM_STAGED mode changed' }
+if ((Get-Symbol $workerSymbols 'STR8_COPY_MODE_STAGE_BANK_SECTOR') -ne 0x06) { throw 'STAGE_BANK_SECTOR mode changed' }
+if ((Get-Symbol $workerSymbols 'STR8_COPY_MODE_PROGRAM_RECORD') -ne 0x07) { throw 'PROGRAM_RECORD mode changed' }
+if ((Get-Symbol $workerSymbols 'STR8_COPY_MODE_JUMP_BANK') -ne 0x08) { throw 'JUMP_BANK mode changed' }
+
+$jumpBank = Get-Symbol $workerSymbols 'STR8W_JUMP_BANK'
+if ($memory[$jumpBank + 3] -ne 0xC9 -or $memory[$jumpBank + 4] -ne 0x04) {
+    throw 'JUMP_BANK must accept only bank bytes 00-03'
+}
+$bankBits = Get-Symbol $workerSymbols 'STR8W_BANK_BIT_TABLE'
+[byte[]]$expectedBankBits = 0xCC, 0xCE, 0xEC, 0xEE
+for ($i = 0; $i -lt $expectedBankBits.Length; $i++) {
+    if ($memory[$bankBits + $i] -ne $expectedBankBits[$i]) {
+        throw ('Bank-select table mismatch at index {0}' -f $i)
+    }
+}
+
+$start = Get-Symbol $workerSymbols 'START'
+$end = Get-Symbol $workerSymbols 'STR8_WORKER_END'
+$modeAddress = Get-Symbol $workerSymbols 'STR8_COPY_MODE'
+$rejected = 0
+for ($mode = 0; $mode -le 0xFF; $mode++) {
+    $result = Invoke-DispatcherPrefix $memory $start $modeAddress ([byte]$mode)
+    if ($expected.ContainsKey($mode)) {
+        if ($result.Action -ne 'JSR' -or $result.Target -ne $expected[$mode]) {
+            throw ('Mode ${0:X2} dispatched to {1} ${2:X4}, expected JSR ${3:X4}' -f $mode, $result.Action, $result.Target, $expected[$mode])
+        }
+        continue
+    }
+    if ($result.Action -ne 'RTS' -or $result.Carry) {
+        throw ('Unknown mode ${0:X2} did not fail closed: {1}, C={2}' -f $mode, $result.Action, [int]$result.Carry)
+    }
+    $rejected++
+}
+
+Write-Host ('STR8 WORKER             = {0:X4}-{1:X4}; ${2:X} bytes' -f $start, ($end - 1), ($end - $start))
+Write-Host 'ACTIVE MODES            = 05 06 07 08'
+Write-Host 'RESIDENT J RANGE        = J0-J3'
+Write-Host 'JUMP BANK RANGE         = 00-03'
+Write-Host 'HIMON COLD RECORD RANGE = 00-03'
+Write-Host 'C000 ERASED FALLBACK    = STR8 MENU'
+Write-Host ('REJECTED MODE BYTES     = {0}' -f $rejected)
+Write-Host 'RETIRED MODES 00/01/03  = FAIL CLOSED'
+Write-Host 'STR8 WORKER MODE CHECK  = PASS'

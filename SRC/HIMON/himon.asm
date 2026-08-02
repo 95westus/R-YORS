@@ -1159,7 +1159,7 @@ MON_CLEAR_RAM:
                         CMP             #STR8_BANK_JUMP_SIG1_VALUE
                         BNE             MON_CLEAR_RAM_BEGIN
                         LDA             STR8_BANK_LAST_JUMP
-                        CMP             #$03
+                        CMP             #STR8_BANK_COUNT
                         BCS             MON_CLEAR_RAM_BEGIN
                         TAX
 MON_CLEAR_RAM_BEGIN:

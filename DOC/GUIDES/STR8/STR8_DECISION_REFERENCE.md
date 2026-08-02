@@ -249,7 +249,7 @@ remain byte-for-byte clean, so metadata is not placed in front of copied data.
 Today:
 
 ```text
-reset -> silent approximately 4-second attach delay -> bounded RX flush
+reset -> 16 dots over approximately 5.991 seconds -> bounded RX flush
 print shared make-time STR8-N build identity
 selector timeout -> Bank 3 HIMON cold
 selector 3 -> HIMON warm with RAM preserved
@@ -277,7 +277,7 @@ U = update HIMON from fixed $C000-$EFFF S19 gate
 0 = restore bank 0 -> bank 3, with verify
 1 = restore bank 1 -> bank 3, with verify
 2 = restore bank 2 -> bank 3, with verify
-J0/J1/J2 = non-destructive opaque-bank handoff
+J0/J1/J2/J3 = non-destructive selected-bank handoff; J3 returns to Bank 3
 G = go HIMON
 R = reset
 ```
@@ -291,9 +291,9 @@ in the protected top sector. IVI means Interrupt Vector Indirection; IVY is only
 the pronunciation and the current signature/symbol spelling.
 
 ```text
-NMI   -> STR8_IVY_ENTRY_NMI at $F0C0
+NMI   -> STR8_IVY_ENTRY_NMI at $F0BA
 RESET -> START at $F000
-IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0D4
+IRQ   -> STR8_IVY_ENTRY_IRQ_MASTER at $F0CE
 ```
 
 On reset, STR8 seeds the IVI RAM cells with safe defaults before the boot
@@ -346,7 +346,7 @@ sector buffer, and restores bank 3 before returning on ordinary worker paths.
 Successful opaque-bank handoff does not return. The `U` HIMON updater also
 uses `$5000-$6FFF` so C/D/E can all be staged before erase.
 
-For a successful `J0`-`J2` handoff, the worker publishes a signed Bank Jump
+For a successful `J0`-`J3` handoff, the worker publishes a signed Bank Jump
 Record at `$1FFD-$1FFF`: `$42,$4A,bank`. The commit occurs after bank selection
 and reset-vector validation, immediately before `JMP`. HIMON preserves a valid
 record across cold RAM clearing; `$42,$4A,$FF` means no validated jump is
@@ -465,7 +465,7 @@ Advanced sector maintenance means a confirmed mode that can select source and
 destination banks/sectors, erase a selected destination sector, copy one sector
 to another, and verify by read-back compare. It is useful for rescue and lab
 work, but it is not part of the small
-`? B U 0 1 2 J0 J1 J2 G R` command surface
+`? U J0 J1 J2 J3 G R` command surface
 and must name and confirm every destination without cascading.
 
 ## Core Rule
