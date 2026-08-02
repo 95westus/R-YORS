@@ -81,8 +81,13 @@ STR8_WORKER_RUN         EQU             $0200
 STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_TRAY_SIZE   EQU             $0800
 STR8_WORKER_TRAY_END    EQU             $09FF
+                        IF              STR8_V1_LAYOUT
+STR8_WORKER_STORE_LO    EQU             $C3
+STR8_WORKER_STORE_HI    EQU             $FC
+                        ELSE
 STR8_WORKER_STORE_LO    EQU             $03
 STR8_WORKER_STORE_HI    EQU             $FD
+                        ENDIF
 STR8_WORKER_COPY_LEN_LO EQU             $ED
 STR8_WORKER_COPY_LEN_HI EQU             $02
 STR8_DELAY_TICKS        EQU             $03

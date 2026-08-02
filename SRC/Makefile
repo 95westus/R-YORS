@@ -63,6 +63,7 @@ HIMON_ROM_S19 := $(S19_DIR)/himon-rom-c000.s19
 HIMON_ROM_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_ROM_BIN := $(BIN_DIR)/himon-rom-c000.bin
 HIMON_STR8_ROM_BIN := $(BIN_DIR)/himon-str8-rom.bin
+HIMON_STR8_V1_LAYOUT_PREVIEW_BIN := $(BIN_DIR)/himon-str8-v1-layout-preview.bin
 HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
@@ -82,6 +83,8 @@ STR8_SRC := $(STR8_SUBDIR)/str8.asm
 STR8_RECORD_EQ := $(STR8_SUBDIR)/str8-record-eq.inc
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
 STR8_S19 := $(S19_DIR)/str8-f000.s19
+STR8_V1_LAYOUT_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-v1-layout.obj
+STR8_V1_LAYOUT_S19 := $(S19_DIR)/str8-v1-layout-f000.s19
 STR8_LINKFLAGS := -g -s -t -cF000 -hm19 -j -o
 STR8_WORKER_SRC := $(STR8_SUBDIR)/str8-worker.asm
 STR8_WORKER_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-worker.obj
@@ -402,6 +405,10 @@ himon-rom-bin: himon-rom
 
 himon-str8-rom-bin: $(HIMON_STR8_ROM_BIN)
 	@echo "Built $(HIMON_STR8_ROM_BIN)."
+
+str8-v1-layout-preview: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)
+	@echo "Built guarded V1 layout preview $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)."
+	@echo "Preview only: no install S19, TopWriter, or stamped ROM image was generated."
 
 himon-rom-install-s19: $(HIMON_ROM_INSTALL_S19)
 	@echo "Built $(HIMON_ROM_INSTALL_S19)."
@@ -730,6 +737,12 @@ $(STR8_S19): $(STR8_OBJ) $(ROM_LIB)
 	@echo [ps] set S9 start $$F000 in $(STR8_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903F0000C'; Set-Content -Path $$p -Value $$lines"
 
+$(STR8_V1_LAYOUT_S19): $(STR8_V1_LAYOUT_OBJ) $(ROM_LIB)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(STR8_LINKFLAGS) $(STR8_V1_LAYOUT_S19) $(STR8_V1_LAYOUT_OBJ) -L $(BUILD_DIR)\lib\rom
+	@echo [ps] set S9 start $$F000 in $(STR8_V1_LAYOUT_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_V1_LAYOUT_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903F0000C'; Set-Content -Path $$p -Value $$lines"
+
 $(STR8_WORKER_S19): $(STR8_WORKER_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(STR8_WORKER_LINKFLAGS) $(STR8_WORKER_S19) $(STR8_WORKER_OBJ)
@@ -737,6 +750,11 @@ $(STR8_WORKER_S19): $(STR8_WORKER_OBJ)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
 
 $(STR8_OBJ): $(STR8_RECORD_EQ) himon-version-stamp
+
+$(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) himon-version-stamp
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT $<
+	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
 $(STR8_WORKER_OBJ): $(STR8_RECORD_EQ)
 
@@ -1031,6 +1049,10 @@ $(HIMON_STR8_ROM_BIN): $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) $(ASM_V1_
 	@echo [ps] stamp $(HIMON_STR8_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_STR8_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
+$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN): $(HIMON_ROM_S19) $(STR8_V1_LAYOUT_S19) $(STR8_WORKER_S19) $(ASM_V1_FLASH_S19) tools/build_himon_str8_rom_bin.ps1
+	@echo [ps] build guarded V1 layout preview $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-v1-layout-f000.map" -Str8S19Path "$(STR8_V1_LAYOUT_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -AsmS19Path "$(ASM_V1_FLASH_S19)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)" -V1LayoutPreview
+
 $(HIMON_ROM_INSTALL_S19): $(HIMON_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 	@echo [ps] build $(HIMON_ROM_INSTALL_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_ROM_BIN)" -S19Path "$(HIMON_ROM_INSTALL_S19)" -BaseAddress 32768
@@ -1192,6 +1214,7 @@ endif
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
+	str8-v1-layout-preview \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \
 	str-himon-str-update str8-top-stage-s19 str8-topwrite-a \

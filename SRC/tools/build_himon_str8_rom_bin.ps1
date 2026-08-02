@@ -10,7 +10,8 @@ param(
     [string]$ApPackageBinPath = "",
     [int]$ApPackageAddress = 0,
     [int]$ApPackageLimit = 0xC000,
-    [string]$BinPath = "BUILD/bin/himon-str8-rom.bin"
+    [string]$BinPath = "BUILD/bin/himon-str8-rom.bin",
+    [switch]$V1LayoutPreview
 )
 
 Set-StrictMode -Version Latest
@@ -324,10 +325,33 @@ $workerBankJumpSig0 = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_BANK
 $workerBankJumpSig1 = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_BANK_JUMP_SIG1"
 $workerBankLastJump = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_BANK_LAST_JUMP"
 $workerSize = $workerRunEnd - $workerRunStart
-$workerStoreEndExclusive = 0xFFF0
-$workerStoreStart = $workerStoreEndExclusive - $workerSize
+$legacyWorkerStoreEndExclusive = 0xFFF0
+$legacyWorkerStoreStart = $legacyWorkerStoreEndExclusive - $workerSize
+$legacyWorkerGapMin = 0x0200
+$legacyWorkerGap = $legacyWorkerStoreStart - $str8End
+$v1DirectoryStart = 0xFFB0
+$v1DirectoryEndExclusive = 0xFFF0
+$v1DirectorySize = 0x0040
+$v1WorkerStoreEndExclusive = $v1DirectoryStart
+$v1WorkerStoreStart = $v1WorkerStoreEndExclusive - $workerSize
+$v1WorkerGapMin = 0x0100
+$v1WorkerGap = $v1WorkerStoreStart - $str8End
+
+if ($V1LayoutPreview) {
+    if ([System.IO.Path]::GetFileName($BinPath) -notmatch 'v1-layout-preview') {
+        throw "V1 layout preview output name must contain 'v1-layout-preview'"
+    }
+    $workerStoreEndExclusive = $v1WorkerStoreEndExclusive
+    $workerStoreStart = $v1WorkerStoreStart
+    $str8WorkerGapMin = $v1WorkerGapMin
+    $layoutMode = "V1 LAYOUT PREVIEW; NOT FLASHABLE"
+} else {
+    $workerStoreEndExclusive = $legacyWorkerStoreEndExclusive
+    $workerStoreStart = $legacyWorkerStoreStart
+    $str8WorkerGapMin = $legacyWorkerGapMin
+    $layoutMode = "LEGACY PROVEN IMAGE"
+}
 $workerStoreSize = $workerSize
-$str8WorkerGapMin = 0x0200
 $str8WorkerGap = $workerStoreStart - $str8End
 $str8WorkerStoreLo = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_STORE_LO"
 $str8WorkerStoreHi = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_WORKER_STORE_HI"
@@ -412,11 +436,32 @@ if ($str8Nmi -lt 0xF000 -or $str8Nmi -ge 0x10000) {
 if ($str8Irq -lt 0xF000 -or $str8Irq -ge 0x10000) {
     throw ("STR8 IVY IRQ entry is {0:X4}; expected F000-FFFF" -f $str8Irq)
 }
+if ($str8End -gt $legacyWorkerStoreStart) {
+    throw ("STR8 crosses legacy worker storage at {0:X4}; _END_DATA={1:X4}" -f $legacyWorkerStoreStart, $str8End)
+}
+if ($legacyWorkerGap -lt $legacyWorkerGapMin) {
+    throw ("STR8 legacy resident/worker gap is {0:X}; minimum is {1:X} ({2:X4}-{3:X4})" -f $legacyWorkerGap, $legacyWorkerGapMin, $str8End, ($legacyWorkerStoreStart - 1))
+}
+if (($v1DirectoryEndExclusive - $v1DirectoryStart) -ne $v1DirectorySize) {
+    throw ("STR8 V1 directory is {0:X4}-{1:X4}; expected exact size {2:X}" -f $v1DirectoryStart, ($v1DirectoryEndExclusive - 1), $v1DirectorySize)
+}
+if ($v1WorkerStoreEndExclusive -ne $v1DirectoryStart) {
+    throw ("STR8 V1 worker ceiling is {0:X4}; expected directory start {1:X4}" -f $v1WorkerStoreEndExclusive, $v1DirectoryStart)
+}
+if ($v1DirectoryEndExclusive -ne 0xFFF0) {
+    throw ("STR8 V1 directory end is {0:X4}; expected config start FFF0" -f $v1DirectoryEndExclusive)
+}
+if ($v1WorkerStoreStart -lt $str8End) {
+    throw ("STR8 V1 resident crosses future worker storage at {0:X4}; _END_DATA={1:X4}" -f $v1WorkerStoreStart, $str8End)
+}
+if ($v1WorkerGap -lt $v1WorkerGapMin) {
+    throw ("STR8 V1 resident/worker gap is {0:X}; minimum is {1:X} ({2:X4}-{3:X4})" -f $v1WorkerGap, $v1WorkerGapMin, $str8End, ($v1WorkerStoreStart - 1))
+}
 if ($str8End -gt $workerStoreStart) {
-    throw ("STR8 crosses worker storage at {0:X4}; _END_DATA={1:X4}" -f $workerStoreStart, $str8End)
+    throw ("STR8 crosses selected worker storage at {0:X4}; _END_DATA={1:X4}" -f $workerStoreStart, $str8End)
 }
 if ($str8WorkerGap -lt $str8WorkerGapMin) {
-    throw ("STR8 resident/worker gap is {0:X}; minimum is {1:X} ({2:X4}-{3:X4})" -f $str8WorkerGap, $str8WorkerGapMin, $str8End, ($workerStoreStart - 1))
+    throw ("STR8 selected resident/worker gap is {0:X}; minimum is {1:X} ({2:X4}-{3:X4})" -f $str8WorkerGap, $str8WorkerGapMin, $str8End, ($workerStoreStart - 1))
 }
 if ($workerRunStart -ne 0x0200) {
     throw ("STR8 worker START is {0:X4}; expected 0200" -f $workerRunStart)
@@ -525,6 +570,15 @@ Import-S19IntoImage -Path $HimonS19Path -Image $bin -BankOffset $bankOffset
 Import-S19RelocatedIntoImage -Path $WorkerS19Path -Image $bin -BankOffset $bankOffset -RunStart $workerRunStart -StoreStart $workerStoreStart -StoreSize $workerStoreSize
 Import-S19IntoImage -Path $Str8S19Path -Image $bin -BankOffset $bankOffset
 
+if ($V1LayoutPreview) {
+    for ($address = $v1DirectoryStart; $address -lt $v1DirectoryEndExclusive; $address++) {
+        $offset = $bankOffset + ($address - 0x8000)
+        if ($bin[$offset] -ne 0xFF) {
+            throw ("V1 preview directory byte {0:X4} is {1:X2}; expected FF" -f $address, $bin[$offset])
+        }
+    }
+}
+
 [byte[]]$vectors = @(
     [byte]($str8Nmi -band 0xFF), [byte](($str8Nmi -shr 8) -band 0xFF),
     [byte]($str8Start -band 0xFF), [byte](($str8Start -shr 8) -band 0xFF),
@@ -596,6 +650,7 @@ for ($i = 0; $i -lt $expectedApAdapter.Length; $i++) {
 }
 
 Write-Host ("HIMON START/NMI/IRQ/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $himonStart, $himonNmi, $himonIrq, $himonEnd)
+Write-Host ("LAYOUT MODE              = {0}" -f $layoutMode)
 Write-Host ("HIMON AP IMPORT LINK     = {0:X4}" -f $himonApImportLink)
 Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Start, $str8Nmi, $str8Irq, $str8End)
 Write-Host ("STR8 SERVICES WORK/AP    = {0:X4}/{1:X4} -> {2:X4}" -f $str8WorkerService, $str8ApLinkService, $str8ApLinkAdapter)
@@ -611,6 +666,18 @@ if ($apPackageStart -ne $null) {
 }
 Write-Host ("WORKER RUN/STORE/SIZE   = {0:X4}/{1:X4}-{2:X4}/{3:X}" -f $workerRunStart, $workerStoreStart, ($workerStoreStart + $workerSize - 1), $workerSize)
 Write-Host ("STR8 RES/WORKER GAP      = {0:X4}-{1:X4}/{2:X} (min {3:X})" -f $str8End, ($workerStoreStart - 1), $str8WorkerGap, $str8WorkerGapMin)
+if ($V1LayoutPreview) {
+    Write-Host ("V1 PREVIEW WORKER         = {0:X4}-{1:X4}/{2:X} (emitted)" -f $v1WorkerStoreStart, ($v1WorkerStoreEndExclusive - 1), $workerSize)
+    Write-Host ("V1 PREVIEW DIRECTORY      = {0:X4}-{1:X4}/{2:X} (all FF)" -f $v1DirectoryStart, ($v1DirectoryEndExclusive - 1), $v1DirectorySize)
+} else {
+    Write-Host ("V1 PREFLIGHT WORKER       = {0:X4}-{1:X4}/{2:X} (not emitted)" -f $v1WorkerStoreStart, ($v1WorkerStoreEndExclusive - 1), $workerSize)
+    Write-Host ("V1 PREFLIGHT DIRECTORY    = {0:X4}-{1:X4}/{2:X} (not emitted)" -f $v1DirectoryStart, ($v1DirectoryEndExclusive - 1), $v1DirectorySize)
+}
+Write-Host ("V1 PREFLIGHT RESERVE      = {0:X4}-{1:X4}/{2:X} (min {3:X})" -f $str8End, ($v1WorkerStoreStart - 1), $v1WorkerGap, $v1WorkerGapMin)
+Write-Host ("V1 PREFLIGHT CONFIG/VECT  = FFF0-FFFF unchanged")
+if ($V1LayoutPreview) {
+    Write-Host "V1 PREVIEW WARNING        = NO INSTALL S19, TOPWRITER, OR ROM IMAGE STAMP"
+}
 Write-Host ("Vectors NMI/RESET/IRQ   = {0:X4}/{1:X4}/{2:X4}" -f $str8Nmi, $str8Start, $str8Irq)
 Write-Host ("Bank offset             = 0x{0:X5}" -f $bankOffset)
 Write-Host ("Bank start @ 8000       = {0}" -f ($bankHead -join " "))

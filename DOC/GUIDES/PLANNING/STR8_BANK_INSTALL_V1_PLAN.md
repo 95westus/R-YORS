@@ -1,8 +1,8 @@
 # STR8-N Four-Bank Installer V1 Plan
 
 ```text
-status:       DESIGN FROZEN; 32K/28K FTDI TRANSPORT PROVEN
-next gate:    TOP-SECTOR LAYOUT AND SIZE ASSERTIONS; ACIA UNQUALIFIED
+status:       DESIGN FROZEN; FTDI PROVEN; GUARDED V1 PREVIEW EMITTED
+next gate:    DIRECTORY CONSTANTS AND STRUCTURAL VALIDATION; ACIA UNQUALIFIED
 source date:  2026-07-31
 ```
 
@@ -480,6 +480,34 @@ resident/worker gap      $FAEF-$FCC2  size $01D4 = 468
 required post-I reserve                 $0100 = 256
 immediate growth room                   $00D4 = 212
 ```
+
+The 2026-08-01 host preflight now enforces this future layout on every normal
+combined-ROM build while leaving the current image unchanged. The accepted
+preflight output is:
+
+```text
+V1 PREFLIGHT WORKER       = FCC3-FFAF/2ED (not emitted)
+V1 PREFLIGHT DIRECTORY    = FFB0-FFEF/40 (not emitted)
+V1 PREFLIGHT RESERVE      = FAEF-FCC2/1D4 (min 100)
+V1 PREFLIGHT CONFIG/VECT  = FFF0-FFFF unchanged
+```
+
+The normal builder still emits the current worker at `$FD03-$FFEF`; it does
+not reserve directory bytes or alter TopWriter output. The separate guarded
+target:
+
+```text
+make -C SRC str8-v1-layout-preview
+```
+
+builds `BUILD/bin/himon-str8-v1-layout-preview.bin` with the worker at
+`$FCC3-$FFAF` and all 64 directory bytes at `$FFB0-$FFEF` equal to `$FF`.
+It uses a separately assembled STR8 image whose worker-copy constant matches
+`$FCC3`. The preview target is not part of `all`, `firmware`, or `release`; it
+does not produce an install S19, TopWriter, or stamped ROM image. It is not a
+flashable migration artifact. Actual onboard V1 layout installation remains
+gated on the explicit migration path and directory-preserving later TopWriter
+behavior.
 
 Estimated reclaim is approximately 727 resident bytes from retired V0 command
 clients and messages, plus 120-155 worker bytes from retired full-copy and
