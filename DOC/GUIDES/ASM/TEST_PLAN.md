@@ -11933,6 +11933,15 @@ after `9-D`, so complete range success through sector D is not claimed.
 Bank 0-2 erase, repeated-erased skip, `ALL`, copy, abort, failure, and `Q`
 remain separate maintenance-tool gates.
 
+The same board source assembled successfully but `SEAL> PACKAGE $3000`
+returned `PKG ERR=$02`. `$3000` is a valid non-overlapping package-output
+buffer; it is not the program entry argument. The error is the expected
+bad-seal-flags rejection because this direct-run maintenance program has far
+more internal absolute references than the ASM-F2 V1 relocation-table limit
+of 16. It does not invalidate the assembled `$2000` body and performs no flash
+operation. Exit with `SEAL> .` and run `G 2000`; packaging this maintenance
+tool would require a separate size/relocation redesign.
+
 Board assembly is:
 
 ```text

@@ -18942,3 +18942,24 @@ accepted: no-input cold, resident `G` warm, and startup selector-`3` warm.
 The maintenance ordered-range run demonstrably progressed through sector C;
 because its RAM result board was not inspected afterward, this transcript is
 not used as proof that every selected sector through D completed.
+
+## 2026-08-02 STR8 Bank Maintenance Package Negative
+
+The current direct-run maintenance source again assembled through `ASM OK`.
+At the seal prompt, the operator attempted to build an AP package:
+
+```text
+ASM>$2625:         END
+ASM OK
+SEAL> PACKAGE $3000
+PKG ERR=$02
+SEAL>
+```
+
+This is a package-only negative, not an assembly or flash failure. `$3000` is
+a valid package-output buffer and does not overlap the `$2000-$2624` body.
+`$02` is the seal bad-flags status. The program contains substantially more
+internal absolute references than the ASM-F2 V1 `ASM_RELOC_MAX=$10` table can
+describe, so it is intentionally direct-run rather than AP-package-clean.
+No maintenance command or flash mutation occurred. The correct continuation
+is `SEAL> .`, followed by `G 2000` at HIMON.
