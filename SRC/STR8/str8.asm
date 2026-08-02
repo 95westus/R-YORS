@@ -44,6 +44,7 @@
 
                         INCLUDE         "STR8/str8-record-eq.inc"
                         INCLUDE         "STR8/str8-jump-eq.inc"
+                        INCLUDE         "STR8/str8-directory-eq.inc"
 
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
 ; 2026-05-17T21:20-05:00        WLP2        Worker storage formerly moved to $FC00 to make room for U/HIMON update.

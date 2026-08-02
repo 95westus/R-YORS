@@ -1,8 +1,8 @@
 # STR8-N Four-Bank Installer V1 Plan
 
 ```text
-status:       DESIGN FROZEN; FTDI PROVEN; GUARDED V1 PREVIEW EMITTED
-next gate:    DIRECTORY CONSTANTS AND STRUCTURAL VALIDATION; ACIA UNQUALIFIED
+status:       DESIGN FROZEN; V1 DIRECTORY HOST CONTRACT CHECKED
+next gate:    V0 RECLAIM AND RESIDENT DIRECTORY VALIDATION; ACIA UNQUALIFIED
 source date:  2026-07-31
 ```
 
@@ -106,6 +106,29 @@ top-sector maintenance.
 
 An entirely `$FF` record is empty. A partially programmed or structurally
 unexpected record is never launchable.
+
+The 2026-08-01 read-only directory slice adds the shared
+`STR8/str8-directory-eq.inc` constants and the host reference gate:
+
+```text
+make -C SRC str8-directory-check
+```
+
+The gate checks the guarded preview's four empty records plus 33 exact legal
+journal states, 61 illegal progression fixtures, and record fixtures covering
+empty, complete, incomplete, exhausted, malformed reserved/description/seal,
+and bank-specific LOCAL ENTRY cases. It distinguishes record states EMPTY,
+INCOMPLETE, COMPLETE, and INVALID; a COMPLETE record may report no next pair
+when all sixteen transactions are consumed. A partial first-install descriptor
+is record-INVALID and nonlaunchable even when its independently scanned journal
+correctly reports STARTED and the same retry pair.
+
+A direct resident validator trial measured `$0115` bytes. Without the planned
+V0 reclaim it would reduce the V1 resident/worker reserve from `$01D4` to
+`$00BF`, violating the hard `$0100` floor by `$0041`. The build gate correctly
+rejected that layout, so this slice adds no resident validator and no flash
+mutation. Resident promotion follows the already-planned V0 command/message
+and worker-mode reclaim.
 
 ## Seal and Install Journal
 

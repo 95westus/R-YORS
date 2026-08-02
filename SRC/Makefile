@@ -81,6 +81,8 @@ FNV1A_HBSTR_S19 := $(S19_DIR)/fnv1a-hbstr-6000.s19
 FNV1A_HBSTR_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
 STR8_SRC := $(STR8_SUBDIR)/str8.asm
 STR8_RECORD_EQ := $(STR8_SUBDIR)/str8-record-eq.inc
+STR8_DIRECTORY_EQ := $(STR8_SUBDIR)/str8-directory-eq.inc
+STR8_DIRECTORY_CHECK := tools/check_str8_directory_v1.ps1
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
 STR8_S19 := $(S19_DIR)/str8-f000.s19
 STR8_V1_LAYOUT_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-v1-layout.obj
@@ -409,6 +411,9 @@ himon-str8-rom-bin: $(HIMON_STR8_ROM_BIN)
 str8-v1-layout-preview: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)
 	@echo "Built guarded V1 layout preview $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)."
 	@echo "Preview only: no install S19, TopWriter, or stamped ROM image was generated."
+
+str8-directory-check: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN) $(STR8_DIRECTORY_EQ) $(STR8_DIRECTORY_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)"
 
 himon-rom-install-s19: $(HIMON_ROM_INSTALL_S19)
 	@echo "Built $(HIMON_ROM_INSTALL_S19)."
@@ -749,9 +754,9 @@ $(STR8_WORKER_S19): $(STR8_WORKER_OBJ)
 	@echo [ps] set S9 start $$0200 in $(STR8_WORKER_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
 
-$(STR8_OBJ): $(STR8_RECORD_EQ) himon-version-stamp
+$(STR8_OBJ): $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
 
-$(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) himon-version-stamp
+$(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
@@ -762,7 +767,7 @@ $(STR8_RECORD_PHASE1_PROOF_OBJ): $(STR8_RECORD_EQ)
 
 $(STR8_L_TRANSPORT_PHASE5_PROOF_OBJ): $(STR8_RECORD_EQ)
 
-$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) himon-version-stamp
+$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_RAM_PROOF $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
@@ -1214,7 +1219,7 @@ endif
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
-	str8-v1-layout-preview \
+	str8-v1-layout-preview str8-directory-check \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \
 	str-himon-str-update str8-top-stage-s19 str8-topwrite-a \
