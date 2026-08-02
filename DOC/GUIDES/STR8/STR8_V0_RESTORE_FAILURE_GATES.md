@@ -24,8 +24,8 @@ bd7f4cae699619e3154d7080c521b2f55bfb67d4  str8-restore-nonerased-3000.a
 
 Active paths:
 
-- [str8-restore-nonerased-3000.a](../ASM/SAMPLES/str8-restore-nonerased-3000.a)
-- [str8-highfail-inject-3000.a](../ASM/SAMPLES/str8-highfail-inject-3000.a)
+- [str8-restore-nonerased-3000.a](../ASM/SAMPLES/OLD/str8-restore-nonerased-3000.a)
+- [str8-highfail-inject-3000.a](../ASM/SAMPLES/OLD/str8-highfail-inject-3000.a)
 
 The files ship with `ARM EQU $00`. An unchanged fixture is a dry safety check:
 `G 3000` must return `$E0` with carry clear and must not write flash. Change
@@ -57,7 +57,7 @@ source, Bank 3 as destination, sector `$9000-$9FFF`, and marker byte `$9FF0`.
 
 ```text
 ASM NEW
-  paste ASM/SAMPLES/str8-restore-nonerased-3000.a unchanged
+  paste ASM/SAMPLES/OLD/str8-restore-nonerased-3000.a unchanged
 .
 G 3000
 D 1A00 1A07
@@ -221,7 +221,7 @@ then be compared byte-for-byte with its retained source after hardware reset.
 
 ```text
 ASM NEW
-  paste ASM/SAMPLES/str8-highfail-inject-3000.a unchanged
+  paste ASM/SAMPLES/OLD/str8-highfail-inject-3000.a unchanged
 .
 G 3000
 D 1A00 1A07

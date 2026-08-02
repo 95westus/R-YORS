@@ -17,7 +17,7 @@ does not mean "write flash at `$XXXX` or `$YYYY`." An AP such as
 
 | AP package | Bank-0 envelope | RAM entry | Envelope | Meaning |
 |---|---:|---:|---:|---|
-| legacy `asm-session-report-4800.a` | `$8000` | `$4800` | `$06A6` installed revision | Fixed-load, ASM-map-matched session report |
+| legacy `OLD/asm-session-report-4800.a` | `$8000` | `$4800` | `$06A6` installed revision | Fixed-load, ASM-map-matched session report |
 | old `FLASH_BANK_READ` | `$86A6` | `$3000` | `$0100` | Non-interactive sector-to-`$4000` read and CRC |
 | old `FLASH_BANK_ERASE_WRITE` | `$87A6` | `$3000` | `$01B4` | Non-interactive armed sector erase/write/verify |
 

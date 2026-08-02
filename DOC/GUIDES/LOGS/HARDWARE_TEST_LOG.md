@@ -18963,3 +18963,51 @@ internal absolute references than the ASM-F2 V1 `ASM_RELOC_MAX=$10` table can
 describe, so it is intentionally direct-run rather than AP-package-clean.
 No maintenance command or flash mutation occurred. The correct continuation
 is `SEAL> .`, followed by `G 2000` at HIMON.
+
+## 2026-08-02 Movable Session Reporter Package and AP Range Negative
+
+After the maintenance run, the operator cold-cleared RAM, reloaded current
+ASM-F2 `00.0802(1709)`, and pasted the generated movable reporter. The board
+assembled the full `$0C5F` body and its `$E0`-row private rebase table, then
+built the one-sector AP envelope successfully:
+
+```text
+ASM>$2C5F:         ENTRY START
+ASM>$2C5F:         END
+ASM OK
+SEAL> PACKAGE $3000
+PKG OK @=$3000 L=$0C8B
+SEAL> .
+ASM BYE
+```
+
+This accepts current-image ASM-F2 source compatibility, emission of the
+private rebase table into the package, and the `$1000` AP-envelope size gate.
+It does not yet accept execution of that table, Bank-0 installation,
+relocation to `$4000`, or post-session reporting.
+
+The following command was a safe range negative:
+
+```text
+>AP B3
+AP [Bn] pkg dst
+>AP B0 $3000 $8000
+APERR=$06
+```
+
+`APERR=$06` is the expected `BAD RANGE`. In banked form, the package source
+must be visible in the selected bank at `$8000-$FFFF`; `$3000` is only the RAM
+envelope bay. The reporter body must load within `$2000-$4FFF`. At its current
+`$0C5F` length its legal starts end at `$43A1`, so `$8000` is also an invalid
+destination. Range validation occurred before execution and made no flash
+write. The `$3000` source check also failed before the STR8 bank-staging worker
+ran, so the RAM envelope remains available on the captured prompt.
+
+The immediate non-destructive continuation is `AP $3000 $4000` without a bank
+argument. It should run the envelope already in RAM and report the reporter's
+own build session. The captured map showed Bank 0 fully erased immediately
+before this package build. On that unchanged board state, the persistent
+continuation is to preserve the `$3000` envelope, assemble and direct-run
+`bank0ap-put-transient-2000.a`, select `$8000` or the AUTO result, and confirm
+the displayed `$0C8B` write. Record the installed address as `$XXXX`, then use
+`AP B0 $XXXX $4000` before the target ASM session and `G 4000` after it.

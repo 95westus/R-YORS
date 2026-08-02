@@ -30,7 +30,7 @@ before continuing. Do not paste ASM source at a `STR8-N>` prompt.
 >ASM NEW
 ```
 
-Paste `DOC/GUIDES/ASM/SAMPLES/life16-column-2000.a`. After `END`:
+Paste `DOC/GUIDES/ASM/SAMPLES/OLD/life16-column-2000.a`. After `END`:
 
 ```text
 ASM OK

@@ -48,7 +48,7 @@ expect ASM>
 Paste the program:
 
 ```text
-paste DOC/GUIDES/ASM/SAMPLES/biorhythm-2000.asm
+paste DOC/GUIDES/ASM/SAMPLES/OLD/biorhythm-2000.asm
 expect ASM FLASH OK
 ```
 
@@ -108,7 +108,7 @@ Accepted hardware proof on 2026-06-10:
 expect LF OK WR=2D6B GO=800C
 
 >ASM
-paste DOC/GUIDES/ASM/SAMPLES/biorhythm-2000.asm
+paste DOC/GUIDES/ASM/SAMPLES/OLD/biorhythm-2000.asm
 expect ASM FLASH OK
 expect SYMBOL rows 00-16
 expect FIXUP rows 00-10, all ST=02 resolved

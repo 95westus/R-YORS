@@ -67,10 +67,10 @@ until the Makefile and operator docs point somewhere else:
 
 ```text
 DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
-DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
-DOC/GUIDES/ASM/SAMPLES/asm-session-report-transient-7000.a
-DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
-DOC/GUIDES/ASM/SAMPLES/banked-ap-smoke.a
+DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-4800.a
+DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-transient-7000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/ASMTEST_3000.asm
+DOC/GUIDES/ASM/SAMPLES/OLD/banked-ap-smoke.a
 DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a
 ```
 
@@ -78,7 +78,7 @@ Those files are named like samples, but today they still support current
 ASM-F2, STR8-N, AP, and reporter workflows.
 
 `banked-rjoin-smoke.a` is no longer a current workflow input. Its closed board
-proof fixture is archived at `DOC/GUIDES/ASM/SAMPLES/OLD CODE/`.
+proof fixture is archived at `DOC/GUIDES/ASM/SAMPLES/OLD/`.
 
 ## Candidate Moves
 

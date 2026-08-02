@@ -22,7 +22,7 @@ expect ASM RT PASTE
 Paste the program:
 
 ```text
-paste DOC/GUIDES/ASM/SAMPLES/local-label-stress-7400.asm
+paste DOC/GUIDES/ASM/SAMPLES/OLD/local-label-stress-7400.asm
 expect ASM RT PASTE OK
 ```
 

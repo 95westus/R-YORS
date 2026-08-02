@@ -18,7 +18,7 @@ ASM NEW
 Paste:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/dc-forward-import-data-2000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-import-data-2000.a
 ```
 
 Expected:
@@ -137,7 +137,7 @@ Build the same AP package at `$3000`:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/dc-forward-import-data-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-import-data-2000.a
 PACKAGE $3000
 .
 D 3000 303F
@@ -242,7 +242,7 @@ import relocation rows:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/dc-forward-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-2000.a
 PACKAGE $3200
 .
 AP $3200 $3000
@@ -277,7 +277,7 @@ fixture:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/OLD CODE/banked-rjoin-smoke.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/banked-rjoin-smoke.a
 PACKAGE $3200
 .
 AP $3200 $3000
@@ -290,7 +290,7 @@ If that passes, isolate imported data constants without `DC` or forward labels:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/import-data-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/import-data-2000.a
 PACKAGE $3200
 .
 AP $3200 $3000
@@ -326,7 +326,7 @@ returning to bank 0 storage:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/dc-forward-import-data-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-import-data-2000.a
 PACKAGE $3200
 .
 AP $3200 $3000

@@ -618,11 +618,11 @@ A [addr] [label[:]] MMM [operand] .
   applicable. They drive the basic session report and xref view.
 - Default flash ASM keeps table printing out of the resident command surface.
   `asm-session-report-7000.s19` is the host-built external table reporter, and
-  `asm-session-report-4800.a` is the flash ASM-native compact source program
+  `SAMPLES/OLD/asm-session-report-4800.a` is the flash ASM-native compact source program
   for preloading before the session being inspected. It uses literal message
   addresses and single-character `DB` atoms so it fits the raised symbol/fixup
   limits without relying on double-quoted `DB` strings.
-  `asm-session-report-transient-7000.a` is retained for non-flash/runtime-paste ASM
+  `SAMPLES/OLD/asm-session-report-transient-7000.a` is retained for non-flash/runtime-paste ASM
   builds that still allow `$7000` output.
 - RAM "rows" are conceptual records. A W65C02 implementation may store fields
   as parallel arrays indexed by slot, matching the current proof style, when

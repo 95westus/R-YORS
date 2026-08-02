@@ -31,7 +31,7 @@ expect ASM RT PASTE
 Paste the program:
 
 ```text
-paste DOC/GUIDES/ASM/SAMPLES/rjoin-hash-stats-7200.asm
+paste DOC/GUIDES/ASM/SAMPLES/OLD/rjoin-hash-stats-7200.asm
 expect ASM RT PASTE OK
 ```
 

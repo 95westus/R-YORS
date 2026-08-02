@@ -724,13 +724,14 @@ For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-ap-2000.a`
 is a compact, pasteable `.a` source. It prints the split low-RAM pools, the
 `$2000/$3000/$4000` islands, high UDATA, safe output, and volatile regions.
 Its complete internal body self-relocates; its current ASM helper/table calls
-remain map-matched. The legacy `asm-session-report-4800.a` fixed-load source
-and `asm-session-report-transient-7000.a` non-flash/runtime-paste source are
-retained.
+remain map-matched. The legacy
+`SAMPLES/OLD/asm-session-report-4800.a` fixed-load source and
+`SAMPLES/OLD/asm-session-report-transient-7000.a` non-flash/runtime-paste
+source are retained in the archive.
 
 To manually store the reporter as an AP package in Bank 0, use the
 `bank0ap-put-transient-2000.a` flow in
-[SAMPLES/bank0ap-put-2000-test.md](SAMPLES/bank0ap-put-2000-test.md). Rebuild,
+[SAMPLES/OLD/bank0ap-put-2000-test.md](SAMPLES/OLD/bank0ap-put-2000-test.md). Rebuild,
 repackage, and reinstall either reporter after ASM-F2 code or map changes. A
 version-stamp-only rebuild with unchanged addresses does not invalidate it.
 Load the matching reporter before the session to inspect, because a banked
@@ -807,7 +808,7 @@ G 3000
 ```
 
 For a fuller current-life-cycle proof with no imports, paste
-`DOC/GUIDES/ASM/SAMPLES/spill-roundtrip-2000.a`. It exercises forward
+`DOC/GUIDES/ASM/SAMPLES/OLD/spill-roundtrip-2000.a`. It exercises forward
 references, a backward branch, export metadata, internal code relocation,
 `PACKAGE`, `INSTALL`, `LOAD`, and `G`. Load it to non-page-aligned `$3123` so
 both low and high relocation bytes have to move. After running `G 3123`,

@@ -174,8 +174,8 @@ for retained loader/volume direction and explicitly marked design history.
                                     STR8 V0 recovery gates.
 ```
 
-scope: `ASM/SAMPLES/str8-restore-nonerased-3000.a`,
-`ASM/SAMPLES/str8-highfail-inject-3000.a`,
+scope: `ASM/SAMPLES/OLD/str8-restore-nonerased-3000.a`,
+`ASM/SAMPLES/OLD/str8-highfail-inject-3000.a`,
 `STR8/STR8_V0_RESTORE_FAILURE_GATES.md`, `STR8_WORK_PROCESS.md`, and
 `ASM/TEST_PLAN.md`.
 
@@ -209,13 +209,13 @@ ASM-F2 recovery path (`LF OK WR=3C6D GO=800C`).
 ```
 
 scope at the time: `ASM/SAMPLES/banked-rjoin-smoke.a` (now archived as
-`ASM/SAMPLES/OLD CODE/banked-rjoin-smoke.a`),
+`ASM/SAMPLES/OLD/banked-rjoin-smoke.a`),
 `ASM/SAMPLES/bankput-transient-3000.a`,
-`ASM/SAMPLES/missing-import-atomicity-2000.a`, `ASM/TEST_PLAN.md`, and
+`ASM/SAMPLES/OLD/missing-import-atomicity-2000.a`, `ASM/TEST_PLAN.md`, and
 `ASM/AP_LINKER_CURRENT_IMAGE_GATES.md`.
 
 change: The reviewed banked-RJOIN and Bank-2 installer fixtures moved
-byte-for-byte out of `SAMPLES/OLD CODE`; the valid-first/missing-second
+byte-for-byte out of `SAMPLES/OLD`; the valid-first/missing-second
 atomicity fixture is now active. The current proof pins
 `BIO_FTDI_PUT_CSTR=$E705` and exact loaded/debug/request bytes.
 

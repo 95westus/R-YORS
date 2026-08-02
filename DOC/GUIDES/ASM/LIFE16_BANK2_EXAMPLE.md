@@ -15,7 +15,7 @@ exists and preserves the board-test evidence.
 Source:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/life16-column-2000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/life16-column-2000.a
 ```
 
 Helper:
@@ -131,7 +131,7 @@ Reason: `ASM NEW` starts a clean ASM-F2 source session. The source itself uses
 Paste:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/life16-column-2000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/life16-column-2000.a
 ```
 
 End of source should return to `SEAL>` after `END`:

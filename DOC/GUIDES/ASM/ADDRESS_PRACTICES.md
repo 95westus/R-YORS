@@ -238,7 +238,7 @@ no longer valid.
 For the bench command sequence, use
 [LIFE16_QUICK_CARD.md](LIFE16_QUICK_CARD.md). For the reasons behind it, use
 [LIFE16_BANK2_EXAMPLE.md](LIFE16_BANK2_EXAMPLE.md). The example assembles
-`SAMPLES/life16-column-2000.a`, stores the AP envelope in bank 2 at `$9000`,
+`SAMPLES/OLD/life16-column-2000.a`, stores the AP envelope in bank 2 at `$9000`,
 and runs it with `AP B2 $9000 $3000`.
 
 ## Bank 0 AP Install
@@ -297,10 +297,11 @@ the new target's flash address; the installer asks for that address at its
 pressed.
 
 The current hand-held board card uses archived fixture
-`DOC/GUIDES/ASM/SAMPLES/OLD CODE/bank0ap-print-smoke.a`, packages it at `$3000`,
+`DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-print-smoke.a`, packages it at `$3000`,
 stores it in bank 0 at `$8000`, and expects the AP body to print `B0 AP RUN`.
 
-`bank0ap-stage-transient-2000.a` and `bank0ap-commit-transient-2000.a` remain available for
+`SAMPLES/OLD/old-bank0ap-stage-transient-2000.a` and
+`SAMPLES/OLD/old-bank0ap-commit-transient-2000.a` remain available for
 diagnosing the staged sector or separating the irreversible write from the
 selection pass. They are not the normal operator path.
 
@@ -338,7 +339,7 @@ ignored. Its important job is to leave the patched reporter resident before
 the target session begins. If the target session fails before `END`, exit
 source mode with `.` and use `G 4000`.
 
-The older `asm-session-report-4800.a` remains available for a board that
+The older `SAMPLES/OLD/asm-session-report-4800.a` remains available for a board that
 already stores it. That form must be loaded and later rerun at exactly `$4800`.
 Do not cold boot, warm boot, reload the reporter, start another session, run a
 banked `AP`, or invoke a flash worker first. Those operations overwrite state

@@ -16,8 +16,8 @@ stop and preserve the transcript before beginning a separate fix.
 ## Archived Frozen Fixtures
 
 The reviewed `banked-rjoin-smoke.a` and `bankput-transient-3000.a` sources are
-frozen proof inputs. `banked-rjoin-smoke.a` is now archived in `SAMPLES/OLD
-CODE`; the three proof inputs retain these Git blobs:
+frozen proof inputs. `banked-rjoin-smoke.a` is now archived in `SAMPLES/OLD`;
+the three proof inputs retain these Git blobs:
 
 ```text
 3522dd3bbfa2f4adaa9fc7bb4babf4b981f5f534  banked-rjoin-smoke.a
@@ -27,9 +27,9 @@ aae0f1ebcc3d9cd82b16e1da828e3c055a7223a1  bankput-transient-3000.a
 
 Archived/current paths:
 
-- [banked-rjoin-smoke.a](SAMPLES/OLD%20CODE/banked-rjoin-smoke.a)
+- [banked-rjoin-smoke.a](SAMPLES/OLD/banked-rjoin-smoke.a)
 - [bankput-transient-3000.a](SAMPLES/bankput-transient-3000.a)
-- [missing-import-atomicity-2000.a](SAMPLES/missing-import-atomicity-2000.a)
+- [missing-import-atomicity-2000.a](SAMPLES/OLD/missing-import-atomicity-2000.a)
 
 The current `bankput` fixture is already pinned to:
 
@@ -60,7 +60,7 @@ Board sequence:
 
 ```text
 ASM NEW
-  paste SAMPLES/missing-import-atomicity-2000.a
+  paste SAMPLES/OLD/missing-import-atomicity-2000.a
 PACKAGE $3200
 .
 M 5848
@@ -108,7 +108,7 @@ Build and install the frozen package:
 
 ```text
 ASM NEW
-  paste SAMPLES/OLD CODE/banked-rjoin-smoke.a
+  paste SAMPLES/OLD/banked-rjoin-smoke.a
 PACKAGE $3200
 .
 ASM NEW

@@ -29,7 +29,7 @@ Legacy ASM paste samples with `.asm` names remain until they are migrated.
 The first active sample is:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/ASMTEST_3000.asm
+DOC/GUIDES/ASM/SAMPLES/OLD/ASMTEST_3000.asm
 ```
 
 Current host-side checker:
@@ -2244,7 +2244,7 @@ to `RET A=0F X=10`, and dumped `$6900-$6910` as
 ASMTEST_3000 bench gate proof for that runtime generation.
 
 Historical line-echo proof on 2026-06-09 with the same `$36B8` paste image:
-the board accepted `DOC/GUIDES/ASM/SAMPLES/ASM_LINE_ECHO_7000.asm` through
+the board accepted `DOC/GUIDES/ASM/SAMPLES/OLD/ASM_LINE_ECHO_7000.asm` through
 `END` at `PC=$704E`, ran `G 7000`, echoed `?` and `ASM IS COOL` after `=> `,
 and returned to HIMON on `.` with `RET A=00 X=00 Y=00`.
 
@@ -3265,31 +3265,31 @@ ASMTEST_FIXUP.asm     forward abs16/rel8/lo8/hi8 fixups
 ASMTEST_BITS.asm      RMB/SMB/BBR/BBS operand forms
 ```
 
-Current pasteable bench toys:
+Pasteable bench sources; proof toys are archived under `SAMPLES/OLD`:
 
 ```text
-ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
-asm-directives-smoke-transient-3000.a
+OLD/ASM_LINE_ECHO_7000.asm  hardware-proven resident line read/echo sample
+OLD/asm-directives-smoke-transient-3000.a
                          hardware-proven EQU/DB/DW/DS and small fixup smoke
-pack40-roundtrip-transient-2000.a self-contained PACK40 pack/unpack oracle
-pack40-interactive-transient-2000.a
+OLD/pack40-roundtrip-transient-2000.a self-contained PACK40 pack/unpack oracle
+OLD/pack40-interactive-transient-2000.a
                          hardware-proven interactive PACK40 pack/unpack
                          exerciser
 bank3-erase-8000-bfff-transient-3000.a
                          bank 3 $8000-$BFFF erase tool using STR8 service;
                          S19 target: make -C SRC bank3-erase
-life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
-local-label-stress-7400.asm
+OLD/life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
+OLD/local-label-stress-7400.asm
                          exact 8-local scope/reuse/?prefix stress sample
-local-label-stress-7400-test.md
+OLD/local-label-stress-7400-test.md
                          board script for the local-label stress slice
-rjoin-hash-stats-7200.asm
+OLD/rjoin-hash-stats-7200.asm
                          line length/XOR/FNV stats through ASM/RJOIN
-rjoin-hash-stats-7200-test.md
+OLD/rjoin-hash-stats-7200-test.md
                          board script for the hash-stats slice
-biorhythm-2000.asm
+OLD/biorhythm-2000.asm
                          biorhythm-style phase chart through flash ASM/RJOIN
-biorhythm-2000-test.md
+OLD/biorhythm-2000-test.md
                          board script for the biorhythm slice
 ```
 
@@ -3407,8 +3407,8 @@ monotonic.
 Hardware-proven RJOIN hash-stats target:
 
 ```text
-follow rjoin-hash-stats-7200-test.md
-paste rjoin-hash-stats-7200.asm through ASM RT PASTE
+follow OLD/rjoin-hash-stats-7200-test.md
+paste OLD/rjoin-hash-stats-7200.asm through ASM RT PASTE
 expect END OK with only internal control-flow fixups
 G 7200
 enter HELLO
@@ -6014,8 +6014,8 @@ END_ADDR-START_ADDR   -> VALUE/NONE delta after both labels are defined
 Hardware-proven board proof:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/expr-math-transient-7010.a
-DOC/GUIDES/ASM/SAMPLES/expr-math-7010-test.md
+DOC/GUIDES/ASM/SAMPLES/OLD/expr-math-transient-7010.a
+DOC/GUIDES/ASM/SAMPLES/OLD/expr-math-7010-test.md
 ```
 
 The accepted HIMON `V 00.0615(2131)` / `ASM FLASH` transcript proves
@@ -8312,7 +8312,7 @@ ASM REPORT OK
 Flash ASM-native source form:
 
 ```text
-ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
+ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-4800.a
 .
 ASM NEW        run the session to inspect
 ...
@@ -8369,7 +8369,7 @@ Older Bank 2 `$8000` AP storage path for the same reporter, retained as an
 alternate storage proof and not the current Bank 0 reporter placement:
 
 ```text
-ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
+ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-4800.a
 SEAL           at SEAL>, expect SEAL OK
 PACKAGE $3200  at SEAL>, expect PKG OK @=$3200
 .
@@ -8848,7 +8848,7 @@ Extended SPIL proof:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/spill-roundtrip-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/spill-roundtrip-2000.a
 PACKAGE $3200
 INSTALL $3200
 INSTALL $3200 $hhhh
@@ -9338,7 +9338,7 @@ Package it at `$3000`, store it with the resident Bank-0 PUT AP, then invoke
 Enter at the exact-`YES` prompt. Require `ABORT - NO FLASH WRITE` and
 `A=$E0/C=0`. This proves package loading and the non-destructive command path
 without an erase after the intentional installer write. The separate
-hand-held card is `DOC/GUIDES/ASM/SAMPLES/flash-erase-bank-ap-2000-test.md`.
+hand-held card is `DOC/GUIDES/ASM/SAMPLES/OLD/flash-erase-bank-ap-2000-test.md`.
 
 The 2026-07-21 non-destructive board gate passed on HIMON/ASM-F2
 `00.0721(1742)`: it produced `PKG OK @=$3000 L=$03D6`, the resident PUT AP
@@ -9365,7 +9365,7 @@ Package it at `$3000`, store it through the resident PUT AP, then invoke
 `AP B0 DUMPPKG $2000`. Select known Bank 2 sector F, compare the first displayed
 row with `D 4000 403F`, and enter `Q` at the first page prompt. Require
 `ABORT - NO FLASH WRITE` with `A=$E0/C=0`. The full pasteable card is
-`DOC/GUIDES/ASM/SAMPLES/flash-bank-dump-ap-2000-test.md`. A preliminary
+`DOC/GUIDES/ASM/SAMPLES/OLD/flash-bank-dump-ap-2000-test.md`. A preliminary
 2026-07-21 board paste emitted `ERR=$07` on overlong data lines and `ERR=$03`
 on standalone labels; the resulting `$8C8B` / `$0231` package is invalid and
 must not be invoked. The source now uses short data rows and label-plus-opcode
@@ -9373,8 +9373,8 @@ lines. Board evidence for the corrected source remains pending.
 
 ## ASM-F2 Bank 0 AP Install Helper
 
-`DOC/GUIDES/ASM/SAMPLES/bank0ap-stage-transient-2000.a` and
-`DOC/GUIDES/ASM/SAMPLES/bank0ap-commit-transient-2000.a` are the planned
+`DOC/GUIDES/ASM/SAMPLES/OLD/old-bank0ap-stage-transient-2000.a` and
+`DOC/GUIDES/ASM/SAMPLES/OLD/old-bank0ap-commit-transient-2000.a` are the planned
 board-buildable bank 0 AP envelope installer. The stage piece consumes the RAM
 AP envelope at `$4000`, asks for a bank 0 destination or Enter for
 auto-selection, stages the selected sector at `$0A00-$19FF`, overlays the AP
@@ -9388,8 +9388,8 @@ packaged at `$4000`; both returned `PKG OK @=$hhhh L=$006A`, and the AP header
 dump began `41 50 01 6A 00 ...`. The first monolithic writer layout proved a
 placement negative: it emitted through the live package buffer, exceeded the
 global symbol budget, hit long `DB` source lines, and ended with
-`ERR=$09 BAD FIX`. The split `bank0ap-stage-transient-2000.a` /
-`bank0ap-commit-transient-2000.a` flow below keeps each source inside its 4K island and
+`ERR=$09 BAD FIX`. The split `old-bank0ap-stage-transient-2000.a` /
+`old-bank0ap-commit-transient-2000.a` flow below keeps each source inside its 4K island and
 under ASM-F2's symbol and source-line limits.
 
 A follow-up stage paste reached `ASM OK`, but ASM-F2 rejected operand
@@ -9408,7 +9408,8 @@ line cap.
 
 Follow-up source direction: the bank 0 installer is split into stage and commit
 pieces instead of growing a single interactive helper. Static checks show
-`bank0ap-stage-transient-2000.a` and `bank0ap-commit-transient-2000.a` remain under the symbol
+`old-bank0ap-stage-transient-2000.a` and
+`old-bank0ap-commit-transient-2000.a` remain under the symbol
 budget and under the 63-visible-character source-line cap. The current map uses
 three 4K islands: helper/body emission `$2000-$2FFF`, AP overlay/load/run
 `$3000-$3FFF`, and RAM AP envelope buffer `$4000-$4FFF`. `$5xxx` is not
@@ -9440,7 +9441,7 @@ The same transcript also caught an operator-mode negative: after running
 produced repeated `ERR=$03 BO`. The correct transition is `SEAL> .`, then
 `>ASM NEW`.
 The follow-up `PACKAGE $2000` attempt is the same class of placement error:
-`bank0ap-stage-transient-2000.a` reads the AP envelope only from `$4000` and emits over
+`old-bank0ap-stage-transient-2000.a` reads the AP envelope only from `$4000` and emits over
 `$2000`, so `G 2000` correctly reported `FAIL $1A00=$E1`.
 After a later bank 0 erase, `AP B0 $8000 $3000` correctly returned
 `APERR=$07` because the package had been erased.
@@ -9463,7 +9464,7 @@ validate its staged copy, require exact `YES`, then program/verify. It clears
 return.
 
 The complete hand-held procedure remains in
-`DOC/GUIDES/ASM/SAMPLES/bank0ap-put-2000-test.md`. Preserve the split-helper
+`DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-put-2000-test.md`. Preserve the split-helper
 evidence above; the one-run result is additional proof, not a replacement.
 
 The first 2026-07-12 combined-source paste exposed a fixture-capacity negative.
@@ -9638,7 +9639,7 @@ Remaining optional board proof: the print-smoke auto-address variant should
 confirm the printed `$hhhh` with `AP B0 $hhhh $3000`. Remaining negatives are
 bad AP header, non-erased destination bytes, no staged write, over-sector
 package placement, and abort without write. The full prompt-by-prompt script
-lives in `DOC/GUIDES/ASM/SAMPLES/bank0ap-put-2000-test.md`.
+lives in `DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-put-2000-test.md`.
 
 ## 2026-07-11 ASM-F2 Forward/Imported Data and DC Host Gate
 
@@ -9714,9 +9715,9 @@ shape, imported data emission, DC, forward data, or bank 0 flash-write failure.
 Pasteable combined board kit:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/dc-forward-import-data-2000.a
-DOC/GUIDES/ASM/SAMPLES/dc-forward-import-data-2000-test.md
-DOC/GUIDES/ASM/SAMPLES/dc-forward-2000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-import-data-2000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-import-data-2000-test.md
+DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-2000.a
 ```
 
 The live top sector dump matched the current STR8-N jump table:
@@ -9832,7 +9833,7 @@ Focused board proof, partial:
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-4800.a
 ASM OK
 SEAL> PACKAGE $3000
 PKG OK @=$3000 L=$hhhh
@@ -9891,7 +9892,7 @@ assemble a fresh target and use `G 4800` with no intervening banked operation,
 then run the `$1000/$1001` boundary fixture.
 
 The maintained closure procedure is
-`DOC/GUIDES/ASM/SAMPLES/asm-session-carry-boundary-test.md`. It rebuilds and
+`DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-carry-boundary-test.md`. It rebuilds and
 installs a map-matched reporter, proves failed and clean reporter carry returns,
 then packages `ap-envelope-1000-fixture-2000.a` and rejects
 `ap-envelope-1001-fixture-2000.a`. The package-only fixtures use empty metadata:
@@ -9968,7 +9969,7 @@ failure or abort, with A carrying the documented status. HIMON's `G`/`AP`
 wrapper saves P with `PHP` immediately after the target returns.
 
 After loading the current ASM-F2 image, paste
-`DOC/GUIDES/ASM/SAMPLES/return-carry-proof-transient-2000.a`, end the session, and run:
+`DOC/GUIDES/ASM/SAMPLES/OLD/return-carry-proof-transient-2000.a`, end the session, and run:
 
 ```text
 >G 2000
@@ -10011,7 +10012,7 @@ failure.
 
 The ordered board sequence, including reporter reinstall and the exact AP
 envelope boundary fixtures, is in
-`DOC/GUIDES/ASM/SAMPLES/asm-session-carry-boundary-test.md`.
+`DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-carry-boundary-test.md`.
 
 For the reporter, preload the Bank 0 AP at `$4800` before the target session.
 After a failed target session, `G 4800` must finish with `RET A=hh ... c`, where
@@ -10033,7 +10034,7 @@ stale. That banked load also occurred after the target session and therefore
 reused the low name tables.
 
 This is a negative lifecycle/version proof, not a reporter or carry-ABI pass.
-Rebuild and install `asm-session-report-4800.a` from the current map, preload
+Rebuild and install `SAMPLES/OLD/asm-session-report-4800.a` from the current map, preload
 the new Bank 0 package at `$4800`, assemble the target, and then use `G 4800`
 without another `AP` operation.
 
@@ -10070,7 +10071,7 @@ vectors                   = 92 F0 00 F0 A6 F0
 `$F006`, verifies the `$F006` absolute jump, verifies the exact adapter bytes
 `A9 03 8D 2F 7E 6C 2D 7E`, and requires `HIM_AP_IMPORT_LINK` to reside inside
 HIMON. `make -C SRC asm-test` also passes after correcting its stale Makefile
-path to the preserved `SAMPLES/OLD CODE/ASMTEST_3000.asm` fixture; the fixture
+path to the preserved `SAMPLES/OLD/ASMTEST_3000.asm` fixture; the fixture
 itself and its hardware transcript were not moved or rewritten.
 
 Required board regression before hardware proof:
@@ -10147,7 +10148,7 @@ Resume the RAM import proof without a cold boot:
 
 ```text
 ASM NEW
-  paste OLD CODE/banked-rjoin-smoke.a
+  paste OLD/banked-rjoin-smoke.a
 PACKAGE $3200
 LOAD $3200 $3000
 .
@@ -10230,9 +10231,9 @@ board sequence in
 Frozen sources:
 
 ```text
-SAMPLES/OLD CODE/banked-rjoin-smoke.a
+SAMPLES/OLD/banked-rjoin-smoke.a
 SAMPLES/bankput-transient-3000.a
-SAMPLES/missing-import-atomicity-2000.a
+SAMPLES/OLD/missing-import-atomicity-2000.a
 ```
 
 The missing-import fixture deliberately orders the valid
@@ -10289,8 +10290,8 @@ run card in
 [STR8_V0_RESTORE_FAILURE_GATES.md](../STR8/STR8_V0_RESTORE_FAILURE_GATES.md).
 
 ```text
-SAMPLES/str8-restore-nonerased-3000.a
-SAMPLES/str8-highfail-inject-3000.a
+SAMPLES/OLD/str8-restore-nonerased-3000.a
+SAMPLES/OLD/str8-highfail-inject-3000.a
 ```
 
 Both sources default to `ARM=$00`, which must return `$E0/C=0` without writing
@@ -10419,7 +10420,7 @@ paste a Motorola S19 into `ASM NEW`: ASM accepts source only.
 
    DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a  assembly source for ASM
    SRC/BUILD/s19/str8-record-phase1-proof-3000.s19         S19 for HIMON L
-   DOC/GUIDES/ASM/SAMPLES/str8-record-phase1-max252.s19    one console input line
+   DOC/GUIDES/ASM/SAMPLES/OLD/str8-record-phase1-max252.s19 one console input line
    ```
 
    The generated topwriter carries the new `$F000-$FFFF` image inside its
@@ -10564,7 +10565,7 @@ Required Phase-1 board gates, in order:
    and the same already-matching byte succeeding through the RAM worker without
    a flash change.  The fixture never passes a differing byte to the worker.
 5. Run `G 3006`, then send exactly the one CR-terminated line in
-   `SAMPLES/str8-record-phase1-max252.s19`.  It is the 514-character S1 record
+   `SAMPLES/OLD/str8-record-phase1-max252.s19`.  It is the 514-character S1 record
    for address `$2000`, payload `$00-$FB`, and checksum `$56`; the console suite
    requires descriptor `DATA/$2000/$FC/$7B00` and every decoded byte.  Run
    `G 3009` separately and send Ctrl-C (`$03`); it must return `ABORT=$0E/C=0`.
@@ -11982,3 +11983,55 @@ prompt without a second attach/reset cycle, accepted `U`, restored
 then directly proved both warm routes while `$C000` was unavailable: resident
 `G` and startup selector `3` each printed `NO BOOT @C000` and returned to the
 STR8 menu.
+
+## 2026-08-02 Movable ASM Session Reporter Continuation
+
+The regenerated [`asm-session-report-ap-2000.a`](SAMPLES/asm-session-report-ap-2000.a)
+is now partially board-accepted against ASM-F2 `00.0802(1709)`. Its `$0C5F`
+body, `$E0` private rebase rows, and `ENTRY START` assembled through `ASM OK`.
+`PACKAGE $3000` then returned `PKG OK @=$3000 L=$0C8B`, proving that the
+current envelope stays within the `$1000` package limit.
+
+The attempted `AP B0 $3000 $8000` correctly returned `APERR=$06`. It had two
+independent range violations: banked AP requires its package source at
+`$8000-$FFFF`, not in the `$3000` RAM envelope bay, and the reporter's current
+body permits destination starts only through `$43A1`. This is a no-write
+negative, not a package, linker, or reporter-body failure.
+
+The generator now makes the address roles explicit in the paste source:
+first use `AP $3000 $4000` without `Bn` for an optional non-destructive RAM
+smoke, then install the same `$3000` envelope with
+[`bank0ap-put-transient-2000.a`](SAMPLES/bank0ap-put-transient-2000.a), record
+the printed Bank-0 `$XXXX`, then preload with `AP B0 $XXXX $4000`. The complete
+same-board continuation is:
+
+```text
+AP $3000 $4000
+expect GO 4000 and ASM REPORT OK for the reporter-build session
+
+ASM NEW
+paste DOC/GUIDES/ASM/SAMPLES/bank0ap-put-transient-2000.a
+ASM OK
+SEAL> .
+ASM BYE
+G 2000
+DST $8000-$FFFF OR ENTER=AUTO> $8000
+TYPE YES TO WRITE> YES
+expect PROGRAM OK and B0 AP @$8000 L=$0C8B
+
+AP B0 $8000 $4000
+expect GO 4000 and ASM REPORT OK
+ASM NEW
+paste the target source to inspect
+ASM OK
+SEAL> .
+ASM BYE
+G 4000
+expect the target session and ASM REPORT OK
+```
+
+The explicit `$8000` choice applies only to the captured state, whose live map
+showed Bank 0 fully erased. Otherwise press Enter for AUTO and substitute its
+printed address in the later `AP B0` command. The RAM-package `$4000` smoke,
+Bank-0 installation, the first banked `$4000` load, and a fresh-session
+`G 4000` report remain pending hardware gates.

@@ -15,7 +15,7 @@ here as a regression check for later HIMON return-wrapper changes.
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/return-carry-proof-transient-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/return-carry-proof-transient-2000.a
 ASM OK
 SEAL> .
 ASM BYE
@@ -37,7 +37,7 @@ preferred proof because it also preserves existing packages in the sector.
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-4800.a
 ASM OK
 SEAL> PACKAGE $3000
 PKG OK @=$3000 L=$llll
@@ -125,7 +125,7 @@ rejects any single `DS` count above `$FF`.
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/ap-envelope-1000-fixture-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/ap-envelope-1000-fixture-2000.a
 ASM OK
 SEAL> PACKAGE $3000
 PKG OK @=$3000 L=$1000
@@ -149,7 +149,7 @@ Hardware status: passed on `HIMON/ASM-F2 00.0715(1804)`.
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/ap-envelope-1001-fixture-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/ap-envelope-1001-fixture-2000.a
 ASM OK
 SEAL> PACKAGE $3000
 ```

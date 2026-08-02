@@ -7,7 +7,7 @@ advance, random fill, and quit back to HIMON.
 Source:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/life-rjoined-6800.asm
+DOC/GUIDES/ASM/SAMPLES/OLD/life-rjoined-6800.asm
 ```
 
 Resource shape:
@@ -53,7 +53,7 @@ expect ASM>$hhhh: on builds with the PC prompt, or ASM> on older quiet builds
 Paste the program:
 
 ```text
-paste DOC/GUIDES/ASM/SAMPLES/life-rjoined-6800.asm
+paste DOC/GUIDES/ASM/SAMPLES/OLD/life-rjoined-6800.asm
 expect ASM FLASH OK
 expect SEAL>
 ```

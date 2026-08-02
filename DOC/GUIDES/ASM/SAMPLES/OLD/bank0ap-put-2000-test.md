@@ -23,7 +23,7 @@ Use `PACKAGE $3000` for this procedure. Never package the target at `$2000`:
 the installer itself emits there. Every pasted source below already ends with
 `END`; do not type another `END` after the paste.
 
-This card uses archived `OLD CODE/bank0ap-print-smoke.a`, which prints from the loaded AP body
+This card uses archived `OLD/bank0ap-print-smoke.a`, which prints from the loaded AP body
 and leaves `$5848=$AC`, `$5850=$5A`, and the imported
 `BIO_FTDI_PUT_CSTR` address at `$584A/$584B`.
 
@@ -34,7 +34,7 @@ intentionally available. If it is not erased, run the flash erase transient:
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/flash-erase-bank-transient-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/flash-erase-bank-transient-2000.a
 ASM OK
 SEAL> .
 ASM BYE
@@ -59,7 +59,7 @@ load/run island.
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/OLD CODE/bank0ap-print-smoke.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-print-smoke.a
 ASM OK
 SEAL> PACKAGE $3000
 PKG OK @=$3000 L=$007F
@@ -316,7 +316,7 @@ body already present at `$4800`:
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/asm-session-report-4800.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-4800.a
 ASM OK
 SEAL> PACKAGE $3000
 PKG OK @=$3000 L=$hhhh
@@ -409,7 +409,8 @@ that location and only reads the Bank 0 input envelope from `$3000`.
 
 ## Diagnostic Split Helpers
 
-`bank0ap-stage-transient-2000.a` and `bank0ap-commit-transient-2000.a` remain for investigation of
+`old-bank0ap-stage-transient-2000.a` and
+`old-bank0ap-commit-transient-2000.a` remain for investigation of
 the sector image between staging and programming. The stage helper leaves
 `$1A06=$5A`; the commit helper consumes that state. Do not boot, run `AP`, or
 assemble another source between those two diagnostic helpers. They are not the

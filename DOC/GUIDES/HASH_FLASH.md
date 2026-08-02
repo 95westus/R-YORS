@@ -237,7 +237,7 @@ The board proof loaded the fixed-address flash image with `L F`, entered it
 with the HIMON command `ASM`, pasted:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/biorhythm-2000.asm
+DOC/GUIDES/ASM/SAMPLES/OLD/biorhythm-2000.asm
 ```
 
 and assembled it successfully:
@@ -322,7 +322,7 @@ Full transcripts live in
 [HARDWARE_TEST_LOG.md](LOGS/HARDWARE_TEST_LOG.md). The flash migration plan is
 [ASM/FLASH_8000_GAME_PLAN.md](ASM/FLASH_8000_GAME_PLAN.md), and the current
 board script is
-[ASM/SAMPLES/OLD CODE/biorhythm-2000-test.md](<ASM/SAMPLES/OLD CODE/biorhythm-2000-test.md>).
+[ASM/SAMPLES/OLD/biorhythm-2000-test.md](ASM/SAMPLES/OLD/biorhythm-2000-test.md).
 
 ## REHASH: Pasteable ASM Runs Interactive Life
 
@@ -337,7 +337,7 @@ board script is
 The public sample is:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/life-rjoined-6800.asm
+DOC/GUIDES/ASM/SAMPLES/OLD/life-rjoined-6800.asm
 ```
 
 Load the current ASM runtime paste image at `$2000`, paste the source, then run
