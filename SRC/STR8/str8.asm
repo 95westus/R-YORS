@@ -27,6 +27,8 @@
                         XDEF            STR8_AP_IMPORT_LINK_SERVICE
                         XDEF            STR8_RECORD_SERVICE_ENTRY
                         XDEF            STR8_RECORD_SERVICE_SIGNATURE
+                        XDEF            STR8_DIR_VALIDATE_BANK_A
+                        XDEF            STR8_DIR_SCAN_JOURNAL
                         XDEF            STR8_IVY_ENTRY_NMI
                         XDEF            STR8_IVY_ENTRY_IRQ_MASTER
                         XDEF            STR8_ID_MARKER_BYTES
@@ -113,6 +115,14 @@ STR8_REC_WORK_SUM       EQU             $D2
 STR8_REC_WORK_COUNT     EQU             $D3
 STR8_REC_WORK_TMP       EQU             $D4
 STR8_REC_WORK_TYPE      EQU             $D5
+; The resident directory validator and S19 record parser run serially and
+; intentionally share this small zero-page work set.
+STR8_DIR_BANK_WORK      EQU             $D1
+STR8_DIR_OPEN_WORK      EQU             $D2
+STR8_DIR_PACKED_WORK    EQU             $D3
+STR8_DIR_LEFT_WORK      EQU             $D4
+STR8_DIR_RESULT_PAIR    EQU             $D5
+STR8_DIR_PAIR_WORK      EQU             $D6
 STR8_STATE_BASE         EQU             $1FE9
 STR8_STATE_END          EQU             $1FFF
 STR8_MARK_SECTOR_HI     EQU             $1FE9
@@ -720,6 +730,196 @@ STR8_AP_IMPORT_LINK_SERVICE_BODY:
                         LDA             #HIM_AP_OP_LINK
                         STA             HIM_AP_OP
                         JMP             (HIM_SVC_AP_LO)
+
+; ----------------------------------------------------------------------------
+; V1 Bank Directory read-only foundation for I and directory-gated J.
+;
+; STR8_DIR_VALIDATE_BANK_A
+;   IN:  A=bank 0-3, Bank 3 visible
+;   OUT: A=STR8_DIR_RECORD_*; X=next/retry pair or $FF; C=1 unless INVALID
+;
+; STR8_DIR_SCAN_JOURNAL
+;   IN:  STR8_PTR_LO/HI points at a 16-byte record
+;   OUT: A=STR8_DIR_JOURNAL_*; X=next/retry pair or $FF; C=1 unless INVALID
+;
+; These routines never select a bank and never mutate flash. The installer
+; must reject INVALID, retry INCOMPLETE at the returned pair, and begin EMPTY
+; at pair zero. Launch code may accept only COMPLETE.
+; ----------------------------------------------------------------------------
+STR8_DIR_VALIDATE_BANK_A:
+                        CLD
+                        CMP             #STR8_DIR_RECORD_COUNT
+                        BCC             ?BANK_OK
+                        JMP             STR8_DIR_RETURN_RECORD_INVALID
+?BANK_OK:              STA             STR8_DIR_BANK_WORK
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        CLC
+                        ADC             #<STR8_DIR_BASE
+                        STA             STR8_PTR_LO
+                        LDA             #>STR8_DIR_BASE
+                        STA             STR8_PTR_HI
+
+; An exactly all-$FF record is the only EMPTY representation.
+                        LDY             #$00
+?EMPTY_SCAN:           LDA             (STR8_PTR_LO),Y
+                        CMP             #STR8_DIR_EMPTY_BYTE
+                        BNE             ?STRUCTURE
+                        INY
+                        CPY             #STR8_DIR_RECORD_SIZE
+                        BNE             ?EMPTY_SCAN
+                        LDA             #STR8_DIR_RECORD_EMPTY
+                        LDX             #$00
+                        SEC
+                        RTS
+
+; RESERVED must remain erased.
+?STRUCTURE:            LDY             #STR8_DIR_RESERVED
+?RESERVED:             LDA             (STR8_PTR_LO),Y
+                        CMP             #STR8_DIR_EMPTY_BYTE
+                        BNE             STR8_DIR_RETURN_RECORD_INVALID
+                        INY
+                        CPY             #(STR8_DIR_RESERVED+STR8_DIR_RESERVED_LEN)
+                        BNE             ?RESERVED
+
+; DESCRIPTION is exactly five display-safe uppercase bytes.
+                        LDY             #STR8_DIR_DESCRIPTION
+?DESCRIPTION:          LDA             (STR8_PTR_LO),Y
+                        JSR             STR8_DIR_DESCRIPTION_BYTE_A
+                        BCC             STR8_DIR_RETURN_RECORD_INVALID
+                        INY
+                        CPY             #(STR8_DIR_DESCRIPTION+STR8_DIR_DESCRIPTION_LEN)
+                        BNE             ?DESCRIPTION
+
+                        LDY             #STR8_DIR_SEAL
+                        LDA             (STR8_PTR_LO),Y
+                        CMP             #STR8_DIR_SEAL_VALUE
+                        BNE             STR8_DIR_RETURN_RECORD_INVALID
+
+; Banks 0-2 have no local entry. Bank 3 accepts $8000-$EFFF or $FFFF.
+?ENTRY:                LDA             STR8_DIR_BANK_WORK
+                        CMP             #STR8_DIR_BANK3
+                        BEQ             ?ENTRY_BANK3
+                        LDY             #STR8_DIR_ENTRY_LO
+                        LDA             (STR8_PTR_LO),Y
+                        CMP             #$FF
+                        BNE             STR8_DIR_RETURN_RECORD_INVALID
+                        INY
+                        LDA             (STR8_PTR_LO),Y
+                        CMP             #$FF
+                        BNE             STR8_DIR_RETURN_RECORD_INVALID
+                        BRA             ?JOURNAL
+
+?ENTRY_BANK3:          LDY             #STR8_DIR_ENTRY_HI
+                        LDA             (STR8_PTR_LO),Y
+                        CMP             #$FF
+                        BNE             ?ENTRY_BANK3_RANGE
+                        DEY
+                        LDA             (STR8_PTR_LO),Y
+                        CMP             #$FF
+                        BNE             STR8_DIR_RETURN_RECORD_INVALID
+                        BRA             ?JOURNAL
+?ENTRY_BANK3_RANGE:    CMP             #STR8_DIR_BANK3_ENTRY_MIN_HI
+                        BCC             STR8_DIR_RETURN_RECORD_INVALID
+                        CMP             #(STR8_DIR_BANK3_ENTRY_MAX_HI+1)
+                        BCS             STR8_DIR_RETURN_RECORD_INVALID
+
+?JOURNAL:              JSR             STR8_DIR_SCAN_JOURNAL
+                        BCC             STR8_DIR_RETURN_RECORD_INVALID
+                        CMP             #STR8_DIR_JOURNAL_STARTED
+                        BEQ             ?INCOMPLETE
+                        BCC             STR8_DIR_RETURN_RECORD_INVALID
+                        LDA             #STR8_DIR_RECORD_COMPLETE
+                        SEC
+                        RTS
+?INCOMPLETE:           LDA             #STR8_DIR_RECORD_INCOMPLETE
+                        SEC
+                        RTS
+
+STR8_DIR_RETURN_RECORD_INVALID:
+                        LDX             #STR8_DIR_PAIR_NONE
+                        LDA             #STR8_DIR_RECORD_INVALID
+                        CLC
+                        RTS
+
+STR8_DIR_DESCRIPTION_BYTE_A:
+                        CMP             #'A'
+                        BCC             ?DIGIT
+                        CMP             #'Z'+1
+                        BCC             ?VALID
+?DIGIT:                CMP             #'0'
+                        BCC             ?PUNCTUATION
+                        CMP             #'9'+1
+                        BCC             ?VALID
+?PUNCTUATION:          CMP             #'-'
+                        BEQ             ?VALID
+                        CMP             #'_'
+                        BEQ             ?VALID
+                        CMP             #'.'
+                        BEQ             ?VALID
+                        CLC
+                        RTS
+?VALID:                SEC
+                        RTS
+
+STR8_DIR_SCAN_JOURNAL:
+                        LDY             #STR8_DIR_JOURNAL
+                        LDX             #$00
+                        STZ             STR8_DIR_OPEN_WORK
+?BYTE:                 LDA             (STR8_PTR_LO),Y
+                        STA             STR8_DIR_PACKED_WORK
+                        LDA             #$04
+                        STA             STR8_DIR_LEFT_WORK
+?PAIR:                 LDA             STR8_DIR_PACKED_WORK
+                        AND             #$03
+                        STA             STR8_DIR_PAIR_WORK
+                        LDA             STR8_DIR_OPEN_WORK
+                        BEQ             ?BEFORE_OPEN
+                        LDA             STR8_DIR_PAIR_WORK
+                        CMP             #STR8_DIR_PAIR_UNUSED
+                        BEQ             ?NEXT_PAIR
+                        JMP             ?INVALID
+
+?BEFORE_OPEN:          LDA             STR8_DIR_PAIR_WORK
+                        CMP             #STR8_DIR_PAIR_COMPLETE
+                        BEQ             ?NEXT_PAIR
+                        CMP             #STR8_DIR_PAIR_ILLEGAL
+                        BEQ             ?INVALID
+                        CMP             #STR8_DIR_PAIR_STARTED
+                        BEQ             ?STARTED
+                        TXA
+                        BNE             ?USED
+                        LDA             #STR8_DIR_JOURNAL_FRESH
+                        BRA             ?OPEN
+?USED:                 LDA             #STR8_DIR_JOURNAL_COMPLETE
+                        BRA             ?OPEN
+?STARTED:              LDA             #STR8_DIR_JOURNAL_STARTED
+?OPEN:                 STA             STR8_DIR_OPEN_WORK
+                        STX             STR8_DIR_RESULT_PAIR
+
+?NEXT_PAIR:            LSR             STR8_DIR_PACKED_WORK
+                        LSR             STR8_DIR_PACKED_WORK
+                        INX
+                        DEC             STR8_DIR_LEFT_WORK
+                        BNE             ?PAIR
+                        INY
+                        CPY             #(STR8_DIR_JOURNAL+STR8_DIR_JOURNAL_LEN)
+                        BNE             ?BYTE
+                        LDA             STR8_DIR_OPEN_WORK
+                        BNE             ?RETURN_OPEN
+                        LDA             #STR8_DIR_JOURNAL_FULL
+                        LDX             #STR8_DIR_PAIR_NONE
+                        SEC
+                        RTS
+?RETURN_OPEN:          LDX             STR8_DIR_RESULT_PAIR
+                        SEC
+                        RTS
+?INVALID:              LDA             #STR8_DIR_JOURNAL_INVALID
+                        LDX             #STR8_DIR_PAIR_NONE
+                        CLC
+                        RTS
 
 ; ----------------------------------------------------------------------------
 ; V1 validated-record service. PARSE validates a complete S0/S1/S9 record into

@@ -427,7 +427,7 @@ str8-v1-layout-preview: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)
 	@echo "Preview only: no install S19, TopWriter, or stamped ROM image was generated."
 
 str8-directory-check: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN) $(STR8_DIRECTORY_EQ) $(STR8_DIRECTORY_CHECK)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)" -Str8MapPath "$(S19_DIR)/str8-v1-layout-f000.map"
 
 str8-worker-mode-check: $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) $(STR8_WORKER_MODE_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_MODE_CHECK) -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)"

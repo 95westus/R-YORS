@@ -21,7 +21,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom-c000.bin." }
     [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K onboard image with ASM-F2/AP report in low flash, HIMON at C000, STR8 at F000: BUILD/bin/himon-str8-rom.bin." }
     [pscustomobject]@{ Target = "str8-v1-layout-preview"; Category = "monitor"; Description = "Build the guarded, nonflashable V1 worker/directory layout preview BIN; produces no install S19, TopWriter, or ROM stamp." }
-    [pscustomobject]@{ Target = "str8-directory-check"; Category = "monitor"; Description = "Run host boundary/progression validation of frozen V1 directory records and journals against the guarded preview BIN." }
+    [pscustomobject]@{ Target = "str8-directory-check"; Category = "monitor"; Description = "Run host reference and compiled-resident validation of frozen V1 directory records and journals against the guarded preview BIN." }
     [pscustomobject]@{ Target = "str8-worker-mode-check"; Category = "monitor"; Description = "Execute the compiled worker dispatcher for all 256 mode bytes; require only 05-08 and fail closed for the other 252." }
     [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-c000-install-8000.s19." }
     [pscustomobject]@{ Target = "himon-str8-rom-install-s19"; Category = "monitor"; Description = "Convert primary HIMON+STR8 ROM BIN to S1/S9 install transport: BUILD/s19/himon-str8-rom-install.s19." }

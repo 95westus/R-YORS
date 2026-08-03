@@ -1,18 +1,24 @@
-# STR8-N Four-Bank Installer V1 Plan
+# STR8-N Four-Bank Installer V1.01 Plan
 
 ```text
-status:       DESIGN FROZEN; V0 RECLAIM BOARD-PROVEN; WORKER FAIL-CLOSED
-next gate:    RESIDENT DIRECTORY VALIDATION; ACIA UNQUALIFIED
-source date:  2026-08-01
+status:       RESIDENT DIRECTORY VALIDATOR HOST-ACCEPTED; NO FLASH MUTATION
+next gate:    DIRECTORY ONE-TO-ZERO WRITER; ACIA UNQUALIFIED
+source date:  2026-08-02
 ```
 
-This is the accepted V1 plan for turning the WDC board into four independently
+This is the accepted V1.01 plan for turning the WDC board into four independently
 selectable bank environments while keeping STR8-N as the Bank-3 reset
 supervisor. Banks may contain code, data, volumes, overlays, tools, or any
 other payload. Directory `TYPE` is display metadata only; it never selects a
 loader or grants permission to execute.
 
-V1 deliberately does not include a volume manager, mutable bank descriptions,
+V1.01 separates destination authority at the command boundary. `I` installs
+only Banks 0-2. `U` updates only the Bank-3 payload at `$8000-$EFFF` and never
+prompts for a bank. Both commands share one receive, validation, journal,
+flash, and verification engine. Neither ordinary command can write the Bank-3
+supervisor sector at `$F000-$FFFF`.
+
+V1.01 deliberately does not include a volume manager, mutable bank descriptions,
 wear balancing, sparse S19 input, or the external S19 backup generator. Those
 remain later work.
 
@@ -34,8 +40,8 @@ selecting another bank.
 
 The Bank-3 top sector contains STR8-N, its stored RAM worker, the central Bank
 Directory, configuration, and vectors. Failure during a top-sector replacement
-can therefore require external recovery. The ordinary `I` installer never
-erases that sector.
+can therefore require external recovery. Ordinary `I` and `U` never erase that
+sector. Its replacement remains a separate expert/recovery operation.
 
 ## Final Flash Layout
 
@@ -123,15 +129,22 @@ when all sixteen transactions are consumed. A partial first-install descriptor
 is record-INVALID and nonlaunchable even when its independently scanned journal
 correctly reports STARTED and the same retry pair.
 
-A direct resident validator trial measured `$0115` bytes. Before V0 reclaim it
-would have reduced the V1 resident/worker reserve from `$01D4` to `$00BF`,
-violating the hard `$0100` floor by `$0041`; the build gate correctly rejected
-that layout. The completed copy/restore reclaim raised the pre-validator
-reserve to `$03A4`; the later 16-dot attach display and leading newline use
-`$001F`, and the `J3` help text uses `$0003`, leaving the current reserve at
-`$0382`. Promoting the same validator would leave `$026D`.
-Resident promotion is the next slice; this host-contract slice itself still
-adds no resident validator and no flash mutation.
+The 2026-08-02 shared `I`/`U` foundation promotes the read-only validator into
+resident STR8-N as `STR8_DIR_VALIDATE_BANK_A` and
+`STR8_DIR_SCAN_JOURNAL`. The compiled
+`$0118`-byte implementation shares the record parser's serial zero-page work
+set, performs no bank selection, and cannot mutate flash. It returns the exact
+EMPTY, INCOMPLETE, COMPLETE, or INVALID record state plus the next/retry journal
+pair.
+
+`make -C SRC str8-directory-check` now executes the compiled 65C02 routines
+from the guarded V1 preview across all 94 journal fixtures and 33 record
+fixtures, in addition to the independent host reference model. The guarded
+layout retains `$0230` between resident STR8 and the packed worker, above the
+hard `$0100` floor. No `I` command is exposed yet, and `U` still has its
+hardware-proven fixed `$C000-$EFFF` behavior. The next slice is the
+dedicated one-to-zero directory writer and its fail-closed transition tests;
+image-sector mutation remains disabled until that prerequisite passes.
 
 ## Seal and Install Journal
 
@@ -171,7 +184,8 @@ only after the complete image has already passed read-back verification: if
 the bit still reads one, the bank remains incomplete; if it reads zero, the
 verified transaction is complete.
 
-When all sixteen pairs have been consumed, `I` refuses another installation.
+When all sixteen pairs have been consumed, the corresponding `I` or `U`
+operation refuses another installation.
 Journal renewal belongs to explicit future top-sector maintenance.
 
 ## Command Surface and Input
@@ -189,25 +203,28 @@ S  remain in STR8-N
 Timeout attempts the Bank-3 payload only when its directory record is complete
 and its LOCAL ENTRY is launchable. Otherwise timeout remains safely in STR8-N.
 
-The V1 prompt is:
+The V1.01 prompt is:
 
 ```text
-? I J0 J1 J2 J3 R
+? I U J0 J1 J2 J3 R
 ```
 
-During the measured reclaim transition, before `I` lands, the compiled prompt
-is `? U J0 J1 J2 J3 G R`. The hardware-proven `U` updater remains until
-`I` replaces it, and `G` remains until the directory-gated Bank-3 local-entry
-handoff replaces it. `B` and bare `0`, `1`, and `2` are already retired.
+During the measured reclaim transition, before `I` and the shared install
+engine land, the compiled prompt is `? U J0 J1 J2 J3 G R`. The
+hardware-proven fixed-range `U` updater remains until it can be generalized
+safely, and `G` remains until the directory-gated Bank-3 local-entry handoff
+replaces it. `B` and bare `0`, `1`, and `2` are already retired.
 
-`?` prints the STR8-N identity and compact directory status. `I` installs a
-bank image. `J0` through `J3` perform non-destructive handoff. `R` selects Bank
-3 and resets into STR8-N.
+`?` prints the STR8-N identity and compact directory status. `I` installs only
+Banks 0-2 and prompts for the destination bank. `U` updates only the Bank-3
+payload and has no bank-selection prompt. `J0` through `J3` perform
+non-destructive handoff. `R` selects Bank 3 and resets into STR8-N.
 
-The destructive V0 meanings of `B`, `U`, bare prompt `0`, `1`, or `2`, and `G`
-are retired. `B` remains reserved for the future external S19 backup generator.
-Unknown worker modes must fail explicitly and must never fall through to an old
-copy operation.
+The destructive V0 meanings of `B`, bare prompt `0`, `1`, or `2`, and `G` are
+retired. The `U` letter remains, but its fixed 12K HIMON-update implementation
+becomes the Bank-3-only front end to the shared V1.01 engine. `B` remains
+reserved for the future external S19 backup generator. Unknown worker modes
+must fail explicitly and must never fall through to an old copy operation.
 
 Command and prompted input use a small shared line editor:
 
@@ -227,18 +244,20 @@ STR8-N V 00.xxxx(xxxx)
 The binary marker bytes `7A 0F 6A 5F` remain in ROM for image recognition;
 they are not operator-facing banner text.
 
-## `I` Operator Flow
+## `I` and `U` Operator Flow
 
 For an empty directory record, `I` prompts separately for:
 
 ```text
-BANK 0-3
+BANK 0-2
 TYPE, two hex digits
 DESCRIPTION, exactly five characters
 FINAL INSTALL CONFIRMATION
 ```
 
-For an existing record, `I` displays and validates the immutable TYPE,
+`U` fixes the destination to Bank 3, prints that destination, and prompts for
+TYPE, DESCRIPTION, and final confirmation without asking for a bank. For an
+existing record, either command displays and validates the immutable TYPE,
 DESCRIPTION, and LOCAL ENTRY instead of accepting replacements.
 
 The initial `Y` is the final destructive confirmation. After it, STR8-N writes
@@ -260,9 +279,23 @@ $7B00-$7BFB  existing validated S19 record buffer
 $7E95-$7EA8  existing record request/result card
 ```
 
-## Dense V1 S19 Contract
+## RAM S19 Loading Stays In HIMON
 
-V1 accepts only a dense, canonical S19 stream:
+Neither `I` nor `U` offers RAM as a destination. At their command boundary,
+both always mean a persistent, journaled flash transaction: `I` for Banks 0-2
+and `U` for the Bank-3 payload. Internal RAM staging by those commands does not
+change that operator contract.
+
+HIMON retains the existing RAM-load interface. `L` validates an S19 stream and
+loads its S1 data into permitted RAM; `L G` performs that load and then enters
+the validated S9 address. Those operations do not erase flash. HIMON may use
+STR8's shared record parser, but RAM destination policy and the operator-facing
+commands remain in HIMON. The separate compatibility command `L F` remains a
+flash path and is not a synonym for `L`, `I`, or `U`.
+
+## Dense V1.01 S19 Contract
+
+V1.01 accepts only a dense, canonical S19 stream:
 
 - An optional S0 may appear only before data.
 - Data uses S1 records with valid counts and checksums.
@@ -279,18 +312,18 @@ V1 accepts only a dense, canonical S19 stream:
 Required logical coverage is:
 
 ```text
-Banks 0-2  exactly $8000-$FFFF
-Bank 3     exactly $8000-$EFFF
+I, Banks 0-2  exactly $8000-$FFFF
+U, Bank 3     exactly $8000-$EFFF
 ```
 
 For Banks 0-2, the S9 address must equal the staged reset vector at
 `$FFFC/$FFFD`. A vector and S9 of `$FFFF` are permitted for a deliberately
 nonlaunchable data bank. A launchable vector must point within `$8000-$FFFF`.
 
-For Bank 3, S9 is the immutable LOCAL ENTRY. It must be within `$8000-$EFFF`,
+For Bank-3 `U`, S9 is the immutable LOCAL ENTRY. It must be within `$8000-$EFFF`,
 or exactly `$FFFF` for a deliberately nonlaunchable payload.
 
-V1 has no whole-image CRC. Integrity comes from every S-record checksum, exact
+V1.01 has no whole-image CRC. Integrity comes from every S-record checksum, exact
 dense coverage, strict ordering, final-entry validation, full-sector read-back
 verification, and the install journal.
 
@@ -308,7 +341,7 @@ validate S9             against staged $FFFC/$FFFD
 program final sector    only after S9 validation
 ```
 
-For Bank 3:
+For Bank-3 `U`:
 
 ```text
 stream/program/verify  $8000-$DFFF
@@ -325,7 +358,7 @@ The final successful sequence is:
 3. Receive, validate, stage, program, and verify every earlier sector.
 4. Receive and validate the unique S9.
 5. Program and verify the held final sector.
-6. On first Bank-3 install, write and verify LOCAL ENTRY.
+6. On the first Bank-3 `U`, write and verify LOCAL ENTRY.
 7. On first install, write and verify seal `$FE`.
 8. Write and verify journal COMPLETE last.
 
@@ -344,7 +377,8 @@ entire 12K S19 into RAM before programming. It therefore does not prove that
 the host, terminal, FTDI path, and receive FIFO tolerate the no-read intervals
 created when the new installer programs a sector during an active stream.
 
-Before real `I` erasure is enabled, a RAM-only proof must:
+Before real `I` erasure or generalized `U` erasure is enabled, a RAM-only proof
+must:
 
 1. Receive a complete dense 32K canonical S19 without writing flash.
 2. Insert a worst-case flash-length no-read pause at every 4K boundary.
@@ -563,24 +597,25 @@ resident/worker gap      $FAEF-$FD02  size $0214 = 532
 
 The first V0 reclaim slice removed `B`, bare `0/1/2`, their resident clients,
 and worker copy/restore modes `$00/$01/$03`. It retained `U`, `G`, and worker
-modes `$05-$08`. The current 16-dot attach countdown adds 31 resident bytes.
-The current measured build reports:
+modes `$05-$08`. The 16-dot attach countdown adds 31 resident bytes. Immediately
+before resident validator promotion, the guarded V1 preview reported:
 
 ```text
-STR8 resident code/data  $F000-$F9D0  size $09D1 = 2513
+STR8 resident code/data  $F000-$FA0A  size $0A0B = 2571
 stored worker            $FD53-$FFAF  size $025D = 605
-resident/worker gap      $F9D1-$FD52  size $0382 = 898
-required post-I reserve                 $0100 = 256
-immediate growth room                   $0282 = 642
+resident/worker gap      $FA0B-$FD52  size $0348 = 840
 ```
 
-The reclaim originally removed `$0140` resident bytes and `$0090` worker bytes,
-`$01D0` total. The 16-dot display consumes `$001F` and `J3` consumes `$0003`
-of that resident saving, leaving a net `$011E` resident and `$01AE` total
-reduction from the baseline.
-Promoting the measured `$0115` directory validator without any further
-optimization would leave `$026D` between resident code and the packed worker,
-including `$016D` beyond the hard `$0100` floor.
+With the compiled `$0118` read-only validator present, the current guarded V1
+preview reports:
+
+```text
+STR8 resident code/data  $F000-$FB22  size $0B23 = 2851
+stored worker            $FD53-$FFAF  size $025D = 605
+resident/worker gap      $FB23-$FD52  size $0230 = 560
+required post-I reserve                 $0100 = 256
+current room beyond floor               $0130 = 304
+```
 
 The 2026-08-01 host preflight now enforces this future layout on every normal
 combined-ROM build while leaving the legacy top-sector layout selected. The
@@ -589,7 +624,7 @@ accepted preflight output is:
 ```text
 V1 PREFLIGHT WORKER       = FD53-FFAF/25D (not emitted)
 V1 PREFLIGHT DIRECTORY    = FFB0-FFEF/40 (not emitted)
-V1 PREFLIGHT RESERVE      = F9D1-FD52/382 (min 100)
+V1 PREFLIGHT RESERVE      = FB23-FD52/230 (min 100)
 V1 PREFLIGHT CONFIG/VECT  = FFF0-FFFF unchanged
 ```
 
@@ -610,9 +645,9 @@ flashable migration artifact. Actual onboard V1 layout installation remains
 gated on the explicit migration path and directory-preserving later TopWriter
 behavior.
 
-The remaining final command-surface reclaim occurs only as `I` replaces `U`
-and directory-gated `J3` replaces `G`. Their proven transitional paths are not
-removed merely to gain space.
+The remaining final command-surface transition occurs only as `I` lands, `U`
+is generalized onto the shared engine, and directory-gated `J3` replaces `G`.
+The proven transitional `U` and `G` paths are not removed merely to gain space.
 
 The gross installer estimate remains 700-1100 bytes. The build gate, not the
 estimate, decides acceptance. If the first implementation is too large, it is
@@ -629,9 +664,143 @@ sector staging                    existing 4096-byte tray
 validated record staging          existing 252-byte tray
 ```
 
+## Future `I`/`U` Sector-Range Installer Consideration
+
+This is a candidate extension for further consideration, not a change to the
+frozen full-bank/Bank-3-payload V1.01 contract. It would let `I` or `U` replace
+one or more complete 4K erase sectors while leaving every sector outside the
+selected S19 extent unchanged:
+
+| Command | Target | Candidate dense extent | Sector count |
+| --- | --- | --- | --- |
+| `I` | Banks 0-2 | Any 4K-aligned range within `$8000-$FFFF` | 1-8, or 4K-32K |
+| `U` | Bank 3 | Any 4K-aligned range within `$8000-$EFFF` | 1-7, or 4K-28K |
+
+The first S1 data address may supply the range start. It must be exactly a 4K
+boundary (`$8000`, `$9000`, and so on). S1 data must then be strictly
+increasing, contiguous, and dense through S9. The final address plus one must
+also be a 4K boundary, giving an exact 4K multiple. Zero-length records, gaps,
+overlaps, duplicates, backward records, and out-of-range bytes are rejected.
+Explicit `$FF` bytes mean erase that part of the selected sector; an omitted
+address never means preserve an old byte inside the selected range.
+
+This permits examples such as:
+
+```text
+I Bank 2  $8000-$BFFF  four-sector / 16K ASM replacement
+I Bank 1  $C000-$EFFF  three-sector / 12K payload replacement
+I Bank 0  $F000-$FFFF  one-sector / 4K top-image replacement
+U Bank 3  $8000-$8FFF  one-sector / 4K payload replacement
+U Bank 3  $8000-$EFFF  seven-sector / 28K payload replacement
+```
+
+Ordinary Bank-3 range installation still rejects `$F000-$FFFF`. Replacing the
+Bank-3 supervisor, worker store, directory, configuration, or vectors belongs
+only to the separately considered expert top-sector path. That path must stage
+the complete 4K sector, preserve the live directory by default, validate STR8
+and all vectors, write sector F last, and retain the external-recovery warning.
+
+Plain S19 has an important confirmation limitation: the first S1 reveals the
+start, but the receiver does not know the final extent until S9 arrives. A
+streaming installer may already have programmed earlier complete sectors by
+then. The current one-sector RAM design can hold the final sector until S9 and
+reject a bad final boundary without marking the journal complete, but it cannot
+retroactively restore earlier sectors.
+
+The first safe implementation should therefore use one of these range-
+declaration gates:
+
+1. Prompt for the expected sector range before requesting S19, then require the
+   first S1 and S9-derived extent to match it exactly. This is the recommended
+   initial form.
+2. Define a canonical STR8 S0 manifest containing bank-independent start and
+   end/length, receive that header in a separate preflight phase, display and
+   confirm the detected range, then request the dense S1/S9 body.
+3. A broad `WRITE Bn RANGE FROM S19` confirmation that discovers the final
+   extent only during mutation is technically possible but remains deferred
+   because it does not show the operator the exact range before the first
+   erase.
+
+### RAM-Batched Receive/Commit Option
+
+Resident STR8-N executes from Bank-3 flash and uses its own FTDI routines, so
+an `I` or `U` transaction may deliberately consume RAM that belongs to HIMON,
+ASM, or the user outside recovery mode. This is materially different from the
+direct-run `$2000` maintenance program. A simple sector-pool layout is:
+
+```text
+$0200-$09FF  RAM worker tray; not an image buffer
+$0A00-$19FF  sector buffer 0                         4K
+$1A00-$1FE8  installer state and optional scatter tail
+$1FE9-$1FFF  worker/STR8 state; never image data
+$2000-$2FFF  sector buffer 1                         4K
+$3000-$3FFF  sector buffer 2                         4K
+$4000-$4FFF  sector buffer 3                         4K
+$5000-$5FFF  sector buffer 4                         4K
+$6000-$6FFF  sector buffer 5                         4K
+$7000-$7AFF  optional scatter tail
+$7B00-$7BFB  active decoded S19 record tray; not persistent image data
+$7E00-$7EFF  HIMON/STR8 service, result, IVY, and vector state; preserve
+```
+
+The six directly programmable trays hold 24K. STR8 can receive and validate a
+dense image into those trays before erasing any target sector. Images of 4K
+through 24K therefore need no receive/program repetition: after S9, STR8 knows
+the exact extent, displays it, obtains final confirmation, writes journal
+START, and commits the staged sectors.
+
+A 28K image can also fit before mutation if the seventh sector is split across
+the unused part of `$1A00-$1FE8` and `$7000-$7AFF`, while leaving a small fixed
+installer-state board. After S9 validation and confirmation, STR8 programs one
+of the six contiguous trays, repacks the scattered seventh sector into the
+freed 4K tray, and writes it last. This more complex path needs explicit host
+mapping tests to prove that no worker-state or parser byte can alias image
+data. It would allow the complete Bank-3 28K payload to be validated before
+the first flash erase.
+
+A dense 32K image cannot coexist in RAM with the CPU stack, worker, installer
+state, S19 record tray, IVY/service state, and I/O page. Banks 0-2 therefore
+still require at least two receive/commit batches. A practical first schedule
+is six sectors (24K), followed by the final two sectors (8K), with sector F held
+until S9 and reset-vector validation.
+
+Batching changes the transport proof. Consuming 24K before a flash pause
+reduces the number of pauses, but programming six buffered sectors creates a
+longer interval in which the target reads no serial bytes. The existing FTDI
+per-sector proof does not automatically qualify that longer pause, and an ACIA
+remains unsupported. Before accepting batching, repeat dense 28K and 32K
+tests with one of these explicit profiles:
+
+- an FTDI/USB path proven to retain or backpressure the remaining stream for
+  the complete batch-program interval;
+- a paced sender that transmits one announced batch and waits for `NEXT`;
+- XON/XOFF or hardware flow control proven to stop before flash begins; or
+- a documented line-delay profile that passes repeated real-flash tests.
+
+The batch state must record the expected flash sector for every RAM tray.
+STR8 validates the whole batch before journal START or, for later batches,
+before changing another sector; programs and verifies each related sector;
+then marks those trays free and resumes S19 reception. After RAM staging, the
+transaction is not warm-return compatible: completion or abort reinitializes
+RAM and returns through a defined STR8 cold path.
+
+For a range package, S9 may be `$FFFF` or an entry within the transmitted
+range. It is component transport metadata and never overrides a Bank-0/1/2
+reset vector. A Bank-3 directory LOCAL ENTRY remains immutable after first
+installation; later component packages do not silently replace it. A partial
+installation into an otherwise empty bank may complete as a valid data bank
+while `J` still refuses an erased or invalid launch vector.
+
+The existing install journal remains bank-wide. The selected `I` or `U`
+operation writes START before the first selected sector changes, making the
+bank nonlaunchable during a range update, and writes COMPLETE only after every
+selected sector passes full read-back verification. This extension is dense
+over its declared range; it is separate from the future sparse-S19 format
+below.
+
 ## Sparse S19 Is a Future Enhancement
 
-Sparse S19 is explicitly outside V1. The dense transport proof and dense
+Sparse S19 is explicitly outside V1.01. The dense transport proof and dense
 installer are implemented first.
 
 A future STR8 sparse format may omit fixed-size output blocks that contain only
