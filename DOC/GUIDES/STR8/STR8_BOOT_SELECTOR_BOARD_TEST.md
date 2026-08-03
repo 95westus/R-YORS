@@ -573,3 +573,30 @@ STR8-N>
 A new STR8 entry then selected `3` during count `6` and produced the same
 `NO BOOT @C000` menu fallback. The no-input/cold, `G` warm, and selector-`3`
 warm paths are now all directly hardware-accepted.
+
+## 2026-08-03 Compact Resident Location Banner
+
+Status: host pass; board smoke deferred to the STR8 `I` board session.
+
+The resident build folds its location into the identity line and removes the
+separate `ROM $F000` line. On reset and again after selecting `S`, require:
+
+```text
+STR8-N V 00.mmdd(hhmm) $F
+```
+
+At the resident menu, require the help line immediately after that identity:
+
+```text
+STR8-N V 00.mmdd(hhmm) $F
+? U J0 J1 J2 J3 G R
+STR8-N>
+```
+
+There must be no `ROM $F000` line. Confirm that timeout, `3`, and `S` startup
+selection remain unchanged. The RAM-proof build is a host-only regression:
+its identity has no `$F` suffix and its existing
+`RAM $0200 BUF $4000-$4FFF` line remains.
+
+Run this focused visibility check when the first STR8 `I` candidate is tested
+on the board; it does not require a separate top-sector installation cycle.

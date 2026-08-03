@@ -12081,3 +12081,33 @@ showed Bank 0 fully erased. Otherwise press Enter for AUTO and substitute its
 printed address in the later `AP B0` command. The RAM-package `$4000` smoke,
 Bank-0 installation, the first banked `$4000` load, and a fresh-session
 `G 4000` report remain pending hardware gates.
+
+## 2026-08-03 STR8 Compact Resident Location Banner
+
+Status: host pass; visible resident-board smoke deferred to the STR8 `I`
+hardware-test session.
+
+Resident STR8 now appends ` $F` to its generated identity and omits the
+separate `ROM $F000` menu line. The intended resident surface is:
+
+```text
+STR8-N V 00.mmdd(hhmm) $F
+? U J0 J1 J2 J3 G R
+STR8-N>
+```
+
+The version generator emits a shared identity prefix; `str8.asm` owns the
+build-specific ending so the RAM proof keeps an unsuffixed identity followed
+by `RAM $0200 BUF $4000-$4FFF`. The linked resident check requires the
+` $F`/CRLF tail and rejects the legacy ROM line. Build resident, V1-layout,
+RAM-proof, worker-mode, and directory checks before installation. The focused
+board gate is recorded in
+[`STR8_BOOT_SELECTOR_BOARD_TEST.md`](../STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md).
+
+The combined host run built resident and RAM STR8, the worker, and the guarded
+V1 layout. The linked resident string matches
+`STR8-N V 00.mmdd(hhmm) $F`; the RAM string is unsuffixed. Resident and V1
+images end at `$FB1B`, eight bytes earlier than the superseded two-line form,
+leaving `$0238` before the V1 worker store. Worker-mode and V1 directory checks
+both pass. Check the visible banner during the first STR8 `I` board acceptance
+rather than scheduling a separate installation cycle.

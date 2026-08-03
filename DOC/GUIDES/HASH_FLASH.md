@@ -29,6 +29,25 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: STR8 ROM Location Joins Identity Line
+
+```text
+2026
+         08
+                03
+                   09:46Z COLLAB-AI Replaced the separate ROM $F000 line
+                               with a compact $F identity suffix.
+```
+
+Resident STR8 now displays `STR8-N V 00.mmdd(hhmm) $F`. The following
+`ROM $F000` screen line is removed; `$F` denotes the protected top-sector
+location without spending a second line. The RAM-proof build retains its
+separate `RAM $0200 BUF $4000-$4FFF` description and does not gain `$F`.
+
+Host layout and linked-image checks cover the new suffix and reject the old
+resident line. The visible resident-board smoke remains required and is
+deferred to the STR8 `I` hardware-test session.
+
 ## REHASH: STR8 J Echo Fully Accepted
 
 ```text

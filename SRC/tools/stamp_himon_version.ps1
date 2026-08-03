@@ -16,7 +16,7 @@ $sourceVersion = "HIMON V 00.$sourceStamp"
 $hashVersion = "HIMON: V 00.$sourceStamp"
 $asmDisplayVersion = "ASM-F2 00.$Stamp"
 $asmSourceVersion = "ASM-F2 00.$sourceStamp"
-$str8DisplayVersion = "STR8-N V 00.$Stamp"
+$str8DisplayVersion = "STR8-N V 00.$Stamp `$F"
 $str8SourceVersion = "STR8-N V 00.$sourceStamp)"
 
 $lines = @(
@@ -48,9 +48,10 @@ if ($Str8OutPath) {
     if ($parent) {
         New-Item -ItemType Directory -Force -Path $parent | Out-Null
     }
-    # The banner is bank-neutral. The binary identity marker remains in ROM
-    # for image tools and is not repeated as operator-facing text.
-    $str8Line = 'MSG_ID:                 DB              $0D,$0A,"' + $str8SourceVersion + '",$0D,$8A'
+    # Generate the bank-neutral text prefix. str8.asm adds the build-specific
+    # terminator: resident ROM appends " $F"; the RAM proof appends only CRLF.
+    # The binary identity marker remains private to image tools.
+    $str8Line = 'MSG_ID:                 DB              $0D,$0A,"' + $str8SourceVersion + '"'
     [System.IO.File]::WriteAllText($Str8OutPath, $str8Line + [Environment]::NewLine, [System.Text.Encoding]::ASCII)
 }
 

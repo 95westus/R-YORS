@@ -232,21 +232,22 @@ for ($address = $residentJumpStart; $address -lt ($residentJumpEnd - 1); $addres
 if (-not $residentRangeFound) { throw 'Resident J parser must accept through ASCII 3' }
 
 [byte[]]$expectedHelp = [System.Text.Encoding]::ASCII.GetBytes('? U J0 J1 J2 J3 G R')
-$helpFound = $false
-for ($address = 0xF000; $address -le (0xFFF0 - $expectedHelp.Length); $address++) {
-    $match = $true
-    for ($i = 0; $i -lt $expectedHelp.Length; $i++) {
-        if ($str8Memory[$address + $i] -ne $expectedHelp[$i]) {
-            $match = $false
-            break
-        }
-    }
-    if ($match) {
-        $helpFound = $true
-        break
-    }
+$idMessage = Get-Symbol $str8Symbols 'MSG_ID'
+$screenMessage = Get-Symbol $str8Symbols 'MSG_SCREEN'
+$promptMessage = Get-Symbol $str8Symbols 'MSG_PROMPT'
+if (-not (Test-ByteSequence $str8Memory $screenMessage ($screenMessage + $expectedHelp.Length) $expectedHelp)) {
+    throw 'Resident help does not publish J3 immediately after the identity line'
 }
-if (-not $helpFound) { throw 'Resident help does not publish J3' }
+
+[byte[]]$expectedBannerTail = 0x20, 0x24, 0x46, 0x0D, 0x8A
+if (-not (Test-ByteSequence $str8Memory ($screenMessage - $expectedBannerTail.Length) $screenMessage $expectedBannerTail)) {
+    throw 'Resident STR8 ID does not end with " $F" and CRLF'
+}
+
+[byte[]]$legacyRomLine = [System.Text.Encoding]::ASCII.GetBytes('ROM $F000')
+if (Test-ByteSequence $str8Memory $idMessage $promptMessage $legacyRomLine) {
+    throw 'Resident STR8 still contains the legacy ROM $F000 screen line'
+}
 
 $coldEntry = Get-Symbol $str8Symbols 'STR8_ENTER_HIMON_COLD'
 $warmEntry = Get-Symbol $str8Symbols 'STR8_ENTER_HIMON_WARM'

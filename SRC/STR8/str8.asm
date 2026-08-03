@@ -1820,11 +1820,15 @@ STR8_ID_MARKER_BYTES:   DB              STR8_ID_MARKER0,STR8_ID_MARKER1
                         DB              STR8_ID_MARKER2,STR8_ID_MARKER3
 
                         INCLUDE         "str8-version.inc"
+; 2026-08-03T09:46Z Codex       Compact the resident ROM location into the ID.
+                        IF              STR8_RAM_PROOF
+                        DB              $0D,$8A
+                        ELSE
+                        DB              " $F",$0D,$8A
+                        ENDIF
 MSG_SCREEN:
                         IF              STR8_RAM_PROOF
                         DB              "RAM $0200 BUF $4000-$4FFF",$0D,$0A
-                        ELSE
-                        DB              "ROM $F000",$0D,$0A
                         ENDIF
                         DB              "? U J0 J1 J2 J3 G R",$0D,$8A
 MSG_PROMPT:             DB              "STR8-N",('>'+$80)
