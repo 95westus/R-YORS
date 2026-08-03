@@ -15,6 +15,7 @@
 ;   BANK 3:     8-E, ALL, OR AN X-Y RANGE WITHIN 8-E.
 ; A IS SECTOR A. ALL IS THE COMPLETE VALID RANGE. B3 SECTOR F IS PROTECTED.
 ; M READS ALL BANK/SECTOR CONTENTS: E=ERASED, U=USED, P=PROTECTED B3F.
+; M RESTORES ITS ENTRY BANK AFTER EACH SHARED-WORKER STAGE CALL.
 ; C/E/M, ABORT, AND SAFE FAILURES RETURN TO THIS MENU. Q RETURNS TO HIMON.
 ; BANK-3 ERASE REMAINS THE EXCEPTION AND RETURNS DIRECTLY TO STR8.
 ;
@@ -33,6 +34,7 @@
 ;   $0200-$045C  STR8 RAM WORKER
 ;   $0A00-$19FF  ONE 4K STAGED SECTOR
 ;   $1B00-$1B0B  RESULT/STATE
+;   $1B0C        ENTRY-BANK PCR BITS FOR MAP RETURN
 ;   $1C00-$1CFE  INPUT BUFFER
 ;   $2000-...    THIS PROGRAM
 ;
@@ -67,6 +69,9 @@ BM_MAIN STZ $1B00
         STZ $1B09
         STZ $1B0A
         STZ $1B0B
+        LDA $7FEC
+        AND #$EE
+        STA $1B0C
         LDX #<BM_MTITLE
         LDY #>BM_MTITLE
         JSR BM_PUTS
@@ -192,9 +197,25 @@ BM_MAP  LDA #'M'
         BNE ?STAGE
         LDA #'P'
         BRA ?MARK
-?STAGE  JSR BM_STAGE
-        BCS ?SCAN
+; The shared worker returns in Bank 3. Restore the entry bank before
+; re-enabling interrupts or calling the entry bank's HIMON vectors.
+?STAGE  PHP
+        SEI
+        JSR BM_STAGE
+        BCS ?STAGEOK
+        LDA #$00
+        BRA ?STAGERES
+?STAGEOK LDA #$01
+?STAGERES PHA
+        LDA #$EE
+        TRB $7FEC
+        LDA $1B0C
+        TSB $7FEC
+        PLA
+        BNE ?STAGEPASS
+        PLP
         JMP BM_FSTAGE
+?STAGEPASS PLP
 ?SCAN   STZ $CA
         LDA #$0A
         STA $CB
@@ -224,8 +245,9 @@ BM_MAP  LDA #'M'
         INC $1B02
         LDA $1B02
         CMP #$04
-        BCC ?BANK
-        JMP BM_SUCCESS
+        BCS ?DONE
+        JMP ?BANK
+?DONE   JMP BM_SUCCESS
 
 BM_CABORT JMP BM_ABORT
 BM_COPY LDA #'C'

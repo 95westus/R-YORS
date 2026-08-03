@@ -120,6 +120,10 @@ $semanticGates = @(
         Pattern = 'BM_MAP.*?STZ \$1B02.*?\?BANK.*?LDA #\$80.*?\?SECTOR.*?JSR BM_STAGE.*?CMP #\$FF'
     },
     @{
+        Name = 'map restores entry bank with interrupts masked'
+        Pattern = 'BM_MAIN.*?LDA \$7FEC.*?AND #\$EE.*?STA \$1B0C.*?BM_MAP.*?\?STAGE\s+PHP.*?SEI.*?JSR BM_STAGE.*?LDA #\$EE.*?TRB \$7FEC.*?LDA \$1B0C.*?TSB \$7FEC.*?PLP.*?\?SCAN'
+    },
+    @{
         Name = 'map protects and identifies Bank-3 sector F'
         Pattern = 'BM_MAP.*?CMP #\$03.*?CMP #\$F0.*?LDA #''P''.*?LDA #''E''.*?LDA #''U'''
     },
@@ -153,6 +157,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host (
-    "STR8 BANK MAINT SOURCE = PASS; symbols={0}/64; locals-max={1}/16; B3 F protected" -f `
+    "STR8 BANK MAINT SOURCE = PASS; symbols={0}/64; locals-max={1}/16; B3 F protected; map restores entry bank" -f `
         $symbols.Count, $maxLocalCount
 )

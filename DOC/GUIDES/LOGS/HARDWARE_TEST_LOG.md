@@ -19011,3 +19011,528 @@ continuation is to preserve the `$3000` envelope, assemble and direct-run
 `bank0ap-put-transient-2000.a`, select `$8000` or the AUTO result, and confirm
 the displayed `$0C8B` write. Record the installed address as `$XXXX`, then use
 `AP B0 $XXXX $4000` before the target ASM session and `G 4000` after it.
+
+## 2026-08-02 STR8 Bank-3 Copy, Confirmation, Erase, and Recovery
+
+The board ran STR8, HIMON, and ASM-F2 `00.0802(1823)`. The current persistent
+menu source ended at `$2625`, assembled through `ASM OK`, exited with `SEAL> .`,
+and ran directly at `$2000`. Bank 3 was copied to disposable Bank 2 with the
+exact confirmation. Eight completion dots, `OK`, and the reprinted menu show
+that all eight copy-sector worker calls returned success:
+
+```text
+C=COPY E=ERASE M=MAP Q=QUIT> C
+SOURCE BANK 0-3> 3
+DEST BANK 0-2> 2
+!STR8
+TYPE COPY 32> COPY 32
+
+........ OK
+
+STR8 BANK MAINT
+```
+
+The immediate live map found all eight Bank-2 sectors used and kept Bank-3
+sector F protected. `Q` then returned normally to HIMON with `$AC` and carry
+set:
+
+```text
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 E E E E E E E E
+B1 E E E E E E E E
+B2 U U U U U U U U
+B3 U U U U U U U P
+ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> Q
+
+#GO# ENTRY=2000
+RET A=AC X=00 Y=00 P=F5 S=FD NV-BdIzC
+```
+
+The exact-confirmation negative selected Bank-3 range B-E but supplied the
+confirmation for range 8-E. The utility rejected it before a write and stayed
+resident:
+
+```text
+C=COPY E=ERASE M=MAP Q=QUIT> E
+BANK 0-3> 3
+SECTOR 8-F, ALL, OR X-Y; B3 MAX E> B-E
+TYPE ERASE 3B-E> ERASE 38-E
+ABORT
+
+STR8 BANK MAINT
+```
+
+The operator then selected 8-E and supplied its exact confirmation. The
+utility made no post-start HIMON calls and transferred to protected STR8 at
+`$F000`. The countdown's dots are STR8 startup output, not maintenance
+completion dots. The blank local `$C000` fallback proves that the ordered
+erase progressed successfully through at least sector C:
+
+```text
+C=COPY E=ERASE M=MAP Q=QUIT> E
+BANK 0-3> 3
+SECTOR 8-F, ALL, OR X-Y; B3 MAX E> 8-E
+TYPE ERASE 38-E> ERASE 38-E
+
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+
+NO BOOT @C000
+```
+
+From resident STR8, `J2` cold-booted the copied Bank-2 image. Its HIMON could
+enter STR8 and ASM-F2, and a later `J2` repeated the cold boot. Conversely,
+`J3` again reached protected STR8 but reported the expected blank local
+`$C000`; `J0` rejected the erased Bank-0 reset vector:
+
+```text
+STR8-N>J2
+J B2
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+>ASM
+ASM-F2 00.0802(1823)
+ASM>$2000: .
+ASM BYE
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 S
+STR8-N V 00.0802(1823)
+ROM $F000
+? U J0 J1 J2 J3 G R
+
+STR8-N>J3
+J B3
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+
+NO BOOT @C000
+
+STR8-N V 00.0802(1823)
+ROM $F000
+? U J0 J1 J2 J3 G R
+STR8-N>J0
+J B0
+
+JERR B0 V=$FFFF
+STR8-N>J2
+J B2
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+```
+
+Result: full Bank-3-to-Bank-2 copy, source STR8-signature warning, post-copy
+menu persistence, live map, `Q`, mismatched exact-confirmation abort, Bank-3
+post-erase STR8 return, protected sector-F survival, and Bank-2 recovery boot
+are hardware-accepted. The result board was not inspected after `ERASE 38-E`,
+so this evidence does not claim that sectors D and E completed even though the
+selected operation covered 8-E.
+
+## 2026-08-02 Bank-2 Maintenance Map Return-Bank Failure
+
+After the Bank-3-to-Bank-2 recovery copy and the Bank-3 `$8000-$EFFF` erase,
+the RAM-resident maintenance body remained at `$2000`. The operator selected
+Bank 2, warm-booted its copied HIMON, and ran the maintenance map again:
+
+```text
+STR8-N>J2
+J B2
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3
+BOOT WARM
+
+HIMON V 00.0802(1823)
+>G 2000
+GO 2000
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> M
+
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1S
+STR8-N V 00.0802(1823)
+ROM $F000
+```
+
+This is a deterministic return-bank failure, not corruption of the `$2000`
+body or `$0A00-$19FF` stage. Mode `$06` selected Bank 0, copied its sector into
+RAM, and followed the shared worker contract by restoring Bank 3. The map then
+resumed in RAM, but its `$7E08/$7E0A` HIMON vectors named routines in the active
+bank's `$C000-$EFFF` window. That window was erased in Bank 3, so no first map
+marker could be printed. `J2` did not persist across the worker call.
+
+The operator subsequently used resident STR8 `U` to reinstall HIMON
+`00.0802(1823)` into Bank 3 and cold-booted it successfully. That recovery is
+accepted; it is not proof of the map repair.
+
+The host repair is confined to `str8-bank-maint-2000.a`. The map snapshots the
+entry PCR bank bits in `$1B0C`, masks interrupts across each `$F003` stage and
+immediate bank restoration, preserves worker carry, and then scans/prints from
+the entry bank. The shared STR8 worker continues to restore Bank 3 for every
+existing caller. Host WDC assembly passes with 63/64 global symbols, 12/16
+locals in the map scope, and an end address of `$2649`. Board acceptance is
+pending a complete four-row map from Bank 2 followed by the `$1B0C` entry-bank
+shadow remaining `$EC` after `Q`.
+
+## 2026-08-02 Corrected Bank-2 Map Functional Pass
+
+The operator entered resident STR8, selected `J2`, and cold-booted the copied
+Bank-2 image. Bank-2 HIMON and ASM-F2 both identified as `00.0802(1823)`. The
+corrected maintenance source included the entry-bank PCR save/restore path,
+ended at `$2649`, and assembled successfully:
+
+```text
+STR8-N>J2
+J B2
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+>ASM NEW
+ASM-F2 00.0802(1823)
+```
+
+After the source paste, the final address and assembly result were:
+
+```text
+ASM>$2649:         END
+ASM OK
+SEAL> .
+ASM BYE
+```
+
+Running the new body at `$2000` completed the map instead of leaving for STR8
+after `B0`. It printed every sector marker, returned `OK`, remained in the
+maintenance menu, and `Q` returned `$AC` with carry set:
+
+```text
+>G 2000
+GO 2000
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> M
+
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 E E E E E E E E
+B1 E E E E E E E E
+B2 U U U U U U U U
+B3 E E E E U U U P
+ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> Q
+
+#GO# ENTRY=2000
+RET A=AC X=00 Y=00 P=F5 S=FD NV-BdIzC
+```
+
+After a STR8 warm handoff, the same RAM body completed the identical map a
+second time. The following safe copy-input negative rejected a malformed
+destination, prohibited Bank 3, and nonnumeric `Q`; empty destination input
+then aborted without reaching destructive confirmation:
+
+```text
+>G 2000
+GO 2000
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> M
+
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 E E E E E E E E
+B1 E E E E E E E E
+B2 U U U U U U U U
+B3 E E E E U U U P
+ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> C
+```
+
+After that first `C` input returned directly to the menu, the captured
+destination-input negative was:
+
+```text
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> C
+SOURCE BANK 0-3> 2
+DEST BANK 0-2> 8-E
+DEST BANK 0-2> 3
+DEST BANK 0-2> Q
+DEST BANK 0-2>
+ABORT
+```
+
+Result: the corrected source's onboard assembly, complete map, repeated map,
+post-map menu loop, `Q`, destination validation, and empty destination abort
+are hardware-accepted from a `J2` entry. Bank-3 HIMON had already been restored,
+and Bank 2 and Bank 3 report the same `1823` versions, so the active bank after
+`Q` cannot be identified independently from these banners. The final entry-
+bank-preservation gate is the RAM shadow at `$1B0C`, requiring `$EC` rather than
+Bank-3 `$EE` after the Bank-2 map and `Q`.
+
+## 2026-08-02 Maintenance Map Direct-PCR Read Guard
+
+The attempted live PCR dump was blocked by HIMON's intentional FTDI/VIA I/O
+guard:
+
+```text
+7FE0: FTDI VIA IO SKIP
+```
+
+No bank identity is claimed from that command. The corrected maintenance body
+already masks and saves the menu-entry PCR value at `$1B0C`, then refreshes it
+when the post-map menu is entered. After `Q`, the safe observable gate is:
+
+```text
+D 1B0C 1B0C
+```
+
+The one-byte result must be `$EC` for Bank 2. `$EE` would show that the map
+silently returned to Bank 3. This RAM-shadow check replaces the impossible
+direct `$7FEC` dump; it does not require rerunning the map if the captured HIMON
+prompt and RAM session are still intact.
+
+## 2026-08-02 Selector-2 Corrected Map Replay
+
+The follow-up used the STR8 startup selector rather than the resident `J2`
+prompt. Key `2` selected Bank 2, delayed the handoff, and cold-booted its
+HIMON:
+
+```text
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 2
+J B2
+BOOT IN 3S
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+```
+
+Bank-2 ASM-F2 again assembled the corrected source through `$2649` and
+`ASM OK`. The first map completed all rows and `Q` returned `$AC` with carry
+set. A STR8 warm handoff preserved the RAM body, and a second `G 2000` produced
+the same full map:
+
+```text
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 E E E E E E E E
+B1 E E E E E E E E
+B2 U U U U U U U U
+B3 E E E E U U U P
+ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT>
+```
+
+The transcript ends at that second maintenance prompt. It contains neither a
+second `Q` nor `D 1B0C 1B0C`, so the selector-2 functional replay is accepted
+but the entry-bank shadow remains unobserved. From this exact prompt the
+remaining sequence is simply:
+
+```text
+Q
+D 1B0C 1B0C
+```
+
+The required one-byte value remains `$EC`.
+
+## 2026-08-02 Bank-2 Map Entry-Bank Shadow Acceptance
+
+The follow-up closed the remaining identity gate with the maintenance body's
+safe masked-PCR shadow at `$1B0C`. The first completed map returned through
+`Q` with status `$AC` and carry set:
+
+```text
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 E E E E E E E E
+B1 E E E E E E E E
+B2 U U U U U U U U
+B3 E E E E U U U P
+ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> Q
+
+#GO# ENTRY=2000
+RET A=AC X=00 Y=00 P=F5 S=FD NV-BdIzC
+```
+
+After the following warm handoff, HIMON observed the Bank-2 value `$EC`, not
+the Bank-3 value `$EE`:
+
+```text
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 3
+BOOT WARM
+
+HIMON V 00.0802(1823)
+>D 1B0C
+1B0C: EC | .
+```
+
+The next selector-2 handoff deliberately cold-booted Bank 2 and cleared the
+RAM shadow. The resulting `$00` is therefore expected and is not a failed bank
+restore:
+
+```text
+0/1/2=BOOT 3=HIMON S=STR8  6 2
+J B2
+BOOT IN 3S
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+>D 1B0C
+1B0C: 00 | .
+```
+
+Bank-2 ASM-F2 then freshly assembled the corrected source through `$2649` and
+`ASM OK`. Its full map and `Q` immediately exposed `$EC` at the HIMON prompt:
+
+```text
+ASM>$2649:         END
+ASM OK
+SEAL> .
+ASM BYE
+>G 2000
+GO 2000
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> M
+
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 E E E E E E E E
+B1 E E E E E E E E
+B2 U U U U U U U U
+B3 E E E E U U U P
+ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> Q
+
+#GO# ENTRY=2000
+RET A=AC X=00 Y=00 P=F5 S=FD NV-BdIzC
+>D 1B0C
+1B0C: EC | .
+```
+
+A final STR8 warm round-trip preserved the same shadow:
+
+```text
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+................
+STR8-N V 00.0802(1823)
+
+0/1/2=BOOT 3=HIMON S=STR8  6 3
+BOOT WARM
+
+HIMON V 00.0802(1823)
+>D 1B0C
+1B0C: EC | .
+```
+
+Result: the corrected map's Bank-2 entry-bank restoration is hardware-
+accepted. The `$EC` observation distinguishes Bank 2 from the worker's normal
+Bank-3 return value `$EE`, survives a warm STR8/HIMON handoff, and reproduces
+after a cold reset and fresh onboard assembly. The broader maintenance test
+matrix for the separately listed erase, skip, `ALL`, empty-input, and explicit-
+failure cases is explicitly deferred and does not block acceptance of this map
+repair.

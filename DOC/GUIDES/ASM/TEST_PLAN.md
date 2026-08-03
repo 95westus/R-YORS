@@ -11913,12 +11913,12 @@ make -C SRC str8-bank-maint-source-check
 ```
 
 It currently passes WDC assembly with 63 of 64 ASM-F2 global symbols and a
-maximum of 8 of 16 local labels in one scope. It also checks line length,
+maximum of 12 of 16 local labels in one scope. It also checks line length,
 direct HIMON service bindings, worker modes `$05/$06`, Bank-3 destination
 rejection, Bank-3 sector-F rejection, ordered range validation, `ALL`, the
 seven-sector Bank-3 all count, read-only map staging and markers, post-erase
-output suppression, `SEI`, and direct `$F000` return. Hardware proof is
-partial.
+output suppression, `SEI`, direct `$F000` return, and the map's interrupt-
+masked entry-bank restoration. Hardware proof is partial.
 
 The 2026-08-02 board run assembled the persistent/Q source through `ASM OK`
 and `SEAL`. `M` printed all four eight-sector rows, used `E/U` markers, and
@@ -11931,8 +11931,54 @@ sector C, again producing the blank-entry fallback. This accepts map,
 post-map looping, single-sector and partial ordered-range Bank-3 erase,
 sector-F survival, and direct STR8 return. The result board was not inspected
 after `9-D`, so complete range success through sector D is not claimed.
-Bank 0-2 erase, repeated-erased skip, `ALL`, copy, abort, failure, and `Q`
-remain separate maintenance-tool gates.
+
+A later board run with STR8/HIMON/ASM-F2 `00.0802(1823)` assembled the current
+`$2000-$2624` source through `ASM OK`. Exact `COPY 32` printed eight completion
+dots and `OK`, then returned to the menu. The following map showed every Bank-2
+sector used, and `J2` cold-booted the copied STR8/HIMON image; HIMON could enter
+both STR8 and ASM-F2. `Q` returned to HIMON with status `$AC` and carry set.
+For destructive-confirmation proof, selection `B-E` rejected the mismatched
+`ERASE 38-E` with `ABORT` and returned to the menu. Exact `ERASE 38-E` for
+selection `8-E` transferred directly to protected STR8. The blank `$C000`
+fallback and later `J3` repeat prove successful erase progression at least
+through sector C, while repeated `J2` boots prove the Bank-2 recovery copy
+remained usable. Because the Bank-3 result board was not inspected, completion
+of sectors D-E is not claimed. Bank 0-2 erase, repeated-erased skip, the `ALL`
+spelling, other empty-input positions, and explicit failure are explicitly
+deferred. They are not blockers for accepting the map entry-bank repair.
+
+The follow-up Bank-2 run exposed a return-bank defect in the map. After `J2`,
+`BOOT WARM`, and `G 2000`, `M` printed its heading and `B0`, then entered STR8
+before printing the first `E/U` marker. Repeating `J2` and `G 2000` produced the
+same result. The `$2000` maintenance body and `$0A00` stage were intact; the
+shared mode-$06 worker had selected Bank 0 for staging and then intentionally
+restored Bank 3. Because Bank-3 `$C000-$EFFF` was erased, the RAM map's next
+HIMON-vector call had no live target.
+
+The corrected direct-run source now ends at `$2649`. At each map stage it saves
+the worker carry result, restores the PCR bank bits captured at menu entry, and
+only then restores the caller's interrupt state. This leaves the shared STR8
+worker ABI unchanged and closes the interrupt window while Bank 3 is selected.
+The repair is host-accepted. A follow-up board run selected `J2`, cold-booted
+Bank-2 HIMON/ASM-F2 `00.0802(1823)`, assembled the corrected source through
+`ASM OK`, and completed all four map rows twice. Both runs showed `P` at B3F,
+printed `OK`, stayed in the maintenance menu, and allowed `Q` to return `$AC`
+with carry set. This closes the original `B0`-then-STR8 liveness regression and
+accepts corrected-source assembly, full map, menu persistence, and `Q` after a
+Bank-2 entry. The same session rejected malformed copy destinations `8-E`, `3`,
+and `Q`; empty input then aborted without a flash confirmation or write.
+
+HIMON deliberately answers a direct `$7FEC` dump with `FTDI VIA IO SKIP`, so
+the non-destructive identity gate uses the map's masked PCR shadow at `$1B0C`.
+A later selector-2 run closed that gate. After a full map and `Q`,
+`D 1B0C 1B0C` returned `$EC`, the expected Bank-2 PCR bits rather than Bank-3
+`$EE`. The value remained `$EC` after a STR8 warm round-trip. Selecting Bank 2
+again produced `J B2`, `BOOT COLD`, and `RAM ZERO OK`; `$1B0C` then read `$00`
+as expected after the cold RAM clear. The source was freshly assembled through
+`$2649` and `ASM OK`, and another full map plus `Q` again returned `$EC`; a
+second warm STR8/HIMON round-trip preserved `$EC`. This accepts the map's
+entry-bank restoration on hardware and closes the original Bank-2
+`B0`-then-STR8 regression without requiring a live PCR read.
 
 The same board source assembled successfully but `SEAL> PACKAGE $3000`
 returned `PKG ERR=$02`. `$3000` is a valid non-overlapping package-output
