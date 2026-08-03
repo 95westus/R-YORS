@@ -41,6 +41,28 @@ effect:     what old assumption is stale now
 action:     where to look or what to do next
 ```
 
+## DECISION: Minimal STR8 RAM Loader Follows I/U
+
+```text
+2026
+         08
+                03
+                   09:39Z COLLAB-AI Settled a minimal STR8-resident L/L G as
+                               the post-V1.01 recovery-bootstrap direction.
+```
+
+scope: `DECISIONS.md`; the V1.01 bank-installer plan is unchanged.
+
+change: Finish and accept `I` and `U` first. Afterward, plan a small RAM-only
+S19 `L`/`L G` path in Bank 3 STR8 to launch standalone recovery programs.
+
+effect: HIMON remains the current `L`/`L G` owner during V1.01, but that
+ownership is no longer the settled final architecture. The future resident
+loader does not absorb flash mutation or installer policy.
+
+action: keep current implementation and proof effort on `I` and `U`; consult
+[DECISIONS.md](./DECISIONS.md) before post-V1.01 loader planning.
+
 ## REDOC: HTML Coverage Expanded
 
 ```text

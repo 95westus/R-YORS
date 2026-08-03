@@ -105,7 +105,23 @@ installer remains a separate safety specification, not a reason to introduce
 the string ABI.
 
 STR8 owns the reusable S19 decode/checksum mechanism and all flash-mutation
-policy. HIMON keeps the `L`/`L G` RAM-load interface and destination policy.
+policy. The V1.01 sequence completes and accepts `I` and `U` before moving any
+additional loader interface into the protected top sector. During that work,
+HIMON keeps the `L`/`L G` RAM-load interface and destination policy. This is a
+sequencing constraint, not the final recovery architecture.
+
+After `I` and `U` are accepted, the settled recovery direction is a minimal
+STR8-resident `L`/`L G`. It consumes S19 into a documented safe RAM window;
+`L G` may transfer control only to the validated S9 entry. It does not mutate
+flash or carry installer policy. Its purpose is to bootstrap standalone
+RAM-resident maintenance, repair, migration, and installer programs when code
+in `$8000-$EFFF` is suspect but Bank 3 STR8 still runs. Such recovery programs
+must not depend on HIMON, ASM, or RAM vectors that enter suspect code; they use
+direct hardware I/O or future explicitly frozen STR8 services. The exact RAM
+window, interface, and proof gates belong to post-V1.01 planning, and the V1.01
+plan remains unchanged. Retire or reduce HIMON's copy only after the STR8 path
+is proven.
+
 The first migration retains `L F` but delegates its validated-record flash
 application to STR8; retiring the command remains optional after an equivalent
 STR8 operator path is proven. Banks used for managed storage declare an
