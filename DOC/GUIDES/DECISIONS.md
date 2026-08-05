@@ -147,6 +147,23 @@ operations are PARSE (`$01`) and APPLY_LF (`$02`). PARSE supports a bounded RAM
 source or STR8's private console and returns S0 metadata, S1 data, or S9
 end/entry only after complete syntax/count/checksum/termination validation.
 
+STR8 additionally publishes the bank-safe userland selector at `$F010`.
+`A=$00-$03`; carry set reports success and carry clear reports rejection with
+the bank unchanged. The caller and JSR return address must be RAM below
+`$8000`. The resident front door copies the worker and tail-calls its fixed
+`$0203` entry so no instruction is fetched from ROM after the bank changes.
+`$F010` is callable only while a compatible STR8 top sector is visible
+(normally Bank 3); after a
+successful selection, repeat selections use the installed `$0203` RAM entry.
+
+Physical-reset Bank 3 is a board invariant, not necessarily a canonical PCR
+readback. Pull-ups may expose Bank 3 while `$7FEC & $EE` still reads `$00` in
+the VIA reset/input state. Software selection establishes the explicit
+`$CC/$CE/$EC/$EE` Bank-0/1/2/3 patterns. Code must therefore treat an
+unrecognized raw PCR as unknown and use a trusted visible-image identity when
+it must prove reset-selected Bank 3; it must not rewrite PCR merely to make a
+bank display deterministic.
+
 APPLY_LF accepts only a validated S1 descriptor, preflights the complete
 nonempty span inside Bank 3 `$8000-$BFFF`, accepts matching or `$FF`
 destination bytes, and uses the STR8 RAM worker to program differing bytes and
@@ -537,10 +554,10 @@ start +count    count is the number of bytes
 
 ## STR8 Call Surface
 
-- STR8 exposes only two deliberate fixed service doorways: `$F003` runs a
-  selected RAM worker mode, and `$F006` is an AP import-link compatibility
-  adapter. These are build-guarded ABI entries, not a general cute-address
-  convention.
+- STR8 exposes deliberate fixed service doorways: `$F003` runs a selected RAM
+  worker mode, `$F006` is an AP import-link compatibility adapter, `$F009` is
+  the validated-record service, and `$F010` is the RAM-caller bank selector.
+  These are build-guarded ABI entries, not a general cute-address convention.
 - STR8 V0 should call its private `STR8_CON_*` console helpers directly for
   recovery I/O.
 - HIMON uses `$F003` only for the bank-safe worker contract. AP import linking

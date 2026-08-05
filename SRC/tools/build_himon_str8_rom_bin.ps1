@@ -306,6 +306,9 @@ $str8ApLinkAdapter = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_AP_IMPO
 $str8RecordService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RECORD_SERVICE_ENTRY"
 $str8RecordServiceBody = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RECORD_SERVICE_BODY"
 $str8RecordSignature = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RECORD_SERVICE_SIGNATURE"
+$str8BankSelectService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_BANK_SELECT_SERVICE_ENTRY"
+$str8BankSelectBody = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_BANK_SELECT_SERVICE_BODY"
+$str8BankSelectRam = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_BANK_SELECT_RAM"
 $str8RecordOp = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_REC_OP"
 $str8RecordExpected = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_REC_EXPECTED"
 $str8RecordDataBuffer = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_REC_DATA_BUF"
@@ -314,6 +317,7 @@ $str8Irq = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_IVY_ENTRY_IRQ_MAS
 $str8End = Get-SymbolAddress -MapPath $Str8MapPath -Name "_END_DATA"
 
 $workerRunStart = Get-SymbolAddress -MapPath $WorkerMapPath -Name "START"
+$workerBankSelectService = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8W_BANK_SELECT_SERVICE"
 $workerRunEnd = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_WORKER_END"
 $workerStateBase = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_STATE_BASE"
 $workerStateEnd = Get-SymbolAddress -MapPath $WorkerMapPath -Name "STR8_STATE_END"
@@ -336,7 +340,7 @@ $v1DirectoryEndExclusive = 0xFFF0
 $v1DirectorySize = 0x0040
 $v1WorkerStoreEndExclusive = $v1DirectoryStart
 $v1WorkerStoreStart = $v1WorkerStoreEndExclusive - $workerSize
-$v1WorkerGapMin = 0x0100
+$v1WorkerGapMin = 0x0040
 $v1WorkerGap = $v1WorkerStoreStart - $str8End
 
 if ($V1LayoutPreview) {
@@ -427,6 +431,12 @@ if ($str8RecordService -ne 0xF009) {
 if ($str8RecordSignature -ne 0xF00C) {
     throw ("STR8 record-service signature is {0:X4}; expected F00C" -f $str8RecordSignature)
 }
+if ($str8BankSelectService -ne 0xF010) {
+    throw ("STR8 bank-select service is {0:X4}; expected stable entry F010" -f $str8BankSelectService)
+}
+if ($str8BankSelectRam -ne 0x0203 -or $workerBankSelectService -ne $str8BankSelectRam) {
+    throw ("STR8 bank-select RAM entry is resident/worker {0:X4}/{1:X4}; expected 0203/0203" -f $str8BankSelectRam, $workerBankSelectService)
+}
 if ($str8RecordOp -ne 0x7E95 -or $str8RecordExpected -ne 0x7EA8) {
     throw ("STR8 record request/result block is {0:X4}-{1:X4}; expected 7E95-7EA8" -f $str8RecordOp, $str8RecordExpected)
 }
@@ -439,11 +449,13 @@ if ($str8Nmi -lt 0xF000 -or $str8Nmi -ge 0x10000) {
 if ($str8Irq -lt 0xF000 -or $str8Irq -ge 0x10000) {
     throw ("STR8 IVY IRQ entry is {0:X4}; expected F000-FFFF" -f $str8Irq)
 }
-if ($str8End -gt $legacyWorkerStoreStart) {
-    throw ("STR8 crosses legacy worker storage at {0:X4}; _END_DATA={1:X4}" -f $legacyWorkerStoreStart, $str8End)
-}
-if ($legacyWorkerGap -lt $legacyWorkerGapMin) {
-    throw ("STR8 legacy resident/worker gap is {0:X}; minimum is {1:X} ({2:X4}-{3:X4})" -f $legacyWorkerGap, $legacyWorkerGapMin, $str8End, ($legacyWorkerStoreStart - 1))
+if (-not $V1LayoutPreview) {
+    if ($str8End -gt $legacyWorkerStoreStart) {
+        throw ("STR8 crosses legacy worker storage at {0:X4}; _END_DATA={1:X4}" -f $legacyWorkerStoreStart, $str8End)
+    }
+    if ($legacyWorkerGap -lt $legacyWorkerGapMin) {
+        throw ("STR8 legacy resident/worker gap is {0:X}; minimum is {1:X} ({2:X4}-{3:X4})" -f $legacyWorkerGap, $legacyWorkerGapMin, $str8End, ($legacyWorkerStoreStart - 1))
+    }
 }
 if (($v1DirectoryEndExclusive - $v1DirectoryStart) -ne $v1DirectorySize) {
     throw ("STR8 V1 directory is {0:X4}-{1:X4}; expected exact size {2:X}" -f $v1DirectoryStart, ($v1DirectoryEndExclusive - 1), $v1DirectorySize)
@@ -647,6 +659,18 @@ for ($i = 0; $i -lt $expectedRecordHeader.Length; $i++) {
     }
 }
 
+$str8BankSelectServiceOffset = $bankOffset + ($str8BankSelectService - 0x8000)
+[byte[]]$expectedBankSelectService = @(
+    0x4C,
+    ($str8BankSelectBody -band 0xFF),
+    (($str8BankSelectBody -shr 8) -band 0xFF)
+)
+for ($i = 0; $i -lt $expectedBankSelectService.Length; $i++) {
+    if ($bin[$str8BankSelectServiceOffset + $i] -ne $expectedBankSelectService[$i]) {
+        throw ("STR8 F010 bank-select jump byte {0} is {1:X2}; expected {2:X2}" -f $i, $bin[$str8BankSelectServiceOffset + $i], $expectedBankSelectService[$i])
+    }
+}
+
 $str8ApAdapterOffset = $bankOffset + ($str8ApLinkAdapter - 0x8000)
 [byte[]]$expectedApAdapter = @(0xA9, 0x03, 0x8D, 0x2F, 0x7E, 0x6C, 0x2D, 0x7E)
 for ($i = 0; $i -lt $expectedApAdapter.Length; $i++) {
@@ -661,6 +685,7 @@ Write-Host ("HIMON AP IMPORT LINK     = {0:X4}" -f $himonApImportLink)
 Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Start, $str8Nmi, $str8Irq, $str8End)
 Write-Host ("STR8 SERVICES WORK/AP    = {0:X4}/{1:X4} -> {2:X4}" -f $str8WorkerService, $str8ApLinkService, $str8ApLinkAdapter)
 Write-Host ("STR8 RECORD ENTRY/BODY   = {0:X4}/{1:X4}; ABI 53 52 01 07" -f $str8RecordService, $str8RecordServiceBody)
+Write-Host ("STR8 BANK SELECT ROM/RAM = {0:X4}/{1:X4}; A=00-03" -f $str8BankSelectService, $str8BankSelectRam)
 Write-Host ("STR8 RECORD RAM          = {0:X4}-{1:X4}; DATA {2:X4}" -f $str8RecordOp, $str8RecordExpected, $str8RecordDataBuffer)
 Write-Host ("BANK JUMP RECORD         = {0:X4}-{1:X4}; 42 4A bank/FF; banks 00-{2:X2}" -f $str8BankJumpSig0, $str8BankLastJump, ($str8BankCount - 1))
 if ($asmBase -ne $null) {

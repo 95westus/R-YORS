@@ -9,7 +9,6 @@ Current STR8 is not just a sketch anymore. The code and docs agree on a small
 V0 recovery surface:
 
 ```text
-?          identity
 B          back up Bank 3 to selected Bank 0, 1, or 2
 U          update HIMON from S19, fixed $C000-$EFFF gate
 0/1/2      restore selected backup bank to Bank 3
@@ -25,8 +24,24 @@ flash worker at `$FD03-$FFEF`, copies that worker into the `$0200-$09FF` tray, u
 The top sector also exposes stable service entries at `$F003` for running
 selected worker modes, `$F006` as an AP import-link compatibility doorway, and
 `$F009` for the V1 validated-record service. `$F00C-$F00F` is `53 52 01 07`.
+The fixed `$F010` bank-selection service accepts `A=$00-$03` only from a RAM
+caller and returns through its `$0203` RAM trampoline with the selected bank
+still visible.
 The linker itself is resident HIMON code; `$F006` selects the AP `LINK`
 operation and jumps through HIMON's `$7E2D-$7E2E` AP service vector.
+
+A RAM-resident user program may select a bank without launching it:
+
+```asm
+STR8_BANK_SELECT        EQU     $F010
+                        LDA     #$02
+                        JSR     STR8_BANK_SELECT
+                        BCC     BANK_ERROR
+; Bank 2 is visible here. This code and the JSR return address must be < $8000.
+```
+
+The service clobbers `A/X/Y`. Carry set means success; carry clear means an
+invalid bank or unsafe banked-ROM return address, with the old bank retained.
 
 The `J` path uses mode `$08` and `$1FF2-$1FF5` for transient target,
 reset-vector, and status state. Resident STR8 prints the selected bank, copies

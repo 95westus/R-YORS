@@ -193,7 +193,6 @@ that exact target is intended.
 ## STR8 Commands
 
 ```text
-?       print STR8 version identity
 B       back up Bank 3 to selected Bank 0/1/2, destructive, confirmed
 U       update $C000-$EFFF from S19, destructive, confirmed
 0       restore Bank 0 -> Bank 3, destructive, confirmed
@@ -205,6 +204,7 @@ J2      non-destructive RAM handoff through Bank 2 reset vector
 J3      non-destructive RAM handoff through Bank 3 reset vector
 G       go to HIMON at $C000
 R       reset through the live reset vector
+other   print the active command help line
 ```
 
 STR8 echoes printable command and response letters in uppercase. Backspace,

@@ -12,6 +12,7 @@
                         MODULE          STR8_WORKER_APP
 
                         XDEF            START
+                        XDEF            STR8W_BANK_SELECT_SERVICE
                         XDEF            STR8_WORKER_END
 
                         INCLUDE         "STR8/str8-record-eq.inc"
@@ -58,9 +59,28 @@ STR8_FLASH_ERASE_TMO_HI EQU             $08
 STR8_FLASH_WRITE_TMO_HI EQU             $02
 
                         CODE
+START:
+                        JMP             STR8W_START_BODY
+
+; Fixed $0203 entry used by the resident $F010 bank-selection service.
+; IN: A=bank 0-3. OUT: C=1 selected; C=0 invalid. A/X are clobbered.
+; The caller and return address must be in RAM below $8000.
+STR8W_BANK_SELECT_SERVICE:
+                        PHP
+                        SEI
+                        CMP             #STR8_BANK_COUNT
+                        BCS             ?BAD_BANK
+                        JSR             STR8W_BANK_SELECT_A
+                        PLP
+                        SEC
+                        RTS
+?BAD_BANK:             PLP
+                        CLC
+                        RTS
+
 ; Only the four published V1 modes may reach a worker operation. Any other
 ; value returns C=0 before selecting a bank or touching flash.
-START:
+STR8W_START_BODY:
                         PHP
                         SEI
                         LDA             STR8_COPY_MODE
@@ -168,20 +188,28 @@ STR8W_STAGE_BANK_SECTOR:
                         STA             STR8W_BUF_HI
                         JMP             STR8W_COPY_PTR_TO_ACTIVE_BUF
 
-; Program one preflighted S1 descriptor without erase. The resident service
-; has already required every destination byte to be equal or $FF; the worker
-; still skips equal bytes and records a reliable failure tuple on error.
+; Program one preflighted record without erase. Repeat a complete one-to-zero
+; preflight after selecting Bank 3, before the first byte write. This protects
+; directory writes even if a resident-side preflight observed the wrong bank.
 STR8W_PROGRAM_RECORD:
                         JSR             STR8W_SELECT_BANK3
-                        LDA             STR8_REC_ADDR_LO
-                        STA             STR8W_ADDR_LO
-                        LDA             STR8_REC_ADDR_HI
-                        STA             STR8W_ADDR_HI
-                        STZ             STR8W_BUF_LO
-                        LDA             #STR8_REC_DATA_BUF_HI
-                        STA             STR8W_BUF_HI
+                        JSR             STR8W_RECORD_INIT
                         LDX             STR8_REC_DATA_LEN
                         BEQ             ?OK
+?PREFLIGHT:
+                        LDY             #$00
+                        LDA             (STR8W_BUF_LO),Y
+                        STA             STR8W_DATA
+                        LDA             (STR8W_ADDR_LO),Y
+                        AND             STR8W_DATA
+                        CMP             STR8W_DATA
+                        BNE             ?FAIL
+                        JSR             STR8W_RECORD_ADVANCE
+                        DEX
+                        BNE             ?PREFLIGHT
+
+                        JSR             STR8W_RECORD_INIT
+                        LDX             STR8_REC_DATA_LEN
 ?BYTE:
                         LDY             #$00
                         LDA             (STR8W_BUF_LO),Y
@@ -192,14 +220,7 @@ STR8W_PROGRAM_RECORD:
                         JSR             STR8W_FLASH_WRITE
                         BCC             ?FAIL
 ?NEXT:
-                        INC             STR8W_ADDR_LO
-                        BNE             ?DATA
-                        INC             STR8W_ADDR_HI
-?DATA:
-                        INC             STR8W_BUF_LO
-                        ; V1 starts at $7B00 and accepts at most 252 bytes, so
-                        ; the record-buffer low byte cannot wrap.
-?COUNT:
+                        JSR             STR8W_RECORD_ADVANCE
                         DEX
                         BNE             ?BYTE
 ?OK:
@@ -216,6 +237,26 @@ STR8W_PROGRAM_RECORD:
                         LDA             STR8W_DATA
                         STA             STR8_REC_EXPECTED
                         CLC
+                        RTS
+
+STR8W_RECORD_INIT:
+                        LDA             STR8_REC_ADDR_LO
+                        STA             STR8W_ADDR_LO
+                        LDA             STR8_REC_ADDR_HI
+                        STA             STR8W_ADDR_HI
+                        STZ             STR8W_BUF_LO
+                        LDA             #STR8_REC_DATA_BUF_HI
+                        STA             STR8W_BUF_HI
+                        RTS
+
+STR8W_RECORD_ADVANCE:
+                        INC             STR8W_ADDR_LO
+                        BNE             ?DATA
+                        INC             STR8W_ADDR_HI
+?DATA:
+                        INC             STR8W_BUF_LO
+                        ; V1 starts at $7B00 and accepts at most 252 bytes, so
+                        ; the record-buffer low byte cannot wrap.
                         RTS
 
 STR8W_COPY_PTR_TO_ACTIVE_BUF:

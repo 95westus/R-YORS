@@ -1,0 +1,170 @@
+; STR8-BANK-SELECT-SERVICE-PROOF-2000.A
+; NON-DESTRUCTIVE ASM-F2 PROOF OF STR8 $F010 AND RAM $0203.
+;
+; ASSEMBLE AND RUN:
+;   ASM NEW
+;   SEND THIS COMPLETE FILE
+;   SEAL> .
+;   G 2000
+;   D 1A20 1A47
+;
+; RUN ONLY FROM RAM WITH THE NEW STR8 IMAGE VISIBLE IN BANK 3.
+; NO FLASH BYTE IS ERASED OR PROGRAMMED. IRQ IS MASKED WHILE BANKS 0-2
+; ARE VISIBLE. THE FIRST VALID CALL USES $F010; LATER CALLS USE THE
+; COPIED $0203 TRAMPOLINE SO TARGET BANKS NEED NOT CONTAIN STR8.
+;
+; RESULT $1A20-$1A47:
+;   1A20  'B','S', STATUS, FAIL-STEP
+;   1A24  PCR AFTER REJECTED BANK 4 (INFORMATIONAL)
+;   1A25  RAM TRAMPOLINE READY ($01 AFTER FIRST VALID CALL)
+;   1A26  CURRENT BANK COUNTER
+;   1A27  RESERVED
+;   1A28  B0: BANK,PCR,F000,F00C,F00D,F00E,F00F,F010
+;   1A30  B1: BANK,PCR,F000,F00C,F00D,F00E,F00F,F010
+;   1A38  B2: BANK,PCR,F000,F00C,F00D,F00E,F00F,F010
+;   1A40  B3: BANK,PCR,F000,F00C,F00D,F00E,F00F,F010
+;
+; STATUS AC = PASS. STATUS E1 = FAIL; FAIL-STEP IDENTIFIES THE GATE.
+
+        ORG $2000
+
+SVC     EQU $F010
+RAMSEL  EQU $0203
+PCR     EQU $7FEC
+RES     EQU $1A20
+RES1    EQU $1A21
+STAT    EQU $1A22
+STEP    EQU $1A23
+IPCR    EQU $1A24
+READY   EQU $1A25
+CUR     EQU $1A26
+ROWS    EQU $1A28
+PLO     EQU $C8
+PHI     EQU $C9
+
+START   PHP
+        SEI
+        LDA #$00
+        LDX #$27
+?CLEAR  STA RES,X
+        DEX
+        BPL ?CLEAR
+        LDA #'B'
+        STA RES
+        LDA #'S'
+        STA RES1
+        LDA #$E1
+        STA STAT
+
+; An invalid bank must fail without leaving Bank 3.
+        LDA #$01
+        STA STEP
+        LDA #$04
+        JSR SVC
+        BCC ?INVCLC
+        JMP FAIL
+?INVCLC:
+        LDA PCR
+        AND #$EE
+        STA IPCR
+; Reset can force Bank 3 while PCR still reads 00. Prove that the rejected
+; call retained the uniquely installed Bank-3 STR8 face instead.
+        LDX #$04
+?INVSIG LDA $F00C,X
+        CMP BSIG,X
+        BNE ?INVBAD
+        DEX
+        BPL ?INVSIG
+        BRA ?INVOK
+?INVBAD:
+        JMP FAIL
+?INVOK:
+
+; $F010 loads the RAM worker and selects Bank 0.
+        LDA #$02
+        STA STEP
+        LDA #<ROWS
+        STA PLO
+        LDA #>ROWS
+        STA PHI
+        LDA #$00
+        JSR SVC
+        BCS ?FIRSTOK
+        JMP FAIL
+?FIRSTOK:
+        INC READY
+        BRA SNAP
+
+; The retained $0203 trampoline selects Banks 1, 2, and 3.
+NEXT    LDA #$03
+        STA STEP
+        LDA CUR
+        JSR RAMSEL
+        BCS SNAP
+        JMP FAIL
+
+SNAP    LDY #$00
+        LDA CUR
+        STA (PLO),Y
+        INY
+        LDA PCR
+        AND #$EE
+        STA (PLO),Y
+        LDX CUR
+        CMP BITS,X
+        BEQ ?PCRGOOD
+        JMP FAIL
+?PCRGOOD:
+        INY
+        LDA $F000
+        STA (PLO),Y
+        INY
+        LDA $F00C
+        STA (PLO),Y
+        INY
+        LDA $F00D
+        STA (PLO),Y
+        INY
+        LDA $F00E
+        STA (PLO),Y
+        INY
+        LDA $F00F
+        STA (PLO),Y
+        INY
+        LDA $F010
+        STA (PLO),Y
+
+        CLC
+        LDA PLO
+        ADC #$08
+        STA PLO
+        BCC ?PTR
+        INC PHI
+?PTR    INC CUR
+        LDA CUR
+        CMP #$04
+        BNE NEXT
+
+        LDA #$AC
+        STA STAT
+        STZ STEP
+        PLP
+        LDA #$AC
+        SEC
+        RTS
+
+FAIL    LDA READY
+        BEQ ?DONE
+        LDA #$03
+        JSR RAMSEL
+?DONE   LDA #$E1
+        STA STAT
+        PLP
+        LDA #$E1
+        CLC
+        RTS
+
+BITS    DB $CC,$CE,$EC,$EE
+BSIG    DB 'S','R',$01,$07,$4C
+
+        END

@@ -5,6 +5,13 @@
 
 STR8_COPY_MODE_JUMP_BANK EQU           $08
 
+; Published bank-selector ABI. STR8_BANK_SELECT_SERVICE copies the current
+; worker image to RAM, then tail-calls the fixed RAM entry so the selected ROM
+; bank cannot replace an executing RTS. The caller and its return address must
+; be below $8000.
+STR8_BANK_SELECT_SERVICE EQU            $F010
+STR8_BANK_SELECT_RAM     EQU            $0203
+
 STR8_JUMP_BANK          EQU             $1FF2
 STR8_JUMP_VEC_LO        EQU             $1FF3
 STR8_JUMP_VEC_HI        EQU             $1FF4

@@ -229,6 +229,40 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `FLASH_WRITE_BYTE_AXY` | `$103B070B` | flash program | `A=byte`, `X/Y=target` | `C=1` verifies, `C=0` guard/timeout/illegal `0->1` | PARTIAL | guarded byte program; needs full illegal-write and bank matrix proof | `FLASH BYTE_PROGRAM AXY` |
 | `FLASH_WRITE_BYTE_RAW_AXY` | `$510FD332` | flash program raw | `A=byte`, `X/Y=target` | `C=1` verifies, `C=0` timeout/illegal `0->1` | NEEDS_PROOF | no range guard; recovery only | `FLASH BYTE_PROGRAM RAW AXY` |
 
+## STR8 Fixed Bank-Selection Service
+
+| doorway | prerequisite | in | out / flags | clobbers | proof |
+| --- | --- | --- | --- | --- | --- |
+| `$F010` | compatible STR8 top sector visible (normally Bank 3); caller and JSR return below `$8000` | `A=bank 0-3` | `C=1`, selected bank remains visible; invalid bank returns `C=0` unchanged | `A/X/Y` and flags other than the returned carry | PROVEN |
+| `$0203` | a successful `$F010` call installed the current RAM worker; caller and JSR return below `$8000` | `A=bank 0-3` | same carry contract without recopying the worker | `A/X` and flags other than the returned carry | PROVEN |
+
+Use `$F010` only while a compatible STR8 face is visible. A successful
+call changes the complete `$8000-$FFFF` window, so the target bank's `$F010`
+is unrelated content unless that target independently carries the same ABI.
+The copied `$0203` trampoline is the repeat-selection entry for the current RAM
+session; cold RAM clear or any caller overwrite invalidates it.
+
+Physical reset and PCR readback are separate facts. Board pull-ups can make
+Bank 3 visible while `$7FEC & $EE` still reads the VIA reset/input state `$00`.
+The explicit `$CC/$CE/$EC/$EE` patterns become authoritative only after a
+software bank selection. Before that, prove Bank 3 from a trusted visible-image
+identity such as the installed STR8 signature, not from raw PCR alone.
+`FLSH_BANK_GET_A` therefore returns `C=0` for the reset/input pattern even when
+the physical-reset invariant says Bank 3 is visible.
+
+Minimal RAM-caller sequence:
+
+```text
+        LDA #$00          ; requested bank
+        JSR $F010         ; only while a compatible STR8 face is visible
+        BCC REJECTED
+        ; execution resumes here from RAM with Bank 0 visible
+
+        LDA #$03
+        JSR $0203         ; retained RAM trampoline returns to Bank 3
+        BCC REJECTED
+```
+
 ## Vector And Trap Helpers
 
 | routine | hash | class | in | out / flags | proof | notes | tags |

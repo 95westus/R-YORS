@@ -101,6 +101,12 @@ Boot Passport Block, shared service entries, or other fixed bytes. Their
 system code. See
 [STR8_J012_OPAQUE_BANK_PLAN.md](../PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md).
 
+Physical-reset visibility does not imply a readable `$EE` PCR pattern. The
+board pull-ups may expose Bank 3 while `$7FEC & $EE` remains `$00` in VIA
+reset/input mode. Only a successful software selection establishes the
+canonical `$CC/$CE/$EC/$EE` patterns. Treat raw PCR `$00` as undecoded, not as
+evidence that Bank 3 is absent.
+
 ## OIL Address Boundary
 
 OIL keeps an AP Capsule (APC) in storage separate from its executable BODY:

@@ -12111,3 +12111,227 @@ images end at `$FB1B`, eight bytes earlier than the superseded two-line form,
 leaving `$0238` before the V1 worker store. Worker-mode and V1 directory checks
 both pass. Check the visible banner during the first STR8 `I` board acceptance
 rather than scheduling a separate installation cycle.
+
+## 2026-08-05 STR8 V1 Directory One-to-Zero Writer
+
+Status: compiled host pass; no board test applies until the explicit V1
+directory migration. No current command can reach this writer.
+
+The guarded V1 preview now contains `STR8_DIR_WRITE_BYTES`, a dedicated
+Bank-3 `$FFB0-$FFEF` writer. Its request card uses the published record
+address/length fields and `$7B00` data buffer. It rejects length zero, length
+above 64, and every range outside the directory; checks every requested byte
+with `(old AND new) == new`; runs RAM-worker mode `$07` without erase; and
+requires an exact full-request readback. Failures publish status plus the
+first address/observed/expected tuple when a specific byte failed.
+
+Mode `$07` now selects Bank 3 and repeats the whole-request transition
+preflight before any program command. This closes the wrong-visible-bank and
+later-illegal-byte partial-write cases independently of the resident wrapper.
+`make -C SRC str8-worker-mode-check` verifies the ordering in the linked
+worker binary.
+
+`make -C SRC str8-directory-check` passes an exhaustive reference-model scan
+of all 65,536 byte transitions (6,561 legal, 58,975 illegal), the existing 94
+journal and 33 record-validator cases, and 77 compiled writer cases. Writer
+cases include the full 64-byte boundary, idempotent writes, bad count/range,
+first- and later-byte illegal transitions, simulated worker failure, simulated
+readback corruption, every one of the 16 journal START and 16 COMPLETE
+transitions, and completed/started rollback rejection.
+
+The V1 preview reports resident `$F000-$FBA4`, worker `$FD31-$FFAF`, and a
+`$018C` gap—`$008C` above the required `$0100` reserve. The normal legacy
+firmware omits the writer, retains its `$0200` minimum, and completes the full
+`make -C SRC firmware` build. The preview still produces no install S19,
+TopWriter, stamped image, or other flashable migration artifact. The next
+slice is the uppercase buffered editor and non-mutating `I` shell.
+
+## 2026-08-05 STR8 V1 Buffered Editor / Non-Mutating I Part 1
+
+Status: compiled host pass; intentionally not a board artifact.
+
+Only the guarded V1 preview now publishes `I`. It uses the new shared line
+editor to prompt `I B0-2:` and prints `NO WRITE` after a valid Bank 0, 1, or 2
+selection. The command has no call path to the directory writer, RAM worker,
+S19 receiver, erase, program, or journal routines. Empty input aborts and Bank
+3 is rejected. The normal legacy image retains its proven command reader and
+does not publish `I`.
+
+The compiled editor gate executes the linked 65C02 routine with console hooks.
+It covers lowercase folding before echo; Backspace and Delete buffer/display
+editing; CR, LF, and CR/LF termination; input-length limiting; zero termination;
+and empty input. Three `I` shell cases cover valid Bank 2, empty abort, and
+Bank-3 rejection. Every case checks exact output, complete input consumption,
+no worker call, and unchanged `$FFB0-$FFEF` bytes. Three confirmation cases
+require lowercase `y` to echo as `Y` and succeed, while `N` and an empty line
+fail. All twelve compiled editor/confirmation/`I` cases pass.
+
+The compact implementation adds exactly `$008C` to the writer-only preview.
+The V1 resident now ends at `$FC30`, leaving `$FC31-$FD30`—exactly the frozen
+`$0100` reserve—before the `$FD31-$FFAF` worker. No install S19, TopWriter, or
+stamped image is generated. Part 2 must reclaim resident code before adding
+TYPE/DESCRIPTION parsing and directory-state preflight; the reserve may not be
+reduced.
+
+## 2026-08-05 STR8 Unified I Metadata/Directory Preflight Part 2
+
+Status: compiled host pass; no flash mutation and no board artifact.
+
+At the Part-2 boundary the V1 command contract was `? I J0 J1 J2 J3 R`. One `I` command accepts
+Bank 0-3: Banks 0-2 publish the exact `$8000-$FFFF` extent and Bank 3 publishes
+the protected `$8000-$EFFF` extent. V1 `U` and `G`, their fixed HIMON updater,
+and their messages are absent from the linked preview; the normal legacy image
+retains both proven commands unchanged.
+
+For an EMPTY directory record, dry `I` accepts a two-digit hexadecimal TYPE
+and exactly five DESCRIPTION characters from `A-Z`, `0-9`, `-`, `_`, or `.`.
+For INCOMPLETE, COMPLETE, or FULL records it uses and displays the immutable
+directory metadata without prompting for replacements. Existing Bank-3
+records also display their validated LOCAL ENTRY. INVALID records stop at
+`DIR INVALID`. Every accepted preview prints the exact range, TYPE,
+DESCRIPTION, state, next/retry pair, and `NO WRITE`.
+
+The linked 65C02 gate now passes 19 editor/confirmation/`I` cases. `I` cases
+cover empty Bank 2 with lowercase metadata and intermediate CR/LF pairs, empty
+Bank 3 and its 28K boundary, existing COMPLETE Bank 1, existing INCOMPLETE
+Bank 3 with entry display, an exhausted FULL journal, INVALID structure, empty
+bank input, Bank 4, bad TYPE, and bad DESCRIPTION. Every case compares exact
+console output, consumes the expected input, confirms zero worker calls, and
+byte-compares all `$FFB0-$FFEF` directory bytes unchanged. The map gate also
+requires the final V1 help text and absence of all retired V1 `U`/`G` symbols.
+
+The V1 reserve policy is now `$0040`. After retirement and the expanded dry
+preflight, resident code/data is `$F000-$FBF6` (`$0BF7` bytes), the worker
+remains `$FD31-$FFAF`, and the gap is `$013A`: `$00FA` remains beyond the new
+floor. `make -C SRC firmware` confirms the normal legacy image remains `$0B21`
+bytes with its `$0250` legacy gap. Part 3 is dense S19 dry receive/stage;
+directory writes, journal transitions, sector erase/program, and migration
+remain unreachable.
+
+## 2026-08-05 STR8 Published Bank Selector / Implicit Help
+
+Status: compiled host pass; no board installation performed.
+
+STR8 now publishes a bank-selection front door at `$F010`. A RAM-resident
+caller uses `LDA #bank` followed by `JSR $F010`; Bank `$00-$03` returns carry
+set with that bank still selected. An invalid bank or a JSR return address in
+the banked `$8000-$FFFF` window returns carry clear without changing banks.
+The front door copies the worker, then tail-calls its fixed `$0203` entry so
+the final latch write, status restore, and `RTS` all execute from RAM. `A`,
+`X`, and `Y` are clobbered.
+
+The explicit `?` command and `STR8_CMD_ID` are removed from both normal and V1
+builds. Menu entry still prints the STR8 identity. The V1 help line is now
+`I J0 J1 J2 J3 R`; the normal line is `U J0 J1 J2 J3 G R`. Every unmatched
+command, including `?`, prints the active help line. Empty Enter remains the
+existing abort response.
+
+The build gate pins `$F010`, `$0203`, the ROM `JMP` front door, the RAM return-
+address check, the worker's Bank 0-3 range check, exact carry returns, and the
+resident copy-plus-tail-call sequence. The compiled V1 shell gate now passes
+21 cases, adding exact-output checks for `?` and another unknown byte. The
+worker dispatcher still exposes only modes `$05-$08`; the selector is a
+separate fixed RAM entry, not a fifth mode.
+
+Current V1 layout:
+
+```text
+resident  $F000-$FC00  $0C01 bytes
+worker    $FD1F-$FFAF  $0291 bytes
+gap       $FC01-$FD1E  $011E bytes
+reserve floor          $0040 bytes
+room beyond floor      $00DE bytes
+```
+
+`make -C SRC firmware`, `make -C SRC str8-directory-check`, and the worker
+mode/ABI checks pass. The unified `I` installer remains non-mutating; the next
+installer slice is still dense S19 receive/staging without flash writes.
+
+The prompt-synchronized board procedure for installing this normal STR8 top
+sector and testing the published selector is
+[`STR8_0805_BOARD_TEST.md`](../STR8/STR8_0805_BOARD_TEST.md). It starts from
+the reported `00.0802(1823)` Bank-2/Bank-3 state and adds the non-destructive
+[`str8-bank-select-service-proof-2000.a`](SAMPLES/str8-bank-select-service-proof-2000.a)
+fixture. The required path records the old header/vectors, stages and inspects
+the exact replacement bytes, installs Bank-3 sector F, verifies implicit help,
+exercises `$F010/$0203`, compares four-bank CRCs, and closes the J2/J3 record
+matrix. Optional destructive sections cover every maintenance empty-input
+position, wrong confirmation, protected B3F, bad source vector, Bank-0/1
+single/repeated/range/ALL erase, positive J0/J1, and Bank-3 ALL plus recovery.
+V1-only directory/editor/installer tests remain explicitly blocked because no
+flashable V1 migration artifact exists.
+
+The first board run passed Sections 1-3. It captured the old `1823` header and
+vectors, staged the exact `1203` replacement, programmed Bank-3 sector F with
+`TW MODE=$01 RES=$AC @=$0000`, and read back the required header/vectors. Reset
+then displayed `STR8-N V 00.0805(1203) $F`; both `?` and lowercase `x` printed
+the implicit help, and `G` warm-entered HIMON.
+
+The first Section-4 source load did not execute. ASM-F2 reported `ERR=$03 BO`
+at `STA RES+1`; the later `ASM OK` did not clear the session error, and HIMON
+correctly returned `EXEC ERR=$03`. No Step-4 flash write was possible. The
+fixture now defines absolute `RES1 EQU $1A21` and uses `STA RES1`, matching the
+ASM-F2 no-symbol-addend rule. WDC assembly passes with 19 symbols, no code line
+over 63 characters, and no remaining symbol-addend operand. Resume by starting
+a fresh `ASM NEW` and resending the complete corrected fixture.
+
+That corrected fixture assembled, but its first runtime assertion returned
+`A=$E1/C=0`, step `$01`, with captured PCR `$00`; `$0200` retained its prior
+RAM contents because the test stopped before the first valid selector call.
+This is a proof-fixture error, not a selector failure. Hardware reset forces
+Bank 3 independently of a software write to PCR, so `$7FEC` need not read the
+Bank-3 `$EE` pattern immediately after reset. The invalid-bank test now records
+PCR only as information and proves unchanged Bank 3 using its unique
+`$F00C-$F010` bytes `53 52 01 07 4C`. Valid selections still require exact
+row PCR values `CC/CE/EC/EE`. No flash path was reached by the failed run.
+
+The corrected third run is hardware-accepted. It returned `A=$AC/C=1`,
+status/step `$AC/$00`, initial informational PCR `$00`, ready `$01`, and
+completed bank counter `$04`. Its four rows reported exact PCR patterns
+`$CC/$CE/$EC/$EE`; Bank 2 exposed the old `SR 01 07` face with `$F010=$78`,
+and Bank 3 exposed the installed face with `$F010=$4C`. The copied RAM bytes
+at `$0200-$0211` exactly matched
+`4C 12 02 08 78 C9 04 B0 06 20 7C 04 28 38 60 28 18 60`.
+
+The read-only CRC fixture then returned `$AC/C=1` before and after the J tests
+with identical complete tables. Banks 0 and 1 were eight erased-sector rows
+(`E1 0F`), while Banks 2 and 3 retained their exact distinct rows. Invalid
+`J0/J1` both reported `$FFFF` and left `42 4A 02` unchanged. `J2` reached the
+Bank-2 `1823` image and published `42 4A 02`; Bank-2 `J3` returned to the new
+Bank-3 `1203` STR8 and published `42 4A 03`. The transcript omitted the second
+`D 1FFD 1FFF` after each `HCOLD`, so those two current-run persistence
+observations remain to be captured before the optional destructive section.
+
+The continuation closes J3 and J2 cold persistence: the retained Bank-3 row
+was `42 4A 03`, and Bank 2 reported `42 4A 02` both before and after `HCOLD`.
+The combined maintenance source then assembled through `$2649` with `ASM OK`.
+All empty operation/copy/erase input positions returned `ABORT`; wrong `NO`
+confirmation aborted; Bank-3 sector F reprompted and then aborted; and erased
+Bank 0 as a copy source produced the safe bad-vector `!` failure before any
+confirmation or write.
+
+Exact `COPY 30` filled Bank 0. Confirmed Bank-0 sector 8 erase produced one
+dot and a map `E U U U U U U U`; repeating the already-erased sector again
+returned one dot and `OK`. A wrong range confirmation and an empty single-
+sector confirmation aborted. Exact `ERASE 09-B` produced three dots and map
+`E E E E U U U U`; exact `ERASE 0ALL` produced eight dots and a fully erased
+Bank 0. Exact copies `30` and `31` then repopulated Banks 0 and 1, the map
+showed all four banks used with B3F protected, and `Q` returned `$AC/C=1` with
+`$1B01=$51` and entry PCR `$EE`.
+
+`J0` and `J1` booted their copied images and published `42 4A 00` and
+`42 4A 01`. Each was followed by a successful `HCOLD`, but the requested
+post-cold dump was omitted for both. Because later operations do not use the
+Bank Jump Record, one final current dump can close J1; J0 needs one
+non-destructive repeat with dumps before and after `HCOLD`.
+
+Bank-3 `ERASE 3ALL` completed twice and returned directly to protected STR8.
+The first `U` recovery restored HIMON `00.0802(1823)`; the second restored
+HIMON `00.0805(1312)`. `L F` then returned `LF OK WR=3C6D GO=800C` and restored
+ASM-F2 `00.0805(1312)`. Final reads retained the exact installed
+`$F000-$F013` face and vectors `BD F0 00 F0 D1 F0`; a fresh maintenance map
+showed Banks 0-3 fully used with B3F protected, and `Q` returned `$AC/C=1`.
+This closes every executable section of `STR8_0805_BOARD_TEST.md` except the
+two post-HCOLD record observations: J1 needs one current dump and J0 needs one
+repeat. The V1-only list remains correctly blocked because no flashable V1
+migration artifact exists.

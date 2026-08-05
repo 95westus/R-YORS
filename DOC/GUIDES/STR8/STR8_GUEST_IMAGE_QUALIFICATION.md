@@ -223,7 +223,8 @@ Use a bounded, single-attempt rail:
 
 1. Physical reset and require Bank-3 STR8/default boot.
 2. Enter the Bank-3 STR8 prompt with `S`.
-3. Run `?` and confirm the expected STR8 identity and Bank 3.
+3. Record the STR8 identity printed on menu entry. Type `?` and require the
+   command help line; `?` is intentionally an unknown command now.
 4. Enter the chosen `Jn`.
 5. Capture the visible `STR8-N>Jn` and `J Bn` lines.
 6. Require the guest's unique build identity or a documented deterministic

@@ -40,6 +40,13 @@ target BPB or shared STR8 ABI is required. After handoff Bank 3 is unmapped, so
 physical reset is the universal recovery path. See
 [STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md).
 
+On physical reset, board pull-ups can select Bank 3 while the VIA PCR remains
+in its reset/input state and `$7FEC & $EE` reads `$00`. PCR is a canonical bank
+identifier only after software writes one of `$CC/$CE/$EC/$EE`. Reset-time
+Bank-3 proof must use the physical-reset invariant plus trusted visible image
+bytes; forcing PCR to `$EE` during common STR8 startup would break a copied
+Bank-0/1/2 image by remapping Bank 3.
+
 STR8 also becomes the shared S19 decode/checksum and flash-mutation boundary;
 HIMON retains its RAM-load user interface and policy. The shared decoder first
 validates complete records in RAM, then can cheaply grow to minimal Intel

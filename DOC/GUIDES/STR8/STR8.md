@@ -468,10 +468,14 @@ echo follow-up RAM J2 and resident visible J0/J1/J2 smoke pass
 current host candidate publishes `42 4A bank` at $1FFD-$1FFF before final J
 shared bank count accepts record banks 0-3 in STR8, worker, and HIMON cold clear
 Bank-3 record publication and HCOLD persistence pass on HIMON 00.0802(1536)
-full Bank Jump Record J0/J1/J2, invalid-vector, and CRC matrix remains pending
+full J0-J3 launch/publication and invalid-vector matrix passes on hardware
+post-HCOLD J0/J1 record dumps remain: current J1 dump plus one J0 repeat
 earlier accepted installed CRCs were B0 $4B59, B1 $2A3D, B2 $04EF, B3 $4663
 post-reclaim inventory CRCs are B0 $5B4A, B1 $19F9, B2 $19F9, B3 $068B
 current host build exposes the V1 record service at $F009 with `SR`/`01`/`07`
+current host build exposes the RAM-caller bank selector at $F010 -> $0203
+installed $F010/$0203 selector invalid and Bank 0-3 matrix passes on hardware
+combined maintenance abort, B0 erase, copy, map, Q, and B3 ALL recovery pass
 current host build converts `U` to the shared validate-first S19 parser
 record-service transport, direct load, erase/apply, and recovery pass on hardware
 current STR8 binary identity marker is `7A 0F 6A 5F`; the banner omits it
@@ -683,14 +687,14 @@ that it has enough serial I/O and flash safety to repair the machine.
 The current transitional command surface is:
 
 ```text
-?          print tiny STR8 ID
 U          update Bank 3 $C000-$EFFF from validated S19, confirmed
 J0/J1/J2/J3 non-destructive selected-bank reset-vector handoff
 G          go HIMON
 R          reset through the live reset vector
+other      print the active command help line
 ```
 
-`B` and bare `0`, `1`, and `2` are retired and return `?`. `U` remains only
+`?`, `B`, and bare `0`, `1`, and `2` are unknown and print the help line. `U` remains only
 until `I` supplies the V1 selected-bank installer; `G` remains only until `J3`
 supplies the directory-gated Bank-3 local-entry handoff. STR8 keeps `R` as
 reset. `L S`, `L F`, `GO addr`, standalone verify, catalog repair, and richer
@@ -706,7 +710,7 @@ flowchart TD
     RESET[RESET vector] --> STR8[STR8 shell at $F000]
     STR8 --> PROMPT[STR8 prompt]
 
-    PROMPT --> Q[? ID]
+    PROMPT --> BAD[unmatched input: help]
     PROMPT --> U[U fixed HIMON S19 update]
     PROMPT --> J[J0/J1/J2/J3 handoff]
     PROMPT --> G[G go HIMON]
@@ -755,7 +759,7 @@ quit advanced mode
 Bad fit:
 
 ```text
-the transitional ? U J0 J1 J2 J3 G R update/handoff path
+the transitional U J0 J1 J2 J3 G R update/handoff path
 implicit or cascading backup policy
 an unconfirmed bank 0 erase
 catalog garbage collection

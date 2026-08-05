@@ -271,7 +271,7 @@ STR8/HIMON -> L F style flash loader
 
 ```text
 STR8 V0 #5F6A0F7A
-? = print tiny STR8 ID
+unmatched input = print active STR8 help line
 B = back up Bank 3 to selected Bank 0, 1, or 2, destructive, confirmed
 U = update HIMON from fixed $C000-$EFFF S19 gate
 0 = restore bank 0 -> bank 3, with verify
@@ -465,7 +465,7 @@ Advanced sector maintenance means a confirmed mode that can select source and
 destination banks/sectors, erase a selected destination sector, copy one sector
 to another, and verify by read-back compare. It is useful for rescue and lab
 work, but it is not part of the small
-`? U J0 J1 J2 J3 G R` command surface
+`U J0 J1 J2 J3 G R` command surface; unmatched input prints this help
 and must name and confirm every destination without cascading.
 
 ## Core Rule

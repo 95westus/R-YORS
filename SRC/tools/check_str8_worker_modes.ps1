@@ -99,6 +99,25 @@ function Test-AbsoluteCall {
     return Test-ByteSequence $Memory $Start $EndExclusive $call
 }
 
+function Get-AbsoluteCallSites {
+    param(
+        [byte[]]$Memory,
+        [int]$Start,
+        [int]$EndExclusive,
+        [int]$Target
+    )
+
+    $sites = @()
+    for ($address = $Start; $address -lt ($EndExclusive - 2); $address++) {
+        if ($Memory[$address] -eq 0x20 -and
+            $Memory[$address + 1] -eq ($Target -band 0xFF) -and
+            $Memory[$address + 2] -eq (($Target -shr 8) -band 0xFF)) {
+            $sites += $address
+        }
+    }
+    return $sites
+}
+
 function Test-RelativeBranch {
     param(
         [byte[]]$Memory,
@@ -136,6 +155,10 @@ function Invoke-DispatcherPrefix {
             0x08 { # PHP
                 $stack.Push($p)
                 $pc++
+                continue
+            }
+            0x4C { # JMP absolute
+                $pc = ([int]$Memory[$pc + 1]) -bor (([int]$Memory[$pc + 2]) -shl 8)
                 continue
             }
             0x78 { # SEI
@@ -231,12 +254,51 @@ for ($address = $residentJumpStart; $address -lt ($residentJumpEnd - 1); $addres
 }
 if (-not $residentRangeFound) { throw 'Resident J parser must accept through ASCII 3' }
 
-[byte[]]$expectedHelp = [System.Text.Encoding]::ASCII.GetBytes('? U J0 J1 J2 J3 G R')
+[byte[]]$expectedHelp = [System.Text.Encoding]::ASCII.GetBytes('U J0 J1 J2 J3 G R')
 $idMessage = Get-Symbol $str8Symbols 'MSG_ID'
 $screenMessage = Get-Symbol $str8Symbols 'MSG_SCREEN'
 $promptMessage = Get-Symbol $str8Symbols 'MSG_PROMPT'
 if (-not (Test-ByteSequence $str8Memory $screenMessage ($screenMessage + $expectedHelp.Length) $expectedHelp)) {
     throw 'Resident help does not publish J3 immediately after the identity line'
+}
+
+$residentBankService = Get-Symbol $str8Symbols 'STR8_BANK_SELECT_SERVICE_ENTRY'
+$residentBankBody = Get-Symbol $str8Symbols 'STR8_BANK_SELECT_SERVICE_BODY'
+$residentBankRam = Get-Symbol $str8Symbols 'STR8_BANK_SELECT_RAM'
+$workerBankService = Get-Symbol $workerSymbols 'STR8W_BANK_SELECT_SERVICE'
+if ($residentBankService -ne 0xF010) { throw 'Resident bank-select service must remain at F010' }
+if ($residentBankRam -ne 0x0203 -or $workerBankService -ne $residentBankRam) {
+    throw 'Resident/worker bank-select RAM entry must remain at 0203'
+}
+[byte[]]$residentBankJump = 0x4C, ($residentBankBody -band 0xFF), (($residentBankBody -shr 8) -band 0xFF)
+if (-not (Test-ByteSequence $str8Memory $residentBankService ($residentBankService + 3) $residentBankJump)) {
+    throw 'Resident F010 bank-select front door is not a JMP to its body'
+}
+[byte[]]$workerBankGate = 0x08, 0x78, 0xC9, 0x04, 0xB0
+if (-not (Test-ByteSequence $memory $workerBankService ($workerBankService + 5) $workerBankGate)) {
+    throw 'RAM bank-select service must mask IRQ and reject banks above 3 before selection'
+}
+$workerRawSelector = Get-Symbol $workerSymbols 'STR8W_BANK_SELECT_A'
+[byte[]]$workerBankServiceBody = @(
+    0x08, 0x78, 0xC9, 0x04, 0xB0, 0x06,
+    0x20, ($workerRawSelector -band 0xFF), (($workerRawSelector -shr 8) -band 0xFF),
+    0x28, 0x38, 0x60, 0x28, 0x18, 0x60
+)
+if (-not (Test-ByteSequence $memory $workerBankService ($workerBankService + $workerBankServiceBody.Length) $workerBankServiceBody)) {
+    throw 'RAM bank-select service no longer validates, selects, restores P, and returns with exact carry status'
+}
+$residentCopyWorker = Get-Symbol $str8Symbols 'STR8_COPY_WORKER_TO_RAM'
+$residentBankBodyEnd = Get-Symbol $str8Symbols 'STR8_AP_IMPORT_LINK_SERVICE_BODY'
+[byte[]]$residentRamReturnGate = 0x48, 0xBA, 0xBD, 0x03, 0x01, 0x30
+if (-not (Test-ByteSequence $str8Memory $residentBankBody $residentBankBodyEnd $residentRamReturnGate)) {
+    throw 'Resident bank-select service does not reject a banked-ROM return address'
+}
+[byte[]]$residentCopyAndTail = @(
+    0x20, ($residentCopyWorker -band 0xFF), (($residentCopyWorker -shr 8) -band 0xFF),
+    0x68, 0x4C, 0x03, 0x02
+)
+if (-not (Test-ByteSequence $str8Memory $residentBankBody $residentBankBodyEnd $residentCopyAndTail)) {
+    throw 'Resident bank-select service does not copy the worker and tail-call RAM $0203'
 }
 
 [byte[]]$expectedBannerTail = 0x20, 0x24, 0x46, 0x0D, 0x8A
@@ -320,6 +382,24 @@ if ((Get-Symbol $workerSymbols 'STR8_COPY_MODE_STAGE_BANK_SECTOR') -ne 0x06) { t
 if ((Get-Symbol $workerSymbols 'STR8_COPY_MODE_PROGRAM_RECORD') -ne 0x07) { throw 'PROGRAM_RECORD mode changed' }
 if ((Get-Symbol $workerSymbols 'STR8_COPY_MODE_JUMP_BANK') -ne 0x08) { throw 'JUMP_BANK mode changed' }
 
+$programRecord = Get-Symbol $workerSymbols 'STR8W_PROGRAM_RECORD'
+$recordInit = Get-Symbol $workerSymbols 'STR8W_RECORD_INIT'
+$flashWrite = Get-Symbol $workerSymbols 'STR8W_FLASH_WRITE'
+$workerAddrLo = Get-Symbol $workerSymbols 'STR8W_ADDR_LO'
+$workerData = Get-Symbol $workerSymbols 'STR8W_DATA'
+$initCalls = @(Get-AbsoluteCallSites $memory $programRecord $recordInit $recordInit)
+$flashCalls = @(Get-AbsoluteCallSites $memory $programRecord $recordInit $flashWrite)
+if ($initCalls.Count -ne 2) {
+    throw ('PROGRAM_RECORD must initialize its pointers twice; found {0}' -f $initCalls.Count)
+}
+if ($flashCalls.Count -ne 1 -or $flashCalls[0] -le $initCalls[1]) {
+    throw 'PROGRAM_RECORD must begin flash writes only after its second pointer initialization'
+}
+[byte[]]$oneToZeroPreflight = 0xB1, ($workerAddrLo -band 0xFF), 0x25, ($workerData -band 0xFF), 0xC5, ($workerData -band 0xFF), 0xD0
+if (-not (Test-ByteSequence $memory ($initCalls[0] + 3) $initCalls[1] $oneToZeroPreflight)) {
+    throw 'PROGRAM_RECORD does not preflight old AND new == new before its write pass'
+}
+
 $jumpBank = Get-Symbol $workerSymbols 'STR8W_JUMP_BANK'
 if ($memory[$jumpBank + 3] -ne 0xC9 -or $memory[$jumpBank + 4] -ne 0x04) {
     throw 'JUMP_BANK must accept only bank bytes 00-03'
@@ -354,8 +434,10 @@ Write-Host ('STR8 WORKER             = {0:X4}-{1:X4}; ${2:X} bytes' -f $start, (
 Write-Host 'ACTIVE MODES            = 05 06 07 08'
 Write-Host 'RESIDENT J RANGE        = J0-J3'
 Write-Host 'JUMP BANK RANGE         = 00-03'
+Write-Host 'RAM BANK SELECT ABI     = F010 -> 0203; A=00-03'
 Write-Host 'HIMON COLD RECORD RANGE = 00-03'
 Write-Host 'C000 ERASED FALLBACK    = STR8 MENU'
+Write-Host 'MODE 07 RECORD PREFLIGHT= WHOLE REQUEST BEFORE WRITE'
 Write-Host ('REJECTED MODE BYTES     = {0}' -f $rejected)
 Write-Host 'RETIRED MODES 00/01/03  = FAIL CLOSED'
 Write-Host 'STR8 WORKER MODE CHECK  = PASS'

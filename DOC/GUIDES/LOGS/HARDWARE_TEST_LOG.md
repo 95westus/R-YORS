@@ -19536,3 +19536,139 @@ after a cold reset and fresh onboard assembly. The broader maintenance test
 matrix for the separately listed erase, skip, `ALL`, empty-input, and explicit-
 failure cases is explicitly deferred and does not block acceptance of this map
 repair.
+
+## 2026-08-05 STR8 `$F010` Board Test Fixture Corrections
+
+The `STR8_0805_BOARD_TEST.md` run installed the new Bank-3 top sector and
+passed its first three sections. The board read back:
+
+```text
+F000: 4C 13 F0 4C 42 F3 4C 5E F3 4C 9C F4 53 52 01 07
+F010: 4C 49 F3 78
+FFFA: BD F0 00 F0 D1 F0
+
+STR8-N V 00.0805(1203) $F
+U J0 J1 J2 J3 G R
+```
+
+Both `?` and lowercase `x` printed the implicit help, and `G` warm-entered
+HIMON `00.0802(1823)`. The first selector-fixture paste reported
+`ERR=$03 BO` at `STA RES+1`; despite a later `ASM OK`, HIMON correctly refused
+execution with `EXEC ERR=$03`. The fixture replaced the symbol addend with
+absolute `RES1 EQU $1A21`.
+
+The next run executed but returned before any valid selection:
+
+```text
+RET A=E1 X=FF Y=30 P=F4 S=FD NV-BdIzc
+1A20: 42 53 E1 01 00 00 00 00
+0200: 53 56 43 00 1C EC 7F A9 EE 0C EC 7F 64 D1 A9 F0
+0210: 85 D2
+```
+
+Status `$E1`, step `$01`, and captured PCR `$00` identify the fixture's
+incorrect reset-time assertion. Hardware reset had made Bank 3 visible through
+the board pull-ups, but no software selection had yet converted PCR to the
+explicit Bank-3 `$EE` output pattern. The retained `$0200` contents confirm the
+test stopped before `$F010` copied its current worker; no flash path was
+reachable.
+
+The corrected fixture records initial PCR only as information and instead
+proves that rejected Bank 4 left Bank 3 visible by matching the installed
+`$F00C-$F010` identity `53 52 01 07 4C`. Later valid selections still require
+the explicit row patterns `$CC/$CE/$EC/$EE`. Hardware acceptance of that final
+fixture is not claimed here until its result dump is captured.
+
+The next run captured that result and closes the fixed selector service:
+
+```text
+RET A=AC X=03 Y=07 P=F5 S=FD NV-BdIzC
+1A20: 42 53 AC 00 00 01 04 00 | 00 CC FF FF FF FF FF FF
+1A30: 01 CE FF FF FF FF FF FF | 02 EC 4C 53 52 01 07 78
+1A40: 03 EE 4C 53 52 01 07 4C
+0200: 4C 12 02 08 78 C9 04 B0 06 20 7C 04 28 38 60 28
+0210: 18 60
+```
+
+This accepts invalid Bank 4 with Bank 3 unchanged, the `$F010` Bank-0 call,
+the retained `$0203` Bank-1/2/3 calls, exact canonical PCR patterns after each
+software selection, and the current RAM worker bytes. The initial `$00` PCR is
+the documented reset/input state and is not a failure.
+
+The four-bank CRC fixture returned `$AC/C=1` before and after the J tests with
+identical rows:
+
+```text
+1A10: E1 0F E1 0F E1 0F E1 0F E1 0F E1 0F E1 0F E1 0F
+1A20: E1 0F E1 0F E1 0F E1 0F E1 0F E1 0F E1 0F E1 0F
+1A30: EC B7 36 70 CE 76 72 C8 A7 71 06 AD D9 18 F6 8A
+1A40: EC B7 36 70 CE 76 7F 73 A7 71 06 AD D9 18 32 42
+```
+
+Thus Banks 0/1 are fully erased, Banks 2/3 retain their distinct images, and
+no selector or J test changed flash. Invalid `J0/J1` preserved `42 4A 02`;
+`J2` reached Bank 2 and published bank 2; Bank-2 `J3` returned to Bank 3 and
+published bank 3. The run did not issue the requested record dump after either
+`HCOLD`, so the two post-cold observations are not claimed from this transcript.
+
+## 2026-08-05 STR8 Maintenance And Bank-3 ALL Completion
+
+The continuation first closed the earlier J3/J2 gap. Bank 3 still held
+`42 4A 03`; a repeated J2 handoff reported `42 4A 02` both before and after
+`HCOLD`. After physical reset, the combined maintenance source assembled
+through `$2649` with `ASM OK`.
+
+The non-writing matrix passed every requested position: empty operation;
+empty copy source, destination, and confirmation; empty erase bank, sector,
+and confirmation; wrong `NO` erase confirmation; Bank-3 sector F rejection;
+and a Bank-0 bad-reset-vector copy source. All returned to the persistent menu
+without a flash confirmation or write. The last path printed `!` before the
+menu, exercising status `$E6` safely.
+
+The destructive Bank-0 sequence then produced the expected maps:
+
+```text
+after COPY 30:     B0 U U U U U U U U
+after ERASE 08:    B0 E U U U U U U U
+after ERASE 09-B:  B0 E E E E U U U U
+after ERASE 0ALL:  B0 E E E E E E E E
+```
+
+The already-erased sector-8 repeat returned one dot and `OK`. A mismatched
+range confirmation and an empty confirmation both aborted. Exact `COPY 30`
+and `COPY 31` restored Banks 0 and 1; the next map showed all sectors used in
+Banks 0-2 and B3 sectors 8-E used with F protected. `Q` returned `$AC/C=1`,
+and the result row was:
+
+```text
+1B00: AC 51 00 00 00 00 00 00 00 00 00 00 EE
+```
+
+Resident J0 and J1 then booted their copied images and published
+`42 4A 00` and `42 4A 01`. Each reached HIMON `00.0802(1823)` and completed
+`HCOLD`; neither post-cold record dump was captured. Later work does not use
+`$1FFD-$1FFF`, so a final current dump can close J1, while J0 requires one
+short repeat.
+
+The Bank-3 `ALL` operation was executed twice. Each erased `$8000-$EFFF` and
+returned directly to the protected `STR8-N V 00.0805(1203) $F` sector. The
+first `U` recovery restored HIMON `00.0802(1823)`. The second recovery restored
+HIMON `00.0805(1312)`, after which `L F` reported:
+
+```text
+LF OK WR=3C6D GO=800C
+ASM-F2 00.0805(1312)
+```
+
+Final top-sector evidence remained exact:
+
+```text
+F000: 4C 13 F0 4C 42 F3 4C 5E F3 4C 9C F4 53 52 01 07
+F010: 4C 49 F3 78
+FFFA: BD F0 00 F0 D1 F0
+```
+
+A fresh maintenance build and map showed all four banks used, B3F protected,
+and `Q` returning `$AC/C=1`. The operator stopped at the explicitly deferred
+V1-only tests. Two post-cold record observations remain: one current J1 dump
+and one J0 repeat. V1 migration tests remain unavailable by design.
