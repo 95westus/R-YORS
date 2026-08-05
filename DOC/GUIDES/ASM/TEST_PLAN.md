@@ -12335,3 +12335,30 @@ This closes every executable section of `STR8_0805_BOARD_TEST.md` except the
 two post-HCOLD record observations: J1 needs one current dump and J0 needs one
 repeat. The V1-only list remains correctly blocked because no flashable V1
 migration artifact exists.
+
+## 2026-08-05 STR8 V1 Dense S19 Dry Receive/Stage Part 3
+
+Status: compiled host pass; deliberately oversized, nonflashable, and
+non-mutating.
+
+`make -C SRC str8-installer-dry-check` assembles the guarded
+`STR8_V1_INSTALLER_DRY` resident and executes the linked 65C02 command and
+receiver. Positive cases consume exact dense 32K Bank-2 and 28K Bank-3 images,
+including optional/absent S0 and S1 records crossing 4K boundaries. The gate
+byte-compares all eight or seven `$0A00-$19FF` sector snapshots, validates S9
+against the Bank-2 reset vector or Bank-3 LOCAL ENTRY, and proves the final
+sector is not released before S9.
+
+Nine negative cases reject an initial gap, zero-length S1, early S9,
+reset/S9 mismatch, out-of-range Bank-3 entry, immutable Bank-3 entry mismatch,
+duplicate S0, parser checksum failure, and queued bytes after S9. Success and
+failure paths call no flash worker and leave `$FFB0-$FFEF` byte-identical. The
+compiled gate reports 11 installer cases and a maximum of 431842 interpreted
+65C02 steps.
+
+The accepted V1 layout remains resident `$F000-$FC00` (`$0C01`), gap
+`$FC01-$FD1E` (`$011E`), and worker `$FD1F-$FFAF` (`$0291`). The standalone
+dry resident ends at `$FDF7` (`$0DF8`): it would overlap the worker by `$00D9`
+and needs `$0119` reclaimed to fit with the `$0040` development gap. Therefore
+this phase adds no flashable install/migration S19, TopWriter, stamped ROM, or
+hardware proof. Journaled erase/program/verify is the next manual-commit phase.

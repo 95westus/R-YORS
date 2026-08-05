@@ -535,3 +535,17 @@ OUT:
 Callers choose the alphabet. For example, uppercase mnemonics can subtract
 `'A'` before packing and add `'A'` after unpacking; lowercase can do the same
 with `'a'`.
+
+## Later: `.AHEX` Binary Load Transport
+
+Bucket: `later consideration`
+
+Consider a line-oriented `.AHEX` format for loading arbitrary binary data. It
+may pair naturally with a small WOZMON-style monitor because the transport can
+remain printable, inspectable, and easy to type or paste.
+
+This is not part of the STR8 V1.01 installer and does not change its dense S19
+contract. Before promoting it, decide whether `.AHEX` is a thin convention over
+an established ASCII-hex format or a new record format, then specify address,
+length, checksum, termination/entry, sparse-data semantics, and monitor error
+recovery. Revisit only after the V1 migration path is closed.

@@ -35,6 +35,10 @@
                         XDEF            STR8_DIR_WRITE_BYTES
                         XDEF            STR8_READ_LINE
                         XDEF            STR8_CMD_INSTALL_PREVIEW
+                        IF              STR8_V1_INSTALLER_DRY
+                        XDEF            STR8_I_RECEIVE_DENSE
+                        XDEF            STR8_I_STAGE_SECTOR_READY
+                        ENDIF
                         ENDIF
                         XDEF            STR8_IVY_ENTRY_NMI
                         XDEF            STR8_IVY_ENTRY_IRQ_MASTER
@@ -130,6 +134,15 @@ STR8_INSTALL_STATE      EQU             $1A07
 STR8_INSTALL_PAIR       EQU             $1A08
 STR8_INSTALL_ENTRY_LO   EQU             $1A09
 STR8_INSTALL_ENTRY_HI   EQU             $1A0A
+STR8_INSTALL_EXPECT_LO  EQU             $1A0B
+STR8_INSTALL_EXPECT_HI  EQU             $1A0C
+STR8_INSTALL_LIMIT_HI   EQU             $1A0D
+STR8_INSTALL_PHASE      EQU             $1A0E
+STR8_INSTALL_SECTOR_HI  EQU             $1A0F
+STR8_INSTALL_STATUS     EQU             $1A10
+STR8_INSTALL_DENSE      EQU             $10
+STR8_INSTALL_ENTRY      EQU             $11
+STR8_INSTALL_TRAILING   EQU             $13
 ; The resident directory validator and S19 record parser run serially and
 ; intentionally share this small zero-page work set.
 STR8_DIR_BANK_WORK      EQU             $D1
@@ -655,9 +668,8 @@ STR8_DISPATCH_A:
                         JMP             STR8_CMD_UNKNOWN
 
                         IF              STR8_V1_LAYOUT
-; Non-mutating I preflight for Banks 0-3. Empty records accept TYPE and
-; DESCRIPTION; existing records publish their immutable metadata. No directory
-; write, journal, S19, erase, or program routine is reachable from here.
+; Non-mutating I preflight for Banks 0-3. The separate installer-dry host build
+; continues through dense S19 staging. Neither form can mutate flash.
 STR8_CMD_INSTALL_PREVIEW:
                         LDA             STR8_REC_DATA_BUF+1
                         BEQ             ?PROMPT
@@ -833,9 +845,235 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_PRINT_XY
                         LDA             STR8_INSTALL_PAIR
                         JSR             STR8_WRITE_HEX_BYTE_A
+                        IF              STR8_V1_INSTALLER_DRY
+                        LDA             STR8_INSTALL_PAIR
+                        CMP             #STR8_DIR_PAIR_NONE
+                        BEQ             STR8_I_NO_WRITE
+                        LDX             #<MSG_I_STAGE_CONFIRM
+                        LDY             #>MSG_I_STAGE_CONFIRM
+                        JSR             STR8_PRINT_XY
+                        JSR             STR8_CONFIRM_Y
+                        BCS             ?CONFIRMED
+                        JMP             STR8_CMD_ABORT
+?CONFIRMED:
+                        LDX             #<MSG_I_SEND_S19
+                        LDY             #>MSG_I_SEND_S19
+                        JSR             STR8_PRINT_XY
+                        JSR             STR8_I_RECEIVE_DENSE
+                        BCC             ?STAGE_FAIL
+                        LDX             #<MSG_I_STAGE_OK
+                        LDY             #>MSG_I_STAGE_OK
+                        JSR             STR8_PRINT_XY
+                        BRA             STR8_I_NO_WRITE
+?STAGE_FAIL:           LDX             #<MSG_I_S19_FAIL
+                        LDY             #>MSG_I_S19_FAIL
+                        JSR             STR8_PRINT_XY
+STR8_I_NO_WRITE:       LDX             #<MSG_I_NO_WRITE
+                        LDY             #>MSG_I_NO_WRITE
+                        JMP             STR8_PRINT_XY
+
+; Receive exactly $8000-$FFFF for Banks 0-2 or $8000-$EFFF for Bank 3.
+; The single $0A00-$19FF sector tray is reused only after the dry sector-ready
+; hook returns. The final sector stays in the tray until S9 is validated.
+STR8_I_RECEIVE_DENSE:
+                        STZ             STR8_INSTALL_EXPECT_LO
+                        STZ             STR8_INSTALL_PHASE
+                        STZ             STR8_INSTALL_STATUS
+                        LDA             #$80
+                        STA             STR8_INSTALL_EXPECT_HI
+                        STA             STR8_INSTALL_SECTOR_HI
+                        LDA             STR8_INSTALL_BANK
+                        CMP             #STR8_DIR_BANK3
+                        BEQ             ?LIMIT3
+                        LDA             #$00
+                        BRA             ?LIMIT
+?LIMIT3:                LDA             #$F0
+?LIMIT:                STA             STR8_INSTALL_LIMIT_HI
+                        LDA             #STR8_REC_OP_PARSE
+                        STA             STR8_REC_OP
+                        LDA             #STR8_REC_FORMAT_S19
+                        STA             STR8_REC_FORMAT
+                        LDA             #STR8_REC_SOURCE_CONSOLE
+                        STA             STR8_REC_SOURCE
+?RECORD:               JSR             STR8_RECORD_SERVICE_BODY
+                        BCS             ?PARSED
+                        LDA             STR8_REC_STATUS
+                        JMP             STR8_I_RECEIVE_FAIL_A
+?PARSED:
+                        LDA             STR8_REC_KIND
+                        CMP             #STR8_REC_KIND_METADATA
+                        BEQ             ?METADATA
+                        CMP             #STR8_REC_KIND_DATA
+                        BEQ             ?DATA
+                        CMP             #STR8_REC_KIND_END
+                        BNE             ?BAD_KIND
+                        JMP             ?END
+?BAD_KIND:
+                        JMP             STR8_I_RECEIVE_DENSE_FAIL
+?METADATA:             LDA             STR8_INSTALL_PHASE
+                        BEQ             ?FIRST_METADATA
+                        JMP             STR8_I_RECEIVE_DENSE_FAIL
+?FIRST_METADATA:
+                        INC             STR8_INSTALL_PHASE
+                        BRA             ?RECORD
+?DATA:                 LDA             STR8_INSTALL_PHASE
+                        CMP             #$03
+                        BCC             ?NOT_FINAL
+                        JMP             STR8_I_RECEIVE_DENSE_FAIL
+?NOT_FINAL:
+                        LDA             STR8_REC_ADDR_LO
+                        CMP             STR8_INSTALL_EXPECT_LO
+                        BEQ             ?ADDRESS_LO
+                        JMP             STR8_I_RECEIVE_DENSE_FAIL
+?ADDRESS_LO:
+                        LDA             STR8_REC_ADDR_HI
+                        CMP             STR8_INSTALL_EXPECT_HI
+                        BEQ             ?ADDRESS_HI
+                        JMP             STR8_I_RECEIVE_DENSE_FAIL
+?ADDRESS_HI:
+                        LDA             STR8_REC_DATA_LEN
+                        BNE             ?HAVE_DATA
+                        JMP             STR8_I_RECEIVE_DENSE_FAIL
+?HAVE_DATA:
+                        LDA             #$02
+                        STA             STR8_INSTALL_PHASE
+                        LDA             STR8_INSTALL_EXPECT_LO
+                        STA             STR8_PTR_LO
+                        LDA             STR8_INSTALL_EXPECT_HI
+                        AND             #$0F
+                        CLC
+                        ADC             #$0A
+                        STA             STR8_PTR_HI
+                        LDX             #$00
+?COPY:                 LDY             #$00
+                        LDA             STR8_REC_DATA_BUF,X
+                        STA             (STR8_PTR_LO),Y
+                        INX
+                        INC             STR8_PTR_LO
+                        BNE             ?EXPECTED
+                        INC             STR8_PTR_HI
+?EXPECTED:             INC             STR8_INSTALL_EXPECT_LO
+                        BNE             ?COUNT
+                        INC             STR8_INSTALL_EXPECT_HI
+?COUNT:                DEC             STR8_REC_DATA_LEN
+                        LDA             STR8_INSTALL_EXPECT_LO
+                        BNE             ?MORE
+                        LDA             STR8_INSTALL_EXPECT_HI
+                        AND             #$0F
+                        BNE             ?MORE
+                        LDA             STR8_INSTALL_EXPECT_HI
+                        CMP             STR8_INSTALL_LIMIT_HI
+                        BEQ             ?FINAL
+                        JSR             STR8_I_STAGE_SECTOR_READY
+                        LDA             STR8_INSTALL_SECTOR_HI
+                        CLC
+                        ADC             #$10
+                        STA             STR8_INSTALL_SECTOR_HI
+                        STZ             STR8_PTR_LO
+                        LDA             #$0A
+                        STA             STR8_PTR_HI
+?MORE:                 LDA             STR8_REC_DATA_LEN
+                        BNE             ?COPY
+                        JMP             ?RECORD
+?FINAL:                LDA             STR8_REC_DATA_LEN
+                        BEQ             ?FINAL_EXACT
+                        JMP             STR8_I_RECEIVE_DENSE_FAIL
+?FINAL_EXACT:
+                        LDA             #$03
+                        STA             STR8_INSTALL_PHASE
+                        JMP             ?RECORD
+
+?END:                  LDA             STR8_INSTALL_PHASE
+                        CMP             #$03
+                        BEQ             ?COVERAGE_OK
+                        JMP             STR8_I_RECEIVE_DENSE_FAIL
+?COVERAGE_OK:
+                        LDA             STR8_REC_ENTRY_LO
+                        AND             STR8_REC_ENTRY_HI
+                        CMP             #$FF
+                        BEQ             ?ENTRY_RANGE_OK
+                        LDA             STR8_REC_ENTRY_HI
+                        CMP             #$80
+                        BCC             STR8_I_RECEIVE_ENTRY_FAIL
+                        LDX             STR8_INSTALL_BANK
+                        CPX             #STR8_DIR_BANK3
+                        BNE             ?ENTRY_RANGE_OK
+                        CMP             #$F0
+                        BCS             STR8_I_RECEIVE_ENTRY_FAIL
+?ENTRY_RANGE_OK:       LDA             STR8_INSTALL_BANK
+                        CMP             #STR8_DIR_BANK3
+                        BEQ             ?ENTRY3
+                        LDA             STR8_REC_ENTRY_LO
+                        CMP             $19FC
+                        BNE             STR8_I_RECEIVE_ENTRY_FAIL
+                        LDA             STR8_REC_ENTRY_HI
+                        CMP             $19FD
+                        BNE             STR8_I_RECEIVE_ENTRY_FAIL
+                        BRA             ?TRAILING
+?ENTRY3:               LDA             STR8_INSTALL_STATE
+                        CMP             #STR8_DIR_RECORD_EMPTY
+                        BNE             ?ENTRY3_EXISTING
+                        LDA             STR8_REC_ENTRY_LO
+                        STA             STR8_INSTALL_ENTRY_LO
+                        LDA             STR8_REC_ENTRY_HI
+                        STA             STR8_INSTALL_ENTRY_HI
+                        BRA             ?TRAILING
+?ENTRY3_EXISTING:      LDA             STR8_REC_ENTRY_LO
+                        CMP             STR8_INSTALL_ENTRY_LO
+                        BNE             STR8_I_RECEIVE_ENTRY_FAIL
+                        LDA             STR8_REC_ENTRY_HI
+                        CMP             STR8_INSTALL_ENTRY_HI
+                        BNE             STR8_I_RECEIVE_ENTRY_FAIL
+?TRAILING:             JSR             STR8_I_END_STREAM
+                        BCC             STR8_I_RECEIVE_TRAIL_FAIL
+                        JSR             STR8_I_STAGE_SECTOR_READY
+                        SEC
+                        RTS
+
+STR8_I_RECEIVE_DENSE_FAIL:
+                        LDA             #STR8_INSTALL_DENSE
+                        BRA             STR8_I_RECEIVE_FAIL_A
+STR8_I_RECEIVE_ENTRY_FAIL:
+                        LDA             #STR8_INSTALL_ENTRY
+                        BRA             STR8_I_RECEIVE_FAIL_A
+STR8_I_RECEIVE_TRAIL_FAIL:
+                        LDA             #STR8_INSTALL_TRAILING
+STR8_I_RECEIVE_FAIL_A: STA             STR8_INSTALL_STATUS
+                        JSR             STR8_I_DRAIN_QUEUED
+                        CLC
+                        RTS
+
+; This dry slice is intentionally non-mutating. The next manual-commit slice
+; replaces this hook with the journaled sector transaction.
+STR8_I_STAGE_SECTOR_READY:
+                        SEC
+                        RTS
+
+STR8_I_END_STREAM:
+                        LDA             STR8_INPUT_SKIP_LF
+                        BEQ             ?CHECK
+                        JSR             STR8_CON_READ_BYTE_NONBLOCK
+                        BCC             ?DONE
+                        CMP             #$0A
+                        BNE             ?FAIL
+                        STZ             STR8_INPUT_SKIP_LF
+?CHECK:                JSR             STR8_CON_READ_BYTE_NONBLOCK
+                        BCS             ?FAIL
+?DONE:                 SEC
+                        RTS
+?FAIL:                 JSR             STR8_I_DRAIN_QUEUED
+                        CLC
+                        RTS
+
+STR8_I_DRAIN_QUEUED:
+                        JSR             STR8_CON_FLUSH_RX
+                        BCC             STR8_I_DRAIN_QUEUED
+                        RTS
+                        ELSE
                         LDX             #<MSG_I_NO_WRITE
                         LDY             #>MSG_I_NO_WRITE
                         JMP             STR8_PRINT_XY
+                        ENDIF
                         ENDIF
 
 ; 2026-07-28T21:19-05:00        Codex       J0-J2 hand off opaque banks from RAM.
@@ -1499,8 +1737,16 @@ STR8_REC_PARSE_BODY:
                         BCS             ?HAVE_END
                         JMP             STR8_REC_FAIL_READ_END
 ?HAVE_END:
+                        IF              STR8_V1_INSTALLER_DRY
+                        CMP             #$0D
+                        BNE             ?CHECK_LF
+                        INC             STR8_INPUT_SKIP_LF
+                        BRA             ?PUBLISH
+                        ELSE
                         CMP             #$0D
                         BEQ             ?PUBLISH
+                        ENDIF
+?CHECK_LF:
                         CMP             #$0A
                         BEQ             ?PUBLISH
                         LDA             #STR8_REC_BAD_END
@@ -2286,6 +2532,12 @@ MSG_I_INCOMPLETE:       DB              " INCOMPLETE",(' '+$80)
 MSG_I_COMPLETE:         DB              " COMPLETE",(' '+$80)
 MSG_I_FULL:             DB              " FULL",(' '+$80)
 MSG_I_PAIR:             DB              "P",('='+$80)
+                        IF              STR8_V1_INSTALLER_DRY
+MSG_I_STAGE_CONFIRM:    DB              " STAGE? Y:",$A0
+MSG_I_SEND_S19:         DB              $0D,$0A,"SEND S19",$0D,$8A
+MSG_I_STAGE_OK:         DB              "STAGE O",('K'+$80)
+MSG_I_S19_FAIL:         DB              $0D,$0A,"S19 FAI",('L'+$80)
+                        ENDIF
 MSG_I_NO_WRITE:         DB              " NO WRITE",$0D,$8A
                         ENDIF
                         IF              STR8_V1_LAYOUT

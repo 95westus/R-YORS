@@ -1,8 +1,8 @@
 # STR8-N Four-Bank Installer V1.01 Plan
 
 ```text
-status:       UNIFIED I METADATA/DIRECTORY PREFLIGHT HOST-ACCEPTED
-next gate:    DENSE S19 DRY RECEIVE/STAGE; ACIA UNQUALIFIED
+status:       DENSE I S19 DRY RECEIVE/STAGE HOST-ACCEPTED; OVERSIZED
+next gate:    JOURNALED ERASE/PROGRAM/VERIFY TRANSACTION; RESIDENT FIT OPEN
 source date:  2026-08-05
 ```
 
@@ -374,6 +374,46 @@ or exactly `$FFFF` for a deliberately nonlaunchable payload.
 V1.01 has no whole-image CRC. Integrity comes from every S-record checksum, exact
 dense coverage, strict ordering, final-entry validation, full-sector read-back
 verification, and the install journal.
+
+### 2026-08-05 Compiled Dry Receiver/Stager
+
+`make -C SRC str8-installer-dry-check` builds a separate
+`STR8_V1_INSTALLER_DRY` S19 and executes its linked 65C02 `I` receiver. This
+image is a host proof only: the sector-ready hook returns without invoking the
+worker, no flash or directory byte can change, and it is not combined with the
+stored worker or emitted as a migration artifact.
+
+The compiled positive cases consume an optional-S0 32K Bank-2 stream in
+251-byte records and a no-S0 28K Bank-3 stream in 193-byte records. Both force
+S1 records across 4K boundaries, byte-compare every staged sector, hold the
+final sector until S9, and validate the reset-vector or LOCAL ENTRY rule. The
+negative matrix covers an initial gap, zero-length S1, early S9, reset/S9
+mismatch, invalid and immutable-mismatch Bank-3 entries, duplicate S0, parser
+checksum failure, and queued bytes after S9. All eleven installer cases pass.
+
+The accepted flash-layout preview remains unchanged:
+
+```text
+resident                   $F000-$FC00  size $0C01 = 3073
+resident/worker gap         $FC01-$FD1E  size $011E = 286
+stored worker               $FD1F-$FFAF  size $0291 = 657
+directory                   $FFB0-$FFEF  size $0040 = 64
+configuration/vectors       $FFF0-$FFFF  size $0010 = 16
+room beyond $0040 floor                    $00DE = 222
+```
+
+The deliberately standalone dry receiver measures:
+
+```text
+dry resident                $F000-$FDF7  size $0DF8 = 3576
+growth over preview                        $01F7 = 503
+would overlap worker        $FD1F-$FDF7  size $00D9 = 217
+fit debt including $0040 gap               $0119 = 281
+```
+
+It stays below the `$FFB0` directory, but cannot coexist with the current
+worker. Step 2 may reuse the proof while implementing the transaction, but no
+flashable V1 artifact exists until resident/worker fit is closed.
 
 ## Sector Streaming and Final-Sector Gate
 
@@ -942,7 +982,9 @@ The future `B` estimate is 160-240 resident bytes and no persistent data.
    consolidate Bank 0-3 installation under `I`, retire V1 `U`/`G`, and freeze
    the V1 command surface.
 5. Implement dense S19 installer state, exact coverage checks, sector splitting,
-   streaming sector writes, S9 gates, and failure drain behavior.
+   streaming sector writes, S9 gates, and failure drain behavior. The receive,
+   dry-stage, S9, and drain slice is host-accepted; journaled mutation and fit
+   closure remain open.
 6. Gate `J0-J3` through directory state, add the Bank-3 local-entry handoff, and
    extend the Bank Jump Record to Bank 3.
 7. Generate the one-time migration TopWriter and make every later TopWriter
@@ -954,7 +996,7 @@ The future `B` estimate is 160-240 resident bytes and no persistent data.
 V1 is accepted only when:
 
 - Host build and all address, ABI, and size assertions pass.
-- At least `$0100` contiguous resident/worker growth space remains.
+- At least `$0040` contiguous resident/worker development space remains.
 - Every legal journal state and representative torn/illegal state is tested.
 - Dense S19 checksum, order, coverage, boundary-crossing, S9, and trailing-data
   tests pass.
