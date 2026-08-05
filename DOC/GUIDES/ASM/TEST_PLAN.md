@@ -12362,3 +12362,86 @@ dry resident ends at `$FDF7` (`$0DF8`): it would overlap the worker by `$00D9`
 and needs `$0119` reclaimed to fit with the `$0040` development gap. Therefore
 this phase adds no flashable install/migration S19, TopWriter, stamped ROM, or
 hardware proof. Journaled erase/program/verify is the next manual-commit phase.
+
+## 2026-08-05 STR8 Enumeration-Safe Live Dots and Warm Selectors
+
+Status: hardware accepted.
+
+Startup first emits exactly 35 LF bytes to scroll a connected terminal clear,
+then runs one 32-dot routine with a hard midpoint. The first 16 dots take about
+5.904 seconds and cannot poll input. At the midpoint STR8 flushes RX, prints
+the identity and selector without blank lines, then enables polling for 16 live
+dots over another 5.904 seconds. Only `0`, `1`, `2`, `3`, and `S` are accepted
+and echoed. `G`, `R`, CR, LF, and other bytes remain silent and do not shorten
+the live phase. Timeout still enters HIMON cold; live `3` still enters HIMON
+warm; live `0`-`2` retain the selected-bank `BOOT IN 3S` path.
+
+At `STR8-N>`, bare `0`-`2` immediately reuse the proven J bank handoff without
+the startup-only three-second delay. Bare `3` enters HIMON warm. Explicit
+`J0`-`J3` remain, so `J3` is still the distinct Bank-3/STR8 re-entry. The `G`
+and `R` dispatch branches, handlers, and messages are removed. The guarded V1
+surface is exactly `I 0-3 J0-3`; the normal legacy updater build accurately
+publishes `U 0-3 J0-3` until `I` becomes flashable.
+
+The compiled V1 emulator runs 12 startup cases. It byte-compares all 35 leading
+LFs, queues an early valid byte before the midpoint, proves the flush discards
+it, injects live `G` and `R` without echo or action, accepts lowercase `s` as
+uppercase `S`, checks every accepted key, rejects `G`/`R`/`4`/CR/LF, and
+byte-compares both early-selection and full-timeout output. Existing worker,
+directory, line-editor, and dense S19 fixtures remain green.
+
+Size results relative to the preceding accepted build:
+
+- normal resident: `$F000-$FAF6`, `$0AF7`, down `$0034` (52 bytes);
+- V1 preview resident: `$F000-$FBF2`, `$0BF3`, down `$000E` (14 bytes), with
+  `$012C` free before the stored worker;
+- installer-dry resident: `$F000-$FDE9`, `$0DEA`, down `$000E` (14 bytes),
+  reducing worker overlap to `$00CB` and fit debt with the `$0040` floor to
+  `$010B`;
+- RAM allocation is unchanged; the startup phase flag continues to share
+  `$1FF1` with the command editor's deferred-LF state.
+
+Host gates:
+
+```text
+make -C SRC str8-worker-mode-check
+make -C SRC str8-v1-layout-preview str8-directory-check
+make -C SRC str8-installer-dry-check
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```
+
+The focused pending hardware procedure is
+[`STR8_LIVE_DOTS_BOARD_TEST.md`](../STR8/STR8_LIVE_DOTS_BOARD_TEST.md).
+
+The first board pass programmed the regenerated normal identity
+`STR8-N V 00.0805(1807) $F`. TopWriter's wrong-confirmation path returned
+`TW CANCEL`; the accepted retry returned `TW MODE=$01 RES=$AC @=$0000`.
+Bank 3 then showed the 35-LF clear, compact `U 0-3 J0-3` help, full timeout to
+HIMON cold, explicit `J3` restart, and live `3` warm entry without a second
+clear. The Bank Jump Record remained `42 4A 03`.
+
+Maintenance copies `30`, `12`, and `31` each completed with eight dots and
+`OK`. This puts the new candidate in B0/B1/B3 and preserves the former B1
+image in B2; the final map reported all B0-B2 sectors used and B3F protected.
+The continuation captured full `$F000-$FFFF` reads in Bank 3 and Bank 1. Both
+contained the exact `1807` header `4C 13 F0 4C 24 F3 4C 40 F3 4C 7E F4 53 52
+01 07`, `$F010` bytes `4C 2B F3 78`, and vector tail `B6 F0 00 F0 CA F0`.
+B0 and B1 repeatedly booted `1807`, while B2 still booted and dumped the
+distinct preserved `1203` image. Direct readback and clone boots are accepted.
+The operator confirms that the silent early valid key and live `G`/`R` were
+actually transmitted and ignored. Combined with the exact readbacks and clone
+boots, this closes the enumeration-safe live-dots and warm-selector board rail.
+
+## 2026-08-05 Bank Jump Record Cold-Persistence Closure
+
+Status: hardware accepted.
+
+The final board continuation closes the two observations left open by the
+maintenance run. J0 published `42 4A 00` before and after two consecutive
+`HCOLD` operations. J1 published `42 4A 01` before and after `HCOLD`. The
+opening current dump retained the prior J3 record `42 4A 03`. Together with
+the earlier J2 capture, Banks 0-3 are now hardware-proven to survive HIMON
+cold RAM clearing. The raw console capture is appended to
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.

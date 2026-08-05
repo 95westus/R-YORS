@@ -232,24 +232,26 @@ and its LOCAL ENTRY is launchable. Otherwise timeout remains safely in STR8-N.
 The V1.01 prompt is:
 
 ```text
-I J0 J1 J2 J3 R
+I 0-3 J0-3
 ```
 
 The normal legacy image prints
-`U J0 J1 J2 J3 G R`. The guarded V1 preview prints the final surface
-above: `U` and `G` are absent, and `I` accepts Bank 0-3. During the dry
+`U 0-3 J0-3`. The guarded V1 preview prints the final surface above: `U`,
+`G`, and `R` are absent, and `I` accepts Bank 0-3. During the dry
 preflight slices it ends with `NO WRITE`; no flash mutation is reachable.
 
 There is no `?` command. The identity is printed when STR8-N enters its menu;
 any command that does not match the active command set prints the help line.
 `I` prompts for Bank 0-3, installing 32K into Banks 0-2 or 28K into the Bank-3
-payload. `J0` through `J3` perform non-destructive handoff. `R` resets through
-the live bank's reset vector.
+payload. Bare `0` through `2` immediately reuse the corresponding bank
+handoff; bare `3` enters the Bank-3 payload warmly. `J0` through `J3` remain
+the explicit non-destructive handoffs, with `J3` retaining STR8 re-entry.
 
-The destructive V0 meanings of `B`, bare prompt `0`, `1`, or `2`, `G`, and the
-fixed 12K `U` updater are retired in V1. `B` remains reserved for the future
-external S19 backup generator. Unknown worker modes must fail explicitly and
-must never fall through to an old copy operation.
+The destructive V0 meanings of `B` and bare prompt `0`, `1`, or `2`, plus the
+separate `G`, `R`, and fixed 12K `U` updater, are retired in V1. The bare
+digits are repurposed only as safe selector aliases. `B` remains reserved for
+the future external S19 backup generator. Unknown worker modes must fail
+explicitly and must never fall through to an old copy operation.
 
 Command and prompted input use a small shared line editor:
 

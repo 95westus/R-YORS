@@ -68,8 +68,10 @@ function Invoke-ResidentDirectoryRoutine {
         [string]$WorkerBehavior = 'None',
         [int]$ReadHook = -1,
         [int]$ReadNonblockHook = -1,
+        [int]$DelayHook = -1,
         [int]$WriteHook = -1,
         [byte[]]$InputBytes = @(),
+        [object[]]$TimedInput = @(),
         [int]$RecordHook = -1,
         [object[]]$RecordFixtures = @(),
         [int]$StageHook = -1,
@@ -86,6 +88,8 @@ function Invoke-ResidentDirectoryRoutine {
     $dataStack = New-Object System.Collections.Generic.Stack[int]
     $output = New-Object System.Collections.Generic.List[byte]
     $inputIndex = 0
+    $timedInputIndex = 0
+    $delayCalls = 0
     $workerCalls = 0
     $recordIndex = 0
     $stageSectors = New-Object System.Collections.Generic.List[object]
@@ -123,6 +127,11 @@ function Invoke-ResidentDirectoryRoutine {
             }
             0x20 { # JSR absolute
                 $target = ([int]$Memory[$pc + 1]) -bor (([int]$Memory[$pc + 2]) -shl 8)
+                if ($target -eq $DelayHook) {
+                    $delayCalls++
+                    $pc += 3
+                    continue
+                }
                 if ($target -eq $RecordHook) {
                     if ($recordIndex -ge $RecordFixtures.Length) {
                         throw ('Resident record fixtures exhausted at ${0:X4}' -f $pc)
@@ -170,7 +179,19 @@ function Invoke-ResidentDirectoryRoutine {
                     continue
                 }
                 if ($target -eq $ReadNonblockHook) {
-                    if ($inputIndex -ge $InputBytes.Length) {
+                    if ($TimedInput.Length -gt 0) {
+                        if ($timedInputIndex -ge $TimedInput.Length -or
+                            [int]$TimedInput[$timedInputIndex].AfterDelay -gt $delayCalls) {
+                            $aReg = 0
+                            $status = Set-NzFlags $status $aReg
+                            $status = $status -band 0xFE
+                        } else {
+                            $aReg = [int]$TimedInput[$timedInputIndex].Byte
+                            $timedInputIndex++
+                            $status = Set-NzFlags $status $aReg
+                            $status = $status -bor 0x01
+                        }
+                    } elseif ($inputIndex -ge $InputBytes.Length) {
                         $aReg = 0
                         $status = Set-NzFlags $status $aReg
                         $status = $status -band 0xFE
@@ -243,6 +264,12 @@ function Invoke-ResidentDirectoryRoutine {
                 $pc += 2
                 continue
             }
+            0x3A { # DEC A
+                $aReg = ($aReg - 1) -band 0xFF
+                $status = Set-NzFlags $status $aReg
+                $pc++
+                continue
+            }
             0x38 { # SEC
                 $status = $status -bor 0x01
                 $pc++
@@ -286,6 +313,8 @@ function Invoke-ResidentDirectoryRoutine {
                             Steps = $step + 1
                             WorkerCalls = $workerCalls
                             InputConsumed = $inputIndex
+                            TimedInputConsumed = $timedInputIndex
+                            DelayCalls = $delayCalls
                             Output = $output.ToArray()
                             RecordCalls = $recordIndex
                             StageCalls = $stageSectors.Count
@@ -315,6 +344,8 @@ function Invoke-ResidentDirectoryRoutine {
                         Steps = $step + 1
                         WorkerCalls = $workerCalls
                         InputConsumed = $inputIndex
+                        TimedInputConsumed = $timedInputIndex
+                        DelayCalls = $delayCalls
                         Output = $output.ToArray()
                         RecordCalls = $recordIndex
                         StageCalls = $stageSectors.Count
@@ -482,6 +513,12 @@ function Invoke-ResidentDirectoryRoutine {
                 $aReg = [int]$Memory[$pc + 1]
                 $status = Set-NzFlags $status $aReg
                 $pc += 2
+                continue
+            }
+            0xAA { # TAX
+                $xReg = $aReg
+                $status = Set-NzFlags $status $xReg
+                $pc++
                 continue
             }
             0xAD { # LDA absolute
@@ -978,6 +1015,15 @@ function Assert-ByteArraysEqual([byte[]]$Actual, [byte[]]$Expected, [string]$Mes
     }
 }
 
+function Get-HighBitStringBytes([byte[]]$Memory, [int]$Address) {
+    $bytes = New-Object System.Collections.Generic.List[byte]
+    while ($true) {
+        $value = [int]$Memory[$Address++]
+        $bytes.Add([byte]($value -band 0x7F))
+        if (($value -band 0x80) -ne 0) { return $bytes.ToArray() }
+    }
+}
+
 function Invoke-ResidentLineFixture {
     param(
         [byte[]]$InputBytes,
@@ -1383,6 +1429,11 @@ $residentConfirmEntry = Get-MapSymbol $residentSymbols "STR8_CONFIRM_Y"
 $residentReadHook = Get-MapSymbol $residentSymbols "STR8_CON_READ_BYTE_BLOCK"
 $residentReadNonblockHook = Get-MapSymbol $residentSymbols "STR8_CON_READ_BYTE_NONBLOCK"
 $residentWriteHook = Get-MapSymbol $residentSymbols "STR8_CON_WRITE_BYTE_BLOCK"
+$residentStartupEntry = Get-MapSymbol $residentSymbols "STR8_STARTUP_DELAY"
+$residentStartupDelayHook = Get-MapSymbol $residentSymbols "STR8_DELAY_FIXED_A"
+$residentBootPollEntry = Get-MapSymbol $residentSymbols "STR8_BOOT_KEY_POLL"
+$residentIdMessage = Get-MapSymbol $residentSymbols "MSG_ID"
+$residentBootPrompt = Get-MapSymbol $residentSymbols "MSG_BOOT_PROMPT"
 $residentSkipLf = Get-MapSymbol $residentSymbols "STR8_INPUT_SKIP_LF"
 $residentInstallBank = Get-MapSymbol $residentSymbols "STR8_INSTALL_BANK"
 $residentInstallType = Get-MapSymbol $residentSymbols "STR8_INSTALL_TYPE"
@@ -1421,16 +1472,16 @@ Assert-True ($residentValidatorSize -gt 0 -and $residentValidatorSize -le 0x0140
 Assert-True ($residentWriterSize -gt 0 -and $residentWriterSize -le 0x00B0) `
     ("Resident writer size is `${0:X}; expected 1-B0" -f $residentWriterSize)
 foreach ($retiredName in @(
-        'STR8_CMD_UPDATE_HIMON', 'STR8_CMD_G_HIMON', 'STR8_CMD_COPY_FAIL',
+        'STR8_CMD_UPDATE_HIMON', 'STR8_CMD_G_HIMON', 'STR8_CMD_RESET', 'STR8_CMD_COPY_FAIL',
         'STR8_UPD_INIT', 'STR8_READ_HIMON_S19', 'STR8_PROGRAM_HIMON_UPDATE',
         'STR8_PRINT_COPY_FAIL', 'MSG_UPDATE_HIMON', 'MSG_G_HIMON',
         'STR8_CMD_ID', 'MSG_UNKNOWN'
     )) {
-    Assert-True (-not $residentSymbols.ContainsKey($retiredName)) "Retired V1 U/G symbol remains: $retiredName"
+    Assert-True (-not $residentSymbols.ContainsKey($retiredName)) "Retired V1 command symbol remains: $retiredName"
 }
-[byte[]]$expectedV1Help = [System.Text.Encoding]::ASCII.GetBytes('I J0 J1 J2 J3 R')
+[byte[]]$expectedV1Help = [System.Text.Encoding]::ASCII.GetBytes('I 0-3 J0-3')
 for ($i = 0; $i -lt $expectedV1Help.Length; $i++) {
-    Assert-True ($residentTemplate[$residentScreen + $i] -eq $expectedV1Help[$i]) 'V1 prompt does not publish only I/J0-J3/R'
+    Assert-True ($residentTemplate[$residentScreen + $i] -eq $expectedV1Help[$i]) 'V1 prompt does not publish I/0-3/J0-3'
 }
 Assert-True ($residentHelp -eq $residentScreen) 'V1 screen/help command list unexpectedly has a prefix'
 $residentJournalCases = 0
@@ -1438,15 +1489,84 @@ $residentRecordCases = 0
 $residentWriterCases = 0
 $residentLineCases = 0
 $residentInstallerCases = 0
+$residentStartupCases = 0
 $residentMaxSteps = 0
 
-foreach ($unknownCommand in @('?', 'X')) {
+# Run the compiled two-phase startup routine with an early R queued before the
+# midpoint and G/R/S arriving on successive live dots. The midpoint flush must
+# discard the early R; live G/R must remain silent; only S may terminate and
+# echo. Delay calls are hooked so this verifies sequencing without wall time.
+$startupTimedInput = @(
+    [pscustomobject]@{ AfterDelay = 0; Byte = [byte][char]'R' },
+    [pscustomobject]@{ AfterDelay = 17; Byte = [byte][char]'G' },
+    [pscustomobject]@{ AfterDelay = 18; Byte = [byte][char]'R' },
+    [pscustomobject]@{ AfterDelay = 19; Byte = [byte][char]'S' }
+)
+[byte[]]$startupMemory = $residentTemplate.Clone()
+$startup = Invoke-ResidentDirectoryRoutine -Memory $startupMemory `
+    -Start $residentStartupEntry `
+    -ReadNonblockHook $residentReadNonblockHook `
+    -DelayHook $residentStartupDelayHook `
+    -WriteHook $residentWriteHook `
+    -TimedInput $startupTimedInput
+$idText = [System.Text.Encoding]::ASCII.GetString((Get-HighBitStringBytes $residentTemplate $residentIdMessage))
+$bootPromptText = [System.Text.Encoding]::ASCII.GetString((Get-HighBitStringBytes $residentTemplate $residentBootPrompt))
+[byte[]]$expectedStartup = [System.Text.Encoding]::ASCII.GetBytes(
+    (("`n" * 35) + "................`r`n${idText}${bootPromptText}...S"))
+Assert-ByteArraysEqual $startup.Output $expectedStartup 'Two-phase startup output mismatch'
+Assert-True ($startup.Carry -and $startup.A -eq [byte][char]'S' -and
+    $startup.DelayCalls -eq 19 -and $startup.TimedInputConsumed -eq $startupTimedInput.Count) `
+    'Two-phase startup did not quarantine early R and accept only the live S'
+$residentMaxSteps = [Math]::Max($residentMaxSteps, $startup.Steps)
+$residentStartupCases++
+
+[byte[]]$startupMemory = $residentTemplate.Clone()
+$startup = Invoke-ResidentDirectoryRoutine -Memory $startupMemory `
+    -Start $residentStartupEntry `
+    -ReadNonblockHook $residentReadNonblockHook `
+    -DelayHook $residentStartupDelayHook `
+    -WriteHook $residentWriteHook
+[byte[]]$expectedStartup = [System.Text.Encoding]::ASCII.GetBytes(
+    (("`n" * 35) + "................`r`n${idText}${bootPromptText}................"))
+Assert-ByteArraysEqual $startup.Output $expectedStartup 'Two-phase startup timeout output mismatch'
+Assert-True (-not $startup.Carry -and $startup.DelayCalls -eq 32) `
+    'Two-phase startup timeout did not complete exactly 16 attach plus 16 live dots'
+$residentMaxSteps = [Math]::Max($residentMaxSteps, $startup.Steps)
+$residentStartupCases++
+
+foreach ($pollCase in @(
+        [pscustomobject]@{ Input = '0'; Accepted = $true; Echo = '0' },
+        [pscustomobject]@{ Input = '1'; Accepted = $true; Echo = '1' },
+        [pscustomobject]@{ Input = '2'; Accepted = $true; Echo = '2' },
+        [pscustomobject]@{ Input = '3'; Accepted = $true; Echo = '3' },
+        [pscustomobject]@{ Input = 's'; Accepted = $true; Echo = 'S' },
+        [pscustomobject]@{ Input = 'G'; Accepted = $false; Echo = '' },
+        [pscustomobject]@{ Input = 'R'; Accepted = $false; Echo = '' },
+        [pscustomobject]@{ Input = '4'; Accepted = $false; Echo = '' },
+        [pscustomobject]@{ Input = "`r"; Accepted = $false; Echo = '' },
+        [pscustomobject]@{ Input = "`n"; Accepted = $false; Echo = '' }
+    )) {
+    [byte[]]$pollInput = [System.Text.Encoding]::ASCII.GetBytes($pollCase.Input)
+    $poll = Invoke-ResidentDirectoryRoutine -Memory ([byte[]]$residentTemplate.Clone()) `
+        -Start $residentBootPollEntry `
+        -ReadNonblockHook $residentReadNonblockHook `
+        -WriteHook $residentWriteHook `
+        -InputBytes $pollInput
+    [byte[]]$expectedEcho = [System.Text.Encoding]::ASCII.GetBytes($pollCase.Echo)
+    Assert-ByteArraysEqual $poll.Output $expectedEcho ("Live selector {0} echo mismatch" -f [int]$pollInput[0])
+    Assert-True ($poll.Carry -eq $pollCase.Accepted -and $poll.InputConsumed -eq 1) `
+        ("Live selector {0} acceptance mismatch" -f [int]$pollInput[0])
+    $residentMaxSteps = [Math]::Max($residentMaxSteps, $poll.Steps)
+    $residentStartupCases++
+}
+
+foreach ($unknownCommand in @('?', 'G', 'R', 'X')) {
     [byte[]]$memory = $residentTemplate.Clone()
     $unknown = Invoke-ResidentDirectoryRoutine -Memory $memory `
         -Start $residentDispatchEntry `
         -A ([byte][char]$unknownCommand) `
         -WriteHook $residentWriteHook
-    [byte[]]$expectedUnknown = [System.Text.Encoding]::ASCII.GetBytes("`r`nI J0 J1 J2 J3 R`r`n")
+    [byte[]]$expectedUnknown = [System.Text.Encoding]::ASCII.GetBytes("`r`nI 0-3 J0-3`r`n")
     Assert-ByteArraysEqual $unknown.Output $expectedUnknown ("Unknown command {0} help mismatch" -f $unknownCommand)
     Assert-True ($unknown.WorkerCalls -eq 0) ("Unknown command {0} reached worker" -f $unknownCommand)
     $residentMaxSteps = [Math]::Max($residentMaxSteps, $unknown.Steps)
@@ -1560,9 +1680,9 @@ Assert-ResidentIPreviewFixture $previewFixture $lineInput "`r`nI B0-3: 1`r`nDIR 
 
 foreach ($negativePreview in @(
         [pscustomobject]@{ Name = 'empty bank'; Input = [byte[]]@(0x0D); Output = "`r`nI B0-3: `r`nABORT`r`n" },
-        [pscustomobject]@{ Name = 'bank 4'; Input = [byte[]]@([byte][char]'4', 0x0A); Output = "`r`nI B0-3: 4`r`nI J0 J1 J2 J3 R`r`n" },
-        [pscustomobject]@{ Name = 'bad type'; Input = [System.Text.Encoding]::ASCII.GetBytes("0`rG0`r"); Output = "`r`nI B0-3: 0`r`nTYPE: G0`r`nI J0 J1 J2 J3 R`r`n" },
-        [pscustomobject]@{ Name = 'bad description'; Input = [System.Text.Encoding]::ASCII.GetBytes("0`r12`rAB CD`r"); Output = "`r`nI B0-3: 0`r`nTYPE: 12`r`nDESC: AB CD`r`nI J0 J1 J2 J3 R`r`n" }
+        [pscustomobject]@{ Name = 'bank 4'; Input = [byte[]]@([byte][char]'4', 0x0A); Output = "`r`nI B0-3: 4`r`nI 0-3 J0-3`r`n" },
+        [pscustomobject]@{ Name = 'bad type'; Input = [System.Text.Encoding]::ASCII.GetBytes("0`rG0`r"); Output = "`r`nI B0-3: 0`r`nTYPE: G0`r`nI 0-3 J0-3`r`n" },
+        [pscustomobject]@{ Name = 'bad description'; Input = [System.Text.Encoding]::ASCII.GetBytes("0`r12`rAB CD`r"); Output = "`r`nI B0-3: 0`r`nTYPE: 12`r`nDESC: AB CD`r`nI 0-3 J0-3`r`n" }
     )) {
     $previewFixture = Invoke-ResidentIPreviewFixture $negativePreview.Input
     Assert-ResidentIPreviewFixture $previewFixture $negativePreview.Input $negativePreview.Output $negativePreview.Name
@@ -1838,6 +1958,7 @@ Write-Host ("RESIDENT JOURNAL CASES  = {0}" -f $residentJournalCases)
 Write-Host ("RESIDENT RECORD CASES   = {0}" -f $residentRecordCases)
 Write-Host ("RESIDENT WRITER CASES   = {0}" -f $residentWriterCases)
 Write-Host ("RESIDENT LINE/I CASES   = {0}" -f $residentLineCases)
+Write-Host ("RESIDENT STARTUP CASES  = {0}" -f $residentStartupCases)
 if ($dryInstallerMode) {
     Write-Host ("RESIDENT INSTALL CASES  = {0}" -f $residentInstallerCases)
 }

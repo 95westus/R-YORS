@@ -1590,8 +1590,8 @@ foreach ($cmd in ($himonCommandRows | Sort-Object File, Line, Entry)) {
 }
 
 $str8CommandDefs = @(
-    [pscustomobject]@{ Command = 'G'; Entry = 'STR8_CMD_G_HIMON'; Meaning = 'go HIMON' }
-    [pscustomobject]@{ Command = 'R'; Entry = 'STR8_CMD_RESET'; Meaning = 'reset vector' }
+    [pscustomobject]@{ Command = '0-2'; Entry = 'STR8_CMD_SELECT_A'; Meaning = 'immediate bank handoff' }
+    [pscustomobject]@{ Command = '3'; Entry = 'STR8_CMD_SELECT_HIMON'; Meaning = 'warm HIMON' }
     [pscustomobject]@{ Command = 'U'; Entry = 'STR8_CMD_UPDATE_HIMON'; Meaning = 'update HIMON C000-EFFF' }
 )
 

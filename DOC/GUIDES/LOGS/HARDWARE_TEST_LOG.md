@@ -19672,3 +19672,304 @@ A fresh maintenance build and map showed all four banks used, B3F protected,
 and `Q` returning `$AC/C=1`. The operator stopped at the explicitly deferred
 V1-only tests. Two post-cold record observations remain: one current J1 dump
 and one J0 repeat. V1 migration tests remain unavailable by design.
+
+## 2026-08-05 Bank Jump Record J0/J1 Cold-Persistence Closure
+
+The focused continuation captured the previously missing current records. J0
+remained `42 4A 00` through two `HCOLD` operations, and J1 remained
+`42 4A 01` through `HCOLD`. The opening Bank-3 dump also retained
+`42 4A 03`. This closes the Bank Jump Record cold-preservation matrix.
+
+Raw board transcript:
+
+```text
+STR8-N V 00.0805(1203) $F
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0805(1312)
+>D 1FFD 1FFF
+1FFD: 42 4A 03 | BJ.
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+................
+STR8-N V 00.0805(1203) $F
+
+0/1/2=BOOT 3=HIMON S=STR8  6 0
+J B0
+BOOT IN 3S
+
+................
+STR8-N V 00.0805(1203) $F
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+>D 1FFD 1FFF
+1FFD: 42 4A 00 | BJ.
+>HCOLD
+RUN HCOLD @C030 K=03 ? y
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+>HCOLD
+RUN HCOLD @C030 K=03 ? y
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+>D 1FFD 1FFF
+1FFD: 42 4A 00 | BJ.
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+................
+STR8-N V 00.0805(1203) $F
+
+0/1/2=BOOT 3=HIMON S=STR8  6 S
+STR8-N V 00.0805(1203) $F
+U J0 J1 J2 J3 G R
+STR8-N>J3
+J B3
+
+................
+STR8-N V 00.0805(1203) $F
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 S
+STR8-N V 00.0805(1203) $F
+U J0 J1 J2 J3 G R
+STR8-N>J1
+J B1
+
+................
+STR8-N V 00.0805(1203) $F
+
+0/1/2=BOOT 3=HIMON S=STR8  6 5 4 3 2 1
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+>D 1FFD 1FFF
+1FFD: 42 4A 01 | BJ.
+>HCOLD
+RUN HCOLD @C030 K=03 ? y
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0802(1823)
+>D 1FFD 1FFF
+1FFD: 42 4A 01 | BJ.
+```
+
+## 2026-08-05 STR8 Live-Dots Partial Board Pass and Candidate Copies
+
+The normal candidate was regenerated on board as
+`STR8-N V 00.0805(1807) $F`. The pasted image retained the planned header
+`4C 13 F0 4C 24 F3 4C 40 F3 4C 7E F4 53 52 01 07` and vector tail
+`B6 F0 00 F0 CA F0`. TopWriter rejected the first wrong confirmation, then
+staged, programmed, and verified Bank 3:
+
+```text
+>G 3000
+GO 3000
+TOPWRITER
+S STAGE+VERIFY
+V VERIFY STAGE
+P PROGRAM BANK 3
+I STATUS
+Q QUIT
+TW> S
+TW STG
+TW OK
+TW> P
+TW OK
+TYPE WRITE TO PROGRAM B3> I
+TW CANCEL
+TW>
+TOPWRITER
+S STAGE+VERIFY
+V VERIFY STAGE
+P PROGRAM BANK 3
+I STATUS
+Q QUIT
+TW> S
+TW STG
+TW OK
+TW> P
+TW OK
+TYPE WRITE TO PROGRAM B3> WRITE
+TW PRG
+TW OK
+TW> I
+TW MODE=$01 RES=$AC @=$0000
+TW> Q
+
+#GO# ENTRY=3000
+RET A=AC X=10 Y=00 P=77 S=FD NV-BdIZC
+>
+```
+
+The terminal capture contained 35 LF lines before each shown Bank-3 startup.
+Live `S`, explicit `J3`, timeout cold, and live `3` warm behaved as follows:
+
+```text
+................
+
+STR8-N V 00.0805(1807) $F
+0/1/2=BOOT 3=HIMON S=STR8  ..S
+U 0-3 J0-3
+STR8-N>J3
+J B3
+
+[35 LF bytes]
+................
+
+STR8-N V 00.0805(1807) $F
+0/1/2=BOOT 3=HIMON S=STR8  ................
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0805(1312)
+>D 1FFD 1FFF
+1FFD: 42 4A 03 | BJ.
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+[35 LF bytes]
+................
+
+STR8-N V 00.0805(1807) $F
+0/1/2=BOOT 3=HIMON S=STR8  ..3
+BOOT WARM
+
+HIMON V 00.0805(1312)
+>D 1FFD 1FFF
+1FFD: 42 4A 03 | BJ.
+```
+
+The final maintenance run cloned the candidate to B0/B1 while retaining the
+old B1 image in B2. All three full-bank operations completed, and the map
+reported the expected used/protected shape:
+
+```text
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> C
+SOURCE BANK 0-3> 3
+DEST BANK 0-2> 0
+!STR8
+TYPE COPY 30> COPY 30
+
+........ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> C
+SOURCE BANK 0-3> 1
+DEST BANK 0-2> 2
+!STR8
+TYPE COPY 12> COPY 12
+
+........ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> C
+SOURCE BANK 0-3> 3
+DEST BANK 0-2> 1
+!STR8
+TYPE COPY 31> COPY 31
+
+........ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> M
+
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 U U U U U U U U
+B1 U U U U U U U U
+B2 U U U U U U U U
+B3 U U U U U U U P
+ OK
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP Q=QUIT> Q
+
+#GO# ENTRY=2000
+RET A=AC X=00 Y=00 P=F5 S=FD NV-BdIzC
+>
+```
+
+This is a partial board acceptance. The run did not capture direct
+`$F000-$F013`/`$FFFA-$FFFF` flash reads after programming, did not boot the
+new B0/B1 copies, and did not repeat the full early-quarantine plus live
+`G`/`R` rejection matrix on `1807`.
+
+## 2026-08-05 STR8 `1807` Readback and Clone-Boot Closure
+
+The continuation began in Bank 3 after a complete 32-dot timeout. One full
+resident dump directly read the installed candidate. The significant edge
+rows were:
+
+```text
+>D F000 FFFF
+F000: 4C 13 F0 4C 24 F3 4C 40 | F3 4C 7E F4 53 52 01 07 | L..L$.L@.L~.SR..
+F010: 4C 2B F3 78 D8 A2 FF 9A | 20 64 F0 20 61 F0 20 54 | L+.x.... d. a. T
+...
+F9F0: 53 54 52 38 2D 4E 20 56 | 20 30 30 2E 30 38 30 35 | STR8-N V 00.0805
+FA00: 28 31 38 30 37 29 20 24 | 46 0D 8A 0D 0A 55 20 30 | (1807) $F....U 0
+FA10: 2D 33 20 4A 30 2D 33 0D | 8A 53 54 52 38 2D 4E BE | -3 J0-3..STR8-N.
+...
+FFF0: FF FF FF FF FF FF FF FF | FF FF B6 F0 00 F0 CA F0 | ................
+```
+
+The board next selected B2, which still displayed the preserved
+`STR8-N V 00.0805(1203) $F`. Its full dump retained the distinct `1203`
+header and `BD F0 00 F0 D1 F0` vector tail. A live Bank-2 `1` then entered
+the copied B1 image. B1 booted `1807`, and its independent full dump matched
+the Bank-3 rows above, including the `1807` identity and
+`B6 F0 00 F0 CA F0` vectors.
+
+The remaining transitions repeatedly exercised both new clones:
+
+```text
+STR8-N V 00.0805(1807) $F
+0/1/2=BOOT 3=HIMON S=STR8  ..0
+J B0
+BOOT IN 3S
+
+[35 LF bytes]
+................
+
+STR8-N V 00.0805(1807) $F
+0/1/2=BOOT 3=HIMON S=STR8  ................
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0805(1312)
+```
+
+After a B2 fallback round-trip through explicit `J0`, B0 again booted `1807`.
+B0 live-selected B1; B1 booted `1807`, then live-selected B0; B0 booted
+`1807` once more. Every new-bank reset visibly included the 35-LF terminal
+clear and completed normally.
+
+This closes direct flash readback and the post-copy B0/B1 boot checks. The
+operator additionally confirms that an early valid key was transmitted during
+the unpolled first dot phase and that live `G` and `R` were transmitted; all
+were ignored as required. The `1807` live-dots and warm-selector board rail is
+hardware-accepted.

@@ -254,12 +254,35 @@ for ($address = $residentJumpStart; $address -lt ($residentJumpEnd - 1); $addres
 }
 if (-not $residentRangeFound) { throw 'Resident J parser must accept through ASCII 3' }
 
-[byte[]]$expectedHelp = [System.Text.Encoding]::ASCII.GetBytes('U J0 J1 J2 J3 G R')
+[byte[]]$expectedHelp = [System.Text.Encoding]::ASCII.GetBytes('U 0-3 J0-3')
 $idMessage = Get-Symbol $str8Symbols 'MSG_ID'
+$bootMenuMessage = Get-Symbol $str8Symbols 'MSG_BOOT_MENU'
 $screenMessage = Get-Symbol $str8Symbols 'MSG_SCREEN'
 $promptMessage = Get-Symbol $str8Symbols 'MSG_PROMPT'
 if (-not (Test-ByteSequence $str8Memory $screenMessage ($screenMessage + $expectedHelp.Length) $expectedHelp)) {
-    throw 'Resident help does not publish J3 immediately after the identity line'
+    throw 'Resident help does not publish the compact U/0-3/J0-3 surface'
+}
+if ($screenMessage -ne ($bootMenuMessage + 2) -or
+    $str8Memory[$bootMenuMessage] -ne 0x0D -or $str8Memory[$bootMenuMessage + 1] -ne 0x0A) {
+    throw 'Resident live-dot menu does not join one CRLF directly to the compact help'
+}
+
+$residentDispatch = Get-Symbol $str8Symbols 'STR8_DISPATCH_A'
+$residentSelector = Get-Symbol $str8Symbols 'STR8_CMD_SELECT_A'
+$residentSelectorHimon = Get-Symbol $str8Symbols 'STR8_CMD_SELECT_HIMON'
+$residentJumpPrep = Get-Symbol $str8Symbols 'STR8_JUMP_BANK_PREP_A'
+$residentJumpLaunch = Get-Symbol $str8Symbols 'STR8_JUMP_BANK_LAUNCH'
+[byte[]]$selectorJump = 0x4C, ($residentSelector -band 0xFF), (($residentSelector -shr 8) -band 0xFF)
+if (-not (Test-ByteSequence $str8Memory $residentDispatch $residentSelector ([byte[]](0xC9, 0x30))) -or
+    -not (Test-ByteSequence $str8Memory $residentDispatch $residentSelector ([byte[]](0xC9, 0x34))) -or
+    -not (Test-ByteSequence $str8Memory $residentDispatch $residentSelector $selectorJump)) {
+    throw 'Resident dispatch does not range-route bare 0-3 to the shared selector'
+}
+if (-not (Test-RelativeBranch $str8Memory $residentSelector $residentSelectorHimon 0xF0 $residentSelectorHimon) -or
+    -not (Test-AbsoluteCall $str8Memory $residentSelector $residentSelectorHimon $residentJumpPrep) -or
+    -not (Test-ByteSequence $str8Memory $residentSelector $residentSelectorHimon `
+        ([byte[]](0x4C, ($residentJumpLaunch -band 0xFF), (($residentJumpLaunch -shr 8) -band 0xFF))))) {
+    throw 'Resident bare selector no longer maps 0-2 to J handoff and 3 to warm HIMON'
 }
 
 $residentBankService = Get-Symbol $str8Symbols 'STR8_BANK_SELECT_SERVICE_ENTRY'
@@ -302,7 +325,7 @@ if (-not (Test-ByteSequence $str8Memory $residentBankBody $residentBankBodyEnd $
 }
 
 [byte[]]$expectedBannerTail = 0x20, 0x24, 0x46, 0x0D, 0x8A
-if (-not (Test-ByteSequence $str8Memory ($screenMessage - $expectedBannerTail.Length) $screenMessage $expectedBannerTail)) {
+if (-not (Test-ByteSequence $str8Memory ($bootMenuMessage - $expectedBannerTail.Length) $bootMenuMessage $expectedBannerTail)) {
     throw 'Resident STR8 ID does not end with " $F" and CRLF'
 }
 
@@ -311,12 +334,44 @@ if (Test-ByteSequence $str8Memory $idMessage $promptMessage $legacyRomLine) {
     throw 'Resident STR8 still contains the legacy ROM $F000 screen line'
 }
 
+$startupDelay = Get-Symbol $str8Symbols 'STR8_STARTUP_DELAY'
+$startupDelayFixed = Get-Symbol $str8Symbols 'STR8_DELAY_FIXED_A'
+$startupPollIf = Get-Symbol $str8Symbols 'STR8_BOOT_KEY_POLL_IF_ENABLED'
+$startupPoll = Get-Symbol $str8Symbols 'STR8_BOOT_KEY_POLL'
+$startupPollEnd = Get-Symbol $str8Symbols 'STR8_PRINT_SCREEN'
+$startupFlag = Get-Symbol $str8Symbols 'STR8_BOOT_KEY_ENABLE'
+$startupFlush = Get-Symbol $str8Symbols 'STR8_CON_FLUSH_RX'
+$startupBanner = Get-Symbol $str8Symbols 'STR8_PRINT_BANNER'
+$selectorHimonEnd = Get-Symbol $str8Symbols 'STR8_CMD_UPDATE_HIMON'
+$selectorWarmTarget = Get-Symbol $str8Symbols 'STR8_ENTER_HIMON_WARM'
+[byte[]]$startupClear = 0xA2, 0x23, 0xA9, 0x0A
+[byte[]]$startupHead = 0x9C, ($startupFlag -band 0xFF), (($startupFlag -shr 8) -band 0xFF), 0xA9, 0x20
+[byte[]]$startupArm = 0xEE, ($startupFlag -band 0xFF), (($startupFlag -shr 8) -band 0xFF)
+if (-not (Test-ByteSequence $str8Memory $startupDelay $startupDelayFixed $startupClear) -or
+    -not (Test-ByteSequence $str8Memory $startupDelay $startupDelayFixed $startupHead) -or
+    -not (Test-ByteSequence $str8Memory $startupDelay $startupDelayFixed ([byte[]](0xC9, 0x10))) -or
+    -not (Test-AbsoluteCall $str8Memory $startupDelay $startupDelayFixed $startupFlush) -or
+    -not (Test-ByteSequence $str8Memory $startupDelay $startupDelayFixed $startupArm) -or
+    -not (Test-AbsoluteCall $str8Memory $startupDelay $startupDelayFixed $startupBanner) -or
+    -not (Test-AbsoluteCall $str8Memory $startupDelay $startupDelayFixed $startupPollIf)) {
+    throw 'Resident startup is not 35 LFs plus one 32-dot loop with a flush/arm/banner midpoint at 16'
+}
+foreach ($removedKey in @([byte][char]'G', [byte][char]'R')) {
+    if (Test-ByteSequence $str8Memory $startupPoll $startupPollEnd ([byte[]](0xC9, $removedKey))) {
+        throw ('Removed live selector {0} remains in boot-key polling' -f [char]$removedKey)
+    }
+}
+[byte[]]$selectorWarmJump = 0x4C, ($selectorWarmTarget -band 0xFF), (($selectorWarmTarget -shr 8) -band 0xFF)
+if (-not (Test-AbsoluteCall $str8Memory $residentSelectorHimon $selectorHimonEnd $startupFlush) -or
+    -not (Test-ByteSequence $str8Memory $residentSelectorHimon $selectorHimonEnd $selectorWarmJump)) {
+    throw 'Bare 3 does not flush the command tail and enter HIMON warm'
+}
+
 $coldEntry = Get-Symbol $str8Symbols 'STR8_ENTER_HIMON_COLD'
 $warmEntry = Get-Symbol $str8Symbols 'STR8_ENTER_HIMON_WARM'
 $availability = Get-Symbol $str8Symbols 'STR8_BOOT_TARGET_AVAILABLE'
 $noBootEntry = Get-Symbol $str8Symbols 'STR8_ENTER_MENU_NO_BOOT'
-$menuEntry = Get-Symbol $str8Symbols 'STR8_ENTER_MENU'
-$attachDelay = Get-Symbol $str8Symbols 'STR8_ATTACH_DELAY'
+$menuHelpEntry = Get-Symbol $str8Symbols 'STR8_ENTER_MENU_HELP'
 $noBootMessage = Get-Symbol $str8Symbols 'MSG_NO_BOOT'
 
 foreach ($entry in @(
@@ -338,17 +393,15 @@ if (-not (Test-ByteSequence $str8Memory $availability $noBootEntry $entryFaceSca
     throw 'STR8 C000 availability gate must reject an all-FF 16-byte entry face'
 }
 
-[byte[]]$menuJump = 0x4C, ($menuEntry -band 0xFF), (($menuEntry -shr 8) -band 0xFF)
-if (-not (Test-ByteSequence $str8Memory $noBootEntry $attachDelay $menuJump)) {
-    throw 'STR8 unavailable-target path does not enter the resident menu'
+[byte[]]$menuJump = 0x4C, ($menuHelpEntry -band 0xFF), (($menuHelpEntry -shr 8) -band 0xFF)
+if (-not (Test-ByteSequence $str8Memory $noBootEntry $startupDelay $menuJump)) {
+    throw 'STR8 unavailable-target path does not enter compact resident help'
 }
 
 [byte[]]$expectedNoBoot = [System.Text.Encoding]::ASCII.GetBytes('NO BOOT @C000')
-if ($str8Memory[$noBootMessage] -ne 0x0D -or
-    $str8Memory[$noBootMessage + 1] -ne 0x0A -or
-    -not (Test-ByteSequence $str8Memory ($noBootMessage + 2) ($noBootMessage + 2 + $expectedNoBoot.Length) $expectedNoBoot) -or
-    $str8Memory[$noBootMessage + 2 + $expectedNoBoot.Length] -ne 0x0D -or
-    $str8Memory[$noBootMessage + 3 + $expectedNoBoot.Length] -ne 0x8A) {
+if (-not (Test-ByteSequence $str8Memory $noBootMessage ($noBootMessage + $expectedNoBoot.Length) $expectedNoBoot) -or
+    $str8Memory[$noBootMessage + $expectedNoBoot.Length] -ne 0x0D -or
+    $str8Memory[$noBootMessage + 1 + $expectedNoBoot.Length] -ne 0x8A) {
     throw 'STR8 unavailable-target message changed'
 }
 
@@ -356,7 +409,10 @@ $retiredResident = @(
     'STR8_CMD_BACKUP',
     'STR8_CMD_RESTORE_A',
     'STR8_RUN_COPY',
-    'STR8_PRINT_COPY_PAIR'
+    'STR8_PRINT_COPY_PAIR',
+    'STR8_CMD_G_HIMON',
+    'STR8_CMD_RESET',
+    'MSG_G_HIMON'
 )
 $retiredWorker = @(
     'STR8W_COPY_BANKS',

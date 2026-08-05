@@ -4,16 +4,16 @@
 ;
 ; Command surface:
 ;   U  update HIMON from S19, fixed gate $C000-$EFFF
+;   0/1/2  warm reset-vector handoff to bank 0/1/2
+;   3  warm-entry HIMON
 ;   J0/J1/J2/J3  non-destructive reset-vector handoff to bank 0/1/2/3
-;   G  go HIMON
-;   R  reset through the live bank reset vector
 ;   invalid input prints the current command help
 ;
-; Reset shows the attach progress, flushes RX, then opens a 6-second selector.
-; Timeout cold-starts the local $C000 target; 3 warm-starts it to preserve RAM.
-; An erased $C000 entry face falls into the STR8 menu. S enters STR8; 0-2
-; announce the selected bank, wait about 3 more seconds, then reuse the
-; non-destructive J handoff.
+; Reset clears the terminal with 35 LFs, shows 16 unpolled attach dots, flushes
+; RX, prints the banner, then opens 16 live selector dots. Timeout cold-starts
+; the local $C000 target; 3 warm-starts it to preserve RAM. An erased $C000
+; entry face falls into the STR8 menu. S enters STR8; 0-2 announce the selected
+; bank, wait about 3 more seconds, then reuse the non-destructive J handoff.
 ;
 ; The RAM proof build performs destructive bank copies directly from RAM. The
 ; resident ROM build copies a worker from high flash to $0200, then runs
@@ -99,15 +99,12 @@ STR8_WORKER_STORE_HI    EQU             $FD
                         ENDIF
 STR8_WORKER_COPY_LEN_LO EQU             $91
 STR8_WORKER_COPY_LEN_HI EQU             $02
-STR8_DELAY_TICKS        EQU             $06
-STR8_DELAY_TICK_A       EQU             $23    ; 0.994s at 8 MHz
-STR8_DELAY_FIRST_A      EQU             $24    ; 1.022s at 8 MHz
 STR8_DELAY_TICK_X       EQU             $B6
 STR8_DELAY_TICK_Y       EQU             $F8
-STR8_ATTACH_DELAY_TICKS EQU             $10
-STR8_ATTACH_TICK_A      EQU             $0D    ; 0.369s at 8 MHz
-STR8_ATTACH_LONG_MIN    EQU             $0E    ; first three ticks are long
-STR8_ATTACH_LONG_A      EQU             $0E    ; 0.398s at 8 MHz
+STR8_SCREEN_CLEAR_LINES EQU             $23
+STR8_STARTUP_DOT_COUNT  EQU             $20
+STR8_STARTUP_LIVE_TICKS EQU             $10
+STR8_STARTUP_DOT_A      EQU             $0D    ; 0.369s at 8 MHz
 STR8_BANK_BOOT_DELAY_A  EQU             $6A    ; 3.010s at 8 MHz
 
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
@@ -219,9 +216,6 @@ STR8_BOOT_START:
                         JSR             STR8_INIT
                         IF              STR8_RAM_PROOF
                         ELSE
-                        JSR             STR8_ATTACH_DELAY
-                        JSR             STR8_BOOT_INPUT_ARM
-                        JSR             STR8_PRINT_BANNER
                         JSR             STR8_STARTUP_DELAY
                         BCC             ?HIMON
                         CMP             #'S'
@@ -231,39 +225,38 @@ STR8_BOOT_START:
                         AND             #$03
                         JSR             STR8_BOOT_JUMP_BANK_A
                         BRA             ?STR8_TAKEOVER
-?HIMON_KEY:            JSR             STR8_CON_FLUSH_RX
-                        LDX             #<MSG_CRLF
-                        LDY             #>MSG_CRLF
-                        JSR             STR8_PRINT_XY
-                        JMP             STR8_ENTER_HIMON_WARM
+?HIMON_KEY:            JMP             STR8_CMD_SELECT_HIMON
 ?HIMON:
                         LDX             #<MSG_CRLF
                         LDY             #>MSG_CRLF
                         JSR             STR8_PRINT_XY
                         JMP             STR8_ENTER_HIMON_COLD
 ?STR8_KEY:             JSR             STR8_CON_FLUSH_RX
-?STR8_TAKEOVER:
+                        LDX             #<MSG_BOOT_MENU
+                        LDY             #>MSG_BOOT_MENU
+                        JSR             STR8_PRINT_XY
+                        JMP             STR8_ENTER_MENU_READY
+?STR8_TAKEOVER:        JMP             STR8_ENTER_MENU_HELP
                         ENDIF
 STR8_ENTER_MENU:
-                        STZ             STR8_INPUT_SKIP_LF
                         JSR             STR8_PRINT_SCREEN
+                        BRA             STR8_ENTER_MENU_READY
+
+STR8_ENTER_MENU_HELP:
+                        LDX             #<MSG_SCREEN
+                        LDY             #>MSG_SCREEN
+                        JSR             STR8_PRINT_XY
+STR8_ENTER_MENU_READY:
+                        STZ             STR8_INPUT_SKIP_LF
                         JMP             STR8_CMD_LOOP
 
 ; ----------------------------------------------------------------------------
 ; STR8 lifecycle
 ; ----------------------------------------------------------------------------
 ; 2026-05-07T19:14-05:00        WLP2        Init flushes RX and gates boot-key polling.
-; 2026-07-30T00:00-05:00        Codex       Boot arms input after the attach delay.
 ; 2026-08-01T00:00-05:00        Codex       Preserve a J-selected bank through startup.
 STR8_INIT:
                         JMP             STR8_CON_INIT
-
-STR8_BOOT_INPUT_ARM:
-                        JSR             STR8_CON_FLUSH_RX
-                        LDA             #$00
-                        ROL
-                        STA             STR8_BOOT_KEY_ENABLE
-                        RTS
 
 ; ----------------------------------------------------------------------------
 ; IVI vector front door. IVI is pronounced IVY; LEAF is the later product surface.
@@ -400,36 +393,10 @@ STR8_ENTER_MENU_NO_BOOT:
                         LDX             #<MSG_NO_BOOT
                         LDY             #>MSG_NO_BOOT
                         JSR             STR8_PRINT_XY
-                        JMP             STR8_ENTER_MENU
+                        JMP             STR8_ENTER_MENU_HELP
 
                         IF              STR8_RAM_PROOF
                         ELSE
-; 2026-08-02T00:00-05:00        Codex       Show 16 dots over six-second attach.
-STR8_ATTACH_DELAY:
-                        LDX             #<MSG_CRLF
-                        LDY             #>MSG_CRLF
-                        JSR             STR8_PRINT_XY
-                        LDA             #STR8_ATTACH_DELAY_TICKS
-?TICK:                 PHA
-                        CMP             #STR8_ATTACH_LONG_MIN
-                        BCC             ?SHORT
-                        LDA             #STR8_ATTACH_LONG_A
-                        BRA             ?WAIT
-?SHORT:
-                        LDA             #STR8_ATTACH_TICK_A
-?WAIT:
-                        JSR             STR8_DELAY_FIXED_A
-                        LDA             #'.'
-                        JSR             STR8_CON_WRITE_BYTE_BLOCK
-                        PLA
-                        DEC             A
-                        BNE             ?TICK
-                        RTS
-STR8_DELAY_FIXED_A:
-                        LDX             #STR8_DELAY_TICK_X
-                        LDY             #STR8_DELAY_TICK_Y
-                        JMP             UTL_DELAY_AXY_8MHZ
-
 STR8_PRINT_BANNER:
                         LDX             #<MSG_ID
                         LDY             #>MSG_ID
@@ -437,22 +404,35 @@ STR8_PRINT_BANNER:
 
 ; OUT: C=1 and A='0'/'1'/'2'/'3'/'S' when a boot choice was consumed.
 ;      C=0 if the timeout elapsed.
-; 2026-05-07T19:14-05:00        WLP2        Countdown split into poll, print, and tick helpers.
+; First emit 35 LFs to clear a connected terminal. The first 16 dots then
+; quarantine USB enumeration and cannot consume a key. At the midpoint RX is
+; flushed, the banner/selector is printed, and 16 live dots poll only
+; 0/1/2/3/S. Each dot phase is about six seconds at 8 MHz.
 STR8_STARTUP_DELAY:
+                        LDX             #STR8_SCREEN_CLEAR_LINES
+?CLEAR:                LDA             #$0A
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
+                        DEX
+                        BNE             ?CLEAR
+                        STZ             STR8_BOOT_KEY_ENABLE
+                        LDA             #STR8_STARTUP_DOT_COUNT
+?TICK:
+                        PHA
+                        CMP             #STR8_STARTUP_LIVE_TICKS
+                        BNE             ?WAIT
+                        JSR             STR8_CON_FLUSH_RX
+                        INC             STR8_BOOT_KEY_ENABLE
+                        LDX             #<MSG_CRLF
+                        LDY             #>MSG_CRLF
+                        JSR             STR8_PRINT_XY
+                        JSR             STR8_PRINT_BANNER
                         LDX             #<MSG_BOOT_PROMPT
                         LDY             #>MSG_BOOT_PROMPT
                         JSR             STR8_PRINT_XY
-                        LDA             #STR8_DELAY_TICKS
-?TICK:
-                        PHA
-                        JSR             STR8_BOOT_KEY_POLL_IF_ENABLED
-                        BCS             ?KEY_PRESSED
-                        PLA
-                        PHA
-                        JSR             STR8_PRINT_COUNTDOWN_A
-                        PLA
-                        PHA
-                        JSR             STR8_DELAY_COUNTDOWN_TICK_A
+?WAIT:                 LDA             #STR8_STARTUP_DOT_A
+                        JSR             STR8_DELAY_FIXED_A
+                        LDA             #'.'
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         JSR             STR8_BOOT_KEY_POLL_IF_ENABLED
                         BCS             ?KEY_PRESSED
                         PLA
@@ -466,6 +446,11 @@ STR8_STARTUP_DELAY:
                         SEC
                         RTS
 
+STR8_DELAY_FIXED_A:
+                        LDX             #STR8_DELAY_TICK_X
+                        LDY             #STR8_DELAY_TICK_Y
+                        JMP             UTL_DELAY_AXY_8MHZ
+
 STR8_BOOT_KEY_POLL_IF_ENABLED:
                         LDA             STR8_BOOT_KEY_ENABLE
                         BEQ             ?NO
@@ -473,31 +458,11 @@ STR8_BOOT_KEY_POLL_IF_ENABLED:
 ?NO:                   CLC
                         RTS
 
-STR8_PRINT_COUNTDOWN_A:
-                        PHA
-                        JSR             STR8_WRITE_DEC_DIGIT_A
-                        PLA
-                        CMP             #$01
-                        BEQ             ?DONE
-                        LDA             #' '
-                        JSR             STR8_CON_WRITE_BYTE_BLOCK
-?DONE:                 RTS
-
-; One $24 tick plus five $23 ticks form the six-second prompt countdown.
-STR8_DELAY_COUNTDOWN_TICK_A:
-                        CMP             #STR8_DELAY_TICKS
-                        BEQ             ?FIRST
-                        LDA             #STR8_DELAY_TICK_A
-                        BRA             ?WAIT
-?FIRST:                LDA             #STR8_DELAY_FIRST_A
-?WAIT:                 BRA             STR8_DELAY_FIXED_A
-
-; 2026-07-31T14:32-05:00        Codex       Echo selector letters uppercase.
+; 2026-08-05T00:00-05:00        Codex       Echo only accepted live-dot keys.
 STR8_BOOT_KEY_POLL:
                         JSR             STR8_CON_READ_BYTE_NONBLOCK
                         BCC             ?NO
                         JSR             STR8_TO_UPPER_A
-                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         CMP             #'0'
                         BCC             ?NOT_DIGIT
                         CMP             #'4'
@@ -508,7 +473,8 @@ STR8_BOOT_KEY_POLL:
                         BEQ             ?YES
 ?NO:                   CLC
                         RTS
-?YES:                  SEC
+?YES:                  JSR             STR8_CON_WRITE_BYTE_BLOCK
+                        SEC
                         RTS
                         ENDIF
 
@@ -640,6 +606,18 @@ STR8_TO_UPPER_A:
 ; Command dispatch
 ; ----------------------------------------------------------------------------
 STR8_DISPATCH_A:
+                        CMP             #'0'
+                        BCC             ?NOT_SELECT
+                        CMP             #'4'
+                        BCS             ?NOT_SELECT
+                        IF              STR8_V1_LAYOUT
+                        LDX             STR8_REC_DATA_BUF+1
+                        BEQ             ?SELECT
+                        JMP             STR8_CMD_UNKNOWN
+?SELECT:
+                        ENDIF
+                        JMP             STR8_CMD_SELECT_A
+?NOT_SELECT:
                         IF              STR8_V1_LAYOUT
                         CMP             #'I'
                         BNE             ?NOT_I
@@ -652,19 +630,11 @@ STR8_DISPATCH_A:
 ?NOT_J:
                         IF              STR8_V1_LAYOUT
                         ELSE
-                        CMP             #'G'
-                        BNE             ?NOT_G
-                        JMP             STR8_CMD_G_HIMON
-?NOT_G:
                         CMP             #'U'
                         BNE             ?NOT_U
                         JMP             STR8_CMD_UPDATE_HIMON
 ?NOT_U:
                         ENDIF
-                        CMP             #'R'
-                        BNE             ?NOT_R
-                        JMP             STR8_CMD_RESET
-?NOT_R:
                         JMP             STR8_CMD_UNKNOWN
 
                         IF              STR8_V1_LAYOUT
@@ -1103,6 +1073,25 @@ STR8_CMD_JUMP_BANK:
 ?BAD:
                         JMP             STR8_CMD_UNKNOWN
 
+; Bare 0/1/2 immediately reuse the proven J handoff. Bare 3 is the warm HIMON
+; path formerly reached by G; explicit J3 remains the Bank-3 STR8 re-entry.
+STR8_CMD_SELECT_A:
+                        CMP             #'3'
+                        BEQ             STR8_CMD_SELECT_HIMON
+                        AND             #$03
+                        JSR             STR8_JUMP_BANK_PREP_A
+                        JMP             STR8_JUMP_BANK_LAUNCH
+
+STR8_CMD_SELECT_HIMON:
+                        IF              STR8_RAM_PROOF
+                        JSR             STR8_SELECT_BANK_3
+                        ENDIF
+                        JSR             STR8_CON_FLUSH_RX
+                        LDX             #<MSG_CRLF
+                        LDY             #>MSG_CRLF
+                        JSR             STR8_PRINT_XY
+                        JMP             STR8_ENTER_HIMON_WARM
+
                         IF              STR8_V1_LAYOUT
                         ELSE
 ; 2026-05-17T21:20-05:00        WLP2        U is the first fixed-gate HIMON S19 update.
@@ -1147,27 +1136,7 @@ STR8_CMD_UPDATE_NO_DATA:
                         LDY             #>MSG_S19_NO_DATA
                         JMP             STR8_PRINT_XY
 
-; 2026-05-07T19:14-05:00        WLP2        G uses warm-entry signature before HIMON handoff.
-STR8_CMD_G_HIMON:
-                        IF              STR8_RAM_PROOF
-                        JSR             STR8_SELECT_BANK_3
-                        LDX             #<MSG_G_HIMON
-                        LDY             #>MSG_G_HIMON
-                        JSR             STR8_PRINT_XY
-                        JMP             STR8_ENTER_HIMON_WARM
-                        ELSE
-                        LDX             #<MSG_G_HIMON
-                        LDY             #>MSG_G_HIMON
-                        JSR             STR8_PRINT_XY
-                        JMP             STR8_ENTER_HIMON_WARM
                         ENDIF
-                        ENDIF
-
-STR8_CMD_RESET:
-                        IF              STR8_RAM_PROOF
-                        JSR             STR8_SELECT_BANK_3
-                        ENDIF
-                        JMP             (STR8_RESET_VECTOR)
 
 STR8_CMD_OK:
                         IF              STR8_RAM_PROOF
@@ -2496,21 +2465,24 @@ STR8_ID_MARKER_BYTES:   DB              STR8_ID_MARKER0,STR8_ID_MARKER1
                         ELSE
                         DB              " $F",$0D,$8A
                         ENDIF
+                        IF              STR8_RAM_PROOF
+                        ELSE
+MSG_BOOT_MENU:          DB              $0D,$0A
+                        ENDIF
 MSG_SCREEN:
                         IF              STR8_RAM_PROOF
                         DB              "RAM $0200 BUF $4000-$4FFF",$0D,$0A
                         ENDIF
 MSG_HELP:
                         IF              STR8_V1_LAYOUT
-                        DB              "I J0 J1 J2 J3 R",$0D,$8A
+                        DB              "I 0-3 J0-3",$0D,$8A
                         ELSE
-                        DB              "U J0 J1 J2 J3 G R",$0D,$8A
+                        DB              "U 0-3 J0-3",$0D,$8A
                         ENDIF
 MSG_PROMPT:             DB              "STR8-N",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
-MSG_BOOT_PROMPT:        DB              $0D,$0A
-                        DB              "0/1/2=BOOT 3=HIMON S=STR8 ",$A0
+MSG_BOOT_PROMPT:        DB              "0/1/2=BOOT 3=HIMON S=STR8 ",$A0
 MSG_BOOT_BANK_WAIT:     DB              "BOOT IN 3S",$0D,$8A
                         ENDIF
 
@@ -2549,11 +2521,10 @@ MSG_UPDATE_SEND_S19:    DB              $0D,$0A,"SEND S19 C000-EFFF",$0D,$8A
 MSG_UPDATE_WRITE:       DB              $0D,$0A,"PROGRAM C000-EFFF? Y:",$A0
 MSG_S19_FAIL:           DB              $0D,$0A,"S19 FAIL",$0D,$8A
 MSG_S19_NO_DATA:        DB              $0D,$0A,"NO S19 DATA",$0D,$8A
-MSG_G_HIMON:            DB              $0D,$0A,"G HIMON",$0D,$8A
                         ENDIF
-MSG_NO_BOOT:            DB              $0D,$0A,"NO BOOT @C000",$0D,$8A
+MSG_NO_BOOT:            DB              "NO BOOT @C000",$0D,$8A
 MSG_JUMP_B:             DB              $0D,$0A,"J ",('B'+$80)
-MSG_JUMP_FAIL_B:        DB              $0D,$0A,"JERR ",('B'+$80)
+MSG_JUMP_FAIL_B:        DB              "JERR ",('B'+$80)
 MSG_JUMP_FAIL_VEC:      DB              " V=",('$'+$80)
                         IF              STR8_RAM_PROOF
 MSG_COPY_FAIL_AT:       DB              $0D,$0A,"COPY FAIL @ ",('$'+$80)
