@@ -1,12 +1,11 @@
 # STR8 V1 Migration and First Transaction Board Test
 
-Status: Bank-3 migration hardware-accepted; command-surface and Bank-2
-transaction proof pending.
+Status: hardware-accepted on `00.0806(1707)`.
 
-Accepted on `00.0806(1707)`: TopWriter status `01 AC 00 00`, exact `$F000`
+Accepted evidence includes TopWriter status `01 AC 00 00`, the exact `$F000`
 service face, packed `$FF28-$FFAF` jump worker, empty `$FFB0-$FFEF` directory,
-vectors, physical-reset entry, and the `I 0-3 J0-3` prompt. Continue at
-Section 4; Sections 5-6 remain destructive and pending.
+vectors, physical-reset entry, compact command surface, first COMPLETE Bank-2
+transaction, `J2`, `42 4A 02`, and reset-persistent directory state.
 
 This card installs the fitted V1 supervisor into Bank 3, verifies the packed
 jump worker and empty directory, then proves one complete journaled `I`
@@ -182,9 +181,10 @@ I OK
 STR8-N>
 ```
 
-Dump the new directory record:
+Enter warm HIMON without clearing RAM, then dump the new directory record:
 
 ```text
+3
 D FFD0 FFDF
 ```
 
@@ -214,6 +214,6 @@ Press physical RESET. Bank 3 must return to the same V1 STR8 selector. Enter
 HIMON and dump `$FFD0-$FFDF` again; the Bank-2 COMPLETE record must still match
 the bytes above.
 
-Append the complete serial transcript, candidate hashes, exact visible
-identity, and any recovery action to `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.
-Only then change this card from `board proof pending` to accepted.
+The complete serial evidence, candidate hashes, exact visible identities, and
+the recovered wrong-artifact pre-pass are recorded in
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.

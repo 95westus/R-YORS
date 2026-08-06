@@ -82,8 +82,8 @@ The flashable V1 candidate is built separately with
 `make -C SRC str8-v1-artifact`. It packs the permanent jump worker at
 `$FF28-$FFAF`, leaves the fixed directory erased at `$FFB0-$FFEF`, and emits a
 single-file `I` transport containing the uploaded mutation worker before the
-dense bank image. It remains a host-accepted candidate until the
-[V1 migration board test](STR8_V1_MIGRATION_BOARD_TEST.md) passes.
+dense bank image. The migration and first journaled Bank-2 transaction are
+hardware-accepted by the [V1 migration board test](STR8_V1_MIGRATION_BOARD_TEST.md).
 
 ## Milestone Snapshot
 

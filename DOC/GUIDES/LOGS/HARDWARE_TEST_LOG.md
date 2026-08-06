@@ -20012,3 +20012,33 @@ new `I 0-3 J0-3` prompt. Bank-3 migration, packed jump-worker installation,
 empty-directory installation, vectors, and reset entry are hardware-accepted.
 The unmatched `?`/`G`/`R` checks, warm `3`, destructive Bank-2 journaled `I`,
 `J2`, and reset-persistence checks remain pending.
+
+## 2026-08-06 STR8 V1 First Transaction Board Closure
+
+The continuation first exercised the final Bank-3 command surface. `?`, `G`,
+and `R` each returned the exact compact `I 0-3 J0-3` help and remained in
+STR8. Bare `3` printed `BOOT WARM` and entered the existing Bank-3
+`HIMON V 00.0805(1312)` without a second 35-LF clear.
+
+The destructive Bank-2 transaction then accepted type `$A5`, description
+`RYORS`, empty state, and pair `$00`. The single combined S19 produced eight
+sector dots and `I OK`. Its central Bank-3 directory record read:
+
+```text
+FFD0: A5 FF FF FF 52 59 4F 52 53 FE FF FF FC FF FF FF
+```
+
+`J2` printed `J B2` and started the newly installed
+`STR8-N V 00.0806(1707) $F`. Live `S` reached `I 0-3 J0-3`; warm `3` then
+entered the distinct Bank-2 `HIMON V 00.0806(1707)`. The published RAM record
+was exact:
+
+```text
+1FFD: 42 4A 02
+```
+
+A physical reset returned to Bank 3, whose older
+`HIMON V 00.0805(1312)` provided an independent bank identity. The COMPLETE
+Bank-2 record at `$FFD0-$FFDF` remained byte-for-byte unchanged. This closes
+the positive V1 Bank-3 migration, command-surface, first journaled Bank-2
+install, launch, Bank Jump Record, and reset-persistence board rail.

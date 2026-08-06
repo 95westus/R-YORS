@@ -13045,3 +13045,19 @@ program/readback and `U 0-3 J0-3` boot were recognized before any `I` action;
 the correct V1 artifact was then staged and checked before programming. The
 remaining board rail is unmatched `?`/`G`/`R`, warm `3`, the destructive
 Bank-2 transaction, `J2`, and physical-reset directory persistence.
+
+## 2026-08-06 STR8 V1 First Transaction Board Closure
+
+Status: positive migration and first journaled bank-install rail
+hardware-accepted.
+
+Unmatched `?`, `G`, and `R` returned the compact V1 help; warm `3` entered the
+older Bank-3 HIMON without another clear. The combined stream installed Bank 2
+with eight dots and `I OK`, producing the exact COMPLETE `$FFD0` record for
+type `$A5`, description `RYORS`, and pair 0. `J2` booted the new Bank-2 V1
+image, published `42 4A 02`, and exposed its distinct newer HIMON identity.
+Physical reset returned to Bank 3 and preserved the COMPLETE directory record.
+
+This closes the board card's positive acceptance rail. Deliberately interrupted
+and malformed on-board recovery cases remain a separate negative-test matrix;
+the host transaction gate already covers their state-machine behavior.
