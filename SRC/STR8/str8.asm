@@ -847,7 +847,7 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDX             #<MSG_I_DESC
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_DESC
                         JSR             STR8_PRINT_XY
@@ -1095,7 +1095,7 @@ STR8_I_SET_DIR_ADDRESS_A:
                         ASL             A
                         ASL             A
                         ASL             A
-                        CLC
+; Bank 0-3 leaves carry clear after the fourth shift.
                         ADC             #<STR8_DIR_BASE
                         STA             STR8_REC_ADDR_LO
                         PLA
@@ -1307,9 +1307,8 @@ STR8_I_STAGE_SECTOR_READY:
                         JSR             STR8_I_RUN_SECTOR_WORKER
                         BCC             ?FAIL
                         LDA             #'.'
-                        JSR             STR8_CON_WRITE_BYTE_BLOCK
-                        SEC
-                        RTS
+; The blocking writer returns only after its nonblocking write sets carry.
+                        JMP             STR8_CON_WRITE_BYTE_BLOCK
 ?FAIL:                 CLC
                         RTS
 
