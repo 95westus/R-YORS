@@ -821,7 +821,10 @@ STR8_I_PRINT_SUMMARY:
                         CMP             #STR8_DIR_BANK3
                         BEQ             ?RANGE3
                         LDX             #<MSG_I_RANGE_32K
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
                         LDY             #>MSG_I_RANGE_32K
+                        ENDIF
                         BRA             ?RANGE
 ?RANGE3:               LDX             #<MSG_I_RANGE_28K
                         IF              STR8_V1_INSTALLER_TXN
@@ -882,13 +885,22 @@ STR8_I_PRINT_SUMMARY:
                         CMP             #STR8_DIR_PAIR_NONE
                         BEQ             ?FULL
                         LDX             #<MSG_I_COMPLETE
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
                         LDY             #>MSG_I_COMPLETE
+                        ENDIF
                         BRA             ?PRINT_STATE
 ?EMPTY:                LDX             #<MSG_I_EMPTY
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
                         LDY             #>MSG_I_EMPTY
+                        ENDIF
                         BRA             ?PRINT_STATE
 ?INCOMPLETE:           LDX             #<MSG_I_INCOMPLETE
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
                         LDY             #>MSG_I_INCOMPLETE
+                        ENDIF
                         BRA             ?PRINT_STATE
 ?FULL:                 LDX             #<MSG_I_FULL
                         IF              STR8_V1_INSTALLER_TXN
@@ -943,7 +955,7 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_I_FINISH_TRANSACTION
                         BCC             STR8_I_PRINT_TRANSACTION_FAIL
                         LDX             #<MSG_I_INSTALL_OK
-                        JMP             STR8_PRINT_TXN_PAGE1_X
+                        JMP             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDX             #<MSG_I_STAGE_OK
                         LDY             #>MSG_I_STAGE_OK
@@ -2843,6 +2855,10 @@ MSG_I_TYPE_PROMPT:      DB              $0D,$0A,"TYPE:",$A0
 MSG_I_DESC_PROMPT:      DB              $0D,$0A,"DESC:",$A0
 MSG_I_INVALID:          DB              $0D,$0A,"DIR INVALID",$0D,$8A
 MSG_I_SUMMARY:          DB              $0D,$0A,"I ",('B'+$80)
+; Fill the reclaimed eight-byte page tail so both range strings stay on $FE.
+                        IF              STR8_V1_INSTALLER_TXN
+MSG_I_INSTALL_OK:       DB              $0D,$0A,"I OK",$0D,$8A
+                        ENDIF
 MSG_I_RANGE_32K:        DB              " 8000-FFFF",(' '+$80)
 MSG_I_RANGE_28K:        DB              " 8000-EFFF",(' '+$80)
 MSG_I_TYPE:             DB              $0D,$0A,"T",('='+$80)
@@ -2861,7 +2877,6 @@ MSG_I_STAGE_CONFIRM:    DB              " STAGE? Y:",$A0
                         ENDIF
 MSG_I_SEND_S19:         DB              $0D,$0A,"SEND S19",$0D,$8A
                         IF              STR8_V1_INSTALLER_TXN
-MSG_I_INSTALL_OK:       DB              $0D,$0A,"I OK",$0D,$8A
 MSG_I_TRANSACTION_FAIL: DB              $0D,$0A,"DIR FAIL ",('$'+$80)
 MSG_I_S19_FAIL:         DB              $0D,$0A,"I FAIL ",('$'+$80)
                         ELSE

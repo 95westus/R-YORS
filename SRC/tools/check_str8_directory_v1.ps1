@@ -1815,6 +1815,7 @@ if ($transactionInstallerMode) {
     $txnPage0High = (Get-MapSymbol $residentSymbols 'MSG_ID') -shr 8
     $txnPage1High = (Get-MapSymbol $residentSymbols 'MSG_CRLF') -shr 8
     $txnSummaryAddress = Get-MapSymbol $residentSymbols 'MSG_I_SUMMARY'
+    $txnInstallOkAddress = Get-MapSymbol $residentSymbols 'MSG_I_INSTALL_OK'
     $txnRange32Address = Get-MapSymbol $residentSymbols 'MSG_I_RANGE_32K'
     $str8SourcePath = Join-Path (Split-Path -Parent $ConstantsPath) 'str8.asm'
     $txnPage0CallCount = (Select-String -LiteralPath $str8SourcePath `
@@ -1822,12 +1823,13 @@ if ($transactionInstallerMode) {
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
         -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0EA6) -and
+    Assert-True (($residentSize -eq 0x0E9E) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnSummaryAddress -eq 0xFDFB) -and ($txnRange32Address -eq 0xFE00) -and
-        ($txnPage0CallCount -eq 16) -and ($txnPage1CallCount -eq 24)) `
-        'Transaction message-page pass must retain its exact size, boundary, and 16/24 call split'
+        ($txnSummaryAddress -eq 0xFDF3) -and ($txnInstallOkAddress -eq 0xFDF8) -and
+        ($txnRange32Address -eq 0xFE00) -and
+        ($txnPage0CallCount -eq 17) -and ($txnPage1CallCount -eq 23)) `
+        'Transaction message-page pass must retain its exact size, boundary, and 17/23 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
         ($txnPrintPage1 + 2 -eq $residentPrintXy)) `
         'Transaction print-page helpers must be the six bytes immediately before STR8_PRINT_XY'
@@ -1840,7 +1842,7 @@ if ($transactionInstallerMode) {
             'MSG_ID', 'MSG_BOOT_MENU', 'MSG_SCREEN', 'MSG_HELP', 'MSG_PROMPT',
             'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_OK', 'MSG_ABORT',
             'MSG_I_BANK', 'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT',
-            'MSG_I_INVALID', 'MSG_I_SUMMARY'
+            'MSG_I_INVALID', 'MSG_I_SUMMARY', 'MSG_I_INSTALL_OK'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage0High) `
@@ -1850,7 +1852,7 @@ if ($transactionInstallerMode) {
             'MSG_I_RANGE_32K', 'MSG_I_RANGE_28K', 'MSG_I_TYPE', 'MSG_I_DESC',
             'MSG_I_ENTRY', 'MSG_I_EMPTY', 'MSG_I_INCOMPLETE', 'MSG_I_COMPLETE',
             'MSG_I_FULL', 'MSG_I_PAIR', 'MSG_I_WRITE_CONFIRM', 'MSG_I_SEND_S19',
-            'MSG_I_INSTALL_OK', 'MSG_I_TRANSACTION_FAIL', 'MSG_I_S19_FAIL',
+            'MSG_I_TRANSACTION_FAIL', 'MSG_I_S19_FAIL',
             'MSG_I_NO_WRITE', 'MSG_NO_BOOT', 'MSG_JUMP_B', 'MSG_JUMP_FAIL_B',
             'MSG_JUMP_FAIL_VEC', 'MSG_CRLF'
         )) {

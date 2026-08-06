@@ -12627,3 +12627,57 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-06 STR8 V1 Transaction Page-Load Size Pass 3
+
+Status: compiled host pass; still oversized and nonflashable.
+
+Four transaction branch arms still loaded `$FE` immediately before the shared
+page-1 print helper overwrote Y: the 32K range and COMPLETE, EMPTY, and
+INCOMPLETE state paths. Removing those four two-byte loads reclaims exactly
+`$0008` bytes. A direct deletion would have pulled `MSG_I_RANGE_32K` back onto
+page `$FD`, so the exact eight-byte `MSG_I_INSTALL_OK` string now fills
+`$FDF8-$FDFF`. Its call moves to the page-0 helper and the first range string
+remains pinned at `$FE00`; operator output is unchanged.
+
+The transaction gate now freezes resident size `$0E9E`, the 17/23 page-helper
+call split, `MSG_I_SUMMARY=$FDF3`, `MSG_I_INSTALL_OK=$FDF8`,
+`MSG_I_RANGE_32K=$FE00`, every optimized message page, and the unchanged
+`A0 FD 80 02 A0 FE` helper bytes.
+
+Measured memory statistics:
+
+```text
+normal resident             $F000-$FAF6  size $0AF7 = 2807  unchanged
+V1 preview resident         $F000-$FBDC  size $0BDD = 3037  unchanged
+V1 preview/worker gap       $FBDD-$FD1E  size $0142 = 322
+dry resident                $F000-$FDBF  size $0DC0 = 3520  unchanged
+dry/worker overlap          $FD1F-$FDBF  size $00A1 = 161
+dry fit debt + $0040 gap                    $00E1 = 225
+transaction resident        $F000-$FE9D  size $0E9E = 3742  down $0008
+transaction/worker overlap  $FD1F-$FE9D  size $017F = 383
+transaction fit debt                         $01BF = 447
+room before directory       $FE9E-$FFAF  size $0112 = 274
+stored worker               $FD1F-$FFAF  size $0291 = 657  unchanged
+directory                   $FFB0-$FFEF  size $0040 = 64   unchanged
+configuration/vectors       $FFF0-$FFFF  size $0010 = 16   unchanged
+```
+
+The transaction gate still passes 38 installer cases, 94 journal cases, 33
+record cases, 77 directory-writer cases, 23 line/`I` cases, and 12 startup
+cases. The largest transaction fixture executes 432652 interpreted steps.
+This transaction-only size slice emits no V1 migration artifact and requires
+no separate board test.
+
+Required host gates:
+
+```text
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-v1-layout-preview str8-directory-check
+make -C SRC firmware
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```
