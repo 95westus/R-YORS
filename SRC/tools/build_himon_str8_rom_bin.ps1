@@ -11,11 +11,16 @@ param(
     [int]$ApPackageAddress = 0,
     [int]$ApPackageLimit = 0xC000,
     [string]$BinPath = "BUILD/bin/himon-str8-rom.bin",
-    [switch]$V1LayoutPreview
+    [switch]$V1LayoutPreview,
+    [switch]$V1Flashable
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+if ($V1LayoutPreview -and $V1Flashable) {
+    throw "V1LayoutPreview and V1Flashable are mutually exclusive"
+}
 
 function Resolve-ArtifactPath {
     param([Parameter(Mandatory = $true)][string]$Path)
@@ -131,6 +136,7 @@ function Import-S19RelocatedIntoImage {
         [Parameter(Mandatory = $true)][int]$StoreSize
     )
 
+    [bool[]]$seen = New-Object bool[] $StoreSize
     foreach ($rawLine in Get-Content -Path $Path) {
         $line = $rawLine.Trim()
         if ($line.Length -eq 0) {
@@ -171,6 +177,10 @@ function Import-S19RelocatedIntoImage {
             if ($delta -lt 0 -or $delta -ge $StoreSize) {
                 throw ("Worker byte at run address {0:X4} is outside configured worker range {1:X4}+{2:X}" -f $runAbsolute, $RunStart, $StoreSize)
             }
+            if ($seen[$delta]) {
+                throw ("Duplicate worker byte at run address {0:X4} in {1}" -f $runAbsolute, $Path)
+            }
+            $seen[$delta] = $true
             $storeAbsolute = $StoreStart + $delta
             if ($storeAbsolute -lt 0x8000 -or $storeAbsolute -ge 0x10000) {
                 throw ("Worker storage address {0:X4} is outside ROM bank image" -f $storeAbsolute)
@@ -187,6 +197,11 @@ function Import-S19RelocatedIntoImage {
         $sum += $checksum
         if (($sum -band 0xFF) -ne 0xFF) {
             throw "Checksum failure in ${Path}: $line"
+        }
+    }
+    for ($i = 0; $i -lt $seen.Length; $i++) {
+        if (-not $seen[$i]) {
+            throw ("Worker S19 is missing run address {0:X4}: {1}" -f ($RunStart + $i), $Path)
         }
     }
 }
@@ -342,14 +357,20 @@ $v1WorkerStoreStart = $v1WorkerStoreEndExclusive - $workerSize
 $v1WorkerGapMin = 0x0040
 $v1WorkerGap = $v1WorkerStoreStart - $str8End
 
-if ($V1LayoutPreview) {
+if ($V1LayoutPreview -or $V1Flashable) {
     if ([System.IO.Path]::GetFileName($BinPath) -notmatch 'v1-layout-preview') {
-        throw "V1 layout preview output name must contain 'v1-layout-preview'"
+        if ($V1LayoutPreview) {
+            throw "V1 layout preview output name must contain 'v1-layout-preview'"
+        }
     }
     $workerStoreEndExclusive = $v1WorkerStoreEndExclusive
     $workerStoreStart = $v1WorkerStoreStart
     $str8WorkerGapMin = $v1WorkerGapMin
-    $layoutMode = "V1 LAYOUT PREVIEW; NOT FLASHABLE"
+    if ($V1Flashable) {
+        $layoutMode = "V1 FLASHABLE CANDIDATE"
+    } else {
+        $layoutMode = "V1 LAYOUT PREVIEW; NOT FLASHABLE"
+    }
 } else {
     $workerStoreEndExclusive = $legacyWorkerStoreEndExclusive
     $workerStoreStart = $legacyWorkerStoreStart
@@ -448,7 +469,7 @@ if ($str8Nmi -lt 0xF000 -or $str8Nmi -ge 0x10000) {
 if ($str8Irq -lt 0xF000 -or $str8Irq -ge 0x10000) {
     throw ("STR8 IVY IRQ entry is {0:X4}; expected F000-FFFF" -f $str8Irq)
 }
-if (-not $V1LayoutPreview) {
+if (-not $V1LayoutPreview -and -not $V1Flashable) {
     if ($str8End -gt $legacyWorkerStoreStart) {
         throw ("STR8 crosses legacy worker storage at {0:X4}; _END_DATA={1:X4}" -f $legacyWorkerStoreStart, $str8End)
     }
@@ -587,11 +608,11 @@ Import-S19IntoImage -Path $HimonS19Path -Image $bin -BankOffset $bankOffset
 Import-S19RelocatedIntoImage -Path $WorkerS19Path -Image $bin -BankOffset $bankOffset -RunStart $workerRunStart -StoreStart $workerStoreStart -StoreSize $workerStoreSize
 Import-S19IntoImage -Path $Str8S19Path -Image $bin -BankOffset $bankOffset
 
-if ($V1LayoutPreview) {
+if ($V1LayoutPreview -or $V1Flashable) {
     for ($address = $v1DirectoryStart; $address -lt $v1DirectoryEndExclusive; $address++) {
         $offset = $bankOffset + ($address - 0x8000)
         if ($bin[$offset] -ne 0xFF) {
-            throw ("V1 preview directory byte {0:X4} is {1:X2}; expected FF" -f $address, $bin[$offset])
+            throw ("V1 directory byte {0:X4} is {1:X2}; expected FF" -f $address, $bin[$offset])
         }
     }
 }
@@ -684,9 +705,10 @@ if ($apPackageStart -ne $null) {
 }
 Write-Host ("WORKER RUN/STORE/SIZE   = {0:X4}/{1:X4}-{2:X4}/{3:X}" -f $workerRunStart, $workerStoreStart, ($workerStoreStart + $workerSize - 1), $workerSize)
 Write-Host ("STR8 RES/WORKER GAP      = {0:X4}-{1:X4}/{2:X} (min {3:X})" -f $str8End, ($workerStoreStart - 1), $str8WorkerGap, $str8WorkerGapMin)
-if ($V1LayoutPreview) {
-    Write-Host ("V1 PREVIEW WORKER         = {0:X4}-{1:X4}/{2:X} (emitted)" -f $v1WorkerStoreStart, ($v1WorkerStoreEndExclusive - 1), $workerSize)
-    Write-Host ("V1 PREVIEW DIRECTORY      = {0:X4}-{1:X4}/{2:X} (all FF)" -f $v1DirectoryStart, ($v1DirectoryEndExclusive - 1), $v1DirectorySize)
+if ($V1LayoutPreview -or $V1Flashable) {
+    $v1Label = $(if ($V1Flashable) { "V1 FLASHABLE" } else { "V1 PREVIEW" })
+    Write-Host ("{0} WORKER       = {1:X4}-{2:X4}/{3:X} (emitted)" -f $v1Label, $v1WorkerStoreStart, ($v1WorkerStoreEndExclusive - 1), $workerSize)
+    Write-Host ("{0} DIRECTORY    = {1:X4}-{2:X4}/{3:X} (all FF)" -f $v1Label, $v1DirectoryStart, ($v1DirectoryEndExclusive - 1), $v1DirectorySize)
 } else {
     Write-Host ("V1 PREFLIGHT WORKER       = {0:X4}-{1:X4}/{2:X} (not emitted)" -f $v1WorkerStoreStart, ($v1WorkerStoreEndExclusive - 1), $workerSize)
     Write-Host ("V1 PREFLIGHT DIRECTORY    = {0:X4}-{1:X4}/{2:X} (not emitted)" -f $v1DirectoryStart, ($v1DirectoryEndExclusive - 1), $v1DirectorySize)

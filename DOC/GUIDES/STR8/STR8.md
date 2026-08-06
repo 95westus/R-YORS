@@ -62,13 +62,13 @@ flowchart LR
     BOOTCHECK -->|all $FF| SHELL
     SELECT -->|0, 1, or 2| JUMP["STR8_BOOT_JUMP_BANK_A<br/>Prepare a delayed, non-destructive selected-bank handoff"]
 
-    SHELL --> DISPATCH["STR8_DISPATCH_A<br/>Route ?, U, J, G, and R; B and bare 0-2 are retired"]
-    DISPATCH --> UPDATE["STR8_CMD_UPDATE_HIMON<br/>Stage, validate, program, and verify the fixed HIMON S19 window"]
+    SHELL --> DISPATCH["STR8_DISPATCH_A<br/>Route I, bare 0-3, and J0-J3; unmatched input prints compact help"]
+    DISPATCH --> INSTALL["STR8_CMD_INSTALL_PREVIEW<br/>Collect metadata and run the journaled selected-bank transaction"]
     DISPATCH --> JUMP
     DISPATCH --> HIMON
 
-    UPDATE --> WORKER["STR8 worker START<br/>Accept only modes $05-$08; every other byte fails before an operation call"]
-    WORKER --> FLASH["STR8W_PROGRAM_DST_SECTOR / STR8W_PROGRAM_RECORD<br/>Erase, program, and read-back verify validated flash work"]
+    INSTALL --> MUTATION["Uploaded mutation worker<br/>Accept modes $05-$07; erase, program, verify, and journal from RAM"]
+    JUMP --> JWORKER["Packed jump worker<br/>Accept mode $08; validate and enter the selected bank from RAM"]
 
     RECORD["STR8_RECORD_SERVICE_ENTRY<br/>Validate S19 records and preflight whole-record apply policy"] --> WORKER
     SERVICE["STR8_RUN_WORKER_SERVICE<br/>Stable resident doorway; copy the worker to $0200 and run it"] --> WORKER
@@ -77,6 +77,13 @@ flowchart LR
 AP parsing and FNV import linking are HIMON responsibilities. STR8's retired
 `$F006` slot now returns carry clear; the former adapter source is retained in
 `SRC/ARCHIVE/str8/` for later reference.
+
+The flashable V1 candidate is built separately with
+`make -C SRC str8-v1-artifact`. It packs the permanent jump worker at
+`$FF28-$FFAF`, leaves the fixed directory erased at `$FFB0-$FFEF`, and emits a
+single-file `I` transport containing the uploaded mutation worker before the
+dense bank image. It remains a host-accepted candidate until the
+[V1 migration board test](STR8_V1_MIGRATION_BOARD_TEST.md) passes.
 
 ## Milestone Snapshot
 
@@ -210,24 +217,26 @@ $FFFE-$FFFF  IRQ/BRK
 Those vector bytes remain part of the selected STR8 protected window. They are
 treated as vector table rather than normal code storage.
 
-The current high-flash layout should be read as a top-sector ownership rule,
-not as general free ROM. STR8 code/data grows upward, the stored RAM worker is
-packed against `$FFEF` and grows downward, and the remaining free space is one
-contiguous hole:
+The flashable V1 high-flash layout should be read as a top-sector ownership
+rule, not as general free ROM. STR8 code/data grows upward, the permanent jump
+worker is packed immediately below the fixed directory, and the remaining free
+space is one contiguous reserve:
 
 ```text
-$F000-$F8AF  STR8 resident code
-             size $08B0 = 2224 bytes
+$F000-$FD89  STR8 transaction code
+             size $0D8A = 3466 bytes
 
-$F8B0-$F9D0  STR8 resident data
-             size $0121 = 289 bytes
+$FD8A-$FEC3  STR8 transaction data
+             size $013A = 314 bytes
 
-$F9D1-$FD92  contiguous unused $FF growth hole
-             size $03C2 = 962 bytes
+$FEC4-$FF27  contiguous reserve
+             size $0064 = 100 bytes
 
-$FD93-$FFEF  stored STR8 RAM worker image
-             size $025D = 605 bytes
-             copied to and run from the $0200-$09FF RAM worker-code tray
+$FF28-$FFAF  packed permanent jump worker
+             size $0088 = 136 bytes; copied to $0200-$0287
+
+$FFB0-$FFEF  fixed four-record V1 directory
+             size $0040 = 64 bytes; initially all $FF
 
 $FFF0-$FFF9  one-time flash board/version/config pocket
              size $000A = 10 bytes
@@ -235,6 +244,9 @@ $FFF0-$FFF9  one-time flash board/version/config pocket
 $FFFA-$FFFF  W65C02 hardware vectors
              size $0006 = 6 bytes
 ```
+
+The mutation worker is not stored in ROM. The one-file `I` transport uploads
+its 555 bytes to `$0200-$042A` before sending the dense bank image.
 
 If STR8 later caches hash/address fast paths in flash, that cache belongs in a
 deliberate STR8-owned record area, not in a fixed little post-worker hole.
@@ -428,9 +440,9 @@ first RAM proof image links at $3000
 first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can back up bank 3 to selected bank 0, 1, or 2 with read-back verify
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-current host build links STR8 at $F000 and stores a RAM worker at $FD93-$FFEF
-current ROM build copies the worker to $0200 before U mutation or J handoff
-current transitional ROM build has ?, U, J0, J1, J2, G, and R commands
+flashable V1 links STR8 at $F000 and packs the jump worker at $FF28-$FFAF
+the V1 transport uploads the mutation worker to $0200-$042A before bank data
+the V1 command surface is I, bare 0-3, and J0-J3
 current worker accepts only modes $05-$08; all other mode bytes fail closed
 reclaim candidate 00.0801(2234) is installed and board-accepted
 retired B and bare 0/1/2 commands return ? on that installed candidate
@@ -697,11 +709,11 @@ R          reset through the live reset vector
 other      print the active command help line
 ```
 
-`?`, `B`, and bare `0`, `1`, and `2` are unknown and print the help line. `U` remains only
-until `I` supplies the V1 selected-bank installer; `G` remains only until `J3`
-supplies the directory-gated Bank-3 local-entry handoff. STR8 keeps `R` as
-reset. `L S`, `L F`, `GO addr`, standalone verify, catalog repair, and richer
-loading remain outside the minimal supervisor.
+`I`, bare `0`-`3`, and `J0`-`J3` are the V1 command surface. Every other input,
+including `?`, `U`, `G`, and `R`, prints the compact help line. Bare `3` enters
+HIMON warm; `J3` uses the validated bank handoff. `L S`, `L F`, `GO addr`,
+standalone verify, catalog repair, and richer loading remain outside the
+minimal supervisor.
 
 ## Current Command Worker Map
 
@@ -714,21 +726,19 @@ flowchart TD
     STR8 --> PROMPT[STR8 prompt]
 
     PROMPT --> BAD[unmatched input: help]
-    PROMPT --> U[U fixed HIMON S19 update]
+    PROMPT --> I[I journaled selected-bank install]
+    PROMPT --> SELECT[bare 0/1/2/3]
     PROMPT --> J[J0/J1/J2/J3 handoff]
-    PROMPT --> G[G go HIMON]
-    PROMPT --> R[R reset]
 
-    G --> HIMON[HIMON at $C000]
-    R --> RESETV[live reset vector]
-
-    U --> COPY[copy worker $FD93-$FFEF -> $0200]
-    J --> COPY
-    COPY --> WORKER[RAM worker: accept only modes $05-$08]
-    WORKER --> FLASH[validated sector/record erase / write / verify]
+    SELECT -->|3| HIMON[HIMON warm at $C000]
+    SELECT -->|0-2 after delay| J
+    I --> UPLOAD[receive exact mutation worker at $0200-$042A]
+    UPLOAD --> FLASH[validated sector erase / program / verify and directory journal]
+    J --> COPY[copy packed jump worker $FF28-$FFAF -> $0200-$0287]
+    COPY --> JWORKER[RAM jump worker: accept only mode $08]
     FLASH --> BANK3[restore Bank 3]
     BANK3 --> STR8
-    WORKER --> BJR[publish $1FFD-$1FFF = BJ + bank]
+    JWORKER --> BJR[publish $1FFD-$1FFF = BJ + bank]
     BJR --> GUEST[validated target reset vector]
 
     Q --> STR8
@@ -762,7 +772,7 @@ quit advanced mode
 Bad fit:
 
 ```text
-the transitional U J0 J1 J2 J3 G R update/handoff path
+the retired transitional U/J/G/R update/handoff path
 implicit or cascading backup policy
 an unconfirmed bank 0 erase
 catalog garbage collection

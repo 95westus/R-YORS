@@ -84,6 +84,10 @@ $mutationEnd = Get-Symbol $mutation 'STR8_WORKER_END'
 $mutationSize = $mutationEnd - $mutationStart
 $residentEnd = Get-Symbol $resident '_END_DATA'
 $mutationSig = Get-Symbol $mutation 'STR8W_MUTATION_SIG'
+$expectedJumpStart = Get-EquValue $WorkerEqPath 'STR8_JUMP_WORKER_START'
+$expectedJumpEnd = Get-EquValue $WorkerEqPath 'STR8_JUMP_WORKER_END'
+$expectedJumpSize = Get-EquValue $WorkerEqPath 'STR8_JUMP_WORKER_SIZE'
+$expectedJumpStore = Get-EquValue $WorkerEqPath 'STR8_JUMP_WORKER_STORE'
 $expectedSigAddress = Get-EquValue $WorkerEqPath 'STR8_MUTATION_WORKER_SIG'
 $expectedMutationEnd = Get-EquValue $WorkerEqPath 'STR8_MUTATION_WORKER_END'
 [byte[]]$expectedSig = @(
@@ -94,8 +98,12 @@ $expectedMutationEnd = Get-EquValue $WorkerEqPath 'STR8_MUTATION_WORKER_END'
 )
 [byte[]]$mutationMemory = Read-S19Memory $MutationS19Path
 
-if ($jumpStart -ne 0x0200 -or $mutationStart -ne 0x0200) {
+if ($jumpStart -ne $expectedJumpStart -or $mutationStart -ne 0x0200) {
     throw ('Split worker starts are ${0:X4}/${1:X4}; expected $0200/$0200' -f $jumpStart, $mutationStart)
+}
+if ($jumpEnd -ne $expectedJumpEnd -or $jumpSize -ne $expectedJumpSize) {
+    throw ('Jump worker extent is ${0:X4}-${1:X4}/${2:X}; expected ${3:X4}-${4:X4}/${5:X}' -f `
+        $jumpStart, ($jumpEnd - 1), $jumpSize, $expectedJumpStart, ($expectedJumpEnd - 1), $expectedJumpSize)
 }
 if ($jumpService -ne 0x0203) {
     throw ('Jump worker bank-select ABI is ${0:X4}; expected $0203' -f $jumpService)
@@ -135,8 +143,19 @@ $physicalRoom = 0xFFB0 - $residentEnd
 $headroom = $physicalRoom - $jumpSize
 $reserve = 0x40
 $reserveHeadroom = $headroom - $reserve
+$residentWorkerStore = ((Get-Symbol $resident 'STR8_WORKER_STORE_HI') -shl 8) -bor `
+    (Get-Symbol $resident 'STR8_WORKER_STORE_LO')
+$residentWorkerCopyLength = ((Get-Symbol $resident 'STR8_WORKER_COPY_LEN_HI') -shl 8) -bor `
+    (Get-Symbol $resident 'STR8_WORKER_COPY_LEN_LO')
 if ($reserveHeadroom -lt 0) {
     throw ('Jump worker leaves ${0:X} bytes after the $40 reserve; split image does not fit' -f $reserveHeadroom)
+}
+if ($expectedJumpStore -ne (0xFFB0 - $jumpSize)) {
+    throw ('Frozen jump-worker store is ${0:X4}; packed extent requires ${1:X4}' -f $expectedJumpStore, (0xFFB0 - $jumpSize))
+}
+if ($residentWorkerStore -ne $expectedJumpStore -or $residentWorkerCopyLength -ne $jumpSize) {
+    throw ('Transaction copy contract is store=${0:X4} len=${1:X}; expected ${2:X4}/${3:X}' -f `
+        $residentWorkerStore, $residentWorkerCopyLength, $expectedJumpStore, $jumpSize)
 }
 
 Write-Host ('JUMP WORKER             = ${0:X4}-${1:X4}; ${2:X} bytes' -f $jumpStart, ($jumpEnd - 1), $jumpSize)
@@ -146,4 +165,5 @@ Write-Host ('TRANSACTION RESIDENT    = $F000-${0:X4}; ${1:X} bytes' -f ($residen
 Write-Host ('PRE-DIRECTORY ROOM      = ${0:X} bytes' -f $physicalRoom)
 Write-Host ('ROOM AFTER JUMP WORKER  = ${0:X} bytes' -f $headroom)
 Write-Host ('ROOM AFTER $40 RESERVE  = ${0:X} bytes' -f $reserveHeadroom)
+Write-Host ('TRANSACTION JUMP STORE  = ${0:X4}-${1:X4}; ${2:X} bytes' -f $residentWorkerStore, ($residentWorkerStore + $residentWorkerCopyLength - 1), $residentWorkerCopyLength)
 Write-Host 'SPLIT WORKER SIZE CHECK = PASS'

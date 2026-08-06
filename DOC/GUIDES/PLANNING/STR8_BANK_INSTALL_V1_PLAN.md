@@ -1,9 +1,9 @@
 # STR8-N Four-Bank Installer V1.01 Plan
 
 ```text
-status:       DENSE I S19 DRY RECEIVE/STAGE HOST-ACCEPTED; OVERSIZED
-next gate:    JOURNALED ERASE/PROGRAM/VERIFY TRANSACTION; RESIDENT FIT OPEN
-source date:  2026-08-05
+status:       FLASHABLE SPLIT-WORKER V1 CANDIDATE HOST-ACCEPTED
+next gate:    BANK-3 MIGRATION AND BANK-2 JOURNALED BOARD PROOF
+source date:  2026-08-06
 ```
 
 This is the accepted V1.01 plan for turning the WDC board into four independently
@@ -77,7 +77,7 @@ The stable STR8-N entries remain:
 ```text
 $F000  STR8-N start
 $F003  RAM-worker service
-$F006  HIMON AP compatibility bridge
+$F006  retired AP bridge; carry-clear tombstone
 $F009  validated-record service
 $F00C  SR/01/07 service signature and capabilities
 $F010  RAM-caller bank-selection service
@@ -482,6 +482,21 @@ The transaction remains a host proof only. Fit closure must remove at least
 350 more physical-overlap bytes, or 414 bytes while retaining the frozen
 `$0040` development reserve, before generating a flashable migration image or
 starting the V1 transaction board ladder.
+
+### 2026-08-06 Split-Worker Fit Closure
+
+The later three-slice resolution replaces the monolithic stored worker with a
+permanent 136-byte jump worker and a transaction-uploaded 555-byte mutation
+worker. The flashable resident copies only `$FF28-$FFAF` to `$0200-$0287`.
+Using the sub-page copy path also reclaims 16 resident bytes. The resulting
+resident ends at `$FEC3`, leaving `$0064` before the packed worker and `$0024`
+beyond the required `$0040` reserve. The directory remains exactly
+`$FFB0-$FFEF`.
+
+`make -C SRC str8-v1-artifact` emits the candidate BIN, ordinary install S19,
+one-file mutation-worker-plus-bank `I` stream, and a self-contained migration
+TopWriter under `SRC/BUILD`. Fit is closed; hardware acceptance now follows
+`DOC/GUIDES/STR8/STR8_V1_MIGRATION_BOARD_TEST.md`.
 
 ## Sector Streaming and Final-Sector Gate
 

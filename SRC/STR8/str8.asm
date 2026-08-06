@@ -97,14 +97,24 @@ STR8_WORKER_RUN_HI      EQU             $02
 STR8_WORKER_TRAY_SIZE   EQU             $0800
 STR8_WORKER_TRAY_END    EQU             $09FF
                         IF              STR8_V1_LAYOUT
+                        IF              STR8_V1_INSTALLER_TXN
+STR8_WORKER_STORE_LO    EQU             <STR8_JUMP_WORKER_STORE
+STR8_WORKER_STORE_HI    EQU             >STR8_JUMP_WORKER_STORE
+                        ELSE
 STR8_WORKER_STORE_LO    EQU             $1F
 STR8_WORKER_STORE_HI    EQU             $FD
+                        ENDIF
                         ELSE
 STR8_WORKER_STORE_LO    EQU             $5F
 STR8_WORKER_STORE_HI    EQU             $FD
                         ENDIF
+                        IF              STR8_V1_INSTALLER_TXN
+STR8_WORKER_COPY_LEN_LO EQU             <STR8_JUMP_WORKER_SIZE
+STR8_WORKER_COPY_LEN_HI EQU             >STR8_JUMP_WORKER_SIZE
+                        ELSE
 STR8_WORKER_COPY_LEN_LO EQU             $91
 STR8_WORKER_COPY_LEN_HI EQU             $02
+                        ENDIF
 STR8_DELAY_TICK_X       EQU             $B6
 STR8_DELAY_TICK_Y       EQU             $F8
 STR8_SCREEN_CLEAR_LINES EQU             $23
@@ -691,7 +701,7 @@ STR8_CMD_INSTALL_PREVIEW:
 ?PROMPT:
                         LDX             #<MSG_I_BANK
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_BANK
                         JSR             STR8_PRINT_XY
@@ -737,7 +747,7 @@ STR8_CMD_INSTALL_PREVIEW:
 STR8_I_READ_TYPE:
                         LDX             #<MSG_I_TYPE_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_TYPE_PROMPT
                         JSR             STR8_PRINT_XY

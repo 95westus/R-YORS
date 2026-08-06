@@ -1826,7 +1826,11 @@ $residentSymbols = Read-MapSymbols $Str8MapPath
 $residentRecordEntry = Get-MapSymbol $residentSymbols "STR8_DIR_VALIDATE_BANK_A"
 $residentEnd = Get-MapSymbol $residentSymbols "_END_DATA"
 $residentStart = 0xF000
-$workerStoreStart = 0xFD1F
+$workerStoreStart = if ($transactionInstallerMode) {
+    Get-MapSymbol $residentSymbols 'STR8_JUMP_WORKER_STORE'
+} else {
+    0xFD1F
+}
 $workerReserveFloor = 0x40
 $residentSize = $residentEnd - $residentStart
 $workerGap = [Math]::Max(0, $workerStoreStart - $residentEnd)
@@ -1968,15 +1972,15 @@ if ($transactionInstallerMode) {
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
         -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0ED4) -and
+    Assert-True (($residentSize -eq 0x0EC4) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnSummaryAddress -eq 0xFE29) -and ($txnInstallOkAddress -eq 0xFE2E) -and
-        ($txnRange32Address -eq 0xFE36) -and ($txnTypeAddress -eq 0xFE4C) -and
-        ($txnDescAddress -eq 0xFE50) -and ($txnEntryAddress -eq 0xFE53) -and
-        ($txnEmptyAddress -eq 0xFE57) -and
-        ($txnPage0CallCount -eq 8) -and ($txnPage1CallCount -eq 29)) `
-        'Transaction worker-upload pass must retain its exact size, boundary, and 8/29 call split'
+        ($txnSummaryAddress -eq 0xFE19) -and ($txnInstallOkAddress -eq 0xFE1E) -and
+        ($txnRange32Address -eq 0xFE26) -and ($txnTypeAddress -eq 0xFE3C) -and
+        ($txnDescAddress -eq 0xFE40) -and ($txnEntryAddress -eq 0xFE43) -and
+        ($txnEmptyAddress -eq 0xFE47) -and
+        ($txnPage0CallCount -eq 10) -and ($txnPage1CallCount -eq 27)) `
+        'Transaction packed-jump-worker pass must retain its exact size, boundary, and 10/27 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
         ($txnPrintPage1 + 2 -eq $residentPrintXy)) `
         'Transaction print-page helpers must be the six bytes immediately before STR8_PRINT_XY'
@@ -1998,15 +2002,16 @@ if ($transactionInstallerMode) {
 
     foreach ($messageName in @(
             'MSG_ID', 'MSG_BOOT_MENU', 'MSG_SCREEN', 'MSG_HELP', 'MSG_PROMPT',
-            'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT'
+            'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT',
+            'MSG_I_BANK', 'MSG_I_TYPE_PROMPT'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage0High) `
             ("Transaction page-0 message moved pages: $messageName")
     }
     foreach ($messageName in @(
-            'MSG_I_BANK', 'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT',
-            'MSG_I_INVALID', 'MSG_I_SUMMARY', 'MSG_I_INSTALL_OK',
+            'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
+            'MSG_I_INSTALL_OK',
             'MSG_I_RANGE_32K', 'MSG_I_RANGE_28K', 'MSG_I_TYPE', 'MSG_I_DESC',
             'MSG_I_ENTRY',
             'MSG_I_EMPTY', 'MSG_I_INCOMPLETE', 'MSG_I_COMPLETE',
@@ -2707,10 +2712,12 @@ Write-Host ("PREVIEW EMPTY RECORDS   = {0}" -f $recordCount)
 Write-Host ("RESIDENT VALIDATOR      = {0:X4}-{1:X4}; `${2:X} bytes" -f $residentRecordEntry, ($residentValidatorEnd - 1), $residentValidatorSize)
 Write-Host ("RESIDENT DIR WRITER     = {0:X4}-{1:X4}; `${2:X} bytes" -f $residentWriterEntry, ($residentWriterEnd - 1), $residentWriterSize)
 Write-Host ("STR8 RESIDENT IMAGE     = {0:X4}-{1:X4}; `${2:X} bytes" -f $residentStart, ($residentEnd - 1), $residentSize)
-if ($dryInstallerMode) {
-    $installerLabel = if ($transactionInstallerMode) { "TXN" } else { "DRY" }
-    Write-Host ("{0}/WORKER OVERLAP      = {1:X4}-{2:X4}; `${3:X} bytes" -f $installerLabel, $workerStoreStart, ($residentEnd - 1), $workerOverlap)
-    Write-Host ("{0} FIT DEBT +`${1:X} GAP   = `${2:X} bytes" -f $installerLabel, $workerReserveFloor, $workerFitDebt)
+if ($transactionInstallerMode) {
+    Write-Host ("TXN/JUMP WORKER GAP    = {0:X4}-{1:X4}; `${2:X} bytes" -f $residentEnd, ($workerStoreStart - 1), $workerGap)
+    Write-Host ("TXN GAP AFTER `${0:X} RESERVE = `${1:X} bytes" -f $workerReserveFloor, ($workerGap - $workerReserveFloor))
+} elseif ($dryInstallerMode) {
+    Write-Host ("DRY/WORKER OVERLAP      = {0:X4}-{1:X4}; `${2:X} bytes" -f $workerStoreStart, ($residentEnd - 1), $workerOverlap)
+    Write-Host ("DRY FIT DEBT +`${0:X} GAP   = `${1:X} bytes" -f $workerReserveFloor, $workerFitDebt)
 } else {
     Write-Host ("RESIDENT/WORKER GAP     = {0:X4}-{1:X4}; `${2:X} bytes" -f $residentEnd, ($workerStoreStart - 1), $workerGap)
 }

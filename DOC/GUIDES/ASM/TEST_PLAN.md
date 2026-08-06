@@ -12960,3 +12960,71 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-06 STR8 V1 Split Worker Slice 3
+
+Status: flashable host candidate complete; board proof pending.
+
+The transaction resident now selects the permanent jump worker as its only ROM
+copy source. Its `$88` bytes pack at `$FF28-$FFAF` and copy to `$0200-$0287`;
+the uploaded `$0200-$042A` mutation worker remains the only code allowed to
+erase, program, verify, or write the directory during `I`. Selecting the
+sub-page copy path also removes the transaction build's two-page copy loop,
+reclaiming another `$0010` resident bytes without changing normal, preview, or
+dry builds.
+
+That 16-byte shift moves `MSG_I_BANK` and `MSG_I_TYPE_PROMPT` onto the first
+transaction message page. Their two callers now use the page-0 helper; the
+address gate freezes the resulting 10/27 helper-call split.
+
+Measured flashable layout:
+
+```text
+transaction resident        $F000-$FEC3  size $0EC4 = 3780
+room before directory       $FEC4-$FFAF  size $00EC = 236
+resident/jump-worker gap    $FEC4-$FF27  size $0064 = 100
+gap after $0040 reserve                     $0024 = 36
+packed jump worker          $FF28-$FFAF  size $0088 = 136
+empty directory             $FFB0-$FFEF  size $0040 = 64
+configuration/vectors       $FFF0-$FFFF  size $0010 = 16
+uploaded mutation worker    $0200-$042A  size $022B = 555
+```
+
+`make -C SRC str8-v1-artifact` now emits a separate, unstamped candidate lane:
+
+```text
+BUILD/bin/himon-str8-v1.bin
+BUILD/s19/himon-str8-v1-install.s19
+BUILD/s19/str8-v1-i-bank012.s19
+BUILD/str8n-v1-topwrite-transient-3000.a
+```
+
+The 32K BIN contains the transaction resident, exact packed jump worker, an
+all-`$FF` directory, and intact configuration/vectors. The ordinary install
+S19 contains 1024 dense bank S1 records and one S9. The single-transfer `I`
+artifact contains 35 exact mutation-worker S1 records first, then the 1024 bank
+records, and only the payload S9: 1060 records total. Its generator verifies
+both dense extents, every checksum, mutation identity, and S9/reset-vector
+agreement before writing the file.
+
+This closes the implementation slices and creates the first flashable V1
+migration candidate. It is not hardware-proven. The required destructive rail
+is [`STR8_V1_MIGRATION_BOARD_TEST.md`](../STR8/STR8_V1_MIGRATION_BOARD_TEST.md),
+which installs Bank-3 sector F with the generated TopWriter and then uses the
+one-file stream for a journaled Bank-2 transaction.
+
+Required host gates:
+
+```text
+make -C SRC str8-v1-artifact
+make -C SRC str8-worker-split-check
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-v1-layout-preview str8-directory-check
+make -C SRC firmware
+make -C SRC asm-test
+make -C SRC routine-word-tree
+make -C SRC edge-docs
+git diff --check
+```

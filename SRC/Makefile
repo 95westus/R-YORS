@@ -64,11 +64,16 @@ HIMON_ROM_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_ROM_BIN := $(BIN_DIR)/himon-rom-c000.bin
 HIMON_STR8_ROM_BIN := $(BIN_DIR)/himon-str8-rom.bin
 HIMON_STR8_V1_LAYOUT_PREVIEW_BIN := $(BIN_DIR)/himon-str8-v1-layout-preview.bin
+HIMON_STR8_V1_BIN := $(BIN_DIR)/himon-str8-v1.bin
 HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
+HIMON_STR8_V1_INSTALL_S19 := $(S19_DIR)/himon-str8-v1-install.s19
+STR8_V1_I_BANK012_S19 := $(S19_DIR)/str8-v1-i-bank012.s19
+STR8_V1_I_STREAM_GEN := tools/build_str8_v1_install_stream.ps1
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
 STR8_TOP_STAGE_S19 := $(S19_DIR)/str8-top-stage-0a00.s19
 STR8_TOPWRITE_A := ../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
+STR8_V1_TOPWRITE_A := $(BUILD_DIR)/str8n-v1-topwrite-transient-3000.a
 STR8_TOPWRITE_A_GEN := tools/emit_str8_topwrite_a.ps1
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
@@ -435,6 +440,16 @@ himon-str8-rom-bin: $(HIMON_STR8_ROM_BIN)
 str8-v1-layout-preview: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)
 	@echo "Built guarded V1 layout preview $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)."
 	@echo "Preview only: no install S19, TopWriter, or stamped ROM image was generated."
+
+str8-v1-artifact: $(HIMON_STR8_V1_BIN) $(HIMON_STR8_V1_INSTALL_S19) $(STR8_V1_I_BANK012_S19) $(STR8_V1_TOPWRITE_A)
+	@echo "Built flashable, host-verified V1 candidate artifacts."
+	@echo "Board proof is still required before calling this image hardware-proven."
+
+str8-v1-install-stream: $(STR8_V1_I_BANK012_S19)
+	@echo "Built single-transfer I stream $(STR8_V1_I_BANK012_S19)."
+
+str8-v1-topwrite-a: $(STR8_V1_TOPWRITE_A)
+	@echo "Built V1 migration TopWriter $(STR8_V1_TOPWRITE_A)."
 
 str8-directory-check: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN) $(STR8_DIRECTORY_EQ) $(STR8_DIRECTORY_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)" -Str8MapPath "$(S19_DIR)/str8-v1-layout-f000.map"
@@ -1144,6 +1159,10 @@ $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN): $(HIMON_ROM_S19) $(STR8_V1_LAYOUT_S19) $(ST
 	@echo [ps] build guarded V1 layout preview $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-v1-layout-f000.map" -Str8S19Path "$(STR8_V1_LAYOUT_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -AsmS19Path "$(ASM_V1_FLASH_S19)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)" -V1LayoutPreview
 
+$(HIMON_STR8_V1_BIN): $(HIMON_ROM_S19) $(STR8_V1_INSTALLER_TXN_S19) $(STR8_JUMP_WORKER_S19) $(ASM_V1_FLASH_S19) tools/build_himon_str8_rom_bin.ps1
+	@echo [ps] build flashable V1 candidate $(HIMON_STR8_V1_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map" -Str8S19Path "$(STR8_V1_INSTALLER_TXN_S19)" -WorkerMapPath "$(S19_DIR)/str8-jump-worker-0200.map" -WorkerS19Path "$(STR8_JUMP_WORKER_S19)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -AsmS19Path "$(ASM_V1_FLASH_S19)" -BinPath "$(HIMON_STR8_V1_BIN)" -V1Flashable
+
 $(HIMON_ROM_INSTALL_S19): $(HIMON_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 	@echo [ps] build $(HIMON_ROM_INSTALL_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_ROM_BIN)" -S19Path "$(HIMON_ROM_INSTALL_S19)" -BaseAddress 32768
@@ -1151,6 +1170,14 @@ $(HIMON_ROM_INSTALL_S19): $(HIMON_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 $(HIMON_STR8_ROM_INSTALL_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 	@echo [ps] build $(HIMON_STR8_ROM_INSTALL_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$(HIMON_STR8_ROM_INSTALL_S19)" -BaseAddress 32768
+
+$(HIMON_STR8_V1_INSTALL_S19): $(HIMON_STR8_V1_BIN) $(ROM_INSTALL_S19_GEN)
+	@echo [ps] build $(HIMON_STR8_V1_INSTALL_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_V1_BIN)" -S19Path "$(HIMON_STR8_V1_INSTALL_S19)" -BaseAddress 32768
+
+$(STR8_V1_I_BANK012_S19): $(HIMON_STR8_V1_INSTALL_S19) $(STR8_MUTATION_WORKER_S19) $(STR8_WORKER_EQ) $(STR8_V1_I_STREAM_GEN)
+	@echo [ps] build $(STR8_V1_I_BANK012_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_V1_I_STREAM_GEN) -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)" -PayloadS19Path "$(HIMON_STR8_V1_INSTALL_S19)" -WorkerEqPath "$(STR8_WORKER_EQ)" -S19Path "$(STR8_V1_I_BANK012_S19)"
 
 $(HIMON_STR8_HIMON_UPDATE_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 	@echo [ps] build $(HIMON_STR8_HIMON_UPDATE_S19)
@@ -1163,6 +1190,10 @@ $(STR8_TOP_STAGE_S19): $(HIMON_STR8_ROM_BIN) tools/build_str8_top_stage_s19.ps1
 $(STR8_TOPWRITE_A): $(HIMON_STR8_ROM_BIN) $(ASM_V1_FLASH_S19) $(STR8_S19) $(STR8_TOPWRITE_A_GEN)
 	@echo [ps] build $(STR8_TOPWRITE_A)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-f000.map" -OutPath "$(STR8_TOPWRITE_A)"
+
+$(STR8_V1_TOPWRITE_A): $(HIMON_STR8_V1_BIN) $(ASM_V1_FLASH_S19) $(STR8_V1_INSTALLER_TXN_S19) $(STR8_TOPWRITE_A_GEN)
+	@echo [ps] build $(STR8_V1_TOPWRITE_A)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_V1_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map" -OutPath "$(STR8_V1_TOPWRITE_A)"
 
 $(MSBASIC_OSI_RAM_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1305,7 +1336,7 @@ endif
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
-	str8-v1-layout-preview str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
+	str8-v1-layout-preview str8-v1-artifact str8-v1-install-stream str8-v1-topwrite-a str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
 	str8-bank-copy-source-check str8-bank-maint-source-check \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \
