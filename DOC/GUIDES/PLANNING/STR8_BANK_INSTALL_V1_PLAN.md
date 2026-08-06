@@ -455,26 +455,28 @@ ROM, or board-test candidate is emitted until that fit debt is closed.
 
 ### 2026-08-06 Current Fit-Closure Ledger
 
-Three isolated size passes now follow the original transaction proof. Moving the
+Four isolated size passes now follow the original transaction proof. Moving the
 17-byte installer state frame to `$0090-$00A0` reclaimed `$0047` transaction
 bytes. Replacing 40 repeated fixed-message page loads with two map-guarded
 page helpers reclaimed another `$004A`. Removing four page loads overwritten
-by those helpers reclaimed `$0008` more. Together they remove `$0099` = 153
-bytes without changing the worker or transaction semantics.
+by those helpers reclaimed `$0008` more. Omitting the transaction-dead menu,
+screen, legacy `U` success path, and `OK` string reclaimed another `$001A`.
+Together they remove `$00B3` = 179 bytes without changing the worker or
+transaction semantics.
 
 ```text
 normal resident             $F000-$FAF6  size $0AF7 = 2807
 V1 preview resident         $F000-$FBDC  size $0BDD = 3037
 dry resident                $F000-$FDBF  size $0DC0 = 3520
-transaction resident        $F000-$FE9D  size $0E9E = 3742
-transaction/worker overlap  $FD1F-$FE9D  size $017F = 383
-fit debt including $0040 gap               $01BF = 447
-room before directory       $FE9E-$FFAF  size $0112 = 274
+transaction resident        $F000-$FE83  size $0E84 = 3716
+transaction/worker overlap  $FD1F-$FE83  size $0165 = 357
+fit debt including $0040 gap               $01A5 = 421
+room before directory       $FE84-$FFAF  size $012C = 300
 stored worker               $FD1F-$FFAF  size $0291 = 657
 ```
 
 The transaction remains a host proof only. Fit closure must remove at least
-383 more physical-overlap bytes, or 447 bytes while retaining the frozen
+357 more physical-overlap bytes, or 421 bytes while retaining the frozen
 `$0040` development reserve, before generating a flashable migration image or
 starting the V1 transaction board ladder.
 

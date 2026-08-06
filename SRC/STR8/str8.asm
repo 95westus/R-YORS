@@ -253,9 +253,13 @@ STR8_BOOT_START:
                         JMP             STR8_ENTER_MENU_READY
 ?STR8_TAKEOVER:        JMP             STR8_ENTER_MENU_HELP
                         ENDIF
+; Transaction startup always enters HELP or READY explicitly.
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
 STR8_ENTER_MENU:
                         JSR             STR8_PRINT_SCREEN
                         BRA             STR8_ENTER_MENU_READY
+                        ENDIF
 
 STR8_ENTER_MENU_HELP:
                         LDX             #<MSG_SCREEN
@@ -513,18 +517,13 @@ STR8_BOOT_KEY_POLL:
                         RTS
                         ENDIF
 
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
 STR8_PRINT_SCREEN:
                         LDX             #<MSG_ID
-                        IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
-                        ELSE
                         LDY             #>MSG_ID
                         JSR             STR8_PRINT_XY
-                        ENDIF
                         LDX             #<MSG_SCREEN
-                        IF              STR8_V1_INSTALLER_TXN
-                        JMP             STR8_PRINT_TXN_PAGE0_X
-                        ELSE
                         LDY             #>MSG_SCREEN
                         JMP             STR8_PRINT_XY
                         ENDIF
@@ -833,13 +832,13 @@ STR8_I_PRINT_SUMMARY:
                         ENDIF
 ?RANGE:
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         JSR             STR8_PRINT_XY
                         ENDIF
                         LDX             #<MSG_I_TYPE
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_TYPE
                         JSR             STR8_PRINT_XY
@@ -1446,14 +1445,14 @@ STR8_CMD_UPDATE_NO_DATA:
 
                         ENDIF
 
+; Legacy U is absent from V1, so its success path is dead in the transaction.
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
 STR8_CMD_OK:
                         IF              STR8_RAM_PROOF
                         JSR             STR8_SELECT_BANK_3
                         ENDIF
                         LDX             #<MSG_OK
-                        IF              STR8_V1_INSTALLER_TXN
-                        JMP             STR8_PRINT_TXN_PAGE0_X
-                        ELSE
                         LDY             #>MSG_OK
                         JMP             STR8_PRINT_XY
                         ENDIF
@@ -2847,7 +2846,10 @@ MSG_BOOT_PROMPT:        DB              "0/1/2=BOOT 3=HIMON S=STR8 ",$A0
 MSG_BOOT_BANK_WAIT:     DB              "BOOT IN 3S",$0D,$8A
                         ENDIF
 
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
 MSG_OK:                 DB              $0D,$0A,"OK",$0D,$8A
+                        ENDIF
 MSG_ABORT:              DB              $0D,$0A,"ABORT",$0D,$8A
                         IF              STR8_V1_LAYOUT
 MSG_I_BANK:             DB              $0D,$0A,"I B0-3:",$A0
@@ -2855,7 +2857,7 @@ MSG_I_TYPE_PROMPT:      DB              $0D,$0A,"TYPE:",$A0
 MSG_I_DESC_PROMPT:      DB              $0D,$0A,"DESC:",$A0
 MSG_I_INVALID:          DB              $0D,$0A,"DIR INVALID",$0D,$8A
 MSG_I_SUMMARY:          DB              $0D,$0A,"I ",('B'+$80)
-; Fill the reclaimed eight-byte page tail so both range strings stay on $FE.
+; Pack the transaction page tail through MSG_I_TYPE; MSG_I_DESC starts on $FE.
                         IF              STR8_V1_INSTALLER_TXN
 MSG_I_INSTALL_OK:       DB              $0D,$0A,"I OK",$0D,$8A
                         ENDIF
