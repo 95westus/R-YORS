@@ -12796,3 +12796,61 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-06 STR8 V1 Transaction Failure-Carry Size Pass 6
+
+Status: compiled host pass; still oversized and nonflashable.
+
+Five transaction failure exits carried caller-local `CLC` instructions. The
+begin-transaction, finish-transaction, and sector-worker exits are reached
+only by `BCC`, so each already has carry clear. Receive and trailing-input
+failures both drain queued input. `STR8_CON_FLUSH_RX` intentionally reports an
+empty queue with carry set, so the transaction drain now normalizes that result
+once and both callers reuse it; the added clear minus two removed caller clears
+reclaims one byte. Dry retains its former caller-local clears and is
+byte-for-byte unchanged. Combined with the three `BCC` exits, the transaction
+saves exactly `$0004` bytes.
+
+The deletion moves `MSG_I_ENTRY=$FDFC` wholly onto page `$FD` and makes
+`MSG_I_EMPTY=$FE00` the first page-1 message. Its print call moves to the page-0
+helper. The transaction gate freezes resident size `$0E7D`, the new boundary,
+the 18/19 helper-call split, and every optimized message page. The receive,
+directory-writer, worker-failure, and trailing-input fixtures exercise all
+changed carry paths.
+
+Measured memory statistics:
+
+```text
+normal resident             $F000-$FAF6  size $0AF7 = 2807  unchanged
+V1 preview resident         $F000-$FBDC  size $0BDD = 3037  unchanged
+V1 preview/worker gap       $FBDD-$FD1E  size $0142 = 322
+dry resident                $F000-$FDBF  size $0DC0 = 3520  unchanged
+dry/worker overlap          $FD1F-$FDBF  size $00A1 = 161
+dry fit debt + $0040 gap                    $00E1 = 225
+transaction resident        $F000-$FE7C  size $0E7D = 3709  down $0004
+transaction/worker overlap  $FD1F-$FE7C  size $015E = 350
+transaction fit debt                         $019E = 414
+room before directory       $FE7D-$FFAF  size $0133 = 307
+stored worker               $FD1F-$FFAF  size $0291 = 657  unchanged
+directory                   $FFB0-$FFEF  size $0040 = 64   unchanged
+configuration/vectors       $FFF0-$FFFF  size $0010 = 16   unchanged
+```
+
+The transaction gate passes 38 installer cases, 94 journal cases, 33 record
+cases, 77 directory-writer cases, 23 line/`I` cases, and 12 startup cases. Its
+largest fixture executes 432635 interpreted steps. Because 350 bytes still
+overlap the stored worker, this pass emits no V1 migration artifact and needs
+no separate board test.
+
+Required host gates:
+
+```text
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-v1-layout-preview str8-directory-check
+make -C SRC firmware
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

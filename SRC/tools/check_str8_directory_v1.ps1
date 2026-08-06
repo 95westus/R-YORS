@@ -1824,6 +1824,7 @@ if ($transactionInstallerMode) {
     $txnTypeAddress = Get-MapSymbol $residentSymbols 'MSG_I_TYPE'
     $txnDescAddress = Get-MapSymbol $residentSymbols 'MSG_I_DESC'
     $txnEntryAddress = Get-MapSymbol $residentSymbols 'MSG_I_ENTRY'
+    $txnEmptyAddress = Get-MapSymbol $residentSymbols 'MSG_I_EMPTY'
     $txnSetDirAddress = Get-MapSymbol $residentSymbols 'STR8_I_SET_DIR_ADDRESS_A'
     $txnStageReadyAddress = Get-MapSymbol $residentSymbols 'STR8_I_STAGE_SECTOR_READY'
     $txnWriteByteAddress = Get-MapSymbol $residentSymbols 'STR8_CON_WRITE_BYTE_BLOCK'
@@ -1833,14 +1834,15 @@ if ($transactionInstallerMode) {
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
         -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0E81) -and
+    Assert-True (($residentSize -eq 0x0E7D) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnSummaryAddress -eq 0xFDD6) -and ($txnInstallOkAddress -eq 0xFDDB) -and
-        ($txnRange32Address -eq 0xFDE3) -and ($txnTypeAddress -eq 0xFDF9) -and
-        ($txnDescAddress -eq 0xFDFD) -and ($txnEntryAddress -eq 0xFE00) -and
-        ($txnPage0CallCount -eq 17) -and ($txnPage1CallCount -eq 20)) `
-        'Transaction carry/tail pass must retain its exact size, boundary, and 17/20 call split'
+        ($txnSummaryAddress -eq 0xFDD2) -and ($txnInstallOkAddress -eq 0xFDD7) -and
+        ($txnRange32Address -eq 0xFDDF) -and ($txnTypeAddress -eq 0xFDF5) -and
+        ($txnDescAddress -eq 0xFDF9) -and ($txnEntryAddress -eq 0xFDFC) -and
+        ($txnEmptyAddress -eq 0xFE00) -and
+        ($txnPage0CallCount -eq 18) -and ($txnPage1CallCount -eq 19)) `
+        'Transaction failure-carry pass must retain its exact size, boundary, and 18/19 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
         ($txnPrintPage1 + 2 -eq $residentPrintXy)) `
         'Transaction print-page helpers must be the six bytes immediately before STR8_PRINT_XY'
@@ -1865,14 +1867,15 @@ if ($transactionInstallerMode) {
             'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT',
             'MSG_I_BANK', 'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT',
             'MSG_I_INVALID', 'MSG_I_SUMMARY', 'MSG_I_INSTALL_OK',
-            'MSG_I_RANGE_32K', 'MSG_I_RANGE_28K', 'MSG_I_TYPE', 'MSG_I_DESC'
+            'MSG_I_RANGE_32K', 'MSG_I_RANGE_28K', 'MSG_I_TYPE', 'MSG_I_DESC',
+            'MSG_I_ENTRY'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage0High) `
             ("Transaction page-0 message moved pages: $messageName")
     }
     foreach ($messageName in @(
-            'MSG_I_ENTRY', 'MSG_I_EMPTY', 'MSG_I_INCOMPLETE', 'MSG_I_COMPLETE',
+            'MSG_I_EMPTY', 'MSG_I_INCOMPLETE', 'MSG_I_COMPLETE',
             'MSG_I_FULL', 'MSG_I_PAIR', 'MSG_I_WRITE_CONFIRM', 'MSG_I_SEND_S19',
             'MSG_I_TRANSACTION_FAIL', 'MSG_I_S19_FAIL',
             'MSG_I_NO_WRITE', 'MSG_NO_BOOT', 'MSG_JUMP_B', 'MSG_JUMP_FAIL_B',

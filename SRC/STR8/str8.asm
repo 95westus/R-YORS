@@ -866,7 +866,7 @@ STR8_I_PRINT_SUMMARY:
                         BEQ             ?STATE
                         LDX             #<MSG_I_ENTRY
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_ENTRY
                         JSR             STR8_PRINT_XY
@@ -1006,8 +1006,8 @@ STR8_I_BEGIN_TRANSACTION:
                         BCC             ?FAIL
 ?OK:                   SEC
                         RTS
-?FAIL:                 CLC
-                        RTS
+; Both incoming write failures branch with carry clear.
+?FAIL:                 RTS
 
 ; COMPLETE is always last. On a first install, publish the immutable Bank-3
 ; local entry and then seal the descriptor before completing the journal pair.
@@ -1037,8 +1037,8 @@ STR8_I_FINISH_TRANSACTION:
                         JSR             STR8_DIR_WRITE_BYTES
                         BCC             ?FAIL
                         BRA             STR8_I_WRITE_JOURNAL_COMPLETE
-?FAIL:                 CLC
-                        RTS
+; Both directory-writer failures branch with carry clear.
+?FAIL:                 RTS
 
 STR8_I_WRITE_METADATA:
                         LDA             STR8_INSTALL_TYPE
@@ -1291,7 +1291,11 @@ STR8_I_RECEIVE_TRAIL_FAIL:
                         LDA             #STR8_INSTALL_TRAILING
 STR8_I_RECEIVE_FAIL_A: STA             STR8_INSTALL_STATUS
                         JSR             STR8_I_DRAIN_QUEUED
+; Transaction drain normalizes carry clear; retain dry bytes unchanged.
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
                         CLC
+                        ENDIF
                         RTS
 
 STR8_I_STAGE_SECTOR_READY:
@@ -1309,8 +1313,8 @@ STR8_I_STAGE_SECTOR_READY:
                         LDA             #'.'
 ; The blocking writer returns only after its nonblocking write sets carry.
                         JMP             STR8_CON_WRITE_BYTE_BLOCK
-?FAIL:                 CLC
-                        RTS
+; The worker failure branch already carries clear.
+?FAIL:                 RTS
 
 STR8_I_RUN_SECTOR_WORKER:
                         JSR             STR8_COPY_WORKER_TO_RAM
@@ -1334,12 +1338,19 @@ STR8_I_END_STREAM:
 ?DONE:                 SEC
                         RTS
 ?FAIL:                 JSR             STR8_I_DRAIN_QUEUED
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
                         CLC
+                        ENDIF
                         RTS
 
 STR8_I_DRAIN_QUEUED:
                         JSR             STR8_CON_FLUSH_RX
                         BCC             STR8_I_DRAIN_QUEUED
+                        IF              STR8_V1_INSTALLER_TXN
+; Share one normalized failure carry across both transaction callers.
+                        CLC
+                        ENDIF
                         RTS
                         ELSE
                         LDX             #<MSG_I_NO_WRITE

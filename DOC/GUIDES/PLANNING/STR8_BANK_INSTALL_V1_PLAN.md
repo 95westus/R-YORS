@@ -455,29 +455,31 @@ ROM, or board-test candidate is emitted until that fit debt is closed.
 
 ### 2026-08-06 Current Fit-Closure Ledger
 
-Five isolated size passes now follow the original transaction proof. Moving the
+Six isolated size passes now follow the original transaction proof. Moving the
 17-byte installer state frame to `$0090-$00A0` reclaimed `$0047` transaction
 bytes. Replacing 40 repeated fixed-message page loads with two map-guarded
 page helpers reclaimed another `$004A`. Removing four page loads overwritten
 by those helpers reclaimed `$0008` more. Omitting the transaction-dead menu,
 screen, legacy `U` success path, and `OK` string reclaimed another `$001A`.
 Reusing the bank shift's known clear carry and tail-calling the carry-setting
-sector-dot writer reclaimed `$0003` more. Together they remove `$00B6` = 182
-bytes without changing the worker or transaction semantics.
+sector-dot writer reclaimed `$0003` more. Sharing one normalized failure carry
+and removing three branch-redundant clears reclaimed another `$0004`. Together
+they remove `$00BA` = 186 bytes without changing the worker or transaction
+semantics.
 
 ```text
 normal resident             $F000-$FAF6  size $0AF7 = 2807
 V1 preview resident         $F000-$FBDC  size $0BDD = 3037
 dry resident                $F000-$FDBF  size $0DC0 = 3520
-transaction resident        $F000-$FE80  size $0E81 = 3713
-transaction/worker overlap  $FD1F-$FE80  size $0162 = 354
-fit debt including $0040 gap               $01A2 = 418
-room before directory       $FE81-$FFAF  size $012F = 303
+transaction resident        $F000-$FE7C  size $0E7D = 3709
+transaction/worker overlap  $FD1F-$FE7C  size $015E = 350
+fit debt including $0040 gap               $019E = 414
+room before directory       $FE7D-$FFAF  size $0133 = 307
 stored worker               $FD1F-$FFAF  size $0291 = 657
 ```
 
 The transaction remains a host proof only. Fit closure must remove at least
-354 more physical-overlap bytes, or 418 bytes while retaining the frozen
+350 more physical-overlap bytes, or 414 bytes while retaining the frozen
 `$0040` development reserve, before generating a flashable migration image or
 starting the V1 transaction board ladder.
 
