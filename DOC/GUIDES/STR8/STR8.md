@@ -72,8 +72,11 @@ flowchart LR
 
     RECORD["STR8_RECORD_SERVICE_ENTRY<br/>Validate S19 records and preflight whole-record apply policy"] --> WORKER
     SERVICE["STR8_RUN_WORKER_SERVICE<br/>Stable resident doorway; copy the worker to $0200 and run it"] --> WORKER
-    APLINK["STR8_AP_IMPORT_LINK_SERVICE<br/>Compatibility doorway into the HIMON AP resident-import linker"] --> HIMON
 ```
+
+AP parsing and FNV import linking are HIMON responsibilities. STR8's retired
+`$F006` slot now returns carry clear; the former adapter source is retained in
+`SRC/ARCHIVE/str8/` for later reference.
 
 ## Milestone Snapshot
 

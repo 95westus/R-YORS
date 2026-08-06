@@ -198,7 +198,7 @@ flowchart TD
     LOADPKG --> APVEC["HIMON AP service $7E2D-$7E2E"]
     APVEC --> HIMAP["HIM_AP_SERVICE"]
     HIMAP --> HIMLINK["HIM_AP_IMPORT_LINK"]
-    F006["STR8 $F006 compatibility doorway"] --> APVEC
+    F006["STR8 $F006 retired; carry-clear tombstone"]
 
     INSTALLCMD["INSTALL command"] --> SUGGEST["ASM_PACKAGE_INSTALL_SUGGEST"]
     SUGGEST --> PARSEPKG

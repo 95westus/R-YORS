@@ -12893,3 +12893,70 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-06 STR8 V1 Split Worker Slice 2
+
+Status: compiled host transaction pass; split layout fits with reserve.
+
+The transaction `I` stream now accepts an optional S0 record, then requires
+the exact contiguous mutation-worker S1 image at `$0200-$042A`, followed by the
+dense bank S1 payload and its S9. The uploaded worker carries identity
+`49 57 01 FE` at `$0203`; both its linked end `$042B` and identity are frozen
+against shared resident constants. Wrong identity, an address gap, a short
+worker, premature S9, and malformed first payload records all fail before any
+persistent write.
+
+After the worker is complete, STR8 validates and stages the first bank record
+before writing the START journal pair. Later receive failures therefore remain
+STARTED and unsealed, while failure before the first valid payload record leaves
+the directory byte-for-byte unchanged. Transaction sector and directory calls
+run the already-uploaded mutation worker; they no longer overwrite it from ROM.
+Before the Slice 2 commit, the unused STR8 AP-link compatibility adapter was
+retired. STR8 contains no FNV implementation; the only resident AP code was a
+three-byte `$F006` doorway and an eight-byte HIMON service shim. `$F006` is now
+`CLC / RTS / NOP`, so stale callers fail closed while `$F009`, its signature,
+and `$F010` remain fixed. The eight-byte shim is archived under
+`SRC/ARCHIVE/str8/`. This retirement is independent of the journal transaction
+and all earlier byte reductions.
+
+Measured split layout:
+
+```text
+normal resident             $F000-$FAEE  size $0AEF = 2799  down $0008
+V1 preview resident         $F000-$FBD4  size $0BD5 = 3029  down $0008
+dry resident                $F000-$FDB7  size $0DB8 = 3512  down $0008
+transaction resident        $F000-$FED3  size $0ED4 = 3796  up $0057
+room before directory       $FED4-$FFAF  size $00DC = 220
+permanent jump worker       $0200-$0287  size $0088 = 136
+packed jump-worker address  $FF28-$FFAF  size $0088 = 136
+resident/jump-worker gap    $FED4-$FF27  size $0054 = 84
+gap after $0040 reserve                     $0014 = 20
+uploaded mutation worker    $0200-$042A  size $022B = 555
+directory                   $FFB0-$FFEF  size $0040 = 64
+configuration/vectors       $FFF0-$FFFF  size $0010 = 16
+```
+
+The two transaction print-page helpers remain six bytes total. Growth moves
+all `I` messages onto page `$FE`; the source gate freezes the resulting 8/29
+page-helper call split and resident size `$0ED4`. The transaction gate passes
+41 installer cases, 94 journal cases, 33 record cases, 77 directory-writer
+cases, 23 line/`I` cases, and 12 startup cases. Its largest fixture executes
+542010 interpreted steps.
+
+This slice does not yet change ROM packing or emit the combined worker-plus-bank
+transport, so it has no flashable V1 artifact or board test. Slice 3 packs the
+jump worker and builds that single-transfer S19 artifact.
+
+Required host gates:
+
+```text
+make -C SRC str8-worker-split-check
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-v1-layout-preview str8-directory-check
+make -C SRC firmware
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

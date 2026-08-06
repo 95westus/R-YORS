@@ -311,7 +311,7 @@ if (-not (Test-ByteSequence $memory $workerBankService ($workerBankService + $wo
     throw 'RAM bank-select service no longer validates, selects, restores P, and returns with exact carry status'
 }
 $residentCopyWorker = Get-Symbol $str8Symbols 'STR8_COPY_WORKER_TO_RAM'
-$residentBankBodyEnd = Get-Symbol $str8Symbols 'STR8_AP_IMPORT_LINK_SERVICE_BODY'
+$residentBankBodyEnd = Get-Symbol $str8Symbols 'STR8_BANK_SELECT_SERVICE_BODY_END'
 [byte[]]$residentRamReturnGate = 0x48, 0xBA, 0xBD, 0x03, 0x01, 0x30
 if (-not (Test-ByteSequence $str8Memory $residentBankBody $residentBankBodyEnd $residentRamReturnGate)) {
     throw 'Resident bank-select service does not reject a banked-ROM return address'

@@ -59,7 +59,7 @@ $top = New-Object byte[] $Length
 $str8Start = Get-MapSymbol -Path $Str8MapPath -Name "START"
 $str8Boot = Get-MapSymbol -Path $Str8MapPath -Name "STR8_BOOT_START"
 $str8WorkerBody = Get-MapSymbol -Path $Str8MapPath -Name "STR8_RUN_WORKER_SERVICE_BODY"
-$str8ApBody = Get-MapSymbol -Path $Str8MapPath -Name "STR8_AP_IMPORT_LINK_SERVICE_BODY"
+$str8RetiredF006 = Get-MapSymbol -Path $Str8MapPath -Name "STR8_RETIRED_F006"
 $str8Nmi = Get-MapSymbol -Path $Str8MapPath -Name "STR8_IVY_ENTRY_NMI"
 $str8Irq = Get-MapSymbol -Path $Str8MapPath -Name "STR8_IVY_ENTRY_IRQ_MASTER"
 $str8Id = Get-MapSymbol -Path $Str8MapPath -Name "MSG_ID"
@@ -67,13 +67,16 @@ $str8Prompt = Get-MapSymbol -Path $Str8MapPath -Name "MSG_PROMPT"
 if ($str8Start -ne 0xF000) {
     throw ("STR8 START is {0}; expected `$F000" -f (Format-HexWord $str8Start))
 }
+if ($str8RetiredF006 -ne 0xF006) {
+    throw ("STR8 retired AP-link slot is {0}; expected `$F006" -f (Format-HexWord $str8RetiredF006))
+}
 
 $idOffset = $str8Id - $str8Start
 $promptOffset = $str8Prompt - $str8Start
 Assert-Bytes -Bytes $top -Offset 0x0000 -Expected @(
     0x4C, ($str8Boot -band 0xFF), (($str8Boot -shr 8) -band 0xFF),
     0x4C, ($str8WorkerBody -band 0xFF), (($str8WorkerBody -shr 8) -band 0xFF),
-    0x4C, ($str8ApBody -band 0xFF), (($str8ApBody -shr 8) -band 0xFF)
+    0x18, 0x60, 0xEA
 ) -Name "top head"
 Assert-Bytes -Bytes $top -Offset $promptOffset -Expected @(0x53,0x54,0x52,0x38,0x2D,0x4E,0xBE) -Name "STR8-N prompt"
 $idEndOffset = $idOffset

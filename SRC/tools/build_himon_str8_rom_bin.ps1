@@ -301,8 +301,7 @@ $himonBankCount = Get-SymbolAddress -MapPath $HimonMapPath -Name "STR8_BANK_COUN
 
 $str8Start = Get-SymbolAddress -MapPath $Str8MapPath -Name "START"
 $str8WorkerService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RUN_WORKER_SERVICE"
-$str8ApLinkService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_AP_IMPORT_LINK_SERVICE"
-$str8ApLinkAdapter = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_AP_IMPORT_LINK_SERVICE_BODY"
+$str8RetiredF006 = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RETIRED_F006"
 $str8RecordService = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RECORD_SERVICE_ENTRY"
 $str8RecordServiceBody = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RECORD_SERVICE_BODY"
 $str8RecordSignature = Get-SymbolAddress -MapPath $Str8MapPath -Name "STR8_RECORD_SERVICE_SIGNATURE"
@@ -422,8 +421,8 @@ if ($str8Start -ne 0xF000) {
 if ($str8WorkerService -ne 0xF003) {
     throw ("STR8 worker service is {0:X4}; expected stable entry F003" -f $str8WorkerService)
 }
-if ($str8ApLinkService -ne 0xF006) {
-    throw ("STR8 AP link compatibility service is {0:X4}; expected stable entry F006" -f $str8ApLinkService)
+if ($str8RetiredF006 -ne 0xF006) {
+    throw ("STR8 retired AP-link slot is {0:X4}; expected stable slot F006" -f $str8RetiredF006)
 }
 if ($str8RecordService -ne 0xF009) {
     throw ("STR8 record service is {0:X4}; expected stable entry F009" -f $str8RecordService)
@@ -634,15 +633,11 @@ $str8Head = $bin[$str8HeadOffset..($str8HeadOffset + 0x000F)] | ForEach-Object {
 $resetHead = $bin[($bankOffset + ($str8Start - 0x8000))..($bankOffset + ($str8Start - 0x8000) + 0x000F)] | ForEach-Object { "{0:X2}" -f $_ }
 $tail = $bin[($bankOffset + 0x7FFA)..($bankOffset + 0x7FFF)] | ForEach-Object { "{0:X2}" -f $_ }
 
-$str8ApServiceOffset = $bankOffset + ($str8ApLinkService - 0x8000)
-[byte[]]$expectedApService = @(
-    0x4C,
-    ($str8ApLinkAdapter -band 0xFF),
-    (($str8ApLinkAdapter -shr 8) -band 0xFF)
-)
-for ($i = 0; $i -lt $expectedApService.Length; $i++) {
-    if ($bin[$str8ApServiceOffset + $i] -ne $expectedApService[$i]) {
-        throw ("STR8 F006 compatibility jump byte {0} is {1:X2}; expected {2:X2}" -f $i, $bin[$str8ApServiceOffset + $i], $expectedApService[$i])
+$str8RetiredF006Offset = $bankOffset + ($str8RetiredF006 - 0x8000)
+[byte[]]$expectedRetiredF006 = @(0x18, 0x60, 0xEA)
+for ($i = 0; $i -lt $expectedRetiredF006.Length; $i++) {
+    if ($bin[$str8RetiredF006Offset + $i] -ne $expectedRetiredF006[$i]) {
+        throw ("STR8 retired F006 byte {0} is {1:X2}; expected {2:X2}" -f $i, $bin[$str8RetiredF006Offset + $i], $expectedRetiredF006[$i])
     }
 }
 
@@ -671,19 +666,11 @@ for ($i = 0; $i -lt $expectedBankSelectService.Length; $i++) {
     }
 }
 
-$str8ApAdapterOffset = $bankOffset + ($str8ApLinkAdapter - 0x8000)
-[byte[]]$expectedApAdapter = @(0xA9, 0x03, 0x8D, 0x2F, 0x7E, 0x6C, 0x2D, 0x7E)
-for ($i = 0; $i -lt $expectedApAdapter.Length; $i++) {
-    if ($bin[$str8ApAdapterOffset + $i] -ne $expectedApAdapter[$i]) {
-        throw ("STR8 AP compatibility adapter byte {0} is {1:X2}; expected {2:X2}" -f $i, $bin[$str8ApAdapterOffset + $i], $expectedApAdapter[$i])
-    }
-}
-
 Write-Host ("HIMON START/NMI/IRQ/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $himonStart, $himonNmi, $himonIrq, $himonEnd)
 Write-Host ("LAYOUT MODE              = {0}" -f $layoutMode)
 Write-Host ("HIMON AP IMPORT LINK     = {0:X4}" -f $himonApImportLink)
 Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Start, $str8Nmi, $str8Irq, $str8End)
-Write-Host ("STR8 SERVICES WORK/AP    = {0:X4}/{1:X4} -> {2:X4}" -f $str8WorkerService, $str8ApLinkService, $str8ApLinkAdapter)
+Write-Host ("STR8 WORK/RETIRED AP     = {0:X4}/{1:X4}; F006=CLC RTS NOP" -f $str8WorkerService, $str8RetiredF006)
 Write-Host ("STR8 RECORD ENTRY/BODY   = {0:X4}/{1:X4}; ABI 53 52 01 07" -f $str8RecordService, $str8RecordServiceBody)
 Write-Host ("STR8 BANK SELECT ROM/RAM = {0:X4}/{1:X4}; A=00-03" -f $str8BankSelectService, $str8BankSelectRam)
 Write-Host ("STR8 RECORD RAM          = {0:X4}-{1:X4}; DATA {2:X4}" -f $str8RecordOp, $str8RecordExpected, $str8RecordDataBuffer)

@@ -137,8 +137,9 @@ auto-detected or passed through the line reader. Its first form is an explicit
 destination plus exact byte count and expected CRC16, with flash mutation only
 through a separate staged and confirmed STR8 update path.
 
-The V1 callable record-service ABI is frozen. STR8 retains `$F000`, `$F003`,
-and `$F006`, adds a stable operation-multiplexer doorway at `$F009`, and
+The V1 callable record-service ABI is frozen. STR8 retains `$F000` and `$F003`,
+keeps the retired `$F006` slot as a carry-clear tombstone, adds a stable
+operation-multiplexer doorway at `$F009`, and
 publishes signature/version/capabilities at `$F00C-$F00F` as
 `53 52 01 07` (`SR`, ABI 1, buffered S19 + console S19 + conservative `L F`
 apply). The fixed 20-byte request/result block is `$7E95-$7EA8`; decoded S0/S1
@@ -555,14 +556,14 @@ start +count    count is the number of bytes
 ## STR8 Call Surface
 
 - STR8 exposes deliberate fixed service doorways: `$F003` runs a selected RAM
-  worker mode, `$F006` is an AP import-link compatibility adapter, `$F009` is
-  the validated-record service, and `$F010` is the RAM-caller bank selector.
+  worker mode, `$F009` is the validated-record service, and `$F010` is the
+  RAM-caller bank selector. Retired `$F006` returns carry clear and no longer
+  enters HIMON's AP linker.
   These are build-guarded ABI entries, not a general cute-address convention.
 - STR8 V0 should call its private `STR8_CON_*` console helpers directly for
   recovery I/O.
 - HIMON uses `$F003` only for the bank-safe worker contract. AP import linking
-  is HIMON-owned; new HIMON load paths call `HIM_AP_IMPORT_LINK` directly, while
-  `$F006` remains for existing callers.
+  is HIMON-owned; HIMON load paths call `HIM_AP_IMPORT_LINK` directly.
 
 ## STR8 Imports And Onboard Resolution
 
@@ -575,8 +576,8 @@ start +count    count is the number of bytes
   that point at callable STR8 routines, but STR8 V0 does not perform catalog
   lookup.
 - AP parsing, resident import resolution, and relocation policy belong to
-  HIMON. STR8 owns only bank-safe source staging and the `$F006` compatibility
-  adapter into HIMON's `$7E2D-$7E2E` AP service.
+  HIMON. STR8 owns bank-safe source staging and carries no AP/FNV linker code.
+  The retired adapter source is preserved under `SRC/ARCHIVE/str8/`.
 - RAM targets can patch resolved addresses directly. Flash targets must either
   stage in RAM before the first write or restrict patching to legal flash
   1-to-0 transitions.

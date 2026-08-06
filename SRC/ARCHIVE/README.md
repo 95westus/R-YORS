@@ -13,6 +13,7 @@ Current shelves:
 
 ```text
 himon/   retired HIMON/Himonia monitor branches
+str8/    retired STR8 compatibility source kept for reference
 ```
 
 Planned shelves are tracked in

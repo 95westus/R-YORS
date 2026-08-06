@@ -16,15 +16,15 @@
 ; bank, wait about 3 more seconds, then reuse the non-destructive J handoff.
 ;
 ; The RAM proof build performs destructive bank copies directly from RAM. The
-; resident ROM build copies a worker from high flash to $0200, then runs
-; destructive stage/erase/write/verify and one-way config writes from RAM.
+; resident ROM build copies its jump worker from high flash to $0200. The V1
+; I transaction uploads its mutation worker there before destructive
+; stage/erase/write/verify and one-way directory writes run from RAM.
 ; ----------------------------------------------------------------------------
 
                         MODULE          STR8_APP
 
                         XDEF            START
                         XDEF            STR8_RUN_WORKER_SERVICE
-                        XDEF            STR8_AP_IMPORT_LINK_SERVICE
                         XDEF            STR8_RECORD_SERVICE_ENTRY
                         XDEF            STR8_RECORD_SERVICE_SIGNATURE
                         XDEF            STR8_BANK_SELECT_SERVICE_ENTRY
@@ -60,6 +60,7 @@
                         INCLUDE         "STR8/str8-record-eq.inc"
                         INCLUDE         "STR8/str8-jump-eq.inc"
                         INCLUDE         "STR8/str8-directory-eq.inc"
+                        INCLUDE         "STR8/str8-worker-eq.inc"
 
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
 ; 2026-05-17T21:20-05:00        WLP2        Worker storage formerly moved to $FC00 to make room for U/HIMON update.
@@ -113,10 +114,6 @@ STR8_STARTUP_DOT_A      EQU             $0D    ; 0.369s at 8 MHz
 STR8_BANK_BOOT_DELAY_A  EQU             $6A    ; 3.010s at 8 MHz
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
 STR8_COPY_MODE_STAGE_BANK_SECTOR EQU    $06
-HIM_SVC_AP_LO           EQU             $7E2D
-HIM_AP_OP               EQU             $7E2F
-HIM_AP_OP_LINK          EQU             $03
-
 STR8_PTR_LO             EQU             $CD
 STR8_PTR_HI             EQU             $CE
 STR8_COPY_PTR_LO        EQU             $CF
@@ -147,6 +144,7 @@ STR8_INSTALL_ENTRY      EQU             $11
 STR8_INSTALL_FLASH      EQU             $12
 STR8_INSTALL_TRAILING   EQU             $13
 STR8_INSTALL_DIRECTORY  EQU             $14
+STR8_INSTALL_WORKER     EQU             $15
 ; The resident directory validator and S19 record parser run serially and
 ; intentionally share this small zero-page work set.
 STR8_DIR_BANK_WORK      EQU             $D1
@@ -194,8 +192,12 @@ START:
 STR8_RUN_WORKER_SERVICE:
                         JMP             STR8_RUN_WORKER_SERVICE_BODY
 
-STR8_AP_IMPORT_LINK_SERVICE:
-                        JMP             STR8_AP_IMPORT_LINK_SERVICE_BODY
+; Retired AP-link ABI slot. Older callers fail closed without moving the V1
+; record/signature/bank-selector entries that follow it.
+STR8_RETIRED_F006:
+                        CLC
+                        RTS
+                        NOP
 
 STR8_RECORD_SERVICE_ENTRY:
                         JMP             STR8_RECORD_SERVICE_BODY
@@ -689,7 +691,7 @@ STR8_CMD_INSTALL_PREVIEW:
 ?PROMPT:
                         LDX             #<MSG_I_BANK
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_BANK
                         JSR             STR8_PRINT_XY
@@ -725,7 +727,7 @@ STR8_CMD_INSTALL_PREVIEW:
                         JMP             STR8_I_PRINT_SUMMARY
 ?INVALID:              LDX             #<MSG_I_INVALID
                         IF              STR8_V1_INSTALLER_TXN
-                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        JMP             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_INVALID
                         JMP             STR8_PRINT_XY
@@ -735,7 +737,7 @@ STR8_CMD_INSTALL_PREVIEW:
 STR8_I_READ_TYPE:
                         LDX             #<MSG_I_TYPE_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_TYPE_PROMPT
                         JSR             STR8_PRINT_XY
@@ -765,7 +767,7 @@ STR8_I_READ_TYPE:
 STR8_I_READ_DESCRIPTION:
                         LDX             #<MSG_I_DESC_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_DESC_PROMPT
                         JSR             STR8_PRINT_XY
@@ -809,7 +811,7 @@ STR8_I_COPY_RECORD_METADATA:
 STR8_I_PRINT_SUMMARY:
                         LDX             #<MSG_I_SUMMARY
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_SUMMARY
                         JSR             STR8_PRINT_XY
@@ -832,13 +834,13 @@ STR8_I_PRINT_SUMMARY:
                         ENDIF
 ?RANGE:
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         JSR             STR8_PRINT_XY
                         ENDIF
                         LDX             #<MSG_I_TYPE
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_TYPE
                         JSR             STR8_PRINT_XY
@@ -847,7 +849,7 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDX             #<MSG_I_DESC
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_DESC
                         JSR             STR8_PRINT_XY
@@ -866,7 +868,7 @@ STR8_I_PRINT_SUMMARY:
                         BEQ             ?STATE
                         LDX             #<MSG_I_ENTRY
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_ENTRY
                         JSR             STR8_PRINT_XY
@@ -937,10 +939,6 @@ STR8_I_PRINT_SUMMARY:
                         BCS             ?CONFIRMED
                         JMP             STR8_CMD_ABORT
 ?CONFIRMED:
-                        IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_I_BEGIN_TRANSACTION
-                        BCC             STR8_I_PRINT_TRANSACTION_FAIL
-                        ENDIF
                         LDX             #<MSG_I_SEND_S19
                         IF              STR8_V1_INSTALLER_TXN
                         JSR             STR8_PRINT_TXN_PAGE1_X
@@ -954,14 +952,20 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_I_FINISH_TRANSACTION
                         BCC             STR8_I_PRINT_TRANSACTION_FAIL
                         LDX             #<MSG_I_INSTALL_OK
-                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        JMP             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDX             #<MSG_I_STAGE_OK
                         LDY             #>MSG_I_STAGE_OK
                         JSR             STR8_PRINT_XY
                         BRA             STR8_I_NO_WRITE
                         ENDIF
-?STAGE_FAIL:           LDX             #<MSG_I_S19_FAIL
+?STAGE_FAIL:
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDA             STR8_INSTALL_STATUS
+                        CMP             #STR8_INSTALL_DIRECTORY
+                        BEQ             STR8_I_PRINT_TRANSACTION_FAIL
+                        ENDIF
+                        LDX             #<MSG_I_S19_FAIL
                         IF              STR8_V1_INSTALLER_TXN
                         JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
@@ -1112,18 +1116,31 @@ STR8_I_JOURNAL_START_MASK:
                         DB              $FE,$FB,$EF,$BF
 STR8_I_JOURNAL_COMPLETE_MASK:
                         DB              $FD,$F7,$DF,$7F
+STR8_I_WORKER_SIG:
+                        DB              STR8_MUTATION_WORKER_SIG0
+                        DB              STR8_MUTATION_WORKER_SIG1
+                        DB              STR8_MUTATION_WORKER_SIG2
+                        DB              STR8_MUTATION_WORKER_SIG3
                         ENDIF
 
-; Receive exactly $8000-$FFFF for Banks 0-2 or $8000-$EFFF for Bank 3.
+; Transaction streams first carry the exact mutation worker at $0200-$042A.
+; Then receive exactly $8000-$FFFF for Banks 0-2 or $8000-$EFFF for Bank 3.
 ; The single $0A00-$19FF sector tray is reused only after the sector-ready hook
 ; returns. The final sector stays in the tray until S9 is validated.
 STR8_I_RECEIVE_DENSE:
                         STZ             STR8_INSTALL_EXPECT_LO
                         STZ             STR8_INSTALL_PHASE
                         STZ             STR8_INSTALL_STATUS
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDA             #>STR8_WORKER_RUN
+                        STA             STR8_INSTALL_EXPECT_HI
+                        LDA             #$80
+                        STA             STR8_INSTALL_SECTOR_HI
+                        ELSE
                         LDA             #$80
                         STA             STR8_INSTALL_EXPECT_HI
                         STA             STR8_INSTALL_SECTOR_HI
+                        ENDIF
                         LDA             STR8_INSTALL_BANK
                         CMP             #STR8_DIR_BANK3
                         BEQ             ?LIMIT3
@@ -1159,7 +1176,11 @@ STR8_I_RECEIVE_DENSE:
                         INC             STR8_INSTALL_PHASE
                         BRA             ?RECORD
 ?DATA:                 LDA             STR8_INSTALL_PHASE
+                        IF              STR8_V1_INSTALLER_TXN
+                        CMP             #$04
+                        ELSE
                         CMP             #$03
+                        ENDIF
                         BCC             ?NOT_FINAL
                         JMP             STR8_I_RECEIVE_DENSE_FAIL
 ?NOT_FINAL:
@@ -1177,8 +1198,20 @@ STR8_I_RECEIVE_DENSE:
                         BNE             ?HAVE_DATA
                         JMP             STR8_I_RECEIVE_DENSE_FAIL
 ?HAVE_DATA:
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDA             STR8_INSTALL_PHASE
+                        CMP             #$02
+                        BCS             ?BANK_DESTINATION
+                        LDA             STR8_INSTALL_EXPECT_LO
+                        STA             STR8_PTR_LO
+                        LDA             STR8_INSTALL_EXPECT_HI
+                        STA             STR8_PTR_HI
+                        BRA             ?COPY_INIT
+?BANK_DESTINATION:
+                        ELSE
                         LDA             #$02
                         STA             STR8_INSTALL_PHASE
+                        ENDIF
                         LDA             STR8_INSTALL_EXPECT_LO
                         STA             STR8_PTR_LO
                         LDA             STR8_INSTALL_EXPECT_HI
@@ -1186,6 +1219,9 @@ STR8_I_RECEIVE_DENSE:
                         CLC
                         ADC             #$0A
                         STA             STR8_PTR_HI
+                        IF              STR8_V1_INSTALLER_TXN
+?COPY_INIT:
+                        ENDIF
                         LDX             #$00
 ?COPY:                 LDY             #$00
                         LDA             STR8_REC_DATA_BUF,X
@@ -1198,6 +1234,33 @@ STR8_I_RECEIVE_DENSE:
                         BNE             ?COUNT
                         INC             STR8_INSTALL_EXPECT_HI
 ?COUNT:                DEC             STR8_REC_DATA_LEN
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDA             STR8_INSTALL_PHASE
+                        CMP             #$02
+                        BCS             ?BANK_COUNT
+                        LDA             STR8_INSTALL_EXPECT_LO
+                        CMP             #<STR8_MUTATION_WORKER_END
+                        BNE             ?MORE
+                        LDA             STR8_INSTALL_EXPECT_HI
+                        CMP             #>STR8_MUTATION_WORKER_END
+                        BNE             ?MORE
+                        LDA             STR8_REC_DATA_LEN
+                        BNE             ?WORKER_BAD
+                        LDX             #$03
+?WORKER_SIG:           LDA             STR8_MUTATION_WORKER_SIG,X
+                        CMP             STR8_I_WORKER_SIG,X
+                        BNE             ?WORKER_BAD
+                        DEX
+                        BPL             ?WORKER_SIG
+                        STZ             STR8_INSTALL_EXPECT_LO
+                        LDA             #$80
+                        STA             STR8_INSTALL_EXPECT_HI
+                        LDA             #$02
+                        STA             STR8_INSTALL_PHASE
+                        JMP             ?RECORD
+?WORKER_BAD:           JMP             STR8_I_RECEIVE_WORKER_FAIL
+?BANK_COUNT:
+                        ENDIF
                         LDA             STR8_INSTALL_EXPECT_LO
                         BNE             ?MORE
                         LDA             STR8_INSTALL_EXPECT_HI
@@ -1219,17 +1282,35 @@ STR8_I_RECEIVE_DENSE:
                         STA             STR8_PTR_HI
 ?MORE:                 LDA             STR8_REC_DATA_LEN
                         BNE             ?COPY
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDA             STR8_INSTALL_PHASE
+                        CMP             #$02
+                        BNE             ?NEXT_RECORD
+                        INC             STR8_INSTALL_PHASE
+                        JSR             STR8_I_BEGIN_TRANSACTION
+                        BCS             ?NEXT_RECORD
+                        JMP             STR8_I_RECEIVE_DIRECTORY_FAIL
+?NEXT_RECORD:
+                        ENDIF
                         JMP             ?RECORD
 ?FINAL:                LDA             STR8_REC_DATA_LEN
                         BEQ             ?FINAL_EXACT
                         JMP             STR8_I_RECEIVE_DENSE_FAIL
 ?FINAL_EXACT:
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDA             #$04
+                        ELSE
                         LDA             #$03
+                        ENDIF
                         STA             STR8_INSTALL_PHASE
                         JMP             ?RECORD
 
 ?END:                  LDA             STR8_INSTALL_PHASE
+                        IF              STR8_V1_INSTALLER_TXN
+                        CMP             #$04
+                        ELSE
                         CMP             #$03
+                        ENDIF
                         BEQ             ?COVERAGE_OK
                         JMP             STR8_I_RECEIVE_DENSE_FAIL
 ?COVERAGE_OK:
@@ -1279,8 +1360,21 @@ STR8_I_RECEIVE_DENSE:
                         RTS
 
 STR8_I_RECEIVE_DENSE_FAIL:
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDA             STR8_INSTALL_PHASE
+                        CMP             #$02
+                        BCC             STR8_I_RECEIVE_WORKER_FAIL
+                        ENDIF
                         LDA             #STR8_INSTALL_DENSE
                         BRA             STR8_I_RECEIVE_FAIL_A
+                        IF              STR8_V1_INSTALLER_TXN
+STR8_I_RECEIVE_WORKER_FAIL:
+                        LDA             #STR8_INSTALL_WORKER
+                        BRA             STR8_I_RECEIVE_FAIL_A
+STR8_I_RECEIVE_DIRECTORY_FAIL:
+                        LDA             #STR8_INSTALL_DIRECTORY
+                        BRA             STR8_I_RECEIVE_FAIL_A
+                        ENDIF
 STR8_I_RECEIVE_ENTRY_FAIL:
                         LDA             #STR8_INSTALL_ENTRY
                         BRA             STR8_I_RECEIVE_FAIL_A
@@ -1317,7 +1411,6 @@ STR8_I_STAGE_SECTOR_READY:
 ?FAIL:                 RTS
 
 STR8_I_RUN_SECTOR_WORKER:
-                        JSR             STR8_COPY_WORKER_TO_RAM
                         JMP             STR8_WORKER_RUN
                         ELSE
 ; The receive/staging proof deliberately cannot reach flash.
@@ -1592,11 +1685,7 @@ STR8_BANK_SELECT_SERVICE_BODY:
 ?BAD_BANK:             CLC
                         RTS
                         ENDIF
-
-STR8_AP_IMPORT_LINK_SERVICE_BODY:
-                        LDA             #HIM_AP_OP_LINK
-                        STA             HIM_AP_OP
-                        JMP             (HIM_SVC_AP_LO)
+STR8_BANK_SELECT_SERVICE_BODY_END:
 
 ; ----------------------------------------------------------------------------
 ; V1 Bank Directory read-only foundation for I and directory-gated J.
@@ -1878,7 +1967,10 @@ STR8_RUN_PROGRAM_RECORD_WORKER:
                         PHA
                         LDA             #STR8_COPY_MODE_PROGRAM_RECORD
                         STA             STR8_COPY_MODE
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
                         JSR             STR8_COPY_WORKER_TO_RAM
+                        ENDIF
                         JSR             STR8_WORKER_RUN
                         LDA             #$00
                         ADC             #$00

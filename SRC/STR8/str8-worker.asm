@@ -2,10 +2,10 @@
 ; str8-worker.asm
 ; RAM-resident STR8 flash-service worker.
 ;
-; This image links for $0200, must fit in the $0200-$09FF STR8 RAM worker tray,
-; is stored in high flash packed below the active layout ceiling, and is copied
-; to $0200 before flash or bank operations. Keep it independent: once running,
-; it must not call ROM code because it switches flash banks and may erase bank 3's top
+; Every variant links for $0200 and must fit in the $0200-$09FF STR8 RAM worker
+; tray. The full and jump workers are copied from high flash; the mutation-only
+; worker is uploaded by I. Keep them independent: once running, they must not
+; call ROM code because they switch flash banks and may erase Bank 3's top
 ; sector.
 ; ----------------------------------------------------------------------------
 
@@ -20,6 +20,7 @@
 
                         INCLUDE         "STR8/str8-record-eq.inc"
                         INCLUDE         "STR8/str8-jump-eq.inc"
+                        INCLUDE         "STR8/str8-worker-eq.inc"
 
 ; 2026-05-07T22:58-05:00        WLP2        Combined ROM layout moves STR8 to $F000.
 ; 2026-05-17T21:20-05:00        WLP2        Worker source storage formerly moved to $FC00.
@@ -63,10 +64,19 @@ STR8_FLASH_WRITE_TMO_HI EQU             $02
 
                         CODE
 START:
+                        IF              STR8_WORKER_MUTATION_ONLY
+                        JMP             STR8W_START_BODY
+STR8W_MUTATION_SIG:
+                        DB              STR8_MUTATION_WORKER_SIG0
+                        DB              STR8_MUTATION_WORKER_SIG1
+                        DB              STR8_MUTATION_WORKER_SIG2
+                        DB              STR8_MUTATION_WORKER_SIG3
+                        ELSE
                         IF              STR8_WORKER_JUMP_ONLY
                         JMP             STR8W_JUMP_START
                         ELSE
                         JMP             STR8W_START_BODY
+                        ENDIF
                         ENDIF
 
 ; Fixed $0203 entry used by the resident $F010 bank-selection service.

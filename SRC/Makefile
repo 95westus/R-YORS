@@ -81,6 +81,7 @@ FNV1A_HBSTR_S19 := $(S19_DIR)/fnv1a-hbstr-6000.s19
 FNV1A_HBSTR_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
 STR8_SRC := $(STR8_SUBDIR)/str8.asm
 STR8_RECORD_EQ := $(STR8_SUBDIR)/str8-record-eq.inc
+STR8_WORKER_EQ := $(STR8_SUBDIR)/str8-worker-eq.inc
 STR8_DIRECTORY_EQ := $(STR8_SUBDIR)/str8-directory-eq.inc
 STR8_DIRECTORY_CHECK := tools/check_str8_directory_v1.ps1
 STR8_WORKER_MODE_CHECK := tools/check_str8_worker_modes.ps1
@@ -441,14 +442,14 @@ str8-directory-check: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN) $(STR8_DIRECTORY_EQ) $
 str8-installer-dry-check: $(STR8_V1_INSTALLER_DRY_S19) $(STR8_DIRECTORY_EQ) $(STR8_DIRECTORY_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -DryInstallerS19Path "$(STR8_V1_INSTALLER_DRY_S19)" -Str8MapPath "$(S19_DIR)/str8-v1-installer-dry-f000.map"
 
-str8-installer-transaction-check: $(STR8_V1_INSTALLER_TXN_S19) $(STR8_DIRECTORY_EQ) $(STR8_DIRECTORY_CHECK)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -TransactionInstallerS19Path "$(STR8_V1_INSTALLER_TXN_S19)" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map"
+str8-installer-transaction-check: $(STR8_V1_INSTALLER_TXN_S19) $(STR8_MUTATION_WORKER_S19) $(STR8_DIRECTORY_EQ) $(STR8_DIRECTORY_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -TransactionInstallerS19Path "$(STR8_V1_INSTALLER_TXN_S19)" -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map"
 
 str8-worker-mode-check: $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) $(STR8_WORKER_MODE_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_MODE_CHECK) -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)"
 
-str8-worker-split-check: $(STR8_JUMP_WORKER_S19) $(STR8_MUTATION_WORKER_S19) $(STR8_WORKER_SPLIT_CHECK)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_SPLIT_CHECK) -JumpMapPath "$(S19_DIR)/str8-jump-worker-0200.map" -MutationMapPath "$(S19_DIR)/str8-mutation-worker-0200.map"
+str8-worker-split-check: $(STR8_V1_INSTALLER_TXN_S19) $(STR8_JUMP_WORKER_S19) $(STR8_MUTATION_WORKER_S19) $(STR8_WORKER_EQ) $(STR8_WORKER_SPLIT_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_SPLIT_CHECK) -JumpMapPath "$(S19_DIR)/str8-jump-worker-0200.map" -MutationMapPath "$(S19_DIR)/str8-mutation-worker-0200.map" -MutationS19Path "$(STR8_MUTATION_WORKER_S19)" -WorkerEqPath "$(STR8_WORKER_EQ)" -ResidentMapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map"
 
 str8-bank-copy-source-check: $(STR8_BANK_COPY_SOURCE) $(STR8_BANK_COPY_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_COPY_CHECK) -SourcePath "$(STR8_BANK_COPY_SOURCE)"
@@ -819,31 +820,31 @@ $(STR8_MUTATION_WORKER_S19): $(STR8_MUTATION_WORKER_OBJ)
 	@echo [ps] set S9 start $$0200 in $(STR8_MUTATION_WORKER_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_MUTATION_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
 
-$(STR8_OBJ): $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_OBJ): $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
 
-$(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_V1_INSTALLER_DRY_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_V1_INSTALLER_DRY_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT -DSTR8_V1_INSTALLER_DRY $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_V1_INSTALLER_TXN_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_V1_INSTALLER_TXN_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT -DSTR8_V1_INSTALLER_DRY -DSTR8_V1_INSTALLER_TXN $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_WORKER_OBJ): $(STR8_RECORD_EQ)
+$(STR8_WORKER_OBJ): $(STR8_RECORD_EQ) $(STR8_WORKER_EQ)
 
-$(STR8_JUMP_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ)
+$(STR8_JUMP_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_WORKER_JUMP_ONLY $(STR8_WORKER_SRC)
 	@if exist $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) move /Y $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_MUTATION_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ)
+$(STR8_MUTATION_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_WORKER_MUTATION_ONLY $(STR8_WORKER_SRC)
 	@if exist $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) move /Y $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) $(subst /,\,$@)
@@ -852,7 +853,7 @@ $(STR8_RECORD_PHASE1_PROOF_OBJ): $(STR8_RECORD_EQ)
 
 $(STR8_L_TRANSPORT_PHASE5_PROOF_OBJ): $(STR8_RECORD_EQ)
 
-$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_RAM_PROOF $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)

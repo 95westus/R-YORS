@@ -115,7 +115,9 @@ The current line retains the 2026-07-18 size-pass proof: its fixed-width `D`
 path, positive RAM AP/RJOIN import path, missing-import atomicity, and
 banked-source RJOIN path are hardware-proven. It retires the STR8 `M` map and
 the richer resident HIMON `D`/quoted-hash forms, and keeps AP import linking in
-HIMON while preserving `$F006` as a compatibility entry.
+HIMON. STR8's former `$F006` compatibility doorway is retired; the slot now
+returns carry clear so stale callers fail without disturbing the active V1
+service addresses.
 
 ## Start Here
 
