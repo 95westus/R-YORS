@@ -12516,3 +12516,56 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-05 STR8 V1 Installer ZP Size Pass 1
+
+Status: compiled host pass; still oversized and nonflashable.
+
+The foreground `I` transaction now keeps its complete 17-byte persistent
+state frame at `$0090-$00A0` instead of `$1A00-$1A10`. This is transient STR8
+recovery ownership inside the normal user/free ZP range. It does not overlap
+the resident or RAM-worker scratch at `$00CD-$00D6`, and `$1A00-$1FE8` returns
+to its reserved/debug and possible future scatter-tail role.
+
+The linked transaction image contains exactly 71 installer-state operands.
+All 71 now use two-byte zero-page forms, so the transaction image shrinks by
+exactly `$0047` without changing control flow or operator output. The host
+65C02 interpreter adds `STA zp,X` (`$95`), `LDA zp,X` (`$B5`), and `CMP zp`
+(`$C5`), replaces its last hard-coded `$1A0B-$1A0F` diagnostic reads with map
+symbols, and rejects any future drift from the exact `$90-$A0` frame.
+
+Measured memory statistics:
+
+```text
+normal resident             $F000-$FAF6  size $0AF7 = 2807  unchanged
+V1 preview resident         $F000-$FBDC  size $0BDD = 3037  down $0016
+V1 preview/worker gap       $FBDD-$FD1E  size $0142 = 322
+dry resident                $F000-$FDBF  size $0DC0 = 3520  down $0038
+dry/worker overlap          $FD1F-$FDBF  size $00A1 = 161
+dry fit debt + $0040 gap                    $00E1 = 225
+transaction resident        $F000-$FEEF  size $0EF0 = 3824  down $0047
+transaction/worker overlap  $FD1F-$FEEF  size $01D1 = 465
+transaction fit debt                         $0211 = 529
+room before directory       $FEF0-$FFAF  size $00C0 = 192
+stored worker               $FD1F-$FFAF  size $0291 = 657  unchanged
+directory                   $FFB0-$FFEF  size $0040 = 64   unchanged
+configuration/vectors       $FFF0-$FFFF  size $0010 = 16   unchanged
+```
+
+The transaction gate retains 38 installer cases, 94 journal cases, 33 record
+cases, 77 directory-writer cases, 23 line/`I` cases, and 12 startup cases; its
+largest fixture remains 432647 interpreted steps. This size-only slice emits
+no V1 migration artifact and adds no board test.
+
+Required host gates:
+
+```text
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-v1-layout-preview str8-directory-check
+make -C SRC firmware
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

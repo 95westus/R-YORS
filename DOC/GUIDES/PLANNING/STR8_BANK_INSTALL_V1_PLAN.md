@@ -316,16 +316,18 @@ and verifies the journal START transition and then requests the S19 stream.
 Sending the S19 begins sector mutation; there is no later post-receive erase
 confirmation.
 
-Persistent installer state that must survive worker calls lives within
-`$1A00-$1FE8`. It must not depend on worker zero page `$CD-$D6`, the worker
-state board `$1FE9-$1FFF`, or transient command-reader state.
+Persistent installer state that must survive worker calls occupies the
+17-byte transient user-ZP frame `$0090-$00A0`. STR8 owns that frame only while
+the foreground recovery transaction is active. It does not overlap worker
+zero page `$00CD-$00D6`, the worker state board `$1FE9-$1FFF`, or transient
+command-reader state.
 
 The installer uses:
 
 ```text
+$0090-$00A0  persistent installer state during I
 $0200-$09FF  RAM worker-code tray
 $0A00-$19FF  one full 4K staged sector
-$1A00-$1FE8  persistent installer state
 $7B00-$7BFB  existing validated S19 record buffer
 $7E95-$7EA8  existing record request/result card
 ```
@@ -832,7 +834,7 @@ Persistent new data is expected to be:
 
 ```text
 Bank Directory                    64 flash bytes
-installer state                   about 32-96 RAM bytes in $1A00-$1FE8
+installer state                   17 transient ZP bytes in $0090-$00A0
 sector staging                    existing 4096-byte tray
 validated record staging          existing 252-byte tray
 ```
@@ -902,9 +904,10 @@ ASM, or the user outside recovery mode. This is materially different from the
 direct-run `$2000` maintenance program. A simple sector-pool layout is:
 
 ```text
+$0090-$00A0  transient installer state during I          17 bytes
 $0200-$09FF  RAM worker tray; not an image buffer
 $0A00-$19FF  sector buffer 0                         4K
-$1A00-$1FE8  installer state and optional scatter tail
+$1A00-$1FE8  optional scatter tail; currently free during I
 $1FE9-$1FFF  worker/STR8 state; never image data
 $2000-$2FFF  sector buffer 1                         4K
 $3000-$3FFF  sector buffer 2                         4K
@@ -923,13 +926,13 @@ the exact extent, displays it, obtains final confirmation, writes journal
 START, and commits the staged sectors.
 
 A 28K image can also fit before mutation if the seventh sector is split across
-the unused part of `$1A00-$1FE8` and `$7000-$7AFF`, while leaving a small fixed
-installer-state board. After S9 validation and confirmation, STR8 programs one
-of the six contiguous trays, repacks the scattered seventh sector into the
-freed 4K tray, and writes it last. This more complex path needs explicit host
-mapping tests to prove that no worker-state or parser byte can alias image
-data. It would allow the complete Bank-3 28K payload to be validated before
-the first flash erase.
+`$1A00-$1FE8` and `$7000-$7AFF`; the installer state remains separate in its
+transient ZP frame. After S9 validation and confirmation, STR8 programs one of
+the six contiguous trays, repacks the scattered seventh sector into the freed
+4K tray, and writes it last. This more complex path needs explicit host mapping
+tests to prove that no worker-state or parser byte can alias image data. It
+would allow the complete Bank-3 28K payload to be validated before the first
+flash erase.
 
 A dense 32K image cannot coexist in RAM with the CPU stack, worker, installer
 state, S19 record tray, IVY/service state, and I/O page. Banks 0-2 therefore

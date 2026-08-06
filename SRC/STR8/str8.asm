@@ -111,10 +111,8 @@ STR8_STARTUP_DOT_COUNT  EQU             $20
 STR8_STARTUP_LIVE_TICKS EQU             $10
 STR8_STARTUP_DOT_A      EQU             $0D    ; 0.369s at 8 MHz
 STR8_BANK_BOOT_DELAY_A  EQU             $6A    ; 3.010s at 8 MHz
-
 STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
 STR8_COPY_MODE_STAGE_BANK_SECTOR EQU    $06
-
 HIM_SVC_AP_LO           EQU             $7E2D
 HIM_AP_OP               EQU             $7E2F
 HIM_AP_OP_LINK          EQU             $03
@@ -129,19 +127,21 @@ STR8_REC_WORK_COUNT     EQU             $D3
 STR8_REC_WORK_TMP       EQU             $D4
 STR8_REC_WORK_TYPE      EQU             $D5
 STR8_LINE_LIMIT         EQU             $D1
-STR8_INSTALL_BANK       EQU             $1A00
-STR8_INSTALL_TYPE       EQU             $1A01
-STR8_INSTALL_DESC       EQU             $1A02
-STR8_INSTALL_STATE      EQU             $1A07
-STR8_INSTALL_PAIR       EQU             $1A08
-STR8_INSTALL_ENTRY_LO   EQU             $1A09
-STR8_INSTALL_ENTRY_HI   EQU             $1A0A
-STR8_INSTALL_EXPECT_LO  EQU             $1A0B
-STR8_INSTALL_EXPECT_HI  EQU             $1A0C
-STR8_INSTALL_LIMIT_HI   EQU             $1A0D
-STR8_INSTALL_PHASE      EQU             $1A0E
-STR8_INSTALL_SECTOR_HI  EQU             $1A0F
-STR8_INSTALL_STATUS     EQU             $1A10
+; I owns this transient user-ZP frame for the complete recovery transaction.
+; The RAM worker uses only $CD-$D6, so these bytes survive every worker call.
+STR8_INSTALL_BANK       EQU             $90
+STR8_INSTALL_TYPE       EQU             $91
+STR8_INSTALL_DESC       EQU             $92
+STR8_INSTALL_STATE      EQU             $97
+STR8_INSTALL_PAIR       EQU             $98
+STR8_INSTALL_ENTRY_LO   EQU             $99
+STR8_INSTALL_ENTRY_HI   EQU             $9A
+STR8_INSTALL_EXPECT_LO  EQU             $9B
+STR8_INSTALL_EXPECT_HI  EQU             $9C
+STR8_INSTALL_LIMIT_HI   EQU             $9D
+STR8_INSTALL_PHASE      EQU             $9E
+STR8_INSTALL_SECTOR_HI  EQU             $9F
+STR8_INSTALL_STATUS     EQU             $A0
 STR8_INSTALL_DENSE      EQU             $10
 STR8_INSTALL_ENTRY      EQU             $11
 STR8_INSTALL_FLASH      EQU             $12

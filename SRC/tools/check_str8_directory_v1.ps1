@@ -495,6 +495,12 @@ function Invoke-ResidentDirectoryRoutine {
                 $pc += 2
                 continue
             }
+            0x95 { # STA zero page,X
+                $address = (([int]$Memory[$pc + 1]) + $xReg) -band 0xFF
+                $Memory[$address] = [byte]$aReg
+                $pc += 2
+                continue
+            }
             0x90 { # BCC relative
                 $offset = [int]$Memory[$pc + 1]
                 if ($offset -ge 0x80) { $offset -= 0x100 }
@@ -597,6 +603,13 @@ function Invoke-ResidentDirectoryRoutine {
                 $pc += 2
                 continue
             }
+            0xB5 { # LDA zero page,X
+                $address = (([int]$Memory[$pc + 1]) + $xReg) -band 0xFF
+                $aReg = [int]$Memory[$address]
+                $status = Set-NzFlags $status $aReg
+                $pc += 2
+                continue
+            }
             0xBD { # LDA absolute,X
                 $address = (([int]$Memory[$pc + 1]) -bor (([int]$Memory[$pc + 2]) -shl 8)) + $xReg
                 $aReg = [int]$Memory[$address -band 0xFFFF]
@@ -620,6 +633,16 @@ function Invoke-ResidentDirectoryRoutine {
                 $status = $status -band 0x7C
                 if ($yReg -ge $value) { $status = $status -bor 0x01 }
                 if ($yReg -eq $value) { $status = $status -bor 0x02 }
+                if (($difference -band 0x80) -ne 0) { $status = $status -bor 0x80 }
+                $pc += 2
+                continue
+            }
+            0xC5 { # CMP zero page
+                $value = [int]$Memory[[int]$Memory[$pc + 1]]
+                $difference = ($aReg - $value) -band 0xFF
+                $status = $status -band 0x7C
+                if ($aReg -ge $value) { $status = $status -bor 0x01 }
+                if ($aReg -eq $value) { $status = $status -bor 0x02 }
                 if (($difference -band 0x80) -ne 0) { $status = $status -bor 0x80 }
                 $pc += 2
                 continue
@@ -1459,8 +1482,11 @@ function Assert-DenseStageFixture {
         throw ('Dense {0} failed: status=${1:X2}, records={2}, stages={3}, input={4}/{5}, expected=${6:X2}{7:X2}, phase=${8:X2}, limit=${9:X2}, sector=${10:X2}' -f `
             $Name, $Fixture.Memory[$script:residentInstallStatus], $Fixture.Cpu.RecordCalls,
             $Fixture.Cpu.StageCalls, $Fixture.Cpu.InputConsumed, $InputBytes.Length,
-            $Fixture.Memory[0x1A0C], $Fixture.Memory[0x1A0B], $Fixture.Memory[0x1A0E],
-            $Fixture.Memory[0x1A0D], $Fixture.Memory[0x1A0F])
+            $Fixture.Memory[$script:residentInstallExpectHi],
+            $Fixture.Memory[$script:residentInstallExpectLo],
+            $Fixture.Memory[$script:residentInstallPhase],
+            $Fixture.Memory[$script:residentInstallLimitHi],
+            $Fixture.Memory[$script:residentInstallSectorHi])
     }
     Assert-ResidentIPreviewFixture $Fixture $InputBytes $ExpectedOutput $Name
     Assert-True ($Fixture.Cpu.RecordCalls -eq $Dense.Records.Length) `
@@ -1721,11 +1747,30 @@ $residentInstallState = Get-MapSymbol $residentSymbols "STR8_INSTALL_STATE"
 $residentInstallPair = Get-MapSymbol $residentSymbols "STR8_INSTALL_PAIR"
 $residentInstallEntryLo = Get-MapSymbol $residentSymbols "STR8_INSTALL_ENTRY_LO"
 $residentInstallEntryHi = Get-MapSymbol $residentSymbols "STR8_INSTALL_ENTRY_HI"
-$residentInstallSectorHi = $(if ($dryInstallerMode) { Get-MapSymbol $residentSymbols "STR8_INSTALL_SECTOR_HI" } else { -1 })
-$residentInstallStatus = $(if ($dryInstallerMode) { Get-MapSymbol $residentSymbols "STR8_INSTALL_STATUS" } else { -1 })
+$residentInstallExpectLo = Get-MapSymbol $residentSymbols "STR8_INSTALL_EXPECT_LO"
+$residentInstallExpectHi = Get-MapSymbol $residentSymbols "STR8_INSTALL_EXPECT_HI"
+$residentInstallLimitHi = Get-MapSymbol $residentSymbols "STR8_INSTALL_LIMIT_HI"
+$residentInstallPhase = Get-MapSymbol $residentSymbols "STR8_INSTALL_PHASE"
+$residentInstallSectorHi = Get-MapSymbol $residentSymbols "STR8_INSTALL_SECTOR_HI"
+$residentInstallStatus = Get-MapSymbol $residentSymbols "STR8_INSTALL_STATUS"
 $residentScreen = Get-MapSymbol $residentSymbols "MSG_SCREEN"
 $residentHelp = Get-MapSymbol $residentSymbols "MSG_HELP"
 $residentWorkerHook = Get-MapSymbol $residentSymbols "STR8_RUN_PROGRAM_RECORD_WORKER"
+Assert-True (($residentInstallBank -eq 0x90) -and
+    ($residentInstallType -eq 0x91) -and
+    ($residentInstallDesc -eq 0x92) -and
+    ($residentInstallState -eq 0x97) -and
+    ($residentInstallPair -eq 0x98) -and
+    ($residentInstallEntryLo -eq 0x99) -and
+    ($residentInstallEntryHi -eq 0x9A) -and
+    ($residentInstallExpectLo -eq 0x9B) -and
+    ($residentInstallExpectHi -eq 0x9C) -and
+    ($residentInstallLimitHi -eq 0x9D) -and
+    ($residentInstallPhase -eq 0x9E) -and
+    ($residentInstallSectorHi -eq 0x9F) -and
+    ($residentInstallStatus -eq 0xA0) -and
+    ($residentInstallStatus -lt 0xCD)) `
+    'Resident I state must occupy only the $90-$A0 transient ZP frame'
 if ($dryInstallerMode) {
     Assert-True ($residentEnd -le $dirBase) 'Installer-dry resident crosses the immutable directory boundary'
 } else {
