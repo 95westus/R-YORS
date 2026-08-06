@@ -453,6 +453,30 @@ It remains below the immutable `$FFB0` directory boundary, but cannot coexist
 with the current `$FD1F-$FFAF` worker. No V1 migration S19, TopWriter, stamped
 ROM, or board-test candidate is emitted until that fit debt is closed.
 
+### 2026-08-05 Current Fit-Closure Ledger
+
+Two isolated size passes now follow the original transaction proof. Moving the
+17-byte installer state frame to `$0090-$00A0` reclaimed `$0047` transaction
+bytes. Replacing 40 repeated fixed-message page loads with two map-guarded
+page helpers reclaimed another `$004A`. Together they remove `$0091` = 145
+bytes without changing the worker or transaction semantics.
+
+```text
+normal resident             $F000-$FAF6  size $0AF7 = 2807
+V1 preview resident         $F000-$FBDC  size $0BDD = 3037
+dry resident                $F000-$FDBF  size $0DC0 = 3520
+transaction resident        $F000-$FEA5  size $0EA6 = 3750
+transaction/worker overlap  $FD1F-$FEA5  size $0187 = 391
+fit debt including $0040 gap               $01C7 = 455
+room before directory       $FEA6-$FFAF  size $010A = 266
+stored worker               $FD1F-$FFAF  size $0291 = 657
+```
+
+The transaction remains a host proof only. Fit closure must remove at least
+391 more physical-overlap bytes, or 455 bytes while retaining the frozen
+`$0040` development reserve, before generating a flashable migration image or
+starting the V1 transaction board ladder.
+
 ## Sector Streaming and Final-Sector Gate
 
 Only one sector is staged. Earlier complete sectors are erased, programmed,

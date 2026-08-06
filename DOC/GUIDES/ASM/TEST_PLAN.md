@@ -12569,3 +12569,61 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-05 STR8 V1 Transaction Message-Page Size Pass 2
+
+Status: compiled host pass; still oversized and nonflashable.
+
+The transaction build had 40 fixed-message print sites carrying a repeated
+two-byte `LDY #>MSG_*`. Its final message layout occupies exactly two pages:
+16 calls select `$FD`, and 24 calls select `$FE`. Two adjacent helpers now
+load those page bytes; the `$FD` helper branches around the `$FE` helper, while
+the `$FE` helper falls through to `STR8_PRINT_XY`. Removing 80 repeated bytes
+and adding the six-byte helper pair reclaims exactly `$004A` = 74 bytes.
+
+The transaction gate freezes the helper bytes as
+`A0 FD 80 02 A0 FE`, requires the pair to sit immediately before
+`STR8_PRINT_XY`, counts the 16/24 source call split, and map-checks every
+optimized message. The exact page boundary is `MSG_I_SUMMARY=$FDFB` followed by
+`MSG_I_RANGE_32K=$FE00`. Normal, RAM-proof, V1 preview, and dry builds retain
+their original message loads. Four branch-specific transaction page loads
+remain intentionally redundant; their possible eight-byte removal is a
+separate size slice.
+
+Measured memory statistics:
+
+```text
+normal resident             $F000-$FAF6  size $0AF7 = 2807  unchanged
+V1 preview resident         $F000-$FBDC  size $0BDD = 3037  unchanged
+V1 preview/worker gap       $FBDD-$FD1E  size $0142 = 322
+dry resident                $F000-$FDBF  size $0DC0 = 3520  unchanged
+dry/worker overlap          $FD1F-$FDBF  size $00A1 = 161
+dry fit debt + $0040 gap                    $00E1 = 225
+transaction resident        $F000-$FEA5  size $0EA6 = 3750  down $004A
+transaction/worker overlap  $FD1F-$FEA5  size $0187 = 391
+transaction fit debt                         $01C7 = 455
+room before directory       $FEA6-$FFAF  size $010A = 266
+stored worker               $FD1F-$FFAF  size $0291 = 657  unchanged
+directory                   $FFB0-$FFEF  size $0040 = 64   unchanged
+configuration/vectors       $FFF0-$FFFF  size $0010 = 16   unchanged
+```
+
+The transaction gate still passes 38 installer cases, 94 journal cases, 33
+record cases, 77 directory-writer cases, 23 line/`I` cases, and 12 startup
+cases. The largest transaction fixture now executes 432653 interpreted steps.
+The dry gate remains unchanged at 11 installer cases. Because 391 physical
+bytes still overlap the stored worker, this pass emits no V1 migration
+artifact and has no board test.
+
+Required host gates:
+
+```text
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-v1-layout-preview str8-directory-check
+make -C SRC firmware
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

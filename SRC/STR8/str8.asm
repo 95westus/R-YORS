@@ -235,13 +235,21 @@ STR8_BOOT_START:
 ?HIMON_KEY:            JMP             STR8_CMD_SELECT_HIMON
 ?HIMON:
                         LDX             #<MSG_CRLF
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_CRLF
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         JMP             STR8_ENTER_HIMON_COLD
 ?STR8_KEY:             JSR             STR8_CON_FLUSH_RX
                         LDX             #<MSG_BOOT_MENU
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_BOOT_MENU
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         JMP             STR8_ENTER_MENU_READY
 ?STR8_TAKEOVER:        JMP             STR8_ENTER_MENU_HELP
                         ENDIF
@@ -251,8 +259,12 @@ STR8_ENTER_MENU:
 
 STR8_ENTER_MENU_HELP:
                         LDX             #<MSG_SCREEN
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_SCREEN
                         JSR             STR8_PRINT_XY
+                        ENDIF
 STR8_ENTER_MENU_READY:
                         STZ             STR8_INPUT_SKIP_LF
                         JMP             STR8_CMD_LOOP
@@ -398,16 +410,24 @@ STR8_BOOT_TARGET_AVAILABLE:
 STR8_ENTER_MENU_NO_BOOT:
                         JSR             STR8_CON_FLUSH_RX
                         LDX             #<MSG_NO_BOOT
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_NO_BOOT
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         JMP             STR8_ENTER_MENU_HELP
 
                         IF              STR8_RAM_PROOF
                         ELSE
 STR8_PRINT_BANNER:
                         LDX             #<MSG_ID
+                        IF              STR8_V1_INSTALLER_TXN
+                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_ID
                         JMP             STR8_PRINT_XY
+                        ENDIF
 
 ; OUT: C=1 and A='0'/'1'/'2'/'3'/'S' when a boot choice was consumed.
 ;      C=0 if the timeout elapsed.
@@ -430,12 +450,20 @@ STR8_STARTUP_DELAY:
                         JSR             STR8_CON_FLUSH_RX
                         INC             STR8_BOOT_KEY_ENABLE
                         LDX             #<MSG_CRLF
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_CRLF
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         JSR             STR8_PRINT_BANNER
                         LDX             #<MSG_BOOT_PROMPT
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_BOOT_PROMPT
                         JSR             STR8_PRINT_XY
+                        ENDIF
 ?WAIT:                 LDA             #STR8_STARTUP_DOT_A
                         JSR             STR8_DELAY_FIXED_A
                         LDA             #'.'
@@ -487,11 +515,19 @@ STR8_BOOT_KEY_POLL:
 
 STR8_PRINT_SCREEN:
                         LDX             #<MSG_ID
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_ID
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDX             #<MSG_SCREEN
+                        IF              STR8_V1_INSTALLER_TXN
+                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_SCREEN
                         JMP             STR8_PRINT_XY
+                        ENDIF
 
 STR8_CMD_LOOP:
                         JSR             STR8_PRINT_PROMPT
@@ -653,8 +689,12 @@ STR8_CMD_INSTALL_PREVIEW:
                         JMP             STR8_CMD_UNKNOWN
 ?PROMPT:
                         LDX             #<MSG_I_BANK
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_I_BANK
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDX             #$01
                         JSR             STR8_READ_LINE
                         CMP             #$01
@@ -685,14 +725,22 @@ STR8_CMD_INSTALL_PREVIEW:
 ?EXISTING:             JSR             STR8_I_COPY_RECORD_METADATA
                         JMP             STR8_I_PRINT_SUMMARY
 ?INVALID:              LDX             #<MSG_I_INVALID
+                        IF              STR8_V1_INSTALLER_TXN
+                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_I_INVALID
                         JMP             STR8_PRINT_XY
+                        ENDIF
 ?BAD:                  JMP             STR8_CMD_UNKNOWN
 
 STR8_I_READ_TYPE:
                         LDX             #<MSG_I_TYPE_PROMPT
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_I_TYPE_PROMPT
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDX             #$02
                         JSR             STR8_READ_LINE
                         CMP             #$02
@@ -717,8 +765,12 @@ STR8_I_READ_TYPE:
 
 STR8_I_READ_DESCRIPTION:
                         LDX             #<MSG_I_DESC_PROMPT
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_I_DESC_PROMPT
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDX             #STR8_DIR_DESCRIPTION_LEN
                         JSR             STR8_READ_LINE
                         CMP             #STR8_DIR_DESCRIPTION_LEN
@@ -757,8 +809,12 @@ STR8_I_COPY_RECORD_METADATA:
 
 STR8_I_PRINT_SUMMARY:
                         LDX             #<MSG_I_SUMMARY
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_I_SUMMARY
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDA             STR8_INSTALL_BANK
                         JSR             STR8_WRITE_DEC_DIGIT_A
                         LDA             STR8_INSTALL_BANK
@@ -768,16 +824,32 @@ STR8_I_PRINT_SUMMARY:
                         LDY             #>MSG_I_RANGE_32K
                         BRA             ?RANGE
 ?RANGE3:               LDX             #<MSG_I_RANGE_28K
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
                         LDY             #>MSG_I_RANGE_28K
-?RANGE:                JSR             STR8_PRINT_XY
+                        ENDIF
+?RANGE:
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
+                        JSR             STR8_PRINT_XY
+                        ENDIF
                         LDX             #<MSG_I_TYPE
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_I_TYPE
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDA             STR8_INSTALL_TYPE
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDX             #<MSG_I_DESC
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_I_DESC
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDX             #$00
 ?PRINT_DESC:           LDA             STR8_INSTALL_DESC,X
                         JSR             STR8_CON_WRITE_BYTE_BLOCK
@@ -791,8 +863,12 @@ STR8_I_PRINT_SUMMARY:
                         CMP             #STR8_DIR_RECORD_EMPTY
                         BEQ             ?STATE
                         LDX             #<MSG_I_ENTRY
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_I_ENTRY
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDA             STR8_INSTALL_ENTRY_HI
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDA             STR8_INSTALL_ENTRY_LO
@@ -815,11 +891,23 @@ STR8_I_PRINT_SUMMARY:
                         LDY             #>MSG_I_INCOMPLETE
                         BRA             ?PRINT_STATE
 ?FULL:                 LDX             #<MSG_I_FULL
+                        IF              STR8_V1_INSTALLER_TXN
+                        ELSE
                         LDY             #>MSG_I_FULL
-?PRINT_STATE:          JSR             STR8_PRINT_XY
+                        ENDIF
+?PRINT_STATE:
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
+                        JSR             STR8_PRINT_XY
+                        ENDIF
                         LDX             #<MSG_I_PAIR
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_I_PAIR
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDA             STR8_INSTALL_PAIR
                         JSR             STR8_WRITE_HEX_BYTE_A
                         IF              STR8_V1_INSTALLER_DRY
@@ -828,12 +916,12 @@ STR8_I_PRINT_SUMMARY:
                         BEQ             STR8_I_NO_WRITE
                         IF              STR8_V1_INSTALLER_TXN
                         LDX             #<MSG_I_WRITE_CONFIRM
-                        LDY             #>MSG_I_WRITE_CONFIRM
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDX             #<MSG_I_STAGE_CONFIRM
                         LDY             #>MSG_I_STAGE_CONFIRM
-                        ENDIF
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         JSR             STR8_CONFIRM_Y
                         BCS             ?CONFIRMED
                         JMP             STR8_CMD_ABORT
@@ -843,16 +931,19 @@ STR8_I_PRINT_SUMMARY:
                         BCC             STR8_I_PRINT_TRANSACTION_FAIL
                         ENDIF
                         LDX             #<MSG_I_SEND_S19
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_I_SEND_S19
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         JSR             STR8_I_RECEIVE_DENSE
                         BCC             ?STAGE_FAIL
                         IF              STR8_V1_INSTALLER_TXN
                         JSR             STR8_I_FINISH_TRANSACTION
                         BCC             STR8_I_PRINT_TRANSACTION_FAIL
                         LDX             #<MSG_I_INSTALL_OK
-                        LDY             #>MSG_I_INSTALL_OK
-                        JMP             STR8_PRINT_XY
+                        JMP             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDX             #<MSG_I_STAGE_OK
                         LDY             #>MSG_I_STAGE_OK
@@ -860,31 +951,36 @@ STR8_I_PRINT_SUMMARY:
                         BRA             STR8_I_NO_WRITE
                         ENDIF
 ?STAGE_FAIL:           LDX             #<MSG_I_S19_FAIL
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_I_S19_FAIL
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         IF              STR8_V1_INSTALLER_TXN
                         LDA             STR8_INSTALL_STATUS
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDX             #<MSG_CRLF
-                        LDY             #>MSG_CRLF
-                        JMP             STR8_PRINT_XY
+                        JMP             STR8_PRINT_TXN_PAGE1_X
                         ENDIF
 STR8_I_NO_WRITE:       LDX             #<MSG_I_NO_WRITE
+                        IF              STR8_V1_INSTALLER_TXN
+                        JMP             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_I_NO_WRITE
                         JMP             STR8_PRINT_XY
+                        ENDIF
 
                         IF              STR8_V1_INSTALLER_TXN
 STR8_I_PRINT_TRANSACTION_FAIL:
                         LDA             #STR8_INSTALL_DIRECTORY
                         STA             STR8_INSTALL_STATUS
                         LDX             #<MSG_I_TRANSACTION_FAIL
-                        LDY             #>MSG_I_TRANSACTION_FAIL
-                        JSR             STR8_PRINT_XY
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         LDA             STR8_REC_STATUS
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDX             #<MSG_CRLF
-                        LDY             #>MSG_CRLF
-                        JMP             STR8_PRINT_XY
+                        JMP             STR8_PRINT_TXN_PAGE1_X
 
 ; START is the first persistent write after confirmation. Empty records then
 ; receive their immutable TYPE/DESCRIPTION bytes. The seal and Bank-3 entry
@@ -1284,8 +1380,12 @@ STR8_CMD_SELECT_HIMON:
                         ENDIF
                         JSR             STR8_CON_FLUSH_RX
                         LDX             #<MSG_CRLF
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_CRLF
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         JMP             STR8_ENTER_HIMON_WARM
 
                         IF              STR8_V1_LAYOUT
@@ -1339,16 +1439,24 @@ STR8_CMD_OK:
                         JSR             STR8_SELECT_BANK_3
                         ENDIF
                         LDX             #<MSG_OK
+                        IF              STR8_V1_INSTALLER_TXN
+                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_OK
                         JMP             STR8_PRINT_XY
+                        ENDIF
 
 STR8_CMD_ABORT:
                         IF              STR8_RAM_PROOF
                         JSR             STR8_SELECT_BANK_3
                         ENDIF
                         LDX             #<MSG_ABORT
+                        IF              STR8_V1_INSTALLER_TXN
+                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_ABORT
                         JMP             STR8_PRINT_XY
+                        ENDIF
 
                         IF              STR8_V1_LAYOUT
                         ELSE
@@ -1361,11 +1469,19 @@ STR8_CMD_COPY_FAIL:
 
 STR8_CMD_UNKNOWN:
                         LDX             #<MSG_CRLF
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_CRLF
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDX             #<MSG_HELP
+                        IF              STR8_V1_INSTALLER_TXN
+                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_HELP
                         JMP             STR8_PRINT_XY
+                        ENDIF
 
                         IF              STR8_RAM_PROOF
                         ELSE
@@ -1373,8 +1489,12 @@ STR8_BOOT_JUMP_BANK_A:
                         JSR             STR8_JUMP_BANK_PREP_A
                         JSR             STR8_CON_FLUSH_RX
                         LDX             #<MSG_BOOT_BANK_WAIT
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_BOOT_BANK_WAIT
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDA             #STR8_BANK_BOOT_DELAY_A
                         JSR             STR8_DELAY_FIXED_A
                         JMP             STR8_JUMP_BANK_LAUNCH
@@ -1386,13 +1506,21 @@ STR8_JUMP_BANK_PREP_A:
                         STZ             STR8_JUMP_VEC_HI
                         STZ             STR8_JUMP_STATUS
                         LDX             #<MSG_JUMP_B
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_JUMP_B
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDA             STR8_JUMP_BANK
                         JSR             STR8_WRITE_DEC_DIGIT_A
                         LDX             #<MSG_CRLF
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_CRLF
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         RTS
 
 STR8_JUMP_BANK_LAUNCH:
@@ -2449,20 +2577,32 @@ STR8_PRINT_COPY_FAIL:
 
 STR8_PRINT_JUMP_FAIL:
                         LDX             #<MSG_JUMP_FAIL_B
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_JUMP_FAIL_B
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDA             STR8_JUMP_BANK
                         JSR             STR8_WRITE_DEC_DIGIT_A
                         LDX             #<MSG_JUMP_FAIL_VEC
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_JUMP_FAIL_VEC
                         JSR             STR8_PRINT_XY
+                        ENDIF
                         LDA             STR8_JUMP_VEC_HI
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDA             STR8_JUMP_VEC_LO
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDX             #<MSG_CRLF
+                        IF              STR8_V1_INSTALLER_TXN
+                        JMP             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
                         LDY             #>MSG_CRLF
                         JMP             STR8_PRINT_XY
+                        ENDIF
 
 STR8_WRITE_DEC_DIGIT_A:
                         AND             #$0F
@@ -2546,9 +2686,22 @@ STR8_JUMP_BANK_RAM:
 ; ----------------------------------------------------------------------------
 STR8_PRINT_PROMPT:
                         LDX             #<MSG_PROMPT
+                        IF              STR8_V1_INSTALLER_TXN
+                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
                         LDY             #>MSG_PROMPT
                         JMP             STR8_PRINT_XY
+                        ENDIF
 
+                        IF              STR8_V1_INSTALLER_TXN
+; Transaction messages span exactly two pages. Callers load X with the
+; message low byte and enter the helper matching the map-checked message page.
+STR8_PRINT_TXN_PAGE0_X:
+                        LDY             #>MSG_ID
+                        BRA             STR8_PRINT_XY
+STR8_PRINT_TXN_PAGE1_X:
+                        LDY             #>MSG_CRLF
+                        ENDIF
 STR8_PRINT_XY:
                         STX             STR8_PTR_LO
                         STY             STR8_PTR_HI
