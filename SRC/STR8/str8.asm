@@ -38,6 +38,11 @@
                         IF              STR8_V1_INSTALLER_DRY
                         XDEF            STR8_I_RECEIVE_DENSE
                         XDEF            STR8_I_STAGE_SECTOR_READY
+                        IF              STR8_V1_INSTALLER_TXN
+                        XDEF            STR8_I_BEGIN_TRANSACTION
+                        XDEF            STR8_I_FINISH_TRANSACTION
+                        XDEF            STR8_I_RUN_SECTOR_WORKER
+                        ENDIF
                         ENDIF
                         ENDIF
                         XDEF            STR8_IVY_ENTRY_NMI
@@ -139,7 +144,9 @@ STR8_INSTALL_SECTOR_HI  EQU             $1A0F
 STR8_INSTALL_STATUS     EQU             $1A10
 STR8_INSTALL_DENSE      EQU             $10
 STR8_INSTALL_ENTRY      EQU             $11
+STR8_INSTALL_FLASH      EQU             $12
 STR8_INSTALL_TRAILING   EQU             $13
+STR8_INSTALL_DIRECTORY  EQU             $14
 ; The resident directory validator and S19 record parser run serially and
 ; intentionally share this small zero-page work set.
 STR8_DIR_BANK_WORK      EQU             $D1
@@ -638,8 +645,8 @@ STR8_DISPATCH_A:
                         JMP             STR8_CMD_UNKNOWN
 
                         IF              STR8_V1_LAYOUT
-; Non-mutating I preflight for Banks 0-3. The separate installer-dry host build
-; continues through dense S19 staging. Neither form can mutate flash.
+; I preflight for Banks 0-3. The default V1 preview stops before confirmation;
+; separate host builds prove dry staging and the guarded write transaction.
 STR8_CMD_INSTALL_PREVIEW:
                         LDA             STR8_REC_DATA_BUF+1
                         BEQ             ?PROMPT
@@ -819,32 +826,190 @@ STR8_I_PRINT_SUMMARY:
                         LDA             STR8_INSTALL_PAIR
                         CMP             #STR8_DIR_PAIR_NONE
                         BEQ             STR8_I_NO_WRITE
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDX             #<MSG_I_WRITE_CONFIRM
+                        LDY             #>MSG_I_WRITE_CONFIRM
+                        ELSE
                         LDX             #<MSG_I_STAGE_CONFIRM
                         LDY             #>MSG_I_STAGE_CONFIRM
+                        ENDIF
                         JSR             STR8_PRINT_XY
                         JSR             STR8_CONFIRM_Y
                         BCS             ?CONFIRMED
                         JMP             STR8_CMD_ABORT
 ?CONFIRMED:
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_I_BEGIN_TRANSACTION
+                        BCC             STR8_I_PRINT_TRANSACTION_FAIL
+                        ENDIF
                         LDX             #<MSG_I_SEND_S19
                         LDY             #>MSG_I_SEND_S19
                         JSR             STR8_PRINT_XY
                         JSR             STR8_I_RECEIVE_DENSE
                         BCC             ?STAGE_FAIL
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_I_FINISH_TRANSACTION
+                        BCC             STR8_I_PRINT_TRANSACTION_FAIL
+                        LDX             #<MSG_I_INSTALL_OK
+                        LDY             #>MSG_I_INSTALL_OK
+                        JMP             STR8_PRINT_XY
+                        ELSE
                         LDX             #<MSG_I_STAGE_OK
                         LDY             #>MSG_I_STAGE_OK
                         JSR             STR8_PRINT_XY
                         BRA             STR8_I_NO_WRITE
+                        ENDIF
 ?STAGE_FAIL:           LDX             #<MSG_I_S19_FAIL
                         LDY             #>MSG_I_S19_FAIL
                         JSR             STR8_PRINT_XY
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDA             STR8_INSTALL_STATUS
+                        JSR             STR8_WRITE_HEX_BYTE_A
+                        LDX             #<MSG_CRLF
+                        LDY             #>MSG_CRLF
+                        JMP             STR8_PRINT_XY
+                        ENDIF
 STR8_I_NO_WRITE:       LDX             #<MSG_I_NO_WRITE
                         LDY             #>MSG_I_NO_WRITE
                         JMP             STR8_PRINT_XY
 
+                        IF              STR8_V1_INSTALLER_TXN
+STR8_I_PRINT_TRANSACTION_FAIL:
+                        LDA             #STR8_INSTALL_DIRECTORY
+                        STA             STR8_INSTALL_STATUS
+                        LDX             #<MSG_I_TRANSACTION_FAIL
+                        LDY             #>MSG_I_TRANSACTION_FAIL
+                        JSR             STR8_PRINT_XY
+                        LDA             STR8_REC_STATUS
+                        JSR             STR8_WRITE_HEX_BYTE_A
+                        LDX             #<MSG_CRLF
+                        LDY             #>MSG_CRLF
+                        JMP             STR8_PRINT_XY
+
+; START is the first persistent write after confirmation. Empty records then
+; receive their immutable TYPE/DESCRIPTION bytes. The seal and Bank-3 entry
+; remain erased until the complete payload has passed read-back verification.
+STR8_I_BEGIN_TRANSACTION:
+                        JSR             STR8_I_WRITE_JOURNAL_START
+                        BCC             ?FAIL
+                        LDA             STR8_INSTALL_STATE
+                        CMP             #STR8_DIR_RECORD_EMPTY
+                        BNE             ?OK
+                        JSR             STR8_I_WRITE_METADATA
+                        BCC             ?FAIL
+?OK:                   SEC
+                        RTS
+?FAIL:                 CLC
+                        RTS
+
+; COMPLETE is always last. On a first install, publish the immutable Bank-3
+; local entry and then seal the descriptor before completing the journal pair.
+STR8_I_FINISH_TRANSACTION:
+                        LDA             STR8_INSTALL_STATE
+                        CMP             #STR8_DIR_RECORD_EMPTY
+                        BNE             STR8_I_WRITE_JOURNAL_COMPLETE
+                        LDA             STR8_INSTALL_BANK
+                        CMP             #STR8_DIR_BANK3
+                        BNE             ?SEAL
+                        LDA             STR8_INSTALL_ENTRY_LO
+                        STA             STR8_REC_DATA_BUF
+                        LDA             STR8_INSTALL_ENTRY_HI
+                        STA             STR8_REC_DATA_BUF+1
+                        LDA             #STR8_DIR_ENTRY_LO
+                        JSR             STR8_I_SET_DIR_ADDRESS_A
+                        LDA             #$02
+                        STA             STR8_REC_DATA_LEN
+                        JSR             STR8_DIR_WRITE_BYTES
+                        BCC             ?FAIL
+?SEAL:                 LDA             #STR8_DIR_SEAL_VALUE
+                        STA             STR8_REC_DATA_BUF
+                        LDA             #STR8_DIR_SEAL
+                        JSR             STR8_I_SET_DIR_ADDRESS_A
+                        LDA             #$01
+                        STA             STR8_REC_DATA_LEN
+                        JSR             STR8_DIR_WRITE_BYTES
+                        BCC             ?FAIL
+                        BRA             STR8_I_WRITE_JOURNAL_COMPLETE
+?FAIL:                 CLC
+                        RTS
+
+STR8_I_WRITE_METADATA:
+                        LDA             STR8_INSTALL_TYPE
+                        STA             STR8_REC_DATA_BUF
+                        LDA             #$FF
+                        STA             STR8_REC_DATA_BUF+1
+                        STA             STR8_REC_DATA_BUF+2
+                        STA             STR8_REC_DATA_BUF+3
+                        LDX             #$00
+?DESC:                 LDA             STR8_INSTALL_DESC,X
+                        STA             STR8_REC_DATA_BUF+STR8_DIR_DESCRIPTION,X
+                        INX
+                        CPX             #STR8_DIR_DESCRIPTION_LEN
+                        BNE             ?DESC
+                        LDA             #$00
+                        JSR             STR8_I_SET_DIR_ADDRESS_A
+                        LDA             #(STR8_DIR_DESCRIPTION+STR8_DIR_DESCRIPTION_LEN)
+                        STA             STR8_REC_DATA_LEN
+                        JMP             STR8_DIR_WRITE_BYTES
+
+STR8_I_WRITE_JOURNAL_START:
+                        LDA             STR8_INSTALL_PAIR
+                        AND             #$03
+                        TAX
+                        LDA             STR8_I_JOURNAL_START_MASK,X
+                        BRA             STR8_I_WRITE_JOURNAL_MASK_A
+STR8_I_WRITE_JOURNAL_COMPLETE:
+                        LDA             STR8_INSTALL_PAIR
+                        AND             #$03
+                        TAX
+                        LDA             STR8_I_JOURNAL_COMPLETE_MASK,X
+STR8_I_WRITE_JOURNAL_MASK_A:
+                        STA             STR8_REC_DATA_BUF
+                        LDA             STR8_INSTALL_PAIR
+                        LSR             A
+                        LSR             A
+                        CLC
+                        ADC             #STR8_DIR_JOURNAL
+                        JSR             STR8_I_SET_DIR_ADDRESS_A
+                        LDY             #$00
+                        LDA             (STR8_PTR_LO),Y
+                        AND             STR8_REC_DATA_BUF
+                        STA             STR8_REC_DATA_BUF
+                        LDA             #$01
+                        STA             STR8_REC_DATA_LEN
+                        JMP             STR8_DIR_WRITE_BYTES
+
+; IN: A=record-relative byte offset. Publish both the request address and a
+; resident pointer used to derive a one-to-zero journal byte.
+STR8_I_SET_DIR_ADDRESS_A:
+                        PHA
+                        LDA             STR8_INSTALL_BANK
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        CLC
+                        ADC             #<STR8_DIR_BASE
+                        STA             STR8_REC_ADDR_LO
+                        PLA
+                        CLC
+                        ADC             STR8_REC_ADDR_LO
+                        STA             STR8_REC_ADDR_LO
+                        STA             STR8_PTR_LO
+                        LDA             #>STR8_DIR_BASE
+                        STA             STR8_REC_ADDR_HI
+                        STA             STR8_PTR_HI
+                        RTS
+
+STR8_I_JOURNAL_START_MASK:
+                        DB              $FE,$FB,$EF,$BF
+STR8_I_JOURNAL_COMPLETE_MASK:
+                        DB              $FD,$F7,$DF,$7F
+                        ENDIF
+
 ; Receive exactly $8000-$FFFF for Banks 0-2 or $8000-$EFFF for Bank 3.
-; The single $0A00-$19FF sector tray is reused only after the dry sector-ready
-; hook returns. The final sector stays in the tray until S9 is validated.
+; The single $0A00-$19FF sector tray is reused only after the sector-ready hook
+; returns. The final sector stays in the tray until S9 is validated.
 STR8_I_RECEIVE_DENSE:
                         STZ             STR8_INSTALL_EXPECT_LO
                         STZ             STR8_INSTALL_PHASE
@@ -935,6 +1100,9 @@ STR8_I_RECEIVE_DENSE:
                         CMP             STR8_INSTALL_LIMIT_HI
                         BEQ             ?FINAL
                         JSR             STR8_I_STAGE_SECTOR_READY
+                        BCS             ?SECTOR_READY
+                        JMP             STR8_I_RECEIVE_FLASH_FAIL
+?SECTOR_READY:
                         LDA             STR8_INSTALL_SECTOR_HI
                         CLC
                         ADC             #$10
@@ -997,6 +1165,9 @@ STR8_I_RECEIVE_DENSE:
 ?TRAILING:             JSR             STR8_I_END_STREAM
                         BCC             STR8_I_RECEIVE_TRAIL_FAIL
                         JSR             STR8_I_STAGE_SECTOR_READY
+                        BCS             ?FINAL_WRITTEN
+                        JMP             STR8_I_RECEIVE_FLASH_FAIL
+?FINAL_WRITTEN:
                         SEC
                         RTS
 
@@ -1006,6 +1177,9 @@ STR8_I_RECEIVE_DENSE_FAIL:
 STR8_I_RECEIVE_ENTRY_FAIL:
                         LDA             #STR8_INSTALL_ENTRY
                         BRA             STR8_I_RECEIVE_FAIL_A
+STR8_I_RECEIVE_FLASH_FAIL:
+                        LDA             #STR8_INSTALL_FLASH
+                        BRA             STR8_I_RECEIVE_FAIL_A
 STR8_I_RECEIVE_TRAIL_FAIL:
                         LDA             #STR8_INSTALL_TRAILING
 STR8_I_RECEIVE_FAIL_A: STA             STR8_INSTALL_STATUS
@@ -1013,11 +1187,33 @@ STR8_I_RECEIVE_FAIL_A: STA             STR8_INSTALL_STATUS
                         CLC
                         RTS
 
-; This dry slice is intentionally non-mutating. The next manual-commit slice
-; replaces this hook with the journaled sector transaction.
 STR8_I_STAGE_SECTOR_READY:
+                        IF              STR8_V1_INSTALLER_TXN
+                        LDA             STR8_INSTALL_SECTOR_HI
+                        STA             STR8_MARK_SECTOR_HI
+                        LDA             #$0A
+                        STA             STR8_STAGE_BUF_HI
+                        LDA             STR8_INSTALL_BANK
+                        STA             STR8_COPY_DST_BANK
+                        LDA             #STR8_COPY_MODE_PROGRAM_STAGED
+                        STA             STR8_COPY_MODE
+                        JSR             STR8_I_RUN_SECTOR_WORKER
+                        BCC             ?FAIL
+                        LDA             #'.'
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
                         SEC
                         RTS
+?FAIL:                 CLC
+                        RTS
+
+STR8_I_RUN_SECTOR_WORKER:
+                        JSR             STR8_COPY_WORKER_TO_RAM
+                        JMP             STR8_WORKER_RUN
+                        ELSE
+; The receive/staging proof deliberately cannot reach flash.
+                        SEC
+                        RTS
+                        ENDIF
 
 STR8_I_END_STREAM:
                         LDA             STR8_INPUT_SKIP_LF
@@ -2505,10 +2701,20 @@ MSG_I_COMPLETE:         DB              " COMPLETE",(' '+$80)
 MSG_I_FULL:             DB              " FULL",(' '+$80)
 MSG_I_PAIR:             DB              "P",('='+$80)
                         IF              STR8_V1_INSTALLER_DRY
+                        IF              STR8_V1_INSTALLER_TXN
+MSG_I_WRITE_CONFIRM:    DB              " WRITE? Y:",$A0
+                        ELSE
 MSG_I_STAGE_CONFIRM:    DB              " STAGE? Y:",$A0
+                        ENDIF
 MSG_I_SEND_S19:         DB              $0D,$0A,"SEND S19",$0D,$8A
+                        IF              STR8_V1_INSTALLER_TXN
+MSG_I_INSTALL_OK:       DB              $0D,$0A,"I OK",$0D,$8A
+MSG_I_TRANSACTION_FAIL: DB              $0D,$0A,"DIR FAIL ",('$'+$80)
+MSG_I_S19_FAIL:         DB              $0D,$0A,"I FAIL ",('$'+$80)
+                        ELSE
 MSG_I_STAGE_OK:         DB              "STAGE O",('K'+$80)
 MSG_I_S19_FAIL:         DB              $0D,$0A,"S19 FAI",('L'+$80)
+                        ENDIF
                         ENDIF
 MSG_I_NO_WRITE:         DB              " NO WRITE",$0D,$8A
                         ENDIF

@@ -12445,3 +12445,74 @@ opening current dump retained the prior J3 record `42 4A 03`. Together with
 the earlier J2 capture, Banks 0-3 are now hardware-proven to survive HIMON
 cold RAM clearing. The raw console capture is appended to
 `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.
+
+## 2026-08-05 STR8 V1 Journaled I Mutation Transaction Slice 2
+
+Status: compiled host pass; deliberately oversized and nonflashable.
+
+`make -C SRC str8-installer-transaction-check` assembles the guarded
+`STR8_V1_INSTALLER_TXN` resident and executes its linked 65C02 `I` command.
+After exact preflight and `WRITE? Y:`, the command writes and verifies journal
+START before any other persistent mutation. Empty records then receive their
+immutable TYPE/DESCRIPTION bytes. Dense sectors invoke worker mode `$05` only
+after a complete 4K tray is ready; the final sector remains held through S9
+validation. Bank 3 publishes LOCAL ENTRY, every first install writes the seal,
+and journal COMPLETE is the final persistent event.
+
+The two end-to-end positives install exact 32K Bank-2 and 28K Bank-3 fixtures,
+byte-compare the modeled destination banks and directory, count eight/seven
+sector writes, and require these event sequences:
+
+```text
+Bank 0-2  START, metadata, sectors, seal, COMPLETE
+Bank 3    START, metadata, sectors, LOCAL ENTRY, seal, COMPLETE
+```
+
+Injected failures cover START, metadata, every legal Bank-2 sector address
+`$8000-$F000`, Bank-3 LOCAL ENTRY, seal, COMPLETE, a receive-order error after
+START, and the first sector-worker call. START failure leaves the directory
+unchanged. Every later failure leaves the journal non-COMPLETE and the record
+nonlaunchable. Completed records consume the next pair; sealed INCOMPLETE
+records retry and complete the same pair without changing immutable metadata.
+The pre-seal first-install representation remains record-INVALID even though
+its independently scanned journal is STARTED; warm/cold interactive recovery
+of that provisional record remains a later slice.
+
+The gate retains all Slice-1 dense negatives and reports 38 installer cases,
+94 resident journal cases, 33 record cases, 77 directory-writer cases, 23
+line/`I` cases, and 12 startup cases. The largest fixture executes 432647
+interpreted 65C02 steps. The separate `str8-installer-dry-check` remains green
+with its original 11 non-mutating installer cases.
+
+Memory statistics from the consistent build:
+
+```text
+normal resident             $F000-$FAF6  size $0AF7 = 2807
+V1 preview resident         $F000-$FBF2  size $0BF3 = 3059
+V1 preview/worker gap       $FBF3-$FD1E  size $012C = 300
+dry resident                $F000-$FDF7  size $0DF8 = 3576
+dry/worker overlap          $FD1F-$FDF7  size $00D9 = 217
+dry fit debt + $0040 gap                    $0119 = 281
+transaction resident        $F000-$FF36  size $0F37 = 3895
+transaction/worker overlap  $FD1F-$FF36  size $0218 = 536
+transaction fit debt                         $0258 = 600
+room before directory       $FF37-$FFAF  size $0079 = 121
+stored worker               $FD1F-$FFAF  size $0291 = 657
+directory                   $FFB0-$FFEF  size $0040 = 64
+configuration/vectors       $FFF0-$FFFF  size $0010 = 16
+```
+
+The `$0040` development reserve remains frozen. Because the transaction image
+overlaps the worker, this slice emits no flashable V1 migration artifact and
+has no board test. Required host gates are:
+
+```text
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-v1-layout-preview str8-directory-check
+make -C SRC firmware
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

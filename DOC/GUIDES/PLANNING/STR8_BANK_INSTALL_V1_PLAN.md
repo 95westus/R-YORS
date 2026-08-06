@@ -417,6 +417,40 @@ It stays below the `$FFB0` directory, but cannot coexist with the current
 worker. Step 2 may reuse the proof while implementing the transaction, but no
 flashable V1 artifact exists until resident/worker fit is closed.
 
+### 2026-08-05 Compiled Journaled Mutation Transaction
+
+`make -C SRC str8-installer-transaction-check` builds the separate guarded
+`STR8_V1_INSTALLER_TXN` host proof. Confirmation changes to `WRITE? Y:`. The
+resident writes and verifies journal START first, writes immutable metadata for
+an empty record, streams each accepted sector through worker mode `$05`, and
+publishes a Bank-3 LOCAL ENTRY and the seal before writing COMPLETE last.
+Failures return `I FAIL $10/$12` for receive/worker failures or the directory
+writer's status after `DIR FAIL`; no failure path writes COMPLETE.
+
+The compiled gate covers full Bank-2 32K and Bank-3 28K transactions with exact
+flash and directory comparisons and exact persistent-event ordering. It also
+injects failures at START, metadata, every `$8000-$F000` sector boundary,
+Bank-3 entry, seal, and COMPLETE; proves completed records advance to the next
+pair; and proves sealed INCOMPLETE records retry the same pair idempotently.
+The combined dry/transaction matrix reports 38 installer cases. A first-install
+record interrupted before its seal remains structurally INVALID and
+nonlaunchable, while its journal independently retains STARTED; interactive
+recovery of that provisional record is outside this slice.
+
+The transaction build is deliberately standalone and measures:
+
+```text
+transaction resident        $F000-$FF36  size $0F37 = 3895
+growth over dry                             $013F = 319
+would overlap worker         $FD1F-$FF36  size $0218 = 536
+fit debt including $0040 gap                $0258 = 600
+room before directory        $FF37-$FFAF  size $0079 = 121
+```
+
+It remains below the immutable `$FFB0` directory boundary, but cannot coexist
+with the current `$FD1F-$FFAF` worker. No V1 migration S19, TopWriter, stamped
+ROM, or board-test candidate is emitted until that fit debt is closed.
+
 ## Sector Streaming and Final-Sector Gate
 
 Only one sector is staged. Earlier complete sectors are erased, programmed,
@@ -985,8 +1019,9 @@ The future `B` estimate is 160-240 resident bytes and no persistent data.
    the V1 command surface.
 5. Implement dense S19 installer state, exact coverage checks, sector splitting,
    streaming sector writes, S9 gates, and failure drain behavior. The receive,
-   dry-stage, S9, and drain slice is host-accepted; journaled mutation and fit
-   closure remain open.
+   dry-stage, S9, drain, and guarded journaled-mutation slices are host-accepted;
+   first-install provisional-record recovery and resident/worker fit closure
+   remain open.
 6. Gate `J0-J3` through directory state, add the Bank-3 local-entry handoff, and
    extend the Bank Jump Record to Bank 3.
 7. Generate the one-time migration TopWriter and make every later TopWriter

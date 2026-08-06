@@ -2,7 +2,8 @@ param(
     [string]$ConstantsPath = "STR8/str8-directory-eq.inc",
     [string]$BinPath = "BUILD/bin/himon-str8-v1-layout-preview.bin",
     [string]$Str8MapPath = "BUILD/s19/str8-v1-layout-f000.map",
-    [string]$DryInstallerS19Path = ""
+    [string]$DryInstallerS19Path = "",
+    [string]$TransactionInstallerS19Path = ""
 )
 
 Set-StrictMode -Version Latest
@@ -76,6 +77,12 @@ function Invoke-ResidentDirectoryRoutine {
         [object[]]$RecordFixtures = @(),
         [int]$StageHook = -1,
         [int]$StageSectorAddress = -1,
+        [int]$SectorHook = -1,
+        [int]$SectorFailAt = 0,
+        [int]$SectorCorruptAt = 0,
+        [hashtable]$FlashBanks = @{},
+        [int]$WorkerFailAt = 0,
+        [int]$WorkerCorruptAt = 0,
         [int]$MaxSteps = 1000000
     )
 
@@ -91,10 +98,12 @@ function Invoke-ResidentDirectoryRoutine {
     $timedInputIndex = 0
     $delayCalls = 0
     $workerCalls = 0
+    $sectorCalls = 0
     $recordIndex = 0
     $stageSectors = New-Object System.Collections.Generic.List[object]
     $stageHighs = New-Object System.Collections.Generic.List[byte]
     $stageRecordCounts = New-Object System.Collections.Generic.List[int]
+    $events = New-Object System.Collections.Generic.List[string]
 
     for ($step = 0; $step -lt $MaxSteps; $step++) {
         $opcode = [int]$Memory[$pc]
@@ -168,6 +177,33 @@ function Invoke-ResidentDirectoryRoutine {
                     $pc += 3
                     continue
                 }
+                if ($target -eq $SectorHook) {
+                    $sectorCalls++
+                    [byte[]]$snapshot = New-Object byte[] 0x1000
+                    [Array]::Copy($Memory, 0x0A00, $snapshot, 0, 0x1000)
+                    $sectorHigh = [int]$Memory[$StageSectorAddress]
+                    $sectorBank = [int]$Memory[0x1FEF]
+                    $stageSectors.Add($snapshot)
+                    $stageHighs.Add([byte]$sectorHigh)
+                    $stageRecordCounts.Add($recordIndex)
+                    $events.Add(('S:{0}:{1:X2}' -f $sectorBank, $sectorHigh))
+                    $failed = $SectorFailAt -gt 0 -and $sectorCalls -eq $SectorFailAt
+                    $corrupt = $SectorCorruptAt -gt 0 -and $sectorCalls -eq $SectorCorruptAt
+                    if (-not $failed -and $FlashBanks.ContainsKey($sectorBank)) {
+                        [byte[]]$flash = $FlashBanks[$sectorBank]
+                        [Array]::Copy($snapshot, 0, $flash, $sectorHigh -shl 8, 0x1000)
+                        if ($corrupt) {
+                            $flash[$sectorHigh -shl 8] = [byte](([int]$flash[$sectorHigh -shl 8]) -bxor 0x01)
+                        }
+                    }
+                    if ($failed -or $corrupt) {
+                        $status = $status -band 0xFE
+                    } else {
+                        $status = $status -bor 0x01
+                    }
+                    $pc += 3
+                    continue
+                }
                 if ($target -eq $ReadHook) {
                     if ($inputIndex -ge $InputBytes.Length) {
                         throw ('Resident text input exhausted at ${0:X4}' -f $pc)
@@ -213,11 +249,18 @@ function Invoke-ResidentDirectoryRoutine {
                     $workerCalls++
                     $recordAddress = ([int]$Memory[0x7E9E]) -bor (([int]$Memory[0x7E9F]) -shl 8)
                     $recordLength = [int]$Memory[0x7EA0]
-                    if ($WorkerBehavior -eq 'Success' -or $WorkerBehavior -eq 'Corrupt') {
+                    $activeWorkerBehavior = $WorkerBehavior
+                    if ($WorkerFailAt -gt 0 -and $workerCalls -eq $WorkerFailAt) {
+                        $activeWorkerBehavior = 'Fail'
+                    } elseif ($WorkerCorruptAt -gt 0 -and $workerCalls -eq $WorkerCorruptAt) {
+                        $activeWorkerBehavior = 'Corrupt'
+                    }
+                    $events.Add(('D:{0:X4}:{1}' -f $recordAddress, $recordLength))
+                    if ($activeWorkerBehavior -eq 'Success' -or $activeWorkerBehavior -eq 'Corrupt') {
                         for ($i = 0; $i -lt $recordLength; $i++) {
                             $Memory[$recordAddress + $i] = $Memory[0x7B00 + $i]
                         }
-                        if ($WorkerBehavior -eq 'Corrupt' -and $recordLength -gt 0) {
+                        if ($activeWorkerBehavior -eq 'Corrupt' -and $recordLength -gt 0) {
                             $last = $recordAddress + $recordLength - 1
                             $Memory[$last] = [byte](([int]$Memory[$last]) -bxor 0x01)
                         }
@@ -321,6 +364,8 @@ function Invoke-ResidentDirectoryRoutine {
                             StageSectors = $stageSectors.ToArray()
                             StageHighs = $stageHighs.ToArray()
                             StageRecordCounts = $stageRecordCounts.ToArray()
+                            SectorCalls = $sectorCalls
+                            Events = $events.ToArray()
                         }
                     }
                     $pc = $returns.Pop()
@@ -352,6 +397,8 @@ function Invoke-ResidentDirectoryRoutine {
                         StageSectors = $stageSectors.ToArray()
                         StageHighs = $stageHighs.ToArray()
                         StageRecordCounts = $stageRecordCounts.ToArray()
+                        SectorCalls = $sectorCalls
+                        Events = $events.ToArray()
                     }
                 }
                 $pc = $returns.Pop()
@@ -904,6 +951,21 @@ function New-Record([int]$Bank, [string]$Description, [int]$Entry, [byte[]]$Jour
     return $record
 }
 
+function New-ProvisionalRecord([byte]$Type, [string]$Description, [int]$Entry, [byte[]]$Journal) {
+    [byte[]]$record = New-Object byte[] $recordSize
+    for ($i = 0; $i -lt $record.Length; $i++) {
+        $record[$i] = $emptyByte
+    }
+    $record[$offType] = $Type
+    [byte[]]$descriptionBytes = [System.Text.Encoding]::ASCII.GetBytes($Description)
+    Assert-True ($descriptionBytes.Length -eq $descriptionLength) "Description fixture must be exactly five bytes"
+    [Array]::Copy($descriptionBytes, 0, $record, $offDescription, $descriptionLength)
+    $record[$offEntryLo] = [byte]($Entry -band 0xFF)
+    $record[$offEntryHi] = [byte](($Entry -shr 8) -band 0xFF)
+    [Array]::Copy($Journal, 0, $record, $offJournal, $journalLength)
+    return $record
+}
+
 function Assert-ResidentJournalResult([byte[]]$Journal) {
     $expected = Get-JournalResult $Journal
     [byte[]]$memory = $script:residentTemplate.Clone()
@@ -1008,6 +1070,7 @@ function Assert-ResidentWriterStatus {
 
 function Assert-ByteArraysEqual([byte[]]$Actual, [byte[]]$Expected, [string]$Message) {
     if ($Actual.Length -ne $Expected.Length) { throw $Message }
+    if ([Convert]::ToBase64String($Actual) -ceq [Convert]::ToBase64String($Expected)) { return }
     for ($i = 0; $i -lt $Actual.Length; $i++) {
         if ($Actual[$i] -ne $Expected[$i]) {
             throw ('{0} at +${1:X}: got ${2:X2}, expected ${3:X2}' -f $Message, $i, $Actual[$i], $Expected[$i])
@@ -1130,6 +1193,216 @@ function Assert-ResidentIPreviewFixture {
         ("Resident I preview $Name reached a worker or left input unread")
     $script:residentMaxSteps = [Math]::Max($script:residentMaxSteps, $Fixture.Cpu.Steps)
     $script:residentLineCases++
+}
+
+function New-TransactionFlashBanks {
+    $banks = @{}
+    for ($bank = 0; $bank -lt 4; $bank++) {
+        [byte[]]$image = New-Object byte[] 65536
+        $fill = [byte](0x40 + $bank)
+        for ($address = 0x8000; $address -le 0xFFFF; $address++) {
+            $image[$address] = $fill
+        }
+        $banks[$bank] = $image
+    }
+    return $banks
+}
+
+function Invoke-ResidentITransactionFixture {
+    param(
+        [byte[]]$InputBytes,
+        [hashtable]$Records = @{},
+        [object[]]$DenseRecords = @(),
+        [int]$WorkerFailAt = 0,
+        [int]$WorkerCorruptAt = 0,
+        [int]$SectorFailAt = 0,
+        [int]$SectorCorruptAt = 0
+    )
+
+    [byte[]]$memory = $script:residentTemplate.Clone()
+    $memory[$script:residentDataBuffer + 1] = 0
+    foreach ($bankKey in $Records.Keys) {
+        $recordAddress = $script:dirBase + ([int]$bankKey * $script:recordSize)
+        [byte[]]$record = $Records[$bankKey]
+        [Array]::Copy($record, 0, $memory, $recordAddress, $script:recordSize)
+    }
+    $flashBanks = New-TransactionFlashBanks
+    $beforeBanks = @{}
+    foreach ($bankKey in $flashBanks.Keys) {
+        $beforeBanks[$bankKey] = ([byte[]]$flashBanks[$bankKey]).Clone()
+    }
+    [byte[]]$beforeDirectory = $memory[$script:dirBase..$script:dirEnd]
+    $cpu = Invoke-ResidentDirectoryRoutine -Memory $memory `
+        -Start $script:residentInstallPreviewEntry `
+        -WorkerHook $script:residentWorkerHook `
+        -WorkerBehavior 'Success' `
+        -WorkerFailAt $WorkerFailAt `
+        -WorkerCorruptAt $WorkerCorruptAt `
+        -ReadHook $script:residentReadHook `
+        -ReadNonblockHook $script:residentReadNonblockHook `
+        -WriteHook $script:residentWriteHook `
+        -InputBytes $InputBytes `
+        -RecordHook $script:residentRecordHook `
+        -RecordFixtures $DenseRecords `
+        -SectorHook $script:residentSectorHook `
+        -SectorFailAt $SectorFailAt `
+        -SectorCorruptAt $SectorCorruptAt `
+        -FlashBanks $flashBanks `
+        -StageSectorAddress $script:residentInstallSectorHi
+    return [pscustomobject]@{
+        Cpu = $cpu
+        Memory = $memory
+        BeforeDirectory = $beforeDirectory
+        AfterDirectory = [byte[]]($memory[$script:dirBase..$script:dirEnd])
+        BeforeBanks = $beforeBanks
+        FlashBanks = $flashBanks
+    }
+}
+
+function Invoke-TransactionRoutineFixture {
+    param(
+        [int]$Start,
+        [int]$Bank,
+        [int]$State,
+        [int]$Pair,
+        [byte[]]$Record,
+        [byte]$Type = 0x5A,
+        [string]$Description = 'STR8N',
+        [int]$Entry = 0xFFFF,
+        [int]$SectorHigh = 0x80,
+        [int]$WorkerFailAt = 0,
+        [int]$WorkerCorruptAt = 0,
+        [int]$SectorFailAt = 0,
+        [int]$SectorCorruptAt = 0
+    )
+
+    [byte[]]$memory = $script:residentTemplate.Clone()
+    $recordAddress = $script:dirBase + ($Bank * $script:recordSize)
+    [Array]::Copy($Record, 0, $memory, $recordAddress, $script:recordSize)
+    $memory[$script:residentInstallBank] = [byte]$Bank
+    $memory[$script:residentInstallState] = [byte]$State
+    $memory[$script:residentInstallPair] = [byte]$Pair
+    $memory[$script:residentInstallType] = $Type
+    [byte[]]$descriptionBytes = [System.Text.Encoding]::ASCII.GetBytes($Description)
+    [Array]::Copy($descriptionBytes, 0, $memory, $script:residentInstallDesc, $script:descriptionLength)
+    $memory[$script:residentInstallEntryLo] = [byte]($Entry -band 0xFF)
+    $memory[$script:residentInstallEntryHi] = [byte](($Entry -shr 8) -band 0xFF)
+    $memory[$script:residentInstallSectorHi] = [byte]$SectorHigh
+    for ($i = 0; $i -lt 0x1000; $i++) {
+        $memory[0x0A00 + $i] = [byte](($i * 13 + $SectorHigh) -band 0xFF)
+    }
+    $flashBanks = New-TransactionFlashBanks
+    $beforeBanks = @{}
+    foreach ($bankKey in $flashBanks.Keys) {
+        $beforeBanks[$bankKey] = ([byte[]]$flashBanks[$bankKey]).Clone()
+    }
+    [byte[]]$beforeDirectory = $memory[$script:dirBase..$script:dirEnd]
+    $cpu = Invoke-ResidentDirectoryRoutine -Memory $memory `
+        -Start $Start `
+        -WorkerHook $script:residentWorkerHook `
+        -WorkerBehavior 'Success' `
+        -WorkerFailAt $WorkerFailAt `
+        -WorkerCorruptAt $WorkerCorruptAt `
+        -SectorHook $script:residentSectorHook `
+        -SectorFailAt $SectorFailAt `
+        -SectorCorruptAt $SectorCorruptAt `
+        -FlashBanks $flashBanks `
+        -StageSectorAddress $script:residentInstallSectorHi `
+        -WriteHook $script:residentWriteHook
+    return [pscustomobject]@{
+        Cpu = $cpu
+        Memory = $memory
+        BeforeDirectory = $beforeDirectory
+        AfterDirectory = [byte[]]($memory[$script:dirBase..$script:dirEnd])
+        BeforeBanks = $beforeBanks
+        FlashBanks = $flashBanks
+    }
+}
+
+function Assert-TransactionOutput {
+    param(
+        [pscustomobject]$Fixture,
+        [byte[]]$InputBytes,
+        [string]$ExpectedOutput,
+        [string]$Name
+    )
+
+    [byte[]]$expectedBytes = [System.Text.Encoding]::ASCII.GetBytes($ExpectedOutput)
+    if ([Convert]::ToBase64String($Fixture.Cpu.Output) -cne [Convert]::ToBase64String($expectedBytes)) {
+        $actualText = [System.Text.Encoding]::ASCII.GetString($Fixture.Cpu.Output).Replace("`r", '\r').Replace("`n", '\n')
+        $wantedText = $ExpectedOutput.Replace("`r", '\r').Replace("`n", '\n')
+        throw ("Transaction $Name output mismatch: got '$actualText'; expected '$wantedText'")
+    }
+    Assert-True ($Fixture.Cpu.InputConsumed -eq $InputBytes.Length) `
+        ("Transaction $Name left text input unread")
+    $script:residentMaxSteps = [Math]::Max($script:residentMaxSteps, $Fixture.Cpu.Steps)
+    $script:residentInstallerCases++
+}
+
+function Assert-StringArraysEqual([string[]]$Actual, [string[]]$Expected, [string]$Message) {
+    if ($Actual.Length -ne $Expected.Length) {
+        throw ("$Message count: got $($Actual.Length), expected $($Expected.Length)")
+    }
+    for ($i = 0; $i -lt $Actual.Length; $i++) {
+        if ($Actual[$i] -cne $Expected[$i]) {
+            throw ("$Message at $i`: got '$($Actual[$i])', expected '$($Expected[$i])'")
+        }
+    }
+}
+
+function Assert-TransactionFlash {
+    param(
+        [pscustomobject]$Fixture,
+        [int]$Bank,
+        [pscustomobject]$Dense,
+        [int]$SectorCount,
+        [string]$Name
+    )
+
+    Assert-True ($Fixture.Cpu.SectorCalls -eq $SectorCount) `
+        ("Transaction $Name sector-call count mismatch")
+    for ($candidate = 0; $candidate -lt 4; $candidate++) {
+        [byte[]]$actual = $Fixture.FlashBanks[$candidate]
+        [byte[]]$before = $Fixture.BeforeBanks[$candidate]
+        if ($candidate -ne $Bank) {
+            Assert-ByteArraysEqual $actual $before ("Transaction $Name changed unrelated Bank $candidate")
+            continue
+        }
+        for ($offset = 0; $offset -lt 0x8000; $offset++) {
+            $address = 0x8000 + $offset
+            if ($offset -lt $Dense.Image.Length) {
+                $expected = $Dense.Image[$offset]
+            } else {
+                $expected = $before[$address]
+            }
+            if ($actual[$address] -ne $expected) {
+                throw ('Transaction {0} flash mismatch Bank {1} ${2:X4}: got ${3:X2}, expected ${4:X2}' -f `
+                    $Name, $Bank, $address, $actual[$address], $expected)
+            }
+        }
+    }
+    Assert-True ($Fixture.Cpu.StageRecordCounts[$SectorCount - 1] -eq $Dense.Records.Length) `
+        ("Transaction $Name released its final sector before S9")
+}
+
+function Assert-DirectoryRecord {
+    param(
+        [pscustomobject]$Fixture,
+        [int]$Bank,
+        [byte[]]$Expected,
+        [string]$Name
+    )
+
+    $offset = $Bank * $script:recordSize
+    [byte[]]$actual = $Fixture.AfterDirectory[$offset..($offset + $script:recordSize - 1)]
+    Assert-ByteArraysEqual $actual $Expected ("Transaction $Name directory record mismatch")
+    for ($candidate = 0; $candidate -lt 4; $candidate++) {
+        if ($candidate -eq $Bank) { continue }
+        $otherOffset = $candidate * $script:recordSize
+        [byte[]]$before = $Fixture.BeforeDirectory[$otherOffset..($otherOffset + $script:recordSize - 1)]
+        [byte[]]$after = $Fixture.AfterDirectory[$otherOffset..($otherOffset + $script:recordSize - 1)]
+        Assert-ByteArraysEqual $after $before ("Transaction $Name changed directory Bank $candidate")
+    }
 }
 
 function New-DenseRecordFixture {
@@ -1364,17 +1637,20 @@ for ($i = 0; $i -lt $partial.Length; $i++) { $partial[$i] = $emptyByte }
 Assert-True ((Get-RecordResult 0 $partial).State -eq $recordInvalid) "Partial first-install descriptor accepted"
 $recordCases++
 
-$dryInstallerMode = -not [string]::IsNullOrWhiteSpace($DryInstallerS19Path)
+$transactionInstallerMode = -not [string]::IsNullOrWhiteSpace($TransactionInstallerS19Path)
+$dryInstallerMode = $transactionInstallerMode -or -not [string]::IsNullOrWhiteSpace($DryInstallerS19Path)
+$installerConfirmText = $(if ($transactionInstallerMode) { 'WRITE' } else { 'STAGE' })
 [byte[]]$residentTemplate = New-Object byte[] 65536
 if ($dryInstallerMode) {
-    if (-not (Test-Path -LiteralPath $DryInstallerS19Path)) {
-        throw "V1 installer-dry S19 not found: $DryInstallerS19Path"
+    $installerS19Path = $(if ($transactionInstallerMode) { $TransactionInstallerS19Path } else { $DryInstallerS19Path })
+    if (-not (Test-Path -LiteralPath $installerS19Path)) {
+        throw "V1 installer S19 not found: $installerS19Path"
     }
     for ($address = 0x8000; $address -le 0xFFFF; $address++) {
         $residentTemplate[$address] = 0xFF
     }
     $s9Count = 0
-    foreach ($line in Get-Content -LiteralPath $DryInstallerS19Path) {
+    foreach ($line in Get-Content -LiteralPath $installerS19Path) {
         $textLine = $line.Trim()
         if ($textLine -notmatch '^S([19])([0-9A-Fa-f]+)$') { continue }
         $type = [int]$Matches[1]
@@ -1424,6 +1700,9 @@ $residentInstallPreviewEntry = Get-MapSymbol $residentSymbols "STR8_CMD_INSTALL_
 $residentDenseEntry = $(if ($dryInstallerMode) { Get-MapSymbol $residentSymbols "STR8_I_RECEIVE_DENSE" } else { -1 })
 $residentRecordHook = $(if ($dryInstallerMode) { Get-MapSymbol $residentSymbols "STR8_RECORD_SERVICE_BODY" } else { -1 })
 $residentStageHook = $(if ($dryInstallerMode) { Get-MapSymbol $residentSymbols "STR8_I_STAGE_SECTOR_READY" } else { -1 })
+$residentSectorHook = $(if ($transactionInstallerMode) { Get-MapSymbol $residentSymbols "STR8_I_RUN_SECTOR_WORKER" } else { -1 })
+$residentBeginTransaction = $(if ($transactionInstallerMode) { Get-MapSymbol $residentSymbols "STR8_I_BEGIN_TRANSACTION" } else { -1 })
+$residentFinishTransaction = $(if ($transactionInstallerMode) { Get-MapSymbol $residentSymbols "STR8_I_FINISH_TRANSACTION" } else { -1 })
 $residentDispatchEntry = Get-MapSymbol $residentSymbols "STR8_DISPATCH_A"
 $residentConfirmEntry = Get-MapSymbol $residentSymbols "STR8_CONFIRM_Y"
 $residentReadHook = Get-MapSymbol $residentSymbols "STR8_CON_READ_BYTE_BLOCK"
@@ -1623,7 +1902,7 @@ foreach ($confirmation in @(
 $expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 NO WRITE`r`n"
 if ($dryInstallerMode) {
     [byte[]]$lineInput = $lineInput + [System.Text.Encoding]::ASCII.GetBytes("n`r")
-    $expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 STAGE? Y: N`r`nABORT`r`n"
+    $expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 $installerConfirmText`? Y: N`r`nABORT`r`n"
 }
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'empty Bank 2 metadata'
@@ -1638,7 +1917,7 @@ Assert-True ([System.Text.Encoding]::ASCII.GetString($previewFixture.Memory, $re
 $expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 NO WRITE`r`n"
 if ($dryInstallerMode) {
     [byte[]]$lineInput = $lineInput + [System.Text.Encoding]::ASCII.GetBytes("n`r")
-    $expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 STAGE? Y: N`r`nABORT`r`n"
+    $expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 $installerConfirmText`? Y: N`r`nABORT`r`n"
 }
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'empty Bank 3 range'
@@ -1651,7 +1930,7 @@ Assert-True ($previewFixture.Memory[$residentInstallBank] -eq 3 -and
 $expectedPreview = "`r`nI B0-3: 1`r`nI B1 8000-FFFF `r`nT=5A D=HELLO COMPLETE P=01 NO WRITE`r`n"
 if ($dryInstallerMode) {
     [byte[]]$lineInput = $lineInput + [System.Text.Encoding]::ASCII.GetBytes("n`r")
-    $expectedPreview = "`r`nI B0-3: 1`r`nI B1 8000-FFFF `r`nT=5A D=HELLO COMPLETE P=01 STAGE? Y: N`r`nABORT`r`n"
+    $expectedPreview = "`r`nI B0-3: 1`r`nI B1 8000-FFFF `r`nT=5A D=HELLO COMPLETE P=01 $installerConfirmText`? Y: N`r`nABORT`r`n"
 }
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput @{ 1 = $completeRecord }
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'existing complete Bank 1'
@@ -1661,7 +1940,7 @@ Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'exis
 $expectedPreview = "`r`nI B0-3: 3`r`nI B3 8000-EFFF `r`nT=5A D=LOCAL E=`$C030 INCOMPLETE P=02 NO WRITE`r`n"
 if ($dryInstallerMode) {
     [byte[]]$lineInput = $lineInput + [System.Text.Encoding]::ASCII.GetBytes("n`r")
-    $expectedPreview = "`r`nI B0-3: 3`r`nI B3 8000-EFFF `r`nT=5A D=LOCAL E=`$C030 INCOMPLETE P=02 STAGE? Y: N`r`nABORT`r`n"
+    $expectedPreview = "`r`nI B0-3: 3`r`nI B3 8000-EFFF `r`nT=5A D=LOCAL E=`$C030 INCOMPLETE P=02 $installerConfirmText`? Y: N`r`nABORT`r`n"
 }
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput @{ 3 = $incompleteRecord }
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'existing incomplete Bank 3'
@@ -1691,18 +1970,200 @@ foreach ($negativePreview in @(
 if ($dryInstallerMode) {
     $dense32 = New-DenseRecordFixture -Length 0x8000 -Entry 0x8000 -ChunkLength 251 -IncludeS0 $true
     [byte[]]$denseInput = [System.Text.Encoding]::ASCII.GetBytes("2`ra5`rryors`ry`r")
-    $previewFixture = Invoke-ResidentIPreviewFixture -InputBytes $denseInput -DenseRecords $dense32.Records
-    $expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 STAGE? Y: Y`r`nSEND S19`r`nSTAGE OK NO WRITE`r`n"
-    Assert-DenseStageFixture $previewFixture $dense32 8 $denseInput $expectedPreview '32K Bank 2 crossing stream'
-
     $dense28 = New-DenseRecordFixture -Length 0x7000 -Entry 0x8000 -ChunkLength 193 -IncludeS0 $false
-    [byte[]]$denseInput = [System.Text.Encoding]::ASCII.GetBytes("3`r5a`rstr8n`ry`n")
-    $previewFixture = Invoke-ResidentIPreviewFixture -InputBytes $denseInput -DenseRecords $dense28.Records
-    $expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 STAGE? Y: Y`r`nSEND S19`r`nSTAGE OK NO WRITE`r`n"
-    Assert-DenseStageFixture $previewFixture $dense28 7 $denseInput $expectedPreview '28K Bank 3 crossing stream'
-    Assert-True ($previewFixture.Memory[$residentInstallEntryLo] -eq 0x00 -and
-        $previewFixture.Memory[$residentInstallEntryHi] -eq 0x80) `
-        'Dense empty Bank-3 stage did not retain the validated local entry'
+    if ($transactionInstallerMode) {
+        $transactionFixture = Invoke-ResidentITransactionFixture -InputBytes $denseInput -DenseRecords $dense32.Records
+        $expectedTransaction = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n........`r`nI OK`r`n"
+        Assert-TransactionOutput $transactionFixture $denseInput $expectedTransaction '32K Bank 2 success'
+        Assert-TransactionFlash $transactionFixture 2 $dense32 8 '32K Bank 2 success'
+        [byte[]]$expectedRecord = New-Record 2 'RYORS' 0xFFFF (New-Journal 1 $false)
+        $expectedRecord[$offType] = 0xA5
+        Assert-DirectoryRecord $transactionFixture 2 $expectedRecord '32K Bank 2 success'
+        Assert-True ($transactionFixture.Cpu.WorkerCalls -eq 4) 'Bank-2 transaction directory-call count mismatch'
+        [string[]]$expectedEvents = @('D:FFDC:1', 'D:FFD0:9')
+        for ($sector = 0; $sector -lt 8; $sector++) {
+            $expectedEvents += ('S:2:{0:X2}' -f (0x80 + ($sector * 0x10)))
+        }
+        $expectedEvents += @('D:FFD9:1', 'D:FFDC:1')
+        Assert-StringArraysEqual $transactionFixture.Cpu.Events $expectedEvents `
+            'Bank-2 START/metadata/sector/seal/COMPLETE order'
+
+        [byte[]]$denseInput = [System.Text.Encoding]::ASCII.GetBytes("3`r5a`rstr8n`ry`n")
+        $transactionFixture = Invoke-ResidentITransactionFixture -InputBytes $denseInput -DenseRecords $dense28.Records
+        $expectedTransaction = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n.......`r`nI OK`r`n"
+        Assert-TransactionOutput $transactionFixture $denseInput $expectedTransaction '28K Bank 3 success'
+        Assert-TransactionFlash $transactionFixture 3 $dense28 7 '28K Bank 3 success'
+        $expectedRecord = New-Record 3 'STR8N' 0x8000 (New-Journal 1 $false)
+        Assert-DirectoryRecord $transactionFixture 3 $expectedRecord '28K Bank 3 success'
+        Assert-True ($transactionFixture.Cpu.WorkerCalls -eq 5) 'Bank-3 transaction directory-call count mismatch'
+        [string[]]$expectedEvents = @('D:FFEC:1', 'D:FFE0:9')
+        for ($sector = 0; $sector -lt 7; $sector++) {
+            $expectedEvents += ('S:3:{0:X2}' -f (0x80 + ($sector * 0x10)))
+        }
+        $expectedEvents += @('D:FFEA:2', 'D:FFE9:1', 'D:FFEC:1')
+        Assert-StringArraysEqual $transactionFixture.Cpu.Events $expectedEvents `
+            'Bank-3 START/metadata/sector/entry/seal/COMPLETE order'
+
+        # BEGIN failure boundaries: START failure changes nothing; metadata
+        # failure leaves a visible START pair and an unsealed descriptor.
+        [byte[]]$emptyTxnRecord = New-Object byte[] $recordSize
+        for ($i = 0; $i -lt $recordSize; $i++) { $emptyTxnRecord[$i] = $emptyByte }
+        $fixture = Invoke-TransactionRoutineFixture -Start $residentBeginTransaction `
+            -Bank 0 -State $recordEmpty -Pair 0 -Record $emptyTxnRecord -Description 'NEW00' -WorkerFailAt 1
+        Assert-True (-not $fixture.Cpu.Carry -and $fixture.Cpu.WorkerCalls -eq 1) `
+            'Transaction START worker failure did not stop BEGIN'
+        Assert-ByteArraysEqual $fixture.AfterDirectory $fixture.BeforeDirectory `
+            'Transaction START failure changed directory'
+        $residentInstallerCases++
+
+        [byte[]]$beginFailureInput = [System.Text.Encoding]::ASCII.GetBytes("0`r5a`rfail0`ry`r")
+        $fixture = Invoke-ResidentITransactionFixture -InputBytes $beginFailureInput -WorkerFailAt 1
+        $expectedFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8000-FFFF `r`nT=5A D=FAIL0 EMPTY P=00 WRITE? Y: Y`r`nDIR FAIL `$04`r`n"
+        Assert-TransactionOutput $fixture $beginFailureInput $expectedFailure 'START directory failure'
+        Assert-True ($fixture.Memory[$residentInstallStatus] -eq 0x14) `
+            'START directory failure did not publish installer status $14'
+        Assert-ByteArraysEqual $fixture.AfterDirectory $fixture.BeforeDirectory `
+            'Command-level START failure changed directory'
+
+        $fixture = Invoke-TransactionRoutineFixture -Start $residentBeginTransaction `
+            -Bank 0 -State $recordEmpty -Pair 0 -Record $emptyTxnRecord -Description 'NEW00' -WorkerFailAt 2
+        Assert-True (-not $fixture.Cpu.Carry -and $fixture.Cpu.WorkerCalls -eq 2) `
+            'Transaction metadata worker failure did not stop BEGIN'
+        [byte[]]$actualRecord = $fixture.AfterDirectory[0..($recordSize - 1)]
+        $journal = Get-JournalResult ([byte[]]$actualRecord[$offJournal..($offJournal + $journalLength - 1)])
+        Assert-True ($journal.State -eq $journalStarted -and $journal.Pair -eq 0 -and
+            $actualRecord[$offSeal] -eq $emptyByte) `
+            'Metadata failure did not leave STARTED/unsealed state'
+        $residentInstallerCases++
+
+        # FINISH boundaries for a first Bank-3 install: ENTRY, SEAL, and
+        # COMPLETE are separate verified writes, and COMPLETE is last.
+        [byte[]]$provisional3 = New-ProvisionalRecord 0x5A 'STR8N' 0xFFFF (New-Journal 0 $true)
+        foreach ($finishFailure in @(
+                [pscustomobject]@{ Call = 1; Seal = $emptyByte; State = $recordInvalid; Name = 'entry' },
+                [pscustomobject]@{ Call = 2; Seal = $emptyByte; State = $recordInvalid; Name = 'seal' },
+                [pscustomobject]@{ Call = 3; Seal = $sealValue; State = $recordIncomplete; Name = 'complete' }
+            )) {
+            $fixture = Invoke-TransactionRoutineFixture -Start $residentFinishTransaction `
+                -Bank 3 -State $recordEmpty -Pair 0 -Record $provisional3 -Entry 0x8000 `
+                -WorkerFailAt $finishFailure.Call
+            Assert-True (-not $fixture.Cpu.Carry -and
+                $fixture.Cpu.WorkerCalls -eq $finishFailure.Call) `
+                ("Transaction Bank-3 $($finishFailure.Name) failure did not stop FINISH")
+            [byte[]]$actualRecord = $fixture.AfterDirectory[(3 * $recordSize)..((4 * $recordSize) - 1)]
+            $recordResult = Get-RecordResult 3 $actualRecord
+            Assert-True ($actualRecord[$offSeal] -eq $finishFailure.Seal -and
+                $recordResult.State -eq $finishFailure.State) `
+                ("Transaction Bank-3 $($finishFailure.Name) failure state mismatch")
+            $journal = Get-JournalResult ([byte[]]$actualRecord[$offJournal..($offJournal + $journalLength - 1)])
+            Assert-True ($journal.State -eq $journalStarted -and $journal.Pair -eq 0) `
+                ("Transaction Bank-3 $($finishFailure.Name) failure completed journal")
+            $residentInstallerCases++
+        }
+
+        $fixture = Invoke-TransactionRoutineFixture -Start $residentFinishTransaction `
+            -Bank 3 -State $recordEmpty -Pair 0 -Record $provisional3 -Entry 0x8000
+        $expectedRecord = New-Record 3 'STR8N' 0x8000 (New-Journal 1 $false)
+        Assert-DirectoryRecord $fixture 3 $expectedRecord 'direct Bank-3 FINISH success'
+        Assert-StringArraysEqual $fixture.Cpu.Events @('D:FFEA:2', 'D:FFE9:1', 'D:FFEC:1') `
+            'Direct Bank-3 FINISH order'
+        $residentInstallerCases++
+
+        # Completed records consume the next pair. Incomplete records retry
+        # the same START pair idempotently and complete it without replacing
+        # immutable metadata.
+        [byte[]]$retryRecord = New-Record 1 'HELLO' 0xFFFF (New-Journal 1 $false)
+        $fixture = Invoke-TransactionRoutineFixture -Start $residentBeginTransaction `
+            -Bank 1 -State $recordComplete -Pair 1 -Record $retryRecord -Description 'XXXXX'
+        Assert-True ($fixture.Cpu.Carry -and $fixture.Cpu.WorkerCalls -eq 1) `
+            'Complete-record next-pair START failed'
+        [byte[]]$startedRecord = $fixture.AfterDirectory[$recordSize..((2 * $recordSize) - 1)]
+        $recordResult = Get-RecordResult 1 $startedRecord
+        Assert-True ($recordResult.State -eq $recordIncomplete -and $recordResult.Pair -eq 1) `
+            'Complete-record next pair was not STARTED'
+        $fixture = Invoke-TransactionRoutineFixture -Start $residentFinishTransaction `
+            -Bank 1 -State $recordComplete -Pair 1 -Record $startedRecord
+        $expectedRecord = New-Record 1 'HELLO' 0xFFFF (New-Journal 2 $false)
+        Assert-DirectoryRecord $fixture 1 $expectedRecord 'complete-record next-pair completion'
+        $residentInstallerCases++
+
+        [byte[]]$retryRecord = New-Record 3 'LOCAL' 0x8000 (New-Journal 2 $true)
+        $fixture = Invoke-TransactionRoutineFixture -Start $residentBeginTransaction `
+            -Bank 3 -State $recordIncomplete -Pair 2 -Record $retryRecord -Entry 0x8000
+        Assert-True ($fixture.Cpu.Carry -and $fixture.Cpu.WorkerCalls -eq 1) `
+            'Incomplete-record retry START failed'
+        Assert-ByteArraysEqual $fixture.AfterDirectory $fixture.BeforeDirectory `
+            'Incomplete-record idempotent START changed directory'
+        $fixture = Invoke-TransactionRoutineFixture -Start $residentFinishTransaction `
+            -Bank 3 -State $recordIncomplete -Pair 2 -Record $retryRecord -Entry 0x8000
+        $expectedRecord = New-Record 3 'LOCAL' 0x8000 (New-Journal 3 $false)
+        Assert-DirectoryRecord $fixture 3 $expectedRecord 'incomplete-record retry completion'
+        $residentInstallerCases++
+
+        # Every legal 32K sector boundary reaches mode $05 with the exact
+        # target high byte. An injected worker failure returns carry clear and
+        # leaves the modeled destination unchanged.
+        for ($sectorHigh = 0x80; $sectorHigh -le 0xF0; $sectorHigh += 0x10) {
+            $fixture = Invoke-TransactionRoutineFixture -Start $residentStageHook `
+                -Bank 2 -State $recordComplete -Pair 1 -Record $emptyTxnRecord `
+                -SectorHigh $sectorHigh
+            Assert-True ($fixture.Cpu.Carry -and $fixture.Cpu.SectorCalls -eq 1 -and
+                $fixture.Cpu.Events[0] -ceq ('S:2:{0:X2}' -f $sectorHigh) -and
+                $fixture.Memory[0x1FE9] -eq $sectorHigh -and
+                $fixture.Memory[0x1FEF] -eq 2 -and
+                $fixture.Memory[0x1FF0] -eq 0x05 -and
+                $fixture.Memory[0x1FF6] -eq 0x0A) `
+                ("Sector boundary `${0:X2} success mismatch" -f $sectorHigh)
+            $fixture = Invoke-TransactionRoutineFixture -Start $residentStageHook `
+                -Bank 2 -State $recordComplete -Pair 1 -Record $emptyTxnRecord `
+                -SectorHigh $sectorHigh -SectorFailAt 1
+            Assert-True (-not $fixture.Cpu.Carry -and $fixture.Cpu.SectorCalls -eq 1) `
+                ("Sector boundary `${0:X2} failure mismatch" -f $sectorHigh)
+            Assert-ByteArraysEqual $fixture.FlashBanks[2] $fixture.BeforeBanks[2] `
+                ("Sector boundary `${0:X2} failure changed flash" -f $sectorHigh)
+            $residentInstallerCases += 2
+        }
+
+        # Full-command receive and first-sector flash failures both leave a
+        # STARTED journal, no seal, and no COMPLETE transition.
+        [object[]]$badTransactionRecords = @($dense32.Records)
+        $firstData = $badTransactionRecords[1]
+        $badTransactionRecords[1] = [pscustomobject]@{
+            FailStatus = 0; Kind = 2; Address = 0x8001; Data = $firstData.Data; Entry = 0
+        }
+        [byte[]]$failureInput = [System.Text.Encoding]::ASCII.GetBytes("0`r5a`rfail0`ry`r")
+        $fixture = Invoke-ResidentITransactionFixture -InputBytes $failureInput `
+            -DenseRecords $badTransactionRecords
+        $expectedFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8000-FFFF `r`nT=5A D=FAIL0 EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nI FAIL `$10`r`n"
+        Assert-TransactionOutput $fixture $failureInput $expectedFailure 'receive failure after START'
+        Assert-True ($fixture.Cpu.WorkerCalls -eq 2 -and $fixture.Cpu.SectorCalls -eq 0) `
+            'Receive failure reached a sector or later directory write'
+        [byte[]]$actualRecord = $fixture.AfterDirectory[0..($recordSize - 1)]
+        $journal = Get-JournalResult ([byte[]]$actualRecord[$offJournal..($offJournal + $journalLength - 1)])
+        Assert-True ($journal.State -eq $journalStarted -and $actualRecord[$offSeal] -eq $emptyByte) `
+            'Receive failure did not remain STARTED/unsealed'
+
+        $fixture = Invoke-ResidentITransactionFixture -InputBytes $failureInput `
+            -DenseRecords $dense32.Records -SectorFailAt 1
+        $expectedFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8000-FFFF `r`nT=5A D=FAIL0 EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nI FAIL `$12`r`n"
+        Assert-TransactionOutput $fixture $failureInput $expectedFailure 'first-sector worker failure'
+        Assert-True ($fixture.Cpu.WorkerCalls -eq 2 -and $fixture.Cpu.SectorCalls -eq 1) `
+            'First-sector failure reached a later transaction boundary'
+        Assert-ByteArraysEqual $fixture.FlashBanks[0] $fixture.BeforeBanks[0] `
+            'First-sector failure changed modeled target flash'
+    } else {
+        $previewFixture = Invoke-ResidentIPreviewFixture -InputBytes $denseInput -DenseRecords $dense32.Records
+        $expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 STAGE? Y: Y`r`nSEND S19`r`nSTAGE OK NO WRITE`r`n"
+        Assert-DenseStageFixture $previewFixture $dense32 8 $denseInput $expectedPreview '32K Bank 2 crossing stream'
+
+        [byte[]]$denseInput = [System.Text.Encoding]::ASCII.GetBytes("3`r5a`rstr8n`ry`n")
+        $previewFixture = Invoke-ResidentIPreviewFixture -InputBytes $denseInput -DenseRecords $dense28.Records
+        $expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 STAGE? Y: Y`r`nSEND S19`r`nSTAGE OK NO WRITE`r`n"
+        Assert-DenseStageFixture $previewFixture $dense28 7 $denseInput $expectedPreview '28K Bank 3 crossing stream'
+        Assert-True ($previewFixture.Memory[$residentInstallEntryLo] -eq 0x00 -and
+            $previewFixture.Memory[$residentInstallEntryHi] -eq 0x80) `
+            'Dense empty Bank-3 stage did not retain the validated local entry'
+    }
 
     [object[]]$badRecords = @($dense32.Records)
     $firstData = $badRecords[1]
@@ -1949,8 +2410,9 @@ Write-Host ("RESIDENT VALIDATOR      = {0:X4}-{1:X4}; `${2:X} bytes" -f $residen
 Write-Host ("RESIDENT DIR WRITER     = {0:X4}-{1:X4}; `${2:X} bytes" -f $residentWriterEntry, ($residentWriterEnd - 1), $residentWriterSize)
 Write-Host ("STR8 RESIDENT IMAGE     = {0:X4}-{1:X4}; `${2:X} bytes" -f $residentStart, ($residentEnd - 1), $residentSize)
 if ($dryInstallerMode) {
-    Write-Host ("DRY/WORKER OVERLAP      = {0:X4}-{1:X4}; `${2:X} bytes" -f $workerStoreStart, ($residentEnd - 1), $workerOverlap)
-    Write-Host ("DRY FIT DEBT +`${0:X} GAP   = `${1:X} bytes" -f $workerReserveFloor, $workerFitDebt)
+    $installerLabel = if ($transactionInstallerMode) { "TXN" } else { "DRY" }
+    Write-Host ("{0}/WORKER OVERLAP      = {1:X4}-{2:X4}; `${3:X} bytes" -f $installerLabel, $workerStoreStart, ($residentEnd - 1), $workerOverlap)
+    Write-Host ("{0} FIT DEBT +`${1:X} GAP   = `${2:X} bytes" -f $installerLabel, $workerReserveFloor, $workerFitDebt)
 } else {
     Write-Host ("RESIDENT/WORKER GAP     = {0:X4}-{1:X4}; `${2:X} bytes" -f $residentEnd, ($workerStoreStart - 1), $workerGap)
 }
@@ -1965,5 +2427,9 @@ if ($dryInstallerMode) {
 Write-Host ("RESIDENT MAX STEPS      = {0}" -f $residentMaxSteps)
 Write-Host "STR8 V1 DIRECTORY CHECK = PASS"
 if ($dryInstallerMode) {
-    Write-Host "STR8 V1 INSTALLER DRY CHECK = PASS"
+    if ($transactionInstallerMode) {
+        Write-Host "STR8 V1 INSTALLER TRANSACTION CHECK = PASS"
+    } else {
+        Write-Host "STR8 V1 INSTALLER DRY CHECK = PASS"
+    }
 }
