@@ -12854,3 +12854,42 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-06 STR8 V1 Split Worker Slice 1
+
+Status: compiled host structure pass; resident behavior is unchanged.
+
+The single worker source now builds two additional, independently linked RAM
+images. The permanent jump worker retains `START=$0200`, the published bank
+selector at `$0203`, opaque-bank reset validation/handoff, and the shared bank
+selector. The mutation worker retains only modes `$05-$07`, sector
+stage/erase/program/verify, the directory one-to-zero record writer, and their
+flash primitives. The original four-mode worker remains the active firmware
+worker during this slice and its existing host gate remains unchanged.
+
+Measured split sizes against the current transaction end `$FE7D`:
+
+```text
+permanent jump worker      $0200-$0287  size $0088 = 136
+uploaded mutation worker   $0200-$0426  size $0227 = 551
+room before directory      $FE7D-$FFAF  size $0133 = 307
+room after jump worker                     $00AB = 171
+room after $0040 reserve                   $006B = 107
+mutation RAM tray          $0200-$09FF  size $0800 = 2048
+```
+
+The split-size gate rejects a jump image above the reserve-inclusive `$00F3`
+ceiling, a mutation image outside the RAM tray, a moved `$0200`/`$0203` ABI,
+or cross-contamination of jump and mutation entry points. No resident calls or
+ROM packing change yet, so this slice creates neither a flashable V1 artifact
+nor a board test.
+
+Required host gates:
+
+```text
+make -C SRC str8-worker-split-check
+make -C SRC str8-worker-mode-check
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

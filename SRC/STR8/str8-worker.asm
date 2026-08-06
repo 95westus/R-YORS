@@ -12,7 +12,10 @@
                         MODULE          STR8_WORKER_APP
 
                         XDEF            START
+                        IF              STR8_WORKER_MUTATION_ONLY
+                        ELSE
                         XDEF            STR8W_BANK_SELECT_SERVICE
+                        ENDIF
                         XDEF            STR8_WORKER_END
 
                         INCLUDE         "STR8/str8-record-eq.inc"
@@ -60,11 +63,17 @@ STR8_FLASH_WRITE_TMO_HI EQU             $02
 
                         CODE
 START:
+                        IF              STR8_WORKER_JUMP_ONLY
+                        JMP             STR8W_JUMP_START
+                        ELSE
                         JMP             STR8W_START_BODY
+                        ENDIF
 
 ; Fixed $0203 entry used by the resident $F010 bank-selection service.
 ; IN: A=bank 0-3. OUT: C=1 selected; C=0 invalid. A/X are clobbered.
 ; The caller and return address must be in RAM below $8000.
+                        IF              STR8_WORKER_MUTATION_ONLY
+                        ELSE
 STR8W_BANK_SELECT_SERVICE:
                         PHP
                         SEI
@@ -77,9 +86,20 @@ STR8W_BANK_SELECT_SERVICE:
 ?BAD_BANK:             PLP
                         CLC
                         RTS
+                        ENDIF
 
 ; Only the four published V1 modes may reach a worker operation. Any other
 ; value returns C=0 before selecting a bank or touching flash.
+                        IF              STR8_WORKER_JUMP_ONLY
+STR8W_JUMP_START:
+                        PHP
+                        SEI
+                        JSR             STR8W_JUMP_BANK
+                        JSR             STR8W_SELECT_BANK3
+                        PLP
+                        CLC
+                        RTS
+                        ELSE
 STR8W_START_BODY:
                         PHP
                         SEI
@@ -90,8 +110,11 @@ STR8W_START_BODY:
                         BEQ             ?STAGE_BANK_SECTOR
                         CMP             #STR8_COPY_MODE_PROGRAM_RECORD
                         BEQ             ?PROGRAM_RECORD
+                        IF              STR8_WORKER_MUTATION_ONLY
+                        ELSE
                         CMP             #STR8_COPY_MODE_JUMP_BANK
                         BEQ             ?JUMP_BANK
+                        ENDIF
                         PLP
                         CLC
                         RTS
@@ -104,8 +127,11 @@ STR8W_START_BODY:
 ?PROGRAM_RECORD:
                         JSR             STR8W_PROGRAM_RECORD
                         BRA             ?DONE
+                        IF              STR8_WORKER_MUTATION_ONLY
+                        ELSE
 ?JUMP_BANK:
                         JSR             STR8W_JUMP_BANK
+                        ENDIF
 ?DONE:
                         BCC             ?FAIL
                         JSR             STR8W_SELECT_BANK3
@@ -117,9 +143,12 @@ STR8W_START_BODY:
                         PLP
                         CLC
                         RTS
+                        ENDIF
 
 ; Non-destructive opaque-bank handoff. Success resets CPU software state and
 ; never returns. Failure returns through START, which restores Bank 3 first.
+                        IF              STR8_WORKER_MUTATION_ONLY
+                        ELSE
 STR8W_JUMP_BANK:
                         LDA             STR8_JUMP_BANK
                         CMP             #STR8_BANK_COUNT
@@ -163,7 +192,10 @@ STR8W_JUMP_BANK:
                         STA             STR8_JUMP_STATUS
                         CLC
                         RTS
+                        ENDIF
 
+                        IF              STR8_WORKER_JUMP_ONLY
+                        ELSE
 STR8W_PROGRAM_STAGED_SECTOR:
                         JSR             STR8W_ERASE_DST_SECTOR
                         BCC             ?FAIL
@@ -454,6 +486,7 @@ STR8W_FLASH_RESET_FAIL:
                         STA             STR8_FLASH_UNLOCK1
                         CLC
                         RTS
+                        ENDIF
 
 STR8W_SELECT_BANK3:
                         LDA             #$03

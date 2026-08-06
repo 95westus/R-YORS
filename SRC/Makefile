@@ -100,7 +100,12 @@ STR8_LINKFLAGS := -g -s -t -cF000 -hm19 -j -o
 STR8_WORKER_SRC := $(STR8_SUBDIR)/str8-worker.asm
 STR8_WORKER_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-worker.obj
 STR8_WORKER_S19 := $(S19_DIR)/str8-worker-0200.s19
+STR8_JUMP_WORKER_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-jump-worker.obj
+STR8_JUMP_WORKER_S19 := $(S19_DIR)/str8-jump-worker-0200.s19
+STR8_MUTATION_WORKER_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-mutation-worker.obj
+STR8_MUTATION_WORKER_S19 := $(S19_DIR)/str8-mutation-worker-0200.s19
 STR8_WORKER_LINKFLAGS := -g -s -t -c0200 -hm19 -j -o
+STR8_WORKER_SPLIT_CHECK := tools/check_str8_worker_split.ps1
 STR8_RAM_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-ram.obj
 STR8_RAM_S19 := $(S19_DIR)/str8-ram-3000.s19
 STR8_RAM_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
@@ -441,6 +446,9 @@ str8-installer-transaction-check: $(STR8_V1_INSTALLER_TXN_S19) $(STR8_DIRECTORY_
 
 str8-worker-mode-check: $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) $(STR8_WORKER_MODE_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_MODE_CHECK) -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)"
+
+str8-worker-split-check: $(STR8_JUMP_WORKER_S19) $(STR8_MUTATION_WORKER_S19) $(STR8_WORKER_SPLIT_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_SPLIT_CHECK) -JumpMapPath "$(S19_DIR)/str8-jump-worker-0200.map" -MutationMapPath "$(S19_DIR)/str8-mutation-worker-0200.map"
 
 str8-bank-copy-source-check: $(STR8_BANK_COPY_SOURCE) $(STR8_BANK_COPY_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_COPY_CHECK) -SourcePath "$(STR8_BANK_COPY_SOURCE)"
@@ -799,6 +807,18 @@ $(STR8_WORKER_S19): $(STR8_WORKER_OBJ)
 	@echo [ps] set S9 start $$0200 in $(STR8_WORKER_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
 
+$(STR8_JUMP_WORKER_S19): $(STR8_JUMP_WORKER_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(STR8_WORKER_LINKFLAGS) $(STR8_JUMP_WORKER_S19) $(STR8_JUMP_WORKER_OBJ)
+	@echo [ps] set S9 start $$0200 in $(STR8_JUMP_WORKER_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_JUMP_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
+
+$(STR8_MUTATION_WORKER_S19): $(STR8_MUTATION_WORKER_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(STR8_WORKER_LINKFLAGS) $(STR8_MUTATION_WORKER_S19) $(STR8_MUTATION_WORKER_OBJ)
+	@echo [ps] set S9 start $$0200 in $(STR8_MUTATION_WORKER_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_MUTATION_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
+
 $(STR8_OBJ): $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
 
 $(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
@@ -817,6 +837,16 @@ $(STR8_V1_INSTALLER_TXN_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_DIRECTORY_EQ)
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
 $(STR8_WORKER_OBJ): $(STR8_RECORD_EQ)
+
+$(STR8_JUMP_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DSTR8_WORKER_JUMP_ONLY $(STR8_WORKER_SRC)
+	@if exist $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) move /Y $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) $(subst /,\,$@)
+
+$(STR8_MUTATION_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DSTR8_WORKER_MUTATION_ONLY $(STR8_WORKER_SRC)
+	@if exist $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) move /Y $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) $(subst /,\,$@)
 
 $(STR8_RECORD_PHASE1_PROOF_OBJ): $(STR8_RECORD_EQ)
 
@@ -1274,7 +1304,7 @@ endif
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
-	str8-v1-layout-preview str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check \
+	str8-v1-layout-preview str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
 	str8-bank-copy-source-check str8-bank-maint-source-check \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \

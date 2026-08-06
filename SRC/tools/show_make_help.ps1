@@ -24,6 +24,7 @@ $rows = @(
     [pscustomobject]@{ Target = "str8-directory-check"; Category = "monitor"; Description = "Run host reference and compiled-resident validation of frozen V1 directory records and journals against the guarded preview BIN." }
     [pscustomobject]@{ Target = "str8-installer-dry-check"; Category = "monitor"; Description = "Build and execute the oversized, nonflashable V1 dense S19 receive/stage host proof." }
     [pscustomobject]@{ Target = "str8-worker-mode-check"; Category = "monitor"; Description = "Execute the compiled worker dispatcher for all 256 mode bytes; require only 05-08 and fail closed for the other 252." }
+    [pscustomobject]@{ Target = "str8-worker-split-check"; Category = "monitor"; Description = "Build and size-check the permanent jump worker and uploaded mutation worker images." }
     [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-c000-install-8000.s19." }
     [pscustomobject]@{ Target = "himon-str8-rom-install-s19"; Category = "monitor"; Description = "Convert primary HIMON+STR8 ROM BIN to S1/S9 install transport: BUILD/s19/himon-str8-rom-install.s19." }
     [pscustomobject]@{ Target = "himon-str8-himon-update-s19"; Category = "monitor"; Description = "Build C000-EFFF S1/S9 stream for STR8 U / UPDATE HIMON: BUILD/s19/himon-str8-himon-update.s19." }
