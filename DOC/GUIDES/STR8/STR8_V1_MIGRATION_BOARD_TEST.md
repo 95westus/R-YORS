@@ -2,6 +2,11 @@
 
 Status: hardware-accepted on `00.0806(1707)`.
 
+This is the historical one-time migration/first-transaction card. Do not use
+its migration writer to refresh an already-installed V1 top sector; it would
+replace the live directory with the embedded empty bytes. Use
+`STR8_V1_REFRESH_BOARD_TEST.md` for later V1 supervisor updates.
+
 Accepted evidence includes TopWriter status `01 AC 00 00`, the exact `$F000`
 service face, packed `$FF28-$FFAF` jump worker, empty `$FFB0-$FFEF` directory,
 vectors, physical-reset entry, compact command surface, first COMPLETE Bank-2
@@ -30,12 +35,15 @@ SRC/BUILD/bin/himon-str8-v1.bin
 SRC/BUILD/s19/himon-str8-v1-install.s19
 SRC/BUILD/s19/str8-v1-i-bank012.s19
 SRC/BUILD/str8n-v1-topwrite-transient-3000.a
+SRC/BUILD/str8n-v1-refresh-transient-3000.a
 ```
 
-Record SHA-256 values for all four files. The full-bank install S19 is an
+Record SHA-256 values for all five files. The full-bank install S19 is an
 external/recovery transport. The `str8-v1-i-bank012.s19` file is the only file
 sent at the `I` command's `SEND S19` prompt; it already contains the mutation
-worker followed by the complete bank payload.
+worker followed by the complete bank payload. The topwrite file remains the
+one-time migration writer; the refresh file preserves an existing V1
+directory and is not used by this historical first-migration procedure.
 
 The accepted host layout is:
 

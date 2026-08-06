@@ -6,7 +6,8 @@ param(
     [int]$SourceOffset = 0x7000,
     [int]$StageAddress = 0x0A00,
     [int]$ImageAddress = 0x4000,
-    [int]$Length = 0x1000
+    [int]$Length = 0x1000,
+    [switch]$PreserveV1Directory
 )
 
 Set-StrictMode -Version Latest
@@ -114,6 +115,11 @@ function Add-Line([string]$Line) {
 Add-Line '; STR8N-TOPWRITE-TRANSIENT-3000.A'
 Add-Line '; SELF-CONTAINED STR8-N TOP-SECTOR WRITER.'
 Add-Line '; ASSEMBLE WITH ASM-F2. NO SEPARATE STR8-TOP-STAGE S19 LOAD NEEDED.'
+if ($PreserveV1Directory) {
+    Add-Line '; V1 REFRESH: COPIES LIVE $FFB0-$FFEF INTO THE EMBEDDED IMAGE.'
+} else {
+    Add-Line '; REPLACEMENT/MIGRATION: USES THE EMBEDDED DIRECTORY BYTES.'
+}
 Add-Line ';'
 Add-Line '; ENTRY POINTS AFTER ASSEMBLY:'
 Add-Line ';   G 3000  OPEN TEXT OPERATION MENU'
@@ -231,6 +237,13 @@ Add-Line '        STZ MODE'
 Add-Line '        STZ STAT'
 Add-Line '        STZ FLO'
 Add-Line '        STZ FHI'
+if ($PreserveV1Directory) {
+    Add-Line '        LDX #$3F'
+    Add-Line 'CDIR    LDA $FFB0,X'
+    Add-Line ('        STA {0},X' -f (Format-HexWord ($ImageAddress + 0x0FB0)))
+    Add-Line '        DEX'
+    Add-Line '        BPL CDIR'
+}
 Add-Line '        JSR COPYI'
 Add-Line '        JSR VSTG'
 Add-Line '        BCC STGERR'
@@ -560,6 +573,12 @@ $symbolCount = @($lines | Where-Object { $_ -match '^[A-Z][A-Z0-9]*\s+' }).Count
 if ($symbolCount -gt 64) {
     throw ("Generated source uses {0} symbols; ASM-F2 limit is 64" -f $symbolCount)
 }
+if ($PreserveV1Directory) {
+    $copyLines = @($lines | Where-Object { $_ -match '^CDIR\s+LDA \$FFB0,X$' })
+    if ($copyLines.Count -ne 1) {
+        throw 'Generated V1 refresh source is missing its live-directory copy loop'
+    }
+}
 
 $longSourceLines = @(
     $lines | Where-Object {
@@ -582,4 +601,5 @@ Write-Host ("Embedded RAM range    = {0}-{1}" -f (Format-HexWord $ImageAddress),
 Write-Host ("Stage RAM range       = {0}-{1}" -f (Format-HexWord $StageAddress), (Format-HexWord ($StageAddress + $Length - 1)))
 Write-Host ("FACE ROM/stage address = {0}/{1}" -f (Format-HexWord $str8Id), (Format-HexWord ($StageAddress + $idOffset)))
 Write-Host ("Prompt ROM/stage addr  = {0}/{1}" -f (Format-HexWord $str8Prompt), (Format-HexWord ($StageAddress + $promptOffset)))
+Write-Host ("V1 directory handling  = {0}" -f $(if ($PreserveV1Directory) { 'preserve live FFB0-FFEF' } else { 'use embedded image bytes' }))
 Write-Host ("ASM-F2 symbols/limit   = {0}/64" -f $symbolCount)

@@ -74,6 +74,7 @@ HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
 STR8_TOP_STAGE_S19 := $(S19_DIR)/str8-top-stage-0a00.s19
 STR8_TOPWRITE_A := ../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
 STR8_V1_TOPWRITE_A := $(BUILD_DIR)/str8n-v1-topwrite-transient-3000.a
+STR8_V1_REFRESH_A := $(BUILD_DIR)/str8n-v1-refresh-transient-3000.a
 STR8_TOPWRITE_A_GEN := tools/emit_str8_topwrite_a.ps1
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
@@ -441,7 +442,7 @@ str8-v1-layout-preview: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)
 	@echo "Built guarded V1 layout preview $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)."
 	@echo "Preview only: no install S19, TopWriter, or stamped ROM image was generated."
 
-str8-v1-artifact: $(HIMON_STR8_V1_BIN) $(HIMON_STR8_V1_INSTALL_S19) $(STR8_V1_I_BANK012_S19) $(STR8_V1_TOPWRITE_A)
+str8-v1-artifact: $(HIMON_STR8_V1_BIN) $(HIMON_STR8_V1_INSTALL_S19) $(STR8_V1_I_BANK012_S19) $(STR8_V1_TOPWRITE_A) $(STR8_V1_REFRESH_A)
 	@echo "Built flashable, host-verified V1 candidate artifacts."
 	@echo "Board proof is still required before calling this image hardware-proven."
 
@@ -450,6 +451,9 @@ str8-v1-install-stream: $(STR8_V1_I_BANK012_S19)
 
 str8-v1-topwrite-a: $(STR8_V1_TOPWRITE_A)
 	@echo "Built V1 migration TopWriter $(STR8_V1_TOPWRITE_A)."
+
+str8-v1-refresh-a: $(STR8_V1_REFRESH_A)
+	@echo "Built directory-preserving V1 refresh writer $(STR8_V1_REFRESH_A)."
 
 str8-directory-check: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN) $(STR8_DIRECTORY_EQ) $(STR8_DIRECTORY_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)" -Str8MapPath "$(S19_DIR)/str8-v1-layout-f000.map"
@@ -1195,6 +1199,10 @@ $(STR8_V1_TOPWRITE_A): $(HIMON_STR8_V1_BIN) $(ASM_V1_FLASH_S19) $(STR8_V1_INSTAL
 	@echo [ps] build $(STR8_V1_TOPWRITE_A)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_V1_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map" -OutPath "$(STR8_V1_TOPWRITE_A)"
 
+$(STR8_V1_REFRESH_A): $(HIMON_STR8_V1_BIN) $(ASM_V1_FLASH_S19) $(STR8_V1_INSTALLER_TXN_S19) $(STR8_TOPWRITE_A_GEN)
+	@echo [ps] build $(STR8_V1_REFRESH_A)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_V1_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map" -OutPath "$(STR8_V1_REFRESH_A)" -PreserveV1Directory
+
 $(MSBASIC_OSI_RAM_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(MSBASIC_OSI_RAM_LINKFLAGS) $(MSBASIC_OSI_RAM_S19) $(MSBASIC_OSI_OBJ)
@@ -1336,7 +1344,7 @@ endif
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
-	str8-v1-layout-preview str8-v1-artifact str8-v1-install-stream str8-v1-topwrite-a str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
+	str8-v1-layout-preview str8-v1-artifact str8-v1-install-stream str8-v1-topwrite-a str8-v1-refresh-a str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
 	str8-bank-copy-source-check str8-bank-maint-source-check \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \

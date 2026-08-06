@@ -771,6 +771,15 @@ Every later TopWriter must:
 Later TopWriters preserve all 64 bytes, including incomplete or invalid
 records. They never silently erase a damaged record or make it appear fresh.
 
+The generated V1 artifacts now separate those two jobs. The one-time
+`str8n-v1-topwrite-transient-3000.a` migration writer still uses the embedded
+empty directory. Once V1 is installed,
+`str8n-v1-refresh-transient-3000.a` copies the live `$FFB0-$FFEF` bytes into
+its embedded RAM image before staging, so its existing full-stage verifier and
+programmer carry the exact directory through a Bank-3 top-sector refresh. The
+refresh source consumes all 64 ASM-F2 symbols and must not be used as the
+first old-layout-to-V1 migration writer.
+
 An externally programmed full Bank-3 image can overwrite the directory. That
 is an explicit full-image operation, not an `I3` payload installation.
 
