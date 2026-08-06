@@ -13028,3 +13028,20 @@ make -C SRC routine-word-tree
 make -C SRC edge-docs
 git diff --check
 ```
+
+## 2026-08-06 STR8 V1 Bank-3 Migration Checkpoint
+
+Status: Bank-3 migration hardware-accepted; first journaled bank transaction
+still pending.
+
+The separate V1 TopWriter staged, verified, programmed, and read back the
+`00.0806(1707)` top sector. Status was `01 AC 00 00`; direct ROM reads matched
+the `$F000` service face, `$FF28-$FFAF` packed jump worker, all-`$FF`
+`$FFB0-$FFEF` directory, and `AB F0 00 F0 BF F0` vectors. Physical reset and
+live `S` reached `I 0-3 J0-3`.
+
+The first attempt had selected the ordinary legacy TopWriter. Its successful
+program/readback and `U 0-3 J0-3` boot were recognized before any `I` action;
+the correct V1 artifact was then staged and checked before programming. The
+remaining board rail is unmatched `?`/`G`/`R`, warm `3`, the destructive
+Bank-2 transaction, `J2`, and physical-reset directory persistence.

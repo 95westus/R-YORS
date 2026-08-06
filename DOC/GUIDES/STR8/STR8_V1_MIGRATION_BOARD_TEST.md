@@ -1,6 +1,12 @@
 # STR8 V1 Migration and First Transaction Board Test
 
-Status: host-accepted candidate; board proof pending.
+Status: Bank-3 migration hardware-accepted; command-surface and Bank-2
+transaction proof pending.
+
+Accepted on `00.0806(1707)`: TopWriter status `01 AC 00 00`, exact `$F000`
+service face, packed `$FF28-$FFAF` jump worker, empty `$FFB0-$FFEF` directory,
+vectors, physical-reset entry, and the `I 0-3 J0-3` prompt. Continue at
+Section 4; Sections 5-6 remain destructive and pending.
 
 This card installs the fitted V1 supervisor into Bank 3, verifies the packed
 jump worker and empty directory, then proves one complete journaled `I`

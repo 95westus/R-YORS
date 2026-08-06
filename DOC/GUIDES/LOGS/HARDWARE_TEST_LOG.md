@@ -19973,3 +19973,42 @@ operator additionally confirms that an early valid key was transmitted during
 the unpolled first dot phase and that live `G` and `R` were transmitted; all
 were ignored as required. The `1807` live-dots and warm-selector board rail is
 hardware-accepted.
+
+## 2026-08-06 STR8 V1 Bank-3 Migration Checkpoint
+
+The first migration attempt stopped before the V1 transaction after readback
+exposed the wrong input artifact. The ordinary regenerated TopWriter installed
+and verified legacy `00.0806(1707)` with `TW MODE=$01 RES=$AC @=$0000`; its
+`$F000` header, `B6 F0 00 F0 CA F0` vectors, and `U 0-3 J0-3` command line
+identified it unambiguously. The board remained bootable. This pass also
+hardware-proves the currently regenerated
+`DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a` legacy sample.
+
+The retry used the separate V1 migration artifact under `SRC/BUILD`. Its
+recorded SHA-256 values were:
+
+```text
+909AB0AA44FB50C8EC400896E59182E67A2212062AC07635412CBF7C289E1CD0  himon-str8-v1.bin
+8CA9D763A81A9F1E6DD65D346D184CF963AD512EF60CCE49D3A6F575960668FC  himon-str8-v1-install.s19
+79276C789ECB419B1ECE7F07B4007EFB08FABCCE60C6A38C185A769206D2660B  str8-v1-i-bank012.s19
+969FF360316D996C7CF2DA05DDEFA04428703FF3E1B740876E25C6020053260D  str8n-v1-topwrite-transient-3000.a
+```
+
+Stage, verify, program, and full-sector verify completed with
+`TW MODE=$01 RES=$AC @=$0000`. Direct installed-flash reads then matched the
+frozen candidate edges:
+
+```text
+1A00: 01 AC 00 00
+F000: 4C 13 F0 4C 46 F7 18 60 EA 4C 19 F9 53 52 01 07
+F010: 4C 4D F7 78
+FF28: 4C 12 02 08 78 C9 04 B0 06 20 73 02 28 38 60 28
+FFB0-FFEF: all FF
+FFFA: AB F0 00 F0 BF F0
+```
+
+A physical reset booted `STR8-N V 00.0806(1707) $F`; live `S` entered the
+new `I 0-3 J0-3` prompt. Bank-3 migration, packed jump-worker installation,
+empty-directory installation, vectors, and reset entry are hardware-accepted.
+The unmatched `?`/`G`/`R` checks, warm `3`, destructive Bank-2 journaled `I`,
+`J2`, and reset-persistence checks remain pending.
