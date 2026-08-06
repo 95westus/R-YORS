@@ -701,7 +701,7 @@ STR8_CMD_INSTALL_PREVIEW:
 ?PROMPT:
                         LDX             #<MSG_I_BANK
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_BANK
                         JSR             STR8_PRINT_XY
@@ -747,7 +747,7 @@ STR8_CMD_INSTALL_PREVIEW:
 STR8_I_READ_TYPE:
                         LDX             #<MSG_I_TYPE_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_TYPE_PROMPT
                         JSR             STR8_PRINT_XY
@@ -1648,6 +1648,18 @@ STR8_JUMP_BANK_PREP_A:
                         RTS
 
 STR8_JUMP_BANK_LAUNCH:
+                        IF              STR8_V1_INSTALLER_TXN
+; Bank 3 is the deliberate local STR8 re-entry exception. Banks 0-2 may
+; launch only after their V1 directory journal reaches COMPLETE.
+                        LDA             STR8_JUMP_BANK
+                        CMP             #STR8_DIR_BANK3
+                        BCS             ?DIRECTORY_OK
+                        JSR             STR8_DIR_VALIDATE_BANK_A
+                        CMP             #STR8_DIR_RECORD_COMPLETE
+                        BEQ             ?DIRECTORY_OK
+                        JMP             STR8_PRINT_JUMP_FAIL
+?DIRECTORY_OK:
+                        ENDIF
                         JSR             STR8_CON_FLUSH_RX
                         LDA             #STR8_COPY_MODE_JUMP_BANK
                         STA             STR8_COPY_MODE

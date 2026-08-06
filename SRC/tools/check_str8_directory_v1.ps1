@@ -1151,6 +1151,30 @@ function Invoke-ResidentLineFixture {
     }
 }
 
+function Invoke-ResidentJumpFixture {
+    param(
+        [int]$Bank,
+        [byte[]]$Record = $null
+    )
+
+    [byte[]]$memory = $script:residentTemplate.Clone()
+    if ($null -ne $Record) {
+        $recordAddress = $script:dirBase + ($Bank * $script:recordSize)
+        [Array]::Copy($Record, 0, $memory, $recordAddress, $script:recordSize)
+    }
+    $memory[0x1FF2] = [byte]$Bank
+    $memory[0x1FF3] = 0
+    $memory[0x1FF4] = 0
+    $memory[0x7EA0] = 0
+    return Invoke-ResidentDirectoryRoutine -Memory $memory `
+        -Start $script:residentJumpLaunchEntry `
+        -WorkerHook 0x0200 `
+        -WorkerBehavior 'Success' `
+        -ReadNonblockHook $script:residentReadNonblockHook `
+        -WriteHook $script:residentWriteHook `
+        -FixtureName ("jump bank={0}" -f $Bank)
+}
+
 function Assert-ResidentLineFixture {
     param(
         [byte[]]$InputBytes,
@@ -1848,6 +1872,7 @@ $residentBeginTransaction = $(if ($transactionInstallerMode) { Get-MapSymbol $re
 $residentFinishTransaction = $(if ($transactionInstallerMode) { Get-MapSymbol $residentSymbols "STR8_I_FINISH_TRANSACTION" } else { -1 })
 $residentDispatchEntry = Get-MapSymbol $residentSymbols "STR8_DISPATCH_A"
 $residentConfirmEntry = Get-MapSymbol $residentSymbols "STR8_CONFIRM_Y"
+$residentJumpLaunchEntry = Get-MapSymbol $residentSymbols "STR8_JUMP_BANK_LAUNCH"
 $residentReadHook = Get-MapSymbol $residentSymbols "STR8_CON_READ_BYTE_BLOCK"
 $residentReadNonblockHook = Get-MapSymbol $residentSymbols "STR8_CON_READ_BYTE_NONBLOCK"
 $residentWriteHook = Get-MapSymbol $residentSymbols "STR8_CON_WRITE_BYTE_BLOCK"
@@ -1972,15 +1997,15 @@ if ($transactionInstallerMode) {
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
         -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0EC4) -and
+    Assert-True (($residentSize -eq 0x0ED5) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnSummaryAddress -eq 0xFE19) -and ($txnInstallOkAddress -eq 0xFE1E) -and
-        ($txnRange32Address -eq 0xFE26) -and ($txnTypeAddress -eq 0xFE3C) -and
-        ($txnDescAddress -eq 0xFE40) -and ($txnEntryAddress -eq 0xFE43) -and
-        ($txnEmptyAddress -eq 0xFE47) -and
-        ($txnPage0CallCount -eq 10) -and ($txnPage1CallCount -eq 27)) `
-        'Transaction packed-jump-worker pass must retain its exact size, boundary, and 10/27 call split'
+        ($txnSummaryAddress -eq 0xFE2A) -and ($txnInstallOkAddress -eq 0xFE2F) -and
+        ($txnRange32Address -eq 0xFE37) -and ($txnTypeAddress -eq 0xFE4D) -and
+        ($txnDescAddress -eq 0xFE51) -and ($txnEntryAddress -eq 0xFE54) -and
+        ($txnEmptyAddress -eq 0xFE58) -and
+        ($txnPage0CallCount -eq 8) -and ($txnPage1CallCount -eq 29)) `
+        'Transaction launch-gate pass must retain its exact size, boundary, and 8/29 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
         ($txnPrintPage1 + 2 -eq $residentPrintXy)) `
         'Transaction print-page helpers must be the six bytes immediately before STR8_PRINT_XY'
@@ -2002,15 +2027,14 @@ if ($transactionInstallerMode) {
 
     foreach ($messageName in @(
             'MSG_ID', 'MSG_BOOT_MENU', 'MSG_SCREEN', 'MSG_HELP', 'MSG_PROMPT',
-            'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT',
-            'MSG_I_BANK', 'MSG_I_TYPE_PROMPT'
+            'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage0High) `
             ("Transaction page-0 message moved pages: $messageName")
     }
     foreach ($messageName in @(
-            'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
+            'MSG_I_BANK', 'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
             'MSG_I_INSTALL_OK',
             'MSG_I_RANGE_32K', 'MSG_I_RANGE_28K', 'MSG_I_TYPE', 'MSG_I_DESC',
             'MSG_I_ENTRY',
@@ -2031,7 +2055,32 @@ $residentWriterCases = 0
 $residentLineCases = 0
 $residentInstallerCases = 0
 $residentStartupCases = 0
+$residentJumpCases = 0
 $residentMaxSteps = 0
+
+if ($transactionInstallerMode) {
+    [byte[]]$invalidJumpRecord = New-Record 1 'STR8N' 0xFFFF (New-Journal 1 $false)
+    $invalidJumpRecord[$offReserved] = 0xFE
+    [byte[]]$incompleteJumpRecord = New-Record 2 'STR8N' 0xFFFF (New-Journal 1 $true)
+    [byte[]]$completeJumpRecord = New-Record 2 'STR8N' 0xFFFF (New-Journal 1 $false)
+    foreach ($jumpCase in @(
+            @{ Bank = 0; Record = $null; Workers = 0; Name = 'empty Bank 0' },
+            @{ Bank = 1; Record = $invalidJumpRecord; Workers = 0; Name = 'invalid Bank 1' },
+            @{ Bank = 2; Record = $incompleteJumpRecord; Workers = 0; Name = 'incomplete Bank 2' },
+            @{ Bank = 2; Record = $completeJumpRecord; Workers = 1; Name = 'complete Bank 2' },
+            @{ Bank = 3; Record = $null; Workers = 1; Name = 'Bank 3 local exception' }
+        )) {
+        $fixture = Invoke-ResidentJumpFixture -Bank $jumpCase.Bank -Record $jumpCase.Record
+        Assert-True ($fixture.WorkerCalls -eq $jumpCase.Workers) `
+            ("Directory-gated jump mismatch: {0}" -f $jumpCase.Name)
+        [byte[]]$expectedOutput = [System.Text.Encoding]::ASCII.GetBytes(
+            ("JERR B{0} V=`$0000`r`n" -f $jumpCase.Bank))
+        Assert-ByteArraysEqual $fixture.Output $expectedOutput `
+            ("Directory-gated jump diagnostic mismatch: {0}" -f $jumpCase.Name)
+        $residentMaxSteps = [Math]::Max($residentMaxSteps, $fixture.Steps)
+        $residentJumpCases++
+    }
+}
 
 # Run the compiled two-phase startup routine with an early R queued before the
 # midpoint and G/R/S arriving on successive live dots. The midpoint flush must
@@ -2726,6 +2775,7 @@ Write-Host ("RESIDENT RECORD CASES   = {0}" -f $residentRecordCases)
 Write-Host ("RESIDENT WRITER CASES   = {0}" -f $residentWriterCases)
 Write-Host ("RESIDENT LINE/I CASES   = {0}" -f $residentLineCases)
 Write-Host ("RESIDENT STARTUP CASES  = {0}" -f $residentStartupCases)
+Write-Host ("RESIDENT JUMP CASES     = {0}" -f $residentJumpCases)
 if ($dryInstallerMode) {
     Write-Host ("RESIDENT INSTALL CASES  = {0}" -f $residentInstallerCases)
 }

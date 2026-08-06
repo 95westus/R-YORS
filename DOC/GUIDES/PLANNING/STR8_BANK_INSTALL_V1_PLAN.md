@@ -742,6 +742,17 @@ transitional J3 path is board-accepted. The later V1 work still must
 directory-gate `J0-J3` and replace this raw Bank-3 reset-vector return with the
 published local entry.
 
+The fitted transaction image now closes the interruption-critical portion of
+that gate: `J0-J2` call the compiled validator while Bank 3 is visible and
+reach the jump worker only for a COMPLETE record. EMPTY, INVALID, and
+INCOMPLETE records fail closed through the existing `JERR Bn V=$0000`
+diagnostic. Five compiled-image fixtures cover those three failures, a
+COMPLETE Bank-2 launch, and the deliberate transitional `J3` exception. The
+resident is `$F000-$FED4`, leaving `$0053` before the packed jump worker and
+`$0013` beyond the protected `$0040` reserve. Hardware proof remains pending.
+Directory-gating `J3` and replacing its raw reset-vector return with the
+published local entry remain a separate later slice.
+
 ## TopWriter Migration and Preservation
 
 The first V1 top-sector installation is a special migration. In the old layout,
@@ -1070,8 +1081,9 @@ The future `B` estimate is 160-240 resident bytes and no persistent data.
    dry-stage, S9, drain, and guarded journaled-mutation slices are host-accepted;
    first-install provisional-record recovery and resident/worker fit closure
    remain open.
-6. Gate `J0-J3` through directory state, add the Bank-3 local-entry handoff, and
-   extend the Bank Jump Record to Bank 3.
+6. Gate `J0-J2` through directory state (host-accepted; hardware pending), then
+   gate `J3`, add the Bank-3 local-entry handoff, and retain Bank Jump Record
+   publication through Bank 3.
 7. Generate the one-time migration TopWriter and make every later TopWriter
    preserve the live directory exactly.
 8. Complete host, RAM, and board failure tests before accepting the installer.
