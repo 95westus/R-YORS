@@ -4,15 +4,14 @@
 ;
 ; Flashable V1 command surface:
 ;   I  preview metadata and run the dense journaled Bank 0-3 transaction
-;   0/1/2  immediate reset-vector handoff to bank 0/1/2
-;   3  warm-entry HIMON
+;   H  warm-entry local HIMON without changing banks
 ;   J0/J1/J2/J3  non-destructive reset-vector handoff to bank 0/1/2/3
 ;   invalid input prints the current command help
 ; V0 proof builds retain U instead of I for the fixed $C000-$EFFF HIMON gate.
 ;
 ; Reset clears the terminal with 35 LFs, shows 16 unpolled attach dots, flushes
 ; RX, prints the banner, then opens 16 live selector dots. Timeout cold-starts
-; the local $C000 target; 3 warm-starts it to preserve RAM. An erased $C000
+; the local $C000 target; H warm-starts it to preserve RAM. An erased $C000
 ; entry face falls into the STR8 menu. S enters STR8; 0-2 announce the selected
 ; bank, wait about 3 more seconds, then reuse the non-destructive J handoff.
 ;
@@ -240,7 +239,11 @@ STR8_BOOT_START:
                         BCC             ?HIMON
                         CMP             #'S'
                         BEQ             ?STR8_KEY
+                        IF              STR8_V1_LAYOUT
+                        CMP             #'H'
+                        ELSE
                         CMP             #'3'
+                        ENDIF
                         BEQ             ?HIMON_KEY
                         AND             #$03
                         JSR             STR8_BOOT_JUMP_BANK_A
@@ -446,12 +449,12 @@ STR8_PRINT_BANNER:
                         JMP             STR8_PRINT_XY
                         ENDIF
 
-; OUT: C=1 and A='0'/'1'/'2'/'3'/'S' when a boot choice was consumed.
+; OUT: C=1 and A='0'/'1'/'2'/'H'/'S' in V1 when a choice was consumed.
 ;      C=0 if the timeout elapsed.
 ; First emit 35 LFs to clear a connected terminal. The first 16 dots then
 ; quarantine USB enumeration and cannot consume a key. At the midpoint RX is
 ; flushed, the banner/selector is printed, and 16 live dots poll only
-; 0/1/2/3/S. Each dot phase is about six seconds at 8 MHz.
+; 0/1/2/H/S in V1. Each dot phase is about six seconds at 8 MHz.
 STR8_STARTUP_DELAY:
                         LDX             #STR8_SCREEN_CLEAR_LINES
 ?CLEAR:                LDA             #$0A
@@ -517,10 +520,17 @@ STR8_BOOT_KEY_POLL:
                         JSR             STR8_TO_UPPER_A
                         CMP             #'0'
                         BCC             ?NOT_DIGIT
+                        IF              STR8_V1_LAYOUT
+                        CMP             #'3'
+                        ELSE
                         CMP             #'4'
+                        ENDIF
                         BCC             ?YES
 ?NOT_DIGIT:
-                        AND             #$DF
+                        IF              STR8_V1_LAYOUT
+                        CMP             #'H'
+                        BEQ             ?YES
+                        ENDIF
                         CMP             #'S'
                         BEQ             ?YES
 ?NO:                   CLC
@@ -661,17 +671,19 @@ STR8_TO_UPPER_A:
 ; Command dispatch
 ; ----------------------------------------------------------------------------
 STR8_DISPATCH_A:
+                        IF              STR8_V1_LAYOUT
+                        CMP             #'H'
+                        BNE             ?NOT_SELECT
+                        LDX             STR8_REC_DATA_BUF+1
+                        BNE             ?NOT_SELECT
+                        JMP             STR8_CMD_SELECT_HIMON
+                        ELSE
                         CMP             #'0'
                         BCC             ?NOT_SELECT
                         CMP             #'4'
                         BCS             ?NOT_SELECT
-                        IF              STR8_V1_LAYOUT
-                        LDX             STR8_REC_DATA_BUF+1
-                        BEQ             ?SELECT
-                        JMP             STR8_CMD_UNKNOWN
-?SELECT:
-                        ENDIF
                         JMP             STR8_CMD_SELECT_A
+                        ENDIF
 ?NOT_SELECT:
                         IF              STR8_V1_LAYOUT
                         CMP             #'I'
@@ -702,7 +714,7 @@ STR8_CMD_INSTALL_PREVIEW:
 ?PROMPT:
                         LDX             #<MSG_I_BANK
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_BANK
                         JSR             STR8_PRINT_XY
@@ -748,7 +760,7 @@ STR8_CMD_INSTALL_PREVIEW:
 STR8_I_READ_TYPE:
                         LDX             #<MSG_I_TYPE_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_TYPE_PROMPT
                         JSR             STR8_PRINT_XY
@@ -1490,15 +1502,19 @@ STR8_CMD_JUMP_BANK:
 ?BAD:
                         JMP             STR8_CMD_UNKNOWN
 
-; Bare 0/1/2 immediately reuse the proven J handoff. Bare 3 is the warm HIMON
-; path formerly reached by G; explicit J3 remains the Bank-3 STR8 re-entry.
+                        IF              STR8_V1_LAYOUT
+                        ELSE
+; Legacy V0 bare 0/1/2 reuse the proven J handoff. Bare 3 enters Bank-3 HIMON.
 STR8_CMD_SELECT_A:
                         CMP             #'3'
                         BEQ             STR8_CMD_SELECT_HIMON
                         AND             #$03
                         JSR             STR8_JUMP_BANK_PREP_A
                         JMP             STR8_JUMP_BANK_LAUNCH
+                        ENDIF
 
+; V1 H enters the local warm target without selecting a bank. The RAM-proof
+; V0 path retains its legacy explicit Bank-3 selection before entering HIMON.
 STR8_CMD_SELECT_HIMON:
                         IF              STR8_RAM_PROOF
                         JSR             STR8_SELECT_BANK_3
@@ -2960,14 +2976,19 @@ MSG_SCREEN:
                         ENDIF
 MSG_HELP:
                         IF              STR8_V1_LAYOUT
-                        DB              "I 0-3 J0-3",$0D,$8A
+                        DB              "I H J0-3",$0D,$8A
                         ELSE
                         DB              "U 0-3 J0-3",$0D,$8A
                         ENDIF
 MSG_PROMPT:             DB              "STR8-N",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
-MSG_BOOT_PROMPT:        DB              "0/1/2=BOOT 3=HIMON S=STR8 ",$A0
+MSG_BOOT_PROMPT:        DB              "0/1/2=BOOT "
+                        IF              STR8_V1_LAYOUT
+                        DB              "H=HIMON S=STR8 ",$A0
+                        ELSE
+                        DB              "3=HIMON S=STR8 ",$A0
+                        ENDIF
 MSG_BOOT_BANK_WAIT:     DB              "BOOT IN 3S",$0D,$8A
                         ENDIF
 
@@ -2982,7 +3003,7 @@ MSG_I_TYPE_PROMPT:      DB              $0D,$0A,"TYPE:",$A0
 MSG_I_DESC_PROMPT:      DB              $0D,$0A,"DESC:",$A0
 MSG_I_INVALID:          DB              $0D,$0A,"DIR INVALID",$0D,$8A
 MSG_I_SUMMARY:          DB              $0D,$0A,"I ",('B'+$80)
-; Pack the transaction page tail through MSG_I_TYPE; MSG_I_DESC starts on $FE.
+; The compact H surface leaves BANK/TYPE on page $FD; DESC starts on page $FE.
                         IF              STR8_V1_INSTALLER_TXN
 MSG_I_INSTALL_OK:       DB              $0D,$0A,"I OK",$0D,$8A
                         ENDIF

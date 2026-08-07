@@ -57,12 +57,12 @@ direct `JSR`/`JMP` evidence.
 flowchart LR
     RESET["START / STR8_BOOT_START<br/>Reset entry; initialize IVY and console, then open the startup selector"] --> SELECT{"Startup choice"}
     SELECT -->|S| SHELL["STR8_CMD_LOOP<br/>Recovery shell; read and dispatch one operator command"]
-    SELECT -->|timeout or 3| BOOTCHECK{"Local $C000 entry face available?"}
+    SELECT -->|timeout or H| BOOTCHECK{"Local $C000 entry face available?"}
     BOOTCHECK -->|yes| HIMON["STR8_ENTER_HIMON_COLD / WARM<br/>Transfer normal operation to the local app"]
     BOOTCHECK -->|all $FF| SHELL
     SELECT -->|0, 1, or 2| JUMP["STR8_BOOT_JUMP_BANK_A<br/>Prepare a delayed, non-destructive selected-bank handoff"]
 
-    SHELL --> DISPATCH["STR8_DISPATCH_A<br/>Route I, bare 0-3, and J0-J3; unmatched input prints compact help"]
+    SHELL --> DISPATCH["STR8_DISPATCH_A<br/>Route I, local H, and J0-J3; unmatched input prints compact help"]
     DISPATCH --> INSTALL["STR8_CMD_INSTALL_PREVIEW<br/>Collect metadata and run the journaled selected-bank transaction"]
     DISPATCH --> JUMP
     DISPATCH --> HIMON
@@ -354,7 +354,7 @@ STR8 prints 16 progress dots over about 6 seconds, then flushes RX
 STR8 prints its shared make-time `STR8-N V 00.mmdd(hhmm)` identity
 STR8 opens an approximately 6-second selector
 selector timeout cold-starts Bank 3 HIMON
-selector 3 warm-starts HIMON and preserves RAM
+selector H warm-starts the local HIMON without changing banks and preserves RAM
 selector S/s enters STR8
 selector 0/1/2 announces the bank, waits about 3 more seconds, and uses the J handoff
 STR8 validates HIMON
@@ -444,7 +444,7 @@ first RAM proof can back up bank 3 to selected bank 0, 1, or 2 with read-back ve
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
 flashable V1 links STR8 at $F000 and packs the jump worker at $FF1F-$FFAF
 the V1 transport uploads the mutation worker to $0200-$042A before bank data
-the V1 command surface is I, bare 0-3, and J0-J3
+the V1.02 command surface is I, local H, and explicit J0-J3
 full worker accepts modes $05-$08; V1 packed jump worker accepts only $08
 reclaim candidate 00.0801(2234) is installed and board-accepted
 retired B and bare 0/1/2 commands return ? on that installed candidate
@@ -457,7 +457,7 @@ direct-run full-bank copy is board-accepted for Bank 3 to Banks 0, 1, and 2
 distinct payloads accept cross-bank selector routes into Banks 1 and 2
 resident cross-bank J0/J1/J2 and sustained Bank-0/1/2 selection are board-accepted
 distinct 1509-to-1518 return accepts J3 software handoff from Bank 0 to Bank 3
-current host boot-selector build accepts 0/1/2/3/S after a post-delay RX flush
+current V1.02 host boot-selector build accepts 0/1/2/H/S after a post-delay RX flush
 current host attach delay prints 16 dots over about 5.991 seconds before the banner
 queued attach-time input is flushed after dot 16
 the 16-dot emitter and dot-time queued-input rejection are host- and board-accepted
@@ -467,9 +467,9 @@ STR8-N, HIMON, and ASM-F2 share one local `00.mmdd(hhmm)` make-time stamp
 STR8 identity omits a bank suffix instead of publishing a guessed bank number
 boot-selector 0/1/2 reuses the J worker after an additional 3-second pause
 boot-selector timeout still enters Bank 3 HIMON cold
-boot-selector 3 enters HIMON warm with RAM preserved; 3 and S act immediately
+boot-selector H enters local HIMON warm with RAM preserved; H and S act immediately
 the earlier three-count boot-selector candidate is accepted on hardware
-boot-selector queued-input flush and warm-3 RAM retention pass on hardware
+boot-selector queued-input flush and earlier warm-3 RAM retention pass on hardware
 boot-selector reset-time 1/2 delayed handoffs pass on hardware
 boot-selector reset-time 0 is operator-accepted
 boot-selector six-second prompting delay supersedes the accepted three-count profile
@@ -711,9 +711,10 @@ R          reset through the live reset vector
 other      print the active command help line
 ```
 
-`I`, bare `0`-`3`, and `J0`-`J3` are the V1 command surface. Every other input,
-including `?`, `U`, `G`, and `R`, prints the compact help line. Bare `3` enters
-HIMON warm; `J3` uses the validated bank handoff. `L S`, `L F`, `GO addr`,
+`I`, `H`, and `J0`-`J3` are the V1.02 command surface. Every other input,
+including bare `0`-`3`, `?`, `U`, `G`, and `R`, prints the compact help line.
+`H` enters the local HIMON warm without changing banks; `J3` uses the validated
+physical-bank handoff. `L S`, `L F`, `GO addr`,
 standalone verify, catalog repair, and richer loading remain outside the
 minimal supervisor.
 
@@ -729,11 +730,10 @@ flowchart TD
 
     PROMPT --> BAD[unmatched input: help]
     PROMPT --> I[I journaled selected-bank install]
-    PROMPT --> SELECT[bare 0/1/2/3]
+    PROMPT --> LOCAL[H: local warm entry]
     PROMPT --> J[J0/J1/J2/J3 handoff]
 
-    SELECT -->|3| HIMON[HIMON warm at $C000]
-    SELECT -->|0-2 after delay| J
+    LOCAL --> HIMON[local HIMON warm at $C000]
     I --> UPLOAD[receive exact mutation worker at $0200-$042A]
     UPLOAD --> FLASH[validated sector erase / program / verify and directory journal]
     J --> COPY[copy packed jump worker $FF1F-$FFAF -> $0200-$0290]

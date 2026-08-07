@@ -146,19 +146,20 @@ approximately six-second selector:
 
 ```text
 ................
-STR8-N V 00.mmdd(hhmm)
-0/1/2=BOOT 3=HIMON S=STR8 6 5 4 3 2 1
+STR8-N V 00.mmdd(hhmm) $F
+0/1/2=BOOT H=HIMON S=STR8 ................
 ```
 
 STR8-N, HIMON, and ASM-F2 receive the same local `00.mmdd(hhmm)` stamp during
 one build.
 
-If the selector expires, STR8 cold-starts Bank 3 HIMON at `$C000`. `3`
-immediately warm-starts HIMON so RAM is preserved, and `S` or `s` enters the
+If the selector expires, STR8 cold-starts the local HIMON at `$C000`. `H`
+immediately warm-starts that local HIMON without changing banks so RAM is
+preserved, and `S` or `s` enters the
 STR8 prompt. `0`, `1`, or `2` prints the selected bank, drains trailing input,
 prints `BOOT IN 3S`, waits approximately three more seconds, then uses the same
 non-destructive reset-vector handoff as `J0`, `J1`, or `J2`. Interactive
-`J0`-`J2` remain immediate. Bare digits at the STR8 prompt are not commands.
+`J0`-`J3` remain immediate. Bare digits at the STR8 prompt are not commands.
 
 The boot-selector protected install, visible build identity, cold timeout,
 STR8 takeover, queued-input flush, and warm-`3` RAM retention have hardware
@@ -174,6 +175,9 @@ The operator also verified that input sent during the dots is discarded before
 the selector opens. The attach-display and prompting-delay gates are complete. See
 [STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md).
 Any future delay change requires the affected timing checks to be repeated.
+The warm-`3` statement above describes the accepted V1.01 transcript. V1.02
+changes that spelling to `H`; that nomenclature change is host-verified only
+until its focused board proof is appended.
 
 ## Flash Banks
 

@@ -13242,3 +13242,48 @@ limits, requires selector/copy/restore structure, and WDC-assembles all four
 maintained read-only bodies. Do not promote split V1 to the default combined
 image or documentation baseline until HIMON's `HIM_AP_STAGE_BANK` path has the
 same read-only selector contract and the resulting AP load path is board-proven.
+
+## 2026-08-07 STR8 V1.02 Local-HIMON Command Pass
+
+Host status: accepted. Board status: focused `H` startup/shell proof is pending;
+the accepted V1.01 transcripts retain their historical bare-`3` spelling.
+
+The V1.02 command language removes the semantic collision between bare `3`
+and `J3`. The reset selector is now
+`0/1/2=BOOT H=HIMON S=STR8`; the shell publishes `I H J0-3`. `H` warm-enters
+the local `$C000` target without changing banks. `J0`-`J3` are the only shell
+commands that explicitly select a physical bank. V0 proof builds retain their
+legacy `U 0-3 J0-3` shell and `3` reset selector.
+
+The compiled transaction emulator accepts reset keys `0`, `1`, `2`, `H`, and
+`S`, rejects reset key `3`, and sends shell digits `0`-`3` through the unknown
+help path. Its positive `H` fixture executes the real local-target availability
+gate, requires warm signature `A5 5A C3 3C`, and requires zero worker calls.
+The full transaction matrix passes with 13 startup cases, 28 line/I cases,
+five jump cases, and 41 installer cases.
+
+Removing the V1 bare-selector handler and shortening the help surface reduced
+the transaction resident by `$0013` bytes:
+
+```text
+transaction resident        $F000-$FEC1  size $0EC2 = 3778
+resident/jump-worker gap    $FEC2-$FF1E  size $005D = 93
+gap after $0040 reserve                     $001D = 29
+packed jump worker          $FF1F-$FFAF  size $0091 = 145
+```
+
+This is useful V1.02 headroom but remains below the range-loader growth target
+of at least `$0080` free beyond the required reserve. The next engineering
+slice remains the dedicated resident-size pass before parameterized range
+state is added.
+
+Required host gates:
+
+```text
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-worker-split-check
+make -C SRC str8-v1-artifact
+make -C SRC routine-word-tree
+git diff --check
+```

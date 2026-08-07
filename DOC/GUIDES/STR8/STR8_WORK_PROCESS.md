@@ -10,14 +10,15 @@ on this compact resident surface:
 
 ```text
 I           preview metadata, receive dense S19, and run a journaled Bank 0-3 transaction
-0/1/2       immediate selected-bank reset-vector handoff
-3           warm-entry HIMON
+H           warm-entry the local HIMON without changing banks
 J0/J1/J2/J3 immediate non-destructive selected-bank reset-vector handoff
 ```
 
 At reset, `S` during the live dots enters this shell, `0`-`2` use the delayed
-selected-bank path, `3` enters HIMON warm, and timeout enters the local HIMON
-cold path. The current V1 host build runs STR8 from Bank 3 `$F000`, packs
+selected-bank path, `H` enters the local HIMON warm without selecting a bank,
+and timeout enters the local HIMON cold path. At the shell, bare digits are not
+commands; `J0`-`J3` are the only explicit physical-bank handoffs. The current
+V1 host build runs STR8 from Bank 3 `$F000`, packs
 the jump-only worker at `$FF1F-$FFAF`, and copies it to `$0200-$0290`. An `I`
 transport uploads the 555-byte mutation worker to `$0200-$042A` before dense
 payload staging uses the single `$0A00-$19FF` sector tray. Worker/update state
@@ -166,7 +167,7 @@ Non-destructive STR8:
   STR8-N prints the same local make-time stamp as HIMON and ASM-F2
   selector prompt counts 6 5 4 3 2 1 over about 5.991 seconds
   selector timeout enters Bank 3 HIMON cold
-  selector 3 enters HIMON warm and preserves RAM
+  V1.02 selector H enters local HIMON warm without changing banks and preserves RAM
   S and s reach the STR8 prompt
   selector 0/1/2 prints J Bn and BOOT IN 3S, pauses, then enters that bank
   selector 0/1/2 and prompt J0/J1/J2 leave all bank CRCs unchanged
@@ -177,7 +178,7 @@ Non-destructive STR8:
   J3 record 42 4A 03 survives cold entry and explicit HCOLD on HIMON 1536
   J0/J1/J2, invalid-vector, and CRC record gates remain separate
   earlier three-count boot-selector candidate is accepted on hardware
-  16-dot queued-input flush and warm-3 RAM retention pass on hardware
+  16-dot queued-input flush and earlier warm-3 RAM retention pass on hardware
   reset-time 1/2 delayed handoffs pass on hardware
   reset-time 0 is operator-accepted
   six-second prompting delay supersedes the accepted three-count profile

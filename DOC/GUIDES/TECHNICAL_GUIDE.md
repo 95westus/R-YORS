@@ -257,9 +257,9 @@ seeds IVI RAM vector cells with safe defaults
 initializes FTDI console I/O
 prints 16 dots over about 5.991 seconds and drains queued RX
 prints `STR8-N V 00.mmdd(hhmm) $F` from the resident `$F000` build
-opens an approximately 6-second 0/1/2/3/S selector
+opens an approximately 6-second 0/1/2/H/S selector
 times out to enter Bank 3 HIMON cold
-accepts 3 to enter HIMON warm and preserve RAM
+accepts H to enter the local HIMON warm without changing banks and preserve RAM
 accepts S/s to enter STR8
 accepts 0/1/2, announces the bank, waits about 3 more seconds, then uses the J handoff
 ```

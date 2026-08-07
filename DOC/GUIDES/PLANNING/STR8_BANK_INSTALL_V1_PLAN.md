@@ -1,12 +1,12 @@
-# STR8-N Four-Bank Installer V1.01 Plan
+# STR8-N Four-Bank Installer V1.02 Plan
 
 ```text
-status:       V1 MIGRATION + FIRST JOURNALED BANK INSTALL HARDWARE-ACCEPTED
-next gate:    NEGATIVE/INTERRUPTED RECOVERY BOARD MATRIX OR NEXT V1 SLICE
-source date:  2026-08-06
+status:       V1.01 HARDWARE-ACCEPTED; V1.02 HOST IMPLEMENTATION ACTIVE
+next gate:    RESIDENT SIZE PASS + PARAMETERIZED RANGE STATE
+source date:  2026-08-07
 ```
 
-This is the accepted V1.01 plan for turning the WDC board into four independently
+V1.01 is the accepted baseline for turning the WDC board into four independently
 selectable bank environments while keeping STR8-N as the Bank-3 reset
 supervisor. Banks may contain code, data, volumes, overlays, tools, or any
 other payload. Directory `TYPE` is display metadata only; it never selects a
@@ -21,6 +21,32 @@ command is retired from V1 rather than generalized.
 V1.01 deliberately does not include a volume manager, mutable bank descriptions,
 wear balancing, sparse S19 input, or the external S19 backup generator. Those
 remain later work.
+
+## V1.02 Delta
+
+V1.02 generalizes the existing dense, one-sector streaming transaction to an
+operator-selected 4K-aligned start and limit. Banks 0-2 may receive any
+contiguous one-to-eight-sector range within `$8000-$FFFF`; Bank 3 may receive
+any contiguous one-to-seven-sector range within `$8000-$EFFF`. This naturally
+supports 4K, 8K, 12K, 16K, 20K, 24K, 28K, and 32K inputs where the selected
+bank permits them. The stream remains dense: gaps, overlaps, bad starts or
+ends, out-of-range records, missing/extra S9, and Bank-3 F-sector input fail.
+
+The receiver continues to use the existing single 4K tray and uploaded
+mutation worker. A proposed 24K RAM batch is explicitly deferred because
+range loading does not require a transport change.
+
+V1.02 also removes the ambiguous shell bare-bank aliases. Its compact surface
+is `I H J0-3`: `H` warm-enters the local `$C000` target without selecting a
+bank, while `J0`-`J3` are the only explicit physical-bank handoffs. The reset
+selector remains `0/1/2=BOOT H=HIMON S=STR8`.
+
+Before range state grows the resident, optimize for free margin above the
+required `$0040` reserve: at least another `$0080` (total gap `$00C0`), with
+another `$0100` (total gap `$0140`) preferred. The first V1.02 nomenclature
+pass moves the first-free resident byte from `$FED5` to `$FEC2`, increasing
+the resident/worker gap from `$004A` to `$005D`; that is useful but still well
+short of the growth target.
 
 > **Transport warning:** the accepted 32K result applies only to Windows Tera
 > Term Send File over the current FTDI FIFO path. It does not qualify an ACIA.

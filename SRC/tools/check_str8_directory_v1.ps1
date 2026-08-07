@@ -613,6 +613,13 @@ function Invoke-ResidentDirectoryRoutine {
                 $pc += 2
                 continue
             }
+            0xB9 { # LDA absolute,Y
+                $address = (([int]$Memory[$pc + 1]) -bor (([int]$Memory[$pc + 2]) -shl 8)) + $yReg
+                $aReg = [int]$Memory[$address -band 0xFFFF]
+                $status = Set-NzFlags $status $aReg
+                $pc += 3
+                continue
+            }
             0xBD { # LDA absolute,X
                 $address = (([int]$Memory[$pc + 1]) -bor (([int]$Memory[$pc + 2]) -shl 8)) + $xReg
                 $aReg = [int]$Memory[$address -band 0xFFFF]
@@ -1966,9 +1973,9 @@ foreach ($retiredName in @(
     )) {
     Assert-True (-not $residentSymbols.ContainsKey($retiredName)) "Retired V1 command symbol remains: $retiredName"
 }
-[byte[]]$expectedV1Help = [System.Text.Encoding]::ASCII.GetBytes('I 0-3 J0-3')
+[byte[]]$expectedV1Help = [System.Text.Encoding]::ASCII.GetBytes('I H J0-3')
 for ($i = 0; $i -lt $expectedV1Help.Length; $i++) {
-    Assert-True ($residentTemplate[$residentScreen + $i] -eq $expectedV1Help[$i]) 'V1 prompt does not publish I/0-3/J0-3'
+    Assert-True ($residentTemplate[$residentScreen + $i] -eq $expectedV1Help[$i]) 'V1 prompt does not publish I/H/J0-3'
 }
 Assert-True ($residentHelp -eq $residentScreen) 'V1 screen/help command list unexpectedly has a prefix'
 if ($transactionInstallerMode) {
@@ -1997,15 +2004,15 @@ if ($transactionInstallerMode) {
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
         -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0ED5) -and
+    Assert-True (($residentSize -eq 0x0EC2) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnSummaryAddress -eq 0xFE2A) -and ($txnInstallOkAddress -eq 0xFE2F) -and
-        ($txnRange32Address -eq 0xFE37) -and ($txnTypeAddress -eq 0xFE4D) -and
-        ($txnDescAddress -eq 0xFE51) -and ($txnEntryAddress -eq 0xFE54) -and
-        ($txnEmptyAddress -eq 0xFE58) -and
-        ($txnPage0CallCount -eq 8) -and ($txnPage1CallCount -eq 29)) `
-        'Transaction launch-gate pass must retain its exact size, boundary, and 8/29 call split'
+        ($txnSummaryAddress -eq 0xFE17) -and ($txnInstallOkAddress -eq 0xFE1C) -and
+        ($txnRange32Address -eq 0xFE24) -and ($txnTypeAddress -eq 0xFE3A) -and
+        ($txnDescAddress -eq 0xFE3E) -and ($txnEntryAddress -eq 0xFE41) -and
+        ($txnEmptyAddress -eq 0xFE45) -and
+        ($txnPage0CallCount -eq 10) -and ($txnPage1CallCount -eq 27)) `
+        'Transaction launch-gate pass must retain its exact size, boundary, and 10/27 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
         ($txnPrintPage1 + 2 -eq $residentPrintXy)) `
         'Transaction print-page helpers must be the six bytes immediately before STR8_PRINT_XY'
@@ -2027,14 +2034,15 @@ if ($transactionInstallerMode) {
 
     foreach ($messageName in @(
             'MSG_ID', 'MSG_BOOT_MENU', 'MSG_SCREEN', 'MSG_HELP', 'MSG_PROMPT',
-            'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT'
+            'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT',
+            'MSG_I_BANK', 'MSG_I_TYPE_PROMPT'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage0High) `
             ("Transaction page-0 message moved pages: $messageName")
     }
     foreach ($messageName in @(
-            'MSG_I_BANK', 'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
+            'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
             'MSG_I_INSTALL_OK',
             'MSG_I_RANGE_32K', 'MSG_I_RANGE_28K', 'MSG_I_TYPE', 'MSG_I_DESC',
             'MSG_I_ENTRY',
@@ -2101,6 +2109,8 @@ $startup = Invoke-ResidentDirectoryRoutine -Memory $startupMemory `
     -TimedInput $startupTimedInput
 $idText = [System.Text.Encoding]::ASCII.GetString((Get-HighBitStringBytes $residentTemplate $residentIdMessage))
 $bootPromptText = [System.Text.Encoding]::ASCII.GetString((Get-HighBitStringBytes $residentTemplate $residentBootPrompt))
+Assert-True ($bootPromptText -eq '0/1/2=BOOT H=HIMON S=STR8  ') `
+    'V1 startup selector does not publish local H and explicit 0/1/2 boot choices'
 [byte[]]$expectedStartup = [System.Text.Encoding]::ASCII.GetBytes(
     (("`n" * 35) + "................`r`n${idText}${bootPromptText}...S"))
 Assert-ByteArraysEqual $startup.Output $expectedStartup 'Two-phase startup output mismatch'
@@ -2128,8 +2138,9 @@ foreach ($pollCase in @(
         [pscustomobject]@{ Input = '0'; Accepted = $true; Echo = '0' },
         [pscustomobject]@{ Input = '1'; Accepted = $true; Echo = '1' },
         [pscustomobject]@{ Input = '2'; Accepted = $true; Echo = '2' },
-        [pscustomobject]@{ Input = '3'; Accepted = $true; Echo = '3' },
+        [pscustomobject]@{ Input = 'h'; Accepted = $true; Echo = 'H' },
         [pscustomobject]@{ Input = 's'; Accepted = $true; Echo = 'S' },
+        [pscustomobject]@{ Input = '3'; Accepted = $false; Echo = '' },
         [pscustomobject]@{ Input = 'G'; Accepted = $false; Echo = '' },
         [pscustomobject]@{ Input = 'R'; Accepted = $false; Echo = '' },
         [pscustomobject]@{ Input = '4'; Accepted = $false; Echo = '' },
@@ -2150,18 +2161,36 @@ foreach ($pollCase in @(
     $residentStartupCases++
 }
 
-foreach ($unknownCommand in @('?', 'G', 'R', 'X')) {
+foreach ($unknownCommand in @('?', '0', '1', '2', '3', 'G', 'R', 'X')) {
     [byte[]]$memory = $residentTemplate.Clone()
     $unknown = Invoke-ResidentDirectoryRoutine -Memory $memory `
         -Start $residentDispatchEntry `
         -A ([byte][char]$unknownCommand) `
         -WriteHook $residentWriteHook
-    [byte[]]$expectedUnknown = [System.Text.Encoding]::ASCII.GetBytes("`r`nI 0-3 J0-3`r`n")
+    [byte[]]$expectedUnknown = [System.Text.Encoding]::ASCII.GetBytes("`r`nI H J0-3`r`n")
     Assert-ByteArraysEqual $unknown.Output $expectedUnknown ("Unknown command {0} help mismatch" -f $unknownCommand)
     Assert-True ($unknown.WorkerCalls -eq 0) ("Unknown command {0} reached worker" -f $unknownCommand)
     $residentMaxSteps = [Math]::Max($residentMaxSteps, $unknown.Steps)
     $residentLineCases++
 }
+
+# H must warm-enter the local $C000 face without invoking a bank worker. A
+# single RTS at $C000 gives the emulator a harmless local-target return point.
+[byte[]]$himonMemory = $residentTemplate.Clone()
+$himonMemory[0xC000] = 0x60
+$himon = Invoke-ResidentDirectoryRoutine -Memory $himonMemory `
+    -Start $residentDispatchEntry `
+    -A ([byte][char]'H') `
+    -ReadNonblockHook $residentReadNonblockHook `
+    -WriteHook $residentWriteHook
+[byte[]]$expectedHimonOutput = [System.Text.Encoding]::ASCII.GetBytes("`r`n")
+Assert-ByteArraysEqual $himon.Output $expectedHimonOutput 'H local warm-entry output mismatch'
+Assert-True ($himon.WorkerCalls -eq 0 -and
+    $himonMemory[0x7EE6] -eq 0xA5 -and $himonMemory[0x7EE7] -eq 0x5A -and
+    $himonMemory[0x7EE8] -eq 0xC3 -and $himonMemory[0x7EE9] -eq 0x3C) `
+    'H did not warm-enter the local target without a bank handoff'
+$residentMaxSteps = [Math]::Max($residentMaxSteps, $himon.Steps)
+$residentLineCases++
 
 [byte[]]$lineInput = [System.Text.Encoding]::ASCII.GetBytes("ab1-_`r")
 [byte[]]$lineEcho = [System.Text.Encoding]::ASCII.GetBytes('AB1-_')
@@ -2270,9 +2299,9 @@ Assert-ResidentIPreviewFixture $previewFixture $lineInput "`r`nI B0-3: 1`r`nDIR 
 
 foreach ($negativePreview in @(
         [pscustomobject]@{ Name = 'empty bank'; Input = [byte[]]@(0x0D); Output = "`r`nI B0-3: `r`nABORT`r`n" },
-        [pscustomobject]@{ Name = 'bank 4'; Input = [byte[]]@([byte][char]'4', 0x0A); Output = "`r`nI B0-3: 4`r`nI 0-3 J0-3`r`n" },
-        [pscustomobject]@{ Name = 'bad type'; Input = [System.Text.Encoding]::ASCII.GetBytes("0`rG0`r"); Output = "`r`nI B0-3: 0`r`nTYPE: G0`r`nI 0-3 J0-3`r`n" },
-        [pscustomobject]@{ Name = 'bad description'; Input = [System.Text.Encoding]::ASCII.GetBytes("0`r12`rAB CD`r"); Output = "`r`nI B0-3: 0`r`nTYPE: 12`r`nDESC: AB CD`r`nI 0-3 J0-3`r`n" }
+        [pscustomobject]@{ Name = 'bank 4'; Input = [byte[]]@([byte][char]'4', 0x0A); Output = "`r`nI B0-3: 4`r`nI H J0-3`r`n" },
+        [pscustomobject]@{ Name = 'bad type'; Input = [System.Text.Encoding]::ASCII.GetBytes("0`rG0`r"); Output = "`r`nI B0-3: 0`r`nTYPE: G0`r`nI H J0-3`r`n" },
+        [pscustomobject]@{ Name = 'bad description'; Input = [System.Text.Encoding]::ASCII.GetBytes("0`r12`rAB CD`r"); Output = "`r`nI B0-3: 0`r`nTYPE: 12`r`nDESC: AB CD`r`nI H J0-3`r`n" }
     )) {
     $previewFixture = Invoke-ResidentIPreviewFixture $negativePreview.Input
     Assert-ResidentIPreviewFixture $previewFixture $negativePreview.Input $negativePreview.Output $negativePreview.Name

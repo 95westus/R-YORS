@@ -9,7 +9,8 @@ does not rewrite those accepted records.
 Do not flash `str8-v1-installer-dry-f000.s19`; it deliberately overlaps the
 stored worker. Until the V1 migration artifact exists, use the normal resident
 STR8 candidate and expect `U 0-3 J0-3`. The eventual V1 artifact must instead
-show the approved final surface `I 0-3 J0-3`.
+show the V1.02 surface `I H J0-3`. The accepted captures below retain the
+earlier `3` spelling and are not rewritten.
 
 The current generated normal candidate is `STR8-N V 00.0805(1704) $F`, staged
 by `DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a`. Before writing,
@@ -87,7 +88,9 @@ U 0-3 J0-3
 STR8-N>
 ```
 
-For a later flashable V1 candidate, substitute `I 0-3 J0-3` for the help line.
+For a V1.02 candidate, substitute `I H J0-3` for the help line and use `H`
+for the local warm entry. The bare-digit tests below describe the accepted
+legacy image only.
 
 ## Test 2: Warm Prompt Selectors
 
