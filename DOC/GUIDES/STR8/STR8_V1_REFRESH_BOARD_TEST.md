@@ -1,6 +1,6 @@
 # STR8 V1 Directory-Preserving Refresh Board Test
 
-Status: host-built; hardware proof pending.
+Status: hardware-accepted on `00.0806(1900)`.
 
 This card updates an already-installed V1 Bank-3 top sector without erasing or
 repairing the live `$FFB0-$FFEF` directory. It is the prerequisite for testing
@@ -104,3 +104,22 @@ save `$1A00-$1A03` and do not retry before reconciling the stage and map.
 Press physical RESET, enter STR8 during the live dots, and issue `J2`. The
 existing COMPLETE Bank-2 record must permit the jump. This proves the new
 launch gate accepts COMPLETE before any destructive interruption test begins.
+
+## Staging Checkpoint
+
+The 2026-08-06 board run first opened the one-time migration writer and quit
+without staging or programming. It then captured the live directory, assembled
+the refresh source with the `$30B4` `CDIR` loop, and returned `TW STG` / `TW
+OK`. The staged `$19B0-$19EF` bytes exactly matched the live `$FFB0-$FFEF`
+snapshot, including the Bank-2 COMPLETE record and `FC FF FF FF` journal.
+Candidate face, packed worker head, and vectors also matched. No flash program
+operation occurred in that capture, so Section 4 remained open at that
+checkpoint.
+
+The continuation issued `P`, confirmed `WRITE`, and received `TW PRG` / `TW
+OK` with status `01 AC 00 00`. Installed `$F000-$F013` and the vectors matched
+the staged candidate. The complete `$FFB0-$FFEF` directory also matched the
+saved snapshot byte-for-byte. Physical reset booted Bank-3
+`STR8-N V 00.0806(1900)`, and `J2` launched the distinct Bank-2
+`STR8-N V 00.0806(1707)`. This accepts the directory-preserving refresh and
+the COMPLETE-record launch gate prerequisite for interruption testing.

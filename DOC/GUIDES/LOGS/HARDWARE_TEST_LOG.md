@@ -20042,3 +20042,70 @@ A physical reset returned to Bank 3, whose older
 Bank-2 record at `$FFD0-$FFDF` remained byte-for-byte unchanged. This closes
 the positive V1 Bank-3 migration, command-surface, first journaled Bank-2
 install, launch, Bank Jump Record, and reset-persistence board rail.
+
+## 2026-08-06 STR8 V1 Directory-Preserving Refresh Stage
+
+The refresh checkpoint began on Bank-3 `STR8-N V 00.0806(1707)` with the
+accepted Bank-2 directory record still present:
+
+```text
+FFD0: A5 FF FF FF 52 59 4F 52 53 FE FF FF FC FF FF FF
+```
+
+The operator first assembled the one-time migration TopWriter, but entered
+`Q` immediately; it performed neither stage nor program. The subsequent source
+was the distinct V1 refresh artifact. Its assembled stage path contained the
+required live-directory copy before the ordinary full-image copy and verify:
+
+```text
+30B2: LDX #$3F
+30B4: CDIR LDA $FFB0,X
+30B7:      STA $4FB0,X
+30BA:      DEX
+30BB:      BPL CDIR
+30BD:      JSR COPYI
+30C0:      JSR VSTG
+```
+
+`S` returned `TW STG` and `TW OK`. The staged candidate edges were:
+
+```text
+0A00: 4C 13 F0 4C 57 F7 18 60 EA 4C 2A F9 53 52 01 07
+0A10: 4C 5E F7 78
+1928: 4C 12 02 08 78 C9 04 B0 06 20 73 02 28 38 60 28
+19FA: AB F0 00 F0 BF F0
+```
+
+Most importantly, `$19B0-$19EF` matched the saved live `$FFB0-$FFEF`
+directory byte-for-byte, including the Bank-2 record above. This accepts the
+directory-preserving stage/copy/verify rail for candidate `00.0806(1900)`.
+The board did not issue `P`; installed readback, physical reset, and the
+COMPLETE-record `J2` launch gate remain pending.
+
+The continuation programmed the already verified stage after the explicit
+`WRITE` confirmation. TopWriter returned `TW PRG`, `TW OK`, and:
+
+```text
+1A00: 01 AC 00 00
+F000: 4C 13 F0 4C 57 F7 18 60 EA 4C 2A F9 53 52 01 07
+F010: 4C 5E F7 78
+FFFA: AB F0 00 F0 BF F0
+```
+
+The post-program directory was unchanged across all 64 bytes; its Bank-2 row
+remained:
+
+```text
+FFD0: A5 FF FF FF 52 59 4F 52 53 FE FF FF FC FF FF FF
+```
+
+A physical reset booted the refreshed Bank-3
+`STR8-N V 00.0806(1900) $F`. Live `S` reached the compact prompt, and the new
+resident `J2` gate printed `J B2` and launched the distinct COMPLETE Bank-2
+`STR8-N V 00.0806(1707) $F`. Bank 2 subsequently self-selected with bare `2`
+and completed its cold path into `HIMON V 00.0806(1707)`.
+
+This closes stage, full-sector program/verify, exact directory preservation,
+physical-reset recovery, and COMPLETE-record `J2` acceptance. The refreshed
+Bank-3 supervisor is now safe to use for the negative/interrupted transaction
+board slice.
