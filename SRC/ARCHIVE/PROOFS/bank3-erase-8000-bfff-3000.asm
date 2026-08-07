@@ -1,5 +1,12 @@
 ; ----------------------------------------------------------------------------
 ; bank3-erase-8000-bfff-3000.asm
+; ARCHIVED 2026-08-07: incompatible with the split-V1 STR8 service contract.
+; WHY IT WAS HERE: this host-built proof erased Bank 3 $8000-$BFFF by staging
+; $FF and requesting the resident full worker's program-staged mode $05.
+; WHY IT MOVED: split V1 reserves $F003 for jump mode $08; mode $05 can fail
+; closed or launch a bank on older unguarded split images. Use the carried
+; mutation worker in str8-bank-maint (`E`, Bank 3, sectors 8-B) instead.
+;
 ; RAM-loaded bank 3 low-flash erase tool, linked at $3000.
 ;
 ; Erases physical bank 3 $8000-$BFFF, four 4K sectors, by reusing the

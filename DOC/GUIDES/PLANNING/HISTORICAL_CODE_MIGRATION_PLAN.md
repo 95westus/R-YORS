@@ -71,12 +71,14 @@ DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-4800.a
 DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-transient-7000.a
 DOC/GUIDES/ASM/SAMPLES/OLD/ASMTEST_3000.asm
 DOC/GUIDES/ASM/SAMPLES/OLD/banked-ap-smoke.a
-DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/bankput-transient-3000.a
 ```
 
 The legacy TopWriter has now moved to `OLD`; the current board-facing generated
 writer is `DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a`.
-The remaining files still support current ASM-F2, AP, and reporter workflows.
+The bankput source moved to `OLD` on 2026-08-07 after split V1 removed its
+`$F003` mode-`$05/$06` service. The remaining files support current ASM-F2,
+AP, and reporter workflows only where their current source path says so.
 
 `banked-rjoin-smoke.a` is no longer a current workflow input. Its closed board
 proof fixture is archived at `DOC/GUIDES/ASM/SAMPLES/OLD/`.

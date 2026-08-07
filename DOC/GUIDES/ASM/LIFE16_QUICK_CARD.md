@@ -1,5 +1,10 @@
 # ASM-F2 Life16 Bank 2 Quick Card
 
+Status: historical pre-split-worker card. Do not run Sections 3-4 on split
+V1. The Bank-2 writer moved to `SAMPLES/OLD` because it calls `$F003` modes
+`$06/$05`, and HIMON banked AP staging still awaits its `$F010/$0203`
+migration. The commands below are retained as accepted proof provenance.
+
 Use this card at the board. The complete explanation is in
 [LIFE16_BANK2_EXAMPLE.md](LIFE16_BANK2_EXAMPLE.md).
 
@@ -56,7 +61,8 @@ the writer is about to copy.
 >ASM NEW
 ```
 
-Paste `DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a`. After `END`:
+Historical source: `DOC/GUIDES/ASM/SAMPLES/OLD/bankput-transient-3000.a`.
+Do not paste it on split V1. In the pre-split workflow, after `END`:
 
 ```text
 ASM OK

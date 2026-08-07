@@ -480,7 +480,9 @@ Purpose: prove `AP Bn pkg dst`, STR8 worker staged-sector copy mode, AP source
 range relaxation, and internal AP relocations.
 
 Use `DOC/GUIDES/ASM/SAMPLES/OLD/banked-ap-smoke.a` and
-`DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a`. Start with bank 2:
+historical `DOC/GUIDES/ASM/SAMPLES/OLD/bankput-transient-3000.a`. This gate
+predates split V1 and must not be rerun on it. The recorded run started with
+bank 2:
 
 ```text
 ASM NEW

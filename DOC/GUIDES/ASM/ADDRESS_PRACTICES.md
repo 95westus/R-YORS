@@ -4,8 +4,10 @@ This is the quick operator guide for choosing addresses while using ASM,
 `SEAL`, `PACKAGE`, `INSTALL`, `LOAD`, and HIMON `AP`. The main rule is:
 package addresses, body addresses, flash storage addresses, and run addresses
 are different roles even when the same four hex digits sometimes appear.
-The current Bank-0 assignments and pending AP entries are recorded in
-[SAMPLES/bank0-ap-entry-points.md](SAMPLES/bank0-ap-entry-points.md).
+The historical Bank-0 assignments are preserved in
+[SAMPLES/OLD/bank0-ap-entry-points.md](SAMPLES/OLD/bank0-ap-entry-points.md).
+That ledger is not a split-V1 operator path: its installer and banked AP
+staging dependencies were archived on 2026-08-07.
 
 ## The Short Model
 
@@ -139,10 +141,11 @@ Bank 0 staging/programming, discovery, loader checks, and board proof.
 
 Sample names containing `-transient-$hhhh.a` are normally fixed-address RAM
 programs: paste them, leave ASM, run them with `G hhhh`, and discard them.
-`bank0ap-put-transient-2000.a` retains its historical filename but now also
-has `ENTRY BANK0_AP_PUT` and packages as a fixed-load Bank-0 AP. Other sources
-with `ENTRY` are AP-capable. The legacy `$4800` reporter is fixed-load; the new
-`asm-session-report-ap-2000.a` self-relocates its complete internal body.
+Archived `OLD/bank0ap-put-transient-2000.a` retains the historical fixed-load
+Bank-0 installer implementation, but split V1 cannot run its `$F003` modes
+`$05/$06`. Other sources with `ENTRY` are AP-capable. The legacy `$4800`
+reporter is fixed-load; `asm-session-report-ap-2000.a` self-relocates its
+complete internal body when supplied through a compatible source path.
 
 ## RAM Package Recipe
 
@@ -198,8 +201,11 @@ load/run destination.
 
 ## Banked AP Recipe
 
-Use this when the AP envelope should live in bank 0-2 instead of the currently
-visible flash window. Bank 2 is the preferred test bank.
+Status: historical workflow, blocked on split V1. The old writer is archived
+at `SAMPLES/OLD/bankput-transient-3000.a`, and current HIMON banked AP staging
+still calls the removed `$F003` mode `$06`. Do not run this recipe on installed
+split-V1 images. It remains below as address-role documentation and proof
+provenance.
 
 ```text
 >ASM NEW
@@ -211,7 +217,7 @@ PKG OK @=$3200 L=$llll
 SEAL> .
 ASM BYE
 >D 3200 5       expect 41 50 version lenlo lenhi
->ASM NEW        paste bankput-transient-3000.a
+>ASM NEW        historical: paste OLD/bankput-transient-3000.a
 ASM>$30D4: END
 ASM OK
 SEAL> .
@@ -232,8 +238,8 @@ not execute from banked flash.
 
 Keep `$3200` unchanged between `PACKAGE $3200` and the completed `G 3000`
 writer run. Do not run `AP`, `LOAD`, or another `PACKAGE` in that interval.
-`bankput-transient-3000.a` returns `$E2` when the package header or length at `$3200` is
-no longer valid.
+The historical `OLD/bankput-transient-3000.a` returned `$E2` when the package
+header or length at `$3200` was no longer valid.
 
 For the bench command sequence, use
 [LIFE16_QUICK_CARD.md](LIFE16_QUICK_CARD.md). For the reasons behind it, use
@@ -243,8 +249,11 @@ and runs it with `AP B2 $9000 $3000`.
 
 ## Bank 0 AP Install
 
-Use this only when Bank 0 is the intended AP package store.
-`bank0ap-put-transient-2000.a` is both a direct `G 2000` RAM tool and a
+Status: historical workflow, blocked on split V1. The source now lives at
+`SAMPLES/OLD/bank0ap-put-transient-2000.a`; a future current installer must
+carry and verify the exact mutation worker.
+
+The archived source was both a direct `G 2000` RAM tool and a
 fixed-load AP package. It consumes the target AP envelope at `$3000`, stages
 the selected Bank-0 sector at `$0A00-$19FF`, validates the staged package,
 asks for exact `YES`, then programs and verifies the sector. Its required AP
@@ -263,7 +272,7 @@ reportable ASM session after `PACKAGE` has serialized the APC metadata.
 
 ```text
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/bank0ap-put-transient-2000.a
+historical: paste DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-put-transient-2000.a
 ASM OK
 SEAL> PACKAGE $3000
 PKG OK @=$3000 L=$hhhh

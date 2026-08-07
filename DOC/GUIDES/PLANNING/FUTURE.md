@@ -53,6 +53,37 @@
 - Keep STR8 fixed-buffer-only. HIMON can adopt `MEM_*` later, starting with
   app/session-owned bump allocation and pools before any general free-list heap.
 
+## Future RAM Ownership Direction
+
+- Preserve the current hardware-proven STR8/HIMON RAM map. Do not relocate its
+  published cards, vectors, worker entry, or Bank Jump Record merely to enlarge
+  today's contiguous user area.
+- Design the next STR8 made from scratch around explicit operating profiles,
+  not one permanent worst-case RAM reservation. Each profile should publish
+  its owned ranges, the largest available contiguous range, transition rules,
+  and what state the transition may clobber.
+- Keep permanent RAM ABI state extremely small. Separate persistent handoff and
+  vector state from scratch that STR8 can rebuild from ROM whenever it enters.
+- Use these initial ownership profiles:
+  - STR8 handoff uses the smallest practical RAM worker and releases its
+    transient RAM after the no-return transfer.
+  - STR8 recovery/install claims fixed bounded work decks and explicitly does
+    not promise to preserve payload RAM.
+  - HIMON reserves only its active service, parser, console, and vector state
+    and publishes the remaining contiguous application range.
+  - ASM acquires symbol, fixup, package, and output arenas only for the active
+    assembly session, then releases them according to an explicit session-end
+    contract.
+  - An exclusive opaque guest may own the full ordinary main-RAM span
+    `$0200-$7EFF`; zero page, the hardware stack, and I/O retain their separate
+    hardware-defined roles.
+- Prefer deterministic fixed arenas, overlays, and acquire/release ownership
+  over a general STR8 heap. Allocation policy belongs in the future `MEM_*`
+  layer; recovery behavior must remain bounded and inspectable.
+- Make every ownership transition testable. A caller must be able to determine
+  whether entry preserves RAM, borrows it temporarily, or revokes it for
+  recovery before making the transition.
+
 ## BIO RX Lookahead Direction
 
 - Treat the current FTDI input path as stable until a deliberate BIO lookahead

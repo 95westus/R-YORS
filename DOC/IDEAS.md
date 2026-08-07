@@ -272,6 +272,30 @@ PLAN  KEEP vectors, KEEP STR8 cfg, WRITE HIMON body
 The open question is whether this becomes a STR8 command, an update-planner
 subroutine, or only a diagnostic/detail view behind the normal restore flow.
 
+## Good Far Out: STR8-N RAM Ownership Profiles
+
+Bucket: `good far out`
+
+Do not disturb the current hardware-proven STR8/HIMON RAM map for this idea.
+For a later STR8 designed from scratch, make RAM ownership depend on the active
+operating level instead of reserving every possible workspace all the time:
+
+```text
+STR8 handoff          smallest transient worker; release on no-return transfer
+STR8 recovery/install fixed bounded work decks; payload RAM may be destroyed
+HIMON                 small resident service/vector state; publish free range
+ASM                   session-owned symbol/fixup/package arenas; release on exit
+opaque guest          exclusive ownership of ordinary $0200-$7EFF main RAM
+```
+
+Keep the permanent RAM ABI tiny, separate persistent cards from rebuildable
+scratch, publish the largest contiguous range for every profile, and document
+each transition's preserve/clobber contract. Prefer fixed arenas and overlays
+to a STR8 heap; any later general allocation service belongs in `MEM_*`.
+
+The promoted architecture direction is recorded in
+`DOC/GUIDES/PLANNING/FUTURE.md`.
+
 ## Word Find: THE
 
 Bucket: `word find`

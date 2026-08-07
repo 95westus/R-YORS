@@ -94,10 +94,14 @@ STR8_WORKER_EQ := $(STR8_SUBDIR)/str8-worker-eq.inc
 STR8_DIRECTORY_EQ := $(STR8_SUBDIR)/str8-directory-eq.inc
 STR8_DIRECTORY_CHECK := tools/check_str8_directory_v1.ps1
 STR8_WORKER_MODE_CHECK := tools/check_str8_worker_modes.ps1
-STR8_BANK_COPY_CHECK := tools/check_str8_bank_copy_source.ps1
-STR8_BANK_COPY_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-copy-2000.a
+STR8_READONLY_BANK_CHECK := tools/check_str8_readonly_bank_tools.ps1
+STR8_BANK_CRC_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a
+STR8_JUMP_INVENTORY_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-jump-inventory-3000.a
+STR8_BANK_READ_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/flash-bank-read-ap-2000.a
+STR8_BANK_DUMP_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/flash-bank-dump-ap-2000.a
 STR8_BANK_MAINT_CHECK := tools/check_str8_bank_maint_source.ps1
 STR8_BANK_MAINT_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a
+STR8_BANK_MAINT_EMBED := tools/embed_str8_bank_maint_worker.ps1
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
 STR8_S19 := $(S19_DIR)/str8-f000.s19
 STR8_V1_LAYOUT_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-v1-layout.obj
@@ -165,10 +169,10 @@ ASM_RJOIN_PROOF_SRC := $(PROOFS_DIR)/asm-rjoin-proof-3000.asm
 ASM_RJOIN_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/asm-rjoin-proof-3000.obj
 ASM_RJOIN_PROOF_S19 := $(S19_DIR)/asm-rjoin-proof-3000.s19
 ASM_RJOIN_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
-BANK3_ERASE_SRC := $(PROOFS_DIR)/bank3-erase-8000-bfff-3000.asm
-BANK3_ERASE_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/bank3-erase-8000-bfff-3000.obj
-BANK3_ERASE_S19 := $(S19_DIR)/bank3-erase-8000-bfff-3000.s19
-BANK3_ERASE_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
+BANK3_ERASE_LEGACY_SRC := ARCHIVE/PROOFS/bank3-erase-8000-bfff-3000.asm
+BANK3_ERASE_LEGACY_OBJ := $(OBJ_DIR)/ARCHIVE/PROOFS/bank3-erase-8000-bfff-3000.obj
+BANK3_ERASE_LEGACY_S19 := $(S19_DIR)/bank3-erase-8000-bfff-3000.s19
+BANK3_ERASE_LEGACY_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 STR8_RECORD_PHASE1_PROOF_SRC := $(PROOFS_DIR)/str8-record-phase1-proof.asm
 STR8_RECORD_PHASE1_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/str8-record-phase1-proof.obj
 STR8_RECORD_PHASE1_PROOF_S19 := $(S19_DIR)/str8-record-phase1-proof-3000.s19
@@ -312,7 +316,7 @@ FIRMWARE_TARGETS ?= \
 	himon-str8-rom-bin \
 	himon-str8-rom-install-s19 \
 	str8-v1-refresh-a \
-	str8-bank-copy-source-check \
+	str8-readonly-bank-tools-check \
 	str8-bank-maint-source-check \
 	str8-worker-mode-check
 
@@ -331,7 +335,6 @@ PROOF_TARGETS ?= \
 	hrec-join-proof \
 	pack40-test \
 	asm-rjoin-proof \
-	bank3-erase \
 	str8-record-phase1-proof \
 	str8-l-transport-phase5-proof \
 	asm-v1-runtime-smoke \
@@ -374,7 +377,7 @@ RELEASE_TARGETS ?= \
 	himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 \
 	str8-v1-refresh-a \
-	str8-bank-copy-source-check \
+	str8-readonly-bank-tools-check \
 	str8-bank-maint-source-check \
 	str8-worker-mode-check
 
@@ -475,13 +478,14 @@ str8-worker-mode-check: $(HIMON_ROM_S19) $(STR8_S19) $(STR8_WORKER_S19) $(STR8_W
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_MODE_CHECK) -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-f000.map" -Str8S19Path "$(STR8_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)"
 
 str8-worker-split-check: $(STR8_V1_INSTALLER_TXN_S19) $(STR8_JUMP_WORKER_S19) $(STR8_MUTATION_WORKER_S19) $(STR8_WORKER_EQ) $(STR8_WORKER_SPLIT_CHECK)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_SPLIT_CHECK) -JumpMapPath "$(S19_DIR)/str8-jump-worker-0200.map" -MutationMapPath "$(S19_DIR)/str8-mutation-worker-0200.map" -MutationS19Path "$(STR8_MUTATION_WORKER_S19)" -WorkerEqPath "$(STR8_WORKER_EQ)" -ResidentMapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_WORKER_SPLIT_CHECK) -JumpMapPath "$(S19_DIR)/str8-jump-worker-0200.map" -JumpS19Path "$(STR8_JUMP_WORKER_S19)" -MutationMapPath "$(S19_DIR)/str8-mutation-worker-0200.map" -MutationS19Path "$(STR8_MUTATION_WORKER_S19)" -WorkerEqPath "$(STR8_WORKER_EQ)" -ResidentMapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map"
 
-str8-bank-copy-source-check: $(STR8_BANK_COPY_SOURCE) $(STR8_BANK_COPY_CHECK)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_COPY_CHECK) -SourcePath "$(STR8_BANK_COPY_SOURCE)"
+str8-readonly-bank-tools-check: $(STR8_BANK_CRC_SOURCE) $(STR8_JUMP_INVENTORY_SOURCE) $(STR8_BANK_READ_AP_SOURCE) $(STR8_BANK_DUMP_AP_SOURCE) $(STR8_READONLY_BANK_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_READONLY_BANK_CHECK) -CrcSourcePath "$(STR8_BANK_CRC_SOURCE)" -InventorySourcePath "$(STR8_JUMP_INVENTORY_SOURCE)" -ReadApSourcePath "$(STR8_BANK_READ_AP_SOURCE)" -DumpApSourcePath "$(STR8_BANK_DUMP_AP_SOURCE)"
 
-str8-bank-maint-source-check: $(STR8_BANK_MAINT_SOURCE) $(STR8_BANK_MAINT_CHECK)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_MAINT_CHECK) -SourcePath "$(STR8_BANK_MAINT_SOURCE)"
+str8-bank-maint-source-check: $(STR8_MUTATION_WORKER_S19) $(STR8_BANK_MAINT_SOURCE) $(STR8_BANK_MAINT_EMBED) $(STR8_BANK_MAINT_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_MAINT_EMBED) -SourcePath "$(STR8_BANK_MAINT_SOURCE)" -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_MAINT_CHECK) -SourcePath "$(STR8_BANK_MAINT_SOURCE)" -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)"
 
 himon-rom-install-s19: $(HIMON_ROM_INSTALL_S19)
 	@echo "Built $(HIMON_ROM_INSTALL_S19)."
@@ -588,8 +592,9 @@ asm-rjoin-proof: $(ROM_LIB) $(ASM_RJOIN_PROOF_S19)
 	@echo "Built $(ASM_RJOIN_PROOF_S19)."
 	@$(MAKE) artifacts
 
-bank3-erase: $(BANK3_ERASE_S19)
-	@echo "Built $(BANK3_ERASE_S19)."
+bank3-erase-legacy: $(BANK3_ERASE_LEGACY_S19)
+	@echo "Built archived pre-split proof $(BANK3_ERASE_LEGACY_S19)."
+	@echo "Do not run it on split V1; use str8-bank-maint E B3 8-B."
 	@$(MAKE) artifacts
 
 str8-record-phase1-proof: $(STR8_RECORD_PHASE1_PROOF_S19)
@@ -971,11 +976,11 @@ $(ASM_RJOIN_PROOF_S19): $(ASM_RJOIN_PROOF_OBJ) $(ROM_LIB)
 	@echo [ps] set S9 start $$3000 in $(ASM_RJOIN_PROOF_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_RJOIN_PROOF_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
 
-$(BANK3_ERASE_S19): $(BANK3_ERASE_OBJ)
+$(BANK3_ERASE_LEGACY_S19): $(BANK3_ERASE_LEGACY_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(BANK3_ERASE_LINKFLAGS) $(BANK3_ERASE_S19) $(BANK3_ERASE_OBJ)
-	@echo [ps] set S9 start $$3000 in $(BANK3_ERASE_S19)
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(BANK3_ERASE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+	$(LINKER) $(BANK3_ERASE_LEGACY_LINKFLAGS) $(BANK3_ERASE_LEGACY_S19) $(BANK3_ERASE_LEGACY_OBJ)
+	@echo [ps] set S9 start $$3000 in $(BANK3_ERASE_LEGACY_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(BANK3_ERASE_LEGACY_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
 
 $(STR8_RECORD_PHASE1_PROOF_S19): $(STR8_RECORD_PHASE1_PROOF_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1356,7 +1361,7 @@ endif
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
 	str8-v1-layout-preview str8-v1-artifact str8-v1-install-stream str8-v1-negative-streams str8-v1-topwrite-a str8-v1-refresh-a str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
-	str8-bank-copy-source-check str8-bank-maint-source-check \
+	str8-readonly-bank-tools-check str8-bank-maint-source-check \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \
 	str-himon-str-update str8-top-stage-s19 str8-topwrite-a \
@@ -1365,7 +1370,7 @@ endif
 	str8 str8-ram test-mon test-ftdi-drv test-ftdi-hal test-flash \
 	life himon-debug-proof himon-search-static himon-search-static-proof \
 	himon-search-proof himon-search-flash himon-search-for-himon \
-	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase str8-record-phase1-proof str8-l-transport-phase5-proof asm-v1-core \
+	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase-legacy str8-record-phase1-proof str8-l-transport-phase5-proof asm-v1-core \
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \
 	asm-v1-runtime-paste asm-session-report asm-session-report-ap-bin asm-v1-flash asm-flash asm-opcode-coverage \
 	asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check \

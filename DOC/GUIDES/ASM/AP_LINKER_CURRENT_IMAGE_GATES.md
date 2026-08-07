@@ -28,7 +28,7 @@ aae0f1ebcc3d9cd82b16e1da828e3c055a7223a1  bankput-transient-3000.a
 Archived/current paths:
 
 - [banked-rjoin-smoke.a](SAMPLES/OLD/banked-rjoin-smoke.a)
-- [bankput-transient-3000.a](SAMPLES/bankput-transient-3000.a)
+- [bankput-transient-3000.a](SAMPLES/OLD/bankput-transient-3000.a)
 - [missing-import-atomicity-2000.a](SAMPLES/OLD/missing-import-atomicity-2000.a)
 
 The current `bankput` fixture is already pinned to:
@@ -112,7 +112,7 @@ ASM NEW
 PACKAGE $3200
 .
 ASM NEW
-  paste SAMPLES/bankput-transient-3000.a
+  historical: paste SAMPLES/OLD/bankput-transient-3000.a
   verify BANK=$02, PKG=$3200, DST=$9000
 .
 G 3000

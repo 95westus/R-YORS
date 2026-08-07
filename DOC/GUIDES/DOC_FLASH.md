@@ -232,7 +232,7 @@ ASM-F2 recovery path (`LF OK WR=3C6D GO=800C`).
 
 scope at the time: `ASM/SAMPLES/banked-rjoin-smoke.a` (now archived as
 `ASM/SAMPLES/OLD/banked-rjoin-smoke.a`),
-`ASM/SAMPLES/bankput-transient-3000.a`,
+`ASM/SAMPLES/OLD/bankput-transient-3000.a`,
 `ASM/SAMPLES/OLD/missing-import-atomicity-2000.a`, `ASM/TEST_PLAN.md`, and
 `ASM/AP_LINKER_CURRENT_IMAGE_GATES.md`.
 

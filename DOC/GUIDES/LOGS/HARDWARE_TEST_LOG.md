@@ -20218,3 +20218,222 @@ Together with the preceding checkpoints, this closes the frozen bad-worker
 rejection before START, directory preservation at `FC`, post-START physical
 interruption at `F8`, fail-closed `J2`, rediscovery as INCOMPLETE, same-pair
 retry to `F0`, restored Bank-2 launch, and final Bank-3 reset persistence.
+
+## 2026-08-06 STR8 V1 Bank-0 Install and Legacy-Worker Mismatch
+
+The next run began with an EMPTY Bank-0 directory record. `J0` correctly
+failed closed with `JERR B0 V=$0000`. A normal `I` transaction then installed
+type `$53`, description `WLPII`, printed eight sector dots and `I OK`, and
+published a launchable Bank 0. `J0` entered distinct Bank-0
+`STR8-N/HIMON V 00.0806(2033)`. Warm selector `3` returned to that local HIMON,
+and Bank-0 `J3` crossed back to the older Bank-3
+`STR8-N V 00.0806(1900)` / `HIMON V 00.0805(1312)` image. This accepts the
+Bank-0 empty-record rejection, full transaction, launch, warm entry, and
+cross-bank Bank-3 return.
+
+The same capture exposed a maintenance compatibility defect. The current
+`str8-bank-maint-2000.a` assembled through `$2649` with `ASM OK`. Its `M`
+command printed the map heading and `B0`, then entered Bank-0 STR8 `2033`
+instead of printing the first sector marker:
+
+```text
+STR8 BANK MAINT
+C=COPY E=ERASE M=MAP Q=QUIT> M
+
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0
+................
+STR8-N V 00.0806(2033) $F
+```
+
+Source and linked-image inspection identify the cause. Split V1 `$F003`
+copies the jump-only worker, but this installed worker did not validate
+`$1FF0=$08`; the maintenance tool requested legacy stage mode `$06`, and the
+jump worker instead consumed the zeroed `$1FF2` target and launched Bank 0.
+The packed jump worker contains no erase/program code, so this failed `M` did
+not mutate flash. It is diagnostic failure evidence, not an accepted map.
+
+## 2026-08-06 STR8 V1 Fail-Closed Worker Refresh and Maintenance Retest
+
+The board returned to Bank-3 `STR8-N V 00.0806(1900) $F` and entered
+`HIMON V 00.0805(1312)`. The generated directory-preserving
+`str8n-v1-refresh-transient-3000.a` source assembled through `$5000` with
+`ASM OK`. Its interactive stage, verification, protected program, and status
+path completed as follows:
+
+```text
+>G 3000
+GO 3000
+TOPWRITER
+...
+TW> S
+TW STG
+TW OK
+TW> V
+TW OK
+TW> P
+TW OK
+TYPE WRITE TO PROGRAM B3> WRITE
+TW PRG
+TW OK
+TW> I
+TW MODE=$01 RES=$AC @=$0000
+TW> Q
+```
+
+The subsequent cold boot identified the newly installed top sector and
+reached the existing HIMON payload:
+
+```text
+STR8-N V 00.0806(2135) $F
+BOOT COLD
+RAM ZERO OK
+HIMON V 00.0805(1312)
+```
+
+This hardware-accepts ASM-F2 assembly, stage copy/verify, confirmed Bank-3
+sector-F erase/program/full-sector verify, status `$AC`, and cold boot for the
+`$0091` fail-closed jump-worker image. The exact reproduced artifact hashes
+are:
+
+```text
+B576025E5E3A6E712467A2F20F747ACCA4DC7D357FFD010DF6B7C5A83887371F  himon-str8-v1.bin
+BF3D2EEA8F7F29E9347F83EF3FC6E51A2460B857785A19BFB9CF31F81655CFB8  himon-str8-v1-install.s19
+41FDB3F0F2692101464949B26FE640B91ACD4A555BAE0C214625C759EFB7D67E  str8-v1-i-bank012.s19
+C850105F51B2C814D18C4A3453D0FB8F60E58CD102FF7EEF9EB392DE4682E741  str8n-v1-refresh-transient-3000.a
+```
+
+The guarded `str8-bank-maint-2000.a` source then assembled through `$2653`
+with `ASM OK`. Its first two map attempts now failed safely at the first stage
+request and returned to the tool instead of launching Bank 0:
+
+```text
+C=COPY E=ERASE M=MAP Q=QUIT> M
+
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 !
+
+STR8 BANK MAINT
+...
+C=COPY E=ERASE M=MAP Q=QUIT> M
+
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 !
+```
+
+A copy attempt selected source Bank 3 and destination Bank 1, printed `!`,
+and returned to the menu before any program request:
+
+```text
+C=COPY E=ERASE M=MAP Q=QUIT> C
+SOURCE BANK 0-3> 3
+DEST BANK 0-2> 1
+!
+```
+
+This closes the maintained-source compatibility regression: mode `$06` no
+longer turns into an unintended Bank-0 launch, and the failed copy does not
+reach mode `$05`. The transcript does not include an independent post-refresh
+directory dump, a `J0-J2` check, or direct unguarded `$F003` probes for modes
+`$05-$07`; those narrower firmware acceptance checks remain open.
+
+## 2026-08-07 STR8 Bank Maintenance First Carried-Worker Paste Rejected
+
+The first board paste of the carried-worker maintenance source did not
+assemble. ASM-F2 rejected numeric byte selection on a literal at `$20AC`:
+
+```text
+ASM>$20AC: BM_READ LDX #<$1C00
+ERR=$03 BO PC=$20AC
+ASM>$20AC:         LDY #>$1C00
+ERR=$03 BO PC=$20AC
+```
+
+Assembly continued, but the enlarged source then exceeded ASM-F2's persistent
+128-row forward-fixup table. The first visible overflow was at `$25C7`, and
+five late branches failed with `ERR=$09 BAD FIX`. `END` also failed:
+
+```text
+ASM>$25C7:         BEQ BM_ENODOT
+ERR=$09 BAD FIX PC=$25C7
+...
+ASM>$322B:         END
+ERR=$09 BAD FIX PC=$322B
+#56AD7400# EXEC ERR=$09
+>.
+#2B0C98F1# HSH_NF!
+```
+
+The operator then ran the incomplete image. It reached the maintenance menu
+but failed before accepting any command:
+
+```text
+>G 2000
+GO 2000
+
+STR8 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY E=ERASE M=MAP+DIR Q=QUIT>
+BRK 00 PC=0003
+```
+
+No `M`, `C`, or `E` input was entered, the carried worker was never called,
+and no flash operation occurred. The installed Bank-3 image therefore was not
+changed by this run.
+
+The corrected source replaces the unsupported selectors with explicit
+`LDX #$00` / `LDY #$1C` and reorders the directory helpers and major routines
+to turn enough references backward. The host gate now rejects numeric literal
+selectors and counts conservative ASM-F2 forward fixups. Its corrected result
+is 63/64 globals, 12/16 locals, 117/128 forward fixups, body end `$2782`, and
+an `$087D` gap before the exact carried worker. A clean board reassembly with
+zero `ERR=` lines and final `ASM OK` remains pending.
+
+Corrected board-paste source identity:
+
+```text
+CE481CB963EE51D34944ABB0F8D4C50DFC016E3BA4417FD0716B9A6CE5456647  str8-bank-maint-2000.a
+```
+
+## 2026-08-07 STR8 Bank Maintenance Carried-Worker Map Accepted
+
+The exact corrected source above assembled from `$2000` through the embedded
+worker end at `$322B` with no `ERR=` lines and a final `ASM OK`. The operator
+sealed it, ran `$2000`, and selected read-only `M`. All 31 readable sectors
+staged and scanned successfully; Bank-3 sector F was not staged and retained
+its protected marker:
+
+```text
+BANK 8 9 A B C D E F
+E=ERASED U=USED P=B3F PROTECTED
+B0 U U U U U U U U
+B1 U U U U U U U U
+B2 U U U U U U U U
+B3 U U U U U U U P
+
+DIR B T DESC ENTRY JOURNAL
+D0 53 WLPII FFFF FCFFFFFF
+D1 FF ..... FFFF FFFFFFFF
+D2 A5 RYORS FFFF F0FFFFFF
+D3 FF ..... FFFF FFFFFFFF
+ OK
+```
+
+The utility then returned normally to `STR8 BANK MAINT` and displayed its
+prompt again. No copy or erase command was entered and no flash write was
+requested. This hardware-accepts the exact carried mutation worker for map
+staging, all four bank rows, the B3F protection path, entry-bank restoration,
+Bank-3 directory snapshot/display, success return, and menu re-entry.
+
+The operator requested the clearer presentation `heading`, blank line, map
+rows, then legend. The derived display-only source is host-accepted at 64/64
+globals, 12/16 locals, 119/128 forward fixups, body end `$278C`, and worker
+gap `$0873`. It does not change the map, directory, or mutation-worker logic:
+
+```text
+F32C969756A066F4C2B6BFB4BA1A3786B43E5EF6E468C9AA442CC50D36FA1FF7  str8-bank-maint-2000.a
+```

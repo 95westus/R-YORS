@@ -98,10 +98,16 @@ STR8W_BANK_SELECT_SERVICE:
                         RTS
                         ENDIF
 
-; Only the four published V1 modes may reach a worker operation. Any other
-; value returns C=0 before selecting a bank or touching flash.
+; Each linked worker accepts only its published mode subset. Any other value
+; returns C=0 before selecting a bank or touching flash.
                         IF              STR8_WORKER_JUMP_ONLY
 STR8W_JUMP_START:
+                        LDA             STR8_COPY_MODE
+                        CMP             #STR8_COPY_MODE_JUMP_BANK
+                        BEQ             ?RUN_JUMP
+                        CLC
+                        RTS
+?RUN_JUMP:
                         PHP
                         SEI
                         JSR             STR8W_JUMP_BANK

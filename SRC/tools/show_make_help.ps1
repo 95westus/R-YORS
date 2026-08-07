@@ -38,7 +38,8 @@ $rows = @(
     [pscustomobject]@{ Target = "str-himon-str-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str8-top-stage-s19"; Category = "monitor"; Description = "Build 0A00-19FF staged S19 from the vector-complete STR8 top sector: BUILD/s19/str8-top-stage-0a00.s19." }
     [pscustomobject]@{ Target = "str8-topwrite-a"; Category = "monitor"; Description = "Build the archived legacy replacement TopWriter under SAMPLES/OLD; unsafe on installed V1." }
-    [pscustomobject]@{ Target = "str8-bank-copy-source-check"; Category = "monitor"; Description = "Validate the direct-run ASM-F2 full-bank copy source and host-assemble it." }
+    [pscustomobject]@{ Target = "str8-readonly-bank-tools-check"; Category = "monitor"; Description = "Validate and host-assemble the split-V1 `$F010/`$0203 read-only bank tools." }
+    [pscustomobject]@{ Target = "str8-bank-maint-source-check"; Category = "monitor"; Description = "Embed the exact mutation worker, validate the maintenance map/directory source, and host-assemble it." }
     [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for himon-str8-rom-install-s19." }
     [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000: BUILD/s19/himon-load-c000.s19." }
     [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image at BUILD/bin/himon-load-c000.bin." }
@@ -57,7 +58,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-search-flash"; Category = "test"; Description = "Build low-flash K=05 S search command S19 at BB80 for L F." }
     [pscustomobject]@{ Target = "himon-search-for-himon"; Category = "test"; Description = "Assemble the native HIMON search port scaffold and guide pointer." }
     [pscustomobject]@{ Target = "pack40-test"; Category = "test"; Description = "Build PACK40 pack/unpack string round-trip proof at 3000." }
-    [pscustomobject]@{ Target = "bank3-erase"; Category = "test"; Description = "Build bank 3 `$8000-`$BFFF erase tool at 3000: BUILD/s19/bank3-erase-8000-bfff-3000.s19." }
+    [pscustomobject]@{ Target = "bank3-erase-legacy"; Category = "archive"; Description = "Build the archived pre-split Bank-3 erase proof; do not run on split V1." }
     [pscustomobject]@{ Target = "asm-flash"; Category = "asm"; Description = "Alias for asm-v1-flash." }
     [pscustomobject]@{ Target = "asm-v1-flash"; Category = "asm"; Description = "Build flash ASM at 8000: BUILD/s19/asm-v1-flash-8000.s19." }
     [pscustomobject]@{ Target = "asm-session-report-ap-bin"; Category = "asm"; Description = "Build fixed-address AP package for the ASM session reporter: BUILD/bin/asm-session-report-4800.ap.bin." }

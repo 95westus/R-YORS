@@ -70,8 +70,8 @@ flowchart LR
     INSTALL --> MUTATION["Uploaded mutation worker<br/>Accept modes $05-$07; erase, program, verify, and journal from RAM"]
     JUMP --> JWORKER["Packed jump worker<br/>Accept mode $08; validate and enter the selected bank from RAM"]
 
-    RECORD["STR8_RECORD_SERVICE_ENTRY<br/>Validate S19 records and preflight whole-record apply policy"] --> WORKER
-    SERVICE["STR8_RUN_WORKER_SERVICE<br/>Stable resident doorway; copy the worker to $0200 and run it"] --> WORKER
+    RECORD["STR8_RECORD_SERVICE_ENTRY<br/>Validate S19 records and preflight whole-record apply policy"] --> MUTATION
+    SERVICE["STR8_RUN_WORKER_SERVICE<br/>Jump-only resident doorway; reject modes $05-$07"] --> JWORKER
 ```
 
 AP parsing and FNV import linking are HIMON responsibilities. STR8's retired
@@ -80,7 +80,7 @@ AP parsing and FNV import linking are HIMON responsibilities. STR8's retired
 
 The flashable V1 candidate is built separately with
 `make -C SRC str8-v1-artifact`. It packs the permanent jump worker at
-`$FF28-$FFAF`, leaves the fixed directory erased at `$FFB0-$FFEF`, and emits a
+`$FF1F-$FFAF`, leaves the fixed directory erased at `$FFB0-$FFEF`, and emits a
 single-file `I` transport containing the uploaded mutation worker before the
 dense bank image. The one-time migration, directory-preserving supervisor
 refresh, first journaled Bank-2 transaction, rejected worker, interrupted
@@ -88,6 +88,11 @@ transaction, fail-closed launch, same-pair retry, and recovered launch are all
 hardware-accepted by the [V1 migration board test](STR8_V1_MIGRATION_BOARD_TEST.md),
 [V1 refresh board test](STR8_V1_REFRESH_BOARD_TEST.md), and
 [V1 interruption board test](STR8_V1_INTERRUPTION_BOARD_TEST.md).
+
+V1 is not yet the default combined-image/documentation baseline. HIMON's
+banked AP loader still requests retired `$F003` stage mode `$06`; it must move
+to a read-only `$F010/$0203` stage-and-restore routine and receive board proof
+before promotion.
 
 ## Milestone Snapshot
 
@@ -226,11 +231,11 @@ $F000-$FD9A  STR8 transaction code
 $FD9B-$FED4  STR8 transaction data
              size $013A = 314 bytes
 
-$FED5-$FF27  contiguous reserve
-             size $0053 = 83 bytes
+$FED5-$FF1E  contiguous reserve
+             size $004A = 74 bytes
 
-$FF28-$FFAF  packed permanent jump worker
-             size $0088 = 136 bytes; copied to $0200-$0287
+$FF1F-$FFAF  packed permanent jump worker
+             size $0091 = 145 bytes; copied to $0200-$0290
 
 $FFB0-$FFEF  fixed four-record V1 directory
              size $0040 = 64 bytes; initially all $FF
@@ -437,10 +442,10 @@ first RAM proof image links at $3000
 first RAM proof reserves $4000-$4FFF as the 4K copy buffer
 first RAM proof can back up bank 3 to selected bank 0, 1, or 2 with read-back verify
 first RAM proof can restore bank 0, 1, or 2 to bank 3 while preserving STR8 bytes
-flashable V1 links STR8 at $F000 and packs the jump worker at $FF28-$FFAF
+flashable V1 links STR8 at $F000 and packs the jump worker at $FF1F-$FFAF
 the V1 transport uploads the mutation worker to $0200-$042A before bank data
 the V1 command surface is I, bare 0-3, and J0-J3
-current worker accepts only modes $05-$08; all other mode bytes fail closed
+full worker accepts modes $05-$08; V1 packed jump worker accepts only $08
 reclaim candidate 00.0801(2234) is installed and board-accepted
 retired B and bare 0/1/2 commands return ? on that installed candidate
 all 252 unrecognized worker modes return without dispatch in the RAM board proof
@@ -731,7 +736,7 @@ flowchart TD
     SELECT -->|0-2 after delay| J
     I --> UPLOAD[receive exact mutation worker at $0200-$042A]
     UPLOAD --> FLASH[validated sector erase / program / verify and directory journal]
-    J --> COPY[copy packed jump worker $FF28-$FFAF -> $0200-$0287]
+    J --> COPY[copy packed jump worker $FF1F-$FFAF -> $0200-$0290]
     COPY --> JWORKER[RAM jump worker: accept only mode $08]
     FLASH --> BANK3[restore Bank 3]
     BANK3 --> STR8

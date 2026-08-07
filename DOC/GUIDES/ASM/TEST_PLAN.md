@@ -3277,7 +3277,7 @@ OLD/pack40-interactive-transient-2000.a
                          exerciser
 OLD/bank3-erase-8000-bfff-transient-3000.a
                          bank 3 $8000-$BFFF erase tool using STR8 service;
-                         S19 target: make -C SRC bank3-erase
+                         S19 target: make -C SRC bank3-erase-legacy
 OLD/life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
 OLD/local-label-stress-7400.asm
                          exact 8-local scope/reuse/?prefix stress sample
@@ -8374,7 +8374,7 @@ SEAL           at SEAL>, expect SEAL OK
 PACKAGE $3200  at SEAL>, expect PKG OK @=$3200
 .
 D 3200 3208    expect AP header: 41 50 ...
-ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/bank2put-8000-transient-3000.a
+ASM NEW        paste DOC/GUIDES/ASM/SAMPLES/OLD/bank2put-8000-transient-3000.a
 .
 G 3000         expect $1A00=$AC
 ASM NEW        run the session to inspect
@@ -9327,7 +9327,8 @@ full-bank run supersedes the requested short single-sector address proof.
 
 ### Fixed-Load Banked Erase AP Gate
 
-`DOC/GUIDES/ASM/SAMPLES/flash-erase-bank-ap-2000.a` is a new, separate
+`DOC/GUIDES/ASM/SAMPLES/OLD/flash-erase-bank-ap-2000.a` is a historical,
+separate
 fixed-load AP form of the proven direct-run erase tool. It retains the `$2000`
 RAM contract and literalizes every internal absolute call, jump, and text
 pointer from the board-proven `$2000-$23A5` map. Its required package gate is
@@ -9355,7 +9356,8 @@ stored copy; retain a recovery path. That destructive AP path remains pending.
 
 ### Fixed-Load Flash Bank/Sector Dump AP Gate
 
-`DOC/GUIDES/ASM/SAMPLES/flash-bank-dump-ap-2000.a` is the read-only companion
+`DOC/GUIDES/ASM/SAMPLES/OLD/flash-bank-dump-ap-2000.a` is the historical
+read-only companion
 to the erase AP. It is fixed-load at `$2000`, stages a selected physical Bank
 `0-3` and sector `8-F` into `$4000-$4FFF`, and displays the 4K image in
 16-byte hex/ASCII rows, pausing every 256 bytes. Enter continues; `Q` returns
@@ -9456,7 +9458,7 @@ reporter runtime address.
 
 ### 2026-07-12 One-Run Bank 0 Installer Board Proof
 
-`DOC/GUIDES/ASM/SAMPLES/bank0ap-put-transient-2000.a` is the intended standard operator
+`DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-put-transient-2000.a` was the intended standard operator
 path. It combines the proven stage and commit logic into one `$2000` RAM
 transient: validate the `$4000` AP envelope, select/stage a Bank 0 sector,
 validate its staged copy, require exact `YES`, then program/verify. It clears
@@ -9848,7 +9850,7 @@ expect ASM REPORT OK
 expect no APERR and ASM REPORT OK
 
 >ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/bank0ap-put-transient-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-put-transient-2000.a
 ASM OK
 SEAL> .
 ASM BYE
@@ -10232,7 +10234,7 @@ Frozen sources:
 
 ```text
 SAMPLES/OLD/banked-rjoin-smoke.a
-SAMPLES/bankput-transient-3000.a
+SAMPLES/OLD/bankput-transient-3000.a
 SAMPLES/OLD/missing-import-atomicity-2000.a
 ```
 
@@ -10833,7 +10835,7 @@ Host gates passed with:
 ```text
 make -C SRC himon himon-str8-rom-bin himon-str8-himon-update-s19
 make -C SRC asm-test
-make -C SRC bank3-erase
+make -C SRC bank3-erase-legacy
 
 HIMON CODE/DATA/END       = $2922/$0596/$EEB8
 HIMON free to STR8        = $EEB8-$EFFF / $0148
@@ -11064,7 +11066,7 @@ and `L F` are out of scope for this phase.
 ### Phase-6 host gates
 
 ```text
-make -C SRC bank3-erase
+make -C SRC bank3-erase-legacy
 ```
 
 The only permitted artifact is
@@ -11182,7 +11184,7 @@ sector.
 Run before the board procedure:
 
 ```text
-make -C SRC asm-test bank3-erase
+make -C SRC asm-test bank3-erase-legacy
 ```
 
 Use only these two generated files after verifying their SHA-256 values:
@@ -11337,7 +11339,7 @@ do not require hash equality across different timestamps.
 Run:
 
 ```text
-make -C SRC himon himon-str8-rom-bin himon-str8-himon-update-s19 asm-test bank3-erase
+make -C SRC himon himon-str8-rom-bin himon-str8-himon-update-s19 asm-test bank3-erase-legacy
 ```
 
 Require a zero exit status, the 217-row ASM opcode audit, ASMTEST checksum
@@ -11721,15 +11723,20 @@ the cold clear and the second dump remained `42 4A 03`. The J3 preservation
 fix is hardware-accepted. The full record card's unknown, J0/J1/J2,
 invalid-vector, and final CRC gates remain separate.
 
-## 2026-08-01 STR8 Full-Bank Copy Maintenance Sample
+## 2026-08-01 STR8 Full-Bank Copy Maintenance Sample (Historical)
 
-[`str8-bank-copy-2000.a`](SAMPLES/str8-bank-copy-2000.a) is a direct-run
+[`str8-bank-copy-2000.a`](SAMPLES/OLD/str8-bank-copy-2000.a) was a direct-run
 ASM-F2 utility for duplicating a qualified 32K image between onboard banks.
 It accepts source Bank 0-3 and destination Bank 0-2, refuses source equal to
 destination, and never permits Bank 3 as a destination. It stages and verifies
 each `$1000`-byte sector through the installed STR8 `$F003` service using
 worker modes `$06` and `$05`. The worker skips erase when the destination
 sector is already erased.
+
+This source was archived on 2026-08-07 because split V1 exposes only jump mode
+`$08` through `$F003`. Use the exact carried-worker
+[`str8-bank-maint-2000.a`](SAMPLES/str8-bank-maint-2000.a) `C` path now. The
+following text remains as historical proof of the pre-split implementation.
 
 The utility checks the source reset vector before confirmation and warns when
 the staged `$F000` sector has the `SR/01/07` STR8 signature. That warning is
@@ -11751,7 +11758,7 @@ image. Run:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/str8-bank-copy-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-copy-2000.a
 SEAL> .
 G 2000
 ```
@@ -11861,10 +11868,9 @@ board-accepted. Bank Jump Record `42 4A 03` and `J4` rejection remain useful
 secondary checks. An unrelated guest without STR8 still requires physical
 reset or its own Bank-3 return routine.
 
-`make -C SRC str8-bank-copy-source-check` is now a firmware/release gate. It
-rejects `IMPORT`/`ENTRY`, unresolved symbol addends, non-comment source lines
-over 63 characters, more than 64 symbols, changed HIMON service bindings, or
-any WDC assembly error. The current source passes with 61 of 64 symbols.
+The former `str8-bank-copy-source-check` gate moved to `SRC/ARCHIVE/tools` with
+the source. Current release coverage is split between
+`str8-readonly-bank-tools-check` and `str8-bank-maint-source-check`.
 
 ## 2026-08-02 Combined STR8 Bank Maintenance Source
 
@@ -11873,14 +11879,16 @@ ASM-F2 utility integrating generalized full-bank copy and selective erase.
 `C` copies `$8000-$FFFF` from source Bank 0-3 to destination Bank 0-2. It
 refuses a same-bank copy, refuses Bank 3 as a destination, qualifies the
 source reset vector, prints `!STR8` when the source has the published STR8
-service signature, and uses the existing mode `$06` stage plus mode `$05`
-erase/program/full-sector-verify loop.
+service signature, and uses its carried mutation worker for mode `$06` stage
+plus mode `$05` erase/program/full-sector-verify loops. It does not call the
+split-V1 `$F003` jump-only doorway.
 
 `M` is a read-only live bank/sector map. It stages and scans sectors `8-F` in
 Banks 0-3 and prints `E` for all-`$FF` erased sectors or `U` for used sectors.
 Bank-3 sector F is not staged and is shown as `P`, identifying the protected
 STR8 sector. The heading is `BANK 8 9 A B C D E F`; rows are `B0` through
-`B3`.
+`B3`. The current source then prints the four Bank-3 directory records as
+`Dn TYPE DESCRIPTION ENTRY JOURNAL`; nonprintable description bytes are `.`.
 
 `Q` quits cleanly to HIMON without a flash operation. It records operation
 `Q`, status `$AC`, and returns with carry set.
@@ -11913,12 +11921,15 @@ make -C SRC str8-bank-maint-source-check
 ```
 
 It currently passes WDC assembly with 63 of 64 ASM-F2 global symbols and a
-maximum of 12 of 16 local labels in one scope. It also checks line length,
-direct HIMON service bindings, worker modes `$05/$06`, Bank-3 destination
-rejection, Bank-3 sector-F rejection, ordered range validation, `ALL`, the
-seven-sector Bank-3 all count, read-only map staging and markers, post-erase
-output suppression, `SEI`, direct `$F000` return, and the map's interrupt-
-masked entry-bank restoration. Hardware proof is partial.
+maximum of 12 of 16 local labels in one scope. The gate regenerates and then
+byte-compares the embedded 555-byte mutation worker against
+`str8-mutation-worker-0200.s19`. It also checks line length, direct HIMON
+service bindings, direct carried-worker modes `$05/$06`, Bank-3 destination
+and sector-F rejection, ordered range validation, `ALL`, the seven-sector
+Bank-3 all count, read-only map staging and markers, all four directory fields,
+post-erase output suppression, `SEI`, direct `$F000` return, and interrupt-
+masked entry-bank restoration. The carried-worker revision requires board
+proof.
 
 The 2026-08-02 board run assembled the persistent/Q source through `ASM OK`
 and `SEAL`. `M` printed all four eight-sector rows, used `E/U` markers, and
@@ -12000,7 +12011,8 @@ G 2000
 
 First prove empty-input abort and incorrect exact-confirmation abort without a
 write. Run `M` first and require four eight-column rows, valid `E/U` markers,
-and `P` at B3F. For destructive proof, use a disposable Bank 0-2 target and
+`P` at B3F, and directory rows `D0-D3`. For destructive proof, use a
+disposable Bank 0-2 target and
 compare a readback or CRC against `$FF` after a single sector, a repeated
 already-erased sector, an `X-Y` range, and `ALL`. Before a Bank-3 `ALL` proof,
 retain a current HIMON update S19 and record a CRC of Bank-3 sector F. After
@@ -12047,7 +12059,7 @@ negative, not a package, linker, or reporter-body failure.
 The generator now makes the address roles explicit in the paste source:
 first use `AP $3000 $4000` without `Bn` for an optional non-destructive RAM
 smoke, then install the same `$3000` envelope with
-[`bank0ap-put-transient-2000.a`](SAMPLES/bank0ap-put-transient-2000.a), record
+[`bank0ap-put-transient-2000.a`](SAMPLES/OLD/bank0ap-put-transient-2000.a), record
 the printed Bank-0 `$XXXX`, then preload with `AP B0 $XXXX $4000`. The complete
 same-board continuation is:
 
@@ -12056,7 +12068,7 @@ AP $3000 $4000
 expect GO 4000 and ASM REPORT OK for the reporter-build session
 
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/bank0ap-put-transient-2000.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-put-transient-2000.a
 ASM OK
 SEAL> .
 ASM BYE
@@ -12411,6 +12423,73 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-06 STR8 Bank Maintenance Carried-Worker Repair
+
+Status: carried-worker `M` and directory display hardware-accepted after a
+rejected first assembly; copy and erase proof remain pending. The requested
+rows-before-legend display revision is host-accepted and awaits its board run.
+
+`str8-bank-maint-2000.a` now embeds the exact 555-byte mutation-only worker at
+`$3000-$322A`, copies it into the `$0200-$042A` tray at entry, and tail-calls
+`$0200` for modes `$06` and `$05`. The utility no longer relies on `$F003`, so
+the split-V1 image can perform map, copy, and erase rather than merely failing
+safely. The ordinary program/data body ends below `$3000`, leaving a guarded gap
+before the embedded image.
+
+`M` retains the four-bank sector map and protected `B3F` marker. It then masks
+interrupts, selects Bank 3, copies `$FFB0-$FFEF` into `$1D00-$1D3F`, restores
+the entry-bank PCR bits, and prints:
+
+```text
+DIR B T DESC ENTRY JOURNAL
+D0 53 WLPII FFFF F0FFFFFF
+D1 FF ..... FFFF FFFFFFFF
+D2 A5 RYORS FFFF F0FFFFFF
+D3 FF ..... FFFF FFFFFFFF
+```
+
+The values above illustrate formatting only; the board's live records are the
+source of truth. Each row exposes the raw type, five-byte description, 16-bit
+entry, and four journal bytes without changing the directory.
+
+The source gate regenerates the embedded block from the compiled mutation
+S19, rejects any byte mismatch, freezes the two-page-plus-43-byte tray copy,
+requires direct mode `$06/$05` calls, checks the Bank-3 snapshot and entry-bank
+restore order, and WDC-assembles the complete ASM-F2 paste. It also rejects
+ASM-F2-incompatible numeric byte selectors and conservatively counts the
+persistent forward-fixup rows. Current rows-before-legend result: 64/64
+globals, 12/16 maximum locals, 119/128 forward fixups, ordinary body end
+`$278C`, worker gap `$0873`, and no branch-range or line-length errors.
+
+The exact hardware-accepted source is pinned by SHA-256:
+
+```text
+CE481CB963EE51D34944ABB0F8D4C50DFC016E3BA4417FD0716B9A6CE5456647  str8-bank-maint-2000.a
+```
+
+The display-only rows-before-legend revision is:
+
+```text
+F32C969756A066F4C2B6BFB4BA1A3786B43E5EF6E468C9AA442CC50D36FA1FF7  str8-bank-maint-2000.a
+```
+
+The first carried-worker board paste was rejected and is not proof. ASM-F2
+reported `ERR=$03 BO PC=$20AC` for `#<$1C00` and `#>$1C00`. Later forward
+references crossed the persistent 128-row fixup limit and produced five
+`ERR=$09 BAD FIX` lines, followed by `END` failure and `HSH_NF!`. Running the
+partial image printed the menu and ended at `BRK 00 PC=0003`; no maintenance
+command was entered, no carried-worker request occurred, and flash was not
+changed. The corrected source expresses the buffer address as `$00/$1C` and
+orders helpers and major routines so the affected references are backward.
+
+The corrected retry contained no `ERR=` lines, ended with `ASM OK`, ran all
+31 readable sector stages, printed four complete `U` map rows with protected
+`B3F`, then printed `D0-D3` and `OK` before returning to the maintenance menu.
+This accepts the carried worker, read-only map, entry-bank restoration, raw
+directory snapshot/display, and normal menu return on hardware. No flash write
+was requested. The observed directory was `D0=53/WLPII/FFFF/FCFFFFFF`, empty
+`D1`, `D2=A5/RYORS/FFFF/F0FFFFFF`, and empty `D3`.
 
 The focused pending hardware procedure is
 [`STR8_LIVE_DOTS_BOARD_TEST.md`](../STR8/STR8_LIVE_DOTS_BOARD_TEST.md).
@@ -13062,3 +13141,104 @@ Physical reset returned to Bank 3 and preserved the COMPLETE directory record.
 This closes the board card's positive acceptance rail. Deliberately interrupted
 and malformed on-board recovery cases remain a separate negative-test matrix;
 the host transaction gate already covers their state-machine behavior.
+
+## 2026-08-06 STR8 V1 `$F003` Split-Worker Fail-Closed Correction
+
+Status: full required host gates pass; the `00.0806(2135)` refresh and guarded
+maintenance fail-safe rail are hardware-accepted. A raw non-`$08` `$F003`
+probe remains pending.
+
+The Bank-0 install transcript closes another positive V1 transaction and then
+shows the legacy maintenance `M` command entering Bank 0 immediately after it
+prints `B0`. The maintenance source wrote mode `$06` and called `$F003`.
+Flashable V1 stores only the jump worker behind that doorway, and the original
+jump-only entry did not inspect the mode byte. With cold RAM leaving
+`$1FF2=$00`, the attempted stage became a Bank-0 launch.
+
+The correction is deliberately two-sided:
+
+- the packed jump worker now accepts only mode `$08` and returns carry clear
+  for every other mode before selecting a bank;
+- both legacy full-worker maintenance sources write `$FF` to the jump-target
+  byte before asking `$F003` for modes `$05/$06`. This makes already-installed
+  vulnerable V1 images fail through their normal worker-error path instead of
+  launching a stale target.
+
+The updated V1 layout is:
+
+```text
+transaction resident        $F000-$FED4  size $0ED5 = 3797
+resident/jump-worker gap    $FED5-$FF1E  size $004A = 74
+gap after $0040 reserve                     $000A = 10
+packed jump worker          $FF1F-$FFAF  size $0091 = 145
+copied jump worker          $0200-$0290  size $0091 = 145
+uploaded mutation worker    $0200-$042A  size $022B = 555
+directory                   $FFB0-$FFEF  size $0040 = 64
+```
+
+`str8-worker-split-check` verifies the linked jump-worker mode gate byte for
+byte, in addition to its existing ABI, size, extent, and cross-contamination
+checks. The bank-copy source gate requires the invalid jump target ahead of
+both legacy service modes. The bank-maintenance gate instead requires an exact
+embedded mutation worker and direct `$0200` calls. The focused gates, V1 artifact,
+transaction and dry-installer suites, full-worker mode sweep, layout/directory
+checks, firmware build, ASM smoke, and generated documentation gates all pass.
+
+The updated directory-preserving TopWriter assembled with `ASM OK` on Bank 3
+`1900`. `S`, `V`, confirmed `P`, and `I` returned `TW OK` and final status
+`01 AC 00 00`; the next cold boot identified `STR8-N V 00.0806(2135) $F`.
+The updated maintenance source also assembled with `ASM OK`. Two `M` runs
+printed `B0 !` and returned to the menu without a STR8 launch. `C` from Bank 3
+to Bank 1 likewise printed `!` and returned before programming. This closes
+the maintained-source fail-safe rail that had previously launched Bank 0.
+
+The capture did not independently dump the directory after refresh and did
+not call `$F003` with an unguarded non-`$08` target. Direct `$F003` calls for
+modes `$05`, `$06`, and `$07` must still be shown returning carry clear without
+a bank change; normal `J0-J3` must retain their existing mode-`$08` behavior.
+
+The maintenance utility now carries the exact mutation worker. The follow-up
+audit archived every other maintained sample body that requested legacy
+`$F003` modes `$05/$06`. CRC, jump inventory, sector read, and sector dump now
+stage read-only data through `$F010/$0203`; copy and erase are supported by
+`str8-bank-maint`; the old AP installers/writer are retired. HIMON's banked AP
+loader remains the one live read-only firmware caller and is the next slice.
+
+Required host gates:
+
+```text
+make -C SRC str8-worker-split-check
+make -C SRC str8-bank-maint-source-check
+make -C SRC str8-readonly-bank-tools-check
+make -C SRC str8-v1-artifact
+make -C SRC str8-installer-transaction-check
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```
+
+## 2026-08-07 STR8 Split-V1 ASM Tool Surface Classification
+
+Host status: accepted. Board status: the four migrated read-only bodies still
+need focused hardware proof; Bank-0-stored AP execution also waits for HIMON's
+banked AP loader migration.
+
+The pre-split versions of `str8-bank-crc-all-3000.a`,
+`str8-jump-inventory-3000.a`, `flash-bank-read-ap-2000.a`, and
+`flash-bank-dump-ap-2000.a` are retained under `SAMPLES/OLD`. Their maintained
+replacements use only `$F010/$0203`, restore Bank 3 after each staged copy,
+and contain no flash-mutation doorway.
+
+The pre-split `str8-bank-copy-2000.a`, `flash-erase-bank-ap-2000.a`, three
+`bank*put` sources, and `flash-bank-erase-write-ap-2000.a` are retired under
+`SAMPLES/OLD`; supported destructive work goes through the exact worker carried
+by `str8-bank-maint-2000.a`. The host-built Bank-3 low-flash erase proof was
+likewise retired to `SRC/ARCHIVE/PROOFS`; use bank-maint `E`, Bank 3, sectors
+`8-B` instead.
+
+`make -C SRC str8-readonly-bank-tools-check` rejects a code reference to
+`$F003`, `$1FF0`, or `STR8_SERVICE`, enforces the ASM-F2 64-global and 63-column
+limits, requires selector/copy/restore structure, and WDC-assembles all four
+maintained read-only bodies. Do not promote split V1 to the default combined
+image or documentation baseline until HIMON's `HIM_AP_STAGE_BANK` path has the
+same read-only selector contract and the resulting AP load path is board-proven.

@@ -32,7 +32,7 @@ only for the named `.a` or `.s19` file.
 | --- | --- |
 | Install historical STR8 top sector | `DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a` |
 | Test `$F010/$0203` | `DOC/GUIDES/ASM/SAMPLES/str8-bank-select-service-proof-2000.a` |
-| Read-only four-bank CRC | `DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a` |
+| Historical read-only four-bank CRC | `DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-crc-all-3000.a` |
 | Optional copy/erase tests | `DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a` |
 | Bank-3 payload recovery | `SRC/BUILD/s19/himon-str8-himon-update.s19` |
 | Bank-3 ASM recovery | `SRC/BUILD/s19/asm-v1-flash-8000.s19` |
@@ -262,10 +262,11 @@ ASM NEW
 **Send file:**
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-crc-all-3000.a
 ```
 
-Require `ASM OK`, then paste:
+Stop on any `ERR=` line and do not run the partial image. Require `ASM OK`,
+then paste:
 
 ```text
 .
@@ -371,7 +372,7 @@ ASM NEW
 **Send file:**
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-crc-all-3000.a
 ```
 
 Require `ASM OK`, then enter:
@@ -402,7 +403,8 @@ ASM NEW
 DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a
 ```
 
-Require `ASM OK`, then paste:
+Require zero `ERR=` lines anywhere in the assembly transcript and a final
+`ASM OK`. An ending prompt or partial menu is not acceptance. Then paste:
 
 ```text
 .
@@ -410,7 +412,9 @@ G 2000
 M
 ```
 
-Require four complete map rows and `P` at Bank-3 sector F.
+Require a blank line after the bank heading, four complete map rows, then the
+`E/U/P` legend. Require `P` at Bank-3 sector F and directory rows `D0-D3`
+under `DIR B T DESC ENTRY JOURNAL`.
 
 Test every empty-input position without writing. Each blank reply below means
 press Enter at that named prompt and require `ABORT` followed by the menu:
@@ -548,7 +552,8 @@ ASM NEW
 DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a
 ```
 
-Require `ASM OK`, then enter:
+Require zero `ERR=` lines anywhere in the assembly transcript and a final
+`ASM OK`. Do not run a partial image. Then enter:
 
 ```text
 .

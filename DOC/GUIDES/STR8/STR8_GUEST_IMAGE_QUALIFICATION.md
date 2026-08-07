@@ -212,8 +212,8 @@ unmodified banks retain their prior CRCs
 
 Run
 [str8-jump-inventory-3000.a](../ASM/SAMPLES/str8-jump-inventory-3000.a)
-only from Bank 3; its `$F003` service dependency belongs to the installed
-Bank-3 STR8 image.
+only from Bank 3. It bootstraps the installed `$F010` selector, stages through
+its copied `$0203` entry, and restores Bank 3 after every sector.
 
 Do not issue `Jn` when the read-back CRC or any required vector differs.
 

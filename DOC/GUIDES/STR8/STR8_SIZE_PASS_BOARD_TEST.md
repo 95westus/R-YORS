@@ -183,7 +183,7 @@ STR8-N V0 #5F6A0F7A
 Reproduce it on the host with:
 
 ```text
-make -C SRC all str8-topwrite-a str8-top-stage-s19 himon-str8-himon-update-s19 str8-record-phase1-proof str8-l-transport-phase5-proof bank3-erase "HIMON_VISIBLE_STAMP=0728(1751)" "ROM_BIN_STAMP=2026-07-28T17:51-05:00"
+make -C SRC all str8-topwrite-a str8-top-stage-s19 himon-str8-himon-update-s19 str8-record-phase1-proof str8-l-transport-phase5-proof bank3-erase-legacy "HIMON_VISIBLE_STAMP=0728(1751)" "ROM_BIN_STAMP=2026-07-28T17:51-05:00"
 ```
 
 PowerShell can verify each file with:
@@ -202,7 +202,7 @@ Get-FileHash -Algorithm SHA256 -LiteralPath <path>
 | `SRC/BUILD/s19/str8-top-stage-0a00.s19` | 9740 | `EA52FC51B4D4B2655950687E5C09115146B3A4957671CDF682813E61DE6745A2` |
 | `DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a` | 28234 | `37CF44D797788C32C291BC4FF255BF87F98A004E66AC5AC62C6D7B5A6AD4B366` |
 | `DOC/GUIDES/ASM/SAMPLES/OLD/bank3-erase-8000-bfff-transient-3000.a` | 2049 | `0139D3A991A1A050956361E8C34EDE3E87B0A501B6D29B780F7CACCD346ABCEA` |
-| `DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a` | 3092 | `D92C504C1501241F3FC791C11F081178E4B053211C3D9F7B15B5F1A5F7891326` |
+| `DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-crc-all-3000.a` | 3092 | `D92C504C1501241F3FC791C11F081178E4B053211C3D9F7B15B5F1A5F7891326` |
 | `DOC/GUIDES/ASM/SAMPLES/OLD/str8-worker-tail-proof-3000.a` | 3515 | `4CC88D6A66120357B0364CBF52A755AFE03EC7FDC7B5729E3B06F3658303A620` |
 | `SRC/BUILD/s19/str8-record-phase1-proof-3000.s19` | 5458 | `CAC1B8F3C955898F112DBC68F8E2E490068098265C3765BD047CFD5041947006` |
 | `SRC/BUILD/s19/str8-l-transport-phase5-proof-3000.s19` | 364 | `BB9D30C483A114502AE021A64961F1FE1D4C8E8895AD0A08E0781476C45C7002` |
@@ -222,7 +222,7 @@ a recovery artifact; it is not input to HIMON `L`, `L F`, or `STR8 U`.
 | `asm-v1-flash-8000.s19` | HIMON `L F` | Current ASM-F2 `$8000-$BC6C` |
 | `OLD/str8n-topwrite-transient-3000.a` | complete source paste after `ASM NEW` | Historical self-contained STR8 `$F000-$FFFF` writer |
 | `OLD/bank3-erase-8000-bfff-transient-3000.a` | complete source paste after `ASM NEW` | Historical Bank-3 low-flash eraser |
-| `str8-bank-crc-all-3000.a` | complete source paste after `ASM NEW` | Read-only CRC of all 32 flash sectors |
+| `OLD/str8-bank-crc-all-3000.a` | complete source paste after `ASM NEW` | Historical read-only CRC oracle used by this proof |
 | `str8-worker-tail-proof-3000.a` | complete source paste after `ASM NEW` | RAM-only shared worker-tail proof |
 | `str8-record-phase1-proof-3000.s19` | HIMON `L` | STR8 record-service regression suite |
 | `str8-record-phase1-max252.s19` | raw line while `G 3006` waits | One maximum-length console record |
@@ -512,7 +512,7 @@ At HIMON:
 Paste the complete text of:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-crc-all-3000.a
 ```
 
 End with `.`, then:

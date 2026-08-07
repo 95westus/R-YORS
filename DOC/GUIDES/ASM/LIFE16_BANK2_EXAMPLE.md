@@ -1,8 +1,9 @@
 # ASM-F2 16x16 Life Bank 2 Example
 
-Status: partial board evidence captured 2026-07-10. ASM-F2 assembled the Life
-source, `PACKAGE $3200` produced `L=$01DE`, and the bank-sector writer returned
-`$1A00=$AC`. The final AP run still needs a corrected-address retry.
+Status: historical pre-split-worker evidence captured 2026-07-10. ASM-F2
+assembled the Life source, `PACKAGE $3200` produced `L=$01DE`, and the old
+bank-sector writer returned `$1A00=$AC`. The writer is now archived because it
+calls `$F003` modes `$06/$05`; do not use this procedure on split V1.
 
 This example assembles a small Conway Life program with ASM-F2, packages it as
 an AP envelope, stores that envelope in flash bank 2 at `$9000`, then runs it
@@ -21,7 +22,7 @@ DOC/GUIDES/ASM/SAMPLES/OLD/life16-column-2000.a
 Helper:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/bankput-transient-3000.a
 ```
 
 ## What It Does
@@ -189,7 +190,7 @@ Start a second ASM session:
 Paste:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/bankput-transient-3000.a
 ```
 
 Do not paste `bank2put-8000-transient-3000.a`. It belongs to the fixed session reporter

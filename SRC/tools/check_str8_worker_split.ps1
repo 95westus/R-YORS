@@ -1,5 +1,6 @@
 param(
     [string]$JumpMapPath = "BUILD/map/str8-jump-worker-0200.map",
+    [string]$JumpS19Path = "BUILD/s19/str8-jump-worker-0200.s19",
     [string]$MutationMapPath = "BUILD/map/str8-mutation-worker-0200.map",
     [string]$MutationS19Path = "BUILD/s19/str8-mutation-worker-0200.s19",
     [string]$WorkerEqPath = "STR8/str8-worker-eq.inc",
@@ -97,6 +98,7 @@ $expectedMutationEnd = Get-EquValue $WorkerEqPath 'STR8_MUTATION_WORKER_END'
     Get-EquValue $WorkerEqPath 'STR8_MUTATION_WORKER_SIG3'
 )
 [byte[]]$mutationMemory = Read-S19Memory $MutationS19Path
+[byte[]]$jumpMemory = Read-S19Memory $JumpS19Path
 
 if ($jumpStart -ne $expectedJumpStart -or $mutationStart -ne 0x0200) {
     throw ('Split worker starts are ${0:X4}/${1:X4}; expected $0200/$0200' -f $jumpStart, $mutationStart)
@@ -107,6 +109,18 @@ if ($jumpEnd -ne $expectedJumpEnd -or $jumpSize -ne $expectedJumpSize) {
 }
 if ($jumpService -ne 0x0203) {
     throw ('Jump worker bank-select ABI is ${0:X4}; expected $0203' -f $jumpService)
+}
+$jumpModeGate = Get-Symbol $jump 'STR8W_JUMP_START'
+[byte[]]$expectedJumpModeGate = @(
+    0xAD, 0xF0, 0x1F, # LDA $1FF0
+    0xC9, 0x08,       # CMP #$08
+    0xF0, 0x02,       # BEQ guarded jump body
+    0x18, 0x60        # CLC / RTS for every other mode
+)
+for ($i = 0; $i -lt $expectedJumpModeGate.Length; $i++) {
+    if ($jumpMemory[$jumpModeGate + $i] -ne $expectedJumpModeGate[$i]) {
+        throw ('Jump worker mode gate mismatch at ${0:X4}' -f ($jumpModeGate + $i))
+    }
 }
 if ($mutationEnd -gt 0x0A00) {
     throw ('Mutation worker ends at ${0:X4}; exceeds the $0200-$09FF RAM tray' -f $mutationEnd)
@@ -136,7 +150,7 @@ foreach ($name in @(
     [void](Get-Symbol $mutation $name)
 }
 
-Assert-Missing $jump @('STR8W_PROGRAM_STAGED_SECTOR', 'STR8W_STAGE_BANK_SECTOR', 'STR8W_PROGRAM_RECORD', 'STR8W_FLASH_WRITE') 'Jump worker'
+Assert-Missing $jump @('STR8W_PROGRAM_STAGED_SECTOR', 'STR8W_STAGE_BANK_SECTOR', 'STR8W_PROGRAM_RECORD', 'STR8W_FLASH_ERASE', 'STR8W_FLASH_WRITE') 'Jump worker'
 Assert-Missing $mutation @('STR8W_BANK_SELECT_SERVICE', 'STR8W_JUMP_BANK') 'Mutation worker'
 
 $physicalRoom = 0xFFB0 - $residentEnd

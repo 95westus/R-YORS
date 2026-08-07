@@ -862,7 +862,7 @@ hash even if firmware source is unchanged.
 The following command passed on 2026-07-20:
 
 ```text
-make -C SRC himon himon-str8-rom-bin himon-str8-himon-update-s19 asm-test bank3-erase
+make -C SRC himon himon-str8-rom-bin himon-str8-himon-update-s19 asm-test bank3-erase-legacy
 ```
 
 The combined ROM and map baseline is:

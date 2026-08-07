@@ -17,8 +17,9 @@ FNV/RJOIN catalog. It starts new source sessions at `$2000` unless source uses
 
 For the short operator view of which address belongs to which command, see
 [ADDRESS_PRACTICES.md](ADDRESS_PRACTICES.md).
-For the current Bank-0 package ledger and exact AP entry meanings, see
-[SAMPLES/bank0-ap-entry-points.md](SAMPLES/bank0-ap-entry-points.md).
+For the historical Bank-0 package ledger and exact AP entry meanings, see
+[SAMPLES/OLD/bank0-ap-entry-points.md](SAMPLES/OLD/bank0-ap-entry-points.md).
+Its install/run workflow is archived and is not valid on split V1.
 
 ## Current Operational Process
 
@@ -645,19 +646,11 @@ expressions, so use `$` on literal hex addresses:
 INSTALL $3200 $hhhh
 ```
 
-Banked install across banks 0-2 is intentionally a board source tool in this
-slice, not a polished `INSTALL` command. Use
-`DOC/GUIDES/ASM/SAMPLES/bankput-transient-3000.a`: it copies the selected bank sector
-into the `$0A00-$19FF` sector staging buffer, overlays the AP envelope, then
-programs/verifies that 4K sector through the `$F003` STR8 worker service.
-`DOC/GUIDES/ASM/SAMPLES/bank2put-8000-transient-3000.a` is the fixed variant for an AP
-envelope at bank 2 `$8000`. For Bank 0 interactive install, use
-`bank0ap-put-transient-2000.a`. It can be bootstrapped once with `G 2000`,
-stored as a fixed-load Bank-0 AP, and later run with
-`AP B0 PUTPKG $2000`. That reloads the installer over the target BODY at
-`$2000` while preserving the target envelope at `$3000`. It stages and
-validates before accepting exact `YES` for the destructive program/verify
-step. HIMON then runs a banked package with:
+Banked install across banks 0-2 is currently unavailable on split V1. The old
+`bankput`, `bank2put`, and `bank0ap-put` sources called `$F003` modes `$05/$06`
+and are archived under `SAMPLES/OLD`. Supported bank mutation now uses
+`str8-bank-maint`, which carries and verifies the exact mutation worker. The
+historical HIMON banked-package forms were:
 
 ```text
 AP B0 $8000 $3000
@@ -667,8 +660,10 @@ AP B0 $hhhh $4000
 AP B0 $hhhh $4800
 ```
 
-The final two lines are the movable and legacy fixed session-reporter forms,
-respectively.
+The final two lines were the movable and legacy fixed session-reporter forms.
+The maintained read/dump AP bodies now use `$F010/$0203`, but current HIMON's
+banked AP loader still needs the same read-only staging migration before these
+forms are restored.
 
 That path copies the banked AP envelope into the sector staging buffer, loads
 and links BODY bytes into `$2000-$4FFF`, and runs from the requested load
@@ -965,8 +960,8 @@ Known limitations:
 - No default flash-image `RESOLVE` command; import resolution happens only
   during AP load/run through resident RJOIN.
 - `INSTALL pkg flash_addr` writes only erased currently visible low flash.
-  Banked install across banks 0-2 is currently `bankput-transient-3000.a`, not a polished
-  command.
+  Banked install across banks 0-2 has no current split-V1 writer; the former
+  `bankput-transient-3000.a` is archived under `SAMPLES/OLD`.
 - `LOAD` does minimal AP parsing and resident RJOIN import linking; no full AP
   FNV validation or dependency manager yet.
 - Local labels are not exported, imported, or reported as public symbols.

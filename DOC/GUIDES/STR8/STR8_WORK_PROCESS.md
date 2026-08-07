@@ -18,13 +18,15 @@ J0/J1/J2/J3 immediate non-destructive selected-bank reset-vector handoff
 At reset, `S` during the live dots enters this shell, `0`-`2` use the delayed
 selected-bank path, `3` enters HIMON warm, and timeout enters the local HIMON
 cold path. The current V1 host build runs STR8 from Bank 3 `$F000`, packs
-the jump-only worker at `$FF28-$FFAF`, and copies it to `$0200-$0287`. An `I`
+the jump-only worker at `$FF1F-$FFAF`, and copies it to `$0200-$0290`. An `I`
 transport uploads the 555-byte mutation worker to `$0200-$042A` before dense
 payload staging uses the single `$0A00-$19FF` sector tray. Worker/update state
 remains in `$1FE9-$1FFF`, and the fixed V1 directory is `$FFB0-$FFEF`.
 
 The top sector exposes stable service entries at `$F003` for the resident
-worker doorway and `$F009` for the V1 validated-record service.
+worker doorway and `$F009` for the V1 validated-record service. In the split
+V1 image, `$F003` exposes only jump mode `$08`; modes `$05-$07` belong to the
+mutation worker uploaded by `I` and return carry clear at this doorway.
 `$F006-$F008` is the retired AP-link slot and fails closed as `CLC/RTS/NOP`;
 AP parsing and FNV import linking belong to HIMON. `$F00C-$F00F` is
 `53 52 01 07`.

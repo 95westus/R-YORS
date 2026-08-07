@@ -678,7 +678,7 @@ entry are copied into RAM before another bank is selected.
 
 ## Worker Modes and Compatibility
 
-V1 retains only these active worker modes:
+The complete worker vocabulary retains only these active modes:
 
 ```text
 $05  PROGRAM_STAGED
@@ -687,11 +687,13 @@ $07  PROGRAM_RECORD
 $08  JUMP_BANK
 ```
 
-Mode `$06` remains required by HIMON AP support. The V0 full-copy and restore
-modes are retired. The worker dispatcher explicitly rejects every unrecognized
-mode. `make -C SRC str8-worker-mode-check` executes the compiled dispatcher
-prefix for all 256 byte values: `$05-$08` must reach their exact entry points,
-and all other 252 values must return carry clear before calling any operation.
+The flashable split V1 image does not expose that complete vocabulary through
+resident `$F003`. Its packed jump worker accepts only `$08`; `$05-$07` belong
+to the mutation worker uploaded and validated by `I`. The V0 full-copy and
+restore modes are retired. Each worker dispatcher explicitly rejects every
+mode outside its own subset. `make -C SRC str8-worker-mode-check` executes the
+compiled full-worker dispatcher for all 256 byte values, while
+`str8-worker-split-check` freezes the jump-only `$08` gate.
 
 The `STR8-N V 00.0801(2234)` board proof installed the reclaimed image through
 TopWriter, confirmed that `B` and bare `0`, `1`, and `2` all return `?`, and
@@ -1137,3 +1139,56 @@ V1 is accepted only when:
 - `J0-J3`, Bank Jump Record publication, and physical-reset recovery pass.
 - A normal TopWriter preserves all 64 live directory bytes exactly.
 - Every bank not selected for installation remains byte-for-byte unchanged.
+
+## 2026-08-06 Split-Worker Service Compatibility Finding
+
+Hardware use of the legacy bank-maintenance map exposed an unsafe assumption:
+the old tool treated `$F003` as a complete modes-`$05/$06` worker service,
+while flashable V1 packs only the mode-`$08` jump worker there. The original
+jump-only entry did not dispatch on `$1FF0`, so a mode-`$06` request used the
+stale jump target instead.
+
+The immediate firmware correction makes the packed worker reject every mode
+except `$08`. The standalone bank-copy source's `$1FF2=$FF` guard protected
+already-installed V1 images, but the source is now archived because it still
+requests obsolete modes. The combined bank-maintenance utility embeds the
+exact mutation worker at `$3000-$322A`, copies it to `$0200-$042A`, and calls
+it directly for copy/erase/map instead of treating `$F003` as a mutation
+service.
+
+The corrected `$0091` jump worker was installed on Bank 3 as
+`00.0806(2135)` through the directory-preserving TopWriter. Assembly, stage,
+verify, confirmed program, full-sector verify, status `$AC`, and the next cold
+boot all passed on hardware. The guarded maintenance source subsequently made
+two map attempts and one Bank-3-to-Bank-1 copy attempt fail with `!` and return
+to its menu, with no unintended bank launch or program. A raw non-`$08`
+`$F003` firmware probe and independent post-refresh directory dump remain
+separate closure checks.
+
+The repaired `M` also snapshots the Bank-3 `$FFB0-$FFEF` directory while
+interrupts are masked, restores the entry bank, and displays four raw rows of
+type, description, entry, and journal information. Exact-worker embedding,
+ASM-F2 limits, map/directory sequencing, and assembly are host-accepted. The
+clean board retry hardware-accepted all 31 readable sector stages, four map
+rows, protected `B3F`, directory rows `D0-D3`, `OK`, and return to the menu.
+The later rows-before-legend presentation change is host-accepted; copy and
+erase board proof remain open.
+
+## 2026-08-07 Maintained-Tool Contract Cut
+
+All maintained ASM sample bodies that used `$F003` modes `$05/$06` have been
+classified. The historical versions are under `SAMPLES/OLD` with warnings at
+their entry points. The CRC, jump-inventory, sector-read, and sector-dump tools
+now stage read-only data through `$F010/$0203`; destructive copy/erase work is
+owned by the exact worker carried in `str8-bank-maint`; the general AP writers
+are retired. The old host-built Bank-3 erase proof is likewise archive-only.
+
+The next slice is deliberately narrow: replace HIMON's
+`HIM_AP_STAGE_BANK` call to `$F003` mode `$06` with a RAM-resident
+select/copy/restore routine. It must bootstrap at `$F010`, invoke `$0203` while
+the banked window is switched, copy only the requested AP envelope bytes (or
+the containing staged sectors under the existing bounds), restore Bank 3 on
+every return, preserve the caller's interrupt state, and retain the existing
+`LOAD_FAIL_SERVICE` failure contract. Then re-run the RAM/visible/banked AP
+matrix and board-prove a Bank-0 AP load. That is the remaining promotion gate
+for making split V1 the default combined-image/documentation baseline.

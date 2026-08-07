@@ -1,5 +1,7 @@
+# Archived 2026-08-07 with the incompatible pre-split-worker bank-copy tool.
+# Current full-bank copy is provided by the carried-worker bank-maint source.
 param(
-    [string]$SourcePath = "../DOC/GUIDES/ASM/SAMPLES/str8-bank-copy-2000.a",
+    [string]$SourcePath = "../DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-copy-2000.a",
     [string]$BuildDir = "BUILD/tmp/str8-bank-copy-check",
     [string]$Assembler = "wdc02as"
 )
@@ -55,6 +57,13 @@ foreach ($text in $required) {
     if (-not $sourceText.Contains($text)) {
         Fail-Check "missing published service binding: $text"
     }
+}
+
+if (-not [regex]::IsMatch(
+        $sourceText,
+        'BC_STAGE.*?LDA #\$FF.*?STA \$1FF2.*?LDA #\$06.*?JMP STR8_SERVICE.*?BC_PROGRAM.*?LDA #\$FF.*?STA \$1FF2.*?LDA #\$05.*?JMP STR8_SERVICE',
+        [System.Text.RegularExpressions.RegexOptions]::Singleline)) {
+    Fail-Check 'legacy worker calls do not pin an invalid jump target'
 }
 
 $assemblerCommand = Get-Command $Assembler -ErrorAction Stop

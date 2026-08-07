@@ -1,5 +1,11 @@
 # Bank 0 AP Entry-Point Ledger
 
+Archived 2026-08-07. This ledger belonged to the pre-split-worker Bank-0 AP
+installation surface. Its read tools called `$F003` mode `$06`, and its
+writers called modes `$05/$06`; split V1 exposes only jump mode `$08` there.
+The recorded addresses remain hardware provenance, but the workflow is not a
+current operator path. It moved with the incompatible sources to `OLD`.
+
 This ledger separates the address where an AP Capsule (the serialized AP
 envelope) is stored in Bank 0 from the address where HIMON loads and runs its
 BODY in the AP Island Runway (AIR).
