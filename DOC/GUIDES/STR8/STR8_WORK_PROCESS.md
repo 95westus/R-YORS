@@ -51,6 +51,13 @@ hardware-proven. The current follow-up publishes `$1FFD-$1FFF = 42 4A nn` as
 the durable Bank Jump Record; host build and clear-path checks pass, while
 board proof of that new record is pending.
 
+The currently live bank-latch state is the raw byte at `$7FEC`, published as
+`STR8_BANK_STATE_BYTE`; inspect it with `D 7FEC 7FEC`. Its explicit
+B0/B1/B2/B3 write patterns are `$CC/$CE/$EC/$EE` under mask `$EE`. This raw
+byte is deliberately not printed as a bank number because reset/input states
+are not an unambiguous decoded bank ID. The `$1FFD-$1FFF` Bank Jump Record
+remains the historical last validated handoff.
+
 The current build targets are:
 
 ```text

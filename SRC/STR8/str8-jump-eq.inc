@@ -12,6 +12,12 @@ STR8_COPY_MODE_JUMP_BANK EQU           $08
 STR8_BANK_SELECT_SERVICE EQU            $F010
 STR8_BANK_SELECT_RAM     EQU            $0203
 
+; Published live bank-latch state byte. Read the raw PCR byte; only bits in
+; STR8_BANK_STATE_MASK are controlled by explicit bank selection. Explicit
+; B0/B1/B2/B3 patterns are $CC/$CE/$EC/$EE. Other states are not bank IDs.
+STR8_BANK_STATE_BYTE    EQU             $7FEC
+STR8_BANK_STATE_MASK    EQU             $EE
+
 STR8_JUMP_BANK          EQU             $1FF2
 STR8_JUMP_VEC_LO        EQU             $1FF3
 STR8_JUMP_VEC_HI        EQU             $1FF4

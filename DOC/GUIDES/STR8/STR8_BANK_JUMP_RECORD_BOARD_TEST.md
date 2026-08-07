@@ -46,6 +46,10 @@ no valid signature -> after cold clear publish 42 4A FF
 
 The record is historical state. It deliberately does not claim that the live
 PCR still selects that bank after the guest resets or returns through Bank 3.
+The separately published live byte is `STR8_BANK_STATE_BYTE = $7FEC`, masked
+by `STR8_BANK_STATE_MASK = $EE`. `D 7FEC 7FEC` exposes the byte without
+claiming a decoded bank number; `$CC/$CE/$EC/$EE` are the explicit
+B0/B1/B2/B3 selector-write patterns, while other raw states remain undecoded.
 
 ## Board Procedure
 

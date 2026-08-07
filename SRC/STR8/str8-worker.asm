@@ -54,8 +54,8 @@ STR8_COPY_DST_BANK      EQU             $1FEF
 STR8_COPY_MODE          EQU             $1FF0
 STR8_STAGE_BUF_HI       EQU             $1FF6
 
-STR8_FTDI_VIA_PCR       EQU             $7FEC
-STR8_BANK_PCR_MASK      EQU             $EE
+STR8_FTDI_VIA_PCR       EQU             STR8_BANK_STATE_BYTE
+STR8_BANK_PCR_MASK      EQU             STR8_BANK_STATE_MASK
 
 STR8_FLASH_UNLOCK1      EQU             $D555
 STR8_FLASH_UNLOCK2      EQU             $AAAA

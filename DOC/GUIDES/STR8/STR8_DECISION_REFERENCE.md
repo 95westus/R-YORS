@@ -353,6 +353,12 @@ record across cold RAM clearing; `$42,$4A,$FF` means no validated jump is
 known. This is historical handoff state, not a decode of the currently live
 PCR bank selection.
 
+The live hardware byte is published separately as `STR8_BANK_STATE_BYTE =
+$7FEC`, with `STR8_BANK_STATE_MASK = $EE`. Read it directly with `D 7FEC
+7FEC`. Explicit selector writes for B0/B1/B2/B3 are `$CC/$CE/$EC/$EE`;
+reset and input-mode values are raw byte states and must not be reported as a
+decoded bank number.
+
 The current RAM worker copies full 32K banks with a 4K buffer:
 
 ```text
