@@ -70,6 +70,9 @@ HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
 HIMON_STR8_V1_INSTALL_S19 := $(S19_DIR)/himon-str8-v1-install.s19
 STR8_V1_I_BANK012_S19 := $(S19_DIR)/str8-v1-i-bank012.s19
 STR8_V1_I_STREAM_GEN := tools/build_str8_v1_install_stream.ps1
+STR8_V1_BAD_WORKER_S19 := $(S19_DIR)/str8-v1-i-bad-worker-id.s19
+STR8_V1_INTERRUPT_S19 := $(S19_DIR)/str8-v1-i-interrupt-after-start.s19
+STR8_V1_NEGATIVE_GEN := tools/build_str8_v1_negative_streams.ps1
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
 STR8_TOP_STAGE_S19 := $(S19_DIR)/str8-top-stage-0a00.s19
 STR8_TOPWRITE_A := ../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
@@ -448,6 +451,9 @@ str8-v1-artifact: $(HIMON_STR8_V1_BIN) $(HIMON_STR8_V1_INSTALL_S19) $(STR8_V1_I_
 
 str8-v1-install-stream: $(STR8_V1_I_BANK012_S19)
 	@echo "Built single-transfer I stream $(STR8_V1_I_BANK012_S19)."
+
+str8-v1-negative-streams: $(STR8_V1_I_BANK012_S19) $(STR8_V1_BAD_WORKER_S19) $(STR8_V1_INTERRUPT_S19)
+	@echo "Built STR8 V1 negative/interruption streams."
 
 str8-v1-topwrite-a: $(STR8_V1_TOPWRITE_A)
 	@echo "Built V1 migration TopWriter $(STR8_V1_TOPWRITE_A)."
@@ -1183,6 +1189,10 @@ $(STR8_V1_I_BANK012_S19): $(HIMON_STR8_V1_INSTALL_S19) $(STR8_MUTATION_WORKER_S1
 	@echo [ps] build $(STR8_V1_I_BANK012_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_V1_I_STREAM_GEN) -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)" -PayloadS19Path "$(HIMON_STR8_V1_INSTALL_S19)" -WorkerEqPath "$(STR8_WORKER_EQ)" -S19Path "$(STR8_V1_I_BANK012_S19)"
 
+$(STR8_V1_BAD_WORKER_S19) $(STR8_V1_INTERRUPT_S19): $(HIMON_STR8_V1_INSTALL_S19) $(STR8_MUTATION_WORKER_S19) $(STR8_WORKER_EQ) $(STR8_V1_NEGATIVE_GEN)
+	@echo [ps] build STR8 V1 negative/interruption streams
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_V1_NEGATIVE_GEN) -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)" -PayloadS19Path "$(HIMON_STR8_V1_INSTALL_S19)" -WorkerEqPath "$(STR8_WORKER_EQ)" -BadWorkerS19Path "$(STR8_V1_BAD_WORKER_S19)" -InterruptS19Path "$(STR8_V1_INTERRUPT_S19)"
+
 $(HIMON_STR8_HIMON_UPDATE_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 	@echo [ps] build $(HIMON_STR8_HIMON_UPDATE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$(HIMON_STR8_HIMON_UPDATE_S19)" -BaseAddress 32768 -RangeStart 49152 -RangeEnd 61439 -StartAddress 49152 -OmitAllFFDataRecords
@@ -1344,7 +1354,7 @@ endif
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
-	str8-v1-layout-preview str8-v1-artifact str8-v1-install-stream str8-v1-topwrite-a str8-v1-refresh-a str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
+	str8-v1-layout-preview str8-v1-artifact str8-v1-install-stream str8-v1-negative-streams str8-v1-topwrite-a str8-v1-refresh-a str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
 	str8-bank-copy-source-check str8-bank-maint-source-check \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \

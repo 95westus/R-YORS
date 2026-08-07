@@ -20109,3 +20109,112 @@ This closes stage, full-sector program/verify, exact directory preservation,
 physical-reset recovery, and COMPLETE-record `J2` acceptance. The refreshed
 Bank-3 supervisor is now safe to use for the negative/interrupted transaction
 board slice.
+
+## 2026-08-06 STR8 V1 Bad-Worker Rejection Checkpoint
+
+The negative transaction test began on refreshed Bank-3
+`STR8-N V 00.0806(1900) $F` with Bank 2 COMPLETE at pair `$01`:
+
+```text
+FFD0: A5 FF FF FF 52 59 4F 52 53 FE FF FF FC FF FF FF
+```
+
+The operator selected `I`, Bank 2, confirmed the immutable
+`T=A5 D=RYORS COMPLETE P=01` summary, and sent the frozen bad-worker stream.
+STR8 rejected its deliberately changed identity byte before START:
+
+```text
+I FAIL $15
+STR8-N>
+```
+
+Bank-3 HIMON then read the Bank-2 journal back as the same exact
+`FC FF FF FF`. `J2` printed `J B2` and launched the distinct Bank-2
+`STR8-N V 00.0806(1707) $F`, which completed its cold path into
+`HIMON V 00.0806(1707)`. This hardware-accepts worker-identity rejection as a
+pre-START failure that preserves the prior COMPLETE transaction and launch.
+
+The transcript next returns to Bank 3 and reaches `SEND S19` for the
+post-START interruption fixture, but ends there. It contains no physical-reset
+recovery, fail-closed `JERR`, `F8` STARTED readback, or successful retry, so
+those phases remain pending and are not claimed by this checkpoint.
+
+## 2026-08-06 STR8 V1 Post-START Interruption Checkpoint
+
+After the deliberately unterminated stream had written START and blocked
+waiting for another S19 record, physical reset recovered refreshed Bank 3.
+The first Bank-2 launch attempt failed closed exactly as required:
+
+```text
+J B2
+JERR B2 V=$0000
+STR8-N>
+```
+
+Selecting Bank 2 through `I` then rediscovered the existing record as:
+
+```text
+T=A5 D=RYORS INCOMPLETE P=01 WRITE? Y: Y
+```
+
+The interruption stream was sent again, intentionally remained silent while
+waiting for a record that never arrives, and was ended by another physical
+reset. `J2` again returned `JERR B2 V=$0000`. Bank-3 HIMON finally read:
+
+```text
+FFD0: A5 FF FF FF 52 59 4F 52 53 FE FF FF F8 FF FF FF
+```
+
+This hardware-accepts persistent pair-1 STARTED state, reset recovery,
+directory rediscovery as INCOMPLETE, and launch rejection after interruption.
+The normal same-pair completion retry, `F0` readback, and restored Bank-2
+launch remain pending.
+
+## 2026-08-06 STR8 V1 Same-Pair Retry Checkpoint
+
+The operator retried Bank 2 with the normal combined stream. STR8 preserved
+the immutable record identity and reused the interrupted pair:
+
+```text
+T=A5 D=RYORS INCOMPLETE P=01 WRITE? Y: Y
+SEND S19
+........
+I OK
+```
+
+Bank-3 HIMON then read pair 1 COMPLETE and pair 2 still erased:
+
+```text
+FFD0: A5 FF FF FF 52 59 4F 52 53 FE FF FF F0 FF FF FF
+```
+
+Returning to Bank-3 STR8 and issuing `J2` printed `J B2`, launched the newly
+written `STR8-N V 00.0806(1927) $F`, and completed its cold path through
+`RAM ZERO OK` into `HIMON V 00.0806(1927)`. This hardware-accepts recovery of
+the interrupted pair, full-bank retry, COMPLETE publication, and restored
+launch.
+
+The final directory dump in the capture is all `$FF` because it was made from
+the newly launched Bank 2. A physical reset to Bank 3 and one final
+`F0 FF FF FF` persistence readback remain pending before closing the complete
+negative/interrupted transaction board slice.
+
+## 2026-08-06 STR8 V1 Interrupted Transaction Board Closure
+
+The final physical reset returned to refreshed Bank 3, identified by:
+
+```text
+STR8-N V 00.0806(1900) $F
+HIMON V 00.0805(1312)
+```
+
+Its Bank-2 directory record retained the completed pair across reset:
+
+```text
+FFD0: A5 FF FF FF 52 59 4F 52 53 FE FF FF F0 FF FF FF
+```
+
+Together with the preceding checkpoints, this closes the frozen bad-worker
+rejection before START, directory preservation at `FC`, post-START physical
+interruption at `F8`, fail-closed `J2`, rediscovery as INCOMPLETE, same-pair
+retry to `F0`, restored Bank-2 launch, and final Bank-3 reset persistence.

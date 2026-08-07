@@ -780,6 +780,25 @@ programmer carry the exact directory through a Bank-3 top-sector refresh. The
 refresh source consumes all 64 ASM-F2 symbols and must not be used as the
 first old-layout-to-V1 migration writer.
 
+The explicit `str8-v1-negative-streams` target now emits two board-only S19
+fixtures. `str8-v1-i-bad-worker-id.s19` changes one checksummed identity byte
+and ends before START; it must report `$15` without touching the directory.
+`str8-v1-i-interrupt-after-start.s19` contains the exact mutation worker and
+only the first `$8000` payload record. That record causes START, but cannot
+complete a 4K sector; the receiver then blocks for the next record until the
+operator resets. Neither fixture contains S9. These artifacts are never part
+of the ordinary install target.
+
+The bad-worker fixture is hardware-accepted on refreshed Bank 3
+`00.0806(1900)`: it returned `$15`, left the Bank-2 pair-1 journal COMPLETE at
+`FC`, and did not prevent `J2` from launching Bank 2. The post-START physical
+reset is also hardware-accepted: `J2` failed closed with `V=$0000`, the
+installer rediscovered `INCOMPLETE P=01`, and the journal read back as `F8`.
+The same-pair retry is hardware-accepted through eight sector writes, `I OK`,
+the pair-1 COMPLETE `F0` journal, and launch of the new Bank-2 image. A final
+physical reset returned Bank 3 `00.0806(1900)` and retained the exact `F0`
+journal, closing the negative/interrupted same-pair recovery board slice.
+
 An externally programmed full Bank-3 image can overwrite the directory. That
 is an explicit full-image operation, not an `I3` payload installation.
 

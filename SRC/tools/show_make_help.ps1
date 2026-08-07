@@ -23,6 +23,7 @@ $rows = @(
     [pscustomobject]@{ Target = "str8-v1-layout-preview"; Category = "monitor"; Description = "Build the guarded, nonflashable V1 worker/directory layout preview BIN; produces no install S19, TopWriter, or ROM stamp." }
     [pscustomobject]@{ Target = "str8-v1-artifact"; Category = "monitor"; Description = "Build the host-verified V1 BIN/S19, combined I stream, migration writer, and directory-preserving refresh writer." }
     [pscustomobject]@{ Target = "str8-v1-install-stream"; Category = "monitor"; Description = "Build one-file mutation-worker plus 32K bank transport: BUILD/s19/str8-v1-i-bank012.s19." }
+    [pscustomobject]@{ Target = "str8-v1-negative-streams"; Category = "monitor"; Description = "Build the bad-worker and post-START interruption S19 board-test streams." }
     [pscustomobject]@{ Target = "str8-v1-topwrite-a"; Category = "monitor"; Description = "Build the V1 Bank-3 top-sector migration writer: BUILD/str8n-v1-topwrite-transient-3000.a." }
     [pscustomobject]@{ Target = "str8-v1-refresh-a"; Category = "monitor"; Description = "Build the directory-preserving V1 refresh writer: BUILD/str8n-v1-refresh-transient-3000.a." }
     [pscustomobject]@{ Target = "str8-directory-check"; Category = "monitor"; Description = "Run host reference and compiled-resident validation of frozen V1 directory records and journals against the guarded preview BIN." }
