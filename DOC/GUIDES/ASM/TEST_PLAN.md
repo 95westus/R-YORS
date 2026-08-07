@@ -13287,3 +13287,44 @@ make -C SRC str8-v1-artifact
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-07 STR8 V1.02 Local-HIMON Identity Gate
+
+Host status: accepted. Board status: focused positive and fail-closed `H`
+proof is pending.
+
+HIMON now publishes a fixed warm-entry image face at `$C000`: `JMP $C007`
+followed by `A5 5A C3 3C` at `$C003-$C006`. STR8 `H` matches all four bytes
+before writing the corresponding RAM warm signature and entering `$C000`.
+Erased or foreign local images, plus each of the four possible single-marker
+byte mismatches, print `NO HIMON`, do not invoke a bank worker, do not alter the
+RAM warm signature, and return to the STR8 help/prompt path.
+
+The compiled transaction emulator passes the positive HIMON fixture and all
+six fail-closed fixtures as part of the full 13-startup, 34-line/I, five-jump,
+and 41-installer matrix. The combined-image builder independently pins the
+marker address and bytes.
+
+The gate costs `$0016` resident bytes relative to the nomenclature pass:
+
+```text
+transaction resident        $F000-$FED7  size $0ED8 = 3800
+resident/jump-worker gap    $FED8-$FF1E  size $0047 = 71
+gap after $0040 reserve                     $0007 = 7
+packed jump worker          $FF1F-$FFAF  size $0091 = 145
+```
+
+The reserve still passes, but the next V1.02 slice must be the resident-size
+pass before parameterized range state is added.
+
+Required host gates:
+
+```text
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-worker-split-check
+make -C SRC str8-v1-artifact
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

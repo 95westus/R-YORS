@@ -153,9 +153,11 @@ STR8-N V 00.mmdd(hhmm) $F
 STR8-N, HIMON, and ASM-F2 receive the same local `00.mmdd(hhmm)` stamp during
 one build.
 
-If the selector expires, STR8 cold-starts the local HIMON at `$C000`. `H`
+If the selector expires, STR8 cold-starts the local target at `$C000`. `H`
 immediately warm-starts that local HIMON without changing banks so RAM is
-preserved, and `S` or `s` enters the
+preserved, but only when its fixed identity is present at `$C003-$C006`. If the
+local image is erased, is not HIMON, or has a damaged identity, STR8 prints
+`NO HIMON` and remains at its prompt. `S` or `s` enters the
 STR8 prompt. `0`, `1`, or `2` prints the selected bank, drains trailing input,
 prints `BOOT IN 3S`, waits approximately three more seconds, then uses the same
 non-destructive reset-vector handoff as `J0`, `J1`, or `J2`. Interactive

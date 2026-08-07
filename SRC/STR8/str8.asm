@@ -57,6 +57,7 @@
                         XREF            FLASH_WRITE_BYTE_RAW_AXY
                         ENDIF
 
+                        INCLUDE         "HIMON/himon-image-eq.inc"
                         INCLUDE         "STR8/str8-record-eq.inc"
                         INCLUDE         "STR8/str8-jump-eq.inc"
                         INCLUDE         "STR8/str8-directory-eq.inc"
@@ -73,7 +74,7 @@ STR8_ID_MARKER1         EQU             $0F
 STR8_ID_MARKER2         EQU             $6A
 STR8_ID_MARKER3         EQU             $5F
 STR8_RESET_VECTOR       EQU             $FFFC
-STR8_HIMON_START        EQU             $C000
+STR8_HIMON_START        EQU             HIMON_IMAGE_ENTRY
 STR8_HIMON_RESET_SIG0   EQU             $7EE6
 STR8_HIMON_RESET_SIG1   EQU             $7EE7
 STR8_HIMON_RESET_SIG2   EQU             $7EE8
@@ -393,13 +394,22 @@ STR8_IVY_ENTRY_IRQ_MASTER:
 STR8_ENTER_HIMON_COLD:
                         JSR             STR8_BOOT_TARGET_AVAILABLE
                         BCC             STR8_ENTER_MENU_NO_BOOT
-                        STZ             STR8_HIMON_RESET_SIG0
-                        STZ             STR8_HIMON_RESET_SIG1
-                        STZ             STR8_HIMON_RESET_SIG2
-                        STZ             STR8_HIMON_RESET_SIG3
+                        LDX             #HIMON_IMAGE_ID_SIZE-1
+?SIG:                  STZ             STR8_HIMON_RESET_SIG0,X
+                        DEX
+                        BPL             ?SIG
                         JMP             STR8_HIMON_START
 
 STR8_ENTER_HIMON_WARM:
+                        IF              STR8_V1_LAYOUT
+                        JSR             STR8_LOCAL_HIMON_AVAILABLE
+                        BCC             STR8_ENTER_MENU_NO_HIMON
+                        LDX             #HIMON_IMAGE_ID_SIZE-1
+?SIG:                  LDA             STR8_HIMON_WARM_SIGNATURE,X
+                        STA             STR8_HIMON_RESET_SIG0,X
+                        DEX
+                        BPL             ?SIG
+                        ELSE
                         JSR             STR8_BOOT_TARGET_AVAILABLE
                         BCC             STR8_ENTER_MENU_NO_BOOT
                         LDA             #$A5
@@ -410,6 +420,7 @@ STR8_ENTER_HIMON_WARM:
                         STA             STR8_HIMON_RESET_SIG2
                         LDA             #$3C
                         STA             STR8_HIMON_RESET_SIG3
+                        ENDIF
                         JMP             STR8_HIMON_START
 
 ; Minimal generic HIMON/user-app availability gate. A richer directory/CRC
@@ -427,13 +438,40 @@ STR8_BOOT_TARGET_AVAILABLE:
 ?YES:                  SEC
                         RTS
 
+                        IF              STR8_V1_LAYOUT
+; H is specifically HIMON warm entry, not a generic local-$C000 launch. Match
+; the complete fixed image marker before writing HIMON's warm signature to RAM.
+STR8_LOCAL_HIMON_AVAILABLE:
+                        LDX             #HIMON_IMAGE_ID_SIZE-1
+?BYTE:                 LDA             HIMON_IMAGE_ID_ADDR,X
+                        CMP             STR8_HIMON_WARM_SIGNATURE,X
+                        BNE             ?NO
+                        DEX
+                        BPL             ?BYTE
+                        SEC
+                        RTS
+?NO:                   CLC
+                        RTS
+
+STR8_ENTER_MENU_NO_HIMON:
+                        LDX             #<MSG_NO_HIMON
+                        IF              STR8_V1_INSTALLER_TXN
+                        BRA             STR8_ENTER_MENU_NO_TARGET_PRINT
+                        ELSE
+                        LDY             #>MSG_NO_HIMON
+                        BRA             STR8_ENTER_MENU_NO_TARGET_PRINT
+                        ENDIF
+                        ENDIF
+
 STR8_ENTER_MENU_NO_BOOT:
                         JSR             STR8_CON_FLUSH_RX
                         LDX             #<MSG_NO_BOOT
                         IF              STR8_V1_INSTALLER_TXN
+STR8_ENTER_MENU_NO_TARGET_PRINT:
                         JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_NO_BOOT
+STR8_ENTER_MENU_NO_TARGET_PRINT:
                         JSR             STR8_PRINT_XY
                         ENDIF
                         JMP             STR8_ENTER_MENU_HELP
@@ -760,7 +798,7 @@ STR8_CMD_INSTALL_PREVIEW:
 STR8_I_READ_TYPE:
                         LDX             #<MSG_I_TYPE_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_TYPE_PROMPT
                         JSR             STR8_PRINT_XY
@@ -3052,5 +3090,11 @@ MSG_JUMP_FAIL_VEC:      DB              " V=",('$'+$80)
 MSG_COPY_FAIL_AT:       DB              $0D,$0A,"COPY FAIL @ ",('$'+$80)
                         ENDIF
 MSG_CRLF:               DB              $0D,$8A
+                        IF              STR8_V1_LAYOUT
+MSG_NO_HIMON:           DB              "NO HIMON",$0D,$8A
+STR8_HIMON_WARM_SIGNATURE:
+                        DB              HIMON_IMAGE_SIG0_VALUE,HIMON_IMAGE_SIG1_VALUE
+                        DB              HIMON_IMAGE_SIG2_VALUE,HIMON_IMAGE_SIG3_VALUE
+                        ENDIF
 
                         END

@@ -57,15 +57,19 @@ direct `JSR`/`JMP` evidence.
 flowchart LR
     RESET["START / STR8_BOOT_START<br/>Reset entry; initialize IVY and console, then open the startup selector"] --> SELECT{"Startup choice"}
     SELECT -->|S| SHELL["STR8_CMD_LOOP<br/>Recovery shell; read and dispatch one operator command"]
-    SELECT -->|timeout or H| BOOTCHECK{"Local $C000 entry face available?"}
-    BOOTCHECK -->|yes| HIMON["STR8_ENTER_HIMON_COLD / WARM<br/>Transfer normal operation to the local app"]
+    SELECT -->|timeout| BOOTCHECK{"Local $C000 entry face available?"}
+    BOOTCHECK -->|yes| COLD["STR8_ENTER_HIMON_COLD<br/>Cold-transfer to the local app"]
     BOOTCHECK -->|all $FF| SHELL
+    SELECT -->|H| HIMONCHECK{"Exact HIMON marker at $C003-$C006?"}
+    HIMONCHECK -->|yes| WARM["STR8_ENTER_HIMON_WARM<br/>Warm-transfer to local HIMON"]
+    HIMONCHECK -->|no| NOHIMON["Print NO HIMON and remain in STR8"]
+    NOHIMON --> SHELL
     SELECT -->|0, 1, or 2| JUMP["STR8_BOOT_JUMP_BANK_A<br/>Prepare a delayed, non-destructive selected-bank handoff"]
 
     SHELL --> DISPATCH["STR8_DISPATCH_A<br/>Route I, local H, and J0-J3; unmatched input prints compact help"]
     DISPATCH --> INSTALL["STR8_CMD_INSTALL_PREVIEW<br/>Collect metadata and run the journaled selected-bank transaction"]
     DISPATCH --> JUMP
-    DISPATCH --> HIMON
+    DISPATCH --> HIMONCHECK
 
     INSTALL --> MUTATION["Uploaded mutation worker<br/>Accept modes $05-$07; erase, program, verify, and journal from RAM"]
     JUMP --> JWORKER["Packed jump worker<br/>Accept mode $08; validate and enter the selected bank from RAM"]
@@ -225,14 +229,14 @@ worker is packed immediately below the fixed directory, and the remaining free
 space is one contiguous reserve:
 
 ```text
-$F000-$FD9A  STR8 transaction code
-             size $0D9B = 3483 bytes
+$F000-$FD91  STR8 transaction code
+             size $0D92 = 3474 bytes
 
-$FD9B-$FED4  STR8 transaction data
-             size $013A = 314 bytes
+$FD92-$FED7  STR8 transaction data
+             size $0146 = 326 bytes
 
-$FED5-$FF1E  contiguous reserve
-             size $004A = 74 bytes
+$FED8-$FF1E  contiguous reserve
+             size $0047 = 71 bytes
 
 $FF1F-$FFAF  packed permanent jump worker
              size $0091 = 145 bytes; copied to $0200-$0290
@@ -354,10 +358,11 @@ STR8 prints 16 progress dots over about 6 seconds, then flushes RX
 STR8 prints its shared make-time `STR8-N V 00.mmdd(hhmm)` identity
 STR8 opens an approximately 6-second selector
 selector timeout cold-starts Bank 3 HIMON
-selector H warm-starts the local HIMON without changing banks and preserves RAM
+selector H requires the local HIMON marker at $C003-$C006, then warm-starts
+  HIMON without changing banks and preserves RAM
+selector H prints NO HIMON and remains in STR8 when that marker is absent
 selector S/s enters STR8
 selector 0/1/2 announces the bank, waits about 3 more seconds, and uses the J handoff
-STR8 validates HIMON
 STR8 hands off to HIMON
 HIMON installs NMI/BRK/IRQ handlers through STR8 or SYS_VEC calls
 STR8 routes traps to the installed HIMON handlers

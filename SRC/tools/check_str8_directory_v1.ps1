@@ -1878,6 +1878,7 @@ $residentSectorHook = $(if ($transactionInstallerMode) { Get-MapSymbol $resident
 $residentBeginTransaction = $(if ($transactionInstallerMode) { Get-MapSymbol $residentSymbols "STR8_I_BEGIN_TRANSACTION" } else { -1 })
 $residentFinishTransaction = $(if ($transactionInstallerMode) { Get-MapSymbol $residentSymbols "STR8_I_FINISH_TRANSACTION" } else { -1 })
 $residentDispatchEntry = Get-MapSymbol $residentSymbols "STR8_DISPATCH_A"
+$residentCommandLoop = Get-MapSymbol $residentSymbols "STR8_CMD_LOOP"
 $residentConfirmEntry = Get-MapSymbol $residentSymbols "STR8_CONFIRM_Y"
 $residentJumpLaunchEntry = Get-MapSymbol $residentSymbols "STR8_JUMP_BANK_LAUNCH"
 $residentReadHook = Get-MapSymbol $residentSymbols "STR8_CON_READ_BYTE_BLOCK"
@@ -2004,15 +2005,15 @@ if ($transactionInstallerMode) {
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
         -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0EC2) -and
+    Assert-True (($residentSize -eq 0x0ED8) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnSummaryAddress -eq 0xFE17) -and ($txnInstallOkAddress -eq 0xFE1C) -and
-        ($txnRange32Address -eq 0xFE24) -and ($txnTypeAddress -eq 0xFE3A) -and
-        ($txnDescAddress -eq 0xFE3E) -and ($txnEntryAddress -eq 0xFE41) -and
-        ($txnEmptyAddress -eq 0xFE45) -and
-        ($txnPage0CallCount -eq 10) -and ($txnPage1CallCount -eq 27)) `
-        'Transaction launch-gate pass must retain its exact size, boundary, and 10/27 call split'
+        ($txnSummaryAddress -eq 0xFE1F) -and ($txnInstallOkAddress -eq 0xFE24) -and
+        ($txnRange32Address -eq 0xFE2C) -and ($txnTypeAddress -eq 0xFE42) -and
+        ($txnDescAddress -eq 0xFE46) -and ($txnEntryAddress -eq 0xFE49) -and
+        ($txnEmptyAddress -eq 0xFE4D) -and
+        ($txnPage0CallCount -eq 9) -and ($txnPage1CallCount -eq 28)) `
+        'Transaction launch-gate pass must retain its exact size, boundary, and 9/28 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
         ($txnPrintPage1 + 2 -eq $residentPrintXy)) `
         'Transaction print-page helpers must be the six bytes immediately before STR8_PRINT_XY'
@@ -2035,14 +2036,14 @@ if ($transactionInstallerMode) {
     foreach ($messageName in @(
             'MSG_ID', 'MSG_BOOT_MENU', 'MSG_SCREEN', 'MSG_HELP', 'MSG_PROMPT',
             'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT',
-            'MSG_I_BANK', 'MSG_I_TYPE_PROMPT'
+            'MSG_I_BANK'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage0High) `
             ("Transaction page-0 message moved pages: $messageName")
     }
     foreach ($messageName in @(
-            'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
+            'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
             'MSG_I_INSTALL_OK',
             'MSG_I_RANGE_32K', 'MSG_I_RANGE_28K', 'MSG_I_TYPE', 'MSG_I_DESC',
             'MSG_I_ENTRY',
@@ -2050,7 +2051,7 @@ if ($transactionInstallerMode) {
             'MSG_I_FULL', 'MSG_I_PAIR', 'MSG_I_WRITE_CONFIRM', 'MSG_I_SEND_S19',
             'MSG_I_TRANSACTION_FAIL', 'MSG_I_S19_FAIL',
             'MSG_I_NO_WRITE', 'MSG_NO_BOOT', 'MSG_JUMP_B', 'MSG_JUMP_FAIL_B',
-            'MSG_JUMP_FAIL_VEC', 'MSG_CRLF'
+            'MSG_JUMP_FAIL_VEC', 'MSG_CRLF', 'MSG_NO_HIMON'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage1High) `
@@ -2174,10 +2175,16 @@ foreach ($unknownCommand in @('?', '0', '1', '2', '3', 'G', 'R', 'X')) {
     $residentLineCases++
 }
 
-# H must warm-enter the local $C000 face without invoking a bank worker. A
-# single RTS at $C000 gives the emulator a harmless local-target return point.
+# H must warm-enter only a local HIMON carrying the complete fixed image marker
+# and must not invoke a bank worker. RTS at the marker-skipping target gives the
+# emulator a harmless local return point.
 [byte[]]$himonMemory = $residentTemplate.Clone()
-$himonMemory[0xC000] = 0x60
+$himonMemory[0xC000] = 0x4C
+$himonMemory[0xC001] = 0x07
+$himonMemory[0xC002] = 0xC0
+[byte[]]$himonImageId = 0xA5, 0x5A, 0xC3, 0x3C
+[Array]::Copy($himonImageId, 0, $himonMemory, 0xC003, $himonImageId.Length)
+$himonMemory[0xC007] = 0x60
 $himon = Invoke-ResidentDirectoryRoutine -Memory $himonMemory `
     -Start $residentDispatchEntry `
     -A ([byte][char]'H') `
@@ -2191,6 +2198,41 @@ Assert-True ($himon.WorkerCalls -eq 0 -and
     'H did not warm-enter the local target without a bank handoff'
 $residentMaxSteps = [Math]::Max($residentMaxSteps, $himon.Steps)
 $residentLineCases++
+
+# Erased, foreign, and one-byte-corrupt identity faces must all fail closed,
+# leave the warm signature untouched, and return to resident help.
+$badHimonCases = @(
+    [pscustomobject]@{ Name = 'erased local target'; Image = [byte[]](@([byte]0xFF) * 16) },
+    [pscustomobject]@{ Name = 'foreign local target'; Image = [byte[]]@(0x60,0,0,0,0,0,0,0) }
+)
+for ($badIndex = 0; $badIndex -lt $himonImageId.Length; $badIndex++) {
+    [byte[]]$badImage = 0x4C,0x07,0xC0,0xA5,0x5A,0xC3,0x3C,0x60
+    $badImage[3 + $badIndex] = $badImage[3 + $badIndex] -bxor 0x01
+    $badHimonCases += [pscustomobject]@{
+        Name = ("identity byte {0} mismatch" -f $badIndex)
+        Image = $badImage
+    }
+}
+foreach ($badHimonCase in $badHimonCases) {
+    [byte[]]$badHimonMemory = $residentTemplate.Clone()
+    [Array]::Copy($badHimonCase.Image, 0, $badHimonMemory, 0xC000, $badHimonCase.Image.Length)
+    $badHimonMemory[$residentCommandLoop] = 0x60
+    $badHimon = Invoke-ResidentDirectoryRoutine -Memory $badHimonMemory `
+        -Start $residentDispatchEntry `
+        -A ([byte][char]'H') `
+        -ReadNonblockHook $residentReadNonblockHook `
+        -WriteHook $residentWriteHook
+    [byte[]]$expectedBadHimonOutput = [System.Text.Encoding]::ASCII.GetBytes(
+        "`r`nNO HIMON`r`nI H J0-3`r`n")
+    Assert-ByteArraysEqual $badHimon.Output $expectedBadHimonOutput `
+        ("H fail-closed output mismatch: {0}" -f $badHimonCase.Name)
+    Assert-True ($badHimon.WorkerCalls -eq 0 -and
+        $badHimonMemory[0x7EE6] -eq 0 -and $badHimonMemory[0x7EE7] -eq 0 -and
+        $badHimonMemory[0x7EE8] -eq 0 -and $badHimonMemory[0x7EE9] -eq 0) `
+        ("H changed banks/signature for {0}" -f $badHimonCase.Name)
+    $residentMaxSteps = [Math]::Max($residentMaxSteps, $badHimon.Steps)
+    $residentLineCases++
+}
 
 [byte[]]$lineInput = [System.Text.Encoding]::ASCII.GetBytes("ab1-_`r")
 [byte[]]$lineEcho = [System.Text.Encoding]::ASCII.GetBytes('AB1-_')

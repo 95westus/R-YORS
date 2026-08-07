@@ -23,6 +23,18 @@ $EF2D-$FFF9   current image gap and future STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
+The HIMON entry face has a fixed warm-entry identity contract independent of
+the rest of the generated map:
+
+```text
+$C000-$C002   JMP to the current HIMON start body
+$C003-$C006   HIMON warm ABI marker: A5 5A C3 3C
+```
+
+STR8 `H` matches all four marker bytes before it writes the same four-byte
+warm signature at `$7EE6-$7EE9` and enters `$C000`. An absent or damaged
+marker is not a generic `$C000` launch: STR8 prints `NO HIMON` and stays active.
+
 The legacy HIMONIA fixed entries at `$F00D`, `$FADE`, and `$FEED` have been
 removed. They were useful as a proof, but not a practical permanent ABI. Local
 language bridges should patch against the current HIMON map or use a future

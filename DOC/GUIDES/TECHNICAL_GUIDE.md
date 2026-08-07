@@ -260,6 +260,7 @@ prints `STR8-N V 00.mmdd(hhmm) $F` from the resident `$F000` build
 opens an approximately 6-second 0/1/2/H/S selector
 times out to enter Bank 3 HIMON cold
 accepts H to enter the local HIMON warm without changing banks and preserve RAM
+requires `A5 5A C3 3C` at `$C003-$C006` for H; otherwise prints `NO HIMON`
 accepts S/s to enter STR8
 accepts 0/1/2, announces the bank, waits about 3 more seconds, then uses the J handoff
 ```

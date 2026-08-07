@@ -297,6 +297,11 @@ if ($ApPackageBinPath) {
 }
 
 $himonStart = Get-SymbolAddress -MapPath $HimonMapPath -Name "START"
+$himonImageId = Get-SymbolAddress -MapPath $HimonMapPath -Name "HIMON_IMAGE_ID"
+$himonImageSig0 = Get-SymbolAddress -MapPath $HimonMapPath -Name "HIMON_IMAGE_SIG0_VALUE"
+$himonImageSig1 = Get-SymbolAddress -MapPath $HimonMapPath -Name "HIMON_IMAGE_SIG1_VALUE"
+$himonImageSig2 = Get-SymbolAddress -MapPath $HimonMapPath -Name "HIMON_IMAGE_SIG2_VALUE"
+$himonImageSig3 = Get-SymbolAddress -MapPath $HimonMapPath -Name "HIMON_IMAGE_SIG3_VALUE"
 $himonNmi = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_NMI"
 $himonIrq = Get-SymbolAddress -MapPath $HimonMapPath -Name "SYS_VEC_ENTRY_IRQ_MASTER"
 $himonEnd = Get-SymbolAddress -MapPath $HimonMapPath -Name "_END_DATA"
@@ -429,6 +434,9 @@ if ($ApPackageBinPath) {
 
 if ($himonStart -ne 0xC000) {
     throw ("HIMON START is {0:X4}; expected C000" -f $himonStart)
+}
+if ($himonImageId -ne 0xC003) {
+    throw ("HIMON image identity is {0:X4}; expected stable marker C003" -f $himonImageId)
 }
 if ($himonEnd -gt 0xF000) {
     throw ("HIMON crosses STR8 sector at F000; _END_DATA={0:X4}" -f $himonEnd)
@@ -608,6 +616,16 @@ Import-S19IntoImage -Path $HimonS19Path -Image $bin -BankOffset $bankOffset
 Import-S19RelocatedIntoImage -Path $WorkerS19Path -Image $bin -BankOffset $bankOffset -RunStart $workerRunStart -StoreStart $workerStoreStart -StoreSize $workerStoreSize
 Import-S19IntoImage -Path $Str8S19Path -Image $bin -BankOffset $bankOffset
 
+$himonImageIdOffset = $bankOffset + ($himonImageId - 0x8000)
+[byte[]]$expectedHimonImageId = @(
+    $himonImageSig0, $himonImageSig1, $himonImageSig2, $himonImageSig3
+)
+for ($i = 0; $i -lt $expectedHimonImageId.Length; $i++) {
+    if ($bin[$himonImageIdOffset + $i] -ne $expectedHimonImageId[$i]) {
+        throw ("HIMON image identity byte {0} is {1:X2}; expected {2:X2}" -f $i, $bin[$himonImageIdOffset + $i], $expectedHimonImageId[$i])
+    }
+}
+
 if ($V1LayoutPreview -or $V1Flashable) {
     for ($address = $v1DirectoryStart; $address -lt $v1DirectoryEndExclusive; $address++) {
         $offset = $bankOffset + ($address - 0x8000)
@@ -688,6 +706,7 @@ for ($i = 0; $i -lt $expectedBankSelectService.Length; $i++) {
 }
 
 Write-Host ("HIMON START/NMI/IRQ/END = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $himonStart, $himonNmi, $himonIrq, $himonEnd)
+Write-Host ("HIMON IMAGE ID           = {0:X4}; {1}" -f $himonImageId, (($expectedHimonImageId | ForEach-Object { "{0:X2}" -f $_ }) -join " "))
 Write-Host ("LAYOUT MODE              = {0}" -f $layoutMode)
 Write-Host ("HIMON AP IMPORT LINK     = {0:X4}" -f $himonApImportLink)
 Write-Host ("STR8 START/NMI/IRQ/END  = {0:X4}/{1:X4}/{2:X4}/{3:X4}" -f $str8Start, $str8Nmi, $str8Irq, $str8End)

@@ -55,6 +55,7 @@ HIM_SUBDIR := $(HIMON_DIR)
 STR8_SUBDIR := $(STR8_DIR)
 HIMON_SRC := $(HIM_SUBDIR)/himon.asm
 HIMON_INC := $(wildcard $(HIM_SUBDIR)/*.inc)
+HIMON_IMAGE_EQ := $(HIM_SUBDIR)/himon-image-eq.inc
 HIMON_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon-c000.obj
 HIMON_ROM_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon-rom-c000.obj
 HIMON_S19 := $(S19_DIR)/himon-c000.s19
@@ -851,19 +852,19 @@ $(STR8_MUTATION_WORKER_S19): $(STR8_MUTATION_WORKER_OBJ)
 	@echo [ps] set S9 start $$0200 in $(STR8_MUTATION_WORKER_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_MUTATION_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
 
-$(STR8_OBJ): $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_OBJ): $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 
-$(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_V1_INSTALLER_DRY_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_V1_INSTALLER_DRY_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT -DSTR8_V1_INSTALLER_DRY $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_V1_INSTALLER_TXN_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_V1_INSTALLER_TXN_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT -DSTR8_V1_INSTALLER_DRY -DSTR8_V1_INSTALLER_TXN $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
@@ -884,7 +885,7 @@ $(STR8_RECORD_PHASE1_PROOF_OBJ): $(STR8_RECORD_EQ)
 
 $(STR8_L_TRANSPORT_PHASE5_PROOF_OBJ): $(STR8_RECORD_EQ)
 
-$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) himon-version-stamp
+$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_RAM_PROOF $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)

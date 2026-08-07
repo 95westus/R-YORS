@@ -10,6 +10,7 @@
                         MODULE          HIMON_APP
 
                         XDEF            START
+                        XDEF            HIMON_IMAGE_ID
                         XDEF            THE_JOIN_FIND
                         XDEF            THE_JOIN_EXEC
                         XDEF            THE_JOIN_EXEC_XY
@@ -42,6 +43,7 @@
                         XREF            SYS_GET_CTRL_C
                         XREF            UTL_HEX_ASCII_TO_NIBBLE
 
+                        INCLUDE         "HIMON/himon-image-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
                         INCLUDE         "STR8/str8-record-eq.inc"
                         INCLUDE         "STR8/str8-jump-eq.inc"
@@ -181,21 +183,26 @@ CMD_HASH_SCAN_BASE_HI    EQU             $80
 
                         CODE
 START:
+                        JMP             HIMON_START_BODY
+HIMON_IMAGE_ID:
+                        DB              HIMON_IMAGE_SIG0_VALUE,HIMON_IMAGE_SIG1_VALUE
+                        DB              HIMON_IMAGE_SIG2_VALUE,HIMON_IMAGE_SIG3_VALUE
+HIMON_START_BODY:
                         SEI
                         CLD
                         LDX             #$FF
                         TXS
                         LDA             RESET_SIG0
-                        CMP             #$A5
+                        CMP             #HIMON_IMAGE_SIG0_VALUE
                         BNE             MON_COLD_RESET
                         LDA             RESET_SIG1
-                        CMP             #$5A
+                        CMP             #HIMON_IMAGE_SIG1_VALUE
                         BNE             MON_COLD_RESET
                         LDA             RESET_SIG2
-                        CMP             #$C3
+                        CMP             #HIMON_IMAGE_SIG2_VALUE
                         BNE             MON_COLD_RESET
                         LDA             RESET_SIG3
-                        CMP             #$3C
+                        CMP             #HIMON_IMAGE_SIG3_VALUE
                         BNE             MON_COLD_RESET
                         JMP             HIMON_WARM_START_BODY
 
@@ -239,13 +246,13 @@ MON_REENTER:
                         JMP             MON_AFTER_BANNER
 
 MON_INIT_COMMON:
-                        LDA             #$A5
+                        LDA             #HIMON_IMAGE_SIG0_VALUE
                         STA             RESET_SIG0
-                        LDA             #$5A
+                        LDA             #HIMON_IMAGE_SIG1_VALUE
                         STA             RESET_SIG1
-                        LDA             #$C3
+                        LDA             #HIMON_IMAGE_SIG2_VALUE
                         STA             RESET_SIG2
-                        LDA             #$3C
+                        LDA             #HIMON_IMAGE_SIG3_VALUE
                         STA             RESET_SIG3
                         JSR             MON_INIT_SERVICE_VECTORS
                         JSR             SYS_INIT

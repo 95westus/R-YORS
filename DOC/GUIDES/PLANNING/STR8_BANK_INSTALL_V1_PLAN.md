@@ -38,15 +38,20 @@ range loading does not require a transport change.
 
 V1.02 also removes the ambiguous shell bare-bank aliases. Its compact surface
 is `I H J0-3`: `H` warm-enters the local `$C000` target without selecting a
-bank, while `J0`-`J3` are the only explicit physical-bank handoffs. The reset
-selector remains `0/1/2=BOOT H=HIMON S=STR8`.
+bank only when `$C003-$C006` carries the fixed HIMON identity
+`A5 5A C3 3C`; otherwise it prints `NO HIMON` and remains in STR8.
+`J0`-`J3` are the only explicit physical-bank handoffs. The reset selector
+remains `0/1/2=BOOT H=HIMON S=STR8`.
 
 Before range state grows the resident, optimize for free margin above the
 required `$0040` reserve: at least another `$0080` (total gap `$00C0`), with
 another `$0100` (total gap `$0140`) preferred. The first V1.02 nomenclature
 pass moves the first-free resident byte from `$FED5` to `$FEC2`, increasing
 the resident/worker gap from `$004A` to `$005D`; that is useful but still well
-short of the growth target.
+short of the growth target. The subsequent exact-HIMON identity gate moves
+first-free to `$FED8` and reduces the gap to `$0047`, leaving only `$0007`
+beyond the required reserve. This makes the size pass mandatory before range
+state is added.
 
 > **Transport warning:** the accepted 32K result applies only to Windows Tera
 > Term Send File over the current FTDI FIFO path. It does not qualify an ACIA.
