@@ -4,9 +4,9 @@ This is the hardware-proof rail for the published record of the last validated
 STR8 `J0`-`J3` handoff.
 
 ```text
-status:       J3 COLD FIX HOST+HARDWARE PASS; FULL RECORD MATRIX PENDING
+status:       FULL J0-J3 COLD-PRESERVATION MATRIX HOST+HARDWARE PASS
 candidate:    himon-str8-rom.bin / current post-fix HIMON update S19
-source date:  2026-08-02
+source dates: 2026-08-02 through 2026-08-05
 record:       $1FFD-$1FFF = 42 4A bank/FF
 ```
 
@@ -47,9 +47,10 @@ no valid signature -> after cold clear publish 42 4A FF
 The record is historical state. It deliberately does not claim that the live
 PCR still selects that bank after the guest resets or returns through Bank 3.
 The separately published live byte is `STR8_BANK_STATE_BYTE = $7FEC`, masked
-by `STR8_BANK_STATE_MASK = $EE`. `D 7FEC 7FEC` exposes the byte without
-claiming a decoded bank number; `$CC/$CE/$EC/$EE` are the explicit
+by `STR8_BANK_STATE_MASK = $EE`. `$CC/$CE/$EC/$EE` are the explicit
 B0/B1/B2/B3 selector-write patterns, while other raw states remain undecoded.
+Capturing `D 7FEC 7FEC` is deferred until the next suitable board test and is
+not part of the accepted historical-record matrix below.
 
 ## Board Procedure
 
@@ -91,8 +92,15 @@ The first dump proved that the corrected cold clear preserved Bank 3:
 
 An explicit confirmed `HCOLD` printed `BOOT COLD` and `RAM ZERO OK`; the repeat
 dump remained exactly `42 4A 03`. This closes the J3 cold-preservation fix.
-The complete board card still retains its separate unknown baseline,
-J0/J1/J2, invalid-vector, and final CRC gates.
+
+## 2026-08-05 Full Matrix Acceptance
+
+The focused continuation captured J0 as `42 4A 00` through two `HCOLD`
+operations and J1 as `42 4A 01` through `HCOLD`. Earlier accepted captures
+already retained J2 as `42 4A 02` and J3 as `42 4A 03` through cold entry.
+Together these close the complete J0-J3 Bank Jump Record cold-preservation
+matrix. Invalid-vector rejection and non-destructive bank CRC checks remain
+separate accepted gates in their own transcripts.
 
 Append the raw transcript and candidate fingerprint to the hardware log. Do
 not rewrite the earlier accepted selector/J evidence, whose addresses belong

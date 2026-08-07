@@ -82,8 +82,12 @@ The flashable V1 candidate is built separately with
 `make -C SRC str8-v1-artifact`. It packs the permanent jump worker at
 `$FF28-$FFAF`, leaves the fixed directory erased at `$FFB0-$FFEF`, and emits a
 single-file `I` transport containing the uploaded mutation worker before the
-dense bank image. The migration and first journaled Bank-2 transaction are
-hardware-accepted by the [V1 migration board test](STR8_V1_MIGRATION_BOARD_TEST.md).
+dense bank image. The one-time migration, directory-preserving supervisor
+refresh, first journaled Bank-2 transaction, rejected worker, interrupted
+transaction, fail-closed launch, same-pair retry, and recovered launch are all
+hardware-accepted by the [V1 migration board test](STR8_V1_MIGRATION_BOARD_TEST.md),
+[V1 refresh board test](STR8_V1_REFRESH_BOARD_TEST.md), and
+[V1 interruption board test](STR8_V1_INTERRUPTION_BOARD_TEST.md).
 
 ## Milestone Snapshot
 
@@ -96,26 +100,19 @@ OSI BASIC  interactive programming payload
 fig-FORTH  threaded language payload
 ```
 
-The hardware log preserves the earlier `M` proof, cascading `B`, Bank 0
-enrollment, selected-bank backup, and restore behavior as retired history.
-Resident `M`, `E`, `B`, and bare `0`-`2` are now removed. The current candidate
-retains the fixed `$C000-$EFFF` `U` / `UPDATE HIMON` gate and opaque-bank
-`J0`-`J2` mechanism. The copy/restore reclaim and fail-closed worker dispatcher
-are independently board-accepted on `00.0801(2234)`. That capture's Bank-1 and
-Bank-2 images contain STR8 at their reset entry and immediately remap Bank 3,
-so their `J1`/`J2` traces are not sustained guest-boot proof. Current source
-removes the unconditional PCR `$EE` startup write and restores the original
-preserve-selected-bank contract. Repaired `00.0802(1323)` is installed, and a
-distinct Bank-2 HIMON `0731` payload proves that reset-selector `2` preserves
-Bank 2 through copied STR8 startup. The direct-run maintenance utility has also
-completed verified Bank-3-to-Bank-0/1/2 full copies. Distinct older Bank-1 and
-Bank-2 payloads accept cross-bank selector routes without remapping Bank 3.
-Resident cross-bank `J0`-`J3` now pass with distinguishable target images.
-The separate Bank Jump Record persistence proof remains pending.
+The hardware log preserves the earlier `M`, `U`, cascading `B`, Bank 0
+enrollment, selected-bank backup, and restore behavior as retired V0 history.
+Resident `M`, `E`, `B`, `U`, `G`, and `R` are removed from the flashable V1
+surface. V1 exposes `I`, bare `0`-`3`, and `J0`-`J3`; it preserves the selected
+bank through startup, gates `J0`-`J2` on a COMPLETE directory record, and
+keeps mutation code in the uploaded RAM worker. Migration, refresh,
+interruption recovery, and the full Bank Jump Record cold-preservation matrix
+are hardware-accepted. The direct-run maintenance utilities and earlier V0
+captures remain historical recovery evidence rather than resident commands.
 
-The milestone does not make STR8 a finished field-updater. STR8 self-update,
-whole-ROM install, catalog-aware repair, raw range update, and original
-WDCMONv2/base-image preservation remain separate future work.
+The milestone does not make STR8 a finished field-updater. STR8 self-update or
+Bank-3 whole-ROM replacement, catalog-aware repair, raw range update, and
+original WDCMONv2/base-image preservation remain separate future work.
 
 ## Core Questions
 
@@ -223,14 +220,14 @@ worker is packed immediately below the fixed directory, and the remaining free
 space is one contiguous reserve:
 
 ```text
-$F000-$FD89  STR8 transaction code
-             size $0D8A = 3466 bytes
+$F000-$FD9A  STR8 transaction code
+             size $0D9B = 3483 bytes
 
-$FD8A-$FEC3  STR8 transaction data
+$FD9B-$FED4  STR8 transaction data
              size $013A = 314 bytes
 
-$FEC4-$FF27  contiguous reserve
-             size $0064 = 100 bytes
+$FED5-$FF27  contiguous reserve
+             size $0053 = 83 bytes
 
 $FF28-$FFAF  packed permanent jump worker
              size $0088 = 136 bytes; copied to $0200-$0287

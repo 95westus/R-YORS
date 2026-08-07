@@ -5,30 +5,32 @@ design each time.
 
 ## Review Result
 
-Current STR8 is not just a sketch anymore. The code and docs agree on a small
-V0 recovery surface:
+Current STR8 is not just a sketch anymore. The flashable V1 code and docs agree
+on this compact resident surface:
 
 ```text
-B          back up Bank 3 to selected Bank 0, 1, or 2
-U          update HIMON from S19, fixed $C000-$EFFF gate
-0/1/2      restore selected backup bank to Bank 3
-J0/J1/J2/J3 non-destructive selected-bank reset-vector handoff
-G          go HIMON
-R          reset
+I           preview metadata, receive dense S19, and run a journaled Bank 0-3 transaction
+0/1/2       immediate selected-bank reset-vector handoff
+3           warm-entry HIMON
+J0/J1/J2/J3 immediate non-destructive selected-bank reset-vector handoff
 ```
 
-The current Phase-1 host build runs STR8 from bank 3 `$F000`, stores the RAM
-flash worker at `$FD03-$FFEF`, copies that worker into the `$0200-$09FF` tray, uses
-`$1FE9-$1FFF` for worker/update state, stages ordinary copy sectors through
-`$4000-$4FFF`, and stages HIMON update sectors through `$4000-$6FFF`.
-The top sector also exposes stable service entries at `$F003` for running
-selected worker modes, `$F006` as an AP import-link compatibility doorway, and
-`$F009` for the V1 validated-record service. `$F00C-$F00F` is `53 52 01 07`.
+At reset, `S` during the live dots enters this shell, `0`-`2` use the delayed
+selected-bank path, `3` enters HIMON warm, and timeout enters the local HIMON
+cold path. The current V1 host build runs STR8 from Bank 3 `$F000`, packs
+the jump-only worker at `$FF28-$FFAF`, and copies it to `$0200-$0287`. An `I`
+transport uploads the 555-byte mutation worker to `$0200-$042A` before dense
+payload staging uses the single `$0A00-$19FF` sector tray. Worker/update state
+remains in `$1FE9-$1FFF`, and the fixed V1 directory is `$FFB0-$FFEF`.
+
+The top sector exposes stable service entries at `$F003` for the resident
+worker doorway and `$F009` for the V1 validated-record service.
+`$F006-$F008` is the retired AP-link slot and fails closed as `CLC/RTS/NOP`;
+AP parsing and FNV import linking belong to HIMON. `$F00C-$F00F` is
+`53 52 01 07`.
 The fixed `$F010` bank-selection service accepts `A=$00-$03` only from a RAM
 caller and returns through its `$0203` RAM trampoline with the selected bank
 still visible.
-The linker itself is resident HIMON code; `$F006` selects the AP `LINK`
-operation and jumps through HIMON's `$7E2D-$7E2E` AP service vector.
 
 A RAM-resident user program may select a bank without launching it:
 
@@ -47,28 +49,27 @@ The `J` path uses mode `$08` and `$1FF2-$1FF5` for transient target,
 reset-vector, and status state. Resident STR8 prints the selected bank, copies
 the worker to RAM, and never regains control after a successful select/vector
 jump. Invalid vectors restore Bank 3 and return an error. The handoff path is
-hardware-proven. The current follow-up publishes `$1FFD-$1FFF = 42 4A nn` as
-the durable Bank Jump Record; host build and clear-path checks pass, while
-board proof of that new record is pending.
+hardware-proven. `$1FFD-$1FFF = 42 4A nn` is the durable Bank Jump Record; the
+full J0-J3 cold-preservation matrix is host- and hardware-accepted.
 
-The currently live bank-latch state is the raw byte at `$7FEC`, published as
-`STR8_BANK_STATE_BYTE`; inspect it with `D 7FEC 7FEC`. Its explicit
-B0/B1/B2/B3 write patterns are `$CC/$CE/$EC/$EE` under mask `$EE`. This raw
-byte is deliberately not printed as a bank number because reset/input states
-are not an unambiguous decoded bank ID. The `$1FFD-$1FFF` Bank Jump Record
+The currently live bank-latch state is published as the raw byte
+`STR8_BANK_STATE_BYTE = $7FEC`. Its explicit B0/B1/B2/B3 write patterns are
+`$CC/$CE/$EC/$EE` under mask `$EE`. This byte is deliberately not printed as a
+bank number because reset/input states are not an unambiguous decoded bank ID.
+Board capture of `D 7FEC 7FEC` is deferred until the next suitable board test;
+no live-byte hardware claim is made yet. The `$1FFD-$1FFF` Bank Jump Record
 remains the historical last validated handoff.
 
 The current build targets are:
 
 ```text
 make -C SRC all
-make -C SRC str8
-make -C SRC himon-str8-rom-bin
-make -C SRC himon-str8-rom-install-s19
-make -C SRC himon-str8-himon-update-s19
-make -C SRC fig-forth-str8-update-s19
-make -C SRC msbasic-osi-str8-update-s19
+make -C SRC str8-v1-artifact
+make -C SRC str8-v1-negative-streams
 ```
+
+The V0 ROM and payload-update targets remain available for historical
+regression and recovery work; they are not the flashable V1 acceptance rail.
 
 The hardware log preserves earlier proof of the retired `M` map, backup
 rotation, and Bank 0 enrollment policy plus `G`, burn-check bytes, `U` /
@@ -135,9 +136,10 @@ Use this loop for each STR8 work item:
    `TECHNICAL_GUIDE.md`, `BRINGUP.md`, or `STR8_DECISION_REFERENCE.md`;
    leave speculation in `QCC_STR8.md`.
 
-## Acceptance Checklist
+## Historical V0 Acceptance Checklist
 
-Before the next feature, rerun this checklist on hardware for the current build:
+This checklist records the retired V0 bench gate and its historical addresses.
+It is not the current V1 layout or command surface:
 
 ```text
 Build:

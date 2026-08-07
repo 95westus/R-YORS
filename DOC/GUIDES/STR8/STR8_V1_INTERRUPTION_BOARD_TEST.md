@@ -150,8 +150,8 @@ Bank-3 `J2` printed `JERR B2 V=$0000`; `I2` described the record as
 `INCOMPLETE P=01`; and Bank-3 HIMON read the exact journal tail
 `F8 FF FF FF`. The operator also repeated the deliberately unterminated stream
 and physical-reset recovery, with `J2` again failing closed. This proves START
-survives reset and prevents launch before completion. Only Section 5 remains
-pending.
+survives reset and prevents launch before completion. Section 5 was completed
+by the later retry checkpoint below.
 
 ## 5. Retry the Same Pair to Completion
 

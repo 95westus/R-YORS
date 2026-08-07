@@ -1,13 +1,14 @@
 ; ----------------------------------------------------------------------------
 ; str8.asm
-; STR8 V0 small recovery proof.
+; STR8 recovery monitor, built in V0 proof and flashable V1 layouts.
 ;
-; Command surface:
-;   U  update HIMON from S19, fixed gate $C000-$EFFF
-;   0/1/2  warm reset-vector handoff to bank 0/1/2
+; Flashable V1 command surface:
+;   I  preview metadata and run the dense journaled Bank 0-3 transaction
+;   0/1/2  immediate reset-vector handoff to bank 0/1/2
 ;   3  warm-entry HIMON
 ;   J0/J1/J2/J3  non-destructive reset-vector handoff to bank 0/1/2/3
 ;   invalid input prints the current command help
+; V0 proof builds retain U instead of I for the fixed $C000-$EFFF HIMON gate.
 ;
 ; Reset clears the terminal with 35 LFs, shows 16 unpolled attach dots, flushes
 ; RX, prints the banner, then opens 16 live selector dots. Timeout cold-starts
