@@ -318,7 +318,7 @@ make -C SRC str8-topwrite-a himon-str8-himon-update-s19
 
 For the 2026-07-18 linker-ownership migration, update HIMON first through the
 old STR8 `U` gate, verify HIMON, and only then assemble and run
-`DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a`. New HIMON calls its
+`DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a`. New HIMON calls its
 resident linker directly and remains usable with the old STR8 doorway. The
 reverse order temporarily puts the new `$F006` AP-operation adapter in front
 of an old HIMON service that does not implement that operation.

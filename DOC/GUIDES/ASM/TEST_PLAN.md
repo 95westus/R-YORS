@@ -3275,7 +3275,7 @@ OLD/pack40-roundtrip-transient-2000.a self-contained PACK40 pack/unpack oracle
 OLD/pack40-interactive-transient-2000.a
                          hardware-proven interactive PACK40 pack/unpack
                          exerciser
-bank3-erase-8000-bfff-transient-3000.a
+OLD/bank3-erase-8000-bfff-transient-3000.a
                          bank 3 $8000-$BFFF erase tool using STR8 service;
                          S19 target: make -C SRC bank3-erase
 OLD/life-rjoined-6800.asm   8x8 interactive Life through ASM/RJOIN
@@ -9258,7 +9258,7 @@ Board result captured 2026-07-10 in
 `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`: `L F` loaded the current flash ASM
 with `LF OK WR=3969 GO=800C`, and entering `ASM` printed `ASM-F2`.
 
-The generated `DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a` source then
+The generated `DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a` source then
 assembled cleanly under ASM-F2. This is the one-file top-sector writer with an
 embedded `$4000-$4FFF` image, so it exercises the enlarged table budget and a
 large literal `DB` paste without the earlier `BAD FIX` failure pattern.
@@ -10365,7 +10365,7 @@ The combined-image builder now checks the `$F009` jump and exact
 `53 52 01 07` header, `$7E95-$7EA8` block, `$7B00` buffer, worker packing,
 fixed legacy entries, STR8/worker non-overlap, and vectors before emitting the
 32K image. The generated standalone installer is
-`SAMPLES/str8n-topwrite-transient-3000.a`; its current face/prompt checks map
+`SAMPLES/OLD/str8n-topwrite-transient-3000.a`; its current face/prompt checks map
 ROM `$F979/$F9AE` to staged RAM `$1379/$13AE`.
 
 ### Executable Phase-1 board proof
@@ -10418,7 +10418,7 @@ paste a Motorola S19 into `ASM NEW`: ASM accepts source only.
    ```text
    make -C SRC str8 str8-top-stage-s19 str8-topwrite-a str8-record-phase1-proof
 
-   DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a  assembly source for ASM
+   DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a  assembly source for ASM
    SRC/BUILD/s19/str8-record-phase1-proof-3000.s19         S19 for HIMON L
    DOC/GUIDES/ASM/SAMPLES/OLD/str8-record-phase1-max252.s19 one console input line
    ```
@@ -10437,7 +10437,7 @@ paste a Motorola S19 into `ASM NEW`: ASM accepts source only.
    session because the worker reuses ASM's low-RAM workspace.
 
 3. **Install STR8, but stage before programming.**  Enter `ASM NEW`, paste the
-   complete text of `str8n-topwrite-transient-3000.a`, and enter `.`.  Require
+   complete text of `OLD/str8n-topwrite-transient-3000.a`, and enter `.`.  Require
    the normal `ASM OK` / `ASM BYE` exit.  Then run and inspect the staged image:
 
    ```text
@@ -10882,7 +10882,7 @@ active flash path must still emit `STR8_REC_OP=$02` followed by `JSR $F009`.
 
    ```text
    >ASM NEW
-   ; paste DOC/GUIDES/ASM/SAMPLES/bank3-erase-8000-bfff-transient-3000.a
+   ; paste DOC/GUIDES/ASM/SAMPLES/OLD/bank3-erase-8000-bfff-transient-3000.a
    .
    >G 3000
    >D 1A00 1A03
@@ -12996,7 +12996,8 @@ uploaded mutation worker    $0200-$042A  size $022B = 555
 BUILD/bin/himon-str8-v1.bin
 BUILD/s19/himon-str8-v1-install.s19
 BUILD/s19/str8-v1-i-bank012.s19
-BUILD/str8n-v1-topwrite-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-topwrite-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a
 ```
 
 The 32K BIN contains the transaction resident, exact packed jump worker, an

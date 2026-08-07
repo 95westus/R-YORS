@@ -680,13 +680,17 @@ tables are released. Any STR8 flash worker or banked `AP` operation then
 reuses that low RAM, so run `asm-session-report` before staging if symbol and
 fixup names from the current session are required.
 
-For STR8 top-sector update or recovery work, use
-`DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a` only when the intended task is
-to rewrite bank 3 `$F000-$FFFF`. `G 3000` stages the embedded STR8-N image into
+For a current V1 STR8 top-sector update, use
+`DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a`. It copies the live
+`$FFB0-$FFEF` directory before staging the embedded STR8-N image into
 `$0A00-$19FF` and should leave `$1A00-$1A03 = 00 AC 00 00`. After verifying
 the staged bytes, `G 3003` erases/programs/verifies the active top sector and
 should leave `$1A00-$1A03 = 01 AC 00 00`. The `$FACE` identity check should
 read `STR8-N V0 #5F6A0F7A`.
+
+The legacy replacement and one-time migration writers are archived under
+`DOC/GUIDES/ASM/SAMPLES/OLD/`. They overwrite the live V1 directory and must
+not be used for an installed V1 refresh.
 
 `CHECK address` exists only in full-core or package-check diagnostic builds.
 It is intentionally omitted from the default flash-resident ASM image to keep

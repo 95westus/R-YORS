@@ -2,7 +2,7 @@ param(
     [string]$BinPath = "BUILD/bin/himon-str8-rom.bin",
     [string]$AsmMapPath = "BUILD/s19/asm-v1-flash-8000.map",
     [string]$Str8MapPath = "BUILD/s19/str8-f000.map",
-    [string]$OutPath = "../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a",
+    [string]$OutPath = "../DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a",
     [int]$SourceOffset = 0x7000,
     [int]$StageAddress = 0x0A00,
     [int]$ImageAddress = 0x4000,
@@ -118,7 +118,8 @@ Add-Line '; ASSEMBLE WITH ASM-F2. NO SEPARATE STR8-TOP-STAGE S19 LOAD NEEDED.'
 if ($PreserveV1Directory) {
     Add-Line '; V1 REFRESH: COPIES LIVE $FFB0-$FFEF INTO THE EMBEDDED IMAGE.'
 } else {
-    Add-Line '; REPLACEMENT/MIGRATION: USES THE EMBEDDED DIRECTORY BYTES.'
+    Add-Line '; ARCHIVED REPLACEMENT/MIGRATION: OVERWRITES LIVE $FFB0-$FFEF.'
+    Add-Line '; DO NOT USE ON INSTALLED V1; USE THE V1 REFRESH WRITER.'
 }
 Add-Line ';'
 Add-Line '; ENTRY POINTS AFTER ASSEMBLY:'

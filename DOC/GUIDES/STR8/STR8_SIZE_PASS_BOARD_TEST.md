@@ -200,8 +200,8 @@ Get-FileHash -Algorithm SHA256 -LiteralPath <path>
 | `SRC/BUILD/s19/himon-str8-himon-update.s19` | 28436 | `3DD9BBE29C59B54784BA50280C033080FEDED779C125CF267FB2D53B92258B94` |
 | `SRC/BUILD/s19/asm-v1-flash-8000.s19` | 42554 | `12D17636D9DF75B4F63CF98BAF64B726AB9CA2C82C5ABF2DF86B2163898ED139` |
 | `SRC/BUILD/s19/str8-top-stage-0a00.s19` | 9740 | `EA52FC51B4D4B2655950687E5C09115146B3A4957671CDF682813E61DE6745A2` |
-| `DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a` | 28234 | `37CF44D797788C32C291BC4FF255BF87F98A004E66AC5AC62C6D7B5A6AD4B366` |
-| `DOC/GUIDES/ASM/SAMPLES/bank3-erase-8000-bfff-transient-3000.a` | 2049 | `0139D3A991A1A050956361E8C34EDE3E87B0A501B6D29B780F7CACCD346ABCEA` |
+| `DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a` | 28234 | `37CF44D797788C32C291BC4FF255BF87F98A004E66AC5AC62C6D7B5A6AD4B366` |
+| `DOC/GUIDES/ASM/SAMPLES/OLD/bank3-erase-8000-bfff-transient-3000.a` | 2049 | `0139D3A991A1A050956361E8C34EDE3E87B0A501B6D29B780F7CACCD346ABCEA` |
 | `DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a` | 3092 | `D92C504C1501241F3FC791C11F081178E4B053211C3D9F7B15B5F1A5F7891326` |
 | `DOC/GUIDES/ASM/SAMPLES/OLD/str8-worker-tail-proof-3000.a` | 3515 | `4CC88D6A66120357B0364CBF52A755AFE03EC7FDC7B5729E3B06F3658303A620` |
 | `SRC/BUILD/s19/str8-record-phase1-proof-3000.s19` | 5458 | `CAC1B8F3C955898F112DBC68F8E2E490068098265C3765BD047CFD5041947006` |
@@ -220,8 +220,8 @@ a recovery artifact; it is not input to HIMON `L`, `L F`, or `STR8 U`.
 | `himon-str8-rom-install.s19` | external programmer or full-ROM installer | Complete `$8000-$FFFF` image |
 | `himon-str8-himon-update.s19` | STR8 `U`, after `SEND S19 C000-EFFF` | Current HIMON `$C000-$EFFF` |
 | `asm-v1-flash-8000.s19` | HIMON `L F` | Current ASM-F2 `$8000-$BC6C` |
-| `str8n-topwrite-transient-3000.a` | complete source paste after `ASM NEW` | Self-contained STR8 `$F000-$FFFF` writer |
-| `bank3-erase-8000-bfff-transient-3000.a` | complete source paste after `ASM NEW` | Erase Bank 3 low flash before exact ASM install |
+| `OLD/str8n-topwrite-transient-3000.a` | complete source paste after `ASM NEW` | Historical self-contained STR8 `$F000-$FFFF` writer |
+| `OLD/bank3-erase-8000-bfff-transient-3000.a` | complete source paste after `ASM NEW` | Historical Bank-3 low-flash eraser |
 | `str8-bank-crc-all-3000.a` | complete source paste after `ASM NEW` | Read-only CRC of all 32 flash sectors |
 | `str8-worker-tail-proof-3000.a` | complete source paste after `ASM NEW` | RAM-only shared worker-tail proof |
 | `str8-record-phase1-proof-3000.s19` | HIMON `L` | STR8 record-service regression suite |
@@ -345,7 +345,7 @@ If the banner is already `ASM-F2 00.0728(1751)`, enter `.` and continue to
 4.4. Otherwise, while the old ASM is still present, paste the complete text of:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/bank3-erase-8000-bfff-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/bank3-erase-8000-bfff-transient-3000.a
 ```
 
 End the ASM session with `.`, then:
@@ -401,7 +401,7 @@ At HIMON:
 Paste the complete text of:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a
 ```
 
 The file ends with `END`. Enter `.` at `SEAL>` and require `ASM BYE` with no

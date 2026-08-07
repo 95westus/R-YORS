@@ -12,7 +12,7 @@ STR8 candidate and expect `U 0-3 J0-3`. The eventual V1 artifact must instead
 show the approved final surface `I 0-3 J0-3`.
 
 The current generated normal candidate is `STR8-N V 00.0805(1704) $F`, staged
-by `DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a`. Before writing,
+by `DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a`. Before writing,
 require these exact resident bytes:
 
 ```text

@@ -18,7 +18,6 @@ fixtures, proof-only sources, and completed board-test cards belong in
 
 ## Flash Tools
 
-- `bank3-erase-8000-bfff-transient-3000.a` - Bank-3 low-flash erase tool.
 - `flash-bank-dump-ap-2000.a` - fixed-load, read-only sector dump AP.
 - `flash-bank-read-ap-2000.a` - movable sector-read and CRC AP.
 - `flash-bank-erase-write-ap-2000.a` - movable sector erase/write/verify AP.
@@ -30,8 +29,10 @@ fixtures, proof-only sources, and completed board-test cards belong in
 - `str8-bank-crc-all-3000.a` - read-only all-bank CRC inventory.
 - `str8-bank-maint-2000.a` - maintained bank copy/erase utility.
 - `str8-jump-inventory-3000.a` - read-only pre-handoff bank inventory.
-- `topwr-transient-3000.a` - maintained staged top-sector shop tool.
-- `str8n-topwrite-transient-3000.a` - generated current top-sector writer.
+- `topwr-transient-3000.a` - maintained staged top-sector shop tool; preserve
+  the live V1 directory when overlaying a replacement image.
+- `str8n-v1-refresh-transient-3000.a` - generated current V1 top-sector
+  refresh writer; copies live `$FFB0-$FFEF` before staging.
 
 Generated maintained sources must continue to target this directory. Generated
 legacy reporter forms target `OLD` so regeneration does not repopulate the

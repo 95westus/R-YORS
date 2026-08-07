@@ -136,7 +136,8 @@ For the single-source ASM-F2 route, build the self-contained top-sector writer:
 make -C SRC str8-topwrite-a
 ```
 
-The target emits `DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a`. That source
+The historical target emits
+`DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a`. That source
 embeds the top 4K image directly, stages it to `$0A00-$19FF`, then programs
 bank 3 `$F000-$FFFF`; no separate `str8-top-stage-0a00.s19` load is used.
 
@@ -171,7 +172,7 @@ ASM source file, without a second S19 stage load:
 
 ```text
 ASM NEW
-  paste DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
+  paste DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a
   expected: ASM OK
 .
 G 3000
@@ -352,7 +353,7 @@ After external recovery, rerun Gate 0 before any AP tests.
 - Use bank 2 first for destructive banked AP tests. Banks 0 and 1 should be
   used only after bank 2 passes and a restore path is accepted.
 - Do not run the top-sector program half of `topwr-transient-3000.a` or
-  `str8n-topwrite-transient-3000.a` unless the release action is explicitly to update
+  `OLD/str8n-topwrite-transient-3000.a` unless the release action is explicitly to update
   the top sector.
 
 ## Gate 0: Identity And Fixed Entries
@@ -605,7 +606,8 @@ D 1A00 1A03
   expected: status AC in $1A01
 ```
 
-Do not run `G 3003` from `topwr-transient-3000.a` or `str8n-topwrite-transient-3000.a` unless the
+Do not run `G 3003` from `topwr-transient-3000.a` or
+`OLD/str8n-topwrite-transient-3000.a` unless the
 release task explicitly includes programming the top sector and a recovery path
 is ready.
 
@@ -634,7 +636,7 @@ AP without imports, banked AP with RJOIN import, banked AP bad-input handling,
 overlap rejection plus staged source acceptance, and the regression shortlist.
 
 Board result captured 2026-07-10 in the same log: flash ASM entered as
-`ASM-F2`, and `str8n-topwrite-transient-3000.a` assembled, staged, programmed, and
+`ASM-F2`, and `OLD/str8n-topwrite-transient-3000.a` assembled, staged, programmed, and
 verified bank 3 `$F000-$FFFF` as `STR8-N V0 #5F6A0F7A` with `$1A00-$1A03`
 ending `01 AC 00 00`.
 
@@ -788,8 +790,9 @@ Recommendation: review after the OIL transcript shows the current split works.
 
 ### 8. Keep Top-Sector Writers External
 
-Plain words: `topwr-transient-3000.a` and `str8n-topwrite-transient-3000.a` are useful shop
-tools, not something to stuff into resident STR8 right now.
+Plain words: `topwr-transient-3000.a` and the archived
+`OLD/str8n-topwrite-transient-3000.a` are external shop tools, not something
+to stuff into resident STR8 right now.
 
 Pros:
 

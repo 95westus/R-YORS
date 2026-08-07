@@ -62,7 +62,7 @@
   STR8-N, HIMON V, and ASM-F2 paths are stable:
   [HISTORICAL_CODE_MIGRATION_PLAN.md](HISTORICAL_CODE_MIGRATION_PLAN.md).
   Do not move current board-ingested sample/generated files such as
-  `str8n-topwrite-transient-3000.a`, `asm-session-report-4800.a`, or `ASMTEST_3000.asm`
+  `OLD/str8n-topwrite-transient-3000.a`, `asm-session-report-4800.a`, or `ASMTEST_3000.asm`
   until their Makefile targets and operator docs have a replacement path.
 - Keep `MEMORY_MAP.md` and `TECHNICAL_GUIDE.md` aligned with the current STR8
   RAM tray: worker-code tray at `$0200-$09FF`, 4K flash sector mirror at

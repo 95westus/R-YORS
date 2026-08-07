@@ -43,7 +43,7 @@ SRC/BUILD/s19/str8-ram-3000.s19
 SRC/BUILD/s19/str8-f000.s19
 SRC/BUILD/bin/himon-str8-rom.bin
 DOC/GUIDES/ASM/SAMPLES/str8-jump-inventory-3000.a
-DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a
 ```
 
 Current host map:

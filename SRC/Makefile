@@ -75,9 +75,9 @@ STR8_V1_INTERRUPT_S19 := $(S19_DIR)/str8-v1-i-interrupt-after-start.s19
 STR8_V1_NEGATIVE_GEN := tools/build_str8_v1_negative_streams.ps1
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
 STR8_TOP_STAGE_S19 := $(S19_DIR)/str8-top-stage-0a00.s19
-STR8_TOPWRITE_A := ../DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
-STR8_V1_TOPWRITE_A := $(BUILD_DIR)/str8n-v1-topwrite-transient-3000.a
-STR8_V1_REFRESH_A := $(BUILD_DIR)/str8n-v1-refresh-transient-3000.a
+STR8_TOPWRITE_A := ../DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a
+STR8_V1_TOPWRITE_A := ../DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-topwrite-transient-3000.a
+STR8_V1_REFRESH_A := ../DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a
 STR8_TOPWRITE_A_GEN := tools/emit_str8_topwrite_a.ps1
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
@@ -306,11 +306,12 @@ HELP_QUERY := $(if $(Q),$(Q),$(SEARCH))
 TERMINAL ?=
 UPLOADER ?=
 
-# TopWriter is an install artifact and must track the current combined ROM.
+# The current board-facing TopWriter preserves the installed V1 directory.
+# Replacement/migration writers are explicit historical targets under OLD.
 FIRMWARE_TARGETS ?= \
 	himon-str8-rom-bin \
 	himon-str8-rom-install-s19 \
-	str8-topwrite-a \
+	str8-v1-refresh-a \
 	str8-bank-copy-source-check \
 	str8-bank-maint-source-check \
 	str8-worker-mode-check
@@ -372,7 +373,7 @@ RELEASE_TARGETS ?= \
 	himon-str8-rom-bin \
 	himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 \
-	str8-topwrite-a \
+	str8-v1-refresh-a \
 	str8-bank-copy-source-check \
 	str8-bank-maint-source-check \
 	str8-worker-mode-check

@@ -22,7 +22,7 @@ Use these two files for this test:
 
 ```text
 SRC/BUILD/bin/himon-str8-v1.bin
-SRC/BUILD/str8n-v1-refresh-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a
 ```
 
 Record their SHA-256 values and the visible STR8/HIMON identity. The accepted
@@ -60,7 +60,7 @@ ASM NEW
 Send:
 
 ```text
-SRC/BUILD/str8n-v1-refresh-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a
 ```
 
 Require `ASM OK` and `SEAL>`, then enter:

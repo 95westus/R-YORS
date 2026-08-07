@@ -30,7 +30,7 @@ only for the named `.a` or `.s19` file.
 
 | Use | Complete file name |
 | --- | --- |
-| Install new STR8 top sector | `DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a` |
+| Install historical STR8 top sector | `DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a` |
 | Test `$F010/$0203` | `DOC/GUIDES/ASM/SAMPLES/str8-bank-select-service-proof-2000.a` |
 | Read-only four-bank CRC | `DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a` |
 | Optional copy/erase tests | `DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a` |
@@ -67,7 +67,7 @@ ASM NEW
 **Send file:**
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/str8n-topwrite-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a
 ```
 
 Require:
