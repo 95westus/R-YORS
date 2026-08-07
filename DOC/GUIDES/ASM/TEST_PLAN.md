@@ -13328,3 +13328,55 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-07 STR8 V1.02 Resident-Size Pass
+
+Host status: accepted. Board status: no new board claim; the focused V1.02
+command and identity proofs remain pending.
+
+The size pass shares one-use startup printing, IVI initialization and IRQ/BRK
+validation, record-parser failure exits, directory validation exits,
+confirmation returns, console setup, and transaction message pages. It keeps
+the one-sector tray, uploaded 555-byte mutation worker, permanent 145-byte
+jump worker, service entries, directory layout, and transport contract
+unchanged. The compiled matrices caught and rejected two intermediate
+regressions: a line-editor `Y` clobber after the shared Backspace printer and a
+nonzero success return from the directory writer. Both contracts are restored
+in the accepted image.
+
+The resulting linked transaction layout is:
+
+```text
+transaction code            $F000-$FD35  size $0D36 = 3382
+transaction data            $FD36-$FE5E  size $0129 = 297
+transaction resident        $F000-$FE5E  size $0E5F = 3679
+resident/jump-worker gap     $FE5F-$FF1E  size $00C0 = 192
+gap after $0040 reserve                      $0080 = 128
+packed jump worker           $FF1F-$FFAF  size $0091 = 145
+uploaded mutation worker     $0200-$042A  size $022B = 555
+```
+
+This reclaims `$0079` bytes from the `$0ED8` identity-gate resident and meets
+the minimum V1.02 range-state target exactly. The compact transaction display
+now spells ranges as `8-F`/`8-E`, record states as `NEW`/`INC`/`OK`/`FULL`, a
+refused write as `REFUSED`, and invalid directory state as `DIR BAD`.
+
+`str8-installer-transaction-check` passes 94 journal, 33 record, 77 writer,
+34 line/I, 13 startup, five jump, and 41 install cases. The dry-installer
+matrix, full 256-mode worker sweep, and split-worker extent/identity gate also
+pass. The worker-mode checker now verifies the inlined startup identity print
+directly instead of depending on the removed one-use
+`STR8_PRINT_BANNER` label.
+
+Required host gates:
+
+```text
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-worker-split-check
+make -C SRC str8-v1-artifact
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

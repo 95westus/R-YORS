@@ -2005,15 +2005,15 @@ if ($transactionInstallerMode) {
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
         -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0ED8) -and
+    Assert-True (($residentSize -eq 0x0E5F) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnSummaryAddress -eq 0xFE1F) -and ($txnInstallOkAddress -eq 0xFE24) -and
-        ($txnRange32Address -eq 0xFE2C) -and ($txnTypeAddress -eq 0xFE42) -and
-        ($txnDescAddress -eq 0xFE46) -and ($txnEntryAddress -eq 0xFE49) -and
-        ($txnEmptyAddress -eq 0xFE4D) -and
-        ($txnPage0CallCount -eq 9) -and ($txnPage1CallCount -eq 28)) `
-        'Transaction launch-gate pass must retain its exact size, boundary, and 9/28 call split'
+        ($txnSummaryAddress -eq 0xFDBF) -and ($txnInstallOkAddress -eq 0xFDC4) -and
+        ($txnRange32Address -eq 0xFDCC) -and ($txnTypeAddress -eq 0xFDD6) -and
+        ($txnDescAddress -eq 0xFDDA) -and ($txnEntryAddress -eq 0xFDDD) -and
+        ($txnEmptyAddress -eq 0xFDE1) -and
+        ($txnPage0CallCount -eq 21) -and ($txnPage1CallCount -eq 17)) `
+        'Transaction size pass must retain its exact size, boundary, and 21/17 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
         ($txnPrintPage1 + 2 -eq $residentPrintXy)) `
         'Transaction print-page helpers must be the six bytes immediately before STR8_PRINT_XY'
@@ -2036,22 +2036,23 @@ if ($transactionInstallerMode) {
     foreach ($messageName in @(
             'MSG_ID', 'MSG_BOOT_MENU', 'MSG_SCREEN', 'MSG_HELP', 'MSG_PROMPT',
             'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT',
-            'MSG_I_BANK'
+            'MSG_I_BANK',
+            'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
+            'MSG_I_INSTALL_OK',
+            'MSG_I_RANGE_32K', 'MSG_I_RANGE_28K', 'MSG_I_TYPE', 'MSG_I_DESC',
+            'MSG_I_ENTRY',
+            'MSG_I_EMPTY', 'MSG_I_INCOMPLETE', 'MSG_I_COMPLETE',
+            'MSG_I_FULL', 'MSG_I_PAIR', 'MSG_I_WRITE_CONFIRM'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage0High) `
             ("Transaction page-0 message moved pages: $messageName")
     }
     foreach ($messageName in @(
-            'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
-            'MSG_I_INSTALL_OK',
-            'MSG_I_RANGE_32K', 'MSG_I_RANGE_28K', 'MSG_I_TYPE', 'MSG_I_DESC',
-            'MSG_I_ENTRY',
-            'MSG_I_EMPTY', 'MSG_I_INCOMPLETE', 'MSG_I_COMPLETE',
-            'MSG_I_FULL', 'MSG_I_PAIR', 'MSG_I_WRITE_CONFIRM', 'MSG_I_SEND_S19',
+            'MSG_I_SEND_S19',
             'MSG_I_TRANSACTION_FAIL', 'MSG_I_S19_FAIL',
             'MSG_I_NO_WRITE', 'MSG_NO_BOOT', 'MSG_JUMP_B', 'MSG_JUMP_FAIL_B',
-            'MSG_JUMP_FAIL_VEC', 'MSG_CRLF', 'MSG_NO_HIMON'
+            'MSG_JUMP_FAIL_VEC', 'MSG_CRLF', 'MSG_NO_HIMON', 'MSG_BACKSPACE'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage1High) `
@@ -2281,10 +2282,10 @@ foreach ($confirmation in @(
 }
 
 [byte[]]$lineInput = [System.Text.Encoding]::ASCII.GetBytes("2`r`na5`r`nryors`r")
-$expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 NO WRITE`r`n"
+$expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8-F `r`nT=A5 D=RYORS NEW P=00 REFUSED`r`n"
 if ($dryInstallerMode) {
     [byte[]]$lineInput = $lineInput + [System.Text.Encoding]::ASCII.GetBytes("n`r")
-    $expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 $installerConfirmText`? Y: N`r`nABORT`r`n"
+    $expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8-F `r`nT=A5 D=RYORS NEW P=00 $installerConfirmText`? Y: N`r`nABORT`r`n"
 }
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'empty Bank 2 metadata'
@@ -2296,10 +2297,10 @@ Assert-True ([System.Text.Encoding]::ASCII.GetString($previewFixture.Memory, $re
     'Resident I Bank-2 description state mismatch'
 
 [byte[]]$lineInput = [System.Text.Encoding]::ASCII.GetBytes("3`r5a`rstr8n`r")
-$expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 NO WRITE`r`n"
+$expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8-E `r`nT=5A D=STR8N NEW P=00 REFUSED`r`n"
 if ($dryInstallerMode) {
     [byte[]]$lineInput = $lineInput + [System.Text.Encoding]::ASCII.GetBytes("n`r")
-    $expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 $installerConfirmText`? Y: N`r`nABORT`r`n"
+    $expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8-E `r`nT=5A D=STR8N NEW P=00 $installerConfirmText`? Y: N`r`nABORT`r`n"
 }
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'empty Bank 3 range'
@@ -2309,20 +2310,20 @@ Assert-True ($previewFixture.Memory[$residentInstallBank] -eq 3 -and
 
 [byte[]]$completeRecord = New-Record 1 'HELLO' 0xFFFF (New-Journal 1 $false)
 [byte[]]$lineInput = [System.Text.Encoding]::ASCII.GetBytes("1`r")
-$expectedPreview = "`r`nI B0-3: 1`r`nI B1 8000-FFFF `r`nT=5A D=HELLO COMPLETE P=01 NO WRITE`r`n"
+$expectedPreview = "`r`nI B0-3: 1`r`nI B1 8-F `r`nT=5A D=HELLO OK P=01 REFUSED`r`n"
 if ($dryInstallerMode) {
     [byte[]]$lineInput = $lineInput + [System.Text.Encoding]::ASCII.GetBytes("n`r")
-    $expectedPreview = "`r`nI B0-3: 1`r`nI B1 8000-FFFF `r`nT=5A D=HELLO COMPLETE P=01 $installerConfirmText`? Y: N`r`nABORT`r`n"
+    $expectedPreview = "`r`nI B0-3: 1`r`nI B1 8-F `r`nT=5A D=HELLO OK P=01 $installerConfirmText`? Y: N`r`nABORT`r`n"
 }
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput @{ 1 = $completeRecord }
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'existing complete Bank 1'
 
 [byte[]]$incompleteRecord = New-Record 3 'LOCAL' 0xC030 (New-Journal 2 $true)
 [byte[]]$lineInput = [System.Text.Encoding]::ASCII.GetBytes("3`n")
-$expectedPreview = "`r`nI B0-3: 3`r`nI B3 8000-EFFF `r`nT=5A D=LOCAL E=`$C030 INCOMPLETE P=02 NO WRITE`r`n"
+$expectedPreview = "`r`nI B0-3: 3`r`nI B3 8-E `r`nT=5A D=LOCAL E=`$C030 INC P=02 REFUSED`r`n"
 if ($dryInstallerMode) {
     [byte[]]$lineInput = $lineInput + [System.Text.Encoding]::ASCII.GetBytes("n`r")
-    $expectedPreview = "`r`nI B0-3: 3`r`nI B3 8000-EFFF `r`nT=5A D=LOCAL E=`$C030 INCOMPLETE P=02 $installerConfirmText`? Y: N`r`nABORT`r`n"
+    $expectedPreview = "`r`nI B0-3: 3`r`nI B3 8-E `r`nT=5A D=LOCAL E=`$C030 INC P=02 $installerConfirmText`? Y: N`r`nABORT`r`n"
 }
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput @{ 3 = $incompleteRecord }
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'existing incomplete Bank 3'
@@ -2330,14 +2331,14 @@ Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'exis
 [byte[]]$fullRecord = New-Record 0 'FULL0' 0xFFFF (New-Journal 16 $false)
 [byte[]]$lineInput = [System.Text.Encoding]::ASCII.GetBytes("0`r")
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput @{ 0 = $fullRecord }
-$expectedPreview = "`r`nI B0-3: 0`r`nI B0 8000-FFFF `r`nT=5A D=FULL0 FULL P=FF NO WRITE`r`n"
+$expectedPreview = "`r`nI B0-3: 0`r`nI B0 8-F `r`nT=5A D=FULL0 FULL P=FF REFUSED`r`n"
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'full Bank 0 journal'
 
 [byte[]]$invalidRecord = $completeRecord.Clone()
 $invalidRecord[$offReserved] = 0xFE
 [byte[]]$lineInput = [System.Text.Encoding]::ASCII.GetBytes("1`r")
 $previewFixture = Invoke-ResidentIPreviewFixture $lineInput @{ 1 = $invalidRecord }
-Assert-ResidentIPreviewFixture $previewFixture $lineInput "`r`nI B0-3: 1`r`nDIR INVALID`r`n" 'invalid directory record'
+Assert-ResidentIPreviewFixture $previewFixture $lineInput "`r`nI B0-3: 1`r`nDIR BAD`r`n" 'invalid directory record'
 
 foreach ($negativePreview in @(
         [pscustomobject]@{ Name = 'empty bank'; Input = [byte[]]@(0x0D); Output = "`r`nI B0-3: `r`nABORT`r`n" },
@@ -2355,7 +2356,7 @@ if ($dryInstallerMode) {
     $dense28 = New-DenseRecordFixture -Length 0x7000 -Entry 0x8000 -ChunkLength 193 -IncludeS0 $false
     if ($transactionInstallerMode) {
         $transactionFixture = Invoke-ResidentITransactionFixture -InputBytes $denseInput -DenseRecords $dense32.Records
-        $expectedTransaction = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n........`r`nI OK`r`n"
+        $expectedTransaction = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8-F `r`nT=A5 D=RYORS NEW P=00 WRITE? Y: Y`r`nSEND S19`r`n........`r`nI OK`r`n"
         Assert-TransactionOutput $transactionFixture $denseInput $expectedTransaction '32K Bank 2 success'
         Assert-TransactionFlash $transactionFixture 2 $dense32 8 '32K Bank 2 success'
         [byte[]]$expectedRecord = New-Record 2 'RYORS' 0xFFFF (New-Journal 1 $false)
@@ -2372,7 +2373,7 @@ if ($dryInstallerMode) {
 
         [byte[]]$denseInput = [System.Text.Encoding]::ASCII.GetBytes("3`r5a`rstr8n`ry`n")
         $transactionFixture = Invoke-ResidentITransactionFixture -InputBytes $denseInput -DenseRecords $dense28.Records
-        $expectedTransaction = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n.......`r`nI OK`r`n"
+        $expectedTransaction = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8-E `r`nT=5A D=STR8N NEW P=00 WRITE? Y: Y`r`nSEND S19`r`n.......`r`nI OK`r`n"
         Assert-TransactionOutput $transactionFixture $denseInput $expectedTransaction '28K Bank 3 success'
         Assert-TransactionFlash $transactionFixture 3 $dense28 7 '28K Bank 3 success'
         $expectedRecord = New-Record 3 'STR8N' 0x8000 (New-Journal 1 $false)
@@ -2390,7 +2391,7 @@ if ($dryInstallerMode) {
         # any persistent write. A bad identity, address gap, or short image
         # reports worker status $15 and leaves the directory untouched.
         [byte[]]$workerFailureInput = [System.Text.Encoding]::ASCII.GetBytes("0`r5a`rfail0`ry`r")
-        $expectedWorkerFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8000-FFFF `r`nT=5A D=FAIL0 EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nI FAIL `$15`r`n"
+        $expectedWorkerFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8-F `r`nT=5A D=FAIL0 NEW P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nI FAIL `$15`r`n"
 
         [object[]]$badWorker = @($script:mutationWorkerRecords)
         [byte[]]$badWorkerData = ([byte[]]$badWorker[0].Data).Clone()
@@ -2441,7 +2442,7 @@ if ($dryInstallerMode) {
         [byte[]]$beginFailureInput = [System.Text.Encoding]::ASCII.GetBytes("0`r5a`rfail0`ry`r")
         $fixture = Invoke-ResidentITransactionFixture -InputBytes $beginFailureInput `
             -DenseRecords $dense32.Records -WorkerFailAt 1
-        $expectedFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8000-FFFF `r`nT=5A D=FAIL0 EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nDIR FAIL `$04`r`n"
+        $expectedFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8-F `r`nT=5A D=FAIL0 NEW P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nDIR FAIL `$04`r`n"
         Assert-TransactionOutput $fixture $beginFailureInput $expectedFailure 'START directory failure'
         Assert-True ($fixture.Memory[$residentInstallStatus] -eq 0x14) `
             'START directory failure did not publish installer status $14'
@@ -2557,7 +2558,7 @@ if ($dryInstallerMode) {
         [byte[]]$failureInput = [System.Text.Encoding]::ASCII.GetBytes("0`r5a`rfail0`ry`r")
         $fixture = Invoke-ResidentITransactionFixture -InputBytes $failureInput `
             -DenseRecords $badTransactionRecords
-        $expectedFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8000-FFFF `r`nT=5A D=FAIL0 EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nI FAIL `$10`r`n"
+        $expectedFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8-F `r`nT=5A D=FAIL0 NEW P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nI FAIL `$10`r`n"
         Assert-TransactionOutput $fixture $failureInput $expectedFailure 'receive failure after START'
         Assert-True ($fixture.Cpu.WorkerCalls -eq 2 -and $fixture.Cpu.SectorCalls -eq 0) `
             'Receive failure reached a sector or later directory write'
@@ -2568,7 +2569,7 @@ if ($dryInstallerMode) {
 
         $fixture = Invoke-ResidentITransactionFixture -InputBytes $failureInput `
             -DenseRecords $dense32.Records -SectorFailAt 1
-        $expectedFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8000-FFFF `r`nT=5A D=FAIL0 EMPTY P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nI FAIL `$12`r`n"
+        $expectedFailure = "`r`nI B0-3: 0`r`nTYPE: 5A`r`nDESC: FAIL0`r`nI B0 8-F `r`nT=5A D=FAIL0 NEW P=00 WRITE? Y: Y`r`nSEND S19`r`n`r`nI FAIL `$12`r`n"
         Assert-TransactionOutput $fixture $failureInput $expectedFailure 'first-sector worker failure'
         Assert-True ($fixture.Cpu.WorkerCalls -eq 2 -and $fixture.Cpu.SectorCalls -eq 1) `
             'First-sector failure reached a later transaction boundary'
@@ -2576,12 +2577,12 @@ if ($dryInstallerMode) {
             'First-sector failure changed modeled target flash'
     } else {
         $previewFixture = Invoke-ResidentIPreviewFixture -InputBytes $denseInput -DenseRecords $dense32.Records
-        $expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8000-FFFF `r`nT=A5 D=RYORS EMPTY P=00 STAGE? Y: Y`r`nSEND S19`r`nSTAGE OK NO WRITE`r`n"
+        $expectedPreview = "`r`nI B0-3: 2`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8-F `r`nT=A5 D=RYORS NEW P=00 STAGE? Y: Y`r`nSEND S19`r`nSTAGE OK REFUSED`r`n"
         Assert-DenseStageFixture $previewFixture $dense32 8 $denseInput $expectedPreview '32K Bank 2 crossing stream'
 
         [byte[]]$denseInput = [System.Text.Encoding]::ASCII.GetBytes("3`r5a`rstr8n`ry`n")
         $previewFixture = Invoke-ResidentIPreviewFixture -InputBytes $denseInput -DenseRecords $dense28.Records
-        $expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8000-EFFF `r`nT=5A D=STR8N EMPTY P=00 STAGE? Y: Y`r`nSEND S19`r`nSTAGE OK NO WRITE`r`n"
+        $expectedPreview = "`r`nI B0-3: 3`r`nTYPE: 5A`r`nDESC: STR8N`r`nI B3 8-E `r`nT=5A D=STR8N NEW P=00 STAGE? Y: Y`r`nSEND S19`r`nSTAGE OK REFUSED`r`n"
         Assert-DenseStageFixture $previewFixture $dense28 7 $denseInput $expectedPreview '28K Bank 3 crossing stream'
         Assert-True ($previewFixture.Memory[$residentInstallEntryLo] -eq 0x00 -and
             $previewFixture.Memory[$residentInstallEntryHi] -eq 0x80) `

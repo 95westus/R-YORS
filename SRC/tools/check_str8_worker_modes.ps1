@@ -341,18 +341,23 @@ $startupPoll = Get-Symbol $str8Symbols 'STR8_BOOT_KEY_POLL'
 $startupPollEnd = Get-Symbol $str8Symbols 'STR8_PRINT_SCREEN'
 $startupFlag = Get-Symbol $str8Symbols 'STR8_BOOT_KEY_ENABLE'
 $startupFlush = Get-Symbol $str8Symbols 'STR8_CON_FLUSH_RX'
-$startupBanner = Get-Symbol $str8Symbols 'STR8_PRINT_BANNER'
+$startupPrinter = Get-Symbol $str8Symbols 'STR8_PRINT_XY'
 $selectorHimonEnd = Get-Symbol $str8Symbols 'STR8_CMD_UPDATE_HIMON'
 $selectorWarmTarget = Get-Symbol $str8Symbols 'STR8_ENTER_HIMON_WARM'
 [byte[]]$startupClear = 0xA2, 0x23, 0xA9, 0x0A
 [byte[]]$startupHead = 0x9C, ($startupFlag -band 0xFF), (($startupFlag -shr 8) -band 0xFF), 0xA9, 0x20
 [byte[]]$startupArm = 0xEE, ($startupFlag -band 0xFF), (($startupFlag -shr 8) -band 0xFF)
+[byte[]]$startupBanner = @(
+    0xA2, ($idMessage -band 0xFF),
+    0xA0, (($idMessage -shr 8) -band 0xFF),
+    0x20, ($startupPrinter -band 0xFF), (($startupPrinter -shr 8) -band 0xFF)
+)
 if (-not (Test-ByteSequence $str8Memory $startupDelay $startupDelayFixed $startupClear) -or
     -not (Test-ByteSequence $str8Memory $startupDelay $startupDelayFixed $startupHead) -or
     -not (Test-ByteSequence $str8Memory $startupDelay $startupDelayFixed ([byte[]](0xC9, 0x10))) -or
     -not (Test-AbsoluteCall $str8Memory $startupDelay $startupDelayFixed $startupFlush) -or
     -not (Test-ByteSequence $str8Memory $startupDelay $startupDelayFixed $startupArm) -or
-    -not (Test-AbsoluteCall $str8Memory $startupDelay $startupDelayFixed $startupBanner) -or
+    -not (Test-ByteSequence $str8Memory $startupDelay $startupDelayFixed $startupBanner) -or
     -not (Test-AbsoluteCall $str8Memory $startupDelay $startupDelayFixed $startupPollIf)) {
     throw 'Resident startup is not 35 LFs plus one 32-dot loop with a flush/arm/banner midpoint at 16'
 }

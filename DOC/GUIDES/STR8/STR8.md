@@ -229,14 +229,14 @@ worker is packed immediately below the fixed directory, and the remaining free
 space is one contiguous reserve:
 
 ```text
-$F000-$FD91  STR8 transaction code
-             size $0D92 = 3474 bytes
+$F000-$FD35  STR8 transaction code
+             size $0D36 = 3382 bytes
 
-$FD92-$FED7  STR8 transaction data
-             size $0146 = 326 bytes
+$FD36-$FE5E  STR8 transaction data
+             size $0129 = 297 bytes
 
-$FED8-$FF1E  contiguous reserve
-             size $0047 = 71 bytes
+$FE5F-$FF1E  contiguous reserve
+             size $00C0 = 192 bytes; $0080 beyond the required $0040
 
 $FF1F-$FFAF  packed permanent jump worker
              size $0091 = 145 bytes; copied to $0200-$0290

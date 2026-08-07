@@ -26,6 +26,11 @@ the jump-only worker at `$FF1F-$FFAF`, and copies it to `$0200-$0290`. An `I`
 transport uploads the 555-byte mutation worker to `$0200-$042A` before dense
 payload staging uses the single `$0A00-$19FF` sector tray. Worker/update state
 remains in `$1FE9-$1FFF`, and the fixed V1 directory is `$FFB0-$FFEF`.
+The V1.02 size pass places the transaction resident at `$F000-$FE5E` and
+leaves `$FE5F-$FF1E`, `$00C0` bytes, free before the stored jump worker. That
+is the required `$0040` reserve plus the full `$0080` minimum range-state
+growth target. Compact installer output uses sector spans `8-F`/`8-E`, states
+`NEW`/`INC`/`OK`/`FULL`, `REFUSED`, and `DIR BAD`.
 
 The top sector exposes stable service entries at `$F003` for the resident
 worker doorway and `$F009` for the V1 validated-record service. In the split

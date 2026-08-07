@@ -2,7 +2,7 @@
 
 ```text
 status:       V1.01 HARDWARE-ACCEPTED; V1.02 HOST IMPLEMENTATION ACTIVE
-next gate:    RESIDENT SIZE PASS + PARAMETERIZED RANGE STATE
+next gate:    PARAMETERIZED RANGE STATE
 source date:  2026-08-07
 ```
 
@@ -36,6 +36,19 @@ The receiver continues to use the existing single 4K tray and uploaded
 mutation worker. A proposed 24K RAM batch is explicitly deferred because
 range loading does not require a transport change.
 
+The resident-size pass is host-accepted. It reuses common parser, validator,
+interrupt, confirmation, console, and message-page paths without changing the
+streaming or flash-worker contracts. The transaction resident is now
+`$F000-$FE5E`, size `$0E5F`; the permanent jump worker remains
+`$FF1F-$FFAF`, leaving the required `$0040` reserve plus `$0080` of growth
+room. This meets the minimum range-state target exactly and reclaims `$0079`
+bytes from the identity-gate baseline. The preferred `$0140` total gap remains
+a later optimization goal rather than a blocker for the next slice.
+
+To keep the resident summaries compact, V1.02 prints sector spans `8-F` and
+`8-E`, states `NEW`, `INC`, `OK`, and `FULL`, transaction refusal as
+`REFUSED`, and invalid directory data as `DIR BAD`.
+
 V1.02 also removes the ambiguous shell bare-bank aliases. Its compact surface
 is `I H J0-3`: `H` warm-enters the local `$C000` target without selecting a
 bank only when `$C003-$C006` carries the fixed HIMON identity
@@ -50,8 +63,8 @@ pass moves the first-free resident byte from `$FED5` to `$FEC2`, increasing
 the resident/worker gap from `$004A` to `$005D`; that is useful but still well
 short of the growth target. The subsequent exact-HIMON identity gate moves
 first-free to `$FED8` and reduces the gap to `$0047`, leaving only `$0007`
-beyond the required reserve. This makes the size pass mandatory before range
-state is added.
+beyond the required reserve. This made the now-completed size pass mandatory
+before range state is added.
 
 > **Transport warning:** the accepted 32K result applies only to Windows Tera
 > Term Send File over the current FTDI FIFO path. It does not qualify an ACIA.
@@ -250,39 +263,39 @@ Journal renewal belongs to explicit future top-sector maintenance.
 The reset-time selector is:
 
 ```text
-0  Bank 0
-1  Bank 1
-2  Bank 2
-3  Bank 3 payload
+0  delayed Bank-0 handoff
+1  delayed Bank-1 handoff
+2  delayed Bank-2 handoff
+H  warm-enter identified local HIMON without selecting a bank
 S  remain in STR8-N
 ```
 
-Timeout attempts the Bank-3 payload only when its directory record is complete
-and its LOCAL ENTRY is launchable. Otherwise timeout remains safely in STR8-N.
+Timeout cold-enters the generic local `$C000` target when its entry face is not
+erased. Otherwise it remains safely in STR8-N.
 
-The V1.01 prompt is:
+The V1.02 prompt is:
 
 ```text
-I 0-3 J0-3
+I H J0-3
 ```
 
 The normal legacy image prints
-`U 0-3 J0-3`. The guarded V1 preview prints the final surface above: `U`,
-`G`, and `R` are absent, and `I` accepts Bank 0-3. During the dry
-preflight slices it ends with `NO WRITE`; no flash mutation is reachable.
+`U 0-3 J0-3`. The guarded V1 image prints the final surface above: `U`,
+`G`, and `R` are absent, and `I` accepts Bank 0-3. A refused/dry transaction
+ends with `REFUSED`.
 
 There is no `?` command. The identity is printed when STR8-N enters its menu;
 any command that does not match the active command set prints the help line.
-`I` prompts for Bank 0-3, installing 32K into Banks 0-2 or 28K into the Bank-3
-payload. Bare `0` through `2` immediately reuse the corresponding bank
-handoff; bare `3` enters the Bank-3 payload warmly. `J0` through `J3` remain
-the explicit non-destructive handoffs, with `J3` retaining STR8 re-entry.
+`I` prompts for Bank 0-3, currently installing 32K into Banks 0-2 or 28K into
+the Bank-3 payload. The next range-state slice generalizes those fixed extents.
+Bare shell digits are unknown commands. `H` is the local warm HIMON path, and
+`J0` through `J3` are the only explicit non-destructive physical-bank
+handoffs, with `J3` retaining STR8 re-entry.
 
 The destructive V0 meanings of `B` and bare prompt `0`, `1`, or `2`, plus the
-separate `G`, `R`, and fixed 12K `U` updater, are retired in V1. The bare
-digits are repurposed only as safe selector aliases. `B` remains reserved for
-the future external S19 backup generator. Unknown worker modes must fail
-explicitly and must never fall through to an old copy operation.
+separate `G`, `R`, and fixed 12K `U` updater, are retired in V1. `B` remains
+reserved for the future external S19 backup generator. Unknown worker modes
+must fail explicitly and must never fall through to an old copy operation.
 
 Command and prompted input use a small shared line editor:
 
