@@ -93,10 +93,17 @@ hardware-accepted by the [V1 migration board test](STR8_V1_MIGRATION_BOARD_TEST.
 [V1 refresh board test](STR8_V1_REFRESH_BOARD_TEST.md), and
 [V1 interruption board test](STR8_V1_INTERRUPTION_BOARD_TEST.md).
 
+The V1.02 parameterized receiver is host-accepted but not yet board-accepted.
+Its focused destructive rail is the
+[V1.02 range installer board test](STR8_V1_02_RANGE_BOARD_TEST.md): preserve
+Bank 3's live directory while refreshing only sector F, then prove independent
+ASM-F2 `8-B` and HIMON `C-E` updates in disposable Bank 2 with per-sector CRCs.
+
 V1 is not yet the default combined-image/documentation baseline. HIMON's
 banked AP loader still requests retired `$F003` stage mode `$06`; it must move
 to a read-only `$F010/$0203` stage-and-restore routine and receive board proof
-before promotion.
+before promotion. The V1.02 range rail above must also pass before the
+parameterized build is promoted.
 
 ## Milestone Snapshot
 

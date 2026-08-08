@@ -10,6 +10,14 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+if ($PayloadStart -lt 0x8000 -or $PayloadEndExclusive -gt 0x10000 -or
+    $PayloadStart -ge $PayloadEndExclusive -or
+    ($PayloadStart -band 0x0FFF) -ne 0 -or
+    ($PayloadEndExclusive -band 0x0FFF) -ne 0) {
+    throw ('Payload extent ${0:X4}-${1:X4} must be a non-empty 4K-aligned range inside $8000-$FFFF' -f `
+        $PayloadStart, ($PayloadEndExclusive - 1))
+}
+
 function Get-EquValue {
     param([string]$Path, [string]$Name)
 
@@ -134,24 +142,41 @@ for ($i = 0; $i -lt $expectedSignature.Length; $i++) {
     }
 }
 
-if ($PayloadEndExclusive -eq 0x10000) {
-    [byte[]]$payloadImage = New-Object byte[] ($PayloadEndExclusive - $PayloadStart)
-    foreach ($record in $payloadS1) {
-        [Array]::Copy($record.Data, 0, $payloadImage, $record.Address - $PayloadStart, $record.Data.Length)
-    }
+[byte[]]$payloadImage = New-Object byte[] ($PayloadEndExclusive - $PayloadStart)
+foreach ($record in $payloadS1) {
+    [Array]::Copy($record.Data, 0, $payloadImage, $record.Address - $PayloadStart, $record.Data.Length)
+}
+
+if ($PayloadStart -eq 0x8000 -and $PayloadEndExclusive -eq 0x10000) {
     $vectorOffset = 0xFFFC - $PayloadStart
     $resetVector = [int]$payloadImage[$vectorOffset] -bor ([int]$payloadImage[$vectorOffset + 1] -shl 8)
     if ($payloadS9[0].Address -ne $resetVector) {
         throw ('Payload S9 is ${0:X4}; reset vector is ${1:X4}' -f $payloadS9[0].Address, $resetVector)
     }
-} elseif ($PayloadEndExclusive -eq 0xF000) {
+} else {
     if ($payloadS9[0].Address -ne 0xFFFF -and
         ($payloadS9[0].Address -lt $PayloadStart -or $payloadS9[0].Address -ge $PayloadEndExclusive)) {
-        throw ('Bank-3 payload S9 ${0:X4} is outside ${1:X4}-${2:X4}' -f `
+        throw ('Range payload S9 ${0:X4} is outside ${1:X4}-${2:X4}' -f `
             $payloadS9[0].Address, $PayloadStart, ($PayloadEndExclusive - 1))
     }
-} else {
-    throw ('Unsupported V1 payload extent ${0:X4}-${1:X4}' -f $PayloadStart, ($PayloadEndExclusive - 1))
+}
+
+$sectorCrcs = New-Object System.Collections.Generic.List[string]
+for ($sectorOffset = 0; $sectorOffset -lt $payloadImage.Length; $sectorOffset += 0x1000) {
+    $crc = 0xFFFF
+    for ($i = 0; $i -lt 0x1000; $i++) {
+        $crc = $crc -bxor ([int]$payloadImage[$sectorOffset + $i] -shl 8)
+        for ($bit = 0; $bit -lt 8; $bit++) {
+            if (($crc -band 0x8000) -ne 0) {
+                $crc = (($crc -shl 1) -bxor 0x1021) -band 0xFFFF
+            } else {
+                $crc = ($crc -shl 1) -band 0xFFFF
+            }
+        }
+    }
+    $sectorHigh = ($PayloadStart + $sectorOffset) -shr 8
+    $sectorCrcs.Add(('{0:X1}:${1:X2} {2:X2}' -f ($sectorHigh -shr 4), `
+        ($crc -band 0xFF), ($crc -shr 8)))
 }
 
 $lines = New-Object System.Collections.Generic.List[string]
@@ -167,6 +192,7 @@ $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $S19Path).Hash
 Write-Host ('MUTATION WORKER        = ${0:X4}-${1:X4}; {2} S1 records' -f $workerStart, ($mutationEnd - 1), $workerS1.Count)
 Write-Host ('PAYLOAD                = ${0:X4}-${1:X4}; {2} S1 records' -f $PayloadStart, ($PayloadEndExclusive - 1), $payloadS1.Count)
 Write-Host ('S9 ENTRY               = ${0:X4}' -f $payloadS9[0].Address)
+Write-Host ('SECTOR CRC LO HI        = {0}' -f ($sectorCrcs -join '; '))
 Write-Host ('COMBINED RECORDS        = {0}; one file/send operation' -f $lines.Count)
 Write-Host ('SHA-256                 = {0}' -f $hash)
 Write-Host ('STR8 V1 I TRANSPORT     = {0}' -f $S19Path)

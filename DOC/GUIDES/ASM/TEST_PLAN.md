@@ -13437,9 +13437,11 @@ git diff --check
 
 ## 2026-08-07 STR8 V1.02 Parameterized Dense Receiver
 
-Host status: accepted. Board status: no new board claim. The next gate is a
-focused FTDI board proof of partial range programming and neighboring-sector
-preservation before V1.02 becomes the default combined-image baseline.
+Host status: accepted. Board status: focused destructive proof pending under
+[`STR8_V1_02_RANGE_BOARD_TEST.md`](../STR8/STR8_V1_02_RANGE_BOARD_TEST.md).
+The rail uses FTDI partial-range programming and per-sector CRCs to prove
+neighboring-sector preservation before V1.02 becomes the default
+combined-image baseline.
 
 The existing one-sector receiver now initializes expected input and flash
 sector state from `STR8_INSTALL_START_HI` and terminates only at

@@ -36,6 +36,12 @@ that state for every 4K-32K range permitted by the selected bank; there is no
 second receiver or RAM-batched transport. Compact output uses states
 `NEW`/`INC`/`OK`/`FULL` and invalid directory text `DIR BAD`.
 
+The remaining destructive range gate is the
+[V1.02 range installer board test](STR8_V1_02_RANGE_BOARD_TEST.md). Its prepared
+streams update Bank 2 `$8000-$BFFF` with ASM-F2 and `$C000-$EFFF` with HIMON
+while preserving sector F, and use the maintained all-bank CRC fixture to
+prove that every unselected sector remains byte-identical.
+
 The top sector exposes stable service entries at `$F003` for the resident
 worker doorway and `$F009` for the V1 validated-record service. In the split
 V1 image, `$F003` exposes only jump mode `$08`; modes `$05-$07` belong to the

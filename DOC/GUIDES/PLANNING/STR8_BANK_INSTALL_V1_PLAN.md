@@ -1251,3 +1251,21 @@ every return, preserve the caller's interrupt state, and retain the existing
 `LOAD_FAIL_SERVICE` failure contract. Then re-run the RAM/visible/banked AP
 matrix and board-prove a Bank-0 AP load. That is the remaining promotion gate
 for making split V1 the default combined-image/documentation baseline.
+
+## 2026-08-07 V1.02 Range Board Rail
+
+The parameterized dense receiver and exact-worker transaction matrices are
+host-accepted. `make -C SRC str8-v1-range-proof-streams` now emits two focused
+single-send transports from the current combined candidate: ASM-F2 for Bank 2
+range `8-B`, and HIMON for Bank 2 range `C-E`. Each stream contains the exact
+mutation worker, a dense component payload, and a unique S9; the build prints
+the per-sector CRC-16/CCITT-FALSE pairs used by the maintained board fixture.
+
+The canonical destructive procedure is
+[`STR8_V1_02_RANGE_BOARD_TEST.md`](../STR8/STR8_V1_02_RANGE_BOARD_TEST.md).
+It first refreshes only Bank 3 sector F through the directory-preserving
+TopWriter, then installs the two component ranges independently into the
+documented disposable Bank 2. Bank 2 sector F remains untouched so the old
+reset path can launch and prove both newly installed components. Promotion
+remains blocked until that complete transcript and the AP-loader gate above
+are board-accepted.
