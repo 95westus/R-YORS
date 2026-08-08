@@ -13540,3 +13540,12 @@ destination), require the package's normal result, then confirm Bank 3 is
 visible and the source bank is unchanged. Do not promote split V1 to the
 default combined-image baseline until that transcript and positive local `H`
 proof are captured.
+
+The first focused board rail is prepared in
+[`STR8_V1_02_HIMON_AP_STAGE_BOARD_TEST.md`](../STR8/STR8_V1_02_HIMON_AP_STAGE_BOARD_TEST.md).
+It installs only Bank-3 HIMON `00.0807(2141)` at `C-E`, proves shell and
+startup-selector `H`, and invokes `AP B0 $8001 $3000` as a deliberately
+non-executing `$07` signature failure. The staged Bank-0 head, restored Bank-3
+directory, and before/after CRC table are required evidence. Passing that
+intermediate rail proves the changed bank-select/copy/restore path but does
+not close the positive known-package execution gate above.

@@ -99,6 +99,13 @@ rail preserved Bank 3's live directory while refreshing only sector F, then
 proved independent ASM-F2 `8-B` and HIMON `C-E` updates in disposable Bank 2
 with exact per-sector CRCs, preserved-sector launch, and reset recovery.
 
+The follow-up [Bank-3 HIMON and AP-stage board test](STR8_V1_02_HIMON_AP_STAGE_BOARD_TEST.md)
+is host-prepared for a `C-E`-only install of HIMON `00.0807(2141)`. It keeps
+the accepted STR8 sector F in place, is designed to close positive
+shell/startup `H`, and uses a deliberately invalid Bank-0 source to prove the
+migrated read-only AP stage/restore path without executing an unknown package.
+Board proof and the later positive known-package run remain open.
+
 V1 is not yet the default combined-image/documentation baseline. HIMON's
 banked AP loader now uses a host-checked RAM-resident `$F010/$0203`
 stage-and-restore routine instead of retired `$F003` mode `$06`, but the
