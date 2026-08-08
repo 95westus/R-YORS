@@ -13434,3 +13434,57 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-07 STR8 V1.02 Parameterized Dense Receiver
+
+Host status: accepted. Board status: no new board claim. The next gate is a
+focused FTDI board proof of partial range programming and neighboring-sector
+preservation before V1.02 becomes the default combined-image baseline.
+
+The existing one-sector receiver now initializes expected input and flash
+sector state from `STR8_INSTALL_START_HI` and terminates only at
+`STR8_INSTALL_RANGE_LIMIT_HI`. The temporary full-range refusal gate and the
+duplicate fixed-range limit state are removed. No second receiver, batching
+path, worker format, or transport behavior was added.
+
+S1 data must start exactly at the declared 4K boundary and remain contiguous
+and dense through the exclusive declared limit. The final sector remains held
+until the unique S9 is validated. S9 is component transport metadata: `$FFFF`
+or an address inside the declared range. It does not replace a Bank-0/1/2 reset
+vector, and a later Bank-3 package does not replace the immutable LOCAL ENTRY.
+The bank-wide journal still writes START before the first selected sector and
+COMPLETE only after every selected sector verifies.
+
+The dry command/receiver matrix streams every sector count from one through
+eight: 4K, 8K, 12K, 16K, 20K, 24K, 28K, and 32K. The exact-worker transaction
+matrix repeats partial 4K/8K/12K/16K operations across Banks 0-3 plus the 28K
+Bank-3 and 32K Bank-2 full extents. It verifies target bytes, every unselected
+sector, all unrelated banks, directory metadata, journal completion, final-
+sector-after-S9 ordering, in-range/out-of-range S9 behavior, and immutable
+Bank-3 entry behavior. The exhaustive 261-case range-language matrix remains
+unchanged. The transaction gate completes within the five-minute host limit.
+
+The transaction layout is now:
+
+```text
+transaction code            $F000-$FD74  size $0D75 = 3445
+transaction data            $FD75-$FE9C  size $0128 = 296
+transaction resident        $F000-$FE9C  size $0E9D = 3741
+resident/jump-worker gap     $FE9D-$FF1E  size $0082 = 130
+gap after $0040 reserve                      $0042 = 66
+packed jump worker           $FF1F-$FFAF  size $0091 = 145
+```
+
+Required host gates:
+
+```text
+make -C SRC str8-directory-check
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-worker-split-check
+make -C SRC str8-v1-artifact
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

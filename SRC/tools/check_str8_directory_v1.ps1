@@ -1538,8 +1538,8 @@ function Assert-TransactionFlash {
         }
         for ($offset = 0; $offset -lt 0x8000; $offset++) {
             $address = 0x8000 + $offset
-            if ($offset -lt $Dense.Image.Length) {
-                $expected = $Dense.Image[$offset]
+            if ($address -ge $Dense.Start -and $address -lt $Dense.End) {
+                $expected = $Dense.Image[$address - $Dense.Start]
             } else {
                 $expected = $before[$address]
             }
@@ -1582,16 +1582,18 @@ function New-DenseRecordFixture {
         [int]$Length,
         [int]$Entry,
         [int]$ChunkLength,
-        [bool]$IncludeS0
+        [bool]$IncludeS0,
+        [int]$Start = 0x8000
     )
 
     [byte[]]$image = New-Object byte[] $Length
     for ($i = 0; $i -lt $Length; $i++) {
         $image[$i] = [byte](($i * 37 + 0x5A) -band 0xFF)
     }
-    if ($Length -eq 0x8000) {
-        $image[0x7FFC] = [byte]($Entry -band 0xFF)
-        $image[0x7FFD] = [byte](($Entry -shr 8) -band 0xFF)
+    if ($Start -le 0xFFFC -and ($Start + $Length) -gt 0xFFFD) {
+        $vectorOffset = 0xFFFC - $Start
+        $image[$vectorOffset] = [byte]($Entry -band 0xFF)
+        $image[$vectorOffset + 1] = [byte](($Entry -shr 8) -band 0xFF)
     }
     $records = New-Object System.Collections.Generic.List[object]
     if ($IncludeS0) {
@@ -1606,7 +1608,7 @@ function New-DenseRecordFixture {
         $records.Add([pscustomobject]@{
             FailStatus = 0
             Kind = 2
-            Address = 0x8000 + $offset
+            Address = $Start + $offset
             Data = $data
             Entry = 0
         })
@@ -1614,7 +1616,12 @@ function New-DenseRecordFixture {
     $records.Add([pscustomobject]@{
         FailStatus = 0; Kind = 3; Address = $Entry; Data = [byte[]]@(); Entry = $Entry
     })
-    return [pscustomobject]@{ Image = $image; Records = $records.ToArray() }
+    return [pscustomobject]@{
+        Start = $Start
+        End = $Start + $Length
+        Image = $image
+        Records = $records.ToArray()
+    }
 }
 
 function Read-MutationWorkerFixture {
@@ -1701,7 +1708,7 @@ function Assert-DenseStageFixture {
             $Fixture.Memory[$script:residentInstallExpectHi],
             $Fixture.Memory[$script:residentInstallExpectLo],
             $Fixture.Memory[$script:residentInstallPhase],
-            $Fixture.Memory[$script:residentInstallLimitHi],
+            $Fixture.Memory[$script:residentInstallRangeLimitHi],
             $Fixture.Memory[$script:residentInstallSectorHi])
     }
     Assert-ResidentIPreviewFixture $Fixture $InputBytes $ExpectedOutput $Name
@@ -1710,7 +1717,7 @@ function Assert-DenseStageFixture {
     Assert-True ($Fixture.Cpu.StageCalls -eq $SectorCount) `
         ("Dense $Name staged $($Fixture.Cpu.StageCalls) sectors; expected $SectorCount")
     for ($sector = 0; $sector -lt $SectorCount; $sector++) {
-        Assert-True ($Fixture.Cpu.StageHighs[$sector] -eq (0x80 + ($sector * 0x10))) `
+        Assert-True ($Fixture.Cpu.StageHighs[$sector] -eq (($Dense.Start -shr 8) + ($sector * 0x10))) `
             ("Dense $Name sector $sector target-high mismatch")
         [byte[]]$expected = New-Object byte[] 0x1000
         [Array]::Copy($Dense.Image, $sector * 0x1000, $expected, 0, 0x1000)
@@ -1730,14 +1737,25 @@ function Invoke-ResidentDenseFixture {
         [object[]]$DenseRecords,
         [byte[]]$InputBytes = @(),
         [int]$State = 1,
-        [int]$Entry = 0xFFFF
+        [int]$Entry = 0xFFFF,
+        [int]$StartHigh = 0x80,
+        [int]$LimitHigh = -1
     )
 
+    if ($LimitHigh -lt 0) { $LimitHigh = $(if ($Bank -eq 3) { 0xF0 } else { 0x00 }) }
+    $sectorCount = $(if ($LimitHigh -eq 0) {
+            (0x100 - $StartHigh) / 0x10
+        } else {
+            ($LimitHigh - $StartHigh) / 0x10
+        })
     [byte[]]$memory = $script:residentTemplate.Clone()
     $memory[$script:residentInstallBank] = [byte]$Bank
     $memory[$script:residentInstallState] = [byte]$State
     $memory[$script:residentInstallEntryLo] = [byte]($Entry -band 0xFF)
     $memory[$script:residentInstallEntryHi] = [byte](($Entry -shr 8) -band 0xFF)
+    $memory[$script:residentInstallStartHi] = [byte]$StartHigh
+    $memory[$script:residentInstallRangeLimitHi] = [byte]$LimitHigh
+    $memory[$script:residentInstallSectorCount] = [byte]$sectorCount
     [byte[]]$beforeDirectory = $memory[$script:dirBase..$script:dirEnd]
     [object[]]$combinedRecords = Join-TransactionRecords $DenseRecords
     $cpu = Invoke-ResidentDirectoryRoutine -Memory $memory `
@@ -1990,7 +2008,6 @@ $residentInstallEntryLo = Get-MapSymbol $residentSymbols "STR8_INSTALL_ENTRY_LO"
 $residentInstallEntryHi = Get-MapSymbol $residentSymbols "STR8_INSTALL_ENTRY_HI"
 $residentInstallExpectLo = Get-MapSymbol $residentSymbols "STR8_INSTALL_EXPECT_LO"
 $residentInstallExpectHi = Get-MapSymbol $residentSymbols "STR8_INSTALL_EXPECT_HI"
-$residentInstallLimitHi = Get-MapSymbol $residentSymbols "STR8_INSTALL_LIMIT_HI"
 $residentInstallPhase = Get-MapSymbol $residentSymbols "STR8_INSTALL_PHASE"
 $residentInstallSectorHi = Get-MapSymbol $residentSymbols "STR8_INSTALL_SECTOR_HI"
 $residentInstallStatus = Get-MapSymbol $residentSymbols "STR8_INSTALL_STATUS"
@@ -2030,7 +2047,6 @@ Assert-True (($residentInstallBank -eq 0x90) -and
     ($residentInstallEntryHi -eq 0x9A) -and
     ($residentInstallExpectLo -eq 0x9B) -and
     ($residentInstallExpectHi -eq 0x9C) -and
-    ($residentInstallLimitHi -eq 0x9D) -and
     ($residentInstallPhase -eq 0x9E) -and
     ($residentInstallSectorHi -eq 0x9F) -and
     ($residentInstallStatus -eq 0xA0) -and
@@ -2102,16 +2118,16 @@ if ($transactionInstallerMode) {
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
         -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0EDC) -and
+    Assert-True (($residentSize -eq 0x0E9D) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnRangePromptAddress -eq 0xFE22) -and
-        ($txnSummaryAddress -eq 0xFE46) -and ($txnInstallOkAddress -eq 0xFE4B) -and
-        ($txnTypeAddress -eq 0xFE53) -and
-        ($txnDescAddress -eq 0xFE57) -and ($txnEntryAddress -eq 0xFE5A) -and
-        ($txnEmptyAddress -eq 0xFE5E) -and
-        ($txnPage0CallCount -eq 6) -and ($txnPage1CallCount -eq 32)) `
-        'Transaction range-state pass must retain its exact size, boundary, and 6/32 call split'
+        ($txnRangePromptAddress -eq 0xFDE3) -and
+        ($txnSummaryAddress -eq 0xFE07) -and ($txnInstallOkAddress -eq 0xFE0C) -and
+        ($txnTypeAddress -eq 0xFE14) -and
+        ($txnDescAddress -eq 0xFE18) -and ($txnEntryAddress -eq 0xFE1B) -and
+        ($txnEmptyAddress -eq 0xFE1F) -and
+        ($txnPage0CallCount -eq 13) -and ($txnPage1CallCount -eq 25)) `
+        'Transaction range receiver must retain its exact size, boundary, and 13/25 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
         ($txnPrintPage1 + 2 -eq $residentPrintXy)) `
         'Transaction print-page helpers must be the six bytes immediately before STR8_PRINT_XY'
@@ -2133,15 +2149,15 @@ if ($transactionInstallerMode) {
 
     foreach ($messageName in @(
             'MSG_ID', 'MSG_BOOT_MENU', 'MSG_SCREEN', 'MSG_HELP', 'MSG_PROMPT',
-            'MSG_BOOT_PROMPT'
+            'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT', 'MSG_I_BANK',
+            'MSG_I_RANGE_PROMPT', 'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT', 'MSG_I_INVALID'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage0High) `
             ("Transaction page-0 message moved pages: $messageName")
     }
     foreach ($messageName in @(
-            'MSG_BOOT_BANK_WAIT', 'MSG_ABORT', 'MSG_I_BANK', 'MSG_I_RANGE_PROMPT',
-            'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT', 'MSG_I_INVALID', 'MSG_I_SUMMARY',
+            'MSG_I_SUMMARY',
             'MSG_I_INSTALL_OK', 'MSG_I_TYPE', 'MSG_I_DESC', 'MSG_I_ENTRY',
             'MSG_I_EMPTY', 'MSG_I_INCOMPLETE', 'MSG_I_COMPLETE', 'MSG_I_FULL',
             'MSG_I_PAIR', 'MSG_I_WRITE_CONFIRM', 'MSG_I_SEND_S19',
@@ -2472,14 +2488,18 @@ $previewFixture = Invoke-ResidentIPreviewFixture $lineInput @{ 1 = $invalidRecor
 Assert-ResidentIPreviewFixture $previewFixture $lineInput "`r`nI B0-3: 1`r`nRANGE: 8-F`r`nDIR BAD`r`n" 'invalid directory record'
 
 [byte[]]$lineInput = [System.Text.Encoding]::ASCII.GetBytes("2`rc-e`ra5`rryors`r")
-$previewFixture = Invoke-ResidentIPreviewFixture $lineInput
 $expectedPreview = "`r`nI B0-3: 2`r`nRANGE: C-E`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 C-E`r`nT=A5 D=RYORS NEW P=00 REFUSED`r`n"
+if ($dryInstallerMode) {
+    [byte[]]$lineInput = $lineInput + [System.Text.Encoding]::ASCII.GetBytes("n`r")
+    $expectedPreview = "`r`nI B0-3: 2`r`nRANGE: C-E`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 C-E`r`nT=A5 D=RYORS NEW P=00 $installerConfirmText`? Y: N`r`nABORT`r`n"
+}
+$previewFixture = Invoke-ResidentIPreviewFixture $lineInput
 Assert-ResidentIPreviewFixture $previewFixture $lineInput $expectedPreview 'partial range fail-closed preview'
 Assert-True ($previewFixture.Memory[$residentInstallStartHi] -eq 0xC0 -and
     $previewFixture.Memory[$residentInstallRangeLimitHi] -eq 0xF0 -and
     $previewFixture.Memory[$residentInstallSectorCount] -eq 3 -and
     $previewFixture.Cpu.WorkerCalls -eq 0) `
-    'Partial range did not publish C-E state and fail closed before confirmation'
+    'Partial range did not publish C-E state or remained worker-reachable after rejection'
 
 foreach ($negativePreview in @(
         [pscustomobject]@{ Name = 'empty bank'; Input = [byte[]]@(0x0D); Output = "`r`nI B0-3: `r`nABORT`r`n" },
@@ -2496,6 +2516,61 @@ if ($dryInstallerMode) {
     $dense32 = New-DenseRecordFixture -Length 0x8000 -Entry 0x8000 -ChunkLength 251 -IncludeS0 $true
     [byte[]]$denseInput = [System.Text.Encoding]::ASCII.GetBytes("2`r8-f`ra5`rryors`ry`r")
     $dense28 = New-DenseRecordFixture -Length 0x7000 -Entry 0x8000 -ChunkLength 193 -IncludeS0 $false
+
+    # Exercise every partial sector count, both address boundaries, and every
+    # bank through the full command/receiver path. The parser matrix above
+    # separately exhausts every legal start/end interval.
+    $partialRangeCases = @(
+        [pscustomobject]@{ Bank = 0; Range = 'F';   Start = 0xF000; Sectors = 1; Entry = 0xF000; Type = 0x41; Desc = 'FOURK' },
+        [pscustomobject]@{ Bank = 1; Range = '8-9'; Start = 0x8000; Sectors = 2; Entry = 0xFFFF; Type = 0x82; Desc = 'EIGHT' },
+        [pscustomobject]@{ Bank = 2; Range = 'C-E'; Start = 0xC000; Sectors = 3; Entry = 0xC000; Type = 0xC3; Desc = 'TWELV' },
+        [pscustomobject]@{ Bank = 3; Range = 'B-E'; Start = 0xB000; Sectors = 4; Entry = 0xC000; Type = 0xB4; Desc = 'SIXTN' },
+        [pscustomobject]@{ Bank = 1; Range = 'A-E'; Start = 0xA000; Sectors = 5; Entry = 0xFFFF; Type = 0xA5; Desc = 'TWENT' },
+        [pscustomobject]@{ Bank = 0; Range = '8-D'; Start = 0x8000; Sectors = 6; Entry = 0x8000; Type = 0x86; Desc = 'TWFRK' }
+    )
+    foreach ($rangeCase in $partialRangeCases) {
+        # The dry model streams every partial sector count. Keep the exact
+        # mutation-worker transaction matrix under its five-minute gate by
+        # repeating the four smallest partials plus the full 28K/32K cases.
+        if ($transactionInstallerMode -and $rangeCase.Sectors -gt 4) { continue }
+        $length = $rangeCase.Sectors * 0x1000
+        $partialDense = New-DenseRecordFixture -Start $rangeCase.Start -Length $length `
+            -Entry $rangeCase.Entry -ChunkLength 251 -IncludeS0 $false
+        $typeText = '{0:X2}' -f $rangeCase.Type
+        $summaryRange = $(if ($rangeCase.Range.Contains('-')) {
+                $rangeCase.Range
+            } else {
+                "$($rangeCase.Range)-$($rangeCase.Range)"
+            })
+        [byte[]]$partialInput = [System.Text.Encoding]::ASCII.GetBytes(
+            "$($rangeCase.Bank)`r$($rangeCase.Range)`r$typeText`r$($rangeCase.Desc)`ry`r")
+        $summary = "`r`nI B0-3: $($rangeCase.Bank)`r`nRANGE: $($rangeCase.Range)`r`n" +
+            "TYPE: $typeText`r`nDESC: $($rangeCase.Desc)`r`n" +
+            "I B$($rangeCase.Bank) $summaryRange`r`n" +
+            "T=$typeText D=$($rangeCase.Desc) NEW P=00"
+        $name = ("{0}K Bank {1} {2}" -f ($length / 1024), $rangeCase.Bank, $rangeCase.Range)
+        if ($transactionInstallerMode) {
+            $transactionFixture = Invoke-ResidentITransactionFixture `
+                -InputBytes $partialInput -DenseRecords $partialDense.Records
+            [string]$dots = -join (@('.') * $rangeCase.Sectors)
+            $expectedTransaction = "$summary WRITE? Y: Y`r`nSEND S19`r`n$dots`r`nI OK`r`n"
+            Assert-TransactionOutput $transactionFixture $partialInput $expectedTransaction $name
+            Assert-TransactionFlash $transactionFixture $rangeCase.Bank $partialDense `
+                $rangeCase.Sectors $name
+            $directoryEntry = $(if ($rangeCase.Bank -eq 3) { $rangeCase.Entry } else { 0xFFFF })
+            [byte[]]$expectedRecord = New-Record $rangeCase.Bank $rangeCase.Desc $directoryEntry `
+                (New-Journal 1 $false)
+            $expectedRecord[$offType] = [byte]$rangeCase.Type
+            Assert-DirectoryRecord $transactionFixture $rangeCase.Bank $expectedRecord $name
+        } else {
+            $previewFixture = Invoke-ResidentIPreviewFixture `
+                -InputBytes $partialInput -DenseRecords $partialDense.Records
+            $expectedPreview = "$summary STAGE? Y: Y`r`nSEND S19`r`nSTAGE OK REFUSED`r`n"
+            Assert-DenseStageFixture $previewFixture $partialDense $rangeCase.Sectors `
+                $partialInput $expectedPreview $name
+        }
+    }
+
     if ($transactionInstallerMode) {
         $transactionFixture = Invoke-ResidentITransactionFixture -InputBytes $denseInput -DenseRecords $dense32.Records
         $expectedTransaction = "`r`nI B0-3: 2`r`nRANGE: 8-F`r`nTYPE: A5`r`nDESC: RYORS`r`nI B2 8-F`r`nT=A5 D=RYORS NEW P=00 WRITE? Y: Y`r`nSEND S19`r`n........`r`nI OK`r`n"
@@ -2757,14 +2832,35 @@ if ($dryInstallerMode) {
         FailStatus = 0; Kind = 3; Address = 0x9000; Data = [byte[]]@(); Entry = 0x9000
     }
     $fixture = Invoke-ResidentDenseFixture 0 $badRecords
-    Assert-DenseReject $fixture 0x11 0 'S9 reset mismatch' $transactionInstallerMode
+    Assert-True ($fixture.Cpu.Carry -and
+        $fixture.Memory[$residentInstallStatus] -eq 0 -and
+        $fixture.Cpu.StageCalls -eq 8) `
+        'Bank-0 in-range S9 metadata was incorrectly tied to the reset vector'
+    $residentInstallerCases++
+
+    $partialDense = New-DenseRecordFixture -Start 0xC000 -Length 0x3000 -Entry 0xBFFF `
+        -ChunkLength 251 -IncludeS0 $false
+    $fixture = Invoke-ResidentDenseFixture -Bank 0 -DenseRecords $partialDense.Records `
+        -StartHigh 0xC0 -LimitHigh 0xF0
+    Assert-DenseReject $fixture 0x11 0 'S9 below selected range' $transactionInstallerMode
+
+    $partialDense = New-DenseRecordFixture -Start 0xC000 -Length 0x3000 -Entry 0xF000 `
+        -ChunkLength 251 -IncludeS0 $false
+    $fixture = Invoke-ResidentDenseFixture -Bank 0 -DenseRecords $partialDense.Records `
+        -StartHigh 0xC0 -LimitHigh 0xF0
+    Assert-DenseReject $fixture 0x11 0 'S9 at selected exclusive limit' $transactionInstallerMode
 
     $bad28 = New-DenseRecordFixture -Length 0x7000 -Entry 0xF000 -ChunkLength 252 -IncludeS0 $false
     $fixture = Invoke-ResidentDenseFixture 3 $bad28.Records
     Assert-DenseReject $fixture 0x11 0 'Bank-3 entry range' $transactionInstallerMode
 
     $fixture = Invoke-ResidentDenseFixture -Bank 3 -DenseRecords $dense28.Records -State 3 -Entry 0xC030
-    Assert-DenseReject $fixture 0x11 0 'immutable Bank-3 entry mismatch' $transactionInstallerMode
+    Assert-True ($fixture.Cpu.Carry -and
+        $fixture.Memory[$residentInstallStatus] -eq 0 -and
+        $fixture.Memory[$residentInstallEntryLo] -eq 0x30 -and
+        $fixture.Memory[$residentInstallEntryHi] -eq 0xC0) `
+        'Later Bank-3 package replaced or rejected the immutable local entry'
+    $residentInstallerCases++
 
     [object[]]$badRecords = @(
         [pscustomobject]@{ FailStatus = 0; Kind = 1; Address = 0; Data = [byte[]]@(); Entry = 0 },

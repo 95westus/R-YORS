@@ -2,7 +2,7 @@
 
 ```text
 status:       V1.01 HARDWARE-ACCEPTED; V1.02 HOST IMPLEMENTATION ACTIVE
-next gate:    PARAMETERIZED DENSE RECEIVER
+next gate:    FOCUSED RANGE BOARD PROOF
 source date:  2026-08-07
 ```
 
@@ -49,20 +49,20 @@ To keep the resident summaries compact, V1.02 prints sector spans `8-F` and
 `8-E`, states `NEW`, `INC`, `OK`, and `FULL`, transaction refusal as
 `REFUSED`, and invalid directory data as `DIR BAD`.
 
-The parameter-state slice is host-accepted. After `BANK`, one `RANGE:` prompt
+The range receiver is host-accepted. After `BANK`, one `RANGE:` prompt
 accepts either one sector (`C`) or an inclusive span (`C-E`). It publishes the
 4K-aligned start high byte, exclusive limit high byte, and sector count in
 `$A1-$A3`. Every ordered interval in `8-F` for Banks 0-2 and `8-E` for Bank 3
-passes; reversed, malformed, below-8, and Bank-3-F selections fail. Until the
-next slice consumes this state, a partial range prints its summary and
-`REFUSED` before confirmation. Existing full `8-F` and `8-E` transactions
-retain their accepted behavior.
+passes; reversed, malformed, below-8, and Bank-3-F selections fail. The one
+existing dense receiver now consumes the chosen start and exclusive limit;
+there is no second receiver or transport path. It holds the selected final
+sector until S9, requires S9 `$FFFF` or inside the selected range, and leaves
+all sectors outside that exact range unchanged.
 
-The transaction resident is now `$F000-$FEDB`, size `$0EDC`, leaving
-`$FEDC-$FF1E`, `$0043` bytes. Only `$0003` remains beyond the hard `$0040`
-reserve. The receiver slice must replace fixed-range initialization and remove
-the temporary full-range gate while maintaining that reserve; it may not add
-a second receiver beside the old one.
+The transaction resident is now `$F000-$FE9C`, size `$0E9D`, leaving
+`$FE9D-$FF1E`, `$0082` bytes. This restores `$0042` beyond the hard `$0040`
+reserve because fixed-range initialization, the duplicate limit byte, and the
+temporary full-range gate were removed rather than layered over.
 
 V1.02 also removes the ambiguous shell bare-bank aliases. Its compact surface
 is `I H J0-3`: `H` warm-enters the local `$C000` target without selecting a
@@ -302,12 +302,11 @@ ends with `REFUSED`.
 There is no `?` command. The identity is printed when STR8-N enters its menu;
 any command that does not match the active command set prints the help line.
 `I` prompts for Bank 0-3 and then `RANGE:`. A single sector such as `C` means
-4K; a span such as `C-E` is inclusive. The current parameter-state slice
-allows only full `8-F`/`8-E` extents to continue to confirmation; other valid
-ranges show the derived summary and end with `REFUSED` until the receiver
-consumes them. Bare shell digits are unknown commands. `H` is the local warm
-HIMON path, and `J0` through `J3` are the only explicit non-destructive
-physical-bank handoffs, with `J3` retaining STR8 re-entry.
+4K; a span such as `C-E` is inclusive. Every valid range continues through the
+same dense streaming receiver and journaled transaction. Bare shell digits are
+unknown commands. `H` is the local warm HIMON path, and `J0` through `J3` are
+the only explicit non-destructive physical-bank handoffs, with `J3` retaining
+STR8 re-entry.
 
 The destructive V0 meanings of `B` and bare prompt `0`, `1`, or `2`, plus the
 separate `G`, `R`, and fixed 12K `U` updater, are retired in V1. `B` remains
@@ -986,10 +985,10 @@ sector staging                    existing 4096-byte tray
 validated record staging          existing 252-byte tray
 ```
 
-## Future `I` Sector-Range Installer Consideration
+## V1.02 `I` Sector-Range Installer Contract
 
-This is a candidate extension for further consideration, not a change to the
-frozen full-bank/Bank-3-payload V1.01 contract. It would let `I` replace
+This is the host-accepted V1.02 extension to the frozen full-bank/
+Bank-3-payload V1.01 contract. It lets `I` replace
 one or more complete 4K erase sectors while leaving every sector outside the
 selected S19 extent unchanged:
 
@@ -998,10 +997,10 @@ selected S19 extent unchanged:
 | `I` | Banks 0-2 | Any 4K-aligned range within `$8000-$FFFF` | 1-8, or 4K-32K |
 | `I` | Bank 3 | Any 4K-aligned range within `$8000-$EFFF` | 1-7, or 4K-28K |
 
-The first S1 data address may supply the range start. It must be exactly a 4K
-boundary (`$8000`, `$9000`, and so on). S1 data must then be strictly
+The operator declares the range before transmission, and the first S1 must
+match its 4K start boundary (`$8000`, `$9000`, and so on). S1 data must then be strictly
 increasing, contiguous, and dense through S9. The final address plus one must
-also be a 4K boundary, giving an exact 4K multiple. Zero-length records, gaps,
+match the declared exclusive 4K limit. Zero-length records, gaps,
 overlaps, duplicates, backward records, and out-of-range bytes are rejected.
 Explicit `$FF` bytes mean erase that part of the selected sector; an omitted
 address never means preserve an old byte inside the selected range.
@@ -1029,12 +1028,11 @@ then. The current one-sector RAM design can hold the final sector until S9 and
 reject a bad final boundary without marking the journal complete, but it cannot
 retroactively restore earlier sectors.
 
-The first safe implementation should therefore use one of these range-
-declaration gates:
+The implementation uses the first of these range-declaration gates:
 
 1. Prompt for the expected sector range before requesting S19, then require the
-   first S1 and S9-derived extent to match it exactly. This is the recommended
-   initial form.
+   first S1 and S9-derived extent to match it exactly. This is the active
+   V1.02 form.
 2. Define a canonical STR8 S0 manifest containing bank-independent start and
    end/length, receive that header in a separate preflight phase, display and
    confirm the detected range, then request the dense S1/S9 body.

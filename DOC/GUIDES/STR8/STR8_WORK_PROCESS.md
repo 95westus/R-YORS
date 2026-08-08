@@ -27,13 +27,13 @@ transport uploads the 555-byte mutation worker to `$0200-$042A` before dense
 payload staging uses the single `$0A00-$19FF` sector tray. Worker/update state
 remains in `$1FE9-$1FFF`, and the fixed V1 directory is `$FFB0-$FFEF`.
 The completed V1.02 size pass originally left `$00C0` bytes before the stored
-jump worker. The following parameter-state slice now places the transaction
-resident at `$F000-$FEDB` and leaves `$FEDC-$FF1E`, `$0043` bytes, free. That
-is only `$0003` beyond the required `$0040` reserve. `I` accepts `RANGE:` as a
-single sector (`C`) or inclusive span (`C-E`) and records start high,
-exclusive limit high, and sector count at `$A1-$A3`. Partial ranges currently
-end with `REFUSED` before confirmation; only full `8-F`/`8-E` transactions
-reach the unchanged receiver. Compact output uses states
+jump worker. The range receiver now places the transaction resident at
+`$F000-$FE9C` and leaves `$FE9D-$FF1E`, `$0082` bytes, free: `$0042` beyond
+the required `$0040` reserve. `I` accepts `RANGE:` as a single sector (`C`) or
+inclusive span (`C-E`) and records start high, exclusive limit high, and
+sector count at `$A1-$A3`. The existing one-sector streaming receiver consumes
+that state for every 4K-32K range permitted by the selected bank; there is no
+second receiver or RAM-batched transport. Compact output uses states
 `NEW`/`INC`/`OK`/`FULL` and invalid directory text `DIR BAD`.
 
 The top sector exposes stable service entries at `$F003` for the resident

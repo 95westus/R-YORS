@@ -146,12 +146,11 @@ STR8_INSTALL_ENTRY_LO   EQU             $99
 STR8_INSTALL_ENTRY_HI   EQU             $9A
 STR8_INSTALL_EXPECT_LO  EQU             $9B
 STR8_INSTALL_EXPECT_HI  EQU             $9C
-STR8_INSTALL_LIMIT_HI   EQU             $9D
 STR8_INSTALL_PHASE      EQU             $9E
 STR8_INSTALL_SECTOR_HI  EQU             $9F
 STR8_INSTALL_STATUS     EQU             $A0
-; V1.02 selected range survives the current fixed-range receiver. The next
-; slice will consume these fields instead of rebuilding $8000/full-bank state.
+; V1.02 selected dense range. The receiver requires this exact start and
+; exclusive limit while retaining a count for summaries/tests.
 STR8_INSTALL_START_HI   EQU             $A1
 STR8_INSTALL_RANGE_LIMIT_HI EQU         $A2
 STR8_INSTALL_SECTOR_COUNT EQU           $A3
@@ -742,7 +741,7 @@ STR8_CMD_INSTALL_PREVIEW:
 ?PROMPT:
                         LDX             #<MSG_I_BANK
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_BANK
                         JSR             STR8_PRINT_XY
@@ -781,7 +780,7 @@ STR8_CMD_INSTALL_PREVIEW:
                         JMP             STR8_I_PRINT_SUMMARY
 ?INVALID:              LDX             #<MSG_I_INVALID
                         IF              STR8_V1_INSTALLER_TXN
-                        JMP             STR8_PRINT_TXN_PAGE1_X
+                        JMP             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_INVALID
                         JMP             STR8_PRINT_XY
@@ -791,7 +790,7 @@ STR8_CMD_INSTALL_PREVIEW:
 STR8_I_READ_TYPE:
                         LDX             #<MSG_I_TYPE_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_TYPE_PROMPT
                         JSR             STR8_PRINT_XY
@@ -824,7 +823,7 @@ STR8_I_READ_TYPE:
 STR8_I_READ_RANGE:
                         LDX             #<MSG_I_RANGE_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_RANGE_PROMPT
                         JSR             STR8_PRINT_XY
@@ -882,7 +881,7 @@ STR8_I_READ_RANGE:
 STR8_I_READ_DESCRIPTION:
                         LDX             #<MSG_I_DESC_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_DESC_PROMPT
                         JSR             STR8_PRINT_XY
@@ -1029,15 +1028,6 @@ STR8_I_PRINT_SUMMARY:
                         LDA             STR8_INSTALL_PAIR
                         JSR             STR8_WRITE_HEX_BYTE_A
                         IF              STR8_V1_INSTALLER_DRY
-; Until the next receiver slice, only the old complete-bank extents may reach
-; confirmation. Partial parameter state is visible but cannot mutate flash.
-                        LDX             #$08
-                        LDA             STR8_INSTALL_BANK
-                        CMP             #STR8_DIR_BANK3
-                        BNE             ?RANGE_COUNT
-                        DEX
-?RANGE_COUNT:          CPX             STR8_INSTALL_SECTOR_COUNT
-                        BNE             STR8_I_NO_WRITE
                         LDA             STR8_INSTALL_PAIR
                         CMP             #STR8_DIR_PAIR_NONE
                         BEQ             STR8_I_NO_WRITE
@@ -1238,9 +1228,9 @@ STR8_I_WORKER_SIG:
                         ENDIF
 
 ; Transaction streams first carry the exact mutation worker at $0200-$042A.
-; Then receive exactly $8000-$FFFF for Banks 0-2 or $8000-$EFFF for Bank 3.
-; The single $0A00-$19FF sector tray is reused only after the sector-ready hook
-; returns. The final sector stays in the tray until S9 is validated.
+; Then receive exactly the operator-selected 4K-aligned dense range. The
+; single $0A00-$19FF sector tray is reused only after the sector-ready hook
+; returns. The selected final sector stays in the tray until S9 is validated.
 STR8_I_RECEIVE_DENSE:
                         STZ             STR8_INSTALL_EXPECT_LO
                         STZ             STR8_INSTALL_PHASE
@@ -1248,20 +1238,12 @@ STR8_I_RECEIVE_DENSE:
                         IF              STR8_V1_INSTALLER_TXN
                         LDA             #>STR8_WORKER_RUN
                         STA             STR8_INSTALL_EXPECT_HI
-                        LDA             #$80
-                        STA             STR8_INSTALL_SECTOR_HI
                         ELSE
-                        LDA             #$80
+                        LDA             STR8_INSTALL_START_HI
                         STA             STR8_INSTALL_EXPECT_HI
-                        STA             STR8_INSTALL_SECTOR_HI
                         ENDIF
-                        LDA             STR8_INSTALL_BANK
-                        CMP             #STR8_DIR_BANK3
-                        BEQ             ?LIMIT3
-                        LDA             #$00
-                        BRA             ?LIMIT
-?LIMIT3:                LDA             #$F0
-?LIMIT:                STA             STR8_INSTALL_LIMIT_HI
+                        LDA             STR8_INSTALL_START_HI
+                        STA             STR8_INSTALL_SECTOR_HI
                         LDA             #STR8_REC_OP_PARSE
                         STA             STR8_REC_OP
                         LDA             #STR8_REC_FORMAT_S19
@@ -1363,7 +1345,7 @@ STR8_I_RECEIVE_DENSE:
                         DEX
                         BPL             ?WORKER_SIG
                         STZ             STR8_INSTALL_EXPECT_LO
-                        LDA             #$80
+                        LDA             STR8_INSTALL_START_HI
                         STA             STR8_INSTALL_EXPECT_HI
                         LDA             #$02
                         STA             STR8_INSTALL_PHASE
@@ -1377,7 +1359,7 @@ STR8_I_RECEIVE_DENSE:
                         AND             #$0F
                         BNE             ?MORE
                         LDA             STR8_INSTALL_EXPECT_HI
-                        CMP             STR8_INSTALL_LIMIT_HI
+                        CMP             STR8_INSTALL_RANGE_LIMIT_HI
                         BEQ             ?FINAL
                         JSR             STR8_I_STAGE_SECTOR_READY
                         BCS             ?SECTOR_READY
@@ -1427,37 +1409,22 @@ STR8_I_RECEIVE_DENSE:
                         CMP             #$FF
                         BEQ             ?ENTRY_RANGE_OK
                         LDA             STR8_REC_ENTRY_HI
-                        CMP             #$80
+                        CMP             STR8_INSTALL_START_HI
                         BCC             STR8_I_RECEIVE_ENTRY_FAIL
-                        LDX             STR8_INSTALL_BANK
-                        CPX             #STR8_DIR_BANK3
-                        BNE             ?ENTRY_RANGE_OK
-                        CMP             #$F0
+                        LDX             STR8_INSTALL_RANGE_LIMIT_HI
+                        BEQ             ?ENTRY_RANGE_OK
+                        CMP             STR8_INSTALL_RANGE_LIMIT_HI
                         BCS             STR8_I_RECEIVE_ENTRY_FAIL
 ?ENTRY_RANGE_OK:       LDA             STR8_INSTALL_BANK
                         CMP             #STR8_DIR_BANK3
-                        BEQ             ?ENTRY3
-                        LDA             STR8_REC_ENTRY_LO
-                        CMP             $19FC
-                        BNE             STR8_I_RECEIVE_ENTRY_FAIL
-                        LDA             STR8_REC_ENTRY_HI
-                        CMP             $19FD
-                        BNE             STR8_I_RECEIVE_ENTRY_FAIL
-                        BRA             ?TRAILING
-?ENTRY3:               LDA             STR8_INSTALL_STATE
+                        BNE             ?TRAILING
+                        LDA             STR8_INSTALL_STATE
                         CMP             #STR8_DIR_RECORD_EMPTY
-                        BNE             ?ENTRY3_EXISTING
+                        BNE             ?TRAILING
                         LDA             STR8_REC_ENTRY_LO
                         STA             STR8_INSTALL_ENTRY_LO
                         LDA             STR8_REC_ENTRY_HI
                         STA             STR8_INSTALL_ENTRY_HI
-                        BRA             ?TRAILING
-?ENTRY3_EXISTING:      LDA             STR8_REC_ENTRY_LO
-                        CMP             STR8_INSTALL_ENTRY_LO
-                        BNE             STR8_I_RECEIVE_ENTRY_FAIL
-                        LDA             STR8_REC_ENTRY_HI
-                        CMP             STR8_INSTALL_ENTRY_HI
-                        BNE             STR8_I_RECEIVE_ENTRY_FAIL
 ?TRAILING:             JSR             STR8_I_END_STREAM
                         BCC             STR8_I_RECEIVE_TRAIL_FAIL
                         JSR             STR8_I_STAGE_SECTOR_READY
@@ -1677,7 +1644,7 @@ STR8_CMD_ABORT:
                         ENDIF
                         LDX             #<MSG_ABORT
                         IF              STR8_V1_INSTALLER_TXN
-                        JMP             STR8_PRINT_TXN_PAGE1_X
+                        JMP             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_ABORT
                         JMP             STR8_PRINT_XY
@@ -1715,7 +1682,7 @@ STR8_BOOT_JUMP_BANK_A:
                         JSR             STR8_CON_FLUSH_RX
                         LDX             #<MSG_BOOT_BANK_WAIT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_BOOT_BANK_WAIT
                         JSR             STR8_PRINT_XY
@@ -3076,7 +3043,7 @@ MSG_I_TYPE_PROMPT:      DB              $0D,$0A,"TYPE:",$A0
 MSG_I_DESC_PROMPT:      DB              $0D,$0A,"DESC:",$A0
 MSG_I_INVALID:          DB              $0D,$0A,"DIR BAD",$0D,$8A
 MSG_I_SUMMARY:          DB              $0D,$0A,"I ",('B'+$80)
-; Compact prompts and summaries fill page $FD; transfer/results start on $FE.
+; Compact prompts fill page $FD; summaries and transaction results use $FE.
                         IF              STR8_V1_INSTALLER_TXN
 MSG_I_INSTALL_OK:       DB              $0D,$0A,"I OK",$0D,$8A
                         ENDIF
