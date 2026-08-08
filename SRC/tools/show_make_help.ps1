@@ -19,6 +19,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon"; Category = "monitor"; Description = "Build current HIMON app S19 and ROM binary." }
     [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000: BUILD/s19/himon-rom-c000.s19." }
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom-c000.bin." }
+    [pscustomobject]@{ Target = "himon-banked-ap-check"; Category = "monitor"; Description = "Emulate HIMON's RAM-resident `$F010/`$0203 banked AP sector staging and restore paths." }
     [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K onboard image with ASM-F2/AP report in low flash, HIMON at C000, STR8 at F000: BUILD/bin/himon-str8-rom.bin." }
     [pscustomobject]@{ Target = "str8-v1-layout-preview"; Category = "monitor"; Description = "Build the guarded, nonflashable V1 worker/directory layout preview BIN; produces no install S19, TopWriter, or ROM stamp." }
     [pscustomobject]@{ Target = "str8-v1-artifact"; Category = "monitor"; Description = "Build the host-verified V1 BIN/S19, combined I stream, migration writer, and directory-preserving refresh writer." }

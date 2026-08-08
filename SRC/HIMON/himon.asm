@@ -145,15 +145,13 @@ HIM_AP_LINK_INDEX       EQU             $1A15
 HIM_AP_LINK_RELOC_COUNT EQU             $1A16
 HIM_AP_LINK_IMPORT_COUNT EQU            $1A17
 
-STR8_RUN_WORKER_SERVICE  EQU             $F003
-STR8_COPY_MODE_PROGRAM_STAGED EQU        $05
-STR8_COPY_MODE_STAGE_BANK_SECTOR EQU     $06
-STR8_MARK_SECTOR_HI      EQU             $1FE9
-STR8_COPY_SRC_BANK       EQU             $1FEE
-STR8_COPY_MODE           EQU             $1FF0
-STR8_STAGE_BUF_HI        EQU             $1FF6
 AP_STAGE_BUF_HI          EQU             $0A
 AP_STAGE_BUF_END_HI      EQU             $1A
+HIM_AP_BANK_STAGE_RAM    EQU             $0300
+HIM_AP_STAGE_SRC_LO      EQU             $D1
+HIM_AP_STAGE_SRC_HI      EQU             $D2
+HIM_AP_STAGE_DST_LO      EQU             $D3
+HIM_AP_STAGE_DST_HI      EQU             $D4
 
 HIM_P40_CODE0            EQU             $E6
 HIM_P40_CODE1            EQU             $E7
@@ -2549,15 +2547,14 @@ HIM_AP_STAGE_BANK_SOURCE:
                         LDA             CMD_IO_TMP
                         CMP             #$03
                         BCS             HIM_AP_STAGE_BANK_BAD
-                        STA             STR8_COPY_SRC_BANK
-                        LDA             CMDP_START_HI
-                        AND             #$F0
-                        STA             STR8_MARK_SECTOR_HI
-                        LDA             #AP_STAGE_BUF_HI
-                        STA             STR8_STAGE_BUF_HI
-                        LDA             #STR8_COPY_MODE_STAGE_BANK_SECTOR
-                        STA             STR8_COPY_MODE
-                        JSR             STR8_RUN_WORKER_SERVICE
+; $F010 may return only to RAM after selecting another bank. Copy this small
+; read-only caller above its $0200-$0290 trampoline before making the call.
+                        LDX             #HIM_AP_BANK_STAGE_CODE_SIZE-1
+?COPY_RAM:             LDA             HIM_AP_BANK_STAGE_CODE,X
+                        STA             HIM_AP_BANK_STAGE_RAM,X
+                        DEX
+                        BPL             ?COPY_RAM
+                        JSR             HIM_AP_BANK_STAGE_RAM
                         BCC             HIM_AP_STAGE_BANK_BAD
                         LDA             CMDP_START_LO
                         STA             HIM_AP_SRC_LO
@@ -2570,6 +2567,44 @@ HIM_AP_STAGE_BANK_SOURCE:
                         RTS
 HIM_AP_STAGE_BANK_BAD:
                         JMP             HIM_AP_BAD_RANGE
+
+; Relocatable RAM body. Relative branches remain valid after the copy; the
+; only absolute calls are the published $F010 bootstrap and $0203 trampoline.
+; Bank 3 is restored before every return to the flash-resident HIMON caller.
+HIM_AP_BANK_STAGE_CODE:
+                        PHP
+                        SEI
+                        LDA             CMD_IO_TMP
+                        JSR             STR8_BANK_SELECT_SERVICE
+                        BCC             ?SELECT_FAIL
+                        STZ             HIM_AP_STAGE_SRC_LO
+                        LDA             CMDP_START_HI
+                        AND             #$F0
+                        STA             HIM_AP_STAGE_SRC_HI
+                        STZ             HIM_AP_STAGE_DST_LO
+                        LDA             #AP_STAGE_BUF_HI
+                        STA             HIM_AP_STAGE_DST_HI
+                        LDX             #$10
+?PAGE:                 LDY             #$00
+?BYTE:                 LDA             (HIM_AP_STAGE_SRC_LO),Y
+                        STA             (HIM_AP_STAGE_DST_LO),Y
+                        INY
+                        BNE             ?BYTE
+                        INC             HIM_AP_STAGE_SRC_HI
+                        INC             HIM_AP_STAGE_DST_HI
+                        DEX
+                        BNE             ?PAGE
+?RESTORE:              LDA             #$03
+                        JSR             STR8_BANK_SELECT_RAM
+                        BCC             ?RESTORE
+                        PLP
+                        SEC
+                        RTS
+?SELECT_FAIL:          PLP
+                        CLC
+                        RTS
+HIM_AP_BANK_STAGE_CODE_END:
+HIM_AP_BANK_STAGE_CODE_SIZE EQU          HIM_AP_BANK_STAGE_CODE_END-HIM_AP_BANK_STAGE_CODE
 
 HIM_AP_SERVICE:
                         LDA             #HIM_AP_STATUS_OK

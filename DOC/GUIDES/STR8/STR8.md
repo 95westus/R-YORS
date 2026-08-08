@@ -100,12 +100,12 @@ proved independent ASM-F2 `8-B` and HIMON `C-E` updates in disposable Bank 2
 with exact per-sector CRCs, preserved-sector launch, and reset recovery.
 
 V1 is not yet the default combined-image/documentation baseline. HIMON's
-banked AP loader still requests retired `$F003` stage mode `$06`; it must move
-to a read-only `$F010/$0203` stage-and-restore routine and receive board proof
-before promotion. Positive local-`H` board proof also remains open: the live
-Bank-3 HIMON predates the fixed identity marker, so this rail accepted the
-startup-selector and shell `NO HIMON` fail-closed paths plus the generic cold
-fallback instead.
+banked AP loader now uses a host-checked RAM-resident `$F010/$0203`
+stage-and-restore routine instead of retired `$F003` mode `$06`, but the
+migrated `AP Bn` path still needs board proof before promotion. Positive
+local-`H` board proof also remains open: the live Bank-3 HIMON predates the
+fixed identity marker, so this rail accepted the startup-selector and shell
+`NO HIMON` fail-closed paths plus the generic cold fallback instead.
 
 ## Milestone Snapshot
 

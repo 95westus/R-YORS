@@ -53,6 +53,14 @@ The fixed `$F010` bank-selection service accepts `A=$00-$03` only from a RAM
 caller and returns through its `$0203` RAM trampoline with the selected bank
 still visible.
 
+HIMON's banked AP loader no longer requests retired `$F003` stage mode `$06`.
+It copies a 54-byte read-only routine to `$0300`, bootstraps the requested bank
+through `$F010`, copies the containing 4K sector into `$0A00-$19FF`, and
+restores Bank 3 through `$0203` before returning to flash. The compiled host
+matrix covers Banks 0-2, low/middle/top sectors, initial-selector failure,
+interrupt-state preservation, and restore retry. Board proof of `AP Bn`
+remains the promotion gate.
+
 A RAM-resident user program may select a bank without launching it:
 
 ```asm

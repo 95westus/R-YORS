@@ -1242,15 +1242,15 @@ now stage read-only data through `$F010/$0203`; destructive copy/erase work is
 owned by the exact worker carried in `str8-bank-maint`; the general AP writers
 are retired. The old host-built Bank-3 erase proof is likewise archive-only.
 
-The next slice is deliberately narrow: replace HIMON's
-`HIM_AP_STAGE_BANK` call to `$F003` mode `$06` with a RAM-resident
-select/copy/restore routine. It must bootstrap at `$F010`, invoke `$0203` while
-the banked window is switched, copy only the requested AP envelope bytes (or
-the containing staged sectors under the existing bounds), restore Bank 3 on
-every return, preserve the caller's interrupt state, and retain the existing
-`LOAD_FAIL_SERVICE` failure contract. Then re-run the RAM/visible/banked AP
-matrix and board-prove a Bank-0 AP load. That is the remaining promotion gate
-for making split V1 the default combined-image/documentation baseline.
+That narrow host slice is complete. `HIM_AP_STAGE_BANK_SOURCE` now copies a
+54-byte routine to `$0300`, bootstraps at `$F010`, invokes `$0203` while the
+banked window is switched, stages the containing sector under the existing AP
+bounds, restores Bank 3 before returning, preserves the caller's interrupt
+state, and retains the existing bad-range failure contract. The compiled
+emulator covers Banks 0-2, low/middle/top sectors, initial-select failure, and
+restore retry. Board-prove a Bank-0 AP load next; that and positive local `H`
+are the remaining promotion gates for making split V1 the default combined-
+image/documentation baseline.
 
 ## 2026-08-07 V1.02 Range Board Rail
 

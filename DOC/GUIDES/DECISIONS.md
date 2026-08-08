@@ -555,15 +555,16 @@ start +count    count is the number of bytes
 
 ## STR8 Call Surface
 
-- STR8 exposes deliberate fixed service doorways: `$F003` runs a selected RAM
-  worker mode, `$F009` is the validated-record service, and `$F010` is the
+- STR8 exposes deliberate fixed service doorways: split V1 `$F003` runs only
+  jump mode `$08`, `$F009` is the validated-record service, and `$F010` is the
   RAM-caller bank selector. Retired `$F006` returns carry clear and no longer
   enters HIMON's AP linker.
   These are build-guarded ABI entries, not a general cute-address convention.
 - STR8 V0 should call its private `STR8_CON_*` console helpers directly for
   recovery I/O.
-- HIMON uses `$F003` only for the bank-safe worker contract. AP import linking
-  is HIMON-owned; HIMON load paths call `HIM_AP_IMPORT_LINK` directly.
+- HIMON does not use `$F003`. Its banked AP reader copies a RAM-resident
+  `$F010/$0203` select/copy/restore routine; AP import linking remains
+  HIMON-owned and load paths call `HIM_AP_IMPORT_LINK` directly.
 
 ## STR8 Imports And Onboard Resolution
 

@@ -13202,7 +13202,8 @@ audit archived every other maintained sample body that requested legacy
 `$F003` modes `$05/$06`. CRC, jump inventory, sector read, and sector dump now
 stage read-only data through `$F010/$0203`; copy and erase are supported by
 `str8-bank-maint`; the old AP installers/writer are retired. HIMON's banked AP
-loader remains the one live read-only firmware caller and is the next slice.
+loader was the one live read-only firmware caller; its host-side migration is
+recorded in the later section below.
 
 Required host gates:
 
@@ -13512,3 +13513,30 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-07 HIMON Split-V1 Banked AP Staging Migration
+
+The remaining live non-jump `$F003` caller is removed from HIMON source.
+`HIM_AP_STAGE_BANK_SOURCE` now copies a relocatable 54-byte read-only body from
+`$D60C-$D641` to `$0300`, above the `$0200-$0290` jump-worker trampoline. The
+RAM body selects Bank 0-2 through `$F010`, copies the containing 4K sector into
+the existing `$0A00-$19FF` AP tray, restores Bank 3 through `$0203`, restores
+the caller's interrupt state, and only then returns to flash-resident HIMON.
+It performs no flash mutation and no call to `$F003`.
+
+`make -C SRC himon-banked-ap-check` assembles the linked HIMON and emulates the
+exact copied bytes. Its eleven cases cover Banks 0-2 at low, middle, and top
+sectors; byte-exact 4K staging; Bank-3 restoration; both incoming interrupt
+states; initial-selector failure with an untouched tray; and one forced
+restore failure followed by retry. The accepted host result is:
+
+```text
+HIMON banked AP check OK body=$D60C-$D641 ram=$0300 bytes=$36 cases=11 max-steps=16486
+```
+
+This closes the host-side split-V1 service mismatch. Board proof remains open:
+run a known stored package through `AP B0 $hhhh $3000` (or its required fixed
+destination), require the package's normal result, then confirm Bank 3 is
+visible and the source bank is unchanged. Do not promote split V1 to the
+default combined-image baseline until that transcript and positive local `H`
+proof are captured.

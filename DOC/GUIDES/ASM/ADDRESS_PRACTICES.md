@@ -201,11 +201,13 @@ load/run destination.
 
 ## Banked AP Recipe
 
-Status: historical workflow, blocked on split V1. The old writer is archived
-at `SAMPLES/OLD/bankput-transient-3000.a`, and current HIMON banked AP staging
-still calls the removed `$F003` mode `$06`. Do not run this recipe on installed
-split-V1 images. It remains below as address-role documentation and proof
-provenance.
+Status: historical install workflow with a migrated loader awaiting board
+proof. The old writer remains archived at
+`SAMPLES/OLD/bankput-transient-3000.a`; current HIMON source stages banked APs
+through a RAM-resident `$F010/$0203` reader instead of removed `$F003` mode
+`$06`. Do not use the archived writer on installed split-V1 images. The recipe
+remains below as address-role documentation and proof provenance; an existing
+stored AP may be used for the focused loader board gate.
 
 ```text
 >ASM NEW

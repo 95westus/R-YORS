@@ -661,9 +661,9 @@ AP B0 $hhhh $4800
 ```
 
 The final two lines were the movable and legacy fixed session-reporter forms.
-The maintained read/dump AP bodies now use `$F010/$0203`, but current HIMON's
-banked AP loader still needs the same read-only staging migration before these
-forms are restored.
+The maintained read/dump AP bodies and current HIMON source now use
+`$F010/$0203`. The loader migration passes its compiled host matrix; these
+banked forms remain provisional until the focused board proof is captured.
 
 That path copies the banked AP envelope into the sector staging buffer, loads
 and links BODY bytes into `$2000-$4FFF`, and runs from the requested load

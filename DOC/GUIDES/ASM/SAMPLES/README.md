@@ -10,9 +10,10 @@ fixtures, proof-only sources, and completed board-test cards belong in
 - `asm-session-report-ap-2000.a` - current movable, Bank-0-storable ASM
   session reporter when supplied from a compatible RAM/visible-flash path.
 
-The old Bank-0/Bank-2 AP installation surface is archived. Split-V1 HIMON
-banked AP staging still needs its separate `$F010/$0203` migration before a
-Bank-0-stored reporter is again a current operator path.
+The old Bank-0/Bank-2 AP installation surface is archived. Split-V1 HIMON now
+contains the `$F010/$0203` banked AP staging replacement; its host matrix is
+accepted, while a Bank-0-stored reporter run remains the board gate before the
+path is current again.
 
 ## Flash Tools
 
@@ -23,8 +24,8 @@ Bank-0-stored reporter is again a current operator path.
 - `str8-bank-maint-2000.a` is the supported carried-worker copy/erase/map
   utility. Its `M` path is read-only and also displays the V1 directory.
 
-The two AP bodies are current, but loading a Bank-0-stored AP still depends on
-HIMON's not-yet-migrated banked AP staging path.
+The two AP bodies are current. Loading a Bank-0-stored AP now uses HIMON's
+migrated banked staging path, which is host-accepted and awaits board proof.
 
 ## STR8 Tools
 
@@ -54,8 +55,8 @@ active sample surface.
 | --- | --- | --- |
 | `str8-bank-crc-all-3000.a` | read-only | Replaced here by `$F010/$0203` source |
 | `str8-jump-inventory-3000.a` | read-only | Replaced here by `$F010/$0203` source |
-| `flash-bank-read-ap-2000.a` | read-only | Replaced here by `$F010/$0203` source; Bank-0 loading still blocked by HIMON |
-| `flash-bank-dump-ap-2000.a` | read-only | Replaced here by `$F010/$0203` source; Bank-0 loading still blocked by HIMON |
+| `flash-bank-read-ap-2000.a` | read-only | Replaced here by `$F010/$0203` source; HIMON loader host-accepted, board proof pending |
+| `flash-bank-dump-ap-2000.a` | read-only | Replaced here by `$F010/$0203` source; HIMON loader host-accepted, board proof pending |
 | `str8-bank-copy-2000.a` | destructive | Retired; use `str8-bank-maint` `C` |
 | `flash-erase-bank-ap-2000.a` | destructive | Retired; use `str8-bank-maint` `E` |
 | `bank0ap-put-transient-2000.a` | destructive | Retired; use `str8-bank-maint` for supported bank mutation |
@@ -63,6 +64,7 @@ active sample surface.
 | `bankput-transient-3000.a` | destructive | Retired; use `str8-bank-maint` for supported bank mutation |
 | `flash-bank-erase-write-ap-2000.a` | destructive | Retired; use `str8-bank-maint` for supported bank mutation |
 
-The remaining live firmware caller is HIMON's banked AP staging path. It must
-move from `$F003` mode `$06` to a small RAM stage routine using `$F010/$0203`
-before split V1 becomes the default combined-image baseline.
+No maintained sample or live HIMON path now requests stage/mutation modes
+through `$F003`. HIMON's replacement is host-accepted at `$0300` and uses
+`$F010/$0203`; a successful board `AP Bn` load remains required before split
+V1 becomes the default combined-image baseline.

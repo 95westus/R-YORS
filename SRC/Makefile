@@ -63,6 +63,7 @@ HIMON_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_ROM_S19 := $(S19_DIR)/himon-rom-c000.s19
 HIMON_ROM_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_ROM_BIN := $(BIN_DIR)/himon-rom-c000.bin
+HIMON_BANKED_AP_CHECK := tools/check_himon_banked_ap.ps1
 HIMON_STR8_ROM_BIN := $(BIN_DIR)/himon-str8-rom.bin
 HIMON_STR8_V1_LAYOUT_PREVIEW_BIN := $(BIN_DIR)/himon-str8-v1-layout-preview.bin
 HIMON_STR8_V1_BIN := $(BIN_DIR)/himon-str8-v1.bin
@@ -318,6 +319,7 @@ UPLOADER ?=
 # The current board-facing TopWriter preserves the installed V1 directory.
 # Replacement/migration writers are explicit historical targets under OLD.
 FIRMWARE_TARGETS ?= \
+	himon-banked-ap-check \
 	himon-str8-rom-bin \
 	himon-str8-rom-install-s19 \
 	str8-v1-refresh-a \
@@ -378,6 +380,7 @@ endif
 LAB_TARGETS += $(LOCAL_LAB_TARGETS)
 
 RELEASE_TARGETS ?= \
+	himon-banked-ap-check \
 	himon-str8-rom-bin \
 	himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 \
@@ -437,6 +440,9 @@ himon: $(ROM_LIB) $(HIMON_S19) himon-load-bin himon-rom-bin
 himon-rom: $(ROM_LIB) $(HIMON_ROM_S19)
 	@echo "Built $(HIMON_ROM_S19)."
 	@$(MAKE) artifacts
+
+himon-banked-ap-check: $(HIMON_ROM_S19) $(HIMON_BANKED_AP_CHECK) $(STR8_WORKER_EQ)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_BANKED_AP_CHECK) -HimonSourcePath "$(HIMON_SRC)" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -WorkerEqPath "$(STR8_WORKER_EQ)"
 
 himon-rom-bin: himon-rom
 	@echo [ps] build $(HIMON_ROM_BIN)
@@ -1384,6 +1390,7 @@ endif
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
+	himon-banked-ap-check \
 	str8-v1-layout-preview str8-v1-artifact str8-v1-install-stream str8-v1-range-proof-streams str8-v1-negative-streams str8-v1-topwrite-a str8-v1-refresh-a str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
 	str8-readonly-bank-tools-check str8-bank-maint-source-check \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
