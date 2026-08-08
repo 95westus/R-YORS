@@ -13437,11 +13437,12 @@ git diff --check
 
 ## 2026-08-07 STR8 V1.02 Parameterized Dense Receiver
 
-Host status: accepted. Board status: focused destructive proof pending under
+Host status: accepted. Board status: the focused destructive rail is accepted
+as `00.0807(2000)` under
 [`STR8_V1_02_RANGE_BOARD_TEST.md`](../STR8/STR8_V1_02_RANGE_BOARD_TEST.md).
-The rail uses FTDI partial-range programming and per-sector CRCs to prove
-neighboring-sector preservation before V1.02 becomes the default
-combined-image baseline.
+FTDI partial-range programming and per-sector CRCs proved selected component
+contents, neighboring-sector preservation, journal progression, preserved-F
+launch, and physical-reset recovery.
 
 The existing one-sector receiver now initializes expected input and flash
 sector state from `STR8_INSTALL_START_HI` and terminates only at
@@ -13465,6 +13466,17 @@ sector, all unrelated banks, directory metadata, journal completion, final-
 sector-after-S9 ordering, in-range/out-of-range S9 behavior, and immutable
 Bank-3 entry behavior. The exhaustive 261-case range-language matrix remains
 unchanged. The transaction gate completes within the five-minute host limit.
+
+On hardware, Bank-2 range `8-B` printed four dots and `I OK`, advanced journal
+pair 2 from `F0` to `C0`, and matched the four ASM CRCs. Range `C-E` printed
+three dots and `I OK`, advanced pair 3 from `C0` to `00`, and matched the three
+HIMON CRCs. Bank-2 sector F and all other payload sectors remained unchanged.
+Bank-3 sector F changed only as required by its resident directory: `E5 A8`
+after refresh, `32 64` after pair 2, and `0D 67` after pair 3. `J2` proved the
+preserved STR8 reset sector, new ASM, new HIMON, and final reset return to
+Bank 3. Local `H` rejected the older unmarked Bank-3 HIMON and the generic
+`J3`/timeout cold fallback succeeded; positive marked-HIMON `H` proof remains
+separate.
 
 The transaction layout is now:
 

@@ -1,6 +1,6 @@
 # STR8 V1.02 Range Installer Board Test
 
-Status: host-accepted; board proof pending.
+Status: parameterized range installer hardware-accepted as `00.0807(2000)`.
 
 This is the first destructive board rail for the V1.02 parameterized dense
 receiver. It refreshes only Bank 3 sector F, preserving the live V1 directory,
@@ -144,8 +144,12 @@ startup selector `0/1/2=BOOT H=HIMON S=STR8`, and command help:
 I H J0-3
 ```
 
-Use `H` for local Bank-3 HIMON. Re-run the CRC fixture. Banks 0-2 must match
-the starting CRC table exactly; only Bank-3 sector F is expected to change.
+Try `H`. An identified current HIMON must warm-enter; an older local HIMON
+without the fixed `$C003-$C006` marker must print `NO HIMON` and remain in
+STR8. In that case, use `J3` and let its reset path time out into the generic
+local cold entry. Re-run the CRC fixture. Banks 0-2 and Bank-3 sectors 8-E must
+match the starting table exactly. With the preserved starting directory from
+this rail, Bank-3 sector F must change from `C9 3F` to `E5 A8`.
 
 ## 4. Install ASM-F2 into Bank 2 Range 8-B
 
@@ -183,8 +187,9 @@ FFD0: A5 FF FF FF 52 59 4F 52 53 FE FF FF C0 FF FF FF
 ```
 
 Re-run the CRC fixture. Bank-2 sectors 8-B must equal the four CRC pairs printed
-by the host build. Bank-2 sectors C-F and every other bank must exactly match
-the starting table.
+by the host build. Bank-2 sectors C-F, Banks 0-1, and Bank-3 sectors 8-E must
+exactly match the starting table. Bank-3 sector F owns the directory and must
+change to `32 64` when the Bank-2 journal advances from `F0` to `C0`.
 
 Return to Bank-3 STR8 and issue `J2`. The preserved Bank-2 sector-F reset path
 must still boot. Enter Bank-2 HIMON and run `ASM NEW`; the ASM-F2 identity must
@@ -225,8 +230,9 @@ FFD0: A5 FF FF FF 52 59 4F 52 53 FE FF FF 00 FF FF FF
 
 Re-run the CRC fixture. Bank-2 sectors 8-B must retain the ASM CRCs, sectors
 C-E must equal the three HIMON CRC pairs printed by the host build, and sector
-F must exactly match the original starting CRC. Banks 0, 1, and 3 must be
-unchanged from the post-refresh table.
+F must exactly match the original starting CRC. Banks 0-1 and Bank-3 sectors
+8-E must remain unchanged. Bank-3 sector F must change to `0D 67` when the
+Bank-2 journal advances from `C0` to `00`.
 
 Issue `J2`. The preserved old Bank-2 STR8 sector must boot, its timeout must
 enter the newly installed HIMON identity, and `ASM NEW` must enter the newly
@@ -241,10 +247,64 @@ Stop immediately and preserve the full serial transcript if:
 - refresh staging does not preserve all 64 directory bytes;
 - output reports `DIR BAD`, `I FAIL`, `DIR FAIL`, or lacks the exact dot count;
 - a journal is STARTED rather than COMPLETE after an install;
-- an unselected Bank-2 sector or unrelated bank changes CRC;
+- an unselected Bank-2 sector, Bank 0/1, or Bank-3 sector 8-E changes CRC;
+- Bank-3 sector F does not match the directory-adjusted CRC at a checkpoint;
 - `J2` fails, the preserved sector-F identity changes, or physical RESET does
   not return to Bank 3.
 
-Do not call V1.02 hardware-accepted or promote it to the default combined-image
-baseline until both component transactions, CRC preservation checks, launch,
-and reset recovery are captured.
+## Accepted `00.0807(2000)` Run
+
+The 2026-08-07 FTDI/Tera Term run completed the full rail. Initial state was
+Bank-3 STR8 `00.0806(2135)`, HIMON/ASM-F2 `00.0805(1312)`, and a COMPLETE
+Bank-2 `A5/RYORS` record with journal `F0 FF FF FF`. The read-only fixture
+returned `$1A00=$AC` and captured this baseline:
+
+```text
+B0  EC B7 36 70 CE 76 3A CB  A7 71 06 AD 5E 44 62 60
+B1  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE 9B 41
+B2  EC B7 36 70 CE 76 E3 4F  A7 71 06 AD 3C BA 09 D7
+B3  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE C9 3F
+```
+
+The refresh source assembled through `$5000`, staged with `TW STG` / `TW OK`,
+and preserved all 64 live directory bytes at `$19B0-$19EF`. Confirmed program
+returned `TW PRG`, `TW OK`, and `01 AC 00 00`; installed face, vectors, and
+directory matched the stage. Physical reset booted STR8 `00.0807(2000)`.
+Local `H` rejected the older unmarked HIMON with `NO HIMON`; `J3` plus timeout
+then cold-entered HIMON `00.0805(1312)`. The post-refresh CRC changed only
+Bank-3 F, exactly to `E5 A8`.
+
+The Bank-2 `8-B` transaction displayed existing `A5/RYORS`, pair `02`, printed
+four dots and `I OK`, and completed its journal at `C0 FF FF FF`. Its CRC row
+became:
+
+```text
+B2  EC B7 36 70 CE 76 63 D9  A7 71 06 AD 3C BA 09 D7
+```
+
+All unselected payload sectors matched baseline; Bank-3 F became the predicted
+directory-adjusted `32 64`. `J2` booted preserved Bank-2 STR8 `00.0806(1927)`,
+timed out into preserved HIMON `00.0806(1927)`, and `ASM NEW` entered newly
+installed ASM-F2 `00.0807(2000)`.
+
+The Bank-2 `C-E` transaction displayed pair `03`, printed three dots and
+`I OK`, and completed the journal at `00 FF FF FF`. Final CRCs were:
+
+```text
+B2  EC B7 36 70 CE 76 63 D9  F2 56 F1 61 74 08 09 D7
+B3  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE 0D 67
+```
+
+Banks 0-1, Bank-3 sectors 8-E, and Bank-2 sector F remained byte-identical.
+`J2` again booted preserved STR8 `00.0806(1927)`, then timed out into newly
+installed HIMON `00.0807(2000)`; `ASM NEW` entered ASM-F2 `00.0807(2000)`.
+A final physical reset returned Bank-3 STR8 `00.0807(2000)`, cold-entered its
+preserved HIMON `00.0805(1312)`, and retained the final directory.
+
+This hardware-accepts the V1.02 parameterized dense receiver for independent
+16K `8-B` and 12K `C-E` component transactions, exact dot counts, journal
+progression, selected-sector contents, neighboring-sector preservation,
+launch through a preserved sector F, and physical-reset recovery. Positive
+local-`H` entry remains a separate proof because the installed Bank-3 HIMON
+does not carry the required identity marker. Default combined-image promotion
+also remains blocked on the HIMON AP-loader contract.

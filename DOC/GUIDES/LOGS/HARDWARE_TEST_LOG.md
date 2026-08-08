@@ -20437,3 +20437,137 @@ gap `$0873`. It does not change the map, directory, or mutation-worker logic:
 ```text
 F32C969756A066F4C2B6BFB4BA1A3786B43E5EF6E468C9AA442CC50D36FA1FF7  str8-bank-maint-2000.a
 ```
+
+## 2026-08-07 STR8 V1.02 Parameterized Range Installer Accepted
+
+The focused FTDI/Tera Term rail used pinned candidate `00.0807(2000)`:
+
+```text
+D8659B7024439F815245D7B6458AC7C7D0CE66E1DB56253CEEF0C987E9776E16  himon-str8-v1.bin
+AAC9E07C27BE2734029EFB2AE3C6CBABDABB60968EF2B8B718D48D1C57B92C63  str8n-v1-refresh-transient-3000.a
+4D4234A2281CC739AFF5D76BEC3FB8842B1BC8C7F518BF3281871A48B81B6A1D  str8-v1-i-asm-8-b.s19
+10B65837A8B0CA94BFFB65DC46B41C0F3BB2FA732416D9619253107AB47772AB  str8-v1-i-himon-c-e.s19
+CF38A8CF76DB20FC83A2A71499E28F218F9D7EAA45D128FEE237DD8F4C877640  str8-bank-crc-all-3000.a
+```
+
+Initial hardware was Bank-3 STR8 `00.0806(2135)`, HIMON/ASM-F2
+`00.0805(1312)`. Bank 2 was the documented disposable `A5/RYORS` image with
+two complete journal pairs:
+
+```text
+FFD0: A5 FF FF FF 52 59 4F 52 | 53 FE FF FF F0 FF FF FF
+```
+
+The read-only all-bank fixture returned `$1A00=$AC` and captured this baseline,
+with CRC pairs ordered by sectors 8 through F:
+
+```text
+B0  EC B7 36 70 CE 76 3A CB  A7 71 06 AD 5E 44 62 60
+B1  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE 9B 41
+B2  EC B7 36 70 CE 76 E3 4F  A7 71 06 AD 3C BA 09 D7
+B3  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE C9 3F
+```
+
+The directory-preserving refresh source assembled through `$5000`. Staging
+returned `TW STG` / `TW OK`; the candidate face, worker, vectors, and all 64
+staged directory bytes matched the saved live values:
+
+```text
+0A00: 4C 13 F0 4C 55 F7 18 60 | EA 4C 1C F9 53 52 01 07
+191F: 4C 12 02 08 78 C9 04 B0 | 06 20 7C 02 28 38 60 28
+19B0: 53 FF FF FF 57 4C 50 49 | 49 FE FF FF F0 FF FF FF
+19D0: A5 FF FF FF 52 59 4F 52 | 53 FE FF FF F0 FF FF FF
+19FA: 9E F0 00 F0 B2 F0
+```
+
+Confirmed Bank-3 sector-F programming and readback passed:
+
+```text
+TW> P
+TW OK
+TYPE WRITE TO PROGRAM B3> WRITE
+TW PRG
+TW OK
+TW> I
+TW MODE=$01 RES=$AC @=$0000
+1A00: 01 AC 00 00
+F000: 4C 13 F0 4C 55 F7 18 60 | EA 4C 1C F9 53 52 01 07
+FFFA: 9E F0 00 F0 B2 F0
+```
+
+Physical reset booted `STR8-N V 00.0807(2000) $F` with the new
+`0/1/2=BOOT H=HIMON S=STR8` selector and `I H J0-3` shell. The older local
+HIMON lacks the fixed identity marker, so the exact gate failed closed and the
+generic cold fallback remained usable:
+
+```text
+STR8-N>H
+NO HIMON
+I H J0-3
+STR8-N>J3
+J B3
+...
+BOOT COLD
+RAM ZERO OK
+HIMON V 00.0805(1312)
+```
+
+The post-refresh CRC table matched baseline for Banks 0-2 and Bank-3 sectors
+8-E. Bank-3 F alone changed to the directory-adjusted `E5 A8`.
+
+The first partial transaction selected existing Bank 2 and range `8-B`:
+
+```text
+I B0-3: 2
+RANGE: 8-B
+I B2 8-B
+T=A5 D=RYORS OK P=02 WRITE? Y: Y
+SEND S19
+....
+I OK
+```
+
+The directory completed pair 2 at `C0 FF FF FF`. Bank-2 CRCs became:
+
+```text
+B2  EC B7 36 70 CE 76 63 D9  A7 71 06 AD 3C BA 09 D7
+```
+
+Banks 0-1, Bank-3 sectors 8-E, and Bank-2 sectors C-F remained unchanged.
+Bank-3 F became predicted `32 64` because its directory owns the Bank-2
+journal. `J2` then booted preserved Bank-2 STR8 `00.0806(1927)`, timed out
+into preserved HIMON `00.0806(1927)`, and `ASM NEW` entered the new
+`ASM-F2 00.0807(2000)`.
+
+The second partial transaction selected Bank 2 range `C-E` and next pair 3:
+
+```text
+I B0-3: 2
+RANGE: C-E
+I B2 C-E
+T=A5 D=RYORS OK P=03 WRITE? Y: Y
+SEND S19
+...
+I OK
+```
+
+The final Bank-2 directory row and CRC tables were:
+
+```text
+FFD0: A5 FF FF FF 52 59 4F 52 | 53 FE FF FF 00 FF FF FF
+B2  EC B7 36 70 CE 76 63 D9  F2 56 F1 61 74 08 09 D7
+B3  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE 0D 67
+```
+
+Banks 0-1, Bank-3 sectors 8-E, and preserved Bank-2 sector F remained exact.
+`J2` booted preserved STR8 `00.0806(1927)`, timed out into newly installed
+`HIMON V 00.0807(2000)`, and `ASM NEW` entered `ASM-F2 00.0807(2000)`.
+Final physical reset returned Bank-3 STR8 `00.0807(2000)`, timed out into its
+preserved HIMON `00.0805(1312)`, and retained Bank-2 journal `00 FF FF FF`.
+
+This hardware-accepts the V1.02 dense parameterized receiver for the focused
+16K `8-B` and 12K `C-E` component rails, exact sector count, selected payload
+content, unselected-sector preservation, directory progression, preserved-F
+launch, and reset recovery. It qualifies only the existing FTDI/Tera Term
+transport. Positive local-`H` entry and the HIMON AP-loader contract remain
+separate promotion gates.

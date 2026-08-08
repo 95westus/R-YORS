@@ -1,8 +1,8 @@
 # STR8-N Four-Bank Installer V1.02 Plan
 
 ```text
-status:       V1.01 HARDWARE-ACCEPTED; V1.02 HOST IMPLEMENTATION ACTIVE
-next gate:    FOCUSED RANGE BOARD PROOF
+status:       V1.02 PARAMETERIZED RANGE INSTALLER HARDWARE-ACCEPTED
+next gate:    HIMON AP LOADER CONTRACT; POSITIVE LOCAL-H PROOF
 source date:  2026-08-07
 ```
 
@@ -1255,7 +1255,7 @@ for making split V1 the default combined-image/documentation baseline.
 ## 2026-08-07 V1.02 Range Board Rail
 
 The parameterized dense receiver and exact-worker transaction matrices are
-host-accepted. `make -C SRC str8-v1-range-proof-streams` now emits two focused
+host-accepted. `make -C SRC str8-v1-range-proof-streams` emits two focused
 single-send transports from the current combined candidate: ASM-F2 for Bank 2
 range `8-B`, and HIMON for Bank 2 range `C-E`. Each stream contains the exact
 mutation worker, a dense component payload, and a unique S9; the build prints
@@ -1266,6 +1266,15 @@ The canonical destructive procedure is
 It first refreshes only Bank 3 sector F through the directory-preserving
 TopWriter, then installs the two component ranges independently into the
 documented disposable Bank 2. Bank 2 sector F remains untouched so the old
-reset path can launch and prove both newly installed components. Promotion
-remains blocked until that complete transcript and the AP-loader gate above
-are board-accepted.
+reset path can launch and prove both newly installed components.
+
+That rail is hardware-accepted as `00.0807(2000)`. The `8-B` and `C-E`
+transactions printed four and three dots respectively, returned `I OK`, and
+advanced Bank-2 journal pairs 2 and 3 through `F0 -> C0 -> 00`. Exact CRCs
+proved both payloads and every unselected payload sector; Bank-3 sector-F CRC
+changes matched only the resident directory transitions. `J2` booted the
+preserved old STR8 and reached the new ASM and HIMON components, and physical
+reset returned to Bank 3 with the final directory intact. The older live
+Bank-3 HIMON lacks the new marker, so `H` correctly printed `NO HIMON` and
+`J3`/timeout proved the generic cold fallback; positive local-`H` proof remains
+open. Promotion also remains blocked on the AP-loader gate above.
