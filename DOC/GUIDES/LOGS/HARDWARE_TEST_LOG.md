@@ -20571,3 +20571,21 @@ content, unselected-sector preservation, directory progression, preserved-F
 launch, and reset recovery. It qualifies only the existing FTDI/Tera Term
 transport. Positive local-`H` entry and the HIMON AP-loader contract remain
 separate promotion gates.
+
+A focused follow-up then exercised the other `H` entry route. Shell `H` first
+repeated `NO HIMON`, and `J3` returned through the known cold fallback. On the
+next physical reset, the operator selected `H` directly at the V1.02 startup
+selector:
+
+```text
+STR8-N V 00.0807(2000) $F
+0/1/2=BOOT H=HIMON S=STR8  ..H
+NO HIMON
+I H J0-3
+STR8-N>
+```
+
+This hardware-accepts both startup-selector and shell fail-closed `H` routes
+against the older Bank-3 HIMON `00.0805(1312)`, which lacks the fixed marker.
+Both return to STR8 without launching the unidentified local image. Positive
+`H` entry into a marked HIMON remains open.

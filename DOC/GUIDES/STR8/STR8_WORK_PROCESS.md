@@ -187,6 +187,7 @@ Non-destructive STR8:
   selector timeout enters Bank 3 HIMON cold
   V1.02 selector H enters identified local HIMON warm without changing banks and preserves RAM
   V1.02 selector/shell H rejects erased, foreign, or corrupt local images with NO HIMON
+  both negative H routes are board-accepted on the older unmarked Bank-3 HIMON
   S and s reach the STR8 prompt
   selector 0/1/2 prints J Bn and BOOT IN 3S, pauses, then enters that bank
   selector 0/1/2 and prompt J0/J1/J2 leave all bank CRCs unchanged

@@ -270,8 +270,10 @@ The refresh source assembled through `$5000`, staged with `TW STG` / `TW OK`,
 and preserved all 64 live directory bytes at `$19B0-$19EF`. Confirmed program
 returned `TW PRG`, `TW OK`, and `01 AC 00 00`; installed face, vectors, and
 directory matched the stage. Physical reset booted STR8 `00.0807(2000)`.
-Local `H` rejected the older unmarked HIMON with `NO HIMON`; `J3` plus timeout
-then cold-entered HIMON `00.0805(1312)`. The post-refresh CRC changed only
+Shell `H` rejected the older unmarked HIMON with `NO HIMON`; `J3` plus timeout
+then cold-entered HIMON `00.0805(1312)`. A later physical reset selected `H`
+at the startup selector and received the same `NO HIMON` plus STR8 help/prompt,
+closing both fail-closed command routes. The post-refresh CRC changed only
 Bank-3 F, exactly to `E5 A8`.
 
 The Bank-2 `8-B` transaction displayed existing `A5/RYORS`, pair `02`, printed

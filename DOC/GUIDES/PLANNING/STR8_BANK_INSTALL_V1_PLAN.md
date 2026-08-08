@@ -1276,5 +1276,7 @@ changes matched only the resident directory transitions. `J2` booted the
 preserved old STR8 and reached the new ASM and HIMON components, and physical
 reset returned to Bank 3 with the final directory intact. The older live
 Bank-3 HIMON lacks the new marker, so `H` correctly printed `NO HIMON` and
-`J3`/timeout proved the generic cold fallback; positive local-`H` proof remains
-open. Promotion also remains blocked on the AP-loader gate above.
+`J3`/timeout proved the generic cold fallback. A later reset-time `H` also
+printed `NO HIMON` and remained at the STR8 prompt, accepting both negative
+routes; positive local-`H` proof remains open. Promotion also remains blocked
+on the AP-loader gate above.

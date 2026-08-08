@@ -104,7 +104,8 @@ banked AP loader still requests retired `$F003` stage mode `$06`; it must move
 to a read-only `$F010/$0203` stage-and-restore routine and receive board proof
 before promotion. Positive local-`H` board proof also remains open: the live
 Bank-3 HIMON predates the fixed identity marker, so this rail accepted the
-`NO HIMON` fail-closed path and generic cold fallback instead.
+startup-selector and shell `NO HIMON` fail-closed paths plus the generic cold
+fallback instead.
 
 ## Milestone Snapshot
 

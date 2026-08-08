@@ -13245,8 +13245,10 @@ same read-only selector contract and the resulting AP load path is board-proven.
 
 ## 2026-08-07 STR8 V1.02 Local-HIMON Command Pass
 
-Host status: accepted. Board status: focused `H` startup/shell proof is pending;
-the accepted V1.01 transcripts retain their historical bare-`3` spelling.
+Host status: accepted. Board status: startup-selector and shell fail-closed
+`H` are accepted as `00.0807(2000)` against an older unmarked HIMON; positive
+marked-HIMON warm entry remains pending. The accepted V1.01 transcripts retain
+their historical bare-`3` spelling.
 
 The V1.02 command language removes the semantic collision between bare `3`
 and `J3`. The reset selector is now
@@ -13290,8 +13292,8 @@ git diff --check
 
 ## 2026-08-07 STR8 V1.02 Local-HIMON Identity Gate
 
-Host status: accepted. Board status: focused positive and fail-closed `H`
-proof is pending.
+Host status: accepted. Board status: startup-selector and shell fail-closed
+`H` are accepted as `00.0807(2000)`; positive marked-HIMON `H` remains pending.
 
 HIMON now publishes a fixed warm-entry image face at `$C000`: `JMP $C007`
 followed by `A5 5A C3 3C` at `$C003-$C006`. STR8 `H` matches all four bytes
@@ -13304,6 +13306,14 @@ The compiled transaction emulator passes the positive HIMON fixture and all
 six fail-closed fixtures as part of the full 13-startup, 34-line/I, five-jump,
 and 41-installer matrix. The combined-image builder independently pins the
 marker address and bytes.
+
+The live Bank-3 HIMON `00.0805(1312)` predates that marker. Shell `H` printed
+`NO HIMON`, returned to `I H J0-3`, and left STR8 active. A separate physical
+reset selected `H` directly at `0/1/2=BOOT H=HIMON S=STR8`; it likewise
+printed `NO HIMON`, entered the same STR8 help/prompt path, and did not cold-
+enter the older image. `J3` followed by timeout remained the validated generic
+cold fallback. This closes both negative command routes without implying the
+still-open positive marked-HIMON handoff.
 
 The gate costs `$0016` resident bytes relative to the nomenclature pass:
 
