@@ -13380,3 +13380,57 @@ make -C SRC asm-test
 make -C SRC routine-word-tree
 git diff --check
 ```
+
+## 2026-08-07 STR8 V1.02 Parameterized Range State
+
+Host status: accepted. Board status: no new board claim; partial ranges remain
+fail-closed before confirmation and therefore have no board procedure yet.
+
+After the `BANK` response, `I` now prompts `RANGE:`. One hexadecimal sector
+digit means one 4K sector; `X-Y` is an inclusive ordered span. Lowercase folds
+to uppercase. Banks 0-2 accept sectors `8-F`; Bank 3 accepts `8-E` and rejects
+every selection containing protected sector F. A valid selection publishes:
+
+```text
+$A1  STR8_INSTALL_START_HI          4K-aligned first address high byte
+$A2  STR8_INSTALL_RANGE_LIMIT_HI    exclusive address-limit high byte
+$A3  STR8_INSTALL_SECTOR_COUNT      one through eight, or seven in Bank 3
+```
+
+The linked host matrix executes all 136 valid ordered intervals, all 105
+reversed intervals, an explicit lowercase equal-endpoint form, four Bank-3-F
+forms, and fifteen malformed/below-range forms: 261 range cases total. It also
+executes a full command-level `C-E` preview and requires `START=$C0`,
+`LIMIT=$F0`, `COUNT=3`, exact summary output, `REFUSED`, zero worker calls, and
+an unchanged directory. Full `8-F` and `8-E` transaction and dry-streaming
+fixtures retain their previous sector, journal, failure, and output behavior.
+
+The current transaction layout is:
+
+```text
+transaction code            $F000-$FDB3  size $0DB4 = 3508
+transaction data            $FDB4-$FEDB  size $0128 = 296
+transaction resident        $F000-$FEDB  size $0EDC = 3804
+resident/jump-worker gap     $FEDC-$FF1E  size $0043 = 67
+gap after $0040 reserve                      $0003 = 3
+packed jump worker           $FF1F-$FFAF  size $0091 = 145
+```
+
+The next slice must parameterize the existing dense receiver, not add a second
+receiver. It must replace the fixed `$8000` start/full-bank limit setup and
+remove the temporary full-range confirmation gate while preserving at least
+the `$0040` gap. Partial streams are not enabled by this commit.
+
+Required host gates:
+
+```text
+make -C SRC str8-directory-check
+make -C SRC str8-installer-transaction-check
+make -C SRC str8-installer-dry-check
+make -C SRC str8-worker-mode-check
+make -C SRC str8-worker-split-check
+make -C SRC str8-v1-artifact
+make -C SRC asm-test
+make -C SRC routine-word-tree
+git diff --check
+```

@@ -2,7 +2,7 @@
 
 ```text
 status:       V1.01 HARDWARE-ACCEPTED; V1.02 HOST IMPLEMENTATION ACTIVE
-next gate:    PARAMETERIZED RANGE STATE
+next gate:    PARAMETERIZED DENSE RECEIVER
 source date:  2026-08-07
 ```
 
@@ -48,6 +48,21 @@ a later optimization goal rather than a blocker for the next slice.
 To keep the resident summaries compact, V1.02 prints sector spans `8-F` and
 `8-E`, states `NEW`, `INC`, `OK`, and `FULL`, transaction refusal as
 `REFUSED`, and invalid directory data as `DIR BAD`.
+
+The parameter-state slice is host-accepted. After `BANK`, one `RANGE:` prompt
+accepts either one sector (`C`) or an inclusive span (`C-E`). It publishes the
+4K-aligned start high byte, exclusive limit high byte, and sector count in
+`$A1-$A3`. Every ordered interval in `8-F` for Banks 0-2 and `8-E` for Bank 3
+passes; reversed, malformed, below-8, and Bank-3-F selections fail. Until the
+next slice consumes this state, a partial range prints its summary and
+`REFUSED` before confirmation. Existing full `8-F` and `8-E` transactions
+retain their accepted behavior.
+
+The transaction resident is now `$F000-$FEDB`, size `$0EDC`, leaving
+`$FEDC-$FF1E`, `$0043` bytes. Only `$0003` remains beyond the hard `$0040`
+reserve. The receiver slice must replace fixed-range initialization and remove
+the temporary full-range gate while maintaining that reserve; it may not add
+a second receiver beside the old one.
 
 V1.02 also removes the ambiguous shell bare-bank aliases. Its compact surface
 is `I H J0-3`: `H` warm-enters the local `$C000` target without selecting a
@@ -286,11 +301,13 @@ ends with `REFUSED`.
 
 There is no `?` command. The identity is printed when STR8-N enters its menu;
 any command that does not match the active command set prints the help line.
-`I` prompts for Bank 0-3, currently installing 32K into Banks 0-2 or 28K into
-the Bank-3 payload. The next range-state slice generalizes those fixed extents.
-Bare shell digits are unknown commands. `H` is the local warm HIMON path, and
-`J0` through `J3` are the only explicit non-destructive physical-bank
-handoffs, with `J3` retaining STR8 re-entry.
+`I` prompts for Bank 0-3 and then `RANGE:`. A single sector such as `C` means
+4K; a span such as `C-E` is inclusive. The current parameter-state slice
+allows only full `8-F`/`8-E` extents to continue to confirmation; other valid
+ranges show the derived summary and end with `REFUSED` until the receiver
+consumes them. Bare shell digits are unknown commands. `H` is the local warm
+HIMON path, and `J0` through `J3` are the only explicit non-destructive
+physical-bank handoffs, with `J3` retaining STR8 re-entry.
 
 The destructive V0 meanings of `B` and bare prompt `0`, `1`, or `2`, plus the
 separate `G`, `R`, and fixed 12K `U` updater, are retired in V1. `B` remains

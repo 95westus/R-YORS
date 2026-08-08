@@ -150,6 +150,11 @@ STR8_INSTALL_LIMIT_HI   EQU             $9D
 STR8_INSTALL_PHASE      EQU             $9E
 STR8_INSTALL_SECTOR_HI  EQU             $9F
 STR8_INSTALL_STATUS     EQU             $A0
+; V1.02 selected range survives the current fixed-range receiver. The next
+; slice will consume these fields instead of rebuilding $8000/full-bank state.
+STR8_INSTALL_START_HI   EQU             $A1
+STR8_INSTALL_RANGE_LIMIT_HI EQU         $A2
+STR8_INSTALL_SECTOR_COUNT EQU           $A3
 STR8_INSTALL_DENSE      EQU             $10
 STR8_INSTALL_ENTRY      EQU             $11
 STR8_INSTALL_FLASH      EQU             $12
@@ -737,7 +742,7 @@ STR8_CMD_INSTALL_PREVIEW:
 ?PROMPT:
                         LDX             #<MSG_I_BANK
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_BANK
                         JSR             STR8_PRINT_XY
@@ -755,6 +760,9 @@ STR8_CMD_INSTALL_PREVIEW:
                         BCS             ?BAD
                         AND             #$03
                         STA             STR8_INSTALL_BANK
+                        JSR             STR8_I_READ_RANGE
+                        BCC             ?BAD
+                        LDA             STR8_INSTALL_BANK
                         JSR             STR8_DIR_VALIDATE_BANK_A
                         STX             STR8_INSTALL_PAIR
                         STA             STR8_INSTALL_STATE
@@ -773,7 +781,7 @@ STR8_CMD_INSTALL_PREVIEW:
                         JMP             STR8_I_PRINT_SUMMARY
 ?INVALID:              LDX             #<MSG_I_INVALID
                         IF              STR8_V1_INSTALLER_TXN
-                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        JMP             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_INVALID
                         JMP             STR8_PRINT_XY
@@ -783,7 +791,7 @@ STR8_CMD_INSTALL_PREVIEW:
 STR8_I_READ_TYPE:
                         LDX             #<MSG_I_TYPE_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_TYPE_PROMPT
                         JSR             STR8_PRINT_XY
@@ -810,10 +818,71 @@ STR8_I_READ_TYPE:
 ?FAIL:                 CLC
                         RTS
 
+; Read one sector ("C") or an inclusive sector span ("C-E"). Publish the
+; 4K-aligned start high byte, exclusive limit high byte, and sector count.
+; $F + 1 deliberately becomes the wrapped exclusive limit high byte $00.
+STR8_I_READ_RANGE:
+                        LDX             #<MSG_I_RANGE_PROMPT
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        ELSE
+                        LDY             #>MSG_I_RANGE_PROMPT
+                        JSR             STR8_PRINT_XY
+                        ENDIF
+                        LDX             #$04
+                        JSR             STR8_READ_LINE
+                        DEC             A
+                        TAX
+                        BEQ             ?END_CHAR
+                        CPX             #$02
+                        BNE             ?FAIL
+                        LDA             STR8_REC_DATA_BUF+1
+                        CMP             #'-'
+                        BNE             ?FAIL
+?END_CHAR:             LDA             STR8_REC_DATA_BUF,X
+                        JSR             STR8_REC_HEX_ASCII_TO_NIBBLE
+                        BCC             ?FAIL
+?END:                  STA             STR8_REC_WORK_TMP
+                        LDA             STR8_REC_DATA_BUF
+                        JSR             STR8_REC_HEX_ASCII_TO_NIBBLE
+                        BCC             ?FAIL
+                        CMP             #$08
+                        BCC             ?FAIL
+                        STA             STR8_INSTALL_START_HI
+                        LDA             STR8_REC_WORK_TMP
+                        CMP             STR8_INSTALL_START_HI
+                        BCC             ?FAIL
+                        LDX             STR8_INSTALL_BANK
+                        CPX             #STR8_DIR_BANK3
+                        BNE             ?VALID
+                        CMP             #$0F
+                        BCS             ?FAIL
+?VALID:                SEC
+                        SBC             STR8_INSTALL_START_HI
+                        INC             A
+                        STA             STR8_INSTALL_SECTOR_COUNT
+                        LDA             STR8_REC_WORK_TMP
+                        INC             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        STA             STR8_INSTALL_RANGE_LIMIT_HI
+                        LDA             STR8_INSTALL_START_HI
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        STA             STR8_INSTALL_START_HI
+                        SEC
+                        RTS
+?FAIL:                 CLC
+                        RTS
+
 STR8_I_READ_DESCRIPTION:
                         LDX             #<MSG_I_DESC_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_DESC_PROMPT
                         JSR             STR8_PRINT_XY
@@ -857,36 +926,26 @@ STR8_I_COPY_RECORD_METADATA:
 STR8_I_PRINT_SUMMARY:
                         LDX             #<MSG_I_SUMMARY
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_SUMMARY
                         JSR             STR8_PRINT_XY
                         ENDIF
                         LDA             STR8_INSTALL_BANK
                         JSR             STR8_WRITE_DEC_DIGIT_A
-                        LDA             STR8_INSTALL_BANK
-                        CMP             #STR8_DIR_BANK3
-                        BEQ             ?RANGE3
-                        LDX             #<MSG_I_RANGE_32K
-                        IF              STR8_V1_INSTALLER_TXN
-                        ELSE
-                        LDY             #>MSG_I_RANGE_32K
-                        ENDIF
-                        BRA             ?RANGE
-?RANGE3:               LDX             #<MSG_I_RANGE_28K
-                        IF              STR8_V1_INSTALLER_TXN
-                        ELSE
-                        LDY             #>MSG_I_RANGE_28K
-                        ENDIF
-?RANGE:
-                        IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
-                        ELSE
-                        JSR             STR8_PRINT_XY
-                        ENDIF
+                        LDA             #' '
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
+                        LDA             STR8_INSTALL_START_HI
+                        JSR             STR8_WRITE_HEX_HIGH_NIBBLE_A
+                        LDA             #'-'
+                        JSR             STR8_CON_WRITE_BYTE_BLOCK
+                        LDA             STR8_INSTALL_RANGE_LIMIT_HI
+                        SEC
+                        SBC             #$10
+                        JSR             STR8_WRITE_HEX_HIGH_NIBBLE_A
                         LDX             #<MSG_I_TYPE
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_TYPE
                         JSR             STR8_PRINT_XY
@@ -895,7 +954,7 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDX             #<MSG_I_DESC
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_DESC
                         JSR             STR8_PRINT_XY
@@ -914,7 +973,7 @@ STR8_I_PRINT_SUMMARY:
                         BEQ             ?STATE
                         LDX             #<MSG_I_ENTRY
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_ENTRY
                         JSR             STR8_PRINT_XY
@@ -956,13 +1015,13 @@ STR8_I_PRINT_SUMMARY:
                         ENDIF
 ?PRINT_STATE:
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         JSR             STR8_PRINT_XY
                         ENDIF
                         LDX             #<MSG_I_PAIR
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_I_PAIR
                         JSR             STR8_PRINT_XY
@@ -970,12 +1029,21 @@ STR8_I_PRINT_SUMMARY:
                         LDA             STR8_INSTALL_PAIR
                         JSR             STR8_WRITE_HEX_BYTE_A
                         IF              STR8_V1_INSTALLER_DRY
+; Until the next receiver slice, only the old complete-bank extents may reach
+; confirmation. Partial parameter state is visible but cannot mutate flash.
+                        LDX             #$08
+                        LDA             STR8_INSTALL_BANK
+                        CMP             #STR8_DIR_BANK3
+                        BNE             ?RANGE_COUNT
+                        DEX
+?RANGE_COUNT:          CPX             STR8_INSTALL_SECTOR_COUNT
+                        BNE             STR8_I_NO_WRITE
                         LDA             STR8_INSTALL_PAIR
                         CMP             #STR8_DIR_PAIR_NONE
                         BEQ             STR8_I_NO_WRITE
                         IF              STR8_V1_INSTALLER_TXN
                         LDX             #<MSG_I_WRITE_CONFIRM
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDX             #<MSG_I_STAGE_CONFIRM
                         LDY             #>MSG_I_STAGE_CONFIRM
@@ -998,7 +1066,7 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_I_FINISH_TRANSACTION
                         BCC             STR8_I_PRINT_TRANSACTION_FAIL
                         LDX             #<MSG_I_INSTALL_OK
-                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        JMP             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDX             #<MSG_I_STAGE_OK
                         LDY             #>MSG_I_STAGE_OK
@@ -1609,7 +1677,7 @@ STR8_CMD_ABORT:
                         ENDIF
                         LDX             #<MSG_ABORT
                         IF              STR8_V1_INSTALLER_TXN
-                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        JMP             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_ABORT
                         JMP             STR8_PRINT_XY
@@ -1647,7 +1715,7 @@ STR8_BOOT_JUMP_BANK_A:
                         JSR             STR8_CON_FLUSH_RX
                         LDX             #<MSG_BOOT_BANK_WAIT
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        JSR             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_BOOT_BANK_WAIT
                         JSR             STR8_PRINT_XY
@@ -2786,6 +2854,15 @@ STR8_WRITE_HEX_NIBBLE_A:
                         ADC             #'0'
                         JMP             STR8_CON_WRITE_BYTE_BLOCK
 
+                        IF              STR8_V1_LAYOUT
+STR8_WRITE_HEX_HIGH_NIBBLE_A:
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        BRA             STR8_WRITE_HEX_NIBBLE_A
+                        ENDIF
+
                         IF              STR8_RAM_PROOF
 ; RAM-proof equivalent of worker mode $08. All code and bank-select helpers
 ; remain in RAM after the visible $8000-$FFFF bank window changes.
@@ -2994,6 +3071,7 @@ MSG_OK:                 DB              $0D,$0A,"OK",$0D,$8A
 MSG_ABORT:              DB              $0D,$0A,"ABORT",$0D,$8A
                         IF              STR8_V1_LAYOUT
 MSG_I_BANK:             DB              $0D,$0A,"I B0-3:",$A0
+MSG_I_RANGE_PROMPT:     DB              $0D,$0A,"RANGE:",$A0
 MSG_I_TYPE_PROMPT:      DB              $0D,$0A,"TYPE:",$A0
 MSG_I_DESC_PROMPT:      DB              $0D,$0A,"DESC:",$A0
 MSG_I_INVALID:          DB              $0D,$0A,"DIR BAD",$0D,$8A
@@ -3002,8 +3080,6 @@ MSG_I_SUMMARY:          DB              $0D,$0A,"I ",('B'+$80)
                         IF              STR8_V1_INSTALLER_TXN
 MSG_I_INSTALL_OK:       DB              $0D,$0A,"I OK",$0D,$8A
                         ENDIF
-MSG_I_RANGE_32K:        DB              " 8-F",(' '+$80)
-MSG_I_RANGE_28K:        DB              " 8-E",(' '+$80)
 MSG_I_TYPE:             DB              $0D,$0A,"T",('='+$80)
 MSG_I_DESC:             DB              " D",('='+$80)
 MSG_I_ENTRY:            DB              " E=",('$'+$80)
