@@ -20821,3 +20821,23 @@ The staged `$19B0-$19EF` directory exactly reproduced the saved live records:
 Bank 0 `WLPII/F0`, Bank 1 erased, Bank 2 `RYORS/00`, and Bank 3
 `RYORS/C000/FC`. The compact stage is accepted and separately authorized for
 the confirmed `P` step. No flash-program claim is made by this checkpoint.
+
+## 2026-08-08: compact Bank-3 sector-F program and readback accepted
+
+Without resetting after the accepted compact stage, the operator reopened
+TopWriter and selected `P`. Its mandatory tray verification returned `TW OK`,
+the exact `TYPE WRITE TO PROGRAM B3>` prompt was answered with `WRITE`, and
+the worker returned `TW PRG` followed by `TW OK`. Status was:
+
+```text
+TW MODE=$01 RES=$AC @=$0000
+1A00: 01 AC 00 00
+```
+
+The external live-sector readback matched the frozen compact image: the
+`4C 3E F7` face and `4C F5 F8` entry were present, `$FE5F-$FE6E` was erased,
+the packed worker began with the expected bytes at `$FF1F`, and the vectors
+were `9C F0 00 F0 B0 F0`. The `$FFB0-$FFEF` directory was byte-identical to
+both the saved pre-program snapshot and the accepted staged copy. This
+hardware-accepts the compact Bank-3 program/readback checkpoint. Reset and
+runtime smoke remain pending.

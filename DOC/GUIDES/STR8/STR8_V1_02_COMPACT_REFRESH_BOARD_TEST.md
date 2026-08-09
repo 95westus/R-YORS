@@ -214,3 +214,24 @@ pre-program checks matched the frozen compact candidate:
 The staged `$19B0-$19EF` directory was byte-identical to the saved live
 directory. This accepts the compact stage and authorizes the separately
 confirmed `P` step; it does not yet claim a flash program or cold boot.
+
+## Accepted Compact Program Checkpoint
+
+The separately authorized `P` pass reverified the tray, printed the exact
+Bank-3 confirmation prompt, accepted `WRITE`, and returned `TW PRG` followed
+by `TW OK`. Status and the external live-sector readback were:
+
+```text
+TW MODE=$01 RES=$AC @=$0000
+1A00: 01 AC 00 00
+F000: 4C 13 F0 4C 3E F7 18 60 EA 4C F5 F8 53 52 01 07
+F010: 4C 44 F7 78
+FE5F: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+FF1F: 4C 12 02 08 78 C9 04 B0 06 20 7C 02 28 38 60 28
+FFF0: FF FF FF FF FF FF FF FF FF FF 9C F0 00 F0 B0 F0
+```
+
+The live `$FFB0-$FFEF` directory remained byte-identical to its saved and
+staged copies. This accepts the compact Bank-3 sector-F program and readback.
+The physical-reset, local-HIMON, NMI, and final cold-path smoke in section 5
+remain pending.
