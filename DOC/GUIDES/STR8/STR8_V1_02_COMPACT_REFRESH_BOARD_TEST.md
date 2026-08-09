@@ -197,3 +197,20 @@ It never printed the confirmation prompt or `TW PRG`. The following live dumps
 still showed the old `4C 55 F7` face, message bytes at `$FE5F`, and
 `9E F0 00 F0 B2 F0` vectors, with the directory unchanged. This accepts the
 stale-tray fail-closed guard; it is not a compact-image program attempt.
+
+## Accepted Compact Stage Checkpoint
+
+The corrected follow-up ran `S` and `V`; both returned `TW OK`. All external
+pre-program checks matched the frozen compact candidate:
+
+```text
+0A00: 4C 13 F0 4C 3E F7 18 60 EA 4C F5 F8 53 52 01 07
+0A10: 4C 44 F7 78
+185F: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+191F: 4C 12 02 08 78 C9 04 B0 06 20 7C 02 28 38 60 28
+19F0: FF FF FF FF FF FF FF FF FF FF 9C F0 00 F0 B0 F0
+```
+
+The staged `$19B0-$19EF` directory was byte-identical to the saved live
+directory. This accepts the compact stage and authorizes the separately
+confirmed `P` step; it does not yet claim a flash program or cold boot.

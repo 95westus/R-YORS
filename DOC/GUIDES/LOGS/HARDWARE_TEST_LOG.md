@@ -20802,3 +20802,22 @@ The `$FFB0-$FFEF` directory also remained byte-identical. This hardware-
 accepts the stale-tray fail-closed guard and again proves no flash mutation.
 The compact candidate still needs `S`, `V`, external staged-byte checks, and a
 later separately authorized `P`.
+
+## 2026-08-08: compact refresh stage and external identity accepted
+
+Without resetting after the stale-tray rejection, the operator reopened the
+correct compact TopWriter and ran `S`, `V`, and `Q`. Both stage operations
+returned `TW OK`. The external tray dumps matched the frozen compact candidate:
+
+```text
+0A00: 4C 13 F0 4C 3E F7 18 60 EA 4C F5 F8 53 52 01 07
+0A10: 4C 44 F7 78
+185F: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+191F: 4C 12 02 08 78 C9 04 B0 06 20 7C 02 28 38 60 28
+19F0: FF FF FF FF FF FF FF FF FF FF 9C F0 00 F0 B0 F0
+```
+
+The staged `$19B0-$19EF` directory exactly reproduced the saved live records:
+Bank 0 `WLPII/F0`, Bank 1 erased, Bank 2 `RYORS/00`, and Bank 3
+`RYORS/C000/FC`. The compact stage is accepted and separately authorized for
+the confirmed `P` step. No flash-program claim is made by this checkpoint.
