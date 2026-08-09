@@ -13042,7 +13042,8 @@ git diff --check
 
 ## 2026-08-06 STR8 V1 Split Worker Slice 3
 
-Status: flashable host candidate complete; board proof pending.
+Status: flashable host candidate complete; later migration, refresh, and
+split-worker hardware rails accepted.
 
 The transaction resident now selects the permanent jump worker as its only ROM
 copy source. Its `$88` bytes pack at `$FF28-$FFAF` and copy to `$0200-$0287`;
@@ -13673,9 +13674,9 @@ then require the usual Bank-3 directory output and unchanged all-bank CRCs.
 
 ## 2026-08-08 STR8 V1.02 `$0080` Growth-Headroom Gate
 
-Host status: accepted. Board status: the parameterized range path is already
-accepted; the exact compact image and shifted IVI addresses await the next
-ordinary refresh proof.
+Host status: accepted. Board status: accepted. The parameterized range path,
+exact compact image, shifted IVI addresses, reset path, local-HIMON handoff,
+and NMI smoke passed the frozen refresh rail.
 
 The second V1.02 size pass replaces local absolute transfers with in-range
 branches, shares directory-entry validation, tables the four compact `I`

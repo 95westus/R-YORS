@@ -32,8 +32,7 @@ breakpoint and single-step behavior, with the resident unassembler removed and
 the `$7F00-$7FFF` I/O page protected by dump/load/debug paths. ASM is
 flash-resident as a HIMON command and now has board-proven SEAL, RESOLVE,
 RELOCATE, and AP v1 PACKAGE flows. The current uppercase STR8 interactive
-surface is hardware-accepted; the Bank Jump Record follow-up remains
-host-accepted with board persistence proof pending.
+surface and full Bank Jump Record persistence matrix are hardware-accepted.
 
 - [HASH_FLASH.md](./HASH_FLASH.md) - command-surface and milestone alerts.
 - [DOC_FLASH.md](./DOC_FLASH.md) - documentation-shape alerts.

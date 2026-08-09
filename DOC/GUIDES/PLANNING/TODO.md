@@ -2,11 +2,12 @@
 
 ## Near Term
 
-- STR8-N V1.02 firmware work is host-complete at compact resident size `$0E5F`.
-  The range receiver, local `H`, `J0`-`J3`, Bank Jump Record, split-worker
-  callers, and valid banked AP path are hardware-accepted. Run the frozen
+- STR8-N V1.02 is host- and hardware-complete at compact resident size
+  `$0E5F`. The range receiver, local `H`, `J0`-`J3`, Bank Jump Record,
+  split-worker callers, valid banked AP path, and frozen
   [compact-image refresh proof](../STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md)
-  next; do not add another resident feature before that exact-image gate.
+  are accepted. Do not reopen V1.02 for deferred self-update, sparse S19,
+  ACIA, catalog, managed-backup, or export features.
 - 2026-07-19 hardware pass: both current-image HIMON AP-linker gates are
   closed. Missing-import validation returned `$09` without body entry or a
   partial patch; banked-source RJOIN returned `A=$AC/C=1` with status `$00`

@@ -83,9 +83,9 @@ AP parsing and FNV import linking are HIMON responsibilities. STR8's retired
 `SRC/ARCHIVE/str8/` for later reference.
 
 The functionally hardware-accepted V1.02 layout is the default combined image
-built by `make -C SRC all`. Its current compact rebuild is host-accepted and
-awaits the exact-image
-[refresh proof](STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md). It packs the
+built by `make -C SRC all`. Its current compact rebuild and exact-image
+[refresh proof](STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md) are hardware-
+accepted. It packs the
 permanent jump worker at
 `$FF1F-$FFAF`, leaves the fixed directory erased at `$FFB0-$FFEF`, and emits a
 primary `himon-str8-rom.bin` plus its install stream. The compatibility target

@@ -1,8 +1,8 @@
 # STR8-N Four-Bank Installer V1.02 Plan
 
 ```text
-status:       V1.02 RANGE PATH HARDWARE-ACCEPTED; COMPACT IMAGE HOST-ACCEPTED
-next gate:    COMPACT PRIMARY IMAGE REFRESH AND QUICK BOARD PROOF
+status:       V1.02 RANGE AND EXACT COMPACT IMAGE HARDWARE-ACCEPTED
+next gate:    RELEASE DOCUMENT RECONCILIATION AND FULL HOST MATRIX
 source date:  2026-08-08
 ```
 
@@ -1176,7 +1176,7 @@ The future `B` estimate is 160-240 resident bytes and no persistent data.
 7. Generate the one-time migration TopWriter and make every later TopWriter
    preserve the live directory exactly. Complete and hardware-accepted.
 8. Complete host, RAM, and board failure tests before accepting the installer.
-   Complete; the later compact rebuild has only its exact refresh smoke open.
+   Complete, including the later compact rebuild's exact refresh smoke.
 
 ## Acceptance Gates
 
@@ -1251,8 +1251,8 @@ state, and retains the existing bad-range failure contract. The compiled
 emulator covers Banks 0-2, low/middle/top sectors, initial-select failure, and
 restore retry. The later valid Bank-0 package run and positive local `H`
 transcripts closed both promotion gates. Split V1 is now the default combined-
-image/documentation baseline; only the exact compact-image refresh proof
-remains.
+image/documentation baseline. The later exact compact-image refresh proof also
+passed and closed the final shifted-address board gate.
 
 ## 2026-08-07 V1.02 Range Board Rail
 
