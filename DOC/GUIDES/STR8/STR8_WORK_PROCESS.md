@@ -96,13 +96,16 @@ remains the historical last validated handoff.
 The current build targets are:
 
 ```text
-make -C SRC all
-make -C SRC str8-v1-artifact
+make -C SRC all                    primary accepted V1.02 image and checks
+make -C SRC str8-v1-artifact       compatibility names and proof streams
 make -C SRC str8-v1-negative-streams
 ```
 
-The V0 ROM and payload-update targets remain available for historical
-regression and recovery work; they are not the flashable V1 acceptance rail.
+`himon-str8-rom.bin` and `himon-str8-rom-install.s19` are now the default
+flashable V1.02 combined-image artifacts. `himon-str8-v1.bin` and its matching
+install S19 remain byte-compatible aliases for frozen V1 board cards. The V0
+ROM and payload-update targets remain available for historical regression and
+recovery work; they are not the default acceptance rail.
 
 The hardware log preserves earlier proof of the retired `M` map, backup
 rotation, and Bank 0 enrollment policy plus `G`, burn-check bytes, `U` /

@@ -9,6 +9,10 @@ build directory itself.
 A GitHub Release should mark a source revision whose release artifacts were
 built from tracked source and whose board proof status is clear.
 
+The primary `himon-str8-rom.*` artifacts use the accepted split-V1.02 layout.
+The `himon-str8-v1.*` names remain compatibility outputs for frozen board
+cards, not a second firmware baseline.
+
 Use releases for:
 
 - the current STR8-N/HIMON/ASM-F2 onboard image;

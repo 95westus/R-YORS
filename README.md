@@ -43,7 +43,7 @@ default payload, currently HIMON.
 
 ## Current Board
 
-The installed 2026-07-31 STR8-N echo image is hardware-proven for:
+The accepted split-V1 board line through 2026-08-08 is hardware-proven for:
 
 - Bank-3 reset, the visible three-second countdown, and timeout into the
   Bank-3 HIMON default;
@@ -69,13 +69,13 @@ The installed 2026-07-31 STR8-N echo image is hardware-proven for:
 The banked-AP bullets now also apply to split V1. Current HIMON stages `AP Bn`
 input with a RAM-resident `$F010/$0203` select/copy/restore routine; its host
 matrix, invalid-package stage/restore rail, and valid Bank-0 package execution
-are hardware-accepted. The default combined-image/documentation baseline
-switch is now unblocked.
+are hardware-accepted. V1.02 is now the default combined-image/documentation
+baseline.
 
-The follow-up Bank Jump Record is host-accepted but still awaits its separate
-board transcript. It publishes `$1FFD-$1FFF = 42 4A nn` after a validated
-`J0`-`J2` handoff, preserves a valid record through HIMON cold clear, and uses
-`42 4A FF` when no validated target is known. See the
+The Bank Jump Record publishes `$1FFD-$1FFF = 42 4A nn` after a validated
+handoff, preserves a valid record through HIMON cold clear, and uses
+`42 4A FF` when no validated target is known. Its full `J0`-`J3` preservation
+matrix is host- and hardware-accepted. See the
 [Bank Jump Record board test](DOC/GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md).
 
 The current bank contents are:
@@ -160,14 +160,19 @@ SRC/BUILD/bin/himon-str8-rom.bin
 
 $8000-$BC6C  ASM-F2, entry $800C
 $BC6D-$BFFF  low-flash growth/AP-store hole
-$C000-$EECB  HIMON, including the resident AP import linker
-$EECC-$EFFF  HIMON/STR8 growth hole
-$F000-$FAEE  STR8-N shell, data, IVI stubs, updater, and adapters
-$FAEF-$FD02  top-sector growth hole
-$FD03-$FFEF  stored RAM worker
+$C000-$EEFF  HIMON, including the resident AP import linker
+$EF00-$EFFF  HIMON/STR8 growth hole
+$F000-$FE9C  STR8-N V1.02 resident
+$FE9D-$FF1E  $0082 free, including the required $0040 reserve
+$FF1F-$FFAF  stored jump-only RAM worker
+$FFB0-$FFEF  fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9  configuration pocket
 $FFFA-$FFFF  hardware vectors
 ```
+
+`make -C SRC str8-v1-artifact` retains the historical
+`himon-str8-v1.*` filenames and focused proof streams; its BIN is byte-identical
+to the primary `himon-str8-rom.bin` from the same build.
 
 The matching first-install stream is:
 

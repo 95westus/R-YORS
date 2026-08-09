@@ -82,11 +82,14 @@ AP parsing and FNV import linking are HIMON responsibilities. STR8's retired
 `$F006` slot now returns carry clear; the former adapter source is retained in
 `SRC/ARCHIVE/str8/` for later reference.
 
-The flashable V1 candidate is built separately with
-`make -C SRC str8-v1-artifact`. It packs the permanent jump worker at
+The hardware-accepted V1.02 layout is the default combined image built by
+`make -C SRC all`. It packs the permanent jump worker at
 `$FF1F-$FFAF`, leaves the fixed directory erased at `$FFB0-$FFEF`, and emits a
-single-file `I` transport containing the uploaded mutation worker before the
-dense bank image. The one-time migration, directory-preserving supervisor
+primary `himon-str8-rom.bin` plus its install stream. The compatibility target
+`make -C SRC str8-v1-artifact` retains `himon-str8-v1.*`, the single-file `I`
+transports containing the uploaded mutation worker before their dense payload,
+and the historical migration/refresh writers. The one-time migration,
+directory-preserving supervisor
 refresh, first journaled Bank-2 transaction, rejected worker, interrupted
 transaction, fail-closed launch, same-pair retry, and recovered launch are all
 hardware-accepted by the [V1 migration board test](STR8_V1_MIGRATION_BOARD_TEST.md),
@@ -103,15 +106,15 @@ The follow-up [Bank-3 HIMON and AP-stage board test](STR8_V1_02_HIMON_AP_STAGE_B
 is hardware-accepted for a `C-E`-only install of HIMON `00.0807(2141)`. It
 kept the accepted STR8 sector F in place, closed positive shell/startup `H`,
 and used a deliberately invalid Bank-0 source to prove the migrated read-only
-AP stage/restore path without executing an unknown package. The later positive
-known-package run remains open.
+AP stage/restore path without executing an unknown package. The subsequent
+freshly installed Bank-0 AP package completed its normal load/run path, restored
+Bank 3, and produced the exact predicted single-sector CRC delta.
 
-V1 is not yet the default combined-image/documentation baseline. HIMON's
-banked AP loader now uses a host- and board-checked RAM-resident
+HIMON's banked AP loader uses the host- and board-checked RAM-resident
 `$F010/$0203` stage-and-restore routine instead of retired `$F003` mode `$06`.
-Both positive and fail-closed local-`H` routes are hardware-accepted. Promotion
-still requires one freshly installed, known Bank-0 AP package to complete its
-normal load/run path through the migrated staging routine.
+Positive and fail-closed local-`H` routes and the positive banked AP path are
+hardware-accepted. Those proofs closed the final promotion gate; V1.02 is now
+the default combined-image/documentation baseline.
 
 ## Milestone Snapshot
 
