@@ -136,6 +136,7 @@ service addresses.
 - [STR8 J0-J2 Board Test](DOC/GUIDES/STR8/STR8_J012_BOARD_TEST.md) - exact inventory, handoff, reset, and CRC acceptance rail
 - [STR8 Bank Jump Record Board Test](DOC/GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - accepted full `J0`-`J3` persistence matrix
 - [STR8 V1.02 Compact Refresh Board Test](DOC/GUIDES/STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md) - final exact-image refresh rail for the `$0E5F` resident
+- [STR8-N V1.02 Release Record](DOC/GUIDES/STR8/STR8_V1_02_RELEASE.md) - frozen identities, host matrix, board closure, and deferred scope
 - [STR8 V1 Migration Board Test](DOC/GUIDES/STR8/STR8_V1_MIGRATION_BOARD_TEST.md) - accepted flashable V1 migration and first journaled Bank-2 install proof
 - [STR8 Guest Image Qualification](DOC/GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - mandatory handoff, peripheral, vector, and CRC procedure for unrelated systems
 - [STR8 S19 And Bank Volumes](DOC/GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - loader/volume direction and superseded compatible-bank design history

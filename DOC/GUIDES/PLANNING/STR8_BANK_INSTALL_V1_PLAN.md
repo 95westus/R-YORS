@@ -2,7 +2,7 @@
 
 ```text
 status:       V1.02 RANGE AND EXACT COMPACT IMAGE HARDWARE-ACCEPTED
-next gate:    RELEASE DOCUMENT RECONCILIATION AND FULL HOST MATRIX
+next gate:    NONE; V1.02 RELEASE CLOSED
 source date:  2026-08-08
 ```
 
@@ -1282,3 +1282,17 @@ Bank-3 HIMON lacks the new marker, so `H` correctly printed `NO HIMON` and
 printed `NO HIMON` and remained at the STR8 prompt, accepting both negative
 routes. The Bank-3 HIMON/AP-stage rail subsequently accepted positive local
 `H`, and the valid Bank-0 AP run closed the final loader gate.
+
+## 2026-08-08 V1.02 Release Closure
+
+The canonical status documents were reconciled after the exact compact board
+proof. The full firmware build, directory validator, dry installer,
+transaction installer, negative/interruption artifacts, compatibility
+artifacts, range proof streams, generated documentation, release target, and
+binary policy all passed. The frozen `00.0808(2058)` artifacts reproduce the
+same combined-BIN and compact-refresh hashes used by the final board rail.
+
+The authoritative identities, commands, accepted scope, and deliberately
+deferred work are recorded in
+[`STR8_V1_02_RELEASE.md`](../STR8/STR8_V1_02_RELEASE.md). V1.02 has no
+remaining implementation or board gate.
