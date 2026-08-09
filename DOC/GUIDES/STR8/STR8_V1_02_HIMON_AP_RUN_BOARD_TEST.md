@@ -41,14 +41,22 @@ paste DOC/GUIDES/ASM/SAMPLES/str8-bank0-ap-smoke.a
 SEAL> PACKAGE $4000
 SEAL> .
 AP $4000 $3000
-D 4000 403F
+D 4000 4035
 D 5848 5850
 ```
 
-Require `PKG OK @=$4000` with a high length byte of `$00` and a low length byte
-from `$05` through `$FF`. The RAM AP must print `GO 3000`, return with `A=AC`
-and carry set, leave `$5848=$AC` and `$5850=$5A`, and leave an `AP 01` envelope
-at `$4000`. Stop before flash mutation if any check fails.
+Require `PKG OK @=$4000 L=$0036` and this exact envelope:
+
+```text
+4000: 41 50 01 36 00 53 0B 01 | 00 20 0F 20 0F 00 09 F5
+4010: 68 9F 52 01 00 45 09 01 | 09 00 00 04 71 51 80 57
+4020: 49 02 00 02 42 0F 00 9C | 48 58 A9 5A 8D 50 58 A9
+4030: AC 8D 48 58 38 60
+```
+
+The seal FNV is `$9F68F509`. The RAM AP must print `GO 3000`, return with
+`A=AC` and carry set, and leave `$5848=$AC` and `$5850=$5A`. Stop before flash
+mutation if any check fails.
 
 ## Install The Fixed Carrier
 
@@ -109,11 +117,20 @@ There must be no `APERR`, cold boot, or loss of the HIMON prompt.
 
 ## Final Isolation Check
 
-Reassemble and run the read-only all-bank CRC fixture. Require every pair to
-match the frozen baseline except Bank-0 sector B. That one pair must change and
-must repeat exactly on a second fresh CRC run. Preserve the package dump and
-both CRC rows in the transcript so the new sector-B value can be pinned in the
-acceptance commit.
+Replacing 54 erased bytes at sector offset `$0F00` with the exact envelope has
+CRC delta `$0D33`. Therefore Bank-0 sector B must move from `$CB3A` to `$C609`
+and display as `09 C6`. Reassemble and run the read-only all-bank CRC fixture;
+require `$1A00=$AC` and this exact table:
+
+```text
+B0  EC B7 36 70 CE 76 09 C6  A7 71 06 AD 5E 44 62 60
+B1  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE 9B 41
+B2  EC B7 36 70 CE 76 63 D9  F2 56 F1 61 74 08 09 D7
+B3  EC B7 36 70 CE 76 A5 FC  00 EA 5C 68 26 A0 04 4A
+```
+
+Run the fixture a second time and require the same table. Preserve the package
+dump and both CRC runs in the transcript.
 
 Passing this card proves a freshly built valid AP envelope was stored in Bank
 0, staged through `$F010/$0203`, loaded to RAM, executed, returned with its

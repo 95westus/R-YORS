@@ -109,6 +109,65 @@ foreach ($text in @(
     }
 }
 
+[byte[]]$smokeBody = @(
+    0x9C, 0x48, 0x58,
+    0xA9, 0x5A,
+    0x8D, 0x50, 0x58,
+    0xA9, 0xAC,
+    0x8D, 0x48, 0x58,
+    0x38,
+    0x60
+)
+[uint64]$smokeHashWork = 2166136261
+foreach ($byte in $smokeBody) {
+    $smokeHashWork = (($smokeHashWork -bxor [uint64]$byte) * `
+        [uint64]16777619) -band [uint64]4294967295
+}
+[uint32]$smokeHash = $smokeHashWork
+if ($smokeHash -ne [Convert]::ToUInt32('9F68F509', 16)) {
+    Fail-Check 'Bank-0 AP smoke FNV changed unexpectedly'
+}
+
+$smokePackage = [System.Collections.Generic.List[byte]]::new()
+foreach ($byte in @(
+    0x41, 0x50, 0x01, 0x36, 0x00,
+    0x53, 0x0B, 0x01, 0x00, 0x20, 0x0F, 0x20, 0x0F, 0x00,
+    0x09, 0xF5, 0x68, 0x9F,
+    0x52, 0x01, 0x00,
+    0x45, 0x09, 0x01, 0x09, 0x00, 0x00, 0x04,
+    0x71, 0x51, 0x80, 0x57,
+    0x49, 0x02, 0x00, 0x02,
+    0x42, 0x0F, 0x00
+)) {
+    $smokePackage.Add([byte]$byte)
+}
+foreach ($byte in $smokeBody) {
+    $smokePackage.Add($byte)
+}
+if ($smokePackage.Count -ne 0x36) {
+    Fail-Check 'Bank-0 AP smoke envelope is not $0036 bytes'
+}
+
+[byte[]]$crcDeltaBytes = New-Object byte[] 4096
+for ($index = 0; $index -lt $smokePackage.Count; $index++) {
+    $crcDeltaBytes[0x0F00 + $index] = 0xFF -bxor $smokePackage[$index]
+}
+[int]$crcDelta = 0
+foreach ($byte in $crcDeltaBytes) {
+    $crcDelta = $crcDelta -bxor ([int]$byte -shl 8)
+    for ($bit = 0; $bit -lt 8; $bit++) {
+        if (($crcDelta -band 0x8000) -ne 0) {
+            $crcDelta = (($crcDelta -shl 1) -bxor 0x1021) -band 0xFFFF
+        } else {
+            $crcDelta = ($crcDelta -shl 1) -band 0xFFFF
+        }
+    }
+}
+[int]$smokePostCrc = 0xCB3A -bxor $crcDelta
+if ($crcDelta -ne 0x0D33 -or $smokePostCrc -ne 0xC609) {
+    Fail-Check 'Bank-0 AP smoke sector-B CRC delta changed unexpectedly'
+}
+
 $lines = [System.IO.File]::ReadAllLines(
     (Resolve-Path -LiteralPath $SourcePath).Path
 )
@@ -425,6 +484,6 @@ if ($bodyEnd -ge 0x3000) {
 $workerGap = 0x3000 - $bodyEnd - 1
 
 Write-Host (
-    "STR8 BANK MAINT SOURCE = PASS; symbols={0}/64; locals-max={1}/16; forward-fixups={2}/128; body-end=`${3:X4}; worker-gap=`${4:X}; carried worker exact; fixed AP put; smoke body=`$000F" -f `
+    "STR8 BANK MAINT SOURCE = PASS; symbols={0}/64; locals-max={1}/16; forward-fixups={2}/128; body-end=`${3:X4}; worker-gap=`${4:X}; carried worker exact; fixed AP put; smoke body=`$000F package=`$0036 fnv=`$9F68F509 B0B=`$C609" -f `
         $symbols.Count, $maxLocalCount, $forwardFixups, $bodyEnd, $workerGap
 )

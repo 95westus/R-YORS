@@ -13589,7 +13589,15 @@ forward-fixups=127/128
 body-end=$284E
 worker-gap=$07B1
 smoke body=$000F
+smoke package=$0036
+smoke fnv=$9F68F509
+post-write Bank-0 sector-B CRC=$C609
 ```
+
+The exact `$0036` envelope replaces erased bytes at Bank-0 sector-B offset
+`$0F00`. Its CRC-16/CCITT-FALSE delta is `$0D33`, so the accepted baseline
+`$CB3A` must become `$C609` and display as `09 C6`. The board card pins all 54
+envelope bytes and the complete predicted post-write all-bank CRC table.
 
 Board-paste source identities:
 
