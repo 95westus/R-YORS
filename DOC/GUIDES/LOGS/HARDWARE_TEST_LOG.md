@@ -20841,3 +20841,29 @@ were `9C F0 00 F0 B0 F0`. The `$FFB0-$FFEF` directory was byte-identical to
 both the saved pre-program snapshot and the accepted staged copy. This
 hardware-accepts the compact Bank-3 program/readback checkpoint. Reset and
 runtime smoke remain pending.
+
+## 2026-08-08: compact STR8 reset, warm-HIMON, NMI, and cold path accepted
+
+After the accepted compact Bank-3 program/readback, physical RESET plus the
+`S` selector entered `STR8-N V 00.0808(2058) $F`. Its command banner was the
+expected `0/1/2=BOOT H=HIMON S=STR8` and `I H J0-3`. Command `H` printed
+`BOOT WARM` and entered the installed local Bank-3 HIMON `00.0807(2141)`.
+
+One NMI produced a clean report with no control characters in its flag field:
+
+```text
+NMI PC=E59D
+A=02 X=00 Y=7A P=E4 S=F7 NV-bdIzc
+```
+
+The immediate `$7EE6-$7EFF` dump agreed with the report: the saved registers
+were `02 00 7A E4`, saved PC was `9D E5`, and saved stack was `F7`. The
+`$CF62-$CFCF` flag formatter bytes were captured intact. Thus the earlier
+transient warm-handoff flag-render anomaly did not reproduce on the compact
+resident.
+
+A second physical RESET, with no selector input, again displayed compact STR8
+`00.0808(2058)` and completed `BOOT COLD`, `RAM ZERO OK`, and HIMON
+`00.0807(2141)`. This hardware-accepts the reset resident, local warm handoff,
+NMI reporting, and normal Bank-3 cold path. The compact-refresh board gate is
+closed.

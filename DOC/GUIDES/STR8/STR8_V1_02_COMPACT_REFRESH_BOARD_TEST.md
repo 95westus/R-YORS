@@ -1,6 +1,6 @@
 # STR8 V1.02 Compact-Image Refresh Board Test
 
-Status: prepared from commit `ee45327281b2`; board proof pending.
+Status: accepted on hardware from commit `ee45327281b2`; board proof complete.
 
 This is the final proof for the compact V1.02 resident. It refreshes only Bank
 3 sector F through the directory-preserving writer. It does not reinstall ASM,
@@ -235,3 +235,26 @@ The live `$FFB0-$FFEF` directory remained byte-identical to its saved and
 staged copies. This accepts the compact Bank-3 sector-F program and readback.
 The physical-reset, local-HIMON, NMI, and final cold-path smoke in section 5
 remain pending.
+
+## Accepted Reset And Runtime Checkpoint
+
+Physical RESET followed by `S` selected the newly programmed resident and
+displayed `STR8-N V 00.0808(2058) $F` with the expected command language.
+Local `H` printed `BOOT WARM` and entered Bank-3 HIMON `00.0807(2141)`.
+
+One NMI returned a clean, legible report:
+
+```text
+NMI PC=E59D
+A=02 X=00 Y=7A P=E4 S=F7 NV-bdIzc
+```
+
+The diagnostic dump at `$7EE6-$7EFF` agreed with the displayed saved frame,
+including `A=$02`, `X=$00`, `Y=$7A`, `P=$E4`, `PC=$E59D`, and `S=$F7`.
+The `$CF62-$CFCF` flag formatter was also captured intact. The earlier
+transient control-character flag rendering did not recur.
+
+A final physical RESET with no selector input displayed the same compact
+STR8 identity, then `BOOT COLD`, `RAM ZERO OK`, and HIMON `00.0807(2141)`.
+All steps in this compact-refresh board card are accepted; the exact compact
+Bank-3 refresh gate is closed.
