@@ -13560,7 +13560,7 @@ path without closing the positive known-package execution gate above.
 
 ## 2026-08-08 Fixed Bank-0 AP Promotion Carrier
 
-Host status: accepted. Board status: pending under
+Host status: accepted. Board status: accepted on 2026-08-08 under
 [`STR8_V1_02_HIMON_AP_RUN_BOARD_TEST.md`](../STR8/STR8_V1_02_HIMON_AP_RUN_BOARD_TEST.md).
 
 `str8-bank-maint-2000.a` now adds one narrow `P` operation for the outstanding
@@ -13598,6 +13598,13 @@ The exact `$0036` envelope replaces erased bytes at Bank-0 sector-B offset
 `$0F00`. Its CRC-16/CCITT-FALSE delta is `$0D33`, so the accepted baseline
 `$CB3A` must become `$C609` and display as `09 C6`. The board card pins all 54
 envelope bytes and the complete predicted post-write all-bank CRC table.
+
+Hardware matched every prediction. The fixed carried-worker write returned
+`OK`; valid `AP B0 $BF00 $3000` returned `A=$AC` with carry set; both result
+markers, all 54 staged envelope bytes, and the restored Bank-3 directory were
+exact. Two executed CRC runs returned the same predicted table with Bank-0
+sector B `09 C6` and every other pair unchanged. The positive known-package
+promotion gate is closed.
 
 Board-paste source identities:
 

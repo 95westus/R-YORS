@@ -66,12 +66,11 @@ The installed 2026-07-31 STR8-N echo image is hardware-proven for:
 - interactive bank/sector flash erase with explicit confirmation and recovery;
 - standalone examples including the 16x16 column Life program.
 
-The banked-AP bullets above describe the hardware-proven pre-split system.
-They are not yet a split-V1 claim. The current HIMON source now stages `AP Bn`
-input with a RAM-resident `$F010/$0203` select/copy/restore routine and its host
-matrix passes, but the migrated path still needs board proof. Split V1 remains
-a candidate rather than the default combined-image/documentation baseline
-until that proof is captured.
+The banked-AP bullets now also apply to split V1. Current HIMON stages `AP Bn`
+input with a RAM-resident `$F010/$0203` select/copy/restore routine; its host
+matrix, invalid-package stage/restore rail, and valid Bank-0 package execution
+are hardware-accepted. The default combined-image/documentation baseline
+switch is now unblocked.
 
 The follow-up Bank Jump Record is host-accepted but still awaits its separate
 board transcript. It publishes `$1FFD-$1FFF = 42 4A nn` after a validated

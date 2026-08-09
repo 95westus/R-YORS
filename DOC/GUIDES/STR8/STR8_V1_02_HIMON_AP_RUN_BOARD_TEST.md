@@ -1,8 +1,7 @@
 # STR8 V1.02 Valid Bank-0 AP Run Board Test
 
-Status: RAM-envelope phase hardware-accepted; fixed Bank-0 write and banked run
-pending. This is the final split-V1 HIMON banked-AP promotion gate after the
-accepted read-only stage/restore rail.
+Status: hardware-accepted on 2026-08-08. This closes the final split-V1 HIMON
+banked-AP promotion gate after the accepted read-only stage/restore rail.
 
 The test builds a new 15-byte marker body with the board's ASM-F2, packages it
 at RAM `$4000`, proves the same envelope from RAM, and only then uses the exact
@@ -140,7 +139,29 @@ B3  EC B7 36 70 CE 76 A5 FC  00 EA 5C 68 26 A0 04 4A
 Run the fixture a second time and require the same table. Preserve the package
 dump and both CRC runs in the transcript.
 
-Passing this card proves a freshly built valid AP envelope was stored in Bank
+## Accepted Hardware Result
+
+ASM-F2 `00.0805(1312)` assembled the pinned maintenance source through worker
+end `$322B` with `ASM OK`. The RAM envelope still began `41 50 01 36 00`.
+Command `P` reached the erased-range prompt, accepted exact `PUT B0BF00`, and
+returned `OK`; its following read-only `M` showed every ordinary sector used,
+Bank-3 F protected, and the accepted Bank-3 directory.
+
+After `Q`, HIMON cleared `$5848` and `$5850`. `AP B0 $BF00 $3000` printed
+`GO 3000`, returned `A=AC` with `P=F5` and carry set, and left `$5848=$AC` /
+`$5850=$5A`. The staged `$1900-$1935` bytes matched the entire `$0036`
+envelope, and `$FFE0-$FFEF` remained:
+
+```text
+FFE0: A5 FF FF FF 52 59 4F 52 | 53 FE 00 C0 FC FF FF FF
+```
+
+Two actual `G 3000` CRC runs returned `$1A00=$AC` and reproduced the exact
+post-write table above, including Bank-0 sector B `09 C6`. A dump taken after
+assembling the CRC fixture but before its first `G 3000` contained stale
+`00 00` in that pair and is not test evidence.
+
+This accepted card proves a freshly built valid AP envelope was stored in Bank
 0, staged through `$F010/$0203`, loaded to RAM, executed, returned with its
-normal result, and restored Bank 3. Only then may split V1 become the default
-combined-image/documentation baseline.
+normal result, and restored Bank 3. Split V1 is now eligible to become the
+default combined-image/documentation baseline.

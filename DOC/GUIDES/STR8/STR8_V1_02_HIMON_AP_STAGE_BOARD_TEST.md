@@ -324,7 +324,7 @@ This hardware-accepts the focused card: three-sector Bank-3 range install,
 first local directory record, shell and startup positive `H`, preserved
 sector-F reset/cold recovery, read-only Bank-0 staging, Bank-3 restoration,
 and unchanged source-bank CRCs. A valid Bank-0 package load/run remains a
-separate promotion gate.
+separate promotion gate for this card; the later continuation closes it.
 
 ## Stop Conditions And Evidence Boundary
 
@@ -345,4 +345,4 @@ Passing this card proves the new Bank-3 HIMON, both local `H` routes, and the
 read-only banked AP stage/restore mechanism on hardware. It does not prove a
 valid Bank-0 package load/run. The separate reviewed continuation is
 [`STR8_V1_02_HIMON_AP_RUN_BOARD_TEST.md`](STR8_V1_02_HIMON_AP_RUN_BOARD_TEST.md);
-do not promote V1 until that card is accepted.
+that card is now hardware-accepted and closes the gate.

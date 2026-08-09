@@ -20678,3 +20678,50 @@ This accepts the freshly generated package before flash mutation: `A=$AC`,
 carry set, `$5848=$AC`, and `$5850=$5A`. The approved envelope remains at
 RAM `$4000`. The fixed Bank-0 `$BF00` carrier write, banked execution, Bank-3
 restoration, and post-write CRC table remain pending.
+
+The operator then assembled the pinned maintenance source through worker end
+`$322B` with `ASM OK`; the package header at `$4000` remained
+`41 50 01 36 00`. The fixed path staged Bank-0 sector B, proved the complete
+target range erased, accepted exact confirmation, and programmed/verified:
+
+```text
+P
+PUT AP B0 $BF00
+TYPE PUT B0BF00> PUT B0BF00
+ OK
+```
+
+Its subsequent read-only `M` returned all ordinary sectors as used, protected
+Bank-3 F, and printed the accepted directory including D3 entry `$C000` and
+journal `FCFFFFFF`. `Q` returned `A=$AC` with carry set.
+
+After clearing both marker bytes, HIMON loaded and ran the new Bank-0 carrier:
+
+```text
+AP B0 $BF00 $3000
+GO 3000
+#GO# ENTRY=3000
+RET A=AC X=30 Y=30 P=F5 S=FD NV-BdIzC
+```
+
+`$5848=$AC` and `$5850=$5A`. The staged source at `$1900-$1935` matched all 54
+package bytes exactly, and Bank 3 was restored with its directory unchanged:
+
+```text
+FFE0: A5 FF FF FF 52 59 4F 52 | 53 FE 00 C0 FC FF FF FF
+```
+
+The first dump after assembling the CRC fixture occurred before `G 3000`; its
+stale Bank-0 sector-B `00 00` is excluded. Two executed read-only CRC runs then
+returned `$AC` and matched the predicted table exactly:
+
+```text
+B0  EC B7 36 70 CE 76 09 C6  A7 71 06 AD 5E 44 62 60
+B1  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE 9B 41
+B2  EC B7 36 70 CE 76 63 D9  F2 56 F1 61 74 08 09 D7
+B3  EC B7 36 70 CE 76 A5 FC  00 EA 5C 68 26 A0 04 4A
+```
+
+This hardware-accepts the valid Bank-0 AP load/run, exact `$F010/$0203`
+stage/restore path, normal body result, Bank-3 restoration, and predicted
+single-sector isolation. The final split-V1 promotion gate is closed.

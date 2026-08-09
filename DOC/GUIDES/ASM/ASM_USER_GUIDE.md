@@ -666,9 +666,9 @@ AP B0 $hhhh $4800
 
 The final two lines were the movable and legacy fixed session-reporter forms.
 The maintained read/dump AP bodies and current HIMON source use
-`$F010/$0203`. The loader migration passes its compiled host matrix, and the
-invalid-package stage/restore path is hardware-accepted. Valid Bank-0 package
-execution through the fixed carrier remains the promotion gate.
+`$F010/$0203`. The loader migration passes its compiled host matrix; the
+invalid-package stage/restore path and valid Bank-0 package execution through
+the fixed carrier are hardware-accepted.
 
 That path copies the banked AP envelope into the sector staging buffer, loads
 and links BODY bytes into `$2000-$4FFF`, and runs from the requested load

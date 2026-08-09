@@ -39,7 +39,7 @@ Read-only mode-`$06` history:
   `$F010/$0203` replacements exist in the parent directory.
 - `flash-bank-read-ap-2000.a` and `flash-bank-dump-ap-2000.a`; maintained
   `$F010/$0203` bodies exist in the parent directory. HIMON's read-only
-  banked-AP stage/restore is board-accepted; valid execution is still pending.
+  banked-AP stage/restore and valid execution are board-accepted.
 
 Destructive mode-`$05/$06` history:
 
