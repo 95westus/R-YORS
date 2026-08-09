@@ -74,4 +74,4 @@ promoted; normal builds do not rewrite this directory or `OLD`.
 No maintained sample or live HIMON path now requests stage/mutation modes
 through `$F003`. HIMON's `$0300` replacement uses `$F010/$0203`; read-only
 stage/restore and successful valid `AP B0` execution are hardware-accepted.
-Split V1 is eligible to become the default combined-image baseline.
+Split V1 is the default combined-image baseline.

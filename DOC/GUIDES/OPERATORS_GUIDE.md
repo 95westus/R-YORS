@@ -26,6 +26,10 @@ read-only banked AP staging, and valid Bank-0 AP execution are hardware-
 accepted. Banks 0-2 accept 4K through 32K ranges; Bank 3 accepts 4K through
 28K and rejects its live sector F.
 
+The function is board-accepted on the preceding V1.02 image. The current
+`$0E5F` compact rebuild is host-accepted and has one remaining exact-image
+[directory-preserving refresh proof](STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md).
+
 The hardware log also preserves the earlier V0 backup/restore and fixed
 `$C000-$EFFF` payload proofs with HIMON, OSI BASIC, and fig-FORTH. Those are
 historical command evidence, not the current resident interface and not

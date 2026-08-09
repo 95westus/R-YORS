@@ -70,7 +70,8 @@ The banked-AP bullets now also apply to split V1. Current HIMON stages `AP Bn`
 input with a RAM-resident `$F010/$0203` select/copy/restore routine; its host
 matrix, invalid-package stage/restore rail, and valid Bank-0 package execution
 are hardware-accepted. V1.02 is now the default combined-image/documentation
-baseline.
+baseline. The current `$0E5F` compact rebuild is host-accepted and awaits its
+frozen directory-preserving sector-F refresh proof.
 
 The Bank Jump Record publishes `$1FFD-$1FFF = 42 4A nn` after a validated
 handoff, preserves a valid record through HIMON cold clear, and uses
@@ -133,7 +134,8 @@ service addresses.
 - [OIL .710 Test Plan](DOC/GUIDES/PLANNING/OIL_710_TEST_PLAN.md) - Overlay Integration Layer board gates
 - [STR8 J0-J2 Opaque-Bank Plan](DOC/GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted implementation, size, recovery, and proof record
 - [STR8 J0-J2 Board Test](DOC/GUIDES/STR8/STR8_J012_BOARD_TEST.md) - exact inventory, handoff, reset, and CRC acceptance rail
-- [STR8 Bank Jump Record Board Test](DOC/GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence proof for `$1FFD-$1FFF`
+- [STR8 Bank Jump Record Board Test](DOC/GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - accepted full `J0`-`J3` persistence matrix
+- [STR8 V1.02 Compact Refresh Board Test](DOC/GUIDES/STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md) - final exact-image refresh rail for the `$0E5F` resident
 - [STR8 V1 Migration Board Test](DOC/GUIDES/STR8/STR8_V1_MIGRATION_BOARD_TEST.md) - accepted flashable V1 migration and first journaled Bank-2 install proof
 - [STR8 Guest Image Qualification](DOC/GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - mandatory handoff, peripheral, vector, and CRC procedure for unrelated systems
 - [STR8 S19 And Bank Volumes](DOC/GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - loader/volume direction and superseded compatible-bank design history

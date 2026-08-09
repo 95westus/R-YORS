@@ -2,6 +2,11 @@
 
 ## Near Term
 
+- STR8-N V1.02 firmware work is host-complete at compact resident size `$0E5F`.
+  The range receiver, local `H`, `J0`-`J3`, Bank Jump Record, split-worker
+  callers, and valid banked AP path are hardware-accepted. Run the frozen
+  [compact-image refresh proof](../STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md)
+  next; do not add another resident feature before that exact-image gate.
 - 2026-07-19 hardware pass: both current-image HIMON AP-linker gates are
   closed. Missing-import validation returned `$09` without body entry or a
   partial patch; banked-source RJOIN returned `A=$AC/C=1` with status `$00`
@@ -42,15 +47,14 @@
 - Defer the common STR8 HB/NUL printer and product-prefix optimization proposed
   in pushed planning commit `4b73509`. Its isolated proof costs about 51-55
   bytes; complete retirement saves only about 25-32 bytes and requires broad
-  STR8/HIMON/ASM/C-string/NMI/hardware regression work. Keep the
-  hardware-proven `ae60409` code/data layout, existing string routines,
-  `$F00C-$F00F = 53 52 01 07`, and current zero-page allocation. Reopen only
-  for demonstrated size pressure or a separate functional need.
-- Refactor the duplicate S19 paths into a STR8 validated-record service before
-  adding formats. Buffer and checksum a complete record before HIMON applies
-  RAM policy or STR8 applies staging/flash policy. Preserve `L`, `L G`, and `U`
-  behavior in the first proof.
-- After that proof, add minimal Intel HEX16 types `00`/`01`, then an explicit
+  STR8/HIMON/ASM/C-string/NMI/hardware regression work. The current compact
+  pass does not adopt it. Keep `$F00C-$F00F = 53 52 01 07`, the string ABI,
+  and current zero-page allocation; reopen only for demonstrated size pressure
+  or a separate functional need.
+- The validated S19 record service is complete at stable entry `$F009`; HIMON
+  RAM policy and STR8 staging/flash policy share the checked record contract.
+  If another format is scheduled after V1.02, add minimal Intel HEX16 types
+  `00`/`01`, then an explicit
   counted binary receiver with expected CRC16. Do not auto-detect raw binary or
   feed it through the line reader; defer extended Intel HEX and XMODEM-style
   protocols.
@@ -71,9 +75,9 @@
   `$4000-$4FFF`, and `U` update staging at `$4000-$6FFF`.
 - Define `FLSH_` suffix conventions for register-carried arguments, including
   `_A` and `_AX`.
-- Treat the current combined ROM protected-window start as `$F000`; the V0
-  acceptance gates are complete, so revisit shrink only if size pressure makes
-  it useful.
+- Treat the current combined ROM protected-window start as `$F000`. The V1.02
+  size pass now enforces `$0080` growth room beyond its `$0040` reserve; further
+  shrink is optional, not a release gate.
 - Keep the first `U` / `UPDATE HIMON` target path boring after the 2026-05-17
   hardware pass: compact S19, `$C000-$EFFF` gate, blank C/D/E staging,
   confirmed erase/write/verify, and no `$F000-$FFFF` update authority.

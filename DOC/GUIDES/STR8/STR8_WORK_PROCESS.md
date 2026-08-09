@@ -42,7 +42,8 @@ Bank 2 `$8000-$BFFF` with ASM-F2 and `$C000-$EFFF` with HIMON while preserving
 sector F. Per-sector CRCs proved every unselected payload sector byte-identical;
 the expected Bank-3 sector-F CRC changes tracked only the directory journal.
 The subsequent `$0E5F` compact rebuild is host-accepted; its exact shifted
-resident addresses still require the next ordinary board refresh proof.
+resident addresses still require the
+[compact-image refresh proof](STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md).
 
 The top sector exposes stable service entries at `$F003` for the resident
 worker doorway and `$F009` for the V1 validated-record service. In the split

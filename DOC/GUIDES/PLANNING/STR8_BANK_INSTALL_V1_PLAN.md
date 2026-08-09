@@ -1159,30 +1159,31 @@ The future `B` estimate is 160-240 resident bytes and no persistent data.
 
 1. Build the RAM-only dense 32K/28K transport proof with flash-length pauses.
 2. Establish the new top-sector layout, `$FFB0` worker ceiling, 64-byte empty
-   directory, and development reserve build gate (now `$0040`).
+   directory, and `$00C0` development-gap gate (`$0040` reserve plus `$0080`
+   growth room).
 3. Add directory constants, structural validation, journal scanning, and the
    dedicated one-to-zero directory writer.
 4. Replace single-character prompt input with the uppercase buffered editor,
    consolidate Bank 0-3 installation under `I`, retire V1 `U`/`G`, and freeze
    the V1 command surface.
 5. Implement dense S19 installer state, exact coverage checks, sector splitting,
-   streaming sector writes, S9 gates, and failure drain behavior. The receive,
-   dry-stage, S9, drain, and guarded journaled-mutation slices are host-accepted;
-   first-install provisional-record recovery and resident/worker fit closure
-   remain open.
-6. Gate `J0-J2` through directory state (host-accepted; hardware pending), then
+   streaming sector writes, S9 gates, and failure drain behavior. The complete
+   range transaction and recovery matrix is host-accepted, and the 4K-32K
+   parameterized range path is hardware-accepted.
+6. Gate `J0-J2` through directory state, then
    gate `J3`, add the Bank-3 local-entry handoff, and retain Bank Jump Record
-   publication through Bank 3.
+   publication through Bank 3. The full path is host- and hardware-accepted.
 7. Generate the one-time migration TopWriter and make every later TopWriter
-   preserve the live directory exactly.
+   preserve the live directory exactly. Complete and hardware-accepted.
 8. Complete host, RAM, and board failure tests before accepting the installer.
+   Complete; the later compact rebuild has only its exact refresh smoke open.
 
 ## Acceptance Gates
 
 V1 is accepted only when:
 
 - Host build and all address, ABI, and size assertions pass.
-- At least `$0040` contiguous resident/worker development space remains.
+- The `$0040` reserve plus `$0080` additional resident/worker growth room remain.
 - Every legal journal state and representative torn/illegal state is tested.
 - Dense S19 checksum, order, coverage, boundary-crossing, S9, and trailing-data
   tests pass.
@@ -1248,9 +1249,10 @@ banked window is switched, stages the containing sector under the existing AP
 bounds, restores Bank 3 before returning, preserves the caller's interrupt
 state, and retains the existing bad-range failure contract. The compiled
 emulator covers Banks 0-2, low/middle/top sectors, initial-select failure, and
-restore retry. Board-prove a Bank-0 AP load next; that and positive local `H`
-are the remaining promotion gates for making split V1 the default combined-
-image/documentation baseline.
+restore retry. The later valid Bank-0 package run and positive local `H`
+transcripts closed both promotion gates. Split V1 is now the default combined-
+image/documentation baseline; only the exact compact-image refresh proof
+remains.
 
 ## 2026-08-07 V1.02 Range Board Rail
 
@@ -1278,5 +1280,5 @@ reset returned to Bank 3 with the final directory intact. The older live
 Bank-3 HIMON lacks the new marker, so `H` correctly printed `NO HIMON` and
 `J3`/timeout proved the generic cold fallback. A later reset-time `H` also
 printed `NO HIMON` and remained at the STR8 prompt, accepting both negative
-routes; positive local-`H` proof remains open. Promotion also remains blocked
-on the AP-loader gate above.
+routes. The Bank-3 HIMON/AP-stage rail subsequently accepted positive local
+`H`, and the valid Bank-0 AP run closed the final loader gate.
