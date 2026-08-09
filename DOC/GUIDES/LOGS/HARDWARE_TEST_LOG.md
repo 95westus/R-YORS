@@ -20725,3 +20725,22 @@ B3  EC B7 36 70 CE 76 A5 FC  00 EA 5C 68 26 A0 04 4A
 This hardware-accepts the valid Bank-0 AP load/run, exact `$F010/$0203`
 stage/restore path, normal body result, Bank-3 restoration, and predicted
 single-sector isolation. The final split-V1 promotion gate is closed.
+
+## 2026-08-08: transient warm-HIMON NMI flag-render anomaly
+
+After a reset, the operator used STR8-N `H` for the local warm-HIMON handoff
+and then pressed NMI. The saved-status flag field rendered approximately as
+`MV-<HT><CR>IZ<FF>` instead of the normal eight-character
+`N/n V/v - B/b D/d I/i Z/z C/c` form. A power cycle restored normal behavior.
+
+This is one unresolved observation, not a reproduced defect or evidence of a
+flash mutation. The flag formatter cannot derive horizontal-tab, carriage-
+return, or `$FF` characters from a valid saved processor-status byte, so the
+capture is consistent with transient execution/data state after the warm local
+handoff. The reset path does not itself establish Bank 3, while power-on state
+can reset the external bank latch.
+
+If this recurs, preserve the live state before another reset or power cycle and
+capture the HIMON banner plus `$7EE6-$7EFF` and `$CF62-$CFCF`. Those dumps will
+distinguish a stale/current-bank handoff from corruption of the NMI save area or
+flag-print routine.
