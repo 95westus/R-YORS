@@ -47,15 +47,14 @@ Bank-3 proof must use the physical-reset invariant plus trusted visible image
 bytes; forcing PCR to `$EE` during common STR8 startup would break a copied
 Bank-0/1/2 image by remapping Bank 3.
 
-STR8 also becomes the shared S19 decode/checksum and flash-mutation boundary;
-HIMON retains its RAM-load user interface and policy. The shared decoder first
-validates complete records in RAM, then can cheaply grow to minimal Intel
-HEX16 and explicit counted BIN/CRC16 without mixing those formats with flash
-policy. S2/S8 (`.s28`) remains a possible `V2.xxx`/`V3` linear physical-flash
-transport, not a change to the 16-bit runtime. The validate-first S19 record
-service and converted `U` path are current and hardware-proven; Intel HEX16,
-counted BIN/CRC16, S2/S8, and managed append-only volumes remain proposed
-interfaces rather than current commands. The retained loader/volume design lives in
+STR8 is the shared S19 decode/checksum and flash-mutation boundary; HIMON
+retains its RAM-load user interface and policy. The record service validates a
+complete record before applying policy. S2/S8 (`.s28`) remains a possible
+`V2.xxx`/`V3` linear physical-flash transport, not a change to the 16-bit
+runtime. The validate-first S19 record service and V1.02 `I` range installer are
+current and hardware-proven; Intel HEX16, counted BIN/CRC16, S2/S8, and managed
+append-only volumes remain proposed interfaces rather than current commands.
+The retained loader/volume design lives in
 [STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md).
 
 ## Current Proof State
@@ -72,11 +71,10 @@ bootable fig-FORTH payload through the same gate
 high-flash recovery from Bank 2 back to known-good HIMON
 ```
 
-The current image removes rotation and enrollment. `B` selects exactly one
-destination bank, 0, 1, or 2, for a verified Bank-3 copy. The selected-bank
-policy, the reset-time selector, and non-destructive `J0`-`J3` handoff are
-hardware-accepted. The follow-up Bank Jump Record is host-accepted and remains
-board-pending; see
+V1.02 removes rotation, enrollment, backup, and restore from the resident
+surface. The `I` selected-bank/range installer, reset-time selector,
+non-destructive `J0`-`J3` handoff, and Bank Jump Record are hardware-accepted;
+see
 [STR8_BANK_JUMP_RECORD_BOARD_TEST.md](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md).
 
 HIMON has hardware proof for RAM-only debug commands `B`, `B C`, `B L`, `N`,
@@ -148,13 +146,19 @@ Primary combined ROM image:
 SRC/BUILD/bin/himon-str8-rom.bin
 ```
 
-Primary install and update streams:
+Primary install stream:
 
 ```text
 SRC/BUILD/s19/himon-str8-rom-install.s19
-SRC/BUILD/s19/himon-str8-himon-update.s19
-SRC/BUILD/s19/fig-forth-str8-update.s19
-SRC/BUILD/s19/msbasic-osi-str8-update.s19
+```
+
+V1.02 compatibility and focused `I` streams:
+
+```text
+SRC/BUILD/s19/himon-str8-v1-install.s19
+SRC/BUILD/s19/str8-v1-i-bank012.s19
+SRC/BUILD/s19/str8-v1-i-asm-8-b.s19
+SRC/BUILD/s19/str8-v1-i-himon-c-e.s19
 ```
 
 Useful targets:
@@ -168,10 +172,8 @@ make -C SRC docs
 make -C SRC himon
 make -C SRC str8
 make -C SRC himon-str8-rom-bin
+make -C SRC str8-v1-artifact
 make -C SRC life
-make -C SRC himon-str8-himon-update-s19
-make -C SRC fig-forth-str8-update-s19
-make -C SRC msbasic-osi-str8-update-s19
 ```
 
 `make docs-html` is an explicit/manual presentation rebuild only. `DOC/HTML`
@@ -193,10 +195,8 @@ $8000-$FFFF  selected 32K flash bank window
 Physical bank roles:
 
 ```text
-Bank 3  live boot image
-Bank 2  newest backup image
-Bank 1  older backup image
-Bank 0  base/factory hold until enrolled into rotation
+Bank 3    reset/default V1.02 supervisor image
+Banks 0-2 opaque installed 32K systems; bank number carries no system meaning
 ```
 
 The current target live-bank budget is:
@@ -211,13 +211,11 @@ In the current `make all` image, `$8000-$BFFF` is no longer empty user scratch:
 ASM-F2 is present at `$8000`. The ASM session reporter AP is not stored in Bank
 3; keep that fixed-address reporter as a Bank 0 AP package and run it with
 `AP B0 $hhhh $4800`. STR8 may use less than 4K, but the whole top erase sector
-is recovery-owned for V0 policy.
+is recovery-owned by Bank-3 V1 policy.
 
-Future bank planning may split the backup model into regions instead of whole
-banks. The current sketch treats banks 0 and 1 together as five 12K backup
-slots plus one 4K metadata sector for names, labels, origins, checks, and
-roles; bank 2 becomes SYS/USR space; bank 3 remains the default boot bank with
-`$8000-$BFFF` user-available. This is not current V0 behavior.
+Future managed-volume planning may assign regions inside opaque banks. The
+current sketch uses 4K slots plus metadata for names, origins, checks, and
+roles. It is not part of the V1.02 installer contract.
 
 ## Combined Image Layout
 
@@ -230,13 +228,14 @@ ASM-F2 end:     $BC6D
 ASM low hole:   $BC6D-$BFFF
 ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
-HIMON body:      $C000-$EECB
+HIMON body:      $C000-$EEFF
 STR8 entry:      $F000
-STR8 body:       $F000-$F9D0
-marker bytes:    $F8B0 = 7A 0F 6A 5F
-worker source:   $FD93-$FFEF
+STR8 resident:   $F000-$FE9C
+free/reserve:    $FE9D-$FF1E, $0082 bytes
+jump worker:     $FF1F-$FFAF
+V1 directory:    $FFB0-$FFEF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = BA F0 00 F0 CE F0
+vectors:         $FFFA-$FFFF = 9E F0 00 F0 B2 F0
 ```
 
 The combined `himon-str8-rom.bin` places HIMON at CPU `$C000`, STR8 at CPU
@@ -268,9 +267,9 @@ accepts 0/1/2, announces the bank, waits about 3 more seconds, then uses the J h
 Current vector path:
 
 ```text
-NMI      -> STR8 IVI entry at $F0BA -> RAM vector $7EFA-$7EFB
+NMI      -> STR8 IVI entry at $F09E -> RAM vector $7EFA-$7EFB
 RESET    -> STR8 START at $F000
-IRQ/BRK  -> STR8 IVI entry at $F0CE -> RAM vectors $7EFC-$7EFF
+IRQ/BRK  -> STR8 IVI entry at $F0B2 -> RAM vectors $7EFC-$7EFF
 ```
 
 HIMON patches the RAM targets after handoff. IVI is a mechanism, not a claim
@@ -296,9 +295,9 @@ Resident STR8:
 owns reset-time prompt and countdown
 owns command parsing for the recovery prompt
 owns J0-J3 target parsing and pre-jump bank display
-owns fixed S19 update-gate validation
+owns I metadata/range collection and validated-record policy
 keeps private console helpers as STR8_CON_*
-copies the flash worker from ROM to RAM
+copies the jump worker from ROM or receives the exact mutation worker
 reports status after the worker restores Bank 3
 ```
 
@@ -306,23 +305,20 @@ RAM worker:
 
 ```text
 runs from $0200
-switches flash banks
-erases and programs selected sectors
-copies and verifies bank images
-validates and enters a selected bank through its reset vector for J0-J3
+the permanent $0200-$0290 jump worker switches banks and validates/enters reset vectors
+an I stream uploads the exact $0200-$042A mutation worker before any payload
+the uploaded worker erases/programs/verifies selected sectors and journals the transaction
 restores Bank 3 before returning on ordinary worker success/failure
 ```
 
 Current RAM workspace:
 
 ```text
-$0200-$09FF   flash worker tray, STR8 copied from $FD03-$FFEF at exact worker length
+$0200-$09FF   flash worker tray; resident jump worker or uploaded mutation worker
 $0A00-$19FF   sector staging buffer
 $1A00-$1FE8   RJOIN/link scratch and reserved low-RAM scratch
 $1FE9-$1FFF   STR8 worker/update state board and map bytes
 $2000-$4FFF   current AP/member load and run area
-$4000-$4FFF   current STR8 high-RAM sector buffer for bank copy
-$4000-$6FFF   current staged C/D/E sector buffers during U
 ```
 
 The RSC tail publishes the last successful opaque-bank handoff as a signed
@@ -341,10 +337,11 @@ STR8 also publishes two stable top-sector service entries for the minimal
 banked AP path:
 
 ```text
-$F003   run selected STR8 worker mode after copying worker to $0200
-$F006   compatibility jump into HIMON's resident AP import linker
+$F003   copy/run the permanent jump worker; mutation modes fail closed here
+$F006   retired AP-link slot: CLC/RTS/NOP
 $F009   RFD: V1 validated-record operation multiplexer
 $F00C-$F00F  `53 52 01 07`: `SR`, ABI 1, buffer/console/`L F` capabilities
+$F010   bank-selection service for RAM callers; returns through $0203
 ```
 
 The retired STR8 `M` map used the worker to switch banks and scan sectors. Its
@@ -353,18 +350,21 @@ hardware transcript remains evidence, but it is not in the current prompt.
 Current top-sector reserve policy:
 
 ```text
-$F000-$F94F  STR8 resident code
-             size $0950 = 2384 bytes
+$F000-$FD74  STR8 resident code
+             size $0D75 = 3445 bytes
 
-$F950-$FAEE  STR8 resident data
-             size $019F = 415 bytes
+$FD75-$FE9C  STR8 resident data
+             size $0128 = 296 bytes
 
-$FAEF-$FD02  contiguous unused $FF growth hole
-             size $0214 = 532 bytes
+$FE9D-$FF1E  contiguous free/reserve gap
+             size $0082 = 130 bytes; required reserve is $0040
 
-$FD03-$FFEF  stored STR8 RAM worker image
-             size $02ED = 749 bytes
+$FF1F-$FFAF  stored jump-only STR8 RAM worker image
+             size $0091 = 145 bytes
              linked at $0200 inside the $0200-$09FF RAM worker-code tray
+
+$FFB0-$FFEF  fixed V1 directory
+             size $0040 = 64 bytes; erased in a new primary image
 
 $FFF0-$FFF9  STR8 config pocket
              size $000A = 10 bytes
@@ -373,57 +373,42 @@ $FFFA-$FFFF  W65C02 vectors
              size $0006 = 6 bytes
 ```
 
-The working rule is that STR8 code/data grows upward from `$F000`, while the
-stored RAM worker is packed against `$FFEF` and grows downward as needed. That
-keeps one visible free hole between resident STR8 data and the worker image.
-Any future STR8 fast-path cache or private metadata should live in a deliberate
-record area, not in a fixed accidental gap. `$FFF0-$FFFF` stays out of general
+The working rule is that STR8 code/data grows upward from `$F000`. The fixed V1
+directory owns `$FFB0-$FFEF`, and the jump worker is packed immediately below
+it. The visible `$FE9D-$FF1E` gap is both growth room and reserve; `$0040` of
+its current `$0082` bytes is mandatory. `$FFF0-$FFFF` stays out of general
 allocation.
 
-## STR8 Update Gate
+## STR8 V1.02 Install Gate
 
-The current `U` gate is intentionally narrow:
+`I` selects a destination bank and an inclusive 4K-sector range. Banks 0-2
+permit `$8000-$FFFF`; Bank 3 permits `$8000-$EFFF` and always rejects sector F.
+A single sector is 4K, so the same receiver handles 4K through 32K on Banks
+0-2 and 4K through 28K on Bank 3.
+
+The transaction contract is:
 
 ```text
-target range:  $C000-$EFFF
-record type:   S1 data records only
-S0:            skipped
-S9:            ends transfer
-outside range: abort before erase
-programming:   requires confirmation after S19 validation
+operator:      select bank, range, and new metadata when no record exists
+confirmation:  exact Y after the directory/metadata preview
+transport:     exact mutation worker first, then dense in-order S1 data
+S9:            required transfer terminator; entry must fit the selected image
+range errors:  bad start/end, gap, overlap, or out-of-range data aborts
+programming:   one staged 4K sector at a time, erase/program/read-back verify
+commit:        journal START before payload mutation and COMPLETE last
+return:        restore Bank 3 before resident STR8 resumes
 ```
 
-STR8 stages blank C/D/E sectors in RAM, overlays incoming S19 bytes, asks again,
-then erases/writes/verifies the three sectors.
+The host matrix covers every legal bank/range pair and rejects malformed
+ranges, bad records, gaps, overlaps, bad S9, and Bank-3 sector F. Hardware has
+accepted representative 16K `$8000-$BFFF` and 12K `$C000-$EFFF` transactions.
 
-This gate is named `UPDATE HIMON` in the current prompt because HIMON is the
-default payload. Technically it is a fixed `$C000-$EFFF` payload installer. The
-same path has booted HIMON, OSI BASIC, and fig-FORTH.
-
-That payload-gate result is not H/P/V/C qualification of an unrelated opaque
-32K image entered through `Jn`. Use
+This install result is not H/P/V/C qualification of an unrelated opaque 32K
+image entered through `Jn`. Use
 [STR8_GUEST_IMAGE_QUALIFICATION.md](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md)
-before promoting such an image.
-
-## STR8 Backup And Restore
-
-`B` reads a destination digit, accepts only `0` through `2`, echoes the chosen
-bank, and requires a separate `Y` confirmation. It then performs exactly one
-full-bank copy:
-
-```text
-B + 0:  Bank 3 -> Bank 0
-B + 1:  Bank 3 -> Bank 1
-B + 2:  Bank 3 -> Bank 2
-```
-
-The other backup banks are unchanged. Bank 0 has no enrollment or special
-protection, and `E` is not a command. The old `$FFF0` rotation bit is ignored.
-
-Restore commands copy selected backup banks into Bank 3 and verify by read-back
-compare. Ordinary restore preserves the protected high region. A separately
-confirmed high-flash recovery path exists for restoring known-good HIMON over a
-bad `$C000` payload.
+before promoting such an image. Arbitrary destructive maintenance is kept out
+of resident STR8; use the explicit `str8-bank-maint` tool with its carried
+mutation worker and recovery procedure.
 
 ## HIMON Implementation
 
@@ -534,12 +519,13 @@ decisions.
 
 ## Payload Contract
 
-The current STR8 payload gate is:
+The current STR8 install envelope is:
 
 ```text
-$C000        executable entry or jump stub
-$C000-$EFFF  bytes accepted by STR8 U
-$F000-$FFFF  STR8-owned recovery sector
+Banks 0-2    any 4K-aligned inclusive sector range from 8 through F
+Bank 3       any 4K-aligned inclusive sector range from 8 through E
+payload      dense, in-order S1 data with a valid in-range S9 entry
+transport    exact mutation worker followed by the selected payload range
 ```
 
 A payload that does not use interrupts can ignore IVI after entry. A payload
@@ -547,8 +533,7 @@ that uses NMI, BRK, or IRQ patches the IVI RAM cells after its handlers are
 ready.
 
 STR8 protects the update transaction. It does not prove the payload's RAM map,
-interrupt policy, console assumptions, or backup history after the operator
-runs `B`.
+interrupt policy, console assumptions, or identity after installation.
 
 ## Future Update Shape
 
@@ -567,10 +552,10 @@ restore Bank 3 before printing status
 
 STR8 self-update is a special confirmed operation and should end in reset.
 
-Future STR8-N/STRAIGHTEN may become a range-aware flash manager that can pack
+Future STR8-N/STRAIGHTEN may become a catalog-aware flash manager that can pack
 regions elsewhere, remember where they came from, and optionally compress
-backed-up regions. That needs explicit metadata and verification before it can
-replace the current whole-bank recovery model.
+backed-up regions. That needs metadata beyond the current fixed V1 directory
+and journal contract.
 
 ## Documentation Shape
 

@@ -7,9 +7,9 @@ For the bench-facing names and layered diagrams of the active control areas,
 see [Control Deck Map](../../GENERATED/CONTROL_DECK_MAP.md). The formal ranges
 in this file remain authoritative.
 
-The map below is definitive for the current generated `himon-rom` image.
-It is not the final STR8/HIMON split. STR8 is intended to own the highest
-recovery region and hand normal operation to HIMON.
+The standalone HIMON map and the primary split-V1.02 combined-image map are
+listed separately below. The combined image is the normal board baseline;
+standalone `himon-rom` remains useful for component builds and proofs.
 
 ## Current HIMON ROM Image
 
@@ -17,9 +17,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E996   HIMON CODE, START/standalone RESET entry at $C000
-$E997-$EF2C   HIMON DATA
-$EF2D-$FFF9   current image gap and future STR8/high-ROM space
+$C000-$E97D   HIMON CODE, START/standalone RESET entry at $C000
+$E97E-$EEFF   HIMON DATA
+$EF00-$FFF9   current image gap and STR8/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -43,9 +43,9 @@ explicit handoff contract; STR8 must not reserve those addresses.
 Current ROM hardware vectors:
 
 ```text
-$FFFA-$FFFB   NMI   = $E70D
+$FFFA-$FFFB   NMI   = $E680
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $E710
+$FFFE-$FFFF   IRQ   = $E683
 ```
 
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
@@ -72,31 +72,31 @@ space.
 The primary combined image is `BUILD/bin/himon-str8-rom.bin`: ASM-F2 starts at
 CPU `$8000` / file offset `$0000`, HIMON starts at CPU `$C000` / file offset
 `$4000`, STR8 starts at CPU `$F000` / file offset `$7000`, the STR8 RAM worker
-source is stored at CPU `$FD93` / file offset `$7D93`, copied into the
-`$0200-$09FF` RAM worker-code tray, and all live hardware vectors enter the
-STR8-owned top sector. RESET points to STR8 at `$F000`; NMI and IRQ/BRK point
-to STR8 IVI stubs at `$F0BA`/`$F0CE`, which dispatch through the RAM vector
-cells.
+source is the jump-only image at CPU `$FF1F` / file offset `$7F1F`, copied into
+the `$0200-$0290` portion of the RAM worker-code tray, and all live hardware
+vectors enter the STR8-owned top sector. RESET points to STR8 at `$F000`; NMI
+and IRQ/BRK point to STR8 IVI stubs at `$F09E`/`$F0B2`, which dispatch through
+the RAM vector cells. Destructive `I` transactions upload their exact mutation
+worker to `$0200-$042A`; it is not resident in the top sector.
 
 Combined image layout:
 
 ```text
 $8000-$BC6C   ASM-F2 low-flash image, entry $800C
 $BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
-$C000-$EECB   HIMON body, including resident AP import linker
-$EECC-$EFFF   current image gap inside the used E sector
-$F000-$F9D0   STR8 resident shell, IVI stubs, HIMON updater, and service adapters
-$F8B0         STR8 binary marker bytes: 7A 0F 6A 5F (not displayed)
-$F9D1-$FD92   current contiguous top-sector growth hole
-$FD93-$FFEF   STR8 RAM-worker source, copied into $0200-$09FF tray
+$C000-$EEFF   HIMON body, including resident AP import linker
+$EF00-$EFFF   current image gap inside the E sector
+$F000-$FE9C   STR8 V1.02 resident shell, IVI stubs, record service, and installer
+$FE9D-$FF1E   free/reserve gap, $0082 bytes
+$FF1F-$FFAF   jump-only STR8 RAM-worker source, copied to $0200-$0290
+$FFB0-$FFEF   fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
 ```
 
-## Proposed Opaque-Bank J Layout
+## Current Opaque-Bank J Layout
 
-The accepted `J0`-`J2` direction treats Banks 0-2 as unrelated 32K systems; it
-is not implemented by the current restore commands:
+The accepted `J0`-`J3` path treats Banks 0-2 as unrelated 32K systems:
 
 ```text
 $8000-$FFFF   opaque bank-owned system image, including its own vectors
@@ -198,9 +198,9 @@ target $8000-$BFFF   currently allowed only if old byte is $FF
 target $C000+        currently protected
 ```
 
-There is no sector erase/condense path in the current HIMON image. STR8 is
-the planned recovery/update owner for safer erase, rewrite, verify, and commit
-flows.
+There is no sector erase/condense path in HIMON. STR8 V1.02 owns selected-bank
+erase, program, verify, and journal flows through its `I` transaction and the
+exact mutation worker carried by the input stream.
 
 ## Current RAM Map
 
@@ -449,7 +449,9 @@ HIMON/himon-shared-eq.inc
 
 The combined `himon-str8-rom.bin` image places STR8 in bank 3's `$F000-$FFFF`
 top-ROM sector with the hardware vectors. HIMON starts at `$C000`, and the
-STR8 RAM-worker source is stored inside the top sector at `$FD03-$FFEF`.
+STR8 jump-worker source is stored at `$FF1F-$FFAF`. The fixed V1 directory is
+`$FFB0-$FFEF`; destructive `I` transactions upload their exact mutation worker
+instead of storing it in the top sector.
 
 The physical erase unit remains 4K. The protected STR8 window starts at the
 highest boundary that fits:
@@ -477,9 +479,9 @@ This split is the current combined STR8/HIMON ROM layout.
 
 ## Future Partitioned Bank Planning
 
-The current implementation still uses whole 32K bank images for backup and
-restore. A near-term planning direction is to treat banks 0 and 1 together as a
-64K managed backup arena:
+The current V1.02 installer writes explicit 4K-sector ranges and does not expose
+resident backup/restore commands. A separate planning direction would treat
+banks 0 and 1 together as a 64K managed backup arena:
 
 ```text
 bank 0 $8000-$8FFF   metadata/catalog sector
