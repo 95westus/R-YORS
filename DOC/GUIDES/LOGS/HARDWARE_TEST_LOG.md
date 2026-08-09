@@ -20769,3 +20769,36 @@ including the Bank-3 `FC FF FF FF` journal. The operator issued `Q`; there was
 no `P`, `TW PRG`, `WRITE` confirmation, or post-program status. No flash byte
 was mutated. The compact refresh remains pending with the uniquely named
 generated source required by its board card.
+
+## 2026-08-08: compact source rejects stale old-image tray
+
+The next attempt pasted the uniquely named compact refresh source. Its source
+header correctly named face `$FD37` and prompt `$FD60`; the embedded image
+contained STR8-N `00.0808(2058)` and vectors `9C F0 00 F0 B0 F0`. It assembled
+with `ASM OK`.
+
+The operator selected `P` without first running `S`, leaving the earlier old
+candidate in `$0A00-$19FF`. TopWriter's mandatory pre-program verification
+failed immediately and reported:
+
+```text
+TW> P
+TW ERR=$E0 @=$0A00
+TW MODE=$02 RES=$E0 @=$0A00
+1A00: 02 E0 00 0A
+```
+
+No WRITE confirmation prompt and no `TW PRG` occurred. Typing `WRITE` after
+the failure was handled by the returned menu as an unknown command and did not
+enter the program worker. Live readback remained the old sector:
+
+```text
+F000: 4C 13 F0 4C 55 F7 18 60 EA 4C 1C F9 53 52 01 07
+FE5F: 4C 20 A4 20 52 45 46 55 53 45 44 0D 8A 4E 4F 20
+FFF0: FF FF FF FF FF FF FF FF FF FF 9E F0 00 F0 B2 F0
+```
+
+The `$FFB0-$FFEF` directory also remained byte-identical. This hardware-
+accepts the stale-tray fail-closed guard and again proves no flash mutation.
+The compact candidate still needs `S`, `V`, external staged-byte checks, and a
+later separately authorized `P`.

@@ -72,6 +72,10 @@ pocket is not the expected erased/default state.
 Enter `ASM NEW`, send the generated refresh source above, require `ASM OK`,
 finish with `.`, then:
 
+`ASM OK` creates the writer and its embedded image at `$3000/$4000`; it does
+not update the `$0A00-$19FF` flash tray. `S` is mandatory after every assembly
+or candidate change, even when an older tray already exists.
+
 ```text
 G 3000
 S
@@ -174,3 +178,22 @@ staged vectors    9E F0 00 F0 B2 F0                not compact
 The live directory was copied exactly into the tray. The operator issued `Q`
 without `P`; there was no `TW PRG`, confirmation prompt, or flash mutation.
 That attempt is rejected-stage evidence only and leaves this proof pending.
+
+## Rejected Stale-Tray Checkpoint
+
+The next attempt assembled the correct compact source: its header named
+`$FD37/$FD60`, embedded identity was `00.0808(2058)`, and embedded vectors were
+`9C F0 00 F0 B0 F0`. The operator then selected `P` without first selecting
+`S`, so the tray still contained the rejected older image.
+
+`P` performed its mandatory pre-program stage verification and returned:
+
+```text
+TW ERR=$E0 @=$0A00
+TW MODE=$02 RES=$E0 @=$0A00
+```
+
+It never printed the confirmation prompt or `TW PRG`. The following live dumps
+still showed the old `4C 55 F7` face, message bytes at `$FE5F`, and
+`9E F0 00 F0 B2 F0` vectors, with the directory unchanged. This accepts the
+stale-tray fail-closed guard; it is not a compact-image program attempt.
