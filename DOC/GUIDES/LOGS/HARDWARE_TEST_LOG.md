@@ -20744,3 +20744,28 @@ If this recurs, preserve the live state before another reset or power cycle and
 capture the HIMON banner plus `$7EE6-$7EFF` and `$CF62-$CFCF`. Those dumps will
 distinguish a stale/current-bank handoff from corruption of the NMI save area or
 flag-print routine.
+
+## 2026-08-08: compact-refresh old-source stage rejected before program
+
+The first compact-refresh attempt began from Bank-3 STR8-N `00.0807(2000)` and
+HIMON `00.0807(2141)`. The live directory and `$FFF0-$FFFF` bytes were captured
+before assembly. The pasted refresh source was the older tracked candidate: its
+header named ROM face `$FD79` and prompt `$FDA2`, and its embedded identity was
+`00.0807(2131)`.
+
+The source assembled with `ASM OK`. TopWriter `S` and `V` both returned `TW OK`,
+proving only that the old embedded image was copied consistently. The external
+compact-image checkpoints rejected it:
+
+```text
+0A00: 4C 13 F0 4C 55 F7 18 60 EA 4C 1C F9 53 52 01 07
+0A10: 4C 5C F7 78
+185F: 4C 20 A4 20 52 45 46 55 53 45 44 0D 8A 4E 4F 20
+19F0: FF FF FF FF FF FF FF FF FF FF 9E F0 00 F0 B2 F0
+```
+
+The staged `$19B0-$19EF` directory did match the saved live directory exactly,
+including the Bank-3 `FC FF FF FF` journal. The operator issued `Q`; there was
+no `P`, `TW PRG`, `WRITE` confirmation, or post-program status. No flash byte
+was mutated. The compact refresh remains pending with the uniquely named
+generated source required by its board card.

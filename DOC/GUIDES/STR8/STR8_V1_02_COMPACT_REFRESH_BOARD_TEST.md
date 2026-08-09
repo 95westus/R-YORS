@@ -21,7 +21,13 @@ Use the generated refresh source, not the older tracked hardware-evidence
 copy under `DOC/GUIDES/ASM/SAMPLES`:
 
 ```text
-SRC/BUILD/generated/asm-samples/str8n-v1-refresh-transient-3000.a
+SRC/BUILD/generated/asm-samples/str8n-v1-current-compact-refresh-transient-3000.a
+```
+
+Before opening the terminal, verify that exact path from PowerShell:
+
+```text
+Get-FileHash SRC/BUILD/generated/asm-samples/str8n-v1-current-compact-refresh-transient-3000.a -Algorithm SHA256
 ```
 
 Require these identities:
@@ -32,6 +38,10 @@ visible STR8 identity          STR8-N V 00.0808(2058) $F
 himon-str8-v1.bin SHA-256      B786C0A5C33B72212EADFBE9289A3293825CAB9830CF412E0EADC548EA41668B
 refresh source SHA-256         BFC071230493EC6F8E09717CC4E6EFAEB396AD4D40B5E1BBD754A2EBEF1389DB
 ```
+
+The pasted source header must also say `FACE CHECK: ROM $FD37` and
+`PROMPT CHECK: ROM $FD60`. `$FD79`/`$FDA2` identifies the older tracked
+candidate and is an immediate stop.
 
 The compact layout is:
 
@@ -147,3 +157,20 @@ D CF62 CFCF
 Finally press physical RESET once more and allow the normal Bank-3 cold path
 to reach HIMON. This closes the exact compact-image refresh gate. It does not
 reopen the already accepted range, journal, AP, or bank-jump matrices.
+
+## Rejected Old-Source Checkpoint
+
+The first 2026-08-08 attempt accidentally pasted the older tracked refresh
+source. Assembly, `S`, and `V` succeeded because that source and its embedded
+image were internally consistent, but the required external identity checks
+rejected it:
+
+```text
+staged face       4C 13 F0 4C 55 F7 ... 4C 1C F9   not compact
+staged $185F      4C 20 A4 20 52 45 46 55 ...      not erased gap
+staged vectors    9E F0 00 F0 B2 F0                not compact
+```
+
+The live directory was copied exactly into the tray. The operator issued `Q`
+without `P`; there was no `TW PRG`, confirmation prompt, or flash mutation.
+That attempt is rejected-stage evidence only and leaves this proof pending.
