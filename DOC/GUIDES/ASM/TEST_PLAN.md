@@ -13586,8 +13586,8 @@ maintenance source with WDC tools, and reports:
 symbols=64/64
 locals-max=12/16
 forward-fixups=127/128
-body-end=$284E
-worker-gap=$07B1
+body-end=$285A
+worker-gap=$07A5
 smoke body=$000F
 smoke package=$0036
 smoke fnv=$9F68F509
@@ -13602,7 +13602,7 @@ envelope bytes and the complete predicted post-write all-bank CRC table.
 Board-paste source identities:
 
 ```text
-25DA127E49EB515D7651223D3E7E90D36A5C14F0E2A65093F473D3DCBF90F2AB  str8-bank-maint-2000.a
+D3E50F9A2F005C437D9692ABA5F31D6B928C1CCB207CC2B3BEB602D50438E029  str8-bank-maint-2000.a
 8B14202A376D3CD8484A0D39C7858A38206A226DA6F2503FCC418E922331439F  str8-bank0-ap-smoke.a
 ```
 

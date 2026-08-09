@@ -20643,3 +20643,38 @@ record, positive shell/startup `H`, preserved-F reset recovery, and HIMON's
 read-only `$F010/$0203` banked stage/restore path. It does not claim a valid AP
 package load or execution. A fresh known Bank-0 package remains the final V1
 promotion gate.
+
+## 2026-08-08 STR8 V1.02 Valid-AP RAM Envelope Accepted
+
+The non-destructive first phase of the final promotion card used Bank-3
+ASM-F2 `00.0805(1312)` to assemble the pinned 15-byte marker body through
+`$200F`. Packaging at `$4000` produced the predicted length:
+
+```text
+PKG OK @=$4000 L=$0036
+```
+
+The complete envelope matched the host-pinned bytes, including body FNV
+`$9F68F509`:
+
+```text
+4000: 41 50 01 36 00 53 0B 01 | 00 20 0F 20 0F 00 09 F5
+4010: 68 9F 52 01 00 45 09 01 | 09 00 00 04 71 51 80 57
+4020: 49 02 00 02 42 0F 00 9C | 48 58 A9 5A 8D 50 58 A9
+4030: AC 8D 48 58 38 60
+```
+
+The same RAM envelope then loaded and executed normally:
+
+```text
+AP $4000 $3000
+GO 3000
+#GO# ENTRY=3000
+RET A=AC X=30 Y=30 P=F5 S=FD NV-BdIzC
+5848: AC 51 5D 6A 72 7E 7F 8D | 5A
+```
+
+This accepts the freshly generated package before flash mutation: `A=$AC`,
+carry set, `$5848=$AC`, and `$5850=$5A`. The approved envelope remains at
+RAM `$4000`. The fixed Bank-0 `$BF00` carrier write, banked execution, Bank-3
+restoration, and post-write CRC table remain pending.

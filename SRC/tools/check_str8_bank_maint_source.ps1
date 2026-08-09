@@ -254,6 +254,7 @@ $required = @(
     'STA $1D00,X',
     'BM_MDIR DB',
     'BM_MLEGEND DB',
+    "DB ' ','P','=','A','P',' ','B','0','B','F','0','0'",
     'ORG $3000',
     'JMP $F000',
     'SEI'

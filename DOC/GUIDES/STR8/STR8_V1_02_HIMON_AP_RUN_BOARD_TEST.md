@@ -1,7 +1,8 @@
 # STR8 V1.02 Valid Bank-0 AP Run Board Test
 
-Status: host-prepared; board pending. This is the final split-V1 HIMON banked-
-AP promotion gate after the accepted read-only stage/restore rail.
+Status: RAM-envelope phase hardware-accepted; fixed Bank-0 write and banked run
+pending. This is the final split-V1 HIMON banked-AP promotion gate after the
+accepted read-only stage/restore rail.
 
 The test builds a new 15-byte marker body with the board's ASM-F2, packages it
 at RAM `$4000`, proves the same envelope from RAM, and only then uses the exact
@@ -11,7 +12,7 @@ No archived `$F003` installer is used.
 Pinned source identities:
 
 ```text
-25DA127E49EB515D7651223D3E7E90D36A5C14F0E2A65093F473D3DCBF90F2AB  str8-bank-maint-2000.a
+D3E50F9A2F005C437D9692ABA5F31D6B928C1CCB207CC2B3BEB602D50438E029  str8-bank-maint-2000.a
 8B14202A376D3CD8484A0D39C7858A38206A226DA6F2503FCC418E922331439F  str8-bank0-ap-smoke.a
 ```
 
@@ -57,6 +58,13 @@ Require `PKG OK @=$4000 L=$0036` and this exact envelope:
 The seal FNV is `$9F68F509`. The RAM AP must print `GO 3000`, return with
 `A=AC` and carry set, and leave `$5848=$AC` and `$5850=$5A`. Stop before flash
 mutation if any check fails.
+
+Hardware result: accepted on 2026-08-08 with ASM-F2 `00.0805(1312)`. Assembly
+ended at `$200F`; `PACKAGE $4000` reported `L=$0036`; all 54 envelope bytes
+matched the rows above. RAM `AP $4000 $3000` printed `GO 3000`, returned
+`A=AC` with `P=F5` (carry set), and left `$5848=$AC` / `$5850=$5A`. This
+authorizes the fixed carrier step below; it does not itself authorize V1
+promotion.
 
 ## Install The Fixed Carrier
 
