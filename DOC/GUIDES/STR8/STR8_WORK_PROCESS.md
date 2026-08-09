@@ -60,8 +60,9 @@ restores Bank 3 through `$0203` before returning to flash. The compiled host
 matrix covers Banks 0-2, low/middle/top sectors, initial-selector failure,
 interrupt-state preservation, and restore retry. The 2026-08-08 board rail
 staged Bank-0 sector 8 exactly, rejected the deliberately unaligned source
-before execution, restored Bank 3, and preserved every bank CRC. A positive
-valid-package load/run remains the promotion gate.
+before execution, restored Bank 3, and preserved every bank CRC. The next
+board card uses `str8-bank-maint P` to place a fresh tiny AP at Bank 0 `$BF00`;
+its positive load/run remains the promotion gate.
 
 A RAM-resident user program may select a bank without launching it:
 

@@ -13557,3 +13557,52 @@ non-executing `$07` signature failure. The staged Bank-0 head was exact, the
 Bank-3 directory was visible after return, and a fresh final CRC run reproduced
 all four post-install rows. This proves the changed bank-select/copy/restore
 path without closing the positive known-package execution gate above.
+
+## 2026-08-08 Fixed Bank-0 AP Promotion Carrier
+
+Host status: accepted. Board status: pending under
+[`STR8_V1_02_HIMON_AP_RUN_BOARD_TEST.md`](../STR8/STR8_V1_02_HIMON_AP_RUN_BOARD_TEST.md).
+
+`str8-bank-maint-2000.a` now adds one narrow `P` operation for the outstanding
+valid-package gate. It accepts an AP envelope at RAM `$4000` only when the
+outer signature is `AP 01`, its 16-bit length is `$0005-$00FF`, and every
+corresponding byte at fixed Bank 0 `$BF00` is erased. Exact confirmation is
+`PUT B0BF00`. It stages Bank-0 sector B with carried worker mode `$06`, overlays
+only the envelope in the `$0A00-$19FF` tray, and programs/verifies that sector
+with carried mode `$05`. The general append/address-selection installers stay
+retired under `SAMPLES/OLD`.
+
+The companion `str8-bank0-ap-smoke.a` has a pinned 15-byte body. It writes
+`$AC` to `$5848`, `$5A` to `$5850`, returns `A=$AC`, and sets carry. The board
+card requires a successful RAM `AP $4000 $3000` before authorizing `P`, then
+repeats the same envelope through `AP B0 $BF00 $3000` and checks the staged
+copy, Bank-3 directory view, and physical-bank CRC isolation.
+
+The source gate regenerates and compares all 555 carried worker bytes, rejects
+any `$F003` dependency, pins the smoke body and commands, assembles the complete
+maintenance source with WDC tools, and reports:
+
+```text
+symbols=64/64
+locals-max=12/16
+forward-fixups=127/128
+body-end=$284E
+worker-gap=$07B1
+smoke body=$000F
+```
+
+Board-paste source identities:
+
+```text
+25DA127E49EB515D7651223D3E7E90D36A5C14F0E2A65093F473D3DCBF90F2AB  str8-bank-maint-2000.a
+8B14202A376D3CD8484A0D39C7858A38206A226DA6F2503FCC418E922331439F  str8-bank0-ap-smoke.a
+```
+
+Required host gates:
+
+```text
+make -C SRC str8-bank-maint-source-check
+make -C SRC himon-banked-ap-check
+make -C SRC asm-test
+git diff --check
+```

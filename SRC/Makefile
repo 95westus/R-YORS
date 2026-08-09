@@ -107,6 +107,7 @@ STR8_BANK_READ_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/flash-bank-read-ap-2000.a
 STR8_BANK_DUMP_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/flash-bank-dump-ap-2000.a
 STR8_BANK_MAINT_CHECK := tools/check_str8_bank_maint_source.ps1
 STR8_BANK_MAINT_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a
+STR8_BANK0_AP_SMOKE_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank0-ap-smoke.a
 STR8_BANK_MAINT_EMBED := tools/embed_str8_bank_maint_worker.ps1
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
 STR8_S19 := $(S19_DIR)/str8-f000.s19
@@ -497,9 +498,9 @@ str8-worker-split-check: $(STR8_V1_INSTALLER_TXN_S19) $(STR8_JUMP_WORKER_S19) $(
 str8-readonly-bank-tools-check: $(STR8_BANK_CRC_SOURCE) $(STR8_JUMP_INVENTORY_SOURCE) $(STR8_BANK_READ_AP_SOURCE) $(STR8_BANK_DUMP_AP_SOURCE) $(STR8_READONLY_BANK_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_READONLY_BANK_CHECK) -CrcSourcePath "$(STR8_BANK_CRC_SOURCE)" -InventorySourcePath "$(STR8_JUMP_INVENTORY_SOURCE)" -ReadApSourcePath "$(STR8_BANK_READ_AP_SOURCE)" -DumpApSourcePath "$(STR8_BANK_DUMP_AP_SOURCE)"
 
-str8-bank-maint-source-check: $(STR8_MUTATION_WORKER_S19) $(STR8_BANK_MAINT_SOURCE) $(STR8_BANK_MAINT_EMBED) $(STR8_BANK_MAINT_CHECK)
+str8-bank-maint-source-check: $(STR8_MUTATION_WORKER_S19) $(STR8_BANK_MAINT_SOURCE) $(STR8_BANK0_AP_SMOKE_SOURCE) $(STR8_BANK_MAINT_EMBED) $(STR8_BANK_MAINT_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_MAINT_EMBED) -SourcePath "$(STR8_BANK_MAINT_SOURCE)" -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)"
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_MAINT_CHECK) -SourcePath "$(STR8_BANK_MAINT_SOURCE)" -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_MAINT_CHECK) -SourcePath "$(STR8_BANK_MAINT_SOURCE)" -SmokeSourcePath "$(STR8_BANK0_AP_SMOKE_SOURCE)" -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)"
 
 himon-rom-install-s19: $(HIMON_ROM_INSTALL_S19)
 	@echo "Built $(HIMON_ROM_INSTALL_S19)."

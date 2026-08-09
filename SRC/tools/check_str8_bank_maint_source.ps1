@@ -1,6 +1,8 @@
 param(
     [string]$SourcePath = `
         "../DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a",
+    [string]$SmokeSourcePath = `
+        "../DOC/GUIDES/ASM/SAMPLES/str8-bank0-ap-smoke.a",
     [string]$MutationWorkerS19Path = `
         "BUILD/s19/str8-mutation-worker-0200.s19",
     [string]$BuildDir = "BUILD/tmp/str8-bank-maint-check",
@@ -67,6 +69,44 @@ function Read-S19Memory([string]$Path) {
 
 if (-not (Test-Path -LiteralPath $SourcePath)) {
     Fail-Check "missing source $SourcePath"
+}
+if (-not (Test-Path -LiteralPath $SmokeSourcePath)) {
+    Fail-Check "missing AP smoke source $SmokeSourcePath"
+}
+
+$smokeLines = [System.IO.File]::ReadAllLines(
+    (Resolve-Path -LiteralPath $SmokeSourcePath).Path
+)
+$smokeText = $smokeLines -join "`n"
+$smokeCode = @($smokeLines | ForEach-Object {
+    $statement = ($_ -split ';', 2)[0].Trim()
+    if (-not [string]::IsNullOrEmpty($statement)) {
+        $statement -replace '\s+', ' '
+    }
+})
+$expectedSmokeCode = @(
+    'ORG $2000',
+    'MAIN STZ $5848',
+    'ENTRY MAIN',
+    'LDA #$5A',
+    'STA $5850',
+    'LDA #$AC',
+    'STA $5848',
+    'SEC',
+    'RTS',
+    'END'
+)
+if (($smokeCode -join "`n") -ne ($expectedSmokeCode -join "`n")) {
+    Fail-Check 'Bank-0 AP smoke body differs from the pinned 15-byte body'
+}
+foreach ($text in @(
+    'SEAL> PACKAGE $4000',
+    'AP $4000 $3000',
+    'AP B0 $BF00 $3000'
+)) {
+    if (-not $smokeText.Contains($text)) {
+        Fail-Check "Bank-0 AP smoke is missing board command: $text"
+    }
 }
 
 $lines = [System.IO.File]::ReadAllLines(
@@ -148,6 +188,7 @@ $required = @(
     'LDA #$08',
     'DEC $1B05',
     "CMP #'M'",
+    "CMP #'P'",
     "CMP #'Q'",
     'JSR BM_DIR',
     'LDA $FFB0,X',
@@ -324,6 +365,10 @@ $semanticGates = @(
     @{
         Name = 'normal outcomes loop until Q'
         Pattern = 'BM_FAIL.*?JMP BM_MAIN.*?BM_SUCCESS.*?JMP BM_MAIN'
+    },
+    @{
+        Name = 'P validates and overlays a fixed erased Bank-0 carrier'
+        Pattern = 'BM_PUT.*?LDA \$4000.*?CMP #''A''.*?LDA \$4001.*?CMP #''P''.*?LDA \$4004.*?BNE \?BAD.*?LDA \$4003.*?CMP #\$05.*?STA \$1B05.*?STZ \$1B02.*?STZ \$1B03.*?LDA #\$B0.*?JSR BM_STAGE.*?LDA \$1900,X.*?CMP #\$FF.*?LDA \$4000,X.*?STA \$1900,X.*?JSR BM_PROGRAM'
     }
 )
 foreach ($gate in $semanticGates) {
@@ -380,6 +425,6 @@ if ($bodyEnd -ge 0x3000) {
 $workerGap = 0x3000 - $bodyEnd - 1
 
 Write-Host (
-    "STR8 BANK MAINT SOURCE = PASS; symbols={0}/64; locals-max={1}/16; forward-fixups={2}/128; body-end=`${3:X4}; worker-gap=`${4:X}; carried worker exact; map+directory restore entry bank" -f `
+    "STR8 BANK MAINT SOURCE = PASS; symbols={0}/64; locals-max={1}/16; forward-fixups={2}/128; body-end=`${3:X4}; worker-gap=`${4:X}; carried worker exact; fixed AP put; smoke body=`$000F" -f `
         $symbols.Count, $maxLocalCount, $forwardFixups, $bodyEnd, $workerGap
 )

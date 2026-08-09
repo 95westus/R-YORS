@@ -343,6 +343,6 @@ Stop and preserve the full transcript if:
 
 Passing this card proves the new Bank-3 HIMON, both local `H` routes, and the
 read-only banked AP stage/restore mechanism on hardware. It does not prove a
-valid Bank-0 package load/run. Prepare and install a fresh known AP carrier in
-a separate, explicitly reviewed transaction before closing that final gate or
-promoting V1 as the default combined-image/documentation baseline.
+valid Bank-0 package load/run. The separate reviewed continuation is
+[`STR8_V1_02_HIMON_AP_RUN_BOARD_TEST.md`](STR8_V1_02_HIMON_AP_RUN_BOARD_TEST.md);
+do not promote V1 until that card is accepted.

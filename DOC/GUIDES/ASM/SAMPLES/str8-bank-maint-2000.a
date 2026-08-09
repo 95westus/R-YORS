@@ -11,6 +11,8 @@
 ; ASM-F2 V1 16-ROW RELOCATION TABLE AND PACKAGE RETURNS ERR=$02.
 ;
 ; C COPIES $8000-$FFFF FROM SOURCE BANK 0-3 TO DESTINATION 0-2.
+; P PUTS ONE VALIDATED AP ENVELOPE FROM $4000 INTO BANK 0 $BF00.
+;   THE AP MUST BE 5-$FF BYTES AND THE COMPLETE DESTINATION MUST BE ERASED.
 ; E ERASES ONE 4K SECTOR OR THE ALLOWED BANK RANGE:
 ;   BANKS 0-2: 8-F, ALL, OR AN X-Y RANGE WITHIN 8-F.
 ;   BANK 3:     8-E, ALL, OR AN X-Y RANGE WITHIN 8-E.
@@ -18,7 +20,7 @@
 ; M READS ALL BANK/SECTOR CONTENTS: E=ERASED, U=USED, P=PROTECTED B3F.
 ; M ALSO PRINTS BANK-3 DIRECTORY TYPE, DESCRIPTION, ENTRY, AND JOURNAL.
 ; M RESTORES ITS ENTRY BANK AFTER EACH CARRIED-WORKER STAGE CALL.
-; C/E/M, ABORT, AND SAFE FAILURES RETURN TO THIS MENU. Q RETURNS TO HIMON.
+; C/E/M/P, ABORT, AND SAFE FAILURES RETURN TO THIS MENU. Q RETURNS TO HIMON.
 ; BANK-3 ERASE REMAINS THE EXCEPTION AND RETURNS DIRECTLY TO STR8.
 ;
 ; THIS SOURCE CARRIES THE EXACT V1 MUTATION WORKER AT $3000-$322A AND COPIES
@@ -33,6 +35,7 @@
 ; A SOURCE WITH THE STR8 SERVICE SIGNATURE PRINTS !STR8 BEFORE CONFIRMATION.
 ; ERASE REQUIRES EXACT `ERASE BS`, `ERASE BX-Y`, OR `ERASE BALL`.
 ; B IS THE BANK. COPY REQUIRES EXACT `COPY XY`.
+; AP PUT REQUIRES EXACT `PUT B0BF00`.
 ;
 ; RAM MAP:
 ;   $0200-$09FF  STR8 RAM WORKER TRAY
@@ -48,11 +51,11 @@
 ; RESULT:
 ;   $1B00 STATUS: $AC OK, $E0 ABORT, $E1 STAGE FAIL,
 ;                 $E2 PROGRAM/VERIFY FAIL, $E6 BAD RESET VECTOR
-;   $1B01 OPERATION: C, E, M, OR Q
+;   $1B01 OPERATION: C, E, M, P, OR Q
 ;   $1B02 SOURCE/ERASE BANK
 ;   $1B03 DESTINATION BANK
 ;   $1B04 CURRENT/FAILING SECTOR HIGH BYTE
-;   $1B05 COMPLETED/REMAINING SECTOR COUNT
+;   $1B05 COMPLETED/REMAINING SECTOR COUNT OR AP LENGTH
 ;   $1B06/$1B07 STR8 FAIL ADDRESS, LO/HI
 ;   $1B08-$1B0A ERASE SELECTION; $1B0B LENGTH, ONE OR THREE
 
@@ -104,6 +107,8 @@ BM_MAIN LDX #$00
         BEQ ?ERASE
         CMP #'M'
         BEQ ?MAP
+        CMP #'P'
+        BEQ ?PUT
         CMP #'Q'
         BNE BM_MAIN
         STA $1B01
@@ -112,6 +117,7 @@ BM_MAIN LDX #$00
         SEC
         RTS
 ?MAP   JMP BM_MAP
+?PUT   JMP BM_PUT
 ?ERASE JMP BM_ERASE
 ?COPY  JMP BM_COPY
 
@@ -147,17 +153,17 @@ BM_MDIR DB $0D,$0A,'D','I','R',' ','B',' ','T',' '
         DB $0D,$0A,0
 
 BM_PARSE_BANK LDA $1C01
-        BNE BM_PB_BAD
+        BNE ?BAD
         LDA $1C00
         CMP #'0'
-        BCC BM_PB_BAD
+        BCC ?BAD
         CMP #'4'
-        BCS BM_PB_BAD
+        BCS ?BAD
         SEC
         SBC #'0'
         SEC
         RTS
-BM_PB_BAD CLC
+?BAD   CLC
         RTS
 
 BM_STAGE LDA $1B02
@@ -819,6 +825,78 @@ BM_MSEC02 DB 'S','E','C','T','O','R',' ','8','-','F',','
         DB ' ','B','3',' ','M','A','X',' ','E','>',' ',0
 BM_MCTYPE DB 'T','Y','P','E',' ','C','O','P','Y',' ',0
 BM_METYPE DB 'T','Y','P','E',' ','E','R','A','S','E',' ',0
+
+; Fixed one-sector AP carrier put for the split-V1 promotion proof.
+; First run AP $4000 $3000 in HIMON. The outer envelope and fit are checked
+; again here; HIMON remains the authority for the complete AP format.
+BM_PUT  BRA ?BODY
+?MTARGET DB 'P','U','T',' ','A','P',' ','B','0',' ','$','B','F'
+        DB '0','0',$0D,$0A
+        DB 'T','Y','P','E',' ','P','U','T',' ','B','0','B','F'
+        DB '0','0','>',' ',0
+?EXACT  DB 'P','U','T',' ','B','0','B','F','0','0',0
+?BAD    JMP BM_ABORT
+?BODY   LDA #'P'
+        STA $1B01
+        LDA $4000
+        CMP #'A'
+        BNE ?BAD
+        LDA $4001
+        CMP #'P'
+        BNE ?BAD
+        LDA $4002
+        CMP #$01
+        BNE ?BAD
+        LDA $4004
+        BNE ?BAD
+        LDA $4003
+        CMP #$05
+        BCC ?BAD
+        STA $1B05
+        STZ $1B02
+        STZ $1B03
+        LDA #$B0
+        STA $1B04
+        JSR BM_STAGE
+        BCS ?STAGED
+        JMP BM_FSTAGE
+?STAGED
+        LDX #$00
+?ERASED LDA $1900,X
+        CMP #$FF
+        BEQ ?ERASEOK
+        JMP BM_ABORT
+?ERASEOK
+        INX
+        CPX $1B05
+        BNE ?ERASED
+        LDX #<?MTARGET
+        LDY #>?MTARGET
+        JSR BM_PUTS
+        JSR BM_READ
+        BCS ?READOK
+        JMP BM_ABORT
+?READOK
+        LDX #$00
+?CONFIRM LDA $1C00,X
+        CMP ?EXACT,X
+        BEQ ?MATCH
+        JMP BM_ABORT
+?MATCH
+        INX
+        CPX #$0B
+        BNE ?CONFIRM
+        LDX #$00
+?OVERLAY LDA $4000,X
+        STA $1900,X
+        INX
+        CPX $1B05
+        BNE ?OVERLAY
+        JSR BM_PROGRAM
+        BCS ?PROGRAMMED
+        JMP BM_FPROGRAM
+?PROGRAMMED
+        JMP BM_SUCCESS
 
 ; BEGIN GENERATED STR8 MUTATION WORKER
         ORG $3000

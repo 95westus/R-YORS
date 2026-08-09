@@ -646,11 +646,15 @@ expressions, so use `$` on literal hex addresses:
 INSTALL $3200 $hhhh
 ```
 
-Banked install across banks 0-2 is currently unavailable on split V1. The old
-`bankput`, `bank2put`, and `bank0ap-put` sources called `$F003` modes `$05/$06`
-and are archived under `SAMPLES/OLD`. Supported bank mutation now uses
-`str8-bank-maint`, which carries and verifies the exact mutation worker. The
-historical HIMON banked-package forms were:
+General banked install across banks 0-2 remains unavailable on split V1. The
+old `bankput`, `bank2put`, and `bank0ap-put` sources called `$F003` modes
+`$05/$06` and are archived under `SAMPLES/OLD`. Supported bank mutation uses
+`str8-bank-maint`, which carries and verifies the exact mutation worker. Its
+narrow `P` command accepts an AP envelope already exercised from RAM at
+`$4000`, requires Bank 0 `$BF00` through the envelope end to be erased, and
+programs/verifies the containing sector after exact `PUT B0BF00`
+confirmation. This fixed promotion carrier is not a general append service.
+The historical HIMON banked-package forms were:
 
 ```text
 AP B0 $8000 $3000
@@ -661,9 +665,10 @@ AP B0 $hhhh $4800
 ```
 
 The final two lines were the movable and legacy fixed session-reporter forms.
-The maintained read/dump AP bodies and current HIMON source now use
-`$F010/$0203`. The loader migration passes its compiled host matrix; these
-banked forms remain provisional until the focused board proof is captured.
+The maintained read/dump AP bodies and current HIMON source use
+`$F010/$0203`. The loader migration passes its compiled host matrix, and the
+invalid-package stage/restore path is hardware-accepted. Valid Bank-0 package
+execution through the fixed carrier remains the promotion gate.
 
 That path copies the banked AP envelope into the sector staging buffer, loads
 and links BODY bytes into `$2000-$4FFF`, and runs from the requested load

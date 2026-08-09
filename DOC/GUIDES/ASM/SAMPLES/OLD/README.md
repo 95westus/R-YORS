@@ -38,8 +38,8 @@ Read-only mode-`$06` history:
 - `str8-bank-crc-all-3000.a` and `str8-jump-inventory-3000.a`; maintained
   `$F010/$0203` replacements exist in the parent directory.
 - `flash-bank-read-ap-2000.a` and `flash-bank-dump-ap-2000.a`; maintained
-  `$F010/$0203` bodies exist in the parent directory. Bank-0 AP loading still
-  waits for the HIMON banked-AP staging cutover.
+  `$F010/$0203` bodies exist in the parent directory. HIMON's read-only
+  banked-AP stage/restore is board-accepted; valid execution is still pending.
 
 Destructive mode-`$05/$06` history:
 
@@ -48,6 +48,8 @@ Destructive mode-`$05/$06` history:
 - `bank0ap-put-transient-2000.a`, `bank2put-8000-transient-3000.a`,
   `bankput-transient-3000.a`, and `flash-bank-erase-write-ap-2000.a`; these
   are retired in favor of the supported carried-worker bank-maintenance path.
+  Its fixed `P` command is the reviewed Bank-0 `$BF00` proof carrier, not a
+  revival of the general append installers.
 
 `bank0-ap-entry-points.md` moved with this surface. Its addresses remain
 hardware provenance, not current split-V1 instructions.
