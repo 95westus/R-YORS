@@ -26,7 +26,9 @@ installers.
   to `$F010/$0203` staging while preserving its historical fixed addresses.
 - `str8-bank-maint-2000.a` is the supported carried-worker copy/erase/map
   utility. `P` adds the fixed Bank-0 `$BF00` AP proof carrier; `M` is read-only
-  and also displays the V1 directory.
+  and marks only structurally valid, body-FNV-matched AP envelopes as `A`.
+  It prints the first AP address and package length in each `A` sector before
+  displaying the V1 directory.
 
 The two read/dump AP bodies are current. The migrated banked staging path and
 a valid Bank-0 package execution are hardware-accepted.
@@ -41,17 +43,18 @@ sources and an explanation of their former roles are under `OLD`.
 - `str8-bank-crc-all-3000.a` - read-only all-bank CRC inventory through
   `$F010/$0203`; no mutation-worker authority.
 - `str8-bank-maint-2000.a` - carried-worker copy/erase/map/fixed-AP-put
-  utility; `M` also displays all four Bank-3 directory records.
+  utility; `M` distinguishes valid AP envelopes from ordinary used bytes and
+  also displays all four Bank-3 directory records.
 - `str8-jump-inventory-3000.a` - read-only pre-handoff bank inventory through
   `$F010/$0203`; no mutation-worker authority.
 - `topwr-transient-3000.a` - maintained staged top-sector shop tool; preserve
   the live V1 directory when overlaying a replacement image.
-- `str8n-v1-refresh-transient-3000.a` - generated current V1 top-sector
-  refresh writer; copies live `$FFB0-$FFEF` before staging.
+- `str8n-v1-refresh-transient-3000.a` - tracked V1 top-sector refresh writer;
+  copies live `$FFB0-$FFEF` before staging.
 
-Generated maintained sources must continue to target this directory. Generated
-legacy reporter forms target `OLD` so regeneration does not repopulate the
-active sample surface.
+Routine writer generation targets `SRC/BUILD/generated/asm-samples`. Tracked
+board-facing samples change only when a generated candidate is deliberately
+promoted; normal builds do not rewrite this directory or `OLD`.
 
 ## Split-V1 `$F003` Classification
 

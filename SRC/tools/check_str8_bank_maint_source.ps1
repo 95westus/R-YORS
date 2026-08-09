@@ -67,6 +67,100 @@ function Read-S19Memory([string]$Path) {
     return $memory
 }
 
+function Test-ApMapEnvelope(
+    [byte[]]$Bytes,
+    [int]$Offset = 0,
+    [int]$SectorBytes = 4096
+) {
+    if ($Offset -lt 0 -or $SectorBytes -lt 5) {
+        return $false
+    }
+    $sectorEnd = $SectorBytes
+    if ($sectorEnd -gt $Bytes.Length -or $Offset + 5 -gt $sectorEnd) {
+        return $false
+    }
+    if ($Bytes[$Offset] -ne 0x41 -or $Bytes[$Offset + 1] -ne 0x50 -or `
+        $Bytes[$Offset + 2] -ne 0x01) {
+        return $false
+    }
+    $total = [int]$Bytes[$Offset + 3] + `
+        ([int]$Bytes[$Offset + 4] -shl 8)
+    if ($total -lt 5 -or $Offset + $total -gt $sectorEnd) {
+        return $false
+    }
+    $end = $Offset + $total
+    $cursor = $Offset + 5
+
+    if ($cursor + 2 -gt $end -or $Bytes[$cursor] -ne 0x53 -or `
+        $Bytes[$cursor + 1] -ne 0x0B) {
+        return $false
+    }
+    $cursor += 2
+    if ($cursor + 0x0B -gt $end -or $Bytes[$cursor] -ne 0x01) {
+        return $false
+    }
+    $sealBase = [int]$Bytes[$cursor + 1] + `
+        ([int]$Bytes[$cursor + 2] -shl 8)
+    $sealEnd = [int]$Bytes[$cursor + 3] + `
+        ([int]$Bytes[$cursor + 4] -shl 8)
+    $bodyLength = [int]$Bytes[$cursor + 5] + `
+        ([int]$Bytes[$cursor + 6] -shl 8)
+    if ($bodyLength -eq 0 -or $sealBase + $bodyLength -gt 0xFFFF -or `
+        $sealBase + $bodyLength -ne $sealEnd) {
+        return $false
+    }
+    [uint32]$expectedHash = [uint32]$Bytes[$cursor + 7] -bor `
+        ([uint32]$Bytes[$cursor + 8] -shl 8) -bor `
+        ([uint32]$Bytes[$cursor + 9] -shl 16) -bor `
+        ([uint32]$Bytes[$cursor + 10] -shl 24)
+    $cursor += 0x0B
+
+    if ($cursor + 2 -gt $end -or $Bytes[$cursor] -ne 0x52) {
+        return $false
+    }
+    $length = [int]$Bytes[$cursor + 1]
+    $cursor += 2
+    if ($length -lt 1 -or $cursor + $length -gt $end) {
+        return $false
+    }
+    $relocCount = [int]$Bytes[$cursor]
+    if ($relocCount -gt 16 -or $length -ne 1 + (5 * $relocCount)) {
+        return $false
+    }
+    $cursor += $length
+
+    foreach ($tag in @(0x45, 0x49)) {
+        if ($cursor + 2 -gt $end -or $Bytes[$cursor] -ne $tag) {
+            return $false
+        }
+        $length = [int]$Bytes[$cursor + 1]
+        $cursor += 2
+        if ($length -lt 2 -or $cursor + $length -gt $end -or `
+            $Bytes[$cursor + 1] -ne $length) {
+            return $false
+        }
+        $cursor += $length
+    }
+
+    if ($cursor + 3 -gt $end -or $Bytes[$cursor] -ne 0x42) {
+        return $false
+    }
+    $taggedBodyLength = [int]$Bytes[$cursor + 1] + `
+        ([int]$Bytes[$cursor + 2] -shl 8)
+    $cursor += 3
+    if ($taggedBodyLength -ne $bodyLength -or `
+        $end - $cursor -ne $bodyLength) {
+        return $false
+    }
+
+    [uint64]$hashWork = 2166136261
+    for ($index = 0; $index -lt $bodyLength; $index++) {
+        $hashWork = (($hashWork -bxor [uint64]$Bytes[$cursor + $index]) * `
+            [uint64]16777619) -band [uint64]4294967295
+    }
+    return [uint32]$hashWork -eq $expectedHash
+}
+
 if (-not (Test-Path -LiteralPath $SourcePath)) {
     Fail-Check "missing source $SourcePath"
 }
@@ -146,6 +240,73 @@ foreach ($byte in $smokeBody) {
 }
 if ($smokePackage.Count -ne 0x36) {
     Fail-Check 'Bank-0 AP smoke envelope is not $0036 bytes'
+}
+
+[byte[]]$apMapSector = New-Object byte[] 4096
+for ($index = 0; $index -lt $apMapSector.Length; $index++) {
+    $apMapSector[$index] = 0xFF
+}
+$apMapOffset = 0x0F00
+[Array]::Copy(
+    $smokePackage.ToArray(),
+    0,
+    $apMapSector,
+    $apMapOffset,
+    $smokePackage.Count
+)
+if (-not (Test-ApMapEnvelope $apMapSector $apMapOffset)) {
+    Fail-Check 'AP map reference validator rejected the pinned envelope'
+}
+
+$invalidApMapCases = [ordered]@{}
+[byte[]]$strayHeader = New-Object byte[] 4096
+$strayHeader[0] = 0x41
+$strayHeader[1] = 0x50
+$strayHeader[2] = 0x01
+$strayHeader[3] = 0x05
+$invalidApMapCases['stray AP header'] = [pscustomobject]@{
+    Bytes = $strayHeader
+    Offset = 0
+}
+
+foreach ($case in @(
+    @{ Name = 'bad seal flags'; Index = 7; Value = 0x00 },
+    @{ Name = 'bad seal end'; Index = 10; Value = 0x10 },
+    @{ Name = 'bad relocation shape'; Index = 20; Value = 0x01 },
+    @{ Name = 'bad export tag'; Index = 21; Value = 0x58 },
+    @{ Name = 'bad export record length'; Index = 24; Value = 0x08 },
+    @{ Name = 'bad import tag'; Index = 32; Value = 0x58 },
+    @{ Name = 'bad body length'; Index = 37; Value = 0x0E },
+    @{ Name = 'bad body FNV'; Index = 14; Value = 0x08 },
+    @{ Name = 'truncated total'; Index = 3; Value = 0x35 }
+)) {
+    [byte[]]$bad = $apMapSector.Clone()
+    $bad[$apMapOffset + $case.Index] = [byte]$case.Value
+    $invalidApMapCases[$case.Name] = [pscustomobject]@{
+        Bytes = $bad
+        Offset = $apMapOffset
+    }
+}
+
+[byte[]]$crossing = New-Object byte[] 4096
+$crossingOffset = 0x0FD0
+[Array]::Copy(
+    $smokePackage.ToArray(),
+    0,
+    $crossing,
+    $crossingOffset,
+    4096 - $crossingOffset
+)
+$invalidApMapCases['crosses sector end'] = [pscustomobject]@{
+    Bytes = $crossing
+    Offset = $crossingOffset
+}
+
+foreach ($caseName in $invalidApMapCases.Keys) {
+    $caseValue = $invalidApMapCases[$caseName]
+    if (Test-ApMapEnvelope $caseValue.Bytes $caseValue.Offset) {
+        Fail-Check "AP map reference validator accepted $caseName"
+    }
 }
 
 [byte[]]$crcDeltaBytes = New-Object byte[] 4096
@@ -254,6 +415,11 @@ $required = @(
     'STA $1D00,X',
     'BM_MDIR DB',
     'BM_MLEGEND DB',
+    'BM_APSCAN STZ $CC',
+    'BM_APLIST BRA ?BODY',
+    'BM_SVC  JMP ($7E00,X)',
+    'CMP $1B14,X',
+    'STA $1D44,X',
     "DB ' ','P','=','A','P',' ','B','0','B','F','0','0'",
     'ORG $3000',
     'JMP $F000',
@@ -372,7 +538,7 @@ $semanticGates = @(
     },
     @{
         Name = 'copy destination rejects Bank 3'
-        Pattern = 'BM_CDST.*?CMP #\$03.*?BCS BM_CDST'
+        Pattern = 'BM_COPY.*?\?DST.*?CMP #\$03.*?BCS \?DST'
     },
     @{
         Name = 'Bank 3 rejects sector F'
@@ -408,7 +574,23 @@ $semanticGates = @(
     },
     @{
         Name = 'map protects and identifies Bank-3 sector F'
-        Pattern = 'BM_MAP.*?CMP #\$03.*?CMP #\$F0.*?LDA #''P''.*?LDA #''E''.*?LDA #''U'''
+        Pattern = 'BM_MAP.*?CMP #\$03.*?CMP #\$F0.*?LDA #''P''.*?LDA #''E''.*?JSR BM_APSCAN.*?LDA #''A''.*?LDA #''U'''
+    },
+    @{
+        Name = 'AP map requires every package section and body FNV'
+        Pattern = 'BM_APSCAN.*?JSR BM_APHEAD.*?JSR BM_APSEAL.*?JSR BM_APREL.*?LDA #''E''.*?JSR BM_APREC.*?LDA #''I''.*?JSR BM_APREC.*?JSR BM_APBODY.*?JSR BM_APHASH'
+    },
+    @{
+        Name = 'AP map bounds total length to one staged sector'
+        Pattern = 'BM_APHEAD.*?LDA #\$1A.*?SBC \$CD.*?STA \$D1.*?LDA \$1B11.*?CMP \$D1.*?LDA \$1B10.*?CMP \$D0.*?LDA #\$05.*?JSR BM_APADV'
+    },
+    @{
+        Name = 'AP map validates seal range and FNV equality'
+        Pattern = 'BM_APSEAL.*?CMP #\$01.*?STA \$1B12.*?STA \$1B13.*?ADC \(\$CE\),Y.*?CMP \$D7.*?CMP \$D8.*?STA \$1B17.*?BM_APHASH.*?LDX #\$14.*?LDX #\$16.*?CMP \$1B14,X'
+    },
+    @{
+        Name = 'AP map records and prints bank address and package length'
+        Pattern = 'BM_APSCAN.*?STA \$1D40,X.*?STA \$1D41,X.*?ADC \$1B04.*?STA \$1D42,X.*?STA \$1D43,X.*?STA \$1D44,X.*?BM_APLIST.*?LDA \$1D42,X.*?LDA \$1D41,X.*?LDA \$1D44,X.*?LDA \$1D43,X'
     },
     @{
         Name = 'map snapshots and prints the Bank-3 directory'
@@ -416,7 +598,7 @@ $semanticGates = @(
     },
     @{
         Name = 'map prints its rows before the legend'
-        Pattern = 'BM_MAP.*?\?BANK.*?\?SECTOR.*?CMP #\$04.*?BCS \?DONE.*?\?DONE\s+LDX #<BM_MLEGEND.*?BM_MMAP.*?BM_MLEGEND'
+        Pattern = 'BM_MAP.*?\?BANK.*?\?SECTOR.*?CMP #\$04.*?BCS \?DONE.*?\?DONE\s+LDX #<BM_MLEGEND.*?JSR BM_PUTS.*?JSR BM_APLIST'
     },
     @{
         Name = 'directory rows include type description entry journal'
@@ -485,6 +667,6 @@ if ($bodyEnd -ge 0x3000) {
 $workerGap = 0x3000 - $bodyEnd - 1
 
 Write-Host (
-    "STR8 BANK MAINT SOURCE = PASS; symbols={0}/64; locals-max={1}/16; forward-fixups={2}/128; body-end=`${3:X4}; worker-gap=`${4:X}; carried worker exact; fixed AP put; smoke body=`$000F package=`$0036 fnv=`$9F68F509 B0B=`$C609" -f `
+    "STR8 BANK MAINT SOURCE = PASS; symbols={0}/64; locals-max={1}/16; forward-fixups={2}/128; body-end=`${3:X4}; worker-gap=`${4:X}; carried worker exact; AP map structure/FNV matrix; fixed AP put; smoke body=`$000F package=`$0036 fnv=`$9F68F509 B0B=`$C609" -f `
         $symbols.Count, $maxLocalCount, $forwardFixups, $bodyEnd, $workerGap
 )

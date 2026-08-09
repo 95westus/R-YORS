@@ -13621,3 +13621,52 @@ make -C SRC himon-banked-ap-check
 make -C SRC asm-test
 git diff --check
 ```
+
+## 2026-08-08 AP-Aware Bank Maintenance Map
+
+Host status: accepted. Board status: pending a read-only `M` run; no flash
+mutation is needed for this gate.
+
+`str8-bank-maint-2000.a` now classifies an ordinary sector as `A` only when it
+contains a complete AP envelope wholly inside that 4K sector. A candidate must
+have the `AP 01` header, an in-range total length, exact `S/R/E/I/B` section
+order and shapes, valid seal flags, an exclusive seal end equal to base plus
+body length, matching seal/body/tag lengths, and a body FNV equal to the seal.
+A bare or malformed `AP 01` sequence remains `U`. Erased sectors remain `E`,
+and Bank-3 sector F remains protected `P` without being staged.
+
+The map records at most one envelope per ordinary sector, so the fixed 31-entry
+table covers every stageable sector. After the bank rows and legend it prints:
+
+```text
+AP ENVELOPES
+AP B0 BF00 L0036
+```
+
+for the hardware-accepted marker envelope already stored at Bank 0 `$BF00`.
+The Bank-3 directory follows those detail rows as before. Address and length
+are display facts only; `M` still has no mutation path.
+
+The source gate uses the exact pinned `$0036` package as its positive fixture.
+Its negative matrix covers a stray header, bad seal flags, incoherent seal end,
+bad relocation shape, bad export tag/length, bad import tag, mismatched body
+length, bad body FNV, truncated total length, and a package crossing the sector
+boundary. WDC host assembly currently reports:
+
+```text
+symbols=64/64
+locals-max=14/16
+forward-fixups=126/128
+body-end=$2BAB
+worker-gap=$0454
+```
+
+Board-paste candidate identity:
+
+```text
+EF0EF969F892190080CDC05C58A07A9483B0A1AB3A5E69CA253C0C419BCF180F  str8-bank-maint-2000.a
+```
+
+The focused board proof is: assemble this revision with zero `ERR=` lines, run
+`M`, require Bank-0 sector B to display `A` and the exact detail line above,
+then require the usual Bank-3 directory output and unchanged all-bank CRCs.

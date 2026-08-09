@@ -17,7 +17,9 @@
 ;   BANKS 0-2: 8-F, ALL, OR AN X-Y RANGE WITHIN 8-F.
 ;   BANK 3:     8-E, ALL, OR AN X-Y RANGE WITHIN 8-E.
 ; A IS SECTOR A. ALL IS THE COMPLETE VALID RANGE. B3 SECTOR F IS PROTECTED.
-; M READS ALL BANK/SECTOR CONTENTS: E=ERASED, U=USED, P=PROTECTED B3F.
+; M READS ALL BANK/SECTOR CONTENTS: E=ERASED, U=USED, A=VALID AP,
+;   P=PROTECTED B3F. A REQUIRES A COMPLETE ENVELOPE AND MATCHING BODY FNV.
+;   ONE AP DETAIL LINE IS PRINTED FOR EACH SECTOR MARKED A.
 ; M ALSO PRINTS BANK-3 DIRECTORY TYPE, DESCRIPTION, ENTRY, AND JOURNAL.
 ; M RESTORES ITS ENTRY BANK AFTER EACH CARRIED-WORKER STAGE CALL.
 ; C/E/M/P, ABORT, AND SAFE FAILURES RETURN TO THIS MENU. Q RETURNS TO HIMON.
@@ -43,8 +45,10 @@
 ;   $1B00-$1B0B  RESULT/STATE
 ;   $1B0C        ENTRY-BANK PCR BITS FOR MAP RETURN
 ;   $1B0D-$1B0E  DIRECTORY PRINT INDEXES
+;   $1B0F-$1B17  AP MAP COUNT/PARSER STATE
 ;   $1C00-$1CFE  INPUT BUFFER
 ;   $1D00-$1D3F  STAGED BANK-3 DIRECTORY
+;   $1D40-$1DDA  FIRST VALID AP PER MAPPED SECTOR, 31 X 5 BYTES
 ;   $2000-...    THIS PROGRAM
 ;   $3000-$322A  EMBEDDED V1 MUTATION WORKER
 ;
@@ -89,6 +93,7 @@ BM_MAIN LDX #$00
         STZ $1B09
         STZ $1B0A
         STZ $1B0B
+        STZ $1B0F
         LDA $7FEC
         AND #$EE
         STA $1B0C
@@ -151,6 +156,25 @@ BM_MDIR DB $0D,$0A,'D','I','R',' ','B',' ','T',' '
         DB 'D','E','S','C',' ','E','N','T','R','Y',' '
         DB 'J','O','U','R','N','A','L'
         DB $0D,$0A,0
+BM_MMAP DB $0D,$0A,'B','A','N','K',' ','8',' ','9',' ','A'
+        DB ' ','B',' ','C',' ','D',' ','E',' ','F',$0D,$0A
+        DB $0D,$0A,0
+BM_MLEGEND DB 'E','=','E','R','A','S','E','D',' '
+        DB 'U','=','U','S','E','D',' ','A','=','A','P',' '
+        DB 'V','A','L','I','D',' ','P','=','B','3','F',' '
+        DB 'P','R','O','T'
+        DB 'E','C','T','E','D'
+        DB $0D,$0A,0
+BM_MSRC DB 'S','O','U','R','C','E',' ','B','A','N','K',' '
+        DB '0','-','3','>',' ',0
+BM_MDST DB 'D','E','S','T',' ','B','A','N','K',' ','0','-','2'
+        DB '>',' ',0
+BM_MBANK DB 'B','A','N','K',' ','0','-','3','>',' ',0
+BM_MSEC02 DB 'S','E','C','T','O','R',' ','8','-','F',','
+        DB ' ','A','L','L',',',' ','O','R',' ','X','-','Y',';'
+        DB ' ','B','3',' ','M','A','X',' ','E','>',' ',0
+BM_MCTYPE DB 'T','Y','P','E',' ','C','O','P','Y',' ',0
+BM_METYPE DB 'T','Y','P','E',' ','E','R','A','S','E',' ',0
 
 BM_PARSE_BANK LDA $1C01
         BNE ?BAD
@@ -314,9 +338,431 @@ BM_DIR  BRA ?BODY
         JMP ?ROW
 ?PRINTDONE RTS
 
-; Read-only live map: E=erased, U=used, P=protected Bank-3 F.
+; AP map parser scratch:
+;   $CC/$CD candidate base, $CE/$CF parse/body pointer
+;   $D0/$D1 remaining, $D2 section length, $D3-$D8 temporaries
+;   $1B10/$1B11 package length, $1B12/$1B13 body length
+;   $1B14-$1B17 expected body FNV, $B0-$B3 computed body FNV
+; Dispatch through a HIMON service-table vector selected by X.
+BM_SVC  JMP ($7E00,X)
+
+; Require A bytes in the current 16-bit remainder.
+BM_APNEED STA $D8
+        LDA $D1
+        BNE ?OK
+        LDA $D0
+        CMP $D8
+        BCS ?OK
+        CLC
+        RTS
+?OK    SEC
+        RTS
+
+; Advance the parser by A bytes.
+BM_APADV STA $D8
+        JSR BM_APNEED
+        BCC ?BAD
+        LDA $CE
+        CLC
+        ADC $D8
+        STA $CE
+        LDA $CF
+        ADC #$00
+        STA $CF
+        LDA $D0
+        SEC
+        SBC $D8
+        STA $D0
+        LDA $D1
+        SBC #$00
+        STA $D1
+        SEC
+        RTS
+?BAD   CLC
+        RTS
+
+; Match tag A plus its one-byte payload length, then skip the tag header.
+BM_APTAG STA $D7
+        LDA #$02
+        JSR BM_APNEED
+        BCC ?BAD
+        LDY #$00
+        LDA ($CE),Y
+        CMP $D7
+        BNE ?BAD
+        INY
+        LDA ($CE),Y
+        STA $D2
+        LDA #$02
+        JMP BM_APADV
+?BAD   CLC
+        RTS
+
+; Validate the AP header and initialize pointer/remainder state.
+BM_APHEAD BRA ?BODY
+?BAD    CLC
+        RTS
+?BODY   LDA $CD
+        CMP #$0A
+        BCC ?BAD
+        CMP #$1A
+        BCS ?BAD
+        LDA #$00
+        SEC
+        SBC $CC
+        STA $D0
+        LDA #$1A
+        SBC $CD
+        STA $D1
+        LDA #$05
+        JSR BM_APNEED
+        BCC ?BAD
+        LDY #$00
+        LDA ($CC),Y
+        CMP #'A'
+        BNE ?BAD
+        INY
+        LDA ($CC),Y
+        CMP #'P'
+        BNE ?BAD
+        INY
+        LDA ($CC),Y
+        CMP #$01
+        BNE ?BAD
+        INY
+        LDA ($CC),Y
+        STA $1B10
+        INY
+        LDA ($CC),Y
+        STA $1B11
+        LDA $1B11
+        CMP $D1
+        BCC ?FIT
+        BNE ?BAD
+        LDA $1B10
+        CMP $D0
+        BCC ?FIT
+        BNE ?BAD
+?FIT    LDA $CC
+        STA $CE
+        LDA $CD
+        STA $CF
+        LDA $1B10
+        STA $D0
+        LDA $1B11
+        STA $D1
+        LDA #$05
+        JSR BM_APADV
+        BCC ?BAD
+        SEC
+        RTS
+
+; Validate the seal, including exclusive end = base + body length.
+BM_APSEAL BRA ?BODY
+?BAD    CLC
+        RTS
+?BODY   LDA #'S'
+        JSR BM_APTAG
+        BCC ?BAD
+        LDA $D2
+        CMP #$0B
+        BNE ?BAD
+        JSR BM_APNEED
+        BCC ?BAD
+        LDY #$00
+        LDA ($CE),Y
+        CMP #$01
+        BNE ?BAD
+        LDY #$05
+        LDA ($CE),Y
+        STA $1B12
+        INY
+        LDA ($CE),Y
+        STA $1B13
+        ORA $1B12
+        BEQ ?BAD
+        LDY #$01
+        LDA ($CE),Y
+        CLC
+        LDY #$05
+        ADC ($CE),Y
+        STA $D7
+        LDY #$02
+        LDA ($CE),Y
+        LDY #$06
+        ADC ($CE),Y
+        BCS ?BAD
+        STA $D8
+        LDY #$03
+        LDA ($CE),Y
+        CMP $D7
+        BNE ?BAD
+        LDY #$04
+        LDA ($CE),Y
+        CMP $D8
+        BNE ?BAD
+        LDY #$07
+        LDA ($CE),Y
+        STA $1B14
+        INY
+        LDA ($CE),Y
+        STA $1B15
+        INY
+        LDA ($CE),Y
+        STA $1B16
+        INY
+        LDA ($CE),Y
+        STA $1B17
+        LDA #$0B
+        JSR BM_APADV
+        BCC ?BAD
+        SEC
+        RTS
+
+; Validate count plus five-byte relocation rows.
+BM_APREL BRA ?BODY
+?BAD    CLC
+        RTS
+?BODY   LDA #'R'
+        JSR BM_APTAG
+        BCC ?BAD
+        LDA $D2
+        BEQ ?BAD
+        JSR BM_APNEED
+        BCC ?BAD
+        LDY #$00
+        LDA ($CE),Y
+        CMP #$11
+        BCS ?BAD
+        STA $D7
+        ASL A
+        ASL A
+        CLC
+        ADC $D7
+        INC A
+        CMP $D2
+        BNE ?BAD
+        LDA $D2
+        JSR BM_APADV
+        BCC ?BAD
+        SEC
+        RTS
+
+; Validate an export/import record section selected by tag A.
+BM_APREC BRA ?BODY
+?BAD    CLC
+        RTS
+?BODY   JSR BM_APTAG
+        BCC ?BAD
+        LDA $D2
+        CMP #$02
+        BCC ?BAD
+        JSR BM_APNEED
+        BCC ?BAD
+        LDY #$01
+        LDA ($CE),Y
+        CMP $D2
+        BNE ?BAD
+        LDA $D2
+        JSR BM_APADV
+        BCC ?BAD
+        SEC
+        RTS
+
+; Validate the body tag, seal length, and exact package remainder.
+BM_APBODY BRA ?BODY
+?BAD    CLC
+        RTS
+?BODY   LDA #$03
+        JSR BM_APNEED
+        BCC ?BAD
+        LDY #$00
+        LDA ($CE),Y
+        CMP #'B'
+        BNE ?BAD
+        INY
+        LDA ($CE),Y
+        CMP $1B12
+        BNE ?BAD
+        INY
+        LDA ($CE),Y
+        CMP $1B13
+        BNE ?BAD
+        LDA #$03
+        JSR BM_APADV
+        BCC ?BAD
+        LDA $D0
+        CMP $1B12
+        BNE ?BAD
+        LDA $D1
+        CMP $1B13
+        BNE ?BAD
+        LDA $CE
+        STA $D3
+        LDA $CF
+        STA $D4
+        SEC
+        RTS
+
+; Hash the body through HIMON's resident FNV service and compare the seal.
+BM_APHASH BRA ?BODY
+?BAD    CLC
+        RTS
+?BODY   LDX #$14
+        JSR BM_SVC
+        LDA $1B12
+        STA $D5
+        LDA $1B13
+        STA $D6
+?MORE   LDA $D5
+        ORA $D6
+        BEQ ?CHECK
+        LDY #$00
+        LDA ($D3),Y
+        LDX #$16
+        JSR BM_SVC
+        INC $D3
+        BNE ?COUNT
+        INC $D4
+?COUNT  DEC $D5
+        LDA $D5
+        CMP #$FF
+        BNE ?MORE
+        DEC $D6
+        BRA ?MORE
+?CHECK  LDX #$03
+?HASH   LDA $B0,X
+        CMP $1B14,X
+        BNE ?BAD
+        DEX
+        BPL ?HASH
+        SEC
+        RTS
+
+; Find and record the first valid AP envelope in the staged sector.
+BM_APSCAN STZ $CC
+        LDA #$0A
+        STA $CD
+        BRA ?NEXT
+?ADV   INC $CC
+        BNE ?NEXT
+        INC $CD
+        LDA $CD
+        CMP #$1A
+        BCC ?NEXT
+        CLC
+        RTS
+?NEXT   LDY #$00
+        LDA ($CC),Y
+        CMP #'A'
+        BNE ?ADV
+        JSR BM_APHEAD
+        BCC ?ADV
+        JSR BM_APSEAL
+        BCC ?ADV
+        JSR BM_APREL
+        BCC ?ADV
+        LDA #'E'
+        JSR BM_APREC
+        BCC ?ADV
+        LDA #'I'
+        JSR BM_APREC
+        BCC ?ADV
+        JSR BM_APBODY
+        BCC ?ADV
+        JSR BM_APHASH
+        BCC ?ADV
+        LDA $1B0F
+        ASL A
+        ASL A
+        CLC
+        ADC $1B0F
+        TAX
+        LDA $1B02
+        STA $1D40,X
+        LDA $CC
+        STA $1D41,X
+        LDA $CD
+        SEC
+        SBC #$0A
+        CLC
+        ADC $1B04
+        STA $1D42,X
+        LDA $1B10
+        STA $1D43,X
+        LDA $1B11
+        STA $1D44,X
+        INC $1B0F
+        SEC
+        RTS
+
+; Print AP Bn AAAA Lhhhh for the first valid envelope in each A sector.
+BM_APLIST BRA ?BODY
+?TITLE  DB $0D,$0A,'A','P',' ','E','N','V','E','L'
+        DB 'O','P','E','S'
+        DB $0D,$0A,0
+?BODY   LDA $1B0F
+        BNE ?HAVE
+        RTS
+?HAVE
+        LDX #<?TITLE
+        LDY #>?TITLE
+        JSR BM_PUTS
+        STZ $1B0D
+        STZ $1B0E
+?ROW    LDA #'A'
+        JSR BM_OUT
+        LDA #'P'
+        JSR BM_OUT
+        LDA #' '
+        JSR BM_OUT
+        LDA #'B'
+        JSR BM_OUT
+        LDX $1B0E
+        LDA $1D40,X
+        CLC
+        ADC #'0'
+        JSR BM_OUT
+        LDA #' '
+        JSR BM_OUT
+        LDX $1B0E
+        LDA $1D42,X
+        LDX #$0C
+        JSR BM_SVC
+        LDX $1B0E
+        LDA $1D41,X
+        LDX #$0C
+        JSR BM_SVC
+        LDA #' '
+        JSR BM_OUT
+        LDA #'L'
+        JSR BM_OUT
+        LDX $1B0E
+        LDA $1D44,X
+        LDX #$0C
+        JSR BM_SVC
+        LDX $1B0E
+        LDA $1D43,X
+        LDX #$0C
+        JSR BM_SVC
+        LDA #$0D
+        JSR BM_OUT
+        LDA #$0A
+        JSR BM_OUT
+        LDA $1B0E
+        CLC
+        ADC #$05
+        STA $1B0E
+        INC $1B0D
+        LDA $1B0D
+        CMP $1B0F
+        BNE ?ROW
+        RTS
+
+; Read-only live map: E=erased, U=used, A=valid AP, P=protected B3F.
 BM_MAP  LDA #'M'
         STA $1B01
+        STZ $1B0F
         LDX #<BM_MMAP
         LDY #>BM_MMAP
         JSR BM_PUTS
@@ -373,7 +819,11 @@ BM_MAP  LDA #'M'
         BNE ?PAGE
         LDA #'E'
         BRA ?MARK
-?USED   LDA #'U'
+?USED   JSR BM_APSCAN
+        BCC ?PLAIN
+        LDA #'A'
+        BRA ?MARK
+?PLAIN  LDA #'U'
 ?MARK   JSR BM_OUT
         LDA $1B04
         CLC
@@ -392,68 +842,70 @@ BM_MAP  LDA #'M'
 ?DONE   LDX #<BM_MLEGEND
         LDY #>BM_MLEGEND
         JSR BM_PUTS
+        JSR BM_APLIST
         JSR BM_DIR
         JMP BM_SUCCESS
 
-BM_CABORT JMP BM_ABORT
-BM_COPY LDA #'C'
+BM_COPY BRA ?BODY
+?ABORT JMP BM_ABORT
+?BODY  LDA #'C'
         STA $1B01
-BM_CSRC LDX #<BM_MSRC
+?SRC   LDX #<BM_MSRC
         LDY #>BM_MSRC
         JSR BM_PUTS
         JSR BM_READ
-        BCC BM_CABORT
+        BCC ?ABORT
         LDA $1C00
-        BEQ BM_CABORT
+        BEQ ?ABORT
         JSR BM_PARSE_BANK
-        BCC BM_CSRC
+        BCC ?SRC
         STA $1B02
-BM_CDST LDX #<BM_MDST
+?DST   LDX #<BM_MDST
         LDY #>BM_MDST
         JSR BM_PUTS
         JSR BM_READ
-        BCC BM_CABORT
+        BCC ?ABORT
         LDA $1C00
-        BEQ BM_CABORT
+        BEQ ?ABORT
         JSR BM_PARSE_BANK
-        BCC BM_CDST
+        BCC ?DST
         CMP #$03
-        BCS BM_CDST
+        BCS ?DST
         CMP $1B02
-        BEQ BM_CDST
+        BEQ ?DST
         STA $1B03
 
 ; Require a source reset vector in $8000-$FFFE before destructive copy.
         LDA #$F0
         STA $1B04
         JSR BM_STAGE
-        BCS BM_CVECTOR
+        BCS ?VECTOR
         JMP BM_FSTAGE
-BM_CVECTOR
+?VECTOR
         LDA $19FD
         CMP #$80
-        BCC BM_CVEC
+        BCC ?VEC
         CMP #$FF
-        BNE BM_CCONF
+        BNE ?CONF
         LDA $19FC
         CMP #$FF
-        BNE BM_CCONF
-BM_CVEC LDA #$E6
+        BNE ?CONF
+?VEC   LDA #$E6
         STA $1B00
         JMP BM_FAIL
 
-BM_CCONF LDA $0A0C
+?CONF  LDA $0A0C
         CMP #'S'
-        BNE BM_CTYPE
+        BNE ?TYPE
         LDA $0A0D
         CMP #'R'
-        BNE BM_CTYPE
+        BNE ?TYPE
         LDA $0A0E
         CMP #$01
-        BNE BM_CTYPE
+        BNE ?TYPE
         LDA $0A0F
         CMP #$07
-        BNE BM_CTYPE
+        BNE ?TYPE
         LDA #'!'
         JSR BM_OUT
         LDA #'S'
@@ -468,7 +920,9 @@ BM_CCONF LDA $0A0C
         JSR BM_OUT
         LDA #$0A
         JSR BM_OUT
-BM_CTYPE LDX #<BM_MCTYPE
+?TYPE   BRA ?PROMPT
+?NO    JMP BM_ABORT
+?PROMPT LDX #<BM_MCTYPE
         LDY #>BM_MCTYPE
         JSR BM_PUTS
         LDA $1B02
@@ -484,50 +938,49 @@ BM_CTYPE LDX #<BM_MCTYPE
         LDA #' '
         JSR BM_OUT
         JSR BM_READ
-        BCC BM_CNO
+        BCC ?NO
         LDA $1C07
-        BNE BM_CNO
+        BNE ?NO
         LDA $1C00
         CMP #'C'
-        BNE BM_CNO
+        BNE ?NO
         LDA $1C01
         CMP #'O'
-        BNE BM_CNO
+        BNE ?NO
         LDA $1C02
         CMP #'P'
-        BNE BM_CNO
+        BNE ?NO
         LDA $1C03
         CMP #'Y'
-        BNE BM_CNO
+        BNE ?NO
         LDA $1C04
         CMP #' '
-        BNE BM_CNO
+        BNE ?NO
         LDA $1B02
         CLC
         ADC #'0'
         CMP $1C05
-        BNE BM_CNO
+        BNE ?NO
         LDA $1B03
         CLC
         ADC #'0'
         CMP $1C06
-        BEQ BM_CYES
-BM_CNO JMP BM_ABORT
-BM_CYES LDA #$0D
+        BNE ?NO
+?YES   LDA #$0D
         JSR BM_OUT
         LDA #$0A
         JSR BM_OUT
         LDA #$80
         STA $1B04
         STZ $1B05
-BM_CLOOP JSR BM_STAGE
-        BCS BM_CSTAGED
+?LOOP  JSR BM_STAGE
+        BCS ?STAGED
         JMP BM_FSTAGE
-BM_CSTAGED
+?STAGED
         JSR BM_PROGRAM
-        BCS BM_CWRITTEN
+        BCS ?WRITTEN
         JMP BM_FPROGRAM
-BM_CWRITTEN
+?WRITTEN
         INC $1B05
         LDA #'.'
         JSR BM_OUT
@@ -535,7 +988,7 @@ BM_CWRITTEN
         CLC
         ADC #$10
         STA $1B04
-        BNE BM_CLOOP
+        BNE ?LOOP
         JMP BM_SUCCESS
 
 BM_ERASE LDA #'E'
@@ -808,25 +1261,6 @@ BM_MTITLE DB $0D,$0A,'S','T','R','8',' ','B','A','N','K',' '
         DB ' ','P','=','A','P',' ','B','0','B','F','0','0'
         DB ' ','Q','=','Q','U','I','T'
         DB '>',' ',0
-BM_MMAP DB $0D,$0A,'B','A','N','K',' ','8',' ','9',' ','A'
-        DB ' ','B',' ','C',' ','D',' ','E',' ','F',$0D,$0A
-        DB $0D,$0A,0
-BM_MLEGEND DB 'E','=','E','R','A','S','E','D',' '
-        DB 'U','=','U','S','E','D',' ','P','=','B','3','F',' '
-        DB 'P','R','O','T'
-        DB 'E','C','T','E','D'
-        DB $0D,$0A,0
-BM_MSRC DB 'S','O','U','R','C','E',' ','B','A','N','K',' '
-        DB '0','-','3','>',' ',0
-BM_MDST DB 'D','E','S','T',' ','B','A','N','K',' ','0','-','2'
-        DB '>',' ',0
-BM_MBANK DB 'B','A','N','K',' ','0','-','3','>',' ',0
-BM_MSEC02 DB 'S','E','C','T','O','R',' ','8','-','F',','
-        DB ' ','A','L','L',',',' ','O','R',' ','X','-','Y',';'
-        DB ' ','B','3',' ','M','A','X',' ','E','>',' ',0
-BM_MCTYPE DB 'T','Y','P','E',' ','C','O','P','Y',' ',0
-BM_METYPE DB 'T','Y','P','E',' ','E','R','A','S','E',' ',0
-
 ; Fixed one-sector AP carrier put for the split-V1 promotion proof.
 ; First run AP $4000 $3000 in HIMON. The outer envelope and fit are checked
 ; again here; HIMON remains the authority for the complete AP format.
