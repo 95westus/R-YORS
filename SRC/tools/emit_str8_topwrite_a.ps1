@@ -2,7 +2,7 @@ param(
     [string]$BinPath = "BUILD/bin/himon-str8-rom.bin",
     [string]$AsmMapPath = "BUILD/s19/asm-v1-flash-8000.map",
     [string]$Str8MapPath = "BUILD/s19/str8-f000.map",
-    [string]$OutPath = "../DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a",
+    [string]$OutPath = "BUILD/generated/asm-samples/str8n-topwrite-transient-3000.a",
     [int]$SourceOffset = 0x7000,
     [int]$StageAddress = 0x0A00,
     [int]$ImageAddress = 0x4000,

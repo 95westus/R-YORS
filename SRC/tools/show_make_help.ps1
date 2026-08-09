@@ -22,11 +22,11 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-banked-ap-check"; Category = "monitor"; Description = "Emulate HIMON's RAM-resident `$F010/`$0203 banked AP sector staging and restore paths." }
     [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K onboard image with ASM-F2/AP report in low flash, HIMON at C000, STR8 at F000: BUILD/bin/himon-str8-rom.bin." }
     [pscustomobject]@{ Target = "str8-v1-layout-preview"; Category = "monitor"; Description = "Build the guarded, nonflashable V1 worker/directory layout preview BIN; produces no install S19, TopWriter, or ROM stamp." }
-    [pscustomobject]@{ Target = "str8-v1-artifact"; Category = "monitor"; Description = "Build the host-verified V1 BIN/S19, combined I stream, migration writer, and directory-preserving refresh writer." }
+    [pscustomobject]@{ Target = "str8-v1-artifact"; Category = "monitor"; Description = "Build the host-verified V1 BIN/S19, combined I stream, migration writer, and directory-preserving refresh writer under BUILD." }
     [pscustomobject]@{ Target = "str8-v1-install-stream"; Category = "monitor"; Description = "Build one-file mutation-worker plus 32K bank transport: BUILD/s19/str8-v1-i-bank012.s19." }
     [pscustomobject]@{ Target = "str8-v1-negative-streams"; Category = "monitor"; Description = "Build the bad-worker and post-START interruption S19 board-test streams." }
-    [pscustomobject]@{ Target = "str8-v1-topwrite-a"; Category = "monitor"; Description = "Build the archived one-time V1 migration writer under SAMPLES/OLD; unsafe on installed V1." }
-    [pscustomobject]@{ Target = "str8-v1-refresh-a"; Category = "monitor"; Description = "Build the current directory-preserving V1 refresh TopWriter under SAMPLES." }
+    [pscustomobject]@{ Target = "str8-v1-topwrite-a"; Category = "monitor"; Description = "Build a one-time V1 migration writer under BUILD; unsafe on installed V1." }
+    [pscustomobject]@{ Target = "str8-v1-refresh-a"; Category = "monitor"; Description = "Build a directory-preserving V1 refresh TopWriter under BUILD." }
     [pscustomobject]@{ Target = "str8-directory-check"; Category = "monitor"; Description = "Run host reference and compiled-resident validation of frozen V1 directory records and journals against the guarded preview BIN." }
     [pscustomobject]@{ Target = "str8-installer-dry-check"; Category = "monitor"; Description = "Build and execute the oversized, nonflashable V1 dense S19 receive/stage host proof." }
     [pscustomobject]@{ Target = "str8-worker-mode-check"; Category = "monitor"; Description = "Execute the compiled worker dispatcher for all 256 mode bytes; require only 05-08 and fail closed for the other 252." }
@@ -38,7 +38,7 @@ $rows = @(
     [pscustomobject]@{ Target = "str8-himon-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str-himon-str-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str8-top-stage-s19"; Category = "monitor"; Description = "Build 0A00-19FF staged S19 from the vector-complete STR8 top sector: BUILD/s19/str8-top-stage-0a00.s19." }
-    [pscustomobject]@{ Target = "str8-topwrite-a"; Category = "monitor"; Description = "Build the archived legacy replacement TopWriter under SAMPLES/OLD; unsafe on installed V1." }
+    [pscustomobject]@{ Target = "str8-topwrite-a"; Category = "monitor"; Description = "Build a legacy replacement TopWriter under BUILD; unsafe on installed V1." }
     [pscustomobject]@{ Target = "str8-readonly-bank-tools-check"; Category = "monitor"; Description = "Validate and host-assemble the split-V1 `$F010/`$0203 read-only bank tools." }
     [pscustomobject]@{ Target = "str8-bank-maint-source-check"; Category = "monitor"; Description = "Embed the exact mutation worker, validate the maintenance map/directory source, and host-assemble it." }
     [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for himon-str8-rom-install-s19." }
