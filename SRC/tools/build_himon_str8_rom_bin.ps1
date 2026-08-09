@@ -372,7 +372,7 @@ if ($V1LayoutPreview -or $V1Flashable) {
     $workerStoreStart = $v1WorkerStoreStart
     $str8WorkerGapMin = $v1WorkerGapMin
     if ($V1Flashable) {
-        $layoutMode = "V1 FLASHABLE CANDIDATE"
+        $layoutMode = "V1 FLASHABLE"
     } else {
         $layoutMode = "V1 LAYOUT PREVIEW; NOT FLASHABLE"
     }

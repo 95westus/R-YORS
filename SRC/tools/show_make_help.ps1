@@ -20,9 +20,9 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000: BUILD/s19/himon-rom-c000.s19." }
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom-c000.bin." }
     [pscustomobject]@{ Target = "himon-banked-ap-check"; Category = "monitor"; Description = "Emulate HIMON's RAM-resident `$F010/`$0203 banked AP sector staging and restore paths." }
-    [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build 32K onboard image with ASM-F2/AP report in low flash, HIMON at C000, STR8 at F000: BUILD/bin/himon-str8-rom.bin." }
+    [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build the primary accepted V1.02 32K image with ASM-F2, HIMON, split STR8, and its fixed directory: BUILD/bin/himon-str8-rom.bin." }
     [pscustomobject]@{ Target = "str8-v1-layout-preview"; Category = "monitor"; Description = "Build the guarded, nonflashable V1 worker/directory layout preview BIN; produces no install S19, TopWriter, or ROM stamp." }
-    [pscustomobject]@{ Target = "str8-v1-artifact"; Category = "monitor"; Description = "Build the host-verified V1 BIN/S19, combined I stream, migration writer, and directory-preserving refresh writer under BUILD." }
+    [pscustomobject]@{ Target = "str8-v1-artifact"; Category = "monitor"; Description = "Build the accepted V1.02 compatibility BIN/S19, combined I streams, migration writer, and directory-preserving refresh writer under BUILD." }
     [pscustomobject]@{ Target = "str8-v1-install-stream"; Category = "monitor"; Description = "Build one-file mutation-worker plus 32K bank transport: BUILD/s19/str8-v1-i-bank012.s19." }
     [pscustomobject]@{ Target = "str8-v1-negative-streams"; Category = "monitor"; Description = "Build the bad-worker and post-START interruption S19 board-test streams." }
     [pscustomobject]@{ Target = "str8-v1-topwrite-a"; Category = "monitor"; Description = "Build a one-time V1 migration writer under BUILD; unsafe on installed V1." }
