@@ -328,7 +328,8 @@ FIRMWARE_TARGETS ?= \
 	str8-v1-refresh-a \
 	str8-readonly-bank-tools-check \
 	str8-bank-maint-source-check \
-	str8-worker-mode-check
+	str8-worker-mode-check \
+	str8-worker-split-check
 
 TEST_TARGETS ?= \
 	test-mon \

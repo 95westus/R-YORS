@@ -26,10 +26,10 @@ the jump-only worker at `$FF1F-$FFAF`, and copies it to `$0200-$0290`. An `I`
 transport uploads the 555-byte mutation worker to `$0200-$042A` before dense
 payload staging uses the single `$0A00-$19FF` sector tray. Worker/update state
 remains in `$1FE9-$1FFF`, and the fixed V1 directory is `$FFB0-$FFEF`.
-The completed V1.02 size pass originally left `$00C0` bytes before the stored
-jump worker. The range receiver now places the transaction resident at
-`$F000-$FE9C` and leaves `$FE9D-$FF1E`, `$0082` bytes, free: `$0042` beyond
-the required `$0040` reserve. `I` accepts `RANGE:` as a single sector (`C`) or
+The completed V1.02 size pass places the transaction resident at
+`$F000-$FE5E` and leaves `$FE5F-$FF1E`, `$00C0` bytes, free: `$0080` of
+growth room beyond the required `$0040` reserve. Both floors are enforced by
+the host build. `I` accepts `RANGE:` as a single sector (`C`) or
 inclusive span (`C-E`) and records start high, exclusive limit high, and
 sector count at `$A1-$A3`. The existing one-sector streaming receiver consumes
 that state for every 4K-32K range permitted by the selected bank; there is no
@@ -41,6 +41,8 @@ hardware-accepted as `00.0807(2000)`. Its two exact-worker streams updated
 Bank 2 `$8000-$BFFF` with ASM-F2 and `$C000-$EFFF` with HIMON while preserving
 sector F. Per-sector CRCs proved every unselected payload sector byte-identical;
 the expected Bank-3 sector-F CRC changes tracked only the directory journal.
+The subsequent `$0E5F` compact rebuild is host-accepted; its exact shifted
+resident addresses still require the next ordinary board refresh proof.
 
 The top sector exposes stable service entries at `$F003` for the resident
 worker doorway and `$F009` for the V1 validated-record service. In the split

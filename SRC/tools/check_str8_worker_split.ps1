@@ -156,13 +156,14 @@ Assert-Missing $mutation @('STR8W_BANK_SELECT_SERVICE', 'STR8W_JUMP_BANK') 'Muta
 $physicalRoom = 0xFFB0 - $residentEnd
 $headroom = $physicalRoom - $jumpSize
 $reserve = 0x40
+$growthTarget = 0x80
 $reserveHeadroom = $headroom - $reserve
 $residentWorkerStore = ((Get-Symbol $resident 'STR8_WORKER_STORE_HI') -shl 8) -bor `
     (Get-Symbol $resident 'STR8_WORKER_STORE_LO')
 $residentWorkerCopyLength = ((Get-Symbol $resident 'STR8_WORKER_COPY_LEN_HI') -shl 8) -bor `
     (Get-Symbol $resident 'STR8_WORKER_COPY_LEN_LO')
-if ($reserveHeadroom -lt 0) {
-    throw ('Jump worker leaves ${0:X} bytes after the $40 reserve; split image does not fit' -f $reserveHeadroom)
+if ($reserveHeadroom -lt $growthTarget) {
+    throw ('Jump worker leaves ${0:X} bytes after the $40 reserve; growth target is ${1:X}' -f $reserveHeadroom, $growthTarget)
 }
 if ($expectedJumpStore -ne (0xFFB0 - $jumpSize)) {
     throw ('Frozen jump-worker store is ${0:X4}; packed extent requires ${1:X4}' -f $expectedJumpStore, (0xFFB0 - $jumpSize))
@@ -178,6 +179,6 @@ Write-Host ('MUTATION ID             = ${0:X4}; {1}' -f $mutationSig, (($expecte
 Write-Host ('TRANSACTION RESIDENT    = $F000-${0:X4}; ${1:X} bytes' -f ($residentEnd - 1), ($residentEnd - 0xF000))
 Write-Host ('PRE-DIRECTORY ROOM      = ${0:X} bytes' -f $physicalRoom)
 Write-Host ('ROOM AFTER JUMP WORKER  = ${0:X} bytes' -f $headroom)
-Write-Host ('ROOM AFTER $40 RESERVE  = ${0:X} bytes' -f $reserveHeadroom)
+Write-Host ('ROOM AFTER $40 RESERVE  = ${0:X} bytes (target ${1:X})' -f $reserveHeadroom, $growthTarget)
 Write-Host ('TRANSACTION JUMP STORE  = ${0:X4}-${1:X4}; ${2:X} bytes' -f $residentWorkerStore, ($residentWorkerStore + $residentWorkerCopyLength - 1), $residentWorkerCopyLength)
 Write-Host 'SPLIT WORKER SIZE CHECK = PASS'

@@ -271,8 +271,8 @@ STR8_BOOT_START:
                         LDY             #>MSG_BOOT_MENU
                         JSR             STR8_PRINT_XY
                         ENDIF
-                        JMP             STR8_ENTER_MENU_READY
-?STR8_TAKEOVER:        JMP             STR8_ENTER_MENU_HELP
+                        BRA             STR8_ENTER_MENU_READY
+?STR8_TAKEOVER:        BRA             STR8_ENTER_MENU_HELP
                         ENDIF
 ; Transaction startup always enters HELP or READY explicitly.
                         IF              STR8_V1_INSTALLER_TXN
@@ -533,7 +533,7 @@ STR8_DELAY_FIXED_A:
 STR8_BOOT_KEY_POLL_IF_ENABLED:
                         LDA             STR8_BOOT_KEY_ENABLE
                         BEQ             ?NO
-                        JMP             STR8_BOOT_KEY_POLL
+                        BRA             STR8_BOOT_KEY_POLL
 ?NO:                   CLC
                         RTS
 
@@ -715,7 +715,7 @@ STR8_DISPATCH_A:
                         IF              STR8_V1_LAYOUT
                         CMP             #'I'
                         BNE             ?NOT_I
-                        JMP             STR8_CMD_INSTALL_PREVIEW
+                        BRA             STR8_CMD_INSTALL_PREVIEW
 ?NOT_I:
                         ENDIF
                         CMP             #'J'
@@ -925,7 +925,7 @@ STR8_I_COPY_RECORD_METADATA:
 STR8_I_PRINT_SUMMARY:
                         LDX             #<MSG_I_SUMMARY
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_SUMMARY
                         JSR             STR8_PRINT_XY
@@ -944,7 +944,7 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_WRITE_HEX_HIGH_NIBBLE_A
                         LDX             #<MSG_I_TYPE
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_TYPE
                         JSR             STR8_PRINT_XY
@@ -953,7 +953,7 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDX             #<MSG_I_DESC
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_DESC
                         JSR             STR8_PRINT_XY
@@ -972,7 +972,7 @@ STR8_I_PRINT_SUMMARY:
                         BEQ             ?STATE
                         LDX             #<MSG_I_ENTRY
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_ENTRY
                         JSR             STR8_PRINT_XY
@@ -981,46 +981,29 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDA             STR8_INSTALL_ENTRY_LO
                         JSR             STR8_WRITE_HEX_BYTE_A
-?STATE:                LDA             STR8_INSTALL_STATE
-                        CMP             #STR8_DIR_RECORD_EMPTY
-                        BEQ             ?EMPTY
-                        CMP             #STR8_DIR_RECORD_INCOMPLETE
-                        BEQ             ?INCOMPLETE
+?STATE:                LDX             STR8_INSTALL_STATE
+                        DEX
+                        CPX             #(STR8_DIR_RECORD_COMPLETE-1)
+                        BNE             ?STATE_MESSAGE
                         LDA             STR8_INSTALL_PAIR
-                        CMP             #STR8_DIR_PAIR_NONE
-                        BEQ             ?FULL
-                        LDX             #<MSG_I_COMPLETE
-                        IF              STR8_V1_INSTALLER_TXN
-                        ELSE
-                        LDY             #>MSG_I_COMPLETE
-                        ENDIF
-                        BRA             ?PRINT_STATE
-?EMPTY:                LDX             #<MSG_I_EMPTY
+                        INC             A
+                        BNE             ?STATE_MESSAGE
+                        INX
+?STATE_MESSAGE:        LDA             STR8_I_STATE_MESSAGE_LO,X
+                        TAX
                         IF              STR8_V1_INSTALLER_TXN
                         ELSE
                         LDY             #>MSG_I_EMPTY
                         ENDIF
-                        BRA             ?PRINT_STATE
-?INCOMPLETE:           LDX             #<MSG_I_INCOMPLETE
-                        IF              STR8_V1_INSTALLER_TXN
-                        ELSE
-                        LDY             #>MSG_I_INCOMPLETE
-                        ENDIF
-                        BRA             ?PRINT_STATE
-?FULL:                 LDX             #<MSG_I_FULL
-                        IF              STR8_V1_INSTALLER_TXN
-                        ELSE
-                        LDY             #>MSG_I_FULL
-                        ENDIF
 ?PRINT_STATE:
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         JSR             STR8_PRINT_XY
                         ENDIF
                         LDX             #<MSG_I_PAIR
                         IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_I_PAIR
                         JSR             STR8_PRINT_XY
@@ -1033,7 +1016,7 @@ STR8_I_PRINT_SUMMARY:
                         BEQ             STR8_I_NO_WRITE
                         IF              STR8_V1_INSTALLER_TXN
                         LDX             #<MSG_I_WRITE_CONFIRM
-                        JSR             STR8_PRINT_TXN_PAGE1_X
+                        JSR             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDX             #<MSG_I_STAGE_CONFIRM
                         LDY             #>MSG_I_STAGE_CONFIRM
@@ -1056,7 +1039,7 @@ STR8_I_PRINT_SUMMARY:
                         JSR             STR8_I_FINISH_TRANSACTION
                         BCC             STR8_I_PRINT_TRANSACTION_FAIL
                         LDX             #<MSG_I_INSTALL_OK
-                        JMP             STR8_PRINT_TXN_PAGE1_X
+                        JMP             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDX             #<MSG_I_STAGE_OK
                         LDY             #>MSG_I_STAGE_OK
@@ -1286,8 +1269,7 @@ STR8_I_RECEIVE_DENSE:
                         BNE             ?DENSE_FAIL
 ?ADDRESS_HI:
                         LDA             STR8_REC_DATA_LEN
-                        BEQ             ?DENSE_FAIL
-                        BRA             ?HAVE_DATA
+                        BNE             ?HAVE_DATA
 ?DENSE_FAIL:           JMP             STR8_I_RECEIVE_DENSE_FAIL
 ?HAVE_DATA:
                         IF              STR8_V1_INSTALLER_TXN
@@ -1381,7 +1363,7 @@ STR8_I_RECEIVE_DENSE:
                         INC             STR8_INSTALL_PHASE
                         JSR             STR8_I_BEGIN_TRANSACTION
                         BCS             ?NEXT_RECORD
-                        JMP             STR8_I_RECEIVE_DIRECTORY_FAIL
+                        BRA             STR8_I_RECEIVE_DIRECTORY_FAIL
 ?NEXT_RECORD:
                         ENDIF
                         JMP             ?RECORD
@@ -1549,9 +1531,13 @@ STR8_CMD_JUMP_BANK:
                         BCS             ?BAD
                         AND             #$03
                         JSR             STR8_JUMP_BANK_PREP_A
+                        IF              STR8_V1_LAYOUT
+                        BRA             STR8_JUMP_BANK_LAUNCH
+                        ELSE
                         JMP             STR8_JUMP_BANK_LAUNCH
+                        ENDIF
 ?BAD:
-                        JMP             STR8_CMD_UNKNOWN
+                        BRA             STR8_CMD_UNKNOWN
 
                         IF              STR8_V1_LAYOUT
                         ELSE
@@ -1689,7 +1675,11 @@ STR8_BOOT_JUMP_BANK_A:
                         ENDIF
                         LDA             #STR8_BANK_BOOT_DELAY_A
                         JSR             STR8_DELAY_FIXED_A
+                        IF              STR8_V1_LAYOUT
+                        BRA             STR8_JUMP_BANK_LAUNCH
+                        ELSE
                         JMP             STR8_JUMP_BANK_LAUNCH
+                        ENDIF
                         ENDIF
 
 STR8_JUMP_BANK_PREP_A:
@@ -1745,8 +1735,7 @@ STR8_RUN_WORKER_SERVICE_BODY:
                         RTS
                         ELSE
                         JSR             STR8_COPY_WORKER_TO_RAM
-                        JSR             STR8_WORKER_RUN
-                        RTS
+                        JMP             STR8_WORKER_RUN
                         ENDIF
 
 ; Published $F010 bank selector.
@@ -1796,7 +1785,11 @@ STR8_DIR_VALIDATE_BANK_A:
                         CLD
                         CMP             #STR8_DIR_RECORD_COUNT
                         BCC             ?BANK_OK
+                        IF              STR8_V1_LAYOUT
+                        BRA             STR8_DIR_RETURN_RECORD_INVALID
+                        ELSE
                         JMP             STR8_DIR_RETURN_RECORD_INVALID
+                        ENDIF
 ?BANK_OK:              STA             STR8_DIR_BANK_WORK
                         ASL             A
                         ASL             A
@@ -1844,24 +1837,16 @@ STR8_DIR_VALIDATE_BANK_A:
                         CMP             #STR8_DIR_SEAL_VALUE
                         BNE             STR8_DIR_RETURN_RECORD_INVALID
 
-; Banks 0-2 have no local entry. Bank 3 accepts $8000-$EFFF or $FFFF.
-?ENTRY:                LDA             STR8_DIR_BANK_WORK
-                        CMP             #STR8_DIR_BANK3
-                        BEQ             ?ENTRY_BANK3
-                        LDY             #STR8_DIR_ENTRY_LO
-                        LDA             (STR8_PTR_LO),Y
-                        INY
-                        AND             (STR8_PTR_LO),Y
-                        CMP             #$FF
-                        BNE             STR8_DIR_RETURN_RECORD_INVALID
-                        BRA             ?JOURNAL
-
-?ENTRY_BANK3:          LDY             #STR8_DIR_ENTRY_LO
+; All banks accept erased $FFFF. Only Bank 3 also accepts $8000-$EFFF.
+?ENTRY:                LDY             #STR8_DIR_ENTRY_LO
                         LDA             (STR8_PTR_LO),Y
                         INY
                         AND             (STR8_PTR_LO),Y
                         CMP             #$FF
                         BEQ             ?JOURNAL
+                        LDA             STR8_DIR_BANK_WORK
+                        CMP             #STR8_DIR_BANK3
+                        BNE             STR8_DIR_RETURN_RECORD_INVALID
                         LDA             (STR8_PTR_LO),Y
                         CMP             #STR8_DIR_BANK3_ENTRY_MIN_HI
                         BCC             STR8_DIR_RETURN_RECORD_INVALID
@@ -1920,7 +1905,7 @@ STR8_DIR_SCAN_JOURNAL:
                         LDA             STR8_DIR_PAIR_WORK
                         CMP             #STR8_DIR_PAIR_UNUSED
                         BEQ             ?NEXT_PAIR
-                        JMP             ?INVALID
+                        BRA             ?INVALID
 
 ?BEFORE_OPEN:          LDA             STR8_DIR_PAIR_WORK
                         CMP             #STR8_DIR_PAIR_COMPLETE
@@ -2221,7 +2206,7 @@ STR8_REC_PARSE_BODY:
 ?CONSOLE_END:
                         JSR             STR8_REC_READ_CHAR
                         BCS             ?HAVE_END
-                        JMP             STR8_REC_FAIL_READ_END
+                        BRA             STR8_REC_FAIL_READ_END
 ?HAVE_END:
                         IF              STR8_V1_INSTALLER_DRY
                         CMP             #$0D
@@ -2344,44 +2329,42 @@ STR8_REC_APPLY_LF:
                         LDA             #STR8_REC_LF_PROTECT
                         JMP             STR8_REC_FAIL_A
 
-?PREFLIGHT_INIT:
+; X=0 performs blank/equal preflight. X=2 performs exact post-write verify;
+; those values also derive NEED_ERASE ($0B) versus VERIFY ($0D) on mismatch.
+?PREFLIGHT_INIT:       LDX             #$00
+?COMPARE_INIT:
                         JSR             STR8_REC_LOAD_APPLY_POINTERS
-?PREFLIGHT:
+?COMPARE:
                         LDY             #$00
                         LDA             (STR8_PTR_LO),Y
                         STA             STR8_REC_WORK_TMP
                         CMP             (STR8_COPY_PTR_LO),Y
-                        BEQ             ?PREFLIGHT_NEXT
+                        BEQ             ?COMPARE_NEXT
+                        CPX             #$00
+                        BNE             ?COMPARE_FAIL
                         CMP             #$FF
-                        BEQ             ?PREFLIGHT_NEXT
+                        BEQ             ?COMPARE_NEXT
+?COMPARE_FAIL:
                         JSR             STR8_REC_CAPTURE_APPLY_FAILURE
-                        LDA             #STR8_REC_LF_NEED_ERASE
+                        TXA
+                        CLC
+                        ADC             #STR8_REC_LF_NEED_ERASE
                         JMP             STR8_REC_FAIL_A
-?PREFLIGHT_NEXT:
+?COMPARE_NEXT:
                         JSR             STR8_REC_ADVANCE_APPLY_POINTERS
                         DEC             STR8_REC_WORK_COUNT
-                        BNE             ?PREFLIGHT
+                        BNE             ?COMPARE
 
+                        CPX             #$00
+                        BNE             ?COMPARE_OK
                         JSR             STR8_RUN_PROGRAM_RECORD_WORKER
                         BCS             ?VERIFY_INIT
                         LDA             #STR8_REC_LF_WRITE
                         JMP             STR8_REC_FAIL_A
 
-?VERIFY_INIT:
-                        JSR             STR8_REC_LOAD_APPLY_POINTERS
-?VERIFY:
-                        LDY             #$00
-                        LDA             (STR8_PTR_LO),Y
-                        STA             STR8_REC_WORK_TMP
-                        CMP             (STR8_COPY_PTR_LO),Y
-                        BEQ             ?VERIFY_NEXT
-                        JSR             STR8_REC_CAPTURE_APPLY_FAILURE
-                        LDA             #STR8_REC_LF_VERIFY
-                        JMP             STR8_REC_FAIL_A
-?VERIFY_NEXT:
-                        JSR             STR8_REC_ADVANCE_APPLY_POINTERS
-                        DEC             STR8_REC_WORK_COUNT
-                        BNE             ?VERIFY
+?VERIFY_INIT:          LDX             #$02
+                        BRA             ?COMPARE_INIT
+?COMPARE_OK:
                         JMP             STR8_REC_RETURN_OK
 
 STR8_REC_LOAD_APPLY_POINTERS:
@@ -2544,10 +2527,9 @@ STR8_CONFIRM_Y:
                         BNE             ?NO
                         LDA             STR8_REC_DATA_BUF
                         CMP             #'Y'
-                        CLC
-                        BNE             ?DONE
+                        BNE             ?NO
                         SEC
-?DONE:                 RTS
+                        RTS
 ?NO:                   CLC
                         RTS
                         ELSE
@@ -2790,17 +2772,20 @@ STR8_PRINT_JUMP_FAIL:
                         JSR             STR8_WRITE_HEX_BYTE_A
                         LDX             #<MSG_CRLF
                         IF              STR8_V1_INSTALLER_TXN
-                        JMP             STR8_PRINT_TXN_PAGE1_X
+                        BRA             STR8_PRINT_TXN_PAGE1_X
                         ELSE
                         LDY             #>MSG_CRLF
                         JMP             STR8_PRINT_XY
                         ENDIF
 
 STR8_WRITE_DEC_DIGIT_A:
-                        AND             #$0F
-                        CLC
-                        ADC             #'0'
+; Callers supply a validated binary digit 0-9.
+                        ORA             #'0'
+                        IF              STR8_RAM_PROOF
                         JMP             STR8_CON_WRITE_BYTE_BLOCK
+                        ELSE
+                        BRA             STR8_CON_WRITE_BYTE_BLOCK
+                        ENDIF
 
 STR8_WRITE_HEX_BYTE_A:
                         PHA
@@ -2813,13 +2798,17 @@ STR8_WRITE_HEX_BYTE_A:
                         AND             #$0F
 STR8_WRITE_HEX_NIBBLE_A:
                         CMP             #$0A
-                        BCC             ?DIGIT
-                        CLC
-                        ADC             #$37
-                        JMP             STR8_CON_WRITE_BYTE_BLOCK
-?DIGIT:                 CLC
+                        BCC             ?ASCII
+; CMP leaves carry set for A-F. ADC #$06 therefore adds seven before the
+; common ASCII-'0' addition, producing 'A'-'F'.
+                        ADC             #$06
+?ASCII:
                         ADC             #'0'
+                        IF              STR8_RAM_PROOF
                         JMP             STR8_CON_WRITE_BYTE_BLOCK
+                        ELSE
+                        BRA             STR8_CON_WRITE_BYTE_BLOCK
+                        ENDIF
 
                         IF              STR8_V1_LAYOUT
 STR8_WRITE_HEX_HIGH_NIBBLE_A:
@@ -2888,7 +2877,7 @@ STR8_JUMP_BANK_RAM:
 STR8_PRINT_PROMPT:
                         LDX             #<MSG_PROMPT
                         IF              STR8_V1_INSTALLER_TXN
-                        JMP             STR8_PRINT_TXN_PAGE0_X
+                        BRA             STR8_PRINT_TXN_PAGE0_X
                         ELSE
                         LDY             #>MSG_PROMPT
                         JMP             STR8_PRINT_XY
@@ -2915,7 +2904,7 @@ STR8_PRINT_XY:
                         INC             STR8_PTR_HI
                         BRA             ?LOOP
 ?LAST:                  AND             #$7F
-                        JMP             STR8_CON_WRITE_BYTE_BLOCK
+                        BRA             STR8_CON_WRITE_BYTE_BLOCK
 
 STR8_CON_INIT:
                         LDA             #STR8_CON_PN_CTRL_INIT
@@ -3054,6 +3043,9 @@ MSG_I_EMPTY:            DB              " NEW",(' '+$80)
 MSG_I_INCOMPLETE:       DB              " INC",(' '+$80)
 MSG_I_COMPLETE:         DB              " OK",(' '+$80)
 MSG_I_FULL:             DB              " FULL",(' '+$80)
+STR8_I_STATE_MESSAGE_LO:
+                        DB              <MSG_I_EMPTY,<MSG_I_INCOMPLETE
+                        DB              <MSG_I_COMPLETE,<MSG_I_FULL
 MSG_I_PAIR:             DB              "P",('='+$80)
                         IF              STR8_V1_INSTALLER_DRY
                         IF              STR8_V1_INSTALLER_TXN

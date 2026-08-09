@@ -13670,3 +13670,30 @@ EF0EF969F892190080CDC05C58A07A9483B0A1AB3A5E69CA253C0C419BCF180F  str8-bank-main
 The focused board proof is: assemble this revision with zero `ERR=` lines, run
 `M`, require Bank-0 sector B to display `A` and the exact detail line above,
 then require the usual Bank-3 directory output and unchanged all-bank CRCs.
+
+## 2026-08-08 STR8 V1.02 `$0080` Growth-Headroom Gate
+
+Host status: accepted. Board status: the parameterized range path is already
+accepted; the exact compact image and shifted IVI addresses await the next
+ordinary refresh proof.
+
+The second V1.02 size pass replaces local absolute transfers with in-range
+branches, shares directory-entry validation, tables the four compact `I`
+states, and shares the record preflight/read-back comparison loop. It does not
+change the single-sector tray, dense S19 transport, mutation worker, directory
+format, or stable service entries at `$F003`, `$F009`, and `$F010`.
+
+```text
+transaction code             $F000-$FD32  size $0D33 = 3379
+transaction data             $FD33-$FE5E  size $012C = 300
+transaction resident         $F000-$FE5E  size $0E5F = 3679
+resident/jump-worker gap      $FE5F-$FF1E  size $00C0 = 192
+gap after $0040 reserve                       $0080 = 128
+IVI NMI / IRQ-BRK             $F09C / $F0B0
+```
+
+`make -C SRC str8-installer-transaction-check` passed the linked resident with
+261 range cases, 47 install cases, 94 journal cases, 77 directory-writer cases,
+33 record cases, 36 line/installer cases, 13 startup cases, and 5 bank-jump
+cases. The gate now requires both the `$0040` hard reserve and the additional
+`$0080` growth floor.

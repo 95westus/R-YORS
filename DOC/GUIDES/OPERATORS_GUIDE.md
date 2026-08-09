@@ -111,13 +111,13 @@ Current combined-image facts:
 
 ```text
 HIMON:           $C000-$EEFF
-STR8 resident:   $F000-$FE9C
-IVI entries:     NMI $F09E, IRQ/BRK $F0B2
-free/reserve:    $FE9D-$FF1E, $0082 bytes
+STR8 resident:   $F000-$FE5E
+IVI entries:     NMI $F09C, IRQ/BRK $F0B0
+free/reserve:    $FE5F-$FF1E, $00C0 bytes
 jump worker:     $FF1F-$FFAF, copied to $0200-$0290
 V1 directory:    $FFB0-$FFEF
 config pocket:   $FFF0-$FFF9
-vectors:         $FFFA-$FFFF = 9E F0 00 F0 B2 F0
+vectors:         $FFFA-$FFFF = 9C F0 00 F0 B0 F0
 bank jump record:$1FFD-$1FFF = 42 4A bank/FF
 ```
 
@@ -129,10 +129,10 @@ After burning, quick monitor checks should look like:
 
 ```text
 D C000 C00F  4C 07 C0 A5 5A C3 3C 78 D8 A2 FF 9A AD E6 7E C9
-D F000 F00F  4C 13 F0 4C 55 F7 18 60 EA 4C 1C F9 53 52 01 07
-D F010 F013  4C 5C F7 78
+D F000 F00F  4C 13 F0 4C 3E F7 18 60 EA 4C F5 F8 53 52 01 07
+D F010 F013  4C 44 F7 78
 D FF1F FF2E  4C 12 02 08 78 C9 04 B0 06 20 7C 02 28 38 60 28
-D FFFA FFFF  9E F0 00 F0 B2 F0
+D FFFA FFFF  9C F0 00 F0 B0 F0
 D 1FFD 1FFF  42 4A FF
 ```
 

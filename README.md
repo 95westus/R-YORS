@@ -162,8 +162,8 @@ $8000-$BC6C  ASM-F2, entry $800C
 $BC6D-$BFFF  low-flash growth/AP-store hole
 $C000-$EEFF  HIMON, including the resident AP import linker
 $EF00-$EFFF  HIMON/STR8 growth hole
-$F000-$FE9C  STR8-N V1.02 resident
-$FE9D-$FF1E  $0082 free, including the required $0040 reserve
+$F000-$FE5E  STR8-N V1.02 resident
+$FE5F-$FF1E  $00C0 free: $0040 reserve plus $0080 growth room
 $FF1F-$FFAF  stored jump-only RAM worker
 $FFB0-$FFEF  fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9  configuration pocket

@@ -1,9 +1,9 @@
 # STR8-N Four-Bank Installer V1.02 Plan
 
 ```text
-status:       V1.02 PARAMETERIZED RANGE INSTALLER HARDWARE-ACCEPTED
-next gate:    HIMON AP LOADER CONTRACT; POSITIVE LOCAL-H PROOF
-source date:  2026-08-07
+status:       V1.02 RANGE PATH HARDWARE-ACCEPTED; COMPACT IMAGE HOST-ACCEPTED
+next gate:    COMPACT PRIMARY IMAGE REFRESH AND QUICK BOARD PROOF
+source date:  2026-08-08
 ```
 
 V1.01 is the accepted baseline for turning the WDC board into four independently
@@ -59,10 +59,10 @@ there is no second receiver or transport path. It holds the selected final
 sector until S9, requires S9 `$FFFF` or inside the selected range, and leaves
 all sectors outside that exact range unchanged.
 
-The transaction resident is now `$F000-$FE9C`, size `$0E9D`, leaving
-`$FE9D-$FF1E`, `$0082` bytes. This restores `$0042` beyond the hard `$0040`
-reserve because fixed-range initialization, the duplicate limit byte, and the
-temporary full-range gate were removed rather than layered over.
+The transaction resident is now `$F000-$FE5E`, size `$0E5F`, leaving
+`$FE5F-$FF1E`, `$00C0` bytes. This restores the full `$0080` growth target
+beyond the hard `$0040` reserve through size-conscious control flow, shared
+directory validation, and a shared preflight/read-back comparison loop.
 
 V1.02 also removes the ambiguous shell bare-bank aliases. Its compact surface
 is `I H J0-3`: `H` warm-enters the local `$C000` target without selecting a

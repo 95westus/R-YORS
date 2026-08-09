@@ -116,6 +116,12 @@ function Invoke-ResidentDirectoryRoutine {
                 $pc += 2
                 continue
             }
+            0x09 { # ORA immediate
+                $aReg = $aReg -bor [int]$Memory[$pc + 1]
+                $status = Set-NzFlags $status $aReg
+                $pc += 2
+                continue
+            }
             0x0A { # ASL A
                 $status = $status -band 0xFE
                 if (($aReg -band 0x80) -ne 0) { $status = $status -bor 0x01 }
@@ -455,7 +461,35 @@ function Invoke-ResidentDirectoryRoutine {
             0x80 { # BRA relative
                 $offset = [int]$Memory[$pc + 1]
                 if ($offset -ge 0x80) { $offset -= 0x100 }
-                $pc = $pc + 2 + $offset
+                $target = $pc + 2 + $offset
+                if ($target -eq $WriteHook) {
+                    $output.Add([byte]$aReg)
+                    $status = $status -bor 0x01
+                    if ($returns.Count -eq 0) {
+                        return [pscustomobject]@{
+                            A = [byte]$aReg
+                            X = [byte]$xReg
+                            Y = [byte]$yReg
+                            Carry = $true
+                            Steps = $step + 1
+                            WorkerCalls = $workerCalls
+                            InputConsumed = $inputIndex
+                            TimedInputConsumed = $timedInputIndex
+                            DelayCalls = $delayCalls
+                            Output = $output.ToArray()
+                            RecordCalls = $recordIndex
+                            StageCalls = $stageSectors.Count
+                            StageSectors = $stageSectors.ToArray()
+                            StageHighs = $stageHighs.ToArray()
+                            StageRecordCounts = $stageRecordCounts.ToArray()
+                            SectorCalls = $sectorCalls
+                            Events = $events.ToArray()
+                        }
+                    }
+                    $pc = $returns.Pop()
+                    continue
+                }
+                $pc = $target
                 continue
             }
             0x84 { # STY zero page
@@ -1971,6 +2005,7 @@ $workerStoreStart = if ($transactionInstallerMode) {
     0xFD1F
 }
 $workerReserveFloor = 0x40
+$workerGrowthFloor = 0x80
 $residentSize = $residentEnd - $residentStart
 $workerGap = [Math]::Max(0, $workerStoreStart - $residentEnd)
 $workerOverlap = [Math]::Max(0, $residentEnd - $workerStoreStart)
@@ -2058,7 +2093,8 @@ Assert-True (($residentInstallBank -eq 0x90) -and
 if ($dryInstallerMode) {
     Assert-True ($residentEnd -le $dirBase) 'Installer-dry resident crosses the immutable directory boundary'
 } else {
-    Assert-True ($workerGap -ge $workerReserveFloor) 'V1 preview violates the resident/worker reserve floor'
+    Assert-True ($workerGap -ge ($workerReserveFloor + $workerGrowthFloor)) `
+        'V1 transaction resident violates the $40 reserve plus $80 growth floor'
 }
 $residentWriterEnd = Get-MapSymbol $residentSymbols "STR8_RECORD_SERVICE_BODY"
 $residentValidatorEnd = $residentWriterEntry
@@ -2114,20 +2150,20 @@ if ($transactionInstallerMode) {
     $txnWriteByteAddress = Get-MapSymbol $residentSymbols 'STR8_CON_WRITE_BYTE_BLOCK'
     $str8SourcePath = Join-Path (Split-Path -Parent $ConstantsPath) 'str8.asm'
     $txnPage0CallCount = (Select-String -LiteralPath $str8SourcePath `
-        -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE0_X\s*$').Count
+        -Pattern '^\s+(?:JSR|JMP|BRA)\s+STR8_PRINT_TXN_PAGE0_X\s*$').Count
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
-        -Pattern '^\s+(?:JSR|JMP)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
+        -Pattern '^\s+(?:JSR|JMP|BRA)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0E9D) -and
+    Assert-True (($residentSize -eq 0x0E5F) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnRangePromptAddress -eq 0xFDE3) -and
-        ($txnSummaryAddress -eq 0xFE07) -and ($txnInstallOkAddress -eq 0xFE0C) -and
-        ($txnTypeAddress -eq 0xFE14) -and
-        ($txnDescAddress -eq 0xFE18) -and ($txnEntryAddress -eq 0xFE1B) -and
-        ($txnEmptyAddress -eq 0xFE1F) -and
-        ($txnPage0CallCount -eq 13) -and ($txnPage1CallCount -eq 25)) `
-        'Transaction range receiver must retain its exact size, boundary, and 13/25 call split'
+        ($txnRangePromptAddress -eq 0xFDA1) -and
+        ($txnSummaryAddress -eq 0xFDC5) -and ($txnInstallOkAddress -eq 0xFDCA) -and
+        ($txnTypeAddress -eq 0xFDD2) -and
+        ($txnDescAddress -eq 0xFDD6) -and ($txnEntryAddress -eq 0xFDD9) -and
+        ($txnEmptyAddress -eq 0xFDDD) -and
+        ($txnPage0CallCount -eq 21) -and ($txnPage1CallCount -eq 17)) `
+        'Transaction range receiver must retain its exact compact size, boundary, and 21/17 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
         ($txnPrintPage1 + 2 -eq $residentPrintXy)) `
         'Transaction print-page helpers must be the six bytes immediately before STR8_PRINT_XY'
@@ -2150,17 +2186,17 @@ if ($transactionInstallerMode) {
     foreach ($messageName in @(
             'MSG_ID', 'MSG_BOOT_MENU', 'MSG_SCREEN', 'MSG_HELP', 'MSG_PROMPT',
             'MSG_BOOT_PROMPT', 'MSG_BOOT_BANK_WAIT', 'MSG_ABORT', 'MSG_I_BANK',
-            'MSG_I_RANGE_PROMPT', 'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT', 'MSG_I_INVALID'
+            'MSG_I_RANGE_PROMPT', 'MSG_I_TYPE_PROMPT', 'MSG_I_DESC_PROMPT', 'MSG_I_INVALID',
+            'MSG_I_SUMMARY', 'MSG_I_INSTALL_OK', 'MSG_I_TYPE', 'MSG_I_DESC',
+            'MSG_I_ENTRY', 'MSG_I_EMPTY', 'MSG_I_INCOMPLETE', 'MSG_I_COMPLETE',
+            'MSG_I_FULL', 'MSG_I_PAIR', 'MSG_I_WRITE_CONFIRM'
         )) {
         $messageAddress = Get-MapSymbol $residentSymbols $messageName
         Assert-True (($messageAddress -shr 8) -eq $txnPage0High) `
             ("Transaction page-0 message moved pages: $messageName")
     }
     foreach ($messageName in @(
-            'MSG_I_SUMMARY',
-            'MSG_I_INSTALL_OK', 'MSG_I_TYPE', 'MSG_I_DESC', 'MSG_I_ENTRY',
-            'MSG_I_EMPTY', 'MSG_I_INCOMPLETE', 'MSG_I_COMPLETE', 'MSG_I_FULL',
-            'MSG_I_PAIR', 'MSG_I_WRITE_CONFIRM', 'MSG_I_SEND_S19',
+            'MSG_I_SEND_S19',
             'MSG_I_TRANSACTION_FAIL', 'MSG_I_S19_FAIL',
             'MSG_I_NO_WRITE', 'MSG_NO_BOOT', 'MSG_JUMP_B', 'MSG_JUMP_FAIL_B',
             'MSG_JUMP_FAIL_VEC', 'MSG_CRLF', 'MSG_NO_HIMON', 'MSG_BACKSPACE'

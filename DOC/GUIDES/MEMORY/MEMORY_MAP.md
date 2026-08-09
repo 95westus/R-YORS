@@ -75,7 +75,7 @@ CPU `$8000` / file offset `$0000`, HIMON starts at CPU `$C000` / file offset
 source is the jump-only image at CPU `$FF1F` / file offset `$7F1F`, copied into
 the `$0200-$0290` portion of the RAM worker-code tray, and all live hardware
 vectors enter the STR8-owned top sector. RESET points to STR8 at `$F000`; NMI
-and IRQ/BRK point to STR8 IVI stubs at `$F09E`/`$F0B2`, which dispatch through
+and IRQ/BRK point to STR8 IVI stubs at `$F09C`/`$F0B0`, which dispatch through
 the RAM vector cells. Destructive `I` transactions upload their exact mutation
 worker to `$0200-$042A`; it is not resident in the top sector.
 
@@ -86,8 +86,8 @@ $8000-$BC6C   ASM-F2 low-flash image, entry $800C
 $BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
 $C000-$EEFF   HIMON body, including resident AP import linker
 $EF00-$EFFF   current image gap inside the E sector
-$F000-$FE9C   STR8 V1.02 resident shell, IVI stubs, record service, and installer
-$FE9D-$FF1E   free/reserve gap, $0082 bytes
+$F000-$FE5E   STR8 V1.02 resident shell, IVI stubs, record service, and installer
+$FE5F-$FF1E   free/reserve gap, $00C0 bytes: $0040 reserve + $0080 growth
 $FF1F-$FFAF   jump-only STR8 RAM-worker source, copied to $0200-$0290
 $FFB0-$FFEF   fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9   STR8 config pocket

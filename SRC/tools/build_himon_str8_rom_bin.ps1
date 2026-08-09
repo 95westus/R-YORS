@@ -359,7 +359,9 @@ $v1DirectoryEndExclusive = 0xFFF0
 $v1DirectorySize = 0x0040
 $v1WorkerStoreEndExclusive = $v1DirectoryStart
 $v1WorkerStoreStart = $v1WorkerStoreEndExclusive - $workerSize
-$v1WorkerGapMin = 0x0040
+$v1WorkerReserveMin = 0x0040
+$v1WorkerGrowthMin = 0x0080
+$v1WorkerGapMin = $v1WorkerReserveMin + $v1WorkerGrowthMin
 $v1WorkerGap = $v1WorkerStoreStart - $str8End
 
 if ($V1LayoutPreview -or $V1Flashable) {
@@ -732,7 +734,7 @@ if ($V1LayoutPreview -or $V1Flashable) {
     Write-Host ("V1 PREFLIGHT WORKER       = {0:X4}-{1:X4}/{2:X} (not emitted)" -f $v1WorkerStoreStart, ($v1WorkerStoreEndExclusive - 1), $workerSize)
     Write-Host ("V1 PREFLIGHT DIRECTORY    = {0:X4}-{1:X4}/{2:X} (not emitted)" -f $v1DirectoryStart, ($v1DirectoryEndExclusive - 1), $v1DirectorySize)
 }
-Write-Host ("V1 PREFLIGHT RESERVE      = {0:X4}-{1:X4}/{2:X} (min {3:X})" -f $str8End, ($v1WorkerStoreStart - 1), $v1WorkerGap, $v1WorkerGapMin)
+Write-Host ("V1 PREFLIGHT RESERVE      = {0:X4}-{1:X4}/{2:X} (min {3:X} = {4:X} reserve + {5:X} growth)" -f $str8End, ($v1WorkerStoreStart - 1), $v1WorkerGap, $v1WorkerGapMin, $v1WorkerReserveMin, $v1WorkerGrowthMin)
 Write-Host ("V1 PREFLIGHT CONFIG/VECT  = FFF0-FFFF unchanged")
 if ($V1LayoutPreview) {
     Write-Host "V1 PREVIEW WARNING        = NO INSTALL S19, TOPWRITER, OR ROM IMAGE STAMP"
