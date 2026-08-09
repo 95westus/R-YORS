@@ -13240,9 +13240,10 @@ likewise retired to `SRC/ARCHIVE/PROOFS`; use bank-maint `E`, Bank 3, sectors
 `make -C SRC str8-readonly-bank-tools-check` rejects a code reference to
 `$F003`, `$1FF0`, or `STR8_SERVICE`, enforces the ASM-F2 64-global and 63-column
 limits, requires selector/copy/restore structure, and WDC-assembles all four
-maintained read-only bodies. Do not promote split V1 to the default combined
-image or documentation baseline until HIMON's `HIM_AP_STAGE_BANK` path has the
-same read-only selector contract and the resulting AP load path is board-proven.
+maintained read-only bodies. HIMON's matching stage/restore path is now
+host- and board-accepted. Do not promote split V1 to the default combined image
+or documentation baseline until a known valid package completes the resulting
+banked AP load/run path.
 
 ## 2026-08-07 STR8 V1.02 Local-HIMON Command Pass
 
@@ -13294,7 +13295,8 @@ git diff --check
 ## 2026-08-07 STR8 V1.02 Local-HIMON Identity Gate
 
 Host status: accepted. Board status: startup-selector and shell fail-closed
-`H` are accepted as `00.0807(2000)`; positive marked-HIMON `H` remains pending.
+`H` are accepted as STR8-N `00.0807(2000)`; both positive routes are accepted
+with marked Bank-3 HIMON `00.0807(2141)`.
 
 HIMON now publishes a fixed warm-entry image face at `$C000`: `JMP $C007`
 followed by `A5 5A C3 3C` at `$C003-$C006`. STR8 `H` matches all four bytes
@@ -13315,6 +13317,12 @@ printed `NO HIMON`, entered the same STR8 help/prompt path, and did not cold-
 enter the older image. `J3` followed by timeout remained the validated generic
 cold fallback. This closes both negative command routes without implying the
 still-open positive marked-HIMON handoff.
+
+The separate 2026-08-08 follow-up installed marked HIMON `00.0807(2141)` into
+Bank 3 `C-E`. Shell `H` and startup-selector `H` each printed `BOOT WARM` and
+entered that exact identity. Physical reset retained STR8-N `00.0807(2000)`
+and timed out through `BOOT COLD` into the same HIMON. This closes the positive
+marked-HIMON handoff without changing the accepted negative evidence above.
 
 The gate costs `$0016` resident bytes relative to the nomenclature pass:
 
@@ -13534,18 +13542,18 @@ restore failure followed by retry. The accepted host result is:
 HIMON banked AP check OK body=$D60C-$D641 ram=$0300 bytes=$36 cases=11 max-steps=16486
 ```
 
-This closes the host-side split-V1 service mismatch. Board proof remains open:
-run a known stored package through `AP B0 $hhhh $3000` (or its required fixed
-destination), require the package's normal result, then confirm Bank 3 is
-visible and the source bank is unchanged. Do not promote split V1 to the
-default combined-image baseline until that transcript and positive local `H`
-proof are captured.
+This closes the host-side split-V1 service mismatch. The read-only stage and
+restore path plus positive local `H` are now board-accepted below. One gate
+remains: run a freshly installed known package through `AP B0 $hhhh $3000`
+(or its required fixed destination), require the package's normal result, then
+confirm Bank 3 is visible and the source bank is unchanged. Do not promote
+split V1 to the default combined-image baseline until that transcript exists.
 
-The first focused board rail is prepared in
+The first focused board rail is hardware-accepted on 2026-08-08 in
 [`STR8_V1_02_HIMON_AP_STAGE_BOARD_TEST.md`](../STR8/STR8_V1_02_HIMON_AP_STAGE_BOARD_TEST.md).
-It installs only Bank-3 HIMON `00.0807(2141)` at `C-E`, proves shell and
-startup-selector `H`, and invokes `AP B0 $8001 $3000` as a deliberately
-non-executing `$07` signature failure. The staged Bank-0 head, restored Bank-3
-directory, and before/after CRC table are required evidence. Passing that
-intermediate rail proves the changed bank-select/copy/restore path but does
-not close the positive known-package execution gate above.
+It installed only Bank-3 HIMON `00.0807(2141)` at `C-E`, proved shell and
+startup-selector `H`, and invoked `AP B0 $8001 $3000` as a deliberately
+non-executing `$07` signature failure. The staged Bank-0 head was exact, the
+Bank-3 directory was visible after return, and a fresh final CRC run reproduced
+all four post-install rows. This proves the changed bank-select/copy/restore
+path without closing the positive known-package execution gate above.

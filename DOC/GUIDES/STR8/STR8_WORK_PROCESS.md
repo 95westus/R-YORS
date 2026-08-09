@@ -58,8 +58,10 @@ It copies a 54-byte read-only routine to `$0300`, bootstraps the requested bank
 through `$F010`, copies the containing 4K sector into `$0A00-$19FF`, and
 restores Bank 3 through `$0203` before returning to flash. The compiled host
 matrix covers Banks 0-2, low/middle/top sectors, initial-selector failure,
-interrupt-state preservation, and restore retry. Board proof of `AP Bn`
-remains the promotion gate.
+interrupt-state preservation, and restore retry. The 2026-08-08 board rail
+staged Bank-0 sector 8 exactly, rejected the deliberately unaligned source
+before execution, restored Bank 3, and preserved every bank CRC. A positive
+valid-package load/run remains the promotion gate.
 
 A RAM-resident user program may select a bank without launching it:
 
@@ -196,6 +198,7 @@ Non-destructive STR8:
   V1.02 selector H enters identified local HIMON warm without changing banks and preserves RAM
   V1.02 selector/shell H rejects erased, foreign, or corrupt local images with NO HIMON
   both negative H routes are board-accepted on the older unmarked Bank-3 HIMON
+  both positive H routes are board-accepted on marked Bank-3 HIMON 00.0807(2141)
   S and s reach the STR8 prompt
   selector 0/1/2 prints J Bn and BOOT IN 3S, pauses, then enters that bank
   selector 0/1/2 and prompt J0/J1/J2 leave all bank CRCs unchanged

@@ -20589,3 +20589,57 @@ This hardware-accepts both startup-selector and shell fail-closed `H` routes
 against the older Bank-3 HIMON `00.0805(1312)`, which lacks the fixed marker.
 Both return to STR8 without launching the unidentified local image. Positive
 `H` entry into a marked HIMON remains open.
+
+## 2026-08-08 STR8 V1.02 Bank-3 HIMON And AP-Stage Pass
+
+The focused follow-up retained Bank-3 STR8-N `00.0807(2000)` and installed
+only HIMON `00.0807(2141)` into Bank 3 range `C-E`. The empty Bank-3 record
+accepted `A5/RYORS`, selected pair 0, printed three dots, and completed:
+
+```text
+I B3 C-E
+T=A5 D=RYORS NEW P=00 WRITE? Y: Y
+SEND S19
+...
+I OK
+```
+
+Shell `H` printed `BOOT WARM` and entered HIMON `00.0807(2141)`. The image
+face and first Bank-3 directory record read back exactly:
+
+```text
+C000: 4C 07 C0 A5 5A C3 3C 78 | D8 A2 FF 9A AD E6 7E C9
+FFE0: A5 FF FF FF 52 59 4F 52 | 53 FE 00 C0 FC FF FF FF
+```
+
+The post-install CRC table returned `$AC` and matched the frozen candidate and
+predicted directory delta:
+
+```text
+B0  EC B7 36 70 CE 76 3A CB  A7 71 06 AD 5E 44 62 60
+B1  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE 9B 41
+B2  EC B7 36 70 CE 76 63 D9  F2 56 F1 61 74 08 09 D7
+B3  EC B7 36 70 CE 76 A5 FC  00 EA 5C 68 26 A0 04 4A
+```
+
+The migrated HIMON banked stage path was exercised without an executable
+package. `AP B0 $8001 $3000` deliberately began one byte into the known ASM
+image and returned `APERR=$07` with no `GO` or body output. The tray contained
+the Bank-0 sector head and Bank 3 was restored before the prompt returned:
+
+```text
+0A00: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0
+FFE0: A5 FF FF FF 52 59 4F 52 | 53 FE 00 C0 FC FF FF FF
+```
+
+The startup selector's `H` route also printed `BOOT WARM` and entered HIMON
+`00.0807(2141)`. Physical reset with no selector input retained STR8-N
+`00.0807(2000)`, printed `BOOT COLD` / `RAM ZERO OK`, and entered the new
+HIMON. After that intentional RAM clear, the CRC fixture was assembled fresh;
+it returned `$AC` and reproduced all four rows above exactly.
+
+This hardware-accepts the Bank-3 `C-E` partial install, first local directory
+record, positive shell/startup `H`, preserved-F reset recovery, and HIMON's
+read-only `$F010/$0203` banked stage/restore path. It does not claim a valid AP
+package load or execution. A fresh known Bank-0 package remains the final V1
+promotion gate.

@@ -1,6 +1,7 @@
 # STR8 V1.02 Bank-3 HIMON And AP-Stage Board Test
 
-Status: host-prepared; board proof pending.
+Status: hardware-accepted on 2026-08-08 as HIMON `00.0807(2141)` with the
+preserved STR8-N `00.0807(2000)` sector F.
 
 This focused follow-up uses the hardware-accepted STR8-N
 `00.0807(2000)` range receiver to replace only Bank 3 `$C000-$EFFF` with
@@ -274,6 +275,56 @@ HIMON V 00.0807(2141)
 
 This final reset must not display STR8-N `00.0807(2141)`: only HIMON `C-E`
 was installed.
+
+## Accepted `00.0807(2141)` Run
+
+The 2026-08-08 FTDI/Tera Term run began with the accepted Bank-3 STR8-N
+`00.0807(2000)`, an empty Bank-3 directory row, and the previously captured
+four-bank CRC baseline. The operator selected Bank 3 range `C-E`, entered
+`A5/RYORS`, received the required `NEW P=00` summary, and sent the frozen
+combined stream. STR8 printed three dots and `I OK`.
+
+Shell `H` immediately printed `BOOT WARM` and entered
+`HIMON V 00.0807(2141)`. Readback matched the fixed marker and completed
+directory record exactly:
+
+```text
+C000: 4C 07 C0 A5 5A C3 3C 78 | D8 A2 FF 9A AD E6 7E C9
+FFE0: A5 FF FF FF 52 59 4F 52 | 53 FE 00 C0 FC FF FF FF
+```
+
+The first post-install CRC fixture returned `$AC`. Banks 0-2 remained at
+baseline; Bank 3 matched the three candidate sector CRCs and predicted
+directory-adjusted sector-F CRC:
+
+```text
+B0  EC B7 36 70 CE 76 3A CB  A7 71 06 AD 5E 44 62 60
+B1  EC B7 36 70 CE 76 A5 FC  A7 71 06 AD 39 AE 9B 41
+B2  EC B7 36 70 CE 76 63 D9  F2 56 F1 61 74 08 09 D7
+B3  EC B7 36 70 CE 76 A5 FC  00 EA 5C 68 26 A0 04 4A
+```
+
+The deliberately unaligned `AP B0 $8001 $3000` returned only `APERR=$07`.
+There was no `GO`, body output, reset, or loss of the prompt. The tray held
+the exact Bank-0 sector head, while the Bank-3 directory remained visible:
+
+```text
+0A00: 46 4E D6 00 74 AD 56 05 | 0C 80 87 B9 20 7B 85 B0
+FFE0: A5 FF FF FF 52 59 4F 52 | 53 FE 00 C0 FC FF FF FF
+```
+
+Returning through the confirmed `STR8` command and pressing `H` during the
+startup dots again produced `BOOT WARM` and HIMON `00.0807(2141)`. A physical
+reset with no selector input retained STR8-N `00.0807(2000)`, then printed
+`BOOT COLD`, `RAM ZERO OK`, and HIMON `00.0807(2141)`. Because that reset
+correctly cleared RAM, the CRC fixture was assembled fresh and run one final
+time. It returned `$AC` and reproduced all four rows above exactly.
+
+This hardware-accepts the focused card: three-sector Bank-3 range install,
+first local directory record, shell and startup positive `H`, preserved
+sector-F reset/cold recovery, read-only Bank-0 staging, Bank-3 restoration,
+and unchanged source-bank CRCs. A valid Bank-0 package load/run remains a
+separate promotion gate.
 
 ## Stop Conditions And Evidence Boundary
 
