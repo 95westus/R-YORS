@@ -72,9 +72,9 @@ matrix, invalid-package stage/restore rail, and valid Bank-0 package execution
 are hardware-accepted. V1.02 is now the default combined-image/documentation
 baseline. The frozen `$0E5F` compact rebuild, directory-preserving sector-F
 refresh, reset path, local-HIMON handoff, and NMI smoke are hardware-accepted.
-The current presentation-only successor is `$0E5D`; it retains those contracts
-but needs a focused banner/timing smoke before its exact bytes are called
-hardware-accepted.
+The current presentation-only successor is `$0E5D`. Its exact refresh, banner,
+live selection, timeout, warm `H`, and post-refresh `C-E` install are board-
+accepted; only deliberate key discard during the first `WAIT` dots remains.
 
 The Bank Jump Record publishes `$1FFD-$1FFF = 42 4A nn` after a validated
 handoff, preserves a valid record through HIMON cold clear, and uses
@@ -139,6 +139,7 @@ service addresses.
 - [STR8 J0-J2 Board Test](DOC/GUIDES/STR8/STR8_J012_BOARD_TEST.md) - exact inventory, handoff, reset, and CRC acceptance rail
 - [STR8 Bank Jump Record Board Test](DOC/GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - accepted full `J0`-`J3` persistence matrix
 - [STR8 V1.02 Compact Refresh Board Test](DOC/GUIDES/STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md) - final exact-image refresh rail for the `$0E5F` resident
+- [STR8 V1.02 Presentation Board Test](DOC/GUIDES/STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md) - `$0E5D` successor evidence and final no-flash WAIT-discard gate
 - [STR8-N V1.02 Release Record](DOC/GUIDES/STR8/STR8_V1_02_RELEASE.md) - frozen identities, host matrix, board closure, and deferred scope
 - [STR8 V1 Migration Board Test](DOC/GUIDES/STR8/STR8_V1_MIGRATION_BOARD_TEST.md) - accepted flashable V1 migration and first journaled Bank-2 install proof
 - [STR8 Guest Image Qualification](DOC/GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - mandatory handoff, peripheral, vector, and CRC procedure for unrelated systems

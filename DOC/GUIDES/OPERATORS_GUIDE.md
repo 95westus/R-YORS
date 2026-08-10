@@ -30,7 +30,8 @@ The frozen `$0E5F` compact rebuild is board-accepted through its
 [directory-preserving refresh proof](STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md),
 including live readback, reset, local warm HIMON, NMI, and final cold boot.
 The current `$0E5D` presentation successor changes only boot text and timing
-order; its exact bytes remain host-verified until a focused board smoke.
+order. Its exact refresh, live selector, cold timeout, warm `H`, and `C-E`
+installer are board-accepted; deliberate key discard during `WAIT` remains.
 
 The hardware log also preserves the earlier V0 backup/restore and fixed
 `$C000-$EFFF` payload proofs with HIMON, OSI BASIC, and fig-FORTH. Those are

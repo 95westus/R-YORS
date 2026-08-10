@@ -13703,8 +13703,10 @@ cases. The gate now requires both the `$0040` hard reserve and the additional
 
 ## 2026-08-09 STR8 V1.02 Boot-Presentation Successor
 
-Host status: accepted. Board status: focused visible/timing smoke pending. The
-frozen `00.0808(2058)` image and its hardware transcripts remain unchanged.
+Host status: accepted. Board status: exact `0809.2224` refresh, visible phases,
+live `S`, cold timeout, warm `H`, and post-refresh `C-E` install accepted;
+deliberate key discard during `WAIT` remains. The frozen `00.0808(2058)` image
+and its hardware transcripts remain unchanged.
 
 The successor prints its identity before the USB-enumeration quarantine. The
 first 16 dots remain non-selectable; STR8 then drains RX and prints the selector
@@ -13730,6 +13732,9 @@ IVI NMI / IRQ-BRK             $F09C / $F0B0
 
 `make -C SRC all`, `str8-directory-check`,
 `str8-installer-transaction-check`, and `str8-i-refresh-a` pass with the new
-identity parser and exact startup transcript. The board smoke needs only to
-confirm the two 16-dot phases, ignored input during `WAIT`, active `0/1/2/H/S`
-selection after the menu line, and ordinary timeout to the local cold target.
+identity parser and exact startup transcript. Board transcript SHA-256
+`D2A3DAE1438809F3936D6C087B35E3987F0990B6D2A188FD5205F7F9EBB3D2AC`
+confirms the exact refresh, both visible phases, live selection, cold timeout,
+warm `H`, and a post-refresh `C-E` install. The final no-flash gate is to type
+`S` during `WAIT`, require it to be discarded and cold-timeout normally, then
+repeat with `S` during the menu dots and require the STR8 prompt.

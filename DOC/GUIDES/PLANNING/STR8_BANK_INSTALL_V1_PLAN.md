@@ -2,15 +2,16 @@
 
 ```text
 status:       V1.02 RANGE AND EXACT COMPACT IMAGE HARDWARE-ACCEPTED
-next gate:    FOCUSED PRESENTATION-SUCCESSOR BOARD SMOKE
+next gate:    WAIT-PHASE KEY-DISCARD OBSERVATION; NO FLASH WORK
 source date:  2026-08-08
 ```
 
 The frozen hardware release remains the exact `$0E5F` image documented below.
 The current source is a `$0E5D` presentation successor: it prints
 `STR8-N 1.02/mmdd.hhmm`, then `WAIT` with 16 quarantined dots, then
-`0-2 BOOT H HIMON S MENU` with 16 live dots. Its functional contracts are
-host-verified; only the new visible order and timing need focused board proof.
+`0-2 BOOT H HIMON S MENU` with 16 live dots. Exact refresh, live selection,
+cold timeout, warm `H`, and a post-refresh `C-E` install are hardware-accepted
+as `0809.2224`. Only deliberate key discard during `WAIT` remains.
 
 V1.01 is the accepted baseline for turning the WDC board into four independently
 selectable bank environments while keeping STR8-N as the Bank-3 reset

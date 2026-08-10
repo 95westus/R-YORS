@@ -20867,3 +20867,39 @@ A second physical RESET, with no selector input, again displayed compact STR8
 `00.0807(2141)`. This hardware-accepts the reset resident, local warm handoff,
 NMI reporting, and normal Bank-3 cold path. The compact-refresh board gate is
 closed.
+
+## 2026-08-09: V1.02 presentation successor partially hardware-accepted
+
+Board transcript SHA-256
+`D2A3DAE1438809F3936D6C087B35E3987F0990B6D2A188FD5205F7F9EBB3D2AC`
+records the directory-preserving refresh from source commit `8193fc0` to
+`STR8-N 1.02/0809.2224`. The exact combined BIN SHA-256 is
+`4933A5FE0BE772D200C61F3712A3560FF6D577159FD6D597F60183C31EB4E6DE`;
+the exact generated refresh-source SHA-256 is
+`C44E7AE23275965B32DF3E67DBB5F774408084DB46360F9A0507E9A8EC726F20`.
+
+TopWriter `S` returned `TW STG` / `TW OK`. `P` passed its mandatory verify,
+accepted the full `WRITE` confirmation, and returned `TW PRG` / `TW OK`.
+The installed resident then displayed:
+
+```text
+STR8-N 1.02/0809.2224
+WAIT ................
+0-2 BOOT H HIMON S MENU ..S
+I H J0-3
+STR8-N>
+```
+
+The transcript also accepts a complete no-input selector and normal cold boot,
+a live `H` warm handoff, and two successful post-refresh Bank-3 `C-E`
+transactions. The local HIMON remained `00.0808(2058)` because the operator
+sent the older self-contained HIMON stream; this is not a STR8 installer
+failure. An attempted HIMON `L F` of a worker-bearing STR8 stream correctly
+failed protected at `$0200`.
+
+No key was deliberately typed during the first `WAIT` phase, so its midpoint
+discard behavior is not yet hardware-proven. The final gate is one reset with
+an early `S` that must be discarded and cold-timeout normally, followed by one
+reset with `S` during the live menu dots that must enter STR8. No further flash
+operation is required. See
+[STR8 V1.02 Presentation-Successor Board Test](../STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md).

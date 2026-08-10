@@ -44,8 +44,9 @@ the expected Bank-3 sector-F CRC changes tracked only the directory journal.
 The frozen `$0E5F` compact rebuild and its exact shifted resident addresses are
 hardware-accepted by the
 [compact-image refresh proof](STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md).
-The current `$0E5D` successor only changes the boot presentation and remains
-host-verified pending a focused visible/timing smoke.
+The current `$0E5D` successor only changes the boot presentation. Its exact
+refresh, live selector, cold timeout, warm `H`, and post-refresh `C-E` install
+are board-accepted. Only deliberate key discard during `WAIT` remains.
 
 The top sector exposes stable service entries at `$F003` for the resident
 worker doorway and `$F009` for the V1 validated-record service. In the split

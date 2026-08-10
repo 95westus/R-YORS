@@ -2,9 +2,9 @@
 
 Status: frozen hardware-accepted release. Firmware source is commit
 `ee45327281b2`; later commits freeze its operator rail, hardware evidence,
-release status, and generated documentation. Current source is a host-verified
-presentation successor and is not byte-identical to this record; use the
-listed commit to reproduce these hashes and transcripts.
+release status, and generated documentation. Current source is a partially
+hardware-accepted presentation successor and is not byte-identical to this
+record; use the listed commit to reproduce these hashes and transcripts.
 
 ## Frozen Build
 
