@@ -21,8 +21,21 @@ Those transcripts are intentionally left intact.
 - `bank3-erase-8000-bfff-transient-3000.a` erases the installed Bank-3 ASM
   sectors `$8000-$BFFF`.
 
-Do not use these on the accepted current board state. The maintained V1 update
-path is `../str8n-v1-refresh-transient-3000.a`.
+Do not use these on the accepted current board state. Generate the maintained
+V1 update path as
+`SRC/BUILD/generated/asm-samples/str8-i-refresh-transient-3000.a` with
+`make -C SRC str8-i-refresh-a`.
+
+## Completed Split-V1 Proof Fixtures
+
+- `str8-bank-select-service-proof-2000.a` froze the accepted `$F010/$0203`
+  bank-selector proof.
+- `str8-bank0-ap-smoke.a` produced the accepted RAM and Bank-0 AP marker.
+- `str8-jump-inventory-v1-3000.a` produced the accepted J0-J3 CRC/face matrix;
+  use maintained `../str8-bank-crc-all-3000.a` for routine inventory.
+- `str8n-v1-refresh-transient-3000.a` embeds the exact range/refresh proof
+  candidate. Generate a current `str8-i-refresh-transient-3000.a` instead of
+  reusing its stale image bytes.
 
 ## Split-V1 `$F003` Compatibility Archives
 

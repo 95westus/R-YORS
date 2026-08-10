@@ -26,7 +26,7 @@ $rows = @(
     [pscustomobject]@{ Target = "str8-v1-install-stream"; Category = "monitor"; Description = "Build one-file mutation-worker plus 32K bank transport: BUILD/s19/str8-v1-i-bank012.s19." }
     [pscustomobject]@{ Target = "str8-v1-negative-streams"; Category = "monitor"; Description = "Build the bad-worker and post-START interruption S19 board-test streams." }
     [pscustomobject]@{ Target = "str8-v1-topwrite-a"; Category = "monitor"; Description = "Build a one-time V1 migration writer under BUILD; unsafe on installed V1." }
-    [pscustomobject]@{ Target = "str8-v1-refresh-a"; Category = "monitor"; Description = "Build a directory-preserving V1 refresh TopWriter under BUILD." }
+    [pscustomobject]@{ Target = "str8-i-refresh-a"; Category = "monitor"; Description = "Build the directory-preserving STR8 I refresh writer under BUILD." }
     [pscustomobject]@{ Target = "str8-directory-check"; Category = "monitor"; Description = "Run host reference and compiled-resident validation of frozen V1 directory records and journals against the guarded preview BIN." }
     [pscustomobject]@{ Target = "str8-installer-dry-check"; Category = "monitor"; Description = "Build and execute the oversized, nonflashable V1 dense S19 receive/stage host proof." }
     [pscustomobject]@{ Target = "str8-worker-mode-check"; Category = "monitor"; Description = "Execute the compiled worker dispatcher for all 256 mode bytes; require only 05-08 and fail closed for the other 252." }

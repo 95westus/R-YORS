@@ -35,7 +35,7 @@ SRC/BUILD/bin/himon-str8-v1.bin
 SRC/BUILD/s19/himon-str8-v1-install.s19
 SRC/BUILD/s19/str8-v1-i-bank012.s19
 DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-topwrite-transient-3000.a
-DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-refresh-transient-3000.a
 ```
 
 Record SHA-256 values for all five files. The full-bank install S19 is an

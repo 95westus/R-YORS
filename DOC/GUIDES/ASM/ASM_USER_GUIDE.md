@@ -681,7 +681,8 @@ reuses that low RAM, so run `asm-session-report` before staging if symbol and
 fixup names from the current session are required.
 
 For a current V1 STR8 top-sector update, use
-`DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a`. It copies the live
+`SRC/BUILD/generated/asm-samples/str8-i-refresh-transient-3000.a`. Generate it
+with `make -C SRC str8-i-refresh-a`. It copies the live
 `$FFB0-$FFEF` directory before staging the embedded STR8-N image into
 `$0A00-$19FF` and should leave `$1A00-$1A03 = 00 AC 00 00`. After verifying
 the staged bytes, `G 3003` erases/programs/verifies the active top sector and

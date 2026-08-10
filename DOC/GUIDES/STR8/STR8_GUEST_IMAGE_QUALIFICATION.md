@@ -201,7 +201,7 @@ Programming is separate from `J`:
 2. Program only the intended destination with the already-proven flash path.
 3. Read back the complete destination bank.
 4. Require byte-for-byte agreement with the host image when tooling permits.
-5. Run the Bank-3 inventory fixture and require:
+5. Run the Bank-3 all-bank CRC tool and require:
 
 ```text
 status/PCR/bank   $AC / $EE / $03
@@ -211,7 +211,7 @@ unmodified banks retain their prior CRCs
 ```
 
 Run
-[str8-jump-inventory-3000.a](../ASM/SAMPLES/str8-jump-inventory-3000.a)
+[str8-bank-crc-all-3000.a](../ASM/SAMPLES/str8-bank-crc-all-3000.a)
 only from Bank 3. It bootstraps the installed `$F010` selector, stages through
 its copied `$0203` entry, and restores Bank 3 after every sector.
 

@@ -9,14 +9,13 @@ fixtures, proof-only sources, and completed board-test cards belong in
 
 - `asm-session-report-ap-2000.a` - current movable, Bank-0-storable ASM
   session reporter when supplied from a compatible RAM/visible-flash path.
-- `str8-bank0-ap-smoke.a` - tiny movable marker AP used by the split-V1
-  Bank-0 load/run promotion gate.
 
 The old general Bank-0/Bank-2 AP installation surface is archived. Split-V1
 HIMON's `$F010/$0203` banked AP staging path, invalid-package rejection, and
 valid-package execution are hardware-accepted. The fixed `str8-bank-maint P`
 carrier at Bank 0 `$BF00` closed that proof without restoring the old `$F003`
-installers.
+installers. Its exact marker source is retained under `OLD` as a regression
+fixture.
 
 ## Flash Tools
 
@@ -45,12 +44,15 @@ sources and an explanation of their former roles are under `OLD`.
 - `str8-bank-maint-2000.a` - carried-worker copy/erase/map/fixed-AP-put
   utility; `M` distinguishes valid AP envelopes from ordinary used bytes and
   also displays all four Bank-3 directory records.
-- `str8-jump-inventory-3000.a` - read-only pre-handoff bank inventory through
-  `$F010/$0203`; no mutation-worker authority.
 - `topwr-transient-3000.a` - maintained staged top-sector shop tool; preserve
   the live V1 directory when overlaying a replacement image.
-- `str8n-v1-refresh-transient-3000.a` - tracked V1 top-sector refresh writer;
-  copies live `$FFB0-$FFEF` before staging.
+
+The current directory-preserving top-sector source is generated as
+`SRC/BUILD/generated/asm-samples/str8-i-refresh-transient-3000.a` by
+`make -C SRC str8-i-refresh-a`. Generated writer names use
+`str8-i-{refresh,migrate,replace-legacy}-transient-3000.a`; only `refresh` is
+the normal installed-V1 path. Exact writers used by completed board proofs are
+frozen under `OLD`.
 
 Routine writer generation targets `SRC/BUILD/generated/asm-samples`. Tracked
 board-facing samples change only when a generated candidate is deliberately
@@ -61,7 +63,7 @@ promoted; normal builds do not rewrite this directory or `OLD`.
 | Historical source under `OLD` | Class | Current disposition |
 | --- | --- | --- |
 | `str8-bank-crc-all-3000.a` | read-only | Replaced here by `$F010/$0203` source |
-| `str8-jump-inventory-3000.a` | read-only | Replaced here by `$F010/$0203` source |
+| `str8-jump-inventory-3000.a` | read-only | Replaced by `str8-bank-crc-all-3000.a`; accepted `$F010/$0203` jump fixture is archived |
 | `flash-bank-read-ap-2000.a` | read-only | Replaced here by `$F010/$0203` source; stage/restore and valid AP run accepted |
 | `flash-bank-dump-ap-2000.a` | read-only | Replaced here by `$F010/$0203` source; stage/restore and valid AP run accepted |
 | `str8-bank-copy-2000.a` | destructive | Retired; use `str8-bank-maint` `C` |

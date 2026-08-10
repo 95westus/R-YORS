@@ -309,7 +309,7 @@ Refreshing the active Bank-3 top sector is separate from `I`; `I` cannot select
 Bank-3 sector F. Use only the directory-preserving V1 refresh procedure:
 
 ```text
-make -C SRC str8-v1-refresh-a
+make -C SRC str8-i-refresh-a
 ```
 
 That writer copies the live `$FFB0-$FFEF` directory before staging the new top

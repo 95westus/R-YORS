@@ -2,7 +2,7 @@ param(
     [string]$SourcePath = `
         "../DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a",
     [string]$SmokeSourcePath = `
-        "../DOC/GUIDES/ASM/SAMPLES/str8-bank0-ap-smoke.a",
+        "../DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank0-ap-smoke.a",
     [string]$MutationWorkerS19Path = `
         "BUILD/s19/str8-mutation-worker-0200.s19",
     [string]$BuildDir = "BUILD/tmp/str8-bank-maint-check",

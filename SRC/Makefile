@@ -83,9 +83,9 @@ STR8_V1_NEGATIVE_GEN := tools/build_str8_v1_negative_streams.ps1
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
 STR8_TOP_STAGE_S19 := $(S19_DIR)/str8-top-stage-0a00.s19
 STR8_GENERATED_SAMPLE_DIR := $(BUILD_DIR)/generated/asm-samples
-STR8_TOPWRITE_A := $(STR8_GENERATED_SAMPLE_DIR)/str8n-topwrite-transient-3000.a
-STR8_V1_TOPWRITE_A := $(STR8_GENERATED_SAMPLE_DIR)/str8n-v1-topwrite-transient-3000.a
-STR8_V1_REFRESH_A := $(STR8_GENERATED_SAMPLE_DIR)/str8n-v1-current-compact-refresh-transient-3000.a
+STR8_TOPWRITE_A := $(STR8_GENERATED_SAMPLE_DIR)/str8-i-replace-legacy-transient-3000.a
+STR8_V1_TOPWRITE_A := $(STR8_GENERATED_SAMPLE_DIR)/str8-i-migrate-transient-3000.a
+STR8_V1_REFRESH_A := $(STR8_GENERATED_SAMPLE_DIR)/str8-i-refresh-transient-3000.a
 STR8_TOPWRITE_A_GEN := tools/emit_str8_topwrite_a.ps1
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
@@ -104,12 +104,12 @@ STR8_DIRECTORY_CHECK := tools/check_str8_directory_v1.ps1
 STR8_WORKER_MODE_CHECK := tools/check_str8_worker_modes.ps1
 STR8_READONLY_BANK_CHECK := tools/check_str8_readonly_bank_tools.ps1
 STR8_BANK_CRC_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a
-STR8_JUMP_INVENTORY_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-jump-inventory-3000.a
+STR8_JUMP_INVENTORY_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/OLD/str8-jump-inventory-v1-3000.a
 STR8_BANK_READ_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/flash-bank-read-ap-2000.a
 STR8_BANK_DUMP_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/flash-bank-dump-ap-2000.a
 STR8_BANK_MAINT_CHECK := tools/check_str8_bank_maint_source.ps1
 STR8_BANK_MAINT_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a
-STR8_BANK0_AP_SMOKE_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank0-ap-smoke.a
+STR8_BANK0_AP_SMOKE_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank0-ap-smoke.a
 STR8_BANK_MAINT_EMBED := tools/embed_str8_bank_maint_worker.ps1
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
 STR8_S19 := $(S19_DIR)/str8-f000.s19
@@ -325,7 +325,7 @@ FIRMWARE_TARGETS ?= \
 	himon-banked-ap-check \
 	himon-str8-rom-bin \
 	himon-str8-rom-install-s19 \
-	str8-v1-refresh-a \
+	str8-i-refresh-a \
 	str8-readonly-bank-tools-check \
 	str8-bank-maint-source-check \
 	str8-worker-mode-check \
@@ -388,7 +388,7 @@ RELEASE_TARGETS ?= \
 	himon-str8-rom-bin \
 	himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 \
-	str8-v1-refresh-a \
+	str8-i-refresh-a \
 	str8-readonly-bank-tools-check \
 	str8-bank-maint-source-check \
 	str8-worker-mode-check
@@ -479,8 +479,11 @@ str8-v1-negative-streams: $(STR8_V1_I_BANK012_S19) $(STR8_V1_BAD_WORKER_S19) $(S
 str8-v1-topwrite-a: $(STR8_V1_TOPWRITE_A)
 	@echo "Built V1 migration TopWriter $(STR8_V1_TOPWRITE_A)."
 
-str8-v1-refresh-a: $(STR8_V1_REFRESH_A)
+str8-i-refresh-a: $(STR8_V1_REFRESH_A)
 	@echo "Built directory-preserving V1 refresh writer $(STR8_V1_REFRESH_A)."
+
+str8-v1-refresh-a: str8-i-refresh-a
+	@echo "Compatibility target: use str8-i-refresh-a."
 
 str8-directory-check: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN) $(STR8_DIRECTORY_EQ) $(STR8_DIRECTORY_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_DIRECTORY_CHECK) -ConstantsPath "$(STR8_DIRECTORY_EQ)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)" -Str8MapPath "$(S19_DIR)/str8-v1-layout-f000.map"
@@ -1246,15 +1249,15 @@ $(STR8_TOP_STAGE_S19): $(HIMON_STR8_ROM_BIN) tools/build_str8_top_stage_s19.ps1
 
 $(STR8_TOPWRITE_A): $(HIMON_STR8_LEGACY_BIN) $(ASM_V1_FLASH_S19) $(STR8_S19) $(STR8_TOPWRITE_A_GEN)
 	@echo [ps] build $(STR8_TOPWRITE_A)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_LEGACY_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-f000.map" -OutPath "$(STR8_TOPWRITE_A)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_LEGACY_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-f000.map" -OutPath "$(STR8_TOPWRITE_A)" -WriterRole replace-legacy
 
 $(STR8_V1_TOPWRITE_A): $(HIMON_STR8_V1_BIN) $(ASM_V1_FLASH_S19) $(STR8_V1_INSTALLER_TXN_S19) $(STR8_TOPWRITE_A_GEN)
 	@echo [ps] build $(STR8_V1_TOPWRITE_A)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_V1_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map" -OutPath "$(STR8_V1_TOPWRITE_A)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_V1_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map" -OutPath "$(STR8_V1_TOPWRITE_A)" -WriterRole migrate
 
 $(STR8_V1_REFRESH_A): $(HIMON_STR8_V1_BIN) $(ASM_V1_FLASH_S19) $(STR8_V1_INSTALLER_TXN_S19) $(STR8_TOPWRITE_A_GEN)
 	@echo [ps] build $(STR8_V1_REFRESH_A)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_V1_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map" -OutPath "$(STR8_V1_REFRESH_A)" -PreserveV1Directory
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_TOPWRITE_A_GEN) -BinPath "$(HIMON_STR8_V1_BIN)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map" -OutPath "$(STR8_V1_REFRESH_A)" -WriterRole refresh -PreserveV1Directory
 
 $(MSBASIC_OSI_RAM_S19): $(MSBASIC_OSI_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1398,7 +1401,7 @@ endif
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-str8-rom-bin \
 	himon-banked-ap-check \
-	str8-v1-layout-preview str8-v1-artifact str8-v1-install-stream str8-v1-range-proof-streams str8-v1-negative-streams str8-v1-topwrite-a str8-v1-refresh-a str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
+	str8-v1-layout-preview str8-v1-artifact str8-v1-install-stream str8-v1-range-proof-streams str8-v1-negative-streams str8-v1-topwrite-a str8-i-refresh-a str8-v1-refresh-a str8-directory-check str8-installer-dry-check str8-installer-transaction-check str8-worker-mode-check str8-worker-split-check \
 	str8-readonly-bank-tools-check str8-bank-maint-source-check \
 	himon-rom-install-s19 himon-str8-rom-install-s19 \
 	himon-str8-himon-update-s19 himon-str8-update str8-himon-update \

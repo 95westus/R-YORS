@@ -2,7 +2,9 @@ param(
     [string]$BinPath = "BUILD/bin/himon-str8-rom.bin",
     [string]$AsmMapPath = "BUILD/s19/asm-v1-flash-8000.map",
     [string]$Str8MapPath = "BUILD/s19/str8-f000.map",
-    [string]$OutPath = "BUILD/generated/asm-samples/str8n-topwrite-transient-3000.a",
+    [string]$OutPath = "BUILD/generated/asm-samples/str8-i-replace-legacy-transient-3000.a",
+    [ValidateSet("replace-legacy", "migrate", "refresh")]
+    [string]$WriterRole = "replace-legacy",
     [int]$SourceOffset = 0x7000,
     [int]$StageAddress = 0x0A00,
     [int]$ImageAddress = 0x4000,
@@ -12,6 +14,13 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+if ($PreserveV1Directory -and $WriterRole -ne "refresh") {
+    throw "PreserveV1Directory requires WriterRole refresh"
+}
+if (-not $PreserveV1Directory -and $WriterRole -eq "refresh") {
+    throw "WriterRole refresh requires PreserveV1Directory"
+}
 
 function Format-HexByte([int]$Value) {
     return ('$' + (($Value -band 0xff).ToString('X2')))
@@ -92,7 +101,12 @@ for ($i = 0; $i -lt $idBytes.Length; $i++) {
     $idBytes[$i] = $top[$idOffset + $i] -band 0x7F
 }
 $idText = [System.Text.Encoding]::ASCII.GetString($idBytes)
-if ($idText -notmatch '^\r\nSTR8-N 1\.02/\d{4}\.\d{4}\r\nWAIT $') {
+$idPattern = if ($WriterRole -eq 'replace-legacy') {
+    '^\r\nSTR8-N 1\.02/\d{4}\.\d{4} \$F\r\n$'
+} else {
+    '^\r\nSTR8-N 1\.02/\d{4}\.\d{4}\r\nWAIT $'
+}
+if ($idText -notmatch $idPattern) {
     throw ("STR8-N FACE id has unexpected text: {0}" -f $idText)
 }
 Assert-Bytes -Bytes $top -Offset 0x0FFA -Expected @(
@@ -112,7 +126,12 @@ function Add-Line([string]$Line) {
     $script:lines.Add($Line)
 }
 
-Add-Line '; STR8N-TOPWRITE-TRANSIENT-3000.A'
+$writerTitle = switch ($WriterRole) {
+    'refresh' { 'STR8-I-REFRESH-TRANSIENT-3000.A' }
+    'migrate' { 'STR8-I-MIGRATE-TRANSIENT-3000.A' }
+    default { 'STR8-I-REPLACE-LEGACY-TRANSIENT-3000.A' }
+}
+Add-Line ('; ' + $writerTitle)
 Add-Line '; SELF-CONTAINED STR8-N TOP-SECTOR WRITER.'
 Add-Line '; ASSEMBLE WITH ASM-F2. NO SEPARATE STR8-TOP-STAGE S19 LOAD NEEDED.'
 if ($PreserveV1Directory) {

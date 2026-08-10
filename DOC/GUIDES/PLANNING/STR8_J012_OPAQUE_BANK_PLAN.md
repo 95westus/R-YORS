@@ -576,7 +576,7 @@ Files under `DOC/GENERATED/` remain generated output. Change their generator in
 - Build current STR8 and combined ROM.
 - Save current resident/worker addresses and sizes.
 - Run
-  [str8-jump-inventory-3000.a](../ASM/SAMPLES/str8-jump-inventory-3000.a),
+  [str8-jump-inventory-v1-3000.a](../ASM/SAMPLES/OLD/str8-jump-inventory-v1-3000.a),
   which records one full-32K CRC, vectors, selected top bytes, and final PCR
   state for every bank without writing flash.
 - Record each bank's CRC, reset/NMI/IRQ vectors, known identity, and whether the

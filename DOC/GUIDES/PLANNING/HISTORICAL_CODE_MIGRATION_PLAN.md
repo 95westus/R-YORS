@@ -75,7 +75,7 @@ DOC/GUIDES/ASM/SAMPLES/OLD/bankput-transient-3000.a
 ```
 
 The legacy TopWriter has now moved to `OLD`; the current board-facing generated
-writer is `DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a`.
+writer is `DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-refresh-transient-3000.a`.
 The bankput source moved to `OLD` on 2026-08-07 after split V1 removed its
 `$F003` mode-`$05/$06` service. The remaining files support current ASM-F2,
 AP, and reporter workflows only where their current source path says so.

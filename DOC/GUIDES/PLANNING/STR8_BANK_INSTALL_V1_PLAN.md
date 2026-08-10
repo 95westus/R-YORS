@@ -839,14 +839,15 @@ Every later TopWriter must:
 Later TopWriters preserve all 64 bytes, including incomplete or invalid
 records. They never silently erase a damaged record or make it appear fresh.
 
-The generated V1 artifacts now separate those two jobs. The one-time
-`str8n-v1-topwrite-transient-3000.a` migration writer still uses the embedded
-empty directory. Once V1 is installed,
-`str8n-v1-refresh-transient-3000.a` copies the live `$FFB0-$FFEF` bytes into
-its embedded RAM image before staging, so its existing full-stage verifier and
-programmer carry the exact directory through a Bank-3 top-sector refresh. The
-refresh source consumes all 64 ASM-F2 symbols and must not be used as the
-first old-layout-to-V1 migration writer.
+The generated V1 artifacts separate those two jobs. The explicit
+`str8-i-migrate-transient-3000.a` writer uses the embedded empty directory.
+Once V1 is installed, `str8-i-refresh-transient-3000.a` copies the live
+`$FFB0-$FFEF` bytes into its embedded RAM image before staging, so its existing
+full-stage verifier and programmer carry the exact directory through a Bank-3
+top-sector refresh. The refresh source consumes all 64 ASM-F2 symbols and must
+not be used as the first old-layout-to-V1 migration writer. Frozen writers
+with the former `str8n-v1-*` names remain under `SAMPLES/OLD` as exact board
+evidence.
 
 The explicit `str8-v1-negative-streams` target now emits two board-only S19
 fixtures. `str8-v1-i-bad-worker-id.s19` changes one checksummed identity byte

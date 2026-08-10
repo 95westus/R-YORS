@@ -2,7 +2,7 @@ param(
     [string]$CrcSourcePath = `
         "../DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a",
     [string]$InventorySourcePath = `
-        "../DOC/GUIDES/ASM/SAMPLES/str8-jump-inventory-3000.a",
+        "../DOC/GUIDES/ASM/SAMPLES/OLD/str8-jump-inventory-v1-3000.a",
     [string]$ReadApSourcePath = `
         "../DOC/GUIDES/ASM/SAMPLES/flash-bank-read-ap-2000.a",
     [string]$DumpApSourcePath = `
@@ -158,7 +158,7 @@ function Check-ApSource(
 $crcSymbols = Check-Source $CrcSourcePath 'str8-bank-crc-all-3000'
 $inventorySymbols = Check-Source `
     $InventorySourcePath `
-    'str8-jump-inventory-3000'
+    'archived str8-jump-inventory-v1-3000 proof fixture'
 $readSymbols = Check-ApSource `
     $ReadApSourcePath `
     'flash-bank-read-ap-2000' `
@@ -174,6 +174,6 @@ $dumpSymbols = Check-ApSource `
       'SYS_READ_CSTRING_ECHO_UPPER', 'BIO_FTDI_PUT_CSTR')
 
 Write-Host (
-    'STR8 READ-ONLY BANK TOOLS = PASS; CRC={0}/64; inventory={1}/64; read AP={2}/64; dump AP={3}/64; $F010/$0203 only' -f `
+    'STR8 READ-ONLY BANK SOURCES = PASS; CRC={0}/64; archived inventory proof={1}/64; read AP={2}/64; dump AP={3}/64; $F010/$0203 only' -f `
         $crcSymbols, $inventorySymbols, $readSymbols, $dumpSymbols
 )

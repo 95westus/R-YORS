@@ -12263,7 +12263,7 @@ The prompt-synchronized board procedure for installing this normal STR8 top
 sector and testing the published selector is
 [`STR8_0805_BOARD_TEST.md`](../STR8/STR8_0805_BOARD_TEST.md). It starts from
 the reported `00.0802(1823)` Bank-2/Bank-3 state and adds the non-destructive
-[`str8-bank-select-service-proof-2000.a`](SAMPLES/str8-bank-select-service-proof-2000.a)
+[`str8-bank-select-service-proof-2000.a`](SAMPLES/OLD/str8-bank-select-service-proof-2000.a)
 fixture. The required path records the old header/vectors, stages and inspects
 the exact replacement bytes, installs Bank-3 sector F, verifies implicit help,
 exercises `$F010/$0203`, compares four-bank CRCs, and closes the J2/J3 record
@@ -13077,7 +13077,7 @@ BUILD/bin/himon-str8-v1.bin
 BUILD/s19/himon-str8-v1-install.s19
 BUILD/s19/str8-v1-i-bank012.s19
 DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-topwrite-transient-3000.a
-DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-refresh-transient-3000.a
 ```
 
 The 32K BIN contains the transaction resident, exact packed jump worker, an
@@ -13227,9 +13227,11 @@ banked AP loader migration.
 
 The pre-split versions of `str8-bank-crc-all-3000.a`,
 `str8-jump-inventory-3000.a`, `flash-bank-read-ap-2000.a`, and
-`flash-bank-dump-ap-2000.a` are retained under `SAMPLES/OLD`. Their maintained
-replacements use only `$F010/$0203`, restore Bank 3 after each staged copy,
-and contain no flash-mutation doorway.
+`flash-bank-dump-ap-2000.a` are retained under `SAMPLES/OLD`. Their replacement
+sources use only `$F010/$0203`, restore Bank 3 after each staged copy, and
+contain no flash-mutation doorway. The accepted replacement jump-inventory
+fixture was later archived as `str8-jump-inventory-v1-3000.a`; routine
+inventory uses maintained `str8-bank-crc-all-3000.a`.
 
 The pre-split `str8-bank-copy-2000.a`, `flash-erase-bank-ap-2000.a`, three
 `bank*put` sources, and `flash-bank-erase-write-ap-2000.a` are retired under
@@ -13727,7 +13729,7 @@ IVI NMI / IRQ-BRK             $F09C / $F0B0
 ```
 
 `make -C SRC all`, `str8-directory-check`,
-`str8-installer-transaction-check`, and `str8-v1-refresh-a` pass with the new
+`str8-installer-transaction-check`, and `str8-i-refresh-a` pass with the new
 identity parser and exact startup transcript. The board smoke needs only to
 confirm the two 16-dot phases, ignored input during `WAIT`, active `0/1/2/H/S`
 selection after the menu line, and ordinary timeout to the local cold target.

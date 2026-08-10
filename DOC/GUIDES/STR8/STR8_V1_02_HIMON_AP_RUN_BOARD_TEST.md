@@ -37,7 +37,7 @@ Under Bank-3 HIMON, use a compatible local ASM-F2:
 
 ```text
 ASM NEW
-paste DOC/GUIDES/ASM/SAMPLES/str8-bank0-ap-smoke.a
+paste DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank0-ap-smoke.a
 SEAL> PACKAGE $4000
 SEAL> .
 AP $4000 $3000

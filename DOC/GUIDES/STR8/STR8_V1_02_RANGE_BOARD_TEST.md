@@ -36,7 +36,7 @@ Record the visible STR8/HIMON/ASM-F2 identity and SHA-256 for:
 
 ```text
 SRC/BUILD/bin/himon-str8-v1.bin
-DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-refresh-transient-3000.a
 SRC/BUILD/s19/str8-v1-i-asm-8-b.s19
 SRC/BUILD/s19/str8-v1-i-himon-c-e.s19
 DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a
@@ -106,7 +106,7 @@ is the preservation oracle for every later step.
 Follow the directory-preserving path only. At HIMON enter `ASM NEW`, then send:
 
 ```text
-DOC/GUIDES/ASM/SAMPLES/str8n-v1-refresh-transient-3000.a
+DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-refresh-transient-3000.a
 ```
 
 Require `ASM OK` and `SEAL>`, enter `.`, then stage and quit before programming:
