@@ -16,8 +16,9 @@ $sourceVersion = "HIMON V 00.$sourceStamp"
 $hashVersion = "HIMON: V 00.$sourceStamp"
 $asmDisplayVersion = "ASM-F2 00.$Stamp"
 $asmSourceVersion = "ASM-F2 00.$sourceStamp"
-$str8DisplayVersion = "STR8-N V 00.$Stamp `$F"
-$str8SourceVersion = "STR8-N V 00.$sourceStamp)"
+$str8BuildStamp = $Stamp.Replace('(', '.').Replace(')', '')
+$str8DisplayVersion = "STR8-N 1.02/$str8BuildStamp"
+$str8SourceVersion = $str8DisplayVersion
 
 $lines = @(
     'MSG_HIMON_VERSION_TEXT:  DB              "' + $sourceVersion + '",('')''+$80)'
@@ -48,8 +49,8 @@ if ($Str8OutPath) {
     if ($parent) {
         New-Item -ItemType Directory -Force -Path $parent | Out-Null
     }
-    # Generate the bank-neutral text prefix. str8.asm adds the build-specific
-    # terminator: resident ROM appends " $F"; the RAM proof appends only CRLF.
+    # Generate the bank-neutral identity. Current V1 appends its WAIT label;
+    # historical/RAM builds retain their own terminators in str8.asm.
     # The binary identity marker remains private to image tools.
     $str8Line = 'MSG_ID:                 DB              $0D,$0A,"' + $str8SourceVersion + '"'
     [System.IO.File]::WriteAllText($Str8OutPath, $str8Line + [Environment]::NewLine, [System.Text.Encoding]::ASCII)

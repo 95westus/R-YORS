@@ -39,10 +39,11 @@ CBI code form stays condensed for source comments:
                                with a compact $F identity suffix.
 ```
 
-Resident STR8 now displays `STR8-N V 00.mmdd(hhmm) $F`. The following
-`ROM $F000` screen line is removed; `$F` denotes the protected top-sector
-location without spending a second line. The RAM-proof build retains its
-separate `RAM $0200 BUF $4000-$4FFF` description and does not gain `$F`.
+Current resident STR8 displays `STR8-N 1.02/mmdd.hhmm`, followed by a `WAIT`
+line. The earlier `$F` suffix and separate `ROM $F000` line are both absent;
+the product name identifies the resident while the semantic/build split is
+clear. The RAM-proof build retains its separate
+`RAM $0200 BUF $4000-$4FFF` description.
 
 Host layout and linked-image checks cover the new suffix and reject the old
 resident line. The visible resident-board smoke remains required and is

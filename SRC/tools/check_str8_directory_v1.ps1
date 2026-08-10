@@ -2154,14 +2154,14 @@ if ($transactionInstallerMode) {
     $txnPage1CallCount = (Select-String -LiteralPath $str8SourcePath `
         -Pattern '^\s+(?:JSR|JMP|BRA)\s+STR8_PRINT_TXN_PAGE1_X\s*$').Count
 
-    Assert-True (($residentSize -eq 0x0E5F) -and
+    Assert-True (($residentSize -eq 0x0E5D) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnRangePromptAddress -eq 0xFDA1) -and
-        ($txnSummaryAddress -eq 0xFDC5) -and ($txnInstallOkAddress -eq 0xFDCA) -and
-        ($txnTypeAddress -eq 0xFDD2) -and
-        ($txnDescAddress -eq 0xFDD6) -and ($txnEntryAddress -eq 0xFDD9) -and
-        ($txnEmptyAddress -eq 0xFDDD) -and
+        ($txnRangePromptAddress -eq 0xFD9F) -and
+        ($txnSummaryAddress -eq 0xFDC3) -and ($txnInstallOkAddress -eq 0xFDC8) -and
+        ($txnTypeAddress -eq 0xFDD0) -and
+        ($txnDescAddress -eq 0xFDD4) -and ($txnEntryAddress -eq 0xFDD7) -and
+        ($txnEmptyAddress -eq 0xFDDB) -and
         ($txnPage0CallCount -eq 21) -and ($txnPage1CallCount -eq 17)) `
         'Transaction range receiver must retain its exact compact size, boundary, and 21/17 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
@@ -2290,10 +2290,12 @@ $startup = Invoke-ResidentDirectoryRoutine -Memory $startupMemory `
     -TimedInput $startupTimedInput
 $idText = [System.Text.Encoding]::ASCII.GetString((Get-HighBitStringBytes $residentTemplate $residentIdMessage))
 $bootPromptText = [System.Text.Encoding]::ASCII.GetString((Get-HighBitStringBytes $residentTemplate $residentBootPrompt))
-Assert-True ($bootPromptText -eq '0/1/2=BOOT H=HIMON S=STR8  ') `
+Assert-True ($idText -match "^`r`nSTR8-N 1\.02/[0-9]{4}\.[0-9]{4}`r`nWAIT `$" ) `
+    'V1 startup identity does not publish semantic/build version and WAIT phase'
+Assert-True ($bootPromptText -eq '0-2 BOOT H HIMON S MENU ') `
     'V1 startup selector does not publish local H and explicit 0/1/2 boot choices'
 [byte[]]$expectedStartup = [System.Text.Encoding]::ASCII.GetBytes(
-    (("`n" * 35) + "................`r`n${idText}${bootPromptText}...S"))
+    (("`n" * 35) + "${idText}................`r`n${bootPromptText}...S"))
 Assert-ByteArraysEqual $startup.Output $expectedStartup 'Two-phase startup output mismatch'
 Assert-True ($startup.Carry -and $startup.A -eq [byte][char]'S' -and
     $startup.DelayCalls -eq 19 -and $startup.TimedInputConsumed -eq $startupTimedInput.Count) `
@@ -2308,7 +2310,7 @@ $startup = Invoke-ResidentDirectoryRoutine -Memory $startupMemory `
     -DelayHook $residentStartupDelayHook `
     -WriteHook $residentWriteHook
 [byte[]]$expectedStartup = [System.Text.Encoding]::ASCII.GetBytes(
-    (("`n" * 35) + "................`r`n${idText}${bootPromptText}................"))
+    (("`n" * 35) + "${idText}................`r`n${bootPromptText}................"))
 Assert-ByteArraysEqual $startup.Output $expectedStartup 'Two-phase startup timeout output mismatch'
 Assert-True (-not $startup.Carry -and $startup.DelayCalls -eq 32) `
     'Two-phase startup timeout did not complete exactly 16 attach plus 16 live dots'

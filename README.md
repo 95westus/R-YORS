@@ -70,8 +70,11 @@ The banked-AP bullets now also apply to split V1. Current HIMON stages `AP Bn`
 input with a RAM-resident `$F010/$0203` select/copy/restore routine; its host
 matrix, invalid-package stage/restore rail, and valid Bank-0 package execution
 are hardware-accepted. V1.02 is now the default combined-image/documentation
-baseline. The current `$0E5F` compact rebuild, directory-preserving sector-F
+baseline. The frozen `$0E5F` compact rebuild, directory-preserving sector-F
 refresh, reset path, local-HIMON handoff, and NMI smoke are hardware-accepted.
+The current presentation-only successor is `$0E5D`; it retains those contracts
+but needs a focused banner/timing smoke before its exact bytes are called
+hardware-accepted.
 
 The Bank Jump Record publishes `$1FFD-$1FFF = 42 4A nn` after a validated
 handoff, preserves a valid record through HIMON cold clear, and uses
@@ -165,8 +168,8 @@ $8000-$BC6C  ASM-F2, entry $800C
 $BC6D-$BFFF  low-flash growth/AP-store hole
 $C000-$EEFF  HIMON, including the resident AP import linker
 $EF00-$EFFF  HIMON/STR8 growth hole
-$F000-$FE5E  STR8-N V1.02 resident
-$FE5F-$FF1E  $00C0 free: $0040 reserve plus $0080 growth room
+$F000-$FE5C  STR8-N V1.02 resident
+$FE5D-$FF1E  $00C2 free: $0040 reserve plus $0082 growth room
 $FF1F-$FFAF  stored jump-only RAM worker
 $FFB0-$FFEF  fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9  configuration pocket

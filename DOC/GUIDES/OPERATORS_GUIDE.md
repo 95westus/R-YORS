@@ -26,9 +26,11 @@ read-only banked AP staging, and valid Bank-0 AP execution are hardware-
 accepted. Banks 0-2 accept 4K through 32K ranges; Bank 3 accepts 4K through
 28K and rejects its live sector F.
 
-The exact `$0E5F` compact rebuild is board-accepted through its
+The frozen `$0E5F` compact rebuild is board-accepted through its
 [directory-preserving refresh proof](STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md),
 including live readback, reset, local warm HIMON, NMI, and final cold boot.
+The current `$0E5D` presentation successor changes only boot text and timing
+order; its exact bytes remain host-verified until a focused board smoke.
 
 The hardware log also preserves the earlier V0 backup/restore and fixed
 `$C000-$EFFF` payload proofs with HIMON, OSI BASIC, and fig-FORTH. Those are
@@ -115,9 +117,9 @@ Current combined-image facts:
 
 ```text
 HIMON:           $C000-$EEFF
-STR8 resident:   $F000-$FE5E
+STR8 resident:   $F000-$FE5C
 IVI entries:     NMI $F09C, IRQ/BRK $F0B0
-free/reserve:    $FE5F-$FF1E, $00C0 bytes
+free/reserve:    $FE5D-$FF1E, $00C2 bytes
 jump worker:     $FF1F-$FFAF, copied to $0200-$0290
 V1 directory:    $FFB0-$FFEF
 config pocket:   $FFF0-$FFF9
@@ -142,19 +144,20 @@ D 1FFD 1FFF  42 4A FF
 
 ## First Boot
 
-On reset, STR8 initializes IVI vector cells and FTDI console I/O and prints 16
-progress dots across an approximately 5.991-second attach interval. It then
-drains queued input, prints its make-time identity, and opens the existing
-approximately six-second selector:
+On reset, STR8 initializes IVI vector cells and FTDI console I/O, prints its
+semantic/build identity and `WAIT`, then prints 16 progress dots across an
+approximately 5.991-second attach interval. It drains queued input and opens
+the existing approximately six-second selector:
 
 ```text
-................
-STR8-N V 00.mmdd(hhmm) $F
-0/1/2=BOOT H=HIMON S=STR8 ................
+STR8-N 1.02/mmdd.hhmm
+WAIT ................
+0-2 BOOT H HIMON S MENU ................
 ```
 
-STR8-N, HIMON, and ASM-F2 receive the same local `00.mmdd(hhmm)` stamp during
-one build.
+STR8-N, HIMON, and ASM-F2 receive the same local `mmdd.hhmm` build stamp during
+one build. STR8-N prefixes it with semantic version `1.02`; HIMON and ASM-F2
+retain their compact `00.mmdd(hhmm)` form.
 
 If the selector expires, STR8 cold-starts the local target at `$C000`. `H`
 immediately warm-starts that local HIMON without changing banks so RAM is

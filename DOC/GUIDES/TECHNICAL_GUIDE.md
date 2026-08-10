@@ -230,8 +230,8 @@ ASM report AP:  Bank 0 package, run with AP B0 $hhhh $4800
 HIMON entry:     $C000
 HIMON body:      $C000-$EEFF
 STR8 entry:      $F000
-STR8 resident:   $F000-$FE5E
-free/reserve:    $FE5F-$FF1E, $00C0 bytes
+STR8 resident:   $F000-$FE5C
+free/reserve:    $FE5D-$FF1E, $00C2 bytes
 jump worker:     $FF1F-$FFAF
 V1 directory:    $FFB0-$FFEF
 config pocket:   $FFF0-$FFF9
@@ -254,9 +254,9 @@ On reset, STR8:
 sets the CPU to a known monitor/recovery state
 seeds IVI RAM vector cells with safe defaults
 initializes FTDI console I/O
-prints 16 dots over about 5.991 seconds and drains queued RX
-prints `STR8-N V 00.mmdd(hhmm) $F` from the resident `$F000` build
-opens an approximately 6-second 0/1/2/H/S selector
+prints `STR8-N 1.02/mmdd.hhmm` and `WAIT`
+prints 16 quarantined dots over about 5.991 seconds and drains queued RX
+prints `0-2 BOOT H HIMON S MENU` and opens a 16-dot selector
 times out to enter Bank 3 HIMON cold
 accepts H to enter the local HIMON warm without changing banks and preserve RAM
 requires `A5 5A C3 3C` at `$C003-$C006` for H; otherwise prints `NO HIMON`
@@ -353,11 +353,11 @@ Current top-sector reserve policy:
 $F000-$FD32  STR8 resident code
              size $0D33 = 3379 bytes
 
-$FD33-$FE5E  STR8 resident data
-             size $012C = 300 bytes
+$FD33-$FE5C  STR8 resident data
+             size $012A = 298 bytes
 
-$FE5F-$FF1E  contiguous free/reserve gap
-             size $00C0 = 192 bytes: $0040 reserve plus $0080 growth
+$FE5D-$FF1E  contiguous free/reserve gap
+             size $00C2 = 194 bytes: $0040 reserve plus $0082 growth
 
 $FF1F-$FFAF  stored jump-only STR8 RAM worker image
              size $0091 = 145 bytes
@@ -375,8 +375,8 @@ $FFFA-$FFFF  W65C02 vectors
 
 The working rule is that STR8 code/data grows upward from `$F000`. The fixed V1
 directory owns `$FFB0-$FFEF`, and the jump worker is packed immediately below
-it. The visible `$FE5F-$FF1E` gap is both growth room and reserve; `$0040` of
-its current `$00C0` bytes is mandatory. `$FFF0-$FFFF` stays out of general
+it. The visible `$FE5D-$FF1E` gap is both growth room and reserve; `$0040` of
+its current `$00C2` bytes is mandatory. `$FFF0-$FFFF` stays out of general
 allocation.
 
 ## STR8 V1.02 Install Gate

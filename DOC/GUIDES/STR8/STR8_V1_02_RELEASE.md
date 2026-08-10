@@ -1,8 +1,10 @@
 # STR8-N V1.02 Release Record
 
-Status: accepted. Firmware source is commit `ee45327281b2`; later commits only
-freeze the operator rail, hardware evidence, release status, and generated
-documentation.
+Status: frozen hardware-accepted release. Firmware source is commit
+`ee45327281b2`; later commits freeze its operator rail, hardware evidence,
+release status, and generated documentation. Current source is a host-verified
+presentation successor and is not byte-identical to this record; use the
+listed commit to reproduce these hashes and transcripts.
 
 ## Frozen Build
 

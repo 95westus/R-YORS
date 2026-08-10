@@ -2,9 +2,15 @@
 
 ```text
 status:       V1.02 RANGE AND EXACT COMPACT IMAGE HARDWARE-ACCEPTED
-next gate:    NONE; V1.02 RELEASE CLOSED
+next gate:    FOCUSED PRESENTATION-SUCCESSOR BOARD SMOKE
 source date:  2026-08-08
 ```
+
+The frozen hardware release remains the exact `$0E5F` image documented below.
+The current source is a `$0E5D` presentation successor: it prints
+`STR8-N 1.02/mmdd.hhmm`, then `WAIT` with 16 quarantined dots, then
+`0-2 BOOT H HIMON S MENU` with 16 live dots. Its functional contracts are
+host-verified; only the new visible order and timing need focused board proof.
 
 V1.01 is the accepted baseline for turning the WDC board into four independently
 selectable bank environments while keeping STR8-N as the Bank-3 reset
@@ -59,17 +65,17 @@ there is no second receiver or transport path. It holds the selected final
 sector until S9, requires S9 `$FFFF` or inside the selected range, and leaves
 all sectors outside that exact range unchanged.
 
-The transaction resident is now `$F000-$FE5E`, size `$0E5F`, leaving
-`$FE5F-$FF1E`, `$00C0` bytes. This restores the full `$0080` growth target
-beyond the hard `$0040` reserve through size-conscious control flow, shared
-directory validation, and a shared preflight/read-back comparison loop.
+The frozen transaction resident is `$F000-$FE5E`, size `$0E5F`, leaving
+`$FE5F-$FF1E`, `$00C0` bytes. The current presentation successor is
+`$F000-$FE5C`, size `$0E5D`, leaving `$FE5D-$FF1E`, `$00C2` bytes and `$0082`
+beyond the hard `$0040` reserve.
 
 V1.02 also removes the ambiguous shell bare-bank aliases. Its compact surface
 is `I H J0-3`: `H` warm-enters the local `$C000` target without selecting a
 bank only when `$C003-$C006` carries the fixed HIMON identity
 `A5 5A C3 3C`; otherwise it prints `NO HIMON` and remains in STR8.
-`J0`-`J3` are the only explicit physical-bank handoffs. The reset selector
-remains `0/1/2=BOOT H=HIMON S=STR8`.
+`J0`-`J3` are the only explicit physical-bank handoffs. The current reset
+selector is `0-2 BOOT H HIMON S MENU`.
 
 Before range state grows the resident, optimize for free margin above the
 required `$0040` reserve: at least another `$0080` (total gap `$00C0`), with

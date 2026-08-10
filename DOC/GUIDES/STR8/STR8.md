@@ -253,11 +253,11 @@ space is one contiguous reserve:
 $F000-$FD32  STR8 transaction code
              size $0D33 = 3379 bytes
 
-$FD33-$FE5E  STR8 transaction data
-             size $012C = 300 bytes
+$FD33-$FE5C  STR8 transaction data
+             size $012A = 298 bytes
 
-$FE5F-$FF1E  contiguous reserve
-             size $00C0 = 192 bytes; $0080 beyond the required $0040
+$FE5D-$FF1E  contiguous reserve
+             size $00C2 = 194 bytes; $0082 beyond the required $0040
 
 $FF1F-$FFAF  packed permanent jump worker
              size $0091 = 145 bytes; copied to $0200-$0290
@@ -375,9 +375,9 @@ Reference normal operation:
 ```text
 RESET enters STR8 at $F000
 STR8 seeds IVI RAM vectors with safe defaults
-STR8 prints 16 progress dots over about 6 seconds, then flushes RX
-STR8 prints its shared make-time `STR8-N V 00.mmdd(hhmm)` identity
-STR8 opens an approximately 6-second selector
+STR8 prints `STR8-N 1.02/mmdd.hhmm` and `WAIT`
+STR8 prints 16 non-selectable progress dots over about 6 seconds, then flushes RX
+STR8 prints `0-2 BOOT H HIMON S MENU` and opens a 16-dot selector
 selector timeout cold-starts Bank 3 HIMON
 selector H requires the local HIMON marker at $C003-$C006, then warm-starts
   HIMON without changing banks and preserves RAM

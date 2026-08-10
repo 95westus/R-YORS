@@ -81,18 +81,18 @@ Assert-Bytes -Bytes $top -Offset 0x0000 -Expected @(
 ) -Name "top head"
 Assert-Bytes -Bytes $top -Offset $promptOffset -Expected @(0x53,0x54,0x52,0x38,0x2D,0x4E,0xBE) -Name "STR8-N prompt"
 $idEndOffset = $idOffset
-while ($idEndOffset -lt ($idOffset + 64) -and $top[$idEndOffset] -ne 0x8A) {
+while ($idEndOffset -lt ($idOffset + 64) -and (($top[$idEndOffset] -band 0x80) -eq 0)) {
     $idEndOffset++
 }
-if ($idEndOffset -ge ($idOffset + 64) -or $top[$idEndOffset] -ne 0x8A) {
+if ($idEndOffset -ge ($idOffset + 64) -or (($top[$idEndOffset] -band 0x80) -eq 0)) {
     throw "STR8-N FACE id is not terminated within 64 bytes"
 }
-Assert-Bytes -Bytes $top -Offset $idOffset -Expected @(0x0D,0x0A) -Name "STR8-N FACE id prefix"
-if ($top[$idEndOffset - 1] -ne 0x0D) {
-    throw "STR8-N FACE id is missing its final CR"
+$idBytes = New-Object byte[] ($idEndOffset - $idOffset + 1)
+for ($i = 0; $i -lt $idBytes.Length; $i++) {
+    $idBytes[$i] = $top[$idOffset + $i] -band 0x7F
 }
-$idText = [System.Text.Encoding]::ASCII.GetString($top, $idOffset + 2, $idEndOffset - $idOffset - 3)
-if ($idText -notmatch '^STR8-N V 00\.\d{4}\(\d{4}\) \$F$') {
+$idText = [System.Text.Encoding]::ASCII.GetString($idBytes)
+if ($idText -notmatch '^\r\nSTR8-N 1\.02/\d{4}\.\d{4}\r\nWAIT $') {
     throw ("STR8-N FACE id has unexpected text: {0}" -f $idText)
 }
 Assert-Bytes -Bytes $top -Offset 0x0FFA -Expected @(

@@ -1,5 +1,9 @@
 # STR8 V1.02 Compact-Image Refresh Board Test
 
+This card freezes the hardware-accepted `ee45327281b2` image. Current source
+has a host-verified banner/wait/selector presentation successor and is not
+byte-identical; keep the identities, addresses, and transcripts below intact.
+
 Status: accepted on hardware from commit `ee45327281b2`; board proof complete.
 
 This is the final proof for the compact V1.02 resident. It refreshes only Bank

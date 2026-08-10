@@ -13698,3 +13698,36 @@ IVI NMI / IRQ-BRK             $F09C / $F0B0
 33 record cases, 36 line/installer cases, 13 startup cases, and 5 bank-jump
 cases. The gate now requires both the `$0040` hard reserve and the additional
 `$0080` growth floor.
+
+## 2026-08-09 STR8 V1.02 Boot-Presentation Successor
+
+Host status: accepted. Board status: focused visible/timing smoke pending. The
+frozen `00.0808(2058)` image and its hardware transcripts remain unchanged.
+
+The successor prints its identity before the USB-enumeration quarantine. The
+first 16 dots remain non-selectable; STR8 then drains RX and prints the selector
+before the 16 live dots:
+
+```text
+STR8-N 1.02/mmdd.hhmm
+WAIT ................
+0-2 BOOT H HIMON S MENU ................
+```
+
+The linked code section and service addresses remain fixed. The shorter text
+reduces transaction data by two bytes:
+
+```text
+transaction code             $F000-$FD32  size $0D33 = 3379
+transaction data             $FD33-$FE5C  size $012A = 298
+transaction resident         $F000-$FE5C  size $0E5D = 3677
+resident/jump-worker gap      $FE5D-$FF1E  size $00C2 = 194
+gap after $0040 reserve                       $0082 = 130
+IVI NMI / IRQ-BRK             $F09C / $F0B0
+```
+
+`make -C SRC all`, `str8-directory-check`,
+`str8-installer-transaction-check`, and `str8-v1-refresh-a` pass with the new
+identity parser and exact startup transcript. The board smoke needs only to
+confirm the two 16-dot phases, ignored input during `WAIT`, active `0/1/2/H/S`
+selection after the menu line, and ordinary timeout to the local cold target.

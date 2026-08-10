@@ -2,12 +2,14 @@
 
 ## Near Term
 
-- STR8-N V1.02 is host- and hardware-complete at compact resident size
-  `$0E5F`. The range receiver, local `H`, `J0`-`J3`, Bank Jump Record,
-  split-worker callers, valid banked AP path, and frozen
+- STR8-N V1.02 functionality is host- and hardware-complete at frozen compact
+  resident size `$0E5F`. The range receiver, local `H`, `J0`-`J3`, Bank Jump
+  Record, split-worker callers, valid banked AP path, and frozen
   [compact-image refresh proof](../STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md)
-  are accepted. Do not reopen V1.02 for deferred self-update, sparse S19,
-  ACIA, catalog, managed-backup, or export features.
+  are accepted. The current `$0E5D` presentation successor is host-verified;
+  run only a focused banner/wait/selector timing smoke before promoting its
+  exact bytes. Do not reopen V1.02 for deferred self-update, sparse S19, ACIA,
+  catalog, managed-backup, or export features.
 - 2026-07-19 hardware pass: both current-image HIMON AP-linker gates are
   closed. Missing-import validation returned `$09` without body entry or a
   partial patch; banked-source RJOIN returned `A=$AC/C=1` with status `$00`

@@ -26,8 +26,8 @@ the jump-only worker at `$FF1F-$FFAF`, and copies it to `$0200-$0290`. An `I`
 transport uploads the 555-byte mutation worker to `$0200-$042A` before dense
 payload staging uses the single `$0A00-$19FF` sector tray. Worker/update state
 remains in `$1FE9-$1FFF`, and the fixed V1 directory is `$FFB0-$FFEF`.
-The completed V1.02 size pass places the transaction resident at
-`$F000-$FE5E` and leaves `$FE5F-$FF1E`, `$00C0` bytes, free: `$0080` of
+The current V1.02 presentation successor places the transaction resident at
+`$F000-$FE5C` and leaves `$FE5D-$FF1E`, `$00C2` bytes, free: `$0082` of
 growth room beyond the required `$0040` reserve. Both floors are enforced by
 the host build. `I` accepts `RANGE:` as a single sector (`C`) or
 inclusive span (`C-E`) and records start high, exclusive limit high, and
@@ -41,9 +41,11 @@ hardware-accepted as `00.0807(2000)`. Its two exact-worker streams updated
 Bank 2 `$8000-$BFFF` with ASM-F2 and `$C000-$EFFF` with HIMON while preserving
 sector F. Per-sector CRCs proved every unselected payload sector byte-identical;
 the expected Bank-3 sector-F CRC changes tracked only the directory journal.
-The subsequent `$0E5F` compact rebuild and its exact shifted resident addresses
-are hardware-accepted by the
+The frozen `$0E5F` compact rebuild and its exact shifted resident addresses are
+hardware-accepted by the
 [compact-image refresh proof](STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md).
+The current `$0E5D` successor only changes the boot presentation and remains
+host-verified pending a focused visible/timing smoke.
 
 The top sector exposes stable service entries at `$F003` for the resident
 worker doorway and `$F009` for the V1 validated-record service. In the split

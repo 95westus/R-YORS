@@ -469,10 +469,10 @@ STR8_ENTER_MENU_NO_TARGET_PRINT:
                         ELSE
 ; OUT: C=1 and A='0'/'1'/'2'/'H'/'S' in V1 when a choice was consumed.
 ;      C=0 if the timeout elapsed.
-; First emit 35 LFs to clear a connected terminal. The first 16 dots then
-; quarantine USB enumeration and cannot consume a key. At the midpoint RX is
-; flushed, the banner/selector is printed, and 16 live dots poll only
-; 0/1/2/H/S in V1. Each dot phase is about six seconds at 8 MHz.
+; First emit 35 LFs to clear a connected terminal. V1 then prints its banner
+; and WAIT label. The first 16 dots quarantine USB enumeration and cannot
+; consume a key. At the midpoint RX is flushed, the selector is printed, and
+; 16 live dots poll only 0/1/2/H/S. Each phase is about six seconds at 8 MHz.
 STR8_STARTUP_DELAY:
                         LDX             #STR8_SCREEN_CLEAR_LINES
 ?CLEAR:                LDA             #$0A
@@ -480,6 +480,15 @@ STR8_STARTUP_DELAY:
                         DEX
                         BNE             ?CLEAR
                         STZ             STR8_BOOT_KEY_ENABLE
+                        IF              STR8_V1_LAYOUT
+                        LDX             #<MSG_ID
+                        IF              STR8_V1_INSTALLER_TXN
+                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        ELSE
+                        LDY             #>MSG_ID
+                        JSR             STR8_PRINT_XY
+                        ENDIF
+                        ENDIF
                         LDA             #STR8_STARTUP_DOT_COUNT
 ?TICK:
                         PHA
@@ -494,10 +503,9 @@ STR8_STARTUP_DELAY:
                         LDY             #>MSG_CRLF
                         JSR             STR8_PRINT_XY
                         ENDIF
-                        LDX             #<MSG_ID
-                        IF              STR8_V1_INSTALLER_TXN
-                        JSR             STR8_PRINT_TXN_PAGE0_X
+                        IF              STR8_V1_LAYOUT
                         ELSE
+                        LDX             #<MSG_ID
                         LDY             #>MSG_ID
                         JSR             STR8_PRINT_XY
                         ENDIF
@@ -2992,7 +3000,11 @@ STR8_ID_MARKER_BYTES:   DB              STR8_ID_MARKER0,STR8_ID_MARKER1
                         IF              STR8_RAM_PROOF
                         DB              $0D,$8A
                         ELSE
+                        IF              STR8_V1_LAYOUT
+                        DB              $0D,$0A,"WAIT",$A0
+                        ELSE
                         DB              " $F",$0D,$8A
+                        ENDIF
                         ENDIF
                         IF              STR8_RAM_PROOF
                         ELSE
@@ -3011,11 +3023,10 @@ MSG_HELP:
 MSG_PROMPT:             DB              "STR8-N",('>'+$80)
                         IF              STR8_RAM_PROOF
                         ELSE
-MSG_BOOT_PROMPT:        DB              "0/1/2=BOOT "
                         IF              STR8_V1_LAYOUT
-                        DB              "H=HIMON S=STR8 ",$A0
+MSG_BOOT_PROMPT:        DB              "0-2 BOOT H HIMON S MENU",$A0
                         ELSE
-                        DB              "3=HIMON S=STR8 ",$A0
+MSG_BOOT_PROMPT:        DB              "0/1/2=BOOT 3=HIMON S=STR8 ",$A0
                         ENDIF
 MSG_BOOT_BANK_WAIT:     DB              "BOOT IN 3S",$0D,$8A
                         ENDIF

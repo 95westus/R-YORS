@@ -86,8 +86,8 @@ $8000-$BC6C   ASM-F2 low-flash image, entry $800C
 $BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
 $C000-$EEFF   HIMON body, including resident AP import linker
 $EF00-$EFFF   current image gap inside the E sector
-$F000-$FE5E   STR8 V1.02 resident shell, IVI stubs, record service, and installer
-$FE5F-$FF1E   free/reserve gap, $00C0 bytes: $0040 reserve + $0080 growth
+$F000-$FE5C   STR8 V1.02 resident shell, IVI stubs, record service, and installer
+$FE5D-$FF1E   free/reserve gap, $00C2 bytes: $0040 reserve + $0082 growth
 $FF1F-$FFAF   jump-only STR8 RAM-worker source, copied to $0200-$0290
 $FFB0-$FFEF   fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9   STR8 config pocket
