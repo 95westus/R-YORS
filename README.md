@@ -13,6 +13,10 @@ R-YORS is a recoverable runtime and onboard workbench for the WDC
 W65C02SXB/W65C02EDU board. It boots through a flash-safe recovery guard into a
 monitor, assembler, and AP object runtime.
 
+STR8-N is the reset, recovery, and installation component of R-YORS, but its
+boundary is deliberately payload-agnostic: it does not depend on HIMON,
+ASM-F2, OIL, or AP, and can supervise compatible non-R-YORS guest systems.
+
 ## System
 
 ```text
