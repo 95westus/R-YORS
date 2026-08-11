@@ -13770,20 +13770,25 @@ Required board gates:
 
 1. Enter `L G` and `L F` separately. Each must print bare `L` usage and return
    immediately; neither may enter the S19 receiver or STR8-N.
-2. Enter `L` and send `S1073000A91160EAC4`, then `S9033000CC`. Require
+2. Enter `L`, press Ctrl-C (`$03`) before sending a record, and require an
+   immediate HIMON prompt. The loader must not print `LS03`, wait for another
+   line, or report `L OK`. Repeat after one accepted S1 record and require the
+   prompt again; the already accepted record may remain in RAM, but the
+   interrupted line must not change its target.
+3. Enter `L` and send `S1073000A91160EAC4`, then `S9033000CC`. Require
    `L @3000`, `L OK=0004 ENTRY=3000`, and an immediate HIMON prompt. There
    must be no automatic execution. Dump `$3000-$3003` and require
    `A9 11 60 EA`; only then enter `G 3000` and require a normal return with
    A=`$11`.
-3. Capture an unchanged RAM byte, send a valid S1 for it with a deliberately
+4. Capture an unchanged RAM byte, send a valid S1 for it with a deliberately
    bad checksum, and require `LERR=$01` with no target mutation. Complete the
    session with a valid S9.
-4. Enter `L`, send `S10479FF5A29` and `S90379FF84`, and require one byte
+5. Enter `L`, send `S10479FF5A29` and `S90379FF84`, and require one byte
    `$5A` at `$79FF`; this proves a nonempty span may end exactly at `$7A00`.
-5. Enter `L`, send `S10579FF11224F`, and require `LERR=$02` with `$79FF`
+6. Enter `L`, send `S10579FF11224F`, and require `LERR=$02` with `$79FF`
    still `$5A`; this proves a crossing record is rejected before its first
    byte is copied. Separately send `S1047A005A27` and `S10480005A21`; each
    must return `LERR=$02` without monitor-workspace, I/O, or flash mutation.
-6. Append the exact transcript and HIMON image identity to
+7. Append the exact transcript and HIMON image identity to
    `HARDWARE_TEST_LOG.md`. Do not rewrite the earlier `L G` or `L F`
    transcripts; they remain evidence for the superseded command surface.

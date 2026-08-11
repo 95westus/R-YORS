@@ -447,6 +447,23 @@ exclusive end `$7A00` and validate-before-copy crossing behavior.
 Current public loader fail codes are `$01` parse/checksum and `$02` protected
 destination. The compact form is `LERR=$ee`.
 
+### Loader Ctrl-C Cancellation
+
+Ctrl-C (`$03`) while `L` is waiting for or receiving an S19 line cancels the
+entire receive session and returns immediately to the HIMON prompt. It must not
+print `LS03`, continue waiting for S9, report `L OK`, or execute the S9 entry.
+Complete S1 records accepted before Ctrl-C remain in RAM; the interrupted line
+is not parsed or copied. This is cancellation, not rollback.
+
+On 2026-08-11 the operator installed HIMON `00.0811(1709)` through STR8-N and
+confirmed `L G` and `L F` still print bare `L` usage. A normal `L` loaded the
+`$162B` Bank Maintenance artifact at `$2000`, returned to the prompt, and ran
+only after explicit `G 2000`. The operator then separately confirmed that
+Ctrl-C at the `L S19` receiver returned immediately without the former `LS03`
+or `LERR` output. The exact Ctrl-C byte/echo transcript was not captured, so
+retain the test-plan boundary and partial-line checks for future regression
+runs.
+
 Historical board proof on 2026-07-05 with HIMON `V 00.0705(0416)` showed
 `D 7EF0 8010` skipping all `$7Fxx` I/O rows, `M 7A00/7EFF/7F00` returning
 `M PROT`, `B 79FF` set/list/clear leaving `B L` empty, `B 7A00/7EFF/7F00/8000`

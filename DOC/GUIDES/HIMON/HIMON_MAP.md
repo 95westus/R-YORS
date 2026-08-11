@@ -211,6 +211,7 @@ flowchart TD
     L[CMD_L] --> ARGS[bare L only]
     L --> READY[print ready]
     L --> READ[HIM_READ_LINE_UPPER]
+    READ -->|Ctrl-C| ABORT[return immediately to prompt]
     READ --> PARSE[L_PARSE_RECORD]
     PARSE --> S0[L_PARSE_RECORD_S0]
     PARSE --> S1[L_PARSE_RECORD_S1]
@@ -361,7 +362,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
 | AP package run | `AP pkg dst` | `CMD_AP`, `HIM_AP_SERVICE` | Loads an AP v1 envelope from RAM or visible flash to `$2000-$4FFF`, applies current internal relocations, then runs `dst`. | V0 keeps the ROM cost low by requiring the package entry to be BODY offset zero. It is not a package-name registry yet. |
 | Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; confirms, then jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; kind is `K03`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
-| S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_RECORD_S1`, `L_VALIDATE_RAM_SPAN` | Accepts S0/S1/S9, validates each complete record before copying S1 data, tracks the byte count, and reports the S9 entry without executing it. | Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` are rejected by the bare-`L` grammar. |
+| S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_RECORD_S1`, `L_VALIDATE_RAM_SPAN` | Accepts S0/S1/S9, validates each complete record before copying S1 data, tracks the byte count, and reports the S9 entry without executing it. Ctrl-C cancels the receive session and returns immediately to the prompt; earlier accepted records remain in RAM, but the interrupted line is not applied. | Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` are rejected by the bare-`L` grammar. |
 | AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_IMPORT_LINK`, `HIM_AP_FIND_HOLE` | Parses AP v1 envelopes, loads BODY to `$2000-$4FFF`, resolves RJOIN imports, applies internal/import relocation rows, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` and HIMON `AP pkg dst` call this so AP package consumption and linking survive after ASM exits. STR8 carries no AP/FNV linker code. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Patch targets are limited to user program RAM below `$7A00`, so monitor RAM and `$7F00-$7FFF` I/O stay protected. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |

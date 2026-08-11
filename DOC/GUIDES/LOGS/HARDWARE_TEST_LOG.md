@@ -21029,3 +21029,58 @@ exact terminal evidence is retained in the
 `J0`-`J2`, destructive Bank Maintenance cases, independent sector-F readback,
 and external recovery remain broader release checks rather than RAM-relocation
 blockers.
+
+## 2026-08-11: HIMON RAM loader and Ctrl-C accepted on hardware
+
+The operator installed Bank-3 HIMON sectors `$C000-$EFFF` through STR8-N `I`
+and reached HIMON `00.0811(1709)`. The captured session proved the removed
+loader forms still reject cleanly and that ordinary `L` returns before an
+explicit `G`:
+
+```text
+HIMON V 00.0811(1709)
+>L G
+L
+>L F
+L
+>L
+L S19
+L @2000
+L OK=162B ENTRY=2000
+>G 2000
+GO 2000
+
+STR8-N 1.2 BANK MAINT
+```
+
+The operator then separately confirmed that Ctrl-C (`$03`) at the `L S19`
+receiver returned immediately to the HIMON prompt without `LS03` or `LERR`.
+That closes the basic cancellation gate and the no-auto-run gate on hardware.
+The exact Ctrl-C byte/echo transcript was not captured, so this checkpoint does
+not claim a board-observed partial-line or prior-S1 preservation test. Source
+and host checks specify that completed S1 records remain in RAM while the
+interrupted line is never parsed or copied.
+
+## 2026-08-11: on-board STR8-N `L` and Ctrl-C behavior confirmed
+
+A later terminal capture confirmed that the active on-board STR8-N 1.2 image
+has the `I L H J` command surface. After Bank Maintenance returned with `Q`,
+the selector returned through warm HIMON and STR8-N was entered again. Ctrl-C
+at the `L` S19 receiver produced `BAD` and returned to the STR8-N prompt:
+
+```text
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>L
+S19
+
+BAD
+STR8-N>L
+S19
+```
+
+The same capture showed `BAD` after aborting `I` at its `B0-3:` selection
+prompt. This is direct evidence for the installed board image. It also records
+a command-surface mismatch with the current tracked STR8 source, which exposes
+`I H J0`-`J3` and no `L` command.

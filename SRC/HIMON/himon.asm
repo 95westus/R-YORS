@@ -161,6 +161,7 @@ HIM_P40_TMP_LO           EQU             $EB
 HIM_P40_TMP_HI           EQU             $EC
 
 CMD_FLAG_TOP_INPUT       EQU             $01
+CMD_ABORT_LINE           EQU             $03
 CMD_ABORT_TOP            EQU             $04
 ; Current FNV record format:
 ;   'F','N',('V'|$80),hash0,hash1,hash2,hash3,kind,payload...
@@ -786,6 +787,8 @@ CMD_USAGE_AP:
 
 ; ----------------------------------------------------------------------------
 ; L  (HIMON-owned RAM S19 loader: S1 data, S9 terminator; S0 skipped)
+; Ctrl-C cancels the receive session. Completed S1 writes remain in RAM, but
+; the interrupted line is never parsed or copied and S9 execution is absent.
 ; ----------------------------------------------------------------------------
 CMD_L_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$AB,$FE,$0B,$C9,CMD_HASH_KIND_EXEC ; L $C90BFEAB EXEC
@@ -814,6 +817,8 @@ CMD_L_READ_LOOP:
                         LDY             #>CMD_BUF
                         JSR             HIM_READ_LINE_UPPER
                         BCS             CMD_L_HAVE_LINE
+                        CMP             #CMD_ABORT_LINE
+                        BEQ             CMD_L_ABORT
                         STA             LOAD_LINE_STATUS
                         LDX             #<MSG_L_STATUS
                         LDY             #>MSG_L_STATUS
@@ -822,6 +827,10 @@ CMD_L_READ_LOOP:
                         JSR             SYS_WRITE_HEX_BYTE
                         JSR             SYS_WRITE_CRLF
                         BRA             CMD_L_READ_LOOP
+
+CMD_L_ABORT:
+                        CLC
+                        RTS
 
 CMD_L_HAVE_LINE:
                         STA             CMD_LEN
@@ -1148,7 +1157,7 @@ HIM_READ_LINE_ABORT:
                         CLC
                         RTS
 HIM_READ_LINE_ABORT_LINE:
-                        LDA             #$03
+                        LDA             #CMD_ABORT_LINE
                         CLC
                         RTS
 

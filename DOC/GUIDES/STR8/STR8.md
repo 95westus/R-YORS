@@ -737,12 +737,27 @@ R          reset through the live reset vector
 other      print the active command help line
 ```
 
-`I`, `H`, and `J0`-`J3` are the V1.02 command surface. Every other input,
-including bare `0`-`3`, `?`, `U`, `G`, and `R`, prints the compact help line.
+`I`, `H`, and `J0`-`J3` are the current tracked-source V1.02 command surface.
+Every other input, including bare `0`-`3`, `?`, `U`, `G`, and `R`, prints the
+compact help line.
 `H` enters the local HIMON warm without changing banks; `J3` uses the validated
 physical-bank handoff. `L S`, `L F`, `GO addr`,
 standalone verify, catalog repair, and richer loading remain outside the
 minimal supervisor.
+
+### On-Board V1.2 `L` Behavior
+
+The active STR8-N 1.2 image on the board exposes `I L H J`. Its `L` command is
+a RAM S19 launcher used for staged utilities. During that receive, Ctrl-C
+(`$03`) aborts through the shared record parser. The board reports `BAD` and
+does not reach the S9-triggered entry. RAM records accepted before the abort
+are not rolled back.
+
+The installed board image and the current tracked source therefore have
+different command surfaces: the board has `L`, while the tracked source
+exposes `I H J0`-`J3` and has no `L` command. Current-source `I` also recognizes
+Ctrl-C as record status `$0E`; it stops the receive path but does not roll back
+sectors already programmed.
 
 ## Current Command Worker Map
 
