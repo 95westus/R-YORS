@@ -249,7 +249,7 @@ PMAP    LDX #$DE
         JSR $7019
         LDA #'-'
         JSR $8592
-        LDA #$7E
+        LDA #$7D
         LDX #$00
         JSR $7019
         JMP $85A9

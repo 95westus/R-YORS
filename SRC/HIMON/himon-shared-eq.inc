@@ -216,33 +216,25 @@ KEYT_ESC_BYTE              EQU             $7E94
 ; ----------------------------------------------------------------------------
 ; LOAD (S-Record) workspace
 ; ----------------------------------------------------------------------------
-; Persistent CMD_L state stays outside the STR8 V1 request/result block at
-; $7E95-$7EA8. These cells overlay inactive command-hook scratch while the
-; foreground loader owns the command processor. The remaining aliases inside
-; the service block are transient: line status before a call and APPLY_LF
-; diagnostics after the service returns.
-LOAD_FLASH_MODE            EQU             $7E78
+; Persistent CMD_L state stays outside $7E95-$7EA8. The private parser uses
+; transient cells in that former record-service request block while the
+; foreground loader owns the command processor.
 LOAD_REC_KIND              EQU             $7E79
 LOAD_FAIL_CODE             EQU             $7E7A
 LOAD_DST_LO                EQU             $7E7B
 LOAD_DST_HI                EQU             $7E7C
 LOAD_GO_LO                 EQU             $7E7D
 LOAD_GO_HI                 EQU             $7E7E
-LOAD_GO_VALID              EQU             $7E7F
 LOAD_TOTAL_LO              EQU             $7E80
 LOAD_TOTAL_HI              EQU             $7E81
 LOAD_FAIL_ADDR_LO          EQU             $7E82
 LOAD_FAIL_ADDR_HI          EQU             $7E83
-LOAD_ABORT_MODE            EQU             $7E84
-LOAD_SKIP_LO               EQU             $7E85
-LOAD_SKIP_HI               EQU             $7E86
 
 LOAD_LINE_STATUS           EQU             $7E95
-LOAD_FLASH_OLD             EQU             $7E9C
-LOAD_AUTO_GO               EQU             $7EAA
+LOAD_COUNT                 EQU             $7E95
+LOAD_DATA_LEN              EQU             $7E96
+LOAD_SUM                   EQU             $7E97
 LOAD_HAVE_DATA             EQU             $7EAB
-LOAD_FIRST_LO              EQU             $7EAC
-LOAD_FIRST_HI              EQU             $7EAD
 LOAD_LAST_LO               EQU             $7EAE
 LOAD_LAST_HI               EQU             $7EAF
 LOAD_CUR_START_LO          EQU             $7EB0
@@ -267,10 +259,6 @@ LOAD_REC_KIND_SKIP         EQU             $03
 LOAD_FAIL_NONE             EQU             $00
 LOAD_FAIL_PARSE            EQU             $01
 LOAD_FAIL_PROTECT          EQU             $02
-LOAD_FAIL_ERASE            EQU             $03
-LOAD_FAIL_WRITE            EQU             $04
-LOAD_FAIL_NEED_FLASH       EQU             $05
-LOAD_FAIL_SERVICE          EQU             $06
 
 LOAD_RANGE_MAX             EQU             $08
 LOAD_RANGE_BASE            EQU             $7EBE

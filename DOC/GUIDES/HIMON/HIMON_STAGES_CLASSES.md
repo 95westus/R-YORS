@@ -333,7 +333,7 @@ CMD_HASH_*     token hashing, record scan, record match, entry lookup
 FNV1A_*        runtime hash calculation
 MATH_*         hash multiply support
 CMD_*          command bodies exposed through FNV records
-L_*            RAM/flash S-record loader
+L_*            RAM-only S-record loader
 HIM_*          line input and HBSTR output
 MON_*          boot, trap, context, print, return-status helpers
 DBG_*          breakpoints and step
@@ -383,7 +383,7 @@ Current HIMON owns:
 ```text
 prompt and command dispatch
 FNV command records
-loader and flash blank-write path
+RAM-only loader with separate explicit execution
 debug trap context
 break/step
 assembler/disassembler helpers
@@ -433,13 +433,13 @@ any later free-list heap
 | `MON_CMD_*` | Split Himon | Older modular command bodies | Full-word shell commands such as display/fill/copy/load/go/resume. |
 | `MON_CTX_*` | Himon parent/Himonia | Current debug context | Saved A/X/Y/P/S/PC, edit, print, and `RTI` resume. |
 | `MON_PRINT_*` | Himonia | Current monitor output | Stop reports, register reports, memory dump formatting, return-status display. |
-| `L_*` / `MON_LOAD_*` | Himon parent/Himonia | Current loader behavior | S-record session, RAM write, flash blank-write gate, load/go. |
+| `L_*` / `MON_LOAD_*` | Himon parent/Himonia | Current loader behavior | HIMON-owned S0/S1/S9 session, validate-before-copy RAM write below `$7A00`, S9 entry report, and prompt return. |
 | `DBG_*` | Himonia | Current debug include | Breakpoint slots, temporary step breakpoint, opcode-length support. |
 | `DIS_*` | Himonia | Current disassembler include | Opcode/mode tables rendered into readable W65C02 mnemonics. |
 | `ASM_*` | Himonia | Current assembler include | Numeric mini assembler; future hash assembler adds symbols/fixups. |
 | `FNV1A_*` | FNV tool | Current runtime hash | 32-bit little-endian FNV-1a over command/name text. |
 | `MATH_*` | FNV tool | Current hash support | 32-bit shift/add math used by FNV prime multiply. |
-| `FLASH_*` | HIMON/STR8-adjacent | Current imported service | Byte write helper used by `L F`; STR8 should own safer erase/update later. |
+| `FLASH_*` | HIMON/STR8-adjacent | Internal compatibility service | Byte write helpers remain for guarded internal installation routines; the public HIMON `L` command never calls them. |
 | fixed HIMONIA ABI slots | Removed HIMON experiment | Removed | The `$F00D`, `$FEED`, `$FADE` trampolines were novelty proof points, not the current contract. |
 | `MEM_*` | Future HIMON dynamic stage | Planned only | Dynamic memory ownership layer; not STR8, not current HIMON. |
 
@@ -495,7 +495,7 @@ D M    memory display and modify
 U      disassemble
 ASM    flash-resident assembler when present
 R X    register/context view, edit, and resume
-G L    execute, load, load/go, flash load
+G L    explicit execute, RAM S19 load-and-return
 B N    breakpoints and single step
 Q      controlled BRK test/quit
 ```

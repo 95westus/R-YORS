@@ -46,7 +46,6 @@
                         INCLUDE         "HIMON/himon-image-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
                         INCLUDE         "STR8/str8-ram-abi.inc"
-                        INCLUDE         "STR8/str8-record-eq.inc"
                         INCLUDE         "STR8/str8-jump-eq.inc"
 
 TRAP_CAUSE               EQU             $7EEA
@@ -86,7 +85,6 @@ HIM_RX_HAVE              EQU             $7E1D
 HIM_RX_BYTE              EQU             $7E1E
 CMD_EXEC_KIND_HASH       EQU             $00
 CMD_EXEC_KIND_GO         EQU             $01
-CMD_EXEC_KIND_LOADGO     EQU             $02
 BOOT_REASON_NONE         EQU             $00
 BOOT_REASON_COLD         EQU             $01
 BOOT_REASON_WARM         EQU             $02
@@ -787,71 +785,27 @@ CMD_USAGE_AP:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; L  (S19-only loader: S1 data, S9 terminator; S0 skipped)
+; L  (HIMON-owned RAM S19 loader: S1 data, S9 terminator; S0 skipped)
 ; ----------------------------------------------------------------------------
 CMD_L_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$AB,$FE,$0B,$C9,CMD_HASH_KIND_EXEC ; L $C90BFEAB EXEC
 CMD_L:
                         JSR             CMD_ADV_PTR
-                        STZ             LOAD_AUTO_GO
-                        STZ             LOAD_FLASH_MODE
-                        JSR             CMD_SKIP_SPACES
-                        JSR             CMD_PEEK
-                        BEQ             CMD_L_ARGS_OK
-                        CMP             #'G'
-                        BEQ             CMD_L_ARG_G
-                        CMP             #'F'
-                        BEQ             CMD_L_ARG_F
-                        BRA             CMD_USAGE_L_JMP
-CMD_L_ARG_G:
-                        JSR             CMD_ADV_PTR
-                        LDA             #$01
-                        STA             LOAD_AUTO_GO
                         JSR             CMD_REQUIRE_EOL
                         BCS             CMD_L_ARGS_OK
-                        BRA             CMD_USAGE_L_JMP
-CMD_L_ARG_F:
-                        JSR             CMD_ADV_PTR
-                        LDA             #$01
-                        STA             LOAD_FLASH_MODE
-                        JSR             CMD_REQUIRE_EOL
-                        BCS             CMD_L_ARGS_OK
-CMD_USAGE_L_JMP:
                         JMP             CMD_USAGE_L
 CMD_L_ARGS_OK:
-                        JSR             L_STR8_REQUIRE_SERVICE
-                        BCS             CMD_L_SERVICE_OK
-                        LDA             #LOAD_FAIL_SERVICE
-                        STA             LOAD_FAIL_CODE
-                        JSR             CMD_L_PRINT_FAIL
-                        LDX             #$00
-                        LDY             #$00
-                        LDA             #LOAD_FAIL_SERVICE
-                        CLC
-                        RTS
-CMD_L_SERVICE_OK:
                         JSR             DBG_CLEAR_ALL
                         STZ             LOAD_FAIL_CODE
                         STZ             LOAD_TOTAL_LO
                         STZ             LOAD_TOTAL_HI
-                        STZ             LOAD_SKIP_LO
-                        STZ             LOAD_SKIP_HI
-                        STZ             LOAD_ABORT_MODE
                         STZ             LOAD_FAIL_ADDR_LO
                         STZ             LOAD_FAIL_ADDR_HI
-                        STZ             LOAD_GO_VALID
                         STZ             LOAD_HAVE_DATA
                         STZ             LOAD_LAST_LO
                         STZ             LOAD_LAST_HI
-                        LDA             LOAD_FLASH_MODE
-                        BEQ             CMD_L_READY_NORMAL
-                        LDX             #<MSG_LF_READY
-                        LDY             #>MSG_LF_READY
-                        BRA             CMD_L_READY_PRINT
-CMD_L_READY_NORMAL:
                         LDX             #<MSG_L_READY
                         LDY             #>MSG_L_READY
-CMD_L_READY_PRINT:
                         JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
 
@@ -880,88 +834,21 @@ CMD_L_HAVE_LINE:
                         CMP             #'L'
                         BEQ             CMD_L_READ_LOOP
 
-                        LDA             LOAD_ABORT_MODE
-                        BNE             CMD_L_KEEP_FAIL_CODE
                         STZ             LOAD_FAIL_CODE
-CMD_L_KEEP_FAIL_CODE:
-                        JSR             L_PARSE_RECORD_STR8
+                        JSR             L_PARSE_RECORD
                         BCS             CMD_L_PARSE_OK
-                        LDA             LOAD_ABORT_MODE
-                        BNE             CMD_L_READ_LOOP
                         JSR             CMD_L_PRINT_FAIL
                         LDA             LOAD_FAIL_CODE
                         CMP             #LOAD_FAIL_PARSE
                         BEQ             CMD_L_READ_LOOP
-                        LDA             LOAD_FLASH_MODE
-                        BNE             CMD_L_FLASH_FAIL_DRAIN
                         JMP             CMD_L_FAIL_EXIT
-CMD_L_FLASH_FAIL_DRAIN:
-                        JSR             CMD_L_LATCH_FLASH_FAIL
-                        BRA             CMD_L_READ_LOOP
 
 CMD_L_PARSE_OK:
                         LDA             LOAD_REC_KIND
                         CMP             #LOAD_REC_KIND_TERM
                         BNE             CMD_L_READ_LOOP
-
-                        LDA             LOAD_AUTO_GO
-                        BEQ             CMD_L_PRINT_DONE
-                        LDA             LOAD_GO_VALID
-                        BEQ             CMD_L_GO_FALLBACK
-                        LDA             LOAD_GO_HI
-                        ORA             LOAD_GO_LO
-                        BNE             CMD_L_PRINT_DONE
-CMD_L_GO_FALLBACK:
-                        LDA             LOAD_HAVE_DATA
-                        BEQ             CMD_L_PRINT_DONE
-                        LDA             LOAD_FIRST_LO
-                        STA             LOAD_GO_LO
-                        LDA             LOAD_FIRST_HI
-                        STA             LOAD_GO_HI
-                        LDA             #$01
-                        STA             LOAD_GO_VALID
-
-CMD_L_PRINT_DONE:
-                        LDA             LOAD_FLASH_MODE
-                        BEQ             CMD_L_DONE_NORMAL
-                        LDA             LOAD_ABORT_MODE
-                        BNE             CMD_L_PRINT_FLASH_FAIL_DONE
-                        LDX             #<MSG_LF_DONE
-                        LDY             #>MSG_LF_DONE
-                        BRA             CMD_L_DONE_PRINT
-CMD_L_PRINT_FLASH_FAIL_DONE:
-                        LDX             #<MSG_LF_FAIL_DONE
-                        LDY             #>MSG_LF_FAIL_DONE
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             LOAD_FAIL_CODE
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDX             #<MSG_L_WR
-                        LDY             #>MSG_L_WR
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             LOAD_TOTAL_HI
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDA             LOAD_TOTAL_LO
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDX             #<MSG_L_SKIP
-                        LDY             #>MSG_L_SKIP
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             LOAD_SKIP_HI
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDA             LOAD_SKIP_LO
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDX             #<MSG_L_GO
-                        LDY             #>MSG_L_GO
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             LOAD_GO_HI
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDA             LOAD_GO_LO
-                        JSR             SYS_WRITE_HEX_BYTE
-                        JSR             SYS_WRITE_CRLF
-                        JMP             CMD_L_FAIL_EXIT
-CMD_L_DONE_NORMAL:
                         LDX             #<MSG_L_DONE
                         LDY             #>MSG_L_DONE
-CMD_L_DONE_PRINT:
                         JSR             HIM_WRITE_HBSTRING
                         LDA             LOAD_TOTAL_HI
                         JSR             SYS_WRITE_HEX_BYTE
@@ -975,20 +862,6 @@ CMD_L_DONE_PRINT:
                         LDA             LOAD_GO_LO
                         JSR             SYS_WRITE_HEX_BYTE
                         JSR             SYS_WRITE_CRLF
-                        LDA             LOAD_AUTO_GO
-                        BEQ             CMD_L_DONE_EXIT
-                        LDA             LOAD_GO_VALID
-                        BEQ             CMD_L_DONE_EXIT
-                        LDA             LOAD_GO_HI
-                        ORA             LOAD_GO_LO
-                        BEQ             CMD_L_DONE_EXIT
-                        LDA             LOAD_GO_LO
-                        STA             CMD_EXEC_ENTRY_LO
-                        LDA             LOAD_GO_HI
-                        STA             CMD_EXEC_ENTRY_HI
-                        LDA             #CMD_EXEC_KIND_LOADGO
-                        STA             CMD_EXEC_KIND
-                        JMP             (LOAD_GO_LO)
 CMD_L_DONE_EXIT:
                         LDA             #LOAD_FAIL_NONE
                         SEC
@@ -1008,18 +881,6 @@ CMD_L_FAIL_EXIT_DST:
 CMD_L_FAIL_EXIT_DONE:
                         PLA
                         CLC
-                        RTS
-
-CMD_L_LATCH_FLASH_FAIL:
-                        LDA             LOAD_ABORT_MODE
-                        BNE             CMD_L_LATCH_FLASH_FAIL_DONE
-                        LDA             LOAD_DST_LO
-                        STA             LOAD_FAIL_ADDR_LO
-                        LDA             LOAD_DST_HI
-                        STA             LOAD_FAIL_ADDR_HI
-                        LDA             #$01
-                        STA             LOAD_ABORT_MODE
-CMD_L_LATCH_FLASH_FAIL_DONE:
                         RTS
 
 CMD_USAGE_L:
@@ -1575,16 +1436,10 @@ MON_PRINT_EXEC_ID:
                         LDA             CMD_EXEC_KIND
                         CMP             #CMD_EXEC_KIND_GO
                         BEQ             MON_PRINT_EXEC_GO
-                        CMP             #CMD_EXEC_KIND_LOADGO
-                        BEQ             MON_PRINT_EXEC_LOADGO
                         JMP             MON_PRINT_HASH
 MON_PRINT_EXEC_GO:
                         LDX             #<MSG_BOX_GO
                         LDY             #>MSG_BOX_GO
-                        BRA             MON_PRINT_BOX
-MON_PRINT_EXEC_LOADGO:
-                        LDX             #<MSG_BOX_LOADGO
-                        LDY             #>MSG_BOX_LOADGO
 MON_PRINT_BOX:
                         LDA             #'#'
                         JSR             BIO_FTDI_WRITE_BYTE_BLOCK
@@ -2059,283 +1914,236 @@ CMD_PARSE_RANGE_FAIL:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; STR8 validated-record client.  L F sends each validated descriptor through
-; APPLY_LF.  The old HIMON byte-at-a-time L F sink was removed in Phase 4.
+; HIMON-private S19 parser. A complete S1 is decoded into FREE_BUF and its
+; checksum and destination span are validated before any target RAM changes.
 ; ----------------------------------------------------------------------------
-L_STR8_REQUIRE_SERVICE:
-                        LDA             STR8_REC_SIG0_ADDR
-                        CMP             #STR8_REC_SIG0_VALUE
-                        BNE             L_STR8_REQUIRE_SERVICE_FAIL
-                        LDA             STR8_REC_SIG1_ADDR
-                        CMP             #STR8_REC_SIG1_VALUE
-                        BNE             L_STR8_REQUIRE_SERVICE_FAIL
-                        LDA             STR8_REC_VERSION_ADDR
-                        CMP             #STR8_REC_VERSION_VALUE
-                        BNE             L_STR8_REQUIRE_SERVICE_FAIL
-                        LDA             STR8_REC_CAPS_ADDR
-                        AND             #STR8_REC_CAPS_V1
-                        CMP             #STR8_REC_CAPS_V1
-                        BNE             L_STR8_REQUIRE_SERVICE_FAIL
-                        SEC
-                        RTS
-L_STR8_REQUIRE_SERVICE_FAIL:
-                        CLC
-                        RTS
-
-; All L forms parse here. HIMON retains destination policy, accounting,
-; progress output, and optional GO around the validated STR8 descriptor.
-L_PARSE_RECORD_STR8:
+L_PARSE_RECORD:
                         STZ             LOAD_REC_KIND
-                        LDA             #STR8_REC_OP_PARSE
-                        STA             STR8_REC_OP
-                        LDA             #STR8_REC_FORMAT_S19
-                        STA             STR8_REC_FORMAT
-                        STZ             STR8_REC_SOURCE
-                        LDA             #<CMD_BUF
-                        STA             STR8_REC_SRC_LO
-                        LDA             #>CMD_BUF
-                        STA             STR8_REC_SRC_HI
-                        LDA             CMD_LEN
-                        STA             STR8_REC_SRC_LEN
-                        JSR             STR8_RECORD_SERVICE
-                        BCC             L_PARSE_RECORD_STR8_FAIL
+                        JSR             CMD_PEEK
+                        CMP             #'S'
+                        BEQ             L_PARSE_RECORD_HAVE_S
+                        JMP             L_PARSE_FAIL
+L_PARSE_RECORD_HAVE_S:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PEEK
+                        CMP             #'0'
+                        BEQ             L_PARSE_RECORD_S0
+                        CMP             #'1'
+                        BEQ             L_PARSE_RECORD_S1
+                        CMP             #'9'
+                        BNE             L_PARSE_RECORD_BAD_KIND
+                        JMP             L_PARSE_RECORD_S9
+L_PARSE_RECORD_BAD_KIND:
+                        JMP             L_PARSE_FAIL
 
-                        LDA             STR8_REC_KIND
-                        CMP             #STR8_REC_KIND_DATA
-                        BEQ             L_PARSE_RECORD_STR8_DATA
-                        CMP             #STR8_REC_KIND_END
-                        BEQ             L_PARSE_RECORD_STR8_END
-                        CMP             #STR8_REC_KIND_METADATA
-                        BNE             L_PARSE_RECORD_STR8_SERVICE_FAIL
+L_PARSE_RECORD_S0:
+                        JSR             CMD_ADV_PTR
+                        JSR             L_PARSE_HEADER
+                        BCC             L_PARSE_S0_FAIL
+L_PARSE_S0_SKIP:
+                        LDA             LOAD_DATA_LEN
+                        BEQ             L_PARSE_S0_CHECK
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCC             L_PARSE_S0_FAIL
+                        JSR             L_SUM_ADD_A
+                        DEC             LOAD_DATA_LEN
+                        BRA             L_PARSE_S0_SKIP
+L_PARSE_S0_CHECK:
+                        JSR             L_VERIFY_CHECKSUM_EOL
+                        BCC             L_PARSE_S0_FAIL
                         LDA             #LOAD_REC_KIND_SKIP
                         STA             LOAD_REC_KIND
                         SEC
                         RTS
+L_PARSE_S0_FAIL:
+                        JMP             L_PARSE_FAIL
 
-L_PARSE_RECORD_STR8_END:
-                        LDA             STR8_REC_ENTRY_LO
-                        STA             LOAD_GO_LO
-                        LDA             STR8_REC_ENTRY_HI
-                        STA             LOAD_GO_HI
-                        LDA             #$01
-                        STA             LOAD_GO_VALID
-                        LDA             #LOAD_REC_KIND_TERM
-                        STA             LOAD_REC_KIND
-                        SEC
-                        RTS
-
-L_PARSE_RECORD_STR8_FAIL:
-                        LDA             STR8_REC_STATUS
-                        CMP             #STR8_REC_BAD_START
-                        BCC             L_PARSE_RECORD_STR8_SERVICE_FAIL
-                        CMP             #STR8_REC_BAD_END+$01
-                        BCS             L_PARSE_RECORD_STR8_SERVICE_FAIL
-                        LDA             #LOAD_FAIL_PARSE
-                        BRA             L_PARSE_RECORD_STR8_FAIL_A
-L_PARSE_RECORD_STR8_SERVICE_FAIL:
-                        LDA             #LOAD_FAIL_SERVICE
-L_PARSE_RECORD_STR8_FAIL_A:
-                        LDX             LOAD_ABORT_MODE
-                        BNE             L_PARSE_RECORD_STR8_FAIL_RETURN
-                        STA             LOAD_FAIL_CODE
-L_PARSE_RECORD_STR8_FAIL_RETURN:
-                        CLC
-                        RTS
-
-L_PARSE_RECORD_STR8_DATA:
-                        LDA             STR8_REC_ADDR_LO
-                        STA             LOAD_DST_LO
-                        STA             LOAD_LAST_LO
-                        LDA             STR8_REC_ADDR_HI
-                        STA             LOAD_DST_HI
-                        STA             LOAD_LAST_HI
-                        LDA             LOAD_FLASH_MODE
-                        BEQ             L_PARSE_RECORD_STR8_DATA_NORMAL
-                        JMP             L_PARSE_RECORD_STR8_FLASH_DATA
-L_PARSE_RECORD_STR8_DATA_NORMAL:
-                        LDA             STR8_REC_DATA_LEN
-                        BNE             L_PARSE_RECORD_STR8_NONEMPTY
-                        JMP             L_PARSE_RECORD_STR8_DATA_DONE
-L_PARSE_RECORD_STR8_NONEMPTY:
-                        JMP             L_PARSE_RECORD_STR8_RAM_DATA
-
-L_PARSE_RECORD_STR8_NEED_FLASH:
-                        LDA             #LOAD_FAIL_NEED_FLASH
-                        BRA             L_PARSE_RECORD_STR8_FAIL_DST_A
-L_PARSE_RECORD_STR8_PROTECT_DST:
-                        LDA             #LOAD_FAIL_PROTECT
-L_PARSE_RECORD_STR8_FAIL_DST_A:
-                        PHA
-                        LDA             LOAD_DST_LO
-                        STA             LOAD_FAIL_ADDR_LO
-                        LDA             LOAD_DST_HI
-                        STA             LOAD_FAIL_ADDR_HI
-                        PLA
-L_PARSE_RECORD_STR8_POLICY_FAIL_A:
-                        STA             LOAD_FAIL_CODE
-                        CLC
-                        RTS
-
-L_PARSE_RECORD_STR8_RAM_DATA:
-                        LDA             LOAD_DST_HI
-                        CMP             #$80
-                        BCS             L_PARSE_RECORD_STR8_NEED_FLASH
-                        CMP             #>SYS_IO_BASE
-                        BCS             L_PARSE_RECORD_STR8_PROTECT_DST
-                        LDA             LOAD_DST_LO
-                        CLC
-                        ADC             STR8_REC_DATA_LEN
-                        STA             LOAD_LAST_LO
-                        LDA             LOAD_DST_HI
-                        ADC             #$00
-                        STA             LOAD_LAST_HI
-                        CMP             #>SYS_IO_BASE
-                        BCC             L_PARSE_RECORD_STR8_SPAN_OK
-                        BNE             L_PARSE_RECORD_STR8_PROTECT_CROSS
-                        LDA             LOAD_LAST_LO
-                        BEQ             L_PARSE_RECORD_STR8_SPAN_OK
-L_PARSE_RECORD_STR8_PROTECT_CROSS:
-                        STZ             LOAD_FAIL_ADDR_LO
-                        LDA             #>SYS_IO_BASE
-                        STA             LOAD_FAIL_ADDR_HI
-                        LDA             #LOAD_FAIL_PROTECT
-                        BRA             L_PARSE_RECORD_STR8_POLICY_FAIL_A
-
-L_PARSE_RECORD_STR8_SPAN_OK:
+L_PARSE_RECORD_S1:
+                        JSR             CMD_ADV_PTR
+                        JSR             L_PARSE_HEADER
+                        BCC             L_PARSE_S1_FAIL
+                        LDX             #$00
+L_PARSE_S1_DATA:
+                        CPX             LOAD_DATA_LEN
+                        BCS             L_PARSE_S1_CHECK
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCC             L_PARSE_S1_FAIL
+                        STA             FREE_BUF,X
+                        JSR             L_SUM_ADD_A
+                        INX
+                        BRA             L_PARSE_S1_DATA
+L_PARSE_S1_CHECK:
+                        JSR             L_VERIFY_CHECKSUM_EOL
+                        BCC             L_PARSE_S1_FAIL
+                        LDA             LOAD_DATA_LEN
+                        BEQ             L_PARSE_S1_DONE
+                        JSR             L_VALIDATE_RAM_SPAN
+                        BCC             L_PARSE_S1_FAIL
                         JSR             L_NOTE_S1_ADDR
-                        LDA             STR8_REC_DATA_LEN
-                        PHA
                         LDA             LOAD_DST_LO
                         STA             CMDP_ADDR_LO
                         LDA             LOAD_DST_HI
                         STA             CMDP_ADDR_HI
-                        CMP             #STR8_REC_DATA_BUF_HI
-                        BNE             L_PARSE_RECORD_STR8_COPY_FORWARD
-                        LDA             LOAD_DST_LO
-                        BEQ             L_PARSE_RECORD_STR8_COPY_FORWARD
-                        CMP             STR8_REC_DATA_LEN
-                        BCS             L_PARSE_RECORD_STR8_COPY_FORWARD
-
-                        LDX             STR8_REC_DATA_LEN
-                        DEX
-L_PARSE_RECORD_STR8_COPY_BACK:
-                        TXA
-                        TAY
-                        LDA             STR8_REC_DATA_BUF,X
-                        STA             (CMDP_ADDR_LO),Y
-                        CPX             #$00
-                        BEQ             L_PARSE_RECORD_STR8_COPIED
-                        DEX
-                        BRA             L_PARSE_RECORD_STR8_COPY_BACK
-
-L_PARSE_RECORD_STR8_COPY_FORWARD:
-                        LDX             STR8_REC_DATA_LEN
+                        LDX             LOAD_DATA_LEN
                         LDY             #$00
-L_PARSE_RECORD_STR8_COPY_NEXT:
-                        LDA             STR8_REC_DATA_BUF,Y
+L_PARSE_S1_COPY:
+                        LDA             FREE_BUF,Y
                         STA             (CMDP_ADDR_LO),Y
                         INY
                         DEX
-                        BNE             L_PARSE_RECORD_STR8_COPY_NEXT
-
-L_PARSE_RECORD_STR8_COPIED:
-                        PLA
+                        BNE             L_PARSE_S1_COPY
+                        LDA             LOAD_TMP_LO
+                        STA             LOAD_LAST_LO
+                        LDA             LOAD_TMP_HI
+                        STA             LOAD_LAST_HI
+                        LDA             LOAD_DATA_LEN
                         CLC
                         ADC             LOAD_TOTAL_LO
                         STA             LOAD_TOTAL_LO
-                        BCC             L_PARSE_RECORD_STR8_DATA_DONE
+                        BCC             L_PARSE_S1_DONE
                         INC             LOAD_TOTAL_HI
-L_PARSE_RECORD_STR8_DATA_DONE:
+L_PARSE_S1_DONE:
                         LDA             #LOAD_REC_KIND_DATA
                         STA             LOAD_REC_KIND
                         SEC
                         RTS
+L_PARSE_S1_FAIL:
+                        JMP             L_PARSE_FAIL
 
-; Phase 3: apply the descriptor just published by PARSE through STR8.  The
-; service preflights every byte before its RAM worker changes flash, so a
-; NEED_ERASE result leaves the entire record untouched.  HIMON keeps its
-; user-facing error mapping, progress and terminal S9 behavior.
-L_PARSE_RECORD_STR8_FLASH_DATA:
-                        LDA             STR8_REC_DATA_LEN
-                        BEQ             L_PARSE_RECORD_STR8_FLASH_APPLY
-                        JSR             L_NOTE_S1_ADDR
-L_PARSE_RECORD_STR8_FLASH_APPLY:
-                        LDA             LOAD_ABORT_MODE
-                        BNE             L_PARSE_RECORD_STR8_FLASH_SKIP
-                        LDA             #STR8_REC_OP_APPLY_LF
-                        STA             STR8_REC_OP
-                        JSR             STR8_RECORD_SERVICE
-                        BCC             L_PARSE_RECORD_STR8_FLASH_SERVICE_FAIL
-                        LDA             STR8_REC_DATA_LEN
+L_PARSE_RECORD_S9:
+                        JSR             CMD_ADV_PTR
+                        JSR             L_PARSE_HEADER
+                        BCC             L_PARSE_S9_FAIL
+                        LDA             LOAD_DATA_LEN
+                        BNE             L_PARSE_S9_FAIL
+                        JSR             L_VERIFY_CHECKSUM_EOL
+                        BCC             L_PARSE_S9_FAIL
+                        LDA             LOAD_DST_LO
+                        STA             LOAD_GO_LO
+                        LDA             LOAD_DST_HI
+                        STA             LOAD_GO_HI
+                        LDA             #LOAD_REC_KIND_TERM
+                        STA             LOAD_REC_KIND
+                        SEC
+                        RTS
+L_PARSE_S9_FAIL:
+                        JMP             L_PARSE_FAIL
+
+L_PARSE_HEADER:
+                        STZ             LOAD_SUM
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCC             L_PARSE_HEADER_FAIL
+                        STA             LOAD_COUNT
+                        JSR             L_SUM_ADD_A
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCC             L_PARSE_HEADER_FAIL
+                        STA             LOAD_DST_HI
+                        JSR             L_SUM_ADD_A
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCC             L_PARSE_HEADER_FAIL
+                        STA             LOAD_DST_LO
+                        JSR             L_SUM_ADD_A
+                        LDA             LOAD_COUNT
+                        CMP             #$03
+                        BCC             L_PARSE_HEADER_FAIL
+                        SBC             #$03
+                        STA             LOAD_DATA_LEN
+                        SEC
+                        RTS
+L_PARSE_HEADER_FAIL:
                         CLC
-                        ADC             LOAD_TOTAL_LO
-                        STA             LOAD_TOTAL_LO
-                        BCC             L_PARSE_RECORD_STR8_FLASH_ADVANCE
-                        INC             LOAD_TOTAL_HI
-                        BRA             L_PARSE_RECORD_STR8_FLASH_ADVANCE
-L_PARSE_RECORD_STR8_FLASH_SKIP:
-                        LDA             STR8_REC_DATA_LEN
-                        CLC
-                        ADC             LOAD_SKIP_LO
-                        STA             LOAD_SKIP_LO
-                        BCC             L_PARSE_RECORD_STR8_FLASH_ADVANCE
-                        INC             LOAD_SKIP_HI
-L_PARSE_RECORD_STR8_FLASH_ADVANCE:
+                        RTS
+
+; Nonempty S1 spans may end exactly at $7A00, but may not write $7A00-$FFFF.
+L_VALIDATE_RAM_SPAN:
+                        LDA             LOAD_DST_HI
+                        CMP             #$7A
+                        BCS             L_VALIDATE_RAM_SPAN_START_FAIL
                         LDA             LOAD_DST_LO
                         CLC
-                        ADC             STR8_REC_DATA_LEN
-                        STA             LOAD_DST_LO
+                        ADC             LOAD_DATA_LEN
+                        STA             LOAD_TMP_LO
                         LDA             LOAD_DST_HI
                         ADC             #$00
-                        STA             LOAD_DST_HI
+                        STA             LOAD_TMP_HI
+                        BCS             L_VALIDATE_RAM_SPAN_CROSS_FAIL
+                        CMP             #$7A
+                        BCC             L_VALIDATE_RAM_SPAN_OK
+                        BNE             L_VALIDATE_RAM_SPAN_CROSS_FAIL
+                        LDA             LOAD_TMP_LO
+                        BNE             L_VALIDATE_RAM_SPAN_CROSS_FAIL
+L_VALIDATE_RAM_SPAN_OK:
+                        SEC
+                        RTS
+L_VALIDATE_RAM_SPAN_START_FAIL:
                         LDA             LOAD_DST_LO
-                        STA             LOAD_LAST_LO
+                        STA             LOAD_FAIL_ADDR_LO
                         LDA             LOAD_DST_HI
-                        STA             LOAD_LAST_HI
-                        BRA             L_PARSE_RECORD_STR8_DATA_DONE
-
-L_PARSE_RECORD_STR8_FLASH_SERVICE_FAIL:
-                        LDA             STR8_REC_FAIL_LO
-                        STA             LOAD_DST_LO
-                        LDA             STR8_REC_FAIL_HI
-                        STA             LOAD_DST_HI
-                        LDA             STR8_REC_OBSERVED
-                        STA             LOAD_FLASH_OLD
-                        LDA             STR8_REC_EXPECTED
-                        STA             CMD_IO_TMP
-                        LDA             STR8_REC_DATA_LEN
-                        CLC
-                        ADC             LOAD_SKIP_LO
-                        STA             LOAD_SKIP_LO
-                        BCC             L_PARSE_RECORD_STR8_FLASH_MAP_STATUS
-                        INC             LOAD_SKIP_HI
-L_PARSE_RECORD_STR8_FLASH_MAP_STATUS:
-                        LDA             STR8_REC_STATUS
-                        CMP             #STR8_REC_LF_PROTECT
-                        BEQ             L_PARSE_RECORD_STR8_FLASH_PROTECT
-                        CMP             #STR8_REC_LF_NEED_ERASE
-                        BEQ             L_PARSE_RECORD_STR8_FLASH_ERASE
-                        CMP             #STR8_REC_LF_WRITE
-                        BEQ             L_PARSE_RECORD_STR8_FLASH_WRITE
-                        CMP             #STR8_REC_LF_VERIFY
-                        BEQ             L_PARSE_RECORD_STR8_FLASH_WRITE
-                        LDA             #LOAD_FAIL_SERVICE
-                        BRA             L_PARSE_RECORD_STR8_FLASH_FAIL_A
-L_PARSE_RECORD_STR8_FLASH_PROTECT:
+                        STA             LOAD_FAIL_ADDR_HI
+                        BRA             L_VALIDATE_RAM_SPAN_FAIL
+L_VALIDATE_RAM_SPAN_CROSS_FAIL:
+                        STZ             LOAD_FAIL_ADDR_LO
+                        LDA             #$7A
+                        STA             LOAD_FAIL_ADDR_HI
+L_VALIDATE_RAM_SPAN_FAIL:
                         LDA             #LOAD_FAIL_PROTECT
-                        BRA             L_PARSE_RECORD_STR8_FLASH_FAIL_A
-L_PARSE_RECORD_STR8_FLASH_ERASE:
-                        LDA             #LOAD_FAIL_ERASE
-                        BRA             L_PARSE_RECORD_STR8_FLASH_FAIL_A
-L_PARSE_RECORD_STR8_FLASH_WRITE:
-                        LDA             #LOAD_FAIL_WRITE
-L_PARSE_RECORD_STR8_FLASH_FAIL_A:
                         STA             LOAD_FAIL_CODE
                         CLC
                         RTS
 
-; This pointer helper is retained for HIM_FLASH_INSTALL_COPY.  L F does not
-; call it: its complete-record mutation path is STR8_REC_OP_APPLY_LF above.
+L_SUM_ADD_A:
+                        CLC
+                        ADC             LOAD_SUM
+                        STA             LOAD_SUM
+                        RTS
+
+L_VERIFY_CHECKSUM_EOL:
+                        JSR             L_PARSE_HEX_BYTE_STRICT
+                        BCC             L_VERIFY_CHECKSUM_EOL_FAIL
+                        CLC
+                        ADC             LOAD_SUM
+                        CMP             #$FF
+                        BNE             L_VERIFY_CHECKSUM_EOL_FAIL
+                        JSR             CMD_PEEK
+                        BEQ             L_VERIFY_CHECKSUM_EOL_OK
+L_VERIFY_CHECKSUM_EOL_FAIL:
+                        CLC
+                        RTS
+L_VERIFY_CHECKSUM_EOL_OK:
+                        SEC
+                        RTS
+
+L_PARSE_HEX_BYTE_STRICT:
+                        JSR             CMD_PEEK
+                        JSR             CMD_HEX_ASCII_TO_NIBBLE
+                        BCC             L_PARSE_HEX_BYTE_STRICT_FAIL
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        STA             CMDP_NIB_HI
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PEEK
+                        JSR             CMD_HEX_ASCII_TO_NIBBLE
+                        BCC             L_PARSE_HEX_BYTE_STRICT_FAIL
+                        ORA             CMDP_NIB_HI
+                        JSR             CMD_ADV_PTR
+                        SEC
+                        RTS
+L_PARSE_HEX_BYTE_STRICT_FAIL:
+                        CLC
+                        RTS
+
+L_PARSE_FAIL:
+                        LDA             LOAD_FAIL_CODE
+                        BNE             L_PARSE_FAIL_HAVE_CODE
+                        LDA             #LOAD_FAIL_PARSE
+                        STA             LOAD_FAIL_CODE
+L_PARSE_FAIL_HAVE_CODE:
+                        CLC
+                        RTS
+
+; This pointer helper is retained for HIM_FLASH_INSTALL_COPY.
 L_FLASH_SET_PTR:
                         LDA             LOAD_DST_LO
                         STA             CMDP_ADDR_LO
@@ -2384,11 +2192,6 @@ HIM_FLASH_INSTALL_RANGE_START:
                         STA             LOAD_LEN_LO
                         LDA             HIM_FLASH_LEN_HI
                         STA             LOAD_LEN_HI
-                        LDA             #$01
-                        STA             LOAD_FLASH_MODE
-                        STZ             LOAD_ABORT_MODE
-                        STZ             LOAD_SKIP_LO
-                        STZ             LOAD_SKIP_HI
 HIM_FLASH_INSTALL_LOOP:
                         LDA             LOAD_LEN_LO
                         ORA             LOAD_LEN_HI
@@ -3776,10 +3579,6 @@ L_NOTE_S1_ADDR:
                         BNE             L_NOTE_S1_ADDR_HAVE_DATA
                         LDA             #$01
                         STA             LOAD_HAVE_DATA
-                        LDA             LOAD_DST_LO
-                        STA             LOAD_FIRST_LO
-                        LDA             LOAD_DST_HI
-                        STA             LOAD_FIRST_HI
                         BRA             L_NOTE_S1_ADDR_PRINT
 
 L_NOTE_S1_ADDR_HAVE_DATA:
@@ -3806,15 +3605,6 @@ L_NOTE_S1_ADDR_DONE:
 
 CMD_L_PRINT_FAIL:
                         LDA             LOAD_FAIL_CODE
-                        LDX             LOAD_FLASH_MODE
-                        BEQ             ?GENERIC
-                        CMP             #LOAD_FAIL_PROTECT
-                        BEQ             CMD_L_PRINT_FAIL_PROTECT
-                        CMP             #LOAD_FAIL_ERASE
-                        BEQ             CMD_L_PRINT_FAIL_ERASE
-                        CMP             #LOAD_FAIL_WRITE
-                        BEQ             CMD_L_PRINT_FAIL_WRITE
-?GENERIC:
                         PHA
                         LDX             #<MSG_L_ERR
                         LDY             #>MSG_L_ERR
@@ -3822,53 +3612,6 @@ CMD_L_PRINT_FAIL:
                         PLA
                         JSR             SYS_WRITE_HEX_BYTE
                         JMP             SYS_WRITE_CRLF
-
-CMD_L_PRINT_FAIL_PROTECT:
-                        LDX             #<MSG_LF_PROTECT
-                        LDY             #>MSG_LF_PROTECT
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             CMD_L_PRINT_LOAD_DST
-                        JMP             SYS_WRITE_CRLF
-
-CMD_L_PRINT_FAIL_ERASE:
-                        LDX             #<MSG_LF_ERASE
-                        LDY             #>MSG_LF_ERASE
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             CMD_L_PRINT_LOAD_DST
-                        LDX             #<MSG_L_OLD
-                        LDY             #>MSG_L_OLD
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             LOAD_FLASH_OLD
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDX             #<MSG_L_NEW
-                        LDY             #>MSG_L_NEW
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             CMD_IO_TMP
-                        JSR             SYS_WRITE_HEX_BYTE
-                        JMP             SYS_WRITE_CRLF
-
-CMD_L_PRINT_FAIL_WRITE:
-                        LDX             #<MSG_LF_WRITE
-                        LDY             #>MSG_LF_WRITE
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             CMD_L_PRINT_LOAD_DST
-                        LDX             #<MSG_L_WANT
-                        LDY             #>MSG_L_WANT
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             CMD_IO_TMP
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDX             #<MSG_L_READ
-                        LDY             #>MSG_L_READ
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             LOAD_FLASH_OLD
-                        JSR             SYS_WRITE_HEX_BYTE
-                        JMP             SYS_WRITE_CRLF
-
-CMD_L_PRINT_LOAD_DST:
-                        LDA             LOAD_DST_HI
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDA             LOAD_DST_LO
-                        JMP             SYS_WRITE_HEX_BYTE
 
 ; ----------------------------------------------------------------------------
 ; FNV-1a command token dispatch
@@ -4730,35 +4473,22 @@ MSG_USAGE_R:             DB              "R reg",('s'+$80)
 MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
 MSG_USAGE_AP:            DB              "AP [Bn] pkg ds",('t'+$80)
-MSG_USAGE_L:             DB              "L [G|F",(']'+$80)
+MSG_USAGE_L:             DB              ('L'+$80)
 MSG_NOCTX:               DB              "NOCT",('X'+$80)
 MSG_RESUME:              DB              "RESUME",(' '+$80)
 MSG_GO:                  DB              "GO",(' '+$80)
 MSG_AP_ERR:              DB              "APERR=",('$'+$80)
 MSG_L_READY:             DB              "L S1",('9'+$80)
-MSG_LF_READY:            DB              "L F S1",('9'+$80)
 MSG_L_STATUS:            DB              "L",('S'+$80)
 MSG_L_ERR:               DB              "LERR=",('$'+$80)
 MSG_L_DONE:              DB              "L OK",('='+$80)
-MSG_LF_DONE:             DB              "LF OK WR",('='+$80)
-MSG_LF_FAIL_DONE:        DB              "LF FAIL",('='+$80)
-MSG_L_WR:                DB              " WR",('='+$80)
-MSG_L_SKIP:              DB              " SKIP",('='+$80)
-MSG_L_GO:                DB              " GO",('='+$80)
-MSG_LF_PROTECT:          DB              "LF PROT",('='+$80)
-MSG_LF_ERASE:            DB              "LF ERASE",('='+$80)
-MSG_LF_WRITE:            DB              "LF WFAIL",('='+$80)
-MSG_L_OLD:               DB              " OLD",('='+$80)
-MSG_L_NEW:               DB              " NEW",('='+$80)
-MSG_L_WANT:              DB              " WANT",('='+$80)
-MSG_L_READ:              DB              " READ",('='+$80)
+MSG_L_GO:                DB              " ENTRY",('='+$80)
 MSG_STOP_NMI:            DB              "NMI PC",('='+$80)
 MSG_STOP_BRK:            DB              "BRK",(' '+$80)
 MSG_STOP_PC:             DB              " PC",('='+$80)
 MSG_ENTRY:               DB              " ENTRY",('='+$80)
 MSG_RET:                 DB              "RET",(' '+$80)
 MSG_BOX_GO:              DB              "G",('O'+$80)
-MSG_BOX_LOADGO:          DB              "LOADG",('O'+$80)
 MSG_REG_A:               DB              "A",('='+$80)
 MSG_REG_X:               DB              " X",('='+$80)
 MSG_REG_Y:               DB              " Y",('='+$80)

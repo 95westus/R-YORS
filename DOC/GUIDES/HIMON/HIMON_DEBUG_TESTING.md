@@ -41,7 +41,7 @@ debug behavior only.
 At the HIMON prompt:
 
 ```text
->L G
+>L
 ```
 
 Send:
@@ -53,7 +53,8 @@ SRC/BUILD/s19/himon-debug-proof-3000.s19
 Expected first stop:
 
 ```text
-L OK=0163 GO=3000
+L OK=0163 ENTRY=3000
+>G 3000
 HIMON DEBUG PROOF $3000
 BRK $41: USE N TO STEP
 BRK 41 PC=...
@@ -72,9 +73,10 @@ NMI PC=DAAA or DB0B
 `LS03` means HIMON left the S19 loader with FTDI status `$03`. If the NMI PC
 lands inside `BIO_FTDI_READ_BYTE_BLOCK` in `SRC/BUILD/map/himon-rom-c000.map`, the
 monitor was in the blocking serial read path, not running the proof. Restart
-`L G` and send the S19 again before treating it as a debug failure.
+`L`, send the S19 again, and then enter `G 3000` before treating it as a debug
+failure.
 
-Do not press Ctrl-C while HIMON is in `L` or `L G`; HIMON sees it as the FTDI
+Do not press Ctrl-C while HIMON is in `L`; HIMON sees it as the FTDI
 Ctrl-C status and the loader can abort with `LS03`. For capture, use terminal
 logging, copy after the prompt returns, or a copy shortcut that does not send
 Ctrl-C to the serial session.
@@ -366,7 +368,8 @@ slots, a repeated min-scan printer is probably cheaper than a general sort.
 Breakpoint workflow check:
 
 ```text
->L G             load proof and stop at BRK 41 / PC=3013
+>L               load proof and return to HIMON
+>G 3000          start proof and stop at BRK 41 / PC=3013
 >B 3043          patch breakpoint
 >B L             should list only 3043 A2 after a fresh load
 >N               step normally; monitor commands preserve the trapped proof PC
@@ -391,7 +394,8 @@ not survive a program reload as stale table entries.
 The pass path is:
 
 ```text
-L G loads the proof
+L loads the proof and returns to the prompt
+G 3000 starts the proof explicitly
 BRK $41 appears
 R shows valid context
 N steps through the listed branch cases
@@ -420,33 +424,30 @@ notes: pass/fail and any BRK code seen
 
 ## Loader RAM Ceiling Smoke
 
-Current normal `L` must not write the `$7F00-$7FFF` I/O page. After flashing a
-known-good recovery image, prove the guard with one-byte S1 records:
+Current `L` must not write monitor workspace, I/O, or flash at `$7A00-$FFFF`.
+After flashing a known-good recovery image, prove the guard with one-byte S1
+records:
 
 ```text
 >L
 L S19
-S1047F00007C
-L @7F00
+S1047A005A27
 LERR=$02
 
 >L
 L S19
-S1048000007B
-L @8000
-LERR=$05
+S10480005A21
+LERR=$02
 ```
 
-The first record is the hard RAM/I/O ceiling proof. The second confirms that
-the generic need-flash error still belongs to `$8000+`, not the `$7Fxx` I/O
-page.
+Also load `S10479FF5A29` successfully, then reject crossing record
+`S10579FF11224F` and require `$79FF` to remain `$5A`. This proves the valid
+exclusive end `$7A00` and validate-before-copy crossing behavior.
 
-Loader fail codes are `$01` parse/checksum, `$02` protect, `$03` erase,
-`$04` write, and `$05` need flash. The compact generic form is `LERR=$ee`;
-`L F` protect/erase/write paths may still print address-rich `LF ...`
-diagnostics.
+Current public loader fail codes are `$01` parse/checksum and `$02` protected
+destination. The compact form is `LERR=$ee`.
 
-Board proof on 2026-07-05 with HIMON `V 00.0705(0416)` showed
+Historical board proof on 2026-07-05 with HIMON `V 00.0705(0416)` showed
 `D 7EF0 8010` skipping all `$7Fxx` I/O rows, `M 7A00/7EFF/7F00` returning
 `M PROT`, `B 79FF` set/list/clear leaving `B L` empty, `B 7A00/7EFF/7F00/8000`
 returning `DBG RAM`, normal `L` returning `LERR=$02` for `S1047F00007C` and

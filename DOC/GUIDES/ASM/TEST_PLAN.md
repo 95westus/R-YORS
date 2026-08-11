@@ -13738,3 +13738,52 @@ confirms the exact refresh, both visible phases, live selection, cold timeout,
 warm `H`, and a post-refresh `C-E` install. The final no-flash gate is to type
 `S` during `WAIT`, require it to be discarded and cold-timeout normally, then
 repeat with `S` during the menu dots and require the STR8 prompt.
+
+## 2026-08-11 HIMON-Only RAM S19 Loader
+
+Host status: HIMON build accepted. Board status: pending. STR8-N source and
+interfaces are unchanged by this phase.
+
+HIMON now accepts only bare `L`. It owns the S0/S1/S9 parser, validates a
+complete S1 into `FREE_BUF` before copying any target byte, rejects every
+nonempty span which touches `$7A00-$FFFF`, reports the S9 address as `ENTRY`,
+and always returns to the prompt. The former `L G` automatic transfer and
+`L F` flash adapter are removed. Persistent installation remains a separate
+STR8-N concern and is not changed here.
+
+The linked HIMON map must contain `L_PARSE_RECORD`,
+`L_PARSE_RECORD_S0`, `L_PARSE_RECORD_S1`, `L_PARSE_RECORD_S9`,
+`L_PARSE_HEX_BYTE_STRICT`, `L_VERIFY_CHECKSUM_EOL`, and
+`L_VALIDATE_RAM_SPAN`. It must not contain `L_STR8_REQUIRE_SERVICE`,
+`L_PARSE_RECORD_STR8`, `CMD_L_ARG_G`, `CMD_L_ARG_F`, or
+`CMD_EXEC_KIND_LOADGO`. HIMON must not include `STR8/str8-record-eq.inc`.
+
+Required host gates:
+
+```text
+make -C SRC himon
+make -C SRC himon-banked-ap-check
+git diff --check
+```
+
+Required board gates:
+
+1. Enter `L G` and `L F` separately. Each must print bare `L` usage and return
+   immediately; neither may enter the S19 receiver or STR8-N.
+2. Enter `L` and send `S1073000A91160EAC4`, then `S9033000CC`. Require
+   `L @3000`, `L OK=0004 ENTRY=3000`, and an immediate HIMON prompt. There
+   must be no automatic execution. Dump `$3000-$3003` and require
+   `A9 11 60 EA`; only then enter `G 3000` and require a normal return with
+   A=`$11`.
+3. Capture an unchanged RAM byte, send a valid S1 for it with a deliberately
+   bad checksum, and require `LERR=$01` with no target mutation. Complete the
+   session with a valid S9.
+4. Enter `L`, send `S10479FF5A29` and `S90379FF84`, and require one byte
+   `$5A` at `$79FF`; this proves a nonempty span may end exactly at `$7A00`.
+5. Enter `L`, send `S10579FF11224F`, and require `LERR=$02` with `$79FF`
+   still `$5A`; this proves a crossing record is rejected before its first
+   byte is copied. Separately send `S1047A005A27` and `S10480005A21`; each
+   must return `LERR=$02` without monitor-workspace, I/O, or flash mutation.
+6. Append the exact transcript and HIMON image identity to
+   `HARDWARE_TEST_LOG.md`. Do not rewrite the earlier `L G` or `L F`
+   transcripts; they remain evidence for the superseded command surface.

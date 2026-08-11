@@ -202,64 +202,49 @@ flowchart TD
     Q[Q CMD_Q] --> QUIESCE[SEI / WAI / MON_REENTER]
 ```
 
-### Loader And Flash Write Edges
+### RAM Loader Edges
 
 #### Receive And Record Types
 
 ```mermaid
 flowchart TD
-    L[CMD_L] --> ARGS[L, L G, or L F args]
+    L[CMD_L] --> ARGS[bare L only]
     L --> READY[print ready]
     L --> READ[HIM_READ_LINE_UPPER]
     READ --> PARSE[L_PARSE_RECORD]
-    PARSE --> S0[L_PARSE_S0]
-    PARSE --> S1[L_PARSE_S1]
-    PARSE --> S9[L_PARSE_S9]
+    PARSE --> S0[L_PARSE_RECORD_S0]
+    PARSE --> S1[L_PARSE_RECORD_S1]
+    PARSE --> S9[L_PARSE_RECORD_S9]
     S0 --> SKIP[S0 skipped after checksum]
-    S9 --> GOSAVE[LOAD_GO saved]
+    S9 --> ENTRYSAVE[entry saved and reported]
+    ENTRYSAVE --> RETURN[return to HIMON prompt]
 ```
 
 #### Destination Policy
 
 ```mermaid
 flowchart TD
-    S1[L_PARSE_S1] --> NOTE[L_NOTE_S1_ADDR]
-    S1 --> WRITE[L_WRITE_DATA_BYTE]
-    WRITE --> RAM{LOAD_FLASH_MODE?}
-    RAM -->|no and dst < $7F00| RAMWRITE[store to RAM]
-    RAM -->|no and $7Fxx| RAMPROTECT[LOAD_FAIL_PROTECT]
-    RAM -->|no and dst >= $8000| NEEDF[LOAD_FAIL_NEED_FLASH]
-    RAM -->|yes| FLASHGATE[flash write gate]
+    S1[L_PARSE_RECORD_S1] --> DECODE[decode complete record into FREE_BUF]
+    DECODE --> CHECK[validate count, hex, checksum, and EOL]
+    CHECK --> SPAN{nonempty span ends at or below $7A00?}
+    SPAN -->|yes| NOTE[L_NOTE_S1_ADDR]
+    NOTE --> RAMWRITE[copy validated bytes to RAM]
+    SPAN -->|no| RAMPROTECT[LOAD_FAIL_PROTECT]
 ```
 
-#### Flash Write And Finish
+#### Finish
 
 ```mermaid
 flowchart TD
-    FLASHGATE[flash write gate] --> PROTECT[protect below $8000 and at/above $D000]
-    FLASHGATE --> OLD[read old byte]
-    OLD -->|same| MATCH[L_WRITE_DATA_BYTE_MATCH]
-    OLD -->|not $FF| ERASE[LOAD_FAIL_ERASE]
-    OLD -->|$FF| FLASHWRITE[FLASH_WRITE_BYTE_AXY]
-    FLASHWRITE --> VERIFY[read-back verify]
-    VERIFY -->|ok| WROTE[LOAD_WRITE_OK]
-    VERIFY -->|bad| WFAIL[LOAD_FAIL_WRITE]
-    S1[L_PARSE_S1] --> CHK[L_VERIFY_CHECKSUM_EOL]
-    L[CMD_L] --> DONE[done status]
-    L --> AUTOGO[optional auto-go]
+    S9[L_PARSE_RECORD_S9] --> CHECK[L_VERIFY_CHECKSUM_EOL]
+    CHECK --> SAVE[save S9 entry]
+    SAVE --> DONE[print L OK byte count and ENTRY]
+    DONE --> PROMPT[return to prompt]
 ```
 
-Future loader direction: `L F` may grow an auto-place relocatable mode. In that
-mode HIMON would first validate and measure the S19 image, find an erased block
-inside the HIMON flash-load guard, rebase S-record addresses to the chosen
-block, write/verify the relocated bytes, and report the selected base plus go
-address. This is not current behavior, and it is not STR8 backup/restore or
-protected-window update.
-
-Relocation is deliberately narrow: plain S19 can be address-rebased, but it
-does not describe absolute operands embedded inside code. A future auto-place
-payload must be position-safe, rely on RJOIN/fixed external contracts, or carry
-explicit relocation metadata from ASM or host tooling.
+HIMON has no S19 flash-write or load-and-run form. Persistent installation and
+flash policy belong to STR8-N; changes to that interface require a separate
+review.
 
 ### Trap, Breakpoint, And Step Edges
 
@@ -376,15 +361,12 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
 | AP package run | `AP pkg dst` | `CMD_AP`, `HIM_AP_SERVICE` | Loads an AP v1 envelope from RAM or visible flash to `$2000-$4FFF`, applies current internal relocations, then runs `dst`. | V0 keeps the ROM cost low by requiring the package entry to be BODY offset zero. It is not a package-name registry yet. |
 | Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; confirms, then jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; kind is `K03`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
-| S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_S1`, `L_WRITE_DATA_BYTE` | Accepts S0/S1/S9, writes S1 data below `$7F00`, tracks count and go address. | `$7F00-$7FFF` reports `LERR=$02`; `$8000+` without `F` fails with `LERR=$05`. |
-| S-record load and go | `L G` | `CMD_L` | Same as `L`, then jumps to S9 address or first data address fallback. | Sets exec kind to LOADGO before jump. |
-| S-record flash load | `L F` | `L_WRITE_DATA_BYTE_FLASH`, `FLASH_WRITE_BYTE_AXY` | Writes only blank `$FF` bytes in `$8000-$CFFF`, verifies readback, skips after first flash failure. | Protects HIMON fixed-entry area at `$D000+`; no sector erase yet. |
+| S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_RECORD_S1`, `L_VALIDATE_RAM_SPAN` | Accepts S0/S1/S9, validates each complete record before copying S1 data, tracks the byte count, and reports the S9 entry without executing it. | Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` are rejected by the bare-`L` grammar. |
 | AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_IMPORT_LINK`, `HIM_AP_FIND_HOLE` | Parses AP v1 envelopes, loads BODY to `$2000-$4FFF`, resolves RJOIN imports, applies internal/import relocation rows, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` and HIMON `AP pkg dst` call this so AP package consumption and linking survive after ASM exits. STR8 carries no AP/FNV linker code. |
-| Future relocatable flash placement | future `L F` mode | future loader staging and flash-block scan | Would measure a relocatable S19 image, choose an erased block, rebase record addresses, write/verify, and report relocated entry. | Not current behavior; plain S19 cannot patch absolute operands inside code without relocation metadata. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Patch targets are limited to user program RAM below `$7A00`, so monitor RAM and `$7F00-$7FFF` I/O stay protected. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
 | Single step | `N` | `CMD_N`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by packed opcode length, prints mnemonic-only step diagnostics, plants a temporary BRK, resumes with `RTI`. | Temporary trap targets use the same patchable-RAM guard as `B`; monitor RAM and I/O are not patched. |
-| Flash ASM | `ASM` when the flash ASM image is present | flash-resident FNV record | Enters the ASM v1 source-line assembler loaded by `L F`. | The legacy HIMON `A` mini-assembler has been removed from the core. |
+| Flash ASM | `ASM` when the flash ASM image is present | flash-resident FNV record | Enters the ASM v1 source-line assembler installed through the STR8-N persistent-image path. | HIMON `L` never writes flash. The legacy HIMON `A` mini-assembler has been removed from the core. |
 | Quiesce | `Q` | `CMD_Q` | Executes `SEI`, `WAI`, then re-enters HIMON. | IRQ wakes cleanly to monitor re-entry; NMI still follows the trap path through the debounce POC vector. |
 | Loaded-language bridge I/O | map-patched call addresses | `BIO_FTDI_READ_BYTE_BLOCK`, `BIO_FTDI_WRITE_BYTE_BLOCK` | Local composite images may patch direct calls from the current HIMON map. | Not a stable fixed-address ABI; rebuild patches must track the map. |
 | Loaded-language return | `$8000` handoff for current composites | `START` | Re-enters HIMON through its reset/monitor entry. | A cleaner app-return contract is future work. |
@@ -504,7 +486,7 @@ only a compatibility adapter into the resident AP service.
 
 - Raw edge truth stays in `HIMON_EDGE_DUMP.md`.
 - This map may collapse many repeated print edges into one package edge.
-- Indirect targets such as `CMD_CALL_ADDR`, `G`, and `L G` are intentionally
+- Indirect targets such as `CMD_CALL_ADDR` and `G` are intentionally
   shown as indirect because the concrete target is runtime data.
 - Relative branches and fallthrough are control-flow facts, but not direct call
   edges. They are described only when they explain capability behavior.

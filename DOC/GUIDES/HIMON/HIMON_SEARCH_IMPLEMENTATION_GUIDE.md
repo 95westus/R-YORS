@@ -5,6 +5,11 @@ search work. Normal resident HIMON owns neither search surface after the
 2026-07-18 size pass. Old `himon-search-*` artifacts remain optional userland
 or alternate-flash-bank material.
 
+The guide's `L G` and `L F` commands are also historical. Current HIMON accepts
+only bare `L`, loads permitted RAM below `$7A00`, reports the S9 entry, and
+returns to its prompt. Run RAM proofs with an explicit later `G`; review any
+persistent installation as a separate STR8-N operation before changing it.
+
 The workflow below is still useful when building a standalone search package:
 write and debug the routine in RAM, then build an S19 that writes the proven
 bytes into flash. After the flash load verifies, the S19 is no longer the thing
