@@ -520,11 +520,11 @@ if ($str8WorkerTrayEnd -ne 0x09FF) {
 if (($workerRunStart + $str8WorkerTraySize - 1) -ne $str8WorkerTrayEnd) {
     throw ("STR8 worker tray {0:X4}+{1:X} ends at {2:X4}; expected {3:X4}" -f $workerRunStart, $str8WorkerTraySize, ($workerRunStart + $str8WorkerTraySize - 1), $str8WorkerTrayEnd)
 }
-if ($str8StateBase -ne 0x1FE9) {
-    throw ("STR8 state base is {0:X4}; expected 1FE9" -f $str8StateBase)
+if ($str8StateBase -ne 0x7DE9) {
+    throw ("STR8 state base is {0:X4}; expected 7DE9" -f $str8StateBase)
 }
-if ($str8StateEnd -ne 0x1FFF) {
-    throw ("STR8 state end is {0:X4}; expected 1FFF" -f $str8StateEnd)
+if ($str8StateEnd -ne 0x7DFF) {
+    throw ("STR8 state end is {0:X4}; expected 7DFF" -f $str8StateEnd)
 }
 if ($workerStateBase -ne $str8StateBase -or $workerStateEnd -ne $str8StateEnd) {
     throw ("STR8 worker state board {0:X4}-{1:X4}; expected resident {2:X4}-{3:X4}" -f $workerStateBase, $workerStateEnd, $str8StateBase, $str8StateEnd)
@@ -532,14 +532,14 @@ if ($workerStateBase -ne $str8StateBase -or $workerStateEnd -ne $str8StateEnd) {
 if ($str8JumpMode -ne 0x08 -or $workerJumpMode -ne $str8JumpMode) {
     throw ("STR8 J mode resident/worker is {0:X2}/{1:X2}; expected 08/08" -f $str8JumpMode, $workerJumpMode)
 }
-if ($str8JumpBank -ne 0x1FF2 -or $str8JumpVecLo -ne 0x1FF3 -or $str8JumpVecHi -ne 0x1FF4 -or $str8JumpStatus -ne 0x1FF5) {
-    throw ("STR8 J state is {0:X4}/{1:X4}/{2:X4}/{3:X4}; expected 1FF2/1FF3/1FF4/1FF5" -f $str8JumpBank, $str8JumpVecLo, $str8JumpVecHi, $str8JumpStatus)
+if ($str8JumpBank -ne 0x7DF2 -or $str8JumpVecLo -ne 0x7DF3 -or $str8JumpVecHi -ne 0x7DF4 -or $str8JumpStatus -ne 0x7DF5) {
+    throw ("STR8 J state is {0:X4}/{1:X4}/{2:X4}/{3:X4}; expected 7DF2/7DF3/7DF4/7DF5" -f $str8JumpBank, $str8JumpVecLo, $str8JumpVecHi, $str8JumpStatus)
 }
 if ($workerJumpBank -ne $str8JumpBank -or $workerJumpVecLo -ne $str8JumpVecLo -or $workerJumpVecHi -ne $str8JumpVecHi -or $workerJumpStatus -ne $str8JumpStatus) {
     throw ("STR8 worker J state {0:X4}/{1:X4}/{2:X4}/{3:X4} differs from resident" -f $workerJumpBank, $workerJumpVecLo, $workerJumpVecHi, $workerJumpStatus)
 }
-if ($str8BankJumpSig0 -ne 0x1FFD -or $str8BankJumpSig1 -ne 0x1FFE -or $str8BankLastJump -ne 0x1FFF) {
-    throw ("STR8 Bank Jump Record is {0:X4}/{1:X4}/{2:X4}; expected 1FFD/1FFE/1FFF" -f $str8BankJumpSig0, $str8BankJumpSig1, $str8BankLastJump)
+if ($str8BankJumpSig0 -ne 0x7DFD -or $str8BankJumpSig1 -ne 0x7DFE -or $str8BankLastJump -ne 0x7DFF) {
+    throw ("STR8 Bank Jump Record is {0:X4}/{1:X4}/{2:X4}; expected 7DFD/7DFE/7DFF" -f $str8BankJumpSig0, $str8BankJumpSig1, $str8BankLastJump)
 }
 if ($str8BankJumpSig0Value -ne 0x42 -or $str8BankJumpSig1Value -ne 0x4A -or $str8BankNone -ne 0xFF) {
     throw ("STR8 Bank Jump Record values are {0:X2}/{1:X2}/{2:X2}; expected 42/4A/FF" -f $str8BankJumpSig0Value, $str8BankJumpSig1Value, $str8BankNone)

@@ -31,7 +31,7 @@ function Check-Source([string]$Path, [string]$Name) {
 
     if ($codeText.Contains('$F003') -or `
         $codeText.Contains('STR8_SERVICE') -or `
-        $codeText.Contains('$1FF0')) {
+        $codeText.Contains('$7DF0')) {
         Fail-Check "$Name still requests the retired full-worker doorway"
     }
 
@@ -106,7 +106,7 @@ function Check-ApSource(
 
     if ($codeText.Contains('$F003') -or `
         $codeText.Contains('STR8_SERVICE') -or `
-        $codeText.Contains('$1FF0')) {
+        $codeText.Contains('$7DF0')) {
         Fail-Check "$Name still requests the retired full-worker doorway"
     }
 

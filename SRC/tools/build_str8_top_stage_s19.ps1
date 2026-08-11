@@ -1,6 +1,6 @@
 param(
     [string]$BinPath = "BUILD/bin/himon-str8-rom.bin",
-    [string]$S19Path = "BUILD/s19/str8-top-stage-0a00.s19",
+    [string]$S19Path = "BUILD/s19/str8n-v1.2-top-stage-0a00.s19",
     [int]$SourceOffset = 0x7000,
     [int]$StageAddress = 0x0A00,
     [int]$Length = 0x1000

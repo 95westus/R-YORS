@@ -12,7 +12,7 @@
 ;   $3006 console 252-byte S1 suite (send max252 S1, then CR)
 ;   $3009 console abort suite (send Ctrl-C)
 ;
-; Result row $1A00-$1A17:
+; Result row $7C00-$7C17:
 ;   00 verdict ($AC pass, $E1 proof failure)
 ;   01 suite (01 buffer, 02 APPLY_LF, 03 console max, 04 console abort)
 ;   02 current/passed case count, 03 assertion field
@@ -34,7 +34,7 @@
 
                         INCLUDE         "STR8/str8-record-eq.inc"
 
-P1_BOARD                EQU             $1A00
+P1_BOARD                EQU             $7C00
 P1_VERDICT              EQU             P1_BOARD+$00
 P1_SUITE_ROW            EQU             P1_BOARD+$01
 P1_CASE_ROW             EQU             P1_BOARD+$02
@@ -60,7 +60,7 @@ P1_SCAN_HI_ROW          EQU             P1_BOARD+$15
 P1_BEFORE_ROW           EQU             P1_BOARD+$16
 P1_AFTER_ROW            EQU             P1_BOARD+$17
 
-P1_STATE                EQU             $1A20
+P1_STATE                EQU             $7C20
 P1_SUITE                EQU             P1_STATE+$00
 P1_COUNT                EQU             P1_STATE+$01
 P1_FIELD                EQU             P1_STATE+$02

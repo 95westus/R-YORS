@@ -17,7 +17,7 @@ $hashVersion = "HIMON: V 00.$sourceStamp"
 $asmDisplayVersion = "ASM-F2 00.$Stamp"
 $asmSourceVersion = "ASM-F2 00.$sourceStamp"
 $str8BuildStamp = $Stamp.Replace('(', '.').Replace(')', '')
-$str8DisplayVersion = "STR8-N 1.02/$str8BuildStamp"
+$str8DisplayVersion = "STR8-N 1.2/$str8BuildStamp"
 $str8SourceVersion = $str8DisplayVersion
 
 $lines = @(

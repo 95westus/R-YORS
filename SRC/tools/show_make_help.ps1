@@ -20,9 +20,9 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000: BUILD/s19/himon-rom-c000.s19." }
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom-c000.bin." }
     [pscustomobject]@{ Target = "himon-banked-ap-check"; Category = "monitor"; Description = "Emulate HIMON's RAM-resident `$F010/`$0203 banked AP sector staging and restore paths." }
-    [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build the primary accepted V1.02 32K image with ASM-F2, HIMON, split STR8, and its fixed directory: BUILD/bin/himon-str8-rom.bin." }
+    [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build the primary accepted v1.2 32K image with ASM-F2, HIMON, split STR8, and its fixed directory: BUILD/bin/himon-str8-rom.bin." }
     [pscustomobject]@{ Target = "str8-v1-layout-preview"; Category = "monitor"; Description = "Build the guarded, nonflashable V1 worker/directory layout preview BIN; produces no install S19, TopWriter, or ROM stamp." }
-    [pscustomobject]@{ Target = "str8-v1-artifact"; Category = "monitor"; Description = "Build the accepted V1.02 compatibility BIN/S19, combined I streams, migration writer, and directory-preserving refresh writer under BUILD." }
+    [pscustomobject]@{ Target = "str8-v1-artifact"; Category = "monitor"; Description = "Build the accepted v1.2 compatibility BIN/S19, combined I streams, migration writer, and directory-preserving refresh writer under BUILD." }
     [pscustomobject]@{ Target = "str8-v1-install-stream"; Category = "monitor"; Description = "Build one-file mutation-worker plus 32K bank transport: BUILD/s19/str8-v1-i-bank012.s19." }
     [pscustomobject]@{ Target = "str8-v1-negative-streams"; Category = "monitor"; Description = "Build the bad-worker and post-START interruption S19 board-test streams." }
     [pscustomobject]@{ Target = "str8-v1-topwrite-a"; Category = "monitor"; Description = "Build a one-time V1 migration writer under BUILD; unsafe on installed V1." }
@@ -37,7 +37,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-str8-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str8-himon-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
     [pscustomobject]@{ Target = "str-himon-str-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
-    [pscustomobject]@{ Target = "str8-top-stage-s19"; Category = "monitor"; Description = "Build 0A00-19FF staged S19 from the vector-complete STR8 top sector: BUILD/s19/str8-top-stage-0a00.s19." }
+    [pscustomobject]@{ Target = "str8-top-stage-s19"; Category = "monitor"; Description = "Build 0A00-19FF staged S19 from the vector-complete STR8 top sector: BUILD/s19/str8n-v1.2-top-stage-0a00.s19." }
     [pscustomobject]@{ Target = "str8-topwrite-a"; Category = "monitor"; Description = "Build a legacy replacement TopWriter under BUILD; unsafe on installed V1." }
     [pscustomobject]@{ Target = "str8-readonly-bank-tools-check"; Category = "monitor"; Description = "Validate and host-assemble the split-V1 `$F010/`$0203 read-only bank tools." }
     [pscustomobject]@{ Target = "str8-bank-maint-source-check"; Category = "monitor"; Description = "Embed the exact mutation worker, validate the maintenance map/directory source, and host-assemble it." }
@@ -62,7 +62,7 @@ $rows = @(
     [pscustomobject]@{ Target = "bank3-erase-legacy"; Category = "archive"; Description = "Build the archived pre-split Bank-3 erase proof; do not run on split V1." }
     [pscustomobject]@{ Target = "asm-flash"; Category = "asm"; Description = "Alias for asm-v1-flash." }
     [pscustomobject]@{ Target = "asm-v1-flash"; Category = "asm"; Description = "Build flash ASM at 8000: BUILD/s19/asm-v1-flash-8000.s19." }
-    [pscustomobject]@{ Target = "asm-session-report-ap-bin"; Category = "asm"; Description = "Build fixed-address AP package for the ASM session reporter: BUILD/bin/asm-session-report-4800.ap.bin." }
+    [pscustomobject]@{ Target = "asm-session-report-ap-bin"; Category = "asm"; Description = "Build fixed-address AP package for the ASM session reporter: BUILD/bin/asm-session-report-v1.2-4800.ap.bin." }
     [pscustomobject]@{ Target = "asm-test"; Category = "asm"; Description = "Run the full ASM smoke/proof build set." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
     [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }

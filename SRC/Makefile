@@ -71,6 +71,9 @@ HIMON_STR8_V1_BIN := $(BIN_DIR)/himon-str8-v1.bin
 HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_STR8_ROM_INSTALL_S19 := $(S19_DIR)/himon-str8-rom-install.s19
 HIMON_STR8_V1_INSTALL_S19 := $(S19_DIR)/himon-str8-v1-install.s19
+RYORS_V12_ASM_S19 := $(S19_DIR)/ryors-v1.2-asm-bank3-8-b.s19
+RYORS_V12_HIMON_S19 := $(S19_DIR)/ryors-v1.2-himon-bank3-c-e.s19
+RYORS_V12_28K_S19 := $(S19_DIR)/ryors-v1.2-asm-himon-bank3-8-e.s19
 STR8_V1_I_BANK012_S19 := $(S19_DIR)/str8-v1-i-bank012.s19
 STR8_V1_ASM_8_B_PAYLOAD_S19 := $(S19_DIR)/str8-v1-payload-asm-8-b.s19
 STR8_V1_HIMON_C_E_PAYLOAD_S19 := $(S19_DIR)/str8-v1-payload-himon-c-e.s19
@@ -81,11 +84,11 @@ STR8_V1_BAD_WORKER_S19 := $(S19_DIR)/str8-v1-i-bad-worker-id.s19
 STR8_V1_INTERRUPT_S19 := $(S19_DIR)/str8-v1-i-interrupt-after-start.s19
 STR8_V1_NEGATIVE_GEN := tools/build_str8_v1_negative_streams.ps1
 HIMON_STR8_HIMON_UPDATE_S19 := $(S19_DIR)/himon-str8-himon-update.s19
-STR8_TOP_STAGE_S19 := $(S19_DIR)/str8-top-stage-0a00.s19
+STR8_TOP_STAGE_S19 := $(S19_DIR)/str8n-v1.2-top-stage-0a00.s19
 STR8_GENERATED_SAMPLE_DIR := $(BUILD_DIR)/generated/asm-samples
 STR8_TOPWRITE_A := $(STR8_GENERATED_SAMPLE_DIR)/str8-i-replace-legacy-transient-3000.a
 STR8_V1_TOPWRITE_A := $(STR8_GENERATED_SAMPLE_DIR)/str8-i-migrate-transient-3000.a
-STR8_V1_REFRESH_A := $(STR8_GENERATED_SAMPLE_DIR)/str8-i-refresh-transient-3000.a
+STR8_V1_REFRESH_A := $(STR8_GENERATED_SAMPLE_DIR)/str8n-v1.2-i-refresh-transient-3000.a
 STR8_TOPWRITE_A_GEN := tools/emit_str8_topwrite_a.ps1
 HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
 HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
@@ -98,19 +101,21 @@ FNV1A_HBSTR_S19 := $(S19_DIR)/fnv1a-hbstr-6000.s19
 FNV1A_HBSTR_LINKFLAGS := -g -s -t -c6000 -hm19 -j -o
 STR8_SRC := $(STR8_SUBDIR)/str8.asm
 STR8_RECORD_EQ := $(STR8_SUBDIR)/str8-record-eq.inc
+STR8_RAM_ABI := $(STR8_SUBDIR)/str8-ram-abi.inc
 STR8_WORKER_EQ := $(STR8_SUBDIR)/str8-worker-eq.inc
 STR8_DIRECTORY_EQ := $(STR8_SUBDIR)/str8-directory-eq.inc
 STR8_DIRECTORY_CHECK := tools/check_str8_directory_v1.ps1
 STR8_WORKER_MODE_CHECK := tools/check_str8_worker_modes.ps1
 STR8_READONLY_BANK_CHECK := tools/check_str8_readonly_bank_tools.ps1
-STR8_BANK_CRC_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-crc-all-3000.a
+STR8_BANK_CRC_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-bank-crc-all-3000.a
 STR8_JUMP_INVENTORY_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/OLD/str8-jump-inventory-v1-3000.a
-STR8_BANK_READ_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/flash-bank-read-ap-2000.a
-STR8_BANK_DUMP_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/flash-bank-dump-ap-2000.a
+STR8_BANK_READ_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-flash-bank-read-ap-2000.a
+STR8_BANK_DUMP_AP_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-flash-bank-dump-ap-2000.a
 STR8_BANK_MAINT_CHECK := tools/check_str8_bank_maint_source.ps1
-STR8_BANK_MAINT_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a
+STR8_BANK_MAINT_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-bank-maint-2000.a
 STR8_BANK0_AP_SMOKE_SOURCE := ../DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank0-ap-smoke.a
 STR8_BANK_MAINT_EMBED := tools/embed_str8_bank_maint_worker.ps1
+STR8_RAM_ABI_CHECK := tools/check_v1_2_ram_abi.ps1
 STR8_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8.obj
 STR8_S19 := $(S19_DIR)/str8-f000.s19
 STR8_V1_LAYOUT_OBJ := $(OBJ_DIR)/$(STR8_SUBDIR)/str8-v1-layout.obj
@@ -182,9 +187,9 @@ BANK3_ERASE_LEGACY_SRC := ARCHIVE/PROOFS/bank3-erase-8000-bfff-3000.asm
 BANK3_ERASE_LEGACY_OBJ := $(OBJ_DIR)/ARCHIVE/PROOFS/bank3-erase-8000-bfff-3000.obj
 BANK3_ERASE_LEGACY_S19 := $(S19_DIR)/bank3-erase-8000-bfff-3000.s19
 BANK3_ERASE_LEGACY_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
-STR8_RECORD_PHASE1_PROOF_SRC := $(PROOFS_DIR)/str8-record-phase1-proof.asm
-STR8_RECORD_PHASE1_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/str8-record-phase1-proof.obj
-STR8_RECORD_PHASE1_PROOF_S19 := $(S19_DIR)/str8-record-phase1-proof-3000.s19
+STR8_RECORD_PHASE1_PROOF_SRC := $(PROOFS_DIR)/str8n-v1.2-record-phase1-proof.asm
+STR8_RECORD_PHASE1_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/str8n-v1.2-record-phase1-proof.obj
+STR8_RECORD_PHASE1_PROOF_S19 := $(S19_DIR)/str8n-v1.2-record-phase1-proof-3000.s19
 STR8_RECORD_PHASE1_PROOF_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
 STR8_L_TRANSPORT_PHASE5_PROOF_SRC := $(PROOFS_DIR)/str8-l-transport-phase5-proof-3000.asm
 STR8_L_TRANSPORT_PHASE5_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/str8-l-transport-phase5-proof-3000.obj
@@ -211,17 +216,17 @@ ASM_V1_RUNTIME_PASTE_S19 := $(S19_DIR)/asm-v1-runtime-paste-2000.s19
 ASM_V1_RUNTIME_PASTE_LINKFLAGS := -g -s -t -c2000 -hm19 -j -o
 ASM_SESSION_REPORT_SRC := $(PROOFS_DIR)/asm-session-report.asm
 ASM_SESSION_REPORT_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/asm-session-report.obj
-ASM_SESSION_REPORT_S19 := $(S19_DIR)/asm-session-report-7000.s19
+ASM_SESSION_REPORT_S19 := $(S19_DIR)/asm-session-report-v1.2-7000.s19
 ASM_SESSION_REPORT_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
-ASM_SESSION_REPORT_FLASH_S19 := $(S19_DIR)/asm-session-report-4800.s19
+ASM_SESSION_REPORT_FLASH_S19 := $(S19_DIR)/asm-session-report-v1.2-4800.s19
 ASM_SESSION_REPORT_FLASH_LINKFLAGS := -g -s -t -c4800 -hm19 -j -o
 ASM_SESSION_REPORT_INC_GEN := tools/emit_asm_session_report_inc.ps1
 ASM_SESSION_REPORT_INC := $(INC_DIR)/asm-session-report.inc
 ASM_SESSION_REPORT_A_FLASH := ../DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-4800.a
 ASM_SESSION_REPORT_A_RUNTIME := ../DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-transient-7000.a
-ASM_SESSION_REPORT_A_MOVABLE := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-ap-2000.a
+ASM_SESSION_REPORT_A_MOVABLE := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-v1.2-ap-2000.a
 ASM_SESSION_REPORT_AP_GEN := tools/build_ap_fixed_package.ps1
-ASM_SESSION_REPORT_AP_BIN := $(BIN_DIR)/asm-session-report-4800.ap.bin
+ASM_SESSION_REPORT_AP_BIN := $(BIN_DIR)/asm-session-report-v1.2-4800.ap.bin
 ASM_V1_FLASH_SRC := $(ASM_DIR)/asm-v1-flash.asm
 ASM_V1_FLASH_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash.obj
 ASM_V1_FLASH_RUNTIME_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash-runtime.obj
@@ -328,6 +333,8 @@ FIRMWARE_TARGETS ?= \
 	str8-i-refresh-a \
 	str8-readonly-bank-tools-check \
 	str8-bank-maint-source-check \
+	str8-v1.2-ram-abi-check \
+	ryors-v1.2 \
 	str8-worker-mode-check \
 	str8-worker-split-check
 
@@ -458,20 +465,23 @@ himon-rom-bin: himon-rom
 	@echo "Built $(HIMON_ROM_BIN)."
 
 himon-str8-rom-bin: $(HIMON_STR8_ROM_BIN)
-	@echo "Built primary flashable V1.02 image $(HIMON_STR8_ROM_BIN)."
+	@echo "Built primary flashable v1.2 image $(HIMON_STR8_ROM_BIN)."
 
 str8-v1-layout-preview: $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)
 	@echo "Built guarded V1 layout preview $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)."
 	@echo "Preview only: no install S19, TopWriter, or stamped ROM image was generated."
 
 str8-v1-artifact: $(HIMON_STR8_V1_BIN) $(HIMON_STR8_V1_INSTALL_S19) $(STR8_V1_I_BANK012_S19) $(STR8_V1_I_ASM_8_B_S19) $(STR8_V1_I_HIMON_C_E_S19) $(STR8_V1_TOPWRITE_A) $(STR8_V1_REFRESH_A)
-	@echo "Built accepted V1.02 artifacts and compatibility filenames."
+	@echo "Built accepted v1.2 artifacts and compatibility filenames."
+
+ryors-v1.2: $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19)
+	@echo "Built versioned v1.2 ASM/HIMON Bank-3 payloads."
 
 str8-v1-install-stream: $(STR8_V1_I_BANK012_S19)
 	@echo "Built single-transfer I stream $(STR8_V1_I_BANK012_S19)."
 
 str8-v1-range-proof-streams: $(STR8_V1_I_ASM_8_B_S19) $(STR8_V1_I_HIMON_C_E_S19)
-	@echo "Built V1.02 ASM 8-B and HIMON C-E board-proof streams."
+	@echo "Built v1.2 ASM 8-B and HIMON C-E board-proof streams."
 
 str8-v1-negative-streams: $(STR8_V1_I_BANK012_S19) $(STR8_V1_BAD_WORKER_S19) $(STR8_V1_INTERRUPT_S19)
 	@echo "Built STR8 V1 negative/interruption streams."
@@ -506,6 +516,9 @@ str8-readonly-bank-tools-check: $(STR8_BANK_CRC_SOURCE) $(STR8_JUMP_INVENTORY_SO
 str8-bank-maint-source-check: $(STR8_MUTATION_WORKER_S19) $(STR8_BANK_MAINT_SOURCE) $(STR8_BANK0_AP_SMOKE_SOURCE) $(STR8_BANK_MAINT_EMBED) $(STR8_BANK_MAINT_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_MAINT_EMBED) -SourcePath "$(STR8_BANK_MAINT_SOURCE)" -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)"
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_BANK_MAINT_CHECK) -SourcePath "$(STR8_BANK_MAINT_SOURCE)" -SmokeSourcePath "$(STR8_BANK0_AP_SMOKE_SOURCE)" -MutationWorkerS19Path "$(STR8_MUTATION_WORKER_S19)"
+
+str8-v1.2-ram-abi-check: $(STR8_RAM_ABI_CHECK) $(STR8_RAM_ABI) $(STR8_BANK_MAINT_SOURCE) $(STR8_BANK_CRC_SOURCE) $(STR8_BANK_READ_AP_SOURCE) $(STR8_BANK_DUMP_AP_SOURCE)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8_RAM_ABI_CHECK)
 
 himon-rom-install-s19: $(HIMON_ROM_INSTALL_S19)
 	@echo "Built $(HIMON_ROM_INSTALL_S19)."
@@ -871,31 +884,31 @@ $(STR8_MUTATION_WORKER_S19): $(STR8_MUTATION_WORKER_OBJ)
 	@echo [ps] set S9 start $$0200 in $(STR8_MUTATION_WORKER_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(STR8_MUTATION_WORKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9030200FA'; Set-Content -Path $$p -Value $$lines"
 
-$(STR8_OBJ): $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
+$(STR8_OBJ): $(STR8_RECORD_EQ) $(STR8_RAM_ABI) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 
-$(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
+$(STR8_V1_LAYOUT_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_RAM_ABI) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_V1_INSTALLER_DRY_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
+$(STR8_V1_INSTALLER_DRY_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_RAM_ABI) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT -DSTR8_V1_INSTALLER_DRY $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_V1_INSTALLER_TXN_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
+$(STR8_V1_INSTALLER_TXN_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_RAM_ABI) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_V1_LAYOUT -DSTR8_V1_INSTALLER_DRY -DSTR8_V1_INSTALLER_TXN $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_WORKER_OBJ): $(STR8_RECORD_EQ) $(STR8_WORKER_EQ)
+$(STR8_WORKER_OBJ): $(STR8_RECORD_EQ) $(STR8_RAM_ABI) $(STR8_WORKER_EQ)
 
-$(STR8_JUMP_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ)
+$(STR8_JUMP_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ) $(STR8_RAM_ABI) $(STR8_WORKER_EQ)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_WORKER_JUMP_ONLY $(STR8_WORKER_SRC)
 	@if exist $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) move /Y $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) $(subst /,\,$@)
 
-$(STR8_MUTATION_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ)
+$(STR8_MUTATION_WORKER_OBJ): $(STR8_WORKER_SRC) $(STR8_RECORD_EQ) $(STR8_RAM_ABI) $(STR8_WORKER_EQ)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_WORKER_MUTATION_ONLY $(STR8_WORKER_SRC)
 	@if exist $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) move /Y $(subst /,\,$(STR8_WORKER_SRC:.asm=.obj)) $(subst /,\,$@)
@@ -904,7 +917,7 @@ $(STR8_RECORD_PHASE1_PROOF_OBJ): $(STR8_RECORD_EQ)
 
 $(STR8_L_TRANSPORT_PHASE5_PROOF_OBJ): $(STR8_RECORD_EQ)
 
-$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
+$(STR8_RAM_OBJ): $(STR8_SRC) $(STR8_RECORD_EQ) $(STR8_RAM_ABI) $(STR8_WORKER_EQ) $(STR8_DIRECTORY_EQ) $(HIMON_IMAGE_EQ) himon-version-stamp
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DSTR8_RAM_PROOF $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
@@ -1102,18 +1115,18 @@ $(ASM_SESSION_REPORT_S19): $(ASM_SESSION_REPORT_OBJ) $(ROM_LIB)
 	$(LINKER) $(ASM_SESSION_REPORT_LINKFLAGS) $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_OBJ) -L $(BUILD_DIR)\lib\rom
 	@echo [ps] set S9 start $$7000 in $(ASM_SESSION_REPORT_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_SESSION_REPORT_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S90370008C'; Set-Content -Path $$p -Value $$lines"
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-session-report-7000.map') { '$(S19_DIR)/asm-session-report-7000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-session-report-7000.map') { '$(MAP_DIR)/asm-session-report-7000.map' } else { throw 'asm-session-report-7000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA not found in asm-session-report map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); if ($$end -gt 0x7A00) { throw ('asm-session-report crosses 7A00: _END_DATA={0:X4}' -f $$end) }; Write-Host ('asm-session-report end = {0:X4} (limit 7A00)' -f $$end)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-session-report-v1.2-7000.map') { '$(S19_DIR)/asm-session-report-v1.2-7000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-session-report-v1.2-7000.map') { '$(MAP_DIR)/asm-session-report-v1.2-7000.map' } else { throw 'asm-session-report-v1.2-7000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA not found in asm-session-report map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); if ($$end -gt 0x7A00) { throw ('asm-session-report crosses 7A00: _END_DATA={0:X4}' -f $$end) }; Write-Host ('asm-session-report end = {0:X4} (limit 7A00)' -f $$end)"
 
 $(ASM_SESSION_REPORT_FLASH_S19): $(ASM_SESSION_REPORT_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(ASM_SESSION_REPORT_FLASH_LINKFLAGS) $(ASM_SESSION_REPORT_FLASH_S19) $(ASM_SESSION_REPORT_OBJ) -L $(BUILD_DIR)\lib\rom
 	@echo [ps] set S9 start $$4800 in $(ASM_SESSION_REPORT_FLASH_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_SESSION_REPORT_FLASH_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9034800B4'; Set-Content -Path $$p -Value $$lines"
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-session-report-4800.map') { '$(S19_DIR)/asm-session-report-4800.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-session-report-4800.map') { '$(MAP_DIR)/asm-session-report-4800.map' } else { throw 'asm-session-report-4800.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA not found in asm-session-report flash map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); if ($$end -gt 0x5000) { throw ('asm-session-report flash crosses 5000: _END_DATA={0:X4}' -f $$end) }; Write-Host ('asm-session-report flash end = {0:X4} (limit 5000)' -f $$end)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/asm-session-report-v1.2-4800.map') { '$(S19_DIR)/asm-session-report-v1.2-4800.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/asm-session-report-v1.2-4800.map') { '$(MAP_DIR)/asm-session-report-v1.2-4800.map' } else { throw 'asm-session-report-v1.2-4800.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA not found in asm-session-report flash map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); if ($$end -gt 0x5000) { throw ('asm-session-report flash crosses 5000: _END_DATA={0:X4}' -f $$end) }; Write-Host ('asm-session-report flash end = {0:X4} (limit 5000)' -f $$end)"
 
 $(ASM_SESSION_REPORT_AP_BIN): $(ASM_SESSION_REPORT_FLASH_S19) $(ASM_SESSION_REPORT_AP_GEN)
 	@echo [ps] build $(ASM_SESSION_REPORT_AP_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_SESSION_REPORT_AP_GEN) -S19Path "$(ASM_SESSION_REPORT_FLASH_S19)" -MapPath "$(S19_DIR)/asm-session-report-4800.map" -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)" -BaseAddress 18432 -EntrySymbol "START" -ExportName "START"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_SESSION_REPORT_AP_GEN) -S19Path "$(ASM_SESSION_REPORT_FLASH_S19)" -MapPath "$(S19_DIR)/asm-session-report-v1.2-4800.map" -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)" -BaseAddress 18432 -EntrySymbol "START" -ExportName "START"
 
 $(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ) $(ASM_V1_FLASH_MAP_CHECK)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1186,7 +1199,7 @@ $(BASIC_FORTH_HIMON_ROM_BIN): $(FIG_FORTH_S19) $(MSBASIC_OSI_S19) $(HIMON_ROM_S1
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(BASIC_FORTH_HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
 $(HIMON_STR8_ROM_BIN): $(HIMON_ROM_S19) $(STR8_V1_INSTALLER_TXN_S19) $(STR8_JUMP_WORKER_S19) $(ASM_V1_FLASH_S19) tools/build_himon_str8_rom_bin.ps1 tools/stamp_rom_bin.ps1 Makefile
-	@echo [ps] build primary flashable V1.02 image $(HIMON_STR8_ROM_BIN)
+	@echo [ps] build primary flashable v1.2 image $(HIMON_STR8_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-v1-installer-transaction-f000.map" -Str8S19Path "$(STR8_V1_INSTALLER_TXN_S19)" -WorkerMapPath "$(S19_DIR)/str8-jump-worker-0200.map" -WorkerS19Path "$(STR8_JUMP_WORKER_S19)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -AsmS19Path "$(ASM_V1_FLASH_S19)" -BinPath "$(HIMON_STR8_ROM_BIN)" -V1Flashable
 	@echo [ps] stamp $(HIMON_STR8_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_STR8_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
@@ -1200,7 +1213,7 @@ $(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN): $(HIMON_ROM_S19) $(STR8_V1_LAYOUT_S19) $(ST
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_str8_rom_bin.ps1 -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -HimonS19Path "$(HIMON_ROM_S19)" -Str8MapPath "$(S19_DIR)/str8-v1-layout-f000.map" -Str8S19Path "$(STR8_V1_LAYOUT_S19)" -WorkerMapPath "$(S19_DIR)/str8-worker-0200.map" -WorkerS19Path "$(STR8_WORKER_S19)" -AsmMapPath "$(S19_DIR)/asm-v1-flash-8000.map" -AsmS19Path "$(ASM_V1_FLASH_S19)" -BinPath "$(HIMON_STR8_V1_LAYOUT_PREVIEW_BIN)" -V1LayoutPreview
 
 $(HIMON_STR8_V1_BIN): $(HIMON_STR8_ROM_BIN)
-	@echo [ps] copy accepted V1.02 compatibility image $(HIMON_STR8_V1_BIN)
+	@echo [ps] copy accepted v1.2 compatibility image $(HIMON_STR8_V1_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(HIMON_STR8_ROM_BIN)' -Destination '$(HIMON_STR8_V1_BIN)' -Force"
 
 $(HIMON_ROM_INSTALL_S19): $(HIMON_ROM_BIN) $(ROM_INSTALL_S19_GEN)
@@ -1214,6 +1227,15 @@ $(HIMON_STR8_ROM_INSTALL_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 $(HIMON_STR8_V1_INSTALL_S19): $(HIMON_STR8_V1_BIN) $(ROM_INSTALL_S19_GEN)
 	@echo [ps] build $(HIMON_STR8_V1_INSTALL_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_V1_BIN)" -S19Path "$(HIMON_STR8_V1_INSTALL_S19)" -BaseAddress 32768
+
+$(RYORS_V12_ASM_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$@" -BaseAddress 32768 -RangeStart 32768 -RangeEnd 49151 -StartAddress 32768
+
+$(RYORS_V12_HIMON_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$@" -BaseAddress 32768 -RangeStart 49152 -RangeEnd 61439 -StartAddress 49152
+
+$(RYORS_V12_28K_S19): $(HIMON_STR8_ROM_BIN) $(ROM_INSTALL_S19_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_STR8_ROM_BIN)" -S19Path "$@" -BaseAddress 32768 -RangeStart 32768 -RangeEnd 61439 -StartAddress 49152
 
 $(STR8_V1_I_BANK012_S19): $(HIMON_STR8_V1_INSTALL_S19) $(STR8_MUTATION_WORKER_S19) $(STR8_WORKER_EQ) $(STR8_V1_I_STREAM_GEN)
 	@echo [ps] build $(STR8_V1_I_BANK012_S19)
@@ -1330,7 +1352,7 @@ $(FIG_FORTH_C000_OBJ): $(FIG_FORTH_C000_SRC)
 himon-version-stamp: $(HIMON_VERSION_STAMP)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" -AsmOutPath "$(ASM_VERSION_INC)" -Str8OutPath "$(STR8_VERSION_INC)" $(HIMON_VISIBLE_STAMP_ARG)
 
-$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) $(STR8_RECORD_EQ) himon-version-stamp
+$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) $(STR8_RECORD_EQ) $(STR8_RAM_ABI) himon-version-stamp
 
 $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))

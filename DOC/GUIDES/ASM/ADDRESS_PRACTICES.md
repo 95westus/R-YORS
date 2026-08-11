@@ -55,13 +55,13 @@ B0:$hhhh     Bank 0 ASM session reporter AP package store address
 $9000        common banked AP package store address for smoke tests
 $0200-$09FF  LRS Symbol Name Lane; later STR8 Worker Code Tray
 $0A00-$19FF  LRS Fixup Name Lane; later STR8 Sector Staging Deck
-$1A00        sample/tool status byte area
-$1B00-$1B0F  Flash Transaction Card for interactive flash APs
-$1C00-$1CFE  Console Input Deck for interactive flash APs
-$1FE9-$1FFF  STR8 Recovery State Capsule
+$1A00-$1FFF  user-free low RAM; no v1.2 firmware/tool allocation
 $5000-$61A9  ASM Work Hold in the current map
 $61AA-$79FF  Safe Output Deck
-$7A00-$7DFF  Volatile Output Deck
+$7A00-$7BFF  Volatile Output Deck / record transit
+$7C00-$7DBF  foreground High Tool Overlay
+$7DC0-$7DC7  HIMON AP-link scratch
+$7DE9-$7DFF  STR8 Recovery State Capsule
 $7E00-$7EFF  High Service Deck (HSD)
 $7F00-$7FFF  I/O Bulkhead, do not use as ordinary RAM
 $F000-$FFFF  STR8 protected top sector
@@ -144,7 +144,7 @@ programs: paste them, leave ASM, run them with `G hhhh`, and discard them.
 Archived `OLD/bank0ap-put-transient-2000.a` retains the historical fixed-load
 Bank-0 installer implementation, but split V1 cannot run its `$F003` modes
 `$05/$06`. Other sources with `ENTRY` are AP-capable. The legacy `$4800`
-reporter is fixed-load; `asm-session-report-ap-2000.a` self-relocates its
+reporter is fixed-load; `asm-session-report-v1.2-ap-2000.a` self-relocates its
 complete internal body when supplied through a compatible source path.
 
 ## RAM Package Recipe
@@ -225,7 +225,7 @@ ASM OK
 SEAL> .
 ASM BYE
 >G 3000
->D 1A00 8       expect AC at $1A00
+>D 7C00 8       expect AC at $7C00
 ```
 
 Then run the ordinary banked package from HIMON:
@@ -287,8 +287,8 @@ At the `DST` prompt, enter a bank 0 address such as `$8000`, or press Enter to
 append after the last framed `AP/01` envelope in the first sector whose clean
 erased tail can hold the new envelope. It does not reuse an interior `$FF`
 run, and it never crosses a 4K sector boundary. At the confirmation prompt,
-type exact `YES`. On success, `$1A00=$AC`, `$1A01/$1A02` hold the selected package address, and
-`$1A06=00`. It also clears `$1A06` on abort or failure.
+type exact `YES`. On success, `$7C00=$AC`, `$7C01/$7C02` hold the selected package address, and
+`$7C06=00`. It also clears `$7C06` on abort or failure.
 
 For every later target, assemble the target BODY, create its envelope at
 `$3000`, exit ASM, and load the resident installer at its required `$2000`
@@ -319,7 +319,7 @@ selection pass. They are not the normal operator path.
 ## Session Reporter From Bank 0
 
 The preferred Bank-0 reporter source is now
-`asm-session-report-ap-2000.a`. Its AP entry is `START`, its body is `$0C5F`,
+`asm-session-report-v1.2-ap-2000.a`. Its AP entry is `START`, its body is `$0C5F`,
 and its expected package is `$0C8B`. It accepts AP destinations
 `$2000-$43A1`; `$4000` is recommended and occupies `$4000-$4C5E`.
 
@@ -371,7 +371,7 @@ or reuse the low-RAM symbol/fixup name pools.
 - Use bank 2 first for destructive banked AP storage tests.
 - Use `$` on literal hex addresses in ASM and `SEAL>` commands.
 - Keep `PACKAGE` buffers, `LOAD` destinations, and status bytes separate.
-- Dump `$1A00` after board-buildable installers; `$AC` is the usual success
+- Dump `$7C00` after v1.2 board-buildable installers; `$AC` is the usual success
   byte for these samples.
 - Run HIMON `D`, `G`, and `AP` only from the `>` prompt.
 

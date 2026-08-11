@@ -228,16 +228,17 @@ $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
 $0200-$09FF   LRS: SNL during ASM, WCT during STR8 flash work
 $0A00-$19FF   LRS: FNL during ASM, SSD during STR8 flash work
-$1A00-$1FE8   RJOIN/link debug trace and reserved low-RAM scratch
-$1B00-$1B0F   FTC used by interactive flash APs
-$1C00-$1CFE   CID used by interactive flash APs
-$1FE9-$1FFF   RSC: STR8 worker/update state
+$1A00-$1FFF   USER FREE: no v1.2 firmware or maintained RAM-tool allocation
 $2000-$4FFF   AIR: Build Bay, Envelope Bay, and Run/Tray Bay
 $5000-$61A9   AWH: flash ASM UDATA
 $61AA-$79FF   SOD: safe upper output/scratch
 $7A00-$7AFF   VOD: command buffer and volatile monitor scratch
 $7B00-$7BFB   RPT: validated-record decoded payload tray (252 bytes)
-$7BFC-$7DFF   VOD: remaining volatile monitor scratch
+$7BFC-$7BFF   VOD: remaining volatile monitor scratch
+$7C00-$7DBF   HTO: foreground High Tool Overlay, single owner
+$7DC0-$7DC7   HIMON AP-link scratch
+$7DC8-$7DE8   reserved
+$7DE9-$7DFF   RSC: STR8 worker/update state
 $7E00-$7E01   HIMON-published RJOIN addr16 (`THE_JOIN_EXEC_XY`)
 $7E02-$7E1C   HIMON resident service vector block + checksum
 $7E1D-$7E1E   HIMON RX lookahead
@@ -305,9 +306,9 @@ while STR8 is performing flash work. During `U`, STR8 also uses
 The SSD is `$0A00-$19FF`; consolidating older high-RAM staging into that deck
 is future implementation work.
 
-STR8 also uses the RSC at `$1FE9-$1FFF` for bank/sector copy state, failure
-address reporting, startup flags, and update state. `J0`-`J3` use
-`$1FF2-$1FF5` for target bank, reset-vector low/high, and handoff status.
+STR8 uses the RSC at `$7DE9-$7DFF` for bank/sector copy state, failure address
+reporting, startup flags, and update state. `J0`-`J3` use `$7DF2-$7DF5` for
+target bank, reset-vector low/high, and handoff status.
 
 During a foreground STR8 `I` recovery transaction, `$0090-$00A0` is a
 17-byte persistent installer frame. It survives RAM-worker calls because the
@@ -318,21 +319,23 @@ The published Bank Jump Record occupies the RSC tail:
 
 | Address | Symbol | Published value |
 | ---: | --- | --- |
-| `$1FFD` | `STR8_BANK_JUMP_SIG0` | `$42` (`B`) |
-| `$1FFE` | `STR8_BANK_JUMP_SIG1` | `$4A` (`J`) |
-| `$1FFF` | `STR8_BANK_LAST_JUMP` | last validated target bank `0`-`3`, or `$FF` |
+| `$7DFD` | `STR8_BANK_JUMP_SIG0` | `$42` (`B`) |
+| `$7DFE` | `STR8_BANK_JUMP_SIG1` | `$4A` (`J`) |
+| `$7DFF` | `STR8_BANK_LAST_JUMP` | last validated target bank `0`-`3`, or `$FF` |
 
 The RAM worker commits the signed record after selecting the target and
 validating its reset vector, immediately before the final jump. HIMON cold
 start preserves a valid record through RAM clearing and republishes `42 4A FF`
-when no valid target is available. Thus `D 1FFD 1FFF` reports the bank selected
+when no valid target is available. Thus `D 7DFD 7DFF` reports the bank selected
 for the preceding successful STR8 handoff rather than the Bank 3 selection
 that is live after returning to HIMON.
 
-The `$1A00-$1FE8` reserved range is the preferred future home for a compact
-hash/RJOIN debug stack. That stack should be a breadcrumb trace for dynamic
-join/load/fixup failures, not the CPU stack and not required for normal success
-paths.
+`$1A00-$1FFF` is free for user code and data in v1.2. HIMON cold start still
+clears it as part of the general RAM clear, but STR8-N, HIMON, ASM-F2, Bank
+Maintenance, and the maintained RAM tools do not reserve any byte in the
+range. The `$7C00-$7DBF` High Tool Overlay replaces the former low-RAM tool
+cards. It is volatile and single-owner. ASM may emit through `$7CFF`; every
+write at or crossing `$7D00` is rejected.
 
 Current high-RAM vectors:
 

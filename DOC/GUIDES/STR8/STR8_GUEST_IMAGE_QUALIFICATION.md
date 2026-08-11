@@ -211,7 +211,7 @@ unmodified banks retain their prior CRCs
 ```
 
 Run
-[str8-bank-crc-all-3000.a](../ASM/SAMPLES/str8-bank-crc-all-3000.a)
+[str8n-v1.2-bank-crc-all-3000.a](../ASM/SAMPLES/str8n-v1.2-bank-crc-all-3000.a)
 only from Bank 3. It bootstraps the installed `$F010` selector, stages through
 its copied `$0203` entry, and restores Bank 3 after every sector.
 

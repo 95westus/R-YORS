@@ -112,7 +112,7 @@ if ($jumpService -ne 0x0203) {
 }
 $jumpModeGate = Get-Symbol $jump 'STR8W_JUMP_START'
 [byte[]]$expectedJumpModeGate = @(
-    0xAD, 0xF0, 0x1F, # LDA $1FF0
+    0xAD, 0xF0, 0x7D, # LDA $7DF0
     0xC9, 0x08,       # CMP #$08
     0xF0, 0x02,       # BEQ guarded jump body
     0x18, 0x60        # CLC / RTS for every other mode

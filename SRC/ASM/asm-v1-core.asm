@@ -268,17 +268,17 @@ ASM_SMOKE_TARGET_FWD_LO EQU            $10
 ASM_SMOKE_TARGET_BACK_LO EQU           $0F
 ASM_SMOKE_DATA_HI      EQU             $71
                         IF              ASM_FLASH_RUNTIME
-ASM_TARGET_LIMIT_HI    EQU             $7E
-ASM_TARGET_MAX_HI      EQU             $7D
-ASM_TARGET_THIRD_ADDR  EQU             $7DFD
-ASM_TARGET_PENULT_ADDR EQU             $7DFE
-ASM_TARGET_LAST_ADDR   EQU             $7DFF
+ASM_TARGET_LIMIT_HI    EQU             $7D
+ASM_TARGET_MAX_HI      EQU             $7C
+ASM_TARGET_THIRD_ADDR  EQU             $7CFD
+ASM_TARGET_PENULT_ADDR EQU             $7CFE
+ASM_TARGET_LAST_ADDR   EQU             $7CFF
                         ELSE
-ASM_TARGET_LIMIT_HI    EQU             $7E
-ASM_TARGET_MAX_HI      EQU             $7D
-ASM_TARGET_THIRD_ADDR  EQU             $7DFD
-ASM_TARGET_PENULT_ADDR EQU             $7DFE
-ASM_TARGET_LAST_ADDR   EQU             $7DFF
+ASM_TARGET_LIMIT_HI    EQU             $7D
+ASM_TARGET_MAX_HI      EQU             $7C
+ASM_TARGET_THIRD_ADDR  EQU             $7CFD
+ASM_TARGET_PENULT_ADDR EQU             $7CFE
+ASM_TARGET_LAST_ADDR   EQU             $7CFF
                         ENDIF
 ASM_TARGET_GUARD_LO    EQU             $00
                         IF              ASM_FLASH_RUNTIME

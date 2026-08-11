@@ -1,6 +1,6 @@
 param(
     [string]$SourcePath = `
-        "../DOC/GUIDES/ASM/SAMPLES/str8-bank-maint-2000.a",
+        "../DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-bank-maint-2000.a",
     [string]$SmokeSourcePath = `
         "../DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank0-ap-smoke.a",
     [string]$MutationWorkerS19Path = `
@@ -406,20 +406,22 @@ $required = @(
     'JMP $0200',
     'CMP #$F0',
     'LDA #$08',
-    'DEC $1B05',
+    'DEC $7C05',
     "CMP #'M'",
     "CMP #'P'",
     "CMP #'Q'",
     'JSR BM_DIR',
     'LDA $FFB0,X',
-    'STA $1D00,X',
+    'STA $7C40,X',
     'BM_MDIR DB',
+    "BM_MTITLE DB `$0D,`$0A,'S','T','R','8','-','N'",
+    "DB ' ','1','.','2',' ','B','A','N','K',' '",
     'BM_MLEGEND DB',
     'BM_APSCAN STZ $CC',
     'BM_APLIST BRA ?BODY',
     'BM_SVC  JMP ($7E00,X)',
-    'CMP $1B14,X',
-    'STA $1D44,X',
+    'CMP $7C14,X',
+    'STA $7C84,X',
     "DB ' ','P','=','A','P',' ','B','0','B','F','0','0'",
     'ORG $3000',
     'JMP $F000',
@@ -534,7 +536,7 @@ $semanticGates = @(
     },
     @{
         Name = 'stage and program call the carried mutation worker'
-        Pattern = 'BM_STAGE.*?LDA #\$06.*?STA \$1FF0.*?JMP \$0200.*?BM_PROGRAM.*?LDA #\$05.*?STA \$1FF0.*?JMP \$0200'
+        Pattern = 'BM_STAGE.*?LDA #\$06.*?STA \$7DF0.*?JMP \$0200.*?BM_PROGRAM.*?LDA #\$05.*?STA \$7DF0.*?JMP \$0200'
     },
     @{
         Name = 'copy destination rejects Bank 3'
@@ -546,7 +548,7 @@ $semanticGates = @(
     },
     @{
         Name = 'Bank 3 all count is seven sectors'
-        Pattern = 'BM_EALL.*?LDA #\$08.*?CMP #\$03.*?DEC \$1B05'
+        Pattern = 'BM_EALL.*?LDA #\$08.*?CMP #\$03.*?DEC \$7C05'
     },
     @{
         Name = 'Bank 3 skips post-erase dot output'
@@ -554,23 +556,23 @@ $semanticGates = @(
     },
     @{
         Name = 'ALL uses the complete valid range'
-        Pattern = 'BM_EALL.*?LDA #''A''.*?STA \$1B08.*?LDA #''L''.*?STA \$1B09.*?STA \$1B0A'
+        Pattern = 'BM_EALL.*?LDA #''A''.*?STA \$7C08.*?LDA #''L''.*?STA \$7C09.*?STA \$7C0A'
     },
     @{
         Name = 'X-Y validates and counts an ordered range'
-        Pattern = 'BM_ENOTALL.*?CMP #''-''.*?LDA \$1C02.*?JSR BM_EHEX.*?CMP \$1B04.*?SBC \$1B04'
+        Pattern = 'BM_ENOTALL.*?CMP #''-''.*?LDA \$7C22.*?JSR BM_EHEX.*?CMP \$7C04.*?SBC \$7C04'
     },
     @{
         Name = 'single-sector path reaches confirmation'
-        Pattern = 'BM_ESINGLE.*?STA \$1B0B.*?JMP BM_ECONF.*?BM_EHEX'
+        Pattern = 'BM_ESINGLE.*?STA \$7C0B.*?JMP BM_ECONF.*?BM_EHEX'
     },
     @{
         Name = 'M scans every bank sector through stage mode'
-        Pattern = 'BM_MAP.*?STZ \$1B02.*?\?BANK.*?LDA #\$80.*?\?SECTOR.*?JSR BM_STAGE.*?CMP #\$FF'
+        Pattern = 'BM_MAP.*?STZ \$7C02.*?\?BANK.*?LDA #\$80.*?\?SECTOR.*?JSR BM_STAGE.*?CMP #\$FF'
     },
     @{
         Name = 'map restores entry bank with interrupts masked'
-        Pattern = 'BM_MAIN.*?LDA \$7FEC.*?AND #\$EE.*?STA \$1B0C.*?BM_MAP.*?\?STAGE\s+PHP.*?SEI.*?JSR BM_STAGE.*?LDA #\$EE.*?TRB \$7FEC.*?LDA \$1B0C.*?TSB \$7FEC.*?PLP.*?\?SCAN'
+        Pattern = 'BM_MAIN.*?LDA \$7FEC.*?AND #\$EE.*?STA \$7C0C.*?BM_MAP.*?\?STAGE\s+PHP.*?SEI.*?JSR BM_STAGE.*?LDA #\$EE.*?TRB \$7FEC.*?LDA \$7C0C.*?TSB \$7FEC.*?PLP.*?\?SCAN'
     },
     @{
         Name = 'map protects and identifies Bank-3 sector F'
@@ -582,19 +584,19 @@ $semanticGates = @(
     },
     @{
         Name = 'AP map bounds total length to one staged sector'
-        Pattern = 'BM_APHEAD.*?LDA #\$1A.*?SBC \$CD.*?STA \$D1.*?LDA \$1B11.*?CMP \$D1.*?LDA \$1B10.*?CMP \$D0.*?LDA #\$05.*?JSR BM_APADV'
+        Pattern = 'BM_APHEAD.*?LDA #\$1A.*?SBC \$CD.*?STA \$D1.*?LDA \$7C11.*?CMP \$D1.*?LDA \$7C10.*?CMP \$D0.*?LDA #\$05.*?JSR BM_APADV'
     },
     @{
         Name = 'AP map validates seal range and FNV equality'
-        Pattern = 'BM_APSEAL.*?CMP #\$01.*?STA \$1B12.*?STA \$1B13.*?ADC \(\$CE\),Y.*?CMP \$D7.*?CMP \$D8.*?STA \$1B17.*?BM_APHASH.*?LDX #\$14.*?LDX #\$16.*?CMP \$1B14,X'
+        Pattern = 'BM_APSEAL.*?CMP #\$01.*?STA \$7C12.*?STA \$7C13.*?ADC \(\$CE\),Y.*?CMP \$D7.*?CMP \$D8.*?STA \$7C17.*?BM_APHASH.*?LDX #\$14.*?LDX #\$16.*?CMP \$7C14,X'
     },
     @{
         Name = 'AP map records and prints bank address and package length'
-        Pattern = 'BM_APSCAN.*?STA \$1D40,X.*?STA \$1D41,X.*?ADC \$1B04.*?STA \$1D42,X.*?STA \$1D43,X.*?STA \$1D44,X.*?BM_APLIST.*?LDA \$1D42,X.*?LDA \$1D41,X.*?LDA \$1D44,X.*?LDA \$1D43,X'
+        Pattern = 'BM_APSCAN.*?STA \$7C80,X.*?STA \$7C81,X.*?ADC \$7C04.*?STA \$7C82,X.*?STA \$7C83,X.*?STA \$7C84,X.*?BM_APLIST.*?LDA \$7C82,X.*?LDA \$7C81,X.*?LDA \$7C84,X.*?LDA \$7C83,X'
     },
     @{
         Name = 'map snapshots and prints the Bank-3 directory'
-        Pattern = 'BM_MDIR.*?BM_DIR\s+BRA.*?SEI.*?LDA #\$EE.*?TSB \$7FEC.*?LDA \$FFB0,X.*?STA \$1D00,X.*?LDA \$1B0C.*?TSB \$7FEC.*?BM_MAP.*?\?DONE\s+LDX #<BM_MLEGEND.*?JSR BM_PUTS.*?JSR BM_DIR'
+        Pattern = 'BM_MDIR.*?BM_DIR\s+BRA.*?SEI.*?LDA #\$EE.*?TSB \$7FEC.*?LDA \$FFB0,X.*?STA \$7C40,X.*?LDA \$7C0C.*?TSB \$7FEC.*?BM_MAP.*?\?DONE\s+LDX #<BM_MLEGEND.*?JSR BM_PUTS.*?JSR BM_DIR'
     },
     @{
         Name = 'map prints its rows before the legend'
@@ -602,7 +604,7 @@ $semanticGates = @(
     },
     @{
         Name = 'directory rows include type description entry journal'
-        Pattern = 'BM_DIR.*?LDA \$1D00,X.*?\?DESC.*?LDA \$1D0B,X.*?LDA \$1D0A,X.*?\?JOURNAL.*?CMP #\$10'
+        Pattern = 'BM_DIR.*?LDA \$7C40,X.*?\?DESC.*?LDA \$7C4B,X.*?LDA \$7C4A,X.*?\?JOURNAL.*?CMP #\$10'
     },
     @{
         Name = 'normal outcomes loop until Q'
@@ -610,7 +612,7 @@ $semanticGates = @(
     },
     @{
         Name = 'P validates and overlays a fixed erased Bank-0 carrier'
-        Pattern = 'BM_PUT.*?LDA \$4000.*?CMP #''A''.*?LDA \$4001.*?CMP #''P''.*?LDA \$4004.*?BNE \?BAD.*?LDA \$4003.*?CMP #\$05.*?STA \$1B05.*?STZ \$1B02.*?STZ \$1B03.*?LDA #\$B0.*?JSR BM_STAGE.*?LDA \$1900,X.*?CMP #\$FF.*?LDA \$4000,X.*?STA \$1900,X.*?JSR BM_PROGRAM'
+        Pattern = 'BM_PUT.*?LDA \$4000.*?CMP #''A''.*?LDA \$4001.*?CMP #''P''.*?LDA \$4004.*?BNE \?BAD.*?LDA \$4003.*?CMP #\$05.*?STA \$7C05.*?STZ \$7C02.*?STZ \$7C03.*?LDA #\$B0.*?JSR BM_STAGE.*?LDA \$1900,X.*?CMP #\$FF.*?LDA \$4000,X.*?STA \$1900,X.*?JSR BM_PROGRAM'
     }
 )
 foreach ($gate in $semanticGates) {

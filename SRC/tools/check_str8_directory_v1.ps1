@@ -191,7 +191,7 @@ function Invoke-ResidentDirectoryRoutine {
                     [byte[]]$snapshot = New-Object byte[] 0x1000
                     [Array]::Copy($Memory, 0x0A00, $snapshot, 0, 0x1000)
                     $sectorHigh = [int]$Memory[$StageSectorAddress]
-                    $sectorBank = [int]$Memory[0x1FEF]
+                    $sectorBank = [int]$Memory[0x7DEF]
                     $stageSectors.Add($snapshot)
                     $stageHighs.Add([byte]$sectorHigh)
                     $stageRecordCounts.Add($recordIndex)
@@ -1229,9 +1229,9 @@ function Invoke-ResidentJumpFixture {
         $recordAddress = $script:dirBase + ($Bank * $script:recordSize)
         [Array]::Copy($Record, 0, $memory, $recordAddress, $script:recordSize)
     }
-    $memory[0x1FF2] = [byte]$Bank
-    $memory[0x1FF3] = 0
-    $memory[0x1FF4] = 0
+    $memory[0x7DF2] = [byte]$Bank
+    $memory[0x7DF3] = 0
+    $memory[0x7DF4] = 0
     $memory[0x7EA0] = 0
     return Invoke-ResidentDirectoryRoutine -Memory $memory `
         -Start $script:residentJumpLaunchEntry `
@@ -2157,11 +2157,11 @@ if ($transactionInstallerMode) {
     Assert-True (($residentSize -eq 0x0E5D) -and
         ($txnPage0High -eq 0xFD) -and ($txnPage1High -eq 0xFE) -and
         ($txnPage1High -eq $txnPage0High + 1) -and
-        ($txnRangePromptAddress -eq 0xFD9F) -and
-        ($txnSummaryAddress -eq 0xFDC3) -and ($txnInstallOkAddress -eq 0xFDC8) -and
-        ($txnTypeAddress -eq 0xFDD0) -and
-        ($txnDescAddress -eq 0xFDD4) -and ($txnEntryAddress -eq 0xFDD7) -and
-        ($txnEmptyAddress -eq 0xFDDB) -and
+        ($txnRangePromptAddress -eq 0xFD9E) -and
+        ($txnSummaryAddress -eq 0xFDC2) -and ($txnInstallOkAddress -eq 0xFDC7) -and
+        ($txnTypeAddress -eq 0xFDCF) -and
+        ($txnDescAddress -eq 0xFDD3) -and ($txnEntryAddress -eq 0xFDD6) -and
+        ($txnEmptyAddress -eq 0xFDDA) -and
         ($txnPage0CallCount -eq 21) -and ($txnPage1CallCount -eq 17)) `
         'Transaction range receiver must retain its exact compact size, boundary, and 21/17 call split'
     Assert-True (($txnPrintPage0 + 4 -eq $txnPrintPage1) -and
@@ -2290,7 +2290,7 @@ $startup = Invoke-ResidentDirectoryRoutine -Memory $startupMemory `
     -TimedInput $startupTimedInput
 $idText = [System.Text.Encoding]::ASCII.GetString((Get-HighBitStringBytes $residentTemplate $residentIdMessage))
 $bootPromptText = [System.Text.Encoding]::ASCII.GetString((Get-HighBitStringBytes $residentTemplate $residentBootPrompt))
-Assert-True ($idText -match "^`r`nSTR8-N 1\.02/[0-9]{4}\.[0-9]{4}`r`nWAIT `$" ) `
+Assert-True ($idText -match "^`r`nSTR8-N 1\.2/[0-9]{4}\.[0-9]{4}`r`nWAIT `$" ) `
     'V1 startup identity does not publish semantic/build version and WAIT phase'
 Assert-True ($bootPromptText -eq '0-2 BOOT H HIMON S MENU ') `
     'V1 startup selector does not publish local H and explicit 0/1/2 boot choices'
@@ -2788,10 +2788,10 @@ if ($dryInstallerMode) {
                 -SectorHigh $sectorHigh
             Assert-True ($fixture.Cpu.Carry -and $fixture.Cpu.SectorCalls -eq 1 -and
                 $fixture.Cpu.Events[0] -ceq ('S:2:{0:X2}' -f $sectorHigh) -and
-                $fixture.Memory[0x1FE9] -eq $sectorHigh -and
-                $fixture.Memory[0x1FEF] -eq 2 -and
-                $fixture.Memory[0x1FF0] -eq 0x05 -and
-                $fixture.Memory[0x1FF6] -eq 0x0A) `
+                $fixture.Memory[0x7DE9] -eq $sectorHigh -and
+                $fixture.Memory[0x7DEF] -eq 2 -and
+                $fixture.Memory[0x7DF0] -eq 0x05 -and
+                $fixture.Memory[0x7DF6] -eq 0x0A) `
                 ("Sector boundary `${0:X2} success mismatch" -f $sectorHigh)
             $fixture = Invoke-TransactionRoutineFixture -Start $residentStageHook `
                 -Bank 2 -State $recordComplete -Pair 1 -Record $emptyTxnRecord `

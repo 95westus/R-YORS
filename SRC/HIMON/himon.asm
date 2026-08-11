@@ -45,6 +45,7 @@
 
                         INCLUDE         "HIMON/himon-image-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
+                        INCLUDE         "STR8/str8-ram-abi.inc"
                         INCLUDE         "STR8/str8-record-eq.inc"
                         INCLUDE         "STR8/str8-jump-eq.inc"
 
@@ -136,14 +137,14 @@ HIM_AP_LINK_CODE1       EQU             $E7
 HIM_AP_LINK_CODE2       EQU             $E8
 HIM_AP_LINK_VALUE_LO    EQU             $E9
 HIM_AP_LINK_VALUE_HI    EQU             $EA
-HIM_AP_LINK_PATCH_KIND  EQU             $1A10
-HIM_AP_LINK_PATCH_LO    EQU             $1A11
-HIM_AP_LINK_PATCH_HI    EQU             $1A12
-HIM_AP_LINK_RES_LO      EQU             $1A13
-HIM_AP_LINK_RES_HI      EQU             $1A14
-HIM_AP_LINK_INDEX       EQU             $1A15
-HIM_AP_LINK_RELOC_COUNT EQU             $1A16
-HIM_AP_LINK_IMPORT_COUNT EQU            $1A17
+HIM_AP_LINK_PATCH_KIND  EQU             HIM_AP_LINK_WORK_BASE+$00
+HIM_AP_LINK_PATCH_LO    EQU             HIM_AP_LINK_WORK_BASE+$01
+HIM_AP_LINK_PATCH_HI    EQU             HIM_AP_LINK_WORK_BASE+$02
+HIM_AP_LINK_RES_LO      EQU             HIM_AP_LINK_WORK_BASE+$03
+HIM_AP_LINK_RES_HI      EQU             HIM_AP_LINK_WORK_BASE+$04
+HIM_AP_LINK_INDEX       EQU             HIM_AP_LINK_WORK_BASE+$05
+HIM_AP_LINK_RELOC_COUNT EQU             HIM_AP_LINK_WORK_BASE+$06
+HIM_AP_LINK_IMPORT_COUNT EQU            HIM_AP_LINK_WORK_BASE+$07
 
 AP_STAGE_BUF_HI          EQU             $0A
 AP_STAGE_BUF_END_HI      EQU             $1A

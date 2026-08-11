@@ -20903,3 +20903,129 @@ an early `S` that must be discarded and cold-timeout normally, followed by one
 reset with `S` during the live menu dots that must enter STR8. No further flash
 operation is required. See
 [STR8 V1.02 Presentation-Successor Board Test](../STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md).
+
+## 2026-08-11: STR8-N v1.2 RAM top updater accepted on hardware
+
+The operator used installed STR8-N 1.1 to commit the rebuilt Bank-3 `$8-$E`
+payload, loaded the v1.2 sector-F updater through `L`, authorized Bank 1 sector
+F as the safety copy, and received `BACKUP VERIFIED`. After the exact final
+confirmation, the updater erased/programmed Bank-3 sector F, reported full
+verification, entered RESET, and the live `S` selector reached STR8-N 1.2:
+
+```text
+>...
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0810(1814)
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.1
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>L
+S19
+
+STR8-N 1.2 TOP UPDATE
+BACKUP B1:F; TARGET B3:F
+TYPE BACKUP B1F> BACKUP B1F
+BACKUP VERIFIED
+SAFE PHY $0F000-$0FFFF; TARGET PHY $1F000-$1FFFF; SUM=$0F1E
+TYPE STR8-N 1.2> STR8-N 1.2
+ERASING B3:F - NO RESET/NMI/POWER
+STR8-N 1.2 VERIFIED; RESET
+
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ..S
+I L H J
+STR8-N>
+```
+
+This closes the destructive onboard-update, backup, internal verify, RESET,
+and live-selector checkpoints. It does not by itself close independent flash
+readback, timeout/`H`/`J` smoke, Bank Jump Record preservation, ASM boundary,
+Bank Maintenance, or external recovery. See
+[STR8-N v1.2 Top-Update Board Test](../STR8/STR8_V1_2_TOP_UPDATE_BOARD_TEST.md).
+
+## 2026-08-11: v1.2 relocated RAM boundaries accepted on hardware
+
+The follow-on run accepted warm entry into rebuilt HIMON `00.0811(1004)` and
+ASM-F2 `00.0811(1004)`. `J3` returned through Bank 3, the no-input selector
+entered cold HIMON, and `$7DFD-$7DFF` retained `42 4A 03` across `RAM ZERO OK`.
+
+ASM accepted three bytes ending exactly at `$7CFF`. A two-byte row beginning
+at `$7CFF` returned `ERR=$06 BAD RANGE PC=$7CFF`; subsequent dumps proved
+`$7CFF` retained `$33` and `$7D00` retained `$00`. This hardware-accepts both
+the new exclusive `$7D00` ceiling and atomic crossing rejection.
+
+The v1.2 Bank Maintenance RAM artifact loaded through STR8-N `L`; read-only
+`M` mapped all banks and printed all directory rows, and `Q` returned through
+STR8-N to warm HIMON. Its banner incorrectly displayed `STR8-N 1.1 BANK MAINT`.
+That was a presentation-only stale literal: the executed map used the v1.2
+`$7C00-$7D1A` overlay and `$7Dxx` worker state. The source was corrected to
+`STR8-N 1.2 BANK MAINT`, the checker now enforces that banner, and the rebuilt
+S19 SHA-256 is
+`0EB33A64D36EAC4EFF7BA9C64A6DBE24BA81EC38A8BB91540898C6AE7445FB3F`.
+
+The terminal transcript is retained in the
+[STR8-N v1.2 Top-Update Board Test](../STR8/STR8_V1_2_TOP_UPDATE_BOARD_TEST.md).
+At this checkpoint, a banked AP link and low-user-RAM canaries were still open,
+along with `J0`-`J2`, destructive Bank Maintenance cases, independent sector-F
+readback, and external recovery. The following checkpoint closes the AP-link
+RAM ABI and the exercised low-user-RAM canary paths.
+
+## 2026-08-11: v1.2 AP-link scratch and low user RAM accepted on hardware
+
+An ASM-F2 importing package was built in RAM (`PKG OK @=$4000 L=$0076`) and
+applied at `$3000`. `BANK RJOIN` printed, execution returned `A=$AC` with carry
+set, the call at `$3006` was relocated to `JSR $E6EC`, and HIMON's relocated
+AP-link scratch contained exactly:
+
+```text
+7DC0: 06 0F 30 EC E6 04 05 01 | ..0.....
+```
+
+This accepts the `$7DC0-$7DC7` RAM ABI through the actual
+`IMPORT`/`PACKAGE`/`AP`/`RJOIN` path.
+
+A separate fixture set distinct values at `$1A00`, `$1AFF`, `$1B00`, `$1C00`,
+`$1D00`, `$1E00`, `$1FFE`, and `$1FFF`. It returned `A=$AC` with carry set and
+status `AC FF`. The check still passed after the AP-link work and after ASM
+emitted `$44,$55,$66` at `$7CFD-$7CFF`. This hardware-accepts `$1A00-$1FFF`
+as untouched user RAM across the exercised ASM packaging, AP-linking, and ASM
+upper-boundary paths.
+
+The exact source and terminal evidence are retained in the
+[STR8-N v1.2 Top-Update Board Test](../STR8/STR8_V1_2_TOP_UPDATE_BOARD_TEST.md).
+At this checkpoint, an integrated canary pass through corrected v1.2 Bank
+Maintenance `M`, `Q`, and live-selector warm `H` remained recommended.
+`J0`-`J2`, destructive Bank Maintenance cases, independent sector-F readback,
+and external recovery remained broader release checks.
+
+## 2026-08-11: v1.2 integrated RAM-relocation canaries accepted
+
+The corrected artifact displayed `STR8-N 1.2 BANK MAINT`, completed read-only
+`M`, and returned through `Q`. The operator selected `H` during the live STR8-N
+selector; HIMON reported `BOOT WARM`. The checker at `$7003` then returned
+`A=$AC`, `X=$07`, and carry set, while `$71F0-$71F1` remained `AC FF`.
+
+This proves the canaries spanning `$1A00-$1FFF` survived the v1.2 Bank
+Maintenance overlay/map path, its return to STR8-N, and the warm HIMON handoff.
+Together with the prior ASM packaging, AP-link, and ASM-boundary results, this
+completes the non-destructive hardware test set for the RAM relocation. The
+exact terminal evidence is retained in the
+[STR8-N v1.2 Top-Update Board Test](../STR8/STR8_V1_2_TOP_UPDATE_BOARD_TEST.md).
+
+`J0`-`J2`, destructive Bank Maintenance cases, independent sector-F readback,
+and external recovery remain broader release checks rather than RAM-relocation
+blockers.

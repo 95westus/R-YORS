@@ -83,7 +83,7 @@ STR8 when needed, then return with `G HIMON`. Load the optional external
 reporter first if table detail will be needed later:
 
 ```text
-L              send SRC/BUILD/s19/asm-session-report-7000.s19
+L              send SRC/BUILD/s19/asm-session-report-v1.2-7000.s19
 ```
 
 Load flash-resident ASM into the visible low-flash window:
@@ -681,13 +681,13 @@ reuses that low RAM, so run `asm-session-report` before staging if symbol and
 fixup names from the current session are required.
 
 For a current V1 STR8 top-sector update, use
-`SRC/BUILD/generated/asm-samples/str8-i-refresh-transient-3000.a`. Generate it
+`SRC/BUILD/generated/asm-samples/str8n-v1.2-i-refresh-transient-3000.a`. Generate it
 with `make -C SRC str8-i-refresh-a`. It copies the live
 `$FFB0-$FFEF` directory before staging the embedded STR8-N image into
-`$0A00-$19FF` and should leave `$1A00-$1A03 = 00 AC 00 00`. After verifying
+`$0A00-$19FF` and should leave `$7C00-$7C03 = 00 AC 00 00`. After verifying
 the staged bytes, `G 3003` erases/programs/verifies the active top sector and
-should leave `$1A00-$1A03 = 01 AC 00 00`. The `$FACE` identity check should
-read `STR8-N V0 #5F6A0F7A`.
+should leave `$7C00-$7C03 = 01 AC 00 00`. The `$FACE` identity check should
+identify the rebuilt STR8-N v1.2 image.
 
 The legacy replacement and one-time migration writers are archived under
 `DOC/GUIDES/ASM/SAMPLES/OLD/`. They overwrite the live V1 directory and must
@@ -708,7 +708,7 @@ make -C SRC asm-session-report
 ```
 
 The current `make all` image does not store a reporter after ASM-F2. The
-preferred generated source is `asm-session-report-ap-2000.a`: it packages at
+preferred generated source is `asm-session-report-v1.2-ap-2000.a`: it packages at
 `$3000`, can load anywhere from `$2000-$43A1`, and conventionally uses
 `$4000`. If it is stored in Bank 0, load it before the session to inspect,
 then exit that session with `.` and run the resident copy:
@@ -722,10 +722,10 @@ G 4000
 ```
 
 `make -C SRC asm-session-report` also builds the explicit reporter artifacts.
-The host-built RAM reporter is `SRC/BUILD/s19/asm-session-report-7000.s19`.
+The host-built RAM reporter is `SRC/BUILD/s19/asm-session-report-v1.2-7000.s19`.
 Load it before the ASM session to inspect, then after `END` and `.` run
 `G 7000`.
-For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-ap-2000.a`
+For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-v1.2-ap-2000.a`
 is a compact, pasteable `.a` source. It prints the split low-RAM pools, the
 `$2000/$3000/$4000` islands, high UDATA, safe output, and volatile regions.
 Its complete internal body self-relocates; its current ASM helper/table calls
@@ -868,13 +868,13 @@ $2000-$2FFF  packageable ASM body/helper emission island
 $3000-$3FFF  Bank 0 AP envelope, then AP load/run space
 $4000-$4FFF  lower RAM output/load space
 $5000-$61A9  protected flash ASM UDATA in the current map
-$61AA-$7DFF  upper ASM output/scratch arena
+$61AA-$7CFF  upper ASM output/scratch arena
 $7E00-$7EFF  HIMON service and monitor workspace
 $7F00-$7FFF  I/O, do not use
 ```
 
 The flash wrapper rejects output into its protected UDATA span. `ORG $5000`
-is `BAD RANGE`; the current map permits `ORG $61AA` through `$7DFF`.
+is `BAD RANGE`; the current map permits `ORG $61AA` through `$7CFF`.
 Runtime code may still use ordinary RAM after leaving ASM if it does not depend
 on returning to the same live ASM workspace. Future AP overlay work may use
 the upper arena, but HIMON AP load destinations remain `$2000-$4FFF` in this

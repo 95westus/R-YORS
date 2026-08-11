@@ -41,8 +41,8 @@ $workspaceEnd = Get-Symbol 'ASM_WORKSPACE_END'
 if ($workspaceEnd -ne $endUdata) {
     throw ('ASM_WORKSPACE_END={0:X4}, _END_UDATA={1:X4}' -f $workspaceEnd, $endUdata)
 }
-if ($endUdata -gt 0x7E00) {
+if ($endUdata -gt 0x7D00) {
     throw ('Flash ASM UDATA crosses HIMON workspace: _END_UDATA={0:X4}' -f $endUdata)
 }
 
-Write-Host ('asm-v1-flash RAM map low=0200-19FF udata=5000-{0:X4} upper={0:X4}-7DFF' -f $endUdata)
+Write-Host ('asm-v1-flash RAM map low=0200-19FF user=1A00-1FFF udata=5000-{0:X4} upper={0:X4}-7CFF' -f $endUdata)

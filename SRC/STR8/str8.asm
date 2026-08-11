@@ -58,6 +58,7 @@
                         ENDIF
 
                         INCLUDE         "HIMON/himon-image-eq.inc"
+                        INCLUDE         "STR8/str8-ram-abi.inc"
                         INCLUDE         "STR8/str8-record-eq.inc"
                         INCLUDE         "STR8/str8-jump-eq.inc"
                         INCLUDE         "STR8/str8-directory-eq.inc"
@@ -149,7 +150,7 @@ STR8_INSTALL_EXPECT_HI  EQU             $9C
 STR8_INSTALL_PHASE      EQU             $9E
 STR8_INSTALL_SECTOR_HI  EQU             $9F
 STR8_INSTALL_STATUS     EQU             $A0
-; V1.02 selected dense range. The receiver requires this exact start and
+; v1.2 selected dense range. The receiver requires this exact start and
 ; exclusive limit while retaining a count for summaries/tests.
 STR8_INSTALL_START_HI   EQU             $A1
 STR8_INSTALL_RANGE_LIMIT_HI EQU         $A2
@@ -168,21 +169,6 @@ STR8_DIR_PACKED_WORK    EQU             $D3
 STR8_DIR_LEFT_WORK      EQU             $D4
 STR8_DIR_RESULT_PAIR    EQU             $D5
 STR8_DIR_PAIR_WORK      EQU             $D6
-STR8_STATE_BASE         EQU             $1FE9
-STR8_STATE_END          EQU             $1FFF
-STR8_MARK_SECTOR_HI     EQU             $1FE9
-STR8_MARK_ADDR_LO       EQU             $1FEA
-STR8_MARK_ADDR_HI       EQU             $1FEB
-STR8_COPY_SRC_BANK      EQU             $1FEE
-STR8_COPY_DST_BANK      EQU             $1FEF
-STR8_COPY_MODE          EQU             $1FF0
-STR8_BOOT_KEY_ENABLE    EQU             $1FF1
-STR8_INPUT_SKIP_LF      EQU             $1FF1
-STR8_STAGE_BUF_HI       EQU             $1FF6
-STR8_UPD_MASK           EQU             $1FF7
-STR8_UPD_DATA_LEN       EQU             $1FF9
-STR8_UPD_DST_LO         EQU             $1FFB
-STR8_UPD_DST_HI         EQU             $1FFC
 STR8_CON_VIA_CTRL       EQU             $7FE0
 STR8_CON_VIA_DATA       EQU             $7FE1
 STR8_CON_VIA_DDRB       EQU             $7FE2
@@ -202,7 +188,7 @@ STR8_CON_FLUSH_RX_MAX   EQU             $FF
 START:
                         JMP             STR8_BOOT_START
 
-; Stable resident entry for HIMON/RAM tools. Caller sets the $1FE9-$1FFF
+; Stable resident entry for HIMON/RAM tools. Caller sets the $7DE9-$7DFF
 ; worker state board, then this copies the flash worker to $0200 and runs it.
 STR8_RUN_WORKER_SERVICE:
                         JMP             STR8_RUN_WORKER_SERVICE_BODY
@@ -3061,6 +3047,8 @@ MSG_I_PAIR:             DB              "P",('='+$80)
                         IF              STR8_V1_INSTALLER_DRY
                         IF              STR8_V1_INSTALLER_TXN
 MSG_I_WRITE_CONFIRM:    DB              " WRITE? Y:",$A0
+; Keep page-1 transaction strings at $FE00 after the v1.2 display-name trim.
+                        DB              $00
                         ELSE
 MSG_I_STAGE_CONFIRM:    DB              " STAGE? Y:",$A0
                         ENDIF

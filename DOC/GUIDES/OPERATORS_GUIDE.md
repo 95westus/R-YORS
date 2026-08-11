@@ -462,7 +462,7 @@ Older board images and narrow development passes can still load the reporter
 and ASM-F2 explicitly:
 
 ```text
->L              send SRC/BUILD/s19/asm-session-report-7000.s19 if reports are needed
+>L              send SRC/BUILD/s19/asm-session-report-v1.2-7000.s19 if reports are needed
 >L F            send SRC/BUILD/s19/asm-v1-flash-8000.s19
 >ASM
 ```

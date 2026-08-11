@@ -484,6 +484,9 @@ function Add-SelfRelocAsmNativeReport([string[]]$Native) {
         '        JSR PL',
         '        LDX #<M40',
         '        LDY #>M40',
+        '        JSR PL',
+        '        LDX #<M41',
+        '        LDY #>M41',
         '        JMP PL',
         ''
     )
@@ -498,10 +501,11 @@ function Add-SelfRelocAsmNativeReport([string[]]$Native) {
     }
     $zoneMessages = @(
         'M36     DB "LOW SYM=$0200-$09FF FIX=$0A00-$19FF",0',
-        'M37     DB "LOW TOOL=$1A00-$1FE8 STR8=$1FE9-$1FFF",0',
-        'M38     DB "ISLANDS=$2000/$3000/$4000 (4K EACH)",0',
-        ('M39     DB "ASM UDATA={0}-{1}",0' -f (Format-HexWord $udataBegin), (Format-HexWord ($udataEnd - 1))),
-        ('M40     DB "SAFE={0}-{1} VOL={2}-{3}",0' -f (Format-HexWord $udataEnd), (Format-HexWord ($volatileBegin - 1)), (Format-HexWord $volatileBegin), (Format-HexWord ($targetLimit - 1)))
+        'M37     DB "USER FREE=$1A00-$1FFF",0',
+        'M38     DB "HIGH TOOL=$7C00-$7DBF STR8=$7DE9-$7DFF",0',
+        'M39     DB "ISLANDS=$2000/$3000/$4000 (4K EACH)",0',
+        ('M40     DB "ASM UDATA={0}-{1}",0' -f (Format-HexWord $udataBegin), (Format-HexWord ($udataEnd - 1))),
+        ('M41     DB "SAFE={0}-{1} VOL={2}-{3}",0' -f (Format-HexWord $udataEnd), (Format-HexWord ($volatileBegin - 1)), (Format-HexWord $volatileBegin), (Format-HexWord ($targetLimit - 1)))
     )
     $endIndex = [Array]::IndexOf($Native, '        END')
     if ($endIndex -lt 0) {

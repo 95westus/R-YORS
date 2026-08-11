@@ -617,7 +617,7 @@ A [addr] [label[:]] MMM [operand] .
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.
 - Default flash ASM keeps table printing out of the resident command surface.
-  `asm-session-report-7000.s19` is the host-built external table reporter, and
+  `asm-session-report-v1.2-7000.s19` is the host-built external table reporter, and
   `SAMPLES/OLD/asm-session-report-4800.a` is the flash ASM-native compact source program
   for preloading before the session being inspected. It uses literal message
   addresses and single-character `DB` atoms so it fits the raised symbol/fixup
