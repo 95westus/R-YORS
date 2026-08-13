@@ -150,11 +150,11 @@
   [MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md): seal RAM-emitted ASM output
   with body length, entry offset, exports/imports, and relocation rows, then
   prove install/move/run from bank 3 flash and RAM overlays.
-- Increase the AP/ASM relocation-row capacity beyond the current
-  `ASM_RELOC_MAX=$10`. The 2026-07-10 session-reporter package proof needed a
-  fixed-address workaround after the report program's internal `JSR`/`JMP`
-  graph exceeded 16 relocation rows; future work should either enlarge the
-  relocation table/record format or add an extended relocation section.
+- Define AP v2 only if packaged relocation capacity must exceed 50 rows. ASM
+  retains 64 live rows for direct `SEAL`/`RELOCATE`; AP v1 packaging and HIMON
+  loading now use its exact 50-row maximum because the one-byte relocation
+  body length is `1 + 5*N` (`$FB` at 50, `$0100` at 51). A full 64-row package
+  needs a wider or chunked AP format plus a matching HIMON loader revision.
 - Add a tiny sorted-list helper for monitor tables such as breakpoint listing.
   `B L` may print slot order for now, but sorted address order will be easier
   to read once multiple breakpoints are active. For the current four breakpoint

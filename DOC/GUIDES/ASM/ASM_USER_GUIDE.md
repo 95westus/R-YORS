@@ -885,7 +885,7 @@ Current proof-sized table limits:
 ```text
 global symbols       64
 fixups               128
-relocation rows      16
+relocation rows      64
 exports              8
 imports              8
 report references    192
@@ -894,6 +894,19 @@ line length          63 visible chars
 global name length   31 visible chars
 local name length    15 visible chars including . or ?
 ```
+
+The 64-row figure is ASM's live `SEAL`/`RELOCATE` capacity. AP v1 packaging
+and the resident HIMON loader share the exact AP v1 structural maximum of 50
+rows. The writer, parser, checker, and loader all enforce that boundary. An AP
+v1 relocation body is `1 + 5*N` bytes (count plus five parallel-array bytes
+per row), so 50 rows occupy `$FB`; 51 rows require `$0100`, which cannot fit
+the one-byte section-length field, and 64 require `$0141`. `PACKAGE` therefore
+returns `BAD FIX` for live seals with 51-64 rows. Supporting more than 50
+packaged rows needs an AP format revision with a wider length or a
+different/chunked relocation encoding, plus a matching HIMON loader change.
+The direct 64-row and AP-v1/HIMON 50-row positive boundaries were both
+hardware-accepted on 2026-08-13; see [TEST_PLAN.md](TEST_PLAN.md) and the
+retained hardware log.
 
 These are implementation limits, not permanent language promises.
 

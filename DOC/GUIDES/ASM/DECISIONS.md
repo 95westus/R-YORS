@@ -629,7 +629,7 @@ A [addr] [label[:]] MMM [operand] .
   that saves code or cycles.
 - First implementation uses fixed table limits. If symbol or fixup space fills,
   fail with `BAD SYM` or `BAD FIX`; do not spill silently or start writing into
-  flash. The current proof sizes are 64 global symbols, 128 fixups, 16 internal
+  flash. The current proof sizes are 64 global symbols, 128 fixups, 64 internal
   relocation rows, 192 report references, 31 visible global-name characters, 16
   local labels per active global scope, 15 visible local-name characters, 63
   input characters, and a 512-byte code buffer; treat those as proof defaults,

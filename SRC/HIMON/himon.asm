@@ -109,7 +109,7 @@ HIM_AP_OFF_VER           EQU             $02
 HIM_AP_OFF_TOTAL         EQU             $03
 HIM_AP_SEAL_REC_BYTES    EQU             $0B
 HIM_AP_IMPORT_REC_OFF_COUNT EQU          $00
-HIM_AP_RELOC_MAX         EQU             $10
+HIM_AP_RELOC_MAX         EQU             $32
 HIM_AP_RELOC_ABS16_INTERNAL EQU          $01
 HIM_AP_RELOC_LO8_INTERNAL EQU            $02
 HIM_AP_RELOC_HI8_INTERNAL EQU            $03

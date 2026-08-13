@@ -446,7 +446,11 @@ ASM_SYM_NAME_MAX       EQU             $20
 ASM_FIX_MAX            EQU             $80
 ASM_FIX_NAME_MAX       EQU             $20
 ASM_FIX_NAME_BYTES     EQU             (ASM_FIX_MAX*ASM_FIX_NAME_MAX)
-ASM_RELOC_MAX          EQU             $10
+ASM_RELOC_MAX          EQU             $40
+; AP v1's one-byte relocation-section length is the packaged boundary. Keep
+; this separate from the larger in-session SEAL/RELOCATE table: one count
+; byte plus five bytes per row permits 50 rows ($FB), while 51 needs $0100.
+ASM_PACKAGE_RELOC_MAX  EQU             $32
 ASM_RELOC_ABS16_INTERNAL EQU           $01
 ASM_RELOC_LO8_INTERNAL EQU             $02
 ASM_RELOC_HI8_INTERNAL EQU             $03
@@ -4635,6 +4639,8 @@ ASM_SMOKE_FIXUPS:
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
                         JSR             ASM_SMOKE_FIXUPS_RELOCATE
                         BCC             ASM_SMOKE_FIXUPS_FAIL_A
+                        JSR             ASM_SMOKE_FIXUPS_RELOCATE_64
+                        BCC             ASM_SMOKE_FIXUPS_FAIL_A
 
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #ASM_SMOKE_TARGET_LO
@@ -5986,6 +5992,164 @@ ASM_SMOKE_FIXUPS_PACKAGE_LIMIT_DONE:
 ASM_SMOKE_FIXUPS_RELOC_FAIL:
                         CLC
                         RTS
+
+; Fill the enlarged live relocation table through the ordinary assembler
+; path, relocate all 64 rows, and prove the exact 50-row AP v1 boundary.
+ASM_SMOKE_FIXUPS_RELOCATE_64:
+                        LDA             #ASM_BEGINF_HAVE_PC
+                        LDX             #ASM_SMOKE_TARGET_LO
+                        LDY             #ASM_SMOKE_TARGET_HI
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_FIXUPS_RELOC_64_BEGIN_OK
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_64_FAIL
+ASM_SMOKE_FIXUPS_RELOC_64_BEGIN_OK:
+                        LDA             #$00
+ASM_SMOKE_FIXUPS_RELOC_64_EMIT:
+                        PHA
+                        LDX             #<ASM_DIRECT_DW_FORWARD
+                        LDY             #>ASM_DIRECT_DW_FORWARD
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_FIXUPS_RELOC_64_EMIT_OK
+                        PLA
+                        JMP             ASM_SMOKE_FIXUPS_RELOC_64_FAIL
+ASM_SMOKE_FIXUPS_RELOC_64_EMIT_OK:
+                        PLA
+                        INC             A
+                        CMP             #ASM_RELOC_MAX
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_EMIT
+                        LDX             #<ASM_DIRECT_FORWARD_LABEL
+                        LDY             #>ASM_DIRECT_FORWARD_LABEL
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCC             ASM_SMOKE_FIXUPS_RELOC_64_FAIL
+                        JSR             ASM_END
+                        BCC             ASM_SMOKE_FIXUPS_RELOC_64_FAIL
+                        JSR             ASM_SMOKE_FIXUPS_RELOC_64_TABLE
+                        BCC             ASM_SMOKE_FIXUPS_RELOC_64_FAIL
+
+                        LDX             #$00
+                        LDY             #$72
+                        JSR             ASM_SEAL_RELOCATE
+                        BCC             ASM_SMOKE_FIXUPS_RELOC_64_FAIL
+                        JSR             ASM_SMOKE_FIXUPS_RELOC_64_IMAGE
+                        BCC             ASM_SMOKE_FIXUPS_RELOC_64_FAIL
+
+                        IF              ASM_PACKAGE_ENABLED
+                        JSR             ASM_SMOKE_FIXUPS_PACKAGE_50
+                        BCC             ASM_SMOKE_FIXUPS_RELOC_64_FAIL
+                        ENDIF
+                        SEC
+                        RTS
+ASM_SMOKE_FIXUPS_RELOC_64_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_FIXUPS_RELOC_64_TABLE:
+                        LDA             ASM_FIX_COUNT
+                        CMP             #ASM_RELOC_MAX
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL
+                        LDA             ASM_RELOC_COUNT
+                        CMP             #ASM_RELOC_MAX
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL
+                        LDA             ASM_SEAL_LEN_LO
+                        CMP             #$81
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL
+                        LDA             ASM_SEAL_LEN_HI
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL
+                        LDX             #(ASM_RELOC_MAX-1)
+                        LDA             ASM_RELOC_KIND,X
+                        CMP             #ASM_RELOC_ABS16_INTERNAL
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL
+                        LDA             ASM_RELOC_SITE_LO,X
+                        CMP             #$7E
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL
+                        LDA             ASM_RELOC_SITE_HI,X
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL
+                        LDA             ASM_RELOC_TARGET_LO,X
+                        CMP             #$80
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL
+                        LDA             ASM_RELOC_TARGET_HI,X
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_FIXUPS_RELOC_64_TABLE_FAIL:
+                        CLC
+                        RTS
+
+ASM_SMOKE_FIXUPS_RELOC_64_IMAGE:
+                        LDA             ASM_RELOCATE_COUNT
+                        CMP             #ASM_RELOC_MAX
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_IMAGE_FAIL
+                        LDA             $7200
+                        CMP             #$80
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_IMAGE_FAIL
+                        LDA             $7201
+                        CMP             #$72
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_IMAGE_FAIL
+                        LDA             $727E
+                        CMP             #$80
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_IMAGE_FAIL
+                        LDA             $727F
+                        CMP             #$72
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_IMAGE_FAIL
+                        LDA             $7280
+                        CMP             #$60
+                        BNE             ASM_SMOKE_FIXUPS_RELOC_64_IMAGE_FAIL
+                        SEC
+                        RTS
+ASM_SMOKE_FIXUPS_RELOC_64_IMAGE_FAIL:
+                        CLC
+                        RTS
+
+                        IF              ASM_PACKAGE_ENABLED
+; The live table still contains 64 valid rows. Package the first 50, verify
+; the maximal $FB relocation body (including an ASM-side parse/check when
+; enabled), then prove row 51 fails before serialization.
+ASM_SMOKE_FIXUPS_PACKAGE_50:
+                        LDA             #ASM_PACKAGE_RELOC_MAX
+                        STA             ASM_RELOC_COUNT
+                        LDX             #$00
+                        LDY             #$74
+                        JSR             ASM_SEAL_PACKAGE
+                        BCC             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        LDA             ASM_PACKAGE_REL_LEN
+                        CMP             #$FB
+                        BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        LDA             $7412
+                        CMP             #ASM_PACKAGE_TAG_RELOC
+                        BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        LDA             $7413
+                        CMP             #$FB
+                        BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        LDA             $7414
+                        CMP             #ASM_PACKAGE_RELOC_MAX
+                        BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        IF              ASM_PACKAGE_CHECK_ENABLED
+                        LDX             #$00
+                        LDY             #$74
+                        JSR             ASM_SEAL_CHECK_PACKAGE
+                        BCC             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        LDA             ASM_RELOC_COUNT
+                        CMP             #ASM_PACKAGE_RELOC_MAX
+                        BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        ENDIF
+                        LDA             #(ASM_PACKAGE_RELOC_MAX+1)
+                        STA             ASM_RELOC_COUNT
+                        LDX             #$00
+                        LDY             #$74
+                        JSR             ASM_SEAL_PACKAGE
+                        BCS             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        CMP             #ASM_STATUS_BAD_FIX
+                        BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        LDA             #ASM_RELOC_MAX
+                        STA             ASM_RELOC_COUNT
+                        SEC
+                        RTS
+ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL:
+                        LDA             #ASM_RELOC_MAX
+                        STA             ASM_RELOC_COUNT
+                        CLC
+                        RTS
+                        ENDIF
 
 ASM_SMOKE_FIXUPS_CHECK_SITE1:
                         LDA             ASM_START_PC_LO
@@ -9747,6 +9911,13 @@ ASM_SEAL_PACKAGE:
                         BCS             ASM_SEAL_PACKAGE_HAVE_SEAL
                         RTS
 ASM_SEAL_PACKAGE_HAVE_SEAL:
+                        LDA             ASM_RELOC_COUNT
+                        CMP             #(ASM_PACKAGE_RELOC_MAX+1)
+                        BCC             ASM_SEAL_PACKAGE_RELOC_COUNT_OK
+                        LDA             #ASM_STATUS_BAD_FIX
+                        CLC
+                        RTS
+ASM_SEAL_PACKAGE_RELOC_COUNT_OK:
                         JSR             ASM_PACKAGE_COMPUTE_LAYOUT
                         JSR             ASM_PACKAGE_LENGTH_OK
                         BCS             ASM_SEAL_PACKAGE_LENGTH_SAFE
@@ -10457,7 +10628,7 @@ ASM_PACKAGE_COPY_RELOC_REC:
                         LDY             #$00
                         LDA             (ASM_SCAN_PTR_LO),Y
                         STA             ASM_SLOT
-                        CMP             #(ASM_RELOC_MAX+1)
+                        CMP             #(ASM_PACKAGE_RELOC_MAX+1)
                         BCC             ASM_PACKAGE_COPY_RELOC_COUNT_OK
                         JMP             ASM_PACKAGE_MIN_BAD_LINE
 ASM_PACKAGE_COPY_RELOC_COUNT_OK:
@@ -10932,7 +11103,7 @@ ASM_PACKAGE_CHECK_RELOC_ROOM_OK:
                         LDY             #$00
                         LDA             (ASM_SCAN_PTR_LO),Y
                         STA             ASM_SLOT
-                        CMP             #(ASM_RELOC_MAX+1)
+                        CMP             #(ASM_PACKAGE_RELOC_MAX+1)
                         BCC             ASM_PACKAGE_CHECK_RELOC_COUNT_OK
                         JMP             ASM_PACKAGE_CHECK_BAD_LINE
 ASM_PACKAGE_CHECK_RELOC_COUNT_OK:

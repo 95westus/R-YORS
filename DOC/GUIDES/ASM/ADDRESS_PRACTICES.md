@@ -325,7 +325,7 @@ and its expected package is `$0C8B`. It accepts AP destinations
 
 The reporter has one ordinary AP relocation, then applies its own 224-row
 private table to every remaining internal address. This makes the whole body
-load-address relocatable despite ASM's 16-row ordinary relocation limit. It
+load-address relocatable despite ASM's 64-row ordinary relocation limit. It
 is still ASM-map-matched because it reads current ASM-F2 tables and calls
 current ASM-F2 output helpers. Rebuild and reinstall it after an ASM code or
 map change.

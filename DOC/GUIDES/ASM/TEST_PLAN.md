@@ -13840,3 +13840,49 @@ The full combined transcript is authoritative in sibling STR8-N at
 `docs/R_YORS_OWNERSHIP_CUTOVER_HARDWARE_PROOF_2026-08-13.md`; its integration
 continuation is appended to `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`. This adds
 no claim for Bank-0 execution, independent flash readback, or sector-F update.
+
+## 2026-08-13 ASM Relocation Capacity 64
+
+Raise `ASM_RELOC_MAX` from `$10` to `$40`. The five structure-of-arrays lanes
+therefore reserve 320 bytes and accept 64 live internal/import relocation rows
+for `SEAL` and direct `RELOCATE` work.
+
+AP v1 remains a separate boundary. Its one-byte relocation-section length
+encodes `1 + 5*N` bytes, allowing at most 50 rows (`$FB`); 51 rows need
+`$0100`, and 64 need `$0141`. `ASM_PACKAGE_RELOC_MAX` and
+`HIM_AP_RELOC_MAX` are therefore both `$32`. The ASM writer, parser, and
+checker plus the resident HIMON parser accept 50 and reject counts above 50.
+A 64-row package requires a revised AP encoding and loader.
+
+Host gate:
+
+1. The standalone core smoke emits 64 forward `DW` references, resolves all
+   64 rows, relocates the `$81`-byte body from `$7000` to `$7200`, and checks
+   the first and last patched words. It then packages and ASM-checks 50 rows,
+   verifies the `R` section length/count are `$FB`/`$32`, and confirms row 51
+   returns `BAD FIX`.
+2. Build the ASM core and flash image; confirm the enlarged UDATA region stays
+   below its configured ceiling.
+3. Run `make -C SRC asm-test`.
+4. Run `git diff --check`.
+
+Host status: accepted. `asm-test`, the full firmware build, external STR8-N
+contract validation, the HIMON AP boundary check, and `git diff --check` pass.
+Flash ASM uses UDATA through `$629A`, leaving `$629A-$7CFF` above it, and
+retains `$0388` ROM bytes below `$C000`. The 64-row/50-row boundary routine is
+part of the standalone on-board smoke image; the host gate assembles and links
+that path but does not execute 65C02 code. The HIMON host check statically
+confirms its `$32` count guard and `$FB` AP v1 length boundary.
+
+Board status: accepted on 2026-08-13 using HIMON/ASM-F2 `00.0813(1211)`.
+[`reloc64-direct-2000.a`](SAMPLES/reloc64-direct-2000.a) sealed and relocated
+all `$40` rows to `$3000`; the first and last relocated words were `$3081`,
+execution returned A=`$64`, and `$7100` contained `$64`.
+[`apv1-reloc50-2000.a`](SAMPLES/apv1-reloc50-2000.a) packaged successfully at
+`$3200` with the required `52 FB 32` relocation header. HIMON
+`AP $3200 $3000` loaded, relocated, and automatically ran the 50-row body;
+the first and last relocated words were `$3065`, execution returned A=`$5A`,
+and `$7100` contained `$5A`. A subsequent explicit `G 3000` repeated the
+successful result. This closes the direct 64-row and AP-v1/HIMON 50-row
+positive boundary gates. The separately host-accepted 51-row `BAD FIX`
+rejection remains the negative boundary evidence.

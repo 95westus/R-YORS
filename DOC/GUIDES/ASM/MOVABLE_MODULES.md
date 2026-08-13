@@ -185,6 +185,11 @@ permanent absolute addresses. For `$04` ABS16_IMPORT, `$05` LO8_IMPORT, and
 `$06` HI8_IMPORT, `site` is still a base offset; `target_lo` carries the import
 slot index and `target_hi` is zero.
 
+ASM retains up to 64 live rows for direct `SEAL`/`RELOCATE`. AP v1 packaging
+and the HIMON loader accept 50 because the serialized relocation body is
+`1 + 5*N` bytes: `$FB` at 50 rows, while row 51 would require `$0100` in a
+one-byte section-length field.
+
 The first post-session `SEAL` dry-run should stay RAM-only. It runs after
 `END`, consumes the frozen facts above, fills `ASM_SEAL_REC`, and writes no
 flash/catalog record.

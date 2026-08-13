@@ -258,11 +258,22 @@ foreach ($path in @($HimonSourcePath, $HimonS19Path, $HimonMapPath, $PublicContr
 
 $sourceLines = [System.IO.File]::ReadAllLines((Resolve-Path $HimonSourcePath))
 $codeText = ($sourceLines | ForEach-Object { ($_ -split ';', 2)[0] }) -join "`n"
+if ($codeText -notmatch 'HIM_AP_RELOC_MAX\s+EQU\s+\$([0-9A-Fa-f]+)') {
+    Fail-Check 'HIMON AP relocation maximum is missing'
+}
+$apRelocMax = [Convert]::ToInt32($matches[1], 16)
+$apRelocLength = 1 + (5 * $apRelocMax)
+if ($apRelocMax -ne 0x32 -or $apRelocLength -ne 0xFB -or
+        $apRelocLength -gt 0xFF) {
+    Fail-Check ('HIMON AP v1 relocation boundary is max={0} len=${1:X}' -f `
+        $apRelocMax, $apRelocLength)
+}
 foreach ($retired in @('$F003', 'STR8_RUN_WORKER_SERVICE',
         'STR8_COPY_MODE_STAGE_BANK_SECTOR')) {
     if ($codeText.Contains($retired)) { Fail-Check "source still uses $retired" }
 }
 foreach ($required in @('HIM_AP_BANK_STAGE_RAM    EQU             $0300',
+        'CMP             #(HIM_AP_RELOC_MAX+1)',
         'JSR             STR8_BANK_SELECT_SERVICE',
         'JSR             STR8_BANK_SELECT_RAM',
         'STA             (HIM_AP_STAGE_DST_LO),Y')) {
@@ -354,5 +365,6 @@ if (($retried.Status -band 0x01) -eq 0 -or $retried.SelectedBank -ne 3) {
 $maxSteps = [Math]::Max($maxSteps, $retried.Steps)
 
 Write-Host (('HIMON banked AP check OK body=${0:X4}-${1:X4} ram=${2:X4} ' +
-    'bytes=${3:X2} cases=11 max-steps={4}') -f `
-    $sourceStart, ($sourceEnd - 1), $ramStart, $size, $maxSteps)
+    'bytes=${3:X2} cases=11 max-steps={4} ap-relocs={5} rel-len=${6:X2}') -f `
+    $sourceStart, ($sourceEnd - 1), $ramStart, $size, $maxSteps,
+    $apRelocMax, $apRelocLength)

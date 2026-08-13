@@ -21303,3 +21303,180 @@ RAM ZERO OK
 HIMON V 00.0813(0552)
 >
 ```
+
+## 2026-08-13 STR8-N Bank-Maintenance stale-directory reclaim
+
+After Banks 0-2 were payload-erased, `M` showed all their sectors erased but
+the separately stored D0-D2 directory rows still occupied. The pre-existing
+`C` and `D` guards correctly refused Bank 0 with `DIR NOT EMPTY`.
+
+The authoritative STR8-N Bank Maintenance image was then reloaded with
+`R=RECLAIM DIR`. A deliberately incorrect `CREATE D0` confirmation aborted;
+the following `M` proved that neither the payload map nor D0 had changed.
+Exact `CLEAR D0` completed the verified protected-sector transaction:
+
+```text
+RECLAIM BANK 0-2> 0
+
+B3F REWRITE
+TYPE CLEAR D0> CLEAR D0
+BACKUP VERIFIED
+ OK
+```
+
+The immediately following `C` copied all eight Bank-3 sectors to Bank 0 and
+enrolled the reclaimed row:
+
+```text
+SOURCE BANK 0-3> 3
+DEST BANK 0-2> 0
+!STR8
+TYPE COPY 30> COPY 30
+
+........
+TYPE 00-FF> FF
+DESC 5 CHARS> BKUP0
+ENROLL? Y: Y
+ OK
+
+B0 U U U U U U U U
+B1 E E E E E E E E
+B2 E E E E E E E E
+B3 U U U U U U U P
+
+DIR B T DESC ENTRY JOURNAL
+D0 FF BKUP0 FFFF FCFFFFFF
+D1 FF XXXXX FFFF FCFFFFFF
+D2 FF B2D2X FFFF FCFFFFFF
+D3 FF RYORS C000 00FCFFFF
+ OK
+```
+
+This accepts the Bank-0 stale-row reclaim gate, exact-confirmation no-mutation
+gate, and subsequent full-copy/enrollment regression. There was no standalone
+`M` between successful reclaim and copy; cleanup is established by `R`'s
+internal verification and its `OK`, followed immediately by the successful
+eight-sector copy. The full retained transcript is in the authoritative
+STR8-N repository at
+`docs/DIRECTORY_MAINT_HARDWARE_PROOF_2026-08-11.md`.
+
+## 2026-08-13 ASM 64-row direct and AP-v1 50-row relocation boundaries
+
+Status: accepted on HIMON/ASM-F2 `00.0813(1211)`. The leading standalone
+`BAD` is retained exactly as received but has no captured command context and
+is not used as evidence for either boundary. The later direct path reported
+`REL OK BASE=$3000 C=$40`, and the AP-v1 package exposed `52 FB 32` before
+HIMON loaded and ran it. Both resulting bodies were dumped at their first and
+last relocated words and executed successfully.
+
+```text
+BAD
+STR8-N>
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0813(1211)
+>ASM NEW
+ASM-F2 00.0813(1211)
+ASM>$2000: ; ASM V1 DIRECT-RELOCATION BOUNDARY: 1 JMP + 9*7 DW = 64 ROWS.
+ASM>$2000: ; RUN=$0081; THE RELOCATED PROOF WRITES $64 TO $7100.
+ASM>$2000:
+ASM>$2000: ORG $2000
+ASM>$2000: JMP RUN
+ASM>$2003: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2011: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$201F: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$202D: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$203B: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2049: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2057: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2065: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2073: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2081: RUN LDA #$64
+ASM>$2083: STA $7100
+ASM>$2086: RTS
+ASM>$2087: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> RELOCATE $3000
+REL OK BASE=$3000 C=$40
+SEAL> .
+ASM BYE
+>D 3000 3004
+3000: 4C 81 30 81 30 | L.0.0
+>D 307F 3086
+307F: 81 30 A9 64 8D 00 71 60 | .0.d..q`
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=64 X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 7100
+7100: 64 | d
+>ASM NEW
+ASM-F2 00.0813(1211)
+ASM>$2000: ; AP V1 RELOCATION BOUNDARY: 1 JMP + 7*7 DW = 50 ROWS.
+ASM>$2000: ; RUN=$0065; THE LOADED PROOF WRITES $5A TO $7100.
+ASM>$2000:
+ASM>$2000: ORG $2000
+ASM>$2000: JMP RUN
+ASM>$2003: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2011: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$201F: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$202D: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$203B: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2049: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2057: DW RUN,RUN,RUN,RUN,RUN,RUN,RUN
+ASM>$2065: RUN LDA #$5A
+ASM>$2067: STA $7100
+ASM>$206A: RTS
+ASM>$206B: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$0185
+SEAL> .
+ASM BYE
+>D 3212 3214
+3212: 52 FB 32 | R.2
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 3000 3004
+3000: 4C 65 30 65 30 | Le0e0
+>D 3063 306A
+3063: 65 30 A9 5A 8D 00 71 60 | e0.Z..q`
+>D 7100
+7100: 5A | Z
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 3000 3004
+3000: 4C 65 30 65 30 | Le0e0
+>D 3063 306F
+3063: 65 30 A9 5A 8D 00 71 60 | 81 30 81 30 81 | e0.Z..q`.0.0.
+>D 7100
+7100: 5A | Z
+>
+```

@@ -15,7 +15,8 @@ protected ASM/RJOIN seed  $7E00-$7E01
 HIMON AP service vector   $7E2D-$7E2E
 global symbols            $40 / 64
 fixups                    $80 / 128
-relocations               $10 / 16
+relocations               $40 / 64
+AP v1 packaged relocs     $32 / 50
 exports                   $08 / 8
 imports                   $08 / 8
 report refs               $C0 / 192
