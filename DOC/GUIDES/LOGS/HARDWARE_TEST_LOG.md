@@ -21084,3 +21084,222 @@ The same capture showed `BAD` after aborting `I` at its `B0-3:` selection
 prompt. This is direct evidence for the installed board image. It also records
 a command-surface mismatch with the current tracked STR8 source, which exposes
 `I H J0`-`J3` and no `L` command.
+
+## 2026-08-13: external STR8-N ownership cutover accepted on hardware
+
+The operator installed the R-YORS-owned dense Bank-3 `$8000-$EFFF` payload
+produced through the locked external STR8-N public contract. The exact S19 was
+`SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19`, SHA-256
+`21F66CC54C23E4DB5763C3D31D162E23BF10030611DB03B192F2977FD31CE7BC`.
+Its visible identities were HIMON `00.0813(0552)` and ASM-F2
+`00.0813(0552)`. Sector F was not included or rewritten.
+
+The first transfer returned `FAIL` before any sector-progress dot. The exact
+cause was not captured. The operator immediately repeated the same guarded
+Bank-3 `8-E` transaction; all seven sector dots appeared, final commit was
+accepted, and STR8-N reported `OK`. Preserve the failed attempt as evidence;
+do not reinterpret it as a successful dry run.
+
+Physical RESET then completed the no-input STR8-N selector timeout, cold
+HIMON boot, and RAM clear. The operator entered `V`; this build has no `V`
+command, so hash dispatch correctly reported that its `$D30C0E69` record was
+absent (`HSH_NF!`). `ASM` entered the installed ASM-F2 identity, `.` exited to
+HIMON, and a final physical RESET plus live `S` selection returned to the
+unchanged STR8-N 1.2 prompt.
+
+Exact operator transcript:
+
+```text
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+
+FAIL
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0813(0552)
+>V
+#D30C0E69# HSH_NF!
+>ASM
+ASM-F2 00.0813(0552)
+ASM>$2000: .
+ASM BYE
+>
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>
+```
+
+This closes the repository-ownership cutover board gate for the ordinary
+Bank-3 payload path: locked external ABI consumption, guarded `8-E` install,
+cold boot, HIMON entry, ASM-F2 entry/exit, and return to standalone STR8-N.
+It does not claim independent flash readback, explain the first transfer
+failure, or exercise a sector-F update.
+
+## 2026-08-13: ownership-cutover loader and Bank-3 copy continuation accepted
+
+The operator continued the same installed-image session. Warm `H` entered
+HIMON `00.0813(0552)`. HIMON bare `L` accepted `$162B` bytes at `$2000`,
+reported S9 `$2000` without executing, and explicit `G 2000` entered the
+standalone STR8-N v1.2 Bank Maintenance image. That byte count and address
+span match the current standalone host artifact:
+
+```text
+C:/SRC/STR8-N/BUILD/v1.2/s19/str8n-v1.2-bank-maint-2000.s19
+SHA-256 B1A9413355CF369FBEE0975CDDB8D4E05151EBCA65DC19261C6AD5374B9F0065
+S1 $2000-$362A; S9 $2000
+```
+
+The terminal transcript is not an independent cryptographic readback of the
+RAM image; it proves the matching `$162B` count, entry, banner, and behavior.
+
+The initial map showed Bank 0 erased. The guarded copy accepted Bank 3 as
+source and Bank 0 as destination only after exact `COPY 30`; all eight sector
+dots appeared. Enrollment accepted type `$FF` and description `COPY1`, and
+the next map showed all Bank-0 sectors used plus durable row
+`D0 FF COPY1 FFFF FCFFFFFF`. After returning to STR8-N, resident `L` directly
+ran Bank Maintenance, whose map showed the same payload and directory row.
+The final physical RESET again timed out into cold HIMON with `RAM ZERO OK`.
+
+This accepts the two distinct RAM-loader contracts, guarded full-bank copy,
+directory enrollment, persistence across loader re-entry, and survival of the
+Bank-3 cold-boot path. It does not prove execution from Bank 0, independent
+flash readback, or a sector-F update. STR8-N retains the complete combined
+transcript in
+`docs/R_YORS_OWNERSHIP_CUTOVER_HARDWARE_PROOF_2026-08-13.md`.
+
+Exact continuation after the preceding transcript:
+
+```text
+H
+BOOT WARM
+
+HIMON V 00.0813(0552)
+>L
+L S19
+L @2000
+L OK=162B ENTRY=2000
+>G 2000
+GO 2000
+
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 Q/ENTER=QUIT> M
+
+BANK 8 9 A B C D E F
+
+B0 E E E E E E E E
+B1 E E E E E E E U
+B2 U U U U U U U U
+B3 U U U U U U U P
+E=ERASED U=USED A=AP VALID P=B3F PROTECTED
+
+DIR B T DESC ENTRY JOURNAL
+D0 FF ..... FFFF FFFFFFFF
+D1 FF XXXXX FFFF FCFFFFFF
+D2 FF B2D2X FFFF FCFFFFFF
+D3 FF RYORS C000 00FCFFFF
+ OK
+
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 Q/ENTER=QUIT> C
+SOURCE BANK 0-3> 3
+DEST BANK 0-2> 0
+!STR8
+TYPE COPY 30> COPY 30
+
+........
+TYPE 00-FF> FF
+DESC 5 CHARS> COPY1
+ENROLL? Y: Y
+ OK
+
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 Q/ENTER=QUIT> M
+
+BANK 8 9 A B C D E F
+
+B0 U U U U U U U U
+B1 E E E E E E E U
+B2 U U U U U U U U
+B3 U U U U U U U P
+E=ERASED U=USED A=AP VALID P=B3F PROTECTED
+
+DIR B T DESC ENTRY JOURNAL
+D0 FF COPY1 FFFF FCFFFFFF
+D1 FF XXXXX FFFF FCFFFFFF
+D2 FF B2D2X FFFF FCFFFFFF
+D3 FF RYORS C000 00FCFFFF
+ OK
+
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 Q/ENTER=QUIT> Q
+
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>L
+S19
+
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 Q/ENTER=QUIT> M
+
+BANK 8 9 A B C D E F
+
+B0 U U U U U U U U
+B1 E E E E E E E U
+B2 U U U U U U U U
+B3 U U U U U U U P
+E=ERASED U=USED A=AP VALID P=B3F PROTECTED
+
+DIR B T DESC ENTRY JOURNAL
+D0 FF COPY1 FFFF FCFFFFFF
+D1 FF XXXXX FFFF FCFFFFFF
+D2 FF B2D2X FFFF FCFFFFFF
+D3 FF RYORS C000 00FCFFFF
+ OK
+
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 Q/ENTER=QUIT> Q
+
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0813(0552)
+>
+```

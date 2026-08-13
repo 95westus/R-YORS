@@ -1,6 +1,7 @@
 param(
     [string]$SourcePath = "../LOCAL/msbasic/generated/osi-basic.asm",
     [string]$MapPath = "BUILD/map/himon-rom-c000.map",
+    [string]$PublicContractPath = "BUILD/inc/str8n-public.inc",
     [ValidateSet("himon", "str8")]
     [string]$Profile = "himon"
 )
@@ -43,6 +44,20 @@ function Get-SymbolAddress {
     return ("`${0:X4}" -f $addr)
 }
 
+function Get-ContractAddress {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+
+    $pattern = "^\s*$([Regex]::Escape($Name))\s+EQU\s+\`$([0-9A-Fa-f]{4})\s*(?:;.*)?$"
+    $line = Select-String -Path $Path -Pattern $pattern | Select-Object -First 1
+    if (-not $line) {
+        throw "Missing public constant '$Name' in $Path"
+    }
+    return ("`${0}" -f $line.Matches[0].Groups[1].Value.ToUpperInvariant())
+}
+
 function Set-Equate {
     param(
         [string[]]$Lines,
@@ -68,13 +83,14 @@ function Set-Equate {
 }
 
 $SourcePath = Resolve-ArtifactPath -Path $SourcePath
-$MapPath = Resolve-ArtifactPath -Path $MapPath
 
 if ($Profile -eq "str8") {
-    $readChar = Get-SymbolAddress -Path $MapPath -Name "STR8_CON_READ_BYTE_BLOCK"
-    $writeChar = Get-SymbolAddress -Path $MapPath -Name "STR8_CON_WRITE_BYTE_BLOCK"
+    $PublicContractPath = Resolve-ArtifactPath -Path $PublicContractPath
+    $readChar = Get-ContractAddress -Path $PublicContractPath -Name "STR8_CHARIN_SERVICE"
+    $writeChar = Get-ContractAddress -Path $PublicContractPath -Name "STR8_CHAROUT_SERVICE"
     $ctrlC = '$0000'
 } else {
+    $MapPath = Resolve-ArtifactPath -Path $MapPath
     $readChar = Get-SymbolAddress -Path $MapPath -Name "BIO_FTDI_READ_BYTE_BLOCK"
     $writeChar = Get-SymbolAddress -Path $MapPath -Name "BIO_FTDI_WRITE_BYTE_BLOCK"
     $ctrlC = Get-SymbolAddress -Path $MapPath -Name "SYS_GET_CTRL_C"

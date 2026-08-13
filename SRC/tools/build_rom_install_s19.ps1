@@ -1,6 +1,6 @@
 param(
-    [string]$BinPath = "BUILD/bin/himon-str8-rom.bin",
-    [string]$S19Path = "BUILD/s19/himon-str8-rom-install.s19",
+    [string]$BinPath = "BUILD/bin/himon-rom-c000.bin",
+    [string]$S19Path = "BUILD/s19/himon-rom-c000-install-8000.s19",
     [int]$BaseAddress = 0x8000,
     [int]$StartAddress = -1,
     [int]$RangeStart = -1,

@@ -13741,7 +13741,9 @@ repeat with `S` during the menu dots and require the STR8 prompt.
 
 ## 2026-08-11 HIMON-Only RAM S19 Loader
 
-Host status: HIMON build accepted. Board status: pending. STR8-N source and
+Host status: HIMON build accepted. Board status: basic bare-`L`, rejected
+`L G`/`L F`, explicit `G`, and Ctrl-C behavior accepted on 2026-08-11;
+extended checksum/span-boundary cases below remain pending. STR8-N source and
 interfaces are unchanged by this phase.
 
 HIMON now accepts only bare `L`. It owns the S0/S1/S9 parser, validates a
@@ -13792,3 +13794,49 @@ Required board gates:
 7. Append the exact transcript and HIMON image identity to
    `HARDWARE_TEST_LOG.md`. Do not rewrite the earlier `L G` or `L F`
    transcripts; they remain evidence for the superseded command surface.
+
+## 2026-08-13 External STR8-N Ownership Cutover Board Gate
+
+Host status: accepted. Board status: accepted for the ordinary Bank-3 `8-E`
+payload path. The exact transcript is appended to
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.
+
+The board accepted the R-YORS-owned 28K S19 built through the locked external
+STR8-N contract. The first transfer failed before any progress dot; a retry of
+the same guarded transaction produced all seven sector dots, accepted final
+commit, and reported `OK`. Physical RESET then timed out through unchanged
+STR8-N 1.2 into cold HIMON `00.0813(0552)`, including `RAM ZERO OK`. `ASM`
+entered ASM-F2 `00.0813(0552)`, `.` returned to HIMON, and a final RESET plus
+live `S` selection returned to the STR8-N prompt.
+
+Accepted artifact:
+
+```text
+SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
+SHA-256 21F66CC54C23E4DB5763C3D31D162E23BF10030611DB03B192F2977FD31CE7BC
+range    $8000-$EFFF
+S9       $C000
+```
+
+This proves that removing STR8-N implementation ownership from R-YORS did not
+break the board-facing Bank-3 payload install, cold boot, HIMON, ASM-F2, or
+STR8-N re-entry paths. The test deliberately did not write sector F. The first
+transfer failure remains unexplained and retained in the evidence.
+
+### Extended loader/copy result
+
+Board status: accepted. The same installed-image session subsequently proved:
+
+- live STR8-N `H` warm-entered HIMON `00.0813(0552)`;
+- HIMON bare `L` loaded `$162B` bytes at `$2000`, reported S9 `$2000`, and
+  required explicit `G 2000` to enter standalone v1.2 Bank Maintenance;
+- the exact `COPY 30` guard authorized Bank 3 to Bank 0, eight sector dots
+  completed, and enrollment published `D0 FF COPY1 FFFF FCFFFFFF`;
+- a later map through STR8-N's separate load-and-run `L` path preserved the
+  Bank-0 payload classification and D0 identity; and
+- final RESET still produced cold HIMON and `RAM ZERO OK`.
+
+The full combined transcript is authoritative in sibling STR8-N at
+`docs/R_YORS_OWNERSHIP_CUTOVER_HARDWARE_PROOF_2026-08-13.md`; its integration
+continuation is appended to `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`. This adds
+no claim for Bank-0 execution, independent flash readback, or sector-F update.

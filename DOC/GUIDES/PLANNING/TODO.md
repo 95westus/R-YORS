@@ -52,11 +52,14 @@
   in pushed planning commit `4b73509`. Its isolated proof costs about 51-55
   bytes; complete retirement saves only about 25-32 bytes and requires broad
   STR8/HIMON/ASM/C-string/NMI/hardware regression work. The current compact
-  pass does not adopt it. Keep `$F00C-$F00F = 53 52 01 07`, the string ABI,
-  and current zero-page allocation; reopen only for demonstrated size pressure
+  pass does not adopt it. The standalone STR8-N repository now owns the
+  published `$F00C-$F00F = 53 52 02 03` record-service face, string ABI, and
+  zero-page allocation; reopen them there only for demonstrated size pressure
   or a separate functional need.
-- The validated S19 record service is complete at stable entry `$F009`; HIMON
-  RAM policy and STR8 staging/flash policy share the checked record contract.
+- The standalone STR8-N validated S19 record service is published at stable
+  entry `$F009` as `SR/02`, capabilities `$03`. STR8-N owns its RAM-load and
+  flash-staging use. HIMON `L` deliberately uses its own S0/S1/S9 parser and
+  does not call `$F009`.
   If another format is scheduled after V1.02, add minimal Intel HEX16 types
   `00`/`01`, then an explicit
   counted binary receiver with expected CRC16. Do not auto-detect raw binary or

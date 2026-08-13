@@ -45,8 +45,9 @@
 
                         INCLUDE         "HIMON/himon-image-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
-                        INCLUDE         "STR8/str8-ram-abi.inc"
-                        INCLUDE         "STR8/str8-jump-eq.inc"
+; Verified external STR8-N public contract, imported into BUILD/inc by the
+; integration gate before HIMON is assembled.
+                        INCLUDE         "str8n-public.inc"
 
 TRAP_CAUSE               EQU             $7EEA
 TRAP_BRK_SIG             EQU             $7EEB

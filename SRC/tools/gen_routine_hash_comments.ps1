@@ -53,7 +53,6 @@ $scanRoots = if (Test-Path -LiteralPath (Join-Path $repoRoot 'LIB')) {
     @(
         (Join-Path $repoRoot 'LIB'),
         (Join-Path $repoRoot 'HIMON'),
-        (Join-Path $repoRoot 'STR8'),
         (Join-Path $repoRoot 'TESTS'),
         (Join-Path $repoRoot 'PROOFS'),
         (Join-Path $repoRoot 'APPS')
@@ -62,7 +61,6 @@ $scanRoots = if (Test-Path -LiteralPath (Join-Path $repoRoot 'LIB')) {
     @(
         (Join-Path $repoRoot 'SRC/LIB'),
         (Join-Path $repoRoot 'SRC/HIMON'),
-        (Join-Path $repoRoot 'SRC/STR8'),
         (Join-Path $repoRoot 'SRC/TESTS'),
         (Join-Path $repoRoot 'SRC/PROOFS'),
         (Join-Path $repoRoot 'SRC/APPS')

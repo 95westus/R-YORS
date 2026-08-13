@@ -92,9 +92,7 @@ $operationalSourceSpecs = @(
     'TESTS/ftdi-backend-debug.asm',
     'HIMON/himon.asm',
     'HIMON/*.inc',
-    'HIMON/fnv1a-fold.asm',
-    'STR8/str8.asm',
-    'STR8/str8-worker.asm'
+    'HIMON/fnv1a-fold.asm'
 )
 
 $excludedOperationalSources = @(
@@ -276,7 +274,7 @@ $header = @(
     '',
     "Generated: $stamp",
     '',
-    'Scope: operational HIMON/STR8 source plus ROM support; excludes harnesses, proof apps, games, ACIA/PIA, and local generated-language images.',
+    'Scope: operational HIMON source plus ROM support; excludes external STR8-N source, harnesses, proof apps, games, ACIA/PIA, and local generated-language images.',
     ''
 )
 
@@ -565,13 +563,6 @@ function Resolve-StackTargetKey {
     if ([string]::IsNullOrWhiteSpace($Target)) { return $null }
     if ($Target.StartsWith('?')) { return $null }
 
-    if ($Target -eq 'STR8_WORKER_RUN' -and $ScopeSet.ContainsKey('STR8/str8-worker.asm')) {
-        $workerKey = New-StackKey -File 'STR8/str8-worker.asm' -Name 'START'
-        if ($labelByKey.ContainsKey($workerKey) -or $stackEventsByKey.ContainsKey($workerKey)) {
-            return $workerKey
-        }
-    }
-
     $sameFileKey = New-StackKey -File $SourceFile -Name $Target
     if ($ScopeSet.ContainsKey($SourceFile) -and ($labelByKey.ContainsKey($sameFileKey) -or $stackEventsByKey.ContainsKey($sameFileKey))) {
         return $sameFileKey
@@ -809,10 +800,8 @@ $allStackDocFiles = @(
     @($labels | ForEach-Object { $_.File }) +
     @($stackEvents | ForEach-Object { $_.File })
 ) | Sort-Object -Unique
-$himonStackScope = New-StackScopeSet -Files @($allStackDocFiles | Where-Object { $_ -notlike 'STR8/*' })
-$str8StackScope = New-StackScopeSet -Files @($allStackDocFiles | Where-Object { $_ -notlike 'HIMON/*' })
+$himonStackScope = New-StackScopeSet -Files $allStackDocFiles
 $himonStackCache = @{}
-$str8StackCache = @{}
 
 $lines = @('# R-YORS Call Order') + $header
 $lines += '## Files'
@@ -1360,7 +1349,7 @@ $interruptRoutineHeaders = @(
 )
 
 $lines = @('# R-YORS Interrupt Vector Map') + $header
-$lines += 'Scope: current source-derived interrupt, vector trampoline, trap, resume, and on-the-fly vector patching map. This describes current HIMON plus the SYS vector layer; future STR8 vector ownership is design direction, not the current ROM behavior.'
+$lines += 'Scope: current source-derived interrupt, vector trampoline, trap, resume, and on-the-fly vector patching map. This describes HIMON plus the SYS vector layer. Hardware-vector ownership in the composed product belongs to external STR8-N and is outside this source-derived map.'
 $lines += ''
 $lines += '## Current Hardware Vector Policy'
 $lines += ''
@@ -1507,10 +1496,6 @@ $stackRootRows += Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache 
 $stackRootRows += Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Name 'CMD_DISPATCH_HASH' -File 'HIMON/himon.asm' -Kind 'hash dispatcher'
 $stackRootRows += Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Name 'MON_NMI_TRAP_DEBOUNCE' -File 'HIMON/himon.asm' -Kind 'NMI trap body'
 $stackRootRows += Get-StackRow -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -Name 'MON_BRK_TRAP' -File 'HIMON/himon.asm' -Kind 'BRK trap body'
-$stackRootRows += Get-StackRow -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -Name 'START' -File 'STR8/str8.asm' -Kind 'reset entry'
-$stackRootRows += Get-StackRow -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -Name 'STR8_CMD_LOOP' -File 'STR8/str8.asm' -Kind 'command loop'
-$stackRootRows += Get-StackRow -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -Name 'START' -File 'STR8/str8-worker.asm' -Kind 'RAM worker entry'
-
 function Get-HimonCommandRelatedKeys {
     param(
         [string]$Command,
@@ -1589,30 +1574,10 @@ foreach ($cmd in ($himonCommandRows | Sort-Object File, Line, Entry)) {
     }
 }
 
-$str8CommandDefs = @(
-    [pscustomobject]@{ Command = 'H'; Entry = 'STR8_CMD_SELECT_HIMON'; Meaning = 'warm local HIMON' }
-    [pscustomobject]@{ Command = '0-3 (V0)'; Entry = 'STR8_CMD_SELECT_A'; Meaning = 'legacy bank/HIMON selector' }
-    [pscustomobject]@{ Command = 'U (V0)'; Entry = 'STR8_CMD_UPDATE_HIMON'; Meaning = 'update HIMON C000-EFFF' }
-)
-
-$str8CommandDepthRows = @()
-foreach ($cmd in $str8CommandDefs) {
-    $row = Get-StackRow -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -Name $cmd.Entry -File 'STR8/str8.asm' -Kind 'command' -BaseBytes 2 -BasePath @('STR8_CMD_LOOP', 'JSR STR8_DISPATCH_A')
-    $str8CommandDepthRows += [pscustomobject]@{
-        Command = $cmd.Command
-        Entry = $cmd.Entry
-        Meaning = $cmd.Meaning
-        Source = if ($row.Line) { ("{0}:{1}" -f $row.File, $row.Line) } else { $row.File }
-        Bytes = $row.Bytes
-        Path = $row.Path
-    }
-}
-
 $himonOwnedStackRows = Get-OwnedStackRows -Scope 'HIMON' -ScopeSet $himonStackScope -Cache $himonStackCache -FilePrefix 'HIMON/' -Limit 30
-$str8OwnedStackRows = Get-OwnedStackRows -Scope 'STR8' -ScopeSet $str8StackScope -Cache $str8StackCache -FilePrefix 'STR8/' -Limit 30
 
 $lines = @('# R-YORS Stack Depth Map') + $header
-$lines += 'Source-derived stack high-water map for current HIMON and STR8 paths. It is meant to answer: how deep does stack usage go, and which command/routine path gets there?'
+$lines += 'Source-derived stack high-water map for current HIMON paths. STR8-N is external and is analyzed in its own repository.'
 $lines += ''
 $lines += '## Counting Rules'
 $lines += ''
@@ -1625,12 +1590,11 @@ $lines += '- Does not add the hardware NMI/IRQ entry frame to trap rows; those r
 $lines += ''
 $lines += '## Command Stack Map'
 $lines += ''
-$lines += 'The stack diagrams use a top-down split: a small HIMON/STR8 overview, then one short route panel per owner. Each route panel is capped to the deepest 12 edges. Node labels show the highest stack depth seen on any command path that touches that node; edge labels show the highest stack depth seen on that route. The tables below remain the exact byte/source reference.'
+$lines += 'The route panel is capped to the deepest 12 edges. Node labels show the highest stack depth seen on any command path that touches that node; edge labels show the highest stack depth seen on that route. The tables below remain the exact byte/source reference.'
 $lines += ''
 $lines += '```mermaid'
 $lines += 'flowchart LR'
 $lines += '    COMMANDS["Command stack paths"] --> HSTACK["HIMON routes"]'
-$lines += '    COMMANDS --> SSTACK["STR8 routes"]'
 $lines += '```'
 $lines += ''
 $lines += '### HIMON Command Routes'
@@ -1640,15 +1604,6 @@ $lines += '%%{init: {"theme": "base", "themeVariables": {"background": "#000000"
 $lines += 'flowchart LR'
 $lines += '    classDef default fill:#000000,stroke:#d8d8d8,color:#ffffff;'
 $lines += Get-StackMermaidMapLines -Group 'HIMON' -Rows ($himonCommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command, Entry) -MaxEdges 12
-$lines += '```'
-$lines += ''
-$lines += '### STR8 Command Routes'
-$lines += ''
-$lines += '```mermaid'
-$lines += '%%{init: {"theme": "base", "themeVariables": {"background": "#000000", "mainBkg": "#000000", "primaryColor": "#000000", "primaryBorderColor": "#d8d8d8", "primaryTextColor": "#ffffff", "lineColor": "#ffffff", "secondaryColor": "#000000", "tertiaryColor": "#000000", "clusterBkg": "#000000", "clusterBorder": "#999999", "edgeLabelBackground": "#000000"}}}%%'
-$lines += 'flowchart LR'
-$lines += '    classDef default fill:#000000,stroke:#d8d8d8,color:#ffffff;'
-$lines += Get-StackMermaidMapLines -Group 'STR8' -Rows ($str8CommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command, Entry) -MaxEdges 12
 $lines += '```'
 $lines += ''
 $lines += '## Application Entries'
@@ -1675,32 +1630,12 @@ foreach ($row in ($himonCommandDepthRows | Sort-Object -Property @{Expression='B
 }
 
 $lines += ''
-$lines += '## STR8 Commands'
-$lines += ''
-$lines += 'Bytes include the command-loop dispatch return: `STR8_CMD_LOOP -> JSR STR8_DISPATCH_A -> command body`. The resident ROM path resolves `STR8_WORKER_RUN` to the RAM worker entry at `STR8/str8-worker.asm:START`.'
-$lines += ''
-$lines += '| Command | Entry | Meaning | Source | Bytes | Deepest path |'
-$lines += '| --- | --- | --- | --- | ---: | --- |'
-foreach ($row in ($str8CommandDepthRows | Sort-Object -Property @{Expression='Bytes';Descending=$true}, Command)) {
-    $lines += ('| `{0}` | `{1}` | {2} | `{3}` | {4} | {5} |' -f (Escape-MdCell $row.Command), $row.Entry, (Escape-MdCell $row.Meaning), $row.Source, $row.Bytes, (Format-StackPathCell $row.Path))
-}
-
 $lines += ''
 $lines += '## Deepest HIMON-Owned Routines'
 $lines += ''
 $lines += '| Routine | Source | Bytes | Deepest path |'
 $lines += '| --- | --- | ---: | --- |'
 foreach ($row in $himonOwnedStackRows) {
-    $source = if ($row.Line) { ("{0}:{1}" -f $row.File, $row.Line) } else { $row.File }
-    $lines += ('| `{0}` | `{1}` | {2} | {3} |' -f $row.Name, $source, $row.Bytes, (Format-StackPathCell $row.Path))
-}
-
-$lines += ''
-$lines += '## Deepest STR8-Owned Routines'
-$lines += ''
-$lines += '| Routine | Source | Bytes | Deepest path |'
-$lines += '| --- | --- | ---: | --- |'
-foreach ($row in $str8OwnedStackRows) {
     $source = if ($row.Line) { ("{0}:{1}" -f $row.File, $row.Line) } else { $row.File }
     $lines += ('| `{0}` | `{1}` | {2} | {3} |' -f $row.Name, $source, $row.Bytes, (Format-StackPathCell $row.Path))
 }
@@ -1727,8 +1662,8 @@ $lines += '| User Low RAM | `$1A00-$1FFF` | User | Free for user code/data in v1
 $lines += '| Recovery State Capsule (RSC) | `$7DE9-$7DFF` | STR8 | Compact bank/sector/copy/update control state plus the published Bank Jump Record at `$7DFD-$7DFF`. |'
 $lines += '| AP Island Runway (AIR) | `$2000-$4FFF` | AP lifecycle | Build Bay `$2000`, Envelope Bay `$3000`, Run/Tray Bay `$4000`. |'
 $lines += '| ASM Work Hold / Safe / Volatile decks (AWH/SOD/VOD) | `$5000-$61A9` / `$61AA-$79FF` / `$7A00-$7CFF` | ASM/HIMON | Current UDATA, safe upper output, then volatile output below the protected `$7Dxx` page. |'
-$lines += '| High Service Deck / I/O Bulkhead (HSD/IOB) | `$7E00-$7EFF` / `$7F00-$7FFF` | HIMON/STR8 / devices | Published service state, including RTC, and side-effectful device boundary. |'
-$lines += '| Boot Passport Block (BPB) | planned `$F010-$F01F` | future STR8 selected-bank launch | `S8B1` identity, entry, CRC, tag, and commit-last seal. |'
+$lines += '| High Service Deck / I/O Bulkhead (HSD/IOB) | `$7E00-$7EFF` / `$7F00-$7FFF` | HIMON/STR8-N / devices | Published service state, including RTC, and side-effectful device boundary. |'
+$lines += '| Boot Passport Block (BPB) | planned `$F010-$F01F` | external STR8-N selected-bank launch | `S8B1` identity, entry, CRC, tag, and commit-last seal. |'
 $lines += '| Reporter Rebase Table (RBT) | movable reporter BODY-relative | session reporter | Private `SR/01` rows that rebase internal addresses; not an AP Capsule ABI field. |'
 $lines += ''
 $lines += '## 1. Control Plane Overview'
@@ -1836,11 +1771,11 @@ $lines += '| Explore unsettled design thinking | [GUIDES/QCC.md](../GUIDES/QCC/I
 $lines += '| Understand memory and flash ranges | [GUIDES/MEMORY_MAP.md](../GUIDES/MEMORY/MEMORY_MAP.md) | Current RAM/ROM/flash ownership. |'
 $lines += '| Follow active control blocks and AP working areas | [CONTROL_DECK_MAP.md](./CONTROL_DECK_MAP.md) | Deck Plan: LRS, AIR, FTC, RFD/RTC/RPT, RSC, and planned BPB. |'
 $lines += '| Understand hash meanings | [GUIDES/HASH_MAP.md](../GUIDES/HASH/HASH_MAP.md) | Hash concepts, widths, records, and catalog direction. |'
-$lines += '| Understand STR8 top-level routines | [GUIDES/STR8.md](../GUIDES/STR8/STR8.md) | Curated reset, recovery-command, service, and RAM-worker purpose map. |'
+$lines += '| Understand STR8-N integration | [GUIDES/STR8.md](../GUIDES/STR8/STR8.md) | External ownership boundary, locked public contract, retained proof rails, and operator links. |'
 $lines += '| Understand HIMON top-level routines | [GUIDES/HIMON_MAP.md](../GUIDES/HIMON/HIMON_MAP.md) | Curated monitor lifecycle, dispatch, command, AP, debug, and RJOIN purpose map. |'
 $lines += '| Understand ASM top-level routines | [GUIDES/ASM_CALL_MAP.md](../GUIDES/ASM/ASM_CALL_MAP.md) | Curated session, parse, emit, seal, package, and load purpose map. |'
 $lines += '| Understand command dispatch flow | [CMD_FLOW_MAP.md](./CMD_FLOW_MAP.md) | Prompt, hash, resolve, run, return. |'
-$lines += '| Check stack depth by command/routine | [STACK_DEPTH_MAP.md](./STACK_DEPTH_MAP.md) | Source-derived HIMON and STR8 stack high-water paths. |'
+$lines += '| Check stack depth by command/routine | [STACK_DEPTH_MAP.md](./STACK_DEPTH_MAP.md) | Source-derived HIMON stack high-water paths. |'
 $lines += '| Understand interrupts and vector patching | [INTERRUPT_VECTOR_MAP.md](./INTERRUPT_VECTOR_MAP.md) | Reset/NMI/IRQ/BRK trampolines, RAM vectors, traps, and `RTI` resume. |'
 $lines += '| See hash-involved source labels | [HASH_ROUTINE_MAP.md](./HASH_ROUTINE_MAP.md) | `CMD_HASH*`, `FNV1A_*`, and related edges. |'
 $lines += '| See command/debug/load/ASM calls | [HIMON_COMMAND_MAP.md](./HIMON_COMMAND_MAP.md) | Compact source-derived HIMON command map. |'
@@ -1877,7 +1812,7 @@ $lines += '    GUIDE --> QCC[QCC]'
 $lines += '    GUIDE --> MEM[Memory Map]'
 $lines += '    GUIDE --> HASH[Hash Map]'
 $lines += '    GUIDE --> HIMON[HIMON routine and subsystem map]'
-$lines += '    GUIDE --> STR8[STR8 routine and recovery map]'
+$lines += '    GUIDE --> STR8[STR8-N integration boundary]'
 $lines += '    GUIDE --> ASM[ASM routine and call map]'
 $lines += '```'
 $lines += ''
@@ -1907,9 +1842,9 @@ $lines += '- Guide maps are design/reference documents. They should be updated w
 $lines += ''
 $lines += '## Boundaries'
 $lines += ''
-$lines += '- Generated source maps use the operational HIMON/STR8 source set and ROM support code.'
+$lines += '- Generated source maps use the operational HIMON source set and ROM support code. STR8-N source is external.'
 $lines += '- Legacy demos, harnesses, games, ACIA/PIA, and local generated-language images stay out of generated operational maps.'
-$lines += '- A map may mention a compatibility label when the source still uses it, but map-facing vocabulary should prefer current HIMON/STR8/R-YORS terms.'
+$lines += '- A map may mention a compatibility label when the source still uses it, but map-facing vocabulary should prefer current HIMON/STR8-N/R-YORS terms.'
 Write-Doc -Name 'MAP_OF_MAPS.md' -Lines $lines
 
 $lines = @('# R-YORS Routine Graph Insights') + $header

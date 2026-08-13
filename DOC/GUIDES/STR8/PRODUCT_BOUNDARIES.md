@@ -1,155 +1,64 @@
-# R-YORS Product Boundaries
+# R-YORS / STR8-N Product Boundary
 
-This page names the product boundary inside the current R-YORS repo. It does
-not split the source tree, create a branch, or fork the project. It gives future
-work a clean place to stand.
+STR8-N is an independent adjacent repository. R-YORS no longer carries a
+second live copy of its resident, worker, installer, top-updater, or directory
+implementation.
 
-## Summary
+## Ownership
 
-```text
-PROJECT / SYSTEM:      R-YORS
-BOARD MANAGEMENT:      STR8
-INTERRUPT MECHANISM:   IVI, pronounced IVY
-INTERRUPT FRONT DOOR:  LEAF
-DEFAULT PAYLOAD:       HIMON
-OTHER PAYLOADS:        BETTERMON, WDCMONv2 image, BASIC/FORTH, apps, tools
-```
+| Product | Owns |
+| --- | --- |
+| R-YORS | HIMON, ASM-F2, OIL/AP integration, `$8000-$EFFF` payloads, and the locked STR8-N consumer contract |
+| STR8-N | RESET supervision, `$F000-$FFFF`, hardware vectors, worker, bank directory, install/recovery tools, full-bank composition, manifest, and public ABI |
+| HIMON | Monitor commands, RAM-only/load-only `L`, debugger, AP loading/linking, and the default Bank-3 payload |
+| ASM-F2 | Onboard source entry, assembly, AP construction, and optional AP checking |
 
-HIMON is the default bundled monitor payload. From STR8's point of view, it is
-one bootable target, not the reason STR8 exists.
-
-## Ownership Table
-
-| Product lane | Owns | Must not own |
-| --- | --- | --- |
-| R-YORS | Whole project direction, vocabulary, book, hash/catalog/runtime arc | Every product detail as one undifferentiated blob |
-| STR8 | Board management: boot, map, backup, restore, install, verify, recovery prompts | Rich monitor behavior, assembler UI, normal user interrupt meanings |
-| IVI | Interrupt Vector Indirection: stable stubs and patchable interrupt/trap targets | Product story, recovery policy, or permanent NMI/IRQ/BRK semantics |
-| LEAF | Latched Entry Address Frontdoor: the product-shaped front door built on IVI | Flash authority or payload interrupt meanings after handoff |
-| HIMON | Default monitor payload: commands, debug, load, inspect, hash/catalog workbench | Board survival, backup rotation, protected top-sector mutation |
-| Payload target | Its own runtime, entry contract, RAM use, interrupt meanings after handoff | STR8 recovery policy or hardware vector reflashing assumptions |
-| THE | Future hash/catalog environment and resolver policy | Board boot safety or flash transaction authority |
-
-## Repo Boundary
-
-Keep STR8 in this repo for now. A branch is for temporary experimental surgery.
-A fork is for an independent product/release life. STR8 is not ready for a fork
-until it can install/use/verify targets cleanly and has its own release story.
-
-Current source homes stay as they are:
+The normal workspace is:
 
 ```text
-SRC/STR8/    STR8 proof and resident recovery source
-SRC/HIMON/   HIMON monitor payload source
-DOC/GUIDES/STR8/STR8.md     STR8 product and design contract
-DOC/GUIDES/QCC/STR8.md live STR8, IVI, and LEAF questions
+parent/
+  R-YORS/
+  STR8-N/
 ```
 
-The boundary is conceptual and documented first. Code movement can wait until
-the code itself asks for it.
-
-## V0 Rule
-
-The V0 installer should be target/range-shaped inside the implementation, not
-HIMON-shaped. The ordinary operator surface should still be named and guided,
-not raw-range driven.
+R-YORS consumes only:
 
 ```text
-first:  STR8 installs target code/ranges below the protected top sector
-proof:  HIMON is the default target used to prove the path
-later:  STR8 self-update handles the protected top sector as a special case
-future: LEAF packages the IVI mechanism into a friendlier front door
+STR8-N/BUILD/str8n-manifest.json
+STR8-N/BUILD/v1.2/include/str8n-public.inc
+STR8-N/BUILD/v1.2/bin/str8n-v1.2-bank3-f000-ffff.bin
 ```
 
-The low-level operation is:
+`SRC/INTEGRATION/str8n.lock.json` pins the accepted top image, public ABI
+artifact, fixed layout, and service addresses. The normal build verifies the
+external manifest before assembling HIMON. Release builds additionally reject
+a dirty STR8-N worktree.
+
+## Image Boundary
 
 ```text
-install this target image/range
-stage full 4K sectors in RAM
-merge incoming bytes
-erase/write/verify selected sectors
-preserve STR8 recovery sector unless explicit STR8 update is requested
+$8000-$BFFF  ASM-F2 and R-YORS low-flash space
+$C000-$EFFF  HIMON
+$F000-$FFFF  STR8-N protected top sector
 ```
 
-That keeps V0 small while avoiding a HIMON-only installer.
+R-YORS emits a dense 28K `$8000-$EFFF` S19. STR8-N's `ryors-full-bank` target
+validates it and appends the current protected top to create a complete 32K
+Bank-0/1/2 payload. R-YORS never constructs sector F.
 
-The first S19 update gates are deliberately fixed:
+## Runtime Boundary
 
-```text
-UPDATE HIMON  accepts only $C000-$EFFF
-UPDATE STR8   accepts only $F000-$FFFF, after stronger confirmation
-```
+HIMON binds only to the generated public contract. Current integration uses
+the fixed record service, bank-select service and RAM selector, raw console
+services, RAM ownership limits, and Bank Jump Record. Private STR8-N labels,
+worker modes, and source maps are not R-YORS interfaces.
 
-Anything outside the selected gate is rejected before erase. A later advanced
-target/range updater can reuse the same primitive after the named profiles are
-boring.
+STR8-N `L` loads a recovery S19 in `$2000-$7AFF` and executes S9. HIMON `L`
+loads RAM and reports S9 but does not execute; `L G` and `L F` are rejected.
 
-## Handoff Contract
+## Historical Evidence
 
-The reference boot shape is:
-
-```text
-RESET -> STR8
-STR8 validates/selects target
-STR8 hands off to target entry
-payload owns normal runtime behavior after handoff
-```
-
-In the current combined STR8 image, hardware vectors enter stable STR8 IVI
-stubs, then dispatch through patchable RAM targets. That is a mechanism, not a
-claim that STR8 dictates every interrupt forever. LEAF is the newer product name
-for making this front door easier to explain and use.
-
-```text
-STR8 time:    safe defaults, recovery, inert NMI unless a safe request window is open
-handoff:      payload may install NMI/IRQ/BRK targets
-payload time: payload owns meanings
-reset:        STR8 can regain control
-```
-
-Payloads can use future LEAF routines to patch IVI targets: install this NMI
-target, install this IRQ target, install this BRK target, and return with either
-the old target still intact or the new target fully installed. Those routines
-change runtime/vector state. They do not erase flash, do not update STR8, and do
-not make LEAF mandatory for payloads that already own their own interrupt
-policy.
-
-## Classification Rule
-
-When adding a feature, ask which product lane would be embarrassed if it failed:
-
-```text
-board will not boot or recover      -> STR8
-hardware vectors need safe stubs    -> IVI mechanism, later LEAF surface
-monitor command/debug behavior      -> HIMON
-hash/catalog naming and resolver    -> THE
-application/game/tool runtime       -> payload target
-chapter/story/reader path           -> R-YORS book/docs
-```
-
-If a feature crosses lanes, split it into mechanism and policy. STR8 may provide
-the mechanism that keeps the board recoverable. The payload owns the policy it
-uses after handoff.
-
-## Product Story
-
-STR8 can be useful even when a user does not care about HIMON, THE, or the full
-R-YORS runtime direction:
-
-```text
-install STR8 once
-map the flash
-save a base image
-install a target
-verify it
-boot it
-recover if it breaks
-```
-
-IVI is the interrupt-vector indirection pattern from BSO2. IVY is just how IVI
-is pronounced. LEAF is the friendly STR8 front door built from it: a stable
-place where reset, interrupts, traps, and recovery can enter without reflashing
-hardware vectors for every experiment.
-
-HIMON remains the bundled workbench. It should be excellent, but STR8 should be
-valuable before HIMON is even considered.
+The older `DOC/GUIDES/STR8/` board cards and `DOC/GUIDES/LOGS/` transcripts
+remain hardware evidence for the images named in those records. They are not
+current build instructions. Current STR8-N operation and releases are
+documented in the standalone repository.

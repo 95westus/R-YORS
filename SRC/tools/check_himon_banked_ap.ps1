@@ -2,7 +2,7 @@ param(
     [string]$HimonSourcePath = "HIMON/himon.asm",
     [string]$HimonS19Path = "BUILD/s19/himon-rom-c000.s19",
     [string]$HimonMapPath = "BUILD/s19/himon-rom-c000.map",
-    [string]$WorkerEqPath = "STR8/str8-worker-eq.inc"
+    [string]$PublicContractPath = "BUILD/inc/str8n-public.inc"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -252,7 +252,7 @@ function Invoke-RamStage(
     Fail-Check 'RAM body did not return within the step limit'
 }
 
-foreach ($path in @($HimonSourcePath, $HimonS19Path, $HimonMapPath, $WorkerEqPath)) {
+foreach ($path in @($HimonSourcePath, $HimonS19Path, $HimonMapPath, $PublicContractPath)) {
     if (-not (Test-Path -LiteralPath $path)) { Fail-Check "missing input $path" }
 }
 
@@ -269,11 +269,11 @@ foreach ($required in @('HIM_AP_BANK_STAGE_RAM    EQU             $0300',
     if (-not $codeText.Contains($required)) { Fail-Check "source is missing $required" }
 }
 
-$workerEqText = [System.IO.File]::ReadAllText((Resolve-Path $WorkerEqPath))
-if ($workerEqText -notmatch 'STR8_JUMP_WORKER_END\s+EQU\s+\$([0-9A-Fa-f]{4})') {
-    Fail-Check 'jump-worker end constant is missing'
+$contractText = [System.IO.File]::ReadAllText((Resolve-Path $PublicContractPath))
+if ($contractText -notmatch 'STR8_WORKER_SELECT_END\s+EQU\s+\$([0-9A-Fa-f]{4})') {
+    Fail-Check 'external selector-end constant is missing'
 }
-$jumpWorkerEnd = [Convert]::ToInt32($matches[1], 16)
+$selectorEnd = [Convert]::ToInt32($matches[1], 16)
 
 $sourceStart = Read-MapSymbol 'HIM_AP_BANK_STAGE_CODE'
 $sourceEnd = Read-MapSymbol 'HIM_AP_BANK_STAGE_CODE_END'
@@ -285,7 +285,7 @@ if ($size -ne ($sourceEnd - $sourceStart)) {
 if ($size -le 0 -or $size -gt 0x80) {
     Fail-Check ('RAM body size ${0:X} exceeds the reverse-copy loop contract' -f $size)
 }
-if ($ramStart -lt $jumpWorkerEnd -or ($ramStart + $size) -gt 0x0A00) {
+if ($ramStart -lt $selectorEnd -or ($ramStart + $size) -gt 0x0A00) {
     Fail-Check 'RAM body overlaps the selector trampoline or AP sector tray'
 }
 

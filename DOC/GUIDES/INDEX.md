@@ -49,13 +49,12 @@ surface and full Bank Jump Record persistence matrix are hardware-accepted.
 
 ## Guide Shelves
 
-- [STR8](STR8/STR8.md) - top-level routine-purpose map, recovery, updates,
-  product boundaries, bringup, work
+- [STR8](STR8/STR8.md) - external integration index, product boundary, and
+  retained historical bringup/work
   process, the [boot-selector board test](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md),
   the [J0-J2 first board test](STR8/STR8_J012_BOARD_TEST.md), the
   [Bank Jump Record board test](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md), the
-  [V0 restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and
-  [edge evidence](STR8/STR8_EDGE_DUMP.md).
+  [V0 restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md).
 - [HIMON](HIMON/HIMON_MAP.md) - top-level routine-purpose map, subsystem maps,
   stage notes, debug, search, and edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction;
@@ -109,15 +108,16 @@ the main operator/technical path.
 
 ## Current Generated Source Snapshot
 
-Quick scan of the operational HIMON/STR8 source set used by `DOC/GENERATED`:
+Quick scan of the operational HIMON source set used by `DOC/GENERATED`.
+STR8-N source is scanned and documented in its standalone repository:
 
 ```text
-Source files scanned:  30
-XDEF declarations:     225
-XREF declarations:     152
+Source files scanned:  29
+XDEF declarations:     216
+XREF declarations:     147
 ROUTINE headers:       145
-JSR/JMP call sites:    1254
-Unique direct edges:   989
+JSR/JMP call sites:    964
+Unique direct edges:   777
 ```
 
 Generated reports live in [../GENERATED](../GENERATED).

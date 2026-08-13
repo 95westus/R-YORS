@@ -70,17 +70,15 @@ The accepted split-V1 board line through 2026-08-08 is hardware-proven for:
 - interactive bank/sector flash erase with explicit confirmation and recovery;
 - standalone examples including the 16x16 column Life program.
 
-The banked-AP bullets now also apply to split V1. Current HIMON stages `AP Bn`
-input with a RAM-resident `$F010/$0203` select/copy/restore routine; its host
-matrix, invalid-package stage/restore rail, and valid Bank-0 package execution
-are hardware-accepted. V1.02 is now the default combined-image/documentation
-baseline. The frozen `$0E5F` compact rebuild, directory-preserving sector-F
-refresh, reset path, local-HIMON handoff, and NMI smoke are hardware-accepted.
-The current presentation-only successor is `$0E5D`. Its exact refresh, banner,
-live selection, timeout, warm `H`, and post-refresh `C-E` install are board-
-accepted; only deliberate key discard during the first `WAIT` dots remains.
+The banked-AP bullets also apply to the split V1 line. Current HIMON stages
+`AP Bn` input with a RAM-resident `$F010/$0203` select/copy/restore routine;
+its host matrix, invalid-package stage/restore rail, and valid Bank-0 package
+execution are hardware-accepted. The historical V1.02 combined-image proofs
+remain in this repository. Current STR8-N v1.2 is built and released from the
+adjacent standalone STR8-N repository; R-YORS imports its checked public ABI
+and builds only the `$8000-$EFFF` ASM/HIMON payload.
 
-The Bank Jump Record publishes `$1FFD-$1FFF = 42 4A nn` after a validated
+The current Bank Jump Record publishes `$7DFD-$7DFF = 42 4A nn` after a validated
 handoff, preserves a valid record through HIMON cold clear, and uses
 `42 4A FF` when no validated target is known. Its full `J0`-`J3` preservation
 matrix is host- and hardware-accepted. See the
@@ -129,9 +127,9 @@ The current line retains the 2026-07-18 size-pass proof: its fixed-width `D`
 path, positive RAM AP/RJOIN import path, missing-import atomicity, and
 banked-source RJOIN path are hardware-proven. It retires the STR8 `M` map and
 the richer resident HIMON `D`/quoted-hash forms, and keeps AP import linking in
-HIMON. STR8's former `$F006` compatibility doorway is retired; the slot now
-returns carry clear so stale callers fail without disturbing the active V1
-service addresses.
+HIMON. Standalone STR8-N v1.2 now publishes `$F006` as its resident ABI query;
+R-YORS verifies that service and its capabilities through the external public
+contract.
 
 ## Start Here
 
@@ -164,40 +162,39 @@ From the repository root:
 make all
 ```
 
-The primary output is a complete 32K `$8000-$FFFF` bank image:
+The primary R-YORS output is a dense 28K `$8000-$EFFF` payload:
 
 ```text
-SRC/BUILD/bin/himon-str8-rom.bin
+SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
 
 $8000-$BC6C  ASM-F2, entry $800C
 $BC6D-$BFFF  low-flash growth/AP-store hole
-$C000-$EEFF  HIMON, including the resident AP import linker
-$EF00-$EFFF  HIMON/STR8 growth hole
-$F000-$FE5C  STR8-N V1.02 resident
-$FE5D-$FF1E  $00C2 free: $0040 reserve plus $0082 growth room
-$FF1F-$FFAF  stored jump-only RAM worker
-$FFB0-$FFEF  fixed V1 directory, erased in a new primary image
-$FFF0-$FFF9  configuration pocket
-$FFFA-$FFFF  hardware vectors
+$C000-$EC8F  current HIMON image
+$EC90-$EFFF  HIMON growth hole
 ```
 
-`make -C SRC str8-v1-artifact` retains the historical
-`himon-str8-v1.*` filenames and focused proof streams; its BIN is byte-identical
-to the primary `himon-str8-rom.bin` from the same build.
+The build first verifies the adjacent STR8-N manifest, locked top-sector hash,
+and public ABI artifact. R-YORS does not assemble or copy STR8-N source.
 
-The matching first-install stream is:
+To compose a complete 32K Bank-0/1/2 payload, run the standalone owner:
 
 ```text
-SRC/BUILD/s19/himon-str8-rom-install.s19
+make -C ../STR8-N ryors-full-bank
+
+../STR8-N/BUILD/v1.2/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19
 ```
+
+STR8-N supplies `$F000-$FFFF`, validates the 28K R-YORS input, and verifies
+the final RESET vector. Bank-3 sector F remains protected and is installed
+with the standalone programmer BIN or guarded STR8-N updater.
 
 Useful targets:
 
 ```text
-make all                       complete current onboard image
+make all                       verify STR8-N and build R-YORS 28K payload
 make life                      standalone loadable Life S19/BIN
 make -C SRC help Q=<term>      find related targets
-make release                   image plus release-side artifacts
+make release                   clean locked integration plus release artifacts
 make docs-html                 HTML rebuild for docs and repository READMEs
 ```
 
@@ -209,7 +206,7 @@ standalone S19 workflow for programs that should be loaded independently.
 ```text
 SRC/ASM/        current ASM-F2 source
 SRC/HIMON/      current HIMON source
-SRC/STR8/       current STR8-N source
+SRC/INTEGRATION/ locked external STR8-N contract
 SRC/LIB/        shared board and ROM support
 SRC/APPS/       current standalone applications
 SRC/PROOFS/     current proof scaffolds still used by onboard work
@@ -220,9 +217,9 @@ DOC/GUIDES/     hand-written guides and hardware logs
 DOC/GENERATED/  source-derived reports
 ```
 
-Active source lanes hold only code or data used to create current onboard
-R-YORS images or data intentionally ingested by the board. STR8-N, HIMON V,
-and ASM-F2 retain their current structure. Retired material belongs in
+Active source lanes hold only code or data used to create current R-YORS
+payloads or data intentionally ingested by the board. STR8-N has its own
+adjacent repository; HIMON and ASM-F2 remain here. Retired material belongs in
 `SRC/ARCHIVE/` under the
 [historical code migration plan](DOC/GUIDES/PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
 

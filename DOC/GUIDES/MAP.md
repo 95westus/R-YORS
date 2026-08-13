@@ -106,16 +106,12 @@ The story path is intentionally outside the main operator/technical path.
 ## Source Map
 
 ```text
-Current operational source used by generated routine docs:
+Current R-YORS operational source used by generated routine docs:
 
 HIMON/
   SRC/HIMON/himon.asm
   SRC/HIMON/*.inc
   SRC/HIMON/fnv1a-fold.asm
-
-STR8/
-  SRC/STR8/str8.asm
-  SRC/STR8/str8-worker.asm
 
 Support/
   SRC/LIB/ftdi/*.asm
@@ -128,7 +124,8 @@ Legacy demos, harnesses, games, ACIA/PIA, and historical monitor experiments
 remain documented where useful, but they are outside the generated operational
 maps unless promoted. Current `SRC/ASM` remains active build source, but it is
 documented through the ASM-specific hand-maintained maps rather than the
-operational HIMON/STR8 routine generator.
+operational HIMON routine generator. STR8-N source is external and is mapped
+in the standalone repository.
 
 Active source lanes are reserved for code/data used to create current onboard
 R-YORS images or board-ingested data. Retired samples, tests, proofs, demos,
@@ -162,9 +159,8 @@ QCC/                            active design questions
 HASH_FLASH.md                   command-surface and milestone alerts
 DOC_FLASH.md                    documentation-shape alerts
 STR8/PRODUCT_BOUNDARIES.md      product ownership lanes
-STR8/STR8.md                    STR8 top-level routine map, design contract, and direction
-STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md pending `$1FFD-$1FFF` proof rail
-STR8/STR8_EDGE_DUMP.md          raw direct-edge evidence
+STR8/STR8.md                    standalone STR8-N integration index
+STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md retained historical proof rail
 STR8/STR8_WORK_PROCESS.md       STR8 proof/work rail
 STR8/STR8_V0_RESTORE_FAILURE_GATES.md guarded restore/failure gate card
 LOGS/HARDWARE_TEST_LOG.md       board transcript validations

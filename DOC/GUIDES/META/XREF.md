@@ -24,7 +24,7 @@ STR8.md
   used by HASHED_ASM.md for flash commit/condense policy
   used by MAP.md for recovery/update ownership
   used by HISTORICAL_DOCUMENTS.md as the recovery-layer name
-  uses STR8_EDGE_DUMP.md as raw direct-edge evidence
+  points to the standalone STR8-N repository for current source-derived maps
 
 STR8_WORK_PROCESS.md
   records the current process for returning to STR8 work
@@ -178,11 +178,6 @@ HIMON_EDGE_DUMP.md
   keeps raw edge sites separate from the compact SYMBOL_XREF call tree and
   readable HIMON_MAP.md diagrams
 
-STR8_EDGE_DUMP.md
-  direct `JSR`/`JMP` edge dump for `STR8/str8.asm`
-  keeps raw recovery-monitor edge sites separate from STR8.md's readable
-  product and proof narrative
-
 HARDWARE_TEST_LOG.md
   records board transcript validation after tests are run
   references BRINGUP.md, HIMON_DEBUG_TESTING.md, HREC_JOIN_PROOF.md, and
@@ -208,25 +203,12 @@ HISTORICAL_CODE_MIGRATION_PLAN.md
 
 ## Source Cross-Reference
 
-Current generated operational source scan:
-
-```text
-Source files scanned:  30
-XDEF declarations:     225
-XREF declarations:     152
-ROUTINE headers:       145
-JSR/JMP call sites:    1254
-Unique direct edges:   989
-```
-
-Current HIMON/STR8 operational files:
+Current R-YORS operational files:
 
 ```text
 HIMON/himon.asm
 HIMON/*.inc
 HIMON/fnv1a-fold.asm
-STR8/str8.asm
-SRC/LIB/ftdi/*.asm
 SRC/LIB/ftdi/*.asm
 ROM/ftdi-backend-debug.asm
 ROM/ftdi/*.asm
@@ -234,8 +216,10 @@ ROM/dev/*.asm
 ROM/util/*.asm
 ```
 
-Legacy demos, harnesses, games, ACIA/PIA, and historical monitor experiments
-are kept out of generated operational maps.
+STR8-N implementation files are intentionally absent; its standalone
+repository owns its source-derived maps. Legacy demos, harnesses, games,
+ACIA/PIA, and historical monitor experiments are kept out of generated
+operational maps.
 
 The historical code migration plan narrows this boundary further: active
 source lanes should contain only code/data used to create current onboard

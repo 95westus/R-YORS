@@ -6,48 +6,31 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $rows = @(
-    [pscustomobject]@{ Target = "all"; Category = "build"; Description = "Build the current onboard 32K image and install S19." }
-    [pscustomobject]@{ Target = "firmware"; Category = "build"; Description = "Build himon-str8-rom.bin plus himon-str8-rom-install.s19." }
+    [pscustomobject]@{ Target = "all"; Category = "build"; Description = "Verify external STR8-N and build the current R-YORS ASM/HIMON 28K payload." }
+    [pscustomobject]@{ Target = "firmware"; Category = "build"; Description = "Alias for the verified external-contract and R-YORS 28K firmware build." }
     [pscustomobject]@{ Target = "lab"; Category = "build"; Description = "Build the broad workbench sweep, including tests, proofs, demos, and local language images when present." }
     [pscustomobject]@{ Target = "everything"; Category = "build"; Description = "Alias for lab." }
     [pscustomobject]@{ Target = "proofs"; Category = "build"; Description = "Build proof targets only." }
     [pscustomobject]@{ Target = "tests"; Category = "build"; Description = "Build test targets only." }
     [pscustomobject]@{ Target = "apps"; Category = "build"; Description = "Build app/demo targets only." }
     [pscustomobject]@{ Target = "help"; Category = "build"; Description = "Show this target list. Filter with Q=term, e.g. make help Q=flash." }
-    [pscustomobject]@{ Target = "release"; Category = "release"; Description = "Build docs plus current onboard release artifacts." }
+    [pscustomobject]@{ Target = "release"; Category = "release"; Description = "Require a clean locked STR8-N checkout, then build docs and R-YORS release artifacts." }
     [pscustomobject]@{ Target = "release-local"; Category = "release"; Description = "Build release plus local/private ROM composites." }
     [pscustomobject]@{ Target = "himon"; Category = "monitor"; Description = "Build current HIMON app S19 and ROM binary." }
     [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000: BUILD/s19/himon-rom-c000.s19." }
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom-c000.bin." }
     [pscustomobject]@{ Target = "himon-banked-ap-check"; Category = "monitor"; Description = "Emulate HIMON's RAM-resident `$F010/`$0203 banked AP sector staging and restore paths." }
-    [pscustomobject]@{ Target = "himon-str8-rom-bin"; Category = "monitor"; Description = "Build the primary accepted v1.2 32K image with ASM-F2, HIMON, split STR8, and its fixed directory: BUILD/bin/himon-str8-rom.bin." }
-    [pscustomobject]@{ Target = "str8-v1-layout-preview"; Category = "monitor"; Description = "Build the guarded, nonflashable V1 worker/directory layout preview BIN; produces no install S19, TopWriter, or ROM stamp." }
-    [pscustomobject]@{ Target = "str8-v1-artifact"; Category = "monitor"; Description = "Build the accepted v1.2 compatibility BIN/S19, combined I streams, migration writer, and directory-preserving refresh writer under BUILD." }
-    [pscustomobject]@{ Target = "str8-v1-install-stream"; Category = "monitor"; Description = "Build one-file mutation-worker plus 32K bank transport: BUILD/s19/str8-v1-i-bank012.s19." }
-    [pscustomobject]@{ Target = "str8-v1-negative-streams"; Category = "monitor"; Description = "Build the bad-worker and post-START interruption S19 board-test streams." }
-    [pscustomobject]@{ Target = "str8-v1-topwrite-a"; Category = "monitor"; Description = "Build a one-time V1 migration writer under BUILD; unsafe on installed V1." }
-    [pscustomobject]@{ Target = "str8-i-refresh-a"; Category = "monitor"; Description = "Build the directory-preserving STR8 I refresh writer under BUILD." }
-    [pscustomobject]@{ Target = "str8-directory-check"; Category = "monitor"; Description = "Run host reference and compiled-resident validation of frozen V1 directory records and journals against the guarded preview BIN." }
-    [pscustomobject]@{ Target = "str8-installer-dry-check"; Category = "monitor"; Description = "Build and execute the oversized, nonflashable V1 dense S19 receive/stage host proof." }
-    [pscustomobject]@{ Target = "str8-worker-mode-check"; Category = "monitor"; Description = "Execute the compiled worker dispatcher for all 256 mode bytes; require only 05-08 and fail closed for the other 252." }
-    [pscustomobject]@{ Target = "str8-worker-split-check"; Category = "monitor"; Description = "Build and size-check the permanent jump worker and uploaded mutation worker images." }
+    [pscustomobject]@{ Target = "str8n-external-artifacts"; Category = "integration"; Description = "Ask the adjacent authoritative STR8-N checkout to publish its manifest and public ABI." }
+    [pscustomobject]@{ Target = "str8n-external-check"; Category = "integration"; Description = "Verify locked STR8-N hashes/layout and import its public ABI into BUILD/inc." }
+    [pscustomobject]@{ Target = "str8n-external-release-check"; Category = "integration"; Description = "Run the external STR8-N check and reject a dirty authoritative checkout." }
+    [pscustomobject]@{ Target = "ryors-v1.2"; Category = "integration"; Description = "Build versioned ASM, HIMON, and combined 28K `$8000-`$EFFF R-YORS payloads." }
     [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-c000-install-8000.s19." }
-    [pscustomobject]@{ Target = "himon-str8-rom-install-s19"; Category = "monitor"; Description = "Convert primary HIMON+STR8 ROM BIN to S1/S9 install transport: BUILD/s19/himon-str8-rom-install.s19." }
-    [pscustomobject]@{ Target = "himon-str8-himon-update-s19"; Category = "monitor"; Description = "Build C000-EFFF S1/S9 stream for STR8 U / UPDATE HIMON: BUILD/s19/himon-str8-himon-update.s19." }
-    [pscustomobject]@{ Target = "himon-str8-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
-    [pscustomobject]@{ Target = "str8-himon-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
-    [pscustomobject]@{ Target = "str-himon-str-update"; Category = "monitor"; Description = "Alias for himon-str8-himon-update-s19." }
-    [pscustomobject]@{ Target = "str8-top-stage-s19"; Category = "monitor"; Description = "Build 0A00-19FF staged S19 from the vector-complete STR8 top sector: BUILD/s19/str8n-v1.2-top-stage-0a00.s19." }
-    [pscustomobject]@{ Target = "str8-topwrite-a"; Category = "monitor"; Description = "Build a legacy replacement TopWriter under BUILD; unsafe on installed V1." }
     [pscustomobject]@{ Target = "str8-readonly-bank-tools-check"; Category = "monitor"; Description = "Validate and host-assemble the split-V1 `$F010/`$0203 read-only bank tools." }
-    [pscustomobject]@{ Target = "str8-bank-maint-source-check"; Category = "monitor"; Description = "Embed the exact mutation worker, validate the maintenance map/directory source, and host-assemble it." }
-    [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for himon-str8-rom-install-s19." }
+    [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for the HIMON-only ROM install S19." }
     [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000: BUILD/s19/himon-load-c000.s19." }
     [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image at BUILD/bin/himon-load-c000.bin." }
     [pscustomobject]@{ Target = "basic-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000 and HIMON at C000." }
     [pscustomobject]@{ Target = "basic-forth-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000, fig-Forth at A000, and HIMON at C000." }
-    [pscustomobject]@{ Target = "str8"; Category = "test"; Description = "Build current STR8-N F000 image, RAM proof image, and fail-closed RAM worker." }
-    [pscustomobject]@{ Target = "str8-ram"; Category = "test"; Description = "Build RAM-launched STR8 console and bank-handoff proof at 3000." }
     [pscustomobject]@{ Target = "fnv1a-hbstr"; Category = "test"; Description = "Build FNV-1a/HBSTR proving app linked at 6000." }
     [pscustomobject]@{ Target = "test-flash"; Category = "test"; Description = "Build flash command/install proving app linked at 3000." }
     [pscustomobject]@{ Target = "test-mon"; Category = "test"; Description = "Build monitor test app." }
@@ -81,7 +64,7 @@ $rows = @(
     [pscustomobject]@{ Target = "rom"; Category = "library"; Description = "Build shared ROM routine library." }
     [pscustomobject]@{ Target = "testing"; Category = "library"; Description = "Build shared testing support library." }
     [pscustomobject]@{ Target = "docs"; Category = "docs"; Description = "Regenerate source-derived docs." }
-    [pscustomobject]@{ Target = "edge-docs"; Category = "docs"; Description = "Regenerate guide raw edge dumps for HIMON and STR8." }
+    [pscustomobject]@{ Target = "edge-docs"; Category = "docs"; Description = "Regenerate the HIMON raw edge dump; STR8-N maps are external." }
     [pscustomobject]@{ Target = "docs-watch"; Category = "docs"; Description = "Watch source and regenerate source-derived docs." }
     [pscustomobject]@{ Target = "call-order"; Category = "docs"; Description = "Regenerate DOC/GENERATED/CALL_ORDER.md." }
     [pscustomobject]@{ Target = "routine-contracts"; Category = "docs"; Description = "Regenerate DOC/GENERATED/ROUTINE_CONTRACTS.md." }
@@ -94,7 +77,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-command-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/HIMON_COMMAND_MAP.md." }
     [pscustomobject]@{ Target = "hash-routine-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/HASH_ROUTINE_MAP.md." }
     [pscustomobject]@{ Target = "cmd-flow-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/CMD_FLOW_MAP.md." }
-    [pscustomobject]@{ Target = "stack-depth-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/STACK_DEPTH_MAP.md for HIMON/STR8 stack high-water paths." }
+    [pscustomobject]@{ Target = "stack-depth-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/STACK_DEPTH_MAP.md for HIMON stack high-water paths." }
     [pscustomobject]@{ Target = "interrupt-vector-map"; Category = "docs"; Description = "Regenerate DOC/GENERATED/INTERRUPT_VECTOR_MAP.md for IRQ/NMI/BRK vectors." }
     [pscustomobject]@{ Target = "irq-vector-map"; Category = "docs"; Description = "Alias for interrupt-vector-map." }
     [pscustomobject]@{ Target = "map-of-maps"; Category = "docs"; Description = "Regenerate DOC/GENERATED/MAP_OF_MAPS.md." }

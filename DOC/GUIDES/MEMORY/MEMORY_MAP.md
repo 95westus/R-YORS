@@ -7,9 +7,9 @@ For the bench-facing names and layered diagrams of the active control areas,
 see [Control Deck Map](../../GENERATED/CONTROL_DECK_MAP.md). The formal ranges
 in this file remain authoritative.
 
-The standalone HIMON map and the primary split-V1.02 combined-image map are
-listed separately below. The combined image is the normal board baseline;
-standalone `himon-rom` remains useful for component builds and proofs.
+The standalone HIMON map and the split STR8-N v1.2 integration map are listed
+separately below. R-YORS builds `$8000-$EFFF`; the adjacent STR8-N repository
+owns `$F000-$FFFF` and composes the optional full-bank payload.
 
 ## Current HIMON ROM Image
 
@@ -17,9 +17,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E97D   HIMON CODE, START/standalone RESET entry at $C000
-$E97E-$EEFF   HIMON DATA
-$EF00-$FFF9   current image gap and STR8/high-ROM space
+$C000-$E768   HIMON CODE, START/standalone RESET entry at $C000
+$E769-$EC8F   HIMON DATA
+$EC90-$FFF9   current image gap and external STR8-N/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -43,9 +43,9 @@ explicit handoff contract; STR8 must not reserve those addresses.
 Current ROM hardware vectors:
 
 ```text
-$FFFA-$FFFB   NMI   = $E680
+$FFFA-$FFFB   NMI   = $E46B
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $E683
+$FFFE-$FFFF   IRQ   = $E46E
 ```
 
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
@@ -69,26 +69,22 @@ dangerous top sector. HIMON should fit below `$F000`; if it outgrows 12K, that
 should be an intentional design decision because it eats the lower 16K user
 space.
 
-The primary combined image is `BUILD/bin/himon-str8-rom.bin`: ASM-F2 starts at
-CPU `$8000` / file offset `$0000`, HIMON starts at CPU `$C000` / file offset
-`$4000`, STR8 starts at CPU `$F000` / file offset `$7000`, the STR8 RAM worker
-source is the jump-only image at CPU `$FF1F` / file offset `$7F1F`, copied into
-the `$0200-$0290` portion of the RAM worker-code tray, and all live hardware
-vectors enter the STR8-owned top sector. RESET points to STR8 at `$F000`; NMI
-and IRQ/BRK point to STR8 IVI stubs at `$F09C`/`$F0B0`, which dispatch through
-the RAM vector cells. Destructive `I` transactions upload their exact mutation
-worker to `$0200-$042A`; it is not resident in the top sector.
+R-YORS publishes `SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19`, a dense
+28K `$8000-$EFFF` payload. STR8-N validates that input and composes
+`BUILD/v1.2/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19` in its own
+repository. RESET points to STR8-N at `$F000`; the exact NMI and IRQ/BRK vector
+targets are owned and checked by the standalone STR8-N build.
 
 Combined image layout:
 
 ```text
 $8000-$BC6C   ASM-F2 low-flash image, entry $800C
 $BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
-$C000-$EEFF   HIMON body, including resident AP import linker
-$EF00-$EFFF   current image gap inside the E sector
-$F000-$FE5C   STR8 V1.02 resident shell, IVI stubs, record service, and installer
-$FE5D-$FF1E   free/reserve gap, $00C2 bytes: $0040 reserve + $0082 growth
-$FF1F-$FFAF   jump-only STR8 RAM-worker source, copied to $0200-$0290
+$C000-$EC8F   HIMON body, including resident AP import linker
+$EC90-$EFFF   current image gap inside the E sector
+$F000-$FD53   STR8-N v1.2 resident supervisor, installer, loader, and services
+$FD54-$FD5B   enforced unused margin, 8 bytes
+$FD5C-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$0453
 $FFB0-$FFEF   fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
@@ -142,17 +138,15 @@ $A000-$BFFF   fig-Forth slot, FNV header at $A000
 $C000-$FFFF   protected live HIMON/STR8 region
 ```
 
-These are still proof/load artifacts. They are not yet packaged as a safe
-erase/rewrite `L F` update flow.
+These are proof/load artifacts. HIMON `L` cannot write flash; package them as
+a dense STR8-N `I` payload before installing them.
 
-STR8 bench tests may temporarily place fig-Forth at `$C000-$EFFF` with
-`BUILD/s19/fig-forth-str8-update.s19`. That is not the normal memory map; it is
-a deliberate replacement of the HIMON payload through STR8 `U`, with STR8 still
-resident at `$F000-$FFFF`.
+Historical STR8 bench tests temporarily placed fig-Forth at `$C000-$EFFF` with
+`BUILD/s19/fig-forth-str8-update.s19`. That was a deliberate V0 `U`
+replacement of HIMON, not a current v1.2 installation procedure.
 
-The same temporary replacement exists for OSI MS BASIC at `$C000-$EFFF` with
-`BUILD/s19/msbasic-osi-str8-update.s19`. It is also a STR8 `U` payload, not the
-normal combined monitor map.
+The matching OSI MS BASIC artifact is likewise historical. Current v1.2 flash
+installation uses standalone STR8-N dense range payloads.
 
 ## Flash Window Mapping
 
@@ -180,27 +174,27 @@ bank 3 before HIMON prints or returns to normal command flow.
 
 ## Current Flash Policy
 
-HIMON treats flash as `$8000-$FFFF`, but the current `L F` writer remains a
-conservative blank-write path, not a sector updater. Its guard protects the
-current HIMON/STR8 live region at `$C000+`:
+HIMON's user-facing `L` command is now RAM-only and load-only. `L G` and `L F`
+are rejected by the bare-`L` grammar. Its guard accepts S1 destinations below
+`$7A00` and rejects flash:
 
 ```text
-$8000-$BFFF   currently allowed by L F only if old byte is $FF
-$C000-$FFFF   protected HIMON/STR8 region
-$F000-$FFFF   STR8 top sector, config, and vectors
+$0000-$79FF   allowed RAM range, subject to record/span checks
+$7A00-$7FFF   protected monitor/I/O range
+$8000-$FFFF   flash rejected by HIMON L
 ```
 
-Current `L F` behavior:
+Current loader behavior:
 
 ```text
-target below $8000   protected
-target $8000-$BFFF   currently allowed only if old byte is $FF
-target $C000+        currently protected
+bare L       load accepted S1 bytes, report S9, do not execute
+L G          usage error
+L F          usage error
 ```
 
-There is no sector erase/condense path in HIMON. STR8 V1.02 owns selected-bank
-erase, program, verify, and journal flows through its `I` transaction and the
-exact mutation worker carried by the input stream.
+There is no user-facing sector erase/condense path in HIMON. STR8-N v1.2 owns
+selected-bank erase, program, verify, and journal flows through its `I`
+transaction and standalone RAM maintenance tools.
 
 ## Current RAM Map
 
@@ -443,30 +437,21 @@ The non-ROM `himon` map is useful for development, but it is not the
 authoritative flash image map. The current ROM memory map should be taken from:
 
 ```text
-SRC/BUILD/map/himon-rom-c000.map
+SRC/BUILD/s19/himon-rom-c000.map
 HIMON/himon.asm
 HIMON/himon-shared-eq.inc
 ```
 
-## STR8 Direction
+## STR8-N Boundary
 
-The combined `himon-str8-rom.bin` image places STR8 in bank 3's `$F000-$FFFF`
-top-ROM sector with the hardware vectors. HIMON starts at `$C000`, and the
-STR8 jump-worker source is stored at `$FF1F-$FFAF`. The fixed V1 directory is
-`$FFB0-$FFEF`; destructive `I` transactions upload their exact mutation worker
-instead of storing it in the top sector.
+The standalone STR8-N image owns Bank 3's `$F000-$FFFF` top sector and hardware
+vectors. HIMON starts at `$C000`. The fixed directory remains `$FFB0-$FFEF`,
+and the unified worker is stored at `$FD5C-$FFAF` and runs at `$0200-$0453`.
 
-The physical erase unit remains 4K. The protected STR8 window starts at the
-highest boundary that fits:
+The physical erase unit and protected STR8-N allocation are both 4K:
 
 ```text
-$FC00-$FFFF  1K protected STR8 window
-$FA00-$FFFF  1.5K protected STR8 window
-$F800-$FFFF  2K protected STR8 window
-$F600-$FFFF  2.5K protected STR8 window
-$F400-$FFFF  3K protected STR8 window
-$F200-$FFFF  3.5K protected STR8 window
-$F000-$FFFF  4K protected STR8 window, current combined image
+$F000-$FFFF  4K protected STR8-N sector
 
 $FFF0-$FFF9  one-time flash board/version/config bytes, inside the window
 $FFFA-$FFFF  W65C02 hardware vector block
@@ -478,7 +463,7 @@ The `$FFF0-$FFF9` pocket is patchable only in the flash sense: after erase,
 programming may clear bits from `1` to `0`, but changing cleared bits back to
 `1` requires another top-sector erase/rewrite.
 
-This split is the current combined STR8/HIMON ROM layout.
+This split is enforced by the external manifest and R-YORS content lock.
 
 ## Future Partitioned Bank Planning
 

@@ -11,15 +11,14 @@ SRC/Makefile
 SRC/HIMON/himon.asm
 SRC/HIMON/*.inc
 SRC/HIMON/fnv1a-fold.asm
-SRC/STR8/str8.asm
-SRC/STR8/str8-worker.asm
 SRC/TESTS/ftdi-backend-debug.asm
 SRC/LIB/ftdi/*.asm
 SRC/LIB/dev/*.asm
 SRC/LIB/util/*.asm
 ```
 
-The generated source-derived docs use this operational set. Legacy demos,
+The generated source-derived docs use this R-YORS operational set. STR8-N is
+an external artifact dependency and documents its source in its own repository. Legacy demos,
 harnesses, games, ACIA/PIA, and historical monitor experiments stay out of the
 bibliography/navigation layer.
 
@@ -96,7 +95,6 @@ DOC/GUIDES/STR8/STR8.md
 DOC/GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md
 DOC/GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md
 DOC/GUIDES/STR8/STR8_DECISION_REFERENCE.md
-DOC/GUIDES/STR8/STR8_EDGE_DUMP.md
 DOC/GUIDES/STR8/STR8_FLASH_UPDATE_PROPOSAL.md
 DOC/GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md
 DOC/GUIDES/STR8/STR8_J012_BOARD_TEST.md
@@ -154,8 +152,8 @@ DOC/GENERATED/STACK_DEPTH_MAP.md
 - Runtime command lookup in HIMON uses FNV-1a hashes over command text.
 - `HIMON_MAP.md` is the readable HIMON map; `HIMON_EDGE_DUMP.md` is the raw
   direct-edge listing.
-- `STR8_EDGE_DUMP.md` is the raw direct-edge listing for the STR8 recovery
-  monitor.
+- STR8-N source-derived maps and raw edges are owned by the standalone
+  STR8-N repository.
 - `HIMON_STAGES_CLASSES.md` reconstructs the Himon/Himonia/Himonia-F stage
   ladder and subsystem class families from current source plus guide evidence.
 - `STR8_WORK_PROCESS.md` records the current review, proof, implementation,
