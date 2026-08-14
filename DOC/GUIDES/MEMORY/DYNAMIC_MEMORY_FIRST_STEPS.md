@@ -244,10 +244,12 @@ meaning: the word value is treated as an address.
 ## The Zero-Page Bottleneck
 
 Heap memory should not live in zero page. Zero page is too small and too useful.
-The current HIMON policy leaves `$00-$AF` user/free while user code is running.
-`$B0-$CC` is reserved for future R-YORS/HIMON/THE/ASM zero-page expansion,
-especially active pointer lanes and addressing-mode workspace. `$CD-$EF` and
-`$F0-$FF` are volatile service/parser scratch windows.
+The current HIMON policy leaves `$00-$AF` user/free while ordinary user code is
+running, but ASM-F2 temporarily owns `$80-$AF`: current PC at `$80/$81`, the
+flash wrapper pointer at `$82/$83`, and the core parser/emitter frame at
+`$84-$AF`. `$B0-$B3` and `$C7-$CA` are active shared FNV32 state, with the rest
+of `$B4-$CC` reserved/shared. `$CD-$EF` and `$F0-$FF` are volatile
+service/parser scratch windows.
 
 The important W65C02 rule is that indirect data-addressing pointer variables
 live in zero page:

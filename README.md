@@ -167,10 +167,10 @@ The primary R-YORS output is a dense 28K `$8000-$EFFF` payload:
 ```text
 SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
 
-$8000-$BC6C  ASM-F2, entry $800C
-$BC6D-$BFFF  low-flash growth/AP-store hole
-$C000-$EC8F  current HIMON image
-$EC90-$EFFF  HIMON growth hole
+$8000-$BABA  ASM-F2, entry $800C
+$BABB-$BFFF  low-flash growth/AP-store hole ($0545 bytes)
+$C000-$EE30  current HIMON image
+$EE31-$EFFF  HIMON growth hole ($01CF bytes)
 ```
 
 The build first verifies the adjacent STR8-N manifest, locked top-sector hash,

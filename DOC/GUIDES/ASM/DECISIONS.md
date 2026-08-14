@@ -327,22 +327,26 @@ A [addr] [label[:]] MMM [operand] .
   infix; internal RPN is allowed only as an implementation form when it saves
   W65C02S code.
 - Current `ASM_PARSE_EXPR` parses one expression from X/Y through
-  NUL/CR/LF/comment and returns a resolved result with kind, width, value, and
-  care mask. It resolves known RAM-session symbols and rejects unknown symbols
-  as `BAD SYM`. Unresolved expression results, caller terminator flags, and
-  fixup addends are later work.
+  NUL/CR/LF/comment, comma, or an indirect operand's right parenthesis and
+  returns a resolved result with kind, width, value, and care mask. A shared
+  data-expression wrapper routes mnemonic operands and `DB`/`DW`/`DS` items
+  through it, then falls back only for simple unresolved symbols, selectors,
+  and register atoms. Compound unresolved fixup addends remain later work.
 - ASM 1.80 current grammar is `term {op term}*`, where a term is decimal, hex,
   binary/mask, character literal, known symbol, or `*`. Current executable
-  operators are `+` and `-`; `<`/`>` selectors and `|`, `&`, `^` remain v1
-  design targets until the operand/DB expression boundary is unified.
+  operators are exactly `+`, `-`, `&`, `|`, `^`, `<<`, and `>>`. A single
+  `<`/`>` remains byte-selector syntax outside the infix evaluator.
 - ASM 1.80 preserves the standout rule: expressions evaluate strictly
   left-to-right, with no operator precedence and no grouping parentheses.
 - `+` and `-` require known concrete values/addresses, not masks. Arithmetic
   keeps the left operand's address-width intent and range-checks the result; it
   does not promote or demote.
-- Future `|`, `&`, and `^` require known same-width values or masks. Mask
+- `|`, `&`, and `^` require known same-width values or masks. Mask
   results carry value/care/width and may normalize to `VALUE` only when the care
   mask becomes all ones.
+- `<<` and `>>` are logical 16-bit shifts. Counts must resolve in the range
+  0 through 15. Logical and shift expressions reject relocatable operands
+  because the current AP relocation contract is additive.
 - V1 unresolved expression results are limited to `SYMBOL`, `<SYMBOL`, and
   `>SYMBOL`. Compound unresolved expressions such as `FOO+1`, `>FOO+1`, and
   forward `NEXT EQU BASE+1` are not v1 until addend fixups or an `EQU`
@@ -403,19 +407,11 @@ A [addr] [label[:]] MMM [operand] .
   the current PC and a known value. Because `*` is an address, `ADDR - VALUE`
   keeps address width if it remains in range. `ADDR - ADDR` produces a scalar
   `VALUE` delta.
-- Current executable ASM v1 expression operators are `+` and `-`. The `|`,
-  `&`, and `^` logical/mask operators are deferred for later implementation,
-  not the next ASM slice. When reopened, evaluate them strictly left-to-right
-  with no operator precedence; `A | B & C` will mean `(A | B) & C`. Use a
-  separate `EQU` if a staged result is needed.
-- When the deferred logical/mask slice is reopened, implement `|` OR, `&` AND,
-  and `^` EOR in `ASM_PARSE_EXPR`, not as special cases in directive emitters.
-  That will make them available first to the current expression callers: `EQU`,
-  `ORG`, and `DW`. `DB`/`DS` list expression math remains separate because
-  those directives still use their byte/list atom parser, not the general
-  expression-list path. In short: keep `|`, `&`, and `^` as an
-  `ASM_PARSE_EXPR` upgrade when they return, with `DB` expression-list
-  unification as a later, cleaner refactor.
+- Current executable ASM v1 expression operators are exactly `+`, `-`, `&`,
+  `|`, `^`, `<<`, and `>>`. They are implemented once in `ASM_PARSE_EXPR` and
+  shared by `ORG`, `EQU`, mnemonic operands, and `DB`/`DW`/`DS`. Evaluation is
+  strict left-to-right: `A | B & C` means `(A | B) & C`. Multiplication and
+  division are intentionally outside the size-first language.
 - Unary minus is not v1 syntax. Use `0-1` if needed, then let the target context
   range-check the result. `DB -1` is `BAD OPER`.
 - Parentheses are not expression grouping in v1. `(` and `)` remain operand
@@ -430,7 +426,7 @@ A [addr] [label[:]] MMM [operand] .
   carries value, care mask, and width. `%XXXXXXX1` records value `$01`, care
   mask `$01`, width 8. `%XXXXXX1X` records value `$02`, care mask `$02`, width
   8. Concrete values carry an all-ones care mask.
-- Future v1 mask/logical expressions `|`, `&`, and `^` require known same-width
+- V1 mask/logical expressions `|`, `&`, and `^` require known same-width
   operands. Result kind is `MASK` if either input is `MASK`. Care-mask rules:
   OR is known if both inputs are known or either input is known 1; AND is known
   if both inputs are known or either input is known 0; XOR is known only if both
@@ -465,7 +461,8 @@ A [addr] [label[:]] MMM [operand] .
   `PSTR'...'` are parked later.
 - `DW expr[,expr...]` emits each resolved expression as one little-endian
   16-bit word. `DW $1234,$12,10+1,'A'` emits `34 12 12 00 0B 00 41 00`.
-  Empty `DW`, leading/trailing commas, masks, and unresolved expressions fail
+  A simple unresolved symbol uses the existing word-fixup path. Empty `DW`,
+  leading/trailing commas, masks, and unresolved compound expressions fail
   clearly.
 - Unknown ordinary symbol operands default to absolute fixups when the mnemonic
   does not force another mode. For example, `LDA FOO` emits the absolute form
@@ -539,9 +536,9 @@ A [addr] [label[:]] MMM [operand] .
   from the seal base. `$04` ABS16_IMPORT, `$05` LO8_IMPORT, and `$06`
   HI8_IMPORT record imported values: site is still a seal-base offset, while
   target low carries the import slot index and target high is zero.
-- The default flash image omits interactive `RESOLVE` in the first
-  `LOAD`/`INSTALL` slice. Import metadata remains packageable, but runnable
-  `LOAD` rejects imports with `BAD FIX`.
+- The default flash image delegates AP v2 parsing, loading, relocation, and
+  resident import resolution to HIMON's service. A missing import, kind
+  mismatch, malformed row, or invalid package fails atomically with `BAD FIX`.
 - `SEAL> RELOCATE address` is the first RAM-overlay move proof. It is
   available only after clean `END`, copies the frozen body to the requested RAM
   base, applies `$01/$02/$03` internal relocation rows against that base, and
@@ -561,8 +558,9 @@ A [addr] [label[:]] MMM [operand] .
 - `SEAL> CHECK address` is the AP v2 package reader proof. It remains
   enabled in full-core smoke and optional diagnostic builds, but the default
   flash-resident ASM image omits the interactive `CHECK` command after the
-  board proof because the `$8000-$BFFF` flash window was only `$24` bytes below
-  `$C000`. This slice checks header, range, section order, section length
+  board proof to preserve resident headroom. The accepted compact image has
+  `$0544` bytes below `$C000`. The diagnostic path checks header, range,
+  section order, section length
   accounting, relocation count shape, typed EXP/IMP rows, and body
   length versus the seal record.
 - AP package addresses and execution addresses are separate. An AP envelope can
@@ -570,19 +568,16 @@ A [addr] [label[:]] MMM [operand] .
   as opaque bytes without relocation. Relocation is required only when the BODY
   bytes are loaded or installed to execute at a base different from the sealed
   base.
-- `SEAL> LOAD pkg dest` is the first runnable AP path. It performs a minimal AP
-  parse, copies BODY to a destination that fits wholly in `$2000-$4FFF`, applies
-  internal `$01-$03` relocation rows, and rejects declared imports/import
-  relocation rows with `BAD FIX`. Full AP validation, BODY FNV verification,
-  import resolution, RJOIN publication, and banked execution are deferred. For
-  RAM package sources in this slice, the destination BODY must end before the AP
-  envelope begins; this conservative rule avoids self-overwriting copies while
-  keeping the resident loader small.
-- HIMON `AP pkg dest` is the first resident run command for installed AP
-  packages. It calls the same resident AP `LOAD` service and then runs `dest`
-  through the existing monitor return-report path. To keep ROM growth small,
-  v0 requires the package entry to be BODY offset zero and does not create
-  per-package command-name records yet.
+- `SEAL> LOAD pkg dest` validates the complete AP v2 structure and BODY FNV,
+  copies BODY to a destination wholly inside `$2000-$4FFF`, applies internal
+  `$01-$03` relocations, and resolves kind-matched `$04-$06` imports through
+  resident RJOIN before committing patches. RAM source/destination overlap is
+  handled with memmove semantics; supported banked sources use the resident
+  staging path.
+- HIMON `AP pkg dest` calls the same resident AP v2 load/link service and then
+  runs `dest + ENTRY offset` through the monitor return-report path. `ENTRY`
+  may be nonzero; the accepted 64-relocation card runs at offset `$0081`.
+  Installed lookup by package hash/name remains future catalog work.
 - The planned pure-overlay profile is a fixed-base installed image, distinct
   from a relocatable AP envelope. It occupies `$4000-$4FFF`, with a 16-byte
   validation/ABI header at `$4000` and a BODY based at `$4010`. Its source bank

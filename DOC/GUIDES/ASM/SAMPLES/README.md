@@ -9,6 +9,12 @@ fixtures, proof-only sources, and completed board-test cards belong in
 
 - `asm-session-report-v1.2-ap-2000.a` - current movable, Bank-0-storable ASM
   session reporter when supplied from a compatible RAM/visible-flash path.
+- `expr-negative-rollback-2000.a` - final-image expression rejection and
+  transactional rollback card.
+- `opcode-reduction-runtime-2000.a` - runtime coverage for the compact shared
+  ALU and shift/rotate opcode tables.
+- `seal-workflow-2000.a` - small named body for final post-`END` command-flow
+  testing.
 
 The old general Bank-0/Bank-2 AP installation surface is archived. Split-V1
 HIMON's `$F010/$0203` banked AP staging path, invalid-package rejection, and

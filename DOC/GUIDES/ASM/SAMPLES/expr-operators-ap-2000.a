@@ -1,0 +1,43 @@
+; ASM-F2 SIZE-FIRST EXPRESSION/AP RELOCATION CARD.
+; EXPECT DIRECT G 2000 OR PACKAGED AP RUN TO RETURN A=$67, C=1,
+; AND WRITE $67 TO $7100.  FAILURE WRITES/RETURNS $EE WITH C=0.
+; OPERATORS ARE STRICTLY LEFT-TO-RIGHT; 1+2<<3 IS (1+2)<<3=$18.
+
+        ORG $2000
+START   JMP RUN
+DATA    DB $11,$22
+MASK    EQU %XXXXXXX1|%XXXXXX1X
+
+RUN     LDA DATA+1
+        CMP #$22
+        BNE FAIL
+        LDA #1+2<<3
+        CMP #$18
+        BNE FAIL
+        LDA #$F0&$CC
+        CMP #$C0
+        BNE FAIL
+        LDA #$F0|$0F
+        CMP #$FF
+        BNE FAIL
+        LDA #$F0^$AA
+        CMP #$5A
+        BNE FAIL
+        LDA #1<<7
+        CMP #$80
+        BNE FAIL
+        LDA #$8000>>8
+        CMP #$80
+        BNE FAIL
+        LDA #$67
+        STA $7100
+        SEC
+        RTS
+
+FAIL    LDA #$EE
+        STA $7100
+        CLC
+        RTS
+
+        ENTRY START
+        END

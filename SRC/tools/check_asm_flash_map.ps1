@@ -45,4 +45,29 @@ if ($endUdata -gt 0x7D00) {
     throw ('Flash ASM UDATA crosses HIMON workspace: _END_UDATA={0:X4}' -f $endUdata)
 }
 
+$pcLo = Get-Symbol 'ASM_PC_LO'
+$pcHi = Get-Symbol 'ASM_PC_HI'
+$cmdLo = Get-Symbol 'ASMF_CMD_PTR_LO'
+$cmdHi = Get-Symbol 'ASMF_CMD_PTR_HI'
+if ($pcLo -ne 0x80 -or $pcHi -ne 0x81 -or
+    $cmdLo -ne 0x82 -or $cmdHi -ne 0x83) {
+    throw ('ASM flash zero-page frame changed: PC={0:X2}-{1:X2} CMD={2:X2}-{3:X2}' -f
+        $pcLo, $pcHi, $cmdLo, $cmdHi)
+}
+
+# Wrapper call sites and the status dispatcher store only low-byte message
+# pointers.  The ordered messages occupy adjacent pages with disjoint
+# low-byte ranges around MSG_TITLE's low byte so ASMF_MSG_XY can recover the
+# page without alignment padding.
+$messageFirst = Get-Symbol 'MSG_TITLE'
+$messageSplit = Get-Symbol 'MSG_STATUS_BAD_LINE'
+$messageEnd = (Get-Symbol 'ASMF_CMD_RELOCATE') - 1
+if (($messageSplit -band 0x00FF) -ge ($messageFirst -band 0x00FF) -or
+    ($messageSplit -band 0xFF00) -ne (($messageFirst -band 0xFF00) + 0x0100) -or
+    ($messageEnd -band 0xFF00) -ne ($messageSplit -band 0xFF00) -or
+    ($messageEnd -band 0x00FF) -ge ($messageFirst -band 0x00FF)) {
+    throw ('ASM flash message-page split invalid: {0:X4}/{1:X4}-{2:X4}' -f
+        $messageFirst, $messageSplit, $messageEnd)
+}
+
 Write-Host ('asm-v1-flash RAM map low=0200-19FF user=1A00-1FFF udata=5000-{0:X4} upper={0:X4}-7CFF' -f $endUdata)

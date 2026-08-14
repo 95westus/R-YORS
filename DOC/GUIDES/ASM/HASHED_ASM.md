@@ -1571,10 +1571,11 @@ lookup answer must still be proven before ASM trusts the value.
 
 ## ASM 1.80 Expression Evaluator
 
-ASM 1.80 evaluates the small v1 expression language. The current source slice
-routes `ASM_PARSE_EXPR` through `EQU`, `ORG`, and `DW`; `DB`/`DS` lists and
-instruction operands still use their atom-specific parsers. The source syntax
-is readable infix. RPN is allowed only as an internal implementation form.
+ASM 1.80 evaluates the small v1 expression language. The current source routes
+resolved expressions through `EQU`, `ORG`, mnemonic operands, and
+`DB`/`DW`/`DS` items. A shared fallback retains simple unresolved-symbol and
+selector fixups. The source syntax is readable infix. RPN is allowed only as
+an internal implementation form.
 
 Expression-evaluator jobs:
 
@@ -1582,7 +1583,7 @@ Expression-evaluator jobs:
 parse one resolved expression from the current directive tail
 resolve known RAM-session symbols through ASM_LOOKUP_SYMBOL
 return value, kind, width, and care mask
-honor strict left-to-right + and - evaluation
+honor strict left-to-right +, -, &, |, ^, <<, and >> evaluation
 reject grouping parentheses in expression context
 ```
 
@@ -1608,9 +1609,9 @@ Current `ASM_PARSE_EXPR` parses one expression and stops only at expression-tail
 terminators:
 
 ```text
-NUL/EOL/comment   normal end for EQU/ORG/DW tail
-comma             DW list terminator; future DB/DS and indexed-operand terminator
-right paren       future terminator inside addressing forms
+NUL/EOL/comment   normal end for a statement tail
+comma             DB/DW/DS list or indexed-operand terminator
+right paren       terminator inside indirect addressing forms
 ```
 
 The terminator is not part of the expression result. The caller owns the list or
@@ -1623,12 +1624,11 @@ Current executable expression grammar:
 ```text
 expr      term { op term }*
 atom      decimal | hex | binary/mask | char | symbol | *
-op        one of + -
+op        one of + - & | ^ << >>
 ```
 
-The target v1 language reserves `<`/`>` selectors and `|`, `&`, `^` logical/mask
-operators, but those are still separate operand/DB atom paths or future
-expression work in the current source slice.
+`<` and `>` remain prefix byte selectors in the simple operand/data atom path;
+they are not single-character shift operators. Shifts require `<<` or `>>`.
 
 The target source syntax has no precedence:
 
@@ -1718,52 +1718,51 @@ ORG and EQU expression tails
 DW expression lists
 single concrete atoms: decimal, hex, char, binary/mask, known symbol, *
 resolved binary + and - over concrete VALUE and ADDR terms
+resolved &, |, and ^ over same-width concrete or mask terms
+resolved 16-bit logical << and >> with counts 0 through 15
 left-to-right evaluation with no precedence
 ADDR + VALUE, VALUE + ADDR, ADDR - VALUE
 ADDR - ADDR as a VALUE/NONE delta
 VALUE + VALUE and VALUE - VALUE
 ZP/ABS address width retention with range checks
 
+resolved mnemonic operand math such as LDA DATA+1
+resolved DB/DW/DS item math such as DB BASE+1
+internal relocation tracking for resolved LABEL+constant results
+
 NOT YET
-mnemonic operand-tail arithmetic such as LDA $12+1
-DB/DS list arithmetic such as DB BASE+1
 forward addends such as FOO+1
 forward EQU dependency chains
-logical/mask operators |, &, ^
 selector addends such as <FOO+1 or >FOO+1
 unary minus and grouping parentheses
 ```
 
-Deferred expression slice:
+Size-first expression boundary:
 
 ```text
-implement |, &, and ^ in ASM_PARSE_EXPR
-spell them as OR, AND, and EOR/XOR in docs and tests
-make them available first through existing expression callers: EQU, ORG, DW
-keep them resolved-now; reject unresolved compound expressions
+implement only +, -, &, |, ^, <<, and >> in ASM_PARSE_EXPR
+keep them resolved-now; reject unresolved compound expressions and fixups
 keep strict left-to-right evaluation; no precedence and no parentheses
-leave DB/DS list expression math for a separate refactor
+keep * as the current-PC atom; do not add multiplication or division
 ```
 
-This slice is deliberately deferred. The current next ASM pass remains the
-onboard proof of the already host-proven `+`/`-` expression math.
+The evaluator, shared data-item parser, and operand integration implement this
+boundary. Direct and AP-relocated board execution passed on HIMON/ASM-F2
+`00.0814(0654)`; the exact transcript is in
+`../LOGS/HARDWARE_TEST_LOG.md`.
+The next expression expansion, unresolved compound fixups, is an explicit
+unchecked item in the
+[ASM Feature Queue](../PLANNING/TODO.md#asm-feature-queue); review that gate
+before beginning another ASM feature pass.
 
-That last boundary is intentional. `DW` already treats each comma-separated item
-as an expression and then forces one little-endian word per result. `DB` and
-`DS` came up through an older byte/list path: they parse one atom at a time,
-own comma handling themselves, and emit byte or word data from that atom's
-recorded width. That path is good for small byte-data rows and for `DS`
-initializer reuse, but it is not yet the general expression-list path. Until it
-is rewired, write compound byte data through an `EQU`:
+`DW` forces one little-endian word per expression. `DB` preserves its existing
+byte-or-word width behavior, and `DS` accepts an expression for its count and
+each initializer item. All three share expression/list parsing now, while the
+simple unresolved-symbol fallback preserves their existing fixup behavior:
 
 ```asm
 FLAGS   EQU A|B
         DB FLAGS
-```
-
-not:
-
-```asm
         DB A|B
 ```
 
@@ -1783,9 +1782,8 @@ $0012-$0011   VALUE/NONE delta
 10 + 1        VALUE/NONE result
 ```
 
-`|`, `&`, and `^` are target v1 logical/mask operators still to implement in
-`ASM_PARSE_EXPR`. They are for known same-width values or masks. Mask operands
-carry `value`, `care`, and `width`.
+`|`, `&`, and `^` are implemented for resolved same-width values or masks.
+Mask operands carry `value`, `care`, and `width`.
 
 ```text
 OR   known if both inputs are known, or either input is known 1
@@ -1796,6 +1794,12 @@ XOR  known only if both inputs are known
 If either input is `MASK`, the result is `MASK` unless the result care mask is
 all ones, in which case it may normalize to `VALUE`. `+` and `-` on masks are
 `BAD WIDTH`.
+
+`<<` and `>>` are logical 16-bit shifts over resolved concrete terms. The
+right term is a count from 0 through 15; larger counts are `BAD RANGE`. The
+result is a concrete `VALUE/NONE`. Relocatable label terms are rejected for
+logical and shift operators because AP relocation is additive, not an
+arbitrary expression replay engine.
 
 ### ASM 1.80.6 Unresolved-Expression Policy
 
@@ -3437,12 +3441,14 @@ number
 |                bitwise OR
 &                bitwise AND
 ^                bitwise EOR/XOR
+<<               16-bit logical left shift
+>>               16-bit logical right shift
 ```
 
-Current executable ASM only implements resolved concrete `+` and `-` through
-`ASM_PARSE_EXPR`, used by `ORG` and `EQU`. The `|`, `&`, and `^` rows above are
-the deferred v1 mask/logical design and remain future work until that slice is
-explicitly reopened.
+Current executable ASM implements this exact operator set through
+`ASM_PARSE_EXPR`. It is shared by `ORG`, `EQU`, mnemonic operands, and
+`DB`/`DW`/`DS`. Multiplication and division are not operators; `*` remains the
+current-PC atom and `/` is rejected.
 
 Unary minus is not v1 syntax. Write `0-1` if you need to express subtraction
 from zero, then let the target context range-check the result. `DB -1` is
@@ -3553,6 +3559,8 @@ expr - expr       concrete value/address only
 expr | expr       concrete or mask, same width, resolved now
 expr & expr       concrete or mask, same width, resolved now
 expr ^ expr       concrete or mask, same width, resolved now
+expr << expr      concrete terms; shift count 0..15; resolved now
+expr >> expr      concrete terms; shift count 0..15; resolved now
 ```
 
 Internal RPN is an implementation form only. For example:
@@ -5228,7 +5236,7 @@ and length. `INSTALL pkg flash_addr` copies the unchanged AP envelope into an
 erased visible low-flash hole through HIMON's flash-install service; banked
 flash install remains future work.
 
-`CHECK address` is the matching AP v1 envelope validator. It is enabled in
+`CHECK address` is the matching AP v2 envelope validator. It is enabled in
 full-core smoke and optional diagnostic builds, and omitted from the stripped
 RAM paste wrapper and the default flash-resident wrapper after the board proof.
 That keeps the `$8000-$BFFF` flash image away from the `$C000` HIMON boundary

@@ -943,7 +943,9 @@ there is no 32-byte slot per symbol. Both the row limit and pool limit are
 checked before commit, and line rollback restores the pool cursor.
 
 The former AP v1/HIMON 50-row boundary remains historical hardware evidence.
-AP v2 host/build gates pass; AP v2 board acceptance is tracked in
+AP v2 host/build and board gates pass, including all 64 relocation rows, all
+64 export/import slots, typed import matching, named package identity, and the
+relocated expression card. Exact evidence is tracked in
 [TEST_PLAN.md](TEST_PLAN.md).
 
 These are implementation limits, not permanent language promises.

@@ -21,6 +21,10 @@ size-conscious W65C02 code built as routines made from routines.
   new evidence instead.
 - Keep ASM slice changes narrow and update `DOC/GUIDES/ASM/TEST_PLAN.md` when
   a test phase or hardware proof changes.
+- Before implementing an ASM feature, review the **ASM Feature Queue** in
+  `DOC/GUIDES/PLANNING/TODO.md`; update its checkbox/evidence only when the
+  implementation, size measurement, host tests, documentation, and required
+  board proof agree.
 - Avoid reverting unrelated dirty files; assume they may be user work.
 
 ## Current Project Shape

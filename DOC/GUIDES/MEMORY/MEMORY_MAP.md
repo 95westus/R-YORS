@@ -17,9 +17,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E768   HIMON CODE, START/standalone RESET entry at $C000
-$E769-$EC8F   HIMON DATA
-$EC90-$FFF9   current image gap and external STR8-N/high-ROM space
+$C000-$E909   HIMON CODE, START/standalone RESET entry at $C000
+$E90A-$EE30   HIMON DATA
+$EE31-$FFF9   current image gap and external STR8-N/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -43,9 +43,9 @@ explicit handoff contract; STR8 must not reserve those addresses.
 Current ROM hardware vectors:
 
 ```text
-$FFFA-$FFFB   NMI   = $E46B
+$FFFA-$FFFB   NMI   = $E60C
 $FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $E46E
+$FFFE-$FFFF   IRQ   = $E60F
 ```
 
 Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
@@ -78,10 +78,10 @@ targets are owned and checked by the standalone STR8-N build.
 Combined image layout:
 
 ```text
-$8000-$BC6C   ASM-F2 low-flash image, entry $800C
-$BC6D-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
-$C000-$EC8F   HIMON body, including resident AP import linker
-$EC90-$EFFF   current image gap inside the E sector
+$8000-$BABA   ASM-F2 low-flash image, entry $800C
+$BABB-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
+$C000-$EE30   HIMON body, including resident AP v2 import linker
+$EE31-$EFFF   current image gap inside the E sector
 $F000-$FD53   STR8-N v1.2 resident supervisor, installer, loader, and services
 $FD54-$FD5B   enforced unused margin, 8 bytes
 $FD5C-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$0453
@@ -340,14 +340,18 @@ $7EFC-$7EFD   IRQ/BRK vector target
 $7EFE-$7EFF   IRQ non-BRK vector target
 ```
 
-Current zero-page detail:
+Current zero-page detail. The ASM ranges are reserved only while ASM-F2 is
+active; ordinary user code may reuse `$00-$AF` after ASM exits:
 
 ```text
-$00-$8F   user/free while running
-$90-$A0   user/free normally; transient STR8 I installer state during recovery
-$A1-$AF   user/free while running
-$B0-$CA   reserved for future R-YORS/HIMON/THE/ASM zero-page expansion;
-          possible active pointer lanes and addressing-mode workspace
+$00-$7F   user/free while running
+$80-$81   ASM current PC while ASM-F2 is active
+$82-$83   flash ASM wrapper command pointer while ASM-F2 is active
+$84-$AF   ASM core parser/emitter frame while ASM-F2 is active;
+          $90-$A0 may instead hold transient STR8 I installer recovery state
+$B0-$B3   shared FNV32 hash state; volatile across hash/catalog services
+$B4-$C6   reserved shared service expansion/scratch
+$C7-$CA   shared FNV32 multiply term; volatile across hash/catalog services
 $CB        CRC16_LO
 $CC        CRC16_HI
 

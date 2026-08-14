@@ -136,10 +136,11 @@ can carry body bytes, relocation rows, exports, and resident imports. HIMON's
 AP service validates the envelope, loads the body to `$2000-$4FFF`, resolves
 RJOIN imports, applies relocations, and transfers to the entry.
 
-The normal compact flash ASM ends at `$BC6C`, leaving `$0393` to `$BFFF`.
-Enabling full AP checking costs 651 bytes and ends at `$BEF7`, leaving `$0108`.
-The checked build is useful as an optional integrity target; it is too costly
-to be the default compact image.
+The corrected compact flash ASM candidate occupies `$8000-$BABA`;
+`_END_DATA=$BABB` leaves `$0545` bytes through `$BFFF`. Its map uses CODE
+`$382C`, DATA `$028F`, and UDATA `$5000-$6D6B`. The default resident wrapper
+keeps AP v2 package/load/install support and omits the diagnostic-only `CHECK`
+command to preserve this headroom.
 
 ## Import And Export
 

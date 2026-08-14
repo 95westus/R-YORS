@@ -28,6 +28,39 @@ function Format-HexByte {
 $sourceFullPath = (Resolve-Path -LiteralPath $SourcePath).Path
 $text = [System.IO.File]::ReadAllText($sourceFullPath)
 $text = $text -replace "`r`n", "`n"
+
+$directiveIdsExpected = @(
+    'ASM_VID_DB', 'ASM_VID_DC', 'ASM_VID_DS', 'ASM_VID_DW',
+    'ASM_VID_END', 'ASM_VID_IMPORT', 'ASM_VID_EQU',
+    'ASM_VID_EXPORT', 'ASM_VID_ORG', 'ASM_VID_ENTRY'
+)
+$directiveCountMatch = [regex]::Match(
+    $text,
+    '(?m)^ASM_VOC_DIR_COUNT\s+EQU\s+\$([0-9A-Fa-f]{2})\s*$'
+)
+if (-not $directiveCountMatch.Success -or
+    [Convert]::ToInt32($directiveCountMatch.Groups[1].Value, 16) -ne
+        $directiveIdsExpected.Count) {
+    Fail-OpcodeAudit 'compact directive count does not match the audited list'
+}
+$directiveTableMatch = [regex]::Match(
+    $text,
+    '(?ms)^ASM_VOC_DIR_IDS:.*?(?=^\s*$)'
+)
+if (-not $directiveTableMatch.Success) {
+    Fail-OpcodeAudit 'could not locate compact directive ID table'
+}
+$directiveIdsActual = @(
+    [regex]::Matches($directiveTableMatch.Value, 'ASM_VID_[A-Z]+') |
+        ForEach-Object { $_.Value }
+)
+if (($directiveIdsActual -join ',') -ne ($directiveIdsExpected -join ',')) {
+    Fail-OpcodeAudit 'compact directive ID table no longer matches the vocabulary'
+}
+if ($text -match '(?m)^ASM_VOC_KIND_TAB:') {
+    Fail-OpcodeAudit 'retired full vocabulary-kind table is present'
+}
+
 $sectionMatch = [regex]::Match(
     $text,
     '(?ms)^ASM_FIND_OPCODE:\n.*?^; -+\n; ROUTINE: ASM_EMIT'
@@ -358,6 +391,11 @@ foreach ($mnemonic in @('BCC','BCS','BEQ','BMI','BNE','BPL','BRA','BVC','BVS')) 
     $branchSet[$mnemonic] = $true
 }
 
+$aluFamilySet = @{}
+foreach ($mnemonic in @('ADC','SBC','AND','ORA','EOR','CMP','LDA','STA')) {
+    $aluFamilySet[$mnemonic] = $true
+}
+
 $expectedHandlers = @{}
 $expectedByKey = @{}
 foreach ($row in $script:expectedRows) {
@@ -394,8 +432,24 @@ if (-not [regex]::IsMatch(
     Fail-OpcodeAudit 'branch common path no longer checks REL8'
 }
 
+$aluBaseHitBlock = Get-AsmLabelBlock 'ASM_FIND_OPCODE_ALU_BASE_HIT'
+if (-not [regex]::IsMatch(
+        $aluBaseHitBlock,
+        'CMP\s+#ASM_VID_STA\s*\n\s*BNE\s+ASM_FIND_OPCODE_ALU_SCAN_MODE\s*\n' +
+            '\s*LDA\s+ASM_MODE\s*\n\s*CMP\s+#ASM_OPM_IMM8\s*\n' +
+            '\s*BEQ\s+ASM_FIND_OPCODE_ALU_BAD_MODE'
+    )) {
+    Fail-OpcodeAudit 'ALU-family path no longer rejects STA immediate mode'
+}
+$aluModeHitBlock = Get-AsmLabelBlock 'ASM_FIND_OPCODE_ALU_MODE_HIT'
+if (-not [regex]::IsMatch(
+        $aluModeHitBlock,
+        'ADC\s+ASM_TMP0_LO\s*\n\s*JMP\s+ASM_FIND_OPCODE_OK_A'
+    )) {
+    Fail-OpcodeAudit 'ALU-family path no longer adds its base opcode'
+}
+
 Assert-ModeRowShardFits 'ASM_FIND_OPCODE_MODE_ROWS_A'
-Assert-ModeRowShardFits 'ASM_FIND_OPCODE_MODE_ROWS_B'
 
 $actualRows = @{}
 function Add-ActualRow {
@@ -420,6 +474,37 @@ function Add-ActualRow {
 
 foreach ($mnemonic in ($actualHandlers.Keys | Sort-Object)) {
     $handlerLabel = "ASM_FIND_OPCODE_$mnemonic"
+    if ($aluFamilySet.ContainsKey($mnemonic)) {
+        $handlerBlock = Get-AsmLabelBlock $handlerLabel
+        $baseMatch = [regex]::Match(
+            $handlerBlock,
+            '(?m)^\s*DB\s+ASM_VID_' + [regex]::Escape($mnemonic) +
+                '\s*,\s*\$([0-9A-Fa-f]{2})\s*$'
+        )
+        if (-not $baseMatch.Success) {
+            Fail-OpcodeAudit "missing ALU-family base for $mnemonic"
+        }
+        $baseOpcode = [Convert]::ToInt32($baseMatch.Groups[1].Value, 16)
+        $modeBlock = Get-AsmLabelBlock 'ASM_FIND_OPCODE_ALU_MODE_ROWS'
+        $modeRows = [regex]::Matches(
+            $modeBlock,
+            '(?m)^\s*DB\s+ASM_OPM_([A-Z0-9_]+)\s*,\s*\$([0-9A-Fa-f]{2})\s*$'
+        )
+        if ($modeRows.Count -ne 9) {
+            Fail-OpcodeAudit 'ALU-family mode-offset table must contain nine rows'
+        }
+        foreach ($modeRow in $modeRows) {
+            $mode = $modeRow.Groups[1].Value
+            if ($mnemonic -eq 'STA' -and $mode -eq 'IMM8') {
+                continue
+            }
+            $delta = [Convert]::ToInt32($modeRow.Groups[2].Value, 16)
+            Add-ActualRow $mnemonic $mode (($baseOpcode + $delta) -band 0xFF) `
+                $handlerLabel
+        }
+        continue
+    }
+
     if ($mnemonic -eq 'RMB' -or $mnemonic -eq 'SMB' -or
             $mnemonic -eq 'BBR' -or $mnemonic -eq 'BBS') {
         $mode = 'BIT_ZP'

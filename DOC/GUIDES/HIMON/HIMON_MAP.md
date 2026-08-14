@@ -360,10 +360,10 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
-| AP package run | `AP pkg dst` | `CMD_AP`, `HIM_AP_SERVICE` | Loads an AP v1 envelope from RAM or visible flash to `$2000-$4FFF`, applies current internal relocations, then runs `dst`. | V0 keeps the ROM cost low by requiring the package entry to be BODY offset zero. It is not a package-name registry yet. |
+| AP package run | `AP pkg dst` | `CMD_AP`, `HIM_AP_SERVICE` | Loads an AP v2 envelope from RAM, visible flash, or the supported banked-source path to `$2000-$4FFF`, applies internal/import relocations, then runs the executable `ENTRY` offset. | AP v2 validates typed exports/imports and supports 64 relocation rows. Installed lookup by package hash/name remains future catalog work. |
 | Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; confirms, then jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; kind is `K03`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_RECORD_S1`, `L_VALIDATE_RAM_SPAN` | Accepts S0/S1/S9, validates each complete record before copying S1 data, tracks the byte count, and reports the S9 entry without executing it. Ctrl-C cancels the receive session and returns immediately to the prompt; earlier accepted records remain in RAM, but the interrupted line is not applied. | Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` are rejected by the bare-`L` grammar. |
-| AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_IMPORT_LINK`, `HIM_AP_FIND_HOLE` | Parses AP v1 envelopes, loads BODY to `$2000-$4FFF`, resolves RJOIN imports, applies internal/import relocation rows, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` and HIMON `AP pkg dst` call this so AP package consumption and linking survive after ASM exits. AP v1 accepts at most 50 relocation rows (`R` length `$FB`). STR8 carries no AP/FNV linker code. |
+| AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_IMPORT_LINK`, `HIM_AP_FIND_HOLE` | Parses AP v2 envelopes, loads BODY to `$2000-$4FFF`, resolves kind-matched RJOIN imports, applies internal/import relocation rows, derives the executable entry, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` and HIMON `AP pkg dst` call this so AP package consumption and linking survive after ASM exits. AP v2 uses 16-bit section lengths and accepts 64 relocation/export/import rows. STR8 carries no AP/FNV linker code. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Patch targets are limited to user program RAM below `$7A00`, so monitor RAM and `$7F00-$7FFF` I/O stay protected. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
 | Single step | `N` | `CMD_N`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by packed opcode length, prints mnemonic-only step diagnostics, plants a temporary BRK, resumes with `RTI`. | Temporary trap targets use the same patchable-RAM guard as `B`; monitor RAM and I/O are not patched. |
@@ -482,6 +482,26 @@ This leaves `$00D3` bytes below `$F000`. The size pass removed quoted hashing
 and the resident `D` continuation/search forms, then used the released space
 for HIMON-owned AP import linking. STR8 `$F006` remains stable but now contains
 only a compatibility adapter into the resident AP service.
+
+2026-08-14 accepted HIMON/AP v2 map used with ASM-F2 `00.0814(0654)`:
+
+```text
+CODE     $290A / 10506
+DATA     $0527 /  1319
+TOTAL    $2E31 / 11825
+_END_DATA = $EE31
+CMD_AP = $C3BF
+HIM_PACK40_ASCII_TO_CODE = $D3A6
+HIM_PACK40_PACK3 = $D3E6
+HIM_AP_SERVICE = $D4AF
+HIM_AP_IMPORT_LINK = $DC37
+AP service cells = $7E2D-$7E40
+```
+
+This leaves `$01CF` bytes below `$F000`. The compiled host gate exercises all
+64 AP v2 relocation rows and the second-page target lanes; installed-board
+cards accept 64 exports, 64 imports, typed import matching, named package
+identity, and relocated execution.
 
 ## Edge Evidence Rules
 

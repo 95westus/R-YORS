@@ -22060,3 +22060,708 @@ RET A=0D X=0F Y=0D P=75 S=FD NV-BdIzC
 
 The two `D 3200 3200` attempts merely printed HIMON's dump usage and changed
 nothing. The maintained card uses the accepted single-address form `D 3200`.
+
+## 2026-08-14 Size-First Expression/AP and Reduced-Image Acceptance
+
+Status: accepted on HIMON/ASM-F2 `00.0814(0654)`. This is the cumulative
+replacement image containing the ASM code/data reductions, structural
+reduction continuation, and the size-first expression set.
+
+STR8-N installed the combined Bank 3 `$8000-$EFFF` image and cold boot cleared
+RAM. The card assembled at `$2000`, named packaging produced `$0076` bytes at
+`$3200`, and both direct execution and AP relocation to `$3000` returned
+A=`$67` with carry set and wrote `$67` to `$7100`. The regenerated `$071B`
+reporter matched `_END_DATA=$BABC`, UDATA `$5000-$6D6B`, the two expected
+relocation rows, and executable export `START` before ending `ASM REPORT OK`.
+
+Exact transcript:
+
+```text
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(0654)
+>ASM NEW
+ASM-F2 00.0814(0654)
+ASM>$2000: ; ASM-F2 SIZE-FIRST EXPRESSION/AP RELOCATION CARD.
+ASM>$2000: ; EXPECT DIRECT G 2000 OR PACKAGED AP RUN TO RETURN A=$67, C=1,
+ASM>$2000: ; AND WRITE $67 TO $7100.  FAILURE WRITES/RETURNS $EE WITH C=0.
+ASM>$2000: ; OPERATORS ARE STRICTLY LEFT-TO-RIGHT; 1+2<<3 IS (1+2)<<3=$18.
+ASM>$2000:
+ASM>$2000:         ORG $2000
+ASM>$2000: START   JMP RUN
+ASM>$2003: DATA    DB $11,$22
+ASM>$2005: MASK    EQU %XXXXXXX1|%XXXXXX1X
+ASM>$2005:
+ASM>$2005: RUN     LDA DATA+1
+ASM>$2008:         CMP #$22
+ASM>$200A:         BNE FAIL
+ASM>$200C:         LDA #1+2<<3
+ASM>$200E:         CMP #$18
+ASM>$2010:         BNE FAIL
+ASM>$2012:         LDA #$F0&$CC
+ASM>$2014:         CMP #$C0
+ASM>$2016:         BNE FAIL
+ASM>$2018:         LDA #$F0|$0F
+ASM>$201A:         CMP #$FF
+ASM>$201C:         BNE FAIL
+ASM>$201E:         LDA #$F0^$AA
+ASM>$2020:         CMP #$5A
+ASM>$2022:         BNE FAIL
+ASM>$2024:         LDA #1<<7
+ASM>$2026:         CMP #$80
+ASM>$2028:         BNE FAIL
+ASM>$202A:         LDA #$8000>>8
+ASM>$202C:         CMP #$80
+ASM>$202E:         BNE FAIL
+ASM>$2030:         LDA #$67
+ASM>$2032:         STA $7100
+ASM>$2035:         SEC
+ASM>$2036:         RTS
+ASM>$2037:
+ASM>$2037: FAIL    LDA #$EE
+ASM>$2039:         STA $7100
+ASM>$203C:         CLC
+ASM>$203D:         RTS
+ASM>$203E:
+ASM>$203E:         ENTRY START
+ASM>$203E:         END
+ASM OK
+SEAL> PACKAGE START $3200
+PKG OK @=$3200 L=$0076
+SEAL> .
+ASM BYE
+>G 2000
+GO 2000
+
+#GO# ENTRY=2000
+RET A=67 X=30 Y=30 P=75 S=FD NV-BdIzC
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=67 X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 7100
+7100: 67 | g
+>L
+L S19
+L @7000
+L OK=071B ENTRY=7000
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$203E
+HIGH=$203E
+BYTES=$003E
+LINES=$0027
+SYMS=$05/$80
+NAMEPOOL=$0014/$0800
+FIXUPS=$08/$80
+REFS=$01/$C0
+TRUNC=NO
+MAP END=$BABC UDATA=$5000-6D6B
+SEAL FL BASE END LEN FNV 01 2000 203E 003E 90564B29
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 05 08 02 01 00 00 00
+PKG @ LEN BODY INST3200 0076 0000 0000 ID START
+USED
+DATA DEF=$0007 REFS=$01 FIRST=$0009
+UNUSED
+START DEF=$0006
+MASK DEF=$0008
+RUN DEF=$0009
+FAIL DEF=$0022
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 2000  01 04 0E 0006 00  0000  START
+01 01 2003  01 04 0F 0007 01  0009  DATA
+02 01 0003  02 05 16 0008 00  0000  MASK
+03 01 2005  01 04 0E 0009 00  0000  RUN
+04 01 2037  01 04 0E 0022 00  0000  FAIL
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  2001 2003 RUN
+01 02 07   00  200B 200C FAIL
+02 02 07   00  2011 2012 FAIL
+03 02 07   00  2017 2018 FAIL
+04 02 07   00  201D 201E FAIL
+05 02 07   00  2023 2024 FAIL
+06 02 07   00  2029 202A FAIL
+07 02 07   00  202F 2030 FAIL
+RELOCS
+SL K  SITE TARG
+00 01 0001 0005
+01 01 0006 0004
+EXPORTS
+SL K  SYM NAME
+00 81 00 START
+IMPORTS
+SL K  LEN FNV
+ASM REPORT OK
+
+#GO# ENTRY=7000
+RET A=0D X=0D Y=0D P=75 S=FD NV-BdIzC
+>
+```
+
+## 2026-08-14 ASM-F2 Final Post-END Workflow Card C Acceptance
+
+The four final-image entries below are ordered newest-first: Card C
+acceptance, Card B acceptance, corrected Card A acceptance, then the retained
+`0654` Card A failure that triggered the correction.
+
+Status: accepted on HIMON/ASM-F2 `00.0814(0805)`. `SEAL` and explicit
+relocation to `$3000` succeeded. The deliberately wrong package identity
+returned `$08` and preserved the seeded `$5A` at `$3200`, proving rejection
+before package writes. The relocated body returned A=`$C3` with carry set and
+wrote `$7905=$C3`.
+
+`ASM SEAL` resumed the preserved post-`END` session. Named packaging produced
+a `$003D`-byte AP v2 envelope, one-argument `INSTALL` reported advisory address
+`$BABB` without programming flash, and `LOAD` installed the `$000A`-byte body
+at `$3000` with one relocation. The loaded run repeated A=`$C3`, carry set,
+and `$7905=$C3`; a second `ASM SEAL` again resumed `SEAL>`. The extra `/`
+command was rejected as `$03 BAD OPER` at unchanged `PC=$200A`, after which
+the required final `.` returned through `ASM BYE` to bare HIMON. The post-exit
+`EXEC ERR=$03` is the retained deliberate `/` rejection, not a failed exit.
+This accepts Card C and closes the three-card final-image onboard deck.
+
+Exact transcript:
+
+```text
+>M 3200
+3200: 41 5A
+>ASM NEW
+ASM-F2 00.0814(0805)
+ASM>$2000: ; ASM-F2 FINAL-IMAGE SEAL/RELOCATE/PACKAGE/LOAD CARD.
+ASM>$2000: ; EVERY DIRECT OR LOADED RUN RETURNS A=$C3, C=1, AND WRITES $C3 TO $7905.
+ASM>$2000:
+ASM>$2000:         ORG $2000
+ASM>$2000: START   JMP RUN
+ASM>$2003:
+ASM>$2003: RUN     LDA #$C3
+ASM>$2005:         STA $7905
+ASM>$2008:         SEC
+ASM>$2009:         RTS
+ASM>$200A:
+ASM>$200A:         ENTRY START
+ASM>$200A:         END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> RELOCATE $3000
+REL OK BASE=$3000 C=$01
+SEAL> PACKAGE WRONG $3200
+PKG ERR=$08
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$08
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=C3 X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 7905
+7905: C3 | .
+>D 3200
+3200: 5A | Z
+>ASM SEAL
+ASM-F2 00.0814(0805)
+SEAL> PACKAGE START $3200
+PKG OK @=$3200 L=$003D
+SEAL> INSTALL $3200
+INST @=$BABB L=$003D
+SEAL> LOAD $3200 $3000
+LOAD OK=$3000 L=$000A C=$01
+SEAL> .
+ASM BYE
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=C3 X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 7905
+7905: C3 | .
+>ASM SEAL
+ASM-F2 00.0814(0805)
+SEAL> /
+ERR=$03 BO PC=$200A
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$03
+>
+```
+
+## 2026-08-14 ASM-F2 Compact Opcode Card B Acceptance
+
+Status: accepted on HIMON/ASM-F2 `00.0814(0805)`. The deliberate illegal
+`STA #$12` returned `$04 BAD MODE` without advancing `$2000`. The completed
+body packaged by identity as a `$0127`-byte AP v2 envelope. Direct execution
+at `$2000` and HIMON AP execution relocated to `$3000` both returned A=`$AC`
+with carry set and wrote `$7904=$AC`.
+
+The reporter confirmed a `$00BD`-byte body, 26 resolved fixups, 12 internal
+relocations, executable export `START`, `_END_DATA=$BABB`, and
+`ASM REPORT OK`. This accepts runtime coverage for all nine compact ALU mode
+rows and all six shared shift/rotate mode rows. The post-exit `EXEC ERR=$04`
+is the retained deliberate `STA` rejection, not a failed package or run.
+
+Exact transcript:
+
+```text
+>ASM NEW
+ASM-F2 00.0814(0805)
+ASM>$2000: ; ASM-F2 COMPACT ALU/SHIFT TABLE RUNTIME CARD.
+ASM>$2000: ; THE FIRST STA MUST FAIL BAD MODE WITHOUT EMITTING.
+ASM>$2000: ; DIRECT AND AP RUNS RETURN A=$AC, C=1, AND WRITE $AC TO $7904.
+ASM>$2000:
+ASM>$2000:         ORG $2000
+ASM>$2000:         STA #$12
+ERR=$04 BMO PC=$2000
+ASM>$2000:
+ASM>$2000: START   JMP RUN
+ASM>$2003:
+ASM>$2003: RUN     LDA #$01
+ASM>$2005:         STA $40
+ASM>$2007:         LDA #$03
+ASM>$2009:         STA $41
+ASM>$200B:         LDA #$80
+ASM>$200D:         STA $42
+ASM>$200F:         LDA #$40
+ASM>$2011:         STA $43
+ASM>$2013:         LDA #<DATA3
+ASM>$2015:         STA $44
+ASM>$2017:         LDA #>DATA3
+ASM>$2019:         STA $45
+ASM>$201B:         LDA #$03
+ASM>$201D:         STA $46
+ASM>$201F:         LDA #$79
+ASM>$2021:         STA $47
+ASM>$2023:         LDA #$02
+ASM>$2025:         STA $48
+ASM>$2027:         LDA #$79
+ASM>$2029:         STA $49
+ASM>$202B:
+ASM>$202B: ; RESTORE MUTABLE BODY DATA SO REPEATED/RELOCATED RUNS ARE IDENTICAL.
+ASM>$202B:         LDA #$0F
+ASM>$202D:         STA DATA2
+ASM>$2030:         LDA #$02
+ASM>$2032:         STA DATA4
+ASM>$2035:
+ASM>$2035: ; ALL NINE SHARED ALU ADDRESSING ROWS, DISTRIBUTED ACROSS THE FAMILIES.
+ASM>$2035:         LDA #$10
+ASM>$2037:         CLC
+ASM>$2038:         ADC #$05
+ASM>$203A:         CMP #$15
+ASM>$203C:         BNE FAIL
+ASM>$203E:         SEC
+ASM>$203F:         SBC $40
+ASM>$2041:         CMP #$14
+ASM>$2043:         BNE FAIL
+ASM>$2045:         AND DATA2
+ASM>$2048:         CMP #$04
+ASM>$204A:         BNE FAIL
+ASM>$204C:         LDX #$04
+ASM>$204E:         ORA $3D,X
+ASM>$2050:         CMP #$07
+ASM>$2052:         BNE FAIL
+ASM>$2054:         LDX #$00
+ASM>$2056:         EOR DATA0,X
+ASM>$2059:         CMP #$52
+ASM>$205B:         BNE FAIL
+ASM>$205D:         LDY #$01
+ASM>$205F:         CMP DATA0,Y
+ASM>$2062:         BNE FAIL
+ASM>$2064:         LDX #$04
+ASM>$2066:         LDA ($40,X)
+ASM>$2068:         CMP #$67
+ASM>$206A:         BNE FAIL
+ASM>$206C:         STA ($46)
+ASM>$206E:         CMP ($48),Y
+ASM>$2070:         BNE FAIL
+ASM>$2072:
+ASM>$2072: ; ALL SIX SHARED SHIFT/ROTATE MODE ROWS.
+ASM>$2072:         LDA #$01
+ASM>$2074:         ASL
+ASM>$2075:         CMP #$02
+ASM>$2077:         BNE FAIL
+ASM>$2079:         LDA #$04
+ASM>$207B:         LSR A
+ASM>$207C:         CMP #$02
+ASM>$207E:         BNE FAIL
+ASM>$2080:         CLC
+ASM>$2081:         ROL $42
+ASM>$2083:         LDA $42
+ASM>$2085:         CMP #$00
+ASM>$2087:         BNE FAIL
+ASM>$2089:         SEC
+ASM>$208A:         ROR DATA2
+ASM>$208D:         LDA DATA2
+ASM>$2090:         CMP #$87
+ASM>$2092:         BNE FAIL
+ASM>$2094:         LDX #$04
+ASM>$2096:         ASL $3F,X
+ASM>$2098:         LDA $43
+ASM>$209A:         CMP #$80
+ASM>$209C:         BNE FAIL
+ASM>$209E:         LDX #$00
+ASM>$20A0:         LSR DATA4,X
+ASM>$20A3:         LDA DATA4
+ASM>$20A6:         CMP #$01
+ASM>$20A8:         BNE FAIL
+ASM>$20AA:
+ASM>$20AA: PASS    LDA #$AC
+ASM>$20AC:         STA $7904
+ASM>$20AF:         SEC
+ASM>$20B0:         RTS
+ASM>$20B1:
+ASM>$20B1: FAIL    LDA #$EE
+ASM>$20B3:         STA $7904
+ASM>$20B6:         CLC
+ASM>$20B7:         RTS
+ASM>$20B8:
+ASM>$20B8: DATA0   DB $55,$52
+ASM>$20BA: DATA2   DB $0F
+ASM>$20BB: DATA3   DB $67
+ASM>$20BC: DATA4   DB $02
+ASM>$20BD:
+ASM>$20BD:         ENTRY START
+ASM>$20BD:         END
+ASM OK
+SEAL> PACKAGE START $3200
+PKG OK @=$3200 L=$0127
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$04
+>G 2000
+GO 2000
+
+#GO# ENTRY=2000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7904
+7904: AC | .
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7904
+7904: AC | .
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$20BD
+HIGH=$20BD
+BYTES=$00BD
+LINES=$0069
+SYMS=$08/$80
+NAMEPOOL=$0024/$0800
+FIXUPS=$1A/$80
+REFS=$00/$C0
+TRUNC=NO
+MAP END=$BABB UDATA=$5000-6D6B
+SEAL FL BASE END LEN FNV 01 2000 20BD 00BD 960606EF
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 08 1A 0C 01 00 00 00
+PKG @ LEN BODY INST3200 0127 0000 0000 ID START
+UNUSED
+START DEF=$0006
+RUN DEF=$0007
+PASS DEF=$005C
+FAIL DEF=$0060
+DATA0 DEF=$0064
+DATA2 DEF=$0065
+DATA3 DEF=$0066
+DATA4 DEF=$0067
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 2000  01 04 0E 0006 00  0000  START
+01 01 2003  01 04 0E 0007 00  0000  RUN
+02 01 20AA  01 04 0E 005C 00  0000  PASS
+03 01 20B1  01 04 0E 0060 00  0000  FAIL
+04 01 20B8  01 04 0E 0064 00  0000  DATA0
+05 01 20BA  01 04 0E 0065 00  0000  DATA2
+06 01 20BB  01 04 0E 0066 00  0000  DATA3
+07 01 20BC  01 04 0E 0067 00  0000  DATA4
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+00 02 04   00  2001 2003 RUN
+01 02 02   01  2014 2015 DATA3
+02 02 02   02  2018 2019 DATA3
+03 02 04   00  202E 2030 DATA2
+04 02 04   00  2033 2035 DATA4
+05 02 07   00  203D 203E FAIL
+06 02 07   00  2044 2045 FAIL
+07 02 04   00  2046 2048 DATA2
+08 02 07   00  204B 204C FAIL
+09 02 07   00  2053 2054 FAIL
+0A 02 06   00  2057 2059 DATA0
+0B 02 07   00  205C 205D FAIL
+0C 02 09   00  2060 2062 DATA0
+0D 02 07   00  2063 2064 FAIL
+0E 02 07   00  206B 206C FAIL
+0F 02 07   00  2071 2072 FAIL
+10 02 07   00  2078 2079 FAIL
+11 02 07   00  207F 2080 FAIL
+12 02 07   00  2088 2089 FAIL
+13 02 04   00  208B 208D DATA2
+14 02 04   00  208E 2090 DATA2
+15 02 07   00  2093 2094 FAIL
+16 02 07   00  209D 209E FAIL
+17 02 06   00  20A1 20A3 DATA4
+18 02 04   00  20A4 20A6 DATA4
+19 02 07   00  20A9 20AA FAIL
+RELOCS
+SL K  SITE TARG
+00 01 0001 0003
+01 01 0057 00B8
+02 01 0060 00B8
+03 01 002E 00BA
+04 01 0046 00BA
+05 01 008B 00BA
+06 01 008E 00BA
+07 02 0014 00BB
+08 03 0018 00BB
+09 01 0033 00BC
+0A 01 00A1 00BC
+0B 01 00A4 00BC
+EXPORTS
+SL K  SYM NAME
+00 81 00 START
+IMPORTS
+SL K  LEN FNV
+ASM REPORT OK
+
+#GO# ENTRY=7000
+RET A=0D X=0D Y=0D P=75 S=FD NV-BdIzC
+>
+```
+
+## 2026-08-14 ASM-F2 Expression Rollback Card A Acceptance
+
+Status: accepted on HIMON/ASM-F2 `00.0814(0805)`. STR8-N installed the
+corrected combined Bank-3 `$8000-$EFFF` image and cold boot cleared RAM. The
+map-matched `$071B` reporter was then loaded at `$7000`.
+
+All six negative expressions returned their required status at unchanged
+`PC=$2001`. The following accepted `TAIL` byte therefore landed at `$2001`.
+The dump began `A5 5A`, and the reporter confirmed `PC/HIGH=$2002`, two owned
+bytes, two symbols, zero references, zero fixups, `_END_DATA=$BABB`, and
+`ASM REPORT OK`. This closes the carry/status propagation defect exposed by
+the earlier failed `0654` run recorded in the next section and accepts Card A.
+Cards B and C remain pending.
+
+Exact transcript:
+
+```text
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(0805)
+>L
+L S19
+L @7000
+L OK=071B ENTRY=7000
+>ASM NEW
+ASM-F2 00.0814(0805)
+ASM>$2000: ; ASM-F2 EXPRESSION REJECTION/ROLLBACK CARD.
+ASM>$2000: ; EVERY REJECTED LINE MUST LEAVE PC=$2001.
+ASM>$2000: ; FINAL BYTES MUST BE $A5,$5A WITH TWO SYMBOLS AND ZERO FIXUPS.
+ASM>$2000:
+ASM>$2000:         ORG $2000
+ASM>$2000: BASE    DB $A5
+ASM>$2001:
+ASM>$2001:         LDA #1<<16
+ERR=$06 BAD RANGE PC=$2001
+ASM>$2001:         LDA #1<2
+ERR=$03 BO PC=$2001
+ASM>$2001:         LDA #2/1
+ERR=$03 BO PC=$2001
+ASM>$2001:         LDA #2*3
+ERR=$03 BO PC=$2001
+ASM>$2001:         LDA #$F0&$1234
+ERR=$05 BW PC=$2001
+ASM>$2001:         LDA MISSING+1
+ERR=$03 BO PC=$2001
+ASM>$2001:
+ASM>$2001: TAIL    DB $5A
+ASM>$2002:         END
+ASM OK
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$03
+>D 2000 2002
+2000: A5 5A 00 | .Z.
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2002
+HIGH=$2002
+BYTES=$0002
+LINES=$000D
+SYMS=$02/$80
+NAMEPOOL=$0008/$0800
+FIXUPS=$00/$80
+REFS=$00/$C0
+TRUNC=NO
+MAP END=$BABB UDATA=$5000-6D6B
+SEAL FL BASE END LEN FNV 01 2000 2002 0002 00000000
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 02 00 00 00 00 00 00
+PKG @ LEN BODY INST0000 0000 0000 0000 ID
+UNUSED
+BASE DEF=$0005
+TAIL DEF=$000C
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 2000  01 04 0E 0005 00  0000  BASE
+01 01 2001  01 04 0E 000C 00  0000  TAIL
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+EXPORTS
+SL K  SYM NAME
+IMPORTS
+SL K  LEN FNV
+ASM REPORT OK
+
+#GO# ENTRY=7000
+RET A=0D X=0D Y=0D P=75 S=FD NV-BdIzC
+>
+```
+
+## 2026-08-14 ASM-F2 Expression Rollback Card A Failure
+
+Status: failed on HIMON/ASM-F2 `00.0814(0654)`. This is firmware defect
+evidence, not acceptance. The first rejected expression was incorrectly
+accepted and emitted two bytes. Later failures exposed stale/transformed status
+returns. The final reporter accurately recorded the resulting four-byte body,
+two symbols, zero references, and zero fixups.
+
+The shared expression glue had two defects. `ASM_PARSE_DATA_EXPR` leaked the
+carry from its status comparison for errors outside the unresolved-atom
+fallback, and `ASM_CLASS_LOAD_EXPR` restored scratch over the returned status
+in A. The corrected `00.0814(0805)` candidate explicitly returns carry clear
+and preserves the status. Card A was subsequently repeated and accepted in the
+section immediately above.
+
+Exact transcript:
+
+```text
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(0654)
+>L
+L S19
+L @7000
+L OK=071B ENTRY=7000
+>ASM NEW
+ASM-F2 00.0814(0654)
+ASM>$2000: ; ASM-F2 EXPRESSION REJECTION/ROLLBACK CARD.
+ASM>$2000: ; EVERY REJECTED LINE MUST LEAVE PC=$2001.
+ASM>$2000: ; FINAL BYTES MUST BE $A5,$5A WITH TWO SYMBOLS AND ZERO FIXUPS.
+ASM>$2000:
+ASM>$2000:         ORG $2000
+ASM>$2000: BASE    DB $A5
+ASM>$2001:
+ASM>$2001:         LDA #1<<16
+ASM>$2003:         LDA #1<2
+ERR=$02 BD PC=$2003
+ASM>$2003:         LDA #2/1
+ERR=$02 BD PC=$2003
+ASM>$2003:         LDA #2*3
+ERR=$02 BD PC=$2003
+ASM>$2003:         LDA #$F0&$1234
+ERR=$06 BAD RANGE PC=$2003
+ASM>$2003:         LDA MISSING+1
+ERR=$03 BO PC=$2003
+ASM>$2003:
+ASM>$2003: TAIL    DB $5A
+ASM>$2004:         END
+ASM OK
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$03
+>D 2000 2001
+2000: A5 A9 | ..
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2004
+HIGH=$2004
+BYTES=$0004
+LINES=$000D
+SYMS=$02/$80
+NAMEPOOL=$0008/$0800
+FIXUPS=$00/$80
+REFS=$00/$C0
+TRUNC=NO
+MAP END=$BABC UDATA=$5000-6D6B
+SEAL FL BASE END LEN FNV 01 2000 2004 0004 00000000
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 02 00 00 00 00 00 00
+PKG @ LEN BODY INST0000 0000 0000 0000 ID
+UNUSED
+BASE DEF=$0005
+TAIL DEF=$000C
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 2000  01 04 0E 0005 00  0000  BASE
+01 01 2003  01 04 0E 000C 00  0000  TAIL
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+EXPORTS
+SL K  SYM NAME
+IMPORTS
+SL K  LEN FNV
+ASM REPORT OK
+
+#GO# ENTRY=7000
+RET A=0D X=0D Y=0D P=75 S=FD NV-BdIzC
+>
+```

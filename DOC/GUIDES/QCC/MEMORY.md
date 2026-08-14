@@ -63,13 +63,15 @@ so scans stay obvious.
 
 ## Q: What zero page is user-stable?
 
-Comment: The current policy leaves `$00-$AF` user/free while user code is
-running. `$B0-$CC` is reserved for future R-YORS/HIMON/THE/ASM zero-page
-workspace, especially active pointers needed for W65C02 addressing modes.
+Comment: The current policy leaves `$00-$AF` user/free while ordinary user code
+is running. ASM-F2 temporarily owns `$80-$AF`; `$80/$81` hold its current PC,
+`$82/$83` belong to the flash wrapper, and `$84-$AF` are its core frame.
+`$B0-$B3` and `$C7-$CA` are active shared FNV32 scratch; the remainder through
+`$CC` stays reserved/shared.
 
-Concern: `$B0-$CC` may look free today because current live HIMON scratch starts
-at `$CD`, but treating it as user-owned would make future pointer-lane work
-harder to add safely.
+Concern: `$80-$AF` is phase-owned rather than permanently user-stable, and
+`$B0-$CC` is volatile service state. User programs must not expect either area
+to survive calls into ASM, hashing, catalog, or monitor services.
 
 ## Q: Where does dynamic allocation belong?
 

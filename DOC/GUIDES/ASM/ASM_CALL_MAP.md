@@ -17,8 +17,8 @@ global symbols            $80 / 128, names share bounded $0800-byte pool
 fixups                    $80 / 128
 relocations               $40 / 64
 AP v2 packaged relocs     $40 / 64
-exports                   $08 / 8
-imports                   $08 / 8
+exports                   $40 / 64
+imports                   $40 / 64
 report refs               $C0 / 192
 locals per global scope   $10 / 16
 local visible chars       15
@@ -43,8 +43,10 @@ flowchart LR
     POLICY --> DATA["ASM_EMIT_DB / ASM_EMIT_DC / ASM_EMIT_DW / ASM_EMIT_DS<br/>Emit directive-owned byte, string, word, or storage data"]
     POLICY --> EMIT["ASM_EMIT<br/>Classify a mnemonic operand, choose an opcode, and emit or defer it"]
     SYMBOL --> EXPR["ASM_PARSE_EXPR<br/>Evaluate v1 expressions while preserving address/value meaning"]
-    DATA --> EXPR
+    DATA --> DATAEXPR["ASM_PARSE_DATA_EXPR<br/>Share resolved expressions and simple unresolved-atom fallback"]
+    DATAEXPR --> EXPR
     EMIT --> OPER["ASM_CLASS_OPERAND / ASM_FIND_OPCODE<br/>Select addressing mode, opcode, fixup, and relocation policy"]
+    OPER --> DATAEXPR
 
     LINE --> ENDASM["ASM_END<br/>Resolve remaining fixups and close the session as ended or failed"]
     ENDASM --> SEAL["ASM_SEAL_COMPUTE_FNV<br/>Validate the image and build seal, relocation, export, and import records"]
@@ -124,10 +126,32 @@ flowchart TD
     DISP --> EMIT["ASM_EMIT"]
     EQU --> EXPR["ASM_PARSE_EXPR"]
     ORG --> EXPR
-    DB --> EXPR
-    DW --> EXPR
-    DS --> EXPR
+    DB --> DATAEXPR["ASM_PARSE_DATA_EXPR"]
+    DW --> DATAEXPR
+    DS --> DATAEXPR
+    DATAEXPR --> EXPR["ASM_PARSE_EXPR"]
+    DATAEXPR --> ATOM["ASM_CLASS_LOAD_ATOM / simple unresolved symbol or selector"]
 ```
+
+### Shared Expression And Data Path
+
+```mermaid
+flowchart TD
+    CALLERS["ORG / EQU / mnemonic / DB / DW / DS"] --> DATAEXPR["ASM_PARSE_DATA_EXPR"]
+    DATAEXPR --> EXPR["ASM_PARSE_EXPR<br/>+ - & | ^ << >>"]
+    DATAEXPR -->|BAD SYM or atom-only syntax| ATOM["ASM_CLASS_LOAD_ATOM<br/>simple symbol, selector, register"]
+    EXPR -->|resolved absolute| VALUE["typed value/address/mask"]
+    EXPR -->|relocation coefficient 1| RELOC["internal additive relocation plan"]
+    EXPR -->|other coefficient or relocatable logic/shift| BAD["BAD WIDTH"]
+    ATOM --> FIX["existing fixup/import plan"]
+    VALUE --> EMIT["operand or data emitter"]
+    RELOC --> EMIT
+    FIX --> EMIT
+```
+
+Expressions are strict left-to-right with no precedence or grouping. A single
+`<` or `>` remains selector syntax in the atom fallback; shifts require `<<`
+or `>>`. Compound unresolved fixups remain the next unchecked expression item.
 
 ### Mnemonic And Operand Path
 
@@ -139,10 +163,26 @@ flowchart TD
     EMIT --> WORD["ASM_EMIT_WORD_LE"]
     EMIT --> FIXSTORE["ASM_STORE_FIXUP_CURRENT"]
     EMIT --> RELOCNOTE["ASM_RELOC_NOTE_*"]
-    CLASS --> EXPR["ASM_PARSE_EXPR"]
+    CLASS --> LOADEXPR["ASM_CLASS_LOAD_EXPR"]
+    LOADEXPR --> DATAEXPR["ASM_PARSE_DATA_EXPR"]
+    DATAEXPR --> EXPR["ASM_PARSE_EXPR"]
+    DATAEXPR --> ATOM["ASM_CLASS_LOAD_ATOM"]
     CLASS --> LOOKUP["ASM_LOOKUP_SYMBOL"]
     CLASS --> RESIDENT["ASM_RJ_RESIDENT_XY"]
     CLASS --> FIXPLAN["ASM_CAPTURE_FIX_PLAN_CURRENT"]
+```
+
+### Compact Opcode Selection
+
+```mermaid
+flowchart LR
+    FIND["ASM_FIND_OPCODE"] --> ALU["8-family ALU scanner<br/>ADC SBC AND ORA EOR CMP LDA STA"]
+    ALU --> BASE["virtual immediate base per mnemonic"]
+    ALU --> OFF["shared 9-row mode-offset table"]
+    FIND --> SHIFT["ASL LSR ROL ROR<br/>shared regular mode rows"]
+    FIND --> OTHER["remaining mnemonic handlers and mode rows"]
+    AUDIT["check_asm_opcode_coverage.ps1"] --> FIND
+    AUDIT --> PROOF["217 rows / 70 mnemonics"]
 ```
 
 ### Fixup Storage And Resolution

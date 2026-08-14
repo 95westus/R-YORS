@@ -1,5 +1,23 @@
 # R-YORS TODO
 
+## ASM Feature Queue
+
+Review this checklist before starting any ASM feature implementation. An item
+stays unchecked until its source, regression tests, documentation, resident
+size measurement, and required hardware proof are complete.
+
+- [ ] **Unresolved compound fixups.** Add a compact representation and
+  resolver for a single unresolved symbol plus a constant addend, including
+  forward internal uses such as `LDA FOO+1`, `BNE TARGET-2`, and `DW TABLE+2`.
+  Define and test selector forms such as `#<FOO+1` and `#>FOO+1` rather than
+  accepting an ambiguous interpretation. Preserve fixup/import atomicity,
+  correct range/width errors, AP relocation after packaging, and the current
+  strict left-to-right expression contract. Measure resident ROM/RAM cost and
+  look for an offset/addend encoding that reuses existing fixup storage before
+  allocating another table. Do not mark complete until forward internal and
+  declared-import cases have positive and negative smoke coverage and board
+  evidence.
+
 ## Near Term
 
 - STR8-N V1.02 functionality is host- and hardware-complete at frozen compact
@@ -150,11 +168,10 @@
   [MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md): seal RAM-emitted ASM output
   with body length, entry offset, exports/imports, and relocation rows, then
   prove install/move/run from bank 3 flash and RAM overlays.
-- Define AP v2 only if packaged relocation capacity must exceed 50 rows. ASM
-  retains 64 live rows for direct `SEAL`/`RELOCATE`; AP v1 packaging and HIMON
-  loading now use its exact 50-row maximum because the one-byte relocation
-  body length is `1 + 5*N` (`$FB` at 50, `$0100` at 51). A full 64-row package
-  needs a wider or chunked AP format plus a matching HIMON loader revision.
+- AP v2 is implemented and hardware-accepted. ASM, packaging, and HIMON share
+  64-row relocation/export/import limits and 16-bit section lengths; AP v1's
+  50-relocation boundary is historical evidence only. Do not reopen the wire
+  format without a demonstrated capacity or lifecycle requirement.
 - Add a tiny sorted-list helper for monitor tables such as breakpoint listing.
   `B L` may print slot order for now, but sorted address order will be easier
   to read once multiple breakpoints are active. For the current four breakpoint

@@ -156,7 +156,7 @@ somewhere else in RAM, and run it.
 >ASM NEW
 ASM>$2000: ORG $2000
 ASM>$2000: MAIN ...body...
-ASM>$hhhh: ENTRY MAIN        optional; keep it at BODY offset zero for HIMON AP
+ASM>$hhhh: ENTRY MAIN        required to run; may be any BODY offset in AP v2
 ASM>$hhhh: END
 ASM OK
 SEAL> SEAL

@@ -65,10 +65,10 @@ also requires the locked standalone STR8-N checkout to be clean.
 ## Current Integrated Layout
 
 ```text
-$8000-$BC6C   ASM-F2, entry $800C
-$BC6D-$BFFF   low-flash headroom/AP-store hole
-$C000-$EC8F   HIMON
-$EC90-$EFFF   HIMON headroom
+$8000-$BABA   ASM-F2, entry $800C
+$BABB-$BFFF   low-flash headroom/AP-store hole
+$C000-$EE30   HIMON
+$EE31-$EFFF   HIMON headroom
 $F000-$FD53   standalone STR8-N v1.2 resident
 $FD54-$FD5B   enforced 8-byte margin
 $FD5C-$FFAF   stored unified STR8-N worker, runs at $0200-$0453

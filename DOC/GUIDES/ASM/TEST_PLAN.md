@@ -93,13 +93,14 @@ acceptance oracle. The first AP v2 64-row board execution exposed the wrapped
 target-high accessor in HIMON/ASM-F2 `00.0813(1809)`. Its corrected Card 1
 retest passed on HIMON `00.0813(1843)`, including the `$3081` entry, all first
 and last relocated words, return `A=$64`, and the reporter's 64-row listing.
-The same run accepted typed-import match/mismatch and all 64 exports. The
-64-import resolution and 128th-symbol/rollback boundaries remain pending
-because the first cards used an unreferenced import set and overwrote the
+The same run accepted typed-import match/mismatch and all 64 exports. At that
+point the 64-import resolution and 128th-symbol/rollback boundaries remained
+open because the first cards used an unreferenced import set and overwrote the
 preloaded reporter with a `$7102` sentinel; the corrected cards use 64 import
-relocations and sentinels at `$7900-$7902`.
+relocations and sentinels at `$7900-$7902`. The later Card 4-6 results below
+close those boundaries.
 
-The paste-ready RAM-only board sequence for those pending gates is
+The maintained paste-ready RAM-only board sequence for those gates is
 [APV2_INSTALLED_TEST_CARDS.md](APV2_INSTALLED_TEST_CARDS.md). It covers the
 64-relocation envelope, matching and deliberately mismatched import kinds,
 64 export rows, 64 import rows, the 128-symbol slot boundary, and atomic
@@ -6056,38 +6057,42 @@ Current executable proof:
 make -C SRC asm-v1-core
 ```
 
-The standalone `START` smoke path now checks resolved expression math used by
-`ORG` and `EQU`: one-atom values, current-PC `*`, known session symbols, and
-strict left-to-right `+`/`-` over concrete values/addresses. This is the
-current executable expression boundary:
+The standalone `START` smoke path checks resolved expression math used by
+`ORG`, `EQU`, mnemonic operands, and `DB`/`DW`/`DS`: one-atom values,
+current-PC `*`, known session symbols, and strict left-to-right evaluation.
+This is the current executable expression boundary:
 
 ```text
 WORKS
 ORG and EQU expression tails
-DW expression lists
+mnemonic operand tails and DB/DW/DS expression lists
 single atoms: decimal, hex, char, binary/mask, known symbol, *
-binary + and - between concrete VALUE and ADDR terms
+binary +, -, &, |, ^, <<, and >>
 left-to-right evaluation only
 ADDR + VALUE, VALUE + ADDR, and ADDR - VALUE
 ADDR - ADDR returning a VALUE/NONE delta
 VALUE + VALUE and VALUE - VALUE
+same-width concrete/mask logical operands
+logical 16-bit shifts with counts 0 through 15
 ZP/ABS address width is retained and range-checked
 bad concrete arithmetic reports BAD RANGE or BAD WIDTH
 
 DOES NOT WORK YET
-mnemonic operand-tail math such as LDA $12+1 or BNE TARGET-2
-DB/DS list expression math such as DB BASE+1
 forward or unresolved addends such as FOO+1
 forward EQU dependency chains
-logical/mask operators |, &, ^
 selector-plus-addend combinations such as <FOO+1 or >FOO+1
 unary minus such as -1
 grouping parentheses or precedence
 ```
 
-Raw operand-tail math, DB/DS list expressions, selectors combined with
-addends, logical/mask operators, forward `EQU` chains, and fixup addends remain
-future expression work.
+Selectors combined with addends, forward `EQU` chains, and unresolved fixup
+addends remain future expression work. Multiplication and division are
+intentionally outside the size-first expression contract.
+
+Unresolved compound fixups are tracked as the next explicit expression item
+in the [ASM Feature Queue](../PLANNING/TODO.md#asm-feature-queue). Review that
+gate before the next ASM feature pass and leave it unchecked until its host,
+size, package/relocation, and board evidence are complete.
 
 Current smoke fixtures:
 
@@ -6101,11 +6106,14 @@ $0012                 -> ADDR/ABS
 $0012+1               -> ADDR/ABS $0013
 $12+1                 -> ADDR/ZP $13
 $0012-$0011           -> VALUE/NONE $0001
+$F0&$CC               -> VALUE/BYTE $C0
+1+2<<3                -> VALUE/NONE $0018
 $FF+1                 -> BAD RANGE
+1<<16                 -> BAD RANGE
 $12 $34               -> BAD OPER
 ```
 
-Additional same-rule examples that the current concrete `+`/`-` evaluator
+Additional same-rule examples that the current expression evaluator
 handles:
 
 ```text
@@ -11838,9 +11846,10 @@ worker modes `$06` and `$05`. The worker skips erase when the destination
 sector is already erased.
 
 This source was archived on 2026-08-07 because split V1 exposes only jump mode
-`$08` through `$F003`. Use the exact carried-worker
-[`str8-bank-maint-2000.a`](SAMPLES/str8-bank-maint-2000.a) `C` path now. The
-following text remains as historical proof of the pre-split implementation.
+`$08` through `$F003`. The maintained carried-worker source now belongs to the
+adjacent STR8-N repository as
+`tools/bank-maint/str8n-v1.2-bank-maint-2000.asm`; use its `C` path. The
+following text remains historical proof of the pre-split implementation.
 
 The utility checks the source reset vector before confirmation and warns when
 the staged `$F000` sector has the `SR/01/07` STR8 signature. That warning is
@@ -11978,8 +11987,10 @@ the source. Current release coverage is split between
 
 ## 2026-08-02 Combined STR8 Bank Maintenance Source
 
-[`str8-bank-maint-2000.a`](SAMPLES/str8-bank-maint-2000.a) is a new direct-run
-ASM-F2 utility integrating generalized full-bank copy and selective erase.
+The former `SAMPLES/str8-bank-maint-2000.a` was a direct-run ASM-F2 utility
+integrating generalized full-bank copy and selective erase. Its maintained
+successor is owned by the adjacent STR8-N repository at
+`tools/bank-maint/str8n-v1.2-bank-maint-2000.asm`.
 `C` copies `$8000-$FFFF` from source Bank 0-3 to destination Bank 0-2. It
 refuses a same-bank copy, refuses Bank 3 as a destination, qualifies the
 source reset vector, prints `!STR8` when the source has the published STR8
@@ -12148,8 +12159,8 @@ STR8 menu.
 
 ## 2026-08-02 Movable ASM Session Reporter Continuation
 
-The regenerated [`asm-session-report-ap-2000.a`](SAMPLES/asm-session-report-ap-2000.a)
-is now partially board-accepted against ASM-F2 `00.0802(1709)`. Its `$0C5F`
+The retired `asm-session-report-ap-2000.a` predecessor was partially
+board-accepted against ASM-F2 `00.0802(1709)`. Its `$0C5F`
 body, `$E0` private rebase rows, and `ENTRY START` assembled through `ASM OK`.
 `PACKAGE $3000` then returned `PKG OK @=$3000 L=$0C8B`, proving that the
 current envelope stays within the `$1000` package limit.
@@ -14031,3 +14042,208 @@ Required board gate is Card 0 in
 no-session `$03` rejection, complete a minimal session, leave `SEAL>` with
 `.`, re-enter it with top-level `ASM SEAL`, run `SEAL` successfully, and exit
 again. Append the exact transcript here only after board proof.
+
+## 2026-08-13 ASM Flash Code/Data Reduction Pass
+
+Host status: accepted. Board status: accepted on the cumulative replacement
+image at HIMON/ASM-F2 `00.0814(0654)`; see the 2026-08-14 expression/AP
+acceptance transcript in `../LOGS/HARDWARE_TEST_LOG.md`.
+
+The flash wrapper now shares identical failure tails for `RELOCATE`, `PACKAGE`,
+`LOAD`, `INSTALL`, and optional `CHECK`. Successful non-`END` lines also reuse
+the existing nearby loop trampoline. Initial and restarted `ASM_BEGIN` failures
+share one return, `RELOCATE`/`LOAD` share the relocation-count suffix, and
+`PACKAGE`/`INSTALL`/optional `CHECK` share the package-length suffix. Every
+merged path has identical inputs and output text; the change preserves status
+values, command syntax, session state, and the resident service calls.
+
+Further reductions share the core high-bit line writer with the flash wrapper,
+overlap compatible message suffixes, and store only the low bytes of the status
+message pointers. The flash-map audit now requires those messages to remain on
+one page. Two unreachable core helpers and two flash-only compatibility stubs
+were removed. The 83-byte per-token vocabulary-kind table is replaced by the
+ten directive IDs; register IDs and all remaining IDs imply their kinds. The
+full 32-bit vocabulary hashes remain unchanged so unknown labels retain the
+existing collision resistance. The opcode audit locks the compact directive
+list and rejects restoration of the retired kind table.
+
+Measured resident result:
+
+```text
+                         before       after        change
+CODE                     $3B18        $3A8D        -$008B / -139
+DATA                     $02E6        $0288        -$005E / -94
+_END_DATA                $BDFE        $BD15        -$00E9 / -233
+headroom to $C000        $0202        $02EB        +$00E9 / +233
+UDATA                    $5000-$6D6D  $5000-$6D6D  unchanged
+```
+
+`make -C SRC asm-test` passes the opcode audit, runtime smoke fixtures,
+flash-map guard, regenerated `$4800` and `$7000` reporters, and the AP v2
+package/capacity check. Because the wrapper shrink moves resident output-helper
+addresses, always reload the regenerated map-matched reporter when testing the
+replacement image.
+
+## 2026-08-14 ASM Flash Structural Reduction Continuation
+
+Host status: accepted. Board status: accepted on the cumulative replacement
+image at HIMON/ASM-F2 `00.0814(0654)`. The expression/AP card exercised the
+shared directive and opcode paths, named packaging, direct execution, AP
+relocation, compact messages, and the regenerated reporter/map.
+
+The current PC moved from UDATA into the already reserved ASM zero-page frame
+at `$80/$81`; the flash wrapper retains `$82/$83` for its command pointer. The
+four shift/rotate families now use the regular mode-row scanner. The eight
+`ADC`/`SBC`/`AND`/`ORA`/`EOR`/`CMP`/`LDA`/`STA` families share virtual immediate
+bases and a single nine-row mode-offset table; `STA` explicitly rejects
+immediate mode. The opcode audit reconstructs all concrete values from these
+tables and still proves 217 rows across 70 mnemonics.
+
+Flash message call sites now carry only low-byte pointers. A guarded two-page
+layout uses disjoint low-byte ranges to recover the high byte without changing
+any displayed text. Finally, `DB`, `DC`, `DW`, and `DS` share their tail/name
+validation, optional label bind, and completion paths, selecting only the
+emitter routine at the end.
+
+Measured continuation result:
+
+```text
+                         before       after        change
+CODE                     $3A8D        $3872        -$021B / -539
+DATA                     $0288        $0288         unchanged
+_END_DATA                $BD15        $BAFA        -$021B / -539
+headroom to $C000        $02EB        $0506        +$021B / +539
+UDATA                    $5000-$6D6D  $5000-$6D6B  -$0002 / -2
+```
+
+Cumulative result from the pre-reduction `$3B18/$02E6` image is 678 CODE bytes
+and 94 DATA bytes reclaimed, moving `_END_DATA` from `$BDFE` to `$BAFA`. Total
+resident flash headroom gained is `$0304` (772 bytes).
+
+`make -C SRC asm-test` passes the standalone build, runtime smoke and paste
+fixtures, 217-row opcode audit, flash-map and message-page guards, regenerated
+`$4800`/`$7000` reporters, and AP v2 package/capacity validation. Reload the
+regenerated reporter with this replacement image before board testing.
+
+## 2026-08-14 Size-First Expression Set
+
+Host status: accepted. Board status: accepted on HIMON/ASM-F2
+`00.0814(0654)`.
+
+`ASM_PARSE_EXPR` now implements exactly `+`, `-`, `&`, `|`, `^`, `<<`, and
+`>>`. Evaluation is strictly left-to-right with no precedence or grouping.
+Bare `*` remains the current-PC atom, `/` is invalid, single `<`/`>` remain
+byte selectors, and shifts accept only counts 0 through 15. Logical operators
+preserve the existing mask care-bit rules. Compound expressions must resolve
+now; forward `NAME+constant` fixups remain rejected.
+
+The expression path is shared by mnemonic operands and `DB`/`DW`/`DS` items.
+The smaller common path replaces the former data-only atom parser and repeated
+list-tail scanners. Resolved `LABEL+constant` operands retain internal
+relocation metadata, while logical/shift expressions over relocatable labels
+are rejected because AP relocation is additive.
+
+Standalone smoke coverage now checks every operator, mask OR/AND care bits,
+left-to-right `1+2<<3 == $18`, shift-count rejection, single-shift rejection,
+and one assembled body using `LDA DATA+1`, `DB DATA+1`, `DW DATA+1`, and
+`DS 2,1<<3`. The body requires three internal relocation rows.
+
+Measured resident result against the preceding structural-reduction image:
+
+```text
+                         before       after        change
+CODE                     $3872        $382D        -$0045 / -69
+DATA                     $0288        $028F        +$0007 / +7
+_END_DATA                $BAFA        $BABC        -$003E / -62
+headroom to $C000        $0506        $0544        +$003E / +62
+UDATA                    $5000-$6D6B  $5000-$6D6B  unchanged
+```
+
+The final figures above must match the final flash map before board use. Run
+`make -C SRC asm-test` and `git diff --check`. Board card:
+[`expr-operators-ap-2000.a`](SAMPLES/expr-operators-ap-2000.a). Assemble and
+run directly first; expect A=`$67`, C=1, and `$7100=$67`. Then package it by
+identity, load it at `$3000`, and require the same result to prove the
+`DATA+1` relocation row.
+
+Board acceptance installed the combined Bank 3 `$8000-$EFFF` image through
+STR8-N, cold-booted with RAM zeroed, and assembled the card at `$2000`.
+`PACKAGE START $3200` produced length `$0076`. Both `G 2000` and
+`AP $3200 $3000` returned A=`$67` with carry set, and `D 7100` showed `$67`.
+The map-matched `$071B` reporter then showed `STATUS=OK`, `PC/HIGH=$203E`,
+`MAP END=$BABC`, `UDATA=$5000-$6D6B`, two relocation rows (the entry jump and
+`DATA+1`), executable export `START`, and `ASM REPORT OK`. The exact transcript
+is preserved in `../LOGS/HARDWARE_TEST_LOG.md`.
+
+### Final-image onboard cards
+
+The positive expression/AP relocation card does not by itself exercise
+expression rejection rollback, the complete compact opcode mode tables, or
+the full post-`END` wrapper workflow. Run Cards A-C in
+[`FINAL_IMAGE_ONBOARD_TEST_CARDS.md`](FINAL_IMAGE_ONBOARD_TEST_CARDS.md).
+They are paste-ready and RAM-only; Card 3's one-argument `INSTALL` form is
+advisory and performs no flash write.
+
+Board status: Cards A-C accepted on `00.0814(0805)`. Exact evidence is retained
+in `../LOGS/HARDWARE_TEST_LOG.md`.
+
+The first Card A run on `00.0814(0654)` failed. `LDA #1<<16` was incorrectly
+accepted and emitted `A9 01`; the remaining rejected expressions returned
+stale or transformed statuses. The reporter correctly described the resulting
+four-byte body and intact two-symbol/zero-fixup tables, so this is firmware
+failure evidence rather than card acceptance.
+
+Root cause was two carry/A preservation defects in the new shared expression
+glue. `ASM_PARSE_DATA_EXPR` returned non-fallback failures with carry inherited
+from `CMP`, and `ASM_CLASS_LOAD_EXPR` restored `ASM_TMP1_LO` over the failure
+status in A. The corrected paths explicitly clear carry and discard dead
+failed-line scratch through X, preserving A. The correction is one resident
+byte smaller than `0654`: CODE `$382C`, DATA `$028F`, `_END_DATA=$BABB`, and
+low-flash headroom `$0545`. Standalone smoke now checks
+the exact mnemonic lines `LDA #1<<16`, `LDA #1<2`, and
+`LDA #$F0&$1234` through `ASM_ASSEMBLE_LINE`, including unchanged PC.
+
+Corrected install candidate:
+
+```text
+HIMON/ASM-F2 00.0814(0805)
+SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
+SHA-256 61EE09C53E8BAB3A2699EEC4DA0B5991A33FB2E0B14BF357A8A11E3905EC57A8
+range $8000-$EFFF; S9 $C000
+```
+
+Reload the regenerated `$071B` reporter after installation; its SHA-256 is
+`A3EADC7AFE84E015AE579DACE0E0C6201A6261BA88F7213EC32EF33C17EEAE14`.
+
+The corrected Card A rerun passed on board. All six rejected mnemonic
+expressions returned their specified `$06/$03/$05` statuses at unchanged
+`PC=$2001`. The final dump began `A5 5A`; the reporter showed
+`PC/HIGH=$2002`, `BYTES=$0002`, two symbols, zero references, zero fixups,
+`MAP END=$BABB`, and `ASM REPORT OK`. This accepts both corrected error
+propagation and complete line rollback. The post-exit `EXEC ERR=$03` is the
+wrapper's retained last rejected-line result, not a failed `END`; the frozen
+session reporter is `STATUS=OK`. The exact transcript is retained in
+`../LOGS/HARDWARE_TEST_LOG.md`.
+
+Card B then passed on the same installed image. Its deliberate `STA #$12`
+returned `$04 BAD MODE` at unchanged `PC=$2000`. Named packaging produced a
+`$0127`-byte AP v2 envelope. Both `G 2000` and `AP $3200 $3000` returned
+A=`$AC` with carry set and left `$7904=$AC`, exercising all nine compact ALU
+mode rows and all six shared shift/rotate mode rows. The reporter showed
+`PC/HIGH=$20BD`, `BYTES=$00BD`, 26 resolved fixups, 12 internal relocation
+rows, executable export `START`, `MAP END=$BABB`, and `ASM REPORT OK`. The
+post-exit `$04` is the retained deliberate `STA` rejection. This accepts the
+opcode-reduction runtime gate.
+
+Card C completed the final post-`END` workflow on the same installed image.
+`SEAL` and `RELOCATE $3000` succeeded, while `PACKAGE WRONG $3200` returned
+`$08` and left the seeded `$5A` at `$3200` untouched. The relocated body
+returned A=`$C3` with carry set and wrote `$7905=$C3`. `ASM SEAL` then resumed
+the preserved `SEAL>` session. `PACKAGE START $3200` produced a `$003D`-byte
+envelope, one-argument `INSTALL $3200` returned the advisory placement
+`$BABB`, and `LOAD $3200 $3000` loaded the `$000A`-byte body with one internal
+relocation. The loaded run repeated A=`$C3`, carry set, and `$7905=$C3`; a
+second `ASM SEAL` again resumed `SEAL>`. An extra `/` was rejected with
+`$03 BAD OPER` at unchanged `PC=$200A`; the required final `.` then returned
+through `ASM BYE` to bare HIMON. This accepts Card C without a flash write and
+closes the three-card final-image onboard deck.
