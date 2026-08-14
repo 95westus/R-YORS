@@ -217,8 +217,12 @@ flowchart TD
     PARSE --> S1[L_PARSE_RECORD_S1]
     PARSE --> S9[L_PARSE_RECORD_S9]
     S0 --> SKIP[S0 skipped after checksum]
-    S9 --> ENTRYSAVE[entry saved and reported]
-    ENTRYSAVE --> RETURN[return to HIMON prompt]
+    PARSE -->|fatal error| POISON[latch failure; suppress later S1 writes]
+    POISON --> READ
+    S9 --> END{failure latched?}
+    END -->|no| ENTRYSAVE[entry saved and reported]
+    END -->|yes| RETURN[return failure to HIMON prompt]
+    ENTRYSAVE --> RETURN
 ```
 
 #### Destination Policy
@@ -230,7 +234,7 @@ flowchart TD
     CHECK --> SPAN{nonempty span ends at or below $7A00?}
     SPAN -->|yes| NOTE[L_NOTE_S1_ADDR]
     NOTE --> RAMWRITE[copy validated bytes to RAM]
-    SPAN -->|no| RAMPROTECT[LOAD_FAIL_PROTECT]
+    SPAN -->|no| RAMPROTECT[LOAD_FAIL_PROTECT; quench through S9 or Ctrl-C]
 ```
 
 #### Finish
@@ -362,7 +366,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
 | AP package run | `AP pkg dst` | `CMD_AP`, `HIM_AP_SERVICE` | Loads an AP v2 envelope from RAM, visible flash, or the supported banked-source path to `$2000-$4FFF`, applies internal/import relocations, then runs the executable `ENTRY` offset. | AP v2 validates typed exports/imports and supports 64 relocation rows. Installed lookup by package hash/name remains future catalog work. |
 | Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; confirms, then jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; kind is `K03`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
-| S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_RECORD_S1`, `L_VALIDATE_RAM_SPAN` | Accepts S0/S1/S9, validates each complete record before copying S1 data, tracks the byte count, and reports the S9 entry without executing it. Ctrl-C cancels the receive session and returns immediately to the prompt; earlier accepted records remain in RAM, but the interrupted line is not applied. | Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` are rejected by the bare-`L` grammar. |
+| S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_RECORD_S1`, `L_VALIDATE_RAM_SPAN` | Accepts S0/S1/S9, validates each complete record before copying S1 data, tracks the byte count, and reports the S9 entry without executing it. A fatal error latches failure, suppresses later S1 writes, and quenches through S9 or Ctrl-C; earlier accepted records remain in RAM. | Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` are rejected by the bare-`L` grammar. |
 | AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_IMPORT_LINK`, `HIM_AP_FIND_HOLE` | Parses AP v2 envelopes, loads BODY to `$2000-$4FFF`, resolves kind-matched RJOIN imports, applies internal/import relocation rows, derives the executable entry, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` and HIMON `AP pkg dst` call this so AP package consumption and linking survive after ASM exits. AP v2 uses 16-bit section lengths and accepts 64 relocation/export/import rows. STR8 carries no AP/FNV linker code. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Patch targets are limited to user program RAM below `$7A00`, so monitor RAM and `$7F00-$7FFF` I/O stay protected. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |

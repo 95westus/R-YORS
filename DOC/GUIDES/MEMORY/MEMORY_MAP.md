@@ -192,6 +192,11 @@ L G          usage error
 L F          usage error
 ```
 
+The first fatal syntax, checksum, or protected-span error poisons the receive
+session. HIMON retains the first failure, suppresses all later S1 writes, and
+continues consuming non-echoed input until a valid S9 or Ctrl-C. Accepted S1
+records from before the error remain in RAM.
+
 There is no user-facing sector erase/condense path in HIMON. STR8-N v1.21 owns
 selected-bank erase, program, verify, and journal flows through its `I`
 transaction and standalone RAM maintenance tools.

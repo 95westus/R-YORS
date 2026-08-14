@@ -773,8 +773,9 @@ CMD_USAGE_AP:
 
 ; ----------------------------------------------------------------------------
 ; L  (HIMON-owned RAM S19 loader: S1 data, S9 terminator; S0 skipped)
-; Ctrl-C cancels the receive session. Completed S1 writes remain in RAM, but
-; the interrupted line is never parsed or copied and S9 execution is absent.
+; Ctrl-C cancels the receive session. A fatal record error poisons the load,
+; suppresses later S1 writes, and quenches input through S9 or Ctrl-C.
+; Completed S1 writes remain in RAM and S9 execution is always absent.
 ; ----------------------------------------------------------------------------
 CMD_L_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$AB,$FE,$0B,$C9,CMD_HASH_KIND_EXEC ; L $C90BFEAB EXEC
@@ -829,19 +830,17 @@ CMD_L_HAVE_LINE:
                         CMP             #'L'
                         BEQ             CMD_L_READ_LOOP
 
-                        STZ             LOAD_FAIL_CODE
                         JSR             L_PARSE_RECORD
                         BCS             CMD_L_PARSE_OK
                         JSR             CMD_L_PRINT_FAIL
-                        LDA             LOAD_FAIL_CODE
-                        CMP             #LOAD_FAIL_PARSE
-                        BEQ             CMD_L_READ_LOOP
-                        BRA             CMD_L_FAIL_EXIT
+                        BRA             CMD_L_READ_LOOP
 
 CMD_L_PARSE_OK:
                         LDA             LOAD_REC_KIND
                         CMP             #LOAD_REC_KIND_TERM
                         BNE             CMD_L_READ_LOOP
+                        LDA             LOAD_FAIL_CODE
+                        BNE             CMD_L_FAIL_EXIT
                         LDX             #<MSG_L_DONE
                         LDY             #>MSG_L_DONE
                         JSR             HIM_WRITE_HBSTRING
@@ -1962,6 +1961,8 @@ L_PARSE_S1_CHECK:
                         BCC             L_PARSE_S1_FAIL
                         LDA             LOAD_DATA_LEN
                         BEQ             L_PARSE_S1_DONE
+                        LDA             LOAD_FAIL_CODE
+                        BNE             L_PARSE_S1_DONE
                         JSR             L_VALIDATE_RAM_SPAN
                         BCC             L_PARSE_S1_FAIL
                         JSR             L_NOTE_S1_ADDR

@@ -109,6 +109,11 @@ HIMON accepts bare `L` only; `L G` and `L F` are usage errors. Explicit `G`
 runs a HIMON-loaded program. STR8-N uses its load-and-run behavior for versioned
 maintenance and recovery tools.
 
+Both receivers poison a session after the first fatal record or destination
+error. They stop applying S1 data and keep the command prompt closed while
+discarding through a syntactically valid S9; Ctrl-C ends a truncated transfer.
+This prevents the tail of a wrong RAM/flash file from becoming monitor input.
+
 ## Memory And Phase Ownership
 
 The authoritative address list is the [Memory Map](MEMORY/MEMORY_MAP.md).

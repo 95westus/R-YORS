@@ -128,6 +128,12 @@ are rejected. To run a loaded program, inspect the reported S9 and issue an
 explicit `G address`. HIMON rejects S1 spans at `$7A00` or above and rejects
 flash destinations.
 
+If a record is malformed or targets protected/flash space, HIMON prints the
+loader error, poisons that load, and silently consumes the remaining S-records
+through S9 before returning to its prompt. Later S1 records are not written.
+Press Ctrl-C if a failed or truncated sender will not provide S9. Earlier valid
+RAM records are retained; cancellation and failure are not rollback.
+
 Example:
 
 ```text

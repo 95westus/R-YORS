@@ -13901,16 +13901,59 @@ Required board gates:
    A=`$11`.
 4. Capture an unchanged RAM byte, send a valid S1 for it with a deliberately
    bad checksum, and require `LERR=$01` with no target mutation. Complete the
-   session with a valid S9.
+   session with a valid S9; require no `L OK` and require the prompt only after
+   that S9 has been consumed.
 5. Enter `L`, send `S10479FF5A29` and `S90379FF84`, and require one byte
    `$5A` at `$79FF`; this proves a nonempty span may end exactly at `$7A00`.
 6. Enter `L`, send `S10579FF11224F`, and require `LERR=$02` with `$79FF`
    still `$5A`; this proves a crossing record is rejected before its first
-   byte is copied. Separately send `S1047A005A27` and `S10480005A21`; each
-   must return `LERR=$02` without monitor-workspace, I/O, or flash mutation.
+   byte is copied. Send a valid S9 and require the loader to quench until it.
+   In fresh `L` sessions, repeat with `S1047A005A27` and `S10480005A21`, each
+   followed by valid S9; each must return `LERR=$02` without monitor-workspace,
+   I/O, or flash mutation and without exposing S-record text at the prompt.
 7. Append the exact transcript and HIMON image identity to
    `HARDWARE_TEST_LOG.md`. Do not rewrite the earlier `L G` or `L F`
    transcripts; they remain evidence for the superseded command surface.
+
+### 2026-08-14 S19 failure-quench amendment
+
+Host status: accepted. STR8-N `make all`, R-YORS `make -C SRC all`,
+`make -C SRC asm-test`, and the HIMON banked-AP check pass. STR8-N remains
+3,418 bytes with its original two-byte margin; HIMON remains `$2DB4` bytes
+through `_END_DATA=$EDB4`. Board proof remains required.
+
+After the first fatal receive or destination-policy error, STR8-N `L` and `I`
+reuse the resident record parser without applying more data until a
+syntactically valid S9 or Ctrl-C. HIMON `L` latches its first error, suppresses
+later S1 copies, and consumes its non-echo line input through the same two
+terminators. An S9 which itself fails destination/entry policy is already the
+transport terminator and returns immediately with failure.
+
+Required host gates:
+
+```text
+make -C ../STR8-N layout-check ram-load-contract-check
+make -C SRC himon
+make -C SRC himon-banked-ap-check
+git -C ../STR8-N diff --check
+git diff --check
+```
+
+Required board gates:
+
+1. At HIMON `L`, send a complete flash-addressed S19. Require the first
+   `LERR=$02`, no later S1 writes, no prompt or echoed S-record tail before S9,
+   and one prompt after S9. Repeat with a truncated stream and Ctrl-C.
+2. At STR8-N `L`, send a complete flash-addressed S19. Require `BAD` only after
+   S9, no execution, and no S-record tail interpreted as commands. Repeat with
+   a truncated stream and Ctrl-C.
+3. On a deliberately disposable/recoverable bank row, enter STR8-N `I`, confirm
+   `WRITE? Y`, and send a RAM-addressed S19. Require failure only after S9 and
+   no command spill. The row may be INCOMPLETE because START precedes `S19`;
+   recover it with the documented full-range procedure. Do not infer rollback
+   from the quench behavior.
+4. Append exact identities and transcripts to `HARDWARE_TEST_LOG.md`; retain
+   this amendment as board-pending until all three command surfaces pass.
 
 ## 2026-08-13 External STR8-N Ownership Cutover Board Gate
 
@@ -14447,7 +14490,7 @@ fixed worker at `$FD5C`—instead of requiring three unused bytes.
 STR8-N `make all`, its range matrix, RAM-load contract, RAM-ABI source check,
 Bank Maintenance checker, top-update checker, directory-refresh checker, and
 full-bank composer pass. R-YORS locks manifest version `1.21`, top-sector
-SHA-256 `442E316F7C0A502E5D6635408076423C397930A710452E28A936DCA96796047E`,
+SHA-256 `9EAA5808344A1232544B4BAE1CB75E8140AECA0E0D122E6694498C74B83BBB75`,
 and the unchanged public-contract SHA-256
 `7778B3A33AF21E9E81160BD51341F52FA81F211292C2425A9280D59F25F45174`.
 The external integration check, full current build, ASM opcode audit, ASMTEST,
