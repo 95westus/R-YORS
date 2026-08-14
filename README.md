@@ -71,6 +71,28 @@ paths. Candidate `1502` exposed and localized a typed-mode lexer fault; `1524`
 is its accepted replacement. AIM self-identifying image metadata remains an
 explicit future goal.
 
+## Recent Work — 2026-08-14
+
+- ASM-F2 now accepts compact `DC 'text'`, `DC C'text'`, `DC H'text'`, and
+  `DC P'text'` raw/CSTR/HBSTR/PSTR forms while retaining legacy
+  `DC C,"text"`, `DC HB,"text"`, and `DC P,"text"` source. Empty forms,
+  254/255/256-byte boundaries, character-literal isolation, and failed-line
+  rollback have dedicated host coverage.
+- Replacement image `00.0814(1524)` is board-accepted. Its `$001E` test body
+  packaged, loaded with the correct zero-relocation count, matched the direct
+  image byte for byte, executed with `$7906=$D7`, and rejected all malformed
+  test lines atomically. See the
+  [compact DC board card](DOC/GUIDES/ASM/COMPACT_DC_BOARD_TEST_CARD.md) and
+  [hardware log](DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md).
+- The compact parser adds only eight resident bytes over `1303`: CODE `$386F`,
+  `_END_DATA=$BAFE`, and `$0502` bytes of low-flash headroom remain.
+- `asm-dc-check` guards the syntax and the DC-local lexer boundary;
+  `board-s19-check` proves that standalone ASM/HIMON streams, the dense Bank-3
+  payload, and STR8-N's combined image contain the same final bytes.
+- The SVG logo's `VERSION .MMDD` is stamped from the same MMDD build identity.
+  Firmware `all` and documentation builds update it automatically;
+  `make -C SRC ryors-logo-stamp` updates it independently.
+
 ## Current Board
 
 The accepted split-V1 board line through 2026-08-14 is hardware-proven for:
@@ -221,6 +243,8 @@ Useful targets:
 ```text
 make all                       verify STR8-N and build R-YORS 28K payload
 make life                      standalone loadable Life S19/BIN
+make -C SRC board-s19-check    compare final bytes across board S19 families
+make -C SRC ryors-logo-stamp   update the SVG logo from the current MMDD
 make -C SRC help Q=<term>      find related targets
 make release                   clean locked integration plus release artifacts
 make docs-html                 HTML rebuild for docs and repository READMEs
