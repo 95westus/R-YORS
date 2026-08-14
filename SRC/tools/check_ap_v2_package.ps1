@@ -2,6 +2,7 @@ param(
     [string]$PackagePath = "BUILD/bin/asm-session-report-v1.2-4800.ap.bin",
     [string]$AsmSourcePath = "ASM/asm-v1-core.asm",
     [string]$AsmFlashSourcePath = "ASM/asm-v1-flash.asm",
+    [string]$RuntimePasteSourcePath = "PROOFS/asm-v1-runtime-paste.asm",
     [string]$HimonSourcePath = "HIMON/himon.asm",
     [string]$Reloc64CardPath = "../DOC/GUIDES/ASM/SAMPLES/apv2-reloc64-2000.a",
     [string]$Export64CardPath = "../DOC/GUIDES/ASM/SAMPLES/apv2-export64-2000.a",
@@ -114,7 +115,8 @@ function Check-PublicSection(
     return $count
 }
 
-foreach ($path in @($PackagePath, $AsmSourcePath, $AsmFlashSourcePath, $HimonSourcePath,
+foreach ($path in @($PackagePath, $AsmSourcePath, $AsmFlashSourcePath,
+        $RuntimePasteSourcePath, $HimonSourcePath,
         $Reloc64CardPath, $Export64CardPath, $Import64CardPath)) {
     if (-not (Test-Path -LiteralPath $path)) { Fail "missing input $path" }
 }
@@ -164,6 +166,7 @@ for ($i = 0; $i -lt 64; $i++) {
 
 $asmText = [System.IO.File]::ReadAllText((Resolve-Path $AsmSourcePath))
 $asmFlashText = [System.IO.File]::ReadAllText((Resolve-Path $AsmFlashSourcePath))
+$runtimePasteText = [System.IO.File]::ReadAllText((Resolve-Path $RuntimePasteSourcePath))
 $himonText = [System.IO.File]::ReadAllText((Resolve-Path $HimonSourcePath))
 foreach ($check in @(
     @($asmText, 'ASM_PACKAGE_VERSION', 2),
@@ -182,6 +185,27 @@ foreach ($check in @(
 foreach ($required in @('ASM_SYM_NAME_OFF_LO', 'ASM_SYM_NAME_OFF_HI',
         'ASM_LINE_SYM_NAME_USED_LO', 'ASM_LINE_SYM_NAME_USED_HI')) {
     if (-not $asmText.Contains($required)) { Fail "missing symbol-pool guard $required" }
+}
+
+# Post-END numeric operands are HIMON-style bare hex without changing normal
+# ASM source numbers. Keep both interactive wrappers on the dedicated parser,
+# and keep executable smoke fixtures for digit- and letter-leading addresses.
+foreach ($required in @('XDEF            ASM_PARSE_SEAL_EXPR',
+        'ASM_NEXT_TOKEN_BARE_HEX:', 'ASM_NEXT_TOKEN_HEX_COMMON:',
+        'DB              "3200",0',
+        'DB              "BABB",0')) {
+    if (-not $asmText.Contains($required)) { Fail "missing SEAL hex parser rail $required" }
+}
+$sharedHexInit = 'ASM_NEXT_TOKEN_HEX:\s+JSR\s+ASM_ADV_PARSE\s+BRA\s+ASM_NEXT_TOKEN_HEX_COMMON\s+ASM_NEXT_TOKEN_BARE_HEX:\s+ASM_NEXT_TOKEN_HEX_COMMON:.*?LDA\s+#\$01\s+STA\s+ASM_LEN\s+JSR\s+ASM_ZERO_VALUE\s+ASM_NEXT_HEX_LOOP:'
+if (-not [regex]::IsMatch($asmText, $sharedHexInit,
+        [Text.RegularExpressions.RegexOptions]::Singleline)) {
+    Fail 'prefixed and bare hex must share the virtual-prefix length initialization'
+}
+if (([regex]::Matches($asmFlashText, 'JSR\s+ASM_PARSE_SEAL_EXPR')).Count -ne 3) {
+    Fail 'flash wrapper must route all three operand parses through bare-hex mode'
+}
+if (([regex]::Matches($runtimePasteText, 'JSR\s+ASM_PARSE_SEAL_EXPR')).Count -ne 1) {
+    Fail 'runtime-paste RELOCATE must use bare-hex mode'
 }
 
 # ASMF_PARSE_TWO_ARGS retains its first-token pointer while ASM_PARSE_EXPR may

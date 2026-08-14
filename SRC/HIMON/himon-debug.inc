@@ -28,8 +28,7 @@ CMD_B:
                         LDY             #>MSG_BP_SET
                         JSR             HIM_WRITE_HBSTRING
                         JSR             DBG_PRINT_CMD_ADDR
-                        JSR             SYS_WRITE_CRLF
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 CMD_B_DONE:
                         RTS
 
@@ -48,50 +47,43 @@ CMD_B_CLEAR:
                         LDY             #>MSG_BP_CLR
                         JSR             HIM_WRITE_HBSTRING
                         JSR             DBG_PRINT_CMD_ADDR
-                        JSR             SYS_WRITE_CRLF
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 
 CMD_B_FULL:
                         LDX             #<MSG_BP_FULL
                         LDY             #>MSG_BP_FULL
                         JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 
 CMD_B_NF:
                         LDX             #<MSG_BP_NF
                         LDY             #>MSG_BP_NF
                         JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 
 CMD_B_LIST:
                         JSR             CMD_ADV_PTR
                         JSR             CMD_REQUIRE_EOL
                         BCC             CMD_USAGE_BL
-                        JSR             DBG_LIST_BP
-                        RTS
+                        JMP             DBG_LIST_BP
 
 CMD_USAGE_B:
                         LDX             #<MSG_USAGE_B
                         LDY             #>MSG_USAGE_B
                         JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 
 CMD_USAGE_BC:
                         LDX             #<MSG_USAGE_BC
                         LDY             #>MSG_USAGE_BC
                         JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 
 CMD_USAGE_BL:
                         LDX             #<MSG_USAGE_BL
                         LDY             #>MSG_USAGE_BL
                         JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 
 CMD_N_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$D1,$01,$0C,$CB,CMD_HASH_KIND_EXEC
@@ -121,8 +113,7 @@ CMD_USAGE_N:
                         LDX             #<MSG_USAGE_N
                         LDY             #>MSG_USAGE_N
                         JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 
 DBG_SET_BP:
                         JSR             DBG_FIND_BP_ADDR
@@ -601,8 +592,7 @@ DBG_PRINT_CMD_ADDR:
                         LDA             CMDP_ADDR_HI
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             CMDP_ADDR_LO
-                        JSR             SYS_WRITE_HEX_BYTE
-                        RTS
+                        JMP             SYS_WRITE_HEX_BYTE
 
 DBG_ADDR_PATCHABLE:
                         ; Breakpoints and step traps patch only user program

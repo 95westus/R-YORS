@@ -61,7 +61,7 @@ Board sequence:
 ```text
 ASM NEW
   paste SAMPLES/OLD/missing-import-atomicity-2000.a
-PACKAGE $3200
+PACKAGE 3200
 .
 M 5848
   enter 00
@@ -109,7 +109,7 @@ Build and install the frozen package:
 ```text
 ASM NEW
   paste SAMPLES/OLD/banked-rjoin-smoke.a
-PACKAGE $3200
+PACKAGE 3200
 .
 ASM NEW
   historical: paste SAMPLES/OLD/bankput-transient-3000.a

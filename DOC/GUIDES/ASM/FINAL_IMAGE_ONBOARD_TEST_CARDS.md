@@ -4,8 +4,11 @@ These three RAM-only cards close the negative-expression, compact opcode-table,
 and post-`END` workflow gaps. Installed image `00.0814(0654)` failed Card A and
 must not be used for acceptance. The corrected `00.0814(0805)` replacement is
 accepted by Cards A-C. The cards do not write flash. The one-argument
-`INSTALL $3200` command in Card 3 only suggests an erased visible-flash
+`INSTALL 3200` command in Card 3 only suggests an erased visible-flash
 address.
+
+Current candidate `00.0814(0945)` must repeat Cards A-C. Its result is not
+implied by the accepted `0805` transcript.
 
 Use the regenerated map-matched reporter at `$7000`. It occupies
 `$7000-$771A`; these cards use `$7903-$7905`. Prompt characters shown in prose
@@ -76,7 +79,7 @@ The following `START JMP RUN` must therefore assemble at `$2000`. After
 `END`, at `SEAL>` enter:
 
 ```text
-PACKAGE START $3200
+PACKAGE START 3200
 .
 ```
 
@@ -85,7 +88,7 @@ Wait for bare HIMON `>`, then enter:
 ```text
 G 2000
 D 7904
-AP $3200 $3000
+AP 3200 3000
 D 7904
 G 7000
 ```
@@ -114,8 +117,8 @@ Enter replacement byte `$5A`. Then enter `ASM NEW`; at `ASM>`, send
 
 ```text
 SEAL
-RELOCATE $3000
-PACKAGE WRONG $3200
+RELOCATE 3000
+PACKAGE WRONG 3200
 .
 ```
 
@@ -136,9 +139,9 @@ before any package write. `ASM SEAL` must reopen the preserved `SEAL>` session.
 At that `SEAL>` prompt enter:
 
 ```text
-PACKAGE START $3200
-INSTALL $3200
-LOAD $3200 $3000
+PACKAGE START 3200
+INSTALL 3200
+LOAD 3200 3000
 .
 ```
 

@@ -56,8 +56,8 @@ $9000        common banked AP package store address for smoke tests
 $0200-$09FF  LRS Symbol Name Lane; later STR8 Worker Code Tray
 $0A00-$19FF  LRS Fixup Name Lane; later STR8 Sector Staging Deck
 $1A00-$1FFF  user-free low RAM; no v1.2 firmware/tool allocation
-$5000-$61A9  ASM Work Hold in the current map
-$61AA-$79FF  Safe Output Deck
+$5000-$6D6B  ASM Work Hold in the current map
+$6D6C-$79FF  Safe Output Deck
 $7A00-$7BFF  Volatile Output Deck / record transit
 $7C00-$7DBF  foreground High Tool Overlay
 $7DC0-$7DC7  HIMON AP-link scratch
@@ -113,7 +113,7 @@ Empty EXPORT and IMPORT payloads are one count byte each. With no relocations,
 the minimum envelope overhead is therefore `$0022`, leaving at most `$0FDE` bytes
 for BODY data. Imports, exports, and relocations reduce that BODY maximum.
 
-`PACKAGE $3000` means "write the envelope beginning at RAM `$3000`." It does
+`PACKAGE 3000` means "write the envelope beginning at RAM `$3000`." It does
 not mean that the package is `$3000` bytes long. A maximum-size envelope there
 occupies `$3000-$3FFF`. The `$1000` check is a current one-sector package and
 installer policy; it is not imposed by the AP header's address field widths.
@@ -161,9 +161,9 @@ ASM>$hhhh: END
 ASM OK
 SEAL> SEAL
 SEAL OK
-SEAL> PACKAGE $3200
+SEAL> PACKAGE 3200
 PKG OK @=$3200 L=$llll
-SEAL> LOAD $3200 $3000
+SEAL> LOAD 3200 3000
 LOAD OK=$3000 L=$bbbb C=$rr
 SEAL> .
 ASM BYE
@@ -179,16 +179,16 @@ Use this when the AP envelope should live in the currently visible low-flash
 window and be reloadable later.
 
 ```text
-SEAL> PACKAGE $3200
-SEAL> INSTALL $3200
+SEAL> PACKAGE 3200
+SEAL> INSTALL 3200
 INST @=$hhhh L=$llll
-SEAL> INSTALL $3200 $hhhh
+SEAL> INSTALL 3200 hhhh
 INST @=$hhhh L=$llll
 SEAL> .
 ```
 
-`INSTALL $3200` only suggests an erased flash hole. It does not write. Use the
-printed `$hhhh` in `INSTALL $3200 $hhhh` to write the unchanged AP envelope.
+`INSTALL 3200` only suggests an erased flash hole. It does not write. Use the
+printed `$hhhh` in `INSTALL 3200 hhhh` to write the unchanged AP envelope.
 
 Later, from HIMON:
 
@@ -214,7 +214,7 @@ stored AP may be used for the focused loader board gate.
 ASM>$2000: ...AP body source...
 ASM>$hhhh: END
 ASM OK
-SEAL> PACKAGE $3200
+SEAL> PACKAGE 3200
 PKG OK @=$3200 L=$llll
 SEAL> .
 ASM BYE
@@ -238,7 +238,7 @@ In `AP B2 $9000 $3000`, `$9000` is the AP envelope address in bank 2's flash
 address space, and `$3000` is the RAM destination/run address. The body does
 not execute from banked flash.
 
-Keep `$3200` unchanged between `PACKAGE $3200` and the completed `G 3000`
+Keep `$3200` unchanged between `PACKAGE 3200` and the completed `G 3000`
 writer run. Do not run `AP`, `LOAD`, or another `PACKAGE` in that interval.
 The historical `OLD/bankput-transient-3000.a` returned `$E2` when the package
 header or length at `$3200` was no longer valid.
@@ -276,7 +276,7 @@ reportable ASM session after `PACKAGE` has serialized the APC metadata.
 >ASM NEW
 historical: paste DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-put-transient-2000.a
 ASM OK
-SEAL> PACKAGE $3000
+SEAL> PACKAGE 3000
 PKG OK @=$3000 L=$hhhh
 SEAL> .
 ASM BYE
@@ -295,7 +295,7 @@ For every later target, assemble the target BODY, create its envelope at
 address:
 
 ```text
-SEAL> PACKAGE $3000
+SEAL> PACKAGE 3000
 SEAL> .
 ASM BYE
 >AP B0 PUTPKG $2000
@@ -364,8 +364,8 @@ or reuse the low-RAM symbol/fixup name pools.
 - Use `$3000` as the default load/run destination for ordinary AP tests.
 - Use `$3123` when you deliberately want to prove relocation across an odd
   page offset.
-- Use `INSTALL $3200` as an address finder, then copy its printed address into
-  `INSTALL $3200 $hhhh`.
+- Use `INSTALL 3200` as an address finder, then copy its printed address into
+  `INSTALL 3200 hhhh`.
 - Do not install into visible `$8000-$BFFF` unless you mean to overwrite the
   flash ASM image. Prefer the suggested erased hole or a banked AP install.
 - Use bank 2 first for destructive banked AP storage tests.
@@ -378,13 +378,13 @@ or reuse the low-RAM symbol/fixup name pools.
 ## Common Mistakes
 
 ```text
-PACKAGE $3200 then G 3200
+PACKAGE 3200 then G 3200
 ```
 
 Wrong: `$3200` is an AP envelope, not the relocated body.
 
 ```text
-INSTALL $3200 then assume flash was written
+INSTALL 3200 then assume flash was written
 ```
 
 Wrong: one-argument `INSTALL` is advisory. Use the two-argument form to write.
@@ -401,7 +401,7 @@ AP B0 $hhhh $4000
 ```
 
 ```text
-LOAD $3200 $3200
+LOAD 3200 3200
 ```
 
 Usually wrong: the package source and body destination overlap.

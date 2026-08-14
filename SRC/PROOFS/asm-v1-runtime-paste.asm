@@ -25,7 +25,7 @@
                         XREF            ASM_RELOCATE_BASE_LO
                         XREF            ASM_RELOCATE_BASE_HI
                         XREF            ASM_RELOCATE_COUNT
-                        XREF            ASM_PARSE_EXPR
+                        XREF            ASM_PARSE_SEAL_EXPR
                         XREF            ASM_PARSE_EXPR_REQUIRE_END
                         XREF            SYS_FLUSH_RX
                         XREF            SYS_READ_CHAR_TIMEOUT_SPINDOWN
@@ -454,7 +454,7 @@ ASMRP_MATCH_CMD_NO:
                         RTS
 
 ASMRP_PARSE_RELOCATE_ARG:
-                        JSR             ASM_PARSE_EXPR
+                        JSR             ASM_PARSE_SEAL_EXPR
                         BCS             ASMRP_PARSE_RELOCATE_EXPR_OK
                         RTS
 ASMRP_PARSE_RELOCATE_EXPR_OK:

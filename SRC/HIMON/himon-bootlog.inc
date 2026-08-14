@@ -18,8 +18,7 @@ MON_BOOTLOG_HAVE_REASON:
                         JSR             MON_BOOTLOG_LINE_XY
                         LDX             #<MSG_BOOTLOG_RAM
                         LDY             #>MSG_BOOTLOG_RAM
-                        JSR             MON_BOOTLOG_LINE_XY
-                        RTS
+                        JMP             MON_BOOTLOG_LINE_XY
 MON_BOOTLOG_WARM:
                         LDX             #<MSG_BOOTLOG_WARM
                         LDY             #>MSG_BOOTLOG_WARM
@@ -27,8 +26,7 @@ MON_BOOTLOG_WARM:
 
 MON_BOOTLOG_LINE_XY:
                         JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
-                        RTS
+                        JMP             SYS_WRITE_CRLF
 
                         DATA
 MSG_BOOTLOG_COLD:       DB              "BOOT COL",('D'+$80)

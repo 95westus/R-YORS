@@ -9,7 +9,7 @@ boundary, not through shared implementation source.
 ```text
 physical RESET -> standalone STR8-N -> HIMON -> ASM-F2 / AP / debugger
                        |
-                       +-----------> Bank 0-2 guest reset vector
+                       +-----------> Bank 0-2 guest or Bank-3 reset vector
 ```
 
 | Component | Repository | Main ownership |
@@ -74,7 +74,7 @@ first enrollment or replacement of the normal `$C000` Bank-3 entry.
 
 ## Runtime Public Interface
 
-HIMON includes only the generated external contract. The fixed v1.2 services
+HIMON includes only the generated external contract. The fixed v1.21 services
 used or checked by R-YORS are:
 
 ```text
@@ -136,9 +136,9 @@ can carry body bytes, relocation rows, exports, and resident imports. HIMON's
 AP service validates the envelope, loads the body to `$2000-$4FFF`, resolves
 RJOIN imports, applies relocations, and transfers to the entry.
 
-The corrected compact flash ASM candidate occupies `$8000-$BABA`;
-`_END_DATA=$BABB` leaves `$0545` bytes through `$BFFF`. Its map uses CODE
-`$382C`, DATA `$028F`, and UDATA `$5000-$6D6B`. The default resident wrapper
+The current compact flash ASM occupies `$8000-$BAF5`;
+`_END_DATA=$BAF6` leaves `$050A` bytes through `$BFFF`. Its map uses CODE
+`$3867`, DATA `$028F`, and UDATA `$5000-$6D6B`. The default resident wrapper
 keeps AP v2 package/load/install support and omits the diagnostic-only `CHECK`
 command to preserve this headroom.
 

@@ -24,7 +24,7 @@ time; they are intentionally not rewritten as current instructions.
 The external ABI is imported from:
 
 ```text
-STR8-N/BUILD/v1.2/include/str8n-public.inc
+STR8-N/BUILD/v1.21/include/str8n-public.inc
 ```
 
 and locked by:

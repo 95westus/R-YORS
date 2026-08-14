@@ -25,8 +25,8 @@ R-YORS consumes only:
 
 ```text
 STR8-N/BUILD/str8n-manifest.json
-STR8-N/BUILD/v1.2/include/str8n-public.inc
-STR8-N/BUILD/v1.2/bin/str8n-v1.2-bank3-f000-ffff.bin
+STR8-N/BUILD/v1.21/include/str8n-public.inc
+STR8-N/BUILD/v1.21/bin/str8n-v1.21-bank3-f000-ffff.bin
 ```
 
 `SRC/INTEGRATION/str8n.lock.json` pins the accepted top image, public ABI

@@ -503,6 +503,26 @@ This leaves `$01CF` bytes below `$F000`. The compiled host gate exercises all
 cards accept 64 exports, 64 imports, typed import matching, named package
 identity, and relocated execution.
 
+Current accepted HIMON/ASM-F2 `00.0814(1303)` map:
+
+```text
+CODE     $28A2 / 10402
+DATA     $0512 /  1298
+TOTAL    $2DB4 / 11700
+_END_DATA = $EDB4
+CMD_AP = $C387
+HIM_PACK40_ASCII_TO_CODE = $D34E
+HIM_PACK40_PACK3 = $D38D
+HIM_AP_SERVICE = $D456
+HIM_AP_IMPORT_LINK = $DBDB
+AP service cells = $7E2D-$7E40
+```
+
+This leaves `$024C` bytes below `$F000`. The current board proof accepts the
+same `1303` HIMON bytes in the standalone Bank-3 `8-E` payload and the final
+STR8-N-composed image, including physical-reset persistence, the fixed `$C000`
+head, ASM-F2 identity, and synthetic `J3` return.
+
 ## Edge Evidence Rules
 
 - Raw edge truth stays in `HIMON_EDGE_DUMP.md`.

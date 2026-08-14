@@ -6655,6 +6655,8 @@ SEAL> RESOLVE operands are rejected as BAD OPER without clearing frozen seal
 facts
 SEAL> RELOCATE address copies the frozen RAM body to the requested destination
 and patches internal `$01/$02/$03` rows against that destination base
+post-END numeric command operands use bare hexadecimal by default, while the
+older `$` prefix remains accepted and ordinary ASM source syntax is unchanged
 SEAL> RELOCATE reports RELOCATE OK BASE=$hhhh COUNT=$nn on success or
 RELOCATE ERR=$ee on failure and stays at SEAL>
 SEAL> RELOCATE rejects missing or extra operands as BAD OPER without clearing
@@ -14247,3 +14249,262 @@ second `ASM SEAL` again resumed `SEAL>`. An extra `/` was rejected with
 `$03 BAD OPER` at unchanged `PC=$200A`; the required final `.` then returned
 through `ASM BYE` to bare HIMON. This accepts Card C without a flash write and
 closes the three-card final-image onboard deck.
+
+## 2026-08-14 HIMON Mechanical Resident-Size Pass
+
+Host status: accepted. Board status: pending.
+
+This pass keeps the command surface, fixed `$C000` entry, `$C003` image
+identity, published RAM service cells, AP v2 format, and operator text
+unchanged. It replaces final `JSR`/`RTS` pairs with tail calls, shortens safe
+local transfers, loops over the contiguous reset signature and service-cell
+initialization ranges, shares identical or suffix-compatible high-bit strings,
+and removes four carry sets already guaranteed by validated subtraction
+ranges. The deliberately retained slow FNV implementation remains resident.
+
+Measured result:
+
+```text
+                         before       after        change
+CODE                     $290A        $28A2        -$0068 / -104
+DATA                     $0527        $0512        -$0015 / -21
+total                    $2E31        $2DB4        -$007D / -125
+_END_DATA                $EE31        $EDB4        -$007D / -125
+headroom to $F000        $01CF        $024C        +$007D / +125
+```
+
+`make -C SRC himon` assembles and links the exact `$2DB4` image while retaining
+the reset head `4C 07 C0 A5 5A C3 3C`. `make -C SRC himon-banked-ap-check`
+passes 11 banked staging cases, and `make -C SRC asm-test` passes the opcode
+audit, runtime smoke fixtures, flash-map checks, regenerated reporters, and AP
+v2 package/capacity validation.
+
+Before board acceptance, exercise physical cold reset, `HCOLD`, `HWARM`, NMI
+and BRK register output, `?`, `#`, `D`, `M`, `R`, `X`, `G`, `L`, `B`, `N`, and
+both direct and banked `AP`. Confirm the shared `ENTRY=`, `NMI PC=`, `VIA`, and
+`FTDI VIA` text remains exact. Append that evidence to the hardware log; do not
+reuse an older-image transcript.
+
+## 2026-08-14 SEAL Bare-Hex Command Operands
+
+Host status: accepted. Board status: pending.
+
+Post-`END` numeric operands now follow HIMON's command convention: `3000`,
+`3A12`, `BABB`, and `FF` are hexadecimal without a `$` prefix. The dedicated
+`ASM_PARSE_SEAL_EXPR` entry applies that rule only while a `SEAL>` operand is
+being parsed. Ordinary `ASM>` source retains decimal bare numbers and
+`$`-prefixed hexadecimal; symbolic package identities such as `START` and
+`ASMREPORT` still resolve normally. The older `$3000` spelling remains
+accepted at `SEAL>` for compatibility with preserved cards and transcripts.
+An identity consisting only of one to four hex digits is intentionally parsed
+as a number in this command context.
+
+The flash wrapper routes `RELOCATE`, `PACKAGE`, `LOAD`, `INSTALL`, and the
+diagnostic `CHECK` build through the dedicated parser. Runtime-paste routes
+its smaller `RELOCATE` command through the same entry. Standalone core smoke
+fixtures cover both digit-leading `3200` and letter-leading `BABB` tokens, and
+the AP v2 host check guards both wrapper call paths.
+
+Measured flash-image cost against accepted `00.0814(0805)`:
+
+```text
+                         before       after        change
+CODE                     $382C        $3867        +$003B / +59
+DATA                     $028F        $028F         $0000
+UDATA                    $1D6B        $1D6C        +$0001 / +1
+_END_DATA                $BABB        $BAF6        +$003B / +59
+headroom to $C000        $0545        $050A        -$003B / -59
+```
+
+The first `00.0814(1102)` board attempt exposed a four-digit bare-hex width
+bug after Cards A and the direct half of B had passed. `PACKAGE START 3200`
+returned `PKG ERR=$03`; no package was written, so the following
+`AP 3200 3000` correctly returned `$07`. The tokenizer had initialized bare
+hex `ASM_LEN` to zero, but the inherited width classifier counts a virtual
+`$` and reserves length four for the rejected three-digit `$xxx` spelling.
+The corrected tokenizer now shares one prefix-compatible initialization path
+for prefixed and bare hex. This both restores four-digit bare operands and
+removes 13 bytes from the failed implementation. Board status remains pending
+for Card B packaging/AP, Card C, banked AP restore, and final persistence.
+
+`make -C SRC asm-test` passes. A forced `make -C SRC -B lab` regenerated the
+broad tracked ROM/RAM S19 set and passed, followed by coherent rebuilds of the
+standalone HIMON load/ROM images, the `$8000-$FFFF` ROM install transport, the
+Bank-3 `$8000-$EFFF` combined payloads, and the HIMON AP v2 install stream.
+
+For current-image board acceptance, use bare operands throughout Card C:
+
+```text
+RELOCATE 3000
+PACKAGE WRONG 3200
+PACKAGE START 3200
+INSTALL 3200
+LOAD 3200 3000
+```
+
+Require the same validation, no-write advisory install, relocation, load,
+run, and preserved-session results as the accepted older card. Append the new
+transcript to `../LOGS/HARDWARE_TEST_LOG.md`; do not rewrite the old `$`-form
+evidence.
+
+### Consolidated `00.0814(1157)` R-YORS/STR8-N board card
+
+The complete current uncommitted-image procedure is
+[`UNCOMMITTED_BOARD_TEST_CARD.md`](UNCOMMITTED_BOARD_TEST_CARD.md). It pins the
+coherently rebuilt Bank-3, STR8-N top-sector, full-bank, and reporter hashes;
+installs the seven-sector `8-E` candidate; performs the guarded STR8-N
+top-sector update; proves the new `RESET` line and three-byte resident margin;
+exercises the HIMON reset/init and mechanical-size paths; repeats final-image
+Cards A-C with bare hexadecimal; adds a letter-leading `BABB` parse/range
+proof; qualifies the new guarded D3 journal-compaction path with erased-scratch
+cleanup and retained identity; and closes with direct and banked AP plus reset
+persistence. Board status remains pending until its full transcript is
+appended to the hardware log.
+
+The `1102` run completed through Card A and exposed the Card B bare-four-digit
+bug described above. Continue only with
+[`UNCOMMITTED_BOARD_RETEST_CARD.md`](UNCOMMITTED_BOARD_RETEST_CARD.md), which
+pins the corrected `1157` image and limits renewed hardware work to installing
+that image, Cards B-C, the new D3 compaction proof, banked AP restore, and final
+persistence. The final host audit accepts all 40 current S19 files (33 R-YORS,
+seven STR8-N), confirms the same 11,700 HIMON bytes in all eight standalone and
+combined carriers, and proves the full-bank 28K/4K slices equal their R-YORS
+and STR8-N sources byte for byte.
+
+### `1157` continuation evidence
+
+Board status: partially accepted.
+
+The 2026-08-14 continuation installed the pinned `1157` Bank-3 `8-E` stream,
+committed seven sectors, and cold-booted matching HIMON/ASM-F2. Card B then
+accepted bare `PACKAGE START 3200` with package length `$0127`; both the direct
+`$2000` run and `AP 3200 3000` returned A=`$AC`, carry set, and wrote
+`$7904=$AC`. The `$7000` reporter matched `_END_DATA=$BAF6`, UDATA
+`$5000-$6D6C`, 26 fixups, 12 relocations, export `START`, and ended
+`ASM REPORT OK`.
+
+Before that install, the completed Bank Maintenance artifact accepted D3 only
+at journal `00000000`, selected erased scratch B1:8, required exact
+`RESET J3`, printed `BACKUP VERIFIED`, and returned `OK`. Its immediate `M`
+post-map preserved `D3 FF RYORS C000`, changed only the journal to
+`FCFFFFFF`, and showed B1:8 erased again. This accepts the protected mutation,
+verified backup, B3F rewrite, scratch cleanup, and identity preservation.
+
+The transcript returned through the Bank Maintenance `Q` path but did not type
+the explicit STR8-N `J3` command.
+
+A subsequent `1157` capture accepts Card C's main path. `RELOCATE 3000`
+returned `REL OK BASE=$3000 C=$01`; `PACKAGE WRONG 3200` returned `$08` and
+left the seeded byte at `$3200` untouched; direct execution returned A=`$C3`,
+carry set, and `$7905=$C3`. Re-entered `ASM SEAL` then produced the correct
+`$003D` package, advisory install address `$BAF6`, and `LOAD OK=$3000 L=$000A
+C=$01`; the loaded run repeated the `$C3` result, and a second `ASM SEAL`
+re-entry remained live.
+
+That capture did not issue the required letter-leading `RELOCATE BABB` probe.
+
+The next continuation printed explicit STR8-N `J3` and `J B3`, then showed a
+Bank-3 RESET/cold path through HIMON `00.0814(1157)` and its live NMI monitor.
+The operator subsequently clarified that the RESET after `J B3` was physical
+and intentional. The capture therefore proves the command was recognized but
+not that `J3` completed the handoff. Repeat it without touching RESET or sending
+input between `J3` and the resulting HIMON identity.
+
+Uninterrupted explicit `J3`, the one Card C range probe, banked
+`AP B0 8001 3000`, and final persistence remain. The reduced procedure is
+[`UNCOMMITTED_BOARD_RETEST_CARD.md`](UNCOMMITTED_BOARD_RETEST_CARD.md).
+
+The next continuation accepts the banked AP restore rail:
+`AP B0 8001 3000` returned `APERR=$07` and a live HIMON prompt. It does not
+accept the `BABB` rail. Immediately beforehand, `ASM NEW` followed by `.` had
+cleared the assembly session; `ASM SEAL` consequently returned
+`EXEC ERR=$03`, and `RELOCATE BABB` was then entered at the HIMON prompt and
+returned `HSH_NF!`. Rebuild the short Card C source, remain at its `SEAL>`
+prompt, and issue `SEAL` plus `RELOCATE BABB` there. The subsequent ASM `1157`
+banner will also close the post-AP identity observation.
+
+The rebuilt `BABB` follow-up passes. After an observed RESET/cold boot into
+HIMON `00.0814(1157)`, the short Card C body assembled and sealed normally;
+bare `RELOCATE BABB` returned `REL ERR=$06` from the actual `SEAL>` prompt.
+This accepts the letter-leading bare-hex parser/range rail and the post-AP ASM
+identity. The operator has now confirmed that its opening RESET was physical
+and intentional. The capture stops before the fixed `$C000` head and final
+STR8 prompt, so those final-persistence observations remain alongside a truly
+uninterrupted `J3`.
+
+## 2026-08-14 STR8-N `1.21` Authorized Resident-Growth Release
+
+Host status: accepted. Board status: pending.
+
+The operator authorized use of the former protected-sector policy reserve and
+advanced STR8-N's product identity from `1.2` to `1.21`. The fixed worker and
+all public ABI addresses remain unchanged. The extra identity byte advances
+the resident end from `$FD59` exclusive to `$FD5A` exclusive, so the linked
+resident occupies `$F000-$FD59` and leaves `$FD5A-$FD5B` available. Layout
+checks now enforce the actual safety boundary—resident end no later than the
+fixed worker at `$FD5C`—instead of requiring three unused bytes.
+
+STR8-N `make all`, its range matrix, RAM-load contract, RAM-ABI source check,
+Bank Maintenance checker, top-update checker, directory-refresh checker, and
+full-bank composer pass. R-YORS locks manifest version `1.21`, top-sector
+SHA-256 `442E316F7C0A502E5D6635408076423C397930A710452E28A936DCA96796047E`,
+and the unchanged public-contract SHA-256
+`7778B3A33AF21E9E81160BD51341F52FA81F211292C2425A9280D59F25F45174`.
+The external integration check, full current build, ASM opcode audit, ASMTEST,
+runtime smoke, AP v2 check, and session reporter pass with frozen R-YORS
+identity `00.0814(1303)`.
+
+The combined Bank-0/1/2 S19 is
+`C:\SRC\STR8-N\BUILD\v1.21\s19\ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19`:
+S19 SHA-256 `6CE8CCDB56D40BED21E646986347AD5A7B7DB59F707DA11B3D3C75BDAB7D0AB5`,
+decoded-image SHA-256
+`641A15855D427F1D3FF7425236DE711D1071EC34A15854485943D3D7AA29D5A1`.
+The maintained board procedure is
+[`UNCOMMITTED_BOARD_RETEST_CARD.md`](UNCOMMITTED_BOARD_RETEST_CARD.md). Earlier
+`1157`/STR8-N `1.2` transcripts remain exact historical evidence and are not
+claimed as direct `1.21` installation proof.
+
+The operator clarified that RESETs in the earlier supplied logs were physical
+and intentional, so those captures did not close the historical explicit-`J3`
+gate. A new continuous capture now explicitly identifies the `RESET` following
+`J B3` as synthetic. It proceeds without physical intervention through the
+STR8-N cold timeout to matching HIMON `00.0814(1157)`, accepting the compacted-
+D3 launch integration for the installed image. Phase 3 of the maintained card
+still repeats `J3` as an installation/identity smoke for the distinct STR8-N
+`1.21` / R-YORS `1303` candidate.
+
+## 2026-08-14 STR8-N `1.21` / R-YORS `1303` Installation Acceptance
+
+Board Phases 1 and 2 are accepted. The protected top updater loaded at `$2000`
+with `$3000` bytes, verified its B1:F backup, reported source/target physical
+ranges and sum `$08F8`, erased B3:F, verified STR8-N `1.21`, and entered its
+RESET vector. The new resident banner and shell were live. A Bank-3 `8-E`
+install then produced all seven program/verify dots, committed, returned `OK`,
+and warm-booted HIMON `00.0814(1303)`.
+
+A later `8-E` transfer produced the six non-final dots and then `FAIL` before
+the `COMMIT?` gate. The remaining S-record stream arrived at the returned
+STR8-N prompt and was rejected as shell input. No cause is inferred from the
+capture. A clean retry of the same range completed all dots, committed, and
+again reached matching HIMON `1303`; this is accepted fail-closed and recovery
+evidence. Phase 3 remains open for one intentional physical-reset persistence
+check, fixed `$C000` head, ASM-F2 `1303`, renamed Bank Maintenance RAM-tool
+smoke, and uninterrupted synthetic-reset `J3` run.
+
+## 2026-08-14 STR8-N `1.21` / R-YORS `1303` Final Board Acceptance
+
+Board Phase 3 is accepted, completing the current card. The operator states
+that only the opening RESET in the supplied capture was physical; all later
+RESET lines were synthetic. That intentional physical reset retained STR8-N
+`1.21`, ran the six-pulse cold path with `RAM ZERO OK`, and reached HIMON
+`00.0814(1303)`. `$C000-$C00F` exactly matched
+`4C 07 C0 A5 5A C3 3C 78 D8 A2 FF 9A A2 03 20 14`, and ASM NEW displayed
+ASM-F2 `00.0814(1303)`.
+
+The renamed STR8-N `1.21` Bank Maintenance S19 loaded and ran. Its read-only
+map showed B3 sectors 8-E used, B3:F protected, and valid D3
+`FF RYORS C000 00FFFFFF`; `Q` returned without mutation. From the resulting
+live STR8-N shell, explicit `J3` printed `J B3`, generated the synthetic RESET,
+timed out through STR8-N `1.21`, and cold-booted matching HIMON `1303` without
+physical intervention. The current installation, persistence, fixed ROM head,
+ASM identity, RAM-tool rename, and Bank-3 handoff are board-accepted.

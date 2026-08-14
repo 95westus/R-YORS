@@ -27,8 +27,9 @@ R-YORS
 
 STR8
   reset-time recovery/update guard
-  rotates backups, restores images, installs $C000 payloads
-  validates opaque-bank handoffs and publishes the pending-proof Bank Jump Record
+  installs dense sector ranges transactionally and runs recovery RAM tools
+  maintains directory journals, guarded top-sector backup/rewrite, and recovery
+  validates enrolled-bank handoffs and publishes the accepted Bank Jump Record
   owns protected top-sector policy while STR8 is active
 
 IVI / LEAF
@@ -41,7 +42,9 @@ HIMON
   and current hash/catalog workbench behavior
 
 ASM
-  onboard assembler and AP object producer
+  onboard assembler and AP v2 object producer
+  supports binary/mask literals, expressions, local/global names, typed public
+  metadata, and the SEAL/RELOCATE/PACKAGE/INSTALL/LOAD lifecycle
 
 OIL
   Overlay Integration Layer
@@ -201,7 +204,8 @@ flowchart TD
     TECH --> DATA[Memory / Catalog / Hash]
     TECH --> DECKS[Control Deck Atlas]
 
-    ASM --> OIL
+    ASM --> SEAL[SEAL / RELOCATE / PACKAGE]
+    SEAL --> OIL
     HIMON --> OIL
     STR8 --> OIL
     OIL --> PROOF

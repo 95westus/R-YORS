@@ -122,7 +122,7 @@ After `END` changes the prompt to `SEAL>`, enter only:
 
 ```text
 SEAL
-PACKAGE $3200
+PACKAGE 3200
 .
 ```
 
@@ -163,7 +163,7 @@ After `END` changes the prompt to `SEAL>`, enter only:
 
 ```text
 SEAL
-PACKAGE $4000
+PACKAGE 4000
 .
 ```
 
@@ -213,7 +213,7 @@ After `END` changes the prompt to `SEAL>`, enter only:
 
 ```text
 SEAL
-PACKAGE $3200
+PACKAGE 3200
 .
 ```
 
@@ -263,7 +263,7 @@ After `END` changes the prompt to `SEAL>`, enter only:
 
 ```text
 SEAL
-PACKAGE $3200
+PACKAGE 3200
 .
 ```
 

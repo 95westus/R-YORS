@@ -1,7 +1,7 @@
 # ASM-F2 16x16 Life Bank 2 Example
 
 Status: historical pre-split-worker evidence captured 2026-07-10. ASM-F2
-assembled the Life source, `PACKAGE $3200` produced `L=$01DE`, and the old
+assembled the Life source, `PACKAGE 3200` produced `L=$01DE`, and the old
 bank-sector writer returned `$1A00=$AC`. The writer is now archived because it
 calls `$F003` modes `$06/$05`; do not use this procedure on split V1.
 
@@ -73,7 +73,7 @@ ASM-F2
 ...
 ASM>$215E:         END
 ASM OK
-SEAL> PACKAGE $3200
+SEAL> PACKAGE 3200
 PKG OK @=$3200 L=$01DE
 ...
 >G 3000
@@ -147,7 +147,7 @@ Seal and package:
 ```text
 SEAL> SEAL
 SEAL OK
-SEAL> PACKAGE $3200
+SEAL> PACKAGE 3200
 PKG OK @=$3200 L=$llll
 ```
 

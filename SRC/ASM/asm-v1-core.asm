@@ -26,6 +26,7 @@
                         XDEF            ASM_PARSE_HEAD
                         XDEF            ASM_DISPATCH_STATEMENT
                         XDEF            ASM_PARSE_EXPR
+                        XDEF            ASM_PARSE_SEAL_EXPR
                         XDEF            ASM_CLASS_OPERAND
                         XDEF            ASM_EMIT_BYTE
                         XDEF            ASM_EMIT_WORD_LE
@@ -2430,6 +2431,39 @@ ASM_SMOKE_EXPR_DEC_LO_OK:
                         BEQ             ASM_SMOKE_EXPR_DEC_OK
                         JMP             ASM_SMOKE_EXPR_FAIL
 ASM_SMOKE_EXPR_DEC_OK:
+
+                        LDX             #<ASM_SMOKE_EXPR_SEAL_HEX
+                        LDY             #>ASM_SMOKE_EXPR_SEAL_HEX
+                        JSR             ASM_PARSE_SEAL_EXPR
+                        BCC             ASM_SMOKE_EXPR_SEAL_FAIL_NEAR
+                        LDA             ASM_MODE
+                        CMP             #ASM_SYMK_ADDR
+                        BNE             ASM_SMOKE_EXPR_SEAL_FAIL_NEAR
+                        LDA             ASM_WIDTH
+                        CMP             #ASM_WIDTH_ABS
+                        BNE             ASM_SMOKE_EXPR_SEAL_FAIL_NEAR
+                        LDA             ASM_VALUE_LO
+                        BNE             ASM_SMOKE_EXPR_SEAL_FAIL_NEAR
+                        LDA             ASM_VALUE_HI
+                        CMP             #$32
+                        BNE             ASM_SMOKE_EXPR_SEAL_FAIL_NEAR
+                        LDA             ASM_PARSE_HEX_DEFAULT
+                        BNE             ASM_SMOKE_EXPR_SEAL_FAIL_NEAR
+
+                        LDX             #<ASM_SMOKE_EXPR_SEAL_ALPHA_HEX
+                        LDY             #>ASM_SMOKE_EXPR_SEAL_ALPHA_HEX
+                        JSR             ASM_PARSE_SEAL_EXPR
+                        BCC             ASM_SMOKE_EXPR_SEAL_FAIL_NEAR
+                        LDA             ASM_VALUE_LO
+                        CMP             #$BB
+                        BNE             ASM_SMOKE_EXPR_SEAL_FAIL_NEAR
+                        LDA             ASM_VALUE_HI
+                        CMP             #$BA
+                        BNE             ASM_SMOKE_EXPR_SEAL_FAIL_NEAR
+                        BRA             ASM_SMOKE_EXPR_SEAL_OK
+ASM_SMOKE_EXPR_SEAL_FAIL_NEAR:
+                        JMP             ASM_SMOKE_EXPR_FAIL
+ASM_SMOKE_EXPR_SEAL_OK:
 
                         LDX             #<ASM_SMOKE_EXPR_HEX_ZP
                         LDY             #>ASM_SMOKE_EXPR_HEX_ZP
@@ -12265,7 +12299,31 @@ ASM_NEXT_TOKEN:
                         CMP             #';'
                         BEQ             ASM_NEXT_TOKEN_EOL
                         CMP             #$27
-                        BEQ             ASM_NEXT_TOKEN_CHAR
+                        BNE             ASM_NEXT_TOKEN_MAYBE_BARE_HEX
+                        JMP             ASM_NEXT_TOKEN_CHAR
+ASM_NEXT_TOKEN_MAYBE_BARE_HEX:
+                        LDA             ASM_PARSE_HEX_DEFAULT
+                        BEQ             ASM_NEXT_TOKEN_PREFIXED_BASES
+                        LDY             #$00
+ASM_NEXT_BARE_HEX_SCAN:
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        PHY
+                        JSR             ASM_HEX_TO_NIBBLE
+                        PLY
+                        BCC             ASM_NEXT_BARE_HEX_END
+                        INY
+                        BRA             ASM_NEXT_BARE_HEX_SCAN
+ASM_NEXT_BARE_HEX_END:
+                        CPY             #$00
+                        BEQ             ASM_NEXT_TOKEN_PREFIXED_BASES
+                        CPY             #$05
+                        BCS             ASM_NEXT_TOKEN_PREFIXED_BASES
+                        JSR             ASM_IS_TOKEN_DELIM
+                        BCC             ASM_NEXT_TOKEN_PREFIXED_BASES
+                        JMP             ASM_NEXT_TOKEN_BARE_HEX
+ASM_NEXT_TOKEN_PREFIXED_BASES:
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
                         CMP             #'%'
                         BNE             ASM_NEXT_NOT_BIN_START
                         JMP             ASM_NEXT_TOKEN_BIN
@@ -12416,6 +12474,10 @@ ASM_NEXT_WORD_BAD:
                         JMP             ASM_NEXT_TOKEN_BAD_OPER
 
 ASM_NEXT_TOKEN_HEX:
+                        JSR             ASM_ADV_PARSE
+                        BRA             ASM_NEXT_TOKEN_HEX_COMMON
+ASM_NEXT_TOKEN_BARE_HEX:
+ASM_NEXT_TOKEN_HEX_COMMON:
                         LDA             #ASM_TOK_NUMBER
                         STA             ASM_TOK_KIND
                         LDA             #ASM_TSUB_HEX
@@ -12423,7 +12485,6 @@ ASM_NEXT_TOKEN_HEX:
                         LDA             #$01
                         STA             ASM_LEN
                         JSR             ASM_ZERO_VALUE
-                        JSR             ASM_ADV_PARSE
 ASM_NEXT_HEX_LOOP:
                         LDY             #$00
                         LDA             (ASM_PARSE_PTR_LO),Y
@@ -14318,6 +14379,14 @@ ASM_EMIT_DS_FAIL_A:
 ; ----------------------------------------------------------------------------
 ASM_PARSE_EXPR_FAIL_NEAR:
                         JMP             ASM_PARSE_EXPR_FAIL_A
+; Post-END command operands use HIMON-style bare hexadecimal.  The flag is
+; private to this call so ordinary ASM source retains its established syntax.
+ASM_PARSE_SEAL_EXPR:
+                        LDA             #$01
+                        STA             ASM_PARSE_HEX_DEFAULT
+                        JSR             ASM_PARSE_EXPR
+                        STZ             ASM_PARSE_HEX_DEFAULT
+                        RTS
 ASM_PARSE_EXPR:
                         STX             ASM_PARSE_PTR_LO
                         STY             ASM_PARSE_PTR_HI
@@ -17392,6 +17461,7 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_RELOC_RESOLVE_FLAGS
                         STZ             ASM_FIX_RESOLVE_COUNT
                         STZ             ASM_DB_COUNTING
+                        STZ             ASM_PARSE_HEX_DEFAULT
                         STZ             ASM_EXPORT_COUNT
                         STZ             ASM_IMPORT_COUNT
                         STZ             ASM_IMPORT_RESOLVE_COUNT
@@ -17627,6 +17697,8 @@ ASM_SMOKE_REPORT_FLAGS:
                         DB              $00
                         ENDIF
 ASM_DB_COUNTING:       DB              $00
+ASM_PARSE_HEX_DEFAULT:
+                        DB              $00
 ASM_ROOM_COUNT:        DB              $00
 ASM_EXPORT_INDEX:      DB              $00
 ASM_EXPORT_NAME_INDEX: DB              $00
@@ -18350,6 +18422,10 @@ ASM_DIRECT_DS_LIST_EXPECT:
                         DB              $AA,$55,$41,$35,$AA,$55,$11,$22
                         DB              $33
 ASM_SMOKE_EXPR_DEC:    DB              "10",0
+ASM_SMOKE_EXPR_SEAL_HEX:
+                        DB              "3200",0
+ASM_SMOKE_EXPR_SEAL_ALPHA_HEX:
+                        DB              "BABB",0
 ASM_SMOKE_EXPR_HEX_ZP:
                         DB              "$12",0
 ASM_SMOKE_EXPR_HEX_ABS:

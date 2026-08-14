@@ -34,5 +34,4 @@ DIS_PRINT_MNEM_DONE:
 
 DIS_WRITE_SPACE:
                         LDA             #' '
-                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        RTS
+                        JMP             BIO_FTDI_WRITE_BYTE_BLOCK

@@ -109,16 +109,16 @@ ASM>$2000: ORG $2000
 ASM>$2000: LDA #$5A
 ASM>$2002: RTS
 ASM>$2003: END
-SEAL> PACKAGE $3200
-SEAL> INSTALL $3200
-SEAL> INSTALL $3200 $hhhh
-SEAL> LOAD $hhhh $3000
+SEAL> PACKAGE 3200
+SEAL> INSTALL 3200
+SEAL> INSTALL 3200 hhhh
+SEAL> LOAD hhhh 3000
 SEAL> .
 >D 3000 3002
 >G 3000
 ```
 
-Use the address printed by `INSTALL $3200`; `$hhhh` is an example placeholder,
+Use the address printed by `INSTALL 3200`; `hhhh` is an example placeholder,
 not a fixed address. `INSTALL pkg` is advisory and
 does not write. `INSTALL pkg flash_addr` writes the unchanged AP envelope to an
 erased visible low-flash hole. In a memory dump, the installed package begins
@@ -154,7 +154,7 @@ to reach `SEAL>`:
 ```text
 >ASM NEW
 ASM>$2000: END
-SEAL> LOAD $hhhh $3800
+SEAL> LOAD hhhh 3800
 SEAL> .
 >G 3800
 ```
@@ -166,6 +166,14 @@ ASM>$hhhh:   source lines only
 SEAL>        SEAL, RELOCATE, PACKAGE, LOAD, INSTALL, NEW, .
 >            HIMON commands such as D, G, L, #, STR8
 ```
+
+Numeric operands at `SEAL>` are hexadecimal by default, matching HIMON: type
+`3000`, `BABB`, or `FF` without a prefix. The older `$3000` spelling remains
+accepted for compatibility. This rule applies only to post-`END` commands;
+ordinary `ASM>` source keeps its existing `$`-prefixed hexadecimal syntax.
+Entry identities such as `START` or `ASMREPORT` remain symbolic operands.
+An identity made only from one to four hex digits (`FACE`, for example) is
+therefore numeric at `SEAL>` and should be renamed.
 
 For example, `D 3800 FF` at `SEAL>` reports `ERR=$03 BO`; exit with `.` and run
 the dump at HIMON's `>` prompt.
@@ -364,8 +372,10 @@ term { op term }*
 Operators:
 
 ```text
-+ - | & ^
++ - | & ^ << >>
 ```
+
+Evaluation is strictly left to right; shifts have no precedence advantage.
 
 Selectors:
 
@@ -413,6 +423,7 @@ END
 ENTRY
 EXPORT
 IMPORT
+DC
 ```
 
 `EQU` defines a resolved value now:
@@ -430,6 +441,17 @@ endian order; use `<` and `>` when one byte is intended:
 DB $12,$34,'A'
 DB <ADDR,>ADDR
 ```
+
+`DC` emits one of the currently defined double-quoted string encodings:
+
+```asm
+DC C,"text"       ; trailing zero C string
+DC HB,"text"      ; high bit set on the final character
+DC P,"text"       ; one-byte length followed by text
+```
+
+The shorter proposed `DC 'text'` spelling is not implemented; it remains in
+the ASM Feature Queue until its terminator contract and board proof are fixed.
 
 `DW` emits each resolved expression as a 16-bit little-endian word:
 
@@ -566,7 +588,7 @@ service.
 internal relocation rows there:
 
 ```text
-RELOCATE $3000
+RELOCATE 3000
 ```
 
 Success shape:
@@ -582,8 +604,8 @@ may also use `PACKAGE identity address`, where `identity` must be the unique
 name declared by `ENTRY`:
 
 ```text
-PACKAGE $3200
-PACKAGE ASMREPORT $3200
+PACKAGE 3200
+PACKAGE ASMREPORT 3200
 ```
 
 Success shape:
@@ -630,7 +652,7 @@ copies the BODY to RAM, applies internal relocation rows, and resolves resident
 RJOIN import rows through the resident HIMON AP service:
 
 ```text
-LOAD $3200 $3000
+LOAD 3200 3000
 ```
 
 `LOAD` is a post-`END` `SEAL>` command, not an ASM source line. To load an
@@ -640,7 +662,7 @@ session and immediately end it:
 ```text
 >ASM NEW
 ASM>$2000: END
-SEAL> LOAD $hhhh $3800
+SEAL> LOAD hhhh 3800
 SEAL> .
 >G 3800
 ```
@@ -661,7 +683,7 @@ but the complete envelope and destination BODY ranges must not overlap.
 The one-argument `INSTALL pkg` form is read-only advisory:
 
 ```text
-INSTALL $3200
+INSTALL 3200
 ```
 
 Success shape:
@@ -673,11 +695,11 @@ INST @=$hhhh L=$hhhh
 It parses enough AP header/length information to find the first erased
 contiguous visible flash hole in `$8000-$FEFF` large enough for the whole
 envelope. `INSTALL pkg flash_addr` writes the unchanged AP envelope to an erased
-visible low-flash hole through HIMON's install service. Both operands are ASM
-expressions, so use `$` on literal hex addresses:
+visible low-flash hole through HIMON's install service. Numeric operands use
+the same bare hexadecimal convention as HIMON:
 
 ```text
-INSTALL $3200 $hhhh
+INSTALL 3200 hhhh
 ```
 
 General banked install across banks 0-2 remains unavailable on split V1. The
@@ -714,18 +736,12 @@ tables are released. Any STR8 flash worker or banked `AP` operation then
 reuses that low RAM, so run `asm-session-report` before staging if symbol and
 fixup names from the current session are required.
 
-For a current V1 STR8 top-sector update, use
-`SRC/BUILD/generated/asm-samples/str8n-v1.2-i-refresh-transient-3000.a`. Generate it
-with `make -C SRC str8-i-refresh-a`. It copies the live
-`$FFB0-$FFEF` directory before staging the embedded STR8-N image into
-`$0A00-$19FF` and should leave `$7C00-$7C03 = 00 AC 00 00`. After verifying
-the staged bytes, `G 3003` erases/programs/verifies the active top sector and
-should leave `$7C00-$7C03 = 01 AC 00 00`. The `$FACE` identity check should
-identify the rebuilt STR8-N v1.2 image.
-
-The legacy replacement and one-time migration writers are archived under
-`DOC/GUIDES/ASM/SAMPLES/OLD/`. They overwrite the live V1 directory and must
-not be used for an installed V1 refresh.
+For a current STR8-N top-sector update, load the standalone repository's
+`BUILD/v1.21/s19/str8n-v1.21-top-update-2000.s19` through STR8-N `L`. It embeds
+the exact manifest-checked top image, verifies a full B1:F backup, preserves
+the live directory/configuration pocket, and requires exact confirmations
+before B3:F erase. The former ASM transient writers are archived under
+`DOC/GUIDES/ASM/SAMPLES/OLD/`; do not use them for an installed refresh.
 
 `CHECK address` exists only in full-core or package-check diagnostic builds.
 It is intentionally omitted from the default flash-resident ASM image to keep
@@ -790,7 +806,7 @@ older body is not load-relocatable: loading it elsewhere lets its literal
 `$48xx` calls escape the body. Either form also fails when its hard-coded ASM
 helper/table addresses no longer match the running ASM-F2 map.
 
-If `PACKAGE ASMREPORT $3000` reports `PKG ERR=$02`, regenerate the reporter source with
+If `PACKAGE ASMREPORT 3000` reports `PKG ERR=$02`, regenerate the reporter source with
 `make -C SRC asm-session-report`; older generated sources could assemble but
 set bad seal flags by overflowing the AP relocation table.
 
@@ -822,22 +838,22 @@ Then at `SEAL>`:
 
 ```text
 SEAL
-RELOCATE $3000
-PACKAGE $3200
-LOAD $3200 $3000
-INSTALL $3200
+RELOCATE 3000
+PACKAGE 3200
+LOAD 3200 3000
+INSTALL 3200
 .
 ```
 
 Expected behavior:
 
 - `SEAL` reports `BASE=$2000 END=$2008` and three relocation rows.
-- `RELOCATE $3000` writes a runnable copy at `$3000`.
-- `PACKAGE $3200` writes an AP v2 envelope whose body still contains the
+- `RELOCATE 3000` writes a runnable copy at `$3000`.
+- `PACKAGE 3200` writes an AP v2 envelope whose body still contains the
   original `$2000`-based bytes.
-- `LOAD $3200 $3000` reloads the package BODY to `$3000` and applies the same
+- `LOAD 3200 3000` reloads the package BODY to `$3000` and applies the same
   internal relocation rows.
-- `INSTALL $3200` suggests an erased visible flash hole but does not write it.
+- `INSTALL 3200` suggests an erased visible flash hole but does not write it.
 
 From HIMON:
 
@@ -877,7 +893,7 @@ At `SEAL>`:
 
 ```text
 SEAL
-PACKAGE $3200
+PACKAGE 3200
 .
 ```
 
@@ -902,14 +918,14 @@ $0A00-$19FF  fixup-name pool; released for flash sector staging
 $2000-$2FFF  packageable ASM body/helper emission island
 $3000-$3FFF  Bank 0 AP envelope, then AP load/run space
 $4000-$4FFF  lower RAM output/load space
-$5000-$61A9  protected flash ASM UDATA in the current map
-$61AA-$7CFF  upper ASM output/scratch arena
+$5000-$6D6B  protected flash ASM UDATA in the current map
+$6D6C-$7CFF  upper ASM output/scratch arena
 $7E00-$7EFF  HIMON service and monitor workspace
 $7F00-$7FFF  I/O, do not use
 ```
 
 The flash wrapper rejects output into its protected UDATA span. `ORG $5000`
-is `BAD RANGE`; the current map permits `ORG $61AA` through `$7CFF`.
+is `BAD RANGE`; the current map permits `ORG $6D6C` through `$7CFF`.
 Runtime code may still use ordinary RAM after leaving ASM if it does not depend
 on returning to the same live ASM workspace. Future AP overlay work may use
 the upper arena, but HIMON AP load destinations remain `$2000-$4FFF` in this
@@ -1013,16 +1029,17 @@ Known limitations:
 - No forward data fixups yet: `DW TARGET`, `DB <TARGET`, and `DB >TARGET`
   require `TARGET` to be known in current flash ASM. The next ASM incarnation
   should support those source forms and emit relocation rows for label data.
-- No string data directives yet: `HBSTR`, `CSTR`, `PSTR`, `X'...'`, and
-  `B'...'` are parked later forms.
+- `DC C,"text"`, `DC HB,"text"`, and `DC P,"text"` are current. Compact
+  `DC 'text'` remains queued until its exact emitted-byte/terminator contract
+  is defined and qualified.
 - No default flash-image `CHECK` command.
 - No default flash-image `RESOLVE` command; import resolution happens only
   during AP load/run through resident RJOIN.
 - `INSTALL pkg flash_addr` writes only erased currently visible low flash.
   Banked install across banks 0-2 has no current split-V1 writer; the former
   `bankput-transient-3000.a` is archived under `SAMPLES/OLD`.
-- `LOAD` does minimal AP parsing and resident RJOIN import linking; no full AP
-  FNV validation or dependency manager yet.
+- `LOAD` validates the AP v2 envelope and BODY FNV and performs resident RJOIN
+  linking, but there is no general dependency manager yet.
 - Local labels are not exported, imported, or reported as public symbols.
 
 For design detail, see [HASHED_ASM.md](HASHED_ASM.md). For board evidence, see

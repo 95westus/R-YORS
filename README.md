@@ -20,20 +20,22 @@ ASM-F2, OIL, or AP, and can supervise compatible non-R-YORS guest systems.
 ## System
 
 ```text
-physical RESET -> Bank 3 STR8-N -- 3s timeout --> Bank 3 HIMON
-                       |                         |
-                       |                         +--> ASM-F2 -> AP object
-                       |                                      |
-                       |                              OIL <----+
-                       |                               |
-                       |                           running body
+physical RESET -> Bank 3 STR8-N 1.21 -- timeout --> Bank 3 HIMON 1303
+                       |                              |
+                       |                              +--> ASM-F2 -> SEAL/AP
+                       |                                           |
+                       |                                   OIL <---+
+                       |                                    |
+                       |                                running body
                        |
-                       +-- J0/J1/J2 --> Bank 0/1/2 guest reset vector
+                       +-- J0/J1/J2 --> enrolled guest RESET vector
+                       +-- J3 -------> Bank 3 RESET vector
+                       +-- I / L ----> flash install / RAM recovery tool
 ```
 
 | Part | Role |
 | --- | --- |
-| **STR8-N** | Bank-3 reset supervisor, recovery, backup/restore, payload updates, and non-destructive `J0`-`J2` opaque-bank handoff |
+| **STR8-N** | Bank-3 reset supervisor, recovery, journaled range installation, protected-top maintenance, and `J0`-`J3` handoff |
 | **HIMON** | Monitor, loader, debugger, catalog/RJOIN services, and command host |
 | **ASM-F2** | Flash-resident onboard W65C02 assembler and AP object producer |
 | **OIL** | **Overlay Integration Layer**: AP storage, load, relocation, resident imports, and execution |
@@ -45,13 +47,33 @@ resolves resident imports. Physical reset selects Bank 3. If the STR8 takeover
 key is not pressed, its countdown stays in Bank 3 and enters the Bank-3
 default payload, currently HIMON.
 
+## Current Capability Snapshot
+
+- STR8-N `1.21` installs dense S19 ranges transactionally, runs recovery tools
+  from RAM, maintains bank-directory journals, updates its protected top
+  sector through a verified backup, and launches enrolled Banks 0-3.
+- HIMON/ASM-F2 `00.0814(1303)` provides RAM loading, memory/debug commands,
+  resident FNV/RJOIN lookup, AP v2 validation/linking, and onboard assembly.
+- ASM source supports hexadecimal, decimal, character, and `%` binary/mask
+  literals; local/global symbols; expressions; initialized data; and AP v2
+  entry, export, import, and relocation metadata.
+- The post-`END` `SEAL>` workflow uses HIMON-style bare hexadecimal addresses
+  for `RELOCATE`, `PACKAGE`, `INSTALL`, and `LOAD`. Standalone and combined
+  ROM S19s are generated from the same final HIMON/ASM bytes.
+
+The current `1.21`/`1303` installation, physical-reset persistence, fixed ROM
+head, Bank Maintenance smoke, and synthetic `J3` return are board-accepted.
+Compact `DC 'text'` syntax and AIM self-identifying image metadata remain
+explicit future goals, not current features.
+
 ## Current Board
 
-The accepted split-V1 board line through 2026-08-08 is hardware-proven for:
+The accepted split-V1 board line through 2026-08-14 is hardware-proven for:
 
 - Bank-3 reset, the visible three-second countdown, and timeout into the
   Bank-3 HIMON default;
-- visible `J0`, `J1`, and `J2` commands, each followed by its `J Bn` status;
+- visible `J0`-`J3` commands, directory-gated handoff, and synthetic RESET-
+  vector return through Bank 3;
 - uppercase single echo for reset-time and resident interactive input, with
   Backspace and empty Enter taking the cancel path;
 - non-destructive RAM-resident bank selection, target reset-vector validation,
@@ -61,12 +83,13 @@ The accepted split-V1 board line through 2026-08-08 is hardware-proven for:
   `$4B59/$2A3D/$04EF/$4663` for Banks 0-3;
 - boot, backup rotation, restore, and guarded payload updates;
 - RAM inspection, S19 loading, one-shot breakpoints, and single-step debugging;
-- onboard W65C02 assembly, `SEAL`, `PACKAGE`, `LOAD`, `INSTALL`, and `AP`;
+- onboard W65C02 assembly, `%` binary literals, expression/data directives,
+  local symbols, `SEAL`, `RELOCATE`, `PACKAGE`, `LOAD`, `INSTALL`, and `AP`;
 - internal AP relocation and resident RJOIN import resolution;
 - AP objects loaded from RAM, visible flash, and banked flash;
 - missing-import rejection, overlap protection, and banked-input validation;
 - the external ASM session reporter AP, kept in Bank 0 and run with
-  `AP B0 $hhhh $4800` from its selected store address;
+  `AP B0 hhhh 4800` from its selected store address;
 - interactive bank/sector flash erase with explicit confirmation and recovery;
 - standalone examples including the 16x16 column Life program.
 
@@ -74,7 +97,7 @@ The banked-AP bullets also apply to the split V1 line. Current HIMON stages
 `AP Bn` input with a RAM-resident `$F010/$0203` select/copy/restore routine;
 its host matrix, invalid-package stage/restore rail, and valid Bank-0 package
 execution are hardware-accepted. The historical V1.02 combined-image proofs
-remain in this repository. Current STR8-N v1.2 is built and released from the
+remain in this repository. Current STR8-N v1.21 is built and released from the
 adjacent standalone STR8-N repository; R-YORS imports its checked public ABI
 and builds only the `$8000-$EFFF` ASM/HIMON payload.
 
@@ -127,7 +150,7 @@ The current line retains the 2026-07-18 size-pass proof: its fixed-width `D`
 path, positive RAM AP/RJOIN import path, missing-import atomicity, and
 banked-source RJOIN path are hardware-proven. It retires the STR8 `M` map and
 the richer resident HIMON `D`/quoted-hash forms, and keeps AP import linking in
-HIMON. Standalone STR8-N v1.2 now publishes `$F006` as its resident ABI query;
+HIMON. Standalone STR8-N v1.21 publishes `$F006` as its resident ABI query;
 R-YORS verifies that service and its capabilities through the external public
 contract.
 
@@ -167,10 +190,10 @@ The primary R-YORS output is a dense 28K `$8000-$EFFF` payload:
 ```text
 SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
 
-$8000-$BABA  ASM-F2, entry $800C
-$BABB-$BFFF  low-flash growth/AP-store hole ($0545 bytes)
-$C000-$EE30  current HIMON image
-$EE31-$EFFF  HIMON growth hole ($01CF bytes)
+$8000-$BAF5  ASM-F2, entry $800C
+$BAF6-$BFFF  low-flash growth/AP-store hole ($050A bytes)
+$C000-$EDB3  current HIMON image
+$EDB4-$EFFF  HIMON growth hole ($024C bytes)
 ```
 
 The build first verifies the adjacent STR8-N manifest, locked top-sector hash,
@@ -181,7 +204,7 @@ To compose a complete 32K Bank-0/1/2 payload, run the standalone owner:
 ```text
 make -C ../STR8-N ryors-full-bank
 
-../STR8-N/BUILD/v1.2/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19
+../STR8-N/BUILD/v1.21/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19
 ```
 
 STR8-N supplies `$F000-$FFFF`, validates the 28K R-YORS input, and verifies
@@ -233,10 +256,10 @@ Flash operations can overwrite firmware, programs, data, and board
 configuration. Destructive STR8 and flash-utility paths require confirmation.
 Do not press NMI during erase, program, or restore operations.
 
-`J0`-`J2` do not write flash, but they deliberately replace the visible
-Bank-3 runtime with the selected guest. Use physical reset as the universal
-return path, and qualify each unrelated guest before relying on its startup or
-interrupt behavior.
+`J0`-`J3` do not write flash, but they deliberately transfer through the
+selected bank's RESET vector. Use physical reset as the universal return path,
+and qualify each unrelated guest before relying on its startup or interrupt
+behavior.
 
 ## Direction
 

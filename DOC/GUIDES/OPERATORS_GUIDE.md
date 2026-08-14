@@ -45,7 +45,7 @@ make -C ../STR8-N ryors-full-bank
 This writes:
 
 ```text
-../STR8-N/BUILD/v1.2/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19
+../STR8-N/BUILD/v1.21/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19
 ```
 
 STR8-N validates the 28K S19, appends its current checked 4K top image, and
@@ -65,12 +65,12 @@ also requires the locked standalone STR8-N checkout to be clean.
 ## Current Integrated Layout
 
 ```text
-$8000-$BABA   ASM-F2, entry $800C
-$BABB-$BFFF   low-flash headroom/AP-store hole
-$C000-$EE30   HIMON
-$EE31-$EFFF   HIMON headroom
-$F000-$FD53   standalone STR8-N v1.2 resident
-$FD54-$FD5B   enforced 8-byte margin
+$8000-$BAF5   ASM-F2, entry $800C
+$BAF6-$BFFF   low-flash headroom/AP-store hole
+$C000-$EDB3   HIMON
+$EDB4-$EFFF   HIMON headroom
+$F000-$FD59   standalone STR8-N v1.21 resident
+$FD5A-$FD5B   available 2-byte growth margin
 $FD5C-$FFAF   stored unified STR8-N worker, runs at $0200-$0453
 $FFB0-$FFEF   bank directory
 $FFF0-$FFF9   configuration pocket

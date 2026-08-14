@@ -6,6 +6,16 @@ Review this checklist before starting any ASM feature implementation. An item
 stays unchecked until its source, regression tests, documentation, resident
 size measurement, and required hardware proof are complete.
 
+- [ ] **`DC 'text'` handling.** Add and test the compact single-quoted text
+  form, first defining its emitted-byte/terminator contract relative to the
+  current `DC C,"text"`, `DC HB,"text"`, and `DC P,"text"` forms. Preserve
+  single-character expression literals such as `DB 'A'` and `LDA #'A'`.
+  Check empty, unterminated, embedded-quote, comment-boundary, overlong, label,
+  PC/high-water, rollback, and seal-ownership cases. Reuse the existing `DC`
+  count/emit loops if that is smaller than adding another string scanner, and
+  do not mark complete without host smoke, resident ROM/RAM measurement,
+  documentation, and required board proof.
+
 - [ ] **Unresolved compound fixups.** Add a compact representation and
   resolver for a single unresolved symbol plus a constant addend, including
   forward internal uses such as `LDA FOO+1`, `BNE TARGET-2`, and `DW TABLE+2`.
@@ -172,6 +182,16 @@ size measurement, and required hardware proof are complete.
   64-row relocation/export/import limits and 16-bit section lengths; AP v1's
   50-relocation boundary is historical evidence only. Do not reopen the wire
   format without a demonstrated capacity or lifecycle requirement.
+- Add **AIM (AP Image Metadata)** as a future self-identifying-image goal.
+  Define a compact **IMD (Image Metadata Descriptor)** in the image body and
+  publish it as a typed DATA export or resident data record. At minimum carry
+  a schema version, product/ABI identity, **BID (Build ID)**, HIMON base/end,
+  and an explicitly non-self-referential content digest contract. Pair it with
+  an **ICG (Image Coherence Gate)** in the host build: derive standalone RAM,
+  ROM, install, and combined Bank-3 outputs from one canonical HIMON artifact,
+  emit an external provenance manifest, and byte-compare every `$C000-$EFFF`
+  HIMON slice. Prefer the existing AP v2 DATA-export mechanism; change the AP
+  wire format only if the body-export design proves insufficient.
 - Add a tiny sorted-list helper for monitor tables such as breakpoint listing.
   `B L` may print slot order for now, but sorted address order will be easier
   to read once multiple breakpoints are active. For the current four breakpoint

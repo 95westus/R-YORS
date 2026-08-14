@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "project": "STR8-N",
-  "version": "1.2",
+  "version": "1.21",
   "repository": "https://github.com/95westus/STR8-N.git",
   "manifestSchema": 3,
   "artifacts": {
-    "topSectorSha256": "799E563E538AF706CF00655E81EAC4ED7A16FCA570123D85CCB1FF41B4DCB334",
+    "topSectorSha256": "442E316F7C0A502E5D6635408076423C397930A710452E28A936DCA96796047E",
     "publicContractSha256": "7778B3A33AF21E9E81160BD51341F52FA81F211292C2425A9280D59F25F45174"
   },
   "layout": {

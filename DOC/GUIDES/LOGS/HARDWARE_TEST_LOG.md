@@ -22221,6 +22221,183 @@ RET A=0D X=0D Y=0D P=75 S=FD NV-BdIzC
 >
 ```
 
+## 2026-08-14 `1157` D3 Compaction And Bare-Hex Card B Acceptance
+
+Status: partially accepted continuation. The supplied terminal capture closes
+the D3 protected mutation/post-map, the current `8-E` install/cold boot, and
+final-image Card B. It does not contain explicit STR8-N `J3`, Card C, banked
+`AP B0 8001 3000`, or the final persistence sequence.
+
+The decisive D3 transcript is preserved verbatim:
+
+```text
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 R=RECLAIM DIR Q/ENTER=QUIT> R
+
+RECLAIM DIR 0-3> 3
+
+B3F REWRITE
+SCRATCH B1:8
+TYPE RESET J3> RESET J3
+BACKUP VERIFIED
+ OK
+
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 R=RECLAIM DIR Q/ENTER=QUIT> M
+
+BANK 8 9 A B C D E F
+
+B0 U U U U U U U U
+B1 E E E E E E E U
+B2 U U U U U U U U
+B3 U U U U U U U P
+E=ERASED U=USED A=AP VALID P=B3F PROTECTED
+
+DIR B T DESC ENTRY JOURNAL
+D0 FF BKUP0 FFFF FCFFFFFF
+D1 FF XXXXX FFFF FCFFFFFF
+D2 FF BACKP FFFF FCFFFFFF
+D3 FF RYORS C000 FCFFFFFF
+ OK
+```
+
+This accepts exact confirmation, verified backup, B3F rewrite, D3 identity and
+entry preservation, journal compaction from `00000000` to `FCFFFFFF`, and
+scratch-sector cleanup. The later current-image install and boot were:
+
+```text
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1157)
+```
+
+Card B then rejected `STA #$12` with `ERR=$04 BMO PC=$2000`, assembled the
+known compact ALU/shift source, and accepted the formerly failing bare operand:
+
+```text
+SEAL> PACKAGE START 3200
+PKG OK @=$3200 L=$0127
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$04
+>G 2000
+GO 2000
+
+#GO# ENTRY=2000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7904
+7904: AC | .
+>AP 3200 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7904
+7904: AC | .
+```
+
+The map-matched reporter ended with:
+
+```text
+STATUS=OK
+START=$2000
+PC=$20BD
+HIGH=$20BD
+BYTES=$00BD
+MAP END=$BAF6 UDATA=$5000-6D6C
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 08 1A 0C 01 00 00 00
+PKG @ LEN BODY INST3200 0127 0000 0000 ID START
+ASM REPORT OK
+```
+
+This accepts the shared ALU/shift table runtime, 26 fixups, 12 relocations,
+executable export `START`, direct execution, AP relocation/execution, and the
+four-digit bare-hex tokenizer correction on hardware.
+
+## 2026-08-14 D3 Journal-Exhaustion Precondition
+
+The operator captured the live board state that motivated the narrow D3
+compaction path. This is precondition evidence, not acceptance of the new
+mutation path. D3 retains the expected `RYORS` / `C000` identity, but its
+journal is exhausted at `00000000`. Bank 1 sectors 8-E provide erased scratch
+space; Bank 1 sector F is used and is not assumed disposable.
+
+```text
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1102)
+>L
+L S19
+L @2000
+L OK=162B ENTRY=2000
+>G 2000
+GO 2000
+
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 R=RECLAIM DIR Q/ENTER=QUIT> M
+
+BANK 8 9 A B C D E F
+
+B0 U U U U U U U U
+B1 E E E E E E E U
+B2 U U U U U U U U
+B3 U U U U U U U P
+E=ERASED U=USED A=AP VALID P=B3F PROTECTED
+
+DIR B T DESC ENTRY JOURNAL
+D0 FF BKUP0 FFFF FCFFFFFF
+D1 FF XXXXX FFFF FCFFFFFF
+D2 FF BACKP FFFF FCFFFFFF
+D3 FF RYORS C000 00000000
+ OK
+
+STR8-N 1.2 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 R=RECLAIM DIR Q/ENTER=QUIT> Q
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1102)
+>
+```
+
+The host-built successor makes `R` accept directory 3 only for this exact
+full-journal state. It searches B0-B2 sectors 8-F, so this map selects B1:8
+without disturbing used B1:F. It preserves D3 bytes +0..+11 and replaces only
++12..+15 with `FCFFFFFF`. `make all`, the strengthened Bank Maintenance
+checker, the R-YORS ASM smoke suite, and both repositories' `git diff --check`
+pass. The candidate S19 SHA-256 is
+`B1088334157A242B4F94AD2228BF4DAEE6328500D6C9533BF9F57E955CF98B73`.
+Board execution and the post-operation map remain open evidence.
+
 ## 2026-08-14 ASM-F2 Final Post-END Workflow Card C Acceptance
 
 The four final-image entries below are ordered newest-first: Card C
@@ -22765,3 +22942,452 @@ ASM REPORT OK
 RET A=0D X=0D Y=0D P=75 S=FD NV-BdIzC
 >
 ```
+
+## 2026-08-14 Latest `1157` Closure Status
+
+The newest supplied capture is recorded above under **`1157` D3 Compaction
+And Bare-Hex Card B Acceptance**. Accepted: D3 protected mutation/post-map,
+current `8-E` install/cold boot, and Card B bare packaging plus direct/AP
+execution and reporter. Remaining: explicit STR8-N `J3`, Card C, banked
+`AP B0 8001 3000`, and final persistence. Use the residual board-closure card;
+do not repeat the already accepted B3F compaction.
+
+## 2026-08-14 `1157` Card C Main-Path Acceptance
+
+Status: accepted except for the separate letter-leading `BABB` range probe.
+The supplied continuation is preserved verbatim:
+
+```text
+M 3200
+3200: 41 5A
+>ASM NEW
+ASM-F2 00.0814(1157)
+ASM>$2000: ; ASM-F2 FINAL-IMAGE SEAL/RELOCATE/PACKAGE/LOAD CARD.
+ASM>$2000: ; EVERY DIRECT OR LOADED RUN RETURNS A=$C3, C=1, AND WRITES $C3 TO $7905.
+ASM>$2000:
+ASM>$2000:         ORG $2000
+ASM>$2000: START   JMP RUN
+ASM>$2003:
+ASM>$2003: RUN     LDA #$C3
+ASM>$2005:         STA $7905
+ASM>$2008:         SEC
+ASM>$2009:         RTS
+ASM>$200A:
+ASM>$200A:         ENTRY START
+ASM>$200A:         END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> RELOCATE 3000
+REL OK BASE=$3000 C=$01
+SEAL> PACKAGE WRONG 3200
+PKG ERR=$08
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$08
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=C3 X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 7905
+7905: C3 | .
+>D 3200
+3200: 5A | Z
+>ASM SEAL
+ASM-F2 00.0814(1157)
+SEAL> PACKAGE START 3200
+PKG OK @=$3200 L=$003D
+SEAL> INSTALL 3200
+INST @=$BAF6 L=$003D
+SEAL> LOAD 3200 3000
+LOAD OK=$3000 L=$000A C=$01
+SEAL> .
+ASM BYE
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=C3 X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 7905
+7905: C3 | .
+>ASM SEAL
+ASM-F2 00.0814(1157)
+SEAL> .
+ASM BYE
+>
+```
+
+This accepts Card C's seal, numeric bare relocation, wrong-identity no-write
+rail, correct package, advisory install, load/relocation, direct and loaded
+execution, and preserved `SEAL>` session. The capture did not enter
+`RELOCATE BABB`; that isolated parser/range rail remains open.
+
+## 2026-08-14 `1157` Explicit `J3` Acceptance
+
+Status: accepted. The supplied continuation is preserved verbatim:
+
+```text
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>J3
+J B3
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1157)
+>Q
+
+NMI PC=C54B
+A=C5 X=FF Y=07 P=A5 S=FB Nv-bdIzC
+>
+```
+
+This closes the explicit launch integration gate left after D3 journal
+compaction. `J3` printed `J B3`, followed the Bank-3 RESET vector, cold-booted
+matching HIMON `1157`, and left its NMI monitor live. The only remaining board
+closures are `RELOCATE BABB`, banked `AP B0 8001 3000`, and final persistence.
+
+### Operator correction: `J3` handoff remains open
+
+The operator subsequently reported that physical RESET may have been pressed,
+or an independently initiated cold boot may have occurred, after `J B3`. That
+makes the RESET/cold portion of the capture causally ambiguous. Superseding the
+acceptance statement above: the transcript proves that explicit `J3` was
+recognized and printed `J B3`, but it does not yet prove that the command
+completed the Bank-3 handoff. Repeat `J3` with no physical RESET or input until
+matching HIMON appears. The raw transcript remains intact as partial evidence.
+
+## 2026-08-14 `1157` Banked AP Acceptance And Misplaced `BABB` Probe
+
+Status: banked AP accepted; `BABB` still open. The supplied continuation is
+preserved verbatim:
+
+```text
+>L
+L S19
+L @7000
+L OK=071B ENTRY=7000
+>ASM NEW
+ASM-F2 00.0814(1157)
+ASM>$2000: .
+ASM BYE
+>ASM SEAL
+ASM-F2 00.0814(1157)
+#56AD7400# EXEC ERR=$03
+>RELOCATE BABB
+#846947D2# HSH_NF!
+>AP B0 8001 3000
+APERR=$07
+>
+```
+
+`AP B0 8001 3000` returned the required `$07` rejection and a live prompt, so
+the banked invalid-source/restore rail is accepted. The `BABB` result is not an
+ASM parser observation: `ASM NEW` followed by `.` cleared the sealed session,
+so `ASM SEAL` returned `$03` to HIMON and the following `RELOCATE` was treated
+as a HIMON hash lookup. Rebuild the short Card C body and issue `SEAL` and
+`RELOCATE BABB` without leaving its `SEAL>` prompt.
+
+## 2026-08-14 `1157` Letter-Leading `BABB` Acceptance
+
+Status: accepted. The supplied continuation is preserved verbatim:
+
+```text
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1157)
+>L
+L S19
+L @7000
+L OK=071B ENTRY=7000
+>ASM NEW
+ASM-F2 00.0814(1157)
+ASM>$2000: ORG $2000
+ASM>$2000: START JMP RUN
+ASM>$2003: RUN LDA #$C3
+ASM>$2005: STA $7905
+ASM>$2008: SEC
+ASM>$2009: RTS
+ASM>$200A: ENTRY START
+ASM>$200A: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> RELOCATE BABB
+REL ERR=$06
+SEAL>
+```
+
+This is the required ASM-context observation: `BABB` was recognized as bare
+hexadecimal and reached the relocation range guard, which failed closed with
+`$06` rather than reporting `BAD OPER`. The letter-leading SEAL operand rail
+is board-accepted. The capture also observes RESET/cold startup and matching
+HIMON/ASM-F2 `1157`, but does not state whether that RESET was intentionally
+physical and stops before the fixed `$C000` head and final STR8 prompt.
+
+## 2026-08-14 `1157` Uninterrupted `J3` Acceptance
+
+Status: accepted for the installed STR8-N `1.2` / R-YORS `1157` image. The
+operator confirmed that no physical RESET or other input intervened after
+`J3`. The uninterrupted continuation is preserved verbatim:
+
+```text
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ..S
+I L H J
+STR8-N>J3
+J B3
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1157)
+>
+```
+
+This supersedes the earlier causal ambiguity without rewriting its retained
+transcript or correction. Explicit `J3` passed the D3 directory gate, selected
+Bank 3, followed its RESET vector, and reached matching HIMON `1157` through
+the normal cold path. The rebuilt STR8-N `1.21` / R-YORS `1303` pair remains a
+separate board candidate and is not claimed by this historical acceptance.
+
+### Operator correction: every logged RESET was physical
+
+The operator subsequently clarified that every `RESET` indicated in the
+supplied logs was a physical, intentional reset. This supersedes the
+uninterrupted-acceptance interpretation immediately above. In particular, the
+physical RESET after `J B3` breaks causal proof of the handoff: the transcript
+accepts explicit `J3` recognition and `J B3` output, but does not prove that
+`J3` itself selected Bank 3 or reached its RESET vector. The compacted-D3
+mutation, post-map, identity preservation, and scratch cleanup remain
+accepted. An actual uninterrupted `J3` run—with no physical RESET or input
+after the command—remains required for launch acceptance.
+
+This clarification also establishes that RESET observations elsewhere in the
+retained hardware logs are intentional physical-reset evidence, not
+software-generated RESET-vector transitions, unless a passage explicitly
+documents another cause.
+
+## 2026-08-14 `1157` Synthetic-RESET `J3` Acceptance
+
+Status: accepted for installed STR8-N `1.2` / R-YORS `1157`. The operator
+identified the `RESET` immediately following `J B3` in this new capture as
+synthetic, not a physical reset:
+
+```text
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>J3
+J B3
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1157)
+>
+```
+
+The explicit synthetic identification distinguishes this RESET from the
+operator's earlier global physical-reset clarification. `J3` recognition,
+directory-gated Bank-3 selection, synthetic RESET-vector handoff, STR8-N cold
+timeout, and matching HIMON `00.0814(1157)` are board-accepted for this
+installed image. The rebuilt STR8-N `1.21` / R-YORS `1303` pair remains a
+separate installation candidate.
+
+## 2026-08-14 STR8-N `1.21` Top And R-YORS `1303` Install Acceptance
+
+Status: top-sector installation accepted; Bank-3 `8-E` installation accepted;
+one intermediate transfer failed closed and a clean retry succeeded. The
+supplied transcript is preserved verbatim:
+
+```text
+>L
+L S19
+L @2000
+L OK=3000 ENTRY=2000
+>G 2000
+GO 2000
+
+STR8-N 1.21 TOP UPDATE
+BACKUP B1:F; TARGET B3:F
+TYPE BACKUP B1F> BACKUP B1F
+BACKUP VERIFIED
+SAFE PHY $0F000-$0FFFF; TARGET PHY $1F000-$1FFFF; SUM=$08F8
+TYPE STR8-N 1.21> STR8-N 1.21
+ERASING B3:F - NO RESET/NMI/POWER
+STR8-N 1.21 VERIFIED; RESET
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: ..S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>H
+BOOT WARM
+
+HIMON V 00.0814(1303)
+>L
+L S19
+
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......
+FAIL
+STR8-N>3FSTR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S1STR8-N>S9STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>H
+BOOT WARM
+
+HIMON V 00.0814(1303)
+>
+```
+
+The top updater's post-verify `RESET` and the later HIMON `STR8` launch are
+software/synthetic transitions, not the still-required Phase-3 physical-reset
+test. The updater accepts the new 3418-byte resident image, protected-sector
+backup/restore boundary, exact confirmation, B3:F erase/program/verify, and
+visible STR8-N `1.21` identity.
+
+The first and third `8-E` attempts accept the current R-YORS image, commit
+rail, and live HIMON `1303` identity. The middle attempt returned `FAIL` after
+the six pre-commit sector dots; the remaining transmitted records were handled
+as shell input, and no commit prompt appeared. The capture does not identify
+the failed record or transport cause, so no root cause is assigned. The clean
+retry succeeded, demonstrating recovery without weakening the fail-closed
+commit boundary. Current Phase 3 remains board-pending.
+
+## 2026-08-14 STR8-N `1.21` / R-YORS `1303` Final Board Acceptance
+
+Status: accepted. The operator explicitly states that only the first RESET in
+this capture was physical; every subsequent RESET shown here was synthetic.
+The supplied transcript is preserved verbatim:
+
+```text
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1303)
+>D C000 C00F
+C000: 4C 07 C0 A5 5A C3 3C 78 | D8 A2 FF 9A A2 03 20 14 | L...Z.<x...... .
+>ASM NEW
+ASM-F2 00.0814(1303)
+ASM>$2000: .
+ASM BYE
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: .S
+I L H J
+STR8-N>L
+S19
+
+STR8-N 1.21 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 R=RECLAIM DIR Q/ENTER=QUIT> M
+
+BANK 8 9 A B C D E F
+
+B0 U U U U U U U U
+B1 E E E E E E E U
+B2 U U U U U U U U
+B3 U U U U U U U P
+E=ERASED U=USED A=AP VALID P=B3F PROTECTED
+
+DIR B T DESC ENTRY JOURNAL
+D0 FF BKUP0 FFFF FCFFFFFF
+D1 FF XXXXX FFFF FCFFFFFF
+D2 FF BACKP FFFF FCFFFFFF
+D3 FF RYORS C000 00FFFFFF
+ OK
+
+STR8-N 1.21 BANK MAINT
+B3 ERASE RETURNS TO STR8; SELECT S
+!STR8=SOURCE HAS STR8
+C=COPY+DIR D=ADOPT E=ERASE M=MAP+DIR P=AP B0BF00 R=RECLAIM DIR Q/ENTER=QUIT> Q
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: .S
+I L H J
+STR8-N>J3
+J B3
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1303)
+>
+```
+
+The opening physical RESET accepts installed-image persistence and the true
+cold path. The fixed ROM head and both HIMON/ASM-F2 visible identities match
+the frozen `1303` build. Bank Maintenance `M` is read-only evidence: it shows
+the expected used/protected sector map and a launchable D3 row, and `Q` makes
+no directory mutation.
+
+The RESET after the HIMON `STR8` command, the RESET after Bank Maintenance
+`Q`, and the RESET after `J B3` are all operator-identified synthetic
+transitions. In particular, no physical RESET or input breaks the final `J3`
+chain. Explicit `J3` passes the current D3 directory gate, selects Bank 3,
+enters its RESET vector, and reaches matching STR8-N `1.21` and HIMON `1303`.
+Together with the preceding installation acceptance, all phases of the current
+board card pass.

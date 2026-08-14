@@ -37,7 +37,7 @@
                         XREF            ASM_PACKAGE_BODY_LEN_HI
                         XREF            ASM_INSTALL_BASE_LO
                         XREF            ASM_INSTALL_BASE_HI
-                        XREF            ASM_PARSE_EXPR
+                        XREF            ASM_PARSE_SEAL_EXPR
                         XREF            ASM_PARSE_EXPR_REQUIRE_END
                         XREF            ASM_DB_COUNTING
                         XREF            ASM_RJOIN_INIT_IO
@@ -664,7 +664,7 @@ ASMF_MATCH_CMD_NO:
                         RTS
 
 ASMF_PARSE_RELOCATE_ARG:
-                        JSR             ASM_PARSE_EXPR
+                        JSR             ASM_PARSE_SEAL_EXPR
                         BCC             ASMF_MATCH_CMD_NO
 ASMF_PARSE_RELOCATE_EXPR_OK:
                         STX             ASMF_RELOCATE_LO
@@ -702,7 +702,7 @@ ASMF_PARSE_TWO_SPLIT:
                         STA             (ASMF_CMD_PTR_LO),Y
                         LDX             ASMF_CMD_PTR_LO
                         LDY             ASMF_CMD_PTR_HI
-                        JSR             ASM_PARSE_EXPR
+                        JSR             ASM_PARSE_SEAL_EXPR
                         BCS             ASMF_PARSE_TWO_FIRST_OK
                         PHA
                         JSR             ASMF_PARSE_TWO_RESTORE
@@ -731,7 +731,7 @@ ASMF_PARSE_TWO_SKIP:
                         LDA             ASMF_CMD_PTR_HI
                         ADC             #$00
                         TAY
-                        JSR             ASM_PARSE_EXPR
+                        JSR             ASM_PARSE_SEAL_EXPR
                         BCS             ASMF_PARSE_TWO_SECOND_OK
                         RTS
 ASMF_PARSE_TWO_SECOND_OK:
