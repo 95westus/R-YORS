@@ -212,6 +212,20 @@ Exit either source mode or `SEAL>` with:
 
 The flash wrapper prints `ASM BYE` and returns to HIMON.
 
+Leaving `SEAL>` does not discard the completed session. To run another seal,
+package, load, or install command against the same frozen post-`END` facts,
+re-enter from the HIMON prompt with:
+
+```text
+ASM SEAL
+```
+
+The wrapper prints its ASM-F2 banner and returns directly to `SEAL>`. It also
+clears a sticky wrapper result left by an earlier rejected SEAL command. If no
+completed session is preserved, `ASM SEAL` fails closed with HIMON
+`EXEC ERR=$03`. Bare `ASM` and `ASM NEW` still begin a new `$2000` source
+session and deliberately discard the old post-`END` window.
+
 ## Quick Example
 
 Paste or type the source lines after entering `ASM`; do not include the prompt
@@ -563,10 +577,13 @@ REL OK BASE=$3000 C=$nn
 
 `RELOCATE` does not resolve import rows.
 
-`PACKAGE address` writes an AP v1 package envelope to RAM:
+`PACKAGE address` writes an AP v2 package envelope to RAM. Runnable packages
+may also use `PACKAGE identity address`, where `identity` must be the unique
+name declared by `ENTRY`:
 
 ```text
 PACKAGE $3200
+PACKAGE ASMREPORT $3200
 ```
 
 Success shape:
@@ -579,19 +596,36 @@ The envelope layout is:
 
 ```text
 AP header
-S tagged seal section
-R tagged relocation section
-E tagged export section
-I tagged import section
-B tagged body section
+S tag + length16 + seal payload
+R tag + length16 + relocation payload
+E tag + length16 + typed export rows
+I tag + length16 + typed import rows
+B tag + length16 + body bytes
 ```
+
+AP v2 is the only accepted version. Export rows carry kind/flags, body offset,
+FNV32, name length, and PACK40 text. Import rows carry the same kind contract,
+FNV32, name length, and PACK40 text. `ENTRY` marks at most one executable
+export. Import binding requires the resident target's executable/data contract
+to match.
+
+The unique executable `ENTRY` row is also the runnable package identity; AP v2
+does not duplicate it in another header field. The named `PACKAGE` form checks
+the complete canonical symbol text, case-insensitively, before writing the
+envelope. Hashes are accelerators, not sole identity proof. The one-argument
+form remains valid for compatibility.
+
+`MODULE name` is reserved for a future non-runnable/library package identity.
+It is not accepted source syntax yet. That future directive is intended for
+packages with exports but no executable `ENTRY`; it will require an explicit
+AP identity representation rather than overloading an arbitrary export.
 
 `PACKAGE` self-verifies the written BODY FNV before reporting success. It does
 not install to flash, resolve imports, relocate the body, or run code. The AP
 envelope can be copied as data; executing its BODY at a new address requires a
 relocation/load step.
 
-`LOAD pkg dest` reads an AP v1 envelope from RAM or currently visible flash,
+`LOAD pkg dest` reads an AP v2 envelope from RAM or currently visible flash,
 copies the BODY to RAM, applies internal relocation rows, and resolves resident
 RJOIN import rows through the resident HIMON AP service:
 
@@ -617,10 +651,10 @@ Success shape:
 LOAD OK=$3000 L=$hhhh C=$nn
 ```
 
-The destination BODY span must fit wholly in `$2000-$4FFF`. `LOAD` deliberately
-does only a minimal package parse in this slice; full `CHECK`/FNV validation is
-deferred. Resident imports are linked through RJOIN; missing imports,
-non-resident dependencies, and unsupported relocation rows fail with
+The destination BODY span must fit wholly in `$2000-$4FFF`. `LOAD` validates
+the complete AP v2 structure and BODY FNV before patching. Resident imports are
+linked through RJOIN; missing imports, kind mismatches, non-resident
+dependencies, and unsupported relocation rows fail with
 `LOAD ERR=$09 BAD FIX`. A RAM package may be above or below its destination,
 but the complete envelope and destination BODY ranges must not overlap.
 
@@ -708,8 +742,9 @@ make -C SRC asm-session-report
 ```
 
 The current `make all` image does not store a reporter after ASM-F2. The
-preferred generated source is `asm-session-report-v1.2-ap-2000.a`: it packages at
-`$3000`, can load anywhere from `$2000-$43A1`, and conventionally uses
+preferred generated source is `asm-session-report-v1.2-ap-2000.a`: its
+identity/entry is `ASMREPORT`, it packages at `$3000`, can load anywhere from
+`$2000-$41DB`, and conventionally uses
 `$4000`. If it is stored in Bank 0, load it before the session to inspect,
 then exit that session with `.` and run the resident copy:
 
@@ -755,7 +790,7 @@ older body is not load-relocatable: loading it elsewhere lets its literal
 `$48xx` calls escape the body. Either form also fails when its hard-coded ASM
 helper/table addresses no longer match the running ASM-F2 map.
 
-If `PACKAGE $3000` reports `PKG ERR=$02`, regenerate the reporter source with
+If `PACKAGE ASMREPORT $3000` reports `PKG ERR=$02`, regenerate the reporter source with
 `make -C SRC asm-session-report`; older generated sources could assemble but
 set bad seal flags by overflowing the AP relocation table.
 
@@ -798,7 +833,7 @@ Expected behavior:
 
 - `SEAL` reports `BASE=$2000 END=$2008` and three relocation rows.
 - `RELOCATE $3000` writes a runnable copy at `$3000`.
-- `PACKAGE $3200` writes an AP v1 envelope whose body still contains the
+- `PACKAGE $3200` writes an AP v2 envelope whose body still contains the
   original `$2000`-based bytes.
 - `LOAD $3200 $3000` reloads the package BODY to `$3000` and applies the same
   internal relocation rows.
@@ -883,11 +918,11 @@ slice.
 Current proof-sized table limits:
 
 ```text
-global symbols       64
+global symbols       128
 fixups               128
 relocation rows      64
-exports              8
-imports              8
+exports              64
+imports              64
 report references    192
 locals per scope     16
 line length          63 visible chars
@@ -895,18 +930,21 @@ global name length   31 visible chars
 local name length    15 visible chars including . or ?
 ```
 
-The 64-row figure is ASM's live `SEAL`/`RELOCATE` capacity. AP v1 packaging
-and the resident HIMON loader share the exact AP v1 structural maximum of 50
-rows. The writer, parser, checker, and loader all enforce that boundary. An AP
-v1 relocation body is `1 + 5*N` bytes (count plus five parallel-array bytes
-per row), so 50 rows occupy `$FB`; 51 rows require `$0100`, which cannot fit
-the one-byte section-length field, and 64 require `$0141`. `PACKAGE` therefore
-returns `BAD FIX` for live seals with 51-64 rows. Supporting more than 50
-packaged rows needs an AP format revision with a wider length or a
-different/chunked relocation encoding, plus a matching HIMON loader change.
-The direct 64-row and AP-v1/HIMON 50-row positive boundaries were both
-hardware-accepted on 2026-08-13; see [TEST_PLAN.md](TEST_PLAN.md) and the
-retained hardware log.
+ASM, AP v2 packaging, and the resident HIMON loader share a 64-row relocation
+limit. An AP v2 relocation payload is `1 + 5*N` bytes, so 64 rows occupy
+`$0141`; all section lengths are 16-bit. Exports and imports also have 64-row
+limits. The overall envelope remains capped at 4 KiB, so all three tables can
+reach their individual limits, but a package containing every maximum-length
+name in every table may leave little or no room for BODY bytes.
+
+Global symbols use 128 metadata rows plus a bounded `$0800`-byte append-only
+name pool. Names remain 1-31 characters, but consume only their actual length;
+there is no 32-byte slot per symbol. Both the row limit and pool limit are
+checked before commit, and line rollback restores the pool cursor.
+
+The former AP v1/HIMON 50-row boundary remains historical hardware evidence.
+AP v2 host/build gates pass; AP v2 board acceptance is tracked in
+[TEST_PLAN.md](TEST_PLAN.md).
 
 These are implementation limits, not permanent language promises.
 

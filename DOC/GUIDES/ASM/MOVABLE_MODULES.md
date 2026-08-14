@@ -185,10 +185,10 @@ permanent absolute addresses. For `$04` ABS16_IMPORT, `$05` LO8_IMPORT, and
 `$06` HI8_IMPORT, `site` is still a base offset; `target_lo` carries the import
 slot index and `target_hi` is zero.
 
-ASM retains up to 64 live rows for direct `SEAL`/`RELOCATE`. AP v1 packaging
-and the HIMON loader accept 50 because the serialized relocation body is
-`1 + 5*N` bytes: `$FB` at 50 rows, while row 51 would require `$0100` in a
-one-byte section-length field.
+ASM, AP v2 packaging, and the HIMON loader all accept 64 relocation rows.
+The serialized relocation payload is `1 + 5*N` bytes, so the maximum payload
+is `$0141`. AP v2's 16-bit section length removes the former AP v1 50-row
+ceiling.
 
 The first post-session `SEAL` dry-run should stay RAM-only. It runs after
 `END`, consumes the frozen facts above, fills `ASM_SEAL_REC`, and writes no
@@ -242,11 +242,12 @@ After clean `END`, current wrappers switch to a small `SEAL> ` command window:
 ```text
 SEAL             dry-run the frozen facts
 RELOCATE addr    copy body to RAM addr and patch internal relocation rows
-PACKAGE addr     write AP v1 package envelope at RAM addr
+PACKAGE addr     write AP v2 package envelope at RAM addr
+PACKAGE name addr validate name against ENTRY, then write the same envelope
 LOAD pkg dest    copy AP BODY to RAM and apply internal relocation rows only
 INSTALL pkg      suggest an erased visible flash hole for the AP envelope
 INSTALL pkg addr copy AP envelope unchanged to an erased visible flash hole
-CHECK addr       validate AP v1 package envelope at RAM addr in diagnostic builds
+CHECK addr       validate AP v2 package envelope at RAM addr in diagnostic builds
 NEW              reopen ASM at the frozen END PC
 .                return to HIMON
 ```
@@ -261,15 +262,11 @@ LOAD     read AP and relocate BODY into RAM
 LINK     future import binding in the loaded overlay/temp-RAM image
 ```
 
-The current default flash slice implements `SPIL`; `LINK` is deferred. Future
-`LINK` should consume import metadata and `$04-$06` import relocation rows after
-`LOAD` has placed the BODY in destination RAM. It should patch that RAM image
-against resident/package providers and leave execution to a separate `G` or
-future run command.
-
-The default flash image omits the older interactive `RESOLVE` command in this
-slice. Import metadata remains packageable, but `LOAD` rejects packages that
-declare imports or carry `$04-$06` import relocation rows with `BAD FIX`.
+The current combined image implements `SPIL` plus resident linking during
+`LOAD`: `$04-$06` import relocation rows bind against HIMON's resident FNV
+records. Cross-package linking remains deferred. A missing resident target or
+an executable/data contract mismatch fails closed with `BAD FIX` before BODY
+patching.
 
 `RELOCATE address` is the first RAM overlay proof command. It accepts one ASM
 address expression, validates the frozen seal, copies the body bytes to that
@@ -278,27 +275,57 @@ not resolve imports and does not publish or install the module. The current
 runtime overlap guard still applies, so a board proof should choose a
 destination above the emitted body and below `$7E00`.
 
-`PACKAGE address` writes the first stable object envelope. It is currently
+`PACKAGE address` writes the AP v2 object envelope. For a runnable package,
+`PACKAGE name address` first requires `name` to match the unique executable
+`ENTRY` symbol's full canonical text. It is currently
 enabled in the full core smoke build and the flash-resident ASM wrapper; the
 RAM paste wrapper deliberately omits it to preserve workspace. The destination
 is a caller-chosen RAM address that passes the ASM target guard and does not
 overlap the sealed body. The envelope starts with `A P version total_lo
 total_hi`, followed by tagged sections: `S` seal record, `R` relocation record,
-`E` export record, `I` import record, and `B` body bytes. This packages the
+`E` export record, `I` import record, and `B` body bytes. Every tag is followed
+by a 16-bit little-endian payload length. This packages the
 facts for later `LOAD`/`INSTALL`; it does not relocate, resolve, or run them.
 Before returning success, `PACKAGE` recomputes the written BODY FNV and compares
 it with the seal record.
 
-`LOAD pkg dest` is the first runnable AP path. It accepts one AP envelope from
-RAM or currently visible low flash, parses only the header/section lengths
-needed for this slice, copies BODY to a RAM destination, and applies `$01-$03`
-internal relocation rows. The destination BODY span must fit wholly in
-`$2000-$4FFF`. Declared import records or `$04-$06` import relocation rows are
-rejected with `BAD FIX`; full AP validation, BODY FNV verification, and import
-resolution are deferred until banks 0-2 access/runability are proven. For RAM
-package sources, this first slice requires the loaded BODY destination to end
-before the AP envelope begins, avoiding overlapping forward copies without a
-larger resident mover.
+The `ENTRY` export row is the AP v2 runnable-package identity. No duplicate
+package-name field is added to the envelope: its FNV32 supports catalog/index
+lookup and its retained PACK40 text proves the selected candidate after a hash
+hit. A future HIMON `APRUN name` can therefore search an installed-package
+directory by the `ENTRY` hash and then compare text before loading it.
+
+Future library/data-only packages need an identity even when they have no
+executable entry. Reserve `MODULE name` for that role. It is deliberately not
+implemented as an alias for `ENTRY`: `MODULE` will name the package itself,
+permit zero runnable entries, and require a future AP identity field/section
+plus directory indexing rules. Current ASM must reject `MODULE` as unknown
+rather than emit an ambiguous AP v2 package.
+
+AP v2 public payloads begin with a one-byte count and contain variable-length
+rows. Limits are 64 export rows and 64 import rows:
+
+```text
+EXPORT row  kind/flags, offset16, FNV32, name_len, PACK40(name)
+IMPORT row  kind/flags,           FNV32, name_len, PACK40(name)
+
+kind $01 executable, $02 data; mask $03
+flag $80 ENTRY, valid only on one executable export
+name_len 1-31; packed bytes = 2 * ceil(name_len / 3)
+```
+
+The FNV32 field is the binding identity. PACK40 text is retained for collision
+proofs, diagnostics, and independent host validation. The resident linker can
+therefore bind directly from the stored hash without carrying a PACK40
+unpacker and FNV recomputation loop in ROM.
+
+`LOAD pkg dest` accepts one AP v2 envelope from RAM or currently visible low
+flash, strictly validates section order, 16-bit lengths, row shapes, kinds,
+counts, BODY length, and BODY FNV before patching. It copies BODY to a RAM
+destination, applies `$01-$03` internal relocations, and resolves `$04-$06`
+imports against resident FNV records with matching executable/data contracts.
+The destination BODY span must fit wholly in `$2000-$4FFF`, and a RAM package
+source may not overlap the destination BODY.
 
 In the 2026-07-07 flash-size split, AP package consumption is resident HIMON
 service work. HIMON publishes an AP service vector plus request/result cells at
@@ -319,17 +346,16 @@ until those banks are functional.
 
 Naming note: `RESIB` is a candidate informal package nickname using the same
 section initials as `Relocation`, `Export`, `Seal`, `Import`, and `Body`.
-Treat it as a human-facing handle only; it does not change the current AP v1
+Treat it as a human-facing handle only; it does not change the current AP v2
 wire order, which remains header, `S`, `R`, `E`, `I`, `B`.
 
-`CHECK address` reads an AP v1 package envelope back from RAM and validates its
+`CHECK address` reads an AP v2 package envelope back from RAM and validates its
 shape. It is a full-core/diagnostic command, not part of the default
 flash-resident command set after the board proof, because the flash image must
 keep room below `$C000` for the package/load/install path. It verifies the
 header, guarded total range, section order, section length accounting,
-relocation count shape, EXP/IMP record length fields, and final body byte count
-against the seal record. It does not load, relocate, resolve, or run the
-package.
+relocation count shape, typed EXP/IMP row shapes, and final body byte count
+against the seal record. It does not load, relocate, resolve, or run the package.
 
 `NEW` is deliberately validated and non-interactive. It accepts only bare `NEW`
 or `NEW ; comment` with optional surrounding spaces/tabs. It does not accept an
@@ -607,7 +633,7 @@ bank 3  live boot bank
 The operator-facing surface should print the role plan before committing.
 
 Future banked package storage should use a flash-native lifecycle byte in the
-directory record rather than changing AP v1. The erased value `$FF` means empty
+directory record rather than changing AP v2. The erased value `$FF` means empty
 or uncommitted. Each durable phase clears one more bit, for example "package
 bytes written", "BODY FNV verified", "directory committed", and "superseded".
 Bank, sector, and offset remain ordinary directory fields; the lifecycle byte

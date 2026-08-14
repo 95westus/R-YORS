@@ -546,18 +546,24 @@ A [addr] [label[:]] MMM [operand] .
   available only after clean `END`, copies the frozen body to the requested RAM
   base, applies `$01/$02/$03` internal relocation rows against that base, and
   leaves `$04/$05/$06` import rows for a later installer.
-- `SEAL> PACKAGE address` is the first stable sealed-object envelope proof. It
+- `SEAL> PACKAGE address` is the stable sealed-object envelope path. Runnable
+  packages may use `SEAL> PACKAGE name address`; the full canonical `name`
+  must match the unique executable `ENTRY` before any envelope byte is written.
+  That `ENTRY` row is the AP v2 runnable-package identity, so the wire format
+  does not duplicate it. `MODULE name` is reserved, but not implemented, for a
+  future identity field on non-runnable/library packages. The path
   is enabled in full core smoke and flash-resident ASM, while the stripped RAM
-  paste wrapper omits it to preserve board workspace. The AP v1 envelope stores
-  a header plus tagged SEAL, REL, EXP, IMP, and BODY sections; it packages
+  paste wrapper omits it to preserve board workspace. The AP v2 envelope stores
+  a header plus tagged SEAL, REL, EXP, IMP, and BODY sections with 16-bit
+  section lengths; it packages
   metadata for later `LOAD`/`INSTALL` work, then self-verifies the written BODY
   FNV against the seal record. It does not resolve, relocate, or run the body.
-- `SEAL> CHECK address` is the first AP v1 package reader proof. It remains
+- `SEAL> CHECK address` is the AP v2 package reader proof. It remains
   enabled in full-core smoke and optional diagnostic builds, but the default
   flash-resident ASM image omits the interactive `CHECK` command after the
   board proof because the `$8000-$BFFF` flash window was only `$24` bytes below
   `$C000`. This slice checks header, range, section order, section length
-  accounting, relocation count shape, EXP/IMP record length fields, and body
+  accounting, relocation count shape, typed EXP/IMP rows, and body
   length versus the seal record.
 - AP package addresses and execution addresses are separate. An AP envelope can
   be copied from RAM to flash, from one flash hole to another, or back to RAM
@@ -629,7 +635,7 @@ A [addr] [label[:]] MMM [operand] .
   that saves code or cycles.
 - First implementation uses fixed table limits. If symbol or fixup space fills,
   fail with `BAD SYM` or `BAD FIX`; do not spill silently or start writing into
-  flash. The current proof sizes are 64 global symbols, 128 fixups, 64 internal
+  flash. The current proof sizes are 128 global symbols, 128 fixups, 64 internal
   relocation rows, 192 report references, 31 visible global-name characters, 16
   local labels per active global scope, 15 visible local-name characters, 63
   input characters, and a 512-byte code buffer; treat those as proof defaults,
@@ -786,11 +792,11 @@ A [addr] [label[:]] MMM [operand] .
   runtime UDATA at `$5000+`. `$5000` is the mutable table arena, not the base
   RAM emission address.
 - For the future "ASM assembles ASM" milestone, table-limit bumps are only a
-  measurement step. The current practical mix is `ASM_SYM_MAX=$40`,
-  `ASM_FIX_MAX=$80`, `ASM_REF_MAX=$C0`, and `ASM_LOCAL_MAX=$10`, while keeping
-  the 32-byte global/fixup and 16-byte local name slots. It favors fixup-heavy
-  interactive samples; the flash map currently places `_END_UDATA` at `$79A6`,
-  below `$8000`. Check `_END_UDATA` after every bump.
+  measurement step. The current practical mix is `ASM_SYM_MAX=$80`,
+  `ASM_FIX_MAX=$80`, `ASM_REF_MAX=$C0`, and `ASM_LOCAL_MAX=$10`. Global names
+  share a bounded `$0800`-byte actual-length pool; fixup names retain 32-byte
+  slots and local names retain 16-byte slots. Check `_END_UDATA` after every
+  bump.
   Self-hosting ASM must be chunked by routine pack/slice with export/seal
   between sessions; a one-session assembly of `asm-v1-core.asm` would need far
   more symbol storage than RAM can provide.

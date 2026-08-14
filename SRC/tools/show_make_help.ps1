@@ -25,6 +25,7 @@ $rows = @(
     [pscustomobject]@{ Target = "str8n-external-release-check"; Category = "integration"; Description = "Run the external STR8-N check and reject a dirty authoritative checkout." }
     [pscustomobject]@{ Target = "ryors-v1.2"; Category = "integration"; Description = "Build versioned ASM, HIMON, and combined 28K `$8000-`$EFFF R-YORS payloads." }
     [pscustomobject]@{ Target = "himon-rom-install-s19"; Category = "monitor"; Description = "Convert HIMON ROM BIN to S1/S9 install transport: BUILD/s19/himon-rom-c000-install-8000.s19." }
+    [pscustomobject]@{ Target = "himon-apv2-install-s19"; Category = "monitor"; Description = "Build dense Bank-3 C-E HIMON APv2 payload for STR8-N I: BUILD/s19/himon-apv2-bank3-c-e.s19." }
     [pscustomobject]@{ Target = "str8-readonly-bank-tools-check"; Category = "monitor"; Description = "Validate and host-assemble the split-V1 `$F010/`$0203 read-only bank tools." }
     [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for the HIMON-only ROM install S19." }
     [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000: BUILD/s19/himon-load-c000.s19." }

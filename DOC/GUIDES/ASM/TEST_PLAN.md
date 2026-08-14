@@ -66,6 +66,93 @@ This is a host-side source audit of `ASM_FIND_OPCODE`. It verifies the active
 v1 mnemonic/addressing rows and opcode bytes, and fails if a row is added,
 removed, or silently changes without updating the audit.
 
+Current AP v2 package/capacity gate:
+
+```text
+make -C SRC asm-ap-v2-check
+```
+
+This builds the fixed session-report AP fixture and independently verifies the
+`A P 02` envelope, 16-bit tagged-section lengths, 64-row relocation/export/
+import limits, typed public rows, PACK40/FNV agreement, BODY FNV, the 128-row
+global-symbol limit, and the bounded `$0800`-byte actual-length symbol-name
+pool. `make -C SRC asm-test` includes this gate. The HIMON-side companion is:
+
+```text
+make -C SRC himon-banked-ap-check
+```
+
+It verifies the resident build and the `$0141` relocation-section boundary.
+It also executes the compiled HIMON target-low and target-high accessors for
+every row at every relocation count 1-64: 4,160 lane reads. This includes the
+second-page `$0100-$0140` cells that an 8-bit `(pointer),Y` accessor cannot
+reach without advancing the record pointer. AP v1 packages are retired and
+must fail the version check. Existing AP v1 transcripts later in this file
+remain historical evidence; do not use their byte offsets as the AP v2
+acceptance oracle. The first AP v2 64-row board execution exposed the wrapped
+target-high accessor in HIMON/ASM-F2 `00.0813(1809)`. Its corrected Card 1
+retest passed on HIMON `00.0813(1843)`, including the `$3081` entry, all first
+and last relocated words, return `A=$64`, and the reporter's 64-row listing.
+The same run accepted typed-import match/mismatch and all 64 exports. The
+64-import resolution and 128th-symbol/rollback boundaries remain pending
+because the first cards used an unreferenced import set and overwrote the
+preloaded reporter with a `$7102` sentinel; the corrected cards use 64 import
+relocations and sentinels at `$7900-$7902`.
+
+The paste-ready RAM-only board sequence for those pending gates is
+[APV2_INSTALLED_TEST_CARDS.md](APV2_INSTALLED_TEST_CARDS.md). It covers the
+64-relocation envelope, matching and deliberately mismatched import kinds,
+64 export rows, 64 import rows, the 128-symbol slot boundary, and atomic
+rollback at the `$0800` pooled-name boundary.
+
+The map-matched reporter rerun on HIMON/ASM-F2 `00.0813(2009)` closes Cards
+1-3. Card 1 reported `FIXUPS=$40/$80`, `REL=$40`, all relocation slots
+`$00-$3F`, one executable export, and `ASM REPORT OK`; the loaded body again
+returned A=`$64` and wrote `$7900=$64`. Card 2 printed `BANK RJOIN`, returned
+A=`$AC`, exposed resident address `$E678`, then rejected the deliberately
+changed import kind with `APERR=$09` and no sentinel write. Card 3 reported
+`SYMS=$40/$80`, `EXP=$40`, all export slots `$00-$3F`, and `ASM REPORT OK`;
+execution returned A=`$40` and wrote `$7901=$40`. The transcript continued
+after verifying that `$7902` was already `$00`; it was inspected, not
+rewritten. Card 4 then produced 64 import relocations, failed the first missing
+resident name with `APERR=$09`, left `$7902=$00`, and reported all 64 import,
+fixup, and relocation rows. Card 5 accepted exactly 128 symbols and rejected
+the 129th with `$08`, retaining `SYMS=$80/$80`. Card 6 accepted 66 31-character
+names at `NAMEPOOL=$07FE/$0800`, then rejected the next name with `$08` without
+changing either count. Cards 4-6 are accepted.
+
+The first Card 7 run preserved a seeded `$3200=$5A` but returned the parser's
+`$03` for both wrong and correct symbolic identities. Source diagnosis found
+that the flash wrapper retained its first argument in `$84/$85`, the core's
+live `ASM_SYM_PTR`; symbolic expression lookup overwrote that pointer before
+the second argument was parsed. The wrapper-private pair is now `$82/$83`,
+outside the core `$84-$AF` frame, and the AP v2 host check rejects any future
+overlap.
+
+The corrected Card 7 retest passed on HIMON/ASM-F2 `00.0813(2101)`. The wrong
+identity returned `PKG ERR=$08` and left the seeded `$3200=$5A` unchanged. The
+matching `PACKAGE ASMREPORT $3200` produced `PKG OK @=$3200 L=$0033`; HIMON
+loaded and ran it at `$3000`, returning A=`$A7` with carry set. The reporter
+printed `STATUS=OK`, `ID ASMREPORT`, the single `$81` executable export, and
+`ASM REPORT OK`. Cards 0-7 are accepted.
+
+The session reporter gate also rebuilds both reporter implementations. They
+must read symbol names through `ASM_SYM_NAME_OFF_*` plus `ASM_SYM_NAME_LEN`,
+print `$0800` name-pool use, use the live 64-row export/import counts, and list
+export kind/symbol/name plus import kind/name-length/FNV alongside the existing
+symbol, fixup, and relocation rows. The fixed reporter must end below `$5000`;
+the movable native reporter and its private rebase table must remain inside
+one 4 KiB island.
+
+The installable resident image gate is:
+
+```text
+make -C SRC himon-apv2-install-s19
+```
+
+It must emit `himon-apv2-bank3-c-e.s19` as a dense `$C000-$EFFF` S1 stream
+with one final S9 `$C000`, suitable for STR8-N `I`, Bank 3, range `C-E`.
+
 Current ASM core build:
 
 ```text
@@ -607,6 +694,23 @@ GO 7000
 ```
 
 ## Current Acceptance
+
+### Named AP identity checks
+
+For a source containing `ENTRY ASMREPORT`, both package spellings must produce
+the same AP v2 bytes at a clean destination:
+
+```text
+SEAL> PACKAGE $3000
+SEAL> PACKAGE ASMREPORT $3000
+```
+
+Before the positive named command, fill a second destination with a known byte
+pattern and issue `PACKAGE NOTASMREPORT second_addr`. Require `PKG ERR` and an
+unchanged destination. The source-side match is full canonical text, not hash
+alone. The external session reporter's `PKG ... ID` field must print
+`ASMREPORT`. `MODULE name` remains a documented future directive and must still
+be rejected as source syntax.
 
 `ASMTEST_3000.asm` is now both the source-language acceptance sample and the
 first full-source onboard paste proof. ASM 2.62 records a hardware transcript
@@ -13886,3 +13990,44 @@ and `$7100` contained `$5A`. A subsequent explicit `G 3000` repeated the
 successful result. This closes the direct 64-row and AP-v1/HIMON 50-row
 positive boundary gates. The separately host-accepted 51-row `BAD FIX`
 rejection remains the negative boundary evidence.
+
+## 2026-08-13 Top-Level ASM SEAL Re-entry
+
+Host status: accepted. Board status: accepted on HIMON/ASM-F2
+`00.0813(2009)`.
+
+The first board attempt with HIMON/ASM-F2 `00.0813(1956)` rejected neither
+no-session `ASM SEAL` call: both entered a new `ASM>$2000:` source session.
+The entry selector had read HIMON's `$FE/$FF` parser pointer after
+`ASM_RJOIN_INIT_IO`, which may clobber that scratch pointer. The corrected
+selector reads the retained canonical command at HIMON `$7A03/$7A04` instead.
+The `1956` transcript is retained in the hardware log and is failed evidence,
+not acceptance.
+
+The corrected `2009` board run accepted both negative cases: `ASM SEAL` after
+cold RAM clear and after `ASM NEW` plus `.` returned `EXEC ERR=$03`. A minimal
+`ORG`/`RTS`/`END` session then exited with `.`, top-level `ASM SEAL` resumed
+directly at `SEAL>`, `SEAL` returned `SEAL OK`, and the second `.` returned to
+HIMON. The same installed image subsequently packaged, loaded, relocated, and
+ran the 64-relocation Card 1 body successfully. Its final reporter invocation
+used a stale `$7000` reporter and produced garbage output; that is a reporter
+artifact/dependency failure, not acceptance of the reporting gate.
+
+Flash ASM now distinguishes the HIMON entry forms. `ASM` and `ASM NEW` call
+`ASM_BEGIN` for a new `$2000` source session. `ASM SEAL` instead requires the
+preserved post-`END` flag, clears the wrapper result, and resumes the existing
+`SEAL>` loop without rebuilding or clearing session tables. A missing
+completed session returns carry clear with bad-operand status `$03`.
+
+Required host gates:
+
+1. Build `asm-v1-flash-8000.s19`; require `_END_DATA <= $BE00` so the enforced
+   `$0200` low-flash margin remains intact.
+2. Run `make -C SRC asm-test`.
+3. Run `git diff --check`.
+
+Required board gate is Card 0 in
+[`APV2_INSTALLED_TEST_CARDS.md`](APV2_INSTALLED_TEST_CARDS.md). Prove the
+no-session `$03` rejection, complete a minimal session, leave `SEAL>` with
+`.`, re-enter it with top-level `ASM SEAL`, run `SEAL` successfully, and exit
+again. Append the exact transcript here only after board proof.

@@ -51,6 +51,7 @@ R-YORS owns:
 SRC/BUILD/s19/ryors-v1.2-asm-bank3-8-b.s19
 SRC/BUILD/s19/ryors-v1.2-himon-bank3-c-e.s19
 SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
+SRC/BUILD/s19/himon-apv2-bank3-c-e.s19
 SRC/BUILD/integration/str8n-receipt.json
 ```
 
@@ -65,6 +66,11 @@ make ryors-full-bank
 The composer validates every R-YORS S-record/checksum and range, appends the
 current checked top image, and verifies RESET before writing the Bank-0/1/2
 `8-F` payload. Bank-3 sector F is never included in a normal `I` update.
+
+`himon-apv2-bank3-c-e.s19` is the explicitly named HIMON-only APv2 update:
+12 KiB of dense S1 payload from `$C000` through `$EFFF`, followed by S9
+`$C000`. It is accepted by STR8-N `I` with Bank 3 and range `C-E`, including
+first enrollment or replacement of the normal `$C000` Bank-3 entry.
 
 ## Runtime Public Interface
 

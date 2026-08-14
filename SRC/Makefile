@@ -73,7 +73,9 @@ HIMON_ROM_S19 := $(S19_DIR)/himon-rom-c000.s19
 HIMON_ROM_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_ROM_BIN := $(BIN_DIR)/himon-rom-c000.bin
 HIMON_BANKED_AP_CHECK := tools/check_himon_banked_ap.ps1
+AP_V2_PACKAGE_CHECK := tools/check_ap_v2_package.ps1
 HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
+HIMON_APV2_INSTALL_S19 := $(S19_DIR)/himon-apv2-bank3-c-e.s19
 RYORS_V12_ASM_S19 := $(S19_DIR)/ryors-v1.2-asm-bank3-8-b.s19
 RYORS_V12_HIMON_S19 := $(S19_DIR)/ryors-v1.2-himon-bank3-c-e.s19
 RYORS_V12_28K_S19 := $(S19_DIR)/ryors-v1.2-asm-himon-bank3-8-e.s19
@@ -407,7 +409,7 @@ $(HIMON_ROM_BIN): $(HIMON_ROM_S19) tools/build_himon_rom_bin.ps1 tools/stamp_rom
 	@echo [ps] stamp $(HIMON_ROM_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_ROM_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
 
-ryors-v1.2: str8n-external-check $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19)
+ryors-v1.2: str8n-external-check $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19) $(HIMON_APV2_INSTALL_S19)
 	@echo "Built versioned v1.2 ASM/HIMON Bank-3 payloads."
 
 str8-readonly-bank-tools-check: $(STR8_BANK_CRC_SOURCE) $(STR8_JUMP_INVENTORY_SOURCE) $(STR8_BANK_READ_AP_SOURCE) $(STR8_BANK_DUMP_AP_SOURCE) $(STR8_READONLY_BANK_CHECK)
@@ -415,6 +417,9 @@ str8-readonly-bank-tools-check: $(STR8_BANK_CRC_SOURCE) $(STR8_JUMP_INVENTORY_SO
 
 himon-rom-install-s19: $(HIMON_ROM_INSTALL_S19)
 	@echo "Built $(HIMON_ROM_INSTALL_S19)."
+
+himon-apv2-install-s19: $(HIMON_APV2_INSTALL_S19)
+	@echo "Built STR8-N I payload $(HIMON_APV2_INSTALL_S19)."
 
 rom-install-s19: himon-rom-install-s19
 	@echo "Built HIMON-only ROM install S19."
@@ -556,8 +561,11 @@ asmtest-3000-wdc-check: asmtest-6800-wdc-check
 asm-opcode-coverage: $(ASM_OPCODE_AUDIT) $(ASM_V1_CORE_SRC)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_OPCODE_AUDIT) -SourcePath "$(ASM_V1_CORE_SRC)"
 
-asm-test: asm-opcode-coverage asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash
+asm-test: asm-opcode-coverage asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
+
+asm-ap-v2-check: $(ASM_SESSION_REPORT_AP_BIN) $(AP_V2_PACKAGE_CHECK) $(ASM_V1_FLASH_SRC)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
 
 calc-9a00-fnv-proof: $(ROM_LIB) $(CALC_9A00_FNV_PROOF_S19)
 	@echo "Built $(CALC_9A00_FNV_PROOF_S19)."
@@ -891,7 +899,7 @@ $(ASM_SESSION_REPORT_FLASH_S19): $(ASM_SESSION_REPORT_OBJ) $(ROM_LIB)
 
 $(ASM_SESSION_REPORT_AP_BIN): $(ASM_SESSION_REPORT_FLASH_S19) $(ASM_SESSION_REPORT_AP_GEN)
 	@echo [ps] build $(ASM_SESSION_REPORT_AP_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_SESSION_REPORT_AP_GEN) -S19Path "$(ASM_SESSION_REPORT_FLASH_S19)" -MapPath "$(S19_DIR)/asm-session-report-v1.2-4800.map" -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)" -BaseAddress 18432 -EntrySymbol "START" -ExportName "START"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_SESSION_REPORT_AP_GEN) -S19Path "$(ASM_SESSION_REPORT_FLASH_S19)" -MapPath "$(S19_DIR)/asm-session-report-v1.2-4800.map" -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)" -BaseAddress 18432 -EntrySymbol "ASMREPORT" -ExportName "ASMREPORT"
 
 $(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ) $(ASM_V1_FLASH_MAP_CHECK)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -966,6 +974,10 @@ $(BASIC_FORTH_HIMON_ROM_BIN): $(FIG_FORTH_S19) $(MSBASIC_OSI_S19) $(HIMON_ROM_S1
 $(HIMON_ROM_INSTALL_S19): $(HIMON_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 	@echo [ps] build $(HIMON_ROM_INSTALL_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_ROM_BIN)" -S19Path "$(HIMON_ROM_INSTALL_S19)" -BaseAddress 32768
+
+$(HIMON_APV2_INSTALL_S19): $(HIMON_ROM_BIN) $(ROM_INSTALL_S19_GEN)
+	@echo [ps] build STR8-N I payload $(HIMON_APV2_INSTALL_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_ROM_BIN)" -S19Path "$(HIMON_APV2_INSTALL_S19)" -BaseAddress 32768 -RangeStart 49152 -RangeEnd 61439 -StartAddress 49152
 
 $(RYORS_V12_ASM_S19): $(ASM_V1_FLASH_S19) $(HIMON_ROM_S19) $(RYORS_FLASH_S19_GEN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(RYORS_FLASH_S19_GEN) -AsmS19Path "$(ASM_V1_FLASH_S19)" -HimonS19Path "$(HIMON_ROM_S19)" -S19Path "$@" -RangeStart 32768 -RangeEnd 49151 -StartAddress 32768
@@ -1115,7 +1127,7 @@ endif
 	all firmware lab everything proofs apps tests help release release-local \
 	himon himon-rom himon-rom-bin himon-banked-ap-check \
 	str8n-external-artifacts str8n-external-check str8n-external-release-check ryors-v1.2 \
-	str8-readonly-bank-tools-check himon-rom-install-s19 rom-install-s19 \
+	str8-readonly-bank-tools-check himon-rom-install-s19 himon-apv2-install-s19 rom-install-s19 \
 	himon-load himon-load-bin \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \
 	test-mon test-ftdi-drv test-ftdi-hal test-flash \

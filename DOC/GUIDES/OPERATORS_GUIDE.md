@@ -32,6 +32,7 @@ R-YORS verifies the locked STR8-N manifest and public ABI, then builds:
 SRC/BUILD/s19/ryors-v1.2-asm-bank3-8-b.s19
 SRC/BUILD/s19/ryors-v1.2-himon-bank3-c-e.s19
 SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
+SRC/BUILD/s19/himon-apv2-bank3-c-e.s19
 ```
 
 The last file is the dense 28K `$8000-$EFFF` payload. To compose a complete
@@ -51,6 +52,12 @@ STR8-N validates the 28K S19, appends its current checked 4K top image, and
 verifies the final RESET vector. For Bank 3, install `$8000-$EFFF` through the
 guarded `I` path and update sector F only with the standalone programmer BIN
 or guarded top updater.
+
+For a HIMON-only APv2 update, build `make -C SRC himon-apv2-install-s19`.
+At the STR8-N prompt choose `I`, Bank 3, range `C-E`, confirm the displayed
+range, and send `SRC/BUILD/s19/himon-apv2-bank3-c-e.s19` only after STR8-N
+prints `S19`. The file is a dense payload-only `$C000-$EFFF` stream with S9
+`$C000`; it contains no `$0200` worker records and never writes sector F.
 
 Use `STR8N_HOME=<path>` when the repositories are not siblings. `make release`
 also requires the locked standalone STR8-N checkout to be clean.

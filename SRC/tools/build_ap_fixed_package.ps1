@@ -267,16 +267,17 @@ if ($bodyLength -gt 0xFFFF) {
 $hash = Get-Fnv1a32 $body
 $entryOffset = $entryAddress - $base
 $exportNameUpper = $ExportName.ToUpperInvariant()
+$exportNameHash = Get-Fnv1a32 ([System.Text.Encoding]::ASCII.GetBytes($exportNameUpper))
 $exportNameBytes = Get-Pack40NameBytes $exportNameUpper
-$exportRecordLength = 2 + 2 + 1 + $exportNameBytes.Length
-if ($exportRecordLength -gt 0xFF) {
+$exportRecordLength = 1 + 1 + 2 + 4 + 1 + $exportNameBytes.Length
+if ($exportRecordLength -gt 0xFFFF) {
   throw "export record is too large: $exportRecordLength bytes"
 }
 
 $sections = New-Object 'System.Collections.Generic.List[byte]'
 
 Add-Byte $sections ([byte][char]'S')
-Add-Byte $sections 0x0B
+Add-WordLe $sections 0x000B
 Add-Byte $sections 0x01
 Add-WordLe $sections $base
 Add-WordLe $sections $endAddress
@@ -287,21 +288,24 @@ Add-Byte $sections (($hash -shr 16) -band 0xFF)
 Add-Byte $sections (($hash -shr 24) -band 0xFF)
 
 Add-Byte $sections ([byte][char]'R')
-Add-Byte $sections 0x01
+Add-WordLe $sections 0x0001
 Add-Byte $sections 0x00
 
 Add-Byte $sections ([byte][char]'E')
-Add-Byte $sections $exportRecordLength
+Add-WordLe $sections $exportRecordLength
 Add-Byte $sections 0x01
-Add-Byte $sections $exportRecordLength
+Add-Byte $sections 0x81
 Add-WordLe $sections $entryOffset
+Add-Byte $sections ($exportNameHash -band 0xFF)
+Add-Byte $sections (($exportNameHash -shr 8) -band 0xFF)
+Add-Byte $sections (($exportNameHash -shr 16) -band 0xFF)
+Add-Byte $sections (($exportNameHash -shr 24) -band 0xFF)
 Add-Byte $sections $exportNameUpper.Length
 Add-Bytes $sections $exportNameBytes
 
 Add-Byte $sections ([byte][char]'I')
-Add-Byte $sections 0x02
+Add-WordLe $sections 0x0001
 Add-Byte $sections 0x00
-Add-Byte $sections 0x02
 
 Add-Byte $sections ([byte][char]'B')
 Add-WordLe $sections $bodyLength
@@ -315,7 +319,7 @@ if ($totalLength -gt 0xFFFF) {
 $package = New-Object 'System.Collections.Generic.List[byte]'
 Add-Byte $package ([byte][char]'A')
 Add-Byte $package ([byte][char]'P')
-Add-Byte $package 0x01
+Add-Byte $package 0x02
 Add-WordLe $package $totalLength
 Add-Bytes $package $sections.ToArray()
 

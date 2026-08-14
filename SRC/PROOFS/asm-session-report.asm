@@ -15,6 +15,7 @@
                         MODULE          ASM_SESSION_REPORT_APP
 
                         XDEF            START
+                        XDEF            ASMREPORT
 
                         INCLUDE         "asm-session-report.inc"
 
@@ -28,9 +29,11 @@ ASMR_PTR_HI            EQU             $01
 ASMR_SLOT              EQU             $02
 ASMR_COUNT             EQU             $03
 ASMR_TMP               EQU             $04
+ASMR_NAME_LEN          EQU             $05
 
                         CODE
 
+ASMREPORT:
 START:
                         LDX             #<MSG_TITLE
                         LDY             #>MSG_TITLE
@@ -45,6 +48,8 @@ START:
                         JSR             ASMR_PRINT_SYMBOL_TABLE
                         JSR             ASMR_PRINT_FIXUP_TABLE
                         JSR             ASMR_PRINT_RELOC_TABLE
+                        JSR             ASMR_PRINT_EXPORT_TABLE
+                        JSR             ASMR_PRINT_IMPORT_TABLE
                         LDX             #<MSG_DONE
                         LDY             #>MSG_DONE
                         JSR             ASMR_PRINT_LINE
@@ -79,6 +84,7 @@ ASMR_PRINT_COMPACT:
                         JSR             ASMR_PRINT_BYTES
                         JSR             ASMR_PRINT_LINES
                         JSR             ASMR_PRINT_SYMS
+                        JSR             ASMR_PRINT_NAME_POOL
                         JSR             ASMR_PRINT_FIXUPS
                         JSR             ASMR_PRINT_REFS
                         JMP             ASMR_PRINT_TRUNC
@@ -176,6 +182,19 @@ ASMR_PRINT_SYMS:
                         JSR             SYS_WRITE_HEX_BYTE
                         JMP             SYS_WRITE_CRLF
 
+ASMR_PRINT_NAME_POOL:
+                        LDX             #<MSG_NAME_POOL
+                        LDY             #>MSG_NAME_POOL
+                        JSR             ASMR_PRINT
+                        LDA             ASM_SYM_NAME_USED_HI
+                        LDX             ASM_SYM_NAME_USED_LO
+                        JSR             ASMR_PRINT_WORD
+                        JSR             ASMR_PRINT_LIMIT_SEP
+                        LDA             #>ASM_SYM_NAME_POOL_BYTES
+                        LDX             #<ASM_SYM_NAME_POOL_BYTES
+                        JSR             ASMR_PRINT_WORD
+                        JMP             SYS_WRITE_CRLF
+
 ASMR_PRINT_FIXUPS:
                         LDX             #<MSG_FIXUPS_COUNT
                         LDY             #>MSG_FIXUPS_COUNT
@@ -244,9 +263,9 @@ ASMR_PRINT_COUNTS:
                         JSR             ASMR_PRINT_BYTE_FIELD
                         LDA             ASM_RELOC_COUNT
                         JSR             ASMR_PRINT_BYTE_FIELD
-                        LDA             ASM_EXPORT_REC_COUNT
+                        LDA             ASM_EXPORT_COUNT
                         JSR             ASMR_PRINT_BYTE_FIELD
-                        LDA             ASM_IMPORT_REC_COUNT
+                        LDA             ASM_IMPORT_COUNT
                         JSR             ASMR_PRINT_BYTE_FIELD
                         LDA             ASM_IMPORT_RESOLVE_COUNT
                         JSR             ASMR_PRINT_BYTE_FIELD
@@ -271,6 +290,24 @@ ASMR_PRINT_PACKAGE:
                         LDA             ASM_INSTALL_BASE_HI
                         LDX             ASM_INSTALL_BASE_LO
                         JSR             ASMR_PRINT_WORD
+                        LDX             #<MSG_PACKAGE_ID
+                        LDY             #>MSG_PACKAGE_ID
+                        JSR             ASMR_PRINT
+                        LDX             #$00
+ASMR_PRINT_PACKAGE_ID_LOOP:
+                        CPX             ASM_EXPORT_COUNT
+                        BEQ             ASMR_PRINT_PACKAGE_DONE
+                        LDA             ASM_EXPORT_KIND,X
+                        AND             #$80
+                        BNE             ASMR_PRINT_PACKAGE_ID_FOUND
+                        INX
+                        BRA             ASMR_PRINT_PACKAGE_ID_LOOP
+ASMR_PRINT_PACKAGE_ID_FOUND:
+                        LDA             ASM_EXPORT_SYM_SLOT,X
+                        TAX
+                        JSR             ASMR_SET_SYM_NAME_PTR_X
+                        JSR             ASMR_PRINT_NAME_BYTES
+ASMR_PRINT_PACKAGE_DONE:
                         JMP             SYS_WRITE_CRLF
 
 ASMR_PRINT_USED:
@@ -376,9 +413,7 @@ ASMR_PRINT_UNUSED_ROW:
 
 ASMR_PRINT_SYMBOL_NAME:
                         JSR             ASMR_SET_SYM_NAME_PTR_X
-                        LDX             ASMR_PTR_LO
-                        LDY             ASMR_PTR_HI
-                        JSR             ASMR_PRINT
+                        JSR             ASMR_PRINT_NAME_BYTES
                         JMP             ASMR_PRINT_SPACE
 
 ASMR_PRINT_DEF_FIELD:
@@ -444,7 +479,7 @@ ASMR_PRINT_SYMBOL_ROW:
                         JSR             ASMR_PRINT_SPACE
                         LDX             ASMR_SLOT
                         JSR             ASMR_SET_SYM_NAME_PTR_X
-                        JMP             ASMR_PRINT_PTR_LINE
+                        JMP             ASMR_PRINT_SYM_PTR_LINE
 
 ASMR_PRINT_FIXUP_TABLE:
                         LDX             #<MSG_FIXUPS
@@ -527,14 +562,89 @@ ASMR_PRINT_RELOC_ROW:
                         JSR             ASMR_PRINT_WORD
                         JMP             SYS_WRITE_CRLF
 
+ASMR_PRINT_EXPORT_TABLE:
+                        LDX             #<MSG_EXPORTS
+                        LDY             #>MSG_EXPORTS
+                        JSR             ASMR_PRINT_LINE
+                        LDX             #<MSG_EXPORT_HEAD
+                        LDY             #>MSG_EXPORT_HEAD
+                        JSR             ASMR_PRINT_LINE
+                        LDX             #$00
+ASMR_PRINT_EXPORT_LOOP:
+                        CPX             ASM_EXPORT_COUNT
+                        BEQ             ASMR_PRINT_EXPORT_DONE
+                        STX             ASMR_SLOT
+                        TXA
+                        JSR             ASMR_PRINT_BYTE_FIELD
+                        LDX             ASMR_SLOT
+                        LDA             ASM_EXPORT_KIND,X
+                        JSR             ASMR_PRINT_BYTE_FIELD
+                        LDX             ASMR_SLOT
+                        LDA             ASM_EXPORT_SYM_SLOT,X
+                        JSR             ASMR_PRINT_BYTE_FIELD
+                        LDX             ASMR_SLOT
+                        LDA             ASM_EXPORT_SYM_SLOT,X
+                        TAX
+                        JSR             ASMR_SET_SYM_NAME_PTR_X
+                        JSR             ASMR_PRINT_NAME_BYTES
+                        JSR             SYS_WRITE_CRLF
+                        LDX             ASMR_SLOT
+                        INX
+                        BRA             ASMR_PRINT_EXPORT_LOOP
+ASMR_PRINT_EXPORT_DONE:
+                        RTS
+
+ASMR_PRINT_IMPORT_TABLE:
+                        LDX             #<MSG_IMPORTS
+                        LDY             #>MSG_IMPORTS
+                        JSR             ASMR_PRINT_LINE
+                        LDX             #<MSG_IMPORT_HEAD
+                        LDY             #>MSG_IMPORT_HEAD
+                        JSR             ASMR_PRINT_LINE
+                        LDX             #$00
+ASMR_PRINT_IMPORT_LOOP:
+                        CPX             ASM_IMPORT_COUNT
+                        BEQ             ASMR_PRINT_IMPORT_DONE
+                        STX             ASMR_SLOT
+                        TXA
+                        JSR             ASMR_PRINT_BYTE_FIELD
+                        LDX             ASMR_SLOT
+                        LDA             ASM_IMPORT_KIND,X
+                        JSR             ASMR_PRINT_BYTE_FIELD
+                        LDX             ASMR_SLOT
+                        LDA             ASM_IMPORT_NAME_LEN,X
+                        JSR             ASMR_PRINT_BYTE_FIELD
+                        LDX             ASMR_SLOT
+                        LDA             ASM_IMPORT_HASH3,X
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             ASMR_SLOT
+                        LDA             ASM_IMPORT_HASH2,X
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             ASMR_SLOT
+                        LDA             ASM_IMPORT_HASH1,X
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDX             ASMR_SLOT
+                        LDA             ASM_IMPORT_HASH0,X
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JSR             SYS_WRITE_CRLF
+                        LDX             ASMR_SLOT
+                        INX
+                        BRA             ASMR_PRINT_IMPORT_LOOP
+ASMR_PRINT_IMPORT_DONE:
+                        RTS
+
 ASMR_SET_SYM_NAME_PTR_X:
                         STX             ASMR_COUNT
-                        LDA             #<ASM_SYM_NAMES
+                        LDA             ASM_SYM_NAME_LEN,X
+                        STA             ASMR_NAME_LEN
+                        LDA             ASM_SYM_NAME_OFF_LO,X
+                        CLC
+                        ADC             #<ASM_SYM_NAMES
                         STA             ASMR_PTR_LO
-                        LDA             #>ASM_SYM_NAMES
+                        LDA             ASM_SYM_NAME_OFF_HI,X
+                        ADC             #>ASM_SYM_NAMES
                         STA             ASMR_PTR_HI
-                        LDX             ASMR_COUNT
-                        BRA             ASMR_ADD_NAME_STRIDE
+                        RTS
 
 ASMR_SET_FIX_NAME_PTR_X:
                         STX             ASMR_COUNT
@@ -543,12 +653,11 @@ ASMR_SET_FIX_NAME_PTR_X:
                         LDA             #>ASM_FIX_NAME_TEXT
                         STA             ASMR_PTR_HI
                         LDX             ASMR_COUNT
-ASMR_ADD_NAME_STRIDE:
                         BEQ             ASMR_NAME_PTR_DONE
 ASMR_ADD_NAME_LOOP:
                         CLC
                         LDA             ASMR_PTR_LO
-                        ADC             #ASM_REPORT_SYM_NAME_MAX
+                        ADC             #ASM_REPORT_FIX_NAME_MAX
                         STA             ASMR_PTR_LO
                         LDA             ASMR_PTR_HI
                         ADC             #$00
@@ -586,6 +695,23 @@ ASMR_PRINT_PTR_LINE:
                         JSR             SYS_WRITE_CSTRING
                         JMP             SYS_WRITE_CRLF
 
+ASMR_PRINT_SYM_PTR_LINE:
+                        JSR             ASMR_PRINT_NAME_BYTES
+                        JMP             SYS_WRITE_CRLF
+
+ASMR_PRINT_NAME_BYTES:
+                        LDY             #$00
+ASMR_PRINT_NAME_LOOP:
+                        LDA             ASMR_NAME_LEN
+                        BEQ             ASMR_PRINT_NAME_DONE
+                        LDA             (ASMR_PTR_LO),Y
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        INY
+                        DEC             ASMR_NAME_LEN
+                        BRA             ASMR_PRINT_NAME_LOOP
+ASMR_PRINT_NAME_DONE:
+                        RTS
+
 ASMR_PRINT_LINE:
                         JSR             ASMR_PRINT
                         JMP             SYS_WRITE_CRLF
@@ -605,6 +731,7 @@ MSG_HIGH:              DB              "HIGH=$",0
 MSG_BYTES:             DB              "BYTES=$",0
 MSG_LINES:             DB              "LINES=$",0
 MSG_SYMS:              DB              "SYMS=$",0
+MSG_NAME_POOL:         DB              "NAMEPOOL=$",0
 MSG_FIXUPS_COUNT:      DB              "FIXUPS=$",0
 MSG_REFS:              DB              "REFS=$",0
 MSG_TRUNC_YES:         DB              "TRUNC=YES",0
@@ -613,7 +740,8 @@ MSG_MAP:               DB              "MAP END=$",0
 MSG_UDATA:             DB              " UDATA=$",0
 MSG_SEAL:              DB              "SEAL FL BASE END LEN FNV ",0
 MSG_COUNTS:            DB              "COUNTS SYM FIX REL EXP IMP IMPRES RELCNT ",0
-MSG_PACKAGE:           DB              "PKG @ LEN BODY INST ",0
+MSG_PACKAGE:           DB              "PKG @ LEN BODY INST",0
+MSG_PACKAGE_ID:        DB              " ID ",0
 MSG_USED:              DB              "USED",0
 MSG_UNUSED:            DB              "UNUSED",0
 MSG_DEF:               DB              "DEF=$",0
@@ -625,6 +753,10 @@ MSG_FIXUPS:            DB              "FIXUPS",0
 MSG_FIX_HEAD:          DB              "SL ST MODE SEL SITE BASE NAME",0
 MSG_RELOCS:            DB              "RELOCS",0
 MSG_RELOC_HEAD:        DB              "SL K  SITE TARG",0
+MSG_EXPORTS:           DB              "EXPORTS",0
+MSG_EXPORT_HEAD:       DB              "SL K  SYM NAME",0
+MSG_IMPORTS:           DB              "IMPORTS",0
+MSG_IMPORT_HEAD:       DB              "SL K  LEN FNV",0
 MSG_DONE:              DB              "ASM REPORT OK",0
 
                         ENDMOD

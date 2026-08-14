@@ -61,6 +61,151 @@ function Set-Nz([int]$Status, [int]$Value) {
     return $next
 }
 
+function Invoke-RelocAccessor(
+    [byte[]]$Memory,
+    [int]$Entry,
+    [int]$Index,
+    [int]$InitialStatus
+) {
+    $pc = $Entry
+    $a = 0
+    $x = $Index -band 0xFF
+    $y = 0
+    $status = $InitialStatus -band 0xFF
+    $stack = [System.Collections.Generic.Stack[int]]::new()
+    $steps = 0
+
+    while ($steps -lt 64) {
+        $steps++
+        $opcode = [int]$Memory[$pc]
+        switch ($opcode) {
+            0x08 { # PHP
+                $stack.Push($status)
+                $pc++
+            }
+            0x0A { # ASL A
+                if (($a -band 0x80) -ne 0) {
+                    $status = $status -bor 0x01
+                } else {
+                    $status = $status -band 0xFE
+                }
+                $a = ($a -shl 1) -band 0xFF
+                $status = Set-Nz $status $a
+                $pc++
+            }
+            0x18 { # CLC
+                $status = $status -band 0xFE
+                $pc++
+            }
+            0x28 { # PLP
+                if ($stack.Count -eq 0) { Fail-Check 'relocation accessor PLP underflow' }
+                $status = $stack.Pop()
+                $pc++
+            }
+            0x60 { # RTS
+                if ($stack.Count -ne 0) { Fail-Check 'relocation accessor returned with saved status' }
+                return [pscustomobject]@{ A = $a; Steps = $steps }
+            }
+            0x65 { # ADC zp
+                $operand = [int]$Memory[[int]$Memory[$pc + 1]]
+                $sum = $a + $operand + ($status -band 0x01)
+                if ($sum -gt 0xFF) { $status = $status -bor 0x01 } else { $status = $status -band 0xFE }
+                $a = $sum -band 0xFF
+                $status = Set-Nz $status $a
+                $pc += 2
+            }
+            0x69 { # ADC imm
+                $sum = $a + [int]$Memory[$pc + 1] + ($status -band 0x01)
+                if ($sum -gt 0xFF) { $status = $status -bor 0x01 } else { $status = $status -band 0xFE }
+                $a = $sum -band 0xFF
+                $status = Set-Nz $status $a
+                $pc += 2
+            }
+            0x6D { # ADC abs
+                $address = [int]$Memory[$pc + 1] -bor ([int]$Memory[$pc + 2] -shl 8)
+                $sum = $a + [int]$Memory[$address] + ($status -band 0x01)
+                if ($sum -gt 0xFF) { $status = $status -bor 0x01 } else { $status = $status -band 0xFE }
+                $a = $sum -band 0xFF
+                $status = Set-Nz $status $a
+                $pc += 3
+            }
+            0x80 { # BRA rel
+                $offset = [int]$Memory[$pc + 1]
+                if ($offset -ge 0x80) { $offset -= 0x100 }
+                $pc += 2 + $offset
+            }
+            0x85 { # STA zp
+                $Memory[[int]$Memory[$pc + 1]] = [byte]$a
+                $pc += 2
+            }
+            0x8A { # TXA
+                $a = $x
+                $status = Set-Nz $status $a
+                $pc++
+            }
+            0x8D { # STA abs
+                $address = [int]$Memory[$pc + 1] -bor ([int]$Memory[$pc + 2] -shl 8)
+                $Memory[$address] = [byte]$a
+                $pc += 3
+            }
+            0x90 { # BCC rel
+                $offset = [int]$Memory[$pc + 1]
+                if ($offset -ge 0x80) { $offset -= 0x100 }
+                $pc += 2
+                if (($status -band 0x01) -eq 0) { $pc += $offset }
+            }
+            0xA5 { # LDA zp
+                $a = [int]$Memory[[int]$Memory[$pc + 1]]
+                $status = Set-Nz $status $a
+                $pc += 2
+            }
+            0xA8 { # TAY
+                $y = $a
+                $status = Set-Nz $status $y
+                $pc++
+            }
+            0xAD { # LDA abs
+                $address = [int]$Memory[$pc + 1] -bor ([int]$Memory[$pc + 2] -shl 8)
+                $a = [int]$Memory[$address]
+                $status = Set-Nz $status $a
+                $pc += 3
+            }
+            0xB0 { # BCS rel
+                $offset = [int]$Memory[$pc + 1]
+                if ($offset -ge 0x80) { $offset -= 0x100 }
+                $pc += 2
+                if (($status -band 0x01) -ne 0) { $pc += $offset }
+            }
+            0xB1 { # LDA (zp),Y
+                $zp = [int]$Memory[$pc + 1]
+                $address = ([int]$Memory[$zp] -bor
+                    ([int]$Memory[($zp + 1) -band 0xFF] -shl 8)) + $y
+                $a = [int]$Memory[$address -band 0xFFFF]
+                $status = Set-Nz $status $a
+                $pc += 2
+            }
+            0xC6 { # DEC zp
+                $zp = [int]$Memory[$pc + 1]
+                $value = ([int]$Memory[$zp] - 1) -band 0xFF
+                $Memory[$zp] = [byte]$value
+                $status = Set-Nz $status $value
+                $pc += 2
+            }
+            0xE6 { # INC zp
+                $zp = [int]$Memory[$pc + 1]
+                $value = ([int]$Memory[$zp] + 1) -band 0xFF
+                $Memory[$zp] = [byte]$value
+                $status = Set-Nz $status $value
+                $pc += 2
+            }
+            default {
+                Fail-Check ('unsupported relocation-accessor opcode ${0:X2} at ${1:X4}' -f $opcode, $pc)
+            }
+        }
+    }
+    Fail-Check 'relocation accessor did not return within the step limit'
+}
+
 function Invoke-RamStage(
     [byte[]]$Routine,
     [byte[][]]$Banks,
@@ -263,9 +408,9 @@ if ($codeText -notmatch 'HIM_AP_RELOC_MAX\s+EQU\s+\$([0-9A-Fa-f]+)') {
 }
 $apRelocMax = [Convert]::ToInt32($matches[1], 16)
 $apRelocLength = 1 + (5 * $apRelocMax)
-if ($apRelocMax -ne 0x32 -or $apRelocLength -ne 0xFB -or
-        $apRelocLength -gt 0xFF) {
-    Fail-Check ('HIMON AP v1 relocation boundary is max={0} len=${1:X}' -f `
+if ($apRelocMax -ne 0x40 -or $apRelocLength -ne 0x141 -or
+        $apRelocLength -gt 0xFFFF) {
+    Fail-Check ('HIMON AP v2 relocation boundary is max={0} len=${1:X}' -f `
         $apRelocMax, $apRelocLength)
 }
 foreach ($retired in @('$F003', 'STR8_RUN_WORKER_SERVICE',
@@ -301,6 +446,49 @@ if ($ramStart -lt $selectorEnd -or ($ramStart + $size) -gt 0x0A00) {
 }
 
 $image = Read-S19Memory
+$relocMemory = [byte[]]::new(0x10000)
+[Array]::Copy($image.Memory, $relocMemory, $relocMemory.Length)
+$relocPtrLo = Read-MapSymbol 'CMDP_PTR_LO'
+$relocPtrHi = Read-MapSymbol 'CMDP_PTR_HI'
+$relocCountCell = Read-MapSymbol 'HIM_AP_RELOC_COUNT'
+$relocTargetLo = Read-MapSymbol 'HIM_AP_RELOC_TARGET_LO_X'
+$relocTargetHi = Read-MapSymbol 'HIM_AP_RELOC_TARGET_HI_X'
+$relocBase = 0x6000
+$relocAccessorCases = 0
+$relocAccessorMaxSteps = 0
+for ($count = 1; $count -le $apRelocMax; $count++) {
+    $relocMemory[$relocBase] = [byte]$count
+    for ($index = 0; $index -lt $count; $index++) {
+        $expectedLo = (0x40 + $count + $index) -band 0xFF
+        $expectedHi = (0x80 + $count + $index) -band 0xFF
+        $relocMemory[$relocBase + 1 + (3 * $count) + $index] = [byte]$expectedLo
+        $relocMemory[$relocBase + 1 + (4 * $count) + $index] = [byte]$expectedHi
+    }
+    $relocMemory[$relocPtrLo] = [byte]($relocBase -band 0xFF)
+    $relocMemory[$relocPtrHi] = [byte](($relocBase -shr 8) -band 0xFF)
+    $relocMemory[$relocCountCell] = [byte]$count
+    for ($index = 0; $index -lt $count; $index++) {
+        $initialStatus = if (($count + $index) -band 1) { 0x21 } else { 0x20 }
+        $lo = Invoke-RelocAccessor -Memory $relocMemory -Entry $relocTargetLo `
+            -Index $index -InitialStatus $initialStatus
+        $hi = Invoke-RelocAccessor -Memory $relocMemory -Entry $relocTargetHi `
+            -Index $index -InitialStatus $initialStatus
+        $expectedLo = (0x40 + $count + $index) -band 0xFF
+        $expectedHi = (0x80 + $count + $index) -band 0xFF
+        if ($lo.A -ne $expectedLo -or $hi.A -ne $expectedHi) {
+            Fail-Check ('relocation accessor count={0} row={1} returned ${2:X2}/${3:X2}, expected ${4:X2}/${5:X2}' -f `
+                $count, $index, $lo.A, $hi.A, $expectedLo, $expectedHi)
+        }
+        if ($relocMemory[$relocPtrLo] -ne ($relocBase -band 0xFF) -or
+                $relocMemory[$relocPtrHi] -ne (($relocBase -shr 8) -band 0xFF)) {
+            Fail-Check "relocation accessor did not restore its record pointer"
+        }
+        $relocAccessorCases += 2
+        $relocAccessorMaxSteps = [Math]::Max(
+            $relocAccessorMaxSteps, [Math]::Max($lo.Steps, $hi.Steps)
+        )
+    }
+}
 $routine = [byte[]]::new($size)
 for ($i = 0; $i -lt $size; $i++) {
     $address = $sourceStart + $i
@@ -365,6 +553,7 @@ if (($retried.Status -band 0x01) -eq 0 -or $retried.SelectedBank -ne 3) {
 $maxSteps = [Math]::Max($maxSteps, $retried.Steps)
 
 Write-Host (('HIMON banked AP check OK body=${0:X4}-${1:X4} ram=${2:X4} ' +
-    'bytes=${3:X2} cases=11 max-steps={4} ap-relocs={5} rel-len=${6:X2}') -f `
+    'bytes=${3:X2} cases=11 max-steps={4} ap-relocs={5} rel-len=${6:X3} ' +
+    'reloc-access={7} max-steps={8}') -f `
     $sourceStart, ($sourceEnd - 1), $ramStart, $size, $maxSteps,
-    $apRelocMax, $apRelocLength)
+    $apRelocMax, $apRelocLength, $relocAccessorCases, $relocAccessorMaxSteps)

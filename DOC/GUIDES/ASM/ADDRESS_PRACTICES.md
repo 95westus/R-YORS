@@ -102,15 +102,15 @@ ASM output in general and not on a separately reserved metadata block. The
 package length is:
 
 ```text
-$001B fixed package bytes
+$001F fixed package bytes (header, five tag/length16 headers, seal payload)
 + ($01 + 5 * relocation count)
-+ serialized EXPORT record length
-+ serialized IMPORT record length
++ serialized EXPORT payload length
++ serialized IMPORT payload length
 + sealed BODY length
 ```
 
-Empty EXPORT and IMPORT records are two bytes each. With no relocations, the
-minimum envelope overhead is therefore `$0020`, leaving at most `$0FE0` bytes
+Empty EXPORT and IMPORT payloads are one count byte each. With no relocations,
+the minimum envelope overhead is therefore `$0022`, leaving at most `$0FDE` bytes
 for BODY data. Imports, exports, and relocations reduce that BODY maximum.
 
 `PACKAGE $3000` means "write the envelope beginning at RAM `$3000`." It does
@@ -218,7 +218,7 @@ SEAL> PACKAGE $3200
 PKG OK @=$3200 L=$llll
 SEAL> .
 ASM BYE
->D 3200 5       expect 41 50 version lenlo lenhi
+>D 3200 5       expect 41 50 02 lenlo lenhi
 >ASM NEW        historical: paste OLD/bankput-transient-3000.a
 ASM>$30D4: END
 ASM OK
@@ -319,18 +319,18 @@ selection pass. They are not the normal operator path.
 ## Session Reporter From Bank 0
 
 The preferred Bank-0 reporter source is now
-`asm-session-report-v1.2-ap-2000.a`. Its AP entry is `START`, its body is `$0C5F`,
-and its expected package is `$0C8B`. It accepts AP destinations
-`$2000-$43A1`; `$4000` is recommended and occupies `$4000-$4C5E`.
+`asm-session-report-v1.2-ap-2000.a`. Its AP identity/entry is `ASMREPORT`, its body is `$0E25`,
+and its expected package is `$0E51`. It accepts AP destinations
+`$2000-$41DB`; `$4000` is recommended and occupies `$4000-$4E24`.
 
-The reporter has one ordinary AP relocation, then applies its own 224-row
+The reporter has one ordinary AP relocation, then applies its own 238-row
 private table to every remaining internal address. This makes the whole body
 load-address relocatable despite ASM's 64-row ordinary relocation limit. It
 is still ASM-map-matched because it reads current ASM-F2 tables and calls
 current ASM-F2 output helpers. Rebuild and reinstall it after an ASM code or
 map change.
 
-Build its envelope with `PACKAGE $3000`, then store it with
+Build its envelope with `PACKAGE ASMREPORT $3000`, then store it with
 the resident `BANK0_AP_PUT`. The printed Bank-0 package address is the first
 operand of the later `AP B0` command; `$4000` is its RAM load/run address.
 

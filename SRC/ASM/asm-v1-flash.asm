@@ -18,6 +18,7 @@
                         XREF            ASM_SEAL_COMPUTE_FNV
                         XREF            ASM_SEAL_RELOCATE
                         XREF            ASM_SEAL_PACKAGE
+                        XREF            ASM_PACKAGE_MATCH_IDENTITY
                         XREF            ASM_PACKAGE_LOAD
                         XREF            ASM_PACKAGE_INSTALL_SUGGEST
                         XREF            ASM_PACKAGE_PARSE_MIN
@@ -38,6 +39,7 @@
                         XREF            ASM_INSTALL_BASE_HI
                         XREF            ASM_PARSE_EXPR
                         XREF            ASM_PARSE_EXPR_REQUIRE_END
+                        XREF            ASM_DB_COUNTING
                         XREF            ASM_RJOIN_INIT_IO
                         XREF            ASM_RJ_READ_CSTRING
                         XREF            ASM_RJ_WRITE_HBSTRING
@@ -62,9 +64,12 @@ ASMF_STATUS_BAD_FIX    EQU             $09
 ASMF_STATUS_LOCAL_NYI  EQU             $0A
 ASMF_STATUS_RJOIN      EQU             $0B
 ASMF_STATUS_NAME_UNKNOWN EQU           $0C
-; Borrow ASM scratch ZP only inside wrapper command matching.
-ASMF_CMD_PTR_LO        EQU             $84
-ASMF_CMD_PTR_HI        EQU             $85
+; Wrapper-private pair below ASM's allocated $84-$AF core frame.  This pointer
+; must survive ASM_PARSE_EXPR; $84/$85 are ASM_SYM_PTR and are not stable.
+ASMF_CMD_PTR_LO        EQU             $82
+ASMF_CMD_PTR_HI        EQU             $83
+; HIMON retains the canonical top-level command in its fixed input buffer.
+ASMF_HIM_CMD_ARG      EQU             $7A04
 
 HIM_SVC_FLASH_INSTALL_LO EQU           $7E25
 HIM_SVC_FLASH_INSTALL_HI EQU           $7E26
@@ -100,6 +105,24 @@ ASMF_IO_READY:
                         LDY             #>MSG_TITLE
                         JSR             ASMF_PRINT_LINE
 
+; HIMON canonicalizes the command line.  An S after "ASM " requests the
+; preserved post-END SEAL window; bare ASM and ASM NEW begin normally.
+                        LDA             ASMF_HIM_CMD_ARG-1
+                        BEQ             ASMF_ENTRY_NEW_SESSION
+                        LDA             ASMF_HIM_CMD_ARG
+                        CMP             #'S'
+                        BNE             ASMF_ENTRY_NEW_SESSION
+                        LDA             ASMF_POST_FLAG
+                        BNE             ASMF_ENTRY_RESUME_SEAL
+                        LDA             #ASMF_STATUS_BAD_OPER
+                        CLC
+                        RTS
+
+ASMF_ENTRY_RESUME_SEAL:
+                        STZ             ASMF_RESULT
+                        BRA             ASMF_LOOP
+
+ASMF_ENTRY_NEW_SESSION:
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #ASMF_TARGET_LO
                         LDY             #ASMF_TARGET_HI
@@ -123,14 +146,14 @@ ASMF_LOOP:
 ASMF_PROMPT_ASM:
                         LDX             #<MSG_PROMPT
                         LDY             #>MSG_PROMPT
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASMF_PC_HI
                         LDX             ASMF_PC_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_PROMPT_TAIL
                         LDY             #>MSG_PROMPT_TAIL
 ASMF_PROMPT_PRINT:
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
 
                         LDX             #<ASMF_LINE_BUF
                         LDY             #>ASMF_LINE_BUF
@@ -244,8 +267,7 @@ ASMF_ACCEPTED:
                         JMP             ASMF_LOOP
 
 ASMF_ACCEPTED_END:
-                        LDA             #$01
-                        STA             ASMF_POST_FLAG
+                        INC             ASMF_POST_FLAG
                         LDX             #<MSG_DONE
                         LDY             #>MSG_DONE
                         JSR             ASMF_PRINT_LINE
@@ -257,7 +279,7 @@ ASMF_SEAL_CMD:
                         STA             ASMF_RESULT
                         LDX             #<MSG_SEAL_ERR
                         LDY             #>MSG_SEAL_ERR
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASMF_RESULT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASMF_PRINT_SEAL_FLAGS_TAIL
@@ -287,21 +309,44 @@ ASMF_RELOCATE_HAVE_ARG:
 ASMF_RELOCATE_OK:
                         LDX             #<MSG_RELOCATE_OK
                         LDY             #>MSG_RELOCATE_OK
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_RELOCATE_BASE_HI
                         LDX             ASM_RELOCATE_BASE_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_RELOCATE_COUNT
                         LDY             #>MSG_RELOCATE_COUNT
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_RELOCATE_COUNT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_RJ_PRINT_CRLF
                         JMP             ASMF_LOOP
 
 ASMF_PACKAGE_CMD:
+; The shared two-expression parser identifies the named form.  Suppress its
+; first-token use accounting: post-END identity validation must not mutate the
+; frozen session report.
+                        INC             ASM_DB_COUNTING
+                        JSR             ASMF_PARSE_TWO_ARGS
+                        PHP
+                        STZ             ASM_DB_COUNTING
+                        PLP
+                        BCC             ASMF_PACKAGE_LEGACY_ARG
+                        LDY             ASMF_SPLIT_OFF
+                        LDA             #$00
+                        STA             (ASMF_CMD_PTR_LO),Y
+                        LDX             ASMF_CMD_PTR_LO
+                        LDY             ASMF_CMD_PTR_HI
+                        JSR             ASM_PACKAGE_MATCH_IDENTITY
+                        BCC             ASMF_PACKAGE_BAD_ARG
+                        LDX             ASMF_ARG1_LO
+                        LDY             ASMF_ARG1_HI
+                        BRA             ASMF_PACKAGE_HAVE_ARG
+ASMF_PACKAGE_LEGACY_ARG:
+                        LDX             ASMF_CMD_PTR_LO
+                        LDY             ASMF_CMD_PTR_HI
                         JSR             ASMF_PARSE_RELOCATE_ARG
                         BCS             ASMF_PACKAGE_HAVE_ARG
+ASMF_PACKAGE_BAD_ARG:
                         STA             ASMF_RESULT
                         LDX             #<MSG_PACKAGE_ERR
                         LDY             #>MSG_PACKAGE_ERR
@@ -318,13 +363,13 @@ ASMF_PACKAGE_HAVE_ARG:
 ASMF_PACKAGE_OK:
                         LDX             #<MSG_PACKAGE_OK
                         LDY             #>MSG_PACKAGE_OK
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PACKAGE_BASE_HI
                         LDX             ASM_PACKAGE_BASE_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_PACKAGE_LEN
                         LDY             #>MSG_PACKAGE_LEN
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PACKAGE_LEN_HI
                         LDX             ASM_PACKAGE_LEN_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
@@ -356,19 +401,19 @@ ASMF_LOAD_HAVE_ARGS:
 ASMF_LOAD_OK:
                         LDX             #<MSG_LOAD_OK
                         LDY             #>MSG_LOAD_OK
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_RELOCATE_BASE_HI
                         LDX             ASM_RELOCATE_BASE_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_PACKAGE_LEN
                         LDY             #>MSG_PACKAGE_LEN
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PACKAGE_BODY_LEN_HI
                         LDX             ASM_PACKAGE_BODY_LEN_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_RELOCATE_COUNT
                         LDY             #>MSG_RELOCATE_COUNT
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_RELOCATE_COUNT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASM_RJ_PRINT_CRLF
@@ -433,13 +478,13 @@ ASMF_INSTALL_HAVE_ARG:
 ASMF_INSTALL_OK:
                         LDX             #<MSG_INSTALL_OK
                         LDY             #>MSG_INSTALL_OK
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_INSTALL_BASE_HI
                         LDX             ASM_INSTALL_BASE_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_PACKAGE_LEN
                         LDY             #>MSG_PACKAGE_LEN
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PACKAGE_LEN_HI
                         LDX             ASM_PACKAGE_LEN_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
@@ -466,13 +511,13 @@ ASMF_CHECK_HAVE_ARG:
 ASMF_CHECK_OK:
                         LDX             #<MSG_CHECK_OK
                         LDY             #>MSG_CHECK_OK
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PACKAGE_BASE_HI
                         LDX             ASM_PACKAGE_BASE_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         LDX             #<MSG_PACKAGE_LEN
                         LDY             #>MSG_PACKAGE_LEN
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PACKAGE_LEN_HI
                         LDX             ASM_PACKAGE_LEN_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
@@ -502,20 +547,20 @@ ASMF_PRINT_FAIL:
                         JMP             ASMF_PRINT_STATUS_LINE
 
 ASMF_PRINT_STATUS_LINE:
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASMF_RESULT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASMF_PRINT_STATUS_NAMED_LINE:
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASMF_RESULT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASMF_PRINT_STATUS_NAME
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASMF_PRINT_STATUS_PC_LINE:
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASMF_RESULT
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JSR             ASMF_PRINT_STATUS_NAME
@@ -523,27 +568,25 @@ ASMF_PRINT_STATUS_PC_LINE:
                         LDY             #>MSG_PC
 
 ASMF_PRINT_PC_TAIL:
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASMF_PC_HI
                         LDX             ASMF_PC_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASMF_PRINT_LINE:
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         JMP             ASM_RJ_PRINT_CRLF
-
-ASMF_PRINT:
-                        JMP             ASM_RJ_WRITE_HBSTRING
 
 ASMF_PRINT_SEAL_FLAGS_TAIL:
                         LDX             #<MSG_FLAGS
                         LDY             #>MSG_FLAGS
-                        JSR             ASMF_PRINT
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_SEAL_FLAGS
                         JSR             ASM_RJ_WRITE_HEX_BYTE
                         JMP             ASM_RJ_PRINT_CRLF
 
+ASMF_ABORT_WITH_TABLES:
 ASMF_RETURN_RESULT:
                         LDA             ASMF_RESULT
                         CLC
@@ -559,9 +602,6 @@ ASMF_RETURN_WITH_A:
 ASMF_FLASH_INSTALL:
                         JMP             (HIM_SVC_FLASH_INSTALL_LO)
 
-ASMF_ABORT_WITH_TABLES:
-                        BRA             ASMF_RETURN_RESULT
-
 ASMF_PRINT_STATUS_NAME:
                         LDA             ASMF_RESULT
                         CMP             #ASMF_STATUS_NAME_UNKNOWN
@@ -575,7 +615,7 @@ ASMF_STATUS_NAME_HAVE_INDEX:
                         TAY
                         PLA
                         TAX
-                        JMP             ASMF_PRINT
+                        JMP             ASM_RJ_WRITE_HBSTRING
 
 ASMF_IS_DOT:
                         LDA             ASMF_LINE_BUF
@@ -583,7 +623,6 @@ ASMF_IS_DOT:
                         BNE             ASMF_DOT_NO
                         LDA             ASMF_LINE_BUF+1
                         BNE             ASMF_DOT_NO
-                        SEC
                         RTS
 ASMF_DOT_NO:
                         CLC
@@ -768,9 +807,7 @@ ASMF_PARSE_TWO_SECOND_OK:
                         STY             ASMF_ARG1_HI
                         JSR             ASM_PARSE_EXPR_REQUIRE_END
                         BCS             ASMF_PARSE_TWO_DONE
-                        LDA             #ASMF_STATUS_BAD_OPER
-                        CLC
-                        RTS
+                        BRA             ASMF_PARSE_TWO_BAD_OPER
 ASMF_PARSE_TWO_DONE:
                         LDX             ASMF_ARG0_LO
                         LDY             ASMF_ARG0_HI

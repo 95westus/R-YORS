@@ -5166,11 +5166,12 @@ ASM source mode; it is a small wrapper command window with these commands:
 ```text
 SEAL             validate and print frozen facts plus the RAM record summary
 RELOCATE addr    copy body to RAM addr and patch internal relocation rows
-PACKAGE addr     write AP v1 package envelope at RAM addr
-LOAD pkg dest    copy AP BODY to RAM and apply internal relocation rows only
+PACKAGE addr     write AP v2 package envelope at RAM addr
+PACKAGE name addr require name to match ENTRY, then write the same envelope
+LOAD pkg dest    validate/link/relocate an AP BODY into RAM
 INSTALL pkg      suggest an erased visible flash hole for the AP envelope
 INSTALL pkg addr copy AP envelope unchanged to an erased visible flash hole
-CHECK addr       validate AP v1 package envelope at RAM addr in diagnostic builds
+CHECK addr       validate AP v2 package envelope at RAM addr in diagnostic builds
 NEW              start a fresh ASM session at the frozen END PC
 .                exit the wrapper
 ```
@@ -5199,19 +5200,26 @@ body and below `$7E00`.
 that include the package builder. The first implementation is enabled in full
 core smoke and flash-resident ASM, not the stripped RAM paste wrapper. It
 validates the frozen seal, rebuilds the SEAL/REL/EXP/IMP facts, and writes an
-`AP` version-1 envelope at the requested RAM address. The envelope is
+`AP` version-2 envelope at the requested RAM address. The envelope is
 sequential: header, tagged seal section `S`, tagged relocation section `R`,
 tagged export section `E`, tagged import section `I`, and tagged body section
 `B`. It preserves relocatable metadata for later load/install work; it does not
 resolve imports, relocate the body, or run code. Before returning success, it
 recomputes the written BODY FNV and compares it with the seal record.
 
+Runnable packages may use `PACKAGE name address`. The full canonical `name`
+must match the unique executable `ENTRY` before any package byte is written.
+That typed export row is the AP v2 runnable-package identity; its hash supports
+future installed-catalog lookup and its PACK40 text proves collision identity.
+`MODULE name` is reserved for a future explicit identity on libraries and
+data-only packages that intentionally have no runnable entry.
+
 `LOAD pkg dest` is valid only in the post-`END` `SEAL> ` window for the default
-flash image. It reads an AP v1 envelope from RAM or currently visible flash,
-copies BODY to a RAM destination, and applies only internal `$01-$03` relocation
-rows. The destination BODY span must fit wholly in `$2000-$4FFF`. It does a
-minimal AP parse, not full `CHECK` validation, and rejects declared imports or
-import relocation rows with `BAD FIX`.
+flash image. Resident HIMON validates AP v2 from RAM or currently visible
+flash, copies BODY to a RAM destination, applies internal `$01-$03` relocation
+rows, and resolves `$04-$06` imports against matching resident RJOIN kinds.
+The destination BODY span must fit wholly in `$2000-$4FFF`; invalid packages,
+missing imports, and kind mismatches fail closed.
 
 `INSTALL pkg` is valid only in the post-`END` `SEAL> ` window for the default
 flash image. The one-argument form parses AP length, finds the first erased

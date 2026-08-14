@@ -1,0 +1,11 @@
+; AP v2 named-package identity proof.
+; WRONG must be rejected before PACKAGE writes; ASMREPORT must match ENTRY.
+
+        ORG $2000
+WRONG   EQU $1234
+
+ASMREPORT LDA #$A7
+        RTS
+
+        ENTRY ASMREPORT
+        END

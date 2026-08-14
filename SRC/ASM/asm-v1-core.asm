@@ -41,6 +41,7 @@
                         XDEF            ASM_SEAL_RELOCATE
                         IF              ASM_PACKAGE_ENABLED
                         XDEF            ASM_SEAL_PACKAGE
+                        XDEF            ASM_PACKAGE_MATCH_IDENTITY
                         XDEF            ASM_PACKAGE_LOAD
                         XDEF            ASM_PACKAGE_INSTALL_SUGGEST
                         IF              ASM_FLASH_RUNTIME
@@ -80,10 +81,12 @@
                         XDEF            ASM_EXPORT_REC_END
                         XDEF            ASM_EXPORT_REC_COUNT
                         XDEF            ASM_EXPORT_REC_LEN
+                        XDEF            ASM_EXPORT_REC_LEN_HI
                         XDEF            ASM_IMPORT_REC
                         XDEF            ASM_IMPORT_REC_END
                         XDEF            ASM_IMPORT_REC_COUNT
                         XDEF            ASM_IMPORT_REC_LEN
+                        XDEF            ASM_IMPORT_REC_LEN_HI
                         XDEF            ASM_IMPORT_RESOLVE_COUNT
                         XDEF            ASM_RELOCATE_BASE_LO
                         XDEF            ASM_RELOCATE_BASE_HI
@@ -99,6 +102,7 @@
                         XDEF            ASM_INSTALL_BASE_HI
                         ENDIF
                         XDEF            ASM_PARSE_EXPR_REQUIRE_END
+                        XDEF            ASM_DB_COUNTING
                         IF              ASM_RUNTIME_ONLY
                         IF              ASM_FLASH_RUNTIME
                         XDEF            ASM_RJOIN_INIT_IO
@@ -316,15 +320,14 @@ ASM_SEAL_REC_OFF_LEN   EQU             $05
 ASM_SEAL_REC_OFF_FNV   EQU             $07
 ASM_EXPORT_REC_OFF_COUNT EQU           $00
 ASM_EXPORT_REC_OFF_LEN EQU             $01
-ASM_EXPORT_REC_OFF_BODY EQU            $02
 ASM_IMPORT_REC_OFF_COUNT EQU           $00
 ASM_IMPORT_REC_OFF_LEN EQU             $01
-ASM_IMPORT_REC_OFF_BODY EQU            $02
 ASM_PACKAGE_HDR_BYTES  EQU             $05
-ASM_PACKAGE_FIXED_BYTES EQU            $1B
+; AP v2 fixed bytes: five-byte header, five tag/length16 headers, and seal.
+ASM_PACKAGE_FIXED_BYTES EQU            $1F
 ASM_PACKAGE_MAX_LO     EQU             $00
 ASM_PACKAGE_MAX_HI     EQU             $10
-ASM_PACKAGE_VERSION    EQU             $01
+ASM_PACKAGE_VERSION    EQU             $02
 ASM_PACKAGE_SIG0       EQU             'A'
 ASM_PACKAGE_SIG1       EQU             'P'
 ASM_PACKAGE_TAG_SEAL   EQU             'S'
@@ -441,29 +444,33 @@ ASM_FIX_IMPORTED       EQU             $04
 ASM_FIX_FAILED         EQU             $80
 
 ASM_LINE_MAX           EQU             $3F
-ASM_SYM_MAX            EQU             $40
+ASM_SYM_MAX            EQU             $80
 ASM_SYM_NAME_MAX       EQU             $20
+ASM_SYM_NAME_POOL_BYTES EQU            $0800
 ASM_FIX_MAX            EQU             $80
 ASM_FIX_NAME_MAX       EQU             $20
 ASM_FIX_NAME_BYTES     EQU             (ASM_FIX_MAX*ASM_FIX_NAME_MAX)
 ASM_RELOC_MAX          EQU             $40
-; AP v1's one-byte relocation-section length is the packaged boundary. Keep
-; this separate from the larger in-session SEAL/RELOCATE table: one count
-; byte plus five bytes per row permits 50 rows ($FB), while 51 needs $0100.
-ASM_PACKAGE_RELOC_MAX  EQU             $32
+; AP v2 uses 16-bit section lengths, so the packaged and live relocation
+; limits are identical.
+ASM_PACKAGE_RELOC_MAX  EQU             ASM_RELOC_MAX
 ASM_RELOC_ABS16_INTERNAL EQU           $01
 ASM_RELOC_LO8_INTERNAL EQU             $02
 ASM_RELOC_HI8_INTERNAL EQU             $03
 ASM_RELOC_ABS16_IMPORT EQU             $04
 ASM_RELOC_LO8_IMPORT EQU               $05
 ASM_RELOC_HI8_IMPORT EQU               $06
-ASM_EXPORT_MAX         EQU             $08
+ASM_AP_KIND_EXEC       EQU             $01
+ASM_AP_KIND_DATA       EQU             $02
+ASM_AP_KIND_MASK       EQU             $03
+ASM_AP_FLAG_ENTRY      EQU             $80
+ASM_EXPORT_MAX         EQU             $40
 ASM_EXPORT_NAME_PACK_MAX EQU           $16
-ASM_EXPORT_ROW_MAX     EQU             $19
-ASM_EXPORT_REC_BODY_MAX EQU            (ASM_EXPORT_MAX*ASM_EXPORT_ROW_MAX)
-ASM_IMPORT_MAX         EQU             $08
-ASM_IMPORT_ROW_MAX     EQU             (1+ASM_EXPORT_NAME_PACK_MAX)
-ASM_IMPORT_REC_BODY_MAX EQU            (ASM_IMPORT_MAX*ASM_IMPORT_ROW_MAX)
+; kind, offset16, hash32, name_len, PACK40(name)
+ASM_EXPORT_ROW_MAX     EQU             (8+ASM_EXPORT_NAME_PACK_MAX)
+ASM_IMPORT_MAX         EQU             $40
+; kind, hash32, name_len, PACK40(name)
+ASM_IMPORT_ROW_MAX     EQU             (6+ASM_EXPORT_NAME_PACK_MAX)
 ASM_REF_MAX            EQU             $C0
 ASM_LOCAL_MAX          EQU             $10
 ASM_LOCAL_NAME_MAX     EQU             $10
@@ -5849,19 +5856,19 @@ ASM_SMOKE_FIXUPS_PACKAGE_TOTAL_OK:
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_SEAL_TAG_OK
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_PACKAGE_SEAL_TAG_OK:
-                        LDY             #$12
+                        LDY             #$13
                         LDA             (ASM_SCAN_PTR_LO),Y
                         CMP             #ASM_PACKAGE_TAG_RELOC
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_TAG_OK
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_PACKAGE_REL_TAG_OK:
-                        LDY             #$13
+                        LDY             #$14
                         LDA             (ASM_SCAN_PTR_LO),Y
                         CMP             #$10
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_LEN_OK
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_PACKAGE_REL_LEN_OK:
-                        LDY             #$14
+                        LDY             #$16
                         LDA             (ASM_SCAN_PTR_LO),Y
                         CMP             #$03
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_COUNT_OK
@@ -5885,7 +5892,7 @@ ASM_SMOKE_FIXUPS_PACKAGE_REL_K1_OK:
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_K2_OK
                         JMP             ASM_SMOKE_FIXUPS_RELOC_FAIL
 ASM_SMOKE_FIXUPS_PACKAGE_REL_K2_OK:
-                        LDY             #$18
+                        LDY             #$1A
                         LDA             (ASM_SCAN_PTR_LO),Y
                         CMP             #$01
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_REL_S0_OK
@@ -5910,7 +5917,7 @@ ASM_SMOKE_FIXUPS_PACKAGE_REL_S2_OK:
                         LDA             ASM_SEAL_BASE_HI
                         ADC             #$00
                         STA             ASM_TMP0_HI
-                        LDY             #$2F
+                        LDY             #$31
                         LDA             (ASM_SCAN_PTR_LO),Y
                         CMP             #$20
                         BEQ             ASM_SMOKE_FIXUPS_PACKAGE_BODY0_OK
@@ -5936,7 +5943,7 @@ ASM_SMOKE_FIXUPS_PACKAGE_VERIFY_OK:
                         STA             ASM_SCAN_PTR_LO
                         LDA             ASM_PACKAGE_BASE_HI
                         STA             ASM_SCAN_PTR_HI
-                        LDY             #$2F
+                        LDY             #$31
                         LDA             #$21
                         STA             (ASM_SCAN_PTR_LO),Y
                         JSR             ASM_PACKAGE_VERIFY_BODY
@@ -5951,7 +5958,7 @@ ASM_SMOKE_FIXUPS_PACKAGE_VERIFY_RESTORE:
                         STA             ASM_SCAN_PTR_LO
                         LDA             ASM_PACKAGE_BASE_HI
                         STA             ASM_SCAN_PTR_HI
-                        LDY             #$2F
+                        LDY             #$31
                         LDA             #$20
                         STA             (ASM_SCAN_PTR_LO),Y
                         IF              ASM_PACKAGE_CHECK_ENABLED
@@ -5994,7 +6001,7 @@ ASM_SMOKE_FIXUPS_RELOC_FAIL:
                         RTS
 
 ; Fill the enlarged live relocation table through the ordinary assembler
-; path, relocate all 64 rows, and prove the exact 50-row AP v1 boundary.
+; path, relocate all 64 rows, and prove the exact 64-row AP v2 boundary.
 ASM_SMOKE_FIXUPS_RELOCATE_64:
                         LDA             #ASM_BEGINF_HAVE_PC
                         LDX             #ASM_SMOKE_TARGET_LO
@@ -6101,9 +6108,9 @@ ASM_SMOKE_FIXUPS_RELOC_64_IMAGE_FAIL:
                         RTS
 
                         IF              ASM_PACKAGE_ENABLED
-; The live table still contains 64 valid rows. Package the first 50, verify
-; the maximal $FB relocation body (including an ASM-side parse/check when
-; enabled), then prove row 51 fails before serialization.
+; The live table still contains 64 valid rows. Package all 64, verify the
+; maximal $0141 relocation body (including an ASM-side parse/check when
+; enabled), then prove row 65 fails before serialization.
 ASM_SMOKE_FIXUPS_PACKAGE_50:
                         LDA             #ASM_PACKAGE_RELOC_MAX
                         STA             ASM_RELOC_COUNT
@@ -6112,15 +6119,21 @@ ASM_SMOKE_FIXUPS_PACKAGE_50:
                         JSR             ASM_SEAL_PACKAGE
                         BCC             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
                         LDA             ASM_PACKAGE_REL_LEN
-                        CMP             #$FB
+                        CMP             #$41
                         BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
-                        LDA             $7412
-                        CMP             #ASM_PACKAGE_TAG_RELOC
+                        LDA             ASM_PACKAGE_REL_LEN_HI
+                        CMP             #$01
                         BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
                         LDA             $7413
-                        CMP             #$FB
+                        CMP             #ASM_PACKAGE_TAG_RELOC
                         BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
                         LDA             $7414
+                        CMP             #$41
+                        BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        LDA             $7415
+                        CMP             #$01
+                        BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
+                        LDA             $7416
                         CMP             #ASM_PACKAGE_RELOC_MAX
                         BNE             ASM_SMOKE_FIXUPS_PACKAGE_50_FAIL
                         IF              ASM_PACKAGE_CHECK_ENABLED
@@ -6835,6 +6848,24 @@ ASM_SMOKE_DIRECT_ENTRY_OK:
                         BEQ             ASM_SMOKE_DIRECT_ENTRY_SLOT_OK
                         JMP             ASM_SMOKE_DIRECT_FAIL
 ASM_SMOKE_DIRECT_ENTRY_SLOT_OK:
+                        IF              ASM_PACKAGE_ENABLED
+                        LDX             #<ASM_PACKAGE_ID_MAIN
+                        LDY             #>ASM_PACKAGE_ID_MAIN
+                        JSR             ASM_PACKAGE_MATCH_IDENTITY
+                        BCS             ASM_SMOKE_DIRECT_ENTRY_ID_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_ENTRY_ID_OK:
+                        LDX             #<ASM_PACKAGE_ID_OTHER
+                        LDY             #>ASM_PACKAGE_ID_OTHER
+                        JSR             ASM_PACKAGE_MATCH_IDENTITY
+                        BCC             ASM_SMOKE_DIRECT_ENTRY_ID_BAD_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_ENTRY_ID_BAD_OK:
+                        CMP             #ASM_STATUS_BAD_SYM
+                        BEQ             ASM_SMOKE_DIRECT_ENTRY_ID_TESTED
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_ENTRY_ID_TESTED:
+                        ENDIF
                         LDA             #ASM_STATUS_BAD_SYM
                         LDX             #<ASM_DIRECT_ENTRY_MAIN
                         LDY             #>ASM_DIRECT_ENTRY_MAIN
@@ -7578,6 +7609,8 @@ ASM_SMOKE_SYMBOLS_FAIL_A:
 
 ASM_SMOKE_SYMBOLS:
                         STZ             ASM_SYM_COUNT
+                        STZ             ASM_SYM_NAME_USED_LO
+                        STZ             ASM_SYM_NAME_USED_HI
 
                         LDX             #<ASM_SMOKE_SYM_LABEL
                         LDY             #>ASM_SMOKE_SYM_LABEL
@@ -7632,7 +7665,9 @@ ASM_SMOKE_SYMBOLS:
                         BCC             ASM_SMOKE_SYMBOLS_FAIL_A
                         LDA             ASM_SYM_WIDTH,X
                         CMP             #ASM_WIDTH_ZP
-                        BNE             ASM_SMOKE_SYMBOLS_FAIL_A
+                        BEQ             ASM_SMOKE_SYMBOLS_ZP_WIDTH_OK
+                        JMP             ASM_SMOKE_SYMBOLS_FAIL
+ASM_SMOKE_SYMBOLS_ZP_WIDTH_OK:
 
                         LDX             #<ASM_SMOKE_SYM_ADDR_EQU
                         LDY             #>ASM_SMOKE_SYM_ADDR_EQU
@@ -7762,6 +7797,8 @@ ASM_SMOKE_INSTALL_COLLISION_ROW:
                         STA             ASM_SYM_HASH3
                         LDA             #$05
                         STA             ASM_SYM_NAME_LEN
+                        STZ             ASM_SYM_NAME_OFF_LO
+                        STZ             ASM_SYM_NAME_OFF_HI
                         STZ             ASM_SYM_DEFLINE_LO
                         STZ             ASM_SYM_DEFLINE_HI
                         STZ             ASM_SYM_USECNT
@@ -7780,6 +7817,9 @@ ASM_SMOKE_INSTALL_COLLISION_ROW:
                         STZ             ASM_SYM_NAMES+5
                         LDA             #$01
                         STA             ASM_SYM_COUNT
+                        LDA             #$05
+                        STA             ASM_SYM_NAME_USED_LO
+                        STZ             ASM_SYM_NAME_USED_HI
                         RTS
 
                         ENDIF
@@ -8075,6 +8115,10 @@ ASM_LINE_SAVE:
                         STA             ASM_LINE_HIGH_PC_HI
                         LDA             ASM_SYM_COUNT
                         STA             ASM_LINE_SYM_COUNT
+                        LDA             ASM_SYM_NAME_USED_LO
+                        STA             ASM_LINE_SYM_NAME_USED_LO
+                        LDA             ASM_SYM_NAME_USED_HI
+                        STA             ASM_LINE_SYM_NAME_USED_HI
                         LDA             ASM_FIX_COUNT
                         STA             ASM_LINE_FIX_COUNT
                         LDA             ASM_LOCAL_COUNT
@@ -8140,6 +8184,10 @@ ASM_LINE_ROLLBACK:
                         STA             ASM_HIGH_PC_HI
                         LDA             ASM_LINE_SYM_COUNT
                         STA             ASM_SYM_COUNT
+                        LDA             ASM_LINE_SYM_NAME_USED_LO
+                        STA             ASM_SYM_NAME_USED_LO
+                        LDA             ASM_LINE_SYM_NAME_USED_HI
+                        STA             ASM_SYM_NAME_USED_HI
                         LDA             ASM_LINE_FIX_COUNT
                         STA             ASM_FIX_COUNT
                         LDA             ASM_LINE_LOCAL_COUNT
@@ -9940,35 +9988,93 @@ ASM_SEAL_PACKAGE_VERIFY_OK:
                         SEC
                         RTS
 
+; ----------------------------------------------------------------------------
+; ROUTINE: ASM_PACKAGE_MATCH_IDENTITY
+; IN : X/Y = NUL-terminated requested package name.
+; OUT: C=1,A=OK,X=ENTRY symbol slot when the full canonical text matches.
+;      C=0,A=BAD_SYM when there is no ENTRY or the requested name differs.
+; NOTE: ENTRY is the AP v2 runnable-package identity.  Hashes accelerate later
+;       catalog lookup, but this source-side authorization compares full text.
+; ----------------------------------------------------------------------------
+ASM_PACKAGE_MATCH_IDENTITY:
+                        STX             ASM_NAME_PTR_LO
+                        STY             ASM_NAME_PTR_HI
+                        LDY             #$00
+ASM_PACKAGE_ID_LEN_LOOP:
+                        LDA             (ASM_NAME_PTR_LO),Y
+                        BEQ             ASM_PACKAGE_ID_HAVE_LEN
+                        INY
+                        CPY             #ASM_SYM_NAME_MAX
+                        BCC             ASM_PACKAGE_ID_LEN_LOOP
+                        BRA             ASM_PACKAGE_ID_BAD
+ASM_PACKAGE_ID_HAVE_LEN:
+                        TYA
+                        BEQ             ASM_PACKAGE_ID_BAD
+                        STA             ASM_LEN
+                        LDX             #$00
+ASM_PACKAGE_ID_ENTRY_LOOP:
+                        CPX             ASM_EXPORT_COUNT
+                        BCS             ASM_PACKAGE_ID_BAD
+                        LDA             ASM_EXPORT_KIND,X
+                        AND             #ASM_AP_FLAG_ENTRY
+                        BNE             ASM_PACKAGE_ID_HAVE_ENTRY
+                        INX
+                        BRA             ASM_PACKAGE_ID_ENTRY_LOOP
+ASM_PACKAGE_ID_HAVE_ENTRY:
+                        LDA             ASM_EXPORT_SYM_SLOT,X
+                        TAX
+                        LDA             ASM_LEN
+                        CMP             ASM_SYM_NAME_LEN,X
+                        BNE             ASM_PACKAGE_ID_BAD
+                        JSR             ASM_SYM_TEXT_MATCH_X
+                        BCC             ASM_PACKAGE_ID_BAD
+                        LDA             #ASM_STATUS_OK
+                        SEC
+                        RTS
+ASM_PACKAGE_ID_BAD:
+                        LDA             #ASM_STATUS_BAD_SYM
+                        CLC
+                        RTS
+
 ASM_PACKAGE_COMPUTE_LAYOUT:
                         LDA             ASM_RELOC_COUNT
-                        ASL             A
-                        ASL             A
+                        STA             ASM_PACKAGE_REL_LEN
+                        STZ             ASM_PACKAGE_REL_LEN_HI
+                        LDX             #$04
+ASM_PACKAGE_REL_LEN_LOOP:
+                        LDA             ASM_PACKAGE_REL_LEN
                         CLC
                         ADC             ASM_RELOC_COUNT
-                        CLC
-                        ADC             #$01
                         STA             ASM_PACKAGE_REL_LEN
+                        LDA             ASM_PACKAGE_REL_LEN_HI
+                        ADC             #$00
+                        STA             ASM_PACKAGE_REL_LEN_HI
+                        DEX
+                        BNE             ASM_PACKAGE_REL_LEN_LOOP
+                        INC             ASM_PACKAGE_REL_LEN
+                        BNE             ASM_PACKAGE_REL_LEN_READY
+                        INC             ASM_PACKAGE_REL_LEN_HI
+ASM_PACKAGE_REL_LEN_READY:
                         LDA             #ASM_PACKAGE_FIXED_BYTES
                         CLC
                         ADC             ASM_PACKAGE_REL_LEN
                         STA             ASM_PACKAGE_LEN_LO
                         LDA             #$00
-                        ADC             #$00
+                        ADC             ASM_PACKAGE_REL_LEN_HI
                         STA             ASM_PACKAGE_LEN_HI
                         LDA             ASM_PACKAGE_LEN_LO
                         CLC
                         ADC             ASM_EXPORT_REC_LEN
                         STA             ASM_PACKAGE_LEN_LO
                         LDA             ASM_PACKAGE_LEN_HI
-                        ADC             #$00
+                        ADC             ASM_EXPORT_REC_LEN_HI
                         STA             ASM_PACKAGE_LEN_HI
                         LDA             ASM_PACKAGE_LEN_LO
                         CLC
                         ADC             ASM_IMPORT_REC_LEN
                         STA             ASM_PACKAGE_LEN_LO
                         LDA             ASM_PACKAGE_LEN_HI
-                        ADC             #$00
+                        ADC             ASM_IMPORT_REC_LEN_HI
                         STA             ASM_PACKAGE_LEN_HI
                         LDA             ASM_PACKAGE_LEN_LO
                         CLC
@@ -10069,6 +10175,8 @@ ASM_PACKAGE_WRITE:
                         JSR             ASM_PACKAGE_WRITE_A
                         LDA             #ASM_SEAL_REC_BYTES
                         JSR             ASM_PACKAGE_WRITE_A
+                        LDA             #$00
+                        JSR             ASM_PACKAGE_WRITE_A
                         LDA             #<ASM_SEAL_REC
                         STA             ASM_SCAN_PTR_LO
                         LDA             #>ASM_SEAL_REC
@@ -10081,31 +10189,23 @@ ASM_PACKAGE_WRITE:
                         JSR             ASM_PACKAGE_WRITE_A
                         LDA             ASM_PACKAGE_REL_LEN
                         JSR             ASM_PACKAGE_WRITE_A
+                        LDA             ASM_PACKAGE_REL_LEN_HI
+                        JSR             ASM_PACKAGE_WRITE_A
                         JSR             ASM_PACKAGE_WRITE_RELOC_REC
                         LDA             #ASM_PACKAGE_TAG_EXPORT
                         JSR             ASM_PACKAGE_WRITE_A
                         LDA             ASM_EXPORT_REC_LEN
                         JSR             ASM_PACKAGE_WRITE_A
-                        LDA             #<ASM_EXPORT_REC
-                        STA             ASM_SCAN_PTR_LO
-                        LDA             #>ASM_EXPORT_REC
-                        STA             ASM_SCAN_PTR_HI
-                        LDA             ASM_EXPORT_REC_LEN
-                        STA             ASM_VALUE_LO
-                        STZ             ASM_VALUE_HI
-                        JSR             ASM_PACKAGE_COPY_BYTES
+                        LDA             ASM_EXPORT_REC_LEN_HI
+                        JSR             ASM_PACKAGE_WRITE_A
+                        JSR             ASM_PACKAGE_WRITE_EXPORT_REC
                         LDA             #ASM_PACKAGE_TAG_IMPORT
                         JSR             ASM_PACKAGE_WRITE_A
                         LDA             ASM_IMPORT_REC_LEN
                         JSR             ASM_PACKAGE_WRITE_A
-                        LDA             #<ASM_IMPORT_REC
-                        STA             ASM_SCAN_PTR_LO
-                        LDA             #>ASM_IMPORT_REC
-                        STA             ASM_SCAN_PTR_HI
-                        LDA             ASM_IMPORT_REC_LEN
-                        STA             ASM_VALUE_LO
-                        STZ             ASM_VALUE_HI
-                        JSR             ASM_PACKAGE_COPY_BYTES
+                        LDA             ASM_IMPORT_REC_LEN_HI
+                        JSR             ASM_PACKAGE_WRITE_A
+                        JSR             ASM_PACKAGE_WRITE_IMPORT_REC
                         LDA             #ASM_PACKAGE_TAG_BODY
                         JSR             ASM_PACKAGE_WRITE_A
                         LDA             ASM_SEAL_LEN_LO
@@ -10193,6 +10293,105 @@ ASM_PACKAGE_WRITE_RELOC_TARGET_HI_LOOP:
                         INX
                         BRA             ASM_PACKAGE_WRITE_RELOC_TARGET_HI_LOOP
 ASM_PACKAGE_WRITE_RELOC_DONE:
+                        RTS
+
+ASM_PACKAGE_WRITE_EXPORT_REC:
+                        LDA             ASM_EXPORT_COUNT
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             #$00
+ASM_PACKAGE_WRITE_EXPORT_LOOP:
+                        CPX             ASM_EXPORT_COUNT
+                        BCS             ASM_PACKAGE_WRITE_EXPORT_DONE
+                        STX             ASM_EXPORT_INDEX
+                        LDA             ASM_EXPORT_KIND,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_EXPORT_INDEX
+                        LDA             ASM_EXPORT_SYM_SLOT,X
+                        TAX
+                        STX             ASM_SLOT
+                        LDA             ASM_SYM_VAL_LO,X
+                        SEC
+                        SBC             ASM_SEAL_BASE_LO
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_VAL_HI,X
+                        SBC             ASM_SEAL_BASE_HI
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_HASH0,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_HASH1,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_HASH2,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_HASH3,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_SLOT
+                        LDA             ASM_SYM_NAME_LEN,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_SLOT
+                        JSR             ASM_EXPORT_PACK_NAME_X
+                        LDX             ASM_EXPORT_INDEX
+                        INX
+                        BRA             ASM_PACKAGE_WRITE_EXPORT_LOOP
+ASM_PACKAGE_WRITE_EXPORT_DONE:
+                        RTS
+
+ASM_PACKAGE_WRITE_IMPORT_REC:
+                        LDA             ASM_IMPORT_COUNT
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             #$00
+ASM_PACKAGE_WRITE_IMPORT_LOOP:
+                        CPX             ASM_IMPORT_COUNT
+                        BCS             ASM_PACKAGE_WRITE_IMPORT_DONE
+                        STX             ASM_IMPORT_INDEX
+                        LDA             ASM_IMPORT_KIND,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_IMPORT_INDEX
+                        LDA             ASM_IMPORT_HASH0,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_IMPORT_INDEX
+                        LDA             ASM_IMPORT_HASH1,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_IMPORT_INDEX
+                        LDA             ASM_IMPORT_HASH2,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_IMPORT_INDEX
+                        LDA             ASM_IMPORT_HASH3,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_IMPORT_INDEX
+                        LDA             ASM_IMPORT_NAME_LEN,X
+                        JSR             ASM_PACKAGE_WRITE_A
+                        LDX             ASM_IMPORT_INDEX
+                        JSR             ASM_IMPORT_SET_PACK_SRC_X
+                        STZ             ASM_EXPORT_NAME_INDEX
+                        STZ             ASM_IMPORT_PACK_INDEX
+ASM_PACKAGE_WRITE_IMPORT_PACK_LOOP:
+                        LDX             ASM_IMPORT_INDEX
+                        LDA             ASM_EXPORT_NAME_INDEX
+                        CMP             ASM_IMPORT_NAME_LEN,X
+                        BCS             ASM_PACKAGE_WRITE_IMPORT_NEXT
+                        LDY             ASM_IMPORT_PACK_INDEX
+                        LDA             (ASM_SYM_PTR_LO),Y
+                        JSR             ASM_PACKAGE_WRITE_A
+                        INC             ASM_IMPORT_PACK_INDEX
+                        LDY             ASM_IMPORT_PACK_INDEX
+                        LDA             (ASM_SYM_PTR_LO),Y
+                        JSR             ASM_PACKAGE_WRITE_A
+                        INC             ASM_IMPORT_PACK_INDEX
+                        LDA             ASM_EXPORT_NAME_INDEX
+                        CLC
+                        ADC             #$03
+                        STA             ASM_EXPORT_NAME_INDEX
+                        BRA             ASM_PACKAGE_WRITE_IMPORT_PACK_LOOP
+ASM_PACKAGE_WRITE_IMPORT_NEXT:
+                        LDX             ASM_IMPORT_INDEX
+                        INX
+                        BRA             ASM_PACKAGE_WRITE_IMPORT_LOOP
+ASM_PACKAGE_WRITE_IMPORT_DONE:
                         RTS
 
 ASM_PACKAGE_COPY_BYTES:
@@ -10507,6 +10706,10 @@ ASM_PACKAGE_PARSE_SEAL:
                         BCS             ASM_PACKAGE_PARSE_SEAL_TAG_OK
                         RTS
 ASM_PACKAGE_PARSE_SEAL_TAG_OK:
+                        LDA             ASM_TMP0_HI
+                        BEQ             ASM_PACKAGE_PARSE_SEAL_LEN_HI_OK
+                        JMP             ASM_PACKAGE_MIN_BAD_LINE
+ASM_PACKAGE_PARSE_SEAL_LEN_HI_OK:
                         LDA             ASM_TMP0_LO
                         CMP             #ASM_SEAL_REC_BYTES
                         BEQ             ASM_PACKAGE_PARSE_SEAL_LEN_OK
@@ -10524,12 +10727,15 @@ ASM_PACKAGE_PARSE_RELOC:
                         RTS
 ASM_PACKAGE_PARSE_RELOC_TAG_OK:
                         LDA             ASM_TMP0_LO
+                        ORA             ASM_TMP0_HI
                         BNE             ASM_PACKAGE_PARSE_RELOC_LEN_OK
                         JMP             ASM_PACKAGE_MIN_BAD_LINE
 ASM_PACKAGE_PARSE_RELOC_LEN_OK:
-                        STA             ASM_PACKAGE_REL_LEN
                         LDA             ASM_TMP0_LO
-                        JSR             ASM_PACKAGE_MIN_NEED_A
+                        STA             ASM_PACKAGE_REL_LEN
+                        LDA             ASM_TMP0_HI
+                        STA             ASM_PACKAGE_REL_LEN_HI
+                        JSR             ASM_PACKAGE_MIN_NEED_TMP
                         BCS             ASM_PACKAGE_PARSE_RELOC_ROOM_OK
                         RTS
 ASM_PACKAGE_PARSE_RELOC_ROOM_OK:
@@ -10538,7 +10744,10 @@ ASM_PACKAGE_PARSE_RELOC_ROOM_OK:
                         RTS
 ASM_PACKAGE_PARSE_RELOC_SHAPE_OK:
                         LDA             ASM_PACKAGE_REL_LEN
-                        JSR             ASM_PACKAGE_MIN_ADVANCE_A
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_PACKAGE_REL_LEN_HI
+                        STA             ASM_TMP0_HI
+                        JSR             ASM_PACKAGE_MIN_ADVANCE_TMP
                         BCS             ASM_PACKAGE_PARSE_EXPORT
                         RTS
 
@@ -10548,8 +10757,13 @@ ASM_PACKAGE_PARSE_EXPORT:
                         BCS             ASM_PACKAGE_PARSE_EXPORT_TAG_OK
                         RTS
 ASM_PACKAGE_PARSE_EXPORT_TAG_OK:
-                        LDA             ASM_TMP0_LO
-                        JSR             ASM_PACKAGE_MIN_ADVANCE_A
+                        LDA             #$08
+                        LDX             #(ASM_AP_KIND_MASK+ASM_AP_FLAG_ENTRY)
+                        JSR             ASM_PACKAGE_CHECK_PUBLIC_REC
+                        BCS             ASM_PACKAGE_PARSE_EXPORT_SHAPE_OK
+                        RTS
+ASM_PACKAGE_PARSE_EXPORT_SHAPE_OK:
+                        JSR             ASM_PACKAGE_MIN_ADVANCE_TMP
                         BCS             ASM_PACKAGE_PARSE_IMPORT
                         RTS
 
@@ -10559,20 +10773,16 @@ ASM_PACKAGE_PARSE_IMPORT:
                         BCS             ASM_PACKAGE_PARSE_IMPORT_TAG_OK
                         RTS
 ASM_PACKAGE_PARSE_IMPORT_TAG_OK:
-                        LDA             ASM_TMP0_LO
-                        CMP             #$02
-                        BCS             ASM_PACKAGE_PARSE_IMPORT_LEN_OK
-                        JMP             ASM_PACKAGE_MIN_BAD_LINE
-ASM_PACKAGE_PARSE_IMPORT_LEN_OK:
-                        JSR             ASM_PACKAGE_MIN_NEED_A
-                        BCS             ASM_PACKAGE_PARSE_IMPORT_ROOM_OK
+                        LDA             #$06
+                        LDX             #ASM_AP_KIND_MASK
+                        JSR             ASM_PACKAGE_CHECK_PUBLIC_REC
+                        BCS             ASM_PACKAGE_PARSE_IMPORT_SHAPE_OK
                         RTS
-ASM_PACKAGE_PARSE_IMPORT_ROOM_OK:
+ASM_PACKAGE_PARSE_IMPORT_SHAPE_OK:
                         LDY             #ASM_IMPORT_REC_OFF_COUNT
                         LDA             (ASM_SCAN_PTR_LO),Y
                         STA             ASM_IMPORT_RESOLVE_COUNT
-                        LDA             ASM_TMP0_LO
-                        JSR             ASM_PACKAGE_MIN_ADVANCE_A
+                        JSR             ASM_PACKAGE_MIN_ADVANCE_TMP
                         BCS             ASM_PACKAGE_PARSE_BODY
                         RTS
 
@@ -10624,6 +10834,153 @@ ASM_PACKAGE_PARSE_BODY_NONZERO:
                         SEC
                         RTS
 
+; Validate an AP v2 public-symbol payload without changing the package cursor.
+; IN: A=fixed row prefix through name_len (export=8, import=6),
+;     X=allowed kind/flag bits. TMP0 is the 16-bit section length.
+ASM_PACKAGE_CHECK_PUBLIC_REC:
+                        STA             ASM_PACKAGE_ROW_PREFIX
+                        STX             ASM_PACKAGE_ROW_ALLOWED
+                        JSR             ASM_PACKAGE_MIN_NEED_TMP
+                        BCS             ASM_PACKAGE_CHECK_PUBLIC_ROOM
+                        RTS
+ASM_PACKAGE_CHECK_PUBLIC_ROOM:
+                        LDA             ASM_SCAN_PTR_LO
+                        STA             ASM_PACKAGE_ROW_PTR_LO
+                        LDA             ASM_SCAN_PTR_HI
+                        STA             ASM_PACKAGE_ROW_PTR_HI
+                        LDA             ASM_TMP0_LO
+                        STA             ASM_PACKAGE_ROW_LEFT_LO
+                        LDA             ASM_TMP0_HI
+                        STA             ASM_PACKAGE_ROW_LEFT_HI
+                        LDY             #$00
+                        LDA             (ASM_PACKAGE_ROW_PTR_LO),Y
+                        CMP             #(ASM_EXPORT_MAX+1)
+                        BCC             ASM_PACKAGE_CHECK_PUBLIC_COUNT_OK
+                        JMP             ASM_PACKAGE_MIN_BAD_LINE
+ASM_PACKAGE_CHECK_PUBLIC_COUNT_OK:
+                        STA             ASM_PACKAGE_ROW_COUNT
+                        STZ             ASM_PACKAGE_ROW_INDEX
+                        STZ             ASM_PACKAGE_ROW_ENTRIES
+                        LDA             #$01
+                        JSR             ASM_PACKAGE_ROW_ADVANCE_A
+                        BCS             ASM_PACKAGE_CHECK_PUBLIC_LOOP
+                        RTS
+ASM_PACKAGE_CHECK_PUBLIC_LOOP:
+                        LDA             ASM_PACKAGE_ROW_INDEX
+                        CMP             ASM_PACKAGE_ROW_COUNT
+                        BCC             ASM_PACKAGE_CHECK_PUBLIC_MORE
+                        JMP             ASM_PACKAGE_CHECK_PUBLIC_DONE
+ASM_PACKAGE_CHECK_PUBLIC_MORE:
+                        LDA             ASM_PACKAGE_ROW_PREFIX
+                        JSR             ASM_PACKAGE_ROW_NEED_A
+                        BCS             ASM_PACKAGE_CHECK_PUBLIC_PREFIX_OK
+                        RTS
+ASM_PACKAGE_CHECK_PUBLIC_PREFIX_OK:
+                        LDY             #$00
+                        LDA             (ASM_PACKAGE_ROW_PTR_LO),Y
+                        STA             ASM_SLOT
+                        AND             ASM_PACKAGE_ROW_ALLOWED
+                        CMP             ASM_SLOT
+                        BEQ             ASM_PACKAGE_CHECK_PUBLIC_FLAGS_OK
+                        JMP             ASM_PACKAGE_MIN_BAD_LINE
+ASM_PACKAGE_CHECK_PUBLIC_FLAGS_OK:
+                        LDA             ASM_SLOT
+                        AND             #ASM_AP_KIND_MASK
+                        CMP             #ASM_AP_KIND_EXEC
+                        BEQ             ASM_PACKAGE_CHECK_PUBLIC_KIND_OK
+                        CMP             #ASM_AP_KIND_DATA
+                        BEQ             ASM_PACKAGE_CHECK_PUBLIC_KIND_OK
+                        JMP             ASM_PACKAGE_MIN_BAD_LINE
+ASM_PACKAGE_CHECK_PUBLIC_KIND_OK:
+                        LDA             ASM_SLOT
+                        AND             #ASM_AP_FLAG_ENTRY
+                        BEQ             ASM_PACKAGE_CHECK_PUBLIC_NAME
+                        LDA             ASM_SLOT
+                        AND             #ASM_AP_KIND_MASK
+                        CMP             #ASM_AP_KIND_EXEC
+                        BEQ             ASM_PACKAGE_CHECK_PUBLIC_ENTRY_EXEC
+                        JMP             ASM_PACKAGE_MIN_BAD_LINE
+ASM_PACKAGE_CHECK_PUBLIC_ENTRY_EXEC:
+                        INC             ASM_PACKAGE_ROW_ENTRIES
+                        LDA             ASM_PACKAGE_ROW_ENTRIES
+                        CMP             #$02
+                        BCC             ASM_PACKAGE_CHECK_PUBLIC_NAME
+                        JMP             ASM_PACKAGE_MIN_BAD_LINE
+ASM_PACKAGE_CHECK_PUBLIC_NAME:
+                        LDY             ASM_PACKAGE_ROW_PREFIX
+                        DEY
+                        LDA             (ASM_PACKAGE_ROW_PTR_LO),Y
+                        BEQ             ASM_PACKAGE_CHECK_PUBLIC_BAD
+                        CMP             #ASM_SYM_NAME_MAX
+                        BCS             ASM_PACKAGE_CHECK_PUBLIC_BAD
+                        STA             ASM_PACKAGE_ROW_NAME_LEFT
+                        LDA             ASM_PACKAGE_ROW_PREFIX
+                        STA             ASM_PACKAGE_ROW_SIZE
+ASM_PACKAGE_CHECK_PUBLIC_PACK_LOOP:
+                        LDA             ASM_PACKAGE_ROW_NAME_LEFT
+                        BEQ             ASM_PACKAGE_CHECK_PUBLIC_ROW_SIZE
+                        LDA             ASM_PACKAGE_ROW_SIZE
+                        CLC
+                        ADC             #$02
+                        STA             ASM_PACKAGE_ROW_SIZE
+                        DEC             ASM_PACKAGE_ROW_NAME_LEFT
+                        BEQ             ASM_PACKAGE_CHECK_PUBLIC_ROW_SIZE
+                        DEC             ASM_PACKAGE_ROW_NAME_LEFT
+                        BEQ             ASM_PACKAGE_CHECK_PUBLIC_ROW_SIZE
+                        DEC             ASM_PACKAGE_ROW_NAME_LEFT
+                        BRA             ASM_PACKAGE_CHECK_PUBLIC_PACK_LOOP
+ASM_PACKAGE_CHECK_PUBLIC_ROW_SIZE:
+                        LDA             ASM_PACKAGE_ROW_SIZE
+                        JSR             ASM_PACKAGE_ROW_ADVANCE_A
+                        BCC             ASM_PACKAGE_CHECK_PUBLIC_FAIL
+                        INC             ASM_PACKAGE_ROW_INDEX
+                        JMP             ASM_PACKAGE_CHECK_PUBLIC_LOOP
+ASM_PACKAGE_CHECK_PUBLIC_DONE:
+                        LDA             ASM_PACKAGE_ROW_LEFT_LO
+                        ORA             ASM_PACKAGE_ROW_LEFT_HI
+                        BNE             ASM_PACKAGE_CHECK_PUBLIC_BAD
+                        SEC
+                        RTS
+ASM_PACKAGE_CHECK_PUBLIC_BAD:
+                        JMP             ASM_PACKAGE_MIN_BAD_LINE
+ASM_PACKAGE_CHECK_PUBLIC_FAIL:
+                        RTS
+
+ASM_PACKAGE_ROW_NEED_A:
+                        STA             ASM_PACKAGE_ROW_SIZE
+                        LDA             ASM_PACKAGE_ROW_LEFT_HI
+                        BNE             ASM_PACKAGE_ROW_NEED_OK
+                        LDA             ASM_PACKAGE_ROW_LEFT_LO
+                        CMP             ASM_PACKAGE_ROW_SIZE
+                        BCC             ASM_PACKAGE_ROW_NEED_FAIL
+ASM_PACKAGE_ROW_NEED_OK:
+                        SEC
+                        RTS
+ASM_PACKAGE_ROW_NEED_FAIL:
+                        JMP             ASM_PACKAGE_MIN_BAD_LINE
+
+ASM_PACKAGE_ROW_ADVANCE_A:
+                        JSR             ASM_PACKAGE_ROW_NEED_A
+                        BCS             ASM_PACKAGE_ROW_ADVANCE_ROOM
+                        RTS
+ASM_PACKAGE_ROW_ADVANCE_ROOM:
+                        LDA             ASM_PACKAGE_ROW_PTR_LO
+                        CLC
+                        ADC             ASM_PACKAGE_ROW_SIZE
+                        STA             ASM_PACKAGE_ROW_PTR_LO
+                        BCC             ASM_PACKAGE_ROW_ADVANCE_PTR_OK
+                        INC             ASM_PACKAGE_ROW_PTR_HI
+ASM_PACKAGE_ROW_ADVANCE_PTR_OK:
+                        LDA             ASM_PACKAGE_ROW_LEFT_LO
+                        SEC
+                        SBC             ASM_PACKAGE_ROW_SIZE
+                        STA             ASM_PACKAGE_ROW_LEFT_LO
+                        LDA             ASM_PACKAGE_ROW_LEFT_HI
+                        SBC             #$00
+                        STA             ASM_PACKAGE_ROW_LEFT_HI
+                        SEC
+                        RTS
+
 ASM_PACKAGE_COPY_RELOC_REC:
                         LDY             #$00
                         LDA             (ASM_SCAN_PTR_LO),Y
@@ -10632,14 +10989,30 @@ ASM_PACKAGE_COPY_RELOC_REC:
                         BCC             ASM_PACKAGE_COPY_RELOC_COUNT_OK
                         JMP             ASM_PACKAGE_MIN_BAD_LINE
 ASM_PACKAGE_COPY_RELOC_COUNT_OK:
-                        ASL             A
-                        ASL             A
+                        STA             ASM_TMP1_LO
+                        STZ             ASM_TMP1_HI
+                        LDX             #$04
+ASM_PACKAGE_COPY_RELOC_LEN_LOOP:
+                        LDA             ASM_TMP1_LO
                         CLC
                         ADC             ASM_SLOT
-                        CLC
-                        ADC             #$01
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_TMP1_HI
+                        ADC             #$00
+                        STA             ASM_TMP1_HI
+                        DEX
+                        BNE             ASM_PACKAGE_COPY_RELOC_LEN_LOOP
+                        INC             ASM_TMP1_LO
+                        BNE             ASM_PACKAGE_COPY_RELOC_LEN_READY
+                        INC             ASM_TMP1_HI
+ASM_PACKAGE_COPY_RELOC_LEN_READY:
+                        LDA             ASM_TMP1_HI
+                        CMP             ASM_PACKAGE_REL_LEN_HI
+                        BNE             ASM_PACKAGE_COPY_RELOC_SHAPE_BAD
+                        LDA             ASM_TMP1_LO
                         CMP             ASM_PACKAGE_REL_LEN
                         BEQ             ASM_PACKAGE_COPY_RELOC_SHAPE_OK
+ASM_PACKAGE_COPY_RELOC_SHAPE_BAD:
                         JMP             ASM_PACKAGE_MIN_BAD_LINE
 ASM_PACKAGE_COPY_RELOC_SHAPE_OK:
                         LDA             ASM_SLOT
@@ -10695,8 +11068,22 @@ ASM_PACKAGE_COPY_RELOC_TARGET_HI_LOOP:
                         INX
                         BRA             ASM_PACKAGE_COPY_RELOC_TARGET_HI_LOOP
 ASM_PACKAGE_COPY_RELOC_DONE:
+                        LDX             #$00
+ASM_PACKAGE_COPY_RELOC_VALIDATE_KIND:
+                        CPX             ASM_RELOC_COUNT
+                        BCS             ASM_PACKAGE_COPY_RELOC_KINDS_OK
+                        LDA             ASM_RELOC_KIND,X
+                        CMP             #ASM_RELOC_ABS16_INTERNAL
+                        BCC             ASM_PACKAGE_COPY_RELOC_KIND_BAD
+                        CMP             #(ASM_RELOC_HI8_IMPORT+1)
+                        BCS             ASM_PACKAGE_COPY_RELOC_KIND_BAD
+                        INX
+                        BRA             ASM_PACKAGE_COPY_RELOC_VALIDATE_KIND
+ASM_PACKAGE_COPY_RELOC_KINDS_OK:
                         SEC
                         RTS
+ASM_PACKAGE_COPY_RELOC_KIND_BAD:
+                        JMP             ASM_PACKAGE_MIN_BAD_LINE
 
 ASM_PACKAGE_RELOC_SITE_OK_X:
                         LDA             ASM_RELOC_KIND,X
@@ -10731,7 +11118,7 @@ ASM_PACKAGE_RELOC_SITE_GOOD:
 
 ASM_PACKAGE_MIN_TAG_LEN:
                         STA             ASM_TMP1_LO
-                        LDA             #$02
+                        LDA             #$03
                         JSR             ASM_PACKAGE_MIN_NEED_A
                         BCS             ASM_PACKAGE_MIN_TAG_ROOM_OK
                         RTS
@@ -10745,9 +11132,47 @@ ASM_PACKAGE_MIN_TAG_OK:
                         INY
                         LDA             (ASM_SCAN_PTR_LO),Y
                         STA             ASM_TMP0_LO
-                        STZ             ASM_TMP0_HI
-                        LDA             #$02
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        STA             ASM_TMP0_HI
+                        LDA             #$03
                         JMP             ASM_PACKAGE_MIN_ADVANCE_A
+
+ASM_PACKAGE_MIN_ADVANCE_TMP:
+                        JSR             ASM_PACKAGE_MIN_NEED_TMP
+                        BCS             ASM_PACKAGE_MIN_ADVANCE_TMP_ROOM
+                        RTS
+ASM_PACKAGE_MIN_ADVANCE_TMP_ROOM:
+                        LDA             ASM_SCAN_PTR_LO
+                        CLC
+                        ADC             ASM_TMP0_LO
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_SCAN_PTR_HI
+                        ADC             ASM_TMP0_HI
+                        STA             ASM_SCAN_PTR_HI
+                        LDA             ASM_VALUE_LO
+                        SEC
+                        SBC             ASM_TMP0_LO
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_VALUE_HI
+                        SBC             ASM_TMP0_HI
+                        STA             ASM_VALUE_HI
+                        SEC
+                        RTS
+
+ASM_PACKAGE_MIN_NEED_TMP:
+                        LDA             ASM_VALUE_HI
+                        CMP             ASM_TMP0_HI
+                        BCC             ASM_PACKAGE_MIN_NEED_TMP_FAIL
+                        BNE             ASM_PACKAGE_MIN_NEED_TMP_OK
+                        LDA             ASM_VALUE_LO
+                        CMP             ASM_TMP0_LO
+                        BCC             ASM_PACKAGE_MIN_NEED_TMP_FAIL
+ASM_PACKAGE_MIN_NEED_TMP_OK:
+                        SEC
+                        RTS
+ASM_PACKAGE_MIN_NEED_TMP_FAIL:
+                        JMP             ASM_PACKAGE_MIN_BAD_RANGE
 
 ASM_PACKAGE_MIN_ADVANCE_A:
                         STA             ASM_TMP1_HI
@@ -10990,8 +11415,50 @@ ASM_PACKAGE_MIN_BAD_LINE:
 
                         IF              ASM_PACKAGE_CHECK_ENABLED
 ASM_SEAL_CHECK_PACKAGE:
+                        JMP             ASM_PACKAGE_CHECK_V2
+
+; AP v2 CHECK shares the strict minimum parser instead of maintaining a
+; second wire-format walker. The extra checks bind the parsed BODY length to
+; the sealed body description.
+ASM_PACKAGE_CHECK_V2:
                         STX             ASM_PACKAGE_BASE_LO
                         STY             ASM_PACKAGE_BASE_HI
+                        JSR             ASM_PACKAGE_PARSE_MIN
+                        BCS             ASM_PACKAGE_CHECK_V2_PARSED
+                        RTS
+ASM_PACKAGE_CHECK_V2_PARSED:
+                        LDA             ASM_PACKAGE_BASE_LO
+                        CLC
+                        ADC             #(ASM_PACKAGE_HDR_BYTES+$03)
+                        STA             ASM_SCAN_PTR_LO
+                        LDA             ASM_PACKAGE_BASE_HI
+                        ADC             #$00
+                        STA             ASM_SCAN_PTR_HI
+                        LDY             #ASM_SEAL_REC_OFF_FLAGS
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             #ASM_SEALF_VALID
+                        BEQ             ASM_PACKAGE_CHECK_V2_FLAGS_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_V2_FLAGS_OK:
+                        LDY             #ASM_SEAL_REC_OFF_LEN
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_PACKAGE_BODY_LEN_LO
+                        BEQ             ASM_PACKAGE_CHECK_V2_LEN_LO_OK
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_V2_LEN_LO_OK:
+                        INY
+                        LDA             (ASM_SCAN_PTR_LO),Y
+                        CMP             ASM_PACKAGE_BODY_LEN_HI
+                        BEQ             ASM_PACKAGE_CHECK_V2_DONE
+                        JMP             ASM_PACKAGE_CHECK_BAD_LINE
+ASM_PACKAGE_CHECK_V2_DONE:
+                        LDA             #ASM_STATUS_OK
+                        LDX             ASM_PACKAGE_BASE_LO
+                        LDY             ASM_PACKAGE_BASE_HI
+                        SEC
+                        RTS
+
+ASM_PACKAGE_CHECK_V1_RETIRED:
                         LDA             #ASM_PACKAGE_HDR_BYTES
                         STA             ASM_PACKAGE_LEN_LO
                         STZ             ASM_PACKAGE_LEN_HI
@@ -12442,15 +12909,15 @@ ASM_DISPATCH_DIR:
 ASM_DISPATCH_DIR_NOT_EQU:
                         CMP             #ASM_VID_EXPORT
                         BNE             ASM_DISPATCH_DIR_NOT_EXPORT
-                        JMP             ASM_DISPATCH_DIR_EXPORT
+                        JMP             ASM_DISPATCH_DIR_PUBLIC
 ASM_DISPATCH_DIR_NOT_EXPORT:
                         CMP             #ASM_VID_IMPORT
                         BNE             ASM_DISPATCH_DIR_NOT_IMPORT
-                        JMP             ASM_DISPATCH_DIR_IMPORT
+                        JMP             ASM_DISPATCH_DIR_PUBLIC
 ASM_DISPATCH_DIR_NOT_IMPORT:
                         CMP             #ASM_VID_ENTRY
                         BNE             ASM_DISPATCH_DIR_NOT_ENTRY
-                        JMP             ASM_DISPATCH_DIR_ENTRY
+                        JMP             ASM_DISPATCH_DIR_PUBLIC
 ASM_DISPATCH_DIR_NOT_ENTRY:
                         CMP             #ASM_VID_ORG
                         BNE             ASM_DISPATCH_DIR_NOT_ORG
@@ -12506,61 +12973,32 @@ ASM_DISPATCH_DIR_EQU_EXPR_END_OK:
 ASM_DISPATCH_DIR_EQU_DEFINE_OK:
                         JMP             ASM_DISPATCH_OK
 
-ASM_DISPATCH_DIR_EXPORT:
+; EXPORT, IMPORT, and ENTRY share the same directive shape.  Keep the policy
+; checks in one path; ENTRY deliberately uses the export implementation.
+ASM_DISPATCH_DIR_PUBLIC:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_NAME
-                        BEQ             ASM_DISPATCH_DIR_EXPORT_NO_NAME
+                        BEQ             ASM_DISPATCH_DIR_PUBLIC_NO_NAME
                         JMP             ASM_DISPATCH_BAD_SYM
-ASM_DISPATCH_DIR_EXPORT_NO_NAME:
+ASM_DISPATCH_DIR_PUBLIC_NO_NAME:
                         LDA             ASM_STMT_FLAGS
                         AND             #ASM_STMTF_HAS_TAIL
-                        BNE             ASM_DISPATCH_DIR_EXPORT_HAVE_TAIL
+                        BNE             ASM_DISPATCH_DIR_PUBLIC_HAVE_TAIL
                         JMP             ASM_DISPATCH_BAD_OPER
-ASM_DISPATCH_DIR_EXPORT_HAVE_TAIL:
+ASM_DISPATCH_DIR_PUBLIC_HAVE_TAIL:
                         LDX             ASM_STMT_TAIL_PTR_LO
                         LDY             ASM_STMT_TAIL_PTR_HI
+                        LDA             ASM_STMT_OP_ID
+                        CMP             #ASM_VID_IMPORT
+                        BEQ             ASM_DISPATCH_DIR_PUBLIC_IMPORT
                         JSR             ASM_EXPORT_SYMBOL
-                        BCS             ASM_DISPATCH_DIR_EXPORT_OK
-                        JMP             ASM_DISPATCH_FAIL_NEAR
-ASM_DISPATCH_DIR_EXPORT_OK:
-                        JMP             ASM_DISPATCH_OK
-
-ASM_DISPATCH_DIR_IMPORT:
-                        LDA             ASM_STMT_FLAGS
-                        AND             #ASM_STMTF_HAS_NAME
-                        BEQ             ASM_DISPATCH_DIR_IMPORT_NO_NAME
-                        JMP             ASM_DISPATCH_BAD_SYM
-ASM_DISPATCH_DIR_IMPORT_NO_NAME:
-                        LDA             ASM_STMT_FLAGS
-                        AND             #ASM_STMTF_HAS_TAIL
-                        BNE             ASM_DISPATCH_DIR_IMPORT_HAVE_TAIL
-                        JMP             ASM_DISPATCH_BAD_OPER
-ASM_DISPATCH_DIR_IMPORT_HAVE_TAIL:
-                        LDX             ASM_STMT_TAIL_PTR_LO
-                        LDY             ASM_STMT_TAIL_PTR_HI
+                        BRA             ASM_DISPATCH_DIR_PUBLIC_DONE
+ASM_DISPATCH_DIR_PUBLIC_IMPORT:
                         JSR             ASM_IMPORT_SYMBOL
-                        BCS             ASM_DISPATCH_DIR_IMPORT_OK
+ASM_DISPATCH_DIR_PUBLIC_DONE:
+                        BCS             ASM_DISPATCH_DIR_PUBLIC_OK
                         JMP             ASM_DISPATCH_FAIL_NEAR
-ASM_DISPATCH_DIR_IMPORT_OK:
-                        JMP             ASM_DISPATCH_OK
-
-ASM_DISPATCH_DIR_ENTRY:
-                        LDA             ASM_STMT_FLAGS
-                        AND             #ASM_STMTF_HAS_NAME
-                        BEQ             ASM_DISPATCH_DIR_ENTRY_NO_NAME
-                        JMP             ASM_DISPATCH_BAD_SYM
-ASM_DISPATCH_DIR_ENTRY_NO_NAME:
-                        LDA             ASM_STMT_FLAGS
-                        AND             #ASM_STMTF_HAS_TAIL
-                        BNE             ASM_DISPATCH_DIR_ENTRY_HAVE_TAIL
-                        JMP             ASM_DISPATCH_BAD_OPER
-ASM_DISPATCH_DIR_ENTRY_HAVE_TAIL:
-                        LDX             ASM_STMT_TAIL_PTR_LO
-                        LDY             ASM_STMT_TAIL_PTR_HI
-                        JSR             ASM_EXPORT_SYMBOL
-                        BCS             ASM_DISPATCH_DIR_ENTRY_OK
-                        JMP             ASM_DISPATCH_FAIL_NEAR
-ASM_DISPATCH_DIR_ENTRY_OK:
+ASM_DISPATCH_DIR_PUBLIC_OK:
                         JMP             ASM_DISPATCH_OK
 
 ASM_DISPATCH_DIR_ORG:
@@ -12793,6 +13231,23 @@ ASM_EXPORT_FOUND:
                         CLC
                         RTS
 ASM_EXPORT_IS_LABEL:
+                        LDA             #ASM_AP_KIND_EXEC
+                        STA             ASM_PUBLIC_KIND
+                        LDA             ASM_STMT_OP_ID
+                        CMP             #ASM_VID_ENTRY
+                        BNE             ASM_EXPORT_KIND_READY
+                        LDA             #(ASM_AP_KIND_EXEC|ASM_AP_FLAG_ENTRY)
+                        STA             ASM_PUBLIC_KIND
+                        LDX             #$00
+ASM_EXPORT_ENTRY_LOOP:
+                        CPX             ASM_EXPORT_COUNT
+                        BCS             ASM_EXPORT_KIND_READY
+                        LDA             ASM_EXPORT_KIND,X
+                        AND             #ASM_AP_FLAG_ENTRY
+                        BNE             ASM_EXPORT_BAD_SYM
+                        INX
+                        BRA             ASM_EXPORT_ENTRY_LOOP
+ASM_EXPORT_KIND_READY:
                         LDX             #$00
 ASM_EXPORT_DUP_LOOP:
                         CPX             ASM_EXPORT_COUNT
@@ -12808,6 +13263,8 @@ ASM_EXPORT_NOT_DUP:
                         BCS             ASM_EXPORT_BAD_SYM
                         LDA             ASM_SLOT
                         STA             ASM_EXPORT_SYM_SLOT,X
+                        LDA             ASM_PUBLIC_KIND
+                        STA             ASM_EXPORT_KIND,X
                         INC             ASM_EXPORT_COUNT
                         LDA             #ASM_STATUS_OK
                         SEC
@@ -12896,6 +13353,16 @@ ASM_IMPORT_PACK_TOKEN_X:
                         STX             ASM_IMPORT_INDEX
                         LDA             ASM_LEN
                         STA             ASM_IMPORT_NAME_LEN,X
+                        LDA             #ASM_AP_KIND_EXEC
+                        STA             ASM_IMPORT_KIND,X
+                        LDA             ASM_HASH0
+                        STA             ASM_IMPORT_HASH0,X
+                        LDA             ASM_HASH1
+                        STA             ASM_IMPORT_HASH1,X
+                        LDA             ASM_HASH2
+                        STA             ASM_IMPORT_HASH2,X
+                        LDA             ASM_HASH3
+                        STA             ASM_IMPORT_HASH3,X
                         JSR             ASM_IMPORT_SET_PACK_PTR_X
                         JSR             ASM_IMPORT_CLEAR_PACK
                         LDA             ASM_NAME_PTR_LO
@@ -15871,7 +16338,7 @@ ASM_BIND_LABEL_NAME_OK:
 ASM_BIND_GLOBAL_LABEL:
                         JSR             ASM_CLOSE_LOCAL_SCOPE
                         BCS             ASM_BIND_GLOBAL_SCOPE_OK
-                        BRA             ASM_BIND_LABEL_FAIL_A
+                        JMP             ASM_BIND_LABEL_FAIL_A
 ASM_BIND_GLOBAL_SCOPE_OK:
                         LDA             #ASM_SYM_LOOK_SESSION
                         JSR             ASM_LOOKUP_SYMBOL
@@ -15881,6 +16348,7 @@ ASM_BIND_GLOBAL_SCOPE_OK:
                         BCS             ASM_BIND_LABEL_BAD
                         STX             ASM_SLOT
                         JSR             ASM_STORE_SYMBOL_NAME_X
+                        BCC             ASM_BIND_LABEL_BAD
                         LDA             #ASM_SYM_STATE_DEFINED
                         STA             ASM_SYM_STATE,X
                         LDA             #(ASM_SYMF_HAS_TEXT|ASM_SYMF_HAS_CARE|ASM_SYMF_FROM_LABEL)
@@ -16026,6 +16494,7 @@ ASM_DEFINE_EQU_KIND_OK:
                         BCS             ASM_DEFINE_EQU_BAD_SYM
                         STX             ASM_SLOT
                         JSR             ASM_STORE_SYMBOL_NAME_X
+                        BCC             ASM_DEFINE_EQU_BAD_SYM
                         LDA             #ASM_SYM_STATE_DEFINED
                         STA             ASM_SYM_STATE,X
                         LDA             #(ASM_SYMF_HAS_TEXT|ASM_SYMF_HAS_CARE|ASM_SYMF_FROM_EQU)
@@ -16105,6 +16574,27 @@ ASM_LOAD_NAME_BAD:
                         RTS
 
 ASM_STORE_SYMBOL_NAME_X:
+                        LDA             ASM_SYM_NAME_USED_LO
+                        CLC
+                        ADC             ASM_LEN
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_SYM_NAME_USED_HI
+                        ADC             #$00
+                        STA             ASM_TMP0_HI
+                        CMP             #>ASM_SYM_NAME_POOL_BYTES
+                        BCC             ASM_STORE_SYMBOL_NAME_ROOM
+                        BNE             ASM_STORE_SYMBOL_NAME_FULL
+                        LDA             ASM_TMP0_LO
+                        BNE             ASM_STORE_SYMBOL_NAME_FULL
+ASM_STORE_SYMBOL_NAME_ROOM:
+                        LDA             ASM_SYM_NAME_USED_LO
+                        STA             ASM_SYM_NAME_OFF_LO,X
+                        LDA             ASM_SYM_NAME_USED_HI
+                        STA             ASM_SYM_NAME_OFF_HI,X
+                        LDA             ASM_TMP0_LO
+                        STA             ASM_SYM_NAME_USED_LO
+                        LDA             ASM_TMP0_HI
+                        STA             ASM_SYM_NAME_USED_HI
                         LDA             ASM_HASH0
                         STA             ASM_SYM_HASH0,X
                         LDA             ASM_HASH1
@@ -16119,16 +16609,18 @@ ASM_STORE_SYMBOL_NAME_X:
                         LDY             #$00
 ASM_STORE_SYMBOL_NAME_LOOP:
                         CPY             ASM_LEN
-                        BEQ             ASM_STORE_SYMBOL_NAME_TERM
+                        BEQ             ASM_STORE_SYMBOL_NAME_DONE
                         LDA             (ASM_NAME_PTR_LO),Y
                         AND             #$7F
                         JSR             ASM_FOLD_UPPER_A
                         STA             (ASM_SYM_PTR_LO),Y
                         INY
                         BRA             ASM_STORE_SYMBOL_NAME_LOOP
-ASM_STORE_SYMBOL_NAME_TERM:
-                        LDA             #$00
-                        STA             (ASM_SYM_PTR_LO),Y
+ASM_STORE_SYMBOL_NAME_DONE:
+                        SEC
+                        RTS
+ASM_STORE_SYMBOL_NAME_FULL:
+                        CLC
                         RTS
 
 ASM_SYM_TEXT_MATCH_X:
@@ -16213,23 +16705,12 @@ ASM_SET_LOCAL_NAME_PTR_X:
                         RTS
 
 ASM_SET_SYM_NAME_PTR_X:
-                        TXA
-                        LSR
-                        LSR
-                        LSR
-                        STA             ASM_TMP0_HI
-                        TXA
-                        AND             #$07
-                        ASL
-                        ASL
-                        ASL
-                        ASL
-                        ASL
+                        LDA             ASM_SYM_NAME_OFF_LO,X
                         CLC
                         ADC             #<ASM_SYM_NAMES
                         STA             ASM_SYM_PTR_LO
-                        LDA             #>ASM_SYM_NAMES
-                        ADC             ASM_TMP0_HI
+                        LDA             ASM_SYM_NAME_OFF_HI,X
+                        ADC             #>ASM_SYM_NAMES
                         STA             ASM_SYM_PTR_HI
                         RTS
 
@@ -16446,61 +16927,62 @@ ASM_FNV1A_UPDATE_A_FAST:
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_EXPORT_BUILD_RECORD
-; Build the compact sealed export record from live EXPORT symbol slots.
-; Record shape:
-;   +0 count
-;   +1 total record length in bytes, including count/len header
-;   +2 rows: offset_lo offset_hi name_len pack40_name_bytes...
+; Compute the AP v2 export payload length without materializing a second copy.
+; Payload shape: count, then kind/offset16/hash32/name_len/PACK40(name) rows.
 ; ----------------------------------------------------------------------------
 ASM_EXPORT_BUILD_RECORD:
                         LDA             ASM_EXPORT_COUNT
                         STA             ASM_EXPORT_REC_COUNT
-                        LDA             #ASM_EXPORT_REC_OFF_BODY
+                        LDA             #$01
                         STA             ASM_EXPORT_REC_LEN
-                        LDA             #<ASM_EXPORT_REC_BODY
-                        STA             ASM_EMIT_PTR_LO
-                        LDA             #>ASM_EXPORT_REC_BODY
-                        STA             ASM_EMIT_PTR_HI
+                        STZ             ASM_EXPORT_REC_LEN_HI
                         LDX             #$00
 ASM_EXPORT_BUILD_LOOP:
                         CPX             ASM_EXPORT_COUNT
                         BEQ             ASM_EXPORT_BUILD_DONE
-                        STX             ASM_EXPORT_INDEX
                         LDA             ASM_EXPORT_SYM_SLOT,X
-                        TAX
-                        STX             ASM_SLOT
-                        LDA             ASM_SYM_VAL_LO,X
-                        SEC
-                        SBC             ASM_SEAL_BASE_LO
-                        STA             ASM_TMP0_LO
-                        LDA             ASM_SYM_VAL_HI,X
-                        SBC             ASM_SEAL_BASE_HI
-                        STA             ASM_TMP0_HI
-                        LDA             ASM_TMP0_LO
-                        JSR             ASM_EXPORT_REC_WRITE_A
-                        LDA             ASM_TMP0_HI
-                        JSR             ASM_EXPORT_REC_WRITE_A
-                        LDX             ASM_SLOT
-                        LDA             ASM_SYM_NAME_LEN,X
-                        JSR             ASM_EXPORT_REC_WRITE_A
-                        LDX             ASM_SLOT
-                        JSR             ASM_EXPORT_PACK_NAME_X
-                        LDX             ASM_EXPORT_INDEX
+                        TAY
+                        LDA             ASM_SYM_NAME_LEN,Y
+                        JSR             ASM_AP_PACKED_NAME_BYTES_A
+                        CLC
+                        ADC             #$08
+                        JSR             ASM_EXPORT_REC_ADD_A
                         INX
                         BRA             ASM_EXPORT_BUILD_LOOP
 ASM_EXPORT_BUILD_DONE:
                         RTS
 
-ASM_EXPORT_REC_WRITE_A:
-                        LDY             #$00
-                        STA             (ASM_EMIT_PTR_LO),Y
-                        INC             ASM_EMIT_PTR_LO
-                        BNE             ASM_EXPORT_REC_WRITE_LEN
-                        INC             ASM_EMIT_PTR_HI
-ASM_EXPORT_REC_WRITE_LEN:
-                        INC             ASM_EXPORT_REC_LEN
+ASM_EXPORT_REC_ADD_A:
+                        CLC
+                        ADC             ASM_EXPORT_REC_LEN
+                        STA             ASM_EXPORT_REC_LEN
+                        LDA             ASM_EXPORT_REC_LEN_HI
+                        ADC             #$00
+                        STA             ASM_EXPORT_REC_LEN_HI
                         RTS
 
+ASM_AP_PACKED_NAME_BYTES_A:
+                        STA             ASM_TMP0_LO
+                        STZ             ASM_TMP0_HI
+ASM_AP_PACKED_NAME_BYTES_LOOP:
+                        LDA             ASM_TMP0_LO
+                        BEQ             ASM_AP_PACKED_NAME_BYTES_DONE
+                        INC             ASM_TMP0_HI
+                        INC             ASM_TMP0_HI
+                        CMP             #$04
+                        BCC             ASM_AP_PACKED_NAME_BYTES_LAST
+                        SEC
+                        SBC             #$03
+                        STA             ASM_TMP0_LO
+                        BRA             ASM_AP_PACKED_NAME_BYTES_LOOP
+ASM_AP_PACKED_NAME_BYTES_LAST:
+                        STZ             ASM_TMP0_LO
+                        BRA             ASM_AP_PACKED_NAME_BYTES_LOOP
+ASM_AP_PACKED_NAME_BYTES_DONE:
+                        LDA             ASM_TMP0_HI
+                        RTS
+
+                        IF              ASM_PACKAGE_ENABLED
 ASM_EXPORT_PACK_NAME_X:
                         STX             ASM_SLOT
                         JSR             ASM_SET_SYM_NAME_PTR_X
@@ -16527,74 +17009,46 @@ ASM_EXPORT_PACK_NAME_LOOP:
                         JSR             ASM_PACK40_PACK3
                         STY             ASM_TMP0_HI
                         TXA
-                        JSR             ASM_EXPORT_REC_WRITE_A
+                        JSR             ASM_PACKAGE_WRITE_A
                         LDA             ASM_TMP0_HI
-                        JSR             ASM_EXPORT_REC_WRITE_A
+                        JSR             ASM_PACKAGE_WRITE_A
                         BRA             ASM_EXPORT_PACK_NAME_LOOP
 ASM_EXPORT_PACK_NAME_DONE:
                         RTS
+                        ENDIF
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_IMPORT_BUILD_RECORD
-; Build the compact sealed import record from live IMPORT names.
-; Record shape:
-;   +0 count
-;   +1 total record length in bytes, including count/len header
-;   +2 rows: name_len pack40_name_bytes...
+; Compute the AP v2 import payload length without materializing a second copy.
+; Payload shape: count, then kind/hash32/name_len/PACK40(name) rows.
 ; ----------------------------------------------------------------------------
 ASM_IMPORT_BUILD_RECORD:
                         LDA             ASM_IMPORT_COUNT
                         STA             ASM_IMPORT_REC_COUNT
-                        LDA             #ASM_IMPORT_REC_OFF_BODY
+                        LDA             #$01
                         STA             ASM_IMPORT_REC_LEN
-                        LDA             #<ASM_IMPORT_REC_BODY
-                        STA             ASM_EMIT_PTR_LO
-                        LDA             #>ASM_IMPORT_REC_BODY
-                        STA             ASM_EMIT_PTR_HI
+                        STZ             ASM_IMPORT_REC_LEN_HI
                         LDX             #$00
 ASM_IMPORT_BUILD_LOOP:
                         CPX             ASM_IMPORT_COUNT
                         BEQ             ASM_IMPORT_BUILD_DONE
-                        STX             ASM_IMPORT_INDEX
                         LDA             ASM_IMPORT_NAME_LEN,X
-                        JSR             ASM_IMPORT_REC_WRITE_A
-                        LDX             ASM_IMPORT_INDEX
-                        JSR             ASM_IMPORT_SET_PACK_SRC_X
-                        STZ             ASM_EXPORT_NAME_INDEX
-                        STZ             ASM_IMPORT_PACK_INDEX
-ASM_IMPORT_BUILD_COPY_LOOP:
-                        LDX             ASM_IMPORT_INDEX
-                        LDA             ASM_EXPORT_NAME_INDEX
-                        CMP             ASM_IMPORT_NAME_LEN,X
-                        BCS             ASM_IMPORT_BUILD_NEXT
-                        LDY             ASM_IMPORT_PACK_INDEX
-                        LDA             (ASM_SYM_PTR_LO),Y
-                        JSR             ASM_IMPORT_REC_WRITE_A
-                        INC             ASM_IMPORT_PACK_INDEX
-                        LDY             ASM_IMPORT_PACK_INDEX
-                        LDA             (ASM_SYM_PTR_LO),Y
-                        JSR             ASM_IMPORT_REC_WRITE_A
-                        INC             ASM_IMPORT_PACK_INDEX
-                        LDA             ASM_EXPORT_NAME_INDEX
+                        JSR             ASM_AP_PACKED_NAME_BYTES_A
                         CLC
-                        ADC             #$03
-                        STA             ASM_EXPORT_NAME_INDEX
-                        BRA             ASM_IMPORT_BUILD_COPY_LOOP
-ASM_IMPORT_BUILD_NEXT:
-                        LDX             ASM_IMPORT_INDEX
+                        ADC             #$06
+                        JSR             ASM_IMPORT_REC_ADD_A
                         INX
                         BRA             ASM_IMPORT_BUILD_LOOP
 ASM_IMPORT_BUILD_DONE:
                         RTS
 
-ASM_IMPORT_REC_WRITE_A:
-                        LDY             #$00
-                        STA             (ASM_EMIT_PTR_LO),Y
-                        INC             ASM_EMIT_PTR_LO
-                        BNE             ASM_IMPORT_REC_WRITE_LEN
-                        INC             ASM_EMIT_PTR_HI
-ASM_IMPORT_REC_WRITE_LEN:
-                        INC             ASM_IMPORT_REC_LEN
+ASM_IMPORT_REC_ADD_A:
+                        CLC
+                        ADC             ASM_IMPORT_REC_LEN
+                        STA             ASM_IMPORT_REC_LEN
+                        LDA             ASM_IMPORT_REC_LEN_HI
+                        ADC             #$00
+                        STA             ASM_IMPORT_REC_LEN_HI
                         RTS
 
 ASM_PACK40_READ_CODE:
@@ -16984,8 +17438,10 @@ ASM_SEAL_CLEAR_LOOP:
                         BPL             ASM_SEAL_CLEAR_LOOP
                         STZ             ASM_EXPORT_REC_COUNT
                         STZ             ASM_EXPORT_REC_LEN
+                        STZ             ASM_EXPORT_REC_LEN_HI
                         STZ             ASM_IMPORT_REC_COUNT
                         STZ             ASM_IMPORT_REC_LEN
+                        STZ             ASM_IMPORT_REC_LEN_HI
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -16998,6 +17454,8 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_LINE_COUNT_LO
                         STZ             ASM_LINE_COUNT_HI
                         STZ             ASM_SYM_COUNT
+                        STZ             ASM_SYM_NAME_USED_LO
+                        STZ             ASM_SYM_NAME_USED_HI
                         STZ             ASM_FIX_COUNT
                         STZ             ASM_LOCAL_COUNT
                         STZ             ASM_LOCAL_SCOPE_ACTIVE
@@ -17019,6 +17477,7 @@ ASM_CLEAR_SESSION:
                         STZ             ASM_EXPORT_COUNT
                         STZ             ASM_IMPORT_COUNT
                         STZ             ASM_IMPORT_RESOLVE_COUNT
+                        STZ             ASM_PUBLIC_KIND
                         STZ             ASM_RELOCATE_BASE_LO
                         STZ             ASM_RELOCATE_BASE_HI
                         STZ             ASM_RELOCATE_COUNT
@@ -17088,18 +17547,22 @@ ASM_RELOC_REC_END:
 ASM_EXPORT_REC:
 ASM_EXPORT_REC_COUNT:  DB              $00
 ASM_EXPORT_REC_LEN:    DB              $00
-ASM_EXPORT_REC_BODY:   DS              ASM_EXPORT_REC_BODY_MAX
+ASM_EXPORT_REC_LEN_HI: DB              $00
 ASM_EXPORT_REC_END:
 ASM_IMPORT_REC:
 ASM_IMPORT_REC_COUNT:  DB              $00
 ASM_IMPORT_REC_LEN:    DB              $00
-ASM_IMPORT_REC_BODY:   DS              ASM_IMPORT_REC_BODY_MAX
+ASM_IMPORT_REC_LEN_HI: DB              $00
 ASM_IMPORT_REC_END:
 ASM_LINE_PC_LO:        DB              $00
 ASM_LINE_PC_HI:        DB              $00
 ASM_LINE_HIGH_PC_LO:   DB              $00
 ASM_LINE_HIGH_PC_HI:   DB              $00
 ASM_LINE_SYM_COUNT:    DB              $00
+ASM_LINE_SYM_NAME_USED_LO:
+                        DB              $00
+ASM_LINE_SYM_NAME_USED_HI:
+                        DB              $00
 ASM_LINE_FIX_COUNT:    DB              $00
 ASM_LINE_LOCAL_COUNT:  DB              $00
 ASM_LINE_LOCAL_SCOPE_ACTIVE:
@@ -17120,6 +17583,8 @@ ASM_LINE_FIX_STATE:    DS              ASM_FIX_MAX
 ASM_LINE_FIX_BYTE0:    DS              ASM_FIX_MAX
 ASM_LINE_FIX_BYTE1:    DS              ASM_FIX_MAX
 ASM_SYM_COUNT:         DB              $00
+ASM_SYM_NAME_USED_LO:  DB              $00
+ASM_SYM_NAME_USED_HI:  DB              $00
 ASM_FIX_COUNT:         DB              $00
 ASM_FIX_RESOLVE_COUNT: DB              $00
 ASM_FIX_LAST_SITE_LO:  DB              $00
@@ -17137,6 +17602,8 @@ ASM_PACKAGE_BASE_HI:   DB              $00
 ASM_PACKAGE_LEN_LO:    DB              $00
 ASM_PACKAGE_LEN_HI:    DB              $00
 ASM_PACKAGE_REL_LEN:   DB              $00
+ASM_PACKAGE_REL_LEN_HI:
+                        DB              $00
 ASM_PACKAGE_BODY_LO:   DB              $00
 ASM_PACKAGE_BODY_HI:   DB              $00
 ASM_PACKAGE_BODY_LEN_LO:
@@ -17145,6 +17612,25 @@ ASM_PACKAGE_BODY_LEN_HI:
                         DB              $00
 ASM_INSTALL_BASE_LO:   DB              $00
 ASM_INSTALL_BASE_HI:   DB              $00
+ASM_PACKAGE_ROW_PTR_LO:
+                        DB              $00
+ASM_PACKAGE_ROW_PTR_HI:
+                        DB              $00
+ASM_PACKAGE_ROW_LEFT_LO:
+                        DB              $00
+ASM_PACKAGE_ROW_LEFT_HI:
+                        DB              $00
+ASM_PACKAGE_ROW_COUNT: DB              $00
+ASM_PACKAGE_ROW_INDEX: DB              $00
+ASM_PACKAGE_ROW_PREFIX:
+                        DB              $00
+ASM_PACKAGE_ROW_ALLOWED:
+                        DB              $00
+ASM_PACKAGE_ROW_ENTRIES:
+                        DB              $00
+ASM_PACKAGE_ROW_SIZE:  DB              $00
+ASM_PACKAGE_ROW_NAME_LEFT:
+                        DB              $00
                         ENDIF
 ASM_REF_COUNT:         DB              $00
 ASM_REPORT_FLAGS:      DB              $00
@@ -17229,6 +17715,7 @@ ASM_EXPORT_INDEX:      DB              $00
 ASM_EXPORT_NAME_INDEX: DB              $00
 ASM_IMPORT_INDEX:      DB              $00
 ASM_IMPORT_PACK_INDEX: DB              $00
+ASM_PUBLIC_KIND:       DB              $00
 ASM_P40_CODE0:         DB              $00
 ASM_P40_CODE1:         DB              $00
 ASM_P40_CODE2:         DB              $00
@@ -17275,6 +17762,8 @@ ASM_SYM_HASH1:         DS              ASM_SYM_MAX
 ASM_SYM_HASH2:         DS              ASM_SYM_MAX
 ASM_SYM_HASH3:         DS              ASM_SYM_MAX
 ASM_SYM_NAME_LEN:      DS              ASM_SYM_MAX
+ASM_SYM_NAME_OFF_LO:   DS              ASM_SYM_MAX
+ASM_SYM_NAME_OFF_HI:   DS              ASM_SYM_MAX
 ASM_SYM_DEFLINE_LO:    DS              ASM_SYM_MAX
 ASM_SYM_DEFLINE_HI:    DS              ASM_SYM_MAX
 ASM_SYM_USECNT:        DS              ASM_SYM_MAX
@@ -17283,10 +17772,16 @@ ASM_SYM_FIRSTREF_HI:   DS              ASM_SYM_MAX
                         IF              ASM_FLASH_RUNTIME
 ASM_SYM_NAMES          EQU             ASM_LOW_SYM_NAMES
                         ELSE
-ASM_SYM_NAMES:         DS              (ASM_SYM_MAX*ASM_SYM_NAME_MAX)
+ASM_SYM_NAMES:         DS              ASM_SYM_NAME_POOL_BYTES
                         ENDIF
 ASM_EXPORT_SYM_SLOT:   DS              ASM_EXPORT_MAX
+ASM_EXPORT_KIND:       DS              ASM_EXPORT_MAX
 ASM_IMPORT_NAME_LEN:   DS              ASM_IMPORT_MAX
+ASM_IMPORT_KIND:       DS              ASM_IMPORT_MAX
+ASM_IMPORT_HASH0:      DS              ASM_IMPORT_MAX
+ASM_IMPORT_HASH1:      DS              ASM_IMPORT_MAX
+ASM_IMPORT_HASH2:      DS              ASM_IMPORT_MAX
+ASM_IMPORT_HASH3:      DS              ASM_IMPORT_MAX
 ASM_IMPORT_NAME_PACKS: DS              (ASM_IMPORT_MAX*ASM_EXPORT_NAME_PACK_MAX)
 ASM_LOCAL_COUNT:       DB              $00
 ASM_LOCAL_SCOPE_ACTIVE:
@@ -17840,6 +18335,8 @@ ASM_DIRECT_DW_IMPORT_DATA:
 ASM_DIRECT_ENTRY_MAIN_LABEL:
                         DB              "MAIN RTS",0
 ASM_DIRECT_ENTRY_MAIN: DB              "        ENTRY MAIN",0
+ASM_PACKAGE_ID_MAIN:   DB              "main",0
+ASM_PACKAGE_ID_OTHER:  DB              "OTHER",0
 ASM_DIRECT_IMPORT_PUT_CSTR:
                         DB              "        IMPORT BIO_FTDI_PUT_CSTR",0
 ASM_FIXUP_JSR_PUT_CSTR:

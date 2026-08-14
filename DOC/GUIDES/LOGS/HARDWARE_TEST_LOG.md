@@ -21480,3 +21480,583 @@ RET A=5A X=30 Y=30 P=75 S=FD NV-BdIzC
 7100: 5A | Z
 >
 ```
+
+## 2026-08-13 APv2 64-row package pass and HIMON execution negative
+
+Status: packaging accepted and resident execution rejected on HIMON/ASM-F2
+`00.0813(1809)`. The APv2 Card 1 source assembled at `$2000`; `PACKAGE $3200`
+produced a `$01F6`-byte AP v2 envelope. Header dumps proved both the v2 marker
+and the exact 64-row relocation payload:
+
+```text
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$01F6
+SEAL> .
+ASM BYE
+>D 3200 3204
+3200: 41 50 02 F6 01 | AP...
+>D 3213 3216
+3213: 52 41 01 40 | RA.@
+>AP $3200 $3000
+GO 3000
+
+BRK 00 PC=3183
+A=01 X=30 Y=30 P=75 S=FB NV-BdIzC
+>
+```
+
+The expected relocated entry was `$3081`; `BRK ... PC=3183` is consistent
+with entry `$3181`. Source inspection found that HIMON's relocation accessors
+indexed all five parallel lanes through one 8-bit `(CMDP_PTR),Y`. At 64 rows,
+the target-high lane is record offsets `$0101-$0140`, so row 0 wrapped to
+offset `$0001` and read relocation kind `$01` as the target high byte. The
+wrong target `$0181` then became runtime address `$3181` instead of `$3081`.
+
+The resident accessor now advances the record pointer for second-page bytes.
+`check_himon_banked_ap.ps1` executes the compiled accessor for target-low and
+target-high at every row of every count 1-64 (4,160 reads), including both
+ways the address arithmetic can cross `$0100`. The corrected installable
+HIMON image remains pending the same Card 1 hardware retest; this transcript
+is a precise negative, not an APv2 execution acceptance.
+
+Earlier in the same terminal capture, an S19 reporter stream was sent while
+the board was still at `ASM>`, producing repeated `ERR=$08 BAD SYM`. The
+operator then left ASM, used bare HIMON `L`, and received
+`L OK=071D ENTRY=7000`. Those input-context errors are unrelated to the AP
+package and relocation failure above.
+
+## 2026-08-13 APv2 corrected 64-row, typed-import, and 64-export passes
+
+Status: accepted with corrected HIMON `00.0813(1843)` and existing ASM-F2
+`00.0813(1809)`. STR8-N installed Bank 3 sectors C-E successfully and warm
+HIMON reported the corrected banner. The preloaded reporter entered at `$7000`
+with length `$071D`.
+
+The corrected Card 1 package retained the exact v2 and 64-row headers, then
+loaded all target words at `$3000` correctly and ran:
+
+```text
+3200: 41 50 02 F6 01 | AP...
+3213: 52 41 01 40 | RA.@
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=64 X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 3000 3006
+3000: 4C 81 30 81 30 81 30 | L.0.0.0
+>D 7100
+7100: 64 | d
+```
+
+The reporter independently listed `FIXUPS=$40/$80`, `REL=40`, and all rows
+`$00-$3F` with target `$0081`. This closes the APv2 64-relocation installed-
+image gate and the prior target-high second-page failure.
+
+Card 2 accepted the executable import kind and resolved
+`BIO_FTDI_PUT_CSTR=$E678`; the package printed `BANK RJOIN`, returned `$AC`,
+and stored `$AC` at `$5848`. Changing only the import contract byte from `$01`
+to data kind `$02` produced `APERR=$09`, did not print `BANK RJOIN`, and left
+the cleared sentinel at `$00`. Restoring `$01` closed the typed-import match
+and mismatch gate.
+
+Card 3 produced and parsed 64 exports, ran successfully, and the reporter
+listed all export rows `$00-$3F`:
+
+```text
+3200: 41 50 02 A9 02 | AP...
+3217: 45 81 02 40 | E..@
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=40 X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 7101
+7101: 40 | @
+```
+
+This accepts the 64-export production, parsing, execution, and reporting gate.
+
+The remainder exposed two test-card defects and is not acceptance evidence for
+the affected gates. Card 4 declared 64 imports but emitted no operand using
+them, so the package contained zero import relocation rows. `SEAL> LOAD`
+correctly reported `C=$00` and did not attempt to resolve the unused names.
+Its `$7102` execution sentinel also lay inside the preloaded reporter's
+`$7000-$771C` code. Writing/clearing that byte corrupted the reporter, which
+then stopped at `BRK 66 PC=7104`; Card 5 inherited the corrupted image after
+the expected 129th-symbol `ERR=$08`. Therefore the 64-import resolution and
+128-symbol rollback reporter gates remain pending. The maintained cards now
+emit one relocation for every import and use `$7900-$7902`, outside the
+reporter image.
+
+The installed-image card deck was subsequently rewritten with separate
+`ASM>`, `SEAL>`, and bare HIMON `>` phases. Each SEAL phase ends with an
+isolated `.` and requires `ASM BYE` before any `D`, `M`, `AP`, `G`, or `L`.
+This removes the prompt ambiguity that led Card 3 diagnostic commands to be
+entered at `SEAL>` and correctly rejected as `ERR=$03 BAD OPER`.
+
+## 2026-08-13 ASM SEAL Re-entry 1956 Failed Board Attempt
+
+Status: failed as intended evidence; corrected image pending retest.
+
+The combined `$8000-$EFFF` payload installed successfully through STR8-N `I`,
+Bank 3, range `8-E`. The preliminary `RANGE: 8` input was rejected before the
+write confirmation and changed no flash. Cold boot identified both HIMON and
+ASM-F2 as `00.0813(1956)`. The reporter loaded successfully at `$7000`.
+
+Card 0 then exposed an entry-selector defect. After `ASM NEW` followed by `.`
+without `END`, top-level `ASM SEAL` should have returned `EXEC ERR=$03`.
+Instead it opened a new `ASM>$2000:` source session. Bare `ASM` and the second
+`ASM SEAL` did the same.
+
+Exact transcript:
+
+```text
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8
+I B3 8-8 WRITE? Y: N
+BAD
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0813(1956)
+>L
+L S19
+L @7000
+L OK=071D ENTRY=7000
+>ASM NEW
+ASM-F2 00.0813(1956)
+ASM>$2000: .
+ASM BYE
+>ASM SEAL
+ASM-F2 00.0813(1956)
+ASM>$2000: .
+ASM BYE
+>ASM
+ASM-F2 00.0813(1956)
+ASM>$2000: .
+ASM BYE
+>ASM SEAL
+ASM-F2 00.0813(1956)
+ASM>$2000: .
+ASM BYE
+>
+```
+
+Root cause: flash ASM read HIMON's `$FE/$FF` parser pointer after calling
+`ASM_RJOIN_INIT_IO`; the service initialization may clobber that scratch
+pointer. The correction reads the still-retained canonical command bytes at
+HIMON's fixed `$7A03/$7A04` input buffer. No `ASM SEAL` acceptance claim is
+made from this transcript.
+
+## 2026-08-13 ASM SEAL Re-entry 2009 Board Acceptance
+
+Status: `ASM SEAL` accepted; APv2 Card 1 execution accepted; reporter output
+rejected because the `$7000` artifact was stale.
+
+STR8-N installed the corrected combined `$8000-$EFFF` image in Bank 3 and
+cold boot reported HIMON/ASM-F2 `00.0813(2009)`. Both no-session checks
+returned the required `$03`. A completed session survived `.`, resumed at
+`SEAL>` through top-level `ASM SEAL`, and sealed successfully:
+
+```text
+HIMON V 00.0813(2009)
+>ASM SEAL
+ASM-F2 00.0813(2009)
+#56AD7400# EXEC ERR=$03
+>ASM NEW
+ASM-F2 00.0813(2009)
+ASM>$2000: .
+ASM BYE
+>ASM SEAL
+ASM-F2 00.0813(2009)
+#56AD7400# EXEC ERR=$03
+>ASM NEW
+ASM-F2 00.0813(2009)
+ASM>$2000: ORG $2000
+ASM>$2000: RTS
+ASM>$2001: END
+ASM OK
+SEAL> .
+ASM BYE
+>ASM SEAL
+ASM-F2 00.0813(2009)
+SEAL> SEAL
+SEAL OK
+SEAL> .
+ASM BYE
+```
+
+The same run then accepted the APv2 64-relocation path:
+
+```text
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$01F6
+SEAL> .
+ASM BYE
+>D 3200 3204
+3200: 41 50 02 F6 01 | AP...
+>D 3213 3216
+3213: 52 41 01 40 | RA.@
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=64 X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 3000 3006
+3000: 4C 81 30 81 30 81 30 | L.0.0.0
+>D 7900
+7900: 64 | d
+```
+
+`G 7000` afterward streamed reporter strings, table bytes, and repeated
+`RUN` names instead of a structured report. The loaded reporter S19 had
+SHA-256 `C1D4543FC3486827C8AF95EFCEA862D21684EE8283C4880C350356CC3170727F`
+and predated the final ASM map. The Make dependency is corrected so
+`asm-test` now builds the full reporter target, including the `$7000` S19.
+The regenerated map-matched reporter SHA-256 is
+`DB65584B5D36F5B0A2AF6BB4E9D63B5DEDA0A3C063E0B66D0966E022FB24D57F`.
+Reload and rerun remain pending; no reporter acceptance is claimed here.
+
+## 2026-08-13 Map-Matched Reporter And APv2 Cards 1-3 Acceptance
+
+Status: corrected `$7000` reporter accepted; APv2 Cards 1-3 accepted on
+HIMON/ASM-F2 `00.0813(2009)`; Cards 4-7 pending.
+
+The corrected reporter loaded as `$071D` bytes at `$7000`. Card 1 again
+packaged the 64-relocation body as length `$01F6`, loaded it at `$3000`,
+returned A=`$64` with carry set, and wrote `$7900=$64`. The reporter then
+printed the complete 64-row fixup and relocation lists and terminated
+normally:
+
+```text
+STATUS=OK
+START=$2000
+PC=$2088
+BYTES=$0088
+SYMS=$02/$80
+NAMEPOOL=$0008/$0800
+FIXUPS=$40/$80
+MAP END=$BDFE UDATA=$5000-6D6D
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 02 40 40 01 00 00 00
+PKG @ LEN BODY INST3200 01F6 0000 0000 ID START
+...
+RELOCS
+SL K  SITE TARG
+00 01 0001 0081
+...
+3F 01 007F 0081
+EXPORTS
+SL K  SYM NAME
+00 81 00 START
+ASM REPORT OK
+
+#GO# ENTRY=7000
+RET A=0D X=0F Y=0D P=75 S=FD NV-BdIzC
+```
+
+Card 2 accepted the typed resident import, resolved it to `$E678`, ran, then
+rejected the deliberate executable/data kind mismatch before execution:
+
+```text
+SEAL> PACKAGE $4000
+PKG OK @=$4000 L=$0082
+>D 4040 4049
+4040: 49 13 00 01 01 42 0F FA | AE 11 | I....B....
+>AP $4000 $3000
+GO 3000
+
+BANK RJOIN
+
+#GO# ENTRY=3000
+RET A=AC X=1A Y=0E P=F5 S=FD NV-BdIzC
+>D 5848 584B
+5848: AC 00 78 E6 | ..x.
+>M 5848
+5848: AC 00
+>M 4044
+4044: 01 02
+>AP $4000 $3000
+APERR=$09
+>D 5848
+5848: 00 | .
+>M 4044
+4044: 02 01
+```
+
+Card 3 packaged and executed all 64 exports, then the reporter listed every
+export slot `$00-$3F` and completed normally:
+
+```text
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$02A9
+>D 3217 321A
+3217: 45 81 02 40 | E..@
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=40 X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 7901
+7901: 40 | @
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+SYMS=$40/$80
+NAMEPOOL=$00C0/$0800
+FIXUPS=$00/$80
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 40 00 00 40 00 00 00
+PKG @ LEN BODY INST3200 02A9 0000 0000 ID E00
+...
+EXPORTS
+SL K  SYM NAME
+00 81 00 E00
+01 01 01 E01
+...
+3F 01 3F E63
+ASM REPORT OK
+```
+
+The transcript stops at bare HIMON `>` immediately after `$7902` was inspected
+and found already `$00`; the operator did not rewrite it. No claim is made yet
+in this section for the 64-import, symbol-slot, name-pool, or named-identity
+cards.
+
+## 2026-08-13 APv2 Cards 4-6 Acceptance And Card 7 Parser Failure
+
+Status: Cards 4-6 accepted on HIMON/ASM-F2 `00.0813(2009)`. Card 7 failed and
+identified a flash-wrapper pointer collision; its corrected board retest is
+pending.
+
+Before Card 4, `$7902` was inspected and found already `$00`; it was not
+rewritten. The revised source emitted one ABS16 use for every import. Packaging
+produced the exact 64-row relocation and import sections, HIMON rejected the
+first unresolved resident name with `$09`, no body ran, and the reporter
+completed normally:
+
+```text
+SEAL> PACKAGE $3200
+PKG OK @=$3200 L=$03F5
+3200: 41 50 02 F5 03
+3213: 52 41 01 40
+3367: 49 01 02 40
+>AP $3200 $3000
+APERR=$09
+>D 7902
+7902: 00 | .
+SYMS=$01/$80
+NAMEPOOL=$0004/$0800
+FIXUPS=$40/$80
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 01 40 40 01 40 00 00
+ASM REPORT OK
+```
+
+Card 5 filled all 128 symbol slots. The next allocation failed with `$08`,
+and the report retained the exact full count rather than a partial row:
+
+```text
+ASM>$2000: S128 EQU $1280
+ERR=$08 BS PC=$2000
+SYMS=$80/$80
+NAMEPOOL=$0200/$0800
+ASM REPORT OK
+```
+
+Card 6 stored 66 names of length 31 for `$07FE` pooled bytes. The following
+symbol failed with `$08`; both the symbol count and pool cursor remained at
+their prior committed values:
+
+```text
+ASM>$2000: BAD EQU $00
+ERR=$08 BS PC=$2000
+SYMS=$42/$80
+NAMEPOOL=$07FE/$0800
+ASM REPORT OK
+```
+
+Card 7 seeded `$3200=$5A`. The wrong identity returned `$03` and left the byte
+unchanged, but the correct identity returned the same error and therefore made
+no package for HIMON to load:
+
+```text
+SEAL> PACKAGE WRONG $3200
+PKG ERR=$03
+>D 3200
+3200: 5A | Z
+SEAL> PACKAGE ASMREPORT $3200
+PKG ERR=$03
+>AP $3200 $3000
+APERR=$07
+```
+
+The reporter still proved the source identity itself was correct:
+
+```text
+SYMS=$02/$80
+NAMEPOOL=$000E/$0800
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 02 00 00 01 00 00 00
+PKG @ LEN BODY INST0000 0000 0000 0000 ID ASMREPORT
+EXPORTS
+SL K  SYM NAME
+00 81 01 ASMREPORT
+ASM REPORT OK
+```
+
+Root cause: `ASMF_PARSE_TWO_ARGS` saved the first-token pointer in `$84/$85`,
+which are also the core's `ASM_SYM_PTR_LO/HI`. Parsing a symbolic first token
+performs a symbol lookup and overwrote that retained pointer before parsing
+the destination. Numeric two-argument commands did not exercise the collision.
+The wrapper now uses unused `$82/$83`; this adds no ROM bytes. The AP v2 host
+gate also verifies that this pair stays contiguous and outside the core's
+allocated `$84-$AF` zero-page frame. Card 7 must be repeated on the corrected
+image before named packaging is accepted.
+
+## 2026-08-13 APv2 Named-Package Card 7 Acceptance
+
+Status: accepted on HIMON/ASM-F2 `00.0813(2101)`. This closes the corrected
+Card 7 retest and the complete APv2 installed-image card deck.
+
+STR8-N installed the combined Bank 3 `$8000-$EFFF` image and cold boot cleared
+RAM. The map-matched `$071D` reporter reloaded at `$7000`. The wrong identity
+returned the required bad-symbol status and did not change the seeded package
+destination. The matching identity emitted the predicted `$0033` package,
+HIMON ran its body at `$3000`, and the reporter independently confirmed the
+identity and executable export.
+
+Exact transcript:
+
+```text
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.2
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0813(2101)
+>L
+L S19
+L @7000
+L OK=071D ENTRY=7000
+>M 3200
+3200: 00 5A
+>ASM NEW
+ASM-F2 00.0813(2101)
+ASM>$2000: ; AP V2 NAMED-PACKAGE IDENTITY PROOF.
+ASM>$2000: ; WRONG MUST BE REJECTED BEFORE PACKAGE WRITES; ASMREPORT MUST MATCH ENTRY.
+ASM>$2000:
+ASM>$2000:         ORG $2000
+ASM>$2000: WRONG   EQU $1234
+ASM>$2000:
+ASM>$2000: ASMREPORT LDA #$A7
+ASM>$2002:         RTS
+ASM>$2003:
+ASM>$2003:         ENTRY ASMREPORT
+ASM>$2003:         END
+ASM OK
+SEAL> PACKAGE WRONG $3200
+PKG ERR=$08
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$08
+>D 3200 3200
+D [a [b]]
+>D 3200 3200
+D [a [b]]
+>D 3200
+3200: 5A | Z
+>ASM NEW
+ASM-F2 00.0813(2101)
+ASM>$2000: ; AP V2 NAMED-PACKAGE IDENTITY PROOF.
+ASM>$2000: ; WRONG MUST BE REJECTED BEFORE PACKAGE WRITES; ASMREPORT MUST MATCH ENTRY.
+ASM>$2000:
+ASM>$2000:         ORG $2000
+ASM>$2000: WRONG   EQU $1234
+ASM>$2000:
+ASM>$2000: ASMREPORT LDA #$A7
+ASM>$2002:         RTS
+ASM>$2003:
+ASM>$2003:         ENTRY ASMREPORT
+ASM>$2003:         END
+ASM OK
+SEAL> PACKAGE ASMREPORT $3200
+PKG OK @=$3200 L=$0033
+SEAL> .
+ASM BYE
+>AP $3200 $3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=A7 X=30 Y=30 P=F5 S=FD NV-BdIzC
+>G 7000
+GO 7000
+ASM REPORT
+STATUS=OK
+ERRLINE=$0000
+START=$2000
+PC=$2003
+HIGH=$2003
+BYTES=$0003
+LINES=$0008
+SYMS=$02/$80
+NAMEPOOL=$000E/$0800
+FIXUPS=$00/$80
+REFS=$00/$C0
+TRUNC=NO
+MAP END=$BDFE UDATA=$5000-6D6D
+SEAL FL BASE END LEN FNV 01 2000 2003 0003 680740FB
+COUNTS SYM FIX REL EXP IMP IMPRES RELCNT 02 00 00 01 00 00 00
+PKG @ LEN BODY INST3200 0033 0000 0000 ID ASMREPORT
+UNUSED
+WRONG DEF=$0004
+ASMREPORT DEF=$0005
+SYMBOLS
+SL ST VALUE K  W  FL DEF  USE FIRST NAME
+00 01 1234  01 04 16 0004 00  0000  WRONG
+01 01 2000  01 04 0E 0005 00  0000  ASMREPORT
+FIXUPS
+SL ST MODE SEL SITE BASE NAME
+RELOCS
+SL K  SITE TARG
+EXPORTS
+SL K  SYM NAME
+00 81 01 ASMREPORT
+IMPORTS
+SL K  LEN FNV
+ASM REPORT OK
+
+#GO# ENTRY=7000
+RET A=0D X=0F Y=0D P=75 S=FD NV-BdIzC
+>
+```
+
+The two `D 3200 3200` attempts merely printed HIMON's dump usage and changed
+nothing. The maintained card uses the accepted single-address form `D 3200`.

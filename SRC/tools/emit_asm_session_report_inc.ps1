@@ -45,8 +45,18 @@ $required = @(
     'ASM_RELOC_TARGET_HI',
     'ASM_EXPORT_REC_COUNT',
     'ASM_EXPORT_REC_LEN',
+    'ASM_EXPORT_COUNT',
+    'ASM_EXPORT_SYM_SLOT',
+    'ASM_EXPORT_KIND',
     'ASM_IMPORT_REC_COUNT',
     'ASM_IMPORT_REC_LEN',
+    'ASM_IMPORT_COUNT',
+    'ASM_IMPORT_NAME_LEN',
+    'ASM_IMPORT_KIND',
+    'ASM_IMPORT_HASH0',
+    'ASM_IMPORT_HASH1',
+    'ASM_IMPORT_HASH2',
+    'ASM_IMPORT_HASH3',
     'ASM_IMPORT_RESOLVE_COUNT',
     'ASM_RELOCATE_BASE_LO',
     'ASM_RELOCATE_BASE_HI',
@@ -79,6 +89,12 @@ $required = @(
     'ASM_SYM_USECNT',
     'ASM_SYM_FIRSTREF_LO',
     'ASM_SYM_FIRSTREF_HI',
+    'ASM_SYM_NAME_USED_LO',
+    'ASM_SYM_NAME_USED_HI',
+    'ASM_SYM_NAME_LEN',
+    'ASM_SYM_NAME_OFF_LO',
+    'ASM_SYM_NAME_OFF_HI',
+    'ASM_SYM_NAME_POOL_BYTES',
     'ASM_SYM_NAMES',
     'ASM_FIX_STATE',
     'ASM_FIX_MODE',
@@ -299,6 +315,14 @@ function ConvertTo-CompactAsmNativeReport([string[]]$Native, [string]$Org) {
         $addrs[$name] = $pc
         $pc += $messages[$name].Length + 1
     }
+    $limit = switch ($Org.ToUpperInvariant()) {
+        '4800' { 0x5000 }
+        '7000' { 0x7a00 }
+        default { 0x10000 }
+    }
+    if ($pc -gt $limit) {
+        throw ('ASM-native reporter at ${0} ends at {1}, beyond {2}.' -f $Org, (Format-HexWord $pc), (Format-HexWord $limit))
+    }
 
     $orderedNames = @($messages.Keys) | Sort-Object @{Expression={$_.Length};Descending=$true}, @{Expression={$_};Descending=$false}
     $resolved = @()
@@ -320,7 +344,7 @@ function ConvertTo-CompactAsmNativeReport([string[]]$Native, [string]$Org) {
     }
     $resolved += ''
     $resolved += '; FIXED-ADDRESS AP ENTRY; LOAD/RUN AT THE SAME ORG.'
-    $resolved += '        ENTRY START'
+    $resolved += '        ENTRY ASMREPORT'
     $resolved += '        END'
     return $resolved
 }
@@ -343,13 +367,13 @@ function Test-AsmNativeRel8Ranges([string[]]$Lines, [string]$Org, [hashtable]$La
 }
 
 function Add-SelfRelocAsmNativeReport([string[]]$Native) {
-    $startIndex = [Array]::IndexOf($Native, 'START   JMP MAIN')
+    $startIndex = [Array]::IndexOf($Native, 'ASMREPORT JMP MAIN')
     if ($startIndex -lt 0) {
-        throw 'Movable reporter could not find START.'
+        throw 'Movable reporter could not find ASMREPORT.'
     }
 
     $boot = @(
-        'START   JSR BOOT',
+        'ASMREPORT JSR BOOT',
         '        JMP MAIN',
         '',
         '; BOOT GETS THE ACTUAL LOAD BASE FROM ITS OWN JSR RETURN ADDRESS.',
@@ -570,7 +594,7 @@ function ConvertTo-SelfRelocAsmNativeReport([string[]]$Native, [string]$Org) {
 
         if ($out -match '^(?<pre>\s*(?:(?:[A-Za-z_][A-Za-z0-9_]*:?)\s+)?(?:JSR|JMP)\s+)(?<target>[A-Za-z_][A-Za-z0-9_]*)\s*$') {
             $target = $matches['target'].ToUpperInvariant()
-            if ($labelAddrs.ContainsKey($target) -and $out.Trim() -ne 'START   JSR BOOT'.Trim()) {
+            if ($labelAddrs.ContainsKey($target) -and $out.Trim() -ne 'ASMREPORT JSR BOOT'.Trim()) {
                 $rows += [pscustomobject]@{ Kind = 1; Site = ($linePc + 1 - $origin); Target = ($labelAddrs[$target] - $origin) }
                 $out = $matches['pre'] + (Format-HexWord $labelAddrs[$target])
             }
@@ -636,13 +660,13 @@ function ConvertTo-SelfRelocAsmNativeReport([string[]]$Native, [string]$Org) {
     $ordinaryRelocs = @($resolved | Where-Object {
         $_ -match '^\s*(?:(?:[A-Za-z_][A-Za-z0-9_]*:?)\s+)?(?:JSR|JMP)\s+[A-Za-z_][A-Za-z0-9_]*\s*$'
     })
-    if ($ordinaryRelocs.Count -ne 1 -or $ordinaryRelocs[0].Trim() -ne 'START   JSR BOOT'.Trim()) {
-        throw ('Movable reporter must retain only START JSR BOOT as an ordinary relocation; found {0} symbolic calls.' -f $ordinaryRelocs.Count)
+    if ($ordinaryRelocs.Count -ne 1 -or $ordinaryRelocs[0].Trim() -ne 'ASMREPORT JSR BOOT'.Trim()) {
+        throw ('Movable reporter must retain only ASMREPORT JSR BOOT as an ordinary relocation; found {0} symbolic calls.' -f $ordinaryRelocs.Count)
     }
 
     $resolved += ''
     $resolved += '; MOVABLE AP ENTRY. BOOT MAY BE RUN AGAIN AT THE SAME ADDRESS.'
-    $resolved += '        ENTRY START'
+    $resolved += '        ENTRY ASMREPORT'
     $resolved += '        END'
     return $resolved
 }
@@ -662,7 +686,6 @@ foreach ($name in $required) {
 
 $lines += @(
     '',
-    'ASM_REPORT_SYM_NAME_MAX EQU         $20',
     'ASM_REPORT_FIX_NAME_MAX EQU         $20'
 )
 
@@ -684,11 +707,11 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         '',
         ('        ORG ${0}' -f $Org),
         '',
-        '; ZP: $00/$01 PTR, $02 SLOT, $03 COUNT, $04 TMP.',
+        '; ZP: $00/$01 PTR, $02 SLOT, $03 COUNT, $04 TMP, $05 NAME LEN.',
         ('; FLASH ASM OUTPUT HELPERS: {0} BYTE, {1} CSTR, {2} HEXB,' -f $char, $cstr, $hexb),
         ('; {0} HEXW AX, {1} CRLF.' -f $hexw, $crlf),
         '',
-        'START   JMP MAIN',
+        'ASMREPORT JMP MAIN',
         '',
         ('PRC     JMP {0}' -f $cstr),
         '',
@@ -714,13 +737,27 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         ('        JSR {0}' -f $cstr),
         ('        JMP {0}' -f $crlf),
         '',
+        'PNL     LDY #$00',
+        'PNLL    LDA $05',
+        '        BEQ PNLD',
+        '        LDA ($00),Y',
+        ('        JSR {0}' -f $char),
+        '        INY',
+        '        DEC $05',
+        '        BRA PNLL',
+        'PNLD    RTS',
+        '',
         'SSYM    STX $03',
-        ('        LDA #{0}' -f (Get-AddrLo 'ASM_SYM_NAMES')),
+        ('        LDA {0},X' -f (Get-Addr 'ASM_SYM_NAME_LEN')),
+        '        STA $05',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_SYM_NAME_OFF_LO')),
+        '        CLC',
+        ('        ADC #{0}' -f (Get-AddrLo 'ASM_SYM_NAMES')),
         '        STA $00',
-        ('        LDA #{0}' -f (Get-AddrHi 'ASM_SYM_NAMES')),
+        ('        LDA {0},X' -f (Get-Addr 'ASM_SYM_NAME_OFF_HI')),
+        ('        ADC #{0}' -f (Get-AddrHi 'ASM_SYM_NAMES')),
         '        STA $01',
-        '        LDX $03',
-        '        BRA SADD',
+        '        RTS',
         '',
         'SFIX    STX $03',
         ('        LDA #{0}' -f (Get-AddrLo 'ASM_FIX_NAME_TEXT')),
@@ -728,8 +765,8 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         ('        LDA #{0}' -f (Get-AddrHi 'ASM_FIX_NAME_TEXT')),
         '        STA $01',
         '        LDX $03',
-        'SADD    BEQ SADDD',
-        'SADDL   CLC',
+        '        BEQ SFIXD',
+        'SFIXL   CLC',
         '        LDA $00',
         '        ADC #$20',
         '        STA $00',
@@ -737,8 +774,8 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         '        ADC #$00',
         '        STA $01',
         '        DEX',
-        '        BNE SADDL',
-        'SADDD   RTS',
+        '        BNE SFIXL',
+        'SFIXD   RTS',
         '',
         'MAIN    LDX #<M0',
         '        LDY #>M0',
@@ -769,6 +806,7 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         '        JSR PBYTS',
         '        JSR PLINS',
         '        JSR PSYMC',
+        '        JSR PNPLC',
         '        JSR PFIXC',
         '        JSR PREFC',
         '        JMP PTRNC',
@@ -798,6 +836,18 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         ('        JMP {0}' -f $crlf),
         'PERR0   LDA #$00',
         '        LDX #$00',
+        '        JSR PW',
+        ('        JMP {0}' -f $crlf),
+        '',
+        'PNPLC   LDX #<M46',
+        '        LDY #>M46',
+        '        JSR PRC',
+        ('        LDA {0}' -f (Get-Addr 'ASM_SYM_NAME_USED_HI')),
+        ('        LDX {0}' -f (Get-Addr 'ASM_SYM_NAME_USED_LO')),
+        '        JSR PW',
+        '        JSR PLIM',
+        ('        LDA #{0}' -f (Get-AddrHi 'ASM_SYM_NAME_POOL_BYTES')),
+        ('        LDX #{0}' -f (Get-AddrLo 'ASM_SYM_NAME_POOL_BYTES')),
         '        JSR PW',
         ('        JMP {0}' -f $crlf),
         '',
@@ -981,9 +1031,9 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         '        JSR PBF',
         ('        LDA {0}' -f (Get-Addr 'ASM_RELOC_COUNT')),
         '        JSR PBF',
-        ('        LDA {0}' -f (Get-Addr 'ASM_EXPORT_REC_COUNT')),
+        ('        LDA {0}' -f (Get-Addr 'ASM_EXPORT_COUNT')),
         '        JSR PBF',
-        ('        LDA {0}' -f (Get-Addr 'ASM_IMPORT_REC_COUNT')),
+        ('        LDA {0}' -f (Get-Addr 'ASM_IMPORT_COUNT')),
         '        JSR PBF',
         ('        LDA {0}' -f (Get-Addr 'ASM_IMPORT_RESOLVE_COUNT')),
         '        JSR PBF',
@@ -1005,7 +1055,20 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         ('        LDA {0}' -f (Get-Addr 'ASM_INSTALL_BASE_HI')),
         ('        LDX {0}' -f (Get-Addr 'ASM_INSTALL_BASE_LO')),
         '        JSR PW',
-        ('        JMP {0}' -f $crlf),
+        '        JSR SP',
+        '        LDX #$00',
+        ('PPKGIL CPX {0}' -f (Get-Addr 'ASM_EXPORT_COUNT')),
+        '        BEQ PPKGD',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_EXPORT_KIND')),
+        '        AND #$80',
+        '        BNE PPKGIF',
+        '        INX',
+        '        BRA PPKGIL',
+        ('PPKGIF LDA {0},X' -f (Get-Addr 'ASM_EXPORT_SYM_SLOT')),
+        '        TAX',
+        '        JSR SSYM',
+        '        JSR PNL',
+        ('PPKGD  JMP {0}' -f $crlf),
         '',
         'PUSED   LDX #$00',
         ('PUSHL   CPX {0}' -f (Get-Addr 'ASM_SYM_COUNT')),
@@ -1077,9 +1140,7 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         ('        JMP {0}' -f $crlf),
         '',
         'PNM     JSR SSYM',
-        '        LDX $00',
-        '        LDY $01',
-        ('        JSR {0}' -f $cstr),
+        '        JSR PNL',
         '        JMP SP',
         '',
         'PDEF    LDX #<M31',
@@ -1140,7 +1201,8 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         '        JSR SP',
         '        LDX $02',
         '        JSR SSYM',
-        '        JMP PPL',
+        '        JSR PNL',
+        ('        JMP {0}' -f $crlf),
         '',
         'PFIX    LDX #<M9',
         '        LDY #>M9',
@@ -1197,7 +1259,7 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         '        LDX $02',
         '        INX',
         '        BRA PRELL',
-        'PRELD   RTS',
+        'PRELD   BRA PEXP',
         '',
         'PRELR   STX $02',
         '        TXA',
@@ -1215,6 +1277,71 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         '        JSR PW',
         ('        JMP {0}' -f $crlf),
         '',
+        'PEXP    LDX #<M42',
+        '        LDY #>M42',
+        '        JSR PL',
+        '        LDX #<M43',
+        '        LDY #>M43',
+        '        JSR PL',
+        '        LDX #$00',
+        ('PEXPL   CPX {0}' -f (Get-Addr 'ASM_EXPORT_COUNT')),
+        '        BEQ PEXPD',
+        '        STX $02',
+        '        TXA',
+        '        JSR PBF',
+        '        LDX $02',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_EXPORT_KIND')),
+        '        JSR PBF',
+        '        LDX $02',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_EXPORT_SYM_SLOT')),
+        '        JSR PBF',
+        '        LDX $02',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_EXPORT_SYM_SLOT')),
+        '        TAX',
+        '        JSR SSYM',
+        '        JSR PNL',
+        ('        JSR {0}' -f $crlf),
+        '        LDX $02',
+        '        INX',
+        '        BRA PEXPL',
+        'PEXPD   BRA PIMP',
+        '',
+        'PIMP    LDX #<M44',
+        '        LDY #>M44',
+        '        JSR PL',
+        '        LDX #<M45',
+        '        LDY #>M45',
+        '        JSR PL',
+        '        LDX #$00',
+        ('PIMPL   CPX {0}' -f (Get-Addr 'ASM_IMPORT_COUNT')),
+        '        BEQ PIMPD',
+        '        STX $02',
+        '        TXA',
+        '        JSR PBF',
+        '        LDX $02',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_IMPORT_KIND')),
+        '        JSR PBF',
+        '        LDX $02',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_IMPORT_NAME_LEN')),
+        '        JSR PBF',
+        '        LDX $02',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_IMPORT_HASH3')),
+        ('        JSR {0}' -f $hexb),
+        '        LDX $02',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_IMPORT_HASH2')),
+        ('        JSR {0}' -f $hexb),
+        '        LDX $02',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_IMPORT_HASH1')),
+        ('        JSR {0}' -f $hexb),
+        '        LDX $02',
+        ('        LDA {0},X' -f (Get-Addr 'ASM_IMPORT_HASH0')),
+        ('        JSR {0}' -f $hexb),
+        ('        JSR {0}' -f $crlf),
+        '        LDX $02',
+        '        INX',
+        '        BRA PIMPL',
+        'PIMPD   RTS',
+        '',
         'M0      DB "ASM REPORT",0',
         'M1      DB "MAP END=$",0',
         'M2      DB " UDATA=$",0',
@@ -1228,7 +1355,7 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         'M10     DB "SL ST MODE SEL SITE BASE NAME",0',
         'M11     DB "RELOCS",0',
         'M12     DB "SL K  SITE TARG",0',
-        'M13     DB "PKG @ LEN BODY INST ",0',
+        'M13     DB "PKG @ LEN BODY INST ID ",0',
         'M15     DB "ASM REPORT OK",0',
         'M16     DB "STATUS=",0',
         'M17     DB "OK",0',
@@ -1250,12 +1377,34 @@ function New-AsmNativeReport([string]$OutFile, [string]$Org, [string[]]$Header, 
         'M33     DB " FIRST=$",0',
         'M34     DB "LOW=$",0',
         'M35     DB " UPPER=$",0',
+        'M42     DB "EXPORTS",0',
+        'M43     DB "SL K  SYM NAME",0',
+        'M44     DB "IMPORTS",0',
+        'M45     DB "SL K  LEN FNV",0',
+        'M46     DB "NAMEPOOL=$",0',
         '',
         '        END'
     )
 
     if ($Movable) {
         $native = Add-SelfRelocAsmNativeReport -Native $native
+    }
+
+    # PL only combines the two fixed resident output helpers.  Calling those
+    # helpers directly costs three body bytes per line but removes one private
+    # rebase row (five bytes), leaving useful RBT headroom for later fields.
+    $directLines = [Collections.Generic.List[string]]::new()
+    foreach ($line in $native) {
+        if ($line -eq '        JSR PL') {
+            $directLines.Add(('        JSR {0}' -f $cstr))
+            $directLines.Add(('        JSR {0}' -f $crlf))
+        } else {
+            $directLines.Add($line)
+        }
+    }
+    $native = $directLines.ToArray()
+
+    if ($Movable) {
         $native = ConvertTo-SelfRelocAsmNativeReport -Native $native -Org $Org
     } else {
         $native = ConvertTo-CompactAsmNativeReport -Native $native -Org $Org
@@ -1269,7 +1418,7 @@ if ($AsmNativeFlashOut) {
         '; REBUILD/REINSTALL AFTER ASM-F2 CODE/MAP CHANGES.',
         '; KEEP THIS AT $4800 BEFORE THE SESSION YOU WANT TO INSPECT.',
         '; AFTER THAT SESSION, EXIT WITH ''.'' AND RUN G 4800.',
-        '; PACKAGE $3000, THEN STORE WITH BANK0AP-PUT-TRANSIENT-2000.A.',
+        '; PACKAGE ASMREPORT $3000, THEN STORE WITH BANK0AP-PUT-TRANSIENT-2000.A.',
         '; LOAD FROM B0 BEFORE THE TARGET SESSION; DO NOT AP AFTER IT.'
     )
 }
@@ -1291,7 +1440,7 @@ if ($AsmNativeMovableOut) {
         '; SELF-RELOCATING, MAP-MATCHED ASM SESSION REPORTER AP SOURCE.',
         '; BODY=__BODY_LEN__; AP PACKAGE=__PACKAGE_LEN__; PRIVATE ROWS=__PRIVATE_COUNT__.',
         '; REBUILD/REINSTALL AFTER ASM-F2 CODE OR MAP CHANGES.',
-        '; ASM NEW, PASTE THIS FILE, THEN PACKAGE $3000.',
+        '; ASM NEW, PASTE THIS FILE, THEN PACKAGE ASMREPORT $3000.',
         '; OPTIONAL RAM SMOKE NOW: AP $3000 $4000 (NO Bn).',
         '; INSTALL WITH BANK0AP-PUT-TRANSIENT-2000.A.',
         '; RECORD THE PRINTED BANK-0 $XXXX.',

@@ -46,6 +46,19 @@ The first flash-resident wrapper, `asm-v1-flash`, is also a simple prompted
 session wrapper. It is meant to prove the `$8000` flash image and HIMON FNV
 entry path before adding prettier interactive or batch presentation modes.
 
+The current top-level entry forms are distinct:
+
+```text
+ASM          begin a new $2000 source session
+ASM NEW      begin a new $2000 source session
+ASM SEAL     re-enter the preserved post-END SEAL> window
+```
+
+`ASM SEAL` is valid only after a clean `END` has established the frozen
+session and `.` has returned to HIMON. With no preserved session it returns
+bad-operand status `$03`. Starting either new-session form clears the saved
+post-`END` window.
+
 ## Future Idea
 
 A later HIMON command surface may choose to expose two wrappers:
@@ -87,7 +100,8 @@ Do not make interactive use an immediate one-line assembler. A human at the
 prompt still owns a full session, and fixups may span lines until `END`.
 
 After a clean `END`, `SEAL> ` is not source mode. It accepts only the wrapper
-commands `SEAL`, `RELOCATE address`, `PACKAGE address`, `LOAD pkg dest`,
+commands `SEAL`, `RELOCATE address`, `PACKAGE address`,
+`PACKAGE entry address`, `LOAD pkg dest`,
 `INSTALL pkg`, `INSTALL pkg flash_addr`, optional diagnostic `CHECK address`,
 `NEW`, and `.`. The default flash image omits interactive `RESOLVE`; imported
 packages are rejected by the first `LOAD` slice with `BAD FIX`. `NEW` is a
