@@ -26,7 +26,8 @@
         fill="#cbd5e1">R-YORS</text>
 
   <rect x="616" y="478" width="368" height="40" rx="8" fill="#111827" stroke="#334155" stroke-width="2"/>
-  <text x="800" y="506" text-anchor="middle"
+  <!-- tools/stamp_himon_version.ps1 replaces this text from the build MMDD. -->
+  <text id="ryors-version" x="800" y="506" text-anchor="middle"
         font-family="'Consolas','Courier New',monospace"
         font-size="24" letter-spacing="5" fill="#60a5fa">VERSION .0814</text>
 </svg>

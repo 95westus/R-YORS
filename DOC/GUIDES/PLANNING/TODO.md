@@ -6,15 +6,21 @@ Review this checklist before starting any ASM feature implementation. An item
 stays unchecked until its source, regression tests, documentation, resident
 size measurement, and required hardware proof are complete.
 
-- [ ] **`DC 'text'` handling.** Add and test the compact single-quoted text
-  form, first defining its emitted-byte/terminator contract relative to the
-  current `DC C,"text"`, `DC HB,"text"`, and `DC P,"text"` forms. Preserve
-  single-character expression literals such as `DB 'A'` and `LDA #'A'`.
-  Check empty, unterminated, embedded-quote, comment-boundary, overlong, label,
-  PC/high-water, rollback, and seal-ownership cases. Reuse the existing `DC`
-  count/emit loops if that is smaller than adding another string scanner, and
-  do not mark complete without host smoke, resident ROM/RAM measurement,
-  documentation, and required board proof.
+- [x] **Compact `DC` text family.** `DC 'text'`
+  emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit
+  CSTR, HBSTR, and PSTR data. Existing `DC C,"text"`, `DC HB,"text"`, and
+  `DC P,"text"` source remains accepted. The implementation reuses the one
+  count/emit path and `ASM_DELIM`, adds no vocabulary or UDATA, and costs
+  `$0008` resident CODE bytes (`_END_DATA $BAF6 -> $BAFE`). Host/core coverage
+  includes exact bytes, all empty forms, 254/255/256 boundaries, unterminated
+  and embedded quotes, comments, labels, PC/high-water, rollback, and
+  preservation of `DB 'A'`/`LDA #'A'`. Candidate `1502` was board-rejected
+  because the general word lexer rejected the typed apostrophe boundary; the
+  DC-local replacement parser and a structural regression guard are frozen in
+  `1524`. Board acceptance proves every encoding and empty form at the expected
+  PCs, `SEAL`, zero-relocation package/load, identical relocated/loaded bytes,
+  execution with `$7906=$D7`, and atomic malformed-input rollback to
+  `A5 4F 4B`. The exact transcript is appended to the hardware log.
 
 - [ ] **Unresolved compound fixups.** Add a compact representation and
   resolver for a single unresolved symbol plus a constant addend, including

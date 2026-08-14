@@ -32,7 +32,10 @@ LOCAL_ROOT ?= ../LOCAL
 LOCAL_PROVENANCE := tools/write_local_provenance.ps1
 ASMTEST_CHECK := tools/check_asmtest_3000.ps1
 ASM_OPCODE_AUDIT := tools/check_asm_opcode_coverage.ps1
+ASM_DC_CHECK := tools/check_asm_dc_contract.ps1
+BOARD_S19_IDENTITY_CHECK := tools/check_board_s19_identity.ps1
 HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
+RYORS_LOGO_SVG := ../DOC/branding/logo-r-yors.svg
 FIG_FORTH_HIMON_PATCH := tools/patch_fig_forth_himon_addrs.ps1
 HIMON_VERSION_INC := $(INC_DIR)/himon-version.inc
 ASM_VERSION_INC := $(INC_DIR)/asm-version.inc
@@ -337,7 +340,7 @@ RELEASE_LOCAL_TARGETS ?= \
 	basic-himon-rom-bin \
 	basic-forth-himon-rom-bin
 
-all: firmware
+all: ryors-logo-stamp firmware
 
 firmware: $(FIRMWARE_TARGETS)
 	@echo "Built current onboard firmware targets: $(FIRMWARE_TARGETS)"
@@ -561,7 +564,14 @@ asmtest-3000-wdc-check: asmtest-6800-wdc-check
 asm-opcode-coverage: $(ASM_OPCODE_AUDIT) $(ASM_V1_CORE_SRC)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_OPCODE_AUDIT) -SourcePath "$(ASM_V1_CORE_SRC)"
 
-asm-test: asm-opcode-coverage asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
+asm-dc-check: $(ASM_DC_CHECK) $(ASM_V1_CORE_SRC)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_DC_CHECK) -AsmSourcePath "$(ASM_V1_CORE_SRC)"
+
+board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(HIMON_ROM_S19) $(HIMON_LOAD_S19) $(HIMON_ROM_INSTALL_S19) $(HIMON_APV2_INSTALL_S19) $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19)
+	@make -C "$(STR8N_HOME)" ryors-full-bank RYORS_28K_S19="$(abspath $(RYORS_V12_28K_S19))"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.21/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19"
+
+asm-test: asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-ap-v2-check: $(ASM_SESSION_REPORT_AP_BIN) $(AP_V2_PACKAGE_CHECK) $(ASM_V1_FLASH_SRC)
@@ -665,7 +675,7 @@ routine-hash-comments: $(ROUTINE_HASH_COMMENTS_GEN) $(CALL_ORDER_SRC)
 edge-docs: $(EDGE_DOCS)
 	@echo "Updated edge docs: $(EDGE_DOCS)."
 
-docs: $(GENERATED_DOCS) edge-docs
+docs: ryors-logo-stamp $(GENERATED_DOCS) edge-docs
 	@echo "Updated docs: $(GENERATED_DOCS)."
 
 docs-watch:
@@ -1055,9 +1065,12 @@ $(FIG_FORTH_C000_OBJ): $(FIG_FORTH_C000_SRC)
 	$(ASM) $(ASFLAGS) $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
-.PHONY: himon-version-stamp
+.PHONY: himon-version-stamp ryors-logo-stamp
 himon-version-stamp: $(HIMON_VERSION_STAMP)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" -AsmOutPath "$(ASM_VERSION_INC)" $(HIMON_VISIBLE_STAMP_ARG)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -OutPath "$(HIMON_VERSION_INC)" -AsmOutPath "$(ASM_VERSION_INC)" -SvgPath "$(RYORS_LOGO_SVG)" $(HIMON_VISIBLE_STAMP_ARG)
+
+ryors-logo-stamp: $(HIMON_VERSION_STAMP) $(RYORS_LOGO_SVG)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -SvgPath "$(RYORS_LOGO_SVG)" $(HIMON_VISIBLE_STAMP_ARG)
 
 $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) $(STR8N_IMPORTED_CONTRACT) himon-version-stamp
 
@@ -1137,7 +1150,7 @@ endif
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \
 	asm-v1-runtime-paste asm-session-report asm-session-report-ap-bin asm-v1-flash asm-flash asm-opcode-coverage \
 	asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check \
-	asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check \
+	asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-dc-check board-s19-check \
 	asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src \
 	fig-forth-c000 fig-forth-str8-update-s19 msbasic-osi msbasic-osi-src \
 	msbasic-osi-bin msbasic-osi-ram msbasic-osi-c000 \
@@ -1146,5 +1159,5 @@ endif
 	routine-word-tree himon-support-map himon-command-map hash-routine-map \
 	cmd-flow-map stack-depth-map interrupt-vector-map irq-vector-map \
 	map-of-maps control-deck-map routine-graph-insights routine-components routine-hash-comments \
-	edge-docs docs docs-watch docs-html bin-check rom testing artifacts clean realclean \
+	edge-docs docs docs-watch docs-html ryors-logo-stamp bin-check rom testing artifacts clean realclean \
 	upload term

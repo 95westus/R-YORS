@@ -1,5 +1,9 @@
 # ASM-F2 Final-Image Onboard Test Cards
 
+The board-accepted `00.0814(1524)` compact-string image has its own focused,
+paste-ready card: [`COMPACT_DC_BOARD_TEST_CARD.md`](COMPACT_DC_BOARD_TEST_CARD.md).
+The material below remains exact evidence for the earlier final-image phases.
+
 These three RAM-only cards close the negative-expression, compact opcode-table,
 and post-`END` workflow gaps. Installed image `00.0814(0654)` failed Card A and
 must not be used for acceptance. The corrected `00.0814(0805)` replacement is

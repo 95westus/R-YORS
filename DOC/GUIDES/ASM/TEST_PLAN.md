@@ -14508,3 +14508,124 @@ live STR8-N shell, explicit `J3` printed `J B3`, generated the synthetic RESET,
 timed out through STR8-N `1.21`, and cold-booted matching HIMON `1303` without
 physical intervention. The current installation, persistence, fixed ROM head,
 ASM identity, RAM-tool rename, and Bank-3 handoff are board-accepted.
+
+## 2026-08-14 ASM Compact DC Host Candidate
+
+Host status: accepted. Board status: pending.
+
+The compact data family is now defined as:
+
+```text
+DC 'OK'  -> 4F 4B
+DC C'OK' -> 4F 4B 00
+DC H'OK' -> 4F CB
+DC P'OK' -> 02 4F 4B
+```
+
+Empty raw/C/H/P forms emit zero bytes, `$00`, `$80`, and `$00`. Raw/H forms
+accept at most 255 characters; C/P forms accept at most 254 because their
+terminator/prefix shares the atomic 255-byte room count. Existing
+`DC C,"text"`, `DC HB,"text"`, and `DC P,"text"` source remains accepted.
+`DB 'A'` and `LDA #'A'` retain their character-expression behavior.
+
+The implementation adds `ASM_DCM_RAW` but no vocabulary row and no UDATA. It
+reuses `ASM_DELIM`, `ASM_EMIT_DC_COUNT`, and the existing emission loop. The
+flash-resident size comparison is:
+
+```text
+                         1303 baseline   compact-DC 1502   delta
+CODE                     $3867           $3895             +$002E / +46
+DATA                     $028F           $028F             +$0000
+UDATA                    $1D6C           $1D6C             +$0000
+_END_DATA                $BAF6           $BB24             +$002E
+headroom to $C000        $050A           $04DC             -$002E
+```
+
+`make -C SRC asm-test` passes the 217-row opcode audit, independent compact-DC
+oracle (`success=11 failure=8 boundaries=4`), ASMTEST, all runtime variants,
+flash map gate, session reporter, and AP v2 package check. The standalone core
+smoke includes exact compact/legacy bytes, all empty forms, a 255-byte raw
+success, 256-byte raw rejection, malformed/embedded quote rejection, comment
+and label handling, PC/high-water checks, rollback, and `LDA #'A'` isolation.
+
+Candidate `1502` was host-accepted but board-rejected. Raw `DC 'OK'` and all
+three legacy comma/double-quote forms assembled, while each compact typed form
+and each compact typed empty form failed `ERR=$03 BO` at unchanged `$3009`.
+The downstream image therefore had no relocations, and its package/load steps
+did not qualify the feature. The exact transcript is retained in the hardware
+log.
+
+The fault was in `ASM_EMIT_DC_PARSE_HEAD`: it called the general word lexer for
+the compact mode. That lexer correctly requires a global delimiter after a
+word, while apostrophe remains a character-literal introducer rather than a
+global punctuation token. The replacement reads `C`, `H`/optional `B`, or `P`
+case-insensitively in a DC-local parse head. A structural host check now rejects
+any `ASM_NEXT_TOKEN` call in that block, preserving `DB 'A'` and `LDA #'A'`.
+
+## 2026-08-14 ASM Compact DC Replacement Candidate
+
+Host status: accepted. Board status: accepted on 2026-08-14.
+
+The replacement firmware family is frozen at HIMON/ASM-F2 `00.0814(1524)`.
+Direct mode parsing reduces the feature to eight resident bytes over `1303`:
+
+```text
+                         1303 baseline   compact-DC 1524   delta
+CODE                     $3867           $386F             +$0008 / +8
+DATA                     $028F           $028F             +$0000
+UDATA                    $1D6C           $1D6C             +$0000
+_END_DATA                $BAF6           $BAFE             +$0008
+headroom to $C000        $050A           $0502             -$0008
+```
+
+`make -C SRC asm-test HIMON_VISIBLE_STAMP=0814(1524)` passes the 217-row
+opcode audit, independent compact-DC oracle (`success=11 failure=8
+boundaries=4`), ASMTEST, all runtime variants, flash map gate, session
+reporter, and AP v2 package check. The final S19 identity gate compares
+canonical ASM `$8000-$BAFD` and HIMON `$C000-$EDB3` bytes across standalone
+load/ROM files, split install streams, the dense 28K Bank-3 image, and
+STR8-N's combined 32K image:
+
+```text
+BOARD S19 IDENTITY = PASS; ASM=$3AFE HIMON=$2DB4 targets=10
+```
+
+The replacement hardware procedure is
+[`COMPACT_DC_BOARD_TEST_CARD.md`](COMPACT_DC_BOARD_TEST_CARD.md). Keep the ASM
+Feature Queue item unchecked until its SEAL relocate/package/load bytes and
+malformed-line rollback are captured on the board.
+
+The first `1524` board phase installed Bank 3 `8-E`, booted matching
+HIMON/ASM-F2 banners, and accepted every raw, compact C/H/P, empty, character,
+and legacy source line at the exact expected PC through `$301E`. `SEAL` passed
+and `RELOCATE 3100` correctly returned `C=$00`. The operator then entered
+`PACKAGE DCTEST 3200`; `$08` is the expected unresolved-name result because the
+defined entry symbol is `START`. The following blank-load `$07` and final
+sticky execution error are consequences of that command, not compact-DC or
+SEAL failures. Resume the preserved session with `ASM SEAL`, `PACKAGE START
+3200`, and `LOAD 3200 3300`, then complete both byte dumps, execution, and the
+malformed-input rollback card.
+
+The completed rerun recreated the source after `ASM NEW` had intentionally
+replaced the earlier preserved session. `PACKAGE START 3200` returned
+`PKG OK @=$3200 L=$004C`; `LOAD 3200 3300` returned
+`LOAD OK=$3300 L=$001E C=$00`. Zero is correct because the body has no internal
+relocation records. Dumps at `$3100-$311D` and `$3300-$331D` were identical:
+
+```text
+A9 D7 8D 06 79 38 60 4F 4B 4F 4B 00 4F CB 02 4F
+4B 00 80 00 A9 41 4F 4B 00 4F CB 02 4F 4B
+```
+
+The loaded body returned normally with A=`$D7`, carry set, and `$7906=$D7`.
+The embedded apostrophe, unterminated raw string, and unknown compact mode each
+returned `$03 BAD OPER` at unchanged `PC=$3401`; the following valid raw string
+advanced to `$3403`, and the final dump was exactly `A5 4F 4B`. This accepts
+compact encoding, legacy compatibility, empties, character isolation,
+SEAL/package/load identity, execution, and transactional rollback on `1524`.
+
+The transcript also contains three harmless operator-context results: `ASM
+SEAL` failed after `ASM NEW` had replaced the saved image; HIMON `D` commands
+entered at `SEAL>` returned `$03`; and an expected dump line pasted at HIMON
+was treated as a hash command and returned `HSH_NF!`. None changes the accepted
+bytes or execution evidence.

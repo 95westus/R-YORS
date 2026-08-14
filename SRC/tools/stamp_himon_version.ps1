@@ -5,9 +5,16 @@ param(
 
     [string]$SourcePath,
 
+    [string]$SvgPath,
+
     [string]$Stamp = (Get-Date -Format 'MMdd(HHmm)')
 )
 
+$mmddMatch = [regex]::Match($Stamp, '^(?<MMDD>\d{4})')
+if (-not $mmddMatch.Success) {
+    throw "Stamp must begin with MMDD: $Stamp"
+}
+$mmdd = $mmddMatch.Groups['MMDD'].Value
 $displayVersion = "HIMON V 00.$Stamp"
 $sourceStamp = if ($Stamp.EndsWith(')')) { $Stamp.Substring(0, $Stamp.Length - 1) } else { $Stamp }
 $sourceVersion = "HIMON V 00.$sourceStamp"
@@ -52,11 +59,36 @@ if ($SourcePath) {
     }
 }
 
-if (-not $OutPath -and -not $AsmOutPath -and -not $SourcePath) {
-    throw "Specify -OutPath, -AsmOutPath, or -SourcePath"
+if ($SvgPath) {
+    $resolvedSvg = Resolve-Path -LiteralPath $SvgPath -ErrorAction Stop
+    $svgText = [System.IO.File]::ReadAllText($resolvedSvg)
+    $svgPattern = '(?s)(<text\b[^>]*\bid="ryors-version"[^>]*>)\s*VERSION\s+\.\d{4}\s*(</text>)'
+    if ($svgText -notmatch $svgPattern) {
+        throw "R-YORS SVG version target not found in $SvgPath"
+    }
+    $logoVersion = "VERSION .$mmdd"
+    $updatedSvg = [regex]::Replace(
+        $svgText,
+        $svgPattern,
+        { param($match) $match.Groups[1].Value + $logoVersion + $match.Groups[2].Value },
+        1
+    )
+    if ($updatedSvg -ne $svgText) {
+        $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+        [System.IO.File]::WriteAllText($resolvedSvg, $updatedSvg, $utf8NoBom)
+    }
 }
 
-Write-Host ("HIMON visible version   = {0}" -f $displayVersion)
+if (-not $OutPath -and -not $AsmOutPath -and -not $SourcePath -and -not $SvgPath) {
+    throw "Specify -OutPath, -AsmOutPath, -SourcePath, or -SvgPath"
+}
+
+if ($OutPath -or $SourcePath) {
+    Write-Host ("HIMON visible version   = {0}" -f $displayVersion)
+}
 if ($AsmOutPath) {
     Write-Host ("ASM-F2 visible version  = {0}" -f $asmDisplayVersion)
+}
+if ($SvgPath) {
+    Write-Host ("R-YORS logo version     = VERSION .{0}" -f $mmdd)
 }

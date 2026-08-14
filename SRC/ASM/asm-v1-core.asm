@@ -447,6 +447,7 @@ ASM_FIXF_LOCAL         EQU             $80
 ASM_DCM_C              EQU             $00
 ASM_DCM_HB             EQU             $01
 ASM_DCM_P              EQU             $02
+ASM_DCM_RAW            EQU             $03
 
 ASM_FIX_PENDING        EQU             $01
 ASM_FIX_RESOLVED       EQU             $02
@@ -6627,6 +6628,172 @@ ASM_SMOKE_DIRECT_DC_BYTE_OK:
                         BEQ             ASM_SMOKE_DIRECT_DC_PC_OK
                         JMP             ASM_SMOKE_DIRECT_FAIL
 ASM_SMOKE_DIRECT_DC_PC_OK:
+
+                        LDA             #$A0
+                        STA             ASM_SLOT
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_DIRECT_DC_COMPACT_BEGIN_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_COMPACT_BEGIN_OK:
+                        LDX             #<ASM_DIRECT_DC_RAW
+                        LDY             #>ASM_DIRECT_DC_RAW
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_RAW_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_RAW_OK:
+                        LDX             #<ASM_DIRECT_DC_COMPACT_C
+                        LDY             #>ASM_DIRECT_DC_COMPACT_C
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_COMPACT_C_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_COMPACT_C_OK:
+                        LDX             #<ASM_DIRECT_DC_COMPACT_H
+                        LDY             #>ASM_DIRECT_DC_COMPACT_H
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_COMPACT_H_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_COMPACT_H_OK:
+                        LDX             #<ASM_DIRECT_DC_COMPACT_P
+                        LDY             #>ASM_DIRECT_DC_COMPACT_P
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_COMPACT_P_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_COMPACT_P_OK:
+                        LDX             #<ASM_DIRECT_DC_EMPTY_RAW
+                        LDY             #>ASM_DIRECT_DC_EMPTY_RAW
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_EMPTY_RAW_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_EMPTY_RAW_OK:
+                        LDX             #<ASM_DIRECT_DC_EMPTY_C
+                        LDY             #>ASM_DIRECT_DC_EMPTY_C
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_EMPTY_C_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_EMPTY_C_OK:
+                        LDX             #<ASM_DIRECT_DC_EMPTY_H
+                        LDY             #>ASM_DIRECT_DC_EMPTY_H
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_EMPTY_H_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_EMPTY_H_OK:
+                        LDX             #<ASM_DIRECT_DC_EMPTY_P
+                        LDY             #>ASM_DIRECT_DC_EMPTY_P
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_EMPTY_P_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_EMPTY_P_OK:
+                        LDX             #<ASM_DIRECT_LDA_CHAR
+                        LDY             #>ASM_DIRECT_LDA_CHAR
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_CHAR_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_CHAR_OK:
+                        LDX             #$00
+ASM_SMOKE_DIRECT_DC_COMPACT_BYTES_LOOP:
+                        LDA             ASM_CODE_BUF,X
+                        CMP             ASM_DIRECT_DC_COMPACT_EXPECT,X
+                        BEQ             ASM_SMOKE_DIRECT_DC_COMPACT_BYTE_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_COMPACT_BYTE_OK:
+                        INX
+                        CPX             #$0F
+                        BNE             ASM_SMOKE_DIRECT_DC_COMPACT_BYTES_LOOP
+                        LDA             ASM_PC_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        CMP             #$0F
+                        BNE             ASM_SMOKE_DIRECT_DC_COMPACT_PC_BAD
+                        LDA             ASM_PC_HI
+                        SBC             ASM_START_PC_HI
+                        BNE             ASM_SMOKE_DIRECT_DC_COMPACT_PC_BAD
+                        LDA             ASM_HIGH_PC_LO
+                        SEC
+                        SBC             ASM_START_PC_LO
+                        CMP             #$0F
+                        BNE             ASM_SMOKE_DIRECT_DC_COMPACT_PC_BAD
+                        LDA             ASM_HIGH_PC_HI
+                        SBC             ASM_START_PC_HI
+                        BEQ             ASM_SMOKE_DIRECT_DC_COMPACT_PC_OK
+ASM_SMOKE_DIRECT_DC_COMPACT_PC_BAD:
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_COMPACT_PC_OK:
+
+                        LDA             #$A1
+                        STA             ASM_SLOT
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_DIRECT_DC_LIMIT_BEGIN_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_LIMIT_BEGIN_OK:
+                        LDX             #<ASM_DIRECT_DC_RAW_255
+                        LDY             #>ASM_DIRECT_DC_RAW_255
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASM_SMOKE_DIRECT_DC_LIMIT_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_LIMIT_OK:
+                        LDA             ASM_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_DIRECT_DC_LIMIT_BAD
+                        LDA             ASM_PC_HI
+                        BNE             ASM_SMOKE_DIRECT_DC_LIMIT_BAD
+                        LDA             ASM_HIGH_PC_LO
+                        CMP             #$FF
+                        BNE             ASM_SMOKE_DIRECT_DC_LIMIT_BAD
+                        LDA             ASM_HIGH_PC_HI
+                        BNE             ASM_SMOKE_DIRECT_DC_LIMIT_BAD
+                        LDA             ASM_CODE_BUF
+                        CMP             #'A'
+                        BNE             ASM_SMOKE_DIRECT_DC_LIMIT_BAD
+                        LDA             ASM_CODE_BUF+$FE
+                        CMP             #'A'
+                        BEQ             ASM_SMOKE_DIRECT_DC_LIMIT_DONE
+ASM_SMOKE_DIRECT_DC_LIMIT_BAD:
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_LIMIT_DONE:
+
+                        LDA             #$A2
+                        STA             ASM_SLOT
+                        LDA             #$00
+                        TAX
+                        TAY
+                        JSR             ASM_BEGIN
+                        BCS             ASM_SMOKE_DIRECT_DC_ERROR_BEGIN_OK
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_ERROR_BEGIN_OK:
+                        LDA             #ASM_STATUS_BAD_RANGE
+                        LDX             #<ASM_DIRECT_DC_RAW_256
+                        LDY             #>ASM_DIRECT_DC_RAW_256
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_ERR
+                        BCC             ASM_SMOKE_DIRECT_DC_ERROR_BAD
+                        LDA             #ASM_STATUS_BAD_OPER
+                        LDX             #<ASM_DIRECT_DC_UNTERM
+                        LDY             #>ASM_DIRECT_DC_UNTERM
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_ERR
+                        BCC             ASM_SMOKE_DIRECT_DC_ERROR_BAD
+                        LDA             #ASM_STATUS_BAD_OPER
+                        LDX             #<ASM_DIRECT_DC_EMBED_QUOTE
+                        LDY             #>ASM_DIRECT_DC_EMBED_QUOTE
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_ERR
+                        BCC             ASM_SMOKE_DIRECT_DC_ERROR_BAD
+                        LDA             #ASM_STATUS_BAD_OPER
+                        LDX             #<ASM_DIRECT_DC_BAD_MODE
+                        LDY             #>ASM_DIRECT_DC_BAD_MODE
+                        JSR             ASM_SMOKE_ASSEMBLE_LINE_ERR
+                        BCC             ASM_SMOKE_DIRECT_DC_ERROR_BAD
+                        LDA             ASM_PC_LO
+                        ORA             ASM_PC_HI
+                        ORA             ASM_HIGH_PC_LO
+                        ORA             ASM_HIGH_PC_HI
+                        BEQ             ASM_SMOKE_DIRECT_DC_ERROR_OK
+ASM_SMOKE_DIRECT_DC_ERROR_BAD:
+                        JMP             ASM_SMOKE_DIRECT_FAIL
+ASM_SMOKE_DIRECT_DC_ERROR_OK:
 
                         LDA             #$DE
                         STA             ASM_SLOT
@@ -13882,14 +14049,18 @@ ASM_EMIT_DATA_NOTE_RELOC_DONE:
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: ASM_EMIT_DC
-; IN : X/Y = DC operand tail: C,"text" | HB,"text" | P,"text".
+; IN : X/Y = DC operand tail:
+;      'text' | C'text' | H'text' | P'text'
+;      C,"text" | HB,"text" | P,"text" (legacy compatible).
 ; OUT: C=1,A=OK when emitted. C=0,A=status on failure.
 ; ----------------------------------------------------------------------------
 ASM_EMIT_DC:
                         STX             ASM_DB_TAIL_LO
                         STY             ASM_DB_TAIL_HI
                         JSR             ASM_EMIT_DC_COUNT
-                        BCC             ASM_EMIT_DC_RETURN
+                        BCS             ASM_EMIT_DC_COUNT_OK
+                        RTS
+ASM_EMIT_DC_COUNT_OK:
                         LDA             ASM_DB_COUNT
                         JSR             ASM_EMIT_ROOM_FOR_A
                         BCS             ASM_EMIT_DC_ROOM_OK
@@ -13937,9 +14108,14 @@ ASM_EMIT_DC_CHAR_A:
 ASM_EMIT_DC_CHARS_DONE:
                         JSR             ASM_ADV_PARSE
                         LDA             ASM_DC_MODE
-                        CMP             #ASM_DCM_C
+                        BEQ             ASM_EMIT_DC_TERM_A
+                        CMP             #ASM_DCM_HB
                         BNE             ASM_EMIT_DC_OK
-                        LDA             #$00
+                        LDA             ASM_DC_LEN
+                        BNE             ASM_EMIT_DC_OK
+                        LDA             #$80
+                        BRA             ASM_EMIT_DC_TERM_A
+ASM_EMIT_DC_TERM_A:
                         JSR             ASM_EMIT_BYTE
                         BCC             ASM_EMIT_DC_RETURN
 ASM_EMIT_DC_OK:
@@ -13963,13 +14139,16 @@ ASM_EMIT_DC_COUNT_LOOP:
                         BEQ             ASM_EMIT_DC_COUNT_BAD_OPER
                         CMP             #$0A
                         BEQ             ASM_EMIT_DC_COUNT_BAD_OPER
-                        CMP             #'"'
+                        CMP             ASM_DELIM
                         BEQ             ASM_EMIT_DC_COUNT_DONE
                         INC             ASM_DB_COUNT
+                        BEQ             ASM_EMIT_DC_COUNT_BAD_RANGE
                         JSR             ASM_ADV_PARSE
                         BRA             ASM_EMIT_DC_COUNT_LOOP
 ASM_EMIT_DC_COUNT_BAD_OPER:
                         JMP             ASM_EMIT_DC_BAD_OPER
+ASM_EMIT_DC_COUNT_BAD_RANGE:
+                        JMP             ASM_EMIT_DC_BAD_RANGE
 ASM_EMIT_DC_COUNT_DONE:
                         LDA             ASM_DB_COUNT
                         STA             ASM_DC_LEN
@@ -13978,22 +14157,21 @@ ASM_EMIT_DC_COUNT_DONE:
                         BCS             ASM_EMIT_DC_TAIL_OK
                         JMP             ASM_EMIT_DC_BAD_OPER
 ASM_EMIT_DC_TAIL_OK:
-                        LDA             ASM_DC_MODE
-                        CMP             #ASM_DCM_HB
-                        BNE             ASM_EMIT_DC_COUNT_TERM
                         LDA             ASM_DC_LEN
-                        BNE             ASM_EMIT_DC_HB_LEN_OK
-                        JMP             ASM_EMIT_DC_BAD_OPER
-ASM_EMIT_DC_HB_LEN_OK:
-                        STA             ASM_DB_COUNT
-                        SEC
-                        RTS
+                        LDX             ASM_DC_MODE
+                        CPX             #ASM_DCM_HB
+                        BEQ             ASM_EMIT_DC_COUNT_HB
+                        CPX             #ASM_DCM_RAW
+                        BEQ             ASM_EMIT_DC_COUNT_STORE
 ASM_EMIT_DC_COUNT_TERM:
-                        LDA             ASM_DC_LEN
                         CLC
                         ADC             #$01
                         BCC             ASM_EMIT_DC_COUNT_STORE
                         JMP             ASM_EMIT_DC_BAD_RANGE
+ASM_EMIT_DC_COUNT_HB:
+                        CMP             #$00
+                        BNE             ASM_EMIT_DC_COUNT_STORE
+                        LDA             #$01
 ASM_EMIT_DC_COUNT_STORE:
                         STA             ASM_DB_COUNT
                         SEC
@@ -14002,70 +14180,61 @@ ASM_EMIT_DC_COUNT_STORE:
 ASM_EMIT_DC_PARSE_HEAD:
                         STX             ASM_PARSE_PTR_LO
                         STY             ASM_PARSE_PTR_HI
-                        JSR             ASM_NEXT_TOKEN
-                        BCS             ASM_EMIT_DC_MODE_TOKEN
-                        RTS
-ASM_EMIT_DC_MODE_TOKEN:
-                        LDA             ASM_TOK_KIND
-                        CMP             #ASM_TOK_WORD
+                        JSR             ASM_SKIP_SPACES
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        CMP             #$27
+                        BNE             ASM_EMIT_DC_PARSE_MODE_HEAD
+                        LDX             #ASM_DCM_RAW
+                        STX             ASM_DC_MODE
+                        BRA             ASM_EMIT_DC_QUOTE_OPEN
+ASM_EMIT_DC_PARSE_MODE_HEAD:
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        AND             #$DF
+                        CMP             #'C'
+                        BEQ             ASM_EMIT_DC_HEAD_C
+                        CMP             #'H'
+                        BEQ             ASM_EMIT_DC_HEAD_H
+                        CMP             #'P'
                         BNE             ASM_EMIT_DC_BAD_OPER
-                        JSR             ASM_EMIT_DC_PARSE_MODE
-                        BCC             ASM_EMIT_DC_FAIL_A
+                        LDA             #ASM_DCM_P
+                        BRA             ASM_EMIT_DC_HEAD_ONE
+ASM_EMIT_DC_HEAD_C:
+                        LDA             #ASM_DCM_C
+ASM_EMIT_DC_HEAD_ONE:
+                        STA             ASM_DC_MODE
+                        JSR             ASM_ADV_PARSE
+                        BRA             ASM_EMIT_DC_HEAD_DONE
+ASM_EMIT_DC_HEAD_H:
+                        LDA             #ASM_DCM_HB
+                        STA             ASM_DC_MODE
+                        JSR             ASM_ADV_PARSE
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        AND             #$DF
+                        CMP             #'B'
+                        BNE             ASM_EMIT_DC_HEAD_DONE
+                        JSR             ASM_ADV_PARSE
+ASM_EMIT_DC_HEAD_DONE:
                         JSR             ASM_SKIP_SPACES
                         LDY             #$00
                         LDA             (ASM_PARSE_PTR_LO),Y
                         CMP             #','
-                        BNE             ASM_EMIT_DC_BAD_OPER
+                        BEQ             ASM_EMIT_DC_LEGACY_QUOTE
+                        CMP             #$27
+                        BEQ             ASM_EMIT_DC_QUOTE_OPEN
+                        BRA             ASM_EMIT_DC_BAD_OPER
+ASM_EMIT_DC_LEGACY_QUOTE:
                         JSR             ASM_ADV_PARSE
                         JSR             ASM_SKIP_SPACES
                         LDY             #$00
                         LDA             (ASM_PARSE_PTR_LO),Y
                         CMP             #'"'
                         BNE             ASM_EMIT_DC_BAD_OPER
+ASM_EMIT_DC_QUOTE_OPEN:
+                        STA             ASM_DELIM
                         JSR             ASM_ADV_PARSE
-                        LDA             #ASM_STATUS_OK
-                        SEC
-                        RTS
-
-ASM_EMIT_DC_PARSE_MODE:
-                        LDA             ASM_LEN
-                        CMP             #$01
-                        BEQ             ASM_EMIT_DC_MODE_ONE
-                        CMP             #$02
-                        BEQ             ASM_EMIT_DC_MODE_TWO
-ASM_EMIT_DC_MODE_BAD:
-                        LDA             #ASM_STATUS_BAD_OPER
-                        CLC
-                        RTS
-ASM_EMIT_DC_MODE_ONE:
-                        LDY             #$00
-                        LDA             (ASM_TOKEN_PTR_LO),Y
-                        AND             #$DF
-                        CMP             #'C'
-                        BEQ             ASM_EMIT_DC_MODE_C
-                        CMP             #'P'
-                        BEQ             ASM_EMIT_DC_MODE_P
-                        BRA             ASM_EMIT_DC_MODE_BAD
-ASM_EMIT_DC_MODE_C:
-                        LDA             #ASM_DCM_C
-                        BRA             ASM_EMIT_DC_MODE_OK
-ASM_EMIT_DC_MODE_P:
-                        LDA             #ASM_DCM_P
-                        BRA             ASM_EMIT_DC_MODE_OK
-ASM_EMIT_DC_MODE_TWO:
-                        LDY             #$00
-                        LDA             (ASM_TOKEN_PTR_LO),Y
-                        AND             #$DF
-                        CMP             #'H'
-                        BNE             ASM_EMIT_DC_MODE_BAD
-                        INY
-                        LDA             (ASM_TOKEN_PTR_LO),Y
-                        AND             #$DF
-                        CMP             #'B'
-                        BNE             ASM_EMIT_DC_MODE_BAD
-                        LDA             #ASM_DCM_HB
-ASM_EMIT_DC_MODE_OK:
-                        STA             ASM_DC_MODE
                         LDA             #ASM_STATUS_OK
                         SEC
                         RTS
@@ -18298,7 +18467,45 @@ ASM_DIRECT_DW_LIST:    DB              "WORD DW $1234,$12,10+1,'A'",0
 ASM_DIRECT_DC_C:       DB              "CSTR DC C,",34,"OK",34,0
 ASM_DIRECT_DC_HB:      DB              "HBSTR DC HB,",34,"OK",34,0
 ASM_DIRECT_DC_P:       DB              "PSTR DC P,",34,"OK",34,0
-ASM_DIRECT_DC_BAD:     DB              "        DC HB,",34,34,0
+ASM_DIRECT_DC_RAW:     DB              "RAW DC 'OK'; compact raw",0
+ASM_DIRECT_DC_COMPACT_C:
+                        DB              "C2 DC C'OK'",0
+ASM_DIRECT_DC_COMPACT_H:
+                        DB              "H2 DC H'OK'",0
+ASM_DIRECT_DC_COMPACT_P:
+                        DB              "P2 DC P'OK'",0
+ASM_DIRECT_DC_EMPTY_RAW:
+                        DB              "R0 DC ''",0
+ASM_DIRECT_DC_EMPTY_C: DB              "C0 DC C''",0
+ASM_DIRECT_DC_EMPTY_H: DB              "H0 DC H''",0
+ASM_DIRECT_DC_EMPTY_P: DB              "P0 DC P''",0
+ASM_DIRECT_LDA_CHAR:   DB              "        LDA #'A'",0
+ASM_DIRECT_DC_RAW_255:
+                        DB              "        DC '"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'",0
+ASM_DIRECT_DC_RAW_256:
+                        DB              "        DC '"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'",0
+ASM_DIRECT_DC_UNTERM:  DB              "        DC 'NO",0
+ASM_DIRECT_DC_EMBED_QUOTE:
+                        DB              "        DC 'IT''S'",0
+ASM_DIRECT_DC_BAD_MODE:
+                        DB              "        DC X'NO'",0
+ASM_DIRECT_DC_BAD:     DB              "        DC X,",34,"NO",34,0
 ASM_DIRECT_ORG_CURRENT:
                         DB              "        ORG *",0
 ASM_DIRECT_ORG_FORWARD:
@@ -18409,6 +18616,9 @@ ASM_DIRECT_DW_EXPECT:  DB              $34,$12,$12,$00,$0B,$00,$41,$00
 ASM_DIRECT_FORWARD_EXPECT:
                         DB              $06,$70,$06,$70,$06,$70,$60
 ASM_DIRECT_DC_EXPECT:  DB              $4F,$4B,$00,$4F,$CB,$02,$4F,$4B
+ASM_DIRECT_DC_COMPACT_EXPECT:
+                        DB              $4F,$4B,$4F,$4B,$00,$4F,$CB,$02
+                        DB              $4F,$4B,$00,$80,$00,$A9,$41
 ASM_IMPORT_DATA_BYTES_EXPECT:
                         DB              $FF,$FF,$FF,$FF,$FF,$FF
 ASM_IMPORT_DATA_FIX_SEL_EXPECT:

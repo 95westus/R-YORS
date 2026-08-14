@@ -23391,3 +23391,345 @@ chain. Explicit `J3` passes the current D3 directory gate, selects Bank 3,
 enters its RESET vector, and reaches matching STR8-N `1.21` and HIMON `1303`.
 Together with the preceding installation acceptance, all phases of the current
 board card pass.
+
+## 2026-08-14 ASM compact DC `1502` rejected candidate
+
+The operator supplied this exact board capture from HIMON/ASM-F2
+`00.0814(1502)` after a successful STR8-N `1.21` Bank-3 payload install and
+top update:
+
+```text
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>L
+S19
+
+STR8-N 1.21 TOP UPDATE
+BACKUP B1:F; TARGET B3:F
+TYPE BACKUP B1F> BACKUP B1F
+BACKUP VERIFIED
+SAFE PHY $0F000-$0FFFF; TARGET PHY $1F000-$1FFFF; SUM=$0756
+TYPE STR8-N 1.21> STR8-N 1.21
+ERASING B3:F - NO RESET/NMI/POWER
+STR8-N 1.21 VERIFIED; RESET
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1502)
+>ASM NEW
+ASM-F2 00.0814(1502)
+ASM>$2000: ORG $3000
+ASM>$3000: START LDA #$D7
+ASM>$3002: STA $7906
+ASM>$3005: SEC
+ASM>$3006: RTS
+ASM>$3007: RAW DC 'OK'; RAW COMMENT BOUNDARY
+ASM>$3009: CSTR DC C'OK'
+ERR=$03 BO PC=$3009
+ASM>$3009: HBSTR DC H'OK'
+ERR=$03 BO PC=$3009
+ASM>$3009: PSTR DC P'OK'
+ERR=$03 BO PC=$3009
+ASM>$3009: R0 DC ''
+ASM>$3009: C0 DC C''
+ERR=$03 BO PC=$3009
+ASM>$3009: H0 DC H''
+ERR=$03 BO PC=$3009
+ASM>$3009: P0 DC P''
+ERR=$03 BO PC=$3009
+ASM>$3009: CHAR LDA #'A'
+ASM>$300B: OLDC DC C,"OK"
+ASM>$300E: OLDH DC HB,"OK"
+ASM>$3010: OLDP DC P,"OK"
+ASM>$3013: ENTRY START
+ASM>$3013: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> RELOCATE 3100
+REL OK BASE=$3100 C=$00
+SEAL> PACKAGE DCTEST 3200
+PKG ERR=$08
+SEAL> LOAD 3200 3300
+LOAD ERR=$07 BL
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$07
+>
+```
+
+This rejects candidate `1502`. Raw compact text succeeded, all compact typed
+forms failed at the unchanged `$3009` PC, and the legacy C/HB/P spellings still
+worked. The failure was localized to use of the general word lexer for the
+typed apostrophe boundary; apostrophe is deliberately not a global delimiter
+because it introduces character literals. The replacement uses a DC-local
+mode parser. The later package/load errors do not independently implicate
+SEAL: the typed lines had already been rejected, and `DCTEST` was not the
+defined entry symbol required by `PACKAGE`.
+
+## 2026-08-14 ASM compact DC `1524` positive syntax phase
+
+The replacement installed and booted with matching HIMON/ASM-F2 `1524`
+identities. This exact operator capture accepts compact typed parsing, empty
+encodings by PC advance, legacy compatibility, `LDA #'A'` isolation, `SEAL`,
+and the expected zero-relocation result:
+
+```text
+STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>J3
+J B3
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1524)
+>ASM NEW
+ASM-F2 00.0814(1524)
+ASM>$2000: ORG $3000
+ASM>$3000: START LDA #$D7
+ASM>$3002: STA $7906
+ASM>$3005: SEC
+ASM>$3006: RTS
+ASM>$3007: RAW DC 'OK'; RAW COMMENT BOUNDARY
+ASM>$3009: CSTR DC C'OK'
+ASM>$300C: HBSTR DC H'OK'
+ASM>$300E: PSTR DC P'OK'
+ASM>$3011: R0 DC ''
+ASM>$3011: C0 DC C''
+ASM>$3012: H0 DC H''
+ASM>$3013: P0 DC P''
+ASM>$3014: CHAR LDA #'A'
+ASM>$3016: OLDC DC C,"OK"
+ASM>$3019: OLDH DC HB,"OK"
+ASM>$301B: OLDP DC P,"OK"
+ASM>$301E: ENTRY START
+ASM>$301E: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> RELOCATE 3100
+REL OK BASE=$3100 C=$00
+SEAL> PACKAGE DCTEST 3200
+PKG ERR=$08
+SEAL> LOAD 3200 3300
+LOAD ERR=$07 BL
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$07
+>
+```
+
+The compact feature itself passes this phase: PCs advance through the exact
+expected `$301E` body, including zero bytes for raw empty, one byte for each
+typed empty, and all three legacy forms. `DCTEST` is not a defined symbol;
+therefore package error `$08`, the subsequent blank-load `$07`, and the sticky
+final error are expected command-chain consequences. Package/load, exact body
+dumps, execution, and malformed-input rollback remain open. The preserved
+final-image session can be resumed with `ASM SEAL` and `PACKAGE START 3200`.
+
+## 2026-08-14 ASM compact DC `1524` final acceptance
+
+The operator supplied the following complete continuation capture. It includes
+the initial undefined package-name path, an attempted resume after `ASM NEW`
+had replaced the preserved session, and the clean full rerun:
+
+```text
+STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: .S
+I L H J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>J3
+J B3
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: ......
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0814(1524)
+>ASM NEW
+ASM-F2 00.0814(1524)
+ASM>$2000: ORG $3000
+ASM>$3000: START LDA #$D7
+ASM>$3002: STA $7906
+ASM>$3005: SEC
+ASM>$3006: RTS
+ASM>$3007: RAW DC 'OK'; RAW COMMENT BOUNDARY
+ASM>$3009: CSTR DC C'OK'
+ASM>$300C: HBSTR DC H'OK'
+ASM>$300E: PSTR DC P'OK'
+ASM>$3011: R0 DC ''
+ASM>$3011: C0 DC C''
+ASM>$3012: H0 DC H''
+ASM>$3013: P0 DC P''
+ASM>$3014: CHAR LDA #'A'
+ASM>$3016: OLDC DC C,"OK"
+ASM>$3019: OLDH DC HB,"OK"
+ASM>$301B: OLDP DC P,"OK"
+ASM>$301E: ENTRY START
+ASM>$301E: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> RELOCATE 3100
+REL OK BASE=$3100 C=$00
+SEAL> PACKAGE DCTEST 3200
+PKG ERR=$08
+SEAL> LOAD 3200 3300
+LOAD ERR=$07 BL
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$07
+>ASM NEW
+ASM-F2 00.0814(1524)
+ASM>$2000: .
+ASM BYE
+>ASM SEAL
+ASM-F2 00.0814(1524)
+#56AD7400# EXEC ERR=$03
+>PACKAGE START 3200
+#1435E41B# HSH_NF!
+>LOAD 3200 3300
+#E3F88DE9# HSH_NF!
+>.
+#2B0C98F1# HSH_NF!
+>D 3100 311D
+3100: A9 D7 8D 06 79 38 60 4F | 4B 4F 4B 00 4F CB 02 4F | ....y8`OKOK.O..O
+3110: 4B 00 80 00 A9 41 4F 4B | 00 4F CB 02 4F 4B | K....AOK.O..OK
+>D 3300 331D
+3300: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00 | ................
+3310: 00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 | ..............
+>G 3300
+GO 3300
+
+BRK 00 PC=3302
+A=01 X=30 Y=30 P=75 S=FB NV-BdIzC
+>ASM NEW
+ASM-F2 00.0814(1524)
+ASM>$2000: ORG $3000
+ASM>$3000: START LDA #$D7
+ASM>$3002: STA $7906
+ASM>$3005: SEC
+ASM>$3006: RTS
+ASM>$3007: RAW DC 'OK'; RAW COMMENT BOUNDARY
+ASM>$3009: CSTR DC C'OK'
+ASM>$300C: HBSTR DC H'OK'
+ASM>$300E: PSTR DC P'OK'
+ASM>$3011: R0 DC ''
+ASM>$3011: C0 DC C''
+ASM>$3012: H0 DC H''
+ASM>$3013: P0 DC P''
+ASM>$3014: CHAR LDA #'A'
+ASM>$3016: OLDC DC C,"OK"
+ASM>$3019: OLDH DC HB,"OK"
+ASM>$301B: OLDP DC P,"OK"
+ASM>$301E: ENTRY START
+ASM>$301E: END
+ASM OK
+SEAL> SEAL
+SEAL OK
+SEAL> RELOCATE 3100
+REL OK BASE=$3100 C=$00
+SEAL> PACKAGE START 3200
+PKG OK @=$3200 L=$004C
+SEAL> LOAD 3200 3300
+LOAD OK=$3300 L=$001E C=$00
+SEAL> D 3100 311D
+ERR=$03 BO PC=$301E
+SEAL> D 3300 331D
+ERR=$03 BO PC=$301E
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$03
+>D 3100 311D
+3100: A9 D7 8D 06 79 38 60 4F | 4B 4F 4B 00 4F CB 02 4F | ....y8`OKOK.O..O
+3110: 4B 00 80 00 A9 41 4F 4B | 00 4F CB 02 4F 4B | K....AOK.O..OK
+>D 3300 331D
+3300: A9 D7 8D 06 79 38 60 4F | 4B 4F 4B 00 4F CB 02 4F | ....y8`OKOK.O..O
+3310: 4B 00 80 00 A9 41 4F 4B | 00 4F CB 02 4F 4B | K....AOK.O..OK
+>G 3300
+GO 3300
+
+#GO# ENTRY=3300
+RET A=D7 X=30 Y=30 P=F5 S=FD NV-BdIzC
+>D 7906
+7906: D7 | .
+>ASM NEW
+ASM-F2 00.0814(1524)
+ASM>$2000: ORG $3400
+ASM>$3400: DB $A5
+ASM>$3401: DC 'IT''S'
+ERR=$03 BO PC=$3401
+ASM>$3401: DC 'NO
+ERR=$03 BO PC=$3401
+ASM>$3401: DC X'NO'
+ERR=$03 BO PC=$3401
+ASM>$3401: DC 'OK'
+ASM>$3403: END
+ASM OK
+SEAL> .
+ASM BYE
+#56AD7400# EXEC ERR=$03
+>D 3400 3402
+3400: A5 4F 4B | .OK
+>3400: A5 4F 4B
+#61DCC418# HSH_NF!
+>
+```
+
+The clean rerun is accepted. `PACKAGE START 3200` built a `$004C` envelope;
+`LOAD 3200 3300` recovered the complete `$001E` body with `C=$00`, correctly
+reporting no internal relocations. The `$3100` and `$3300` bodies are byte-for-
+byte identical, execution returns A=`$D7` with carry set and writes `$7906=D7`,
+and all three malformed compact inputs fail atomically at unchanged `$3401`
+before the valid raw `OK` produces the exact `A5 4F 4B` final image.
+
+The failed `ASM SEAL` follows `ASM NEW` plus `.`, which replaced and then left
+the preserved final-image session. The two `D` failures occurred because HIMON
+commands were entered at `SEAL>`; the same dumps succeeded after `.`. The final
+`HSH_NF!` is the result of pasting the expected dump line as a HIMON command.
+These operator-context results do not affect acceptance. Compact raw/CSTR/
+HBSTR/PSTR syntax, legacy compatibility, empty encodings, character isolation,
+SEAL/package/load ownership, execution, and rollback are board-accepted on
+HIMON/ASM-F2 `00.0814(1524)`.

@@ -20,7 +20,7 @@ ASM-F2, OIL, or AP, and can supervise compatible non-R-YORS guest systems.
 ## System
 
 ```text
-physical RESET -> Bank 3 STR8-N 1.21 -- timeout --> Bank 3 HIMON 1303
+physical RESET -> Bank 3 STR8-N 1.21 -- timeout --> Bank 3 HIMON 1524
                        |                              |
                        |                              +--> ASM-F2 -> SEAL/AP
                        |                                           |
@@ -52,19 +52,24 @@ default payload, currently HIMON.
 - STR8-N `1.21` installs dense S19 ranges transactionally, runs recovery tools
   from RAM, maintains bank-directory journals, updates its protected top
   sector through a verified backup, and launches enrolled Banks 0-3.
-- HIMON/ASM-F2 `00.0814(1303)` provides RAM loading, memory/debug commands,
+- HIMON/ASM-F2 `00.0814(1524)` is the board-accepted line and provides RAM
+  loading, memory/debug commands,
   resident FNV/RJOIN lookup, AP v2 validation/linking, and onboard assembly.
 - ASM source supports hexadecimal, decimal, character, and `%` binary/mask
-  literals; local/global symbols; expressions; initialized data; and AP v2
-  entry, export, import, and relocation metadata.
+  literals; local/global symbols; expressions; compact raw/CSTR/HBSTR/PSTR
+  data; initialized data; and AP v2 entry, export, import, and relocation
+  metadata.
 - The post-`END` `SEAL>` workflow uses HIMON-style bare hexadecimal addresses
   for `RELOCATE`, `PACKAGE`, `INSTALL`, and `LOAD`. Standalone and combined
   ROM S19s are generated from the same final HIMON/ASM bytes.
 
-The current `1.21`/`1303` installation, physical-reset persistence, fixed ROM
-head, Bank Maintenance smoke, and synthetic `J3` return are board-accepted.
-Compact `DC 'text'` syntax and AIM self-identifying image metadata remain
-explicit future goals, not current features.
+The current `1.21`/`1524` installation, compact raw/CSTR/HBSTR/PSTR data,
+SEAL package/load identity, execution, and malformed-input rollback are
+board-accepted. The earlier `1303` persistence, fixed ROM head, Bank
+Maintenance, and synthetic `J3` evidence remains valid for the unchanged
+paths. Candidate `1502` exposed and localized a typed-mode lexer fault; `1524`
+is its accepted replacement. AIM self-identifying image metadata remains an
+explicit future goal.
 
 ## Current Board
 
@@ -190,8 +195,8 @@ The primary R-YORS output is a dense 28K `$8000-$EFFF` payload:
 ```text
 SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
 
-$8000-$BAF5  ASM-F2, entry $800C
-$BAF6-$BFFF  low-flash growth/AP-store hole ($050A bytes)
+$8000-$BAFD  ASM-F2, entry $800C
+$BAFE-$BFFF  low-flash growth/AP-store hole ($0502 bytes)
 $C000-$EDB3  current HIMON image
 $EDB4-$EFFF  HIMON growth hole ($024C bytes)
 ```

@@ -136,9 +136,9 @@ can carry body bytes, relocation rows, exports, and resident imports. HIMON's
 AP service validates the envelope, loads the body to `$2000-$4FFF`, resolves
 RJOIN imports, applies relocations, and transfers to the entry.
 
-The current compact flash ASM occupies `$8000-$BAF5`;
-`_END_DATA=$BAF6` leaves `$050A` bytes through `$BFFF`. Its map uses CODE
-`$3867`, DATA `$028F`, and UDATA `$5000-$6D6B`. The default resident wrapper
+The current compact flash ASM occupies `$8000-$BAFD`;
+`_END_DATA=$BAFE` leaves `$0502` bytes through `$BFFF`. Its map uses CODE
+`$386F`, DATA `$028F`, and UDATA `$5000-$6D6B`. The default resident wrapper
 keeps AP v2 package/load/install support and omits the diagnostic-only `CHECK`
 command to preserve this headroom.
 

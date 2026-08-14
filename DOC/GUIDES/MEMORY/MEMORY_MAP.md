@@ -78,8 +78,8 @@ targets are owned and checked by the standalone STR8-N build.
 Combined image layout:
 
 ```text
-$8000-$BAF5   ASM-F2 low-flash image, entry $800C
-$BAF6-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
+$8000-$BAFD   ASM-F2 low-flash image, entry $800C
+$BAFE-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
 $C000-$EDB3   HIMON body, including resident AP v2 import linker
 $EDB4-$EFFF   current image gap inside the E sector
 $F000-$FD59   STR8-N v1.21 resident supervisor, installer, loader, and services

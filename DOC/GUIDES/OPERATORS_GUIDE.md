@@ -65,8 +65,8 @@ also requires the locked standalone STR8-N checkout to be clean.
 ## Current Integrated Layout
 
 ```text
-$8000-$BAF5   ASM-F2, entry $800C
-$BAF6-$BFFF   low-flash headroom/AP-store hole
+$8000-$BAFD   ASM-F2, entry $800C
+$BAFE-$BFFF   low-flash headroom/AP-store hole
 $C000-$EDB3   HIMON
 $EDB4-$EFFF   HIMON headroom
 $F000-$FD59   standalone STR8-N v1.21 resident

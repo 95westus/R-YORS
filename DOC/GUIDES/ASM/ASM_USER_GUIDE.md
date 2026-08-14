@@ -442,7 +442,16 @@ DB $12,$34,'A'
 DB <ADDR,>ADDR
 ```
 
-`DC` emits one of the currently defined double-quoted string encodings:
+`DC` accepts a compact single-quoted family:
+
+```asm
+DC 'text'         ; raw bytes, no terminator
+DC C'text'        ; trailing-zero C string
+DC H'text'        ; high bit set on the final character
+DC P'text'        ; one-byte length followed by text
+```
+
+The older comma/double-quote forms remain source-compatible:
 
 ```asm
 DC C,"text"       ; trailing zero C string
@@ -450,8 +459,14 @@ DC HB,"text"      ; high bit set on the final character
 DC P,"text"       ; one-byte length followed by text
 ```
 
-The shorter proposed `DC 'text'` spelling is not implemented; it remains in
-the ASM Feature Queue until its terminator contract and board proof are fixed.
+Empty raw text emits no bytes; empty CSTR, HBSTR, and PSTR forms emit `$00`,
+`$80`, and `$00`. Raw and HB strings may contain at most 255 characters;
+CSTR and PSTR forms may contain at most 254 because their terminator/prefix
+must fit the same 255-byte atomic emission. A semicolon after the closing
+quote starts a comment. Apostrophes cannot currently be escaped inside a
+single-quoted string, so embedded or unterminated quotes fail atomically with
+`ERR=$03`. Single-character expressions such as `DB 'A'` and `LDA #'A'`
+retain their existing meaning outside `DC`.
 
 `DW` emits each resolved expression as a 16-bit little-endian word:
 
@@ -1029,9 +1044,8 @@ Known limitations:
 - No forward data fixups yet: `DW TARGET`, `DB <TARGET`, and `DB >TARGET`
   require `TARGET` to be known in current flash ASM. The next ASM incarnation
   should support those source forms and emit relocation rows for label data.
-- `DC C,"text"`, `DC HB,"text"`, and `DC P,"text"` are current. Compact
-  `DC 'text'` remains queued until its exact emitted-byte/terminator contract
-  is defined and qualified.
+- Compact raw/CSTR/HBSTR/PSTR `DC` forms and the older comma/double-quote forms
+  are current. Embedded apostrophes have no escape spelling yet.
 - No default flash-image `CHECK` command.
 - No default flash-image `RESOLVE` command; import resolution happens only
   during AP load/run through resident RJOIN.

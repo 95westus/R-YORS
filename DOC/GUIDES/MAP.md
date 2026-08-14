@@ -44,7 +44,8 @@ HIMON
 ASM
   onboard assembler and AP v2 object producer
   supports binary/mask literals, expressions, local/global names, typed public
-  metadata, and the SEAL/RELOCATE/PACKAGE/INSTALL/LOAD lifecycle
+  metadata, compact raw/CSTR/HBSTR/PSTR data, and the
+  SEAL/RELOCATE/PACKAGE/INSTALL/LOAD lifecycle
 
 OIL
   Overlay Integration Layer
