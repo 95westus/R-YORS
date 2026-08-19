@@ -337,6 +337,20 @@
   and verify by read-back compare. This is good for rescue/lab work, bad for
   the tiny V0 rescue prompt, and must not change Bank 0 rotation policy except
   through the normal `E` enrollment command.
+- Keep the recent Bank Maintenance copy/adopt sequence as a usability case:
+  full-bank `C`, declining enrollment, and a separate `D` worked, but was
+  convoluted. Consider an explicit copy-only path with source/destination
+  sector ranges and an optional compare-first mode that writes only differing
+  sectors. Partial or differential copies must not auto-enroll a bank or claim
+  a complete guest.
+- Improve future Bank Maintenance maps without conflating protection, role,
+  and detected content. Preserve `P` for the live protected B3:F sector;
+  consider `B` for a verified retained backup such as B1:F, or `S` only for a
+  positively identified STR8-N/system image. Keep the legend explicit.
+- Consider `W` for positively recognized factory onboard firmware in Banks
+  0-2 only after a stable, low-false-positive signature is defined and proven.
+  A banner or a board-local `WDC*` directory label is not enough by itself;
+  unknown used content should continue to display as `U`.
 - Treat future flash GC as append/invalidate/reclaim instead of in-place edits:
   mark records or sections stale, prepare a compacted sector image in RAM,
   relink copied records when needed, erase the old 4K sector, then write and
