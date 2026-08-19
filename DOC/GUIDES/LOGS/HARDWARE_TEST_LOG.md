@@ -24038,3 +24038,39 @@ d 3000 300c
 
 This accepts the unchanged uppercase HIMON command-reader path and completes
 the case-preserving ASM-F2 source-input board gate.
+
+## 2026-08-19 Tera Term Answerback And VT100 DA Board Proof
+
+ASM-F2 `00.0819(1123)` accepted the complete maintained
+`terminal-answerback-vt100-3000.a` source at `$3000-$3180`. The first run,
+before a Tera Term answerback was configured, exercised the bounded ENQ timeout
+and then received the terminal's Primary Device Attributes reply:
+
+```text
+TERMINAL QUERY
+ENQ / ANSWERBACK
+NO REPLY
+VT100 PRIMARY DA
+HEX: 1B 5B 3F 31 3B 32 63
+TEXT: .[?1;2c
+DONE
+```
+
+After setting Tera Term's answerback to `RYORS`, the second run received and
+rendered both replies:
+
+```text
+TERMINAL QUERY
+ENQ / ANSWERBACK
+HEX: 52 59 4F 52 53
+TEXT: RYORS
+VT100 PRIMARY DA
+HEX: 1B 5B 3F 31 3B 32 63
+TEXT: .[?1;2c
+DONE
+```
+
+Both `G 3000` runs returned normally to HIMON. This accepts the sample against
+the pinned STR8-N 1.22 raw console contract, including ABI/capability checks,
+bounded polling, the no-answerback path, configured ENQ answerback, VT100
+Primary DA, hex rendering, and safe printable rendering.

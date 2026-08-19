@@ -1,0 +1,170 @@
+; TERMINAL-ANSWERBACK-VT100-3000.A
+; QUERY TERA TERM ENQ ANSWERBACK AND VT100 PRIMARY DA.
+; RUNS UNDER HIMON WITH STR8-N 1.22/BANK 3 VISIBLE.
+; REPLIES PRINT AS HEX AND SAFE TEXT; ESC PRINTS AS '.'.
+; NO REPLY IS NORMAL WHEN ANSWERBACK OR DA IS DISABLED.
+;
+;   >ASM NEW
+;   PASTE THIS FILE
+;   AT SEAL> TYPE .
+;   >G 3000
+;
+; DO NOT TYPE WHILE A REPLY WINDOW IS OPEN.
+
+        ORG $3000
+
+ABI     EQU $F006
+CHARIN  EQU $F013
+CHAROUT EQU $F019
+READY   EQU $F03E
+
+BUF     EQU $1A00
+LEN     EQU $1A20
+PTRLO   EQU $80
+PTRHI   EQU $81
+
+START   JSR ABI
+        BCC BADABI
+        CMP #$01
+        BNE BADABI
+        TXA
+        AND #$1C
+        CMP #$1C
+        BNE BADABI
+
+        LDX #<TITLE
+        LDY #>TITLE
+        JSR PUTSLN
+
+        LDX #<ENQMSG
+        LDY #>ENQMSG
+        JSR PUTSLN
+        LDA #$05
+        JSR CHAROUT
+        JSR READ
+        JSR SHOW
+
+        LDX #<DAMSG
+        LDY #>DAMSG
+        JSR PUTSLN
+        LDA #$1B
+        JSR CHAROUT
+        LDA #'['
+        JSR CHAROUT
+        LDA #'c'
+        JSR CHAROUT
+        JSR READ
+        JSR SHOW
+        RTS
+
+BADABI  LDX #<ABIMSG
+        LDY #>ABIMSG
+        JSR PUTSLN
+        RTS
+
+; WAIT ABOUT ONE LONG WINDOW FOR FIRST BYTE, SHORTER BETWEEN.
+READ    STZ LEN
+        LDY #$00
+RWAIT   LDX #$00
+RPOLL   JSR READY
+        BCS RGOT
+        DEX
+        BNE RPOLL
+        DEY
+        BNE RWAIT
+        RTS
+
+RGOT    JSR CHARIN
+        LDX LEN
+        STA BUF,X
+        INX
+        STX LEN
+        CPX #$20
+        BCS RDONE
+        LDY #$40
+        BRA RWAIT
+RDONE   RTS
+
+SHOW    LDA LEN
+        BNE SHEX
+        LDX #<NOMSG
+        LDY #>NOMSG
+        JSR PUTSLN
+        RTS
+
+SHEX    LDX #<HEXMSG
+        LDY #>HEXMSG
+        JSR PUTS
+        LDX #$00
+SHLOOP  LDA BUF,X
+        JSR HEX
+        LDA #' '
+        JSR CHAROUT
+        INX
+        CPX LEN
+        BNE SHLOOP
+        JSR CRLF
+
+        LDX #<TEXTMSG
+        LDY #>TEXTMSG
+        JSR PUTS
+        LDX #$00
+STLOOP  LDA BUF,X
+        CMP #' '
+        BCC SDOT
+        CMP #$7F
+        BCC SPUT
+SDOT    LDA #'.'
+SPUT    JSR CHAROUT
+        INX
+        CPX LEN
+        BNE STLOOP
+        JSR CRLF
+        RTS
+
+HEX     PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR NIB
+        PLA
+        AND #$0F
+NIB     CMP #$0A
+        BCC NDIG
+        CLC
+        ADC #$37
+        JMP CHAROUT
+NDIG    CLC
+        ADC #'0'
+        JMP CHAROUT
+
+PUTSLN  JSR PUTS
+        JMP CRLF
+
+PUTS    STX PTRLO
+        STY PTRHI
+        LDY #$00
+PLOOP   LDA (PTRLO),Y
+        BEQ PDONE
+        JSR CHAROUT
+        INC PTRLO
+        BNE PLOOP
+        INC PTRHI
+        BRA PLOOP
+PDONE   RTS
+
+CRLF    LDA #$0D
+        JSR CHAROUT
+        LDA #$0A
+        JMP CHAROUT
+
+TITLE   DC C'Tera Term / VT100 query'
+ENQMSG  DC C'ENQ answerback ($05)'
+DAMSG   DC C'VT100 primary DA (ESC [ c)'
+HEXMSG  DC C'HEX: '
+TEXTMSG DC C'TEXT: '
+NOMSG   DC C'NO REPLY'
+ABIMSG  DC C'NEED STR8-N 1.22 CONSOLE ABI'
+
+        END

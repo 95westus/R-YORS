@@ -14735,3 +14735,17 @@ encoding, lowercase directive parsing, lowercase symbol folding, and lowercase
 character atoms on hardware. The final regression typed `d 3000 300c` at the
 HIMON prompt; HIMON echoed `D 3000 300C` and produced the same dump. That
 accepts the unchanged direct uppercase-reader path and closes the board gate.
+
+## 2026-08-19 Tera Term Answerback And VT100 DA Sample
+
+Host status: accepted. Board status: accepted.
+
+`terminal-answerback-vt100-3000.a` assembled under ASM-F2 `00.0819(1123)`
+from `$3000` through `$3180` and returned normally on both board runs. With no
+answerback configured, ENQ reached the bounded `NO REPLY` path. After Tera Term
+answerback was set to `RYORS`, ENQ returned exact bytes `52 59 4F 52 53`.
+
+Both runs sent VT100 Primary Device Attributes (`ESC [ c`) and received exact
+bytes `1B 5B 3F 31 3B 32 63`, displayed safely as `.[?1;2c`. This accepts the
+sample's pinned STR8-N 1.22 raw-console ABI check, bounded receive loop, hex
+display, safe-text display, no-reply path, answerback path, and VT100 DA path.

@@ -50,6 +50,11 @@ sources and an explanation of their former roles are under `OLD`.
 - `str8n-v1.2-bank-maint-2000.a` - carried-worker copy/erase/map/fixed-AP-put
   utility; `M` distinguishes valid AP envelopes from ordinary used bytes and
   also displays all four Bank-3 directory records.
+- `terminal-answerback-vt100-3000.a` - read-only Tera Term/VT100 probe using
+  the pinned STR8-N 1.22 raw console ABI. It sends ENQ and Primary Device
+  Attributes, bounds both reply waits, and prints replies as hex plus safe
+  printable text. Board-accepted with configured answerback `RYORS` and
+  Primary DA reply `ESC [ ? 1 ; 2 c`.
 - `str8n-v1.2-topwr-transient-3000.a` - maintained staged top-sector shop tool; preserve
   the live V1 directory when overlaying a replacement image.
 
