@@ -13,7 +13,7 @@ This is the full guide index for the current R-YORS documentation set.
 - [PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` implementation, size, recovery, and hardware-proof plan for opaque 32K banks.
 - [STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - accepted reset-time `0`/`1`/`2`/`3`/`S` selector proof record.
 - [STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence proof for the host-accepted Bank Jump Record.
-- [STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md](STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md) - accepted `$0E5D` presentation evidence and final no-flash WAIT-discard gate.
+- [STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md](STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md) - fully accepted `$0E5D` presentation and WAIT-discard evidence.
 - [STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) -
   important per-image warm-handoff, peripheral, vector, CRC, and recovery
   qualification procedure for unrelated 32K systems.

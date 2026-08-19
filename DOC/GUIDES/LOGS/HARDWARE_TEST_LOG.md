@@ -23733,3 +23733,262 @@ These operator-context results do not affect acceptance. Compact raw/CSTR/
 HBSTR/PSTR syntax, legacy compatibility, empty encodings, character isolation,
 SEAL/package/load ownership, execution, and rollback are board-accepted on
 HIMON/ASM-F2 `00.0814(1524)`.
+
+## 2026-08-18 STR8-N `1.21` WAIT gate and Bank-0 guest acceptance
+
+Terminology: this section calls the observed Bank-0/1/2 payload the **factory
+onboard firmware** unless later artifact provenance identifies it more
+specifically. The operator-assigned directory descriptions `WDCV2`, `WDCBK`,
+and `WDCDG` are retained literally as board evidence; they do not by themselves
+identify the payload as WDCMONv2.
+
+The operator supplied a retained session after installing the standalone
+STR8-N `$F000-$FFFF` BIN. It repeatedly cold-started STR8-N `1.21`, installed
+and launched a full `8-F` factory-onboard-firmware guest in Bank 2, exercised
+Bank Maintenance erase and guarded directory reclaim for D2 and D0, then
+installed the factory firmware in Bank 0 with TYPE `$02` and description
+`WDCV2`. The final map and handoff included:
+
+```text
+DIR B T DESC ENTRY JOURNAL
+D0 02 WDCV2 FFFF FCFFFFFF
+D1 FF XXXXX FFFF FCFFFFFF
+D2 FF ..... FFFF FFFFFFFF
+D3 FF RYORS C000 000000FF
+ OK
+
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: .0
+J B0
+3S
+
+================================
+  W65C02SXB + EDU Kit  Rev 1.0
+  W65C02S @ 8 MHz  |  5V System
+  I2C/SPI bit-banged via W65C22
+================================
+Initializing...
+Scanning devices...
+  OLED (SSD1306)     $3C  OK
+  RTC  (MCP79411)    $6F  OK
+  SPI SRAM           OK
+```
+
+The operator explicitly accepts the previously open presentation case: input
+deliberately sent during `WAIT` was discarded and did not become a selector
+response. Since discarded quarantine input prints no token, this is recorded
+as operator-observed hardware evidence. Live selector handling is independently
+visible in the session as `.S`, `.2`, and `.0`. This closes the inherited
+V1.02 WAIT-phase gate on the current STR8-N `1.21` successor.
+
+For the Bank-0 guest, the operator also accepts interrupt disposition and
+physical-reset recovery after the final `J0`. NMI was observed to reset and
+re-enter the factory onboard firmware; no further IRQ/BRK injection is required
+by the operator. The guest is accepted for manual `J0` use on this board.
+
+The session does not retain an exact 32K host SHA-256, full-bank CRC, or a
+pre/post all-bank CRC inventory. Those checks identify a reproducible exact
+guest artifact under `STR8_GUEST_IMAGE_QUALIFICATION.md`; they are not required
+by the implemented manual `J0` reset-vector gate. The operator explicitly does
+not require that stronger identity assurance for this guest, so this result is
+recorded as an operator-approved manual-use exception rather than a claim that
+the strict exact-image H/P/V/C record is complete.
+
+### Bank-0 to Bank-1 copy/enrollment continuation
+
+The retained continuation first proved that `C` refuses an occupied directory
+row, then erased all eight Bank-1 sectors and reclaimed stale D1 through the
+guarded Bank-3-sector-F rewrite:
+
+```text
+BM> C
+SOURCE BANK 0-3> 0
+DEST BANK 0-2> 1
+
+DIR NOT EMPTY
+ABORT
+
+BM> E
+BANK 0-3> 1
+SECTOR 8-F, ALL, OR X-Y; B3 MAX E> 8-F
+TYPE ERASE 18-F> ERASE 18-F
+
+........ OK
+
+BM> R
+RECLAIM DIR 0-3> 1
+
+B3F REWRITE
+TYPE CLEAR D1> CLEAR D1
+BACKUP VERIFIED
+ OK
+```
+
+Bank Maintenance then copied the complete Bank-0 factory onboard firmware to
+Bank 1, verified all eight sectors, and enrolled D1 independently as TYPE
+`$F2`, description `WDCBK`:
+
+```text
+BM> C
+SOURCE BANK 0-3> 0
+DEST BANK 0-2> 1
+TYPE COPY 01> COPY 01
+
+........
+TYPE 00-FF> F2
+DESC 5 CHARS> WDCBK
+ENROLL? Y: Y
+ OK
+
+DIR B T DESC ENTRY JOURNAL
+D0 02 WDCV2 FFFF FCFFFFFF
+D1 F2 WDCBK FFFF FCFFFFFF
+D2 FF ..... FFFF FFFFFFFF
+D3 FF RYORS C000 000000FF
+ OK
+```
+
+Reset-time selector `1` entered the copied Bank-1 guest and reproduced its
+device initialization. The second complete guest banner was produced after
+the operator's NMI action, accepting the copied image's NMI reset behavior.
+Physical RESET then returned to Bank 3, where selector `H` entered HIMON
+`00.0818(1108)` warm. A later independent sequence reconfirmed three edges:
+
+```text
+0-2 H S: .2
+J B2
+3S
+J FAIL
+
+STR8-N>J3
+J B3
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: .1
+J B1
+3S
+```
+
+`J B2` correctly failed because D2 and its payload were erased. `J3` restarted
+Bank-3 STR8, and Bank 1 again launched the copied guest. A final physical RESET
+returned to Bank 3 and cold-booted HIMON `00.0818(1108)`. This accepts the
+current Bank Maintenance B0-to-B1 copy-plus-enrollment path, directory-gated
+empty-B2 refusal, copied-guest NMI restart, and repeated physical recovery.
+It remains the same manual-use identity-policy exception recorded above; no
+full-bank hash or CRC claim is added.
+
+### Positive metadata-only D2 adoption
+
+The next retained session closed the positive `D` path separately from copy
+and enrollment. Bank 2 began fully erased with D2 empty. `C` copied all eight
+Bank-0 sectors to Bank 2 and verified them, but the operator entered `ABORT` at
+the TYPE prompt, leaving the copied payload intact and D2 erased:
+
+```text
+BM> C
+SOURCE BANK 0-3> 0
+DEST BANK 0-2> 2
+TYPE COPY 02> COPY 02
+
+........
+TYPE 00-FF> ABORT
+
+BM> M
+
+B2 U U U U U U U U
+
+DIR B T DESC ENTRY JOURNAL
+D0 02 WDCV2 FFFF FCFFFFFF
+D1 F2 WDCBK FFFF FCFFFFFF
+D2 FF ..... FFFF FFFFFFFF
+D3 FF RYORS C000 000000FF
+ OK
+```
+
+`D` then accepted that existing payload without recopying it, collected only
+the new identity, required the exact adoption confirmation, and committed the
+previously empty D2 row:
+
+```text
+BM> D
+BANK 0-3> 2
+
+TYPE 00-FF> F2
+DESC 5 CHARS> WDCDG
+TYPE ADOPT B2> ADOPT B2
+ OK
+
+BM> M
+
+B2 U U U U U U U U
+
+DIR B T DESC ENTRY JOURNAL
+D0 02 WDCV2 FFFF FCFFFFFF
+D1 F2 WDCBK FFFF FCFFFFFF
+D2 F2 WDCDG FFFF FCFFFFFF
+D3 FF RYORS C000 000000FF
+ OK
+```
+
+This is positive board proof that Bank Maintenance `D` is an enrollment path
+separate from `C`: it adopts an already present Bank-0/1/2 payload, records
+entry `$FFFF` for RESET-vector launch, and does not perform the full-bank copy.
+
+A retained continuation then closed handoff from this exact adopted record.
+The attempted D1 reclaim first proved that the all-erased-bank guard recognized
+and protected the intentionally retained B1:F backup:
+
+```text
+BM> R
+
+RECLAIM DIR 0-3> 1
+
+BANK NOT ERASED
+ABORT
+```
+
+Returning to STR8-N and selecting Bank 2 launched the adopted guest through its
+RESET vector. The guest completed the same device initialization already seen
+from the Bank-0/1 copies:
+
+```text
+BM> Q
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.21
+0-2 H S: .2
+J B2
+3S
+
+================================
+  W65C02SXB + EDU Kit  Rev 1.0
+  W65C02S @ 8 MHz  |  5V System
+  I2C/SPI bit-banged via W65C22
+================================
+Initializing...
+Scanning devices...
+  OLED (SSD1306)     $3C  OK
+  RTC  (MCP79411)    $6F  OK
+  SPI SRAM           OK
+  ADC  (ADS1015)     $48  not found
+  CardKB             $5F  not found
+Init complete.
+```
+
+Physical RESET returned to STR8-N `1.21`; selector `H` warm-booted HIMON
+`00.0818(1108)`. Rerunning the RAM-resident Bank Maintenance tool produced the
+same final map and COMPLETE D2 row. This accepts positive metadata-only `D2`
+adoption, directory-gated `J2` handoff, guest initialization, and physical-reset
+recovery.
+
+The final map in this continuation was taken after the operator intentionally
+erased only Bank-1 sectors `8-E` while retaining Bank-1 sector F as the verified
+Bank-3-sector-F recovery backup made by `U`. It therefore ended with B1 shown
+as `E E E E E E E U` while D1 still advertised the former `WDCBK` guest. This
+is an intentional recovery state, not a guest: do not use `J1` or run
+`E B1 ALL` while the retained B1:F backup is required. `R D1` cannot reclaim
+this state and is expected to refuse it as `BANK NOT ERASED`. It does not
+invalidate the completed D2 adoption.

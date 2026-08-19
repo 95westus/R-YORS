@@ -15,6 +15,7 @@ $rows = @(
     [pscustomobject]@{ Target = "apps"; Category = "build"; Description = "Build app/demo targets only." }
     [pscustomobject]@{ Target = "help"; Category = "build"; Description = "Show this target list. Filter with Q=term, e.g. make help Q=flash." }
     [pscustomobject]@{ Target = "release"; Category = "release"; Description = "Require a clean locked STR8-N checkout, then build docs and R-YORS release artifacts." }
+    [pscustomobject]@{ Target = "release-files"; Category = "release"; Description = "Publish current source, S19, BIN, and checksum files into the flat repository RELEASE directory." }
     [pscustomobject]@{ Target = "release-local"; Category = "release"; Description = "Build release plus local/private ROM composites." }
     [pscustomobject]@{ Target = "himon"; Category = "monitor"; Description = "Build current HIMON app S19 and ROM binary." }
     [pscustomobject]@{ Target = "himon-rom"; Category = "monitor"; Description = "Build HIMON linked at ROM address C000: BUILD/s19/himon-rom-c000.s19." }
@@ -28,8 +29,6 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-apv2-install-s19"; Category = "monitor"; Description = "Build dense Bank-3 C-E HIMON APv2 payload for STR8-N I: BUILD/s19/himon-apv2-bank3-c-e.s19." }
     [pscustomobject]@{ Target = "str8-readonly-bank-tools-check"; Category = "monitor"; Description = "Validate and host-assemble the split-V1 `$F010/`$0203 read-only bank tools." }
     [pscustomobject]@{ Target = "rom-install-s19"; Category = "monitor"; Description = "Alias for the HIMON-only ROM install S19." }
-    [pscustomobject]@{ Target = "himon-load"; Category = "monitor"; Description = "Build HIMON loadable S19 linked at C000: BUILD/s19/himon-load-c000.s19." }
-    [pscustomobject]@{ Target = "himon-load-bin"; Category = "monitor"; Description = "Build HIMON loadable binary image at BUILD/bin/himon-load-c000.bin." }
     [pscustomobject]@{ Target = "basic-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000 and HIMON at C000." }
     [pscustomobject]@{ Target = "basic-forth-himon-rom-bin"; Category = "rom"; Description = "Local composite with BASIC at 8000, fig-Forth at A000, and HIMON at C000." }
     [pscustomobject]@{ Target = "fnv1a-hbstr"; Category = "test"; Description = "Build FNV-1a/HBSTR proving app linked at 6000." }

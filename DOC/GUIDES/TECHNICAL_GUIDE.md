@@ -45,14 +45,14 @@ make -C SRC all STR8N_HOME="C:/path/to/STR8-N"
 
 ## Artifacts
 
-R-YORS owns:
+The flat `RELEASE/` directory publishes:
 
 ```text
-SRC/BUILD/s19/ryors-v1.2-asm-bank3-8-b.s19
-SRC/BUILD/s19/ryors-v1.2-himon-bank3-c-e.s19
-SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
-SRC/BUILD/s19/himon-apv2-bank3-c-e.s19
-SRC/BUILD/integration/str8n-receipt.json
+RELEASE/ryors-v1.2-asm-bank3-8-b.s19
+RELEASE/ryors-v1.2-himon-bank3-c-e.s19
+RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
+RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
+RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin
 ```
 
 The adjacent STR8-N repository owns its 4K programmer BIN, resident/worker

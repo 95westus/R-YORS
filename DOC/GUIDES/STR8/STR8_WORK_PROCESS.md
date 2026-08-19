@@ -46,7 +46,16 @@ hardware-accepted by the
 [compact-image refresh proof](STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md).
 The current `$0E5D` successor only changes the boot presentation. Its exact
 refresh, live selector, cold timeout, warm `H`, and post-refresh `C-E` install
-are board-accepted. Only deliberate key discard during `WAIT` remains.
+are board-accepted. Deliberate key discard during `WAIT` was operator-accepted
+on 2026-08-18, closing the final presentation gate.
+
+The adjacent standalone repository now publishes STR8-N `1.21`. Its combined
+Bank Maintenance menu is board-accepted through guarded `U`, full-bank copy
+and enrollment, separate metadata-only `D2` adoption, directory-gated `J2`
+launch of the factory onboard firmware, and physical-reset recovery. Bank 1
+sector F remains a verified Bank-3-sector-F recovery backup in the accepted
+final state; with Bank 1 sectors `8-E` erased, `R D1` correctly refuses
+`BANK NOT ERASED` and `J1` must not be used.
 
 The top sector exposes stable service entries at `$F003` for the resident
 worker doorway and `$F009` for the V1 validated-record service. In the split

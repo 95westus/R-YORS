@@ -1,0 +1,110 @@
+﻿{
+    "schema":  3,
+    "project":  "STR8-N",
+    "version":  "1.21",
+    "repository":  "https://github.com/95westus/STR8-N.git",
+    "commit":  "74980695770ee64fa16dada84ddc0706d3ffceda",
+    "dirty":  false,
+    "artifacts":  {
+                      "topSector":  {
+                                        "file":  "BUILD/v1.21/bin/str8n-v1.21-bank3-f000-ffff.bin",
+                                        "size":  4096,
+                                        "cpuStart":  "F000",
+                                        "cpuEnd":  "FFFF",
+                                        "sha256":  "9EAA5808344A1232544B4BAE1CB75E8140AECA0E0D122E6694498C74B83BBB75"
+                                    },
+                      "workerS19":  {
+                                        "file":  "BUILD/v1.21/s19/str8n-v1.21-worker-0200.s19",
+                                        "size":  596,
+                                        "runStart":  "0200",
+                                        "runEnd":  "0453",
+                                        "storeStart":  "FD5C",
+                                        "sha256":  "04F46E258924F07510FB113EDB00C788EBA129EAB98B25C284D6AB15C306E69C"
+                                    },
+                      "bankMaintenanceS19":  {
+                                                 "file":  "BUILD/v1.21/s19/str8n-v1.21-bank-maint-2000.s19",
+                                                 "ramStart":  "2000",
+                                                 "ramEnd":  "362A",
+                                                 "entry":  "2000",
+                                                 "privateWorkerStore":  "3400",
+                                                 "sha256":  "7B5502EDB7A874A1BB9D6B485D35056731ECB2A5452F0EEE34012421903DFE06"
+                                             },
+                      "consoleAbiTestS19":  {
+                                                "file":  "BUILD/v1.21/s19/str8n-v1.21-console-abi-test-2000.s19",
+                                                "ramStart":  "2000",
+                                                "ramEnd":  "2371",
+                                                "entry":  "2000",
+                                                "sha256":  "28548F60F12D9E7CA1E63DE8A8E1058CF2428FA728573462CB36136951A1BC97"
+                                            },
+                      "topUpdateS19":  {
+                                           "file":  "BUILD/v1.21/s19/str8n-v1.21-top-update-2000.s19",
+                                           "ramStart":  "2000",
+                                           "ramEnd":  "4FFF",
+                                           "candidateStart":  "4000",
+                                           "candidateEnd":  "4FFF",
+                                           "entry":  "2000",
+                                           "backup":  "Bank 1 CPU F000-FFFF / physical 0F000-0FFFF",
+                                           "sha256":  "2370875F945D7E818A1EBCF3583E9DA98D844329711FCF328FF934CEBBFA697F"
+                                       },
+                      "directoryRefreshS19":  {
+                                                  "file":  "BUILD/v1.21/s19/str8n-v1.21-directory-refresh-2000.s19",
+                                                  "ramStart":  "2000",
+                                                  "ramEnd":  "4FFF",
+                                                  "candidateStart":  "4000",
+                                                  "candidateEnd":  "4FFF",
+                                                  "entry":  "2000",
+                                                  "backup":  "Bank 1 CPU F000-FFFF / physical 0F000-0FFFF",
+                                                  "clears":  "Bank 3 CPU FFB0-FFF9 / physical 1FFB0-1FFF9",
+                                                  "sha256":  "15FB69B7B3B19B7ACD88C2C87373CE43EC20EC87AB66ABD72173322DB7022E58"
+                                              },
+                      "publicContract":  {
+                                             "file":  "BUILD/v1.21/include/str8n-public.inc",
+                                             "sha256":  "7778B3A33AF21E9E81160BD51341F52FA81F211292C2425A9280D59F25F45174"
+                                         }
+                  },
+    "layout":  {
+                   "residentStart":  "F000",
+                   "residentEnd":  "FD59",
+                   "unusedMargin":  2,
+                   "directoryStart":  "FFB0",
+                   "directoryEnd":  "FFEF",
+                   "configurationStart":  "FFF0",
+                   "configurationEnd":  "FFF9",
+                   "vectorsStart":  "FFFA",
+                   "vectorsEnd":  "FFFF"
+               },
+    "abi":  {
+                "ramVersion":  18,
+                "lowUserStart":  "1A00",
+                "lowUserEnd":  "1FFF",
+                "highToolStart":  "7C00",
+                "highToolEnd":  "7DBF",
+                "himonApLinkStart":  "7DC0",
+                "himonApLinkEnd":  "7DC7",
+                "str8StateStart":  "7DE9",
+                "str8StateEnd":  "7DFF",
+                "bankJumpRecordStart":  "7DFD",
+                "bankJumpRecordEnd":  "7DFF",
+                "bankJumpSig0":  "7DFD",
+                "bankJumpSig1":  "7DFE",
+                "bankLastJump":  "7DFF",
+                "bankJumpSignature":  "BJ",
+                "bankCount":  4,
+                "bankNone":  255,
+                "bankStateByte":  "7FEC",
+                "asmTargetEndExclusive":  "7D00",
+                "residentVersion":  1,
+                "residentCapabilities":  63,
+                "consoleInitService":  "F003",
+                "abiQueryService":  "F006",
+                "recordService":  "F009",
+                "recordVersion":  2,
+                "recordCapabilities":  3,
+                "bankSelectService":  "F010",
+                "charInService":  "F013",
+                "charOutService":  "F019",
+                "charReadyService":  "F03E",
+                "selectorEntry":  "0203",
+                "selectorEnd":  "0228"
+            }
+}

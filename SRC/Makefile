@@ -24,6 +24,8 @@ S19_DIR := $(BUILD_DIR)/s19
 ROM_BIN_STAMP_DEFAULT := $(shell powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-ddTHH:mmK'")
 ROM_BIN_STAMP ?= $(ROM_BIN_STAMP_DEFAULT)
 ROM_BIN_ARCHIVE_DIR := ROM_IMAGES
+PUBLISHED_RELEASE_DIR := ../RELEASE
+PUBLISH_RELEASE_TOOL := tools/publish_release.ps1
 HIMON_VISIBLE_STAMP ?=
 HIMON_VISIBLE_STAMP_ARG := $(if $(HIMON_VISIBLE_STAMP),-Stamp "$(HIMON_VISIBLE_STAMP)",)
 PYTHON ?= python
@@ -81,10 +83,7 @@ HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_APV2_INSTALL_S19 := $(S19_DIR)/himon-apv2-bank3-c-e.s19
 RYORS_V12_ASM_S19 := $(S19_DIR)/ryors-v1.2-asm-bank3-8-b.s19
 RYORS_V12_HIMON_S19 := $(S19_DIR)/ryors-v1.2-himon-bank3-c-e.s19
-RYORS_V12_28K_S19 := $(S19_DIR)/ryors-v1.2-asm-himon-bank3-8-e.s19
-HIMON_LOAD_S19 := $(S19_DIR)/himon-load-c000.s19
-HIMON_LOAD_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
-HIMON_LOAD_BIN := $(BIN_DIR)/himon-load-c000.bin
+RYORS_V12_28K_S19 := $(S19_DIR)/ryors-v1.2-himon-asm-bank3-8-e.s19
 BASIC_HIMON_ROM_BIN := $(BIN_DIR)/basic-himon-rom.bin
 BASIC_FORTH_HIMON_ROM_BIN := $(BIN_DIR)/basic-forth-himon-rom.bin
 FNV1A_HBSTR_SRC := $(HIM_SUBDIR)/fnv1a-hbstr-6000.asm
@@ -365,6 +364,7 @@ help:
 release: docs $(RELEASE_TARGETS)
 	@$(MAKE) artifacts
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(BIN_CHECK) -BinDir "$(BIN_DIR)"
+	@$(MAKE) release-files
 	@echo "Release build complete."
 	@echo "Tracked-source release targets: $(RELEASE_TARGETS)"
 	@echo "Primary R-YORS payload: $(RYORS_V12_28K_S19)"
@@ -390,7 +390,7 @@ str8n-external-check: $(STR8N_IMPORTED_CONTRACT)
 str8n-external-release-check: str8n-external-artifacts $(STR8N_LOCK) $(STR8N_EXTERNAL_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8N_EXTERNAL_CHECK) -Str8nHome "$(STR8N_HOME)" -ManifestPath "$(STR8N_MANIFEST)" -LockPath "$(STR8N_LOCK)" -ImportedContractPath "$(STR8N_IMPORTED_CONTRACT)" -ReceiptPath "$(STR8N_RECEIPT)" -RequireClean
 
-himon: $(ROM_LIB) $(HIMON_S19) himon-load-bin himon-rom-bin
+himon: $(ROM_LIB) $(HIMON_S19) himon-rom-bin
 	@echo "Built $(HIMON_S19)."
 	@$(MAKE) artifacts
 
@@ -426,19 +426,6 @@ himon-apv2-install-s19: $(HIMON_APV2_INSTALL_S19)
 
 rom-install-s19: himon-rom-install-s19
 	@echo "Built HIMON-only ROM install S19."
-
-himon-load: $(ROM_LIB) $(HIMON_LOAD_S19)
-	@echo "Built $(HIMON_LOAD_S19)."
-	@$(MAKE) artifacts
-
-himon-load-bin: himon-load
-	@echo [ps] build $(HIMON_LOAD_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_himon_rom_bin.ps1 -MapPath "$(MAP_DIR)/himon-load-c000.map" -S19Path "$(HIMON_LOAD_S19)" -BinPath "$(HIMON_LOAD_BIN)" -TmpVecPath "$(BUILD_DIR)/tmp/himon-load-c000-vectors.bin" -NmiSymbol "SYS_VEC_ENTRY_NMI" -IrqSymbol "SYS_VEC_ENTRY_IRQ_MASTER" -ResetSymbol "START"
-	@echo [ps] clean HIMON load vector temp
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(BIN_DIR)/himon-load-c000-vectors.bin') { Remove-Item -LiteralPath '$(BIN_DIR)/himon-load-c000-vectors.bin' -Force }"
-	@echo [ps] stamp $(HIMON_LOAD_BIN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File tools/stamp_rom_bin.ps1 -SourcePath "$(HIMON_LOAD_BIN)" -OutDir "$(ROM_BIN_ARCHIVE_DIR)" -Stamp "$(ROM_BIN_STAMP)"
-	@echo "Built $(HIMON_LOAD_BIN)."
 
 basic-himon-rom-bin: $(BASIC_HIMON_ROM_BIN)
 	@echo "Built $(BASIC_HIMON_ROM_BIN)."
@@ -567,9 +554,12 @@ asm-opcode-coverage: $(ASM_OPCODE_AUDIT) $(ASM_V1_CORE_SRC)
 asm-dc-check: $(ASM_DC_CHECK) $(ASM_V1_CORE_SRC)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_DC_CHECK) -AsmSourcePath "$(ASM_V1_CORE_SRC)"
 
-board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(HIMON_ROM_S19) $(HIMON_LOAD_S19) $(HIMON_ROM_INSTALL_S19) $(HIMON_APV2_INSTALL_S19) $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19)
+board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(HIMON_ROM_S19) $(HIMON_ROM_INSTALL_S19) $(HIMON_APV2_INSTALL_S19) $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19)
 	@make -C "$(STR8N_HOME)" ryors-full-bank RYORS_28K_S19="$(abspath $(RYORS_V12_28K_S19))"
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.21/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.21/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+
+release-files: board-s19-check life rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
 asm-test: asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
@@ -710,10 +700,6 @@ testing: $(TEST_LIB)
 $(HIMON_S19): $(HIMON_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(HIMON_LINKFLAGS) $(HIMON_S19) $(HIMON_OBJ) -L $(BUILD_DIR)\lib\rom
-
-$(HIMON_LOAD_S19): $(HIMON_OBJ) $(ROM_LIB)
-	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
-	$(LINKER) $(HIMON_LOAD_LINKFLAGS) $(HIMON_LOAD_S19) $(HIMON_OBJ) -L $(BUILD_DIR)\lib\rom
 
 $(HIMON_ROM_S19): $(HIMON_ROM_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1137,11 +1123,10 @@ else
 endif
 
 .PHONY: \
-	all firmware lab everything proofs apps tests help release release-local \
+	all firmware lab everything proofs apps tests help release release-local release-files \
 	himon himon-rom himon-rom-bin himon-banked-ap-check \
 	str8n-external-artifacts str8n-external-check str8n-external-release-check ryors-v1.2 \
 	str8-readonly-bank-tools-check himon-rom-install-s19 himon-apv2-install-s19 rom-install-s19 \
-	himon-load himon-load-bin \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \
 	test-mon test-ftdi-drv test-ftdi-hal test-flash \
 	life himon-debug-proof himon-search-static himon-search-static-proof \

@@ -69,10 +69,10 @@ dangerous top sector. HIMON should fit below `$F000`; if it outgrows 12K, that
 should be an intentional design decision because it eats the lower 16K user
 space.
 
-R-YORS publishes `SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19`, a dense
-28K `$8000-$EFFF` payload. STR8-N validates that input and composes
-`BUILD/v1.21/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19` in its own
-repository. RESET points to STR8-N at `$F000`; the exact NMI and IRQ/BRK vector
+R-YORS publishes `RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19`, a dense 28K
+`$8000-$EFFF` payload. STR8-N validates that input and the release lane
+publishes `RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19`. RESET points
+to STR8-N at `$F000`; the exact NMI and IRQ/BRK vector
 targets are owned and checked by the standalone STR8-N build.
 
 Combined image layout:

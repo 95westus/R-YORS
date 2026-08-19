@@ -13852,9 +13852,10 @@ IVI NMI / IRQ-BRK             $F09C / $F0B0
 identity parser and exact startup transcript. Board transcript SHA-256
 `D2A3DAE1438809F3936D6C087B35E3987F0990B6D2A188FD5205F7F9EBB3D2AC`
 confirms the exact refresh, both visible phases, live selection, cold timeout,
-warm `H`, and a post-refresh `C-E` install. The final no-flash gate is to type
-`S` during `WAIT`, require it to be discarded and cold-timeout normally, then
-repeat with `S` during the menu dots and require the STR8 prompt.
+warm `H`, and a post-refresh `C-E` install. On 2026-08-18 the operator accepted
+that `S` sent during `WAIT` was discarded at the phase boundary; the retained
+session separately shows live selector `S` as `0-2 H S: .S` followed by the
+STR8 prompt. This closes the final no-flash presentation gate.
 
 ## 2026-08-11 HIMON-Only RAM S19 Loader
 

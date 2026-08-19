@@ -1,7 +1,7 @@
 param(
     [string]$AsmS19Path = "BUILD/s19/asm-v1-flash-8000.s19",
     [string]$HimonS19Path = "BUILD/s19/himon-rom-c000.s19",
-    [string]$S19Path = "BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19",
+    [string]$S19Path = "BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
     [int]$RangeStart = 0x8000,
     [int]$RangeEnd = 0xEFFF,
     [int]$StartAddress = 0xC000

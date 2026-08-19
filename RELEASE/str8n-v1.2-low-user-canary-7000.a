@@ -1,0 +1,83 @@
+; STR8N-V1.2-LOW-USER-CANARY-7000.A
+; EXPLICIT TEST FIXTURE FOR USER-FREE $1A00-$1FFF.
+; THIS IS NOT A FIRMWARE OR TOOL ALLOCATION.
+;
+; G 7000 SETS EIGHT CANARIES AND RETURNS A=$AC/C=1.
+; G 7003 CHECKS THEM AND RETURNS A=$AC/C=1 ON PASS.
+; FAILURE RETURNS A=$E0/C=0; $71F1 IS THE INDEX 00-07.
+; $71F0/$71F1 ARE STATUS/FAIL INDEX AND ARE NOT CANARIES.
+
+        ORG $7000
+
+SETENT  JMP CSETV
+CHKENT  JMP CCHK
+
+CSETV   LDA #$A1
+        STA $1A00
+        LDA #$AF
+        STA $1AFF
+        LDA #$B1
+        STA $1B00
+        LDA #$C1
+        STA $1C00
+        LDA #$D1
+        STA $1D00
+        LDA #$E1
+        STA $1E00
+        LDA #$FE
+        STA $1FFE
+        LDA #$FF
+        STA $1FFF
+        LDA #$AC
+        STA $71F0
+        LDA #$FF
+        STA $71F1
+        LDA #$AC
+        SEC
+        RTS
+
+CCHK    LDX #$00
+        LDA $1A00
+        CMP #$A1
+        BNE CFAIL
+        INX
+        LDA $1AFF
+        CMP #$AF
+        BNE CFAIL
+        INX
+        LDA $1B00
+        CMP #$B1
+        BNE CFAIL
+        INX
+        LDA $1C00
+        CMP #$C1
+        BNE CFAIL
+        INX
+        LDA $1D00
+        CMP #$D1
+        BNE CFAIL
+        INX
+        LDA $1E00
+        CMP #$E1
+        BNE CFAIL
+        INX
+        LDA $1FFE
+        CMP #$FE
+        BNE CFAIL
+        INX
+        LDA $1FFF
+        CMP #$FF
+        BNE CFAIL
+        LDA #$AC
+        STA $71F0
+        LDA #$FF
+        STA $71F1
+        LDA #$AC
+        SEC
+        RTS
+
+CFAIL   STX $71F1
+        LDA #$E0
+        STA $71F0
+        CLC
+        RTS

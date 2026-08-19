@@ -1,8 +1,9 @@
 # R-YORS Release Guide
 
 This guide describes the GitHub release lane for R-YORS. The release artifact
-is the bench-built firmware image and its matching S19 streams, not the ignored
-build directory itself.
+is the bench-built firmware image and its matching S19 streams. Git retains
+all current operator-facing files together under `RELEASE/`; generated build
+products elsewhere remain ignored.
 
 ## Release Meaning
 
@@ -42,20 +43,26 @@ or rebuild from a clean tree before tagging. Do not hand-edit files under
 
 ## Assets
 
-Attach these files to the GitHub Release:
+Attach these primary files to the GitHub Release:
 
 ```text
-SRC/BUILD/bin/himon-str8-rom.bin
-SRC/BUILD/s19/himon-str8-rom-install.s19
-SRC/BUILD/s19/himon-str8-himon-update.s19
+RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin
+RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
+RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
 ```
+
+The separately installable ASM and HIMON slices retained beside them are
+`ryors-v1.2-asm-bank3-8-b.s19` and
+`ryors-v1.2-himon-bank3-c-e.s19`. The standalone/install S19 variants are
+also retained because `board-s19-check` verifies that all delivery forms carry
+the same current bytes.
 
 Optional but recommended checksum commands:
 
 ```text
-Get-FileHash SRC/BUILD/bin/himon-str8-rom.bin -Algorithm SHA256
-Get-FileHash SRC/BUILD/s19/himon-str8-rom-install.s19 -Algorithm SHA256
-Get-FileHash SRC/BUILD/s19/himon-str8-himon-update.s19 -Algorithm SHA256
+Get-FileHash RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin -Algorithm SHA256
+Get-FileHash RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19 -Algorithm SHA256
+Get-FileHash RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19 -Algorithm SHA256
 ```
 
 ## Tagging
@@ -84,9 +91,9 @@ match the artifacts being uploaded.
 
 ### Build
 - Command: `make -C SRC release`
-- ROM: `SRC/BUILD/bin/himon-str8-rom.bin`
-- First install: `SRC/BUILD/s19/himon-str8-rom-install.s19`
-- HIMON update: `SRC/BUILD/s19/himon-str8-himon-update.s19`
+- Complete BIN: `RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin`
+- Complete S19: `RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19`
+- Bank-3 payload: `RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19`
 
 ### Proven
 - STR8-N recovery/update path:
@@ -99,9 +106,9 @@ Bench-proven firmware. Keep an external programmer and known-good image nearby.
 
 ### Checksums
 ```text
-himon-str8-rom.bin              SHA256:
-himon-str8-rom-install.s19      SHA256:
-himon-str8-himon-update.s19     SHA256:
+ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin  SHA256:
+ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19  SHA256:
+ryors-v1.2-himon-asm-bank3-8-e.s19          SHA256:
 ```
 ````
 

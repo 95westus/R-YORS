@@ -212,10 +212,10 @@ From the repository root:
 make all
 ```
 
-The primary R-YORS output is a dense 28K `$8000-$EFFF` payload:
+The primary R-YORS payload is published in the flat release directory:
 
 ```text
-SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
+RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
 
 $8000-$BAFD  ASM-F2, entry $800C
 $BAFE-$BFFF  low-flash growth/AP-store hole ($0502 bytes)
@@ -231,7 +231,7 @@ To compose a complete 32K Bank-0/1/2 payload, run the standalone owner:
 ```text
 make -C ../STR8-N ryors-full-bank
 
-../STR8-N/BUILD/v1.21/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19
+RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
 ```
 
 STR8-N supplies `$F000-$FFFF`, validates the 28K R-YORS input, and verifies
@@ -244,6 +244,7 @@ Useful targets:
 make all                       verify STR8-N and build R-YORS 28K payload
 make life                      standalone loadable Life S19/BIN
 make -C SRC board-s19-check    compare final bytes across board S19 families
+make -C SRC release-files      refresh the flat RELEASE directory
 make -C SRC ryors-logo-stamp   update the SVG logo from the current MMDD
 make -C SRC help Q=<term>      find related targets
 make release                   clean locked integration plus release artifacts
@@ -252,6 +253,10 @@ make docs-html                 HTML rebuild for docs and repository READMEs
 
 `make life` does not change the onboard image. It preserves the simple
 standalone S19 workflow for programs that should be loaded independently.
+
+Git retains current source snapshots, board-delivery S19 files, BIN files, and
+checksums together under `RELEASE/`. Generated proof, test, staging,
+timestamped, and backup artifacts under `BUILD` remain ignored.
 
 ## Repository
 
@@ -265,6 +270,7 @@ SRC/PROOFS/     current proof scaffolds still used by onboard work
 SRC/TESTS/      current test harnesses
 SRC/ARCHIVE/    retired sample, test, proof, demo, and one-off code/data
 SRC/tools/      host bootstrap and build tools
+RELEASE/        flat current release sources, S19s, BINs, and checksums
 DOC/GUIDES/     hand-written guides and hardware logs
 DOC/GENERATED/  source-derived reports
 ```

@@ -1,6 +1,6 @@
 param(
     [string]$S19Dir = "BUILD/s19",
-    [string]$Str8FullBankPath = "../../STR8-N/BUILD/v1.21/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19"
+    [string]$Str8FullBankPath = "../../STR8-N/BUILD/v1.21/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -65,11 +65,10 @@ if ($himon.Memory.Count -ne 0x2DB4) { Fail ('canonical HIMON byte count is ${0:X
 
 $himonTargets = @(
     'himon-c000.s19',
-    'himon-load-c000.s19',
     'himon-rom-c000-install-8000.s19',
     'himon-apv2-bank3-c-e.s19',
     'ryors-v1.2-himon-bank3-c-e.s19',
-    'ryors-v1.2-asm-himon-bank3-8-e.s19'
+    'ryors-v1.2-himon-asm-bank3-8-e.s19'
 ) | ForEach-Object { Read-S19 (Join-Path $S19Dir $_) }
 $full = Read-S19 $Str8FullBankPath
 $himonTargets += $full
@@ -77,12 +76,12 @@ foreach ($target in $himonTargets) { Assert-Canonical $himon $target ('HIMON ' +
 
 $asmTargets = @(
     'ryors-v1.2-asm-bank3-8-b.s19',
-    'ryors-v1.2-asm-himon-bank3-8-e.s19'
+    'ryors-v1.2-himon-asm-bank3-8-e.s19'
 ) | ForEach-Object { Read-S19 (Join-Path $S19Dir $_) }
 $asmTargets += $full
 foreach ($target in $asmTargets) { Assert-Canonical $asm $target ('ASM ' + $target.Path) }
 
-$dense = Read-S19 (Join-Path $S19Dir 'ryors-v1.2-asm-himon-bank3-8-e.s19')
+$dense = Read-S19 (Join-Path $S19Dir 'ryors-v1.2-himon-asm-bank3-8-e.s19')
 if ($dense.Memory.Count -ne 0x7000 -or $dense.Start -ne 0xC000) {
     Fail 'dense Bank-3 stream is not $8000-$EFFF with S9 $C000'
 }

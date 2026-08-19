@@ -29,10 +29,10 @@ make all
 R-YORS verifies the locked STR8-N manifest and public ABI, then builds:
 
 ```text
-SRC/BUILD/s19/ryors-v1.2-asm-bank3-8-b.s19
-SRC/BUILD/s19/ryors-v1.2-himon-bank3-c-e.s19
-SRC/BUILD/s19/ryors-v1.2-asm-himon-bank3-8-e.s19
-SRC/BUILD/s19/himon-apv2-bank3-c-e.s19
+RELEASE/ryors-v1.2-asm-bank3-8-b.s19
+RELEASE/ryors-v1.2-himon-bank3-c-e.s19
+RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
+RELEASE/himon-apv2-bank3-c-e.s19
 ```
 
 The last file is the dense 28K `$8000-$EFFF` payload. To compose a complete
@@ -45,7 +45,7 @@ make -C ../STR8-N ryors-full-bank
 This writes:
 
 ```text
-../STR8-N/BUILD/v1.21/s19/ryors-v1.2-asm-himon-str8n-bank0-2-8-f.s19
+RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
 ```
 
 STR8-N validates the 28K S19, appends its current checked 4K top image, and

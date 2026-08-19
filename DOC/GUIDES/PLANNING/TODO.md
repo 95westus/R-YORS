@@ -41,10 +41,17 @@ size measurement, and required hardware proof are complete.
   Record, split-worker callers, valid banked AP path, and frozen
   [compact-image refresh proof](../STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md)
   are accepted. The current `$0E5D` presentation successor has exact refresh,
-  live selector, cold timeout, warm `H`, and `C-E` board proof. Confirm only
-  that a key typed during `WAIT` is discarded; no flash work remains. Do not
-  reopen V1.02 for deferred self-update, sparse S19, ACIA, catalog,
+  live selector, cold timeout, warm `H`, and `C-E` board proof. The final key
+  discard during `WAIT` was operator-accepted on 2026-08-18; no V1.02 hardware
+  gate remains. Do not reopen V1.02 for deferred self-update, sparse S19, ACIA,
+  catalog,
   managed-backup, or export features.
+- The standalone STR8-N `1.21` successor is board-accepted through its combined
+  Bank Maintenance `U`, full-bank copy/enrollment, separate metadata-only `D2`
+  adoption, successful directory-gated `J2` launch of the factory onboard
+  firmware, and physical-reset recovery. The retained B1:F backup remains an
+  intentional recovery object; B1 sectors `8-E` are erased, `R D1` refuses
+  `BANK NOT ERASED`, and `J1` is not a valid guest edge in that state.
 - 2026-07-19 hardware pass: both current-image HIMON AP-linker gates are
   closed. Missing-import validation returned `$09` without body entry or a
   partial patch; banked-source RJOIN returned `A=$AC/C=1` with status `$00`

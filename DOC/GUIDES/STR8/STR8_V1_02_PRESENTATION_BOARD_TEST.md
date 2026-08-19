@@ -1,8 +1,8 @@
 # STR8 V1.02 Presentation-Successor Board Test
 
-Status: exact refresh, visible presentation, live selection, cold timeout, warm
-HIMON, and post-refresh `C-E` install are accepted. One focused case remains:
-prove that a key typed during `WAIT` is discarded at the phase boundary.
+Status: fully hardware-accepted. Exact refresh, visible presentation, live
+selection, cold timeout, warm HIMON, post-refresh `C-E` install, and key
+discard at the `WAIT` phase boundary are accepted.
 
 ## Accepted Candidate
 
@@ -63,6 +63,15 @@ LF FAIL=02 WR=0000 SKIP=422B GO=8000
 
 After those two observations, the presentation successor can be called fully
 hardware-accepted. No erase/program operation is needed for this final gate.
+
+### 2026-08-18 Final Operator Acceptance
+
+The operator explicitly accepted the remaining phase-boundary behavior on the
+installed STR8-N `1.21` successor: a key deliberately sent during `WAIT` was
+discarded and did not become a selector response. Discarded quarantine input
+has no printable terminal token, so this is operator-observed evidence. The
+same retained session shows live selector input separately as `0-2 H S: .S`
+and entry to the STR8 prompt. This closes the final no-flash presentation gate.
 
 ## Fresh HIMON Range Stream
 
