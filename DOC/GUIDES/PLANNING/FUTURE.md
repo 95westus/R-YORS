@@ -124,6 +124,60 @@
   mechanism only after two or more optional subsystems need the same command,
   hook, profile, and documentation machinery.
 
+## Selectable ROM Composition Direction
+
+- Explore a future ROM-recipe compositor in which STR8-N is the mandatory
+  reset/recovery root and the operator or host selects the higher system
+  packages to include: HIMON core/shell, Debug, OIL/AP integration, ASM, and
+  later applications. This is a possible direction, not a current build or
+  onboard-command commitment.
+- Treat the selection as a dependency graph, not as binary concatenation or a
+  set of unrelated yes/no switches. For example, Debug may require HIMON core
+  and its trap dispatcher; ASM may require HIMON plus the minimal OIL loader;
+  selecting either should add those requirements visibly or reject the recipe.
+- Consider splitting the permanent substrate into these conceptual packages:
+
+  ```text
+  STR8-N          mandatory reset, recovery, bank, and flash boundary
+  HIMON core      console/service anchors, vectors, records, minimal loader
+  HIMON shell     normal interactive monitor commands and help
+  OIL0            smallest validator, relocator, and import resolver
+  OIL extensions  banked storage, catalog, placement, and richer integration
+  Debug           optional commands, trap behavior, and context helpers
+  ASM             optional onboard assembler and package producer
+  ```
+
+  The exact split is deliberately unsettled. At least one non-loadable nucleus
+  must always be able to validate and load the next layer without depending on
+  the layer it is loading.
+- Give each selectable package an inspectable manifest containing its name and
+  version, ROM size/alignment, dependencies, provided capabilities, imports,
+  exports, relocation rows, entry/init routine, command/help contributions,
+  RAM ownership, vector/hook requirements, and body hash or CRC.
+- The compositor should compute dependency closure, reject incompatible RAM or
+  vector claims, allocate ROM, resolve imports and relocations, synthesize the
+  selected command/help/record surfaces, verify final vectors, and emit the
+  complete recipe, layout map, and image identity. Omitting Debug must continue
+  to omit its commands, help, BRK behavior, records, and documentation claims.
+- Make the first implementation, if pursued, a host-side fixed-slot composer.
+  R-YORS may emit the selectable `$8000-$EFFF` package artifacts and manifests;
+  STR8-N remains the owner of `$F000-$FFFF`, the final 32K composition, reset
+  vectors, and release identity. Move to tightly packed relocatable modules only
+  after the sealed-module and relocation contracts have hardware proof.
+- A later onboard `ROM BUILD` or equivalent could present a custom recipe,
+  stage and verify it sector by sector in an inactive Bank 0-2 target, and
+  publish the directory/boot-valid record last. It must not grow or rewrite the
+  executing Bank 3 image one package at a time. Package sources must remain
+  available outside any sector being replaced, and power loss before final
+  commit must leave the current recovery root usable.
+- A configured Bank 0-2 result is one legitimate opaque 32K guest; it does not
+  impose STR8, HIMON, a package format, or a common layout on other `J0`-`J2`
+  targets. The current opaque-bank handoff contract remains unchanged.
+- Keep static ROM composition distinct from runtime overlays. A package may be
+  baked into the composed ROM, stored as a sealed object for later RAM loading,
+  or omitted. The recipe and package metadata should make that lifecycle
+  explicit rather than treating all three states as equivalent.
+
 ## Long-Term RPG II Direction
 
 - RPG II is the long-term language goal, not a near-term monitor feature.
