@@ -18,6 +18,7 @@
                         XDEF            THE_JOIN_LOAD_HASH_XY
                         XDEF            FNV1A_INIT_FNV
                         XDEF            FNV1A_UPDATE_A_FAST_FNV
+                        XDEF            SYS_READ_CSTRING_FNV
                         XDEF            SYS_READ_CSTRING_ECHO_UPPER_FNV
                         XDEF            BIO_FTDI_PUT_CSTR_FNV
                         XDEF            SYS_PRINT_IO_SLOT_SKIP
@@ -324,7 +325,7 @@ HIM_SVC_BOOT_TABLE:
                         DW              SYS_WRITE_CSTRING
                         DW              SYS_WRITE_HEX_BYTE
                         DW              SYS_WRITE_CRLF
-                        DW              HIM_READ_LINE_ECHO_UPPER
+                        DW              HIM_READ_LINE_ECHO
                         DW              UTL_HEX_ASCII_TO_NIBBLE
                         DW              FNV1A_INIT
                         DW              FNV1A_UPDATE_A_FAST
@@ -1061,6 +1062,10 @@ MON_CLEAR_RAM_ZP:
 ; ----------------------------------------------------------------------------
 ; Tiny HIMONIA input
 ; ----------------------------------------------------------------------------
+; CMD_IO_TMP bit 7 preserves input case; bit 0 enables echo.
+HIM_READ_LINE_ECHO:
+                        LDA             #$81
+                        BRA             HIM_READ_LINE_SET_MODE
 HIM_READ_LINE_ECHO_UPPER:
                         LDA             #$01
                         BRA             HIM_READ_LINE_SET_MODE
@@ -1083,7 +1088,10 @@ HIM_READ_LINE_LOOP:
                         BEQ             HIM_READ_LINE_BACKSPACE
                         CMP             #$7F
                         BEQ             HIM_READ_LINE_BACKSPACE
+                        BIT             CMD_IO_TMP
+                        BMI             HIM_READ_LINE_KEEP_CASE
                         JSR             HIM_CHAR_TO_UPPER
+HIM_READ_LINE_KEEP_CASE:
                         STA             CMDP_BYTE_TMP
                         LDA             CMDP_REMAIN
                         CMP             #$FF
@@ -4609,6 +4617,11 @@ HIM_FNV_FORCE_RESIDENT:
                         DW              SYS_GET_CTRL_C
                         DW              UTL_HEX_ASCII_TO_NIBBLE
 
+SYS_READ_CSTRING_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$94,$43,$F5,$EF,CMD_HASH_KIND_EXEC_TEXT ; SYS_READ_CSTRING $EFF54394 EXEC+TEXT
+                        DW              HIM_READ_LINE_ECHO
+                        DW              TXT_SYS_READ_CSTRING
+
 SYS_READ_CSTRING_ECHO_UPPER_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$AF,$10,$DD,$E2,CMD_HASH_KIND_EXEC_TEXT ; SYS_READ_CSTRING_ECHO_UPPER $E2DD10AF EXEC+TEXT
                         DW              HIM_READ_LINE_ECHO_UPPER
@@ -4636,6 +4649,7 @@ TXT_HWARM:               DB              "HWAR",('M'+$80)
 TXT_THE_JOIN_EXEC_XY:    DB              "HASH ACQUIR",('E'+$80)
 TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
 TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)
+TXT_SYS_READ_CSTRING:   DB              "READ SOURC",('E'+$80)
 TXT_SYS_READ_CSTRING_ECHO_UPPER:
                         DB              "READ LIN",('E'+$80)
 TXT_BIO_FTDI_PUT_CSTR:   DB              "PUT CST",('R'+$80)

@@ -23992,3 +23992,49 @@ is an intentional recovery state, not a guest: do not use `J1` or run
 `E B1 ALL` while the retained B1:F backup is required. `R D1` cannot reclaim
 this state and is expected to refuse it as `BANK NOT ERASED`. It does not
 invalidate the completed D2 adoption.
+
+## 2026-08-19 ASM-F2 Case-Preserving Source Input Board Proof
+
+STR8-N 1.22 accepted a Bank-3 `8-E` install with six sector dots, final commit,
+and `OK`. Cold boot first showed the previously installed HIMON
+`00.0818(1108)` in three repeated install attempts; the final current payload
+booted HIMON `00.0819(1123)` and entered matching ASM-F2 `00.0819(1123)`.
+
+The current ASM-F2 session preserved and echoed mixed case in apostrophe and
+double-quote operands:
+
+```text
+>ASM NEW
+ASM-F2 00.0819(1123)
+ASM>$2000: ORG $3000
+ASM>$3000: DC 'aZ'
+ASM>$3002: DC C'Hi'
+ASM>$3005: DC HB,"hI"
+ASM>$3007: DC P,"mX"
+ASM>$300A: LDA #'q'
+ASM>$300C: END
+ASM OK
+SEAL> .
+ASM BYE
+>D 3000 300C
+3000: 61 5A 48 69 00 68 C9 02 | 6D 58 A9 71 00 | aZHi.h..mX.q.
+```
+
+The significant `$3000-$300B` bytes are exactly
+`61 5A 48 69 00 68 C9 02 6D 58 A9 71`. This accepts case-preserving source
+input and echo, raw/CSTR/HBSTR/PSTR encoding across both delimiters, lowercase
+syntax folding, and the lowercase character atom.
+
+The final regression entered the dump command entirely in lowercase. HIMON's
+direct input path folded it before echo and executed it normally without
+changing the assembled bytes:
+
+```text
+d 3000 300c
+>D 3000 300C
+3000: 61 5A 48 69 00 68 C9 02 | 6D 58 A9 71 00 | aZHi.h..mX.q.
+>
+```
+
+This accepts the unchanged uppercase HIMON command-reader path and completes
+the case-preserving ASM-F2 source-input board gate.

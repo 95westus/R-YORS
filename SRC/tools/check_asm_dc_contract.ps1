@@ -1,5 +1,6 @@
 param(
-    [string]$AsmSourcePath = "ASM/asm-v1-core.asm"
+    [string]$AsmSourcePath = "ASM/asm-v1-core.asm",
+    [string]$HimonSourcePath = "HIMON/himon.asm"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,7 +12,8 @@ function Fail([string]$Message) {
 function Emit-CompactDc([string]$Source) {
     $match = [regex]::Match(
         $Source,
-        "^\s*DC\s*(?:(?<mode>[CHPchp])\s*)?'(?<text>[^']*)'\s*(?:;.*)?$"
+        "^\s*DC\s*(?:(?<mode>[CHP])\s*)?'(?<text>[^']*)'\s*(?:;.*)?$",
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
     )
     if ($match.Success) {
         $mode = $match.Groups['mode'].Value.ToUpperInvariant()
@@ -72,7 +74,11 @@ $success = @(
     @{ Source = "DC P''"; Bytes = [byte[]](0x00) },
     @{ Source = 'DC C,"OK"'; Bytes = [byte[]](0x4F, 0x4B, 0x00) },
     @{ Source = 'DC HB,"OK"'; Bytes = [byte[]](0x4F, 0xCB) },
-    @{ Source = 'DC P,"OK"'; Bytes = [byte[]](0x02, 0x4F, 0x4B) }
+    @{ Source = 'DC P,"OK"'; Bytes = [byte[]](0x02, 0x4F, 0x4B) },
+    @{ Source = "dc 'aZ'"; Bytes = [byte[]](0x61, 0x5A) },
+    @{ Source = "dc c'Hi'"; Bytes = [byte[]](0x48, 0x69, 0x00) },
+    @{ Source = 'dc hb,"hI"'; Bytes = [byte[]](0x68, 0xC9) },
+    @{ Source = 'dc p,"mX"'; Bytes = [byte[]](0x02, 0x6D, 0x58) }
 )
 foreach ($case in $success) { Assert-Bytes $case.Source $case.Bytes }
 
@@ -124,6 +130,21 @@ $parseHead = [regex]::Match(
 if (-not $parseHead.Success) { Fail 'missing DC parse-head block' }
 if ($parseHead.Value -match 'JSR\s+ASM_NEXT_TOKEN') {
     Fail 'typed compact modes must bypass the general lexer apostrophe boundary'
+}
+
+if (-not (Test-Path -LiteralPath $HimonSourcePath)) {
+    Fail "HIMON source not found: $HimonSourcePath"
+}
+$himon = [System.IO.File]::ReadAllText((Resolve-Path -LiteralPath $HimonSourcePath))
+foreach ($required in @(
+    'HIM_READ_LINE_ECHO:',
+    'LDA             #$81',
+    'BIT             CMD_IO_TMP',
+    'BMI             HIM_READ_LINE_KEEP_CASE',
+    'DW              HIM_READ_LINE_ECHO',
+    'SYS_READ_CSTRING $EFF54394 EXEC+TEXT'
+)) {
+    if (-not $himon.Contains($required)) { Fail "missing HIMON case-preserving input marker: $required" }
 }
 
 Write-Host ("ASM compact DC contract OK: success={0} failure={1} boundaries=4" -f $success.Count, $failures.Count)

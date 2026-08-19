@@ -67,10 +67,10 @@ also requires the locked standalone STR8-N checkout to be clean.
 ```text
 $8000-$BAFD   ASM-F2, entry $800C
 $BAFE-$BFFF   low-flash headroom/AP-store hole
-$C000-$EDB3   HIMON
-$EDB4-$EFFF   HIMON headroom
-$F000-$FD59   standalone STR8-N v1.21 resident
-$FD5A-$FD5B   available 2-byte growth margin
+$C000-$EDD2   HIMON
+$EDD3-$EFFF   HIMON headroom
+$F000-$FD54   standalone STR8-N v1.22 resident
+$FD55-$FD5B   available 7-byte growth margin
 $FD5C-$FFAF   stored unified STR8-N worker, runs at $0200-$0453
 $FFB0-$FFEF   bank directory
 $FFF0-$FFF9   configuration pocket

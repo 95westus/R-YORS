@@ -74,7 +74,7 @@ first enrollment or replacement of the normal `$C000` Bank-3 entry.
 
 ## Runtime Public Interface
 
-HIMON includes only the generated external contract. The fixed v1.21 services
+HIMON includes only the generated external contract. The fixed v1.22 services
 used or checked by R-YORS are:
 
 ```text

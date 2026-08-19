@@ -1,14 +1,17 @@
 {
   "schema": 1,
   "project": "STR8-N",
-  "version": "1.21",
+  "version": "1.22",
   "repository": "https://github.com/95westus/STR8-N.git",
   "manifestSchema": 3,
   "artifacts": {
-    "topSectorSha256": "9EAA5808344A1232544B4BAE1CB75E8140AECA0E0D122E6694498C74B83BBB75",
+    "topSectorSha256": "C26F86CC8BAA77DCEA9FCA59DDD79AED8415BFCFB106EFE90DEE03EE228F26A7",
     "publicContractSha256": "7778B3A33AF21E9E81160BD51341F52FA81F211292C2425A9280D59F25F45174"
   },
   "layout": {
+    "residentStart": "F000",
+    "residentEnd": "FD54",
+    "unusedMargin": 7,
     "directoryStart": "FFB0",
     "directoryEnd": "FFEF",
     "configurationStart": "FFF0",

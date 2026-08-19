@@ -55,7 +55,7 @@ S3X_HOME ?= $(LOCAL_ROOT)/s3x
 STR8N_HOME ?= ../../STR8-N
 STR8N_MANIFEST := $(STR8N_HOME)/BUILD/str8n-manifest.json
 STR8N_LOCK := INTEGRATION/str8n.lock.json
-STR8N_PUBLIC_CONTRACT := $(STR8N_HOME)/BUILD/v1.21/include/str8n-public.inc
+STR8N_PUBLIC_CONTRACT := $(STR8N_HOME)/BUILD/v1.22/include/str8n-public.inc
 STR8N_IMPORTED_CONTRACT := $(INC_DIR)/str8n-public.inc
 STR8N_RECEIPT := $(BUILD_DIR)/integration/str8n-receipt.json
 STR8N_EXTERNAL_CHECK := tools/check_external_str8n.ps1
@@ -551,12 +551,12 @@ asmtest-3000-wdc-check: asmtest-6800-wdc-check
 asm-opcode-coverage: $(ASM_OPCODE_AUDIT) $(ASM_V1_CORE_SRC)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_OPCODE_AUDIT) -SourcePath "$(ASM_V1_CORE_SRC)"
 
-asm-dc-check: $(ASM_DC_CHECK) $(ASM_V1_CORE_SRC)
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_DC_CHECK) -AsmSourcePath "$(ASM_V1_CORE_SRC)"
+asm-dc-check: $(ASM_DC_CHECK) $(ASM_V1_CORE_SRC) $(HIMON_SRC)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_DC_CHECK) -AsmSourcePath "$(ASM_V1_CORE_SRC)" -HimonSourcePath "$(HIMON_SRC)"
 
 board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(HIMON_ROM_S19) $(HIMON_ROM_INSTALL_S19) $(HIMON_APV2_INSTALL_S19) $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19)
 	@make -C "$(STR8N_HOME)" ryors-full-bank RYORS_28K_S19="$(abspath $(RYORS_V12_28K_S19))"
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.21/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.22/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 
 release-files: board-s19-check life rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"

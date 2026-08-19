@@ -14673,3 +14673,65 @@ SEAL` failed after `ASM NEW` had replaced the saved image; HIMON `D` commands
 entered at `SEAL>` returned `$03`; and an expected dump line pasted at HIMON
 was treated as a hash command and returned `HSH_NF!`. None changes the accepted
 bytes or execution evidence.
+
+## 2026-08-19 ASM-F2 Case-Preserving Source Input
+
+Host status: accepted. Board status: accepted.
+
+ASM-F2 previously received every interactive source line through
+`SYS_READ_CSTRING_ECHO_UPPER`, so lowercase quoted bytes were irreversibly
+folded before the lexer or `DC` emitter saw them. HIMON now has a separate
+`HIM_READ_LINE_ECHO` entry whose mode preserves input bytes while retaining
+echo, backspace, Ctrl-C, CR/LF, and NUL termination. The existing service-vector
+slot points to this entry, and a resident `SYS_READ_CSTRING` (`$EFF54394`)
+EXEC+TEXT row named `READ SOURCE` supports the RJOIN path. HIMON's own prompt,
+modify command, and S-record loader continue to call the uppercase entries.
+
+The independent DC oracle now covers lowercase directives with mixed-case
+payloads in both apostrophe and double-quote forms. The compiled core smoke
+requires their exact output, including `dc 'aZ'`, `dc c'Hi'`,
+`dc hb,"hI"`, `dc p,"mX"`, and `lda #'q'`. The locally linked HIMON candidate
+measures:
+
+```text
+                         prior           case-preserving   delta
+CODE                     $28A2           $28AA             +$0008 / +8
+DATA                     $0512           $0529             +$0017 / +23
+_END_DATA                $EDB4           $EDD3             +$001F / +31
+headroom to $F000        $024C           $022D             -$001F / -31
+```
+
+The pinned external contract now accepts the current clean STR8-N 1.22
+manifest at commit `2a6f65da`: top-sector SHA-256
+`C26F86CC8BAA77DCEA9FCA59DDD79AED8415BFCFB106EFE90DEE03EE228F26A7`
+and unchanged public-contract SHA-256
+`7778B3A33AF21E9E81160BD51341F52FA81F211292C2425A9280D59F25F45174`.
+`make -C SRC str8n-external-check`, `make -C SRC asm-test`,
+`make -C SRC himon`, `make -C SRC all`, and `make -C SRC board-s19-check`
+pass; the identity gate accepts ASM `$3AFE` and HIMON `$2DD3` across all nine
+board artifacts.
+
+The 2026-08-19 board run installed the current Bank-3 `8-E` payload through
+STR8-N 1.22 and cold-booted HIMON/ASM-F2 `00.0819(1123)`. ASM echoed the exact
+mixed-case source and advanced through the expected PCs:
+
+```text
+ASM>$3000: DC 'aZ'
+ASM>$3002: DC C'Hi'
+ASM>$3005: DC HB,"hI"
+ASM>$3007: DC P,"mX"
+ASM>$300A: LDA #'q'
+ASM>$300C: END
+```
+
+HIMON then dumped exact bytes:
+
+```text
+3000: 61 5A 48 69 00 68 C9 02 | 6D 58 A9 71 00 | aZHi.h..mX.q.
+```
+
+This accepts case-preserving input, echo, both delimiters, raw/CSTR/HBSTR/PSTR
+encoding, lowercase directive parsing, lowercase symbol folding, and lowercase
+character atoms on hardware. The final regression typed `d 3000 300c` at the
+HIMON prompt; HIMON echoed `D 3000 300C` and produced the same dump. That
+accepts the unchanged direct uppercase-reader path and closes the board gate.

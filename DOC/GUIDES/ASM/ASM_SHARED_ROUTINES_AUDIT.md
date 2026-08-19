@@ -13,7 +13,7 @@ ASM is already using the most important resident services through RJOIN:
 ```text
 THE_JOIN_EXEC_XY              HIMON-published join seed at $7E00/$7E01
 BIO_FTDI_WRITE_BYTE_BLOCK     blocking byte output
-SYS_READ_CSTRING_ECHO_UPPER   paste/interactive line input
+SYS_READ_CSTRING              case-preserving paste/interactive line input
 FNV1A_INIT                    shared FNV hash init
 FNV1A_UPDATE_A_FAST           shared FNV byte update
 ```
@@ -37,7 +37,7 @@ callable entry.
 | --- | --- | --- |
 | RJOIN seed | `THE_JOIN_EXEC_XY` | mandatory and hardware-proven via `$7E00/$7E01` |
 | Byte output | `BIO_FTDI_WRITE_BYTE_BLOCK` | ASM resolves at startup |
-| Line input | `SYS_READ_CSTRING_ECHO_UPPER` | ASM paste wrapper resolves when needed |
+| Line input | `SYS_READ_CSTRING` | ASM source input preserves case; syntax folding remains inside ASM |
 | Hash init | `FNV1A_INIT` | ASM resolves at startup |
 | Hash update | `FNV1A_UPDATE_A_FAST` | ASM resolves at startup |
 | Hex ASCII parser | `UTL_HEX_ASCII_TO_NIBBLE` | ASM resolves at startup |
@@ -234,7 +234,7 @@ Already shared or resolved:
 | ASM routine/use | HIMON/resident routine | Verdict |
 | --- | --- | --- |
 | `ASM_RJ_WRITE_BYTE` | `BIO_FTDI_WRITE_BYTE_BLOCK` / `WRITE BYTE` | done |
-| `ASM_RJ_READ_CSTRING` | `SYS_READ_CSTRING_ECHO_UPPER` / `READ LINE` | done |
+| `ASM_RJ_READ_CSTRING` | `SYS_READ_CSTRING` / `READ SOURCE` | done |
 | `ASM_HEX_TO_NIBBLE` | `UTL_HEX_ASCII_TO_NIBBLE` / `HEX NIB` | done |
 | `ASM_FNV1A_INIT` | `FNV1A_INIT` / `HASH OPEN` | done |
 | `ASM_FNV1A_UPDATE_A_FAST` | `FNV1A_UPDATE_A_FAST` / `HASH MIX` | done |

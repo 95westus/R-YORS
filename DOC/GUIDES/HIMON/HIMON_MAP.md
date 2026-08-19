@@ -352,7 +352,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Boot/re-enter monitor | reset, trap return, `$8000` handoff | `START`, `MON_REENTER`, `MON_START_INIT` | Owns hardware stack on entry, initializes system I/O, installs active vectors, enters prompt. | This is the normal HIMON path today. STR8 hands normal boot here. |
 | Cold RAM clear | reset path | `MON_COLD_RESET`, `MON_CLEAR_RAM` | Clears RAM through `SYS_RAM_END` (`$7EFF`), then sets reset signature and starts monitor. | `SYS_IO_BASE` (`$7F00`) is the hard stop before memory-mapped I/O. |
 | Vector/trap install | boot-time | `SYS_VEC_SET_NMI_XY`, `SYS_VEC_SET_IRQ_BRK_XY`, `SYS_VEC_SET_IRQ_NONBRK_XY` | Installs HIMON NMI, BRK, and IRQ handlers through system vector helpers. | STR8 should own physical vectors later, with HIMON installing active RAM vectors. |
-| Line input | prompt and loaders | `HIM_READ_LINE_ECHO_UPPER`, `HIM_READ_LINE_UPPER` | Blocking FTDI read, uppercases input, supports backspace, Ctrl-C abort, and NUL termination. | `L` uses non-echo upper input for S-record streams. |
+| Line input | prompt, loaders, and ASM service vector | `HIM_READ_LINE_ECHO`, `HIM_READ_LINE_ECHO_UPPER`, `HIM_READ_LINE_UPPER` | Blocking FTDI read with exact-case echoed or uppercase modes, backspace, Ctrl-C abort, and NUL termination. | HIMON commands and `L` retain uppercase input; the ASM-facing vector uses exact-case echo so quoted source bytes survive. |
 | Hi-bit string output | all command messages | `HIM_WRITE_HBSTRING` | Writes high-bit terminated strings through FTDI. | Current compact text format for monitor messages. |
 | FNV-era command hashing | every command token | `CMD_HASH_TOKEN`, `FNV1A_*`, `MATH_*` | Computes the current HIMON command hash and saves it in command exec state. | FNV32 remains the public command/export identity hash; CRC16 is for compact local/scoped tables and checks. |
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
@@ -526,6 +526,19 @@ This leaves `$024C` bytes below `$F000`. The current board proof accepts the
 same `1303` HIMON bytes in the standalone Bank-3 `8-E` payload and the final
 STR8-N-composed image, including physical-reset persistence, the fixed `$C000`
 head, ASM-F2 identity, and synthetic `J3` return.
+
+Current 2026-08-19 case-preserving source-input host candidate:
+
+```text
+CODE     $28AA / 10410
+DATA     $0529 /  1321
+TOTAL    $2DD3 / 11731
+_END_DATA = $EDD3
+```
+
+This leaves `$022D` bytes below `$F000`. The 31-byte growth supplies the
+case-preserving echoed input entry and its resident `SYS_READ_CSTRING` record;
+board acceptance is still pending.
 
 ## Edge Evidence Rules
 

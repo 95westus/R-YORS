@@ -60,9 +60,9 @@ foreach ($relative in $rArtifacts) {
 
 $str8Artifacts = @(
     "BUILD/str8n-manifest.json",
-    "BUILD/v1.21/bin/str8n-v1.21-bank3-f000-ffff.bin",
-    "BUILD/v1.21/s19/str8n-v1.21-f000.s19",
-    "BUILD/v1.21/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+    "BUILD/v1.22/bin/str8n-v1.22-bank3-f000-ffff.bin",
+    "BUILD/v1.22/s19/str8n-v1.22-f000.s19",
+    "BUILD/v1.22/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 )
 foreach ($relative in $str8Artifacts) {
     Publish-File -Source (Join-Path $str8n $relative)
@@ -83,10 +83,10 @@ $str8Sources = @(
     "src/str8.asm",
     "src/str8-worker.asm",
     "src/util-delay.asm",
-    "tools/bank-maint/str8n-v1.21-bank-maint-2000.asm",
-    "tools/bank-maint/str8n-v1.21-bank-maint-menu-2000.asm",
-    "tools/bank-maint/str8n-v1.21-bank-maint-menu-2000.a",
-    "tools/top-update/str8n-v1.21-top-update-2000.asm"
+    "tools/bank-maint/str8n-v1.22-bank-maint-2000.asm",
+    "tools/bank-maint/str8n-v1.22-bank-maint-menu-2000.asm",
+    "tools/bank-maint/str8n-v1.22-bank-maint-menu-2000.a",
+    "tools/top-update/str8n-v1.22-top-update-2000.asm"
 )
 foreach ($relative in $str8Sources) {
     Publish-File -Source (Join-Path $str8n $relative)

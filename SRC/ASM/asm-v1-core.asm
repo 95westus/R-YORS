@@ -1638,8 +1638,8 @@ ASM_RJOIN_INIT_IO:
                         BNE             ASM_RJOIN_INIT_IO_READY
                         LDA             #ASM_STEP_RJOIN_READ
                         STA             ASM_START_STEP
-                        LDX             #<ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
-                        LDY             #>ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
+                        LDX             #<ASM_HASH_SYS_READ_CSTRING
+                        LDY             #>ASM_HASH_SYS_READ_CSTRING
                         JSR             ASM_RJ_RESIDENT_XY
                         BCC             ASM_RJOIN_INIT_IO_FAIL
                         STX             ASM_RJ_READ_LO
@@ -18464,22 +18464,22 @@ ASM_DIRECT_DW_FORWARD: DB              "        DW FWD",0
 ASM_DIRECT_FORWARD_LABEL:
                         DB              "FWD RTS",0
 ASM_DIRECT_DW_LIST:    DB              "WORD DW $1234,$12,10+1,'A'",0
-ASM_DIRECT_DC_C:       DB              "CSTR DC C,",34,"OK",34,0
-ASM_DIRECT_DC_HB:      DB              "HBSTR DC HB,",34,"OK",34,0
-ASM_DIRECT_DC_P:       DB              "PSTR DC P,",34,"OK",34,0
-ASM_DIRECT_DC_RAW:     DB              "RAW DC 'OK'; compact raw",0
+ASM_DIRECT_DC_C:       DB              "cstr dc c,",34,"Ok",34,0
+ASM_DIRECT_DC_HB:      DB              "hbstr dc hb,",34,"hI",34,0
+ASM_DIRECT_DC_P:       DB              "pstr dc p,",34,"mX",34,0
+ASM_DIRECT_DC_RAW:     DB              "raw dc 'aZ'; compact raw",0
 ASM_DIRECT_DC_COMPACT_C:
-                        DB              "C2 DC C'OK'",0
+                        DB              "c2 dc c'Hi'",0
 ASM_DIRECT_DC_COMPACT_H:
-                        DB              "H2 DC H'OK'",0
+                        DB              "h2 dc h'bY'",0
 ASM_DIRECT_DC_COMPACT_P:
-                        DB              "P2 DC P'OK'",0
+                        DB              "p2 dc p'Qs'",0
 ASM_DIRECT_DC_EMPTY_RAW:
                         DB              "R0 DC ''",0
 ASM_DIRECT_DC_EMPTY_C: DB              "C0 DC C''",0
 ASM_DIRECT_DC_EMPTY_H: DB              "H0 DC H''",0
 ASM_DIRECT_DC_EMPTY_P: DB              "P0 DC P''",0
-ASM_DIRECT_LDA_CHAR:   DB              "        LDA #'A'",0
+ASM_DIRECT_LDA_CHAR:   DB              "        lda #'q'",0
 ASM_DIRECT_DC_RAW_255:
                         DB              "        DC '"
                         DB              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
@@ -18615,10 +18615,10 @@ ASM_DIRECT_DB_EXPECT:  DB              $FF,$0A,$41,$34,$12,$34,$12
 ASM_DIRECT_DW_EXPECT:  DB              $34,$12,$12,$00,$0B,$00,$41,$00
 ASM_DIRECT_FORWARD_EXPECT:
                         DB              $06,$70,$06,$70,$06,$70,$60
-ASM_DIRECT_DC_EXPECT:  DB              $4F,$4B,$00,$4F,$CB,$02,$4F,$4B
+ASM_DIRECT_DC_EXPECT:  DB              $4F,$6B,$00,$68,$C9,$02,$6D,$58
 ASM_DIRECT_DC_COMPACT_EXPECT:
-                        DB              $4F,$4B,$4F,$4B,$00,$4F,$CB,$02
-                        DB              $4F,$4B,$00,$80,$00,$A9,$41
+                        DB              $61,$5A,$48,$69,$00,$62,$D9,$02
+                        DB              $51,$73,$00,$80,$00,$A9,$71
 ASM_IMPORT_DATA_BYTES_EXPECT:
                         DB              $FF,$FF,$FF,$FF,$FF,$FF
 ASM_IMPORT_DATA_FIX_SEL_EXPECT:
@@ -18727,12 +18727,12 @@ ASM_HASH_UTL_HEX_ASCII_TO_NIBBLE:
                         DB              $B1,$14,$D7,$AD
                         IF              ASM_RUNTIME_ONLY
                         IF              ASM_FLASH_RUNTIME
-ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER:
-                        DB              $AF,$10,$DD,$E2
+ASM_HASH_SYS_READ_CSTRING:
+                        DB              $94,$43,$F5,$EF
                         ENDIF
                         ELSE
-ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER:
-                        DB              $AF,$10,$DD,$E2
+ASM_HASH_SYS_READ_CSTRING:
+                        DB              $94,$43,$F5,$EF
                         ENDIF
 ASM_HASH_FNV1A_INIT:
                         DB              $1E,$EE,$9A,$4B

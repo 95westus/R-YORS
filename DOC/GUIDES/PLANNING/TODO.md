@@ -22,6 +22,21 @@ size measurement, and required hardware proof are complete.
   execution with `$7906=$D7`, and atomic malformed-input rollback to
   `A5 4F 4B`. The exact transcript is appended to the hardware log.
 
+- [x] **Case-preserving ASM-F2 source input.** HIMON now provides
+  `HIM_READ_LINE_ECHO`, publishes it as `SYS_READ_CSTRING` (`$EFF54394`), and
+  places it in the existing ASM-facing service-vector slot. HIMON command and
+  loader callers retain the direct uppercase entries. ASM folds syntax and
+  symbol comparisons itself while preserving exact bytes inside apostrophe
+  and double-quote delimiters. The independent DC oracle and core smoke cover
+  mixed/lowercase legacy and compact strings plus lowercase character atoms.
+  The HIMON candidate grows by `$001F` resident bytes (`_END_DATA $EDB4 ->
+  $EDD3`: CODE `+$0008`, DATA `+$0017`); ASM size is unchanged. The `1123`
+  board run accepts mixed-case input/echo and exact bytes
+  `61 5A 48 69 00 68 C9 02 6D 58 A9 71` for raw, CSTR, HBSTR, PSTR, and
+  lowercase character-atom forms. A lowercase `d 3000 300c` HIMON command
+  echoed as `D 3000 300C` and reproduced the same dump, accepting the unchanged
+  uppercase command-input path.
+
 - [ ] **Unresolved compound fixups.** Add a compact representation and
   resolver for a single unresolved symbol plus a constant addend, including
   forward internal uses such as `LDA FOO+1`, `BNE TARGET-2`, and `DW TABLE+2`.

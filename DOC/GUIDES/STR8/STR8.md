@@ -1,6 +1,6 @@
 # STR8-N Integration Index
 
-STR8-N v1.21 is maintained in the adjacent standalone `STR8-N` repository.
+STR8-N v1.22 is maintained in the adjacent standalone `STR8-N` repository.
 R-YORS owns no live STR8-N implementation source.
 
 For current work:
@@ -16,7 +16,7 @@ For current work:
 - The standalone `STR8-N/docs/TECHNICAL_GUIDE.md` is authoritative for the
   resident, worker, directory, ABI, and protected-sector layout.
 
-Current board acceptance through 2026-08-18 includes the combined v1.21 Bank
+Current board acceptance through 2026-08-18 includes the combined v1.22 Bank
 Maintenance menu, guarded `U` update with retained B1:F backup, full-bank
 copy-plus-enrollment, metadata-only `D2` adoption followed by successful `J2`,
 and physical-reset recovery. The observed non-R-YORS payload is called the
@@ -32,7 +32,7 @@ time; they are intentionally not rewritten as current instructions.
 The external ABI is imported from:
 
 ```text
-STR8-N/BUILD/v1.21/include/str8n-public.inc
+STR8-N/BUILD/v1.22/include/str8n-public.inc
 ```
 
 and locked by:

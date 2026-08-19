@@ -55,7 +55,7 @@ Assert-Equal $contractHash $lock.artifacts.publicContractSha256 'locked public-c
 Assert-Equal $manifest.artifacts.topSector.size 4096 'top-sector size in manifest'
 Assert-Equal $manifest.artifacts.topSector.cpuStart 'F000' 'top-sector start'
 Assert-Equal $manifest.artifacts.topSector.cpuEnd 'FFFF' 'top-sector end'
-foreach ($name in @('directoryStart','directoryEnd','configurationStart','configurationEnd','vectorsStart','vectorsEnd')) {
+foreach ($name in @('residentStart','residentEnd','unusedMargin','directoryStart','directoryEnd','configurationStart','configurationEnd','vectorsStart','vectorsEnd')) {
     Assert-Equal $manifest.layout.$name $lock.layout.$name "layout.$name"
 }
 foreach ($name in @('ramVersion','himonApLinkStart','himonApLinkEnd','bankJumpSig0','bankJumpSig1','bankLastJump','bankJumpSignature','bankCount','bankNone','bankSelectService','selectorEntry','selectorEnd','recordService','recordVersion','recordCapabilities','residentVersion','residentCapabilities')) {
