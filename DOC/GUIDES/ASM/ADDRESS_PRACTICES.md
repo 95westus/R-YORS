@@ -137,6 +137,23 @@ APs, or add a future multi-sector/segmented package format. Merely raising the
 `$1000` constant would also require new package-buffer placement, multi-sector
 Bank 0 staging/programming, discovery, loader checks, and board proof.
 
+The next AP design session is planned to generalize selectable AP storage
+across Banks 0-2. Those banks are not presumed to be AP stores: any one may
+hold a foreign/opaque image, which AP tooling must identify and leave alone.
+The initial multi-sector boundary is one bank per capsule; a capsule may span
+sectors within that bank but must not cross into another bank. Compression is
+not a dependency and remains only a possible long-term encoding.
+
+Storage placement and execution placement are separate questions. Moving an
+intact AP envelope to another RAM or flash address does not relocate its BODY;
+the envelope is still data. At load time, AP copies the BODY to the requested
+RAM destination and uses its relocation/import metadata to make that copy
+runnable. A future split installed form could leave metadata in one catalog
+location and place the BODY in a suitable flash hole, but that would be a new
+storage contract: the metadata must name and authenticate the external BODY,
+and the loader must fetch it before applying relocation. A bare BODY copied out
+of its envelope has not thereby become independently movable.
+
 ## Source Lifecycle Names
 
 Sample names containing `-transient-$hhhh.a` are normally fixed-address RAM

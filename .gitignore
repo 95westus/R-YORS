@@ -51,6 +51,11 @@ DOC/s34
 !/RELEASE/*.[sS]19
 !/RELEASE/*.json
 
+# WDCMONv2 images are local/provenance-only, including under RELEASE. Keep
+# these after the RELEASE allowlist so they cannot be published accidentally.
+*[wW][dD][cC][mM][oO][nN][vV]2*.[bB][iI][nN]
+*[wW][dD][cC][mM][oO][nN][vV]2*.[sS]19
+
 # Immutable console-input fixture referenced by hardware proof. This is test
 # source, not a generated firmware artifact.
 !/DOC/GUIDES/ASM/SAMPLES/OLD/str8-record-phase1-max252.s19

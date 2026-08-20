@@ -29,5 +29,5 @@
   <!-- tools/stamp_himon_version.ps1 replaces this text from the build MMDD. -->
   <text id="ryors-version" x="800" y="506" text-anchor="middle"
         font-family="'Consolas','Courier New',monospace"
-        font-size="24" letter-spacing="5" fill="#60a5fa">VERSION .0819</text>
+        font-size="24" letter-spacing="5" fill="#60a5fa">VERSION .0820</text>
 </svg>

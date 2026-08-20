@@ -19,6 +19,19 @@ New-Item -ItemType Directory -Force -Path $out | Out-Null
 Get-ChildItem -LiteralPath $out -File | Remove-Item -Force
 
 $published = [Collections.Generic.Dictionary[string, string]]::new([StringComparer]::OrdinalIgnoreCase)
+$forbiddenImagePattern = '(?i)wdcmonv2.*\.(bin|s19)$'
+
+function Assert-PublishableImageName {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Role
+    )
+
+    $leaf = Split-Path -Leaf $Path
+    if ($leaf -match $forbiddenImagePattern) {
+        throw "WDCMONv2 BIN/S19 files are local-only and must not be published ($Role): $Path"
+    }
+}
 
 function Publish-File {
     param(
@@ -32,6 +45,8 @@ function Publish-File {
     if ([string]::IsNullOrWhiteSpace($Name)) {
         $Name = Split-Path -Leaf $Source
     }
+    Assert-PublishableImageName -Path $Source -Role "source"
+    Assert-PublishableImageName -Path $Name -Role "release name"
     if ($published.ContainsKey($Name)) {
         throw "Duplicate flat release filename '$Name' from '$Source' and '$($published[$Name])'"
     }
@@ -155,6 +170,10 @@ The canonical build source remains under `SRC/` and the adjacent `STR8-N`
 repository. `SHA256SUMS.txt` identifies every published file.
 '@
 Set-Content -LiteralPath (Join-Path $out "README.md") -Value $readme -Encoding utf8
+
+Get-ChildItem -LiteralPath $out -File | ForEach-Object {
+    Assert-PublishableImageName -Path $_.Name -Role "release output"
+}
 
 $hashLines = Get-ChildItem -LiteralPath $out -File |
     Where-Object { $_.Name -ne "SHA256SUMS.txt" } |
