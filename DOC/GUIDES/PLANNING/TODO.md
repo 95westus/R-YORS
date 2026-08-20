@@ -8,6 +8,12 @@ size measurement, and required hardware proof are complete.
 
 ### Next session: AP storage across Banks 0-2
 
+Implementation authority: [AP_STORAGE_BANKS_0_2_PLAN.md](AP_STORAGE_BANKS_0_2_PLAN.md).
+The plan freezes the settled direction: sector-granular coexistence, Bank-3
+discovery plus per-sector identity, complete AP v2 envelopes, arbitrary
+same-bank sector chains, managed-only format, separate explicit conversion,
+append-only delete, and deferred compaction.
+
 - [ ] Specify AP storage for selectable Banks 0, 1, and 2. A bank may instead
   contain a foreign/opaque image; AP discovery and mutation must identify the
   bank role and refuse to treat a foreign image as an AP store.
