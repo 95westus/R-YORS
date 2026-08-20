@@ -1,0 +1,78 @@
+param([string]$ContractPath = "ASM/ap-store-v1.inc")
+
+$ErrorActionPreference = 'Stop'
+function Fail([string]$Message) { throw "AP Store V1 check: $Message" }
+function Put-U16([byte[]]$B,[int]$O,[int]$V){$B[$O]=[byte]($V-band 0xFF);$B[$O+1]=[byte](($V-shr 8)-band 0xFF)}
+function Put-U32([byte[]]$B,[int]$O,[uint32]$V){0..3|ForEach-Object{$B[$O+$_]=[byte]((([uint64]$V)-shr(8*$_))-band 0xFF)}}
+function Get-U16([byte[]]$B,[int]$O){return [int]$B[$O]-bor([int]$B[$O+1]-shl 8)}
+function Get-U32([byte[]]$B,[int]$O){return [uint32](([uint64]$B[$O])-bor([uint64]$B[$O+1]-shl 8)-bor([uint64]$B[$O+2]-shl 16)-bor([uint64]$B[$O+3]-shl 24))}
+function Slice([byte[]]$B,[int]$O,[int]$N){[byte[]]$r=New-Object byte[] $N;[Array]::Copy($B,$O,$r,0,$N);return $r}
+function Fnv32([byte[]]$B){[uint64]$h=2166136261;foreach($v in $B){$h=(($h-bxor[uint64]$v)*[uint64]16777619)-band[uint64]4294967295};return [uint32]$h}
+function Crc16([byte[]]$B){
+    [int]$crc=0xFFFF
+    foreach($v in $B){$crc=$crc-bxor([int]$v-shl 8);1..8|ForEach-Object{$crc=if($crc-band 0x8000){(($crc-shl 1)-bxor 0x1021)-band 0xFFFF}else{($crc-shl 1)-band 0xFFFF}}}
+    return $crc
+}
+
+if(-not(Test-Path -LiteralPath $ContractPath)){Fail "missing $ContractPath"}
+$text=[IO.File]::ReadAllText((Resolve-Path $ContractPath))
+function Equ([string]$N){$m=[regex]::Match($text,'(?m)^'+[regex]::Escape($N)+'\s+EQU\s+\$([0-9A-Fa-f]+)\s*$');if(-not$m.Success){Fail "missing $N"};return [Convert]::ToInt32($m.Groups[1].Value,16)}
+foreach($p in @(@('APS_SECTOR_BYTES',4096),@('APS_SECTOR_HEADER_BYTES',16),@('APS_RECORD_HEADER_BYTES',20),@('APS_RECORD_TRAILER_BYTES',1),@('APS_OBJECT_MAX_CHUNKS',8))){if((Equ $p[0])-ne$p[1]){Fail "$($p[0]) changed"}}
+
+function New-Sector([int]$Bank,[int]$Sector,[int]$Generation){
+    if($Bank-lt 0-or$Bank-gt 2-or$Sector-lt 8-or$Sector-gt 15){Fail 'invalid bank/sector'}
+    [byte[]]$b=New-Object byte[] 4096
+    for($i=0;$i-lt$b.Length;$i++){$b[$i]=0xFF}
+    [Array]::Copy([Text.Encoding]::ASCII.GetBytes('ASV1'),$b,4)
+    $b[4]=1;$b[5]=[byte]$Bank;$b[6]=[byte]$Sector;$b[7]=0;Put-U16 $b 8 $Generation
+    Put-U16 $b 10 (Crc16 (Slice $b 0 10));$b[15]=0xA5;return $b
+}
+function Test-Sector([byte[]]$B,[int]$Bank,[int]$Sector){
+    if($B.Length-ne 4096-or([Text.Encoding]::ASCII.GetString($B,0,4))-ne'ASV1'-or$B[4]-ne 1-or$B[5]-ne$Bank-or$B[6]-ne$Sector-or$B[7]-ne 0-or$B[12]-ne 0xFF-or$B[13]-ne 0xFF-or$B[14]-ne 0xFF-or$B[15]-ne 0xA5){return $false}
+    return (Get-U16 $B 10)-eq(Crc16 (Slice $B 0 10))
+}
+function Add-Record([byte[]]$B,[int]$At,[int]$Type,[int]$Flags,[int]$Object,[int]$Generation,[int]$Logical,[byte[]]$Payload){
+    $end=$At+20+$Payload.Length;if($end-ge 4096){Fail 'record does not fit'}
+    $B[$At]=[byte][char]'A';$B[$At+1]=[byte][char]'R';$B[$At+2]=1;$B[$At+3]=[byte]$Type;$B[$At+4]=[byte]$Flags;$B[$At+5]=0xFF
+    Put-U16 $B ($At+6) $Object;Put-U16 $B ($At+8) $Generation;Put-U16 $B ($At+10) $Logical;Put-U16 $B ($At+12) $Payload.Length
+    Put-U32 $B ($At+14) (Fnv32 $Payload);Put-U16 $B ($At+18) (Crc16 (Slice $B $At 18));[Array]::Copy($Payload,0,$B,$At+20,$Payload.Length);$B[$end]=0xA5
+    return $B
+}
+function Read-Records([byte[]]$B){
+    $rows=@();$at=16
+    while($at-lt 4096-and$B[$at]-ne 0xFF){
+        if($at+20-ge 4096-or$B[$at]-ne[byte][char]'A'-or$B[$at+1]-ne[byte][char]'R'-or$B[$at+2]-ne 1-or$B[$at+5]-ne 0xFF){Fail 'bad record header'}
+        $len=Get-U16 $B ($at+12);$end=$at+20+$len;if($end-ge 4096-or$B[$end]-ne 0xA5){break}
+        if((Get-U16 $B ($at+18))-ne(Crc16 (Slice $B $at 18))){Fail 'record header CRC'}
+        $payload=Slice $B ($at+20) $len;if((Fnv32 $payload)-ne(Get-U32 $B ($at+14))){Fail 'record payload FNV'}
+        $rows+=,[pscustomobject]@{Type=$B[$at+3];Flags=$B[$at+4];Object=Get-U16 $B ($at+6);Generation=Get-U16 $B ($at+8);Logical=Get-U16 $B ($at+10);Payload=$payload};$at=$end+1
+    }
+    return $rows
+}
+
+# Golden nonadjacent Bank-2 sector chain.
+[byte[]]$ap=[Text.Encoding]::ASCII.GetBytes('AP2-GOLDEN-ENVELOPE')
+$s8=New-Sector 2 8 7;$sf=New-Sector 2 15 9
+[byte[]]$p0=Slice $ap 0 7;[byte[]]$p1=Slice $ap 7 ($ap.Length-7)
+$s8=Add-Record $s8 16 1 1 0x1234 3 0 $p0
+$sf=Add-Record $sf 16 1 2 0x1234 3 7 $p1
+if($s8[16]-ne[byte][char]'A'-or$sf[16]-ne[byte][char]'A'){Fail 'record encoder did not mutate sector'}
+if(-not(Test-Sector $s8 2 8)-or-not(Test-Sector $sf 2 15)){Fail 'golden sector rejected'}
+$rows=@()
+$rows+=@(Read-Records $s8)
+$rows+=@(Read-Records $sf)
+$rows=@($rows|Sort-Object Logical)
+[byte[]]$joined=@(foreach($row in $rows){foreach($value in $row.Payload){$value}})
+$joinedText=[Text.Encoding]::ASCII.GetString($joined)
+if($joinedText-ne'AP2-GOLDEN-ENVELOPE'){Fail "nonadjacent reconstruction failed rows=$($rows.Count) bytes=$($joined.Length): $joinedText"}
+
+$bad=Slice $s8 0 4096;$bad[5]=1;if(Test-Sector $bad 2 8){Fail 'wrong-bank header accepted'}
+$bad=Slice $s8 0 4096;$bad[15]=0xFF;if(Test-Sector $bad 2 8){Fail 'uncommitted header accepted'}
+$bad=Slice $s8 0 4096;$bad[20]=$bad[20]-bxor 1
+try{$null=Read-Records $bad;Fail 'corrupt record accepted'}catch{if($_.Exception.Message-notmatch'record header CRC'){throw}}
+$t=New-Sector 0 9 1;$t=Add-Record $t 16 2 0 0x1234 3 0 ([byte[]]@())
+if(@(Read-Records $t).Count-ne 1){Fail 'tombstone fixture failed'}
+
+$payloadPerEmptySector=4096-16-20-1
+if($payloadPerEmptySector-ne 4059-or[Math]::Ceiling(4096/[double]$payloadPerEmptySector)-ne 2){Fail 'capacity calculation changed'}
+Write-Host "AP Store V1 check passed: sector=4096 header=16 record-overhead=21 empty-payload=$payloadPerEmptySector AP-max=4096 min-sectors=2"

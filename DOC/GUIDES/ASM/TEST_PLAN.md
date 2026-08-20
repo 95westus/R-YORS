@@ -14872,3 +14872,17 @@ addresses, request/result card, operations, statuses, AP identity and section
 order, row kinds, and limits. It also inspects a built AP v2 artifact. Private
 routine addresses, zero-page scratch, UDATA, and code/data sizes remain outside
 the ABI so size work can continue without false compatibility breaks.
+
+## 2026-08-20 AP Store V1 Host Format Oracle
+
+Host status: accepted. Board status: not applicable; this slice is read-only
+host design and emits no firmware.
+
+`make -C SRC ap-store-v1-check` freezes the candidate `ASV1` managed-sector
+header and append-only `AR` CHUNK/TOMBSTONE records. Its golden object crosses
+nonadjacent Bank-2 sectors `$8` and `$F`; corruption cases reject wrong-bank,
+uncommitted, and bad-CRC media. The measured empty-sector payload ceiling is
+4059 bytes after the 16-byte sector header and 21-byte record overhead, so a
+maximum 4096-byte AP v2 envelope requires two sectors. Discovery is based only
+on committed sector headers and records. It never scans Banks 0-2 for resident
+HIMON `F N (V|$80)` signatures.
