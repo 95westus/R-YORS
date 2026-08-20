@@ -91,13 +91,19 @@ per-sector overhead, maximum chain length, parser RAM, and resident code cost.
 ### 2026-08-20 Host Format Oracle
 
 The first read-only slice freezes a candidate format in
-`SRC/ASM/ap-store-v1.inc`. A managed sector starts with a 16-byte `ASV1`
-header containing version, claimed bank/sector, generation, CRC16, reserved
-bytes, and a commit-last `$A5`. Its append-only `AR` records use a 20-byte
+`SRC/ASM/ap-store-v1.inc`. A managed sector starts with a 16-byte `AS1`
+header containing packed bank/sector, generation, full FNV-1a over the six
+identity bytes, five reserved `$FF` bytes, and an active-low state byte. Its
+append-only `AR` records use a 20-byte
 header, payload, and commit-last `$A5`. The header carries type, flags,
 object/generation, logical offset, length, payload FNV-1a, and header CRC16.
 Record types are CHUNK and TOMBSTONE; chunk flags identify the unique first and
 last records.
+
+Sector state starts erased/staged at `$FF`; commit clears bit 0 to make `$FE`.
+Later one-way transitions may clear bit 1 for RETIRED (`$FC`) and bit 2 for BAD
+(`$FA`), or both (`$F8`). Bits 3-7 must remain set. State is excluded from the
+identity FNV so these legal flash transitions preserve sector identity.
 
 An empty managed sector can hold 4059 payload bytes in one record. The frozen
 AP v2 maximum remains 4096 bytes, so a maximum-size envelope necessarily uses
@@ -132,17 +138,26 @@ commit leaves the sector unavailable.
 The command name and confirmation syntax are decided during the operator-UI
 slice; the semantic distinction from reformat is mandatory.
 
+An opaque sector is inventoried across all 4096 bytes before mutation. If all
+bytes are `$FF`, CLAIM skips erase, writes and verifies bytes `$00-$0E`, then
+commits state `$FF->$FE`. If any byte is occupied, ordinary CLAIM returns
+`SECTOR OCCUPIED`; only the separate confirmed conversion path may erase it,
+after displaying its bank, sector, and full-sector CRC.
+
 ### Format
 
 `FORMAT bank:sector` accepts only a sector whose on-sector identity validates.
-It confirms, erases, verifies, writes a new generation header, and commits it
-last. It never adopts an opaque sector.
+The reconstructed index must also prove that no live object references the
+sector; otherwise it returns `SECTOR IN USE`. It confirms, erases all 4096
+bytes, verifies `$FF`, writes a new generation header, and commits state last.
+It never adopts an opaque sector.
 
 ### Install
 
 `INSTALL` validates the complete source AP v2 envelope before mutation, chooses
 appendable extents only from explicitly managed sectors in the requested bank,
-writes and verifies chunks, validates the reconstructed stored envelope, and
+writes only into a fully `$FF` append range without erasing, verifies chunks,
+validates the reconstructed stored envelope, and
 commits each chunk last. The object becomes live only when a subsequent scan
 finds a complete valid generation. Allocation may cross sectors but not banks.
 Insufficient append-only space leaves no new live generation.
@@ -180,8 +195,10 @@ host fault matrix and board proof.
    decoder, initial corruption cases, capacity calculations, and golden
    nonadjacent-chain/tombstone fixtures are frozen. Expand the fault matrix as
    the read-only firmware parser is introduced.
-2. **Read-only inventory.** Add Bank-3-owned discovery scanning plus bank-worker sector
-   header reads. Prove that arbitrary opaque Banks 0-2 remain unchanged.
+2. **Read-only inventory.** Add a Bank-3-resident discovery routine that uses
+   the RAM bank worker to read the 24 candidate sector headers in Banks 0-2
+   (three banks times sectors `$8-$F`). It does not scan Bank 3. Prove that
+   arbitrary opaque Banks 0-2 remain unchanged.
 3. **Single-sector claim and format.** Implement the separate destructive
    conversion and managed-only reformat paths with commit-last fault tests.
 4. **Single-sector install/list/validate/load.** Store complete small AP v2

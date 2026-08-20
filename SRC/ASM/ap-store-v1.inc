@@ -8,10 +8,12 @@ APS_SECTOR_BYTES            EQU             $1000
 APS_SECTOR_HEADER_BYTES     EQU             $0010
 APS_SECTOR_SIG0             EQU             'A'
 APS_SECTOR_SIG1             EQU             'S'
-APS_SECTOR_SIG2             EQU             'V'
-APS_SECTOR_SIG3             EQU             '1'
-APS_SECTOR_VERSION          EQU             $01
-APS_SECTOR_COMMIT           EQU             $A5
+APS_SECTOR_SIG2             EQU             '1'
+APS_SECTOR_STATE_STAGED     EQU             $FF
+APS_SECTOR_STATE_ACTIVE     EQU             $FE
+APS_SECTOR_STATE_RETIRED    EQU             $FC
+APS_SECTOR_STATE_BAD        EQU             $FA
+APS_SECTOR_STATE_RETIRED_BAD EQU            $F8
 
 APS_RECORD_HEADER_BYTES     EQU             $0014
 APS_RECORD_TRAILER_BYTES    EQU             $0001
@@ -27,14 +29,11 @@ APS_OBJECT_MAX_CHUNKS       EQU             $08
 
 ; Sector header offsets (16 bytes).
 APS_SH_OFF_SIG              EQU             $00
-APS_SH_OFF_VERSION          EQU             $04
-APS_SH_OFF_BANK             EQU             $05
-APS_SH_OFF_SECTOR           EQU             $06
-APS_SH_OFF_FLAGS            EQU             $07
-APS_SH_OFF_GENERATION       EQU             $08
-APS_SH_OFF_CRC16            EQU             $0A
-APS_SH_OFF_RESERVED         EQU             $0C
-APS_SH_OFF_COMMIT           EQU             $0F
+APS_SH_OFF_LOCATION         EQU             $03
+APS_SH_OFF_GENERATION       EQU             $04
+APS_SH_OFF_FNV              EQU             $06
+APS_SH_OFF_RESERVED         EQU             $0A
+APS_SH_OFF_STATE            EQU             $0F
 
 ; Record header offsets (20 bytes), followed by payload and one commit byte.
 APS_RH_OFF_SIG              EQU             $00

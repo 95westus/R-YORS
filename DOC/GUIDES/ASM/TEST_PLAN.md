@@ -14878,7 +14878,7 @@ the ABI so size work can continue without false compatibility breaks.
 Host status: accepted. Board status: not applicable; this slice is read-only
 host design and emits no firmware.
 
-`make -C SRC ap-store-v1-check` freezes the candidate `ASV1` managed-sector
+`make -C SRC ap-store-v1-check` freezes the candidate `AS1` managed-sector
 header and append-only `AR` CHUNK/TOMBSTONE records. Its golden object crosses
 nonadjacent Bank-2 sectors `$8` and `$F`; corruption cases reject wrong-bank,
 uncommitted, and bad-CRC media. The measured empty-sector payload ceiling is
@@ -14886,3 +14886,10 @@ uncommitted, and bad-CRC media. The measured empty-sector payload ceiling is
 maximum 4096-byte AP v2 envelope requires two sectors. Discovery is based only
 on committed sector headers and records. It never scans Banks 0-2 for resident
 HIMON `F N (V|$80)` signatures.
+
+The revised compact header packs bank in the high nibble and sector in the low
+nibble, stores generation plus a full FNV-1a over those six identity bytes,
+leaves five bytes `$FF`, and uses an active-low state byte. The oracle accepts
+the irreversible `$FE` active, `$FC` retired, `$FA` bad, and `$F8` retired/bad
+states; it rejects `$FF`, reserved-bit clearing, wrong location, and identity
+FNV corruption.

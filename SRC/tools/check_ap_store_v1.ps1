@@ -23,13 +23,14 @@ function New-Sector([int]$Bank,[int]$Sector,[int]$Generation){
     if($Bank-lt 0-or$Bank-gt 2-or$Sector-lt 8-or$Sector-gt 15){Fail 'invalid bank/sector'}
     [byte[]]$b=New-Object byte[] 4096
     for($i=0;$i-lt$b.Length;$i++){$b[$i]=0xFF}
-    [Array]::Copy([Text.Encoding]::ASCII.GetBytes('ASV1'),$b,4)
-    $b[4]=1;$b[5]=[byte]$Bank;$b[6]=[byte]$Sector;$b[7]=0;Put-U16 $b 8 $Generation
-    Put-U16 $b 10 (Crc16 (Slice $b 0 10));$b[15]=0xA5;return $b
+    [Array]::Copy([Text.Encoding]::ASCII.GetBytes('AS1'),$b,3)
+    $b[3]=[byte](($Bank-shl 4)-bor$Sector);Put-U16 $b 4 $Generation
+    Put-U32 $b 6 (Fnv32 (Slice $b 0 6));$b[15]=0xFE;return $b
 }
 function Test-Sector([byte[]]$B,[int]$Bank,[int]$Sector){
-    if($B.Length-ne 4096-or([Text.Encoding]::ASCII.GetString($B,0,4))-ne'ASV1'-or$B[4]-ne 1-or$B[5]-ne$Bank-or$B[6]-ne$Sector-or$B[7]-ne 0-or$B[12]-ne 0xFF-or$B[13]-ne 0xFF-or$B[14]-ne 0xFF-or$B[15]-ne 0xA5){return $false}
-    return (Get-U16 $B 10)-eq(Crc16 (Slice $B 0 10))
+    $location=($Bank-shl 4)-bor$Sector
+    if($B.Length-ne 4096-or([Text.Encoding]::ASCII.GetString($B,0,3))-ne'AS1'-or$B[3]-ne$location-or$B[10]-ne 0xFF-or$B[11]-ne 0xFF-or$B[12]-ne 0xFF-or$B[13]-ne 0xFF-or$B[14]-ne 0xFF-or($B[15]-band 0xF8)-ne 0xF8-or($B[15]-band 1)-ne 0){return $false}
+    return (Get-U32 $B 6)-eq(Fnv32 (Slice $B 0 6))
 }
 function Add-Record([byte[]]$B,[int]$At,[int]$Type,[int]$Flags,[int]$Object,[int]$Generation,[int]$Logical,[byte[]]$Payload){
     $end=$At+20+$Payload.Length;if($end-ge 4096){Fail 'record does not fit'}
@@ -66,8 +67,13 @@ $rows=@($rows|Sort-Object Logical)
 $joinedText=[Text.Encoding]::ASCII.GetString($joined)
 if($joinedText-ne'AP2-GOLDEN-ENVELOPE'){Fail "nonadjacent reconstruction failed rows=$($rows.Count) bytes=$($joined.Length): $joinedText"}
 
-$bad=Slice $s8 0 4096;$bad[5]=1;if(Test-Sector $bad 2 8){Fail 'wrong-bank header accepted'}
+$bad=Slice $s8 0 4096;$bad[3]=0x18;if(Test-Sector $bad 2 8){Fail 'wrong-bank header accepted'}
 $bad=Slice $s8 0 4096;$bad[15]=0xFF;if(Test-Sector $bad 2 8){Fail 'uncommitted header accepted'}
+$bad=Slice $s8 0 4096;$bad[15]=0xFC;if(-not(Test-Sector $bad 2 8)){Fail 'retired managed header lost identity'}
+$bad=Slice $s8 0 4096;$bad[15]=0xFA;if(-not(Test-Sector $bad 2 8)){Fail 'bad managed header lost identity'}
+$bad=Slice $s8 0 4096;$bad[15]=0xF8;if(-not(Test-Sector $bad 2 8)){Fail 'retired/bad managed header lost identity'}
+$bad=Slice $s8 0 4096;$bad[15]=0xF6;if(Test-Sector $bad 2 8){Fail 'reserved state bit accepted'}
+$bad=Slice $s8 0 4096;$bad[4]=$bad[4]-bxor 1;if(Test-Sector $bad 2 8){Fail 'bad sector FNV accepted'}
 $bad=Slice $s8 0 4096;$bad[20]=$bad[20]-bxor 1
 try{$null=Read-Records $bad;Fail 'corrupt record accepted'}catch{if($_.Exception.Message-notmatch'record header CRC'){throw}}
 $t=New-Sector 0 9 1;$t=Add-Record $t 16 2 0 0x1234 3 0 ([byte[]]@())
@@ -75,4 +81,4 @@ if(@(Read-Records $t).Count-ne 1){Fail 'tombstone fixture failed'}
 
 $payloadPerEmptySector=4096-16-20-1
 if($payloadPerEmptySector-ne 4059-or[Math]::Ceiling(4096/[double]$payloadPerEmptySector)-ne 2){Fail 'capacity calculation changed'}
-Write-Host "AP Store V1 check passed: sector=4096 header=16 record-overhead=21 empty-payload=$payloadPerEmptySector AP-max=4096 min-sectors=2"
+Write-Host "AP Store V1 check passed: AS1 packed-location FNV32 active-low-state sector=4096 header=16 record-overhead=21 empty-payload=$payloadPerEmptySector AP-max=4096 min-sectors=2"
