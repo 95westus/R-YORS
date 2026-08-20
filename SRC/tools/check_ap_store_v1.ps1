@@ -32,6 +32,16 @@ function Test-Sector([byte[]]$B,[int]$Bank,[int]$Sector){
     if($B.Length-ne 4096-or([Text.Encoding]::ASCII.GetString($B,0,3))-ne'AS1'-or$B[3]-ne$location-or$B[10]-ne 0xFF-or$B[11]-ne 0xFF-or$B[12]-ne 0xFF-or$B[13]-ne 0xFF-or$B[14]-ne 0xFF-or($B[15]-band 0xF8)-ne 0xF8-or($B[15]-band 1)-ne 0){return $false}
     return (Get-U32 $B 6)-eq(Fnv32 (Slice $B 0 6))
 }
+function Sector-Class([byte[]]$B,[int]$Bank,[int]$Sector){
+    $erased=$true
+    foreach($value in $B){if($value-ne 0xFF){$erased=$false;break}}
+    if($erased){return 'ERASED'}
+    if($B.Length-ne 4096-or([Text.Encoding]::ASCII.GetString($B,0,3))-ne'AS1'){return 'OPAQUE'}
+    $location=($Bank-shl 4)-bor$Sector
+    if($B[3]-ne$location-or(Get-U32 $B 6)-ne(Fnv32 (Slice $B 0 6))){return 'CORRUPT'}
+    foreach($offset in 10..14){if($B[$offset]-ne 0xFF){return 'CORRUPT'}}
+    switch($B[15]){0xFF{return 'STAGED'};0xFE{return 'ACTIVE'};0xFC{return 'RETIRED'};0xFA{return 'BAD'};0xF8{return 'RETIRED_BAD'};default{return 'CORRUPT'}}
+}
 function Add-Record([byte[]]$B,[int]$At,[int]$Type,[int]$Flags,[int]$Object,[int]$Generation,[int]$Logical,[byte[]]$Payload){
     $end=$At+20+$Payload.Length;if($end-ge 4096){Fail 'record does not fit'}
     $B[$At]=[byte][char]'A';$B[$At+1]=[byte][char]'R';$B[$At+2]=1;$B[$At+3]=[byte]$Type;$B[$At+4]=[byte]$Flags;$B[$At+5]=0xFF
@@ -79,6 +89,29 @@ try{$null=Read-Records $bad;Fail 'corrupt record accepted'}catch{if($_.Exception
 $t=New-Sector 0 9 1;$t=Add-Record $t 16 2 0 0x1234 3 0 ([byte[]]@())
 if(@(Read-Records $t).Count-ne 1){Fail 'tombstone fixture failed'}
 
+# Bank-3-resident discovery model: exactly 3 banks x 8 candidate sectors.
+$media=@{}
+for($bank=0;$bank-le 2;$bank++){
+    for($sector=8;$sector-le 15;$sector++){
+        [byte[]]$blank=New-Object byte[] 4096
+        for($i=0;$i-lt$blank.Length;$i++){$blank[$i]=0xFF}
+        $media["$bank`:$sector"]=$blank
+    }
+}
+$media['0:8']=New-Sector 0 8 1
+$media['1:12']=New-Sector 1 12 2;$media['1:12'][15]=0xFC
+$media['2:15']=New-Sector 2 15 3;$media['2:15'][15]=0xFA
+$media['0:9'][0]=0x42
+$counts=@{}
+for($bank=0;$bank-le 2;$bank++){
+    for($sector=8;$sector-le 15;$sector++){
+        $class=Sector-Class $media["$bank`:$sector"] $bank $sector
+        $counts[$class]=1+$counts[$class]
+    }
+}
+if(($counts.Values|Measure-Object -Sum).Sum-ne 24-or$counts['ACTIVE']-ne 1-or$counts['RETIRED']-ne 1-or$counts['BAD']-ne 1-or$counts['OPAQUE']-ne 1-or$counts['ERASED']-ne 20){Fail '24-sector inventory matrix failed'}
+
 $payloadPerEmptySector=4096-16-20-1
 if($payloadPerEmptySector-ne 4059-or[Math]::Ceiling(4096/[double]$payloadPerEmptySector)-ne 2){Fail 'capacity calculation changed'}
-Write-Host "AP Store V1 check passed: AS1 packed-location FNV32 active-low-state sector=4096 header=16 record-overhead=21 empty-payload=$payloadPerEmptySector AP-max=4096 min-sectors=2"
+Write-Host "AP Store V1 check passed: AS1 packed-location FNV32 active-low-state candidates=24 active=1 retired=1 bad=1 opaque=1 erased=20"
+Write-Host "AP Store V1 capacity: sector=4096 header=16 record-overhead=21 empty-payload=$payloadPerEmptySector AP-max=4096 min-sectors=2"

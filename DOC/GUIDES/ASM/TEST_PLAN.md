@@ -14893,3 +14893,12 @@ leaves five bytes `$FF`, and uses an active-low state byte. The oracle accepts
 the irreversible `$FE` active, `$FC` retired, `$FA` bad, and `$F8` retired/bad
 states; it rejects `$FF`, reserved-bit clearing, wrong location, and identity
 FNV corruption.
+
+The read-only inventory model scans exactly 24 candidates (Banks 0-2 times
+sectors `$8-$F`) and classifies active, retired, bad, staged, erased, opaque,
+and corrupt headers without searching payload bytes. The initial matrix is one
+active, one retired, one bad, one opaque, and twenty erased sectors. The RAM
+contract adds no permanent cells: LIST streams through `$7C00-$7DBF`, while
+VALIDATE/LOAD reuse `$0200-$09FF` worker code and `$0A00-$19FF` AP staging.
+Because those low ranges overlap ASM session name tables, STORE becomes a
+terminal post-END operation and requires `ASM NEW` afterward.

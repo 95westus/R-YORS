@@ -44,6 +44,36 @@ otherwise opaque in every sector not explicitly registered as AP storage.
 8. Loading reconstructs or streams the complete envelope through a bounded RAM
    path and runs the frozen ASM ABI v1/AP v2 validator before BODY copy,
    import linking, relocation, or execution.
+9. AP Store V1 allocates no new permanent RAM ABI cells. It reuses declared
+   foreground overlays and existing bank-worker/staging areas under explicit
+   ownership rules.
+
+## RAM Ownership And ASM Lifecycle
+
+Read-only inventory does not retain a 24-sector catalog in RAM. The Bank-3
+routine scans one sector header or record header at a time, reports rows as it
+goes, and uses repeated bounded passes when it must select the newest complete
+object generation. Its transient header, record, and best-candidate state fit
+in the existing High Tool Overlay `$7C00-$7DBF`.
+
+The RAM bank worker continues to own `$0200-$09FF` while it is active. Loading
+or validating a chained package reconstructs at most the frozen 4096-byte AP v2
+envelope in the existing `$0A00-$19FF` staging area. No second 4K buffer is
+reserved: the worker copies individual flash chunk ranges directly into their
+logical offsets in that staging area, restores Bank 3, and the existing AP v2
+validator consumes the completed envelope.
+
+Those low ranges overlap ASM's session-owned name tables. A STORE operation
+launched from ASM's post-END shell is therefore terminal for that session once
+the bank worker begins: success or failure requires `ASM NEW` before further
+assembly or session reporting. Preflight and operator cancellation occur before
+claiming the low-RAM worker/staging lifecycle. This rule avoids hidden permanent
+RAM and prevents a destroyed symbol table from appearing resumable.
+
+LIST may stream output without the 4K staging area. VALIDATE/LOAD claim the 4K
+staging area and are unavailable while a resumable ASM session owns the low
+tables. Resident request/result cells remain the frozen ASM ABI v1 cells; new
+AP-store state stays private to the foreground overlay.
 
 ## Format Design Phase
 
