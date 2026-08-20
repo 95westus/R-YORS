@@ -29,11 +29,13 @@
 
 ASM_BEGINF_HAVE_PC     EQU             $01
 ASM_SEALF_VALID        EQU             $01
+ASM_STATUS_BAD_OPER    EQU             $03
+ASM_STATUS_BAD_RANGE   EQU             $06
 ASMRT_TARGET_LO        EQU             $00
 ASMRT_TARGET_HI        EQU             $70
 ASMRT_RESULT           EQU             $67F0
-ASMRT_CODE_LEN         EQU             $14
-ASMRT_END_LO           EQU             $14
+ASMRT_CODE_LEN         EQU             $20
+ASMRT_END_LO           EQU             $20
 ASMRT_END_HI           EQU             $70
 ASMRT_JSR_LO           EQU             $03
 ASMRT_JSR_HI           EQU             $04
@@ -103,6 +105,9 @@ ASMRT_RUN:
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASMRT_RETURN_FAIL
 
+                        JSR             ASMRT_CHECK_NEGATIVE_LINES
+                        BCC             ASMRT_RETURN_FAIL
+
                         LDX             #<LINE_LDA
                         LDY             #>LINE_LDA
                         JSR             ASM_ASSEMBLE_LINE
@@ -143,6 +148,9 @@ ASMRT_RUN:
                         JSR             ASM_ASSEMBLE_LINE
                         BCC             ASMRT_RETURN_FAIL
 
+                        JSR             ASMRT_EMIT_COMPOUND_LINES
+                        BCC             ASMRT_RETURN_FAIL
+
                         LDX             #<LINE_END
                         LDY             #>LINE_END
                         JSR             ASM_ASSEMBLE_LINE
@@ -156,6 +164,44 @@ ASMRT_RUN:
 
                         JSR             ASMRT_CHECK_BYTES
 ASMRT_RETURN_FAIL:
+                        RTS
+
+ASMRT_CHECK_NEGATIVE_LINES:
+                        LDX             #<LINE_BAD_ADD_RANGE
+                        LDY             #>LINE_BAD_ADD_RANGE
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASMRT_NEGATIVE_FAIL
+                        CMP             #ASM_STATUS_BAD_RANGE
+                        BNE             ASMRT_NEGATIVE_FAIL
+                        LDX             #<LINE_BAD_TWO_SYMBOLS
+                        LDY             #>LINE_BAD_TWO_SYMBOLS
+                        JSR             ASM_ASSEMBLE_LINE
+                        BCS             ASMRT_NEGATIVE_FAIL
+                        CMP             #ASM_STATUS_BAD_OPER
+                        BNE             ASMRT_NEGATIVE_FAIL
+                        SEC
+                        RTS
+ASMRT_NEGATIVE_FAIL:
+                        LDA             #$E8
+                        CLC
+                        RTS
+
+ASMRT_EMIT_COMPOUND_LINES:
+                        LDX             #$00
+ASMRT_EMIT_COMPOUND_LOOP:
+                        PHX
+                        LDA             ASMRT_COMPOUND_PTR_LO,X
+                        PHA
+                        LDY             ASMRT_COMPOUND_PTR_HI,X
+                        PLX
+                        JSR             ASM_ASSEMBLE_LINE
+                        PLX
+                        BCC             ASMRT_EMIT_COMPOUND_FAIL
+                        INX
+                        CPX             #$06
+                        BNE             ASMRT_EMIT_COMPOUND_LOOP
+                        SEC
+ASMRT_EMIT_COMPOUND_FAIL:
                         RTS
 
 ASMRT_CHECK_SEAL:
@@ -250,7 +296,6 @@ ASMRT_BAD_OUTPUT_B:
                         LDA             #$E6
                         CLC
                         RTS
-
 ASMRT_PRINT_LINE:
                         JSR             ASMRT_PRINT
                         JMP             SYS_WRITE_CRLF
@@ -263,6 +308,8 @@ MSG_TITLE:              DB              "ASM RT SMOKE",0
 MSG_PASS:               DB              "ASM RT OK",0
 MSG_FAIL:               DB              "ASM RT FAIL $",0
 LINE_ORG:               DB              "ORG $7000",0
+LINE_BAD_ADD_RANGE:     DB              "LDA MISS+128",0
+LINE_BAD_TWO_SYMBOLS:   DB              "LDA MISS+OTHER",0
 LINE_LDA:               DB              "LDA #$0A",0
 LINE_JSR_HEX_NIB:       DB              "LABEL: JSR UTL_HEX_NIBBLE_TO_ASCII",0
 LINE_STA:               DB              "STA $7101",0
@@ -271,7 +318,20 @@ LINE_JSR_TAIL:          DB              "JSR TAIL",0
 LINE_STA_B:             DB              "STA $7102",0
 LINE_RTS:               DB              "RTS",0
 LINE_TAIL_JMP:          DB              "TAIL JMP UTL_HEX_NIBBLE_TO_ASCII",0
+LINE_LDA_TABLE_ADD:     DB              "LDA TABLE+1",0
+LINE_DW_TABLE_ADD:      DB              "DW TABLE+2",0
+LINE_LDA_LO_TABLE_ADD:  DB              "LDA #<TABLE+1",0
+LINE_LDX_HI_TABLE_ADD:  DB              "LDX #>TABLE+1",0
+LINE_BNE_TABLE_SUB:     DB              "BNE TABLE-2",0
+LINE_TABLE:             DB              "TABLE DB $EA",0
 LINE_END:               DB              "END",0
+ASMRT_COMPOUND_PTR_LO:  DB              <LINE_LDA_TABLE_ADD,<LINE_DW_TABLE_ADD
+                        DB              <LINE_LDA_LO_TABLE_ADD,<LINE_LDX_HI_TABLE_ADD
+                        DB              <LINE_BNE_TABLE_SUB,<LINE_TABLE
+ASMRT_COMPOUND_PTR_HI:  DB              >LINE_LDA_TABLE_ADD,>LINE_DW_TABLE_ADD
+                        DB              >LINE_LDA_LO_TABLE_ADD,>LINE_LDX_HI_TABLE_ADD
+                        DB              >LINE_BNE_TABLE_SUB,>LINE_TABLE
 EXPECT_IMAGE:           DB              $A9,$0A,$20,$FF,$FF,$8D,$01,$71
                         DB              $A9,$0B,$20,$11,$70,$8D,$02,$71
-                        DB              $60,$4C,$FF,$FF
+                        DB              $60,$4C,$FF,$FF,$AD,$20,$70,$21
+                        DB              $70,$A9,$20,$A2,$70,$D0,$FE,$EA

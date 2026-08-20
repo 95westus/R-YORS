@@ -6,6 +6,26 @@ Review this checklist before starting any ASM feature implementation. An item
 stays unchecked until its source, regression tests, documentation, resident
 size measurement, and required hardware proof are complete.
 
+### Next session: AP storage across Banks 0-2
+
+- [ ] Specify AP storage for selectable Banks 0, 1, and 2. A bank may instead
+  contain a foreign/opaque image; AP discovery and mutation must identify the
+  bank role and refuse to treat a foreign image as an AP store.
+- [ ] Define the AP-store identity, catalog/allocation records, integrity and
+  commit-last rules, and the explicit destructive operation that converts an
+  opaque bank or region into managed AP storage.
+- [ ] Allow an AP Capsule to span sectors inside one bank, but initially forbid
+  one capsule from crossing a bank boundary. Do not implement this by merely
+  raising the current `$1000` package check: define multi-sector reading,
+  staging/streaming, flash programming, validation, and recovery behavior.
+- [ ] Keep compression/decompression out of the required design. It is a
+  possible long-term stored encoding only, and may never be implemented.
+- [ ] Decide whether the stored unit is (a) the complete AP envelope or (b) an
+  installed/split form whose AP metadata names a separately placed BODY.
+  For a split form, specify BODY bank/address/length, bind it to its metadata
+  with an integrity value, and distinguish storage placement from load/run
+  relocation.
+
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit
   CSTR, HBSTR, and PSTR data. Existing `DC C,"text"`, `DC HB,"text"`, and
@@ -37,7 +57,7 @@ size measurement, and required hardware proof are complete.
   echoed as `D 3000 300C` and reproduced the same dump, accepting the unchanged
   uppercase command-input path.
 
-- [ ] **Unresolved compound fixups.** Add a compact representation and
+- [x] **Unresolved compound fixups.** Add a compact representation and
   resolver for a single unresolved symbol plus a constant addend, including
   forward internal uses such as `LDA FOO+1`, `BNE TARGET-2`, and `DW TABLE+2`.
   Define and test selector forms such as `#<FOO+1` and `#>FOO+1` rather than
@@ -48,6 +68,35 @@ size measurement, and required hardware proof are complete.
   allocating another table. Do not mark complete until forward internal and
   declared-import cases have positive and negative smoke coverage and board
   evidence.
+  Host implementation now reuses the fixup `BASE_LO/HI` columns as a 16-bit
+  internal addend and derives relative bases from `SITE + patch width`; UDATA
+  is unchanged. AP v2 import rows carry a signed-byte addend in the previously
+  zero `TARGET_HI`, so row and package sizes are unchanged. The runtime smoke
+  covers forward absolute, relative, `DW`, low/high selector, `+128`, and
+  two-symbol rollback cases; compiled fixup smoke covers positive and negative
+  declared-import selector addends. Board `00.0820(1504)` exposed classifier
+  scratch corruption after literal-tail parsing (`DW` became mask-width and a
+  branch lost its unresolved flag). Board `00.0820(1518)` accepted, sealed,
+  packaged, and loaded all forms, but exposed later reuse of the addend scratch
+  in the low-selector fixup (`$12` instead of `$0F`). Board `00.0820(1531)`
+  confirmed that carrying the value through ordinary classifier cells was not
+  sufficient; `1541` and `1559` reproduced `$12`. The final root cause is
+  cumulative multi-row resolution: each matching row added into the shared
+  symbol value, so the earlier `+1` and `+2` changed the input to the selector
+  row. The resolver now applies each row in `ASM_BASE_LO/HI` scratch and keeps
+  `ASM_VALUE` immutable. Board `1623` exposed an independent startup regression:
+  the new uppercase-reader pointer shifted the contiguous HIMON service-vector
+  destinations, leaving the ASM title's `HBSTR` target zero and producing
+  `BRK 00 PC=0002`. Candidate `1628` moves the extension outside that copied
+  block and pins its layout in the host contract. `asm-test` passes. Current
+  flash sizes remain CODE `$39F7`, DATA `$0293`, UDATA `$1D6E`; fixup and AP
+  row sizes remain unchanged. ASM-F2 `1629` is the clean corrected board proof:
+  source bytes are `AD 0F 20 10 20 A9 0F A2 20 D0 00 FF FF EA 11 22 33`, and
+  the `$3000` load is `AD 0F 30 10 30 A9 0F A2 30 D0 00 B5 E8 EA 11 22 33`.
+  This proves independent internal addends, selector semantics, relative
+  patching, relocation, and declared-import `+1` resolution. The operator also
+  accepted the independent lowercase-to-uppercase seal-shell echo sweep on
+  2026-08-20; no UI gate remains.
 
 ## Near Term
 

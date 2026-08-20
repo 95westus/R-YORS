@@ -24074,3 +24074,251 @@ Both `G 3000` runs returned normally to HIMON. This accepts the sample against
 the pinned STR8-N 1.22 raw console contract, including ABI/capability checks,
 bounded polling, the no-answerback path, configured ENQ answerback, VT100
 Primary DA, hex rendering, and safe printable rendering.
+
+## 2026-08-20 Unresolved-Addend First Board Attempt
+
+ASM-F2 `00.0820(1504)` was the first installed image containing unresolved
+symbol addends. The exact significant transcript was:
+
+```text
+>ASM NEW
+ASM-F2 00.0820(1504)
+ASM>$2000: ORG $2000
+ASM>$2000: IMPORT UTL_HEX_NIBBLE_TO_ASCII
+ASM>$2000: MAIN LDA TABLE+1
+ASM>$2003:      DW TABLE+2
+ERR=$05 BW PC=$2003
+ASM>$2003:      LDA #<TABLE+1
+ASM>$2005:      LDX #>TABLE+1
+ASM>$2007:      BNE TARGET-2
+ERR=$06 BAD RANGE PC=$2007
+ASM>$2007:      DW UTL_HEX_NIBBLE_TO_ASCII+1
+ASM>$2009: TARGET NOP
+ASM>$200A: TABLE DB $11,$22,$33
+ASM>$200D: END
+ASM OK
+SEAL>
+```
+
+This is failure evidence, not acceptance. It proves the absolute and selector
+forms reached deferred emission, while `DW` and relative emission exposed
+classifier scratch corruption during literal-tail parsing. The corrected
+`00.0820(1512)` host candidate restores the deferred address kind, width, and
+unresolved flag after parsing the addend. A fresh complete source/package/load
+run is still required.
+
+## 2026-08-20 Unresolved-Addend Second Board Attempt
+
+ASM-F2 `00.0820(1518)` accepted the entire fixture and completed the package
+and relocation path:
+
+```text
+ASM>$2000: MAIN LDA TABLE+1
+ASM>$2003:      DW TABLE+2
+ASM>$2005:      LDA #<TABLE+1
+ASM>$2007:      LDX #>TABLE+1
+ASM>$2009:      BNE TARGET-2
+ASM>$200B:      DW UTL_HEX_NIBBLE_TO_ASCII+1
+ASM>$200D: TARGET NOP
+ASM>$200E: TABLE DB $11,$22,$33
+ASM>$2011: END
+ASM OK
+>D 2000 2011
+2000: AD 0F 20 11 20 A9 12 A2 | 20 D0 00 FF FF EA 11 22
+2010: 33 00
+>ASM S
+SEAL> SEAL
+SEAL OK
+SEAL> PACKAGE 4000
+PKG OK @=$4000 L=$0062
+SEAL> LOAD 4000 3000
+LOAD OK=$3000 L=$0011 C=$05
+>D 3000 3010
+3000: AD 0F 30 11 30 A9 12 A2 | 30 D0 00 B5 E8 EA 11 22
+3010: 33
+```
+
+This remains failure evidence, not acceptance. Five forms behaved correctly:
+the internal absolute and word values relocated by `$1000`, the high selector
+changed from `$20` to `$30`, the branch resolved to displacement zero, and the
+declared import resolved during load. The low selector is wrong: with `TABLE`
+at `$200E`, `#<TABLE+1` must be `$0F`, not `$12`. The failure persisted in the
+relocated image because selector bytes themselves do not move. The root cause
+was reuse of `ASM_RELOC_PLAN_TARGET` between parsing and fixup-row storage; the
+`00.0820(1528)` host candidate preserves the addend through the classifier
+value path and passes `make -C SRC asm-test`. A fresh board run is required.
+
+## 2026-08-20 Unresolved-Addend Third Board Attempt
+
+ASM-F2 `00.0820(1531)` again accepted the full source. A lowercase `seal` was
+correctly rejected as `ERR=$03 BO`; uppercase `SEAL` then continued the same
+session successfully through packaging and loading:
+
+```text
+SEAL> SEAL
+SEAL OK
+SEAL> PACKAGE 4000
+PKG OK @=$4000 L=$0062
+SEAL> LOAD 4000 3000
+LOAD OK=$3000 L=$0011 C=$05
+>D 2000 2010
+2000: AD 0F 20 11 20 A9 12 A2 | 20 D0 00 FF FF EA 11 22
+2010: 33
+>D 3000 3010
+3000: AD 0F 30 11 30 A9 12 A2 | 30 D0 00 B5 E8 EA 11 22
+3010: 33
+```
+
+This confirms the same remaining failure: `#<TABLE+1` is `$12`, not `$0F`.
+The ordinary classifier value cells were not a sufficiently long-lived plan
+store. The `00.0820(1536)` host candidate instead retains the validated signed
+addend in a dedicated two-byte plan field through fixup-row creation. It adds
+two UDATA bytes and passes `make -C SRC asm-test`. Board acceptance remains
+pending.
+
+## 2026-08-20 Unresolved-Addend Fourth Board Attempt
+
+ASM-F2 `00.0820(1541)` completed assembly, sealing, packaging, and loading but
+again emitted `$12` for `#<TABLE+1` in both images:
+
+```text
+>D 2000 201F
+2000: AD 0F 20 11 20 A9 12 A2 | 20 D0 00 FF FF EA 11 22
+2010: 33 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00
+>D 3000 301F
+3000: AD 0F 30 11 30 A9 12 A2 | 30 D0 00 B5 E8 EA 11 22
+3010: 33 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00
+>G 3000
+GO 3000
+
+BRK 00 PC=3013
+A=00 X=30 Y=30 P=77 S=FB NV-BdIZC
+```
+
+The `G 3000` result is not a feature failure: this byte-inspection fixture has
+no terminating instruction and deliberately falls through its table into zero
+fill. The significant failure remains `A9 12` instead of `A9 0F`.
+
+The repeated `$12` identified the exact arithmetic: a failed initial attempt
+to parse the selector as a resolved expression left width metadata `$03` in
+`ASM_RELOC_PLAN_TARGET_LO`; deferred parsing then added one. The
+`00.0820(1544)` host candidate clears both accumulator bytes at the unresolved
+fallback boundary and removes the temporary two-byte plan field. It passes
+`make -C SRC asm-test`; fresh board evidence is required.
+
+## 2026-08-20 Unresolved-Addend Fifth Board Attempt
+
+ASM-F2 `00.0820(1559)` again completed the full assembly, seal, package, and
+load sequence, but both dumps retained the incorrect low-selector byte:
+
+```text
+2000: AD 0F 20 11 20 A9 12 A2 | 20 D0 00 FF FF EA 11 22
+3000: AD 0F 30 11 30 A9 12 A2 | 30 D0 00 B5 E8 EA 11 22
+```
+
+This is failure evidence for the unresolved-addend gate; `$A9 $0F` remains
+required. The same transcript clarified a separate UI requirement: source
+entry must preserve case, while all `SEAL>` input must fold and echo uppercase.
+The `00.0820(1609)` host candidate selects HIMON's resident echo-uppercase
+reader only when `ASMF_POST_FLAG` is set and passes `make -C SRC asm-test`.
+
+The `1559` repetition superseded the earlier accumulator-seeding diagnosis.
+The parser had stored the individual addends correctly; the resolver was
+mutating `ASM_VALUE` while walking every fixup matching `TABLE`. Thus row 0
+changed `$200E` to `$200F`, row 1 changed it to `$2011`, and the low-selector
+row added one again to reach the observed `$2012`. In the `00.0820(1617)` host
+candidate, each row computes its adjusted target in `ASM_BASE_LO/HI` scratch,
+leaving the shared symbol value unchanged for subsequent rows. Relocation
+metadata reads the same adjusted scratch. The full host suite and a static
+non-accumulation contract pass; fresh board evidence remains required.
+
+## 2026-08-20 Unresolved-Addend Sixth Board Attempt
+
+HIMON `00.0820(1623)` reached the monitor normally, but both attempts to enter
+ASM-F2 failed before the title could print:
+
+```text
+#326C9938# HSH_NF!
+HIMON V 00.0820(1623)
+
+> ASM NEW
+
+BRK 00 PC=0002
+A=F7 X=F7 Y=B9 P=37 S=F7 Nv-BdIZC
+
+> ASM NEW
+
+BRK 00 PC=0002
+A=F7 X=F7 Y=B9 P=37 S=F7 Nv-BdIZC
+```
+
+This is startup-regression evidence, not an unresolved-addend result. The new
+two-byte uppercase-reader pointer had been inserted inside the contiguous
+destination block populated by ASM's HIMON service-vector copy. It shifted the
+subsequent `HEX_NIB`, FNV, `UPPER`, and `HBSTR` destinations while the source
+service table retained its established order. The title path therefore jumped
+through a zero `ASM_RJ_HBSTR` pointer and reached the BRK at `$0000`, reported
+as `PC=$0002`.
+
+The `00.0820(1628)` host candidate moves `ASM_RJ_READ_UPPER_LO/HI` after
+`ASM_RJ_HBSTR_HI`, outside the copied destination block. A structural host
+guard now pins the complete service-vector destination order and requires the
+dynamically resolved uppercase-reader extension to follow `HBSTR`. The full
+`make -C SRC asm-test` suite passes. Fresh board evidence must first prove ASM
+startup, then the uppercase `SEAL>` echo contract and the corrected `$A9 $0F`
+unresolved-addend result.
+
+## 2026-08-20 Unresolved-Addend Board Acceptance
+
+ASM-F2 `00.0820(1629)` started normally and completed the full source, seal,
+package, and relocated-load sequence:
+
+```text
+> ASM NEW
+> ASM-F2 00.0820(1629)
+> ASM>$2000: ; Unresolved symbol-plus-addend board acceptance source.
+> ASM>$2000: ; Inspect the emitted bytes, then SEAL/PACKAGE/LOAD at $3000.
+> ASM>$2000: ORG $2000
+> ASM>$2000: IMPORT UTL_HEX_NIBBLE_TO_ASCII
+> ASM>$2000: MAIN LDA TABLE+1
+> ASM>$2003:      DW TABLE+2
+> ASM>$2005:      LDA #<TABLE+1
+> ASM>$2007:      LDX #>TABLE+1
+> ASM>$2009:      BNE TARGET-2
+> ASM>$200B:      DW UTL_HEX_NIBBLE_TO_ASCII+1
+> ASM>$200D: TARGET NOP
+> ASM>$200E: TABLE DB $11,$22,$33
+> ASM>$2011: END
+> ASM OK
+> SEAL> SEAL
+> SEAL OK
+> SEAL> PACKAGE 4000
+> PKG OK @=$4000 L=$0062
+> SEAL> LOAD 4000 3000
+> LOAD OK=$3000 L=$0011 C=$05
+> SEAL> .
+> ASM BYE
+> D 2000 201F
+> 2000: AD 0F 20 10 20 A9 0F A2 | 20 D0 00 FF FF EA 11 22
+> 2010: 33 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00
+> D 3000 301F
+> 3000: AD 0F 30 10 30 A9 0F A2 | 30 D0 00 B5 E8 EA 11 22
+> 3010: 33 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00
+```
+
+This accepts the unresolved-compound-fixup gate. At source base `$2000`, the
+dump proves `TABLE+1=$200F`, `TABLE+2=$2010`, `<(TABLE+1)=$0F`,
+`>(TABLE+1)=$20`, and relative target `TARGET-2=$200B` from branch base
+`$200B`, yielding displacement `$00`. The unresolved import remains `$FFFF`
+in the source image and resolves with its `+1` addend to `$E8B5` in the loaded
+image. Loading at `$3000` correctly relocates internal absolute words and the
+high selector while preserving the low selector and relative displacement.
+
+This run also accepts the `1623` startup correction. It used already-uppercase
+seal commands; lowercase-to-uppercase echo for every seal-shell command remains
+a separate UI sweep.
+
+The operator subsequently declared that separate lowercase-to-uppercase
+seal-shell echo sweep complete on 2026-08-20. No additional transcript was
+supplied with the declaration; this records operator acceptance while the host
+contract remains the exact per-command regression evidence.

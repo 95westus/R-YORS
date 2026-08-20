@@ -175,6 +175,12 @@ Entry identities such as `START` or `ASMREPORT` remain symbolic operands.
 An identity made only from one to four hex digits (`FACE`, for example) is
 therefore numeric at `SEAL>` and should be renamed.
 
+Alphabetic input at `SEAL>` is folded and echoed uppercase before byte-exact
+command matching. Thus `seal` appears and executes as `SEAL`; the command set
+remains `SEAL`, `RELOCATE`, `PACKAGE`, `LOAD`, `INSTALL`, `CHECK` (when built),
+and `NEW`. Source entry at `ASM>$hhhh:` remains case-preserving. The punctuation
+command `.` is unchanged.
+
 For example, `D 3800 FF` at `SEAL>` reports `ERR=$03 BO`; exit with `.` and run
 the dump at HIMON's `>` prompt.
 
@@ -383,6 +389,24 @@ Selectors:
 <expr         low byte
 >expr         high byte
 ```
+
+A forward reference may contain one unresolved symbol plus a signed byte
+addend (`-128` through `+127`):
+
+```asm
+LDA TABLE+1
+BNE TARGET-2
+DW TABLE+2
+LDA #<TABLE+1
+LDX #>TABLE+1
+```
+
+For selectors, addition happens before byte selection: `#>TABLE+1` includes
+any carry out of the adjusted low byte. The same encoding is retained for a
+declared import when an AP v2 package is loaded. Two unresolved symbols,
+logical or shift operators on an unresolved value, reversed subtraction, and
+addends outside the signed-byte range are rejected. Resolved expressions keep
+the general left-to-right operator rules above.
 
 V1 does not support grouping parentheses or forward `EQU` dependencies.
 
@@ -933,7 +957,7 @@ $0A00-$19FF  fixup-name pool; released for flash sector staging
 $2000-$2FFF  packageable ASM body/helper emission island
 $3000-$3FFF  Bank 0 AP envelope, then AP load/run space
 $4000-$4FFF  lower RAM output/load space
-$5000-$6D6B  protected flash ASM UDATA in the current map
+$5000-$6D6D  protected flash ASM UDATA in the current map
 $6D6C-$7CFF  upper ASM output/scratch arena
 $7E00-$7EFF  HIMON service and monitor workspace
 $7F00-$7FFF  I/O, do not use

@@ -150,8 +150,11 @@ flowchart TD
 ```
 
 Expressions are strict left-to-right with no precedence or grouping. A single
-`<` or `>` remains selector syntax in the atom fallback; shifts require `<<`
-or `>>`. Compound unresolved fixups remain the next unchecked expression item.
+`<` or `>` is selector syntax; shifts require `<<` or `>>`. A deferred
+expression permits one unresolved symbol followed by signed-byte literal
+`+`/`-` terms. Its addend occupies the existing fixup BASE columns; relative
+patch bases are derived from SITE and width. AP import rows retain the addend
+in TARGET high and apply it before low/high selection at load time.
 
 ### Mnemonic And Operand Path
 

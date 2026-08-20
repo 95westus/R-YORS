@@ -11,6 +11,8 @@ fixtures, proof-only sources, and completed board-test cards belong in
   session reporter when supplied from a compatible RAM/visible-flash path.
 - `expr-negative-rollback-2000.a` - final-image expression rejection and
   transactional rollback card.
+- `unresolved-addends-2000.a` - forward internal absolute, relative, data,
+  selector, and packaged declared-import addend acceptance card.
 - `opcode-reduction-runtime-2000.a` - runtime coverage for the compact shared
   ALU and shift/rotate opcode tables.
 - `seal-workflow-2000.a` - small named body for final post-`END` command-flow

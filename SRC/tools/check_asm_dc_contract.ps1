@@ -1,6 +1,7 @@
 param(
     [string]$AsmSourcePath = "ASM/asm-v1-core.asm",
-    [string]$HimonSourcePath = "HIMON/himon.asm"
+    [string]$HimonSourcePath = "HIMON/himon.asm",
+    [string]$FlashSourcePath = "ASM/asm-v1-flash.asm"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -132,6 +133,40 @@ if ($parseHead.Value -match 'JSR\s+ASM_NEXT_TOKEN') {
     Fail 'typed compact modes must bypass the general lexer apostrophe boundary'
 }
 
+$fixupPatch = [regex]::Match(
+    $asm,
+    '(?ms)^ASM_PATCH_FIXUP_X:.*?(?=^ASM_RELOC_NOTE_RESOLVED_OPERAND:)'
+)
+if (-not $fixupPatch.Success) { Fail 'missing fixup patch block' }
+foreach ($required in @(
+    'STA             ASM_BASE_LO',
+    'STA             ASM_BASE_HI'
+)) {
+    if (-not $fixupPatch.Value.Contains($required)) {
+        Fail "fixup rows must use independent adjusted-value scratch: $required"
+    }
+}
+if ($fixupPatch.Value -match 'STA\s+ASM_VALUE_(?:LO|HI)') {
+    Fail 'fixup patching must not accumulate addends in the shared symbol value'
+}
+$serviceLayout = [regex]::Match(
+    $asm,
+    '(?ms)^ASM_RJ_JOINER_LO:.*?^ASM_RJ_READ_UPPER_HI:\s+DB\s+\$00'
+)
+if (-not $serviceLayout.Success) { Fail 'missing flash service-vector destination layout' }
+$layoutNames = @(
+    'ASM_RJ_JOINER_LO', 'ASM_RJ_WRITE_LO', 'ASM_RJ_CSTR_LO',
+    'ASM_RJ_HEX_BYTE_LO', 'ASM_RJ_CRLF_LO', 'ASM_RJ_READ_LO',
+    'ASM_RJ_HEX_NIB_LO', 'ASM_RJ_FNV_INIT_LO', 'ASM_RJ_FNV_UPDATE_LO',
+    'ASM_RJ_UPPER_LO', 'ASM_RJ_HBSTR_LO', 'ASM_RJ_READ_UPPER_LO'
+)
+$lastOffset = -1
+foreach ($name in $layoutNames) {
+    $offset = $serviceLayout.Value.IndexOf($name, [System.StringComparison]::Ordinal)
+    if ($offset -le $lastOffset) { Fail "service-vector destination order: $name" }
+    $lastOffset = $offset
+}
+
 if (-not (Test-Path -LiteralPath $HimonSourcePath)) {
     Fail "HIMON source not found: $HimonSourcePath"
 }
@@ -147,4 +182,33 @@ foreach ($required in @(
     if (-not $himon.Contains($required)) { Fail "missing HIMON case-preserving input marker: $required" }
 }
 
-Write-Host ("ASM compact DC contract OK: success={0} failure={1} boundaries=4" -f $success.Count, $failures.Count)
+if (-not (Test-Path -LiteralPath $FlashSourcePath)) {
+    Fail "flash source not found: $FlashSourcePath"
+}
+$flash = [System.IO.File]::ReadAllText((Resolve-Path -LiteralPath $FlashSourcePath))
+$sealCommands = @('SEAL', 'RELOCATE', 'PACKAGE', 'LOAD', 'INSTALL', 'CHECK', 'NEW')
+foreach ($command in $sealCommands) {
+    $commandPattern = '(?m)^ASMF_CMD_{0}:\s+DB\s+"{0}",0' -f $command
+    if ($flash -notmatch $commandPattern) {
+        Fail "missing exact uppercase seal command literal: $command"
+    }
+}
+$matchCommand = [regex]::Match(
+    $flash,
+    '(?ms)^ASMF_MATCH_CMD:.*?(?=^ASMF_PARSE_RELOCATE_ARG:)'
+)
+if (-not $matchCommand.Success) { Fail 'missing seal command matcher' }
+if ($matchCommand.Value -notmatch 'CMP\s+ASMF_LINE_BUF,X') {
+    Fail 'seal command matcher must compare source bytes directly'
+}
+foreach ($required in @(
+    'XREF            ASM_RJ_READ_CSTRING_UPPER',
+    'LDA             ASMF_POST_FLAG',
+    'JSR             ASM_RJ_READ_CSTRING_UPPER'
+)) {
+    if (-not $flash.Contains($required)) {
+        Fail "missing uppercase seal-reader marker: $required"
+    }
+}
+
+Write-Host ("ASM compact DC contract OK: success={0} failure={1} boundaries=4 seal-uppercase={2}" -f $success.Count, $failures.Count, $sealCommands.Count)

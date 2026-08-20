@@ -112,6 +112,7 @@
                         IF              ASM_FLASH_RUNTIME
                         XDEF            ASM_RJOIN_INIT_IO
                         XDEF            ASM_RJ_READ_CSTRING
+                        XDEF            ASM_RJ_READ_CSTRING_UPPER
                         ENDIF
                         ELSE
                         XDEF            ASM_RJOIN_INIT_IO
@@ -1628,7 +1629,22 @@ ASM_RJOIN_INIT_SERVICE_COPY:
                         RTS
 
 ASM_RJOIN_INIT_IO:
-                        JMP             ASM_RJOIN_INIT
+                        JSR             ASM_RJOIN_INIT
+                        BCC             ASM_RJOIN_INIT_IO_FAIL
+                        LDA             ASM_RJ_READ_UPPER_HI
+                        BNE             ASM_RJOIN_INIT_IO_READY
+                        LDX             #<ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
+                        LDY             #>ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
+                        JSR             ASM_RJ_RESIDENT_XY
+                        BCC             ASM_RJOIN_INIT_IO_FAIL
+                        STX             ASM_RJ_READ_UPPER_LO
+                        STY             ASM_RJ_READ_UPPER_HI
+ASM_RJOIN_INIT_IO_READY:
+                        SEC
+                        RTS
+ASM_RJOIN_INIT_IO_FAIL:
+                        CLC
+                        RTS
                         ENDIF
                         ELSE
 ASM_RJOIN_INIT_IO:
@@ -1675,6 +1691,8 @@ ASM_RJ_WRITE_BYTE:
                         IF              ASM_FLASH_RUNTIME
 ASM_RJ_READ_CSTRING:
                         JMP             (ASM_RJ_READ_LO)
+ASM_RJ_READ_CSTRING_UPPER:
+                        JMP             (ASM_RJ_READ_UPPER_LO)
                         ENDIF
                         ELSE
 ASM_RJ_READ_CSTRING:
@@ -5510,10 +5528,12 @@ ASM_SMOKE_FIXUPS_IMP_SEL_SH1_OK:
                         LDA             ASM_RELOC_TARGET_LO
                         BNE             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
                         LDA             ASM_RELOC_TARGET_HI
+                        CMP             #$01
                         BNE             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
                         LDA             ASM_RELOC_TARGET_LO+1
                         BNE             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
                         LDA             ASM_RELOC_TARGET_HI+1
+                        CMP             #$FE
                         BNE             ASM_SMOKE_FIXUPS_IMP_SEL_FAIL
                         SEC
                         RTS
@@ -6384,18 +6404,9 @@ ASM_SMOKE_FIXUPS_CHECK_SITE1:
                         RTS
 
 ASM_SMOKE_FIXUPS_CHECK_BASE2:
-                        LDA             ASM_START_PC_LO
-                        CLC
-                        ADC             #$02
-                        STA             ASM_TMP0_LO
-                        LDA             ASM_START_PC_HI
-                        ADC             #$00
-                        STA             ASM_TMP0_HI
-                        LDA             ASM_TMP0_LO
-                        CMP             ASM_FIX_BASE_LO
+                        LDA             ASM_FIX_BASE_LO
                         BNE             ASM_SMOKE_FIXUPS_CHECK_FAIL
-                        LDA             ASM_TMP0_HI
-                        CMP             ASM_FIX_BASE_HI
+                        LDA             ASM_FIX_BASE_HI
                         BNE             ASM_SMOKE_FIXUPS_CHECK_FAIL
                         SEC
                         RTS
@@ -6418,18 +6429,9 @@ ASM_SMOKE_FIXUPS_CHECK_SITE2:
                         RTS
 
 ASM_SMOKE_FIXUPS_CHECK_BASE3:
-                        LDA             ASM_START_PC_LO
-                        CLC
-                        ADC             #$03
-                        STA             ASM_TMP0_LO
-                        LDA             ASM_START_PC_HI
-                        ADC             #$00
-                        STA             ASM_TMP0_HI
-                        LDA             ASM_TMP0_LO
-                        CMP             ASM_FIX_BASE_LO
+                        LDA             ASM_FIX_BASE_LO
                         BNE             ASM_SMOKE_FIXUPS_CHECK_FAIL
-                        LDA             ASM_TMP0_HI
-                        CMP             ASM_FIX_BASE_HI
+                        LDA             ASM_FIX_BASE_HI
                         BNE             ASM_SMOKE_FIXUPS_CHECK_FAIL
                         SEC
                         RTS
@@ -9509,11 +9511,12 @@ ASM_STORE_FIXUP_HAVE_ROOM:
                         STA             ASM_FIX_SEL,X
                         LDA             ASM_PC_LO
                         STA             ASM_FIX_SITE_LO,X
-                        STA             ASM_FIX_BASE_LO,X
                         LDA             ASM_PC_HI
                         STA             ASM_FIX_SITE_HI,X
+                        LDA             ASM_RELOC_PLAN_TARGET_LO
+                        STA             ASM_FIX_BASE_LO,X
+                        LDA             ASM_RELOC_PLAN_TARGET_HI
                         STA             ASM_FIX_BASE_HI,X
-                        JSR             ASM_FIX_ADD_OPERAND_SIZE_X
                         LDA             #ASM_FIX_PENDING
                         STA             ASM_FIX_STATE,X
                         JSR             ASM_STORE_FIXUP_NAME_X
@@ -9521,20 +9524,6 @@ ASM_STORE_FIXUP_HAVE_ROOM:
                         LDA             #ASM_STATUS_OK
                         STA             ASM_STATUS
                         SEC
-                        RTS
-
-ASM_FIX_ADD_OPERAND_SIZE_X:
-                        PHX
-                        LDA             ASM_FIX_MODE,X
-                        TAX
-                        LDA             ASM_OPM_PATCH_BYTES,X
-                        PLX
-                        CLC
-                        ADC             ASM_FIX_BASE_LO,X
-                        STA             ASM_FIX_BASE_LO,X
-                        LDA             ASM_FIX_BASE_HI,X
-                        ADC             #$00
-                        STA             ASM_FIX_BASE_HI,X
                         RTS
 
 ASM_STORE_FIXUP_NAME_X:
@@ -9700,6 +9689,15 @@ ASM_FIX_TEXT_MATCH_NO:
                         RTS
 
 ASM_PATCH_FIXUP_X:
+; Apply each row to scratch so all rows matching the current symbol start from
+; the same unmodified ASM_VALUE.
+                        LDA             ASM_VALUE_LO
+                        CLC
+                        ADC             ASM_FIX_BASE_LO,X
+                        STA             ASM_BASE_LO
+                        LDA             ASM_VALUE_HI
+                        ADC             ASM_FIX_BASE_HI,X
+                        STA             ASM_BASE_HI
                         LDA             ASM_FIX_SITE_LO,X
                         STA             ASM_FIX_PTR_LO
                         LDA             ASM_FIX_SITE_HI,X
@@ -9746,7 +9744,7 @@ ASM_PATCH_FIXUP_BYTE:
                         BEQ             ASM_PATCH_FIXUP_BYTE_LO
                         CMP             #ASM_FIX_SEL_HI
                         BEQ             ASM_PATCH_FIXUP_BYTE_HI
-                        LDA             ASM_VALUE_HI
+                        LDA             ASM_BASE_HI
                         BEQ             ASM_PATCH_FIXUP_BYTE_RANGE_OK
                         LDA             #ASM_STATUS_BAD_RANGE
                         CLC
@@ -9754,34 +9752,43 @@ ASM_PATCH_FIXUP_BYTE:
 ASM_PATCH_FIXUP_BYTE_RANGE_OK:
 ASM_PATCH_FIXUP_BYTE_LO:
                         LDY             #$00
-                        LDA             ASM_VALUE_LO
+                        LDA             ASM_BASE_LO
                         STA             (ASM_FIX_PTR_LO),Y
                         SEC
                         RTS
 ASM_PATCH_FIXUP_BYTE_HI:
                         LDY             #$00
-                        LDA             ASM_VALUE_HI
+                        LDA             ASM_BASE_HI
                         STA             (ASM_FIX_PTR_LO),Y
                         SEC
                         RTS
 
 ASM_PATCH_FIXUP_WORD:
                         LDY             #$00
-                        LDA             ASM_VALUE_LO
+                        LDA             ASM_BASE_LO
                         STA             (ASM_FIX_PTR_LO),Y
                         INY
-                        LDA             ASM_VALUE_HI
+                        LDA             ASM_BASE_HI
                         STA             (ASM_FIX_PTR_LO),Y
                         SEC
                         RTS
 
 ASM_PATCH_FIXUP_REL8:
-                        LDA             ASM_VALUE_LO
+                        LDA             ASM_FIX_MODE,X
+                        TAY
+                        LDA             ASM_OPM_PATCH_BYTES,Y
+                        CLC
+                        ADC             ASM_FIX_SITE_LO,X
+                        STA             ASM_TMP1_LO
+                        LDA             ASM_FIX_SITE_HI,X
+                        ADC             #$00
+                        STA             ASM_TMP1_HI
+                        LDA             ASM_BASE_LO
                         SEC
-                        SBC             ASM_FIX_BASE_LO,X
+                        SBC             ASM_TMP1_LO
                         STA             ASM_TMP0_LO
-                        LDA             ASM_VALUE_HI
-                        SBC             ASM_FIX_BASE_HI,X
+                        LDA             ASM_BASE_HI
+                        SBC             ASM_TMP1_HI
                         STA             ASM_TMP0_HI
                         BEQ             ASM_PATCH_FIXUP_REL8_POS
                         CMP             #$FF
@@ -9849,9 +9856,9 @@ ASM_RELOC_NOTE_FIXUP_X:
                         STA             ASM_TMP0_LO
                         LDA             ASM_FIX_SITE_HI,X
                         STA             ASM_TMP0_HI
-                        LDA             ASM_VALUE_LO
+                        LDA             ASM_BASE_LO
                         STA             ASM_TMP1_LO
-                        LDA             ASM_VALUE_HI
+                        LDA             ASM_BASE_HI
                         STA             ASM_TMP1_HI
                         PLA
                         JSR             ASM_RELOC_STORE_A
@@ -9942,6 +9949,8 @@ ASM_IMPORT_FIND_FIXUP_NO:
 
 ASM_RELOC_STORE_IMPORT_X:
                         PHX
+                        LDA             ASM_FIX_BASE_LO,X
+                        STA             ASM_TMP1_HI
                         LDA             ASM_FIX_SITE_LO,X
                         STA             ASM_TMP0_LO
                         LDA             ASM_FIX_SITE_HI,X
@@ -9969,7 +9978,8 @@ ASM_RELOC_STORE_IMPORT_SITE_OK:
                         STA             ASM_RELOC_SITE_HI,X
                         LDA             ASM_IMPORT_INDEX
                         STA             ASM_RELOC_TARGET_LO,X
-                        STZ             ASM_RELOC_TARGET_HI,X
+                        LDA             ASM_TMP1_HI
+                        STA             ASM_RELOC_TARGET_HI,X
                         LDA             ASM_TMP1_LO
                         STA             ASM_RELOC_KIND,X
                         INC             ASM_RELOC_COUNT
@@ -12079,6 +12089,20 @@ ASM_IMPORT_PATCH_ROW_X:
                         LDA             ASM_SEAL_BASE_HI
                         ADC             ASM_RELOC_SITE_HI,X
                         STA             ASM_EMIT_PTR_HI
+                        LDA             ASM_BASE_LO
+                        CLC
+                        ADC             ASM_RELOC_TARGET_HI,X
+                        STA             ASM_VALUE_LO
+                        LDA             ASM_RELOC_TARGET_HI,X
+                        BMI             ASM_IMPORT_PATCH_ADD_NEG
+                        LDA             ASM_BASE_HI
+                        ADC             #$00
+                        BRA             ASM_IMPORT_PATCH_ADD_DONE
+ASM_IMPORT_PATCH_ADD_NEG:
+                        LDA             ASM_BASE_HI
+                        ADC             #$FF
+ASM_IMPORT_PATCH_ADD_DONE:
+                        STA             ASM_VALUE_HI
                         LDA             ASM_RELOC_KIND,X
                         CMP             #ASM_RELOC_ABS16_IMPORT
                         BEQ             ASM_IMPORT_PATCH_ABS16
@@ -13754,6 +13778,57 @@ ASM_IMPORT_CLEAR_PACK_DONE:
 ASM_PARSE_DATA_EXPR:
                         STX             ASM_DB_ITEM_LO
                         STY             ASM_DB_ITEM_HI
+                        STZ             ASM_RELOC_PLAN_TARGET_LO
+                        STZ             ASM_RELOC_PLAN_TARGET_HI
+                        STX             ASM_PARSE_PTR_LO
+                        STY             ASM_PARSE_PTR_HI
+                        JSR             ASM_SKIP_SPACES
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        CMP             #'<'
+                        BEQ             ASM_PARSE_DATA_EXPR_RESOLVED_SEL_LO
+                        CMP             #'>'
+                        BNE             ASM_PARSE_DATA_EXPR_NO_SELECTOR
+                        LDA             #ASM_FIX_SEL_HI
+                        BRA             ASM_PARSE_DATA_EXPR_RESOLVED_SELECTOR
+ASM_PARSE_DATA_EXPR_RESOLVED_SEL_LO:
+                        LDA             #ASM_FIX_SEL_LO
+ASM_PARSE_DATA_EXPR_RESOLVED_SELECTOR:
+                        STA             ASM_FIX_PLAN_SEL
+                        JSR             ASM_ADV_PARSE
+                        LDX             ASM_PARSE_PTR_LO
+                        LDY             ASM_PARSE_PTR_HI
+                        JSR             ASM_PARSE_EXPR
+                        BCC             ASM_PARSE_DATA_EXPR_FALLBACK
+                        LDA             ASM_VALUE_LO
+                        STA             ASM_RELOC_PLAN_TARGET_LO
+                        LDA             ASM_VALUE_HI
+                        STA             ASM_RELOC_PLAN_TARGET_HI
+                        LDA             ASM_FIX_PLAN_SEL
+                        CMP             #ASM_FIX_SEL_HI
+                        BEQ             ASM_PARSE_DATA_EXPR_RESOLVED_HI
+                        STZ             ASM_VALUE_HI
+                        BRA             ASM_PARSE_DATA_EXPR_RESOLVED_SELECTED
+ASM_PARSE_DATA_EXPR_RESOLVED_HI:
+                        LDA             ASM_VALUE_HI
+                        STA             ASM_VALUE_LO
+                        STZ             ASM_VALUE_HI
+ASM_PARSE_DATA_EXPR_RESOLVED_SELECTED:
+                        LDA             #ASM_SYMK_ADDR
+                        STA             ASM_MODE
+                        LDA             #ASM_WIDTH_ZP
+                        STA             ASM_WIDTH
+                        LDA             ASM_EXPR_RELOC
+                        BEQ             ASM_PARSE_DATA_EXPR_ABSOLUTE
+                        CMP             #$01
+                        BNE             ASM_PARSE_DATA_EXPR_BAD_RELOC
+                        LDA             #ASM_OPF_RELOC_INTERNAL
+                        STA             ASM_FLAGS
+                        SEC
+                        RTS
+ASM_PARSE_DATA_EXPR_NO_SELECTOR:
+                        LDX             ASM_DB_ITEM_LO
+                        LDY             ASM_DB_ITEM_HI
                         JSR             ASM_PARSE_EXPR
                         BCC             ASM_PARSE_DATA_EXPR_FALLBACK
                         STZ             ASM_TMP1_LO
@@ -13788,6 +13863,10 @@ ASM_PARSE_DATA_EXPR_FALLBACK:
                         CLC
                         RTS
 ASM_PARSE_DATA_EXPR_FALLBACK_ATOM:
+; A failed resolved-selector probe may leave expression relocation metadata in
+; this pair.  The deferred parser needs a clean signed-addend accumulator.
+                        STZ             ASM_RELOC_PLAN_TARGET_LO
+                        STZ             ASM_RELOC_PLAN_TARGET_HI
                         LDX             ASM_DB_ITEM_LO
                         LDY             ASM_DB_ITEM_HI
                         STX             ASM_PARSE_PTR_LO
@@ -13796,6 +13875,12 @@ ASM_PARSE_DATA_EXPR_FALLBACK_ATOM:
                         BCC             ASM_PARSE_DATA_EXPR_RETURN
                         JSR             ASM_CLASS_LOAD_ATOM
                         BCC             ASM_PARSE_DATA_EXPR_RETURN
+                        LDA             ASM_TMP1_HI
+                        AND             #ASM_OPF_UNRESOLVED
+                        BEQ             ASM_PARSE_DATA_EXPR_FALLBACK_READY
+                        JSR             ASM_PARSE_FIXUP_ADDEND_KEEP_CLASS
+                        BCC             ASM_PARSE_DATA_EXPR_RETURN
+ASM_PARSE_DATA_EXPR_FALLBACK_READY:
                         LDA             ASM_BASE_LO
                         STA             ASM_VALUE_LO
                         LDA             ASM_BASE_HI
@@ -13811,6 +13896,117 @@ ASM_PARSE_DATA_EXPR_FALLBACK_ATOM:
                         STA             ASM_TMP1_LO
                         SEC
 ASM_PARSE_DATA_EXPR_RETURN:
+                        RTS
+
+; The literal atom parser uses the classifier result cells as scratch. Preserve
+; the unresolved kind/width/flags while it consumes the addend tail.
+ASM_PARSE_FIXUP_ADDEND_KEEP_CLASS:
+                        JSR             ASM_PARSE_FIXUP_ADDEND
+                        BCC             ASM_PARSE_FIXUP_ADDEND_KEEP_RETURN
+                        LDA             #ASM_SYMK_ADDR
+                        STA             ASM_TMP0_LO
+                        LDA             ASM_FIX_PLAN_SEL
+                        AND             #ASM_FIX_SEL_MASK
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_KEEP_ABS
+                        LDA             #ASM_WIDTH_ZP
+                        BRA             ASM_PARSE_FIXUP_ADDEND_KEEP_WIDTH
+ASM_PARSE_FIXUP_ADDEND_KEEP_ABS:
+                        LDA             #ASM_WIDTH_ABS
+ASM_PARSE_FIXUP_ADDEND_KEEP_WIDTH:
+                        STA             ASM_TMP0_HI
+                        LDA             #ASM_OPF_UNRESOLVED
+                        STA             ASM_TMP1_HI
+ASM_PARSE_FIXUP_ADDEND_KEEP_RETURN:
+                        RTS
+
+; A deferred expression is deliberately narrower than the resolved evaluator:
+; one unresolved atom followed only by literal + or - terms.  The accumulated
+; signed byte fits both the reused fixup BASE columns and AP import TARGET_HI.
+ASM_PARSE_FIXUP_ADDEND:
+                        JSR             ASM_SKIP_SPACES
+                        LDY             #$00
+                        LDA             (ASM_PARSE_PTR_LO),Y
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_RANGE
+                        CMP             #$0D
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_RANGE
+                        CMP             #$0A
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_RANGE
+                        CMP             #';'
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_RANGE
+                        CMP             #','
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_RANGE
+                        CMP             #')'
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_RANGE
+                        CMP             #'+'
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_OP
+                        CMP             #'-'
+                        BNE             ASM_PARSE_FIXUP_ADDEND_BAD_OPER
+ASM_PARSE_FIXUP_ADDEND_OP:
+                        STA             ASM_EXPR_OP
+                        JSR             ASM_ADV_PARSE
+                        JSR             ASM_NEXT_TOKEN
+                        BCC             ASM_PARSE_FIXUP_ADDEND_FAIL
+                        LDA             ASM_TOK_KIND
+                        CMP             #ASM_TOK_NUMBER
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_ATOM
+                        CMP             #ASM_TOK_CHAR
+                        BNE             ASM_PARSE_FIXUP_ADDEND_BAD_OPER
+ASM_PARSE_FIXUP_ADDEND_ATOM:
+                        JSR             ASM_PARSE_EXPR_ATOM
+                        BCC             ASM_PARSE_FIXUP_ADDEND_FAIL
+                        LDA             ASM_EXPR_OP
+                        CMP             #'+'
+                        BNE             ASM_PARSE_FIXUP_ADDEND_SUB
+                        LDA             ASM_VALUE_HI
+                        BNE             ASM_PARSE_FIXUP_ADDEND_BAD_RANGE
+                        LDA             ASM_VALUE_LO
+                        BMI             ASM_PARSE_FIXUP_ADDEND_BAD_RANGE
+                        LDA             ASM_RELOC_PLAN_TARGET_LO
+                        CLC
+                        ADC             ASM_VALUE_LO
+                        STA             ASM_RELOC_PLAN_TARGET_LO
+                        LDA             ASM_RELOC_PLAN_TARGET_HI
+                        ADC             ASM_VALUE_HI
+                        STA             ASM_RELOC_PLAN_TARGET_HI
+                        BRA             ASM_PARSE_FIXUP_ADDEND
+ASM_PARSE_FIXUP_ADDEND_SUB:
+                        LDA             ASM_VALUE_HI
+                        BNE             ASM_PARSE_FIXUP_ADDEND_BAD_RANGE
+                        LDA             ASM_VALUE_LO
+                        CMP             #$81
+                        BCS             ASM_PARSE_FIXUP_ADDEND_BAD_RANGE
+                        LDA             ASM_RELOC_PLAN_TARGET_LO
+                        SEC
+                        SBC             ASM_VALUE_LO
+                        STA             ASM_RELOC_PLAN_TARGET_LO
+                        LDA             ASM_RELOC_PLAN_TARGET_HI
+                        SBC             ASM_VALUE_HI
+                        STA             ASM_RELOC_PLAN_TARGET_HI
+                        BRA             ASM_PARSE_FIXUP_ADDEND
+ASM_PARSE_FIXUP_ADDEND_RANGE:
+                        LDA             ASM_RELOC_PLAN_TARGET_HI
+                        BEQ             ASM_PARSE_FIXUP_ADDEND_POS
+                        CMP             #$FF
+                        BNE             ASM_PARSE_FIXUP_ADDEND_BAD_RANGE
+                        LDA             ASM_RELOC_PLAN_TARGET_LO
+                        BPL             ASM_PARSE_FIXUP_ADDEND_BAD_RANGE
+                        SEC
+                        RTS
+ASM_PARSE_FIXUP_ADDEND_POS:
+                        LDA             ASM_RELOC_PLAN_TARGET_LO
+                        BMI             ASM_PARSE_FIXUP_ADDEND_BAD_RANGE
+                        SEC
+                        RTS
+ASM_PARSE_FIXUP_ADDEND_BAD_OPER:
+                        LDA             #ASM_STATUS_BAD_OPER
+                        BRA             ASM_PARSE_FIXUP_ADDEND_STATUS
+ASM_PARSE_FIXUP_ADDEND_BAD_RANGE:
+                        LDA             #ASM_STATUS_BAD_RANGE
+ASM_PARSE_FIXUP_ADDEND_STATUS:
+                        STA             ASM_STATUS
+                        STA             ASM_LAST_STATUS
+ASM_PARSE_FIXUP_ADDEND_FAIL:
+                        CLC
                         RTS
 
 ASM_PARSE_DATA_AFTER_ITEM:
@@ -16116,9 +16312,22 @@ ASM_CLASS_LOAD_SEL_WORD:
 ASM_CLASS_LOAD_SEL_FAIL:
                         RTS
 ASM_CLASS_LOAD_SEL_SYMBOL_OK:
+; Selector atom loading may reuse relocation-plan scratch for width/relocation
+; metadata.  Deferred +/- parsing must always start from a zero addend here.
+                        STZ             ASM_RELOC_PLAN_TARGET_LO
+                        STZ             ASM_RELOC_PLAN_TARGET_HI
+                        JSR             ASM_PARSE_FIXUP_ADDEND_KEEP_CLASS
+                        BCC             ASM_CLASS_LOAD_SEL_FAIL
                         LDA             ASM_TMP1_HI
                         AND             #ASM_OPF_UNRESOLVED
                         BNE             ASM_CLASS_LOAD_SEL_UNRESOLVED
+                        LDA             ASM_BASE_LO
+                        CLC
+                        ADC             ASM_RELOC_PLAN_TARGET_LO
+                        STA             ASM_BASE_LO
+                        LDA             ASM_BASE_HI
+                        ADC             ASM_RELOC_PLAN_TARGET_HI
+                        STA             ASM_BASE_HI
                         LDA             ASM_FIX_PLAN_SEL
                         CMP             #ASM_FIX_SEL_HI
                         BEQ             ASM_CLASS_LOAD_SEL_RESOLVED_HI
@@ -17824,6 +18033,10 @@ ASM_RJ_UPPER_LO:       DB              $00
 ASM_RJ_UPPER_HI:       DB              $00
 ASM_RJ_HBSTR_LO:       DB              $00
 ASM_RJ_HBSTR_HI:       DB              $00
+; Dynamically resolved extension; keep outside the contiguous service-vector
+; destination block from ASM_RJ_JOINER_LO through ASM_RJ_HBSTR_HI.
+ASM_RJ_READ_UPPER_LO:  DB              $00
+ASM_RJ_READ_UPPER_HI:  DB              $00
                         ENDIF
                         IF              ASM_RUNTIME_ONLY
                         ELSE
@@ -18446,8 +18659,8 @@ ASM_SMOKE_TXN_AFTER_LABEL:
                         DB              "AFTER",0
 ASM_FIXUP_LDA_LO_FOO:  DB              "        LDA #<FOO",0
 ASM_FIXUP_LDA_HI_FOO:  DB              "        LDA #>FOO",0
-ASM_FIXUP_LDA_LO_EXT:  DB              "        LDA #<EXT",0
-ASM_FIXUP_LDX_HI_EXT:  DB              "        LDX #>EXT",0
+ASM_FIXUP_LDA_LO_EXT:  DB              "        LDA #<EXT+1",0
+ASM_FIXUP_LDX_HI_EXT:  DB              "        LDX #>EXT-2",0
 ASM_FIXUP_LOCAL_MAIN_BRA:
                         DB              "MAIN BRA .SKIP",0
 ASM_FIXUP_LOCAL_LDA:   DB              "        LDA #$EE",0
@@ -18720,6 +18933,8 @@ ASM_SMOKE_SYM_ERR_EQU:
 ASM_SMOKE_SYM_NOPE:    DB              "NOPE",0
                         ENDIF
                         IF              ASM_FLASH_RUNTIME
+ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER:
+                        DB              $AF,$10,$DD,$E2
                         ELSE
 ASM_HASH_BIO_WRITE_BYTE_BLOCK:
                         DB              $30,$E9,$9F,$37

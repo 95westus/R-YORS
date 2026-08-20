@@ -3546,8 +3546,6 @@ HIM_AP_LINK_RELOAD_REL_PTR:
                         RTS
 
 HIM_AP_LINK_RESOLVE_ROW_X:
-                        JSR             HIM_AP_RELOC_TARGET_HI_X
-                        BNE             HIM_AP_LINK_RESOLVE_ROW_FAIL
                         JSR             HIM_AP_RELOC_TARGET_LO_X
                         CMP             HIM_AP_LINK_IMPORT_COUNT
                         BCS             HIM_AP_LINK_RESOLVE_ROW_FAIL
@@ -3555,6 +3553,22 @@ HIM_AP_LINK_RESOLVE_ROW_X:
                         JSR             HIM_AP_LINK_RESOLVE_SLOT_X
                         BCC             HIM_AP_LINK_RESOLVE_ROW_FAIL
                         LDX             HIM_AP_LINK_INDEX
+                        JSR             HIM_AP_LINK_RELOAD_REL_PTR
+                        JSR             HIM_AP_RELOC_TARGET_HI_X
+                        STA             HIM_AP_LINK_TMP_LO
+                        CLC
+                        ADC             HIM_AP_LINK_RES_LO
+                        STA             HIM_AP_LINK_RES_LO
+                        LDA             HIM_AP_LINK_TMP_LO
+                        BMI             HIM_AP_LINK_RESOLVE_ADD_NEG
+                        LDA             HIM_AP_LINK_RES_HI
+                        ADC             #$00
+                        BRA             HIM_AP_LINK_RESOLVE_ADD_DONE
+HIM_AP_LINK_RESOLVE_ADD_NEG:
+                        LDA             HIM_AP_LINK_RES_HI
+                        ADC             #$FF
+HIM_AP_LINK_RESOLVE_ADD_DONE:
+                        STA             HIM_AP_LINK_RES_HI
                         SEC
                         RTS
 HIM_AP_LINK_RESOLVE_ROW_FAIL:

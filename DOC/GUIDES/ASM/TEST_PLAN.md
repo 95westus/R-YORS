@@ -6072,27 +6072,25 @@ left-to-right evaluation only
 ADDR + VALUE, VALUE + ADDR, and ADDR - VALUE
 ADDR - ADDR returning a VALUE/NONE delta
 VALUE + VALUE and VALUE - VALUE
+one unresolved symbol plus a final signed-byte addend
+selector-plus-addend forms mean <(SYMBOL+ADDEND) and >(SYMBOL+ADDEND)
 same-width concrete/mask logical operands
 logical 16-bit shifts with counts 0 through 15
 ZP/ABS address width is retained and range-checked
 bad concrete arithmetic reports BAD RANGE or BAD WIDTH
 
 DOES NOT WORK YET
-forward or unresolved addends such as FOO+1
 forward EQU dependency chains
-selector-plus-addend combinations such as <FOO+1 or >FOO+1
 unary minus such as -1
 grouping parentheses or precedence
 ```
 
-Selectors combined with addends, forward `EQU` chains, and unresolved fixup
-addends remain future expression work. Multiplication and division are
-intentionally outside the size-first expression contract.
+Forward `EQU` chains remain future expression work. Multiplication and
+division are intentionally outside the size-first expression contract.
 
-Unresolved compound fixups are tracked as the next explicit expression item
-in the [ASM Feature Queue](../PLANNING/TODO.md#asm-feature-queue). Review that
-gate before the next ASM feature pass and leave it unchecked until its host,
-size, package/relocation, and board evidence are complete.
+Unresolved compound fixups are tracked in the
+[ASM Feature Queue](../PLANNING/TODO.md#asm-feature-queue). Their host, size,
+package/relocation, and board gates are complete on ASM-F2 `00.0820(1629)`.
 
 Current smoke fixtures:
 
@@ -14749,3 +14747,115 @@ Both runs sent VT100 Primary Device Attributes (`ESC [ c`) and received exact
 bytes `1B 5B 3F 31 3B 32 63`, displayed safely as `.[?1;2c`. This accepts the
 sample's pinned STR8-N 1.22 raw-console ABI check, bounded receive loop, hex
 display, safe-text display, no-reply path, answerback path, and VT100 DA path.
+
+## 2026-08-20 Unresolved Symbol Addends
+
+Host status: accepted. Board status: failed on `00.0820(1504)`, partially
+failed on `00.0820(1518)`, and confirmed the same selector defect on
+`00.0820(1531)` and `00.0820(1541)`; corrected candidate pending.
+
+Deferred expressions now accept one unresolved symbol followed by literal
+`+`/`-` terms whose final addend is signed 8-bit. Selection is defined as
+`<(symbol+addend)` or `>(symbol+addend)`, including carry. Internal fixups
+reuse `ASM_FIX_BASE_LO/HI` for the signed 16-bit working addend and reconstruct
+the relative base from the patch site and operand width. AP v2 import rows put
+the signed byte in the previously zero target-high lane; both the ASM resolver
+and HIMON loader add it before ABS16/LO8/HI8 patching. Existing zero-addend AP
+packages remain byte-compatible.
+
+The runtime smoke source covers `LDA TABLE+1`, `DW TABLE+2`, both selector
+forms, and `BNE TABLE-2`, plus atomic rejection of `MISS+128` and
+`MISS+OTHER`. Compiled core smoke changes declared import selectors to
+`#<EXT+1` and `#>EXT-2` and requires target-high bytes `$01/$FE`.
+
+Flash-resident size comparison against the current `$3867/$028F/$1D6C`
+baseline is:
+
+```text
+                         baseline        addends          delta
+CODE                     $3867           $39CA            +$0163 / +355
+DATA                     $028F           $028F            +$0000
+UDATA                    $1D6C           $1D6C            +$0000
+_END_DATA                $BAF6           $BC59            +$0163
+headroom to $C000        $050A           $03A7            -$0163
+```
+
+HIMON grows from CODE `$28AA` to `$28C7` (`+$001D` / 29 bytes), with DATA
+unchanged at `$0529`. Combined resident growth is 384 bytes; fixup rows and AP
+relocation rows do not grow. The board gate uses
+`SAMPLES/unresolved-addends-2000.a`: assemble through `END`, inspect exact
+bytes/fixup addends, `PACKAGE`, load at `$3000`, and confirm that the internal
+and declared-import patched values both move correctly. Append the exact
+transcript to the hardware log before checking the feature queue item.
+
+The first current-image board attempt on ASM-F2 `00.0820(1504)` accepted
+`LDA TABLE+1` and both selector forms, but rejected `DW TABLE+2` with
+`BAD WIDTH` and `BNE TARGET-2` with `BAD RANGE`. Both failures had the same
+cause: parsing the literal RHS reused the classifier result cells, changing
+the deferred address kind and clearing its unresolved flag. The corrected
+path restores the known deferred address/width/flag tuple after consuming the
+addend. `make -C SRC asm-test` passed for that `00.0820(1512)` candidate.
+
+The next complete run on `00.0820(1518)` accepted every source line and
+successfully sealed, packaged, and loaded the image at `$3000`. Absolute,
+`DW`, high-selector, relative, and declared-import fixups were correct, but
+`LDA #<TABLE+1` emitted `$12` instead of `$0F` both before and after loading.
+Opcode classification had reused the relocation-plan scratch after parsing.
+The corrected path now carries an unresolved addend through the ordinary
+classifier value cells until the fixup row is stored. The zero-padding flash
+message layout was retuned by reordering existing command literals.
+
+Boards `00.0820(1531)` and `00.0820(1541)` proved that this first lifetime
+correction was aimed at the wrong boundary: both complete package/load runs
+again produced `$12`. The failed resolved-selector probe was leaving width
+metadata `$03` in the relocation accumulator, so the deferred `+1` became
+`$04`. The corrected fallback explicitly clears that accumulator before
+reparsing the unresolved atom. The temporary two-byte plan field was removed;
+UDATA is again unchanged. `make -C SRC asm-test` passes for `00.0820(1544)`;
+board acceptance remains pending.
+
+The post-`END` seal shell has a separate case contract from source syntax.
+Every alphabetic command is folded and echoed uppercase before matching:
+`SEAL`, `RELOCATE`, `PACKAGE`, `LOAD`, `INSTALL`, optional `CHECK`, and `NEW`.
+For example, typing `seal` must display `SEAL` and execute normally. Source
+lines remain case-preserving. The host contract check pins all seven uppercase
+literals, direct byte comparison in the matcher, and selection of the resident
+echo-uppercase reader whenever `ASMF_POST_FLAG` is set. The lowercase rejection
+seen on board `00.0820(1531)` is superseded. The operator accepted the complete
+lowercase-to-uppercase seal-shell echo sweep on 2026-08-20; no further UI gate
+remains for this command set.
+
+The prompt-specific reader adds CODE `$002D` (45 bytes), DATA `$0004`, and
+UDATA `$0002` relative to the `$39CA/$028F/$1D6C` addend candidate. Current
+flash layout is CODE `$39F7`, DATA `$0293`, UDATA `$1D6E`, `_END_DATA=$BC8A`,
+with `$0376` bytes of headroom. Existing wrapper literals and the status-pointer
+table were reordered around the compact-message boundary; no padding was
+added. Board `00.0820(1559)` disproved the accumulator-seeding diagnosis. The
+actual defect was in multi-row resolution: `ASM_PATCH_FIXUP_X` added each
+row's addend directly into the shared `ASM_VALUE`, so the five `TABLE` rows
+accumulated (`$200E +1`, then `+2`, then selector `+1`), producing `$2012`.
+The corrected patcher computes each adjusted target in `ASM_BASE_LO/HI`, keeps
+the original symbol value immutable for the next row, and records relocation
+metadata from that adjusted scratch. The host contract rejects any future
+`STA ASM_VALUE_LO/HI` inside the patch block. `make -C SRC asm-test` passes for
+`00.0820(1617)`; board acceptance remains pending.
+
+Board `00.0820(1623)` then exposed an independent ASM startup regression:
+`ASM NEW` twice stopped at `BRK 00 PC=0002` before printing the ASM title. The
+new uppercase-reader pointer had been inserted inside the contiguous HIMON
+service-vector destination block, shifting the later destinations and leaving
+the title's `ASM_RJ_HBSTR` indirect target zero. Candidate `00.0820(1628)`
+moves that dynamically resolved pointer after `ASM_RJ_HBSTR_HI`, outside the
+copied block. The host contract now pins the full destination order as well as
+the extension boundary. `make -C SRC asm-test` passes with unchanged flash
+sizes CODE `$39F7`, DATA `$0293`, UDATA `$1D6E`; the board gate remains open.
+
+ASM-F2 `00.0820(1629)` closes that board gate. The source image emitted
+`AD 0F 20 10 20 A9 0F A2 20 D0 00 FF FF EA 11 22 33`; after packaging and
+loading at `$3000`, it emitted
+`AD 0F 30 10 30 A9 0F A2 30 D0 00 B5 E8 EA 11 22 33`. These bytes prove
+independent `TABLE+1` and `TABLE+2` rows, low/high selector behavior, relative
+`TARGET-2`, internal relocation, and declared-import `+1` resolution. The
+feature queue item is accepted. The command input in this run was already
+uppercase; the separate lowercase-to-uppercase seal-shell echo sweep was then
+declared complete by the operator on 2026-08-20.
