@@ -12,6 +12,8 @@
 
                         MODULE          ASM_V1_CORE
 
+                        INCLUDE         "ASM/asm-abi-v1.inc"
+
                         IF              ASM_RUNTIME_ONLY
                         ELSE
                         XDEF            START
@@ -235,16 +237,16 @@ ASM_PACKAGE_SEAL_LEN_HI EQU           ASM_CARE_HI
 ; ----------------------------------------------------------------------------
 ; Status, session, and v1 proof limits.
 ; ----------------------------------------------------------------------------
-ASM_STATUS_OK          EQU             $00
+ASM_STATUS_OK          EQU             ASM_ABI_STATUS_OK
 ASM_STATUS_BAD_MNEM    EQU             $01
 ASM_STATUS_BAD_DIR     EQU             $02
 ASM_STATUS_BAD_OPER    EQU             $03
 ASM_STATUS_BAD_MODE    EQU             $04
 ASM_STATUS_BAD_WIDTH   EQU             $05
-ASM_STATUS_BAD_RANGE   EQU             $06
-ASM_STATUS_BAD_LINE    EQU             $07
+ASM_STATUS_BAD_RANGE   EQU             ASM_ABI_STATUS_BAD_RANGE
+ASM_STATUS_BAD_LINE    EQU             ASM_ABI_STATUS_BAD_LINE
 ASM_STATUS_BAD_SYM     EQU             $08
-ASM_STATUS_BAD_FIX     EQU             $09
+ASM_STATUS_BAD_FIX     EQU             ASM_ABI_STATUS_BAD_FIX
 ASM_STATUS_RJOIN       EQU             $0B
 
 ASM_SEAL_STATUS_NO_END EQU             $01
@@ -323,7 +325,7 @@ ASM_SEALF_UNOWNED      EQU             $04
 ASM_SEALF_RELOC_TRUNC  EQU             $08
 ASM_SEALF_RELOC_BAD    EQU             $10
 
-ASM_SEAL_REC_BYTES     EQU             $0B
+ASM_SEAL_REC_BYTES     EQU             ASM_ABI_AP_SEAL_BYTES
 ASM_SEAL_REC_OFF_FLAGS EQU             $00
 ASM_SEAL_REC_OFF_BASE  EQU             $01
 ASM_SEAL_REC_OFF_END   EQU             $03
@@ -333,19 +335,19 @@ ASM_EXPORT_REC_OFF_COUNT EQU           $00
 ASM_EXPORT_REC_OFF_LEN EQU             $01
 ASM_IMPORT_REC_OFF_COUNT EQU           $00
 ASM_IMPORT_REC_OFF_LEN EQU             $01
-ASM_PACKAGE_HDR_BYTES  EQU             $05
+ASM_PACKAGE_HDR_BYTES  EQU             ASM_ABI_AP_HEADER_BYTES
 ; AP v2 fixed bytes: five-byte header, five tag/length16 headers, and seal.
-ASM_PACKAGE_FIXED_BYTES EQU            $1F
+ASM_PACKAGE_FIXED_BYTES EQU            ASM_ABI_AP_FIXED_BYTES
 ASM_PACKAGE_MAX_LO     EQU             $00
 ASM_PACKAGE_MAX_HI     EQU             $10
 ASM_PACKAGE_VERSION    EQU             $02
-ASM_PACKAGE_SIG0       EQU             'A'
-ASM_PACKAGE_SIG1       EQU             'P'
-ASM_PACKAGE_TAG_SEAL   EQU             'S'
-ASM_PACKAGE_TAG_RELOC  EQU             'R'
-ASM_PACKAGE_TAG_EXPORT EQU             'E'
-ASM_PACKAGE_TAG_IMPORT EQU             'I'
-ASM_PACKAGE_TAG_BODY   EQU             'B'
+ASM_PACKAGE_SIG0       EQU             ASM_ABI_AP_SIG0_VALUE
+ASM_PACKAGE_SIG1       EQU             ASM_ABI_AP_SIG1_VALUE
+ASM_PACKAGE_TAG_SEAL   EQU             ASM_ABI_AP_TAG_SEAL
+ASM_PACKAGE_TAG_RELOC  EQU             ASM_ABI_AP_TAG_RELOC
+ASM_PACKAGE_TAG_EXPORT EQU             ASM_ABI_AP_TAG_EXPORT
+ASM_PACKAGE_TAG_IMPORT EQU             ASM_ABI_AP_TAG_IMPORT
+ASM_PACKAGE_TAG_BODY   EQU             ASM_ABI_AP_TAG_BODY
 ASM_PACKAGE_OFF_SIG0   EQU             $00
 ASM_PACKAGE_OFF_SIG1   EQU             $01
 ASM_PACKAGE_OFF_VER    EQU             $02
@@ -466,12 +468,12 @@ ASM_RELOC_MAX          EQU             $40
 ; AP v2 uses 16-bit section lengths, so the packaged and live relocation
 ; limits are identical.
 ASM_PACKAGE_RELOC_MAX  EQU             ASM_RELOC_MAX
-ASM_RELOC_ABS16_INTERNAL EQU           $01
-ASM_RELOC_LO8_INTERNAL EQU             $02
-ASM_RELOC_HI8_INTERNAL EQU             $03
-ASM_RELOC_ABS16_IMPORT EQU             $04
-ASM_RELOC_LO8_IMPORT EQU               $05
-ASM_RELOC_HI8_IMPORT EQU               $06
+ASM_RELOC_ABS16_INTERNAL EQU           ASM_ABI_AP_RELOC_ABS16
+ASM_RELOC_LO8_INTERNAL EQU             ASM_ABI_AP_RELOC_LO8
+ASM_RELOC_HI8_INTERNAL EQU             ASM_ABI_AP_RELOC_HI8
+ASM_RELOC_ABS16_IMPORT EQU            ASM_ABI_AP_RELOC_ABS16_IMP
+ASM_RELOC_LO8_IMPORT EQU              ASM_ABI_AP_RELOC_LO8_IMP
+ASM_RELOC_HI8_IMPORT EQU              ASM_ABI_AP_RELOC_HI8_IMP
 ASM_AP_KIND_EXEC       EQU             $01
 ASM_AP_KIND_DATA       EQU             $02
 ASM_AP_KIND_MASK       EQU             $03

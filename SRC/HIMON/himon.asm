@@ -44,6 +44,7 @@
                         XREF            SYS_GET_CTRL_C
                         XREF            UTL_HEX_ASCII_TO_NIBBLE
 
+                        INCLUDE         "ASM/asm-abi-v1.inc"
                         INCLUDE         "HIMON/himon-image-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
 ; Verified external STR8-N public contract, imported into BUILD/inc by the
@@ -91,14 +92,14 @@ BOOT_REASON_NONE         EQU             $00
 BOOT_REASON_COLD         EQU             $01
 BOOT_REASON_WARM         EQU             $02
 
-HIM_AP_STATUS_OK         EQU             $00
-HIM_AP_STATUS_BAD_RANGE  EQU             $06
-HIM_AP_STATUS_BAD_LINE   EQU             $07
-HIM_AP_STATUS_BAD_FIX    EQU             $09
-HIM_AP_HDR_BYTES         EQU             $05
+HIM_AP_STATUS_OK         EQU             ASM_ABI_STATUS_OK
+HIM_AP_STATUS_BAD_RANGE  EQU             ASM_ABI_STATUS_BAD_RANGE
+HIM_AP_STATUS_BAD_LINE   EQU             ASM_ABI_STATUS_BAD_LINE
+HIM_AP_STATUS_BAD_FIX    EQU             ASM_ABI_STATUS_BAD_FIX
+HIM_AP_HDR_BYTES         EQU             ASM_ABI_AP_HEADER_BYTES
 HIM_AP_VERSION           EQU             $02
-HIM_AP_SIG0              EQU             'A'
-HIM_AP_SIG1              EQU             'P'
+HIM_AP_SIG0              EQU             ASM_ABI_AP_SIG0_VALUE
+HIM_AP_SIG1              EQU             ASM_ABI_AP_SIG1_VALUE
 HIM_AP_TAG_SEAL          EQU             'S'
 HIM_AP_TAG_RELOC         EQU             'R'
 HIM_AP_TAG_EXPORT        EQU             'E'
@@ -117,16 +118,16 @@ HIM_AP_SEAL_OFF_FNV      EQU             $07
 HIM_AP_IMPORT_REC_OFF_COUNT EQU          $00
 HIM_AP_RELOC_MAX         EQU             $40
 HIM_AP_PUBLIC_MAX        EQU             $40
-HIM_AP_KIND_EXEC         EQU             $01
-HIM_AP_KIND_DATA         EQU             $02
+HIM_AP_KIND_EXEC         EQU             ASM_ABI_AP_KIND_EXEC
+HIM_AP_KIND_DATA         EQU             ASM_ABI_AP_KIND_DATA
 HIM_AP_KIND_MASK         EQU             $03
-HIM_AP_FLAG_ENTRY        EQU             $80
-HIM_AP_RELOC_ABS16_INTERNAL EQU          $01
-HIM_AP_RELOC_LO8_INTERNAL EQU            $02
-HIM_AP_RELOC_HI8_INTERNAL EQU            $03
-HIM_AP_RELOC_ABS16_IMPORT EQU            $04
-HIM_AP_RELOC_LO8_IMPORT EQU              $05
-HIM_AP_RELOC_HI8_IMPORT EQU              $06
+HIM_AP_FLAG_ENTRY        EQU             ASM_ABI_AP_FLAG_ENTRY
+HIM_AP_RELOC_ABS16_INTERNAL EQU          ASM_ABI_AP_RELOC_ABS16
+HIM_AP_RELOC_LO8_INTERNAL EQU            ASM_ABI_AP_RELOC_LO8
+HIM_AP_RELOC_HI8_INTERNAL EQU            ASM_ABI_AP_RELOC_HI8
+HIM_AP_RELOC_ABS16_IMPORT EQU            ASM_ABI_AP_RELOC_ABS16_IMP
+HIM_AP_RELOC_LO8_IMPORT EQU              ASM_ABI_AP_RELOC_LO8_IMP
+HIM_AP_RELOC_HI8_IMPORT EQU              ASM_ABI_AP_RELOC_HI8_IMP
 HIM_AP_RAM_BASE_HI      EQU             $20
 HIM_AP_RAM_LIMIT_HI     EQU             $50
 HIM_AP_FLASH_BASE_HI    EQU             $80

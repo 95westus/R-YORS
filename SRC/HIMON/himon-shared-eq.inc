@@ -133,10 +133,10 @@ HIM_AP_TMP2_LO             EQU             $7E43
 HIM_AP_TMP2_HI             EQU             $7E44
 HIM_AP_REL_LEN             EQU             $7E45
 
-HIM_SVC_SIG0_VAL           EQU             'R'
-HIM_SVC_SIG1_VAL           EQU             'Y'
-HIM_SVC_VERSION_1          EQU             $01
-HIM_SVC_VECTOR_COUNT       EQU             $0B
+HIM_SVC_SIG0_VAL           EQU             ASM_ABI_SVC_SIG0_VALUE
+HIM_SVC_SIG1_VAL           EQU             ASM_ABI_SVC_SIG1_VALUE
+HIM_SVC_VERSION_1          EQU             ASM_ABI_SVC_VERSION_VALUE
+HIM_SVC_VECTOR_COUNT       EQU             ASM_ABI_SVC_VECTOR_COUNT
 
 ; ----------------------------------------------------------------------------
 ; Group D: monitor/parser/load workspace (packed into the high 7E page)

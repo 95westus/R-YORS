@@ -35,6 +35,8 @@ LOCAL_PROVENANCE := tools/write_local_provenance.ps1
 ASMTEST_CHECK := tools/check_asmtest_3000.ps1
 ASM_OPCODE_AUDIT := tools/check_asm_opcode_coverage.ps1
 ASM_DC_CHECK := tools/check_asm_dc_contract.ps1
+ASM_ABI_CHECK := tools/check_asm_abi_v1.ps1
+ASM_ABI_INC := $(ASM_DIR)/asm-abi-v1.inc
 BOARD_S19_IDENTITY_CHECK := tools/check_board_s19_identity.ps1
 HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
 RYORS_LOGO_SVG := ../DOC/branding/logo-r-yors.svg
@@ -561,8 +563,11 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 release-files: board-s19-check life rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
+asm-test: asm-abi-check asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
+
+asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_ABI_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
 
 asm-ap-v2-check: $(ASM_SESSION_REPORT_AP_BIN) $(AP_V2_PACKAGE_CHECK) $(ASM_V1_FLASH_SRC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
@@ -802,12 +807,12 @@ $(ASM_V1_CORE_S19): $(ASM_V1_CORE_OBJ)
 	@echo [ps] set S9 start $$2000 in $(ASM_V1_CORE_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASM_V1_CORE_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
 
-$(ASM_V1_CORE_OBJ): $(ASM_V1_CORE_SRC)
+$(ASM_V1_CORE_OBJ): $(ASM_V1_CORE_SRC) $(ASM_ABI_INC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DASM_PACKAGE_ENABLED -DASM_PACKAGE_CHECK_ENABLED $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
 
-$(ASM_V1_RUNTIME_OBJ): $(ASM_V1_CORE_SRC)
+$(ASM_V1_RUNTIME_OBJ): $(ASM_V1_CORE_SRC) $(ASM_ABI_INC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DASM_RUNTIME_ONLY $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
@@ -850,7 +855,7 @@ $(ASM_V1_FLASH_OBJ): $(ASM_V1_FLASH_SRC) himon-version-stamp
 	$(ASM) $(ASFLAGS) $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
 
-$(ASM_V1_FLASH_RUNTIME_OBJ): $(ASM_V1_CORE_SRC)
+$(ASM_V1_FLASH_RUNTIME_OBJ): $(ASM_V1_CORE_SRC) $(ASM_ABI_INC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	$(ASM) $(ASFLAGS) -DASM_RUNTIME_ONLY -DASM_FLASH_RUNTIME -DASM_PACKAGE_ENABLED $<
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.obj))' -Destination '$(subst /,\,$@)' -Force"
@@ -1058,7 +1063,7 @@ himon-version-stamp: $(HIMON_VERSION_STAMP)
 ryors-logo-stamp: $(HIMON_VERSION_STAMP) $(RYORS_LOGO_SVG)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -SvgPath "$(RYORS_LOGO_SVG)" $(HIMON_VISIBLE_STAMP_ARG)
 
-$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) $(STR8N_IMPORTED_CONTRACT) himon-version-stamp
+$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT) himon-version-stamp
 
 $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))

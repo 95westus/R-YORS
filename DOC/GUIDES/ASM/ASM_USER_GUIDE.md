@@ -1,5 +1,9 @@
 # ASM User Guide
 
+The stable HIMON service-vector/RAM-card and AP v2 package interfaces are
+defined in [ASM_ABI_V1.md](ASM_ABI_V1.md). Internal ASM addresses are not part
+of that ABI.
+
 Status: current operator guide for ASM v1 as of 2026-07-06. ASM is a young
 onboard W65C02 workbench, not yet a finished hosted toolchain. The hardware
 proof source of truth remains [TEST_PLAN.md](TEST_PLAN.md).

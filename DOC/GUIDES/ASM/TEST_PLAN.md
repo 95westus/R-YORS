@@ -14859,3 +14859,16 @@ independent `TABLE+1` and `TABLE+2` rows, low/high selector behavior, relative
 feature queue item is accepted. The command input in this run was already
 uppercase; the separate lowercase-to-uppercase seal-shell echo sweep was then
 declared complete by the operator on 2026-08-20.
+
+## 2026-08-20 ASM ABI v1 Freeze
+
+Host status: accepted. Board status: inherited from the already accepted
+service-vector and AP v2 package/load proofs; no firmware bytes change.
+
+`ASM/asm-abi-v1.inc` is now the canonical machine-readable contract for both
+the HIMON-to-ASM service boundary and the serialized AP v2 package boundary.
+`make -C SRC asm-abi-check` freezes the header, vector count and order, fixed
+addresses, request/result card, operations, statuses, AP identity and section
+order, row kinds, and limits. It also inspects a built AP v2 artifact. Private
+routine addresses, zero-page scratch, UDATA, and code/data sizes remain outside
+the ABI so size work can continue without false compatibility breaks.
