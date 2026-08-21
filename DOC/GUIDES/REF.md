@@ -40,6 +40,7 @@ L              load S0/S1/S9 into RAM; report S9, do not execute
 STR8           confirmed jump to $F000
 ASM            enter ASM-F2
 AP ...         load/link/run AP package
+APS            provisional read-only AP-sector header inventory
 B/N/R/X        breakpoint, step, context, resume
 Q              quiesce
 ```

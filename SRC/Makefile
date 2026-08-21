@@ -39,6 +39,7 @@ ASM_ABI_CHECK := tools/check_asm_abi_v1.ps1
 ASM_ABI_INC := $(ASM_DIR)/asm-abi-v1.inc
 AP_STORE_V1_CHECK := tools/check_ap_store_v1.ps1
 AP_STORE_V1_INC := $(ASM_DIR)/ap-store-v1.inc
+AP_STORE_INVENTORY_CHECK := tools/check_ap_store_inventory.ps1
 BOARD_S19_IDENTITY_CHECK := tools/check_board_s19_identity.ps1
 HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
 RYORS_LOGO_SVG := ../DOC/branding/logo-r-yors.svg
@@ -562,7 +563,7 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 release-files: board-s19-check life rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check ap-store-v1-check asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
+asm-test: asm-abi-check ap-store-v1-check ap-store-inventory-check asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
@@ -570,6 +571,9 @@ asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $
 
 ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_V1_CHECK)
+
+ap-store-inventory-check: $(HIMON_ROM_S19) $(AP_STORE_INVENTORY_CHECK) $(AP_STORE_V1_INC) $(STR8N_IMPORTED_CONTRACT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_INVENTORY_CHECK) -HimonSourcePath "$(HIMON_SRC)" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -PublicContractPath "$(STR8N_IMPORTED_CONTRACT)"
 
 asm-ap-v2-check: $(ASM_SESSION_REPORT_AP_BIN) $(AP_V2_PACKAGE_CHECK) $(ASM_V1_FLASH_SRC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
@@ -1055,7 +1059,7 @@ himon-version-stamp: $(HIMON_VERSION_STAMP)
 ryors-logo-stamp: $(HIMON_VERSION_STAMP) $(RYORS_LOGO_SVG)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_VERSION_STAMP) -SvgPath "$(RYORS_LOGO_SVG)" $(HIMON_VISIBLE_STAMP_ARG)
 
-$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT) himon-version-stamp
+$(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_INC) $(ASM_ABI_INC) $(AP_STORE_V1_INC) $(STR8N_IMPORTED_CONTRACT) himon-version-stamp
 
 $(HIMON_OBJ) $(HIMON_ROM_OBJ): $(HIMON_SRC)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))

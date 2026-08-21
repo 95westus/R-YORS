@@ -45,6 +45,7 @@
                         XREF            UTL_HEX_ASCII_TO_NIBBLE
 
                         INCLUDE         "ASM/asm-abi-v1.inc"
+                        INCLUDE         "ASM/ap-store-v1.inc"
                         INCLUDE         "HIMON/himon-image-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
 ; Verified external STR8-N public contract, imported into BUILD/inc by the
@@ -164,6 +165,23 @@ HIM_AP_STAGE_SRC_LO      EQU             $D1
 HIM_AP_STAGE_SRC_HI      EQU             $D2
 HIM_AP_STAGE_DST_LO      EQU             $D3
 HIM_AP_STAGE_DST_HI      EQU             $D4
+
+; AP Store inventory is a foreground overlay, not a permanent RAM ABI.
+; One 16-byte sector header is copied here while Bank 3 is hidden.
+HIM_APS_HEADER_BASE      EQU             STR8_HIGH_TOOL_BASE
+HIM_APS_BANK             EQU             HIM_APS_HEADER_BASE+$10
+HIM_APS_SECTOR_HI        EQU             HIM_APS_HEADER_BASE+$11
+HIM_APS_CLASS            EQU             HIM_APS_HEADER_BASE+$12
+HIM_APS_LOCATION         EQU             HIM_APS_HEADER_BASE+$13
+HIM_APS_HEADER_READ_RAM  EQU             $0300
+HIM_APS_CLASS_HEADER_FF  EQU             $00
+HIM_APS_CLASS_OPAQUE     EQU             $01
+HIM_APS_CLASS_CORRUPT    EQU             $02
+HIM_APS_CLASS_STAGED     EQU             $03
+HIM_APS_CLASS_ACTIVE     EQU             $04
+HIM_APS_CLASS_RETIRED    EQU             $05
+HIM_APS_CLASS_BAD        EQU             $06
+HIM_APS_CLASS_RETIRED_BAD EQU            $07
 
 HIM_P40_CODE0            EQU             $E6
 HIM_P40_CODE1            EQU             $E7
@@ -772,6 +790,184 @@ CMD_USAGE_AP:
                         LDY             #>MSG_USAGE_AP
                         JSR             HIM_WRITE_HBSTRING
                         JMP             SYS_WRITE_CRLF
+
+; ----------------------------------------------------------------------------
+; APS -- provisional AP Store V1 read-only sector-header inventory.
+; Scans exactly Banks 0-2, sectors $8-$F. The command spelling remains
+; provisional until the operator-hardening slice.
+; ----------------------------------------------------------------------------
+CMD_APS_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$45,$CE,$A6,$64,CMD_HASH_KIND_EXEC ; APS $64A6CE45 EXEC
+CMD_APS:
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_REQUIRE_EOL
+                        BCC             CMD_USAGE_APS
+
+; The selector trampoline occupies $0200-$0228. Keep this relocatable reader
+; above it and copy it only while Bank 3 is visible.
+                        LDX             #HIM_APS_HEADER_READ_CODE_SIZE-1
+?COPY_RAM:             LDA             HIM_APS_HEADER_READ_CODE,X
+                        STA             HIM_APS_HEADER_READ_RAM,X
+                        DEX
+                        BPL             ?COPY_RAM
+
+                        STZ             HIM_APS_BANK
+                        LDA             #$80
+                        STA             HIM_APS_SECTOR_HI
+?READ:                 JSR             HIM_APS_HEADER_READ_RAM
+                        BCC             ?IO_ERROR
+                        JSR             HIM_APS_PRINT_ROW
+
+                        LDA             HIM_APS_SECTOR_HI
+                        CLC
+                        ADC             #$10
+                        BNE             ?NEXT_SECTOR
+                        INC             HIM_APS_BANK
+                        LDA             HIM_APS_BANK
+                        CMP             #$03
+                        BCS             ?DONE
+                        LDA             #$80
+?NEXT_SECTOR:          STA             HIM_APS_SECTOR_HI
+                        BRA             ?READ
+?DONE:                 LDX             #<MSG_APS_OK
+                        LDY             #>MSG_APS_OK
+                        JSR             HIM_WRITE_HBSTRING
+                        JMP             SYS_WRITE_CRLF
+?IO_ERROR:             JSR             HIM_APS_PACK_LOCATION
+                        PHA
+                        LDX             #<MSG_APS_IOERR
+                        LDY             #>MSG_APS_IOERR
+                        JSR             HIM_WRITE_HBSTRING
+                        PLA
+                        JSR             SYS_WRITE_HEX_BYTE
+                        JMP             SYS_WRITE_CRLF
+
+CMD_USAGE_APS:
+                        LDX             #<MSG_USAGE_APS
+                        LDY             #>MSG_USAGE_APS
+                        JSR             HIM_WRITE_HBSTRING
+                        JMP             SYS_WRITE_CRLF
+
+HIM_APS_PRINT_ROW:
+                        JSR             HIM_APS_PACK_LOCATION
+                        PHA
+                        LDX             #<MSG_APS_PREFIX
+                        LDY             #>MSG_APS_PREFIX
+                        JSR             HIM_WRITE_HBSTRING
+                        PLA
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             #' '
+                        JSR             BIO_FTDI_WRITE_BYTE_BLOCK
+                        JSR             HIM_APS_CLASSIFY_HEADER
+                        STA             HIM_APS_CLASS
+                        TAX
+                        LDA             MSG_APS_CLASS_LO,X
+                        PHA
+                        LDY             MSG_APS_CLASS_HI,X
+                        PLA
+                        TAX
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             HIM_APS_CLASS
+                        CMP             #HIM_APS_CLASS_STAGED
+                        BCC             ?EOL
+                        LDX             #<MSG_APS_GEN
+                        LDY             #>MSG_APS_GEN
+                        JSR             HIM_WRITE_HBSTRING
+                        LDA             HIM_APS_HEADER_BASE+APS_SH_OFF_GENERATION+1
+                        JSR             SYS_WRITE_HEX_BYTE
+                        LDA             HIM_APS_HEADER_BASE+APS_SH_OFF_GENERATION
+                        JSR             SYS_WRITE_HEX_BYTE
+?EOL:                  JMP             SYS_WRITE_CRLF
+
+HIM_APS_PACK_LOCATION:
+                        LDA             HIM_APS_BANK
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        STA             HIM_APS_LOCATION
+                        LDA             HIM_APS_SECTOR_HI
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        ORA             HIM_APS_LOCATION
+                        STA             HIM_APS_LOCATION
+                        RTS
+
+; OUT: A=HIM_APS_CLASS_*. HEADER-FF means only that the 16-byte header is
+; erased; CLAIM must still inspect all 4096 bytes before treating a sector as
+; empty.
+HIM_APS_CLASSIFY_HEADER:
+                        LDX             #APS_SECTOR_HEADER_BYTES-1
+?ALL_FF:               LDA             HIM_APS_HEADER_BASE,X
+                        CMP             #$FF
+                        BNE             ?SIGNATURE
+                        DEX
+                        BPL             ?ALL_FF
+                        LDA             #HIM_APS_CLASS_HEADER_FF
+                        RTS
+?SIGNATURE:            LDA             HIM_APS_HEADER_BASE+APS_SH_OFF_SIG
+                        CMP             #APS_SECTOR_SIG0
+                        BNE             ?OPAQUE
+                        LDA             HIM_APS_HEADER_BASE+APS_SH_OFF_SIG+1
+                        CMP             #APS_SECTOR_SIG1
+                        BNE             ?OPAQUE
+                        LDA             HIM_APS_HEADER_BASE+APS_SH_OFF_SIG+2
+                        CMP             #APS_SECTOR_SIG2
+                        BNE             ?OPAQUE
+                        LDA             HIM_APS_HEADER_BASE+APS_SH_OFF_LOCATION
+                        CMP             HIM_APS_LOCATION
+                        BNE             ?CORRUPT
+
+                        LDX             #$04
+?RESERVED:             LDA             HIM_APS_HEADER_BASE+APS_SH_OFF_RESERVED,X
+                        CMP             #$FF
+                        BNE             ?CORRUPT
+                        DEX
+                        BPL             ?RESERVED
+
+                        JSR             FNV1A_INIT
+                        LDY             #$00
+?FNV:                  LDA             HIM_APS_HEADER_BASE,Y
+                        JSR             FNV1A_UPDATE_A_FAST
+                        INY
+                        CPY             #APS_SH_OFF_FNV
+                        BNE             ?FNV
+                        LDX             #$03
+?FNV_COMPARE:          LDA             FNV_HASH0,X
+                        CMP             HIM_APS_HEADER_BASE+APS_SH_OFF_FNV,X
+                        BNE             ?CORRUPT
+                        DEX
+                        BPL             ?FNV_COMPARE
+
+                        LDA             HIM_APS_HEADER_BASE+APS_SH_OFF_STATE
+                        CMP             #APS_SECTOR_STATE_STAGED
+                        BEQ             ?STAGED
+                        CMP             #APS_SECTOR_STATE_ACTIVE
+                        BEQ             ?ACTIVE
+                        CMP             #APS_SECTOR_STATE_RETIRED
+                        BEQ             ?RETIRED
+                        CMP             #APS_SECTOR_STATE_BAD
+                        BEQ             ?BAD
+                        CMP             #APS_SECTOR_STATE_RETIRED_BAD
+                        BNE             ?CORRUPT
+                        LDA             #HIM_APS_CLASS_RETIRED_BAD
+                        RTS
+?STAGED:               LDA             #HIM_APS_CLASS_STAGED
+                        RTS
+?ACTIVE:               LDA             #HIM_APS_CLASS_ACTIVE
+                        RTS
+?RETIRED:              LDA             #HIM_APS_CLASS_RETIRED
+                        RTS
+?BAD:                  LDA             #HIM_APS_CLASS_BAD
+                        RTS
+?OPAQUE:               LDA             #HIM_APS_CLASS_OPAQUE
+                        RTS
+?CORRUPT:              LDA             #HIM_APS_CLASS_CORRUPT
+                        RTS
 
 ; ----------------------------------------------------------------------------
 ; L  (HIMON-owned RAM S19 loader: S1 data, S9 terminator; S0 skipped)
@@ -2403,6 +2599,40 @@ HIM_AP_BANK_STAGE_CODE:
                         RTS
 HIM_AP_BANK_STAGE_CODE_END:
 HIM_AP_BANK_STAGE_CODE_SIZE EQU          HIM_AP_BANK_STAGE_CODE_END-HIM_AP_BANK_STAGE_CODE
+
+; Relocatable AP Store header reader. It copies exactly 16 bytes from one
+; selected sector boundary into the High Tool Overlay, then restores Bank 3.
+; The body performs no bank-window writes.
+HIM_APS_HEADER_READ_CODE:
+                        PHP
+                        SEI
+                        LDA             HIM_APS_BANK
+                        JSR             STR8_BANK_SELECT_SERVICE
+                        BCC             ?SELECT_FAIL
+                        STZ             HIM_AP_STAGE_SRC_LO
+                        LDA             HIM_APS_SECTOR_HI
+                        STA             HIM_AP_STAGE_SRC_HI
+                        STZ             HIM_AP_STAGE_DST_LO
+                        LDA             #>HIM_APS_HEADER_BASE
+                        STA             HIM_AP_STAGE_DST_HI
+                        LDX             #APS_SECTOR_HEADER_BYTES
+                        LDY             #$00
+?BYTE:                 LDA             (HIM_AP_STAGE_SRC_LO),Y
+                        STA             (HIM_AP_STAGE_DST_LO),Y
+                        INY
+                        DEX
+                        BNE             ?BYTE
+?RESTORE:              LDA             #$03
+                        JSR             STR8_BANK_SELECT_RAM
+                        BCC             ?RESTORE
+                        PLP
+                        SEC
+                        RTS
+?SELECT_FAIL:          PLP
+                        CLC
+                        RTS
+HIM_APS_HEADER_READ_CODE_END:
+HIM_APS_HEADER_READ_CODE_SIZE EQU       HIM_APS_HEADER_READ_CODE_END-HIM_APS_HEADER_READ_CODE
 
 HIM_AP_SERVICE:
                         LDA             #HIM_AP_STATUS_OK
@@ -4695,7 +4925,7 @@ MSG_D_IO_PIA:            DB              "PI",('A'+$80)
 MSG_D_IO_FTDI:           DB              "FTDI "
 MSG_D_IO_VIA:            DB              "VI",('A'+$80)
 MSG_D_IO_SKIP:           DB              " IO SKI",('P'+$80)
-MSG_HELP:                DB              "#? D M R X G AP L B N Q STR",('8'+$80)
+MSG_HELP:                DB              "#? D M R X G AP APS L B N Q STR",('8'+$80)
 MSG_USAGE_D:             DB              "D [a [b]",(']'+$80)
 MSG_USAGE_M:             DB              "M start [end|+cnt",(']'+$80)
 MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
@@ -4703,6 +4933,27 @@ MSG_USAGE_R:             DB              "R reg",('s'+$80)
 MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
 MSG_USAGE_AP:            DB              "AP [Bn] pkg ds",('t'+$80)
+MSG_USAGE_APS:           DB              "AP",('S'+$80)
+MSG_APS_PREFIX:          DB              "APS B/S",('='+$80)
+MSG_APS_IOERR:           DB              "APS IOERR B/S",('='+$80)
+MSG_APS_GEN:             DB              " G",('='+$80)
+MSG_APS_OK:              DB              "APS O",('K'+$80)
+MSG_APS_HEADER_FF:       DB              "HEADER-F",('F'+$80)
+MSG_APS_OPAQUE:          DB              "OPAQU",('E'+$80)
+MSG_APS_CORRUPT:         DB              "CORRUP",('T'+$80)
+MSG_APS_STAGED:          DB              "STAGE",('D'+$80)
+MSG_APS_ACTIVE:          DB              "ACTIV",('E'+$80)
+MSG_APS_RETIRED:         DB              "RETIRE",('D'+$80)
+MSG_APS_BAD:             DB              "BA",('D'+$80)
+MSG_APS_RETIRED_BAD:     DB              "RETIRED+BA",('D'+$80)
+MSG_APS_CLASS_LO:        DB              <MSG_APS_HEADER_FF,<MSG_APS_OPAQUE
+                        DB              <MSG_APS_CORRUPT,<MSG_APS_STAGED
+                        DB              <MSG_APS_ACTIVE,<MSG_APS_RETIRED
+                        DB              <MSG_APS_BAD,<MSG_APS_RETIRED_BAD
+MSG_APS_CLASS_HI:        DB              >MSG_APS_HEADER_FF,>MSG_APS_OPAQUE
+                        DB              >MSG_APS_CORRUPT,>MSG_APS_STAGED
+                        DB              >MSG_APS_ACTIVE,>MSG_APS_RETIRED
+                        DB              >MSG_APS_BAD,>MSG_APS_RETIRED_BAD
 MSG_USAGE_L:             DB              ('L'+$80)
 MSG_NOCTX:               DB              "NOCT",('X'+$80)
 MSG_RESUME:              DB              "RESUME",(' '+$80)

@@ -14914,3 +14914,53 @@ The active fixed reporter proof has moved from historical `$4800` to `$7000`.
 `asm-session-report-v1.2-7000.ap.bin` for the ABI/AP v2 gates. Current builds no
 longer link or package a `$4800` reporter; its ASM-native source and raw board
 transcripts remain unchanged as historical evidence.
+
+## 2026-08-20 AP Store V1 Read-Only Inventory Slice
+
+Host status: accepted candidate. Board status: pending. This slice performs no
+flash mutation.
+
+HIMON now carries a provisional `APS` command whose Bank-3-resident loop scans
+exactly Banks 0-2 and sectors `$8-$F`. Before the first bank switch it copies a
+48-byte, position-independent reader to `$0300`, above the selector prefix at
+`$0200-$0228`. Each invocation selects one bank, copies exactly 16 bytes from a
+sector boundary to `$7C00-$7C0F`, restores Bank 3 through `$0203`, and only then
+classifies and prints the row. Four private iteration/result bytes occupy
+`$7C10-$7C13`; the `$0A00-$19FF` 4K staging area is untouched.
+
+Rows distinguish `HEADER-FF`, `OPAQUE`, `CORRUPT`, `STAGED`, `ACTIVE`,
+`RETIRED`, `BAD`, and `RETIRED+BAD`. `HEADER-FF` promises only that the scanned
+identity bytes are `$FF`; it does not claim the unscanned sector body is empty.
+Managed classifications require exact `AS1`, packed physical location, five
+reserved `$FF` bytes, full FNV-1a over bytes 0-5, and one of the five legal
+active-low state bytes.
+
+`make -C SRC ap-store-inventory-check` emulates the exact linked RAM reader and
+resident classifier. Its matrix covers all 24 candidates, all eight classes,
+wrong location, reserved-byte damage, invalid state, corrupt FNV, initial
+selector failure, restore retry, both incoming interrupt states, buffer guard
+bytes, and byte-for-byte preservation of all four 32K bank images. It also
+pins the `APS` FNV command record and proves that no Bank-3 candidate is read.
+
+Although `APS` is read-only with respect to flash and avoids the 4K staging
+area, `$F010` installs the selector at `$0200-$0228` and `APS` installs its
+reader at `$0300-$032F`. It therefore destroys part of ASM's low session tables.
+If run after an ASM session, reporting must already be complete and `ASM NEW`
+is required before any later assembly or session report.
+
+Measured candidate size:
+
+```text
+reader source       $D5AA-$D5D9, 48 bytes
+reader RAM          $0300-$032F
+high overlay        $7C00-$7C13, 20 bytes
+4K staging          0 bytes
+HIMON CODE          10819 bytes
+HIMON DATA          1430 bytes
+HIMON resident      12249 bytes, $C000-$EFD8
+margin to STR8      39 bytes, $EFD9-$EFFF
+```
+
+The command spelling and final diagnostics remain provisional until the
+operator-hardening slice. Board proof must capture one continuous 24-row scan
+and matching before/after full-bank CRCs before Slice 2 is hardware-accepted.

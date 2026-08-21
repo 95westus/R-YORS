@@ -33,9 +33,9 @@ function Test-Sector([byte[]]$B,[int]$Bank,[int]$Sector){
     return (Get-U32 $B 6)-eq(Fnv32 (Slice $B 0 6))
 }
 function Sector-Class([byte[]]$B,[int]$Bank,[int]$Sector){
-    $erased=$true
-    foreach($value in $B){if($value-ne 0xFF){$erased=$false;break}}
-    if($erased){return 'ERASED'}
+    $headerFF=$true
+    foreach($offset in 0..15){if($B[$offset]-ne 0xFF){$headerFF=$false;break}}
+    if($headerFF){return 'HEADER_FF'}
     if($B.Length-ne 4096-or([Text.Encoding]::ASCII.GetString($B,0,3))-ne'AS1'){return 'OPAQUE'}
     $location=($Bank-shl 4)-bor$Sector
     if($B[3]-ne$location-or(Get-U32 $B 6)-ne(Fnv32 (Slice $B 0 6))){return 'CORRUPT'}
@@ -109,9 +109,9 @@ for($bank=0;$bank-le 2;$bank++){
         $counts[$class]=1+$counts[$class]
     }
 }
-if(($counts.Values|Measure-Object -Sum).Sum-ne 24-or$counts['ACTIVE']-ne 1-or$counts['RETIRED']-ne 1-or$counts['BAD']-ne 1-or$counts['OPAQUE']-ne 1-or$counts['ERASED']-ne 20){Fail '24-sector inventory matrix failed'}
+if(($counts.Values|Measure-Object -Sum).Sum-ne 24-or$counts['ACTIVE']-ne 1-or$counts['RETIRED']-ne 1-or$counts['BAD']-ne 1-or$counts['OPAQUE']-ne 1-or$counts['HEADER_FF']-ne 20){Fail '24-sector inventory matrix failed'}
 
 $payloadPerEmptySector=4096-16-20-1
 if($payloadPerEmptySector-ne 4059-or[Math]::Ceiling(4096/[double]$payloadPerEmptySector)-ne 2){Fail 'capacity calculation changed'}
-Write-Host "AP Store V1 check passed: AS1 packed-location FNV32 active-low-state candidates=24 active=1 retired=1 bad=1 opaque=1 erased=20"
+Write-Host "AP Store V1 check passed: AS1 packed-location FNV32 active-low-state candidates=24 active=1 retired=1 bad=1 opaque=1 header-ff=20"
 Write-Host "AP Store V1 capacity: sector=4096 header=16 record-overhead=21 empty-payload=$payloadPerEmptySector AP-max=4096 min-sectors=2"

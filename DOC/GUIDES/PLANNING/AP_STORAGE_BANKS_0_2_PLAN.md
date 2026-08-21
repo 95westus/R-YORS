@@ -1,6 +1,8 @@
 # AP Storage Across Banks 0-2
 
-Status: planned; no implementation or flash-format ABI exists yet.
+Status: implementation in progress. Host format oracle and read-only inventory
+firmware are accepted host candidates; no flash mutation or board proof exists
+yet.
 
 This plan introduces managed AP storage in selected 4K sectors of Banks 0-2
 without treating any whole bank as an AP volume. A bank may remain bootable or
@@ -63,12 +65,13 @@ reserved: the worker copies individual flash chunk ranges directly into their
 logical offsets in that staging area, restores Bank 3, and the existing AP v2
 validator consumes the completed envelope.
 
-Those low ranges overlap ASM's session-owned name tables. A STORE operation
-launched from ASM's post-END shell is therefore terminal for that session once
-the bank worker begins: success or failure requires `ASM NEW` before further
-assembly or session reporting. Preflight and operator cancellation occur before
-claiming the low-RAM worker/staging lifecycle. This rule avoids hidden permanent
-RAM and prevents a destroyed symbol table from appearing resumable.
+Those low ranges overlap ASM's session-owned name tables. Any AP Store operation
+that starts the bank selector/worker is therefore terminal for that session;
+this includes read-only `APS` inventory even though it does not claim the 4K
+staging area. Success or failure requires `ASM NEW` before further assembly or
+session reporting. Preflight and operator cancellation occur before claiming
+the low-RAM worker/staging lifecycle. This rule avoids hidden permanent RAM and
+prevents a destroyed symbol table from appearing resumable.
 
 The supported evidence order is report before store. A session reporter AP is
 loaded at `$7000` before `ASM NEW`; after the target reaches END
@@ -101,10 +104,11 @@ do not regenerate a `$4800` S19 or AP package. The current host proof package
 is fixed at `$7000`; the separately generated movable ASM-native reporter
 remains available for the existing `$4000` load workflow.
 
-LIST may stream output without the 4K staging area. VALIDATE/LOAD claim the 4K
-staging area and are unavailable while a resumable ASM session owns the low
-tables. Resident request/result cells remain the frozen ASM ABI v1 cells; new
-AP-store state stays private to the foreground overlay.
+LIST may stream output without the 4K staging area, but its selector and reader
+still overwrite part of `$0200-$09FF`; it cannot preserve a resumable ASM
+session. VALIDATE/LOAD additionally claim the 4K staging area. Resident
+request/result cells remain the frozen ASM ABI v1 cells; new AP-store state
+stays private to the foreground overlay.
 
 ## Format Design Phase
 
@@ -176,6 +180,11 @@ sectors in one bank.
 across nonadjacent Bank-2 sectors `$8` and `$F`, covers a tombstone, rejects a
 wrong-bank header, uncommitted header, and corrupt committed record, and pins
 the capacity calculation. It performs no firmware build or flash mutation.
+
+The read-only firmware reports an all-`$FF` 16-byte identity area as
+`HEADER-FF`, not as an erased sector. Bytes `$0010-$0FFF` are intentionally not
+read by inventory, so only CLAIM's later full-sector pass may conclude that a
+sector is empty.
 
 ## Operation Model
 
@@ -271,6 +280,14 @@ host fault matrix and board proof.
    reporting, and deterministic no-space behavior without reuse.
 7. **Operator hardening.** Freeze command syntax, confirmations, diagnostics,
    cancellation behavior, and recovery instructions.
+
+Slices 1 and 2 are host-accepted as of 2026-08-20; Slice 2 still requires board
+proof. HIMON's provisional `APS` command copies one 16-byte header at a time
+through a 48-byte RAM reader at `$0300`, classifies it after restoring Bank 3,
+and streams all 24 rows. It uses 20 bytes at `$7C00-$7C13`, no 4K staging, and
+never writes the bank window. The linked HIMON candidate measures CODE 10819,
+DATA 1430, resident 12249 bytes, ending at `$EFD9` with 39 bytes before STR8.
+The `APS` spelling is deliberately not frozen until Slice 7.
 
 Each slice must measure STR8/HIMON/ASM resident CODE, DATA, UDATA, worker size,
 catalog capacity, and maximum RAM staging. A slice does not advance if it moves

@@ -32,6 +32,11 @@ append-only delete, and deferred compaction.
   with an integrity value, and distinguish storage placement from load/run
   relocation.
 
+Current evidence (2026-08-20): format-oracle and read-only-inventory host
+slices pass. The provisional HIMON `APS` path scans exactly 24 headers without
+flash mutation and measures its resident/RAM cost. These queue items remain
+open until the later mutation/load slices and required board proof agree.
+
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit
   CSTR, HBSTR, and PSTR data. Existing `DC C,"text"`, `DC HB,"text"`, and
