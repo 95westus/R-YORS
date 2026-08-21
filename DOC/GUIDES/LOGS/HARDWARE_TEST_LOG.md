@@ -24575,3 +24575,89 @@ A final `HCOLD` cleared RAM; resident `APS` still reported
 `B/S=18 ACTIVE G=0002` and `APS OK`. This accepts AP bootstrap, CLAIM, FORMAT,
 commit-last activation, confirmation consumption, isolation of all 31 other
 sectors, and cold persistence. Occupied-sector CONVERT remains unproven.
+
+## 2026-08-21 AP Store V1 Slice 4 Cold Persistence Evidence
+
+After the initial B1:9 CLAIM and object append, `HCOLD` zeroed RAM. The
+corrected `$0A1E` APOBJ envelope and the complete `$002A` B1:9/O1/G1 request
+helper were loaded. The envelope was transmitted twice; both accepted loads
+were identical and the second simply replaced the first at `$3000`.
+
+```text
+HCOLD
+RUN HCOLD @C02C K=03 ? y
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0821(0132)
+
+> L
+> L S19
+> L @3000
+> L OK=0A1E ENTRY=3000
+> L
+> L S19
+> L @3000
+> L OK=0A1E ENTRY=3000
+> L
+> L S19
+> L @1A00
+> L OK=002A ENTRY=1A00
+> D 1A00 1A29
+> 1A00: A9 01 8D 01 7C A9 09 8D | 02 7C 9C 30 7C A9 30 8D
+> 1A10: 31 7C 9C 32 7C 8D 33 7C | A9 01 8D 34 7C 9C 35 7C
+> 1A20: 8D 36 7C 9C 37 7C 9C 38 | 7C 60
+> G 1A00
+> GO 1A00
+
+#GO# ENTRY=1A00
+RET A=01 X=30 Y=30 P=75 S=FD NV-BdIzC
+
+> D 7C01 7C02
+> 7C01: 01 09
+> D 7C30 7C38
+> 7C30: 00 30 00 30 01 00 01 00 | 00
+> AP 3000 7000
+> GO 7000
+> APOBJ O=0001 G=0001 L=0037
+> APOBJ OK
+
+#GO# ENTRY=7000
+RET A=AC X=E7 Y=08 P=F5 S=FD NV-BdIzC
+
+> G 7006
+> GO 7006
+
+#GO# ENTRY=7006
+RET A=D7 X=36 Y=30 P=F4 S=FD NV-BdIzc
+
+> D 7C38 7C45
+> 7C38: 00 D7 5C 00 00 00 00 00 | 00 00 15 69 03 01
+> G 7009
+> GO 7009
+
+#GO# ENTRY=7009
+RET A=AC X=00 Y=0A P=B5 S=FD Nv-BdIzC
+
+> D 0A00 0A04
+> 0A00: 41 50 02 37 00
+> G 700C
+> GO 700C
+
+#GO# ENTRY=700C
+RET A=AC X=00 Y=30 P=B5 S=FD Nv-BdIzC
+
+> D 7C46 7C47
+> 7C46: 00 30
+> D 1A00
+> 1A00: A4
+```
+
+The cold LIST found exactly one committed object with the expected id,
+generation, and `$0037` length. Unconfirmed EXECUTE returned `$D7` with carry
+clear; the card independently held confirmation `$00`, status `$D7`, failure
+phase `$03`, and record count `$01`. VALIDATE reconstructed the AP v2 header
+at `$0A00`, and LOAD/RUN resolved entry `$3000` and executed the marker that
+wrote `$A4` to `$1A00`. This accepts corrected status return, cold catalog
+reconstruction, integrity validation, and persistent execution. The final
+post-append four-bank CRC isolation comparison remains outstanding.

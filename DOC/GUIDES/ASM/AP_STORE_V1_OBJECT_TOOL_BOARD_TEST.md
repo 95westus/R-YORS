@@ -179,6 +179,7 @@ only activation step. Any earlier interruption leaves no live object.
 The first B1:9 board pass proved CLAIM, append, one-record LIST, exact package
 reconstruction, validation, and LOAD/RUN. It also exposed that four direct
 EXECUTE rejection exits returned the failure phase in `A` even though the card
-held the correct status. The corrected candidate funnels those exits through
-the common status return. Cold persistence, corrected `$D7` return, and final
-CRC isolation remain required before board acceptance.
+held the correct status. After correction, a cold run returned `$D7` with
+carry clear, listed exactly one persistent object, reconstructed and validated
+it, and loaded/ran the `$A4` marker. Only final CRC isolation remains required
+before board acceptance.

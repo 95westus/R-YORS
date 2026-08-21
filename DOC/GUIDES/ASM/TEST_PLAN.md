@@ -15127,11 +15127,12 @@ It first CLAIMs B1:9 so the accepted B1:8 generation-2 proof remains separate,
 then requires append/list/validate/load, whole-bank isolation, cold reload,
 and persistent reconstruction before Slice 4 is accepted.
 
-The first B1:9 pass has proved CLAIM, append, exact one-record LIST,
-reconstruction, validation, and LOAD/RUN. A second unconfirmed EXECUTE did not
-mutate flash but returned its phase `$03` instead of card status `$D7`; the
-corrected host candidate routes every direct rejection through the common
-status return. Its AP envelope is `$0A1E` bytes with BODY FNV `$26A2F3DC`.
-Dedicated S19 carriers now place both binary AP envelopes at `$3000`, avoiding
-raw-binary input to the monitor's S19 loader. Corrected return, cold reload,
-and post-append CRC isolation remain pending.
+The first B1:9 pass proved CLAIM, append, exact one-record LIST,
+reconstruction, validation, and LOAD/RUN. It exposed a phase/status return
+defect on unconfirmed EXECUTE. The corrected `$0A1E` candidate, BODY FNV
+`$26A2F3DC`, subsequently returned `$D7` with carry clear after `HCOLD`; its
+card held phase `$03`. The same cold run listed exactly one persistent object,
+reconstructed and validated its `AP 02 37 00` envelope, loaded entry `$3000`,
+and executed the `$A4` marker. Dedicated S19 carriers place both binary AP
+envelopes at `$3000`, avoiding raw-binary input to the monitor's S19 loader.
+Only post-append four-bank CRC isolation remains pending.

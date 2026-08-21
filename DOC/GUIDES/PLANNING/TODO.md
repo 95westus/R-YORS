@@ -50,8 +50,8 @@ package as a commit-last record, lists, reconstructs, validates, and loads/runs
 it through the frozen AP service. The host model covers a valid-log no-space
 case and all 76 write interruption points. The operator approved B1:8-E test
 media. B1:9 CLAIM, append, LIST, reconstruction, validation, and LOAD/RUN pass;
-the corrected failure-status return, cold persistence, and final CRC-isolation
-gates remain pending.
+the corrected `$D7` failure-status return and cold persistence also pass. Only
+the final CRC-isolation gate remains pending.
 Provisional resident `APS` and `Q` removal is intentionally deferred.
 
 - [x] **Compact `DC` text family.** `DC 'text'`
