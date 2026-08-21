@@ -14992,9 +14992,10 @@ hardware acceptance. The raw transcript is appended to the hardware log.
 
 ## 2026-08-20 AP Store V1 Single-Sector Mutation Slice
 
-Host status: accepted candidate. Board status: pending AP-bootstrap inventory
-and explicit sacrificial-sector CLAIM/FORMAT proof. The frozen ASM ABI is
-unchanged; resident HIMON changes only to admit the dedicated AP tool tray.
+Host status: accepted. Board status: AP-bootstrap inventory plus sacrificial
+CLAIM/FORMAT accepted on 2026-08-21; occupied-sector CONVERT remains pending
+separate approval. The frozen ASM ABI is unchanged; resident HIMON changes
+only to admit the dedicated AP tool tray.
 
 `make -C SRC ap-store-sector-tool-check` builds the standalone worker at
 `$7000-$7727` and the fixed AP v2 package
@@ -15043,3 +15044,43 @@ The maintained destructive procedure is
 [`AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md`](AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md).
 Board acceptance requires before/after four-bank CRC tables, persistent ACTIVE
 generation 1 after CLAIM, and persistent ACTIVE generation 2 after FORMAT.
+
+### 2026-08-21 CLAIM/FORMAT board acceptance
+
+HIMON/ASM-F2 `00.0821(0132)` installed from the Bank-3 8-E payload, loaded the
+1880-byte AP v2 envelope at `$3000`, admitted its fixed BODY at `$7000`, and
+printed all 24 inventory rows followed by `APSTORE OK`. The board exposed one
+procedure defect without weakening protection: HIMON `M 7C00 7C03` correctly
+returned `M PROT=$7C00`. Request and confirmation bytes were therefore written
+only by inspected helpers loaded into the documented user-free `$1A00` range.
+The maintained board card now records that method.
+
+The operator explicitly declared B1:8 sacrificial. CLAIM PREPARE returned
+status `$A0`, class header-FF, flags `$03`, next generation 1, and equal
+prepared/current CRC `0FE1`. EXECUTE returned `$AC`; its header card contained
+`AS1`, packed location `$18`, generation `$0001`, FNV `$E928684D`, erased
+reserved bytes, and staged state `$FF`. Resident `APS` independently reported
+`B/S=18 ACTIVE G=0001`. Across complete four-bank tables, only B1:8 changed:
+
+```text
+before CLAIM  B1:8 E1 0F
+after CLAIM   B1:8 56 F1
+```
+
+`HCOLD` cleared RAM and resident `APS` again reported ACTIVE generation 1.
+FORMAT PREPARE then returned class ACTIVE, flags `$02`, next generation 2, and
+equal CRC `F156`. FORMAT EXECUTE returned `$AC`; its new header card carried
+generation `$0002` and FNV `$0F2AE2B6`. An accidental immediate second
+`G 7006` returned `$E7`, proving confirmation had been consumed before any
+second bank selection or mutation. `APS` reported ACTIVE generation 2, and
+the next complete CRC table again changed only B1:8:
+
+```text
+before FORMAT B1:8 56 F1
+after FORMAT  B1:8 48 F2
+```
+
+Every other Bank 0-3 sector CRC matched exactly across both mutations. A final
+`HCOLD` preserved `B/S=18 ACTIVE G=0002`. This closes Slice 3 AP-bootstrap,
+CLAIM, FORMAT, commit-last, one-shot confirmation, isolation, and persistence
+proof. Destructive CONVERT of occupied opaque media remains a separate gate.

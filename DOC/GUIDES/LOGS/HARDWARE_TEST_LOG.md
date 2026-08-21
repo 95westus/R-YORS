@@ -24486,3 +24486,92 @@ The two `$7C10-$7C4F` tables match byte for byte across all 32 sectors in all
 four banks. Both status blocks are exactly `AC 00 00 00 00`. This proves that
 the intervening `APS` scan did not mutate flash, including the unscanned Bank
 3, and completes AP Store V1 implementation Slice 2 hardware acceptance.
+
+## 2026-08-21 AP Store V1 Slice 3 CLAIM/FORMAT Acceptance
+
+HIMON/ASM-F2 `00.0821(0132)` loaded the 1880-byte fixed AP v2 package at
+`$3000`, relocated its BODY to `$7000`, and completed the 24-sector inventory.
+The monitor correctly rejected direct card editing with `M PROT=$7C00`; the
+request and confirmation were written by inspected six- to nineteen-byte RAM
+helpers at `$1A00/$1A20`. The operator explicitly named B1:8 sacrificial.
+
+The pre-CLAIM baseline was:
+
+```text
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C20: E1 0F E1 0F E1 0F E1 0F | E1 0F E1 0F E1 0F 36 42
+7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C40: 83 61 92 C8 30 A1 DE 44 | 20 5C 18 7B 00 A8 A7 DD
+```
+
+CLAIM PREPARE and EXECUTE evidence:
+
+```text
+>G 7003
+GO 7003
+#GO# ENTRY=7003
+RET A=A0 X=FF Y=00 P=F5 S=FD NV-BdIzC
+>D 7C00 7C1F
+7C00: 01 01 08 00 E1 0F A0 00 | 03 01 00 00 00 00 E1 0F
+7C10: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF
+>G 7006
+GO 7006
+#GO# ENTRY=7006
+RET A=AC X=03 Y=0F P=B5 S=FD Nv-BdIzC
+>D 7C00 7C1F
+7C00: 01 01 08 00 E1 0F AC 00 | 03 01 00 00 00 00 E1 0F
+7C10: 41 53 31 18 01 00 4D 68 | 28 E9 FF FF FF FF FF FF
+>APS
+APS B/S=18 ACTIVE G=0001
+APS OK
+```
+
+The first post-write table changed only B1:8:
+
+```text
+7C20: 56 F1 E1 0F E1 0F E1 0F | E1 0F E1 0F E1 0F 36 42
+```
+
+After `HCOLD`, HIMON `00.0821(0132)` again reported
+`APS B/S=18 ACTIVE G=0001`. FORMAT PREPARE and EXECUTE evidence:
+
+```text
+>G 7003
+GO 7003
+#GO# ENTRY=7003
+RET A=A0 X=FF Y=06 P=B5 S=FD Nv-BdIzC
+>D 7C00 7C1F
+7C00: 03 01 08 00 56 F1 A0 04 | 02 02 00 00 00 00 56 F1
+7C10: 41 53 31 18 01 00 4D 68 | 28 E9 FF FF FF FF FF FE
+>G 7006
+GO 7006
+#GO# ENTRY=7006
+RET A=AC X=03 Y=0F P=B5 S=FD Nv-BdIzC
+>G 7006
+GO 7006
+#GO# ENTRY=7006
+RET A=E7 X=36 Y=30 P=F4 S=FD NV-BdIzc
+>D 7C00 7C1F
+7C00: 03 01 08 00 56 F1 E7 04 | 02 02 00 02 00 00 56 F1
+7C10: 41 53 31 18 02 00 B6 E2 | 2A 0F FF FF FF FF FF FF
+>APS
+APS B/S=18 ACTIVE G=0002
+APS OK
+```
+
+The second `G 7006` was an accidental but safe negative test: EXECUTE had
+already consumed `$A5`, so `$E7` returned before another flash operation. The
+first `$AC` and independent ACTIVE generation-2 scan prove FORMAT succeeded.
+The post-FORMAT table again changed only B1:8:
+
+```text
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C20: 48 F2 E1 0F E1 0F E1 0F | E1 0F E1 0F E1 0F 36 42
+7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C40: 83 61 92 C8 30 A1 DE 44 | 20 5C 18 7B 00 A8 A7 DD
+```
+
+A final `HCOLD` cleared RAM; resident `APS` still reported
+`B/S=18 ACTIVE G=0002` and `APS OK`. This accepts AP bootstrap, CLAIM, FORMAT,
+commit-last activation, confirmation consumption, isolation of all 31 other
+sectors, and cold persistence. Occupied-sector CONVERT remains unproven.

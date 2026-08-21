@@ -1,6 +1,7 @@
 # AP Store V1 Single-Sector Tool Board Test
 
-Status: host-accepted candidate; destructive board proof pending.
+Status: host-accepted; board-accepted for AP bootstrap, CLAIM, and FORMAT.
+Occupied-sector CONVERT remains pending separate operator approval and proof.
 
 This procedure qualifies implementation Slice 3. The S19 image is
 `SRC/BUILD/s19/ap-store-v1-sector-tool-7000.s19`; the fixed AP v2 package is
@@ -67,15 +68,29 @@ later attempt.
    `str8n-v1.2-bank-crc-all-3000.a` fixture.
 3. Load `ap-store-v1-sector-tool-7000.s19` through HIMON's RAM S19 loader, or
    load its AP package through resident `AP` and let inventory finish first.
-4. Set only the operation, bank, and sector. Example syntax for operation 01,
-   Bank 2, sector A:
+4. Set only the operation, bank, and sector. HIMON deliberately protects the
+   High Tool Overlay: `M 7C00 7C03` returns `M PROT=$7C00`. Use a short,
+   inspected RAM helper in the user-free `$1A00-$1FFF` range instead. The
+   generic helper is:
+
+```asm
+        ORG $1A00
+        LDA #operation
+        STA $7C00
+        LDA #bank
+        STA $7C01
+        LDA #sector
+        STA $7C02
+        STZ $7C03
+        RTS
+```
+
+   Load the helper through `L`, inspect its bytes with `D`, run it, and verify
+   the request before PREPARE:
 
 ```text
->M 7C00 7C03
-7C00: xx 01
-7C01: xx 02
-7C02: xx 0A
-7C03: xx
+>G 1A00
+>D 7C00 7C03
 >G 7003
 >D 7C00 7C1F
 ```
@@ -94,11 +109,20 @@ sector. A PREPARE transcript alone makes no flash-mutation claim.
 
 ## Explicit EXECUTE Gate
 
-After reviewing the PREPARE card, set only the confirmation byte and execute:
+After reviewing the PREPARE card, set only the confirmation byte with a
+separate inspected helper. The exact accepted helper at `$1A20` is:
 
 ```text
->M 7C03
-7C03: 00 A5
+>L
+L S19
+S1091A20A9A58D037C6002
+S9031A20C2
+L OK=0006 ENTRY=1A20
+>D 1A20 1A25
+1A20: A9 A5 8D 03 7C 60
+>G 1A20
+>D 7C03
+7C03: A5
 >G 7006
 >D 7C00 7C1F
 >APS
@@ -121,6 +145,31 @@ For CLAIM, bytes `$0010-$0FFF` must remain `$FF`. For FORMAT and CONVERT, the
 worker must erase and verify all 4096 bytes before writing the new header.
 Header bytes `$00-$0E` are written and verified first; state `$FE` is the final
 program operation.
+
+## Accepted CLAIM And FORMAT Proof
+
+On 2026-08-21, HIMON/ASM-F2 `00.0821(0132)` loaded the fixed `APSTORE` package
+at `$3000` and its BODY at `$7000`. Inventory returned all 24 rows and
+`APSTORE OK`. The operator named Bank 1 sector 8 sacrificial.
+
+CLAIM PREPARE classified B1:8 as header-FF with flags `$03`, generation 1, and
+matching CRC bytes `E1 0F`. EXECUTE returned `$AC`; the built header was
+`41 53 31 18 01 00 4D 68 28 E9 FF FF FF FF FF FF`, and resident `APS`
+reported `B/S=18 ACTIVE G=0001`. The four-bank CRC table changed only B1:8,
+from `E1 0F` to `56 F1`. `HCOLD` then preserved ACTIVE generation 1.
+
+FORMAT PREPARE classified the same sector ACTIVE with an erased record tail,
+flags `$02`, next generation 2, and matching CRC bytes `56 F1`. EXECUTE erased,
+verified, rebuilt, and committed the sector, returning `$AC`. A second
+unconfirmed `G 7006` immediately returned `$E7`; it did not select or mutate
+flash. The generation-2 header card was
+`41 53 31 18 02 00 B6 E2 2A 0F FF FF FF FF FF FF`, and `APS` reported
+`B/S=18 ACTIVE G=0002`. The next full CRC table changed only B1:8, from
+`56 F1` to `48 F2`. A final `HCOLD` preserved ACTIVE generation 2.
+
+This accepts AP bootstrap into the dedicated `$7000` tray, read-only PREPARE,
+CLAIM, FORMAT, commit-last activation, consumed confirmation, whole-bank
+isolation, and cold persistence. CONVERT is not accepted by this proof.
 
 ## Failure Expectations
 
