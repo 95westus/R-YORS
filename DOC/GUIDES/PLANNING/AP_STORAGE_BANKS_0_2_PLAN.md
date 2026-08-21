@@ -2,8 +2,8 @@
 
 Status: implementation in progress. Slices 1-4 are host- and board-accepted:
 format/inventory, managed-sector mutation, and single-sector object
-install/list/validate/load. Slice 5 arbitrary-sector chaining has a frozen
-host model; transient firmware remains pending.
+install/list/validate/load. Slice 5 arbitrary-sector chaining now has a frozen
+host model plus measured installer/reader firmware; board proof is pending.
 
 This plan introduces managed AP storage in selected 4K sectors of Banks 0-2
 without treating any whole bank as an AP volume. A bank may remain bootable or
@@ -399,11 +399,12 @@ without another mutation. The accepted transcript and remaining CONVERT gate
 are under `../ASM/AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md`.
 
 Slice 4 single-sector install/list/validate/load is host- and board-accepted
-on B1:9. Slice 5 host planning uses the accepted B1:9 tail plus nonadjacent
-B1:B as its golden two-sector chain; no board mutation is authorized until the
-transient installer/reader images, size checks, fault matrix, documentation,
-and explicit self-contained board card are complete. Occupied-sector CONVERT
-remains separately deferred.
+on B1:9. Slice 5 uses the accepted B1:9 tail plus nonadjacent B1:B as its
+golden two-sector chain. Its `$7000-$7900` installer and `$7000-$7825` reader,
+exact 4K AP fixture, size/package/static-policy checks, fault model, and
+self-contained board card are host-accepted. The remaining gate is the board
+procedure in `../ASM/AP_STORE_V1_CHAIN_TOOL_BOARD_TEST.md`. Occupied-sector
+CONVERT remains separately deferred.
 
 Each slice must measure STR8/HIMON/ASM resident CODE, DATA, UDATA, worker size,
 catalog capacity, and maximum RAM staging. A slice does not advance if it moves

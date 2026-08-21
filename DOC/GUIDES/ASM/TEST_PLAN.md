@@ -15143,8 +15143,9 @@ location. This completes Slice 4 host and board acceptance.
 
 ## 2026-08-21 AP Store V1 Arbitrary-Sector Chain Slice
 
-Host status: format/allocator model accepted. Firmware and board status:
-pending; this section authorizes no flash mutation.
+Host status: format/allocator model and transient firmware accepted. Board
+status: pending. The only board mutation path authorized by this candidate is
+the guarded B1:9/B1:B procedure in `AP_STORE_V1_CHAIN_TOOL_BOARD_TEST.md`.
 
 Slice 5 retains the frozen `AS1`/`AR` bytes and complete AP v2 stored unit.
 There are no next-sector pointers. The request names one bank and an explicit
@@ -15171,3 +15172,18 @@ after 4,138 append actions. Every one of the 4,138 interruption boundaries is
 non-live. The model also rejects a zero mask, selected unmanaged sector,
 single-sector no-space, duplicate generation, logical gap, overlap, and
 repeated sector, and proves no mutation outside B1:9/B1:B.
+
+`make -C SRC ap-store-chain-tool-check` builds and checks both fixed APs and
+their `$4000` S19 carriers. The installer is 2305 bytes at `$7000-$7900`; the
+reader is 2086 bytes at `$7000-$7825`. The check proves the reader contains no
+flash byte-program routine, PLAN does not directly reach mutation code,
+EXECUTE contains confirmation/source/catalog checks before programming, all
+entry stubs and AP BODY bytes match their linked S19 images, and the APBIG
+fixture is exactly `$1000` bytes with a 4050-byte BODY. The fixture package
+FNV is `$85A60A1D`. Static helpers are byte-checked at `$1A00/$1A40`.
+
+The board candidate uses the accepted B1:9 tail and CLAIMs only B1:B after an
+explicit `HEADER-FF`/CRC gate. Expected PLAN capacity is `$1F6A`; the prepared
+rows are B1:9 `09 01 5C 00 00 00 8F 0F 15 69` and B1:B
+`0B 02 10 00 8F 0F 71 00 77 58`. Every load/assembly input is named, and all
+tiny helpers are reproduced as full S19 text in the board card.

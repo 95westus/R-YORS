@@ -15,6 +15,16 @@
                         MODULE          AP_STORE_V1_SECTOR_TOOL
 
                         XDEF            START
+                        IF              APSC_CHAIN_BUILD
+                        IF              APSC_CHAIN_READER_BUILD
+                        XDEF            APSC_LIST
+                        XDEF            APSC_VALIDATE
+                        XDEF            APSC_LOAD
+                        ELSE
+                        XDEF            APSC_INSTALL_PLAN
+                        XDEF            APSC_INSTALL_EXECUTE
+                        ENDIF
+                        ELSE
                         IF              APSO_OBJECT_BUILD
                         XDEF            APSO_LIST
                         XDEF            APSO_INSTALL_PREPARE
@@ -25,6 +35,7 @@
                         XDEF            APSW_INVENTORY
                         XDEF            APSW_PREPARE
                         XDEF            APSW_EXECUTE
+                        ENDIF
                         ENDIF
 
                         INCLUDE         "str8n-public.inc"
@@ -60,6 +71,10 @@ APSW_ERASE_TIMEOUT_HI   EQU             $08
 APSW_WRITE_TIMEOUT_HI   EQU             $02
 
                         CODE
+
+                        IF              APSC_CHAIN_BUILD
+                        INCLUDE         "ASM/ap-store-v1-chain-tool.inc"
+                        ELSE
 
 START:
                         IF              APSO_OBJECT_BUILD
@@ -2120,6 +2135,8 @@ APSW_CLASS_TEXT_HI:     DB              >APSW_TEXT_HEADER_FF,>APSW_TEXT_OPAQUE
                         DB              >APSW_TEXT_CORRUPT,>APSW_TEXT_STAGED
                         DB              >APSW_TEXT_ACTIVE,>APSW_TEXT_RETIRED
                         DB              >APSW_TEXT_BAD,>APSW_TEXT_RETIRED_BAD
+                        ENDIF
+
                         ENDIF
 
                         ENDMOD

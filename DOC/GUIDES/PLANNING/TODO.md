@@ -56,14 +56,18 @@ and preserved all other 31 sectors, completing Slice 4 board acceptance.
 Multi-sector object chaining is now the active AP-store implementation slice.
 Provisional resident `APS` and `Q` removal is intentionally deferred.
 
-Slice 5 host contract (in progress): no on-media format or ASM ABI change. A
+Slice 5 host candidate (board proof pending): no on-media format or ASM ABI
+change. A
 single-bank sector mask names the allowed arbitrary sectors; deterministic
 allocation emits at most one logical extent per sector. PLAN snapshots every
 used tail and sector CRC, partial committed prefixes remain non-live, and a
 retry must use a new generation. Separate `$7000` installer and reader APs
 share card `$7C80-$7D3F` to remain below HIMON's `$7A00` command buffer. The
 golden model fills B1:9 with `$0F8F` bytes and continues `$0071` bytes in
-nonadjacent B1:B, covering all 4,138 interrupted byte-write boundaries.
+nonadjacent B1:B, covering all 4,138 interrupted byte-write boundaries. The
+separate installer and reader link at `$7000-$7900` and `$7000-$7825`; their
+AP envelopes, `$4000` carriers, exact `$1000` fixture, static mutation split,
+and self-contained named-file/full-helper-S19 board card pass host checks.
 
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit
