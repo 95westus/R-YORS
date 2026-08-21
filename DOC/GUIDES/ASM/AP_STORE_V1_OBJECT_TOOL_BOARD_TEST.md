@@ -1,6 +1,6 @@
 # AP Store V1 Single-Sector Object Tool Board Test
 
-Status: host-accepted; board proof pending.
+Status: host-accepted; board-accepted on 2026-08-21.
 
 This procedure qualifies implementation Slice 4: append one complete AP v2
 package to one already-managed sector, list its record, reconstruct and
@@ -158,8 +158,8 @@ and `$0006/$1A40`, respectively. The CRC item is ASM source: paste it into
     and reconstruction independent of prior RAM.
 
 Append the raw transcript and all CRC tables to
-`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`. Do not mark Slice 4 accepted until the
-cold path passes.
+`DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`. Slice 4 acceptance requires both the
+cold path and the post-append four-bank CRC isolation comparison.
 
 ## Failure Statuses
 
@@ -181,5 +181,7 @@ reconstruction, validation, and LOAD/RUN. It also exposed that four direct
 EXECUTE rejection exits returned the failure phase in `A` even though the card
 held the correct status. After correction, a cold run returned `$D7` with
 carry clear, listed exactly one persistent object, reconstructed and validated
-it, and loaded/ran the `$A4` marker. Only final CRC isolation remains required
-before board acceptance.
+it, and loaded/ran the `$A4` marker. The final CRC table changed only B1:9,
+from bytes `3E 40` (CRC `$403E`) after CLAIM to `15 69` (CRC `$6915`) after
+append; all other 31 sector CRCs matched exactly. This completes Slice 4 board
+acceptance.

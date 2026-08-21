@@ -50,8 +50,10 @@ package as a commit-last record, lists, reconstructs, validates, and loads/runs
 it through the frozen AP service. The host model covers a valid-log no-space
 case and all 76 write interruption points. The operator approved B1:8-E test
 media. B1:9 CLAIM, append, LIST, reconstruction, validation, and LOAD/RUN pass;
-the corrected `$D7` failure-status return and cold persistence also pass. Only
-the final CRC-isolation gate remains pending.
+the corrected `$D7` failure-status return and cold persistence also pass. The
+final CRC table changed only B1:9 (`3E 40` to `15 69`, CRC `$403E` to `$6915`)
+and preserved all other 31 sectors, completing Slice 4 board acceptance.
+Multi-sector object chaining remains the next AP-store implementation slice.
 Provisional resident `APS` and `Q` removal is intentionally deferred.
 
 - [x] **Compact `DC` text family.** `DC 'text'`

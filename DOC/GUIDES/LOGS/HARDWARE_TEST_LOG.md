@@ -24661,3 +24661,37 @@ at `$0A00`, and LOAD/RUN resolved entry `$3000` and executed the marker that
 wrote `$A4` to `$1A00`. This accepts corrected status return, cold catalog
 reconstruction, integrity validation, and persistent execution. The final
 post-append four-bank CRC isolation comparison remains outstanding.
+
+## 2026-08-21 AP Store V1 Slice 4 CRC Isolation Acceptance
+
+The maintained read-only `str8n-v1.2-bank-crc-all-3000.a` fixture was assembled
+unchanged under HIMON/ASM-F2 `00.0821(0132)` after the accepted B1:9 append and
+cold-persistence run. Verbatim execution tail:
+
+```text
+ASM OK
+SEAL> .
+ASM BYE
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7C00 7C04
+7C00: AC 00 00 00 00 | .....
+>D 7C10 7C4F
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0 | yU..............
+7C20: 48 F2 15 69 E1 0F E1 0F | E1 0F E1 0F E1 0F 36 42 | H..i..........6B
+7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0 | yU..............
+7C40: 83 61 92 C8 30 A1 DE 44 | 20 5C 18 7B 00 A8 A7 DD | .a..0..D \.{....
+>
+```
+
+The fixture returned `$AC` with bank, sector, and failure address all zero.
+Against the recorded post-CLAIM baseline, B1:9 alone changed from CRC bytes
+`3E 40` (`$403E` in conventional numeric display) to `15 69` (`$6915`). B1:8
+remained `48 F2`; every other Bank 0-3 sector pair matched byte for byte. This
+accepts target isolation and completes AP Store V1 implementation Slice 4:
+single-sector append, commit-last interruption safety, LIST, reconstruction,
+AP validation, LOAD/RUN, corrected rejection status, cold persistence, and
+whole-flash CRC isolation.

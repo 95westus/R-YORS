@@ -15087,8 +15087,9 @@ proof. Destructive CONVERT of occupied opaque media remains a separate gate.
 
 ## 2026-08-21 AP Store V1 Single-Sector Object Slice
 
-Host status: accepted. Board status: pending on the operator-approved B1:8-E
-media range. B1:F remains excluded.
+Host status: accepted. Board status: accepted on B1:9 on 2026-08-21. The
+operator-approved B1:8-E range remains the only test-media authority; B1:F
+remains excluded.
 
 `make -C SRC ap-store-object-tool-check` builds a separate fixed `APOBJ` AP v2
 tool rather than enlarging the accepted Slice 3 image. The Slice 3 `APSTORE`
@@ -15135,4 +15136,7 @@ card held phase `$03`. The same cold run listed exactly one persistent object,
 reconstructed and validated its `AP 02 37 00` envelope, loaded entry `$3000`,
 and executed the `$A4` marker. Dedicated S19 carriers place both binary AP
 envelopes at `$3000`, avoiding raw-binary input to the monitor's S19 loader.
-Only post-append four-bank CRC isolation remains pending.
+The final post-append CRC table changed only B1:9, from bytes `3E 40` (CRC
+`$403E`) after CLAIM to `15 69` (CRC `$6915`) after append. All other 31 Bank
+0-3 sector CRCs matched exactly and the fixture returned `$AC` with no failure
+location. This completes Slice 4 host and board acceptance.
