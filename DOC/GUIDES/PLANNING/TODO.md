@@ -35,9 +35,9 @@ append-only delete, and deferred compaction.
 Current evidence (2026-08-20): format-oracle and read-only-inventory host
 slices pass. The provisional HIMON `APS` path scans exactly 24 headers without
 flash mutation and measures its resident/RAM cost. Its functional board scan
-passes; matching before/after CRC tables remain open. These queue items remain
-open until the preservation continuation, later mutation/load slices, and
-required board proof agree.
+and matching before/after four-bank CRC tables pass, completing Slice 2. These
+queue items remain open until the later mutation/load slices and their required
+board proof agree.
 
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit

@@ -14917,9 +14917,8 @@ transcripts remain unchanged as historical evidence.
 
 ## 2026-08-20 AP Store V1 Read-Only Inventory Slice
 
-Host status: accepted candidate. Board status: functional scan accepted;
-before/after CRC preservation continuation pending. This slice performs no
-flash mutation by design.
+Host status: accepted. Board status: accepted. This slice performs no flash
+mutation.
 
 HIMON now carries a provisional `APS` command whose Bank-3-resident loop scans
 exactly Banks 0-2 and sectors `$8-$F`. Before the first bank switch it copies a
@@ -14963,8 +14962,7 @@ margin to STR8      39 bytes, $EFD9-$EFFF
 ```
 
 The command spelling and final diagnostics remain provisional until the
-operator-hardening slice. Board proof must capture one continuous 24-row scan
-and matching before/after full-bank CRCs before Slice 2 is hardware-accepted.
+operator-hardening slice.
 
 ### Functional board continuation
 
@@ -14975,8 +14973,19 @@ distinction: Bank-0:F and Bank-2:F were full-sector `USED` while their first 16
 bytes were `$FF`; Bank-1:8-E were erased and also `HEADER-FF`; Bank-1:F was
 occupied and `OPAQUE`. The raw transcript is appended to the hardware log.
 
-The only remaining Slice-2 board gate is byte-preservation evidence. Assemble
-the maintained `str8n-v1.2-bank-crc-all-3000.a` fixture, capture its
-`$7C10-$7C4F` table, run `APS`, rerun `G 3000`, and capture the regenerated
-table. The two 64-byte CRC tables must match exactly. `$7C00` must be `$AC`
-after each CRC run; `APS` is expected to overwrite that overlay between runs.
+### CRC preservation board acceptance
+
+The maintained `str8n-v1.2-bank-crc-all-3000.a` fixture returned `$AC` with
+zero failure cells before and after `APS`. Both `$7C10-$7C4F` CRC tables are
+byte-for-byte identical:
+
+```text
+B0 79 55 07 D5 D0 AC DF EF DF EF DF EF DF EF 07 D0
+B1 E1 0F E1 0F E1 0F E1 0F E1 0F E1 0F E1 0F 36 42
+B2 79 55 07 D5 D0 AC DF EF DF EF DF EF DF EF 07 D0
+B3 83 61 92 C8 30 A1 42 AE 17 FD 29 AB 5B 89 87 DA
+```
+
+`APS` was the only operation between the two complete four-bank CRC runs. This
+closes byte preservation, including unscanned Bank 3, and completes Slice 2
+hardware acceptance. The raw transcript is appended to the hardware log.

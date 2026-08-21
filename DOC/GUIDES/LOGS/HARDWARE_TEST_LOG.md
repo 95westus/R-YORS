@@ -24420,3 +24420,69 @@ This accepts the functional scan, ordering, physical-location presentation,
 `HEADER-FF` semantics, Bank-3 exclusion, and normal return. It does not yet
 close flash-preservation proof because the capture contains no matching full-
 bank CRC tables immediately before and after `APS`.
+
+## 2026-08-20 AP Store V1 Inventory CRC Preservation Acceptance
+
+The maintained `str8n-v1.2-bank-crc-all-3000.a` fixture was assembled after
+`HCOLD`. It returned `$AC` with all failure cells zero, then `APS` completed its
+24-row scan, and the unchanged fixture was run again. Verbatim execution
+continuation:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7C00 7C04
+7C00: AC 00 00 00 00 | .....
+>D 7C10 7C4F
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0 | yU..............
+7C20: E1 0F E1 0F E1 0F E1 0F | E1 0F E1 0F E1 0F 36 42 | ..............6B
+7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0 | yU..............
+7C40: 83 61 92 C8 30 A1 42 AE | 17 FD 29 AB 5B 89 87 DA | .a..0.B...).[...
+>APS
+APS B/S=08 OPAQUE
+APS B/S=09 OPAQUE
+APS B/S=0A OPAQUE
+APS B/S=0B OPAQUE
+APS B/S=0C OPAQUE
+APS B/S=0D OPAQUE
+APS B/S=0E OPAQUE
+APS B/S=0F HEADER-FF
+APS B/S=18 HEADER-FF
+APS B/S=19 HEADER-FF
+APS B/S=1A HEADER-FF
+APS B/S=1B HEADER-FF
+APS B/S=1C HEADER-FF
+APS B/S=1D HEADER-FF
+APS B/S=1E HEADER-FF
+APS B/S=1F OPAQUE
+APS B/S=28 OPAQUE
+APS B/S=29 OPAQUE
+APS B/S=2A OPAQUE
+APS B/S=2B OPAQUE
+APS B/S=2C OPAQUE
+APS B/S=2D OPAQUE
+APS B/S=2E OPAQUE
+APS B/S=2F HEADER-FF
+APS OK
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7C00 7C04
+7C00: AC 00 00 00 00 | .....
+>D 7C10 7C4F
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0 | yU..............
+7C20: E1 0F E1 0F E1 0F E1 0F | E1 0F E1 0F E1 0F 36 42 | ..............6B
+7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0 | yU..............
+7C40: 83 61 92 C8 30 A1 42 AE | 17 FD 29 AB 5B 89 87 DA | .a..0.B...).[...
+>
+```
+
+The two `$7C10-$7C4F` tables match byte for byte across all 32 sectors in all
+four banks. Both status blocks are exactly `AC 00 00 00 00`. This proves that
+the intervening `APS` scan did not mutate flash, including the unscanned Bank
+3, and completes AP Store V1 implementation Slice 2 hardware acceptance.
