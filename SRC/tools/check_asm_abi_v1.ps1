@@ -3,7 +3,7 @@ param(
     [string]$AsmSourcePath = "ASM/asm-v1-core.asm",
     [string]$HimonSourcePath = "HIMON/himon.asm",
     [string]$HimonSharedPath = "HIMON/himon-shared-eq.inc",
-    [string]$PackagePath = "BUILD/bin/asm-session-report-v1.2-4800.ap.bin"
+    [string]$PackagePath = "BUILD/bin/asm-session-report-v1.2-7000.ap.bin"
 )
 
 $ErrorActionPreference = 'Stop'

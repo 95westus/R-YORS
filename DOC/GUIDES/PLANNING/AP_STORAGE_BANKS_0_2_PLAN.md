@@ -71,7 +71,7 @@ claiming the low-RAM worker/staging lifecycle. This rule avoids hidden permanent
 RAM and prevents a destroyed symbol table from appearing resumable.
 
 The supported evidence order is report before store. A session reporter AP is
-loaded at its execution address before `ASM NEW`; after the target reaches END
+loaded at `$7000` before `ASM NEW`; after the target reaches END
 and SEAL, the reporter runs while `$0200-$19FF` still contains that session's
 tables. Control then resumes the post-END shell, PACKAGE writes the target AP v2
 envelope into caller-selected RAM, and STORE is the final session operation.
@@ -86,6 +86,20 @@ run reporter against intact session tables
 resume post-END shell -> PACKAGE -> STORE
 ASM NEW before any later assembly/report
 ```
+
+A later optional ASM entry may automate the first step. Conceptually,
+`ASM NEW REPORT` would use AP Store while no ASM session owns the low tables,
+load the `ASMREPORT` export at `$7000`, reserve `$7000-$771A` from that
+session's output policy, and only then call `ASM_BEGIN`. The exact spelling is
+not frozen. It must fail before beginning the session if the reporter is
+absent, invalid, or does not fit; it must not silently start without a
+requested reporter.
+
+The former fixed `$4800` reporter is historical. Its source and hardware
+transcripts remain under `SAMPLES/OLD` and the hardware log, but current builds
+do not regenerate a `$4800` S19 or AP package. The current host proof package
+is fixed at `$7000`; the separately generated movable ASM-native reporter
+remains available for the existing `$4000` load workflow.
 
 LIST may stream output without the 4K staging area. VALIDATE/LOAD claim the 4K
 staging area and are unavailable while a resumable ASM session owns the low

@@ -14908,3 +14908,9 @@ AP before `ASM NEW`, assemble and seal the target, run the reporter against the
 intact low tables, resume the post-END shell, then PACKAGE and STORE last. This
 preserves the reporter as an AP without allocating another worker or staging
 arena.
+
+The active fixed reporter proof has moved from historical `$4800` to `$7000`.
+`asm-session-report-v1.2-7000.s19` now supplies
+`asm-session-report-v1.2-7000.ap.bin` for the ABI/AP v2 gates. Current builds no
+longer link or package a `$4800` reporter; its ASM-native source and raw board
+transcripts remain unchanged as historical evidence.

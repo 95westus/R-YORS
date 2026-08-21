@@ -1,5 +1,5 @@
 param(
-    [string]$PackagePath = "BUILD/bin/asm-session-report-v1.2-4800.ap.bin",
+    [string]$PackagePath = "BUILD/bin/asm-session-report-v1.2-7000.ap.bin",
     [string]$AsmSourcePath = "ASM/asm-v1-core.asm",
     [string]$AsmFlashSourcePath = "ASM/asm-v1-flash.asm",
     [string]$RuntimePasteSourcePath = "PROOFS/asm-v1-runtime-paste.asm",

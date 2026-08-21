@@ -816,7 +816,9 @@ G 4000
 ```
 
 `make -C SRC asm-session-report` also builds the explicit reporter artifacts.
-The host-built RAM reporter is `SRC/BUILD/s19/asm-session-report-v1.2-7000.s19`.
+The host-built RAM reporter is `SRC/BUILD/s19/asm-session-report-v1.2-7000.s19`;
+the matching fixed AP proof package is
+`SRC/BUILD/bin/asm-session-report-v1.2-7000.ap.bin`.
 Load it before the ASM session to inspect, then after `END` and `.` run
 `G 7000`.
 For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-v1.2-ap-2000.a`
@@ -824,7 +826,7 @@ is a compact, pasteable `.a` source. It prints the split low-RAM pools, the
 `$2000/$3000/$4000` islands, high UDATA, safe output, and volatile regions.
 Its complete internal body self-relocates; its current ASM helper/table calls
 remain map-matched. The legacy
-`SAMPLES/OLD/asm-session-report-4800.a` fixed-load source and
+`SAMPLES/OLD/asm-session-report-4800.a` historical fixed-load source and
 `SAMPLES/OLD/asm-session-report-transient-7000.a` non-flash/runtime-paste
 source are retained in the archive.
 
@@ -844,10 +846,11 @@ ASM NEW
 G 4000
 ```
 
-For an existing legacy package, substitute `$4800` in both commands. That
-older body is not load-relocatable: loading it elsewhere lets its literal
-`$48xx` calls escape the body. Either form also fails when its hard-coded ASM
-helper/table addresses no longer match the running ASM-F2 map.
+The `$4800` reporter is no longer an active build artifact. Its source and
+board evidence remain historical. Current fixed host builds use `$7000`; the
+movable `$4000` form remains preferred for stored use. A future optional ASM
+entry may preload `ASMREPORT` at `$7000` before `ASM_BEGIN` and reserve its span
+from that session's output range.
 
 If `PACKAGE ASMREPORT 3000` reports `PKG ERR=$02`, regenerate the reporter source with
 `make -C SRC asm-session-report`; older generated sources could assemble but

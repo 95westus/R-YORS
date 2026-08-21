@@ -45,7 +45,7 @@ $rows = @(
     [pscustomobject]@{ Target = "bank3-erase-legacy"; Category = "archive"; Description = "Build the archived pre-split Bank-3 erase proof; do not run on split V1." }
     [pscustomobject]@{ Target = "asm-flash"; Category = "asm"; Description = "Alias for asm-v1-flash." }
     [pscustomobject]@{ Target = "asm-v1-flash"; Category = "asm"; Description = "Build flash ASM at 8000: BUILD/s19/asm-v1-flash-8000.s19." }
-    [pscustomobject]@{ Target = "asm-session-report-ap-bin"; Category = "asm"; Description = "Build fixed-address AP package for the ASM session reporter: BUILD/bin/asm-session-report-v1.2-4800.ap.bin." }
+    [pscustomobject]@{ Target = "asm-session-report-ap-bin"; Category = "asm"; Description = "Build the transient ASM session reporter AP fixed at 7000: BUILD/bin/asm-session-report-v1.2-7000.ap.bin." }
     [pscustomobject]@{ Target = "asm-test"; Category = "asm"; Description = "Run the full ASM smoke/proof build set." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
     [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }
