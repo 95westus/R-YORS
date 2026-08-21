@@ -227,6 +227,7 @@ APSC_STATUS_INCOMPLETE      EQU             $DD
 APSC_STATUS_CONFLICT        EQU             $DE
 APSC_STATUS_TOO_MANY        EQU             $DF
 APSC_STATUS_CROSS_BANK      EQU             $E0
+APSC_STATUS_ALREADY_DELETED EQU             $E1
 
 APSC_PHASE_NONE             EQU             $00
 APSC_PHASE_SOURCE           EQU             $01
@@ -238,6 +239,47 @@ APSC_PHASE_PAYLOAD          EQU             $06
 APSC_PHASE_COMMIT           EQU             $07
 APSC_PHASE_RESTORE          EQU             $08
 APSC_PHASE_VALIDATE         EQU             $09
+
+; Slice 6 reuses the private Slice 5 card only while its mutually exclusive
+; catalog/delete AP is loaded.  These aliases keep the loaded images small and
+; add no resident or permanent RAM.
+APSD_LIVE_LO                EQU             APSC_CARD_BASE+$0E
+APSD_LIVE_HI                EQU             APSC_CARD_BASE+$0F
+APSD_STALE_LO               EQU             APSC_CARD_BASE+$10
+APSD_STALE_HI               EQU             APSC_CARD_BASE+$11
+APSD_FREE_LO                EQU             APSC_CARD_BASE+$12
+APSD_FREE_HI                EQU             APSC_CARD_BASE+$13
+APSD_BLOCKED_LO             EQU             APSC_CARD_BASE+$14
+APSD_BLOCKED_HI             EQU             APSC_CARD_BASE+$15
+APSD_TARGET_SECTOR          EQU             APSC_CARD_BASE+$18
+APSD_TARGET_OFF_LO          EQU             APSC_CARD_BASE+$19
+APSD_TARGET_OFF_HI          EQU             APSC_CARD_BASE+$1A
+APSD_TARGET_CRC_LO          EQU             APSC_CARD_BASE+$1B
+APSD_TARGET_CRC_HI          EQU             APSC_CARD_BASE+$1C
+APSD_PREP_CHUNK_COUNT       EQU             APSC_CARD_BASE+$1D
+APSD_MODE                   EQU             APSC_CARD_BASE+$1E
+APSD_CEILING_LO             EQU             APSC_CARD_BASE+$1F
+APSD_CEILING_HI             EQU             APSC_PREP_BASE+$00
+APSD_RESOLVED_GEN_LO        EQU             APSC_PREP_BASE+$01
+APSD_RESOLVED_GEN_HI        EQU             APSC_PREP_BASE+$02
+APSD_PREP_BANK              EQU             APSC_PREP_BASE+$03
+APSD_PREP_MASK              EQU             APSC_PREP_BASE+$04
+APSD_PREP_OBJECT_LO         EQU             APSC_PREP_BASE+$05
+APSD_PREP_OBJECT_HI         EQU             APSC_PREP_BASE+$06
+APSD_PREP_GEN_LO            EQU             APSC_PREP_BASE+$07
+APSD_PREP_GEN_HI            EQU             APSC_PREP_BASE+$08
+APSD_PREP_LENGTH_LO         EQU             APSC_PREP_BASE+$09
+APSD_PREP_LENGTH_HI         EQU             APSC_PREP_BASE+$0A
+APSD_PREP_FNV0              EQU             APSC_PREP_BASE+$0B
+APSD_PREP_FNV1              EQU             APSC_PREP_BASE+$0C
+APSD_PREP_FNV2              EQU             APSC_PREP_BASE+$0D
+APSD_PREP_FNV3              EQU             APSC_PREP_BASE+$0E
+
+APSD_MODE_EXACT             EQU             $00
+APSD_MODE_FIND              EQU             $01
+APSD_MODE_REPORT            EQU             $02
+APSD_MODE_EXECUTE           EQU             $03
+APSD_MODE_INSPECT           EQU             $04
 
 APSW_OP_CLAIM               EQU             $01
 APSW_OP_CONVERT             EQU             $02

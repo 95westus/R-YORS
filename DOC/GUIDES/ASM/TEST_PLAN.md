@@ -15203,3 +15203,52 @@ The reader listed exactly `O=0002 G=0001 L=1000`, reconstructed and validated
 independently reloaded reader repeated LIST, VALIDATE, and LOAD/RUN, `APS`
 again found both sectors ACTIVE generation 1, and all 32 CRC words exactly
 matched the post-chain table. This closes Slice 5 board acceptance.
+
+## 2026-08-21 AP Store V1 Delete And Exhaustion Slice
+
+Host status: accepted candidate. Board status: pending on the accepted
+B1:9/B1:B Slice 5 media. The maintained procedure is
+[`AP_STORE_V1_SLICE6_BOARD_TEST.md`](AP_STORE_V1_SLICE6_BOARD_TEST.md).
+
+Slice 6 adds no resident code, RAM allocation, ASM ABI value, or on-media
+format. Tombstones use the frozen `AR` type `$02` and occupy exactly 21 bytes:
+a 20-byte header with zero flags/logical offset/length, reserved `$FF`, empty
+FNV-1a `$811C9DC5`, header CRC16, then commit-last `$A5`.
+
+The effective `$7A00` HIMON command-buffer boundary is a build gate. To keep
+each transient AP small, `make -C SRC ap-store-slice6-tool-check` builds three
+fixed variants that share scanner/reconstruction primitives but never coexist
+in the `$7000` tray:
+
+```text
+APNEW   reader LIST/VALIDATE/LOAD   $7000-$797F   2432 bytes
+APPLAN  read-only DELETE PLAN       $7000-$7927   2344 bytes
+APDEL   confirmed tombstone write   $7000-$770A   1803 bytes
+```
+
+APPLAN and APDEL have inert `RTS/NOP/NOP` entries at `$7000`; their operation
+entry is `$7003`. APNEW contains no flash byte-program routine. APPLAN contains
+no mutation routine and reports object/mask physical byte counts through the
+card as LIVE, STALE, FREE, and BLOCKED. APDEL consumes `$A5`, compares the
+request, every target-chain sector CRC, the selected append offset and CRC,
+and the complete target-record count across all eight sectors before writing
+the tombstone header and final commit.
+
+The host media model proves newest-visible selection with an incomplete newer
+generation, exact deletion, fallback to the next older live generation,
+complete AP-invalid newest rejection without rollback, all 21 interruption
+boundaries, repeat-delete `ALREADY DELETED`, exact space counters, and
+deterministic NO_SPACE without reuse. The linked-image gate proves all entry
+stubs, `$7A00` limits, AP BODY/S19 equality, exact `$4000` carriers, mutation
+separation, empty-FNV header constants, and header-before-commit ordering.
+
+The board candidate first resolves object `$0002` generation `$0001` through
+APNEW, then expects APPLAN counters LIVE `$102A`, STALE `$0000`, FREE `$0F6A`,
+BLOCKED `$0000`. Deterministic selection is B1:B offset `$0096`, CRC `$60E7`.
+The exact record is
+`41 52 01 02 00 FF 02 00 01 00 00 00 00 00 C5 9D 1C 81 AB 45 A5`.
+After commit, exact lookup must return `$E1` and newest lookup `$DB`; cold
+repetition proves persistence. This zero-payload tombstone is CRC-neutral
+against its erased 21-byte tail, so the maintained card requires the complete
+post-delete CRC table to remain identical and uses catalog results—not a
+fabricated CRC delta—as the publication proof.

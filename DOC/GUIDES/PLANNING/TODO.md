@@ -54,7 +54,7 @@ the corrected `$D7` failure-status return and cold persistence also pass. The
 final CRC table changed only B1:9 (`3E 40` to `15 69`, CRC `$403E` to `$6915`)
 and preserved all other 31 sectors, completing Slice 4 board acceptance.
 Slice 5 arbitrary-sector chaining is now accepted; Slice 6 delete and
-exhaustion is the active AP-store implementation slice. Provisional resident
+exhaustion has a host-accepted candidate and is at the board gate. Provisional resident
 `APS` and `Q` removal is intentionally deferred.
 
 Slice 5 is host- and board-accepted with no on-media format or ASM ABI
@@ -85,6 +85,15 @@ live generation, while a complete AP-invalid newer generation is an integrity
 error rather than an implicit rollback. Implementation should favor separate
 fixed transient AP variants and shared primitives to minimize each loaded
 image; no resident RAM or ABI allocation is authorized.
+
+The host candidate follows that split: APNEW is 2432 bytes, read-only APPLAN
+is 2344 bytes, and APDEL is 1803 bytes. All end below `$7A00`; only APDEL
+contains byte-program code, and both APPLAN/APDEL enter safely through an inert
+`$7000` stub before their `$7003` operation. The host model covers all 21
+tombstone interruption cuts, newest/exact visibility, older-generation
+fallback, AP-invalid rollback refusal, exact LIVE/STALE/FREE/BLOCKED counts,
+repeat-delete `$E1`, and no-space without reuse. Board proof on the accepted
+B1:9/B1:B chain is next.
 
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit

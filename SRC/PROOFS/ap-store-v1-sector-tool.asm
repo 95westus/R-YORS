@@ -16,6 +16,21 @@
 
                         XDEF            START
                         IF              APSC_CHAIN_BUILD
+                        IF              APSC_SLICE6_BUILD
+                        IF              APSC_DELETE_EXECUTOR_BUILD
+                        XDEF            APSD_SAFE
+                        XDEF            APSD_DELETE_EXECUTE
+                        ELSE
+                        IF              APSC_SLICE6_READER_BUILD
+                        XDEF            APSD_LIST
+                        XDEF            APSD_VALIDATE
+                        XDEF            APSD_LOAD
+                        ELSE
+                        XDEF            APSD_SAFE
+                        XDEF            APSD_DELETE_PLAN
+                        ENDIF
+                        ENDIF
+                        ELSE
                         IF              APSC_CHAIN_READER_BUILD
                         XDEF            APSC_LIST
                         XDEF            APSC_VALIDATE
@@ -23,6 +38,7 @@
                         ELSE
                         XDEF            APSC_INSTALL_PLAN
                         XDEF            APSC_INSTALL_EXECUTE
+                        ENDIF
                         ENDIF
                         ELSE
                         IF              APSO_OBJECT_BUILD

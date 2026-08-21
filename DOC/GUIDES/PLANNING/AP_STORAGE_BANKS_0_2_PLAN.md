@@ -2,8 +2,9 @@
 
 Status: implementation in progress. Slices 1-5 are host- and board-accepted:
 format/inventory, managed-sector mutation, single-sector object operations,
-and arbitrary-sector same-bank chaining. Slice 6 delete and exhaustion is
-next; compaction remains explicitly deferred.
+and arbitrary-sector same-bank chaining. Slice 6 delete and exhaustion now has
+a host-accepted three-image candidate and awaits board proof; compaction
+remains explicitly deferred.
 
 This plan introduces managed AP storage in selected 4K sectors of Banks 0-2
 without treating any whole bank as an AP volume. A bank may remain bootable or
@@ -404,7 +405,9 @@ host fault matrix and board proof.
    reconstruction/streaming, duplicate/gap/cycle rejection, and same-bank
    enforcement.
 6. **Delete and exhaustion.** Add tombstones, generation selection, stale-space
-   reporting, and deterministic no-space behavior without reuse.
+   reporting, and deterministic no-space behavior without reuse. Host-accepted
+   candidate: separate `$7000` APNEW reader, read-only APPLAN, and confirmed
+   APDEL executor, all below HIMON's `$7A00` command buffer.
 7. **Operator hardening.** Freeze command syntax, confirmations, diagnostics,
    cancellation behavior, and recovery instructions.
 

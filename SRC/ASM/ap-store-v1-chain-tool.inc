@@ -46,6 +46,25 @@ APSC_TMP_SWAP           EQU             APSC_RECORD_HEADER_BASE+$30
 APSC_PACKAGE_BUFFER     EQU             $0A00
 
 START:
+                        IF              APSC_SLICE6_BUILD
+                        IF              APSC_DELETE_EXECUTOR_BUILD
+APSD_SAFE:              RTS
+                        NOP
+                        NOP
+APSD_DELETE_EXECUTE:    JMP             APSD_DELETE_EXECUTE_BODY
+                        ELSE
+                        IF              APSC_SLICE6_READER_BUILD
+APSD_LIST:              JMP             APSD_LIST_BODY
+APSD_VALIDATE:          JMP             APSD_VALIDATE_BODY
+APSD_LOAD:              JMP             APSD_LOAD_BODY
+                        ELSE
+APSD_SAFE:              RTS
+                        NOP
+                        NOP
+APSD_DELETE_PLAN:       JMP             APSD_DELETE_PLAN_BODY
+                        ENDIF
+                        ENDIF
+                        ELSE
                         IF              APSC_CHAIN_READER_BUILD
 APSC_LIST:              JMP             APSC_LIST_BODY
 APSC_VALIDATE:          JMP             APSC_VALIDATE_BODY
@@ -53,6 +72,7 @@ APSC_LOAD:              JMP             APSC_LOAD_BODY
                         ELSE
 APSC_INSTALL_PLAN:      JMP             APSC_INSTALL_PLAN_BODY
 APSC_INSTALL_EXECUTE:   JMP             APSC_INSTALL_EXECUTE_BODY
+                        ENDIF
                         ENDIF
 
 ; ----------------------------------------------------------------------------
@@ -74,9 +94,17 @@ APSC_VALIDATE_REQUEST:
                         LDA             APSC_OBJECT_LO
                         ORA             APSC_OBJECT_HI
                         BEQ             APSC_BAD_REQUEST
+                        IF              APSC_SLICE6_BUILD
+                        IF              APSC_DELETE_EXECUTOR_BUILD
                         LDA             APSC_OBJECT_GEN_LO
                         ORA             APSC_OBJECT_GEN_HI
                         BEQ             APSC_BAD_REQUEST
+                        ENDIF
+                        ELSE
+                        LDA             APSC_OBJECT_GEN_LO
+                        ORA             APSC_OBJECT_GEN_HI
+                        BEQ             APSC_BAD_REQUEST
+                        ENDIF
                         SEC
                         RTS
 APSC_BAD_REQUEST:
@@ -428,7 +456,11 @@ APSC_COPY_RECORD_HEADER:
                         BNE             APSC_COPY_RECORD_HEADER
                         JSR             APSC_VALIDATE_RECORD_HEADER
                         BCS             APSC_SCAN_RECORD_VALID
+                        IF              APSC_SLICE6_BUILD
+                        JMP             APSC_SCAN_CLOSED
+                        ELSE
                         JMP             APSC_SCAN_LOG_BAD
+                        ENDIF
 APSC_SCAN_RECORD_VALID:
                         LDA             APSC_TMP_COMMIT_LO
                         CLC
@@ -468,7 +500,11 @@ APSC_SCAN_COMMIT:
                         LDY             #$00
                         LDA             (APSW_PTR_LO),Y
                         CMP             #APS_RECORD_COMMIT
+                        IF              APSC_SLICE6_BUILD
+                        BNE             APSC_SCAN_UNCOMMITTED
+                        ELSE
                         BNE             APSC_SCAN_CLOSED
+                        ENDIF
                         LDX             #$03
 APSC_SCAN_PAYLOAD_COMPARE:
                         LDA             APSC_HASH0,X
@@ -484,12 +520,20 @@ APSC_SCAN_PAYLOAD_BYTE_OK:
                         LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_OBJECT+1
                         CMP             APSC_OBJECT_HI
                         BNE             APSC_SCAN_NOT_TARGET
+                        IF              APSC_SLICE6_BUILD
+                        IF              APSC_DELETE_EXECUTOR_BUILD
+                        ELSE
+                        LDA             APSD_MODE
+                        BNE             APSC_SCAN_TARGET_ACTION
+                        ENDIF
+                        ENDIF
                         LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_GENERATION
                         CMP             APSC_OBJECT_GEN_LO
                         BNE             APSC_SCAN_NOT_TARGET
                         LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_GENERATION+1
                         CMP             APSC_OBJECT_GEN_HI
                         BNE             APSC_SCAN_NOT_TARGET
+APSC_SCAN_TARGET_ACTION:
                         JSR             APSC_MATCH_ACTION
                         BCS             APSC_SCAN_NOT_TARGET
                         JMP             APSC_SCAN_LOG_BAD
@@ -506,7 +550,22 @@ APSC_SCAN_NOT_TARGET:
 APSC_SCAN_CLOSED:
                         LDA             #$02
                         STA             APSC_TMP_ACTIVE
+                        IF              APSC_SLICE6_BUILD
+                        BRA             APSC_SCAN_CRC
+                        ELSE
                         BRA             APSC_SCAN_NO_APPEND
+                        ENDIF
+                        IF              APSC_SLICE6_BUILD
+APSC_SCAN_UNCOMMITTED:
+                        LDA             APSC_TMP_TAIL_LO
+                        SEC
+                        SBC             #APS_RECORD_HEADER_BYTES
+                        STA             APSC_TMP_TAIL_LO
+                        LDA             APSC_TMP_TAIL_HI
+                        SBC             #$00
+                        STA             APSC_TMP_TAIL_HI
+                        BRA             APSC_SCAN_CLOSED
+                        ENDIF
 APSC_SCAN_LOG_FULL:
 APSC_SCAN_NO_APPEND:
                         LDA             #$00
@@ -615,10 +674,29 @@ APSC_VALIDATE_RECORD_HEADER:
                         BNE             APSC_RECORD_BAD
                         LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_TYPE
                         CMP             #APS_RECORD_CHUNK
+                        IF              APSC_SLICE6_BUILD
+                        BEQ             APSC_RECORD_CHUNK_TYPE
+                        CMP             #APS_RECORD_TOMBSTONE
                         BNE             APSC_RECORD_BAD
+                        LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_FLAGS
+                        BNE             APSC_RECORD_BAD
+                        LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_LOGICAL
+                        ORA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_LOGICAL+1
+                        BNE             APSC_RECORD_BAD
+                        LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_LENGTH
+                        ORA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_LENGTH+1
+                        BNE             APSC_RECORD_BAD
+                        BRA             APSC_RECORD_ID
+                        ELSE
+                        BNE             APSC_RECORD_BAD
+                        ENDIF
+APSC_RECORD_BAD:        CLC
+                        RTS
+APSC_RECORD_CHUNK_TYPE:
                         LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_FLAGS
                         AND             #$FC
                         BNE             APSC_RECORD_BAD
+APSC_RECORD_ID:
                         LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_RESERVED
                         CMP             #$FF
                         BNE             APSC_RECORD_BAD
@@ -628,9 +706,15 @@ APSC_VALIDATE_RECORD_HEADER:
                         LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_GENERATION
                         ORA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_GENERATION+1
                         BEQ             APSC_RECORD_BAD
+                        IF              APSC_SLICE6_BUILD
+                        LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_TYPE
+                        CMP             #APS_RECORD_TOMBSTONE
+                        BEQ             APSC_RECORD_COMMON
+                        ENDIF
                         LDA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_LENGTH
                         ORA             APSC_RECORD_HEADER_BASE+APS_RH_OFF_LENGTH+1
                         BEQ             APSC_RECORD_BAD
+APSC_RECORD_COMMON:
                         LDA             #$FF
                         STA             APSW_CRC_LO
                         STA             APSW_CRC_HI
@@ -649,10 +733,13 @@ APSC_RECORD_CRC:
                         BNE             APSC_RECORD_BAD
                         SEC
                         RTS
-APSC_RECORD_BAD:
-                        CLC
-                        RTS
-
+                        IF              APSC_SLICE6_BUILD
+                        IF              APSC_DELETE_EXECUTOR_BUILD
+                        INCLUDE         "ASM/ap-store-v1-slice6-delete.inc"
+                        ELSE
+                        INCLUDE         "ASM/ap-store-v1-slice6-reader.inc"
+                        ENDIF
+                        ELSE
                         IF              APSC_CHAIN_READER_BUILD
                         INCLUDE         "ASM/ap-store-v1-chain-reader.inc"
                         ELSE
@@ -1287,12 +1374,25 @@ APSC_WRITE_OK:
                         RTS
 
                         ENDIF
+                        ENDIF
 
                         DATA
+                        IF              APSC_SLICE6_BUILD
+                        IF              APSC_DELETE_EXECUTOR_BUILD
+                        ELSE
+                        IF              APSC_SLICE6_READER_BUILD
+APSD_MSG_ROW:           DB              "APNEW O=",0
+APSD_MSG_GEN:           DB              " G=",0
+APSD_MSG_LEN:           DB              " L=",0
+APSD_MSG_OK:            DB              "APNEW OK",0
+                        ENDIF
+                        ENDIF
+                        ELSE
                         IF              APSC_CHAIN_READER_BUILD
 APSC_MSG_ROW:           DB              "APCHAIN O=",0
 APSC_MSG_GEN:           DB              " G=",0
 APSC_MSG_LEN:           DB              " L=",0
 APSC_MSG_OK:            DB              "APCHAIN OK",0
+                        ENDIF
                         ENDIF
 APSC_IMAGE_SENTINEL:    DB              $FF

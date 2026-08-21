@@ -43,6 +43,7 @@ AP_STORE_INVENTORY_CHECK := tools/check_ap_store_inventory.ps1
 AP_STORE_SECTOR_TOOL_CHECK := tools/check_ap_store_sector_tool.ps1
 AP_STORE_OBJECT_TOOL_CHECK := tools/check_ap_store_object_tool.ps1
 AP_STORE_CHAIN_TOOL_CHECK := tools/check_ap_store_chain_tools.ps1
+AP_STORE_SLICE6_TOOL_CHECK := tools/check_ap_store_slice6_tools.ps1
 AP_STORE_SECTOR_TOOL_INC := $(ASM_DIR)/ap-store-v1-worker.inc
 BOARD_S19_IDENTITY_CHECK := tools/check_board_s19_identity.ps1
 HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
@@ -203,6 +204,18 @@ AP_STORE_CHAIN_READER_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/ap-store-v1-chain-reader-t
 AP_STORE_CHAIN_READER_S19 := $(S19_DIR)/ap-store-v1-chain-reader-tool-7000.s19
 AP_STORE_CHAIN_READER_AP_BIN := $(BIN_DIR)/ap-store-v1-chain-reader-tool-7000.ap.bin
 AP_STORE_CHAIN_READER_PACKAGE_S19 := $(S19_DIR)/ap-store-v1-chain-reader-tool-package-4000.s19
+AP_STORE_SLICE6_CATALOG_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/ap-store-v1-slice6-catalog-tool.obj
+AP_STORE_SLICE6_CATALOG_S19 := $(S19_DIR)/ap-store-v1-slice6-catalog-tool-7000.s19
+AP_STORE_SLICE6_CATALOG_AP_BIN := $(BIN_DIR)/ap-store-v1-slice6-catalog-tool-7000.ap.bin
+AP_STORE_SLICE6_CATALOG_PACKAGE_S19 := $(S19_DIR)/ap-store-v1-slice6-catalog-tool-package-4000.s19
+AP_STORE_SLICE6_PLAN_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/ap-store-v1-slice6-plan-tool.obj
+AP_STORE_SLICE6_PLAN_S19 := $(S19_DIR)/ap-store-v1-slice6-plan-tool-7000.s19
+AP_STORE_SLICE6_PLAN_AP_BIN := $(BIN_DIR)/ap-store-v1-slice6-plan-tool-7000.ap.bin
+AP_STORE_SLICE6_PLAN_PACKAGE_S19 := $(S19_DIR)/ap-store-v1-slice6-plan-tool-package-4000.s19
+AP_STORE_SLICE6_DELETE_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/ap-store-v1-slice6-delete-tool.obj
+AP_STORE_SLICE6_DELETE_S19 := $(S19_DIR)/ap-store-v1-slice6-delete-tool-7000.s19
+AP_STORE_SLICE6_DELETE_AP_BIN := $(BIN_DIR)/ap-store-v1-slice6-delete-tool-7000.ap.bin
+AP_STORE_SLICE6_DELETE_PACKAGE_S19 := $(S19_DIR)/ap-store-v1-slice6-delete-tool-package-4000.s19
 AP_STORE_CHAIN_MARKER_SRC := $(PROOFS_DIR)/ap-store-v1-chain-marker-4000.asm
 AP_STORE_CHAIN_MARKER_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/ap-store-v1-chain-marker-4000.obj
 AP_STORE_CHAIN_MARKER_S19 := $(S19_DIR)/ap-store-v1-chain-marker-4000.s19
@@ -573,6 +586,10 @@ ap-store-chain-tools: $(AP_STORE_CHAIN_INSTALL_S19) $(AP_STORE_CHAIN_INSTALL_AP_
 	@echo "Built AP Store Slice 5 installer, reader, and 4K marker carriers."
 	@$(MAKE) artifacts
 
+ap-store-slice6-tools: $(AP_STORE_SLICE6_CATALOG_S19) $(AP_STORE_SLICE6_CATALOG_AP_BIN) $(AP_STORE_SLICE6_CATALOG_PACKAGE_S19) $(AP_STORE_SLICE6_PLAN_S19) $(AP_STORE_SLICE6_PLAN_AP_BIN) $(AP_STORE_SLICE6_PLAN_PACKAGE_S19) $(AP_STORE_SLICE6_DELETE_S19) $(AP_STORE_SLICE6_DELETE_AP_BIN) $(AP_STORE_SLICE6_DELETE_PACKAGE_S19)
+	@echo "Built AP Store Slice 6 reader, read-only delete planner, and delete executor carriers."
+	@$(MAKE) artifacts
+
 ap-store-marker: $(AP_STORE_MARKER_S19) $(AP_STORE_MARKER_AP_BIN) $(AP_STORE_MARKER_PACKAGE_S19)
 	@echo "Built $(AP_STORE_MARKER_S19), $(AP_STORE_MARKER_AP_BIN), and $(AP_STORE_MARKER_PACKAGE_S19)."
 	@$(MAKE) artifacts
@@ -618,7 +635,7 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 release-files: board-s19-check life rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
+asm-test: asm-abi-check ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
@@ -644,6 +661,12 @@ ap-store-chain-tool-check: $(AP_STORE_CHAIN_INSTALL_S19) $(AP_STORE_CHAIN_INSTAL
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_CHAIN_INSTALL_AP_BIN)"
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_CHAIN_READER_AP_BIN)"
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_CHAIN_MARKER_AP_BIN)"
+
+ap-store-slice6-tool-check: ap-store-slice6-tools $(AP_STORE_SLICE6_TOOL_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SLICE6_TOOL_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_SLICE6_CATALOG_AP_BIN)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_SLICE6_PLAN_AP_BIN)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_SLICE6_DELETE_AP_BIN)"
 
 asm-ap-v2-check: $(ASM_SESSION_REPORT_AP_BIN) $(AP_V2_PACKAGE_CHECK) $(ASM_V1_FLASH_SRC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
@@ -1018,6 +1041,42 @@ $(AP_STORE_CHAIN_READER_AP_BIN): $(AP_STORE_CHAIN_READER_S19) $(AP_STORE_SECTOR_
 $(AP_STORE_CHAIN_READER_PACKAGE_S19): $(AP_STORE_CHAIN_READER_AP_BIN) $(ROM_INSTALL_S19_GEN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$<" -S19Path "$@" -BaseAddress 16384 -StartAddress 16384
 
+$(AP_STORE_SLICE6_CATALOG_S19): $(AP_STORE_SLICE6_CATALOG_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) -g -s -t -c7000 -hm19 -j -o $@ $<
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$@'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S90370008C'; Set-Content -Path $$p -Value $$lines"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = '$(@:.s19=.map)'; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA missing' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4),16); if ($$end -gt 0x7A00) { throw ('Slice 6 reader crosses 7A00: {0:X4}' -f $$end) }; Write-Host ('AP Store Slice 6 reader end = {0:X4} (limit 7A00)' -f $$end)"
+
+$(AP_STORE_SLICE6_CATALOG_AP_BIN): $(AP_STORE_SLICE6_CATALOG_S19) $(AP_STORE_SECTOR_TOOL_AP_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_AP_GEN) -S19Path "$<" -MapPath "$(S19_DIR)/ap-store-v1-slice6-catalog-tool-7000.map" -PackagePath "$@" -BaseAddress 28672 -EntrySymbol "APSD_LIST" -ExportName "APNEW"
+
+$(AP_STORE_SLICE6_CATALOG_PACKAGE_S19): $(AP_STORE_SLICE6_CATALOG_AP_BIN) $(ROM_INSTALL_S19_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$<" -S19Path "$@" -BaseAddress 16384 -StartAddress 16384
+
+$(AP_STORE_SLICE6_PLAN_S19): $(AP_STORE_SLICE6_PLAN_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) -g -s -t -c7000 -hm19 -j -o $@ $<
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$@'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S90370008C'; Set-Content -Path $$p -Value $$lines"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = '$(@:.s19=.map)'; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA missing' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4),16); if ($$end -gt 0x7A00) { throw ('Slice 6 planner crosses 7A00: {0:X4}' -f $$end) }; Write-Host ('AP Store Slice 6 planner end = {0:X4} (limit 7A00)' -f $$end)"
+
+$(AP_STORE_SLICE6_PLAN_AP_BIN): $(AP_STORE_SLICE6_PLAN_S19) $(AP_STORE_SECTOR_TOOL_AP_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_AP_GEN) -S19Path "$<" -MapPath "$(S19_DIR)/ap-store-v1-slice6-plan-tool-7000.map" -PackagePath "$@" -BaseAddress 28672 -EntrySymbol "APSD_SAFE" -ExportName "APPLAN"
+
+$(AP_STORE_SLICE6_PLAN_PACKAGE_S19): $(AP_STORE_SLICE6_PLAN_AP_BIN) $(ROM_INSTALL_S19_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$<" -S19Path "$@" -BaseAddress 16384 -StartAddress 16384
+
+$(AP_STORE_SLICE6_DELETE_S19): $(AP_STORE_SLICE6_DELETE_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) -g -s -t -c7000 -hm19 -j -o $@ $<
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$@'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S90370008C'; Set-Content -Path $$p -Value $$lines"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = '$(@:.s19=.map)'; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA missing' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4),16); if ($$end -gt 0x7A00) { throw ('Slice 6 delete crosses 7A00: {0:X4}' -f $$end) }; Write-Host ('AP Store Slice 6 delete end = {0:X4} (limit 7A00)' -f $$end)"
+
+$(AP_STORE_SLICE6_DELETE_AP_BIN): $(AP_STORE_SLICE6_DELETE_S19) $(AP_STORE_SECTOR_TOOL_AP_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_AP_GEN) -S19Path "$<" -MapPath "$(S19_DIR)/ap-store-v1-slice6-delete-tool-7000.map" -PackagePath "$@" -BaseAddress 28672 -EntrySymbol "APSD_SAFE" -ExportName "APDEL"
+
+$(AP_STORE_SLICE6_DELETE_PACKAGE_S19): $(AP_STORE_SLICE6_DELETE_AP_BIN) $(ROM_INSTALL_S19_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$<" -S19Path "$@" -BaseAddress 16384 -StartAddress 16384
+
 $(AP_STORE_CHAIN_MARKER_S19): $(AP_STORE_CHAIN_MARKER_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) -g -s -t -c4000 -hm19 -j -o $@ $<
@@ -1044,26 +1103,41 @@ $(AP_STORE_MARKER_PACKAGE_S19): $(AP_STORE_MARKER_AP_BIN) $(ROM_INSTALL_S19_GEN)
 
 $(AP_STORE_SECTOR_TOOL_OBJ): $(AP_STORE_SECTOR_TOOL_SRC) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
-	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=0 -DAPSC_CHAIN_READER_BUILD=0 -DAPSO_OBJECT_BUILD=0 $<
+	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=0 -DAPSC_CHAIN_READER_BUILD=0 -DAPSO_OBJECT_BUILD=0 -DAPSC_SLICE6_BUILD=0 -DAPSC_DELETE_EXECUTOR_BUILD=0 -DAPSC_SLICE6_READER_BUILD=0 -DAPSC_READER_COMMON_ONLY=0 -DAPSC_WRITER_BUILD=0 $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
 $(AP_STORE_OBJECT_TOOL_OBJ): $(AP_STORE_OBJECT_TOOL_SRC) $(AP_STORE_SECTOR_TOOL_OBJ) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 	@if not exist $(subst /,\,$(LST_DIR)) mkdir $(subst /,\,$(LST_DIR))
 	@if not exist $(subst /,\,$(SYM_DIR)) mkdir $(subst /,\,$(SYM_DIR))
-	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=0 -DAPSC_CHAIN_READER_BUILD=0 -DAPSO_OBJECT_BUILD=1 $<
+	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=0 -DAPSC_CHAIN_READER_BUILD=0 -DAPSO_OBJECT_BUILD=1 -DAPSC_SLICE6_BUILD=0 -DAPSC_DELETE_EXECUTOR_BUILD=0 -DAPSC_SLICE6_READER_BUILD=0 -DAPSC_READER_COMMON_ONLY=0 -DAPSC_WRITER_BUILD=0 $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(subst /,\,$(<:.asm=.lst))') { Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.lst))' -Destination '$(subst /,\,$(LST_DIR)/ap-store-v1-object-tool.lst)' -Force }"
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(subst /,\,$(<:.asm=.sym))') { Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.sym))' -Destination '$(subst /,\,$(SYM_DIR)/ap-store-v1-object-tool.sym)' -Force }"
 
 $(AP_STORE_CHAIN_INSTALL_OBJ): $(AP_STORE_OBJECT_TOOL_SRC) $(AP_STORE_OBJECT_TOOL_OBJ) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(ASM_DIR)/ap-store-v1-chain-tool.inc $(STR8N_IMPORTED_CONTRACT)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
-	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=1 -DAPSC_CHAIN_READER_BUILD=0 -DAPSO_OBJECT_BUILD=0 $<
+	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=1 -DAPSC_CHAIN_READER_BUILD=0 -DAPSO_OBJECT_BUILD=0 -DAPSC_SLICE6_BUILD=0 -DAPSC_DELETE_EXECUTOR_BUILD=0 -DAPSC_SLICE6_READER_BUILD=0 -DAPSC_READER_COMMON_ONLY=0 -DAPSC_WRITER_BUILD=0 $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
 $(AP_STORE_CHAIN_READER_OBJ): $(AP_STORE_OBJECT_TOOL_SRC) $(AP_STORE_CHAIN_INSTALL_OBJ) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(ASM_DIR)/ap-store-v1-chain-tool.inc $(ASM_DIR)/ap-store-v1-chain-reader.inc $(STR8N_IMPORTED_CONTRACT)
 	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
-	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=1 -DAPSC_CHAIN_READER_BUILD=1 -DAPSO_OBJECT_BUILD=0 $<
+	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=1 -DAPSC_CHAIN_READER_BUILD=1 -DAPSO_OBJECT_BUILD=0 -DAPSC_SLICE6_BUILD=0 -DAPSC_DELETE_EXECUTOR_BUILD=0 -DAPSC_SLICE6_READER_BUILD=0 -DAPSC_READER_COMMON_ONLY=0 -DAPSC_WRITER_BUILD=1 $<
+	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
+
+$(AP_STORE_SLICE6_CATALOG_OBJ): $(AP_STORE_OBJECT_TOOL_SRC) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(ASM_DIR)/ap-store-v1-chain-tool.inc $(ASM_DIR)/ap-store-v1-chain-reader.inc $(ASM_DIR)/ap-store-v1-slice6-reader.inc $(STR8N_IMPORTED_CONTRACT)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=1 -DAPSC_CHAIN_READER_BUILD=1 -DAPSO_OBJECT_BUILD=0 -DAPSC_SLICE6_BUILD=1 -DAPSC_DELETE_EXECUTOR_BUILD=0 -DAPSC_SLICE6_READER_BUILD=1 -DAPSC_READER_COMMON_ONLY=1 -DAPSC_WRITER_BUILD=1 $<
+	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
+
+$(AP_STORE_SLICE6_PLAN_OBJ): $(AP_STORE_OBJECT_TOOL_SRC) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(ASM_DIR)/ap-store-v1-chain-tool.inc $(ASM_DIR)/ap-store-v1-chain-reader.inc $(ASM_DIR)/ap-store-v1-slice6-reader.inc $(STR8N_IMPORTED_CONTRACT)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=1 -DAPSC_CHAIN_READER_BUILD=1 -DAPSO_OBJECT_BUILD=0 -DAPSC_SLICE6_BUILD=1 -DAPSC_DELETE_EXECUTOR_BUILD=0 -DAPSC_SLICE6_READER_BUILD=0 -DAPSC_READER_COMMON_ONLY=1 -DAPSC_WRITER_BUILD=0 $<
+	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
+
+$(AP_STORE_SLICE6_DELETE_OBJ): $(AP_STORE_OBJECT_TOOL_SRC) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(ASM_DIR)/ap-store-v1-chain-tool.inc $(ASM_DIR)/ap-store-v1-slice6-delete.inc $(STR8N_IMPORTED_CONTRACT)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DAPSC_CHAIN_BUILD=1 -DAPSC_CHAIN_READER_BUILD=0 -DAPSO_OBJECT_BUILD=0 -DAPSC_SLICE6_BUILD=1 -DAPSC_DELETE_EXECUTOR_BUILD=1 -DAPSC_SLICE6_READER_BUILD=0 -DAPSC_READER_COMMON_ONLY=0 -DAPSC_WRITER_BUILD=0 $<
 	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
 
 $(AP_STORE_CHAIN_MARKER_OBJ): $(AP_STORE_CHAIN_MARKER_SRC)
@@ -1311,6 +1385,7 @@ endif
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \
 	asm-v1-runtime-paste asm-session-report asm-session-report-ap-bin asm-v1-flash asm-flash asm-opcode-coverage \
 	ap-store-sector-tool ap-store-sector-tool-ap-bin ap-store-sector-tool-check ap-store-object-tool ap-store-object-tool-check ap-store-marker \
+	ap-store-chain-tools ap-store-chain-tool-check ap-store-slice6-tools ap-store-slice6-tool-check \
 	asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check \
 	asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-dc-check board-s19-check \
 	asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src \

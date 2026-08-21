@@ -3,6 +3,9 @@
 ; AP-v2 validation, and load/run. Included only in the reader image.
 ; ----------------------------------------------------------------------------
 
+                        IF              APSC_READER_COMMON_ONLY
+                        ELSE
+
 APSC_MATCH_ACTION:
                         INC             APSC_TMP_FOUND
                         LDA             APSC_CHUNK_COUNT
@@ -204,6 +207,8 @@ APSC_READER_RETURN_ERROR:
                         LDA             APSC_STATUS
                         CLC
                         RTS
+
+                        ENDIF
 
 APSC_READER_NEXT_ROW:
                         LDA             APSC_ZP_ROW_LO
@@ -475,6 +480,7 @@ APSC_READER_AP_INVALID:
                         CLC
                         RTS
 
+                        IF              APSC_WRITER_BUILD
 APSC_WRITE_CSTRING:
                         LDA             APSW_SVC_WRITE_CSTRING
                         STA             APSW_CALL_LO
@@ -495,3 +501,4 @@ APSC_WRITE_CRLF:
                         LDA             APSW_SVC_WRITE_CRLF+1
                         STA             APSW_CALL_HI
                         JMP             (APSW_CALL_LO)
+                        ENDIF

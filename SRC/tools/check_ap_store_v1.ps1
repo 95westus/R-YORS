@@ -10,6 +10,7 @@ function Put-U32([byte[]]$B,[int]$O,[uint32]$V){0..3|ForEach-Object{$B[$O+$_]=[b
 function Get-U16([byte[]]$B,[int]$O){return [int]$B[$O]-bor([int]$B[$O+1]-shl 8)}
 function Get-U32([byte[]]$B,[int]$O){return [uint32](([uint64]$B[$O])-bor([uint64]$B[$O+1]-shl 8)-bor([uint64]$B[$O+2]-shl 16)-bor([uint64]$B[$O+3]-shl 24))}
 function Slice([byte[]]$B,[int]$O,[int]$N){[byte[]]$r=New-Object byte[] $N;[Array]::Copy($B,$O,$r,0,$N);return $r}
+function Equal([byte[]]$A,[byte[]]$B){if($A.Length-ne$B.Length){return $false};for($i=0;$i-lt$A.Length;$i++){if($A[$i]-ne$B[$i]){return $false}};return $true}
 function Fnv32([byte[]]$B){[uint64]$h=2166136261;foreach($v in $B){$h=(($h-bxor[uint64]$v)*[uint64]16777619)-band[uint64]4294967295};return [uint32]$h}
 function Crc16([byte[]]$B){
     [int]$crc=0xFFFF
@@ -134,9 +135,10 @@ function Add-ListByte($List,[int]$V){$List.Add([byte]($V-band255))}
 function Add-ListWord($List,[int]$V){Add-ListByte $List $V;Add-ListByte $List ($V-shr8)}
 function Add-ListBytes($List,[byte[]]$Bytes){foreach($v in $Bytes){Add-ListByte $List $v}}
 function Add-ApSection($List,[char]$Tag,[byte[]]$Payload){Add-ListByte $List ([byte]$Tag);Add-ListWord $List $Payload.Length;Add-ListBytes $List $Payload}
-function New-ChainPackage {
-    [byte[]]$body=[byte[]]::new(4050);for($i=0;$i-lt$body.Length;$i++){$body[$i]=0xEA}
-    [byte[]]$code=0xA9,0xC5,0x8D,0x01,0x1A,0xA9,0xAC,0x38,0x60;[Array]::Copy($code,$body,$code.Length)
+function New-TestPackage([int]$BodyLength,[byte]$Marker) {
+    if($BodyLength-lt9-or$BodyLength-gt4050){Fail 'invalid test BODY length'}
+    [byte[]]$body=[byte[]]::new($BodyLength);for($i=0;$i-lt$body.Length;$i++){$body[$i]=0xEA}
+    [byte[]]$code=0xA9,$Marker,0x8D,0x01,0x1A,0xA9,0xAC,0x38,0x60;[Array]::Copy($code,$body,$code.Length)
     [byte[]]$seal=[byte[]]::new(11);$seal[0]=1;Put-U16 $seal 1 0x4000;Put-U16 $seal 3 (0x4000+$body.Length);Put-U16 $seal 5 $body.Length;Put-U32 $seal 7 (Fnv32 $body)
     [byte[]]$rel=0
     [byte[]]$export=1,0x81,0,0,0xED,0xFD,0xBA,0x24,6,0xCD,8,0x1B,9
@@ -144,16 +146,19 @@ function New-ChainPackage {
     $p=New-Object 'System.Collections.Generic.List[byte]';Add-ListBytes $p ([byte[]](0x41,0x50,0x02,0,0));Add-ApSection $p 'S' $seal;Add-ApSection $p 'R' $rel;Add-ApSection $p 'E' $export;Add-ApSection $p 'I' $import;Add-ApSection $p 'B' $body
     [byte[]]$result=$p.ToArray();Put-U16 $result 3 $result.Length;return $result
 }
+function New-ChainPackage {return New-TestPackage 4050 0xC5}
 function Inspect-ChainLog([byte[]]$B){
     $rows=@();$at=16
     while($at-lt4096){
         if($B[$at]-eq0xFF){for($i=$at;$i-lt4096;$i++){if($B[$i]-ne0xFF){return [pscustomobject]@{State='CLOSED';Rows=$rows;Tail=$at}}};return [pscustomobject]@{State='OK';Rows=$rows;Tail=$at}}
         if($at+20-ge4096-or$B[$at]-ne[byte][char]'A'-or$B[$at+1]-ne[byte][char]'R'-or$B[$at+2]-ne1-or$B[$at+5]-ne0xFF){return [pscustomobject]@{State='CLOSED';Rows=$rows;Tail=$at}}
-        $len=Get-U16 $B ($at+12);$commit=$at+20+$len
-        if($len-eq0-or$commit-ge4096-or(Get-U16 $B ($at+18))-ne(Crc16 (Slice $B $at 18))){return [pscustomobject]@{State='CLOSED';Rows=$rows;Tail=$at}}
+        $type=$B[$at+3];$flags=$B[$at+4];$object=Get-U16 $B ($at+6);$generation=Get-U16 $B ($at+8);$logical=Get-U16 $B ($at+10);$len=Get-U16 $B ($at+12);$commit=$at+20+$len
+        $chunkValid=$type-eq1-and$len-ne0-and($flags-band0xFC)-eq0
+        $tombValid=$type-eq2-and$len-eq0-and$flags-eq0-and$logical-eq0
+        if(((-not$chunkValid)-and(-not$tombValid))-or$object-eq0-or$generation-eq0-or$commit-ge4096-or(Get-U16 $B ($at+18))-ne(Crc16 (Slice $B $at 18))){return [pscustomobject]@{State='CLOSED';Rows=$rows;Tail=$at}}
         if($B[$commit]-ne0xA5){return [pscustomobject]@{State='CLOSED';Rows=$rows;Tail=$at}}
-        [byte[]]$payload=Slice $B ($at+20) $len;if((Get-U32 $B ($at+14))-ne(Fnv32 $payload)){return [pscustomobject]@{State='CLOSED';Rows=$rows;Tail=$at}}
-        $rows+=,[pscustomobject]@{Offset=$at;Type=$B[$at+3];Flags=$B[$at+4];Object=Get-U16 $B ($at+6);Generation=Get-U16 $B ($at+8);Logical=Get-U16 $B ($at+10);Payload=$payload}
+        [byte[]]$payload=Slice $B ($at+20) $len;if((Get-U32 $B ($at+14))-ne(Fnv32 $payload)){return [pscustomobject]@{State='CORRUPT';Rows=$rows;Tail=$at}}
+        $rows+=,[pscustomobject]@{Offset=$at;Size=21+$len;Type=$type;Flags=$flags;Object=$object;Generation=$generation;Logical=$logical;Payload=$payload}
         $at=$commit+1
     }
     return [pscustomobject]@{State='OK';Rows=$rows;Tail=$at}
@@ -172,7 +177,7 @@ function Get-ChainPlan($Media,[int]$Bank,[int]$Mask,[int]$Object,[int]$Generatio
         $class=Sector-Class $Media[$sector] $Bank $sector
         if($class-eq'ACTIVE'){
             $log=Inspect-ChainLog $Media[$sector];$logs[$sector]=$log
-            foreach($row in $log.Rows){if($row.Type-eq1-and$row.Object-eq$Object-and$row.Generation-eq$Generation){$duplicate=$true}}
+            foreach($row in $log.Rows){if($row.Object-eq$Object-and$row.Generation-eq$Generation){$duplicate=$true}}
         }
     }
     if($duplicate){return [pscustomobject]@{Status='DUPLICATE'}}
@@ -203,12 +208,14 @@ function Get-ChainActions($Plan,[byte[]]$Package){
     return $actions
 }
 function Resolve-Chain($Media,[int]$Bank,[int]$Object,[int]$Generation){
-    $matches=@()
+    $matches=@();$deleted=$false
     for($sector=8;$sector-le15;$sector++){
         if(-not$Media.ContainsKey($sector)-or(Sector-Class $Media[$sector] $Bank $sector)-ne'ACTIVE'){continue}
         $log=Inspect-ChainLog $Media[$sector]
-        foreach($row in $log.Rows){if($row.Type-eq1-and$row.Object-eq$Object-and$row.Generation-eq$Generation){$matches+=,[pscustomobject]@{Sector=$sector;Flags=$row.Flags;Logical=$row.Logical;Payload=$row.Payload}}}
+        if($log.State-eq'CORRUPT'){return [pscustomobject]@{Status='LOG_CORRUPT'}}
+        foreach($row in $log.Rows){if($row.Object-eq$Object-and$row.Generation-eq$Generation){if($row.Type-eq2){$deleted=$true}else{$matches+=,[pscustomobject]@{Sector=$sector;Offset=$row.Offset;Size=$row.Size;Flags=$row.Flags;Logical=$row.Logical;Payload=$row.Payload}}}}
     }
+    if($deleted){return [pscustomobject]@{Status='DELETED'}}
     if($matches.Count-eq0){return [pscustomobject]@{Status='NOT_FOUND'}}
     if($matches.Count-gt8){return [pscustomobject]@{Status='TOO_MANY'}}
     if(@($matches|Group-Object Sector|Where-Object Count -gt 1).Count-ne0){return [pscustomobject]@{Status='CONFLICT'}}
@@ -223,6 +230,71 @@ function Resolve-Chain($Media,[int]$Bank,[int]$Object,[int]$Generation){
     }
     [byte[]]$package=$joined.ToArray();if(-not(Test-ApPackage $package)){return [pscustomobject]@{Status='AP_INVALID'}}
     return [pscustomobject]@{Status='LIVE';Package=$package;Rows=$ordered}
+}
+
+function Resolve-Newest($Media,[int]$Bank,[int]$Object){
+    $generations=New-Object 'System.Collections.Generic.HashSet[int]'
+    for($sector=8;$sector-le15;$sector++){
+        if(-not$Media.ContainsKey($sector)-or(Sector-Class $Media[$sector] $Bank $sector)-ne'ACTIVE'){continue}
+        $log=Inspect-ChainLog $Media[$sector]
+        if($log.State-eq'CORRUPT'){return [pscustomobject]@{Status='LOG_CORRUPT'}}
+        foreach($row in $log.Rows){if($row.Object-eq$Object){$null=$generations.Add($row.Generation)}}
+    }
+    foreach($generation in @($generations|Sort-Object -Descending)){
+        $resolved=Resolve-Chain $Media $Bank $Object $generation
+        if($resolved.Status-eq'LIVE'){$resolved|Add-Member -NotePropertyName Generation -NotePropertyValue $generation;return $resolved}
+        if($resolved.Status-eq'DELETED'-or$resolved.Status-eq'INCOMPLETE'-or$resolved.Status-eq'NOT_FOUND'){continue}
+        return $resolved
+    }
+    return [pscustomobject]@{Status='NOT_FOUND'}
+}
+
+function New-TombstoneHeader([int]$Object,[int]$Generation){
+    [byte[]]$h=[byte[]]::new(20);for($i=0;$i-lt20;$i++){$h[$i]=0xFF}
+    $h[0]=[byte][char]'A';$h[1]=[byte][char]'R';$h[2]=1;$h[3]=2;$h[4]=0
+    Put-U16 $h 6 $Object;Put-U16 $h 8 $Generation;Put-U16 $h 10 0;Put-U16 $h 12 0
+    Put-U32 $h 14 (Fnv32 ([byte[]]@()));Put-U16 $h 18 (Crc16 (Slice $h 0 18));return $h
+}
+
+function Get-DeletePlan($Media,[int]$Bank,[int]$Mask,[int]$Object,[int]$Generation){
+    if($Bank-lt0-or$Bank-gt2-or$Mask-eq0-or$Object-eq0-or$Generation-eq0){return [pscustomobject]@{Status='BAD_REQUEST'}}
+    $resolved=Resolve-Chain $Media $Bank $Object $Generation
+    if($resolved.Status-eq'DELETED'){return [pscustomobject]@{Status='ALREADY_DELETED'}}
+    if($resolved.Status-ne'LIVE'){return [pscustomobject]@{Status=$resolved.Status}}
+    $target=$null;$free=0
+    for($sector=8;$sector-le15;$sector++){
+        $bit=1-shl($sector-8);if(($Mask-band$bit)-eq0){continue}
+        if(-not$Media.ContainsKey($sector)-or(Sector-Class $Media[$sector] $Bank $sector)-ne'ACTIVE'){return [pscustomobject]@{Status='NOT_MANAGED';FailSector=$sector}}
+        $log=Inspect-ChainLog $Media[$sector]
+        if($log.State-eq'CORRUPT'){return [pscustomobject]@{Status='LOG_CORRUPT';FailSector=$sector}}
+        if($log.State-eq'OK'){$available=4096-$log.Tail;$free+=$available;if($null-eq$target-and$available-ge21){$target=[pscustomobject]@{Sector=$sector;Offset=$log.Tail;MediaCRC=Crc16 $Media[$sector]}}}
+    }
+    if($null-eq$target){return [pscustomobject]@{Status='NO_SPACE';Free=$free}}
+    $snapshots=@();foreach($row in $resolved.Rows){if($snapshots.Sector -notcontains $row.Sector){$snapshots+=,[pscustomobject]@{Sector=$row.Sector;MediaCRC=Crc16 $Media[$row.Sector]}}}
+    return [pscustomobject]@{Status='PREPARED';Bank=$Bank;Mask=$Mask;Object=$Object;Generation=$Generation;Rows=$resolved.Rows;Snapshots=$snapshots;Target=$target;Header=New-TombstoneHeader $Object $Generation;Free=$free}
+}
+
+function Get-DeleteActions($Plan){
+    $actions=New-Object 'System.Collections.Generic.List[object]';$at=$Plan.Target.Offset
+    foreach($v in $Plan.Header){$actions.Add([pscustomobject]@{Sector=$Plan.Target.Sector;Offset=$at++;Value=$v})}
+    $actions.Add([pscustomobject]@{Sector=$Plan.Target.Sector;Offset=$at;Value=0xA5});return $actions
+}
+
+function Get-ObjectSpaceReport($Media,[int]$Bank,[int]$Mask,[int]$Object,[int]$RequestedGeneration){
+    if($Bank-lt0-or$Bank-gt2-or$Mask-eq0-or$Object-eq0){return [pscustomobject]@{Status='BAD_REQUEST'}}
+    $resolved=if($RequestedGeneration-eq0){Resolve-Newest $Media $Bank $Object}else{Resolve-Chain $Media $Bank $Object $RequestedGeneration}
+    if($resolved.Status-ne'LIVE'-and$resolved.Status-ne'NOT_FOUND'-and$resolved.Status-ne'DELETED'){return $resolved}
+    $visible=if($resolved.Status-eq'LIVE'){if($RequestedGeneration-eq0){$resolved.Generation}else{$RequestedGeneration}}else{0}
+    $live=0;$stale=0;$free=0;$blocked=0
+    for($sector=8;$sector-le15;$sector++){
+        $bit=1-shl($sector-8);if(($Mask-band$bit)-eq0){continue}
+        if(-not$Media.ContainsKey($sector)-or(Sector-Class $Media[$sector] $Bank $sector)-ne'ACTIVE'){return [pscustomobject]@{Status='NOT_MANAGED';FailSector=$sector}}
+        $log=Inspect-ChainLog $Media[$sector]
+        if($log.State-eq'CORRUPT'){return [pscustomobject]@{Status='LOG_CORRUPT';FailSector=$sector}}
+        if($log.State-eq'OK'){$free+=4096-$log.Tail}else{$blocked+=4096-$log.Tail}
+        foreach($row in $log.Rows){if($row.Object-ne$Object){continue};if($row.Type-eq1-and$row.Generation-eq$visible){$live+=$row.Size}else{$stale+=$row.Size}}
+    }
+    return [pscustomobject]@{Status=$resolved.Status;Generation=$visible;Live=$live;Stale=$stale;Free=$free;Blocked=$blocked}
 }
 
 [byte[]]$chainPackage=New-ChainPackage
@@ -270,6 +342,43 @@ if((Resolve-Chain $badEnvelope 1 6 1).Status-ne'AP_INVALID'){Fail 'invalid recon
 $tooMany=@{};for($sector=8;$sector-le15;$sector++){$tooMany[$sector]=New-Sector 1 $sector 1;$flags=if($sector-eq8){1}elseif($sector-eq15){2}else{0};$tooMany[$sector]=Add-Record $tooMany[$sector] 16 1 $flags 7 1 ($sector-8) ([byte[]]@($sector))};$tooMany[8]=Add-Record $tooMany[8] 38 1 0 7 1 8 ([byte[]]@(0xEE))
 if((Resolve-Chain $tooMany 1 7 1).Status-ne'TOO_MANY'){Fail 'more than eight chunks accepted'}
 
+# Slice 6 model: exact-generation tombstones, generation-zero newest lookup,
+# object/mask space accounting, and append-only exhaustion without reuse.
+$deleteMedia=@{};for($sector=8;$sector-le15;$sector++){$deleteMedia[$sector]=New-Sector 0 $sector 1}
+[byte[]]$gen1=New-TestPackage 32 0xA1;[byte[]]$gen2=New-TestPackage 40 0xA2
+$deleteMedia[8]=Add-Record $deleteMedia[8] 16 1 3 0x20 1 0 $gen1
+$deleteMedia[9]=Add-Record $deleteMedia[9] 16 1 3 0x20 2 0 $gen2
+[byte[]]$prefix=Slice $gen2 0 12;$deleteMedia[10]=Add-Record $deleteMedia[10] 16 1 1 0x20 3 0 $prefix
+$newest=Resolve-Newest $deleteMedia 0 0x20
+if($newest.Status-ne'LIVE'-or$newest.Generation-ne2-or-not(Equal $newest.Package $gen2)){Fail 'newest lookup did not skip incomplete generation'}
+$beforeReport=Get-ObjectSpaceReport $deleteMedia 0 0x0F 0x20 0
+if($beforeReport.Status-ne'LIVE'-or$beforeReport.Generation-ne2-or$beforeReport.Live-ne(21+$gen2.Length)-or$beforeReport.Stale-ne(42+$gen1.Length+$prefix.Length)-or$beforeReport.Blocked-ne0){Fail 'pre-delete space report changed'}
+$deletePlan=Get-DeletePlan $deleteMedia 0 0x08 0x20 2
+if($deletePlan.Status-ne'PREPARED'-or$deletePlan.Target.Sector-ne11-or$deletePlan.Target.Offset-ne16-or$deletePlan.Header.Length-ne20-or$deletePlan.Header[3]-ne2-or(Get-U16 $deletePlan.Header 12)-ne0-or(Get-U32 $deletePlan.Header 14)-ne[uint32]2166136261){Fail 'delete plan/header changed'}
+$deleteActions=Get-DeleteActions $deletePlan;if($deleteActions.Count-ne21){Fail 'tombstone action count changed'}
+$deleteFault=Copy-ChainMedia $deleteMedia;$deleteFaults=0
+foreach($action in $deleteActions){
+    $visible=Resolve-Newest $deleteFault 0 0x20
+    if($visible.Status-ne'LIVE'-or$visible.Generation-ne2){Fail "delete became visible before commit at cut $deleteFaults"}
+    $old=$deleteFault[$action.Sector][$action.Offset];if((($old-bor$action.Value)-band255)-ne$old){Fail "delete non-append write at cut $deleteFaults"};$deleteFault[$action.Sector][$action.Offset]=[byte]($old-band$action.Value);$deleteFaults++
+}
+if((Resolve-Chain $deleteFault 0 0x20 2).Status-ne'DELETED'){Fail 'committed tombstone did not hide exact generation'}
+$fallback=Resolve-Newest $deleteFault 0 0x20
+if($fallback.Status-ne'LIVE'-or$fallback.Generation-ne1-or-not(Equal $fallback.Package $gen1)){Fail 'delete did not expose older generation'}
+if((Get-DeletePlan $deleteFault 0 0x08 0x20 2).Status-ne'ALREADY_DELETED'){Fail 'repeat delete was not idempotent'}
+$afterReport=Get-ObjectSpaceReport $deleteFault 0 0x0F 0x20 0
+$expectedStale=(21+$gen2.Length)+(21+$prefix.Length)+21
+if($afterReport.Status-ne'LIVE'-or$afterReport.Generation-ne1-or$afterReport.Live-ne(21+$gen1.Length)-or$afterReport.Stale-ne$expectedStale-or$afterReport.Free-ne($beforeReport.Free-21)-or$afterReport.Blocked-ne0){Fail 'post-delete space report changed'}
+
+[byte[]]$badNew=New-TestPackage 24 0xA4;$badNew[0]=0;$deleteFault[12]=Add-Record $deleteFault[12] 16 1 3 0x20 4 0 $badNew
+if((Resolve-Newest $deleteFault 0 0x20).Status-ne'AP_INVALID'){Fail 'newest lookup silently rolled back past AP-invalid generation'}
+$deleteFault[12]=New-Sector 0 12 1
+[byte[]]$fill=[byte[]]::new(4039);for($i=0;$i-lt$fill.Length;$i++){$fill[$i]=0x5A};$deleteFault[13]=Add-Record $deleteFault[13] 16 1 3 0x99 1 0 $fill
+if((Get-DeletePlan $deleteFault 0 0x20 0x20 1).Status-ne'NO_SPACE'){Fail 'delete exhaustion was not deterministic'}
+if((Get-ChainPlan $deleteFault 0 0x20 0x20 2 $gen2).Status-ne'DUPLICATE'){Fail 'tombstoned generation became reusable'}
+if((Get-ChainPlan $deleteFault 0 0x20 0x20 5 $gen2).Status-ne'NO_SPACE'){Fail 'install reused non-free tombstoned space'}
+
 Write-Host "AP Store V1 check passed: AS1 packed-location FNV32 active-low-state candidates=24 active=1 retired=1 bad=1 opaque=1 header-ff=20"
 Write-Host "AP Store V1 capacity: sector=4096 header=16 record-overhead=21 empty-payload=$payloadPerEmptySector AP-max=4096 min-sectors=2"
 Write-Host ("AP Store V1 chain model passed: mask=0A used=0A sectors=09,0B chunks=2 lengths=0F8F,0071 actions={0} fault-cuts={0}" -f $faultCuts)
+Write-Host ("AP Store V1 delete model passed: tombstone=21 actions={0} fault-cuts={0} newest=0001 live={1} stale={2} free={3} blocked=0" -f $deleteFaults,$afterReport.Live,$afterReport.Stale,$afterReport.Free)
