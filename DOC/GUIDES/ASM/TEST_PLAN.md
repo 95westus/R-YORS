@@ -15140,3 +15140,34 @@ The final post-append CRC table changed only B1:9, from bytes `3E 40` (CRC
 `$403E`) after CLAIM to `15 69` (CRC `$6915`) after append. All other 31 Bank
 0-3 sector CRCs matched exactly and the fixture returned `$AC` with no failure
 location. This completes Slice 4 host and board acceptance.
+
+## 2026-08-21 AP Store V1 Arbitrary-Sector Chain Slice
+
+Host status: format/allocator model accepted. Firmware and board status:
+pending; this section authorizes no flash mutation.
+
+Slice 5 retains the frozen `AS1`/`AR` bytes and complete AP v2 stored unit.
+There are no next-sector pointers. The request names one bank and an explicit
+mask of allowed sectors `$8-$F`; allocation visits the mask in sector order,
+while record logical offsets define reconstruction order. Matching chunks are
+live only with one FIRST, one LAST, at most one chunk per sector, no gap or
+overlap, at most eight chunks, exact envelope coverage, and successful AP v2
+validation. Any committed prefix left by interruption is non-live and blocks
+reuse of that object/generation key.
+
+The private Slice 5 card is `$7C80-$7D3F`; eight ten-byte rows at
+`$7CB0-$7CFF` hold sector, flags, append offset, logical offset, payload length,
+and prepared full-sector CRC. To preserve the effective `$7A00` command-buffer
+limit, implementation is split into separate fixed APs: installer PLAN/EXECUTE
+at `$7000/$7003`, and reader LIST/VALIDATE/LOAD at `$7000/$7003/$7006`. No
+resident or permanent RAM is allocated.
+
+`make -C SRC ap-store-v1-check` builds a synthetic valid maximum-size `$1000`
+AP envelope. With the accepted 55-byte object already occupying B1:9, the
+golden mask `$0A` selects nonadjacent B1:9 and B1:B. The deterministic plan is
+B1:9 offset `$005C`, logical `$0000`, length `$0F8F`, FIRST; then B1:B offset
+`$0010`, logical `$0F8F`, length `$0071`, LAST. Exact reconstruction passes
+after 4,138 append actions. Every one of the 4,138 interruption boundaries is
+non-live. The model also rejects a zero mask, selected unmanaged sector,
+single-sector no-space, duplicate generation, logical gap, overlap, and
+repeated sector, and proves no mutation outside B1:9/B1:B.

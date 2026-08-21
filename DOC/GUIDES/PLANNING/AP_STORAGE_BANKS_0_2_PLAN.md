@@ -1,9 +1,9 @@
 # AP Storage Across Banks 0-2
 
-Status: implementation in progress. Host format oracle and read-only inventory
-firmware are host- and board-accepted through implementation Slice 2. The
-transient single-sector mutation worker is a host-accepted Slice 3 candidate;
-destructive board proof is pending.
+Status: implementation in progress. Slices 1-4 are host- and board-accepted:
+format/inventory, managed-sector mutation, and single-sector object
+install/list/validate/load. Slice 5 arbitrary-sector chaining has a frozen
+host model; transient firmware remains pending.
 
 This plan introduces managed AP storage in selected 4K sectors of Banks 0-2
 without treating any whole bank as an AP volume. A bank may remain bootable or
@@ -271,6 +271,51 @@ commits each chunk last. The object becomes live only when a subsequent scan
 finds a complete valid generation. Allocation may cross sectors but not banks.
 Insufficient append-only space leaves no new live generation.
 
+### Slice 5 Arbitrary-Sector Chain Contract
+
+Slice 5 does not change the 16-byte `AS1` sector header, the 20-byte `AR`
+record header, or AP v2. The existing logical-offset, length, payload FNV,
+FIRST/LAST, and commit fields are sufficient. There are deliberately no flash
+next-sector pointers: discovery repeatedly scans the eight candidate sectors
+in the requested bank, then orders matching chunks by logical offset. This
+makes pointer cycles structurally impossible and prevents unchecked flash data
+from directing a bank or address change.
+
+INSTALL names one bank, a nonzero eight-bit mask for sectors `$8-$F`, an
+explicit nonzero object/generation key, and one already-valid AP v2 source.
+Every selected sector must have a valid ACTIVE header and a completely valid,
+appendable log. The allocator visits selected sectors `$8` through `$F`, uses
+at most one new extent per sector, and consumes each append tail before moving
+to the next selected sector. The resulting used-sector mask may be a subset of
+the allowed mask. Physical adjacency is irrelevant; logical offsets define
+canonical byte order. A chain uses at most eight chunks and cannot cross its
+single requested bank.
+
+PLAN is read-only. It validates the complete source AP, scans the full bank for
+an existing matching object/generation, calculates each extent, and snapshots
+the package length/FNV plus each used sector, append offset, logical offset,
+chunk length, and full-sector CRC. EXECUTE consumes `$A5` before bank selection,
+revalidates the source and every snapshot, then writes each 20-byte header,
+payload, and commit byte in that order. Each record commits independently, but
+the generation becomes live only after discovery finds the unique FIRST and
+LAST records, one chunk per sector, and gap-free nonoverlapping coverage that
+reconstructs an exact valid AP envelope. Interrupted committed prefixes remain
+inert. Any retry after a committed prefix must use a new generation; an
+existing matching chunk makes the old key a duplicate rather than resumable.
+
+Validation scans all eight sectors in the named bank, not only the installer
+mask. It rejects duplicate logical offsets, gaps, overlaps, repeated sectors,
+multiple or missing FIRST/LAST records, more than eight chunks, invalid sector
+identity, chunk integrity failure, and reconstructed AP failure. It copies
+chunks by logical offset into the existing `$0A00-$19FF` package buffer and
+calls the frozen AP v2 service before load, relocation, linking, or execution.
+
+Code size requires two mutually exclusive fixed AP tools in the existing
+`$7000-$79FF` safe tray. The installer exports PLAN `$7000` and EXECUTE `$7003`;
+the reader exports LIST `$7000`, VALIDATE `$7003`, and LOAD/RUN `$7006`. They
+share private card `$7C80-$7D3F`, including eight ten-byte plan rows at
+`$7CB0-$7CFF`. No resident or permanent RAM is added.
+
 ### Delete
 
 `DELETE` appends a tombstone for the named object generation. Old chunks remain
@@ -353,10 +398,12 @@ changed only B1:8, and an immediate unconfirmed second EXECUTE returned `$E7`
 without another mutation. The accepted transcript and remaining CONVERT gate
 are under `../ASM/AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md`.
 
-The next implementation target is Slice 4 single-sector
-install/list/validate/load. It can use empty managed B1:8 without first
-destroying an opaque sector; CONVERT may remain deferred until the operator
-names a separately disposable occupied target.
+Slice 4 single-sector install/list/validate/load is host- and board-accepted
+on B1:9. Slice 5 host planning uses the accepted B1:9 tail plus nonadjacent
+B1:B as its golden two-sector chain; no board mutation is authorized until the
+transient installer/reader images, size checks, fault matrix, documentation,
+and explicit self-contained board card are complete. Occupied-sector CONVERT
+remains separately deferred.
 
 Each slice must measure STR8/HIMON/ASM resident CODE, DATA, UDATA, worker size,
 catalog capacity, and maximum RAM staging. A slice does not advance if it moves

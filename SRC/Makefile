@@ -606,8 +606,8 @@ asm-test: asm-abi-check ap-store-v1-check ap-store-inventory-check ap-store-sect
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_ABI_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
 
-ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_V1_CHECK)
+ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_V1_CHECK) -WorkerContractPath "$(AP_STORE_SECTOR_TOOL_INC)"
 
 ap-store-inventory-check: $(HIMON_ROM_S19) $(AP_STORE_INVENTORY_CHECK) $(AP_STORE_V1_INC) $(STR8N_IMPORTED_CONTRACT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_INVENTORY_CHECK) -HimonSourcePath "$(HIMON_SRC)" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -PublicContractPath "$(STR8N_IMPORTED_CONTRACT)"

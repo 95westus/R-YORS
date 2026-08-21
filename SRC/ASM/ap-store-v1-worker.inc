@@ -140,6 +140,105 @@ APSO_SCAN_LIST              EQU             $00
 APSO_SCAN_FIND              EQU             $01
 APSO_SCAN_PREPARE           EQU             $02
 
+; Slice 5 arbitrary-sector chain request/result card. This remains private to
+; a separate foreground AP. The caller names one bank and an explicit mask of
+; eligible sectors 8-F. Physical scan order is 8-F; logical offsets are the
+; canonical chain order. Each ten-byte plan row snapshots one used sector.
+APSC_INSTALL_PLAN_ENTRY     EQU             $7000
+APSC_INSTALL_EXECUTE_ENTRY  EQU             $7003
+; Slice 5 reader is a separate AP image in the same transient tray.
+APSC_LIST_ENTRY             EQU             $7000
+APSC_VALIDATE_ENTRY         EQU             $7003
+APSC_LOAD_ENTRY             EQU             $7006
+
+APSC_CARD_BASE              EQU             $7C80
+APSC_SOURCE_LO              EQU             APSC_CARD_BASE+$00
+APSC_SOURCE_HI              EQU             APSC_CARD_BASE+$01
+APSC_DEST_LO                EQU             APSC_CARD_BASE+$02
+APSC_DEST_HI                EQU             APSC_CARD_BASE+$03
+APSC_BANK                   EQU             APSC_CARD_BASE+$04
+APSC_SECTOR_MASK            EQU             APSC_CARD_BASE+$05
+APSC_OBJECT_LO              EQU             APSC_CARD_BASE+$06
+APSC_OBJECT_HI              EQU             APSC_CARD_BASE+$07
+APSC_OBJECT_GEN_LO          EQU             APSC_CARD_BASE+$08
+APSC_OBJECT_GEN_HI          EQU             APSC_CARD_BASE+$09
+APSC_CONFIRM                EQU             APSC_CARD_BASE+$0A
+APSC_STATUS                 EQU             APSC_CARD_BASE+$0B
+APSC_PACKAGE_LEN_LO         EQU             APSC_CARD_BASE+$0C
+APSC_PACKAGE_LEN_HI         EQU             APSC_CARD_BASE+$0D
+APSC_PACKAGE_FNV0           EQU             APSC_CARD_BASE+$0E
+APSC_PACKAGE_FNV1           EQU             APSC_CARD_BASE+$0F
+APSC_PACKAGE_FNV2           EQU             APSC_CARD_BASE+$10
+APSC_PACKAGE_FNV3           EQU             APSC_CARD_BASE+$11
+APSC_CHUNK_COUNT            EQU             APSC_CARD_BASE+$12
+APSC_USED_MASK              EQU             APSC_CARD_BASE+$13
+APSC_CAPACITY_LO            EQU             APSC_CARD_BASE+$14
+APSC_CAPACITY_HI            EQU             APSC_CARD_BASE+$15
+APSC_FAIL_PHASE             EQU             APSC_CARD_BASE+$16
+APSC_FAIL_SECTOR            EQU             APSC_CARD_BASE+$17
+APSC_ENTRY_LO               EQU             APSC_CARD_BASE+$18
+APSC_ENTRY_HI               EQU             APSC_CARD_BASE+$19
+APSC_PREP_BASE              EQU             APSC_CARD_BASE+$20
+APSC_PREP_BANK              EQU             APSC_PREP_BASE+$00
+APSC_PREP_SECTOR_MASK       EQU             APSC_PREP_BASE+$01
+APSC_PREP_OBJECT_LO         EQU             APSC_PREP_BASE+$02
+APSC_PREP_OBJECT_HI         EQU             APSC_PREP_BASE+$03
+APSC_PREP_OBJECT_GEN_LO     EQU             APSC_PREP_BASE+$04
+APSC_PREP_OBJECT_GEN_HI     EQU             APSC_PREP_BASE+$05
+APSC_PREP_PACKAGE_LEN_LO    EQU             APSC_PREP_BASE+$06
+APSC_PREP_PACKAGE_LEN_HI    EQU             APSC_PREP_BASE+$07
+APSC_PREP_PACKAGE_FNV0      EQU             APSC_PREP_BASE+$08
+APSC_PREP_PACKAGE_FNV1      EQU             APSC_PREP_BASE+$09
+APSC_PREP_PACKAGE_FNV2      EQU             APSC_PREP_BASE+$0A
+APSC_PREP_PACKAGE_FNV3      EQU             APSC_PREP_BASE+$0B
+APSC_PLAN_BASE              EQU             $7CB0
+APSC_PLAN_ROW_BYTES         EQU             $0A
+APSC_PLAN_SECTOR            EQU             $00
+APSC_PLAN_FLAGS             EQU             $01
+APSC_PLAN_RECORD_OFF_LO     EQU             $02
+APSC_PLAN_RECORD_OFF_HI     EQU             $03
+APSC_PLAN_LOGICAL_LO        EQU             $04
+APSC_PLAN_LOGICAL_HI        EQU             $05
+APSC_PLAN_LENGTH_LO         EQU             $06
+APSC_PLAN_LENGTH_HI         EQU             $07
+APSC_PLAN_MEDIA_CRC_LO      EQU             $08
+APSC_PLAN_MEDIA_CRC_HI      EQU             $09
+APSC_RECORD_HEADER_BASE     EQU             $7D00
+APSC_CARD_END               EQU             $7D3F
+
+APSC_CONFIRM_EXECUTE        EQU             $A5
+APSC_STATUS_IDLE            EQU             $00
+APSC_STATUS_PREPARED        EQU             $A0
+APSC_STATUS_OK              EQU             $AC
+APSC_STATUS_BAD_REQUEST     EQU             $D0
+APSC_STATUS_AP_INVALID      EQU             $D1
+APSC_STATUS_NOT_MANAGED     EQU             $D2
+APSC_STATUS_LOG_CORRUPT     EQU             $D3
+APSC_STATUS_DUPLICATE       EQU             $D4
+APSC_STATUS_NO_SPACE        EQU             $D5
+APSC_STATUS_MEDIA_CHANGED   EQU             $D6
+APSC_STATUS_NOT_CONFIRMED   EQU             $D7
+APSC_STATUS_PROGRAM_FAILED  EQU             $D8
+APSC_STATUS_VERIFY_FAILED   EQU             $D9
+APSC_STATUS_RESTORE_FAILED  EQU             $DA
+APSC_STATUS_NOT_FOUND       EQU             $DB
+APSC_STATUS_SERVICE_FAILED  EQU             $DC
+APSC_STATUS_INCOMPLETE      EQU             $DD
+APSC_STATUS_CONFLICT        EQU             $DE
+APSC_STATUS_TOO_MANY        EQU             $DF
+APSC_STATUS_CROSS_BANK      EQU             $E0
+
+APSC_PHASE_NONE             EQU             $00
+APSC_PHASE_SOURCE           EQU             $01
+APSC_PHASE_CATALOG          EQU             $02
+APSC_PHASE_PLAN             EQU             $03
+APSC_PHASE_POLICY           EQU             $04
+APSC_PHASE_HEADER           EQU             $05
+APSC_PHASE_PAYLOAD          EQU             $06
+APSC_PHASE_COMMIT           EQU             $07
+APSC_PHASE_RESTORE          EQU             $08
+APSC_PHASE_VALIDATE         EQU             $09
+
 APSW_OP_CLAIM               EQU             $01
 APSW_OP_CONVERT             EQU             $02
 APSW_OP_FORMAT              EQU             $03
