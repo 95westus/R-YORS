@@ -321,7 +321,9 @@ host fault matrix and board proof.
    cancellation behavior, and recovery instructions.
 
 Slices 1 and 2 are host-accepted as of 2026-08-20, and Slice 2 is board-
-accepted. HIMON's provisional `APS` command copies one 16-byte header at a time
+accepted. Slice 3 CLAIM/FORMAT is board-accepted as of 2026-08-21; explicit
+occupied-sector CONVERT remains a separate destructive proof. HIMON's
+provisional `APS` command copies one 16-byte header at a time
 through a 48-byte RAM reader at `$0300`, classifies it after restoring Bank 3,
 and streams all 24 rows. It uses 20 bytes at `$7C00-$7C13`, no 4K staging, and
 never writes the bank window. The linked HIMON candidate measures CODE 10819,
@@ -333,7 +335,7 @@ immediately before and after `APS`; both CRC runs returned `$AC` with zero
 failure cells. This proves byte preservation across Banks 0-3 while discovery
 continues to inspect headers only in Banks 0-2.
 
-Slice 3 now has a host-accepted transient candidate. It links 1832 bytes at
+Slice 3 has a host- and board-accepted transient tool. It links 1832 bytes at
 `$7000-$7727`, owns card `$7C00-$7C2F`, reuses only the `$0200-$0453` copied
 STR8 worker/selector range, and uses no permanent RAM. Entry `$7000` performs
 the full-sector 24-row read-only inventory; `$7003/$7006` retain the guarded
@@ -344,8 +346,17 @@ bootstrap and now admits only `$7000-$7BFF` in addition to its general
 resident 12274 bytes, ending at `$EFF2` with 14 bytes before STR8; resident
 `APS` and `Q` remain pending the later size pass. The host oracle passes all 24
 inventory rows, all 24 mutation locations, and 50 commit-last interruption
-points. The candidate remains board-pending under
-`../ASM/AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md`.
+points. On HIMON/ASM-F2 `00.0821(0132)`, sacrificial B1:8 advanced from erased
+to persistent ACTIVE generation 1 through CLAIM, then to persistent ACTIVE
+generation 2 through managed-empty FORMAT. Complete before/after CRC tables
+changed only B1:8, and an immediate unconfirmed second EXECUTE returned `$E7`
+without another mutation. The accepted transcript and remaining CONVERT gate
+are under `../ASM/AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md`.
+
+The next implementation target is Slice 4 single-sector
+install/list/validate/load. It can use empty managed B1:8 without first
+destroying an opaque sector; CONVERT may remain deferred until the operator
+names a separately disposable occupied target.
 
 Each slice must measure STR8/HIMON/ASM resident CODE, DATA, UDATA, worker size,
 catalog capacity, and maximum RAM staging. A slice does not advance if it moves
