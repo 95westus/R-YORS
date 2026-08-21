@@ -1,6 +1,6 @@
 # AP Store V1 Arbitrary-Sector Chain Board Test
 
-Status: host-accepted candidate; board proof pending.
+Status: host- and board-accepted on B1:9/B1:B on 2026-08-21.
 
 This card qualifies Slice 5 by storing one exact `$1000`-byte AP v2 envelope
 as a two-chunk object in nonadjacent managed sectors B1:9 and B1:B. B1:9
@@ -119,7 +119,7 @@ and prepared full-sector CRC, with every word little-endian.
    differ from the baseline. Its empty managed-sector header and CRC are:
 
    ```text
-   41 53 31 1B 01 00 5C 8D D7 59 FF FF FF FF FF FE
+   41 53 31 1B 01 00 5C 8D D7 59 FF FF FF FF FF FF
    CRC16 $5877, stored by the CRC tool as bytes 77 58
    ```
 
@@ -188,7 +188,14 @@ and prepared full-sector CRC, with every word little-endian.
 
 12. Re-run the exact four-bank CRC source. Relative to the post-CLAIM table,
     only B1:9 and B1:B may differ; all other 30 sector CRCs must be exact.
-    Save the table.
+    Save the table. The accepted CRCs are B1:9 `$65C3` and B1:B `$60E7`:
+
+    ```text
+    7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+    7C20: 48 F2 C3 65 E1 0F E7 60 | E1 0F E1 0F E1 0F 36 42
+    7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+    7C40: 83 61 92 C8 30 A1 DE 44 | 20 5C 18 7B 00 A8 A7 DD
+    ```
 
 13. Cold reset. Load the chain request helper, run `G 1A00`, load the reader
     envelope at `$4000`, and run `AP 4000 7000`. Repeat LIST, VALIDATE, the
@@ -198,6 +205,24 @@ and prepared full-sector CRC, with every word little-endian.
 
 Append the raw terminal transcript and all three CRC tables (baseline,
 post-CLAIM, post-chain/cold) to `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.
+
+## Accepted board result
+
+HIMON/ASM-F2 `00.0821(0132)` accepted the complete guarded procedure on
+2026-08-21. CLAIM changed only B1:B from `$0FE1` to `$5877`. PLAN returned
+`$A0` with exact rows `09/01/$005C/$0000/$0F8F/$6915` and
+`0B/02/$0010/$0F8F/$0071/$5877`. Confirmed EXECUTE returned `$AC`; its
+immediate replay returned `$D7`. LIST found exactly object `$0002`, generation
+`$0001`, length `$1000`; VALIDATE reconstructed `41 50 02 00 10`; LOAD/RUN
+resolved `$4000` and wrote marker `$C5` at `$1A01`.
+
+The post-chain CRC table changed only B1:9 (`$6915 -> $65C3`) and B1:B
+(`$5877 -> $60E7`). After `HCOLD` and `RAM ZERO OK`, the reader independently
+repeated LIST, VALIDATE, and LOAD/RUN, resident `APS` still reported both
+sectors ACTIVE generation 1, and the complete four-bank CRC table was
+identical. This accepts arbitrary nonadjacent same-bank chaining, exact
+reconstruction, commit-last publication, one-shot confirmation, mutation
+isolation, and cold persistence.
 
 ## Status values
 

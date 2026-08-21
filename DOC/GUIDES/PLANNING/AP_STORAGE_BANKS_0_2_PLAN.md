@@ -1,9 +1,9 @@
 # AP Storage Across Banks 0-2
 
-Status: implementation in progress. Slices 1-4 are host- and board-accepted:
-format/inventory, managed-sector mutation, and single-sector object
-install/list/validate/load. Slice 5 arbitrary-sector chaining now has a frozen
-host model plus measured installer/reader firmware; board proof is pending.
+Status: implementation in progress. Slices 1-5 are host- and board-accepted:
+format/inventory, managed-sector mutation, single-sector object operations,
+and arbitrary-sector same-bank chaining. Slice 6 delete and exhaustion is
+next; compaction remains explicitly deferred.
 
 This plan introduces managed AP storage in selected 4K sectors of Banks 0-2
 without treating any whole bank as an AP volume. A bank may remain bootable or
@@ -402,8 +402,11 @@ Slice 4 single-sector install/list/validate/load is host- and board-accepted
 on B1:9. Slice 5 uses the accepted B1:9 tail plus nonadjacent B1:B as its
 golden two-sector chain. Its `$7000-$7900` installer and `$7000-$7825` reader,
 exact 4K AP fixture, size/package/static-policy checks, fault model, and
-self-contained board card are host-accepted. The remaining gate is the board
-procedure in `../ASM/AP_STORE_V1_CHAIN_TOOL_BOARD_TEST.md`. Occupied-sector
+self-contained board card are host-accepted. The guarded board procedure in
+`../ASM/AP_STORE_V1_CHAIN_TOOL_BOARD_TEST.md` also passes: PLAN and confirmed
+EXECUTE produced the exact two rows, LIST/VALIDATE/LOAD/RUN passed before and
+after `HCOLD`, and only B1:9/B1:B changed in the complete CRC table. Their
+final CRCs are `$65C3/$60E7`. Occupied-sector
 CONVERT remains separately deferred.
 
 Each slice must measure STR8/HIMON/ASM resident CODE, DATA, UDATA, worker size,

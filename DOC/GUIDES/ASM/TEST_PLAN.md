@@ -15143,9 +15143,9 @@ location. This completes Slice 4 host and board acceptance.
 
 ## 2026-08-21 AP Store V1 Arbitrary-Sector Chain Slice
 
-Host status: format/allocator model and transient firmware accepted. Board
-status: pending. The only board mutation path authorized by this candidate is
-the guarded B1:9/B1:B procedure in `AP_STORE_V1_CHAIN_TOOL_BOARD_TEST.md`.
+Host status: accepted. Board status: accepted on B1:9/B1:B on 2026-08-21.
+The guarded mutation procedure is maintained in
+`AP_STORE_V1_CHAIN_TOOL_BOARD_TEST.md`.
 
 Slice 5 retains the frozen `AS1`/`AR` bytes and complete AP v2 stored unit.
 There are no next-sector pointers. The request names one bank and an explicit
@@ -15187,3 +15187,19 @@ explicit `HEADER-FF`/CRC gate. Expected PLAN capacity is `$1F6A`; the prepared
 rows are B1:9 `09 01 5C 00 00 00 8F 0F 15 69` and B1:B
 `0B 02 10 00 8F 0F 71 00 77 58`. Every load/assembly input is named, and all
 tiny helpers are reproduced as full S19 text in the board card.
+
+The board run CLAIMed B1:B only after its header-FF and `$0FE1` CRC gate;
+CLAIM returned `$AC`, its replay returned `$E7`, and the resulting empty
+managed-sector CRC was `$5877`. The Slice 5 PLAN then returned `$A0`, package
+length `$1000`, FNV `$85A60A1D`, capacity `$1F6A`, and the exact two prepared
+rows above. Confirmed EXECUTE returned `$AC`; immediate replay returned `$D7`
+without mutation. Resident `APS` continued to report B1:9 and B1:B ACTIVE
+generation 1 because appending did not alter their sector headers.
+
+The reader listed exactly `O=0002 G=0001 L=1000`, reconstructed and validated
+`41 50 02 00 10`, loaded entry `$4000`, and executed the marker that wrote
+`$C5` to `$1A01`. The complete CRC table changed only B1:9 from `$6915` to
+`$65C3` and B1:B from `$5877` to `$60E7`. After `HCOLD`/`RAM ZERO OK`, the
+independently reloaded reader repeated LIST, VALIDATE, and LOAD/RUN, `APS`
+again found both sectors ACTIVE generation 1, and all 32 CRC words exactly
+matched the post-chain table. This closes Slice 5 board acceptance.

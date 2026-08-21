@@ -20,13 +20,13 @@ append-only delete, and deferred compaction.
 - [ ] Define the AP-store identity, catalog/allocation records, integrity and
   commit-last rules, and the explicit destructive operation that converts an
   opaque bank or region into managed AP storage.
-- [ ] Allow an AP Capsule to span sectors inside one bank, but initially forbid
+- [x] Allow an AP Capsule to span sectors inside one bank, but initially forbid
   one capsule from crossing a bank boundary. Do not implement this by merely
   raising the current `$1000` package check: define multi-sector reading,
   staging/streaming, flash programming, validation, and recovery behavior.
-- [ ] Keep compression/decompression out of the required design. It is a
+- [x] Keep compression/decompression out of the required design. It is a
   possible long-term stored encoding only, and may never be implemented.
-- [ ] Decide whether the stored unit is (a) the complete AP envelope or (b) an
+- [x] Decide whether the stored unit is (a) the complete AP envelope or (b) an
   installed/split form whose AP metadata names a separately placed BODY.
   For a split form, specify BODY bank/address/length, bind it to its metadata
   with an integrity value, and distinguish storage placement from load/run
@@ -53,21 +53,27 @@ media. B1:9 CLAIM, append, LIST, reconstruction, validation, and LOAD/RUN pass;
 the corrected `$D7` failure-status return and cold persistence also pass. The
 final CRC table changed only B1:9 (`3E 40` to `15 69`, CRC `$403E` to `$6915`)
 and preserved all other 31 sectors, completing Slice 4 board acceptance.
-Multi-sector object chaining is now the active AP-store implementation slice.
-Provisional resident `APS` and `Q` removal is intentionally deferred.
+Slice 5 arbitrary-sector chaining is now accepted; Slice 6 delete and
+exhaustion is the active AP-store implementation slice. Provisional resident
+`APS` and `Q` removal is intentionally deferred.
 
-Slice 5 host candidate (board proof pending): no on-media format or ASM ABI
-change. A
-single-bank sector mask names the allowed arbitrary sectors; deterministic
-allocation emits at most one logical extent per sector. PLAN snapshots every
-used tail and sector CRC, partial committed prefixes remain non-live, and a
-retry must use a new generation. Separate `$7000` installer and reader APs
+Slice 5 is host- and board-accepted with no on-media format or ASM ABI
+change. A single-bank sector mask names the allowed arbitrary sectors;
+deterministic allocation emits at most one logical extent per sector. PLAN
+snapshots every used tail and sector CRC, partial committed prefixes remain
+non-live, and a retry must use a new generation. Separate `$7000` installer
+and reader APs
 share card `$7C80-$7D3F` to remain below HIMON's `$7A00` command buffer. The
 golden model fills B1:9 with `$0F8F` bytes and continues `$0071` bytes in
 nonadjacent B1:B, covering all 4,138 interrupted byte-write boundaries. The
 separate installer and reader link at `$7000-$7900` and `$7000-$7825`; their
 AP envelopes, `$4000` carriers, exact `$1000` fixture, static mutation split,
 and self-contained named-file/full-helper-S19 board card pass host checks.
+On board, PLAN produced exact nonadjacent B1:9/B1:B rows, confirmed EXECUTE
+returned `$AC`, replay returned `$D7`, and LIST/VALIDATE/LOAD/RUN passed both
+live and after `HCOLD`. Only B1:9/B1:B changed across the complete CRC table,
+to `$65C3/$60E7`; all other 30 sectors remained exact. Slice 6 delete and
+exhaustion is next.
 
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit

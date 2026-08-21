@@ -24695,3 +24695,247 @@ accepts target isolation and completes AP Store V1 implementation Slice 4:
 single-sector append, commit-last interruption safety, LIST, reconstruction,
 AP validation, LOAD/RUN, corrected rejection status, cold persistence, and
 whole-flash CRC isolation.
+
+## 2026-08-21 AP Store V1 Slice 5 Arbitrary-Sector Chain Acceptance
+
+HIMON/ASM-F2 `00.0821(0132)` ran the guarded B1:9/B1:B procedure from
+`AP_STORE_V1_CHAIN_TOOL_BOARD_TEST.md`. The operator-authorized writable media
+remained B1:8-E; B1:F was excluded. Initial catalog and read-only CRC baseline:
+
+```text
+>APS
+APS B/S=18 ACTIVE G=0002
+APS B/S=19 ACTIVE G=0001
+APS B/S=1A HEADER-FF
+APS B/S=1B HEADER-FF
+APS B/S=1C HEADER-FF
+APS B/S=1D HEADER-FF
+APS B/S=1E HEADER-FF
+APS OK
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7C00 7C04
+7C00: AC 00 00 00 00 | .....
+>D 7C10 7C4F
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C20: 48 F2 15 69 E1 0F E1 0F | E1 0F E1 0F E1 0F 36 42
+7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C40: 83 61 92 C8 30 A1 DE 44 | 20 5C 18 7B 00 A8 A7 DD
+```
+
+An initial confirmed-EXECUTE attempt after re-running the CRC tool safely
+returned `$E0`: that read-only tool had replaced the request card at `$7C00`,
+so restoring only `$7C03=A5` did not form a valid request. `APS` and a repeated
+CRC table showed no mutation. The request was then rebuilt and kept intact
+between PREPARE and EXECUTE. Successful B1:B CLAIM transcript:
+
+```text
+>G 1A00
+GO 1A00
+
+#GO# ENTRY=1A00
+RET A=0B X=30 Y=30 P=75 S=FD NV-BdIzC
+>D 7C00 7C03
+7C00: 01 01 0B 00 | ....
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=A0 X=FF Y=00 P=F5 S=FD NV-BdIzC
+>D 7C00 7C1F
+7C00: 01 01 0B 00 E1 0F A0 00 | 03 01 00 00 00 00 E1 0F
+7C10: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF
+>G 1A20
+GO 1A20
+
+#GO# ENTRY=1A20
+RET A=A5 X=30 Y=32 P=F5 S=FD NV-BdIzC
+>D 7C03
+7C03: A5 | .
+>G 7006
+GO 7006
+
+#GO# ENTRY=7006
+RET A=AC X=03 Y=0F P=F5 S=FD NV-BdIzC
+>D 7C00 7C1F
+7C00: 01 01 0B 00 E1 0F AC 00 | 03 01 00 00 00 00 E1 0F
+7C10: 41 53 31 1B 01 00 5C 8D | D7 59 FF FF FF FF FF FF
+>G 7006
+GO 7006
+
+#GO# ENTRY=7006
+RET A=E7 X=36 Y=30 P=F4 S=FD NV-BdIzc
+>APS
+APS B/S=18 ACTIVE G=0002
+APS B/S=19 ACTIVE G=0001
+APS B/S=1B ACTIVE G=0001
+APS OK
+```
+
+The post-CLAIM CRC table changed only B1:B from `$0FE1` to `$5877`:
+
+```text
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C20: 48 F2 15 69 E1 0F 77 58 | E1 0F E1 0F E1 0F 36 42
+7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C40: 83 61 92 C8 30 A1 DE 44 | 20 5C 18 7B 00 A8 A7 DD
+```
+
+The exact `$1000` APBIG envelope, chain request, and `$092F` installer carrier
+loaded at `$3000`, `$1A00`, and `$4000`. Read-only PLAN produced the frozen
+two-row allocation:
+
+```text
+>D 3000 3004
+3000: 41 50 02 00 10 | AP...
+>D 7C80 7C8A
+7C80: 00 30 00 40 01 0A 02 00 | 01 00 00
+>AP 4000 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=A0 X=FF Y=01 P=B5 S=FD Nv-BdIzC
+>D 7C80 7C99
+7C80: 00 30 00 40 01 0A 02 00 | 01 00 00 A0 00 10 1D 0A
+7C90: A6 85 02 0A 6A 1F 00 00 | 00 00
+>D 7CB0 7CC3
+7CB0: 09 01 5C 00 00 00 8F 0F | 15 69 0B 02 10 00 8F 0F
+7CC0: 71 00 77 58
+```
+
+Confirmed EXECUTE completed all 4,138 append actions, consumed confirmation,
+and left the prepared request and sector snapshots unchanged. Immediate replay
+was rejected before mutation:
+
+```text
+>G 1A40
+GO 1A40
+
+#GO# ENTRY=1A40
+RET A=A5 X=30 Y=34 P=F5 S=FD NV-BdIzC
+>D 7C8A
+7C8A: A5 | .
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=AC X=00 Y=00 P=B5 S=FD Nv-BdIzC
+>D 7C80 7C99
+7C80: 00 30 00 40 01 0A 02 00 | 01 00 00 AC 00 10 1D 0A
+7C90: A6 85 02 0A 6A 1F 00 00 | 00 00
+>D 7CB0 7CC3
+7CB0: 09 01 5C 00 00 00 8F 0F | 15 69 0B 02 10 00 8F 0F
+7CC0: 71 00 77 58
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=D7 X=33 Y=30 P=F4 S=FD NV-BdIzc
+>APS
+APS B/S=18 ACTIVE G=0002
+APS B/S=19 ACTIVE G=0001
+APS B/S=1B ACTIVE G=0001
+APS OK
+```
+
+The `$0854` reader carrier was then loaded. LIST, VALIDATE, reconstruction,
+relocation, and execution all passed against the live RAM session:
+
+```text
+>AP 4000 7000
+GO 7000
+APCHAIN O=0002 G=0001 L=1000
+APCHAIN OK
+
+#GO# ENTRY=7000
+RET A=AC X=1A Y=0A P=F5 S=FD NV-BdIzC
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=AC X=00 Y=0A P=B5 S=FD Nv-BdIzC
+>D 0A00 0A04
+0A00: 41 50 02 00 10 | AP...
+>G 7006
+GO 7006
+
+#GO# ENTRY=7006
+RET A=AC X=00 Y=40 P=B5 S=FD Nv-BdIzC
+>D 7C98 7C99
+7C98: 00 40 | .@
+>D 1A01
+1A01: C5 | .
+```
+
+The exact read-only CRC source assembled with `ASM OK`. The post-chain table
+changed only B1:9 and B1:B relative to post-CLAIM:
+
+```text
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7C00 7C04
+7C00: AC 00 00 00 00 | .....
+>D 7C10 7C4F
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C20: 48 F2 C3 65 E1 0F E7 60 | E1 0F E1 0F E1 0F 36 42
+7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C40: 83 61 92 C8 30 A1 DE 44 | 20 5C 18 7B 00 A8 A7 DD
+```
+
+Finally, `HCOLD` reported `RAM ZERO OK`. Resident discovery, an independently
+reloaded reader, and the same exact CRC source proved persistence:
+
+```text
+>APS
+APS B/S=18 ACTIVE G=0002
+APS B/S=19 ACTIVE G=0001
+APS B/S=1B ACTIVE G=0001
+APS OK
+>AP 4000 7000
+GO 7000
+APCHAIN O=0002 G=0001 L=1000
+APCHAIN OK
+
+#GO# ENTRY=7000
+RET A=AC X=1A Y=0A P=F5 S=FD NV-BdIzC
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=AC X=00 Y=0A P=B5 S=FD Nv-BdIzC
+>D 0A00 0A04
+0A00: 41 50 02 00 10 | AP...
+>G 7006
+GO 7006
+
+#GO# ENTRY=7006
+RET A=AC X=00 Y=40 P=B5 S=FD Nv-BdIzC
+>D 7C98 7C99
+7C98: 00 40 | .@
+>D 1A01
+1A01: C5 | .
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7C00 7C04
+7C00: AC 00 00 00 00 | .....
+>D 7C10 7C4F
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C20: 48 F2 C3 65 E1 0F E7 60 | E1 0F E1 0F E1 0F 36 42
+7C30: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C40: 83 61 92 C8 30 A1 DE 44 | 20 5C 18 7B 00 A8 A7 DD
+```
+
+B1:9 advanced from `$6915` to `$65C3`; B1:B advanced from `$5877` to
+`$60E7`. All other 30 sector CRCs stayed exact, and the cold table matched the
+post-chain table byte for byte. This completes Slice 5 board acceptance for
+nonadjacent same-bank chaining, commit-last publication, exact reconstruction,
+AP validation, LOAD/RUN, one-shot confirmation, isolation, and persistence.
