@@ -14989,3 +14989,34 @@ B3 83 61 92 C8 30 A1 42 AE 17 FD 29 AB 5B 89 87 DA
 `APS` was the only operation between the two complete four-bank CRC runs. This
 closes byte preservation, including unscanned Bank 3, and completes Slice 2
 hardware acceptance. The raw transcript is appended to the hardware log.
+
+## 2026-08-20 AP Store V1 Single-Sector Mutation Slice
+
+Host status: accepted candidate. Board status: pending explicit sacrificial-
+sector CLAIM/FORMAT proof. No resident HIMON or ASM ABI bytes change.
+
+`make -C SRC ap-store-sector-tool-check` builds the standalone worker at
+`$7000-$757F` and pins its two-entry contract: read-only PREPARE at `$7000`,
+confirmed EXECUTE at `$7003`, and request/result card `$7C00-$7C2F`. The tool
+uses the published `$F010` selector bootstrap and copied `$0203` entry. Its
+scan, flash command, polling, verify, and restore paths all execute from RAM;
+Bank 3 is restored before return.
+
+PREPARE scans all 4096 bytes, records CRC16, classification, erased flags, and
+next generation, then clears confirmation. EXECUTE requires `$A5`, consumes it
+before selecting flash, and repeats the full scan. A changed request, class,
+flags, generation policy, or CRC returns without mutation.
+
+The host matrix covers all 24 eligible locations, exact `AS1` header bytes,
+CLAIM of erased media, occupied CLAIM rejection, occupied-unmanaged CONVERT,
+managed CONVERT rejection, managed-empty FORMAT, nonempty FORMAT rejection,
+generation exhaustion, missing confirmation, stale media, and preservation of
+every byte outside the selected sector including Bank 3. Fifty injected stop
+points span erase, bytes `$00-$0E`, and the final state-byte commit across
+CLAIM, CONVERT, and FORMAT. No requested generation becomes ACTIVE before the
+last action.
+
+The maintained destructive procedure is
+[`AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md`](AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md).
+Board acceptance requires before/after four-bank CRC tables, persistent ACTIVE
+generation 1 after CLAIM, and persistent ACTIVE generation 2 after FORMAT.

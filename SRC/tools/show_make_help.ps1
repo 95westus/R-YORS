@@ -47,6 +47,8 @@ $rows = @(
     [pscustomobject]@{ Target = "asm-v1-flash"; Category = "asm"; Description = "Build flash ASM at 8000: BUILD/s19/asm-v1-flash-8000.s19." }
     [pscustomobject]@{ Target = "asm-session-report-ap-bin"; Category = "asm"; Description = "Build the transient ASM session reporter AP fixed at 7000: BUILD/bin/asm-session-report-v1.2-7000.ap.bin." }
     [pscustomobject]@{ Target = "ap-store-inventory-check"; Category = "asm"; Description = "Build and emulate HIMON's read-only 24-sector AP Store inventory path." }
+    [pscustomobject]@{ Target = "ap-store-sector-tool"; Category = "asm"; Description = "Build the transient AP Store CLAIM/CONVERT/FORMAT tool at 7000." }
+    [pscustomobject]@{ Target = "ap-store-sector-tool-check"; Category = "asm"; Description = "Check the linked AP Store sector tool and its commit-last fault matrix." }
     [pscustomobject]@{ Target = "asm-test"; Category = "asm"; Description = "Run the full ASM smoke/proof build set." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
     [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }

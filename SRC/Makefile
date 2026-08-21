@@ -40,6 +40,8 @@ ASM_ABI_INC := $(ASM_DIR)/asm-abi-v1.inc
 AP_STORE_V1_CHECK := tools/check_ap_store_v1.ps1
 AP_STORE_V1_INC := $(ASM_DIR)/ap-store-v1.inc
 AP_STORE_INVENTORY_CHECK := tools/check_ap_store_inventory.ps1
+AP_STORE_SECTOR_TOOL_CHECK := tools/check_ap_store_sector_tool.ps1
+AP_STORE_SECTOR_TOOL_INC := $(ASM_DIR)/ap-store-v1-worker.inc
 BOARD_S19_IDENTITY_CHECK := tools/check_board_s19_identity.ps1
 HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
 RYORS_LOGO_SVG := ../DOC/branding/logo-r-yors.svg
@@ -179,6 +181,10 @@ ASM_SESSION_REPORT_A_RUNTIME := ../DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report
 ASM_SESSION_REPORT_A_MOVABLE := ../DOC/GUIDES/ASM/SAMPLES/asm-session-report-v1.2-ap-2000.a
 ASM_SESSION_REPORT_AP_GEN := tools/build_ap_fixed_package.ps1
 ASM_SESSION_REPORT_AP_BIN := $(BIN_DIR)/asm-session-report-v1.2-7000.ap.bin
+AP_STORE_SECTOR_TOOL_SRC := $(PROOFS_DIR)/ap-store-v1-sector-tool.asm
+AP_STORE_SECTOR_TOOL_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/ap-store-v1-sector-tool.obj
+AP_STORE_SECTOR_TOOL_S19 := $(S19_DIR)/ap-store-v1-sector-tool-7000.s19
+AP_STORE_SECTOR_TOOL_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
 ASM_V1_FLASH_SRC := $(ASM_DIR)/asm-v1-flash.asm
 ASM_V1_FLASH_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash.obj
 ASM_V1_FLASH_RUNTIME_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash-runtime.obj
@@ -522,6 +528,10 @@ asm-session-report: $(ROM_LIB) $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_AP
 	@echo "Built $(ASM_SESSION_REPORT_S19) and $(ASM_SESSION_REPORT_AP_BIN)."
 	@$(MAKE) artifacts
 
+ap-store-sector-tool: $(AP_STORE_SECTOR_TOOL_S19)
+	@echo "Built $(AP_STORE_SECTOR_TOOL_S19)."
+	@$(MAKE) artifacts
+
 asm-session-report-ap-bin: $(ASM_SESSION_REPORT_AP_BIN)
 	@echo "Built $(ASM_SESSION_REPORT_AP_BIN)."
 	@$(MAKE) artifacts
@@ -563,7 +573,7 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 release-files: board-s19-check life rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check ap-store-v1-check ap-store-inventory-check asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
+asm-test: asm-abi-check ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
@@ -574,6 +584,9 @@ ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC)
 
 ap-store-inventory-check: $(HIMON_ROM_S19) $(AP_STORE_INVENTORY_CHECK) $(AP_STORE_V1_INC) $(STR8N_IMPORTED_CONTRACT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_INVENTORY_CHECK) -HimonSourcePath "$(HIMON_SRC)" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -PublicContractPath "$(STR8N_IMPORTED_CONTRACT)"
+
+ap-store-sector-tool-check: $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(STR8N_IMPORTED_CONTRACT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_CHECK) -SourcePath "$(AP_STORE_SECTOR_TOOL_SRC)" -S19Path "$(AP_STORE_SECTOR_TOOL_S19)" -MapPath "$(S19_DIR)/ap-store-v1-sector-tool-7000.map"
 
 asm-ap-v2-check: $(ASM_SESSION_REPORT_AP_BIN) $(AP_V2_PACKAGE_CHECK) $(ASM_V1_FLASH_SRC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
@@ -898,6 +911,15 @@ $(ASM_SESSION_REPORT_AP_BIN): $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_AP_
 	@echo [ps] build $(ASM_SESSION_REPORT_AP_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_SESSION_REPORT_AP_GEN) -S19Path "$(ASM_SESSION_REPORT_S19)" -MapPath "$(S19_DIR)/asm-session-report-v1.2-7000.map" -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)" -BaseAddress 28672 -EntrySymbol "ASMREPORT" -ExportName "ASMREPORT"
 
+$(AP_STORE_SECTOR_TOOL_S19): $(AP_STORE_SECTOR_TOOL_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(AP_STORE_SECTOR_TOOL_LINKFLAGS) $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_OBJ)
+	@echo [ps] set S9 start $$7000 in $(AP_STORE_SECTOR_TOOL_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(AP_STORE_SECTOR_TOOL_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S90370008C'; Set-Content -Path $$p -Value $$lines"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/ap-store-v1-sector-tool-7000.map') { '$(S19_DIR)/ap-store-v1-sector-tool-7000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/ap-store-v1-sector-tool-7000.map') { '$(MAP_DIR)/ap-store-v1-sector-tool-7000.map' } else { throw 'ap-store-v1-sector-tool-7000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_CODE\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_CODE not found in AP Store sector tool map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); if ($$end -gt 0x7C00) { throw ('AP Store sector tool crosses 7C00: _END_CODE={0:X4}' -f $$end) }; Write-Host ('AP Store sector tool end = {0:X4} (limit 7C00)' -f $$end)"
+
+$(AP_STORE_SECTOR_TOOL_OBJ): $(AP_STORE_SECTOR_TOOL_SRC) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(STR8N_IMPORTED_CONTRACT)
+
 $(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ) $(ASM_V1_FLASH_MAP_CHECK)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(ASM_V1_FLASH_LINKFLAGS) $(ASM_V1_FLASH_S19) $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ)
@@ -1135,6 +1157,7 @@ endif
 	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase-legacy asm-v1-core \
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \
 	asm-v1-runtime-paste asm-session-report asm-session-report-ap-bin asm-v1-flash asm-flash asm-opcode-coverage \
+	ap-store-sector-tool ap-store-sector-tool-check \
 	asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check \
 	asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-dc-check board-s19-check \
 	asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src \

@@ -1,8 +1,9 @@
 # AP Storage Across Banks 0-2
 
 Status: implementation in progress. Host format oracle and read-only inventory
-firmware are host- and board-accepted through implementation Slice 2. No flash
-mutation firmware exists yet.
+firmware are host- and board-accepted through implementation Slice 2. The
+transient single-sector mutation worker is a host-accepted Slice 3 candidate;
+destructive board proof is pending.
 
 This plan introduces managed AP storage in selected 4K sectors of Banks 0-2
 without treating any whole bank as an AP volume. A bank may remain bootable or
@@ -222,6 +223,44 @@ sector; otherwise it returns `SECTOR IN USE`. It confirms, erases all 4096
 bytes, verifies `$FF`, writes a new generation header, and commits state last.
 It never adopts an opaque sector.
 
+### Slice 3 Transient Worker Boundary
+
+Single-sector mutation does not consume the remaining 39-byte HIMON resident
+margin. A standalone foreground tool is linked at `$7000`, below the `$7C00`
+High Tool Overlay, and uses the existing STR8 selector bootstrap at `$F010`.
+After bootstrap, all bank changes use the copied `$0203` selector. The tool's
+scan, erase, program, polling, and restore control flow executes from RAM; it
+never calls Bank-3 flash while Bank 0, 1, or 2 is selected.
+
+The transient request/result card is frozen in
+`SRC/ASM/ap-store-v1-worker.inc`. `PREPARE` at `$7000` accepts an operation,
+bank, and sector in the `$7C00` card, scans all 4096 bytes, copies the 16-byte
+header, classifies it, and records its CRC16. It performs no mutation.
+`EXECUTE` at `$7003` requires the operator to set confirmation byte `$A5`,
+consumes that byte before selecting the target bank, and repeats the complete
+scan. Any classification, policy, or CRC change returns `MEDIA CHANGED`
+without mutation.
+
+The provisional operations are deliberately narrower than the eventual
+operator UI:
+
+- CLAIM accepts only a completely erased eligible sector and never erases it;
+- CONVERT accepts only an occupied sector that is not valid managed storage,
+  then erases it explicitly;
+- FORMAT accepts only a committed managed header whose bytes `$0010-$0FFF`
+  are all `$FF`, then increments its sector generation and erases it. This
+  empty-log restriction is the Slice 3 proof that no live object references
+  the sector. A later catalog-aware slice may widen FORMAT safely.
+
+CLAIM and CONVERT begin at generation 1. FORMAT rejects generation `$FFFF`
+rather than wrapping. After any required erase and full-sector `$FF` verify,
+the worker writes and verifies header bytes `$00-$0E`, then programs state
+`$FE` last. A failure or power interruption before the state commit leaves an
+unavailable erased, partial, corrupt, or staged sector; only the final verified
+state transition makes it active. The tool and the `$7000` reporter are
+mutually exclusive foreground loads, and every worker invocation remains
+terminal for an ASM session.
+
 ### Install
 
 `INSTALL` validates the complete source AP v2 envelope before mutation, chooses
@@ -293,6 +332,13 @@ Board acceptance captured all 24 rows and identical four-bank CRC tables
 immediately before and after `APS`; both CRC runs returned `$AC` with zero
 failure cells. This proves byte preservation across Banks 0-3 while discovery
 continues to inspect headers only in Banks 0-2.
+
+Slice 3 now has a host-accepted transient candidate. It links 1408 bytes at
+`$7000-$757F`, owns card `$7C00-$7C2F`, reuses only the `$0200-$0453` copied
+STR8 worker/selector range, and uses no 4K staging or permanent RAM. Its host
+oracle passes all 24 locations and 50 commit-last interruption points. The
+candidate remains board-pending under
+`../ASM/AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md`.
 
 Each slice must measure STR8/HIMON/ASM resident CODE, DATA, UDATA, worker size,
 catalog capacity, and maximum RAM staging. A slice does not advance if it moves
