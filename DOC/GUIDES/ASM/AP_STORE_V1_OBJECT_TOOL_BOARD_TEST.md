@@ -61,18 +61,68 @@ at `$3000`, writes `$A4` to
 The whole-package FNV stored in the AR header is `$708711B6`, little-endian
 `B6 11 87 70`.
 
+## Transport Manifest
+
+Every loadable helper used by this card has an exact filename. Build the three
+generated tool/package transports with:
+
+```text
+make -C SRC ap-store-sector-tool ap-store-object-tool ap-store-marker
+```
+
+```text
+Purpose                  File loaded through HIMON L
+Slice 3 APSTORE          SRC/BUILD/s19/ap-store-v1-sector-tool-7000.s19
+CLAIM B1:9 request       DOC/GUIDES/ASM/SAMPLES/ap-store-v1-claim-b1s9-1a00.s19
+CLAIM confirmation       DOC/GUIDES/ASM/SAMPLES/ap-store-v1-claim-confirm-1a20.s19
+Slice 4 APOBJ envelope   SRC/BUILD/s19/ap-store-v1-object-tool-package-3000.s19
+Object B1:9 O1/G1 card   DOC/GUIDES/ASM/SAMPLES/ap-store-v1-object-b1s9-o1g1-1a00.s19
+APMARK envelope          SRC/BUILD/s19/ap-store-v1-marker-package-3000.s19
+Object confirmation      DOC/GUIDES/ASM/SAMPLES/ap-store-v1-object-confirm-1a40.s19
+Four-bank CRC source     DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-bank-crc-all-3000.a
+```
+
+The four static helper transports are deliberately tiny and inspectable:
+
+```text
+; ap-store-v1-claim-b1s9-1a00.s19
+S1141A00A9018D007C8D017CA9098D027C9C037C60DC
+S9031A00E2
+
+; ap-store-v1-claim-confirm-1a20.s19
+S1091A20A9A58D037C6002
+S9031A20C2
+
+; ap-store-v1-object-b1s9-o1g1-1a00.s19
+S1231A00A9018D017CA9098D027C9C307CA9308D317C9C327C8D337CA9018D347C9C357C3C
+S10D1A208D367C9C377C9C387C607A
+S9031A00E2
+
+; ap-store-v1-object-confirm-1a40.s19
+S1091A40A9A58D387C60AD
+S9031A40A2
+```
+
+Expected loader reports are `$0011/$1A00`, `$0006/$1A20`, `$002A/$1A00`,
+and `$0006/$1A40`, respectively. The CRC item is ASM source: paste it into
+`ASM NEW`, terminate with `.`, then `ASM BYE`; its resulting S19 is loaded at
+`$3000` exactly as in the captured board procedure.
+
 ## Gate Sequence
 
 1. Capture the complete four-bank CRC table and run `APS`. Require B1:8
    `ACTIVE G=0002`, B1:9 `HEADER-FF`, and the operator-approved B1:8-E range.
-2. Load `APSTORE`, set CLAIM/B1:9 through an inspected helper, run PREPARE
-   `$7003`, review the card, write confirmation `$A5` to `$7C03`, and run
-   EXECUTE `$7006`. Require `$AC` and `APS B/S=19 ACTIVE G=0001`.
+2. Load `ap-store-v1-sector-tool-7000.s19`, run `G 7000`, load
+   `ap-store-v1-claim-b1s9-1a00.s19`, and run `G 1A00`. Run PREPARE `$7003`,
+   review the card, load `ap-store-v1-claim-confirm-1a20.s19`, run `G 1A20`,
+   and run EXECUTE `$7006`. Require `$AC` and
+   `APS B/S=19 ACTIVE G=0001`.
 3. Load `ap-store-v1-object-tool-package-3000.s19`, which places the `$0A1E`
    AP envelope at `$3000`, then run `AP 3000 7000`. It enters LIST; set B1:9
    before calling LIST again if the initial request bytes are not already valid.
-4. Load `ap-store-v1-marker-package-3000.s19` at `$3000`. Run the golden object-card
-   helper and inspect `$7C01-$7C02` plus `$7C30-$7C38`.
+4. Load `ap-store-v1-marker-package-3000.s19` at `$3000`. Load
+   `ap-store-v1-object-b1s9-o1g1-1a00.s19`, run `G 1A00`, and inspect
+   `$7C01-$7C02` plus `$7C30-$7C38`.
 5. Call INSTALL PREPARE with `G 7003`. This is read-only. Require status `$A0`,
    phase `$00`, record offset `$0010`, package length `$0037`, package FNV
    `B6 11 87 70`, record count zero, and equal live/prepared media CRCs. The
@@ -83,9 +133,10 @@ The whole-package FNV stored in the AR header is `$708711B6`, little-endian
    B6 11 87 70 3F 42
    ```
 
-6. Write only `$A5` to `$7C38`, verify it, then call INSTALL EXECUTE with
-   `G 7006`. Require status/return `$AC`, confirmation consumed to `$00`, and
-   phase `$00`. A second `G 7006` must return `$D7` and must not mutate media.
+6. Load `ap-store-v1-object-confirm-1a40.s19`, run `G 1A40`, and verify that
+   it wrote only `$A5` to `$7C38`. Then call INSTALL EXECUTE with `G 7006`.
+   Require status/return `$AC`, confirmation consumed to `$00`, and phase
+   `$00`. A second `G 7006` must return `$D7` and must not mutate media.
 7. Call LIST with `G 7000`. Require exactly:
 
    ```text
@@ -100,9 +151,11 @@ The whole-package FNV stored in the AR header is `$708711B6`, little-endian
 10. Re-run the four-bank CRC table. Only B1:9 may differ from the post-CLAIM
     table. The committed record occupies sector offsets `$0010-$005B`; its
     commit byte at `$005B` is `$A5`, and `$005C-$0FFF` remains erased.
-11. Cold-reset, reload `APOBJ`, restore the request, and repeat LIST, VALIDATE,
-    and LOAD/RUN. This closes flash persistence and reconstruction independent
-    of prior RAM.
+11. Cold-reset; load `ap-store-v1-object-tool-package-3000.s19`, then load
+    `ap-store-v1-object-b1s9-o1g1-1a00.s19` and run `G 1A00`. Run
+    `AP 3000 7000`, then repeat the unconfirmed `G 7006`, VALIDATE, and
+    LOAD/RUN checks. This closes corrected `$D7` return, flash persistence,
+    and reconstruction independent of prior RAM.
 
 Append the raw transcript and all CRC tables to
 `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`. Do not mark Slice 4 accepted until the
