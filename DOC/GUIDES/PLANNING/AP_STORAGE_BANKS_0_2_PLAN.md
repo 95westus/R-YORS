@@ -70,6 +70,23 @@ assembly or session reporting. Preflight and operator cancellation occur before
 claiming the low-RAM worker/staging lifecycle. This rule avoids hidden permanent
 RAM and prevents a destroyed symbol table from appearing resumable.
 
+The supported evidence order is report before store. A session reporter AP is
+loaded at its execution address before `ASM NEW`; after the target reaches END
+and SEAL, the reporter runs while `$0200-$19FF` still contains that session's
+tables. Control then resumes the post-END shell, PACKAGE writes the target AP v2
+envelope into caller-selected RAM, and STORE is the final session operation.
+The reporter itself may be an AP and may live in AP Store; it simply must not be
+loaded through the table-clobbering low staging path after the target session
+has begun.
+
+```text
+load reporter AP before ASM NEW
+ASM NEW -> assemble -> END -> SEAL
+run reporter against intact session tables
+resume post-END shell -> PACKAGE -> STORE
+ASM NEW before any later assembly/report
+```
+
 LIST may stream output without the 4K staging area. VALIDATE/LOAD claim the 4K
 staging area and are unavailable while a resumable ASM session owns the low
 tables. Resident request/result cells remain the frozen ASM ABI v1 cells; new

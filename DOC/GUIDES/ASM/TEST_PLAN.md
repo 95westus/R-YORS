@@ -14902,3 +14902,9 @@ contract adds no permanent cells: LIST streams through `$7C00-$7DBF`, while
 VALIDATE/LOAD reuse `$0200-$09FF` worker code and `$0A00-$19FF` AP staging.
 Because those low ranges overlap ASM session name tables, STORE becomes a
 terminal post-END operation and requires `ASM NEW` afterward.
+
+The accepted lifecycle is explicitly report-before-store: preload the reporter
+AP before `ASM NEW`, assemble and seal the target, run the reporter against the
+intact low tables, resume the post-END shell, then PACKAGE and STORE last. This
+preserves the reporter as an AP without allocating another worker or staging
+arena.
