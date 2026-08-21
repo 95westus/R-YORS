@@ -14917,8 +14917,9 @@ transcripts remain unchanged as historical evidence.
 
 ## 2026-08-20 AP Store V1 Read-Only Inventory Slice
 
-Host status: accepted candidate. Board status: pending. This slice performs no
-flash mutation.
+Host status: accepted candidate. Board status: functional scan accepted;
+before/after CRC preservation continuation pending. This slice performs no
+flash mutation by design.
 
 HIMON now carries a provisional `APS` command whose Bank-3-resident loop scans
 exactly Banks 0-2 and sectors `$8-$F`. Before the first bank switch it copies a
@@ -14964,3 +14965,18 @@ margin to STR8      39 bytes, $EFD9-$EFFF
 The command spelling and final diagnostics remain provisional until the
 operator-hardening slice. Board proof must capture one continuous 24-row scan
 and matching before/after full-bank CRCs before Slice 2 is hardware-accepted.
+
+### Functional board continuation
+
+HIMON `00.0820(1943)` printed all 24 rows in the required order, omitted Bank
+3, reported `APS OK`, and returned to its prompt. An immediately preceding
+Bank Maintenance map independently confirmed the important `HEADER-FF`
+distinction: Bank-0:F and Bank-2:F were full-sector `USED` while their first 16
+bytes were `$FF`; Bank-1:8-E were erased and also `HEADER-FF`; Bank-1:F was
+occupied and `OPAQUE`. The raw transcript is appended to the hardware log.
+
+The only remaining Slice-2 board gate is byte-preservation evidence. Assemble
+the maintained `str8n-v1.2-bank-crc-all-3000.a` fixture, capture its
+`$7C10-$7C4F` table, run `APS`, rerun `G 3000`, and capture the regenerated
+table. The two 64-byte CRC tables must match exactly. `$7C00` must be `$AC`
+after each CRC run; `APS` is expected to overwrite that overlay between runs.

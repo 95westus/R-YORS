@@ -24322,3 +24322,101 @@ The operator subsequently declared that separate lowercase-to-uppercase
 seal-shell echo sweep complete on 2026-08-20. No additional transcript was
 supplied with the declaration; this records operator acceptance while the host
 contract remains the exact per-command regression evidence.
+
+## 2026-08-20 AP Store V1 Read-Only Inventory Functional Board Proof
+
+HIMON `00.0820(1943)` ran the provisional `APS` inventory after a warm return
+to Bank 3. The immediately preceding Bank Maintenance map provides an
+independent full-sector occupied/erased classification for comparison. Raw
+console transcript:
+
+```text
+HIMON V 00.0820(1943)
+>G 2000
+GO 2000
+
+STR8-N 1.21 BANK MAINT + TOP
+ M  MAP BANKS + DIRECTORY
+ C  COPY BANK + ENROLL
+ D  ADOPT BANK INTO DIRECTORY
+ R  RECLAIM DIRECTORY
+ E  ERASE BANK RANGE
+ P  PUT AP $5000 -> B0:BF00
+ U  UPDATE B3:F (BACKUP B1:F; RESET)
+ ?  MENU
+ Q/ENTER  RETURN TO STR8-N
+BM> M
+
+B# 8 9 A B C D E F
+
+B0 U U U U U U U U
+B1 E E E E E E E U
+B2 U U U U U U U U
+B3 U U U U U U U P
+E=ERASED U=USED A=AP VALID P=B3F PROTECTED
+
+DIR B T DESC ENTRY JOURNAL
+D0 02 WDCV2 FFFF FCFFFFFF
+D1 F2 WDCBK FFFF FCFFFFFF
+D2 F2 WDCDG FFFF FCFFFFFF
+D3 FF RYORS C000 0000F0FF
+ OK
+
+STR8-N 1.21 BANK MAINT + TOP
+ M  MAP BANKS + DIRECTORY
+ C  COPY BANK + ENROLL
+ D  ADOPT BANK INTO DIRECTORY
+ R  RECLAIM DIRECTORY
+ E  ERASE BANK RANGE
+ P  PUT AP $5000 -> B0:BF00
+ U  UPDATE B3:F (BACKUP B1:F; RESET)
+ ?  MENU
+ Q/ENTER  RETURN TO STR8-N
+BM> Q
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.22
+0-2 C W S: ......
+BOOT WARM
+
+HIMON V 00.0820(1943)
+>APS
+APS B/S=08 OPAQUE
+APS B/S=09 OPAQUE
+APS B/S=0A OPAQUE
+APS B/S=0B OPAQUE
+APS B/S=0C OPAQUE
+APS B/S=0D OPAQUE
+APS B/S=0E OPAQUE
+APS B/S=0F HEADER-FF
+APS B/S=18 HEADER-FF
+APS B/S=19 HEADER-FF
+APS B/S=1A HEADER-FF
+APS B/S=1B HEADER-FF
+APS B/S=1C HEADER-FF
+APS B/S=1D HEADER-FF
+APS B/S=1E HEADER-FF
+APS B/S=1F OPAQUE
+APS B/S=28 OPAQUE
+APS B/S=29 OPAQUE
+APS B/S=2A OPAQUE
+APS B/S=2B OPAQUE
+APS B/S=2C OPAQUE
+APS B/S=2D OPAQUE
+APS B/S=2E OPAQUE
+APS B/S=2F HEADER-FF
+APS OK
+>
+```
+
+The command emitted exactly 24 rows in Bank 0, Bank 1, Bank 2 order and never
+reported Bank 3. It returned normally to the Bank-3 HIMON prompt. The two
+classification views agree without conflating header identity with whole-
+sector occupancy: Bank-0 sector F and Bank-2 sector F are `U` in the full-
+sector map but `HEADER-FF` in `APS`, while erased Bank-1 sectors 8-E also have
+`HEADER-FF`; occupied Bank-1 sector F is `OPAQUE`.
+
+This accepts the functional scan, ordering, physical-location presentation,
+`HEADER-FF` semantics, Bank-3 exclusion, and normal return. It does not yet
+close flash-preservation proof because the capture contains no matching full-
+bank CRC tables immediately before and after `APS`.

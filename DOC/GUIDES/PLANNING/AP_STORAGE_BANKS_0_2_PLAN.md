@@ -1,8 +1,9 @@
 # AP Storage Across Banks 0-2
 
 Status: implementation in progress. Host format oracle and read-only inventory
-firmware are accepted host candidates; no flash mutation or board proof exists
-yet.
+firmware are accepted host candidates. The 24-row functional board scan passes;
+matching before/after CRC preservation evidence remains open. No flash mutation
+firmware exists yet.
 
 This plan introduces managed AP storage in selected 4K sectors of Banks 0-2
 without treating any whole bank as an AP volume. A bank may remain bootable or
@@ -281,8 +282,9 @@ host fault matrix and board proof.
 7. **Operator hardening.** Freeze command syntax, confirmations, diagnostics,
    cancellation behavior, and recovery instructions.
 
-Slices 1 and 2 are host-accepted as of 2026-08-20; Slice 2 still requires board
-proof. HIMON's provisional `APS` command copies one 16-byte header at a time
+Slices 1 and 2 are host-accepted as of 2026-08-20. Slice 2's functional board
+scan passes, but its before/after CRC preservation gate remains open. HIMON's
+provisional `APS` command copies one 16-byte header at a time
 through a 48-byte RAM reader at `$0300`, classifies it after restoring Bank 3,
 and streams all 24 rows. It uses 20 bytes at `$7C00-$7C13`, no 4K staging, and
 never writes the bank window. The linked HIMON candidate measures CODE 10819,
