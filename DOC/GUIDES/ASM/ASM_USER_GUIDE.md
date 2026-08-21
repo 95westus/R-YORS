@@ -4,9 +4,13 @@ The stable HIMON service-vector/RAM-card and AP v2 package interfaces are
 defined in [ASM_ABI_V1.md](ASM_ABI_V1.md). Internal ASM addresses are not part
 of that ABI.
 
-Status: current operator guide for ASM v1 as of 2026-07-06. ASM is a young
-onboard W65C02 workbench, not yet a finished hosted toolchain. The hardware
-proof source of truth remains [TEST_PLAN.md](TEST_PLAN.md).
+Status: current operator guide for ASM v1 as of 2026-08-21. The repository
+build identifies as ASM-F2 `00.0821(1039)`; the bounded-table note is also
+reconciled with board-observed `00.0821(0132)`. ASM is a young onboard W65C02
+workbench, not a hosted toolchain. The hardware proof source of truth remains
+[TEST_PLAN.md](TEST_PLAN.md). For WDC, ca65, and vasm translation, including
+the non-equivalent AP metadata model, see
+[ASM_DIALECT_CROSSWALK.md](ASM_DIALECT_CROSSWALK.md).
 
 ## What ASM Is
 
@@ -437,6 +441,12 @@ LDA #13       ; OK
 LDA 13        ; BAD WIDTH
 ```
 
+Do not assume hosted-assembler behavior here. ASM-F2 width follows spelling,
+expressions evaluate strictly left to right, and its forward-reference and
+relocation tables are bounded independently. The concise porting rules and
+directive equivalents are in
+[ASM_DIALECT_CROSSWALK.md](ASM_DIALECT_CROSSWALK.md).
+
 ## Directives
 
 Current v1 directives:
@@ -496,7 +506,8 @@ single-quoted string, so embedded or unterminated quotes fail atomically with
 `ERR=$03`. Single-character expressions such as `DB 'A'` and `LDA #'A'`
 retain their existing meaning outside `DC`.
 
-`DW` emits each resolved expression as a 16-bit little-endian word:
+`DW` emits each expression as a 16-bit little-endian word. A forward label is
+patched when it binds and consumes a forward-fixup row in the meantime:
 
 ```asm
 DW START,TARGET,$1234
@@ -1003,6 +1014,15 @@ limits. The overall envelope remains capped at 4 KiB, so all three tables can
 reach their individual limits, but a package containing every maximum-length
 name in every table may leave little or no room for BODY bytes.
 
+Fixups and relocations are separate budgets. Each unresolved emitted use
+consumes one of the 128 fixup rows, even when many rows name the same target.
+Putting data and helpers before their fixed-load uses can therefore prevent
+`BAD FIX`. It does not reduce the relocation rows required to move internal
+absolute address sites. Relocation overflow leaves ordinary fixed-address ASM
+valid but seal-ineligible; it does not become packageable when later AP work
+is finished. See the worked distinction in
+[ASM_DIALECT_CROSSWALK.md](ASM_DIALECT_CROSSWALK.md).
+
 Global symbols use 128 metadata rows plus a bounded `$0800`-byte append-only
 name pool. Names remain 1-31 characters, but consume only their actual length;
 there is no 32-byte slot per symbol. Both the row limit and pool limit are
@@ -1054,7 +1074,7 @@ BAD WIDTH   source width does not match the instruction or context
 BAD RANGE   value, branch, ORG, or target address is out of range
 BAD LINE    malformed or too-long source line
 BAD SYM     bad, duplicate, missing, reserved, or out-of-scope symbol
-BAD FIX     unresolved or failed fixup, commonly at END
+BAD FIX     unresolved, failed, or table-exhausted fixup
 RJOIN       resident routine lookup/service setup failed
 ```
 
@@ -1064,21 +1084,18 @@ RJOIN       resident routine lookup/service setup failed
 - a local label was referenced outside its scope
 - an import was intended but not declared
 - a resident call name was not available in the current HIMON/RJOIN catalog
+- 128 live forward-fixup rows were consumed before their targets bound
 
 ## Current Gaps
 
 Known limitations:
 
 - No `ASM I` / `ASM B` split yet; typing and pasting use the same line path.
-- Soon ASM-F2 update: make DB-heavy prompt/string sources less fragile than
-  today's 63-visible-character physical line cap, either by a longer paste line
-  path, explicit continuation, or first-class string data forms. Until then,
-  split long `DB` rows manually; overlong rows correctly report `ERR=$07 BL`.
+- The physical source-line cap remains 63 visible characters. Compact `DC`
+  strings reduce DB-heavy source pressure, but long rows must still be split;
+  overlong rows correctly report `ERR=$07 BAD LINE`.
 - No parentheses or precedence in expressions.
 - No forward `EQU` dependency solver.
-- No forward data fixups yet: `DW TARGET`, `DB <TARGET`, and `DB >TARGET`
-  require `TARGET` to be known in current flash ASM. The next ASM incarnation
-  should support those source forms and emit relocation rows for label data.
 - Compact raw/CSTR/HBSTR/PSTR `DC` forms and the older comma/double-quote forms
   are current. Embedded apostrophes have no escape spelling yet.
 - No default flash-image `CHECK` command.

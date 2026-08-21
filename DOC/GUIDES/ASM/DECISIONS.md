@@ -25,11 +25,10 @@ Settled v1 overview:
   use `.asm`. Older paste samples may keep their legacy names until migrated.
 - Width is source intent. `$hh` means zero page, `$hhhh` means absolute, and no
   numeric-range promotion/demotion is allowed.
-- `EQU`, `DB`, `DW`, `DS`, `ORG`, and `END` are v1 directives. `EQU` must resolve
-  immediately; forward references use emitted-byte fixups only.
-- `DC` is parked for now because WDC source format wins. V1 vocabulary keeps
-  `DC` reserved so using it as an operation returns `BAD DIR`, not a user
-  symbol.
+- Current v1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, `END`, `ENTRY`,
+  `EXPORT`, `IMPORT`, and `DC`. `EQU` must resolve immediately; forward
+  references use emitted-byte fixups only. Compact raw/C/H/P `DC` strings are
+  ASM-F2 syntax, not a claim of WDC `DC` byte-for-byte compatibility.
 - V1 reports the current session: address range, bytes, counts, unresolved
   fixups, used symbols with line numbers, unused session symbols, and resident
   symbols referenced.
@@ -190,18 +189,20 @@ A [addr] [label[:]] MMM [operand] .
   and `?NAME:` bind/reference local PC labels inside the most recent nonlocal
   label scope. `.` alone is a legacy `A`/input-driver sentinel if used, not ASM
   source syntax. No v1 dot-directive aliases.
-- Minimal v1 ASM directives follow WDC shape: `EQU`, `DB`, `DW`, `DS`, `ORG`,
-  `END`, `EXPORT`, and `IMPORT`. `DC` and `START` remain parked later
-  directives. The module-boundary spelling is `EXPORT NAME` for a public
-  global label offset and `IMPORT NAME` for an intended external/imported
-  symbol; `ENTRY`/`EXTRN` are not the planned spellings.
+- Current v1 ASM directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, `END`,
+  `ENTRY`, `EXPORT`, `IMPORT`, and `DC`. `START` is released as an ordinary
+  label. The module-boundary spellings are `ENTRY NAME` for the executable
+  public row, `EXPORT NAME` for another public global label offset, and
+  `IMPORT NAME` for an intended external/imported symbol.
 - V1 directive shapes are:
   `NAME EQU expr` with name required;
   `[NAME] DB item[,item...]` with optional current-PC label;
   `[NAME] DW expr[,expr...]` with optional current-PC label;
   `[NAME] DS count[,init...]` with optional current-PC label;
+  `[NAME] DC string-form` with optional current-PC label;
   `ORG expr` with no leading name;
   `END` with no leading name and no operand;
+  `ENTRY NAME` with no leading name and exactly one defined global PC label;
   `EXPORT NAME` with no leading name and exactly one defined global label name;
   `IMPORT NAME` with no leading name and exactly one global intended external
   name.
@@ -217,19 +218,12 @@ A [addr] [label[:]] MMM [operand] .
   before resident RJOIN. This makes explicit `IMPORT NAME` a force-deferred
   spelling even when `NAME` is resident today; plain undeclared `JSR`/`JMP`
   operands still RJOIN and bind to today's resident address.
-- The next ASM incarnation must make data directives first-class fixup and
-  relocation clients. `DW TARGET` should accept known and forward PC labels,
-  emit or later patch a little-endian word, and record an `$01`
-  `ABS16_INTERNAL` relocation row when the target is a session label.
-  `DB <TARGET` and `DB >TARGET` should do the same for `$02` `LO8_INTERNAL`
-  and `$03` `HI8_INTERNAL`. The dry-run/count pass must not reject forward
-  labels that have an unambiguous selected width. Later import-capable `LINK`
-  can extend the same path to `$04-$06` import rows.
-- Parked vocabulary must not permanently steal common user labels. In the next
-  ASM incarnation, either implement an actual `START` directive in the same
-  slice or release `START`/`START:` as an ordinary user label. Leaving `START`
-  reserved while it is not usable as syntax is too sharp for board-facing
-  source.
+- Data directives are now first-class fixup and relocation clients.
+  `DW TARGET`, `DB <TARGET`, and `DB >TARGET` accept known or forward session
+  labels and record `$01` ABS16, `$02` LO8, and `$03` HI8 internal relocation
+  rows. The import path likewise uses typed `$04-$06` rows.
+- The earlier parked-`START` decision is superseded: `START` and `START:` are
+  ordinary user labels. Use `ENTRY NAME` to declare an AP executable entry.
 - ASM reads one full source line in v1, capped at 63 visible characters. Spaces
   and tabs are whitespace; tabs have no column meaning. Empty and comment-only
   lines are OK. An overlong line is `BAD LINE`.

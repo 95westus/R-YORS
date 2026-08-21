@@ -15,9 +15,11 @@ and audits current as call ownership or RJOIN boundaries change.
 The planned post-board-test direction for sealed, relocatable ASM output lives
 in [MOVABLE_MODULES.md](MOVABLE_MODULES.md).
 
-Current WDC-compatibility correction: `DB` is the active v1 data directive.
-`DC` is parked/reserved for now, so older `DC` examples in this narrative are
-historical unless repeated in [DECISIONS.md](DECISIONS.md).
+Current source correction: `DB`, `DW`, and compact raw/C/H/P `DC` are active
+v1 data directives. ASM-F2 `DC` is local syntax and does not imply WDC `DC`
+byte compatibility. See the current operator guide and
+[ASM_DIALECT_CROSSWALK.md](ASM_DIALECT_CROSSWALK.md); older parked-`DC`
+discussion below is implementation history.
 
 HIMON's old `A` command was legacy mini-assembler code. ASM was once going to
 use `A`, but that plan is canceled and `A` has been removed from HIMON. ASM
@@ -110,13 +112,13 @@ Core settled rules:
   emitted bytes, not symbol equations.
 - `<` and `>` select low/high bytes. V1 applies them as prefix selectors on one
   atom. `*` is the current assembly PC.
-- V1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, `END`, `EXPORT`, and
-  `IMPORT`. `DC` and `START` are parked. `EXPORT NAME` marks a defined global
-  label as a public module offset; `IMPORT NAME` declares an intended
-  external/imported symbol as sealed metadata.
-- `DB` v1 is simple byte/word/address data. `X'...'`, `B'...'`, `HBSTR`,
-  `CSTR`, and `PSTR` are later.
-- `DW` emits each resolved expression as one little-endian 16-bit word.
+- V1 directives are `EQU`, `DB`, `DW`, `DS`, `ORG`, `END`, `ENTRY`, `EXPORT`,
+  `IMPORT`, and `DC`. `START` is an ordinary label. `ENTRY NAME` marks the
+  executable public row, `EXPORT NAME` another public module offset, and
+  `IMPORT NAME` an external/imported symbol as sealed metadata.
+- `DB` emits byte/word/address data. `DC` accepts current raw/C/H/P compact
+  strings and older comma/double-quote compatibility forms.
+- `DW` emits each known or forward expression as one little-endian 16-bit word.
 - `ORG` sets PC, emits no bytes, and never moves backward.
 - Unknown ordinary symbol operands default to absolute fixups unless the
   mnemonic forces another mode. Placeholder bytes are `$FF`.
@@ -1207,9 +1209,11 @@ LABEL END           ; BAD SYM
 FOO BAR             ; BAD MNEM if BAR is not vocabulary
 ORG                 ; BAD OPER
 END X               ; BAD OPER
-START               ; BAD DIR in v1, parked directive
 .LOOP               ; BAD SYM until a nonlocal label opens local scope
 ```
+
+The former `START` error example is superseded; `START` is now an ordinary
+global label at the current PC.
 
 ## ASM 1.70 Symbol Table Basics
 
@@ -4141,8 +4145,9 @@ tokens such as `DB`, `DW`, or `FCC`, not dot-leading tokens.
 
 ### Future Directive Alias Records
 
-THE can model an alias as one hash record resolving to another typed record,
-but `DC` is parked for v1:
+Historical design note: THE can model an alias as one hash record resolving
+to another typed record. This sketch predates the implemented compact `DC`
+handler:
 
 ```text
 hash("DC") -> alias/directive record -> hash("DB") -> DB handler

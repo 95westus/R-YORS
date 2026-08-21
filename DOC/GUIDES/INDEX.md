@@ -63,6 +63,8 @@ surface and full Bank Jump Record persistence matrix are hardware-accepted.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
 - [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and [Hash Trash](HASH/HASH_TRASH.md).
 - [ASM](ASM/ASM_USER_GUIDE.md) - onboard assembler operator guide;
+  see [ASM_DIALECT_CROSSWALK.md](ASM/ASM_DIALECT_CROSSWALK.md) for WDC, ca65,
+  and vasm directive equivalents and ASM-F2's unusual semantic rules,
   see [ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) for practical address
   choices and command address roles,
   see [AP_LINKER_CURRENT_IMAGE_GATES.md](ASM/AP_LINKER_CURRENT_IMAGE_GATES.md)

@@ -15252,3 +15252,23 @@ repetition proves persistence. This zero-payload tombstone is CRC-neutral
 against its erased 21-byte tail, so the maintained card requires the complete
 post-delete CRC table to remain identical and uses catalog results—not a
 fabricated CRC delta—as the publication proof.
+
+## 2026-08-21 ASM-F2 VT102 Fixup-Budget Observation
+
+Board status: assembly limit reproduced; restructured source assembly
+accepted; execution/exit remains unaccepted.
+
+The supplied ASM-F2 `00.0821(0132)` transcript distinguishes the two bounded
+metadata problems. The symbolic VT102 exerciser shape consumed all 128 live
+forward-fixup rows and began returning `ERR=$09 BAD FIX` at `PC=$3143`. This
+is an assembly-time limit: repeated references count separately even when they
+name the same helper or string. It is not the 64-row AP relocation limit.
+
+The later fixed-load, table-driven byte-stream shape reached `END` at
+`PC=$39CC` and printed `ASM OK` in three captured attempts. This accepts the
+restructuring as a way to stay inside the forward-fixup table for a program
+that will run only at its original address. Each attempt then showed `SEAL>`
+followed by `BRK 23 PC=2890`; the transcript does not contain `SEAL OK
+FLAGS=$01` or a normal program return. Therefore it proves source assembly,
+not AP packaging or execution acceptance. The exit/entry sequence must be
+corrected and rerun before either terminal exerciser is called board-proven.

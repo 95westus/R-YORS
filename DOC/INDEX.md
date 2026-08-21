@@ -61,7 +61,9 @@ The story is intentionally outside the main operator/technical path:
 - [GUIDES/MEMORY](GUIDES/MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
 - [GUIDES/CATALOG](GUIDES/CATALOG/CATALOG.md) - routine catalog and catalog proof notes.
 - [GUIDES/HASH](GUIDES/HASH/HASH_MAP.md) - hash references and map.
-- [GUIDES/ASM](GUIDES/ASM/HASHED_ASM.md) - assembler and symbol references; includes the [ASM test plan](GUIDES/ASM/TEST_PLAN.md).
+- [GUIDES/ASM](GUIDES/ASM/ASM_USER_GUIDE.md) - current assembler guide, the
+  [hosted-dialect crosswalk](GUIDES/ASM/ASM_DIALECT_CROSSWALK.md), and the
+  [ASM test plan](GUIDES/ASM/TEST_PLAN.md).
 - [GUIDES/QCC](GUIDES/QCC/INDEX.md) - active design questions.
 - [GUIDES/LOGS](GUIDES/LOGS/HARDWARE_TEST_LOG.md) - hardware proof logs.
 - [GUIDES/PLANNING](GUIDES/PLANNING/TODO.md) - TODO and future notes.

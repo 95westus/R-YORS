@@ -36,6 +36,8 @@ connect.
 - [CATALOG](CATALOG/CATALOG.md) - callable routine catalog and catalog proof examples.
 - [HASH](HASH/HASH_MAP.md) - hash policy, FNV-era notes, CRC16 direction, and parked ideas.
 - [ASM](ASM/ASM_USER_GUIDE.md) - onboard assembler operator guide, with
+  [ASM_DIALECT_CROSSWALK.md](ASM/ASM_DIALECT_CROSSWALK.md) for ASM-F2 versus
+  WDC, ca65, and vasm syntax and semantic traps,
   [ASM_ABI_V1.md](ASM/ASM_ABI_V1.md) as the frozen HIMON service and AP v2
   binary contract,
   [ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) as the quick address-role
