@@ -1,12 +1,12 @@
-# ISH Proposal
+# `#ISH` Proposal
 
-Status: informal planning proposal recorded 2026-08-21. `ISH` is a working
-name, not yet an acronym or a committed language, command, ABI, or resident
-feature.
+Status: informal planning proposal recorded 2026-08-21. The canonical name is
+`#ISH`, with `#ish` accepted as its lowercase form. The name is not yet an
+acronym, committed language, command, ABI, or resident feature.
 
 ## The Idea
 
-ISH could be a small, readable source layer for composing existing R-YORS
+`#ISH` could be a small, readable source layer for composing existing R-YORS
 routines. It would keep machine state visible, but remove repetitive load,
 call, and branch spelling from simple programs:
 
@@ -18,7 +18,7 @@ IF NC HANDLE_IO_ERROR
 ```
 
 The useful middle ground is above raw W65C02 source and below a general
-high-level language. An ISH statement should lower to a short, inspectable ASM
+high-level language. A `#ISH` statement should lower to a short, inspectable ASM
 sequence. It should not introduce a virtual machine, hidden heap, scheduler,
 exception system, or second runtime ABI.
 
@@ -65,7 +65,7 @@ SYS_SYSTEM_HALT
 ```
 
 `IF NC` is intentional here. The current R-YORS service convention generally
-uses carry set for success and carry clear for rejection or failure. If ISH
+uses carry set for success and carry clear for rejection or failure. If `#ISH`
 uses `IF C`, it should mean exactly "branch when carry is set"; it should not
 silently reinterpret carry according to the preceding call.
 
@@ -129,7 +129,7 @@ name argument roles, register placement, result registers and flags, callable
 kind, and clobbers. It should describe the existing ABI rather than invent a
 parallel one.
 
-ISH source should be able to request an AP import for a named service and then
+`#ISH` source should be able to request an AP import for a named service and then
 use the assembler's normal linking path. A host-only direct-address mode may
 be useful for diagnostics, but should not become the portable program form.
 
@@ -145,7 +145,7 @@ publish the example names `SYS_CONSOLE_GET_CSTRING`,
 More importantly, `A=64` is not enough to make the current C-string reader
 bounded. A proposed console-get service must say whether 64 includes the final
 NUL, what happens at capacity, whether the buffer is always terminated, and
-how Ctrl-C, timeout, blank input, overflow, and editing are distinguished. ISH
+how Ctrl-C, timeout, blank input, overflow, and editing are distinguished. `#ISH`
 must not imply safety that the called service does not provide.
 
 `ERROR=$0080` is unused in the sketch. It could eventually point to a compact
@@ -166,7 +166,7 @@ The smallest useful experiment would contain only:
 - a host-side line parser for labels, register/role assignment, named calls,
   `IF C`, `IF NC`, `GOTO`, and `RETURN`;
 - a tiny declarative signature table for a few already-published routines;
-- ordinary ASM output with comments showing each ISH source line;
+- ordinary ASM output with comments showing each `#ISH` source line;
 - one serial-read example using the existing `SYS_READ_CSTRING` contract and
   a local ASCII validator;
 - golden tests that compare exact emitted ASM and rejected input diagnostics.
@@ -177,12 +177,12 @@ and error paths are shown.
 
 If bounded input is still the motivating example, design and prove that SYS
 routine independently. Only after its capacity and failure contract is stable
-should `ADDR`, `LIMIT`, and `SYS_CONSOLE_GET_CSTRING` become a standard ISH
+should `ADDR`, `LIMIT`, and `SYS_CONSOLE_GET_CSTRING` become a standard `#ISH`
 signature.
 
 ## Proof Questions
 
-Before treating ISH as more than a proposal, demonstrate:
+Before treating `#ISH` as more than a proposal, demonstrate:
 
 - exact lowering for constants, symbols, low/high address bytes, and forward
   branches;
@@ -197,7 +197,7 @@ Before treating ISH as more than a proposal, demonstrate:
 
 ## Decisions To Leave Open
 
-- Whether `ISH` receives a long name.
+- Whether `#ISH` receives a long name.
 - Whether calls are bare routine names or use `CALL`.
 - Whether `ADDR` and `LIMIT` are universal roles or service-specific aliases.
 - Whether the source is translated directly to ASM text or to a small
