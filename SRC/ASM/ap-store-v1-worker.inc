@@ -10,6 +10,12 @@ APSW_LOAD_BASE              EQU             $7000
 APSW_INVENTORY_ENTRY        EQU             $7000
 APSW_PREPARE_ENTRY          EQU             $7003
 APSW_EXECUTE_ENTRY          EQU             $7006
+; Slice 4 is a separate transient image. Its entry table also begins at $7000.
+APSO_LIST_ENTRY             EQU             $7000
+APSO_INSTALL_PREPARE_ENTRY  EQU             $7003
+APSO_INSTALL_EXECUTE_ENTRY  EQU             $7006
+APSO_VALIDATE_ENTRY         EQU             $7009
+APSO_LOAD_ENTRY             EQU             $700C
 APSW_LIMIT_EXCLUSIVE        EQU             $7C00
 
 APSW_CARD_BASE              EQU             STR8_HIGH_TOOL_BASE
@@ -47,6 +53,92 @@ APSW_TERM1                  EQU             APSW_PRIVATE_BASE+$0D
 APSW_TERM2                  EQU             APSW_PRIVATE_BASE+$0E
 APSW_TERM3                  EQU             APSW_PRIVATE_BASE+$0F
 APSW_CARD_END               EQU             APSW_CARD_BASE+$2F
+
+; Slice 4 single-sector object request/result card. Object ids are explicit,
+; opaque nonzero allocation keys; they are not truncated name hashes.
+APSO_CARD_BASE              EQU             $7C30
+APSO_SOURCE_LO              EQU             APSO_CARD_BASE+$00
+APSO_SOURCE_HI              EQU             APSO_CARD_BASE+$01
+APSO_DEST_LO                EQU             APSO_CARD_BASE+$02
+APSO_DEST_HI                EQU             APSO_CARD_BASE+$03
+APSO_OBJECT_LO              EQU             APSO_CARD_BASE+$04
+APSO_OBJECT_HI              EQU             APSO_CARD_BASE+$05
+APSO_OBJECT_GEN_LO          EQU             APSO_CARD_BASE+$06
+APSO_OBJECT_GEN_HI          EQU             APSO_CARD_BASE+$07
+APSO_CONFIRM                EQU             APSO_CARD_BASE+$08
+APSO_STATUS                 EQU             APSO_CARD_BASE+$09
+APSO_RECORD_OFF_LO          EQU             APSO_CARD_BASE+$0A
+APSO_RECORD_OFF_HI          EQU             APSO_CARD_BASE+$0B
+APSO_PACKAGE_LEN_LO         EQU             APSO_CARD_BASE+$0C
+APSO_PACKAGE_LEN_HI         EQU             APSO_CARD_BASE+$0D
+APSO_PACKAGE_FNV0           EQU             APSO_CARD_BASE+$0E
+APSO_PACKAGE_FNV1           EQU             APSO_CARD_BASE+$0F
+APSO_PACKAGE_FNV2           EQU             APSO_CARD_BASE+$10
+APSO_PACKAGE_FNV3           EQU             APSO_CARD_BASE+$11
+APSO_MEDIA_CRC_LO           EQU             APSO_CARD_BASE+$12
+APSO_MEDIA_CRC_HI           EQU             APSO_CARD_BASE+$13
+APSO_FAIL_PHASE             EQU             APSO_CARD_BASE+$14
+APSO_RECORD_COUNT           EQU             APSO_CARD_BASE+$15
+APSO_ENTRY_LO               EQU             APSO_CARD_BASE+$16
+APSO_ENTRY_HI               EQU             APSO_CARD_BASE+$17
+APSO_PREP_BASE              EQU             APSO_CARD_BASE+$18
+APSO_PREP_BANK              EQU             APSO_PREP_BASE+$00
+APSO_PREP_SECTOR            EQU             APSO_PREP_BASE+$01
+APSO_PREP_OBJECT_LO         EQU             APSO_PREP_BASE+$02
+APSO_PREP_OBJECT_HI         EQU             APSO_PREP_BASE+$03
+APSO_PREP_OBJECT_GEN_LO     EQU             APSO_PREP_BASE+$04
+APSO_PREP_OBJECT_GEN_HI     EQU             APSO_PREP_BASE+$05
+APSO_PREP_RECORD_OFF_LO     EQU             APSO_PREP_BASE+$06
+APSO_PREP_RECORD_OFF_HI     EQU             APSO_PREP_BASE+$07
+APSO_PREP_PACKAGE_LEN_LO    EQU             APSO_PREP_BASE+$08
+APSO_PREP_PACKAGE_LEN_HI    EQU             APSO_PREP_BASE+$09
+APSO_PREP_PACKAGE_FNV0      EQU             APSO_PREP_BASE+$0A
+APSO_PREP_PACKAGE_FNV1      EQU             APSO_PREP_BASE+$0B
+APSO_PREP_PACKAGE_FNV2      EQU             APSO_PREP_BASE+$0C
+APSO_PREP_PACKAGE_FNV3      EQU             APSO_PREP_BASE+$0D
+APSO_PREP_MEDIA_CRC_LO      EQU             APSO_PREP_BASE+$0E
+APSO_PREP_MEDIA_CRC_HI      EQU             APSO_PREP_BASE+$0F
+APSO_FOUND_OFF_LO           EQU             APSO_CARD_BASE+$28
+APSO_FOUND_OFF_HI           EQU             APSO_CARD_BASE+$29
+APSO_SCAN_MODE              EQU             APSO_CARD_BASE+$2A
+APSO_FOUND_COUNT            EQU             APSO_CARD_BASE+$2B
+APSO_RECORD_HEADER_BASE     EQU             APSO_CARD_BASE+$30
+APSO_CARD_END               EQU             APSO_RECORD_HEADER_BASE+APS_RECORD_HEADER_BYTES-1
+
+APSO_SECTOR_BUFFER          EQU             $2000
+APSO_PACKAGE_BUFFER         EQU             $0A00
+APSO_CONFIRM_EXECUTE        EQU             $A5
+
+APSO_STATUS_IDLE            EQU             $00
+APSO_STATUS_PREPARED        EQU             $A0
+APSO_STATUS_OK              EQU             $AC
+APSO_STATUS_BAD_REQUEST     EQU             $D0
+APSO_STATUS_AP_INVALID      EQU             $D1
+APSO_STATUS_NOT_MANAGED     EQU             $D2
+APSO_STATUS_LOG_CORRUPT     EQU             $D3
+APSO_STATUS_DUPLICATE       EQU             $D4
+APSO_STATUS_NO_SPACE        EQU             $D5
+APSO_STATUS_MEDIA_CHANGED   EQU             $D6
+APSO_STATUS_NOT_CONFIRMED   EQU             $D7
+APSO_STATUS_PROGRAM_FAILED  EQU             $D8
+APSO_STATUS_VERIFY_FAILED   EQU             $D9
+APSO_STATUS_RESTORE_FAILED  EQU             $DA
+APSO_STATUS_NOT_FOUND       EQU             $DB
+APSO_STATUS_SERVICE_FAILED  EQU             $DC
+
+APSO_PHASE_NONE             EQU             $00
+APSO_PHASE_SCAN             EQU             $01
+APSO_PHASE_SOURCE           EQU             $02
+APSO_PHASE_POLICY           EQU             $03
+APSO_PHASE_HEADER           EQU             $04
+APSO_PHASE_PAYLOAD          EQU             $05
+APSO_PHASE_COMMIT           EQU             $06
+APSO_PHASE_RESTORE          EQU             $07
+APSO_PHASE_VALIDATE         EQU             $08
+
+APSO_SCAN_LIST              EQU             $00
+APSO_SCAN_FIND              EQU             $01
+APSO_SCAN_PREPARE           EQU             $02
 
 APSW_OP_CLAIM               EQU             $01
 APSW_OP_CONVERT             EQU             $02

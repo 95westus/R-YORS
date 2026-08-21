@@ -41,6 +41,7 @@ AP_STORE_V1_CHECK := tools/check_ap_store_v1.ps1
 AP_STORE_V1_INC := $(ASM_DIR)/ap-store-v1.inc
 AP_STORE_INVENTORY_CHECK := tools/check_ap_store_inventory.ps1
 AP_STORE_SECTOR_TOOL_CHECK := tools/check_ap_store_sector_tool.ps1
+AP_STORE_OBJECT_TOOL_CHECK := tools/check_ap_store_object_tool.ps1
 AP_STORE_SECTOR_TOOL_INC := $(ASM_DIR)/ap-store-v1-worker.inc
 BOARD_S19_IDENTITY_CHECK := tools/check_board_s19_identity.ps1
 HIMON_VERSION_STAMP := tools/stamp_himon_version.ps1
@@ -187,6 +188,16 @@ AP_STORE_SECTOR_TOOL_S19 := $(S19_DIR)/ap-store-v1-sector-tool-7000.s19
 AP_STORE_SECTOR_TOOL_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
 AP_STORE_SECTOR_TOOL_AP_GEN := tools/build_ap_fixed_package.ps1
 AP_STORE_SECTOR_TOOL_AP_BIN := $(BIN_DIR)/ap-store-v1-sector-tool-7000.ap.bin
+AP_STORE_OBJECT_TOOL_SRC := $(AP_STORE_SECTOR_TOOL_SRC)
+AP_STORE_OBJECT_TOOL_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/ap-store-v1-object-tool.obj
+AP_STORE_OBJECT_TOOL_S19 := $(S19_DIR)/ap-store-v1-object-tool-7000.s19
+AP_STORE_OBJECT_TOOL_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
+AP_STORE_OBJECT_TOOL_AP_BIN := $(BIN_DIR)/ap-store-v1-object-tool-7000.ap.bin
+AP_STORE_MARKER_SRC := $(PROOFS_DIR)/ap-store-v1-marker-3000.asm
+AP_STORE_MARKER_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/ap-store-v1-marker-3000.obj
+AP_STORE_MARKER_S19 := $(S19_DIR)/ap-store-v1-marker-3000.s19
+AP_STORE_MARKER_LINKFLAGS := -g -s -t -c3000 -hm19 -j -o
+AP_STORE_MARKER_AP_BIN := $(BIN_DIR)/ap-store-v1-marker-3000.ap.bin
 ASM_V1_FLASH_SRC := $(ASM_DIR)/asm-v1-flash.asm
 ASM_V1_FLASH_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash.obj
 ASM_V1_FLASH_RUNTIME_OBJ := $(OBJ_DIR)/$(ASM_DIR)/asm-v1-flash-runtime.obj
@@ -538,6 +549,14 @@ ap-store-sector-tool-ap-bin: $(AP_STORE_SECTOR_TOOL_AP_BIN)
 	@echo "Built $(AP_STORE_SECTOR_TOOL_AP_BIN)."
 	@$(MAKE) artifacts
 
+ap-store-object-tool: $(AP_STORE_OBJECT_TOOL_S19) $(AP_STORE_OBJECT_TOOL_AP_BIN)
+	@echo "Built $(AP_STORE_OBJECT_TOOL_S19) and $(AP_STORE_OBJECT_TOOL_AP_BIN)."
+	@$(MAKE) artifacts
+
+ap-store-marker: $(AP_STORE_MARKER_S19) $(AP_STORE_MARKER_AP_BIN)
+	@echo "Built $(AP_STORE_MARKER_S19) and $(AP_STORE_MARKER_AP_BIN)."
+	@$(MAKE) artifacts
+
 asm-session-report-ap-bin: $(ASM_SESSION_REPORT_AP_BIN)
 	@echo "Built $(ASM_SESSION_REPORT_AP_BIN)."
 	@$(MAKE) artifacts
@@ -594,6 +613,11 @@ ap-store-inventory-check: $(HIMON_ROM_S19) $(AP_STORE_INVENTORY_CHECK) $(AP_STOR
 ap-store-sector-tool-check: $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_AP_BIN) $(AP_STORE_SECTOR_TOOL_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_CHECK) -SourcePath "$(AP_STORE_SECTOR_TOOL_SRC)" -S19Path "$(AP_STORE_SECTOR_TOOL_S19)" -MapPath "$(S19_DIR)/ap-store-v1-sector-tool-7000.map" -PackagePath "$(AP_STORE_SECTOR_TOOL_AP_BIN)"
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_SECTOR_TOOL_AP_BIN)"
+
+ap-store-object-tool-check: $(AP_STORE_OBJECT_TOOL_S19) $(AP_STORE_OBJECT_TOOL_AP_BIN) $(AP_STORE_OBJECT_TOOL_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(AP_STORE_MARKER_AP_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_OBJECT_TOOL_CHECK) -SourcePath "$(AP_STORE_OBJECT_TOOL_SRC)" -S19Path "$(AP_STORE_OBJECT_TOOL_S19)" -MapPath "$(S19_DIR)/ap-store-v1-object-tool-7000.map" -ToolPackagePath "$(AP_STORE_OBJECT_TOOL_AP_BIN)" -PackagePath "$(AP_STORE_MARKER_AP_BIN)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_OBJECT_TOOL_AP_BIN)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_MARKER_AP_BIN)"
 
 asm-ap-v2-check: $(ASM_SESSION_REPORT_AP_BIN) $(AP_V2_PACKAGE_CHECK) $(ASM_V1_FLASH_SRC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
@@ -929,7 +953,41 @@ $(AP_STORE_SECTOR_TOOL_AP_BIN): $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TO
 	@echo [ps] build $(AP_STORE_SECTOR_TOOL_AP_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_AP_GEN) -S19Path "$(AP_STORE_SECTOR_TOOL_S19)" -MapPath "$(S19_DIR)/ap-store-v1-sector-tool-7000.map" -PackagePath "$(AP_STORE_SECTOR_TOOL_AP_BIN)" -BaseAddress 28672 -EntrySymbol "APSW_INVENTORY" -ExportName "APSTORE"
 
+$(AP_STORE_OBJECT_TOOL_S19): $(AP_STORE_OBJECT_TOOL_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(AP_STORE_OBJECT_TOOL_LINKFLAGS) $(AP_STORE_OBJECT_TOOL_S19) $(AP_STORE_OBJECT_TOOL_OBJ)
+	@echo [ps] set S9 start $$7000 in $(AP_STORE_OBJECT_TOOL_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(AP_STORE_OBJECT_TOOL_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S90370008C'; Set-Content -Path $$p -Value $$lines"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$map = if (Test-Path -LiteralPath '$(S19_DIR)/ap-store-v1-object-tool-7000.map') { '$(S19_DIR)/ap-store-v1-object-tool-7000.map' } elseif (Test-Path -LiteralPath '$(MAP_DIR)/ap-store-v1-object-tool-7000.map') { '$(MAP_DIR)/ap-store-v1-object-tool-7000.map' } else { throw 'ap-store-v1-object-tool-7000.map not found' }; $$m = Select-String -Path $$map -Pattern '^\s*([0-9A-Fa-f]{8})\s+_END_DATA\s*$$' | Select-Object -First 1; if (-not $$m) { throw '_END_DATA not found in AP Store object tool map' }; $$end = [Convert]::ToInt32($$m.Matches[0].Groups[1].Value.Substring(4), 16); if ($$end -gt 0x7C00) { throw ('AP Store object tool crosses 7C00: _END_DATA={0:X4}' -f $$end) }; Write-Host ('AP Store object tool end = {0:X4} (limit 7C00)' -f $$end)"
+
+$(AP_STORE_OBJECT_TOOL_AP_BIN): $(AP_STORE_OBJECT_TOOL_S19) $(AP_STORE_SECTOR_TOOL_AP_GEN)
+	@echo [ps] build $(AP_STORE_OBJECT_TOOL_AP_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_AP_GEN) -S19Path "$(AP_STORE_OBJECT_TOOL_S19)" -MapPath "$(S19_DIR)/ap-store-v1-object-tool-7000.map" -PackagePath "$(AP_STORE_OBJECT_TOOL_AP_BIN)" -BaseAddress 28672 -EntrySymbol "APSO_LIST" -ExportName "APOBJ"
+
+$(AP_STORE_MARKER_S19): $(AP_STORE_MARKER_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(AP_STORE_MARKER_LINKFLAGS) $(AP_STORE_MARKER_S19) $(AP_STORE_MARKER_OBJ)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(AP_STORE_MARKER_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9033000CC'; Set-Content -Path $$p -Value $$lines"
+
+$(AP_STORE_MARKER_AP_BIN): $(AP_STORE_MARKER_S19) $(AP_STORE_SECTOR_TOOL_AP_GEN)
+	@echo [ps] build $(AP_STORE_MARKER_AP_BIN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_AP_GEN) -S19Path "$(AP_STORE_MARKER_S19)" -MapPath "$(S19_DIR)/ap-store-v1-marker-3000.map" -PackagePath "$(AP_STORE_MARKER_AP_BIN)" -BaseAddress 12288 -EntrySymbol "START" -ExportName "APMARK" -EndSymbol "_END_CODE"
+
 $(AP_STORE_SECTOR_TOOL_OBJ): $(AP_STORE_SECTOR_TOOL_SRC) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(ASM) $(ASFLAGS) -DAPSO_OBJECT_BUILD=0 $<
+	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
+
+$(AP_STORE_OBJECT_TOOL_OBJ): $(AP_STORE_OBJECT_TOOL_SRC) $(AP_STORE_SECTOR_TOOL_OBJ) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT)
+	@if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	@if not exist $(subst /,\,$(LST_DIR)) mkdir $(subst /,\,$(LST_DIR))
+	@if not exist $(subst /,\,$(SYM_DIR)) mkdir $(subst /,\,$(SYM_DIR))
+	$(ASM) $(ASFLAGS) -DAPSO_OBJECT_BUILD=1 $<
+	@if exist $(subst /,\,$(<:.asm=.obj)) move /Y $(subst /,\,$(<:.asm=.obj)) $(subst /,\,$@)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(subst /,\,$(<:.asm=.lst))') { Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.lst))' -Destination '$(subst /,\,$(LST_DIR)/ap-store-v1-object-tool.lst)' -Force }"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '$(subst /,\,$(<:.asm=.sym))') { Copy-Item -LiteralPath '$(subst /,\,$(<:.asm=.sym))' -Destination '$(subst /,\,$(SYM_DIR)/ap-store-v1-object-tool.sym)' -Force }"
+
+$(AP_STORE_MARKER_OBJ): $(AP_STORE_MARKER_SRC)
 
 $(ASM_V1_FLASH_S19): $(ASM_V1_FLASH_OBJ) $(ASM_V1_FLASH_RUNTIME_OBJ) $(ASM_V1_FLASH_MAP_CHECK)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1168,7 +1226,7 @@ endif
 	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase-legacy asm-v1-core \
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \
 	asm-v1-runtime-paste asm-session-report asm-session-report-ap-bin asm-v1-flash asm-flash asm-opcode-coverage \
-	ap-store-sector-tool ap-store-sector-tool-ap-bin ap-store-sector-tool-check \
+	ap-store-sector-tool ap-store-sector-tool-ap-bin ap-store-sector-tool-check ap-store-object-tool ap-store-object-tool-check ap-store-marker \
 	asmtest-6800-check asmtest-6800-wdc asmtest-6800-wdc-check \
 	asmtest-3000-check asmtest-3000-wdc asmtest-3000-wdc-check asm-dc-check board-s19-check \
 	asm-test calc-9a00-fnv-proof rom-append-calc fig-forth fig-forth-src \

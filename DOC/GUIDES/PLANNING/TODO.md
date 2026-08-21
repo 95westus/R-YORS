@@ -43,8 +43,13 @@ coverage. Resident `AP` accepts the dedicated `$7000-$7BFF` tool tray as a
 BODY destination. Its board AP-bootstrap, sacrificial B1:8 CLAIM, generation-1
 persistence, empty-managed FORMAT, generation-2 persistence, one-shot
 confirmation, and whole-bank CRC isolation proofs pass. Occupied-sector
-CONVERT and the later record/object slices remain pending. Provisional resident
-`APS` and `Q` removal is intentionally deferred.
+CONVERT remains pending. Slice 4 now has a separate 2540-byte `APOBJ` host
+candidate at `$7000-$79EB`: it parses before write, appends one complete AP v2
+package as a commit-last record, lists, reconstructs, validates, and loads/runs
+it through the frozen AP service. The host model covers a valid-log no-space
+case and all 76 write interruption points. The operator approved B1:8-E test
+media; the B1:9 CLAIM plus object/persistence board gate remains pending.
+Provisional resident `APS` and `Q` removal is intentionally deferred.
 
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit

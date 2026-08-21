@@ -4,7 +4,8 @@ param(
   [Parameter(Mandatory = $true)][string]$PackagePath,
   [int]$BaseAddress = 0x4800,
   [string]$EntrySymbol = "START",
-  [string]$ExportName = "START"
+  [string]$ExportName = "START",
+  [string]$EndSymbol = "_END_DATA"
 )
 
 Set-StrictMode -Version Latest
@@ -248,7 +249,7 @@ if ($packageDir -and -not (Test-Path -LiteralPath $packageDir)) {
 
 $base = $BaseAddress -band 0xFFFF
 $entryAddress = Get-SymbolAddress $resolvedMap $EntrySymbol
-$endAddress = Get-SymbolAddress $resolvedMap "_END_DATA"
+$endAddress = Get-SymbolAddress $resolvedMap $EndSymbol
 
 if ($entryAddress -lt $base -or $entryAddress -ge $endAddress) {
   throw "entry $EntrySymbol=$("{0:X4}" -f $entryAddress) is outside body $("{0:X4}" -f $base)-$("{0:X4}" -f $endAddress)"

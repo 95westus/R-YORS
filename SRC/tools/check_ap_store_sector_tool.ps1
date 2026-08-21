@@ -309,7 +309,7 @@ foreach ($required in @(
 foreach ($line in ($source -split "`r?`n")) {
     if ($line -match '^\s*JSR\s+([^;\s]+)') {
         $target = $matches[1]
-        if ($target -notmatch '^(APSW_|STR8_BANK_SELECT_)') { Fail "unexpected external call $target" }
+        if ($target -notmatch '^(APSW_|APSO_|STR8_BANK_SELECT_)') { Fail "unexpected external call $target" }
     }
 }
 $inventorySource = $source.Substring($source.IndexOf('APSW_INVENTORY:'),

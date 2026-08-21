@@ -15084,3 +15084,43 @@ Every other Bank 0-3 sector CRC matched exactly across both mutations. A final
 `HCOLD` preserved `B/S=18 ACTIVE G=0002`. This closes Slice 3 AP-bootstrap,
 CLAIM, FORMAT, commit-last, one-shot confirmation, isolation, and persistence
 proof. Destructive CONVERT of occupied opaque media remains a separate gate.
+
+## 2026-08-21 AP Store V1 Single-Sector Object Slice
+
+Host status: accepted. Board status: pending on the operator-approved B1:8-E
+media range. B1:F remains excluded.
+
+`make -C SRC ap-store-object-tool-check` builds a separate fixed `APOBJ` AP v2
+tool rather than enlarging the accepted Slice 3 image. The Slice 3 `APSTORE`
+BODY remains byte-identical at 1832 bytes with FNV `$F7FB285C`. `APOBJ` owns
+`$7000-$79EB` (2540 bytes) and leaves `$79EC-$7BFF` free. Its entries are LIST
+`$7000`, INSTALL PREPARE `$7003`, INSTALL EXECUTE `$7006`, VALIDATE `$7009`,
+and LOAD/RUN `$700C`. It uses the existing `$7C01/$7C02` bank/sector bytes, a
+Slice 4 card at `$7C30-$7C73`, a transient sector mirror at `$2000-$2FFF`, and
+reconstruction buffer `$0A00-$19FF`; it allocates no resident or dedicated RAM.
+
+The first implementation accepts one FIRST+LAST CHUNK containing one complete
+AP v2 envelope. Object id and object generation are explicit nonzero 16-bit
+allocation keys, not folded name hashes. PREPARE calls the frozen resident AP
+PARSE service before any flash operation, validates an ACTIVE `AS1` header and
+the complete append log, rejects duplicate id/generation and insufficient
+space, then snapshots source length/FNV, append offset, and full-sector CRC.
+EXECUTE requires `$A5`, revalidates that snapshot, programs the 20-byte header
+and payload, and writes the record's `$A5` commit byte last. It has no erase,
+CLAIM, CONVERT, or FORMAT path.
+
+The host gate pins all five S19 jump stubs, exact S19/AP BODY equality, fixed
+`APOBJ` export, `$7C00` limit, inclusion of byte programming, and exclusion of
+the Slice 3 erase path. Its media model covers malformed headers/payloads,
+dirty tails, duplicate keys, invalid AP-before-write, confirmation and stale
+media, an append-only valid log filled through NO_SPACE, outside-sector bank
+preservation, exact package reconstruction, and every one of 76 power cuts
+across the golden 20-byte header, 55-byte package, and final commit.
+
+The golden stored package is fixed `APMARK` at `$3000`, length `$0037`,
+whole-package FNV `$708711B6`. Its nine-byte BODY writes `$A4` to `$1A00` and
+returns `$AC` with carry set. The maintained board procedure is
+[`AP_STORE_V1_OBJECT_TOOL_BOARD_TEST.md`](AP_STORE_V1_OBJECT_TOOL_BOARD_TEST.md).
+It first CLAIMs B1:9 so the accepted B1:8 generation-2 proof remains separate,
+then requires append/list/validate/load, whole-bank isolation, cold reload,
+and persistent reconstruction before Slice 4 is accepted.
