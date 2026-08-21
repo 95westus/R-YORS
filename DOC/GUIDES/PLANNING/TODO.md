@@ -75,6 +75,17 @@ live and after `HCOLD`. Only B1:9/B1:B changed across the complete CRC table,
 to `$65C3/$60E7`; all other 30 sectors remained exact. Slice 6 delete and
 exhaustion is next.
 
+Slice 6 contract review is complete. DELETE targets one exact nonzero
+generation and appends one 21-byte commit-last tombstone in the first fitting
+sector of an explicit same-bank mask. Reader generation `$0000` selects the
+newest visible generation; deleting it exposes the next older valid generation.
+The object/mask report separates LIVE, STALE, FREE, and BLOCKED physical bytes,
+and only FREE is reusable. Incomplete newer generations do not hide an older
+live generation, while a complete AP-invalid newer generation is an integrity
+error rather than an implicit rollback. Implementation should favor separate
+fixed transient AP variants and shared primitives to minimize each loaded
+image; no resident RAM or ABI allocation is authorized.
+
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit
   CSTR, HBSTR, and PSTR data. Existing `DC C,"text"`, `DC HB,"text"`, and

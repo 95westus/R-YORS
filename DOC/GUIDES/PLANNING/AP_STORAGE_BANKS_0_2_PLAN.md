@@ -322,6 +322,49 @@ share private card `$7C80-$7D3F`, including eight ten-byte plan rows at
 programmed and are not allocation candidates. Listing and loading ignore a
 generation only after its valid tombstone is committed.
 
+### Slice 6 Delete, Selection, And Exhaustion Contract
+
+Slice 6 retains the frozen `AS1`, `AR`, and AP v2 bytes. A tombstone is the
+already-reserved `AR` type `$02`: flags zero, reserved `$FF`, explicit nonzero
+object and generation, logical offset and payload length zero, empty-payload
+FNV-1a `$811C9DC5`, header CRC16, and commit-last `$A5`. It occupies exactly
+21 bytes. It may be appended to any valid appendable managed sector selected
+by the request's nonzero same-bank sector mask; allocation chooses the first
+fitting sector in ascending sector order.
+
+DELETE always names one exact nonzero object/generation. PREPARE scans the
+whole named bank and requires that generation to be a complete, valid, live AP
+chain. It rejects an absent or incomplete generation, an already committed
+tombstone, a corrupt catalog, and a mask with no 21-byte append tail without
+mutation. EXECUTE consumes `$A5`, revalidates the request, target chain,
+selected-sector CRC and append offset, then writes the 20-byte tombstone header
+and its commit byte last. Repeating DELETE returns `ALREADY DELETED`; it does
+not append a redundant tombstone.
+
+A tombstone hides only its exact generation. Therefore deleting the newest
+generation exposes the next older complete, valid, non-tombstoned generation.
+Generation comparison is unsigned 16-bit with no wrap. Stored generation zero
+remains invalid; reader request generation `$0000` is instead the selector for
+the newest visible generation, while a nonzero request retains exact lookup.
+An incomplete newer generation does not hide an older live generation. A
+structurally complete but AP-invalid newer generation is an integrity error;
+the reader must not silently roll back past it.
+
+Space reporting is scoped to the requested object and sector mask. Counters
+are physical record-area bytes, excluding each fixed 16-byte sector header:
+
+- `LIVE` is committed record storage belonging to the resolved visible
+  generation;
+- `STALE` is committed storage for superseded, tombstoned, or incomplete
+  generations of the object, including tombstone records;
+- `FREE` is erased append-tail storage in selected valid appendable sectors;
+- `BLOCKED` is storage unavailable after the first interrupted or closed log
+  position in a selected managed sector.
+
+Only `FREE` is allocatable. DELETE never makes `STALE` reusable, and INSTALL
+continues to return deterministic `NO SPACE` before mutation when appendable
+capacity is insufficient. Reclamation remains deferred to compaction.
+
 ### Load
 
 `LOAD` resolves the newest live generation from the reconstructed index, validates every sector
