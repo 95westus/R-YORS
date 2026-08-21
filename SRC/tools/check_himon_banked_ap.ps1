@@ -419,10 +419,38 @@ foreach ($retired in @('$F003', 'STR8_RUN_WORKER_SERVICE',
 }
 foreach ($required in @('HIM_AP_BANK_STAGE_RAM    EQU             $0300',
         'CMP             #(HIM_AP_RELOC_MAX+1)',
+        'HIM_AP_TOOL_BASE_HI     EQU             $70',
+        'HIM_AP_TOOL_LIMIT_HI    EQU             $7C',
+        'HIM_AP_LOAD_TOOL_LAST:',
         'JSR             STR8_BANK_SELECT_SERVICE',
         'JSR             STR8_BANK_SELECT_RAM',
         'STA             (HIM_AP_STAGE_DST_LO),Y')) {
     if (-not $codeText.Contains($required)) { Fail-Check "source is missing $required" }
+}
+
+# Resident AP keeps its general $2000-$4FFF BODY window and adds only the
+# transient high-tool tray. $5000-$6FFF and the $7C00 card remain protected.
+function Test-ApDestination([int]$Base, [int]$Length) {
+    if ($Length -le 0) { return $false }
+    $last = $Base + $Length - 1
+    if ($last -gt 0xFFFF) { return $false }
+    return (($Base -ge 0x2000 -and $last -lt 0x5000) -or
+        ($Base -ge 0x7000 -and $last -lt 0x7C00))
+}
+foreach ($case in @(
+    [pscustomobject]@{ Base=0x2000; Length=1; Accept=$true },
+    [pscustomobject]@{ Base=0x4FFF; Length=1; Accept=$true },
+    [pscustomobject]@{ Base=0x4FFF; Length=2; Accept=$false },
+    [pscustomobject]@{ Base=0x5000; Length=1; Accept=$false },
+    [pscustomobject]@{ Base=0x6FFF; Length=1; Accept=$false },
+    [pscustomobject]@{ Base=0x7000; Length=0x0C00; Accept=$true },
+    [pscustomobject]@{ Base=0x7000; Length=0x0C01; Accept=$false },
+    [pscustomobject]@{ Base=0x7BFF; Length=1; Accept=$true },
+    [pscustomobject]@{ Base=0x7C00; Length=1; Accept=$false }
+)) {
+    if ((Test-ApDestination $case.Base $case.Length) -ne $case.Accept) {
+        Fail-Check ('AP destination model failed ${0:X4}+${1:X4}' -f $case.Base, $case.Length)
+    }
 }
 
 $contractText = [System.IO.File]::ReadAllText((Resolve-Path $PublicContractPath))

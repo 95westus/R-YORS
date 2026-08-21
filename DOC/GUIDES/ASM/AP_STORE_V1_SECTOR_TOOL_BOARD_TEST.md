@@ -2,14 +2,39 @@
 
 Status: host-accepted candidate; destructive board proof pending.
 
-This procedure qualifies implementation Slice 3 without adding resident HIMON
-code. The S19 image is `SRC/BUILD/s19/ap-store-v1-sector-tool-7000.s19` and
-owns `$7000-$757F` plus transient card `$7C00-$7C2F`. It is mutually exclusive
-with the `$7000` ASM reporter and is terminal for an ASM session.
+This procedure qualifies implementation Slice 3. The S19 image is
+`SRC/BUILD/s19/ap-store-v1-sector-tool-7000.s19`; the fixed AP v2 package is
+`SRC/BUILD/bin/ap-store-v1-sector-tool-7000.ap.bin`. The BODY owns
+`$7000-$7727` plus transient card `$7C00-$7C2F`. It is mutually exclusive with
+the `$7000` ASM reporter and is terminal for an ASM session. Resident `AP` has
+a narrow `$7000-$7BFF` BODY-destination exception so it can remain the
+bootstrap; resident `APS` and `Q` are unchanged in this slice.
 
-Do not execute `$7003` against a sector until its bank, sector, current CRC,
-classification, and intended loss have been reviewed. PREPARE at `$7000` is
-read-only. EXECUTE at `$7003` may erase an entire 4096-byte sector.
+Do not execute `$7006` against a sector until its bank, sector, current CRC,
+classification, and intended loss have been reviewed. Inventory at `$7000` and
+PREPARE at `$7003` are read-only. EXECUTE at `$7006` may erase an entire
+4096-byte sector.
+
+## Read-Only Inventory And AP Bootstrap
+
+Raw-S19 entry `$7000` and AP export `APSTORE` both run the inventory. The AP
+package BODY and export are fixed at `$7000`, so use destination `$7000`:
+
+```text
+>AP $hhhh $7000
+GO 7000
+APSTORE B/S=08 ...
+...
+APSTORE B/S=2F ...
+APSTORE OK
+```
+
+Here `$hhhh` is a visible RAM or flash address containing the package. If the
+package begins at a Bank 0-2 sector boundary, use `AP Bn $s000 $7000`; resident
+`AP` first stages that 4K sector through `$0A00-$19FF`. Require exactly 24 rows
+from `08` through `2F`, no Bank-3 row, and a final `APSTORE OK`. The inventory
+is read-only, but it copies the STR8 selector/worker into low RAM and therefore
+still terminates any prior ASM session.
 
 ## Request And Result Card
 
@@ -19,7 +44,7 @@ $7C01  bank            00-02
 $7C02  sector          08-0F
 $7C03  confirmation    tool clears it; operator sets A5 only after PREPARE
 $7C04  prepared CRC16  low, high
-$7C06  status          A0 prepared, AC success, E0-ED failure
+$7C06  status          A0 prepared, AC success, E0-EE failure
 $7C07  class           00 header-FF, 01 opaque, 02 corrupt, 03 staged,
                        04 active, 05 retired, 06 bad, 07 retired+bad
 $7C08  flags           bit 0 full-sector erased, bit 1 tail erased
@@ -40,7 +65,8 @@ later attempt.
 1. Build with `make -C SRC ap-store-sector-tool-check`.
 2. Capture the four-bank CRC table with the maintained
    `str8n-v1.2-bank-crc-all-3000.a` fixture.
-3. Load `ap-store-v1-sector-tool-7000.s19` through HIMON's RAM S19 loader.
+3. Load `ap-store-v1-sector-tool-7000.s19` through HIMON's RAM S19 loader, or
+   load its AP package through resident `AP` and let inventory finish first.
 4. Set only the operation, bank, and sector. Example syntax for operation 01,
    Bank 2, sector A:
 
@@ -50,7 +76,7 @@ later attempt.
 7C01: xx 02
 7C02: xx 0A
 7C03: xx
->G 7000
+>G 7003
 >D 7C00 7C1F
 ```
 
@@ -73,7 +99,7 @@ After reviewing the PREPARE card, set only the confirmation byte and execute:
 ```text
 >M 7C03
 7C03: 00 A5
->G 7003
+>G 7006
 >D 7C00 7C1F
 >APS
 ```

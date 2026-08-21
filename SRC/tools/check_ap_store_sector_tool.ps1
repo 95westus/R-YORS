@@ -1,7 +1,8 @@
 param(
     [string]$SourcePath = "PROOFS/ap-store-v1-sector-tool.asm",
     [string]$S19Path = "BUILD/s19/ap-store-v1-sector-tool-7000.s19",
-    [string]$MapPath = "BUILD/s19/ap-store-v1-sector-tool-7000.map"
+    [string]$MapPath = "BUILD/s19/ap-store-v1-sector-tool-7000.map",
+    [string]$PackagePath = "BUILD/bin/ap-store-v1-sector-tool-7000.ap.bin"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -56,6 +57,29 @@ function Fnv32([byte[]]$Bytes) {
         $hash = (($hash -bxor [uint64]$value) * [uint64]16777619) -band [uint64]4294967295
     }
     [uint32]$hash
+}
+
+function Word([byte[]]$Bytes, [int]$Offset) {
+    [int]$Bytes[$Offset] -bor ([int]$Bytes[$Offset + 1] -shl 8)
+}
+
+function Pack40([string]$Name) {
+    $codes = @{}
+    for ($i = 0; $i -lt 26; $i++) { $codes[[char]([int][char]'A' + $i)] = $i + 1 }
+    for ($i = 0; $i -lt 10; $i++) { $codes[[char]([int][char]'0' + $i)] = $i + 27 }
+    $codes[[char]'_'] = 37; $codes[[char]'?'] = 38; $codes[[char]'.'] = 39
+    $upper = $Name.ToUpperInvariant()
+    [byte[]]$result = [byte[]]::new(([Math]::Ceiling($upper.Length / 3.0)) * 2)
+    $out = 0
+    for ($at = 0; $at -lt $upper.Length; $at += 3) {
+        $a = $codes[$upper[$at]]
+        $b = if (($at + 1) -lt $upper.Length) { $codes[$upper[$at + 1]] } else { 0 }
+        $c = if (($at + 2) -lt $upper.Length) { $codes[$upper[$at + 2]] } else { 0 }
+        $value = (($a * 40) + $b) * 40 + $c
+        $result[$out++] = [byte]($value -band 0xFF)
+        $result[$out++] = [byte](($value -shr 8) -band 0xFF)
+    }
+    $result
 }
 
 function Crc16([byte[]]$Bytes) {
@@ -218,9 +242,11 @@ function Execute(
 if (-not (Test-Path -LiteralPath $SourcePath)) { Fail "missing $SourcePath" }
 if (-not (Test-Path -LiteralPath $S19Path)) { Fail "missing $S19Path" }
 if (-not (Test-Path -LiteralPath $MapPath)) { Fail "missing $MapPath" }
+if (-not (Test-Path -LiteralPath $PackagePath)) { Fail "missing $PackagePath" }
 
 $expectedMap = @{
-    APSW_PREPARE_ENTRY = 0x7000; APSW_EXECUTE_ENTRY = 0x7003; APSW_LIMIT_EXCLUSIVE = 0x7C00
+    APSW_INVENTORY_ENTRY = 0x7000; APSW_PREPARE_ENTRY = 0x7003
+    APSW_EXECUTE_ENTRY = 0x7006; APSW_LIMIT_EXCLUSIVE = 0x7C00
     APSW_CARD_BASE = 0x7C00; APSW_OP = 0x7C00; APSW_BANK = 0x7C01; APSW_SECTOR = 0x7C02
     APSW_CONFIRM = 0x7C03; APSW_PREP_CRC_LO = 0x7C04; APSW_PREP_CRC_HI = 0x7C05
     APSW_STATUS = 0x7C06; APSW_CLASS = 0x7C07; APSW_FLAGS = 0x7C08
@@ -237,6 +263,7 @@ $expectedMap = @{
     APSW_STATUS_ERASE_FAILED = 0xE8; APSW_STATUS_PROGRAM_FAILED = 0xE9
     APSW_STATUS_VERIFY_FAILED = 0xEA; APSW_STATUS_RESTORE_FAILED = 0xEB
     APSW_STATUS_ALREADY_MANAGED = 0xEC; APSW_STATUS_NOT_OCCUPIED = 0xED
+    APSW_STATUS_SERVICE_FAILED = 0xEE
     APSW_CLASS_HEADER_FF = 0; APSW_CLASS_OPAQUE = 1; APSW_CLASS_CORRUPT = 2
     APSW_CLASS_STAGED = 3; APSW_CLASS_ACTIVE = 4; APSW_CLASS_RETIRED = 5
     APSW_CLASS_BAD = 6; APSW_CLASS_RETIRED_BAD = 7
@@ -249,14 +276,18 @@ foreach ($name in $expectedMap.Keys) {
 }
 
 $endCode = Map '_END_CODE'
-if ($endCode -gt (Map 'APSW_LIMIT_EXCLUSIVE')) { Fail ('linked code crosses overlay: ${0:X4}' -f $endCode) }
+$endData = Map '_END_DATA'
+if ($endData -gt (Map 'APSW_LIMIT_EXCLUSIVE')) { Fail ('linked image crosses overlay: ${0:X4}' -f $endData) }
 $image = Read-S19
 for ($at = 0; $at -lt 0x10000; $at++) {
     if ($image.Present[$at] -and ($at -lt 0x7000 -or $at -ge 0x7C00)) {
         Fail ('S19 byte outside transient tray at ${0:X4}' -f $at)
     }
 }
-foreach ($entry in @(@(0x7000,'APSW_PREPARE'),@(0x7003,'APSW_EXECUTE'))) {
+for ($at = (Map 'APSW_LOAD_BASE'); $at -lt $endData; $at++) {
+    if (-not $image.Present[$at]) { Fail ('S19 image gap at ${0:X4}' -f $at) }
+}
+foreach ($entry in @(@(0x7000,'APSW_INVENTORY_BODY'),@(0x7003,'APSW_PREPARE'),@(0x7006,'APSW_EXECUTE'))) {
     $at = $entry[0]; $target = Map $entry[1]
     if ($image.Memory[$at] -ne 0x4C -or $image.Memory[$at + 1] -ne ($target -band 0xFF) -or
         $image.Memory[$at + 2] -ne (($target -shr 8) -band 0xFF)) {
@@ -269,7 +300,9 @@ foreach ($required in @(
     'JSR             STR8_BANK_SELECT_SERVICE', 'JSR             STR8_BANK_SELECT_RAM',
     'APSW_MUTATE_HEADER_BYTE:', 'APSW_VERIFY_HEADER_STAGED:', 'APSW_PHASE_COMMIT',
     'CMP             #APSW_CONFIRM_EXECUTE', 'STZ             APSW_CONFIRM',
-    'APSW_FORCE_BANK3:', 'TRB             STR8_BANK_STATE_BYTE', 'TSB             STR8_BANK_STATE_BYTE'
+    'APSW_FORCE_BANK3:', 'TRB             STR8_BANK_STATE_BYTE', 'TSB             STR8_BANK_STATE_BYTE',
+    'XDEF            APSW_INVENTORY', 'APSW_INVENTORY_SCAN:', 'CMP             #$03',
+    'APSW_VALIDATE_SERVICES:', 'ASM_ABI_SVC_CHECKSUM', 'APSW_MSG_PREFIX:'
 )) {
     if (-not $source.Contains($required)) { Fail "source contract missing $required" }
 }
@@ -278,6 +311,58 @@ foreach ($line in ($source -split "`r?`n")) {
         $target = $matches[1]
         if ($target -notmatch '^(APSW_|STR8_BANK_SELECT_)') { Fail "unexpected external call $target" }
     }
+}
+$inventorySource = $source.Substring($source.IndexOf('APSW_INVENTORY:'),
+    $source.IndexOf('; PREPARE is strictly read-only') - $source.IndexOf('APSW_INVENTORY:'))
+if ($inventorySource.Contains('JSR             APSW_MUTATE') -or
+    $inventorySource.Contains('JSR             APSW_FLASH')) {
+    Fail 'inventory entry reaches a flash mutation routine directly'
+}
+
+# Pin the fixed-$7000 AP v2 envelope and its APSTORE entry export.
+[byte[]]$package = [IO.File]::ReadAllBytes((Resolve-Path $PackagePath))
+if ($package.Length -lt 5 -or $package[0] -ne [byte][char]'A' -or
+    $package[1] -ne [byte][char]'P' -or $package[2] -ne 2) { Fail 'AP v2 envelope changed' }
+if ((Word $package 3) -ne $package.Length) { Fail 'AP package length changed' }
+$sectionOrder = New-Object System.Collections.Generic.List[string]
+$sections = @{}
+for ($at = 5; $at -lt $package.Length) {
+    if (($at + 3) -gt $package.Length) { Fail 'truncated AP section header' }
+    $tag = [char]$package[$at]
+    $length = Word $package ($at + 1)
+    if (($at + 3 + $length) -gt $package.Length) { Fail "truncated AP $tag section" }
+    $sectionOrder.Add([string]$tag)
+    $sections[[string]$tag] = Slice $package ($at + 3) $length
+    $at += 3 + $length
+}
+if (($sectionOrder -join '') -ne 'SREIB') { Fail 'AP section order changed' }
+[byte[]]$seal = $sections['S']
+$base = Map 'APSW_LOAD_BASE'
+if ($seal.Length -ne 11 -or $seal[0] -ne 1 -or (Word $seal 1) -ne $base -or
+    (Word $seal 3) -ne $endData -or (Word $seal 5) -ne ($endData - $base)) {
+    Fail 'AP fixed BODY seal changed'
+}
+[byte[]]$body = $sections['B']
+if ($body.Length -ne ($endData - $base)) { Fail 'AP BODY length changed' }
+[byte[]]$s19Body = Slice $image.Memory $base $body.Length
+if (-not (Equal-Bytes $body $s19Body)) { Fail 'AP BODY differs from linked S19' }
+[uint32]$bodyHash = Fnv32 $body
+[uint32]$sealedHash = [uint32]$seal[7] -bor ([uint32]$seal[8] -shl 8) -bor
+    ([uint32]$seal[9] -shl 16) -bor ([uint32]$seal[10] -shl 24)
+if ($sealedHash -ne $bodyHash) { Fail 'AP BODY seal hash changed' }
+if ($sections['R'].Length -ne 1 -or $sections['R'][0] -ne 0 -or
+    $sections['I'].Length -ne 1 -or $sections['I'][0] -ne 0) { Fail 'AP package is not fixed/no-import' }
+[byte[]]$export = $sections['E']
+[byte[]]$name = [Text.Encoding]::ASCII.GetBytes('APSTORE')
+[byte[]]$packedName = Pack40 'APSTORE'
+[uint32]$nameHash = Fnv32 $name
+[uint32]$storedNameHash = [uint32]$export[4] -bor ([uint32]$export[5] -shl 8) -bor
+    ([uint32]$export[6] -shl 16) -bor ([uint32]$export[7] -shl 24)
+if ($export.Length -ne (9 + $packedName.Length) -or $export[0] -ne 1 -or $export[1] -ne 0x81 -or
+    (Word $export 2) -ne ((Map 'APSW_INVENTORY') - $base) -or
+    $storedNameHash -ne $nameHash -or $export[8] -ne $name.Length -or
+    -not (Equal-Bytes (Slice $export 9 $packedName.Length) $packedName)) {
+    Fail 'APSTORE entry export changed'
 }
 
 # Policy matrix and exact committed headers across every eligible location.
@@ -358,6 +443,65 @@ foreach ($scenario in @(
     }
 }
 
+# The APSTORE inventory walks all and only the 24 candidates and is byte-for-
+# byte read-only across the complete four-bank model.  Its first eight rows
+# exercise every printed classification.
+$inventoryBanks = @()
+for ($bank = 0; $bank -lt 4; $bank++) {
+    [byte[]]$bytes = [byte[]]::new(0x8000)
+    for ($i = 0; $i -lt $bytes.Length; $i++) { $bytes[$i] = 0xFF }
+    $inventoryBanks += ,$bytes
+}
+$fixtures = @(
+    [pscustomobject]@{ Sector=8; Class='HEADER_FF'; Media=(New-ErasedSector) },
+    [pscustomobject]@{ Sector=9; Class='OPAQUE'; Media=(New-ErasedSector) },
+    [pscustomobject]@{ Sector=10; Class='CORRUPT'; Media=(New-ManagedSector 0 10 0x1000) },
+    [pscustomobject]@{ Sector=11; Class='STAGED'; Media=(New-ManagedSector 0 11 0x1001 0xFF) },
+    [pscustomobject]@{ Sector=12; Class='ACTIVE'; Media=(New-ManagedSector 0 12 0x1002 0xFE) },
+    [pscustomobject]@{ Sector=13; Class='RETIRED'; Media=(New-ManagedSector 0 13 0x1003 0xFC) },
+    [pscustomobject]@{ Sector=14; Class='BAD'; Media=(New-ManagedSector 0 14 0x1004 0xFA) },
+    [pscustomobject]@{ Sector=15; Class='RETIRED_BAD'; Media=(New-ManagedSector 0 15 0x1005 0xF8) }
+)
+$fixtures[0].Media[0x234] = 0x42
+$fixtures[1].Media[0] = 0x42
+$fixtures[2].Media[6] = $fixtures[2].Media[6] -bxor 1
+foreach ($fixture in $fixtures) {
+    [byte[]]$fixtureMedia = $fixture.Media
+    [Array]::Copy($fixtureMedia, 0, $inventoryBanks[0], ($fixture.Sector - 8) * 4096, 4096)
+}
+$inventoryBaseline = @()
+for ($bank = 0; $bank -lt 4; $bank++) { $inventoryBaseline += ,([byte[]]$inventoryBanks[$bank].Clone()) }
+$inventoryRows = @()
+for ($bank = 0; $bank -le 2; $bank++) {
+    for ($sector = 8; $sector -le 15; $sector++) {
+        [byte[]]$media = Slice $inventoryBanks[$bank] (($sector - 8) * 4096) 4096
+        $inventoryRows += [pscustomobject]@{
+            Bank = $bank; Sector = $sector; Scan = Inspect-Sector $media $bank $sector
+        }
+    }
+}
+if ($inventoryRows.Count -ne 24) { Fail 'inventory did not produce 24 rows' }
+for ($i = 0; $i -lt $inventoryRows.Count; $i++) {
+    $expectedBank = [Math]::Floor($i / 8)
+    $expectedSector = 8 + ($i % 8)
+    if ($inventoryRows[$i].Bank -ne $expectedBank -or $inventoryRows[$i].Sector -ne $expectedSector) {
+        Fail "inventory order changed at row $i"
+    }
+}
+for ($i = 0; $i -lt $fixtures.Count; $i++) {
+    if ($inventoryRows[$i].Scan.Class -ne $fixtures[$i].Class) {
+        Fail "inventory class $($fixtures[$i].Class) missing"
+    }
+}
+if ($inventoryRows[0].Scan.FullErased -or $inventoryRows[0].Scan.Class -ne 'HEADER_FF') {
+    Fail 'inventory confused header-FF with full-sector erased'
+}
+for ($bank = 0; $bank -lt 4; $bank++) {
+    if (-not (Equal-Bytes $inventoryBanks[$bank] $inventoryBaseline[$bank])) {
+        Fail "inventory mutated Bank $bank"
+    }
+}
+
 # A selected-sector operation cannot touch arbitrary peers or Bank 3 in the
 # media model.
 $banks = @()
@@ -383,6 +527,7 @@ for ($bank = 0; $bank -lt 4; $bank++) {
     }
 }
 
-$size = $endCode - (Map 'APSW_LOAD_BASE')
-Write-Host ("AP Store sector tool check passed: bytes={0} end=`${1:X4} locations={2} fault-cuts={3}" -f $size, $endCode, $cases, $faults)
+$size = $endData - (Map 'APSW_LOAD_BASE')
+Write-Host ("AP Store sector tool check passed: bytes={0} end=`${1:X4} inventory-rows={2} locations={3} fault-cuts={4}" -f $size, $endData, $inventoryRows.Count, $cases, $faults)
+Write-Host ("AP Store sector tool package: APSTORE entry=`${0:X4} body=`$7000-`${1:X4}" -f (Map 'APSW_INVENTORY'), ($endData - 1))
 Write-Host "AP Store sector tool policy: CLAIM erased-only; CONVERT occupied-unmanaged; FORMAT managed-empty-log; commit-last"

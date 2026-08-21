@@ -716,8 +716,11 @@ Success shape:
 LOAD OK=$3000 L=$hhhh C=$nn
 ```
 
-The destination BODY span must fit wholly in `$2000-$4FFF`. `LOAD` validates
-the complete AP v2 structure and BODY FNV before patching. Resident imports are
+The general destination BODY span must fit wholly in `$2000-$4FFF`. The
+resident service also reserves `$7000-$7BFF` for fixed transient tools such as
+`APSTORE`; that overlay destroys the live ASM upper arena and is therefore
+terminal for the session. `LOAD` validates the complete AP v2 structure and
+BODY FNV before patching. Resident imports are
 linked through RJOIN; missing imports, kind mismatches, non-resident
 dependencies, and unsupported relocation rows fail with
 `LOAD ERR=$09 BAD FIX`. A RAM package may be above or below its destination,
@@ -770,8 +773,9 @@ invalid-package stage/restore path and valid Bank-0 package execution through
 the fixed carrier are hardware-accepted.
 
 That path copies the banked AP envelope into the sector staging buffer, loads
-and links BODY bytes into `$2000-$4FFF`, and runs from the requested load
-address. It never executes directly from banked flash.
+and links ordinary BODY bytes into `$2000-$4FFF`, and runs from the requested
+load address. Fixed transient tools may instead use `$7000-$7BFF`. It never
+executes directly from banked flash.
 
 Flash ASM keeps symbol names at `$0200-$09FF` and fixup names at
 `$0A00-$19FF`. `PACKAGE` serializes the required AP metadata before those
@@ -973,9 +977,9 @@ $7F00-$7FFF  I/O, do not use
 The flash wrapper rejects output into its protected UDATA span. `ORG $5000`
 is `BAD RANGE`; the current map permits `ORG $6D6C` through `$7CFF`.
 Runtime code may still use ordinary RAM after leaving ASM if it does not depend
-on returning to the same live ASM workspace. Future AP overlay work may use
-the upper arena, but HIMON AP load destinations remain `$2000-$4FFF` in this
-slice.
+on returning to the same live ASM workspace. HIMON retains `$2000-$4FFF` for
+general AP destinations and reserves `$7000-$7BFF` for terminal transient
+tools; `$5000-$6FFF` and `$7C00-$7FFF` remain excluded.
 
 Current proof-sized table limits:
 

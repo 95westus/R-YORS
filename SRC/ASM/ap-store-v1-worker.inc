@@ -7,8 +7,9 @@
 ; ----------------------------------------------------------------------------
 
 APSW_LOAD_BASE              EQU             $7000
-APSW_PREPARE_ENTRY          EQU             $7000
-APSW_EXECUTE_ENTRY          EQU             $7003
+APSW_INVENTORY_ENTRY        EQU             $7000
+APSW_PREPARE_ENTRY          EQU             $7003
+APSW_EXECUTE_ENTRY          EQU             $7006
 APSW_LIMIT_EXCLUSIVE        EQU             $7C00
 
 APSW_CARD_BASE              EQU             STR8_HIGH_TOOL_BASE
@@ -69,6 +70,7 @@ APSW_STATUS_VERIFY_FAILED   EQU             $EA
 APSW_STATUS_RESTORE_FAILED  EQU             $EB
 APSW_STATUS_ALREADY_MANAGED EQU             $EC
 APSW_STATUS_NOT_OCCUPIED    EQU             $ED
+APSW_STATUS_SERVICE_FAILED  EQU             $EE
 
 APSW_CLASS_HEADER_FF        EQU             $00
 APSW_CLASS_OPAQUE           EQU             $01

@@ -69,8 +69,11 @@ $F000-$FFFF  STR8 protected top sector
 
 For the compact Bank 0 flow, keep transient code and packageable BODY bytes in
 `$2000-$2FFF` and write the one-sector envelope at `$3000-$3FFF`. The current
-HIMON AP loader still limits BODY destinations to `$2000-$4FFF`; flash ASM may
-emit into the separate upper arena beginning at the map-reported workspace end.
+HIMON AP loader keeps `$2000-$4FFF` as its general BODY destination. It also
+admits the dedicated transient-tool tray `$7000-$7BFF` for fixed tools such as
+`APSTORE`; using that tray is terminal for the current ASM session. Flash ASM
+may emit into the separate upper arena beginning at the map-reported workspace
+end only while no such tool owns it.
 
 ## Planned Pure Overlay Coexistence
 

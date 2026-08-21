@@ -131,6 +131,8 @@ HIM_AP_RELOC_LO8_IMPORT EQU              ASM_ABI_AP_RELOC_LO8_IMP
 HIM_AP_RELOC_HI8_IMPORT EQU              ASM_ABI_AP_RELOC_HI8_IMP
 HIM_AP_RAM_BASE_HI      EQU             $20
 HIM_AP_RAM_LIMIT_HI     EQU             $50
+HIM_AP_TOOL_BASE_HI     EQU             $70
+HIM_AP_TOOL_LIMIT_HI    EQU             $7C
 HIM_AP_FLASH_BASE_HI    EQU             $80
 HIM_AP_FLASH_LIMIT_HI   EQU             $FF
 
@@ -3438,6 +3440,11 @@ HIM_AP_LOAD_LEN_NONZERO:
 HIM_AP_LOAD_BASE_GE_20:
                         CMP             #HIM_AP_RAM_LIMIT_HI
                         BCC             HIM_AP_LOAD_BASE_LT_50
+                        CMP             #HIM_AP_TOOL_BASE_HI
+                        BCC             HIM_AP_LOAD_BASE_BAD
+                        CMP             #HIM_AP_TOOL_LIMIT_HI
+                        BCC             HIM_AP_LOAD_BASE_LT_50
+HIM_AP_LOAD_BASE_BAD:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_BASE_LT_50:
                         LDA             HIM_AP_BODY_LEN_LO
@@ -3457,7 +3464,15 @@ HIM_AP_LOAD_BASE_LT_50:
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_LAST_NO_CARRY:
                         STA             HIM_AP_TMP2_HI
+                        LDA             HIM_AP_DST_HI
                         CMP             #HIM_AP_RAM_LIMIT_HI
+                        LDA             HIM_AP_TMP2_HI
+                        BCS             HIM_AP_LOAD_TOOL_LAST
+                        CMP             #HIM_AP_RAM_LIMIT_HI
+                        BCC             HIM_AP_LOAD_RANGE_GOOD
+                        JMP             HIM_AP_BAD_RANGE
+HIM_AP_LOAD_TOOL_LAST:
+                        CMP             #HIM_AP_TOOL_LIMIT_HI
                         BCC             HIM_AP_LOAD_RANGE_GOOD
                         JMP             HIM_AP_BAD_RANGE
 HIM_AP_LOAD_RANGE_GOOD:

@@ -324,8 +324,10 @@ flash, strictly validates section order, 16-bit lengths, row shapes, kinds,
 counts, BODY length, and BODY FNV before patching. It copies BODY to a RAM
 destination, applies `$01-$03` internal relocations, and resolves `$04-$06`
 imports against resident FNV records with matching executable/data contracts.
-The destination BODY span must fit wholly in `$2000-$4FFF`, and a RAM package
-source may not overlap the destination BODY.
+The general destination BODY span must fit wholly in `$2000-$4FFF`, and a RAM
+package source may not overlap the destination BODY. Resident HIMON separately
+reserves `$7000-$7BFF` for fixed, terminal transient tools such as `APSTORE`;
+that exception is not a general movable-module destination.
 
 In the 2026-07-07 flash-size split, AP package consumption is resident HIMON
 service work. HIMON publishes an AP service vector plus request/result cells at

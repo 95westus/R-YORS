@@ -14992,23 +14992,46 @@ hardware acceptance. The raw transcript is appended to the hardware log.
 
 ## 2026-08-20 AP Store V1 Single-Sector Mutation Slice
 
-Host status: accepted candidate. Board status: pending explicit sacrificial-
-sector CLAIM/FORMAT proof. No resident HIMON or ASM ABI bytes change.
+Host status: accepted candidate. Board status: pending AP-bootstrap inventory
+and explicit sacrificial-sector CLAIM/FORMAT proof. The frozen ASM ABI is
+unchanged; resident HIMON changes only to admit the dedicated AP tool tray.
 
 `make -C SRC ap-store-sector-tool-check` builds the standalone worker at
-`$7000-$757F` and pins its two-entry contract: read-only PREPARE at `$7000`,
-confirmed EXECUTE at `$7003`, and request/result card `$7C00-$7C2F`. The tool
-uses the published `$F010` selector bootstrap and copied `$0203` entry. Its
+`$7000-$7727` and the fixed AP v2 package
+`BUILD/bin/ap-store-v1-sector-tool-7000.ap.bin`. The three-entry contract is
+read-only 24-sector inventory at `$7000`, PREPARE at `$7003`, confirmed EXECUTE
+at `$7006`, and request/result card `$7C00-$7C2F`. The package export is named
+`APSTORE`, has BODY `$7000-$7727`, entry offset zero, no relocations, and no
+imports. The tool uses the frozen HIMON service-vector card for output and the
+published `$F010` selector bootstrap plus copied `$0203` entry for banking. Its
 scan, flash command, polling, verify, and restore paths all execute from RAM;
-Bank 3 is restored before return.
+Bank 3 is restored before output or return.
+
+The inventory entry scans all 4096 bytes of each Bank 0-2 sector `$8-$F`, in
+physical order, and never enters a flash mutation routine. It prints packed
+bank/sector, the same eight classes used by resident `APS`, and generation for
+managed/staged headers, then reports `APSTORE OK`. This is deliberately a
+stronger but slower inventory than provisional resident `APS`, whose reader
+copies only the 16-byte header. The host matrix proves exactly 24 rows, all
+eight classes, the distinction between header-FF and fully erased, and
+byte-for-byte preservation of all four banks.
+
+Resident `AP` remains the bootstrap. Its general BODY destination remains
+`$2000-$4FFF`; the loader now also accepts only the dedicated transient tool
+tray `$7000-$7BFF`, while `$5000-$6FFF` and the `$7C00` card remain rejected.
+Given an AP package source at `$hhhh`, `AP $hhhh $7000` loads the BODY and
+immediately enters inventory. The banked form `AP Bn $s000 $7000` retains the
+existing 4K staging lifecycle. No frozen ASM ABI value changes. Resident `Q`
+and provisional resident `APS` remain present pending the later size pass.
 
 PREPARE scans all 4096 bytes, records CRC16, classification, erased flags, and
 next generation, then clears confirmation. EXECUTE requires `$A5`, consumes it
 before selecting flash, and repeats the full scan. A changed request, class,
 flags, generation policy, or CRC returns without mutation.
 
-The host matrix covers all 24 eligible locations, exact `AS1` header bytes,
-CLAIM of erased media, occupied CLAIM rejection, occupied-unmanaged CONVERT,
+The mutation host matrix covers all 24 eligible locations and exact `AS1`
+header bytes, CLAIM of erased media, occupied CLAIM rejection,
+occupied-unmanaged CONVERT,
 managed CONVERT rejection, managed-empty FORMAT, nonempty FORMAT rejection,
 generation exhaustion, missing confirmation, stale media, and preservation of
 every byte outside the selected sector including Bank 3. Fifty injected stop

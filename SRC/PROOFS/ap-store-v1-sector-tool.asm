@@ -1,8 +1,9 @@
 ; ----------------------------------------------------------------------------
 ; AP Store V1 transient single-sector CLAIM/CONVERT/FORMAT worker.
 ;
-; Load at $7000.  Configure the request card at $7C00, call PREPARE ($7000),
-; inspect the result/CRC, set $7C03=$A5, then call EXECUTE ($7003).
+; Load at $7000.  Inventory enters at $7000.  For mutation, configure the
+; request card at $7C00, call PREPARE ($7003), inspect the result/CRC, set
+; $7C03=$A5, then call EXECUTE ($7006).
 ; This foreground tool is terminal for an ASM session and is mutually
 ; exclusive with the $7000 ASM session reporter.
 ; ----------------------------------------------------------------------------
@@ -13,10 +14,12 @@
                         MODULE          AP_STORE_V1_SECTOR_TOOL
 
                         XDEF            START
+                        XDEF            APSW_INVENTORY
                         XDEF            APSW_PREPARE
                         XDEF            APSW_EXECUTE
 
                         INCLUDE         "str8n-public.inc"
+                        INCLUDE         "ASM/asm-abi-v1.inc"
                         INCLUDE         "ASM/ap-store-v1.inc"
                         INCLUDE         "ASM/ap-store-v1-worker.inc"
 
@@ -30,6 +33,13 @@ APSW_TMO1               EQU             $A6
 APSW_TMO2               EQU             $A7
 APSW_PAGE               EQU             $A8
 APSW_TMP                EQU             $A9
+APSW_CALL_LO            EQU             $AA
+APSW_CALL_HI            EQU             $AB
+
+APSW_SVC_WRITE_BYTE     EQU             ASM_ABI_SVC_FIRST_VECTOR+$02
+APSW_SVC_WRITE_CSTRING  EQU             ASM_ABI_SVC_FIRST_VECTOR+$04
+APSW_SVC_WRITE_HEX_BYTE EQU             ASM_ABI_SVC_FIRST_VECTOR+$06
+APSW_SVC_WRITE_CRLF     EQU             ASM_ABI_SVC_FIRST_VECTOR+$08
 
 APSW_FLASH_UNLOCK1      EQU             $D555
 APSW_FLASH_UNLOCK2      EQU             $AAAA
@@ -39,8 +49,168 @@ APSW_WRITE_TIMEOUT_HI   EQU             $02
                         CODE
 
 START:
+APSW_INVENTORY:
+                        JMP             APSW_INVENTORY_BODY
                         JMP             APSW_PREPARE
                         JMP             APSW_EXECUTE
+
+; APSTORE's AP v2 export enters here.  Each full-sector scan restores Bank 3
+; before the row is printed.  The loop visits exactly B0:8 through B2:F and
+; has no path to the flash mutation routines.
+APSW_INVENTORY_BODY:
+                        CLD
+                        STZ             APSW_CONFIRM
+                        JSR             APSW_CLEAR_RESULT
+                        JSR             APSW_VALIDATE_SERVICES
+                        BCC             APSW_INVENTORY_RETURN_ERROR
+                        JSR             APSW_BOOT_SELECTOR
+                        BCC             APSW_INVENTORY_PRINT_ERROR
+                        STZ             APSW_BANK
+                        LDA             #$08
+                        STA             APSW_SECTOR
+APSW_INVENTORY_SCAN:
+                        JSR             APSW_SCAN_SECTOR
+                        BCC             APSW_INVENTORY_PRINT_ERROR
+                        JSR             APSW_CLASSIFY_HEADER
+                        JSR             APSW_PRINT_ROW
+                        INC             APSW_SECTOR
+                        LDA             APSW_SECTOR
+                        CMP             #$10
+                        BCC             APSW_INVENTORY_SCAN
+                        LDA             #$08
+                        STA             APSW_SECTOR
+                        INC             APSW_BANK
+                        LDA             APSW_BANK
+                        CMP             #$03
+                        BCC             APSW_INVENTORY_SCAN
+
+                        LDA             #APSW_STATUS_OK
+                        STA             APSW_STATUS
+                        LDX             #<APSW_MSG_OK
+                        LDY             #>APSW_MSG_OK
+                        JSR             APSW_PRINT_LINE
+                        LDA             #APSW_STATUS_OK
+                        SEC
+                        RTS
+
+APSW_INVENTORY_PRINT_ERROR:
+                        LDX             #<APSW_MSG_ERROR
+                        LDY             #>APSW_MSG_ERROR
+                        JSR             APSW_WRITE_CSTRING
+                        LDA             APSW_STATUS
+                        JSR             APSW_WRITE_HEX_BYTE
+                        LDX             #<APSW_MSG_PHASE
+                        LDY             #>APSW_MSG_PHASE
+                        JSR             APSW_WRITE_CSTRING
+                        LDA             APSW_FAIL_PHASE
+                        JSR             APSW_WRITE_HEX_BYTE
+                        JSR             APSW_WRITE_CRLF
+APSW_INVENTORY_RETURN_ERROR:
+                        LDA             APSW_STATUS
+                        CLC
+                        RTS
+
+APSW_VALIDATE_SERVICES:
+                        LDA             ASM_ABI_SVC_SIG0
+                        CMP             #ASM_ABI_SVC_SIG0_VALUE
+                        BNE             APSW_SERVICES_BAD
+                        LDA             ASM_ABI_SVC_SIG1
+                        CMP             #ASM_ABI_SVC_SIG1_VALUE
+                        BNE             APSW_SERVICES_BAD
+                        LDA             ASM_ABI_SVC_VERSION
+                        CMP             #ASM_ABI_SVC_VERSION_VALUE
+                        BNE             APSW_SERVICES_BAD
+                        LDA             ASM_ABI_SVC_COUNT
+                        CMP             #ASM_ABI_SVC_VECTOR_COUNT
+                        BCC             APSW_SERVICES_BAD
+                        LDA             #$00
+                        LDX             #ASM_ABI_SVC_CHECKSUM-ASM_ABI_SVC_SIG0-1
+APSW_SERVICES_CHECKSUM:
+                        EOR             ASM_ABI_SVC_SIG0,X
+                        DEX
+                        BPL             APSW_SERVICES_CHECKSUM
+                        CMP             ASM_ABI_SVC_CHECKSUM
+                        BNE             APSW_SERVICES_BAD
+                        SEC
+                        RTS
+APSW_SERVICES_BAD:
+                        LDA             #APSW_STATUS_SERVICE_FAILED
+                        STA             APSW_STATUS
+                        CLC
+                        RTS
+
+APSW_PRINT_ROW:
+                        LDA             APSW_BANK
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ORA             APSW_SECTOR
+                        PHA
+                        LDX             #<APSW_MSG_PREFIX
+                        LDY             #>APSW_MSG_PREFIX
+                        JSR             APSW_WRITE_CSTRING
+                        PLA
+                        JSR             APSW_WRITE_HEX_BYTE
+                        LDA             #' '
+                        JSR             APSW_WRITE_BYTE
+                        LDX             APSW_CLASS
+                        LDA             APSW_CLASS_TEXT_LO,X
+                        PHA
+                        LDY             APSW_CLASS_TEXT_HI,X
+                        PLA
+                        TAX
+                        JSR             APSW_WRITE_CSTRING
+                        LDA             APSW_CLASS
+                        CMP             #APSW_CLASS_STAGED
+                        BCC             APSW_PRINT_ROW_EOL
+                        LDX             #<APSW_MSG_GENERATION
+                        LDY             #>APSW_MSG_GENERATION
+                        JSR             APSW_WRITE_CSTRING
+                        LDA             APSW_GENERATION_HI
+                        JSR             APSW_WRITE_HEX_BYTE
+                        LDA             APSW_GENERATION_LO
+                        JSR             APSW_WRITE_HEX_BYTE
+APSW_PRINT_ROW_EOL:
+                        JMP             APSW_WRITE_CRLF
+
+APSW_PRINT_LINE:
+                        JSR             APSW_WRITE_CSTRING
+                        JMP             APSW_WRITE_CRLF
+
+; Tail-call through the frozen HIMON service-vector card.  The target RTS
+; returns directly to the original JSR caller.
+APSW_WRITE_BYTE:
+                        PHA
+                        LDA             APSW_SVC_WRITE_BYTE
+                        STA             APSW_CALL_LO
+                        LDA             APSW_SVC_WRITE_BYTE+1
+                        STA             APSW_CALL_HI
+                        PLA
+                        JMP             (APSW_CALL_LO)
+
+APSW_WRITE_CSTRING:
+                        LDA             APSW_SVC_WRITE_CSTRING
+                        STA             APSW_CALL_LO
+                        LDA             APSW_SVC_WRITE_CSTRING+1
+                        STA             APSW_CALL_HI
+                        JMP             (APSW_CALL_LO)
+
+APSW_WRITE_HEX_BYTE:
+                        PHA
+                        LDA             APSW_SVC_WRITE_HEX_BYTE
+                        STA             APSW_CALL_LO
+                        LDA             APSW_SVC_WRITE_HEX_BYTE+1
+                        STA             APSW_CALL_HI
+                        PLA
+                        JMP             (APSW_CALL_LO)
+
+APSW_WRITE_CRLF:
+                        LDA             APSW_SVC_WRITE_CRLF
+                        STA             APSW_CALL_LO
+                        LDA             APSW_SVC_WRITE_CRLF+1
+                        STA             APSW_CALL_HI
+                        JMP             (APSW_CALL_LO)
 
 ; PREPARE is strictly read-only.  It freezes the request, classification,
 ; flags, generation, and full-sector CRC used by EXECUTE's media-change gate.
@@ -814,6 +984,30 @@ APSW_VERIFY_HEADER_BYTE:
 APSW_VERIFY_FAIL:
                         CLC
                         RTS
+
+                        DATA
+
+APSW_MSG_PREFIX:        DB              "APSTORE B/S=",0
+APSW_MSG_GENERATION:    DB              " G=",0
+APSW_MSG_OK:            DB              "APSTORE OK",0
+APSW_MSG_ERROR:         DB              "APSTORE ERR $",0
+APSW_MSG_PHASE:         DB              " P$",0
+APSW_TEXT_HEADER_FF:    DB              "HEADER-FF",0
+APSW_TEXT_OPAQUE:       DB              "OPAQUE",0
+APSW_TEXT_CORRUPT:      DB              "CORRUPT",0
+APSW_TEXT_STAGED:       DB              "STAGED",0
+APSW_TEXT_ACTIVE:       DB              "ACTIVE",0
+APSW_TEXT_RETIRED:      DB              "RETIRED",0
+APSW_TEXT_BAD:          DB              "BAD",0
+APSW_TEXT_RETIRED_BAD:  DB              "RETIRED+BAD",0
+APSW_CLASS_TEXT_LO:     DB              <APSW_TEXT_HEADER_FF,<APSW_TEXT_OPAQUE
+                        DB              <APSW_TEXT_CORRUPT,<APSW_TEXT_STAGED
+                        DB              <APSW_TEXT_ACTIVE,<APSW_TEXT_RETIRED
+                        DB              <APSW_TEXT_BAD,<APSW_TEXT_RETIRED_BAD
+APSW_CLASS_TEXT_HI:     DB              >APSW_TEXT_HEADER_FF,>APSW_TEXT_OPAQUE
+                        DB              >APSW_TEXT_CORRUPT,>APSW_TEXT_STAGED
+                        DB              >APSW_TEXT_ACTIVE,>APSW_TEXT_RETIRED
+                        DB              >APSW_TEXT_BAD,>APSW_TEXT_RETIRED_BAD
 
                         ENDMOD
                         END

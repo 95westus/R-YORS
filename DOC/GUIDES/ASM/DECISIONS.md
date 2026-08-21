@@ -573,7 +573,8 @@ A [addr] [label[:]] MMM [operand] .
   `$01-$03` relocations, and resolves kind-matched `$04-$06` imports through
   resident RJOIN before committing patches. RAM source/destination overlap is
   handled with memmove semantics; supported banked sources use the resident
-  staging path.
+  staging path. A later narrow exception reserves `$7000-$7BFF` for fixed,
+  terminal transient tools; it does not widen the general movable AP window.
 - HIMON `AP pkg dest` calls the same resident AP v2 load/link service and then
   runs `dest + ENTRY offset` through the monitor return-report path. `ENTRY`
   may be nonzero; the accepted 64-relocation card runs at offset `$0081`.

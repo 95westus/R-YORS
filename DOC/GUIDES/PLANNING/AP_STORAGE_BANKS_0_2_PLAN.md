@@ -333,11 +333,18 @@ immediately before and after `APS`; both CRC runs returned `$AC` with zero
 failure cells. This proves byte preservation across Banks 0-3 while discovery
 continues to inspect headers only in Banks 0-2.
 
-Slice 3 now has a host-accepted transient candidate. It links 1408 bytes at
-`$7000-$757F`, owns card `$7C00-$7C2F`, reuses only the `$0200-$0453` copied
-STR8 worker/selector range, and uses no 4K staging or permanent RAM. Its host
-oracle passes all 24 locations and 50 commit-last interruption points. The
-candidate remains board-pending under
+Slice 3 now has a host-accepted transient candidate. It links 1832 bytes at
+`$7000-$7727`, owns card `$7C00-$7C2F`, reuses only the `$0200-$0453` copied
+STR8 worker/selector range, and uses no permanent RAM. Entry `$7000` performs
+the full-sector 24-row read-only inventory; `$7003/$7006` retain the guarded
+PREPARE/EXECUTE mutation lifecycle. The fixed AP v2 artifact exports `APSTORE`
+at BODY offset zero with no relocations or imports. Resident `AP` remains the
+bootstrap and now admits only `$7000-$7BFF` in addition to its general
+`$2000-$4FFF` BODY window. HIMON therefore measures CODE 10844, DATA 1430,
+resident 12274 bytes, ending at `$EFF2` with 14 bytes before STR8; resident
+`APS` and `Q` remain pending the later size pass. The host oracle passes all 24
+inventory rows, all 24 mutation locations, and 50 commit-last interruption
+points. The candidate remains board-pending under
 `../ASM/AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md`.
 
 Each slice must measure STR8/HIMON/ASM resident CODE, DATA, UDATA, worker size,
