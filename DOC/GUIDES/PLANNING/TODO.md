@@ -354,6 +354,12 @@ B1:9/B1:B chain is next.
 
 ## Very Possible
 
+- Consider an ASM-produced, FNV-1a-addressable module/subroutine artifact that
+  is callable in place from owned RAM or visible flash, without making it an AP
+  Capsule. Keep this parked as a proposal until its wrapper, bounded discovery,
+  fixed-address/position-independent rules, collision behavior, integrity,
+  and STR8-owned flash lifecycle are settled. See
+  [ASM_FNV_MODULE_PROPOSAL.md](ASM_FNV_MODULE_PROPOSAL.md).
 - Add `TBE`, The Bit Engine, as a small W65C02S convenience/helper routine
   family for setting, resetting, testing, and branching on bits. Keep RAM
   helpers based on `TSB`/`TRB`/`SMB`/`RMB`/`BBS`/`BBR` separate from flash-safe
