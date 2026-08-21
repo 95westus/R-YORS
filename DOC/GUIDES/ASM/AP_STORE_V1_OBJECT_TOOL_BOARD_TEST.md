@@ -8,8 +8,11 @@ validate it, then load and run it. The tool does not erase sectors and does not
 claim unmanaged media.
 
 The fixed AP v2 tool is
-`SRC/BUILD/bin/ap-store-v1-object-tool-7000.ap.bin`, export `APOBJ`. Its BODY is
-`$7000-$79EB`; its five entries are LIST `$7000`, INSTALL PREPARE `$7003`,
+`SRC/BUILD/bin/ap-store-v1-object-tool-7000.ap.bin`, export `APOBJ`. Load its
+AP envelope with `SRC/BUILD/s19/ap-store-v1-object-tool-package-3000.s19`;
+do not send the raw binary to the S19 loader. Its BODY is `$7000-$79EF` (2544
+bytes), ending 16 bytes below HIMON's `$7A00` command buffer. Its five entries
+are LIST `$7000`, INSTALL PREPARE `$7003`,
 INSTALL EXECUTE `$7006`, VALIDATE `$7009`, and LOAD/RUN `$700C`. It uses the
 sector mirror `$2000-$2FFF`, reconstructed-package buffer `$0A00-$19FF`, and
 cards `$7C00-$7C73`. Loading or running it is terminal for an ASM session.
@@ -51,7 +54,9 @@ PREPARE. Do not reuse Slice 3's `$7C03` confirmation address.
 ## Golden Package
 
 `SRC/BUILD/bin/ap-store-v1-marker-3000.ap.bin` is a 55-byte fixed AP v2
-package named `APMARK`. Its nine-byte BODY loads at `$3000`, writes `$A4` to
+package named `APMARK`. Load it through
+`SRC/BUILD/s19/ap-store-v1-marker-package-3000.s19`. Its nine-byte BODY loads
+at `$3000`, writes `$A4` to
 `$1A00`, returns with `A=$AC` and carry set, and has no imports or relocations.
 The whole-package FNV stored in the AR header is `$708711B6`, little-endian
 `B6 11 87 70`.
@@ -63,10 +68,10 @@ The whole-package FNV stored in the AR header is `$708711B6`, little-endian
 2. Load `APSTORE`, set CLAIM/B1:9 through an inspected helper, run PREPARE
    `$7003`, review the card, write confirmation `$A5` to `$7C03`, and run
    EXECUTE `$7006`. Require `$AC` and `APS B/S=19 ACTIVE G=0001`.
-3. Load `ap-store-v1-object-tool-7000.ap.bin` at `$3000`, then run
-   `AP 3000 7000`. It enters LIST; set B1:9 before calling LIST again if the
-   initial request bytes are not already valid.
-4. Load `ap-store-v1-marker-3000.ap.bin` at `$3000`. Run the golden object-card
+3. Load `ap-store-v1-object-tool-package-3000.s19`, which places the `$0A1E`
+   AP envelope at `$3000`, then run `AP 3000 7000`. It enters LIST; set B1:9
+   before calling LIST again if the initial request bytes are not already valid.
+4. Load `ap-store-v1-marker-package-3000.s19` at `$3000`. Run the golden object-card
    helper and inspect `$7C01-$7C02` plus `$7C30-$7C38`.
 5. Call INSTALL PREPARE with `G 7003`. This is read-only. Require status `$A0`,
    phase `$00`, record offset `$0010`, package length `$0037`, package FNV
@@ -117,3 +122,10 @@ PREPARE parses the AP source before any flash write and snapshots the request,
 package length/FNV, append offset, and full-sector CRC. EXECUTE revalidates all
 of them. It programs the 20-byte header, then package bytes, then `$A5` as the
 only activation step. Any earlier interruption leaves no live object.
+
+The first B1:9 board pass proved CLAIM, append, one-record LIST, exact package
+reconstruction, validation, and LOAD/RUN. It also exposed that four direct
+EXECUTE rejection exits returned the failure phase in `A` even though the card
+held the correct status. The corrected candidate funnels those exits through
+the common status return. Cold persistence, corrected `$D7` return, and final
+CRC isolation remain required before board acceptance.

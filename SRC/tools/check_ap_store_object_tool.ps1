@@ -5,7 +5,9 @@ param(
     [string]$S19Path = "BUILD/s19/ap-store-v1-object-tool-7000.s19",
     [string]$MapPath = "BUILD/s19/ap-store-v1-object-tool-7000.map",
     [string]$ToolPackagePath = "BUILD/bin/ap-store-v1-object-tool-7000.ap.bin",
-    [string]$PackagePath = "BUILD/bin/ap-store-v1-marker-3000.ap.bin"
+    [string]$ToolCarrierPath = "BUILD/s19/ap-store-v1-object-tool-package-3000.s19",
+    [string]$PackagePath = "BUILD/bin/ap-store-v1-marker-3000.ap.bin",
+    [string]$PackageCarrierPath = "BUILD/s19/ap-store-v1-marker-package-3000.s19"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,16 +21,16 @@ function Get32([byte[]]$B,[int]$O){[uint32](([uint64]$B[$O])-bor([uint64]$B[$O+1
 function Fnv32([byte[]]$B){[uint64]$h=2166136261;foreach($v in $B){$h=(($h-bxor[uint64]$v)*[uint64]16777619)-band[uint64]4294967295};[uint32]$h}
 function Crc16([byte[]]$B){[int]$c=0xFFFF;foreach($v in $B){$c=$c-bxor([int]$v-shl 8);for($i=0;$i-lt 8;$i++){$c=if($c-band 0x8000){(($c-shl 1)-bxor 0x1021)-band 0xFFFF}else{($c-shl 1)-band 0xFFFF}}};$c}
 
-foreach($p in @($ContractPath,$WorkerContractPath,$SourcePath,$S19Path,$MapPath,$ToolPackagePath,$PackagePath)){if(-not(Test-Path -LiteralPath $p)){Fail "missing $p"}}
+foreach($p in @($ContractPath,$WorkerContractPath,$SourcePath,$S19Path,$MapPath,$ToolPackagePath,$ToolCarrierPath,$PackagePath,$PackageCarrierPath)){if(-not(Test-Path -LiteralPath $p)){Fail "missing $p"}}
 $contract=[IO.File]::ReadAllText((Resolve-Path $ContractPath))
 $worker=[IO.File]::ReadAllText((Resolve-Path $WorkerContractPath))
 function Equ([string]$Text,[string]$Name){$m=[regex]::Match($Text,'(?m)^'+[regex]::Escape($Name)+'\s+EQU\s+\$([0-9A-Fa-f]+)\s*$');if(-not$m.Success){Fail "missing $Name"};[Convert]::ToInt32($m.Groups[1].Value,16)}
 $mapSymbols=@{}
 foreach($line in [IO.File]::ReadLines($MapPath)){if($line-match'^\s*([0-9A-Fa-f]{8})\s+(\S+)\s*$'){$mapSymbols[$matches[2]]=[Convert]::ToInt32($matches[1],16)}}
 function Sym([string]$Name){if(-not$mapSymbols.ContainsKey($Name)){Fail "map symbol $Name is missing"};[int]$mapSymbols[$Name]}
-function Read-S19 {
+function Read-S19([string]$Path) {
     [byte[]]$memory=[byte[]]::new(0x10000);[bool[]]$present=[bool[]]::new(0x10000)
-    foreach($raw in [IO.File]::ReadLines($S19Path)){
+    foreach($raw in [IO.File]::ReadLines($Path)){
         $line=$raw.Trim();if($line.Length-lt4-or$line[0]-ne'S'){continue}
         $addressBytes=switch($line[1]){'1'{2}'2'{3}'3'{4}default{0}};if($addressBytes-eq0){continue}
         $count=[Convert]::ToInt32($line.Substring(2,2),16);$address=[Convert]::ToInt32($line.Substring(4,2*$addressBytes),16);$dataBytes=$count-$addressBytes-1
@@ -58,9 +60,9 @@ function Test-Ap([byte[]]$P){
 }
 
 $expectedEntries=@(@(0x7000,'APSO_LIST_BODY'),@(0x7003,'APSO_INSTALL_PREPARE_BODY'),@(0x7006,'APSO_INSTALL_EXECUTE_BODY'),@(0x7009,'APSO_VALIDATE_BODY'),@(0x700C,'APSO_LOAD_BODY'))
-$endData=Sym '_END_DATA';if($endData-gt0x7C00){Fail ('linked object tool crosses overlay: ${0:X4}'-f$endData)}
-$image=Read-S19
-for($at=0;$at-lt0x10000;$at++){if($image.Present[$at]-and($at-lt0x7000-or$at-ge0x7C00)){Fail ('object S19 byte outside transient tray at ${0:X4}'-f$at)}}
+$endData=Sym '_END_DATA';if($endData-gt0x7A00){Fail ('linked object tool crosses HIMON command buffer: ${0:X4}'-f$endData)}
+$image=Read-S19 $S19Path
+for($at=0;$at-lt0x10000;$at++){if($image.Present[$at]-and($at-lt0x7000-or$at-ge0x7A00)){Fail ('object S19 byte outside safe transient tray at ${0:X4}'-f$at)}}
 for($at=0x7000;$at-lt$endData;$at++){if(-not$image.Present[$at]){Fail ('object S19 image gap at ${0:X4}'-f$at)}}
 foreach($entry in $expectedEntries){$at=$entry[0];$target=Sym $entry[1];if($image.Memory[$at]-ne0x4C-or$image.Memory[$at+1]-ne($target-band255)-or$image.Memory[$at+2]-ne(($target-shr8)-band255)){Fail ("entry stub at `${0:X4} does not JMP {1}"-f$at,$entry[1])}}
 if($mapSymbols.ContainsKey('APSW_FLASH_ERASE')-or$mapSymbols.ContainsKey('APSW_MUTATE_SECTOR')){Fail 'object image contains Slice 3 erase/format path'}
@@ -75,8 +77,18 @@ if($executeSource.IndexOf('STZ             APSO_CONFIRM')-gt$executeSource.Index
 $listSource=Routine 'APSO_LIST_BODY:' 'APSO_INSTALL_PREPARE_BODY:'
 $validateSource=Routine 'APSO_VALIDATE_BODY:' 'APSO_LOAD_BODY:'
 if($listSource.Contains('APSO_PROGRAM_RECORD')-or$validateSource.Contains('APSO_PROGRAM_RECORD')){Fail 'LIST/VALIDATE reaches append directly'}
+foreach($handler in @(@('APSO_NOT_MANAGED:','APSO_NOT_CONFIRMED:'),@('APSO_NOT_CONFIRMED:','APSO_MEDIA_CHANGED:'),@('APSO_MEDIA_CHANGED:','APSO_AP_INVALID:'),@('APSO_AP_INVALID:','APSO_RETURN_ERROR:'))){if(-not(Routine $handler[0] $handler[1]).Contains('JMP             APSO_RETURN_ERROR')){Fail "$($handler[0]) does not return status in A"}}
 
 [byte[]]$toolPackage=[IO.File]::ReadAllBytes((Resolve-Path $ToolPackagePath));if(-not(Test-Ap $toolPackage)){Fail 'APOBJ tool package rejected'}
+function Test-Carrier([string]$Path,[byte[]]$Expected,[string]$Name){
+    $carrier=Read-S19 $Path
+    for($at=0;$at-lt0x10000;$at++){
+        $inside=$at-ge0x3000-and$at-lt(0x3000+$Expected.Length)
+        if($carrier.Present[$at]-ne$inside){Fail ('{0} carrier range mismatch at ${1:X4}'-f$Name,$at)}
+        if($inside-and$carrier.Memory[$at]-ne$Expected[$at-0x3000]){Fail ('{0} carrier differs at ${1:X4}'-f$Name,$at)}
+    }
+}
+Test-Carrier $ToolCarrierPath $toolPackage 'APOBJ'
 $toolSections=@{};$at=5;while($at-lt$toolPackage.Length){$tag=[char]$toolPackage[$at];$n=Get16 $toolPackage ($at+1);$toolSections[[string]$tag]=Slice $toolPackage ($at+3) $n;$at+=3+$n}
 [byte[]]$toolBody=$toolSections['B'];if($toolBody.Length-ne($endData-0x7000)-or-not(Equal $toolBody (Slice $image.Memory 0x7000 $toolBody.Length))){Fail 'APOBJ BODY differs from linked S19'}
 [byte[]]$export=$toolSections['E'];[byte[]]$name=[Text.Encoding]::ASCII.GetBytes('APOBJ');[byte[]]$packedName=Pack40 'APOBJ';if($export.Length-ne(9+$packedName.Length)-or$export[0]-ne1-or$export[1]-ne0x81-or(Get16 $export 2)-ne0-or(Get32 $export 4)-ne(Fnv32 $name)-or$export[8]-ne$name.Length-or-not(Equal (Slice $export 9 $packedName.Length) $packedName)){Fail 'APOBJ entry export changed'}
@@ -130,6 +142,7 @@ function Find-Object([byte[]]$Media,[int]$Object,[int]$Generation){$log=Read-Log
 
 [byte[]]$package=[IO.File]::ReadAllBytes((Resolve-Path $PackagePath))
 if(-not(Test-Ap $package)){Fail 'golden APMARK package rejected'}
+Test-Carrier $PackageCarrierPath $package 'APMARK'
 [byte[]]$media=New-Sector 1 8 2
 $prep=Prepare-Install $media 1 8 1 1 $package
 if($prep.Status-ne'PREPARED'-or$prep.Offset-ne16-or$prep.Length-ne$package.Length){Fail 'golden PREPARE failed'}

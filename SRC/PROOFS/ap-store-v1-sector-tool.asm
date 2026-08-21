@@ -1274,8 +1274,7 @@ APSO_NOT_MANAGED:
                         STA             APSO_STATUS
                         LDA             #APSO_PHASE_SCAN
                         STA             APSO_FAIL_PHASE
-                        CLC
-                        RTS
+                        JMP             APSO_RETURN_ERROR
 
 APSO_NOT_CONFIRMED:
                         STZ             APSO_CONFIRM
@@ -1283,24 +1282,21 @@ APSO_NOT_CONFIRMED:
                         STA             APSO_STATUS
                         LDA             #APSO_PHASE_POLICY
                         STA             APSO_FAIL_PHASE
-                        CLC
-                        RTS
+                        JMP             APSO_RETURN_ERROR
 
 APSO_MEDIA_CHANGED:
                         LDA             #APSO_STATUS_MEDIA_CHANGED
                         STA             APSO_STATUS
                         LDA             #APSO_PHASE_POLICY
                         STA             APSO_FAIL_PHASE
-                        CLC
-                        RTS
+                        JMP             APSO_RETURN_ERROR
 
 APSO_AP_INVALID:
                         LDA             #APSO_STATUS_AP_INVALID
                         STA             APSO_STATUS
                         LDA             #APSO_PHASE_VALIDATE
                         STA             APSO_FAIL_PHASE
-                        CLC
-                        RTS
+                        JMP             APSO_RETURN_ERROR
 
 APSO_RETURN_ERROR:
                         LDA             APSO_STATUS

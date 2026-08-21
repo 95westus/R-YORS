@@ -15093,7 +15093,8 @@ media range. B1:F remains excluded.
 `make -C SRC ap-store-object-tool-check` builds a separate fixed `APOBJ` AP v2
 tool rather than enlarging the accepted Slice 3 image. The Slice 3 `APSTORE`
 BODY remains byte-identical at 1832 bytes with FNV `$F7FB285C`. `APOBJ` owns
-`$7000-$79EB` (2540 bytes) and leaves `$79EC-$7BFF` free. Its entries are LIST
+`$7000-$79EF` (2544 bytes), with 16 bytes of measured headroom before HIMON's
+`$7A00` command buffer. Its entries are LIST
 `$7000`, INSTALL PREPARE `$7003`, INSTALL EXECUTE `$7006`, VALIDATE `$7009`,
 and LOAD/RUN `$700C`. It uses the existing `$7C01/$7C02` bank/sector bytes, a
 Slice 4 card at `$7C30-$7C73`, a transient sector mirror at `$2000-$2FFF`, and
@@ -15110,7 +15111,8 @@ and payload, and writes the record's `$A5` commit byte last. It has no erase,
 CLAIM, CONVERT, or FORMAT path.
 
 The host gate pins all five S19 jump stubs, exact S19/AP BODY equality, fixed
-`APOBJ` export, `$7C00` limit, inclusion of byte programming, and exclusion of
+`APOBJ` export, the effective `$7A00` command-buffer limit, inclusion of byte
+programming, and exclusion of
 the Slice 3 erase path. Its media model covers malformed headers/payloads,
 dirty tails, duplicate keys, invalid AP-before-write, confirmation and stale
 media, an append-only valid log filled through NO_SPACE, outside-sector bank
@@ -15124,3 +15126,12 @@ returns `$AC` with carry set. The maintained board procedure is
 It first CLAIMs B1:9 so the accepted B1:8 generation-2 proof remains separate,
 then requires append/list/validate/load, whole-bank isolation, cold reload,
 and persistent reconstruction before Slice 4 is accepted.
+
+The first B1:9 pass has proved CLAIM, append, exact one-record LIST,
+reconstruction, validation, and LOAD/RUN. A second unconfirmed EXECUTE did not
+mutate flash but returned its phase `$03` instead of card status `$D7`; the
+corrected host candidate routes every direct rejection through the common
+status return. Its AP envelope is `$0A1E` bytes with BODY FNV `$26A2F3DC`.
+Dedicated S19 carriers now place both binary AP envelopes at `$3000`, avoiding
+raw-binary input to the monitor's S19 loader. Corrected return, cold reload,
+and post-append CRC isolation remain pending.
