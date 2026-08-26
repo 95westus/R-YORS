@@ -15511,3 +15511,13 @@ the candidate B3:8-E image, `ASM NEW` BANKAUDIT, `PACKAGE
 BANKAUDIT $3000`, `INSTALL 3000 B1`, reset, list it by `APS B1`, execute it by
 `AP B1 BANKAUDIT`, and confirm all four CRC rows plus `A=$AC/C=1`. Address and
 `AP L` variants are secondary checks. No board proof is claimed yet.
+
+After this baseline passes, retain its transcript unchanged and begin the
+read-only inspection follow-up. The intended operator form is `AP D Bn
+name|s000`; `AP D B2 APMAN` must validate, describe, and hex-dump the APMAN
+envelope without loading or executing it. The companion dissection document
+must tie the command output to physical bank/sector maps, serialized AP v2
+section offsets, APMAN RAM overlays/staging, resident HIMON/STR8 services, and
+the complete install-to-execute flow. This is deliberately not part of the
+current board candidate: changing APMAN before its baseline proof would make
+the evidence refer to a different image.
