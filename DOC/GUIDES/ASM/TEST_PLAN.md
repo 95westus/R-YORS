@@ -15565,8 +15565,7 @@ utility printed `BANKAUDIT OK; B3 RESTORED`, and the direct run returned
 
 ## 2026-08-26 BANKDUMP Banked APC Candidate
 
-Host status: accepted. Board status: corrected carrier and `H` mode accepted;
-`P` and corrected-carrier `A/Q` checks remain open.
+Host status: accepted. Board status: accepted.
 
 `BANKDUMP` is a read-only fixed-`$2000` carrier utility. It prompts for Bank
 0-3 and sector 8-F, stages the complete sector at `$4000-$4FFF`, restores
@@ -15619,8 +15618,15 @@ B2:9, survived reset, and was found by both `APS B2` and
 reported CRC16 `$60CF`, decoded APMAN as `PKG=0B40 BASE=7000 END=7B12
 BODY=0B12 FNV=421C7515`, dumped the first page, and ended with
 `BANKDUMP OK; B3 RESTORED`. Board-gate steps 1-5 are accepted. Steps 6-7
-remain open.
+were subsequently accepted as described below.
 
 An earlier `G 2000` entered at `SEAL>` correctly failed: the raw body still
 contains unresolved imports and is not executable. This does not affect the
 subsequent clean package/install/reset/named-AP proof.
+
+The final two gates passed. `P` mode on B1:C reported the known BANKAUDIT
+CRC16 `$FA1C`, printed exactly `$C000-$C0FF`, and ended with
+`BANKDUMP OK; B3 RESTORED`. `A` mode on erased B2:F reported CRC16 `$0FE1`,
+printed `$F000-$F0FF`, accepted `Q` at the first `-- MORE` prompt, and ended
+with `BANKDUMP QUIT; NO FLASH WRITE`. All seven BANKDUMP board gates are now
+accepted.

@@ -1,7 +1,7 @@
 # BANKDUMP Banked APC Utility
 
-Status: corrected `$0597` carrier and APMAN-header mode are board-proven.
-Separate page mode and corrected all-pages safe-quit checks remain open.
+Status: accepted on board. The corrected `$0597` carrier, header mode, page
+mode, and all-pages safe-quit path are proven.
 
 `BANKDUMP` is the read-only physical-flash inspection APC. It selects one
 Bank 0-3 sector, copies all 4K to `$4000-$4FFF`, restores Bank 3, calculates
@@ -176,6 +176,9 @@ C0F0: ...
 BANKDUMP OK; B3 RESTORED
 ```
 
+This test passed on 2026-08-26. CRC `$FA1C`, all 16 rows from `$C000-$C0FF`,
+the completion message, and Bank-3 restoration matched.
+
 ## Test 3: whole-sector paging and safe quit
 
 ```text
@@ -192,6 +195,10 @@ After the first 16 rows:
 
 BANKDUMP QUIT; NO FLASH WRITE
 ```
+
+This test passed on 2026-08-26 against erased B2:F. BANKDUMP reported CRC
+`$0FE1`, printed `$F000-$F0FF`, accepted `Q` at the first page boundary, and
+returned through the no-write quit path.
 
 Success returns `A=$AC`, carry set. A deliberate `Q` returns `A=$E0`, carry
 clear. A staging/restore failure prints `BANKDUMP E1`, returns `A=$E1`, carry

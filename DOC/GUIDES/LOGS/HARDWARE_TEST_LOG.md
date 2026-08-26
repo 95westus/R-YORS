@@ -25441,3 +25441,51 @@ This accepts board-gate steps 1-5: corrected assembly, package, installation,
 reset persistence, named discovery/load, APMAN header decode, first-page dump,
 known CRC, and Bank-3 restoration. The B1:C page test and corrected-carrier
 all-pages safe-quit test remain open.
+
+## 2026-08-26 BANKDUMP Page and Safe-Quit Acceptance
+
+The remaining two BANKDUMP gates passed through the installed B2:9 carrier.
+Page mode staged B1:C, matched BANKAUDIT's known CRC16 `$FA1C`, printed the
+complete first page `$C000-$C0FF`, and restored Bank 3. All-pages mode staged
+erased B2:F, matched CRC16 `$0FE1`, printed its first page, and accepted `Q`
+at the first page boundary without entering any flash-write path.
+
+```text
+> AP B2 BANKDUMP
+AP LOAD B2 9000 -> 2000
+GO 2000
+
+BANKDUMP READ-ONLY
+BANK 0-3> 1
+SECTOR 8-F> C
+H=APC HEADER P=PAGE A=ALL Q=QUIT> P
+PAGE 0-F> 0
+
+BANKDUMP B1:C000 CRC16=FA1C
+C000: 41 50 02 99 02 53 0B 00 01 00 20 02 22 02 02 33 |AP...S.... ."..3|
+...
+C0F0: 85 AB D0 C3 E6 AA A5 AA C9 04 D0 B7 20 FC 20 A9 |............ . .|
+
+BANKDUMP OK; B3 RESTORED
+
+> AP B2 BANKDUMP
+AP LOAD B2 9000 -> 2000
+GO 2000
+
+BANKDUMP READ-ONLY
+BANK 0-3> 2
+SECTOR 8-F> F
+H=APC HEADER P=PAGE A=ALL Q=QUIT> A
+
+BANKDUMP B2:F000 CRC16=0FE1
+F000: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF |................|
+...
+F0F0: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF |................|
+
+-- MORE (ENTER=NEXT, Q=QUIT)> Q
+
+BANKDUMP QUIT; NO FLASH WRITE
+```
+
+Together with the corrected install/header proof, this accepts all BANKDUMP
+board gates and closes the read-only inspection carrier candidate.

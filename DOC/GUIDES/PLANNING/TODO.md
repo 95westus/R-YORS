@@ -190,8 +190,9 @@ board run proved B0:8 staging, CRC `$5579`, and the complete 4K dump, but three
 quoted semicolons caused `ERR=$03 BO` and a shortened `$0564` carrier. The
 corrected card uses `$3B`. The corrected `$0597` B2:9 install, reset, named
 load, and APMAN `H` inspection are board-proven, including CRC `$60CF` and B3
-restoration. The B1:C `P` check and corrected-carrier `A/Q` check in
-`BANK_DUMP_AP_CARD.md` remain open.
+restoration. B1:C `P` mode subsequently matched CRC `$FA1C`, and B2:F `A`
+mode matched erased CRC `$0FE1` and quit safely at the first page boundary.
+The BANKDUMP carrier gate is complete.
 
 ### Near term: Bank 1 application work sector
 
