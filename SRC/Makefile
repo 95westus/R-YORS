@@ -132,6 +132,13 @@ BANK_AUDIT_OBJ := $(OBJ_DIR)/$(APPS_DIR)/bank-audit-2000.obj
 BANK_AUDIT_S19 := $(S19_DIR)/bank-audit-2000.s19
 BANK_AUDIT_A := ../DOC/GUIDES/ASM/SAMPLES/bank-audit-2000.a
 BANK_AUDIT_CHECK := tools/check_bank_audit.ps1
+BANK_DUMP_SRC := $(APPS_DIR)/bank-dump-2000.asm
+BANK_DUMP_OBJ := $(OBJ_DIR)/$(APPS_DIR)/bank-dump-2000.obj
+BANK_DUMP_S19 := $(S19_DIR)/bank-dump-2000.s19
+BANK_DUMP_MAP := $(S19_DIR)/bank-dump-2000.map
+BANK_DUMP_A := ../DOC/GUIDES/ASM/SAMPLES/bank-dump-2000.a
+BANK_DUMP_A_GEN := tools/write_bank_dump_a.ps1
+BANK_DUMP_CHECK := tools/check_bank_dump.ps1
 APMAN_SRC := $(APPS_DIR)/apman-7000.asm
 APMAN_OBJ := $(OBJ_DIR)/$(APPS_DIR)/apman-7000.obj
 APMAN_S19 := $(S19_DIR)/apman-7000.s19
@@ -379,6 +386,7 @@ PROOF_TARGETS ?= \
 APP_TARGETS ?= \
 	apman \
 	bank-audit \
+	bank-dump \
 	life \
 	pia-led-show \
 	rom-append-calc
@@ -545,6 +553,11 @@ bank-audit: $(BANK_AUDIT_S19) $(BANK_AUDIT_A) $(BANK_AUDIT_CHECK)
 	@echo "Built and checked $(BANK_AUDIT_S19) against $(BANK_AUDIT_A)."
 	@$(MAKE) artifacts
 
+bank-dump: $(BANK_DUMP_S19) $(BANK_DUMP_A) $(BANK_DUMP_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(BANK_DUMP_CHECK) -AsmPath "$(BANK_DUMP_SRC)" -APath "$(BANK_DUMP_A)" -S19Path "$(BANK_DUMP_S19)" -MapPath "$(BANK_DUMP_MAP)" -GeneratorPath "$(BANK_DUMP_A_GEN)"
+	@echo "Built and checked $(BANK_DUMP_S19) against $(BANK_DUMP_A)."
+	@$(MAKE) artifacts
+
 apman: $(APMAN_S19) $(APMAN_PACKAGE) $(APMAN_BANK2_BIN) $(APMAN_BANK2_S19) $(APMAN_BOOTSTRAP_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(APMAN_BOOTSTRAP_CHECK) -PackagePath "$(APMAN_PACKAGE)" -BinPath "$(APMAN_BANK2_BIN)" -S19Path "$(APMAN_BANK2_S19)"
 	@echo "Built APMAN carrier manager: $(APMAN_S19), $(APMAN_PACKAGE), $(APMAN_BANK2_BIN), and $(APMAN_BANK2_S19)."
@@ -675,10 +688,10 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 	@make -C "$(STR8N_HOME)" ryors-full-bank RYORS_28K_S19="$(abspath $(RYORS_V12_28K_S19))"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.23/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 
-release-files: board-s19-check apman bank-audit life pia-led-show rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
+release-files: board-s19-check apman bank-audit bank-dump life pia-led-show rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit pia-led-show asm-ap-v2-check
+asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
@@ -900,6 +913,15 @@ $(BANK_AUDIT_S19): $(BANK_AUDIT_OBJ)
 	$(LINKER) $(TEST_LINKFLAGS) $(BANK_AUDIT_S19) $(BANK_AUDIT_OBJ)
 	@echo [ps] set S9 start $$2000 in $(BANK_AUDIT_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(BANK_AUDIT_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
+$(BANK_DUMP_S19): $(BANK_DUMP_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(TEST_LINKFLAGS) $(BANK_DUMP_S19) $(BANK_DUMP_OBJ)
+	@echo [ps] set S9 start $$2000 in $(BANK_DUMP_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(BANK_DUMP_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
+$(BANK_DUMP_A): $(BANK_DUMP_SRC) $(BANK_DUMP_S19) $(BANK_DUMP_A_GEN)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(BANK_DUMP_A_GEN) -AsmPath "$(BANK_DUMP_SRC)" -MapPath "$(BANK_DUMP_MAP)" -OutPath "$(BANK_DUMP_A)"
 
 $(APMAN_S19): $(APMAN_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1463,7 +1485,7 @@ endif
 	str8-readonly-bank-tools-check himon-rom-install-s19 himon-apv2-install-s19 rom-install-s19 \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \
 	test-mon test-ftdi-drv test-ftdi-hal test-flash \
-	life pia-led-show bank-audit apman himon-debug-proof himon-search-static himon-search-static-proof \
+	life pia-led-show bank-audit bank-dump apman himon-debug-proof himon-search-static himon-search-static-proof \
 	himon-search-proof himon-search-flash himon-search-for-himon \
 	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase-legacy asm-v1-core \
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \

@@ -116,14 +116,16 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
 
 ### Next major pass: consolidated AP tooling
 
-- [ ] Add the simple carrier path `SEAL> INSTALL package Bn` for Banks 0-2.
-  The host candidate now finds the first completely erased and unreserved 4K
+- [x] Add the simple carrier path `SEAL> INSTALL package Bn` for Banks 0-2.
+  The proven implementation finds the first completely erased and unreserved 4K
   sector, keeps exactly one complete AP v2 envelope there, treats `Bn` as the
   in-command confirmation, runs bank selection/program/verify entirely from
   RAM, restores Bank 3, and prints the exact selected location. `AP Bn name`
   and `AP Bn address` execute after reset; `AP L` loads/fixes without running.
   It does not require transient helpers, request cards, generations, or a
-  separate PREPARE/EXECUTE program. Keep this item open for board proof.
+  separate PREPARE/EXECUTE program. The B1:C `$0299` BANKAUDIT install,
+  reset, named load/link/execute, repeated 32-sector CRC report, and B3
+  restoration completed the board proof on 2026-08-26.
 - [ ] Design one persistent AP Store operator menu/dispatcher that replaces
   the overlapping `$7000` transit images without changing V1 media bytes. It
   may be another APC loaded into RAM through the carrier path.
@@ -148,13 +150,12 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
 - [ ] Decide whether compaction, harder confirmation/recovery rails, and a
   larger directory locator are part of that version or separately gated work.
 
-The read-only `BANKAUDIT` carrier application is now a host-built candidate
-for that simple lifecycle. Its onboard `.a` and host `.asm` share a checked
+The read-only `BANKAUDIT` carrier application completed that simple lifecycle.
+Its onboard `.a` and host `.asm` share a checked
 `$0202`-byte body; the S19 FNV32 is `$0EFD2A83`. It CRCs all 32 flash sectors,
-records role bytes, restores Bank 3, and has no mutation doorway. Do not mark
-the carrier-path item complete until bank-aware `INSTALL`, size measurement,
-documentation, and the complete ASM-F2/package/install/reset/AP board cycle
-all pass.
+records role bytes, restores Bank 3, and has no mutation doorway. The board
+installed it at B1:C, discovered it by name, ran it twice with identical 32
+sector CRCs, returned `A=$AC/C=1`, and printed `B3 RESTORED`.
 
 APMAN V1 is the implemented host candidate for this pass. It is a named APC
 installed initially at B2:8, with a `$0B12` body and `$0B40` AP envelope. Its
@@ -172,12 +173,21 @@ although HIMON's command dispatcher accepts leading blanks. Keep the baseline
 carrier unchanged for the current proof; make leading-whitespace normalization
 part of the next APMAN revision.
 
-The first board attempt proved B2:8 installation and APMAN discovery, but is
-not acceptance: the valid AP-v2 carrier was misclassified as `U` by Bank
+The first board attempt proved B2:8 installation and APMAN discovery, but the
+valid AP-v2 carrier was misclassified as `U` by Bank
 Maintenance and direct selection of APMAN recursively executed the manager.
 The host correction parses the AP-v2 16-bit section headers and rejects the
 manager's `AM01` body identity with `APMAN ERR=$DB` before load or execution.
-Prove both corrections before continuing the BANKAUDIT lifecycle.
+Both corrections and the subsequent BANKAUDIT lifecycle are now board-proven.
+
+`BANKDUMP` is the next read-only inspection APC candidate. Its generated
+onboard `.a` is fixed at `$2000` to keep the AP-v2 table to three import
+relocations; the host counterpart emits the same `$0516` bytes with FNV32
+`$2CB2A3ED`, and the predicted package is `$0597`. It stages a selected 4K
+sector, restores B3, reports CRC16, decodes a sector-base AP-v2 seal, and can
+dump the first page, any 256-byte page, or all pages with safe quit. Board
+install at the currently erased B2:9 and the three tests in
+`BANK_DUMP_AP_CARD.md` remain open.
 
 ### Near term: Bank 1 application work sector
 

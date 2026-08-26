@@ -15466,7 +15466,7 @@ accepted `PACKAGE MAIN $7000`, producing `PKG OK @=$7000 L=$00A3` without the
 former trap. A following bare `INSTALL` failed safely with `ERR=$03 BO
 PC=$2057`, as required for a missing operand, and left the `$7000` carrier
 available for Bank Maintenance `P`.
-## 2026-08-26 BANKAUDIT Banked AP Candidate
+## 2026-08-26 BANKAUDIT Banked AP
 
 `bank-audit-2000.a` is the useful-system-program candidate for the simple
 ASM-F2 -> package -> banked carrier -> reset -> AP lifecycle. It is read-only:
@@ -15478,13 +15478,14 @@ The checked host counterpart occupies `$2000-$2201` (`$0202` bytes), FNV32
 `$0EFD2A83`. The `.a` and `.asm` shared bodies have 226 identical logical
 lines. Static policy checks require `$F010/$0203` bank-select paths and the
 RAM stage loop, and reject `$F003` or named erase/program surfaces. The direct
-S19 is host-accepted. Board acceptance remains open until the bank-aware
-`SEAL> INSTALL 3000 B1` command passes on board and one cold-reset carrier run prints
-all four CRC rows, returns `A=$AC/C=1`, and preserves before/after flash CRCs.
+S19 is host-accepted. Board status is accepted: `SEAL> INSTALL 3000 B1`
+installed the `$0299` envelope at B1:C; reset/named APMAN execution printed
+all 32 CRCs and `BANKAUDIT OK; B3 RESTORED`. A direct second `G 2000` run
+printed the identical table and returned `A=$AC/C=1`.
 
 ## 2026-08-26 APMAN V1 Host Candidate
 
-Host status: accepted. Board status: open.
+Host status: accepted. Board status: accepted.
 
 APMAN V1 is a `$0B12`-byte fixed manager body packaged as a `$0B40` AP v2
 envelope. The initial bootstrap S19 is dense across `$8000-$8FFF`: it places
@@ -15504,13 +15505,13 @@ prevents a loaded BODY from overwriting its live manager overlay. `APS` fully
 checks AP Store header location, reserved bytes, FNV, and state before printing
 `+`, `-`, `~`, or `!`.
 
-Board acceptance requires the exact
+Board acceptance used the exact
 [`APMAN_V1_BOARD_TEST.md`](APMAN_V1_BOARD_TEST.md) cycle: erase all of B2,
 reclaim D2 to all `$FF`, enroll `D2 A2 APC02`, install APMAN at B2:8, install
 the candidate B3:8-E image, `ASM NEW` BANKAUDIT, `PACKAGE
 BANKAUDIT $3000`, `INSTALL 3000 B1`, reset, list it by `APS B1`, execute it by
 `AP B1 BANKAUDIT`, and confirm all four CRC rows plus `A=$AC/C=1`. Address and
-`AP L` variants are secondary checks. No board proof is claimed yet.
+`AP L` variants are secondary checks. The primary lifecycle is accepted.
 
 After this baseline passes, retain its transcript unchanged and begin the
 read-only inspection follow-up. The intended operator form is `AP D Bn
@@ -15530,8 +15531,8 @@ manager as an application, re-read the unchanged command card, and recursed
 until operator NMI. The corrected scanner consumes the full three-byte AP-v2
 section header. The corrected APMAN recognizes its `AM01` body identity before
 printing `AP LOAD` or writing destination RAM and returns `APMAN ERR=$DB`.
-Board acceptance remains open pending the focused correction card and the
-complete BANKAUDIT lifecycle.
+The focused correction card and complete BANKAUDIT lifecycle subsequently
+passed.
 
 Focused correction board status: accepted. Bank Maintenance recognized and
 listed the reinstalled `$0B40` carrier, resident named APS returned the exact
@@ -15555,3 +15556,44 @@ was entered with a leading blank and returned `$D0`: HIMON's dispatcher trims
 that blank, but the current external APMAN parser expects `AP` at command-card
 column zero. Repeat the already-installed carrier with no leading blank; no
 erase, assembly, package, or install operation is required.
+
+The no-leading-blank retry completed named APMAN discovery, load, relocation,
+import link, and execution. It printed the same four rows on the named run and
+on a direct second `G 2000` run. B3:F remained `$A94C` in both reports, the
+utility printed `BANKAUDIT OK; B3 RESTORED`, and the direct run returned
+`A=$AC/C=1`. This closes the APMAN V1 carrier baseline.
+
+## 2026-08-26 BANKDUMP Banked APC Candidate
+
+Host status: accepted. Board status: open.
+
+`BANKDUMP` is a read-only fixed-`$2000` carrier utility. It prompts for Bank
+0-3 and sector 8-F, stages the complete sector at `$4000-$4FFF`, restores
+Bank 3, computes CRC-16/CCITT-FALSE, and displays only staged RAM. `H` decodes
+the sector-base AP-v2 seal and dumps its first page; `P` dumps one selected
+256-byte page; `A` pages through all 4K with a safe `Q` exit.
+
+The host body is `$2000-$2515` (`$0516` bytes), FNV32 `$2CB2A3ED`. The
+generated onboard `.a` substitutes every internal label with the checked host
+map address, retaining only three HIMON service imports. Its predicted AP-v2
+package is `$0597`, below the 4K carrier limit and the 64-row relocation limit.
+The checker regenerates the `.a` to a temporary file and requires exact byte
+identity with the maintained card; it also pins the S19 extent, entry, bank
+selector/stager sequences, AP-v2 probe, import count, package length, and
+absence of a named mutation doorway.
+
+Board gate:
+
+1. `ASM NEW` the complete `bank-dump-2000.a` card.
+2. `PACKAGE BANKDUMP $3000`; require `L=$0597`.
+3. `INSTALL 3000 B2`; on the current inventory require B2:9.
+4. Reset and require `APS B2 BANKDUMP` to report `9000`, `$0597`, and
+   `@2000`.
+5. Use `H` on B2:8; require APMAN `PKG=0B40`, `BASE=7000`, `END=7B12`,
+   `BODY=0B12`, `FNV=421C7515`, and CRC16 `$60CF`.
+6. Use `P` on B1:C page 0 and require BANKAUDIT sector CRC16 `$FA1C`.
+7. Start `A` on B2:F, quit at the first page boundary, and require
+   `BANKDUMP QUIT; NO FLASH WRITE`.
+
+The exact source paths, inputs, and output shapes are in
+[`BANK_DUMP_AP_CARD.md`](BANK_DUMP_AP_CARD.md).

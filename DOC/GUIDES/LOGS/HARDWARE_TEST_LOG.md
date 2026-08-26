@@ -25306,3 +25306,43 @@ APS B1 C000 APC BANKAUDIT L=0299 @2000
 > AP B1 BANKAUDIT
 APMAN ERR=$D0
 ```
+
+### APMAN V1 and BANKAUDIT lifecycle acceptance
+
+The operator repeated the installed carrier command with `AP` in command-card
+column zero. APMAN found B1:C by name, loaded and linked the `$0299` carrier at
+its sealed `$2000` base, and transferred control. BANKAUDIT printed all 32
+sector CRCs and restored Bank 3. A direct second `G 2000` run produced the
+identical table and the monitor reported `A=$AC` with carry set.
+
+```text
+> AP B1 BANKAUDIT
+AP LOAD B1 C000 -> 2000
+GO 2000
+
+BANKAUDIT CRC16/4K
+B0 8=5579 9=D507 A=ACD0 B=EFDF C=EFDF D=EFDF E=EFDF F=D007
+B1 8=F248 9=65C3 A=6089 B=37A8 C=FA1C D=78F8 E=0FE1 F=2912
+B2 8=60CF 9=0FE1 A=0FE1 B=0FE1 C=0FE1 D=0FE1 E=0FE1 F=0FE1
+B3 8=0F7A 9=AF77 A=21F9 B=8480 C=CE01 D=6E63 E=613E F=A94C
+BANKAUDIT OK; B3 RESTORED
+
+> G 2000
+> GO 2000
+
+BANKAUDIT CRC16/4K
+B0 8=5579 9=D507 A=ACD0 B=EFDF C=EFDF D=EFDF E=EFDF F=D007
+B1 8=F248 9=65C3 A=6089 B=37A8 C=FA1C D=78F8 E=0FE1 F=2912
+B2 8=60CF 9=0FE1 A=0FE1 B=0FE1 C=0FE1 D=0FE1 E=0FE1 F=0FE1
+B3 8=0F7A 9=AF77 A=21F9 B=8480 C=CE01 D=6E63 E=613E F=A94C
+BANKAUDIT OK; B3 RESTORED
+
+#GO# ENTRY=2000
+RET A=AC X=BF Y=1B P=F5 S=FD NV-BdIzC
+```
+
+The following resident inventory still identified APMAN at B2:8, BANKAUDIT
+at B1:C, B1:E as WORK, and B1:F as the B3:F backup. This accepts the complete
+ASM-F2 -> PACKAGE -> INSTALL -> RESET -> APS -> named AP -> useful program
+lifecycle. No flash-mutation claim is inferred from the read-only application
+run.

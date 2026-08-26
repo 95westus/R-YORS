@@ -108,6 +108,7 @@ $rComponentArtifacts = @(
     "SRC/BUILD/s19/apman-7000.s19",
     "SRC/BUILD/s19/apman-v1-bank2-8000.s19",
     "SRC/BUILD/s19/bank-audit-2000.s19",
+    "SRC/BUILD/s19/bank-dump-2000.s19",
     "SRC/BUILD/s19/fnv1a-hbstr-6000.s19",
     "SRC/BUILD/s19/himon-c000.s19",
     "SRC/BUILD/s19/himon-rom-c000-install-8000.s19",
@@ -128,6 +129,7 @@ Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/himon-apv2-bank3-c-e.s19") 
 Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19")
 Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/APMAN_V1_BOARD_TEST.md") -RelativeDir "BOARD-CARDS"
 Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/BANK_AUDIT_AP_CARD.md") -RelativeDir "BOARD-CARDS"
+Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/BANK_DUMP_AP_CARD.md") -RelativeDir "BOARD-CARDS"
 
 $str8ComponentArtifacts = @(
     "BUILD/str8n-manifest.json",
@@ -265,6 +267,7 @@ Board-use artifacts:
 - BOARD-CARDS/APMAN_V1_BOARD_TEST.md - exact destructive B2/D2 preparation,
   candidate update, and first persistent carrier test
 - BOARD-CARDS/BANK_AUDIT_AP_CARD.md - BANKAUDIT utility reference
+- BOARD-CARDS/BANK_DUMP_AP_CARD.md - BANKDUMP install and inspection tests
 
 Historical artifacts:
 

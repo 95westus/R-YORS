@@ -35,6 +35,7 @@ Board-use artifacts:
 - BOARD-CARDS/APMAN_V1_BOARD_TEST.md - exact destructive B2/D2 preparation,
   candidate update, and first persistent carrier test
 - BOARD-CARDS/BANK_AUDIT_AP_CARD.md - BANKAUDIT utility reference
+- BOARD-CARDS/BANK_DUMP_AP_CARD.md - BANKDUMP install and inspection tests
 
 Historical artifacts:
 
