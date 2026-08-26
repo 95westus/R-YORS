@@ -9,6 +9,7 @@ This is the full guide index for the current R-YORS documentation set.
 - [ASM/ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) - practical address-role guide for ASM, SEAL, PACKAGE, INSTALL, LOAD, and AP.
 - [ASM/LIFE16_QUICK_CARD.md](ASM/LIFE16_QUICK_CARD.md) - exact board commands and checkpoints for the ASM-F2 Life bank-2 procedure.
 - [ASM/LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) - complete ASM-F2 16x16 Life AP package, bank 2 storage, and run walkthrough.
+- [ASM/AP_STORE_V1_FULL_CYCLE_BOARD_TEST.md](ASM/AP_STORE_V1_FULL_CYCLE_BOARD_TEST.md) - exact onboard ASM-to-B1:8-to-cold-boot cycle for the eight-LED PIA AP.
 - [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
 - [PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` implementation, size, recovery, and hardware-proof plan for opaque 32K banks.
 - [STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - accepted reset-time `0`/`1`/`2`/`3`/`S` selector proof record.

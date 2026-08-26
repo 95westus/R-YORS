@@ -64,4 +64,8 @@ DOC/s34
 !/DOC/GUIDES/ASM/SAMPLES/OLD/str8-record-phase1-max252.s19
 # Read-only Slice 6 board diagnostic; immutable S19 test source.
 !/DOC/GUIDES/ASM/SAMPLES/ap-store-v1-slice6-stage-b1sb-1a00.s19
+# Exact AP Store full-cycle request helpers; immutable board-test inputs.
+!/DOC/GUIDES/ASM/SAMPLES/ap-store-v1-cycle-install-b1s8-o3g1-1a00.s19
+!/DOC/GUIDES/ASM/SAMPLES/ap-store-v1-cycle-reader-b1-o1-newest-1a00.s19
+!/DOC/GUIDES/ASM/SAMPLES/ap-store-v1-cycle-reader-b1-o3-newest-1a00.s19
 *.code-workspace

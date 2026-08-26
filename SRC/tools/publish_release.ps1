@@ -105,6 +105,7 @@ $rComponentArtifacts = @(
     "SRC/BUILD/s19/himon-rom-c000-install-8000.s19",
     "SRC/BUILD/s19/himon-rom-c000.s19",
     "SRC/BUILD/s19/life-2000.s19",
+    "SRC/BUILD/s19/pia-led-show-2000.s19",
     "SRC/BUILD/s19/rom-append-calc-b804.s19",
     "SRC/BUILD/s19/ryors-v1.2-asm-bank3-8-b.s19",
     "SRC/BUILD/s19/ryors-v1.2-himon-bank3-c-e.s19"

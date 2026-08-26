@@ -20,6 +20,8 @@ carrier for AP Status at `$7000`, PREPARE at `$7003`, and confirmed EXECUTE at
   selector, and packaged declared-import addend acceptance card.
 - `opcode-reduction-runtime-2000.a` - runtime coverage for the compact shared
   ALU and shift/rotate opcode tables.
+- `pia-led-show-2000.a` - movable AP demo that drives all eight PIA port-A
+  LEDs, then restores the prior output and direction state.
 - `seal-workflow-2000.a` - small named body for final post-`END` command-flow
   testing.
 
