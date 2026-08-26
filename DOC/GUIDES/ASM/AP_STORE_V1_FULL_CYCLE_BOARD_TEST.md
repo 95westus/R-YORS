@@ -146,7 +146,7 @@ erased. B1:8 remains active generation `$0002`.
 Press physical RESET. At this selector, press `C`:
 
 ```text
-STR8-N 1.22
+STR8-N 1.23
 0-2 C W S: C
 BOOT COLD
 RAM ZERO OK

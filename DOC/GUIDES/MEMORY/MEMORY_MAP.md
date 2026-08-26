@@ -7,7 +7,7 @@ For the bench-facing names and layered diagrams of the active control areas,
 see [Control Deck Map](../../GENERATED/CONTROL_DECK_MAP.md). The formal ranges
 in this file remain authoritative.
 
-The standalone HIMON map and the split STR8-N v1.22 integration map are listed
+The standalone HIMON map and the split STR8-N v1.23 integration map are listed
 separately below. R-YORS builds `$8000-$EFFF`; the adjacent STR8-N repository
 owns `$F000-$FFFF` and composes the optional full-bank payload.
 
@@ -82,7 +82,7 @@ $8000-$BAFD   ASM-F2 low-flash image, entry $800C
 $BAFE-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
 $C000-$EDD2   HIMON body, including resident AP v2 import linker
 $EDD3-$EFFF   current image gap inside the E sector
-$F000-$FD54   STR8-N v1.22 resident supervisor, installer, loader, and services
+$F000-$FD54   STR8-N v1.23 resident supervisor, installer, loader, and services
 $FD55-$FD5B   currently available resident growth, 7 bytes
 $FD5C-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$0453
 $FFB0-$FFEF   fixed V1 directory, erased in a new primary image
@@ -143,9 +143,9 @@ a dense STR8-N `I` payload before installing them.
 
 Historical STR8 bench tests temporarily placed fig-Forth at `$C000-$EFFF` with
 `BUILD/s19/fig-forth-str8-update.s19`. That was a deliberate V0 `U`
-replacement of HIMON, not a current v1.22 installation procedure.
+replacement of HIMON, not a current v1.23 installation procedure.
 
-The matching OSI MS BASIC artifact is likewise historical. Current v1.22 flash
+The matching OSI MS BASIC artifact is likewise historical. Current v1.23 flash
 installation uses standalone STR8-N dense range payloads.
 
 ## Flash Window Mapping
@@ -197,7 +197,7 @@ session. HIMON retains the first failure, suppresses all later S1 writes, and
 continues consuming non-echoed input until a valid S9 or Ctrl-C. Accepted S1
 records from before the error remain in RAM.
 
-There is no user-facing sector erase/condense path in HIMON. STR8-N v1.22 owns
+There is no user-facing sector erase/condense path in HIMON. STR8-N v1.23 owns
 selected-bank erase, program, verify, and journal flows through its `I`
 transaction and standalone RAM maintenance tools.
 
@@ -227,7 +227,7 @@ $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
 $0200-$09FF   LRS: SNL during ASM, WCT during STR8 flash work
 $0A00-$19FF   LRS: FNL during ASM, SSD during STR8 flash work
-$1A00-$1FFF   USER FREE: no v1.22 firmware or maintained RAM-tool allocation
+$1A00-$1FFF   USER FREE: no v1.23 firmware or maintained RAM-tool allocation
 $2000-$4FFF   AIR: Build Bay, Envelope Bay, and Run/Tray Bay
 $5000-$6D6B   AWH: flash ASM UDATA
 $6D6C-$79FF   SOD: safe upper output/scratch
@@ -329,7 +329,7 @@ when no valid target is available. Thus `D 7DFD 7DFF` reports the bank selected
 for the preceding successful STR8 handoff rather than the Bank 3 selection
 that is live after returning to HIMON.
 
-`$1A00-$1FFF` is free for user code and data in v1.22. HIMON cold start still
+`$1A00-$1FFF` is free for user code and data in v1.23. HIMON cold start still
 clears it as part of the general RAM clear, but STR8-N, HIMON, ASM-F2, Bank
 Maintenance, and the maintained RAM tools do not reserve any byte in the
 range. The `$7C00-$7DBF` High Tool Overlay replaces the former low-RAM tool

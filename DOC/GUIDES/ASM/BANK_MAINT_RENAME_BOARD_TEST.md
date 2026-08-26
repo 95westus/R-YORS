@@ -5,7 +5,7 @@ Status: host-built; board proof pending.
 Use this exact onboard source:
 
 ```text
-C:\SRC\R-YORS\RELEASE\ARTIFACTS\SOURCES\str8n-v1.22-bank-maint-menu-2000.a
+C:\SRC\R-YORS\RELEASE\ARTIFACTS\SOURCES\str8n-v1.23-bank-maint-menu-2000.a
 ```
 
 At HIMON:

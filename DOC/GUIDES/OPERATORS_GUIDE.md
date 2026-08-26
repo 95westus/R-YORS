@@ -69,7 +69,7 @@ $8000-$BAFD   ASM-F2, entry $800C
 $BAFE-$BFFF   low-flash headroom/AP-store hole
 $C000-$EDD2   HIMON
 $EDD3-$EFFF   HIMON headroom
-$F000-$FD54   standalone STR8-N v1.22 resident
+$F000-$FD54   standalone STR8-N v1.23 resident
 $FD55-$FD5B   available 7-byte growth margin
 $FD5C-$FFAF   stored unified STR8-N worker, runs at $0200-$0453
 $FFB0-$FFEF   bank directory

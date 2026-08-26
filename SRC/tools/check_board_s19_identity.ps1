@@ -1,6 +1,6 @@
 param(
     [string]$S19Dir = "BUILD/s19",
-    [string]$Str8FullBankPath = "../../STR8-N/BUILD/v1.22/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+    [string]$Str8FullBankPath = "../../STR8-N/BUILD/v1.23/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 )
 
 $ErrorActionPreference = 'Stop'

@@ -123,19 +123,19 @@ Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/ryors-v1.2-himon-asm-bank3-
 
 $str8ComponentArtifacts = @(
     "BUILD/str8n-manifest.json",
-    "BUILD/v1.22/bin/str8n-v1.22-bank3-f000-ffff.bin",
-    "BUILD/v1.22/s19/str8n-v1.22-bank-maint-2000.s19",
-    "BUILD/v1.22/s19/str8n-v1.22-bank-maint-menu-2000.s19",
-    "BUILD/v1.22/s19/str8n-v1.22-console-abi-test-2000.s19",
-    "BUILD/v1.22/s19/str8n-v1.22-directory-refresh-2000.s19",
-    "BUILD/v1.22/s19/str8n-v1.22-f000.s19",
-    "BUILD/v1.22/s19/str8n-v1.22-worker-0200.s19"
+    "BUILD/v1.23/bin/str8n-v1.23-bank3-f000-ffff.bin",
+    "BUILD/v1.23/s19/str8n-v1.23-bank-maint-2000.s19",
+    "BUILD/v1.23/s19/str8n-v1.23-bank-maint-menu-2000.s19",
+    "BUILD/v1.23/s19/str8n-v1.23-console-abi-test-2000.s19",
+    "BUILD/v1.23/s19/str8n-v1.23-directory-refresh-2000.s19",
+    "BUILD/v1.23/s19/str8n-v1.23-f000.s19",
+    "BUILD/v1.23/s19/str8n-v1.23-worker-0200.s19"
 )
 foreach ($relative in $str8ComponentArtifacts) {
     Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 }
-Publish-File -Source (Join-Path $str8n "BUILD/v1.22/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19")
-Publish-File -Source (Join-Path $str8n "BUILD/v1.22/s19/str8n-v1.22-top-update-2000.s19")
+Publish-File -Source (Join-Path $str8n "BUILD/v1.23/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19")
+Publish-File -Source (Join-Path $str8n "BUILD/v1.23/s19/str8n-v1.23-top-update-2000.s19")
 
 $sourceRoots = @(
     (Join-Path $repo "SRC/ASM"),
@@ -152,11 +152,11 @@ $str8Sources = @(
     "src/str8.asm",
     "src/str8-worker.asm",
     "src/util-delay.asm",
-    "tools/bank-maint/str8n-v1.22-bank-maint-2000.asm",
-    "tools/bank-maint/str8n-v1.22-bank-maint-rename.inc",
-    "tools/bank-maint/str8n-v1.22-bank-maint-menu-2000.asm",
-    "tools/bank-maint/str8n-v1.22-bank-maint-menu-2000.a",
-    "tools/top-update/str8n-v1.22-top-update-2000.asm"
+    "tools/bank-maint/str8n-v1.23-bank-maint-2000.asm",
+    "tools/bank-maint/str8n-v1.23-bank-maint-rename.inc",
+    "tools/bank-maint/str8n-v1.23-bank-maint-menu-2000.asm",
+    "tools/bank-maint/str8n-v1.23-bank-maint-menu-2000.a",
+    "tools/top-update/str8n-v1.23-top-update-2000.asm"
 )
 foreach ($relative in $str8Sources) {
     Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/SOURCES"
@@ -237,15 +237,15 @@ Bank-3 sectors 8-E update, without protected sector F:
 
 Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
 
-- str8n-v1.22-top-update-2000.s19
+- str8n-v1.23-top-update-2000.s19
 
 Board-use artifacts:
 
 - ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19
 - ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19
-- ARTIFACTS/SOURCES/str8n-v1.22-bank-maint-menu-2000.a - onboard `ASM NEW`
+- ARTIFACTS/SOURCES/str8n-v1.23-bank-maint-menu-2000.a - onboard `ASM NEW`
   source for guarded directory rename and Bank-3 directory reclaim
-- ARTIFACTS/COMPONENT-IMAGES/str8n-v1.22-bank-maint-menu-2000.s19 - direct
+- ARTIFACTS/COMPONENT-IMAGES/str8n-v1.23-bank-maint-menu-2000.s19 - direct
   loader form of the same maintenance menu
 - ARTIFACTS/COMPONENT-IMAGES - component, diagnostic, and recovery images
 - ARTIFACTS/SOURCES - source snapshots and onboard sample sources
