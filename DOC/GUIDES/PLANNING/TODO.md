@@ -167,6 +167,11 @@ rejects duplicate names, protects `$FFF0/$FFF1` roles, lists APC/AP Store/media
 states, and rejects application BODY ranges that would overwrite its live
 `$7000` overlay. STR8-N 1.23 and AP Store V1 media bytes are unchanged.
 
+The proven manager command card currently requires `AP`/`AP L` at column zero,
+although HIMON's command dispatcher accepts leading blanks. Keep the baseline
+carrier unchanged for the current proof; make leading-whitespace normalization
+part of the next APMAN revision.
+
 The first board attempt proved B2:8 installation and APMAN discovery, but is
 not acceptance: the valid AP-v2 carrier was misclassified as `U` by Bank
 Maintenance and direct selection of APMAN recursively executed the manager.

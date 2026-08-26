@@ -15545,6 +15545,13 @@ The first BANKAUDIT paste stopped before packaging with `ERR=$07 BL` on three
 64-70-column message `DB` lines and the consequent `ERR=$09 BAD FIX` at
 `END`. No flash operation ran. The corrected source splits the same bytes over
 lines no longer than 63 columns; host code size (`$0202`), FNV32
-(`$0EFD2A83`), relocation count (16), and package length (`$0294`) are
+(`$0EFD2A83`), relocation count (17), and package length (`$0299`) are
 unchanged. `check_bank_audit.ps1` now enforces the onboard non-comment line
 limit. Repeat the lifecycle from `ASM NEW`.
+
+The retry assembled and sealed, then installed the valid `$0299` carrier at
+B1:C. `APS B1 BANKAUDIT` returned the exact detail row. The first AP execution
+was entered with a leading blank and returned `$D0`: HIMON's dispatcher trims
+that blank, but the current external APMAN parser expects `AP` at command-card
+column zero. Repeat the already-installed carrier with no leading blank; no
+erase, assembly, package, or install operation is required.

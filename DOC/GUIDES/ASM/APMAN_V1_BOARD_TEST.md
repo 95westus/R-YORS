@@ -382,15 +382,16 @@ is no later confirmation prompt.
 
 ```text
 SEAL> PACKAGE BANKAUDIT $3000
-PKG OK @=$3000 L=$0294
+PKG OK @=$3000 L=$0299
 SEAL> INSTALL 3000 B1
-INST B1 A000 L=0294
+INST B1 C000 L=0299
 SEAL>
 ```
 
-`A000` is expected on the captured board because B1:A is the first erased,
-unreserved sector. If APMAN prints a different sector, record it and do not
-substitute `A000` later. Both package lengths must be exactly `$0294`.
+`C000` is the captured board result because B1:A now holds PIALED and B1:C is
+the first erased, unreserved sector. If APMAN prints a different sector,
+record it and use that address later. Both package lengths must be exactly
+`$0299`.
 
 Do not use Bank Maintenance `P`, do not load a helper, and do not type `G`.
 Exit ASM and physically reset:
@@ -412,19 +413,19 @@ At the rebooted HIMON prompt, type:
 Expected shape, using the address and length printed by `INSTALL`:
 
 ```text
-APS B1 A000 APC BANKAUDIT L=0294 @2000
+APS B1 C000 APC BANKAUDIT L=0299 @2000
 ```
 
 Then type:
 
 ```text
-> AP B1 BANKAUDIT
+>AP B1 BANKAUDIT
 ```
 
 Expected output:
 
 ```text
-AP LOAD B1 A000 -> 2000
+AP LOAD B1 C000 -> 2000
 GO 2000
 BANKAUDIT CRC16/4K
 B0 8=hhhh 9=hhhh A=hhhh B=hhhh C=hhhh D=hhhh E=hhhh F=hhhh
@@ -449,17 +450,18 @@ It must report the same address and length after the run.
 
 ## Optional load-only and address checks
 
-Replace `A000` below if `INSTALL` selected another sector:
+Replace `C000` below if `INSTALL` selected another sector. Enter AP/AP L at
+column zero: the proven APMAN parser does not currently skip a leading blank.
 
 ```text
-> AP L B1 BANKAUDIT
-AP LOAD B1 A000 -> 2000
+>AP L B1 BANKAUDIT
+AP LOAD B1 C000 -> 2000
 
-> AP L B1 A000
-AP LOAD B1 A000 -> 2000
+>AP L B1 C000
+AP LOAD B1 C000 -> 2000
 
-> AP B1 A000
-AP LOAD B1 A000 -> 2000
+>AP B1 C000
+AP LOAD B1 C000 -> 2000
 GO 2000
 ```
 

@@ -74,13 +74,13 @@ foreach ($forbidden in @('$F003','FLASH_WRITE','FLASH_ERASE','PROGRAM_BYTE')) {
 # Pin the deterministic onboard AP-v2 envelope reported by PACKAGE/INSTALL.
 # Internal/import absolute uses each contribute one five-byte relocation row.
 $relocRows = 0
-foreach ($symbol in @('CRC16','PRINT_REPORT','BIO_FTDI_PUT_CSTR','CRC_UPDATE','HEX_STORE','HEX_NIBBLE')) {
-    $relocRows += ([regex]::Matches($aText, ('(?m)^\s*JSR\s+' + [regex]::Escape($symbol) + '\s*$'))).Count
+foreach ($symbol in @('STAGE','CRC16','PRINT_REPORT','BIO_FTDI_PUT_CSTR','CRC_UPDATE','HEX_STORE','HEX_NIBBLE')) {
+    $relocRows += ([regex]::Matches($aText, ('(?m)^\s*(?:[A-Z_][A-Z0-9_]*\s+)?JSR\s+' + [regex]::Escape($symbol) + '\s*$'))).Count
 }
 foreach ($symbol in @('MSG_FAIL','MSG_TITLE','MSG_OK')) {
     $relocRows += ([regex]::Matches($aText, ('(?m)#(?:<|>)' + [regex]::Escape($symbol) + '\b'))).Count
 }
-if ($relocRows -ne 16) { throw "BANKAUDIT relocation-row count is $relocRows, expected 16" }
+if ($relocRows -ne 17) { throw "BANKAUDIT relocation-row count is $relocRows, expected 17" }
 
 $aBody = Get-SharedBody -Path $APath
 $asmBody = Get-SharedBody -Path $AsmPath -AsmNative
@@ -109,7 +109,7 @@ foreach ($b in $image) { $fnv = (($fnv -bxor [uint64]$b) * [uint64]16777619) -ba
 $exportRecordLength = 1 + 1 + 2 + 4 + 1 + (2 * [Math]::Ceiling('BANKAUDIT'.Length / 3.0))
 $importRecordLength = 1 + 1 + 4 + 1 + (2 * [Math]::Ceiling('BIO_FTDI_PUT_CSTR'.Length / 3.0))
 $packageLength = [int](0x1F + (1 + (5 * $relocRows)) + $exportRecordLength + $importRecordLength + $image.Length)
-if ($packageLength -ne 0x0294) { throw ('BANKAUDIT package length is ${0:X4}, expected $0294' -f $packageLength) }
+if ($packageLength -ne 0x0299) { throw ('BANKAUDIT package length is ${0:X4}, expected $0299' -f $packageLength) }
 Write-Host ('BANKAUDIT .a/.asm shared body: {0} logical lines, identical' -f $aBody.Count)
 Write-Host ('BANKAUDIT S19: $2000-${0:X4}, {1} bytes, FNV32=${2:X8}' -f $last,$image.Length,[uint32]$fnv)
 Write-Host ('BANKAUDIT onboard AP v2: {0} relocations, package length=${1:X4}' -f $relocRows,$packageLength)

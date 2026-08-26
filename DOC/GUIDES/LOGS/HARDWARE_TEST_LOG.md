@@ -25283,6 +25283,26 @@ ERR=$09 BAD FIX PC=$21D7
 
 The corrected `.a` and host `.asm` split only those message bytes across
 shorter directives. Emitted code remains `$0202` bytes with FNV32 `$0EFD2A83`,
-and the expected onboard AP-v2 package remains `$0294`. The host checker now
+and the onboard AP-v2 package is `$0299`. The host checker now
 rejects any non-comment onboard source line longer than 63 columns. Board
 acceptance remains open pending a clean retry from `ASM NEW`.
+
+The retry assembled and sealed cleanly, packaged `$0299`, and installed the
+valid carrier at B1:C. Resident named APS proved the carrier. The first AP
+execution line contained a leading blank; HIMON dispatch accepted it, but the
+current APMAN command parser begins at command-card column zero and returned
+`$D0`. No load or application execution occurred. Retry the existing carrier
+with `AP B1 BANKAUDIT` entered without a leading blank.
+
+```text
+ASM OK
+SEAL> PACKAGE BANKAUDIT $3000
+PKG OK @=$3000 L=$0299
+SEAL> INSTALL 3000 B1
+INST B1 C000 L=0299
+...
+>APS B1 BANKAUDIT
+APS B1 C000 APC BANKAUDIT L=0299 @2000
+> AP B1 BANKAUDIT
+APMAN ERR=$D0
+```

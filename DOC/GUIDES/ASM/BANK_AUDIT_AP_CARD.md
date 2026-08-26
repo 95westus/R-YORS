@@ -26,7 +26,7 @@ The host body occupies `$2000-$2201`, `$0202` bytes, with FNV32 `$0EFD2A83`.
 The `.a` and `.asm` shared bodies are checked line-for-line. The onboard `.a`
 imports `BIO_FTDI_PUT_CSTR`, so its AP package resolves the compatible resident
 console routine when loaded rather than freezing the host build's address. Its
-one entry export, one import, and 16 relocation rows produce an exact `$0294`
+one entry export, one import, and 17 relocation rows produce an exact `$0299`
 AP v2 envelope.
 
 ## Complete APMAN cycle
@@ -57,8 +57,8 @@ INSTALL 3000 B1
 Expected package and captured-board install lines are:
 
 ```text
-PKG OK @=$3000 L=$0294
-INST B1 A000 L=0294
+PKG OK @=$3000 L=$0299
+INST B1 C000 L=0299
 ```
 
 `B1` is the in-command destination confirmation. Record the address printed by
