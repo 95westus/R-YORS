@@ -10,6 +10,10 @@ This is the full guide index for the current R-YORS documentation set.
 - [ASM/LIFE16_QUICK_CARD.md](ASM/LIFE16_QUICK_CARD.md) - exact board commands and checkpoints for the ASM-F2 Life bank-2 procedure.
 - [ASM/LIFE16_BANK2_EXAMPLE.md](ASM/LIFE16_BANK2_EXAMPLE.md) - complete ASM-F2 16x16 Life AP package, bank 2 storage, and run walkthrough.
 - [ASM/AP_STORE_V1_FULL_CYCLE_BOARD_TEST.md](ASM/AP_STORE_V1_FULL_CYCLE_BOARD_TEST.md) - exact onboard ASM-to-B1:8-to-cold-boot cycle for the eight-LED PIA AP.
+- [ASM/BANKED_AP_CARRIER_VS_AP_STORE.md](ASM/BANKED_AP_CARRIER_VS_AP_STORE.md) - simple AP carrier lifecycle versus the larger record-store design.
+- [ASM/APMAN_V1_BOARD_TEST.md](ASM/APMAN_V1_BOARD_TEST.md) - accepted named carrier lookup, status, run/load-only, and install manager.
+- [ASM/APMAN_APC_DISSECTION.md](ASM/APMAN_APC_DISSECTION.md) - exact carrier-sector, AP-v2 envelope, RAM-overlay, service, and execution maps.
+- [ASM/BANK_DUMP_AP_CARD.md](ASM/BANK_DUMP_AP_CARD.md) - accepted read-only sector inspector and physical bank map.
 - [ASM/B3_RECLAIM_BOARD_CARD.md](ASM/B3_RECLAIM_BOARD_CARD.md) - exact guarded Bank-3 directory-journal reclaim sequence.
 - [ASM/BANK_MAINT_RENAME_BOARD_TEST.md](ASM/BANK_MAINT_RENAME_BOARD_TEST.md) - guarded five-character D0-D3 description rename sequence.
 - [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
@@ -34,9 +38,11 @@ the recorded R-YORS bank images; each future unrelated guest requires its own
 H/P/V/C record. HIMON RAM-only debug is hardware-proven for current one-shot
 breakpoint and single-step behavior, with the resident unassembler removed and
 the `$7F00-$7FFF` I/O page protected by dump/load/debug paths. ASM is
-flash-resident as a HIMON command and now has board-proven SEAL, RESOLVE,
-RELOCATE, and AP v1 PACKAGE flows. The current uppercase STR8 interactive
-surface and full Bank Jump Record persistence matrix are hardware-accepted.
+flash-resident as a HIMON command and now has board-proven AP-v2 PACKAGE,
+automatic INSTALL, reset-time discovery, named AP/AP L, and APS flows. APMAN
+at B2:8 and BANKDUMP at B2:9 complete the current carrier-management and
+read-only inspection cycle. The current uppercase STR8 interactive surface
+and full Bank Jump Record persistence matrix are hardware-accepted.
 
 - [HASH_FLASH.md](./HASH_FLASH.md) - command-surface and milestone alerts.
 - [DOC_FLASH.md](./DOC_FLASH.md) - documentation-shape alerts.
@@ -72,6 +78,10 @@ surface and full Bank Jump Record persistence matrix are hardware-accepted.
   choices and command address roles,
   see [AP_LINKER_CURRENT_IMAGE_GATES.md](ASM/AP_LINKER_CURRENT_IMAGE_GATES.md)
   for the frozen missing-import and banked-source current-image proof,
+  see [BANKED_AP_CARRIER_VS_AP_STORE.md](ASM/BANKED_AP_CARRIER_VS_AP_STORE.md)
+  for the carrier/store boundary, [APMAN_V1_BOARD_TEST.md](ASM/APMAN_V1_BOARD_TEST.md)
+  for the manager lifecycle, and [BANK_DUMP_AP_CARD.md](ASM/BANK_DUMP_AP_CARD.md)
+  for read-only physical inspection,
   see [HASHED_ASM.md](ASM/HASHED_ASM.md) for source/parser/reference material,
   see [DECISIONS.md](ASM/DECISIONS.md) for AP package/envelope/install
   boundaries,
@@ -118,11 +128,11 @@ STR8-N source is scanned and documented in its standalone repository:
 
 ```text
 Source files scanned:  29
-XDEF declarations:     216
+XDEF declarations:     217
 XREF declarations:     147
 ROUTINE headers:       145
-JSR/JMP call sites:    964
-Unique direct edges:   777
+JSR/JMP call sites:   1000
+Unique direct edges:   808
 ```
 
 Generated reports live in [../GENERATED](../GENERATED).

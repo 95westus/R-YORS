@@ -39,8 +39,12 @@ G addr         execute address
 L              load S0/S1/S9 into RAM; report S9, do not execute
 STR8           confirmed jump to $F000
 ASM            enter ASM-F2
-AP ...         load/link/run AP package
-APS            provisional read-only AP-sector header inventory
+AP pkg dst                 direct RAM/visible-package recovery form
+AP Bn name|s000 [dst]      load/link/run installed carrier through APMAN
+AP L Bn name|s000 [dst]    load/link installed carrier; do not run
+APS                        Bank 0-2 carrier/media status
+APS Bn                     list valid carriers in one bank
+APS Bn name|s000           show one validated carrier
 B/N/R/X        breakpoint, step, context, resume
 Q              quiesce
 ```
@@ -58,6 +62,22 @@ J3       use Bank-3 RESET vector
 ```
 
 STR8-N `L` and HIMON `L` deliberately have different execution semantics.
+
+## Accepted AP Carrier Inventory
+
+```text
+B2:8  APMAN     package L=$0B40, transient body $7000-$7B11
+B2:9  BANKDUMP  package L=$09AD, default body $2000-$292B
+B1:E  WORK      configured application work sector
+B1:F  BKUP      protected B3:F backup
+B3:F  PROTECTED live STR8-N top sector
+```
+
+`SEAL> INSTALL package Bn` accepts Banks 0-2 and selects the first fully erased
+4K sector. It does not rely on a hard-coded bank personality.
+
+For the complete Bank 0-3 physical map, run `AP B2 BANKDUMP` and enter `M` at
+its first prompt.
 
 ## Public STR8-N Contract
 

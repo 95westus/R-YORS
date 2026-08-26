@@ -52,6 +52,15 @@ OIL
   carries AP objects from storage through load, relocation, resident-import
   integration, and execution
 
+APMAN
+  banked APC loaded at $7000 when AP/APS/INSTALL needs carrier management
+  supplies named/addressed lookup, load-only/run, status/list/detail, and
+  first-erased-sector installation for Banks 0-2
+
+BANKDUMP
+  read-only APC sector inspector and physical 4x8 bank map
+  validates AP-v2/body FNV and restores Bank 3 before output
+
 Deck Plan
   bench-facing names for the control blocks and phase-owned work areas:
   APC, LRS, AIR, FTC, RFD/RTC/RPT, RSC, the Bank Jump Record, and a future external bank inventory
@@ -72,6 +81,7 @@ STR8 keeps recovery/update safe.
 STR8 hands normal operation to HIMON or another payload.
 HIMON provides the default monitor/debug/catalog workbench.
 ASM creates AP objects; OIL integrates and runs them.
+APMAN manages installed AP carriers; BANKDUMP inspects their physical map.
 ```
 
 ## Reader Paths
@@ -152,6 +162,10 @@ LOCAL/s3x/
 OPERATORS_GUIDE.md              current board-facing guide
 ASM/ASM_USER_GUIDE.md           ASM operator guide
 ASM/ADDRESS_PRACTICES.md        ASM address-role operator guide
+ASM/BANKED_AP_CARRIER_VS_AP_STORE.md carrier lifecycle versus record-store design
+ASM/APMAN_V1_BOARD_TEST.md      accepted APMAN install/discovery/run/status rail
+ASM/APMAN_APC_DISSECTION.md     exact flash/envelope/RAM/service/flow atlas
+ASM/BANK_DUMP_AP_CARD.md        accepted BANKDUMP inspection/map rail
 ASM/AP_LINKER_CURRENT_IMAGE_GATES.md frozen moved-linker board gates
 ASM/LIFE16_QUICK_CARD.md        exact ASM-F2 Life bank-2 bench sequence
 ASM/LIFE16_BANK2_EXAMPLE.md     ASM-F2 16x16 Life AP bank-2 walkthrough

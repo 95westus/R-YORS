@@ -793,9 +793,17 @@ must fit in `$2000-$6FFF`; direct resident `AP package destination` remains the
 recovery form.
 
 That path copies the banked AP envelope into the sector staging buffer, loads
-and links ordinary BODY bytes into `$2000-$4FFF`, and runs from the requested
-load address. Fixed transient tools may instead use `$7000-$7BFF`. It never
-executes directly from banked flash.
+and links BODY bytes into a manager-approved destination in `$2000-$6FFF`,
+and runs from the requested load address. APMAN itself owns `$7000-$7B11`. It
+never executes a carrier directly from banked flash.
+
+A parent AP can use published direct LOAD operation `$01` through the service
+pointer at `$7E2D-$7E2E` for a non-overlapping package already in RAM or
+visible flash. Named banked-child chaining through manager operation `$04` is
+mechanically possible but not yet a supported ABI: the parent must survive
+staging, manager scratch, and the child destination, and no parent-context
+contract has been board-proven. See [Banked AP Carrier Versus AP
+Store](BANKED_AP_CARRIER_VS_AP_STORE.md).
 
 Flash ASM keeps symbol names at `$0200-$09FF` and fixup names at
 `$0A00-$19FF`. `PACKAGE` serializes the required AP metadata before those

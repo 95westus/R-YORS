@@ -32,11 +32,14 @@ flowchart TD
     HASH --> DISPATCH["CMD_DISPATCH_HASH<br/>Scan resident FNV records, resolve the command, and execute it"]
 
     DISPATCH --> LOAD["CMD_L<br/>Receive S19, enforce RAM/flash policy, verify records, and optionally run"]
-    DISPATCH --> AP["CMD_AP<br/>Load an AP package from RAM or banked storage and transfer to its entry"]
+    DISPATCH --> AP["CMD_AP / CMD_APS<br/>Direct package load or delegated carrier operation"]
     DISPATCH --> DEBUG["CMD_B / CMD_N<br/>Manage one-shot breakpoints and prepare one instruction step"]
     DISPATCH --> MEM["CMD_D / CMD_M / CMD_R / CMD_X / CMD_G<br/>Inspect memory/context, edit state, resume, or jump"]
 
-    AP --> APSVC["HIM_AP_SERVICE<br/>Validate, parse, relocate, load, link, or suggest placement for an AP object"]
+    AP --> BOOT["HIM_APMAN_BOOTSTRAP<br/>Discover AM01 in Banks 2, 1, then 0; load it at $7000"]
+    BOOT --> APMAN["APMAN<br/>Named lookup, load-only/run, status, and install"]
+    AP --> APSVC["HIM_AP_SERVICE<br/>Validate, parse, relocate, load, link, suggest, or enter manager"]
+    APMAN --> APSVC
     APSVC --> LINK["HIM_AP_IMPORT_LINK<br/>Resolve AP imports through resident FNV records and patch relocation sites"]
     DEBUG --> CTX["MON_CTX_RESUME_RTI / DBG_HANDLE_BRK<br/>Restore saved context or capture a breakpoint/step stop"]
 
@@ -55,6 +58,7 @@ flowchart LR
     STORE[RAM / Visible Flash / Banked Flash] --> OIL[OIL]
     AP --> STORE
     HIMON[HIMON] --> OIL
+    APMAN[APMAN carrier manager] --> OIL
     OIL --> LOAD[Load / Relocate]
     OIL --> STR8[STR8 Bank Services]
     OIL --> RJOIN[Resident Imports]
@@ -365,11 +369,11 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
-| AP package run | `AP pkg dst` | `CMD_AP`, `HIM_AP_SERVICE` | Loads an AP v2 envelope from RAM, visible flash, or the supported banked-source path to `$2000-$4FFF`, applies internal/import relocations, then runs the executable `ENTRY` offset. | AP v2 validates typed exports/imports and supports 64 relocation rows. Installed lookup by package hash/name remains future catalog work. |
-| AP Store status | `APS` | `CMD_APS`, `HIM_APS_HEADER_READ_CODE`, `HIM_APS_CLASSIFY_HEADER` | Streams all 24 sector headers in Banks 0-2, restoring Bank 3 before validating or printing each row. | Read-only. Compact rows use packed location plus `HDR ERASED`, `UNMANAGED`, `?`, `+`, `-`, `!`, `-!`, `= WORK`, or `= BKUP B3F`; generation is printed only for managed states. |
+| AP package/carrier run | `AP pkg dst`; `AP Bn name\|s000 [dst]`; `AP L ...` | `CMD_AP`, `HIM_APMAN_BOOTSTRAP`, APMAN `APMAN_COMMAND_AP` | The direct form validates and loads a visible envelope. Bank/name/address forms discover APMAN, stage and validate one bank sector, load/link the body below `$7000`, and either run it or return after load-only. | APMAN rejects its own `AM01` carrier as a child and restores Bank 3 around bank access. Named carrier execution is board-accepted. |
+| AP status/list/detail | `APS`; `APS Bn`; `APS Bn name\|s000` | `CMD_APS`, `HIM_APMAN_BOOTSTRAP`, APMAN `APMAN_COMMAND_APS` | Delegates to APMAN. Bare `APS` prints the 24 Bank 0-2 storage sectors with erased/unmanaged/managed/APC/WORK/backup states. Bank/detail forms list or inspect validated carriers. | Read-only. The accepted board has APMAN at B2:8 and BANKDUMP at B2:9; BANKDUMP `M` supplies the complete Bank 0-3 physical map. |
 | Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; confirms, then jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; kind is `K03`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
 | S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_RECORD_S1`, `L_VALIDATE_RAM_SPAN` | Accepts S0/S1/S9, validates each complete record before copying S1 data, tracks the byte count, and reports the S9 entry without executing it. A fatal error latches failure, suppresses later S1 writes, and quenches through S9 or Ctrl-C; earlier accepted records remain in RAM. | Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` are rejected by the bare-`L` grammar. |
-| AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_IMPORT_LINK`, `HIM_AP_FIND_HOLE` | Parses AP v2 envelopes, loads BODY to `$2000-$4FFF`, resolves kind-matched RJOIN imports, applies internal/import relocation rows, derives the executable entry, and suggests erased flash holes. | Published through `$7E2D-$7E40`; flash ASM `LOAD`/`INSTALL` and HIMON `AP pkg dst` call this so AP package consumption and linking survive after ASM exits. AP v2 uses 16-bit section lengths and accepts 64 relocation/export/import rows. STR8 carries no AP/FNV linker code. |
+| AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_IMPORT_LINK`, `HIM_AP_FIND_HOLE`, `HIM_APMAN_BOOTSTRAP` | Parses AP-v2 envelopes, loads BODY into an allowed application/tool lane, resolves kind-matched RJOIN imports, applies relocation rows, derives the entry, suggests holes, or discovers/starts APMAN for manager operation `$04`. | Published through `$7E2D-$7E40`; ASM and APMAN share it. AP-v2 uses 16-bit section lengths and accepts 64 relocation/export/import rows. STR8 carries no AP/FNV linker code. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Patch targets are limited to user program RAM below `$7A00`, so monitor RAM and `$7F00-$7FFF` I/O stay protected. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
 | Single step | `N` | `CMD_N`, `DBG_STEP_ONCE`, `DBG_OPCODE_LEN`, `MON_CTX_RESUME_RTI` | Computes next PC by packed opcode length, prints mnemonic-only step diagnostics, plants a temporary BRK, resumes with `RTI`. | Temporary trap targets use the same patchable-RAM guard as `B`; monitor RAM and I/O are not patched. |
@@ -508,7 +512,7 @@ This leaves `$01CF` bytes below `$F000`. The compiled host gate exercises all
 cards accept 64 exports, 64 imports, typed import matching, named package
 identity, and relocated execution.
 
-Current accepted HIMON/ASM-F2 `00.0814(1303)` map:
+Earlier accepted HIMON/ASM-F2 `00.0814(1303)` map:
 
 ```text
 CODE     $28A2 / 10402
@@ -528,7 +532,7 @@ same `1303` HIMON bytes in the standalone Bank-3 `8-E` payload and the final
 STR8-N-composed image, including physical-reset persistence, the fixed `$C000`
 head, ASM-F2 identity, and synthetic `J3` return.
 
-Current 2026-08-19 case-preserving source-input host candidate:
+Earlier 2026-08-19 case-preserving source-input host candidate:
 
 ```text
 CODE     $28AA / 10410
@@ -540,6 +544,28 @@ _END_DATA = $EDD3
 This leaves `$022D` bytes below `$F000`. The 31-byte growth supplies the
 case-preserving echoed input entry and its resident `SYS_READ_CSTRING` record;
 board acceptance is still pending.
+
+Current board-accepted HIMON/ASM-F2 `00.0826(1510)` map:
+
+```text
+CODE     $292F / 10543
+DATA     $054A /  1354
+TOTAL    $2E79 / 11897
+_END_DATA = $EE79
+CMD_AP = $C387
+CMD_APS = $C427
+HIM_PACK40_ASCII_TO_CODE = $D316
+HIM_PACK40_PACK3 = $D355
+HIM_APMAN_BOOTSTRAP = $D3B8
+HIM_AP_SERVICE = $D4A3
+HIM_AP_IMPORT_LINK = $DC4B
+AP service cells = $7E2D-$7E40
+```
+
+This leaves `$0187` bytes below `$F000`. The accepted board proof includes
+APMAN discovery at B2:8, `$7000` loading, named carrier installation and
+execution, detailed/list `APS`, BANKAUDIT execution, and BANKDUMP's complete
+read-only physical-sector map with Bank 3 restored.
 
 ## Edge Evidence Rules
 

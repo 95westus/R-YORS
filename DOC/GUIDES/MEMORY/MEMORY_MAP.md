@@ -17,9 +17,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E8A9   HIMON CODE, START/standalone RESET entry at $C000
-$E8AA-$EDD2   HIMON DATA
-$EDD3-$FFF9   current image gap and external STR8-N/high-ROM space
+$C000-$E92E   HIMON CODE, START/standalone RESET entry at $C000
+$E92F-$EE78   HIMON DATA
+$EE79-$FFF9   current image gap and external STR8-N/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -78,10 +78,10 @@ targets are owned and checked by the standalone STR8-N build.
 Combined image layout:
 
 ```text
-$8000-$BAFD   ASM-F2 low-flash image, entry $800C
-$BAFE-$BFFF   current low-flash growth/AP-store hole; no reporter AP in Bank 3
-$C000-$EDD2   HIMON body, including resident AP v2 import linker
-$EDD3-$EFFF   current image gap inside the E sector
+$8000-$BD2A   ASM-F2 low-flash image, entry $800C
+$BD2B-$BFFF   current low-flash growth margin; no carrier storage in Bank 3
+$C000-$EE78   HIMON body, including resident AP-v2 linker/APMAN bootstrap
+$EE79-$EFFF   current image gap inside the E sector
 $F000-$FD54   STR8-N v1.23 resident supervisor, installer, loader, and services
 $FD55-$FD5B   currently available resident growth, 7 bytes
 $FD5C-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$0453
@@ -115,6 +115,28 @@ reset/input mode. Only a successful software selection establishes the
 canonical `$CC/$CE/$EC/$EE` patterns. Treat raw PCR `$00` as undecoded, not as
 evidence that Bank 3 is absent.
 
+## Accepted Physical-Sector Inventory
+
+The read-only BANKDUMP `M` run captured this board inventory on 2026-08-26:
+
+```text
+B# 8 9 A B C D E F
+
+B0 U U U U U U U U
+B1 U A A U U A W B
+B2 A A E E E E E E
+B3 U U U U U U U P
+```
+
+`E` is a completely erased 4K sector, `U` is occupied/unmanaged content, and
+`A` is a fully validated AP-v2 carrier including body FNV. `W`, `B`, and `P`
+are configured roles: B1:E WORK, B1:F B3:F backup, and live B3:F protected.
+
+Known accepted carriers are APMAN at B2:8 (`L=$0B40`, body
+`$7000-$7B11`) and BANKDUMP at B2:9 (`L=$09AD`, body `$2000-$292B`). B1:C
+currently reports `U`; the map classifies live bytes and does not trust a
+former package name or directory description.
+
 ## OIL Address Boundary
 
 OIL keeps an AP Capsule (APC) in storage separate from its executable BODY:
@@ -122,13 +144,16 @@ OIL keeps an AP Capsule (APC) in storage separate from its executable BODY:
 ```text
 AP Capsule in RAM, visible flash, or banked flash
   -> stage and parse (banked flash uses the SSD at $0A00-$19FF)
-  -> load BODY into the AIR at $2000-$4FFF
+  -> load BODY into ordinary application RAM at $2000-$6FFF
   -> apply relocation and resident imports
   -> run the entry from RAM
 ```
 
 A banked AP is staged one 4K sector at a time; it is not executed directly
-from the banked flash window.
+from the banked flash window. The resident direct `AP pkg dst` recovery form
+uses the ordinary `$2000-$4FFF` lane. APMAN occupies `$7000-$7B11`, so its
+managed child destination must begin at or above `$2000` and end at or below
+`$7000`.
 
 Local language images are built to sit below the protected HIMON/STR8 region:
 
@@ -227,10 +252,13 @@ $00F0-$00FF   monitor/parser hot zero-page window
 $0100-$01FF   hardware stack; HIMON owns this on monitor entry
 $0200-$09FF   LRS: SNL during ASM, WCT during STR8 flash work
 $0A00-$19FF   LRS: FNL during ASM, SSD during STR8 flash work
-$1A00-$1FFF   USER FREE: no v1.23 firmware or maintained RAM-tool allocation
-$2000-$4FFF   AIR: Build Bay, Envelope Bay, and Run/Tray Bay
-$5000-$6D6B   AWH: flash ASM UDATA
-$6D6C-$79FF   SOD: safe upper output/scratch
+$1A00-$1AFF   APMAN command shadow while AP/APS/INSTALL is active
+$1B00-$1FFF   user/free outside another phase owner
+$2000-$4FFF   AIR: Build Bay, Envelope Bay, and normal Run/Tray Bay
+$5000-$6D6D   AWH: flash ASM UDATA
+$6D6E-$6FFF   SOD/application headroom
+$7000-$7B11   APMAN transient body when resident AP/APS/INSTALL delegates
+$7B12-$7BFF   APMAN/tool-tray remainder when that phase is active
 $7A00-$7AFF   VOD: command buffer and volatile monitor scratch
 $7B00-$7BFB   RPT: validated-record decoded payload tray (252 bytes)
 $7BFC-$7BFF   VOD: remaining volatile monitor scratch
@@ -266,6 +294,13 @@ is retained staging, not an execution region. It can hold a complete
 flash-sector mirror/update image or a banked AP Capsule copied from banks 0-2.
 AP BODY bytes execute only after the AP loader relocates/links them into the
 requested AIR load address, currently inside `$2000-$4FFF`.
+
+APMAN changes the foreground phase map while it is active. HIMON copies the
+command page to `$1A00`, loads APMAN at `$7000`, stages one bank sector at
+`$0A00-$19FF`, and loads a selected child below `$7000`. These areas are not
+independent persistent buffers; a caller that wants to survive a child AP must
+keep its own code/data and stack outside every child destination and manager
+scratch range.
 
 The RPT and RTC are a second, smaller handoff pair: STR8's Record Frontdoor
 (`$F009-$F00F`) parses an S19 record into the RPT and publishes its descriptor

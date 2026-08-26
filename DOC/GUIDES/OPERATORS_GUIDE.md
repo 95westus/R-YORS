@@ -65,10 +65,10 @@ also requires the locked standalone STR8-N checkout to be clean.
 ## Current Integrated Layout
 
 ```text
-$8000-$BAFD   ASM-F2, entry $800C
-$BAFE-$BFFF   low-flash headroom/AP-store hole
-$C000-$EDD2   HIMON
-$EDD3-$EFFF   HIMON headroom
+$8000-$BD2A   ASM-F2, entry $800C
+$BD2B-$BFFF   low-flash growth margin
+$C000-$EE78   HIMON
+$EE79-$EFFF   HIMON growth margin
 $F000-$FD54   standalone STR8-N v1.23 resident
 $FD55-$FD5B   available 7-byte growth margin
 $FD5C-$FFAF   stored unified STR8-N worker, runs at $0200-$0453
@@ -114,6 +114,7 @@ STR8           enter resident STR8-N at $F000 after confirmation
 L              load S0/S1/S9 into RAM and report the S9 address
 ASM            enter flash-resident ASM-F2 when present
 AP ...         load/link/run an AP package
+APS ...        map/list/inspect installed AP carriers
 R [regs]       display or edit trapped context
 B start        set a one-shot breakpoint
 B C start      clear a breakpoint
@@ -146,28 +147,37 @@ L OK ... GO=2000
 This differs intentionally from STR8-N `L`, whose recovery workflow loads and
 runs in one operation.
 
-## A Complete ASM Session
+## A Complete Named-Carrier Session
 
-ASM-F2 is already resident in the normal R-YORS 28K payload:
+ASM-F2 is already resident in the normal R-YORS 28K payload. This is the
+short path from source to a named carrier that remains usable after reset:
 
 ```text
->ASM
+>ASM NEW
 ASM>$2000: ORG $2000
-ASM>$2000: LDA #$5A
+ASM>$2000: MAIN LDA #$5A
 ASM>$2002: RTS
+ASM>$2003: ENTRY MAIN
 ASM>$2003: END
-SEAL> PACKAGE $3200
-SEAL> LOAD $3200 $3000
+SEAL> PACKAGE MAIN $3000
+SEAL> INSTALL 3000 B2
 SEAL> .
->D 3000 3002
->G 3000
+>RESET
+>APS B2 MAIN
+>AP B2 MAIN
 ```
 
-During the ASM session, ASM owns its published low-RAM tables and workspace.
-After `END`, `PACKAGE` emits an AP envelope. `LOAD` loads that package into
-RAM; `INSTALL package flash_addr` may store it in a verified erased low-flash
-hole. Exit with `.` to return to HIMON. If a detailed table report is needed,
-run the separately stored ASM session reporter AP after leaving ASM.
+After `END`, `PACKAGE name address` emits the AP-v2 envelope. `INSTALL address
+Bn` asks the installed APMAN carrier to choose the first completely erased 4K
+sector in Bank 0, 1, or 2, program the envelope, and restore Bank 3. `APS`
+checks discovery after reset; `AP` loads, links, and runs it. `AP L` performs
+the same named load/link without transferring control.
+
+APMAN itself is installed at B2:8 and runs transiently at `$7000`. BANKDUMP is
+installed at B2:9 and supplies read-only header/page/all-sector inspection and
+the full `E/U/A/W/B/P` map. See the
+[APMAN card](ASM/APMAN_V1_BOARD_TEST.md) and
+[BANKDUMP card](ASM/BANK_DUMP_AP_CARD.md).
 
 An optional checked ASM build spends 651 additional bytes on full AP checking
 and leaves only `$0108` flash headroom. The normal compact build leaves

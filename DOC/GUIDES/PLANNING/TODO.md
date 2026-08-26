@@ -129,14 +129,16 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
 - [ ] Design one persistent AP Store operator menu/dispatcher that replaces
   the overlapping `$7000` transit images without changing V1 media bytes. It
   may be another APC loaded into RAM through the carrier path.
-- [ ] After the current APMAN/APC/APS board cycle passes, publish a complete
+- [x] After the current APMAN/APC/APS board cycle passes, publish a complete
   inspection/dissection package for the proven image: physical Bank 0-3 and
   sector-role maps; the B2:8 carrier-sector byte map; AP v2 envelope/header,
   section, BODY, entry, relocation, export/import, FNV, and erased-tail maps;
   APMAN's resident-flash, staging-RAM, overlay, command-card, worker, and HIMON
   service ranges; and install/list/load/fixup/execute flow diagrams. Include
   exact addresses, lengths, hashes, ownership, overwrite hazards, and captured
-  board output rather than schematic-only descriptions.
+  board output rather than schematic-only descriptions. Published as
+  `ASM/APMAN_APC_DISSECTION.md`; BANKDUMP provides the accepted read-only
+  inspection/dump path for APMAN itself.
 - [ ] Add a read-only APMAN carrier inspection command after that baseline is
   hardware-proven. Preferred command shape is `AP D Bn name|s000`: validate
   the selected carrier exactly as `AP` does, print its parsed AP v2 metadata

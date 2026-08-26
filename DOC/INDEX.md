@@ -21,6 +21,10 @@ DOC/GUIDES/TECHNICAL_GUIDE.md
 - [GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md](./GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence proof for the host-accepted `$1FFD-$1FFF` Bank Jump Record.
 - [GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](./GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - required per-image handoff, peripheral, vector, CRC, and recovery procedure for unrelated 32K guests.
 - [GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](./GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - retained S19/bank-volume direction and superseded compatible-bank design history.
+- [GUIDES/ASM/BANKED_AP_CARRIER_VS_AP_STORE.md](./GUIDES/ASM/BANKED_AP_CARRIER_VS_AP_STORE.md) - AP carrier versus larger AP Store.
+- [GUIDES/ASM/APMAN_V1_BOARD_TEST.md](./GUIDES/ASM/APMAN_V1_BOARD_TEST.md) - accepted named carrier manager lifecycle.
+- [GUIDES/ASM/APMAN_APC_DISSECTION.md](./GUIDES/ASM/APMAN_APC_DISSECTION.md) - exact APMAN/APC flash, envelope, RAM, and flow maps.
+- [GUIDES/ASM/BANK_DUMP_AP_CARD.md](./GUIDES/ASM/BANK_DUMP_AP_CARD.md) - accepted read-only sector inspector and bank map.
 
 ## Current Status
 
@@ -29,9 +33,10 @@ OSI BASIC, and fig-FORTH. That is not opaque 32K `Jn` qualification.
 `J0`-`J2` is hardware-proven on the recorded R-YORS bank images; every
 unrelated guest requires its own H/P/V/CRC record. HIMON RAM-only debug is
 hardware-proven for the current one-shot breakpoint and single-step surface.
-The reset-time `0`/`1`/`2`/`3`/`S` selector and the current uppercase
-interactive echo are hardware-accepted. The follow-up Bank Jump Record is
-host-accepted and awaits its separate persistence transcript.
+The reset-time `0`/`1`/`2`/`3`/`S` selector, uppercase interactive echo, and
+Bank Jump Record are hardware-accepted. The current AP-v2 carrier lifecycle is
+also accepted: ASM PACKAGE/INSTALL, reset-time APMAN discovery, named AP/AP L,
+APS status/detail, BANKAUDIT, and BANKDUMP's read-only physical map.
 
 - [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md) - milestone and command alerts.
 - [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md) - documentation-shape alerts.

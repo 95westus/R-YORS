@@ -125,9 +125,12 @@ Important shared boundaries are:
 
 ```text
 $0200-$19FF   ASM tables during assembly, STR8-N worker/staging during recovery
-$1A00-$1FFF   user free RAM
-$2000-$4FFF   AP/body/recovery-tool RAM
-$5000-$79FF   ASM output and safe upper scratch
+$1A00-$1AFF   APMAN command shadow during delegated AP operations
+$1B00-$1FFF   user/free outside another phase owner
+$2000-$6FFF   managed AP body destination range
+$5000-$6D6D   ASM UDATA while ASM owns the phase
+$6D6E-$6FFF   application/headroom outside ASM ownership
+$7000-$7B11   transient APMAN body
 $7A00-$7AFF   HIMON volatile command area
 $7C00-$7DBF   single-owner high tool overlay
 $7DC0-$7DC7   HIMON AP-link scratch
@@ -142,14 +145,57 @@ reset or explicit handoff establishes the next phase.
 
 ASM-F2 begins at `$800C` and emits normal code or an AP package. AP packages
 can carry body bytes, relocation rows, exports, and resident imports. HIMON's
-AP service validates the envelope, loads the body to `$2000-$4FFF`, resolves
-RJOIN imports, applies relocations, and transfers to the entry.
+AP service validates the envelope, loads the body, resolves RJOIN imports,
+applies relocations, and derives the entry.
 
-The current compact flash ASM occupies `$8000-$BAFD`;
-`_END_DATA=$BAFE` leaves `$0502` bytes through `$BFFF`. Its map uses CODE
-`$386F`, DATA `$028F`, and UDATA `$5000-$6D6B`. The default resident wrapper
-keeps AP v2 package/load/install support and omits the diagnostic-only `CHECK`
-command to preserve this headroom.
+The resident command bootstrap discovers the `AM01` APMAN carrier in Banks
+2, 1, then 0, stages it, and loads its body at `$7000`. APMAN provides:
+
+```text
+AP Bn name|s000 [dst]     load/link/run an installed carrier
+AP L Bn name|s000 [dst]   load/link without running
+APS                       Bank 0-2 carrier/media status
+APS Bn                    list valid carriers in one bank
+APS Bn name|s000          show one carrier
+INSTALL package Bn        choose the first fully erased 4K sector
+```
+
+APMAN stages banked media at `$0A00-$19FF`; managed child bodies may occupy
+`$2000-$6FFF`. It rejects itself as a child and restores Bank 3 on every bank
+operation path.
+
+The current flash ASM occupies `$8000-$BD2A`; `_END_DATA=$BD2B` leaves `$02D5`
+bytes through `$BFFF`. Its UDATA ends at `$6D6E` (exclusive). The resident
+wrapper keeps AP-v2 package/load and APMAN-backed install support.
+
+### Can one AP load another AP?
+
+The basic loader mechanism is already public. `$7E2D-$7E2E` contains the AP
+service pointer; a parent can use a local `JSR`-to-`JMP ($7E2D)` trampoline,
+submit direct LOAD operation `$01` through the `$7E2F-$7E40` card, and receive
+the linked child entry in X/Y. This works for a package already reachable in
+RAM or currently visible flash, provided parent and child ranges do not
+overlap.
+
+Named banked-child execution is not yet a promised application ABI. Current
+manager operation `$04` enters the APMAN bootstrap, but the caller must also
+put `AP Bn ...` in HIMON's `$7A00` command buffer and set APMAN mode `$01` at
+`$7C60`. HIMON then shadows the command at `$1A00`, loads APMAN, and APMAN
+jumps to the child. With the service entered through `JSR`, the child's final
+`RTS` can in principle unwind back to the parent.
+
+That parent must remain outside APMAN `$7000-$7B11`, staging
+`$0A00-$19FF`, shared service/card/ZP workspace, and the child's destination.
+The manager and child also do not preserve an application-level register or
+memory context contract. Therefore current supported practice is chaining at
+the monitor/operator level: return from one AP, then issue the next `AP`.
+A small explicit `AP_CHAIN` ABI should hide those private manager cells, state
+which registers and memory survive, and be board-tested before applications
+rely on parent-to-banked-child calls.
+
+See the [APMAN/APC Dissection](ASM/APMAN_APC_DISSECTION.md) for the exact
+carrier-sector, serialized-envelope, RAM-overlay, service-card, and execution
+maps.
 
 ## Import And Export
 

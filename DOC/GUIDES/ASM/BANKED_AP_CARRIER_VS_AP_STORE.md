@@ -87,6 +87,39 @@ The old STR8-N Bank Maintenance `P` command remains a narrow recovery writer
 for legacy small envelopes. It is no longer the normal ASM/package/install
 flow and does not provide APMAN name discovery.
 
+## Can an AP load another AP?
+
+For a directly reachable package, yes. For a named banked child, mechanically
+yes but not yet as a supported application contract.
+
+HIMON publishes the AP service pointer at `$7E2D-$7E2E` and its request/result
+card at `$7E2F-$7E40`. A parent can call direct LOAD operation `$01` through a
+small `JSR`-to-`JMP ($7E2D)` trampoline, then use the returned X/Y child entry.
+That path already has a published service shape, but parent and child RAM must
+not overlap.
+
+For a named banked carrier, manager operation `$04` can discover APMAN and
+load it at `$7000`. The present caller must first write `AP Bn ...` into
+HIMON's `$7A00` command buffer and set APMAN mode `$01` at `$7C60`; bootstrap
+copies the command to `$1A00` before overlaying the manager. If the parent
+enters the service through `JSR`, APMAN jumps to the child and the child's
+final `RTS` can in principle unwind back to the parent.
+
+There are important ownership rules:
+
+- the parent cannot live in APMAN's `$7000-$7B11` body;
+- the parent must survive the `$0A00-$19FF` sector staging area and shared
+  service/card/zero-page scratch;
+- the child destination must not overwrite the surviving parent;
+- no parent/child register, scratch, or error-return convention is currently
+  promised or board-proven.
+
+Therefore the supported current chain is operator/monitor level: one AP
+returns, then the next `AP` command runs. Before applications depend on nested
+loading, define a small `AP_CHAIN` call card/ABI, preserve the parent context,
+choose non-overlapping destinations, and prove success/failure/B3-restore
+paths on the board.
+
 ## AP Store V1
 
 AP Store manages append-only records rather than assigning one sector to one
