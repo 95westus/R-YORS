@@ -25511,5 +25511,48 @@ The host code and package measurements were not at fault. The generator now
 removes all onboard-only internal labels and EQU symbols, replaces every
 branch/call/data/constant reference with its checked host-map value, and keeps
 only `BANKDUMP` plus the three imports. Emitted body `$092C`, FNV32
-`$CEF1F837`, and package `$09AD` remain unchanged. A clean board retry of the
-symbol-lean card is pending.
+`$CEF1F837`, and package `$09AD` remain unchanged. At this point, a clean board
+retry of the symbol-lean card was pending; its acceptance follows below.
+
+## 2026-08-26 BANKDUMP Read-Only Map Extension Acceptance
+
+The symbol-lean retry assembled through `$292C` without an error, packaged the
+predicted `$09AD` envelope, and installed it automatically at B2:9. After a
+warm reset, resident APS resolved the carrier by name and resident AP loaded
+and executed it at its sealed `$2000` base.
+
+```text
+ASM>$292C: END
+ASM OK
+SEAL> PACKAGE BANKDUMP $3000
+PKG OK @=$3000 L=$09AD
+SEAL> INSTALL 3000 B2
+INST B2 9000 L=09AD
+SEAL> .
+ASM BYE
+>RESET
+...
+>APS B2 BANKDUMP
+APS B2 9000 APC BANKDUMP L=09AD @2000
+>AP B2 BANKDUMP
+AP LOAD B2 9000 -> 2000
+GO 2000
+
+BANKDUMP READ-ONLY
+BANK 0-3 OR M=MAP> M
+
+B# 8 9 A B C D E F
+
+B0 U U U U U U U U
+B1 U A A U U A W B
+B2 A A E E E E E E
+B3 U U U U U U U P
+E=ERASED U=USED A=AP VALID
+W=WORK B=B3F BKUP P=B3F PROTECTED
+BANKDUMP MAP OK; B3 RESTORED
+```
+
+B1:C was correctly reported `U` for its live bytes rather than being assumed
+valid from its former BANKAUDIT role. B2:8 APMAN and B2:9 BANKDUMP validated
+as `A`; B1:E, B1:F, and B3:F retained `W`, `B`, and `P`. This accepts the
+complete `$09AD` read-only bank-map extension and closes its board gate.

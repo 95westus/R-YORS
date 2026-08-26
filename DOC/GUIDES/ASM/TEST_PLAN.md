@@ -15633,8 +15633,8 @@ accepted.
 
 ## 2026-08-26 BANKDUMP Read-Only Bank-Map Extension
 
-Host status: accepted. Board status: pending replacement of the `$0597` B2:9
-baseline with the `$09AD` candidate and one named `M` run.
+Host status: accepted. Board status: accepted. The `$09AD` candidate replaced
+the `$0597` B2:9 baseline and passed the named `M` run.
 
 `M` is accepted at the initial bank prompt and prints a 4x8 physical-sector
 map. It stages every non-role sector, restores Bank 3 before output, requires
@@ -15658,7 +15658,8 @@ Board gate:
 5. Reset; require `APS B2 BANKDUMP` to report `9000`, `$09AD`, and `@2000`.
 6. Run `AP B2 BANKDUMP`, enter `M` at `BANK 0-3 OR M=MAP>`, and require the
    current map in `BANK_DUMP_AP_CARD.md`, including B1:E `W`, B1:F `B`, B3:F
-   `P`, B1:C/B2:8/B2:9 `A`, and `BANKDUMP MAP OK; B3 RESTORED`.
+   `P`, B2:8/B2:9 `A`, and `BANKDUMP MAP OK; B3 RESTORED`. B1:C is expected
+   to reflect its live contents; the accepted run classified it `U`.
 
 The already accepted `H`, `P`, and `A/Q` behavior is unchanged; a focused map
 run is sufficient for this extension.
@@ -15670,5 +15671,6 @@ source rejection rather than a flash or runtime failure. The generated `.a`
 now keeps only `BANKDUMP` plus the three imported symbols. Every internal
 branch, call, constant, and data address is fixed from the checked host map;
 the host `.asm`, emitted `$092C` bytes, FNV `$CEF1F837`, and predicted `$09AD`
-package are unchanged. Board status remains pending a clean assembly/install
-and the named `M` gate.
+package are unchanged. The corrected retry assembled without error, packaged
+and installed exactly as predicted, survived reset, resolved by name, and
+passed the complete map/B3-restore gate.

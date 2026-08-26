@@ -1,8 +1,8 @@
 # BANKDUMP Banked APC Utility
 
-Status: the `$0597` dump-only baseline is accepted on board. The `$09AD`
-read-only bank-map extension is host-accepted; its symbol-lean onboard source
-awaits a clean board retry.
+Status: accepted on board. The symbol-lean `$09AD` read-only bank-map
+extension assembled, packaged, installed at B2:9, survived reset, resolved by
+name, printed the complete map, and restored Bank 3.
 
 `BANKDUMP` is the read-only physical-flash inspection APC. It selects one
 Bank 0-3 sector, copies all 4K to `$4000-$4FFF`, restores Bank 3, calculates
@@ -54,7 +54,7 @@ Do not enter `G 2000` on the raw ASM-F2 body. Its imports are unresolved until
 `PACKAGE` and the named `AP` load link them. At `SEAL>`, use only the package,
 install, and exit commands shown below.
 
-### Retry after `ERR=$08 BS`
+### Historical correction after `ERR=$08 BS`
 
 The first map-extension card exceeded ASM-F2's global symbol budget beginning
 at `AP_RECORD`. It ended with `ERR=$09 BAD FIX`; no `PACKAGE` or `INSTALL`
@@ -69,11 +69,12 @@ ASM NEW
 Then send the current complete `.a` and continue at `PACKAGE` below. Do not
 repeat the erase step.
 
-## Install on the current board
+## Fresh or replacement install
 
-The current B2:9 contains the accepted `$0597` dump-only BANKDUMP. Erase that
-sector before installing the `$09AD` map extension. No STR8-N, HIMON, ASM,
-APMAN, directory, or Bank-3 update is needed.
+The accepted `$09AD` BANKDUMP is currently installed at B2:9. For a fresh
+installation, or if B2:9 contains an older/different carrier, erase that
+sector first. No STR8-N, HIMON, ASM, APMAN, directory, or Bank-3 update is
+needed.
 
 At HIMON enter `L` and send this complete file:
 
@@ -140,7 +141,6 @@ Expected package/install lines for the current board are:
 ```text
 PKG OK @=$3000 L=$09AD
 INST B2 9000 L=09AD
-... OK
 ASM BYE
 ```
 
@@ -170,7 +170,7 @@ Expected current-board map:
 B# 8 9 A B C D E F
 
 B0 U U U U U U U U
-B1 U A A U A A W B
+B1 U A A U U A W B
 B2 A A E E E E E E
 B3 U U U U U U U P
 E=ERASED U=USED A=AP VALID
@@ -178,8 +178,9 @@ W=WORK B=B3F BKUP P=B3F PROTECTED
 BANKDUMP MAP OK; B3 RESTORED
 ```
 
-Require `A` at B1:C for BANKAUDIT, B2:8 for APMAN, and B2:9 for BANKDUMP.
-The exact B0/B3 `U` contents are board inventory, not hard-coded policy.
+The accepted run classified B1:C as `U`: its current bytes no longer pass the
+complete AP-v2/body-FNV validator. Require `A` at B2:8 for APMAN and B2:9 for
+BANKDUMP. The other `U` contents are board inventory, not hard-coded policy.
 
 ## Test 2: inspect APMAN itself
 
