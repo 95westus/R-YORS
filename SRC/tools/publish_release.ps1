@@ -67,7 +67,15 @@ function Publish-File {
     $published.Add($relativePath, $Source)
 }
 
-$apStoreArtifacts = @(
+$apStoreActiveArtifacts = @(
+    "SRC/BUILD/s19/ap-store-v1-chain-install-tool-package-4000.s19",
+    "SRC/BUILD/s19/ap-store-v1-slice6-catalog-tool-package-4000.s19"
+)
+foreach ($relative in $apStoreActiveArtifacts) {
+    Publish-File -Source (Join-Path $repo $relative) -RelativeDir "ARTIFACTS/AP-STORE"
+}
+
+$apStoreArchiveArtifacts = @(
     "SRC/BUILD/bin/ap-store-v1-chain-install-tool-7000.ap.bin",
     "SRC/BUILD/bin/ap-store-v1-chain-reader-tool-7000.ap.bin",
     "SRC/BUILD/bin/ap-store-v1-object-tool-7000.ap.bin",
@@ -79,28 +87,25 @@ $apStoreArtifacts = @(
     "SRC/BUILD/bin/life-2000-load.bin",
     "SRC/BUILD/s19/asm-v1-flash-8000.s19",
     "SRC/BUILD/s19/ap-store-v1-chain-install-tool-7000.s19",
-    "SRC/BUILD/s19/ap-store-v1-chain-install-tool-package-4000.s19",
     "SRC/BUILD/s19/ap-store-v1-chain-reader-tool-7000.s19",
     "SRC/BUILD/s19/ap-store-v1-chain-reader-tool-package-4000.s19",
     "SRC/BUILD/s19/ap-store-v1-object-tool-7000.s19",
     "SRC/BUILD/s19/ap-store-v1-object-tool-package-3000.s19",
     "SRC/BUILD/s19/ap-store-v1-sector-tool-7000.s19",
     "SRC/BUILD/s19/ap-store-v1-slice6-catalog-tool-7000.s19",
-    "SRC/BUILD/s19/ap-store-v1-slice6-catalog-tool-package-4000.s19",
     "SRC/BUILD/s19/ap-store-v1-slice6-delete-tool-7000.s19",
     "SRC/BUILD/s19/ap-store-v1-slice6-delete-tool-package-4000.s19",
     "SRC/BUILD/s19/ap-store-v1-slice6-plan-tool-7000.s19",
     "SRC/BUILD/s19/ap-store-v1-slice6-plan-tool-package-4000.s19"
 )
-foreach ($relative in $apStoreArtifacts) {
-    Publish-File -Source (Join-Path $repo $relative) -RelativeDir "ARTIFACTS/AP-STORE"
+foreach ($relative in $apStoreArchiveArtifacts) {
+    Publish-File -Source (Join-Path $repo $relative) -RelativeDir "ARTIFACTS/ARCHIVE/AP-STORE"
 }
-Publish-File -Source (Join-Path $repo "SRC/PROOFS/ap-store-v1-sector-tool.asm") -RelativeDir "ARTIFACTS/AP-STORE"
-Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-sector-tool-7000.a") -RelativeDir "ARTIFACTS/AP-STORE"
+Publish-File -Source (Join-Path $repo "SRC/PROOFS/ap-store-v1-sector-tool.asm") -RelativeDir "ARTIFACTS/ARCHIVE/AP-STORE"
+Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-sector-tool-7000.a") -RelativeDir "ARTIFACTS/ARCHIVE/AP-STORE"
 
 $rComponentArtifacts = @(
     "SRC/BUILD/s19/fnv1a-hbstr-6000.s19",
-    "SRC/BUILD/s19/himon-apv2-bank3-c-e.s19",
     "SRC/BUILD/s19/himon-c000.s19",
     "SRC/BUILD/s19/himon-rom-c000-install-8000.s19",
     "SRC/BUILD/s19/himon-rom-c000.s19",
@@ -113,6 +118,7 @@ $rComponentArtifacts = @(
 foreach ($relative in $rComponentArtifacts) {
     Publish-File -Source (Join-Path $repo $relative) -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 }
+Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/himon-apv2-bank3-c-e.s19") -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
 Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19")
 
 $str8ComponentArtifacts = @(
@@ -155,10 +161,24 @@ foreach ($relative in $str8Sources) {
     Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/SOURCES"
 }
 
+$archivedSampleNames = @(
+    "apv1-reloc50-2000.a",
+    "apv2-export64-2000.a",
+    "apv2-import64-2000.a",
+    "apv2-named-identity-2000.a",
+    "apv2-reloc64-2000.a"
+)
 Get-ChildItem -LiteralPath (Join-Path $repo "DOC/GUIDES/ASM/SAMPLES") -File -Filter *.a |
     Where-Object { $_.Name -ne "ap-store-v1-sector-tool-7000.a" } |
     Sort-Object Name |
-    ForEach-Object { Publish-File -Source $_.FullName -RelativeDir "ARTIFACTS/SOURCES" }
+    ForEach-Object {
+        $relativeDir = if ($archivedSampleNames -contains $_.Name) {
+            "ARTIFACTS/ARCHIVE/SOURCES"
+        } else {
+            "ARTIFACTS/SOURCES"
+        }
+        Publish-File -Source $_.FullName -RelativeDir $relativeDir
+    }
 
 function Convert-S19ToFullBankBin {
     param(
@@ -218,11 +238,22 @@ Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
 
 - str8n-v1.22-top-update-2000.s19
 
-Moved-aside material:
+Board-use artifacts:
 
-- ARTIFACTS/AP-STORE - AP Store transit tools and exact `.a`/`.asm` carriers
+- ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19
+- ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19
+- ARTIFACTS/SOURCES/str8n-v1.22-bank-maint-menu-2000.a - onboard `ASM NEW`
+  source for guarded Bank-3 directory reclaim
+- ARTIFACTS/COMPONENT-IMAGES/str8n-v1.22-bank-maint-menu-2000.s19 - direct
+  loader form of the same maintenance menu
 - ARTIFACTS/COMPONENT-IMAGES - component, diagnostic, and recovery images
 - ARTIFACTS/SOURCES - source snapshots and onboard sample sources
+
+Historical artifacts:
+
+- ARTIFACTS/ARCHIVE/AP-STORE - superseded AP Store transit variants
+- ARTIFACTS/ARCHIVE/COMPONENT-IMAGES - superseded named component images
+- ARTIFACTS/ARCHIVE/SOURCES - AP v1/v2 proof fixtures retained for regression
 
 The canonical source remains under `SRC/` and the adjacent `STR8-N`
 repository. `SHA256SUMS.txt` covers every file recursively.
