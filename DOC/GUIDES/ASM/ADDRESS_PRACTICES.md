@@ -221,53 +221,49 @@ load/run destination.
 
 ## Banked AP Recipe
 
-Status: historical install workflow with a migrated loader awaiting board
-proof. The old writer remains archived at
-`SAMPLES/OLD/bankput-transient-3000.a`; current HIMON source stages banked APs
-through a RAM-resident `$F010/$0203` reader instead of removed `$F003` mode
-`$06`. Do not use the archived writer on installed split-V1 images. The recipe
-remains below as address-role documentation and proof provenance; an existing
-stored AP may be used for the focused loader board gate.
+Status: current operator workflow. Bank Maintenance `P` consumes an AP v2
+envelope at `$7000` in the menu+top image (or `$4000` in the standalone image),
+accepts a Bank 0-2 sector-base target, refuses configured work/backup roles,
+requires the complete package destination to be erased, and programs through
+its embedded mutation worker. The old standalone writer remains archived at
+`SAMPLES/OLD/bankput-transient-3000.a` and must not be used.
 
 ```text
 >ASM NEW
 ASM>$2000: ...AP body source...
 ASM>$hhhh: END
 ASM OK
-SEAL> PACKAGE 3200
-PKG OK @=$3200 L=$llll
+SEAL> SEAL
+SEAL> PACKAGE ENTRYNAME $7000
+PKG OK @=$7000 L=$00ll
 SEAL> .
 ASM BYE
->D 3200 5       expect 41 50 02 lenlo lenhi
->ASM NEW        historical: paste OLD/bankput-transient-3000.a
-ASM>$30D4: END
-ASM OK
+>ASM NEW
+  send the complete str8n-v1.23-bank-maint-menu-2000.a
 SEAL> .
 ASM BYE
->G 3000
->D 7C00 8       expect AC at $7C00
+>G 2000
+BM> P
+TYPE PUT BnS000 (n=0-2,S=8-F)> PUT B28000
+ OK
+BM> Q
 ```
 
-Then run the ordinary banked package from HIMON:
+After a cold boot into HIMON, run the banked package:
 
 ```text
->AP B2 $9000 $3000
+>AP B2 $8000 $4000
 ```
 
-In `AP B2 $9000 $3000`, `$9000` is the AP envelope address in bank 2's flash
-address space, and `$3000` is the RAM destination/run address. The body does
-not execute from banked flash.
+In `AP B2 $8000 $4000`, `$8000` is the AP envelope address in bank 2's flash
+window, and `$4000` is the RAM destination/run address. The body is loaded,
+relocated, and executed from RAM; it does not execute from banked flash.
 
-Keep `$3200` unchanged between `PACKAGE 3200` and the completed `G 3000`
-writer run. Do not run `AP`, `LOAD`, or another `PACKAGE` in that interval.
-The historical `OLD/bankput-transient-3000.a` returned `$E2` when the package
-header or length at `$3200` was no longer valid.
+Keep `$7000` unchanged between `PACKAGE` and the completed Bank Maintenance
+`P`. Do not run `AP`, `LOAD`, or another `PACKAGE` in that interval.
 
-For the bench command sequence, use
-[LIFE16_QUICK_CARD.md](LIFE16_QUICK_CARD.md). For the reasons behind it, use
-[LIFE16_BANK2_EXAMPLE.md](LIFE16_BANK2_EXAMPLE.md). The example assembles
-`SAMPLES/OLD/life16-column-2000.a`, stores the AP envelope in bank 2 at `$9000`,
-and runs it with `AP B2 $9000 $3000`.
+For the current board sequence, use
+[PIA_LED_BANKED_AP_CARD.md](PIA_LED_BANKED_AP_CARD.md).
 
 ## Bank 0 AP Install
 

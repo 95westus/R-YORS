@@ -15390,3 +15390,26 @@ The revised image then passed the complete board gate. Confirmed APDEL returned
 LIST/VALIDATE returned `$DB/$DB` both warm and after `HCOLD`. A read-only B1:B
 stage exposed the exact tombstone at offset `$0096`; only B1:B changed CRC,
 from `$60E7` to `$37A8`, and the cold table exactly matched the warm table.
+
+## 2026-08-26 Banked PIA LED Carrier
+
+Host status: accepted. Board status: pending the focused LED card; no board
+proof is claimed here.
+
+Bank Maintenance `P` now accepts an AP v2 envelope of `$0005-$00FF` bytes at
+the base of a Bank 0-2 sector. It uses the embedded mutation worker, rejects
+configured WORK/BKUP roles, requires the complete destination range erased,
+and uses the target line as the exact destructive confirmation. The focused
+case packages `pia-led-show-2000.a` as `MAIN` at `$7000`, confirms
+`PUT B28000`, cold-boots, and runs only:
+
+```text
+AP B2 $8000 $4000
+```
+
+Host gates require the `.a`/`.asm` LED bodies to remain identical, pin its
+87-byte body and expected `$00A3` AP envelope, validate both standalone and
+menu Bank Maintenance S19 images, and retain the private worker SHA-256
+`FFCDB4201C913FC9B3E3F3D438A98940F76967C5E62F843A2DC32CFF1D1AD1B2`.
+The exact operator sequence is in
+[`PIA_LED_BANKED_AP_CARD.md`](PIA_LED_BANKED_AP_CARD.md).

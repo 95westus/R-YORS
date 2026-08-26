@@ -759,15 +759,15 @@ the same bare hexadecimal convention as HIMON:
 INSTALL 3200 hhhh
 ```
 
-General banked install across banks 0-2 remains unavailable on split V1. The
-old `bankput`, `bank2put`, and `bank0ap-put` sources called `$F003` modes
-`$05/$06` and are archived under `SAMPLES/OLD`. Supported bank mutation uses
-`str8-bank-maint`, which carries and verifies the exact mutation worker. Its
-narrow `P` command accepts an AP envelope already exercised from RAM at
-`$4000`, requires Bank 0 `$BF00` through the envelope end to be erased, and
-programs/verifies the containing sector after exact `PUT B0BF00`
-confirmation. This fixed promotion carrier is not a general append service.
-The historical HIMON banked-package forms were:
+Bank Maintenance now provides the narrow banked install needed for one AP per
+sector. The old `bankput`, `bank2put`, and `bank0ap-put` sources called resident
+`$F003` modes `$05/$06` and remain archived under `SAMPLES/OLD`. The supported
+`P` path carries its exact mutation worker, reads the AP v2 envelope at `$7000`
+in the menu image (`$4000` standalone), accepts a Bank 0-2 sector base, rejects
+configured WORK/BKUP roles, and requires the complete package range to be
+erased. The target line is the exact confirmation; for example,
+`PUT B28000`. This is a sector-base carrier, not a directory or append service.
+HIMON banked-package run forms are:
 
 ```text
 AP B0 $8000 $3000
@@ -777,7 +777,7 @@ AP B0 $hhhh $4000
 AP B0 $hhhh $4800
 ```
 
-The final two lines were the movable and legacy fixed session-reporter forms.
+The final two lines are the movable and legacy fixed session-reporter forms.
 The maintained read/dump AP bodies and current HIMON source use
 `$F010/$0203`. The loader migration passes its compiled host matrix; the
 invalid-package stage/restore path and valid Bank-0 package execution through
