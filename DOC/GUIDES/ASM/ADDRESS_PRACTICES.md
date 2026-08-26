@@ -264,6 +264,9 @@ Keep `$7000` unchanged between `PACKAGE` and the completed Bank Maintenance
 
 For the current board sequence, use
 [PIA_LED_BANKED_AP_CARD.md](PIA_LED_BANKED_AP_CARD.md).
+For the architectural and operational boundary between this raw carrier and
+managed AP Store objects, use
+[BANKED_AP_CARRIER_VS_AP_STORE.md](BANKED_AP_CARRIER_VS_AP_STORE.md).
 
 ## Bank 0 AP Install
 

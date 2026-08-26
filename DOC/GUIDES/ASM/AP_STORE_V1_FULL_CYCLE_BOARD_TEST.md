@@ -2,6 +2,10 @@
 
 Status: prepared; board proof not yet captured.
 
+This is the managed-object alternative to the raw sector-base carrier. See
+[BANKED_AP_CARRIER_VS_AP_STORE.md](BANKED_AP_CARRIER_VS_AP_STORE.md) before
+choosing between the two deployment paths.
+
 This is the exact short cycle: build a real eight-LED program with onboard
 ASM-F2, seal/package it, append it to B1:8 as object `$0003`, cold boot, load
 it from AP Store, and run it. The program uses PIA port A at `$7FA1` and DDRA

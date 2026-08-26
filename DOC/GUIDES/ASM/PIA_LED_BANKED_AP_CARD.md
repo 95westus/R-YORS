@@ -3,6 +3,8 @@
 This is the complete ASM -> named AP package -> banked flash -> cold boot ->
 AP run example. It uses Bank 2 sector 8 as the carrier and loads the LED body
 at `$4000`. Use it only while Bank Maintenance `M` reports `B2 8` erased.
+For the storage-model distinction, see
+[BANKED_AP_CARRIER_VS_AP_STORE.md](BANKED_AP_CARRIER_VS_AP_STORE.md).
 
 ## 1. Assemble and package the LED program
 
