@@ -25186,3 +25186,49 @@ HIMON V 00.0826(0017)
 This closes AP Store V1 Slice 7 board acceptance: guarded role publication,
 retained B1:F backup, warm reset, exact compact status vocabulary, complete
 24-row inventory, and removal of `Q` all behave as designed.
+
+## 2026-08-26 APMAN V1 First Carrier Attempt
+
+Board status: partial pass with two host-corrected blockers; APMAN V1 is not
+yet hardware-accepted.
+
+The operator installed the 00.0826(1510 B3:8-E image and the guarded STR8-N
+1.23 top, cold-booted HIMON, cleared D2, enrolled `D2 A2 APC02`, and installed
+the dense APMAN carrier at B2:8. Resident APS validated and named the envelope
+exactly. Bank Maintenance displayed B2:8 as `U` rather than `A`, revealing
+that its informational scanner still consumed the old one-byte section-length
+form instead of the AP-v2 tag plus 16-bit length.
+
+The command `AP B2 APMAN 2000` exposed a second defect: APMAN treated its own
+manager body as an ordinary application. Each copy executed the unchanged AP
+command card again, printing `AP LOAD` and `GO` repeatedly until the operator
+stopped it with NMI. There is no transcript evidence of a flash mutation: the
+path only staged the selected sector, restored B3, copied to RAM, and
+executed. Acceptance stopped immediately.
+
+Key evidence:
+
+```text
+DIR B T DESC ENTRY JOURNAL
+D2 A2 APC02 FFFF FCFFFFFF
+
+APS 28 APC APMAN L=0B09
+APS B2
+APS B2 8000 APC APMAN L=0B09 @7000
+
+AP B2 APMAN 2000
+AP LOAD B2 8000 -> 2000
+GO 2000
+AP LOAD B2 8000 -> 2000
+GO 2000
+... repeated ...
+
+NMI PC=E238
+A=EC X=02 Y=00 P=24 S=F1 Nv-bdIzc
+```
+
+The host correction changes no media bytes or resident ABI. Bank Maintenance
+now consumes the three-byte AP-v2 section header. APMAN now checks the `AM01`
+manager identity before printing `AP LOAD` or touching destination RAM and
+fails once with `APMAN ERR=$DB`. Focused board proof and the later BANKAUDIT
+full lifecycle remain open.

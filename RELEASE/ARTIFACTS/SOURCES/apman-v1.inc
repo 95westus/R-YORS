@@ -51,6 +51,7 @@ APMAN_STATUS_NOT_CONFIRMED EQU             $D7
 APMAN_STATUS_PROGRAM_FAIL  EQU             $D8
 APMAN_STATUS_RESTORE_FAIL  EQU             $D9
 APMAN_STATUS_NO_MANAGER    EQU             $DA
+APMAN_STATUS_SELF          EQU             $DB
 
 APMAN_PHASE_NONE           EQU             $00
 APMAN_PHASE_PARSE          EQU             $01

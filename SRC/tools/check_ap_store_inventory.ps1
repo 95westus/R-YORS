@@ -303,6 +303,8 @@ if ($source.Contains('HIM_APMAN_BOOTSTRAP:')) {
         'APMAN_PRINT_STATUS_ROW:', 'APMAN_STAGE_RAW:', 'APMAN_INSTALL:',
         'APMAN_FIND_NAMED:', 'APMAN_COPY_WORKER:',
         'APMAN_LOAD_RANGE_SAFE:', 'APMAN_VALIDATE_APS_HEADER:',
+        'APMAN_SELECTED_IS_MANAGER:', 'JMP             APMAN_SELF',
+        'LDA             #APMAN_STATUS_SELF',
         'INCLUDE         "apman-str8-worker.inc"'
     )) {
         if (-not $apman.Contains($required)) { Fail "APMAN source is missing $required" }
@@ -316,6 +318,36 @@ if ($source.Contains('HIM_APMAN_BOOTSTRAP:')) {
     }
     $declared = [int]$package[3] -bor ([int]$package[4] -shl 8)
     if ($declared -ne $package.Length) { Fail 'APMAN declared package length mismatch' }
+    $body = $null
+    $cursor = 5
+    while ($cursor -lt $package.Length) {
+        if (($cursor + 3) -gt $package.Length) { Fail 'APMAN section header is truncated' }
+        $tag = [char]$package[$cursor]
+        $sectionLength = [int]$package[$cursor + 1] -bor ([int]$package[$cursor + 2] -shl 8)
+        $cursor += 3
+        if (($cursor + $sectionLength) -gt $package.Length) { Fail "APMAN section $tag is truncated" }
+        if ($tag -eq 'B') {
+            if ($null -ne $body) { Fail 'APMAN package has duplicate BODY sections' }
+            $body = $package[$cursor..($cursor + $sectionLength - 1)]
+        }
+        $cursor += $sectionLength
+    }
+    if ($cursor -ne $package.Length -or $null -eq $body -or $body.Length -lt 6) {
+        Fail 'APMAN package BODY is missing or malformed'
+    }
+    if ($body[2] -ne [byte][char]'A' -or $body[3] -ne [byte][char]'M' -or
+            $body[4] -ne [byte][char]'0' -or $body[5] -ne [byte][char]'1') {
+        Fail 'APMAN package BODY does not carry the AM01 manager identity'
+    }
+    $apHave = $apman.IndexOf('APMAN_AP_HAVE:')
+    $apLoad = $apman.IndexOf('APMAN_AP_LOAD:')
+    if ($apHave -lt 0 -or $apLoad -le $apHave) { Fail 'APMAN AP path labels are malformed' }
+    $apSelection = $apman.Substring($apHave, $apLoad - $apHave)
+    $guardCall = $apSelection.IndexOf('JSR             APMAN_SELECTED_IS_MANAGER')
+    $selfJump = $apSelection.IndexOf('JMP             APMAN_SELF')
+    if ($guardCall -lt 0 -or $selfJump -le $guardCall) {
+        Fail 'APMAN self-execution guard is not before the load path'
+    }
     $sealedBase = [int]$package[9] -bor ([int]$package[10] -shl 8)
     $bodyEnd = [int]$package[11] -bor ([int]$package[12] -shl 8)
     if ($sealedBase -ne 0x7000 -or $bodyEnd -gt 0x7C00) {

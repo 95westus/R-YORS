@@ -3,7 +3,7 @@
     "project":  "STR8-N",
     "version":  "1.23",
     "repository":  "https://github.com/95westus/STR8-N.git",
-    "commit":  "f3bda118b8b27a8b43763b17ca2033c78320a5ee",
+    "commit":  "9b741fb6e22a3f94b089fac2e3def18521a1ed5c",
     "dirty":  false,
     "artifacts":  {
                       "topSector":  {
@@ -27,7 +27,7 @@
                                                  "ramEnd":  "362A",
                                                  "entry":  "2000",
                                                  "privateWorkerStore":  "3400",
-                                                 "sha256":  "F8AADE132B1E5BE79258730CA2B62D5102147384CA7732302FE2AE9FFE759C95"
+                                                 "sha256":  "BE6DE54F2A21626641A269AD9544548B442D1D4279C745191729F5B8AEE39584"
                                              },
                       "consoleAbiTestS19":  {
                                                 "file":  "BUILD/v1.23/s19/str8n-v1.23-console-abi-test-2000.s19",

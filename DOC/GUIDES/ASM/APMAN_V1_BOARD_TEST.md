@@ -26,8 +26,97 @@ Onboard BANKAUDIT source used after the update
 C:\SRC\R-YORS\RELEASE\ARTIFACTS\SOURCES\bank-audit-2000.a
 ```
 
-The APMAN S19 is exactly `$8000-$8FFF`, including its erased `$FF` tail. Do
-not use an older short APMAN S19 whose last data address is near `$8B08`.
+The APMAN S19 is exactly `$8000-$8FFF`, including its erased `$FF` tail. The
+corrected carrier is `$0B40` bytes. Do not use the earlier `$0B09` carrier or
+any short APMAN S19 whose last data address is near `$8B08`.
+
+## Correction card after the 00.0826(1510) first-board run
+
+The first-board run proved installation and resident APS discovery, then
+exposed two defects: Bank Maintenance displayed a valid AP-v2 carrier as `U`,
+and APMAN recursively executed itself. The corrected external APMAN fails that
+command once with `$DB`; the corrected Bank Maintenance menu displays the
+carrier as `A`. Neither correction changes resident HIMON, ASM-F2, STR8-N, the
+directory, or B3. Do not rewrite B3:8-E or B3:F for this correction.
+
+At HIMON, enter STR8-N and load this exact corrected menu:
+
+```text
+> STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+STR8-N>L
+S19
+```
+
+Send:
+
+```text
+C:\SRC\R-YORS\RELEASE\ARTIFACTS\COMPONENT-IMAGES\str8n-v1.23-bank-maint-menu-2000.s19
+```
+
+Erase only the old APMAN sector:
+
+```text
+BM> E
+BANK 0-3> 2
+SECTOR 8-F, ALL, OR X-Y; B3 MAX E> 8
+TYPE ERASE 28> ERASE 28
+. OK
+RESET
+```
+
+At STR8-N, reinstall the corrected dense carrier. D2 is already enrolled, so
+there are no `TYPE` or `DESC` questions:
+
+```text
+STR8-N>I
+B0-3: 2
+RANGE: 8
+I B2 8-8 WRITE? Y: Y
+S19
+```
+
+Send:
+
+```text
+C:\SRC\R-YORS\RELEASE\ARTIFACTS\COMPONENT-IMAGES\apman-v1-bank2-8000.s19
+```
+
+Finish the write:
+
+```text
+COMMIT? Y: Y.
+OK
+```
+
+Reload the corrected Bank Maintenance menu, then verify:
+
+```text
+BM> M
+```
+
+Required B2 row and envelope line:
+
+```text
+B2 A E E E E E E E
+AP ENVELOPES
+AP B2 8000 L0B40
+OK
+```
+
+Reset to HIMON and run these exact checks:
+
+```text
+> APS B2 APMAN
+APS B2 8000 APC APMAN L=0B40 @7000
+> AP B2 APMAN 2000
+APMAN ERR=$DB
+```
+
+`AP B2 APMAN 2000` is deliberately invalid: APMAN is the manager, not an
+ordinary application. It must print no `AP LOAD` and no `GO`, and it must
+return immediately to one HIMON prompt. Continue at section 8 only after all
+of these corrected checkpoints pass.
 
 ## 1. Enter STR8-N and load Bank Maintenance
 
@@ -229,11 +318,11 @@ physically reset the board. Expected boot ending:
 ```text
 BOOT WARM
 
-HIMON V 00.0826(1510)
+HIMON V 00.0826(1544)
 >
 ```
 
-`1510` is the visible stamp in this exact published candidate. Stop if the
+`1544` is the visible stamp in this exact published candidate. Stop if the
 board still prints the older `00.0826(1059)` image after the update.
 
 ## 7. Prove APMAN discovery before assembling anything
@@ -247,7 +336,7 @@ Type:
 Expected complete result:
 
 ```text
-APS B2 8000 APC APMAN L=0B09 @7000
+APS B2 8000 APC APMAN L=0B40 @7000
 ```
 
 Then type:
@@ -259,7 +348,7 @@ Then type:
 Expected complete result is the same single detail line:
 
 ```text
-APS B2 8000 APC APMAN L=0B09 @7000
+APS B2 8000 APC APMAN L=0B40 @7000
 ```
 
 Stop here and report the transcript if either command prints an error, no

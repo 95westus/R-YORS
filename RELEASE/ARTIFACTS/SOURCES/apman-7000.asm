@@ -176,6 +176,10 @@ APMAN_AP_FIND_NAME:     JSR             APMAN_FIND_NAMED
                         BCS             APMAN_AP_HAVE
                         JMP             APMAN_NOT_FOUND
 APMAN_AP_HAVE:          JSR             APMAN_SET_PACKAGE_FACTS
+                        JSR             APMAN_SELECTED_IS_MANAGER
+                        BCC             APMAN_AP_NOT_MANAGER
+                        JMP             APMAN_SELF
+APMAN_AP_NOT_MANAGER:
                         LDA             TAIL_LO
                         STA             PTRL
                         LDA             TAIL_HI
@@ -573,6 +577,37 @@ APMAN_SET_PACKAGE_FACTS:
                         STA             APMAN_FOUND_PKG_LEN_LO
                         LDA             HIM_AP_PKG_LEN_HI
                         STA             APMAN_FOUND_PKG_LEN_HI
+                        RTS
+
+; APMAN is an operator manager, not an ordinary application entry. Loading
+; its body and executing it would re-read the unchanged AP command card and
+; recursively invoke itself. Reject any selected carrier with the bootstrap
+; body identity before printing AP LOAD or touching destination RAM.
+APMAN_SELECTED_IS_MANAGER:
+                        LDA             HIM_AP_BODY_LO
+                        STA             PTRL
+                        LDA             HIM_AP_BODY_HI
+                        STA             PTRH
+                        LDY             #$02
+                        LDA             (PTRL),Y
+                        CMP             #'A'
+                        BNE             APMAN_SELECTED_NOT_MANAGER
+                        INY
+                        LDA             (PTRL),Y
+                        CMP             #'M'
+                        BNE             APMAN_SELECTED_NOT_MANAGER
+                        INY
+                        LDA             (PTRL),Y
+                        CMP             #'0'
+                        BNE             APMAN_SELECTED_NOT_MANAGER
+                        INY
+                        LDA             (PTRL),Y
+                        CMP             #'1'
+                        BNE             APMAN_SELECTED_NOT_MANAGER
+                        SEC
+                        RTS
+APMAN_SELECTED_NOT_MANAGER:
+                        CLC
                         RTS
 
 ; APMAN remains live at $7000 while it asks HIMON to copy/fix the selected
@@ -1174,6 +1209,8 @@ APMAN_DUPLICATE:       LDA             #APMAN_STATUS_DUPLICATE
 APMAN_BAD_PACKAGE:     LDA             #APMAN_STATUS_BAD_PACKAGE
                         BRA             APMAN_FAIL_A
 APMAN_BAD_RANGE:       LDA             #APMAN_STATUS_BAD_RANGE
+                        BRA             APMAN_FAIL_A
+APMAN_SELF:            LDA             #APMAN_STATUS_SELF
                         BRA             APMAN_FAIL_A
 APMAN_RESTORE_FAIL:    LDA             #APMAN_STATUS_RESTORE_FAIL
 APMAN_FAIL_A:          STA             APMAN_STATUS

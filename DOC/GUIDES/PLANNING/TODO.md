@@ -157,7 +157,7 @@ documentation, and the complete ASM-F2/package/install/reset/AP board cycle
 all pass.
 
 APMAN V1 is the implemented host candidate for this pass. It is a named APC
-installed initially at B2:8, with a `$0ADB` body and `$0B09` AP envelope. Its
+installed initially at B2:8, with a `$0B12` body and `$0B40` AP envelope. Its
 STR8-N bootstrap is a checked dense `$8000-$8FFF` image, including the erased
 tail required by `I`; the earlier short S19 is superseded. HIMON
 keeps the direct `AP package destination` recovery form and discovers APMAN in
@@ -166,6 +166,13 @@ B2/B1/B0 for bank/name commands and `APS`. Flash ASM accepts exactly
 rejects duplicate names, protects `$FFF0/$FFF1` roles, lists APC/AP Store/media
 states, and rejects application BODY ranges that would overwrite its live
 `$7000` overlay. STR8-N 1.23 and AP Store V1 media bytes are unchanged.
+
+The first board attempt proved B2:8 installation and APMAN discovery, but is
+not acceptance: the valid AP-v2 carrier was misclassified as `U` by Bank
+Maintenance and direct selection of APMAN recursively executed the manager.
+The host correction parses the AP-v2 16-bit section headers and rejects the
+manager's `AM01` body identity with `APMAN ERR=$DB` before load or execution.
+Prove both corrections before continuing the BANKAUDIT lifecycle.
 
 ### Near term: Bank 1 application work sector
 

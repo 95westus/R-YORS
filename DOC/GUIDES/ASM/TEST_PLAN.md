@@ -15486,7 +15486,7 @@ all four CRC rows, returns `A=$AC/C=1`, and preserves before/after flash CRCs.
 
 Host status: accepted. Board status: open.
 
-APMAN V1 is a `$0ADB`-byte fixed manager body packaged as a `$0B09` AP v2
+APMAN V1 is a `$0B12`-byte fixed manager body packaged as a `$0B40` AP v2
 envelope. The initial bootstrap S19 is dense across `$8000-$8FFF`: it places
 the complete envelope at B2:`$8000` and explicitly carries the erased `$FF`
 tail required by STR8-N `I`.
@@ -15521,3 +15521,14 @@ section offsets, APMAN RAM overlays/staging, resident HIMON/STR8 services, and
 the complete install-to-execute flow. This is deliberately not part of the
 current board candidate: changing APMAN before its baseline proof would make
 the evidence refer to a different image.
+
+The first 00.0826(1510 board attempt proved dense B2:8 installation and both
+resident `APS B2` and named detail discovery. It then exposed two blockers.
+Bank Maintenance's informational scanner consumed AP-v2 section lengths as
+one byte and displayed the valid carrier as `U`; `AP B2 APMAN 2000` loaded the
+manager as an application, re-read the unchanged command card, and recursed
+until operator NMI. The corrected scanner consumes the full three-byte AP-v2
+section header. The corrected APMAN recognizes its `AM01` body identity before
+printing `AP LOAD` or writing destination RAM and returns `APMAN ERR=$DB`.
+Board acceptance remains open pending the focused correction card and the
+complete BANKAUDIT lifecycle.
