@@ -219,7 +219,7 @@ From the repository root:
 make all
 ```
 
-The primary R-YORS payload is published in the flat release directory:
+The primary R-YORS payload is published at the uncluttered release root:
 
 ```text
 RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
@@ -251,7 +251,7 @@ Useful targets:
 make all                       verify STR8-N and build R-YORS 28K payload
 make life                      standalone loadable Life S19/BIN
 make -C SRC board-s19-check    compare final bytes across board S19 families
-make -C SRC release-files      refresh the flat RELEASE directory
+make -C SRC release-files      refresh RELEASE and moved-aside ARTIFACTS
 make -C SRC ryors-logo-stamp   update the SVG logo from the current MMDD
 make -C SRC help Q=<term>      find related targets
 make release                   clean locked integration plus release artifacts

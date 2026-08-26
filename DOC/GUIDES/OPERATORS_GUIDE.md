@@ -29,10 +29,10 @@ make all
 R-YORS verifies the locked STR8-N manifest and public ABI, then builds:
 
 ```text
-RELEASE/ryors-v1.2-asm-bank3-8-b.s19
-RELEASE/ryors-v1.2-himon-bank3-c-e.s19
+RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-asm-bank3-8-b.s19
+RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-himon-bank3-c-e.s19
 RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
-RELEASE/himon-apv2-bank3-c-e.s19
+RELEASE/ARTIFACTS/COMPONENT-IMAGES/himon-apv2-bank3-c-e.s19
 ```
 
 The last file is the dense 28K `$8000-$EFFF` payload. To compose a complete

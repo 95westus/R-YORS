@@ -45,11 +45,12 @@ make -C SRC all STR8N_HOME="C:/path/to/STR8-N"
 
 ## Artifacts
 
-The flat `RELEASE/` directory publishes:
+The `RELEASE/` root publishes only board-facing products. Component images are
+moved under `RELEASE/ARTIFACTS/COMPONENT-IMAGES/`:
 
 ```text
-RELEASE/ryors-v1.2-asm-bank3-8-b.s19
-RELEASE/ryors-v1.2-himon-bank3-c-e.s19
+RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-asm-bank3-8-b.s19
+RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-himon-bank3-c-e.s19
 RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
 RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
 RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin
@@ -62,6 +63,9 @@ and final 32K composition. Run there:
 ```text
 make ryors-full-bank
 ```
+
+AP transit tools are under `RELEASE/ARTIFACTS/AP-STORE/`; source and onboard
+carriers are under `RELEASE/ARTIFACTS/SOURCES/`.
 
 The composer validates every R-YORS S-record/checksum and range, appends the
 current checked top image, and verifies RESET before writing the Bank-0/1/2

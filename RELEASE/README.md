@@ -1,18 +1,27 @@
 ﻿# Current R-YORS Release Files
 
-This flat directory is the operator-facing release location. Product names
-follow top-down memory order: STR8-N (`$F000), HIMON (`$C000), then ASM-F2
-(`$8000).
+The root of this directory contains only board-facing update products.
+Supporting images, transient tools, and source carriers are under
+`ARTIFACTS/` so they cannot be mistaken for the normal board update.
 
-Primary complete product:
+Complete 32K Bank-0/1/2 product:
 
 - ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
 - ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin
 
-Bank-3 payload without the protected STR8-N top sector:
+Bank-3 sectors 8-E update, without protected sector F:
 
 - ryors-v1.2-himon-asm-bank3-8-e.s19
 
-The `.asm` and `.a` files are source snapshots for inspection and onboard use.
-The canonical build source remains under `SRC/` and the adjacent `STR8-N`
-repository. `SHA256SUMS.txt` identifies every published file.
+Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
+
+- str8n-v1.22-top-update-2000.s19
+
+Moved-aside material:
+
+- ARTIFACTS/AP-STORE - AP Store transit tools and exact `.a`/`.asm` carriers
+- ARTIFACTS/COMPONENT-IMAGES - component, diagnostic, and recovery images
+- ARTIFACTS/SOURCES - source snapshots and onboard sample sources
+
+The canonical source remains under `SRC/` and the adjacent `STR8-N`
+repository. `SHA256SUMS.txt` covers every file recursively.

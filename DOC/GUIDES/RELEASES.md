@@ -51,9 +51,10 @@ RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
 RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
 ```
 
-The separately installable ASM and HIMON slices retained beside them are
-`ryors-v1.2-asm-bank3-8-b.s19` and
-`ryors-v1.2-himon-bank3-c-e.s19`. The standalone/install S19 variants are
+The separately installable ASM and HIMON slices are moved under
+`RELEASE/ARTIFACTS/COMPONENT-IMAGES/` as
+`ryors-v1.2-asm-bank3-8-b.s19` and `ryors-v1.2-himon-bank3-c-e.s19`.
+The standalone/install S19 variants are
 also retained because `board-s19-check` verifies that all delivery forms carry
 the same current bytes.
 

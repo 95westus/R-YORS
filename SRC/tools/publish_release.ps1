@@ -17,6 +17,14 @@ if (-not [StringComparer]::OrdinalIgnoreCase.Equals($out, $expectedOut)) {
 
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 Get-ChildItem -LiteralPath $out -File | Remove-Item -Force
+$artifactRoot = Join-Path $out "ARTIFACTS"
+if (Test-Path -LiteralPath $artifactRoot) {
+    $resolvedArtifactRoot = [IO.Path]::GetFullPath($artifactRoot)
+    if (-not $resolvedArtifactRoot.StartsWith($expectedOut + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Artifact cleanup escaped RELEASE: $resolvedArtifactRoot"
+    }
+    Remove-Item -LiteralPath $resolvedArtifactRoot -Recurse -Force
+}
 
 $published = [Collections.Generic.Dictionary[string, string]]::new([StringComparer]::OrdinalIgnoreCase)
 $forbiddenImagePattern = '(?i)wdcmonv2.*\.(bin|s19)$'
@@ -36,7 +44,8 @@ function Assert-PublishableImageName {
 function Publish-File {
     param(
         [Parameter(Mandatory = $true)][string]$Source,
-        [string]$Name = ""
+        [string]$Name = "",
+        [string]$RelativeDir = ""
     )
 
     if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
@@ -47,14 +56,18 @@ function Publish-File {
     }
     Assert-PublishableImageName -Path $Source -Role "source"
     Assert-PublishableImageName -Path $Name -Role "release name"
-    if ($published.ContainsKey($Name)) {
-        throw "Duplicate flat release filename '$Name' from '$Source' and '$($published[$Name])'"
+    $relativePath = if ([string]::IsNullOrWhiteSpace($RelativeDir)) { $Name } else { Join-Path $RelativeDir $Name }
+    if ($published.ContainsKey($relativePath)) {
+        throw "Duplicate release path '$relativePath' from '$Source' and '$($published[$relativePath])'"
     }
-    Copy-Item -LiteralPath $Source -Destination (Join-Path $out $Name) -Force
-    $published.Add($Name, $Source)
+    $destination = Join-Path $out $relativePath
+    $destinationDir = Split-Path -Parent $destination
+    New-Item -ItemType Directory -Force -Path $destinationDir | Out-Null
+    Copy-Item -LiteralPath $Source -Destination $destination -Force
+    $published.Add($relativePath, $Source)
 }
 
-$rArtifacts = @(
+$apStoreArtifacts = @(
     "SRC/BUILD/bin/ap-store-v1-chain-install-tool-7000.ap.bin",
     "SRC/BUILD/bin/ap-store-v1-chain-reader-tool-7000.ap.bin",
     "SRC/BUILD/bin/ap-store-v1-object-tool-7000.ap.bin",
@@ -77,7 +90,15 @@ $rArtifacts = @(
     "SRC/BUILD/s19/ap-store-v1-slice6-delete-tool-7000.s19",
     "SRC/BUILD/s19/ap-store-v1-slice6-delete-tool-package-4000.s19",
     "SRC/BUILD/s19/ap-store-v1-slice6-plan-tool-7000.s19",
-    "SRC/BUILD/s19/ap-store-v1-slice6-plan-tool-package-4000.s19",
+    "SRC/BUILD/s19/ap-store-v1-slice6-plan-tool-package-4000.s19"
+)
+foreach ($relative in $apStoreArtifacts) {
+    Publish-File -Source (Join-Path $repo $relative) -RelativeDir "ARTIFACTS/AP-STORE"
+}
+Publish-File -Source (Join-Path $repo "SRC/PROOFS/ap-store-v1-sector-tool.asm") -RelativeDir "ARTIFACTS/AP-STORE"
+Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-sector-tool-7000.a") -RelativeDir "ARTIFACTS/AP-STORE"
+
+$rComponentArtifacts = @(
     "SRC/BUILD/s19/fnv1a-hbstr-6000.s19",
     "SRC/BUILD/s19/himon-apv2-bank3-c-e.s19",
     "SRC/BUILD/s19/himon-c000.s19",
@@ -86,30 +107,28 @@ $rArtifacts = @(
     "SRC/BUILD/s19/life-2000.s19",
     "SRC/BUILD/s19/rom-append-calc-b804.s19",
     "SRC/BUILD/s19/ryors-v1.2-asm-bank3-8-b.s19",
-    "SRC/BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
     "SRC/BUILD/s19/ryors-v1.2-himon-bank3-c-e.s19"
 )
-foreach ($relative in $rArtifacts) {
-    Publish-File -Source (Join-Path $repo $relative)
+foreach ($relative in $rComponentArtifacts) {
+    Publish-File -Source (Join-Path $repo $relative) -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 }
+Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19")
 
-Publish-File -Source (Join-Path $repo "SRC/PROOFS/ap-store-v1-sector-tool.asm")
-
-$str8Artifacts = @(
+$str8ComponentArtifacts = @(
     "BUILD/str8n-manifest.json",
     "BUILD/v1.22/bin/str8n-v1.22-bank3-f000-ffff.bin",
-    "BUILD/v1.22/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19",
     "BUILD/v1.22/s19/str8n-v1.22-bank-maint-2000.s19",
     "BUILD/v1.22/s19/str8n-v1.22-bank-maint-menu-2000.s19",
     "BUILD/v1.22/s19/str8n-v1.22-console-abi-test-2000.s19",
     "BUILD/v1.22/s19/str8n-v1.22-directory-refresh-2000.s19",
     "BUILD/v1.22/s19/str8n-v1.22-f000.s19",
-    "BUILD/v1.22/s19/str8n-v1.22-top-update-2000.s19",
     "BUILD/v1.22/s19/str8n-v1.22-worker-0200.s19"
 )
-foreach ($relative in $str8Artifacts) {
-    Publish-File -Source (Join-Path $str8n $relative)
+foreach ($relative in $str8ComponentArtifacts) {
+    Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 }
+Publish-File -Source (Join-Path $str8n "BUILD/v1.22/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19")
+Publish-File -Source (Join-Path $str8n "BUILD/v1.22/s19/str8n-v1.22-top-update-2000.s19")
 
 $sourceRoots = @(
     (Join-Path $repo "SRC/ASM"),
@@ -119,7 +138,7 @@ $sourceRoots = @(
 foreach ($sourceRoot in $sourceRoots) {
     Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Filter *.asm |
         Sort-Object FullName |
-        ForEach-Object { Publish-File -Source $_.FullName }
+        ForEach-Object { Publish-File -Source $_.FullName -RelativeDir "ARTIFACTS/SOURCES" }
 }
 
 $str8Sources = @(
@@ -132,12 +151,13 @@ $str8Sources = @(
     "tools/top-update/str8n-v1.22-top-update-2000.asm"
 )
 foreach ($relative in $str8Sources) {
-    Publish-File -Source (Join-Path $str8n $relative)
+    Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/SOURCES"
 }
 
 Get-ChildItem -LiteralPath (Join-Path $repo "DOC/GUIDES/ASM/SAMPLES") -File -Filter *.a |
+    Where-Object { $_.Name -ne "ap-store-v1-sector-tool-7000.a" } |
     Sort-Object Name |
-    ForEach-Object { Publish-File -Source $_.FullName }
+    ForEach-Object { Publish-File -Source $_.FullName -RelativeDir "ARTIFACTS/SOURCES" }
 
 function Convert-S19ToFullBankBin {
     param(
@@ -180,39 +200,51 @@ $published.Add($fullBinName, $fullS19)
 $readme = @'
 # Current R-YORS Release Files
 
-This flat directory is the operator-facing release location. Product names
-follow top-down memory order: STR8-N (`$F000), HIMON (`$C000), then ASM-F2
-(`$8000).
+The root of this directory contains only board-facing update products.
+Supporting images, transient tools, and source carriers are under
+`ARTIFACTS/` so they cannot be mistaken for the normal board update.
 
-Primary complete product:
+Complete 32K Bank-0/1/2 product:
 
 - ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
 - ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin
 
-Bank-3 payload without the protected STR8-N top sector:
+Bank-3 sectors 8-E update, without protected sector F:
 
 - ryors-v1.2-himon-asm-bank3-8-e.s19
 
-The `.asm` and `.a` files are source snapshots for inspection and onboard use.
-The canonical build source remains under `SRC/` and the adjacent `STR8-N`
-repository. `SHA256SUMS.txt` identifies every published file.
+Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
+
+- str8n-v1.22-top-update-2000.s19
+
+Moved-aside material:
+
+- ARTIFACTS/AP-STORE - AP Store transit tools and exact `.a`/`.asm` carriers
+- ARTIFACTS/COMPONENT-IMAGES - component, diagnostic, and recovery images
+- ARTIFACTS/SOURCES - source snapshots and onboard sample sources
+
+The canonical source remains under `SRC/` and the adjacent `STR8-N`
+repository. `SHA256SUMS.txt` covers every file recursively.
 '@
 Set-Content -LiteralPath (Join-Path $out "README.md") -Value $readme -Encoding utf8
 
-Get-ChildItem -LiteralPath $out -File | ForEach-Object {
+Get-ChildItem -LiteralPath $out -Recurse -File | ForEach-Object {
     Assert-PublishableImageName -Path $_.Name -Role "release output"
 }
 
-$hashLines = Get-ChildItem -LiteralPath $out -File |
+$hashLines = Get-ChildItem -LiteralPath $out -Recurse -File |
     Where-Object { $_.Name -ne "SHA256SUMS.txt" } |
-    Sort-Object Name |
-    ForEach-Object { "{0}  {1}" -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash, $_.Name }
+    Sort-Object FullName |
+    ForEach-Object {
+        $relative = $_.FullName.Substring($out.Length).TrimStart('\', '/').Replace('\', '/')
+        "{0}  {1}" -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash, $relative
+    }
 Set-Content -LiteralPath (Join-Path $out "SHA256SUMS.txt") -Value $hashLines -Encoding ascii
 
-$counts = Get-ChildItem -LiteralPath $out -File | Group-Object Extension | Sort-Object Name
+$rootFiles = Get-ChildItem -LiteralPath $out -File | Sort-Object Name
+$artifactFiles = Get-ChildItem -LiteralPath $artifactRoot -Recurse -File
 Write-Host "RELEASE = $out"
-foreach ($count in $counts) {
-    Write-Host ("  {0,-8} {1,3}" -f $(if ($count.Name) { $count.Name } else { "[none]" }), $count.Count)
-}
+Write-Host ("  ROOT FILES = {0}" -f $rootFiles.Count)
+Write-Host ("  MOVED ASIDE = {0}" -f $artifactFiles.Count)
 Write-Host "Primary S19 SHA-256 = $((Get-FileHash -LiteralPath $fullS19 -Algorithm SHA256).Hash)"
 Write-Host "Primary BIN SHA-256 = $((Get-FileHash -LiteralPath $fullBin -Algorithm SHA256).Hash)"
