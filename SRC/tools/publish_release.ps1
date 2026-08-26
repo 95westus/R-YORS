@@ -122,9 +122,12 @@ foreach ($relative in $rComponentArtifacts) {
     Publish-File -Source (Join-Path $repo $relative) -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 }
 Publish-File -Source (Join-Path $repo "SRC/BUILD/bin/apman-v1.ap") -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
+Publish-File -Source (Join-Path $repo "SRC/BUILD/bin/apman-v1-bank2-8000.bin") -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 Publish-File -Source (Join-Path $repo "SRC/ASM/apman-v1.inc") -RelativeDir "ARTIFACTS/SOURCES"
 Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/himon-apv2-bank3-c-e.s19") -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
 Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19")
+Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/APMAN_V1_BOARD_TEST.md") -RelativeDir "BOARD-CARDS"
+Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/BANK_AUDIT_AP_CARD.md") -RelativeDir "BOARD-CARDS"
 
 $str8ComponentArtifacts = @(
     "BUILD/str8n-manifest.json",
@@ -247,7 +250,9 @@ Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
 Board-use artifacts:
 
 - ARTIFACTS/COMPONENT-IMAGES/apman-v1-bank2-8000.s19 - initial Bank-2
-  bootstrap carrier for the APMAN manager
+  dense 4K bootstrap carrier for the APMAN manager
+- ARTIFACTS/COMPONENT-IMAGES/apman-v1-bank2-8000.bin - the same dense 4K
+  sector for programmer/readback use
 - ARTIFACTS/COMPONENT-IMAGES/apman-v1.ap - exact AP v2 APMAN envelope
 - ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19
 - ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19
@@ -257,6 +262,9 @@ Board-use artifacts:
   loader form of the same maintenance menu
 - ARTIFACTS/COMPONENT-IMAGES - component, diagnostic, and recovery images
 - ARTIFACTS/SOURCES - source snapshots and onboard sample sources
+- BOARD-CARDS/APMAN_V1_BOARD_TEST.md - exact destructive B2/D2 preparation,
+  candidate update, and first persistent carrier test
+- BOARD-CARDS/BANK_AUDIT_AP_CARD.md - BANKAUDIT utility reference
 
 Historical artifacts:
 

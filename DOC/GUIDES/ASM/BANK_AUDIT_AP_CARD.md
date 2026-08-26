@@ -25,7 +25,9 @@ C:\SRC\R-YORS\RELEASE\ARTIFACTS\COMPONENT-IMAGES\bank-audit-2000.s19
 The host body occupies `$2000-$2201`, `$0202` bytes, with FNV32 `$0EFD2A83`.
 The `.a` and `.asm` shared bodies are checked line-for-line. The onboard `.a`
 imports `BIO_FTDI_PUT_CSTR`, so its AP package resolves the compatible resident
-console routine when loaded rather than freezing the host build's address.
+console routine when loaded rather than freezing the host build's address. Its
+one entry export, one import, and 16 relocation rows produce an exact `$0294`
+AP v2 envelope.
 
 ## Complete APMAN cycle
 
@@ -50,6 +52,13 @@ At `SEAL>`:
 ```text
 PACKAGE BANKAUDIT $3000
 INSTALL 3000 B1
+```
+
+Expected package and captured-board install lines are:
+
+```text
+PKG OK @=$3000 L=$0294
+INST B1 A000 L=0294
 ```
 
 `B1` is the in-command destination confirmation. Record the address printed by

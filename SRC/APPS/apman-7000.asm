@@ -877,6 +877,8 @@ APMAN_PRINT_CARRIER_DETAIL:
                         LDY             #>MSG_APS_PREFIX
                         JSR             APMAN_PUTS
                         JSR             APMAN_PRINT_LOCATION
+                        LDA             #' '
+                        JSR             APMAN_PUTC
                         LDX             #<MSG_APC
                         LDY             #>MSG_APC
                         JSR             APMAN_PUTS

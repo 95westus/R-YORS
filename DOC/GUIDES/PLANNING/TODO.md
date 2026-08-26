@@ -141,7 +141,9 @@ documentation, and the complete ASM-F2/package/install/reset/AP board cycle
 all pass.
 
 APMAN V1 is the implemented host candidate for this pass. It is a named APC
-installed initially at B2:8, with a `$0AD6` body and `$0B04` AP envelope. HIMON
+installed initially at B2:8, with a `$0ADB` body and `$0B09` AP envelope. Its
+STR8-N bootstrap is a checked dense `$8000-$8FFF` image, including the erased
+tail required by `I`; the earlier short S19 is superseded. HIMON
 keeps the direct `AP package destination` recovery form and discovers APMAN in
 B2/B1/B0 for bank/name commands and `APS`. Flash ASM accepts exactly
 `INSTALL source B0`, `B1`, or `B2`. APMAN validates one carrier per sector,

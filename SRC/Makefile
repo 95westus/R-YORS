@@ -137,7 +137,9 @@ APMAN_OBJ := $(OBJ_DIR)/$(APPS_DIR)/apman-7000.obj
 APMAN_S19 := $(S19_DIR)/apman-7000.s19
 APMAN_MAP := $(S19_DIR)/apman-7000.map
 APMAN_PACKAGE := $(BIN_DIR)/apman-v1.ap
+APMAN_BANK2_BIN := $(BIN_DIR)/apman-v1-bank2-8000.bin
 APMAN_BANK2_S19 := $(S19_DIR)/apman-v1-bank2-8000.s19
+APMAN_BOOTSTRAP_CHECK := tools/check_apman_bootstrap.ps1
 APMAN_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
 APMAN_WORKER_GEN := tools/write_apman_worker_inc.ps1
 APMAN_WORKER_SOURCE := $(STR8N_HOME)/tools/bank-maint/str8n-v1.23-bank-maint-2000.asm
@@ -543,8 +545,9 @@ bank-audit: $(BANK_AUDIT_S19) $(BANK_AUDIT_A) $(BANK_AUDIT_CHECK)
 	@echo "Built and checked $(BANK_AUDIT_S19) against $(BANK_AUDIT_A)."
 	@$(MAKE) artifacts
 
-apman: $(APMAN_S19) $(APMAN_PACKAGE) $(APMAN_BANK2_S19)
-	@echo "Built APMAN carrier manager: $(APMAN_S19), $(APMAN_PACKAGE), and $(APMAN_BANK2_S19)."
+apman: $(APMAN_S19) $(APMAN_PACKAGE) $(APMAN_BANK2_BIN) $(APMAN_BANK2_S19) $(APMAN_BOOTSTRAP_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(APMAN_BOOTSTRAP_CHECK) -PackagePath "$(APMAN_PACKAGE)" -BinPath "$(APMAN_BANK2_BIN)" -S19Path "$(APMAN_BANK2_S19)"
+	@echo "Built APMAN carrier manager: $(APMAN_S19), $(APMAN_PACKAGE), $(APMAN_BANK2_BIN), and $(APMAN_BANK2_S19)."
 
 himon-debug-proof: $(ROM_LIB) $(HIMON_DEBUG_PROOF_S19)
 	@echo "Built $(HIMON_DEBUG_PROOF_S19)."
@@ -914,8 +917,11 @@ $(APMAN_PACKAGE): $(APMAN_S19) tools/build_ap_fixed_package.ps1
 	@if not exist $(subst /,\,$(BIN_DIR)) mkdir $(subst /,\,$(BIN_DIR))
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_ap_fixed_package.ps1 -S19Path "$(APMAN_S19)" -MapPath "$(APMAN_MAP)" -PackagePath "$@" -BaseAddress 0x7000 -EntrySymbol APMAN -ExportName APMAN -EndSymbol APMAN_IMAGE_END
 
-$(APMAN_BANK2_S19): $(APMAN_PACKAGE) tools/build_rom_install_s19.ps1
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_rom_install_s19.ps1 -BinPath "$(APMAN_PACKAGE)" -S19Path "$@" -BaseAddress 0x8000 -StartAddress 0x8000
+$(APMAN_BANK2_BIN): $(APMAN_PACKAGE) tools/build_ap_carrier_sector.ps1
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_ap_carrier_sector.ps1 -PackagePath "$(APMAN_PACKAGE)" -BinPath "$@"
+
+$(APMAN_BANK2_S19): $(APMAN_BANK2_BIN) tools/build_rom_install_s19.ps1
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_rom_install_s19.ps1 -BinPath "$(APMAN_BANK2_BIN)" -S19Path "$@" -BaseAddress 0x8000 -StartAddress 0x8000
 
 $(HIMON_DEBUG_PROOF_S19): $(HIMON_DEBUG_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))

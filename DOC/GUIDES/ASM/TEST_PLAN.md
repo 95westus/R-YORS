@@ -15486,8 +15486,10 @@ all four CRC rows, returns `A=$AC/C=1`, and preserves before/after flash CRCs.
 
 Host status: accepted. Board status: open.
 
-APMAN V1 is a `$0AD6`-byte fixed manager body packaged as a `$0B04` AP v2
-envelope. The initial bootstrap S19 places that complete envelope at B2:`$8000`.
+APMAN V1 is a `$0ADB`-byte fixed manager body packaged as a `$0B09` AP v2
+envelope. The initial bootstrap S19 is dense across `$8000-$8FFF`: it places
+the complete envelope at B2:`$8000` and explicitly carries the erased `$FF`
+tail required by STR8-N `I`.
 HIMON discovers the manager in B2, B1, then B0, while retaining direct
 `AP package destination` as the recovery path. Flash ASM routes exactly
 `INSTALL source B0|B1|B2` through the shared AP service card.
@@ -15503,8 +15505,9 @@ checks AP Store header location, reserved bytes, FNV, and state before printing
 `+`, `-`, `~`, or `!`.
 
 Board acceptance requires the exact
-[`APMAN_V1_BOARD_TEST.md`](APMAN_V1_BOARD_TEST.md) cycle: install APMAN at
-B2:8, install the candidate B3:8-E image, `ASM NEW` BANKAUDIT, `PACKAGE
+[`APMAN_V1_BOARD_TEST.md`](APMAN_V1_BOARD_TEST.md) cycle: erase all of B2,
+reclaim D2 to all `$FF`, enroll `D2 A2 APC02`, install APMAN at B2:8, install
+the candidate B3:8-E image, `ASM NEW` BANKAUDIT, `PACKAGE
 BANKAUDIT $3000`, `INSTALL 3000 B1`, reset, list it by `APS B1`, execute it by
 `AP B1 BANKAUDIT`, and confirm all four CRC rows plus `A=$AC/C=1`. Address and
 `AP L` variants are secondary checks. No board proof is claimed yet.
