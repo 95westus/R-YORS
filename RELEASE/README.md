@@ -19,6 +19,9 @@ Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
 
 Board-use artifacts:
 
+- ARTIFACTS/COMPONENT-IMAGES/apman-v1-bank2-8000.s19 - initial Bank-2
+  bootstrap carrier for the APMAN manager
+- ARTIFACTS/COMPONENT-IMAGES/apman-v1.ap - exact AP v2 APMAN envelope
 - ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19
 - ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19
 - ARTIFACTS/SOURCES/str8n-v1.23-bank-maint-menu-2000.a - onboard `ASM NEW`

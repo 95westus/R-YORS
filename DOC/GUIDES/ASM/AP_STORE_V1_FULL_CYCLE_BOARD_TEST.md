@@ -85,7 +85,7 @@ Require:
 BASE=$2000 END=$2057
 LEN=$0057 FNV=$5D916946
 COUNT=$06
-PKG OK @=$3000 L=$00A3
+PKG OK @=$3000 L=$00D0
 ```
 
 Stop if any value differs.
@@ -119,7 +119,7 @@ D 7C80 7C99
 D 7CB0 7CB9
 ```
 
-Require return/status `$A0`, package length `$00A3`, one chunk, used mask
+Require return/status `$A0`, package length `$00D0`, one chunk, used mask
 `$01`, capacity `$0FDB`, and this plan row:
 
 ```text
@@ -194,7 +194,7 @@ APS
 Require:
 
 ```text
-APNEW O=0003 G=0001 L=00A3
+APNEW O=0003 G=0001 L=00D0
 APNEW OK
 G 7003 returns A=$AC with carry set
 G 7006 visibly runs both four-LED groups and returns A=$AC with carry set
@@ -209,7 +209,7 @@ six internal relocations, and calls it. No pre-reset package bytes are used.
 ## Pass
 
 Pass requires the exact seal/package facts, one confirmed B1:8 append, cold
-RAM clear, `APNEW O=0003 G=0001 L=00A3`, visible eight-LED sequence, restored
+RAM clear, `APNEW O=0003 G=0001 L=00D0`, visible eight-LED sequence, restored
 PIA state, `A=$AC`/carry set, and unchanged B1:8 generation `$0002`. Append the
 terminal capture to `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`; do not rewrite old
 hardware evidence.

@@ -166,6 +166,25 @@ foreach ($name in $layoutNames) {
     if ($offset -le $lastOffset) { Fail "service-vector destination order: $name" }
     $lastOffset = $offset
 }
+$upperReaderInit = [regex]::Match(
+    $asm,
+    '(?ms)^ASM_RJOIN_INIT_IO:.*?(?=^ASM_RJOIN_INIT_IO_READY:)'
+)
+if (-not $upperReaderInit.Success) { Fail 'missing flash upper-reader initialization block' }
+foreach ($required in @(
+    'LDX             #<ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER',
+    'LDY             #>ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER',
+    'JSR             ASM_RJ_RESIDENT_XY',
+    'STX             ASM_RJ_READ_UPPER_LO',
+    'STY             ASM_RJ_READ_UPPER_HI'
+)) {
+    if (-not $upperReaderInit.Value.Contains($required)) {
+        Fail "upper reader must be freshly resolved on entry: $required"
+    }
+}
+if ($upperReaderInit.Value -match 'LDA\s+ASM_RJ_READ_UPPER_HI|BNE\s+ASM_RJOIN_INIT_IO_READY') {
+    Fail 'upper reader initialization must not trust a stale nonzero RAM vector'
+}
 
 if (-not (Test-Path -LiteralPath $HimonSourcePath)) {
     Fail "HIMON source not found: $HimonSourcePath"

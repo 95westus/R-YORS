@@ -116,12 +116,38 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
 
 ### Next major pass: consolidated AP tooling
 
+- [ ] Add the simple carrier path `SEAL> INSTALL package Bn` for Banks 0-2.
+  The host candidate now finds the first completely erased and unreserved 4K
+  sector, keeps exactly one complete AP v2 envelope there, treats `Bn` as the
+  in-command confirmation, runs bank selection/program/verify entirely from
+  RAM, restores Bank 3, and prints the exact selected location. `AP Bn name`
+  and `AP Bn address` execute after reset; `AP L` loads/fixes without running.
+  It does not require transient helpers, request cards, generations, or a
+  separate PREPARE/EXECUTE program. Keep this item open for board proof.
 - [ ] Design one persistent AP Store operator menu/dispatcher that replaces
-  the overlapping `$7000` transit images without changing V1 media bytes.
+  the overlapping `$7000` transit images without changing V1 media bytes. It
+  may be another APC loaded into RAM through the carrier path.
 - [ ] Freeze the new RAM/overlay map, shared-core boundaries, staging ownership,
   return-to-menu contract, and interrupted-operation recovery before coding.
 - [ ] Decide whether compaction, harder confirmation/recovery rails, and a
   larger directory locator are part of that version or separately gated work.
+
+The read-only `BANKAUDIT` carrier application is now a host-built candidate
+for that simple lifecycle. Its onboard `.a` and host `.asm` share a checked
+`$0202`-byte body; the S19 FNV32 is `$0EFD2A83`. It CRCs all 32 flash sectors,
+records role bytes, restores Bank 3, and has no mutation doorway. Do not mark
+the carrier-path item complete until bank-aware `INSTALL`, size measurement,
+documentation, and the complete ASM-F2/package/install/reset/AP board cycle
+all pass.
+
+APMAN V1 is the implemented host candidate for this pass. It is a named APC
+installed initially at B2:8, with a `$0AD6` body and `$0B04` AP envelope. HIMON
+keeps the direct `AP package destination` recovery form and discovers APMAN in
+B2/B1/B0 for bank/name commands and `APS`. Flash ASM accepts exactly
+`INSTALL source B0`, `B1`, or `B2`. APMAN validates one carrier per sector,
+rejects duplicate names, protects `$FFF0/$FFF1` roles, lists APC/AP Store/media
+states, and rejects application BODY ranges that would overwrite its live
+`$7000` overlay. STR8-N 1.23 and AP Store V1 media bytes are unchanged.
 
 ### Near term: Bank 1 application work sector
 

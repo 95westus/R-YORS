@@ -1,84 +1,76 @@
-# PIA LED Banked AP Card
+# PIA LED Named Carrier Card
 
-This is the complete ASM -> named AP package -> banked flash -> cold boot ->
-AP run example. It uses Bank 2 sector 8 as the carrier and loads the LED body
-at `$4000`. Use it only while Bank Maintenance `M` reports `B2 8` erased.
-For the storage-model distinction, see
-[BANKED_AP_CARRIER_VS_AP_STORE.md](BANKED_AP_CARRIER_VS_AP_STORE.md).
+Hardware status: the carrier transport passed with the older LED register
+model, but no EDU LED changed. The maintained source now uses the W65C21's
+multiplexed Port-A/DDRA register at `$7FA0` and CRA at `$7FA1`; that physical
+LED correction still needs its focused board rerun.
 
-## 1. Assemble and package the LED program
+This is the small APMAN example:
 
-At the HIMON `>` prompt:
+```text
+ASM NEW -> PACKAGE -> INSTALL -> RESET -> AP by name
+```
+
+Install the B2:8 APMAN bootstrap and current Bank-3 image first, using sections
+1 and 2 of [APMAN_V1_BOARD_TEST.md](APMAN_V1_BOARD_TEST.md).
+
+## Exact source
+
+```text
+C:\SRC\R-YORS\RELEASE\ARTIFACTS\SOURCES\pia-led-show-2000.a
+```
+
+## Assemble, package, and install
+
+At HIMON:
 
 ```text
 ASM NEW
 ```
 
-Send the complete
-[pia-led-show-2000.a](SAMPLES/pia-led-show-2000.a). At `SEAL>`, enter:
+Send the exact source above. After `ASM OK` and `SEAL>`, type:
 
 ```text
 SEAL
-PACKAGE MAIN $7000
+PACKAGE PIALED $3000
+INSTALL 3000 B1
 .
+RESET
 ```
 
-Require:
+Require `PKG OK @=$3000 L=$00D0`. `B1` is the install confirmation. APMAN
+selects the first completely erased, unreserved B1 sector and prints it; no
+Bank Maintenance menu, PUT helper, or separate `G` command is used.
+
+## List and run after reset
 
 ```text
-SEAL OK
-PKG OK @=$7000 L=$00A3
-ASM BYE
+APS B1
+APS B1 PIALED
+AP B1 PIALED
 ```
 
-`MAIN` is the package identity and must match the source's `ENTRY MAIN`.
+The program loads at its sealed `$2000` base, walks the eight LED patterns,
+restores the previous Port-A state, DDRA, and CRA, then returns `A=$AC` with
+carry set. The `GO 2000` line printed by HIMON is output from `AP`, not another
+command to type.
 
-## 2. Put that package into Bank 2 sector 8
-
-At the HIMON `>` prompt:
+If another B1 carrier already uses the executable name `PIALED`, name discovery
+must reject the duplicate. Either reclaim that older carrier for a later test
+or run this carrier by the exact sector address printed by INSTALL:
 
 ```text
-ASM NEW
+AP B1 A000
 ```
 
-Send the complete release file
-`RELEASE/ARTIFACTS/SOURCES/str8n-v1.23-bank-maint-menu-2000.a`. At `SEAL>`,
-enter:
+Replace `A000` with the actual printed sector.
 
-```text
-.
-G 2000
-```
+## Historical transport proof
 
-At the Bank Maintenance prompt, enter exactly:
-
-```text
-BM> P
-TYPE PUT BnS000 (n=0-2,S=8-F)> PUT B28000
- OK
-BM> Q
-```
-
-Stop if the tool prints `ABORT`, `PROTECTED ROLE`, or `!` instead of `OK`.
-`PUT B28000` means Bank 2, address `$8000`, and consumes the exact AP envelope
-at `$7000`. It preserves the rest of the 4K sector.
-
-## 3. Cold boot and run only from banked flash
-
-After `Q` returns to STR8-N, enter:
-
-```text
-STR8-N>C
-BOOT COLD
-RAM ZERO OK
-```
-
-At the new HIMON `>` prompt:
-
-```text
-AP B2 $8000 $4000
-```
-
-The eight PIA LEDs should run the complete pattern. Require the final return to
-show `A=AC` with carry set. No `G` command follows `AP`: `AP` loads, relocates,
-and runs the package entry itself.
+Before APMAN, the board assembled the older 87-byte LED body, packaged it at
+`$7000`, and Bank Maintenance put it at B1:D. After reset,
+`AP B1 D000 2000` loaded, relocated, and executed it, returning `A=$AC` and
+`X=$10`; therefore all 16 pattern rows ran. No physical LED changed because
+that source incorrectly treated `$7FA1/$7FA3` as W65C22 Port-A/DDRA registers.
+The current 132-byte body corrects that hardware model. This historical run is
+carrier-transport evidence only, not acceptance of the corrected LED output.

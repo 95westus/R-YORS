@@ -105,6 +105,9 @@ Publish-File -Source (Join-Path $repo "SRC/PROOFS/ap-store-v1-sector-tool.asm") 
 Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-sector-tool-7000.a") -RelativeDir "ARTIFACTS/ARCHIVE/AP-STORE"
 
 $rComponentArtifacts = @(
+    "SRC/BUILD/s19/apman-7000.s19",
+    "SRC/BUILD/s19/apman-v1-bank2-8000.s19",
+    "SRC/BUILD/s19/bank-audit-2000.s19",
     "SRC/BUILD/s19/fnv1a-hbstr-6000.s19",
     "SRC/BUILD/s19/himon-c000.s19",
     "SRC/BUILD/s19/himon-rom-c000-install-8000.s19",
@@ -118,6 +121,8 @@ $rComponentArtifacts = @(
 foreach ($relative in $rComponentArtifacts) {
     Publish-File -Source (Join-Path $repo $relative) -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 }
+Publish-File -Source (Join-Path $repo "SRC/BUILD/bin/apman-v1.ap") -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
+Publish-File -Source (Join-Path $repo "SRC/ASM/apman-v1.inc") -RelativeDir "ARTIFACTS/SOURCES"
 Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/himon-apv2-bank3-c-e.s19") -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
 Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19")
 
@@ -241,6 +246,9 @@ Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
 
 Board-use artifacts:
 
+- ARTIFACTS/COMPONENT-IMAGES/apman-v1-bank2-8000.s19 - initial Bank-2
+  bootstrap carrier for the APMAN manager
+- ARTIFACTS/COMPONENT-IMAGES/apman-v1.ap - exact AP v2 APMAN envelope
 - ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19
 - ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19
 - ARTIFACTS/SOURCES/str8n-v1.23-bank-maint-menu-2000.a - onboard `ASM NEW`

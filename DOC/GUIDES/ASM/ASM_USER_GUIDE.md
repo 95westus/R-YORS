@@ -759,29 +759,38 @@ the same bare hexadecimal convention as HIMON:
 INSTALL 3200 hhhh
 ```
 
-Bank Maintenance now provides the narrow banked install needed for one AP per
-sector. The old `bankput`, `bank2put`, and `bank0ap-put` sources called resident
-`$F003` modes `$05/$06` and remain archived under `SAMPLES/OLD`. The supported
-`P` path carries its exact mutation worker, reads the AP v2 envelope at `$7000`
-in the menu image (`$4000` standalone), accepts a Bank 0-2 sector base, rejects
-configured WORK/BKUP roles, and requires the complete package range to be
-erased. The target line is the exact confirmation; for example,
-`PUT B28000`. This is a sector-base carrier, not a directory or append service.
-HIMON banked-package run forms are:
+The normal banked-carrier install form is:
 
 ```text
-AP B0 $8000 $3000
-AP B1 $9000 $3000
-AP B2 $9000 $3000
-AP B0 $hhhh $4000
-AP B0 $hhhh $4800
+INSTALL 3200 B1
 ```
 
-The final two lines are the movable and legacy fixed session-reporter forms.
-The maintained read/dump AP bodies and current HIMON source use
-`$F010/$0203`. The loader migration passes its compiled host matrix; the
-invalid-package stage/restore path and valid Bank-0 package execution through
-the fixed carrier are hardware-accepted.
+The bank token is the in-command destructive confirmation. The APMAN carrier
+manager validates an AP v2 envelope of at most `$1000` bytes, selects the first
+completely erased and unreserved 4K sector in the requested Bank 0-2, programs
+and verifies the full sector through the RAM worker, restores Bank 3, and
+prints the exact selected address. There is one complete carrier per sector;
+this is not AP Store record packing. The older Bank Maintenance `P` command
+remains a recovery path for its `$00FF` package policy.
+
+HIMON carrier forms are:
+
+```text
+APS
+APS B1
+APS B1 BANKAUDIT
+AP B1 BANKAUDIT
+AP B1 A000
+AP L B1 BANKAUDIT
+AP B1 BANKAUDIT 3000
+```
+
+`AP` executes; `AP L` only loads and fixes. Selection is by the package's
+executable `ENTRY` name or by its sector-base address. The optional destination
+overrides the sealed base. Duplicate names in one bank fail, while an address
+disambiguates. APMAN V1 stays live at `$7000`, so manager-driven BODY loads
+must fit in `$2000-$6FFF`; direct resident `AP package destination` remains the
+recovery form.
 
 That path copies the banked AP envelope into the sector staging buffer, loads
 and links ordinary BODY bytes into `$2000-$4FFF`, and runs from the requested
@@ -1102,8 +1111,8 @@ Known limitations:
 - No default flash-image `RESOLVE` command; import resolution happens only
   during AP load/run through resident RJOIN.
 - `INSTALL pkg flash_addr` writes only erased currently visible low flash.
-  Banked install across banks 0-2 has no current split-V1 writer; the former
-  `bankput-transient-3000.a` is archived under `SAMPLES/OLD`.
+- `INSTALL pkg Bn` invokes APMAN for a single named AP carrier in the first
+  safe erased sector of Bank 0, 1, or 2.
 - `LOAD` validates the AP v2 envelope and BODY FNV and performs resident RJOIN
   linking, but there is no general dependency manager yet.
 - Local labels are not exported, imported, or reported as public symbols.

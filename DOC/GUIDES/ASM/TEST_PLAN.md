@@ -15393,23 +15393,118 @@ from `$60E7` to `$37A8`, and the cold table exactly matched the warm table.
 
 ## 2026-08-26 Banked PIA LED Carrier
 
-Host status: accepted. Board status: pending the focused LED card; no board
-proof is claimed here.
+Host status: accepted for the carrier mechanism. Board status: package,
+Bank-Maintenance put, reboot, banked load, relocation, and return accepted;
+physical LED behavior failed and remains open.
+
+The corrected host candidate uses the W65C21 register model: `$7FA0` is the
+multiplexed Port-A/DDRA register and CRA bit 2 at `$7FA1` selects its role. It
+preserves/restores CRA, the prior Port-A pin state, and DDRA. The `.a` and
+`.asm` bodies match at 132 bytes, FNV `$9F3CAF3C`; the AP v2 envelope is
+`$00D0`. Host checks pass. Board LED-function retest is pending.
 
 Bank Maintenance `P` now accepts an AP v2 envelope of `$0005-$00FF` bytes at
 the base of a Bank 0-2 sector. It uses the embedded mutation worker, rejects
 configured WORK/BKUP roles, requires the complete destination range erased,
 and uses the target line as the exact destructive confirmation. The focused
-case packages `pia-led-show-2000.a` as `MAIN` at `$7000`, confirms
-`PUT B28000`, cold-boots, and runs only:
+case packages `pia-led-show-2000.a` as `MAIN` at `$7000`. The maintained card
+uses `PUT B28000`; the accepted board run used the equivalent erased sector
+B1:D, rebooted, and ran:
 
 ```text
-AP B2 $8000 $4000
+AP B1 D000 2000
 ```
 
 Host gates require the `.a`/`.asm` LED bodies to remain identical, pin its
-87-byte body and expected `$00A3` AP envelope, validate both standalone and
+132-byte corrected W65C21 body and expected `$00D0` AP envelope, validate both standalone and
 menu Bank Maintenance S19 images, and retain the private worker SHA-256
 `FFCDB4201C913FC9B3E3F3D438A98940F76967C5E62F843A2DC32CFF1D1AD1B2`.
 The exact operator sequence is in
 [`PIA_LED_BANKED_AP_CARD.md`](PIA_LED_BANKED_AP_CARD.md).
+
+The board assembled under ASM-F2 `00.0826(1059)`, emitted `PKG OK @=$7000
+L=$00A3`, and Bank Maintenance `P` accepted `PUT B1D000`. After reset, HIMON
+`AP B1 D000 2000` relocated and ran the flash-resident carrier. It returned
+`A=$AC`, `X=$10`, and carry set, proving the CPU traversed all 16 pattern rows,
+but none of the EDU LEDs changed state. The sample incorrectly applied the
+W65C22 VIA register layout to the W65C21 PIA: `$7FA1` is control register A
+and `$7FA3` is control register B, not Port A and DDRA. Correct W65C21 Port-A
+access uses `$7FA0`, with control-register-A bit 2 at `$7FA1` selecting DDRA
+when clear and the peripheral interface when set. No LED-function acceptance
+is claimed for this run.
+Resident `APS 1D UNMANAGED` is expected because this raw carrier is not an AP
+Store sector. The Bank Maintenance map initially printed `U` because its AP
+probe still recognized envelope version 1; that diagnostic was corrected to
+recognize the emitted AP v2 envelope. The stored B1:D carrier itself was valid
+and requires no rewrite.
+
+## 2026-08-26 Warm SEAL Reader Vector Regression
+
+Host status: accepted. Board status: named-package creation and banked-flash
+transport completed; the physical LED-function gate remains open because the
+sample used the wrong W65C21 register model.
+
+ASM-F2 `00.0826(0202)` assembled the 87-byte PIA LED body successfully in
+three identical no-trailing-blank-line attempts. Each printed `ASM OK` and
+`SEAL>`, then trapped at `BRK 03 PC=2890` before accepting a SEAL command.
+Re-entering the preserved session with `ASM S` reproduced the same prompt and
+trap, separating the failure from `END`, the emitted body, and terminal tail
+input.
+
+The post-END uppercase reader is a dynamically resolved extension outside the
+resident service-vector block. Its initialization previously skipped lookup
+whenever the cached RAM pointer's high byte was merely nonzero, allowing warm
+or reused RAM to be trusted as an executable address. Initialization now
+resolves the uppercase-reader FNV record on every ASM entry and overwrites both
+pointer bytes. The host contract rejects restoration of the nonzero-high-byte
+shortcut. `make -C SRC asm-test` and `make -C SRC all` pass for candidate
+`00.0826(1059)`.
+
+The corrected Bank-3 `$8000-$EFFF` image was installed and booted warm as
+HIMON/ASM-F2 `00.0826(1059)`. The unchanged LED card then reached `ASM OK` and
+accepted `PACKAGE MAIN $7000`, producing `PKG OK @=$7000 L=$00A3` without the
+former trap. A following bare `INSTALL` failed safely with `ERR=$03 BO
+PC=$2057`, as required for a missing operand, and left the `$7000` carrier
+available for Bank Maintenance `P`.
+## 2026-08-26 BANKAUDIT Banked AP Candidate
+
+`bank-audit-2000.a` is the useful-system-program candidate for the simple
+ASM-F2 -> package -> banked carrier -> reset -> AP lifecycle. It is read-only:
+it stages all 32 Bank 0-3 sectors through `$4000-$4FFF`, calculates
+CRC-16/CCITT-FALSE, leaves the table at `$7C10-$7C4F`, captures each bank's
+`$FFF0/$FFF1` at `$7C08-$7C0F`, and restores Bank 3 after every staged read.
+
+The checked host counterpart occupies `$2000-$2201` (`$0202` bytes), FNV32
+`$0EFD2A83`. The `.a` and `.asm` shared bodies have 226 identical logical
+lines. Static policy checks require `$F010/$0203` bank-select paths and the
+RAM stage loop, and reject `$F003` or named erase/program surfaces. The direct
+S19 is host-accepted. Board acceptance remains open until the bank-aware
+`SEAL> INSTALL 3000 B1` command passes on board and one cold-reset carrier run prints
+all four CRC rows, returns `A=$AC/C=1`, and preserves before/after flash CRCs.
+
+## 2026-08-26 APMAN V1 Host Candidate
+
+Host status: accepted. Board status: open.
+
+APMAN V1 is a `$0AD6`-byte fixed manager body packaged as a `$0B04` AP v2
+envelope. The initial bootstrap S19 places that complete envelope at B2:`$8000`.
+HIMON discovers the manager in B2, B1, then B0, while retaining direct
+`AP package destination` as the recovery path. Flash ASM routes exactly
+`INSTALL source B0|B1|B2` through the shared AP service card.
+
+The host gates build and AP-validate the manager, prove it remains within the
+`$7000-$7BFF` tray, build the B2:`$8000` bootstrap carrier, build HIMON and
+flash ASM within their layout limits, and pass the full `make -C SRC asm-test`
+regression. The manager accepts envelopes through `$1000`, selects only a
+fully erased non-role sector, installs and verifies through the maintained
+STR8 RAM worker, restores Bank 3, rejects duplicate entry identities, and
+prevents a loaded BODY from overwriting its live manager overlay. `APS` fully
+checks AP Store header location, reserved bytes, FNV, and state before printing
+`+`, `-`, `~`, or `!`.
+
+Board acceptance requires the exact
+[`APMAN_V1_BOARD_TEST.md`](APMAN_V1_BOARD_TEST.md) cycle: install APMAN at
+B2:8, install the candidate B3:8-E image, `ASM NEW` BANKAUDIT, `PACKAGE
+BANKAUDIT $3000`, `INSTALL 3000 B1`, reset, list it by `APS B1`, execute it by
+`AP B1 BANKAUDIT`, and confirm all four CRC rows plus `A=$AC/C=1`. Address and
+`AP L` variants are secondary checks. No board proof is claimed yet.

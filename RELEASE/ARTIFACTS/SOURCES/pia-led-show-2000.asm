@@ -8,23 +8,35 @@
                         PW              132
 
                         MODULE          PIA_LED_SHOW
-                        XDEF            MAIN
+                        XDEF            PIALED
                         XDEF            _END_CODE
 
-PIA_PORTA               EQU             $7FA1
-PIA_DDRA                EQU             $7FA3
+; W65C21 RS1/RS0=00 at $7FA0 selects DDRA when CRA bit 2 is clear
+; and the Port-A peripheral interface when CRA bit 2 is set.
+PIA_PORTA_DDRA          EQU             $7FA0
+PIA_CRA                 EQU             $7FA1
 
                         CODE
 
 ; BEGIN SHARED LED BODY
-MAIN:                   BRA             RUN
+PIALED:                 BRA             RUN
 
-RUN:                    LDA             PIA_DDRA
+RUN:                    LDA             PIA_CRA
                         PHA
-                        LDA             PIA_PORTA
+                        ORA             #$04
+                        STA             PIA_CRA
+                        LDA             PIA_PORTA_DDRA
+                        PHA
+                        LDA             PIA_CRA
+                        AND             #$FB
+                        STA             PIA_CRA
+                        LDA             PIA_PORTA_DDRA
                         PHA
                         LDA             #$FF
-                        STA             PIA_DDRA
+                        STA             PIA_PORTA_DDRA
+                        LDA             PIA_CRA
+                        ORA             #$04
+                        STA             PIA_CRA
                         LDX             #$00
 
 NEXT:                   LDA             PATTERNS,X
@@ -33,15 +45,23 @@ NEXT:                   LDA             PATTERNS,X
                         CPX             #$10
                         BNE             NEXT
 
+                        LDA             PIA_CRA
+                        AND             #$FB
+                        STA             PIA_CRA
                         PLA
-                        STA             PIA_PORTA
+                        STA             PIA_PORTA_DDRA
+                        LDA             PIA_CRA
+                        ORA             #$04
+                        STA             PIA_CRA
                         PLA
-                        STA             PIA_DDRA
+                        STA             PIA_PORTA_DDRA
+                        PLA
+                        STA             PIA_CRA
                         LDA             #$AC
                         SEC
                         RTS
 
-SHOW:                   STA             PIA_PORTA
+SHOW:                   STA             PIA_PORTA_DDRA
                         JSR             DELAY40
                         JSR             DELAY40
                         JSR             DELAY40

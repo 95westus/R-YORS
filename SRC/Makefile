@@ -127,6 +127,21 @@ PIA_LED_SHOW_OBJ := $(OBJ_DIR)/$(APPS_DIR)/pia-led-show-2000.obj
 PIA_LED_SHOW_S19 := $(S19_DIR)/pia-led-show-2000.s19
 PIA_LED_SHOW_A := ../DOC/GUIDES/ASM/SAMPLES/pia-led-show-2000.a
 PIA_LED_SHOW_CHECK := tools/check_pia_led_show.ps1
+BANK_AUDIT_SRC := $(APPS_DIR)/bank-audit-2000.asm
+BANK_AUDIT_OBJ := $(OBJ_DIR)/$(APPS_DIR)/bank-audit-2000.obj
+BANK_AUDIT_S19 := $(S19_DIR)/bank-audit-2000.s19
+BANK_AUDIT_A := ../DOC/GUIDES/ASM/SAMPLES/bank-audit-2000.a
+BANK_AUDIT_CHECK := tools/check_bank_audit.ps1
+APMAN_SRC := $(APPS_DIR)/apman-7000.asm
+APMAN_OBJ := $(OBJ_DIR)/$(APPS_DIR)/apman-7000.obj
+APMAN_S19 := $(S19_DIR)/apman-7000.s19
+APMAN_MAP := $(S19_DIR)/apman-7000.map
+APMAN_PACKAGE := $(BIN_DIR)/apman-v1.ap
+APMAN_BANK2_S19 := $(S19_DIR)/apman-v1-bank2-8000.s19
+APMAN_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
+APMAN_WORKER_GEN := tools/write_apman_worker_inc.ps1
+APMAN_WORKER_SOURCE := $(STR8N_HOME)/tools/bank-maint/str8n-v1.23-bank-maint-2000.asm
+APMAN_WORKER_INC := $(INC_DIR)/apman-str8-worker.inc
 HIMON_DEBUG_PROOF_SRC := $(PROOFS_DIR)/himon-debug-proof.asm
 HIMON_DEBUG_PROOF_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/himon-debug-proof.obj
 HIMON_DEBUG_PROOF_S19 := $(S19_DIR)/himon-debug-proof-3000.s19
@@ -360,6 +375,8 @@ PROOF_TARGETS ?= \
 	asm-session-report
 
 APP_TARGETS ?= \
+	apman \
+	bank-audit \
 	life \
 	pia-led-show \
 	rom-append-calc
@@ -521,6 +538,14 @@ pia-led-show: $(PIA_LED_SHOW_S19) $(PIA_LED_SHOW_A) $(PIA_LED_SHOW_CHECK)
 	@echo "Built and checked $(PIA_LED_SHOW_S19) against $(PIA_LED_SHOW_A)."
 	@$(MAKE) artifacts
 
+bank-audit: $(BANK_AUDIT_S19) $(BANK_AUDIT_A) $(BANK_AUDIT_CHECK)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(BANK_AUDIT_CHECK) -AsmPath "$(BANK_AUDIT_SRC)" -APath "$(BANK_AUDIT_A)" -S19Path "$(BANK_AUDIT_S19)"
+	@echo "Built and checked $(BANK_AUDIT_S19) against $(BANK_AUDIT_A)."
+	@$(MAKE) artifacts
+
+apman: $(APMAN_S19) $(APMAN_PACKAGE) $(APMAN_BANK2_S19)
+	@echo "Built APMAN carrier manager: $(APMAN_S19), $(APMAN_PACKAGE), and $(APMAN_BANK2_S19)."
+
 himon-debug-proof: $(ROM_LIB) $(HIMON_DEBUG_PROOF_S19)
 	@echo "Built $(HIMON_DEBUG_PROOF_S19)."
 	@$(MAKE) artifacts
@@ -647,10 +672,10 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 	@make -C "$(STR8N_HOME)" ryors-full-bank RYORS_28K_S19="$(abspath $(RYORS_V12_28K_S19))"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.23/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 
-release-files: board-s19-check life pia-led-show rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
+release-files: board-s19-check apman bank-audit life pia-led-show rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report pia-led-show asm-ap-v2-check
+asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit pia-led-show asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
@@ -662,7 +687,7 @@ asm-terminal-check: $(ASM_TERMINAL_CHECK) ../DOC/GUIDES/ASM/SAMPLES/vt102-exerci
 ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_V1_CHECK) -WorkerContractPath "$(AP_STORE_SECTOR_TOOL_INC)"
 
-ap-store-inventory-check: $(HIMON_ROM_S19) $(AP_STORE_INVENTORY_CHECK) $(AP_STORE_V1_INC) $(STR8N_IMPORTED_CONTRACT)
+ap-store-inventory-check: $(HIMON_ROM_S19) $(APMAN_PACKAGE) $(AP_STORE_INVENTORY_CHECK) $(AP_STORE_V1_INC) $(STR8N_IMPORTED_CONTRACT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_INVENTORY_CHECK) -HimonSourcePath "$(HIMON_SRC)" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -PublicContractPath "$(STR8N_IMPORTED_CONTRACT)"
 
 ap-store-sector-tool-check: $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_AP_BIN) $(AP_STORE_SECTOR_TOOL_A) $(AP_STORE_SECTOR_TOOL_CHECK) $(AP_STORE_SECTOR_TOOL_A_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT)
@@ -866,6 +891,31 @@ $(PIA_LED_SHOW_S19): $(PIA_LED_SHOW_OBJ)
 	$(LINKER) $(TEST_LINKFLAGS) $(PIA_LED_SHOW_S19) $(PIA_LED_SHOW_OBJ)
 	@echo [ps] set S9 start $$2000 in $(PIA_LED_SHOW_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(PIA_LED_SHOW_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
+$(BANK_AUDIT_S19): $(BANK_AUDIT_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(TEST_LINKFLAGS) $(BANK_AUDIT_S19) $(BANK_AUDIT_OBJ)
+	@echo [ps] set S9 start $$2000 in $(BANK_AUDIT_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(BANK_AUDIT_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
+$(APMAN_S19): $(APMAN_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(APMAN_LINKFLAGS) $(APMAN_S19) $(APMAN_OBJ)
+	@echo [ps] set S9 start $$7000 in $(APMAN_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(APMAN_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S90370008C'; Set-Content -Path $$p -Value $$lines"
+
+$(APMAN_WORKER_INC): $(APMAN_WORKER_GEN) $(APMAN_WORKER_SOURCE)
+	@if not exist $(subst /,\,$(INC_DIR)) mkdir $(subst /,\,$(INC_DIR))
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(APMAN_WORKER_GEN) -SourcePath "$(APMAN_WORKER_SOURCE)" -OutPath "$@"
+
+$(APMAN_OBJ): $(APMAN_WORKER_INC) $(ASM_DIR)/apman-v1.inc
+
+$(APMAN_PACKAGE): $(APMAN_S19) tools/build_ap_fixed_package.ps1
+	@if not exist $(subst /,\,$(BIN_DIR)) mkdir $(subst /,\,$(BIN_DIR))
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_ap_fixed_package.ps1 -S19Path "$(APMAN_S19)" -MapPath "$(APMAN_MAP)" -PackagePath "$@" -BaseAddress 0x7000 -EntrySymbol APMAN -ExportName APMAN -EndSymbol APMAN_IMAGE_END
+
+$(APMAN_BANK2_S19): $(APMAN_PACKAGE) tools/build_rom_install_s19.ps1
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_rom_install_s19.ps1 -BinPath "$(APMAN_PACKAGE)" -S19Path "$@" -BaseAddress 0x8000 -StartAddress 0x8000
 
 $(HIMON_DEBUG_PROOF_S19): $(HIMON_DEBUG_PROOF_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1407,7 +1457,7 @@ endif
 	str8-readonly-bank-tools-check himon-rom-install-s19 himon-apv2-install-s19 rom-install-s19 \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \
 	test-mon test-ftdi-drv test-ftdi-hal test-flash \
-	life himon-debug-proof himon-search-static himon-search-static-proof \
+	life pia-led-show bank-audit apman himon-debug-proof himon-search-static himon-search-static-proof \
 	himon-search-proof himon-search-flash himon-search-for-himon \
 	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase-legacy asm-v1-core \
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \

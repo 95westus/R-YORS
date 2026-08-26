@@ -1633,8 +1633,9 @@ ASM_RJOIN_INIT_SERVICE_COPY:
 ASM_RJOIN_INIT_IO:
                         JSR             ASM_RJOIN_INIT
                         BCC             ASM_RJOIN_INIT_IO_FAIL
-                        LDA             ASM_RJ_READ_UPPER_HI
-                        BNE             ASM_RJOIN_INIT_IO_READY
+; This extension is outside the resident service-vector block copied above.
+; Resolve it on every entry: warm RAM can contain any nonzero stale pointer,
+; and trusting only its high byte can jump the SEAL reader into old UPA code.
                         LDX             #<ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
                         LDY             #>ASM_HASH_SYS_READ_CSTRING_ECHO_UPPER
                         JSR             ASM_RJ_RESIDENT_XY

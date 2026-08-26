@@ -2,7 +2,9 @@ param(
     [string]$HimonSourcePath = "HIMON/himon.asm",
     [string]$HimonS19Path = "BUILD/s19/himon-rom-c000.s19",
     [string]$HimonMapPath = "BUILD/s19/himon-rom-c000.map",
-    [string]$PublicContractPath = "BUILD/inc/str8n-public.inc"
+    [string]$PublicContractPath = "BUILD/inc/str8n-public.inc",
+    [string]$ApmanSourcePath = "APPS/apman-7000.asm",
+    [string]$ApmanPackagePath = "BUILD/bin/apman-v1.ap"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -286,6 +288,43 @@ foreach ($path in @($HimonSourcePath, $HimonS19Path, $HimonMapPath, $PublicContr
 }
 
 $source = [IO.File]::ReadAllText((Resolve-Path $HimonSourcePath))
+if ($source.Contains('HIM_APMAN_BOOTSTRAP:')) {
+    foreach ($path in @($ApmanSourcePath, $ApmanPackagePath)) {
+        if (-not (Test-Path -LiteralPath $path)) { Fail "missing $path" }
+    }
+    foreach ($required in @(
+        'CMD_APS_FNV:', 'HIM_APMAN_BOOTSTRAP:', 'HIM_AP_OP_MANAGER',
+        'STA             $1A00,X', 'JMP             APMAN_ENTRY'
+    )) {
+        if (-not $source.Contains($required)) { Fail "APMAN bootstrap is missing $required" }
+    }
+    $apman = [IO.File]::ReadAllText((Resolve-Path $ApmanSourcePath))
+    foreach ($required in @(
+        'APMAN_PRINT_STATUS_ROW:', 'APMAN_STAGE_RAW:', 'APMAN_INSTALL:',
+        'APMAN_FIND_NAMED:', 'APMAN_COPY_WORKER:',
+        'APMAN_LOAD_RANGE_SAFE:', 'APMAN_VALIDATE_APS_HEADER:',
+        'INCLUDE         "apman-str8-worker.inc"'
+    )) {
+        if (-not $apman.Contains($required)) { Fail "APMAN source is missing $required" }
+    }
+    [byte[]]$package = [IO.File]::ReadAllBytes((Resolve-Path $ApmanPackagePath))
+    if ($package.Length -lt 5 -or $package.Length -gt 0x1000) {
+        Fail ('APMAN package length ${0:X4} is outside $0005-$1000' -f $package.Length)
+    }
+    if ($package[0] -ne [byte][char]'A' -or $package[1] -ne [byte][char]'P' -or $package[2] -ne 2) {
+        Fail 'APMAN package header is not AP v2'
+    }
+    $declared = [int]$package[3] -bor ([int]$package[4] -shl 8)
+    if ($declared -ne $package.Length) { Fail 'APMAN declared package length mismatch' }
+    $sealedBase = [int]$package[9] -bor ([int]$package[10] -shl 8)
+    $bodyEnd = [int]$package[11] -bor ([int]$package[12] -shl 8)
+    if ($sealedBase -ne 0x7000 -or $bodyEnd -gt 0x7C00) {
+        Fail ('APMAN body ${0:X4}-${1:X4} exceeds the manager tray' -f $sealedBase, $bodyEnd)
+    }
+    if ((Map 'HIM_APMAN_BOOTSTRAP') -lt 0xC000) { Fail 'APMAN bootstrap is not resident' }
+    Write-Host ('AP Store inventory check: APMAN split pass; package=${0:X4}, bootstrap=${1:X4}' -f $package.Length, (Map 'HIM_APMAN_BOOTSTRAP'))
+    exit 0
+}
 foreach ($required in @(
     'CMD_APS_FNV:', 'HIM_APS_CLASSIFY_HEADER:', 'HIM_APS_HEADER_READ_CODE:',
     'JSR             STR8_BANK_SELECT_SERVICE', 'JSR             STR8_BANK_SELECT_RAM',

@@ -109,12 +109,12 @@ for ($i = 0; $i -lt $patterns.Length; $i++) {
 }
 
 $relocations = @(
-    @{ Site = 0x12; Target = 0x47 },
-    @{ Site = 0x15; Target = 0x28 },
-    @{ Site = 0x2C; Target = 0x38 },
-    @{ Site = 0x2F; Target = 0x38 },
-    @{ Site = 0x32; Target = 0x38 },
-    @{ Site = 0x35; Target = 0x38 }
+    @{ Site = 0x2B; Target = 0x74 },
+    @{ Site = 0x2E; Target = 0x55 },
+    @{ Site = 0x59; Target = 0x65 },
+    @{ Site = 0x5C; Target = 0x65 },
+    @{ Site = 0x5F; Target = 0x65 },
+    @{ Site = 0x62; Target = 0x65 }
 )
 foreach ($reloc in $relocations) {
     $actual = [int]$image[$reloc.Site] -bor ([int]$image[$reloc.Site + 1] -shl 8)
@@ -124,11 +124,28 @@ foreach ($reloc in $relocations) {
     }
 }
 
-# AP v2: 31 fixed bytes, 1+5*n relocation bytes, one 4-character MAIN
+# AP v2: 31 fixed bytes, 1+5*n relocation bytes, one 6-character PIALED
 # export (1 count + 8 fixed row bytes + 4 PACK40 bytes), one empty-import
 # count byte, then BODY.
 $packageLength = 31 + (1 + 5 * $relocations.Count) + 13 + 1 + $image.Length
-if ($packageLength -ne 0x00A3) { throw ('AP package length is ${0:X4}, expected $00A3' -f $packageLength) }
+if ($packageLength -ne 0x00D0) { throw ('AP package length is ${0:X4}, expected $00D0' -f $packageLength) }
+
+# W65C21 Port A and DDRA share $7FA0. CRA bit 2 at $7FA1 selects the
+# peripheral interface when set and DDRA when clear. Reject the former
+# W65C22-style $7FA1/$7FA3 data/direction mapping.
+$hex = [BitConverter]::ToString($image).Replace('-', '')
+foreach ($required in @(
+        'ADA17F4809048DA17FADA07F48',
+        'ADA17F29FB8DA17FADA07F48A9FF8DA07F',
+        'ADA17F09048DA17F',
+        'ADA17F29FB8DA17F688DA07F',
+        'ADA17F09048DA17F688DA07F688DA17F',
+        '8DA07F206520')) {
+    if (-not $hex.Contains($required)) {
+        throw "S19 is missing required W65C21 Port-A access sequence $required"
+    }
+}
+if ($hex.Contains('8DA37F')) { throw 'S19 still writes $7FA3 as though it were W65C22 DDRA' }
 
 $fnv = [uint64]2166136261
 foreach ($b in $image) { $fnv = (($fnv -bxor [uint64]$b) * [uint64]16777619) -band [uint64]4294967295 }

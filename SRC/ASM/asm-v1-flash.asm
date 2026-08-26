@@ -11,6 +11,9 @@
 
                         MODULE          ASM_V1_FLASH_APP
 
+                        INCLUDE         "ASM/asm-abi-v1.inc"
+                        INCLUDE         "ASM/apman-v1.inc"
+
                         XDEF            START
 
                         XREF            ASM_BEGIN
@@ -81,6 +84,9 @@ HIM_FLASH_DST_LO       EQU             $7E29
 HIM_FLASH_DST_HI       EQU             $7E2A
 HIM_FLASH_LEN_LO       EQU             $7E2B
 HIM_FLASH_LEN_HI       EQU             $7E2C
+HIM_SVC_AP_LO          EQU             ASM_ABI_AP_SERVICE
+HIM_SVC_AP_HI          EQU             ASM_ABI_AP_SERVICE+$01
+HIM_AP_OP              EQU             ASM_ABI_AP_OP
 
 ASMF_FNV_SIG2          EQU             $D6
 ASMF_KIND_EXEC_TEXT    EQU             $05
@@ -392,6 +398,12 @@ ASMF_LOAD_OK:
 
 ASMF_INSTALL_CMD:
 ; All install forms preserve the failure status in A for one common tail.
+                        JSR             ASMF_PARSE_INSTALL_BANK
+                        BCC             ASMF_INSTALL_NOT_BANK
+                        JMP             ASMF_INSTALL_BANK
+ASMF_INSTALL_NOT_BANK:
+                        LDX             ASMF_CMD_PTR_LO
+                        LDY             ASMF_CMD_PTR_HI
                         JSR             ASMF_PARSE_TWO_ARGS
                         BCS             ASMF_INSTALL_HAVE_TWO_ARGS
                         LDX             ASMF_CMD_PTR_LO
@@ -444,6 +456,26 @@ ASMF_INSTALL_OK:
                         LDX             ASM_INSTALL_BASE_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JMP             ASMF_PRINT_PACKAGE_LEN_LOOP
+
+; INSTALL source Bn is the explicit bank-aware carrier form. Naming the bank
+; in the command is the confirmation. APMAN still chooses only a completely
+; erased, unreserved sector and verifies the full programmed sector.
+ASMF_INSTALL_BANK:     STA             APMAN_INSTALL_BANK
+                        LDA             ASMF_ARG0_LO
+                        STA             APMAN_INSTALL_SRC_LO
+                        LDA             ASMF_ARG0_HI
+                        STA             APMAN_INSTALL_SRC_HI
+                        LDA             #APMAN_CONFIRM_INSTALL
+                        STA             APMAN_CONFIRM
+                        LDA             #APMAN_MODE_INSTALL
+                        STA             APMAN_MODE
+                        LDA             #ASM_ABI_AP_OP_MANAGER
+                        STA             HIM_AP_OP
+                        LDA             HIM_SVC_AP_HI
+                        CMP             #$C0
+                        BCC             ASMF_INSTALL_BAD_RANGE
+                        JSR             ASMF_AP_SERVICE
+                        JMP             ASMF_LOOP
 
                         IF              ASM_PACKAGE_CHECK_ENABLED
 ASMF_CHECK_CMD:
@@ -551,6 +583,7 @@ ASMF_RETURN_WITH_A:
 
 ASMF_FLASH_INSTALL:
                         JMP             (HIM_SVC_FLASH_INSTALL_LO)
+ASMF_AP_SERVICE:       JMP             (HIM_SVC_AP_LO)
 
 ASMF_PRINT_STATUS_NAME:
                         LDA             ASMF_RESULT
@@ -763,6 +796,74 @@ ASMF_PARSE_TWO_RESTORE:
                         LDY             ASMF_SPLIT_OFF
                         LDA             ASMF_SPLIT_CHAR
                         STA             (ASMF_CMD_PTR_LO),Y
+                        RTS
+
+; Parse exactly `source B0`, `source B1`, or `source B2`. C=0 leaves the
+; original text restored so the legacy one/two-address forms can retry it.
+ASMF_PARSE_INSTALL_BANK:
+                        STX             ASMF_CMD_PTR_LO
+                        STY             ASMF_CMD_PTR_HI
+                        LDY             #$00
+ASMF_INSTALL_BANK_SPLIT_SCAN:
+                        LDA             (ASMF_CMD_PTR_LO),Y
+                        BEQ             ASMF_INSTALL_BANK_NOT_FORM
+                        CMP             #';'
+                        BEQ             ASMF_INSTALL_BANK_NOT_FORM
+                        CMP             #' '
+                        BEQ             ASMF_INSTALL_BANK_SPLIT
+                        CMP             #$09
+                        BEQ             ASMF_INSTALL_BANK_SPLIT
+                        INY
+                        BRA             ASMF_INSTALL_BANK_SPLIT_SCAN
+ASMF_INSTALL_BANK_SPLIT:
+                        STY             ASMF_SPLIT_OFF
+                        STA             ASMF_SPLIT_CHAR
+                        LDA             #$00
+                        STA             (ASMF_CMD_PTR_LO),Y
+                        LDX             ASMF_CMD_PTR_LO
+                        LDY             ASMF_CMD_PTR_HI
+                        JSR             ASM_PARSE_SEAL_EXPR
+                        BCC             ASMF_INSTALL_BANK_PARSE_FAIL
+                        STX             ASMF_ARG0_LO
+                        STY             ASMF_ARG0_HI
+                        JSR             ASMF_PARSE_TWO_RESTORE
+                        LDY             ASMF_SPLIT_OFF
+ASMF_INSTALL_BANK_SKIP:
+                        INY
+                        LDA             (ASMF_CMD_PTR_LO),Y
+                        CMP             #' '
+                        BEQ             ASMF_INSTALL_BANK_SKIP
+                        CMP             #$09
+                        BEQ             ASMF_INSTALL_BANK_SKIP
+                        CMP             #'B'
+                        BNE             ASMF_INSTALL_BANK_NOT_FORM
+                        INY
+                        LDA             (ASMF_CMD_PTR_LO),Y
+                        SEC
+                        SBC             #'0'
+                        BCC             ASMF_INSTALL_BANK_NOT_FORM
+                        CMP             #$03
+                        BCS             ASMF_INSTALL_BANK_NOT_FORM
+                        PHA
+                        INY
+                        LDA             (ASMF_CMD_PTR_LO),Y
+                        BEQ             ASMF_INSTALL_BANK_DONE
+                        CMP             #';'
+                        BNE             ASMF_INSTALL_BANK_TRAILING
+ASMF_INSTALL_BANK_DONE:PLA
+                        SEC
+                        RTS
+ASMF_INSTALL_BANK_TRAILING:
+                        PLA
+ASMF_INSTALL_BANK_NOT_FORM:
+                        LDA             #ASMF_STATUS_BAD_OPER
+                        CLC
+                        RTS
+ASMF_INSTALL_BANK_PARSE_FAIL:
+                        PHA
+                        JSR             ASMF_PARSE_TWO_RESTORE
+                        PLA
+                        CLC
                         RTS
 
 ASMF_IS_END:

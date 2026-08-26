@@ -46,6 +46,7 @@
 
                         INCLUDE         "ASM/asm-abi-v1.inc"
                         INCLUDE         "ASM/ap-store-v1.inc"
+                        INCLUDE         "ASM/apman-v1.inc"
                         INCLUDE         "HIMON/himon-image-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
 ; Verified external STR8-N public contract, imported into BUILD/inc by the
@@ -167,25 +168,6 @@ HIM_AP_STAGE_SRC_LO      EQU             $D1
 HIM_AP_STAGE_SRC_HI      EQU             $D2
 HIM_AP_STAGE_DST_LO      EQU             $D3
 HIM_AP_STAGE_DST_HI      EQU             $D4
-
-; AP Store inventory is a foreground overlay, not a permanent RAM ABI.
-; One 16-byte sector header is copied here while Bank 3 is hidden.
-HIM_APS_HEADER_BASE      EQU             STR8_HIGH_TOOL_BASE
-HIM_APS_BANK             EQU             HIM_APS_HEADER_BASE+$10
-HIM_APS_SECTOR_HI        EQU             HIM_APS_HEADER_BASE+$11
-HIM_APS_CLASS            EQU             HIM_APS_HEADER_BASE+$12
-HIM_APS_LOCATION         EQU             HIM_APS_HEADER_BASE+$13
-HIM_APS_HEADER_READ_RAM  EQU             $0300
-HIM_APS_CLASS_HEADER_FF  EQU             $00
-HIM_APS_CLASS_OPAQUE     EQU             $01
-HIM_APS_CLASS_CORRUPT    EQU             $02
-HIM_APS_CLASS_STAGED     EQU             $03
-HIM_APS_CLASS_ACTIVE     EQU             $04
-HIM_APS_CLASS_RETIRED    EQU             $05
-HIM_APS_CLASS_BAD        EQU             $06
-HIM_APS_CLASS_RETIRED_BAD EQU            $07
-HIM_APS_CLASS_WORK       EQU             $08
-HIM_APS_CLASS_TOP_BACKUP EQU             $09
 
 HIM_P40_CODE0            EQU             $E6
 HIM_P40_CODE1            EQU             $E7
@@ -702,7 +684,9 @@ CMD_AP:
                         JSR             CMD_SKIP_SPACES
                         JSR             CMD_PEEK
                         CMP             #'B'
-                        BEQ             CMD_AP_BANKED
+                        BEQ             CMD_AP_MANAGER
+                        CMP             #'L'
+                        BEQ             CMD_AP_MANAGER
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
                         BCS             CMD_AP_SRC_OK
                         JMP             CMD_USAGE_AP
@@ -753,41 +737,9 @@ CMD_AP_LOAD_OK:
                         STZ             TRAP_BRK_SIG
                         JMP             (CMDP_ADDR_LO)
 
-CMD_AP_BANKED:
-                        JSR             CMD_ADV_PTR
-                        JSR             CMD_PEEK
-                        CMP             #'0'
-                        BCC             CMD_USAGE_AP
-                        CMP             #'3'
-                        BCS             CMD_USAGE_AP
-                        SEC
-                        SBC             #'0'
-                        STA             CMD_IO_TMP
-                        JSR             CMD_ADV_PTR
-                        JSR             CMD_PARSE_HEX_WORD_TOKEN
-                        BCC             CMD_USAGE_AP
-                        LDA             CMDP_ADDR_LO
-                        STA             CMDP_START_LO
-                        LDA             CMDP_ADDR_HI
-                        STA             CMDP_START_HI
-                        JSR             CMD_PARSE_HEX_WORD_TOKEN
-                        BCC             CMD_USAGE_AP
-                        JSR             CMD_REQUIRE_EOL
-                        BCC             CMD_USAGE_AP
-                        LDA             CMDP_ADDR_LO
-                        STA             HIM_AP_DST_LO
-                        LDA             CMDP_ADDR_HI
-                        STA             HIM_AP_DST_HI
-                        JSR             HIM_AP_STAGE_BANK_SOURCE
-                        BCC             CMD_AP_BANK_STAGE_FAIL
-                        JMP             CMD_AP_LOAD_REQUEST
-CMD_AP_BANK_STAGE_FAIL:
-                        LDX             #<MSG_AP_ERR
-                        LDY             #>MSG_AP_ERR
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             HIM_AP_STATUS
-                        JSR             SYS_WRITE_HEX_BYTE
-                        JMP             SYS_WRITE_CRLF
+CMD_AP_MANAGER:         LDA             #APMAN_MODE_AP
+                        STA             APMAN_MODE
+                        JMP             HIM_APMAN_BOOTSTRAP
 
 CMD_USAGE_AP:
                         LDX             #<MSG_USAGE_AP
@@ -802,6 +754,11 @@ CMD_USAGE_AP:
 CMD_APS_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$45,$CE,$A6,$64,CMD_HASH_KIND_EXEC ; APS $64A6CE45 EXEC
 CMD_APS:
+                        LDA             #APMAN_MODE_APS
+                        STA             APMAN_MODE
+                        JMP             HIM_APMAN_BOOTSTRAP
+
+                        IF              0
                         JSR             CMD_ADV_PTR
                         JSR             CMD_ADV_PTR
                         JSR             CMD_ADV_PTR
@@ -983,6 +940,8 @@ HIM_APS_CLASSIFY_HEADER:
                         RTS
 ?CORRUPT:              LDA             #HIM_APS_CLASS_CORRUPT
                         RTS
+
+                        ENDIF
 
 ; ----------------------------------------------------------------------------
 ; L  (HIMON-owned RAM S19 loader: S1 data, S9 terminator; S0 skipped)
@@ -2541,6 +2500,74 @@ HIM_PACK40_MUL40_SHIFT32:
                         STA             HIM_P40_VALUE_HI
                         RTS
 
+; Discover the APMAN carrier at a sector base in Banks 2, 1, then 0. Every
+; candidate is fully parsed before its four-byte body identity is inspected.
+; The command page is shadowed at $1A00 before loading because the manager may
+; use the complete $7000-$7BFF tool tray. Direct `AP pkg dst` remains the
+; recovery route when no installed manager can be found.
+HIM_APMAN_BOOTSTRAP:
+                        LDX             #$00
+?CMD_COPY:             LDA             CMD_BUF,X
+                        STA             $1A00,X
+                        INX
+                        BNE             ?CMD_COPY
+                        LDA             #$02
+                        STA             CMD_IO_TMP
+?BANK:                  LDA             #$80
+                        STA             CMDP_START_HI
+?SECTOR:                STZ             CMDP_START_LO
+                        JSR             HIM_AP_STAGE_BANK_SOURCE
+                        BCC             ?NEXT
+                        LDA             #HIM_AP_OP_PARSE
+                        STA             HIM_AP_OP
+                        JSR             HIM_AP_SERVICE
+                        BCC             ?NEXT
+                        LDA             HIM_AP_BODY_LEN_HI
+                        CMP             #$0C
+                        BCC             ?SIZE_OK
+                        BNE             ?NEXT
+                        LDA             HIM_AP_BODY_LEN_LO
+                        BNE             ?NEXT
+?SIZE_OK:               LDA             HIM_AP_BODY_LO
+                        STA             CMDP_PTR_LO
+                        LDA             HIM_AP_BODY_HI
+                        STA             CMDP_PTR_HI
+                        LDY             #$02
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             #'A'
+                        BNE             ?NEXT
+                        INY
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             #'M'
+                        BNE             ?NEXT
+                        INY
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             #'0'
+                        BNE             ?NEXT
+                        INY
+                        LDA             (CMDP_PTR_LO),Y
+                        CMP             #'1'
+                        BNE             ?NEXT
+                        STZ             HIM_AP_DST_LO
+                        LDA             #>APMAN_ENTRY
+                        STA             HIM_AP_DST_HI
+                        LDA             #HIM_AP_OP_LOAD
+                        STA             HIM_AP_OP
+                        JSR             HIM_AP_SERVICE
+                        BCC             ?NEXT
+                        JMP             APMAN_ENTRY
+?NEXT:                  LDA             CMDP_START_HI
+                        CLC
+                        ADC             #$10
+                        STA             CMDP_START_HI
+                        BNE             ?SECTOR
+                        DEC             CMD_IO_TMP
+                        BPL             ?BANK
+                        LDX             #<MSG_APMAN_NF
+                        LDY             #>MSG_APMAN_NF
+                        JSR             HIM_WRITE_HBSTRING
+                        JMP             SYS_WRITE_CRLF
+
 HIM_AP_STAGE_BANK_SOURCE:
                         LDA             CMDP_START_HI
                         CMP             #$80
@@ -2610,6 +2637,7 @@ HIM_AP_BANK_STAGE_CODE_SIZE EQU          HIM_AP_BANK_STAGE_CODE_END-HIM_AP_BANK_
 ; Relocatable AP Store header reader. It copies exactly 16 bytes from one
 ; selected sector boundary into the High Tool Overlay, then restores Bank 3.
 ; The body performs no bank-window writes.
+                        IF              0
 HIM_APS_HEADER_READ_CODE:
                         PHP
                         SEI
@@ -2640,6 +2668,7 @@ HIM_APS_HEADER_READ_CODE:
                         RTS
 HIM_APS_HEADER_READ_CODE_END:
 HIM_APS_HEADER_READ_CODE_SIZE EQU       HIM_APS_HEADER_READ_CODE_END-HIM_APS_HEADER_READ_CODE
+                        ENDIF
 
 HIM_AP_SERVICE:
                         LDA             #HIM_AP_STATUS_OK
@@ -2654,7 +2683,12 @@ HIM_AP_SERVICE:
                         JMP             HIM_AP_SERVICE_SUGGEST
 HIM_AP_SERVICE_CHECK_LINK:
                         CMP             #HIM_AP_OP_LINK
-                        BEQ             HIM_AP_SERVICE_LINK
+                        BNE             HIM_AP_SERVICE_CHECK_MANAGER
+                        JMP             HIM_AP_SERVICE_LINK
+HIM_AP_SERVICE_CHECK_MANAGER:
+                        CMP             #HIM_AP_OP_MANAGER
+                        BNE             HIM_AP_SERVICE_BAD_OP
+                        JMP             HIM_APMAN_BOOTSTRAP
 HIM_AP_SERVICE_BAD_OP:
                         JMP             HIM_AP_BAD_LINE
 
@@ -4952,7 +4986,9 @@ MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)
 MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
-MSG_USAGE_AP:            DB              "AP [Bn] pkg ds",('t'+$80)
+MSG_USAGE_AP:            DB              "AP pkg dst | AP [L] Bn name|s000 [dst",(']'+$80)
+MSG_APMAN_NF:            DB              "APMAN N",('F'+$80)
+                        IF              0
 MSG_USAGE_APS:           DB              "AP",('S'+$80)
 MSG_APS_PREFIX:          DB              "APS",(' '+$80)
 MSG_APS_IOERR:           DB              "APS IOERR",(' '+$80)
@@ -4973,6 +5009,7 @@ MSG_APS_CLASS_LO:        DB              <MSG_APS_HEADER_FF,<MSG_APS_OPAQUE
                         DB              <MSG_APS_ACTIVE,<MSG_APS_RETIRED
                         DB              <MSG_APS_BAD,<MSG_APS_RETIRED_BAD
                         DB              <MSG_APS_WORK,<MSG_APS_TOP_BACKUP
+                        ENDIF
 MSG_USAGE_L:             DB              ('L'+$80)
 MSG_NOCTX:               DB              "NOCT",('X'+$80)
 MSG_RESUME:              DB              "RESUME",(' '+$80)

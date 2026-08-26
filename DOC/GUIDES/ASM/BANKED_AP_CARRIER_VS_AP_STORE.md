@@ -1,112 +1,104 @@
 # Banked AP Carrier Versus AP Store
 
-Both paths persist the same AP v2 envelope in flash and eventually feed that
-envelope to the same AP loader. They differ in how the envelope is stored,
-found, updated, and recovered.
-
-## Short distinction
+Both paths persist an AP v2 envelope in banked flash and use the same HIMON
+loader. They solve different problems.
 
 ```text
-Banked AP carrier = one raw AP envelope at a known bank/sector address
-AP Store          = managed objects inside append-only sector records
+AP carrier = one complete named program in one 4K sector
+AP Store   = managed objects, generations, chunks, and deletion history
 ```
 
-Use a carrier when a small program needs one stable, explicitly assigned
-address and direct execution is desirable. Use AP Store when programs need
-object identity, generations, catalog lookup, chaining, deletion history, and
-managed capacity.
+In ordinary terms, a carrier is a labeled toolbox in its own locker. AP Store
+is a filing system that can keep several versions and reconstruct a large item
+from several records.
 
-## Comparison
-
-| Property | Banked AP carrier | AP Store V1 |
+| Property | AP carrier (APC) | AP Store V1 |
 |---|---|---|
-| Stored bytes | AP v2 envelope begins directly at the sector base | AP envelope is payload reconstructed from store records/chunks |
-| Addressing | Physical bank plus address, such as `B2:$8000` | Object number plus generation, with newest-generation lookup |
-| Run path | `AP B2 $8000 $4000` | Run APNEW, select/reconstruct object, validate it, then load/run it |
-| Current package size | `$0005-$00FF` through Bank Maintenance `P` | Up to `$1000`, including a multi-sector chain |
-| Sector use | One assigned package at the base; remaining bytes are preserved but unmanaged | Multiple append-only records share managed sectors |
-| Metadata | Only the AP envelope's own header, seal, exports/imports, and entry identity | Store sector header, object/generation records, chunk metadata, CRCs, lifecycle state, and AP envelope data |
-| Updates | Erase/rebuild the carrier sector, then put the replacement | Append a newer object generation; older records become stale |
-| Delete | Erase/reclaim the carrier sector | Append a tombstone; replay is rejected and history remains inspectable |
-| Discovery | Operator must know `bank:address` | LIST/VALIDATE and newest/exact-generation lookup |
-| `APS` view | `UNMANAGED`, because there is no AP Store sector header | `+ G=nnnn`, WORK, or another managed role |
-| Failure model | Small exact-address operation; no catalog transaction | Read-only plan, explicit confirmation, commit-last append, CRC/request recheck, and replay rejection |
+| Flash shape | One complete AP v2 envelope at a 4K sector base | AP data inside append-only records/chunks |
+| Maximum | `$1000` bytes including the envelope | `$1000` envelope through the current chained-object tools |
+| Name | AP executable `ENTRY` name | Object number plus generation |
+| Install | `SEAL> INSTALL source Bn` | Plan/confirm/execute transit tools |
+| Find | Bank plus name or sector address | Newest or exact object generation |
+| Run | `AP Bn name` or `AP Bn s000` | Reconstruct, validate, then load/run |
+| Load only | `AP L Bn name` | Reader/tool-specific operation |
+| Status | `APS`, `APS Bn`, `APS Bn name` | Same `APS` media view plus store tools |
+| Replacement | Erase/reinstall the whole carrier sector | Append a newer generation |
+| Deletion | Reclaim/erase the carrier sector | Append a tombstone |
 
-## Banked AP carrier
+## Current APMAN carrier path
 
-Bank Maintenance `P` is the current carrier writer. In the combined menu it
-reads one AP v2 envelope from RAM `$7000`; the standalone tool reads `$4000`.
-The operator supplies a Bank 0-2 sector-base destination by typing the exact
-target, for example:
+APMAN is itself an APC. HIMON discovers it in Bank 2, then Bank 1, then Bank 0,
+loads it at `$7000`, and gives it the command line. The initial release places
+APMAN at B2:`$8000`. Bank 0 has no hard-coded special status; current WDCMONV2
+contents are simply occupied media and are never selected as an erased hole.
 
-```text
-TYPE PUT BnS000 (n=0-2,S=8-F)> PUT B28000
-```
-
-Before programming, `P` verifies the AP signature/version and current
-`$0005-$00FF` length policy, rejects configured WORK/BKUP sectors, stages the
-target sector, and requires every byte occupied by the envelope to be erased.
-It overlays only the envelope and preserves the rest of the 4K sector.
-
-After a cold boot, HIMON can address that envelope directly:
+At `SEAL>`, a named package can be installed with one command:
 
 ```text
-AP B2 $8000 $4000
+PACKAGE BANKAUDIT $3000
+INSTALL 3000 B1
 ```
 
-HIMON stages the banked source, validates the AP envelope, loads its body into
-RAM, applies relocations/imports, and runs its entry. The body never executes
-in place from banked flash. `AP` also performs the run; no following `G` is
-needed.
+The explicit `B1` is the destructive confirmation. APMAN validates the
+envelope, requires its total length to be at most `$1000`, skips the configured
+WORK and B3:F-backup locations, selects the first completely erased sector in
+that bank, writes and verifies the whole sector from RAM, restores Bank 3, and
+prints the exact location. It does not pack several programs into one sector.
 
-`PACKAGE MAIN $7000` gives the AP an entry identity, but the current carrier
-run command is still address-based. There is no carrier catalog, allocator,
-generation selection, tombstone, or automatic relocation to another flash
-hole. Bank Maintenance `P` also does not modify the STR8 whole-bank directory.
+After reset, either the package name or its sector address may be used:
 
-The complete LED carrier example is
-[PIA_LED_BANKED_AP_CARD.md](PIA_LED_BANKED_AP_CARD.md).
+```text
+APS B1
+AP B1 BANKAUDIT
+AP B1 A000
+AP L B1 BANKAUDIT
+```
+
+`AP` loads, fixes imports/relocations, and executes the entry. `AP L` performs
+the same load/fix but does not execute. With no explicit RAM destination, the
+AP header's sealed base is used. An optional final destination overrides it:
+
+```text
+AP B1 BANKAUDIT 3000
+AP L B1 A000 3000
+```
+
+Because APMAN itself is live at `$7000`, its first version permits the loaded
+BODY only in `$2000-$6FFF` (the exclusive end may equal `$7000`). This is a
+manager-overlay limit, not a carrier-media limit. Direct recovery form
+`AP package-address destination` remains resident in HIMON.
+
+Names are the AP executable `ENTRY` identities already stored in the envelope;
+there is no second carrier directory. A name collision within the selected
+bank fails. A sector address always disambiguates.
+
+`APS` remains AP Status:
+
+- `APS` prints all Bank 0-2 sector roles/media states.
+- `APS B1` lists valid carriers in Bank 1.
+- `APS B1 BANKAUDIT` or `APS B1 A000` prints one carrier's name, envelope
+  length, and sealed load address.
+
+AP Store V1 media bytes are unchanged. Its active headers still appear as
+`+ G=nnnn`; configured roles appear as `= WORK` and `= BKUP B3F`; erased and
+unknown media appear as `HDR ERASED` and `UNMANAGED`.
+
+The old STR8-N Bank Maintenance `P` command remains a narrow recovery writer
+for legacy small envelopes. It is no longer the normal ASM/package/install
+flow and does not provide APMAN name discovery.
 
 ## AP Store V1
 
-AP Store manages TWS sectors rather than reserving one raw address per AP.
-Sector headers establish managed/active generations. Append-only records name
-an object and object generation; larger packages are divided into ordered
-chunks and may span selected sectors. Readers find the newest or an exact
-generation, reconstruct the original AP envelope, validate it, and load/run
-it from RAM.
+AP Store manages append-only records rather than assigning one sector to one
+program. It provides object generations, chaining, validation, tombstones,
+capacity planning, and replay protection. Those features require more tools
+and more operator steps. A later consolidated AP Store manager may itself be
+an APC loaded into RAM, but the V1 media layout does not need to change.
 
-Installation and deletion are deliberately multi-step. A read-only planner
-checks the request, current media, capacity, chain layout, and CRCs. A separate
-confirmation authorizes the executor. The executor rechecks the snapshot and
-commits last; immediate replay fails closed. Deletion appends a tombstone
-instead of erasing the old bytes. This costs code, RAM staging, records, and
-operator steps, but provides the lifecycle machinery absent from a carrier.
+Choose a carrier for one named utility that should be easy to assemble,
+install, reboot, list, and run. Choose AP Store when version history, shared
+managed capacity, multi-record reconstruction, or tombstone deletion is the
+actual requirement.
 
-The same LED body has a complete AP Store path in
-[AP_STORE_V1_FULL_CYCLE_BOARD_TEST.md](AP_STORE_V1_FULL_CYCLE_BOARD_TEST.md).
-That card installs it as object `$0003`, generation `$0001`, cold-boots,
-performs newest-generation lookup, reconstructs the `$00A3` envelope, and
-runs it.
-
-## Choosing between them
-
-Choose a banked carrier when all of these are true:
-
-- the AP is at most `$00FF` bytes under the current `P` policy;
-- a fixed physical address is acceptable;
-- one explicit erase/update operation is acceptable;
-- direct `AP Bn pkg dst` execution is useful;
-- catalog, generations, and delete history are unnecessary.
-
-Choose AP Store when any of these are needed:
-
-- packages larger than the carrier limit or packages that require chaining;
-- multiple objects sharing managed flash capacity;
-- newest/exact-generation selection;
-- append-only replacement and tombstone deletion;
-- inventory, validation, recovery planning, or replay protection.
-
-A carrier is therefore a deployment slot. AP Store is a storage system. The
-carrier is the right small example and recovery-friendly bootstrap; AP Store
-is the path for a growing managed application collection.
+The exact first-carrier board sequence is in
+[APMAN_V1_BOARD_TEST.md](APMAN_V1_BOARD_TEST.md).

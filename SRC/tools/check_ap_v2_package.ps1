@@ -201,11 +201,23 @@ if (-not [regex]::IsMatch($asmText, $sharedHexInit,
         [Text.RegularExpressions.RegexOptions]::Singleline)) {
     Fail 'prefixed and bare hex must share the virtual-prefix length initialization'
 }
-if (([regex]::Matches($asmFlashText, 'JSR\s+ASM_PARSE_SEAL_EXPR')).Count -ne 3) {
-    Fail 'flash wrapper must route all three operand parses through bare-hex mode'
+if (([regex]::Matches($asmFlashText, 'JSR\s+ASM_PARSE_SEAL_EXPR')).Count -ne 4) {
+    Fail 'flash wrapper must route its four operand parses through bare-hex mode'
 }
 if (([regex]::Matches($runtimePasteText, 'JSR\s+ASM_PARSE_SEAL_EXPR')).Count -ne 1) {
     Fail 'runtime-paste RELOCATE must use bare-hex mode'
+}
+foreach ($required in @('ASMF_PARSE_INSTALL_BANK:', 'ASMF_INSTALL_BANK:',
+        'APMAN_CONFIRM_INSTALL', 'APMAN_MODE_INSTALL',
+        'ASM_ABI_AP_OP_MANAGER')) {
+    if (-not $asmFlashText.Contains($required)) {
+        Fail "missing bank-aware INSTALL rail $required"
+    }
+}
+if (-not [regex]::IsMatch($asmFlashText,
+        'ASMF_PARSE_INSTALL_BANK:.*?CMP\s+#\$03.*?ASMF_INSTALL_BANK_DONE:PLA\s+SEC\s+RTS',
+        [Text.RegularExpressions.RegexOptions]::Singleline)) {
+    Fail 'INSTALL source Bn parser must accept only bank digits 0-2'
 }
 
 # ASMF_PARSE_TWO_ARGS retains its first-token pointer while ASM_PARSE_EXPR may
