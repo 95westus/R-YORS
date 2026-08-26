@@ -95,6 +95,26 @@ fallback, AP-invalid rollback refusal, exact LIVE/STALE/FREE/BLOCKED counts,
 repeat-delete `$E1`, and no-space without reuse. Board proof on the accepted
 B1:9/B1:B chain is next.
 
+### Near term: Bank 1 application work sector
+
+- [ ] Reserve Bank 1 sector E (`B1:E`, `$E000-$EFFF` while Bank 1 is selected)
+  as the application **Work** sector and display it as `W` in bank maps. `W`
+  means application-owned transient workspace: it is not free AP allocation,
+  persistent object storage, or the only authoritative copy of data. The first
+  intended owner is ASM-F2, for temporary fixup, symbol, and related assembly
+  work. Keep the role application-neutral so later applications may reuse it.
+- [ ] Remove `B1:E` from AP-store allocation/test masks before relying on the
+  `W` designation. Earlier accepted `B1:8-E` AP test-media evidence remains
+  historical; the new reservation changes future allocation policy rather than
+  retroactively changing those transcripts.
+- [ ] Add only the sector-level `W` map classification in the near-term slice.
+  Defer 256-byte page-level submaps and allocations within the 4K sector until
+  an application demonstrates a need for them.
+- [ ] Treat wear leveling as a later design, not part of the first `W` slice.
+  The likely first wear metric is a persistent per-sector erase count; define
+  its storage, update/recovery rules, counter lifetime/overflow behavior, and
+  allocation policy before using it to rotate work or AP sectors.
+
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit
   CSTR, HBSTR, and PSTR data. Existing `DC C,"text"`, `DC HB,"text"`, and
