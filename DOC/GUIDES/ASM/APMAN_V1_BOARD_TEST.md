@@ -89,7 +89,9 @@ COMMIT? Y: Y.
 OK
 ```
 
-Reload the corrected Bank Maintenance menu, then verify:
+Reload the corrected Bank Maintenance menu from its S19, then verify. Do not
+use `G 2000`: STR8-N `I` uses RAM within the menu's `$2000-$4FFF` footprint,
+so the earlier RAM copy is no longer a valid maintenance image.
 
 ```text
 BM> M

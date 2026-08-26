@@ -25232,3 +25232,31 @@ now consumes the three-byte AP-v2 section header. APMAN now checks the `AM01`
 manager identity before printing `AP LOAD` or touching destination RAM and
 fails once with `APMAN ERR=$DB`. Focused board proof and the later BANKAUDIT
 full lifecycle remain open.
+
+### Focused correction proof
+
+The corrected Bank Maintenance menu recognized the dense `$0B40` APMAN
+carrier as `A`, listed `AP B2 8000 L0B40`, verified B2:8 erased, and recognized
+the reinstalled carrier again. D2 advanced normally to `C0FFFFFF`. Reusing the
+old RAM image with `G 2000` after STR8-N `I` temporarily printed B1:E/F by raw
+content as `E/U`; `I` uses RAM within the maintenance image's `$2000-$4FFF`
+footprint, so that image is not reusable and must be reloaded. Direct dumps
+before and after resident APS and APMAN proved the Bank-3 configuration pocket
+remained exactly `1E 1F`.
+
+```text
+> D FFF0 FFF1
+> FFF0: 1E 1F | ..
+> APS B2 APMAN
+> APS B2 8000 APC APMAN L=0B40 @7000
+> D FFF0 FFF1
+> FFF0: 1E 1F | ..
+> AP B2 APMAN 2000
+> APMAN ERR=$DB
+> D FFF0 FFF1
+> FFF0: 1E 1F | ..
+```
+
+Focused correction status: accepted. The self-selection command printed no
+`AP LOAD`, no `GO`, and did not recurse. Full APMAN V1 acceptance remains open
+until the ASM-F2/package/install/reset/BANKAUDIT lifecycle passes.

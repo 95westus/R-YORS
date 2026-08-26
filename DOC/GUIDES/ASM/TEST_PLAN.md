@@ -15532,3 +15532,11 @@ section header. The corrected APMAN recognizes its `AM01` body identity before
 printing `AP LOAD` or writing destination RAM and returns `APMAN ERR=$DB`.
 Board acceptance remains open pending the focused correction card and the
 complete BANKAUDIT lifecycle.
+
+Focused correction board status: accepted. Bank Maintenance recognized and
+listed the reinstalled `$0B40` carrier, resident named APS returned the exact
+B2:8 detail row, and `AP B2 APMAN 2000` returned `APMAN ERR=$DB` once without
+`AP LOAD`, `GO`, or recursion. Three surrounding `$FFF0-$FFF1` dumps remained
+`1E 1F`. A Bank Maintenance RAM image must be reloaded after STR8-N `I`; the
+installer uses RAM inside the menu's `$2000-$4FFF` footprint, so `G 2000`
+cannot be used to re-enter the old image after installation.
