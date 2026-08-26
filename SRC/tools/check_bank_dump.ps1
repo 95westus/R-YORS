@@ -83,6 +83,12 @@ foreach ($required in @(
 foreach ($forbidden in @('$F003','FLASH_WRITE','FLASH_ERASE','PROGRAM_BYTE')) {
     if ($aText.Contains($forbidden)) { throw ".a reaches or names forbidden mutation surface: $forbidden" }
 }
+if ($aText.Contains("';'")) {
+    throw ".a contains a quoted semicolon that ASM-F2 will parse as a comment"
+}
+if (([regex]::Matches($aText, '(?m)\$3B')).Count -ne 3) {
+    throw '.a must encode its three message semicolons as $3B'
+}
 
 $imports = @(
     'BIO_FTDI_PUT_CSTR',

@@ -185,9 +185,11 @@ onboard `.a` is fixed at `$2000` to keep the AP-v2 table to three import
 relocations; the host counterpart emits the same `$0516` bytes with FNV32
 `$2CB2A3ED`, and the predicted package is `$0597`. It stages a selected 4K
 sector, restores B3, reports CRC16, decodes a sector-base AP-v2 seal, and can
-dump the first page, any 256-byte page, or all pages with safe quit. Board
-install at the currently erased B2:9 and the three tests in
-`BANK_DUMP_AP_CARD.md` remain open.
+dump the first page, any 256-byte page, or all pages with safe quit. The first
+board run proved B0:8 staging, CRC `$5579`, and the complete 4K dump, but three
+quoted semicolons caused `ERR=$03 BO` and a shortened `$0564` carrier. The
+corrected card uses `$3B`; erase the invalid B2:9 copy and repeat the `$0597`
+install and remaining tests in `BANK_DUMP_AP_CARD.md`.
 
 ### Near term: Bank 1 application work sector
 

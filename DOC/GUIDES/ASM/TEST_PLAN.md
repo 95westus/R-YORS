@@ -15565,7 +15565,7 @@ utility printed `BANKAUDIT OK; B3 RESTORED`, and the direct run returned
 
 ## 2026-08-26 BANKDUMP Banked APC Candidate
 
-Host status: accepted. Board status: open.
+Host status: accepted. Board status: partial; corrected carrier retry open.
 
 `BANKDUMP` is a read-only fixed-`$2000` carrier utility. It prompts for Bank
 0-3 and sector 8-F, stages the complete sector at `$4000-$4FFF`, restores
@@ -15597,3 +15597,17 @@ Board gate:
 
 The exact source paths, inputs, and output shapes are in
 [`BANK_DUMP_AP_CARD.md`](BANK_DUMP_AP_CARD.md).
+
+The first board run exposed a source-card encoding defect. ASM-F2 interpreted
+the literal semicolon in each of three message `DB` rows as the beginning of
+a comment and reported `ERR=$03 BO`. The continuing assembly installed a
+short `$0564` B2:9 carrier. Despite the damaged tail strings, its `A` mode
+staged and printed all 4K of B0:8 and reported the expected CRC16 `$5579`.
+This is useful partial proof of sector selection, staging, Bank-3 restoration,
+CRC, row formatting, and paging, but it is not carrier acceptance.
+
+The maintained source now encodes those three bytes as `$3B`; the emitted host
+body remains `$0516`, FNV32 remains `$2CB2A3ED`, and the correct package is
+still `$0597`. The generator no longer strips semicolons blindly, and the
+checker rejects quoted semicolons. Erase the invalid B2:9 copy, rebuild from
+`ASM NEW`, and repeat the board gate above.

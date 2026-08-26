@@ -25,7 +25,11 @@ $imports = @(
 )
 
 function Normalize-Code([string]$Line) {
-    $code = ($Line -replace ';.*$', '').Trim()
+    # The selected EQU/shared regions contain no inline comments.  Do not use
+    # a raw semicolon regex here: ASM character data may legitimately encode
+    # $3B, and treating a quoted semicolon as a comment truncated three board
+    # message definitions in the first candidate.
+    $code = $Line.Trim()
     $code = $code -replace '^([A-Z_][A-Z0-9_]*):', '$1'
     $code = $code -replace '\s+', ' '
     return $code.Trim()
@@ -93,7 +97,7 @@ $output = [Collections.Generic.List[string]]::new()
     '; ASM NEW',
     '; PASTE THIS WHOLE FILE',
     '; AT SEAL>: PACKAGE BANKDUMP $3000',
-    '; AT SEAL>: INSTALL 3000 B1',
+    '; AT SEAL>: INSTALL 3000 B2',
     '; AFTER RESET: AP B2 BANKDUMP',
     ';',
     '; H DECODES AN AP-V2 HEADER AND DUMPS ITS FIRST 256 BYTES.',

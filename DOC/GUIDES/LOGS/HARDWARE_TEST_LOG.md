@@ -25346,3 +25346,42 @@ at B1:C, B1:E as WORK, and B1:F as the B3:F backup. This accepts the complete
 ASM-F2 -> PACKAGE -> INSTALL -> RESET -> APS -> named AP -> useful program
 lifecycle. No flash-mutation claim is inferred from the read-only application
 run.
+
+## 2026-08-26 BANKDUMP Partial Board Run and Source Correction
+
+The first BANKDUMP card was not a clean carrier build. ASM-F2 reported three
+`ERR=$03 BO` errors where message data contained a quoted semicolon. ASM-F2
+treated each semicolon as a source comment, continued assembly, and produced
+the shortened package `$0564` instead of the required `$0597`. That copy was
+installed at B2:9 and must be erased before the corrected retry.
+
+The runnable prefix nevertheless selected B0:8, staged the full sector,
+reported its known CRC16 `$5579`, and displayed all 256 rows through `$8FF0`.
+The damaged message tail then printed concatenated text. This proves the
+read-only stage/CRC/full-dump path only; it does not accept the malformed
+carrier or its completion messages.
+
+```text
+ASM>$24BB:         DB ' ','O','K',';
+ERR=$03 BO PC=$24BB
+ASM>$24C5:         DB ' ','E','1',';
+ERR=$03 BO PC=$24C5
+ASM>$24DB:         DB ' ','Q','U','I','T',';
+ERR=$03 BO PC=$24DB
+SEAL> PACKAGE BANKDUMP $3000
+PKG OK @=$3000 L=$0564
+SEAL> INSTALL 3000 B2
+INST B2 9000 L=0564
+
+> AP B2 BANKDUMP
+BANK 0-3> 0
+SECTOR 8-F> 8
+H=APC HEADER P=PAGE A=ALL Q=QUIT> A
+BANKDUMP B0:8000 CRC16=5579
+...
+8FF0: ...
+```
+
+The maintained card now spells the three semicolon bytes as `$3B`. Host body
+size `$0516`, FNV32 `$2CB2A3ED`, and correct package length `$0597` are
+unchanged. Corrected installation and the remaining board gates are open.

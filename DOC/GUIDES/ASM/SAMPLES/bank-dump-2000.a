@@ -4,7 +4,7 @@
 ; ASM NEW
 ; PASTE THIS WHOLE FILE
 ; AT SEAL>: PACKAGE BANKDUMP $3000
-; AT SEAL>: INSTALL 3000 B1
+; AT SEAL>: INSTALL 3000 B2
 ; AFTER RESET: AP B2 BANKDUMP
 ;
 ; H DECODES AN AP-V2 HEADER AND DUMPS ITS FIRST 256 BYTES.
@@ -485,12 +485,15 @@ MSG_MORE DB $0D,$0A,'-','-',' ','M','O','R','E',' '
 DB '(','E','N','T','E','R','=','N','E','X','T',','
 DB ' ','Q','=','Q','U','I','T',')','>',' ',0
 MSG_OK DB $0D,$0A,'B','A','N','K','D','U','M','P'
-DB ' ','O','K','
+DB ' ','O','K',$3B,' ','B','3',' '
+DB 'R','E','S','T','O','R','E','D',$0D,$0A,0
 MSG_STAGE_FAIL DB $0D,$0A,'B','A','N','K','D','U','M','P'
-DB ' ','E','1','
+DB ' ','E','1',$3B,' ','B','3',' '
+DB 'R','E','S','T','O','R','E',' '
 DB 'A','T','T','E','M','P','T','E','D',$0D,$0A,0
 MSG_ABORT DB $0D,$0A,'B','A','N','K','D','U','M','P'
-DB ' ','Q','U','I','T','
+DB ' ','Q','U','I','T',$3B,' ','N','O',' '
+DB 'F','L','A','S','H',' '
 DB 'W','R','I','T','E',$0D,$0A,0
 ; END SHARED BANKDUMP BODY
 

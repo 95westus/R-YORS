@@ -1,6 +1,7 @@
 # BANKDUMP Banked APC Utility
 
-Status: host-built and structurally checked. Board proof is pending.
+Status: host-built and structurally checked. The board proved the complete
+4K stage/CRC/dump path; corrected carrier acceptance is pending.
 
 `BANKDUMP` is the read-only physical-flash inspection APC. It selects one
 Bank 0-3 sector, copies all 4K to `$4000-$4FFF`, restores Bank 3, calculates
@@ -38,8 +39,35 @@ checked against the host `$2000` map.
 
 ## Install on the current board
 
-The current inventory has B2:8 occupied by `APMAN` and B2:9 erased, so use
-Bank 2. No STR8-N, HIMON, ASM, APMAN, directory, or Bank-3 update is needed.
+The first board card contained three quoted semicolons that ASM-F2 treated as
+comments. It installed a shortened, invalid `$0564` carrier at B2:9. Remove
+that copy before installing the corrected `$0597` carrier. No STR8-N, HIMON,
+ASM, APMAN, directory, or Bank-3 update is needed.
+
+At the current Bank Maintenance `BM>` prompt enter:
+
+```text
+E
+BANK 0-3> 2
+SECTOR 8-F, ALL, OR X-Y; B3 MAX E> 9
+TYPE ERASE 29> ERASE 29
+```
+
+Require:
+
+```text
+. OK
+```
+
+Then enter:
+
+```text
+Q
+RESET
+APS B2
+```
+
+B2:9 must no longer be listed as `BANKDUMP`.
 
 At HIMON:
 
@@ -52,6 +80,8 @@ Send this one complete file:
 ```text
 C:\SRC\R-YORS\RELEASE\ARTIFACTS\SOURCES\bank-dump-2000.a
 ```
+
+This is the corrected card. Do not reuse the earlier pasted `$0564` source.
 
 At `SEAL>` enter exactly:
 
