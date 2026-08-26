@@ -4,7 +4,8 @@
 ; BANKDUMP is a read-only fixed-$2000 APC.  It selects one physical bank/sector,
 ; stages the complete 4K sector at $4000, restores Bank 3, computes CRC16,
 ; and presents either a decoded AP-v2 header, one 256-byte page, or the whole
-; sector as 16-byte hexadecimal/ASCII rows.
+; sector as 16-byte hexadecimal/ASCII rows.  M at the bank prompt scans the
+; complete 4x8 physical map with Bank Maintenance-compatible classifications.
 ; ---------------------------------------------------------------------------
 
                         CHIP            65C02
@@ -29,6 +30,15 @@ PAGES_LEFT              EQU             $7C05
 ROWS_LEFT               EQU             $7C06
 CRC_LO_RESULT           EQU             $7C08
 CRC_HI_RESULT           EQU             $7C09
+MAP_BANK                EQU             $7C0A
+MAP_SECTOR              EQU             $7C0B
+WORK_ROLE               EQU             $7C0C
+BACKUP_ROLE             EQU             $7C0D
+AP_PACKAGE_LO           EQU             $7C10
+AP_PACKAGE_HI           EQU             $7C11
+AP_BODY_LO              EQU             $7C12
+AP_BODY_HI              EQU             $7C13
+AP_EXPECT_FNV0          EQU             $7C14
 INPUT                   EQU             $7000
 
 PTR_LO                  EQU             $A0
@@ -41,6 +51,27 @@ CRC_LO                  EQU             $A6
 CRC_HI                  EQU             $A7
 ADDR_LO                 EQU             $A8
 ADDR_HI                 EQU             $A9
+AP_CAND_LO              EQU             $AA
+AP_CAND_HI              EQU             $AB
+AP_PARSE_LO             EQU             $AC
+AP_PARSE_HI             EQU             $AD
+AP_REMAIN_LO            EQU             $AE
+AP_REMAIN_HI            EQU             $AF
+FNV0                    EQU             $B0
+FNV1                    EQU             $B1
+FNV2                    EQU             $B2
+FNV3                    EQU             $B3
+AP_SECTION_LEN          EQU             $B4
+AP_BODY_PTR_LO          EQU             $B5
+AP_BODY_PTR_HI          EQU             $B6
+AP_BODY_COUNT_LO        EQU             $B7
+AP_BODY_COUNT_HI        EQU             $B8
+AP_TMP0                 EQU             $B9
+AP_TMP1                 EQU             $BA
+FNV_SHIFT0              EQU             $C7
+FNV_SHIFT1              EQU             $C8
+FNV_SHIFT2              EQU             $C9
+FNV_SHIFT3              EQU             $CA
 
 BANK_SELECT             EQU             $F010
 BANK_SELECT_RAM         EQU             $0203
@@ -63,6 +94,12 @@ ASK_BANK:               LDX             #<MSG_BANK
                         BCS             BANK_READ_OK
                         JMP             ABORT
 BANK_READ_OK:           CMP             #'0'
+                        BNE             BANK_NOT_ZERO
+                        BRA             BANK_LOW_OK
+BANK_NOT_ZERO:          CMP             #'M'
+                        BNE             BANK_DIGIT
+                        JMP             MAP_RUN
+BANK_DIGIT:             CMP             #'0'
                         BCS             BANK_LOW_OK
                         JMP             BAD_BANK
 BANK_LOW_OK:            CMP             #'4'
@@ -226,6 +263,121 @@ HEX_VALUE_DIGIT:        AND             #$0F
 HEX_VALUE_BAD:          CLC
                         RTS
 
+; M is a read-only 4-bank x 8-sector map.
+; Role bytes come from the live Bank-3 top sector.
+; Other sectors are staged before inspection.
+; Bank 3 is restored before every output call.
+MAP_RUN:                PHP
+                        SEI
+                        LDA             #$03
+                        JSR             BANK_SELECT_RAM
+                        BCS             MAP_ROLE_OK
+                        PLP
+                        JMP             STAGE_FAIL
+MAP_ROLE_OK:            LDA             $FFF0
+                        STA             WORK_ROLE
+                        LDA             $FFF1
+                        STA             BACKUP_ROLE
+                        PLP
+                        LDX             #<MSG_MAP_TITLE
+                        LDY             #>MSG_MAP_TITLE
+                        JSR             PUTS
+                        STZ             MAP_BANK
+MAP_BANK_LOOP:          LDA             #'B'
+                        JSR             PUTC
+                        LDA             MAP_BANK
+                        CLC
+                        ADC             #'0'
+                        JSR             PUTC
+                        LDA             #$80
+                        STA             MAP_SECTOR
+MAP_SECTOR_LOOP:        LDA             #' '
+                        JSR             PUTC
+                        LDA             MAP_BANK
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        STA             AP_TMP0
+                        LDA             MAP_SECTOR
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        ORA             AP_TMP0
+                        CMP             WORK_ROLE
+                        BNE             MAP_NOT_WORK
+                        LDA             #'W'
+                        BRA             MAP_MARK
+MAP_NOT_WORK:           CMP             BACKUP_ROLE
+                        BNE             MAP_NOT_BACKUP
+                        LDA             #'B'
+                        BRA             MAP_MARK
+MAP_NOT_BACKUP:         LDA             MAP_BANK
+                        CMP             #$03
+                        BNE             MAP_STAGE
+                        LDA             MAP_SECTOR
+                        CMP             #$F0
+                        BNE             MAP_STAGE
+                        LDA             #'P'
+                        BRA             MAP_MARK
+MAP_STAGE:              LDA             MAP_BANK
+                        STA             BANK_NO
+                        LDA             MAP_SECTOR
+                        STA             SECTOR_HI
+                        JSR             STAGE
+                        BCS             MAP_STAGED
+                        JMP             STAGE_FAIL
+MAP_STAGED:             JSR             MAP_ERASED
+                        BCC             MAP_USED
+                        LDA             #'E'
+                        BRA             MAP_MARK
+MAP_USED:               JSR             AP_SCAN
+                        BCC             MAP_PLAIN
+                        LDA             #'A'
+                        BRA             MAP_MARK
+MAP_PLAIN:              LDA             #'U'
+MAP_MARK:               JSR             PUTC
+                        LDA             MAP_SECTOR
+                        CLC
+                        ADC             #$10
+                        STA             MAP_SECTOR
+                        BNE             MAP_SECTOR_LOOP
+                        JSR             CRLF
+                        INC             MAP_BANK
+                        LDA             MAP_BANK
+                        CMP             #$04
+                        BCS             MAP_DONE
+                        JMP             MAP_BANK_LOOP
+MAP_DONE:               LDX             #<MSG_MAP_LEGEND
+                        LDY             #>MSG_MAP_LEGEND
+                        JSR             PUTS
+                        LDX             #<MSG_MAP_OK
+                        LDY             #>MSG_MAP_OK
+                        JSR             PUTS
+                        LDA             #$AC
+                        STA             STATUS
+                        SEC
+                        RTS
+
+MAP_ERASED:             STZ             PTR_LO
+                        LDA             #BUFFER_HI
+                        STA             PTR_HI
+                        LDX             #$10
+MAP_ERASED_PAGE:        LDY             #$00
+MAP_ERASED_BYTE:        LDA             (PTR_LO),Y
+                        CMP             #$FF
+                        BNE             MAP_NOT_ERASED
+                        INY
+                        BNE             MAP_ERASED_BYTE
+                        INC             PTR_HI
+                        DEX
+                        BNE             MAP_ERASED_PAGE
+                        SEC
+                        RTS
+MAP_NOT_ERASED:         CLC
+                        RTS
+
 STAGE:                  PHP
                         SEI
                         LDA             #$03
@@ -296,6 +448,365 @@ CRC_NEXT:               DEX
                         STA             CRC_LO_RESULT
                         LDA             CRC_HI
                         STA             CRC_HI_RESULT
+                        RTS
+
+; Bank Maintenance-compatible AP-v2 validator.
+; It scans the staged sector and validates section order.
+; It also validates bounds and matches the body FNV.
+AP_NEED:                STA             AP_TMP1
+                        LDA             AP_REMAIN_HI
+                        BNE             AP_NEED_OK
+                        LDA             AP_REMAIN_LO
+                        CMP             AP_TMP1
+                        BCS             AP_NEED_OK
+                        CLC
+                        RTS
+AP_NEED_OK:             SEC
+                        RTS
+
+AP_ADV:                 STA             AP_TMP1
+                        JSR             AP_NEED
+                        BCC             AP_ADV_BAD
+                        LDA             AP_PARSE_LO
+                        CLC
+                        ADC             AP_TMP1
+                        STA             AP_PARSE_LO
+                        LDA             AP_PARSE_HI
+                        ADC             #$00
+                        STA             AP_PARSE_HI
+                        LDA             AP_REMAIN_LO
+                        SEC
+                        SBC             AP_TMP1
+                        STA             AP_REMAIN_LO
+                        LDA             AP_REMAIN_HI
+                        SBC             #$00
+                        STA             AP_REMAIN_HI
+                        SEC
+                        RTS
+AP_ADV_BAD:             CLC
+                        RTS
+
+AP_TAG:                 STA             AP_TMP0
+                        LDA             #$03
+                        JSR             AP_NEED
+                        BCC             AP_TAG_BAD
+                        LDY             #$00
+                        LDA             (AP_PARSE_LO),Y
+                        CMP             AP_TMP0
+                        BNE             AP_TAG_BAD
+                        INY
+                        LDA             (AP_PARSE_LO),Y
+                        STA             AP_SECTION_LEN
+                        INY
+                        LDA             (AP_PARSE_LO),Y
+                        BNE             AP_TAG_BAD
+                        LDA             #$03
+                        JMP             AP_ADV
+AP_TAG_BAD:             CLC
+                        RTS
+
+AP_HEAD:                LDA             AP_CAND_HI
+                        CMP             #BUFFER_HI
+                        BCC             AP_HEAD_BAD
+                        CMP             #$50
+                        BCS             AP_HEAD_BAD
+                        LDA             #$00
+                        SEC
+                        SBC             AP_CAND_LO
+                        STA             AP_REMAIN_LO
+                        LDA             #$50
+                        SBC             AP_CAND_HI
+                        STA             AP_REMAIN_HI
+                        LDA             #$05
+                        JSR             AP_NEED
+                        BCC             AP_HEAD_BAD
+                        LDY             #$00
+                        LDA             (AP_CAND_LO),Y
+                        CMP             #'A'
+                        BNE             AP_HEAD_BAD
+                        INY
+                        LDA             (AP_CAND_LO),Y
+                        CMP             #'P'
+                        BNE             AP_HEAD_BAD
+                        INY
+                        LDA             (AP_CAND_LO),Y
+                        CMP             #$02
+                        BNE             AP_HEAD_BAD
+                        INY
+                        LDA             (AP_CAND_LO),Y
+                        STA             AP_PACKAGE_LO
+                        INY
+                        LDA             (AP_CAND_LO),Y
+                        STA             AP_PACKAGE_HI
+                        LDA             AP_PACKAGE_HI
+                        CMP             AP_REMAIN_HI
+                        BCC             AP_HEAD_FIT
+                        BNE             AP_HEAD_BAD
+                        LDA             AP_PACKAGE_LO
+                        CMP             AP_REMAIN_LO
+                        BCC             AP_HEAD_FIT
+                        BNE             AP_HEAD_BAD
+AP_HEAD_FIT:            LDA             AP_CAND_LO
+                        STA             AP_PARSE_LO
+                        LDA             AP_CAND_HI
+                        STA             AP_PARSE_HI
+                        LDA             AP_PACKAGE_LO
+                        STA             AP_REMAIN_LO
+                        LDA             AP_PACKAGE_HI
+                        STA             AP_REMAIN_HI
+                        LDA             #$05
+                        JSR             AP_ADV
+                        BCC             AP_HEAD_BAD
+                        SEC
+                        RTS
+AP_HEAD_BAD:            CLC
+                        RTS
+
+AP_SEAL:                LDA             #'S'
+                        JSR             AP_TAG
+                        BCC             AP_SEAL_BAD
+                        LDA             AP_SECTION_LEN
+                        CMP             #$0B
+                        BNE             AP_SEAL_BAD
+                        JSR             AP_NEED
+                        BCC             AP_SEAL_BAD
+                        LDY             #$00
+                        LDA             (AP_PARSE_LO),Y
+                        CMP             #$01
+                        BNE             AP_SEAL_BAD
+                        LDY             #$05
+                        LDA             (AP_PARSE_LO),Y
+                        STA             AP_BODY_LO
+                        INY
+                        LDA             (AP_PARSE_LO),Y
+                        STA             AP_BODY_HI
+                        ORA             AP_BODY_LO
+                        BEQ             AP_SEAL_BAD
+                        LDY             #$01
+                        LDA             (AP_PARSE_LO),Y
+                        CLC
+                        LDY             #$05
+                        ADC             (AP_PARSE_LO),Y
+                        STA             AP_TMP0
+                        LDY             #$02
+                        LDA             (AP_PARSE_LO),Y
+                        LDY             #$06
+                        ADC             (AP_PARSE_LO),Y
+                        BCS             AP_SEAL_BAD
+                        STA             AP_TMP1
+                        LDY             #$03
+                        LDA             (AP_PARSE_LO),Y
+                        CMP             AP_TMP0
+                        BNE             AP_SEAL_BAD
+                        LDY             #$04
+                        LDA             (AP_PARSE_LO),Y
+                        CMP             AP_TMP1
+                        BNE             AP_SEAL_BAD
+                        LDY             #$07
+                        LDX             #$00
+AP_SEAL_FNV:            LDA             (AP_PARSE_LO),Y
+                        STA             AP_EXPECT_FNV0,X
+                        INY
+                        INX
+                        CPX             #$04
+                        BNE             AP_SEAL_FNV
+                        LDA             #$0B
+                        JSR             AP_ADV
+                        BCC             AP_SEAL_BAD
+                        SEC
+                        RTS
+AP_SEAL_BAD:            CLC
+                        RTS
+
+AP_RELOC:               LDA             #'R'
+                        JSR             AP_TAG
+                        BCC             AP_RELOC_BAD
+                        LDA             AP_SECTION_LEN
+                        BEQ             AP_RELOC_BAD
+                        JSR             AP_NEED
+                        BCC             AP_RELOC_BAD
+                        LDY             #$00
+                        LDA             (AP_PARSE_LO),Y
+                        CMP             #$11
+                        BCS             AP_RELOC_BAD
+                        STA             AP_TMP0
+                        ASL             A
+                        ASL             A
+                        CLC
+                        ADC             AP_TMP0
+                        INC             A
+                        CMP             AP_SECTION_LEN
+                        BNE             AP_RELOC_BAD
+                        LDA             AP_SECTION_LEN
+                        JSR             AP_ADV
+                        BCC             AP_RELOC_BAD
+                        SEC
+                        RTS
+AP_RELOC_BAD:           CLC
+                        RTS
+
+AP_RECORD:              JSR             AP_TAG
+                        BCC             AP_RECORD_BAD
+                        LDA             AP_SECTION_LEN
+                        BEQ             AP_RECORD_BAD
+                        JSR             AP_NEED
+                        BCC             AP_RECORD_BAD
+                        LDA             AP_SECTION_LEN
+                        JSR             AP_ADV
+                        BCC             AP_RECORD_BAD
+                        SEC
+                        RTS
+AP_RECORD_BAD:          CLC
+                        RTS
+
+AP_BODY:                LDA             #$03
+                        JSR             AP_NEED
+                        BCC             AP_BODY_BAD
+                        LDY             #$00
+                        LDA             (AP_PARSE_LO),Y
+                        CMP             #'B'
+                        BNE             AP_BODY_BAD
+                        INY
+                        LDA             (AP_PARSE_LO),Y
+                        CMP             AP_BODY_LO
+                        BNE             AP_BODY_BAD
+                        INY
+                        LDA             (AP_PARSE_LO),Y
+                        CMP             AP_BODY_HI
+                        BNE             AP_BODY_BAD
+                        LDA             #$03
+                        JSR             AP_ADV
+                        BCC             AP_BODY_BAD
+                        LDA             AP_REMAIN_LO
+                        CMP             AP_BODY_LO
+                        BNE             AP_BODY_BAD
+                        LDA             AP_REMAIN_HI
+                        CMP             AP_BODY_HI
+                        BNE             AP_BODY_BAD
+                        LDA             AP_PARSE_LO
+                        STA             AP_BODY_PTR_LO
+                        LDA             AP_PARSE_HI
+                        STA             AP_BODY_PTR_HI
+                        SEC
+                        RTS
+AP_BODY_BAD:            CLC
+                        RTS
+
+AP_HASH:                JSR             FNV_INIT
+                        LDA             AP_BODY_LO
+                        STA             AP_BODY_COUNT_LO
+                        LDA             AP_BODY_HI
+                        STA             AP_BODY_COUNT_HI
+AP_HASH_MORE:           LDA             AP_BODY_COUNT_LO
+                        ORA             AP_BODY_COUNT_HI
+                        BEQ             AP_HASH_CHECK
+                        LDY             #$00
+                        LDA             (AP_BODY_PTR_LO),Y
+                        JSR             FNV_UPDATE
+                        INC             AP_BODY_PTR_LO
+                        BNE             AP_HASH_COUNT
+                        INC             AP_BODY_PTR_HI
+AP_HASH_COUNT:          DEC             AP_BODY_COUNT_LO
+                        LDA             AP_BODY_COUNT_LO
+                        CMP             #$FF
+                        BNE             AP_HASH_MORE
+                        DEC             AP_BODY_COUNT_HI
+                        BRA             AP_HASH_MORE
+AP_HASH_CHECK:          LDX             #$03
+AP_HASH_BYTE:           LDA             FNV0,X
+                        CMP             AP_EXPECT_FNV0,X
+                        BNE             AP_HASH_BAD
+                        DEX
+                        BPL             AP_HASH_BYTE
+                        SEC
+                        RTS
+AP_HASH_BAD:            CLC
+                        RTS
+
+AP_SCAN:                STZ             AP_CAND_LO
+                        LDA             #BUFFER_HI
+                        STA             AP_CAND_HI
+                        BRA             AP_SCAN_NEXT
+AP_SCAN_ADV:            INC             AP_CAND_LO
+                        BNE             AP_SCAN_NEXT
+                        INC             AP_CAND_HI
+                        LDA             AP_CAND_HI
+                        CMP             #$50
+                        BCC             AP_SCAN_NEXT
+                        CLC
+                        RTS
+AP_SCAN_NEXT:           LDY             #$00
+                        LDA             (AP_CAND_LO),Y
+                        CMP             #'A'
+                        BNE             AP_SCAN_ADV
+                        JSR             AP_HEAD
+                        BCC             AP_SCAN_ADV
+                        JSR             AP_SEAL
+                        BCC             AP_SCAN_ADV
+                        JSR             AP_RELOC
+                        BCC             AP_SCAN_ADV
+                        LDA             #'E'
+                        JSR             AP_RECORD
+                        BCC             AP_SCAN_ADV
+                        LDA             #'I'
+                        JSR             AP_RECORD
+                        BCC             AP_SCAN_ADV
+                        JSR             AP_BODY
+                        BCC             AP_SCAN_ADV
+                        JSR             AP_HASH
+                        BCC             AP_SCAN_ADV
+                        SEC
+                        RTS
+
+FNV_INIT:               LDX             #$03
+FNV_INIT_BYTE:          LDA             FNV_BASIS,X
+                        STA             FNV0,X
+                        DEX
+                        BPL             FNV_INIT_BYTE
+                        RTS
+FNV_BASIS:              DB              $C5,$9D,$1C,$81
+
+FNV_UPDATE:             EOR             FNV0
+                        STA             FNV0
+                        LDX             #$03
+FNV_COPY:               LDA             FNV0,X
+                        STA             FNV_SHIFT0,X
+                        DEX
+                        BPL             FNV_COPY
+                        LDX             #$01
+                        JSR             FNV_SHIFT_ADD
+                        LDX             #$03
+                        JSR             FNV_SHIFT_ADD
+                        LDX             #$03
+                        JSR             FNV_SHIFT_ADD
+                        LDX             #$01
+                        JSR             FNV_SHIFT_ADD
+                        LDA             FNV3
+                        CLC
+                        ADC             FNV_SHIFT1
+                        STA             FNV3
+                        RTS
+FNV_SHIFT_ADD:          JSR             FNV_SHIFT
+                        CLC
+                        LDA             FNV0
+                        ADC             FNV_SHIFT0
+                        STA             FNV0
+                        LDA             FNV1
+                        ADC             FNV_SHIFT1
+                        STA             FNV1
+                        LDA             FNV2
+                        ADC             FNV_SHIFT2
+                        STA             FNV2
+                        LDA             FNV3
+                        ADC             FNV_SHIFT3
+                        STA             FNV3
+                        RTS
+FNV_SHIFT:              ASL             FNV_SHIFT0
+                        ROL             FNV_SHIFT1
+                        ROL             FNV_SHIFT2
+                        ROL             FNV_SHIFT3
+                        DEX
+                        BNE             FNV_SHIFT
                         RTS
 
 PRINT_SELECTION:        LDX             #<MSG_SELECTED
@@ -480,7 +991,8 @@ CRLF:                   LDA             #$0D
 
 MSG_TITLE:              DB              $0D,$0A,'B','A','N','K','D','U','M','P'
                         DB              ' ','R','E','A','D','-','O','N','L','Y',$0D,$0A,0
-MSG_BANK:               DB              'B','A','N','K',' ','0','-','3','>',' ',0
+MSG_BANK:               DB              'B','A','N','K',' ','0','-','3',' '
+                        DB              'O','R',' ','M','=','M','A','P','>',' ',0
 MSG_SECTOR:             DB              'S','E','C','T','O','R',' ','8','-','F','>',' ',0
 MSG_MODE:               DB              'H','=','A','P','C',' ','H','E','A','D','E','R',' '
                         DB              'P','=','P','A','G','E',' ','A','=','A','L','L',' '
@@ -521,6 +1033,19 @@ MSG_ABORT:              DB              $0D,$0A,'B','A','N','K','D','U','M','P'
                         DB              ' ','Q','U','I','T',$3B,' ','N','O',' '
                         DB              'F','L','A','S','H',' '
                         DB              'W','R','I','T','E',$0D,$0A,0
+MSG_MAP_TITLE:          DB              $0D,$0A,'B','#',' ','8',' ','9',' ','A'
+                        DB              ' ','B',' ','C',' ','D',' ','E',' ','F'
+                        DB              $0D,$0A,$0D,$0A,0
+MSG_MAP_LEGEND:         DB              'E','=','E','R','A','S','E','D',' '
+                        DB              'U','=','U','S','E','D',' '
+                        DB              'A','=','A','P',' ','V','A','L','I','D'
+                        DB              $0D,$0A,'W','=','W','O','R','K',' '
+                        DB              'B','=','B','3','F',' ','B','K','U','P',' '
+                        DB              'P','=','B','3','F',' ','P','R','O','T'
+                        DB              'E','C','T','E','D',$0D,$0A,0
+MSG_MAP_OK:             DB              'B','A','N','K','D','U','M','P',' '
+                        DB              'M','A','P',' ','O','K',$3B,' ','B','3',' '
+                        DB              'R','E','S','T','O','R','E','D',$0D,$0A,0
 ; END SHARED BANKDUMP BODY
 
 _END_CODE:

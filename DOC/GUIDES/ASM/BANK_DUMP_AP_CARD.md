@@ -1,14 +1,16 @@
 # BANKDUMP Banked APC Utility
 
-Status: accepted on board. The corrected `$0597` carrier, header mode, page
-mode, and all-pages safe-quit path are proven.
+Status: the `$0597` dump-only baseline is accepted on board. The `$09AD`
+read-only bank-map extension is host-accepted and awaits board proof.
 
 `BANKDUMP` is the read-only physical-flash inspection APC. It selects one
 Bank 0-3 sector, copies all 4K to `$4000-$4FFF`, restores Bank 3, calculates
 CRC-16/CCITT-FALSE, and then displays only the staged RAM copy. It contains no
 flash erase/program path.
 
-The three modes are:
+The four modes are:
+
+- `M` at the bank prompt: scan and classify all 32 physical sectors.
 
 - `H`: decode an AP-v2 envelope at the sector base and dump its first 256
   bytes.
@@ -28,9 +30,14 @@ Direct RAM-load S19
 C:\SRC\R-YORS\RELEASE\ARTIFACTS\COMPONENT-IMAGES\bank-dump-2000.s19
 ```
 
-The host body occupies `$2000-$2515`, `$0516` bytes, with FNV32
-`$2CB2A3ED`. The onboard AP-v2 package has three import relocations and exact
-length `$0597`.
+The host body occupies `$2000-$292B`, `$092C` bytes, with FNV32
+`$CEF1F837`. The onboard AP-v2 package has three import relocations and exact
+length `$09AD`.
+
+Map classification matches Bank Maintenance: `E` requires all 4096 bytes to
+be `$FF`; `A` requires a complete AP-v2 envelope with matching body FNV and
+may occur anywhere in the sector; other occupied sectors are `U`. Configured
+roles override content as `W`, `B`, or `P`.
 
 `BANKDUMP` is deliberately fixed at its sealed `$2000` base. Run it by name
 without a destination override. Its HIMON console imports remain dynamically
@@ -43,12 +50,23 @@ install, and exit commands shown below.
 
 ## Install on the current board
 
-The first board card contained three quoted semicolons that ASM-F2 treated as
-comments. It installed a shortened, invalid `$0564` carrier at B2:9. Remove
-that copy before installing the corrected `$0597` carrier. No STR8-N, HIMON,
-ASM, APMAN, directory, or Bank-3 update is needed.
+The current B2:9 contains the accepted `$0597` dump-only BANKDUMP. Erase that
+sector before installing the `$09AD` map extension. No STR8-N, HIMON, ASM,
+APMAN, directory, or Bank-3 update is needed.
 
-At the current Bank Maintenance `BM>` prompt enter:
+At HIMON enter `L` and send this complete file:
+
+```text
+C:\SRC\R-YORS\RELEASE\ARTIFACTS\COMPONENT-IMAGES\str8n-v1.23-bank-maint-menu-2000.s19
+```
+
+Then enter:
+
+```text
+G 2000
+```
+
+At `BM>` enter:
 
 ```text
 E
@@ -85,7 +103,8 @@ Send this one complete file:
 C:\SRC\R-YORS\RELEASE\ARTIFACTS\SOURCES\bank-dump-2000.a
 ```
 
-This is the corrected card. Do not reuse the earlier pasted `$0564` source.
+This is the `$09AD` map-extension card. Do not reuse the earlier `$0597`
+source.
 
 At `SEAL>` enter exactly:
 
@@ -98,8 +117,8 @@ INSTALL 3000 B2
 Expected package/install lines for the current board are:
 
 ```text
-PKG OK @=$3000 L=$0597
-INST B2 9000 L=0597
+PKG OK @=$3000 L=$09AD
+INST B2 9000 L=09AD
 ... OK
 ASM BYE
 ```
@@ -114,10 +133,34 @@ APS B2 BANKDUMP
 Expected:
 
 ```text
-APS B2 9000 APC BANKDUMP L=0597 @2000
+APS B2 9000 APC BANKDUMP L=09AD @2000
 ```
 
-## Test 1: inspect APMAN itself
+## Test 1: complete bank map
+
+```text
+AP B2 BANKDUMP
+BANK 0-3 OR M=MAP> M
+```
+
+Expected current-board map:
+
+```text
+B# 8 9 A B C D E F
+
+B0 U U U U U U U U
+B1 U A A U A A W B
+B2 A A E E E E E E
+B3 U U U U U U U P
+E=ERASED U=USED A=AP VALID
+W=WORK B=B3F BKUP P=B3F PROTECTED
+BANKDUMP MAP OK; B3 RESTORED
+```
+
+Require `A` at B1:C for BANKAUDIT, B2:8 for APMAN, and B2:9 for BANKDUMP.
+The exact B0/B3 `U` contents are board inventory, not hard-coded policy.
+
+## Test 2: inspect APMAN itself
 
 Enter the command with `A` in the first column:
 
@@ -128,7 +171,7 @@ AP B2 BANKDUMP
 Then answer:
 
 ```text
-BANK 0-3> 2
+BANK 0-3 OR M=MAP> 2
 SECTOR 8-F> 8
 H=APC HEADER P=PAGE A=ALL Q=QUIT> H
 ```
@@ -155,11 +198,11 @@ This test passed on 2026-08-26 with the corrected `$0597` B2:9 carrier after a
 warm reset. Named discovery, load, execution, the exact decoded APMAN fields,
 CRC `$60CF`, completion text, and Bank-3 restoration all matched this card.
 
-## Test 2: one page
+## Test 3: one page
 
 ```text
 AP B2 BANKDUMP
-BANK 0-3> 1
+BANK 0-3 OR M=MAP> 1
 SECTOR 8-F> C
 H=APC HEADER P=PAGE A=ALL Q=QUIT> P
 PAGE 0-F> 0
@@ -179,11 +222,11 @@ BANKDUMP OK; B3 RESTORED
 This test passed on 2026-08-26. CRC `$FA1C`, all 16 rows from `$C000-$C0FF`,
 the completion message, and Bank-3 restoration matched.
 
-## Test 3: whole-sector paging and safe quit
+## Test 4: whole-sector paging and safe quit
 
 ```text
 AP B2 BANKDUMP
-BANK 0-3> 2
+BANK 0-3 OR M=MAP> 2
 SECTOR 8-F> F
 H=APC HEADER P=PAGE A=ALL Q=QUIT> A
 ```

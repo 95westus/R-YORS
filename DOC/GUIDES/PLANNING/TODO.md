@@ -194,6 +194,12 @@ restoration. B1:C `P` mode subsequently matched CRC `$FA1C`, and B2:F `A`
 mode matched erased CRC `$0FE1` and quit safely at the first page boundary.
 The BANKDUMP carrier gate is complete.
 
+The next BANKDUMP candidate adds a read-only `M` bank map at the initial bank
+prompt. It mirrors Bank Maintenance's full-sector erased check, complete
+AP-v2/body-FNV scan, and `E/U/A/W/B/P` roles without importing a mutation
+path. Host body `$092C`, FNV32 `$CEF1F837`, and package `$09AD` pass; replacing
+the accepted `$0597` B2:9 carrier and proving one named map run remain open.
+
 ### Near term: Bank 1 application work sector
 
 - [x] Reserve Bank 1 sector E (`B1:E`, `$E000-$EFFF` while Bank 1 is selected)

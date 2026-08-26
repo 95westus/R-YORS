@@ -15630,3 +15630,35 @@ CRC16 `$FA1C`, printed exactly `$C000-$C0FF`, and ended with
 printed `$F000-$F0FF`, accepted `Q` at the first `-- MORE` prompt, and ended
 with `BANKDUMP QUIT; NO FLASH WRITE`. All seven BANKDUMP board gates are now
 accepted.
+
+## 2026-08-26 BANKDUMP Read-Only Bank-Map Extension
+
+Host status: accepted. Board status: pending replacement of the `$0597` B2:9
+baseline with the `$09AD` candidate and one named `M` run.
+
+`M` is accepted at the initial bank prompt and prints a 4x8 physical-sector
+map. It stages every non-role sector, restores Bank 3 before output, requires
+all 4096 bytes to be `$FF` for `E`, and uses the Bank Maintenance AP-v2
+section/bounds/body-FNV scanner for `A`. Other occupied sectors are `U`.
+Configured `$FFF0/$FFF1` roles produce `W` and `B`; live B3:F is `P` and is
+never staged. The map contains no flash-mutation doorway.
+
+The extended host body is `$2000-$292B` (`$092C` bytes), FNV32 `$CEF1F837`.
+The onboard package remains at three import relocations and is `$09AD`, safely
+within one 4K carrier sector. The generated `.a` is byte-identical to the host
+S19 and the checker pins map entry, erased scan, AP scan, FNV validation,
+body size, hash, package size, and the mutation denylist.
+
+Board gate:
+
+1. Erase the existing B2:9 `$0597` BANKDUMP through Bank Maintenance.
+2. `ASM NEW` the complete current `bank-dump-2000.a`.
+3. `PACKAGE BANKDUMP $3000`; require `L=$09AD`.
+4. `INSTALL 3000 B2`; require B2:9 and `L=09AD`.
+5. Reset; require `APS B2 BANKDUMP` to report `9000`, `$09AD`, and `@2000`.
+6. Run `AP B2 BANKDUMP`, enter `M` at `BANK 0-3 OR M=MAP>`, and require the
+   current map in `BANK_DUMP_AP_CARD.md`, including B1:E `W`, B1:F `B`, B3:F
+   `P`, B1:C/B2:8/B2:9 `A`, and `BANKDUMP MAP OK; B3 RESTORED`.
+
+The already accepted `H`, `P`, and `A/Q` behavior is unchanged; a focused map
+run is sufficient for this extension.

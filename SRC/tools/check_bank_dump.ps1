@@ -86,8 +86,17 @@ foreach ($forbidden in @('$F003','FLASH_WRITE','FLASH_ERASE','PROGRAM_BYTE')) {
 if ($aText.Contains("';'")) {
     throw ".a contains a quoted semicolon that ASM-F2 will parse as a comment"
 }
-if (([regex]::Matches($aText, '(?m)\$3B')).Count -ne 3) {
-    throw '.a must encode its three message semicolons as $3B'
+if (([regex]::Matches($aText, '(?m)^DB .*\$3B')).Count -ne 4) {
+    throw '.a must encode its four message semicolons as $3B'
+}
+foreach ($required in @(
+    "CMP #'M'",
+    'MAP_RUN',
+    'MAP_ERASED',
+    'AP_SCAN',
+    'FNV_UPDATE',
+    'MSG_MAP_LEGEND')) {
+    if (-not $aText.Contains($required)) { throw ".a is missing map contract: $required" }
 }
 
 $imports = @(
@@ -125,8 +134,8 @@ for ($address=0x2000; $address -le $last; $address++) {
 [byte[]]$image = for ($address=0x2000; $address -le $last; $address++) {
     $s19.Data[$address]
 }
-if ($image.Length -ne 0x0516) {
-    throw ('BANKDUMP body is ${0:X4}, expected $0516' -f $image.Length)
+if ($image.Length -ne 0x092C) {
+    throw ('BANKDUMP body is ${0:X4}, expected $092C' -f $image.Length)
 }
 $hex = [BitConverter]::ToString($image).Replace('-','')
 foreach ($required in @('2010F0','200302','AD0040C941','AD0140C950','AD0240C902')) {
@@ -137,8 +146,9 @@ $fnv = [uint64]2166136261
 foreach ($b in $image) {
     $fnv = (($fnv -bxor [uint64]$b) * [uint64]16777619) -band [uint64]4294967295
 }
-if ([uint32]$fnv -ne [uint32]0x2CB2A3ED) {
-    throw ('BANKDUMP FNV32 is ${0:X8}, expected $2CB2A3ED' -f [uint32]$fnv)
+$expectedFnv = [Convert]::ToUInt32('CEF1F837',16)
+if ([uint32]$fnv -ne $expectedFnv) {
+    throw ('BANKDUMP FNV32 is ${0:X8}, expected $CEF1F837' -f [uint32]$fnv)
 }
 $exportRecordLength = 1 + 1 + 2 + 4 + 1 + (2 * [Math]::Ceiling('BANKDUMP'.Length / 3.0))
 $importSectionLength = 1
@@ -147,11 +157,11 @@ foreach ($import in $imports) {
 }
 $packageLength = [int](0x1F + (1 + (5 * $relocRows)) +
     $exportRecordLength + $importSectionLength + $image.Length)
-if ($packageLength -ne 0x0597) {
-    throw ('BANKDUMP package length is ${0:X4}, expected $0597' -f $packageLength)
+if ($packageLength -ne 0x09AD) {
+    throw ('BANKDUMP package length is ${0:X4}, expected $09AD' -f $packageLength)
 }
 
 Write-Host 'BANKDUMP host map/onboard fixed operands: identical and current'
 Write-Host ('BANKDUMP S19: $2000-${0:X4}, {1} bytes, FNV32=${2:X8}' -f $last,$image.Length,[uint32]$fnv)
 Write-Host ('BANKDUMP onboard AP v2: {0} import relocations, package length=${1:X4}' -f $relocRows,$packageLength)
-Write-Host 'BANKDUMP policy: stage, restore B3, decode/dump/CRC; no mutation doorway'
+Write-Host 'BANKDUMP policy: map/stage/restore/decode/dump/CRC; no mutation doorway'
