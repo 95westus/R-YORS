@@ -153,6 +153,7 @@ $str8Sources = @(
     "src/str8-worker.asm",
     "src/util-delay.asm",
     "tools/bank-maint/str8n-v1.22-bank-maint-2000.asm",
+    "tools/bank-maint/str8n-v1.22-bank-maint-rename.inc",
     "tools/bank-maint/str8n-v1.22-bank-maint-menu-2000.asm",
     "tools/bank-maint/str8n-v1.22-bank-maint-menu-2000.a",
     "tools/top-update/str8n-v1.22-top-update-2000.asm"
@@ -243,7 +244,7 @@ Board-use artifacts:
 - ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19
 - ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19
 - ARTIFACTS/SOURCES/str8n-v1.22-bank-maint-menu-2000.a - onboard `ASM NEW`
-  source for guarded Bank-3 directory reclaim
+  source for guarded directory rename and Bank-3 directory reclaim
 - ARTIFACTS/COMPONENT-IMAGES/str8n-v1.22-bank-maint-menu-2000.s19 - direct
   loader form of the same maintenance menu
 - ARTIFACTS/COMPONENT-IMAGES - component, diagnostic, and recovery images
