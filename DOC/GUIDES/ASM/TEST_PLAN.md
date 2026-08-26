@@ -15540,3 +15540,11 @@ B2:8 detail row, and `AP B2 APMAN 2000` returned `APMAN ERR=$DB` once without
 `1E 1F`. A Bank Maintenance RAM image must be reloaded after STR8-N `I`; the
 installer uses RAM inside the menu's `$2000-$4FFF` footprint, so `G 2000`
 cannot be used to re-enter the old image after installation.
+
+The first BANKAUDIT paste stopped before packaging with `ERR=$07 BL` on three
+64-70-column message `DB` lines and the consequent `ERR=$09 BAD FIX` at
+`END`. No flash operation ran. The corrected source splits the same bytes over
+lines no longer than 63 columns; host code size (`$0202`), FNV32
+(`$0EFD2A83`), relocation count (16), and package length (`$0294`) are
+unchanged. `check_bank_audit.ps1` now enforces the onboard non-comment line
+limit. Repeat the lifecycle from `ASM NEW`.

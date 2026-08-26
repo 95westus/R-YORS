@@ -281,10 +281,12 @@ HEX_PUT STA LINE,X
 
 MSG_TITLE DB $0D,$0A,'B','A','N','K','A','U','D','I','T',' '
         DB 'C','R','C','1','6','/','4','K',$0D,$0A,0
-MSG_OK  DB 'B','A','N','K','A','U','D','I','T',' ','O','K',';',' '
-        DB 'B','3',' ','R','E','S','T','O','R','E','D',$0D,$0A,0
-MSG_FAIL DB $0D,$0A,'B','A','N','K','A','U','D','I','T',' '
-        DB 'E','1',';',' ','B','3',' ','R','E','S','T','O','R','E',' '
+MSG_OK  DB 'B','A','N','K','A','U','D','I','T'
+        DB ' ','O','K',';',' ','B','3',' '
+        DB 'R','E','S','T','O','R','E','D',$0D,$0A,0
+MSG_FAIL DB $0D,$0A,'B','A','N','K','A','U','D','I','T'
+        DB ' ','E','1',';',' ','B','3',' '
+        DB 'R','E','S','T','O','R','E',' '
         DB 'A','T','T','E','M','P','T','E','D',$0D,$0A,0
 ; END SHARED BANKAUDIT BODY
 

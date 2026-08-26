@@ -25260,3 +25260,29 @@ remained exactly `1E 1F`.
 Focused correction status: accepted. The self-selection command printed no
 `AP LOAD`, no `GO`, and did not recurse. Full APMAN V1 acceptance remains open
 until the ASM-F2/package/install/reset/BANKAUDIT lifecycle passes.
+
+### BANKAUDIT onboard-source line-limit correction
+
+The first BANKAUDIT `ASM NEW` paste reached its final message definitions but
+did not seal. Three non-comment `DB` lines were 64-70 columns, beyond ASM-F2's
+63-column onboard limit. ASM-F2 reported `ERR=$07 BL` at `$21BF/$21CB`; `END`
+then correctly reported `ERR=$09 BAD FIX` because those data definitions were
+incomplete. No `PACKAGE` or `INSTALL` command ran, so flash was unchanged.
+
+```text
+ASM>$21BF: MSG_OK  DB ...
+ERR=$07 BL PC=$21BF
+ASM>$21BF:         DB ...
+ERR=$07 BL PC=$21BF
+ASM>$21CB:         DB ...
+ERR=$07 BL PC=$21CB
+ASM>$21D7:         END
+ERR=$09 BAD FIX PC=$21D7
+#56AD7400# EXEC ERR=$09
+```
+
+The corrected `.a` and host `.asm` split only those message bytes across
+shorter directives. Emitted code remains `$0202` bytes with FNV32 `$0EFD2A83`,
+and the expected onboard AP-v2 package remains `$0294`. The host checker now
+rejects any non-comment onboard source line longer than 63 columns. Board
+acceptance remains open pending a clean retry from `ASM NEW`.

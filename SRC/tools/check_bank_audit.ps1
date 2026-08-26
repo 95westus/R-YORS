@@ -56,6 +56,14 @@ function Read-S19 {
 }
 
 $aText = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $APath))
+$lineNumber = 0
+foreach ($line in [IO.File]::ReadAllLines((Resolve-Path -LiteralPath $APath))) {
+    $lineNumber++
+    if ($line.TrimStart().StartsWith(';')) { continue }
+    if ($line.Length -gt 63) {
+        throw "BANKAUDIT onboard source line $lineNumber is $($line.Length) columns; maximum is 63"
+    }
+}
 foreach ($required in @('IMPORT BIO_FTDI_PUT_CSTR','ENTRY BANKAUDIT','BANK_SELECT EQU $F010','BANK_SELECT_RAM EQU $0203')) {
     if (-not $aText.Contains($required)) { throw ".a is missing required contract: $required" }
 }
