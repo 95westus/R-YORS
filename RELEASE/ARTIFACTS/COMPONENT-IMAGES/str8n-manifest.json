@@ -3,8 +3,8 @@
     "project":  "STR8-N",
     "version":  "1.23",
     "repository":  "https://github.com/95westus/STR8-N.git",
-    "commit":  "3e604247cf2f3976d12c9915a05e3c7b9f1d9264",
-    "dirty":  true,
+    "commit":  "f3bda118b8b27a8b43763b17ca2033c78320a5ee",
+    "dirty":  false,
     "artifacts":  {
                       "topSector":  {
                                         "file":  "BUILD/v1.23/bin/str8n-v1.23-bank3-f000-ffff.bin",
